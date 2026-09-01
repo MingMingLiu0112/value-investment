@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: value-investment-agent-db
+    environment:
+      POSTGRES_DB: value_agent
+      POSTGRES_USER: value_agent
+      POSTGRES_PASSWORD: change-me
+    ports:
+      - "5432:5432"
+    volumes:
+      - value_agent_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U value_agent -d value_agent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  restore_db:
+    image: postgres:16-alpine
+    container_name: value-investment-agent-restore-db
+    environment:
+      POSTGRES_DB: value_agent_restore
+      POSTGRES_USER: value_agent
+      POSTGRES_PASSWORD: change-me
+    ports:
+      - "5433:5432"
+    volumes:
+      - value_agent_restore_postgres:/var/lib/postgresql/data
+
+volumes:
+  value_agent_postgres:
+  value_agent_restore_postgres:

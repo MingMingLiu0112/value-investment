@@ -1,0 +1,14 @@
+FROM docker.io/library/python:3.12-slim
+
+WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PIP_DEFAULT_TIMEOUT=180 PIP_RETRIES=5
+COPY pyproject.toml ./
+COPY sql ./sql
+COPY src ./src
+RUN pip install .
+
+CMD ["python", "-m", "value_investment_agent"]

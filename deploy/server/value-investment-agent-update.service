@@ -1,0 +1,10 @@
+[Unit]
+Description=Value investment Agent daily data update
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/value-investment-agent
+EnvironmentFile=/etc/value-investment-agent/agent.env
+ExecStart=/opt/value-investment-agent/deploy/server/run_update.sh

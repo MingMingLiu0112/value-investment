@@ -1,0 +1,21 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python and test artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+node_modules/
+
+# Runtime data and backups
+runtime/
+backups/
+*.dump
+*.manifest.json
+
+# Editor and operating-system files
+.DS_Store
+Thumbs.db

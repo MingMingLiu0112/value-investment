@@ -1,0 +1,41 @@
+{
+  "generated_at": "2026-09-01T16:00:00+08:00",
+  "valuations": [
+    {
+      "symbol": "600941",
+      "current_price": 100.25,
+      "fair_value": null,
+      "safety_margin": null,
+      "valuation_status": "待估值",
+      "build_signal": "待数据",
+      "target_weight": 0,
+      "data_status": "待估值"
+    }
+  ],
+  "points": [
+    {
+      "symbol": "600941",
+      "field_name": "current_price",
+      "value": 100.25,
+      "source_id": "00000000-0000-0000-0000-000000000001"
+    }
+  ],
+  "audits": [
+    {
+      "source_id": "00000000-0000-0000-0000-000000000001",
+      "symbol": "600941",
+      "field_name": "current_price",
+      "period_label": "2026-09-01 16:00",
+      "value": 100.25,
+      "unit": "CNY/share",
+      "source_name": "测试来源",
+      "source_url": "https://example.test/price",
+      "fetched_at": "2026-09-01T08:00:00Z",
+      "published_at": null,
+      "parser_version": "test-v1",
+      "sha256": "test-hash",
+      "validation_status": "pending",
+      "human_reviewed": false
+    }
+  ]
+}

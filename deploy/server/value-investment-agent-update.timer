@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the value investment Agent after market close on weekdays
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 16:10:00 Asia/Shanghai
+Persistent=true
+Unit=value-investment-agent-update.service
+
+[Install]
+WantedBy=timers.target
