@@ -5,7 +5,7 @@ import json
 from decimal import Decimal
 from pathlib import Path
 
-from .adapters import AksharePriceAdapter
+from .adapters import AksharePriceAdapter, SinaFinancialAdapter
 from .backup import create_backup, verify_restore
 from .db import begin_run, connect, end_run, export_payload, initialize, latest_points, store_record, upsert_valuation
 from .quality import as_valuation_row, evaluate
@@ -18,7 +18,7 @@ def _schema_path() -> Path:
     return Path.cwd() / 'sql' / '001_init.sql'
 
 
-def run_update(prices: bool, sync_excel: bool) -> None:
+def run_update(prices: bool, financials: bool, sync_excel: bool) -> None:
     settings = get_settings()
     with connect(settings.database_url) as connection:
         run_id = begin_run(connection, 'update')
@@ -26,6 +26,11 @@ def run_update(prices: bool, sync_excel: bool) -> None:
             stored = 0
             if prices:
                 for record in AksharePriceAdapter().fetch([item[0] for item in UNIVERSE]):
+                    store_record(connection, record, 'pending')
+                    stored += 1
+            if financials:
+                for record in SinaFinancialAdapter().fetch([item[0] for item in UNIVERSE]):
+                    # Public structured indicators remain review-required until matched to an official filing.
                     store_record(connection, record, 'pending')
                     stored += 1
             grouped: dict[str, list[dict]] = {item[0]: [] for item in UNIVERSE}
@@ -57,6 +62,7 @@ def main() -> None:
     sub.add_parser('init-db')
     update = sub.add_parser('update')
     update.add_argument('--prices', action='store_true', help='从 AkShare 拉取公共行情')
+    update.add_argument('--financials', action='store_true', help='从 AkShare/Sina 拉取待核验财务指标')
     update.add_argument('--no-sync-excel', action='store_true')
     sub.add_parser('quality')
     sub.add_parser('export-payload')
@@ -70,7 +76,7 @@ def main() -> None:
         initialize(settings.database_url, _schema_path())
         print('数据库和证券池初始化完成。')
     elif args.command == 'update':
-        run_update(args.prices, not args.no_sync_excel)
+        run_update(args.prices, args.financials, not args.no_sync_excel)
     elif args.command == 'quality':
         run_quality()
     elif args.command == 'export-payload':
