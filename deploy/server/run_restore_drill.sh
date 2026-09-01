@@ -7,6 +7,8 @@ if [[ $# -ne 1 ]]; then
 fi
 
 source /etc/value-investment-agent/postgres.env
+manifest_name="$(basename "$1")"
+trap 'podman stop value-investment-restore-postgres >/dev/null 2>&1 || true' EXIT
 podman rm -f value-investment-restore-postgres 2>/dev/null || true
 podman run -d --name value-investment-restore-postgres \
   --memory=256m --memory-reservation=128m --memory-swap=384m \
@@ -21,5 +23,4 @@ until podman exec value-investment-restore-postgres pg_isready -U value_agent_ad
 podman run --rm --network host --memory=256m --memory-reservation=128m --memory-swap=384m \
   --env-file /etc/value-investment-agent/agent.env \
   -v /opt/value-investment-agent/backups:/app/backups:Z \
-  value-investment-agent:latest python -m value_investment_agent restore-verify --manifest "$1"
-podman stop value-investment-restore-postgres
+  value-investment-agent:latest python -m value_investment_agent restore-verify --manifest "/app/backups/$manifest_name"

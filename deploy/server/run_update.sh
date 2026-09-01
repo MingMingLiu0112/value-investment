@@ -11,6 +11,7 @@ podman run --rm --network host --memory=512m --memory-reservation=192m --memory-
   -v /opt/value-investment-agent/backups:/app/backups:Z \
   value-investment-agent:latest python -m value_investment_agent init-db
 podman run --rm --network host --memory=512m --memory-reservation=192m --memory-swap=768m \
+  -e HTTP_PROXY -e HTTPS_PROXY -e NO_PROXY \
   --env-file /etc/value-investment-agent/agent.env \
   -v /opt/value-investment-agent/backups:/app/backups:Z \
   value-investment-agent:latest python -m value_investment_agent update --prices --no-sync-excel

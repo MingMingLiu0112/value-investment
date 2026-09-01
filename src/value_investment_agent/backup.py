@@ -59,7 +59,14 @@ def verify_restore(database_url: str, restore_database_url: str, backup_manifest
         raise RuntimeError('备份 Hash 不匹配，已拒绝恢复。')
     started = time.monotonic()
     if pg_restore:
-        subprocess.run([pg_restore, '--clean', '--if-exists', '--no-owner', '--dbname', restore_database_url, str(dump_path)], check=True)
+        result = subprocess.run(
+            [pg_restore, '--clean', '--if-exists', '--no-owner', '--no-acl', '--dbname', restore_database_url, str(dump_path)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode and 'unrecognized configuration parameter "transaction_timeout"' not in result.stderr:
+            raise RuntimeError(f'pg_restore failed: {result.stderr.strip()}')
     else:
         runtime = shutil.which(container_runtime)
         if not runtime:

@@ -38,7 +38,7 @@ def initialize(database_url: str, schema_path: Path) -> None:
 
 def begin_run(connection: psycopg.Connection, task_name: str) -> uuid.UUID:
     run_id = uuid.uuid4()
-    cursor = connection.execute(
+    connection.execute(
         'INSERT INTO task_runs(run_id, task_name, started_at, status) VALUES (%s, %s, now(), %s)',
         (run_id, task_name, 'running'),
     )
@@ -55,7 +55,7 @@ def end_run(connection: psycopg.Connection, run_id: uuid.UUID, status: str, deta
 def store_record(connection: psycopg.Connection, record: SourceRecord, validation_status: str = 'pending') -> uuid.UUID:
     document_id = uuid.uuid4()
     source_id = hashlib.sha256(record.raw_payload).hexdigest()
-    connection.execute(
+    cursor = connection.execute(
         """INSERT INTO raw_documents(document_id, source_name, source_url, published_at, fetched_at, parser_version, sha256, metadata)
            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
            ON CONFLICT (sha256) DO UPDATE SET fetched_at = EXCLUDED.fetched_at

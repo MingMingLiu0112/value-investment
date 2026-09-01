@@ -59,6 +59,7 @@ def main() -> None:
     update.add_argument('--prices', action='store_true', help='从 AkShare 拉取公共行情')
     update.add_argument('--no-sync-excel', action='store_true')
     sub.add_parser('quality')
+    sub.add_parser('export-payload')
     sub.add_parser('sync-excel')
     sub.add_parser('backup')
     restore = sub.add_parser('restore-verify')
@@ -72,6 +73,9 @@ def main() -> None:
         run_update(args.prices, not args.no_sync_excel)
     elif args.command == 'quality':
         run_quality()
+    elif args.command == 'export-payload':
+        with connect(settings.database_url) as connection:
+            print(json.dumps(export_payload(connection), ensure_ascii=False, default=str))
     elif args.command == 'sync-excel':
         with connect(settings.database_url) as connection:
             print(sync_workbook(export_payload(connection), settings.workbook_path, settings.output_directory))

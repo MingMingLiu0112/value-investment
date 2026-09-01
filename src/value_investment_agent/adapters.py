@@ -10,9 +10,9 @@ from .models import SourceRecord
 class AksharePriceAdapter:
     """Fetch only tracked symbols, avoiding the provider's full-market endpoint."""
 
-    source_name = "AkShare / Eastmoney public quotes"
+    source_name = "AkShare / Sina public historical quotes"
     source_url = "https://akshare.akfamily.xyz/data/stock/stock.html"
-    parser_version = "akshare-price-v2-history"
+    parser_version = "akshare-price-v3-sina-history"
 
     def fetch(self, symbols: list[str]) -> list[SourceRecord]:
         try:
@@ -22,13 +22,13 @@ class AksharePriceAdapter:
 
         fetched_at = datetime.now(timezone.utc)
         records: list[SourceRecord] = []
-        close_column = "\u6536\u76d8"
         for symbol in symbols:
-            frame = ak.stock_zh_a_hist(symbol=symbol, period="daily", adjust="")
-            if frame.empty or close_column not in frame.columns:
+            exchange_symbol = ("sh" if symbol.startswith("6") else "sz") + symbol
+            frame = ak.stock_zh_a_daily(symbol=exchange_symbol, adjust="")
+            if frame.empty or "close" not in frame.columns:
                 continue
             row = frame.iloc[-1]
-            value = row[close_column]
+            value = row["close"]
             if value is None or str(value).strip() in {"-", "nan"}:
                 continue
             raw = json.dumps({"code": symbol, "price": str(value), "row": row.to_dict()}, ensure_ascii=False, default=str).encode()

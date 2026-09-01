@@ -23,6 +23,7 @@ class SourceRecord:
     def audit_metadata(self) -> dict[str, Any]:
         result = asdict(self)
         result.pop("raw_payload")
+        result["value"] = str(result["value"])
         for key in ("published_at", "fetched_at"):
             if result[key] is not None:
                 result[key] = result[key].isoformat()
