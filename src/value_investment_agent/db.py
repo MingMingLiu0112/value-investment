@@ -32,8 +32,14 @@ def initialize(database_url: str, schema_path: Path) -> None:
                  strategy_type = EXCLUDED.strategy_type""",
             UNIVERSE,
             )
-        connection.execute('GRANT SELECT ON ALL TABLES IN SCHEMA public TO value_agent_reader')
-        connection.execute('ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO value_agent_reader')
+        connection.execute(
+            """DO $$ BEGIN
+                 IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'value_agent_reader') THEN
+                   GRANT SELECT ON ALL TABLES IN SCHEMA public TO value_agent_reader;
+                   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO value_agent_reader;
+                 END IF;
+               END $$"""
+        )
 
 
 def begin_run(connection: psycopg.Connection, task_name: str) -> uuid.UUID:
@@ -105,6 +111,50 @@ def upsert_valuation(connection: psycopg.Connection, result: dict) -> None:
     )
 
 
+def record_monthly_snapshot(connection: psycopg.Connection, snapshot_month: str) -> int:
+    """Freeze the last collected price of a completed month and contemporaneous research state."""
+    try:
+        datetime.strptime(snapshot_month, '%Y-%m')
+    except ValueError as error:
+        raise ValueError('snapshot_month must use YYYY-MM') from error
+    prices = connection.execute(
+        """SELECT DISTINCT ON (p.symbol) p.symbol, p.value
+           FROM data_points p
+           WHERE p.field_name = 'current_price' AND p.period_label LIKE %s
+           ORDER BY p.symbol, p.period_label DESC, p.created_at DESC""",
+        (f'{snapshot_month}%',),
+    ).fetchall()
+    latest_by_symbol: dict[str, dict[str, dict]] = {}
+    for point in latest_points(connection):
+        latest_by_symbol.setdefault(point['symbol'], {})[point['field_name']] = point
+    valuations = {
+        row['symbol']: row
+        for row in connection.execute('SELECT * FROM valuation_results').fetchall()
+    }
+    stored = 0
+    for price in prices:
+        symbol = price['symbol']
+        valuation = valuations.get(symbol)
+        if valuation is None:
+            continue
+        fields = latest_by_symbol.get(symbol, {})
+        cursor = connection.execute(
+            """INSERT INTO monthly_snapshots(
+                 symbol, snapshot_month, current_price, fair_value, safety_margin, valuation_status,
+                 build_signal, target_weight, revenue_yoy, net_income_yoy, roe, data_status
+               ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+               ON CONFLICT (symbol, snapshot_month) DO NOTHING""",
+            (
+                symbol, snapshot_month, price['value'], valuation['fair_value'], valuation['safety_margin'],
+                valuation['valuation_status'], valuation['build_signal'], valuation['target_weight'],
+                fields.get('revenue_yoy', {}).get('value'), fields.get('net_income_yoy', {}).get('value'),
+                fields.get('roe', {}).get('value'), valuation['data_status'],
+            ),
+        )
+        stored += cursor.rowcount
+    return stored
+
+
 def export_payload(connection: psycopg.Connection) -> dict:
     valuations = connection.execute('SELECT * FROM valuation_results ORDER BY symbol').fetchall()
     points = latest_points(connection)
@@ -115,4 +165,12 @@ def export_payload(connection: psycopg.Connection) -> dict:
            FROM data_points p JOIN raw_documents d ON d.document_id = p.source_id
            ORDER BY p.created_at DESC LIMIT 500"""
     ).fetchall()
-    return {'valuations': valuations, 'points': points, 'audits': audits, 'generated_at': datetime.now(timezone.utc).isoformat()}
+    monthly_snapshots = connection.execute(
+        """SELECT m.*, i.name
+           FROM monthly_snapshots m JOIN instruments i ON i.symbol = m.symbol
+           ORDER BY m.snapshot_month, m.symbol"""
+    ).fetchall()
+    return {
+        'valuations': valuations, 'points': points, 'audits': audits,
+        'monthly_snapshots': monthly_snapshots, 'generated_at': datetime.now(timezone.utc).isoformat(),
+    }

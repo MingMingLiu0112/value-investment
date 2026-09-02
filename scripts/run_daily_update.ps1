@@ -57,11 +57,29 @@ function Assert-WorkbookUnlocked {
     }
 }
 
+function Assert-CanonicalWorkbookUnlocked {
+    $workbooks = @(Get-ChildItem -LiteralPath $projectRoot -File -Filter '*.xlsx')
+    if ($workbooks.Count -ne 1) {
+        throw 'Expected exactly one canonical .xlsx workbook in the project root.'
+    }
+    for ($attempt = 1; $attempt -le 30; $attempt += 1) {
+        try {
+            $stream = [System.IO.File]::Open($workbooks[0].FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+            $stream.Close()
+            return
+        }
+        catch {
+            Start-Sleep -Seconds 2
+        }
+    }
+    throw 'The canonical Excel workbook stayed open or locked for 60 seconds. Close it in WPS, then retry the sync.'
+}
+
 try {
     Set-Location $projectRoot
     $python = Get-AgentPython
     Assert-CentralDatabaseReachable
-    Assert-WorkbookUnlocked
+    Assert-CanonicalWorkbookUnlocked
 
     if (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.env'))) {
         Write-Warning 'No .env found. Using the project defaults; configure .env before storing non-demo credentials.'

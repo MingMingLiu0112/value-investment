@@ -17,6 +17,10 @@ for (const point of payload.points) {
   pointBySymbol.set(point.symbol, values);
 }
 
+function symbolKey(value) {
+  return String(value ?? '').padStart(6, '0');
+}
+
 function cellValue(value) {
   return value === null || value === undefined ? null : Number.isFinite(Number(value)) ? Number(value) : value;
 }
@@ -26,7 +30,7 @@ function syncRows(sheetName, firstDataRow, writeRow) {
   for (let row = firstDataRow; row <= 200; row += 1) {
     const symbol = sheet.getRange(`A${row}`).values?.[0]?.[0];
     if (!symbol) break;
-    writeRow(sheet, row, String(symbol).padStart(6, '0'));
+    writeRow(sheet, row, symbolKey(symbol));
   }
 }
 
@@ -60,6 +64,57 @@ syncRows('03_财务指标', 4, (sheet, row, symbol) => {
   const source = financialFields.map((field) => p[field]?.source_id).find(Boolean) ?? null;
   sheet.getRange(`D${row}:V${row}`).values = [[...values, source, source ? '待人工复核' : '待Agent写入']];
 });
+
+const observationSheet = workbook.worksheets.getItem('01_观察名单');
+const qualityBySymbol = new Map();
+for (let row = 4; row <= 200; row += 1) {
+  const symbol = observationSheet.getRange(`A${row}`).values?.[0]?.[0];
+  if (!symbol) break;
+  qualityBySymbol.set(symbolKey(symbol), observationSheet.getRange(`J${row}`).values?.[0]?.[0] ?? null);
+}
+const positionSheet = workbook.worksheets.getItem('05_仓位管理');
+const positionBySymbol = new Map();
+for (let row = 10; row <= 200; row += 1) {
+  const symbol = positionSheet.getRange(`A${row}`).values?.[0]?.[0];
+  if (!symbol) break;
+  positionBySymbol.set(symbolKey(symbol), positionSheet.getRange(`H${row}`).values?.[0]?.[0] ?? null);
+}
+
+const monthlySheet = workbook.worksheets.getItem('06_月度跟踪');
+const monthlyRowByKey = new Map();
+let nextMonthlyRow = 4;
+for (; nextMonthlyRow <= 500; nextMonthlyRow += 1) {
+  const month = monthlySheet.getRange(`A${nextMonthlyRow}`).values?.[0]?.[0];
+  if (!month) break;
+  const symbol = monthlySheet.getRange(`B${nextMonthlyRow}`).values?.[0]?.[0];
+  if (symbol) monthlyRowByKey.set(`${month}|${symbolKey(symbol)}`, nextMonthlyRow);
+}
+for (const snapshot of payload.monthly_snapshots ?? []) {
+  const symbol = symbolKey(snapshot.symbol);
+  const key = `${snapshot.snapshot_month}|${symbol}`;
+  let row = monthlyRowByKey.get(key);
+  if (!row) {
+    row = nextMonthlyRow;
+    nextMonthlyRow += 1;
+    monthlyRowByKey.set(key, row);
+    monthlySheet.getRange(`A${row}:C${row}`).values = [[snapshot.snapshot_month, symbol, snapshot.name]];
+  }
+  const snapshotAt = monthlySheet.getRange(`P${row}`).values?.[0]?.[0];
+  if (snapshotAt) continue;
+  monthlySheet.getRange(`D${row}:M${row}`).values = [[
+    cellValue(snapshot.current_price),
+    cellValue(qualityBySymbol.get(symbol)),
+    cellValue(snapshot.safety_margin),
+    snapshot.valuation_status,
+    snapshot.build_signal,
+    cellValue(positionBySymbol.get(symbol)),
+    cellValue(snapshot.revenue_yoy),
+    cellValue(snapshot.net_income_yoy),
+    cellValue(snapshot.roe),
+    null,
+  ]];
+  monthlySheet.getRange(`O${row}:P${row}`).values = [[snapshot.data_status, snapshot.snapshot_at]];
+}
 
 const auditSheet = workbook.worksheets.getItem('11_数据源审计');
 let auditRow = 4;

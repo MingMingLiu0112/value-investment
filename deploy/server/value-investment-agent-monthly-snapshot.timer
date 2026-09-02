@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the value investment Agent monthly snapshot
+
+[Timer]
+OnCalendar=*-*-01 00:20:00 Asia/Shanghai
+Persistent=true
+Unit=value-investment-agent-monthly-snapshot.service
+
+[Install]
+WantedBy=timers.target

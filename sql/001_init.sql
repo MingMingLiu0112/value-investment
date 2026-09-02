@@ -47,6 +47,26 @@ CREATE TABLE IF NOT EXISTS valuation_results (
 );
 ALTER TABLE valuation_results ADD COLUMN IF NOT EXISTS calculation_details JSONB NOT NULL DEFAULT '{}'::jsonb;
 
+CREATE TABLE IF NOT EXISTS monthly_snapshots (
+  symbol TEXT NOT NULL REFERENCES instruments(symbol),
+  snapshot_month TEXT NOT NULL CHECK (snapshot_month ~ '^[0-9]{4}-[0-9]{2}$'),
+  current_price NUMERIC NOT NULL,
+  fair_value NUMERIC,
+  safety_margin NUMERIC,
+  valuation_status TEXT NOT NULL,
+  build_signal TEXT NOT NULL,
+  target_weight NUMERIC NOT NULL DEFAULT 0,
+  revenue_yoy NUMERIC,
+  net_income_yoy NUMERIC,
+  roe NUMERIC,
+  data_status TEXT NOT NULL,
+  snapshot_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (symbol, snapshot_month)
+);
+ALTER TABLE monthly_snapshots DROP CONSTRAINT IF EXISTS monthly_snapshots_snapshot_month_check;
+ALTER TABLE monthly_snapshots ADD CONSTRAINT monthly_snapshots_snapshot_month_check
+  CHECK (snapshot_month ~ '^[0-9]{4}-[0-9]{2}$');
+
 CREATE TABLE IF NOT EXISTS task_runs (
   run_id UUID PRIMARY KEY,
   task_name TEXT NOT NULL,

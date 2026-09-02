@@ -46,12 +46,20 @@ podman exec value-investment-restore-postgres psql -At -U value_agent_admin -d v
 podman run --rm --network host --memory=256m --memory-reservation=128m --memory-swap=384m \
   --env-file /etc/value-investment-agent/agent.env -e "DATABASE_URL=$DATABASE_URL" \
   value-investment-agent:latest python -m value_investment_agent update --no-sync-excel >/dev/null
+podman run --rm --network host --memory=256m --memory-reservation=128m --memory-swap=384m \
+  --env-file /etc/value-investment-agent/agent.env -e "DATABASE_URL=$DATABASE_URL" \
+  value-investment-agent:latest python -m value_investment_agent init-db >/dev/null
+monthly_result="$(podman run --rm --network host --memory=256m --memory-reservation=128m --memory-swap=384m \
+  --env-file /etc/value-investment-agent/agent.env -e "DATABASE_URL=$DATABASE_URL" \
+  value-investment-agent:latest python -m value_investment_agent snapshot-month --month 2026-09)"
+printf 'Monthly snapshot result: %s\n' "$monthly_result"
 
 evidence_count="$(podman exec value-investment-restore-postgres psql -At -U value_agent_admin -d value_agent_restore -c "SELECT count(*) FROM data_points WHERE symbol = '600519' AND field_name = 'fair_value' AND validation_status = 'verified' AND human_reviewed")"
 hash_count="$(podman exec value-investment-restore-postgres psql -At -U value_agent_admin -d value_agent_restore -c "SELECT count(*) FROM raw_documents WHERE source_url = 'https://example.test/official-filing' AND sha256 <> ''")"
 valuation_state="$(podman exec value-investment-restore-postgres psql -At -U value_agent_admin -d value_agent_restore -c "SELECT data_status FROM valuation_results WHERE symbol = '600519'")"
-if [[ "$evidence_count" != "1" || "$hash_count" != "1" ]]; then
-  echo "Evidence smoke test failed: evidence=$evidence_count hashes=$hash_count" >&2
+monthly_count="$(podman exec value-investment-restore-postgres psql -At -U value_agent_admin -d value_agent_restore -c "SELECT count(*) FROM monthly_snapshots WHERE snapshot_month = '2026-09'")"
+if [[ "$evidence_count" != "1" || "$hash_count" != "1" || "$monthly_count" != "10" ]]; then
+  echo "Evidence smoke test failed: evidence=$evidence_count hashes=$hash_count monthly=$monthly_count" >&2
   exit 1
 fi
-printf '{"status":"passed","verified_fair_values":%s,"source_hashes":%s,"valuation_state":"%s"}\n' "$evidence_count" "$hash_count" "$valuation_state"
+printf '{"status":"passed","verified_fair_values":%s,"source_hashes":%s,"monthly_snapshots":%s,"valuation_state":"%s"}\n' "$evidence_count" "$hash_count" "$monthly_count" "$valuation_state"

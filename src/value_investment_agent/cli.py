@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .adapters import AksharePriceAdapter, SinaFinancialAdapter
 from .backup import create_backup, verify_restore
-from .db import begin_run, connect, end_run, export_payload, initialize, latest_points, store_record, upsert_valuation
+from .db import begin_run, connect, end_run, export_payload, initialize, latest_points, record_monthly_snapshot, store_record, upsert_valuation
 from .evidence import load_evidence_manifest
 from .quality import as_valuation_row, evaluate
 from .settings import get_settings
@@ -72,6 +72,20 @@ def import_evidence(manifest: Path) -> None:
     print(json.dumps({'status': 'succeeded', 'records_stored': len(records)}, ensure_ascii=False))
 
 
+def snapshot_month(month: str) -> None:
+    settings = get_settings()
+    with connect(settings.database_url) as connection:
+        run_id = begin_run(connection, 'snapshot-month')
+        try:
+            stored = record_monthly_snapshot(connection, month)
+            end_run(connection, run_id, 'succeeded', {'snapshot_month': month, 'records_stored': stored})
+        except Exception as error:
+            connection.rollback()
+            end_run(connection, run_id, 'failed', {'snapshot_month': month, 'error': str(error)})
+            raise
+    print(json.dumps({'status': 'succeeded', 'snapshot_month': month, 'records_stored': stored}, ensure_ascii=False))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description='价值投资 Agent：研究辅助，不执行交易。')
     sub = parser.add_subparsers(dest='command', required=True)
@@ -83,6 +97,8 @@ def main() -> None:
     sub.add_parser('quality')
     sub.add_parser('export-payload')
     sub.add_parser('sync-excel')
+    snapshot = sub.add_parser('snapshot-month')
+    snapshot.add_argument('--month', required=True, help='Completed calendar month in YYYY-MM form')
     evidence = sub.add_parser('import-evidence')
     evidence.add_argument('--manifest', required=True, type=Path)
     sub.add_parser('backup')
@@ -105,6 +121,8 @@ def main() -> None:
             print(sync_workbook(export_payload(connection), settings.workbook_path, settings.output_directory))
     elif args.command == 'import-evidence':
         import_evidence(args.manifest)
+    elif args.command == 'snapshot-month':
+        snapshot_month(args.month)
     elif args.command == 'backup':
         print(create_backup(settings.database_url, settings.backup_directory, settings.container_runtime, settings.postgres_container_name))
     else:

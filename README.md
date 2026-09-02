@@ -31,6 +31,7 @@
 ```powershell
 python -m value_investment_agent update --prices
 python -m value_investment_agent quality
+python -m value_investment_agent snapshot-month --month 2026-09
 python -m value_investment_agent backup
 python -m value_investment_agent restore-verify
 ```

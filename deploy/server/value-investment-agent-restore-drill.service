@@ -1,0 +1,9 @@
+[Unit]
+Description=Verify the latest value investment Agent backup in isolation
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/value-investment-agent
+ExecStart=/bin/bash -lc 'latest=$$(find /opt/value-investment-agent/backups -name "*.manifest.json" -printf "%T@ %p\\n" | sort -nr | head -n1 | cut -d" " -f2-); test -n "$$latest"; /opt/value-investment-agent/deploy/server/run_restore_drill.sh "$$latest"'

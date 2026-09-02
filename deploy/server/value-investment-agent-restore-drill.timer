@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the value investment Agent monthly restore drill
+
+[Timer]
+OnCalendar=*-*-02 01:20:00 Asia/Shanghai
+Persistent=true
+Unit=value-investment-agent-restore-drill.service
+
+[Install]
+WantedBy=timers.target
