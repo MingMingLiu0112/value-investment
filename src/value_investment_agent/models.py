@@ -20,10 +20,12 @@ class SourceRecord:
     parser_version: str
     raw_payload: bytes
     local_path: str | None = None
+    point_metadata: dict[str, Any] | None = None
 
     def audit_metadata(self) -> dict[str, Any]:
         result = asdict(self)
         result.pop("raw_payload")
+        result.pop("point_metadata")
         result["value"] = str(result["value"])
         for key in ("published_at", "fetched_at"):
             if result[key] is not None:

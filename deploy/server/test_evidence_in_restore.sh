@@ -25,7 +25,7 @@ manifest_name="$(basename "$manifest_path")"
 dump_name="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["database_dump"])' "$manifest_path")"
 
 printf 'isolated official evidence smoke test\n' > "$test_dir/filing.pdf"
-python3 -c 'import json,sys; json.dump({"source_name":"Test Exchange","source_url":"https://example.test/official-filing","evidence_file":"filing.pdf","published_at":"2026-09-01T00:00:00+00:00","validation_status":"verified","human_reviewed":True,"points":[{"symbol":"600519","field_name":"fair_value","period_label":"2026-09-01","value":"1600","unit":"CNY/share"}]},open(sys.argv[1],"w"))' "$test_dir/evidence.json"
+python3 -c 'import json,sys; json.dump({"source_name":"Shanghai Stock Exchange","source_url":"https://www.sse.com.cn/disclosure/listedinfo/announcement/","source_type":"exchange","evidence_file":"filing.pdf","published_at":"2026-09-01T00:00:00+00:00","validation_status":"verified","human_reviewed":True,"reviewed_by":"restore-test@example.com","reviewed_at":"2026-09-01T01:00:00+00:00","points":[{"symbol":"600519","field_name":"fair_value","period_label":"2026-09-01","value":"1600","unit":"CNY/share","calculation_method":"restore-test","calculation_formula":"documented test valuation","assumptions":{"purpose":"restore smoke test"},"valuation_as_of":"2026-09-01"}]},open(sys.argv[1],"w"))' "$test_dir/evidence.json"
 
 DATABASE_URL="postgresql://value_agent_admin:${POSTGRES_PASSWORD}@127.0.0.1:5433/value_agent_restore"
 restore_output="$(podman run --rm --network host --memory=256m --memory-reservation=128m --memory-swap=384m \
@@ -55,7 +55,7 @@ monthly_result="$(podman run --rm --network host --memory=256m --memory-reservat
 printf 'Monthly snapshot result: %s\n' "$monthly_result"
 
 evidence_count="$(podman exec value-investment-restore-postgres psql -At -U value_agent_admin -d value_agent_restore -c "SELECT count(*) FROM data_points WHERE symbol = '600519' AND field_name = 'fair_value' AND validation_status = 'verified' AND human_reviewed")"
-hash_count="$(podman exec value-investment-restore-postgres psql -At -U value_agent_admin -d value_agent_restore -c "SELECT count(*) FROM raw_documents WHERE source_url = 'https://example.test/official-filing' AND sha256 <> ''")"
+hash_count="$(podman exec value-investment-restore-postgres psql -At -U value_agent_admin -d value_agent_restore -c "SELECT count(*) FROM raw_documents WHERE source_url = 'https://www.sse.com.cn/disclosure/listedinfo/announcement/' AND sha256 <> ''")"
 valuation_state="$(podman exec value-investment-restore-postgres psql -At -U value_agent_admin -d value_agent_restore -c "SELECT data_status FROM valuation_results WHERE symbol = '600519'")"
 monthly_count="$(podman exec value-investment-restore-postgres psql -At -U value_agent_admin -d value_agent_restore -c "SELECT count(*) FROM monthly_snapshots WHERE snapshot_month = '2026-09'")"
 if [[ "$evidence_count" != "1" || "$hash_count" != "1" || "$monthly_count" != "10" ]]; then

@@ -29,8 +29,10 @@ CREATE TABLE IF NOT EXISTS data_points (
   source_id UUID NOT NULL REFERENCES raw_documents(document_id),
   validation_status TEXT NOT NULL CHECK (validation_status IN ('pending','verified','conflict','failed')),
   human_reviewed BOOLEAN NOT NULL DEFAULT FALSE,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE data_points ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb;
 CREATE INDEX IF NOT EXISTS data_points_lookup ON data_points (symbol, field_name, period_label, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS valuation_results (
