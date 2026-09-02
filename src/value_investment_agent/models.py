@@ -19,6 +19,7 @@ class SourceRecord:
     fetched_at: datetime
     parser_version: str
     raw_payload: bytes
+    local_path: str | None = None
 
     def audit_metadata(self) -> dict[str, Any]:
         result = asdict(self)
@@ -40,3 +41,4 @@ class QualityGateResult:
     safety_margin: Decimal | None
     signal: str
     target_weight: Decimal
+    calculation_details: dict[str, Any]

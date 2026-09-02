@@ -8,6 +8,7 @@ from pathlib import Path
 from .adapters import AksharePriceAdapter, SinaFinancialAdapter
 from .backup import create_backup, verify_restore
 from .db import begin_run, connect, end_run, export_payload, initialize, latest_points, store_record, upsert_valuation
+from .evidence import load_evidence_manifest
 from .quality import as_valuation_row, evaluate
 from .settings import get_settings
 from .universe import UNIVERSE
@@ -56,6 +57,21 @@ def run_quality() -> None:
     print(json.dumps(rows, ensure_ascii=False, default=str, indent=2))
 
 
+def import_evidence(manifest: Path) -> None:
+    records, validation_status, human_reviewed = load_evidence_manifest(manifest)
+    settings = get_settings()
+    with connect(settings.database_url) as connection:
+        run_id = begin_run(connection, 'import-evidence')
+        try:
+            for record in records:
+                store_record(connection, record, validation_status, human_reviewed)
+            end_run(connection, run_id, 'succeeded', {'manifest': str(manifest), 'records_stored': len(records)})
+        except Exception as error:
+            end_run(connection, run_id, 'failed', {'manifest': str(manifest), 'error': str(error)})
+            raise
+    print(json.dumps({'status': 'succeeded', 'records_stored': len(records)}, ensure_ascii=False))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description='价值投资 Agent：研究辅助，不执行交易。')
     sub = parser.add_subparsers(dest='command', required=True)
@@ -67,6 +83,8 @@ def main() -> None:
     sub.add_parser('quality')
     sub.add_parser('export-payload')
     sub.add_parser('sync-excel')
+    evidence = sub.add_parser('import-evidence')
+    evidence.add_argument('--manifest', required=True, type=Path)
     sub.add_parser('backup')
     restore = sub.add_parser('restore-verify')
     restore.add_argument('--manifest', required=True, type=Path)
@@ -85,6 +103,8 @@ def main() -> None:
     elif args.command == 'sync-excel':
         with connect(settings.database_url) as connection:
             print(sync_workbook(export_payload(connection), settings.workbook_path, settings.output_directory))
+    elif args.command == 'import-evidence':
+        import_evidence(args.manifest)
     elif args.command == 'backup':
         print(create_backup(settings.database_url, settings.backup_directory, settings.container_runtime, settings.postgres_container_name))
     else:

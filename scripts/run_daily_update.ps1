@@ -23,9 +23,45 @@ function Get-AgentPython {
     throw 'Python was not found. Create .venv and install project dependencies.'
 }
 
+function Assert-CentralDatabaseReachable {
+    $envFile = Join-Path $projectRoot '.env'
+    $databaseLine = Get-Content -LiteralPath $envFile | Where-Object { $_ -match '^DATABASE_URL=' } | Select-Object -First 1
+    if (-not $databaseLine) {
+        throw 'DATABASE_URL is missing from .env.'
+    }
+    $uri = [Uri]($databaseLine.Substring('DATABASE_URL='.Length))
+    $client = [System.Net.Sockets.TcpClient]::new()
+    try {
+        $connection = $client.BeginConnect($uri.Host, $uri.Port, $null, $null)
+        if (-not $connection.AsyncWaitHandle.WaitOne(10000)) {
+            throw 'timeout'
+        }
+        $client.EndConnect($connection)
+    }
+    catch {
+        throw 'Cannot reach the central database private endpoint. Sign in to Tailscale and retry.'
+    }
+    finally {
+        $client.Dispose()
+    }
+}
+
+function Assert-WorkbookUnlocked {
+    $workbookPath = Join-Path $projectRoot 'A股价值投资_Agent前端智能跟踪模板.xlsx'
+    try {
+        $stream = [System.IO.File]::Open($workbookPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+        $stream.Close()
+    }
+    catch {
+        throw 'The canonical Excel workbook is open or locked. Close it in WPS, then retry the sync.'
+    }
+}
+
 try {
     Set-Location $projectRoot
     $python = Get-AgentPython
+    Assert-CentralDatabaseReachable
+    Assert-WorkbookUnlocked
 
     if (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.env'))) {
         Write-Warning 'No .env found. Using the project defaults; configure .env before storing non-demo credentials.'
@@ -34,7 +70,7 @@ try {
     & $python -m value_investment_agent sync-excel
     if ($LASTEXITCODE -ne 0) { throw "Central database read or Excel sync failed. Exit code: $LASTEXITCODE" }
 
-    Write-Host "Complete. Excel output: $(Join-Path $projectRoot 'runtime')"
+    Write-Host "Complete. Canonical Excel workbook updated in place. Technical backup: $(Join-Path $runtimeDirectory 'workbook-backups')"
     exit 0
 }
 catch {

@@ -42,8 +42,10 @@ CREATE TABLE IF NOT EXISTS valuation_results (
   build_signal TEXT NOT NULL,
   target_weight NUMERIC NOT NULL DEFAULT 0,
   data_status TEXT NOT NULL,
+  calculation_details JSONB NOT NULL DEFAULT '{}'::jsonb,
   calculated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE valuation_results ADD COLUMN IF NOT EXISTS calculation_details JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 CREATE TABLE IF NOT EXISTS task_runs (
   run_id UUID PRIMARY KEY,

@@ -2,13 +2,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { FileBlob, SpreadsheetFile } from '@oai/artifact-tool';
 
-const [templatePath, payloadPath, outputPath] = process.argv.slice(2);
-if (!templatePath || !payloadPath || !outputPath) {
-  throw new Error('Usage: node sync_workbook.mjs <template.xlsx> <payload.json> <output.xlsx>');
+const [workbookPath, payloadPath, outputPath] = process.argv.slice(2);
+if (!workbookPath || !payloadPath || !outputPath) {
+  throw new Error('Usage: node sync_workbook.mjs <workbook.xlsx> <payload.json> <temporary-output.xlsx>');
 }
 const payload = JSON.parse(await fs.readFile(payloadPath, 'utf8'));
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
-const workbook = await SpreadsheetFile.importXlsx(await FileBlob.load(templatePath));
+const workbook = await SpreadsheetFile.importXlsx(await FileBlob.load(workbookPath));
 const valuationBySymbol = new Map(payload.valuations.map((row) => [row.symbol, row]));
 const pointBySymbol = new Map();
 for (const point of payload.points) {
@@ -64,8 +64,17 @@ syncRows('03_财务指标', 4, (sheet, row, symbol) => {
 const auditSheet = workbook.worksheets.getItem('11_数据源审计');
 let auditRow = 4;
 while (auditSheet.getRange(`A${auditRow}`).values?.[0]?.[0]) auditRow += 1;
+const existingAuditKeys = new Set();
+for (let row = 4; row < auditRow; row += 1) {
+  const values = auditSheet.getRange(`A${row}:D${row}`).values?.[0] ?? [];
+  existingAuditKeys.add(values.map((value) => String(value ?? '')).join('|'));
+}
 for (const audit of payload.audits) {
+  const auditKey = [audit.source_id, audit.symbol, audit.field_name, audit.period_label]
+    .map((value) => String(value ?? '')).join('|');
+  if (existingAuditKeys.has(auditKey)) continue;
   auditSheet.getRange(`A${auditRow}:R${auditRow}`).values = [[audit.source_id, audit.symbol, audit.field_name, audit.period_label, cellValue(audit.value), audit.unit, audit.source_name, audit.source_url, null, null, audit.fetched_at, audit.published_at, audit.parser_version, audit.sha256, null, audit.validation_status, audit.human_reviewed ? '是' : '否', '由本地 Agent 同步']];
+  existingAuditKeys.add(auditKey);
   auditRow += 1;
 }
 

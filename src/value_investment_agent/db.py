@@ -52,25 +52,31 @@ def end_run(connection: psycopg.Connection, run_id: uuid.UUID, status: str, deta
     )
 
 
-def store_record(connection: psycopg.Connection, record: SourceRecord, validation_status: str = 'pending') -> uuid.UUID:
+def store_record(
+    connection: psycopg.Connection,
+    record: SourceRecord,
+    validation_status: str = 'pending',
+    human_reviewed: bool = False,
+) -> uuid.UUID:
     document_id = uuid.uuid4()
     source_id = hashlib.sha256(record.raw_payload).hexdigest()
     cursor = connection.execute(
-        """INSERT INTO raw_documents(document_id, source_name, source_url, published_at, fetched_at, parser_version, sha256, metadata)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-           ON CONFLICT (sha256) DO UPDATE SET fetched_at = EXCLUDED.fetched_at
+        """INSERT INTO raw_documents(document_id, source_name, source_url, published_at, fetched_at, parser_version, sha256, local_path, metadata)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+           ON CONFLICT (sha256) DO UPDATE SET fetched_at = EXCLUDED.fetched_at,
+             local_path = COALESCE(EXCLUDED.local_path, raw_documents.local_path)
            RETURNING document_id""",
         (document_id, record.source_name, record.source_url, record.published_at, record.fetched_at,
-         record.parser_version, source_id, json.dumps(record.audit_metadata(), ensure_ascii=False)),
+         record.parser_version, source_id, record.local_path, json.dumps(record.audit_metadata(), ensure_ascii=False)),
     )
     source_row = cursor.fetchone()
     source_uuid = source_row['document_id']
     data_point_id = uuid.uuid4()
     connection.execute(
-        """INSERT INTO data_points(data_point_id, symbol, field_name, period_label, value, unit, source_id, validation_status)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+        """INSERT INTO data_points(data_point_id, symbol, field_name, period_label, value, unit, source_id, validation_status, human_reviewed)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
         (data_point_id, record.symbol, record.field_name, record.period_label, record.value,
-         record.unit, source_uuid, validation_status),
+         record.unit, source_uuid, validation_status, human_reviewed),
     )
     return data_point_id
 
@@ -88,14 +94,14 @@ def latest_points(connection: psycopg.Connection) -> list[dict]:
 
 def upsert_valuation(connection: psycopg.Connection, result: dict) -> None:
     connection.execute(
-        """INSERT INTO valuation_results(symbol, current_price, fair_value, safety_margin, valuation_status, build_signal, target_weight, data_status)
+        """INSERT INTO valuation_results(symbol, current_price, fair_value, safety_margin, valuation_status, build_signal, target_weight, data_status, calculation_details)
            VALUES (%(symbol)s, %(current_price)s, %(fair_value)s, %(safety_margin)s, %(valuation_status)s,
-             %(build_signal)s, %(target_weight)s, %(data_status)s)
+             %(build_signal)s, %(target_weight)s, %(data_status)s, %(calculation_details)s)
            ON CONFLICT (symbol) DO UPDATE SET current_price = EXCLUDED.current_price, fair_value = EXCLUDED.fair_value,
              safety_margin = EXCLUDED.safety_margin, valuation_status = EXCLUDED.valuation_status,
              build_signal = EXCLUDED.build_signal, target_weight = EXCLUDED.target_weight,
-             data_status = EXCLUDED.data_status, calculated_at = now()""",
-        result,
+             data_status = EXCLUDED.data_status, calculation_details = EXCLUDED.calculation_details, calculated_at = now()""",
+        {**result, 'calculation_details': json.dumps(result['calculation_details'], ensure_ascii=False)},
     )
 
 
