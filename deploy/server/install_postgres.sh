@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# This proxy is reachable only from the host and is used for image and package
-# downloads. PostgreSQL still binds exclusively to 127.0.0.1.
-export HTTP_PROXY="${HTTP_PROXY:-http://127.0.0.1:7890}"
-export HTTPS_PROXY="${HTTPS_PROXY:-http://127.0.0.1:7890}"
-export NO_PROXY="${NO_PROXY:-127.0.0.1,localhost}"
+# The server reaches package registries and market-data providers directly.
+# Do not inherit a stale local proxy into container builds or runtime tasks.
+unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
+export NO_PROXY="127.0.0.1,localhost"
 
 APP_DIR=/opt/value-investment-agent
 CONFIG_DIR=/etc/value-investment-agent
