@@ -24,7 +24,7 @@
 3. 使用 Python 3.12+ 创建虚拟环境并执行 `pip install -e .[dev]`。
 4. 在 Codex Desktop 中执行 `powershell -ExecutionPolicy Bypass -File scripts/setup-workspace-runtime.ps1`，以启用 Excel 同步组件。
 5. 初始化数据库：`python -m value_investment_agent init-db`。
-6. 拉取行情并生成 Excel 副本：`python -m value_investment_agent update --prices`。
+6. 拉取行情并原位更新根目录中唯一的 Excel：`python -m value_investment_agent update --prices`。
 
 ## 日常命令
 
@@ -46,7 +46,7 @@ python -m value_investment_agent restore-verify
 powershell -ExecutionPolicy Bypass -File scripts/register_daily_task.ps1
 ```
 
-每次运行的日志位于 `runtime/logs/`，同步后的 Excel 位于 `runtime/`。可用下面命令手动试跑一次：
+每次运行的日志位于 `runtime/logs/`；根目录中唯一的 Excel 会被原位更新，`runtime/workbook-backups/` 只保留故障回退副本。可用下面命令手动试跑一次：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/run_daily_update.ps1
