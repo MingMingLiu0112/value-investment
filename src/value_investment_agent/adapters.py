@@ -109,3 +109,78 @@ class SinaFinancialAdapter:
         if missing:
             raise RuntimeError(f"Financial response incomplete: {', '.join(sorted(missing))}")
         return records
+
+
+class AkshareFinancialAbstractAdapter:
+    """Fetch supplemental financial-statement line items from the Sina abstract feed."""
+
+    source_name = "AkShare / Sina financial abstract"
+    parser_version = "akshare-financial-v2-sina-abstract"
+    _fields = {
+        "revenue": ("\u8425\u4e1a\u603b\u6536\u5165", "CNY 100M", Decimal("100000000")),
+        "net_income": ("\u5f52\u6bcd\u51c0\u5229\u6da6", "CNY 100M", Decimal("100000000")),
+        "operating_cash_flow": ("\u7ecf\u8425\u73b0\u91d1\u6d41\u91cf\u51c0\u989d", "CNY 100M", Decimal("100000000")),
+        "fcf_per_share": ("\u6bcf\u80a1\u4f01\u4e1a\u81ea\u7531\u73b0\u91d1\u6d41\u91cf", "CNY/share", None),
+        "roic": ("\u6295\u5165\u8d44\u672c\u56de\u62a5\u7387", "percent", None),
+    }
+
+    def fetch(self, symbols: list[str]) -> list[SourceRecord]:
+        try:
+            import akshare as ak
+        except ImportError as error:
+            raise RuntimeError("AkShare is not installed") from error
+
+        fetched_at = datetime.now(timezone.utc)
+        records: list[SourceRecord] = []
+        for symbol in symbols:
+            frame = ak.stock_financial_abstract(symbol=symbol)
+            if frame.empty or len(frame.columns) < 3:
+                raise RuntimeError(f"Financial abstract response incomplete: {symbol}")
+            period_columns = [str(column) for column in frame.columns[2:] if str(column).isdigit()]
+            if not period_columns:
+                raise RuntimeError(f"Financial abstract has no report period: {symbol}")
+            period = max(period_columns)
+            metrics = {
+                str(row.iloc[1]): row[period]
+                for _, row in frame.iterrows()
+                if len(row) > 1
+            }
+            raw = json.dumps(
+                {"code": symbol, "report_date": period, "metrics": metrics},
+                ensure_ascii=False,
+                default=str,
+            ).encode()
+            report_at = datetime.strptime(period, "%Y%m%d").replace(tzinfo=timezone.utc)
+            source_url = (
+                "https://vip.stock.finance.sina.com.cn/corp/go.php/"
+                f"vFD_FinancialGuideLine/stockid/{symbol}/ctrl/{report_at.year}/displaytype/4.phtml"
+            )
+            for field_name, (metric_name, unit, divisor) in self._fields.items():
+                value = metrics.get(metric_name)
+                if value is None or (isinstance(value, float) and math.isnan(value)):
+                    continue
+                try:
+                    decimal_value = Decimal(str(value))
+                except Exception:
+                    continue
+                if divisor:
+                    decimal_value /= divisor
+                records.append(
+                    SourceRecord(
+                        symbol=symbol,
+                        field_name=field_name,
+                        period_label=report_at.strftime("%Y-%m-%d"),
+                        value=decimal_value,
+                        unit=unit,
+                        source_name=self.source_name,
+                        source_url=source_url,
+                        published_at=None,
+                        fetched_at=fetched_at,
+                        parser_version=self.parser_version,
+                        raw_payload=raw,
+                    )
+                )
+        missing = set(symbols) - {record.symbol for record in records}
+        if missing:
+            raise RuntimeError(f"Financial abstract response incomplete: {', '.join(sorted(missing))}")
+        return records

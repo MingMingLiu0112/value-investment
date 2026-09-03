@@ -92,7 +92,7 @@ def latest_points(connection: psycopg.Connection) -> list[dict]:
     return connection.execute(
         """SELECT DISTINCT ON (p.symbol, p.field_name)
               p.symbol, p.field_name, p.period_label, p.value, p.unit, p.validation_status,
-              p.human_reviewed, p.metadata, p.created_at, d.document_id AS source_id, d.source_name, d.source_url,
+              p.human_reviewed, p.created_at, d.document_id AS source_id, d.source_name, d.source_url,
               d.published_at, d.fetched_at, d.parser_version, d.sha256
             FROM data_points p JOIN raw_documents d ON d.document_id = p.source_id
             ORDER BY p.symbol, p.field_name, p.period_label DESC, p.created_at DESC"""

@@ -5,7 +5,7 @@ import json
 from decimal import Decimal
 from pathlib import Path
 
-from .adapters import AksharePriceAdapter, SinaFinancialAdapter
+from .adapters import AkshareFinancialAbstractAdapter, AksharePriceAdapter, SinaFinancialAdapter
 from .backup import create_backup, verify_restore
 from .db import begin_run, connect, end_run, export_payload, initialize, latest_points, record_monthly_snapshot, store_record, upsert_valuation
 from .evidence import load_evidence_manifest
@@ -32,6 +32,9 @@ def run_update(prices: bool, financials: bool, sync_excel: bool) -> None:
             if financials:
                 for record in SinaFinancialAdapter().fetch([item[0] for item in UNIVERSE]):
                     # Public structured indicators remain review-required until matched to an official filing.
+                    store_record(connection, record, 'pending')
+                    stored += 1
+                for record in AkshareFinancialAbstractAdapter().fetch([item[0] for item in UNIVERSE]):
                     store_record(connection, record, 'pending')
                     stored += 1
             grouped: dict[str, list[dict]] = {item[0]: [] for item in UNIVERSE}

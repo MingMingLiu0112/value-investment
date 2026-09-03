@@ -25,6 +25,21 @@ function cellValue(value) {
   return value === null || value === undefined ? null : Number.isFinite(Number(value)) ? Number(value) : value;
 }
 
+function positiveRatio(numerator, denominator) {
+  const top = Number(numerator);
+  const bottom = Number(denominator);
+  return Number.isFinite(top) && Number.isFinite(bottom) && bottom > 0 ? top / bottom : null;
+}
+
+function displayPeriod(periodLabel) {
+  const match = String(periodLabel ?? '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return periodLabel ?? null;
+  const [, year, month, day] = match;
+  if (month === '12' && day === '31') return `${year}A`;
+  if (month === '06' && day === '30') return `${year}H1`;
+  return `${year}Q${Math.ceil(Number(month) / 3)}`;
+}
+
 function syncRows(sheetName, firstDataRow, writeRow) {
   const sheet = workbook.worksheets.getItem(sheetName);
   for (let row = firstDataRow; row <= 200; row += 1) {
@@ -46,7 +61,7 @@ syncRows('04_估值跟踪', 4, (sheet, row, symbol) => {
   const v = valuationBySymbol.get(symbol);
   const p = pointBySymbol.get(symbol) ?? {};
   if (!v) return;
-  sheet.getRange(`C${row}:U${row}`).values = [[cellValue(v.current_price), cellValue(p.eps_ttm?.value), cellValue(p.bvps?.value), cellValue(p.fcf_per_share?.value), cellValue(p.dps_ttm?.value), null, null, null, null, null, cellValue(v.fair_value), null, cellValue(v.fair_value), cellValue(v.safety_margin), v.valuation_status, null, p.current_price?.source_id ?? null, payload.generated_at, v.data_status]];
+  sheet.getRange(`C${row}:U${row}`).values = [[cellValue(v.current_price), cellValue(p.eps_ttm?.value), cellValue(p.bvps?.value), cellValue(p.fcf_per_share?.value), cellValue(p.dps_ttm?.value), positiveRatio(v.current_price, p.eps_ttm?.value), positiveRatio(v.current_price, p.bvps?.value), null, null, null, cellValue(v.fair_value), null, cellValue(v.fair_value), cellValue(v.safety_margin), v.valuation_status, null, p.current_price?.source_id ?? null, payload.generated_at, v.data_status]];
 });
 
 syncRows('05_仓位管理', 10, (sheet, row, symbol) => {
@@ -62,7 +77,8 @@ syncRows('03_财务指标', 4, (sheet, row, symbol) => {
   const p = pointBySymbol.get(symbol) ?? {};
   const values = financialFields.map((field) => cellValue(p[field]?.value));
   const source = financialFields.map((field) => p[field]?.source_id).find(Boolean) ?? null;
-  sheet.getRange(`D${row}:V${row}`).values = [[...values, source, source ? '待人工复核' : '待Agent写入']];
+  const period = financialFields.map((field) => p[field]?.period_label).find(Boolean) ?? null;
+  sheet.getRange(`C${row}:V${row}`).values = [[displayPeriod(period), ...values, source, source ? '待人工复核' : '待Agent写入']];
 });
 
 const observationSheet = workbook.worksheets.getItem('01_观察名单');
@@ -118,11 +134,16 @@ for (const snapshot of payload.monthly_snapshots ?? []) {
 
 const auditSheet = workbook.worksheets.getItem('11_数据源审计');
 let auditRow = 4;
-while (auditSheet.getRange(`A${auditRow}`).values?.[0]?.[0]) auditRow += 1;
 const existingAuditKeys = new Set();
-for (let row = 4; row < auditRow; row += 1) {
+for (let row = 4; row <= 1000; row += 1) {
   const values = auditSheet.getRange(`A${row}:D${row}`).values?.[0] ?? [];
+  if (!values[0]) continue;
+  if (String(values[0]).startsWith('EXAMPLE-')) {
+    auditSheet.getRange(`A${row}:R${row}`).values = [Array(18).fill(null)];
+    continue;
+  }
   existingAuditKeys.add(values.map((value) => String(value ?? '')).join('|'));
+  auditRow = row + 1;
 }
 for (const audit of payload.audits) {
   const auditKey = [audit.source_id, audit.symbol, audit.field_name, audit.period_label]
