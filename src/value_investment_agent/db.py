@@ -334,7 +334,7 @@ def export_payload(connection: psycopg.Connection) -> dict:
              FROM market_screen_results s JOIN instruments i ON i.symbol = s.symbol
              LEFT JOIN financial_enrichment_queue q ON q.symbol = s.symbol
              WHERE s.screen_date = (SELECT max(screen_date) FROM market_screen_results)
-             ORDER BY s.initial_score DESC, s.symbol LIMIT 500"""
+             ORDER BY s.initial_score DESC, s.symbol LIMIT 2000"""
     ).fetchall()
     reminder_actions = {
         'pending_official_filings': ('补全财报并人工复核', '全A股初筛通过；公共估值数据待财报和公告原件复核'),

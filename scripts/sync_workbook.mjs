@@ -179,8 +179,9 @@ for (const audit of payload.audits) {
 }
 
 function replaceSheetRows(sheet, headers, rows) {
-  sheet.getRange(`A1:${String.fromCharCode(64 + headers.length)}501`).values = Array.from(
-    { length: 501 },
+  const rowCount = Math.max(501, rows.length + 1);
+  sheet.getRange(`A1:${String.fromCharCode(64 + headers.length)}${rowCount}`).values = Array.from(
+    { length: rowCount },
     (_, index) => index === 0 ? headers : Array(headers.length).fill(null),
   );
   if (rows.length) sheet.getRange(`A2:${String.fromCharCode(64 + headers.length)}${rows.length + 1}`).values = rows;
@@ -197,7 +198,7 @@ function enrichmentStatusLabel(status) {
   }[status] ?? '待归档官方财报';
 }
 
-const reminders = (payload.reminders ?? []).slice(0, 300).map((row) => [
+const reminders = (payload.reminders ?? []).map((row) => [
   row.priority, row.action, row.symbol, row.name, row.sector, row.reason,
   cellValue(row.current_price), cellValue(row.pe), cellValue(row.pb), enrichmentStatusLabel(row.enrichment_status), row.source_id, row.as_of,
 ]);
@@ -207,7 +208,7 @@ replaceSheetRows(reminderSheet,
 );
 
 const marketSheet = workbook.worksheets.getOrAdd('13_全市场初筛');
-const candidates = (payload.market_candidates ?? []).slice(0, 500).map((row) => [
+const candidates = (payload.market_candidates ?? []).map((row) => [
   row.symbol, row.name, row.sector, cellValue(row.current_price), cellValue(row.pe), cellValue(row.pb),
   cellValue(Number(row.market_cap) / 100000000), cellValue(row.initial_score), row.status, row.source_id, row.screen_date,
 ]);
