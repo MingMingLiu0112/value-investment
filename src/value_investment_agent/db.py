@@ -13,6 +13,7 @@ from psycopg.rows import dict_row
 
 from .models import SourceRecord
 from .universe import UNIVERSE
+from .financial_institutions import financial_gate_message, provisional_financial_type
 
 
 @contextmanager
@@ -394,15 +395,20 @@ def export_payload(connection: psycopg.Connection) -> dict:
     }
     reminders = []
     for row in market_candidates:
-        action, reason = reminder_actions.get(
-            row['enrichment_status'], reminder_actions['pending_official_filings'],
-        )
+        institution_type = provisional_financial_type(row['name'], row['sector'])
+        if institution_type:
+            action, reason = financial_gate_message(institution_type)
+        else:
+            action, reason = reminder_actions.get(
+                row['enrichment_status'], reminder_actions['pending_official_filings'],
+            )
         reminders.append({
             'priority': '重点观察', 'action': action, 'symbol': row['symbol'],
             'name': row['name'], 'sector': row['sector'], 'reason': reason,
             'current_price': row['current_price'], 'pe': row['pe'], 'pb': row['pb'],
             'source_id': row['source_id'], 'as_of': row['screen_date'],
             'enrichment_status': row['enrichment_status'],
+            'research_model': f'provisional_{institution_type}' if institution_type else 'general_pending_review',
         })
     return {
         'valuations': valuations, 'points': points, 'audits': audits,

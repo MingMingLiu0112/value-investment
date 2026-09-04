@@ -12,6 +12,7 @@ from .db import begin_run, claim_disclosures_for_extraction, claim_financial_enr
 from .disclosures import collect_latest_reports
 from .dividends import CninfoDividendAdapter, build_payout_ratio_records
 from .evidence import load_evidence_manifest
+from .candidate_review import load_review_rows, reviewed_records, write_review_template
 from .filing_extract import extract_candidates
 from .quality import as_valuation_row, evaluate
 from .market import AllAMarketAdapter
@@ -89,6 +90,29 @@ def import_evidence(manifest: Path) -> None:
             end_run(connection, run_id, 'succeeded', {'manifest': str(manifest), 'records_stored': len(records)})
         except Exception as error:
             end_run(connection, run_id, 'failed', {'manifest': str(manifest), 'error': str(error)})
+            raise
+    print(json.dumps({'status': 'succeeded', 'records_stored': len(records)}, ensure_ascii=False))
+
+
+def export_review_template(output: Path) -> None:
+    settings = get_settings()
+    with connect(settings.database_url) as connection:
+        count = write_review_template(connection, output)
+    print(json.dumps({'status': 'succeeded', 'review_rows': count, 'output': str(output)}, ensure_ascii=False))
+
+
+def import_candidate_reviews(review_csv: Path) -> None:
+    rows = load_review_rows(review_csv)
+    settings = get_settings()
+    with connect(settings.database_url) as connection:
+        run_id = begin_run(connection, 'import-candidate-reviews')
+        try:
+            records = reviewed_records(connection, rows)
+            for record in records:
+                store_record(connection, record, 'verified', True)
+            end_run(connection, run_id, 'succeeded', {'review_csv': str(review_csv), 'records_stored': len(records)})
+        except Exception as error:
+            record_failed_run(connection, run_id, 'import-candidate-reviews', {'review_csv': str(review_csv), 'error': str(error)})
             raise
     print(json.dumps({'status': 'succeeded', 'records_stored': len(records)}, ensure_ascii=False))
 
@@ -234,6 +258,10 @@ def main() -> None:
     snapshot.add_argument('--month', required=True, help='Completed calendar month in YYYY-MM form')
     evidence = sub.add_parser('import-evidence')
     evidence.add_argument('--manifest', required=True, type=Path)
+    review_template = sub.add_parser('export-review-template')
+    review_template.add_argument('--output', required=True, type=Path)
+    reviews = sub.add_parser('import-candidate-reviews')
+    reviews.add_argument('--csv', required=True, type=Path)
     sub.add_parser('backup')
     filings = sub.add_parser('collect-filings')
     filings.add_argument('--symbols', help='Comma-separated A-share codes; defaults to the tracked sample universe')
@@ -264,6 +292,10 @@ def main() -> None:
             print(sync_workbook(export_payload(connection), settings.workbook_path, settings.output_directory))
     elif args.command == 'import-evidence':
         import_evidence(args.manifest)
+    elif args.command == 'export-review-template':
+        export_review_template(args.output)
+    elif args.command == 'import-candidate-reviews':
+        import_candidate_reviews(args.csv)
     elif args.command == 'snapshot-month':
         snapshot_month(args.month)
     elif args.command == 'backup':
