@@ -13,9 +13,8 @@ def automatically_verified(point: dict) -> bool:
 
 
 def accepted_verification(point: dict) -> bool:
-    return point['validation_status'] == 'verified' and (
-        point.get('human_reviewed', False) or automatically_verified(point)
-    )
+    """Permit valuation inputs only after retained automatic cross-validation."""
+    return point['validation_status'] == 'verified' and automatically_verified(point)
 
 
 def evaluate(symbol: str, points: list[dict], max_age_hours: int, conflict_tolerance: Decimal) -> QualityGateResult:

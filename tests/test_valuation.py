@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from value_investment_agent.quality import evaluate
+from value_investment_agent.quality import accepted_verification, evaluate
 from value_investment_agent.valuation import build_reference_records
 
 
@@ -43,3 +43,14 @@ def test_model_reference_never_creates_a_trade_signal() -> None:
     assert result.status == "模型估值待复核"
     assert result.signal == "等待复核"
     assert result.target_weight == Decimal("0")
+
+
+def test_human_marked_point_does_not_bypass_automatic_cross_validation() -> None:
+    candidate = {
+        **point("fair_value", "760"),
+        "validation_status": "verified",
+        "human_reviewed": True,
+        "metadata": {},
+    }
+
+    assert not accepted_verification(candidate)
