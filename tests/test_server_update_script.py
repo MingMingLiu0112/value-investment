@@ -6,3 +6,10 @@ def test_daily_update_uses_mounted_source_for_every_stage() -> None:
 
     assert script.count('-e PYTHONPATH=/app/src') == 4
     assert script.count('-v /opt/value-investment-agent/src:/app/src:ro,Z') == 4
+
+
+def test_market_screen_uses_mounted_source_for_every_stage() -> None:
+    script = (Path(__file__).parents[1] / 'deploy' / 'server' / 'run_market_screen.sh').read_text(encoding='utf-8')
+
+    assert script.count('-e PYTHONPATH=/app/src') == 2
+    assert script.count('-v /opt/value-investment-agent/src:/app/src:ro,Z') == 2

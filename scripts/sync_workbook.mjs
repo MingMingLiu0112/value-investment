@@ -199,21 +199,21 @@ function enrichmentStatusLabel(status) {
 }
 
 const reminders = (payload.reminders ?? []).map((row) => [
-  row.priority, row.action, row.symbol, row.name, row.sector, row.reason,
+  row.priority, row.action, row.symbol, row.name, row.board, row.sector, row.reason,
   cellValue(row.current_price), cellValue(row.pe), cellValue(row.pb), enrichmentStatusLabel(row.enrichment_status), row.source_id, row.as_of,
 ]);
 replaceSheetRows(reminderSheet,
-  ['优先级', '建议动作', '股票代码', '公司名称', '板块', '原因', '当前价(元)', 'PE', 'PB', '财报补全状态', 'source_id', '数据时点'],
+  ['优先级', '建议动作', '股票代码', '公司名称', '上市板块', '行业', '原因', '当前价(元)', 'PE', 'PB', '财报补全状态', 'source_id', '数据时点'],
   reminders,
 );
 
 const marketSheet = workbook.worksheets.getOrAdd('13_全市场初筛');
 const candidates = (payload.market_candidates ?? []).map((row) => [
-  row.symbol, row.name, row.sector, cellValue(row.current_price), cellValue(row.pe), cellValue(row.pb),
+  row.symbol, row.name, row.board, row.sector, cellValue(row.current_price), cellValue(row.pe), cellValue(row.pb),
   cellValue(Number(row.market_cap) / 100000000), cellValue(row.initial_score), row.status, row.source_id, row.screen_date,
 ]);
 replaceSheetRows(marketSheet,
-  ['股票代码', '公司名称', '板块', '当前价(元)', 'PE', 'PB', '总市值(亿元)', '初筛评分', '状态', 'source_id', '筛选日期'],
+  ['股票代码', '公司名称', '上市板块', '行业', '当前价(元)', 'PE', 'PB', '总市值(亿元)', '初筛评分', '状态', 'source_id', '筛选日期'],
   candidates,
 );
 

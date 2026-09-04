@@ -26,6 +26,7 @@ class MarketCandidate:
     symbol: str
     name: str
     sector: str
+    board: str
     current_price: Decimal
     pe: Decimal
     pb: Decimal | None
@@ -49,6 +50,19 @@ def _value(row: dict, *names: str):
         if name in row and row[name] is not None:
             return row[name]
     return None
+
+
+def board_for_symbol(symbol: str) -> str:
+    """Classify listing board from the A-share code, independently of industry."""
+    if symbol.startswith(("688", "689")):
+        return "科创板"
+    if symbol.startswith(("300", "301")):
+        return "创业板"
+    if symbol.startswith(("4", "8", "92")):
+        return "北交所"
+    if symbol.startswith(("000", "001", "002", "003", "600", "601", "603", "605")):
+        return "主板"
+    return "待板块映射"
 
 
 def screen_rows(rows: list[dict], sectors: dict[str, str], require_pb: bool = True) -> list[MarketCandidate]:
@@ -79,9 +93,9 @@ def screen_rows(rows: list[dict], sectors: dict[str, str], require_pb: bool = Tr
             score += min(Decimal("1"), (Decimal("3") - pb) / Decimal("3")) * Decimal("35")
         score += min(Decimal("1"), market_cap / Decimal("100000000000")) * cap_weight
         score = score.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        sector = sectors.get(symbol, str(_value(row, "板块", "sector") or "待行业映射"))
+        sector = sectors.get(symbol, str(_value(row, "行业", "industry", "sector") or "待行业映射"))
         status = "initial_screen_pending_financial_review" if require_pb else "initial_screen_pending_pb_financial_review"
-        candidates.append(MarketCandidate(symbol, name, sector, price, pe, pb, market_cap, score, status))
+        candidates.append(MarketCandidate(symbol, name, sector, board_for_symbol(symbol), price, pe, pb, market_cap, score, status))
     return sorted(candidates, key=lambda candidate: (-candidate.score, candidate.sector, candidate.symbol))
 
 
@@ -116,6 +130,7 @@ class AllAMarketAdapter:
                 universe.append({"symbol": symbol, "name": name, "sector": sectors.get(symbol, "待行业映射")})
         raw = json.dumps({
             "rows": rows, "candidate_count": len(candidates), "source": source[0],
+            "industry_mapping_count": len(sectors),
             "fallback_reason": fallback_reason,
         }, ensure_ascii=False, default=str).encode()
         return universe, sectors, candidates, raw, fetched_at, source

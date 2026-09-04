@@ -24,6 +24,7 @@ EASTMONEY_PUSH2_IP="${EASTMONEY_PUSH2_IP:-61.129.129.196}"
 TENCENT_FINANCE_IP="${TENCENT_FINANCE_IP:-183.47.125.78}"
 
 podman run --rm --network host --memory=512m --memory-reservation=192m --memory-swap=768m \
+  -e PYTHONPATH=/app/src \
   -e HTTP_PROXY -e HTTPS_PROXY -e NO_PROXY \
   --env-file /etc/value-investment-agent/agent.env \
   --add-host="82.push2.eastmoney.com:${EASTMONEY_82_PUSH2_IP}" \
@@ -33,6 +34,7 @@ podman run --rm --network host --memory=512m --memory-reservation=192m --memory-
   -v /opt/value-investment-agent/sql:/app/sql:ro,Z \
   value-investment-agent:latest python -m value_investment_agent init-db
 podman run --rm --network host --memory=512m --memory-reservation=192m --memory-swap=768m \
+  -e PYTHONPATH=/app/src \
   -e HTTP_PROXY -e HTTPS_PROXY -e NO_PROXY \
   --env-file /etc/value-investment-agent/agent.env \
   --add-host="82.push2.eastmoney.com:${EASTMONEY_82_PUSH2_IP}" \

@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS market_screen_results (
   symbol TEXT NOT NULL REFERENCES instruments(symbol),
   screen_date DATE NOT NULL,
   sector TEXT NOT NULL,
+  board TEXT NOT NULL DEFAULT '待板块映射',
   current_price NUMERIC NOT NULL,
   pe NUMERIC NOT NULL,
   pb NUMERIC,
@@ -91,6 +92,11 @@ CREATE TABLE IF NOT EXISTS market_screen_results (
   PRIMARY KEY (symbol, screen_date)
 );
 ALTER TABLE market_screen_results ALTER COLUMN pb DROP NOT NULL;
+ALTER TABLE market_screen_results ADD COLUMN IF NOT EXISTS board TEXT NOT NULL DEFAULT '待板块映射';
+UPDATE market_screen_results
+   SET board = sector, sector = '待行业映射'
+ WHERE board = '待板块映射'
+   AND sector IN ('主板', '创业板', '科创板', '北交所', '待板块映射');
 CREATE INDEX IF NOT EXISTS market_screen_results_lookup
   ON market_screen_results (screen_date DESC, initial_score DESC);
 

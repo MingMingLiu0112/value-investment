@@ -3,7 +3,7 @@ import sys
 from decimal import Decimal
 from types import SimpleNamespace
 
-from value_investment_agent.market import AllAMarketAdapter, TENCENT_SOURCE, screen_rows
+from value_investment_agent.market import AllAMarketAdapter, TENCENT_SOURCE, board_for_symbol, screen_rows
 
 
 def test_market_screen_filters_and_classifies_initial_candidates() -> None:
@@ -17,6 +17,7 @@ def test_market_screen_filters_and_classifies_initial_candidates() -> None:
     candidate = candidates[0]
     assert candidate.symbol == '600001'
     assert candidate.sector == '公用事业'
+    assert candidate.board == '主板'
     assert candidate.score == Decimal('54.33')
     assert candidate.status == 'initial_screen_pending_financial_review'
 
@@ -28,8 +29,16 @@ def test_tencent_fallback_keeps_missing_pb_out_of_complete_valuation_status() ->
 
     assert len(candidates) == 1
     assert candidates[0].pb is None
-    assert candidates[0].sector == '主板'
+    assert candidates[0].sector == '待行业映射'
+    assert candidates[0].board == '主板'
     assert candidates[0].status == 'initial_screen_pending_pb_financial_review'
+
+
+def test_board_is_code_based_and_never_used_as_industry() -> None:
+    assert board_for_symbol('600001') == '主板'
+    assert board_for_symbol('300001') == '创业板'
+    assert board_for_symbol('688001') == '科创板'
+    assert board_for_symbol('830001') == '北交所'
 
 
 def test_tencent_rows_keep_units_and_board_classification() -> None:

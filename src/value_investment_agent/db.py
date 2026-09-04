@@ -136,13 +136,13 @@ def store_market_screen(
     )
     screen_date = fetched_at.date()
     connection.cursor().executemany(
-        """INSERT INTO market_screen_results(symbol, screen_date, sector, current_price, pe, pb, market_cap, initial_score, status, source_id)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-           ON CONFLICT (symbol, screen_date) DO UPDATE SET sector = EXCLUDED.sector,
+        """INSERT INTO market_screen_results(symbol, screen_date, sector, board, current_price, pe, pb, market_cap, initial_score, status, source_id)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+           ON CONFLICT (symbol, screen_date) DO UPDATE SET sector = EXCLUDED.sector, board = EXCLUDED.board,
              current_price = EXCLUDED.current_price, pe = EXCLUDED.pe, pb = EXCLUDED.pb,
              market_cap = EXCLUDED.market_cap, initial_score = EXCLUDED.initial_score,
              status = EXCLUDED.status, source_id = EXCLUDED.source_id, created_at = now()""",
-        [(candidate.symbol, screen_date, candidate.sector, candidate.current_price, candidate.pe, candidate.pb,
+        [(candidate.symbol, screen_date, candidate.sector, candidate.board, candidate.current_price, candidate.pe, candidate.pb,
           candidate.market_cap, candidate.score, candidate.status, source_uuid) for candidate in candidates],
     )
     return len(candidates)
@@ -212,7 +212,9 @@ def sector_map(connection: psycopg.Connection) -> dict[str, str]:
     return {
         row['symbol']: row['sector']
         for row in connection.execute(
-            "SELECT symbol, sector FROM instruments WHERE sector IS NOT NULL AND sector <> '待行业映射'"
+            """SELECT symbol, sector FROM instruments
+                 WHERE sector IS NOT NULL AND sector <> '待行业映射'
+                   AND sector NOT IN ('主板', '创业板', '科创板', '北交所', '待板块映射')"""
         ).fetchall()
     }
 
@@ -378,7 +380,7 @@ def export_payload(connection: psycopg.Connection) -> dict:
              ORDER BY c.created_at DESC LIMIT 2000"""
     ).fetchall()
     market_candidates = connection.execute(
-        """SELECT s.symbol, i.name, s.sector, s.current_price, s.pe, s.pb, s.market_cap,
+        """SELECT s.symbol, i.name, s.sector, s.board, s.current_price, s.pe, s.pb, s.market_cap,
                   s.initial_score, s.status, s.screen_date, s.source_id,
                   COALESCE(q.status, 'pending_official_filings') AS enrichment_status
              FROM market_screen_results s JOIN instruments i ON i.symbol = s.symbol
@@ -404,7 +406,7 @@ def export_payload(connection: psycopg.Connection) -> dict:
             )
         reminders.append({
             'priority': '重点观察', 'action': action, 'symbol': row['symbol'],
-            'name': row['name'], 'sector': row['sector'], 'reason': reason,
+            'name': row['name'], 'sector': row['sector'], 'board': row['board'], 'reason': reason,
             'current_price': row['current_price'], 'pe': row['pe'], 'pb': row['pb'],
             'source_id': row['source_id'], 'as_of': row['screen_date'],
             'enrichment_status': row['enrichment_status'],
