@@ -61,7 +61,8 @@ syncRows('04_估值跟踪', 4, (sheet, row, symbol) => {
   const v = valuationBySymbol.get(symbol);
   const p = pointBySymbol.get(symbol) ?? {};
   if (!v) return;
-  sheet.getRange(`C${row}:U${row}`).values = [[cellValue(v.current_price), cellValue(p.eps_ttm?.value), cellValue(p.bvps?.value), cellValue(p.fcf_per_share?.value), cellValue(p.dps_ttm?.value), positiveRatio(v.current_price, p.eps_ttm?.value), positiveRatio(v.current_price, p.bvps?.value), null, null, null, cellValue(v.fair_value), null, cellValue(v.fair_value), cellValue(v.safety_margin), v.valuation_status, null, p.current_price?.source_id ?? null, payload.generated_at, v.data_status]];
+  sheet.getRange(`K3:R3`).values = [['PE \u76ee\u6807\u500d\u6570', 'PB \u76ee\u6807\u500d\u6570', 'PE \u6a21\u578b\u5408\u7406\u4ef7(\u5143)', 'PB \u6a21\u578b\u5408\u7406\u4ef7(\u5143)', '\u7efc\u5408\u5408\u7406\u4ef7(\u5143)', '\u5b89\u5168\u8fb9\u9645', '\u4f30\u503c\u72b6\u6001', '\u6a21\u578b/\u590d\u6838\u8bf4\u660e']];
+  sheet.getRange(`C${row}:U${row}`).values = [[cellValue(v.current_price), cellValue(p.eps_ttm?.value), cellValue(p.bvps?.value), cellValue(p.fcf_per_share?.value), cellValue(p.dps_ttm?.value), positiveRatio(v.current_price, p.eps_ttm?.value), positiveRatio(v.current_price, p.bvps?.value), null, cellValue(p.model_target_pe?.value), cellValue(p.model_target_pb?.value), cellValue(p.model_pe_fair_value?.value), cellValue(p.model_pb_fair_value?.value), cellValue(v.fair_value), cellValue(v.safety_margin), v.valuation_status, 'PE/PB \u89c4\u5219\u6a21\u578b\uff1b\u5f85\u590d\u6838', p.model_fair_value?.source_id ?? p.current_price?.source_id ?? null, payload.generated_at, v.data_status]];
 });
 
 syncRows('05_仓位管理', 10, (sheet, row, symbol) => {
@@ -82,6 +83,24 @@ syncRows('03_财务指标', 4, (sheet, row, symbol) => {
 });
 
 const observationSheet = workbook.worksheets.getItem('01_观察名单');
+const disclosureBySymbol = new Map((payload.disclosures ?? []).map((row) => [row.symbol, row]));
+const annualReportSheet = workbook.worksheets.getItem('10_\u5e74\u62a5\u8ddf\u8e2a');
+for (let row = 4; row <= 200; row += 1) {
+  const symbol = annualReportSheet.getRange(`A${row}`).values?.[0]?.[0];
+  if (!symbol) break;
+  const disclosure = disclosureBySymbol.get(symbolKey(symbol));
+  if (!disclosure) continue;
+  const reportStatus = disclosure.review_status === 'verified'
+    ? '\u5b98\u65b9\u539f\u4ef6\u5df2\u590d\u6838'
+    : '\u5b98\u65b9\u539f\u4ef6\u5f85\u590d\u6838';
+  annualReportSheet.getRange(`C${row}:E${row}`).values = [[
+    displayPeriod(disclosure.report_period),
+    `${reportStatus}: ${disclosure.title}`,
+    disclosure.published_at,
+  ]];
+  annualReportSheet.getRange(`M${row}`).values = [[disclosure.source_url]];
+}
+
 const qualityBySymbol = new Map();
 for (let row = 4; row <= 200; row += 1) {
   const symbol = observationSheet.getRange(`A${row}`).values?.[0]?.[0];

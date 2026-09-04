@@ -20,6 +20,25 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def evidence_manifest(evidence_directory: Path) -> list[dict[str, str | int]]:
+    """Record every first-party original in the daily backup manifest.
+
+    The originals live beneath the same server backup root. Keeping their hash
+    inventory alongside the PostgreSQL dump makes a restore drill able to prove
+    both structured facts and the original disclosure evidence survived.
+    """
+    if not evidence_directory.is_dir():
+        return []
+    records: list[dict[str, str | int]] = []
+    for path in sorted(evidence_directory.rglob("*.pdf")):
+        records.append({
+            "path": path.relative_to(evidence_directory.parent).as_posix(),
+            "size_bytes": path.stat().st_size,
+            "sha256": sha256_file(path),
+        })
+    return records
+
+
 def create_backup(database_url: str, target_dir: Path, container_runtime: str = 'podman', container_name: str = 'value-investment-postgres') -> Path:
     pg_dump = shutil.which('pg_dump')
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -37,6 +56,7 @@ def create_backup(database_url: str, target_dir: Path, container_runtime: str = 
     manifest = {
         'backup_id': str(backup_id), 'created_at': now.isoformat(), 'database_dump': dump_path.name,
         'sha256': sha256_file(dump_path), 'schema_version': '001_init',
+        'evidence_files': evidence_manifest(target_dir / 'evidence'),
     }
     manifest_path = dump_path.with_suffix('.manifest.json')
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -57,6 +77,12 @@ def verify_restore(database_url: str, restore_database_url: str, backup_manifest
     dump_path = backup_manifest.with_name(manifest['database_dump'])
     if sha256_file(dump_path) != manifest['sha256']:
         raise RuntimeError('备份 Hash 不匹配，已拒绝恢复。')
+    for evidence in manifest.get('evidence_files', []):
+        evidence_path = backup_manifest.parent / evidence['path']
+        if not evidence_path.is_file():
+            raise RuntimeError(f"证据原件缺失，已拒绝恢复验证：{evidence['path']}")
+        if sha256_file(evidence_path) != evidence['sha256']:
+            raise RuntimeError(f"证据原件 Hash 不匹配，已拒绝恢复验证：{evidence['path']}")
     started = time.monotonic()
     if pg_restore:
         result = subprocess.run(
@@ -85,4 +111,7 @@ def verify_restore(database_url: str, restore_database_url: str, backup_manifest
                WHERE backup_id = %s""",
             (rto_seconds, manifest['backup_id']),
         )
-    return {'backup_id': manifest['backup_id'], 'status': 'passed', 'rto_seconds': rto_seconds, 'data_points': source_count}
+    return {
+        'backup_id': manifest['backup_id'], 'status': 'passed', 'rto_seconds': rto_seconds,
+        'data_points': source_count, 'evidence_files': len(manifest.get('evidence_files', [])),
+    }

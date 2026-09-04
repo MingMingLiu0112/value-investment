@@ -7,12 +7,14 @@ from pathlib import Path
 
 from .adapters import AkshareFinancialAbstractAdapter, AksharePriceAdapter, SinaFinancialAdapter
 from .backup import create_backup, verify_restore
-from .db import begin_run, connect, end_run, export_payload, initialize, latest_points, record_monthly_snapshot, store_record, upsert_valuation
+from .db import begin_run, connect, end_run, export_payload, initialize, latest_points, record_monthly_snapshot, store_official_disclosure, store_record, upsert_valuation
+from .disclosures import collect_latest_reports
 from .evidence import load_evidence_manifest
 from .quality import as_valuation_row, evaluate
 from .settings import get_settings
 from .universe import UNIVERSE
 from .workbook import sync_workbook
+from .valuation import build_reference_records
 
 
 def _schema_path() -> Path:
@@ -37,6 +39,9 @@ def run_update(prices: bool, financials: bool, sync_excel: bool) -> None:
                 for record in AkshareFinancialAbstractAdapter().fetch([item[0] for item in UNIVERSE]):
                     store_record(connection, record, 'pending')
                     stored += 1
+            for record in build_reference_records(latest_points(connection), [item[0] for item in UNIVERSE]):
+                store_record(connection, record, 'pending')
+                stored += 1
             grouped: dict[str, list[dict]] = {item[0]: [] for item in UNIVERSE}
             for point in latest_points(connection):
                 grouped[point['symbol']].append(point)
@@ -89,6 +94,22 @@ def snapshot_month(month: str) -> None:
     print(json.dumps({'status': 'succeeded', 'snapshot_month': month, 'records_stored': stored}, ensure_ascii=False))
 
 
+def collect_filings() -> None:
+    """Archive official report originals. Parsing/verification is a separate step."""
+    settings = get_settings()
+    with connect(settings.database_url) as connection:
+        run_id = begin_run(connection, 'collect-filings')
+        try:
+            records = collect_latest_reports([item[0] for item in UNIVERSE], settings.evidence_directory)
+            for record in records:
+                store_official_disclosure(connection, record)
+            end_run(connection, run_id, 'succeeded', {'filings_stored': len(records)})
+        except Exception as error:
+            end_run(connection, run_id, 'failed', {'error': str(error)})
+            raise
+    print(json.dumps({'status': 'succeeded', 'filings_stored': len(records)}, ensure_ascii=False))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description='价值投资 Agent：研究辅助，不执行交易。')
     sub = parser.add_subparsers(dest='command', required=True)
@@ -105,6 +126,7 @@ def main() -> None:
     evidence = sub.add_parser('import-evidence')
     evidence.add_argument('--manifest', required=True, type=Path)
     sub.add_parser('backup')
+    sub.add_parser('collect-filings')
     restore = sub.add_parser('restore-verify')
     restore.add_argument('--manifest', required=True, type=Path)
     args = parser.parse_args()
@@ -128,6 +150,8 @@ def main() -> None:
         snapshot_month(args.month)
     elif args.command == 'backup':
         print(create_backup(settings.database_url, settings.backup_directory, settings.container_runtime, settings.postgres_container_name))
+    elif args.command == 'collect-filings':
+        collect_filings()
     else:
         if not settings.restore_database_url:
             raise RuntimeError('请在 .env 配置隔离的 RESTORE_DATABASE_URL 后再做恢复演练。')

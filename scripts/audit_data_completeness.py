@@ -22,7 +22,7 @@ FINANCIAL_FIELDS = (
     "roe", "gross_margin", "net_margin", "revenue_yoy", "net_income_yoy",
     "debt_ratio", "cash", "interest_bearing_debt", "eps_ttm", "bvps", "dps_ttm",
 )
-RESEARCH_FIELDS = ("fair_value",)
+RESEARCH_FIELDS = ("fair_value", "model_fair_value")
 
 
 def main() -> None:
@@ -50,14 +50,20 @@ def main() -> None:
         print(f"  Public source missing: {', '.join(missing) or 'none'}")
         if "roic" in missing or "fcf_per_share" in missing:
             print("  Note: ROIC and FCF/share are intentionally blank when the source does not publish an applicable value.")
-        if "fair_value" not in points:
-            print("  Research data pending: fair_value, safety_margin, build_signal (official evidence + human review required)")
-        else:
+        if "fair_value" in points:
             print(
-                "  Research data: "
+                "  Approved research data: "
                 f"fair_value={valuation.get('fair_value')}, safety_margin={valuation.get('safety_margin')}, "
                 f"build_signal={valuation.get('build_signal')}"
             )
+        elif "model_fair_value" in points:
+            print(
+                "  PE/PB model reference: "
+                f"fair_value={valuation.get('fair_value')}, safety_margin={valuation.get('safety_margin')}, "
+                "status=review required; build signal remains blocked"
+            )
+        else:
+            print("  Research data pending: fair_value and PE/PB model reference")
 
 
 if __name__ == "__main__":

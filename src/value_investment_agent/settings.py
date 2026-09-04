@@ -28,6 +28,7 @@ class Settings:
     container_runtime: str
     postgres_container_name: str
     restore_container_name: str
+    evidence_directory: Path
 
 
 def get_settings() -> Settings:
@@ -43,4 +44,5 @@ def get_settings() -> Settings:
         container_runtime=os.environ.get('CONTAINER_RUNTIME', 'podman'),
         postgres_container_name=os.environ.get('POSTGRES_CONTAINER_NAME', 'value-investment-postgres'),
         restore_container_name=os.environ.get('RESTORE_CONTAINER_NAME', 'value-investment-restore-postgres'),
+        evidence_directory=Path(os.environ.get('EVIDENCE_DIRECTORY', 'evidence')),
     )

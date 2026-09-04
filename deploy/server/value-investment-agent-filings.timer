@@ -1,0 +1,10 @@
+[Unit]
+Description=Check official CNINFO reports after market close
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 18:10:00 Asia/Shanghai
+Persistent=true
+Unit=value-investment-agent-filings.service
+
+[Install]
+WantedBy=timers.target

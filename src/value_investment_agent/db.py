@@ -88,6 +88,21 @@ def store_record(
     return data_point_id
 
 
+def store_official_disclosure(connection: psycopg.Connection, disclosure: dict) -> None:
+    """Register a downloaded exchange filing without treating it as parsed data."""
+    connection.execute(
+        """INSERT INTO official_disclosures(
+             disclosure_id, symbol, report_period, report_kind, title, source_name,
+             source_url, published_at, sha256, local_path, fetched_at, review_status
+           ) VALUES (%(disclosure_id)s, %(symbol)s, %(report_period)s, %(report_kind)s,
+             %(title)s, %(source_name)s, %(source_url)s, %(published_at)s, %(sha256)s,
+             %(local_path)s, %(fetched_at)s, 'pending')
+           ON CONFLICT (symbol, sha256) DO UPDATE SET fetched_at = EXCLUDED.fetched_at,
+             local_path = EXCLUDED.local_path, source_url = EXCLUDED.source_url""",
+        disclosure,
+    )
+
+
 def latest_points(connection: psycopg.Connection) -> list[dict]:
     return connection.execute(
         """SELECT DISTINCT ON (p.symbol, p.field_name)
@@ -171,7 +186,15 @@ def export_payload(connection: psycopg.Connection) -> dict:
            FROM monthly_snapshots m JOIN instruments i ON i.symbol = m.symbol
            ORDER BY m.snapshot_month, m.symbol"""
     ).fetchall()
+    disclosures = connection.execute(
+        """SELECT DISTINCT ON (o.symbol) o.symbol, o.report_period, o.report_kind,
+                  o.title, o.source_name, o.source_url, o.published_at, o.sha256,
+                  o.review_status, o.fetched_at
+             FROM official_disclosures o
+             ORDER BY o.symbol, o.published_at DESC"""
+    ).fetchall()
     return {
         'valuations': valuations, 'points': points, 'audits': audits,
-        'monthly_snapshots': monthly_snapshots, 'generated_at': datetime.now(timezone.utc).isoformat(),
+        'monthly_snapshots': monthly_snapshots, 'disclosures': disclosures,
+        'generated_at': datetime.now(timezone.utc).isoformat(),
     }

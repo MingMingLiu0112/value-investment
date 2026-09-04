@@ -46,7 +46,7 @@ class SinaFinancialAdapter:
     source_name = "AkShare / Sina financial indicators"
     parser_version = "akshare-financial-v1-sina"
     _fields = {
-        "eps_ttm": ("摊薄每股收益(元)", "CNY/share"),
+        "eps_reported": ("摊薄每股收益(元)", "CNY/share"),
         "bvps": ("每股净资产_调整前(元)", "CNY/share"),
         "roe": ("净资产收益率(%)", "percent"),
         "gross_margin": ("销售毛利率(%)", "percent"),
@@ -105,6 +105,44 @@ class SinaFinancialAdapter:
                         raw_payload=raw,
                     )
                 )
+            # Interim EPS is cumulative. Only emit a true rolling-12-month
+            # EPS when the prior annual and matching interim values exist.
+            eps_column = self._fields["eps_reported"][0]
+            previous_annual = frame.loc[
+                (frame["_report_at"].dt.year == report_at.year - 1)
+                & (frame["_report_at"].dt.month == 12)
+                & (frame["_report_at"].dt.day == 31)
+            ]
+            previous_matching = frame.loc[
+                (frame["_report_at"].dt.year == report_at.year - 1)
+                & (frame["_report_at"].dt.month == report_at.month)
+                & (frame["_report_at"].dt.day == report_at.day)
+            ]
+            if not previous_annual.empty and not previous_matching.empty:
+                try:
+                    ttm_eps = Decimal(str(row[eps_column])) + Decimal(str(previous_annual.iloc[0][eps_column])) - Decimal(str(previous_matching.iloc[0][eps_column]))
+                except Exception:
+                    ttm_eps = None
+                if ttm_eps is not None and ttm_eps > 0:
+                    records.append(
+                        SourceRecord(
+                            symbol=symbol,
+                            field_name="eps_ttm",
+                            period_label=report_at.strftime("%Y-%m-%d"),
+                            value=ttm_eps,
+                            unit="CNY/share",
+                            source_name=self.source_name,
+                            source_url=source_url,
+                            published_at=None,
+                            fetched_at=fetched_at,
+                            parser_version="akshare-financial-v1-sina-ttm",
+                            raw_payload=raw,
+                            point_metadata={
+                                "formula": "current interim EPS + prior annual EPS - prior matching interim EPS",
+                                "current_period": report_at.strftime("%Y-%m-%d"),
+                            },
+                        )
+                    )
         missing = set(symbols) - {record.symbol for record in records}
         if missing:
             raise RuntimeError(f"Financial response incomplete: {', '.join(sorted(missing))}")
@@ -122,6 +160,7 @@ class AkshareFinancialAbstractAdapter:
         "operating_cash_flow": ("\u7ecf\u8425\u73b0\u91d1\u6d41\u91cf\u51c0\u989d", "CNY 100M", Decimal("100000000")),
         "fcf_per_share": ("\u6bcf\u80a1\u4f01\u4e1a\u81ea\u7531\u73b0\u91d1\u6d41\u91cf", "CNY/share", None),
         "roic": ("\u6295\u5165\u8d44\u672c\u56de\u62a5\u7387", "percent", None),
+        "cash": ("\u8d27\u5e01\u8d44\u91d1", "CNY 100M", Decimal("100000000")),
     }
 
     def fetch(self, symbols: list[str]) -> list[SourceRecord]:
@@ -178,6 +217,59 @@ class AkshareFinancialAbstractAdapter:
                         fetched_at=fetched_at,
                         parser_version=self.parser_version,
                         raw_payload=raw,
+                    )
+                )
+            revenue = metrics.get("\u8425\u4e1a\u603b\u6536\u5165")
+            operating_cost = metrics.get("\u8425\u4e1a\u6210\u672c")
+            if revenue is not None and operating_cost is not None:
+                try:
+                    revenue_value = Decimal(str(revenue))
+                    cost_value = Decimal(str(operating_cost))
+                    gross_margin = (revenue_value - cost_value) / revenue_value * Decimal("100")
+                except Exception:
+                    gross_margin = None
+                if gross_margin is not None and revenue_value > 0:
+                    records.append(
+                        SourceRecord(
+                            symbol=symbol,
+                            field_name="gross_margin",
+                            period_label=report_at.strftime("%Y-%m-%d"),
+                            value=gross_margin,
+                            unit="percent",
+                            source_name=self.source_name,
+                            source_url=source_url,
+                            published_at=None,
+                            fetched_at=fetched_at,
+                            parser_version="akshare-financial-v2-sina-abstract-derived",
+                            raw_payload=raw,
+                            point_metadata={"formula": "(revenue - operating_cost) / revenue"},
+                        )
+                    )
+            debt_items = ("\u77ed\u671f\u501f\u6b3e", "\u4e00\u5e74\u5185\u5230\u671f\u7684\u975e\u6d41\u52a8\u8d1f\u503a", "\u957f\u671f\u501f\u6b3e", "\u5e94\u4ed8\u503a\u5238")
+            debt_values: list[Decimal] = []
+            for item in debt_items:
+                value = metrics.get(item)
+                if value is None:
+                    continue
+                try:
+                    debt_values.append(Decimal(str(value)))
+                except Exception:
+                    continue
+            if debt_values:
+                records.append(
+                    SourceRecord(
+                        symbol=symbol,
+                        field_name="interest_bearing_debt",
+                        period_label=report_at.strftime("%Y-%m-%d"),
+                        value=sum(debt_values) / Decimal("100000000"),
+                        unit="CNY 100M",
+                        source_name=self.source_name,
+                        source_url=source_url,
+                        published_at=None,
+                        fetched_at=fetched_at,
+                        parser_version="akshare-financial-v2-sina-abstract-derived",
+                        raw_payload=raw,
+                        point_metadata={"formula": "short-term borrowings + current maturities + long-term borrowings + bonds payable"},
                     )
                 )
         missing = set(symbols) - {record.symbol for record in records}

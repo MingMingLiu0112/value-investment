@@ -35,6 +35,24 @@ CREATE TABLE IF NOT EXISTS data_points (
 ALTER TABLE data_points ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb;
 CREATE INDEX IF NOT EXISTS data_points_lookup ON data_points (symbol, field_name, period_label, created_at DESC);
 
+CREATE TABLE IF NOT EXISTS official_disclosures (
+  disclosure_id UUID PRIMARY KEY,
+  symbol TEXT NOT NULL REFERENCES instruments(symbol),
+  report_period TEXT NOT NULL,
+  report_kind TEXT NOT NULL,
+  title TEXT NOT NULL,
+  source_name TEXT NOT NULL,
+  source_url TEXT NOT NULL,
+  published_at TIMESTAMPTZ NOT NULL,
+  sha256 TEXT NOT NULL,
+  local_path TEXT NOT NULL,
+  fetched_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  review_status TEXT NOT NULL DEFAULT 'pending' CHECK (review_status IN ('pending', 'verified', 'rejected')),
+  UNIQUE (symbol, sha256)
+);
+CREATE INDEX IF NOT EXISTS official_disclosures_lookup
+  ON official_disclosures (symbol, report_period, report_kind, published_at DESC);
+
 CREATE TABLE IF NOT EXISTS valuation_results (
   symbol TEXT PRIMARY KEY REFERENCES instruments(symbol),
   current_price NUMERIC,

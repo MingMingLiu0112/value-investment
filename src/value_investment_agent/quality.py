@@ -26,7 +26,21 @@ def evaluate(symbol: str, points: list[dict], max_age_hours: int, conflict_toler
         return QualityGateResult(symbol, '异常', reasons, price, None, None, '等待数据', Decimal('0'), {'price': str(price), 'reasons': reasons})
     fair_values = [p for p in points if p['field_name'] == 'fair_value']
     if not fair_values:
-        return QualityGateResult(symbol, '待估值', ['缺少已复核合理价值'], price, None, None, '待数据', Decimal('0'), {'price': str(price), 'reasons': ['缺少已复核合理价值']})
+        model_values = [p for p in points if p['field_name'] == 'model_fair_value']
+        if not model_values:
+            return QualityGateResult(symbol, '待估值', ['缺少已复核合理价值和模型参考价'], price, None, None, '待数据', Decimal('0'), {'price': str(price), 'reasons': ['缺少已复核合理价值和模型参考价']})
+        model = max(model_values, key=lambda p: p['created_at'])
+        fair_value = Decimal(model['value'])
+        safety_margin = (fair_value - price) / fair_value if fair_value > 0 else Decimal('0')
+        return QualityGateResult(
+            symbol, '模型估值待复核', ['PE/PB 模型价尚未以一手财报复核'], price, fair_value,
+            safety_margin, '等待复核', Decimal('0'), {
+                'price': str(price), 'fair_value': str(fair_value),
+                'safety_margin': str(safety_margin), 'formula': '(fair_value - current_price) / fair_value',
+                'model_source_id': str(model.get('source_id', '')),
+                'reasons': ['PE/PB 模型价尚未以一手财报复核'],
+            },
+        )
     fair = max(fair_values, key=lambda p: p['created_at'])
     fair_value = Decimal(fair['value'])
     if fair['validation_status'] != 'verified' or not fair.get('human_reviewed', False):
