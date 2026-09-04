@@ -276,3 +276,138 @@ class AkshareFinancialAbstractAdapter:
         if missing:
             raise RuntimeError(f"Financial abstract response incomplete: {', '.join(sorted(missing))}")
         return records
+
+
+class SinaFinancialStatementsAdapter:
+    """Read selected line items from the provider's detailed financial statements.
+
+    The detailed sheets expose balance-sheet and cash-flow fields omitted from
+    the summary feed.  They remain supplemental until a reviewer matches them
+    to the archived statutory filing.
+    """
+
+    source_name = "AkShare / Sina detailed financial statements"
+    parser_version = "akshare-financial-v1-sina-statements"
+    _debt_fields = ("短期借款", "一年内到期的非流动负债", "长期借款", "应付债券")
+    _capex_fields = (
+        "购建固定资产、无形资产和其他长期资产所支付的现金",
+        "购建固定资产、无形资产和其他长期资产支付的现金",
+    )
+
+    @staticmethod
+    def _value(row, names: tuple[str, ...] | str) -> Decimal | None:
+        if isinstance(names, str):
+            names = (names,)
+        for name in names:
+            value = row.get(name)
+            if value is None or (isinstance(value, float) and math.isnan(value)):
+                continue
+            try:
+                return Decimal(str(value))
+            except Exception:
+                continue
+        return None
+
+    @staticmethod
+    def _report_date(row) -> datetime | None:
+        value = row.get("报告日")
+        if value is None:
+            return None
+        text = str(value).strip()
+        try:
+            return datetime.strptime(text[:8], "%Y%m%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            return None
+
+    @staticmethod
+    def _published_at(row) -> datetime | None:
+        value = row.get("公告日期")
+        if value is None:
+            return None
+        text = str(value).strip()
+        try:
+            return datetime.strptime(text[:8], "%Y%m%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            return None
+
+    def fetch(self, symbols: list[str]) -> list[SourceRecord]:
+        try:
+            import akshare as ak
+        except ImportError as error:
+            raise RuntimeError("AkShare is not installed") from error
+
+        fetched_at = datetime.now(timezone.utc)
+        records: list[SourceRecord] = []
+        for symbol in symbols:
+            stock = ("sh" if symbol.startswith("6") else "sz") + symbol
+            try:
+                balance = ak.stock_financial_report_sina(stock=stock, symbol="资产负债表")
+                cashflow = ak.stock_financial_report_sina(stock=stock, symbol="现金流量表")
+            except Exception:
+                # This is a supplemental source. A temporary provider failure
+                # must not discard the core price/indicator update.
+                continue
+            if balance.empty or cashflow.empty:
+                continue
+            balance_row = balance.iloc[0]
+            report_at = self._report_date(balance_row)
+            if report_at is None:
+                continue
+            cashflow_row = next(
+                (row for _, row in cashflow.iterrows() if self._report_date(row) == report_at),
+                None,
+            )
+            raw = json.dumps(
+                {
+                    "code": symbol,
+                    "report_date": report_at.strftime("%Y-%m-%d"),
+                    "balance": balance_row.to_dict(),
+                    "cashflow": cashflow_row.to_dict() if cashflow_row is not None else None,
+                },
+                ensure_ascii=False,
+                default=str,
+            ).encode()
+            source_url = (
+                "https://vip.stock.finance.sina.com.cn/corp/go.php/"
+                f"vFD_FinanceSummary/stockid/{symbol}/displaytype/4.phtml?source=fzb"
+            )
+            common = {
+                "symbol": symbol,
+                "period_label": report_at.strftime("%Y-%m-%d"),
+                "source_name": self.source_name,
+                "source_url": source_url,
+                "published_at": self._published_at(balance_row),
+                "fetched_at": fetched_at,
+                "parser_version": self.parser_version,
+                "raw_payload": raw,
+            }
+            cash = self._value(balance_row, "货币资金")
+            if cash is not None:
+                records.append(SourceRecord(field_name="cash", value=cash / Decimal("100000000"), unit="CNY 100M", **common))
+            debt_values = [self._value(balance_row, field) for field in self._debt_fields]
+            debt_values = [value for value in debt_values if value is not None]
+            if debt_values:
+                records.append(
+                    SourceRecord(
+                        field_name="interest_bearing_debt",
+                        value=sum(debt_values) / Decimal("100000000"),
+                        unit="CNY 100M",
+                        point_metadata={"formula": "short-term borrowings + current maturities + long-term borrowings + bonds payable"},
+                        **common,
+                    )
+                )
+            if cashflow_row is None:
+                continue
+            operating_cashflow = self._value(cashflow_row, "经营活动产生的现金流量净额")
+            capex = self._value(cashflow_row, self._capex_fields)
+            if operating_cashflow is not None and capex is not None:
+                records.append(
+                    SourceRecord(
+                        field_name="free_cash_flow",
+                        value=(operating_cashflow - abs(capex)) / Decimal("100000000"),
+                        unit="CNY 100M",
+                        point_metadata={"formula": "operating cash flow - capital expenditure"},
+                        **common,
+                    )
+                )
+        return records
