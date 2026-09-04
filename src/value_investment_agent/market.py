@@ -110,11 +110,10 @@ class AllAMarketAdapter:
         fetched_at = datetime.now(timezone.utc)
         source = EASTMONEY_SOURCE
         fallback_reason: str | None = None
+        industry_mapping_error: str | None = None
         try:
             frame = ak.stock_zh_a_spot_em()
             rows = frame.to_dict("records")
-            sectors = self._industry_map(ak) if include_industry else {}
-            candidates = screen_rows(rows, sectors)
         except Exception as eastmoney_error:
             fallback_reason = str(eastmoney_error)
             frame = ak.stock_zh_a_spot_tx()
@@ -122,6 +121,19 @@ class AllAMarketAdapter:
             sectors = {}
             candidates = screen_rows(rows, sectors, require_pb=False)
             source = TENCENT_SOURCE
+        else:
+            if include_industry:
+                try:
+                    sectors = self._industry_map(ak)
+                except Exception as error:
+                    # Industry classification must not discard an otherwise
+                    # complete all-market quote snapshot or silently switch
+                    # it to a source with different valuation coverage.
+                    sectors = {}
+                    industry_mapping_error = str(error)
+            else:
+                sectors = {}
+            candidates = screen_rows(rows, sectors)
         universe = []
         for row in rows:
             symbol = str(_value(row, "代码", "symbol", "code") or "").zfill(6)
@@ -131,6 +143,7 @@ class AllAMarketAdapter:
         raw = json.dumps({
             "rows": rows, "candidate_count": len(candidates), "source": source[0],
             "industry_mapping_count": len(sectors),
+            "industry_mapping_error": industry_mapping_error,
             "fallback_reason": fallback_reason,
         }, ensure_ascii=False, default=str).encode()
         return universe, sectors, candidates, raw, fetched_at, source

@@ -74,3 +74,24 @@ def test_market_adapter_records_primary_failure_when_using_tencent(monkeypatch) 
     assert source == TENCENT_SOURCE
     assert candidates[0].status == 'initial_screen_pending_pb_financial_review'
     assert json.loads(raw)['fallback_reason'] == 'eastmoney unavailable'
+
+
+def test_industry_mapping_failure_keeps_primary_quote_source(monkeypatch) -> None:
+    class Frame:
+        def to_dict(self, orient: str):
+            assert orient == 'records'
+            return [{
+                '代码': '600001', '名称': '候选公司', '最新价': '10',
+                '市盈率-动态': '10', '市净率': '1', '总市值': '10000000000',
+            }]
+
+    fake_ak = SimpleNamespace(stock_zh_a_spot_em=lambda: Frame())
+    monkeypatch.setitem(sys.modules, 'akshare', fake_ak)
+    monkeypatch.setattr(AllAMarketAdapter, '_industry_map', staticmethod(lambda _ak: (_ for _ in ()).throw(RuntimeError('industry unavailable'))))
+
+    _, _, candidates, raw, _, source = AllAMarketAdapter().fetch(include_industry=True)
+
+    assert source != TENCENT_SOURCE
+    assert candidates[0].pb == Decimal('1')
+    assert candidates[0].sector == '待行业映射'
+    assert json.loads(raw)['industry_mapping_error'] == 'industry unavailable'
