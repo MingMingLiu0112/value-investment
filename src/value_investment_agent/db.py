@@ -129,10 +129,20 @@ def store_market_screen(
 ) -> int:
     if not candidates:
         return 0
+    try:
+        snapshot = json.loads(raw_payload.decode('utf-8'))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        snapshot = {}
     source_uuid = _store_document(
         connection, source_name=source_name, source_url=source_url, published_at=None,
         fetched_at=fetched_at, parser_version=parser_version, raw_payload=raw_payload,
-        metadata={'candidate_count': len(candidates), 'scope': 'all A-share initial screen'},
+        metadata={
+            'candidate_count': len(candidates), 'scope': 'all A-share initial screen',
+            'snapshot_source': snapshot.get('source'),
+            'fallback_reason': snapshot.get('fallback_reason'),
+            'industry_mapping_count': snapshot.get('industry_mapping_count'),
+            'industry_mapping_error': snapshot.get('industry_mapping_error'),
+        },
     )
     screen_date = fetched_at.date()
     connection.cursor().executemany(
@@ -400,6 +410,11 @@ def export_payload(connection: psycopg.Connection) -> dict:
         institution_type = provisional_financial_type(row['name'], row['sector'])
         if institution_type:
             action, reason = financial_gate_message(institution_type)
+            if row['pb'] is None:
+                reason += ' 当前公共行情快照缺少 PB，须在专用模型复核中补齐。'
+        elif row['pb'] is None:
+            action = '补全 PB、财报并人工复核'
+            reason = '当前全市场行情快照缺少 PB；只能作为待补全研究队列，不得按完整估值条件生成交易建议。'
         else:
             action, reason = reminder_actions.get(
                 row['enrichment_status'], reminder_actions['pending_official_filings'],
