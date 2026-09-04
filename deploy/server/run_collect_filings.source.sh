@@ -63,6 +63,17 @@ podman run --rm --network host --memory=512m --memory-reservation=192m --memory-
 # source on field, report period, unit and value tolerance. No manual action is
 # needed, and unmatched candidates remain blocked for the next scheduled retry.
 podman run --rm --network host --memory=256m --memory-reservation=128m --memory-swap=384m \
+  --add-host="money.finance.sina.com.cn:116.133.8.236" \
+  --add-host="vip.stock.finance.sina.com.cn:116.133.8.236" \
+  --env-file /etc/value-investment-agent/agent.env \
+  -e PYTHONPATH=/app/src \
+  -e HTTP_PROXY= -e HTTPS_PROXY= -e ALL_PROXY= \
+  -e http_proxy= -e https_proxy= -e all_proxy= \
+  -e NO_PROXY='*' -e no_proxy='*' \
+  -v /opt/value-investment-agent/src:/app/src:ro,Z \
+  value-investment-agent:latest python -m value_investment_agent collect-secondary-financials --limit 25
+
+podman run --rm --network host --memory=256m --memory-reservation=128m --memory-swap=384m \
   --env-file /etc/value-investment-agent/agent.env \
   -e PYTHONPATH=/app/src \
   -v /opt/value-investment-agent/src:/app/src:ro,Z \

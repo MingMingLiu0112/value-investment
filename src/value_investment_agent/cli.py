@@ -137,6 +137,49 @@ def auto_verify_filings(limit: int) -> None:
     print(json.dumps({'status': 'succeeded', 'records_stored': len(records)}, ensure_ascii=False))
 
 
+def collect_secondary_financials(limit: int) -> None:
+    """Collect an independent structured cross-check for archived filings."""
+    settings = get_settings()
+    with connect(settings.database_url) as connection:
+        run_id = begin_run(connection, 'collect-secondary-financials')
+        rows = connection.execute(
+            """SELECT DISTINCT ON (o.symbol) o.symbol
+                 FROM official_disclosures o
+                 JOIN filing_candidates c ON c.disclosure_id = o.disclosure_id
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM data_points p JOIN raw_documents d ON d.document_id = p.source_id
+                     WHERE p.symbol = o.symbol AND p.period_label = o.report_period
+                       AND d.source_name = 'AkShare / Sina financial indicators'
+                )
+                ORDER BY o.symbol, o.published_at DESC
+                LIMIT %s""",
+            (limit,),
+        ).fetchall()
+        stored = failed = 0
+        failures: list[dict[str, str]] = []
+        try:
+            adapter = SinaFinancialAdapter()
+            for row in rows:
+                try:
+                    # A nested transaction becomes a savepoint here, so one
+                    # issuer cannot discard previously collected evidence.
+                    with connection.transaction():
+                        records = adapter.fetch([row['symbol']])
+                        for record in records:
+                            store_record(connection, record, 'pending')
+                    stored += len(records)
+                except Exception as error:
+                    failures.append({'symbol': row['symbol'], 'error': str(error)[:300]})
+                    failed += 1
+            end_run(connection, run_id, 'succeeded', {
+                'requested': len(rows), 'records_stored': stored, 'failed_symbols': failures,
+            })
+        except Exception as error:
+            record_failed_run(connection, run_id, 'collect-secondary-financials', {'error': str(error)})
+            raise
+    print(json.dumps({'status': 'succeeded', 'requested': len(rows), 'records_stored': stored, 'failed': failed}, ensure_ascii=False))
+
+
 def snapshot_month(month: str) -> None:
     settings = get_settings()
     with connect(settings.database_url) as connection:
@@ -284,6 +327,8 @@ def main() -> None:
     reviews.add_argument('--csv', required=True, type=Path)
     auto_verify = sub.add_parser('auto-verify-filings')
     auto_verify.add_argument('--limit', type=int, default=100, choices=range(1, 501), metavar='1-500')
+    secondary = sub.add_parser('collect-secondary-financials')
+    secondary.add_argument('--limit', type=int, default=25, choices=range(1, 101), metavar='1-100')
     sub.add_parser('backup')
     filings = sub.add_parser('collect-filings')
     filings.add_argument('--symbols', help='Comma-separated A-share codes; defaults to the tracked sample universe')
@@ -320,6 +365,8 @@ def main() -> None:
         import_candidate_reviews(args.csv)
     elif args.command == 'auto-verify-filings':
         auto_verify_filings(args.limit)
+    elif args.command == 'collect-secondary-financials':
+        collect_secondary_financials(args.limit)
     elif args.command == 'snapshot-month':
         snapshot_month(args.month)
     elif args.command == 'backup':
