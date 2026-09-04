@@ -33,8 +33,8 @@ podman run --rm --network host --memory=512m --memory-reservation=192m --memory-
   -v /opt/value-investment-agent/src:/app/src:ro,Z \
   value-investment-agent:latest python -m value_investment_agent collect-filings
 
-# Keep official-PDF collection bounded. Three candidates per trading day limit
-# bandwidth, disk growth, and memory while steadily clearing the review queue.
+# Keep official-PDF collection bounded. Ten candidates per trading day keep the
+# container below its memory limit while clearing the review queue in one quarter.
 podman run --rm --network host --memory=512m --memory-reservation=192m --memory-swap=768m \
   --add-host="www.cninfo.com.cn:${CNINFO_WEB_IP}" \
   --add-host="static.cninfo.com.cn:${CNINFO_STATIC_IP}" \
@@ -45,4 +45,4 @@ podman run --rm --network host --memory=512m --memory-reservation=192m --memory-
   -e EVIDENCE_DIRECTORY=/app/evidence \
   -v /opt/value-investment-agent/evidence:/app/evidence:Z \
   -v /opt/value-investment-agent/src:/app/src:ro,Z \
-  value-investment-agent:latest python -m value_investment_agent enrich-financials --limit 3
+  value-investment-agent:latest python -m value_investment_agent enrich-financials --limit 10
