@@ -237,11 +237,12 @@ def claim_disclosures_for_extraction(connection: psycopg.Connection, limit: int)
         """WITH next_batch AS (
              SELECT disclosure_id FROM official_disclosures
              WHERE extraction_status = 'pending'
-                OR (extraction_status = 'processing' AND fetched_at < now() - interval '3 hours')
+                OR (extraction_status = 'processing' AND extraction_claimed_at < now() - interval '3 hours')
              ORDER BY published_at DESC
              FOR UPDATE SKIP LOCKED LIMIT %s
            )
-           UPDATE official_disclosures o SET extraction_status = 'processing'
+           UPDATE official_disclosures o
+           SET extraction_status = 'processing', extraction_claimed_at = now()
            FROM next_batch b WHERE o.disclosure_id = b.disclosure_id
            RETURNING o.disclosure_id, o.symbol, o.report_period, o.sha256, o.local_path""",
         (limit,),
@@ -267,7 +268,7 @@ def store_filing_candidates(connection: psycopg.Connection, disclosure_id: uuid.
 def finish_disclosure_extraction(connection: psycopg.Connection, disclosure_id: uuid.UUID, candidates: int = 0,
                                  error: str | None = None) -> None:
     status = 'failed' if error else ('extracted' if candidates else 'no_candidates')
-    connection.execute('UPDATE official_disclosures SET extraction_status = %s WHERE disclosure_id = %s',
+    connection.execute('UPDATE official_disclosures SET extraction_status = %s, extraction_claimed_at = NULL WHERE disclosure_id = %s',
                        (status, disclosure_id))
     connection.commit()
 

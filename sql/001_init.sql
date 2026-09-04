@@ -54,8 +54,11 @@ CREATE TABLE IF NOT EXISTS official_disclosures (
 ALTER TABLE official_disclosures ADD COLUMN IF NOT EXISTS report_assurance TEXT NOT NULL DEFAULT 'statutory_report_assurance_not_classified';
 ALTER TABLE official_disclosures ADD COLUMN IF NOT EXISTS extraction_status TEXT NOT NULL DEFAULT 'pending'
   CHECK (extraction_status IN ('pending', 'processing', 'extracted', 'no_candidates', 'failed'));
+ALTER TABLE official_disclosures ADD COLUMN IF NOT EXISTS extraction_claimed_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS official_disclosures_lookup
   ON official_disclosures (symbol, report_period, report_kind, published_at DESC);
+CREATE INDEX IF NOT EXISTS official_disclosures_extraction_queue
+  ON official_disclosures (extraction_status, extraction_claimed_at, published_at DESC);
 
 CREATE TABLE IF NOT EXISTS filing_candidates (
   candidate_id UUID PRIMARY KEY,
