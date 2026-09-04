@@ -58,18 +58,18 @@ def upsert_instruments(connection: psycopg.Connection, instruments: list[dict]) 
 
 def _store_document(connection: psycopg.Connection, *, source_name: str, source_url: str,
                     published_at, fetched_at, parser_version: str, raw_payload: bytes,
-                    metadata: dict | None = None) -> uuid.UUID:
+                    metadata: dict | None = None, local_path: str | None = None) -> uuid.UUID:
     document_id = uuid.uuid4()
     source_id = hashlib.sha256(raw_payload).hexdigest()
     cursor = connection.execute(
         """INSERT INTO raw_documents(document_id, source_name, source_url, published_at, fetched_at, parser_version, sha256, local_path, metadata)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, NULL, %s)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
            ON CONFLICT (sha256) DO UPDATE SET source_name = EXCLUDED.source_name,
              source_url = EXCLUDED.source_url, published_at = EXCLUDED.published_at,
              fetched_at = EXCLUDED.fetched_at, parser_version = EXCLUDED.parser_version,
              metadata = EXCLUDED.metadata
            RETURNING document_id""",
-        (document_id, source_name, source_url, published_at, fetched_at, parser_version, source_id,
+        (document_id, source_name, source_url, published_at, fetched_at, parser_version, source_id, local_path,
          json.dumps(metadata or {}, ensure_ascii=False)),
     )
     return cursor.fetchone()['document_id']
@@ -111,7 +111,7 @@ def store_record(
     source_uuid = _store_document(
         connection, source_name=record.source_name, source_url=record.source_url,
         published_at=record.published_at, fetched_at=record.fetched_at, parser_version=record.parser_version,
-        raw_payload=record.raw_payload, metadata=record.audit_metadata(),
+        raw_payload=record.raw_payload, metadata=record.audit_metadata(), local_path=record.local_path,
     )
     data_point_id = uuid.uuid4()
     connection.execute(
@@ -293,7 +293,7 @@ def latest_points(connection: psycopg.Connection) -> list[dict]:
     return connection.execute(
         """SELECT DISTINCT ON (p.symbol, p.field_name)
               p.symbol, p.field_name, p.period_label, p.value, p.unit, p.validation_status,
-              p.human_reviewed, p.created_at, d.document_id AS source_id, d.source_name, d.source_url,
+              p.human_reviewed, p.metadata, p.created_at, d.document_id AS source_id, d.source_name, d.source_url,
               d.published_at, d.fetched_at, d.parser_version, d.sha256
             FROM data_points p JOIN raw_documents d ON d.document_id = p.source_id
             ORDER BY p.symbol, p.field_name, p.period_label DESC, p.created_at DESC"""
@@ -405,9 +405,9 @@ def export_payload(connection: psycopg.Connection) -> dict:
              ORDER BY s.initial_score DESC, s.symbol LIMIT 2000"""
     ).fetchall()
     reminder_actions = {
-        'pending_official_filings': ('补全财报并人工复核', '全A股初筛通过；公共估值数据待财报和公告原件复核'),
+        'pending_official_filings': ('补全官方财报，等待Agent自动验证', '全A股初筛通过；Agent将归档官方财报并执行交叉验证。'),
         'processing': ('等待归档完成', '正在从法定披露源归档财报原件；暂不生成交易建议'),
-        'official_filings_archived': ('解析财报并人工复核', '官方财报原件已归档；指标尚未完成页码级核验'),
+        'official_filings_archived': ('等待Agent自动交叉验证', '官方财报原件已归档；Agent正在校验报告期、单位、页码和独立来源。'),
         'retry': ('重试官方归档', '官方披露归档异常；暂不生成交易建议'),
         'manual_review_required': ('人工核查公告来源', '官方披露归档连续失败；暂不生成交易建议'),
     }
@@ -419,7 +419,7 @@ def export_payload(connection: psycopg.Connection) -> dict:
             if row['pb'] is None:
                 reason += ' 当前公共行情快照缺少 PB，须在专用模型复核中补齐。'
         elif row['pb'] is None:
-            action = '补全 PB、财报并人工复核'
+            action = '补全 PB、财报，等待Agent自动验证'
             reason = '当前全市场行情快照缺少 PB；只能作为待补全研究队列，不得按完整估值条件生成交易建议。'
         else:
             action, reason = reminder_actions.get(

@@ -50,11 +50,20 @@ podman run --rm --network host --memory=512m --memory-reservation=192m --memory-
   -v /opt/value-investment-agent/src:/app/src:ro,Z \
   value-investment-agent:latest python -m value_investment_agent enrich-financials --limit 10
 
-# Extract page-level candidates only. They remain outside the verified facts
-# table until a researcher confirms the source page and accounting unit.
+# Extract page-level candidates. They remain outside verified facts until the
+# automatic cross-source validator confirms page, period, unit and value.
 podman run --rm --network host --memory=512m --memory-reservation=192m --memory-swap=768m \
   --env-file /etc/value-investment-agent/agent.env \
   -e PYTHONPATH=/app/src \
   -v /opt/value-investment-agent/evidence:/app/evidence:ro,Z \
   -v /opt/value-investment-agent/src:/app/src:ro,Z \
   value-investment-agent:latest python -m value_investment_agent extract-filing-candidates-batch --limit 10
+
+# Promote only filings that agree with an independently collected structured
+# source on field, report period, unit and value tolerance. No manual action is
+# needed, and unmatched candidates remain blocked for the next scheduled retry.
+podman run --rm --network host --memory=256m --memory-reservation=128m --memory-swap=384m \
+  --env-file /etc/value-investment-agent/agent.env \
+  -e PYTHONPATH=/app/src \
+  -v /opt/value-investment-agent/src:/app/src:ro,Z \
+  value-investment-agent:latest python -m value_investment_agent auto-verify-filings --limit 200

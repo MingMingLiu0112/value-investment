@@ -2,7 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from value_investment_agent.candidate_review import load_review_rows, reviewed_records
+from decimal import Decimal
+
+from value_investment_agent.candidate_review import load_review_rows, reviewed_records, values_agree
 
 
 def test_review_csv_requires_full_traceability_columns(tmp_path: Path) -> None:
@@ -41,3 +43,10 @@ def test_review_rejects_value_mismatch_before_promotion() -> None:
 
     with pytest.raises(ValueError, match='value differs'):
         reviewed_records(_Connection(), [row])
+
+
+def test_automatic_cross_source_tolerances_are_unit_specific() -> None:
+    assert values_agree(Decimal('8.32'), Decimal('8.36'), 'percent')
+    assert not values_agree(Decimal('8.32'), Decimal('8.38'), 'percent')
+    assert values_agree(Decimal('19.84'), Decimal('19.85'), 'CNY/share')
+    assert not values_agree(Decimal('19.84'), Decimal('19.87'), 'CNY/share')

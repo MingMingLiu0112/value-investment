@@ -6,6 +6,18 @@ from decimal import Decimal
 from .models import QualityGateResult
 
 
+def automatically_verified(point: dict) -> bool:
+    """Accept machine verification only when its cross-source evidence is retained."""
+    metadata = point.get('metadata') or {}
+    return bool(metadata.get('automatic_cross_source_verification'))
+
+
+def accepted_verification(point: dict) -> bool:
+    return point['validation_status'] == 'verified' and (
+        point.get('human_reviewed', False) or automatically_verified(point)
+    )
+
+
 def evaluate(symbol: str, points: list[dict], max_age_hours: int, conflict_tolerance: Decimal) -> QualityGateResult:
     prices = [p for p in points if p['field_name'] == 'current_price']
     reasons: list[str] = []
@@ -43,11 +55,11 @@ def evaluate(symbol: str, points: list[dict], max_age_hours: int, conflict_toler
         )
     fair = max(fair_values, key=lambda p: p['created_at'])
     fair_value = Decimal(fair['value'])
-    if fair['validation_status'] != 'verified' or not fair.get('human_reviewed', False):
-        reasons = ['合理价值尚未人工复核']
+    if not accepted_verification(fair):
+        reasons = ['合理价值尚未完成自动交叉验证']
         return QualityGateResult(symbol, '待核验', reasons, price, fair_value, None, '待数据', Decimal('0'), {'price': str(price), 'fair_value': str(fair_value), 'reasons': reasons})
-    if newest['validation_status'] != 'verified' or not newest.get('human_reviewed', False):
-        reasons = ['当前价格尚未人工复核']
+    if not accepted_verification(newest):
+        reasons = ['当前价格尚未完成自动交叉验证']
         return QualityGateResult(symbol, '待核验', reasons, price, fair_value, None, '待数据', Decimal('0'), {'price': str(price), 'fair_value': str(fair_value), 'reasons': reasons})
     safety_margin = (fair_value - price) / fair_value if fair_value > 0 else Decimal('0')
     if safety_margin >= Decimal('0.30'):

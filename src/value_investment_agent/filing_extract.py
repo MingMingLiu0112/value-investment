@@ -52,7 +52,7 @@ def _number_after_label(text: str, label: str) -> tuple[str, str] | None:
 
 
 def extract_candidates_from_pages(pages: list[str]) -> list[dict]:
-    """Return candidate values with page and text evidence, never trusted facts."""
+    """Return candidates for automated cross-source verification, never trusted facts."""
     candidates: list[dict] = []
     statement: str | None = None
     for page_index, page_text in enumerate(pages, start=1):
@@ -65,7 +65,7 @@ def extract_candidates_from_pages(pages: list[str]) -> list[dict]:
                 candidates.append({
                     "field_name": field_name, "source_label": label,
                     "value": value, "unit": unit, "page": page_index,
-                    "excerpt": excerpt, "status": "candidate_requires_human_review",
+                    "excerpt": excerpt, "status": "candidate_pending_automated_verification",
                 })
         if "母公司资产负债表" in page_text or "母公司现金流量表" in page_text:
             statement = None
@@ -90,7 +90,7 @@ def extract_candidates_from_pages(pages: list[str]) -> list[dict]:
                     "unit": "CNY",
                     "page": page_index,
                     "excerpt": excerpt,
-                    "status": "candidate_requires_human_review",
+                    "status": "candidate_pending_automated_verification",
                 }
             )
     return candidates
@@ -115,5 +115,5 @@ def extract_candidates(pdf_path: Path) -> dict:
         "sha256": hashlib.sha256(raw).hexdigest(),
         "page_count": len(pages),
         "candidates": extract_candidates_from_pages(pages),
-        "warning": "Candidates are not imported into the database. Review the page and excerpt, then create a verified evidence manifest.",
+        "warning": "Candidates require automatic cross-source verification before they enter verified facts.",
     }

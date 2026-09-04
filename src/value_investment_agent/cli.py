@@ -12,7 +12,7 @@ from .db import begin_run, claim_disclosures_for_extraction, claim_financial_enr
 from .disclosures import collect_latest_reports
 from .dividends import CninfoDividendAdapter, build_payout_ratio_records
 from .evidence import load_evidence_manifest
-from .candidate_review import load_review_rows, reviewed_records, write_review_template
+from .candidate_review import automatically_verified_candidates, load_review_rows, reviewed_records, write_review_template
 from .filing_extract import extract_candidates
 from .quality import as_valuation_row, evaluate
 from .market import AllAMarketAdapter
@@ -113,6 +113,26 @@ def import_candidate_reviews(review_csv: Path) -> None:
             end_run(connection, run_id, 'succeeded', {'review_csv': str(review_csv), 'records_stored': len(records)})
         except Exception as error:
             record_failed_run(connection, run_id, 'import-candidate-reviews', {'review_csv': str(review_csv), 'error': str(error)})
+            raise
+    print(json.dumps({'status': 'succeeded', 'records_stored': len(records)}, ensure_ascii=False))
+
+
+def auto_verify_filings(limit: int) -> None:
+    """Promote only official filing values with an automatic independent match."""
+    settings = get_settings()
+    with connect(settings.database_url) as connection:
+        run_id = begin_run(connection, 'auto-verify-filings')
+        try:
+            records = automatically_verified_candidates(connection, limit)
+            for candidate_id, record in records:
+                store_record(connection, record, 'verified', False)
+                connection.execute(
+                    "UPDATE filing_candidates SET status = 'automatically_verified' WHERE candidate_id = %s",
+                    (candidate_id,),
+                )
+            end_run(connection, run_id, 'succeeded', {'records_stored': len(records), 'limit': limit})
+        except Exception as error:
+            record_failed_run(connection, run_id, 'auto-verify-filings', {'error': str(error), 'limit': limit})
             raise
     print(json.dumps({'status': 'succeeded', 'records_stored': len(records)}, ensure_ascii=False))
 
@@ -262,6 +282,8 @@ def main() -> None:
     review_template.add_argument('--output', required=True, type=Path)
     reviews = sub.add_parser('import-candidate-reviews')
     reviews.add_argument('--csv', required=True, type=Path)
+    auto_verify = sub.add_parser('auto-verify-filings')
+    auto_verify.add_argument('--limit', type=int, default=100, choices=range(1, 501), metavar='1-500')
     sub.add_parser('backup')
     filings = sub.add_parser('collect-filings')
     filings.add_argument('--symbols', help='Comma-separated A-share codes; defaults to the tracked sample universe')
@@ -296,6 +318,8 @@ def main() -> None:
         export_review_template(args.output)
     elif args.command == 'import-candidate-reviews':
         import_candidate_reviews(args.csv)
+    elif args.command == 'auto-verify-filings':
+        auto_verify_filings(args.limit)
     elif args.command == 'snapshot-month':
         snapshot_month(args.month)
     elif args.command == 'backup':

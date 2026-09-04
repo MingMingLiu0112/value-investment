@@ -54,7 +54,7 @@ syncRows('01_观察名单', 4, (sheet, row, symbol) => {
   if (!v) return;
   sheet.getRange(`F${row}:I${row}`).values = [[cellValue(v.current_price), cellValue(v.fair_value), cellValue(v.safety_margin), v.valuation_status]];
   sheet.getRange(`K${row}:L${row}`).values = [[v.build_signal, cellValue(v.target_weight)]];
-  sheet.getRange(`N${row}:P${row}`).values = [[v.build_signal === '待数据' ? '等待数据' : '人工确认', payload.generated_at, v.data_status]];
+  sheet.getRange(`N${row}:P${row}`).values = [[v.build_signal === '待数据' ? '等待数据' : 'Agent 自动验证', payload.generated_at, v.data_status]];
 });
 
 syncRows('04_估值跟踪', 4, (sheet, row, symbol) => {
@@ -70,7 +70,7 @@ syncRows('05_仓位管理', 10, (sheet, row, symbol) => {
   if (!v) return;
   sheet.getRange(`C${row}:D${row}`).values = [[v.build_signal, cellValue(v.target_weight)]];
   sheet.getRange(`F${row}`).values = [[cellValue(v.current_price)]];
-  sheet.getRange(`K${row}`).values = [[v.build_signal === '待数据' ? '等待数据' : '人工确认']];
+  sheet.getRange(`K${row}`).values = [[v.build_signal === '待数据' ? '等待数据' : 'Agent 自动验证']];
 });
 
 const financialFields = ['revenue', 'revenue_yoy', 'net_income', 'net_income_yoy', 'roe', 'roic', 'gross_margin', 'net_margin', 'operating_cash_flow', 'free_cash_flow', 'operating_cash_flow_to_net_income', 'debt_ratio', 'cash', 'interest_bearing_debt', 'eps_ttm', 'dps_ttm', 'payout_ratio'];
@@ -84,7 +84,7 @@ syncRows('03_财务指标', 4, (sheet, row, symbol) => {
   });
   const source = financialFields.map((field) => p[field]?.source_id).find(Boolean) ?? null;
   const period = financialFields.map((field) => p[field]?.period_label).find(Boolean) ?? null;
-  sheet.getRange(`C${row}:V${row}`).values = [[displayPeriod(period), ...values, source, source ? '待人工复核' : '待Agent写入']];
+  sheet.getRange(`C${row}:V${row}`).values = [[displayPeriod(period), ...values, source, source ? 'Agent 自动交叉验证中' : '待Agent写入']];
 });
 
 const observationSheet = workbook.worksheets.getItem('01_观察名单');
@@ -192,9 +192,9 @@ function enrichmentStatusLabel(status) {
   return {
     pending_official_filings: '待归档官方财报',
     processing: '正在归档官方财报',
-    official_filings_archived: '官方原件已归档，待解析复核',
+    official_filings_archived: '官方原件已归档，待Agent自动验证',
     retry: '归档异常，待重试',
-    manual_review_required: '归档连续失败，需人工复核',
+    manual_review_required: '归档连续失败，Agent将自动重试',
   }[status] ?? '待归档官方财报';
 }
 
@@ -234,7 +234,7 @@ const filingCandidates = (payload.filing_candidates ?? []).map((row) => [
   row.status, row.source_url, row.sha256, row.excerpt,
 ]);
 replaceSheetRows(filingCandidateSheet,
-  ['candidate_id', '股票代码', '公司名称', '报告期', '报告类型', '字段', '候选值', '单位', '页码', '原始标签', '复核状态', '官方URL', '文件SHA-256', '原文摘录'],
+  ['candidate_id', '股票代码', '公司名称', '报告期', '报告类型', '字段', '候选值', '单位', '页码', '原始标签', 'Agent验证状态', '官方URL', '文件SHA-256', '原文摘录'],
   filingCandidates,
 );
 

@@ -10,7 +10,7 @@ def test_extracts_candidate_with_page_and_excerpt() -> None:
     cash = next(candidate for candidate in candidates if candidate["field_name"] == "cash")
     assert cash["value"] == "53518798979.08"
     assert cash["page"] == 2
-    assert cash["status"] == "candidate_requires_human_review"
+    assert cash["status"] == "candidate_pending_automated_verification"
 
 
 def test_extracts_continuation_pages_without_repeating_the_table_title() -> None:
@@ -41,7 +41,7 @@ def test_extracts_annual_summary_candidates_from_bank_style_report() -> None:
     assert by_field["operating_cash_flow"]["value"] == "69063"
     assert by_field["eps_annual"]["unit"] == "CNY/share"
     assert by_field["roe"]["unit"] == "percent"
-    assert all(candidate["status"] == "candidate_requires_human_review" for candidate in candidates)
+    assert all(candidate["status"] == "candidate_pending_automated_verification" for candidate in candidates)
 
 
 def test_recognizes_bank_style_consolidated_cashflow_heading() -> None:

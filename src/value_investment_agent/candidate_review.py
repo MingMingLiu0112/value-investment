@@ -1,4 +1,4 @@
-"""Promotion of page-level filing candidates after explicit human review."""
+"""Promotion of official filing candidates after automatic cross-source verification."""
 
 from __future__ import annotations
 
@@ -18,6 +18,24 @@ REQUIRED_COLUMNS = {
     "candidate_id", "confirmed_value", "confirmed_unit", "report_period",
     "official_url", "file_sha256", "reviewed_by", "reviewed_at", "approve",
 }
+
+# Only fields with an unambiguous unit and a comparable independently sourced
+# counterpart are eligible for unattended promotion.  Amount fields remain
+# pending until their report unit can also be extracted deterministically.
+AUTOMATIC_FIELD_MAP = {
+    "roe": "roe",
+    "bvps": "bvps",
+    "eps_annual": "eps_reported",
+}
+
+
+def values_agree(official: Decimal, secondary: Decimal, unit: str) -> bool:
+    """Use field-appropriate tolerance, never silently coerce units."""
+    if unit == "percent":
+        return abs(official - secondary) <= Decimal("0.05")
+    if unit == "CNY/share":
+        return abs(official - secondary) <= Decimal("0.02")
+    return False
 
 
 def load_review_rows(path: Path) -> list[dict[str, str]]:
@@ -129,3 +147,65 @@ def write_review_template(connection: psycopg.Connection, output: Path) -> int:
         for row in rows:
             writer.writerow({key: row.get(key) for key in headers})
     return len(rows)
+
+
+def automatically_verified_candidates(connection: psycopg.Connection, limit: int) -> list[tuple[str, SourceRecord]]:
+    """Promote only candidates corroborated by a second structured source.
+
+    A statutory PDF remains the value ultimately stored as the fact.  The
+    separate provider supplies a cross-check for symbol, period, unit and value.
+    No candidate becomes verified when either side is missing or conflicts.
+    """
+    candidates = connection.execute(
+        """SELECT c.candidate_id, c.field_name, c.value, c.unit, c.page_number, c.source_label,
+                  o.symbol, o.report_period, o.source_name, o.source_url, o.published_at,
+                  o.sha256, o.local_path
+             FROM filing_candidates c JOIN official_disclosures o ON o.disclosure_id = c.disclosure_id
+            WHERE c.status = 'candidate_pending_automated_verification'
+              AND c.field_name = ANY(%s)
+            ORDER BY o.published_at DESC, c.created_at
+            LIMIT %s""",
+        (list(AUTOMATIC_FIELD_MAP), limit),
+    ).fetchall()
+    verified: list[tuple[str, SourceRecord]] = []
+    for candidate in candidates:
+        if connection.execute(
+            "SELECT 1 FROM data_points WHERE metadata ->> 'candidate_id' = %s LIMIT 1",
+            (str(candidate['candidate_id']),),
+        ).fetchone():
+            continue
+        secondary_field = AUTOMATIC_FIELD_MAP[candidate['field_name']]
+        matches = connection.execute(
+            """SELECT p.value, p.unit, p.data_point_id, d.document_id AS source_id, d.source_name, d.source_url
+                 FROM data_points p JOIN raw_documents d ON d.document_id = p.source_id
+                WHERE p.symbol = %s AND p.field_name = %s AND p.period_label = %s
+                  AND d.source_url <> %s
+                ORDER BY p.created_at DESC""",
+            (candidate['symbol'], secondary_field, candidate['report_period'], candidate['source_url']),
+        ).fetchall()
+        match = next((row for row in matches if row['unit'] == candidate['unit'] and values_agree(
+            Decimal(candidate['value']), Decimal(row['value']), candidate['unit'])), None)
+        if match is None:
+            continue
+        local_path = Path(candidate['local_path'])
+        if not local_path.is_file():
+            continue
+        payload = local_path.read_bytes()
+        if hashlib.sha256(payload).hexdigest().lower() != candidate['sha256'].lower():
+            continue
+        verified.append((str(candidate['candidate_id']), SourceRecord(
+            symbol=candidate['symbol'], field_name=candidate['field_name'],
+            period_label=candidate['report_period'], value=Decimal(candidate['value']),
+            unit=candidate['unit'], source_name=candidate['source_name'],
+            source_url=candidate['source_url'], published_at=candidate['published_at'],
+            fetched_at=datetime.now(timezone.utc), parser_version='automatic-cross-source-v1',
+            raw_payload=payload, local_path=str(local_path), point_metadata={
+                'candidate_id': str(candidate['candidate_id']), 'page_number': candidate['page_number'],
+                'source_label': candidate['source_label'], 'automatic_cross_source_verification': True,
+                'verification_method': 'official_pdf_plus_independent_structured_source',
+                'secondary_data_point_id': str(match['data_point_id']),
+                'secondary_source_id': str(match['source_id']),
+                'secondary_source_name': match['source_name'], 'secondary_source_url': match['source_url'],
+            },
+        )))
+    return verified

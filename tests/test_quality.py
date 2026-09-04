@@ -34,3 +34,17 @@ def test_fresh_price_requires_fair_value() -> None:
     result = evaluate('600519', [point('1500')], 30, Decimal('0.03'))
     assert result.status == '待估值'
     assert result.signal == '待数据'
+
+
+def test_automatic_cross_source_evidence_can_pass_the_quality_gate() -> None:
+    now = datetime.now(timezone.utc)
+    automatic = {'automatic_cross_source_verification': True}
+    result = evaluate('600519', [
+        {'field_name': 'current_price', 'value': Decimal('50'), 'created_at': now, 'fetched_at': now,
+         'validation_status': 'verified', 'human_reviewed': False, 'metadata': automatic},
+        {'field_name': 'fair_value', 'value': Decimal('100'), 'created_at': now, 'fetched_at': now,
+         'validation_status': 'verified', 'human_reviewed': False, 'metadata': automatic},
+    ], 30, Decimal('0.03'))
+
+    assert result.signal == '建仓候选'
+    assert result.target_weight == Decimal('0.10')
