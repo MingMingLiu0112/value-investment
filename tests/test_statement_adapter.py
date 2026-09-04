@@ -58,3 +58,29 @@ def test_detailed_statements_supply_cash_debt_and_free_cash_flow(monkeypatch) ->
     assert next(record for record in records if record.field_name == "free_cash_flow").point_metadata == {
         "formula": "operating cash flow - capital expenditure"
     }
+
+
+def test_bank_uses_liquidity_and_funding_specific_line_items(monkeypatch) -> None:
+    balance = Frame([
+        Row({
+            "报告日": "20260630", "公告日期": "20260815", "现金及存放中央银行款项": 500_000_000,
+            "向中央银行借款": 100_000_000, "同业存入及拆入": 200_000_000,
+            "客户存款(吸收存款)": 300_000_000, "应付债券": 400_000_000,
+            "卖出回购金融资产款": 500_000_000,
+        })
+    ])
+    cashflow = Frame([Row({"报告日": "20260630"})])
+
+    def report(stock: str, symbol: str):
+        return balance if symbol == "资产负债表" else cashflow
+
+    monkeypatch.setitem(sys.modules, "akshare", SimpleNamespace(stock_financial_report_sina=report))
+    records = SinaFinancialStatementsAdapter().fetch(["600036"])
+    values = {record.field_name: record.value for record in records}
+
+    assert values["cash"] == 5
+    assert values["interest_bearing_debt"] == 15
+    assert "free_cash_flow" not in values
+    assert next(record for record in records if record.field_name == "cash").point_metadata == {
+        "source_line_item": "现金及存放中央银行款项"
+    }

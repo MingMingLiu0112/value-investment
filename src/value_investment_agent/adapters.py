@@ -288,7 +288,10 @@ class SinaFinancialStatementsAdapter:
 
     source_name = "AkShare / Sina detailed financial statements"
     parser_version = "akshare-financial-v1-sina-statements"
+    _bank_symbols = {"600036", "601288"}
     _debt_fields = ("短期借款", "一年内到期的非流动负债", "长期借款", "应付债券")
+    _bank_cash_fields = ("现金及存放中央银行款项", "货币资金")
+    _bank_debt_fields = ("向中央银行借款", "同业存入及拆入", "客户存款(吸收存款)", "应付债券", "卖出回购金融资产款")
     _capex_fields = (
         "购建固定资产、无形资产和其他长期资产所支付的现金",
         "购建固定资产、无形资产和其他长期资产支付的现金",
@@ -381,18 +384,25 @@ class SinaFinancialStatementsAdapter:
                 "parser_version": self.parser_version,
                 "raw_payload": raw,
             }
-            cash = self._value(balance_row, "货币资金")
+            bank = symbol in self._bank_symbols
+            cash = self._value(balance_row, self._bank_cash_fields if bank else "货币资金")
             if cash is not None:
-                records.append(SourceRecord(field_name="cash", value=cash / Decimal("100000000"), unit="CNY 100M", **common))
-            debt_values = [self._value(balance_row, field) for field in self._debt_fields]
+                metadata = {"source_line_item": "现金及存放中央银行款项"} if bank else None
+                records.append(SourceRecord(field_name="cash", value=cash / Decimal("100000000"), unit="CNY 100M", point_metadata=metadata, **common))
+            debt_fields = self._bank_debt_fields if bank else self._debt_fields
+            debt_values = [self._value(balance_row, field) for field in debt_fields]
             debt_values = [value for value in debt_values if value is not None]
             if debt_values:
+                formula = (
+                    "central bank borrowings + interbank deposits/borrowings + customer deposits + bonds payable + repurchase obligations"
+                    if bank else "short-term borrowings + current maturities + long-term borrowings + bonds payable"
+                )
                 records.append(
                     SourceRecord(
                         field_name="interest_bearing_debt",
                         value=sum(debt_values) / Decimal("100000000"),
                         unit="CNY 100M",
-                        point_metadata={"formula": "short-term borrowings + current maturities + long-term borrowings + bonds payable"},
+                        point_metadata={"formula": formula},
                         **common,
                     )
                 )
@@ -400,7 +410,7 @@ class SinaFinancialStatementsAdapter:
                 continue
             operating_cashflow = self._value(cashflow_row, "经营活动产生的现金流量净额")
             capex = self._value(cashflow_row, self._capex_fields)
-            if operating_cashflow is not None and capex is not None:
+            if not bank and operating_cashflow is not None and capex is not None:
                 records.append(
                     SourceRecord(
                         field_name="free_cash_flow",

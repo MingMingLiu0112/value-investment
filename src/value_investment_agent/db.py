@@ -173,7 +173,12 @@ def record_monthly_snapshot(connection: psycopg.Connection, snapshot_month: str)
 
 def export_payload(connection: psycopg.Connection) -> dict:
     valuations = connection.execute('SELECT * FROM valuation_results ORDER BY symbol').fetchall()
-    points = latest_points(connection)
+    # Cash-flow definitions for banks include changes in deposits and lending;
+    # they are not comparable to an industrial company's free cash flow.
+    points = [
+        point for point in latest_points(connection)
+        if not (point['symbol'] in {'600036', '601288'} and point['field_name'] == 'free_cash_flow')
+    ]
     audits = connection.execute(
         """SELECT p.symbol, p.field_name, p.period_label, p.value, p.unit, d.source_name, d.source_url,
            d.document_id AS source_id, d.fetched_at, d.published_at, d.parser_version, d.sha256,

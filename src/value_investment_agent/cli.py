@@ -9,6 +9,7 @@ from .adapters import AkshareFinancialAbstractAdapter, AksharePriceAdapter, Sina
 from .backup import create_backup, verify_restore
 from .db import begin_run, connect, end_run, export_payload, initialize, latest_points, record_monthly_snapshot, store_official_disclosure, store_record, upsert_valuation
 from .disclosures import collect_latest_reports
+from .dividends import CninfoDividendAdapter, build_payout_ratio_records
 from .evidence import load_evidence_manifest
 from .quality import as_valuation_row, evaluate
 from .settings import get_settings
@@ -40,6 +41,12 @@ def run_update(prices: bool, financials: bool, sync_excel: bool) -> None:
                     store_record(connection, record, 'pending')
                     stored += 1
                 for record in SinaFinancialStatementsAdapter().fetch([item[0] for item in UNIVERSE]):
+                    store_record(connection, record, 'pending')
+                    stored += 1
+                for record in CninfoDividendAdapter().fetch([item[0] for item in UNIVERSE]):
+                    store_record(connection, record, 'pending')
+                    stored += 1
+                for record in build_payout_ratio_records(latest_points(connection), [item[0] for item in UNIVERSE]):
                     store_record(connection, record, 'pending')
                     stored += 1
             for record in build_reference_records(latest_points(connection), [item[0] for item in UNIVERSE]):

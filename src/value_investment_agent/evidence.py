@@ -16,6 +16,7 @@ OFFICIAL_EXCHANGE_HOSTS = {
     "disc.static.szse.cn",
     "www.cninfo.com.cn",
     "static.cninfo.com.cn",
+    "webapi.cninfo.com.cn",
 }
 
 
