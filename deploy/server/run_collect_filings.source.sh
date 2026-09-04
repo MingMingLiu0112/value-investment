@@ -11,6 +11,7 @@ podman run --rm --network host --memory=512m --memory-reservation=192m --memory-
   --add-host="www.cninfo.com.cn:${CNINFO_WEB_IP}" \
   --add-host="static.cninfo.com.cn:${CNINFO_STATIC_IP}" \
   --env-file /etc/value-investment-agent/agent.env \
+  -e PYTHONPATH=/app/src \
   -e HTTP_PROXY= -e HTTPS_PROXY= -e ALL_PROXY= \
   -e http_proxy= -e https_proxy= -e all_proxy= \
   -e NO_PROXY='*' -e no_proxy='*' \
@@ -25,6 +26,7 @@ podman run --rm --network host --memory=512m --memory-reservation=192m --memory-
   --add-host="www.cninfo.com.cn:${CNINFO_WEB_IP}" \
   --add-host="static.cninfo.com.cn:${CNINFO_STATIC_IP}" \
   --env-file /etc/value-investment-agent/agent.env \
+  -e PYTHONPATH=/app/src \
   -e HTTP_PROXY= -e HTTPS_PROXY= -e ALL_PROXY= \
   -e http_proxy= -e https_proxy= -e all_proxy= \
   -e NO_PROXY='*' -e no_proxy='*' \
@@ -39,6 +41,7 @@ podman run --rm --network host --memory=512m --memory-reservation=192m --memory-
   --add-host="www.cninfo.com.cn:${CNINFO_WEB_IP}" \
   --add-host="static.cninfo.com.cn:${CNINFO_STATIC_IP}" \
   --env-file /etc/value-investment-agent/agent.env \
+  -e PYTHONPATH=/app/src \
   -e HTTP_PROXY= -e HTTPS_PROXY= -e ALL_PROXY= \
   -e http_proxy= -e https_proxy= -e all_proxy= \
   -e NO_PROXY='*' -e no_proxy='*' \
@@ -51,5 +54,7 @@ podman run --rm --network host --memory=512m --memory-reservation=192m --memory-
 # table until a researcher confirms the source page and accounting unit.
 podman run --rm --network host --memory=512m --memory-reservation=192m --memory-swap=768m \
   --env-file /etc/value-investment-agent/agent.env \
+  -e PYTHONPATH=/app/src \
   -v /opt/value-investment-agent/evidence:/app/evidence:ro,Z \
+  -v /opt/value-investment-agent/src:/app/src:ro,Z \
   value-investment-agent:latest python -m value_investment_agent extract-filing-candidates-batch --limit 10
