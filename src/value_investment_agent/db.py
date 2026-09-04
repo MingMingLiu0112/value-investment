@@ -395,8 +395,11 @@ def export_payload(connection: psycopg.Connection) -> dict:
     market_candidates = connection.execute(
         """SELECT s.symbol, i.name, s.sector, s.board, s.current_price, s.pe, s.pb, s.market_cap,
                   s.initial_score, s.status, s.screen_date, s.source_id,
-                  COALESCE(q.status, 'pending_official_filings') AS enrichment_status
+                  COALESCE(q.status, 'pending_official_filings') AS enrichment_status,
+                  d.source_name AS market_source, d.metadata->>'fallback_reason' AS market_fallback_reason,
+                  d.metadata->>'industry_mapping_count' AS industry_mapping_count
              FROM market_screen_results s JOIN instruments i ON i.symbol = s.symbol
+             JOIN raw_documents d ON d.document_id = s.source_id
              LEFT JOIN financial_enrichment_queue q ON q.symbol = s.symbol
              WHERE s.screen_date = (SELECT max(screen_date) FROM market_screen_results)
              ORDER BY s.initial_score DESC, s.symbol LIMIT 2000"""
@@ -429,6 +432,8 @@ def export_payload(connection: psycopg.Connection) -> dict:
             'source_id': row['source_id'], 'as_of': row['screen_date'],
             'enrichment_status': row['enrichment_status'],
             'research_model': f'provisional_{institution_type}' if institution_type else 'general_pending_review',
+            'market_source': row['market_source'], 'market_fallback_reason': row['market_fallback_reason'],
+            'industry_mapping_count': row['industry_mapping_count'],
         })
     return {
         'valuations': valuations, 'points': points, 'audits': audits,
