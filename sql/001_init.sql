@@ -75,10 +75,10 @@ CREATE TABLE IF NOT EXISTS filing_candidates (
   UNIQUE (disclosure_id, field_name, page_number, source_label)
 );
 ALTER TABLE filing_candidates DROP CONSTRAINT IF EXISTS filing_candidates_status_check;
-ALTER TABLE filing_candidates ADD CONSTRAINT filing_candidates_status_check
-  CHECK (status IN ('candidate_pending_automated_verification', 'automatically_verified'));
 UPDATE filing_candidates SET status = 'candidate_pending_automated_verification'
   WHERE status = 'candidate_requires_human_review';
+ALTER TABLE filing_candidates ADD CONSTRAINT filing_candidates_status_check
+  CHECK (status IN ('candidate_pending_automated_verification', 'automatically_verified'));
 CREATE INDEX IF NOT EXISTS filing_candidates_review ON filing_candidates (created_at DESC, disclosure_id);
 
 CREATE TABLE IF NOT EXISTS market_screen_results (
