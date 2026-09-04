@@ -32,6 +32,21 @@ class _Connection:
         return self.cursor_instance
 
 
+def test_raw_document_conflict_refreshes_audit_metadata() -> None:
+    connection = _Connection()
+    from value_investment_agent.db import _store_document
+
+    _store_document(
+        connection, source_name='new source', source_url='https://example.test/new',
+        published_at=None, fetched_at=datetime.now(timezone.utc), parser_version='v2',
+        raw_payload=b'same payload', metadata={'fallback_reason': 'ConnectionError:'},
+    )
+
+    statement = connection.calls[0][0]
+    assert 'metadata = EXCLUDED.metadata' in statement
+    assert 'source_name = EXCLUDED.source_name' in statement
+
+
 def test_market_snapshot_persists_fallback_and_industry_audit_metadata() -> None:
     connection = _Connection()
     raw = json.dumps({

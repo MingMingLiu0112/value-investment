@@ -64,7 +64,10 @@ def _store_document(connection: psycopg.Connection, *, source_name: str, source_
     cursor = connection.execute(
         """INSERT INTO raw_documents(document_id, source_name, source_url, published_at, fetched_at, parser_version, sha256, local_path, metadata)
            VALUES (%s, %s, %s, %s, %s, %s, %s, NULL, %s)
-           ON CONFLICT (sha256) DO UPDATE SET fetched_at = EXCLUDED.fetched_at
+           ON CONFLICT (sha256) DO UPDATE SET source_name = EXCLUDED.source_name,
+             source_url = EXCLUDED.source_url, published_at = EXCLUDED.published_at,
+             fetched_at = EXCLUDED.fetched_at, parser_version = EXCLUDED.parser_version,
+             metadata = EXCLUDED.metadata
            RETURNING document_id""",
         (document_id, source_name, source_url, published_at, fetched_at, parser_version, source_id,
          json.dumps(metadata or {}, ensure_ascii=False)),

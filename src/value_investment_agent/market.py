@@ -115,7 +115,7 @@ class AllAMarketAdapter:
             frame = ak.stock_zh_a_spot_em()
             rows = frame.to_dict("records")
         except Exception as eastmoney_error:
-            fallback_reason = str(eastmoney_error)
+            fallback_reason = f"{type(eastmoney_error).__name__}: {eastmoney_error}"
             frame = ak.stock_zh_a_spot_tx()
             rows = self._tencent_rows(frame.to_dict("records"))
             sectors = {}
@@ -130,7 +130,7 @@ class AllAMarketAdapter:
                     # complete all-market quote snapshot or silently switch
                     # it to a source with different valuation coverage.
                     sectors = {}
-                    industry_mapping_error = str(error)
+                    industry_mapping_error = f"{type(error).__name__}: {error}"
             else:
                 sectors = {}
             candidates = screen_rows(rows, sectors)

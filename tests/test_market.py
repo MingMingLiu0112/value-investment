@@ -73,7 +73,7 @@ def test_market_adapter_records_primary_failure_when_using_tencent(monkeypatch) 
 
     assert source == TENCENT_SOURCE
     assert candidates[0].status == 'initial_screen_pending_pb_financial_review'
-    assert json.loads(raw)['fallback_reason'] == 'eastmoney unavailable'
+    assert json.loads(raw)['fallback_reason'] == 'RuntimeError: eastmoney unavailable'
 
 
 def test_industry_mapping_failure_keeps_primary_quote_source(monkeypatch) -> None:
@@ -94,4 +94,4 @@ def test_industry_mapping_failure_keeps_primary_quote_source(monkeypatch) -> Non
     assert source != TENCENT_SOURCE
     assert candidates[0].pb == Decimal('1')
     assert candidates[0].sector == '待行业映射'
-    assert json.loads(raw)['industry_mapping_error'] == 'industry unavailable'
+    assert json.loads(raw)['industry_mapping_error'] == 'RuntimeError: industry unavailable'
