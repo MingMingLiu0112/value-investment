@@ -219,12 +219,12 @@ replaceSheetRows(marketSheet,
 
 const filingCandidateSheet = workbook.worksheets.getOrAdd('14_财报候选');
 const filingCandidates = (payload.filing_candidates ?? []).map((row) => [
-  row.symbol, row.name, row.report_period, row.report_kind, row.field_name,
+  row.candidate_id, row.symbol, row.name, row.report_period, row.report_kind, row.field_name,
   cellValue(row.value), row.unit, cellValue(row.page_number), row.source_label,
   row.status, row.source_url, row.sha256, row.excerpt,
 ]);
 replaceSheetRows(filingCandidateSheet,
-  ['股票代码', '公司名称', '报告期', '报告类型', '字段', '候选值', '单位', '页码', '原始标签', '复核状态', '官方URL', '文件SHA-256', '原文摘录'],
+  ['candidate_id', '股票代码', '公司名称', '报告期', '报告类型', '字段', '候选值', '单位', '页码', '原始标签', '复核状态', '官方URL', '文件SHA-256', '原文摘录'],
   filingCandidates,
 );
 

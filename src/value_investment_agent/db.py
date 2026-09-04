@@ -369,7 +369,7 @@ def export_payload(connection: psycopg.Connection) -> dict:
              ORDER BY o.symbol, o.published_at DESC"""
     ).fetchall()
     filing_candidates = connection.execute(
-        """SELECT c.field_name, c.value, c.unit, c.page_number, c.source_label, c.excerpt,
+        """SELECT c.candidate_id, c.field_name, c.value, c.unit, c.page_number, c.source_label, c.excerpt,
                   c.status, c.parser_version, o.symbol, i.name, o.report_period, o.report_kind,
                   o.source_url, o.sha256, o.extraction_status
              FROM filing_candidates c JOIN official_disclosures o ON o.disclosure_id = c.disclosure_id
