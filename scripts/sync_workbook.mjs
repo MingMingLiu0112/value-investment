@@ -198,10 +198,18 @@ function enrichmentStatusLabel(status) {
   }[status] ?? '待归档官方财报';
 }
 
+function auditSummary(value) {
+  if (!value) return null;
+  const text = String(value);
+  if (text.includes('ProxyError')) return 'ProxyError: primary market source unavailable; see source_id for full audit.';
+  if (text.includes('ConnectionError')) return 'ConnectionError: primary market source unavailable; see source_id for full audit.';
+  return text.length > 240 ? `${text.slice(0, 237)}...` : text;
+}
+
 const reminders = (payload.reminders ?? []).map((row) => [
   row.priority, row.action, row.symbol, row.name, row.board, row.sector, row.reason,
   cellValue(row.current_price), cellValue(row.pe), cellValue(row.pb), enrichmentStatusLabel(row.enrichment_status),
-  row.market_source, row.market_fallback_reason, row.industry_mapping_count, row.source_id, row.as_of,
+  row.market_source, auditSummary(row.market_fallback_reason), row.industry_mapping_count, row.source_id, row.as_of,
 ]);
 replaceSheetRows(reminderSheet,
   ['优先级', '建议动作', '股票代码', '公司名称', '上市板块', '行业', '原因', '当前价(元)', 'PE', 'PB', '财报补全状态', '行情来源', '行情异常', '行业映射数量', 'source_id', '数据时点'],
@@ -212,7 +220,7 @@ const marketSheet = workbook.worksheets.getOrAdd('13_全市场初筛');
 const candidates = (payload.market_candidates ?? []).map((row) => [
   row.symbol, row.name, row.board, row.sector, cellValue(row.current_price), cellValue(row.pe), cellValue(row.pb),
   cellValue(Number(row.market_cap) / 100000000), cellValue(row.initial_score), row.status,
-  row.market_source, row.market_fallback_reason, row.industry_mapping_count, row.source_id, row.screen_date,
+  row.market_source, auditSummary(row.market_fallback_reason), row.industry_mapping_count, row.source_id, row.screen_date,
 ]);
 replaceSheetRows(marketSheet,
   ['股票代码', '公司名称', '上市板块', '行业', '当前价(元)', 'PE', 'PB', '总市值(亿元)', '初筛评分', '状态', '行情来源', '行情异常', '行业映射数量', 'source_id', '筛选日期'],
