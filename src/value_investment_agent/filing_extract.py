@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import re
 from pathlib import Path
 
@@ -103,6 +104,9 @@ def extract_candidates(pdf_path: Path) -> dict:
         raise RuntimeError("PDF extraction requires pypdf; install the project dependencies") from error
     if not pdf_path.is_file():
         raise FileNotFoundError(f"PDF was not found: {pdf_path}")
+    # Some issuer PDFs have recoverable xref defects. Keep those warnings out
+    # of scheduled-task logs; exceptions still fail the specific disclosure.
+    logging.getLogger("pypdf").setLevel(logging.ERROR)
     raw = pdf_path.read_bytes()
     reader = PdfReader(pdf_path)
     pages = [page.extract_text() or "" for page in reader.pages]
