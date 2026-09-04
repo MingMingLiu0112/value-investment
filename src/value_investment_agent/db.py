@@ -392,6 +392,12 @@ def export_payload(connection: psycopg.Connection) -> dict:
              JOIN instruments i ON i.symbol = o.symbol
              ORDER BY c.created_at DESC LIMIT 2000"""
     ).fetchall()
+    filing_verification_summary = {
+        row['status']: row['count']
+        for row in connection.execute(
+            "SELECT status, count(*) AS count FROM filing_candidates GROUP BY status"
+        ).fetchall()
+    }
     market_candidates = connection.execute(
         """SELECT s.symbol, i.name, s.sector, s.board, s.current_price, s.pe, s.pb, s.market_cap,
                   s.initial_score, s.status, s.screen_date, s.source_id,
@@ -439,5 +445,6 @@ def export_payload(connection: psycopg.Connection) -> dict:
         'valuations': valuations, 'points': points, 'audits': audits,
         'monthly_snapshots': monthly_snapshots, 'disclosures': disclosures,
         'filing_candidates': filing_candidates, 'market_candidates': market_candidates, 'reminders': reminders,
+        'filing_verification_summary': filing_verification_summary,
         'generated_at': datetime.now(timezone.utc).isoformat(),
     }

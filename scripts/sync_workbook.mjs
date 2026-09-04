@@ -9,6 +9,15 @@ if (!workbookPath || !payloadPath || !outputPath) {
 const payload = JSON.parse(await fs.readFile(payloadPath, 'utf8'));
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
 const workbook = await SpreadsheetFile.importXlsx(await FileBlob.load(workbookPath));
+const dashboardSheet = workbook.worksheets.getItem('00_首页Dashboard');
+const verificationSummary = payload.filing_verification_summary ?? {};
+const latestMarketSource = payload.market_candidates?.[0]?.market_source ?? '待采集';
+dashboardSheet.getRange('I4:J7').values = [
+  ['全市场初筛候选', (payload.market_candidates ?? []).length],
+  ['自动验证通过', Number(verificationSummary.automatically_verified ?? 0)],
+  ['自动补证队列', Number(verificationSummary.candidate_pending_automated_verification ?? 0)],
+  ['当前行情来源', latestMarketSource],
+];
 const valuationBySymbol = new Map(payload.valuations.map((row) => [row.symbol, row]));
 const pointBySymbol = new Map();
 for (const point of payload.points) {
