@@ -1,0 +1,93 @@
+"""Extract review-only financial-statement candidates from statutory PDFs."""
+
+from __future__ import annotations
+
+import hashlib
+import re
+from pathlib import Path
+
+
+FIELDS = {
+    "货币资金": "cash",
+    "短期借款": "short_term_borrowings",
+    "一年内到期的非流动负债": "current_portion_long_term_debt",
+    "长期借款": "long_term_borrowings",
+    "应付债券": "bonds_payable",
+    "经营活动产生的现金流量净额": "operating_cash_flow",
+    "购建固定资产、无形资产和其他长期资产所支付的现金": "capital_expenditure",
+}
+FIELD_STATEMENTS = {
+    "cash": "balance",
+    "short_term_borrowings": "balance",
+    "current_portion_long_term_debt": "balance",
+    "long_term_borrowings": "balance",
+    "bonds_payable": "balance",
+    "operating_cash_flow": "cashflow",
+    "capital_expenditure": "cashflow",
+}
+
+
+def _number_after_label(text: str, label: str) -> tuple[str, str] | None:
+    # The PDF text layer puts an optional footnote reference between a label
+    # and its amount, e.g. "货币资金 1 53,518,798,979.08".
+    match = re.search(
+        rf"{re.escape(label)}(?:\s+\d{{1,2}})?\s+(-?[\d,]+(?:\.\d+)?)",
+        text,
+    )
+    if match is None:
+        return None
+    return match.group(1).replace(",", ""), text[max(0, match.start() - 120):match.end() + 180]
+
+
+def extract_candidates_from_pages(pages: list[str]) -> list[dict]:
+    """Return candidate values with page and text evidence, never trusted facts."""
+    candidates: list[dict] = []
+    statement: str | None = None
+    for page_index, page_text in enumerate(pages, start=1):
+        if "母公司资产负债表" in page_text or "母公司现金流量表" in page_text:
+            statement = None
+        elif "合并资产负债表" in page_text:
+            statement = "balance"
+        elif "合并现金流量表" in page_text:
+            statement = "cashflow"
+        if statement is None:
+            continue
+        for label, field_name in FIELDS.items():
+            if FIELD_STATEMENTS[field_name] != statement:
+                continue
+            result = _number_after_label(page_text, label)
+            if result is None:
+                continue
+            value, excerpt = result
+            candidates.append(
+                {
+                    "field_name": field_name,
+                    "source_label": label,
+                    "value": value,
+                    "unit": "CNY",
+                    "page": page_index,
+                    "excerpt": excerpt,
+                    "status": "candidate_requires_human_review",
+                }
+            )
+    return candidates
+
+
+def extract_candidates(pdf_path: Path) -> dict:
+    """Read a statutory PDF and produce a JSON-serializable review packet."""
+    try:
+        from pypdf import PdfReader
+    except ImportError as error:
+        raise RuntimeError("PDF extraction requires pypdf; install the project dependencies") from error
+    if not pdf_path.is_file():
+        raise FileNotFoundError(f"PDF was not found: {pdf_path}")
+    raw = pdf_path.read_bytes()
+    reader = PdfReader(pdf_path)
+    pages = [page.extract_text() or "" for page in reader.pages]
+    return {
+        "evidence_file": str(pdf_path),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "page_count": len(pages),
+        "candidates": extract_candidates_from_pages(pages),
+        "warning": "Candidates are not imported into the database. Review the page and excerpt, then create a verified evidence manifest.",
+    }

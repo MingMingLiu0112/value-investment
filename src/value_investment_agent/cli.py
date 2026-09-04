@@ -11,6 +11,7 @@ from .db import begin_run, connect, end_run, export_payload, initialize, latest_
 from .disclosures import collect_latest_reports
 from .dividends import CninfoDividendAdapter, build_payout_ratio_records
 from .evidence import load_evidence_manifest
+from .filing_extract import extract_candidates
 from .quality import as_valuation_row, evaluate
 from .settings import get_settings
 from .universe import UNIVERSE
@@ -137,6 +138,8 @@ def main() -> None:
     evidence.add_argument('--manifest', required=True, type=Path)
     sub.add_parser('backup')
     sub.add_parser('collect-filings')
+    candidates = sub.add_parser('extract-filing-candidates')
+    candidates.add_argument('--pdf', required=True, type=Path)
     restore = sub.add_parser('restore-verify')
     restore.add_argument('--manifest', required=True, type=Path)
     args = parser.parse_args()
@@ -162,6 +165,8 @@ def main() -> None:
         print(create_backup(settings.database_url, settings.backup_directory, settings.container_runtime, settings.postgres_container_name))
     elif args.command == 'collect-filings':
         collect_filings()
+    elif args.command == 'extract-filing-candidates':
+        print(json.dumps(extract_candidates(args.pdf), ensure_ascii=False, indent=2))
     else:
         if not settings.restore_database_url:
             raise RuntimeError('请在 .env 配置隔离的 RESTORE_DATABASE_URL 后再做恢复演练。')
