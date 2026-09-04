@@ -74,9 +74,14 @@ syncRows('05_仓位管理', 10, (sheet, row, symbol) => {
 });
 
 const financialFields = ['revenue', 'revenue_yoy', 'net_income', 'net_income_yoy', 'roe', 'roic', 'gross_margin', 'net_margin', 'operating_cash_flow', 'free_cash_flow', 'operating_cash_flow_to_net_income', 'debt_ratio', 'cash', 'interest_bearing_debt', 'eps_ttm', 'dps_ttm', 'payout_ratio'];
+const bankOnlyInapplicableFields = new Set(['revenue_yoy', 'roic', 'net_margin', 'free_cash_flow']);
+const bankSymbols = new Set(['600036', '601288']);
 syncRows('03_财务指标', 4, (sheet, row, symbol) => {
   const p = pointBySymbol.get(symbol) ?? {};
-  const values = financialFields.map((field) => cellValue(p[field]?.value));
+  const values = financialFields.map((field) => {
+    if (bankSymbols.has(symbol) && bankOnlyInapplicableFields.has(field)) return '\u4e0d\u9002\u7528\uff08\u94f6\u884c\u53e3\u5f84\uff09';
+    return cellValue(p[field]?.value);
+  });
   const source = financialFields.map((field) => p[field]?.source_id).find(Boolean) ?? null;
   const period = financialFields.map((field) => p[field]?.period_label).find(Boolean) ?? null;
   sheet.getRange(`C${row}:V${row}`).values = [[displayPeriod(period), ...values, source, source ? '待人工复核' : '待Agent写入']];
