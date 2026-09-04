@@ -46,12 +46,47 @@ CREATE TABLE IF NOT EXISTS official_disclosures (
   published_at TIMESTAMPTZ NOT NULL,
   sha256 TEXT NOT NULL,
   local_path TEXT NOT NULL,
+  report_assurance TEXT NOT NULL DEFAULT 'statutory_report_assurance_not_classified',
   fetched_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   review_status TEXT NOT NULL DEFAULT 'pending' CHECK (review_status IN ('pending', 'verified', 'rejected')),
   UNIQUE (symbol, sha256)
 );
+ALTER TABLE official_disclosures ADD COLUMN IF NOT EXISTS report_assurance TEXT NOT NULL DEFAULT 'statutory_report_assurance_not_classified';
 CREATE INDEX IF NOT EXISTS official_disclosures_lookup
   ON official_disclosures (symbol, report_period, report_kind, published_at DESC);
+
+CREATE TABLE IF NOT EXISTS market_screen_results (
+  symbol TEXT NOT NULL REFERENCES instruments(symbol),
+  screen_date DATE NOT NULL,
+  sector TEXT NOT NULL,
+  current_price NUMERIC NOT NULL,
+  pe NUMERIC NOT NULL,
+  pb NUMERIC,
+  market_cap NUMERIC NOT NULL,
+  initial_score NUMERIC NOT NULL,
+  status TEXT NOT NULL,
+  source_id UUID NOT NULL REFERENCES raw_documents(document_id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (symbol, screen_date)
+);
+ALTER TABLE market_screen_results ALTER COLUMN pb DROP NOT NULL;
+CREATE INDEX IF NOT EXISTS market_screen_results_lookup
+  ON market_screen_results (screen_date DESC, initial_score DESC);
+
+CREATE TABLE IF NOT EXISTS financial_enrichment_queue (
+  symbol TEXT PRIMARY KEY REFERENCES instruments(symbol),
+  screen_date DATE NOT NULL,
+  priority_score NUMERIC NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending_official_filings', 'processing', 'official_filings_archived', 'retry', 'manual_review_required')),
+  attempts INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE financial_enrichment_queue DROP CONSTRAINT IF EXISTS financial_enrichment_queue_status_check;
+ALTER TABLE financial_enrichment_queue ADD CONSTRAINT financial_enrichment_queue_status_check
+  CHECK (status IN ('pending_official_filings', 'processing', 'official_filings_archived', 'retry', 'manual_review_required'));
+CREATE INDEX IF NOT EXISTS financial_enrichment_queue_next
+  ON financial_enrichment_queue (status, priority_score DESC, updated_at);
 
 CREATE TABLE IF NOT EXISTS valuation_results (
   symbol TEXT PRIMARY KEY REFERENCES instruments(symbol),

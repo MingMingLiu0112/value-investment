@@ -42,6 +42,35 @@ def initialize(database_url: str, schema_path: Path) -> None:
         )
 
 
+def upsert_instruments(connection: psycopg.Connection, instruments: list[dict]) -> None:
+    rows = [(row['symbol'], row['name'], row.get('sector'), '全市场初筛') for row in instruments]
+    if not rows:
+        return
+    connection.cursor().executemany(
+        """INSERT INTO instruments(symbol, name, sector, strategy_type)
+           VALUES (%s, %s, %s, %s)
+           ON CONFLICT (symbol) DO UPDATE SET name = EXCLUDED.name,
+             sector = CASE WHEN EXCLUDED.sector = '待行业映射' THEN instruments.sector ELSE EXCLUDED.sector END""",
+        rows,
+    )
+
+
+def _store_document(connection: psycopg.Connection, *, source_name: str, source_url: str,
+                    published_at, fetched_at, parser_version: str, raw_payload: bytes,
+                    metadata: dict | None = None) -> uuid.UUID:
+    document_id = uuid.uuid4()
+    source_id = hashlib.sha256(raw_payload).hexdigest()
+    cursor = connection.execute(
+        """INSERT INTO raw_documents(document_id, source_name, source_url, published_at, fetched_at, parser_version, sha256, local_path, metadata)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, NULL, %s)
+           ON CONFLICT (sha256) DO UPDATE SET fetched_at = EXCLUDED.fetched_at
+           RETURNING document_id""",
+        (document_id, source_name, source_url, published_at, fetched_at, parser_version, source_id,
+         json.dumps(metadata or {}, ensure_ascii=False)),
+    )
+    return cursor.fetchone()['document_id']
+
+
 def begin_run(connection: psycopg.Connection, task_name: str) -> uuid.UUID:
     run_id = uuid.uuid4()
     connection.execute(
@@ -58,25 +87,28 @@ def end_run(connection: psycopg.Connection, run_id: uuid.UUID, status: str, deta
     )
 
 
+def record_failed_run(connection: psycopg.Connection, run_id: uuid.UUID, task_name: str, details: dict) -> None:
+    """Persist a failure after rolling back the work transaction that caused it."""
+    connection.rollback()
+    connection.execute(
+        """INSERT INTO task_runs(run_id, task_name, started_at, finished_at, status, details)
+           VALUES (%s, %s, now(), now(), 'failed', %s)
+           ON CONFLICT (run_id) DO UPDATE SET finished_at = now(), status = 'failed', details = EXCLUDED.details""",
+        (run_id, task_name, json.dumps(details, ensure_ascii=False)),
+    )
+
+
 def store_record(
     connection: psycopg.Connection,
     record: SourceRecord,
     validation_status: str = 'pending',
     human_reviewed: bool = False,
 ) -> uuid.UUID:
-    document_id = uuid.uuid4()
-    source_id = hashlib.sha256(record.raw_payload).hexdigest()
-    cursor = connection.execute(
-        """INSERT INTO raw_documents(document_id, source_name, source_url, published_at, fetched_at, parser_version, sha256, local_path, metadata)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-           ON CONFLICT (sha256) DO UPDATE SET fetched_at = EXCLUDED.fetched_at,
-             local_path = COALESCE(EXCLUDED.local_path, raw_documents.local_path)
-           RETURNING document_id""",
-        (document_id, record.source_name, record.source_url, record.published_at, record.fetched_at,
-         record.parser_version, source_id, record.local_path, json.dumps(record.audit_metadata(), ensure_ascii=False)),
+    source_uuid = _store_document(
+        connection, source_name=record.source_name, source_url=record.source_url,
+        published_at=record.published_at, fetched_at=record.fetched_at, parser_version=record.parser_version,
+        raw_payload=record.raw_payload, metadata=record.audit_metadata(),
     )
-    source_row = cursor.fetchone()
-    source_uuid = source_row['document_id']
     data_point_id = uuid.uuid4()
     connection.execute(
         """INSERT INTO data_points(data_point_id, symbol, field_name, period_label, value, unit, source_id, validation_status, human_reviewed, metadata)
@@ -88,17 +120,114 @@ def store_record(
     return data_point_id
 
 
+def store_market_screen(
+    connection: psycopg.Connection, candidates: list, raw_payload: bytes, fetched_at: datetime,
+    source_name: str = 'AkShare / Eastmoney all-A market snapshot',
+    source_url: str = 'https://quote.eastmoney.com/center/gridlist.html#hs_a_board',
+    parser_version: str = 'market-screen-v1-eastmoney',
+) -> int:
+    if not candidates:
+        return 0
+    source_uuid = _store_document(
+        connection, source_name=source_name, source_url=source_url, published_at=None,
+        fetched_at=fetched_at, parser_version=parser_version, raw_payload=raw_payload,
+        metadata={'candidate_count': len(candidates), 'scope': 'all A-share initial screen'},
+    )
+    screen_date = fetched_at.date()
+    connection.cursor().executemany(
+        """INSERT INTO market_screen_results(symbol, screen_date, sector, current_price, pe, pb, market_cap, initial_score, status, source_id)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+           ON CONFLICT (symbol, screen_date) DO UPDATE SET sector = EXCLUDED.sector,
+             current_price = EXCLUDED.current_price, pe = EXCLUDED.pe, pb = EXCLUDED.pb,
+             market_cap = EXCLUDED.market_cap, initial_score = EXCLUDED.initial_score,
+             status = EXCLUDED.status, source_id = EXCLUDED.source_id, created_at = now()""",
+        [(candidate.symbol, screen_date, candidate.sector, candidate.current_price, candidate.pe, candidate.pb,
+          candidate.market_cap, candidate.score, candidate.status, source_uuid) for candidate in candidates],
+    )
+    return len(candidates)
+
+
+def enqueue_financial_enrichment(connection: psycopg.Connection, candidates: list, screen_date) -> int:
+    """Queue public-screened companies for bounded official-filing collection."""
+    if not candidates:
+        return 0
+    cursor = connection.cursor()
+    cursor.executemany(
+        """INSERT INTO financial_enrichment_queue(symbol, screen_date, priority_score, status)
+           VALUES (%s, %s, %s, 'pending_official_filings')
+           ON CONFLICT (symbol) DO UPDATE SET screen_date = EXCLUDED.screen_date,
+             priority_score = EXCLUDED.priority_score,
+             status = CASE
+               WHEN financial_enrichment_queue.status IN ('official_filings_archived', 'processing', 'manual_review_required')
+                 THEN financial_enrichment_queue.status
+               ELSE 'pending_official_filings'
+             END,
+             updated_at = now()""",
+        [(candidate.symbol, screen_date, candidate.score) for candidate in candidates],
+    )
+    return cursor.rowcount
+
+
+def claim_financial_enrichment_batch(connection: psycopg.Connection, limit: int) -> list[dict]:
+    """Claim a small batch without keeping a database transaction open during downloads."""
+    rows = connection.execute(
+        """WITH next_batch AS (
+             SELECT q.symbol
+             FROM financial_enrichment_queue q
+             WHERE q.status IN ('pending_official_filings', 'retry')
+                OR (q.status = 'processing' AND q.updated_at < now() - interval '3 hours')
+             ORDER BY q.priority_score DESC, q.updated_at
+             FOR UPDATE SKIP LOCKED
+             LIMIT %s
+           )
+           UPDATE financial_enrichment_queue q
+           SET status = 'processing', attempts = q.attempts + 1, updated_at = now(), last_error = NULL
+           FROM next_batch b
+           WHERE q.symbol = b.symbol
+           RETURNING q.symbol, q.priority_score,
+             (SELECT i.name FROM instruments i WHERE i.symbol = q.symbol) AS name""",
+        (limit,),
+    ).fetchall()
+    connection.commit()
+    return rows
+
+
+def finish_financial_enrichment(connection: psycopg.Connection, symbol: str, error: str | None = None) -> None:
+    connection.execute(
+        """UPDATE financial_enrichment_queue
+           SET status = CASE
+                 WHEN %s::text IS NULL THEN 'official_filings_archived'
+                 WHEN attempts >= 3 THEN 'manual_review_required'
+                 ELSE 'retry'
+               END,
+               last_error = %s, updated_at = now()
+           WHERE symbol = %s""",
+        (error, error[:1000] if error else None, symbol),
+    )
+    connection.commit()
+
+
+def sector_map(connection: psycopg.Connection) -> dict[str, str]:
+    return {
+        row['symbol']: row['sector']
+        for row in connection.execute(
+            "SELECT symbol, sector FROM instruments WHERE sector IS NOT NULL AND sector <> '待行业映射'"
+        ).fetchall()
+    }
+
+
 def store_official_disclosure(connection: psycopg.Connection, disclosure: dict) -> None:
     """Register a downloaded exchange filing without treating it as parsed data."""
     connection.execute(
         """INSERT INTO official_disclosures(
              disclosure_id, symbol, report_period, report_kind, title, source_name,
-             source_url, published_at, sha256, local_path, fetched_at, review_status
+             source_url, published_at, sha256, local_path, fetched_at, review_status, report_assurance
            ) VALUES (%(disclosure_id)s, %(symbol)s, %(report_period)s, %(report_kind)s,
              %(title)s, %(source_name)s, %(source_url)s, %(published_at)s, %(sha256)s,
-             %(local_path)s, %(fetched_at)s, 'pending')
+             %(local_path)s, %(fetched_at)s, 'pending', %(report_assurance)s)
            ON CONFLICT (symbol, sha256) DO UPDATE SET fetched_at = EXCLUDED.fetched_at,
-             local_path = EXCLUDED.local_path, source_url = EXCLUDED.source_url""",
+             local_path = EXCLUDED.local_path, source_url = EXCLUDED.source_url,
+             report_assurance = EXCLUDED.report_assurance""",
         disclosure,
     )
 
@@ -198,8 +327,37 @@ def export_payload(connection: psycopg.Connection) -> dict:
              FROM official_disclosures o
              ORDER BY o.symbol, o.published_at DESC"""
     ).fetchall()
+    market_candidates = connection.execute(
+        """SELECT s.symbol, i.name, s.sector, s.current_price, s.pe, s.pb, s.market_cap,
+                  s.initial_score, s.status, s.screen_date, s.source_id,
+                  COALESCE(q.status, 'pending_official_filings') AS enrichment_status
+             FROM market_screen_results s JOIN instruments i ON i.symbol = s.symbol
+             LEFT JOIN financial_enrichment_queue q ON q.symbol = s.symbol
+             WHERE s.screen_date = (SELECT max(screen_date) FROM market_screen_results)
+             ORDER BY s.initial_score DESC, s.symbol LIMIT 500"""
+    ).fetchall()
+    reminder_actions = {
+        'pending_official_filings': ('补全财报并人工复核', '全A股初筛通过；公共估值数据待财报和公告原件复核'),
+        'processing': ('等待归档完成', '正在从法定披露源归档财报原件；暂不生成交易建议'),
+        'official_filings_archived': ('解析财报并人工复核', '官方财报原件已归档；指标尚未完成页码级核验'),
+        'retry': ('重试官方归档', '官方披露归档异常；暂不生成交易建议'),
+        'manual_review_required': ('人工核查公告来源', '官方披露归档连续失败；暂不生成交易建议'),
+    }
+    reminders = []
+    for row in market_candidates:
+        action, reason = reminder_actions.get(
+            row['enrichment_status'], reminder_actions['pending_official_filings'],
+        )
+        reminders.append({
+            'priority': '重点观察', 'action': action, 'symbol': row['symbol'],
+            'name': row['name'], 'sector': row['sector'], 'reason': reason,
+            'current_price': row['current_price'], 'pe': row['pe'], 'pb': row['pb'],
+            'source_id': row['source_id'], 'as_of': row['screen_date'],
+            'enrichment_status': row['enrichment_status'],
+        })
     return {
         'valuations': valuations, 'points': points, 'audits': audits,
         'monthly_snapshots': monthly_snapshots, 'disclosures': disclosures,
+        'market_candidates': market_candidates, 'reminders': reminders,
         'generated_at': datetime.now(timezone.utc).isoformat(),
     }

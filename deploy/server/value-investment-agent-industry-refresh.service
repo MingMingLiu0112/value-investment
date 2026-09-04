@@ -1,0 +1,7 @@
+[Unit]
+Description=Value investment Agent weekly industry mapping refresh
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/value-investment-agent/deploy/server/run_market_screen.sh weekly

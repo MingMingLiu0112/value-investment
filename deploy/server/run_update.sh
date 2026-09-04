@@ -14,6 +14,7 @@ podman run --rm --network host --memory=512m --memory-reservation=192m --memory-
   -e HTTP_PROXY -e HTTPS_PROXY -e NO_PROXY \
   --env-file /etc/value-investment-agent/agent.env \
   -v /opt/value-investment-agent/src:/app/src:ro,Z \
+  -v /opt/value-investment-agent/sql:/app/sql:ro,Z \
   -v /opt/value-investment-agent/backups:/app/backups:Z \
   value-investment-agent:latest python -m value_investment_agent init-db
 podman run --rm --network host --memory=512m --memory-reservation=192m --memory-swap=768m \

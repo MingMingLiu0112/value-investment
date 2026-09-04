@@ -1,0 +1,7 @@
+[Unit]
+Description=Value investment Agent all-A share initial screen
+After=network-online.target value-investment-agent-update.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/value-investment-agent/deploy/server/run_market_screen.sh daily

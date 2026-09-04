@@ -178,6 +178,44 @@ for (const audit of payload.audits) {
   auditRow += 1;
 }
 
+function replaceSheetRows(sheet, headers, rows) {
+  sheet.getRange(`A1:${String.fromCharCode(64 + headers.length)}501`).values = Array.from(
+    { length: 501 },
+    (_, index) => index === 0 ? headers : Array(headers.length).fill(null),
+  );
+  if (rows.length) sheet.getRange(`A2:${String.fromCharCode(64 + headers.length)}${rows.length + 1}`).values = rows;
+}
+
+const reminderSheet = workbook.worksheets.getOrAdd('12_提醒');
+function enrichmentStatusLabel(status) {
+  return {
+    pending_official_filings: '待归档官方财报',
+    processing: '正在归档官方财报',
+    official_filings_archived: '官方原件已归档，待解析复核',
+    retry: '归档异常，待重试',
+    manual_review_required: '归档连续失败，需人工复核',
+  }[status] ?? '待归档官方财报';
+}
+
+const reminders = (payload.reminders ?? []).slice(0, 300).map((row) => [
+  row.priority, row.action, row.symbol, row.name, row.sector, row.reason,
+  cellValue(row.current_price), cellValue(row.pe), cellValue(row.pb), enrichmentStatusLabel(row.enrichment_status), row.source_id, row.as_of,
+]);
+replaceSheetRows(reminderSheet,
+  ['优先级', '建议动作', '股票代码', '公司名称', '板块', '原因', '当前价(元)', 'PE', 'PB', '财报补全状态', 'source_id', '数据时点'],
+  reminders,
+);
+
+const marketSheet = workbook.worksheets.getOrAdd('13_全市场初筛');
+const candidates = (payload.market_candidates ?? []).slice(0, 500).map((row) => [
+  row.symbol, row.name, row.sector, cellValue(row.current_price), cellValue(row.pe), cellValue(row.pb),
+  cellValue(Number(row.market_cap) / 100000000), cellValue(row.initial_score), row.status, row.source_id, row.screen_date,
+]);
+replaceSheetRows(marketSheet,
+  ['股票代码', '公司名称', '板块', '当前价(元)', 'PE', 'PB', '总市值(亿元)', '初筛评分', '状态', 'source_id', '筛选日期'],
+  candidates,
+);
+
 const output = await SpreadsheetFile.exportXlsx(workbook);
 await output.save(outputPath);
 console.log(outputPath);

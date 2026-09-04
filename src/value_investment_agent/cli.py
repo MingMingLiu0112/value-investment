@@ -2,17 +2,19 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 
 from .adapters import AkshareFinancialAbstractAdapter, AksharePriceAdapter, SinaFinancialAdapter, SinaFinancialStatementsAdapter
 from .backup import create_backup, verify_restore
-from .db import begin_run, connect, end_run, export_payload, initialize, latest_points, record_monthly_snapshot, store_official_disclosure, store_record, upsert_valuation
+from .db import begin_run, claim_financial_enrichment_batch, connect, end_run, enqueue_financial_enrichment, export_payload, finish_financial_enrichment, initialize, latest_points, record_failed_run, record_monthly_snapshot, sector_map, store_market_screen, store_official_disclosure, store_record, upsert_instruments, upsert_valuation
 from .disclosures import collect_latest_reports
 from .dividends import CninfoDividendAdapter, build_payout_ratio_records
 from .evidence import load_evidence_manifest
 from .filing_extract import extract_candidates
 from .quality import as_valuation_row, evaluate
+from .market import AllAMarketAdapter
 from .settings import get_settings
 from .universe import UNIVERSE
 from .workbook import sync_workbook
@@ -65,7 +67,7 @@ def run_update(prices: bool, financials: bool, sync_excel: bool) -> None:
             end_run(connection, run_id, 'succeeded', {'records_stored': stored, 'workbook': output})
             print(json.dumps({'status': 'succeeded', 'records_stored': stored, 'workbook': output}, ensure_ascii=False))
         except Exception as error:
-            end_run(connection, run_id, 'failed', {'error': str(error)})
+            record_failed_run(connection, run_id, 'update', {'error': str(error)})
             raise
 
 
@@ -105,20 +107,93 @@ def snapshot_month(month: str) -> None:
     print(json.dumps({'status': 'succeeded', 'snapshot_month': month, 'records_stored': stored}, ensure_ascii=False))
 
 
-def collect_filings() -> None:
+def collect_filings(symbols: list[str] | None = None) -> None:
     """Archive official report originals. Parsing/verification is a separate step."""
     settings = get_settings()
     with connect(settings.database_url) as connection:
         run_id = begin_run(connection, 'collect-filings')
         try:
-            records = collect_latest_reports([item[0] for item in UNIVERSE], settings.evidence_directory)
+            requested_symbols = symbols or [item[0] for item in UNIVERSE]
+            issuer_names = {
+                row['symbol']: row['name']
+                for row in connection.execute(
+                    'SELECT symbol, name FROM instruments WHERE symbol = ANY(%s)',
+                    (requested_symbols,),
+                ).fetchall()
+            }
+            records = []
+            failures = []
+            for symbol in requested_symbols:
+                try:
+                    records.extend(collect_latest_reports([symbol], settings.evidence_directory, issuer_names))
+                except Exception as error:
+                    # A transient single-issuer failure must not prevent the
+                    # bounded enrichment stage from processing other companies.
+                    failures.append({'symbol': symbol, 'error': str(error)[:500]})
             for record in records:
                 store_official_disclosure(connection, record)
-            end_run(connection, run_id, 'succeeded', {'filings_stored': len(records)})
+            end_run(connection, run_id, 'succeeded', {
+                'filings_stored': len(records), 'failed_symbols': failures,
+            })
+        except Exception as error:
+            record_failed_run(connection, run_id, 'collect-filings', {'error': str(error)})
+            raise
+    print(json.dumps({
+        'status': 'succeeded', 'filings_stored': len(records), 'failed_symbols': len(failures),
+    }, ensure_ascii=False))
+
+
+def enrich_financials(limit: int) -> None:
+    """Archive a bounded batch of official reports for screened companies."""
+    settings = get_settings()
+    with connect(settings.database_url) as connection:
+        run_id = begin_run(connection, 'enrich-financials')
+        batch = claim_financial_enrichment_batch(connection, limit)
+        completed = 0
+        failed = 0
+        try:
+            for item in batch:
+                try:
+                    records = collect_latest_reports(
+                        [item['symbol']], settings.evidence_directory,
+                        {item['symbol']: item['name']},
+                    )
+                    if not records:
+                        raise RuntimeError('No statutory reports found')
+                    for record in records:
+                        store_official_disclosure(connection, record)
+                    finish_financial_enrichment(connection, item['symbol'])
+                    completed += 1
+                except Exception as error:
+                    connection.rollback()
+                    finish_financial_enrichment(connection, item['symbol'], str(error))
+                    failed += 1
+            end_run(connection, run_id, 'succeeded', {
+                'requested': len(batch), 'completed': completed, 'failed': failed,
+            })
         except Exception as error:
             end_run(connection, run_id, 'failed', {'error': str(error)})
             raise
-    print(json.dumps({'status': 'succeeded', 'filings_stored': len(records)}, ensure_ascii=False))
+    print(json.dumps({'status': 'succeeded', 'requested': len(batch), 'completed': completed, 'failed': failed}, ensure_ascii=False))
+
+
+def screen_market(include_industry: bool) -> None:
+    settings = get_settings()
+    with connect(settings.database_url) as connection:
+        run_id = begin_run(connection, 'screen-market')
+        try:
+            universe, _, candidates, raw, fetched_at, source = AllAMarketAdapter().fetch(include_industry=include_industry)
+            upsert_instruments(connection, universe)
+            if not include_industry:
+                known_sectors = sector_map(connection)
+                candidates = [replace(candidate, sector=known_sectors.get(candidate.symbol, candidate.sector)) for candidate in candidates]
+            stored = store_market_screen(connection, candidates, raw, fetched_at, *source)
+            enqueue_financial_enrichment(connection, candidates, fetched_at.date())
+            end_run(connection, run_id, 'succeeded', {'universe_count': len(universe), 'candidate_count': stored})
+        except Exception as error:
+            record_failed_run(connection, run_id, 'screen-market', {'error': str(error)})
+            raise
+    print(json.dumps({'status': 'succeeded', 'universe_count': len(universe), 'candidate_count': stored}, ensure_ascii=False))
 
 
 def main() -> None:
@@ -137,7 +212,12 @@ def main() -> None:
     evidence = sub.add_parser('import-evidence')
     evidence.add_argument('--manifest', required=True, type=Path)
     sub.add_parser('backup')
-    sub.add_parser('collect-filings')
+    filings = sub.add_parser('collect-filings')
+    filings.add_argument('--symbols', help='Comma-separated A-share codes; defaults to the tracked sample universe')
+    enrichment = sub.add_parser('enrich-financials')
+    enrichment.add_argument('--limit', type=int, default=5, choices=range(1, 21), metavar='1-20')
+    market = sub.add_parser('screen-market')
+    market.add_argument('--without-industry', action='store_true')
     candidates = sub.add_parser('extract-filing-candidates')
     candidates.add_argument('--pdf', required=True, type=Path)
     restore = sub.add_parser('restore-verify')
@@ -164,7 +244,16 @@ def main() -> None:
     elif args.command == 'backup':
         print(create_backup(settings.database_url, settings.backup_directory, settings.container_runtime, settings.postgres_container_name))
     elif args.command == 'collect-filings':
-        collect_filings()
+        requested_symbols = None
+        if args.symbols:
+            requested_symbols = [symbol.strip().zfill(6) for symbol in args.symbols.split(',') if symbol.strip()]
+            if not requested_symbols or any(not symbol.isdigit() or len(symbol) != 6 for symbol in requested_symbols):
+                raise ValueError('--symbols must be comma-separated six-digit A-share codes')
+        collect_filings(requested_symbols)
+    elif args.command == 'enrich-financials':
+        enrich_financials(args.limit)
+    elif args.command == 'screen-market':
+        screen_market(not args.without_industry)
     elif args.command == 'extract-filing-candidates':
         print(json.dumps(extract_candidates(args.pdf), ensure_ascii=False, indent=2))
     else:

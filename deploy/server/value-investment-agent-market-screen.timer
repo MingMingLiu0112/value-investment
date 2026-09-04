@@ -1,0 +1,10 @@
+[Unit]
+Description=Run all-A share market screen after market close
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 16:30:00 Asia/Shanghai
+Persistent=true
+Unit=value-investment-agent-market-screen.service
+
+[Install]
+WantedBy=timers.target

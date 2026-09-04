@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh all-A share industry classifications weekly
+
+[Timer]
+OnCalendar=Sat *-*-* 10:30:00 Asia/Shanghai
+Persistent=true
+Unit=value-investment-agent-industry-refresh.service
+
+[Install]
+WantedBy=timers.target
