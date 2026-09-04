@@ -46,3 +46,10 @@ podman run --rm --network host --memory=512m --memory-reservation=192m --memory-
   -v /opt/value-investment-agent/evidence:/app/evidence:Z \
   -v /opt/value-investment-agent/src:/app/src:ro,Z \
   value-investment-agent:latest python -m value_investment_agent enrich-financials --limit 10
+
+# Extract page-level candidates only. They remain outside the verified facts
+# table until a researcher confirms the source page and accounting unit.
+podman run --rm --network host --memory=512m --memory-reservation=192m --memory-swap=768m \
+  --env-file /etc/value-investment-agent/agent.env \
+  -v /opt/value-investment-agent/evidence:/app/evidence:ro,Z \
+  value-investment-agent:latest python -m value_investment_agent extract-filing-candidates-batch --limit 10

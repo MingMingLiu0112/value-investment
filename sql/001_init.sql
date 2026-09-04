@@ -52,8 +52,26 @@ CREATE TABLE IF NOT EXISTS official_disclosures (
   UNIQUE (symbol, sha256)
 );
 ALTER TABLE official_disclosures ADD COLUMN IF NOT EXISTS report_assurance TEXT NOT NULL DEFAULT 'statutory_report_assurance_not_classified';
+ALTER TABLE official_disclosures ADD COLUMN IF NOT EXISTS extraction_status TEXT NOT NULL DEFAULT 'pending'
+  CHECK (extraction_status IN ('pending', 'processing', 'extracted', 'no_candidates', 'failed'));
 CREATE INDEX IF NOT EXISTS official_disclosures_lookup
   ON official_disclosures (symbol, report_period, report_kind, published_at DESC);
+
+CREATE TABLE IF NOT EXISTS filing_candidates (
+  candidate_id UUID PRIMARY KEY,
+  disclosure_id UUID NOT NULL REFERENCES official_disclosures(disclosure_id),
+  field_name TEXT NOT NULL,
+  value NUMERIC NOT NULL,
+  unit TEXT NOT NULL,
+  page_number INTEGER NOT NULL,
+  source_label TEXT NOT NULL,
+  excerpt TEXT NOT NULL,
+  parser_version TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status = 'candidate_requires_human_review'),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (disclosure_id, field_name, page_number, source_label)
+);
+CREATE INDEX IF NOT EXISTS filing_candidates_review ON filing_candidates (created_at DESC, disclosure_id);
 
 CREATE TABLE IF NOT EXISTS market_screen_results (
   symbol TEXT NOT NULL REFERENCES instruments(symbol),

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .adapters import AkshareFinancialAbstractAdapter, AksharePriceAdapter, SinaFinancialAdapter, SinaFinancialStatementsAdapter
 from .backup import create_backup, verify_restore
-from .db import begin_run, claim_financial_enrichment_batch, connect, end_run, enqueue_financial_enrichment, export_payload, finish_financial_enrichment, initialize, latest_points, record_failed_run, record_monthly_snapshot, sector_map, store_market_screen, store_official_disclosure, store_record, upsert_instruments, upsert_valuation
+from .db import begin_run, claim_disclosures_for_extraction, claim_financial_enrichment_batch, connect, end_run, enqueue_financial_enrichment, export_payload, finish_disclosure_extraction, finish_financial_enrichment, initialize, latest_points, record_failed_run, record_monthly_snapshot, sector_map, store_filing_candidates, store_market_screen, store_official_disclosure, store_record, upsert_instruments, upsert_valuation
 from .disclosures import collect_latest_reports
 from .dividends import CninfoDividendAdapter, build_payout_ratio_records
 from .evidence import load_evidence_manifest
@@ -177,6 +177,29 @@ def enrich_financials(limit: int) -> None:
     print(json.dumps({'status': 'succeeded', 'requested': len(batch), 'completed': completed, 'failed': failed}, ensure_ascii=False))
 
 
+def extract_filing_candidates_batch(limit: int) -> None:
+    """Persist review-only page-level candidates from archived statutory PDFs."""
+    settings = get_settings()
+    with connect(settings.database_url) as connection:
+        run_id = begin_run(connection, 'extract-filing-candidates')
+        batch = claim_disclosures_for_extraction(connection, limit)
+        stored = failed = 0
+        for disclosure in batch:
+            try:
+                packet = extract_candidates(Path(disclosure['local_path']))
+                if packet['sha256'] != disclosure['sha256']:
+                    raise RuntimeError('Archived PDF hash does not match disclosure record')
+                count = store_filing_candidates(connection, disclosure['disclosure_id'], packet['candidates'])
+                finish_disclosure_extraction(connection, disclosure['disclosure_id'], count)
+                stored += count
+            except Exception as error:
+                connection.rollback()
+                finish_disclosure_extraction(connection, disclosure['disclosure_id'], error=str(error))
+                failed += 1
+        end_run(connection, run_id, 'succeeded', {'requested': len(batch), 'candidates_stored': stored, 'failed': failed})
+    print(json.dumps({'status': 'succeeded', 'requested': len(batch), 'candidates_stored': stored, 'failed': failed}, ensure_ascii=False))
+
+
 def screen_market(include_industry: bool) -> None:
     settings = get_settings()
     with connect(settings.database_url) as connection:
@@ -216,6 +239,8 @@ def main() -> None:
     filings.add_argument('--symbols', help='Comma-separated A-share codes; defaults to the tracked sample universe')
     enrichment = sub.add_parser('enrich-financials')
     enrichment.add_argument('--limit', type=int, default=5, choices=range(1, 21), metavar='1-20')
+    extraction = sub.add_parser('extract-filing-candidates-batch')
+    extraction.add_argument('--limit', type=int, default=10, choices=range(1, 21), metavar='1-20')
     market = sub.add_parser('screen-market')
     market.add_argument('--without-industry', action='store_true')
     candidates = sub.add_parser('extract-filing-candidates')
@@ -252,6 +277,8 @@ def main() -> None:
         collect_filings(requested_symbols)
     elif args.command == 'enrich-financials':
         enrich_financials(args.limit)
+    elif args.command == 'extract-filing-candidates-batch':
+        extract_filing_candidates_batch(args.limit)
     elif args.command == 'screen-market':
         screen_market(not args.without_industry)
     elif args.command == 'extract-filing-candidates':

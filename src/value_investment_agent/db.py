@@ -232,6 +232,46 @@ def store_official_disclosure(connection: psycopg.Connection, disclosure: dict) 
     )
 
 
+def claim_disclosures_for_extraction(connection: psycopg.Connection, limit: int) -> list[dict]:
+    rows = connection.execute(
+        """WITH next_batch AS (
+             SELECT disclosure_id FROM official_disclosures
+             WHERE extraction_status = 'pending'
+                OR (extraction_status = 'processing' AND fetched_at < now() - interval '3 hours')
+             ORDER BY published_at DESC
+             FOR UPDATE SKIP LOCKED LIMIT %s
+           )
+           UPDATE official_disclosures o SET extraction_status = 'processing'
+           FROM next_batch b WHERE o.disclosure_id = b.disclosure_id
+           RETURNING o.disclosure_id, o.symbol, o.report_period, o.sha256, o.local_path""",
+        (limit,),
+    ).fetchall()
+    connection.commit()
+    return rows
+
+
+def store_filing_candidates(connection: psycopg.Connection, disclosure_id: uuid.UUID, candidates: list[dict]) -> int:
+    if not candidates:
+        return 0
+    connection.cursor().executemany(
+        """INSERT INTO filing_candidates(candidate_id, disclosure_id, field_name, value, unit,
+              page_number, source_label, excerpt, parser_version, status)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'filing-extract-v2', %s)
+           ON CONFLICT (disclosure_id, field_name, page_number, source_label) DO NOTHING""",
+        [(uuid.uuid4(), disclosure_id, row['field_name'], row['value'], row['unit'], row['page'],
+          row['source_label'], row['excerpt'][:1000], row['status']) for row in candidates],
+    )
+    return len(candidates)
+
+
+def finish_disclosure_extraction(connection: psycopg.Connection, disclosure_id: uuid.UUID, candidates: int = 0,
+                                 error: str | None = None) -> None:
+    status = 'failed' if error else ('extracted' if candidates else 'no_candidates')
+    connection.execute('UPDATE official_disclosures SET extraction_status = %s WHERE disclosure_id = %s',
+                       (status, disclosure_id))
+    connection.commit()
+
+
 def latest_points(connection: psycopg.Connection) -> list[dict]:
     return connection.execute(
         """SELECT DISTINCT ON (p.symbol, p.field_name)
@@ -327,6 +367,14 @@ def export_payload(connection: psycopg.Connection) -> dict:
              FROM official_disclosures o
              ORDER BY o.symbol, o.published_at DESC"""
     ).fetchall()
+    filing_candidates = connection.execute(
+        """SELECT c.field_name, c.value, c.unit, c.page_number, c.source_label, c.excerpt,
+                  c.status, c.parser_version, o.symbol, i.name, o.report_period, o.report_kind,
+                  o.source_url, o.sha256, o.extraction_status
+             FROM filing_candidates c JOIN official_disclosures o ON o.disclosure_id = c.disclosure_id
+             JOIN instruments i ON i.symbol = o.symbol
+             ORDER BY c.created_at DESC LIMIT 2000"""
+    ).fetchall()
     market_candidates = connection.execute(
         """SELECT s.symbol, i.name, s.sector, s.current_price, s.pe, s.pb, s.market_cap,
                   s.initial_score, s.status, s.screen_date, s.source_id,
@@ -358,6 +406,6 @@ def export_payload(connection: psycopg.Connection) -> dict:
     return {
         'valuations': valuations, 'points': points, 'audits': audits,
         'monthly_snapshots': monthly_snapshots, 'disclosures': disclosures,
-        'market_candidates': market_candidates, 'reminders': reminders,
+        'filing_candidates': filing_candidates, 'market_candidates': market_candidates, 'reminders': reminders,
         'generated_at': datetime.now(timezone.utc).isoformat(),
     }
