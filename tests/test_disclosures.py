@@ -6,6 +6,36 @@ import pytest
 from value_investment_agent import disclosures
 
 
+def test_cninfo_index_request_bypasses_machine_proxy(monkeypatch):
+    calls = {}
+
+    class Response:
+        def raise_for_status(self):
+            calls["status_checked"] = True
+
+        def json(self):
+            return {"announcements": []}
+
+    class Session:
+        trust_env = True
+
+        def post(self, url, **kwargs):
+            calls.update(url=url, **kwargs)
+            return Response()
+
+        def close(self):
+            calls["closed"] = True
+
+    session = Session()
+    monkeypatch.setattr(disclosures.requests, "Session", lambda: session)
+    assert disclosures._request_json({"pageNum": "1"}) == {"announcements": []}
+    assert session.trust_env is False
+    assert calls["url"] == disclosures.SEARCH_URL
+    assert calls["data"] == {"pageNum": "1"}
+    assert calls["timeout"] == (10, 30)
+    assert calls["status_checked"] and calls["closed"]
+
+
 def announcement(title: str, url: str) -> dict:
     return {
         "announcementTitle": title,

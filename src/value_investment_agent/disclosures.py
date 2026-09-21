@@ -14,8 +14,9 @@ import shutil
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+import requests
 
 from .universe import UNIVERSE
 
@@ -79,13 +80,24 @@ def _discover_security_id(symbol: str, column: str, fallback: str, issuer_name: 
 
 
 def _request_json(data: dict[str, str]) -> dict:
-    request = Request(
-        SEARCH_URL,
-        data=urlencode(data).encode("utf-8"),
-        headers={"User-Agent": USER_AGENT, "Content-Type": "application/x-www-form-urlencoded"},
-    )
-    with urlopen(request, timeout=30) as response:
-        return json.loads(response.read().decode("utf-8"))
+    # CNINFO index lookups must bypass a machine-wide proxy setting. The raw
+    # PDF downloader keeps its existing independently audited implementation.
+    session = requests.Session()
+    session.trust_env = False
+    try:
+        response = session.post(
+            SEARCH_URL,
+            data=data,
+            headers={"User-Agent": USER_AGENT, "Content-Type": "application/x-www-form-urlencoded"},
+            timeout=(10, 30),
+        )
+        response.raise_for_status()
+        payload = response.json()
+        if not isinstance(payload, dict):
+            raise ValueError("CNINFO announcement response must be an object")
+        return payload
+    finally:
+        session.close()
 
 
 REPORT_CATEGORIES = {

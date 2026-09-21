@@ -89,9 +89,10 @@ def verify_navigation(book, result):
             if str(r[0]).isdigit() and len(str(r[0])) == 6}
     pending = {str(r[0]) for r in book[PENDING].iter_rows(min_row=4, values_only=True)
                if str(r[0]).isdigit() and len(str(r[0])) == 6}
-    assert not done & pending, 'A company appears in both groups'
-    assert done | pending == set(result['groups']), 'A company was lost from navigation'
-    assert len(done) == result['research_result_count']
+    # The MVP overview deliberately shows every fixed research case, while the
+    # pending page continues to show its unresolved gates. They may overlap.
+    assert done == set(result['groups']), 'A company was lost from the MVP overview'
+    assert pending <= done, 'Pending page contains an unknown company'
     assert len(pending) == result['pending_count']
     assert book.active.title == HOME
     assert [s.title for s in book if s.sheet_state == 'visible'] == [s for s in PRIMARY if s in book]
@@ -118,6 +119,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--workbook', type=Path, default=Path(
         'C:/Users/we/WPSDrive/197617831/WPS云盘/价投跟踪/A股价值投资_Agent前端智能跟踪模板.xlsx'))
+    parser.add_argument('--skip-render', action='store_true',
+                        help='Skip Pillow preview PNGs for unattended publication checks.')
     args = parser.parse_args()
     original = args.workbook.resolve()
     out = ROOT / 'runtime/workbook-backups' / ('frontdoor-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ'))
@@ -148,19 +151,21 @@ def main():
         for filename in package.namelist():
             if filename.startswith('xl/worksheets/_rels/'):
                 assert not any(e.get('Target', '').startswith('#') for e in ET.fromstring(package.read(filename))), filename
-    for name, filename, end_row, end_col in [
-            (HOME, 'homepage-preview.png', 23, 8),
-            (OVERVIEW, 'results-preview.png', checked[OVERVIEW].max_row, 8),
-            (PENDING, 'pending-preview.png', 8, 9)]:
-        render_sheet(checked[name], out / filename, end_row, end_col)
-    for start in range(1, checked[GUIDE].max_row + 1, 20):
-        render_sheet(checked[GUIDE], out / f'guide-preview-{start:03d}.png',
-                     min(start + 19, checked[GUIDE].max_row), 8, start)
+    if not args.skip_render:
+        for name, filename, end_row, end_col in [
+                (HOME, 'homepage-preview.png', 23, 8),
+                (OVERVIEW, 'results-preview.png', checked[OVERVIEW].max_row, 8),
+                (PENDING, 'pending-preview.png', 8, 9)]:
+            render_sheet(checked[name], out / filename, end_row, end_col)
+        for start in range(1, checked[GUIDE].max_row + 1, 20):
+            render_sheet(checked[GUIDE], out / f'guide-preview-{start:03d}.png',
+                         min(start + 19, checked[GUIDE].max_row), 8, start)
     result.update({'original': str(original), 'original_sha256': before_hash, 'backup': str(backup),
                    'staged': str(staged), 'staged_sha256': hashlib.sha256(staged.read_bytes()).hexdigest(),
                    'preserved_sheets': before, 'checked_at': datetime.now(timezone.utc).isoformat(),
                    'status': 'verified_ready_for_atomic_publication',
-                   'render_note': 'Pillow layout previews; not a WPS application screenshot.'})
+                   'render_note': ('Skipped for unattended publication; WPS COM verification remains required.'
+                                   if args.skip_render else 'Pillow layout previews; not a WPS application screenshot.')})
     checked.close()
     (out / 'verification.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps({k: result[k] for k in ('staged', 'staged_sha256', 'research_result_count',

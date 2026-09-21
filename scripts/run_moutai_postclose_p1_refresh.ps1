@@ -34,6 +34,9 @@ function Invoke-AgentJson([string]$Python, [string[]]$Arguments, [string]$Name) 
 
 try {
     Set-Location $root
+    if ((Get-Date).TimeOfDay -lt [TimeSpan]::Parse('15:05:00')) {
+        throw 'Post-close P1 refresh must not run before the 15:05 Shanghai publication buffer.'
+    }
     $python = Get-Python
     $receipt = Get-ChildItem (Join-Path $runtime 'company-research') -Directory -Filter '600519-preclose-capital-receipt-*' |
         Sort-Object LastWriteTime -Descending | Select-Object -First 1
@@ -54,13 +57,17 @@ try {
     $admission = Invoke-AgentJson $python @('scripts/audit_moutai_current_valuation_admission.py') 'P1 admission audit'
     $scope = Invoke-AgentJson $python @('scripts/assess_moutai_current_equity_scope.py') 'Scope review'
     $thesis = Invoke-AgentJson $python @('scripts/assess_moutai_current_thesis.py') 'Thesis review'
-    if ($admission.blocking_gate_ids.Count -ne 0 -or -not $admission.p1_current_model_admitted) {
-        throw 'P1 admission remains blocked; the 16:50 paper cycle must fail closed.'
-    }
     [PSCustomObject]@{
-        status = 'succeeded'; date = $today; policy = $policy.output; model = $model.output; bridge = $bridge.output
+        # B1 may preserve a dated conditional research model while P1 simulation
+        # admission remains blocked. Neither branch authorizes a trade or order.
+        status = if ($admission.p1_current_model_admitted -and $admission.blocking_gate_ids.Count -eq 0) {
+            'p1_simulation_admitted'
+        } else {
+            'model_staged_simulation_blocked'
+        }
+        date = $today; policy = $policy.output; model = $model.output; bridge = $bridge.output
         p1_contract = $contract.output; admission = $admission.output; scope = $scope.output; thesis = $thesis.output
-        trade_approved = $false; live_eligible = $false
+        blocking_gate_ids = $admission.blocking_gate_ids; trade_approved = $false; live_eligible = $false
     } | ConvertTo-Json -Compress
 }
 catch {

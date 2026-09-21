@@ -124,13 +124,19 @@ def bounded_implied_growth(target: Decimal, value_at, lower: Decimal, upper: Dec
     raise ValueError("Inverse valuation did not converge")
 
 
-def review_current(quote_report: Path) -> dict:
-    reference = json.loads(CURRENT_POINTER.read_text(encoding="utf-8"))
-    model_path = (ROOT / reference["path"] / "evidence.json").resolve()
+def review_current(quote_report: Path, model_evidence: Path | None = None) -> dict:
+    """Reproduce one pinned model against a verified close from its own session."""
+    if model_evidence is None:
+        reference = json.loads(CURRENT_POINTER.read_text(encoding="utf-8"))
+        model_path = (ROOT / reference["path"] / "evidence.json").resolve()
+        expected_sha256 = reference["sha256"]
+    else:
+        model_path = model_evidence.resolve()
+        expected_sha256 = digest(model_path)
     quote_report = quote_report.resolve()
     if not model_path.is_relative_to(ROOT) or not quote_report.is_relative_to(ROOT):
         raise ValueError("Review inputs must remain under the project root")
-    model = load(model_path, reference["sha256"])
+    model = load(model_path, expected_sha256)
     policy_path = (ROOT / model["policy"]["path"]).resolve()
     if digest(policy_path) != model["policy"]["sha256"]:
         raise ValueError("Current model policy changed")
@@ -194,8 +200,12 @@ def review_current(quote_report: Path) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--current-quote-report", type=Path)
+    parser.add_argument("--model-evidence", type=Path)
     args = parser.parse_args()
-    payload = review_current(args.current_quote_report) if args.current_quote_report else build()
+    if args.model_evidence and not args.current_quote_report:
+        parser.error("--model-evidence requires --current-quote-report")
+    payload = (review_current(args.current_quote_report, args.model_evidence)
+               if args.current_quote_report else build())
     prefix = "600519-current-assumption-diagnostic-" if args.current_quote_report else "600519-consolidated-parent-equity-assumption-review-"
     output = ROOT / "runtime/company-research" / (
         prefix + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")

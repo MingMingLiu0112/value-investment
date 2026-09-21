@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from datetime import date, datetime, time, timezone, timedelta
@@ -47,10 +48,20 @@ def final_json(output: str, context: str) -> dict:
         raise ValueError(context + " returned invalid final JSON") from error
 
 
+def index_directory(result: dict) -> Path:
+    directory = result.get("directory")
+    if not isinstance(directory, str) or not directory:
+        raise ValueError("Filing-index result must include a directory")
+    return Path(directory).resolve()
+
+
 def run(*args: str) -> dict:
-    completed = subprocess.run([sys.executable, "-X", "utf8", *args], cwd=ROOT,
+    python = Path(os.environ.get("VALUE_INVESTMENT_PYTHON", sys.executable)).resolve()
+    if not python.is_file():
+        raise RuntimeError("Configured project Python is unavailable: " + str(python))
+    completed = subprocess.run([str(python), "-X", "utf8", *args], cwd=ROOT,
                                text=True, encoding="utf-8", capture_output=True,
-                               env={"PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"})
+                               env={**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"})
     if completed.returncode:
         raise RuntimeError("Command failed: " + " ".join(args) + "\n" + completed.stderr[-2000:])
     return final_json(completed.stdout, args[0])
@@ -73,7 +84,7 @@ def main() -> int:
     finished = datetime.now(SHANGHAI)
     if finished.time() >= CUTOFF:
         raise ValueError("Capital refresh completed after close; do not use it for this close-time model")
-    index_dir = Path(index["output"]).resolve()
+    index_dir = index_directory(index)
     index_records = list(index_dir.glob("600519-*.json"))
     if len(index_records) != 1:
         raise ValueError("Expected exactly one bounded 600519 index record")

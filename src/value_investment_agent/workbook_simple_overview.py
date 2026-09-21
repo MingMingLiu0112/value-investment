@@ -19,6 +19,15 @@ DERIVED = {HOME, OVERVIEW, PENDING, GUIDE}
 ROOT = Path(__file__).resolve().parents[2]
 METADATA = {'初筛日期', '行情快照时间', '服务导出时间', '数据时效'}
 INK, GREEN, BLUE, AMBER = '263330', '18755D', '245D83', 'FFF1D6'
+MVP_DISPLAY_STATUS = {
+    'financial_scope_approved': '财务范围已核验',
+    'financial_scope_blocked': '财务范围待补证',
+    'incomplete': '研究未完成',
+    'verified': '证据已核验',
+    'partial': '证据部分核验',
+    'not_ready': '估值未就绪',
+    'conditional_research_only': '条件研究（非交易）',
+}
 
 
 def _pinned(root, pointer, filename):
@@ -71,6 +80,37 @@ def company_progress(wb, root):
             tracking_state=str(decisions[code][1][3]) if code in decisions else '尚无每日决策记录',
         )
     refs = {}
+    mvp = _pinned(root, 'runtime/excel-mvp-research-cases-latest.json', 'evidence.json')
+    if mvp:
+        payload, payload_ref = mvp
+        if (payload.get('version') != 'excel-mvp-research-cases-v1'
+                or payload.get('formal_trade_instructions') is not False):
+            raise ValueError('Excel MVP research payload changed')
+        for record in payload.get('records', []):
+            case, gate = record.get('case', {}), record.get('gate', {})
+            code = case.get('symbol')
+            if code not in rows or code not in {'600519', '000333', '601088'}:
+                raise ValueError('Excel MVP research identity changed')
+            if gate.get('conclusion') != '估值未就绪':
+                raise ValueError('Excel MVP may not promote a valuation conclusion')
+            rows[code]['mvp_research'] = record
+            rows[code]['stage'] = 'MVP研究已载入；' + gate['conclusion']
+            rows[code]['available'] = '统一研究卡：事实、反证、失效条件、阻断项与下一事件'
+            rows[code]['next_step'] = '按阻断项补证，不产生订单或仓位'
+            refs.setdefault(code, []).append(payload_ref)
+    if '600519' in rows:
+        valuation = _pinned(root, 'runtime/valuation-results/600519-current-equity-stage-b-latest.json', 'evidence.json')
+        if valuation:
+            payload, valuation_ref = valuation
+            value = payload.get('result', {})
+            if (payload.get('version') != 'moutai-stage-b-valuation-result-v1'
+                    or value.get('symbol') != '600519'
+                    or value.get('status') != 'conditional_research_only'
+                    or value.get('confidence') != '低'
+                    or payload.get('trade_approved') is not False):
+                raise ValueError('Moutai Stage B valuation payload changed')
+            rows['600519']['valuation_result'] = value
+            refs.setdefault('600519', []).append(valuation_ref)
     if '600519' in rows:
         closure = _pinned(root, 'runtime/strategy-validation/moutai-simulation-closure-latest.json', 'summary.json')
         case = _pinned(root, 'runtime/company-research/600519-end-to-end-case-latest.json', 'evidence.json')
@@ -161,6 +201,20 @@ def company_progress(wb, root):
                 available='财务勾稽、股本与停复牌资料',
                 next_step='匹配每股口径并完成适用估值；尚无完整回放')
             refs['000333'] = [audit[1]]
+        valuation = _pinned(root, 'runtime/valuation-results/000333-fcff-stage-b-latest.json', 'evidence.json')
+        if valuation:
+            payload, valuation_ref = valuation
+            value = payload.get('result', {})
+            if (payload.get('version') != 'unified-company-valuation-result-v1'
+                    or value.get('symbol') != '000333'
+                    or value.get('model_type') != 'FCFF'
+                    or value.get('status') not in {'not_ready', 'conditional_research_only'}
+                    or payload.get('trade_approved') is not False):
+                raise ValueError('Midea unified valuation payload changed')
+            rows['000333']['valuation_result'] = value
+            rows['000333']['stage'] = 'MVP研究已载入；' + _mvp_display_status(value['status'])
+            rows['000333']['next_step'] = '按统一 FCFF 估值阻断项补证，不产生订单或仓位'
+            refs.setdefault('000333', []).append(valuation_ref)
     if '601088' in rows:
         rows['601088'].update(pool='固定研究案例',
             next_step='完成周期正常化研究与估值；尚无完整回放')
@@ -250,6 +304,74 @@ def _research_contract(ws, start_row, company):
     return start_row + len(rows) + 2
 
 
+def _mvp_statement(items):
+    if not items:
+        return '未登记。'
+    labels = {'fact': '事实', 'interpretation': '判断', 'hypothesis': '待验证', 'gap': '缺口'}
+    return '\n'.join('[' + labels[item['kind']] + '] ' + item.get('text', '') for item in items)
+
+
+def _mvp_display_status(status):
+    """Keep technical state in evidence JSON while using plain language in Excel."""
+    return MVP_DISPLAY_STATUS.get(status, status)
+
+
+def _mvp_research_card(ws, start_row, record, valuation=None):
+    """Compact uniform cards; details remain in immutable JSON evidence."""
+    case, gate = record['case'], record['gate']
+    _band(ws, start_row, case['name'] + ' ' + case['symbol'] + ' | MVP研究卡', color=BLUE, height=30)
+    rows = [
+        ('研究定位', case['industry'] + '；' + case['investment_path'], _mvp_display_status(case['research_status'])),
+        ('投资论点', case['thesis'], '研究假说/待持续验证'),
+        ('回报来源 / 错价', case['return_driver'] + '\n错价：' + case['mispricing_hypothesis'], '不生成目标价'),
+        ('财务摘要', '\n'.join(f'{key}: {value}' for key, value in case['financial_summary'].items()),
+         '财务期：' + (case.get('financial_period') or '未准入')),
+        ('支持证据', _mvp_statement(case['positives']), _mvp_display_status(case['evidence_status'])),
+        ('反证 / 缺口', _mvp_statement(case['counter_evidence']), '缺口不计入正面证据'),
+        ('论点失效条件', _mvp_statement(case['thesis_breakers']), '预先登记；不是自动卖出'),
+        ('下一验证事件', _mvp_statement(case['next_events']), '等待证据，不追价'),
+        ('估值门禁', gate['conclusion'] + '\n阻断：' + '；'.join(gate['blockers']), '无买卖价 / 无仓位 / 无订单'),
+    ]
+    if valuation:
+        if any(valuation.get(key) is None for key in ('bear_value', 'base_value', 'bull_value')):
+            rows.append(('统一估值结果', '模型：' + valuation['model_type'] + '；' +
+                         _mvp_display_status(valuation['status']) + '。\n阻断：' +
+                         '；'.join(valuation['blockers']), _mvp_display_status(valuation['status'])))
+        else:
+            scenarios = '熊 / 基 / 牛：' + ' / '.join(
+                f"{Decimal(valuation[key]):.2f} 元/股" for key in ('bear_value', 'base_value', 'bull_value'))
+            reverse = valuation['assumptions']['reverse_valuation']
+            if valuation.get('current_price') is None:
+                price_text = '同日价格：未建立，安全边际不计算。'
+            else:
+                if valuation.get('margin_to_bear') is None or valuation.get('margin_to_base') is None:
+                    raise ValueError('Bound price requires both research margins')
+                price_text = (
+                    '同日绑定价格：' + f"{Decimal(valuation['current_price']):.2f}" + ' 元/股；'
+                    '相对熊/基准情景：' + f"{Decimal(valuation['margin_to_bear']):.1%}" + ' / '
+                    + f"{Decimal(valuation['margin_to_base']):.1%}" + '。'
+                )
+            rows.append(('条件估值研究', scenarios + '\n估值日：' + valuation['valuation_date']
+                         + '；置信度：' + valuation['confidence']
+                         + '；' + price_text + '\n阻断：'
+                         + '；'.join(valuation['blockers']), _mvp_display_status(valuation['status'])))
+            rows.append(('反向估值（归档）', reverse['quote_date'] + ' 归档价格 ' + reverse['quote_price_cny']
+                         + ' 元/股，在登记的利润增长 -5% 至 +5% 与优势衰减 0/5/10 年组合外。'
+                         + ' 仅说明需更强假设，非唯一市场预期或当前判断。', '旧时点解释，不更新为今日结论'))
+    for row, (label, body, state) in enumerate(rows, start_row + 1):
+        _span(ws, row, 1, 2, label, fill='EDF3F8', bold=True)
+        _span(ws, row, 3, 6, body)
+        _span(ws, row, 7, 8, state, fill=AMBER)
+        lines = max(body.count('\n') + 1, state.count('\n') + 1)
+        ws.row_dimensions[row].height = max(52, lines * 22 + 18)
+        if label == '条件估值研究':
+            ws.row_dimensions[row].height = max(ws.row_dimensions[row].height, 112)
+    evidence = '\n'.join(ref['id'] + ': ' + ref['path'] + '\nSHA-256: ' + ref['sha256']
+                         for ref in case['evidence_refs'])
+    ws.cell(start_row + 5, 3).comment = Comment(evidence, '研究证据')
+    return start_row + len(rows) + 2
+
+
 def _methodology_guide(ws, start_row):
     _band(ws, start_row, '投资路径 | 可以重叠；行业口径另行匹配', color=BLUE, height=32)
     for first, label in ((1, '研究路径'), (3, '重点研究什么'), (5, '如何估值 / 实现价值'), (7, '退出复评 / 开发状态')):
@@ -300,22 +422,32 @@ def _methodology_guide(ws, start_row):
 
 def _results(wb, done):
     indexes = {s: _rows(wb[s]) for s in ('09_公司研究', '04_估值跟踪', '21_决策验证')}
+    companies = done
+    done = [company for company in companies if company['has_results']]
     ws = _sheet(wb, OVERVIEW, [12, 16, 21, 36, 40, 12, 12, 12],
-        '贵州茅台 | 单公司研究卡',
-        '初步事实与判断已整理；完整估值结论仍待完成。历史快照不是今日报价，研究不等于买卖指令。')
+        '三家公司 | 统一研究卡',
+        '事实、反证、缺口和门禁分开呈现。估值未就绪不等于低估；本页不产生买卖指令。')
     for c, label in enumerate(['代码', '公司', '进度', '已经能看什么', '还差什么', '公司研究', '估值明细', '决策明细'], 1):
         _cell(ws, 3, c, label, fill='DCEBE5', bold=True)
     ws.row_dimensions[3].height = 28
-    for r, company in enumerate(done, 4):
+    for r, company in enumerate(companies, 4):
         for c, value in enumerate([company['code'], company['name'], company['stage'],
                                   company['available'], company['next_step']], 1):
             _cell(ws, r, c, value, fill='F3F7F5')
         _links(ws, r, company['code'], indexes)
         ws.row_dimensions[r].height = 60
-    if not done:
+    if not companies:
         _span(ws, 4, 1, 8, '暂无已核验的研究回放；请从“待完成公司”查看进度。')
         ws.row_dimensions[4].height = 36
-    r = max(7, len(done) + 6)
+    r = max(8, len(companies) + 6)
+    for company in companies:
+        record = company.get('mvp_research')
+        if not record:
+            continue
+        r = _mvp_research_card(ws, r, record, company.get('valuation_result'))
+    # Older Moutai-only presentation remains in retained JSON evidence. The
+    # MVP surface intentionally stops here so all three cases share one shape.
+    return
     for company_row, company in enumerate(done, 4):
         brief_start = r
         r = _company_brief(ws, r, company)
@@ -569,10 +701,72 @@ def _pending(wb, pending):
     return ws
 
 
+def _mvp_home(ws, companies, metadata):
+    """Stage-A homepage: all fixed cases, with no portfolio or order semantics."""
+    for first, last, label, dest in (
+            (1, 3, '三家公司研究卡 →', OVERVIEW),
+            (4, 6, '待完成公司', PENDING),
+            (7, 8, '研究与交易边界', GUIDE)):
+        _span(ws, 4, first, last, label, fill='DCEBE5' if first == 1 else 'EDF3F8', bold=True)
+        _link(ws.cell(4, first), label, dest)
+    ws.row_dimensions[4].height = 45
+    _band(ws, 6, '当前研究工作台 | 研究状态与估值状态分开，不生成订单', height=28)
+    headers = ['代码', '公司', '路径', '数据日期', '研究状态', '估值状态', '最大反证', '阻断项 / 下一事件']
+    for col, label in enumerate(headers, 1):
+        _cell(ws, 7, col, label, fill='DCEBE5', bold=True)
+    ws.row_dimensions[7].height = 42
+    for row, company in enumerate(sorted(companies, key=lambda value: value['code']), 8):
+        case = company['mvp_research']['case']
+        gate = company['mvp_research']['gate']
+        counter = case['counter_evidence'][0]['text']
+        next_event = case['next_events'][0]['text']
+        blockers = gate['blockers'][0]
+        compact = lambda text: text if len(text) <= 34 else text[:33] + '…'
+        values = [case['symbol'], case['name'], case['investment_path'],
+                  '财务：' + (case.get('financial_period') or '未准入') + '\n行情：' + (case.get('quote_date') or '未用于结论'),
+                  _mvp_display_status(case['research_status']), gate['conclusion'], counter,
+                  '阻断：' + compact(blockers) + '\n下一步：' + compact(next_event)]
+        for col, value in enumerate(values, 1):
+            _cell(ws, row, col, value, fill='F3F6F8' if row % 2 == 0 else 'FFFFFF')
+        _link(ws.cell(row, 7), counter, OVERVIEW)
+        ws.row_dimensions[row].height = 150
+    _band(ws, 13, '日常使用顺序 | 六个入口', height=28)
+    steps = [
+        ('1 读研究卡', '先看三家公司论点、反证、失效条件和下一事件。', OVERVIEW, '研究卡'),
+        ('2 查依据', '事实、判断和未知分开，原财报与个人笔记保留。', '09_公司研究', '公司研究'),
+        ('3 查估值', '条件估值不等于正式合理价；没有同日价格不计算安全边际。', '04_估值跟踪', '估值跟踪'),
+        ('4 看买卖条件', '查看门禁与阻断原因；当前没有由系统生成的订单。', '21_决策验证', '决策验证'),
+        ('5 管持仓', '核对自己的现金和实际持仓；研究账户与真实账户分开。', '05_仓位管理', '仓位管理'),
+        ('6 记交易', '人工成交后记录数量、价格、理由，并在月度复盘中回看。', '08_交易记录', '交易记录'),
+    ]
+    for row, (label, explanation, dest, link_text) in enumerate(steps, 14):
+        _span(ws, row, 1, 2, label, fill='F0F4F2', bold=True)
+        _span(ws, row, 3, 6, explanation)
+        _span(ws, row, 7, 8, link_text)
+        _link(ws.cell(row, 7), link_text, dest)
+        ws.row_dimensions[row].height = 34
+    _span(ws, 21, 1, 6, '研究卡、条件估值、模拟跟踪和实盘准入是四个不同层级。', fill=AMBER)
+    _span(ws, 21, 7, 8, '使用说明')
+    _link(ws['G21'], '使用说明', GUIDE)
+    _span(ws, 23, 1, 6, '当前顺序：先完成茅台时间一致的估值与反向估值，再依次研究美的和神华。', fill='EFF3F1')
+    _span(ws, 23, 7, 8, '研究框架')
+    _link(ws['G23'], '研究框架', GUIDE, 6)
+    for row, (key, value) in enumerate(sorted(metadata.items()), 26):
+        _cell(ws, row, 1, key)
+        _cell(ws, row, 2, value)
+        ws.row_dimensions[row].hidden = True
+    ws.freeze_panes = 'A8'
+    ws.print_area = 'A1:H23'
+    return ws
+
+
 def _home(wb, done, pending, metadata):
     ws = _sheet(wb, HOME, [16, 14, 16, 16, 16, 16, 16, 16],
-        '价值投资 | 先研究一家公司',
-        '短期交付：茅台研究卡。事实与初步判断已整理；完整估值结论尚未完成，不提供实盘买卖指令。')
+        '价值投资 | 三家公司研究工作台',
+        '研究、估值、模拟和实盘准入分开管理；不提供自动下单或实盘买卖指令。')
+    mvp_companies = [company for company in [*done, *pending] if company.get('mvp_research')]
+    if {company['code'] for company in mvp_companies} == {'600519', '000333', '601088'}:
+        return _mvp_home(ws, mvp_companies, metadata)
     for first, last, label, dest in (
             (1, 3, '茅台研究卡 →', OVERVIEW),
             (4, 6, '其他公司记录（暂不扩展）', PENDING),
@@ -916,15 +1110,10 @@ def _style_detail(ws):
 
 def _has_verified_research_card(ws):
     """Keep a separately WPS-verified research card intact during data refreshes."""
-    if ws['A1'].value != '贵州茅台 | 单公司研究卡':
+    if ws['A1'].value != '三家公司 | 统一研究卡':
         return False
     labels = {str(ws.cell(row, 1).value) for row in range(1, ws.max_row + 1)}
-    return {
-        '主模型 / 价格要求',
-        '资本配置 / 治理',
-        '现金 / 低谷韧性',
-        '当前交付边界',
-    } <= labels
+    return {'研究定位', '支持证据', '反证 / 缺口', '估值门禁'} <= labels
 
 
 def apply_simple_overview(wb, *, root=None):
@@ -937,8 +1126,11 @@ def apply_simple_overview(wb, *, root=None):
     # Short-term research delivery must not refresh legacy mixed-date valuation cells.
     added = {}
     preserved_research_card = OVERVIEW in wb and _has_verified_research_card(wb[OVERVIEW])
-    if not preserved_research_card:
-        _results(wb, done)
+    # The overview is derived. A newly pinned unified valuation result is a
+    # user-visible status change and must refresh its corresponding MVP card.
+    refresh_overview = any(company.get('valuation_result') for company in companies)
+    if not preserved_research_card or refresh_overview:
+        _results(wb, companies)
     _pending(wb, pending)
     _home(wb, done, pending, metadata)
     _guide(wb, refs, metadata)
@@ -946,15 +1138,16 @@ def apply_simple_overview(wb, *, root=None):
     for ws in wb:
         ws.sheet_state = 'visible' if ws.title in visible else 'hidden'
         ws.sheet_view.tabSelected = False
-        if ws.title in visible and ws.title not in DERIVED:
-            _style_detail(ws)
+        # Detailed source sheets retain their existing formatting. Reapplying
+        # styles cell-by-cell to the large evidence sheet is expensive and does
+        # not change research content or navigation.
         ws.sheet_properties.tabColor = (GREEN if ws.title in [HOME, OVERVIEW] else
             BLUE if ws.title == PENDING else 'B2BCC2')
     for i, name in enumerate(visible):
         wb.move_sheet(wb[name], offset=i - wb.sheetnames.index(name))
     wb.active = 0
     repaired = repair_internal_links(wb)
-    return {'version': VERSION, 'research_framework_version': 'single-company-brief-20260920',
+    return {'version': VERSION, 'research_framework_version': 'three-company-excel-mvp-20260921',
             'visible_sheets': visible, 'company_count': len(companies),
             'research_result_count': len(done), 'pending_count': len(pending),
             'strategy_accepted_count': sum(c['strategy_accepted'] for c in companies),

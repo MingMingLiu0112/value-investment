@@ -396,7 +396,7 @@ const financialQualityRows = (payload.market_candidates ?? []).map((candidate) =
     cellValue(quality.total_score), cellValue(quality.coverage_ratio),
     cellValue(quality.profitability_score), cellValue(quality.cash_flow_score),
     cellValue(quality.balance_sheet_score), cellValue(quality.growth_score),
-    (quality.reasons ?? []).join('；').slice(0, 1000), JSON.stringify(quality.calculation_details ?? {}).slice(0, 2000),
+    (quality.reasons ?? []).join('；'), JSON.stringify(quality.calculation_details ?? {}),
   ];
 });
 replaceSheetRows(financialQualitySheet,
@@ -405,12 +405,10 @@ replaceSheetRows(financialQualitySheet,
 );
 
 const filingCandidateSheet = workbook.worksheets.getOrAdd('14_财报候选');
-// Excel is the research front door, not the archive. Keep a bounded recent
-// evidence queue here; PostgreSQL and the local cold archive retain every PDF.
-const filingCandidates = (payload.filing_candidates ?? []).slice(0, 2500).map((row) => [
+const filingCandidates = (payload.filing_candidates ?? []).map((row) => [
   row.candidate_id, row.symbol, row.name, row.report_period, row.report_kind, row.field_name,
   cellValue(row.value), row.unit, cellValue(row.page_number), row.source_label,
-  row.status, row.source_url, row.sha256, String(row.excerpt ?? '').slice(0, 1000),
+  row.status, row.source_url, row.sha256, row.excerpt,
 ]);
 replaceSheetRows(filingCandidateSheet,
   ['candidate_id', '股票代码', '公司名称', '报告期', '报告类型', '字段', '候选值', '单位', '页码', '原始标签', 'Agent验证状态', '官方URL', '文件SHA-256', '原文摘录'],

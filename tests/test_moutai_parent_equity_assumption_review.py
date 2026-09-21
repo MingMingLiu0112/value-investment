@@ -43,13 +43,6 @@ def test_bounded_inverse_rejects_invalid_target(price):
                                       Decimal("-.05"), Decimal(".05"))
 
 
-def test_current_review_reproduces_model_without_changing_admission():
-    result = MODULE.review_current(ROOT / "runtime/quote-sessions/20260914T105221815291Z/report.json")
-    assert result["arithmetic_reproduced"] is True
-    assert result["reviewed_as_of"].startswith("2026-09-14")
-    assert result["quote_price_cny"] == "1277.96"
-    assert len(result["profit_paths"]) == 3
-    assert [row["fade_years"] for row in result["reverse_valuation"]] == [0, 5, 10]
-    assert all(row["implied_growth"] is None for row in result["reverse_valuation"])
-    assert result["simulation_eligible"] is False
-    assert result["trade_approved"] is False
+def test_current_review_rejects_a_quote_from_a_different_model_session():
+    with pytest.raises(ValueError, match="share the reviewed session"):
+        MODULE.review_current(ROOT / "runtime/quote-sessions/20260914T105221815291Z/report.json")
