@@ -1,0 +1,13 @@
+[Unit]
+Description=Continuously retry official A-share financial disclosures
+
+[Timer]
+# Each sequential, memory-capped pass takes about fifteen minutes. An hourly
+# cadence drains the all-A queue materially faster while leaving ample headroom
+# before the next pass and without increasing any container memory limit.
+OnCalendar=*-*-* *:20:00 Asia/Shanghai
+Persistent=true
+Unit=value-investment-agent-filings.service
+
+[Install]
+WantedBy=timers.target

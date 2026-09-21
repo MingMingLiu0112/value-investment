@@ -10,7 +10,7 @@ from __future__ import annotations
 
 FINANCIAL_KEYWORDS = {
     "bank": ("银行",),
-    "insurer": ("保险",),
+    "insurer": ("保险", "中国人寿", "中国太保", "中国平安", "中国人保"),
     "broker": ("证券",),
 }
 
@@ -21,11 +21,13 @@ def provisional_financial_type(name: str | None, sector: str | None) -> str | No
     for institution_type, keywords in FINANCIAL_KEYWORDS.items():
         if any(keyword in searchable for keyword in keywords):
             return institution_type
+    if sector and any(label in sector for label in ('非银金融', '多元金融')):
+        return 'financial_group'
     return None
 
 
 def financial_gate_message(institution_type: str) -> tuple[str, str]:
-    labels = {"bank": "银行", "insurer": "保险", "broker": "证券公司"}
+    labels = {"bank": "银行", "insurer": "保险", "broker": "证券公司", "financial_group": "金融控股/多元金融"}
     label = labels[institution_type]
     return (
         f"{label}专用模型待核验",

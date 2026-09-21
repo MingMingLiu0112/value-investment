@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import uuid
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -12,6 +13,8 @@ from pathlib import Path
 import psycopg
 
 from .models import SourceRecord
+from .growth_evidence import official_growth_period_matches, validate_retained_growth
+from .payables_evidence import validate_payables_components
 
 
 REQUIRED_COLUMNS = {
@@ -23,9 +26,18 @@ REQUIRED_COLUMNS = {
 # counterpart are eligible for unattended promotion.  Amount fields remain
 # pending until their report unit can also be extracted deterministically.
 AUTOMATIC_FIELD_MAP = {
-    "roe": "roe",
+    'revenue_yoy': 'revenue_yoy', 'net_income_yoy': 'net_income_yoy',
+    "roe": "roe_weighted",
     "bvps": "bvps",
     "eps_annual": "eps_reported",
+    "cash": "cash", "short_term_borrowings": "short_term_borrowings",
+    "current_portion_long_term_debt": "current_portion_long_term_debt",
+    "long_term_borrowings": "long_term_borrowings", "bonds_payable": "bonds_payable",
+    "lease_liabilities_noncurrent": "lease_liabilities_noncurrent",
+    "long_term_payables_noncurrent": "long_term_payables_noncurrent",
+    "operating_cash_flow": "operating_cash_flow",
+    "revenue": "revenue", "net_income": "net_income", "operating_cost": "operating_cost",
+    "total_assets": "total_assets", "total_liabilities": "total_liabilities",
 }
 
 
@@ -35,6 +47,8 @@ def values_agree(official: Decimal, secondary: Decimal, unit: str) -> bool:
         return abs(official - secondary) <= Decimal("0.05")
     if unit == "CNY/share":
         return abs(official - secondary) <= Decimal("0.02")
+    if unit == "CNY":
+        return abs(official - secondary) <= max(Decimal("1"), abs(official) * Decimal("0.001"))
     return False
 
 
@@ -58,9 +72,9 @@ def _reviewed_at(value: str) -> datetime:
 
 def _candidate(connection: psycopg.Connection, candidate_id: str) -> dict:
     row = connection.execute(
-        """SELECT c.candidate_id, c.field_name, c.value, c.unit, c.page_number, c.source_label,
+        """SELECT c.candidate_id, c.field_name, c.value, c.unit, c.page_number, c.source_label, c.excerpt,
                   o.symbol, o.report_period, o.source_name, o.source_url, o.published_at,
-                  o.sha256, o.local_path
+                  o.sha256, o.local_path, o.archive_status, o.archive_uri
              FROM filing_candidates c
              JOIN official_disclosures o ON o.disclosure_id = c.disclosure_id
             WHERE c.candidate_id = %s""",
@@ -68,6 +82,10 @@ def _candidate(connection: psycopg.Connection, candidate_id: str) -> dict:
     ).fetchone()
     if row is None:
         raise ValueError(f"Unknown candidate_id: {candidate_id}")
+    if row['archive_status'] != 'server_resident':
+        raise ValueError(
+            f"candidate {candidate_id} requires cold archive restore before review: {row['archive_uri']}"
+        )
     return row
 
 
@@ -120,6 +138,7 @@ def reviewed_records(connection: psycopg.Connection, rows: list[dict[str, str]])
             fetched_at=datetime.now(timezone.utc), parser_version="candidate-review-v1",
             raw_payload=payload, local_path=str(local_path), point_metadata={
                 "candidate_id": str(candidate["candidate_id"]), "page_number": candidate["page_number"],
+                "candidate_excerpt": candidate.get("excerpt", ""),
                 "source_label": candidate["source_label"], "reviewed_by": reviewer,
                 "reviewed_at": reviewed_at.isoformat(), "review_method": "page-level official-filing review",
             },
@@ -134,7 +153,8 @@ def write_review_template(connection: psycopg.Connection, output: Path) -> int:
                   c.page_number, c.source_label, c.excerpt, o.source_url, o.sha256
              FROM filing_candidates c JOIN official_disclosures o ON o.disclosure_id = c.disclosure_id
              JOIN instruments i ON i.symbol = o.symbol
-            WHERE NOT EXISTS (SELECT 1 FROM data_points p WHERE p.metadata ->> 'candidate_id' = c.candidate_id::text)
+            WHERE o.archive_status = 'server_resident'
+              AND NOT EXISTS (SELECT 1 FROM data_points p WHERE p.metadata ->> 'candidate_id' = c.candidate_id::text)
             ORDER BY o.published_at DESC, o.symbol, c.page_number"""
     ).fetchall()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -149,7 +169,44 @@ def write_review_template(connection: psycopg.Connection, output: Path) -> int:
     return len(rows)
 
 
-def automatically_verified_candidates(connection: psycopg.Connection, limit: int) -> list[tuple[str, SourceRecord]]:
+def comparable_value_agrees(value: Decimal, unit: str, row: dict) -> bool:
+    """Compare explicit RMB scales without rewriting the original observation."""
+    scales = {'CNY': Decimal(1), 'CNY 10K': Decimal(10000), 'CNY 100M': Decimal(100000000)}
+    try:
+        secondary = Decimal(str(row['value']))
+        if not value.is_finite() or not secondary.is_finite():
+            return False
+        if unit in scales and row['unit'] in scales:
+            return values_agree(value * scales[unit], secondary * scales[row['unit']], 'CNY')
+        return row['unit'] == unit and values_agree(value, secondary, unit)
+    except (InvalidOperation, TypeError, ValueError, KeyError):
+        return False
+
+
+def latest_consistent_secondary(matches: list[dict], value: Decimal, unit: str) -> dict | None:
+    """Rows arrive newest first; older provider snapshots cannot resolve a conflict."""
+    latest = {}
+    for row in matches:
+        latest.setdefault(row['source_name'], row)
+    if not latest or any(
+        not comparable_value_agrees(value, unit, row)
+        for row in latest.values()
+    ):
+        return None
+    return next(iter(latest.values()))
+
+
+def cashflow_secondary(matches: list[dict], value: Decimal, unit: str) -> dict | None:
+    if latest_consistent_secondary(matches, value, unit) is None:
+        return None
+    for row in matches:
+        if row['source_name'] == 'AkShare / Sina detailed financial statements':
+            metadata = row.get('metadata') or {}
+            return row if isinstance(metadata, dict) and metadata.get('statement_scope') == 'consolidated' else None
+    return None
+
+
+def automatically_verified_candidates(connection: psycopg.Connection, limit: int) -> Iterator[tuple[str, SourceRecord]]:
     """Promote only candidates corroborated by a second structured source.
 
     A statutory PDF remains the value ultimately stored as the fact.  The
@@ -157,55 +214,134 @@ def automatically_verified_candidates(connection: psycopg.Connection, limit: int
     No candidate becomes verified when either side is missing or conflicts.
     """
     candidates = connection.execute(
-        """SELECT c.candidate_id, c.field_name, c.value, c.unit, c.page_number, c.source_label,
+        """SELECT c.candidate_id, c.field_name, c.value, c.unit, c.page_number, c.source_label, c.excerpt,
                   o.symbol, o.report_period, o.source_name, o.source_url, o.published_at,
                   o.sha256, o.local_path
-             FROM filing_candidates c JOIN official_disclosures o ON o.disclosure_id = c.disclosure_id
-            WHERE c.status = 'candidate_pending_automated_verification'
+            FROM filing_candidates c JOIN official_disclosures o ON o.disclosure_id = c.disclosure_id
+            WHERE o.archive_status = 'server_resident'
+              AND (c.status = 'candidate_pending_automated_verification'
+                   OR (c.status = 'automatically_verified' AND EXISTS (
+                       SELECT 1 FROM data_points old
+                        WHERE old.metadata ->> 'candidate_id' = c.candidate_id::text
+                          AND old.metadata -> 'evidence_quarantine' ->> 'reason'
+                              = 'total_revenue_used_as_operating_revenue'
+                   )))
+              AND NOT EXISTS (
+                  SELECT 1 FROM data_points existing
+                   WHERE existing.metadata ->> 'candidate_id' = c.candidate_id::text
+                     AND NOT (COALESCE(existing.metadata, '{}'::jsonb) ? 'evidence_quarantine')
+              )
               AND c.field_name = ANY(%s)
+              AND EXISTS (
+                  SELECT 1
+                    FROM data_points p JOIN raw_documents d ON d.document_id = p.source_id
+                   WHERE p.symbol = o.symbol
+                     AND p.field_name = CASE c.field_name
+                         WHEN 'eps_annual' THEN 'eps_reported'
+                         WHEN 'roe' THEN 'roe_weighted' ELSE c.field_name END
+                     AND p.period_label = o.report_period
+                     AND p.unit = c.unit
+                     AND d.source_url <> o.source_url
+                     AND (c.field_name NOT IN ('revenue_yoy','net_income_yoy')
+                          OR d.source_name = 'Value Investment Agent same-scope secondary growth')
+                     AND p.validation_status IN ('pending', 'verified')
+                     AND NOT (COALESCE(p.metadata, '{}'::jsonb) ? 'evidence_quarantine')
+                     AND NOT (p.field_name = 'revenue' AND d.source_name = 'AkShare / Sina financial abstract')
+                     AND (
+                         (c.unit = 'percent' AND abs(c.value - p.value) <= 0.05)
+                         OR (c.unit = 'CNY/share' AND abs(c.value - p.value) <= 0.02)
+                         OR (c.unit = 'CNY' AND abs(c.value - p.value) <= GREATEST(1, abs(c.value) * 0.001))
+                     )
+              )
             ORDER BY o.published_at DESC, c.created_at
             LIMIT %s""",
         (list(AUTOMATIC_FIELD_MAP), limit),
     ).fetchall()
-    verified: list[tuple[str, SourceRecord]] = []
     for candidate in candidates:
-        if connection.execute(
-            "SELECT 1 FROM data_points WHERE metadata ->> 'candidate_id' = %s LIMIT 1",
+        if candidate['field_name'] in ('revenue_yoy', 'net_income_yoy') and not official_growth_period_matches(
+                candidate.get('excerpt'), candidate['report_period']):
+            continue
+        previous = connection.execute(
+            """SELECT data_point_id, validation_status, metadata FROM data_points
+                 WHERE metadata ->> 'candidate_id' = %s""",
             (str(candidate['candidate_id']),),
-        ).fetchone():
+        ).fetchall()
+        if any(row['validation_status'] != 'failed' or
+               (row.get('metadata') or {}).get('evidence_quarantine', {}).get('reason')
+               != 'total_revenue_used_as_operating_revenue' for row in previous):
             continue
         secondary_field = AUTOMATIC_FIELD_MAP[candidate['field_name']]
         matches = connection.execute(
-            """SELECT p.value, p.unit, p.data_point_id, d.document_id AS source_id, d.source_name, d.source_url
+            """SELECT p.value, p.unit, p.metadata, p.data_point_id, d.document_id AS source_id, d.source_name, d.source_url
                  FROM data_points p JOIN raw_documents d ON d.document_id = p.source_id
                 WHERE p.symbol = %s AND p.field_name = %s AND p.period_label = %s
                   AND d.source_url <> %s
-                ORDER BY p.created_at DESC""",
+                  AND (p.field_name NOT IN ('revenue_yoy','net_income_yoy')
+                       OR d.source_name = 'Value Investment Agent same-scope secondary growth')
+                  AND p.validation_status IN ('pending', 'verified')
+                  AND NOT (COALESCE(p.metadata, '{}'::jsonb) ? 'evidence_quarantine')
+                  AND NOT (p.field_name = 'revenue' AND d.source_name = 'AkShare / Sina financial abstract')
+                ORDER BY p.created_at DESC, p.data_point_id DESC""",
             (candidate['symbol'], secondary_field, candidate['report_period'], candidate['source_url']),
         ).fetchall()
-        match = next((row for row in matches if row['unit'] == candidate['unit'] and values_agree(
-            Decimal(candidate['value']), Decimal(row['value']), candidate['unit'])), None)
+        match = latest_consistent_secondary(matches, Decimal(candidate['value']), candidate['unit'])
+        if candidate['field_name'] == 'operating_cash_flow':
+            match = cashflow_secondary(matches, Decimal(candidate['value']), candidate['unit'])
         if match is None:
             continue
+        if candidate['field_name'] in ('revenue_yoy','net_income_yoy'):
+            metadata = match.get('metadata') or {}
+            try:
+                ids = [uuid.UUID(str(value)) for value in metadata.get('input_data_point_ids', [])]
+            except (ValueError,TypeError):
+                continue
+            inputs = connection.execute(
+                """SELECT p.*,d.sha256,d.source_name,d.source_url FROM data_points p
+                     JOIN raw_documents d ON d.document_id=p.source_id WHERE p.data_point_id=ANY(%s)""",
+                (ids,)).fetchall()
+            if not validate_retained_growth(metadata,inputs,candidate['symbol'],candidate['report_period'],
+                                            candidate['field_name'],Decimal(match['value'])):
+                continue
+        payables_input_ids = []
+        if candidate['field_name'] == 'long_term_payables_noncurrent':
+            inputs = connection.execute("""SELECT * FROM data_points
+                WHERE source_id=%s AND symbol=%s AND period_label=%s
+                  AND field_name IN ('long_term_payables_excluding_special','special_payables_noncurrent')""",
+                (match['source_id'], candidate['symbol'], candidate['report_period'])).fetchall()
+            if not validate_payables_components(match, inputs, candidate['symbol'], candidate['report_period']):
+                continue
+            payables_input_ids = [str(row['data_point_id']) for row in inputs]
         local_path = Path(candidate['local_path'])
         if not local_path.is_file():
             continue
         payload = local_path.read_bytes()
         if hashlib.sha256(payload).hexdigest().lower() != candidate['sha256'].lower():
-            continue
-        verified.append((str(candidate['candidate_id']), SourceRecord(
+            raise ValueError(f"candidate {candidate['candidate_id']} archived filing hash no longer matches")
+        # Yield one PDF at a time: store_record hashes the actual archived bytes.
+        yield str(candidate['candidate_id']), SourceRecord(
             symbol=candidate['symbol'], field_name=candidate['field_name'],
             period_label=candidate['report_period'], value=Decimal(candidate['value']),
             unit=candidate['unit'], source_name=candidate['source_name'],
             source_url=candidate['source_url'], published_at=candidate['published_at'],
-            fetched_at=datetime.now(timezone.utc), parser_version='automatic-cross-source-v1',
+            fetched_at=datetime.now(timezone.utc), parser_version='automatic-cross-source-v2',
             raw_payload=payload, local_path=str(local_path), point_metadata={
+                'official_file_sha256': candidate['sha256'].lower(),
+                'official_file_hash_verified_at_promotion': True,
                 'candidate_id': str(candidate['candidate_id']), 'page_number': candidate['page_number'],
+                'candidate_excerpt': candidate.get('excerpt', ''),
                 'source_label': candidate['source_label'], 'automatic_cross_source_verification': True,
                 'verification_method': 'official_pdf_plus_independent_structured_source',
                 'secondary_data_point_id': str(match['data_point_id']),
                 'secondary_source_id': str(match['source_id']),
+                **({'secondary_component_data_point_ids': payables_input_ids,
+                    'payables_scope': 'total_including_special_not_financing_classified'}
+                   if payables_input_ids else {}),
                 'secondary_source_name': match['source_name'], 'secondary_source_url': match['source_url'],
+                'official_file_hash_verified_during_extraction': True,
+                **({'reverification': {
+                    'reason': 'replacement_same_scope_secondary_evidence',
+                    'previous_data_point_ids': [str(row['data_point_id']) for row in previous],
+                    'previous_records_preserved': True,
+                }} if previous else {}),
             },
-        )))
-    return verified
+        )

@@ -1,0 +1,7 @@
+FROM docker.io/library/postgres:16-bookworm AS pgtools
+
+FROM localhost/value-investment-agent:latest
+COPY --from=pgtools /usr/lib/postgresql/16/bin/pg_dump /opt/pg16/bin/pg_dump
+COPY --from=pgtools /usr/lib/postgresql/16/bin/pg_restore /opt/pg16/bin/pg_restore
+ENV PATH=/opt/pg16/bin:${PATH}
+RUN pg_dump --version && pg_restore --version

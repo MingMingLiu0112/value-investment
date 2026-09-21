@@ -1,0 +1,50 @@
+{
+  "policy_version": "moutai-current-equity-policy-v1",
+  "symbol": "600519",
+  "registered_at": "2026-09-14T11:50:49+00:00",
+  "use_scope": "Current-date forward paper research; not a historical policy or live-account approval.",
+  "basis_at": "2026-06-30T23:59:59+08:00",
+  "event_coverage_date": "2026-09-16",
+  "sources": {
+    "facts": {"path": "runtime/company-research/600519-consolidated-parent-equity-inputs-20260914T115049Z/evidence.json", "sha256": "efc4dc37d81e9d4bf54930a5c2bf7cd50305b7b7ce808531ef4bc4138f80891b"},
+    "discount": {"path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json", "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"},
+    "capital_review": {"path": "runtime/company-research/600519-current-share-price-review-20260909T135607541717Z/evidence.json", "sha256": "b4d38f775005c34b3367e85dfb279748b70f2596732c68e6822a2482414d4e16"},
+    "capital_refresh": {"path": "runtime/company-research/600519-current-capital-refresh-20260917T054410Z/evidence.json", "sha256": "e421fe8ed3221d84b3ce989c3bfd0ff347b043b95588017c783be6d985dc625f"},
+    "peer_counterevidence": {"path": "runtime/company-research/000858-peer-interim-20260909T125304973619Z/evidence.json", "sha256": "1e5a3d030881678d7e3b63ae03718df3312dac4a17a44c64fb79436516a7a00c"},
+    "annual_pdf": {"path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf", "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288"},
+    "interim_pdf": {"path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf", "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6"}
+  },
+  "earnings_anchor": "lower_of_reported_and_issuer_ex_nonrecurring_ttm",
+  "forecast_years": 5,
+  "fade_years": 5,
+  "payout_ratio": "0.75",
+  "terminal_growth": "0.02",
+  "terminal_roe_policy": "cost_of_equity_no_permanent_excess_return",
+  "share_policy": "Latest disclosed ordinary shares plus reviewed post-basis announcements; fixed future shares, no assumed buybacks, issuance or OCI.",
+  "payment_policy": "One aggregated dividend at each June-30 forecast year end, first 2027-06-30. Annual effective discounting; fractional first-year time from basis to valuation. Forecast dates are model assumptions, not issuer payment commitments.",
+  "post_basis_distributions_cny": "0",
+  "scenarios": {
+    "bear": {"income_growth": "-0.05", "discount_case": "upper"},
+    "base": {"income_growth": "0", "discount_case": "central"},
+    "bull": {"income_growth": "0.05", "discount_case": "lower"}
+  },
+  "sensitivity": {
+    "payout_ratios": ["0.50", "0.85"],
+    "fade_years": [0, 10],
+    "extra_cost_of_equity": "0.02",
+    "no_franchise_tail": "Zero future earnings/distributions and no terminal liquidation recovery; extreme total-loss scenario, not an estimated probability or the routine bear price."
+  },
+  "rationale": {
+    "income": "FY2025 parent profit fell 4.53%; H1 2026 fell 1.95%, and ex-nonrecurring profit fell 2.04%. The lower TTM anchor removes disclosed exceptional items but is not through-cycle normalized earnings. Five annual -5/0/+5 percent paths represent continued deterioration, stabilization, and an explicitly optimistic recovery, not analyst consensus. They are not calculated by compounding book equity at historical ROE.",
+    "price_event": "July's SKU/channel price increases are one-time level changes. Channel weights, volumes and margins are uncertain; no additional whole-company price uplift is stacked onto the profit paths.",
+    "payout": "Annual report physical page 33 reports combined distribution including repurchases of 71,153,295,260.53 and repurchases of 6,120,088,960.04; the difference is proposed/interim cash dividends of 65,033,206,300.49, about 79% of annual parent profit. The 75% assumption is a research policy below that observation, not a future company commitment. H1 mother-company CFO 15,224,606,455.02 and capex 828,735,611.53 do not cover dividends/interest paid of 35,032,574,305.20; cash fell from 85,687,080,245.45 to 61,596,625,049.44. Opening cash and subsidiary remittances matter. Consolidated finance-company deposits cannot be treated as distributable cash.",
+    "capital_and_fade": "Profit is projected independently for five years; retained earnings increase book capital without automatically earning historic franchise returns. Beginning-equity ROE then fades linearly to the scenario cost of equity over five years. The terminal regime earns its capital cost with growth funded by retention; it contains no perpetual excess franchise value. Five-year horizons are bounded research choices, tested with immediate and ten-year fade, not established forecasts.",
+    "discount": "Use the archived CNY sovereign-yield plus listed-equity beta times China total ERP policy. Select central for base and upper/lower for bear/bull. Components are asynchronous dated proxies; the beta interval is not a forward cost-of-equity confidence interval. The +200bp sensitivity tests a materially higher required return; no second country premium is added.",
+    "peer": "Wuliangye H1 growth is off restated revenue/profit comparatives; negative operating cash flow and higher sales-expense intensity counter an assumption of automatic industry recovery. Peer growth is not transferred to Moutai.",
+    "time_bridge": "The June-30 book basis is a modelling origin using information available only by the actual registration/valuation timestamp. Annual cash-flow values are transported to that valuation timestamp with the matching discount convention; this is not observed September net assets and must never be backfilled into June decisions. June dividends/repurchases already reflected in book equity are not subtracted again."
+  },
+  "review_required_before_simulation_admission": [
+    "Confirm current model facts, time bridge, payout/capital assumptions and sensitivity results are admissible for the stated paper scope.",
+    "Bind the new model and policy to the P1 producer/consumer contracts and daily account; source truth and arithmetic alone do not grant simulation or live admission."
+  ]
+}

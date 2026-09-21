@@ -13,14 +13,14 @@ class FakeConnection:
         self.commits += 1
 
 
-def test_financial_enrichment_completion_casts_nullable_error_for_postgres() -> None:
+def test_financial_enrichment_completion_marks_official_archive() -> None:
     connection = FakeConnection()
 
     finish_financial_enrichment(connection, "600519")
 
     query, params = connection.calls[0]
-    assert "%s::text IS NULL" in query
-    assert params == (None, None, "600519")
+    assert "SET status = %s" in query
+    assert params == ("official_filings_archived", None, "600519")
     assert connection.commits == 1
 
 
@@ -30,4 +30,4 @@ def test_financial_enrichment_failure_keeps_error_for_retry() -> None:
     finish_financial_enrichment(connection, "600519", "network timeout")
 
     _, params = connection.calls[0]
-    assert params == ("network timeout", "network timeout", "600519")
+    assert params == ("retry", "network timeout", "600519")

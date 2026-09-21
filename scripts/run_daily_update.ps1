@@ -3,6 +3,7 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'workbook_path.ps1')
 $runtimeDirectory = Join-Path $projectRoot 'runtime'
 $logDirectory = Join-Path $runtimeDirectory 'logs'
 $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
@@ -12,6 +13,10 @@ New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
 Start-Transcript -Path $logPath -Append | Out-Null
 
 function Get-AgentPython {
+    $python = Join-Path $runtimeDirectory 'venv\Scripts\python.exe'
+    if (Test-Path -LiteralPath $python) { return $python }
+    $reportPython = Join-Path $runtimeDirectory 'test-venv\Scripts\python.exe'
+    if (Test-Path -LiteralPath $reportPython) { return $reportPython }
     $venvPython = Join-Path $projectRoot '.venv\Scripts\python.exe'
     if (Test-Path -LiteralPath $venvPython) { return $venvPython }
 
@@ -58,13 +63,11 @@ function Assert-WorkbookUnlocked {
 }
 
 function Assert-CanonicalWorkbookUnlocked {
-    $workbooks = @(Get-ChildItem -LiteralPath $projectRoot -File -Filter '*.xlsx')
-    if ($workbooks.Count -ne 1) {
-        throw 'Expected exactly one canonical .xlsx workbook in the project root.'
-    }
+    $workbook = Get-AgentWorkbook -ProjectRoot $projectRoot
+    $env:WORKBOOK_PATH = $workbook.FullName
     for ($attempt = 1; $attempt -le 30; $attempt += 1) {
         try {
-            $stream = [System.IO.File]::Open($workbooks[0].FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+            $stream = [System.IO.File]::Open($workbook.FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
             $stream.Close()
             return
         }
@@ -77,6 +80,15 @@ function Assert-CanonicalWorkbookUnlocked {
 
 try {
     Set-Location $projectRoot
+    # Task Scheduler starts with a minimal environment. Pin the project source,
+    # UTF-8 output, and the bundled Node runtime used by the workbook exporter.
+    $env:PYTHONPATH = Join-Path $projectRoot 'src'
+    $env:PYTHONUTF8 = '1'
+    $nodeRoot = Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\node'
+    if (Test-Path -LiteralPath (Join-Path $nodeRoot 'bin\node.exe')) {
+        $env:PATH = "$(Join-Path $nodeRoot 'bin');$env:PATH"
+        $env:NODE_PATH = Join-Path $nodeRoot 'node_modules'
+    }
     $python = Get-AgentPython
     Assert-CentralDatabaseReachable
     Assert-CanonicalWorkbookUnlocked

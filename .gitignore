@@ -15,7 +15,14 @@ runtime/
 backups/
 *.dump
 *.manifest.json
+evidence-archive/
+.agents/
 
 # Editor and operating-system files
 .DS_Store
 Thumbs.db
+
+# WPS Cloud conflict copies. Keep them on disk for recovery, but do not track
+# cloud-generated duplicates of versioned deployment definitions.
+deploy/server/*-副本*.service
+deploy/server/*-副本*.timer

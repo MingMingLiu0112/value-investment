@@ -4,17 +4,19 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from .models import QualityGateResult
+from .valuation import reference_matches_current_inputs
 
 
 def automatically_verified(point: dict) -> bool:
     """Accept machine verification only when its cross-source evidence is retained."""
     metadata = point.get('metadata') or {}
-    return bool(metadata.get('automatic_cross_source_verification'))
+    return metadata.get('automatic_cross_source_verification') is True and not metadata.get('evidence_quarantine')
 
 
 def accepted_verification(point: dict) -> bool:
     """Permit valuation inputs only after retained automatic cross-validation."""
-    return point['validation_status'] == 'verified' and automatically_verified(point)
+    from .financial_quality import _accepted
+    return _accepted(point)
 
 
 def evaluate(symbol: str, points: list[dict], max_age_hours: int, conflict_tolerance: Decimal) -> QualityGateResult:
@@ -41,6 +43,11 @@ def evaluate(symbol: str, points: list[dict], max_age_hours: int, conflict_toler
         if not model_values:
             return QualityGateResult(symbol, '待估值', ['缺少已复核合理价值和模型参考价'], price, None, None, '待数据', Decimal('0'), {'price': str(price), 'reasons': ['缺少已复核合理价值和模型参考价']})
         model = max(model_values, key=lambda p: p['created_at'])
+        if not reference_matches_current_inputs(symbol, model, points):
+            reasons = ['模型参考价输入已失效或溯源不匹配，需重新计算']
+            return QualityGateResult(symbol, '待估值', reasons, price, None, None,
+                                     '待数据', Decimal('0'),
+                                     {'price': str(price), 'reasons': reasons})
         fair_value = Decimal(model['value'])
         safety_margin = (fair_value - price) / fair_value if fair_value > 0 else Decimal('0')
         return QualityGateResult(

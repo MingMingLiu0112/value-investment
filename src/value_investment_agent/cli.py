@@ -2,18 +2,22 @@ from __future__ import annotations
 
 import argparse
 import json
+import hashlib
+import shutil
 from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 
 from .adapters import AkshareFinancialAbstractAdapter, AksharePriceAdapter, SinaFinancialAdapter, SinaFinancialStatementsAdapter
 from .backup import create_backup, verify_restore
-from .db import begin_run, claim_disclosures_for_extraction, claim_financial_enrichment_batch, connect, end_run, enqueue_financial_enrichment, export_payload, finish_disclosure_extraction, finish_financial_enrichment, initialize, latest_points, record_failed_run, record_monthly_snapshot, sector_map, store_filing_candidates, store_market_screen, store_official_disclosure, store_record, upsert_instruments, upsert_valuation
+from .db import begin_run, claim_disclosures_for_extraction, claim_financial_enrichment_batch, connect, current_market_candidate_symbols, end_run, enqueue_financial_enrichment, export_payload, finish_disclosure_extraction, finish_financial_enrichment, initialize, latest_points, record_failed_run, record_monthly_snapshot, sector_map, store_filing_candidates, store_market_screen, store_official_disclosure, store_record, upsert_financial_quality, upsert_instruments, upsert_valuation
 from .disclosures import collect_latest_reports
 from .dividends import CninfoDividendAdapter, build_payout_ratio_records
 from .evidence import load_evidence_manifest
 from .candidate_review import automatically_verified_candidates, load_review_rows, reviewed_records, write_review_template
 from .filing_extract import extract_candidates
+from .financial_quality import evaluate_financial_quality
+from .derived_financials import build_verified_derivations
 from .quality import as_valuation_row, evaluate
 from .market import AllAMarketAdapter
 from .settings import get_settings
@@ -58,10 +62,11 @@ def run_update(prices: bool, financials: bool, sync_excel: bool) -> None:
                 stored += 1
             grouped: dict[str, list[dict]] = {item[0]: [] for item in UNIVERSE}
             for point in latest_points(connection):
-                grouped[point['symbol']].append(point)
+                grouped.setdefault(point['symbol'], []).append(point)
             for symbol, rows in grouped.items():
                 result = evaluate(symbol, rows, settings.data_max_age_hours, Decimal(str(settings.price_conflict_tolerance)))
                 upsert_valuation(connection, as_valuation_row(result))
+            _refresh_financial_quality(connection)
             output = None
             if sync_excel:
                 output = str(sync_workbook(export_payload(connection), settings.workbook_path, settings.output_directory))
@@ -77,6 +82,72 @@ def run_quality() -> None:
     with connect(settings.database_url) as connection:
         rows = connection.execute('SELECT symbol, data_status, build_signal, calculated_at FROM valuation_results ORDER BY symbol').fetchall()
     print(json.dumps(rows, ensure_ascii=False, default=str, indent=2))
+
+
+def refresh_valuations() -> None:
+    """Recalculate every current screen candidate without fetching new data."""
+    settings = get_settings()
+    with connect(settings.database_url) as connection:
+        run_id = begin_run(connection, 'refresh-valuations')
+        try:
+            symbols = current_market_candidate_symbols(connection)
+            if not symbols:
+                raise RuntimeError('No current all-market screen candidates are available')
+            for symbol in symbols:
+                points = latest_points(connection, symbols=[symbol])
+                for record in build_reference_records(points, [symbol]):
+                    store_record(connection, record, 'pending')
+                del points
+                rows = latest_points(connection, symbols=[symbol])
+                result = evaluate(symbol, rows, settings.data_max_age_hours, Decimal(str(settings.price_conflict_tolerance)))
+                upsert_valuation(connection, as_valuation_row(result))
+                del rows
+            _refresh_financial_quality(connection, symbols)
+            end_run(connection, run_id, 'succeeded', {'candidate_count': len(symbols)})
+        except Exception as error:
+            record_failed_run(connection, run_id, 'refresh-valuations', {'error': str(error)})
+            raise
+    print(json.dumps({'status': 'succeeded', 'candidate_count': len(symbols)}, ensure_ascii=False))
+
+
+def _refresh_financial_quality(connection, symbols: list[str] | None = None) -> int:
+    """Rebuild research-quality scores from retained verified data only."""
+    symbols = symbols or current_market_candidate_symbols(connection)
+    if not symbols:
+        return 0
+    issuers = {
+        row['symbol']: row
+        for row in connection.execute(
+            'SELECT symbol, name, sector FROM instruments WHERE symbol = ANY(%s)', (symbols,)
+        ).fetchall()
+    }
+    for symbol in symbols:
+        for annual_only in (False, True):
+            points = latest_points(connection, annual_only=annual_only, symbols=[symbol])
+            for record in build_verified_derivations(points, [symbol]):
+                store_record(connection, record, 'verified', False)
+            del points
+        rows = (latest_points(connection, symbols=[symbol])
+                + latest_points(connection, annual_only=True, symbols=[symbol]))
+        issuer = issuers[symbol]
+        upsert_financial_quality(connection, evaluate_financial_quality(
+            symbol, issuer['name'], issuer['sector'], rows,
+        ))
+        del rows
+    return len(symbols)
+
+
+def refresh_financial_quality() -> None:
+    settings = get_settings()
+    with connect(settings.database_url) as connection:
+        run_id = begin_run(connection, 'refresh-financial-quality')
+        try:
+            count = _refresh_financial_quality(connection)
+            end_run(connection, run_id, 'succeeded', {'candidate_count': count})
+        except Exception as error:
+            record_failed_run(connection, run_id, 'refresh-financial-quality', {'error': str(error)})
+            raise
+    print(json.dumps({'status': 'succeeded', 'candidate_count': count}, ensure_ascii=False))
 
 
 def import_evidence(manifest: Path) -> None:
@@ -124,17 +195,32 @@ def auto_verify_filings(limit: int) -> None:
         run_id = begin_run(connection, 'auto-verify-filings')
         try:
             records = automatically_verified_candidates(connection, limit)
+            stored_count = 0
             for candidate_id, record in records:
                 store_record(connection, record, 'verified', False)
                 connection.execute(
                     "UPDATE filing_candidates SET status = 'automatically_verified' WHERE candidate_id = %s",
                     (candidate_id,),
                 )
-            end_run(connection, run_id, 'succeeded', {'records_stored': len(records), 'limit': limit})
+                stored_count += 1
+            end_run(connection, run_id, 'succeeded', {'records_stored': stored_count, 'limit': limit})
         except Exception as error:
             record_failed_run(connection, run_id, 'auto-verify-filings', {'error': str(error), 'limit': limit})
             raise
-    print(json.dumps({'status': 'succeeded', 'records_stored': len(records)}, ensure_ascii=False))
+    print(json.dumps({'status': 'succeeded', 'records_stored': stored_count}, ensure_ascii=False))
+
+
+def archive_financial_records(records, directory):
+    from .tracking_collection import archive_snapshot
+    paths = {}
+    archived = []
+    for record in records:
+        digest = hashlib.sha256(record.raw_payload).hexdigest()
+        if digest not in paths:
+            paths[digest] = archive_snapshot(directory, record.raw_payload,
+                                              subdirectory='financial_snapshots')
+        archived.append(replace(record, local_path=str(paths[digest])))
+    return archived
 
 
 def collect_secondary_financials(limit: int) -> None:
@@ -143,7 +229,7 @@ def collect_secondary_financials(limit: int) -> None:
     with connect(settings.database_url) as connection:
         run_id = begin_run(connection, 'collect-secondary-financials')
         rows = connection.execute(
-            """SELECT DISTINCT ON (o.symbol) o.symbol
+            """SELECT DISTINCT ON (o.symbol, o.report_period) o.symbol, o.report_period
                  FROM official_disclosures o
                  JOIN filing_candidates c ON c.disclosure_id = o.disclosure_id
                 WHERE NOT EXISTS (
@@ -151,33 +237,73 @@ def collect_secondary_financials(limit: int) -> None:
                      WHERE p.symbol = o.symbol AND p.period_label = o.report_period
                        AND d.source_name = 'AkShare / Sina financial indicators'
                 )
-                ORDER BY o.symbol, o.published_at DESC
+                   OR EXISTS (
+                    SELECT 1 FROM filing_candidates c
+                     WHERE c.disclosure_id = o.disclosure_id AND c.field_name = 'roe'
+                       AND NOT EXISTS (
+                         SELECT 1 FROM data_points p JOIN raw_documents d ON d.document_id = p.source_id
+                          WHERE p.symbol = o.symbol AND p.period_label = o.report_period
+                            AND p.field_name = 'roe_weighted'
+                            AND d.source_name = 'AkShare / Sina financial indicators'
+                       )
+                   )
+                   OR EXISTS (
+                    SELECT 1 FROM filing_candidates c
+                     WHERE c.disclosure_id = o.disclosure_id AND c.field_name = 'net_income'
+                       AND NOT EXISTS (
+                         SELECT 1 FROM data_points p JOIN raw_documents d ON d.document_id = p.source_id
+                          WHERE p.symbol = o.symbol AND p.period_label = o.report_period
+                            AND p.field_name = c.field_name AND p.unit = 'CNY'
+                            AND d.source_name = 'AkShare / Sina financial abstract'
+                       )
+                   )
+                   OR EXISTS (
+                    SELECT 1 FROM filing_candidates c
+                     WHERE c.disclosure_id = o.disclosure_id
+                       AND c.field_name = ANY(ARRAY['cash','short_term_borrowings','current_portion_long_term_debt','long_term_borrowings','bonds_payable','operating_cash_flow','total_assets','total_liabilities','operating_cost','revenue','net_income'])
+                       AND NOT EXISTS (
+                         SELECT 1 FROM data_points p JOIN raw_documents d ON d.document_id = p.source_id
+                          WHERE p.symbol = o.symbol AND p.period_label = o.report_period
+                            AND p.field_name = c.field_name AND p.unit = 'CNY'
+                            AND d.source_name = 'AkShare / Sina detailed financial statements'
+                       )
+                   )
+                ORDER BY o.symbol, o.report_period, o.published_at DESC
                 LIMIT %s""",
             (limit,),
         ).fetchall()
         stored = failed = 0
         failures: list[dict[str, str]] = []
+        # Release selection locks before any external network calls.
+        connection.commit()
         try:
             adapter = SinaFinancialAdapter()
+            abstract_adapter = AkshareFinancialAbstractAdapter()
+            statements_adapter = SinaFinancialStatementsAdapter()
             for row in rows:
                 try:
-                    # A nested transaction becomes a savepoint here, so one
-                    # issuer cannot discard previously collected evidence.
+                    records = adapter.fetch([row['symbol']])
+                    records.extend(abstract_adapter.fetch([row['symbol']], report_period=row['report_period']))
+                    records.extend(statements_adapter.fetch([row['symbol']], report_period=row['report_period']))
+                    records = archive_financial_records(records, settings.evidence_directory)
+                    # Each issuer is atomic; no network wait holds a write lock.
                     with connection.transaction():
-                        records = adapter.fetch([row['symbol']])
                         for record in records:
                             store_record(connection, record, 'pending')
                     stored += len(records)
                 except Exception as error:
                     failures.append({'symbol': row['symbol'], 'error': str(error)[:300]})
                     failed += 1
-            end_run(connection, run_id, 'succeeded', {
+            outcome = 'failed' if failed else 'succeeded'
+            end_run(connection, run_id, outcome, {
                 'requested': len(rows), 'records_stored': stored, 'failed_symbols': failures,
             })
         except Exception as error:
             record_failed_run(connection, run_id, 'collect-secondary-financials', {'error': str(error)})
             raise
-    print(json.dumps({'status': 'succeeded', 'requested': len(rows), 'records_stored': stored, 'failed': failed}, ensure_ascii=False))
+    print(json.dumps({'status': outcome, 'requested': len(rows), 'records_stored': stored, 'failed': failed}, ensure_ascii=False))
+    if failed:
+        raise SystemExit(1)
 
 
 def snapshot_month(month: str) -> None:
@@ -278,13 +404,20 @@ def extract_filing_candidates_batch(limit: int) -> None:
                     raise RuntimeError('Archived PDF hash does not match disclosure record')
                 count = store_filing_candidates(connection, disclosure['disclosure_id'], packet['candidates'])
                 finish_disclosure_extraction(connection, disclosure['disclosure_id'], count)
+                # A later report failure must not roll back earlier evidence.
+                connection.commit()
                 stored += count
             except Exception as error:
                 connection.rollback()
                 finish_disclosure_extraction(connection, disclosure['disclosure_id'], error=str(error))
+                connection.commit()
                 failed += 1
-        end_run(connection, run_id, 'succeeded', {'requested': len(batch), 'candidates_stored': stored, 'failed': failed})
-    print(json.dumps({'status': 'succeeded', 'requested': len(batch), 'candidates_stored': stored, 'failed': failed}, ensure_ascii=False))
+        status = 'failed' if failed else 'succeeded'
+        result = {'requested': len(batch), 'candidates_stored': stored, 'failed': failed}
+        end_run(connection, run_id, status, result)
+    print(json.dumps({'status': status, **result}, ensure_ascii=False))
+    if failed:
+        raise SystemExit(1)
 
 
 def screen_market(include_industry: bool) -> None:
@@ -297,7 +430,19 @@ def screen_market(include_industry: bool) -> None:
             if not include_industry:
                 known_sectors = sector_map(connection)
                 candidates = [replace(candidate, sector=known_sectors.get(candidate.symbol, candidate.sector)) for candidate in candidates]
-            stored = store_market_screen(connection, candidates, raw, fetched_at, *source)
+            archive_dir = settings.evidence_directory / 'market_snapshots'
+            archive_dir.mkdir(parents=True, exist_ok=True)
+            archive = archive_dir / f'{hashlib.sha256(raw).hexdigest()}.json'
+            if archive.exists():
+                if hashlib.sha256(archive.read_bytes()).hexdigest() != hashlib.sha256(raw).hexdigest():
+                    raise ValueError('Existing market evidence hash mismatch')
+            else:
+                if shutil.disk_usage(archive_dir).free < 2*1024**3 + len(raw):
+                    raise OSError('Low disk: preserve database reserve before market archive')
+                temporary = archive.with_suffix('.part')
+                temporary.write_bytes(raw)
+                temporary.replace(archive)
+            stored = store_market_screen(connection, candidates, raw, fetched_at, *source, local_path=str(archive))
             enqueue_financial_enrichment(connection, candidates, fetched_at.date())
             end_run(connection, run_id, 'succeeded', {'universe_count': len(universe), 'candidate_count': stored})
         except Exception as error:
@@ -315,6 +460,12 @@ def main() -> None:
     update.add_argument('--financials', action='store_true', help='从 AkShare/Sina 拉取待核验财务指标')
     update.add_argument('--no-sync-excel', action='store_true')
     sub.add_parser('quality')
+    sub.add_parser('track-candidates')
+    sub.add_parser('refresh-valuations')
+    sub.add_parser('refresh-financial-quality')
+    sub.add_parser('refresh-security-universe')
+    institutions = sub.add_parser('collect-institution-metrics')
+    institutions.add_argument('--limit', type=int, default=80, choices=range(1, 101))
     sub.add_parser('export-payload')
     sub.add_parser('sync-excel')
     snapshot = sub.add_parser('snapshot-month')
@@ -328,14 +479,16 @@ def main() -> None:
     auto_verify = sub.add_parser('auto-verify-filings')
     auto_verify.add_argument('--limit', type=int, default=100, choices=range(1, 501), metavar='1-500')
     secondary = sub.add_parser('collect-secondary-financials')
-    secondary.add_argument('--limit', type=int, default=25, choices=range(1, 101), metavar='1-100')
+    secondary.add_argument('--limit', type=int, default=25, choices=range(1, 121), metavar='1-120')
+    growth = sub.add_parser('collect-growth-evidence')
+    growth.add_argument('--limit', type=int, default=5, choices=range(1, 21), metavar='1-20')
     sub.add_parser('backup')
     filings = sub.add_parser('collect-filings')
     filings.add_argument('--symbols', help='Comma-separated A-share codes; defaults to the tracked sample universe')
     enrichment = sub.add_parser('enrich-financials')
-    enrichment.add_argument('--limit', type=int, default=5, choices=range(1, 21), metavar='1-20')
+    enrichment.add_argument('--limit', type=int, default=5, choices=range(1, 41), metavar='1-40')
     extraction = sub.add_parser('extract-filing-candidates-batch')
-    extraction.add_argument('--limit', type=int, default=10, choices=range(1, 21), metavar='1-20')
+    extraction.add_argument('--limit', type=int, default=10, choices=range(1, 41), metavar='1-40')
     market = sub.add_parser('screen-market')
     market.add_argument('--without-industry', action='store_true')
     candidates = sub.add_parser('extract-filing-candidates')
@@ -367,6 +520,9 @@ def main() -> None:
         auto_verify_filings(args.limit)
     elif args.command == 'collect-secondary-financials':
         collect_secondary_financials(args.limit)
+    elif args.command == 'collect-growth-evidence':
+        from .growth_collection import collect_growth_evidence
+        print(json.dumps(collect_growth_evidence(args.limit), ensure_ascii=False))
     elif args.command == 'snapshot-month':
         snapshot_month(args.month)
     elif args.command == 'backup':
@@ -384,6 +540,19 @@ def main() -> None:
         extract_filing_candidates_batch(args.limit)
     elif args.command == 'screen-market':
         screen_market(not args.without_industry)
+    elif args.command == 'track-candidates':
+        from .tracking_collection import collect_candidate_quotes
+        print(json.dumps(collect_candidate_quotes(settings), ensure_ascii=False))
+    elif args.command == 'refresh-valuations':
+        refresh_valuations()
+    elif args.command == 'refresh-financial-quality':
+        refresh_financial_quality()
+    elif args.command == 'refresh-security-universe':
+        from .official_universe import refresh_official_universe
+        print(json.dumps(refresh_official_universe(),ensure_ascii=False))
+    elif args.command == 'collect-institution-metrics':
+        from .institution_metrics import collect_institution_metrics
+        print(json.dumps(collect_institution_metrics(args.limit), ensure_ascii=False))
     elif args.command == 'extract-filing-candidates':
         print(json.dumps(extract_candidates(args.pdf), ensure_ascii=False, indent=2))
     else:

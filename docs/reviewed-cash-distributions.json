@@ -1,0 +1,844 @@
+{
+  "scope": "Body-reviewed gross cash entitlements; incomplete historical coverage",
+  "backtest_ready": false,
+  "events": [
+    {
+      "symbol": "600519",
+      "record_date": "2021-06-24",
+      "ex_date": "2021-06-25",
+      "cash_payment_date": "2021-06-25",
+      "cash_amount": "19.293",
+      "per_shares": "1",
+      "cash_per_share": "19.293",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2021-06-21/1210293974.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1210293974.pdf",
+          "sha256": "b516194d5adb337d3ea44b81e0a22a132247b310d341dfa1fb951a385a7642cb",
+          "pages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2022-06-29",
+      "ex_date": "2022-06-30",
+      "cash_payment_date": "2022-06-30",
+      "cash_amount": "21.675",
+      "per_shares": "1",
+      "cash_per_share": "21.675",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2022-06-24/1213805064.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1213805064.pdf",
+          "sha256": "25234cfd2976a86649b9e1d15e3dc915480b2075b244e21e35bd6cb12a4daabb",
+          "pages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2023-06-29",
+      "ex_date": "2023-06-30",
+      "cash_payment_date": "2023-06-30",
+      "cash_amount": "25.911",
+      "per_shares": "1",
+      "cash_per_share": "25.911",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2023-06-26/1217133037.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1217133037.pdf",
+          "sha256": "a4c07cb17a1ca6e1fd5e49a2324aa71a4900347da51810781f1457df4940978f",
+          "pages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2022-12-26",
+      "ex_date": "2022-12-27",
+      "cash_payment_date": "2022-12-27",
+      "cash_amount": "21.91",
+      "per_shares": "1",
+      "cash_per_share": "21.91",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2022-12-21/1215407396.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1215407396.pdf",
+          "sha256": "2686df87a57d91f7348cf58155963531e9731b7b8a966b191d081ac9493b0601",
+          "pages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2024-06-18",
+      "ex_date": "2024-06-19",
+      "cash_payment_date": "2024-06-19",
+      "cash_amount": "30.876",
+      "per_shares": "1",
+      "cash_per_share": "30.876",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2024-06-12/1220324741.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1220324741.pdf",
+          "sha256": "626888864d607e51f11f48df3368c496c7dec832f6cdd90244336195b1ef2972",
+          "pages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2023-12-19",
+      "ex_date": "2023-12-20",
+      "cash_payment_date": "2023-12-20",
+      "cash_amount": "19.106",
+      "per_shares": "1",
+      "cash_per_share": "19.106",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2023-12-14/1218606528.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1218606528.pdf",
+          "sha256": "6d17512b6f5a0000d53d8053201ef8a3f934714fdca31e8220ef6f1a9bb67f14",
+          "pages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2024-12-19",
+      "ex_date": "2024-12-20",
+      "cash_payment_date": "2024-12-20",
+      "cash_amount": "23.882",
+      "per_shares": "1",
+      "cash_per_share": "23.882",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2024-12-14/1222015210.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1222015210.pdf",
+          "sha256": "c2ae81be30b3feaa191bf8897e94da37ef7392be57c60181bd49f49318ee3a6e",
+          "pages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2025-06-25",
+      "ex_date": "2025-06-26",
+      "cash_payment_date": "2025-06-26",
+      "cash_amount": "27.673",
+      "per_shares": "1",
+      "cash_per_share": "27.673",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "ex_reference_cash_per_share": "27.600",
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2025-06-20/1223934491.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1223934491.pdf",
+          "sha256": "8ff3e6e370c75cece700e5474337c8ecf1adb87b01a1a696bae02fd25982af3b",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2025-12-18",
+      "ex_date": "2025-12-19",
+      "cash_payment_date": "2025-12-19",
+      "cash_amount": "23.957",
+      "per_shares": "1",
+      "cash_per_share": "23.957",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2025-12-11/1224867074.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1224867074.pdf",
+          "sha256": "ad2f4548490a203bbcada1181341d9dc90b19a64a0ecf14ff1c8e6b9d4b71673",
+          "pages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2016-06-30",
+      "ex_date": "2016-07-01",
+      "cash_payment_date": "2016-07-01",
+      "cash_amount": "6.171",
+      "per_shares": "1",
+      "cash_per_share": "6.171",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2016-06-27/1202409697.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1202409697.pdf",
+          "sha256": "22fee2f46b76bf9d4d15e4e39044bf1b9e7b41e79b81931a94b17ae435d936e4",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2017-07-06",
+      "ex_date": "2017-07-07",
+      "cash_payment_date": "2017-07-07",
+      "cash_amount": "6.787",
+      "per_shares": "1",
+      "cash_per_share": "6.787",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2017-07-01/1203671345.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1203671345.pdf",
+          "sha256": "c25202905ef3d8251f9d1faa0c5a904f115cf50b16139d46753d22faa9a775bb",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2018-06-14",
+      "ex_date": "2018-06-15",
+      "cash_payment_date": "2018-06-15",
+      "cash_amount": "10.999",
+      "per_shares": "1",
+      "cash_per_share": "10.999",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2018-06-08/1205044357.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1205044357.pdf",
+          "sha256": "1023bc4bdefb23f2c8691a2cbbbab0925d9206a0aab3af24273c9aad33f6e416",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2019-06-27",
+      "ex_date": "2019-06-28",
+      "cash_payment_date": "2019-06-28",
+      "cash_amount": "14.539",
+      "per_shares": "1",
+      "cash_per_share": "14.539",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2019-06-22/1206379388.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1206379388.pdf",
+          "sha256": "c418dcb2ef7fa5e890f1285ea9bed7d6cc4f3b3e5201b4e4076982eec60c30c0",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2020-06-23",
+      "ex_date": "2020-06-24",
+      "cash_payment_date": "2020-06-24",
+      "cash_amount": "17.025",
+      "per_shares": "1",
+      "cash_per_share": "17.025",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2020-06-18/1207935404.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1207935404.pdf",
+          "sha256": "2e9e24aa45eaaedc9b9f13f52d327aace62f9ea4deb86be4c49b48aed6a669b8",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "000333",
+      "record_date": "2022-06-01",
+      "ex_date": "2022-06-02",
+      "cash_payment_date": "2022-06-02",
+      "cash_amount": "17.008943",
+      "per_shares": "10",
+      "cash_per_share": "1.7008943",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2022-05-27/1213516434.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/000333-1213516434.pdf",
+          "sha256": "716fafb0e4163618ab0251d31033271a05a1639e81ad153addd08c71fb4f3b29",
+          "pages": [
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "000333",
+      "record_date": "2023-05-31",
+      "ex_date": "2023-06-01",
+      "cash_payment_date": "2023-06-01",
+      "cash_amount": "25",
+      "per_shares": "10",
+      "cash_per_share": "2.5",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "ex_reference_cash_per_share": "2.45",
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2023-05-25/1216898601.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/000333-1216898601.pdf",
+          "sha256": "a7229455f23fb8364a3a5730ea3ab76cf5c7b1ffa60f9d5d7dc06ec219a9dcd6",
+          "pages": [
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "000333",
+      "record_date": "2024-05-14",
+      "ex_date": "2024-05-15",
+      "cash_payment_date": "2024-05-15",
+      "cash_amount": "30",
+      "per_shares": "10",
+      "cash_per_share": "3",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "ex_reference_cash_per_share": "2.9791154",
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2024-05-09/1220011030.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/000333-1220011030.pdf",
+          "sha256": "c0cab0c355c20c4dbb3510dba55b0645185866696d99a16a87ff3c887a540f34",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "000333",
+      "record_date": "2025-06-11",
+      "ex_date": "2025-06-12",
+      "cash_payment_date": "2025-06-12",
+      "cash_amount": "35",
+      "per_shares": "10",
+      "cash_per_share": "3.5",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "ex_reference_cash_per_share": "3.4788428",
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2025-06-06/1223787314.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/000333-1223787314.pdf",
+          "sha256": "d9bb47f27deb4b2eb3fce504509d826c2fa6df3f17664feab24b5e0e2ddfbe3c",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "000333",
+      "record_date": "2025-11-17",
+      "ex_date": "2025-11-18",
+      "cash_payment_date": "2025-11-18",
+      "cash_amount": "5",
+      "per_shares": "10",
+      "cash_per_share": "0.5",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "ex_reference_cash_per_share": "0.4902212",
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2025-11-12/1224799414.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/000333-1224799414.pdf",
+          "sha256": "9f994668dbc5e1e4583e0536bdc7c0b88f3b45d7749851010960a69971e712b3",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "000333",
+      "record_date": "2017-05-09",
+      "ex_date": "2017-05-10",
+      "cash_payment_date": "2017-05-10",
+      "cash_amount": "10.00",
+      "per_shares": "10",
+      "cash_per_share": "1.00",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2017-05-03/1203470235.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/000333-1203470235.pdf",
+          "sha256": "1ea5a1d0064baf6e4b4a80f7e0a366860b9e3ade0af1b8d93ab9b0bbb547ae34",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "000333",
+      "record_date": "2018-05-03",
+      "ex_date": "2018-05-04",
+      "cash_payment_date": "2018-05-04",
+      "cash_amount": "12.00",
+      "per_shares": "10",
+      "cash_per_share": "1.20",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2018-04-26/1204790074.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/000333-1204790074.pdf",
+          "sha256": "1a60285cd2616f5b5cfd6fb3b439fd34566446d7e4453e2354418f84bc80622b",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "000333",
+      "record_date": "2019-05-29",
+      "ex_date": "2019-05-30",
+      "cash_payment_date": "2019-05-30",
+      "cash_amount": "13.039620",
+      "per_shares": "10",
+      "cash_per_share": "1.303962",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "ex_reference_cash_per_share": "1.30",
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2019-05-23/1206296145.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/000333-1206296145.pdf",
+          "sha256": "c7e64aa656b2221bb4bbfa34b29d53685c124e03ab93197daead4360ef107056",
+          "pages": [
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "000333",
+      "record_date": "2020-06-01",
+      "ex_date": "2020-06-02",
+      "cash_payment_date": "2020-06-02",
+      "cash_amount": "16",
+      "per_shares": "10",
+      "cash_per_share": "1.6",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "ex_reference_cash_per_share": "1.59",
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2020-05-27/1207862877.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/000333-1207862877.pdf",
+          "sha256": "7f723ce6352c6fb8032aa499a680d982b93d85464881b3af353368de58668c09",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "000333",
+      "record_date": "2015-04-29",
+      "ex_date": "2015-04-30",
+      "cash_payment_date": "2015-04-30",
+      "cash_amount": "10.00",
+      "per_shares": "10",
+      "cash_per_share": "1.00",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2015-04-24/1200895308.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/000333-1200895308.pdf",
+          "sha256": "33e7849cae8273671928ad1a063ae7047956155746a538cf878e17a868460953",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "000333",
+      "record_date": "2016-05-05",
+      "ex_date": "2016-05-06",
+      "cash_payment_date": "2016-05-06",
+      "cash_amount": "12.00",
+      "per_shares": "10",
+      "cash_per_share": "1.20",
+      "amount_basis": "implemented_gross_entitlement",
+      "capitalization_shares_per_share": "0.5",
+      "capitalization_credit_date": "2016-05-06",
+      "capitalization_listing_date": "2016-05-06",
+      "fractional_share_method": "descending_fraction_then_random_ties_until_declared_total",
+      "share_action_engine_supported": false,
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2016-04-29/1202266278.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/000333-1202266278.pdf",
+          "sha256": "d27511916bd8bcd50538ab44f7240fcaedf6ce68d9d71b362a8c90699c469fda",
+          "pages": [
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "601088",
+      "record_date": "2022-07-08",
+      "ex_date": "2022-07-11",
+      "cash_payment_date": "2022-07-11",
+      "cash_amount": "2.54",
+      "per_shares": "1",
+      "cash_per_share": "2.54",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2022-07-04/1213929820.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/601088-1213929820.pdf",
+          "sha256": "f884d4a87acba2f1e9c644b749167fea8a6f369722b5a082c13716c8ef7d3bbc",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "601088",
+      "record_date": "2023-07-04",
+      "ex_date": "2023-07-05",
+      "cash_payment_date": "2023-07-05",
+      "cash_amount": "2.55",
+      "per_shares": "1",
+      "cash_per_share": "2.55",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2023-06-28/1217145623.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/601088-1217145623.pdf",
+          "sha256": "1d3da427adc3511616cc277d392e91e9bc91667bf0e14d8942e01e0909d025c8",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "601088",
+      "record_date": "2024-07-05",
+      "ex_date": "2024-07-08",
+      "cash_payment_date": "2024-07-08",
+      "cash_amount": "2.26",
+      "per_shares": "1",
+      "cash_per_share": "2.26",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2024-07-01/1220505732.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/601088-1220505732.pdf",
+          "sha256": "d0a2a354bf3aeb735db8953ce1e364b1d18321fdd54852b0f6335f7ebc2f14d5",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "601088",
+      "record_date": "2025-07-04",
+      "ex_date": "2025-07-07",
+      "cash_payment_date": "2025-07-07",
+      "cash_amount": "2.26",
+      "per_shares": "1",
+      "cash_per_share": "2.26",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2025-06-30/1224029700.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/601088-1224029700.pdf",
+          "sha256": "6a1d6efa309c4361d270428b5eb17a3de9a72a65b6664f58b83d0f51034fda26",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "601088",
+      "record_date": "2025-11-07",
+      "ex_date": "2025-11-10",
+      "cash_payment_date": "2025-11-10",
+      "cash_amount": "0.98",
+      "per_shares": "1",
+      "cash_per_share": "0.98",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2025-11-04/1224784190.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/601088-1224784190.pdf",
+          "sha256": "14a76446d223efc414f420d4310c645426f831dc9ac3a7509d934bb7f239d36c",
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "601088",
+      "record_date": "2019-07-05",
+      "ex_date": "2019-07-08",
+      "cash_payment_date": "2019-07-08",
+      "cash_amount": "0.880",
+      "per_shares": "1",
+      "cash_per_share": "0.880",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [{
+        "url": "https://static.cninfo.com.cn/finalpage/2019-07-01/1206410487.PDF",
+        "path": "runtime/historical-filing-index/20260908T064040186766Z/pdfs/601088-1206410487.pdf",
+        "sha256": "8118e1416e2f08494493d01e11dee556e5bbe11d049d35321225f53dd5c7ec89",
+        "pages": [1, 2]
+      }]
+    },
+    {
+      "symbol": "601088",
+      "record_date": "2020-06-12",
+      "ex_date": "2020-06-15",
+      "cash_payment_date": "2020-06-15",
+      "cash_amount": "1.260",
+      "per_shares": "1",
+      "cash_per_share": "1.260",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [{
+        "url": "https://static.cninfo.com.cn/finalpage/2020-06-08/1207904635.PDF",
+        "path": "runtime/historical-filing-index/20260908T064040186766Z/pdfs/601088-1207904635.pdf",
+        "sha256": "aa3f04f85544ed418fe90c7d1030dc7fb9b39836e8ba998363af63daa00a8f8c",
+        "pages": [1, 2]
+      }]
+    },
+    {
+      "symbol": "601088",
+      "record_date": "2021-07-09",
+      "ex_date": "2021-07-12",
+      "cash_payment_date": "2021-07-12",
+      "cash_amount": "1.810",
+      "per_shares": "1",
+      "cash_per_share": "1.810",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [{
+        "url": "https://static.cninfo.com.cn/finalpage/2021-07-05/1210410648.PDF",
+        "path": "runtime/historical-filing-index/20260908T064040186766Z/pdfs/601088-1210410648.pdf",
+        "sha256": "8fcd8537964f8deb13a0c320b15272e6aed177d7596537cec68b43bbcfaf8752",
+        "pages": [1, 2]
+      }]
+    },
+    {
+      "symbol": "601088",
+      "record_date": "2015-06-12",
+      "ex_date": "2015-06-15",
+      "cash_payment_date": "2015-06-15",
+      "cash_amount": "0.740",
+      "per_shares": "1",
+      "cash_per_share": "0.740",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [{
+        "url": "https://static.cninfo.com.cn/finalpage/2015-06-06/1201112299.PDF",
+        "path": "runtime/historical-filing-index/20260908T064040186766Z/pdfs/601088-1201112299.pdf",
+        "sha256": "71daf31552c808c4f19d804242dfce5a0a26f680ac46a0787eb593b66b334243",
+        "pages": [1, 2, 3]
+      }]
+    },
+    {
+      "symbol": "601088",
+      "record_date": "2016-07-01",
+      "ex_date": "2016-07-04",
+      "cash_payment_date": "2016-07-04",
+      "cash_amount": "0.320",
+      "per_shares": "1",
+      "cash_per_share": "0.320",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [{
+        "url": "https://static.cninfo.com.cn/finalpage/2016-06-25/1202406486.PDF",
+        "path": "runtime/historical-filing-index/20260908T064040186766Z/pdfs/601088-1202406486.pdf",
+        "sha256": "743a31a0a6c0b047fca36d6beea49dd66e49550b1eb1bba84758d162acc19792",
+        "pages": [1, 2, 3]
+      }]
+    },
+    {
+      "symbol": "601088",
+      "record_date": "2018-07-06",
+      "ex_date": "2018-07-09",
+      "cash_payment_date": "2018-07-09",
+      "cash_amount": "0.91",
+      "per_shares": "1",
+      "cash_per_share": "0.91",
+      "amount_basis": "implemented_gross_entitlement",
+      "tax_treatment_verified": false,
+      "evidence": [{
+        "url": "https://static.cninfo.com.cn/finalpage/2018-06-30/1205110636.PDF",
+        "path": "runtime/historical-filing-index/20260908T064040186766Z/pdfs/601088-1205110636.pdf",
+        "sha256": "8d2a1a35e73e4f4ea49e617a0ba43ae14ca2196406754969d919fb6e9aafd8d9",
+        "pages": [1, 2, 3]
+      }]
+    },
+    {
+      "symbol": "601088",
+      "record_date": "2017-07-07",
+      "ex_date": "2017-07-10",
+      "cash_payment_date": "2017-07-10",
+      "cash_amount": "2.970",
+      "per_shares": "1",
+      "cash_per_share": "2.970",
+      "amount_basis": "implemented_gross_entitlement",
+      "components": {"ordinary": "0.460", "special": "2.510"},
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2017-07-03/1203675941.PDF",
+          "path": "runtime/historical-filing-index/20260908T064040186766Z/pdfs/601088-1203675941.pdf",
+          "sha256": "d37500274003e20efde75edb17fd57c3ee48ac2e0206a814278db96b9ad64c98",
+          "pages": [1]
+        }
+      ]
+    },
+    {
+      "symbol": "600519",
+      "record_date": "2015-07-16",
+      "ex_date": "2015-07-17",
+      "cash_payment_date": "2015-07-17",
+      "cash_amount": "4.37400",
+      "per_shares": "1",
+      "cash_per_share": "4.37400",
+      "amount_basis": "implemented_gross_entitlement",
+      "bonus_shares_per_share": "0.10000",
+      "bonus_listing_date": "2015-07-20",
+      "tax_treatment_verified": false,
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2015-07-10/1201268407.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/600519-1201268407.pdf",
+          "sha256": "bc57d0f990fbd85a23a9fedb5ee52bf274e8f37ad556dfb4632056e07ae0bd42",
+          "pages": [1, 2]
+        }
+      ]
+    },
+    {
+      "symbol": "000333",
+      "record_date": "2021-06-01",
+      "ex_date": "2021-06-02",
+      "cash_payment_date": "2021-06-02",
+      "cash_amount": "16.005847",
+      "per_shares": "10",
+      "cash_per_share": "1.6005847",
+      "amount_basis": "implemented_gross_entitlement",
+      "bonus_shares_per_share": null,
+      "tax_treatment_verified": false,
+      "superseded_document_id": "1210086884",
+      "evidence": [
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2021-05-26/1210091870.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/000333-1210091870.pdf",
+          "sha256": "3ae86625494a29dbf4f5032d366698e9c428a93811083c57230420f76670ee1c",
+          "pages": [2, 3]
+        },
+        {
+          "url": "https://static.cninfo.com.cn/finalpage/2021-05-26/1210091871.PDF",
+          "path": "runtime/historical-filing-index/20260908T062537893160Z/pdfs/000333-1210091871.pdf",
+          "sha256": "e64125b5c469416a0759bd0d492a84e619f8d3a99e00c7d23dbe3f6ed1b93170",
+          "pages": [2]
+        }
+      ]
+    }
+  ]
+}

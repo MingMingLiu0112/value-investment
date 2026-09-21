@@ -1,0 +1,27 @@
+{
+  "symbol": "000429",
+  "report_period": "2025-12-31",
+  "source_url": "https://static.cninfo.com.cn/finalpage/2026-03-14/1225008769.PDF",
+  "official_sha256": "369370607f3205de735f2f7b1d70311ac8a098fad4395c000f35cbaa62c6c7c1",
+  "unit": "CNY",
+  "scope": "bonds payable including current maturities",
+  "page_144": {
+    "zero_column": "opening_balance",
+    "closing_balance_cell": "blank",
+    "direct_closing_zero_extraction_allowed": false
+  },
+  "page_154": {
+    "opening_balance": "767774662.42",
+    "noncash_increase": "4725337.58",
+    "cash_repayment": "772500000.00",
+    "closing_balance_cell": "blank",
+    "formula": "opening_balance + noncash_increase - cash_repayment",
+    "reconciled_residual": "0.00",
+    "column_positions_visually_checked": true
+  },
+  "page_145_caution": "Adding the printed signed amortization directly gives -204099.78; do not change signs merely to force a zero residual.",
+  "status": "official_internal_reconciliation_only",
+  "independent_source_verified": false,
+  "database_value_changed": false,
+  "next_required_evidence": "Confirm repayment/completion from a separate disclosure or a same-scope independent structured source; define a tested zero-balance derivation policy before promotion."
+}

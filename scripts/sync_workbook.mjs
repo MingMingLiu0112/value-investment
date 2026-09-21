@@ -6,8 +6,48 @@ const [workbookPath, payloadPath, outputPath] = process.argv.slice(2);
 if (!workbookPath || !payloadPath || !outputPath) {
   throw new Error('Usage: node sync_workbook.mjs <workbook.xlsx> <payload.json> <temporary-output.xlsx>');
 }
-const payload = JSON.parse(await fs.readFile(payloadPath, 'utf8'));
+// XLSX is XML-based and rejects C0 controls sometimes present in PDF extracts.
+// Strip only non-displayable controls at the presentation boundary; the raw
+// original remains archived with its source hash in PostgreSQL.
+function spreadsheetSafe(value) {
+  if (typeof value === 'string') return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  if (Array.isArray(value)) return value.map(spreadsheetSafe);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, spreadsheetSafe(item)]));
+  }
+  return value;
+}
+
+// PostgreSQL exports are UTF-8, but archived/manual payloads can carry a
+// UTF-8 BOM.  Normalize only that transport marker before strict JSON parse.
+const payloadText = (await fs.readFile(payloadPath, 'utf8')).replace(/^\uFEFF/, '');
+const payload = spreadsheetSafe(JSON.parse(payloadText));
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
+
+function assertCompleteMarketPayload(value) {
+  const candidates = value.market_candidates;
+  if (!Array.isArray(candidates)) throw new Error('Payload is missing market_candidates');
+  // The daily workbook is a full-market research queue.  Do not allow a
+  // transient provider failure to replace it with a partial response.  Local
+  // fixture work can opt in explicitly without weakening scheduled runs.
+  if (candidates.length < 500 && process.env.ALLOW_PARTIAL_MARKET_PAYLOAD !== '1') {
+    throw new Error(`Refusing incomplete all-market payload: ${candidates.length} candidates (minimum 500)`);
+  }
+  const seen = new Set();
+  for (const candidate of candidates) {
+    const symbol = symbolKey(candidate.symbol);
+    if (!/^\d{6}$/.test(symbol) || seen.has(symbol)) {
+      throw new Error(`Invalid or duplicate market candidate symbol: ${candidate.symbol}`);
+    }
+    if (!candidate.board || candidate.board === '待板块映射' || !candidate.sector || candidate.sector === '待行业映射') {
+      throw new Error(`Incomplete board or industry mapping for ${symbol}`);
+    }
+    if (!candidate.source_id) throw new Error(`Missing market source audit ID for ${symbol}`);
+    seen.add(symbol);
+  }
+}
+
+assertCompleteMarketPayload(payload);
 const workbook = await SpreadsheetFile.importXlsx(await FileBlob.load(workbookPath));
 const dashboardSheet = workbook.worksheets.getItem('00_首页Dashboard');
 const verificationSummary = payload.filing_verification_summary ?? {};
@@ -19,10 +59,16 @@ dashboardSheet.getRange('I4:J7').values = [
   ['当前行情来源', latestMarketSource],
 ];
 const valuationBySymbol = new Map(payload.valuations.map((row) => [row.symbol, row]));
+const financialQualityBySymbol = new Map((payload.financial_quality ?? []).map((row) => [row.symbol, row]));
 const pointBySymbol = new Map();
 for (const point of payload.points) {
   const values = pointBySymbol.get(point.symbol) ?? {};
-  values[point.field_name] = point;
+  const existing = values[point.field_name];
+  // Retain an official cross-source fact when a later pending provider value
+  // exists for the same field.
+  if (!existing || (point.validation_status === 'verified' && existing.validation_status !== 'verified')) {
+    values[point.field_name] = point;
+  }
   pointBySymbol.set(point.symbol, values);
 }
 
@@ -47,6 +93,16 @@ function displayPeriod(periodLabel) {
   if (month === '12' && day === '31') return `${year}A`;
   if (month === '06' && day === '30') return `${year}H1`;
   return `${year}Q${Math.ceil(Number(month) / 3)}`;
+}
+
+function financialSummary(points, fieldNames = financialFields) {
+  const relevantPoints = Object.values(points).filter((point) => fieldNames.includes(point.field_name));
+  const verified = relevantPoints.filter((point) => point.validation_status === 'verified').length;
+  const pending = relevantPoints.filter((point) => point.validation_status !== 'verified').length;
+  if (!relevantPoints.length) return '\u5f85\u5f52\u6863\u5b98\u65b9\u8d22\u62a5';
+  if (!pending) return `\u5df2\u5b98\u65b9\u53cc\u6e90\u9a8c\u8bc1 ${verified} \u9879`;
+  if (!verified) return `\u5f85\u5b98\u65b9\u53cc\u6e90\u9a8c\u8bc1 ${pending} \u9879`;
+  return `\u5df2\u9a8c\u8bc1 ${verified} \u9879\uff0c\u5f85\u9a8c\u8bc1 ${pending} \u9879`;
 }
 
 function syncRows(sheetName, firstDataRow, writeRow) {
@@ -83,17 +139,28 @@ syncRows('05_仓位管理', 10, (sheet, row, symbol) => {
 });
 
 const financialFields = ['revenue', 'revenue_yoy', 'net_income', 'net_income_yoy', 'roe', 'roic', 'gross_margin', 'net_margin', 'operating_cash_flow', 'free_cash_flow', 'operating_cash_flow_to_net_income', 'debt_ratio', 'cash', 'interest_bearing_debt', 'eps_ttm', 'dps_ttm', 'payout_ratio'];
+// This is the evidence-facing coverage tab, so keep both the decision ratios
+// and their official-statement inputs visible.  Users can trace a debt ratio
+// or gross margin back to the actual verified asset, liability and cost facts.
+const coverageFinancialFields = [
+  ...financialFields,
+  'operating_cost', 'total_assets', 'total_liabilities',
+  'short_term_borrowings', 'current_portion_long_term_debt',
+  'long_term_borrowings', 'bonds_payable', 'capital_expenditure',
+  'eps_annual', 'eps_reported', 'bvps',
+];
 const bankOnlyInapplicableFields = new Set(['revenue_yoy', 'roic', 'net_margin', 'free_cash_flow']);
 const bankSymbols = new Set(['600036', '601288']);
 syncRows('03_财务指标', 4, (sheet, row, symbol) => {
   const p = pointBySymbol.get(symbol) ?? {};
   const values = financialFields.map((field) => {
     if (bankSymbols.has(symbol) && bankOnlyInapplicableFields.has(field)) return '\u4e0d\u9002\u7528\uff08\u94f6\u884c\u53e3\u5f84\uff09';
+    if (field === 'eps_ttm') return cellValue((p.eps_ttm ?? p.eps_annual ?? p.eps_reported)?.value);
     return cellValue(p[field]?.value);
   });
   const source = financialFields.map((field) => p[field]?.source_id).find(Boolean) ?? null;
   const period = financialFields.map((field) => p[field]?.period_label).find(Boolean) ?? null;
-  sheet.getRange(`C${row}:V${row}`).values = [[displayPeriod(period), ...values, source, source ? 'Agent 自动交叉验证中' : '待Agent写入']];
+  sheet.getRange(`C${row}:V${row}`).values = [[displayPeriod(period), ...values, source, financialSummary(p)]];
 });
 
 const observationSheet = workbook.worksheets.getItem('01_观察名单');
@@ -187,13 +254,27 @@ for (const audit of payload.audits) {
   auditRow += 1;
 }
 
+function columnLabel(columnNumber) {
+  let value = columnNumber;
+  let label = '';
+  while (value > 0) {
+    const remainder = (value - 1) % 26;
+    label = String.fromCharCode(65 + remainder) + label;
+    value = Math.floor((value - 1) / 26);
+  }
+  return label;
+}
+
 function replaceSheetRows(sheet, headers, rows) {
-  const rowCount = Math.max(501, rows.length + 1);
-  sheet.getRange(`A1:${String.fromCharCode(64 + headers.length)}${rowCount}`).values = Array.from(
+  // Clear enough rows to remove stale entries when a later screen contains
+  // fewer candidates than the prior all-market run.
+  const rowCount = Math.max(2001, rows.length + 1);
+  const lastColumn = columnLabel(headers.length);
+  sheet.getRange(`A1:${lastColumn}${rowCount}`).values = Array.from(
     { length: rowCount },
     (_, index) => index === 0 ? headers : Array(headers.length).fill(null),
   );
-  if (rows.length) sheet.getRange(`A2:${String.fromCharCode(64 + headers.length)}${rows.length + 1}`).values = rows;
+  if (rows.length) sheet.getRange(`A2:${lastColumn}${rows.length + 1}`).values = rows;
 }
 
 const reminderSheet = workbook.worksheets.getOrAdd('12_提醒');
@@ -216,31 +297,120 @@ function auditSummary(value) {
 }
 
 const reminders = (payload.reminders ?? []).map((row) => [
+  // Financial quality is a research-ranking layer. It never overrides the
+  // independent valuation and evidence gates that control build signals.
+  ...(() => {
+    const q = financialQualityBySymbol.get(row.symbol) ?? {};
+    return [
   row.priority, row.action, row.symbol, row.name, row.board, row.sector, row.reason,
   cellValue(row.current_price), cellValue(row.pe), cellValue(row.pb), enrichmentStatusLabel(row.enrichment_status),
+  row.valuation_signal, row.valuation_status, cellValue(row.safety_margin), row.valuation_data_status,
+  cellValue(q.total_score), q.quality_status ?? '待补证', cellValue(q.coverage_ratio),
   row.market_source, auditSummary(row.market_fallback_reason), row.industry_mapping_count, row.source_id, row.as_of,
+    ];
+  })(),
 ]);
 replaceSheetRows(reminderSheet,
-  ['优先级', '建议动作', '股票代码', '公司名称', '上市板块', '行业', '原因', '当前价(元)', 'PE', 'PB', '财报补全状态', '行情来源', '行情异常', '行业映射数量', 'source_id', '数据时点'],
+  ['优先级', '建议动作', '股票代码', '公司名称', '上市板块', '行业', '原因', '当前价(元)', 'PE', 'PB', '财报补全状态', '估值信号', '估值状态', '安全边际', '估值数据状态', '财务质量分', '财务质量状态', '质量覆盖率', '行情来源', '行情异常', '行业映射数量', 'source_id', '数据时点'],
   reminders,
 );
 
 const marketSheet = workbook.worksheets.getOrAdd('13_全市场初筛');
 const candidates = (payload.market_candidates ?? []).map((row) => [
+  // Keep the market screen and the financial-quality result adjacent for
+  // sorting, while retaining separate status fields for missing evidence.
+  ...(() => {
+    const q = financialQualityBySymbol.get(row.symbol) ?? {};
+    return [
   row.symbol, row.name, row.board, row.sector, cellValue(row.current_price), cellValue(row.pe), cellValue(row.pb),
   cellValue(Number(row.market_cap) / 100000000), cellValue(row.initial_score), row.status,
+  cellValue(q.total_score), q.quality_status ?? '待补证', cellValue(q.coverage_ratio),
   row.market_source, auditSummary(row.market_fallback_reason), row.industry_mapping_count, row.source_id, row.screen_date,
+    ];
+  })(),
 ]);
 replaceSheetRows(marketSheet,
-  ['股票代码', '公司名称', '上市板块', '行业', '当前价(元)', 'PE', 'PB', '总市值(亿元)', '初筛评分', '状态', '行情来源', '行情异常', '行业映射数量', 'source_id', '筛选日期'],
+  ['股票代码', '公司名称', '上市板块', '行业', '当前价(元)', 'PE', 'PB', '总市值(亿元)', '初筛评分', '状态', '财务质量分', '财务质量状态', '质量覆盖率', '行情来源', '行情异常', '行业映射数量', 'source_id', '筛选日期'],
   candidates,
 );
 
+const financialCoverageSheet = workbook.worksheets.getOrAdd('15_公司财务覆盖');
+const financialCoverageRows = (payload.market_candidates ?? []).map((candidate) => {
+  const quality = financialQualityBySymbol.get(candidate.symbol) ?? {};
+  const points = pointBySymbol.get(candidate.symbol) ?? {};
+  const financialPoints = Object.values(points).filter((point) => coverageFinancialFields.includes(point.field_name));
+  const sourceIds = [...new Set(financialPoints.map((point) => point.source_id).filter(Boolean))];
+  const periods = financialPoints.map((point) => point.period_label).filter(Boolean);
+  const verified = financialPoints.filter((point) => point.validation_status === 'verified').length;
+  const pending = financialPoints.filter((point) => point.validation_status !== 'verified').length;
+  return [
+    candidate.symbol, candidate.name, candidate.board, candidate.sector, candidate.screen_date,
+    candidate.enrichment_status, displayPeriod(periods[0]), verified, pending, financialSummary(points, coverageFinancialFields),
+    quality.model_type ?? 'general_enterprise', quality.quality_status ?? '待补证', cellValue(quality.total_score), cellValue(quality.coverage_ratio),
+    sourceIds.join(', '), ...coverageFinancialFields.map((field) => cellValue(points[field]?.value)),
+  ];
+});
+replaceSheetRows(financialCoverageSheet,
+  [
+    '股票代码', '公司名称', '上市板块', '行业', '初筛日期', '财报队列状态', '最新财报期',
+    '已验证字段数', '待验证字段数', '数据状态', '质量模型', '财务质量状态', '财务质量分', '质量覆盖率', '源证据ID', ...coverageFinancialFields,
+  ],
+  financialCoverageRows,
+);
+
+const sectorSummarySheet = workbook.worksheets.getOrAdd('16_板块行业汇总');
+const sectorSummary = new Map();
+for (const candidate of payload.market_candidates ?? []) {
+  const key = `${candidate.board}|${candidate.sector}`;
+  const points = pointBySymbol.get(candidate.symbol) ?? {};
+  const verifiedFields = Object.values(points)
+    .filter((point) => financialFields.includes(point.field_name) && point.validation_status === 'verified');
+  const row = sectorSummary.get(key) ?? {
+    board: candidate.board, sector: candidate.sector, candidates: 0, focus: 0,
+    scoreTotal: 0, verifiedCompanies: 0, verifiedFields: 0,
+  };
+  row.candidates += 1;
+  row.focus += Number(candidate.initial_score) >= 55 ? 1 : 0;
+  row.scoreTotal += Number(candidate.initial_score);
+  row.verifiedCompanies += verifiedFields.length ? 1 : 0;
+  row.verifiedFields += verifiedFields.length;
+  sectorSummary.set(key, row);
+}
+const sectorSummaryRows = [...sectorSummary.values()]
+  .sort((left, right) => right.focus - left.focus || right.candidates - left.candidates || left.board.localeCompare(right.board) || left.sector.localeCompare(right.sector))
+  .map((row) => [
+    row.board, row.sector, row.candidates, row.focus,
+    Number((row.scoreTotal / row.candidates).toFixed(2)), row.verifiedCompanies, row.verifiedFields,
+  ]);
+replaceSheetRows(sectorSummarySheet,
+  ['上市板块', '行业', '初筛候选数', '重点观察数', '平均初筛分', '有已验证财报公司数', '已验证字段数'],
+  sectorSummaryRows,
+);
+
+const financialQualitySheet = workbook.worksheets.getOrAdd('17_财务质量评分');
+const financialQualityRows = (payload.market_candidates ?? []).map((candidate) => {
+  const quality = financialQualityBySymbol.get(candidate.symbol) ?? {};
+  return [
+    candidate.symbol, candidate.name, candidate.board, candidate.sector,
+    quality.model_type ?? 'general_enterprise', quality.quality_status ?? '待补证',
+    cellValue(quality.total_score), cellValue(quality.coverage_ratio),
+    cellValue(quality.profitability_score), cellValue(quality.cash_flow_score),
+    cellValue(quality.balance_sheet_score), cellValue(quality.growth_score),
+    (quality.reasons ?? []).join('；').slice(0, 1000), JSON.stringify(quality.calculation_details ?? {}).slice(0, 2000),
+  ];
+});
+replaceSheetRows(financialQualitySheet,
+  ['股票代码', '公司名称', '上市板块', '行业', '质量模型', '质量状态', '财务质量分', '质量覆盖率', '盈利能力分', '现金流分', '资产负债表分', '成长分', '阻断原因', '计算与证据'],
+  financialQualityRows,
+);
+
 const filingCandidateSheet = workbook.worksheets.getOrAdd('14_财报候选');
-const filingCandidates = (payload.filing_candidates ?? []).map((row) => [
+// Excel is the research front door, not the archive. Keep a bounded recent
+// evidence queue here; PostgreSQL and the local cold archive retain every PDF.
+const filingCandidates = (payload.filing_candidates ?? []).slice(0, 2500).map((row) => [
   row.candidate_id, row.symbol, row.name, row.report_period, row.report_kind, row.field_name,
   cellValue(row.value), row.unit, cellValue(row.page_number), row.source_label,
-  row.status, row.source_url, row.sha256, row.excerpt,
+  row.status, row.source_url, row.sha256, String(row.excerpt ?? '').slice(0, 1000),
 ]);
 replaceSheetRows(filingCandidateSheet,
   ['candidate_id', '股票代码', '公司名称', '报告期', '报告类型', '字段', '候选值', '单位', '页码', '原始标签', 'Agent验证状态', '官方URL', '文件SHA-256', '原文摘录'],

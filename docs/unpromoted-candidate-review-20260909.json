@@ -1,0 +1,23 @@
+{
+  "reviewer": "Codex",
+  "review_date": "2026-09-09",
+  "decision": "reject_existing_field_mapping",
+  "expected_count": 90,
+  "triage_sha256": "7fb0c97c5a2c722df4d71aeac075e88028dec0b703e501cde020491634d99eef",
+  "evidence_sha256": "443967e90c94f000dac150a25ebb780379d0599ab0f641758a633f8e8857cac4",
+  "basis": "Review of all candidate excerpts, with hash-matched original page packets and explicit inspection of ambiguous continuation headers. Reject the old field/period/unit mapping, not the issuer disclosure itself. Exact reasons are recorded per slot in the pinned triage CSV.",
+  "additional_context_checked": [
+    "000301 PDF pages 69-70: parent income statement begins on the preceding page.",
+    "000682 PDF pages 47-48: parent income statement begins on the preceding page.",
+    "000729 PDF page 125: selected 18602410.48 is an opening-period undiscounted contractual cash flow, not the current closing carrying amount."
+  ],
+  "conditions": [
+    "Only these 90 exact pending candidates may be retired after checking current metadata, disclosure identity and original PDF hash.",
+    "No data_point may reference any target candidate. New references or changed records require a new review.",
+    "Preserve original values, excerpts and identifiers; status change only with an audit record.",
+    "Do not restore six already retired candidates or retire eight retained valid notes.",
+    "Run a real transactional rollback rehearsal before committing."
+  ],
+  "production_updated": false,
+  "strategy_approved": false
+}

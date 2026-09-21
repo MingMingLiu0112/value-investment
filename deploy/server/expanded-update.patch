@@ -1,0 +1,11 @@
+--- cli.py
++++ cli.py
+@@ -62,7 +62,7 @@
+                 stored += 1
+             grouped: dict[str, list[dict]] = {item[0]: [] for item in UNIVERSE}
+             for point in latest_points(connection):
+-                grouped[point['symbol']].append(point)
++                grouped.setdefault(point['symbol'], []).append(point)
+             for symbol, rows in grouped.items():
+                 result = evaluate(symbol, rows, settings.data_max_age_hours, Decimal(str(settings.price_conflict_tolerance)))
+                 upsert_valuation(connection, as_valuation_row(result))

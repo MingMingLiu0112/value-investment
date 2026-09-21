@@ -1,0 +1,9 @@
+--- backup.py
++++ backup.py
+@@ -91,5 +91,5 @@
+             capture_output=True,
+             text=True,
+         )
+-        if result.returncode and 'unrecognized configuration parameter "transaction_timeout"' not in result.stderr:
++        if result.returncode:
+             raise RuntimeError(f'pg_restore failed: {result.stderr.strip()}')

@@ -7,7 +7,7 @@ RUN apt-get update \
 
 ENV PIP_DEFAULT_TIMEOUT=180 PIP_RETRIES=5
 COPY pyproject.toml ./
-RUN pip install "psycopg[binary]>=3.2,<4" "akshare>=1.16,<2"
+RUN pip install "psycopg[binary]>=3.2,<4" "akshare>=1.16,<2" "pypdf>=5,<6" "pypdfium2>=5.13,<6" "openpyxl>=3.1,<4"
 
 COPY sql ./sql
 COPY src ./src
