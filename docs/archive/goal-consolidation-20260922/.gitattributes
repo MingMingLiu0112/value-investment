@@ -1,0 +1,2 @@
+# Keep archived originals byte-identical across Windows and Linux checkouts.
+*.md -text

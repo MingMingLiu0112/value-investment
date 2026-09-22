@@ -1,8 +1,5 @@
 # 外部数据阻塞处理政策
 
-本文是 [数据与证据政策](data-and-evidence-policy.md) 的专项细则，不制定开发顺序；唯一任务见 [current-stage-goal.md](current-stage-goal.md)。
-模型不适用、未注册假设与报价等待须保留不同缺口类型；历史载荷使用 PENDING_EXTERNAL_DATA 时，不得掩盖同时存在的模型或假设问题。
-
 生效日期：2026-09-21。适用范围：价值投资 Agent 的开发、测试、Excel 发布和当前研究验证。
 
 ## 核心原则

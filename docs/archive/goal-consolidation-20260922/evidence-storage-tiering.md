@@ -1,7 +1,5 @@
 # 证据分层存储
 
-本文是 [数据与证据政策](data-and-evidence-policy.md) 的运维细则；保留现有存储边界，不自动授权迁移、清理或服务器操作。当前任务见 [current-stage-goal.md](current-stage-goal.md)。
-
 ## 目标
 
 服务器只承担 PostgreSQL、定时采集、当前研究案例、近期运行证据和 Excel
