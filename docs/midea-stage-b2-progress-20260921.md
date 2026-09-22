@@ -251,4 +251,13 @@ ROE、权益成本、派息/留存政策、当前普通股分母和干净盈余�
 本大节点客观评估已完成，结论见
 [midea-stage-b2-convergence-assessment-20260922.md](midea-stage-b2-convergence-assessment-20260922.md)。
 美的继续保留研究卡可见的 fail-closed 状态；不生成情景值、价格桥接数值、仓位或订单。
-下一工程主线转交中国神华正常化估值收敛。
+下一工程主线转交中国神华正常化估值收敛；该 B3 节点已于同日完成 fail-closed 收敛评估。
+
+## 2026-09-22 Provenance Repair
+
+统一 FCFF 结果已按当前源文件重新生成，将 `research_case_ref` 和适用性证据从旧 Hash 更新为
+`156700b16dbd1ac42d8209e05853c724ab347b3c1917d7d6fd03f988acf10bf6` 与
+`70f23d6eedc799194e69b70da282593664efaf931b4cc821a97e9951237a4cf9`，并把内嵌 policy 同步到
+当前适用性证据。新统一结果 SHA-256 为
+`10c8f565647df6bda5eac4eff8c0e9ed4b4d3192e1d5cd1241a1233b5706f5fc`。估值、价格桥接、仓位、
+订单和实盘状态均未改变。

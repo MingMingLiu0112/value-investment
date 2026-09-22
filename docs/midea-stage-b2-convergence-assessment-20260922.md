@@ -49,7 +49,7 @@ live_eligible=false。本节点关闭的是 继续无限补证的工程分支，
   SHA-256 70f23d6eedc799194e69b70da282593664efaf931b4cc821a97e9951237a4cf9。
 - Unified FCFF result：
   runtime/valuation-results/000333-fcff-stage-b/evidence.json，
-  SHA-256 5ad0052e676ffacb4141d8c01b11799026550f0bc7a3d39d6a52916dd2523255。
+  SHA-256 10c8f565647df6bda5eac4eff8c0e9ed4b4d3192e1d5cd1241a1233b5706f5fc。
 
 ## Unified Acceptance Answers
 
@@ -90,8 +90,15 @@ confidence、valuation output 或 thesis。因此按 P0.5 第 49-50 节停止美
 - 2025-12-31 年末库存股股数及能匹配未来估值日的普通股分母；
 - 有明确经济依据和来源的权益价值假设链，并先通过共享假设与证据合同。
 
+## Provenance Repair 2026-09-22
+
+统一 FCFF 结果已按当前源文件重新生成，使研究案例引用、适用性证据和内嵌 policy 指向同一
+Hash 锁定快照。当前 `research_case_ref` 为 `156700b16dbd1ac42d8209e05853c724ab347b3c1917d7d6fd03f988acf10bf6`，
+适用性证据为 `70f23d6eedc799194e69b70da282593664efaf931b4cc821a97e9951237a4cf9`。
+结果仍为 `not_ready / PENDING_EXTERNAL_DATA`，无情景值、合理价、仓位、订单或实盘状态变化。
+
 ## Handoff
 
-美的保持研究卡可见的 fail-closed 状态，下一工程主线转向中国神华正常化估值收敛。
-神华同样先做大节点收敛评估，不把 B3 工程边界已存在当作研究级估值已完成。
+美的保持研究卡可见的 fail-closed 状态。当时指定的下一工程主线中国神华 B3 已于同日完成
+fail-closed 收敛评估，不把 B3 工程边界已存在当作研究级估值已完成。
 后续披露触发时，美的可从对应证据包恢复，不必重新做 EBIT/股本/权益历史考古。
