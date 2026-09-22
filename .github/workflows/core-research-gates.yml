@@ -46,6 +46,7 @@ jobs:
           tests/test_valuation_model_registry.py
           tests/test_fixed_sample_manifest.py
           tests/test_research_batch.py
+          tests/test_research_e2e_replay.py
 
   postgres-integration:
     runs-on: ubuntu-latest

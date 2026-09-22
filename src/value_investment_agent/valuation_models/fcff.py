@@ -9,7 +9,7 @@ from typing import Any, Protocol
 from ..research_case import ResearchCase
 from ..scenario_valuation import BridgeItem, ForecastYear, Terminal, value_scenario
 from ..valuation_confidence import ConfidenceEvidence, evaluate_confidence
-from .base import ValuationResult
+from .base import ValuationResult, merge_evidence_refs
 
 
 MODEL_VERSION = "fcff-shared-scenario-v1"
@@ -90,7 +90,7 @@ class FCFFValuationModel:
             raise ValueError("Financial facts and research case symbols must match")
         if facts.confidence not in {"高", "中", "低"}:
             raise ValueError("FCFF confidence must be 高, 中 or 低")
-        refs = [*facts.evidence_refs, *case.evidence_refs]
+        refs = merge_evidence_refs(facts.evidence_refs, case.evidence_refs)
         if not refs:
             raise ValueError("FCFF research requires named evidence references")
         blockers = list(dict.fromkeys([

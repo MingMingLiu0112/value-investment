@@ -6,7 +6,7 @@ from datetime import date
 from decimal import Decimal
 import json
 import re
-from typing import Any
+from typing import Any, Iterable, Mapping
 
 
 @dataclass(frozen=True)
@@ -48,3 +48,20 @@ class ValuationResult:
                 return value.isoformat() if isinstance(value, date) else str(value)
             raise TypeError(type(value).__name__)
         return json.dumps(asdict(self), ensure_ascii=False, allow_nan=False, default=encode, indent=2)
+
+
+def merge_evidence_refs(
+    *groups: Iterable[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Merge evidence groups by id and fail on conflicting provenance."""
+    merged: dict[str, dict[str, Any]] = {}
+    for group in groups:
+        for raw in group:
+            ref = dict(raw)
+            ref_id = ref.get("id")
+            if not ref_id:
+                raise ValueError("Valuation evidence references require ids")
+            if ref_id in merged and merged[ref_id] != ref:
+                raise ValueError(f"Valuation evidence id conflict: {ref_id}")
+            merged[ref_id] = ref
+    return list(merged.values())

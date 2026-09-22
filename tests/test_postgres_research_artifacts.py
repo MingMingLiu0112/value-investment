@@ -4,10 +4,13 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 import os
 from pathlib import Path
+import tempfile
 
 import pytest
 
+from fixed_sample_runtime_fixture import write_fixed_sample_runtime_fixture
 from value_investment_agent.research_artifact_codecs import decode_artifact
+from value_investment_agent.research_e2e_replay import run_three_company_replay
 from value_investment_agent.research_artifact_repository import (
     PostgresResearchArtifactRepository,
 )
@@ -159,3 +162,24 @@ def test_frozen_three_company_runtime_imports_into_disposable_postgres(repositor
         "review", "review", "fixed_sample_admission"
     )
 
+
+def test_frozen_three_company_replay_persists_to_disposable_postgres(repository):
+    with tempfile.TemporaryDirectory(prefix="c3-postgres-replay-") as directory:
+        root = Path(directory)
+        write_fixed_sample_runtime_fixture(root)
+        result = run_three_company_replay(
+            repository,
+            root=root,
+            run_id="postgres-three-company-replay",
+            now_utc=lambda: datetime(2026, 9, 22, 3, 0, tzinfo=timezone.utc),
+        )
+
+    assert result.all_semantics_matched is True
+    assert result.action == "no_order"
+    stored = repository.load_by_id(result.aggregate_review_artifact_id)
+    assert repository.verify(stored)["verified"] is True
+    assert repository.load_latest(
+        "review",
+        "c3-e2e-postgres-three-company-replay",
+        "fixed_sample_admission",
+    ).artifact_id == stored.artifact_id
