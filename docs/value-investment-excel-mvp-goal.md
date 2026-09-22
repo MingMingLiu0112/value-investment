@@ -1,6 +1,6 @@
 # A股价值投资 Agent：Excel MVP 执行目标（Codex 短执行版）
 
-> 版本：v3.0
+> 版本：v3.1
 > 日期：2026-09-22
 > 仓库：`MingMingLiu0112/value-investment`
 > 目标文件：`docs/value-investment-excel-mvp-goal.md`
@@ -31,7 +31,8 @@ ResearchGate 不得输出价格相关结论；没有 `READY` PriceBridge 时，P
 ### 阶段 P0.5：职责分离与三公司收敛
 P0.5 已通过。PriceAttractivenessAssessment、ValuationAssumptionSet 与 Materiality 三层均已落地，
 相关验收见第 24 节。当前恢复三公司研究级估值主线；继续冻结新增 Shenhua / Midea 证据脚本、
-第四家公司及 Moutai execution / historical / R1 扩展。
+第四家公司及 Moutai execution / historical / R1 扩展。美的 B2 与神华 B3 大节点均已完成
+fail-closed 收敛评估，三公司统一验收已通过并冻结，见第 25 节。
 
 ### 阶段 A：Excel MVP
 先建立统一 `ResearchCase + ResearchGate + ValuationResult + ModelValidity + PriceBridgeResult`。
@@ -235,8 +236,9 @@ P0.5 文档为 `docs/value-investment-architecture-correction-p05-20260922.md`�
 新开发，但继续冻结新增 Shenhua / Midea 证据脚本，不继续 Moutai execution、historical、
 R1 refinement 或 paper strategy 扩展。
 
-恢复后的顺序为：美的 B2 大节点收敛评估已完成，结论为 fail-closed；下一主线是神华正常化
-估值收敛。任何公司都不因工程边界存在而自动写成研究级估值完成。
+恢复后的顺序为：美的 B2 大节点收敛评估已完成，结论为 fail-closed；神华 B3 大节点收敛评估
+也已完成，结论为 fail-closed；三公司统一验收已通过并冻结，下一主线是 20-50 家固定跨行业
+样本。任何公司都不因工程边界存在而自动写成研究级估值完成。
 
 ### 2026-09-21 当前实施状态
 
@@ -247,9 +249,9 @@ R1 refinement 或 paper strategy 扩展。
 内容验收尚未通过：三家公司均需补足至少三条可追溯的支持依据、反证与 Thesis
 Breakers，并完成五维财务状态及 G0-G4 门禁对齐。
 
-下一顺序固定为：P0.5 已完成，美的 B2 已做大节点 fail-closed 收敛评估；当前恢复神华
-正常化估值收敛，再做三公司统一验收。B1 现有条件性模型可保留为研究材料，但不得提前
-写成正式估值结论或交易判断；价格吸引力必须等待合法 `READY` PriceBridge。
+下一顺序固定为：P0.5 已完成，美的 B2 与神华 B3 均已做大节点 fail-closed 收敛评估，三公司
+统一验收已通过并冻结。B1 现有条件性模型可保留为研究材料，但不得提前写成正式估值结论或
+交易判断；价格吸引力必须等待合法 `READY` PriceBridge。
 
 ### A0 基线
 创建 `docs/excel-mvp-baseline-20260921.md`。
@@ -458,6 +460,11 @@ Expenses 和 Profit and total comprehensive income，仍未披露子公司逐户
 对应研究卡已更新并原子发布回原 Excel；未写入任何 `CyclicalFacts.operating_inputs`，估值状态
 保持 `VALUATION_NOT_READY`。
 
+2026-09-22 已完成神华 B3 大节点收敛评估：工程 READY，生产估值 VALUATION_NOT_READY，
+数据状态 PENDING_EXTERNAL_DATA。评估见
+[shenhua-stage-b3-convergence-assessment-20260922.md](shenhua-stage-b3-convergence-assessment-20260922.md)。
+现有证据包只读保留，不再为同一批缺口的年报或转载页继续考古；下一主线转为三公司统一验收与冻结。
+
 ## 17. 阶段 A 验收标准
 - [x] 三家公司出现在首页。
 - [x] 三家公司使用统一 ResearchCase。
@@ -538,7 +545,7 @@ R2 以后才解决：是否允许进入受限的人工实盘辅助。
 各层不得混为一谈。
 
 ## 23. 后续顺序与环境约束
-阶段 A（已验收）→ P0.5（已通过）→ Midea 研究级估值大节点收敛评估（已完成，生产估值仍 PENDING_EXTERNAL_DATA）→ Shenhua 正常化估值收敛 → 三公司统一验收与冻结 → 20-50 家固定跨行业样本 → 之后才恢复首例 P1/P2/P3、真实历史与前瞻模拟及 R1 → 多公司模拟组合 → R2 评审。已有必要行情、备份、风险显示和维护继续；MVP 不撤销已获授权的独立日常任务。
+阶段 A（已验收）→ P0.5（已通过）→ Midea 研究级估值大节点收敛评估（已完成，生产估值仍 PENDING_EXTERNAL_DATA）→ Shenhua B3 研究级估值大节点收敛评估（已完成，生产估值仍 VALUATION_NOT_READY）→ 三公司统一验收与冻结（已完成）→ 20-50 家固定跨行业样本 → 之后才恢复首例 P1/P2/P3、真实历史与前瞻模拟及 R1 → 多公司模拟组合 → R2 评审。已有必要行情、备份、风险显示和维护继续；MVP 不撤销已获授权的独立日常任务。
 沿用原目标第5、6、8节的数据缺口处理、原表发布与环境保护。保护服务器 PTA、Hermes、PostgreSQL 和既有资源限额；原Excel的人工笔记、持仓、交易和月度历史必须保留。阶段 A 优先使用版本化 JSON 与现有持久化能力，不以新增数据库表为前置条件；一致性核验针对实际使用的事实来源。
 每个阶段完成后，基于实际产物客观评估可用能力、限制及下一步合理性；缺乏依据的模型允许明确记录不适用及下一条有依据的研究路径，不能无限补证或为满足三公司数量强行通过。P0.5、阶段 A、阶段 B、R1、R2 分别验收。
 
@@ -553,5 +560,18 @@ R2 以后才解决：是否允许进入受限的人工实盘辅助。
 - [x] 三家公司共享同一 PriceAttractiveness 接口；Excel 展示 Research、Valuation、Assumption status、PriceBridge 和 PriceAttractiveness，但不生成买卖指令。
 - [x] Core tests 进入 GitHub Actions；提交至少按 PriceAttractiveness、Assumptions、Materiality+Midea、三公司适配+Excel、Tests/CI/docs 的意图拆分。
 
-以上验收已全部通过。P0.5 完成语句已写入目标状态；三公司生产估值收敛从美的 B2
-fail-closed 大节点评估恢复，当前下一主线为神华正常化估值收敛。
+以上验收已全部通过。P0.5 完成语句已写入目标状态；美的 B2 与神华 B3 均已关闭 fail-closed
+大节点，三公司生产估值仍未就绪，统一验收已完成并冻结。
+
+## 25. 三公司统一验收与冻结结果
+
+- 600519、000333、601088 共用 ResearchCase、ResearchGate、ValuationResult、
+  ModelValidity/PriceBridgeResult、PriceAttractivenessAssessment 和 Excel 展示合同。
+- 600519 保持 `conditional_research_only`、低置信度、同日 READY 价格桥接，但价格吸引力仍
+  `NOT_ASSESSABLE`。
+- 000333 与 601088 保持 `not_ready`、无 bear/base/bull、`PENDING_EXTERNAL_DATA`，不伪造
+  正式合理价、仓位、订单或实盘准入。
+- 当前 WPS 原表 Hash 为 `BD8049F042EED173AFC271C2E88C36F603719DC97F2480093C49335CD9AB22D1`。
+- 完整 15 问验收、冻结基线与下一主线见
+  `docs/three-company-unified-acceptance-20260922.md`；本地冻结回归见
+  `tests/test_three_company_unified_acceptance.py`。

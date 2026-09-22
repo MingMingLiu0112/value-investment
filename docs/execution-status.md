@@ -1,5 +1,39 @@
 # 价值投资v2执行状态
 
+## 2026-09-22: Three-company unified acceptance passes and MVP is frozen
+
+三公司统一验收已通过，但仅代表三家公司共用同一研究、估值、价格桥接与 Excel 展示合同，不代表
+阶段 B 正式估值完成。600519 保持低置信度条件研究，000333 与 601088 保持
+`not_ready / PENDING_EXTERNAL_DATA`，三者均无正式合理价、仓位、订单或实盘准入。
+
+冻结验收见 `docs/three-company-unified-acceptance-20260922.md`，本地回归见
+`tests/test_three_company_unified_acceptance.py`。当前 WPS 原表 Hash 为
+`BD8049F042EED173AFC271C2E88C36F603719DC97F2480093C49335CD9AB22D1`，与最新发布备份一致。
+下一主线是 20-50 家固定跨行业样本的可复用性验证；不新增第四家公司，不启动全市场筛选、Web
+前端、模拟、R1 或实盘准入。
+
+## 2026-09-22: Shenhua B3 node closes fail-closed; Midea provenance repaired
+
+本轮没有修改估值参数、交易执行、仓位逻辑、原 WPS 工作簿手工记录或服务器 PTA 项目，也没有新增
+第四家公司或 Shenhua/Midea 证据脚本。
+
+美的 B2 统一估值结果已按当前研究案例和适用性证据重新生成，修复两个过期证据引用和旧 policy
+快照。`research_case_ref` 现在为
+`156700b16dbd1ac42d8209e05853c724ab347b3c1917d7d6fd03f988acf10bf6`，适用性证据为
+`70f23d6eedc799194e69b70da282593664efaf931b4cc821a97e9951237a4cf9`，内嵌 policy 与源文件
+完全一致。统一 FCFF 结果新 SHA-256 为
+`10c8f565647df6bda5eac4eff8c0e9ed4b4d3192e1d5cd1241a1233b5706f5fc`。结果仍为
+`not_ready / PENDING_EXTERNAL_DATA`，无情景值、合理价、仓位、订单或实盘状态变化。
+新增 `tests/test_midea_unified_valuation_provenance.py` 防止引用再次过期。
+
+神华 B3 已完成大节点收敛评估，结论为 fail-closed：工程 READY，生产估值
+VALUATION_NOT_READY，当前数据 PENDING_EXTERNAL_DATA。正常化假设集仍为 PARTIAL，
+`registered_model_inputs=false`，共享周期模型没有执行情景算术。评估见
+`docs/shenhua-stage-b3-convergence-assessment-20260922.md`。
+
+当前主线转为三公司统一验收与冻结；不新增第四家公司，不启动全市场筛选、Web 前端、模拟、R1
+或实盘准入。
+
 ## 2026-09-22: P0.5 第二轮纠偏已恢复开发并推进
 
 当前最高优先级为 `docs/value-investment-architecture-correction-p05-20260922.md`。本轮没有修改 Moutai 估值参数、交易执行、仓位逻辑、原 WPS 工作簿手工记录或服务器 PTA 项目；没有新增第四家公司，也没有继续 Midea/Shenhua 的证据考古。

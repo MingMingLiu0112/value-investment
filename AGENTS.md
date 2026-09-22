@@ -41,16 +41,18 @@ definitions, evidence requirements and admission boundaries.
 
 ## Current MVP Boundary
 
-- P0.5 has passed. The current sequence is the Midea B2 fail-closed convergence
-  node assessment (completed on 2026-09-22), then the Shenhua normalized-valuation
-  convergence node, then the unified three-company MVP acceptance.
+- P0.5 has passed. The Midea B2 and Shenhua B3 fail-closed convergence nodes are
+  both completed on 2026-09-22, and the unified three-company MVP acceptance
+  passed for freeze on the same date. The acceptance record is
+  `docs/three-company-unified-acceptance-20260922.md`.
 - Freeze new Midea/Shenhua company-specific evidence scripts. Existing evidence
   is read-only. Also freeze Moutai execution, historical, R1 refinement and
   paper-strategy expansion; allow only bug fixes, regression fixes and
   security/data-integrity repairs.
-- Do not add a fourth company until the three-company MVP is frozen. Do not
-  claim Midea B2 is a research-grade valuation because its engineering boundary
-  exists. The retained filing keeps production valuation PENDING_EXTERNAL_DATA.
+- The three-company MVP is frozen. Do not add a fourth company before the fixed
+  cross-industry sample scope is defined, and do not claim Midea B2 or Shenhua B3
+  is a research-grade valuation because its engineering boundary exists. The
+  retained filings keep production valuation PENDING_EXTERNAL_DATA.
 - Stage B1 Moutai remains low-confidence conditional research until the dated
   evidence chain and its independent acceptance checks pass. It is not a
   research-attractive, simulation-eligible or trading state.
@@ -59,7 +61,8 @@ definitions, evidence requirements and admission boundaries.
   Excel display. The Midea finance-company Materiality finding must not
   directly unlock FCFF. Do not create a Midea-specific valuation framework,
   produce scenario values without verified facts, or change execution code.
-  Shenhua B3 remains deferred until its stated evidence prerequisites are met.
+  Shenhua B3 remains fail-closed with no registered normalized inputs and no
+  scenario values until the named external-disclosure prerequisites are met.
 - Never replace the WPS canonical workbook without candidate preservation,
   source-hash guarding and WPS read-only verification. Preserve all manual
   records and never write broker orders.
