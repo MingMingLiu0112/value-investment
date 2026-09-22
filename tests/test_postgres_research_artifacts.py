@@ -162,7 +162,7 @@ def test_frozen_three_company_runtime_imports_into_disposable_postgres(repositor
             SCOPE_SECURITY, "600519", "valuation_result"
         )
         assert repository.load_latest(
-            "review", "review", "fixed_sample_admission"
+            "review", "fixed-sample-v1", "fixed_sample_admission"
         )
 
 
