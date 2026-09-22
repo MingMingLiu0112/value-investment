@@ -62,7 +62,7 @@ Domain Engine 不读取 Excel、网络或数据库；Application 负责编排、
 5. 重大事件为 STALE，未知为 UNKNOWN；价格缺失为 PENDING_EXTERNAL_DATA。不可判断不构成价格不吸引，更不构成卖出。
 6. READY 是通过合同验证后的结果，直接构造对象、JSON 恢复与正常函数路径都必须维持同样不变量。
 
-上述身份约束存在本轮复现的代码缺口，唯一下一任务负责修复；不能把文档合同称作已通过的新验收。
+C0 已通过并冻结上述身份与时点合同；该段旧“代码缺口”不再作为当前状态。新价格桥接仍必须保持这些不变量，不能被 C3 的 Repository/Application 层放宽。
 
 ## Dividend / Distribution Domain：最小合同已实现
 
@@ -95,7 +95,7 @@ MarketContext 未来只提供环境与研究解释，不直接修改内在价值
 PostgreSQL 是长期结构化事实、身份/版本关系、状态和运行审计底座；Evidence/Snapshot 保存不可变原件与封存输入；runtime JSON 是当前 MVP 的可追溯中间产物，Excel 是展示和明确的人工作业入口。
 现有旧 valuation_results 表仍混存价格与信号。新合同尚未迁入，不将它误认为新 ValuationResult 的数据库实现，也不因同名认定新领域对象仍含价格。
 
-持久化迁移列为扩样本前的 P2：先确定消费路径与单一写入权威，再增量迁移、双向核对与恢复演练；保留旧实验语义，不能直接覆盖旧表及历史值。本轮不部署、不迁库。
+C3 正在建立独立 append-only Research Artifact 存储；旧 `valuation_results` 保留为历史实验结构，不承载新语义。生产迁移必须作为未来独立、人工确认的阶段执行；C3 只允许 disposable/local/test PostgreSQL 和 CI 一次性实例。
 Excel publisher 目前仍有三公司 adapter，可作为技术债保留；同一财务计算不能复制到表内。人工研究输入须显式导入并审计，不能静默反向控制模型。
 
 ## 工程治理

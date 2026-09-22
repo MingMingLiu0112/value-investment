@@ -7,17 +7,17 @@
 ```text
 在 D:\GPTProject\value-investment 工作。先读取 AGENTS.md、docs/current-stage-goal.md 和 docs/execution-status.md，再按其中引用的 north-star.md、architecture.md、research-methodology.md、data-and-evidence-policy.md 执行。
 
-本次唯一目标是完成 C2-MINIMAL-DISTRIBUTION-RESEARCH-CONTRACT：建立最小、可复用、画像感知的 Distribution / Dividend 研究合同，并把历史验收测试从滚动的 runtime 指针改为冻结快照。三家公司复用同一合同，允许显式 PARTIAL / UNKNOWN，但任何结果都不能生成订单或自动升级生产估值。
+本次唯一目标是完成 C3-RESEARCH-PLATFORM-FOUNDATION：把三家公司、runtime JSON 和多个专用脚本的研究 MVP，升级为未来 20-50 家固定样本可复用的研究后台基础。继承 C0/C1/C2 冻结成果，但不得重复已通过阶段。
 
-从实际 Git HEAD、工作树和相关测试开始，继承 C0 价格桥接和 C1 固定样本准入成果。新增 DividendRecord、DividendHistory、DistributionCapacity、DividendSustainabilityAssessment、DividendYieldSnapshot 和 DividendResearchResult，严格执行时点、身份、币种、股份口径和证据引用校验。当前价格只进入 DividendYieldSnapshot，不进入分配能力或可持续性。
+先建立 append-only、不可变、可版本化、可 Hash 校验的通用 Research Artifact 持久化合同与独立 SQL migration；旧 valuation_results 混存价格和信号，保留为历史实验结构，不复用为新语义。随后实现 Repository，Domain 不导入 psycopg，由 Repository 完成 canonical JSON 与 PostgreSQL 转换。只允许 disposable/local/test PostgreSQL 和 CI 一次性实例，绝不连接 .env 中的生产数据库、修改旧表或部署 migration。
 
-用同一公共入口把三家公司 typed 现金回报结果接入 FixedSampleCompanyAdmission。历史分红只是事实，不是未来承诺；高当前收益率不得升级可持续性，UNKNOWN 是合法 fail-closed 状态。审查命令继续输出 REUSABLE、production_valuation_available=false、human_confirmation_required=true 和 action=no_order。
+建立受控 importer/replay，将当前冻结的 600519、000333、601088 核心 artifact 导入测试 PostgreSQL并生成可审计 parity report；不存在则记 NOT_AVAILABLE，不得伪造。建立显式 ResearchRunSpec 驱动的 Application Runner，profile、model、facts、assumptions、distribution、quote 均显式输入，禁止 symbol if/else。Runner 按身份与版本校验、ResearchProfile、ValuationRouter、已注册模型、估值、有效性、价格桥接、吸引力、分配研究、CurrentResearchStatus、持久化编排；NOT_READY 只阻断依赖它的结论，身份/evidence/schema 损坏才 fail-closed。
 
-旧茅台估值与三公司验收测试改为读取冻结的 2026-09-21 快照并校验固定 Hash，不再读取 rolling current/latest。新增测试加入 Core Gate，且覆盖完全离线的三画像合同。
+将现有三种估值模型接入同一 registry/factory，并把 scripts/review_fixed_sample_admission.py 的三公司硬编码 policy 迁入版本化 manifest。建立带 run_id、时点和 rule_version 的 Batch Contract，单公司失败隔离，重复运行幂等。CI 保留离线 Core Gate，并增加 disposable PostgreSQL integration；全量历史测试不再作为未解释的 83% 中止状态证据。
 
-不得新增公司、全市场、Web、完整股息引擎、ShareholderYield、模拟交易或券商逻辑；不调整估值参数、原 Excel、生产数据库、计划任务或服务器 PTA 服务。按验收标准完成测试与回归，将实际结果、证据、剩余风险和一个建议后续任务更新到 docs/execution-status.md。
+三公司 E2E 必须保持冻结语义：600519 quality_compounder/conditional/low/production unavailable/cash partial；000333 mature_manufacturing/not_ready/cash partial-or-unknown；601088 cyclical_cash_return/not_ready/current != normalized dividend/cash partial-or-unknown。所有输出 no_order。审查 Excel 只是 Presentation，但本轮不重写 Excel。
 
-完成 C2 后停止并交付，不自动推进路线图。若发现阻碍 C2 的真实设计问题，先给出有界论证并继续可独立完成部分；不得等待自然时间或无限补证。长期始终服务资本增值与可持续股息现金回报，由用户作最终决策。
+不得新增第四家真实公司、扩全市场、Web、新金融模型、复杂 ShareholderYield、自动交易、券商下单或仓位算法；不调估值参数、不改原 Excel、生产数据库、计划任务或服务器 PTA 服务。按 W1-W12 连续完成并按 C3.1-C3.6 分阶段提交，不因 W1/W2 结束提前停止。全部完成后更新 execution-status、将 current-stage-goal 标记为 C3 PASSED_FOR_FREEZE，给出 Expansion Readiness Verdict，只提一个下一阶段建议后停止，不自动扩真实股票样本。
 ```
 
 当前任务完整定义在 [current-stage-goal.md](current-stage-goal.md)；实际进度在 [execution-status.md](execution-status.md)。

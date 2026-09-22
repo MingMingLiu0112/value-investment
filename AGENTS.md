@@ -29,9 +29,9 @@ Use `docs/project-goal-consolidation-20260922.md` for the audit and complete doc
 ## Current Boundary
 
 The three-company engineering MVP is frozen. This does not mean research-grade valuation or dividend sustainability is complete.
-C0-PRICE-BRIDGE-INTEGRITY and C1-FIXED-SAMPLE-ADMISSION-ORCHESTRATION are frozen. The active next task is `C2-MINIMAL-DISTRIBUTION-RESEARCH-CONTRACT`: implement the minimum reusable, profile-aware Distribution / Dividend contract, consume its typed result through C1, and move historical acceptance tests to frozen snapshots.
+C0-PRICE-BRIDGE-INTEGRITY, C1-FIXED-SAMPLE-ADMISSION-ORCHESTRATION and C2-MINIMAL-DISTRIBUTION-RESEARCH-CONTRACT are frozen. The active long task is `C3-RESEARCH-PLATFORM-FOUNDATION`: replace runtime JSON plus script-specific orchestration with an append-only PostgreSQL artifact repository, versioned research-sample manifest, profile-driven application runner, batch contract and disposable PostgreSQL CI integration, without adding a fourth real company or touching production.
 Keep existing Moutai values and Midea/Shenhua fail-closed research boundaries. No new company-specific evidence scripts, fourth company, full-market engine, Web, new financial-sector model, complete dividend engine or ShareholderYield, portfolio/execution extension or broker integration.
-Allowed freeze exceptions are scoped bug/regression fixes and security/data-integrity repairs. No production database migration, scheduler change or deployment is part of C2.
+Allowed freeze exceptions are scoped bug/regression fixes and security/data-integrity repairs. No production database migration, scheduler change or deployment is part of C3. A future production migration remains a separate human-confirmed stage.
 
 ## Permanent Research Rules
 

@@ -133,8 +133,18 @@ C2-MINIMAL-DISTRIBUTION-RESEARCH-CONTRACT：`PASSED_FOR_FREEZE`。
 - Distribution 对象尚未迁移到 PostgreSQL；runtime JSON 仍是当前可追溯中间产物。
 - ShareholderYield、完整 distribution_profile、行业阈值和回购/稀释口径未实现，不属于 C2。
 
-## 唯一建议后续任务
+## C3 验收基线
 
-`NEXT TASK: 最小 Distribution 合同迁移到 PostgreSQL`。目标是在扩样本前确定单一写入权威和恢复合同，将现有 typed 对象与 runtime 指针转入结构化存储并完成双向核对；不改估值参数，不连接自动交易，不在同步盘中放置数据库文件。
+- C3 开始 HEAD：`d658b92 C2-minimal-distribution-research-contract`；工作树开始时的改动仅包含 C3 的 W1 治理校准。
+- C3-RESEARCH-PLATFORM-FOUNDATION 当前处于实施中，尚未达到 `PASSED_FOR_FREEZE`。
+- C2 的唯一建议后续任务“最小 Distribution 合同迁移到 PostgreSQL”已被 C3 吸收，但 C3 范围扩大到通用 Research Artifact 合同、Repository、Runner、Registry、Manifest、Batch、CI 与三公司 E2E。
+- 数据库安全边界：`.env` 中的生产 `DATABASE_URL` 在本阶段不得连接；只使用 disposable/local/test PostgreSQL 或 GitHub CI 一次性实例。
 
-当前 C2 已完成，停止本阶段目标运行，不自动开始下一任务。
+## 当前实施记录
+
+- W1 治理校准：`AGENTS.md`、`docs/architecture.md`、`docs/current-stage-goal.md`、`docs/value-investment-goal-prompt.md` 已切到 C3。
+- 尚未完成 W2-W12；runtime JSON 保持原状，旧 `valuation_results` 未修改，三公司研究语义未改变。
+
+## 当前建议后续任务
+
+`NEXT TASK: 完成 C3-RESEARCH-PLATFORM-FOUNDATION 的 W2-W12`。下一直接工程动作是建立独立 append-only Research Artifact 合同与 migration，然后实现 Repository 并完成三公司 replay；每一阶段保持离线测试通过并增量提交，不连接生产 PostgreSQL。
