@@ -1,6 +1,6 @@
 # 价值投资项目执行目标
 
-修订日期：2026-09-22（三公司 Excel MVP 优先，模型逐只完成，随后验收模拟）。工作目录：D:/GPTProject/value-investment。
+修订日期：2026-09-22（P0.5 第二轮架构纠偏与三公司收敛优先；暂停新增公司专用证据脚本及茅台执行扩展）。工作目录：D:/GPTProject/value-investment。
 
 持续完善一个以一手披露为依据、以原WPS Excel为日常界面的人工投资决策辅助系统：识别企业经济价值及市场预期差，完成公司筛选、财务和商业研究、情景估值、买卖与加减仓条件、仓位管理和复盘。投资不只分为捡烟蒂与成长股；采用共同风险底线、投资路径和行业口径相结合的研究框架。争取长期税费后正收益并控制永久损失，但不把“保证稳定盈利”作为可交付承诺，不自动下单。
 
@@ -10,18 +10,23 @@
 
 ## 1. 唯一执行顺序
 
-本文件是唯一启动入口；[架构纠偏与长期约束](value-investment-architecture-correction-20260921.md)规定当前 P0 的最高优先级；[Excel MVP 执行目标](value-investment-excel-mvp-goal.md)规定阶段 A/B 的范围与验收；[详细框架](value-investment-goal-framework-v2.md)规定金融口径及后续模拟、实盘验收；[全市场研究漏斗最终目标](value-investment-full-market-funnel-goal.md)规定最终用户交互范式与扩展验收；[历史验证协议](strategy-validation-protocol.md)约束历史实验。当前顺序：P0 职责分离与快照验证 → B1 Engineering 收尾与 B2 Engineering → B1 当前生产验证并行等待 → B3 → 首例 P1/P2/P3、真实历史与前瞻模拟及 R1 → 多公司模拟组合 → R2 评审。外部行情等待不阻塞工程；数据真实性和准入底线继续有效。
+本文件是唯一启动入口；[架构纠偏与长期约束](value-investment-architecture-correction-20260921.md)规定 P0 的第一轮职责边界；[第二轮架构纠偏与三公司收敛](value-investment-architecture-correction-p05-20260922.md)规定当前最高优先级的 P0.5；[Excel MVP 执行目标](value-investment-excel-mvp-goal.md)规定阶段 A/B 的范围与验收；[详细框架](value-investment-goal-framework-v2.md)规定金融口径及后续模拟、实盘验收；[全市场研究漏斗最终目标](value-investment-full-market-funnel-goal.md)规定最终用户交互范式与扩展验收；[历史验证协议](strategy-validation-protocol.md)约束历史实验。当前顺序：P0（已基本完成）→ P0.5 架构纠偏 → Midea 研究级估值收敛 → Shenhua 正常化估值收敛 → 三公司统一验收与冻结 → 之后才恢复首例 P1/P2/P3、真实历史与前瞻模拟及 R1 → 多公司模拟组合 → R2 评审。外部行情等待不阻塞工程；数据真实性和准入底线继续有效。
 
 数据获取和财报字段的正式范围见[数据源与财报覆盖矩阵](data-source-and-financial-coverage-matrix.md)。一手披露优先、公共结构化接口仅作补充；估值按必要字段解析，不把“已归档全部 PDF”或“接口返回了摘要”误称为“全部财报已分析”。
 
 首例的当前阶段判定见[600519闭环就绪度评估](first-case-readiness-assessment-20260920.md)。该评估是进度基线：R0、当前P1、P2、R1、R2分别验收，不用某一项已通过的测试或已生成的文件替代其他阶段的证据。
 
-### 1.1 当前唯一短期交付：P0 架构纠偏与三公司 Excel MVP
+### 1.1 当前唯一短期交付：P0.5 架构纠偏与三公司收敛
+
+- 2026-09-22 起，最高优先级切换为 `docs/value-investment-architecture-correction-p05-20260922.md`。当前按用户要求暂停新开发，仅完成目标文档合入；恢复开发后的第一任务是 `PriceAttractiveness semantic correction`，第二任务是通用 `ValuationAssumptionSet`，第三任务是以美的财务公司为首例的通用 `Materiality` 合同。
+- 从现在起冻结新增 Shenhua / Midea 证据脚本；现有证据包只读保留，不再为了每个新数据缺口继续“证据考古”。同时冻结 Moutai execution、historical、R1 refinement 和 paper strategy 扩展，只允许 bug fix、回归修复及安全/数据完整性修复。
+- 三家公司 MVP 未冻结前不新增第四家公司，不启动全市场筛选、Web 前端、银行/保险/地产专项估值、复杂 CycleAnalyzer、市场情绪系统、真实交易或券商 API。
+- 以下历史工程成果仍保留为证据，但不再自动构成当前开发主线；未提交的工作只核对其是否违反上述冻结规则，不继续扩展。
 
 - 2026-09-22 茅台 B1 已完成研究级阶段验收（见 `moutai-stage-b1-acceptance-20260922.md`）：条件模型、三情景、敏感性、共享规则置信度、反向估值和同日价格桥接均落在同一 Hash 锁定载荷；正式合理价值、模拟有效性和实盘准入仍保持不通过。
 - 按 [Excel MVP 目标](value-investment-excel-mvp-goal.md) A0–A4，复用现有成果，形成贵州茅台、美的集团、中国神华的统一 ResearchCase、ResearchGate 与 ValuationResult。
 - 阶段 A 在原Excel交付三家公司同结构的业务判断、财务摘要、支持证据、反证、复评条件、数据日期、估值状态及下一事件；未完成估值明确显示“估值未就绪”。空壳卡片或仅填“待验证”不能通过。
-- 三家公司展示层已完成，严格内容验收仍按 `excel-mvp-stage-a-acceptance-20260921.md` 的未完成项执行；不回滚、不重做已发布页面。
+- 三家公司展示层已完成，Stage A 已按 `excel-mvp-stage-a-acceptance-20260921.md` 通过“Excel 研究工作台范围”验收；该验收不构成估值、模拟、组合或交易准入，未解决的数据与估值依赖继续作为后续阶段阻断项。
 - P0 先将 ValuationResult、ModelValidity 与 PriceBridgeResult 分离，并完成 ResearchGate 的 Thesis Gate；B1 生产数据等待不得阻塞 B2 Engineering。
 - 后续按 B1、B2、B3 的适用模型逐只完成模型、假设、敏感性、置信度及反向估值；不并行重写三套模型。
 - 截至 2026-09-22：P0、B1 有界条件模型、B2 FCFF fail-closed 边界和 B3 周期模型 fail-closed 边界均已归档工程验收；B3 已生成候选输入包、2014--2025 运营周期证据包及独立审查包、2014--2025 归母利润与现金税候选序列、2014--2025 外部煤价与 2025 成本运输桥接、2025 内部煤电销售/耗用口径复核、NCEI/BSPI/CCTD 外部指数一手溯源包，以及 BSPI 点-in-time 发布页与转载页证据包并写回原 Excel。三个桥接包已完成独立评审：普通股分母 `21,689,434,304` 批准为 2026-06-30 时点候选，但尚未单独注册；归母税前营业利润 pro forma 与归母净现金区间因缺少子公司逐户税前、税费、少数股东及现金债务分配而拒绝作为模型输入。运营序列七类字段仅批准为时期事实，归母利润/现金税序列仅批准为候选边界；外部煤价存在指标断点和披露缺口，内部煤电 73.2/77.7 已归档为销售/耗用两套口径且年报未给桥接，均不直接满足任何周期模型输入。一手溯源包已固化 NCEI 首发、BSPI 周度规则和 CCTD 三类价格编制方案；BSPI 点时包已更正层级：秦皇岛煤炭网 2017/2021/2022 的 577/737/734 为运营方文章，CCTD 2014/2015/2016 页面为转载，2017/2020/2021/2022 明确转载页保持次级，固定 2014 的 525 非年末发布、2017 最终 577 与年报 578 未合并，2018/2019/2020 运营方原文均记录为 `ORIGINAL_NOT_EVIDENCED`；2020 另有中国能源网、易航网两处转载及 CEI 仅标题/日期/文章路径的登录受限列表，均不得插值或升级。NCEI/BSPI/CCTD/CECI 历史原始数据仍受缴费会员权限限制；当前 NCEI 即时读数和所有外部值均不进入模型。当前没有输入写入 `CyclicalFacts.operating_inputs`，共享周期模型继续 fail-closed。下一步补齐 2018/2019/2020 BSPI 与 2023 后 NCEI 原始发布档案及修订政策，并完成路线成本与中周期情景对账，只有可独立复算的少量输入才进入正常化评审。
@@ -50,7 +55,7 @@ L4 高关注池；首页以市场覆盖、今日变化、3--10 家高关注公�
 
 2026-09-14修订前原文另存于[启动文档备份](archive/value-investment-goal-prompt-before-20260914-review.md)和[框架备份](archive/value-investment-goal-framework-v2-before-20260914-review.md)。带v3后缀的两份旧目标文档是2026-09-09历史方案，不因版本号较大取得优先级；旧准入报告和不可变JSON是当时判断的证据，不是覆盖本文件的新指令。
 
-用户当前任务优先于本文件的工作顺序。当前按第1.1节先交付阶段 A/B，第4节技术工作包排在阶段 B 之后，不因文档修订自动批准。修订前文本见[启动文档备份](archive/value-investment-goal-prompt-before-20260915-methodology.md)和[框架备份](archive/value-investment-goal-framework-v2-before-20260915-methodology.md)。
+用户当前任务优先于本文件的工作顺序。当前按第1.1节先完成 P0.5，再恢复 Midea/Shenhua 研究级估值与三公司收敛；第4节技术工作包排在 P0.5 和三公司统一验收之后，不因文档修订自动批准。修订前文本见[启动文档备份](archive/value-investment-goal-prompt-before-20260915-methodology.md)和[框架备份](archive/value-investment-goal-framework-v2-before-20260915-methodology.md)。
 
 ## 2. 用户必须最终能做的事
 
@@ -224,7 +229,7 @@ PriceBridge 规则，以 [外部数据阻塞处理政策](external-data-blocking
 
 ## 7. 后续模拟扩展与实盘评审
 
-三公司的研究展示和估值已在阶段 A/B 依次推进；随后交付茅台R1及限制，再将模拟规则、执行与账户验收依次扩展至美的、神华和三股组合。分别检查制造业再投资/业务增长及周期正常化，不把前一公司的参数直接复制。随后完善月度多通道初筛、6至10家公司研究及每日持仓跟踪；资产折价另建资产可回收与催化/等待成本证据后再试点，困境反转及特殊情形保持专项未支持。公司不适用或实验结果不佳时保留该结论，不为完成数量硬凑买点。
+三公司的研究展示和估值已在阶段 A 推进；当前先完成 P0.5 职责分离与三公司统一收敛，之后才恢复 Midea/Shenhua 研究级估值，再考虑茅台R1及限制。冻结 Moutai execution、historical、R1 refinement 和 paper strategy 新扩展，只允许 bug fix、回归修复及安全/数据完整性修复。随后将模拟规则、执行与账户验收依次扩展至美的、神华和三股组合。分别检查制造业再投资/业务增长及周期正常化，不把前一公司的参数直接复制。随后完善月度多通道初筛、6至10家公司研究及每日持仓跟踪；资产折价另建资产可回收与催化/等待成本证据后再试点，困境反转及特殊情形保持专项未支持。公司不适用或实验结果不佳时保留该结论，不为完成数量硬凑买点。
 
 每条新增路径登记适用范围、选样依据、分析契约、规则版本和停止条件，再验证功能与经济表现。研究样本需含不入选、失败或具有相反证据的案例；冻结选择规则，保留排除理由和全部结果。首例或三家成功案例不能证明全市场筛选能力；有限案例不宣称统计有效，扩大筛选范围时另处理幸存者偏差与退市记录。
 
@@ -259,3 +264,4 @@ R2保持技术、数据范围、经济证据、运营及真实账户五方面的
 服务器 /opt/value-investment-agent 沿用现有Python/PostgreSQL及调度，保护PTA、Hermes和现有资源限额、2GiB磁盘储备。重研究优先D盘；本地任务不必每轮SSH全量体检。数据库文件不放云盘，专用SSH密钥按既有授权使用，密码和私钥不写文档、skills或Git。除已授权范围外不新增付费服务、不公开推送、不动其他项目或替用户交易。
 
 每次汇报只说明业务能力改变、原表入口、实际验证、限制和下一项；不以脚本、测试、文档或归档数量代替进度。首例交付与整个项目完成分别判断。
+

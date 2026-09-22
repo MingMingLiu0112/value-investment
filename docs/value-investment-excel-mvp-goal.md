@@ -1,21 +1,21 @@
 # A股价值投资 Agent：Excel MVP 执行目标（Codex 短执行版）
 
-> 版本：v2.2
-> 日期：2026-09-21
+> 版本：v3.0
+> 日期：2026-09-22
 > 仓库：`MingMingLiu0112/value-investment`
 > 目标文件：`docs/value-investment-excel-mvp-goal.md`
 
 ## 1. 当前唯一目标
-尽快交付一个用户打开 Excel 就能实际使用的多公司价值投资研究版本。
+先完成 P0.5 职责分离与三公司收敛，再交付一个用户打开 Excel 就能实际使用的多公司价值投资研究版本。
 当前固定三家公司：`600519 贵州茅台`、`000333 美的集团`、`601088 中国神华`。
-用户打开 Excel 后，必须能回答：公司靠什么赚钱、财务怎么样、核心论点是什么、最强反证是什么、估值是否就绪、当前价格是否有研究吸引力、哪些事实会推翻结论、下一次关键事件是什么。
+用户打开 Excel 后，必须能回答：公司靠什么赚钱、财务怎么样、核心论点是什么、最强反证是什么、估值是否就绪、当前价格是否有研究吸引力、哪些事实会推翻结论、下一次关键事件是什么。其中“估值是否就绪”属于 ResearchGate，“价格是否有研究吸引力”只允许由独立 PriceAttractivenessAssessment 在合法 PriceBridge 之后回答。
 本阶段定位：**可追溯的价值投资研究辅助系统**，不是自动交易、保证盈利或券商下单系统。
 
 ## 2. 与现有目标文档的关系
-本文件负责当前阶段 A/B 的范围、执行顺序和验收；`value-investment-goal-prompt.md` 是唯一启动入口，`value-investment-goal-framework-v2.md` 提供金融口径和后续验收约束。附件中的指令自本次合入起成为项目目标。
+本文件负责当前阶段 P0.5 与 A/B 的范围、执行顺序和验收；`value-investment-goal-prompt.md` 是唯一启动入口，`value-investment-architecture-correction-p05-20260922.md` 规定当前 P0.5 的强制顺序，`value-investment-goal-framework-v2.md` 提供金融口径和后续验收约束。附件中的指令自本次合入起成为项目目标。
 本文件不直接删除现有 `value-investment-goal-prompt.md` 的有效约束。
 继续继承以下底线：一手披露优先、来源/Hash/日期可追溯、数据冲突不静默覆盖、quarantine 不进入正式估值、缺失值不填 0、历史数据遵守 point-in-time、WPS 原表发布保护、模拟与实盘隔离、R1/R2 独立验收。
-若旧文档的短期顺序要求“继续只深挖茅台后才允许扩展”，与本文件冲突时，以本文件的 Excel MVP 顺序为准。
+若旧文档的短期顺序要求“继续只深挖茅台后才允许扩展”，与本文件冲突时，以本文件的 P0.5 与 Excel MVP 顺序为准。
 R1 历史验证和 R2 实盘准入继续保留，但不作为 Excel MVP 的前置条件。
 
 ## 3. 不可突破的边界
@@ -24,8 +24,12 @@ R1 历史验证和 R2 实盘准入继续保留，但不作为 Excel MVP 的前�
 不得自动下单、生成真实订单、生成真实券商数量、将模板本金当真实本金、将研究状态直接映射成真实仓位。
 估值区间是研究结果，不得写成“可直接照做”的强制交易价。
 Excel MVP 通过不等于历史策略有效或实盘准入。
+ResearchGate 不得输出价格相关结论；没有 `READY` PriceBridge 时，PriceAttractiveness 只能为 `NOT_ASSESSABLE`，不得输出“估值具备研究吸引力”。
 
-## 4. 当前实施只分两个阶段
+## 4. 当前实施分三个阶段
+
+### 阶段 P0.5：职责分离与三公司收敛
+当前最高优先级。第一任务修正 ResearchGate 与价格吸引力语义并新增 `PriceAttractivenessAssessment`；第二任务建立通用 `ValuationAssumptionSet`，把茅台现有命名假设只做映射，神华开始形成正常化假设；第三任务建立通用 Materiality 合同，以美的财务公司为首例，不直接解锁 FCFF。P0.5 未通过前，不继续 B2/B3 的证据考古，不新增第四家公司，不继续 Moutai execution / historical / R1 扩展。当前按用户要求暂停新开发，只完成目标文档合入。
 
 ### 阶段 A：Excel MVP
 先建立统一 `ResearchCase + ResearchGate + ValuationResult + ModelValidity + PriceBridgeResult`。
@@ -99,8 +103,9 @@ status
 ## 6. 阶段 A 的统一研究门禁
 
 ### G0 证据门
-检查当前价格、最新财报、核心事实、来源、自动验证、quarantine、数据日期。
-失败输出：`数据不足`。保留仍有依据的财务和商业研究；行情缺失只阻断依赖当前价格的判断，不清空已有研究卡。
+检查最新财报、核心事实、来源、自动验证、quarantine、数据日期，并单独记录
+当前价格的数据状态。失败输出：`数据不足`。行情缺失只标记
+`PENDING_EXTERNAL_DATA`，不清空已有研究卡，也不使 G0~G3 的研究完成状态失败。
 
 ### G1 财务门
 输出财务优势、财务弱点以及五维状态：盈利、现金、资产负债、成长、资本配置。
@@ -116,15 +121,20 @@ status
 不得自动回退到固定 PE/PB 主估值。
 
 ### G4 研究状态门
-所有门禁结果独立保存。已证实的论点受损须单独突出展示，不被数据或估值缺口掩盖；缺失与负面事实不能混同。只有 G0~G3 通过且预先登记的吸引力判据满足时，才能升级为 `估值具备研究吸引力`；其他情况显示对应缺口或复评状态。
-G4 不生成订单、股数或真实仓位。
+所有门禁结果独立保存。已证实的论点受损须单独突出展示，不被数据或估值缺口掩盖；
+缺失与负面事实不能混同。G0~G3 通过时只输出
+`研究与估值已就绪`，不输出价格相关结论。价格吸引力由独立的
+`PriceAttractivenessAssessment` 在 `READY` PriceBridge 之后判断；无合法桥接时返回
+`NOT_ASSESSABLE`。G4 不生成订单、股数或真实仓位。
 
 ## 7. 统一研究状态
-只允许以下状态：
+当前状态由 `ResearchGate` 与 `PriceAttractivenessAssessment` 分别输出，聚合后只允许
+以下中文状态：
 - `数据不足`
 - `研究未完成`
 - `估值未就绪`
 - `研究不通过`
+- `研究与估值已就绪`
 - `价格缺乏吸引力`
 - `等待更有吸引力的价格`
 - `重点观察`
@@ -193,7 +203,8 @@ G4 不生成订单、股数或真实仓位。
 只允许：`高 / 中 / 低`。
 使用透明规则，不使用 LLM 黑盒评分。
 至少考虑：数据完整度、商业稳定性、行业周期性、关键参数敏感度、预测跨度、终值占比、模型交叉检查分歧。
-置信度为低时不得升级为 `估值具备研究吸引力`。
+置信度为低时，ResearchGate 不得输出研究与估值已就绪，也不得进入
+`PriceAttractivenessAssessment` 的正向价格吸引力结论。
 
 2026-09-22 已增加 `valuation_confidence.py`：置信度由上述显式证据按固定政策阈值计算；
 未知、未测量或未通过必要检查时失败关闭为低，不采用 LLM 黑盒评分。
@@ -215,6 +226,18 @@ margin_to_bear
 
 ## 16. Codex 实施顺序
 
+### 2026-09-22 P0.5 合入状态
+
+P0.5 文档已合入为 `docs/value-investment-architecture-correction-p05-20260922.md`，并从本日起优先于 B2/B3 证据补充。当前按用户要求暂停新开发，只完成目标合入；不新增 Shenhua / Midea 证据脚本，不继续 Moutai execution、historical、R1 refinement 或 paper strategy 扩展。
+
+恢复开发后的唯一顺序为：
+
+1. PriceAttractiveness semantic correction：修改 ResearchGate、新增 `price_attractiveness.py`、重组 `CurrentResearchStatus`，并补 READY / PENDING / STALE 状态测试；不修改 Moutai 估值参数、交易执行或仓位逻辑。
+2. `ValuationAssumptionSet`：建立 Facts / Assumptions 分离，Moutai 只映射现有参数，Shenhua 开始形成正常化假设；不继续扩历史证据，不按股价反向调参。
+3. Materiality：以 Midea 财务公司为首例建立通用合同，只判断 LOW / MEDIUM / HIGH / UNKNOWN，不直接解除 `MODEL_NOT_APPLICABLE`。
+
+P0.5 全部通过后才恢复 Midea 研究级估值收敛和 Shenhua 正常化估值收敛。
+
 ### 2026-09-21 当前实施状态
 
 阶段 A 的实际基线、证据与工作簿发布回执见
@@ -224,10 +247,9 @@ margin_to_bear
 内容验收尚未通过：三家公司均需补足至少三条可追溯的支持依据、反证与 Thesis
 Breakers，并完成五维财务状态及 G0-G4 门禁对齐。
 
-下一顺序固定为：先完成 P0 的估值、模型有效性、价格桥接与 Thesis Gate 职责分离，再继续
-B1 Engineering：贵州茅台的适用主估值、情景、透明置信度与反向估值；B1 的 Current
-Production Validation 可以独立等待真实数据，不能阻塞 B2 Engineering。B1 现有条件性模型
-可保留为研究材料，但不得提前写成正式估值结论或交易判断。
+下一顺序固定为：先完成 P0.5 的研究/价格语义、AssumptionSet 与 Materiality 三层，再恢复
+Midea 研究级估值与 Shenhua 正常化估值。B1 现有条件性模型可保留为研究材料，但不得提前
+写成正式估值结论或交易判断；价格吸引力必须等待合法 `READY` PriceBridge。
 
 ### A0 基线
 创建 `docs/excel-mvp-baseline-20260921.md`。
@@ -466,16 +488,29 @@ Expenses 和 Profit and total comprehensive income，仍未披露子公司逐户
 
 ## 19. 明确延后的内容
 当前 MVP 不做：全市场深度 DCF、银行正式估值、保险正式估值、券商正式估值、LLM 自动交易、券商 API 下单、分钟/Tick 回测、宏观择时、自动真实仓位、历史安全边际参数优化、为了产生交易而调阈值、大量新增 Excel Sheet、大量新增公司专用一次性脚本。
+P0.5 完成前另外冻结：新增第四家公司、继续新增 Midea/Shenhua 证据考古脚本、Moutai execution / historical / R1 扩展、全市场筛选、Web 前端、复杂 CycleAnalyzer 和市场情绪系统。
 
 ## 20. 每轮 Codex 汇报格式
-每轮只汇报四块：
-1. `Excel 用户可见新增`：本轮用户打开 Excel 能多看到什么。
-2. `完成的代码`：核心文件和 run_id。
-3. `当前 blockers`：最多 5 条。
-4. `下一步唯一任务`：只允许一个最高优先任务。
-不得用测试数量、脚本数量、文档数量代替业务进度。
+按 P0.5 文档第 52 节固定汇报，并把 blocker 分类到 FACT / ASSUMPTION / MATERIALITY / MODEL / PRICE：
+
+```text
+Engineering Status:
+Current Data Status:
+本轮解决的问题类型:
+本轮通用架构变化:
+本轮公司适配变化:
+测试:
+新增 company-specific scripts:
+当前 blockers:
+下一唯一任务:
+等待的 Production Validation:
+```
+
+不得用测试数量、脚本数量、文档数量代替业务进度；新增公司专用脚本必须写明理由。
 
 ## 21. 第一条执行指令
+以下 A0-A4 是 2026-09-21 阶段 A 的历史执行记录，不再重复执行。当前第一执行指令以 P0.5 文档第 53 节为准：暂停新增 Shenhua / Midea 证据脚本，恢复后先做 PriceAttractiveness semantic correction。
+
 Codex 立即执行：
 1. 创建 `docs/excel-mvp-baseline-20260921.md`。
 2. 创建 `src/value_investment_agent/research_case.py`。
@@ -491,13 +526,27 @@ Codex 立即执行：
 
 ## 22. 最终判断标准
 项目是否在前进，不看代码量，只看 Excel 是否越来越能帮助投资者理解并比较真实公司。
+阶段 P0.5 解决：研究、估值、假设、重大性、价格桥接和价格吸引力是否彻底分离？
 阶段 A 解决：能不能用统一结构论证多家公司？
 阶段 B 解决：能不能对不同类型公司用适合的模型形成可复算估值？
 R1 以后解决：这些规则在历史和前瞻模拟中是否具有足够经济证据？
 R2 以后才解决：是否允许进入受限的人工实盘辅助。
-四层不得混为一谈。
+各层不得混为一谈。
 
 ## 23. 后续顺序与环境约束
-阶段 A → 阶段 B（茅台、美的、神华依次完成）→ 首例 P1/P2/P3、真实历史与前瞻模拟及 R1 → 多公司模拟组合 → R2 评审。已有必要行情、备份、风险显示和维护继续；MVP 不撤销已获授权的独立日常任务。
+阶段 A（已验收）→ P0.5 → Midea 研究级估值收敛 → Shenhua 正常化估值收敛 → 三公司统一验收与冻结 → 20-50 家固定跨行业样本 → 之后才恢复首例 P1/P2/P3、真实历史与前瞻模拟及 R1 → 多公司模拟组合 → R2 评审。已有必要行情、备份、风险显示和维护继续；MVP 不撤销已获授权的独立日常任务。
 沿用原目标第5、6、8节的数据缺口处理、原表发布与环境保护。保护服务器 PTA、Hermes、PostgreSQL 和既有资源限额；原Excel的人工笔记、持仓、交易和月度历史必须保留。阶段 A 优先使用版本化 JSON 与现有持久化能力，不以新增数据库表为前置条件；一致性核验针对实际使用的事实来源。
-每个阶段完成后，基于实际产物客观评估可用能力、限制及下一步合理性；缺乏依据的模型允许明确记录不适用及下一条有依据的研究路径，不能无限补证或为满足三公司数量强行通过。阶段 A、阶段 B、R1、R2 分别验收。
+每个阶段完成后，基于实际产物客观评估可用能力、限制及下一步合理性；缺乏依据的模型允许明确记录不适用及下一条有依据的研究路径，不能无限补证或为满足三公司数量强行通过。P0.5、阶段 A、阶段 B、R1、R2 分别验收。
+
+## 24. P0.5 验收与恢复顺序
+
+- [x] ResearchGate 不再输出价格相关结论，只有研究状态：数据不足、研究未完成、估值未就绪、研究未通过、研究与估值已就绪。
+- [x] 新增 `PriceAttractivenessAssessment`；只有合法 `READY` PriceBridge 才可输出价格吸引力，PENDING / STALE / INVALID 一律 `NOT_ASSESSABLE`。
+- [x] 禁止统一 30% 安全边际或固定价格阈值，必须 Profile-aware；置信度低或熊市下行风险过高时不得输出 `RESEARCH_ATTRACTIVE`。
+- [x] 新增 `ValuationAssumption` / `ValuationAssumptionSet`，Facts 与 Assumptions 永久分离；每个假设有 basis、rationale、evidence、confidence、sensitivity，模型内部不得隐藏关键经济假设。
+- [x] 新增 Materiality 合同；UNKNOWN 继续 fail-closed，LOW / IMMATERIAL 必须有量化暴露或上下界，不得自动解除 MODEL_NOT_APPLICABLE。
+- [x] Moutai 假设映射到统一结构但参数不改；Midea blocker 明确分类为事实、假设、重大性或模型适用性；Shenhua 从历史证据收集转向形成正常化假设。
+- [x] 三家公司共享同一 PriceAttractiveness 接口；Excel 展示 Research、Valuation、Assumption status、PriceBridge 和 PriceAttractiveness，但不生成买卖指令。
+- [x] Core tests 进入 GitHub Actions；提交至少按 PriceAttractiveness、Assumptions、Materiality+Midea、三公司适配+Excel、Tests/CI/docs 的意图拆分。
+
+只有以上全部通过，才允许写 P0.5 完成语句并恢复三公司生产估值收敛。

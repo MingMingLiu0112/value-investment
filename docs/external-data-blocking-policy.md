@@ -41,10 +41,15 @@
 ```text
 FinancialFacts -> ValuationModel -> ValuationResult
                                       |
-ModelValidity + QuoteSnapshot -> PriceBridge -> CurrentResearchStatus
+ModelValidity + QuoteSnapshot -> PriceBridgeResult
+                                       |
+PriceAttractivenessAssessment ---------> CurrentResearchStatus -> Excel
 ```
 
-`ValuationResult` 与 `PriceBridge` 分开保存。行情未形成时保留已验证的估值结果，价格桥接显示 `PENDING_EXTERNAL_DATA`，Excel 显示等待原因与上一有效行情/研究状态，不清空历史研究。
+`ValuationResult`、`PriceBridgeResult` 与 `PriceAttractivenessAssessment` 分开保存。
+行情未形成时保留已验证的估值结果，价格桥接显示 `PENDING_EXTERNAL_DATA`；此时研究
+完成状态可以保留，但价格吸引力必须为 `NOT_ASSESSABLE`。Excel 显示等待原因与上一有效
+行情/研究状态，不清空历史研究。
 
 研究级价格桥接不以 `model_date == quote_date` 作为唯一合法条件；必须通过 `ModelValidity` 判断：`model_as_of`、`valid_from`、`last_material_event_check`、资本结构是否变化、是否发现重大事件和状态。未出现影响价值的重要财报、资本结构、收购/处置或其他重大事项时，可在有效窗口内桥接后续报价；重大事件使模型 `STALE` 并触发重估。
 

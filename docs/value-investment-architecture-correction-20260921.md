@@ -5,6 +5,10 @@
 外部数据政策和已发布 Excel 基线核对后合入。本文件是短期 P0 架构契约和长期边界；启动入口
 仍为 `value-investment-goal-prompt.md`。
 
+2026-09-22 起，下一轮约束见 [第二轮架构纠偏与三公司收敛](value-investment-architecture-correction-p05-20260922.md)。
+在 P0.5 未通过前，本文件的 P0 边界继续有效，但不得以继续补 Midea/Shenhua 证据脚本替代
+P0.5 的职责分离任务。
+
 ## P0 优先级与现状
 
 P0 在恢复 B1/B2 业务研究前完成。保留三家公司研究卡、已归档证据和 Excel 发布成果；不把
@@ -14,11 +18,16 @@ P0 在恢复 B1/B2 业务研究前完成。保留三家公司研究卡、已归�
 固定数据流：
 
 ```text
-FinancialFacts -> ResearchCase -> ValuationModel -> ValuationResult
-                                                  -> ModelValidity
-ModelValidity + QuoteSnapshot ------------------> PriceBridgeResult
-ValuationResult + PriceBridgeResult ------------> CurrentResearchStatus -> Excel
+Evidence -> FinancialFacts -> ResearchCase -> ResearchGate
+ResearchGate -> ValuationAssumptionSet -> ValuationModel -> ValuationResult
+ValuationResult + ModelValidity + QuoteSnapshot -> PriceBridgeResult
+PriceBridgeResult -> PriceAttractivenessAssessment
+ResearchGate + ValuationResult + PriceBridgeResult + PriceAttractivenessAssessment
+    -> CurrentResearchStatus -> Excel
 ```
+
+该数据流中的 `PriceAttractivenessAssessment` 是 P0.5 新增层；P0 已把企业估值、模型
+有效期和价格桥接拆开，但价格吸引力必须在 P0.5 之后从 ResearchGate 中彻底移出。
 
 ## P0 合同
 
@@ -29,7 +38,9 @@ ValuationResult + PriceBridgeResult ------------> CurrentResearchStatus -> Excel
 3. `ModelValidity` 判断模型在报价日期是否仍有效，而不是机械要求模型日期等于报价日期。新财报、
    重大资本结构变化、收购处置或影响价值的重要公告使模型 `STALE` 并触发重估。
 4. `ResearchGate` 固定为 G0 证据、G1 财务、G2 Thesis、G3 估值。G2 必须检查论点、回报来源、
-   错价假说、支持与反证、Thesis Breakers 和下一事件；空壳内容不能通过。价格桥接不属于 G3。
+   错价假说、支持与反证、Thesis Breakers 和下一事件；空壳内容不能通过。价格桥接和价格
+   吸引力均不属于 G3；ResearchGate 不得输出价格缺乏吸引力、等待更有吸引力的价格或
+   估值具备研究吸引力。
 5. 所有实时里程碑拆成 Engineering Implementation、Snapshot Validation、Production Validation。
    外部数据只允许使最后一项 `PENDING_EXTERNAL_DATA`，不阻塞工程或下一家公司工程。
 
@@ -74,7 +85,8 @@ QualityCompounderFacts`。质量复利画像由此返回 `SUPPORTED`；交叉检
 同日新增 `current_research_status.py`，把 `ResearchGate`、`ValuationResult` 与
 `PriceBridgeResult` 聚合成只读的 `CurrentResearchStatus`。聚合层分别输出研究结论、
 估值状态、价格桥接状态、工程状态和当前数据状态；低置信度、未完成估值、条件估值以及
-失效的价格桥接均失败关闭，不得升级为 `估值具备研究吸引力`。`PENDING_EXTERNAL_DATA`
+失效的价格桥接均失败关闭，不得进入 `PriceAttractivenessAssessment` 的正向结论。
+`PENDING_EXTERNAL_DATA`
 只改变当前数据状态，保留既有研究结论与估值结果，不输出交易、订单、仓位或实盘状态。
 `workbook_simple_overview.py` 通过 JSON 载荷适配器接入该对象，Excel 卡片增加派生状态行，
 不替代原研究门禁、估值明细或证据展示。

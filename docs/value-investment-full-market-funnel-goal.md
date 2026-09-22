@@ -34,7 +34,9 @@ L0--L1 由 Python 和数据规则完成；L1--L2 可以使用 LLM 辅助商业�
 ## 数据与自动化边界
 
 数据流为 `Raw Evidence -> Validation -> FinancialFacts -> ScreeningResult ->
-ResearchCase -> ValuationResult -> PriceBridge -> Funnel State -> Excel -> Human Decision`。
+ResearchCase -> ResearchGate -> ValuationAssumptionSet -> ValuationResult ->
+ModelValidity -> PriceBridgeResult -> PriceAttractivenessAssessment -> Funnel State ->
+Excel -> Human Decision`。
 Python 负责采集、校验、指标、筛选、估值、状态机和数值；LLM 只辅助叙事研究、反证、
 事件摘要和缺口管理。数据库是事实底座，Excel 是研究 UI。
 
@@ -42,8 +44,9 @@ Python 负责采集、校验、指标、筛选、估值、状态机和数值；L
 股息率只用于寻找研究候选，不能直接成为正式内在价值或买卖结论。单一公司或接口失败
 只使该公司降级为 `DATA_INCOMPLETE` 等状态，不能中止全市场任务。
 
-日常任务以变化驱动：新行情更新 PriceBridge；新财报更新 FinancialFacts/模型；重大公告
-触发 ResearchCase 复评；Thesis Breaker 触发降级；没有变化则保留状态。外部数据等待遵循
+日常任务以变化驱动：新行情更新 PriceBridgeResult 和价格吸引力评估；新财报更新
+FinancialFacts/模型；重大公告触发 ResearchCase 复评；Thesis Breaker 触发降级；没有变化
+则保留状态。外部数据等待遵循
 [外部数据阻塞处理政策](external-data-blocking-policy.md)。
 
 ## Excel 最终验收

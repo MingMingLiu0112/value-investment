@@ -171,19 +171,40 @@ WACC、净债务、股本或可转让上市权益价值的输入。
 `registered_valuation_inputs={}`，并将适用性证据链新增为
 `midea_finance_company_size_observation`。工业 FCFF 与合并企业价值桥接的阻断条件均不变。
 
+## 2026-09-22 HKEX 公告日股本证据
+
+`build_midea_20260330_hkex_share_basis.py` 将 HKEX 2026-03-30 全年业绩公告的原始 PDF
+锁定为 `runtime/midea-hkex-20260330-annual-results.pdf`，SHA-256：
+`c79bef69e4e0629f46987159698bca4a6a5cbfad0fdea596242580b42a813b2a`。
+
+公告第 15 页以总股本 `7,603,276,186` 股剔除已回购 A 股 `80,412,541` 股后的
+`7,522,863,645` 股作为末期股息基数；第 94 页明确该 `80,412,541` 股是
+“截至本公告日期”的 A 股库存股份，且库存股无权获付股息。对应证据包为
+`runtime/company-research/midea-20260330-hkex-share-basis-20260922/evidence.json`。
+
+该公告补上了“公告日库存股股数”这一时点事实，但没有补出 2025-12-31 年末库存股股数，
+也没有把公告日范围变成 2026-09-22 估值日普通股分母。因此状态保持
+`announcement_date_share_basis_disclosed_not_registered`、
+`share_basis_registered_for_current_valuation=false` 与 `VALUATION_NOT_READY`。
+适用性包新增 `announcement_date_share_scope=DISCLOSED_NOT_REGISTERED`，而
+`current_valuation_share_scope` 仍为 `NOT_REGISTERED`；FCFF 阻断项不变。
+
 ## ResearchCase Status
 
-美的 ResearchCase 现有七条可追溯支持证据、五条反证和四条 Thesis Breakers；`G2_商业论点门`
+美的 ResearchCase 现有八条可追溯支持证据、五条反证和五条 Thesis Breakers；`G2_商业论点门`
 通过。`G0_证据门`、`G1_财务门`及 `G3_估值门`仍不通过，因此结论仍为“数据不足”，不生成
 合理价、价格桥接、安全边际、仓位或订单。研究卡证据链已新增
-`midea_equity_return_history` 与 `midea_finance_company_size_observation`，并明确历史现金
-回报及财务公司规模披露都不是前瞻 ROE、派息或每股价值输入。
+`midea_equity_return_history`、`midea_finance_company_size_observation` 与
+`midea_hkex_share_basis`，并明确历史现金回报、财务公司规模披露及公告日库存股股数都不是
+当前估值日普通股分母或模型输入。
 
 ## 不可越过的缺口
 
 - 期末已发行 A/H 股本和 FY2025 会计加权普通股已披露，但都还不是后续估值日的
   每股估值分母。
 - 第 220 页库存股只有账面金额，没有股数；年报未披露加权计算的逐日公司行动权重。
+- HKEX 公告已披露 2026-03-30 公告日 A 股库存股 `80,412,541` 股，但该范围不是 2025-12-31
+  年末库存股，也不是后续估值日的当前普通股分母。
 - 合并口径含金融业务；不得把合并现金减全部借款、债券和租赁负债直接称为工业 FCFF 净债务。
 - EBIT、现金税率、折旧、营运资本变动、WACC、适用净债务和非经营资产尚无完整、可复算的同口径证据。
 - 合并归母权益与归母利润已披露，但剩余收益/权益价值路线的 ROE、权益成本、派息政策及
@@ -202,14 +223,14 @@ WACC、净债务、股本或可转让上市权益价值的输入。
 安全边际、仓位或订单。统一状态行显示 `工程 READY / 数据 PENDING_EXTERNAL_DATA`，研究结论
 仍为“数据不足”。
 
-2026-09-22 本轮新增权益回报历史候选序列与财务公司规模观察后，聚焦 Midea 与展示层测试
-`32 passed`，全量本地回归 `1844 passed, 1 skipped`。候选路线、历史序列与规模观察接入没有
+2026-09-22 再新增 HKEX 公告日股本证据包后，聚焦 Midea、路由与展示层测试
+`20 passed`。候选路线、历史序列、规模观察与公告日股本接入没有
 改变任何估值、价格桥接、仓位、订单或
 实盘准入状态。统一 FCFF 结果 SHA-256：
 `5ad0052e676ffacb4141d8c01b11799026550f0bc7a3d39d6a52916dd2523255`。
 
 WPS 原表已完成真实只读导航、源单元格保留和原子发布，发布后 SHA-256：
-`07BDB40595F870107BDC0A9A2DFD5BC322D18F42B4AC257C7A3544AB7F850413`。
+`BC011BFE5EE4CF583F303FE6EEBA0F5615E930C0F26AC986F9CF775551078FD3`。
 
 ## B2 Engineering Acceptance
 
@@ -218,9 +239,9 @@ FCFF 入口已达到可验收的阻断状态：真实缺口已被定位并封存
 
 ## 下一唯一工程任务
 
-美的适用性登记、合并权益口径和 2014--2024 权益回报历史候选序列已完成，并已通过聚焦与
-全量回归、WPS 实机验证和原表原子发布。下一项不是继续扩展年报附注，也不是制造 FCFF 或
-权益价值情景值；唯一工程任务是按目标文档完成一次大节点客观评估：确认美的 B2 应保持
+美的适用性登记、合并权益口径、2014--2024 权益回报历史候选序列及 HKEX 公告日股本证据
+已完成。下一项不是继续扩展年报附注，也不是制造 FCFF 或
+权益价值情景值；唯一工程任务是按目标文档完成一次大节点客观评估并发布本轮研究卡：确认美的 B2 应保持
 “事实准入待披露”的 fail-closed 状态，还是在不放宽事实边界的前提下转交下一阶段。在预测
 ROE、权益成本、派息/留存政策、当前普通股分母和干净盈余对账注册前，FCFF 与权益价值结果
 都保持 `not_ready`，不构造工业净债务、WACC 或每股情景值。

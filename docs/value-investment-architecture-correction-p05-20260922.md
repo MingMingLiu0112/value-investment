@@ -1398,53 +1398,53 @@ Web前端
 
 ## ResearchGate
 
-- [ ] 不再输出价格相关结论
-- [ ] 新增 READY_FOR_PRICE_ASSESSMENT 或等价状态
-- [ ] PENDING quote 不影响研究完成状态
+- [x] 不再输出价格相关结论
+- [x] 新增 READY_FOR_PRICE_ASSESSMENT 或等价状态
+- [x] PENDING quote 不影响研究完成状态
 
 ## PriceAttractiveness
 
-- [ ] 新增独立对象
-- [ ] 无 READY PriceBridge 时不得输出 research attractive
-- [ ] 真正使用 margin_to_base / margin_to_bear
-- [ ] 不使用统一30%
-- [ ] 支持 Profile-aware 扩展
+- [x] 新增独立对象
+- [x] 无 READY PriceBridge 时不得输出 research attractive
+- [x] 真正使用 margin_to_base / margin_to_bear
+- [x] 不使用统一30%
+- [x] 支持 Profile-aware 扩展
 
 ## Assumptions
 
-- [ ] 新增 ValuationAssumption
-- [ ] 新增 ValuationAssumptionSet
-- [ ] Facts 与 Assumptions 明确分离
-- [ ] 假设必须有 basis / rationale / evidence / confidence / sensitivity
-- [ ] 不允许模型内部隐藏关键经济假设
+- [x] 新增 ValuationAssumption
+- [x] 新增 ValuationAssumptionSet
+- [x] Facts 与 Assumptions 明确分离
+- [x] 假设必须有 basis / rationale / evidence / confidence / sensitivity
+- [x] 不允许模型内部隐藏关键经济假设
 
 ## Materiality
 
-- [ ] 新增 Materiality contract
-- [ ] UNKNOWN 继续 fail-closed
-- [ ] LOW/IMMATERIAL 必须有量化证据
-- [ ] 不得自动解除 MODEL_NOT_APPLICABLE
+- [x] 新增 Materiality contract
+- [x] UNKNOWN 继续 fail-closed
+- [x] LOW/IMMATERIAL 必须有量化证据
+- [x] 不得自动解除 MODEL_NOT_APPLICABLE
 
 ## Three-company integration
 
-- [ ] Moutai 假设可以映射统一 AssumptionSet
-- [ ] Midea blocker 被明确分类
-- [ ] Shenhua 从“继续找历史事实”转向“形成正常化假设”
-- [ ] 三家公司共享同一 PriceAttractiveness 接口
+- [x] Moutai 假设可以映射统一 AssumptionSet
+- [x] Midea blocker 被明确分类
+- [x] Shenhua 从“继续找历史事实”转向“形成正常化假设”
+- [x] 三家公司共享同一 PriceAttractiveness 接口
 
 ## Excel
 
-- [ ] 展示 Research
-- [ ] 展示 Valuation
-- [ ] 展示 Assumption status
-- [ ] 展示 PriceBridge
-- [ ] 展示 PriceAttractiveness
-- [ ] 不新增买卖指令
+- [x] 展示 Research
+- [x] 展示 Valuation
+- [x] 展示 Assumption status
+- [x] 展示 PriceBridge
+- [x] 展示 PriceAttractiveness
+- [x] 不新增买卖指令
 
 ## CI
 
-- [ ] 新核心测试进入 GitHub Actions
-- [ ] Core tests 可在 Linux Python 3.12 运行
+- [x] 新核心测试进入 GitHub Actions
+- [x] Core tests 可在 Linux Python 3.12 运行
 
 ---
 

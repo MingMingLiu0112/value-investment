@@ -1,5 +1,48 @@
 # 价值投资v2执行状态
 
+## 2026-09-22: P0.5 第二轮纠偏已恢复开发并推进
+
+当前最高优先级为 `docs/value-investment-architecture-correction-p05-20260922.md`。本轮没有修改 Moutai 估值参数、交易执行、仓位逻辑、原 WPS 工作簿手工记录或服务器 PTA 项目；没有新增第四家公司，也没有继续 Midea/Shenhua 的证据考古。
+
+**P0.5-1 已通过：研究完成状态与价格吸引力状态已经彻底分离；没有合法 PriceBridge 时，系统不再产生“估值具备研究吸引力”等价格相关研究结论。**
+
+- `ResearchGate` 只输出研究/估值完成状态，并新增 `ready_for_price_assessment` 与 `RESEARCH_READY_FOR_PRICE_ASSESSMENT`。
+- 新增 `PriceAttractivenessAssessment`；只有 `READY PriceBridgeResult` 才能进入价格吸引力判断，`PENDING_EXTERNAL_DATA` / `STALE_MODEL` / `INVALID` 返回 `NOT_ASSESSABLE`。
+- `CurrentResearchStatus` 分别保存 `research_conclusion` 与 `price_attractiveness`，不再把价格吸引力结论伪装成研究门禁结论。
+
+### P0.5-2：通用 ValuationAssumptionSet
+
+- 新增 `src/value_investment_agent/valuation_assumptions.py`，包含 `ValuationAssumption`、`ValuationAssumptionSet` 与 `READY/PARTIAL/NOT_READY/INVALID` 状态。
+- 每个假设必须提供 bear/base/bull、basis、rationale、evidence、confidence、sensitivity；数值情景必须按登记的升序或降序排列，未知或未解释的假设 fail closed。
+- 茅台映射只复用现有冻结假设，没有重算估值：产物 `runtime/valuation-assumptions/moutai-current-20260921/evidence.json`，状态 `READY`，`parameters_changed=false`。
+- 神华第一版正常化假设从现有 2014-2025 包提取历史候选范围，明确标为 `PARTIAL` 且不是模型输入：产物 `runtime/valuation-assumptions/shenhua-normalized-candidates-20260922/evidence.json`。
+
+### P0.5-3：通用 Materiality 合同与美的首例
+
+- 新增 `src/value_investment_agent/materiality.py`；`UNKNOWN` 只能 `REQUIRE_MORE_EVIDENCE` 或 `BLOCK_MODEL`，`IMMATERIAL/LOW` 必须有量化暴露或上下界。
+- 美的财务公司以 2025 已审计规模观察判定为 `LOW`、`MODEL_AS_RANGE`：利润约占归母普通股净利润 `0.934%`，净资产约占归母普通股权益 `3.521%`。
+- Materiality 没有把 `MODEL_NOT_APPLICABLE` 改成 `SUPPORTED`；工业 FCFF carve-out 仍为 `MODEL_NOT_APPLICABLE`，产物 `runtime/company-research/midea-finance-materiality-20260922/evidence.json`。
+
+### P0.5-8 / P0.5-9：Blocker 分类与 Excel 公司卡
+
+- 新增 `src/value_investment_agent/gap_classification.py`，统一分类为 `FACT_MISSING`、`ASSUMPTION_MISSING`、`MATERIALITY_UNKNOWN`、`MODEL_NOT_APPLICABLE`、`PRICE_DATA_PENDING` 等。
+- `00_公司总览` 的 MVP 公司卡新增“假设状态”“价格桥接”“价格吸引力”“Materiality”“主要未解决问题类型”，仍不生成买卖指令。
+- 新核心测试已进入 `.github/workflows/core-research-gates.yml`。
+- 茅台当前估值阻断项补齐中英文语义规则，分别识别为 `ASSUMPTION_LOW_CONFIDENCE` 与 `FACT_MISSING`，不再在 Excel 中落入 `UNCLASSIFIED`。
+
+**P0.5 已通过：Research、Valuation、Assumption、Materiality、PriceBridge 与 PriceAttractiveness 已完成职责分离；系统停止以无限证据收集替代估值判断，三公司进入统一收敛阶段。**
+
+当前完整项目回归为 `1879 passed, 1 skipped`；P0.5 与工作簿展示聚焦测试为 `54 passed`。
+
+原 WPS 工作簿已完成候选校验、WPS COM 只读导航和原子发布。最新发布后 SHA-256 为
+`bd8049f042eed173afc271c2e88c36f603719dc97f2480093c49335cd9ab22d1`；
+发布前副本保留在 `runtime/workbook-backups/frontdoor-20260922T041238343587Z/publish-backup/`。
+公司卡已经实际显示假设状态、价格桥接、价格吸引力、Materiality 和主要未解决问题类型，
+`trade_approved` 仍为 false，没有生成买卖指令。
+
+## 2026-09-22: P0.5 干净检出与远程 CI 修复
+
+此前远程提交 `8729923` 的 Core Gate 因测试读取被 `.gitignore` 排除的 `runtime/` 产物而失败。本轮改为仓库内确定性 fixture，并在待提交快照的干净检出中运行 13 个 Core Gate，结果为 `90 passed`。推送 `e26b005` 后，GitHub Actions run `35688371033` 在 Linux Python 3.12 上通过。当前完整本地回归为 `1879 passed, 1 skipped`。正式 WPS 工作簿 Hash `bd8049f042eed173afc271c2e88c36f603719dc97f2480093c49335cd9ab22d1` 已同步进仓库，仍无订单、仓位或实盘资格。
 ## 2026-09-10：M3虚拟账户执行内核及合成路径验证
 
 根据最新“先跑通单股闭环”执行契约，新增 `src/value_investment_agent/virtual_account.py` 和 `scripts/run_moutai_virtual_account.py`，不连接券商、不读取用户真实持仓。账户初始现金固定为 1,000,000 CNY、初始持仓为零；状态提议在收盘后创建订单，最早于下一输入交易日开盘成交。账本使用稳定 `decision_id` 去重，重复回放同一已完成订单不会再次成交；买入执行整手约束、按每笔最低佣金和费率记费，卖出受 A 股 T+1 可卖数量约束，逐日记录现金、持仓、可卖数量、待成交订单和收盘净值。
