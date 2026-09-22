@@ -11,6 +11,14 @@ GATE_FINANCIAL = "G1_财务门"
 GATE_BUSINESS = "G2_商业论点门"
 GATE_VALUATION = "G3_估值门"
 
+CONCLUSION_DATA_INSUFFICIENT = "数据不足"
+CONCLUSION_RESEARCH_INCOMPLETE = "研究未完成"
+CONCLUSION_VALUATION_NOT_READY = "估值未就绪"
+CONCLUSION_RESEARCH_NOT_PASSED = "研究不通过"
+CONCLUSION_RESEARCH_READY = "研究与估值已就绪"
+RESEARCH_READY_FOR_PRICE_ASSESSMENT = "RESEARCH_READY_FOR_PRICE_ASSESSMENT"
+RESEARCH_NOT_READY_FOR_PRICE_ASSESSMENT = "RESEARCH_NOT_READY_FOR_PRICE_ASSESSMENT"
+
 
 @dataclass(frozen=True)
 class ResearchGate:
@@ -27,6 +35,19 @@ class ResearchGate:
             GATE_EVIDENCE, GATE_FINANCIAL, GATE_BUSINESS, GATE_VALUATION,
         ))
 
+    @property
+    def ready_for_price_assessment(self) -> bool:
+        """ResearchGate may state that research is ready, never whether price is attractive."""
+        return self.conclusion == CONCLUSION_RESEARCH_READY
+
+    @property
+    def internal_status(self) -> str:
+        return (
+            RESEARCH_READY_FOR_PRICE_ASSESSMENT
+            if self.ready_for_price_assessment
+            else RESEARCH_NOT_READY_FOR_PRICE_ASSESSMENT
+        )
+
 
 def _has_complete_business_case(case: ResearchCase) -> bool:
     """The MVP requires evidence-linked arguments, not merely populated sections."""
@@ -42,16 +63,14 @@ def _has_complete_business_case(case: ResearchCase) -> bool:
     return bool(case.thesis.strip() and case.return_driver.strip() and case.mispricing_hypothesis.strip())
 
 
-def _conclusion(results: dict[str, bool], case: ResearchCase) -> str:
+def _conclusion(results: dict[str, bool]) -> str:
     if not results[GATE_EVIDENCE]:
-        return "数据不足"
+        return CONCLUSION_DATA_INSUFFICIENT
     if not results[GATE_FINANCIAL] or not results[GATE_BUSINESS]:
-        return "研究未完成"
+        return CONCLUSION_RESEARCH_INCOMPLETE
     if not results[GATE_VALUATION]:
-        return "估值未就绪"
-    if case.valuation_status == "approved_low_confidence":
-        return "等待更有吸引力的价格"
-    return "估值具备研究吸引力"
+        return CONCLUSION_VALUATION_NOT_READY
+    return CONCLUSION_RESEARCH_READY
 
 
 def evaluate(case: ResearchCase) -> ResearchGate:
@@ -62,7 +81,7 @@ def evaluate(case: ResearchCase) -> ResearchGate:
         GATE_BUSINESS: _has_complete_business_case(case),
         GATE_VALUATION: case.valuation_status in {"approved", "approved_low_confidence"},
     }
-    conclusion = _conclusion(results, case)
+    conclusion = _conclusion(results)
     blockers = list(case.blockers)
     for gate, passed in results.items():
         if not passed:

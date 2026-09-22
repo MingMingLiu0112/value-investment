@@ -9,7 +9,14 @@ import re
 from typing import Any
 
 from .price_bridge import PriceBridgeResult
-from .research_gate import ResearchGate
+from .price_attractiveness import (
+    PRICE_ATTRACTIVENESS_DISPLAY,
+    STATUS_NOT_ASSESSABLE,
+    STATUS_RESEARCH_ATTRACTIVE,
+    PriceAttractivenessAssessment,
+    assess_price_attractiveness,
+)
+from .research_gate import CONCLUSION_RESEARCH_READY, ResearchGate
 from .valuation_models.base import ValuationResult
 
 
@@ -43,23 +50,22 @@ CONCLUSION_DATA_INSUFFICIENT = "数据不足"
 CONCLUSION_RESEARCH_INCOMPLETE = "研究未完成"
 CONCLUSION_VALUATION_NOT_READY = "估值未就绪"
 CONCLUSION_RESEARCH_NOT_PASSED = "研究不通过"
-CONCLUSION_PRICE_NOT_ATTRACTIVE = "价格缺乏吸引力"
-CONCLUSION_WAITING_FOR_BETTER_PRICE = "等待更有吸引力的价格"
-CONCLUSION_KEY_OBSERVATION = "重点观察"
-CONCLUSION_RESEARCH_ATTRACTIVE = "估值具备研究吸引力"
 CONCLUSION_HOLD_TRACKING = "持有研究跟踪"
 CONCLUSION_PAUSED = "暂停新增研究"
 CONCLUSION_THESIS_DAMAGED = "论点受损，需复评"
 CONCLUSION_REMOVED = "退出研究池"
+
+CONCLUSION_PRICE_NOT_ATTRACTIVE = PRICE_ATTRACTIVENESS_DISPLAY["PRICE_NOT_ATTRACTIVE"]
+CONCLUSION_WAITING_FOR_BETTER_PRICE = PRICE_ATTRACTIVENESS_DISPLAY["WAITING_FOR_BETTER_PRICE"]
+CONCLUSION_KEY_OBSERVATION = PRICE_ATTRACTIVENESS_DISPLAY["KEY_OBSERVATION"]
+CONCLUSION_RESEARCH_ATTRACTIVE = PRICE_ATTRACTIVENESS_DISPLAY["RESEARCH_ATTRACTIVE"]
+
 ALLOWED_RESEARCH_CONCLUSIONS = {
     CONCLUSION_DATA_INSUFFICIENT,
     CONCLUSION_RESEARCH_INCOMPLETE,
     CONCLUSION_VALUATION_NOT_READY,
     CONCLUSION_RESEARCH_NOT_PASSED,
-    CONCLUSION_PRICE_NOT_ATTRACTIVE,
-    CONCLUSION_WAITING_FOR_BETTER_PRICE,
-    CONCLUSION_KEY_OBSERVATION,
-    CONCLUSION_RESEARCH_ATTRACTIVE,
+    CONCLUSION_RESEARCH_READY,
     CONCLUSION_HOLD_TRACKING,
     CONCLUSION_PAUSED,
     CONCLUSION_THESIS_DAMAGED,
@@ -134,6 +140,7 @@ class CurrentResearchStatus:
     price_bridge_status: str
     engineering_status: str
     current_data_status: CurrentDataStatus
+    price_attractiveness: PriceAttractivenessAssessment
     display_text: str
     blockers: list[str]
     evidence_refs: list[dict[str, Any]]
@@ -147,11 +154,15 @@ class CurrentResearchStatus:
             raise ValueError("Unknown engineering status")
         if not isinstance(self.current_data_status, CurrentDataStatus):
             raise ValueError("Current research status requires a CurrentDataStatus")
+        if not isinstance(self.price_attractiveness, PriceAttractivenessAssessment):
+            raise ValueError("Current research status requires a PriceAttractivenessAssessment")
+        if self.symbol != self.price_attractiveness.symbol:
+            raise ValueError("Current research and price-attractiveness symbols must match")
         _validate_refs(self.evidence_refs)
 
     @property
     def research_attractive(self) -> bool:
-        return self.research_conclusion == CONCLUSION_RESEARCH_ATTRACTIVE
+        return self.price_attractiveness.status == STATUS_RESEARCH_ATTRACTIVE
 
     def as_policy(self) -> dict[str, Any]:
         return {
@@ -161,6 +172,7 @@ class CurrentResearchStatus:
             "price_bridge_status": self.price_bridge_status,
             "engineering_status": self.engineering_status,
             "current_data_status": self.current_data_status.as_policy(),
+            "price_attractiveness": self.price_attractiveness.as_policy(),
             "display_text": self.display_text,
             "blockers": list(self.blockers),
             "evidence_refs": [dict(ref) for ref in self.evidence_refs],
@@ -187,48 +199,39 @@ def _scenarios_complete(valuation: ValuationResult) -> bool:
     )
 
 
-def _resolve_conclusion(
+def _resolve_research_conclusion(
     gate: ResearchGate,
     valuation: ValuationResult,
-    price_bridge: PriceBridgeResult,
     blockers: list[str],
 ) -> str:
-    if gate.conclusion not in {
+    conclusion = gate.conclusion
+    if conclusion in {
         CONCLUSION_WAITING_FOR_BETTER_PRICE,
         CONCLUSION_RESEARCH_ATTRACTIVE,
     }:
-        return gate.conclusion
+        conclusion = (
+            CONCLUSION_RESEARCH_READY
+            if gate.valuation_ready
+            else CONCLUSION_VALUATION_NOT_READY
+        )
+    if conclusion != CONCLUSION_RESEARCH_READY:
+        return conclusion
 
     if valuation.status == "not_ready" or not _scenarios_complete(valuation):
         blockers.append("valuation_not_ready")
         return CONCLUSION_VALUATION_NOT_READY
 
-    if valuation.status == "conditional_research_only":
-        blockers.append("conditional_valuation_is_not_formal_research_attractiveness")
-        return (
-            CONCLUSION_WAITING_FOR_BETTER_PRICE
-            if valuation.confidence == "低"
-            else CONCLUSION_KEY_OBSERVATION
-        )
-
-    if valuation.confidence == "低":
-        blockers.append("valuation_confidence_low_blocks_research_attractiveness")
-        return CONCLUSION_WAITING_FOR_BETTER_PRICE
-
-    if price_bridge.bridge_status in {"STALE_MODEL", "INVALID"}:
-        blockers.append(f"model_bridge_{price_bridge.bridge_status.lower()}")
-        return CONCLUSION_KEY_OBSERVATION
-
-    # Pending external data retains the completed research and valuation result.
-    return gate.conclusion
+    return conclusion
 
 
 def _display_text(
     conclusion: str,
+    price_attractiveness: PriceAttractivenessAssessment,
     valuation: ValuationResult,
     engineering_status: str,
     current_data_status: CurrentDataStatus,
 ) -> str:
+    price_conclusion = PRICE_ATTRACTIVENESS_DISPLAY[price_attractiveness.status]
     if current_data_status.status == CURRENT_DATA_PENDING_EXTERNAL_DATA:
         retained = (
             "估值结果已保留；等待已验证收盘行情后更新价格桥接和安全边际。"
@@ -246,7 +249,8 @@ def _display_text(
 
     return (
         f"研究结论：{conclusion}；估值状态：{valuation.status}；"
-        f"工程链路：{engineering_status}；当前数据：{current_data_status.status}。"
+        f"价格吸引力：{price_conclusion}；工程链路：{engineering_status}；"
+        f"当前数据：{current_data_status.status}。"
         f"{retained}该状态只属于研究层，不生成交易、仓位或订单。"
     )
 
@@ -258,6 +262,7 @@ def evaluate_current_research_status(
     *,
     engineering_status: str = ENGINEERING_READY,
     current_data_status: CurrentDataStatus | None = None,
+    profile_id: str | None = None,
 ) -> CurrentResearchStatus:
     """Combine retained domain results without creating an execution instruction."""
     if not isinstance(gate, ResearchGate):
@@ -297,7 +302,14 @@ def evaluate_current_research_status(
     blockers = [*gate.blockers, *valuation.blockers]
     if engineering_status != ENGINEERING_READY:
         blockers.append(f"engineering_status_{engineering_status.lower()}")
-    conclusion = _resolve_conclusion(gate, valuation, price_bridge, blockers)
+    conclusion = _resolve_research_conclusion(gate, valuation, blockers)
+    price_attractiveness = assess_price_attractiveness(
+        gate,
+        valuation,
+        price_bridge,
+        profile_id=profile_id,
+    )
+    blockers.extend(price_attractiveness.blockers)
     blockers = list(dict.fromkeys(blockers))
     evidence_refs = _merge_refs(
         valuation.evidence_refs,
@@ -311,8 +323,10 @@ def evaluate_current_research_status(
         price_bridge_status=price_bridge.bridge_status,
         engineering_status=engineering_status,
         current_data_status=current_data_status,
+        price_attractiveness=price_attractiveness,
         display_text=_display_text(
             conclusion,
+            price_attractiveness,
             valuation,
             engineering_status,
             current_data_status,
@@ -359,13 +373,25 @@ def current_research_status_from_payloads(
     *,
     engineering_status: str = ENGINEERING_READY,
     current_data_status: CurrentDataStatus | None = None,
+    profile_id: str | None = None,
 ) -> CurrentResearchStatus:
     """Restore serialized domain results before aggregating them."""
+    gate_conclusion = str(gate_payload["conclusion"])
+    gate_results = dict(gate_payload["results"])
+    if gate_conclusion in {
+        CONCLUSION_WAITING_FOR_BETTER_PRICE,
+        CONCLUSION_RESEARCH_ATTRACTIVE,
+    }:
+        gate_conclusion = (
+            CONCLUSION_RESEARCH_READY
+            if all(gate_results.values())
+            else CONCLUSION_VALUATION_NOT_READY
+        )
     gate = ResearchGate(
         symbol=str(valuation_payload["symbol"]),
-        results=dict(gate_payload["results"]),
+        results=gate_results,
         blockers=list(gate_payload["blockers"]),
-        conclusion=str(gate_payload["conclusion"]),
+        conclusion=gate_conclusion,
     )
     valuation = ValuationResult(
         symbol=str(valuation_payload["symbol"]),
@@ -411,4 +437,5 @@ def current_research_status_from_payloads(
         price_bridge,
         engineering_status=engineering_status,
         current_data_status=current_data_status,
+        profile_id=profile_id,
     )

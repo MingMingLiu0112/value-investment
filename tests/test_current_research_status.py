@@ -6,10 +6,8 @@ import json
 import pytest
 
 from value_investment_agent.current_research_status import (
-    CONCLUSION_KEY_OBSERVATION,
-    CONCLUSION_RESEARCH_ATTRACTIVE,
+    CONCLUSION_RESEARCH_READY,
     CONCLUSION_VALUATION_NOT_READY,
-    CONCLUSION_WAITING_FOR_BETTER_PRICE,
     CURRENT_DATA_PENDING_EXTERNAL_DATA,
     ENGINEERING_READY,
     CurrentDataStatus,
@@ -17,11 +15,17 @@ from value_investment_agent.current_research_status import (
     evaluate_current_research_status,
 )
 from value_investment_agent.price_bridge import PriceBridgeResult
+from value_investment_agent.price_attractiveness import (
+    STATUS_KEY_OBSERVATION,
+    STATUS_NOT_ASSESSABLE,
+    STATUS_RESEARCH_ATTRACTIVE,
+    STATUS_WAITING_FOR_BETTER_PRICE,
+)
 from value_investment_agent.research_gate import ResearchGate
 from value_investment_agent.valuation_models.base import ValuationResult
 
 
-def gate(conclusion="估值具备研究吸引力"):
+def gate(conclusion=CONCLUSION_RESEARCH_READY):
     return ResearchGate(
         symbol="600519",
         results={
@@ -60,9 +64,9 @@ def bridge(status="READY", **overrides):
         symbol="600519",
         valuation_date=date(2026, 9, 20),
         quote_date=date(2026, 9, 21),
-        current_price=Decimal("450"),
-        margin_to_bear=Decimal("-0.125"),
-        margin_to_base=Decimal("0.1"),
+        current_price=Decimal("350"),
+        margin_to_bear=Decimal("0.125"),
+        margin_to_base=Decimal("0.3"),
         model_validity_status="VALID",
         quote_status="verified_close",
         bridge_status=status,
@@ -86,7 +90,10 @@ def test_pending_quote_retains_research_and_valuation_while_splitting_data_statu
         ),
     )
 
-    assert outcome.research_conclusion == CONCLUSION_RESEARCH_ATTRACTIVE
+    assert outcome.research_conclusion == CONCLUSION_RESEARCH_READY
+    assert outcome.price_attractiveness.status == STATUS_NOT_ASSESSABLE
+    assert outcome.research_attractive is False
+    assert "估值具备研究吸引力" not in outcome.display_text
     assert outcome.valuation_status == "approved_research_only"
     assert outcome.price_bridge_status == "PENDING_EXTERNAL_DATA"
     assert outcome.engineering_status == ENGINEERING_READY
@@ -102,11 +109,13 @@ def test_low_confidence_cannot_become_research_attractive():
         gate(),
         valuation(confidence="低"),
         bridge(),
+        profile_id="quality_compounder",
     )
 
-    assert outcome.research_conclusion == CONCLUSION_WAITING_FOR_BETTER_PRICE
+    assert outcome.research_conclusion == CONCLUSION_RESEARCH_READY
+    assert outcome.price_attractiveness.status == STATUS_WAITING_FOR_BETTER_PRICE
     assert outcome.research_attractive is False
-    assert "valuation_confidence_low_blocks_research_attractiveness" in outcome.blockers
+    assert "valuation_confidence_low" in outcome.blockers
 
 
 def test_unperformed_valuation_remains_valuation_not_ready():
@@ -133,9 +142,10 @@ def test_conditional_research_only_is_not_promoted_to_attractive():
         bridge(),
     )
 
-    assert outcome.research_conclusion == CONCLUSION_KEY_OBSERVATION
+    assert outcome.research_conclusion == CONCLUSION_RESEARCH_READY
+    assert outcome.price_attractiveness.status == STATUS_KEY_OBSERVATION
     assert outcome.research_attractive is False
-    assert "conditional_valuation_is_not_formal_research_attractiveness" in outcome.blockers
+    assert "profile_not_identified" in outcome.blockers
 
 
 def test_stale_and_invalid_price_bridges_do_not_become_attractive():
@@ -150,10 +160,12 @@ def test_stale_and_invalid_price_bridges_do_not_become_attractive():
         bridge("INVALID", model_validity_status="INVALID"),
     )
 
-    assert stale.research_conclusion == CONCLUSION_KEY_OBSERVATION
-    assert invalid.research_conclusion == CONCLUSION_KEY_OBSERVATION
-    assert "model_bridge_stale_model" in stale.blockers
-    assert "model_bridge_invalid" in invalid.blockers
+    assert stale.research_conclusion == CONCLUSION_RESEARCH_READY
+    assert invalid.research_conclusion == CONCLUSION_RESEARCH_READY
+    assert stale.price_attractiveness.status == STATUS_NOT_ASSESSABLE
+    assert invalid.price_attractiveness.status == STATUS_NOT_ASSESSABLE
+    assert "price_bridge_stale_model" in stale.blockers
+    assert "price_bridge_invalid" in invalid.blockers
 
 
 def test_complete_high_confidence_research_can_be_research_attractive():
@@ -161,10 +173,13 @@ def test_complete_high_confidence_research_can_be_research_attractive():
         gate(),
         valuation(confidence="高"),
         bridge(),
+        profile_id="quality_compounder",
     )
 
-    assert outcome.research_conclusion == CONCLUSION_RESEARCH_ATTRACTIVE
+    assert outcome.research_conclusion == CONCLUSION_RESEARCH_READY
+    assert outcome.price_attractiveness.status == STATUS_RESEARCH_ATTRACTIVE
     assert outcome.research_attractive is True
+    assert "估值具备研究吸引力" in outcome.display_text
     assert outcome.current_data_status.status == "READY"
 
 
@@ -176,6 +191,7 @@ def test_non_attractive_gate_conclusion_is_preserved():
     )
 
     assert outcome.research_conclusion == "研究未完成"
+    assert outcome.price_attractiveness.status == STATUS_NOT_ASSESSABLE
     assert outcome.research_attractive is False
 
 
@@ -224,6 +240,7 @@ def test_policy_is_serializable_and_contains_no_trading_state():
 
     assert restored == policy
     assert "research_attractive" not in policy
+    assert policy["price_attractiveness"]["status"] == STATUS_NOT_ASSESSABLE
     for key in ("trade", "order", "position", "target_weight", "shares"):
         assert key not in json.dumps(policy, ensure_ascii=False)
     assert policy["evidence_refs"] == [{"id": "valuation"}, {"id": "quote"}]
@@ -243,9 +260,11 @@ def test_serialized_domain_payloads_restore_before_aggregation():
         },
         valuation_payload=json.loads(valuation().to_json()),
         price_bridge_payload=json.loads(bridge().to_json()),
+        profile_id="quality_compounder",
     )
 
-    assert outcome.research_conclusion == CONCLUSION_RESEARCH_ATTRACTIVE
+    assert outcome.research_conclusion == CONCLUSION_RESEARCH_READY
+    assert outcome.price_attractiveness.status == STATUS_RESEARCH_ATTRACTIVE
     assert outcome.current_data_status.status == "READY"
     assert outcome.evidence_refs == [{"id": "valuation"}, {"id": "quote"}]
 

@@ -1,7 +1,11 @@
 from dataclasses import replace
 
 from test_research_case import case
-from value_investment_agent.research_gate import GATE_BUSINESS, evaluate
+from value_investment_agent.research_gate import (
+    CONCLUSION_RESEARCH_READY,
+    GATE_BUSINESS,
+    evaluate,
+)
 
 
 def test_incomplete_case_cannot_become_a_valuation_conclusion():
@@ -24,7 +28,10 @@ def test_all_substantive_gates_are_required():
     )
     gate = evaluate(ready)
     assert gate.valuation_ready is True
-    assert gate.conclusion == "估值具备研究吸引力"
+    assert gate.ready_for_price_assessment is True
+    assert gate.internal_status == "RESEARCH_READY_FOR_PRICE_ASSESSMENT"
+    assert gate.conclusion == CONCLUSION_RESEARCH_READY
+    assert gate.conclusion not in {"估值具备研究吸引力", "等待更有吸引力的价格"}
 
 
 def test_g2_requires_a_registered_next_event():

@@ -1,0 +1,31 @@
+{
+  "symbol": "000333",
+  "as_of_period": "2025-12-31",
+  "basis": "synthetic deterministic test fixture",
+  "package_version": "midea-fcff-facts-test-fixture-v1",
+  "financial_scope_approved": false,
+  "fcff_inputs": {
+    "capex": "11141889000",
+    "ebit": null,
+    "cash_tax_rate": null,
+    "depreciation": null,
+    "working_capital_change": null,
+    "wacc": null,
+    "net_debt": null,
+    "non_operating_assets": null,
+    "shares": null
+  },
+  "observed_facts": {},
+  "evidence_refs": [
+    {
+      "id": "midea_fcff_partial_facts_fixture"
+    }
+  ],
+  "per_share_blockers": [
+    "fy2025_accounting_weighted_denominator_disclosed_but_not_current_valuation_denominator"
+  ],
+  "blockers": [
+    "synthetic_input_gap_for_contract_test"
+  ],
+  "status": "partial_facts_not_valuation_ready"
+}

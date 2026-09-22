@@ -12,6 +12,9 @@ from openpyxl.comments import Comment
 from openpyxl.utils import get_column_letter
 
 from .current_research_status import current_research_status_from_payloads
+from .gap_classification import classify_blockers
+from .price_attractiveness import PRICE_ATTRACTIVENESS_DISPLAY
+from .research_gate import CONCLUSION_RESEARCH_READY
 from .workbook_frontdoor import HOME, PRIMARY, VERSION, _rows, _band, _link, repair_internal_links
 
 OVERVIEW = '00_公司总览'
@@ -96,7 +99,9 @@ def company_progress(wb, root):
             if code not in rows:
                 # Isolated report tests build a candidate-only workbook without the fixed cases.
                 continue
-            permitted_conclusions = {'数据不足', '研究未完成', '估值未就绪'}
+            permitted_conclusions = {
+                '数据不足', '研究未完成', '估值未就绪', CONCLUSION_RESEARCH_READY,
+            }
             if gate.get('conclusion') not in permitted_conclusions:
                 raise ValueError('Excel MVP may not promote a valuation conclusion')
             rows[code]['mvp_research'] = record
@@ -146,7 +151,7 @@ def company_progress(wb, root):
                     next_step='完成估值口径与策略有效性验收',
                     closure=run, case=case_data,
                 )
-                refs['600519'] = [closure[1], case[1]]
+                refs.setdefault('600519', []).extend([closure[1], case[1]])
                 observation = _pinned(root, 'runtime/company-research/600519-current-conditional-observation-latest.json', 'evidence.json')
                 pe = _pinned(root, 'runtime/strategy-validation/moutai-pe-mid-paper-contract-v2-latest.json', 'summary.json')
                 if observation:
@@ -271,6 +276,47 @@ def company_progress(wb, root):
             rows['601088']['stage'] = 'MVP研究已载入；' + _mvp_display_status(value['status'])
             rows['601088']['next_step'] = '按周期正常化估值阻断项补证，不产生订单或仓位'
             refs.setdefault('601088', []).append(valuation_ref)
+    assumption_pointers = {
+        '600519': 'runtime/valuation-assumptions/600519-current-latest.json',
+        '601088': 'runtime/valuation-assumptions/601088-normalized-latest.json',
+    }
+    for code, pointer in assumption_pointers.items():
+        if code not in rows:
+            continue
+        package = _pinned(root, pointer, 'evidence.json')
+        if not package:
+            continue
+        payload, package_ref = package
+        assumption_set = payload.get('assumption_set') or {}
+        if (payload.get('symbol') != code
+                or assumption_set.get('status') not in {'READY', 'PARTIAL', 'NOT_READY', 'INVALID'}):
+            raise ValueError('Assumption-set display identity changed: ' + code)
+        rows[code]['assumption_status'] = assumption_set['status']
+        rows[code]['assumption_blockers'] = assumption_set.get('blockers', [])
+        refs.setdefault(code, []).append(package_ref)
+    if '000333' in rows:
+        package = _pinned(root, 'runtime/company-research/000333-finance-materiality-latest.json', 'evidence.json')
+        if package:
+            payload, package_ref = package
+            assessment = payload.get('assessment') or {}
+            if (payload.get('symbol') != '000333'
+                    or payload.get('industrial_fcff_carve_out') != 'MODEL_NOT_APPLICABLE'
+                    or assessment.get('materiality') not in {'IMMATERIAL', 'LOW', 'MEDIUM', 'HIGH', 'UNKNOWN'}):
+                raise ValueError('Midea materiality display identity changed')
+            rows['000333']['materiality'] = assessment
+            rows['000333']['materiality_blockers'] = assessment.get('blockers', [])
+            refs.setdefault('000333', []).append(package_ref)
+    for code, row in rows.items():
+        blockers = [
+            *(row.get('assumption_blockers') or []),
+            *(row.get('materiality_blockers') or []),
+            *(row.get('valuation_result') or {}).get('blockers', []),
+        ]
+        if not blockers and row.get('current_research_status'):
+            blockers = row['current_research_status'].blockers
+        classifications = classify_blockers(code, blockers)
+        gap_types = list(dict.fromkeys(item.gap_type for item in classifications if item.gap_type != 'UNCLASSIFIED'))
+        row['gap_types'] = gap_types or ['UNCLASSIFIED']
     return list(rows.values()), refs
 
 
@@ -416,7 +462,8 @@ def _mvp_card_row_height(ws, body, state):
 
 
 def _mvp_research_card(ws, start_row, record, valuation=None, price_bridge=None,
-                       current_status=None):
+                       current_status=None, assumption_status=None, materiality=None,
+                       gap_types=None):
     """Compact uniform cards; details remain in immutable JSON evidence."""
     case, gate = record['case'], record['gate']
     _band(ws, start_row, case['name'] + ' ' + case['symbol'] + ' | MVP研究卡', color=BLUE, height=30)
@@ -462,6 +509,26 @@ def _mvp_research_card(ws, start_row, record, valuation=None, price_bridge=None,
         rows.append(('统一当前状态', current_status.display_text,
                      '工程：' + current_status.engineering_status
                      + ' | 数据：' + current_status.current_data_status.status))
+        rows.append((
+            '价格桥接',
+            current_status.price_bridge_status,
+            current_status.price_bridge_status,
+        ))
+        price_label = PRICE_ATTRACTIVENESS_DISPLAY.get(
+            current_status.price_attractiveness.status,
+            current_status.price_attractiveness.status,
+        )
+        rows.append(('价格吸引力', price_label, current_status.price_attractiveness.status))
+    if assumption_status:
+        rows.append(('假设状态', assumption_status, assumption_status))
+    if materiality:
+        rows.append((
+            'Materiality',
+            materiality.get('materiality') + ' / ' + materiality.get('treatment'),
+            materiality.get('materiality'),
+        ))
+    if gap_types:
+        rows.append(('主要未解决问题类型', ' / '.join(gap_types), '统一阻断分类'))
     for row, (label, body, state) in enumerate(rows, start_row + 1):
         _span(ws, row, 1, 2, label, fill='EDF3F8', bold=True)
         _span(ws, row, 3, 6, body)
@@ -552,6 +619,8 @@ def _results(wb, done):
         r = _mvp_research_card(
             ws, r, record, company.get('valuation_result'),
             company.get('price_bridge_result'), company.get('current_research_status'),
+            company.get('assumption_status'), company.get('materiality'),
+            company.get('gap_types'),
         )
     # Older Moutai-only presentation remains in retained JSON evidence. The
     # MVP surface intentionally stops here so all three cases share one shape.

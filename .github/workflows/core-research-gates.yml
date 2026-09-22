@@ -28,6 +28,10 @@ jobs:
           tests/test_research_profile.py
           tests/test_valuation_confidence.py
           tests/test_valuation_router.py
+          tests/test_price_attractiveness.py
+          tests/test_valuation_assumptions.py
+          tests/test_materiality.py
+          tests/test_gap_classification.py
           tests/test_current_research_status.py
           tests/test_unified_fcff_valuation.py
           tests/test_residual_income_equity_valuation.py

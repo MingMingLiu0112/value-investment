@@ -1,0 +1,42 @@
+{
+  "version": "test-fixture",
+  "generated_at": "2025-12-31T00:00:00+00:00",
+  "records": [
+    {
+      "case": {
+        "symbol": "000333",
+        "name": "美的集团",
+        "as_of": "2025-12-31",
+        "run_id": "test-fixture",
+        "generated_at": "2025-12-31T00:00:00+00:00",
+        "research_version": "test",
+        "industry": "家电",
+        "investment_path": "成长价值",
+        "thesis": "测试",
+        "return_driver": "测试",
+        "mispricing_hypothesis": "未证明",
+        "financial_summary": {
+          "period_end": "2025-12-31"
+        },
+        "positives": [],
+        "counter_evidence": [],
+        "thesis_breakers": [],
+        "next_events": [],
+        "evidence_status": "partial",
+        "valuation_status": "not_ready",
+        "research_status": "financial_scope_blocked",
+        "blockers": [],
+        "evidence_refs": [
+          {
+            "id": "fixture-case"
+          }
+        ],
+        "quote_date": null,
+        "financial_period": "2025-12-31",
+        "missing_date_reasons": {
+          "quote_date": "fixture does not use a quote"
+        }
+      }
+    }
+  ]
+}

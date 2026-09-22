@@ -17,6 +17,7 @@ from value_investment_agent.valuation_models.fcff import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+FIXTURES = ROOT / "tests" / "fixtures"
 
 
 def case():
@@ -240,12 +241,13 @@ def test_invalid_share_denominator_is_rejected(shares):
         FCFFValuationModel().value(facts, case())
 
 
-def test_existing_midea_production_payload_still_yields_not_ready():
-    audit = json.loads((ROOT / "runtime/company-research/midea-fcff-facts-20260922/evidence.json").read_text(encoding="utf-8"))
+def test_partial_midea_fcff_facts_fixture_yields_not_ready():
+    facts_fixture = FIXTURES / "midea_fcff_partial_facts_fixture.json"
+    audit = json.loads(facts_fixture.read_text(encoding="utf-8"))
     facts = FinancialFacts(
         symbol="000333", as_of=date.fromisoformat(audit["as_of_period"]),
         verified=audit["financial_scope_approved"] is True,
-        evidence_refs=[{"id": "midea_fcff_facts", "path": "runtime/company-research/midea-fcff-facts-20260922/evidence.json"}],
+        evidence_refs=[{"id": "midea_fcff_facts_fixture", "path": str(facts_fixture.relative_to(ROOT))}],
         blockers=list(audit.get("per_share_blockers", [])),
         operating_inputs={key: (None if value is None else D(str(value)))
                           for key, value in audit.get("fcff_inputs", {}).items()},

@@ -29,6 +29,8 @@ def test_midea_applicability_separates_economic_route_from_fact_scope():
     assert payload["scope_assessment"]["industrial_fcff_carve_out"] == "MODEL_NOT_APPLICABLE"
     assert payload["scope_assessment"]["consolidated_enterprise_value_bridge"] == "VALUATION_NOT_READY"
     assert payload["scope_assessment"]["fy2025_accounting_eps_denominator"] == "DISCLOSED_NOT_REGISTERED"
+    assert payload["scope_assessment"]["announcement_date_share_scope"] == "DISCLOSED_NOT_REGISTERED"
+    assert payload["scope_assessment"]["current_valuation_share_scope"] == "NOT_REGISTERED"
     assert payload["finance_company_size_observation"]["status"] == "OBSERVATION_NOT_MODEL_INPUT"
     assert payload["finance_company_size_observation"]["does_not_unblock_industrial_fcff"] is True
     assert payload["registered_valuation_model"] is None
@@ -38,6 +40,7 @@ def test_midea_applicability_separates_economic_route_from_fact_scope():
     assert payload["alternative_route_candidate"]["profile_authorization"] == "UNSUPPORTED"
     assert payload["alternative_route_candidate"]["evidence_status"]["historical_equity_income_and_cash_return_series"] == "COMPILED_CANDIDATE"
     assert payload["alternative_route_candidate"]["evidence_status"]["current_ordinary_share_denominator"] == "NOT_REGISTERED"
+    assert payload["alternative_route_candidate"]["evidence_status"]["announcement_date_share_scope"] == "DISCLOSED_NOT_REGISTERED"
     assert any(item.startswith("Forward bear/base/bull ROE assumptions")
                for item in payload["alternative_route_candidate"]["required_next_evidence"])
     assert any(item.startswith("Clean-surplus equity rollforward")
@@ -54,6 +57,7 @@ def test_midea_applicability_separates_economic_route_from_fact_scope():
     assert {ref["id"] for ref in payload["evidence_refs"]} == {
         "midea_ebit_scope", "midea_share_basis", "midea_consolidated_equity_scope",
         "midea_equity_return_history", "midea_finance_company_size_observation",
+        "midea_hkex_20260330_share_basis",
     }
     assert all((ROOT / ref["path"]).is_relative_to(ROOT / "runtime/company-research")
                for ref in payload["evidence_refs"])

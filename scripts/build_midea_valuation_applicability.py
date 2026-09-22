@@ -27,6 +27,7 @@ SHARE_POINTER = ROOT / "runtime/company-research/midea-2025-share-basis-latest.j
 EQUITY_SCOPE_POINTER = ROOT / "runtime/company-research/midea-consolidated-equity-scope-latest.json"
 HISTORICAL_EQUITY_RETURN_POINTER = ROOT / "runtime/company-research/midea-2014-2024-equity-return-candidate-latest.json"
 FINANCE_COMPANY_POINTER = ROOT / "runtime/company-research/midea-finance-co-2025-size-observation-latest.json"
+HKEX_SHARE_POINTER = ROOT / "runtime/company-research/midea-20260330-hkex-share-basis-latest.json"
 
 OUT = ROOT / "runtime/company-research/midea-valuation-applicability-20260922"
 POINTER = ROOT / "runtime/company-research/midea-valuation-applicability-latest.json"
@@ -76,6 +77,16 @@ def load_pinned_finance_company_observation() -> tuple[dict, str]:
     return json.loads(target.read_text(encoding="utf-8")), pin["sha256"].lower()
 
 
+def load_pinned_hkex_share_basis() -> tuple[dict, str]:
+    pin = json.loads(HKEX_SHARE_POINTER.read_text(encoding="utf-8"))
+    target = (ROOT / pin["path"] / "evidence.json").resolve()
+    if not target.is_relative_to(ROOT.resolve()):
+        raise ValueError("Midea HKEX share-basis pointer escapes the project root")
+    if digest(target) != pin["sha256"].lower():
+        raise ValueError("Midea HKEX share-basis evidence changed")
+    return json.loads(target.read_text(encoding="utf-8")), pin["sha256"].lower()
+
+
 def build_payload() -> dict:
     if digest(EBIT) != EBIT_SHA256:
         raise ValueError("Midea EBIT scope evidence changed")
@@ -117,6 +128,14 @@ def build_payload() -> dict:
             or finance_company.get("registered_valuation_model") is not None):
         raise ValueError("Midea finance-company observation changed its fail-closed contract")
 
+    hkex_share, hkex_share_sha256 = load_pinned_hkex_share_basis()
+    if (hkex_share.get("symbol") != "000333"
+            or hkex_share.get("status") != "announcement_date_share_basis_disclosed_not_registered"
+            or hkex_share.get("share_basis_registered_for_current_valuation") is not False
+            or hkex_share.get("valuation_status") != "VALUATION_NOT_READY"
+            or hkex_share.get("registered_valuation_inputs") != {}):
+        raise ValueError("Midea HKEX share-basis payload changed its fail-closed contract")
+
     route = ValuationRouter().route(PROFILES["mature_manufacturing"], "fcff")
     if route.status != ROUTE_SUPPORTED or route.model_type != "FCFF":
         raise ValueError("Mature-manufacturing profile no longer routes to the shared FCFF contract")
@@ -132,6 +151,7 @@ def build_payload() -> dict:
         "dated_cost_of_equity_range": "NOT_EVIDENCED",
         "registered_payout_or_retention": "NOT_EVIDENCED",
         "current_ordinary_share_denominator": "NOT_REGISTERED",
+        "announcement_date_share_scope": "DISCLOSED_NOT_REGISTERED",
         "clean_surplus_equity_rollforward": "NOT_RECONCILED",
     }
     required_next_evidence = [
@@ -153,6 +173,7 @@ def build_payload() -> dict:
             "industrial_fcff_carve_out": "MODEL_NOT_APPLICABLE",
             "consolidated_enterprise_value_bridge": "VALUATION_NOT_READY",
             "fy2025_accounting_eps_denominator": "DISCLOSED_NOT_REGISTERED",
+            "announcement_date_share_scope": "DISCLOSED_NOT_REGISTERED",
             "current_valuation_share_scope": "NOT_REGISTERED",
         },
         "finance_company_size_observation": {
@@ -247,6 +268,12 @@ def build_payload() -> dict:
                 "sha256": finance_company_sha256,
                 "description": "Issuer-linked 2025 Midea Group Finance Co. size observation (not a model input)",
             },
+            {
+                "id": "midea_hkex_20260330_share_basis",
+                "path": str((ROOT / json.loads(HKEX_SHARE_POINTER.read_text(encoding="utf-8"))["path"] / "evidence.json").relative_to(ROOT)),
+                "sha256": hkex_share_sha256,
+                "description": "2026-03-30 HKEX announcement-date A-share treasury count and final-dividend base (not registered)",
+            },
         ],
         "formal_fair_value": None,
         "valuation_approved": False,
@@ -269,6 +296,7 @@ def main() -> None:
         "equity_scope_sha256": load_pinned_equity_scope()[1],
         "equity_return_history_sha256": load_pinned_historical_equity_return()[1],
         "finance_company_observation_sha256": load_pinned_finance_company_observation()[1],
+        "hkex_share_basis_sha256": load_pinned_hkex_share_basis()[1],
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
     (OUT / "manifest.json").write_text(

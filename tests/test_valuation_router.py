@@ -29,6 +29,10 @@ BUILD_SPEC = importlib.util.spec_from_file_location(
 BUILD_MODULE = importlib.util.module_from_spec(BUILD_SPEC)
 BUILD_SPEC.loader.exec_module(BUILD_MODULE)
 
+FIXTURES = ROOT / "tests" / "fixtures"
+CASE_FIXTURE = FIXTURES / "midea_research_case_fixture.json"
+FACTS_FIXTURE = FIXTURES / "midea_fcff_partial_facts_fixture.json"
+
 
 def test_mature_manufacturing_routes_to_the_shared_fcff_contract():
     route = route_profile("mature_manufacturing")
@@ -97,8 +101,8 @@ def test_unknown_profile_id_fails_closed():
 def test_fcff_builder_records_profile_based_route_without_writing_runtime_state():
     payload = BUILD_MODULE.build(
         symbol="000333",
-        case_path=ROOT / "runtime/excel-mvp-research-cases/evidence.json",
-        facts_path=ROOT / "runtime/company-research/midea-fcff-facts-20260922/evidence.json",
+        case_path=CASE_FIXTURE,
+        facts_path=FACTS_FIXTURE,
         model="fcff",
         profile_id="mature_manufacturing",
     )
@@ -114,8 +118,8 @@ def test_fcff_builder_rejects_an_economically_incompatible_profile():
     with pytest.raises(ValueError, match="does not support"):
         BUILD_MODULE.build(
             symbol="000333",
-            case_path=ROOT / "runtime/excel-mvp-research-cases/evidence.json",
-            facts_path=ROOT / "runtime/company-research/midea-fcff-facts-20260922/evidence.json",
+            case_path=CASE_FIXTURE,
+            facts_path=FACTS_FIXTURE,
             model="fcff",
             profile_id="cyclical_cash_return",
         )

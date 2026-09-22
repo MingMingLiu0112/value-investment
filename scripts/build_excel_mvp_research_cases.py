@@ -19,6 +19,7 @@ MIDEA_SHARE_BASIS_POINTER = ROOT / "runtime/company-research/midea-2025-share-ba
 MIDEA_EQUITY_SCOPE_POINTER = ROOT / "runtime/company-research/midea-consolidated-equity-scope-latest.json"
 MIDEA_EQUITY_RETURN_POINTER = ROOT / "runtime/company-research/midea-2014-2024-equity-return-candidate-latest.json"
 MIDEA_FINANCE_CO_POINTER = ROOT / "runtime/company-research/midea-finance-co-2025-size-observation-latest.json"
+MIDEA_HKEX_SHARE_POINTER = ROOT / "runtime/company-research/midea-20260330-hkex-share-basis-latest.json"
 SHENHUA_CANDIDATE_POINTER = ROOT / "runtime/company-research/shenhua-cyclical-candidate-inputs-latest.json"
 SHENHUA_SUBSIDIARY_POINTER = ROOT / "runtime/company-research/shenhua-2025-subsidiary-allocation-evidence-latest.json"
 SHENHUA_IFRS_TAX_POINTER = ROOT / "runtime/company-research/shenhua-2025-ifrs-subsidiary-tax-review-latest.json"
@@ -102,11 +103,12 @@ def cases() -> list[ResearchCase]:
                 {"kind":"fact", "text":"2025年末归母普通股权益223,221,305千元、少数股东权益13,202,918千元，归母普通股净利43,945,411千元；金融业务在合并报表可见但无独立财务口径，剩余收益/权益价值路线仅登记为候选，未注册模型。", "evidence_refs":["midea_equity_scope"]},
                 {"kind":"fact", "text":"2014-2024年归母普通股权益、归母净利、现金分红和回购式现金回报已按各年原始年报页码建立候选序列；其中2024年现金分红267.12亿元，序列只证明历史现金回报，不构成未来ROE、派息或每股价值承诺。", "evidence_refs":["midea_equity_return_history"]},
                 {"kind":"fact", "text":"美的财务公司2025年经审计总资产444.64亿元、净资产78.59亿元、净利润4.11亿元，分别约为美的合并归母普通股权益3.52%和归母普通股净利润0.93%；只证明金融公司在合并规模中不占数量主导，不是估值模型输入。", "evidence_refs":["midea_finance_co"]},
+                {"kind":"fact", "text":"HKEX 2026-03-30全年业绩公告披露公告日A股库存股80,412,541股，并以总股本7,603,276,186股剔除该库存股后的7,522,863,645股作为末期股息基数；这是公告日时点事实，不是2025年末库存股或当前估值日普通股分母。", "evidence_refs":["midea_hkex_share_basis"]},
             ],
             counter_evidence=[
                 {"kind":"fact", "text":"家电业务毛利率29.90%，同比下降0.08个百分点；商用及工业解决方案毛利率20.81%，同比下降0.58个百分点。", "evidence_refs":["midea_business"]},
                 {"kind":"fact", "text":"洗衣机销量同比下降6.17%，不能用整体收入增长替代全部品类的需求验证。", "evidence_refs":["midea_business"]},
-                {"kind":"fact", "text":"年末库存股只有账面金额8,151,117千元，没有披露股数；会计加权普通股的逐日权重也未披露，因此不能把FY2025加权分母延用为后续估值日分母。", "evidence_refs":["midea_share_basis", "midea_financial"]},
+                {"kind":"fact", "text":"2025年报年末库存股只有账面金额8,151,117千元，没有披露年末股数；HKEX公告虽披露了2026-03-30公告日股数80,412,541股，但两者都不是2026-09-22估值日范围，会计加权普通股的逐日权重也未披露。", "evidence_refs":["midea_share_basis", "midea_hkex_share_basis", "midea_financial"]},
                 {"kind":"fact", "text":"合并归母权益和归母净利虽然已披露，但金融业务没有独立利润表和资产负债表，不能直接从合并权益/利润推导普通股权益价值或剩余收益。", "evidence_refs":["midea_equity_scope"]},
                 {"kind":"fact", "text":"2014-2024历史权益、利润与现金回报序列虽已逐页定位，但历史序列没有注册前瞻ROE、带日期的权益成本、当前派息政策和当前普通股分母，也没有完成干净盈余权益滚动对账，因此仍是候选证据。", "evidence_refs":["midea_equity_return_history"]},
                 {"kind":"fact", "text":"财务公司关联公告虽称2025年数据已经审计，但没有提供独立利润表、资产负债表、税费/债务/现金/营运资本拆分；不能从中构造工业EBIT或企业价值桥接。", "evidence_refs":["midea_finance_co"]},
@@ -123,9 +125,10 @@ def cases() -> list[ResearchCase]:
                 {"kind":"fact", "text":"后续若取得金融业务独立财务口径、带日期的权益成本、ROE/派息假设和当前普通股分母，再评估是否把剩余收益/权益价值路线从候选升级为注册模型。", "evidence_refs":["midea_equity_scope"]},
                 {"kind":"fact", "text":"后续定期报告、分红预案、回购进展与公司行动公告将用于继续更新2014年以来的权益、利润和现金回报候选序列，但单靠新增历史年份仍不能注册前瞻权益价值模型。", "evidence_refs":["midea_equity_return_history"]},
                 {"kind":"fact", "text":"后续若取得财务公司或金融业务完整独立报表、经审计税费及资产分配，再评估是否解除工业FCFF口径阻断；此前不把财务公司规模观察写入任何模型输入。", "evidence_refs":["midea_finance_co"]},
+                {"kind":"fact", "text":"后续若需使用HKEX公告披露的2026-03-30股本与库存股范围，必须同时登记同日的全部估值输入并注明估值日，不能把公告日股本直接套到以后日期。", "evidence_refs":["midea_hkex_share_basis"]},
             ],
             evidence_status="partial", valuation_status="not_ready", research_status="financial_scope_partial", blockers=["会计加权普通股已披露，但当前估值日普通股分母仍未注册", "年末库存股股数与逐日加权权重未披露", "财务来源独立性未验证", "合并归母权益/利润已披露，但金融业务无独立报表；剩余收益/权益价值路线未注册，前瞻ROE、股权成本、派息政策和当前普通股分母尚未证明", "2014-2024权益回报历史序列仅登记为候选，未完成干净盈余权益滚动对账，不能升级为模型输入", "财务公司规模观察仅登记为非模型输入，未提供金融业务独立报表或工业税费/债务/现金/营运资本分配", "正式估值不存在"],
-            evidence_refs=[reference("midea_admission",midea_path,description="美的准入审计"), reference("midea_financial",midea_financial,description="美的财务口径审计"), reference("midea_business",midea_business,description="美的2025年报的收入、分部利润率、销量与研发披露"), reference("midea_fcff_facts",midea_fcff_facts,description="美的2025年报合并现金流与 FCFF 口径限制"), pointer_reference("midea_share_basis", MIDEA_SHARE_BASIS_POINTER, description="美的2025年报会计每股收益、期末A/H股本和库存股范围证据包（未批准为估值分母）"), pointer_reference("midea_equity_scope", MIDEA_EQUITY_SCOPE_POINTER, description="美的2025年报合并归母/少数股东权益与利润、可见金融业务口径及未注册权益估值路线"), pointer_reference("midea_equity_return_history", MIDEA_EQUITY_RETURN_POINTER, description="美的2014-2024归母权益、归母利润与现金回报候选序列（逐页来源、未注册模型输入）"), pointer_reference("midea_finance_co", MIDEA_FINANCE_CO_POINTER, description="美的财务公司2025年经审计/未审计规模观察（非模型输入）")], quote_date=None, financial_period=date(2025,12,31), missing_date_reasons={"quote_date":"本阶段不使用行情生成结论。"}),
+            evidence_refs=[reference("midea_admission",midea_path,description="美的准入审计"), reference("midea_financial",midea_financial,description="美的财务口径审计"), reference("midea_business",midea_business,description="美的2025年报的收入、分部利润率、销量与研发披露"), reference("midea_fcff_facts",midea_fcff_facts,description="美的2025年报合并现金流与 FCFF 口径限制"), pointer_reference("midea_share_basis", MIDEA_SHARE_BASIS_POINTER, description="美的2025年报会计每股收益、期末A/H股本和库存股范围证据包（未批准为估值分母）"), pointer_reference("midea_hkex_share_basis", MIDEA_HKEX_SHARE_POINTER, description="美的HKEX 2026-03-30业绩公告的公告日库存股与末期股息基数（点时事实、未注册为当前估值分母）"), pointer_reference("midea_equity_scope", MIDEA_EQUITY_SCOPE_POINTER, description="美的2025年报合并归母/少数股东权益与利润、可见金融业务口径及未注册权益估值路线"), pointer_reference("midea_equity_return_history", MIDEA_EQUITY_RETURN_POINTER, description="美的2014-2024归母权益、归母利润与现金回报候选序列（逐页来源、未注册模型输入）"), pointer_reference("midea_finance_co", MIDEA_FINANCE_CO_POINTER, description="美的财务公司2025年经审计/未审计规模观察（非模型输入）")], quote_date=None, financial_period=date(2025,12,31), missing_date_reasons={"quote_date":"本阶段不使用行情生成结论。"}),
         ResearchCase(
             symbol="601088", name="中国神华", as_of=date(2026, 9, 21), run_id="excel-mvp-20260922",
             generated_at=generated, research_version="excel-mvp-v1", industry="煤炭与综合能源", investment_path="周期正常化", thesis="煤炭、发电、运输及煤化工一体化能否在周期回落时保持可分配现金，需由中周期价格、销量、成本、资源寿命和资本开支共同验证。",

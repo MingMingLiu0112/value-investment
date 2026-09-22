@@ -128,6 +128,22 @@ def test_current_date_research_does_not_silently_replace_primary_model_or_admit_
     assert any('research-card-evidence-' in ref['path'] for ref in refs['600519'])
 
 
+def test_p05_status_rows_expose_assumptions_materiality_and_gap_types():
+    rows, refs = company_progress(companies(), ROOT)
+    by_code = {row['code']: row for row in rows}
+
+    assert by_code['600519']['assumption_status'] == 'READY'
+    assert by_code['601088']['assumption_status'] == 'PARTIAL'
+    assert by_code['000333']['materiality']['materiality'] == 'LOW'
+    assert by_code['000333']['materiality']['treatment'] == 'MODEL_AS_RANGE'
+    assert 'MODEL_NOT_APPLICABLE' in by_code['000333']['gap_types']
+    assert 'ASSUMPTION_MISSING' in by_code['601088']['gap_types']
+    assert 'ASSUMPTION_LOW_CONFIDENCE' in by_code['600519']['gap_types']
+    assert 'FACT_MISSING' in by_code['600519']['gap_types']
+    assert 'UNCLASSIFIED' not in by_code['600519']['gap_types']
+    assert any('valuation-assumptions/' in ref['path'].replace('\\', '/') for ref in refs['600519'])
+
+
 def test_changed_run_evidence_rejects_navigation_promotion(tmp_path):
     target = pinned(tmp_path, 'strategy-validation/moutai-simulation-closure-latest.json', 'summary.json', {})
     target.write_text('{"execution_mechanics_verified": true}', encoding='utf-8')
