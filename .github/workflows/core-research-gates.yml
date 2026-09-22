@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  core-gates:
+  offline-core:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -19,7 +19,7 @@ jobs:
           python-version: "3.12"
       - name: Install core test dependencies
         run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
-      - name: Verify fail-closed research gates
+      - name: Verify fail-closed offline research gates
         run: >-
           python -m pytest -q
           tests/test_research_gate.py
@@ -37,3 +37,42 @@ jobs:
           tests/test_fixed_sample_admission.py
           tests/test_unified_fcff_valuation.py
           tests/test_residual_income_equity_valuation.py
+          tests/test_cyclical_normalized_valuation.py
+          tests/test_research_artifacts.py
+          tests/test_research_artifact_codecs.py
+          tests/test_research_artifact_repository.py
+          tests/test_research_runtime_import.py
+          tests/test_research_application.py
+          tests/test_valuation_model_registry.py
+          tests/test_fixed_sample_manifest.py
+          tests/test_research_batch.py
+
+  postgres-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: research_agent_test
+          POSTGRES_USER: research_agent
+          POSTGRES_PASSWORD: research_agent
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U research_agent -d research_agent_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      C3_TEST_POSTGRES_DSN: >-
+        postgresql://research_agent:research_agent@localhost:5432/research_agent_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install core test dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+      - name: Verify disposable PostgreSQL research repository
+        run: python -m pytest -q tests/test_postgres_research_artifacts.py
