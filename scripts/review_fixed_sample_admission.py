@@ -31,12 +31,10 @@ from value_investment_agent.distribution import (
     build_trailing_paid_yield_snapshot,
 )
 from value_investment_agent.fixed_sample_admission import (
-    DECISION_CONTINUE_CONDITIONAL_MODEL,
-    DECISION_PAUSE_PRODUCTION_VALUATION,
-    DECISION_RESOLVE_MODEL_INPUTS,
     FixedSampleAdmissionPolicy,
     review_fixed_sample,
 )
+from value_investment_agent.fixed_sample_manifest import load_fixed_sample_manifest
 from value_investment_agent.quote_snapshot import QuoteSnapshot
 
 
@@ -52,6 +50,7 @@ DISTRIBUTION_POINTER = (
 )
 REVIEWED_DISTRIBUTIONS = ROOT / "docs/reviewed-cash-distributions.json"
 REVIEWED_DISTRIBUTIONS_SHA256 = "ab15bdef761774593cd0a8ea96effe1cefa51424643673de492366c9c492312f"
+MANIFEST_PATH = ROOT / "config/fixed-sample-manifest.json"
 
 
 def digest(path: Path) -> str:
@@ -75,62 +74,7 @@ def load_pinned(pointer: Path, filename: str = "evidence.json") -> tuple[dict, d
 
 
 def policies() -> dict[str, FixedSampleAdmissionPolicy]:
-    return {
-        "600519": FixedSampleAdmissionPolicy(
-            profile_id="quality_compounder",
-            decision=DECISION_CONTINUE_CONDITIONAL_MODEL,
-            decision_reason="保留低置信度条件估值；正式估值、G3 和当前股本动作仍需完成。",
-            cash_return_status="PARTIAL",
-            cash_return_explanation="已有历史分配、现金覆盖和注册分红比例证据，但完整 DividendSustainability 未完成。",
-            admission_evidence=(
-                "六位证券代码与公司名称",
-                "quality_compounder 经济画像和已注册模型路由",
-                "带证据引用的版本化 ResearchCase",
-            ),
-            required_evidence=(
-                "G3 正式估值通过或明确替代模型",
-                "2026 母公司可分配现金与子公司回款范围",
-                "当前普通股、股本动作与估值日期绑定",
-                "正式估值的独立人工批准",
-            ),
-        ),
-        "000333": FixedSampleAdmissionPolicy(
-            profile_id="mature_manufacturing",
-            decision=DECISION_RESOLVE_MODEL_INPUTS,
-            decision_reason="FCFF 路线已注册，但财务事实、股份分母和模型输入未完成；先解决输入合同，不生成情景。",
-            cash_return_status="PARTIAL",
-            cash_return_explanation="已有历史派息与现金回报候选材料，但派息可持续性未评估。",
-            admission_evidence=(
-                "六位证券代码与公司名称",
-                "mature_manufacturing 经济画像和已注册模型路由",
-                "带证据引用的版本化 ResearchCase",
-            ),
-            required_evidence=(
-                "当前 A/H 估值普通股分母，排除库存股",
-                "EBIT、现金税、折旧、营运资本、WACC、净债务和非经营资产输入",
-                "财务事实来源独立核验",
-                "适用性复核或明确的模型替换/停止决定",
-            ),
-        ),
-        "601088": FixedSampleAdmissionPolicy(
-            profile_id="cyclical_cash_return",
-            decision=DECISION_PAUSE_PRODUCTION_VALUATION,
-            decision_reason="周期正常化模型输入多项缺失且外部价格/成本运输口径未对账；暂停生产估值。",
-            cash_return_status="PARTIAL",
-            cash_return_explanation="已有派息和周期现金回报候选材料，但可持续性和周期分配能力未评估。",
-            admission_evidence=(
-                "六位证券代码与公司名称",
-                "cyclical_cash_return 经济画像和已注册模型路由",
-                "带证据引用的版本化 ResearchCase",
-            ),
-            required_evidence=(
-                "正常化经营利润、现金税、维护资本开支、营运资本、折现率、长期增长、资源寿命、归母净现金和普通股",
-                "外部煤价与内部成本运输口径对账",
-                "独立成本曲线、资源寿命和谷底偿付能力",
-                "模型替换或停止研究决定",
-            ),
-        ),
-    }
+    return load_fixed_sample_manifest(MANIFEST_PATH).policies
 
 
 def _registry_ref(symbol: str) -> dict:
@@ -511,6 +455,7 @@ def build_review() -> dict:
 
 def main() -> None:
     payload = build_review()
+    policy_manifest = load_fixed_sample_manifest(MANIFEST_PATH)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     output = ROOT / "runtime" / f"fixed-sample-admission-review-{stamp}"
     output.mkdir(parents=False, exist_ok=False)
@@ -522,6 +467,8 @@ def main() -> None:
     manifest = {
         "script_sha256": digest(Path(__file__)),
         "evidence_sha256": digest(evidence),
+        "policy_manifest_sha256": digest(MANIFEST_PATH),
+        "policy_manifest_version": policy_manifest.manifest_version,
     }
     (output / "manifest.json").write_text(
         json.dumps(manifest, indent=2) + "\n",
