@@ -15,6 +15,7 @@ from .current_research_status import (
     ENGINEERING_READY,
     current_research_status_from_payloads,
 )
+from .distribution import DividendResearchResult
 from .research_profile import PROFILES
 from .valuation_router import ROUTE_SUPPORTED, route_profile
 
@@ -149,6 +150,7 @@ class FixedSampleCompanyAdmission:
     evidence_refs: list[dict[str, Any]]
     human_confirmation_required: bool
     action: str
+    cash_return_result: DividendResearchResult | None = None
 
     def __post_init__(self) -> None:
         if not re.fullmatch(r"[0-9]{6}", self.symbol):
@@ -175,10 +177,19 @@ class FixedSampleCompanyAdmission:
             raise ValueError("Fixed-sample admission can only record no_order")
         if self.human_confirmation_required is not True:
             raise ValueError("Fixed-sample state changes always require human confirmation")
+        if self.cash_return_result is not None:
+            if self.cash_return_result.symbol != self.symbol:
+                raise ValueError("Typed cash-return result symbol differs from the fixed sample")
+            if self.cash_return_result.profile_id != self.profile_id:
+                raise ValueError("Typed cash-return result profile differs from the fixed sample")
+            if self.cash_return_result.action != "no_order":
+                raise ValueError("Typed cash-return result can only record no_order")
+            if self.cash_return_result.cash_return_status != self.cash_return_status:
+                raise ValueError("Typed cash-return status differs from the recorded status")
         object.__setattr__(self, "evidence_refs", _validate_refs(self.evidence_refs))
 
     def as_policy(self) -> dict[str, Any]:
-        return {
+        policy = {
             "symbol": self.symbol,
             "profile_id": self.profile_id,
             "engineering_contract_reusable": self.engineering_contract_reusable,
@@ -196,6 +207,9 @@ class FixedSampleCompanyAdmission:
             "human_confirmation_required": self.human_confirmation_required,
             "action": self.action,
         }
+        if self.cash_return_result is not None:
+            policy["cash_return_research"] = self.cash_return_result.as_policy()
+        return policy
 
 
 @dataclass(frozen=True)
@@ -331,6 +345,7 @@ def assess_fixed_sample_company(
     research_evidence_refs: Sequence[dict[str, Any]],
     model_validity_payload: Mapping[str, Any] | None = None,
     engineering_status: str = ENGINEERING_READY,
+    cash_return_result: DividendResearchResult | None = None,
 ) -> FixedSampleCompanyAdmission:
     """Restore common contracts, then apply one explicit fixed-sample policy."""
     route = route_profile(policy.profile_id)
@@ -383,9 +398,24 @@ def assess_fixed_sample_company(
         elif result_payload.get("status") == "not_ready":
             blockers.append("valuation_scenarios_not_available")
 
+    if cash_return_result is not None:
+        if cash_return_result.symbol != symbol:
+            raise ValueError("Typed cash-return result symbol differs from the valuation")
+        if cash_return_result.profile_id != policy.profile_id:
+            raise ValueError("Typed cash-return result profile differs from the policy")
+        if cash_return_result.action != "no_order":
+            raise ValueError("Typed cash-return result can only record no_order")
+        blockers.extend(cash_return_result.blockers)
+        cash_return_status = cash_return_result.cash_return_status
+        cash_return_explanation = cash_return_result.explanation
+    else:
+        cash_return_status = policy.cash_return_status
+        cash_return_explanation = policy.cash_return_explanation
+
     evidence_refs = _merge_refs(
         status.evidence_refs,
         research_evidence_refs,
+        cash_return_result.evidence_refs if cash_return_result is not None else (),
     )
     return FixedSampleCompanyAdmission(
         symbol=symbol,
@@ -395,8 +425,8 @@ def assess_fixed_sample_company(
         admission_evidence=list(policy.admission_evidence),
         production_valuation_status=production_valuation_status,
         bounded_value_judgment=bounded_value_judgment,
-        cash_return_status=policy.cash_return_status,
-        cash_return_explanation=policy.cash_return_explanation,
+        cash_return_status=cash_return_status,
+        cash_return_explanation=cash_return_explanation,
         decision=policy.decision,
         decision_reason=policy.decision_reason,
         required_evidence=list(policy.required_evidence),
@@ -404,6 +434,7 @@ def assess_fixed_sample_company(
         evidence_refs=evidence_refs,
         human_confirmation_required=True,
         action="no_order",
+        cash_return_result=cash_return_result,
     )
 
 
@@ -413,6 +444,7 @@ def review_fixed_sample(
     valuation_payloads: Mapping[str, Mapping[str, Any]],
     policies: Mapping[str, FixedSampleAdmissionPolicy],
     as_of: date,
+    distribution_results: Mapping[str, DividendResearchResult] | None = None,
 ) -> FixedSampleAdmissionReview:
     """Apply one admission policy to every explicitly supplied frozen payload."""
     records = [dict(record) for record in research_records]
@@ -423,6 +455,13 @@ def review_fixed_sample(
         raise ValueError("Fixed-sample policies must match the supplied research records")
     if set(record_symbols) != set(valuation_payloads):
         raise ValueError("Fixed-sample valuation payloads must match the supplied research records")
+    if distribution_results is not None:
+        unknown = set(distribution_results) - set(record_symbols)
+        if unknown:
+            raise ValueError(
+                "Fixed-sample distribution results contain unknown symbols: "
+                + ", ".join(sorted(unknown))
+            )
 
     companies: list[FixedSampleCompanyAdmission] = []
     for record in records:
@@ -440,6 +479,9 @@ def review_fixed_sample(
                 ),
                 research_evidence_refs=record["case"].get("evidence_refs", []),
                 model_validity_payload=payload.get("model_validity"),
+                cash_return_result=(
+                    distribution_results.get(symbol) if distribution_results is not None else None
+                ),
             )
         )
 

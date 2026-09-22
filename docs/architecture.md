@@ -64,7 +64,9 @@ Domain Engine 不读取 Excel、网络或数据库；Application 负责编排、
 
 上述身份约束存在本轮复现的代码缺口，唯一下一任务负责修复；不能把文档合同称作已通过的新验收。
 
-## Dividend / Distribution Domain：已批准设计，尚未完整实现
+## Dividend / Distribution Domain：最小合同已实现
+
+`src/value_investment_agent/distribution.py` 已实现最小时点合同：`DividendRecord`、`DividendHistory`、`DistributionCapacity`、`DividendSustainabilityAssessment`、`DividendYieldSnapshot` 与 `DividendResearchResult`。当前只证明共享类型与 fail-closed 边界，不代表三家公司的股息研究已经完成。
 
 | 对象 | 内容 | 是否依赖当前价格 |
 | --- | --- | --- |
@@ -101,4 +103,3 @@ Excel publisher 目前仍有三公司 adapter，可作为技术债保留；同�
 新增公司专用脚本只允许独有的一手解析、法律/披露结构或有退出计划的迁移 adapter；复用计算、假设、重大性、价格判断优先放 Core。
 历史 20/30/40% 规则只属于原版本实验；不进入新 Router、研究结论或通用仓位规则。
 策略、模拟、账户与真实执行独立；研究结果无论是否 READY 均不授权订单。
-

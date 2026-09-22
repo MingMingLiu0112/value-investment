@@ -3,8 +3,12 @@ from __future__ import annotations
 
 from decimal import Decimal
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
+import sys
+
+import pytest
 
 from value_investment_agent.current_research_status import (
     CURRENT_DATA_PENDING_EXTERNAL_DATA,
@@ -16,6 +20,31 @@ from value_investment_agent.price_attractiveness import STATUS_NOT_ASSESSABLE
 
 
 ROOT = Path(__file__).resolve().parents[1]
+FROZEN_MOUTAI_PATHS = {
+    "model": (
+        ROOT
+        / "runtime/company-research"
+        / "600519-consolidated-parent-equity-residual-income-current-20260921T124252Z"
+        / "evidence.json"
+    ),
+    "admission": (
+        ROOT
+        / "runtime/company-research"
+        / "600519-current-valuation-admission-20260921T124253Z"
+        / "evidence.json"
+    ),
+    "diagnostic": (
+        ROOT
+        / "runtime/company-research"
+        / "600519-current-assumption-diagnostic-20260921T124253Z"
+        / "evidence.json"
+    ),
+}
+FROZEN_MOUTAI_HASHES = {
+    "model": "8ffe43ccf6acba184496eec12d7ed65082ec91d4ba38f7cfd5604a32fe648f30",
+    "admission": "443aeae6be01760bcbda512c7097d7882df5241d2c964d320938bdce4183b556",
+    "diagnostic": "044c81d7224673f0765ad00059a6df40f2b68086f1138139a2818380c47fc1b2",
+}
 RESEARCH_POINTER = ROOT / "runtime" / "excel-mvp-research-cases-latest.json"
 VALUATION_POINTERS = {
     "600519": ROOT / "runtime" / "valuation-results" / "600519-current-equity-stage-b-latest.json",
@@ -30,12 +59,44 @@ MATERIALITY_POINTER = (
     ROOT / "runtime" / "company-research" / "000333-finance-materiality-latest.json"
 )
 
+pytestmark = pytest.mark.skipif(
+    not all(path.is_file() for path in FROZEN_MOUTAI_PATHS.values()),
+    reason="frozen 2026-09-21 Moutai snapshots are not available in a clean checkout",
+)
+
+EXPORT_SPEC = importlib.util.spec_from_file_location(
+    "three_company_moutai_export",
+    ROOT / "scripts" / "build_moutai_valuation_result.py",
+)
+EXPORT = importlib.util.module_from_spec(EXPORT_SPEC)
+sys.modules[EXPORT_SPEC.name] = EXPORT
+EXPORT_SPEC.loader.exec_module(EXPORT)
+
 
 def _pinned(pointer: Path) -> tuple[dict, Path]:
     pin = json.loads(pointer.read_text(encoding="utf-8"))
     path = ROOT / str(pin["path"]).replace("\\", "/") / "evidence.json"
     assert hashlib.sha256(path.read_bytes()).hexdigest() == pin["sha256"].lower()
     return json.loads(path.read_text(encoding="utf-8")), path
+
+
+def _frozen_moutai_payload() -> dict:
+    for key, path in FROZEN_MOUTAI_PATHS.items():
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == FROZEN_MOUTAI_HASHES[key]
+    return EXPORT.build(
+        FROZEN_MOUTAI_PATHS["diagnostic"],
+        model_evidence=FROZEN_MOUTAI_PATHS["model"],
+        admission_evidence=FROZEN_MOUTAI_PATHS["admission"],
+    )
+
+
+def _valuation_payloads() -> dict[str, dict]:
+    payloads = {"600519": _frozen_moutai_payload()}
+    for symbol, pointer in VALUATION_POINTERS.items():
+        if symbol != "600519":
+            payload, _ = _pinned(pointer)
+            payloads[symbol] = payload
+    return payloads
 
 
 def _assert_pinned_ref(ref: dict) -> None:
@@ -106,9 +167,9 @@ def test_three_valuation_envelopes_share_fail_closed_boundaries():
             "bridge_validity": "UNKNOWN",
         },
     }
-    for symbol, pointer in VALUATION_POINTERS.items():
-        payload, _ = _pinned(pointer)
-        contract = expected[symbol]
+    payloads = _valuation_payloads()
+    for symbol, contract in expected.items():
+        payload = payloads[symbol]
         result, bridge = payload["result"], payload["price_bridge"]
         assert payload["version"] == contract["version"]
         assert result["symbol"] == symbol
@@ -130,7 +191,7 @@ def test_three_valuation_envelopes_share_fail_closed_boundaries():
         ]:
             _assert_pinned_ref(ref)
 
-    moutai, _ = _pinned(VALUATION_POINTERS["600519"])
+    moutai = payloads["600519"]
     values = [
         Decimal(moutai["result"][name])
         for name in ("bear_value", "base_value", "bull_value")
@@ -142,14 +203,14 @@ def test_three_valuation_envelopes_share_fail_closed_boundaries():
     assert moutai["valuation_route"]["profile_id"] == "quality_compounder"
     assert moutai["valuation_route"]["status"] == "SUPPORTED"
 
-    midea, _ = _pinned(VALUATION_POINTERS["000333"])
+    midea = payloads["000333"]
     assert midea["valuation_route"]["profile_id"] == "mature_manufacturing"
     assert midea["valuation_route"]["status"] == "SUPPORTED"
     assert midea["valuation_applicability"]["policy"]["symbol"] == "000333"
     research_pin = json.loads(RESEARCH_POINTER.read_text(encoding="utf-8"))
     assert midea["research_case_ref"]["sha256"] == research_pin["sha256"]
 
-    shenhua, _ = _pinned(VALUATION_POINTERS["601088"])
+    shenhua = payloads["601088"]
     assert (shenhua["result"]["bear_value"], shenhua["result"]["base_value"],
             shenhua["result"]["bull_value"]) == (None, None, None)
     assert shenhua["price_bridge"]["current_price"] is None
@@ -157,6 +218,7 @@ def test_three_valuation_envelopes_share_fail_closed_boundaries():
 
 
 def test_assumptions_materiality_and_shared_status_never_unlock_trading():
+    valuation_payloads = _valuation_payloads()
     moutai_assumptions, _ = _pinned(ASSUMPTION_POINTERS["600519"])
     assert moutai_assumptions["symbol"] == "600519"
     assert moutai_assumptions["mapping_only"] is True
@@ -191,7 +253,7 @@ def test_assumptions_materiality_and_shared_status_never_unlock_trading():
         "601088": ("研究未完成", CURRENT_DATA_PENDING_EXTERNAL_DATA),
     }
     for symbol, (conclusion, data_status) in expected.items():
-        payload, _ = _pinned(VALUATION_POINTERS[symbol])
+        payload = valuation_payloads[symbol]
         status = current_research_status_from_payloads(
             cases[symbol]["gate"],
             payload["result"],

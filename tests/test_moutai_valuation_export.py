@@ -11,6 +11,33 @@ from value_investment_agent.valuation_router import ROUTE_SUPPORTED
 
 
 ROOT = Path(__file__).resolve().parents[1]
+FROZEN_MODEL = (
+    ROOT
+    / "runtime/company-research"
+    / "600519-consolidated-parent-equity-residual-income-current-20260921T124252Z"
+    / "evidence.json"
+)
+FROZEN_ADMISSION = (
+    ROOT
+    / "runtime/company-research"
+    / "600519-current-valuation-admission-20260921T124253Z"
+    / "evidence.json"
+)
+FROZEN_DIAGNOSTIC = (
+    ROOT
+    / "runtime/company-research"
+    / "600519-current-assumption-diagnostic-20260921T124253Z"
+    / "evidence.json"
+)
+FROZEN_HASHES = {
+    FROZEN_MODEL: "8ffe43ccf6acba184496eec12d7ed65082ec91d4ba38f7cfd5604a32fe648f30",
+    FROZEN_ADMISSION: "443aeae6be01760bcbda512c7097d7882df5241d2c964d320938bdce4183b556",
+    FROZEN_DIAGNOSTIC: "044c81d7224673f0765ad00059a6df40f2b68086f1138139a2818380c47fc1b2",
+}
+pytestmark = pytest.mark.skipif(
+    not all(path.is_file() for path in FROZEN_HASHES),
+    reason="frozen 2026-09-21 Moutai snapshots are not available in a clean checkout",
+)
 SPEC = importlib.util.spec_from_file_location("moutai_valuation_export", ROOT / "scripts" / "build_moutai_valuation_result.py")
 MODULE = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = MODULE
@@ -23,8 +50,18 @@ sys.modules[REVIEW_SPEC.name] = REVIEW
 REVIEW_SPEC.loader.exec_module(REVIEW)
 
 
+def _frozen_payload() -> dict:
+    for path, expected in FROZEN_HASHES.items():
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == expected
+    return MODULE.build(
+        FROZEN_DIAGNOSTIC,
+        model_evidence=FROZEN_MODEL,
+        admission_evidence=FROZEN_ADMISSION,
+    )
+
+
 def test_current_model_export_remains_conditional_and_low_confidence():
-    payload = MODULE.build()
+    payload = _frozen_payload()
     result = payload["result"]
     assert result["status"] == "conditional_research_only"
     assert result["confidence"] == "低"
@@ -49,11 +86,8 @@ def test_current_model_export_remains_conditional_and_low_confidence():
 
 
 def test_current_pointer_retains_the_dated_matched_close_bridge():
-    pointer = json.loads((ROOT / "runtime/valuation-results/600519-current-equity-stage-b-latest.json").read_text(encoding="utf-8"))
-    evidence_path = ROOT / pointer["path"] / "evidence.json"
-    payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+    payload = _frozen_payload()
 
-    assert hashlib.sha256(evidence_path.read_bytes()).hexdigest() == pointer["sha256"]
     assert payload["price_bridge"]["bridge_status"] == "READY"
     assert payload["price_bridge"]["quote_date"] == "2026-09-21"
     assert payload["price_bridge"]["current_price"] == "1252.57"
@@ -62,8 +96,7 @@ def test_current_pointer_retains_the_dated_matched_close_bridge():
 
 
 def test_current_model_accepts_a_same_date_matched_close_bridge():
-    diagnostic = sorted((ROOT / "runtime/company-research").glob("600519-current-assumption-diagnostic-*/evidence.json"))[-1]
-    payload = MODULE.build(diagnostic)
+    payload = _frozen_payload()
 
     assert payload["result"]["status"] == "conditional_research_only"
     assert payload["price_bridge"]["bridge_status"] == "READY"
@@ -74,9 +107,8 @@ def test_current_model_accepts_a_same_date_matched_close_bridge():
 
 
 def test_current_model_uses_a_retained_dated_policy_snapshot():
-    pointer = json.loads((ROOT / "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-latest.json").read_text(encoding="utf-8"))
-    model_path = ROOT / pointer["path"] / "evidence.json"
-    model = json.loads(model_path.read_text(encoding="utf-8"))
+    assert hashlib.sha256(FROZEN_MODEL.read_bytes()).hexdigest() == FROZEN_HASHES[FROZEN_MODEL]
+    model = json.loads(FROZEN_MODEL.read_text(encoding="utf-8"))
     policy_path = ROOT / model["policy"]["path"]
     assert policy_path.is_file()
     assert "runtime/company-research/600519-current-equity-policy-" in model["policy"]["path"].replace("\\", "/")

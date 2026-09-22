@@ -26,6 +26,7 @@ jobs:
           tests/test_valuation_result.py
           tests/test_price_bridge.py
           tests/test_research_profile.py
+          tests/test_distribution.py
           tests/test_valuation_confidence.py
           tests/test_valuation_router.py
           tests/test_price_attractiveness.py
