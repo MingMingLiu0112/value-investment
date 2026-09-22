@@ -3958,3 +3958,29 @@ read-only WPS COM navigation before atomic publication with a pre-publish backup
 workbook SHA-256 is
 `2203B670EA21B9767E9D831B9289E9D16C80A8685F52FA2930B4569DA118359F`; no valuation, position,
 order or trade-approval state changed.
+
+## 2026-09-22: Midea B2 research-grade valuation convergence node closes fail-closed
+
+The Midea applicability, share-basis, consolidated-equity, historical-equity-return,
+finance-company-size and HKEX announcement-date evidence packages were reassessed as one
+objective B2 convergence node rather than expanded with more annual-report archaeology.
+
+The decision is STAGE_B2_NODE_ASSESSED with engineering READY, production valuation
+VALUATION_NOT_READY, and current data status PENDING_EXTERNAL_DATA. The mature-manufacturing
+profile still authorizes FCFF as the primary economic route, but the retained FY2025 filing
+has no standalone financial-business profit/balance-sheet/tax/debt/cash/working-capital scope,
+so the industrial carve-out remains MODEL_NOT_APPLICABLE and the enterprise-value bridge
+remains VALUATION_NOT_READY. The residual-income/equity-value route remains
+CANDIDATE_NOT_REGISTERED and is not profile-authorized for mature manufacturing as a primary
+route. No scenario value, price-bridge value, position, order or trade/live approval was
+created.
+
+The assessment is published in
+docs/midea-stage-b2-convergence-assessment-20260922.md. The goal prompt, Excel MVP goal,
+AGENTS.md and Midea B2 progress note were aligned so the next mainline task is Shenhua
+normalized-valuation convergence, with Midea reopening only if one of the named external
+disclosures becomes available.
+
+Verification: the focused Midea applicability/scope suite passed (5 passed), and the full
+local suite with a project-local pytest basetemp passed (1879 passed, 1 skipped). No source
+code, valuation arithmetic, workbook, server service, database or trading state was changed.

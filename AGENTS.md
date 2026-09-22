@@ -1,8 +1,8 @@
 # Value Investment Methodology Context
 
 Read `docs/value-investment-goal-prompt.md` first.
-`docs/value-investment-architecture-correction-p05-20260922.md` is the current
-highest-priority P0.5 contract and controls near-term work;
+`docs/value-investment-architecture-correction-p05-20260922.md` is the completed
+P0.5 contract and remains the control for the current three-company convergence;
 `docs/value-investment-excel-mvp-goal.md` v3.0 supplies the stage A/B scope and
 P0.5 acceptance; `docs/value-investment-goal-framework-v2.md` controls financial
 definitions, evidence requirements and admission boundaries.
@@ -41,15 +41,16 @@ definitions, evidence requirements and admission boundaries.
 
 ## Current MVP Boundary
 
-- P0.5 is first. Restart order: PriceAttractiveness semantic correction,
-  generic `ValuationAssumptionSet`, then generic Materiality with the Midea
-  finance company as the first case.
+- P0.5 has passed. The current sequence is the Midea B2 fail-closed convergence
+  node assessment (completed on 2026-09-22), then the Shenhua normalized-valuation
+  convergence node, then the unified three-company MVP acceptance.
 - Freeze new Midea/Shenhua company-specific evidence scripts. Existing evidence
   is read-only. Also freeze Moutai execution, historical, R1 refinement and
   paper-strategy expansion; allow only bug fixes, regression fixes and
   security/data-integrity repairs.
 - Do not add a fourth company until the three-company MVP is frozen. Do not
-  resume B2/B3 production valuation convergence before P0.5 passes.
+  claim Midea B2 is a research-grade valuation because its engineering boundary
+  exists. The retained filing keeps production valuation PENDING_EXTERNAL_DATA.
 - Stage B1 Moutai remains low-confidence conditional research until the dated
   evidence chain and its independent acceptance checks pass. It is not a
   research-attractive, simulation-eligible or trading state.
