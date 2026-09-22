@@ -29,9 +29,9 @@ Use `docs/project-goal-consolidation-20260922.md` for the audit and complete doc
 ## Current Boundary
 
 The three-company engineering MVP is frozen. This does not mean research-grade valuation or dividend sustainability is complete.
-C0-PRICE-BRIDGE-INTEGRITY, C1-FIXED-SAMPLE-ADMISSION-ORCHESTRATION and C2-MINIMAL-DISTRIBUTION-RESEARCH-CONTRACT are frozen. The active long task is `C3-RESEARCH-PLATFORM-FOUNDATION`: replace runtime JSON plus script-specific orchestration with an append-only PostgreSQL artifact repository, versioned research-sample manifest, profile-driven application runner, batch contract and disposable PostgreSQL CI integration, without adding a fourth real company or touching production.
+C0-PRICE-BRIDGE-INTEGRITY, C1-FIXED-SAMPLE-ADMISSION-ORCHESTRATION, C2-MINIMAL-DISTRIBUTION-RESEARCH-CONTRACT and C3-RESEARCH-PLATFORM-FOUNDATION are frozen. There is no active long task. The next-stage proposal in `docs/current-stage-goal.md` is `C4-MANIFEST-DRIVEN-FIXED-SAMPLE-INPUT-ADAPTER`; do not start C4, add a fourth company, or expand the sample without explicit user authorization.
 Keep existing Moutai values and Midea/Shenhua fail-closed research boundaries. No new company-specific evidence scripts, fourth company, full-market engine, Web, new financial-sector model, complete dividend engine or ShareholderYield, portfolio/execution extension or broker integration.
-Allowed freeze exceptions are scoped bug/regression fixes and security/data-integrity repairs. No production database migration, scheduler change or deployment is part of C3. A future production migration remains a separate human-confirmed stage.
+Allowed freeze exceptions are scoped bug/regression fixes and security/data-integrity repairs. C3 was completed without a production database migration, scheduler change or deployment. A future production migration remains a separate human-confirmed stage.
 
 ## Permanent Research Rules
 

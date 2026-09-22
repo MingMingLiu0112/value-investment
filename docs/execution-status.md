@@ -155,6 +155,9 @@ b787b3e C3.4 profile-driven application research runner
 33590bb C3.7 failure-isolated research batch contract
 9d9231b C3.8 offline core and disposable postgres CI
 13c5b03 C3.10 three-company frozen replay receipt
+412564a C3.11 presentation boundary and expansion verdict
+957243f C3.12 isolate postgres CI from ignored runtime data
+fc49ab7 C3.13 align postgres import assertion with review scope
 ```
 
 W1-W12 结果：
@@ -174,7 +177,7 @@ W1-W12 结果：
 
 - Offline Core Gate 全清单：`176 passed`。
 - 新增三公司 replay 自包含 fixture：三种 Profile、三种模型、`no_order`、美的/神华 `not_ready`、神华 current/normalized yield 区分和 Hash 篡改 fail-closed。
-- PostgreSQL integration 在本机无 disposable DSN，`4 skipped`；GitHub CI 中由一次性 PostgreSQL service 验证 migration、repository round-trip、frozen runtime import 和三公司 replay。
+- PostgreSQL integration 在本机无 disposable DSN，`4 skipped`；GitHub CI 中由一次性 PostgreSQL service 验证 migration、repository round-trip、frozen runtime import 和三公司 replay。最终验收运行 `35727542158` 的离线 Core 与 disposable PostgreSQL job 均为 success。
 - 本机真实 frozen runtime 命令验证：`all_semantics_matched=True`、`action=no_order`、收据约 193KB。
 - `compileall` 与 `git diff --check` 通过。
 - 未连接生产数据库、未修改旧 `valuation_results`、未改动原 Excel、未调整估值参数、未触碰服务器 PTA 项目或计划任务。

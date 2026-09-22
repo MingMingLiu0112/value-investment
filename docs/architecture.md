@@ -93,9 +93,9 @@ MarketContext 未来只提供环境与研究解释，不直接修改内在价值
 ## 存储、展示与迁移
 
 PostgreSQL 是长期结构化事实、身份/版本关系、状态和运行审计底座；Evidence/Snapshot 保存不可变原件与封存输入；runtime JSON 是当前 MVP 的可追溯中间产物，Excel 是展示和明确的人工作业入口。
-现有旧 valuation_results 表仍混存价格与信号。新合同尚未迁入，不将它误认为新 ValuationResult 的数据库实现，也不因同名认定新领域对象仍含价格。
+现有旧 valuation_results 表仍混存价格与信号，不将它误认为新 ValuationResult 的数据库实现，也不因同名认定新领域对象仍含价格。
 
-C3 正在建立独立 append-only Research Artifact 存储；旧 `valuation_results` 保留为历史实验结构，不承载新语义。生产迁移必须作为未来独立、人工确认的阶段执行；C3 只允许 disposable/local/test PostgreSQL 和 CI 一次性实例。
+C3 已建立独立 append-only Research Artifact 存储，尚未迁移到生产 PostgreSQL；旧 `valuation_results` 保留为历史实验结构，不承载新语义。生产迁移必须作为未来独立、人工确认的阶段执行；当前只使用 disposable/local/test PostgreSQL 和 CI 一次性实例。
 Excel publisher 目前仍有三公司 adapter，可作为技术债保留；同一财务计算不能复制到表内。人工研究输入须显式导入并审计，不能静默反向控制模型。
 
 ## 工程治理
