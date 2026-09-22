@@ -5,11 +5,13 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import unicodedata
 
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.comments import Comment
 from openpyxl.utils import get_column_letter
 
+from .current_research_status import current_research_status_from_payloads
 from .workbook_frontdoor import HOME, PRIMARY, VERSION, _rows, _band, _link, repair_internal_links
 
 OVERVIEW = '00_公司总览'
@@ -89,9 +91,13 @@ def company_progress(wb, root):
         for record in payload.get('records', []):
             case, gate = record.get('case', {}), record.get('gate', {})
             code = case.get('symbol')
-            if code not in rows or code not in {'600519', '000333', '601088'}:
+            if code not in {'600519', '000333', '601088'}:
                 raise ValueError('Excel MVP research identity changed')
-            if gate.get('conclusion') != '估值未就绪':
+            if code not in rows:
+                # Isolated report tests build a candidate-only workbook without the fixed cases.
+                continue
+            permitted_conclusions = {'数据不足', '研究未完成', '估值未就绪'}
+            if gate.get('conclusion') not in permitted_conclusions:
                 raise ValueError('Excel MVP may not promote a valuation conclusion')
             rows[code]['mvp_research'] = record
             rows[code]['stage'] = 'MVP研究已载入；' + gate['conclusion']
@@ -103,13 +109,23 @@ def company_progress(wb, root):
         if valuation:
             payload, valuation_ref = valuation
             value = payload.get('result', {})
-            if (payload.get('version') != 'moutai-stage-b-valuation-result-v1'
+            bridge = payload.get('price_bridge', {})
+            if (payload.get('version') != 'moutai-stage-b-valuation-result-v2'
                     or value.get('symbol') != '600519'
                     or value.get('status') != 'conditional_research_only'
                     or value.get('confidence') != '低'
+                    or bridge.get('bridge_status') not in {'PENDING_EXTERNAL_DATA', 'READY', 'STALE_MODEL'}
                     or payload.get('trade_approved') is not False):
                 raise ValueError('Moutai Stage B valuation payload changed')
             rows['600519']['valuation_result'] = value
+            rows['600519']['price_bridge_result'] = bridge
+            mvp_record = rows['600519'].get('mvp_research')
+            if mvp_record:
+                rows['600519']['current_research_status'] = (
+                    current_research_status_from_payloads(
+                        mvp_record['gate'], value, bridge
+                    )
+                )
             refs.setdefault('600519', []).append(valuation_ref)
     if '600519' in rows:
         closure = _pinned(root, 'runtime/strategy-validation/moutai-simulation-closure-latest.json', 'summary.json')
@@ -168,12 +184,12 @@ def company_progress(wb, root):
                 card = _pinned(root, 'runtime/company-research/600519-research-card-evidence-latest.json', 'evidence.json')
                 if card:
                     if (card[0].get('symbol') != '600519'
-                            or card[0].get('research_card_version') != 'moutai-research-card-evidence-v5'
+                            or card[0].get('research_card_version') != 'moutai-research-card-evidence-v6'
                             or card[0].get('trade_approved') is not False):
                         raise ValueError('Research-card evidence display scope changed')
                     rows['600519']['research_card'] = card[0]
-                    rows['600519']['available'] = '半年报、FY2025量价、现金分配与估值假设反证已归档'
-                    rows['600519']['next_step'] = '等待下一期量价/现金事实，约束优势持续期后冻结主估值模型'
+                    rows['600519']['available'] = '半年报、FY2025量价、现金分配、优势持续期有界审计与估值假设反证已归档'
+                    rows['600519']['next_step'] = '等待下一期量价/现金事实，保留优势持续期实际时长的长期证据缺口'
                     refs['600519'].append(card[1])
                 daily = _pinned(root, 'runtime/strategy-validation/moutai-daily-paper-latest.json', 'summary.json')
                 if daily:
@@ -205,19 +221,56 @@ def company_progress(wb, root):
         if valuation:
             payload, valuation_ref = valuation
             value = payload.get('result', {})
+            bridge = payload.get('price_bridge', {})
             if (payload.get('version') != 'unified-company-valuation-result-v1'
                     or value.get('symbol') != '000333'
                     or value.get('model_type') != 'FCFF'
                     or value.get('status') not in {'not_ready', 'conditional_research_only'}
+                    or bridge.get('symbol') != '000333'
+                    or bridge.get('bridge_status') != 'PENDING_EXTERNAL_DATA'
                     or payload.get('trade_approved') is not False):
                 raise ValueError('Midea unified valuation payload changed')
             rows['000333']['valuation_result'] = value
+            rows['000333']['price_bridge_result'] = bridge
+            mvp_record = rows['000333'].get('mvp_research')
+            if mvp_record:
+                rows['000333']['current_research_status'] = (
+                    current_research_status_from_payloads(
+                        mvp_record['gate'], value, bridge
+                    )
+                )
             rows['000333']['stage'] = 'MVP研究已载入；' + _mvp_display_status(value['status'])
             rows['000333']['next_step'] = '按统一 FCFF 估值阻断项补证，不产生订单或仓位'
             refs.setdefault('000333', []).append(valuation_ref)
     if '601088' in rows:
         rows['601088'].update(pool='固定研究案例',
             next_step='完成周期正常化研究与估值；尚无完整回放')
+        valuation = _pinned(root, 'runtime/valuation-results/601088-cyclical-stage-b-latest.json', 'evidence.json')
+        if valuation:
+            payload, valuation_ref = valuation
+            value = payload.get('result', {})
+            bridge = payload.get('price_bridge', {})
+            if (payload.get('version') != 'unified-company-valuation-result-v1'
+                    or payload.get('model') != 'cyclical_normalized'
+                    or value.get('symbol') != '601088'
+                    or value.get('model_type') != 'cyclical_normalized'
+                    or value.get('status') != 'not_ready'
+                    or bridge.get('symbol') != '601088'
+                    or bridge.get('bridge_status') != 'PENDING_EXTERNAL_DATA'
+                    or payload.get('trade_approved') is not False):
+                raise ValueError('Shenhua unified valuation payload changed')
+            rows['601088']['valuation_result'] = value
+            rows['601088']['price_bridge_result'] = bridge
+            mvp_record = rows['601088'].get('mvp_research')
+            if mvp_record:
+                rows['601088']['current_research_status'] = (
+                    current_research_status_from_payloads(
+                        mvp_record['gate'], value, bridge
+                    )
+                )
+            rows['601088']['stage'] = 'MVP研究已载入；' + _mvp_display_status(value['status'])
+            rows['601088']['next_step'] = '按周期正常化估值阻断项补证，不产生订单或仓位'
+            refs.setdefault('601088', []).append(valuation_ref)
     return list(rows.values()), refs
 
 
@@ -316,7 +369,54 @@ def _mvp_display_status(status):
     return MVP_DISPLAY_STATUS.get(status, status)
 
 
-def _mvp_research_card(ws, start_row, record, valuation=None):
+def _wrapped_line_count(text, max_width):
+    """Match the Pillow layout verifier; fall back to a conservative count."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        font = ImageFont.truetype('C:/Windows/Fonts/msyh.ttc', round(11 * 4 / 3))
+        draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+        lines, line = 1, ''
+        for char in text:
+            if char == '\n':
+                lines += 1
+                line = ''
+            elif line and draw.textlength(line + char, font=font) > max_width:
+                lines += 1
+                line = char
+            else:
+                line += char
+        return lines
+    except Exception:
+        lines, used = 1, 0
+        capacity = max(12, int(max_width / 16))
+        for char in text:
+            if char == '\n':
+                lines += 1
+                used = 0
+                continue
+            width = 2 if unicodedata.east_asian_width(char) in {'F', 'W'} else 1
+            if used + width > capacity:
+                lines += 1
+                used = width
+            else:
+                used += width
+        return lines
+
+
+def _mvp_card_row_height(ws, body, state):
+    body_width = sum((ws.column_dimensions[get_column_letter(c)].width or 8.43)
+                     for c in range(3, 7))
+    state_width = sum((ws.column_dimensions[get_column_letter(c)].width or 8.43)
+                      for c in range(7, 9))
+    body_max_width = body_width * 7 + 5 - 12
+    state_max_width = state_width * 7 + 5 - 12
+    lines = max(_wrapped_line_count(body, body_max_width),
+                _wrapped_line_count(state, state_max_width))
+    return max(52, lines * 15 + 4)
+
+
+def _mvp_research_card(ws, start_row, record, valuation=None, price_bridge=None,
+                       current_status=None):
     """Compact uniform cards; details remain in immutable JSON evidence."""
     case, gate = record['case'], record['gate']
     _band(ws, start_row, case['name'] + ' ' + case['symbol'] + ' | MVP研究卡', color=BLUE, height=30)
@@ -341,15 +441,15 @@ def _mvp_research_card(ws, start_row, record, valuation=None):
             scenarios = '熊 / 基 / 牛：' + ' / '.join(
                 f"{Decimal(valuation[key]):.2f} 元/股" for key in ('bear_value', 'base_value', 'bull_value'))
             reverse = valuation['assumptions']['reverse_valuation']
-            if valuation.get('current_price') is None:
-                price_text = '同日价格：未建立，安全边际不计算。'
+            if not price_bridge or price_bridge.get('bridge_status') == 'PENDING_EXTERNAL_DATA':
+                price_text = '当前价格桥接：待外部数据；企业估值保留，安全边际不计算。'
             else:
-                if valuation.get('margin_to_bear') is None or valuation.get('margin_to_base') is None:
-                    raise ValueError('Bound price requires both research margins')
+                if price_bridge.get('margin_to_bear') is None or price_bridge.get('margin_to_base') is None:
+                    raise ValueError('Ready price bridge requires both research margins')
                 price_text = (
-                    '同日绑定价格：' + f"{Decimal(valuation['current_price']):.2f}" + ' 元/股；'
-                    '相对熊/基准情景：' + f"{Decimal(valuation['margin_to_bear']):.1%}" + ' / '
-                    + f"{Decimal(valuation['margin_to_base']):.1%}" + '。'
+                    '价格桥接：' + f"{Decimal(price_bridge['current_price']):.2f}" + ' 元/股；'
+                    '相对熊/基准情景：' + f"{Decimal(price_bridge['margin_to_bear']):.1%}" + ' / '
+                    + f"{Decimal(price_bridge['margin_to_base']):.1%}" + '。'
                 )
             rows.append(('条件估值研究', scenarios + '\n估值日：' + valuation['valuation_date']
                          + '；置信度：' + valuation['confidence']
@@ -358,14 +458,19 @@ def _mvp_research_card(ws, start_row, record, valuation=None):
             rows.append(('反向估值（归档）', reverse['quote_date'] + ' 归档价格 ' + reverse['quote_price_cny']
                          + ' 元/股，在登记的利润增长 -5% 至 +5% 与优势衰减 0/5/10 年组合外。'
                          + ' 仅说明需更强假设，非唯一市场预期或当前判断。', '旧时点解释，不更新为今日结论'))
+    if current_status:
+        rows.append(('统一当前状态', current_status.display_text,
+                     '工程：' + current_status.engineering_status
+                     + ' | 数据：' + current_status.current_data_status.status))
     for row, (label, body, state) in enumerate(rows, start_row + 1):
         _span(ws, row, 1, 2, label, fill='EDF3F8', bold=True)
         _span(ws, row, 3, 6, body)
         _span(ws, row, 7, 8, state, fill=AMBER)
-        lines = max(body.count('\n') + 1, state.count('\n') + 1)
-        ws.row_dimensions[row].height = max(52, lines * 22 + 18)
+        ws.row_dimensions[row].height = _mvp_card_row_height(ws, body, state)
         if label == '条件估值研究':
             ws.row_dimensions[row].height = max(ws.row_dimensions[row].height, 112)
+        if label == '统一当前状态':
+            ws.row_dimensions[row].height = max(ws.row_dimensions[row].height, 96)
     evidence = '\n'.join(ref['id'] + ': ' + ref['path'] + '\nSHA-256: ' + ref['sha256']
                          for ref in case['evidence_refs'])
     ws.cell(start_row + 5, 3).comment = Comment(evidence, '研究证据')
@@ -444,7 +549,10 @@ def _results(wb, done):
         record = company.get('mvp_research')
         if not record:
             continue
-        r = _mvp_research_card(ws, r, record, company.get('valuation_result'))
+        r = _mvp_research_card(
+            ws, r, record, company.get('valuation_result'),
+            company.get('price_bridge_result'), company.get('current_research_status'),
+        )
     # Older Moutai-only presentation remains in retained JSON evidence. The
     # MVP surface intentionally stops here so all three cases share one shape.
     return

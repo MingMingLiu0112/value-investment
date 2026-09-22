@@ -9,17 +9,11 @@ from value_investment_agent.valuation_models.base import ValuationResult
 
 def result(**overrides):
     values = dict(symbol="600519", model_type="fixture", valuation_date=date(2026, 9, 20),
-                  bear_value=Decimal("1"), base_value=Decimal("2"), bull_value=Decimal("3"),
-                  current_price=None, margin_to_bear=None, margin_to_base=None, confidence="低",
+                  bear_value=Decimal("1"), base_value=Decimal("2"), bull_value=Decimal("3"), confidence="低",
                   assumptions={}, sensitivities=[], evidence_refs=[{"id": "fixture"}], blockers=["gap"],
-                  status="conditional_research_only")
+                  status="conditional_research_only", model_version="fixture-v1")
     values.update(overrides)
     return ValuationResult(**values)
-
-
-def test_same_date_price_is_required_for_margins():
-    with pytest.raises(ValueError, match="Margins require"):
-        result(margin_to_base=Decimal(".1"))
 
 
 def test_scenarios_are_ordered_and_serializable():

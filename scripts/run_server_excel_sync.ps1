@@ -93,7 +93,8 @@ function Update-MoutaiCurrentObservation([string]$Python, [string]$ProjectRoot) 
         if ($LASTEXITCODE -ne 0) { throw "Current execution-contract preparation failed. Exit code: $LASTEXITCODE" }
         $execution = ConvertFrom-AgentJsonLine -Output $executionText -Context 'Current execution-contract preparation'
         $contract = [string]$execution.contract.output
-        $observationText = [string[]](& $Python scripts\run_moutai_simulation_closure.py --daily-paper --current-quote-report $report --execution-contract $contract)
+        $policy = [string]$execution.policy.output
+        $observationText = [string[]](& $Python scripts\run_moutai_simulation_closure.py --daily-paper --current-quote-report $report --execution-contract $contract --simulation-policy $policy)
         if ($LASTEXITCODE -ne 0) { throw "Daily paper-account cycle failed. Exit code: $LASTEXITCODE" }
         return @{ status = 'succeeded'; p1 = $p1; collection = $collection; execution = $execution; observation = (ConvertFrom-AgentJsonLine -Output $observationText -Context 'Daily paper-account cycle') }
     }

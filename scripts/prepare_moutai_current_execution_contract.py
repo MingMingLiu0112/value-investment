@@ -51,7 +51,13 @@ def main() -> int:
                         "--prior-close", str(price))
     if contract.get("execution_ready") is not True or contract.get("trade_approved") is not False:
         raise ValueError("Current execution contract did not retain the paper-only boundary")
-    print(json.dumps({"quote_session": observed, "valid_session": valid, "contract": contract}, ensure_ascii=False))
+    policy = run_json("scripts/build_moutai_daily_simulation_policy.py",
+                      "--quote-report", str(quote_report),
+                      "--execution-contract", str(Path(contract["output"]) / "evidence.json"))
+    if policy.get("observed_session") != observed or policy.get("valid_session") != valid:
+        raise ValueError("Daily simulation policy dates do not match the execution contract")
+    print(json.dumps({"quote_session": observed, "valid_session": valid,
+                      "contract": contract, "policy": policy}, ensure_ascii=False))
     return 0
 
 

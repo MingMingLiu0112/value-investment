@@ -18,6 +18,7 @@ def test_current_conditional_valuation_is_not_admitted_as_fair_value_or_trade():
     assert "historical_execution" not in result["blocking_gate_ids"]
     assert result["admission_version"] == "current-valuation-admission-v3"
     assert result["separate_execution_requirements"]["affects_valuation_admission"] is False
+    assert result["separate_execution_requirements"]["daily_simulation_policy_implemented"] is True
     assert "market_session" not in result["blocking_gate_ids"]
     assert "paper_execution" not in result["blocking_gate_ids"]
     assert result["current_capital_bridge_evidence"]["path"].endswith("evidence.json")

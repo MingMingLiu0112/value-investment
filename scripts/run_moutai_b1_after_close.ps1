@@ -2,6 +2,9 @@
 param()
 
 $ErrorActionPreference = 'Stop'
+[Console]::InputEncoding = [Text.UTF8Encoding]::new()
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new()
+$OutputEncoding = [Console]::OutputEncoding
 $root = Split-Path -Parent $PSScriptRoot
 $runtime = Join-Path $root 'runtime'
 $logs = Join-Path $runtime 'logs'

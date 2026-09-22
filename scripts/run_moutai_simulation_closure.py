@@ -170,13 +170,15 @@ def run_current_only(quote_report: Path, output: Path) -> dict:
 
 
 def run_daily_paper(quote_report: Path, output: Path, state_dir: Path,
-                    execution_contract: Path | None = None) -> dict:
+                    execution_contract: Path | None = None,
+                    simulation_policy: Path | None = None) -> dict:
     """Run one actual close-time paper-account cycle without inventing an open."""
     producer = run_json(
         "scripts/build_moutai_current_daily_simulation.py", "--quote-report", str(quote_report),
         "--state-file", str(state_dir / "daily-paper-state.json"),
         "--output-dir", str(output / "daily-input"),
         *(["--execution-contract", str(execution_contract)] if execution_contract else []),
+        *(["--simulation-policy", str(simulation_policy)] if simulation_policy else []),
     )
     input_path = Path(producer["output"]) / "input.json"
     account = run_json(
@@ -199,6 +201,7 @@ def run_daily_paper(quote_report: Path, output: Path, state_dir: Path,
         "observed_close_cny": producer["sessions"][0]["close"],
         "daily_input": {"path": str(Path(producer["output"]).relative_to(ROOT)),
                         "sha256": digest(input_path)},
+        "simulation_policy": producer.get("simulation_policy"),
         "account": account,
         "idempotent_replay": account["new_journal_rows"] == 0,
         "formal_fair_value": None, "valuation_approved": False,
@@ -220,6 +223,8 @@ def main() -> int:
                         help="archived dual-source report.json for an optional current close-only observation")
     parser.add_argument("--execution-contract", type=Path,
                         help="dated paper-execution contract required for a proposal-bearing daily cycle")
+    parser.add_argument("--simulation-policy", type=Path,
+                        help="separately dated daily simulation policy for a proposal-bearing daily cycle")
     parser.add_argument("--current-only", action="store_true",
                         help="refresh only the dated current observation and admission audit")
     parser.add_argument("--daily-paper", action="store_true",
@@ -266,7 +271,7 @@ def main() -> int:
         return 0
 
     if args.daily_paper:
-        daily = run_daily_paper(report, output, state_dir, args.execution_contract)
+        daily = run_daily_paper(report, output, state_dir, args.execution_contract, args.simulation_policy)
         summary = output / "summary.json"
         summary.write_text(json.dumps(daily, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         pointer = ROOT / "runtime/strategy-validation/moutai-daily-paper-latest.json"

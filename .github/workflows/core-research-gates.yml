@@ -1,0 +1,33 @@
+name: Core Research Gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  core-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install core test dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+      - name: Verify fail-closed research gates
+        run: >-
+          python -m pytest -q
+          tests/test_research_gate.py
+          tests/test_valuation_result.py
+          tests/test_price_bridge.py
+          tests/test_research_profile.py
+          tests/test_valuation_confidence.py
+          tests/test_valuation_router.py
+          tests/test_current_research_status.py
+          tests/test_unified_fcff_valuation.py
+          tests/test_residual_income_equity_valuation.py

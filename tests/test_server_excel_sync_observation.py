@@ -14,6 +14,7 @@ def test_server_sync_runs_local_current_observation_before_remote_payload_sync()
     assert "ConvertFrom-AgentJsonLine -Output $observationText -Context 'Daily paper-account cycle'" in script
     assert "[IO.Path]::GetFullPath([string]$collection.path)" in script
     assert "--daily-paper --current-quote-report $report --execution-contract $contract" in script
+    assert "--execution-contract $contract --simulation-policy $policy" in script
     assert "Daily paper-account cycle failed" in script
     assert "$p1 = Assert-MoutaiCurrentP1Ready -ProjectRoot $ProjectRoot" in script
     assert script.index("Assert-MoutaiCurrentP1Ready -ProjectRoot $ProjectRoot") < script.index("scripts\\collect_quote_sessions.py --symbols 600519")

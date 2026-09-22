@@ -24,6 +24,7 @@ from value_investment_agent.quote_session_collection import resolve_session_refe
 from value_investment_agent.quote_sessions import next_sse_2026_session
 from value_investment_agent.simulation_state import DecisionInput, evaluate
 from value_investment_agent.virtual_account import ORDER_TERMS_VERSION, VirtualAccount
+from value_investment_agent.daily_simulation_policy import validate_policy
 
 
 CURRENT_MODEL_POINTER = ROOT / "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-latest.json"
@@ -239,10 +240,25 @@ def load_execution_contract(contract_path: Path, observed_at: datetime, next_ses
             "liquidity_budget_cny": contract.get("liquidity_budget_cny")}
 
 
+def load_daily_simulation_policy(policy_path: Path, observed_at: datetime,
+                                 next_session: dict) -> dict:
+    """Load and hash-bind one separately dated daily execution policy."""
+    policy_path = policy_path.resolve()
+    if not policy_path.is_relative_to(ROOT.resolve()) or policy_path.name != "evidence.json":
+        raise ValueError("Daily simulation policy must be an evidence.json under the project root")
+    policy = validate_policy(json.loads(policy_path.read_text(encoding="utf-8")))
+    if (policy["observed_session"] != observed_at.date().isoformat()
+            or policy["valid_session"] != next_session["date"]):
+        raise ValueError("Daily simulation policy is incompatible with the quote session")
+    return {"policy": policy, "path": str(policy_path.relative_to(ROOT)),
+            "sha256": digest(policy_path)}
+
+
 def build(quote_report: Path, account: VirtualAccount | None = None,
           execution_contract: Path | None = None, model_evidence: Path | None = None,
           scope_review_evidence: Path | None = None, thesis_evidence: Path | None = None,
-          admission_evidence: Path | None = None) -> dict:
+          admission_evidence: Path | None = None,
+          simulation_policy: Path | None = None) -> dict:
     quote_report = quote_report.resolve()
     if not quote_report.is_relative_to(ROOT.resolve()):
         raise ValueError("Quote report must remain under the project root")
@@ -254,10 +270,12 @@ def build(quote_report: Path, account: VirtualAccount | None = None,
     account = account or VirtualAccount()
     execution = (load_execution_contract(execution_contract, observed_at, next_session)
                  if execution_contract else {"execution_ready": False,
-                                              "blockers": ["execution_contract_missing"],
-                                              "path": None, "sha256": None,
-                                              "next_session": next_session["date"],
-                                              "slippage_bps": None, "liquidity_budget_cny": None})
+                                               "blockers": ["execution_contract_missing"],
+                                               "path": None, "sha256": None,
+                                               "next_session": next_session["date"],
+                                               "slippage_bps": None, "liquidity_budget_cny": None})
+    dated_policy = (load_daily_simulation_policy(simulation_policy, observed_at, next_session)
+                    if simulation_policy else None)
     model_at = datetime.fromisoformat(model["valuation_at"])
     blockers: list[str] = []
     # A dated model cannot be carried across later closes until the capital
@@ -286,6 +304,8 @@ def build(quote_report: Path, account: VirtualAccount | None = None,
     ))
     decision = {**state, "decision_id": "600519-close-" + observed_at.date().isoformat(),
                 "decision_scope": "current_close_research_only"}
+    if state["state"] in {"proposed_entry", "proposed_add", "proposed_reduce"} and dated_policy is None:
+        raise ValueError("A separately dated daily simulation policy is required before a paper proposal")
     if state["state"] == "proposed_entry":
         sizing = size_entry_or_add(nav=account.marked_nav(), cash=account.cash,
                                    current_shares=account.shares, price=price, tranche_index=0)
@@ -310,6 +330,7 @@ def build(quote_report: Path, account: VirtualAccount | None = None,
         "thesis": thesis,
         "p1_admission": admission,
         "execution_contract": execution,
+        "simulation_policy": dated_policy,
         "observed_at": observed_at.isoformat(),
         "sessions": [{
             "date": observed_at.date().isoformat(), "open": None, "close": str(price),
@@ -341,13 +362,16 @@ def main() -> int:
                         help="dated thesis evidence.json matching the quote session")
     parser.add_argument("--admission-evidence", type=Path,
                         help="dated P1 admission evidence.json for the same paper-research scope")
+    parser.add_argument("--simulation-policy", type=Path,
+                        help="separately dated daily simulation policy evidence.json")
     args = parser.parse_args()
     account = None
     if args.state_file and args.state_file.exists():
         account = VirtualAccount.from_dict(json.loads(args.state_file.read_text(encoding="utf-8")))
     payload = build(args.quote_report, account, args.execution_contract,
                     args.model_evidence, args.scope_review_evidence,
-                    args.thesis_evidence, args.admission_evidence)
+                    args.thesis_evidence, args.admission_evidence,
+                    args.simulation_policy)
     if args.output_dir:
         output = args.output_dir.resolve()
         output.mkdir(parents=True, exist_ok=False)

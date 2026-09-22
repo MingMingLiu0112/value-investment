@@ -31,7 +31,10 @@ CONTENT_REQUIREMENTS = {
     "support_and_counterevidence": (
         "counterevidence", "resilience_counterevidence", "governance_counterevidence",
     ),
-    "model_and_assumption_scope": ("model_basis", "market_implied_expectation", "valuation"),
+    "model_and_assumption_scope": (
+        "model_basis", "franchise_duration", "franchise_duration_unproven",
+        "market_implied_expectation", "valuation",
+    ),
 }
 
 

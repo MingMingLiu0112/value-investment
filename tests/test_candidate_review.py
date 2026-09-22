@@ -32,6 +32,7 @@ class _Connection:
             'page_number': 8, 'source_label': 'ROE', 'symbol': '600015', 'report_period': '2025-12-31',
             'source_name': 'CNINFO', 'source_url': 'https://www.cninfo.com.cn/a.pdf',
             'published_at': None, 'sha256': 'a' * 64, 'local_path': 'unused.pdf',
+            'archive_status': 'server_resident', 'archive_uri': None,
         })
 
 

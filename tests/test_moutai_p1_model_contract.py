@@ -26,6 +26,7 @@ def test_parent_equity_contract_separates_model_from_historical_execution():
     assert "historical_execution" not in {gate["id"] for gate in contract["admission_gates"]}
     assert contract["candidate_primary_model"]["model_version"].endswith("-v2")
     assert contract["separate_execution_requirements"]["affects_valuation_admission"] is False
+    # v3 was frozen on 2026-09-14; the separately dated policy arrived on 2026-09-21.
     assert contract["separate_execution_requirements"]["daily_simulation_policy_implemented"] is False
     assert contract["specified_simulation_eligible"] is False
     assert contract["trade_approved"] is False

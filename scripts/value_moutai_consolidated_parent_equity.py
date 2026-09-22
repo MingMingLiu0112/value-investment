@@ -6,8 +6,14 @@ import hashlib
 import json
 import argparse
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal, localcontext
+from decimal import Decimal
 from pathlib import Path
+
+from value_investment_agent.valuation_models.residual_income import (
+    current_projection,
+    current_value,
+    scenario_value,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,79 +52,6 @@ def load(path: Path, expected: str) -> dict:
     if digest(path) != expected:
         raise ValueError(f"Pinned input changed: {path.name}")
     return json.loads(path.read_text(encoding="utf-8"))
-
-
-def scenario_value(start_book: Decimal, shares: Decimal, cost: Decimal, configuration: dict[str, object]) -> dict[str, object]:
-    terminal_roe = Decimal(str(configuration["terminal_roe"]))
-    terminal_growth = Decimal(str(configuration["terminal_growth"]))
-    forecast_roes = [Decimal(str(value)) for value in configuration["forecast_roe"]]
-    retention = Decimal(str(configuration.get("retention", "0.30")))
-    if (any(not value.is_finite() for value in
-            [start_book, shares, cost, terminal_roe, terminal_growth, retention, *forecast_roes])
-            or min(start_book, shares, cost, terminal_roe) <= 0
-            or not forecast_roes or any(value < 0 for value in forecast_roes)
-            or not Decimal(0) <= terminal_growth < cost or terminal_growth > terminal_roe
-            or not Decimal(0) <= retention <= Decimal(1)):
-        raise ValueError("Invalid equity basis or unsupported self-funded terminal assumptions")
-    book = start_book
-    present_value_residual = Decimal("0")
-    annuals = []
-    with localcontext() as context:
-        context.prec = 48
-        present_value_dividends = Decimal(0)
-        for year, roe in enumerate(forecast_roes, 1):
-            income = roe * book
-            residual_income = income - cost * book
-            discount_factor = (Decimal("1") + cost) ** year
-            present_value_residual += residual_income / discount_factor
-            next_book = book + income * retention
-            dividend = income * (Decimal(1) - retention)
-            present_value_dividends += dividend / discount_factor
-            annuals.append({
-                "year": year,
-                "opening_book_equity_cny": str(book),
-                "roe_assumption": str(roe),
-                "net_income_assumption_cny": str(income),
-                "retention_assumption": str(retention),
-                "dividend_assumption_cny": str(dividend),
-                "residual_income_cny": str(residual_income),
-                "discount_factor": str(discount_factor),
-                "closing_book_equity_cny": str(next_book),
-            })
-            book = next_book
-        # The first terminal income is earned on the final explicit year's
-        # closing equity; growth applies to subsequent terminal incomes.
-        terminal_residual = (terminal_roe - cost) * book
-        terminal_value = terminal_residual / (cost - terminal_growth)
-        present_value_terminal = terminal_value / ((Decimal("1") + cost) ** len(annuals))
-        equity_value = start_book + present_value_residual + present_value_terminal
-        terminal_retention = terminal_growth / terminal_roe
-        terminal_dividend = (terminal_roe - terminal_growth) * book
-        dividend_equity_value = present_value_dividends + (
-            terminal_dividend / (cost - terminal_growth)
-            / ((Decimal(1) + cost) ** len(annuals)))
-        reconciliation_difference = equity_value - dividend_equity_value
-        if abs(reconciliation_difference) > max(Decimal("0.01"), abs(equity_value) * Decimal("1e-24")):
-            raise ValueError("Residual-income and dividend paths do not reconcile")
-        if equity_value <= 0:
-            raise ValueError("Scenario has no positive equity value under these assumptions")
-    return {
-        "cost_of_equity_cny_nominal": str(cost),
-        "forecast_years": annuals,
-        "terminal_roe": str(terminal_roe),
-        "terminal_growth": str(terminal_growth),
-        "terminal_opening_book_equity_cny": str(book),
-        "terminal_retention_assumption": str(terminal_retention),
-        "terminal_first_dividend_cny": str(terminal_dividend),
-        "terminal_residual_income_cny": str(terminal_residual),
-        "present_value_explicit_residual_income_cny": str(present_value_residual),
-        "present_value_terminal_residual_income_cny": str(present_value_terminal),
-        "conditional_equity_value_cny": str(equity_value),
-        "conditional_value_per_2025_issued_share_cny": str(equity_value / shares),
-        "dividend_crosscheck_equity_value_cny": str(dividend_equity_value),
-        "dividend_crosscheck_difference_cny": str(reconciliation_difference),
-        "terminal_residual_contribution_ratio": str(present_value_terminal / equity_value),
-    }
 
 
 def build() -> dict[str, object]:
@@ -184,74 +117,6 @@ def build() -> dict[str, object]:
             "This model avoids an industrial/finance carveout but does not establish strategy evidence, executable historical fills, or a simulation admission.",
         ],
     }
-
-
-def current_projection(start_book: Decimal, profit: Decimal, cost: Decimal, growth: Decimal,
-                       payout: Decimal, growth_years: int, fade_years: int) -> list[Decimal]:
-    if (any(not value.is_finite() for value in (start_book, profit, cost, growth, payout))
-            or min(start_book, profit, cost) <= 0 or growth <= -1
-            or not 0 <= payout <= 1 or type(growth_years) is not int or growth_years < 1
-            or type(fade_years) is not int or fade_years < 0):
-        raise ValueError("Invalid current projection assumptions")
-    with localcontext() as context:
-        context.prec = 48
-        book, income, roes = start_book, profit, []
-        for _ in range(growth_years):
-            income *= 1 + growth
-            roes.append(income / book)
-            book += income * (1 - payout)
-        last_roe = roes[-1]
-        for step in range(1, fade_years + 1):
-            roe = last_roe + (cost - last_roe) * Decimal(step) / fade_years
-            roes.append(roe)
-            book += roe * book * (1 - payout)
-    return roes
-
-
-def current_value(start_book: Decimal, shares: Decimal, profit: Decimal, cost: Decimal,
-                  growth: Decimal, payout: Decimal, growth_years: int, fade_years: int,
-                  terminal_growth: Decimal, basis_at: datetime, as_of: datetime) -> dict:
-    if basis_at.tzinfo is None or as_of.tzinfo is None:
-        raise ValueError("Current valuation requires timezone-aware dates")
-    first_payment = basis_at.replace(year=basis_at.year + 1)
-    if not basis_at <= as_of < first_payment:
-        raise ValueError("Current date is outside the first projected payment period")
-    with localcontext() as context:
-        context.prec = 48
-        roes = current_projection(start_book, profit, cost, growth, payout, growth_years, fade_years)
-        calculation = scenario_value(start_book, shares, cost, {
-            "forecast_roe": roes, "retention": 1 - payout,
-            "terminal_roe": cost, "terminal_growth": terminal_growth,
-        })
-        elapsed = Decimal(str((as_of - basis_at).total_seconds())) / Decimal(str((first_payment - basis_at).total_seconds()))
-        transport = (1 + cost) ** elapsed
-        origin_value = Decimal(calculation["conditional_equity_value_cny"])
-        equity_value = origin_value * transport
-        # Reprice the future dividend schedule directly at the valuation date.
-        dividend_value = sum(Decimal(row["dividend_assumption_cny"]) / (1 + cost) ** (Decimal(row["year"]) - elapsed)
-                             for row in calculation["forecast_years"])
-        count = len(roes)
-        dividend_value += (Decimal(calculation["terminal_first_dividend_cny"]) / (cost - terminal_growth)
-                           / (1 + cost) ** (Decimal(count) - elapsed))
-        if abs(equity_value - dividend_value) > Decimal("0.01"):
-            raise ValueError("Current-date dividend and residual-income values do not reconcile")
-        for row in calculation["forecast_years"]:
-            row["assumed_payment_at"] = basis_at.replace(year=basis_at.year + row["year"]).isoformat()
-        calculation.pop("conditional_value_per_2025_issued_share_cny")
-        return {
-            "basis_origin_calculation": calculation,
-            "income_growth_assumption": str(growth), "payout_assumption": str(payout),
-            "fade_years": fade_years, "cost_of_equity_cny_nominal": str(cost),
-            "basis_at": basis_at.isoformat(), "valuation_at": as_of.isoformat(),
-            "fractional_first_year_elapsed": str(elapsed),
-            "basis_to_valuation_factor": str(transport),
-            "conditional_current_equity_value_cny": str(equity_value),
-            "conditional_value_per_current_disclosed_share_cny": str(equity_value / shares),
-            "current_dividend_crosscheck_equity_value_cny": str(dividend_value),
-            "current_dividend_crosscheck_difference_cny": str(equity_value - dividend_value),
-            "terminal_dividend_value_share": str((Decimal(calculation["terminal_first_dividend_cny"])
-                / (cost - terminal_growth) / (1 + cost) ** (Decimal(count) - elapsed)) / equity_value),
-        }
 
 
 def build_current(policy_path: Path, as_of: datetime | None = None) -> dict:

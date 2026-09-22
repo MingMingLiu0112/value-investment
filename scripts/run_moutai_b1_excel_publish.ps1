@@ -30,15 +30,17 @@ try {
     if ($evidenceHash -ne ([string]$pointer.sha256).ToLowerInvariant()) { throw 'Current Moutai B1 valuation evidence hash changed.' }
     $payload = Get-Content -LiteralPath $evidencePath -Raw | ConvertFrom-Json
     $value = $payload.result
-    $reverse = $value.assumptions.reverse_valuation
-    if ($payload.version -ne 'moutai-stage-b-valuation-result-v1' -or $value.symbol -ne '600519' -or
+    $bridge = $payload.price_bridge
+    $validity = $payload.model_validity
+    if ($payload.version -ne 'moutai-stage-b-valuation-result-v2' -or $value.symbol -ne '600519' -or
         $value.status -ne 'conditional_research_only' -or $value.confidence -ne '低' -or
         $payload.trade_approved -ne $false -or $payload.live_eligible -ne $false -or
-        $value.valuation_date -ne $ExpectedDate -or $reverse.quote_date -ne $ExpectedDate -or
-        $null -eq $value.current_price -or $null -eq $value.margin_to_bear -or $null -eq $value.margin_to_base) {
-        throw 'Current Moutai B1 result is not a same-date conditional research result eligible for Excel publication.'
+        $validity.status -ne 'VALID' -or $bridge.bridge_status -ne 'READY' -or
+        $bridge.quote_date -ne $ExpectedDate -or $null -eq $bridge.current_price -or
+        $null -eq $bridge.margin_to_bear -or $null -eq $bridge.margin_to_base) {
+        throw 'Current Moutai B1 result does not have a valid model and verified current price bridge eligible for Excel publication.'
     }
-    foreach ($number in @($value.current_price, $value.margin_to_bear, $value.margin_to_base)) {
+    foreach ($number in @($bridge.current_price, $bridge.margin_to_bear, $bridge.margin_to_base)) {
         $parsed = [decimal]::Parse([string]$number, [Globalization.CultureInfo]::InvariantCulture)
         if ($parsed -ne $parsed) { throw 'Current Moutai B1 result contains a non-finite numeric value.' }
     }

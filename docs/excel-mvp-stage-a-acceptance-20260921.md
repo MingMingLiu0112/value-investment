@@ -1,5 +1,10 @@
 # Excel MVP Stage A Acceptance
 
+> Status as of 2026-09-21: **passed for the Excel research-workbench scope**.
+> This is not a valuation, simulation, portfolio, or trading-readiness acceptance.
+> Each unresolved evidence, financial, valuation and price dependency remains
+> visible in the corresponding card and gate output.
+
 Date: 2026-09-21
 
 ## Scope and Evidence
@@ -20,38 +25,57 @@ reference in the three records was also hash-addressable locally.
 
 | Stage A requirement | Evidence | Result |
 | --- | --- | --- |
-| Three uniform research objects | `ResearchCase`, `ResearchGate`, and three records in the pinned payload | Passed |
-| Homepage summary | `00_首页Dashboard` displays the three fixed cases with path, data date, research/valuation state, counterevidence, blockers and next event | Passed |
-| Research gate and blocked valuation state | All three records have G0-G3 results, blockers, and `估值未就绪` | Passed |
-| Financial summary | 600519 has H1 2026 financial anchors; 000333 has explicitly restricted TTM scope; 601088 explicitly states current financial evidence is not admitted | Passed, with disclosed limits |
-| Business thesis, support, counterevidence, breakers, next event | Every record includes all five structured sections with evidence kinds | Passed |
-| Traceability | Every case has named evidence references with file paths and SHA-256 | Passed |
-| Original Excel display | Published WPS workbook contains the three MVP cards on `00_公司总览` | Passed |
-| No valuation/order promotion | Payload has `formal_trade_instructions: false`; all cases are `not_ready`; Excel labels say no price, position, or order | Passed |
+| Three uniform research objects | `ResearchCase`, `ResearchGate`, and three records in the pinned payload | Structural pass |
+| Homepage summary | `00_首页Dashboard` displays the three fixed cases with path, data date, research/valuation state, counterevidence, blockers and next event | Structural pass |
+| Research gate and blocked valuation state | G0 evidence, G1 financial, G2 business and G3 valuation results are independently saved with blockers. All three cases pass G2; no case is promoted through G3. | Pass |
+| Financial summary | Each card contains dated, scoped facts and explicit five-dimension status where available. Midea and Shenhua retain financial gaps rather than filling them with scores or estimates. | Pass with disclosed gaps |
+| Business thesis, support, counterevidence, breakers, next event | Every case has at least three evidence-linked supporting facts, three counter-evidence items, three thesis breakers and registered next events. | Pass |
+| Traceability | Every current case has named local evidence references with file paths and SHA-256 | Structural pass |
+| Original Excel display | Published WPS workbook contains the three MVP cards on `00_公司总览` | Structural pass |
+| No valuation/order promotion | Payload has `formal_trade_instructions: false`; all cases are `not_ready`; Excel labels say no price, position, or order | Pass |
 
 ## Runtime Verification
 
-- Focused Python tests: `18 passed` after the Stage A artifact tests were added.
+- Focused Python tests: `16 passed` in the latest Stage A research, gate,
+  valuation-boundary, price-bridge and profile regression run.
 - Isolated workbook build: preserved non-derived source-cell fingerprints,
   internal-link serialization and layout checks.
 - WPS COM verification: passed against the published WPS cloud workbook. The
   verifier followed the homepage, company overview, pending, research,
   valuation and decision links and retained a formula calculation check.
-- Publication: original file was hash-guarded, backed up under
-  `runtime/workbook-backups/published-20260921-excel-mvp/`, then atomically
-  replaced. Published SHA-256:
-  `E83C482A330FE80005183965271EA8C3E63C1EDC8B66532876666324FF66F0EE`.
+- Publication: original file was hash-guarded and atomically replaced from
+  `runtime/workbook-backups/frontdoor-20260921T091602230674Z/`. Published SHA-256:
+  `0EEEAEA8143DB9D6969A0C85F09D99850988E46551799FB4689F75A338CF37AE`.
+
+Later on the same date, the B1 same-date Moutai result was independently published
+from `runtime/workbook-backups/frontdoor-20260921T124307037961Z/`, changing the
+canonical workbook SHA-256 to
+`A9F9BC91AF801F26E45B21CD3CEAA2840B67110F9FCFD2F8034FB5DAD6F298D5`. That later
+publication is a Stage B result, not a change to this Stage A acceptance.
+
+A later Shenhua subsidiary-allocation evidence package and its corresponding Stage A
+research-card traceability update were published from
+`runtime/workbook-backups/frontdoor-20260921T155641364470Z/`. The focused new package and
+Stage A research-case tests passed (`9 passed`), and the canonical workbook SHA-256 became
+`F96ED4D90701C999BFE0491B0DAFCBE2427992D99CB7075B1E487AF5A81ED0E5`. This also does not
+change the Stage A acceptance result or permit valuation or trading promotion.
+
+On 2026-09-22 the IFRS 12 subsidiary-tax review was added to the Shenhua research card and
+published from `runtime/workbook-backups/frontdoor-20260921T161640335295Z/`. The focused
+research-case and IFRS-review tests passed (`10 passed`), and the canonical workbook SHA-256
+became `17036D1F8EBC094DF9287AB25B4BF256F70B6AA9F1DF23DEDD16D3E7A98AFA9B`. This preserves
+the Stage A acceptance result and keeps valuation and trading promotion blocked.
 
 ## Objective Assessment
 
-Stage A is usable as a research triage surface: it makes the difference between
-evidence, interpretation, gap and blocked valuation visible for three
-companies. It is not yet usable to decide a purchase, sale, position size or
-portfolio allocation. In particular, the Moutai work remains a constrained
-research model rather than an approved fair value; Midea lacks approved
-per-share inputs; and Shenhua lacks a current fundamental evidence package.
+Stage A is usable as a research workbench: it makes facts, interpretation,
+counterevidence, gaps and blocked valuation visible for all three companies.
+It is not usable to decide a purchase, sale, position size or portfolio
+allocation. Moutai remains a constrained, no-current-price research model;
+Midea lacks approved FCFF and per-share inputs; Shenhua lacks the debt, resource,
+cost-curve and normalized-cycle package required for a cyclical valuation.
 
-The next plan remains appropriate: Stage B starts with Moutai, completing a
-specific applicable valuation contract, dated inputs, scenario analysis,
-assumption sensitivity and reverse-valuation result before moving to Midea.
-It must not use the existing Stage A cards as a substitute for those checks.
+The next plan follows Stage B's model order: first obtain a date-matched,
+reproducible Moutai valuation and price bridge; then finish Midea FCFF scope;
+then build Shenhua's cyclical-normalization input contract. No Stage B result
+may be promoted to simulation or trading readiness without its own acceptance.

@@ -121,7 +121,7 @@ def test_current_date_research_does_not_silently_replace_primary_model_or_admit_
     assert current['simulation_eligible'] is False
     assert any('residual-income-current-' in ref['path'] for ref in refs['600519'])
     card = company['research_card']
-    assert card['research_card_version'] == 'moutai-research-card-evidence-v5'
+    assert card['research_card_version'] == 'moutai-research-card-evidence-v6'
     assert card['facts']['liquor_revenue_growth_pct'] == '-1.08'
     assert card['facts']['liquor_sales_volume_growth_pct'] == '2.13'
     assert card['trade_approved'] is False

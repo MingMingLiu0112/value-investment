@@ -26,6 +26,13 @@ def test_daily_b1_refresh_only_accepts_declared_postclose_states():
     assert "Unexpected post-close P1 refresh status" in script
 
 
+def test_daily_b1_refresh_forces_utf8_before_parsing_agent_json():
+    script = (ROOT / "scripts/run_moutai_b1_after_close.ps1").read_text(encoding="utf-8")
+    assert "[Console]::InputEncoding = [Text.UTF8Encoding]::new()" in script
+    assert "[Console]::OutputEncoding = [Text.UTF8Encoding]::new()" in script
+    assert "$OutputEncoding = [Console]::OutputEncoding" in script
+
+
 def test_mvp_publication_is_candidate_first_and_explicitly_opt_in():
     script = (ROOT / "scripts/run_excel_mvp_publication.ps1").read_text(encoding="utf-8")
     assert "[switch]$Publish" in script
@@ -37,12 +44,12 @@ def test_mvp_publication_is_candidate_first_and_explicitly_opt_in():
     assert "expected-destination-sha256" in script
 
 
-def test_scheduled_b1_publication_requires_a_same_date_research_result():
+def test_scheduled_b1_publication_requires_a_valid_current_price_bridge():
     script = (ROOT / "scripts/run_moutai_b1_excel_publish.ps1").read_text(encoding="utf-8")
-    assert "$value.valuation_date -ne $ExpectedDate" in script
-    assert "$reverse.quote_date -ne $ExpectedDate" in script
-    assert "$null -eq $value.current_price" in script
-    assert "$null -eq $value.margin_to_bear" in script
+    assert "$validity.status -ne 'VALID'" in script
+    assert "$bridge.quote_date -ne $ExpectedDate" in script
+    assert "$null -eq $bridge.current_price" in script
+    assert "$null -eq $bridge.margin_to_bear" in script
     assert "Join-Path $evidencePath 'evidence.json'" in script
     assert "run_excel_mvp_publication.ps1') -Publish" in script
     assert "trade_approved = $false" in script

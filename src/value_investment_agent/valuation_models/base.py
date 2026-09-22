@@ -1,4 +1,4 @@
-"""A serializable valuation result that cannot silently become a trade signal."""
+"""A serializable intrinsic-value result; market prices belong to PriceBridge."""
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -17,15 +17,13 @@ class ValuationResult:
     bear_value: Decimal | None
     base_value: Decimal | None
     bull_value: Decimal | None
-    current_price: Decimal | None
-    margin_to_bear: Decimal | None
-    margin_to_base: Decimal | None
     confidence: str
     assumptions: dict[str, Any]
     sensitivities: list[dict[str, Any]]
     evidence_refs: list[dict[str, Any]]
     blockers: list[str]
     status: str
+    model_version: str
 
     def __post_init__(self) -> None:
         if not re.fullmatch(r"[0-9]{6}", self.symbol):
@@ -37,16 +35,11 @@ class ValuationResult:
             raise ValueError("Scenario values must be positive finite Decimals when supplied")
         if all(value is not None for value in values) and not self.bear_value <= self.base_value <= self.bull_value:
             raise ValueError("Scenario values must be bear <= base <= bull")
-        if self.current_price is not None and (not self.current_price.is_finite() or self.current_price <= 0):
-            raise ValueError("Current price must be positive and finite")
-        for name, value in (("margin_to_bear", self.margin_to_bear), ("margin_to_base", self.margin_to_base)):
-            if value is not None and not value.is_finite():
-                raise ValueError(f"{name} must be finite")
-        if self.current_price is None and (self.margin_to_bear is not None or self.margin_to_base is not None):
-            raise ValueError("Margins require a same-date price")
         if not self.evidence_refs or any(not ref.get("id") for ref in self.evidence_refs):
             raise ValueError("Valuation requires named evidence references")
-        if self.status not in {"not_ready", "conditional_research_only", "approved_research_only"}:
+        if not self.model_version.strip():
+            raise ValueError("Valuation model version is required")
+        if self.status not in {"not_ready", "conditional_research_only", "approved_research_only", "ready"}:
             raise ValueError("Unknown valuation status")
 
     def to_json(self) -> str:

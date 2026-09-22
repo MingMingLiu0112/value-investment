@@ -25,6 +25,8 @@ PEER_PATH = RESEARCH / "000858-peer-interim-20260909T125304973619Z/evidence.json
 PEER_SHA256 = "1e5a3d030881678d7e3b63ae03718df3312dac4a17a44c64fb79436516a7a00c"
 GOVERNANCE_POINTER = RESEARCH / "600519-governance-capital-review-latest.json"
 RESILIENCE_POINTER = RESEARCH / "600519-resilience-review-latest.json"
+DISTRIBUTION_POINTER = RESEARCH / "600519-distribution-capacity-evidence-latest.json"
+FRANCHISE_POINTER = RESEARCH / "600519-franchise-duration-evidence-latest.json"
 
 
 def digest(path: Path) -> str:
@@ -66,6 +68,8 @@ def build() -> dict:
     peer, peer_reference = read_pinned_path(PEER_PATH, PEER_SHA256)
     governance, governance_reference = read_pointer(GOVERNANCE_POINTER)
     resilience, resilience_reference = read_pointer(RESILIENCE_POINTER)
+    distribution, distribution_reference = read_pointer(DISTRIBUTION_POINTER)
+    franchise, franchise_reference = read_pointer(FRANCHISE_POINTER)
 
     current = facts["current_disclosed_basis"]
     facts_period = current["period_end"]
@@ -95,12 +99,16 @@ def build() -> dict:
             or resilience.get("review_version") != "moutai-resilience-review-v1"
             or resilience.get("resilience_approved") is not False):
         raise ValueError("Resilience review scope changed")
+    if distribution.get("status") != "distribution_history_verified_but_forward_cash_capacity_not_approved":
+        raise ValueError("Distribution-capacity evidence scope changed")
+    if franchise.get("status") != "bounded_conditional_policy_audited_not_empirical_franchise_duration":
+        raise ValueError("Franchise-duration audit scope changed")
 
     return {
         "symbol": "600519",
-        "research_card_version": "moutai-research-card-evidence-v5",
+        "research_card_version": "moutai-research-card-evidence-v6",
         "as_of": model["valuation_at"][:10],
-        "scope": "second-round company research: earnings quality, sales realization, cash distribution and valuation applicability; not a target price or trading recommendation",
+        "scope": "second-round company research: earnings quality, sales realization, cash distribution, bounded franchise-duration policy and valuation applicability; not a target price or trading recommendation",
         "evidence": {
             "current_model": model_ref,
             "issuer_interim_facts": facts_reference,
@@ -110,6 +118,8 @@ def build() -> dict:
             "peer_counterevidence": peer_reference,
             "governance_capital_review": governance_reference,
             "resilience_review": resilience_reference,
+            "distribution_capacity_review": distribution_reference,
+            "franchise_duration_audit": franchise_reference,
         },
         "facts": {
             "period_end": facts_period,
@@ -136,18 +146,20 @@ def build() -> dict:
             "governance": governance["conclusions"]["governance"],
             "governance_counterevidence": governance["conclusions"]["counterevidence"],
             "model_basis": "主研究模型为归母权益剩余收益/分配能力模型：以2026年中期归母权益和扣非TTM为起点，分别检验未来五年利润-5%/0/+5%、75%研究性分配率、优势回报五年衰减至资本成本及不同折现率。它的作用是把盈利、资本和分配假设放在同一口径下比较，不是正式合理价值。",
+            "franchise_duration": franchise["conclusion"]["policy_boundary"],
+            "franchise_duration_unproven": franchise["conclusion"]["not_proven"],
             "market_implied_expectation": "在已登记的强衰减逆向检验中，归档价格高于0年、5年和10年优势衰减，以及利润增长-5%至+5%的所有注册组合上限。因此，价格至少要求利润路径、可分配比例、优势持续期或资本成本中的一项显著强于该保守组合；但这些变量存在多解，不能反推出唯一市场预测。",
             "valuation": "上述价格约束提示不能把归档报价视为已证实的安全边际；它不是合理价、卖出结论或单一市场预期。正式估值仍须通过股本/资本动作、预测假设和折现政策的指定日期审查。",
         },
         "conditional_actions": {
-            "not_holding": "不从旧情景值或价格下跌直接得出买入价。先补足量价兑现、全年可分配现金和优势持续期证据，再冻结适用估值模型。",
+            "not_holding": "不从旧情景值或价格下跌直接得出买入价。先补足量价兑现和全年可分配现金；优势持续期已审计为有界假设，但未来实际持续时长仍待长期证据，再按正式估值门审查。",
             "holding": "先核对自己的成本、仓位和现金需求；重点复评量价兑现、分配能力和治理/资本配置。系统或数据执行故障不是卖出依据。",
         },
         "next_event": "下一份定期报告及任何渠道、价格策略、分红/回购或重大资本动作披露；更新时须重算而非沿用本轮结论。",
         "gaps": [
             "量价与渠道：下一期收入、销量、产品/渠道结构须验证FY2025收入/吨下行是阶段性还是持续性。",
             "可分配现金：须以全年经营现金流、必要投入、受限资金及母子公司现金归属复核分配能力。",
-            "优势持续期：须用公司经营证据和可比公司反证约束主模型的增长、回报率和衰减期限。",
+            "优势持续期：当前五年中央政策与0/10年压力边界已独立审计；未来竞争优势实际时长仍需长期经营证据。",
         ],
         "formal_fair_value": None,
         "valuation_approved": False,

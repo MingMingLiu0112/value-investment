@@ -15,6 +15,7 @@ POINTERS = {
     "cost_policy": ("runtime/company-research/600519-current-cost-of-equity-policy-latest.json", "evidence.json"),
     "forward_assumptions": ("runtime/company-research/600519-current-forward-assumptions-latest.json", "evidence.json"),
 }
+DAILY_POLICY_POINTER = ROOT / "runtime/strategy-validation/moutai-daily-simulation-policy-latest.json"
 
 
 def digest(path: Path) -> str:
@@ -29,6 +30,22 @@ def load_pointer(pointer_relative: str, filename: str) -> tuple[dict, dict]:
     return json.loads(path.read_text(encoding="utf-8")), {"path": str(path.relative_to(ROOT)), "sha256": pointer["sha256"]}
 
 
+def load_daily_simulation_policy() -> tuple[dict, dict] | None:
+    """Read the separately dated policy only when its pointer and hash still match."""
+    from value_investment_agent.daily_simulation_policy import IMPLEMENTED_STATUS, validate_policy
+
+    if not DAILY_POLICY_POINTER.exists():
+        return None
+    pointer = json.loads(DAILY_POLICY_POINTER.read_text(encoding="utf-8"))
+    path = (ROOT / pointer["path"] / "evidence.json").resolve()
+    if not path.is_relative_to(ROOT.resolve()) or digest(path) != pointer["sha256"]:
+        raise ValueError("Pinned daily simulation policy changed")
+    policy = validate_policy(json.loads(path.read_text(encoding="utf-8")))
+    if policy["implementation_status"] != IMPLEMENTED_STATUS:
+        raise ValueError("Daily simulation policy is not implemented for paper execution")
+    return policy, {"path": str(path.relative_to(ROOT)), "sha256": pointer["sha256"]}
+
+
 def build() -> dict:
     data, refs = {}, {}
     for name, (pointer, filename) in POINTERS.items():
@@ -41,6 +58,8 @@ def build() -> dict:
             or cost.get("as_of") != as_of or cost.get("passed") is not True
             or assumptions.get("as_of") != as_of or assumptions.get("passed") is not True):
         raise ValueError("Current P1 dependency scope is incomplete")
+    daily_policy = load_daily_simulation_policy()
+    policy_implemented = daily_policy is not None and daily_policy[0].get("observed_session") == as_of
     return {
         "symbol": "600519", "contract_version": "moutai-p1-model-contract-v4", "as_of": as_of, "inputs": refs,
         "candidate_primary_model": {"name": "consolidated_parent_equity_residual_income_or_dividend_capacity", "model_version": model["model_version"], "research_date_only": bool(model["model_policy"].get("research_date_only")), "conclusion": "admitted_for_bounded_current_paper_research"},
@@ -55,14 +74,15 @@ def build() -> dict:
         "simulation_eligible": False, "trade_approved": False, "live_eligible": False,
         "separate_execution_requirements": {
             "affects_valuation_admission": False,
-            "daily_simulation_policy_implemented": False,
+            "daily_simulation_policy_implemented": policy_implemented,
+            "daily_simulation_policy": daily_policy[1] if daily_policy else None,
             "requirements": "A separate dated execution contract must cover prices, status, corporate actions, fees, slippage, liquidity and account constraints before simulation fills.",
             "real_fill_verified": False,
         },
         "scope": "Current-date bounded paper research only. It is not information available at the prior market close and cannot create a safety-margin signal, paper order, simulation admission, or trading instruction.",
         "next_evidence_path": [
             "Maintain a new point-in-time capital-event bridge for every later research or market-session date.",
-            "Implement and validate the separate dated daily execution policy before any simulation fills.",
+            "Refresh the separately dated daily execution policy and execution contract for every later session before any simulation fill.",
             "Do not convert research-date values into market-session safety margins without a date-consistent quote and model bridge.",
         ],
     }

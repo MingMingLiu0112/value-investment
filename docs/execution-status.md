@@ -3267,3 +3267,651 @@ XLSX path returned no 2014-2015 snapshots. This neither proves nor disproves
 the original file's availability because the present paths incorporate a 2023
 migration location. Workbook creation/modification properties are recorded as
 auxiliary metadata only; they are not promoted to publication evidence.
+
+## 2026-09-21: Daily paper-execution policy implemented and dry-run verified
+
+The separately dated daily simulation policy
+`moutai-daily-simulation-paper-execution-policy-v1` is now implemented for paper
+execution only. It binds the observed 2026-09-21 session and valid 2026-09-22
+session to a hash-pinned execution contract, and rejects stale contracts or any
+real-fill, trade-approval or live-eligibility boundary crossing. The policy evidence is
+`runtime/strategy-validation/moutai-daily-simulation-policy-20260921T153024Z/evidence.json`,
+SHA-256 `3ce32b9bb29a4f6fd104d8a9fe93d3e65b88c95d4e2ae11c109fef8b84352fe3`.
+
+The current P1 model contract was rebuilt as `moutai-p1-model-contract-v4` and the
+current valuation-admission receipt now reports `daily_simulation_policy_implemented=true`.
+A real 2026-09-21 close-only paper run loaded the policy and produced
+`watch / no_order` at 1,252.57 CNY/share: no proposal, no opening fill and no approval
+state change. The focused execution-policy, P1-contract, admission and closure regression
+suite passed (22 tests).
+
+This registration proves neither next-session liquidity depth nor a real fill. Historical
+strategy effectiveness, simulation eligibility and live-trading readiness remain
+unchanged at `false`.
+
+## 2026-09-21: Shenhua subsidiary-allocation boundary audited and republished to Excel
+
+The Shenhua 2025 annual report was re-read at pages 152, 338, 340, 428, 429, 439 and 440 to
+pin the legal/subsidiary ownership boundary. The new package is
+`runtime/company-research/shenhua-2025-subsidiary-allocation-evidence-20260921/evidence.json`,
+with source-bound SHA-256 evidence and a latest pointer.
+
+The retained parent legal-entity income statement contains RMB44,607 million of investment
+income within RMB64,233 million of operating profit, so it is not group parent-attributable
+pre-tax operating profit. The seven material non-wholly-owned subsidiaries explain only
+RMB8,832 million of consolidated RMB9,934 million minority profit and RMB45,723 million of
+consolidated RMB72,344 million minority equity. The annual report still does not provide a
+subsidiary-by-subsidiary pre-tax/tax allocation; both relevant model inputs remain null.
+
+The Stage A Shenhua research card now exposes this boundary evidence, next event and blocker.
+The focused evidence and research-case tests passed (`9 passed`), and the broader B3 focused
+regression passed (`16 passed`). The candidate workbook passed real WPS COM read-only
+navigation and was atomically published with backup protection. Published canonical workbook
+SHA-256 is `17036D1F8EBC094DF9287AB25B4BF256F70B6AA9F1DF23DEDD16D3E7A98AFA9B`.
+
+No valuation input, bear/base/bull value, price bridge, position or order was created.
+
+## 2026-09-22: IFRS 12 review confirms no subsidiary-level pre-tax/tax allocation
+
+The HKEX English/IFRS 2025 annual report was downloaded completely and hash-pinned at
+`runtime/company-research/shenhua-2025-ifrs-annual-review-20260922/2026033003712.pdf`
+(SHA-256 `491E701A90B1ECE239B95CE3F3DE27053F420583F2458D81CBE5B21B4607FDC9`).
+The new review package is
+`runtime/company-research/shenhua-2025-ifrs-subsidiary-tax-review-20260922/evidence.json`.
+
+IFRS Note 44 summarizes each material non-wholly-owned subsidiary with revenue, expenses and
+profit and total comprehensive income before intragroup eliminations, but has no subsidiary
+Profit before income tax or Income tax expense line. Named NCI profit totals RMB9,094 million
+against consolidated minority profit RMB10,285 million; named accumulated NCI totals RMB46,274
+million against consolidated minority equity RMB72,891 million. Note 10 discloses a RMB(4,228)
+million effect from different tax rates of branches and subsidiaries, and the Directors' Report
+supplies operating-profit notes for only three major subsidiaries. The review therefore leaves
+`normalized_parent_operating_profit.model_input=null`, with no valuation or trade status change.
+
+The focused source-bound regression passed: `6 passed`; after adding the review to the
+Shenhua research card, the combined research-case and IFRS-review suite passed (`10 passed`)
+and the card was atomically republished to Excel.
+
+## 2026-09-22: Shenhua 2014-2025 operating-cycle series collected and independently audited
+
+The twelve-year coal price/volume, unit-production-cost and power price/volume package was
+built as `runtime/company-research/shenhua-2014-2025-operational-cycle-series-20260922/evidence.json`
+(SHA-256 `923cd297a72d39d20968a577475fb19640b2b8f87fe3ca9aefd353cbaa6ce6ad`).
+Every row is source, URL, page and SHA-256 addressed, with original and restated versions kept
+separate. The follow-up audit is
+`runtime/company-research/shenhua-2014-2025-operational-cycle-audit-20260922/evidence.json`
+(SHA-256 `7d21b86914e87be98a95dace75356746ee501309f81be273bf6d1453648da015`).
+
+The audit classifies all seven operating fields as point-in-time period facts only. It records
+that blended group coal price cannot be paired with self-produced unit production cost,
+2019/2020 group power prices are not comparable after the January 2019 power reorganization,
+and the 2014/2015/2017/2019 self-produced volumes were disclosed in later-year comparative
+tables. No value was registered in `CyclicalFacts.operating_inputs`.
+
+The Shenhua research card was updated with the audit pointer, corrected share-denominator
+blocker and period-evidence-only blocker. Focused operating-cycle, audit and research-case
+regression passed (`13 passed`), and the card was atomically republished to Excel after real
+WPS COM navigation. Published workbook SHA-256 is
+`80BD75D8009C97F58CBB6EE7BFA094F74FB97C8BF1EA30D7BA81ED5617EFBD98`.
+
+## 2026-09-22: Shenhua external-price and 2025 cost/transport bridge built
+
+The annual-report market sections for 2014-2025 were compiled into
+`runtime/company-research/shenhua-2014-2025-price-cost-transport-bridge-20260922/evidence.json`
+(SHA-256 `c99cec17a0b671bb6221dbe3e4a81a5f3bfff090e2e1f582872bb2cbc2e3059e`).
+Each benchmark observation is source, URL, page and SHA-256 addressed and is point-in-time as of
+the filing date. The 2025 internal bridge covers self-produced/contract/internal coal prices,
+power fuel cost, and rail, port and shipping unit costs.
+
+The package records a benchmark-definition break from Bohai Rim to NCEI in 2023, no 2018 point
+value, a 550-650 CNY/t range for 2019, and the fact that external market prices are not Shenhua
+realized prices. It also records the unreconciled internal-coal bridge: the coal table shows
+73.2 Mt sold to power at 447 CNY/t, while the power segment reports 47,702 million CNY
+fuel/energy cost and 77.7 Mt of internal coal consumption. No value was registered in
+`CyclicalFacts.operating_inputs`.
+
+The Shenhua research card was updated with the bridge pointer and a new blocker. The focused
+bridge and expanded Shenhua regression passed (`63 passed`), and the card was atomically
+republished to Excel after real WPS COM navigation. Published workbook SHA-256 is
+`0A0FCCBFBAC18E9197D5B47CDCDC1263015B7650923F44C2AE9827AE73630820`.
+
+A repository-wide pytest run is still not green in this local environment:
+`1543 passed, 1 skipped, 153 errors, 7 failed`. Most errors are `PermissionError` while
+creating `C:\Users\we\AppData\Local\Temp\pytest-of-Ming`; the remaining failures are in
+existing workbook-report and candidate-review tests. The focused Shenhua bridge, cycle,
+research-case and shared-valuation suites remain green (`63 passed`).
+
+No normalized profit, fair value, bear/base/bull value, price bridge, position or order was created.
+
+## 2026-09-22: Shared FCFF arithmetic path completed without manufacturing Midea inputs
+
+`src/value_investment_agent/valuation_models/fcff.py` now accepts explicit
+`FCFFScenarioInputs` for bear/base/bull and delegates to the existing shared
+`scenario_valuation.value_scenario` engine. Each scenario must carry forecast,
+terminal, enterprise-to-equity bridge, operating/asset exposure partition,
+ordinary-share count and named evidence references. Dated scenarios must match
+`FinancialFacts.as_of`.
+
+The unverified path is unchanged: no scenario set still produces the same
+`not_ready` `ValuationResult` with null values and full blockers. With complete
+synthetic, verified inputs the model returns ordered research-only per-share
+values and status `conditional_research_only`; it never emits a market price,
+margin of safety, position, order or trade approval.
+
+Regression coverage in `tests/test_unified_fcff_valuation.py` expanded from 2 to
+11 tests, covering closed-form arithmetic, scenario ordering, equity-bridge
+application, missing scenarios, dated-as-of mismatch, invalid
+terminal/bridge/share inputs and the existing production payload remaining
+fail-closed. Focused FCFF/P0 suite passed
+(`51 passed`). The full repository result is unchanged from the known baseline:
+`1740 passed, 24 failed, 1 skipped`; the 24 failures are pre-existing outside
+this change.
+
+The existing Midea production facts still yield `not_ready` with 12 blockers and
+no scenario values. This is an engineering capability upgrade, not a valuation
+of 000333, and no production or Excel state was changed.
+
+## 2026-09-22: Profile-based valuation routing added without symbol fallback
+
+Added `src/value_investment_agent/valuation_router.py` to make model selection
+follow `ResearchProfile` rather than a stock code. `mature_manufacturing` routes
+to the shared FCFF contract, `cyclical_cash_return` routes to the shared cyclical
+contract, and `quality_compounder` remains `UNSUPPORTED` until a generic
+residual-income engine is extracted from the Moutai adapter. Cross-check and
+unknown models fail closed as `MODEL_NOT_APPLICABLE` or `UNSUPPORTED`.
+
+`scripts/build_company_valuation_result.py` now accepts an explicit
+`--profile-id` and records the routed policy. The third-case Shenhua builder now
+must pass the `cyclical_cash_return` route before it can construct
+`CyclicalFacts`. CI core gates now include `tests/test_valuation_router.py`.
+
+Focused profile/router, FCFF, cyclical, price-bridge and research-gate regression
+passed (`39 passed`), and the CI-equivalent core gate set passed (`35 passed`).
+The full suite remains `1750 passed, 24 failed, 1 skipped`; the 24 failures are
+pre-existing outside this routing change. No runtime valuation payload, Excel
+workbook, production fact, approval flag, simulation or trade state was changed.
+
+## 2026-09-22: Deterministic valuation-confidence gate added
+
+Added `src/value_investment_agent/valuation_confidence.py` with explicit
+`ConfidenceEvidence` inputs: data completeness, business stability, parameter
+sensitivity, cyclicality, forecast horizon, terminal-value share and cross-check
+disagreement. Missing terminal/cross-check measurements, high terminal
+dependence, unknown stability/sensitivity/cyclicality and short horizons fail
+closed to `低`; the medium/high policy thresholds are explicit module constants.
+
+`FinancialFacts` and `CyclicalFacts` now accept optional `confidence_evidence`.
+When supplied with complete scenario arithmetic, FCFF and cyclical results use
+the rule-based confidence instead of the hand-set field, while their status
+remains `conditional_research_only` and no research attractiveness or trade
+state is promoted.
+
+Focused confidence, FCFF and cyclical tests passed (`24 passed`). The CI core
+gate set now includes the confidence contract and passed (`44 passed`). The full
+suite remains `1760 passed, 24 failed, 1 skipped`; the 24 failures are
+pre-existing outside this change. No runtime production payload, Excel workbook
+or approval flag was changed.
+
+## 2026-09-22: Moutai R1 gains a dated sovereign-bond coupon observation, not a capital-cost input
+
+Added `scripts/build_moutai_historical_1429_sovereign_observation.py` to archive the
+2014 book-entry fixed-coupon issue known as `2014年记账式附息（二十九期）国债`,
+`国债1429`, `101429` and `019429`. The Ministry of Finance primary notice dated
+2014-12-17 and the SZSE listing notice dated 2014-12-22 predate the existing archived
+2015-01-06 CNY 200.00 execution fill. A later 2015-01-28 MOF reissue notice and the SSE
+2015 market-data record are retained only as independent later corroboration.
+
+The generated package is
+`runtime/company-research/moutai-historical-1429-sovereign-observation-20260922/evidence.json`
+(SHA-256 `fc06756d257084c397746a87ea34c2e8d9995858fb4d6396508d52a9ab80f454`).
+It records the 10-year tenor, 3.77% coupon, 282.4 billion CNY issue amount,
+2014-12-18 interest start, 2014-12-24 listing and 2024-12-18 maturity, but registers
+no capital-cost input.
+
+The package remains fail-closed with `r1_status=not_passed`,
+`registered_capital_cost_inputs=[]`, `formal_fair_value=null`,
+`valuation_approved=false`, `simulation_eligible=false`, `replay_eligible=false`,
+`trade_approved=false` and `live_eligible=false`. The dated coupon is explicitly not a
+risk-free rate, cost of equity, beta, ERP or WACC. The focused package test passed
+(`7 passed`), and the representative Moutai historical/current plus Shenhua BSPI
+regression passed (`18 passed`).
+
+`docs/moutai-capital-cost-evidence.md` was updated truthfully. The canonical Excel
+workbook was not changed because no display state or approval status changed.
+
+## 2026-09-22: Moutai R1 gains dated public yield observations, still no capital-cost input
+
+Added `scripts/build_moutai_historical_2015_01_yield_observations.py` to pin four public
+observations around the first archived 2015-01-06 fill: a Bank of China 2014-12-17 report
+of a 10-year government-bond transaction at 3.75%, ChinaBond's current official historical
+query of 3.6251% for 2015-01-05, the China Securities Journal page dated 2015-01-06
+reporting the prior-day 10-year yield near 3.63%, and a PBoC-hosted 2016-03-04 monthly PDF
+recording 3.4966% for the last trading day of January 2015.
+
+The generated package is
+`runtime/company-research/moutai-historical-2015-01-yield-observations-20260922/evidence.json`
+(SHA-256 `0cbbc220f5050e328e085f548e444a0c9c01ee993b73590fc8a7a3b375b58de1`).
+The newspaper page establishes contemporaneous public reporting of the prior-day curve,
+but the exact publication timestamp is not tied to the archived fill time. The package
+registers no capital-cost input and remains fail-closed with `r1_status=not_passed`,
+`registered_capital_cost_inputs=[]`, `formal_fair_value=null`,
+`valuation_approved=false`, `simulation_eligible=false`, `trade_approved=false` and
+`live_eligible=false`. Focused package tests passed (`6 passed`). No Excel, server,
+production or trade state was changed.
+
+## 2026-09-22: Shenhua 2014-2025 attributable-profit and cash-tax candidate series built
+
+The annual consolidated operating-profit, pre-tax-profit, income-tax, parent/minority-profit and
+cash-flow tax-payment figures were collected into
+`runtime/company-research/shenhua-2014-2025-attributable-profit-series-20260922/evidence.json`
+(SHA-256 `0eb6e930831f19d0e7ab8520dbfd4f67dd2e4afc7183e36233fd4a4ee0191e64`).
+Each row is source, URL, page and SHA-256 addressed, with original and restated figures kept
+separate. The package also carries a uniform-ownership parent-attributable operating-profit
+pro forma, a wider no-tax-allocation bound, accounting tax rate and cash-tax-payment ratios.
+
+The package records that the cash-flow line "taxes paid" includes resource tax and other taxes,
+so it is a conservative tax-burden upper bound rather than an income-tax rate. It also keeps the
+parent operating-profit pro forma and no-tax-allocation bound out of `CyclicalFacts.operating_inputs`;
+the shared cyclical model remains fail-closed.
+
+The Shenhua research card was updated with the candidate-series pointer and the revised blocker,
+and the focused attributable-series and research-case regression passed. The card was atomically
+republished to Excel after real WPS COM navigation. Published workbook SHA-256 is
+`7564B978542458AA06D24A259F04EBEEC4194E1720788B90DFF722B9FCDB3304`.
+
+No normalized profit, fair value, bear/base/bull value, price bridge, position or order was created.
+
+## 2026-09-22: Shenhua NCEI/BSPI/CCTD primary index-operator provenance built
+
+The NCEI launch announcement, current NCEI mobile page, historical-data public shell, NDRC
+BSPI trial notice, and CCTD Qinhuangdao methodology were downloaded and SHA-256 addressed in
+`runtime/company-research/shenhua-external-index-provenance-20260922/`. The generated package is
+`runtime/company-research/shenhua-external-index-provenance-20260922/evidence.json`
+(SHA-256 `3cf0e8e5df004a6166738194564afd0f421b94c897f14e4261815297bcc4b427`).
+
+The package pins NCEI's operator, 2021-12-31 launch date and independence declaration; the dated
+current-page observations 758 (2026-09-18) and 704 CNY/t (2026-08-31); the paid-membership gate
+over NCEI/BSPI/CCTD/CECI historical tables; the 2010 NDRC BSPI weekly publication rules; and the
+CCTD 5500/5000/4500 kcal/kg grades, FOB tax-inclusive basis, composite/spot/annual long-term
+prices, weekly/daily/monthly publication schedule and disclosed subjective-judgment allowance.
+
+No current index value is a model input. The package remains
+`primary_provenance_archived_historical_operator_archives_membership_restricted`, with
+`registered_cyclical_facts_operating_inputs=[]`, `financial_scope_approved=false`,
+`valuation_status=VALUATION_NOT_READY`, `formal_fair_value=null`,
+`valuation_approved=false`, `simulation_eligible=false`, `trade_approved=false` and
+`live_eligible=false`.
+
+The Shenhua research card was updated with the provenance pointer, a next event requiring the
+operator historical archive and a membership-restriction blocker. Focused provenance, bridge and
+research-case regression passed (`21 passed`), and the broader Shenhua plus research-case suite
+passed (`72 passed`). The card was atomically republished to Excel after real WPS COM navigation.
+Published workbook SHA-256 is
+`A72B1B73E78DDAB429E22D58973B1ACE220F9D5AA9C984A7EE04BCD90DD7FDD7`.
+
+No normalized profit, fair value, bear/base/bull value, price bridge, position or order was created.
+
+## 2026-09-22: CurrentResearchStatus aggregation layer added and wired into Excel cards
+
+Added `src/value_investment_agent/current_research_status.py` to join the retained
+`ResearchGate`, `ValuationResult` and `PriceBridgeResult` into one read-only presentation
+object. It reports the research conclusion, valuation status, price-bridge status,
+engineering status and current data status separately.
+
+Low confidence, incomplete scenario values, `conditional_research_only` valuations, and
+stale or invalid price bridges fail closed and cannot become `估值具备研究吸引力`.
+`PENDING_EXTERNAL_DATA` retains the completed research and valuation result while placing
+the quote wait under `CurrentDataStatus`; the object has no trade, order, position or
+target-weight fields. A JSON-payload adapter restores serialized domain results before
+aggregation.
+
+`workbook_simple_overview.py` now builds this status for the retained Moutai valuation and
+displays one derived `统一当前状态` row in the company card without replacing the existing
+gate, valuation or evidence rows. Focused status and card tests passed (`16 passed`), the
+CI-equivalent core gates passed (`55 passed`), and a full suite run with a writable
+project-local base temp produced `1772 passed, 24 failed, 1 skipped`. The 24 failures remain
+pre-existing and are outside this change. The candidate workbook passed actual WPS COM
+navigation and calculation in read-only mode, then was atomically published after source-cell
+hash preservation. Published workbook SHA-256 is
+`94E426CCB9A05EAF859E0D2220312F7D051F833391BF0CB7B655CF0E04B895AA`; no approval state or
+trade state was changed.
+
+## 2026-09-22: Midea and Shenhua joined the same fail-closed status bridge
+
+Added `pending_price_bridge_for_incomplete_valuation` in `price_bridge.py`. It emits a
+`PENDING_EXTERNAL_DATA` bridge for a valuation that has no formal scenario values, without
+inventing a `ModelValidity`, quote, margin of safety or per-share value.
+
+`build_company_valuation_result.py` now persists that bridge in Midea's unified FCFF payload.
+`build_shenhua_cyclical_valuation_result.py` now wraps the retained `not_ready` cyclical result
+in the same `unified-company-valuation-result-v1` contract, persists the bridge, and publishes
+the hash-locked pointer `runtime/valuation-results/601088-cyclical-stage-b-latest.json`.
+`workbook_simple_overview.py` now aggregates `CurrentResearchStatus` for both firms.
+
+The three company cards therefore share one `统一当前状态` row. Midea remains
+`not_ready / PENDING_EXTERNAL_DATA / 数据不足`; Shenhua remains
+`not_ready / PENDING_EXTERNAL_DATA / 研究未完成`; Moutai remains the retained conditional
+research state. No bear/base/bull value, current price, margin, position or order was created.
+
+Focused status, bridge, FCFF and cyclical tests passed (`36 passed`); the expanded local
+core set passed (`64 passed`). The GitHub core-gates workflow remains limited to
+source-independent contracts because `runtime/` is intentionally ignored and not available in
+a fresh checkout. A full local run produced
+`1775 passed, 24 failed, 1 skipped`; the 24 failures are the same pre-existing candidate
+review, Excel report, institution-disclosure and Moutai sensitivity groups and no new failure
+was introduced. The canonical WPS workbook passed real read-only WPS COM navigation and source
+cell preservation, then was atomically published with SHA-256
+`2FACAB415DF899EF40678CE54719BFF2107D98710B3F6B2AE615D44C7897159D`.
+
+## 2026-09-22: Generic quality-compounder residual-income contract registered
+
+Added `src/value_investment_agent/valuation_models/residual_income.py` as the shared engine
+behind `residual_income_or_equity_value`. It defines `QualityCompounderFacts`,
+`ResidualIncomeScenarioInputs`, `scenario_value`, `current_projection`, `current_value`, and
+`ResidualIncomeEquityValuationModel`. Complete verified facts can produce at most
+`conditional_research_only`; missing or unverified inputs fail closed as `not_ready` with no
+scenario values, and the result has no market price, margin of safety, position or order.
+
+The legacy Moutai script now imports the three arithmetic functions from this module instead of
+keeping a private copy, preserving its output and existing point-in-time regression coverage.
+`valuation_router.py` now registers
+`residual_income_or_equity_value -> ResidualIncomeEquityValuationModel / QualityCompounderFacts`,
+so the `quality_compounder` profile returns `SUPPORTED`. Router, model, and legacy Moutai
+arithmetic regression passed (`36 passed`); the GitHub-equivalent core gates passed
+(`64 passed`). With a writable project-local pytest base temp, the full local suite produced
+`1782 passed, 24 failed, 1 skipped`; the 24 failures are the same pre-existing groups recorded
+before this change. No production valuation, price bridge, Excel state or admission decision
+was changed.
+
+## 2026-09-22: Moutai production export now records the profile-based route
+
+`build_moutai_valuation_result.py` now resolves
+`quality_compounder -> residual_income_or_equity_value` through `ValuationRouter` before
+reading the retained Moutai model, admission or quote evidence, rejects an incorrect route,
+and writes `valuation_route` into the production payload.
+
+The retained production payload was regenerated from the same hash-pinned inputs. Its
+scenario values remain bear/base/bull `403.4392 / 478.4337 / 571.2466`, status
+`conditional_research_only`, confidence `低`, and every valuation, simulation, trade and
+live flag remains false. On 2026-09-22 the route re-export briefly lost the retained
+same-date price bridge and showed `PENDING_EXTERNAL_DATA`; the producer now resolves the
+matching assumption diagnostic by default and restores the dated `READY` bridge at
+`1,252.57 CNY` for `2026-09-21`, with margins `-210.5% / -161.8%`. The current pointer
+SHA-256 is
+`5fd86bd643d958a93462905f32eae57fad3e8a7ee6c8986dce7ba2ef73ee9495`. The export now also
+uses the shared deterministic confidence policy, which returns `低` for
+`parameter_sensitivity_high` and `cyclicality_unknown`. Focused Moutai, confidence,
+current-status and workbook-navigation tests passed (`43 passed`) with a project-local
+pytest base temp.
+The canonical Excel workbook was rebuilt, passed real read-only WPS COM navigation, and was
+atomically published with a pre-publish backup. Published workbook SHA-256 is
+`030e702789c37d66580f99ca5769b28289cd820457ad77c0c9196e019c499ef5`. No valuation,
+admission, position, order or trade-approval state changed.
+
+## 2026-09-22: Shenhua BSPI provenance layers corrected and 2020 gap retained fail-closed
+
+The BSPI point-in-time package now distinguishes Qinhuangdao Coal Network operator pages
+from CCTD-hosted pages. The 2014/2015/2016 CCTD pages were reclassified as republications;
+Qinhuangdao Coal Network article IDs `80997`, `110846` and `114105` were archived as API
+responses and addressable page shells for BSPI 577 on 2017-12-27, 737 on 2021-12-29 and 734
+on 2022-12-28. Their `newsSource` is 秦皇岛煤炭网 and their later CMS `updateTime` values are
+retained as evidence that current bytes do not prove revision-free first publication.
+
+The exact 2020-12-23 to 2020-12-29 BSPI 585 article is absent from the current operator
+search index and complete column-234 listing, between addressable 2020-12-23 582 and
+2021-01-06 593 articles. The search-gap snapshot is hash-bound and the 585 value remains
+attested only by the China5e republication; it is not promoted or interpolated. The 2014
+525 non-final publication and 2017 577 versus annual-report 578 mismatch remain separate
+blockers. `registered_cyclical_facts_operating_inputs=[]`, `financial_scope_approved=false`,
+`valuation_status=VALUATION_NOT_READY`, and every simulation/trade/live flag remains false.
+
+The corrected package is
+`runtime/company-research/shenhua-bspi-point-in-time-publications-20260922/evidence.json`
+with SHA-256
+`ea46744f66132c63a7adb4083053df6ef804292f91fc3b6ccc04abb8d6e1fcaf`. Focused provenance,
+research-case, workbook-navigation and Shenhua tests passed (`49 passed` with a project-local
+pytest basetemp). The canonical WPS workbook was rebuilt with source-cell preservation, passed
+real read-only WPS COM navigation, and was atomically published. Published workbook SHA-256 is
+`60845FDA99B73AA9C7A94622C8BDADE83E038B4EA020FC32E35D12AA3C4F8B5A`; no valuation,
+position, order or trade approval was changed.
+
+## 2026-09-22: Second independent 2020 BSPI 585 republication archived
+
+The E-Hang page
+`http://www.e-hang.net/wap/detail/post-43328.html` was fetched as raw HTTP bytes and added to the
+same BSPI point-in-time package as `ehang-attributed-bspi-2020-year-end-585.html`, SHA-256
+`25b916b7ca45b550f087f18f267f5340815204eb311852d6a943789b265359a1`. The page contains the full
+2020-12-23 to 2020-12-29 text, 585 yuan/tonne, OCFI 1257.40, author 齐红, and an explicit
+`来源：秦皇岛煤炭网` attribution. Its canonical alias on `www.ehangwang.cn` is retained as metadata.
+
+China5e and E-Hang are now two independently addressable secondary republications for the missing
+2020 final-period operator article. This strengthens text corroboration but does not create an
+operator original: `operator_primary_article_missing_years` remains `[2020]`, `source_role` remains
+`secondary_attributed_republication`, all publication values remain `model_input=null`,
+`registered_cyclical_facts_operating_inputs=[]`, and every simulation/trade/live flag remains false.
+The package evidence SHA-256 is
+`9d71ba5c3b4ccad4abcb442ba0735f21c994932e94eb2e8ef97ada790365e4fd` and the script hash is
+`e64fd153615a55aded0f685acfc799e34b0594030f65261858435a1aa11f476f`.
+
+The Shenhua research card text now reports two independent attributed republications while still
+requiring the operator original. The candidate workbook passed real read-only WPS COM navigation
+and was atomically published to the canonical WPS workbook; the published workbook SHA-256 is
+`26883e034d23a4a0de7752674ac6b2be5edf61a319484645953cb6931b60465e`. Focused provenance,
+research-case and workbook-navigation tests passed (`26 passed`), and the broader Shenhua,
+current-status, price-bridge and workbook suite passed (`135 passed`). No valuation, position,
+order or trade approval changed.
+
+## 2026-09-22: Shenhua route-specific delivered-cost gap is now a hash-bound audit
+
+`build_shenhua_route_delivered_cost_audit.py` scanned all retained 2014--2025 Chinese annual
+reports plus the 2025 English/IFRS report: 13 sources and 3,609 pages. It searched route names,
+route-specific tonne-kilometres/freight/port/shipping unit-cost phrases and allocation-matrix
+terms, and found zero route-specific metric disclosures or route-allocation matrices.
+
+The package retains the 2025 aggregate facts, including 313.0 billion tonne-km, 217.0/44.6 Mt
+port loading, 114.9 billion tonne-nautical miles and 171.6 CNY/t production-scope unit cost, but
+marks simple segment-cost divisions and production-plus-transport sums as forbidden. It does not
+register `unit_cost` or any other `CyclicalFacts.operating_inputs`; `VALUATION_NOT_READY` and all
+simulation/trade/live false flags remain unchanged. Evidence SHA-256 is
+`f7d681992eb6a64d3bbc29bace836db2c4d168683a1dd2eddb3ee3908aa2d91b`.
+
+The Shenhua research card was updated with this negative finding and blocker, the candidate
+workbook passed real read-only WPS COM navigation, and the canonical WPS workbook was atomically
+published. Published workbook SHA-256 is
+`f08cf8bb5500f136ba81b89053110371315a6a00d8de956fe1c298128e7c4c63`. Focused route-audit,
+Excel research-case, current-status and workbook-navigation tests passed (`35 passed`). No
+valuation, position, order or trade approval changed.
+
+## 2026-09-22: Midea FY2025 accounting share basis is pinned separately from a valuation denominator
+
+`build_midea_2025_share_basis.py` verifies six pages of the retained Midea 2025 annual report and
+publishes an independent share-scope evidence package. It records the 2025-12-31 issued A/H total
+`7,597,145,346` shares, the FY2025 weighted/diluted ordinary-share denominators `7,559,265 /
+7,608,132` thousand, reported basic/diluted EPS `5.80 / 5.76`, and the year-end treasury-stock
+carrying value `8,151,117` thousand. It also records that the annual report does not disclose a
+year-end treasury share count or day-by-day corporate-action weights.
+
+The package explicitly keeps `share_basis_approved=false`, registers no `ordinary_shares` model
+input, and marks every valuation/trade approval false. The Midea MVP research card now shows the
+disclosed accounting scope while retaining the blocker that the FY2025 weighted denominator is not
+a current valuation denominator. Evidence SHA-256 is
+`f31dfaddf00a42d227107932a3eecdc8b1de9b44860f383c9157b321046c2113`.
+
+Focused Midea share-basis, Excel research-case, current-status and workbook-navigation tests
+passed (`32 passed`) with a project-local pytest base temp. No valuation, position, order or trade
+approval changed.
+
+## 2026-09-22: Midea FCFF facts v2 and valuation applicability split
+
+`build_midea_valuation_applicability.py` publishes
+`runtime/company-research/midea-valuation-applicability-20260922/evidence.json`, SHA-256
+`4c252c4d58765199bd005ce089bb64e54f4d20081561f9b066a05124fc42e9c6`. It keeps the economic
+route separate from fact applicability: `mature_manufacturing -> fcff` is `SUPPORTED`, while the
+industrial FCFF carve-out is `MODEL_NOT_APPLICABLE`, the consolidated enterprise-value bridge is
+`VALUATION_NOT_READY`, and no arithmetic model or valuation input is registered.
+
+Midea FCFF facts moved to v2 at
+`runtime/company-research/midea-fcff-facts-20260922/evidence.json`, SHA-256
+`106dea6c9555f48badf9fa8d2a1c7b2464794d7e78ba8250788b100091fc3a42`. The package now records the
+FY2025 weighted/diluted denominators and year-end treasury carrying value, and replaces the stale
+weighted-share blocker with the explicit accounting-denominator blocker.
+
+`build_company_valuation_result.py` accepts `--applicability-path` and embeds both the selected
+route and the applicability policy in the Midea unified result
+`runtime/valuation-results/000333-fcff-stage-b/evidence.json`, SHA-256
+`9b0d873b18b265906040ae3cf9d132036013922a98506e451a012e1ce423bc20`. The result remains
+`not_ready`, the bridge remains `PENDING_EXTERNAL_DATA`, and no formal fair value, margin,
+position or order is created.
+
+Focused applicability, FCFF facts, Excel research-case, unified FCFF, router, current-status and
+workbook-navigation tests passed (`53 passed`) with a project-local pytest base temp. A full local
+run produced `1797 passed, 24 failed, 1 skipped`; the same 24 pre-existing candidate-review,
+Excel-report, institution-disclosure and Moutai sensitivity failures remain outside this change.
+
+The canonical WPS workbook was rebuilt with source-cell preservation, passed real read-only WPS
+COM navigation, and was atomically published with a pre-publish backup. Published workbook
+SHA-256 is
+`A64D61A264A923CC476A3FBBDD27D3910C347ECAD7A1C33120667A525CC8A8C4`; no valuation, position,
+order or trade-approval state changed.
+
+## 2026-09-22: Midea consolidated equity scope and unregistered alternative route
+
+`build_midea_consolidated_equity_scope.py` verifies pages 133, 135--137, 143, 185 and 246 of the
+retained Midea 2025 annual report and publishes
+`runtime/company-research/midea-consolidated-equity-scope-20260922/evidence.json`, SHA-256
+`190f7cb5fbe07a47b81a59ae7f04d02ba9f514bb3a8327272cc62a682150c360`. It records the disclosed
+consolidated attributable ordinary equity `223,221,305` thousand, minority equity `13,202,918`
+thousand, attributable ordinary net profit `43,945,411` thousand, parent-company totals, visible
+financial-business items and 95%/5% finance-company ownership. It does not register a model: the
+`residual_income_or_equity_value` route remains `CANDIDATE_NOT_REGISTERED` because forecast ROE,
+dated cost of equity, payout policy and the current ordinary-share denominator are not evidenced.
+
+The applicability package now references that equity-scope evidence and carries the unregistered
+alternative-route policy. Its regenerated evidence hash is
+`55177e06b0feb591614cdb91cdf8be66098b6aafee90e42b27ea3890061064aa`. The Midea ResearchCase
+shows the consolidated equity/profit facts, the financial-business carve-out blocker and the
+alternative-route registration condition. The regenerated research-case evidence hash is
+`280ae9a90689234a4bb77889c5fc48b27b87ac5efef8180c8e6784962a5be1bc`.
+
+The unified Midea FCFF result was rebuilt from the updated research case and applicability policy;
+its hash is
+`fc9f452f2eee66ce04314d8565fa7c43a03c2391454a9873275ff73cbf598cb2`. It remains `not_ready`, the
+bridge remains `PENDING_EXTERNAL_DATA`, and no scenario value, margin, position or order is
+created. The canonical WPS workbook passed source-cell preservation and real read-only WPS COM
+navigation, then was atomically published with a pre-publish backup. Published workbook SHA-256 is
+`2AAB9BAEC7F8D8DDCCA89995D4083E5B2631E2341BD346F11A2970AAF5E8C689`; no valuation, position,
+order or trade-approval state changed.
+
+Focused consolidated-equity, applicability and Excel research-case tests passed (`13 passed`). The
+full local regression passed with `1822 passed, 1 skipped`; no formal valuation, price bridge,
+position, order or trade-approval state was changed.
+
+## 2026-09-22: Midea 2014-2024 equity-return candidate series
+
+`build_midea_2014_2024_equity_return_candidate_series.py` pins eleven years of original
+annual-report pages for attributable ordinary equity, attributable net profit, cash dividends and
+buyback-style cash returns. The package is
+`runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json`,
+SHA-256
+`6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1`. Every row retains source
+path, URL, PDF hash, physical pages, point-in-time availability, disclosed and derived ratios, and
+`model_input=null`. The 2019 original filing reports zero other cash return, while the 2020
+comparative table later reports the year-2019 buyback `3,200,000,000`; the package keeps both
+point-in-time observations instead of silently merging them.
+
+The series is `COMPILED_CANDIDATE`, not registered evidence for forward ROE, cost of equity,
+payout policy or the current ordinary-share denominator. The applicability policy now requires
+forward bear/base/bull ROE assumptions, dated cost of equity, a registered payout/retention policy,
+the current ordinary-share denominator and a clean-surplus equity rollforward; it no longer says
+historical evidence is missing. Its regenerated evidence hash is
+`245a227a3ae815b0b3d4e13fd1379d3693a88aa2fa22929608fe52a39d21cd11`.
+
+The Midea ResearchCase now carries the historical candidate as positive and counter-evidence,
+registers it in `evidence_refs`, and retains the fail-closed blocker that historical cash returns
+are not forward inputs. The regenerated research-case evidence hash is
+`3c9a3e0f89633e1fe0a45d5fd68cc19778621e6cb8290d4aef0967595c6de867`. The unified Midea FCFF
+result was rebuilt against that case and applicability policy; its hash is
+`cb57b106c1019e3182e74f9909fa69f1d2d15d7560bb739797485bd81741d355`, with `not_ready` result,
+`PENDING_EXTERNAL_DATA` bridge, and no scenario value, margin, position or order.
+
+Focused historical-series, applicability, Excel research-case, unified FCFF, current-status and
+workbook-navigation tests passed (`48 passed`). The full local regression passed with
+`1828 passed, 1 skipped`. No valuation, price-bridge, position, order or trade-approval state
+changed.
+
+The canonical WPS workbook passed source-cell preservation and real read-only WPS COM navigation,
+then was atomically published with a pre-publish backup. Published workbook SHA-256 is
+`7FD225384D0726C11AE98241B6786DC31C3A2D8657CF76DDD0B084878C54F8D7`; no valuation, position,
+order or trade-approval state changed.
+
+## 2026-09-22: Midea finance-company size observation remains non-model input
+
+`build_midea_finance_co_size_observation.py` pins three issuer-linked disclosures about Midea
+Group Finance Co., Ltd:
+
+- Kelu Electronics 2026-03-21 risk assessment: unaudited FY2025 totals;
+- Hiconics 2026-03-21 risk assessment: the same unaudited totals, as a citation cross-check;
+- Kelu Electronics 2026-08-27 related-transaction announcement: audited FY2025 totals.
+
+The audited values are assets `44,464,130,600`, liabilities `36,605,537,300`, net assets
+`7,858,593,400`, revenue `599,134,600` and net profit `410,528,300` CNY. Relative candidate
+ratios are `0.93%` of Midea consolidated attributable ordinary net profit and `3.52%` of
+attributable ordinary equity. The package is
+`runtime/company-research/midea-finance-co-2025-size-observation-20260922/evidence.json`,
+SHA-256
+`2b3069bc617167dce2ee60730da52cf3da29483e6515adc428a58bd905fb1714`.
+
+The observation is explicitly `OBSERVATION_NOT_MODEL_INPUT` and
+`VALUATION_NOT_READY`. It does not supply a standalone financial-business profit statement,
+balance sheet, tax, debt, cash or working-capital allocation, and finance-company book equity
+is not a transferable listed-equity value. Industrial FCFF carve-out remains
+`MODEL_NOT_APPLICABLE`; consolidated enterprise-value bridge remains `VALUATION_NOT_READY`.
+
+The Midea applicability package now references the observation and regenerated its evidence hash
+to
+`89e69d6472ff7ac23b467fa5f7a660a4c9d7cd95f4bcc565d91a762a9717fcc5`. The research case adds
+the audited size observation as a positive fact, retains the explicit non-carve-out as
+counter-evidence, and adds a next event for any future standalone financial-business statement.
+The regenerated research-case evidence hash is
+`bab3cabaeb760dc927f27142410d760cfd7f54cb3042b34ae7c74799391d00e8`. The unified Midea FCFF
+result remains `not_ready` with null bear/base/bull values and
+`PENDING_EXTERNAL_DATA` price-bridge status; its hash is
+`5ad0052e676ffacb4141d8c01b11799026550f0bc7a3d39d6a52916dd2523255`.
+
+Focused Midea and display tests passed (`32 passed`). The full local regression passed with
+`1844 passed, 1 skipped`. No formal valuation, price-bridge value, position, order or
+trade-approval state changed.
+
+The canonical WPS workbook passed source-cell preservation and real read-only WPS COM
+navigation, then was atomically published with a pre-publish backup. Published workbook
+SHA-256 is
+`07BDB40595F870107BDC0A9A2DFD5BC322D18F42B4AC257C7A3544AB7F850413`; the Midea card now shows
+the finance-company observation while all valuation, position and order state remains blocked.
+
+## 2026-09-22: Shenhua BSPI publisher provenance and CEI access limits closed fail-closed
+
+The BSPI point-in-time package now adds four hash-bound source records for the previously
+secondary-only years: China5e 2018 page (`569`, explicit Qinhuangdao Coal Network attribution),
+Hebei Great Wall Network operator-group 2018 report (`569`), CCTD-hosted Ruitian Futures 2019
+commentary (`551`), and a CEI 2020 listing page (`585` title). The CEI listing exposes only the
+exact title, `2020-12-31` date and addressable article path; its linked full article is
+login-gated, so it is not full-text corroboration or operator attribution.
+
+The package adds `PUBLISHER_PROVENANCE` and `ORIGINAL_AVAILABILITY` sections.
+`operator_primary_article_missing_years` is now `[2018, 2019, 2020]`,
+`secondary_corroboration_only_years` remains `[2018, 2019]`, and
+`not_collected_years` is now `[2023, 2024, 2025]` for NCEI originals. Every corroborating record
+keeps `model_input=null`; the CEI record also carries `title_date_article_path_only` and
+`LOGIN_GATED`. The package remains `financial_scope_approved=false`,
+`valuation_status=VALUATION_NOT_READY`, and all simulation/trade/live flags are false.
+
+The regenerated evidence SHA-256 is
+`2b5112abd8814c456874a0ff68704344b3c04b484ed534e809dca513d4bc1af2` and the updated manifest pins
+the script and all raw source bytes. The Shenhua research card was updated with the expanded
+missing-original scope without changing valuation state. Focused provenance/research/status/
+price-bridge tests passed (`48 passed`), and the full local regression passed
+`1830 passed, 1 skipped`. The canonical WPS workbook passed source-cell preservation and real
+read-only WPS COM navigation before atomic publication with a pre-publish backup. Published
+workbook SHA-256 is
+`2203B670EA21B9767E9D831B9289E9D16C80A8685F52FA2930B4569DA118359F`; no valuation, position,
+order or trade-approval state changed.

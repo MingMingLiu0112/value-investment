@@ -41,7 +41,7 @@ def test_company_research_preserves_personal_notes_and_has_live_link(tmp_path):
     assert row[3].value == '个人研究内容'
     assert [cell.value for cell in row[13:17]] == display
     assert row[16].hyperlink.target == display[3]
-    assert sheet.column_dimensions['N'].width == 56
+    assert sheet.column_dimensions['N'].width == 48
     assert sheet.row_dimensions[row[0].row].height == 100
 
 

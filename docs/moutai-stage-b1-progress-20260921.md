@@ -2,139 +2,155 @@
 
 Date: 2026-09-21
 
-## Implemented
+## Current Result
 
-- Added the reusable `ValuationResult` contract and bounded one-variable
-  reverse-valuation utility.
-- Exported the pinned 2026-09-20 parent-equity residual-income / distribution
-  model as `runtime/valuation-results/600519-current-equity-stage-b/evidence.json`.
-- Preserved the model's conditional per-share scenarios: bear 403.33, base
-  478.32, bull 571.13 CNY/share. These are not formal fair values.
-- Preserved the 2026-09-14 bounded reverse valuation: its 1,277.96 CNY/share
-  archived quote was above all registered -5% to +5% growth envelopes for 0,
-  5 and 10 year franchise fade. This states only that at least one assumption
-  would need to be stronger; it does not identify a unique market forecast.
-- Synced this constrained output to the Moutai Excel MVP card and published it
-  with a hash-guarded backup and successful WPS COM verification.
+The retained model is `归母权益剩余收益 / 分配能力`
+(`moutai-current-parent-equity-residual-income-v1`). Its dated conditional values are:
 
-## Current Limitation
+- Bear: 403.44 CNY/share
+- Base: 478.43 CNY/share
+- Bull: 571.25 CNY/share
 
-The 2026-09-21 two-source quote collection ran successfully but produced only
-an `intraday_quote` observation (1252.50 CNY) outside the expected 2026-09-18
-session. The quote gate rejected it. It is retained as evidence but is not used
-as current price, margin of safety or reverse-valuation target.
+The 2026-09-21 two-source quote was verified as a matched close at 1,252.57 CNY/share.
+The independent price bridge is `READY`:
 
-Therefore B1 has **not** passed as an approved valuation result: confidence is
-`低`, both margin fields remain null, and status is
-`conditional_research_only`. The project must not advance to Midea B2 merely
-because scenario arithmetic exists.
+- Margin to bear: -210.5%
+- Margin to base: -161.8%
 
-### Archived Replay Finding
+This result was written to the canonical WPS workbook with a backup, SHA-256 check and
+actual WPS read-only navigation verification. The published workbook SHA-256 is
+`76b3d55e0009a88a1366b281acaca9b3238ab8e3c53e2bb340440ca28cdca946`.
 
-The 2026-09-14 package does contain a verified same-session close of 1,277.96
-CNY and a model frozen later that evening. However, that model pins policy hash
-`ce8c7...`, while the current policy is `b3c20...`; the exact earlier policy is
-not retained in Git or the evidence archive. The archived model therefore
-cannot be re-executed or exported as a reproducible same-day valuation result.
-This is intentionally fail-closed: visible archived arithmetic is not promoted
-to a current price comparison, margin, formal fair value or trade action.
+After the later Shenhua candidate-card publication on the same date, the canonical
+workbook SHA-256 is
+`a1d755f7705135d3ada9c84a8021cb57b0c3b4459b08dc802f133aade4ddf26f`.
+
+On 2026-09-22 the dated same-date price bridge was restored after a route re-export had
+inadvertently left it pending. The export now also evaluates confidence with the shared
+deterministic policy rather than a hard-coded label. The canonical workbook was rebuilt,
+WPS-verified read-only, and atomically published again. Current canonical workbook SHA-256 is
+`030e702789c37d66580f99ca5769b28289cd820457ad77c0c9196e019c499ef5`.
+
+The result remains `conditional_research_only` with `confidence=低`,
+`formal_fair_value=null`, `valuation_approved=false`, `trade_approved=false` and
+`live_eligible=false`.
+
+## What The Negative Margins Mean
+
+The quote is far above both registered conditional scenarios. Under the frozen -5%/0%/+5%
+profit-growth and franchise-fade assumptions, the reverse valuation cannot solve for a
+growth rate inside the registered envelope at any 0, 5 or 10 year fade horizon.
+
+This is not proof that Moutai is overvalued and is not a sell instruction. The scenarios
+are explicitly conditional research arithmetic. The franchise-duration policy is now
+audited as bounded, but its future real-world duration and terminal profit remain
+unverified; forward full-year 2026 cash capacity is not disclosed, so confidence is low.
+The result cannot be promoted to research attractiveness, a fair value, an order, a paper
+fill or live readiness.
+
+## Distribution-Capacity Evidence Added
+
+A separate hash-bound primary-report package now verifies:
+
+- FY2025 total disclosed cash dividend plus repurchase is about 86.43% of consolidated profit.
+- The latest three-year disclosed cash dividend is about 75.35% of average profit.
+- FY2025 proposed annual plus implemented interim cash is about 79.00% of FY2025 consolidated profit.
+- FY2025 parent CFO plus subsidiary investment income, after parent capex, covered paid
+  distributions and interest by about `1.224x`.
+- H1 2026 parent CFO after capex covered distributions by only about `0.411x`; the small
+  subsidiary investment-income receipt shows why half-year coverage is not a full-year
+  conclusion.
+- Finance-company deposits and the disclosed restricted-cash subset remain excluded from
+  parent distributable cash.
+
+The package status is
+`distribution_history_verified_but_forward_cash_capacity_not_approved`. It improves the
+evidence boundary around historical payout and FY2025 cash coverage, but it does not by
+itself increase valuation confidence or approve a forward payout policy.
+
+## Franchise-Duration Evidence Added
+
+A separate hash-bound audit now verifies the bounded geometry behind the five-year fade:
+
+- Five forecast years and five fade years are explicit, internally consistent model policy.
+- Immediate fade and ten-year fade are explicit stress bounds: the zero-year case removes
+  the assumed excess-return window, while the ten-year case tests a materially longer
+  duration.
+- The terminal ROE equals the scenario cost of equity, so no permanent excess franchise
+  return is capitalized.
+- The audit re-extracts the FY2025 volume/price, capacity and aged-product pages, plus the
+  H1 2026 dynamic-price language, and retains Wuliangye H1 2026 revenue, operating-cash-flow
+  and selling-expense observations as counterevidence.
+- The archived quote lies above every registered 0/5/10-year fade and -5%/0%/+5% growth
+  combination, so the five-year policy was not selected to manufacture a positive margin.
+
+The status is
+`bounded_conditional_policy_audited_not_empirical_franchise_duration`. This closes the
+question of whether the policy geometry is defensible, but it does not measure how long
+Moutai's competitive advantage will actually persist and does not raise valuation
+confidence.
+
+## What Is Verified Versus Assumed
+
+Verified and hash-bound:
+
+- The issuer capital-event bridge and current share denominator.
+- Parent equity, parent profit and issued-share scope.
+- The dated cost-of-equity selection policy.
+- The 2026-09-21 two-source matched close and exchange-calendar session.
+- Reproduction of the residual-income and dividend arithmetic.
+- 2015-2025 disclosed cash distributions and the FY2025 parent cash-coverage chain.
+- The bounded five-year franchise-fade policy, its 0/10 stress bounds and its
+  no-permanent-excess-return terminal regime.
+
+Explicit assumptions, not independently verified forecasts:
+
+- Five-year profit growth of -5%, 0% and +5%.
+- 75% payout and 25% retention as a forward policy; 75% is bounded by the disclosed
+  historical record, but future commitment and settlement timing remain assumptions.
+- The actual future length of Moutai's competitive advantage; five years remains a
+  conditional policy, not an empirical measurement.
+- 2% terminal growth and the selected discount-rate range.
+
+## B1 Engineering Acceptance
+
+See [moutai-stage-b1-engineering-acceptance-20260921.md](moutai-stage-b1-engineering-acceptance-20260921.md).
+
+## P1 Boundary
+
+The current P1 model audit is admitted for bounded current paper research. However, the
+separate dated daily paper-execution policy is now implemented as
+`moutai-daily-simulation-paper-execution-policy-v1`. The retained
+2026-09-21 -> 2026-09-22 policy is hash-bound to the current execution contract and is
+reported by the current P1 contract and admission receipt as implemented. A real
+close-only dry run with that policy produced `watch / no_order` at 1,252.57 CNY/share:
+no proposal, no fill and no account delta beyond the session record. This is execution
+policy registration only; it proves neither next-session liquidity depth nor a real fill,
+and `specified_simulation_eligible` remains `false`.
+
+Authoritative policy artifacts:
+
+- `runtime/strategy-validation/moutai-current-execution-contract-20260921T153023Z/evidence.json`
+- `runtime/strategy-validation/moutai-daily-simulation-policy-20260921T153024Z/evidence.json`
+- Policy evidence SHA-256: `3ce32b9bb29a4f6fd104d8a9fe93d3e65b88c95d4e2ae11c109fef8b84352fe3`
 
 ## Required Next Evidence
 
-1. At a subsequent market close, collect and verify a two-source close.
-2. Rebuild or explicitly time-bridge the model using only facts and capital
-   actions available at that quote's session; do not relabel the 2026-09-20
-   model as earlier market-session information.
-3. Recompute margins and bounded reverse valuation using that matched pair.
-4. Reassess confidence after documented evidence on advantage duration,
-   distributable cash and discount-rate policy. A low-confidence result cannot
-   be promoted to research attractiveness.
+The bounded franchise-duration policy and the dated cost-of-equity selection policy have
+now been independently audited. The remaining real dependencies are full-year 2026 parent
+remittances and cash-flow disclosure, future empirical evidence on competitive-advantage
+duration, and the separate formal valuation approval gate. The research card should be
+republished to the WPS workbook with the new evidence references; the valuation result,
+bridge, confidence and no-trade flags remain unchanged.
 
-## Scheduled Evidence Control
+## Runtime Controls
 
-`ValueInvestmentAgent-DailyUpdate` was migrated to run
-`scripts/run_moutai_b1_after_close.ps1` at 17:05 on weekdays. It now collects
-one two-source quote package, rejects invalid/intraday sessions without
-rebuilding the model, and never writes the canonical WPS workbook. With an
-accepted close it can rebuild the P1 evidence chain after the close and stage a
-bounded reverse-valuation diagnostic plus a same-date `ValuationResult`; this
-still has no order or trade effect. The export refuses to attach a diagnostic
-whose model path, SHA-256 or valuation date differs from the current model.
+`ValueInvestmentAgent-DailyUpdate` runs
+`scripts/run_moutai_b1_after_close.ps1` after the close. It accepts a same-date matched
+close, rebuilds the P1 evidence chain, creates a bounded reverse-valuation diagnostic and
+exports a separate `ValuationResult` plus `PriceBridgeResult`.
 
-The post-close refresh distinguishes B1 evidence staging from P1 simulation
-admission. When capital, model and review artifacts are valid but a P1 gate
-remains unmet, it returns `model_staged_simulation_blocked` with the blocking
-gate IDs instead of failing the entire B1 chain. It still returns
-`trade_approved: false` and `live_eligible: false`; only a fully admitted P1
-chain returns `p1_simulation_admitted`.
-
-The parent daily task parses that receipt and accepts only those two declared
-states. Missing, malformed or unexpected child output fails the task rather
-than allowing a diagnostic or Excel publication to proceed from an ambiguous
-state.
-
-### Excel Publication Readiness
-
-The controlled MVP publication route was exercised without replacing the WPS
-canonical workbook. Candidate
-`runtime/workbook-backups/frontdoor-20260921T050830878883Z/ready.xlsx` passed
-non-derived-sheet preservation, 6,236 internal-link checks and actual WPS
-read-only navigation/formula verification. Its verification receipt is in the
-same directory. A later B1 result with a valid same-date price may use this
-candidate-first route; it must be re-verified against the then-current source
-hash before atomic publication, and is never published from an ambiguous or
-cross-date result.
-
-`scripts/run_excel_mvp_publication.ps1` is the single publication entry point.
-Its default mode builds and WPS-verifies a candidate only; `-Publish` is an
-explicit opt-in that checks the canonical source hash again, creates a backup
-and performs the atomic replacement. A default-mode end-to-end run on
-2026-09-21 produced `frontdoor-20260921T051617347110Z/` with a passing WPS
-receipt and did not replace the canonical workbook.
-
-`ValueInvestmentAgent-MoutaiB1ExcelPublish` is registered for 17:30 on trading
-weekdays, after the 17:05 B1 evidence task. Its date-bound gate accepts only a
-current `conditional_research_only` result with low confidence, a same-date
-reverse-valuation quote, non-null current price and both research margins.
-It then invokes the candidate-first publisher with explicit `-Publish`. A
-manual negative test against the current no-price artifact returned
-`not_published`; it did not touch the workbook. The task never publishes an
-order, a position, a formal fair value or trade approval.
-
-The MVP dashboard was republished on 2026-09-21 after a separate WPS read-only
-verification of `frontdoor-20260921T053427237287Z/ready.xlsx`. The published
-hash was `567c2d973c41a7a6f824936558f2b9deb7618ac6f0dbdefdc087c6a6a6f48ea3`;
-the pre-publication canonical backup is under that candidate directory. This
-presentation-only publication maps internal research and evidence status codes
-to Chinese display text. It did not alter non-derived sheets, formal-value
-status, margin inputs, simulation admission or trade approval.
-
-The published canonical workbook itself was then opened read-only in WPS and
-passed the same 12 navigation checks plus the retained `=SUM(G10:G100)`
-position-summary formula check. The post-publication WPS receipt is
-`frontdoor-20260921T053427237287Z/published-wps-verification.json`.
-
-The former task action used `run_server_excel_sync.ps1`, whose older workbook
-sync path could have overwritten the newly published MVP pages. That path is no
-longer scheduled. The duplicate 16:40 postclose policy task was disabled so a
-single after-close task owns the next-cycle evidence chain.
-
-Manual dry run on 2026-09-21 returned
-`quote_rejected_no_model_rebuild` with `intraday_quote`, exit code zero and
-`workbook_changed: false`. This proves the task's fail-closed branch, not a
-successful close or valuation result.
-
-### 2026-09-21 Pre-close Receipt
-
-The pre-close CNINFO capital-event refresh was first exercised manually at
-12:40 Shanghai time, then executed through the registered Windows scheduled
-task at 12:52 Shanghai time. The scheduled invocation returned `0` and
-produced
-`runtime/company-research/600519-preclose-capital-receipt-20260921T045237Z/`
-with `preclose_complete: true` and `trade_approved: false`. Its CNINFO index
-and capital-refresh records have SHA-256 references. The repair retains the
-Windows process environment for nested collection and pins the project Python
-executable, preventing the former system-resolver failure. This receipt is
-only a pre-close input; it does not replace the scheduled later refresh, valid
-close, same-date model, reverse valuation, Excel publication or any trade
-approval.
+`ValueInvestmentAgent-MoutaiB1ExcelPublish` runs afterward. It publishes only when the
+model is valid, the bridge is `READY`, the quote date equals the expected date and no trade
+or live flag is present. The candidate-first publication route preserves non-derived
+sheets, verifies WPS navigation read-only and atomically replaces the canonical workbook.

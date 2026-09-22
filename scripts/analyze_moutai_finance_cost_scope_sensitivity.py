@@ -29,7 +29,8 @@ INTEGRATED = ROOT / "runtime/company-research/600519-integrated-conditional-equi
 INTEGRATED_SHA256 = "67e908b43a33700442267796e71a75e91b93430cd749de9fe1392e3d01eff6bc"
 FINANCE_PDF = ROOT / "runtime/company-research/600519-finance-current-20260909T073502376364Z/600519-1225475863.pdf"
 FINANCE_PDF_SHA256 = "cf2d50aa028fcf11ce9eb04746932b7a9be25c3e31d443295f77add844b1121b"
-OBSERVATION_POINTER = ROOT / "runtime/company-research/600519-current-conditional-observation-latest.json"
+OBSERVATION = ROOT / "runtime/strategy-validation/moutai-current-observation-20260912T235130Z/current-observation/evidence.json"
+OBSERVATION_SHA256 = "c353fc2b99c725cc9e5b4d295b90e6fbc1a52d7d5108c34d9bfe820da8e7e2bd"
 OPERATING = ROOT / "runtime/company-research/600519-dated-operating-20260909T121512582335Z/evidence.json"
 OPERATING_SHA256 = "8d4dc2ae6970fd3f3f71731961fa167e3875045ac1fef15840f5e26a30fd6fec"
 
@@ -77,16 +78,15 @@ def finance_scale() -> dict:
 
 
 def load_verified_observation() -> tuple[Decimal, dict]:
-    reference = json.loads(OBSERVATION_POINTER.read_text(encoding="utf-8"))
-    path = (ROOT / reference["path"] / "evidence.json").resolve()
-    if not path.is_relative_to(ROOT.resolve()) or digest(path) != reference["sha256"]:
-        raise ValueError("Pinned current observation changed")
+    path = OBSERVATION.resolve()
+    if not path.is_relative_to(ROOT.resolve()) or digest(path) != OBSERVATION_SHA256:
+        raise ValueError("Pinned dated observation changed")
     observation = json.loads(path.read_text(encoding="utf-8"))
     prices = {Decimal(row["observed_price_cny"]) for row in observation.get("scenarios", [])}
     if (observation.get("quote_session_verified") is not True or observation.get("quote_session_status") != "matched_close"
             or len(prices) != 1):
-        raise ValueError("Current observation lacks one verified price")
-    return prices.pop(), {"path": str(path.relative_to(ROOT)), "sha256": reference["sha256"]}
+        raise ValueError("Dated observation lacks one verified price")
+    return prices.pop(), {"path": str(path.relative_to(ROOT)), "sha256": OBSERVATION_SHA256}
 
 
 def analyze() -> dict:

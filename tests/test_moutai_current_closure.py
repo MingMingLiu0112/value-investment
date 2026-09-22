@@ -37,6 +37,7 @@ def test_daily_paper_mode_uses_the_existing_closure_entry_and_persistent_account
     assert "daily-paper-state.json" in script
     assert "moutai-daily-paper-latest.json" in script
     assert '"--bounded-orders"' in script
+    assert '"--simulation-policy"' in script
 
 
 def test_current_cache_reuses_identical_dependencies_but_recomputes_changed_model(tmp_path, monkeypatch):

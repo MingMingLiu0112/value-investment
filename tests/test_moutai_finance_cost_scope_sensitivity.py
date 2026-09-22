@@ -17,6 +17,7 @@ SPEC.loader.exec_module(MODULE)
 
 def test_finance_cost_scale_is_explicit_research_only_and_does_not_admit_trade():
     result = MODULE.analyze()
+    assert Decimal(result["observed_price_cny"]) == Decimal("1275.16")
     assert Decimal(result["finance_reference_scale"]["annualized_reference_scale_cny"]) == Decimal("1548000000")
     assert len(result["results"]) == 1296
     assert result["scope_approved"] is False

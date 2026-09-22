@@ -28,7 +28,7 @@ Excel MVP 通过不等于历史策略有效或实盘准入。
 ## 4. 当前实施只分两个阶段
 
 ### 阶段 A：Excel MVP
-先建立统一 `ResearchCase + ResearchGate + ValuationResult`。
+先建立统一 `ResearchCase + ResearchGate + ValuationResult + ModelValidity + PriceBridgeResult`。
 让 600519、000333、601088 都进入 Excel，并使用同一研究结构。
 阶段 A 不要求三家公司全部完成正式估值；未完成模型的公司必须显示 `估值未就绪`，不能硬填价值区间。目标是证明系统能用同一骨架论证不同公司。
 
@@ -92,7 +92,9 @@ evidence_refs
 blockers
 status
 ```
-估值未完成时允许 `bear/base/bull = None`。
+估值未完成时允许 `bear/base/bull = None`。`ValuationResult` 不保存当前价格或安全边际；它只描述
+企业价值。市场价格与安全边际属于 `PriceBridgeResult`，行情未形成时显示
+`PENDING_EXTERNAL_DATA`，不反向把已完成估值标为未就绪。
 
 ## 6. 阶段 A 的统一研究门禁
 
@@ -193,6 +195,9 @@ G4 不生成订单、股数或真实仓位。
 至少考虑：数据完整度、商业稳定性、行业周期性、关键参数敏感度、预测跨度、终值占比、模型交叉检查分歧。
 置信度为低时不得升级为 `估值具备研究吸引力`。
 
+2026-09-22 已增加 `valuation_confidence.py`：置信度由上述显式证据按固定政策阈值计算；
+未知、未测量或未通过必要检查时失败关闭为低，不采用 LLM 黑盒评分。
+
 ## 14. 安全边际
 同时保留：
 ```text
@@ -210,13 +215,19 @@ margin_to_bear
 
 ## 16. Codex 实施顺序
 
-### 2026-09-21 阶段 A 已验收状态
+### 2026-09-21 当前实施状态
 
 阶段 A 的实际基线、证据与工作簿发布回执见
 `excel-mvp-baseline-20260921.md` 和 `excel-mvp-stage-a-acceptance-20260921.md`。
 三家公司均以统一 ResearchCase/ResearchGate 写入原 Excel，均明确标示
-`估值未就绪`，且不生成订单、数量或真实仓位。此状态只完成研究展示层，下一唯一
-任务为 B1：贵州茅台的适用主估值、情景、置信度和反向估值。
+`估值未就绪`，且不生成订单、数量或真实仓位。研究展示层已跑通，但阶段 A 的严格
+内容验收尚未通过：三家公司均需补足至少三条可追溯的支持依据、反证与 Thesis
+Breakers，并完成五维财务状态及 G0-G4 门禁对齐。
+
+下一顺序固定为：先完成 P0 的估值、模型有效性、价格桥接与 Thesis Gate 职责分离，再继续
+B1 Engineering：贵州茅台的适用主估值、情景、透明置信度与反向估值；B1 的 Current
+Production Validation 可以独立等待真实数据，不能阻塞 B2 Engineering。B1 现有条件性模型
+可保留为研究材料，但不得提前写成正式估值结论或交易判断。
 
 ### A0 基线
 创建 `docs/excel-mvp-baseline-20260921.md`。
@@ -247,22 +258,29 @@ margin_to_bear
 
 #### 2026-09-21 当前 B1 状态
 
-已导出冻结模型的 bear/base/bull 条件研究结果与有界反向估值诊断，结果文件为
-`runtime/valuation-results/600519-current-equity-stage-b/evidence.json`。其状态为
-`conditional_research_only`、置信度为低、`current_price` 与两项安全边际均为空：最近的
-双源尝试为盘中报价，不满足模型日期与收盘价同日桥接。故 B1 尚未验收，不得将条件值
-标为正式合理价、买卖价或研究吸引力；B2 不得提前开始。
+已导出 2026-09-21 冻结模型的 bear/base/bull 条件研究结果和同日有界反向估值诊断，
+结果文件为 `runtime/valuation-results/600519-current-equity-stage-b/evidence.json`。
+同日双源行情 1,252.57 元/股已通过 matched close，价格桥接状态为 `READY`；相对熊/基准
+情景分别为 -210.5% / -161.8%。该结果已写回原 Excel。
 
-归档的 2026-09-14 同日收盘价和模型不能替代该缺口：模型依赖的政策哈希
-`ce8c7...` 已不在当前工作树、Git 历史或证据归档中，故无法从精确输入重演。归档
-算术仅可阅读，不得导出为可复算价格比较或安全边际。后续必须由当日收盘后、同日完整
-政策与证据链重新生成可复演模型；找不到旧输入时不回填或猜测。
+该结果状态仍是 `conditional_research_only`、置信度为低，`formal_fair_value` 为空、
+`valuation_approved=false`、`trade_approved=false`、`live_eligible=false`。负安全边际只
+说明当前价格高于这些条件情景值，不是卖出指令、低估/高估结论或研究吸引力。优势持续期
+已审计为有界中央政策，但未来实际持续时长仍未得到经验证明；全年2026母公司可分配现金
+尚未披露，折现率仍是研究区间而非实际未来资本成本。B1-P1 的模型准入已通过，但逐日
+模拟执行政策尚未实现，因此不能形成模拟拟单或实盘准入。
 
-2026-09-21 12:52 上海时间，`ValueInvestmentAgent-MoutaiPrecloseCapitalRefresh`
-已由 Windows 计划任务实际运行并返回 `0`。收据
-`runtime/company-research/600519-preclose-capital-receipt-20260921T045237Z/`
-记录了巨潮索引与资本刷新文件的 SHA-256，并明确 `trade_approved: false`。该成功只证明
-收盘前资本事件证据链可运行；收盘价、同日模型桥接和 B1 验收仍待收盘后任务验证。
+2026-09-21 收盘后正式链已完成：双源收盘证据、同日 P1 证据链、反向估值诊断、独立
+`PriceBridgeResult`、候选工作簿 WPS 只读校验和带备份的原子发布。发布的原表 SHA-256 为
+`76b3d55e0009a88a1366b281acaca9b3238ab8e3c53e2bb340440ca28cdca946`；同日后一次神华候选卡
+发布后，当前原表 SHA-256 为
+`a1d755f7705135d3ada9c84a8021cb57b0c3b4459b08dc802f133aade4ddf26f`。
+同日稍后，神华子公司归属边界审计证据并入研究卡并原子写回原 Excel 后，当前原表
+SHA-256 为 `17036d1f8ebc094df9287ab25b4bf256f70b6aa9f1df23dedd16d3e7a98afa9b`。
+2026-09-22 恢复 B1 同日价格桥接后再次候选构建、WPS 只读验证并原子发布，当前原表
+SHA-256 为 `030e702789c37d66580f99ca5769b28289cd820457ad77c0c9196e019c499ef5`。
+研究级阶段验收见 `docs/moutai-stage-b1-acceptance-20260922.md`；工程验收见
+`docs/moutai-stage-b1-engineering-acceptance-20260921.md`。
 
 ### B2 000333 FCFF
 完成 FCFF、confidence、reverse valuation，并同步 Excel。
@@ -280,8 +298,139 @@ margin_to_bear
 不得为了满足字段完整性伪造 FCFF 区间。只有验证后的事实、假设和每股桥接齐备，
 才允许共享模型计算 bear/base/bull 与后续反向估值。
 
+#### 2026-09-21 当前 B2 状态
+
+共享 FCFF 契约已通过 fail-closed 工程验收，见
+`docs/midea-stage-b2-engineering-acceptance-20260921.md`。工业口径 FCFF 剥离为
+`MODEL_NOT_APPLICABLE`，合并企业价值桥接为 `VALUATION_NOT_READY`；不生成
+bear/base/bull、价格桥接或安全边际。原因是年报未单独披露金融业务利润表、资产负债表、税费、
+债务、现金与营运资本，不能把合并净债务和合并现金直接称为工业 FCFF 输入。
+
+2026-09-22 已补齐共享情景算术路径：`FinancialFacts.scenario_inputs` 可承载显式
+bear/base/bull 预测、终值、权益桥接、暴露分区、股份与证据，并复用
+`scenario_valuation.value_scenario`。该路径仅用于工程验证；美的现有年报载荷仍保持
+`not_ready`，不因此生成正式估值。
+
+同日进一步把 FY2025 会计每股收益范围与期末 A/H 股本独立 Hash 锁定：
+`midea-2025-share-basis-20260922`。该包记录期末总股本 `7,597,145,346` 股、会计加权
+普通股 `7,559,265` 千股、稀释后 `7,608,132` 千股及年末库存股只有账面金额而无股数，
+明确会计加权分母不注册为当前估值分母；`share_basis_approved=false`，未写入任何
+`ordinary_shares` 模型输入，FCFF 生产路径继续 `not_ready`。
+
+2026-09-22 同日完成估值适用性登记：`mature_manufacturing -> fcff` 经济路线为
+`SUPPORTED`，但工业口径 FCFF 剥离为 `MODEL_NOT_APPLICABLE`、合并企业价值桥接为
+`VALUATION_NOT_READY`，因此不注册算术模型和输入。生产结果同时嵌入 `valuation_route`
+与 `valuation_applicability`，保持 `not_ready / PENDING_EXTERNAL_DATA`；FCFF facts
+升至 v2 路径 `midea-fcff-facts-20260922`。
+
+同日再增加 `midea-consolidated-equity-scope-20260922`，从同一份 Hash 锁定年报封存合并
+归母普通股权益 `223,221,305` 千元、少数股东权益 `13,202,918` 千元、归母普通股净利
+`43,945,411` 千元及可见金融业务口径。`residual_income_or_equity_value` 仅作为
+`CANDIDATE_NOT_REGISTERED` 候选进入适用性证据和研究卡，预测 ROE、权益成本、派息政策和
+当前普通股分母未注册；不生成任何情景值，FCFF 生产路径继续 `not_ready`。
+
+同日再增加 `midea-2014-2024-equity-return-candidate-20260922`，把 2014--2024 各年原始
+年报的归母权益、归母利润、现金分红和回购式现金回报锁成逐页候选序列。序列只证明历史
+现金回报披露，不代表未来 ROE、权益成本、派息政策、当前普通股分母或干净盈余权益滚动
+对账；适用性包的下一证据清单只列前瞻假设与当前范围，不把“历史证据仍缺失”继续写成阻断
+原因。所有行 `model_input=null`，研究卡和 Excel 只展示候选证据，FCFF 与权益价值路线继续
+`not_ready`，不生成任何情景值、价格、安全边际、仓位或订单。
+
 ### B3 601088 周期模型
 完成周期正常化估值、confidence、reverse valuation，并同步 Excel。
+
+#### 2026-09-21 当前 B3 状态
+
+共享周期正常化模型和 2014--2025 原始序列已通过 fail-closed 工程验收，见
+`docs/shenhua-stage-b3-engineering-acceptance-20260921.md`。已增加
+`runtime/company-research/shenhua-cyclical-candidate-inputs-20260921/evidence.json`，
+将官方披露整理为未审核候选。三项优先阻塞已进一步生成
+`shenhua-2026-share-bridge-20260921`、`shenhua-2025-parent-operating-profit-bridge-20260921`
+和 `shenhua-2025-attributable-net-cash-bridge-20260921` 三个未审核证据包；它们记录候选值
+但均保持 `model_input=null`。维护/发展资本开支、绝对单位成本、折现率和长期增长率仍未批准，
+因此估值状态保持 `VALUATION_NOT_READY`。
+
+同日后增加 `shenhua-2025-subsidiary-allocation-evidence-20260921` 边界审计包：固化母公司
+法人利润表、七家重要非全资子公司的持股、少数股东损益、分红、权益及财务摘要，并证明七家
+少数股东损益合计 88.32 亿元对合并 93.34 亿元、少数股东权益合计 457.23 亿元对合并 723.44 亿元
+仍存在未列示部分。该审计明确母公司投资收益 446.07 亿元不能当作集团归母税前营业利润，
+所有估值输入继续为 null；对应研究卡已写回原 Excel。
+
+2026-09-22 进一步复核 HKEX 英文/IFRS 年报 Note 44、Note 10 及主要子公司附注，增加
+`shenhua-2025-ifrs-subsidiary-tax-review-20260922`。英文报表只列示内部抵销前的 Revenue、
+Expenses 和 Profit and total comprehensive income，仍未披露子公司逐户税前利润和所得税；
+税务调节中“不同分/子公司适用税率”影响 -42.28 亿元也阻断比例分配。因此神华估值仍为
+`VALUATION_NOT_READY`，所有相关模型输入保持 null；该复核已写入研究卡并原子发布回原 Excel。
+
+2026-09-22 另增加 2014--2025 运营周期序列
+`shenhua-2014-2025-operational-cycle-series-20260922` 及其独立审查
+`shenhua-2014-2025-operational-cycle-audit-20260922`。审查把煤炭价量、自产煤均价与单位成本、
+售电量与电价全部定为逐页可追溯的时期事实，不批准任何字段进入 `CyclicalFacts.operating_inputs`；
+同时记录混煤均价与自产煤单位成本不得配对、2019/2020 电价不可比、部分自产煤销量来自后续年报
+对比表以及 2025 年产量 332.1 百万吨与销量 332.3 百万吨不得混用。对应研究卡已更新并原子发布回
+原 Excel；估值状态保持 `VALUATION_NOT_READY`。
+
+2026-09-22 进一步增加 2014--2025 归母利润与现金税候选序列
+`shenhua-2014-2025-attributable-profit-series-20260922`。该包按年记录合并营业利润、税前利润、
+所得税费用、归母/少数股东净利润和“支付的各项税费”，并给出统一所有权比例 pro forma 与不分摊
+所得税的宽边界。它明确不把“支付的各项税费”当作所得税率，因为该现金流口径包含资源税及其他
+税费；所有行仍为候选研究边界，未写入 `CyclicalFacts.operating_inputs`。对应研究卡已更新并
+原子发布回原 Excel；估值状态保持 `VALUATION_NOT_READY`。
+
+2026-09-22 继续增加 2014--2025 外部煤价与 2025 成本运输桥接
+`shenhua-2014-2025-price-cost-transport-bridge-20260922`。该包把各年报披露的环渤海/NCEI 指数、
+秦皇岛现货价、公司自产/长协/内部转移价及铁路、港口、航运单位成本逐页锁定，并明确 2018 缺失、
+2019 只有区间、2023 指标定义切换和 73.2/77.7 百万吨内部煤电销售/耗用口径差异。对应研究卡已更新并
+原子发布回原 Excel；未写入任何 `CyclicalFacts.operating_inputs`，估值状态保持
+`VALUATION_NOT_READY`。
+
+2026-09-22 再增加 NCEI/BSPI/CCTD 外部指数一手溯源包
+`shenhua-external-index-provenance-20260922`。该包哈希归档 NCEI 首发公告、当前 NCEI 页面、
+历史查询公开壳页、NDRC 的 BSPI 试运行通知和 CCTD 编制方案，并明确当前 NCEI 两个即时读数只作
+观察、四类历史指数表均受缴费会员权限限制，不能冒充已取得的历史原始档案。对应研究卡已更新
+并原子发布回原 Excel；未写入任何 `CyclicalFacts.operating_inputs`，估值状态保持
+`VALUATION_NOT_READY`。
+
+2026-09-22 再增加 CCTD 五个公开历史指数端点
+`shenhua-public-index-history-20260922`：BSPI、太原、陕西、鄂尔多斯与长江口 JSON 均逐字节
+归档并保留 URL、SHA-256 和抓取时间。BSPI 覆盖 2010-06-29 至 2026-09-16 共 802 个唯一日期；
+所有观察值均为 `model_input=null`。该包同时记录 CTPI/TCPI 命名不一致、单位标注和发布缺口。
+
+同轮进一步建立 BSPI 与年报年度均价对账包
+`shenhua-bspi-annual-report-reconciliation-20260922`。2014、2015、2016、2017、2020、2021、
+2022 七个可比年份的端点未加权年度均值与神华年报披露值的最大偏差为 0.49 元/吨，其中五个年末值
+完全一致；2018/2019 无可比年报均值，2023 年起年报改用 NCEI。该结果只佐证序列口径吻合，不证明
+历史值未经修订或原日期已公开。对应研究卡已更新并原子发布回原 Excel；未写入任何
+`CyclicalFacts.operating_inputs`，估值状态保持 `VALUATION_NOT_READY`。
+
+同轮再增加 BSPI 点-in-time 发布页与转载页证据包
+`shenhua-bspi-point-in-time-publications-20260922`。秦皇岛煤炭网 2017/2021/2022 的
+577/737/734 一手文章 API 响应与网页外壳、CCTD 2014/2015/2016 转载页，以及中国能源网明确标注
+来源为“秦皇岛煤炭网”的 2017/2020/2021/2022 转载页均按 URL、字节数和 SHA-256 归档。证据包明确
+2014 页面中的 525 不是年末最后发布，2017 最终发布 577 与年报 578 保持分离，2020 期末 585 的
+运营方原文在当前搜索索引和完整栏目列表中缺失；易航网作为第二处独立转载页已一并哈希归档，
+与中国能源网共同佐证 2020 期末 585 文本，但均不得升级为原文或用于插值。所有发布值均为
+`model_input=null`。对应研究卡已更新并原子发布回原 Excel；未写入任何
+`CyclicalFacts.operating_inputs`，估值状态保持 `VALUATION_NOT_READY`；发布后原表 SHA-256 为
+`60845fda99b73aa9c7a94622c8bdade83e038b4ea020fc32e35d12aa3c4f8b5a`，随后易航网证据
+补充后再次发布，新原表 SHA-256 为
+`26883e034d23a4a0de7752674ac6b2be5edf61a319484645953cb6931b60465e`。
+
+同日继续补齐该点时包的发布方归属与原始页可得性：中国能源网 2018 与河北长城网运营方集团报道
+固定 569，CCTD 瑞达期货 2019 评论固定 551，CEI 2020 列表页只保留标题“环渤海动力煤价格指数585
+元/吨”、2020-12-31 日期与登录受限的文章路径。新增 `PUBLISHER_PROVENANCE` 与
+`ORIGINAL_AVAILABILITY`，`operator_primary_article_missing_years=[2018,2019,2020]`，
+`not_collected_years=[2023,2024,2025]`；全部佐证仍为 `model_input=null`。证据包更新后 SHA-256
+为 `2b5112abd8814c456874a0ff68704344b3c04b484ed534e809dca513d4bc1af2`，对应研究卡经 WPS
+只读导航后原子发布回原 Excel，发布后原表 SHA-256 为
+`2203b670ea21b9767e9d831b9289e9d16c80a8685f52fa2930b4569da118359f`。
+
+同轮再增加 2025 内部煤电销售/耗用口径复核
+`shenhua-2025-internal-coal-power-reconciliation-20260922`。中英文年报交叉核验确认 73.2 百万吨
+是煤炭分部内部销售、77.7 百万吨是发电分部内部煤耗用，二者不是同一口径，且年报没有披露
+4.5 百万吨差异的吨数桥接；47,702 百万元燃料动力成本不能除以 77.7 百万吨当作内部转移价。
+对应研究卡已更新并原子发布回原 Excel；未写入任何 `CyclicalFacts.operating_inputs`，估值状态
+保持 `VALUATION_NOT_READY`。
 
 ## 17. 阶段 A 验收标准
 - [x] 三家公司出现在首页。

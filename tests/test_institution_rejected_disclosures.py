@@ -11,6 +11,6 @@ def test_institution_report_selection_excludes_rejected_before_latest_selection(
                   and 'SELECT DISTINCT ON(o.symbol)' in node.value]
     assert len(statements) == 1
     sql = statements[0]
-    assert "WHERE o.review_status <> 'rejected'" in sql
+    assert "AND o.review_status <> 'rejected'" in " ".join(sql.split())
     assert sql.index("o.review_status <> 'rejected'") < sql.index('ORDER BY')
     assert 'AND o.symbol IN' in sql
