@@ -501,3 +501,11 @@ PENDING_EXTERNAL_DATA`，研究结论仍为“研究未完成”，不产生价�
 `CyclicalFacts.operating_inputs`。普通股分母
 `21,689,434,304` 已批准，待估值日期和其余正常化输入具备一致 provenance 后再注册；在全部
 输入通过评审前，共享周期模型继续 fail-closed。
+
+## 2026-09-22 收敛节点已完成
+
+本大节点客观评估已完成，结论见
+[shenhua-stage-b3-convergence-assessment-20260922.md](shenhua-stage-b3-convergence-assessment-20260922.md)。
+神华继续保持研究卡可见的 fail-closed 状态：工程 READY，生产估值 VALUATION_NOT_READY，
+当前数据 PENDING_EXTERNAL_DATA；不生成情景值、价格桥接数值、仓位或订单。现有证据包只读
+保留，仅在对应新披露出现时按停止规则重新打开。下一工程主线转为三公司统一验收与冻结。
