@@ -29,9 +29,9 @@ Use `docs/project-goal-consolidation-20260922.md` for the audit and complete doc
 ## Current Boundary
 
 The three-company engineering MVP is frozen. This does not mean research-grade valuation or dividend sustainability is complete.
-The active next task is `C0-PRICE-BRIDGE-INTEGRITY`: repair and test cross-company/model/quote identity integrity in the shared price bridge. It is not yet implemented as of the consolidation baseline.
+C0-PRICE-BRIDGE-INTEGRITY is frozen. The active next task is `C1-FIXED-SAMPLE-ADMISSION-ORCHESTRATION`: separate reusable fixed-sample orchestration from production-valuation availability, and record explicit admission evidence, model decisions and human-confirmation boundaries for the existing three companies.
 Keep existing Moutai values and Midea/Shenhua fail-closed research boundaries. No new company-specific evidence scripts, fourth company, full-market engine, Web, new financial-sector model, complex dividend engine, portfolio/execution extension or broker integration.
-Allowed freeze exceptions are scoped bug/regression fixes and security/data-integrity repairs. No production database migration, scheduler change or deployment is part of C0.
+Allowed freeze exceptions are scoped bug/regression fixes and security/data-integrity repairs. No production database migration, scheduler change or deployment is part of C1.
 
 ## Permanent Research Rules
 

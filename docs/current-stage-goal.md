@@ -1,64 +1,62 @@
-# 当前阶段：研究价格桥接完整性修复
+# 当前阶段：固定样本准入协议与公共编排审查
 
-更新：2026-09-22。唯一活动工程任务：`C0-PRICE-BRIDGE-INTEGRITY`。
+更新：2026-09-22。唯一活动工程任务：`C1-FIXED-SAMPLE-ADMISSION-ORCHESTRATION`。
 执行入口为 [value-investment-goal-prompt.md](value-investment-goal-prompt.md)；证据基线见 [execution-status.md](execution-status.md)。
-本轮文档治理已完成目标定义，下面的代码任务尚未执行。
 
-## 已有成果和冻结边界
+## 已通过并冻结
 
-Stage A、P0/P0.5 已有验收；三公司统一验收于 2026-09-22 为 PASSED_FOR_FREEZE。
-这表示统一工程/研究展示合同可以冻结，不表示三家公司估值或股息研究完成：茅台低置信度条件估值，美的与神华 not_ready，三家价格吸引力均 NOT_ASSESSABLE。
-保留现有 ResearchCase、Profile、Router、Assumptions、Materiality 和原 Excel；不重新建设这些模块，不重估茅台参数，不追加美的/神华证据脚本。
-本轮发现的合同缺陷作为冻结后的 P0 完整性修复，不抹掉旧验收，也不把旧测试通过当成没有缺陷。
+- Stage A、P0/P0.5、三公司统一工程/Excel MVP 已冻结。
+- C0-PRICE-BRIDGE-INTEGRITY 已通过：共享价格桥接的证券、估值快照、模型有效性、报价证据、时点和反序列化身份合同已收紧。
+- C0 通过不表示任何公司生产估值或股息可持续性已经完成。
 
 ## NEXT TASK
 
-Goal：使研究价格比较只能使用同一证券、同一估值快照、覆盖报价时点的 ModelValidity 和可核验 QuoteSnapshot；同一不变量贯穿正常调用、JSON 恢复和价格吸引力聚合。
+Goal：建立可复用的固定样本准入协议和公共编排入口，把“流程可复用”与“生产估值可用”严格分开；三家公司可按相同合同进入固定研究样本，但未完成的估值、价格和现金回报判断保持 fail-closed。
 
-### 已复现问题
+### 协议定义
 
-2026-09-22 在 `052d6ffe4da8efa4b2d4a735e29f57361dbce051` 的内存合成检查中：
-`valuation.symbol=600519`、`validity.symbol=000333`、`model_id=unrelated-model`，
-报价证据为空，`bridge()` 仍输出 `READY / margin_to_base=0.1`。
-不是生产混配事故证明，但证明通用合同存在漏检。
-`current_research_status_from_payloads()` 还用估值 symbol 构造桥接对象，可能掩盖输入 JSON 的身份冲突。
+1. 每次准入必须显式声明研究样本准入证据、经济画像与已注册模型路由、版本化 ResearchCase 和证据引用。
+2. `FixedSampleCompanyAdmission` 同时记录：
+   - `engineering_contract_reusable`
+   - `research_sample_status`
+   - `production_valuation_status`
+   - `bounded_value_judgment`
+   - `cash_return_status` 与解释
+   - 显式模型继续、输入解决、暂停或替换/停止决策
+   - 决策所需证据、阻断项、证据引用和人工确认边界。
+3. 公共入口 `review_fixed_sample()` 必须覆盖显式传入的每一家公司，不得按证券代码猜测经济画像或估值模型。
+4. 身份冲突、缺失估值 payload、未知 profile、坏价格桥接或未注册模型必须异常退出或返回明确拒绝状态；单家公司失败不得静默跳过。
+5. `production_valuation_available` 仅在正式估值批准、合法模型状态、完整三情景和有效人工确认边界同时满足时为 true。
+6. `conditional_research_only`、`not_ready`、空情景或缺失报价只能保留为研究状态，不能被解释为生产估值可用。
+7. 所有输出必须为 `action=no_order`，不得生成仓位、订单、目标权重或实盘指令。
 
-### 实施范围
+### 本轮范围
 
-先在现有测试中重现失败，再修复最小合同。复用快照 Hash、引用或最小身份字段绑定估值与有效性记录；研究并确定最小 QuoteSnapshot 输入合同，不提前构建行情服务。
-审查并收紧 READY 的构造不变量及反序列化边界；报价身份/证据、估值版本、事件复核时点、边际算式必须一致。
-只修改该任务必需的调用处；旧快照以显式版本适配或 fail-closed 处理，保留旧文件和原判断，不能静默用新 symbol 或默认 VALID 洗掉冲突。
-
-Files likely affected：
-- `src/value_investment_agent/price_bridge.py`
-- `src/value_investment_agent/model_validity.py`
-- `src/value_investment_agent/current_research_status.py`
-- `src/value_investment_agent/price_attractiveness.py`
-- 仅在绑定身份确有必要时调整 `valuation_models/base.py` 或最小 snapshot 合同，以及直接生产/恢复该载荷的 adapter。
-- 对应现有 tests / fixtures；新防回归用例加入既有 Core Gate，不新增另一套 CI。
+- 新增共享准入域合同与统一审查入口：`src/value_investment_agent/fixed_sample_admission.py`。
+- 新增可审计本地命令：`scripts/review_fixed_sample_admission.py`，读取三公司冻结指针并生成带 Hash 的审查产物。
+- 防回归测试覆盖直接构造、JSON 恢复、身份冲突、条件估值不升级、空情景和公共编排；新测试加入现有 Core Gate，不新建 CI。
+- 更新 `current-stage-goal.md` 和 `execution-status.md`，不扩展路线图。
 
 ### Acceptance Criteria
 
-1. 跨公司 ModelValidity、不同估值快照/模型版本、过期或错误时点检查，必须拒绝或返回 INVALID/NOT_ASSESSABLE，并能定位原因。
-2. 非核验报价、缺证据或快照身份、未知/STALE 模型不能产生 READY；直接构造和 JSON 恢复同样有效。
-3. 不同证券/估值版本的 JSON 不能被规范化成同一证券；margin 必须由绑定的估值和报价复算，篡改值被拒绝。
-4. 同一合法快照、有效事件扫描下允许模型与报价跨日；真实缺报价为 PENDING_EXTERNAL_DATA，原估值及置信度完整保留。
-5. ResearchGate 继续只描述研究；坏桥接永远不输出 RESEARCH_ATTRACTIVE；conditional_research_only 不被升级为正式估值。
-6. 当前三家公司冻结快照回归保持既有研究语义；如合同升级使旧快照需重新验证，报告明确兼容状态并保留旧 Hash，不改估值参数、原 Excel 或历史 acceptance。
-7. Core Gate 在不依赖联网、未跟踪 runtime、WPS 或生产数据库的 fixture 上通过；本地三公司回归单列。报告测试能证明的边界及尚待生产验证项。
-8. diff 只含本任务必要改动，`execution-status.md` 写明实际结果、测试和一个建议后续任务；不以文件/测试数量算完成度。
+1. 同一公共入口成功读取三家公司冻结 ResearchCase、ValuationResult、ModelValidity、PriceBridge 和下游状态，不新增公司适配流水线。
+2. `engineering_orchestration_status` 与 `production_valuation_available` 独立；当前预期为 `REUSABLE` 与 `false`。
+3. 茅台边界为 `CONDITIONAL`，美的和神华为 `NOT_AVAILABLE`；三家公司都不得因空估值或缺行情变成生产估值可用。
+4. 每家公司有显式且可执行的决策与所需证据：继续条件模型、解决模型输入或暂停生产估值；不生成自动升级。
+5. 身份/JSON 冲突、缺证据或未知 profile 被拒绝并可定位原因；正常失败不写入半成品指针。
+6. 固定样本准入证据字段独立于估值推进证据字段，避免把“进入研究池”写成“模型已批准”。
+7. 审查命令输出 `human_confirmation_required=true`、`action=no_order`，序列化结果不含交易、仓位或订单状态。
+8. Core Gate 在离线 fixture 上通过；三公司冻结 payload 本地回归单列。diff 只含本任务必要改动。
 
 ### Forbidden Changes
 
 不得新增第四家公司、扩全市场、实现新估值/股息引擎、调整估值/价格阈值或仓位、扩展模拟/历史策略、接券商、修改 WPS 原表、迁生产数据库、改计划任务或服务器服务。
-不进行通用目录重构，不复制公司流水线，不放宽证据门禁，不为得到 READY 修饰 fixture。
+不进行通用目录重构，不复制公司流水线，不放宽证据门禁，不为让公司达到生产可用而修饰 fixture。
 
 ## 停止条件与后续路线
 
-本任务完成并验证后停止目标运行，交付可复现证据和实际 diff；不自动开始下一阶段。
-只在当前任务内处理回归及必要兼容问题。外部数据等待不阻塞上述工程工作；真正合同设计问题应先做有界论证，并报告受影响部分，不能无限补证。
+本任务完成并验证后停止目标运行，交付可复现证据、实际 diff 和审查产物指针；不自动开始下一阶段。
+真正的合同设计或兼容问题先做有界论证并报告受影响部分，不能无限补证。
 
-候选后续顺序（尚未授权开发）：固定样本准入协议与公共编排审查 -> 20--50 家范围/分批计划 -> 在允许扩样本前补齐通用入口、持久化与最小现金回报研究合同 -> 逐批验证 -> 扩大候选与事件运营。
-固定样本准入须分开“流程可复用”和“生产估值可用”；边界案例可保持不可估值，但不能把全部结果为空当成研究产品已可用。至少应有可复核的有界价值判断与现金回报解释，或明确且可执行的模型替代/停止决定。
-这些后续任务须在 C0 的节点评估后选定一个更新本文件。旧文档中的 P1/P2/P3、R1/R2、6--10 家或“继续三公司冻结”不自动恢复。
-
+候选后续顺序（尚未授权开发）：20--50 家范围/分批计划 -> 在允许扩样本前补齐通用入口、持久化与最小现金回报研究合同 -> 逐批验证 -> 扩大候选与事件运营。
+固定样本协议完成后，后续任务须在节点评估后选定一个更新本文件。旧文档中的 P1/P2/P3、R1/R2、6--10 家或“继续三公司冻结”不自动恢复。
