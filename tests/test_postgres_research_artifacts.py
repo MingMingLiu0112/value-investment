@@ -137,30 +137,33 @@ def test_postgres_append_only_versions_and_monotonic_head(repository):
 
 
 def test_frozen_three_company_runtime_imports_into_disposable_postgres(repository):
-    result = import_runtime_artifacts(
-        repository,
-        ROOT,
-        run_id="ci-postgres-three-company-import",
-    )
+    with tempfile.TemporaryDirectory(prefix="c3-postgres-import-") as directory:
+        root = Path(directory)
+        write_fixed_sample_runtime_fixture(root)
+        result = import_runtime_artifacts(
+            repository,
+            root,
+            run_id="ci-postgres-three-company-import",
+        )
 
-    assert len(result.stored) == 20
-    assert result.all_hashes_matched is True
-    assert set(result.missing) == {
-        ("000333", "model_validity"),
-        ("601088", "model_validity"),
-    }
-    valuations = {
-        symbol: resolve_pinned(ROOT, pointer)[0]
-        for symbol, pointer in VALUATION_POINTERS.items()
-    }
-    rows = semantic_parity_report(result, root=ROOT, valuations=valuations)
-    assert all(row["hash_matched"] for row in rows)
-    assert repository.load_latest(
-        SCOPE_SECURITY, "600519", "valuation_result"
-    )
-    assert repository.load_latest(
-        "review", "review", "fixed_sample_admission"
-    )
+        assert len(result.stored) == 20
+        assert result.all_hashes_matched is True
+        assert set(result.missing) == {
+            ("000333", "model_validity"),
+            ("601088", "model_validity"),
+        }
+        valuations = {
+            symbol: resolve_pinned(root, pointer)[0]
+            for symbol, pointer in VALUATION_POINTERS.items()
+        }
+        rows = semantic_parity_report(result, root=root, valuations=valuations)
+        assert all(row["hash_matched"] for row in rows)
+        assert repository.load_latest(
+            SCOPE_SECURITY, "600519", "valuation_result"
+        )
+        assert repository.load_latest(
+            "review", "review", "fixed_sample_admission"
+        )
 
 
 def test_frozen_three_company_replay_persists_to_disposable_postgres(repository):
