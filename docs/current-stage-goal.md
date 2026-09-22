@@ -1,12 +1,12 @@
-# 当前阶段：研究平台基础
+# 已冻结阶段：研究平台基础
 
-更新：2026-09-22。唯一活动长程工程任务：`C3-RESEARCH-PLATFORM-FOUNDATION`。
+更新：2026-09-22。`C3-RESEARCH-PLATFORM-FOUNDATION`：`PASSED_FOR_FREEZE`。
 执行入口为 [value-investment-goal-prompt.md](value-investment-goal-prompt.md)；证据基线见 [execution-status.md](execution-status.md)。
 
 ## 已通过并冻结
 
 - Stage A、P0/P0.5、三公司统一工程/Excel MVP 已冻结。
-- C0-PRICE-BRIDGE-INTEGRITY、C1-FIXED-SAMPLE-ADMISSION-ORCHESTRATION、C2-MINIMAL-DISTRIBUTION-RESEARCH-CONTRACT 已通过并冻结。
+- C0-PRICE-BRIDGE-INTEGRITY、C1-FIXED-SAMPLE-ADMISSION-ORCHESTRATION、C2-MINIMAL-DISTRIBUTION-RESEARCH-CONTRACT、C3-RESEARCH-PLATFORM-FOUNDATION 已通过并冻结。
 - 已冻结不代表任何公司生产估值、股息可持续性或现金回报结论完成。
 
 ## C3 目标
@@ -119,4 +119,12 @@ Domain 不依赖 Excel、PostgreSQL、HTTP；Application 负责编排；Reposito
 
 这是连续长程目标，完成 W1/W2 后必须继续，直到 C3 全部验收或出现不可逆生产风险、核心架构冲突、无法恢复的数据完整性问题。外部数据暂不可得标记 `PENDING_EXTERNAL_DATA`，不阻塞无关工程任务；真实公司仍无法估值时保持 `NOT_READY`，继续平台化。
 
-全部完成后更新 `docs/execution-status.md`，将本文件标记为 C3 `PASSED_FOR_FREEZE`，给出 Expansion Readiness Verdict，只提一个下一阶段建议后停止，不自动扩真实股票样本。
+W1-W12 已完成；执行证据见 `docs/execution-status.md`。Expansion Readiness Verdict 为 `NOT_READY`，审查详见 [fixed-sample-expansion-readiness-review.md](fixed-sample-expansion-readiness-review.md)。
+
+## 下一阶段唯一建议
+
+```text
+NEXT TASK: C4-MANIFEST-DRIVEN-FIXED-SAMPLE-INPUT-ADAPTER
+```
+
+先移除三公司 replay 中 `symbol == "600519"` 的专用输入分支，建立 versioned per-company input descriptor，再以离线 fixture 和 disposable PostgreSQL replay 验收。验收前不新增第四家真实公司，也不自动扩样本。

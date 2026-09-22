@@ -136,15 +136,53 @@ C2-MINIMAL-DISTRIBUTION-RESEARCH-CONTRACT：`PASSED_FOR_FREEZE`。
 ## C3 验收基线
 
 - C3 开始 HEAD：`d658b92 C2-minimal-distribution-research-contract`；工作树开始时的改动仅包含 C3 的 W1 治理校准。
-- C3-RESEARCH-PLATFORM-FOUNDATION 当前处于实施中，尚未达到 `PASSED_FOR_FREEZE`。
 - C2 的唯一建议后续任务“最小 Distribution 合同迁移到 PostgreSQL”已被 C3 吸收，但 C3 范围扩大到通用 Research Artifact 合同、Repository、Runner、Registry、Manifest、Batch、CI 与三公司 E2E。
 - 数据库安全边界：`.env` 中的生产 `DATABASE_URL` 在本阶段不得连接；只使用 disposable/local/test PostgreSQL 或 GitHub CI 一次性实例。
 
-## 当前实施记录
+## C3 验收结果
 
-- W1 治理校准：`AGENTS.md`、`docs/architecture.md`、`docs/current-stage-goal.md`、`docs/value-investment-goal-prompt.md` 已切到 C3。
-- 尚未完成 W2-W12；runtime JSON 保持原状，旧 `valuation_results` 未修改，三公司研究语义未改变。
+C3-RESEARCH-PLATFORM-FOUNDATION：`PASSED_FOR_FREEZE`。
+
+提交序列：
+
+```text
+7903933 C3.1 governance and research artifact contract
+6eee08e C3.2 repository and typed artifact round-trip
+a89e269 C3.3 frozen runtime parity importer
+b787b3e C3.4 profile-driven application research runner
+365d845 C3.5 explicit valuation model registry contract
+2bfe065 C3.6 versioned fixed sample policy manifest
+33590bb C3.7 failure-isolated research batch contract
+9d9231b C3.8 offline core and disposable postgres CI
+13c5b03 C3.10 three-company frozen replay receipt
+```
+
+W1-W12 结果：
+
+- W2-W3：新增 `sql/20260922_research_artifacts.sql`、`research_artifacts.py`、`research_artifact_codecs.py` 和 `research_artifact_repository.py`。新表 append-only，与旧混合语义 `valuation_results` 分离；round-trip、版本 head、Hash 与 fail-closed 均有测试。
+- W4：`research_runtime_import.py` 把三公司 frozen runtime 核心 artifact 迁入 repository，输出 source path、source/database SHA-256 和 restored semantic status；缺失 `model_validity` 显式记为缺失，不伪造。
+- W5：`research_application.py` 使用显式 `ResearchRunSpec`，按 Profile -> Router -> Model -> Validity -> PriceBridge -> Distribution -> CurrentStatus -> Repository 编排，不按 symbol 猜模型。
+- W6：`valuation_router.py` 已表达三种 Profile 与三种模型/Facts 合同；未知 profile 为 `UNSUPPORTED`。
+- W7：三公司 admission policy 迁入 `config/fixed-sample-manifest.json`，禁止交易键，loader 做 schema 与 profile/model 校验。
+- W8：`research_batch.py` 隔离单公司 GAP/FAILED/UNSUPPORTED，支持 run_id、rule_version、时点和幂等输入 fingerprint。
+- W9：GitHub Core Gate 保持离线，另增加 disposable PostgreSQL job；本地未使用生产 DSN。
+- W10：`research_e2e_replay.py` 完成三公司 Manifest -> ResearchRunSpec -> Application -> Repository -> Batch replay。真实 frozen runtime 结果为 `all_semantics_matched=True`、`action=no_order`。新增命令行 `python scripts/run_three_company_research_replay.py`，输出独立 JSON 审计收据。
+- W11：Application/Presentation 边界审查通过并记录技术债，见 [application-presentation-boundary.md](application-presentation-boundary.md)。Domain/Application 不依赖 Excel 或 PostgreSQL schema；旧 Excel publisher 尚未切换到新 Application result。
+- W12：Expansion Readiness Verdict 为 `NOT_READY`，原因见 [fixed-sample-expansion-readiness-review.md](fixed-sample-expansion-readiness-review.md)。核心 pipeline 可复用，但缺少 manifest-driven facts/assumptions/quote input adapter，且 replay adapter 仍含茅台 symbol 专用分支。
+
+验证证据：
+
+- Offline Core Gate 全清单：`176 passed`。
+- 新增三公司 replay 自包含 fixture：三种 Profile、三种模型、`no_order`、美的/神华 `not_ready`、神华 current/normalized yield 区分和 Hash 篡改 fail-closed。
+- PostgreSQL integration 在本机无 disposable DSN，`4 skipped`；GitHub CI 中由一次性 PostgreSQL service 验证 migration、repository round-trip、frozen runtime import 和三公司 replay。
+- 本机真实 frozen runtime 命令验证：`all_semantics_matched=True`、`action=no_order`、收据约 193KB。
+- `compileall` 与 `git diff --check` 通过。
+- 未连接生产数据库、未修改旧 `valuation_results`、未改动原 Excel、未调整估值参数、未触碰服务器 PTA 项目或计划任务。
 
 ## 当前建议后续任务
 
-`NEXT TASK: 完成 C3-RESEARCH-PLATFORM-FOUNDATION 的 W2-W12`。下一直接工程动作是建立独立 append-only Research Artifact 合同与 migration，然后实现 Repository 并完成三公司 replay；每一阶段保持离线测试通过并增量提交，不连接生产 PostgreSQL。
+```text
+NEXT TASK: C4-MANIFEST-DRIVEN-FIXED-SAMPLE-INPUT-ADAPTER
+```
+
+先移除三公司 replay 中的茅台 symbol 专用分支，建立 versioned per-company input descriptor，再以离线 fixture 和 disposable PostgreSQL replay 验收。验收前不新增第四家真实公司，也不自动扩样本。

@@ -1,6 +1,6 @@
 # 目标模式启动入口
 
-更新：2026-09-22。本文件仅启动当前阶段，不再叠加长期工作包。
+更新：2026-09-22。本文件仅启动当前阶段，不再叠加长期工作包。当前 C3 已 `PASSED_FOR_FREEZE`，请先读取 [current-stage-goal.md](current-stage-goal.md) 中的下一阶段唯一建议，不要重新执行已完成 C3。
 仓库：`D:/GPTProject/value-investment`。文档权威见 [AGENTS.md](../AGENTS.md)。
 下列文本可直接作为目标模式的目标：
 
