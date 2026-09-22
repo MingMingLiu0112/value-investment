@@ -296,7 +296,7 @@ class ResearchApplicationService:
             raise ValueError("Assumption as_of does not match the research facts")
 
         gate = evaluate_research_gate(spec.research_case)
-        model = route.model_factory()
+        model = route.build_model()
         valuation = model.value(spec.facts, spec.research_case)
         if not isinstance(valuation, ValuationResult):
             raise TypeError("Registered model returned a non-valuation result")
