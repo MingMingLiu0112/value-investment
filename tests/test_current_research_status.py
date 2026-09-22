@@ -25,6 +25,13 @@ from value_investment_agent.research_gate import ResearchGate
 from value_investment_agent.valuation_models.base import ValuationResult
 
 
+QUOTE_REF = {
+    "id": "quote",
+    "path": "fixtures/quote.json",
+    "sha256": "quote-hash",
+}
+
+
 def gate(conclusion=CONCLUSION_RESEARCH_READY):
     return ResearchGate(
         symbol="600519",
@@ -70,8 +77,15 @@ def bridge(status="READY", **overrides):
         model_validity_status="VALID",
         quote_status="verified_close",
         bridge_status=status,
-        evidence_refs=[{"id": "quote"}],
+        evidence_refs=[QUOTE_REF],
+        quote_evidence_refs=[QUOTE_REF],
         blockers=[],
+        model_id="fixture-v1",
+        model_version="fixture-v1",
+        model_as_of=date(2026, 9, 20),
+        quote_symbol="600519",
+        valuation_bear_value=Decimal("400"),
+        valuation_base_value=Decimal("500"),
     )
     if status != "READY":
         values.update(current_price=None, margin_to_bear=None, margin_to_base=None)
@@ -222,7 +236,9 @@ def test_explicit_current_data_status_must_match_price_bridge():
 
 def test_identity_mismatch_and_unknown_statuses_are_rejected():
     with pytest.raises(ValueError, match="symbols must match"):
-        evaluate_current_research_status(gate(), valuation(), bridge(symbol="000333"))
+        evaluate_current_research_status(
+            gate(), valuation(), bridge(symbol="000333", quote_symbol="000333")
+        )
     with pytest.raises(ValueError, match="engineering"):
         evaluate_current_research_status(
             gate(), valuation(), bridge(), engineering_status="BLOCKED_BY_DATA"
@@ -243,7 +259,7 @@ def test_policy_is_serializable_and_contains_no_trading_state():
     assert policy["price_attractiveness"]["status"] == STATUS_NOT_ASSESSABLE
     for key in ("trade", "order", "position", "target_weight", "shares"):
         assert key not in json.dumps(policy, ensure_ascii=False)
-    assert policy["evidence_refs"] == [{"id": "valuation"}, {"id": "quote"}]
+    assert policy["evidence_refs"] == [{"id": "valuation"}, QUOTE_REF]
 
 
 def test_serialized_domain_payloads_restore_before_aggregation():
@@ -266,7 +282,21 @@ def test_serialized_domain_payloads_restore_before_aggregation():
     assert outcome.research_conclusion == CONCLUSION_RESEARCH_READY
     assert outcome.price_attractiveness.status == STATUS_RESEARCH_ATTRACTIVE
     assert outcome.current_data_status.status == "READY"
-    assert outcome.evidence_refs == [{"id": "valuation"}, {"id": "quote"}]
+    assert outcome.evidence_refs == [{"id": "valuation"}, QUOTE_REF]
+
+    conflicted = json.loads(bridge().to_json())
+    conflicted["symbol"] = "000333"
+    conflicted["quote_symbol"] = "000333"
+    with pytest.raises(ValueError, match="symbols differ"):
+        current_research_status_from_payloads(
+            gate_payload={
+                "results": {},
+                "blockers": [],
+                "conclusion": "估值未就绪",
+            },
+            valuation_payload=json.loads(valuation().to_json()),
+            price_bridge_payload=conflicted,
+        )
 
     with pytest.raises(ValueError, match="valuation_date"):
         current_research_status_from_payloads(

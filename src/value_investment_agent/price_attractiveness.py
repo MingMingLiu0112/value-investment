@@ -6,7 +6,7 @@ from decimal import Decimal
 import re
 from typing import Any
 
-from .price_bridge import PriceBridgeResult
+from .price_bridge import PriceBridgeResult, price_bridge_binding_blockers
 from .research_gate import ResearchGate
 from .research_profile import (
     CYCLICAL_CASH_RETURN,
@@ -159,6 +159,22 @@ def assess_price_attractiveness(
         raise ValueError("Price assessment requires a PriceBridgeResult")
     if not (gate.symbol == valuation.symbol == price_bridge.symbol):
         raise ValueError("Price assessment inputs must share one symbol")
+
+    binding_blockers = price_bridge_binding_blockers(valuation, price_bridge)
+    if binding_blockers:
+        return PriceAttractivenessAssessment(
+            symbol=valuation.symbol,
+            profile_id=profile_id or infer_profile_id(valuation) or "unspecified",
+            status=STATUS_NOT_ASSESSABLE,
+            margin_to_bear=None,
+            margin_to_base=None,
+            downside_reference=None,
+            upside_reference=None,
+            confidence=valuation.confidence,
+            reasons=["PriceBridge 与估值身份不一致，不能进行价格判断"],
+            blockers=[f"price_bridge_binding:{blocker}" for blocker in binding_blockers],
+            evidence_refs=list(price_bridge.evidence_refs),
+        )
 
     resolved_profile = profile_id or infer_profile_id(valuation) or "unspecified"
     base_evidence_refs = list(price_bridge.evidence_refs)

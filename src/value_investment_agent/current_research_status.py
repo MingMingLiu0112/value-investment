@@ -8,7 +8,11 @@ import json
 import re
 from typing import Any
 
-from .price_bridge import PriceBridgeResult
+from .price_bridge import (
+    PriceBridgeResult,
+    price_bridge_from_payload,
+    validate_price_bridge_binding,
+)
 from .price_attractiveness import (
     PRICE_ATTRACTIVENESS_DISPLAY,
     STATUS_NOT_ASSESSABLE,
@@ -273,6 +277,7 @@ def evaluate_current_research_status(
         raise ValueError("Current research status requires a PriceBridgeResult")
     if not (gate.symbol == valuation.symbol == price_bridge.symbol):
         raise ValueError("Research, valuation and price-bridge symbols must match")
+    validate_price_bridge_binding(valuation, price_bridge)
     if engineering_status not in ENGINEERING_STATUSES:
         raise ValueError("Unknown engineering status")
 
@@ -371,11 +376,16 @@ def current_research_status_from_payloads(
     valuation_payload: dict[str, Any],
     price_bridge_payload: dict[str, Any],
     *,
+    model_validity_payload: dict[str, Any] | None = None,
     engineering_status: str = ENGINEERING_READY,
     current_data_status: CurrentDataStatus | None = None,
     profile_id: str | None = None,
 ) -> CurrentResearchStatus:
     """Restore serialized domain results before aggregating them."""
+    valuation_symbol = str(valuation_payload["symbol"])
+    gate_symbol = str(gate_payload.get("symbol", valuation_symbol))
+    if gate_symbol != valuation_symbol:
+        raise ValueError("Research gate and valuation symbols differ")
     gate_conclusion = str(gate_payload["conclusion"])
     gate_results = dict(gate_payload["results"])
     if gate_conclusion in {
@@ -388,7 +398,7 @@ def current_research_status_from_payloads(
             else CONCLUSION_VALUATION_NOT_READY
         )
     gate = ResearchGate(
-        symbol=str(valuation_payload["symbol"]),
+        symbol=gate_symbol,
         results=gate_results,
         blockers=list(gate_payload["blockers"]),
         conclusion=gate_conclusion,
@@ -408,28 +418,10 @@ def current_research_status_from_payloads(
         status=str(valuation_payload["status"]),
         model_version=str(valuation_payload["model_version"]),
     )
-    price_bridge = PriceBridgeResult(
-        symbol=str(valuation_payload["symbol"]),
-        valuation_date=_required_date(
-            price_bridge_payload["valuation_date"], "price_bridge_valuation_date"
-        ),
-        quote_date=_optional_date(
-            price_bridge_payload.get("quote_date"), "price_bridge_quote_date"
-        ),
-        current_price=_optional_decimal(
-            price_bridge_payload.get("current_price"), "current_price"
-        ),
-        margin_to_bear=_optional_decimal(
-            price_bridge_payload.get("margin_to_bear"), "margin_to_bear"
-        ),
-        margin_to_base=_optional_decimal(
-            price_bridge_payload.get("margin_to_base"), "margin_to_base"
-        ),
-        model_validity_status=str(price_bridge_payload["model_validity_status"]),
-        quote_status=str(price_bridge_payload["quote_status"]),
-        bridge_status=str(price_bridge_payload["bridge_status"]),
-        evidence_refs=list(price_bridge_payload["evidence_refs"]),
-        blockers=list(price_bridge_payload["blockers"]),
+    price_bridge = price_bridge_from_payload(
+        valuation,
+        price_bridge_payload,
+        model_validity_payload=model_validity_payload,
     )
     return evaluate_current_research_status(
         gate,

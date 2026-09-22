@@ -1,36 +1,53 @@
 # 当前执行状态
 
 更新：2026-09-22。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
-更新方式：替换当前摘要，重要运行细节保留于有日期的验收/证据；不再在本文件累加数千行互相覆盖的“下一步”。
 此前完整运行记录原样归档于 [execution-status.md 历史快照](archive/goal-consolidation-20260922/execution-status.md)。
 
-## 本次审查基线
+## C0 验收基线
 
-- HEAD：`052d6ffe4da8efa4b2d4a735e29f57361dbce051`。
-- 提交时间：2026-09-22 14:02:08 +08:00；提交信息：`Freeze unified three-company Excel MVP`。
-- 审查开始工作树干净。当前文档治理改动尚未提交，不等于已部署或已推送。
-- 已读取当前合同、核心实现、CI 配置、统一验收与关键 runtime；枚举 docs/src/scripts/tests；未逐行复核全部旧脚本，未连接服务器或重做原始财报审计。
-- 今日定向测试：Core Gate 同清单 + `test_three_company_unified_acceptance.py`，`93 passed in 0.79s`；未重跑全量测试。
-- 本地核心 CI 配置已追踪，push main / PR 执行 pytest；旧记录称 run 35688371033 通过，本轮未重新验证远程最新 run。
-- 原 WPS 文件 Hash：`BD8049F042EED173AFC271C2E88C36F603719DC97F2480093C49335CD9AB22D1`，与冻结验收一致。本轮未打开重渲染或发布工作簿。
-- 文档治理验证：14 份归档原文 Hash 全部匹配；20 份活动 Markdown 的本地链接无断链；git diff --check 通过；src/scripts/tests/sql/deploy/.github 无差异，原 Excel Hash 未变。
+- HEAD：`2baa77e86c31259d6f82de7cf1400e64d680d84b`。
+- 提交时间：2026-09-22 15:33:49 +08:00；提交信息：`Consolidate-project-governance-and-current-stage-goal`。
+- C0 开始前工作树干净。当前 C0 改动尚未提交，不表示已部署或已推送。
+- 修复前复现：`600519 valuation + 000333 ModelValidity(unrelated-model) + quote evidence=[]` 返回 `READY / margin_to_base=0.1`；定向基线 `35 passed`，但没有覆盖该身份漏检。
+- 未连接服务器、生产数据库或定时任务；未重做原始财报、行情或重大事项审计。
+
+## C0 验收结果
+
+C0-PRICE-BRIDGE-INTEGRITY：`PASSED_FOR_FREEZE`。
+
+本阶段只修复共享价格桥接合同，不新增公司、模型、数据源或交易能力。核心改动如下：
+
+- 新增 `QuoteSnapshot`：绑定证券、报价日、价格、状态和证据；`verified_close` 必须有正有限价格及 Hash 地址化证据。
+- 收紧 `ModelValidity`：要求非空模型 ID、六位证券代码、命名证据；VALID 必须覆盖报价日且完成无重大事项检查。
+- 收紧 `PriceBridgeResult`：保存 schema、模型 ID/版本/as-of、报价证券、绑定估值情景，并在构造时重算两个 margin。
+- 增加 `bridge_with_quote()` 主入口，保留 `bridge()` 兼容入口；直接构造和 JSON 恢复都必须满足相同身份、版本、时点、报价证据和 margin 不变量。
+- `current_research_status_from_payloads()` 不再用估值 symbol 覆盖桥接身份，改为同时校验 gate、valuation、price_bridge、model_validity。
+- 下游价格吸引力对身份绑定失败返回 `NOT_ASSESSABLE`；坏桥接不会升级为 `RESEARCH_ATTRACTIVE`。
+- 旧 runtime 载荷按 legacy 合同显式恢复。茅台旧 READY 必须携带其 model_validity 并重新通过绑定校验，恢复结果增加 `legacy_price_bridge_contract_revalidated` 标记；美的和神华继续保持 fail-closed。
+
+验证证据：
+
+- 定向防回归：`47 passed`，包含三公司冻结回归和茅台导出回归。
+- Core Gate 清单：`102 passed`。
+- 全量测试：`1896 passed, 1 skipped, 18 warnings`。本机默认 pytest 临时目录被另一 Windows 账户占用，改用项目内 `--basetemp` 后通过；未改变测试内容。
+- `compileall` 通过；`git diff --check` 通过。
+- 三公司 runtime 四个 evidence.json Hash 与冻结记录一致；原 WPS 工作簿 Hash 仍为 `BD8049F042EED173AFC271C2E88C36F603719DC97F2480093C49335CD9AB22D1`。
+- 未改动 runtime Hash、历史 acceptance、估值参数、原 Excel、数据库、计划任务或服务器服务。
 
 ## 阶段语义
 
-Stage A 与三公司统一工程/Excel 验收已通过并冻结。P0/P0.5 有已通过的历史验收；新增边界复现表明 PriceBridge 合同仍需 P0 修复。
-PASSED_FOR_FREEZE 只代表现有边界明确并停止扩张。Research Complete、Valuation Complete、Dividend Research Complete、Production Data Ready 和 Price Assessment Ready 均须独立验收。
+三公司统一工程/Excel 验收已通过并冻结。C0 通过表示共享价格桥接身份和反序列化合同已修复，不代表研究、估值、股息能力、生产数据或价格判断已经完成。
 
 | 维度 | 600519 贵州茅台 | 000333 美的集团 | 601088 中国神华 |
 | --- | --- | --- | --- |
-| Engineering Complete | READY：冻结三公司路径；共同桥接合同仍有 P0 风险 | READY：FCFF 算术和拒绝边界，不等于该公司估值 | READY：周期算术和拒绝边界，不等于该公司估值 |
+| Engineering Complete | READY：三公司路径和 C0 共享桥接合同已冻结 | READY：FCFF 算术和拒绝边界，不等于该公司估值 | READY：周期算术和拒绝边界，不等于该公司估值 |
 | Research Complete | PARTIAL：商业/财务材料与论点存在，G3 未通过 | PARTIAL：事实范围 MODEL_NOT_APPLICABLE | PARTIAL：正常化假设和财务门未通过 |
 | Valuation Complete | PARTIAL：低置信度 conditional_research_only | NOT_READY：无三情景值 | NOT_READY：无三情景值 |
 | Dividend Research Complete | PARTIAL：有历史分红及分配交叉检查 | PARTIAL：有历史派息与部分财务材料 | PARTIAL：有派息与周期候选材料 |
 | Production Data Ready | 2026-09-21 快照 READY；未验证 09-22 当前生产 | PENDING_EXTERNAL_DATA，并存模型适用性问题 | PENDING_EXTERNAL_DATA，并存未注册假设/输入问题 |
 | Price Assessment Ready | NOT_ASSESSABLE：低置信度及研究门限制 | NOT_ASSESSABLE | NOT_ASSESSABLE |
 
-三家公司完整 DividendSustainability 评估均未完成；不把历史派息数据/模拟记账当成股息能力研究。
-美的与神华缺失不能全称“等行情”：前者含 MODEL_NOT_APPLICABLE，后者含 ASSUMPTION_MISSING / 未注册模型输入，需不同处理。
+三家公司完整 DividendSustainability 评估均未完成。美的与神华缺失不能全称“等行情”：前者含 MODEL_NOT_APPLICABLE，后者含 ASSUMPTION_MISSING / 未注册模型输入，需不同处理。
 
 ## 当前可追溯产物
 
@@ -41,17 +58,17 @@ PASSED_FOR_FREEZE 只代表现有边界明确并停止扩张。Research Complete
 | 美的未就绪结果 | `runtime/valuation-results/000333-fcff-stage-b/evidence.json` | `10c8f565647df6bda5eac4eff8c0e9ed4b4d3192e1d5cd1241a1233b5706f5fc` |
 | 神华未就绪结果 | `runtime/valuation-results/601088-cyclical-b3/evidence.json` | `b03eaa05f7cbe117c676ddc5f6d9be6dc0c551a84fd3a457e18ee9886e5d1df6` |
 
-茅台估值/报价日期均为 2026-09-21，条件情景 403.44 / 478.43 / 571.25 元每股；此处仅描述冻结模型，不是当前合理价或投资建议。
-美的、神华载荷日期为 2025-12-31，不能称作今日估值；null 情景保持原义。
-历史验收与 Hash 详见 [统一验收](three-company-unified-acceptance-20260922.md)，本轮未改历史记录。
+茅台估值/报价日期均为 2026-09-21，条件情景 403.44 / 478.43 / 571.25 元每股；此处仅描述冻结模型，不是当前合理价或投资建议。美的、神华载荷日期为 2025-12-31，不能称作今日估值。
 
-## 本轮发现与唯一下一任务
+## 剩余风险与边界
 
-C0-PRICE-BRIDGE-INTEGRITY：NOT_STARTED。
-合成输入 `600519 valuation + 000333 ModelValidity(unrelated-model) + quote evidence=[]` 仍返回 READY，证明共享函数缺少身份/证据约束。
-序列化恢复还将 bridge symbol 替换为 valuation symbol，需在同一修复中验证输入而非覆盖冲突。
-此问题是通用合同风险，未发现现有三公司冻结产物实际混配；不宣称已经影响用户历史判断。
+- C0 是工程合同验证，不替代生产行情、公告或重大事项复核；当前价格评估仍为 NOT_ASSESSABLE。
+- 旧 `bridge()` 兼容入口仍会从散字段临时构造 QuoteSnapshot。后续调用方应逐步切换到显式 QuoteSnapshot，但当前旧 runtime 已 fail-closed 恢复。
+- 模型身份当前从估值 evidence Hash 和 model_version 集合校验，尚未迁移到 PostgreSQL 的持久化模型快照注册表。
+- 全市场漏斗、正式股息可持续性、Web 前端和券商接入均未实现，不属于 C0 回归范围。
 
-当前工程不依赖自然时间。下一目标按 current-stage-goal 的验收完成后停止，不继续股息、数据库或扩样本工作。
-最核心三个风险：价格桥接身份漏检；三公司 fail-closed 工程冻结被误读为投资研究完成；大量公司专用编排与 runtime/数据库双路径限制扩展。
-详细分级、文档治理清单和后续门槛见 [本轮审查报告](project-goal-consolidation-20260922.md)。
+## 唯一建议后续任务
+
+`NEXT TASK: 固定样本准入协议与公共编排审查`。目标是在扩样本前，把“流程可复用”和“生产估值可用”分开：定义三家公司进入固定研究样本的准入证据、可复用的公共编排入口、失败退出和人工确认边界；不改估值参数，不连接自动交易。
+
+当前 C0 已完成，停止本阶段目标运行，不自动开始下一任务。

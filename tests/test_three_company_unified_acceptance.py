@@ -196,6 +196,7 @@ def test_assumptions_materiality_and_shared_status_never_unlock_trading():
             cases[symbol]["gate"],
             payload["result"],
             payload["price_bridge"],
+            model_validity_payload=payload.get("model_validity"),
         )
         assert status.symbol == symbol
         assert status.engineering_status == ENGINEERING_READY

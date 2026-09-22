@@ -128,7 +128,8 @@ def company_progress(wb, root):
             if mvp_record:
                 rows['600519']['current_research_status'] = (
                     current_research_status_from_payloads(
-                        mvp_record['gate'], value, bridge
+                        mvp_record['gate'], value, bridge,
+                        model_validity_payload=payload.get('model_validity'),
                     )
                 )
             refs.setdefault('600519', []).append(valuation_ref)
@@ -241,7 +242,8 @@ def company_progress(wb, root):
             if mvp_record:
                 rows['000333']['current_research_status'] = (
                     current_research_status_from_payloads(
-                        mvp_record['gate'], value, bridge
+                        mvp_record['gate'], value, bridge,
+                        model_validity_payload=payload.get('model_validity'),
                     )
                 )
             rows['000333']['stage'] = 'MVP研究已载入；' + _mvp_display_status(value['status'])
@@ -270,7 +272,8 @@ def company_progress(wb, root):
             if mvp_record:
                 rows['601088']['current_research_status'] = (
                     current_research_status_from_payloads(
-                        mvp_record['gate'], value, bridge
+                        mvp_record['gate'], value, bridge,
+                        model_validity_payload=payload.get('model_validity'),
                     )
                 )
             rows['601088']['stage'] = 'MVP研究已载入；' + _mvp_display_status(value['status'])
