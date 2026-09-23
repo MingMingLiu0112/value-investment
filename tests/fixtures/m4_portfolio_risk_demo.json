@@ -1,0 +1,105 @@
+{
+  "schema_version": "m4-portfolio-risk-demo-v1",
+  "action": "no_order",
+  "assessment_namespace": "SIMULATED",
+  "assessment_id": "sim-risk-assessment-v1",
+  "as_of": "2026-09-22",
+  "generated_at": "2026-09-22T13:00:00+00:00",
+  "policy": {
+    "policy_id": "sim-policy-v1",
+    "policy_version": "20260922-v1",
+    "as_of": "2026-09-22",
+    "confirmation_status": "HUMAN_CONFIRMED",
+    "confirmed_at": "2026-09-22T10:30:00+00:00",
+    "account_scope": "SIMULATED_PUBLIC_DEMO",
+    "investable_assets_cny": "2000000",
+    "minimum_cash_cny": "200000",
+    "emergency_cash_cny": "300000",
+    "liquidity_needs_cny": "100000",
+    "time_horizon_years": "10",
+    "max_single_security_pct": "25",
+    "max_single_industry_pct": "40",
+    "max_cyclical_exposure_pct": "30",
+    "dividend_income_goal_cny": "30000",
+    "risk_tolerance": "BALANCED",
+    "concentration_allowed": false,
+    "tax_regime": "模拟税务口径",
+    "restrictions": ["no_order", "no_leverage"],
+    "evidence_refs": [{"id": "sim-policy-confirmation"}]
+  },
+  "snapshot": {
+    "snapshot_id": "sim-snapshot-v1",
+    "snapshot_version": "20260922-v1",
+    "as_of": "2026-09-22",
+    "available_at": "2026-09-22T12:00:00+00:00",
+    "account_scope": "SIMULATED_PUBLIC_DEMO",
+    "namespace": "SIMULATED",
+    "cash_cny": "350000",
+    "holdings": [
+      {
+        "symbol": "600519",
+        "exchange": "SSE",
+        "quantity": "100",
+        "cost_basis_cny": "500000",
+        "market_value_cny": "500000",
+        "quantity_source": "HUMAN_CONFIRMED",
+        "corporate_action_adjusted": true,
+        "evidence_refs": [{"id": "sim-holding-600519"}]
+      },
+      {
+        "symbol": "000333",
+        "exchange": "SZSE",
+        "quantity": "100",
+        "cost_basis_cny": "300000",
+        "market_value_cny": "300000",
+        "quantity_source": "HUMAN_CONFIRMED",
+        "corporate_action_adjusted": true,
+        "evidence_refs": [{"id": "sim-holding-000333"}]
+      },
+      {
+        "symbol": "601088",
+        "exchange": "SSE",
+        "quantity": "100",
+        "cost_basis_cny": "450000",
+        "market_value_cny": "450000",
+        "quantity_source": "HUMAN_CONFIRMED",
+        "corporate_action_adjusted": true,
+        "evidence_refs": [{"id": "sim-holding-601088"}]
+      }
+    ],
+    "reconciliation_status": "RECONCILED",
+    "reconciled_at": "2026-09-22T10:30:00+00:00",
+    "evidence_refs": [{"id": "sim-broker-statement"}]
+  },
+  "security_attributes": {
+    "600519": {
+      "symbol": "600519",
+      "industry": "消费",
+      "cyclical": false,
+      "liquidity_profile": "LIQUID",
+      "common_factors": ["brand"],
+      "evidence_refs": [{"id": "sim-risk-600519"}]
+    },
+    "000333": {
+      "symbol": "000333",
+      "industry": "耐用制造",
+      "cyclical": false,
+      "liquidity_profile": "LIQUID",
+      "common_factors": ["manufacturing"],
+      "evidence_refs": [{"id": "sim-risk-000333"}]
+    },
+    "601088": {
+      "symbol": "601088",
+      "industry": "能源",
+      "cyclical": true,
+      "liquidity_profile": "LIQUID",
+      "common_factors": ["energy_cycle"],
+      "evidence_refs": [{"id": "sim-risk-601088"}]
+    }
+  },
+  "security_names": {
+    "600519": "贵州茅台",
+    "000333": "美的集团",
+    "601088": "中国神华"
+  }
+}

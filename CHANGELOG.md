@@ -1,5 +1,41 @@
 # Changelog
 
+## v2026.09.24-m4-portfolio-risk-assessment
+
+### Release Scope
+
+建立 M4 非个人化组合风险与集中度评估，以及一个显式模拟的 4 页 Excel 候选。
+本版本不读取真实 IPS/持仓，不计算目标仓位、仓位大小或订单；缺失输入仍然失败关闭。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/portfolio_risk.py`：
+  - `SecurityRiskAttributes`、`RiskFinding`、`PortfolioRiskAssessment`；
+  - 单股/行业/周期暴露、最低与应急/流动性现金、共同因子和流动性复核；
+  - 实际与模拟评估命名空间分离，公开结果拒绝真实账户命名空间。
+- 新增 `src/value_investment_agent/m4_portfolio_risk_workbook.py`，生成 4 页候选：
+  `00_组合风险`、`01_持仓与集中度`、`02_风险发现`、`03_输入与边界`。
+- 新增 `scripts/build_m4_portfolio_risk_candidate.py`、WPS 验证脚本和
+  `tests/fixtures/m4_portfolio_risk_demo.json`。
+- 新增 `tests/test_portfolio_risk_assessment.py`、
+  `tests/test_m4_portfolio_risk_workbook.py` 并纳入 GitHub Core Research Gate。
+
+### Verification
+
+- M4 风险域定向回归：8 passed；M4 风险/合同/工作簿联合回归：18 passed。
+- 模拟候选为 4 页、3 个持仓、3 项风险发现，固定 `action=no_order`；
+  字节数 10,060，SHA-256
+  `0594db6981a78063883271cd2fa45e117487fe6a9657a97e14665dc6bf8b07a7`。
+- WPS 只读打开、页序、公式错误、模拟标签、行数和 `no_order` 检查通过；
+  WPS 云盘同名副本与仓库候选逐字节一致。
+- 未修改原 55 页生产工作簿，未读取真实账户、现金、IPS、持仓或交易记录。
+
+### Acceptance Boundary
+
+- M2 当前为 `PENDING_HUMAN_REVIEW`，M3、M4 均继续保持 `PARTIAL`。
+- 该候选只是非个人化工程演示；真实组合风险报告仍需用户确认真实 IPS/持仓后另出
+  私有版本，不得据此自动调仓或交易。
+
 ## v2026.09.24-m3-history-read-model
 
 ### Release Scope

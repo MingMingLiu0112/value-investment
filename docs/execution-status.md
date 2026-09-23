@@ -2,6 +2,36 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M4 组合风险与集中度评估：2026-09-24
+
+本节记录 M4 非个人化风险域与模拟 Excel 候选。M2 为 `PENDING_HUMAN_REVIEW`，
+M3、M4 仍为 `PARTIAL`；本批只使用显式模拟组合，不读取真实账户、IPS 或持仓。
+
+- 新增 `portfolio_risk.py`，建立 `SecurityRiskAttributes`、`RiskFinding` 和
+  `PortfolioRiskAssessment`；单股/行业/周期暴露、现金储备、共同因子和流动性
+  分别计算，缺失输入失败关闭。
+- 实际评估只接受人工确认且已对账的 `ACTUAL` 快照；公开候选只接受
+  `SIMULATED` 评估，真实私人数据不得进入公开仓库。
+- 新增 `m4_portfolio_risk_workbook.py`、构建脚本、WPS 校验脚本和模拟 fixture，
+  并纳入 GitHub Core Research Gate。
+- 独立候选 4 页、3 个持仓、3 项风险发现，固定 `action=no_order`；字节数
+  10,060，SHA-256
+  `0594db6981a78063883271cd2fa45e117487fe6a9657a97e14665dc6bf8b07a7`。
+- WPS 只读收据 `runtime/m4-portfolio-risk-wps-20260924/receipt.json` 为
+  `passed`；WPS 云盘同名副本与仓库候选逐字节一致。
+- 真实组合风险报告、PositionGuidance 和 DividendIncomeProjection 尚未完成；
+  本候选不是个人化风险结论。
+
+## M2 AC1-AC12 完整本地回归复核：2026-09-24
+
+- 重新执行 `scripts/audit_m2_acceptance.py --run-tests --ci-status success`，
+  并显式核对 WPS 生产工作簿；最新收据
+  `runtime/m2-acceptance-audit-20260923T194403Z/receipt.json`，SHA-256
+  `2d1ec99b99e4696fcd3ebcb07a6b86d9cd28ea005fa8a847acd0205a7f5fe89c`。
+- 全量离线回归通过；AC1、AC2、AC3、AC4、AC5、AC6、AC7、AC11 为 `DONE`。
+- AC8、AC9、AC10、AC12 保持 `PENDING_HUMAN_REVIEW`；整体状态由 `PARTIAL`
+  转为 `PENDING_HUMAN_REVIEW`，下一步仍需用户在 WPS 中完成 Checkpoint A。
+
 ## M3 论点连续性历史链只读模型：2026-09-24
 
 本节记录 M3 历史链的公开离线工程。M2、M3、M4 均仍为 `PARTIAL`；
@@ -36,8 +66,8 @@
 - IPS 人工确认门槛、持仓对账门槛和缺失字段均已显式化，见
   [m4-portfolio-input-contracts-20260924.md](m4-portfolio-input-contracts-20260924.md)。
 - 新增 7 项回归测试并纳入 GitHub Core Research Gate。
-- 尚未实现 PositionGuidance、PortfolioRiskAssessment、DividendIncomeProjection、
-  私有持久化、真实账户导入或原 Excel M4 展示。
+- `PortfolioRiskAssessment` 已在本日后续批次实现；PositionGuidance、
+  DividendIncomeProjection、私有持久化、真实账户导入和原 Excel M4 展示尚未完成。
 - 本批未修改任何 Excel 字节，原 55 页生产工作簿和 M3 独立候选 Hash 均保持不变。
 
 ## M3 决策卡可重复验收审计与 M2 机器门复核：2026-09-24
