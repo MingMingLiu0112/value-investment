@@ -50,6 +50,7 @@ jobs:
           tests/test_m3_decision_acceptance_audit.py
           tests/test_m3_history_read_model.py
           tests/test_m3_history_original_workbook.py
+          tests/test_m7_workbench_candidate.py
           tests/test_portfolio_contracts.py
           tests/test_portfolio_risk_assessment.py
           tests/test_m4_portfolio_risk_workbook.py

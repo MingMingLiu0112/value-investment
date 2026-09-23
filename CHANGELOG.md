@@ -1,5 +1,42 @@
 # Changelog
 
+## v2026.09.24-m7-workbench-display-candidate
+
+### Release Scope
+
+把已受保护的 M3 历史链叠加候选与六个 M4/M5 只读候选合并为一个 90 页的 M7
+统一工作台展示候选。本版本只准备原 Excel 的统一展示入口，不发布 canonical，
+不读取真实 IPS/持仓，不创建决策、仓位或订单。
+
+### New Capability
+
+- 新增 `scripts/build_m7_workbench_candidate.py`：绑定基底、canonical 和六个
+  M4/M5 候选 SHA-256，先唯一重命名附加工作表，再通过
+  `stage_frontend_package.graft` 逐层叠加，并生成版本 manifest。
+- 扩展 `stage_frontend_package.rename_workbook_sheets`：仅改写
+  `xl/workbook.xml` 的 sheet title，保留其余 ZIP 部件，校验长度和重复名。
+- 新增 `00_M7总览`，说明 M2-M7 状态、no_order 边界和 9 个内部入口；该页
+  禁止使用订单式正向决策文本。
+- 新增 `scripts/verify_m7_workbench_wps.ps1` 和 4 项构建器回归，纳入 GitHub
+  Core Research Gate。
+
+### Verification
+
+- 候选字节数 13,262,051，SHA-256：
+  `829f743acc3f628e60bd9e210b196965865ad2306dea7e520d9f9d62b402d582`。
+- 工作表 90 个；89 个源页面、145 个未替换源 ZIP 部件在最终叠加前保留。
+- 定向回归 11 passed；WPS 实际只读打开 90 页，前 31 页顺序、导航目标、
+  公式错误和 no_order 文本校验通过，canonical 打开前后 Hash 不变。
+- 全量离线回归 2292 passed、6 skipped、0 failed。
+- WPS 云盘同名候选与仓库候选逐字节一致。
+
+### Acceptance Boundary
+
+- `M2=PENDING_HUMAN_REVIEW`，`M3/M4/M5=PARTIAL`，`M6=NOT_STARTED`，
+  `M7=PARTIAL`，全部动作 `action=no_order`。
+- 本候选只证明只读展示叠加可重复，不替代 Checkpoint A-D、真实 IPS/组合授权、
+  M6 运营证据或 M7 最终用户签收。
+
 ## v2026.09.24-m3-history-original-workbook-overlay
 
 ### Release Scope

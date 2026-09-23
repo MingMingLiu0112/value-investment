@@ -2,6 +2,31 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M7 统一工作台展示候选：2026-09-24
+
+本节记录在人工 Checkpoint 与真实 M6 数据尚未满足时，按总目标允许提前完成的
+M7 只读展示层工程。M2 保持 `PENDING_HUMAN_REVIEW`，M3、M4、M5 保持
+`PARTIAL`，M6 为 `NOT_STARTED`；全部动作 `action=no_order`。
+
+- 新增 `scripts/build_m7_workbench_candidate.py`：绑定 M3 基底、canonical 和
+  六个 M4/M5 候选的 SHA-256，先显式重命名附加工作表，再用 `graft` 逐层叠加；
+  任何输入变化或重复页名均失败关闭。
+- 扩展 `stage_frontend_package.py` 的 `rename_workbook_sheets`：只修改
+  `xl/workbook.xml` 的标题，其余 ZIP 部件逐字节保留，并校验 Excel 标题长度和
+  重复名。
+- 新增 90 页候选
+  `A股价值投资_Agent前端智能跟踪模板_M7统一工作台候选_20260924.xlsx`：
+  `00_M7总览` + 29 个重命名 M4/M5 页 + 60 页 M3 历史链叠加基底。
+- 候选 SHA-256：
+  `829f743acc3f628e60bd9e210b196965865ad2306dea7e520d9f9d62b402d582`；
+  字节数 13,262,051；89 个源页面和 145 个源 ZIP 部件在最后一层前保持不变。
+- 新增 WPS 只读验证脚本和 4 项构建器回归并纳入 GitHub Core Research Gate。
+  定向回归 11 passed；全量离线回归 2292 passed、6 skipped、0 failed；WPS 只读收据
+  `runtime/m7-workbench-wps-20260924/wps-verification.json` 为 `passed`。
+- WPS 云盘同名候选与仓库候选逐字节一致，canonical 未被覆盖。
+- 本候选不证明 Checkpoint D、M7 交付或实盘准入；真实 M7 仍需 M2/M3 用户复核、
+  真实 IPS/组合授权、M5/M6 生产观察和 Checkpoint D。
+
 ## M3 论点连续性历史链叠加候选：2026-09-24
 
 本节记录把五页显式模拟历史链追加到已受保护的 M3 决策复核候选。M2 保持

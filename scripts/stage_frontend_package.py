@@ -77,6 +77,66 @@ def validate_package_relationships(path):
                         )
 
 
+def rename_workbook_sheets(
+    source,
+    output,
+    expected,
+    prefix='',
+    rename_map=None,
+):
+    """Rename worksheet titles without rewriting any other workbook XML part.
+
+    This is deliberately a packaging helper for cumulative read-model workbooks.
+    It does not alter cell content, styles, evidence links or sheet order.
+    """
+    if digest(source.read_bytes()) != expected:
+        raise ValueError('Source changed since inspection; do not rename')
+    if output.exists():
+        raise ValueError('Renamed candidate already exists')
+    if not prefix and not rename_map:
+        raise ValueError('A non-empty prefix or rename map is required')
+    rename_map = dict(rename_map or {})
+    with ZipFile(source) as src:
+        workbook, entries = sheets(src)
+        renamed = []
+        for sheet, _path in entries:
+            old_name = sheet.get('name')
+            new_name = rename_map.get(old_name, prefix + old_name)
+            if len(new_name) > 31:
+                raise ValueError(f'Renamed sheet title exceeds Excel limit: {new_name}')
+            if new_name in renamed:
+                raise ValueError(f'Duplicate renamed sheet title: {new_name}')
+            sheet.set('name', new_name)
+            renamed.append(new_name)
+        replacements = {'xl/workbook.xml': serialized(workbook)}
+        with ZipFile(output, 'w', ZIP_DEFLATED, allowZip64=True) as out:
+            for item in src.infolist():
+                out.writestr(
+                    deepcopy(item),
+                    replacements.get(item.filename, src.read(item.filename)),
+                )
+    with ZipFile(output) as result, ZipFile(source) as original:
+        unchanged = [path for path in original.namelist() if path not in replacements]
+        assert all(result.read(path) == original.read(path) for path in unchanged)
+        assert result.testzip() is None
+        validate_package_relationships(output)
+        _, verified = sheets(result)
+        assert [sheet.get('name') for sheet, _path in verified] == renamed
+    receipt = {
+        'source_sha256': expected,
+        'candidate_sha256': digest(output.read_bytes()),
+        'original_parts_unchanged': len(unchanged),
+        'renamed_sheets': renamed,
+        'candidate': str(output),
+        'status': 'renamed_not_published',
+    }
+    output.with_suffix('.receipt.json').write_text(
+        json.dumps(receipt, ensure_ascii=False, indent=2),
+        encoding='utf-8',
+    )
+    return receipt
+
+
 def preview(source, output):
     # Only the inspection copy is truncated. The publication path copies original bytes.
     with ZipFile(source) as z:
