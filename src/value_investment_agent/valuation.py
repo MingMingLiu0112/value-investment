@@ -1,4 +1,10 @@
-"""Transparent, review-required PE/PB reference valuation."""
+"""Transparent, review-required PE/PB reference valuation.
+
+LEGACY_SAMPLE_REFERENCE_PROFILES
+
+The hard-coded multiples below describe the historical ten-company seed sample.
+They are not a general sector router and must not assign a model to a new symbol.
+"""
 
 from __future__ import annotations
 
@@ -7,6 +13,9 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from .models import SourceRecord
+
+
+LEGACY_SAMPLE_REFERENCE_PROFILES = True
 
 
 MODEL_VERSION = "pe-pb-reference-v2-explicit-components"

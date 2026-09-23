@@ -245,6 +245,39 @@ def test_component_payload_round_trip_preserves_haircuts():
     assert restored.base_recoverable_value == Decimal("80")
 
 
+def test_temporary_haircut_flags_round_trip_and_aggregate_fail_closed():
+    component = _component(blockers=("stress-check",))
+    component = BridgeComponentAssessment(
+        **{
+            **component.__dict__,
+            "stress_test_only": True,
+            "not_valuation_input": True,
+            "not_price_assessment_input": True,
+        }
+    )
+    restored = bridge_component_from_payload(component.as_policy())
+
+    assert restored == component
+    assert restored.stress_test_only is True
+    assert restored.not_valuation_input is True
+    assert restored.not_price_assessment_input is True
+
+    review = build_bridge_contribution(
+        symbol="600519",
+        valuation_scenario="base",
+        currency="CNY",
+        ordinary_shares=Decimal("10"),
+        operating_enterprise_value=Decimal("200"),
+        components=(restored,),
+        confidence="低",
+        evidence_refs=({"id": "bridge-review"},),
+    )
+    assert review.stress_test_only is True
+    assert review.not_valuation_input is True
+    assert review.not_price_assessment_input is True
+    assert bridge_contribution_from_payload(review.as_policy()) == review
+
+
 def test_large_bridge_share_is_visible_without_being_an_automatic_failure():
     review = build_bridge_contribution(
         symbol="600519",

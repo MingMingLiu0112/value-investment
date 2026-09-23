@@ -59,7 +59,10 @@ def build() -> dict:
             or assumptions.get("as_of") != as_of or assumptions.get("passed") is not True):
         raise ValueError("Current P1 dependency scope is incomplete")
     daily_policy = load_daily_simulation_policy()
-    policy_implemented = daily_policy is not None and daily_policy[0].get("observed_session") == as_of
+    policy_implemented = daily_policy is not None and as_of in {
+        daily_policy[0].get("observed_session"),
+        daily_policy[0].get("valid_session"),
+    }
     return {
         "symbol": "600519", "contract_version": "moutai-p1-model-contract-v4", "as_of": as_of, "inputs": refs,
         "candidate_primary_model": {"name": "consolidated_parent_equity_residual_income_or_dividend_capacity", "model_version": model["model_version"], "research_date_only": bool(model["model_policy"].get("research_date_only")), "conclusion": "admitted_for_bounded_current_paper_research"},

@@ -57,6 +57,7 @@ jobs:
           tests/test_m1_sample_preregistration.py
           tests/test_research_batch.py
           tests/test_research_e2e_replay.py
+          tests/test_m1_post_review_receipts_boundary.py
 
   postgres-integration:
     runs-on: ubuntu-latest

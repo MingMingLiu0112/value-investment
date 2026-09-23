@@ -1,11 +1,41 @@
-# 当前长期目标：固定样本研究工作台
+# 当前执行目标：M2 多通道机会发现
 
-更新：2026-09-23。目标 ID：`M1-FIXED-SAMPLE-RESEARCH-WORKBENCH`。
-状态：DONE。固定样本研究工作台的 AC1-AC10 机器验收已通过；研究结论全部保持 `conditional_research_only`。正式 G3 研究批准和模型前公告材料性复核是后续 M3/M5 的决策阶段复核，M1 只保存为显式 `deferred_human_review`，不作为研究工作台验收阻断项。正常化股息情景仍显式 `NOT_READY`，这是后续研究缺口，不代表研究状态可以升级。
-可重复的 AC1-AC10 机器验收入口为 `scripts/audit_m1_acceptance.py --run-tests`；审计器只核本地证据，不批准 G3 或事件材料性。
-逐条公告/G3 后续复核台账由 `scripts/render_m1_human_review_packet.py` 只读生成，见 `docs/m1-human-review-packet-20260923.md`。
+更新：2026-09-23。当前活动阶段为 `POST-M1-STABILIZATION`，完成后立即进入
+`M2-MULTI-CHANNEL-OPPORTUNITY-DISCOVERY`。执行输入为
+[m2-current-progress-review-20260923.md](m2-current-progress-review-20260923.md)。
+
+## M2 Goal / 用户可见成果
+
+系统首次主动回答“整个 A 股现在应该看谁”：以交易所 Universe 为分母，建立
+Quality、Dividend/Cash Return、Value、Cyclical 四个证据通道，把候选、进入原因、
+缺失数据、支持画像和证据日期写入 Excel。候选只进入深研队列，不生成 BUY、仓位或订单。
+
+## M2 边界
+
+- 不做全市场 DCF；禁止银行/保险被误套现有非金融模型，缺失不得默认为 0。
+- 旧 `PE<=25 / PB<=3 / 市值>=50亿` 仅保留为 `LEGACY_VALUE_SCREEN` shadow，不作候选排序。
+- 每家公司至少记录 `channel / reasons / evidence_date / data_status / profile_status`。
+- 最终必须完成一次真实 run-once、可重复 PIT 重放，以及 Excel 候选板卡。
+- 未完成真实数据验收时只标 `PARTIAL`，不宣布 M2 完成。
+
+## 当前保护
+
+- M1 冻结包、冻结验收 Hash、生产 PostgreSQL、生产调度器、服务器 PTA/Web App 和原 WPS 人工区均不修改。
+- 所有输出保持 `action=no_order`；M2 是机会发现，不是决策或交易准入。
 
 跨阶段规划和真实基线见 [LONG-TERM-GOAL.md](../LONG-TERM-GOAL.md)。本文件是唯一当前执行范围，不与长期文件建立两套任务队列。
+
+## M1 历史目标收口
+
+目标 ID：`M1-FIXED-SAMPLE-RESEARCH-WORKBENCH`，状态：`DONE`。固定样本研究工作台的
+AC1-AC10 机器验收已通过；研究结论全部保持 `conditional_research_only`。正式 G3
+研究批准和模型前公告材料性复核是后续 M3/M5 的决策阶段复核，M1 只保存为显式
+`deferred_human_review`，不作为研究工作台验收阻断项。正常化股息情景仍显式
+`NOT_READY`，这是后续研究缺口，不代表研究状态可以升级。
+可重复的 AC1-AC10 机器验收入口为 `scripts/audit_m1_acceptance.py --run-tests`；
+审计器只核本地证据，不批准 G3 或事件材料性。逐条公告/G3 后续复核台账由
+`scripts/render_m1_human_review_packet.py` 只读生成，见
+`docs/m1-human-review-packet-20260923.md`。以下 M1 章节保留为历史授权和完成定义，不再作为新增任务。
 
 ## 继承与替代
 

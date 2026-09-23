@@ -38,6 +38,34 @@ def load_pinned_reference(reference: dict) -> tuple[dict, dict]:
     return json.loads(path.read_text(encoding="utf-8")), {"path": str(path.relative_to(ROOT)), "sha256": reference["sha256"]}
 
 
+def resolve_separate_execution_requirements(contract: dict) -> dict:
+    """Derive the execution-policy fact from the pinned policy, not its stale flag.
+
+    The v4 P1 contract moved its research date from 2026-09-21 to 2026-09-22.
+    The separately dated paper-execution policy was observed on the prior session
+    and is valid for the 2026-09-22 session. The audit must preserve that
+    historical fact instead of letting an old boolean in the contract shadow the
+    hash-bound policy that the contract itself references.
+    """
+    requirements = dict(contract.get("separate_execution_requirements") or {})
+    if contract.get("contract_version") == "moutai-p1-model-contract-v4":
+        policy_ref = requirements.get("daily_simulation_policy") or {}
+        policy, _ = load_pinned_reference(policy_ref) if policy_ref else (None, {})
+        implemented = bool(
+            policy
+            and policy.get("implementation_status")
+            == "implemented_for_paper_execution_only"
+            and policy.get("trade_approved") is False
+            and policy.get("live_eligible") is False
+            and contract.get("as_of") in {
+                policy.get("observed_session"),
+                policy.get("valid_session"),
+            }
+        )
+        requirements["daily_simulation_policy_implemented"] = implemented
+    return requirements
+
+
 def audit() -> dict:
     observation, observation_ref = load_pointed_evidence(CURRENT_OBSERVATION_POINTER, "evidence.json")
     closure, closure_ref = load_pointed_evidence(SIMULATION_CLOSURE_POINTER, "summary.json")
@@ -149,7 +177,7 @@ def audit() -> dict:
             "current_forward_assumptions_evidence": forward_assumptions_ref,
             "blocking_gate_ids": [gate["id"] for gate in gates if not gate["passed"]],
             "model_scope_assessment": assessment,
-            "separate_execution_requirements": contract.get("separate_execution_requirements"),
+             "separate_execution_requirements": resolve_separate_execution_requirements(contract),
             "interpretation": "Current valuation requires dated model facts, supported assumptions and accounting/capital-action bridges. P1 admission permits only the stated conditional paper-research scope; market observations and execution mechanics are separate context, not formal-value or trade approval. Historical and forward simulation retain their own execution requirements."}
 
 

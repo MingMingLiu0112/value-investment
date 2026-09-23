@@ -1,3 +1,11 @@
+"""Legacy ten-company seed list used by early fixed-sample experiments.
+
+LEGACY_FIXED_SAMPLE_SEED_LIST
+"""
+
+LEGACY_FIXED_SAMPLE_SEED_LIST = True
+
+
 UNIVERSE = [
     ('600941', '中国移动', '通信运营', '稳健高股息'),
     ('600900', '长江电力', '电力公用事业', '稳健现金流'),

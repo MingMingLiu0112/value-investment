@@ -1,4 +1,11 @@
-"""Low-memory, auditable all-A-share initial screening."""
+"""Low-memory, auditable all-A-share initial screening.
+
+LEGACY_VALUE_SCREEN
+
+The PE<=25 / PB<=3 / market-cap>=5bn selection in this module is retained for
+historical comparison and enrichment only. M2 must not use its score as a
+candidate priority.
+"""
 
 from __future__ import annotations
 
@@ -9,6 +16,9 @@ from collections import Counter
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
+
+
+LEGACY_VALUE_SCREEN = True
 
 
 EASTMONEY_SOURCE = (

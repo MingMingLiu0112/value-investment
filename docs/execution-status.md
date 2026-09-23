@@ -2,6 +2,22 @@
 
 更新：2026-09-23。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## POST-M1 Stabilization + M2 启动：2026-09-23
+
+执行输入是用户复核后的 [m2-current-progress-review-20260923.md](m2-current-progress-review-20260923.md)。
+当前活动阶段为 `POST-M1-STABILIZATION`，完成 A1-A5 后进入
+`M2-MULTI-CHANNEL-OPPORTUNITY-DISCOVERY`。M1 保持 `DONE`，不重写历史。
+
+- A1：修正茅台旧审计断言，从 P1 v4 契约自带的 hash-bound daily-simulation policy 推导执行政策事实，不删除红测试。
+- A2：`build_m1_post_review_receipts.py` 标记为 `ONE_OFF_REVIEW_RECEIPT_GENERATOR`，并增加生产路径防误用测试。
+- A3：临时桥接 haircut 增加 `stress_test_only / not_valuation_input / not_price_assessment_input`，域对象可序列化和 round-trip。
+- A4：旧十样本估值画像、固定 Universe seed 与 PE/PB screen 明确标记为 legacy；M2 不得复用为候选排序。
+- A5：`current-stage-goal.md` 已切换到 M2；本执行手册复制入 `docs/`。
+- 稳定化验收：定向回归 14 passed；使用仓库内隔离 basetemp 的全量回归 2112 passed / 6 skipped；`compileall` 与 `git diff --check` 通过；Core 生产路径未新增 `000651 / 600741 / 600887` symbol 特例。
+
+尚未声明 M2 完成。M2 需要真实全市场 run-once、真实数据覆盖、四个通道、候选原因、
+缺失隔离、不支持行业隔离、可重放 PIT 和 Excel 候选输出。
+
 ## M1 收口：2026-09-23
 
 - `M1-FIXED-SAMPLE-RESEARCH-WORKBENCH` 已达到 `DONE`；AC1-AC10 均由本地产物、隔离 PostgreSQL、WPS 发布收据和定向回归支持，最新审计状态为 `PASSED`、`action=no_order`。收据 `runtime/m1-acceptance-audit-20260923T091447Z/receipt.json`，SHA-256 `f7c71e507585d7660cc9f66320617738525a32abf141f2296ce46ee9ae90d16a`。

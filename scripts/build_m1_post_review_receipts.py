@@ -1,5 +1,11 @@
 """Build append-only M1 post-review receipts from the frozen M1 baseline.
 
+ONE_OFF_REVIEW_RECEIPT_GENERATOR
+
+This script is a historical receipt builder, not a reusable M2/M3/M4 production
+path. New production modules must not import it or reuse its company-specific
+receipt constants.
+
 This script reads the frozen valuation packages, the existing event-scan PDFs
 and the existing M1 application output. It emits a new timestamped runtime
 bundle. It never edits config/m1-valuation-packages-v1, the production
@@ -68,6 +74,7 @@ from value_investment_agent.valuation_models.residual_income import scenario_val
 
 
 SCHEMA_VERSION = "m1-post-review-receipts-v1"
+ONE_OFF_REVIEW_RECEIPT_GENERATOR = True
 ACTION_NO_ORDER = "no_order"
 REVIEWED_AT = datetime(2026, 9, 23, 5, 30, tzinfo=timezone.utc)
 REVIEW_AS_OF = REVIEWED_AT.date()
@@ -545,6 +552,9 @@ def _asset(
     basis: str,
     evidence_refs: tuple[Mapping[str, Any], ...],
     blockers: tuple[str, ...] = (),
+    stress_test_only: bool = True,
+    not_valuation_input: bool = True,
+    not_price_assessment_input: bool = True,
 ) -> BridgeComponentAssessment:
     bear, base, bull = haircuts or ("0", "0", "0")
     bear_value = Decimal(bear)
@@ -568,6 +578,9 @@ def _asset(
         confidence="低",
         evidence_refs=tuple(dict(ref) for ref in evidence_refs),
         blockers=blockers,
+        stress_test_only=stress_test_only,
+        not_valuation_input=not_valuation_input,
+        not_price_assessment_input=not_price_assessment_input,
     )
 
 

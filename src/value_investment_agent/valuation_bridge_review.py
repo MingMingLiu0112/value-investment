@@ -115,6 +115,9 @@ class BridgeComponentAssessment:
     confidence: str
     evidence_refs: tuple[dict[str, Any], ...]
     blockers: tuple[str, ...] = ()
+    stress_test_only: bool = False
+    not_valuation_input: bool = False
+    not_price_assessment_input: bool = False
 
     def __post_init__(self) -> None:
         if not _SYMBOL.fullmatch(self.symbol):
@@ -198,6 +201,9 @@ class BridgeComponentAssessment:
             "confidence": self.confidence,
             "evidence_refs": [dict(ref) for ref in self.evidence_refs],
             "blockers": list(self.blockers),
+            "stress_test_only": self.stress_test_only,
+            "not_valuation_input": self.not_valuation_input,
+            "not_price_assessment_input": self.not_price_assessment_input,
         }
 
 
@@ -246,6 +252,9 @@ class BridgeContributionAssessment:
     blockers: tuple[str, ...]
     evidence_refs: tuple[dict[str, Any], ...]
     action: str = ACTION_NO_ORDER
+    stress_test_only: bool = False
+    not_valuation_input: bool = False
+    not_price_assessment_input: bool = False
 
     def __post_init__(self) -> None:
         if not _SYMBOL.fullmatch(self.symbol):
@@ -335,6 +344,9 @@ class BridgeContributionAssessment:
             "blockers": list(self.blockers),
             "evidence_refs": [dict(ref) for ref in self.evidence_refs],
             "action": self.action,
+            "stress_test_only": self.stress_test_only,
+            "not_valuation_input": self.not_valuation_input,
+            "not_price_assessment_input": self.not_price_assessment_input,
         }
 
     def to_json(self) -> str:
@@ -393,6 +405,11 @@ def build_bridge_contribution(
     ]
     for component in components:
         merged_blockers.extend(component.blockers)
+    stress_test_only = any(component.stress_test_only for component in components)
+    not_valuation_input = any(component.not_valuation_input for component in components)
+    not_price_assessment_input = any(
+        component.not_price_assessment_input for component in components
+    )
     return BridgeContributionAssessment(
         symbol=symbol,
         valuation_scenario=valuation_scenario,
@@ -412,6 +429,9 @@ def build_bridge_contribution(
         confidence=confidence,
         blockers=tuple(dict.fromkeys(merged_blockers)),
         evidence_refs=tuple(dict(ref) for ref in evidence_refs),
+        stress_test_only=stress_test_only,
+        not_valuation_input=not_valuation_input,
+        not_price_assessment_input=not_price_assessment_input,
     )
 
 
@@ -443,6 +463,9 @@ def bridge_component_from_payload(
         confidence=str(data["confidence"]),
         evidence_refs=tuple(dict(item) for item in data.get("evidence_refs") or ()),
         blockers=tuple(str(item) for item in data.get("blockers") or ()),
+        stress_test_only=bool(data.get("stress_test_only", False)),
+        not_valuation_input=bool(data.get("not_valuation_input", False)),
+        not_price_assessment_input=bool(data.get("not_price_assessment_input", False)),
     )
 
 
@@ -484,4 +507,7 @@ def bridge_contribution_from_payload(
         blockers=tuple(str(item) for item in data.get("blockers") or ()),
         evidence_refs=tuple(dict(item) for item in data.get("evidence_refs") or ()),
         action=str(data.get("action", ACTION_NO_ORDER)),
+        stress_test_only=bool(data.get("stress_test_only", False)),
+        not_valuation_input=bool(data.get("not_valuation_input", False)),
+        not_price_assessment_input=bool(data.get("not_price_assessment_input", False)),
     )
