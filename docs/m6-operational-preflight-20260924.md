@@ -9,6 +9,10 @@
 - 机器预检入口：`scripts/audit_m6_preflight.py`。
 - 配置：`config/m6-operational-preflight-v1.json`。
 - 动作边界：`action=no_order`。
+- 干净工作树预检收据：
+  `runtime/m6-operational-preflight-20260923T234552Z/receipt.json`
+  （SHA-256：
+  `759a13d55f3315caee25b6e8d46685977dda501bc209b695ad402a48a3c62423`）
 
 当前可验证的是工程安全和恢复机制；真实 RPO/RTO、真实事件、20 个连续真实
 交易会话和生产授权均不能由本地测试替代，仍保持未完成。
@@ -40,6 +44,9 @@
 
 未取得上述授权前，不实施任何生产动作；预检只输出
 `OPERATIONAL_ACCEPTANCE_STATUS=NOT_STARTED`。
+
+预检结果同时确认当前 `engineering_status=PARTIAL`：隔离恢复、资源上限、
+事务快照和公开仓库隐私扫描可用，但独立加密备份/云端同步/密钥分离仍缺失。
 
 ## 与 M7 的关系
 

@@ -2,6 +2,41 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M6 运营准入预检：2026-09-24
+
+本节记录 M6 的非生产前置审计。`M6` 保持 `NOT_STARTED`，所有动作
+`action=no_order`。
+
+- 新增 `src/value_investment_agent/m6_operational_readiness.py`、
+  `scripts/audit_m6_preflight.py` 和
+  `config/m6-operational-preflight-v1.json`。
+- 工程检查确认隔离恢复目标、事务快照、表级 Hash、原件 SHA-256、磁盘预留、
+  256 MiB / 0.5 CPU 演练上限和公开仓库敏感文件扫描均已实现。
+- 干净工作树审计收据：
+  `runtime/m6-operational-preflight-20260923T234552Z/receipt.json`，
+  SHA-256
+  `759a13d55f3315caee25b6e8d46685977dda501bc209b695ad402a48a3c62423`。
+- 全量离线回归：2300 passed、6 skipped、0 failed；GitHub run
+  `35935194665` 的 `offline-core` 与 `postgres-integration` 均为
+  `success`，公开提交为 `d79afe2`。
+- 当前状态：`engineering_status=PARTIAL`，
+  `operational_acceptance_status=NOT_STARTED`。
+- 待完成：独立加密备份/云端同步/密钥分离、真实隔离恢复与 RPO/RTO、20 个
+  连续真实交易会话、至少一个真实财务或资本事件、生产迁移/调度/通知授权。
+- 本预检未连接生产 PostgreSQL、未修改服务器项目或 PTA、未读取真实持仓，
+  也不能把本地测试或 fixture 当作 M6 运营验收。
+
+## M2 机器验收最新收据：2026-09-24
+
+完整离线回归后，M2 AC1-AC7、AC11 机器门均为 `DONE`；AC8-AC10、AC12 保留
+用户复核。当前 M2 状态仍为 `PENDING_HUMAN_REVIEW`，`action=no_order`。
+
+- 收据：`runtime/m2-acceptance-audit-20260923T234143Z/receipt.json`
+- SHA-256：`4d8f20a3c68f5f5424e667bbbb170183e1d56bf7da6cf5c84e77ffb428229f60`
+- 用户复核范围：WPS 原工作簿的候选池、逐通道覆盖、AC8 研究报告/反证、
+  AC9 分层抽样、证据链接和导航。
+- 用户完成 Checkpoint A 评估前，M2 不标 DONE，也不发布个人化正向结论。
+
 ## M7 统一工作台展示候选：2026-09-24
 
 本节记录在人工 Checkpoint 与真实 M6 数据尚未满足时，按总目标允许提前完成的

@@ -1,5 +1,55 @@
 # Changelog
 
+## v2026.09.24-m6-operational-readiness-preflight
+
+### Release Scope
+
+新增 M6 的非生产运营准入预检，不连接生产 PostgreSQL、不修改服务器服务、
+调度、通知或 PTA，不读取真实持仓，也不执行任何订单。它把“工程已具备哪些
+恢复/资源/隐私保护”和“还需要哪些真实授权与自然时间”分开记录。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/m6_operational_readiness.py`：
+  - 校验隔离恢复目标 `127.0.0.1:5433/value_agent_restore`；
+  - 检查恢复脚本的 256 MiB / 0.5 CPU 上限和一次性容器清理；
+  - 检查备份代码的事务快照、表级规范化 Hash、原件 SHA-256、磁盘预留和
+    `--clean --if-exists --no-owner --no-acl`；
+  - 扫描公开跟踪文件中的 `.env`、密钥、dump、口令或个人资产特征；
+  - 提供真实 session/restore 证据的 fail-closed 计数和 RPO/RTO 边界检查。
+- 新增 `scripts/audit_m6_preflight.py` 和
+  `config/m6-operational-preflight-v1.json`，本地输出机器可重放收据。
+- 新增说明 `docs/m6-operational-preflight-20260924.md`，明确当前缺口和
+  生产授权清单。
+
+### Verification
+
+- 定向回归：M6 预检与备份/恢复相关测试 38 passed。
+- 全量离线回归：2300 passed、6 skipped、0 failed。
+- GitHub Core Research Gates run `35935194665`：`offline-core` 与
+  `postgres-integration` 均为 `success`；公开提交为 `d79afe2`。
+- 本地审计状态：`engineering_status=PARTIAL`，
+  `operational_acceptance_status=NOT_STARTED`，`action=no_order`。
+- 当前明确未完成：M1-M5 产品验收未全部完成、独立加密备份未实现、无真实
+  恢复演练、20 个真实交易会话为 0、生产迁移/调度/通知未授权。
+- 本次未连接生产数据库、未访问服务器项目、未修改 canonical 或 PTA。
+
+### Repository Sync
+
+- 当前 HEAD 已包含本轮新建的全部 M2-M7 Excel 候选；WPS 云盘同名文件与
+  仓库文件逐字节一致，工作树没有未提交的 `.xlsx` 修改。
+- canonical SHA-256：
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- M7 统一工作台候选 SHA-256：
+  `829f743acc3f628e60bd9e210b196965865ad2306dea7e520d9f9d62b402d582`。
+- 仓库未提交 `.env`、密钥、数据库 dump 或生产运行时数据。
+
+### Acceptance Boundary
+
+- `M6=NOT_STARTED`，本包只完成非生产前置检查，不构成 M6 或 M7 验收。
+- 不能以本地收据、合成 fixture 或代码存在替代真实 RPO/RTO、真实事件和
+  20 个连续真实交易会话。
+
 ## v2026.09.24-m7-reproducible-zip-timestamps
 
 ### Release Scope
