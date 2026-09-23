@@ -14,12 +14,14 @@
 - 新增 60 页候选 `A股价值投资_Agent前端智能跟踪模板_M3历史链叠加候选_20260924.xlsx`：
   前 5 页为历史链，后 55 页完整保留 M3 决策复核候选；55 个源页面和 111 个源 ZIP
   部件保持不变。
-- 新增 WPS 只读验证、7 项审计门 `hoc1-hoc7` 和 4 项回归；`hoc1-hoc5` 本地机器
-  验证 `DONE`，`hoc6` 待 GitHub CI，`hoc7` 保持 `PENDING_HUMAN_REVIEW`。
+- 新增 WPS 只读验证、7 项审计门 `hoc1-hoc7` 和 4 项回归；`hoc1-hoc6` 机器验证
+  `DONE`，`hoc7` 保持 `PENDING_HUMAN_REVIEW`。
 - 候选 SHA-256：
   `67e720f2326443bb3d36003db707a86169483bcd2f2be10a97dbda6d3bfacd4d`；
   WPS 只读收据 `runtime/m3-history-overlay-wps-20260924/wps-verification.json`
   为 `passed`，WPS 云盘副本与仓库候选逐字节一致，canonical 未被覆盖。
+- GitHub Core Research Gates 运行 `35931101091` 的两个 job 均为 `success`；
+  公开提交为 `d614b5b`。
 - 示例链仅使用 `600887` 的显式模拟 Entry、Journal 与 Consistency；不读取真实账户，
   不构成 Checkpoint B、投资结论或实盘准入。
 

@@ -30,13 +30,14 @@
 ## 机器验证
 
 - 定向离线回归：11 passed。
-- 审计器机器门 `hoc1-hoc5` 全部 `DONE`；`hoc6` 在 CI 前为 `PENDING_CI`；
-  `hoc7` 保持 `PENDING_HUMAN_REVIEW`。
+- 审计器机器门 `hoc1-hoc6` 全部 `DONE`；`hoc7` 保持 `PENDING_HUMAN_REVIEW`。
 - WPS 只读打开：60 页、前 5 页顺序正确、历史链 `600887` 且 `namespace=simulated`、
   `action=no_order`，`00_决策复核` 仍为三张负向卡；打开前后 Hash 不变。
 - WPS 收据：
   `runtime/m3-history-overlay-wps-20260924/wps-verification.json`，`passed`。
 - WPS 云盘同名候选与仓库候选逐字节一致，canonical 未被替换。
+- GitHub Core Research Gates 运行 `35931101091`：`offline-core` 与
+  `postgres-integration` 均为 `success`；公开提交 `d614b5b`。
 
 ## 安全边界
 

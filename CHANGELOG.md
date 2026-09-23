@@ -27,9 +27,11 @@
   `67e720f2326443bb3d36003db707a86169483bcd2f2be10a97dbda6d3bfacd4d`。
 - 55 个源页面、111 个未替换源 ZIP 部件逐字节保留；前 5 页历史链为
   `600887` 显式模拟，`action=no_order`。
-- 定向离线回归 11 passed；本地机器门 `hoc1-hoc5` 全部 `DONE`，`hoc6` 待 GitHub CI，
-  `hoc7` 保持 `PENDING_HUMAN_REVIEW`。
+- 定向离线回归 11 passed；全量离线回归 2288 passed、6 skipped、0 failed。
+- 机器门 `hoc1-hoc6` 全部 `DONE`；`hoc7` 保持 `PENDING_HUMAN_REVIEW`。
 - WPS 只读收据 `passed`；WPS 云盘同名候选与仓库候选逐字节一致，canonical 未改变。
+- GitHub Core Research Gates 运行 `35931101091` 的 `offline-core` 与
+  `postgres-integration` 均为 `success`。
 
 ### Acceptance Boundary
 

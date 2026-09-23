@@ -25,6 +25,8 @@ M3 决策复核候选，不替换任何源页面，不覆盖 canonical，不读�
   `runtime/m3-history-overlay-wps-20260924/wps-verification.json`，`passed`
 - WPS 云盘同名副本与仓库候选逐字节一致；canonical SHA-256 仍为
   `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- GitHub Core Research Gates 运行 `35931101091`：`offline-core` 与
+  `postgres-integration` 均为 `success`；公开提交为 `d614b5b`。
 
 该候选只演示模拟理由链与 M3 决策页的叠加形态，不等于 Checkpoint B、真实成交或
 实盘准入。
@@ -258,7 +260,7 @@ WPS 只读校验只覆盖打开/计算、公式错误、工作表顺序和链接
 
 | 文件 | 字节数 | SHA-256 | 最近提交 |
 | --- | ---: | --- | --- |
-| A股价值投资_Agent前端智能跟踪模板_M3历史链叠加候选_20260924.xlsx | 13,208,437 | 67e720f2326443bb3d36003db707a86169483bcd2f2be10a97dbda6d3bfacd4d | 本轮 M3 历史链叠加候选 |
+| A股价值投资_Agent前端智能跟踪模板_M3历史链叠加候选_20260924.xlsx | 13,208,437 | 67e720f2326443bb3d36003db707a86169483bcd2f2be10a97dbda6d3bfacd4d | d614b5b |
 | A股价值投资_M5真实披露人工复核回填_20260924.xlsx | 13,885 | 1ae75325fe02c93011201c3a44af73d739a49680e24af35a8f33fcd362a6c420 | 本轮 M5 人工复核回填 |
 | A股价值投资_M5真实披露待复核队列_20260924.xlsx | 13,130 | 58b16bf00dd7ea57ee9cdcd6d7d7d00d80c0fc9669cd047f5171f500a9b16ec5 | e81e996 |
 | A股价值投资_M5材料性接入候选_20260924.xlsx | 13,240 | e976e330ae517f06ddd341220ce71fb9b6c0753ff4c7f421ef39baed5e9ce1df | 1017f1d |
