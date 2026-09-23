@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory)][string]$OriginalPath,
     [Parameter(Mandatory)][string]$CandidatePath,
     [Parameter(Mandatory)][string]$WpsReceiptPath,
-    [Parameter(Mandatory=$false)][string]$ExpectedOriginalSha256
+    [Parameter(Mandatory=$false)][string]$ExpectedOriginalSha256,
+    [Parameter(Mandatory=$false)][int]$NewFrontendSheetCount = 6
 )
 $ErrorActionPreference = 'Stop'
 [Console]::InputEncoding = [Text.UTF8Encoding]::new()
@@ -54,7 +55,7 @@ $receipt = @{
     original_sha256=$expectedOriginalHash; base_source_sha256=$package.source_sha256
     published_sha256=$candidateHash
     checked_at=[DateTimeOffset]::UtcNow.ToString('o'); preserved_original_sheets=$package.original_sheets_preserved
-    new_frontend_sheets=6; production_or_scheduler_changed=$false
+    new_frontend_sheets=$NewFrontendSheetCount; production_or_scheduler_changed=$false
 }
 $receipt | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $backupDir 'publication.json') -Encoding utf8
 $receipt | ConvertTo-Json -Depth 4 -Compress

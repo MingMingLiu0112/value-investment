@@ -27,6 +27,12 @@ from .m2_opportunity_discovery import (
     DiscoveryRunReceipt,
     ExcludedSecurity,
 )
+from .m2_research_report import (
+    M2ResearchReportBatch,
+    VERDICT_INSUFFICIENT,
+    VERDICT_PENDING,
+    VERDICT_REJECTED,
+)
 
 
 OVERVIEW_SHEET = "00_M2总览"
@@ -40,6 +46,25 @@ EXCLUDED_SHEET = "07_不支持与缺失"
 LEGACY_SHEET = "08_Legacy对比"
 EVIDENCE_SHEET = "09_证据清单"
 COVERAGE_SHEET = "10_逐通道覆盖"
+RESEARCH_SHEET = "11_研究报告"
+RESEARCH_EVIDENCE_SHEET = "12_研究证据"
+
+VERDICT_LABELS = {
+    VERDICT_PENDING: "待深研",
+    VERDICT_REJECTED: "通道否决",
+    VERDICT_INSUFFICIENT: "证据不足",
+}
+CHANNEL_LABELS = {
+    CHANNEL_QUALITY: "质量",
+    CHANNEL_DIVIDEND: "股息/现金回报",
+    CHANNEL_VALUE: "价值",
+    CHANNEL_CYCLICAL: "周期",
+}
+VERDICT_FILLS = {
+    VERDICT_PENDING: "E4F3EE",
+    VERDICT_REJECTED: "F8E7E6",
+    VERDICT_INSUFFICIENT: "FFF1D6",
+}
 
 INK = "24312D"
 GREEN = "18755D"
@@ -327,6 +352,197 @@ def _coverage(wb: Workbook, receipt: DiscoveryRunReceipt) -> None:
             _style(ws.cell(row, 6, evaluation.profile_status))
             _style(ws.cell(row, 7, evaluation.evidence_date))
             row += 1
+
+
+def _research_summary_links(wb: Workbook, batch: M2ResearchReportBatch) -> None:
+    ws = wb[OVERVIEW_SHEET]
+    row = ws.max_row + 1
+    substantive = batch.substantive_reports()
+    rejected = sum(report.verdict == VERDICT_REJECTED for report in batch.reports)
+    pending = sum(report.verdict == VERDICT_PENDING for report in batch.reports)
+    insufficient = sum(
+        report.verdict == VERDICT_INSUFFICIENT for report in batch.reports
+    )
+    links = [
+        (
+            "研究/否决报告",
+            (
+                f"{len(batch.reports)} 份；待深研 {pending} / 通道否决 {rejected} / "
+                f"证据不足 {insufficient}；实质报告 {len(substantive)} 份"
+            ),
+            RESEARCH_SHEET,
+        ),
+        (
+            "研究证据",
+            "点击查看每条报告对应的来源 URL、原件 SHA-256、报告期与抓取时间",
+            RESEARCH_EVIDENCE_SHEET,
+        ),
+    ]
+    for label, value, target in links:
+        _style(ws.cell(row, 1, label), fill=GREY, bold=True)
+        cell = ws.cell(row, 2, value)
+        _style(cell)
+        cell.hyperlink = f"#'{target}'!A1"
+        cell.font = Font(
+            name="Microsoft YaHei",
+            size=11,
+            bold=True,
+            color=BLUE,
+            underline="single",
+        )
+        row += 1
+
+
+def _research_reports_sheet(wb: Workbook, batch: M2ResearchReportBatch) -> None:
+    ws = wb.create_sheet(RESEARCH_SHEET)
+    ws.sheet_view.showGridLines = False
+    ws.freeze_panes = "A4"
+    columns = [
+        "证券代码",
+        "公司",
+        "报告ID",
+        "主通道",
+        "通道结论",
+        "总结论",
+        "研究层级",
+        "数据",
+        "研究/否决结论",
+        "正向证据",
+        "反证",
+        "缺失证据",
+        "下一触发点",
+    ]
+    _widths(ws, [11, 16, 28, 17, 34, 14, 12, 12, 72, 48, 48, 48, 48])
+    _title(
+        ws,
+        "AC8 实质研究与通道否决",
+        (
+            f"policy={batch.policy_version} | action={batch.action} | "
+            f"machine={batch.machine_status} | acceptance={batch.acceptance_status}"
+        ),
+        len(columns),
+    )
+    row = _header(ws, 4, columns)
+    for report in batch.reports:
+        channel_verdicts = "；".join(
+            f"{CHANNEL_LABELS.get(channel, channel)}="
+            f"{VERDICT_LABELS.get(verdict, verdict)}"
+            for channel, verdict in report.channel_verdicts.items()
+        )
+        fill = VERDICT_FILLS.get(report.verdict, "FFFFFF")
+        values = [
+            report.symbol,
+            report.name,
+            report.report_id,
+            CHANNEL_LABELS.get(report.primary_channel, report.primary_channel),
+            channel_verdicts,
+            VERDICT_LABELS.get(report.verdict, report.verdict),
+            report.candidate_class,
+            report.data_status,
+            report.conclusion,
+            "\n".join(report.positives),
+            "\n".join(report.counter_evidence),
+            "\n".join(report.missing_evidence),
+            "\n".join(report.next_events),
+        ]
+        for column, value in enumerate(values, 1):
+            cell = ws.cell(row, column, value)
+            _style(cell, fill=fill if column == 6 else "FFFFFF")
+            if column == 1:
+                cell.font = Font(
+                    name="Microsoft YaHei",
+                    size=11,
+                    bold=True,
+                    color=INK,
+                )
+        ws.row_dimensions[row].height = max(
+            72,
+            max(len(value.splitlines()) for value in values[8:]) * 16,
+        )
+        row += 1
+
+
+def _research_evidence_sheet(wb: Workbook, batch: M2ResearchReportBatch) -> None:
+    ws = wb.create_sheet(RESEARCH_EVIDENCE_SHEET)
+    ws.sheet_view.showGridLines = False
+    ws.freeze_panes = "A4"
+    columns = [
+        "证券代码",
+        "字段",
+        "报告期",
+        "值",
+        "单位",
+        "校验状态",
+        "来源",
+        "来源URL",
+        "原件SHA-256",
+        "发布时间",
+        "抓取时间",
+    ]
+    _widths(ws, [11, 20, 15, 18, 13, 12, 32, 58, 64, 22, 25])
+    _title(
+        ws,
+        "研究证据追溯",
+        "每条证据保留来源、URL、原件 Hash 与可用时间；不得把研究结论当成交易指令。",
+        len(columns),
+    )
+    row = _header(ws, 4, columns)
+    for report in batch.reports:
+        for evidence in report.evidence:
+            values = [
+                report.symbol,
+                evidence.field_name,
+                evidence.period_label,
+                evidence.value,
+                evidence.unit,
+                evidence.validation_status,
+                evidence.source_name,
+                evidence.source_url,
+                evidence.source_sha256 or "",
+                evidence.published_at or "",
+                evidence.fetched_at or "",
+            ]
+            for column, value in enumerate(values, 1):
+                cell = ws.cell(row, column, value)
+                _style(cell)
+            if evidence.source_url.startswith(("http://", "https://")):
+                url_cell = ws.cell(row, 8, evidence.source_url)
+                url_cell.hyperlink = evidence.source_url
+                url_cell.font = Font(
+                    name="Microsoft YaHei",
+                    size=11,
+                    color=BLUE,
+                    underline="single",
+                )
+            row += 1
+
+
+def append_research_reports(
+    wb: Workbook,
+    batch: M2ResearchReportBatch,
+) -> dict[str, Any]:
+    if batch.action != ACTION_NO_ORDER:
+        raise ValueError("M2 research workbook requires action=no_order")
+    if batch.machine_status != "MACHINE_CHECKS_PASS":
+        raise ValueError("M2 research reports have not passed machine checks")
+    _research_summary_links(wb, batch)
+    _research_reports_sheet(wb, batch)
+    _research_evidence_sheet(wb, batch)
+    substantive = batch.substantive_reports()
+    return {
+        "report_count": len(batch.reports),
+        "substantive_report_count": len(substantive),
+        "substantive_channels": list(batch.substantive_channels()),
+        "insufficient_evidence_count": sum(
+            report.verdict == VERDICT_INSUFFICIENT for report in batch.reports
+        ),
+        "rejected_count": sum(
+            report.verdict == VERDICT_REJECTED for report in batch.reports
+        ),
+        "pending_deep_research_count": sum(
+            report.verdict == VERDICT_PENDING for report in batch.reports
+        ),
+    }
 
 
 def build_discovery_workbook(

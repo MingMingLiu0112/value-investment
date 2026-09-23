@@ -2,10 +2,40 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M2 AC8 研究报告并入原 Excel 统一入口：2026-09-24
+
+本节记录把 AC8 实质研究/否决报告并入 M2 原表候选、真实 WPS 校验和受保护发布的证据。
+M2 仍为 `PARTIAL`，AC8 仍为 `AC8_REVIEW_PENDING`，AC10 为机器检查通过、用户可见审核
+待完成；`action=no_order`。
+
+- 代码新增研究页与证据页：`11_研究报告`、`12_研究证据`，并在 `00_M2总览` 加入内部
+  导航；候选构造器、发布脚本和 WPS 校验脚本同步补齐，相关文件在本次 Git 版本中公开。
+- 发布前原工作簿 SHA-256
+  `a62a6ae634ea949db36c3c209278515e2ee66ef3a61aaa25d59d2051d5954d58`。
+- 新候选及发布后 WPS 原工作簿 SHA-256
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- 55 个工作表：13 个 M2、6 个 M1 Application、36 个原工作簿页；42 个原有工作表被
+  保留，96 个原始部分未变化。
+- 研究报告 22 行、研究证据 245 行、228 个来源链接；AC8 报告 JSON Hash 保持
+  `dd55c02c75dec17ff766fa6b6ae529030d02a31376b305c02ddd0a8f5443c8a6`。
+- WPS 发布前与发布后只读收据均为 `passed`，实际引擎路径
+  `D:\WPS Office\12.1.0.28505\office6`；只验证只读打开/计算、公式错误、工作表顺序和
+  链接数量，不冒充人工逐链接或视觉点击验收。
+- 受保护发布收据：
+  `runtime/workbook-backups/stage-frontend-5e6ab310df554a49a100ccbcc6d68c33/publication.json`；
+  同目录 `before.xlsx` 为回退原件。
+- 定向回归 32 passed；最新全量离线回归 2144 passed、6 skipped、18 warnings、0 failed；
+  `git diff --check` 通过。
+- 未连接生产 PostgreSQL、未触碰服务器 PTA/Web App、未修改计划任务，也未生成估值、
+  BUY、ADD、仓位或订单。
+- 工作簿版本与 Hash 清单见
+  [excel-artifact-version-record-20260924.md](excel-artifact-version-record-20260924.md)。
+
 ## M2 AC8 研究报告生成：2026-09-24
 
 本节记录 AC8 的预注册报告工具与真实运行证据。M2 仍为 `PARTIAL`，AC8 单项目前为
-`AC8_REVIEW_PENDING`，`action=no_order`。
+`AC8_REVIEW_PENDING`，`action=no_order`。本段是上一阶段报告生成历史；“未生成新 Excel”
+只描述当时状态，最新原表集成发布见上一节。
 
 - 新增 `m2_research_report.py`、离线命令、固定输入配置与回归测试；只消费 AC9
   `selected_leads` 已封存样本，不按结果后验选公司。

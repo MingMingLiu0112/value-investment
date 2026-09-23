@@ -1,5 +1,58 @@
 # Changelog
 
+## v2026.09.24-m2-ac10-integrated-workbook
+
+### Release Scope
+
+把 M2 AC8 已形成的实质研究/否决报告并入现有 WPS 原工作簿的统一入口，同时保留 M1
+Application 与原有 42 个工作表，受保护发布后把仓库 canonical、独立候选与 WPS 云盘生产
+原表对齐为同一 SHA-256。本版继续 `action=no_order`，不生成估值、BUY、ADD、仓位、订单
+或回测收益。
+
+### New Capability
+
+- `m2_discovery_workbook.py` 新增 `11_研究报告`、`12_研究证据` 两页，并在
+  `00_M2总览` 增加内部导航；报告页保留通道结论、正反证、缺口和下一触发点，证据页保留
+  来源 URL、原件 SHA-256、报告期、发布时间和抓取时间。
+- `build_m2_original_workbook_candidate.py` 支持把固定 AC8 报告批或报告配置并入候选，
+  并把报告 Hash 与统计写入 candidate manifest。
+- `publish_stage_frontend.ps1` 新增 `-NewFrontendSheetCount`，允许 M1 的 6 页和 M2 的
+  13 页使用同一受保护发布路径。
+- 新增 `scripts/verify_m2_integrated_workbook_wps.ps1`，只读打开真实 WPS、计算工作表、
+  扫描公式错误、核对工作表顺序、检查研究/证据行数与来源链接数。
+
+### Real Artifacts
+
+- 发布前原工作簿：12,210,200 bytes，SHA-256
+  `a62a6ae634ea949db36c3c209278515e2ee66ef3a61aaa25d59d2051d5954d58`。
+- 新候选：`A股价值投资_Agent前端智能跟踪模板_M2候选_20260924.xlsx`，
+  13,199,222 bytes，SHA-256
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- 仓库 canonical 原工作簿、新候选、WPS 云盘发布后原工作簿三者 SHA-256 相同。
+- 55 个工作表：13 个 M2、6 个 M1 Application、36 个原工作簿页；42 个原有工作表被
+  保留，96 个原始部分未变化。
+- 研究报告 22 行，研究证据 245 行，识别 228 个来源链接。研究报告 JSON 的 SHA-256 仍为
+  `dd55c02c75dec17ff766fa6b6ae529030d02a31376b305c02ddd0a8f5443c8a6`。
+- 发布前收据：`runtime/m2-original-candidate-20260924-v4/wps-prepublication.json`；
+  发布后收据：`runtime/m2-original-candidate-20260924-v4/wps-published.json`；
+  回退原件：`runtime/workbook-backups/stage-frontend-5e6ab310df554a49a100ccbcc6d68c33/before.xlsx`。
+
+### Verification
+
+- 定向回归：32 passed。
+- 仓库全量离线回归：2144 passed、6 skipped、18 warnings、0 failed。
+- 发布前和发布后的 WPS 只读校验均为 `status=passed`；实际引擎路径
+  `D:\WPS Office\12.1.0.28505\office6` 已核对为 WPS。
+- `git diff --check` 通过。
+
+### Acceptance Boundary
+
+- AC8 仍为 `AC8_REVIEW_PENDING`。
+- AC10 机器检查为 `MACHINE_CHECKS_PASS`，但 WPS 脚本只验证只读打开、计算、公式错误、
+  工作表顺序和链接数量，未做桌面人工逐链接/视觉点击验收，因此 Excel 用户审核仍标
+  `AC10_REVIEW_PENDING`。
+- M2 保持 `PARTIAL`；本版不单独宣告 AC8、AC10 或 M2 完成。
+
 ## v2026.09.24-m2-ac8-research-reports
 
 ### Release Scope

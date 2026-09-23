@@ -11,7 +11,20 @@ from openpyxl import Workbook, load_workbook
 import pytest
 
 from value_investment_agent.m2_discovery_engine import M2ScreeningPolicy, build_discovery_receipt
-from value_investment_agent.m2_opportunity_discovery import EvidenceReference
+from value_investment_agent.m2_opportunity_discovery import (
+    CANDIDATE_CLASS_LEAD,
+    CHANNEL_DIVIDEND,
+    CHANNEL_VALUE,
+    DATA_PARTIAL,
+    EvidenceReference,
+)
+from value_investment_agent.m2_research_report import (
+    M2ResearchEvidence,
+    M2ResearchReport,
+    M2ResearchReportBatch,
+    VERDICT_PENDING,
+    VERDICT_REJECTED,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -133,6 +146,60 @@ def _write_receipt(path: Path) -> None:
     path.write_text(json.dumps(_receipt_payload(), ensure_ascii=False), encoding="utf-8")
 
 
+def _research_batch() -> M2ResearchReportBatch:
+    evidence = M2ResearchEvidence(
+        symbol="600001",
+        field_name="free_cash_flow",
+        period_label="2025-12-31",
+        value="100",
+        unit="CNY 100M",
+        validation_status="verified",
+        source_name="测试公告",
+        source_url="https://example.test/disclosure.pdf",
+        source_sha256="0" * 64,
+        published_at="2026-04-01T00:00:00+00:00",
+        fetched_at="2026-09-20T07:00:00+00:00",
+    )
+    def report(symbol, name, channel, verdict, evidence=()):
+        return M2ResearchReport(
+            report_id=f"m2-ac8-{symbol}-fixture",
+            symbol=symbol,
+            name=name,
+            channels=(channel,),
+            primary_channel=channel,
+            verdict=verdict,
+            channel_verdicts={channel: verdict},
+            candidate_class=CANDIDATE_CLASS_LEAD,
+            data_status=DATA_PARTIAL,
+            title=f"{name}：M2 实质研究/否决",
+            conclusion="固定输入可追溯，但尚需补充通道深研证据。",
+            positives=("核心财务点可追溯",),
+            counter_evidence=("缺失周期或派息长期证据",),
+            missing_evidence=("补充研究证据",),
+            next_events=("年度报告",),
+            market_context={"pe_ttm": "10", "pb": "2"},
+            evidence=evidence,
+        )
+
+    reports = (
+        report("600001", "质量制造", CHANNEL_DIVIDEND, VERDICT_PENDING, (evidence,)),
+        report("600002", "测试银行", CHANNEL_VALUE, VERDICT_REJECTED),
+        report("600003", "测试煤业", CHANNEL_VALUE, VERDICT_REJECTED),
+    )
+    return M2ResearchReportBatch(
+        schema_version="m2-ac8-research-report-v1",
+        policy_version="fixture-v1",
+        action="no_order",
+        as_of=datetime(2026, 9, 23, tzinfo=timezone.utc).date(),
+        minimum_substantive_reports=3,
+        minimum_channels=2,
+        source_binding={"m2_receipt_sha256": "0" * 64},
+        reports=reports,
+        machine_status="MACHINE_CHECKS_PASS",
+        acceptance_status="AC8_REVIEW_PENDING",
+    )
+
+
 def test_candidate_prepends_m2_sheets_without_rewriting_original_parts(tmp_path):
     source = tmp_path / "canonical.xlsx"
     receipt = tmp_path / "receipt.json"
@@ -146,6 +213,7 @@ def test_candidate_prepends_m2_sheets_without_rewriting_original_parts(tmp_path)
         receipt_path=receipt,
         output=output,
         expected_source_sha256=expected,
+        project_root=tmp_path,
     )
 
     loaded = load_workbook(output, read_only=False)
@@ -163,6 +231,49 @@ def test_candidate_prepends_m2_sheets_without_rewriting_original_parts(tmp_path)
         retained_sheet = candidate.read("xl/worksheets/sheet1.xml")
         assert retained_sheet == original_sheet
     MODULE.STAGE_FRONTEND["validate_package_relationships"](output)
+
+
+def test_candidate_includes_research_reports_and_evidence_links(tmp_path):
+    source = tmp_path / "canonical.xlsx"
+    receipt = tmp_path / "receipt.json"
+    output = tmp_path / "candidate.xlsx"
+    _source_workbook(source)
+    _write_receipt(receipt)
+    expected = MODULE.digest(source)
+    batch = _research_batch()
+
+    manifest = MODULE.build_candidate(
+        source=source,
+        receipt_path=receipt,
+        output=output,
+        expected_source_sha256=expected,
+        research_batch=batch,
+        project_root=tmp_path,
+    )
+
+    loaded = load_workbook(output, read_only=False)
+    assert "11_研究报告" in loaded.sheetnames
+    assert "12_研究证据" in loaded.sheetnames
+    reports = loaded["11_研究报告"]
+    assert reports["A1"].value == "AC8 实质研究与通道否决"
+    assert reports["F5"].value == "待深研"
+    evidence = loaded["12_研究证据"]
+    assert evidence["H5"].value == "https://example.test/disclosure.pdf"
+    assert evidence["H5"].hyperlink.target == "https://example.test/disclosure.pdf"
+    overview = loaded["00_M2总览"]
+    assert any(
+        value == "研究/否决报告"
+        for row in overview.iter_rows(values_only=True)
+        for value in row
+    )
+    assert manifest["research_report_sha256"] is not None
+    assert manifest["research_summary"]["report_count"] == 3
+    assert manifest["research_machine_status"] == "MACHINE_CHECKS_PASS"
+
+    forbidden = {"buy", "sell", "target_weight", "position_size", "order_quantity"}
+    for worksheet in loaded.worksheets:
+        for row in worksheet.iter_rows(values_only=True):
+            assert not forbidden & {str(value).lower() for value in row if value is not None}
 
 
 def test_candidate_refuses_source_change_after_inspection(tmp_path):

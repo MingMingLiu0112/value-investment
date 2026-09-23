@@ -22,11 +22,20 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from value_investment_agent.m2_discovery_engine import M2ScreeningPolicy
-from value_investment_agent.m2_discovery_workbook import build_discovery_workbook
+from value_investment_agent.m2_discovery_workbook import (
+    append_research_reports,
+    build_discovery_workbook,
+)
 from value_investment_agent.m2_opportunity_discovery import (
     ACTION_NO_ORDER,
     DiscoveryRunReceipt,
     discovery_receipt_from_payload,
+)
+from value_investment_agent.m2_research_report import (
+    DEFAULT_RESEARCH_REPORT_PATH,
+    M2ResearchReportBatch,
+    build_m2_research_reports,
+    load_m2_research_report_policy,
 )
 
 
@@ -57,11 +66,15 @@ def build_candidate(
     receipt_path: Path,
     output: Path,
     expected_source_sha256: str,
+    research_batch: M2ResearchReportBatch | None = None,
+    research_config: Path | None = None,
+    project_root: Path | None = None,
 ) -> dict[str, Any]:
+    project_root = (project_root or ROOT).resolve()
     source = source.resolve()
     output = output.resolve()
     receipt_path = receipt_path.resolve()
-    if not output.is_relative_to(ROOT.resolve()):
+    if not output.is_relative_to(project_root):
         raise ValueError("M2 original workbook candidate must stay under project root")
     if output.exists():
         raise ValueError(f"M2 original workbook candidate already exists: {output}")
@@ -73,7 +86,25 @@ def build_candidate(
     if addon.exists():
         raise ValueError(f"M2 addon already exists: {addon}")
 
+    if research_batch is not None and research_config is not None:
+        raise ValueError("Provide either research_batch or research_config, not both")
+    if research_batch is None and research_config is not None:
+        policy = load_m2_research_report_policy(research_config)
+        research_batch = build_m2_research_reports(policy, root=project_root)
+
     workbook = build_discovery_workbook(receipt, M2ScreeningPolicy())
+    research_report_sha256 = None
+    research_summary = None
+    if research_batch is not None:
+        research_summary = append_research_reports(workbook, research_batch)
+        research_report_sha256 = hashlib.sha256(
+            json.dumps(
+                research_batch.as_policy(),
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            ).encode("utf-8")
+        ).hexdigest()
     workbook.save(addon)
     graft_receipt = STAGE_FRONTEND["graft"](
         source,
@@ -100,6 +131,19 @@ def build_candidate(
         "original_sheets_preserved": graft_receipt["original_sheets_preserved"],
         "original_parts_unchanged": graft_receipt["original_parts_unchanged"],
         "new_sheets": graft_receipt["new_sheets"],
+        "research_config": (
+            str(research_config.resolve().relative_to(project_root))
+            if research_config is not None
+            else None
+        ),
+        "research_report_sha256": research_report_sha256,
+        "research_summary": research_summary,
+        "research_machine_status": (
+            research_batch.machine_status if research_batch is not None else None
+        ),
+        "research_acceptance_status": (
+            research_batch.acceptance_status if research_batch is not None else None
+        ),
         "status": "candidate_verified_not_published",
     }
     manifest_path = output.with_name(output.stem + ".candidate.manifest.json")
@@ -116,6 +160,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--receipt", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--expected-sha256", required=True)
+    parser.add_argument(
+        "--research-config",
+        type=Path,
+        default=DEFAULT_RESEARCH_REPORT_PATH,
+    )
+    parser.add_argument("--no-research-reports", action="store_true")
     return parser.parse_args()
 
 
@@ -126,6 +176,7 @@ def main() -> int:
         receipt_path=args.receipt,
         output=args.output,
         expected_source_sha256=args.expected_sha256,
+        research_config=None if args.no_research_reports else args.research_config,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
