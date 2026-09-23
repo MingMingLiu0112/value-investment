@@ -55,9 +55,11 @@ M7 产品验收，也不替代任何 Checkpoint。
 & 'D:\APP\Python313\python.exe' -X utf8 scripts\build_m7_workbench_candidate.py
 ```
 
-构建器使用固定的 `generated_at=2026-09-24T00:00:00+00:00`，并复用输入 ZipInfo
-时间戳，因此同一组输入可跨机器重建为相同 SHA-256。构建器不会覆盖 canonical，
-也不会直接写 WPS 生产路径。
+构建器使用固定的 `generated_at=2026-09-24T00:00:00+00:00`。自修复提交
+`fa23f05` 起，`graft` 把新增前端层的 ZipInfo 时间戳固定为
+`1980-01-01T00:00:00`，因此后续同一组输入不会因构建秒差而漂移；本文件记录的是
+发布时冻结的 SHA-256，不把 SHA-256 当作估值、决策或实盘证据。构建器不会覆盖
+canonical，也不会直接写 WPS 生产路径。
 
 ## 机器验证
 
@@ -74,6 +76,9 @@ M7 产品验收，也不替代任何 Checkpoint。
   `c237b14482398b4903c13b0447ba406d11ec4688b8a17e3b99b045f1f5210e1e`）
 - WPS 云盘同名候选与仓库候选逐字节一致，SHA-256 相同。
 - 全量离线回归：2292 passed、6 skipped、0 failed。
+- GitHub Core Research Gates run `35933960701` 的两个 job 均为 `success`；
+  其中 `fa23f05` 修复了首次 M7 推送 `9e37435` 在 Linux runner 上由新增层
+  ZipInfo 时间戳引起的确定性回归，候选内容未改变。
 
 ## 状态边界
 

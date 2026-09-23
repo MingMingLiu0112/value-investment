@@ -27,6 +27,11 @@
   `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
 - 构建与状态详情：[m7-workbench-candidate-20260924.md](m7-workbench-candidate-20260924.md)
 - 全量离线回归：2292 passed、6 skipped、0 failed。
+- GitHub 修复提交 `fa23f05` 把 `graft` 新增层 ZipInfo 时间戳固定为
+  `1980-01-01T00:00:00`；修复后 run `35933960701` 的 `offline-core` 与
+  `postgres-integration` 均为 `success`。本次发布候选本身未重新生成，仍为
+  `9e37435` 中冻结的 13,262,051 字节和上述 SHA-256；用修复后代码重建时，90 页
+  工作表的解压 XML 内容保持一致，仅新增层 ZIP 元数据时间戳会规范化。
 
 该候选只证明只读展示叠加可重复，不等同于 Checkpoint D、M7 交付或实盘准入。
 

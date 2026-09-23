@@ -24,6 +24,11 @@ M7 只读展示层工程。M2 保持 `PENDING_HUMAN_REVIEW`，M3、M4、M5 保�
   定向回归 11 passed；全量离线回归 2292 passed、6 skipped、0 failed；WPS 只读收据
   `runtime/m7-workbench-wps-20260924/wps-verification.json` 为 `passed`。
 - WPS 云盘同名候选与仓库候选逐字节一致，canonical 未被覆盖。
+- GitHub Core Research Gates 首次 M7 推送 `9e37435` 的 `offline-core` 因 Linux
+  runner 上新增层 ZipInfo 时间戳导致确定性回归失败；`fa23f05` 将 `graft`
+  新增层时间戳固定为 `1980-01-01T00:00:00`，随后 run `35933960701` 的
+  `offline-core` 与 `postgres-integration` 均为 `success`。修复只改 ZIP 元数据，
+  90 页工作表内容和已发布候选 SHA-256 未改变。
 - 本候选不证明 Checkpoint D、M7 交付或实盘准入；真实 M7 仍需 M2/M3 用户复核、
   真实 IPS/组合授权、M5/M6 生产观察和 Checkpoint D。
 

@@ -1,5 +1,39 @@
 # Changelog
 
+## v2026.09.24-m7-reproducible-zip-timestamps
+
+### Release Scope
+
+修复 GitHub Core Research Gate 在 Linux runner 上出现的 M7 构建确定性回归。
+第一次 M7 推送 `9e37435` 的内容检查全部通过，但同一构建两次生成的 Excel
+在新增工作层的 ZIP 条目时间戳上不同，导致文件级 SHA-256 漂移。修复只固定
+`graft` 新增层的 ZIP 时间戳，不修改工作表内容、页序、样式、公式、证据链接、
+canonical、WPS 文件或任何投资/交易语义。
+
+### Bug Fix
+
+- `scripts/stage_frontend_package.py` 新增固定 ZIP 时间戳
+  `1980-01-01T00:00:00`，仅用于 `graft` 复制的新增前端层，消除跨秒构建漂移。
+- 已交付 M7 候选继续使用发布时冻结的 SHA-256：
+  `829f743acc3f628e60bd9e210b196965865ad2306dea7e520d9f9d62b402d582`。
+- 修复后用当前代码重建只改变 31 个新增层的 ZIP 元数据时间戳；90 个工作表的
+  全部解压 XML 部件与已交付候选逐字节相同。
+
+### Verification
+
+- 定向回归：`tests/test_m7_workbench_candidate.py` 与
+  `tests/test_stage_frontend_replace_sheet.py` 共 6 passed。
+- 间隔 2 秒的两次独立构建：原始 Excel 字节和 manifest SHA-256 完全一致。
+- 全量离线回归：2292 passed、6 skipped、0 failed。
+- GitHub Core Research Gates run `35933960701`：`offline-core` 与
+  `postgres-integration` 均为 `success`；公开提交为 `fa23f05`。
+
+### Acceptance Boundary
+
+- 不改变 `M2=PENDING_HUMAN_REVIEW`、`M3/M4/M5=PARTIAL`、
+  `M6=NOT_STARTED`、`M7=PARTIAL`。
+- 本修复只解决构建可复现性，不构成 Checkpoint D、M7 交付、估值结论或实盘准入。
+
 ## v2026.09.24-m7-workbench-display-candidate
 
 ### Release Scope
