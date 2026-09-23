@@ -2,6 +2,27 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M3.1 共享决策域契约：2026-09-24
+
+本节记录 M3 解释性决策域的第一批离线工程。M2 仍为 `PARTIAL`，M3 仍为 `PARTIAL`；
+本批契约不是 M3 产品验收，也不生成个人化 BUY/ADD、仓位或订单。
+
+- 新增 `src/value_investment_agent/investment_decision.py`，建立
+  Evidence Bundle、Minimal Portfolio Preconditions、Decision Review、
+  Entry Thesis Snapshot、Decision Journal 与 Consistency Review 的不可变合同。
+- 在 research artifact 类型与 codec 中注册六个决策 artifact，支持哈希、版本和仓库
+  追加式保存；新增仓库往返测试与 13 项定向回归。
+- `evaluate_investment_decision()` 固定 `action=no_order` 与 `requires_human_review=True`；
+  缺容量只返回 `WATCH`，正向复核不得绕过价格、置信度、反证和人工确认。
+- 实际/模拟 Entry 必须价格，历史重建必须注明；Journal 只追加更正；Consistency 采用
+  `BROKEN > NEGATIVE > all-FULFILLED > CONSISTENT` 的保守聚合。
+- 测试事实：决策定向 13 passed；联合 codec 17 passed；CI 等价离线清单 317 passed；
+  全量离线回归 2164 passed、6 skipped、18 warnings、0 failed。
+- 本批未修改任何 Excel 字节，仓库 canonical、M2 候选与 WPS 生产原表继续保持
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- 下一步仍按总Goal继续：Decision/理由卡 read model 与应用编排、版本化历史 replay 输入、
+  原 Excel 展示；Checkpoint B 与 M2 的人工验收均不能由代码自行通过。
+
 ## M2 AC1-AC12 可重复验收审计器：2026-09-24
 
 本节记录统一审计入口的代码与本地运行事实。M2 仍为 `PARTIAL`，`action=no_order`；

@@ -27,14 +27,36 @@ from .fixed_sample_admission import (
     FixedSampleAdmissionReview,
     FixedSampleCompanyAdmission,
 )
+from .investment_decision import (
+    ConsistencyComparison,
+    DecisionEvidenceBundle,
+    DecisionJournalEntry,
+    EntryThesisSnapshot,
+    InvestmentConsistencyReview,
+    InvestmentDecisionReview,
+    MinimalPortfolioPreconditions,
+    consistency_comparison_from_payload,
+    decision_evidence_bundle_from_payload,
+    decision_journal_entry_from_payload,
+    entry_thesis_snapshot_from_payload,
+    investment_consistency_review_from_payload,
+    investment_decision_review_from_payload,
+    minimal_portfolio_preconditions_from_payload,
+)
 from .model_validity import ModelValidity, model_validity_from_payload
 from .price_attractiveness import PriceAttractivenessAssessment
 from .price_bridge import PriceBridgeResult, price_bridge_from_payload
 from .quote_snapshot import QuoteSnapshot
 from .research_artifacts import (
     ARTIFACT_CURRENT_RESEARCH_STATUS,
+    ARTIFACT_DECISION_EVIDENCE_BUNDLE,
+    ARTIFACT_DECISION_JOURNAL_ENTRY,
     ARTIFACT_DIVIDEND_RESEARCH,
+    ARTIFACT_ENTRY_THESIS_SNAPSHOT,
     ARTIFACT_FIXED_SAMPLE_ADMISSION,
+    ARTIFACT_INVESTMENT_CONSISTENCY_REVIEW,
+    ARTIFACT_INVESTMENT_DECISION_REVIEW,
+    ARTIFACT_MINIMAL_PORTFOLIO_PRECONDITIONS,
     ARTIFACT_MODEL_VALIDITY,
     ARTIFACT_PRICE_ATTRACTIVENESS,
     ARTIFACT_PRICE_BRIDGE,
@@ -706,6 +728,96 @@ class FixedSampleAdmissionCodec:
         )
 
 
+class DecisionEvidenceBundleCodec:
+    artifact_type = ARTIFACT_DECISION_EVIDENCE_BUNDLE
+    schema_version = ARTIFACT_SCHEMA_VERSION
+
+    def to_payload(self, value: DecisionEvidenceBundle) -> dict[str, Any]:
+        if not isinstance(value, DecisionEvidenceBundle):
+            raise TypeError("decision_evidence_bundle codec has the wrong input type")
+        return value.as_policy()
+
+    def from_payload(
+        self, payload: Mapping[str, Any], **_: Any
+    ) -> DecisionEvidenceBundle:
+        return decision_evidence_bundle_from_payload(payload)
+
+
+class MinimalPortfolioPreconditionsCodec:
+    artifact_type = ARTIFACT_MINIMAL_PORTFOLIO_PRECONDITIONS
+    schema_version = ARTIFACT_SCHEMA_VERSION
+
+    def to_payload(self, value: MinimalPortfolioPreconditions) -> dict[str, Any]:
+        if not isinstance(value, MinimalPortfolioPreconditions):
+            raise TypeError("minimal_portfolio_preconditions codec has the wrong input type")
+        return value.as_policy()
+
+    def from_payload(
+        self, payload: Mapping[str, Any], **_: Any
+    ) -> MinimalPortfolioPreconditions:
+        return minimal_portfolio_preconditions_from_payload(payload)
+
+
+class InvestmentDecisionReviewCodec:
+    artifact_type = ARTIFACT_INVESTMENT_DECISION_REVIEW
+    schema_version = ARTIFACT_SCHEMA_VERSION
+
+    def to_payload(self, value: InvestmentDecisionReview) -> dict[str, Any]:
+        if not isinstance(value, InvestmentDecisionReview):
+            raise TypeError("investment_decision_review codec has the wrong input type")
+        return value.as_policy()
+
+    def from_payload(
+        self, payload: Mapping[str, Any], **_: Any
+    ) -> InvestmentDecisionReview:
+        return investment_decision_review_from_payload(payload)
+
+
+class EntryThesisSnapshotCodec:
+    artifact_type = ARTIFACT_ENTRY_THESIS_SNAPSHOT
+    schema_version = ARTIFACT_SCHEMA_VERSION
+
+    def to_payload(self, value: EntryThesisSnapshot) -> dict[str, Any]:
+        if not isinstance(value, EntryThesisSnapshot):
+            raise TypeError("entry_thesis_snapshot codec has the wrong input type")
+        return value.as_policy()
+
+    def from_payload(
+        self, payload: Mapping[str, Any], **_: Any
+    ) -> EntryThesisSnapshot:
+        return entry_thesis_snapshot_from_payload(payload)
+
+
+class DecisionJournalEntryCodec:
+    artifact_type = ARTIFACT_DECISION_JOURNAL_ENTRY
+    schema_version = ARTIFACT_SCHEMA_VERSION
+
+    def to_payload(self, value: DecisionJournalEntry) -> dict[str, Any]:
+        if not isinstance(value, DecisionJournalEntry):
+            raise TypeError("decision_journal_entry codec has the wrong input type")
+        return value.as_policy()
+
+    def from_payload(
+        self, payload: Mapping[str, Any], **_: Any
+    ) -> DecisionJournalEntry:
+        return decision_journal_entry_from_payload(payload)
+
+
+class InvestmentConsistencyReviewCodec:
+    artifact_type = ARTIFACT_INVESTMENT_CONSISTENCY_REVIEW
+    schema_version = ARTIFACT_SCHEMA_VERSION
+
+    def to_payload(self, value: InvestmentConsistencyReview) -> dict[str, Any]:
+        if not isinstance(value, InvestmentConsistencyReview):
+            raise TypeError("investment_consistency_review codec has the wrong input type")
+        return value.as_policy()
+
+    def from_payload(
+        self, payload: Mapping[str, Any], **_: Any
+    ) -> InvestmentConsistencyReview:
+        return investment_consistency_review_from_payload(payload)
+
+
 CODECS: dict[str, ArtifactCodec] = {
     codec.artifact_type: codec
     for codec in (
@@ -720,6 +832,12 @@ CODECS: dict[str, ArtifactCodec] = {
         CurrentResearchStatusCodec(),
         DividendResearchCodec(),
         FixedSampleAdmissionCodec(),
+        DecisionEvidenceBundleCodec(),
+        MinimalPortfolioPreconditionsCodec(),
+        InvestmentDecisionReviewCodec(),
+        EntryThesisSnapshotCodec(),
+        DecisionJournalEntryCodec(),
+        InvestmentConsistencyReviewCodec(),
     )
 }
 

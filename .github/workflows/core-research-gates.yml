@@ -40,6 +40,7 @@ jobs:
           tests/test_valuation_bridge_review.py
           tests/test_interim_report_policy.py
           tests/test_pre_decision_eligibility.py
+          tests/test_investment_decision.py
           tests/test_unified_fcff_valuation.py
           tests/test_residual_income_equity_valuation.py
           tests/test_cyclical_normalized_valuation.py

@@ -1,5 +1,53 @@
 # Changelog
 
+## v2026.09.24-m3-shared-decision-domain
+
+### Release Scope
+
+建立 M3 的解释性投资决策共享域基础，把研究证据、人工决策、原始入场论点和一致性复核
+定义为不可变版本化契约。本版本只完成离线领域工程，不生成任何个人化买入建议，不连接
+券商，不改变 Excel 字节。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/investment_decision.py`：
+  - `DecisionArtifactReference` 与 `DecisionEvidenceBundle` 保存证据依赖及 SHA-256；
+  - `MinimalPortfolioPreconditions` 把最小容量输入与决策复核分开；
+  - `InvestmentDecisionReview` 以 `action=no_order`、强制人工复核为固定边界；
+  - `EntryThesisSnapshot` 保存确认后的原始论点、情景估值、风险、反证和 breaker；
+  - `DecisionJournalEntry` 采用追加式人工确认/拒绝记录；
+  - `InvestmentConsistencyReview` 比较当前事实与原始入场论点；
+  - `evaluate_investment_decision()` 聚合前置资格、证据、置信度和容量约束。
+- 在 `research_artifacts.py` 和 `research_artifact_codecs.py` 注册六种追加式 artifact：
+  `decision_evidence_bundle`、`minimal_portfolio_preconditions`、
+  `investment_decision_review`、`entry_thesis_snapshot`、
+  `decision_journal_entry`、`investment_consistency_review`。
+- 新增 13 项定向测试，覆盖拒绝路径、人工边界、Entry/Journal/Consistency 及仓库
+  保存-恢复往返，并把新测试纳入 GitHub Core Research Gate。
+
+### Decision Boundary
+
+- 缺 Portfolio 输入时只返回 `WATCH`，不能产生正向 BUY/ADD；
+- 正向复核必须同时满足 `ELIGIBLE`、中/高置信度、完整证据和人工确认容量；
+- BUY 不能静默转成 ADD；HOLD 必须有原 Entry 和当前理由；
+- REDUCE/EXIT 保留显式人工复核；实际/模拟 Entry 必须价格，历史重建必须注明；
+- Consistency 优先级为 `BROKEN > NEGATIVE > all-FULFILLED > CONSISTENT`。
+
+### Verification
+
+- 新决策测试：13 passed。
+- 决策与 codec 联合回归：17 passed。
+- GitHub Core Research Gate 等价离线清单：317 passed。
+- 仓库全量离线回归：2164 passed、6 skipped、18 warnings、0 failed。
+- `py_compile` 与 `git diff --check` 通过。
+
+### Workbook Version
+
+- 本轮不修改任何 `.xlsx` 字节。仓库 canonical、独立候选和 WPS 生产原表仍为 SHA-256
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- `A股价值投资_Agent前端智能跟踪模板_M2候选_20260924.xlsx` 继续作为同内容独立快照。
+- M2 保持 `PARTIAL`，M3 本轮仅标记为共享域工程基础，不等同于 M3 产品验收。
+
 ## v2026.09.24-m2-acceptance-auditor-ci-fix
 
 ### Fix
