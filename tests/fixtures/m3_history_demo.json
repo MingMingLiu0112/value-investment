@@ -1,0 +1,139 @@
+{
+  "schema_version": "m3-decision-history-input-v1",
+  "source_id": "simulated-m3-history-v1",
+  "action": "no_order",
+  "entries": [
+    {
+      "schema_version": "m3-investment-decision-v1",
+      "entry_id": "600887-sim-entry-v1",
+      "symbol": "600887",
+      "confirmed_at": "2026-09-01T02:00:00+00:00",
+      "entry_type": "simulated",
+      "entry_date": "2026-09-01",
+      "entry_price": "20",
+      "review_id": "600887-buy-review-v1",
+      "bundle_id": "600887-buy-bundle-v1",
+      "thesis": "模拟：长期消费品牌仍具有稳定现金生成能力",
+      "return_driver": "模拟：产品结构改善带动盈利能力",
+      "mispricing_hypothesis": "市场低估了盈利韧性",
+      "bear_value": "16",
+      "base_value": "20",
+      "bull_value": "24",
+      "confidence": "中",
+      "dividend_thesis": "模拟：分红能力与经营现金相匹配",
+      "hold_logic": "只要论点未破坏且估值未极端高估",
+      "risks": ["需求下降"],
+      "counter_evidence": ["行业竞争加剧"],
+      "breakers": ["现金流持续恶化"],
+      "catalysts": ["年度报告"],
+      "reasons_to_add": ["证据增强且组合容量允许"],
+      "reasons_not_to_add": ["论点削弱时不加仓"],
+      "reasons_to_reduce": ["原回报驱动明显减弱"],
+      "reasons_to_exit": ["原始论点被证实破坏"],
+      "reconstructed_note": "",
+      "action": "no_order"
+    }
+  ],
+  "journals": [
+    {
+      "schema_version": "m3-investment-decision-v1",
+      "journal_id": "600887-journal-buy-v1",
+      "symbol": "600887",
+      "decision_at": "2026-09-01T02:05:00+00:00",
+      "review_id": "600887-buy-review-v1",
+      "review_status": "MANUAL_BUY_REVIEW",
+      "system_reason": "模拟系统理由：研究链完整，但最终决定由人工完成",
+      "human_decision": "CONFIRM_BUY",
+      "human_reason": "模拟人工理由：认可原始论点",
+      "entry_id": "600887-sim-entry-v1",
+      "confirmed_price": "20",
+      "namespace": "simulated",
+      "previous_journal_id": null,
+      "action": "no_order"
+    },
+    {
+      "schema_version": "m3-investment-decision-v1",
+      "journal_id": "600887-journal-hold-v1",
+      "symbol": "600887",
+      "decision_at": "2026-09-15T02:05:00+00:00",
+      "review_id": "600887-hold-review-v1",
+      "review_status": "HOLD",
+      "system_reason": "模拟系统理由：尚无破坏性证据",
+      "human_decision": "CONFIRM_HOLD",
+      "human_reason": "模拟人工理由：继续观察",
+      "entry_id": "600887-sim-entry-v1",
+      "confirmed_price": null,
+      "namespace": "simulated",
+      "previous_journal_id": null,
+      "action": "no_order"
+    },
+    {
+      "schema_version": "m3-investment-decision-v1",
+      "journal_id": "600887-journal-reduce-v1",
+      "symbol": "600887",
+      "decision_at": "2026-09-24T02:05:00+00:00",
+      "review_id": "600887-reduce-review-v1",
+      "review_status": "MANUAL_REDUCE_REVIEW",
+      "system_reason": "模拟系统理由：原始回报驱动出现减弱证据",
+      "human_decision": "CONFIRM_REDUCE",
+      "human_reason": "模拟人工理由：按减仓条件执行",
+      "entry_id": "600887-sim-entry-v1",
+      "confirmed_price": "22",
+      "namespace": "simulated",
+      "previous_journal_id": null,
+      "action": "no_order"
+    }
+  ],
+  "consistency_reviews": [
+    {
+      "schema_version": "m3-investment-decision-v1",
+      "review_id": "600887-consistency-20260923",
+      "symbol": "600887",
+      "entry_id": "600887-sim-entry-v1",
+      "as_of": "2026-09-23",
+      "status": "WEAKENED",
+      "comparisons": [
+        {
+          "dimension": "return_driver",
+          "original_value": "产品结构改善",
+          "current_value": "改善速度低于预期",
+          "impact": "NEGATIVE",
+          "change_reason": "模拟新证据",
+          "evidence_refs": [{"id": "sim-evidence-1"}]
+        },
+        {
+          "dimension": "thesis",
+          "original_value": "长期品牌韧性",
+          "current_value": "长期品牌韧性",
+          "impact": "NEUTRAL",
+          "change_reason": "",
+          "evidence_refs": []
+        }
+      ],
+      "blockers": [],
+      "evidence_refs": [{"id": "sim-evidence-1"}],
+      "action": "no_order"
+    },
+    {
+      "schema_version": "m3-investment-decision-v1",
+      "review_id": "600887-consistency-20260924",
+      "symbol": "600887",
+      "entry_id": "600887-sim-entry-v1",
+      "as_of": "2026-09-24",
+      "status": "BROKEN",
+      "comparisons": [
+        {
+          "dimension": "return_driver",
+          "original_value": "产品结构改善",
+          "current_value": "驱动已破坏",
+          "impact": "BROKEN",
+          "change_reason": "模拟新证据",
+          "evidence_refs": [{"id": "sim-evidence-2"}]
+        }
+      ],
+      "blockers": ["sim-breaker"],
+      "evidence_refs": [{"id": "sim-evidence-2"}],
+      "action": "no_order"
+    }
+  ]
+}

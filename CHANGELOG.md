@@ -1,5 +1,42 @@
 # Changelog
 
+## v2026.09.24-m3-history-read-model
+
+### Release Scope
+
+建立 M3 论点连续性历史链的公开只读模型和独立 Excel 候选。本版本只展示显式
+“模拟”链路的原 Entry、人工决策日志与一致性复核，不写入原 55 页生产工作簿，
+不读取真实账户，也不生成订单、目标仓位或真实成交。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/m3_history_read_model.py`：
+  - `EntryThesisCard`、`DecisionJournalLine`、`ConsistencyReviewCard`；
+  - 将 Entry、Journal、Consistency 按证券组合为 `DecisionHistoryChain`；
+  - 每条输入均绑定不可变 SHA-256，公开链路只接受 `simulated` 命名空间。
+- 新增 `src/value_investment_agent/m3_history_workbook.py`，生成 5 页独立候选：
+  `00_历史链`、`01_原Entry`、`02_决策日志`、`03_一致性复核`、`04_来源哈希`。
+- 新增 `scripts/build_m3_history_candidate.py` 和
+  `tests/fixtures/m3_history_demo.json`，示例链路显式标记为模拟。
+- 新增 `tests/test_m3_history_read_model.py` 并纳入 GitHub Core Research Gate。
+
+### Verification
+
+- M3 历史链定向回归：4 passed。
+- M3/M4 相关定向回归：40 passed。
+- 示例候选为 5 页、1 条模拟链，固定 `action=no_order`；
+  字节数 12,121，SHA-256
+  `5ca99c128be065c836fa00a521b5aaade2f2826cba09dbf6249fd4e9ba926bc0`；
+  WPS 只读收据为 `passed`，WPS 云盘副本与仓库候选逐字节一致。
+- 拒绝真实账户命名空间、拒绝覆盖已有文件。
+- 未修改 WPS 生产工作簿、未读取真实 IPS/持仓或 Entry。
+
+### Acceptance Boundary
+
+- M2、M3、M4 均继续保持 `PARTIAL`。
+- 该候选只演示历史链结构，不等于真实 Entry 已确认，也不能替代用户对
+  Checkpoint B 的理解复核。
+
 ## v2026.09.24-m4-portfolio-input-contracts
 
 ### Release Scope

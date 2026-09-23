@@ -2,6 +2,28 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M3 论点连续性历史链只读模型：2026-09-24
+
+本节记录 M3 历史链的公开离线工程。M2、M3、M4 均仍为 `PARTIAL`；
+本批只使用显式模拟数据，不读取真实账户、IPS、Entry 或持仓。
+
+- 新增 `m3_history_read_model.py`，建立 `EntryThesisCard`、
+  `DecisionJournalLine`、`ConsistencyReviewCard`、`DecisionHistoryChain`
+  和 `DecisionHistoryCollection`。
+- 公开链只接受 `simulated` 命名空间；Entry、Journal、Consistency 输入均绑定
+  不可变 SHA-256，且日志顺序和更正前驱关系会显式校验。
+- 新增 `m3_history_workbook.py`，生成 5 页独立候选：
+  `00_历史链`、`01_原Entry`、`02_决策日志`、`03_一致性复核`、`04_来源哈希`。
+- 新增 `scripts/build_m3_history_candidate.py` 与
+  `tests/fixtures/m3_history_demo.json`；示例链路从模拟 Entry 到持有、削弱、
+  破坏和减仓复核，固定 `action=no_order`。
+- 新增 4 项回归测试并纳入 GitHub Core Research Gate。
+- 独立候选字节数 12,121，SHA-256
+  `5ca99c128be065c836fa00a521b5aaade2f2826cba09dbf6249fd4e9ba926bc0`；
+  WPS 只读收据为 `passed`，WPS 云盘副本与本仓库候选逐字节一致。
+- 本批未修改原 55 页生产工作簿；候选只演示结构，不等于真实历史链或 Checkpoint B
+  已由用户签收。
+
 ## M4 组合输入合同：2026-09-24
 
 本节记录 M4 的第一批非个人化输入合同。M2、M3 与 M4 均仍为 `PARTIAL`；

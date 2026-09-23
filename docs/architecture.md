@@ -130,5 +130,9 @@ BusinessQuality/CapitalAllocation 先随 M1 真实研究建立最小证据合同
 2026-09-24 已增加 M4 非个人化输入合同 `InvestorPolicyStatement`、`PortfolioHolding`、
 `PortfolioSnapshot` 和 `PortfolioInputBundle`；它们只校验人工确认的 IPS/持仓输入与
 缺失字段，不计算 PositionGuidance、风险或股息预测，也不允许从缺输入补出默认百分比。
+同日增加 M3 论点连续性历史链的公开只读投影：`EntryThesisCard`、
+`DecisionJournalLine`、`ConsistencyReviewCard` 与 `DecisionHistoryChain`。公开候选
+只接受 `simulated` 命名空间；真实 Entry/Journal 数据不进入公开仓库，也不会被当前
+价格或新研究覆盖。
 缺少 Portfolio 输入不能自动批准 BUY/ADD；已证实的 Thesis Breaker 风险提示不能因缺价格而消失。旧数据未知不是 HOLD，更不是自动卖出。
 Entry 是用户确认行为的不可变研究基线，不是系统生成的成交；无历史理由只能标记事后重建。MarketContext 不直接修改内在价值。
