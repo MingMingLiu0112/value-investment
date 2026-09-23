@@ -11,6 +11,7 @@ from value_investment_agent.fixed_sample_admission import (
     FixedSampleAdmissionPolicy,
 )
 from value_investment_agent.model_validity import MaterialEvent
+from value_investment_agent.price_attractiveness import STATUS_NOT_ASSESSABLE
 from value_investment_agent.quote_snapshot import (
     QUOTE_STATUS_VERIFIED_CLOSE,
     QuoteSnapshot,
@@ -240,6 +241,12 @@ def test_verified_quote_and_validity_produce_a_ready_bridge():
     assert outcome.price_bridge.bridge_status == "READY"
     assert outcome.price_bridge.current_price == D("5")
     assert outcome.price_bridge.margin_to_bear > 0
+    assert outcome.price_attractiveness is not None
+    assert outcome.price_attractiveness.status == STATUS_NOT_ASSESSABLE
+    assert (
+        "human_approval_price_assessment_not_eligible"
+        in outcome.price_attractiveness.blockers
+    )
     assert app.repository.load_latest(
         SCOPE_SECURITY, "600519", ARTIFACT_MODEL_VALIDITY
     )

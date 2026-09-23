@@ -3,11 +3,18 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from test_research_case import case
+from value_investment_agent.human_research_approval import (
+    DECISION_APPROVED_CONDITIONAL_LOW_CONFIDENCE,
+    DECISION_REJECTED_NEEDS_REWORK,
+    HumanResearchApprovalReceipt,
+    artifact_fingerprint,
+)
 from value_investment_agent.research_gate import (
     CONCLUSION_RESEARCH_READY,
     GATE_BUSINESS,
     GATE_VALUATION,
     evaluate,
+    evaluate_with_human_approval,
     evaluate_with_valuation,
 )
 from value_investment_agent.research_run_contract import (
@@ -67,6 +74,42 @@ def _approval(valuation: ValuationResult) -> ResearchValuationApproval:
         approved_at=datetime(2026, 9, 21, 12, 0, tzinfo=timezone.utc),
         approver="human-reviewer",
         evidence_refs=[{"id": "approval"}],
+    )
+
+
+def _payload(artifact_id: str) -> dict:
+    return {"artifact_id": artifact_id, "value": f"{artifact_id}-v1"}
+
+
+def _human_approval(
+    valuation: ValuationResult,
+    *,
+    decision: str,
+    price_assessment_eligible: bool,
+    remaining_blockers: tuple[str, ...] = (),
+) -> HumanResearchApprovalReceipt:
+    return HumanResearchApprovalReceipt(
+        approval_id="600519-g3-20260923.1",
+        symbol="600519",
+        security_id="600519",
+        profile_id="quality_compounder",
+        valuation_artifact_id="600519-valuation-v1",
+        valuation_artifact_sha256=valuation_result_sha256(valuation),
+        valuation_model_id="residual_income_or_equity_value",
+        valuation_model_version=valuation.model_version,
+        research_case_id="600519-case-v1",
+        research_case_sha256=artifact_fingerprint(_payload("case")),
+        assumption_set_id="600519-assumptions-v1",
+        assumption_set_sha256=artifact_fingerprint(_payload("assumptions")),
+        facts_artifact_id="600519-facts-v1",
+        facts_artifact_sha256=artifact_fingerprint(_payload("facts")),
+        reviewed_at=datetime(2026, 9, 23, 5, 30, tzinfo=timezone.utc),
+        review_as_of=date(2026, 9, 23),
+        reviewer_type="human_research_lead",
+        decision=decision,
+        price_assessment_eligible=price_assessment_eligible,
+        remaining_blockers=remaining_blockers,
+        evidence_refs=({"id": "human-approval"},),
     )
 
 
@@ -148,3 +191,48 @@ def test_g3_requires_exact_current_result_and_human_approval():
         approval=wrong_model,
     )
     assert rejected.results[GATE_VALUATION] is False
+
+
+def test_human_g3_approval_can_open_research_gate_without_price_authorization():
+    valuation = _valuation()
+    approval = _human_approval(
+        valuation,
+        decision=DECISION_APPROVED_CONDITIONAL_LOW_CONFIDENCE,
+        price_assessment_eligible=False,
+    )
+
+    gate = evaluate_with_human_approval(
+        _ready_case(),
+        valuation,
+        model_id="residual_income_or_equity_value",
+        approval=approval,
+        research_case_payload=_payload("case"),
+        facts_payload=_payload("facts"),
+        assumptions_payload=_payload("assumptions"),
+    )
+
+    assert gate.results[GATE_VALUATION] is True
+    assert gate.valuation_ready is True
+
+
+def test_rejected_human_g3_keeps_valuation_gate_closed():
+    valuation = _valuation()
+    approval = _human_approval(
+        valuation,
+        decision=DECISION_REJECTED_NEEDS_REWORK,
+        price_assessment_eligible=False,
+        remaining_blockers=("bridge_review_pending",),
+    )
+
+    gate = evaluate_with_human_approval(
+        _ready_case(),
+        valuation,
+        model_id="residual_income_or_equity_value",
+        approval=approval,
+        research_case_payload=_payload("case"),
+        facts_payload=_payload("facts"),
+        assumptions_payload=_payload("assumptions"),
+    )
+
+    assert gate.results[GATE_VALUATION] is False
+    assert GATE_VALUATION in gate.blockers

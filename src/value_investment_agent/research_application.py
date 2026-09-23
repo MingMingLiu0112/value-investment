@@ -19,11 +19,17 @@ from .current_research_status import (
 )
 from .distribution import DividendResearchResult
 from .event_scan import EventScanResult
+from .event_materiality import EventMaterialityReview
 from .fixed_sample_admission import (
     FixedSampleAdmissionPolicy,
     FixedSampleAdmissionReview,
     review_fixed_sample,
 )
+from .human_research_approval import (
+    HumanResearchApprovalReceipt,
+    resolve_human_research_approval,
+)
+from .interim_report_policy import InterimReportPolicyDecision
 from .model_validity import (
     MaterialEvent,
     ModelValidity,
@@ -37,6 +43,10 @@ from .price_bridge import (
     PriceBridgeResult,
     bridge_with_quote,
     pending_price_bridge_for_incomplete_valuation,
+)
+from .pre_decision_eligibility import (
+    PreDecisionEligibility,
+    evaluate_pre_decision_eligibility,
 )
 from .quote_snapshot import (
     QUOTE_STATUS_PENDING_EXTERNAL_DATA,
@@ -71,6 +81,7 @@ from .research_artifacts import (
 from .research_case import ResearchCase
 from .research_gate import (
     ResearchGate,
+    evaluate_with_human_approval,
     evaluate_with_valuation,
 )
 from .research_profile import PROFILES
@@ -81,6 +92,7 @@ from .research_run_contract import (
     validate_assumption_bindings,
 )
 from .valuation_assumptions import ValuationAssumptionSet
+from .valuation_bridge_review import BridgeContributionAssessment
 from .valuation_models.base import ValuationResult
 from .valuation_router import (
     ROUTE_SUPPORTED,
@@ -182,6 +194,13 @@ class ResearchRunSpec:
     parser_version: str | None = None
     scan_watermark: str | None = None
     input_descriptor_sha256: str | None = None
+    human_research_approval: HumanResearchApprovalReceipt | None = None
+    event_materiality_review: EventMaterialityReview | None = None
+    research_case_payload: Mapping[str, Any] | None = None
+    facts_payload: Mapping[str, Any] | None = None
+    assumptions_payload: Mapping[str, Any] | None = None
+    bridge_contribution_reviews: tuple[BridgeContributionAssessment, ...] = ()
+    interim_report_policy: InterimReportPolicyDecision | None = None
 
     def __post_init__(self) -> None:
         if not self.run_id.strip():
@@ -297,11 +316,60 @@ class ResearchRunSpec:
             r"[0-9a-f]{64}", self.input_descriptor_sha256
         ):
             raise ValueError("Research input descriptor hash must be SHA-256 hex")
+        if self.human_research_approval is not None:
+            if not isinstance(
+                self.human_research_approval,
+                HumanResearchApprovalReceipt,
+            ):
+                raise TypeError("Human G3 approval must use the typed receipt")
+            if self.human_research_approval.symbol != self.symbol:
+                raise ValueError("Human G3 approval symbol does not match the run spec")
+            if self.human_research_approval.action != "no_order":
+                raise ValueError("Human G3 approval must remain no_order")
+        if self.event_materiality_review is not None:
+            if not isinstance(
+                self.event_materiality_review,
+                EventMaterialityReview,
+            ):
+                raise TypeError("Event materiality review must be typed")
+            if self.event_materiality_review.symbol != self.symbol:
+                raise ValueError("Event materiality symbol does not match the run spec")
+            if self.event_materiality_review.action != "no_order":
+                raise ValueError("Event materiality review must remain no_order")
+        if self.interim_report_policy is not None:
+            if not isinstance(
+                self.interim_report_policy,
+                InterimReportPolicyDecision,
+            ):
+                raise TypeError("Interim report policy must be typed")
+            if self.interim_report_policy.symbol != self.symbol:
+                raise ValueError("Interim report policy symbol does not match the run spec")
+            if self.interim_report_policy.action != "no_order":
+                raise ValueError("Interim report policy must remain no_order")
+        for review in self.bridge_contribution_reviews:
+            if not isinstance(review, BridgeContributionAssessment):
+                raise TypeError("Bridge contribution review must be typed")
+            if review.symbol != self.symbol:
+                raise ValueError("Bridge contribution symbol does not match the run spec")
+            if review.action != "no_order":
+                raise ValueError("Bridge contribution review must remain no_order")
+        if (
+            self.human_research_approval is not None
+            and self.valuation_approval is not None
+        ):
+            raise ValueError(
+                "Human G3 receipt and legacy valuation approval cannot both be supplied"
+            )
         object.__setattr__(self, "input_sources", tuple(self.input_sources))
         object.__setattr__(
             self,
             "assumption_bindings",
             tuple(self.assumption_bindings),
+        )
+        object.__setattr__(
+            self,
+            "bridge_contribution_reviews",
+            tuple(self.bridge_contribution_reviews),
         )
 
 
@@ -327,6 +395,11 @@ class CompanyResearchRunOutcome:
     stored_artifacts: tuple[StoredResearchArtifact, ...]
     as_of: date
     available_at: datetime
+    human_research_approval: HumanResearchApprovalReceipt | None = None
+    event_materiality_review: EventMaterialityReview | None = None
+    pre_decision_eligibility: PreDecisionEligibility | None = None
+    bridge_contribution_reviews: tuple[BridgeContributionAssessment, ...] = ()
+    interim_report_policy: InterimReportPolicyDecision | None = None
 
     def __post_init__(self) -> None:
         if self.status not in RUN_STATUSES:
@@ -337,22 +410,40 @@ class CompanyResearchRunOutcome:
             if not self.blockers:
                 raise ValueError("An unsupported run must name its blocker")
             if any(
-                value is not None
-                for value in (
+                (
                     self.gate,
                     self.valuation,
                     self.model_validity,
                     self.price_bridge,
                     self.price_attractiveness,
                     self.current_status,
+                    self.human_research_approval,
+                    self.event_materiality_review,
+                    self.pre_decision_eligibility,
+                    self.interim_report_policy,
                 )
-            ):
+            ) or self.bridge_contribution_reviews:
                 raise ValueError("An unsupported run cannot contain downstream artifacts")
         else:
             if self.gate is None or self.valuation is None or self.current_status is None:
                 raise ValueError("A completed run requires gate, valuation and status")
             if self.symbol != self.gate.symbol or self.symbol != self.valuation.symbol:
                 raise ValueError("Completed run artifacts must share one symbol")
+        if self.human_research_approval is not None:
+            if self.human_research_approval.symbol != self.symbol:
+                raise ValueError("Completed run human approval symbol does not match")
+            if self.human_research_approval.action != "no_order":
+                raise ValueError("Completed run human approval must remain no_order")
+        if self.event_materiality_review is not None:
+            if self.event_materiality_review.symbol != self.symbol:
+                raise ValueError("Completed run event review symbol does not match")
+            if self.event_materiality_review.action != "no_order":
+                raise ValueError("Completed run event review must remain no_order")
+        if self.pre_decision_eligibility is not None:
+            if self.pre_decision_eligibility.symbol != self.symbol:
+                raise ValueError("Completed run predecision symbol does not match")
+            if self.pre_decision_eligibility.action != "no_order":
+                raise ValueError("Completed run predecision must remain no_order")
 
 
 class ResearchApplicationService:
@@ -399,6 +490,11 @@ class ResearchApplicationService:
                 stored_artifacts=(),
                 as_of=spec.as_of or self._facts_as_of(spec),
                 available_at=available_at,
+                human_research_approval=None,
+                event_materiality_review=None,
+                pre_decision_eligibility=None,
+                bridge_contribution_reviews=(),
+                interim_report_policy=None,
             )
 
         self._validate_route_contract(spec, route)
@@ -412,12 +508,35 @@ class ResearchApplicationService:
         valuation = model.value(spec.facts, spec.research_case)
         if not isinstance(valuation, ValuationResult):
             raise TypeError("Registered model returned a non-valuation result")
-        gate = evaluate_with_valuation(
-            spec.research_case,
-            valuation,
-            model_id=route.selected_model,
-            approval=spec.valuation_approval,
-        )
+        approval_decision = None
+        if spec.human_research_approval is not None:
+            case_payload, facts_payload, assumptions_payload = (
+                self._human_approval_payloads(spec)
+            )
+            gate = evaluate_with_human_approval(
+                spec.research_case,
+                valuation,
+                model_id=route.selected_model,
+                approval=spec.human_research_approval,
+                research_case_payload=case_payload,
+                facts_payload=facts_payload,
+                assumptions_payload=assumptions_payload,
+            )
+            approval_decision = resolve_human_research_approval(
+                spec.human_research_approval,
+                valuation,
+                model_id=route.selected_model,
+                research_case_payload=case_payload,
+                facts_payload=facts_payload,
+                assumptions_payload=assumptions_payload,
+            )
+        else:
+            gate = evaluate_with_valuation(
+                spec.research_case,
+                valuation,
+                model_id=route.selected_model,
+                approval=spec.valuation_approval,
+            )
 
         validity, quote = self._resolve_validity_and_quote(spec, valuation)
         price_bridge = self._resolve_price_bridge(
@@ -431,6 +550,10 @@ class ResearchApplicationService:
             valuation,
             price_bridge,
             profile_id=spec.profile_id,
+            human_approval_price_assessment_eligible=(
+                approval_decision.price_assessment_eligible
+                if approval_decision is not None else False
+            ),
         )
         current_status = evaluate_current_research_status(
             gate,
@@ -438,7 +561,36 @@ class ResearchApplicationService:
             price_bridge,
             engineering_status=ENGINEERING_READY,
             profile_id=spec.profile_id,
+            human_approval_price_assessment_eligible=(
+                approval_decision.price_assessment_eligible
+                if approval_decision is not None else False
+            ),
         )
+
+        pre_decision = None
+        if (
+            spec.human_research_approval is not None
+            and spec.event_materiality_review is not None
+            and validity is not None
+            and price_bridge is not None
+        ):
+            case_payload, facts_payload, assumptions_payload = (
+                self._human_approval_payloads(spec)
+            )
+            pre_decision = evaluate_pre_decision_eligibility(
+                gate=gate,
+                valuation=valuation,
+                approval=spec.human_research_approval,
+                model_validity=validity,
+                price_bridge=price_bridge,
+                event_materiality=spec.event_materiality_review,
+                decision_as_of=as_of,
+                model_id=route.selected_model,
+                research_case_payload=case_payload,
+                facts_payload=facts_payload,
+                assumptions_payload=assumptions_payload,
+                price_attractiveness=price_attractiveness,
+            )
 
         blockers = tuple(
             dict.fromkeys(
@@ -449,6 +601,19 @@ class ResearchApplicationService:
                     *price_bridge.blockers,
                     *price_attractiveness.blockers,
                     *current_status.blockers,
+                    *(
+                        pre_decision.blockers
+                        if pre_decision is not None else []
+                    ),
+                    *(
+                        blocker
+                        for review in spec.bridge_contribution_reviews
+                        for blocker in review.blockers
+                    ),
+                    *(
+                        spec.interim_report_policy.blockers
+                        if spec.interim_report_policy is not None else []
+                    ),
                     *(spec.distribution_result.blockers if spec.distribution_result else []),
                     *(spec.assumptions.blockers if spec.assumptions else []),
                 ]
@@ -484,6 +649,11 @@ class ResearchApplicationService:
             stored_artifacts=tuple(stored),
             as_of=as_of,
             available_at=available_at,
+            human_research_approval=spec.human_research_approval,
+            event_materiality_review=spec.event_materiality_review,
+            pre_decision_eligibility=pre_decision,
+            bridge_contribution_reviews=spec.bridge_contribution_reviews,
+            interim_report_policy=spec.interim_report_policy,
         )
 
     def review_company_research(
@@ -593,8 +763,28 @@ class ResearchApplicationService:
             ),
             blockers=list(validity_input.blockers),
             event_scan=validity_input.event_scan,
+            event_materiality=spec.event_materiality_review,
         )
         return validity, quote
+
+    def _human_approval_payloads(
+        self,
+        spec: ResearchRunSpec,
+    ) -> tuple[Mapping[str, Any], Mapping[str, Any], Mapping[str, Any]]:
+        """Require exact payload bindings when a human receipt is supplied."""
+        if (
+            spec.research_case_payload is None
+            or spec.facts_payload is None
+            or spec.assumptions_payload is None
+        ):
+            raise ValueError(
+                "Human G3 approval requires exact research case, facts and assumptions payloads"
+            )
+        return (
+            spec.research_case_payload,
+            spec.facts_payload,
+            spec.assumptions_payload,
+        )
 
     def _resolve_price_bridge(
         self,

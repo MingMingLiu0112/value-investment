@@ -14,6 +14,12 @@ from .event_scan import (
     SCAN_PENDING_HUMAN_REVIEW,
     EventScanResult,
 )
+from .event_materiality import (
+    DECISION_REQUIRES_RECALCULATION,
+    DECISION_REQUIRES_DECOMPOSITION,
+    DECISION_RISK_MONITOR,
+    EventMaterialityReview,
+)
 from .valuation_models.base import ValuationResult, merge_evidence_refs
 
 
@@ -92,6 +98,7 @@ def evaluate_model_validity(
     event_scan_evidence_refs: list[dict[str, Any]],
     blockers: list[str] | None = None,
     event_scan: EventScanResult | None = None,
+    event_materiality: EventMaterialityReview | None = None,
 ) -> ModelValidity:
     """Evaluate whether a model remains valid at a later quote date."""
     base_blockers = list(blockers or [])
@@ -110,6 +117,90 @@ def evaluate_model_validity(
             "INVALID",
             base_blockers + ["quote date precedes model validity window"],
             [],
+        )
+    if event_scan is not None and event_materiality is not None:
+        raise ValueError("event_scan and event_materiality review cannot both be supplied")
+    if event_materiality is not None:
+        if events:
+            raise ValueError(
+                "event_materiality and legacy material events cannot both be supplied"
+            )
+        if event_materiality.symbol != symbol:
+            raise ValueError("event materiality symbol does not match the validity symbol")
+        if event_materiality.coverage_watermark < quote_date:
+            return ModelValidity(
+                model_id,
+                symbol,
+                model_as_of,
+                valid_from,
+                quote_date,
+                None,
+                None,
+                None,
+                "INVALID",
+                base_blockers + ["event materiality review does not cover the quote date"],
+                merge_evidence_refs(
+                    event_scan_evidence_refs,
+                    event_materiality.evidence_refs,
+                ),
+            )
+        review_blockers = list(event_materiality.review_blockers)
+        review_refs = merge_evidence_refs(
+            event_scan_evidence_refs,
+            event_materiality.evidence_refs,
+            *(
+                (decision.source_ref,)
+                for decision in event_materiality.decisions
+                if decision.source_ref
+            ),
+        )
+        if event_materiality.has_unresolved_recalculation:
+            latest = max(
+                decision.published_at.date()
+                for decision in event_materiality.recalculation_decisions
+            )
+            financial_changed = any(
+                "financial" in item
+                or "fact" in item
+                for decision in event_materiality.recalculation_decisions
+                for item in decision.affected_domains
+            )
+            capital_changed = any(
+                "capital" in item
+                or "share" in item
+                or "buyback" in item
+                for decision in event_materiality.recalculation_decisions
+                for item in decision.affected_domains
+            )
+            return ModelValidity(
+                model_id,
+                symbol,
+                model_as_of,
+                valid_from,
+                quote_date,
+                financial_changed,
+                capital_changed,
+                True,
+                "STALE",
+                [
+                    *base_blockers,
+                    f"material event review requires recalculation at {latest.isoformat()}",
+                    *review_blockers,
+                ],
+                review_refs,
+            )
+        return ModelValidity(
+            model_id,
+            symbol,
+            model_as_of,
+            valid_from,
+            quote_date,
+            False,
+            False,
+            False,
+            "VALID",
+            [*base_blockers, *review_blockers],
+            review_refs,
         )
     if event_scan is not None:
         if events:

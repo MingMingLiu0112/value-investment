@@ -165,3 +165,27 @@ def test_incomplete_gate_blocks_price_assessment_even_with_ready_bridge():
 
     assert outcome.status == STATUS_NOT_ASSESSABLE
     assert "research_gate_not_ready_for_price_assessment" in outcome.blockers
+
+
+def test_human_approval_flag_false_blocks_even_an_otherwise_ready_bridge():
+    outcome = assess_price_attractiveness(
+        gate(),
+        valuation(),
+        bridge(),
+        human_approval_price_assessment_eligible=False,
+    )
+
+    assert outcome.status == STATUS_NOT_ASSESSABLE
+    assert outcome.margin_to_bear is None
+    assert "human_approval_price_assessment_not_eligible" in outcome.blockers
+
+
+def test_absent_human_approval_flag_does_not_implicitly_authorize_price_assessment():
+    outcome = assess_price_attractiveness(
+        gate(),
+        valuation(),
+        bridge(),
+        human_approval_price_assessment_eligible=None,
+    )
+
+    assert outcome.status != STATUS_NOT_ASSESSABLE

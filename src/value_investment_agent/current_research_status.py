@@ -272,6 +272,7 @@ def evaluate_current_research_status(
     engineering_status: str = ENGINEERING_READY,
     current_data_status: CurrentDataStatus | None = None,
     profile_id: str | None = None,
+    human_approval_price_assessment_eligible: bool | None = None,
 ) -> CurrentResearchStatus:
     """Combine retained domain results without creating an execution instruction."""
     if not isinstance(gate, ResearchGate):
@@ -318,6 +319,9 @@ def evaluate_current_research_status(
         valuation,
         price_bridge,
         profile_id=profile_id,
+        human_approval_price_assessment_eligible=(
+            human_approval_price_assessment_eligible
+        ),
     )
     blockers.extend(price_attractiveness.blockers)
     blockers = list(dict.fromkeys(blockers))

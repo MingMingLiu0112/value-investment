@@ -197,6 +197,20 @@ def test_complete_high_confidence_research_can_be_research_attractive():
     assert outcome.current_data_status.status == "READY"
 
 
+def test_human_price_flag_false_forces_not_assessable_inside_current_status():
+    outcome = evaluate_current_research_status(
+        gate(),
+        valuation(),
+        bridge(),
+        profile_id="quality_compounder",
+        human_approval_price_assessment_eligible=False,
+    )
+
+    assert outcome.price_attractiveness.status == STATUS_NOT_ASSESSABLE
+    assert outcome.research_attractive is False
+    assert "human_approval_price_assessment_not_eligible" in outcome.blockers
+
+
 def test_non_attractive_gate_conclusion_is_preserved():
     outcome = evaluate_current_research_status(
         gate(conclusion="研究未完成"),

@@ -149,6 +149,7 @@ def assess_price_attractiveness(
         price_bridge: PriceBridgeResult,
         *,
         profile_id: str | None = None,
+        human_approval_price_assessment_eligible: bool | None = None,
 ) -> PriceAttractivenessAssessment:
     """Require a legal bridge before comparing research value with market price."""
     if not isinstance(gate, ResearchGate):
@@ -178,6 +179,21 @@ def assess_price_attractiveness(
 
     resolved_profile = profile_id or infer_profile_id(valuation) or "unspecified"
     base_evidence_refs = list(price_bridge.evidence_refs)
+
+    if human_approval_price_assessment_eligible is False:
+        return PriceAttractivenessAssessment(
+            symbol=valuation.symbol,
+            profile_id=resolved_profile,
+            status=STATUS_NOT_ASSESSABLE,
+            margin_to_bear=None,
+            margin_to_base=None,
+            downside_reference=None,
+            upside_reference=None,
+            confidence=valuation.confidence,
+            reasons=["人工 G3 批准未授权当前模型进入价格吸引力判断"],
+            blockers=["human_approval_price_assessment_not_eligible"],
+            evidence_refs=base_evidence_refs,
+        )
 
     if price_bridge.bridge_status != "READY":
         return PriceAttractivenessAssessment(

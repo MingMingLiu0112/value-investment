@@ -4,6 +4,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from .human_research_approval import (
+    HumanResearchApprovalReceipt,
+    resolve_human_research_approval,
+)
 from .research_case import ResearchCase
 from .research_run_contract import ResearchValuationApproval
 
@@ -121,6 +125,54 @@ def evaluate_with_valuation(
         and approval is not None
         and approval.model_id == model_id
         and approval.matches(valuation)
+    )
+    conclusion = _conclusion(results)
+    blockers = list(case.blockers)
+    for gate, passed in results.items():
+        if not passed:
+            blockers.append(gate)
+    return ResearchGate(
+        case.symbol,
+        results,
+        list(dict.fromkeys(blockers)),
+        conclusion,
+    )
+
+
+def evaluate_with_human_approval(
+    case: ResearchCase,
+    valuation: Any,
+    *,
+    model_id: str,
+    approval: HumanResearchApprovalReceipt,
+    research_case_payload: Any | None = None,
+    facts_payload: Any | None = None,
+    assumptions_payload: Any | None = None,
+) -> ResearchGate:
+    """G3 binds the human decision to exact valuation and dependency artifacts."""
+    if not isinstance(approval, HumanResearchApprovalReceipt):
+        raise TypeError("Human G3 requires a typed HumanResearchApprovalReceipt")
+    base = evaluate(case)
+    approval_decision = resolve_human_research_approval(
+        approval,
+        valuation,
+        model_id=model_id,
+        research_case_payload=research_case_payload,
+        facts_payload=facts_payload,
+        assumptions_payload=assumptions_payload,
+    )
+    results = dict(base.results)
+    results[GATE_VALUATION] = (
+        valuation.status != "not_ready"
+        and all(
+            value is not None
+            for value in (
+                valuation.bear_value,
+                valuation.base_value,
+                valuation.bull_value,
+            )
+        )
+        and approval_decision.approved
     )
     conclusion = _conclusion(results)
     blockers = list(case.blockers)
