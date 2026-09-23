@@ -1,0 +1,332 @@
+"""Presentation-only M2 opportunity workbook.
+
+This workbook is derived from an immutable DiscoveryRunReceipt.  It contains
+no valuation arithmetic, order, position or BUY column.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import hashlib
+from pathlib import Path
+from typing import Any, Iterable, Mapping
+
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
+
+from .m2_discovery_engine import M2ScreeningPolicy
+from .m2_opportunity_discovery import (
+    ACTION_NO_ORDER,
+    CHANNEL_CYCLICAL,
+    CHANNEL_DIVIDEND,
+    CHANNEL_QUALITY,
+    CHANNEL_VALUE,
+    CandidateReason,
+    ChannelResult,
+    DiscoveryRunReceipt,
+    ExcludedSecurity,
+)
+
+
+OVERVIEW_SHEET = "00_M2总览"
+POOL_SHEET = "01_候选池"
+QUALITY_SHEET = "02_质量候选"
+DIVIDEND_SHEET = "03_现金回报候选"
+VALUE_SHEET = "04_价值候选"
+CYCLICAL_SHEET = "05_周期候选"
+HEALTH_SHEET = "06_数据健康"
+EXCLUDED_SHEET = "07_不支持与缺失"
+LEGACY_SHEET = "08_Legacy对比"
+EVIDENCE_SHEET = "09_证据清单"
+
+INK = "24312D"
+GREEN = "18755D"
+BLUE = "245D83"
+AMBER = "FFF1D6"
+GREY = "EFF3F1"
+RED = "C0392B"
+
+
+def _style(cell, *, fill: str = "FFFFFF", bold: bool = False, color: str = INK) -> None:
+    cell.font = Font(name="Microsoft YaHei", size=11, bold=bold, color=color)
+    cell.fill = PatternFill("solid", fgColor=fill)
+    cell.alignment = Alignment(vertical="top", wrap_text=True)
+
+
+def _title(ws, title: str, subtitle: str, columns: int) -> None:
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=columns)
+    ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=columns)
+    _style(ws.cell(1, 1, title), fill=GREEN, bold=True, color="FFFFFF")
+    _style(ws.cell(2, 1, subtitle), fill=GREY, bold=True)
+    ws.row_dimensions[1].height = 34
+    ws.row_dimensions[2].height = 28
+
+
+def _header(ws, row: int, columns: list[str]) -> int:
+    for column, value in enumerate(columns, 1):
+        _style(ws.cell(row, column, value), fill=BLUE, bold=True, color="FFFFFF")
+    return row + 1
+
+
+def _widths(ws, widths: list[int]) -> None:
+    for index, width in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(index)].width = width
+
+
+def _number(value: Any, digits: int = 2) -> str:
+    if value is None:
+        return ""
+    try:
+        return f"{float(value):.{digits}f}"
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _metrics_text(metrics: Mapping[str, Any]) -> str:
+    labels = {
+        "pe_ttm": "PE(TTM)",
+        "pb": "PB",
+        "market_cap": "总市值",
+        "quality_score": "质量分",
+        "coverage_ratio": "证据覆盖",
+        "cash_dps": "每股分红",
+        "declared_yield": "参考股息率",
+        "earnings_yield": "盈利收益率",
+        "implied_roe": "隐含ROE",
+        "fcf_yield": "FCF Yield",
+        "ev_ebit": "EV/EBIT",
+        "normalized_earnings": "正常化盈利",
+        "current_vs_normalized_roe": "当前/正常化ROE",
+        "dividend_status": "分红状态",
+    }
+    lines: list[str] = []
+    for key, value in metrics.items():
+        label = labels.get(key, key)
+        if value is None:
+            lines.append(f"{label}: 缺失")
+        elif key in {"declared_yield", "earnings_yield", "implied_roe", "coverage_ratio"}:
+            lines.append(f"{label}: {float(value) * 100:.2f}%")
+        else:
+            lines.append(f"{label}: {_number(value)}")
+    return "\n".join(lines)
+
+
+def _candidate_row(ws, row: int, candidate: CandidateReason, include_channel: bool) -> int:
+    _style(ws.cell(row, 1, candidate.symbol), bold=True)
+    _style(ws.cell(row, 2, candidate.name))
+    if include_channel:
+        _style(ws.cell(row, 3, candidate.channel), fill=GREY)
+        offset = 1
+    else:
+        offset = 0
+    _style(ws.cell(row, 3 + offset, candidate.priority_tier), bold=True)
+    _style(ws.cell(row, 4 + offset, candidate.profile_status))
+    _style(
+        ws.cell(row, 5 + offset, candidate.data_status),
+        fill=AMBER if candidate.data_status == "PARTIAL" else "FFFFFF",
+    )
+    _style(ws.cell(row, 6 + offset, candidate.evidence_date))
+    _style(ws.cell(row, 7 + offset, candidate.metrics.get("industry") or ""))
+    _style(ws.cell(row, 8 + offset, "\n".join(candidate.reasons)))
+    _style(ws.cell(row, 9 + offset, _metrics_text(candidate.metrics)))
+    ws.row_dimensions[row].height = max(58, len(candidate.reasons) * 16)
+    return row + 1
+
+
+def _candidate_sheet(
+    wb: Workbook,
+    title: str,
+    subtitle: str,
+    candidates: Iterable[CandidateReason],
+    *,
+    include_channel: bool,
+) -> None:
+    ws = wb.create_sheet(title)
+    ws.sheet_view.showGridLines = False
+    ws.freeze_panes = "A4"
+    columns = ["证券代码", "公司", "通道", "优先级", "画像", "数据", "证据日期", "行业", "Why Now / 原因", "关键指标"]
+    if not include_channel:
+        columns = columns[:2] + columns[3:]
+    _widths(ws, [11, 16, 18, 9, 13, 12, 12, 14, 62, 46][: len(columns)])
+    _title(ws, title, subtitle, len(columns))
+    row = _header(ws, 4, columns)
+    for candidate in candidates:
+        row = _candidate_row(ws, row, candidate, include_channel)
+
+
+def _overview(wb: Workbook, receipt: DiscoveryRunReceipt, policy: M2ScreeningPolicy) -> None:
+    ws = wb.create_sheet(OVERVIEW_SHEET)
+    ws.sheet_view.showGridLines = False
+    ws.column_dimensions["A"].width = 34
+    ws.column_dimensions["B"].width = 100
+    _title(
+        ws,
+        "M2 多通道机会发现",
+        (
+            f"run_id={receipt.run_id} | as_of={receipt.as_of.isoformat()} | "
+            f"rule={receipt.rule_version} | action={receipt.action}"
+        ),
+        2,
+    )
+    row = 4
+    items = [
+        ("产品结论", "系统只发现值得深研的公司，不生成估值、BUY、仓位或订单。"),
+        ("Universe 分母", f"{receipt.data_health.universe_count} 家官方证券清单，行情匹配 {receipt.data_health.matched_quote_count} 家。"),
+        ("数据健康", f"{receipt.data_health.status}；阻断 {len(receipt.data_health.blockers)} 项。"),
+        ("候选总量", f"{receipt.legacy_comparison.new_candidate_count} 家，跨通道可能重复。"),
+        ("Legacy 对比", f"{receipt.legacy_comparison.legacy_candidate_count} 家旧 PE/PB 阴影候选，与新池重叠 {receipt.legacy_comparison.overlap_count} 家。"),
+        ("候选签名", receipt.candidate_signature),
+    ]
+    for label, value in items:
+        _style(ws.cell(row, 1, label), fill=GREY, bold=True)
+        _style(ws.cell(row, 2, str(value)))
+        row += 1
+
+
+def _health(wb: Workbook, receipt: DiscoveryRunReceipt) -> None:
+    ws = wb.create_sheet(HEALTH_SHEET)
+    ws.sheet_view.showGridLines = False
+    ws.column_dimensions["A"].width = 42
+    ws.column_dimensions["B"].width = 30
+    _title(ws, "全市场数据健康", "缺失、冲突和不支持行业必须可见；缺失不得视为 0。", 2)
+    row = _header(ws, 4, ["指标", "数量"])
+    health = receipt.data_health
+    rows = [
+        ("状态", health.status),
+        ("官方 Universe", health.universe_count),
+        ("行情快照", health.quote_count),
+        ("行情与官方清单匹配", health.matched_quote_count),
+        ("官方清单缺行情", health.missing_quote_count),
+        ("行情不在官方清单", health.extra_quote_count),
+        ("双源价格冲突", health.price_conflict_count),
+        ("申万行业映射", health.industry_mapping_count),
+        ("财务证据公司数", health.financial_evidence_count),
+        ("分红证据公司数", health.dividend_evidence_count),
+        ("金融行业待专用模型", health.unsupported_financial_count),
+    ]
+    for label, value in rows:
+        _style(ws.cell(row, 1, label), fill=GREY)
+        _style(ws.cell(row, 2, str(value)))
+        row += 1
+    row += 1
+    _style(ws.cell(row, 1, "阻断项"), fill=BLUE, bold=True, color="FFFFFF")
+    row += 1
+    for blocker in health.blockers:
+        _style(ws.cell(row, 1, blocker), fill=AMBER)
+        row += 1
+
+
+def _excluded(wb: Workbook, receipt: DiscoveryRunReceipt) -> None:
+    ws = wb.create_sheet(EXCLUDED_SHEET)
+    ws.sheet_view.showGridLines = False
+    ws.freeze_panes = "A4"
+    _widths(ws, [12, 18, 22, 50, 18, 14])
+    _title(ws, "不支持与缺失", "银行/保险/券商等不进入通用通道；金融专用模型另评。", 6)
+    row = _header(ws, 4, ["证券代码", "公司", "通道", "原因", "画像", "证据日期"])
+    seen: set[tuple[str, str, str]] = set()
+    for channel, result in receipt.channel_results.items():
+        for item in [*result.excluded, *result.missing]:
+            key = (item.symbol, item.reason, channel)
+            if key in seen:
+                continue
+            seen.add(key)
+            _style(ws.cell(row, 1, item.symbol))
+            _style(ws.cell(row, 2, item.name))
+            _style(ws.cell(row, 3, channel))
+            _style(ws.cell(row, 4, item.reason))
+            _style(ws.cell(row, 5, item.profile_status))
+            _style(ws.cell(row, 6, item.evidence_date))
+            row += 1
+
+
+def _legacy(wb: Workbook, receipt: DiscoveryRunReceipt) -> None:
+    ws = wb.create_sheet(LEGACY_SHEET)
+    ws.sheet_view.showGridLines = False
+    ws.column_dimensions["A"].width = 24
+    ws.column_dimensions["B"].width = 100
+    _title(ws, "Legacy PE/PB Shadow 对比", receipt.legacy_comparison.note, 2)
+    row = _header(ws, 4, ["项目", "数值"])
+    comparison = receipt.legacy_comparison
+    for label, value in (
+        ("Legacy 候选数", comparison.legacy_candidate_count),
+        ("M2 新候选数", comparison.new_candidate_count),
+        ("重叠数", comparison.overlap_count),
+    ):
+        _style(ws.cell(row, 1, label), fill=GREY)
+        _style(ws.cell(row, 2, str(value)))
+        row += 1
+    row += 1
+    _style(ws.cell(row, 1, "Legacy 证券代码"), fill=BLUE, bold=True, color="FFFFFF")
+    row += 1
+    _style(ws.cell(row, 1, "、".join(comparison.legacy_candidates)), fill=GREY)
+
+
+def _evidence(wb: Workbook, receipt: DiscoveryRunReceipt) -> None:
+    ws = wb.create_sheet(EVIDENCE_SHEET)
+    ws.sheet_view.showGridLines = False
+    ws.freeze_panes = "A4"
+    _widths(ws, [18, 48, 70, 72, 28])
+    _title(ws, "运行证据清单", "每个原始快照都保留路径与 SHA-256，可重放。", 5)
+    row = _header(ws, 4, ["证据 ID", "本地路径", "来源", "URL", "抓取时间"])
+    for reference in receipt.evidence_refs:
+        _style(ws.cell(row, 1, reference.id))
+        _style(ws.cell(row, 2, reference.path))
+        _style(ws.cell(row, 3, reference.source_name))
+        _style(ws.cell(row, 4, reference.source_url))
+        _style(ws.cell(row, 5, reference.fetched_at.isoformat()))
+        row += 1
+
+
+def build_discovery_workbook(
+    receipt: DiscoveryRunReceipt,
+    policy: M2ScreeningPolicy,
+) -> Workbook:
+    if receipt.action != ACTION_NO_ORDER:
+        raise ValueError("M2 workbook cannot consume a non-no_order receipt")
+    wb = Workbook()
+    wb.remove(wb.active)
+    _overview(wb, receipt, policy)
+    _candidate_sheet(
+        wb,
+        POOL_SHEET,
+        "全部通道候选；仅进入深研队列，不代表便宜或值得买入。",
+        tuple(
+            candidate
+            for channel in (CHANNEL_QUALITY, CHANNEL_DIVIDEND, CHANNEL_VALUE, CHANNEL_CYCLICAL)
+            for candidate in receipt.channel_results[channel].candidates
+        ),
+        include_channel=True,
+    )
+    _candidate_sheet(wb, QUALITY_SHEET, "Quality 候选", receipt.channel_results[CHANNEL_QUALITY].candidates, include_channel=False)
+    _candidate_sheet(wb, DIVIDEND_SHEET, "Dividend / Cash Return 候选", receipt.channel_results[CHANNEL_DIVIDEND].candidates, include_channel=False)
+    _candidate_sheet(wb, VALUE_SHEET, "Value 候选", receipt.channel_results[CHANNEL_VALUE].candidates, include_channel=False)
+    _candidate_sheet(wb, CYCLICAL_SHEET, "Cyclical 候选", receipt.channel_results[CHANNEL_CYCLICAL].candidates, include_channel=False)
+    _health(wb, receipt)
+    _excluded(wb, receipt)
+    _legacy(wb, receipt)
+    _evidence(wb, receipt)
+    wb.active = 0
+    return wb
+
+
+def write_discovery_workbook(
+    receipt: DiscoveryRunReceipt,
+    policy: M2ScreeningPolicy,
+    *,
+    output: Path,
+    root: Path,
+) -> dict[str, Any]:
+    output = output.resolve()
+    if not output.is_relative_to(root.resolve()):
+        raise ValueError("M2 workbook output escapes project root")
+    if output.exists():
+        raise ValueError(f"M2 workbook output already exists: {output}")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    workbook = build_discovery_workbook(receipt, policy)
+    workbook.save(output)
+    digest = hashlib.sha256(output.read_bytes()).hexdigest()
+    return {
+        "workbook_path": str(output.relative_to(root)),
+        "workbook_sha256": digest,
+        "action": ACTION_NO_ORDER,
+    }

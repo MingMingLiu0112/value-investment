@@ -1,6 +1,6 @@
 # 当前执行目标：M2 多通道机会发现
 
-更新：2026-09-23。当前活动阶段为 `POST-M1-STABILIZATION`，完成后立即进入
+更新：2026-09-23。`POST-M1-STABILIZATION` 已完成并冻结；当前唯一活动阶段为
 `M2-MULTI-CHANNEL-OPPORTUNITY-DISCOVERY`。执行输入为
 [m2-current-progress-review-20260923.md](m2-current-progress-review-20260923.md)。
 
@@ -17,6 +17,25 @@ Quality、Dividend/Cash Return、Value、Cyclical 四个证据通道，把候选
 - 每家公司至少记录 `channel / reasons / evidence_date / data_status / profile_status`。
 - 最终必须完成一次真实 run-once、可重复 PIT 重放，以及 Excel 候选板卡。
 - 未完成真实数据验收时只标 `PARTIAL`，不宣布 M2 完成。
+
+## M2 Acceptance
+
+不能因为创建了 Channel class 或完成一次 JSON 运行就通过。M2 必须依次满足：
+
+1. 全市场 Universe 分母完整。
+2. Quality、Dividend/Cash Return、Value、Cyclical 四个通道真实运行。
+3. 缺失数据不会默认为 0，必须在指标和原因中显式保留缺失。
+4. 银行、保险、券商等不支持画像不进入通用通道，进入 `UNSUPPORTED` 隔离。
+5. 每个候选都有进入通道、指标、证据日期、数据状态和画像状态。
+6. 无候选是合法快照，不得为凑候选降低门禁。
+7. 至少从“系统主动发现”的公司里形成 3 份实质研究或否决报告。
+8. 同一 `run_id + rule_version + raw inputs` 可以重放，并核对候选签名。
+9. Legacy PE/PB 仅作 shadow 对比，不参与新候选排序。
+10. 用户能在 Excel 中直接看到候选、进入原因、缺失和不支持项。
+
+第 1-6、8-10 项已由 2026-09-23 真实全市场 run-once 形成证据；第 7 项尚未完成，
+因此当前 M2 状态为 `PARTIAL`。下一步不得复制 symbol 专用流水线，只做有界、
+可归档的三份新候选研究/否决报告。
 
 ## 当前保护
 

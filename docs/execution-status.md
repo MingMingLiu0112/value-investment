@@ -2,10 +2,10 @@
 
 更新：2026-09-23。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
-## POST-M1 Stabilization + M2 启动：2026-09-23
+## POST-M1 Stabilization + M2 首个真实 run-once：2026-09-23
 
 执行输入是用户复核后的 [m2-current-progress-review-20260923.md](m2-current-progress-review-20260923.md)。
-当前活动阶段为 `POST-M1-STABILIZATION`，完成 A1-A5 后进入
+`POST-M1-STABILIZATION` 的 A1-A5 已完成并冻结，当前活动阶段为
 `M2-MULTI-CHANNEL-OPPORTUNITY-DISCOVERY`。M1 保持 `DONE`，不重写历史。
 
 - A1：修正茅台旧审计断言，从 P1 v4 契约自带的 hash-bound daily-simulation policy 推导执行政策事实，不删除红测试。
@@ -15,8 +15,21 @@
 - A5：`current-stage-goal.md` 已切换到 M2；本执行手册复制入 `docs/`。
 - 稳定化验收：定向回归 14 passed；使用仓库内隔离 basetemp 的全量回归 2112 passed / 6 skipped；`compileall` 与 `git diff --check` 通过；Core 生产路径未新增 `000651 / 600741 / 600887` symbol 特例。
 
-尚未声明 M2 完成。M2 需要真实全市场 run-once、真实数据覆盖、四个通道、候选原因、
-缺失隔离、不支持行业隔离、可重放 PIT 和 Excel 候选输出。
+## M2 真实全市场 run-once 结果：2026-09-23
+
+命令 `scripts/run_m2_opportunity_discovery.py` 已完成一次真实运行，
+产物目录 `runtime/m2-live-20260923/`。状态为 `PARTIAL`，尚未声明 M2 完成。
+
+- 官方 Universe 5,568 家；腾讯与新浪行情均匹配 5,568 家，缺报/多余/价格冲突均为 0。
+- 行业映射 5,568 家；财务证据 873 条；股息证据 3,622 条；金融行业不支持隔离 121 家。
+- 四个通道均真实执行：Quality 0、Dividend 50、Value 50、Cyclical 50，合并去重候选 113 家。
+- 每份候选保留进入原因、证据日期、`data_status`、`profile_status` 与缺失指标；缺失保留 `None`，不默认为 0。
+- Legacy `PE<=25 / PB<=3 / 市值>=50亿` 仅作 shadow：747 家，与新候选重叠 86 家，不参与新候选排序。
+- 收据 `action=no_order`；从收据字节和保留原始输入重建的候选签名均一致，`receipt_bytes_match=true`、`raw_inputs_match=true`。
+- 独立候选工作簿 `A股价值投资_M2机会发现_20260923.xlsx` 已写入 WPS 云盘“价投跟踪”目录，未覆盖原工作簿；两处 SHA-256 均为 `a612a622cf476322724826c84b00783c51d65886fd3c9bb335159a509fa0c821`。
+- Quality 为空是证据门禁的失败关闭结果：本轮财务点来自 2026-09-18 前后服务端导出，未达到“验证状态、自动双源交叉核验、完整债务口径、同一报告期年度数据”的门禁，因此未降低阈值强行放行候选。
+- M2 验收第 1-6、8-10 项已有真实证据；第 7 项“从新发现候选中形成 3 份实质研究/否决报告”尚未开始。下一步只做有界、可归档的三份新候选研究/否决报告，不复制 symbol 专用流水线。
+- 本轮 M2 定向回归 6 passed；仓库内隔离 basetemp 全量回归 2118 passed / 6 skipped；未连接生产 PostgreSQL、未改计划任务、未触碰服务器 PTA/Web App 或原 WPS 人工工作簿。
 
 ## M1 收口：2026-09-23
 

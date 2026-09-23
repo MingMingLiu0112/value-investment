@@ -2,7 +2,7 @@
 
 版本：2026-09-22 / roadmap-v1。规划状态：已设计，尚未实施。审查基线：`494d0857c7edb4b76b0527d773065013b7abf2d1`。
 
-本文件规划未来多个 Codex Goal Runs，不是一次性开发全部系统的指令。职责：跨阶段产品路线、依赖和毕业门槛；不得放宽 `AGENTS.md`、架构、研究方法或证据政策。唯一待启动目标为 M1，其执行范围在 [current-stage-goal.md](docs/current-stage-goal.md)；运行事实在 [execution-status.md](docs/execution-status.md)。完成一个 Milestone 后停止、审查，再由用户启动下一个，内部工作包不再膨胀为 C4/C5/C6 平行目标。
+本文件规划未来多个 Codex Goal Runs，不是一次性开发全部系统的指令。职责：跨阶段产品路线、依赖和毕业门槛；不得放宽 `AGENTS.md`、架构、研究方法或证据政策。M1 已完成并冻结，当前唯一活动目标为 M2，其执行范围在 [current-stage-goal.md](docs/current-stage-goal.md)；运行事实在 [execution-status.md](docs/execution-status.md)。完成一个 Milestone 后停止、审查，再由用户启动下一个，内部工作包不再膨胀为 C4/C5/C6 平行目标。
 
 ## 1. Current Reality Audit
 
