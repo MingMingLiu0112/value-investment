@@ -1,80 +1,76 @@
 # LONG-TERM VALUE INVESTMENT SYSTEM ROADMAP
 
-版本：2026-09-22 / roadmap-v1。规划状态：已设计，尚未实施。审查基线：`494d0857c7edb4b76b0527d773065013b7abf2d1`。
+版本：2026-09-23 / roadmap-v3。按用户最新要求，下一总Goal贯穿M2-M7；M1与Post-M1 Stabilization已完成，M2为PARTIAL，M3-M7尚未产品验收。审查代码基线：`f4bb55cd686838b874b6a8b0c601492c8bd7aab5`。路线与当前执行范围已经冻结，实际实现由 [current-stage-goal.md](docs/current-stage-goal.md) 控制。
 
-本文件规划未来多个 Codex Goal Runs，不是一次性开发全部系统的指令。职责：跨阶段产品路线、依赖和毕业门槛；不得放宽 `AGENTS.md`、架构、研究方法或证据政策。M1 已完成并冻结，当前唯一活动目标为 M2，其执行范围在 [current-stage-goal.md](docs/current-stage-goal.md)；运行事实在 [execution-status.md](docs/execution-status.md)。完成一个 Milestone 后停止、审查，再由用户启动下一个，内部工作包不再膨胀为 C4/C5/C6 平行目标。
+本文件仍是唯一跨阶段路线，不新建平行Roadmap。用户已将下一总Goal扩展为 `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`：从M2逐阶段推进至M7，不必每过一关重新建立Goal。M1保持冻结；当前聚焦M2，执行范围和交接门见 [current-stage-goal.md](docs/current-stage-goal.md)，事实见 [execution-status.md](docs/execution-status.md)。内部阶段完成后必须审查、记录证据再继续，不能因总目标扩大跳过验收；生产操作、私人资料和人工研究批准仍有独立授权边界。
 
 ## 1. Current Reality Audit
 
-### 1.1 基线与审查边界
+### 1.1 已提交基线与本轮边界
 
-| 项目 | 实际核查结果 |
+| 项目 | 实际证据 |
 | --- | --- |
-| 本地 HEAD / GitHub main | 均为 `494d0857c7edb4b76b0527d773065013b7abf2d1` |
-| 最近提交 | 2026-09-22 20:33:40 +08:00，`C3.14 close governance and record green CI receipt` |
-| 审查开始工作树 | 干净；本轮后续文档改动不属于这个已提交基线 |
-| GitHub CI | [当前 HEAD 的 run 35727941981](https://github.com/MingMingLiu0112/value-investment/actions/runs/35727941981)：offline-core、postgres-integration 均 success；push main / PR 自动触发；main 当前未开启 branch protection |
-| 本机重跑 | 当前 workflow 清单合并 PostgreSQL 测试：173 passed、4 skipped；冻结茅台及三公司验收：9 passed。历史文档的 176 passed 不作本次实测数 |
-| 真实 runtime 内存 replay | `all_semantics_matched=true`、`action=no_order`；没有写 runtime 或连接数据库 |
-| 当前原 Excel | 12,138,778 bytes，修改时间 2026-09-22 17:30:45；SHA-256 `4EA4AB6F291E0D3C8838A1729007C8B29D0825CCF7CA6459BBD16257BEC0188E` |
-| 未验证 | 当日生产 PostgreSQL、服务器资源/服务、计划任务、最新行情原件、全部历史测试、WPS 界面及公式重算；本轮没有操作这些资产 |
+| Git | main；HEAD `f4bb55cd686838b874b6a8b0c601492c8bd7aab5`；开始审查时工作树干净，跟踪 origin/main；本轮文档改动另属未提交工作状态 |
+| 最新提交 | 2026-09-23 21:55:48 +08:00，Release M2 candidate workbook snapshot and changelog |
+| 继承提交 | `60c9de0` 人工复核回执；`f26f726` Post-M1 稳定化；`6658b14` M2 首次运行；不回到旧 60c9de0 起点 |
+| CI | [35870537557](https://github.com/MingMingLiu0112/value-investment/actions/runs/35870537557)，本 HEAD 的 push；offline-core 与 postgres-integration 均 success；workflow 为 `.github/workflows/core-research-gates.yml` |
+| 本地测试 | 本轮全量 2118 passed / 6 skipped / 18 warnings，290.45s；跳过为4项无隔离PG DSN、1项无PG二进制、1项已有冻结输出。CI仅指定核心清单，不代表投资方法有效 |
+| M2 封存 | `runtime/m2-live-20260923/manifest.json` 的8个文件 Hash 本轮全部复核一致；只证明保存字节完整，不证明时点和经济判断正确 |
+| 原 Excel | 12,210,200 bytes；SHA-256 `a62a6ae634ea949db36c3c209278515e2ee66ef3a61aaa25d59d2051d5954d58`；历史发布记录为42页；本轮不编辑、不宣称重新通过 WPS 视觉/公式验收 |
+| M2 展示 | 独立 `A股价值投资_M2机会发现_20260923.xlsx`；不是原工作台已完成统一接入的证明 |
+| 未操作 | 生产数据库、SSH、PTA、计划任务、行情采集、工作簿和研究批准；本轮仅测试、内存反例、只读核对与文档修订 |
 
-Excel 当前 Hash 与历史冻结记录不同，不据此判断损坏，也不宣称仍是冻结原件。后续发布必须从当前文件重新取源 Hash、保留人工修改。本次只核对文件元数据、既有验收及 publisher 代码，未对所有表格单元格做内容审计。
+### 1.2 已完成与不能声称完成的部分
 
-### 1.2 真实能力，不按代码数量计进度
+- Stage A、P0/P0.5、三公司工程、C0-C3 保持冻结；不重复建设。
+- M1 的20家分层样本、6份研究档案、三公司 Application/原Excel、输入包/PIT及隔离 PostgreSQL replay 已有验收收据。M1 DONE 指机器可验证研究工作台，全部投资结论仍受 conditional_research_only 限制；不是估值/股息全部获批。
+- Post-M1 已落地 HumanResearchApprovalReceipt、EventMaterialityDecision/Review、BridgeContributionAssessment、InterimReportPolicy、PreDecisionEligibility，并接入 Application/G3/ModelValidity/PriceAttractiveness/CurrentResearchStatus。现有 PreDecisionEligibility 是研究准入前置合同，不是完整投资决策/Portfolio 门；可选的价格评估输入也不能让未来 BUY 路径绕过必需检查。
+- 稳定化 `f26f726` 已修旧茅台断言、标识 one-off generator、隔离 stress haircut 和 legacy。下一 Goal 的 W0 只重核/维护回归，不再次开发这些已完成项目。
+- M2 真运行收据：官方 Universe/行情匹配均5568，财务证据覆盖873个证券、股息覆盖3622、金融不支持121；Quality=0、Dividend=50、Value=50、Cyclical=50，去重113。Legacy=747，只作shadow。Quality=0不等于全市场没有好公司，也可能说明数据不足。
+- M2已形成 run-once 和独立展示，但不是可依赖的 L2 毕业；完整决策、个人仓位、每日可靠运营仍未完成。
 
-| 能力 | 结论 | 代码或产物证据 |
-| --- | --- | --- |
-| Stage A / P0 / P0.5 / 三公司展示 | 继承冻结，不重建；不等于研究内容全部合格 | 冻结验收 9 项本轮通过；ResearchGate、ValuationResult、PriceBridge 已分层 |
-| C0 价格桥接 | 共享身份、时点、算术合同已落地 | `price_bridge.py`、`quote_snapshot.py`、相关离线回归 |
-| C1 准入、C2 分配 | 有正式合同；三公司现金回报仍 PARTIAL | `fixed_sample_admission.py`、`distribution.py`、真实 replay |
-| C3 研究平台 | 有可复用工程核心，不是生产研究平台完成 | `research_application.py`、`research_artifact_repository.py`、`research_batch.py`、模型 Registry、manifest |
-| PostgreSQL | 一次性测试实例验证持久化；尚无生产迁移证据 | `sql/20260922_research_artifacts.sql`；4 项 CI integration 使用自包含 fixture，不是实时市场或生产数据 |
-| 三公司 E2E | 保留旧语义，包括拒绝与缺口，不证明估值正确 | `research_e2e_replay.py`；本轮真实 runtime replay 为内存 Repository，和 CI PostgreSQL fixture 是两类证据 |
-| 扩样本输入 | 尚不能直接通用 onboarding | replay 固定 `SYMBOLS` / 茅台指针，`build_replay_inputs()` 第 496 行按 symbol 选载荷 |
-| Excel 新链路 | 旧展示可保留，新 Application result 尚未接入 | `workbook_simple_overview.py` 第 88/113/226/255 行仍读旧 runtime 指针 |
-| 全市场基础 | 有旧行情采集、官方 Universe 对账及 baseline，不是从零开始 | `official_universe.py`、`market.py`、`cli.py` 第 428/445 行 |
-| 多通道研究漏斗 | 尚未形成正式新链路 | `market.py` 第 103/105 行仍为 PE<=25、PB<=3、市值>=50亿元的历史 baseline；CLI 仍可调用，不能宣称已退役 |
-| Business Quality / 决策 / 组合 / 事件 | 有研究字段及旧实验资产，没有本路线要求的完整正式域 | 新核心未发现 InvestmentDecisionReview、EntryThesisSnapshot、InvestmentConsistencyReview、DecisionJournalEntry、ChangeEvent 等正式类型 |
+### 1.3 人工复核后的正确拒绝状态
 
-### 1.3 三家公司当前结论
+来源：`runtime/m1-post-review-20260923T114228Z/`，对应用户研究输入与版本化回执；不是本轮重新批准。
 
-| 公司 | 估值 / 价格桥接 | 分配与研究 | 可以说明什么 |
+| 公司 | Human G3 | ModelValidity | DecisionEligibility |
 | --- | --- | --- | --- |
-| 600519 贵州茅台 | conditional_research_only、低置信度；ModelValidity VALID、PriceBridge READY | cash_return PARTIAL；production valuation NOT_AVAILABLE | 有条件情景和合法价格连接；不能称为买入依据或完成股息研究 |
-| 000333 美的集团 | not_ready；无可用三情景，缺有效性；bridge PENDING_EXTERNAL_DATA | 模型输入/口径问题仍在；cash_return PARTIAL | FCFF 算术可用，不等于美的 FCFF 研究完成；不只是等待行情 |
-| 601088 中国神华 | not_ready；正常化输入未解决；bridge PENDING_EXTERNAL_DATA | 有 current / normalized yield 类型，但 cash_return PARTIAL | 两种股息率能分开表达，不证明正常化股息可持续 |
+| 000651 格力 | REJECTED_NEEDS_REWORK | STALE | NOT_ELIGIBLE |
+| 600741 华域 | REJECTED_NEEDS_REWORK，HIGH priority | VALID | NOT_ELIGIBLE |
+| 600887 伊利 | APPROVED_CONDITIONAL_LOW_CONFIDENCE | STALE | NOT_ELIGIBLE |
 
-真实 replay 源估值 Hash 分别为 `4331175d74b692f6a449dd1c17afb775abd6596d178761bc004f7368d97636e7`、`10c8f565647df6bda5eac4eff8c0e9ed4b4d3192e1d5cd1241a1233b5706f5fc`、`b03eaa05f7cbe117c676ddc5f6d9be6dc0c551a84fd3a457e18ee9886e5d1df6`。茅台引用是 rolling 指针，今后必须在收据中锁定已解析版本；后两家的旧模型日期不代表今日估值。
+旧茅台/美的/神华冻结反例继续保留，不被这三家公司替换。格力/华域桥接 stress 不代表新获批估值；伊利条件批准不等于条件已经解除。未来重估必须 Facts + 版本化 Assumptions + Bridge -> Model -> 新 ValuationResult -> 新 HumanApproval，不能倒推 operating value 后 haircut 冒充正式估值。
 
-### 1.4 本轮复现的工程风险
+### 1.4 M2 代码审查与反例：并非只差三份报告
 
-以下没有顺手修复，纳入 M1 的同一输入可信闭环：
+本轮未顺手修复业务代码；以下纳入同一 M2 Goal，不重开 M1：
 
-1. **日期一致性缺口**：`research_application.py:292` 用 `spec.as_of` 覆盖 facts 日期后，只比较 case；内存 fixture 证明 case/spec=2025-12-31、facts=2024-12-31 仍返回 outcome，并产生 2024-12-31 valuation。需要先定义研究日、财报期、估值日各自含义，不是简单强制财报期等于研究日。
-2. **PIT 可用时间缺口**：同一入口第 266 行接受调用方 available_at；2025 年 facts/case 可以随结果标记 2024-01-01。类型里“有时间字段”不等于完整防未来数据验证。
-3. **增量复用缺口**：`research_batch.py:310` 仅凭相同 input hash 与非 FAILED 复用；fixture 将 rule_version 从 v1 改到 v2，仍得到 UNCHANGED。规则、模型、解析器、Profile、事件扫描截止日和报价变化必须进入依赖 fingerprint 或失效检查。
-4. **假设有两条表达路径**：Runner 保存 `spec.assumptions`，但 `model.value(spec.facts, spec.research_case)` 实际使用 facts 内的 scenario_inputs。尚需证明登记假设和计算输入一一对应，不能仅保存一个与计算无关的假设对象。
-5. **G3 仍是输入状态门**：`research_gate.py:82` 读取 case.valuation_status；Runner 先 evaluate 再算模型。G2 检查论点文本、三组证据引用及事件文本，是有用结构门，但并未自动验证经济逻辑真伪。M1 要明确 G0-G2、计算、G3/人工研究复核的顺序与身份，不能自动批准全部新估值。
-
-Repository 目前以 API/Hash 保持 append-only 语义，DDL 没有禁止数据库角色直接 UPDATE/DELETE 的机制；运行时 Facts、假设版本与完整依赖图尚未全量持久化。M1 补最小可重放输入包，生产权限/事务/备份在 M6 验收，不把测试 Repository 当成生产抗篡改系统。
-
-### 1.5 方向与成熟度判断
-
-核心方向没有变成自动交易系统；新路径保持研究/价格/执行隔离。风险是**平台合同完成速度快于研究内容和用户闭环**，以及旧入口/显示与新平台并存。不是推倒重来，也不能继续只数接口。
-
-脚本文件名包含 moutai/midea/shenhua 的数量分别为 195/26/23；这不是活跃任务数。独有披露解析和历史 replay 可保留；新公司不得复制估值、Gate、桥接、发布或日更流水线。只在相关迁移完成后逐步退役重复入口，不做全仓库清理。
-
-| 成熟度 | 毕业含义 | 当前 |
+| 发现 | 代码定位与复现 | 影响 / 必须验收 |
 | --- | --- | --- |
-| L0 Engineering Prototype | 合同、算术、存储和拒绝路径可测 | 已具备 |
-| L1 Research Tool | 多家真实公司的可追溯研究、情景、股息与可读展示 | 早期 / PARTIAL；尚未达到 M1 毕业 |
-| L2 Opportunity Discovery | 多通道稳定发现/排除候选，解释 Why Now | 未达到；旧 screen 不算毕业 |
-| L3 Decision Support | 可解释的复核卡、入场论点及买卖一致性 | 未达到 |
-| L4 Portfolio Decision Support | 结合私人 IPS/持仓/现金提出保守仓位复核 | 未达到 |
-| L5 Continuous Monitoring | 真实事件驱动、静默与报警、可恢复运营 | 未达到 |
+| 时点门不足 | `m2_discovery_engine.py::build_discovery_receipt/build_channel_results` 未按 cutoff 排除未来分红；合成 fixture 把宣告日改为2026-10-01，9月23日仍入选 | 加 available_at、报价会话、方案状态和缺失时点处理；这不是已有当日数据确定错误的断言 |
+| 旧缓存可被标为当前 | `run_m2_opportunity_discovery.py::run_once` 在 reuse-inputs 分支用 now 作多个 fetched_at，统一 quote_date 来自运行日期 | 原始采集/会话时间不可刷新；replay 与 current-run 分开；不能用同日签名重建证明 PIT |
+| 官方分母未约束候选 | 行情合并使用来源证券并集；合成反例从 official 删除600004后仍入选，data_health=COMPLETE但含 extra-symbol blocker | 官方身份集合与交易状态实际约束准入，逐证券/逐通道覆盖账，不只总数 |
+| 候选去重丢理由 | `m2_opportunity_discovery.py::DiscoveryRunReceipt.candidate_pool` 字典覆盖；合成600001入两个通道，返回只剩value理由 | 合并所有通道/证据/缺口；稳定优先级、转移和队列预算，不能最后一个通道获胜 |
+| 完整性语义过强 | Dividend/Value/Cyclical 常以无价格冲突标 COMPLETE；Value 的 FCF/EV 指标、Cyclical正常化盈利仍为 None；Dividend tier A主要看高收益率 | 区分线索、已核候选、研究质量与报价健康；不把高息/低倍数排序当可持续性筛查 |
+| 画像与覆盖不足 | `_profile_status` 以非金融且有行业判 SUPPORTED；每通道截前50；主要有聚合缺口统计 | screening适用不等于估值Registry支持；保留预算截断前分母与待研究对象；不支持不默转模型 |
+| replay证明范围有限 | 改 evidence Hash/未来 fetched_at 后candidate_signature不变且入口接受；原测试仅6个 | 内容签名可以独立存在，但完整验收必须验证原件Hash、输入/规则/时点/覆盖和输出依赖，不只候选名单相同 |
+| 用户路径尚分散 | M2是独立工作簿，原表已有阶段前台及M1页 | 下一Goal从原工作台给出统一市场->候选->Why Now->研究入口；保留手工与冻结页，不用继续堆表冒充产品 |
 
-工程基础成熟度较高；研究可用性低到中；真实决策、组合、持续监控成熟度低。测试通过不证明策略有效，replay 成功不证明历史收益，Excel 能打开不证明估值正确。
+合成反例用于证明入口缺少拒绝检查，不能被写成真实股票或真实违规数据。金融 Quality 绕过的猜想本轮反例未复现，不列为已确认缺陷。现有 manifest 八项 Hash 一致是有效成果，应继承而非废弃。
+
+### 1.5 真实成熟度
+
+| 层级 | 当前结论 | 尚缺什么 |
+| --- | --- | --- |
+| L0 Engineering Foundation | HEALTHY，有边界 | CI不覆盖所有经济语义；新M2时点/范围问题仍须修 |
+| L1 Research Workbench | BASICALLY READY / M1 DONE | 条件研究不等于Human G3通过，正常化分红和估值质量仍逐公司审查 |
+| L2 Opportunity Discovery | PARTIAL / NOT USER READY | 第1.4节、安全的四通道真实验证、3份主动发现报告及统一前台 |
+| L3 Explainable Decision Support | NOT READY | 完整决策、理由卡、Entry/Journal/Consistency与用户理解验收 |
+| L4 Portfolio Decision Support | NOT READY | 用户确认IPS/持仓、组合容量与可持续收入 |
+| L5 Continuous Monitoring | NOT READY | 事件运营、水位、异常恢复、通知与真实观察 |
+| Initial Assisted Use | NOT READY | M6综合准入 |
+
+方向仍正确：Research/Valuation/Evidence/Funnel，不是自动交易。真正偏差是用行情完备或名单重建成功代替研究/时点完备；应修相关通用路径。runtime JSON、有限 production adapter 和较大 publisher 是合理技术债，当前不要求生产迁移或全仓重构。
 
 ## 2. Final Product Definition
 
@@ -144,7 +140,7 @@ Quality 通道重视持续盈利、现金转换、资本效率、健康资产负
 
 1. 先校验证券、版本、证据与 PIT 完整性，区分未知、冲突、未支持和已确认重大破坏。
 2. 经证据确认的 Thesis Breaker 优先 Critical；即使便宜也禁止自动升级为 ADD。疑似 breaker 输出紧急人工核查，不把传闻当事实。
-3. BUY/ADD 同时需要：Gates、商业/财务质量、Thesis、适用且可用的估值、最低置信度政策、ModelValidity、PriceBridge、反证复核、重大性、适用时的股息可持续性、Portfolio Capacity。
+3. BUY/ADD 同时需要：Gates、绑定当前依赖且有效的 Human G3、覆盖目标日的 Event Review、商业/财务质量、Thesis、适用且可用的估值、最低置信度政策、ModelValidity、PriceBridge、可评估的 PriceAttractiveness、反证复核、重大性、适用时的股息可持续性、Portfolio Capacity。现有 PreDecisionEligibility 不是完整决策批准，缺任一必需输入不能放行。
 4. 缺 Portfolio/IPS 时只能研究或等待，不能发针对个人的正向 BUY/ADD 或数值权重。M3 只接最小已确认 capacity 合同，完整容量计算属于 M4。
 5. EXIT/REDUCE 风险提示与 BUY 前置条件分开：已证实的永久损害不能因报价缺失被静默屏蔽，但必须说明缺报价、不得给交易数量/执行价。
 6. 显示主状态并保留所有风险原因；禁止用加权总分抵消 veto。规则冲突采用显式优先级，不依赖代码分支顺序的偶然性。
@@ -169,7 +165,7 @@ Quality 通道重视持续盈利、现金转换、资本效率、健康资产负
 
 ## 6. Target Portfolio Architecture
 
-`InvestorPolicyStatement` 由用户确认目标、收入需要、可投资资产范围、期限、应急现金/负债、风险承受及税费口径。未知不猜测；研究工作可继续，但暂停个人化容量/仓位结论。
+`InvestorPolicyStatement` 由用户确认目标、收入需要、可投资资产范围、期限、应急现金/负债、风险承受及税费口径，明确最低现金、单股/行业/周期资产上限、流动性需求及是否允许集中投资。未知不猜测；研究工作可继续，但暂停个人化容量/仓位结论。
 
 `PortfolioSnapshot` 保存 as_of、实际/模拟、账户范围、资产/现金/持仓数量、成本与市值口径、行业/共同风险、快照和人工核对记录。数据经明确导入或用户确认，不连接自动下单；私有账户数据不得进公开 GitHub。
 
@@ -177,7 +173,7 @@ Quality 通道重视持续盈利、现金转换、资本效率、健康资产负
 
 `PositionGuidance` 输出允许/不允许升级、阶段、条件范围与剩余容量，而非单股各算20%。推荐增量受单股、行业、共同风险、流动性、现金和总组合约束的最紧上限限制；多个候选共用预算，不能重复分配同一现金。具体上限须由 IPS/政策审查登记，本路线不捏造通用百分比。
 
-Starter -> Normal -> Add -> Max 每次升级需新证据/置信度/价格改善和容量；LOW Confidence 即使看似便宜也不发大仓位建议，未知可为零。正常持有 -> 停止加仓 -> Reduce -> Major Reduce -> Exit 保留降级原因。允许完全不持仓，不为资金利用率强制满仓。
+初版层级为 ZERO / WATCH_ONLY / STARTER / NORMAL / ADD_ALLOWED / MAX_CAPACITY / STOP_ADDING / REDUCE_REVIEW / EXIT_REVIEW，不输出未经规则验证的伪精确百分比。Starter -> Normal -> Add -> Max 每次升级需新证据/置信度/价格改善和容量；LOW Confidence 即使看似便宜也不发大仓位建议，未知可为零。正常持有 -> 停止加仓 -> Reduce -> Major Reduce -> Exit 保留降级原因。允许完全不持仓，不为资金利用率强制满仓。
 
 `DividendIncomeProjection` 区分已到账、已宣告未到账、Forward、Normalized sustainable income；按实际持股/权益登记/币种/税费情景计算，不能把承诺当现金。显示 Annual/Forward/Normalized Income、Yield on Cost（仅成本体验）、Dividend Concentration、Sustainability Distribution。回购不是个人到账股息，特别股息不机械年化。目标收入不足不能通过增加周期高息暴露掩盖风险。
 
@@ -197,7 +193,7 @@ Starter -> Normal -> Add -> Max 每次升级需新证据/置信度/价格改善�
 
 ## 8. Board / Dashboard Architecture
 
-继续使用唯一原 WPS Excel；M1 首先接 Application read model，未来 Web 复用，不在表格重写 Domain。板卡是同一事实的投影，不是第二套状态机。
+继续使用唯一原 WPS Excel；M1 已有 Application read model 发布，M2独立候选需整合为原表统一入口，未来 Web 复用，不在表格重写 Domain。板卡是同一事实的投影，不是第二套状态机。
 
 | 板卡 | 回答的问题 / 最小内容 |
 | --- | --- |
@@ -221,13 +217,15 @@ Starter -> Normal -> Add -> Max 每次升级需新证据/置信度/价格改善�
 
 ### M1. Fixed-Sample Research Workbench
 
-**Goal**：把 C3 平台变成可阅读、可复算的真实固定样本研究工作台：20 家分层入组、其中至少 6 家深研，原 Excel 展示共同输出。这是第一个且唯一推荐启动的长期 Goal。
+**当前状态：DONE / FROZEN。** 以下保存当时工作台范围与毕业合同；决策级 G3/事件复核不重新加入 M1 验收。其后人工复核合同与稳定化也已落地，拒绝状态见第1节。
+
+**Goal**：把 C3 平台变成可阅读、可复算的真实固定样本研究工作台：20 家分层入组、其中至少 6 家深研，原 Excel 展示共同输出。这是已冻结的历史阶段，不再作为启动目标。
 
 **Why it exists**：消除输入/研究/显示断层，用真实不同经济结构暴露缺口，不再只完成 adapter。
 
 **Prerequisites**：复核本轮 HEAD/CI；保留三公司冻结反例；先完成 manifest input 与时点/版本安全门，再新增样本。
 
-**Domain changes**：最小完整 InputDescriptor/事实假设绑定；校正第 1.4 节风险；BusinessQuality/CapitalAllocation 的证据化最小评估合同，复用现有估值和 Distribution，不建完整行业评分平台。
+**Domain changes**：最小完整 InputDescriptor/事实假设绑定；校正 roadmap-v1 在旧 C3 基线发现的输入/时点/规则复用风险；BusinessQuality/CapitalAllocation 的证据化最小评估合同，复用现有估值和 Distribution，不建完整行业评分平台。
 
 **Application changes**：descriptor -> RunSpec -> Runner -> Repository -> read model -> Excel；manifest 在运行前逐公司校验并隔离坏 descriptor、未知 Profile、身份冲突；不从 symbol 猜模型。统一 evidence/facts 导入和人工研究模板，有 provenance 的半自动输入可用，不假称深研全自动。
 
@@ -247,29 +245,36 @@ Starter -> Normal -> Add -> Max 每次升级需新证据/置信度/价格改善�
 
 ### M2. Multi-Channel Opportunity Discovery
 
-**Goal**：从全市场低成本发现候选并解释 Why Now，达到 L2。
+**Goal**：继承已有5568证券run-once，完成可信的主动发现：全市场 -> 四通道 -> 可解释候选 -> 研究优先级 -> 深研队列 -> 原Excel重点关注。不是仅补三份报告，也不是重建M2。
 
-**Why it exists**：研究工具要能找公司，而不只研究手工挑选的熟悉公司。
+**Why it exists**：回答“整个A股现在值得研究谁、为什么”，把粗筛线索与经过证据核验的研究候选分开。
 
-**Prerequisites**：M1 产品验收；固定样本缺口分类稳定。先复用官方 Universe/旧行情组件的合格部分；按原样本约束扩至20-50家验证通道反例，不以增加数量替代质量。
+**Prerequisites**：M1保持DONE；W0重核Post-M1稳定化/全量离线测试/CI/冻结Hash。既有one-off回执生成器只维护，不成为新的Milestone；已有修复不重做。
 
-**Domain changes**：UniverseSnapshot、ChannelScreenResult、Candidate/FunnelTransition；先 Quality+Dividend，再 Value+Cyclical，同一里程碑按门推进；Asset/Growth/Special 留接口不实施。
+**Domain changes**：复用 UniverseSnapshot/ChannelScreenResult，补逐证券逐通道Coverage、版本化筛选Policy、Candidate多原因合并及Funnel转移；Profile分筛选适用与估值支持。可提前形成Decision-ready Candidate read model，仅表示未来输入可消费，绝不表示Decision eligible。
 
-**Application changes**：规则注册、数据适用性校验、批量 cheap screen、候选去重与路由、研究队列预算；新通道 shadow 对比旧 PE/PB baseline 后显式切换，保留历史入口标签，不悄悄改义。
+**Application changes**：有界采集/缓存 -> cutoff及适用性验证 -> 四通道 -> 线索补证 -> 候选合并/预算 -> 新发现报告 -> read model。current-run/replay入口分开，旧缓存不改成今日；单只失败不阻塞其他公司，整批不可信不能发布成当前完整市场。
 
-**Persistence changes**：版本化 Universe、输入快照、通道/规则版本、入出理由、覆盖统计及任务收据；索引按实际查询需求，小批次写入，避免重存大原件。
+**Persistence changes**：不可变原始输入/Universe/Policy/版本/known-at/Hash、逐证券状态、候选与转移、抽样名单及运行收据。沿用现有本地Artifact/JSON合同，完成冷重放与索引责任说明；不连接生产数据库、不为过关新增生产迁移。
 
-**Data requirements**：官方可核对身份与当日交易状态；多期质量/现金/分红/债务/资本投入与周期指标；行情授权、频率及缺失清单。财务不支持不能被当作低分淘汰或零值。
+**Data requirements**：官方当期身份/交易状态、真实有效行情会话、财务/分红/周期证据可用日。全市场只做cheap screen；候选层有界补多期事实，不要求5568家公司全部深研。通道门见下表，所有阈值说明经济理由、适用范围、敏感性、失败反例和版本，不优化历史收益。
 
-**Tests**：各通道正反例、股息陷阱、周期高点低PE、不支持行业、缺失/冲突、重复证券、上市退市/停牌、分页漏采、数据分母勾稽、冷启动与资源预算、规则版本变化。
+| 通道 | 粗筛可以使用 | 晋级候选必须检查 / 缺失处理 |
+| --- | --- | --- |
+| Quality | 资本效率、持续盈利、现金转换、杠杆等低成本指标 | 多期可比性、债务口径、现金质量及行业适用；总分不能抵消硬缺口；低覆盖留DATA_GAP而非好公司不存在 |
+| Dividend / Cash Return | 明确basis的DPS和收益率 | 分红历史/状态/普通与特别、派息与现金覆盖、CapEx/债务/周期风险；缺项保留线索，不标可持续或因高息升A；深层正常化可先为UNKNOWN |
+| Value | PE/PB等可解释便宜度观察 | 盈利/资产/现金质量、负债或一次性收益风险、可能折价机制；相关倍数不是独立经济证据，不能把FCF缺失当完整价值筛查 |
+| Cyclical | 行业/价格/当期倍数 | 多期利润/现金/商品或行业周期代理、正常化与当期差异及低谷债务承受；无可靠中周期证据只留线索/缺口，不编造正常化数值 |
 
-**Point-in-Time requirements**：历史 Universe 含当时上市和后退市者；无历史成分/可用时间则不能声称无幸存者偏差；更正前后版本与当时政策分别 replay。
+**Tests**：正反例及空池；未来公告/未知available_at、旧缓存、休市/盘中/停牌、非官方证券、缺页/缺报、价格冲突、跨通道理由保留、截断预算、Profile未知/不支持、普通/特别分红、股息陷阱、周期峰值、Hash篡改/规则变更/重启。0 unexpected offline failures，现有测试不能替代新增语义反例。
 
-**Acceptance criteria**：真实固定样本交叉验证四通道后，完成全市场当期 run-once；每个身份都有覆盖状态，每个候选有原因/证据/通道，缺失与模型不支持显式可见；从新发现而非事后挑选的候选中形成至少3份受支持画像的可读深研或实质否决报告。队列0合法，不强迫产生高关注。
+**Point-in-Time requirements**：真实披露边界至少两个时点的加入/退出可解释重放；保存计算时刻和信息截止点。日期级已知信息采用保守上界。历史Universe未知就明确幸存者偏差限制，不声称完整历史全市场PIT。当前名单用后来事实补齐不能用于过去决策。
 
-**Forbidden scope**：全市场逐股DCF、买卖数量、收益优化、一次开发所有行业模型或Web。
+**Acceptance criteria**：以 current-stage-goal 的AC1-AC12为唯一可执行明细：逐证券覆盖可对账，四通道真实运行、线索与候选分开；至少一次当期全市场run和事先登记规则抽取的至少3家新发现实质研究/否决；对入选、漏筛、缺失、不支持及预算截断做分层抽检；原Excel统一入口显示Why Now/证据/缺口；完整重放且无错误时点放行。零High Attention合法，三份可以全部实质否决，不能为数量放宽准入。
 
-**Exit criteria**：覆盖与候选转移可复算，真实日期下的四通道抽样误放/漏筛复核完成；重放与数据缺口不被测试通过掩盖。持续每日服务在 M5/M6 验收，run-once 不冒充运营上线。
+**Forbidden scope**：BUY/ADD/仓位/订单、全市场DCF、完整M3决策对象、个人组合、Web、所有行业模型、收益调参、symbol专用流水线、修改冻结M1/人工区/生产数据库/计划任务/PTA。
+
+**Exit criteria**：Engineering、Current Data、Research Review、Excel/User Review分别记结果；关键证据或用户可见验证未完成则PARTIAL，外部等待单列。全部毕业后交付Product Checkpoint A、完成客观审查，在同一总Goal中继续M3，不再因阶段完成退出。run-once不冒充每日自动运行。
 
 ### M3. Explainable Decisions and Thesis Continuity
 
@@ -277,11 +282,11 @@ Starter -> Normal -> Add -> Max 每次升级需新证据/置信度/价格改善�
 
 **Why it exists**：解决“为什么买、为什么拿、哪里错了”，不是把 Attractive 改名 BUY。
 
-**Prerequisites**：M1研究合同和M2候选来源通过；注册决策政策/反例；最小 PortfolioPreconditions 与 Entry 确认输入明确，未提供则 WAIT。
+**Prerequisites**：M1研究合同和M2候选来源通过；继承Post-M1 HumanApproval/EventReview/PreDecision门而非重建；注册决策政策/反例；最小 PortfolioPreconditions 与 Entry 确认输入明确，未提供则 WAIT。
 
 **Domain changes**：InvestmentDecisionReview、DecisionEvidenceBundle、Buy/Hold/Add/Reduce/Exit Card、EntryThesisSnapshot、InvestmentConsistencyReview、DecisionJournalEntry；完整状态优先级及拒绝规则。
 
-**Application changes**：研究 -> 前置检查 -> 理由卡 -> 用户确认/拒绝 -> Entry/Journal；后续复核必须引用同一原始论点；无需买入才能继续研究。
+**Application changes**：研究 -> 前置检查 -> 理由卡 -> 用户确认/拒绝 -> Entry/Journal；Decision域、卡片read model、历史replay可在共享合同冻结后并行，真实BUY正向验收必须等待有效G3/Event/Price及最小人工确认容量；后续复核必须引用同一原始论点；无需买入才能继续研究。
 
 **Persistence changes**：不可变决策/Entry/Journal 和更正链接、规则版本、Bundle 完整依赖；实际与模拟命名空间隔离；私有数据不得入公开 fixture。
 
@@ -295,7 +300,7 @@ Starter -> Normal -> Add -> Max 每次升级需新证据/置信度/价格改善�
 
 **Forbidden scope**：自动创建成交、券商订单、数值仓位优化、自动把回测胜率当置信度。没有容量输入时不得发个人化正向复核。
 
-**Exit criteria**：可追溯“哪条原始理由变化”，工程/研究/人类可理解性分别通过；真实 BUY 数量可为零，不能降低政策求信号。
+**Exit criteria**：可追溯“哪条原始理由变化”，工程/研究/人类可理解性分别通过，形成Product Checkpoint B。真实 BUY 数量可为零，不能降低政策求信号；历史真实数据链可验证未在当前出现的状态，但仅合成正向测试不能声称真实BUY路径已验证。未有足够审批/容量的公司保持WAIT，当前可用范围逐项限定。
 
 ### M4. Portfolio and Sustainable Income Guidance
 
@@ -329,7 +334,7 @@ Starter -> Normal -> Add -> Max 每次升级需新证据/置信度/价格改善�
 
 **Why it exists**：研究必须在新证据到来时失效/更新，不能形成一次性报告后遗忘。
 
-**Prerequisites**：M1-M4版本和依赖合同；源健康/资源预算、通知目标及调度权限预先确定；生产动作仍单独确认。
+**Prerequisites**：M3版本/决策/Entry合同稳定后，可与M4并行建设事件收集、水位、outbox和恢复；Portfolio相关事件产品验收必须等M4真实合同。源健康/资源预算、通知目标及调度权限预先确定，生产动作仍单独确认。
 
 **Domain changes**：ChangeEvent、MaterialityPolicy、DependencyInvalidation、Alert/ReviewDue；复用现有ModelValidity/Batch，补规则变化与事件扫描截止日失效。
 
@@ -349,9 +354,9 @@ Starter -> Normal -> Add -> Max 每次升级需新证据/置信度/价格改善�
 
 **Exit criteria**：run-once与恢复/投递证据通过后，经授权接既有调度做 shadow；自然时间观察交M6，不循环等待未来事件把工程卡死。
 
-### M6. Initial Real-Use Acceptance
+### M6. Operational and Real-Use Readiness Validation
 
-**Goal**：完成“初步可以真实辅助个人价值投资”的有限生产准入，而非策略盈利认证。
+**Goal**：完成真实运行、数据、恢复及安全方面的准入验证，输出 `OPERATIONAL_ACCEPTANCE_PASSED`；M7在此基础上完成个人工作台最终交付。保留原M6全部实质验收，不把增加M7当作推迟或取消安全门，也不认证策略盈利。
 
 **Why it exists**：真实可用还需要稳定数据、可恢复运营、用户理解及错误处理，测试不能替代。
 
@@ -369,37 +374,97 @@ Starter -> Normal -> Add -> Max 每次升级需新证据/置信度/价格改善�
 
 **Point-in-Time requirements**：历史信息集/当前信息集/模拟/真实账户清晰隔离；按当时可知数据重建至少一条入场至变化复核的决策链。
 
-**Acceptance criteria**：满足第12节全部条件。建议预登记不少于20个连续交易会话的shadow观察，含至少一次真实财务或资本分配事件；若自然时间未覆盖，保留为未完成线上验收，历史replay只补工程验证，不能代替真实运行。20个会话是候选运营最低观察门，不是工期或收益统计证明，可在观察前基于风险加严，不可事后放宽求通过。
+**Acceptance criteria**：满足第12节全部条件。必须预登记不少于20个连续真实交易会话的shadow观察，含至少一次真实财务或资本分配事件；若自然时间未覆盖，保留为未完成线上验收，历史replay只补工程验证，不能代替真实运行。每日重复执行不增加交易会话计数；按交易所会话记录，缺失/关键故障不能算成功，重大缺陷修复后重启受影响版本的观察窗口。20个会话是候选运营最低观察门，不是工期或收益统计证明，可在观察前基于风险加严，不可事后放宽求通过。
 
 **Forbidden scope**：自动交易、以盈利/出现BUY作为毕业条件、删不利样本、无授权部署、挤占PTA资源、用备份文件存在代替恢复成功。
 
-**Exit criteria**：独立审查工程/研究/当前数据/决策解释/组合/运营/用户验收，通过后仅标 `INITIAL_ASSISTED_USE`，列明支持画像、未覆盖范围、风险和复审日期。任何 P0身份/未来数据/错误放行缺陷未解决不得准入。
+**Exit criteria**：独立审查工程/研究/当前数据/决策解释/组合/运营及阶段用户验证，全部通过后标 `OPERATIONAL_ACCEPTANCE_PASSED` 并在同一Goal进入M7，列明支持画像、未覆盖范围、风险和复审日期。任何P0身份/未来数据/错误放行缺陷未解决不得准入。M7复用这些证据，不重复要求另一轮20会话。
+
+### M7. Personal Investment Workbench Delivery
+
+**Goal**：在M6已验证的系统上完成个人投资工作台的端到端交付与用户独立使用验收，最终达到有边界的 `INITIAL_ASSISTED_USE`。M7是本次新增定义，不是已存在或已完成的阶段。
+
+**Why it exists**：把“组件和运营通过”落到用户能每天使用的一个入口，最后证明用户知道研究谁、为何买/持/卖、组合与股息有什么风险；不是再造新功能平台。
+
+**Prerequisites**：M2-M5产品能力与M6真实运营门全部通过；真实用户IPS/组合、授权发布与通知范围已确认。M7只读展示整合和任务脚本可提前准备，最终签收不可提前。
+
+**Domain changes**：原则上不新增投资领域；仅修端到端验收暴露的理由缺口、状态矛盾、依赖失效或边界错误。Entry、Decision、Portfolio、Event沿用原合同。
+
+**Application changes**：同一原Excel主入口贯通全市场、候选、深研、重点关注、人工买入/加仓复核、持有理由、风险/减仓/退出、股息现金流、今日变化与数据健康。导航可定位对应Evidence/Entry/Journal；未来Web仍能复用同一read model，不在本Goal另建Web。
+
+**Persistence changes**：形成受控的发布清单，绑定代码/配置/数据库schema、规则、研究与决策版本、组合时点、原Excel Hash、恢复收据和支持范围；维护手册及非敏感说明可入Git，私有资产不公开。保留可回退的上一发布版本。
+
+**Data requirements**：当期已验证市场快照、受支持公司的真实研究、人工确认组合（全现金合法）、真实事件、决定及原始论点。尚无真实买入的用户可用显著标识的人工模拟Entry与真实历史信息链完成交互验收，不捏造实际成交/买入理由，不把模拟状态显示为今日信号。
+
+**Tests**：复用M2-M6验收并补端到端用户路径、状态一致性、断链/过期/源失联、无持仓/空候选、工作簿占用与回退、权限/隐私和用户任务测试。仅修阻碍交付的缺陷，不因交付再做全仓重构。
+
+**Point-in-Time requirements**：从任一Review卡可还原当时的事实、假设、报价、规则、Entry和组合，清楚区分Original/Current、historical/current、simulated/actual；原买入理由不被新研究覆盖。
+
+**Acceptance criteria**：
+1. 用户从原工作台能完成：发现关注对象、解释Why Now、查看反证/估值/股息边界、读买入理由、判断为何加或不加、解释继续持有、查减仓/退出与原论点的变化、查组合集中度、查正常化股息脆弱性、查今日重要变化及源健康。
+2. BUY/ADD/HOLD/REDUCE/EXIT Review全部有理由和版本链；当下无合格信号可全WAIT，未验证的正向路径必须说明限制。历史案例/合成测试不能冒充当前获批机会。
+3. 用户在常用设备完成实际阅读和操作确认，并能复述至少3份卡片的理由/反证，复用M3已通过的理解验收，另确认最终整合入口。代理不能替用户签收；另一个设备未验证时明确列限制，不宣称多端已测。
+4. 给出一份简明使用/故障处置/恢复/停止发布说明、私有数据位置和授权清单、已知限制、支持画像及复审日期；运行失败有降级，无需用户每天排查日志。
+5. M6不少于20个真实交易会话与恢复验收仍有效，无未关闭P0/P1错误放行、证据或运营安全问题；不以盈利、真实下单或出现BUY作为交付门。
+
+**Forbidden scope**：自动下单、收益保证、用户未确认的风险偏好/研究批准、额外行业/策略/Web扩张、无限优化、修改原验收使之更容易通过、追加无必要常驻服务或损害PTA。
+
+**Exit criteria**：最终验收表分别列Engineering/Research/Current Data/Decision/Portfolio/Operations/User Acceptance，全部有据且用户确认后标 `INITIAL_ASSISTED_USE`，完成总Goal并停止。缺任一项仍为PARTIAL/具体等待，不用“框架完成”替代交付。不自动增加M8、继续功能扩展或创建维护自动化。
 
 ## 10. Milestone Dependencies
 
 ```text
-CURRENT: C3工程平台 / L1早期，非投资决策就绪
-  -> M1: 20家固定样本 + 6家深研 + 股息/估值/Excel真实工作台
-  -> M2: 全市场身份对账 + 四通道候选发现
-  -> M3: 决策理由卡 + Entry Thesis + Journal + 买卖一致性
-  -> M4: Portfolio-aware容量/仓位 + 可持续股息收入
-  -> M5: 事件驱动重算 + 每日重要变化与静默
-  -> M6: 经授权shadow、恢复与用户验收
-  -> INITIAL REAL INVESTMENT USE (human-reviewed, no_order)
+CURRENT: M1 DONE + Post-M1 DONE + M2 PARTIAL
+  -> M2: 可信四通道主动发现 / Checkpoint A
+  -> M3: 解释性决策 + Entry/Journal/Consistency / Checkpoint B
+  -> M4 Portfolio域  ||  M5 Event基础设施
+  -> M4+M5集成验收 / Checkpoint C
+  -> M6: 授权shadow + >=20真实交易会话 + 恢复 / 运营准入
+  -> M7: 个人工作台整合 + 用户独立使用签收 / Checkpoint D
+  -> INITIAL_ASSISTED_USE / 总Goal完成并停止 (human review, no_order)
 ```
 
-M3的BUY/ADD依赖PortfolioPreconditions，但M3只接显式人工确认/模拟容量；M4才计算完整真实容量，避免循环依赖或提前发个人化信号。Entry/Journal与Consistency放同一Milestone，不能先做卖出再补原买入逻辑。M1起保存可失效依赖，M5才建完整事件运营。安全与PIT贯穿，不能等M6才补。
+### 总Goal第一阶段：M2 的 DAG
 
-| 阶段 | 工作规模 | 主要风险 | 验收强度 |
+```text
+W0 核对已完成稳定化 / 基线 / 预登记
+  -> W1 时点/身份/Coverage合同冻结
+  -> [W2 四通道与候选合并 || W3 PIT/反例/抽样工具 || W4 Excel read model候选]
+  -> W5 全市场有效会话run + 依规则抽样 + >=3份新发现实质研究/否决
+  -> W6 统一原Excel发布 + Coverage/误放漏筛/重放联合验收
+  -> W7 客观收口 / Checkpoint A / 阶段验收后继续M3
+```
+
+W1期间允许离线盘点源、Excel消费者和历史fixture，禁止多个工作流各自定义同名状态。W2的Quality/Dividend与Value/Cyclical可在同一合同/Policy下并行；合并后才运行端到端验收。W4先用明确fixture验证布局，真实发布等W5。不能让三份报告全部串行等待全市场深研，也不能先挑想要的公司再补抽样规则。
+
+M3的Decision域、卡片展示、历史决策replay可并行；真实正向BUY验收汇合于有效G3/Event/Price、置信度及最小人工确认容量。M3只接PortfolioPreconditions，不提前造完整M4；缺IPS/持仓不阻塞非个人化理由卡，但禁止个人化BUY/ADD。
+
+M4/M5可部分并行，不是M3前抢跑两阶段。共享Entry/Portfolio/Event合同先冻结，各自修改独立文件；组合事件、每日仓位复核与通知集成必须两边都通过。用户已授权将M2-M7纳入同一总Goal，因此满足依赖后可自动推进这些工程工作；这不等于授权生产改动、个人数据使用、通知或替用户签署验收。
+
+### 用户可见产品节点
+
+| 节点 | 通过后实际可用 | 仍不能宣称 |
+| --- | --- | --- |
+| A / M2 | 原Excel查看全市场覆盖、通道候选、Why Now、数据缺口、重点研究队列及实质报告 | 买卖信号、可持续收益、每日自动服务；High Attention可为0 |
+| B / M3 | 受支持且证据满足的公司形成买/加/持/减/退人工复核理由；对照原买入逻辑，用户能复述反证 | 账户未知时的个人仓位；全部公司均可交易；没有真实正向链时不宣称BUY已获市场验证 |
+| C / M4+M5 | 用户确认组合下的分层仓位/集中度/正常化收入复核；授权后的重要变化跟踪与静默 | 尚未经M6观察的稳定生产服务 |
+| D / M7，依赖M6 | 用户实际使用签收；限定画像、已核数据与已确认组合内 INITIAL_ASSISTED_USE | 自动下单、盈利保证、全行业估值支持 |
+
+Engineering Ready、Research Reviewed、Current Data Valid、User Ready分别验收。新增几种dataclass、全绿测试、工作簿能打开均不足以达成上述产品节点。
+
+### 工作规模、风险与高强度运行
+
+| 剩余工作 | 预计规模 | 主要瓶颈 | 验收强度 |
 | --- | --- | --- | --- |
-| M1 | 大；工程与研究并重 | 披露口径、假设可信度、旧新展示迁移 | 真实20家账+6深研+跨模型+DB/Excel |
-| M2 | 大；覆盖/通道/源质量 | 不支持行业、幸存者偏差、数据授权/限流 | 固定反例+全市场分母+真实候选审阅 |
-| M3 | 大；领域政策与可解释性 | 研究状态被误读为交易、原论点缺失 | 状态反例+真实历史链+人工复述 |
-| M4 | 中大；私人数据与约束 | 错误容量、集中风险、股息陷阱 | 真实对账+压力场景+隐私验收 |
-| M5 | 大；持续运营 | 漏事件、误静默、通知噪音/OOM | 事件replay+故障恢复+在线证据 |
-| M6 | 高验证强度，规模取决于发现问题 | 数据/运行/人类使用的联合风险 | 独立综合验收+真实观察+恢复 |
+| M2收尾 | 中大，通用边界修复+真实通道研究，不从零开发 | 当前/PIT来源质量、候选证据与原表整合 | 全市场逐证券账+通道正反例+3份新发现报告+抽样+WPS |
+| M3 | 大，投资政策和解释性研究并重 | 有效人工审批、Entry真实性、用户理解 | 全状态拒绝/正向路径+真实历史决策链+至少3卡用户复述 |
+| M4/M5并行 | 大，两个相对独立域后联合验收 | 私有IPS/持仓、事件完整性、幂等/恢复/通知授权 | 真实组合守恒/压力+真实事件+异常恢复+每日可读输出 |
+| M6 | 实现量依缺陷而定，运营验收强度最高 | 真实自然时间、运维/备份/授权 | 不少于20连续交易会话+真实事件+隔离恢复 |
+| M7 | 中，复用既有能力的最终交付，不扩新功能 | 用户参与、前台一致性、独立可用性 | 真实工作台任务验收+证据/Entry贯通+用户签收 |
 
-不承诺天数。每个Goal可跨多次运行续接已验收工作包，但只能有一个当前Milestone。外部数据、人工输入、授权和自然时间分开列状态，不能以一项等待阻塞所有独立工程，也不能越权自动启动下一阶段。
+每天约20小时只增加可用执行预算，不等于20小时有效研究，也不能把等待、限流、重试和测试并行当线性提速。当前没有足够稳定吞吐数据，暂不承诺“几小时/几周必完成”。W1与首批通道验证后，基于实际完成的可验收工作包、外部输入及人工响应更新 optimistic/base/risk-adjusted 剩余窗口，记录估计假设，不能拿测试数量外推进度。M6的20个交易会话是确定的最低观察长度，不折算成运行次数。
+
+一个总Goal跨M2-M7多个workstream，不因一个包或阶段完成就退出。阶段验收有据后记录交接并继续；未通过不虚标DONE。若仅人工签收/自然时间等待，可继续总范围内依赖已满足的离线工程和M7展示准备，不能发布依赖未验收输入的个人化结论、跳过生产授权或提前签收M6/M7。范围/方法冲突、需单独授权的生产风险或关键人工输入须请求决策；有限重试，不无限轮询、空转或擅自设长期任务。证据Stop Rule按研究方法执行。
 
 ## 11. Acceptance Criteria
 
@@ -443,7 +508,7 @@ M3的BUY/ADD依赖PortfolioPreconditions，但M3只接显式人工确认/模拟�
 ## 13. Major Risks
 
 1. **研究内容空心化**：接口齐全但无可信估值/股息。M1数量与质量双门、读得懂的反证和原件抽样，不以全GAP毕业。
-2. **PIT与版本假完整**：有日期/Hash但链不一致。M1先修已复现缺口，所有后续Bundle和增量重算继承。
+2. **PIT与版本假完整**：有日期/Hash但链不一致。M1已建立输入约束；M2新入口仍须修第1.4节缺口，不以签名一致替代信息可用边界。
 3. **经济画像泛化错误**：三画像不是全行业；业务相似也可能有金融子公司、少数股东、监管/资源约束。适用性显式审阅，禁止默认模型。
 4. **旧新入口混义**：旧screen、模拟账户/策略和Excel仍在。迁移有标签、回归和消费者清单，不无差别删除，也不让历史规则进入新决策。
 5. **持续采集无产品增量**：证据stop rule、每批可读交付、假设/材料性边界复核；不会影响结论的新原件不无限收集。
@@ -451,24 +516,24 @@ M3的BUY/ADD依赖PortfolioPreconditions，但M3只接显式人工确认/模拟�
 7. **规模/运营拖垮共享服务器**：分层计算、限并发/内存/重试、源预算；生产前核实PTA余量，不增加无必要常驻服务，不假设需要本机Docker Desktop。
 8. **生产资产与公开仓库风险**：源码/schema/脱敏fixture可公开；持仓、密钥、生产dump、未经许可原件不公开。以私有证据存储及加密备份保障恢复。
 9. **代理/接口/授权不稳定**：来源可替换但口径需再核验；不得通过不合规访问补数据；错误源不能被第二个同源镜像洗白。
-10. **计划过大又无限延伸**：六个大Milestone分别启动/停止；M1止于20家与研究展示，不自动吞并M2-M6。
+10. **总Goal过大或虚假收口**：明确终点M7，以版本化阶段收据续接，每次聚焦依赖已满足的工作；M4/M5有界并行，不能同时无序铺开所有模块。所有验收完成后停止，不新增M8或无限打磨。
 
 ## 14. Explicit Non-goals
 
 - 自动炒股、订单执行、券商接入、收益承诺、保证股息或强制满仓。
 - 本轮编码、改Excel、连生产DB、改调度/服务器/做生产迁移；本轮仅审查和文档。
-- M1开发全市场、Web、所有行业估值或个人仓位；也不为消除所有技术债大重构。
+- 当前M2开发BUY/ADD/个人仓位、Web、所有行业估值；不为消除所有技术债大重构，不重新开发冻结M1。
 - 将短期市场走势预测、技术指标拟合或最高回测收益变成价值投资主线。
 - 每天荐股、以评分排名替代解释、用LLM作为唯一财务数字计算来源。
 - 用真实资金交易来证明产品能力；模拟盈利或fixture全绿替代生产验收。
 - 重新建设已冻结Stage A/C0-C3，或把新的有限研究允许解释成随意修改冻结历史。
 
-## 15. Recommended First Long Goal
+## 15. Authorized Long Goal
 
-**唯一选择：M1-FIXED-SAMPLE-RESEARCH-WORKBENCH。**
+**总Goal：VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE。**
 
-首要工程问题是可信输入到可读研究的完整链路，不是再孤立完成一个adapter。按内部工作包顺序：基线/预登记 -> 输入及PIT/依赖完整性 -> 原三公司回归 -> 6家公司深研和新read model候选展示 -> 12/20家分层验证 -> 原Excel安全发布 -> 隔离DB冷启动replay -> 产品/方法/技术债审查。
+按用户最新要求，终点由单独M2扩大到M7。继承f4bb55c及后续成果：M2主动发现 -> M3解释性决策/Entry一致性 -> M4/M5组合与事件有界并行 -> M6真实运营准入 -> M7用户交付。M1不重做，安全门不放宽。
 
-首批用户可见成果是6家公司的研究工作台：能看到生意、回报来源、三情景或具体拒绝原因、股息可持续性、当前价格位置、最强反证和下一事件；它仍不发布BUY/ADD/仓位。
+每个阶段通过后记录证据并自动继续，不要求用户重新建Goal；真实研究批准、私人IPS/持仓、生产迁移/调度/通知和用户签收仍需对应人工输入/授权。当前聚焦M2，具体阶段门在 [current-stage-goal.md](docs/current-stage-goal.md)，可复制总Goal文本在 [value-investment-goal-prompt.md](docs/value-investment-goal-prompt.md)。
 
-完成定义与停止条件以第9节M1及 [current-stage-goal.md](docs/current-stage-goal.md) 为准。允许失败/缺失案例，不允许占位结果充数；无法通过真实验收就保留PARTIAL与可执行缺口，不假称初步实盘就绪。推荐启动文本见 [value-investment-goal-prompt.md](docs/value-investment-goal-prompt.md)。
+M7全部条件成立后才完成总Goal并停止。外部/人工/自然时间未满足时分别记录具体等待及已完成工程，不能以阶段代码齐全宣称INITIAL_ASSISTED_USE。

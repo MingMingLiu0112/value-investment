@@ -2,6 +2,33 @@
 
 更新：2026-09-23。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 用户扩大总Goal至M7：2026-09-23
+
+本节只改变后续执行范围，不改变下方代码审查事实或宣称新增功能。用户最新请求为“把这个目标调整到直接做到m7”。
+
+- 唯一总Goal改为 `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`；当前聚焦仍是M2/PARTIAL。M1与Post-M1保持DONE，M3-M7未通过产品验收。
+- 沿用M1-M6主轴，新增明确定义的M7“个人投资工作台交付与独立使用验收”；M6保留原20连续交易会话/真实事件/恢复等全部实质门，输出运营准入，M7最终用户签收后才标INITIAL_ASSISTED_USE。
+- 阶段通过后记录证据、客观审查并在同一Goal继续，不再要求每阶段重建Goal；M4/M5仍仅在依赖成立后有界并行。
+- 总范围不授权具体生产迁移、计划任务、通知、私人组合导入或代签G3/IPS/用户验收。这些对应输入和单独授权门保留。
+- 本轮仅在上一轮未提交文档修改上增量调整AGENTS、LONG-TERM-GOAL、current-stage-goal、启动Prompt与本状态文件；未启动Goal、未改业务代码/Excel/数据库/服务器/调度，未commit/push。
+- 下节“下一Goal只完成M2”的旧范围被本节替代；f4bb55c审查、2118 passed/6 skipped和M2反例仍为上一轮实测，本轮文档调整不冒称重新运行全量测试。
+
+## 路线融合复审：2026-09-23，代码基线 f4bb55c
+
+本节是当前状态判断，优先于下方历史记录的“只差三报告”等当时结论。本轮仅审查与文档；未启动Goal、未改业务代码/Excel/数据库/计划任务，未SSH、未commit/push。
+
+- Git：main，HEAD `f4bb55cd686838b874b6a8b0c601492c8bd7aab5`；提交时间21:55:48 +08:00；开始时工作树干净。本轮目标文档修改是未提交工作状态，不算新增已发布功能。
+- GitHub本HEAD push run [35870537557](https://github.com/MingMingLiu0112/value-investment/actions/runs/35870537557)：offline-core、postgres-integration均success。CI指定37个离线测试文件及4项一次性PG集成，不是全仓/真实市场/生产可用性证明。
+- 本机 `D:/APP/Python313/python.exe -X utf8 -m pytest -q --basetemp runtime/audit-roadmap-20260923-pytest-v2`：**2118 passed / 6 skipped / 18 warnings，290.45s，0 failures**。18条warning来自Backtrader utcnow弃用，不是投资逻辑报警。
+- 用 `pytest -q -rs tests/test_postgres_research_artifacts.py tests/test_m1_postgres_cold_replay.py tests/test_moutai_end_to_end_case.py --basetemp runtime/audit-roadmap-20260923-skip-check` 复核：4项无C3_TEST_POSTGRES_DSN、1项无postgresql-binaries、1项已有冻结输出目录，另1 passed。本轮未重跑真实本机PG冷启动，CI一次性PG与历史冷启动收据分开。
+- M1与Post-M1稳定化保持DONE；已存在HumanApproval/EventReview/Bridge stress/Interim/PreDecision合同，不重建。三家NOT_ELIGIBLE/STALE或REJECTED结论不提高。
+- `runtime/m2-live-20260923/manifest.json` 八项文件Hash均一致，真实收据保留5568匹配、财务覆盖873证券、股息3622、四通道0/50/50/50及113去重候选。Hash一致不证明PIT与研究充分。
+- 本轮内存合成反例：未来10月1日宣告仍可进入9月23日Dividend候选；从official删除600004后仍入选，健康仍COMPLETE且含extra blocker；600001入两通道而candidate_pool只保留value；改未来fetched_at/来源Hash后入口仍接受且candidate_signature不变。这些是合成入口缺口，不是实际股票异常。代码定位及修复验收在长期路线第1.4节。
+- 源码复核：reuse-inputs重标now/quote_date风险、Dividend/Value/Cyclical以价格无冲突标COMPLETE、FCF/正常化指标仍None、行业存在即SUPPORTED、每通道50截断未保留完整覆盖账。应区分cheap leads与已核候选，不要求全市场DCF。
+- 原Excel当前Hash `a62a6ae634ea949db36c3c209278515e2ee66ef3a61aaa25d59d2051d5954d58`，12,210,200 bytes；M2仍在独立工作簿。本轮未做WPS视觉验收，统一原工作台纳入下一Goal受保护发布。
+- 本轮调整：LONG-TERM-GOAL更新真实基线/成熟度及M2-M6 DAG；current-stage-goal替换“只差三报告”为W0-W7/AC1-AC12；同步AGENTS、架构、方法/证据政策和启动入口。没有建立第二份Roadmap。
+- 当前成熟度：L0 HEALTHY，L1 BASICALLY READY，L2 PARTIAL，L3-L5与INITIAL_ASSISTED_USE均NOT READY。下一唯一Goal完成可信M2，CheckPoint A只帮助研究谁/为什么，不给买卖仓位、不声称每日运营。
+
 ## POST-M1 Stabilization + M2 首个真实 run-once：2026-09-23
 
 执行输入是用户复核后的 [m2-current-progress-review-20260923.md](m2-current-progress-review-20260923.md)。
@@ -28,7 +55,7 @@
 - 收据 `action=no_order`；从收据字节和保留原始输入重建的候选签名均一致，`receipt_bytes_match=true`、`raw_inputs_match=true`。
 - 独立候选工作簿 `A股价值投资_M2机会发现_20260923.xlsx` 已写入 WPS 云盘“价投跟踪”目录，未覆盖原工作簿；两处 SHA-256 均为 `a612a622cf476322724826c84b00783c51d65886fd3c9bb335159a509fa0c821`。
 - Quality 为空是证据门禁的失败关闭结果：本轮财务点来自 2026-09-18 前后服务端导出，未达到“验证状态、自动双源交叉核验、完整债务口径、同一报告期年度数据”的门禁，因此未降低阈值强行放行候选。
-- M2 验收第 1-6、8-10 项已有真实证据；第 7 项“从新发现候选中形成 3 份实质研究/否决报告”尚未开始。下一步只做有界、可归档的三份新候选研究/否决报告，不复制 symbol 专用流水线。
+- 当时曾判断旧验收第1-6、8-10项已有证据、仅差三份报告。**本判断已被顶部f4bb55c复审纠正**：现有收据证明运行/字节重建，不足以证明时点、覆盖、候选质量与统一前台。当前执行范围仅见current-stage-goal，仍禁止symbol专用流水线。
 - 本轮 M2 定向回归 6 passed；仓库内隔离 basetemp 全量回归 2118 passed / 6 skipped；未连接生产 PostgreSQL、未改计划任务、未触碰服务器 PTA/Web App 或原 WPS 人工工作簿。
 
 ## M1 收口：2026-09-23

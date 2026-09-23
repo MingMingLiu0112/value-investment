@@ -64,9 +64,11 @@ Domain Engine 不读取 Excel、网络或数据库；Application 负责编排、
 
 C0 已通过并冻结上述身份与时点合同；该段旧“代码缺口”不再作为当前状态。新价格桥接仍必须保持这些不变量，不能被 C3 的 Repository/Application 层放宽。
 
-2026-09-22 长期审查发现 Application 输入日期/available_at 与 Batch 规则失效仍有缺口，详见 [长期路线第1节](../LONG-TERM-GOAL.md)。这是 C3 上层完整性待补，不推翻 C0 冻结。M1 必须明确 report_period / research_as_of / valuation_date / source_available_at / computed_at，验证实际输入的信息可用边界；不能用外层时间覆盖或伪装内层事实日期。登记 AssumptionSet 必须绑定实际 scenario_inputs，输入包可独立重放；规则/模型/解析器/Profile/事件扫描变化必须使旧增量结果失效。
+2026-09-22 C3审查发现的输入/PIT/规则复用问题已由M1输入包与相关回归承接，不能继续当作未开始的M1任务。永久合同仍为：report_period / research_as_of / valuation_date / source_available_at / computed_at 分开，实际AssumptionSet绑定实际scenario_inputs，输入包可独立重放，规则/模型/解析器/Profile/事件扫描变化使旧增量结果失效。M2新入口尚未满足所有同类约束，具体反例见 [长期路线第1.4节](../LONG-TERM-GOAL.md)，不能用M1通过推断M2自动安全。
 
-G3 当前代码仍读取 case.valuation_status，不能宣称已经由本次计算自动重建。M1 需落实 G0-G2、适用模型计算、绑定估值版本的 G3/研究批准顺序；算出数值不等于批准研究。
+2026-09-23 Post-M1已接入绑定Valuation/ResearchCase/Facts/Assumptions Hash的HumanResearchApprovalReceipt、EventMaterialityReview、ModelValidity及PreDecisionEligibility。G0-G2 -> 模型计算 -> 绑定当前依赖的G3/人工研究复核 -> 价格评估；计算不等于批准，历史case状态不能替代新回执。依赖变化使批准失效，未完成事件拆分/重算不得放行。BridgeContributionAssessment只表达stress review，不是新批准估值。
+
+PreDecisionEligibility是前置合同，不是完整InvestmentDecisionReview；未来BUY/ADD还必须显式要求可评估价格、最低置信度、反证、适用股息研究与PortfolioPreconditions，不能只检查ELIGIBLE标签。M2的Decision-ready Candidate仅表示M3可读取研究输入，绝不表示决策合格。
 
 ## Dividend / Distribution Domain：最小合同已实现
 
@@ -84,11 +86,13 @@ ResearchProfile 未来可带 distribution_profile：growth_reinvestment / balanc
 可持续性阈值按经济特征登记，不共享一个机械 payout 或 FCF 阈值。DividendSustainability 是有条件判断，不保证分红兑现。
 Distribution 与 Valuation 共用有身份的 Facts/Assumptions；分红、回购和终值不能重复计价。
 
-## 漏斗与事件：后续设计
+## 漏斗与事件：部分实现，产品合同仍待验收
 
 L0 身份/上市与数据覆盖；L1 多通道筛查；L2 初步论点与研究缺口；L3 深研/估值/股息能力；L4 高关注与变化跟踪。
 每次升降级保存 old_state、new_state、reason、as_of、rule_version、actor、evidence_refs；不以一条总分抹掉否决项，不按名额填满 L4。
 正式完整估值限 L3/L4；不支持的 Profile 保留覆盖与缺口，不调用默认 FCFF。
+
+M2已有UniverseSnapshot/ChannelScreenResult/DiscoveryRunReceipt及四通道原型，尚未完成可信机会发现验收。正式池受官方身份与时点约束；报价健康、逐证券通道Coverage和研究完备性分别表达。线索不等于核验候选，screening适用不等于ValuationRouter支持。合并须保留多通道全部理由，预算截断不能丢失分母。原件/规则/已知时点依赖不可被candidate_signature代替。
 
 事件区分发生日、披露/可用日、抓取日；新财报、更正、资本动作、分红变化、重大并购、债务和经营变化只失效受影响依赖。
 无实质变化保持安静；重复事件幂等，单公司失败不阻塞其他公司。MaterialEvent 类型已存在不代表完整 Event Engine 已上线。

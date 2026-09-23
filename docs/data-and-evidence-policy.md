@@ -58,7 +58,7 @@ openpyxl 保存成功不证明公式缓存已重算；本地 runtime 路径不�
 
 ## 长期研究与决策证据链
 
-[LONG-TERM-GOAL.md](../LONG-TERM-GOAL.md) 的分期不能降低本政策。M1 先补完整实际输入包：每个结果绑定用于计算的 Facts/Assumptions、Profile/Model/Parser/Rule 版本、研究信息截止日、原件引用和Hash。保存假设对象但计算另一套scenario_inputs不算完成追溯。
+[LONG-TERM-GOAL.md](../LONG-TERM-GOAL.md) 的分期不能降低本政策。M1已建立实际输入包约束；M2及后续新入口必须继承并独立验证：每个结果绑定用于计算的 Facts/Assumptions、Profile/Model/Parser/Rule 版本、研究信息截止日、原件引用和Hash。保存假设对象但计算另一套scenario_inputs不算完成追溯。
 区分报告期、估值基准日、研究截止日、source available_at、系统生成日；最终结果的可用时间不得早于必要输入。今天计算的历史replay保存实际computed_at与历史cutoff，不能伪装成历史当天已有的研究结果。
 Facts、Assumptions、模型、规则、解析器、Profile、报价或事件扫描水位变化时，增量结果必须重新校验依赖；调用方传同一input hash不允许绕过这一要求。
 Future DecisionEvidenceBundle 还必须绑定 Distribution、Price、ModelValidity、Portfolio Snapshot、Entry和Decision Rule。原始买入理由只在人明确确认后封存，更正追加；系统建议、用户决定、实际成交和模拟行为分开记录。
