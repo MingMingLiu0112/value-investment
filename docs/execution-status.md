@@ -19,6 +19,8 @@ M3、M4 仍为 `PARTIAL`；本批只使用显式模拟组合，不读取真实�
   `0594db6981a78063883271cd2fa45e117487fe6a9657a97e14665dc6bf8b07a7`。
 - WPS 只读收据 `runtime/m4-portfolio-risk-wps-20260924/receipt.json` 为
   `passed`；WPS 云盘同名副本与仓库候选逐字节一致。
+- 本批已以 `324694744b51a3f0c3f2316e1ce206ac6cad6cb2` 提交并推送；
+  GitHub Core Research Gates run 35913005217 为 `success`。
 - 真实组合风险报告、PositionGuidance 和 DividendIncomeProjection 尚未完成；
   本候选不是个人化风险结论。
 

@@ -19,6 +19,10 @@
 - WPS 只读收据：`runtime/m4-portfolio-risk-wps-20260924/receipt.json`，
   `passed`
 - WPS 云盘同名副本与本仓库候选逐字节一致
+- Git 提交：`324694744b51a3f0c3f2316e1ce206ac6cad6cb2`
+  `feat: add M4 portfolio-risk assessment and simulated Excel candidate`
+- GitHub Core Research Gates：[run 35913005217](https://github.com/MingMingLiu0112/value-investment/actions/runs/35913005217)
+  为 `success`；本地 M4 定向回归 11 passed
 
 该候选只演示非个人化风险计算结构，不构成真实组合报告、仓位建议或交易指令。
 
