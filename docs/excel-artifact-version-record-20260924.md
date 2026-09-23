@@ -48,6 +48,18 @@ WPS 只读校验只覆盖打开/计算、公式错误、工作表顺序和链接
 - 第二行：同一发布内容的独立 M2 候选快照。
 - WPS 云盘同名生产原表：与上述两个快照逐字节一致，SHA-256 相同。
 
+## M2 AC1-AC12 审计器版本包
+
+本版本新增的 M2 统一验收审计器不创建第二份“最新工作簿”，只继续核对上表 canonical、
+候选和 WPS 生产原表三者的字节一致性。当前三者仍为
+`64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`；
+新提交中的 Excel 文件与上表相同，未发生额外字节变更。
+
+- 审计配置：`config/m2-acceptance-audit-v1.json`
+- 审计模块：`src/value_investment_agent/m2_acceptance_audit.py`
+- 审计命令：`scripts/audit_m2_acceptance.py`
+- 回归测试：`tests/test_m2_acceptance_audit.py`
+
 ## 被替换前的历史 canonical
 
 本轮替换前，仓库和 WPS 云盘的原工作簿版本为：

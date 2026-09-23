@@ -1,5 +1,63 @@
 # Changelog
 
+## v2026.09.24-m2-ac12-acceptance-auditor
+
+### Release Scope
+
+为 M2 的 AC1-AC12 建立可重复、可回放的统一验收入口。审计器只重算已固定 Hash 的
+真实 M2 运行、覆盖抽样、研究报告和工作簿发布证据，不重新采集市场，不写 WPS
+原工作簿，不连接生产数据库，不生成估值、BUY、ADD、仓位或订单。
+
+### New Capability
+
+- 新增 `config/m2-acceptance-audit-v1.json`，固定 M2 运行收据、manifest、政策、
+  AC9 覆盖抽样、AC8 研究报告、工作簿发布收据、两个 PIT 快照、55 个工作表门和最多
+  30 个允许跳过测试的边界。
+- 新增 `src/value_investment_agent/m2_acceptance_audit.py`，逐项重算 AC1-AC12：
+  - AC1 继承稳定性、Git HEAD、本地全量和 GitHub Actions 结果；
+  - AC2 官方 5,568 证券与四通道逐证券覆盖；
+  - AC3 四通道真实线索、LEAD/PARTIAL 与空 Quality 成因；
+  - AC4 版本化 policy、legacy shadow 和缺失指标不填零；
+  - AC5 跨通道原因、画像适用和预算外账；
+  - AC6 两个真实 PIT 信息边界、冷重放与未来证据拒绝；
+  - AC7 当前真实市场 run、报价日期和完整分母；
+  - AC8 实质研究/否决报告；
+  - AC9 分层误放与漏筛审计；
+  - AC10 原 Excel 发布 Hash、回退、WPS 收据和 55 页检查；
+  - AC11 no_order、生产/调度边界、资源上限和无 symbol 专属流水线；
+  - AC12 保留用户复核与 Checkpoint A 交接边界。
+- 新增 `scripts/audit_m2_acceptance.py`，支持 `--run-tests`、`--ci-status`、
+  `--wps-workbook` 和 `--json-only`，输出版本化 receipt 与 latest pointer。
+- 新增 5 项审计回归测试并纳入 GitHub Core Research Gate。
+
+### Real Artifacts
+
+- M2 运行收据固定为 `runtime/m2-live-20260923-v3/receipt.json`，SHA-256
+  `869044a72c514be2d274308383c4479f7536bb393bfbf5ca10e492eee24bc220`。
+- AC9 覆盖审计固定为
+  `3c30936a6e567bd55b8d03bf67163071c49d223ca10def66b93fcdc336a84695`。
+- AC8 研究报告固定为
+  `dd55c02c75dec17ff766fa6b6ae529030d02a31376b305c02ddd0a8f5443c8a6`。
+- WPS canonical、仓库 canonical 和新 M2 候选工作簿继续逐字节一致，SHA-256
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- 两个 PIT 快照保留在 `runtime/m2-live-20260923-v2/` 与
+  `runtime/m2-live-20260923-v2b/`，用于证明两个真实信息边界及 v3 replay。
+
+### Verification
+
+- M2 定向回归：33 passed、0 failed。
+- 仓库全量离线回归：2149 passed、6 skipped、18 warnings、0 failed。
+- `git diff --check` 通过。
+
+### Acceptance Boundary
+
+- AC8、AC9、AC10 和 AC12 的机器证据通过后仍保持 `PENDING_HUMAN_REVIEW`，不能由
+  审计器自动批准。
+- M2 继续保持 `PARTIAL`，直到用户在实际 WPS 工作簿完成研究报告、分层样本、导航和
+  证据链接复核，并完成 Checkpoint A 交接。
+- 本版本不连接生产 PostgreSQL、不改服务器 PTA/Web App、不改计划任务，也不生成
+  任何交易指令。
+
 ## v2026.09.24-m2-ac10-integrated-workbook
 
 ### Release Scope

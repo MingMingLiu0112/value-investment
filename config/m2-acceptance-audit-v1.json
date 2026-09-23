@@ -1,0 +1,58 @@
+{
+  "schema_version": "m2-acceptance-audit-policy-v1",
+  "policy_version": "20260924-v1",
+  "stage": "M2",
+  "action": "no_order",
+  "run": {
+    "manifest_path": "runtime/m2-live-20260923-v3/manifest.json",
+    "manifest_sha256": "69bd1b4a134fcdf67e4cd15454373b4441783ffe24a2446daa375ea260b844a1",
+    "receipt_path": "runtime/m2-live-20260923-v3/receipt.json",
+    "receipt_sha256": "869044a72c514be2d274308383c4479f7536bb393bfbf5ca10e492eee24bc220",
+    "policy_path": "runtime/m2-live-20260923-v3/policy.json",
+    "policy_sha256": "088db04ad3da125a4c0091a107055907b6e217d93263b4b566a6c72b7dee4226"
+  },
+  "coverage": {
+    "config_path": "config/m2-coverage-sampling-v1.json",
+    "config_sha256": "fb06f475e46111778b9c40f6610b528e5fb139c707069a038cbc93ae2fa07ff6",
+    "report_path": "runtime/m2-ac9-coverage-audit-20260923-v2/report.json",
+    "report_sha256": "3c30936a6e567bd55b8d03bf67163071c49d223ca10def66b93fcdc336a84695"
+  },
+  "research": {
+    "config_path": "config/m2-ac8-research-report-v1.json",
+    "config_sha256": "efe992734b80db445c4d0dceafff3ac2b4fdbcc9773eea3168fdb72d1d09f00f",
+    "report_path": "runtime/m2-ac8-research-reports-20260924-v1/report.json",
+    "report_sha256": "dd55c02c75dec17ff766fa6b6ae529030d02a31376b305c02ddd0a8f5443c8a6"
+  },
+  "workbook": {
+    "candidate_manifest_path": "runtime/m2-original-candidate-20260924-v4/A股价值投资_Agent前端智能跟踪模板_M2候选_20260924.candidate.manifest.json",
+    "candidate_manifest_sha256": "17e2493e3608750560c050e3108fff47f846ab1cb3d5765cc3b3203271e6d252",
+    "publication_path": "runtime/workbook-backups/stage-frontend-5e6ab310df554a49a100ccbcc6d68c33/publication.json",
+    "publication_sha256": "b0967f445fd5eb90d786967b6f81ea679dc938713883e9e6099ab5b50065935b",
+    "wps_prepublication_path": "runtime/m2-original-candidate-20260924-v4/wps-prepublication.json",
+    "wps_prepublication_sha256": "9d5e353d59b7802fc90503d8dfa69ab63b81aa6e99f89382765702f4c92c9950",
+    "wps_published_path": "runtime/m2-original-candidate-20260924-v4/wps-published.json",
+    "wps_published_sha256": "3a62d116467fd0769fe529d6ee804dcce9720cfabcf210da5bcb96f6c7082216",
+    "canonical_sha256": "64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911"
+  },
+  "pit_snapshots": [
+    {
+      "receipt_path": "runtime/m2-live-20260923-v2/receipt.json",
+      "receipt_sha256": "5251997c5aff103483a0929b28e1f83342f35d404a8b380c487837616380fb2e",
+      "manifest_path": "runtime/m2-live-20260923-v2/manifest.json",
+      "manifest_sha256": "5ef70bdfd116b1433c4198039fe778d407ce8b65034d7d553f91144597717984"
+    },
+    {
+      "receipt_path": "runtime/m2-live-20260923-v2b/receipt.json",
+      "receipt_sha256": "1d9b3b279ade08d31880b35994ec07979aabeed16bcbdfa1f91ad8959de72959",
+      "manifest_path": "runtime/m2-live-20260923-v2b/manifest.json",
+      "manifest_sha256": "b9bb8b8da198b224355767b3d179a47a346c405de6f727404e3b55a8ad5b191e"
+    }
+  ],
+  "minimum_universe_count": 5000,
+  "minimum_candidate_channels": 3,
+  "minimum_candidate_symbols": 100,
+  "minimum_substantive_reports": 3,
+  "minimum_substantive_channels": 2,
+  "expected_sheet_count": 55,
+  "max_allowed_skips": 30
+}

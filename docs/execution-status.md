@@ -2,6 +2,28 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M2 AC1-AC12 可重复验收审计器：2026-09-24
+
+本节记录统一审计入口的代码与本地运行事实。M2 仍为 `PARTIAL`，`action=no_order`；
+审计器不能替代用户在 WPS 中的实际研究、导航和证据链接复核。
+
+- 新增 `config/m2-acceptance-audit-v1.json`、
+  `src/value_investment_agent/m2_acceptance_audit.py`、
+  `scripts/audit_m2_acceptance.py` 和
+  `tests/test_m2_acceptance_audit.py`，并纳入 GitHub Core Research Gate。
+- 审计器重算固定 M2 run、manifest、policy、两个 PIT 快照、AC8 报告、AC9 分层审计、
+  工作簿发布收据和 WPS Hash；任何被固定文件的字节变化都会拒绝。
+- AC1、AC6 依赖本地全量离线回归；AC8、AC9、AC10、AC12 的机器证据通过后仍为
+  `PENDING_HUMAN_REVIEW`，不自动宣布 M2 完成。
+- 本地定向回归 33 passed；仓库全量离线回归 2149 passed、6 skipped、18 warnings、
+  0 failed。GitHub Actions 对本次新提交的成功结果将在 push 后单独核对。
+- 当前 WPS 云盘生产工作簿、仓库 canonical 和 M2 候选工作簿逐字节一致，SHA-256
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- 未连接生产 PostgreSQL、未触碰服务器 PTA/Web App、未修改计划任务，也未生成估值、
+  BUY、ADD、仓位或订单。
+- 详细版本记录见 [CHANGELOG.md](../CHANGELOG.md)；工作簿清单见
+  [excel-artifact-version-record-20260924.md](excel-artifact-version-record-20260924.md)。
+
 ## M2 AC8 研究报告并入原 Excel 统一入口：2026-09-24
 
 本节记录把 AC8 实质研究/否决报告并入 M2 原表候选、真实 WPS 校验和受保护发布的证据。
