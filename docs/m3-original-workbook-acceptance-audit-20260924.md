@@ -34,6 +34,13 @@
 - 定向回归：7 passed。
 - 机器门 `owc1-owc6`：`DONE`；`owc7`：`PENDING_HUMAN_REVIEW`。
 - 审计动作：`no_order`；候选状态：`candidate_verified_not_published`。
+- 最新收据：
+  `runtime/m3-original-workbook-audit-20260923T223129Z/receipt.json`
+- 收据 SHA-256：
+  `2242450c9f5ee76ce7dc9b4c9bc231448ea55d07d7efea06e99ab5a95ceae0c9`
+- 对应提交：`d6e4179488c11d4833f27fe2f0edde37f4651a46`
+- GitHub Core Research Gates：[run 35928696898](https://github.com/MingMingLiu0112/value-investment/actions/runs/35928696898)，
+  `offline-core` 与 `postgres-integration` 均成功。
 
 ## 边界
 

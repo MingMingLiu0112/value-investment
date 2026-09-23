@@ -75,6 +75,11 @@
   GitHub Core Research Gate；M3 原工作簿定向回归 7 passed。
 - 候选保持 `candidate_verified_not_published`；`owc7` 为
   `PENDING_HUMAN_REVIEW`，Checkpoint B 仍必须由用户完成。
+- 最新收据：`runtime/m3-original-workbook-audit-20260923T223129Z/receipt.json`，
+  SHA-256
+  `2242450c9f5ee76ce7dc9b4c9bc231448ea55d07d7efea06e99ab5a95ceae0c9`。
+- 对应提交 `d6e4179488c11d4833f27fe2f0edde37f4651a46`；GitHub Core Research
+  Gates run 35928696898 两个作业均为 `success`。
 
 ## M5 人工材料性判定接入：2026-09-24
 
@@ -169,13 +174,17 @@ M3、M4 仍为 `PARTIAL`；本批只使用显式模拟组合，不读取真实�
 
 ## M2 AC1-AC12 完整本地回归复核：2026-09-24
 
-- 重新执行 `scripts/audit_m2_acceptance.py --run-tests --ci-status success`，
-  并显式核对 WPS 生产工作簿；最新收据
-  `runtime/m2-acceptance-audit-20260923T194403Z/receipt.json`，SHA-256
-  `2d1ec99b99e4696fcd3ebcb07a6b86d9cd28ea005fa8a847acd0205a7f5fe89c`。
-- 全量离线回归通过；AC1、AC2、AC3、AC4、AC5、AC6、AC7、AC11 为 `DONE`。
+- 在 `d6e4179488c11d4833f27fe2f0edde37f4651a46` 重新执行
+  `scripts/audit_m2_acceptance.py --run-tests --ci-status success`，并显式核对
+  WPS 生产工作簿；最新收据
+  `runtime/m2-acceptance-audit-20260923T223550Z/receipt.json`，SHA-256
+  `0342ddbedee1ab9906140e6c6be34742434b7e3c687630a311067a6791254ce4`。
+- 全量离线回归 2284 passed、6 skipped、0 failed；AC1、AC2、AC3、AC4、AC5、
+  AC6、AC7、AC11 为 `DONE`。
 - AC8、AC9、AC10、AC12 保持 `PENDING_HUMAN_REVIEW`；整体状态由 `PARTIAL`
   转为 `PENDING_HUMAN_REVIEW`，下一步仍需用户在 WPS 中完成 Checkpoint A。
+- GitHub Core Research Gates run 35928696898：`offline-core` 与
+  `postgres-integration` 均为 `success`。
 
 ## M3 论点连续性历史链只读模型：2026-09-24
 
