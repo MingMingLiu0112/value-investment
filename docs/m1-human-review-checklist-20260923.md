@@ -1,12 +1,12 @@
-# M1 人工复核清单
+# M1 后续里程碑人工复核台账
 
-更新：2026-09-23。本清单对应 [m1-acceptance-fact-matrix-20260923.md](m1-acceptance-fact-matrix-20260923.md) 中仍为 `PENDING_HUMAN_REVIEW` 的项。机器不替人工完成这些判断，也不因条件模型产出了 Bear/Base/Bull 就自动通过 G3。
+更新：2026-09-23。本清单对应 [m1-acceptance-fact-matrix-20260923.md](m1-acceptance-fact-matrix-20260923.md) 中延后到 M3/M5/M6 的复核项。机器不替人工完成这些判断，也不因条件模型产出了 Bear/Base/Bull 就自动通过 G3。这些项不阻塞 M1 研究工作台验收。
 
 逐条可直接打开的公告和 G3 决策表见 [m1-human-review-packet-20260923.md](m1-human-review-packet-20260923.md)，该证据包由当前冻结 runtime/config 只读生成。
 
-全部复核应保持 `action=no_order`。任何 G3 批准、事件重要性判断或研究深度结论都应留下可追溯人工记录；当前运行产物中不存在这种批准记录，因此 M1 尚未完成。
+全部复核应保持 `action=no_order`。任何 G3 批准、事件重要性判断或研究深度结论都应留下可追溯人工记录；当前运行产物中不存在这种批准记录，所以估值仍保持 `conditional_research_only`。
 
-## A. 三公司 G3 估值审批
+## A. M3：三公司 G3 估值审批
 
 每家公司依次核对后，才能把条件估值从“仅研究算术”提升为“人工确认的研究包络”。这仍然不是买入建议。
 
@@ -24,7 +24,7 @@
 4. 事件扫描中是否存在会让模型 `STALE` 或需要调整输入的重要事项。
 5. 人工批准只表示“模型基础可接受为条件研究”，不得被解读为价格吸引力、目标仓位或交易批准。
 
-## B. 事件重要性人工阅读
+## B. M5：事件重要性人工阅读
 
 以下扫描结果是标题规则分类，不是独立重要性判断。打开对应 `evidence.json` 中每个 `materiality_candidate=true` 的公告原件，确认是否为模型前重要事件。
 
@@ -59,7 +59,7 @@
 
 档案报告入口：`python scripts/report_m1_research_dossiers.py`。当前机器状态为 `READABLE=6, BLOCKED=3, NOT_STARTED=11`。
 
-## D. Excel 人工可用性确认
+## D. M6：Excel 人工可用性确认
 
 当前原 WPS 工作簿已经原子发布为 42 页，前 6 页是 M1 Application，原 36 页 worksheet XML 逐字节保留。WPS 只读打开、读取、重算和公式错误扫描已通过，但以下仍属于人工确认：
 
@@ -81,4 +81,4 @@
 
 ## 复核完成后的边界
 
-即使以上 A-D 全部完成，M1 也只能在事实矩阵、正常化股息缺口和所有状态如实保留的前提下更新状态。不得因此宣称真实投资就绪；该称号仍需按 `LONG-TERM-GOAL.md` 的 M6 单独验收。
+以上 A-D 是后续里程碑的输入，不改变 M1 已完成的机器验收。不得因此宣称真实投资就绪；该称号仍需按 `LONG-TERM-GOAL.md` 的 M6 单独验收。

@@ -1,8 +1,8 @@
 # 目标模式启动入口
 
-更新：2026-09-22。当前唯一待启动目标是 `M1-FIXED-SAMPLE-RESEARCH-WORKBENCH`。
+更新：2026-09-23。`M1-FIXED-SAMPLE-RESEARCH-WORKBENCH` 已按 [current-stage-goal.md](current-stage-goal.md) 完成机器验收；当前没有自动启动的下一目标。M2 须由用户单独授权并先复核 M1 收口。
 完整长期路线见 [LONG-TERM-GOAL.md](../LONG-TERM-GOAL.md)，执行范围见 [current-stage-goal.md](current-stage-goal.md)。
-本轮只完成审查和规划；下列文本由用户放入目标模式后启动，不启动全部六个Milestones。
+下列文本是已退役的 M1 历史启动文本，仅用于记录原任务口径，不再重复执行。
 
 ```text
 在 D:\GPTProject\value-investment 执行长期目标 M1-FIXED-SAMPLE-RESEARCH-WORKBENCH。

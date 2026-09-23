@@ -243,7 +243,7 @@ Starter -> Normal -> Add -> Max 每次升级需新证据/置信度/价格改善�
 
 **Forbidden scope**：全市场正式漏斗、买卖状态/仓位、Web、金融行业新模型、ShareholderYield 完整引擎、50家自动扩容、生产迁移/调度/部署。不得删冻结证据、调旧参数凑通过或增加公司专用流水线。
 
-**Exit criteria**：共同结果已显示于原 Excel，源 Hash/人工区/WPS 检查有收据；至少一次隔离 PostgreSQL 冷启动重放；给出 coverage/gaps 与技术债报告。研究有合理拒绝是成果，但“20家全是占位/缺失”不毕业。外部不可用可完成工程并登记未完成的真实验收，不虚报 M1 DONE。达到标准后停止，交用户复核 M2。
+**Exit criteria**：共同结果已显示于原 Excel，源 Hash/人工区/WPS 检查有收据；至少一次隔离 PostgreSQL 冷启动重放；给出 coverage/gaps 与技术债报告。研究有合理拒绝是成果，但“20家全是占位/缺失”不毕业。M1 只保留 `conditional_research_only` 和显式缺口；正式 G3 研究批准归 M3、公告材料性与事件决策归 M5，不把这两类后续人工复核当作 M1 完成阻断。外部不可用可完成工程并登记未完成的真实验收，不虚报 M1 DONE。达到标准后停止，交用户复核 M2。
 
 ### M2. Multi-Channel Opportunity Discovery
 

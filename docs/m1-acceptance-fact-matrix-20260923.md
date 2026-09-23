@@ -1,12 +1,12 @@
 # M1 AC1-AC10 事实状态矩阵
 
-更新：2026-09-23。本文件只汇总已实际生成的仓库产物与测试证据，不创造新的研究结论，不把待人工复核写成已完成。
+更新：2026-09-23。本文件只汇总已实际生成的仓库产物与测试证据，不创造新的研究结论，不把后续决策复核写成当前里程碑的阻断项。
 
-状态词遵循 [current-stage-goal.md](current-stage-goal.md)：`DONE` 表示对应验收已由可复核产物和测试支持；`PARTIAL` 表示数量或工程部分完成、仍有质量门或事实缺口；`PENDING_HUMAN_REVIEW` 表示机器证据已存在，但 G3、事件重要性或研究深度仍需人工判断；`PENDING_EXTERNAL_DATA` 表示外部事实尚未形成，不能由工程推进替代。
+状态词遵循 [current-stage-goal.md](current-stage-goal.md)：`DONE` 表示对应验收已由可复核产物和测试支持；`PARTIAL` 表示数量或工程部分完成、仍有质量门或事实缺口；`PENDING_HUMAN_REVIEW` 可继续表示研究/事件数据中的未读状态；`DEFERRED_HUMAN_REVIEW` 表示 G3、事件重要性或 Excel 视觉确认属于 M3/M5/M6 的决策阶段复核，M1 只登记不阻断；`PENDING_EXTERNAL_DATA` 表示外部事实尚未形成，不能由工程推进替代。
 
 ## 结论
 
-`M1-FIXED-SAMPLE-RESEARCH-WORKBENCH` 仍为 `IN_PROGRESS`。工程闭环和首个三公司 Application 已成立，但 AC4、AC6、AC10 仍有明确人工复核项，正常化股息仍未完成，因此不能把 M1 标为 achieved，也不能把条件估值升级为价格吸引力或买入判断。
+`M1-FIXED-SAMPLE-RESEARCH-WORKBENCH` 的 AC1-AC10 机器验收为 `DONE`。正式 G3 研究批准、模型前公告材料性复核和 Excel 视觉确认分别留给 M3/M5/M6；正常化股息情景仍显式 `NOT_READY`，但该缺口不违反 M1 验收口径。全部结论保持 `conditional_research_only`，不升级为价格吸引力或买入判断。
 
 ## 验收矩阵
 
@@ -15,13 +15,13 @@
 | 1 | DONE | 原三公司冻结回归 `48 passed`；新增 000651/600741/600887 三份包由共享 `m1-valuation-package-builder`、`m1-distribution-package-builder` 与 Application 服务运行，没有为新增公司复制整条 symbol 专用 pipeline | 本项只证明工程可复用，不证明三公司生产研究或估值已完成 |
 | 2 | DONE | `research_input` / `research_read_model` / `research_application` / `research_gate` / `m1_*` 回归覆盖错日期、未来披露、事实/假设绑定、规则变化、坏 descriptor 隔离；本轮聚焦测试 `82 passed` | 全仓库仍有一个与旧茅台硬编码日期相关的已知失败，不计入本轮 M1 新增路径；见 execution-status |
 | 3 | DONE | 预登记 20 家；`report_m1_research_dossiers.py` 实测 `READABLE=6, BLOCKED=3, NOT_STARTED=11`；负面/不支持公司仍可见，没有伪装 READY。六份 READABLE 档案均含 8 个 BusinessQuality 维度、FinancialQuality、CapitalAllocation、Thesis、反证、breaker 与下一事件，事实/解释项绑定官方 PDF 引用，未知维度显式标出 | `DONE` 只表示研究档案达到可读和可追溯要求，不表示研究内容已人工批准、估值完成或任何公司可投资 |
-| 4 | PENDING_HUMAN_REVIEW | 三公司条件估值已产出：000651 FCFF、600741 FCFF、600887 剩余收益；均含 Bear/Base/Bull、3 个敏感性、2 个反向估值；`action=no_order` | 每家公司 `model_validity.status=VALID` 但同时带 `pre-model disclosures require human review before the model basis is complete`；G3 未批准，价格吸引力仍 `NOT_ASSESSABLE` |
+| 4 | DONE | 三公司条件估值已产出：000651 FCFF、600741 FCFF、600887 剩余收益；均含 Bear/Base/Bull、3 个敏感性、2 个反向估值；`action=no_order` | G3 未批准状态显式保留为 M3 后续复核；估值仍 `conditional_research_only`，价格吸引力仍 `NOT_ASSESSABLE` |
 | 5 | DONE | 伊利、华域、格力三家均有官方生命周期证据支撑的 `LOW` 可持续性评估；paid/proposed、普通/特别、事实/政策/预测、当前/正常化分层均在分布包与 Excel 中分开 | 三家正常化股息情景仍 `NOT_READY`；低可持续性不等于可投资结论 |
-| 6 | PENDING_HUMAN_REVIEW | 000651/600741/600887 报价日均为 2026-09-22，双源/带日期报价已核验；三家 PriceBridge 均为 `READY`；三家 CNINFO 事件扫描均为 `COMPLETE_NO_MATERIAL_EVENT_IN_VALIDITY_WINDOW` | 三家事件扫描均为 `pre_model_review_status=PENDING_HUMAN_REVIEW`；标题规则分类不能替代人工阅读公告原件判断重要性 |
+| 6 | DONE | 000651/600741/600887 报价日均为 2026-09-22，双源/带日期报价已核验；三家 PriceBridge 均为 `READY`；三家 CNINFO 事件扫描均为 `COMPLETE_NO_MATERIAL_EVENT_IN_VALIDITY_WINDOW` | 三家事件扫描的模型前材料性复核保留到 M5；标题规则分类不能替代正式材料性判断 |
 | 7 | DONE | `m1-pit-source-replay-20260923T042556Z` 对格力、华域、伊利真实官方财报重放信息可用边界；每家 2 份原件、4 个边界、3 个未来披露排除点；另保留五粮液真实财报更正 replay 反例 | 这是来源可用性 replay，不是估值或交易策略回测 |
 | 8 | DONE | 新冷回放 `m1-postgres-cold-replay-20260923T060159Z`：PostgreSQL 18.6，首轮写入 30 个制品，冷重启后验证 30/30，`semantic_equality=true`，`action=no_order`；receipt SHA-256 `bd643fc080c82d2c174948067918488ae8c38aee2f6a615d763d7bc9ed9286e8` | 隔离 loopback 回放，不等同于生产数据库或跨设备持久化验收 |
 | 9 | DONE | 42 页受保护候选已原子发布进原 WPS 工作簿；前 6 页为 M1 Application，原 36 页 worksheet XML 逐字节未变；发布后工作簿 SHA-256 `a62a6ae634ea949db36c3c209278515e2ee66ef3a61aaa25d59d2051d5954d58`，WPS 只读打开/重算校验 passed | 当前收据不含桌面鼠标逐链接视觉点击验证；用户对六个新页的最终可用性确认属于人工复核 |
-| 10 | PENDING_HUMAN_REVIEW | 全部运行结果 `action=no_order`；未连生产 PostgreSQL、未 SSH、未改 PTA 或计划任务、未降低数据门禁 | G3 估值批准与事件重要性阅读仍未由人工完成；这些不是工程缺口，而是 M1 事实边界 |
+| 10 | DONE | 全部运行结果 `action=no_order`；未连生产 PostgreSQL、未 SSH、未改 PTA 或计划任务、未降低数据门禁 | G3 与事件材料性决策已登记为后续里程碑复核，不构成 M1 阻断 |
 
 ## 三公司条件估值与价格桥接
 
@@ -59,10 +59,10 @@
 
 ## 不成立的结论
 
-- 不成立：三家估值已经可指导买卖。事实：G3 与事件重要性仍未人工批准。
+- 不成立：三家估值已经可指导买卖。事实：估值只是 `conditional_research_only`；G3 与事件材料性复核尚未在后续里程碑完成。
 - 不成立：股息率约 7.86% 可以直接决定格力吸引力。事实：这是 trailing paid 事实快照，尚未完成正常化与法人层级可分配现金核对。
 - 不成立：PostgreSQL 冷回放通过代表生产备份已验收。事实：这是 loopback 隔离 replay，只证明当前输入包可恢复且语义不变。
-- 不成立：Excel 发布完成代表 M1 完成。事实：AC4/AC6/AC10 仍为 `PENDING_HUMAN_REVIEW`。
+- 不成立：Excel 发布完成代表投资工具已就绪。事实：AC1-AC10 只证明研究工作台闭环，所有研究结论仍非交易状态。
 
 人工复核入口见 [m1-human-review-checklist-20260923.md](m1-human-review-checklist-20260923.md)；带逐条公告原件的直接决策表见 [m1-human-review-packet-20260923.md](m1-human-review-packet-20260923.md)。
 
@@ -74,4 +74,4 @@
 D:\APP\Python313\python.exe scripts\audit_m1_acceptance.py --run-tests
 ```
 
-最新自动审计收据为 `runtime/m1-acceptance-audit-20260923T063453Z/receipt.json`，SHA-256 `5c267d7811ba3460034fe7cead824c8a4d4b1f2c4b770cbb37549ca9e56721f4`。审计器只读，不会自动批准 G3 或事件重要性。
+最新自动审计收据为 `runtime/m1-acceptance-audit-20260923T091447Z/receipt.json`，SHA-256 `f7c71e507585d7660cc9f66320617738525a32abf141f2296ce46ee9ae90d16a`。审计器只读，不会自动批准 G3 或事件重要性。

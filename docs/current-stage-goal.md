@@ -1,9 +1,9 @@
 # 当前长期目标：固定样本研究工作台
 
 更新：2026-09-23。目标 ID：`M1-FIXED-SAMPLE-RESEARCH-WORKBENCH`。
-状态：IN_PROGRESS。W1 样本与方法预登记、W2 可信输入与共同安全边界已通过本地离线回归；W3 已生成 6 份绑定官方原件的 READABLE 研究档案。三家报价桥接已 READY，隔离 PostgreSQL 冷启动与三家真实披露 PIT replay 已通过；三公司 Application 六页已按受保护方式原子发布进原 WPS Excel，并保留原 36 页。伊利、华域、格力均已形成有官方生命周期证据的 LOW 股息可持续性结论，paid/proposed、普通/特别、事实/政策/预测、当前/正常化已在 Excel 分开展示；但正常化股息情景仍 NOT_READY，估值人工审批、重大事项人工复核及更完整跨模型情景仍未完成。READABLE 只表示研究内容已完整呈现且未知项显式可见。M1 未完成。
-可重复的 AC1-AC10 机器验收入口为 `scripts/audit_m1_acceptance.py --run-tests`；该审计器只核本地证据，不代替人工审批。
-人工复核的逐条公告/G3 决策表由 `scripts/render_m1_human_review_packet.py` 只读生成，见 `docs/m1-human-review-packet-20260923.md`。
+状态：DONE。固定样本研究工作台的 AC1-AC10 机器验收已通过；研究结论全部保持 `conditional_research_only`。正式 G3 研究批准和模型前公告材料性复核是后续 M3/M5 的决策阶段复核，M1 只保存为显式 `deferred_human_review`，不作为研究工作台验收阻断项。正常化股息情景仍显式 `NOT_READY`，这是后续研究缺口，不代表研究状态可以升级。
+可重复的 AC1-AC10 机器验收入口为 `scripts/audit_m1_acceptance.py --run-tests`；审计器只核本地证据，不批准 G3 或事件材料性。
+逐条公告/G3 后续复核台账由 `scripts/render_m1_human_review_packet.py` 只读生成，见 `docs/m1-human-review-packet-20260923.md`。
 
 跨阶段规划和真实基线见 [LONG-TERM-GOAL.md](../LONG-TERM-GOAL.md)。本文件是唯一当前执行范围，不与长期文件建立两套任务队列。
 
@@ -26,7 +26,7 @@ Stage A、P0/P0.5、三公司工程/Excel MVP、C0-C3 保留冻结，不重做�
 - Manifest只能配置policy；replay仍绑定三公司/茅台输入，Excel未消费新Application结果。
 - `research_application.py` 可接受case/spec与facts日期混配，available_at可早于输入；登记assumptions没有明确绑定实际scenario_inputs。
 - `research_batch.py` 在rule_version改变但输入hash相同时仍可UNCHANGED。
-- G3来源为旧case状态，需明确本次计算和人工研究批准的绑定；不能自动批准。
+- G3来源为旧case状态，需与本次计算绑定；正式人工研究批准归属 M3，M1 不自动批准，也不把未批准状态作为研究工作台阻断项。
 - 三公司仍无通过生产验收的估值；Distribution为PARTIAL。
 - 原Excel当前Hash与历史冻结不同，必须重新取当前源Hash保护人工区，不回退用户工作。
 
@@ -43,7 +43,7 @@ Stage A、P0/P0.5、三公司工程/Excel MVP、C0-C3 保留冻结，不重做�
 建立版本化input descriptor -> typed RunSpec adapter；包含security/profile、Facts、Assumptions、ResearchCase、distribution、quote、validity/event scan、源Hash与信息截止日。
 校正日期/可用时间、实际计算假设映射、规则/模型/解析器/Profile/扫描水位的fingerprint失效；区分report_period、research_as_of、valuation_date、available_at、computed_at。
 坏descriptor与未知Profile在单公司边界隔离，不能在构建整批前抛错终止所有公司，也不能套默认模型。
-G0-G2 -> 合法计算 -> G3绑定本次结果/批准记录；研究未批准时继续显示边界，不能以模型算出了数就通过G3。
+G0-G2 -> 合法计算 -> G3绑定本次结果与后续批准记录；M1 只允许 `conditional_research_only`，正式 G3 批准和事件材料性复核归属 M3/M5，不能以模型算出数值自动升级研究状态。
 保留原三公司快照，先通过跨公司/跨版本/跨日期/未来数据/更正/规则变化回归再扩大真实样本。
 
 ### W3 真实研究与6家公司可见闭环
@@ -103,7 +103,7 @@ LOW Confidence的有界研究可以展示，但不得直接升为价格吸引或
 ## 执行与停止条件
 
 持续推进M1所有可独立完成的工作包，不在adapter或unit tests完成时结束。每批有研究/产品增量与审查。
-明确分别报告Engineering、Research、Valuation、Dividend、Current Data、Price Assessment、Publication；外部等待标PENDING_EXTERNAL_DATA，人工复核标PENDING_HUMAN_REVIEW，不污染无关工程状态。
+明确分别报告Engineering、Research、Valuation、Dividend、Current Data、Price Assessment、Publication；外部等待标PENDING_EXTERNAL_DATA。M1 范围内机器可验证结论用 DONE/PARTIAL；G3 与事件材料性等后续决策复核记录为 deferred_human_review，不阻塞当前研究工作台，也不污染无关工程状态。
 遇到外部源不可用、用户文件占用或自然时间不足时，完成其余独立工作，保存证据与重开条件；不忙等、不伪造、不自动扩范围。真实验收未满足只能PARTIAL，不能标Goal achieved。
 遇到真实不可恢复数据风险/生产权限需求，停止相关高风险动作并说明所需授权，继续其他安全工作。
-全部验收完成后更新execution-status，客观评估成熟度/剩余限制，停止M1。不要自动开始M2，也不要宣称初步真实投资就绪；该称号须通过LONG-TERM-GOAL的M6。
+M1 机器验收完成后更新execution-status，客观评估成熟度/剩余限制，停止M1。不要自动开始M2，也不要宣称初步真实投资就绪；该称号须通过LONG-TERM-GOAL的M6。

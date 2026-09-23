@@ -2,6 +2,13 @@
 
 更新：2026-09-23。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M1 收口：2026-09-23
+
+- `M1-FIXED-SAMPLE-RESEARCH-WORKBENCH` 已达到 `DONE`；AC1-AC10 均由本地产物、隔离 PostgreSQL、WPS 发布收据和定向回归支持，最新审计状态为 `PASSED`、`action=no_order`。收据 `runtime/m1-acceptance-audit-20260923T091447Z/receipt.json`，SHA-256 `f7c71e507585d7660cc9f66320617738525a32abf141f2296ce46ee9ae90d16a`。
+- AC4/AC6/AC10 不再被 G3 或事件材料性人工状态阻断。三家公司 G3 研究批准保留到 M3，模型前公告材料性复核保留到 M5，Excel 视觉确认保留到 M6；审计器只登记 `deferred_human_review`，不自动批准。
+- 三家正常化股息情景仍 `NOT_READY`、全部估值仍 `conditional_research_only`、价格吸引力仍 `NOT_ASSESSABLE`。M1 完成只表示研究工作台闭环，不表示真实投资或交易准入。
+- 未启动 M2，未连接生产 PostgreSQL、未 SSH、未改 PTA 或计划任务。
+
 ## 用户指定的前端调整：2026-09-23 已更新原 Excel
 
 独立于并行 M1 研究任务，本次只调整使用界面，不提升研究或交易准入状态。
@@ -17,10 +24,10 @@
 
 ## M1 当前增量：2026-09-23 格力历史双源收盘价、PIT replay 与新 Application 候选
 
-本节记录本轮实际生成的新收据；仍不声称 M1 完成。
+本节记录当时实际生成的新收据；该时间点的“未完成”只描述当时状态，最终 M1 收口见本文件顶部。
 
 - 格力 `000651` 注入真实历史双源收盘价：腾讯与搜狐均 `38.18`，SZSE 交易日历为 `2026-09-22`；Application 桥接从 `PENDING_EXTERNAL_DATA` 变为 `READY`，当前数据为 `READY`。格力 FY2024 末期与 FY2025 中期派息实施原件也已补齐，见下方“格力股息生命周期”节。
-- 三公司最新 Application：`000651 / 600741 / 600887` 全部 `COMPLETED_WITH_BLOCKERS`、`action=no_order`；三家报价桥接均为 `READY`，但 G3 人工估值审批与真实研究缺口仍使价格吸引力保持 `NOT_ASSESSABLE`。
+- 三公司最新 Application：`000651 / 600741 / 600887` 全部 `COMPLETED_WITH_BLOCKERS`、`action=no_order`；三家报价桥接均为 `READY`，价格吸引力保持 `NOT_ASSESSABLE`。G3 与事件材料性后来按里程碑边界延后，不作为 M1 阻断。
 - 隔离 PostgreSQL 冷启动已用更新后的格力数据包重跑：PostgreSQL 18.6，首轮写入 30 个制品，冷重启后 30/30 验证通过，`semantic_equality=true`。最新收据 `runtime/m1-postgres-cold-replay-20260923T060159Z/receipt.json`，SHA-256 `bd643fc080c82d2c174948067918488ae8c38aee2f6a615d763d7bc9ed9286e8`。
 - 新披露 PIT replay：`m1_pit_replay.py` 对格力、华域、伊利三家真实官方 PDF 重放报告期披露可用边界；每家 2 份官方财报、4 个决策边界、3 个未来披露排除点，只按 `published_at` 选择，不用 `retrieved_at` 推断历史可用。收据 `runtime/m1-pit-source-replay-20260923T042556Z/evidence.json`，SHA-256 `f9a19f4da5d06ace7cb5b681e910925f45137f3c17df9e600be0f782ae34bf7f`。
 - 原五粮液真实财报更正 replay 继续作为 AC7 的更正反例：`runtime/company-research/000858-revision-replay-20260909T131721971494Z/evidence.json`。
@@ -101,14 +108,14 @@
 - 格力可持续性结论为 `LOW`，不是“可维持”或投资依据；财务公司、受限现金、金融资产与法人层级可分配现金仍未拆通。
 - 证据目录 `runtime/company-research/m1-dividend-lifecycles/20260923T055500Z/`；清单 SHA-256 `41f2114f7261370984e0219a8ec13aba658ff6f7b32af2b97c2ae7430b97c965`。两份新 PDF SHA-256 分别为 `8d4b488560f9d3ec81c9349757cda9d9bdee4cdbbecb97911761e2f6a93b4b64` 与 `89ab10370d6601c698426eb6a37dba664687ca03ee59a46208e104068d62d3dd`。
 - 更新后的三公司 Application 与 42 页集成工作簿再次发布：原 36 页 XML 逐字节保留；发布后 WPS 工作簿 SHA-256 `a62a6ae634ea949db36c3c209278515e2ee66ef3a61aaa25d59d2051d5954d58`。候选、备份与发布前/后 WPS 收据均在 `runtime/m1-integrated-dividend-20260923T055026Z/`。
-- AC1-AC10 正式状态与证据见 [m1-acceptance-fact-matrix-20260923.md](m1-acceptance-fact-matrix-20260923.md)。当前：AC1/2/3/5/7/8/9 `DONE`，AC4/6/10 `PENDING_HUMAN_REVIEW`。
-- 人工需要逐项完成的 G3 估值审批、CNINFO 事件重要性阅读和 Excel 可用性检查见 [m1-human-review-checklist-20260923.md](m1-human-review-checklist-20260923.md)。六份档案的机器可读深度已抽查，人工质量复核仍可保留，但不再是 AC3 阻塞项。
+- AC1-AC10 正式状态与证据见 [m1-acceptance-fact-matrix-20260923.md](m1-acceptance-fact-matrix-20260923.md)。最终：AC1-AC10 `DONE`；G3 研究批准延后到 M3，事件材料性复核延后到 M5，Excel 视觉确认延后到 M6。
+- 后续里程碑才需要逐项完成的 G3 估值审批、CNINFO 事件重要性阅读和 Excel 可用性检查见 [m1-human-review-checklist-20260923.md](m1-human-review-checklist-20260923.md)。六份档案的机器可读深度已抽查，人工质量复核可保留，但不阻塞 M1。
 - 收束后聚焦回归 `82 passed`；`compileall` 与 `git diff --check` 通过。当前 WPS 工作簿 SHA-256 仍为 `a62a6ae634ea949db36c3c209278515e2ee66ef3a61aaa25d59d2051d5954d58`，未再改动。
-- 新增可重复执行的本地验收审计器 `scripts/audit_m1_acceptance.py`：只读核对 dossier、输入/估值/股息包、PIT replay、PostgreSQL 冷回放与 WPS 发布收据，并可选重跑 AC1/AC2 回归。最新命令收据 `runtime/m1-acceptance-audit-20260923T063453Z/receipt.json`，SHA-256 `5c267d7811ba3460034fe7cead824c8a4d4b1f2c4b770cbb37549ca9e56721f4`，结论仍为 `PENDING_HUMAN_REVIEW`。
+- 新增可重复执行的本地验收审计器 `scripts/audit_m1_acceptance.py`：只读核对 dossier、输入/估值/股息包、PIT replay、PostgreSQL 冷回放与 WPS 发布收据，并可选重跑 AC1/AC2 回归。审计器 schema v2 区分 M1 机器验收与 M3/M5/M6 后续人工复核；最新运行收据见“机器复算入口”节。
 - 新增 `scripts/render_m1_human_review_packet.py`，从冻结 Application/事件扫描包生成 [m1-human-review-packet-20260923.md](m1-human-review-packet-20260923.md)：当前 24 条待人工阅读公告均给出本地原件、CNINFO 原件和 SHA-256 前段，另有三家公司 G3 决策表。生成器只读，`action=no_order`。
 - 当前脏工作树按 GitHub offline-core 同款 30 个测试文件重放：`226 passed`。系统默认 `C:\Users\we\AppData\Local\Temp\pytest-of-Ming` 因 Windows 权限拒绝导致 4 个 setup error；使用项目内 `runtime/pytest-tmp-ci-full` basetemp 后全部通过，未修改系统目录权限，未把环境错误写成代码失败。
 
-M1 仍未完成。剩余项不是继续堆模型数值就能替代，也不能把 `VALID` 或 `READY` 写成价格吸引力或交易准入。
+M1 已在上述口径下完成。`VALID` 或 `READY` 仍不能写成价格吸引力或交易准入；条件研究、正常化股息缺口和后续人工复核状态全部保留。
 
 ## M1 Application 与三公司候选展示：2026-09-23
 

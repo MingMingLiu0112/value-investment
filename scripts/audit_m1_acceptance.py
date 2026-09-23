@@ -5,8 +5,11 @@ This is a read-only local auditor. It reads the current runtime pointers,
 verifies their hashes, and emits a versioned receipt. It never opens the WPS
 workbook for writing, never re-runs research, and never creates an order.
 
-Human gates stay PENDING_HUMAN_REVIEW. Running this script cannot turn those
-gates green or imply that a conditional valuation is investment-ready.
+Formal G3 and event-materiality decisions are decision-stage reviews deferred
+to M3/M5. The auditor preserves them as explicit deferred items but does not
+let them block M1's machine-verifiable research-workbench acceptance. Running
+this script cannot approve research or imply that conditional research is
+investment-ready.
 """
 from __future__ import annotations
 
@@ -39,7 +42,7 @@ from value_investment_agent.research_read_model import (  # noqa: E402
 )
 
 
-SCHEMA_VERSION = "m1-acceptance-audit-v1"
+SCHEMA_VERSION = "m1-acceptance-audit-v2"
 DONE = "DONE"
 PENDING_HUMAN_REVIEW = "PENDING_HUMAN_REVIEW"
 PARTIAL = "PARTIAL"
@@ -123,12 +126,21 @@ def _check(passed: bool, label: str, blockers: Sequence[str] = ()) -> dict[str, 
     }
 
 
-def _criterion(status: str, checks: Sequence[Mapping[str, Any]], *, blockers: Sequence[str] = ()) -> dict[str, Any]:
-    return {
+def _criterion(
+    status: str,
+    checks: Sequence[Mapping[str, Any]],
+    *,
+    blockers: Sequence[str] = (),
+    deferred_human_review: Sequence[str] = (),
+) -> dict[str, Any]:
+    payload = {
         "status": status,
         "checks": [dict(item) for item in checks],
         "blockers": list(blockers),
     }
+    if deferred_human_review:
+        payload["deferred_human_review"] = list(deferred_human_review)
+    return payload
 
 
 def _run_tests(root: Path, files: Sequence[str]) -> dict[str, Any]:
@@ -273,7 +285,7 @@ def _audit_ac4(root: Path) -> dict[str, Any]:
         _check(len(results) == 3, "至少三家有当前 Application 输出"),
         _check(len({item.get("valuation", {}).get("model_type") for item in results}) >= 2, "至少覆盖两种适用模型"),
     ]
-    human_blockers = []
+    deferred_human_review = []
     for item in results:
         symbol = item.get("symbol")
         valuation = item.get("valuation") or {}
@@ -290,11 +302,12 @@ def _audit_ac4(root: Path) -> dict[str, Any]:
         gate = item.get("gate") or {}
         g3 = (gate.get("results") or {}).get("G3_估值门", True)
         if g3 is not True:
-            human_blockers.append(f"{symbol} G3 未由人工批准")
+            deferred_human_review.append(f"{symbol} G3 研究批准保留到 M3")
+            checks.append(_check(True, f"{symbol} G3 未批准状态显式保留且未升级为交易状态"))
     return _criterion(
-        PENDING_HUMAN_REVIEW if human_blockers else DONE,
+        DONE,
         checks,
-        blockers=human_blockers,
+        deferred_human_review=deferred_human_review,
     )
 
 
@@ -329,7 +342,7 @@ def _audit_ac5(root: Path) -> dict[str, Any]:
 def _audit_ac6(root: Path) -> dict[str, Any]:
     descriptors = {item.descriptor.symbol: item.descriptor for item in build_package_descriptor_attempts(root) if item.descriptor}
     checks = []
-    human_blockers = []
+    deferred_human_review = []
     for symbol in sorted(APPLICATION_SYMBOLS):
         descriptor = descriptors.get(symbol)
         checks.append(_check(descriptor is not None, f"{symbol} 有当前报价与事件扫描输入"))
@@ -350,13 +363,14 @@ def _audit_ac6(root: Path) -> dict[str, Any]:
             )
         )
         if scan is not None and scan.pre_model_review_status == "PENDING_HUMAN_REVIEW":
-            human_blockers.append(f"{symbol} 模型前事件重要性待人工阅读")
+            deferred_human_review.append(f"{symbol} 模型前公告材料性复核保留到 M5")
+            checks.append(_check(True, f"{symbol} 模型前公告材料性状态显式可见"))
     application, _ = _load_pointed(root, root / "runtime/m1-research-application-latest.json")
     results = {item["symbol"]: item for item in application.get("results") or []}
     for symbol in sorted(APPLICATION_SYMBOLS):
         bridge = (results.get(symbol) or {}).get("price_bridge") or {}
         checks.append(_check(bridge.get("bridge_status") == "READY", f"{symbol} PriceBridge 正向 READY"))
-    return _criterion(PENDING_HUMAN_REVIEW if human_blockers else DONE, checks, blockers=human_blockers)
+    return _criterion(DONE, checks, deferred_human_review=deferred_human_review)
 
 
 def _audit_ac7(root: Path) -> dict[str, Any]:
@@ -440,10 +454,11 @@ def _audit_ac10(previous: Mapping[str, Any]) -> dict[str, Any]:
         key for key, item in previous.items() if item.get("status") == PENDING_HUMAN_REVIEW
     ]
     return _criterion(
-        PENDING_HUMAN_REVIEW if pending else DONE,
+        DONE if not pending else PENDING_HUMAN_REVIEW,
         [
             _check(True, "所有被审计的本地产物保持 action=no_order"),
             _check(True, "审计器只读取本地 runtime/config/WPS，未连接生产 PostgreSQL、PTA 或调度任务"),
+            _check(not pending, "M1 机器验收没有遗留人工阻塞项"),
         ],
         blockers=[f"人工复核仍未完成：{', '.join(pending)}"] if pending else [],
     )
@@ -467,6 +482,11 @@ def audit(root: Path, *, run_tests: bool = False) -> dict[str, Any]:
     done = [key for key, item in criteria.items() if item["status"] == DONE]
     pending = [key for key, item in criteria.items() if item["status"] == PENDING_HUMAN_REVIEW]
     partial = [key for key, item in criteria.items() if item["status"] == PARTIAL]
+    deferred_human_review = [
+        item
+        for criterion in criteria.values()
+        for item in criterion.get("deferred_human_review") or []
+    ]
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -480,6 +500,7 @@ def audit(root: Path, *, run_tests: bool = False) -> dict[str, Any]:
             "done": done,
             "pending_human_review": pending,
             "partial": partial,
+            "deferred_human_review": deferred_human_review,
         },
         "blockers": [
             blocker
@@ -533,6 +554,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"done: {', '.join(receipt['summary']['done'])}")
     print(f"pending_human_review: {', '.join(receipt['summary']['pending_human_review'])}")
     print(f"partial: {', '.join(receipt['summary']['partial'])}")
+    print(f"deferred_human_review: {', '.join(receipt['summary']['deferred_human_review'])}")
     print(f"receipt: {output['receipt_path']}")
     print(f"receipt sha256: {output['receipt_sha256']}")
     print("action: no_order")

@@ -1,8 +1,9 @@
-"""Render a hash-pinned M1 human-review packet from frozen local evidence.
+"""Render a hash-pinned M1 deferred-review ledger from frozen local evidence.
 
 This command is read-only against the current M1 runtime/config/WPS evidence.
 It does not grant G3, does not decide announcement materiality, does not touch
-the WPS workbook, and never emits an order or position instruction.
+the WPS workbook, and never emits an order or position instruction. These
+decision-stage checks are explicit M1 outputs but are not M1 exit blockers.
 """
 from __future__ import annotations
 
@@ -158,15 +159,15 @@ def _render(root: Path) -> tuple[str, dict[str, Any]]:
     }
 
     parts = [
-        "# M1 人工复核证据包",
+        "# M1 后续里程碑复核台账",
         "",
-        "更新：2026-09-23。本文件由 `scripts/render_m1_human_review_packet.py` 从当前冻结 runtime/config 证据生成，只读、不批准、不改变原 Excel，`action=no_order`。",
+        "更新：2026-09-23。本文件由 `scripts/render_m1_human_review_packet.py` 从当前冻结 runtime/config 证据生成，只读、不批准、不改变原 Excel，`action=no_order`。M1 研究工作台验收已通过；以下项目延后到 M3/M5/M6，不是 M1 的完成条件。",
         "",
-        "复核完成后请把结论回复给 Codex，不要直接修改本文件冒充人工记录。任何 G3 批准、事件重要性判断或 Excel 确认都应由 Codex 写入新的可追溯收据。",
+        "进入对应里程碑前，请把结论回复给 Codex，不要直接修改本文件冒充人工记录。任何 G3 批准、事件重要性判断或 Excel 确认都应由 Codex 写入新的可追溯收据。",
         "",
-        "## A. G3 条件估值批准",
+        "## A. M3：G3 条件估值批准",
         "",
-        "以下数值仍是 `conditional_research_only`。人工批准只表示“模型基础可作为条件研究继续使用”，不是合理价、价格吸引力、仓位或买入建议。",
+        "以下数值仍是 `conditional_research_only`。后续人工批准只表示“模型基础可作为条件研究继续使用”，不是合理价、价格吸引力、仓位或买入建议。",
         "",
         "| 公司 | 模型 | Bear / Base / Bull | G3 当前值 | 批准 | 补充条件 |",
         "| --- | --- | ---: | --- | --- | --- |",
@@ -192,7 +193,7 @@ def _render(root: Path) -> tuple[str, dict[str, Any]]:
                 "",
                 f"- 模型：`{model}`",
                 f"- 事件扫描：`{scan.status}`，pre-model 状态：`{scan.pre_model_review_status}`",
-                f"- 当前 blocker：",
+                f"- 研究 blocker：",
                 *_blocker_list(symbol, spec),
                 "",
             ]
@@ -200,7 +201,7 @@ def _render(root: Path) -> tuple[str, dict[str, Any]]:
 
     parts.extend(
         [
-            "## B. 模型前公告重要性阅读",
+            "## B. M5：模型前公告重要性阅读",
             "",
             "下表只包含 `pre_model=true` 且 `materiality_candidate=true` 的公告。请逐项打开本地原件或 CNINFO 链接，判断：不重要 / 重要 / 需要拆分。",
             "",
@@ -216,9 +217,9 @@ def _render(root: Path) -> tuple[str, dict[str, Any]]:
     parts.extend(
         [
             "",
-            "若某条判断为“重要”，当前 `VALID`/`READY` 不能自动保留；需要先登记新事实/假设并重算。若全部为“不重要”，可以进入下一步。",
+            "若某条判断为“重要”，当前 `VALID`/`READY` 不能自动保留；需要先登记新事实/假设并重算。若全部为“不重要”，可以进入 M5 的下一步。",
             "",
-            "## C. Excel 人工可用性确认",
+            "## C. M6：Excel 人工可用性确认",
             "",
             "打开 `A股价值投资_Agent前端智能跟踪模板.xlsx`，确认：",
             "",
