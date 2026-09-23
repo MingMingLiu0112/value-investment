@@ -2,6 +2,27 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M3 决策卡可重复验收审计与 M2 机器门复核：2026-09-24
+
+本节记录当前 HEAD 的机器证据，不把人工验收改写成已完成。M2 与 M3 仍均为
+`PARTIAL`，所有动作保持 `action=no_order`。
+
+- 新增 `m3_decision_acceptance_audit.py`、
+  `scripts/audit_m3_decision_acceptance.py` 和
+  `tests/test_m3_decision_acceptance_audit.py`，并纳入 GitHub Core Research Gate。
+- M3 审计器固定冻结输入、M1 预登记、候选工作簿、manifest、WPS 副本与 WPS
+  只读收据；重建三张负向卡，验证 deterministic replay、逐卡来源 Hash 绑定和
+  原 55 页生产工作簿未改变。
+- 机器门 `m3c1-m3c6` 全部 `DONE`；`m3c7` 保持
+  `PENDING_HUMAN_REVIEW`，等待用户阅读三张卡并复述理由与反证。
+- 收据：`runtime/m3-decision-acceptance-audit-20260923T190024Z/receipt.json`，
+  SHA-256 `2bb49e94df6740330d2713dee03eec1c44bb2be753f3afbbd40b1560797c8259`。
+- M3 定向回归 29 passed；本次同时以全量离线回归复核 M2：AC1-AC7、AC11 为
+  `DONE`，AC8/AC9/AC10/AC12 为 `PENDING_HUMAN_REVIEW`。全量
+  2180 passed、6 skipped、18 warnings、0 failed。
+- 未修改原 55 页生产工作簿、未写入 `00_决策复核`、未连接生产 PostgreSQL、
+  未触碰服务器 PTA/Web App，也未创建任何 BUY/ADD/仓位或订单。
+
 ## M3.2 Decision Card 只读模型与独立 Excel 候选：2026-09-24
 
 本节记录 M3 决策域的第一批可查看离线工程。M2 与 M3 均仍为 `PARTIAL`；本轮未写入

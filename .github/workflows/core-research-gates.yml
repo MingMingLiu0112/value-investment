@@ -44,6 +44,7 @@ jobs:
           tests/test_decision_read_model.py
           tests/test_m3_decision_application.py
           tests/test_m3_decision_card_workbook.py
+          tests/test_m3_decision_acceptance_audit.py
           tests/test_unified_fcff_valuation.py
           tests/test_residual_income_equity_valuation.py
           tests/test_cyclical_normalized_valuation.py

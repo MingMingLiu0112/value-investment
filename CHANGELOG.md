@@ -1,5 +1,41 @@
 # Changelog
 
+## v2026.09.24-m3-decision-acceptance-audit
+
+### Release Scope
+
+为 M3 非个人化 Decision Card 增加可重复机器验收入口，同时复核 M2 AC1-AC12。
+本版本不生成 Entry、Journal、Consistency、个人组合或订单，不改原 55 页生产工作簿。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/m3_decision_acceptance_audit.py`，固定冻结 M1
+  输入、预登记、候选工作簿、manifest、WPS 副本、WPS 只读收据和原生产表 Hash。
+- 重放三张真实负向卡并检查确定性、来源 Hash 绑定、`no_order`、无正向状态、
+  无禁止的交易/仓位文本，以及原 55 页生产表未改变。
+- 新增 `scripts/audit_m3_decision_acceptance.py --run-tests` 和 3 项回归测试，
+  并纳入 GitHub Core Research Gate。
+- 机器门 `m3c1-m3c6` 为 `DONE`，`m3c7` 明确保持
+  `PENDING_HUMAN_REVIEW`；Checkpoint B 仍需用户实际阅读并复述三张卡。
+
+### Verification
+
+- M3 定向回归：29 passed。
+- M2 AC1-AC12 全量离线复核：AC1-AC7、AC11 `DONE`；
+  AC8、AC9、AC10、AC12 `PENDING_HUMAN_REVIEW`。
+- 仓库全量离线回归：2180 passed、6 skipped、18 warnings、0 failed。
+- M3 审计收据：`runtime/m3-decision-acceptance-audit-20260923T190024Z/receipt.json`，
+  SHA-256 `2bb49e94df6740330d2713dee03eec1c44bb2be753f3afbbd40b1560797c8259`。
+- 独立 M3 候选继续为 15,102 bytes，SHA-256
+  `589f19ef9e3d235401814e98450475d657c3e981b33637337ab5da9d33fb307d`；
+  原生产工作簿继续为
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+
+### Acceptance Boundary
+
+- M2 与 M3 均继续保持 `PARTIAL`；本次没有新增正向投资结论。
+- 未写入原工作簿 `00_决策复核`，也未发布任何个人化决策卡。
+
 ## v2026.09.24-m3-decision-card-read-model
 
 ### Release Scope
