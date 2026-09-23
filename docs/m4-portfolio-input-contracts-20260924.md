@@ -44,13 +44,11 @@ IPS 至少需要用户确认：
 
 ## 尚未实现
 
-- `PositionGuidance`：分层仓位、共同预算和容量竞争；
-- `DividendIncomeProjection`：已到账、已宣告、Forward、Normalized 和税费情景；
 - 私有数据持久化、加密备份和真实账户导入；
 - 原 Excel 的 M4 展示页。
 
-`PortfolioRiskAssessment` 已在 `v2026.09.24-m4-portfolio-risk-assessment` 中完成，
-但真实个人化风险报告仍需用户确认 IPS 与持仓后生成。
+`PortfolioRiskAssessment`、`PositionGuidance` 和 `DividendIncomeProjection` 已在
+同日后续批次完成；真实个人化风险、仓位和收入报告仍需用户确认 IPS 与持仓后生成。
 
 这些项目只在 M3 人工决策链稳定且用户提供真实 IPS/持仓后继续，本轮不提前构造
 个人化结论。

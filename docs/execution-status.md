@@ -2,6 +2,24 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M4 分层仓位与股息收入投影：2026-09-24
+
+本节记录 M4 的第二批非个人化领域工程与模拟 Excel 候选。M2 仍为
+`PENDING_HUMAN_REVIEW`，M3、M4 仍为 `PARTIAL`；所有动作保持 `no_order`。
+
+- 新增 `position_guidance.py`：人工确认的 Starter/Normal/Max 上限、共同预算、
+  行业/周期限制、停止加仓和减仓复核条件；不输出目标仓位、仓位大小或订单。
+- 新增 `dividend_income_projection.py`：已到账、已宣告、Forward、Normalized
+  四种口径，普通/特别分红分开，未结算税费保持未知，特别分红不自动年化。
+- 新增 `m4_guidance_income_workbook.py`、模拟 fixture、构建脚本与 WPS 校验脚本，
+  并纳入 GitHub Core Research Gate。
+- 独立候选 5 页、4 个仓位候选、4 个股息口径，固定 `action=no_order`；字节数
+  11,504，SHA-256
+  `764f8d201dfc798012a6e27f9080d927d2b6f7b0ada6bb53bf947c6a5ff2e45e`。
+- M4 合同/风险/仓位/股息/工作簿联合定向回归 36 passed；WPS 只读收据为
+  `passed`，WPS 云盘同名副本与仓库候选逐字节一致。
+- 真实 IPS/持仓未提供；未修改原 55 页生产工作簿，也未生成个人化建议。
+
 ## M4 组合风险与集中度评估：2026-09-24
 
 本节记录 M4 非个人化风险域与模拟 Excel 候选。M2 为 `PENDING_HUMAN_REVIEW`，

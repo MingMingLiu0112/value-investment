@@ -1,5 +1,41 @@
 # Changelog
 
+## v2026.09.24-m4-position-guidance-income
+
+### Release Scope
+
+建立 M4 非个人化分层仓位边界与四口径股息收入投影，并发布一个显式模拟的 5 页
+Excel 候选。本版本不读取真实 IPS/持仓，不生成目标仓位、仓位大小或订单。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/position_guidance.py`：
+  - 人工确认的 Starter/Normal/Max 上限，禁止使用默认 20%；
+  - 候选前置条件、组合共同预算、行业/周期限制和停止加仓/减仓复核条件；
+  - 多个候选争用现金时显式标记 `BUDGET_CONFLICT`，不代替人工分配。
+- 新增 `src/value_investment_agent/dividend_income_projection.py`：
+  - 已到账、已宣告、Forward、Normalized 四种收入基础；
+  - 普通/特别分红分开，特别分红不进入 Forward/Normalized；
+  - 税费只在批次取得、登记和处置日期完整时计算，未结算保持未知。
+- 新增 `src/value_investment_agent/m4_guidance_income_workbook.py`，生成 5 页
+  候选；新增 fixture、构建脚本、WPS 校验脚本和 18 项定向回归并纳入 CI。
+
+### Verification
+
+- M4 合同/风险/仓位/股息/工作簿联合定向回归：36 passed。
+- 模拟候选为 5 页、4 个仓位候选、4 个股息口径，固定 `action=no_order`；
+  字节数 11,504，SHA-256
+  `764f8d201dfc798012a6e27f9080d927d2b6f7b0ada6bb53bf947c6a5ff2e45e`。
+- WPS 只读打开、页序、公式错误、模拟标签、行数和 `no_order` 检查通过；
+  WPS 云盘同名副本与仓库候选逐字节一致。
+- 未修改原 55 页生产工作簿，未读取真实账户、现金、IPS、持仓或交易记录。
+
+### Acceptance Boundary
+
+- M2 当前为 `PENDING_HUMAN_REVIEW`，M3、M4 均继续保持 `PARTIAL`。
+- 该候选只是非个人化工程演示；真实组合报告仍需用户确认真实 IPS/持仓后另出
+  私有版本，不得据此自动调仓或交易。
+
 ## v2026.09.24-m4-portfolio-risk-assessment
 
 ### Release Scope

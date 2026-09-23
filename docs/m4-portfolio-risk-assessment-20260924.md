@@ -35,12 +35,13 @@
 
 ## 尚未实现
 
-- `PositionGuidance`：Starter/Normal/Max 与停止加仓/减仓条件；
-- `DividendIncomeProjection`：已到账、已宣告、Forward、Normalized 和税费情景；
 - 私有持久化、加密备份、真实账户导入和原 Excel M4 展示。
 
 这些项目继续按总Goal推进；真实 IPS/持仓仍由用户确认后提供，系统不猜测风险偏好
 或默认 20% 仓位。
+
+`PositionGuidance` 与 `DividendIncomeProjection` 已在
+`v2026.09.24-m4-position-guidance-income` 后续批次完成。
 
 ## 验证
 

@@ -137,5 +137,9 @@ BusinessQuality/CapitalAllocation 先随 M1 真实研究建立最小证据合同
 同日增加 M4 非个人化 `PortfolioRiskAssessment`：按人工确认 IPS 与已对账快照计算
 当前权重、行业/周期暴露、现金储备、共同因子和流动性风险；只报告当前组合事实，
 不产生 PositionGuidance、目标仓位或订单。公开工作簿只接受显式模拟评估。
+同日继续增加 `PositionGuidance` 与 `DividendIncomeProjection`。前者要求人工确认的
+Starter/Normal/Max 上限，仅输出上限、剩余空间、共同预算冲突、停止加仓和减仓复核
+条件；后者区分已到账、已宣告、Forward、Normalized，普通/特别分红和税费状态，
+特别分红不自动年化。两个领域均只接受显式模拟公开工作簿，真实私人数据不得入库。
 缺少 Portfolio 输入不能自动批准 BUY/ADD；已证实的 Thesis Breaker 风险提示不能因缺价格而消失。旧数据未知不是 HOLD，更不是自动卖出。
 Entry 是用户确认行为的不可变研究基线，不是系统生成的成交；无历史理由只能标记事后重建。MarketContext 不直接修改内在价值。
