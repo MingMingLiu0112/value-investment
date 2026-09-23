@@ -15,12 +15,19 @@ R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
 P = 'http://schemas.openxmlformats.org/package/2006/relationships'
 C = 'http://schemas.openxmlformats.org/package/2006/content-types'
 NS = {'m': M, 'r': R, 'p': P}
+REPRODUCIBLE_ZIP_DATE = (1980, 1, 1, 0, 0, 0)
 ET.register_namespace('', M)
 ET.register_namespace('r', R)
 
 
 def digest(data):
     return hashlib.sha256(data).hexdigest()
+
+
+def reproducible_info(info):
+    info = deepcopy(info)
+    info.date_time = REPRODUCIBLE_ZIP_DATE
+    return info
 
 
 def xml(data):
@@ -339,7 +346,7 @@ def graft(source, addon, output, expected):
                 # writestr updates ZipInfo offsets; never mutate the source index.
                 out.writestr(deepcopy(item), replacements.get(item.filename, src.read(item.filename)))
             for name, data in copied.items():
-                info = deepcopy(new.getinfo(copied_source_names[name]))
+                info = reproducible_info(new.getinfo(copied_source_names[name]))
                 info.filename = name
                 out.writestr(info, data)
         with ZipFile(output) as result:
