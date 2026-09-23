@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 import hashlib
 import json
@@ -64,6 +64,7 @@ from .m2_opportunity_discovery import (
 
 
 FINANCIAL_MODEL_TYPES = frozenset({"bank", "insurer", "broker", "financial_group"})
+CHINA = timezone(timedelta(hours=8))
 CYCLICAL_SECTORS = frozenset(
     {
         "煤炭",
@@ -170,7 +171,9 @@ def build_universe_snapshot(
     evidence_refs: Iterable[EvidenceReference] = (),
 ) -> UniverseSnapshot:
     fetched_at = official_payload.get("fetched_at")
-    as_of = _date(fetched_at) if fetched_at else date.today()
+    if not fetched_at:
+        raise ValueError("Official universe payload requires fetched_at")
+    as_of = _date(fetched_at)
     return UniverseSnapshot(
         schema_version=M2_SCHEMA_VERSION,
         as_of=as_of,
@@ -269,21 +272,44 @@ def _latest_points(points: Iterable[Mapping[str, Any]]) -> dict[str, list[dict[s
     return dict(by_symbol)
 
 
+def _point_available_at(point: Mapping[str, Any], evaluation_at: datetime) -> datetime | None:
+    value = point.get("available_at") or point.get("fetched_at") or point.get("created_at")
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None or parsed > evaluation_at:
+        return None
+    return parsed
+
+
 def build_financial_evidence(
     points: Iterable[Mapping[str, Any]],
     names: Mapping[str, str],
     sectors: Mapping[str, str | None],
     *,
-    evaluation_date: date,
+    evaluation_at: datetime,
 ) -> dict[str, FinancialEvidence]:
     result: dict[str, FinancialEvidence] = {}
     for symbol, symbol_points in _latest_points(points).items():
+        available_points = []
+        available_times = []
+        for point in symbol_points:
+            available_at = _point_available_at(point, evaluation_at)
+            if available_at is None:
+                continue
+            available_points.append(point)
+            available_times.append(available_at)
+        if not available_points:
+            continue
         evaluation = evaluate_financial_quality(
             symbol,
             names.get(symbol),
             sectors.get(symbol),
-            symbol_points,
-            evaluation_date=evaluation_date,
+            available_points,
+            evaluation_date=evaluation_at.date(),
         )
         details = evaluation.calculation_details
         values = details.get("values") or {} if isinstance(details, dict) else {}
@@ -299,10 +325,7 @@ def build_financial_evidence(
             source_ids={
                 str(key): str(value) for key, value in (details.get("source_ids") or {}).items()
             },
-            evidence_date=str(max(
-                (str(point.get("fetched_at") or point.get("created_at") or "") for point in symbol_points),
-                default="",
-            )),
+            evidence_date=max(available_times).isoformat(),
         )
     return result
 
@@ -357,6 +380,14 @@ def _metric(value: Decimal | None) -> str | None:
     return str(value) if value is not None else None
 
 
+def _candidate_data_status(channel: str, price_conflict: bool) -> str:
+    if channel == CHANNEL_QUALITY:
+        return DATA_PARTIAL if price_conflict else DATA_COMPLETE
+    # Cheap screens intentionally omit the deep evidence required for a complete
+    # research claim. A pass therefore remains a data-partial lead.
+    return DATA_PARTIAL
+
+
 def _evidence_refs(
     run_refs: Mapping[str, EvidenceReference],
     *keys: str,
@@ -397,7 +428,7 @@ def build_channel_results(
                 fin.symbol, quote.name, "financial coverage below quality gate", _profile_status(quote), quote_date,
             ))
             continue
-        data_status = DATA_COMPLETE if not quote.price_conflict else DATA_PARTIAL
+        data_status = _candidate_data_status(CHANNEL_QUALITY, quote.price_conflict)
         tier = PRIORITY_A if fin.total_score >= Decimal("75") and data_status == DATA_COMPLETE else PRIORITY_B
         quality_candidates.append(CandidateReason(
             symbol=fin.symbol,
@@ -445,8 +476,8 @@ def build_channel_results(
             continue
         if dividend.declared_yield < policy.dividend_min_yield:
             continue
-        data_status = DATA_COMPLETE if not quote.price_conflict else DATA_PARTIAL
-        tier = PRIORITY_A if dividend.declared_yield >= Decimal("0.05") and data_status == DATA_COMPLETE else PRIORITY_B
+        data_status = _candidate_data_status(CHANNEL_DIVIDEND, quote.price_conflict)
+        tier = PRIORITY_B
         dividend_candidates.append(CandidateReason(
             symbol=dividend.symbol,
             name=quote.name,
@@ -493,7 +524,7 @@ def build_channel_results(
                 quote.symbol, quote.name, "financial-institution profile excluded from general value channel", profile, quote_date,
             ))
             continue
-        data_status = DATA_COMPLETE if not quote.price_conflict else DATA_PARTIAL
+        data_status = _candidate_data_status(CHANNEL_VALUE, quote.price_conflict)
         value_candidates.append(CandidateReason(
             symbol=quote.symbol,
             name=quote.name,
@@ -517,7 +548,7 @@ def build_channel_results(
             evidence_date=quote_date,
             data_status=data_status,
             profile_status=profile,
-            priority_tier=PRIORITY_B if data_status == DATA_COMPLETE else PRIORITY_C,
+            priority_tier=PRIORITY_C,
             candidate_class=CANDIDATE_CLASS_LEAD,
         ))
 
@@ -538,7 +569,7 @@ def build_channel_results(
                 quote.symbol, quote.name, "financial-institution profile excluded from cyclical screening", profile, quote_date,
             ))
             continue
-        data_status = DATA_COMPLETE if not quote.price_conflict else DATA_PARTIAL
+        data_status = _candidate_data_status(CHANNEL_CYCLICAL, quote.price_conflict)
         cyclical_candidates.append(CandidateReason(
             symbol=quote.symbol,
             name=quote.name,
@@ -927,6 +958,10 @@ def build_discovery_receipt(
     policy: M2ScreeningPolicy | None = None,
 ) -> DiscoveryRunReceipt:
     policy = policy or M2ScreeningPolicy()
+    run_date = generated_at.astimezone(CHINA).date()
+    parsed_quote_date = date.fromisoformat(quote_date)
+    if parsed_quote_date > run_date:
+        raise ValueError("quote_date cannot be after receipt as_of")
     universe = build_universe_snapshot(
         official_payload,
         evidence_refs=_evidence_refs(run_refs, "official"),
@@ -955,7 +990,7 @@ def build_discovery_receipt(
         financial_points,
         names,
         sectors,
-        evaluation_date=generated_at.date(),
+        evaluation_at=generated_at,
         ).items()
         if symbol in official_by_symbol
     }
@@ -963,9 +998,9 @@ def build_discovery_receipt(
         symbol: evidence
         for symbol, evidence in build_dividend_evidence(
         parse_eastmoney_dividends(dividend_payload),
-        fetched_at=generated_at,
+        fetched_at=run_refs["dividend"].fetched_at,
         raw_sha256=str(run_refs["dividend"].sha256),
-        known_at=generated_at.date(),
+        known_at=run_date,
         ).items()
         if symbol in official_by_symbol
     }
@@ -997,7 +1032,8 @@ def build_discovery_receipt(
         run_id=run_id,
         rule_version=policy.rule_version,
         generated_at=generated_at,
-        as_of=generated_at.date(),
+        as_of=run_date,
+        quote_date=quote_date,
         action=ACTION_NO_ORDER,
         universe=universe,
         data_health=health,

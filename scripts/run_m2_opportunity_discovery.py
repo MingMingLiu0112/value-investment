@@ -138,6 +138,20 @@ def _collect_official(output_dir: Path, root: Path) -> tuple[dict, EvidenceRefer
     return payload, reference
 
 
+def _retained_run_clock(output_dir: Path) -> tuple[datetime, str, str]:
+    """Recover the original PIT clock before replaying retained inputs."""
+    receipt_path = output_dir / "receipt.json"
+    if not receipt_path.is_file():
+        raise RuntimeError(
+            "--reuse-inputs requires an existing receipt.json; refusing to relabel "
+            "retained inputs with the current clock"
+        )
+    receipt = discovery_receipt_from_payload(
+        json.loads(receipt_path.read_text(encoding="utf-8"))
+    )
+    return receipt.generated_at, receipt.quote_date or receipt.as_of.isoformat(), receipt.run_id
+
+
 def run_once(
     *,
     root: Path,
@@ -147,12 +161,21 @@ def run_once(
     skip_dividend: bool,
     reuse_inputs: bool,
 ) -> dict:
-    now = datetime.now(timezone.utc)
-    run_id = f"m2-{now.astimezone(CHINA).strftime('%Y%m%dT%H%M%S')}Z"
+    wall_now = datetime.now(timezone.utc)
     output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     policy = M2ScreeningPolicy(max_per_channel=max_per_channel)
-    quote_date = now.astimezone(CHINA).date().isoformat()
+
+    if reuse_inputs:
+        retained_generated_at, quote_date, retained_run_id = _retained_run_clock(output_dir)
+        generated_at = retained_generated_at
+        run_id = f"m2-replay-{wall_now.astimezone(CHINA).strftime('%Y%m%dT%H%M%S')}Z"
+        replay_of_run_id = retained_run_id
+    else:
+        generated_at = wall_now
+        quote_date = wall_now.astimezone(CHINA).date().isoformat()
+        run_id = f"m2-{wall_now.astimezone(CHINA).strftime('%Y%m%dT%H%M%S')}Z"
+        replay_of_run_id = None
 
     required_inputs = {
         "official": output_dir / "official-universe.json",
@@ -161,7 +184,12 @@ def run_once(
         "dividend": output_dir / "eastmoney-dividends.json",
         "financial": output_dir / "retained-financial-points.json",
     }
-    if reuse_inputs and all(path.exists() for path in required_inputs.values()):
+    if reuse_inputs:
+        missing_inputs = [name for name, path in required_inputs.items() if not path.exists()]
+        if missing_inputs:
+            raise RuntimeError(
+                "--reuse-inputs requires every retained input: " + ", ".join(missing_inputs)
+            )
         official_path = required_inputs["official"]
         official_payload = json.loads(official_path.read_text(encoding="utf-8"))
         official_fetched = _payload_fetched_at(official_payload, "official")
@@ -250,7 +278,7 @@ def run_once(
                 root=root,
                 source_name="M2 dividend adapter skipped by operator",
                 source_url="internal://m2/dividend-skipped",
-                fetched_at=now,
+                fetched_at=generated_at,
             )
 
         financial_points, financial_export = _load_retained_financial_export(
@@ -282,7 +310,7 @@ def run_once(
     }
     receipt = build_discovery_receipt(
         run_id=run_id,
-        generated_at=now,
+        generated_at=generated_at,
         official_payload=official_payload,
         tencent_payload=tencent_payload,
         sina_payload=sina_payload,
@@ -313,7 +341,7 @@ def run_once(
     )
     replay_build = build_discovery_receipt(
         run_id=run_id,
-        generated_at=now,
+        generated_at=generated_at,
         official_payload=json.loads((output_dir / "official-universe.json").read_text(encoding="utf-8")),
         tencent_payload=json.loads((output_dir / "tencent-market.json").read_text(encoding="utf-8")),
         sina_payload=json.loads((output_dir / "sina-industry-quotes.json").read_text(encoding="utf-8")),
@@ -332,7 +360,9 @@ def run_once(
     wps_result = None
     if wps_dir is not None:
         wps_dir.mkdir(parents=True, exist_ok=True)
-        wps_name = WPS_WORKBOOK_NAME.format(date=now.astimezone(CHINA).strftime("%Y%m%d"))
+        wps_name = WPS_WORKBOOK_NAME.format(
+            date=generated_at.astimezone(CHINA).strftime("%Y%m%d")
+        )
         wps_target = wps_dir / wps_name
         counter = 2
         while wps_target.exists():
@@ -351,7 +381,10 @@ def run_once(
     summary = {
         "run_id": run_id,
         "action": ACTION_NO_ORDER,
+        "generated_at": receipt.generated_at.isoformat(),
         "as_of": receipt.as_of.isoformat(),
+        "quote_date": receipt.quote_date,
+        "replay_of_run_id": replay_of_run_id,
         "rule_version": receipt.rule_version,
         "data_health": receipt.data_health.as_policy(),
         "channel_counts": counts,

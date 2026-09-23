@@ -706,6 +706,7 @@ class DiscoveryRunReceipt:
     evidence_refs: tuple[EvidenceReference, ...]
     coverage_signature: str
     candidate_signature: str
+    quote_date: str | None = None
 
     def __post_init__(self) -> None:
         if self.schema_version != M2_SCHEMA_VERSION:
@@ -714,11 +715,33 @@ class DiscoveryRunReceipt:
         object.__setattr__(self, "rule_version", _required_text(self.rule_version, "rule version"))
         _required_datetime(self.generated_at, "receipt generated_at")
         _required_date(self.as_of, "receipt as_of")
+        if self.quote_date is not None:
+            object.__setattr__(self, "quote_date", _required_text(self.quote_date, "receipt quote date"))
+            try:
+                quote_date = date.fromisoformat(self.quote_date)
+            except ValueError as error:
+                raise ValueError("receipt quote_date must be an ISO date") from error
+            if quote_date > self.as_of:
+                raise ValueError("receipt quote_date cannot be after as_of")
+        else:
+            object.__setattr__(self, "quote_date", None)
         if self.action != ACTION_NO_ORDER:
             raise ValueError("M2 receipt action must remain no_order")
         if set(self.channel_results) != _CHANNELS:
             raise ValueError("M2 receipt must contain all four channel results")
         object.__setattr__(self, "evidence_refs", tuple(self.evidence_refs))
+        if self.universe.as_of > self.as_of:
+            raise ValueError("universe as_of cannot be after receipt as_of")
+        future_evidence = [
+            reference.id
+            for reference in self.evidence_refs
+            if reference.fetched_at > self.generated_at
+        ]
+        if future_evidence:
+            raise ValueError(
+                "evidence fetched_at cannot be after receipt generated_at: "
+                + ", ".join(future_evidence)
+            )
         object.__setattr__(
             self,
             "coverage_signature",
@@ -754,6 +777,7 @@ class DiscoveryRunReceipt:
             "rule_version": self.rule_version,
             "generated_at": self.generated_at.isoformat(),
             "as_of": self.as_of.isoformat(),
+            "quote_date": self.quote_date,
             "action": self.action,
             "universe": self.universe.as_policy(),
             "data_health": self.data_health.as_policy(),
@@ -872,6 +896,7 @@ def discovery_receipt_from_payload(value: Mapping[str, Any]) -> DiscoveryRunRece
         ),
         coverage_signature=str(data.get("coverage_signature") or ""),
         candidate_signature=str(data.get("candidate_signature") or ""),
+        quote_date=str(data.get("quote_date")) if data.get("quote_date") else None,
     )
     if receipt.coverage_signature != coverage_signature(receipt.channel_results):
         raise ValueError("Discovery coverage signature changed during decode")

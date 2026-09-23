@@ -1,5 +1,63 @@
 # Changelog
 
+## v2026.09.23-m2-pit-and-partial-evidence
+
+### Release Scope
+
+加固 M2 W1/W2 共同合同：旧输入冷重放不得重标为当前时间，未来或未知时点的
+证据不得进入历史快照，缺少深研证据的便宜筛选线索不得显示为 `COMPLETE`。
+本版本继续执行 `action=no_order`，不生成估值、BUY、ADD、仓位或订单。
+
+### New Capability
+
+- `DiscoveryRunReceipt` 新增可选 `quote_date` 字段；旧 v2 收据仍可向后兼容读取。
+- 收据构建时拒绝：
+  - `quote_date > as_of`；
+  - `universe.as_of > receipt.as_of`；
+  - 任一 `EvidenceReference.fetched_at > generated_at`。
+- 官方 Universe 缺少 `fetched_at` 时直接失败，不再用系统当前日期补时点。
+- 财务点仅保留带时区、且 `available_at/fetched_at/created_at <= evaluation_at` 的记录；
+  未来或时区未知的点不会进入财务证据。
+- Dividend 证据的 `fetched_at` 使用原始分红输入的实际抓取时间，不再统一盖成运行时间。
+- 非 Quality 通道候选在缺少 FCF/EV-EBIT、正常化利润、派息可持续性等深研证据时统一为
+  `DATA_PARTIAL`；Dividend 最高优先级降为 B，Value/Cyclical 降为 C。
+- `scripts/run_m2_opportunity_discovery.py --reuse-inputs`：
+  - 必须有既有 `receipt.json` 和全部保留输入，否则失败；
+  - 保留原收据的 `generated_at`、`quote_date` 和源 `run_id`；
+  - 新运行使用 `m2-replay-*` ID，并在清单中记录 `replay_of_run_id`；
+  - 不再把旧输入重标为当前日历日。
+
+### Real Replay Evidence
+
+- 输入：`runtime/m2-live-20260923-v2b/` 的真实 5,568 家保留输入。
+- 输出：`runtime/m2-live-20260923-v3/`。
+- 原始时钟保持：`generated_at=2026-09-23T15:12:00.735987+00:00`，
+  `as_of=2026-09-23`，`quote_date=2026-09-23`。
+- `replay_of_run_id=m2-20260923T231200Z`；新 `run_id=m2-replay-20260923T232854Z`。
+- 字节收据重放与原始输入冷重放均一致。
+- 覆盖签名不变：`4e1655de3e55b79bad0b2737cebf893d82049f4c495cf373a3e51344745cf805`。
+- 候选签名更新：`f77fd5f0e139cf0ab283e9aee9fdd2f4f66695071c85816f303c9b31715cbe79`。
+- 通道可见数仍为 Quality 0、Dividend 50、Value 50、Cyclical 50；已核候选 0。
+- 候选数据状态：Quality 无候选；Dividend/Value/Cyclical 全部 `PARTIAL`。
+
+### Artifacts
+
+- 更新 `A股价值投资_Agent前端智能跟踪模板_M2候选_20260923.xlsx`
+  - SHA-256：`95993fa8721d4d333463b8ac48677b1700cbeec98d7eb4aad4bb457385baef6a`
+  - 仍保留后 42 个原工作簿页，`original_parts_unchanged=96`
+  - 已同步到 WPS 云盘独立预览，未替换生产原工作簿
+
+### Verification
+
+- M2、原工作簿候选、Frontend stage 与发布边界定向回归：24 passed。
+- 仓库全量离线回归：2131 passed、6 skipped、18 warnings、0 failed。
+- `git diff --check` 通过。
+
+### Status
+
+`PARTIAL`。本版修复时点重标、未来证据和证据完整度语义，不等于 M2 验收完成；
+预注册抽样、至少三份新发现研究报告、真实 WPS 视觉验收和后续 M3-M7 仍继续。
+
 ## v2026.09.23-m2-lead-verified-original-candidate
 
 ### Release Scope

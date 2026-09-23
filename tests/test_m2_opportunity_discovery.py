@@ -1,6 +1,9 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 import hashlib
+import importlib.util
+import json
+from pathlib import Path
 
 import pytest
 
@@ -16,9 +19,11 @@ from value_investment_agent.m2_market_data import (
 from value_investment_agent.m2_opportunity_discovery import (
     ACTION_NO_ORDER,
     CANDIDATE_CLASS_LEAD,
+    CHANNEL_CYCLICAL,
     CHANNEL_DIVIDEND,
     CHANNEL_QUALITY,
     CHANNEL_VALUE,
+    DATA_COMPLETE,
     DATA_PARTIAL,
     EVALUATION_BUDGET_EXCLUDED,
     EVALUATION_NOT_EVALUATED,
@@ -27,6 +32,15 @@ from value_investment_agent.m2_opportunity_discovery import (
     coverage_signature,
     discovery_receipt_from_payload,
 )
+
+
+ROOT = Path(__file__).resolve().parents[1]
+RUN_SPEC = importlib.util.spec_from_file_location(
+    "run_m2_opportunity_discovery",
+    ROOT / "scripts" / "run_m2_opportunity_discovery.py",
+)
+RUN_M2 = importlib.util.module_from_spec(RUN_SPEC)
+RUN_SPEC.loader.exec_module(RUN_M2)
 
 
 def _sha(value: str) -> str:
@@ -353,3 +367,144 @@ def test_workbook_is_presentation_only_and_contains_channel_sheets(tmp_path):
         for row in overview.iter_rows()
         for cell in row
     )
+
+
+def test_cheap_screen_passes_remain_data_partial_until_deep_evidence_is_verified():
+    receipt = _receipt()
+
+    quality = receipt.channel_results[CHANNEL_QUALITY].candidates[0]
+    assert quality.data_status == DATA_COMPLETE
+    for channel in (CHANNEL_DIVIDEND, CHANNEL_VALUE, CHANNEL_CYCLICAL):
+        candidates = receipt.channel_results[channel].candidates
+        assert candidates
+        assert all(candidate.data_status == DATA_PARTIAL for candidate in candidates)
+        assert all(candidate.candidate_class == CANDIDATE_CLASS_LEAD for candidate in candidates)
+
+
+def test_receipt_rejects_quote_date_newer_than_as_of():
+    run_refs = {key: _reference(key) for key in ("official", "tencent", "sina", "dividend", "financial")}
+    with pytest.raises(ValueError, match="quote_date"):
+        build_discovery_receipt(
+            run_id="m2-future-quote-fixture",
+            generated_at=datetime(2026, 9, 23, 8, 5, tzinfo=timezone.utc),
+            official_payload=_official_payload(),
+            tencent_payload=_tencent_payload(),
+            sina_payload=_sina_payload(),
+            dividend_payload=_dividend_payload(),
+            financial_points=_financial_points(),
+            quote_date="2026-09-24",
+            run_refs=run_refs,
+        )
+
+
+def test_receipt_rejects_evidence_fetched_after_generated_at():
+    future = datetime(2026, 9, 23, 10, 0, tzinfo=timezone.utc)
+    run_refs = {key: _reference(key) for key in ("official", "tencent", "sina", "dividend", "financial")}
+    run_refs["tencent"] = EvidenceReference(
+        id="tencent",
+        path="runtime/tencent.json",
+        sha256=_sha("tencent"),
+        source_name="tencent",
+        source_url="https://example.test/tencent",
+        fetched_at=future,
+    )
+
+    with pytest.raises(ValueError, match="fetched_at"):
+        build_discovery_receipt(
+            run_id="m2-future-evidence-fixture",
+            generated_at=datetime(2026, 9, 23, 8, 5, tzinfo=timezone.utc),
+            official_payload=_official_payload(),
+            tencent_payload=_tencent_payload(),
+            sina_payload=_sina_payload(),
+            dividend_payload=_dividend_payload(),
+            financial_points=_financial_points(),
+            quote_date="2026-09-23",
+            run_refs=run_refs,
+        )
+
+
+def test_future_financial_point_is_excluded_from_snapshot_evidence():
+    from value_investment_agent.m2_discovery_engine import build_financial_evidence
+
+    point = _financial_points()[0]
+    point["fetched_at"] = "2026-09-23T09:00:00+00:00"
+    evidence = build_financial_evidence(
+        [point],
+        {"600001": "质量制造"},
+        {"600001": "机械设备"},
+        evaluation_at=datetime(2026, 9, 23, 8, 5, tzinfo=timezone.utc),
+    )
+
+    assert evidence == {}
+
+
+def test_reuse_inputs_preserves_original_clock_instead_of_relabeling_today(tmp_path):
+    project = tmp_path / "project"
+    output_dir = project / "run"
+    output_dir.mkdir(parents=True)
+    generated_at = datetime(2026, 9, 22, 8, 5, tzinfo=timezone.utc)
+
+    def clocked_reference(ref_id: str) -> EvidenceReference:
+        return EvidenceReference(
+            id=ref_id,
+            path=f"run/{ref_id}.json",
+            sha256=_sha(ref_id),
+            source_name=ref_id,
+            source_url=f"https://example.test/{ref_id}",
+            fetched_at=datetime(2026, 9, 22, 7, 0, tzinfo=timezone.utc),
+        )
+
+    official_payload = _official_payload()
+    official_payload["fetched_at"] = "2026-09-22T07:00:00+00:00"
+    tencent_payload = _tencent_payload()
+    tencent_payload["fetched_at"] = "2026-09-22T07:00:00+00:00"
+    sina_payload = _sina_payload()
+    sina_payload["fetched_at"] = "2026-09-22T07:00:00+00:00"
+    dividend_payload = _dividend_payload()
+    dividend_payload["fetched_at"] = "2026-09-22T07:00:00+00:00"
+    financial_points = _financial_points()
+
+    run_refs = {key: clocked_reference(key) for key in ("official", "tencent", "sina", "dividend", "financial")}
+    original = build_discovery_receipt(
+        run_id="m2-original-clock-fixture",
+        generated_at=generated_at,
+        official_payload=official_payload,
+        tencent_payload=tencent_payload,
+        sina_payload=sina_payload,
+        dividend_payload=dividend_payload,
+        financial_points=financial_points,
+        quote_date="2026-09-22",
+        run_refs=run_refs,
+        policy=M2ScreeningPolicy(max_per_channel=10),
+    )
+    (output_dir / "receipt.json").write_text(
+        json.dumps(original.as_policy(), ensure_ascii=False),
+        encoding="utf-8",
+    )
+    (output_dir / "official-universe.json").write_text(json.dumps(official_payload, ensure_ascii=False), encoding="utf-8")
+    (output_dir / "tencent-market.json").write_text(json.dumps(tencent_payload, ensure_ascii=False), encoding="utf-8")
+    (output_dir / "sina-industry-quotes.json").write_text(json.dumps(sina_payload, ensure_ascii=False), encoding="utf-8")
+    (output_dir / "eastmoney-dividends.json").write_text(json.dumps(dividend_payload, ensure_ascii=False), encoding="utf-8")
+    (output_dir / "retained-financial-points.json").write_text(
+        json.dumps(
+            {"points": financial_points, "retained_generated_at": "2026-09-20T07:00:00+00:00"},
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    summary = RUN_M2.run_once(
+        root=project,
+        output_dir=output_dir,
+        wps_dir=None,
+        max_per_channel=10,
+        skip_dividend=False,
+        reuse_inputs=True,
+    )
+
+    assert summary["generated_at"] == generated_at.isoformat()
+    assert summary["as_of"] == "2026-09-22"
+    assert summary["quote_date"] == "2026-09-22"
+    assert summary["replay_of_run_id"] == original.run_id
+    assert summary["replay"]["receipt_bytes_match"] is True
+    assert summary["replay"]["raw_inputs_match"] is True

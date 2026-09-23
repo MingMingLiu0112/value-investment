@@ -35,6 +35,33 @@
 - 定向回归 19 passed，`git diff --check` 通过。未连接生产 PostgreSQL、未修改调度、
   未触碰服务器 PTA/Web App，也未替换 WPS 生产原工作簿。
 
+## M2 时点合同与 PARTIAL 证据语义：2026-09-23
+
+本节记录 W1/W2 共同合同加固后的代码、真实冷重放与候选产物。M2 仍为 `PARTIAL`。
+
+- `DiscoveryRunReceipt` 增加向后兼容的 `quote_date`，并拒绝 `quote_date > as_of`、
+  `universe.as_of > receipt.as_of` 和 `EvidenceReference.fetched_at > generated_at`。
+  Universe 缺少抓取时点直接失败，不再回退到系统今天。
+- 财务点只接受带时区且不晚于 `evaluation_at` 的记录；未来或未知时点不会进入
+  `FinancialEvidence`。Dividend 证据保存原始输入的实际抓取时间。
+- 非 Quality 便宜筛选通道缺少深研证据时全部标 `DATA_PARTIAL`，不再因价格无冲突
+  标 `COMPLETE`；当前真实重放中 Dividend 优先级 B，Value/Cyclical 优先级 C。
+- `--reuse-inputs` 现在必须读取既有 `receipt.json` 和全部保留输入，并继承原
+  `generated_at/quote_date`；新运行 ID 为 `m2-replay-*`，清单记录 `replay_of_run_id`，
+  不再把旧快照重标为今天。
+- 真实冷重放：从 `runtime/m2-live-20260923-v2b/` 保留输入生成
+  `runtime/m2-live-20260923-v3/`。原始时钟仍为 `2026-09-23T15:12:00.735987+00:00`，
+  字节收据与原始输入重放均一致。覆盖签名保持
+  `4e1655de3e55b79bad0b2737cebf893d82049f4c495cf373a3e51344745cf805`；
+  候选签名更新为
+  `f77fd5f0e139cf0ab283e9aee9fdd2f4f66695071c85816f303c9b31715cbe79`。
+- 更新原工作簿候选：SHA-256
+  `95993fa8721d4d333463b8ac48677b1700cbeec98d7eb4aad4bb457385baef6a`，
+  后 42 个原页和 96 个原始部件不变；同步到 WPS 云盘独立预览，生产原工作簿未替换。
+- 定向回归 24 passed；仓库全量离线回归 2131 passed / 6 skipped / 18 warnings / 0 failed；
+  `git diff --check` 通过。未连接生产 PostgreSQL、未改调度、
+  未触碰服务器 PTA/Web App。
+
 ## 路线融合复审：2026-09-23，代码基线 f4bb55c
 
 本节是当前状态判断，优先于下方历史记录的“只差三报告”等当时结论。本轮仅审查与文档；未启动Goal、未改业务代码/Excel/数据库/计划任务，未SSH、未commit/push。
