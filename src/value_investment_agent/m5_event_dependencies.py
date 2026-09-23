@@ -43,6 +43,26 @@ KIND_SOURCE_HEALTH = "source_health"
 KIND_VALUATION_RESULT = "valuation_result"
 KIND_PRICE_BRIDGE = "price_bridge"
 
+DEPENDENCY_KINDS = frozenset(
+    {
+        KIND_FACTS,
+        KIND_VALUATION_INPUTS,
+        KIND_DISTRIBUTION_HISTORY,
+        KIND_MODEL_VALIDITY,
+        KIND_THESIS,
+        KIND_ENTRY_CONSISTENCY,
+        KIND_DECISION_REVIEW,
+        KIND_PRICE_ATTRACTIVENESS,
+        KIND_CURRENT_STATUS,
+        KIND_PORTFOLIO_RISK,
+        KIND_POSITION_GUIDANCE,
+        KIND_DIVIDEND_SUSTAINABILITY,
+        KIND_SOURCE_HEALTH,
+        KIND_VALUATION_RESULT,
+        KIND_PRICE_BRIDGE,
+    }
+)
+
 _EVENT_POLICY: dict[str, tuple[str, ...]] = {
     EVENT_TYPE_NEW_FINANCIAL_REPORT: (
         KIND_FACTS,
@@ -185,12 +205,19 @@ class DependencyGraph:
                 return item
         raise ValueError(f"Dependency node does not exist: {node_id}")
 
-    def direct_nodes(self, event: ChangeEvent) -> tuple[DependencyNode, ...]:
-        kinds = _EVENT_POLICY.get(event.event_type, ())
+    def direct_nodes(
+        self,
+        event: ChangeEvent,
+        *,
+        kinds: Sequence[str] | None = None,
+    ) -> tuple[DependencyNode, ...]:
+        selected = tuple(kinds) if kinds is not None else _EVENT_POLICY.get(event.event_type, ())
+        if any(kind not in DEPENDENCY_KINDS for kind in selected):
+            raise ValueError("Unknown dependency kind in direct-node policy")
         return tuple(
             node
             for node in self._nodes
-            if node.kind in kinds
+            if node.kind in selected
             and (
                 node.symbol == event.symbol
                 or node.symbol == "*"
@@ -202,16 +229,22 @@ class DependencyGraph:
         self,
         event: ChangeEvent,
         *,
+        direct_kinds: Sequence[str] | None = None,
         max_depth: int = 4,
         max_nodes: int = 20,
     ) -> "DependencyInvalidation":
+        selected = tuple(direct_kinds) if direct_kinds is not None else None
+        if selected is not None and any(
+            kind not in DEPENDENCY_KINDS for kind in selected
+        ):
+            raise ValueError("Unknown dependency kind in invalidation policy")
         max_depth = _required_int(max_depth, "max_depth")
         max_nodes = _required_int(max_nodes, "max_nodes")
         if max_depth < 0:
             raise ValueError("max_depth cannot be negative")
         if max_nodes <= 0:
             raise ValueError("max_nodes must be positive")
-        direct = self.direct_nodes(event)
+        direct = self.direct_nodes(event, kinds=selected)
         visited: dict[str, DependencyInvalidationItem] = {}
         for node in direct:
             visited[node.node_id] = DependencyInvalidationItem(
@@ -254,6 +287,7 @@ class DependencyGraph:
                 self.schema_version,
                 max_depth,
                 max_nodes,
+                tuple(selected) if selected is not None else (),
             )[:32],
             event_id=event.event_id,
             event_type=event.event_type,
@@ -262,8 +296,13 @@ class DependencyGraph:
             affected_nodes=kept,
             truncated=truncated,
             deferred_node_ids=deferred,
-            reason=f"Direct policy {_EVENT_POLICY.get(event.event_type, ())} followed "
-            f"through at most {max_depth} dependency levels",
+            reason=(
+                f"Materiality policy {selected} followed through at most "
+                f"{max_depth} dependency levels"
+                if selected is not None
+                else f"Direct policy {_EVENT_POLICY.get(event.event_type, ())} followed "
+                f"through at most {max_depth} dependency levels"
+            ),
         )
 
     def _assert_acyclic(self) -> None:

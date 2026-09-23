@@ -204,6 +204,7 @@ def run_event_batch(
     lock_owner: str = "offline-m5-runner",
     lock_token: str = "m5-offline-token",
     lease_seconds: int = 120,
+    direct_kinds_by_source_event_id: Mapping[str, Sequence[str]] | None = None,
 ) -> M5EventRunReceipt:
     """Ingest one bounded batch and return a fail-closed run receipt."""
 
@@ -215,6 +216,15 @@ def run_event_batch(
         raise ValueError("Public run-once coordinator accepts SIMULATED only")
     if any(event.namespace != namespace for event in events):
         raise ValueError("All events must use the requested namespace")
+    direct_kinds_by_source_event_id = dict(
+        direct_kinds_by_source_event_id or {}
+    )
+    event_source_ids = {event.source_event_id for event in events}
+    if any(
+        source_event_id not in event_source_ids
+        for source_event_id in direct_kinds_by_source_event_id
+    ):
+        raise ValueError("Every custom dependency policy must match an event")
 
     ledger = EventLedger(namespace=namespace)
     watermarks = WatermarkLedger()
@@ -260,7 +270,15 @@ def run_event_batch(
             INGEST_SUPERSEDES_ACCEPTED,
         }:
             continue
-        invalidations.append(graph.invalidate(result.event))
+        custom_kinds = direct_kinds_by_source_event_id.get(
+            result.event.source_event_id
+        )
+        invalidations.append(
+            graph.invalidate(
+                result.event,
+                direct_kinds=tuple(custom_kinds) if custom_kinds else None,
+            )
+        )
         alert_type = _ALERT_BY_EVENT_TYPE.get(
             result.event.event_type,
             ALERT_TYPE_REVIEW_DUE,

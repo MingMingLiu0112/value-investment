@@ -2,6 +2,28 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M5 人工材料性判定接入：2026-09-24
+
+本节记录把已有人工 `EventMaterialityDecision` 接入 M5 事件管道的离线工程。M2 保持
+`PENDING_HUMAN_REVIEW`，M3、M4、M5 保持 `PARTIAL`；所有动作 `action=no_order`。
+
+- 新增 `m5_materiality_bridge.py`：静默判定不产生事件；需重算判定生成高严重度事件
+  并按事实、估值输入、模型有效性、估值结果和决策复核精确失效；需拆分只失效决策
+  复核与当前状态，风险监控只进入决策复核。
+- 未注册领域和制品保留为 `unmapped_domains` / `unmapped_artifacts`，不猜测；
+  公告发布时间与人工复核时间分离，复核早于公告失败关闭。
+- 扩展依赖失效和 run-once 编排，支持按源事件 ID 应用自定义直接依赖类型，并把策略
+  纳入确定性摘要。
+- 独立候选 6 页、6 项人工材料性判定、3 项静默、3 个事件、3 条失效记录和 3 条
+  outbox 提醒，固定 `action=no_order`；字节数 13,240，SHA-256
+  `e976e330ae517f06ddd341220ce71fb9b6c0753ff4c7f421ef39baed5e9ce1df`。
+- 材料性桥接定向回归 39 passed；CI 离线清单 405 passed；除 PostgreSQL 集成外的
+  全量离线回归 2252 passed、2 skipped、0 failed。
+- WPS 只读收据 `runtime/m5-materiality-wps-20260924/receipt.json` 为 `passed`；
+  WPS 云盘同名副本与仓库候选逐字节一致。
+- 真实公告采集、生产调度、通知投递、数据库变更、Entry/组合复核和故障恢复尚未建设；
+  本批不证明 M5 生产验收。
+
 ## M5 事件基础设施离线合同：2026-09-24
 
 本节记录 M5 第一批纯领域与 run-once 离线工程。M2 保持

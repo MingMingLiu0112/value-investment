@@ -1,5 +1,55 @@
 # Changelog
 
+## v2026.09.24-m5-materiality-bridge
+
+### Release Scope
+
+把已经存在的人工 `EventMaterialityDecision` 接入 M5 事件账和有界依赖失效，并发布一个
+显式模拟的 6 页 Excel 候选。本版本只负责人工结论到事件的精确映射；不建立公告采集、
+生产调度、通知投递、数据库变更或任何实盘动作。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/m5_materiality_bridge.py`：
+  - `NOT_MATERIAL`、`MATERIAL_SUPPORTING_EVIDENCE`、`MATERIAL_ALREADY_INCORPORATED`
+    和 `DUPLICATE_OR_DERIVED` 保持静默，不生成事件或依赖失效；
+  - `MATERIAL_REQUIRES_RECALCULATION` 生成高严重度事件，并可按财务事实、估值输入、
+    模型有效性、估值结果和决策复核等类型精确失效；只有该结论允许触达模型有效性
+    重算路径；
+  - `REQUIRES_DECOMPOSITION` 只失效决策复核与当前状态，不直接使模型失效；
+    `MATERIAL_RISK_MONITOR` 只进入决策复核；
+  - 未注册的领域和制品保留为 `unmapped_domains` / `unmapped_artifacts`，不猜测；
+  - 公告发布时间作为 `available_at`，人工复核时间作为 `detected_at`，复核早于
+    公告时 fail-closed。
+- 扩展 `m5_event_dependencies.py`：显式列出 `DEPENDENCY_KINDS`，direct node 和
+  invalidation 支持限定依赖类型，自定义失效策略纳入确定性摘要。
+- 扩展 `m5_event_run.py`：`run_event_batch` 接受按源事件 ID 的
+  `direct_kinds_by_source_event_id`，逐事件校验后应用。
+- 新增 6 页候选：`00_总览`、`01_材料性映射`、`02_事件账`、`03_依赖失效与重算`、
+  `04_Outbox`、`05_输入与边界`。
+- 新增模拟 fixture、构建脚本、WPS 只读校验脚本和材料性桥接回归，并纳入 GitHub
+  Core Research Gate。
+
+### Verification
+
+- M5 材料性桥接相关定向回归：39 passed。
+- GitHub Core Research Gates 离线清单：405 passed。
+- 本仓库除 PostgreSQL 集成测试外的全量离线回归：2252 passed、2 skipped、
+  18 warnings、0 failed。
+- 模拟候选包含 6 项人工材料性判定、3 项静默、3 个事件、3 条失效记录和 3 条
+  outbox 提醒，固定 `action=no_order`；字节数 13,240，SHA-256
+  `e976e330ae517f06ddd341220ce71fb9b6c0753ff4c7f421ef39baed5e9ce1df`。
+- WPS 只读收据 `runtime/m5-materiality-wps-20260924/receipt.json` 为 `passed`；
+  WPS 云盘同名副本与仓库候选逐字节一致。
+- `compileall` 和 `git diff --check` 通过。
+
+### Acceptance Boundary
+
+- M2 保持 `PENDING_HUMAN_REVIEW`，M3、M4、M5 保持 `PARTIAL`，全部动作
+  `action=no_order`。
+- 该候选证明人工材料性结论可以精确接入 M5 事件管道，不证明真实公告采集、公告级
+  材料性判定、生产调度、通知投递、Entry/组合复核或持续市场监控已上线。
+
 ## v2026.09.24-m5-event-infrastructure
 
 ### Release Scope

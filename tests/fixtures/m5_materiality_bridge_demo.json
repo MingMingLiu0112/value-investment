@@ -1,0 +1,204 @@
+{
+  "schema_version": "post-m1-event-materiality-v1",
+  "review_id": "600887-event-review-20260924-sim",
+  "symbol": "600887",
+  "scan_id": "600887-scan-20260924-sim",
+  "scan_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "scan_from": "2026-08-27",
+  "scan_to": "2026-09-24",
+  "reviewed_at": "2026-09-24T09:30:00+08:00",
+  "review_as_of": "2026-09-24",
+  "reviewer_type": "human_research_lead",
+  "evidence_refs": [
+    {
+      "id": "simulated-cninfo-scan"
+    }
+  ],
+  "decisions": [
+    {
+      "schema_version": "post-m1-event-materiality-v1",
+      "event_decision_id": "materiality-600887-not-material-001",
+      "symbol": "600887",
+      "announcement_id": "1225542001",
+      "title": "模拟非重大日常公告",
+      "published_at": "2026-09-02T09:00:00+08:00",
+      "source_ref": {
+        "id": "pdf-1225542001"
+      },
+      "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "machine_candidate_reason": "title rule candidate",
+      "human_decision": "NOT_MATERIAL",
+      "affected_domains": [],
+      "affected_fact_fields": [],
+      "affected_assumptions": [],
+      "affected_artifacts": [],
+      "requires_recalculation": false,
+      "requires_model_stale": false,
+      "requires_followup": false,
+      "reviewed_at": "2026-09-24T09:30:00+08:00",
+      "reviewer_type": "human_research_lead",
+      "review_notes": [
+        "模拟静默判定"
+      ],
+      "decision_version": "20260923.1",
+      "action": "no_order"
+    },
+    {
+      "schema_version": "post-m1-event-materiality-v1",
+      "event_decision_id": "materiality-600887-supporting-002",
+      "symbol": "600887",
+      "announcement_id": "1225542002",
+      "title": "模拟支持性公告",
+      "published_at": "2026-09-03T09:00:00+08:00",
+      "source_ref": {
+        "id": "pdf-1225542002"
+      },
+      "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "machine_candidate_reason": "title rule candidate",
+      "human_decision": "MATERIAL_SUPPORTING_EVIDENCE",
+      "affected_domains": [
+        "business_model"
+      ],
+      "affected_fact_fields": [],
+      "affected_assumptions": [],
+      "affected_artifacts": [],
+      "requires_recalculation": false,
+      "requires_model_stale": false,
+      "requires_followup": false,
+      "reviewed_at": "2026-09-24T09:30:00+08:00",
+      "reviewer_type": "human_research_lead",
+      "review_notes": [
+        "模拟静默判定"
+      ],
+      "decision_version": "20260923.1",
+      "action": "no_order"
+    },
+    {
+      "schema_version": "post-m1-event-materiality-v1",
+      "event_decision_id": "materiality-600887-recalc-003",
+      "symbol": "600887",
+      "announcement_id": "1225542003",
+      "title": "模拟重大会计口径变化",
+      "published_at": "2026-09-05T09:00:00+08:00",
+      "source_ref": {
+        "id": "pdf-1225542003"
+      },
+      "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "machine_candidate_reason": "accounting policy change rule candidate",
+      "human_decision": "MATERIAL_REQUIRES_RECALCULATION",
+      "affected_domains": [
+        "balance_sheet_risk",
+        "lease"
+      ],
+      "affected_fact_fields": [
+        "total_liabilities",
+        "lease_obligations"
+      ],
+      "affected_assumptions": [
+        "reinvestment_capacity"
+      ],
+      "affected_artifacts": [
+        "valuation_result",
+        "model_validity"
+      ],
+      "requires_recalculation": true,
+      "requires_model_stale": true,
+      "requires_followup": false,
+      "reviewed_at": "2026-09-24T09:30:00+08:00",
+      "reviewer_type": "human_research_lead",
+      "review_notes": [
+        "模拟需重算判定"
+      ],
+      "decision_version": "20260923.1",
+      "action": "no_order"
+    },
+    {
+      "schema_version": "post-m1-event-materiality-v1",
+      "event_decision_id": "materiality-600887-decompose-004",
+      "symbol": "600887",
+      "announcement_id": "1225542004",
+      "title": "模拟复杂交易需拆分",
+      "published_at": "2026-09-08T09:00:00+08:00",
+      "source_ref": {
+        "id": "pdf-1225542004"
+      },
+      "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "machine_candidate_reason": "complex transaction rule candidate",
+      "human_decision": "REQUIRES_DECOMPOSITION",
+      "affected_domains": [],
+      "affected_fact_fields": [],
+      "affected_assumptions": [],
+      "affected_artifacts": [],
+      "requires_recalculation": false,
+      "requires_model_stale": false,
+      "requires_followup": true,
+      "reviewed_at": "2026-09-24T09:30:00+08:00",
+      "reviewer_type": "human_research_lead",
+      "review_notes": [
+        "模拟需拆分判定"
+      ],
+      "decision_version": "20260923.1",
+      "action": "no_order"
+    },
+    {
+      "schema_version": "post-m1-event-materiality-v1",
+      "event_decision_id": "materiality-600887-risk-005",
+      "symbol": "600887",
+      "announcement_id": "1225542005",
+      "title": "模拟需持续风险监控",
+      "published_at": "2026-09-10T09:00:00+08:00",
+      "source_ref": {
+        "id": "pdf-1225542005"
+      },
+      "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "machine_candidate_reason": "risk monitor rule candidate",
+      "human_decision": "MATERIAL_RISK_MONITOR",
+      "affected_domains": [
+        "portfolio_risk"
+      ],
+      "affected_fact_fields": [],
+      "affected_assumptions": [],
+      "affected_artifacts": [],
+      "requires_recalculation": false,
+      "requires_model_stale": false,
+      "requires_followup": true,
+      "reviewed_at": "2026-09-24T09:30:00+08:00",
+      "reviewer_type": "human_research_lead",
+      "review_notes": [
+        "模拟风险监控判定"
+      ],
+      "decision_version": "20260923.1",
+      "action": "no_order"
+    },
+    {
+      "schema_version": "post-m1-event-materiality-v1",
+      "event_decision_id": "materiality-600887-duplicate-006",
+      "symbol": "600887",
+      "announcement_id": "1225542006",
+      "title": "模拟重复或衍生公告",
+      "published_at": "2026-09-11T09:00:00+08:00",
+      "source_ref": {
+        "id": "pdf-1225542006"
+      },
+      "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "machine_candidate_reason": "duplicate rule candidate",
+      "human_decision": "DUPLICATE_OR_DERIVED",
+      "affected_domains": [],
+      "affected_fact_fields": [],
+      "affected_assumptions": [],
+      "affected_artifacts": [],
+      "requires_recalculation": false,
+      "requires_model_stale": false,
+      "requires_followup": false,
+      "event_cluster_id": "MATERIALITY_CLUSTER_SIM",
+      "reviewed_at": "2026-09-24T09:30:00+08:00",
+      "reviewer_type": "human_research_lead",
+      "review_notes": [
+        "模拟重复判定"
+      ],
+      "decision_version": "20260923.1",
+      "action": "no_order"
+    }
+  ],
+  "action": "no_order"
+}
