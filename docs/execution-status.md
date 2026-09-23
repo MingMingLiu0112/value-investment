@@ -19,6 +19,8 @@
   `e976e330ae517f06ddd341220ce71fb9b6c0753ff4c7f421ef39baed5e9ce1df`。
 - 材料性桥接定向回归 39 passed；CI 离线清单 405 passed；除 PostgreSQL 集成外的
   全量离线回归 2252 passed、2 skipped、0 failed。
+- GitHub Core Research Gates run 37：`offline-core` 与 `postgres-integration`
+  均为 `success`。
 - WPS 只读收据 `runtime/m5-materiality-wps-20260924/receipt.json` 为 `passed`；
   WPS 云盘同名副本与仓库候选逐字节一致。
 - 真实公告采集、生产调度、通知投递、数据库变更、Entry/组合复核和故障恢复尚未建设；

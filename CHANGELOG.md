@@ -34,6 +34,8 @@
 
 - M5 材料性桥接相关定向回归：39 passed。
 - GitHub Core Research Gates 离线清单：405 passed。
+- GitHub Core Research Gates run 37：`offline-core` 与 `postgres-integration`
+  均为 `success`。
 - 本仓库除 PostgreSQL 集成测试外的全量离线回归：2252 passed、2 skipped、
   18 warnings、0 failed。
 - 模拟候选包含 6 项人工材料性判定、3 项静默、3 个事件、3 条失效记录和 3 条
