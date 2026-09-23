@@ -13,6 +13,28 @@
 - 本轮仅在上一轮未提交文档修改上增量调整AGENTS、LONG-TERM-GOAL、current-stage-goal、启动Prompt与本状态文件；未启动Goal、未改业务代码/Excel/数据库/服务器/调度，未commit/push。
 - 下节“下一Goal只完成M2”的旧范围被本节替代；f4bb55c审查、2118 passed/6 skipped和M2反例仍为上一轮实测，本轮文档调整不冒称重新运行全量测试。
 
+## M2 线索/已核候选边界与未发布原表候选：2026-09-23
+
+本节记录工作树改动与真实候选产物。M2 仍为 `PARTIAL`，没有候选发布为生产工作簿。
+
+- 领域合同：`CandidateReason.candidate_class` 只允许 `LEAD` 或 `VERIFIED_CANDIDATE`；
+  当前 Quality/Dividend/Value/Cyclical 筛选输出全部显式标记为 `LEAD`，不能再把便宜筛选结果
+  直接表述为已核实候选。`DiscoveryRunReceipt.verified_candidate_pool()` 当前真实运行返回空池。
+- 工作簿：新增“研究层级”列和总览计数，明确显示“研究线索/已核候选”；候选签名包含
+  `candidate_class`，`action=no_order` 保持不变。
+- 原工作簿候选入口：新增 `scripts/build_m2_original_workbook_candidate.py`，要求原工作簿
+  预期 SHA-256 与有效 M2 收据，复用受保护 graft，拒绝已有输出或源文件变化，并输出
+  `status=candidate_verified_not_published`。脚本不执行 WPS 生产原子替换。
+- 真实候选：源原工作簿 SHA-256
+  `a62a6ae634ea949db36c3c209278515e2ee66ef3a61aaa25d59d2051d5954d58`；候选
+  `A股价值投资_Agent前端智能跟踪模板_M2候选_20260923.xlsx` SHA-256
+  `b57da4f4d3e8fd46ef24dc220820b8be9187f2c79503c5b1835f5761b9318335`。
+  53 个工作表：前 11 个为 M2，后 42 个原工作簿页保留；`original_parts_unchanged=96`。
+- 真实 5,568 家保留输入重放：Quality 0、Dividend 50、Value 50、Cyclical 50；
+  `candidate_signature=a4f555b789c3942c690c1e288e5ce3bfa210544cd9ffcc63803d4c1eeb46f4c7`。
+- 定向回归 19 passed，`git diff --check` 通过。未连接生产 PostgreSQL、未修改调度、
+  未触碰服务器 PTA/Web App，也未替换 WPS 生产原工作簿。
+
 ## 路线融合复审：2026-09-23，代码基线 f4bb55c
 
 本节是当前状态判断，优先于下方历史记录的“只差三报告”等当时结论。本轮仅审查与文档；未启动Goal、未改业务代码/Excel/数据库/计划任务，未SSH、未commit/push。

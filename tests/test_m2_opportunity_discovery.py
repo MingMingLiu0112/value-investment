@@ -15,6 +15,7 @@ from value_investment_agent.m2_market_data import (
 )
 from value_investment_agent.m2_opportunity_discovery import (
     ACTION_NO_ORDER,
+    CANDIDATE_CLASS_LEAD,
     CHANNEL_DIVIDEND,
     CHANNEL_QUALITY,
     CHANNEL_VALUE,
@@ -267,6 +268,14 @@ def test_cross_channel_candidate_reasons_are_preserved_in_pool():
     assert len(reasons) == 2
     assert {item.channel for item in reasons} == {CHANNEL_QUALITY, CHANNEL_VALUE}
     assert all(reason.reasons for reason in reasons)
+
+
+def test_screen_outputs_are_research_leads_until_a_later_verification_gate_passes():
+    receipt = _receipt()
+    all_reasons = [reason for reasons in receipt.candidate_pool().values() for reason in reasons]
+
+    assert all(reason.candidate_class == CANDIDATE_CLASS_LEAD for reason in all_reasons)
+    assert receipt.verified_candidate_pool() == {}
 
 
 def test_budget_truncation_keeps_budget_excluded_accounting():

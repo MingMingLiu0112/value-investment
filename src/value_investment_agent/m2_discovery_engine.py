@@ -25,6 +25,7 @@ from .m2_opportunity_discovery import (
     CHANNEL_QUALITY,
     CHANNEL_VALUE,
     CHANNELS,
+    CANDIDATE_CLASS_LEAD,
     DATA_COMPLETE,
     DATA_MISSING,
     DATA_PARTIAL,
@@ -420,6 +421,7 @@ def build_channel_results(
             data_status=data_status,
             profile_status=_profile_status(quote),
             priority_tier=tier,
+            candidate_class=CANDIDATE_CLASS_LEAD,
         ))
 
     dividend_candidates: list[CandidateReason] = []
@@ -468,6 +470,7 @@ def build_channel_results(
             data_status=data_status,
             profile_status=profile,
             priority_tier=tier,
+            candidate_class=CANDIDATE_CLASS_LEAD,
         ))
 
     value_candidates: list[CandidateReason] = []
@@ -515,6 +518,7 @@ def build_channel_results(
             data_status=data_status,
             profile_status=profile,
             priority_tier=PRIORITY_B if data_status == DATA_COMPLETE else PRIORITY_C,
+            candidate_class=CANDIDATE_CLASS_LEAD,
         ))
 
     cyclical_candidates: list[CandidateReason] = []
@@ -557,6 +561,7 @@ def build_channel_results(
             data_status=data_status,
             profile_status=profile,
             priority_tier=PRIORITY_C,
+            candidate_class=CANDIDATE_CLASS_LEAD,
         ))
 
     def bounded(items: list[CandidateReason]) -> tuple[CandidateReason, ...]:

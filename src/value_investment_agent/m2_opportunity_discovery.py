@@ -43,6 +43,9 @@ PRIORITY_A = "A"
 PRIORITY_B = "B"
 PRIORITY_C = "C"
 
+CANDIDATE_CLASS_LEAD = "LEAD"
+CANDIDATE_CLASS_VERIFIED = "VERIFIED_CANDIDATE"
+
 EVALUATION_PASS = "PASS"
 EVALUATION_REJECTED = "REJECTED"
 EVALUATION_DATA_GAP = "DATA_GAP"
@@ -57,6 +60,7 @@ _CHANNELS = set(CHANNELS)
 _DATA_STATUSES = {DATA_COMPLETE, DATA_PARTIAL, DATA_MISSING, DATA_UNSUPPORTED}
 _PROFILE_STATUSES = {PROFILE_SUPPORTED, PROFILE_UNKNOWN, PROFILE_UNSUPPORTED}
 _PRIORITY_TIERS = {PRIORITY_A, PRIORITY_B, PRIORITY_C}
+_CANDIDATE_CLASSES = {CANDIDATE_CLASS_LEAD, CANDIDATE_CLASS_VERIFIED}
 _EVALUATION_STATUSES = {
     EVALUATION_PASS,
     EVALUATION_REJECTED,
@@ -424,6 +428,7 @@ class CandidateReason:
     data_status: str
     profile_status: str
     priority_tier: str
+    candidate_class: str
 
     def __post_init__(self) -> None:
         if not _SYMBOL.fullmatch(self.symbol):
@@ -443,6 +448,8 @@ class CandidateReason:
             raise ValueError("Candidate profile status is invalid")
         if self.priority_tier not in _PRIORITY_TIERS:
             raise ValueError("Candidate priority tier is invalid")
+        if self.candidate_class not in _CANDIDATE_CLASSES:
+            raise ValueError("Candidate research class is invalid")
 
     def as_policy(self) -> dict[str, Any]:
         return {
@@ -456,6 +463,7 @@ class CandidateReason:
             "data_status": self.data_status,
             "profile_status": self.profile_status,
             "priority_tier": self.priority_tier,
+            "candidate_class": self.candidate_class,
         }
 
 
@@ -475,6 +483,7 @@ def candidate_reason_from_payload(value: Mapping[str, Any]) -> CandidateReason:
         data_status=str(data.get("data_status") or ""),
         profile_status=str(data.get("profile_status") or ""),
         priority_tier=str(data.get("priority_tier") or ""),
+        candidate_class=str(data.get("candidate_class") or ""),
     )
 
 
@@ -729,6 +738,15 @@ class DiscoveryRunReceipt:
                 pooled.setdefault(candidate.symbol, []).append(candidate)
         return {symbol: tuple(items) for symbol, items in pooled.items()}
 
+    def verified_candidate_pool(self) -> dict[str, tuple[CandidateReason, ...]]:
+        """Return only candidates that passed the later deep-research verification gate."""
+        pooled: dict[str, list[CandidateReason]] = {}
+        for reasons in self.candidate_pool().values():
+            for candidate in reasons:
+                if candidate.candidate_class == CANDIDATE_CLASS_VERIFIED:
+                    pooled.setdefault(candidate.symbol, []).append(candidate)
+        return {symbol: tuple(items) for symbol, items in pooled.items()}
+
     def as_policy(self) -> dict[str, Any]:
         return {
             "schema_version": self.schema_version,
@@ -763,6 +781,7 @@ def candidate_signature(channel_results: Mapping[str, ChannelResult]) -> str:
                     "tier": candidate.priority_tier,
                     "data_status": candidate.data_status,
                     "profile_status": candidate.profile_status,
+                    "candidate_class": candidate.candidate_class,
                     "reasons": list(candidate.reasons),
                     "metrics": _json_value(candidate.metrics),
                 }

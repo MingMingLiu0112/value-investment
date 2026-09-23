@@ -17,6 +17,7 @@ from openpyxl.utils import get_column_letter
 from .m2_discovery_engine import M2ScreeningPolicy
 from .m2_opportunity_discovery import (
     ACTION_NO_ORDER,
+    CANDIDATE_CLASS_VERIFIED,
     CHANNEL_CYCLICAL,
     CHANNEL_DIVIDEND,
     CHANNEL_QUALITY,
@@ -123,13 +124,17 @@ def _candidate_row(ws, row: int, candidate: CandidateReason, include_channel: bo
     _style(ws.cell(row, 3 + offset, candidate.priority_tier), bold=True)
     _style(ws.cell(row, 4 + offset, candidate.profile_status))
     _style(
-        ws.cell(row, 5 + offset, candidate.data_status),
+        ws.cell(row, 5 + offset, "已核候选" if candidate.candidate_class == CANDIDATE_CLASS_VERIFIED else "研究线索"),
+        fill=GREY if candidate.candidate_class == CANDIDATE_CLASS_VERIFIED else AMBER,
+    )
+    _style(
+        ws.cell(row, 6 + offset, candidate.data_status),
         fill=AMBER if candidate.data_status == "PARTIAL" else "FFFFFF",
     )
-    _style(ws.cell(row, 6 + offset, candidate.evidence_date))
-    _style(ws.cell(row, 7 + offset, candidate.metrics.get("industry") or ""))
-    _style(ws.cell(row, 8 + offset, "\n".join(candidate.reasons)))
-    _style(ws.cell(row, 9 + offset, _metrics_text(candidate.metrics)))
+    _style(ws.cell(row, 7 + offset, candidate.evidence_date))
+    _style(ws.cell(row, 8 + offset, candidate.metrics.get("industry") or ""))
+    _style(ws.cell(row, 9 + offset, "\n".join(candidate.reasons)))
+    _style(ws.cell(row, 10 + offset, _metrics_text(candidate.metrics)))
     ws.row_dimensions[row].height = max(58, len(candidate.reasons) * 16)
     return row + 1
 
@@ -145,10 +150,10 @@ def _candidate_sheet(
     ws = wb.create_sheet(title)
     ws.sheet_view.showGridLines = False
     ws.freeze_panes = "A4"
-    columns = ["证券代码", "公司", "通道", "优先级", "画像", "数据", "证据日期", "行业", "Why Now / 原因", "关键指标"]
+    columns = ["证券代码", "公司", "通道", "优先级", "画像", "研究层级", "数据", "证据日期", "行业", "Why Now / 原因", "关键指标"]
     if not include_channel:
         columns = columns[:2] + columns[3:]
-    _widths(ws, [11, 16, 18, 9, 13, 12, 12, 14, 62, 46][: len(columns)])
+    _widths(ws, [11, 16, 18, 9, 13, 12, 12, 12, 14, 62, 46][: len(columns)])
     _title(ws, title, subtitle, len(columns))
     row = _header(ws, 4, columns)
     for candidate in candidates:
@@ -179,12 +184,15 @@ def _overview(wb: Workbook, receipt: DiscoveryRunReceipt, policy: M2ScreeningPol
         )
         for channel, result in receipt.channel_results.items()
     )
+    lead_count = sum(len(items) for items in receipt.candidate_pool().values())
+    verified_count = sum(len(items) for items in receipt.verified_candidate_pool().values())
     items = [
         ("产品结论", "系统只发现值得深研的公司，不生成估值、BUY、仓位或订单。"),
         ("Universe 分母", f"{receipt.data_health.universe_count} 家官方证券清单，行情匹配 {receipt.data_health.matched_quote_count} 家。"),
         ("数据健康", f"{receipt.data_health.status}；阻断 {len(receipt.data_health.blockers)} 项。"),
         ("逐通道覆盖", coverage_text),
         ("候选总量", f"{receipt.legacy_comparison.new_candidate_count} 家，跨通道可能重复。"),
+        ("研究层级", f"研究线索 {lead_count} 条；已核候选 {verified_count} 条。线索不视为研究完成。"),
         ("预算外通过者", f"各通道超出展示预算的通过者已在覆盖账中保留，不静默删除。"),
         ("Legacy 对比", f"{receipt.legacy_comparison.legacy_candidate_count} 家旧 PE/PB 阴影候选，与新池重叠 {receipt.legacy_comparison.overlap_count} 家。"),
         ("覆盖签名", receipt.coverage_signature),

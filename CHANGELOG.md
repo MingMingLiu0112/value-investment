@@ -1,5 +1,62 @@
 # Changelog
 
+## v2026.09.23-m2-lead-verified-original-candidate
+
+### Release Scope
+
+在保持 `m2-opportunity-discovery-v2` 冷重放语义的前提下，把“便宜筛选产出”与
+“已经深研核实的候选”在领域模型中显式分开；同时增加从原工作簿生成受保护
+M2 候选工作簿的离线发布入口。本版本继续执行 `action=no_order`，不生成
+估值、BUY、ADD、仓位或订单，也不把候选发布为生产工作簿。
+
+### New Capability
+
+- `CandidateReason` 新增 `candidate_class`，只允许 `LEAD` 或
+  `VERIFIED_CANDIDATE`；当前所有四通道筛选输出均明确标记为 `LEAD`。
+- `DiscoveryRunReceipt.verified_candidate_pool()` 只返回后续深研验证门通过的候选；
+  当前真实运行中该池为空，不再用“候选数”暗示研究已经完成。
+- 候选签名包含 `candidate_class`，冷重放仍可验证新旧层级字段。
+- M2 工作簿新增“研究层级”列，显示“研究线索”或“已核候选”；总览分别展示
+  线索数与已核候选数。
+- 新增 `scripts/build_m2_original_workbook_candidate.py`：
+  - 校验原工作簿预期 SHA-256，源文件变化即拒绝；
+  - 只接受 `action=no_order` 的有效 M2 收据；
+  - 复用 `stage_frontend_package.graft`，原工作簿页和原始 ZIP 部件保持字节不变；
+  - 拒绝覆盖已有输出，并产出 `candidate_verified_not_published` 清单；
+  - 不执行对 WPS 云盘原工作簿的原子替换或发布。
+- 新增回归测试覆盖源 Hash 变化拒绝、输出已存在拒绝、原页与原公式保留、
+  OOXML 关系有效，以及所有屏幕结果是研究线索这一合同。
+
+### Real Run And Candidate Evidence
+
+- 复用 2026-09-23 真实全市场 5,568 家官方证券保留输入生成
+  `runtime/m2-live-20260923-v2b/`。
+- 展示候选仍为 Quality 0、Dividend 50、Value 50、Cyclical 50；已核候选 0。
+- `candidate_signature=a4f555b789c3942c690c1e288e5ce3bfa210544cd9ffcc63803d4c1eeb46f4c7`。
+- `coverage_signature=4e1655de3e55b79bad0b2737cebf893d82049f4c495cf373a3e51344745cf805`。
+- 原工作簿候选：
+  - 源 SHA-256：`a62a6ae634ea949db36c3c209278515e2ee66ef3a61aaa25d59d2051d5954d58`
+  - 候选 SHA-256：`b57da4f4d3e8fd46ef24dc220820b8be9187f2c79503c5b1835f5761b9318335`
+  - 53 个工作表，前 11 个为 M2，后 42 个为原工作簿页
+  - `original_parts_unchanged=96`，`status=candidate_verified_not_published`
+- 候选以独立预览复制到 WPS 云盘，未替换生产原工作簿。
+
+### Artifacts
+
+- 新增 `A股价值投资_Agent前端智能跟踪模板_M2候选_20260923.xlsx`
+  - SHA-256：`b57da4f4d3e8fd46ef24dc220820b8be9187f2c79503c5b1835f5761b9318335`
+
+### Verification
+
+- M2 与原工作簿候选定向回归：19 passed。
+- `git diff --check` 通过。
+
+### Status
+
+`PARTIAL`。本版固定了线索/已核候选边界并演示未发布的原工作簿候选阶段，
+不等于 M2 验收完成；深研报告、预注册抽样、完整时点重放、用户可见发布验收
+与后续 M3-M7 仍按 `docs/current-stage-goal.md` 和 `LONG-TERM-GOAL.md` 继续。
+
 ## v2026.09.23-m2-v2-coverage
 
 ### Release Scope
