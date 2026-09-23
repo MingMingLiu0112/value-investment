@@ -241,6 +241,7 @@ WPS 只读校验只覆盖打开/计算、公式错误、工作表顺序和链接
 | A股价值投资_M4组合风险候选_20260924.xlsx | 10,060 | 0594db6981a78063883271cd2fa45e117487fe6a9657a97e14665dc6bf8b07a7 | 3246947 |
 | A股价值投资_M3历史链候选_20260924.xlsx | 12,121 | 5ca99c128be065c836fa00a521b5aaade2f2826cba09dbf6249fd4e9ba926bc0 | 511c64a |
 | A股价值投资_M3决策卡候选_20260924.xlsx | 15,102 | 589f19ef9e3d235401814e98450475d657c3e981b33637337ab5da9d33fb307d | 1338eab |
+| A股价值投资_Agent前端智能跟踪模板_M3决策复核候选_20260924.xlsx | 13,200,586 | ac3e67e6b9c5eb65812fab7c82cfa73e2ee2336c530b30f1d77fbc6383b1a7a3 | 本轮 M3 决策复核原工作簿候选 |
 | A股价值投资_Agent前端智能跟踪模板.xlsx | 13,199,222 | 64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911 | 8fdb361 |
 | A股价值投资_Agent前端智能跟踪模板_M2候选_20260924.xlsx | 13,199,222 | 64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911 | 8fdb361 |
 | A股价值投资_Agent前端智能跟踪模板_M2候选_20260923.xlsx | 13,168,877 | 95993fa8721d4d333463b8ac48677b1700cbeec98d7eb4aad4bb457385baef6a | 0566ed4 |
@@ -310,6 +311,25 @@ WPS 生产原表的字节、SHA-256 均保持不变。
 - `.A股价值投资_Agent前端智能跟踪模板.p2.stage.xlsx`
 - `A股价值投资_Agent前端智能跟踪模板.checks.json`
 - `价投跟踪系统_框架逻辑与使用手册.docx`
+
+## M3 决策复核原工作簿候选
+
+本批新增第 16 个受 Git 跟踪的工作簿。它由当前 55 页 canonical 生成，只替换派生页
+`00_决策复核`，不修改其他 54 页，也不覆盖 WPS 生产原表或 canonical 快照。
+
+- 文件：`A股价值投资_Agent前端智能跟踪模板_M3决策复核候选_20260924.xlsx`
+- 字节数：13,200,586
+- SHA-256：
+  `ac3e67e6b9c5eb65812fab7c82cfa73e2ee2336c530b30f1d77fbc6383b1a7a3`
+- 绑定输入：冻结 M1 integrated-runs SHA-256
+  `b1123333f2b4caa6beae16102bdca613b0894ad7fb72aa17329e838cd32b0459`；
+  M1 预登记 SHA-256
+  `5b7df98f8781080f66e5e053b8d0015f0b7c7eee9e27e8a10f7b0fe7990ab5b1`。
+- WPS 只读验证：`passed`；WPS 云盘同名候选与仓库候选逐字节一致。
+- 三张卡均为负向状态，`positive_review_count=0`，`action=no_order`。
+
+本候选只证明 M3 决策 read model 能接入原工作簿派生页，不等同 Checkpoint B、M3 产品
+验收或 canonical 发布。
 
 ## 状态
 

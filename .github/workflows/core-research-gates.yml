@@ -44,6 +44,8 @@ jobs:
           tests/test_decision_read_model.py
           tests/test_m3_decision_application.py
           tests/test_m3_decision_card_workbook.py
+          tests/test_m3_decision_review_sheet.py
+          tests/test_stage_frontend_replace_sheet.py
           tests/test_m3_decision_acceptance_audit.py
           tests/test_m3_history_read_model.py
           tests/test_portfolio_contracts.py

@@ -42,6 +42,26 @@
 - 新增定向回归 15 passed；M5 联合回归 56 passed。24 条材料性结论仍待用户逐条填写，
   之后才允许显式调用材料性桥。
 
+## M3 决策复核原工作簿候选：2026-09-24
+
+本节记录把三张真实 M3 负向决策卡接入现有 55 页工作簿派生页 `00_决策复核` 的
+候选工程。M2 保持 `PENDING_HUMAN_REVIEW`，M3、M4、M5 保持 `PARTIAL`；所有动作
+`action=no_order`。
+
+- 新增 `m3_decision_review_sheet.py`：三张卡、缺失与阻断、来源 Hash、证据引用
+  和人工复核要求集中投影到一个派生页，不新增个人化结论。
+- 扩展 `stage_frontend_package.py` 的 `replace_sheet`：只替换 `00_决策复核`
+  XML 部件，其余 54 个页面和 113 个未替换 ZIP 部件逐字节保留。
+- 新增 `scripts/build_m3_original_workbook_candidate.py`，绑定 canonical、冻结
+  M1 输入与 M1 预登记 Hash；候选不自动发布。
+- 候选文件 `A股价值投资_Agent前端智能跟踪模板_M3决策复核候选_20260924.xlsx`，
+  字节数 13,200,586，SHA-256
+  `ac3e67e6b9c5eb65812fab7c82cfa73e2ee2336c530b30f1d77fbc6383b1a7a3`。
+- 实际 WPS 只读验证 `passed`：55 页、决策页可见、公式错误 0、禁止信号扫描通过、
+  打开前后 Hash 不变；WPS 云盘同名候选与仓库候选逐字节一致。
+- 新增 4 项定向回归并纳入 CI；M3 决策与发布层联合回归 18 passed。
+- 本候选不证明 Checkpoint B；用户仍需在 WPS 中阅读三张卡并复述理由与反证。
+
 ## M5 人工材料性判定接入：2026-09-24
 
 本节记录把已有人工 `EventMaterialityDecision` 接入 M5 事件管道的离线工程。M2 保持

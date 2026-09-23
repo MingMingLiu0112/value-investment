@@ -16,6 +16,8 @@ runtime/
 backups/
 *.dump
 *.manifest.json
+*.receipt.json
+*.m3-decision-addon.xlsx
 evidence-archive/
 .agents/
 

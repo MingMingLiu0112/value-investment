@@ -1,5 +1,40 @@
 # Changelog
 
+## v2026.09.24-m3-decision-review-original-workbook-candidate
+
+### Release Scope
+
+把三张真实非个人化 M3 负向决策卡投影进现有 55 页工作簿的派生页
+`00_决策复核`，形成受保护候选。本版本不发布 canonical、不覆盖其余 54 页、不创建
+Entry、Journal、组合结论或订单。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/m3_decision_review_sheet.py`：
+  在单一 `00_决策复核` 页展示三张卡、缺失与阻断、来源 Hash、证据引用和人工复核
+  要求；所有卡保持 `requires_human_review=true`、`action=no_order`。
+- 扩展 `scripts/stage_frontend_package.py`：
+  新增 `replace_sheet`，只替换目标派生工作表 XML 部件，合并样式并内联共享字符串；
+  其余工作表和工作簿关系逐字节保留。
+- 新增 `scripts/build_m3_original_workbook_candidate.py`：
+  绑定 canonical、冻结 M1 输入和 M1 预登记三个 SHA-256，生成候选和 manifest。
+- 新增 WPS 只读校验脚本、4 项定向回归，并纳入 GitHub Core Research Gate。
+
+### Verification
+
+- 源工作簿 SHA-256 保持不变：
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- 候选字节数 13,200,586，SHA-256：
+  `ac3e67e6b9c5eb65812fab7c82cfa73e2ee2336c530b30f1d77fbc6383b1a7a3`。
+- 54 个原工作表保留、1 个派生页替换、113 个未替换 ZIP 部件逐字节一致。
+- 三张卡全部为负向状态，`positive_review_count=0`；WPS 只读收据 `passed`，
+  WPS 云盘同名候选与仓库候选逐字节一致。
+
+### Acceptance Boundary
+
+- `M2=PENDING_HUMAN_REVIEW`，`M3/M4/M5=PARTIAL`，全部动作 `action=no_order`。
+- 本版本不证明 Checkpoint B；用户仍需在 WPS 中实际阅读三张卡并复述理由与反证。
+
 ## v2026.09.24-m5-disclosure-review-intake
 
 ### Release Scope

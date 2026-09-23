@@ -301,6 +301,134 @@ def graft(source, addon, output, expected):
     return receipt
 
 
+def replace_sheet(
+    source,
+    addon,
+    output,
+    expected,
+    target_sheet,
+    replacement_sheet=None,
+    frozen_rows=4,
+):
+    """Replace one derived frontend sheet while retaining every other XML part.
+
+    Unlike ``graft``, this mode keeps the workbook sheet order and relationship
+    graph unchanged.  It only swaps the worksheet bytes at the existing target
+    path, merges the addon styles, and inlines the addon shared strings.
+    """
+    replacement_sheet = replacement_sheet or target_sheet
+    if digest(source.read_bytes()) != expected:
+        raise ValueError("Source changed since inspection; do not publish")
+    if output.exists():
+        raise ValueError("Candidate already exists")
+    with ZipFile(source) as src, ZipFile(addon) as new:
+        _, existing = sheets(src)
+        _, added = sheets(new)
+        existing_paths = {s.get("name"): path for s, path in existing}
+        added_paths = {s.get("name"): path for s, path in added}
+        if target_sheet not in existing_paths:
+            raise ValueError("Target frontend sheet does not exist: " + target_sheet)
+        if replacement_sheet not in added_paths:
+            raise ValueError("Replacement sheet does not exist in addon: " + replacement_sheet)
+        target_path = existing_paths[target_sheet]
+        replacement_path = added_paths[replacement_sheet]
+
+        replacement_rel = (
+            replacement_path.replace("xl/worksheets/", "xl/worksheets/_rels/")
+            .removesuffix(".xml") + ".xml.rels"
+        )
+        if replacement_rel in new.namelist() and len(xml(new.read(replacement_rel))):
+            raise ValueError(
+                "Single-sheet replacement does not support external worksheet dependencies"
+            )
+
+        styles = xml(src.read("xl/styles.xml"))
+        offsets = merge_styles(styles, xml(new.read("xl/styles.xml")))
+        shared = []
+        if "xl/sharedStrings.xml" in new.namelist():
+            shared = [
+                deepcopy(item)
+                for item in xml(new.read("xl/sharedStrings.xml"))
+            ]
+        root = xml(new.read(replacement_path))
+        view = root.find("m:sheetViews/m:sheetView", NS)
+        if view is not None:
+            for pane in view.findall("m:pane", NS):
+                view.remove(pane)
+            ET.SubElement(
+                view,
+                f"{{{M}}}pane",
+                {
+                    "ySplit": str(frozen_rows),
+                    "topLeftCell": f"A{frozen_rows + 1}",
+                    "activePane": "bottomLeft",
+                    "state": "frozen",
+                },
+            )
+            view.set("zoomScale", "90")
+        for cell in root.iter(f"{{{M}}}c"):
+            if "s" in cell.attrib:
+                cell.set("s", str(int(cell.get("s")) + offsets["cellXfs"]))
+            if cell.get("t") == "s":
+                value = cell.find(f"{{{M}}}v")
+                if value is None:
+                    raise ValueError("Replacement shared-string cell has no value")
+                entry = deepcopy(shared[int(value.text)])
+                entry.tag = f"{{{M}}}is"
+                cell.remove(value)
+                cell.set("t", "inlineStr")
+                cell.append(entry)
+        for element in root.iter():
+            if "dxfId" in element.attrib:
+                element.set("dxfId", str(int(element.get("dxfId")) + offsets["dxfs"]))
+            if element.tag == f"{{{M}}}col" and "style" in element.attrib:
+                element.set("style", str(int(element.get("style")) + offsets["cellXfs"]))
+
+        replacements = {
+            target_path: serialized(root),
+            "xl/styles.xml": serialized(styles),
+        }
+        with ZipFile(output, "w", ZIP_DEFLATED, allowZip64=True) as out:
+            for item in src.infolist():
+                out.writestr(
+                    deepcopy(item),
+                    replacements.get(item.filename, src.read(item.filename)),
+                )
+
+        with ZipFile(output) as result:
+            unchanged = [
+                path for path in src.namelist() if path not in replacements
+            ]
+            assert all(result.read(path) == src.read(path) for path in unchanged)
+            assert result.testzip() is None
+            validate_package_relationships(output)
+            _, verified = sheets(result)
+            verified_names = [sheet.get("name") for sheet, _ in verified]
+            existing_names = [sheet.get("name") for sheet, _ in existing]
+            assert verified_names == existing_names
+            verified_paths = {
+                sheet.get("name"): path for sheet, path in verified
+            }
+            assert verified_paths[target_sheet] == target_path
+
+    receipt = {
+        "source_sha256": expected,
+        "candidate_sha256": digest(output.read_bytes()),
+        "original_parts_unchanged": len(unchanged),
+        "original_sheets_preserved": len(existing) - 1,
+        "derived_sheets_replaced": 1,
+        "target_sheet": target_sheet,
+        "replacement_sheet": replacement_sheet,
+        "candidate": str(output),
+        "retained_parts_modified": sorted(replacements),
+        "status": "candidate_verified_not_published",
+    }
+    output.with_suffix(".receipt.json").write_text(
+        json.dumps(receipt, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    return receipt
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('mode', choices=['preview', 'graft'])
