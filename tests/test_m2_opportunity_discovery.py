@@ -19,8 +19,11 @@ from value_investment_agent.m2_opportunity_discovery import (
     CHANNEL_QUALITY,
     CHANNEL_VALUE,
     DATA_PARTIAL,
+    EVALUATION_BUDGET_EXCLUDED,
+    EVALUATION_NOT_EVALUATED,
     EvidenceReference,
     PROFILE_UNSUPPORTED,
+    coverage_signature,
     discovery_receipt_from_payload,
 )
 
@@ -154,6 +157,7 @@ def test_receipt_round_trip_preserves_no_order_and_candidate_signature():
 
     assert restored == receipt
     assert restored.action == ACTION_NO_ORDER
+    assert restored.coverage_signature == receipt.coverage_signature
     assert restored.candidate_signature == receipt.candidate_signature
 
 
@@ -182,6 +186,111 @@ def test_missing_analytics_remain_null_not_zero():
     assert any(candidate.symbol == "600001" for candidate in quality_candidates)
 
 
+def test_future_dividend_declaration_cannot_enter_an_earlier_snapshot():
+    dividend_payload = _dividend_payload()
+    future_row = [""] * 18
+    future_row[0] = "600001"
+    future_row[1] = "质量制造"
+    future_row[5] = "2.00"
+    future_row[6] = "0.08"
+    future_row[13] = "2026-10-01"
+    future_row[15] = "2026-11-01"
+    future_row[16] = "预案"
+    dividend_payload["rows"].append(future_row)
+    run_refs = {key: _reference(key) for key in ("official", "tencent", "sina", "dividend", "financial")}
+    receipt = build_discovery_receipt(
+        run_id="m2-future-dividend-fixture",
+        generated_at=datetime(2026, 9, 23, 8, 5, tzinfo=timezone.utc),
+        official_payload=_official_payload(),
+        tencent_payload=_tencent_payload(),
+        sina_payload=_sina_payload(),
+        dividend_payload=dividend_payload,
+        financial_points=_financial_points(),
+        quote_date="2026-09-23",
+        run_refs=run_refs,
+        policy=M2ScreeningPolicy(max_per_channel=10),
+    )
+
+    dividend_result = receipt.channel_results[CHANNEL_DIVIDEND]
+    assert not any(candidate.symbol == "600001" for candidate in dividend_result.candidates)
+    assert next(item for item in dividend_result.evaluations if item.symbol == "600001").status == EVALUATION_NOT_EVALUATED
+
+
+def test_source_external_quote_is_isolated_from_formal_pool_and_legacy_shadow():
+    tencent_payload = _tencent_payload()
+    tencent_payload["rows"].append({
+        "code": "sh600099",
+        "name": "非官方证券",
+        "zxj": "5",
+        "pe_ttm": "5",
+        "pn": "1",
+        "zsz": "100",
+        "stock_type": "GP-A",
+        "state": "",
+        "zdf_y": "1",
+    })
+    sina_payload = _sina_payload()
+    sina_payload["rows"].append({
+        "code": "600099",
+        "name": "非官方证券",
+        "class": "机械设备",
+        "trade": "5.00",
+        "per": "5",
+        "pb": "1",
+        "mktcap": "1000000",
+        "ticktime": "15:00:00",
+    })
+    run_refs = {key: _reference(key) for key in ("official", "tencent", "sina", "dividend", "financial")}
+    receipt = build_discovery_receipt(
+        run_id="m2-extra-quote-fixture",
+        generated_at=datetime(2026, 9, 23, 8, 5, tzinfo=timezone.utc),
+        official_payload=_official_payload(),
+        tencent_payload=tencent_payload,
+        sina_payload=sina_payload,
+        dividend_payload=_dividend_payload(),
+        financial_points=_financial_points(),
+        quote_date="2026-09-23",
+        run_refs=run_refs,
+        policy=M2ScreeningPolicy(max_per_channel=10),
+    )
+
+    assert "600099" not in receipt.candidate_pool()
+    assert "600099" not in receipt.legacy_comparison.legacy_candidates
+    assert receipt.data_health.extra_quote_count == 1
+    assert all(result.coverage_count == 4 for result in receipt.channel_results.values())
+
+
+def test_cross_channel_candidate_reasons_are_preserved_in_pool():
+    receipt = _receipt()
+    reasons = receipt.candidate_pool().get("600001", ())
+
+    assert len(reasons) == 2
+    assert {item.channel for item in reasons} == {CHANNEL_QUALITY, CHANNEL_VALUE}
+    assert all(reason.reasons for reason in reasons)
+
+
+def test_budget_truncation_keeps_budget_excluded_accounting():
+    run_refs = {key: _reference(key) for key in ("official", "tencent", "sina", "dividend", "financial")}
+    receipt = build_discovery_receipt(
+        run_id="m2-budget-fixture",
+        generated_at=datetime(2026, 9, 23, 8, 5, tzinfo=timezone.utc),
+        official_payload=_official_payload(),
+        tencent_payload=_tencent_payload(),
+        sina_payload=_sina_payload(),
+        dividend_payload=_dividend_payload(),
+        financial_points=_financial_points(),
+        quote_date="2026-09-23",
+        run_refs=run_refs,
+        policy=M2ScreeningPolicy(max_per_channel=1),
+    )
+    value_result = receipt.channel_results[CHANNEL_VALUE]
+
+    assert len(value_result.candidates) == 1
+    assert value_result.pass_count == 1
+    assert value_result.budget_excluded_count == 2
+    assert value_result.coverage_count == 4
+
+
 def test_empty_candidate_pool_is_a_legal_snapshot():
     from value_investment_agent.m2_discovery_engine import build_channel_results
     from value_investment_agent.m2_opportunity_discovery import candidate_signature
@@ -193,6 +302,7 @@ def test_empty_candidate_pool_is_a_legal_snapshot():
 
     assert all(not result.candidates for result in channels.values())
     assert candidate_signature(channels)
+    assert coverage_signature(channels)
 
 
 def test_adapter_parsers_preserve_units_and_missing_values():
@@ -211,6 +321,7 @@ def test_adapter_parsers_preserve_units_and_missing_values():
 def test_workbook_is_presentation_only_and_contains_channel_sheets(tmp_path):
     from openpyxl import load_workbook
     from value_investment_agent.m2_discovery_workbook import (
+        COVERAGE_SHEET,
         HEALTH_SHEET,
         OVERVIEW_SHEET,
         POOL_SHEET,
@@ -226,6 +337,7 @@ def test_workbook_is_presentation_only_and_contains_channel_sheets(tmp_path):
     assert OVERVIEW_SHEET in loaded.sheetnames
     assert POOL_SHEET in loaded.sheetnames
     assert HEALTH_SHEET in loaded.sheetnames
+    assert COVERAGE_SHEET in loaded.sheetnames
     overview = loaded[OVERVIEW_SHEET]
     assert any(
         "不生成估值、BUY、仓位或订单" in str(cell.value)

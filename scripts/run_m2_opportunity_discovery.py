@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import shutil
 import sys
+from typing import Mapping
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -84,6 +85,27 @@ def _load_retained_financial_export(path: Path) -> tuple[list[dict], dict]:
     return points, payload
 
 
+def _payload_fetched_at(payload: Mapping[str, object], name: str) -> datetime:
+    value = payload.get("fetched_at")
+    if not value:
+        raise RuntimeError(f"{name} payload has no fetched_at and cannot be replay-restamped")
+    return datetime.fromisoformat(str(value))
+
+
+def _financial_fetched_at(payload: Mapping[str, object]) -> datetime:
+    generated_at = payload.get("retained_generated_at") or payload.get("generated_at")
+    if generated_at:
+        return datetime.fromisoformat(str(generated_at))
+    point_times = [
+        str(point.get("fetched_at") or point.get("created_at") or "")
+        for point in payload.get("points") or []
+        if point.get("fetched_at") or point.get("created_at")
+    ]
+    if point_times:
+        return datetime.fromisoformat(max(point_times))
+    raise RuntimeError("Retained financial export has no generated_at or point timestamp")
+
+
 def _collect_official(output_dir: Path, root: Path) -> tuple[dict, EvidenceReference]:
     retained = root / "runtime" / "exchange-lists" / "official-universe.json"
     live_error: str | None = None
@@ -102,7 +124,9 @@ def _collect_official(output_dir: Path, root: Path) -> tuple[dict, EvidenceRefer
     if live_error:
         payload = dict(payload)
         payload["m2_live_collection_error"] = live_error
-    fetched_at = payload.get("fetched_at") or datetime.now(timezone.utc).isoformat()
+    fetched_at = payload.get("fetched_at")
+    if not fetched_at:
+        raise RuntimeError("Official universe payload has no fetched_at")
     reference = _reference(
         "official",
         path,
@@ -140,12 +164,12 @@ def run_once(
     if reuse_inputs and all(path.exists() for path in required_inputs.values()):
         official_path = required_inputs["official"]
         official_payload = json.loads(official_path.read_text(encoding="utf-8"))
-        official_fetched = official_payload.get("fetched_at") or now.isoformat()
+        official_fetched = _payload_fetched_at(official_payload, "official")
         official_ref = _reference(
             "official", official_path, root=root,
             source_name="沪深北交易所官方证券清单",
             source_url="https://www.szse.cn | https://query.sse.com.cn | https://www.bse.cn",
-            fetched_at=datetime.fromisoformat(official_fetched),
+            fetched_at=official_fetched,
         )
         tencent_path = required_inputs["tencent"]
         tencent_payload = json.loads(tencent_path.read_text(encoding="utf-8"))
@@ -153,7 +177,7 @@ def run_once(
             "tencent", tencent_path, root=root,
             source_name="AkShare / Tencent all-A market snapshot",
             source_url="https://stockapp.finance.qq.com/mstats/#mod=list&id=hs_hsj&module=hs&type=hsj",
-            fetched_at=now,
+            fetched_at=_payload_fetched_at(tencent_payload, "tencent"),
         )
         sina_path = required_inputs["sina"]
         sina_payload = json.loads(sina_path.read_text(encoding="utf-8"))
@@ -161,7 +185,7 @@ def run_once(
             "sina", sina_path, root=root,
             source_name="AkShare / Sina Shenwan level-1 industry and quote snapshot",
             source_url="https://vip.stock.finance.sina.com.cn/mkt/#hs_a",
-            fetched_at=now,
+            fetched_at=_payload_fetched_at(sina_payload, "sina"),
         )
         dividend_path = required_inputs["dividend"]
         dividend_payload = json.loads(dividend_path.read_text(encoding="utf-8"))
@@ -169,7 +193,7 @@ def run_once(
             "dividend", dividend_path, root=root,
             source_name="AkShare / Eastmoney annual cash dividend plan snapshot",
             source_url="https://data.eastmoney.com/yjfp/",
-            fetched_at=now,
+            fetched_at=_payload_fetched_at(dividend_payload, "dividend"),
         )
         financial_path = required_inputs["financial"]
         financial_payload = json.loads(financial_path.read_text(encoding="utf-8"))
@@ -178,7 +202,7 @@ def run_once(
             "financial", financial_path, root=root,
             source_name="Retained point-in-time financial evidence export",
             source_url="internal://runtime/server-export-payload",
-            fetched_at=now,
+            fetched_at=_financial_fetched_at(financial_payload),
         )
     else:
         official_payload, official_ref = _collect_official(output_dir, root)
@@ -191,7 +215,7 @@ def run_once(
             root=root,
             source_name="AkShare / Tencent all-A market snapshot",
             source_url="https://stockapp.finance.qq.com/mstats/#mod=list&id=hs_hsj&module=hs&type=hsj",
-            fetched_at=now,
+            fetched_at=_payload_fetched_at(tencent_payload, "tencent"),
         )
 
         sina_raw, sina_payload = fetch_sina_industry_quotes()
@@ -202,7 +226,7 @@ def run_once(
             root=root,
             source_name="AkShare / Sina Shenwan level-1 industry and quote snapshot",
             source_url="https://vip.stock.finance.sina.com.cn/mkt/#hs_a",
-            fetched_at=now,
+            fetched_at=_payload_fetched_at(sina_payload, "sina"),
         )
 
         dividend_payload: dict = {"fiscal_year": "2025", "rows": []}
@@ -215,7 +239,7 @@ def run_once(
                 root=root,
                 source_name="AkShare / Eastmoney annual cash dividend plan snapshot",
                 source_url="https://data.eastmoney.com/yjfp/",
-                fetched_at=now,
+                fetched_at=_payload_fetched_at(dividend_payload, "dividend"),
             )
         else:
             dividend_raw = _json_bytes(dividend_payload)
@@ -236,14 +260,17 @@ def run_once(
             "points": financial_points,
             "retained_generated_at": financial_export.get("generated_at"),
         }))
-        financial_fetched = financial_export.get("generated_at") or now.isoformat()
+        financial_fetched = _financial_fetched_at({
+            "points": financial_points,
+            "generated_at": financial_export.get("generated_at"),
+        })
         financial_ref = _reference(
             "financial",
             financial_path,
             root=root,
             source_name="Retained point-in-time financial evidence export",
             source_url="internal://runtime/server-export-payload",
-            fetched_at=datetime.fromisoformat(financial_fetched),
+            fetched_at=financial_fetched,
         )
 
     run_refs = {
@@ -279,7 +306,11 @@ def run_once(
 
     # Replay from the exact receipt bytes and from the retained raw inputs.
     replay = discovery_receipt_from_payload(json.loads(receipt_bytes.decode("utf-8")))
-    replay_matches_receipt = replay.candidate_signature == receipt.candidate_signature
+    replay_matches_receipt = (
+        replay == receipt
+        and replay.candidate_signature == receipt.candidate_signature
+        and replay.coverage_signature == receipt.coverage_signature
+    )
     replay_build = build_discovery_receipt(
         run_id=run_id,
         generated_at=now,
@@ -292,7 +323,11 @@ def run_once(
         run_refs=run_refs,
         policy=policy,
     )
-    replay_matches_inputs = replay_build.candidate_signature == receipt.candidate_signature
+    replay_matches_inputs = (
+        replay_build == receipt
+        and replay_build.candidate_signature == receipt.candidate_signature
+        and replay_build.coverage_signature == receipt.coverage_signature
+    )
 
     wps_result = None
     if wps_dir is not None:
@@ -321,7 +356,12 @@ def run_once(
         "data_health": receipt.data_health.as_policy(),
         "channel_counts": counts,
         "legacy_comparison": receipt.legacy_comparison.as_policy(),
+        "coverage_signature": receipt.coverage_signature,
         "candidate_signature": receipt.candidate_signature,
+        "coverage_counts": {
+            channel: result.as_policy()["coverage"]
+            for channel, result in receipt.channel_results.items()
+        },
         "receipt_path": str(receipt_path.relative_to(root)),
         "workbook": workbook_info,
         "wps_workbook": wps_result,

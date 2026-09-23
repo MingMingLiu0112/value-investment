@@ -15,8 +15,8 @@ import re
 from typing import Any, Mapping, Sequence
 
 
-M2_SCHEMA_VERSION = "m2-opportunity-discovery-v1"
-M2_RULE_VERSION = "m2-multi-channel-cheap-screen-v1"
+M2_SCHEMA_VERSION = "m2-opportunity-discovery-v2"
+M2_RULE_VERSION = "m2-multi-channel-cheap-screen-v2"
 ACTION_NO_ORDER = "no_order"
 
 CHANNEL_QUALITY = "quality"
@@ -43,12 +43,29 @@ PRIORITY_A = "A"
 PRIORITY_B = "B"
 PRIORITY_C = "C"
 
+EVALUATION_PASS = "PASS"
+EVALUATION_REJECTED = "REJECTED"
+EVALUATION_DATA_GAP = "DATA_GAP"
+EVALUATION_CONFLICT = "CONFLICT"
+EVALUATION_UNSUPPORTED = "UNSUPPORTED"
+EVALUATION_NOT_EVALUATED = "NOT_EVALUATED"
+EVALUATION_BUDGET_EXCLUDED = "BUDGET_EXCLUDED"
+
 _SYMBOL = re.compile(r"^[0-9]{6}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _CHANNELS = set(CHANNELS)
 _DATA_STATUSES = {DATA_COMPLETE, DATA_PARTIAL, DATA_MISSING, DATA_UNSUPPORTED}
 _PROFILE_STATUSES = {PROFILE_SUPPORTED, PROFILE_UNKNOWN, PROFILE_UNSUPPORTED}
 _PRIORITY_TIERS = {PRIORITY_A, PRIORITY_B, PRIORITY_C}
+_EVALUATION_STATUSES = {
+    EVALUATION_PASS,
+    EVALUATION_REJECTED,
+    EVALUATION_DATA_GAP,
+    EVALUATION_CONFLICT,
+    EVALUATION_UNSUPPORTED,
+    EVALUATION_NOT_EVALUATED,
+    EVALUATION_BUDGET_EXCLUDED,
+}
 
 
 def _required_text(value: object, field: str) -> str:
@@ -462,6 +479,43 @@ def candidate_reason_from_payload(value: Mapping[str, Any]) -> CandidateReason:
 
 
 @dataclass(frozen=True)
+class ChannelEvaluation:
+    """One security's per-channel outcome, including the non-candidate denominator."""
+
+    symbol: str
+    name: str
+    channel: str
+    status: str
+    reason: str
+    profile_status: str
+    evidence_date: str
+
+    def __post_init__(self) -> None:
+        if not _SYMBOL.fullmatch(self.symbol):
+            raise ValueError("Evaluation symbol must be six digits")
+        object.__setattr__(self, "name", _required_text(self.name, "evaluation name"))
+        if self.channel not in _CHANNELS:
+            raise ValueError(f"Unknown evaluation channel: {self.channel}")
+        if self.status not in _EVALUATION_STATUSES:
+            raise ValueError(f"Unknown evaluation status: {self.status}")
+        object.__setattr__(self, "reason", _required_text(self.reason, "evaluation reason"))
+        if self.profile_status not in _PROFILE_STATUSES:
+            raise ValueError("Evaluation profile status is invalid")
+        object.__setattr__(self, "evidence_date", _required_text(self.evidence_date, "evaluation evidence date"))
+
+    def as_policy(self) -> dict[str, Any]:
+        return {
+            "symbol": self.symbol,
+            "name": self.name,
+            "channel": self.channel,
+            "status": self.status,
+            "reason": self.reason,
+            "profile_status": self.profile_status,
+            "evidence_date": self.evidence_date,
+        }
+
+
+@dataclass(frozen=True)
 class ExcludedSecurity:
     symbol: str
     name: str
@@ -496,6 +550,7 @@ class ChannelResult:
     excluded: tuple[ExcludedSecurity, ...]
     missing: tuple[ExcludedSecurity, ...]
     rule_version: str
+    evaluations: tuple[ChannelEvaluation, ...] = ()
 
     def __post_init__(self) -> None:
         if self.channel not in _CHANNELS:
@@ -505,6 +560,44 @@ class ChannelResult:
         object.__setattr__(self, "excluded", tuple(self.excluded))
         object.__setattr__(self, "missing", tuple(self.missing))
         object.__setattr__(self, "rule_version", _required_text(self.rule_version, "channel rule version"))
+        object.__setattr__(self, "evaluations", tuple(self.evaluations))
+        if len({item.symbol for item in self.evaluations}) != len(self.evaluations):
+            raise ValueError("Channel evaluations contain duplicate symbols")
+
+    def _count(self, status: str) -> int:
+        return sum(1 for item in self.evaluations if item.status == status)
+
+    @property
+    def pass_count(self) -> int:
+        return self._count(EVALUATION_PASS)
+
+    @property
+    def rejected_count(self) -> int:
+        return self._count(EVALUATION_REJECTED)
+
+    @property
+    def data_gap_count(self) -> int:
+        return self._count(EVALUATION_DATA_GAP)
+
+    @property
+    def conflict_count(self) -> int:
+        return self._count(EVALUATION_CONFLICT)
+
+    @property
+    def unsupported_count(self) -> int:
+        return self._count(EVALUATION_UNSUPPORTED)
+
+    @property
+    def not_evaluated_count(self) -> int:
+        return self._count(EVALUATION_NOT_EVALUATED)
+
+    @property
+    def budget_excluded_count(self) -> int:
+        return self._count(EVALUATION_BUDGET_EXCLUDED)
+
+    @property
+    def coverage_count(self) -> int:
+        return len(self.evaluations)
 
     def as_policy(self) -> dict[str, Any]:
         return {
@@ -514,6 +607,17 @@ class ChannelResult:
             "excluded": [item.as_policy() for item in self.excluded],
             "missing": [item.as_policy() for item in self.missing],
             "rule_version": self.rule_version,
+            "evaluations": [item.as_policy() for item in self.evaluations],
+            "coverage": {
+                "coverage_count": self.coverage_count,
+                "pass_count": self.pass_count,
+                "rejected_count": self.rejected_count,
+                "data_gap_count": self.data_gap_count,
+                "conflict_count": self.conflict_count,
+                "unsupported_count": self.unsupported_count,
+                "not_evaluated_count": self.not_evaluated_count,
+                "budget_excluded_count": self.budget_excluded_count,
+            },
         }
 
 
@@ -591,6 +695,7 @@ class DiscoveryRunReceipt:
     channel_results: dict[str, ChannelResult]
     legacy_comparison: LegacyComparison
     evidence_refs: tuple[EvidenceReference, ...]
+    coverage_signature: str
     candidate_signature: str
 
     def __post_init__(self) -> None:
@@ -607,16 +712,22 @@ class DiscoveryRunReceipt:
         object.__setattr__(self, "evidence_refs", tuple(self.evidence_refs))
         object.__setattr__(
             self,
+            "coverage_signature",
+            _required_text(self.coverage_signature, "coverage signature"),
+        )
+        object.__setattr__(
+            self,
             "candidate_signature",
             _required_text(self.candidate_signature, "candidate signature"),
         )
 
-    def candidate_pool(self) -> dict[str, CandidateReason]:
-        return {
-            candidate.symbol: candidate
-            for channel in self.channel_results.values()
-            for candidate in channel.candidates
-        }
+    def candidate_pool(self) -> dict[str, tuple[CandidateReason, ...]]:
+        """Return every candidate, preserving all channel reasons for one symbol."""
+        pooled: dict[str, list[CandidateReason]] = {}
+        for result in self.channel_results.values():
+            for candidate in result.candidates:
+                pooled.setdefault(candidate.symbol, []).append(candidate)
+        return {symbol: tuple(items) for symbol, items in pooled.items()}
 
     def as_policy(self) -> dict[str, Any]:
         return {
@@ -633,6 +744,7 @@ class DiscoveryRunReceipt:
             },
             "legacy_comparison": self.legacy_comparison.as_policy(),
             "evidence_refs": [reference.as_policy() for reference in self.evidence_refs],
+            "coverage_signature": self.coverage_signature,
             "candidate_signature": self.candidate_signature,
         }
 
@@ -659,6 +771,41 @@ def candidate_signature(channel_results: Mapping[str, ChannelResult]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def coverage_signature(channel_results: Mapping[str, ChannelResult]) -> str:
+    """Hash the full per-security, per-channel denominator and outcome."""
+    entries = []
+    for channel in CHANNELS:
+        result = channel_results.get(channel)
+        if result is None:
+            raise ValueError(f"Missing channel result: {channel}")
+        for evaluation in result.evaluations:
+            entries.append(
+                {
+                    "channel": channel,
+                    "symbol": evaluation.symbol,
+                    "status": evaluation.status,
+                    "reason": evaluation.reason,
+                    "profile_status": evaluation.profile_status,
+                    "evidence_date": evaluation.evidence_date,
+                }
+            )
+    payload = json.dumps(entries, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def channel_evaluation_from_payload(value: Mapping[str, Any]) -> ChannelEvaluation:
+    data = dict(value)
+    return ChannelEvaluation(
+        symbol=str(data.get("symbol") or ""),
+        name=str(data.get("name") or ""),
+        channel=str(data.get("channel") or ""),
+        status=str(data.get("status") or ""),
+        reason=str(data.get("reason") or ""),
+        profile_status=str(data.get("profile_status") or ""),
+        evidence_date=str(data.get("evidence_date") or ""),
+    )
+
+
 def _channel_result_from_payload(value: Mapping[str, Any]) -> ChannelResult:
     data = dict(value)
     return ChannelResult(
@@ -668,6 +815,9 @@ def _channel_result_from_payload(value: Mapping[str, Any]) -> ChannelResult:
         excluded=tuple(_excluded_from_payload(item) for item in data.get("excluded") or []),
         missing=tuple(_excluded_from_payload(item) for item in data.get("missing") or []),
         rule_version=str(data.get("rule_version") or ""),
+        evaluations=tuple(
+            channel_evaluation_from_payload(item) for item in data.get("evaluations") or []
+        ),
     )
 
 
@@ -701,8 +851,11 @@ def discovery_receipt_from_payload(value: Mapping[str, Any]) -> DiscoveryRunRece
         evidence_refs=tuple(
             evidence_reference_from_payload(item) for item in data.get("evidence_refs") or []
         ),
+        coverage_signature=str(data.get("coverage_signature") or ""),
         candidate_signature=str(data.get("candidate_signature") or ""),
     )
+    if receipt.coverage_signature != coverage_signature(receipt.channel_results):
+        raise ValueError("Discovery coverage signature changed during decode")
     if receipt.candidate_signature != candidate_signature(receipt.channel_results):
         raise ValueError("Discovery candidate signature changed during decode")
     return receipt

@@ -38,6 +38,7 @@ HEALTH_SHEET = "06_数据健康"
 EXCLUDED_SHEET = "07_不支持与缺失"
 LEGACY_SHEET = "08_Legacy对比"
 EVIDENCE_SHEET = "09_证据清单"
+COVERAGE_SHEET = "10_逐通道覆盖"
 
 INK = "24312D"
 GREEN = "18755D"
@@ -169,12 +170,24 @@ def _overview(wb: Workbook, receipt: DiscoveryRunReceipt, policy: M2ScreeningPol
         2,
     )
     row = 4
+    coverage_text = "；".join(
+        (
+            f"{channel}: 分母 {result.coverage_count} / PASS {result.pass_count} / "
+            f"REJECTED {result.rejected_count} / DATA_GAP {result.data_gap_count} / "
+            f"CONFLICT {result.conflict_count} / UNSUPPORTED {result.unsupported_count} / "
+            f"NOT_EVALUATED {result.not_evaluated_count} / BUDGET_EXCLUDED {result.budget_excluded_count}"
+        )
+        for channel, result in receipt.channel_results.items()
+    )
     items = [
         ("产品结论", "系统只发现值得深研的公司，不生成估值、BUY、仓位或订单。"),
         ("Universe 分母", f"{receipt.data_health.universe_count} 家官方证券清单，行情匹配 {receipt.data_health.matched_quote_count} 家。"),
         ("数据健康", f"{receipt.data_health.status}；阻断 {len(receipt.data_health.blockers)} 项。"),
+        ("逐通道覆盖", coverage_text),
         ("候选总量", f"{receipt.legacy_comparison.new_candidate_count} 家，跨通道可能重复。"),
+        ("预算外通过者", f"各通道超出展示预算的通过者已在覆盖账中保留，不静默删除。"),
         ("Legacy 对比", f"{receipt.legacy_comparison.legacy_candidate_count} 家旧 PE/PB 阴影候选，与新池重叠 {receipt.legacy_comparison.overlap_count} 家。"),
+        ("覆盖签名", receipt.coverage_signature),
         ("候选签名", receipt.candidate_signature),
     ]
     for label, value in items:
@@ -277,6 +290,37 @@ def _evidence(wb: Workbook, receipt: DiscoveryRunReceipt) -> None:
         row += 1
 
 
+def _coverage(wb: Workbook, receipt: DiscoveryRunReceipt) -> None:
+    ws = wb.create_sheet(COVERAGE_SHEET)
+    ws.sheet_view.showGridLines = False
+    ws.freeze_panes = "A4"
+    _widths(ws, [12, 18, 22, 18, 72, 14, 14])
+    _title(
+        ws,
+        "逐证券逐通道覆盖",
+        "覆盖账保留完整官方分母、原因、画像与证据日期；PASS 不等于买入。",
+        7,
+    )
+    row = _header(ws, 4, ["证券代码", "公司", "通道", "状态", "原因", "画像", "证据日期"])
+    for channel, result in receipt.channel_results.items():
+        for evaluation in result.evaluations:
+            fill = "FFFFFF"
+            if evaluation.status == "PASS":
+                fill = "E4F3EE"
+            elif evaluation.status == "BUDGET_EXCLUDED":
+                fill = AMBER
+            elif evaluation.status in {"DATA_GAP", "CONFLICT", "UNSUPPORTED"}:
+                fill = "F8E7E6"
+            _style(ws.cell(row, 1, evaluation.symbol))
+            _style(ws.cell(row, 2, evaluation.name))
+            _style(ws.cell(row, 3, channel), fill=GREY)
+            _style(ws.cell(row, 4, evaluation.status), fill=fill, bold=True)
+            _style(ws.cell(row, 5, evaluation.reason))
+            _style(ws.cell(row, 6, evaluation.profile_status))
+            _style(ws.cell(row, 7, evaluation.evidence_date))
+            row += 1
+
+
 def build_discovery_workbook(
     receipt: DiscoveryRunReceipt,
     policy: M2ScreeningPolicy,
@@ -305,6 +349,7 @@ def build_discovery_workbook(
     _excluded(wb, receipt)
     _legacy(wb, receipt)
     _evidence(wb, receipt)
+    _coverage(wb, receipt)
     wb.active = 0
     return wb
 

@@ -29,6 +29,13 @@ from .m2_opportunity_discovery import (
     DATA_MISSING,
     DATA_PARTIAL,
     DATA_UNSUPPORTED,
+    EVALUATION_BUDGET_EXCLUDED,
+    EVALUATION_CONFLICT,
+    EVALUATION_DATA_GAP,
+    EVALUATION_NOT_EVALUATED,
+    EVALUATION_PASS,
+    EVALUATION_REJECTED,
+    EVALUATION_UNSUPPORTED,
     M2_RULE_VERSION,
     M2_SCHEMA_VERSION,
     PRIORITY_A,
@@ -38,6 +45,7 @@ from .m2_opportunity_discovery import (
     PROFILE_UNKNOWN,
     PROFILE_UNSUPPORTED,
     CandidateReason,
+    ChannelEvaluation,
     ChannelResult,
     DataHealth,
     DiscoveryRunReceipt,
@@ -50,6 +58,7 @@ from .m2_opportunity_discovery import (
     UniverseRecord,
     UniverseSnapshot,
     candidate_signature,
+    coverage_signature,
 )
 
 
@@ -302,6 +311,7 @@ def build_dividend_evidence(
     *,
     fetched_at: datetime,
     raw_sha256: str,
+    known_at: date,
 ) -> dict[str, DividendEvidence]:
     result: dict[str, DividendEvidence] = {}
     for row in rows:
@@ -309,6 +319,11 @@ def build_dividend_evidence(
         cash_dps = _decimal(row.get("cash_dps"))
         declared_yield = _decimal(row.get("declared_yield"))
         if cash_dps is None or declared_yield is None:
+            continue
+        declaration_date = (
+            _date(row["declaration_date"]) if row.get("declaration_date") else None
+        )
+        if declaration_date is not None and declaration_date > known_at:
             continue
         result[symbol] = DividendEvidence(
             symbol=symbol,
@@ -353,13 +368,19 @@ def build_channel_results(
     financial: Mapping[str, FinancialEvidence],
     dividends: Mapping[str, DividendEvidence],
     *,
+    official_universe: Mapping[str, UniverseRecord] | None = None,
     run_refs: Mapping[str, EvidenceReference],
     policy: M2ScreeningPolicy,
     quote_date: str,
 ) -> dict[str, ChannelResult]:
+    def eligible(symbol: str) -> bool:
+        return official_universe is None or symbol in official_universe
+
     quality_candidates: list[CandidateReason] = []
     quality_missing: list[ExcludedSecurity] = []
     for fin in sorted(financial.values(), key=lambda item: (item.total_score is None, -(item.total_score or Decimal("-1")))):
+        if not eligible(fin.symbol):
+            continue
         if fin.model_type in FINANCIAL_MODEL_TYPES:
             continue
         quote = quotes.get(fin.symbol)
@@ -407,6 +428,8 @@ def build_channel_results(
         dividends.values(),
         key=lambda item: (-item.declared_yield, -(item.cash_dps)),
     ):
+        if not eligible(dividend.symbol):
+            continue
         quote = quotes.get(dividend.symbol)
         if quote is None:
             continue
@@ -451,7 +474,8 @@ def build_channel_results(
     value_excluded: list[ExcludedSecurity] = []
     value_rows = [
         quote for quote in quotes.values()
-        if quote.pe_ttm is not None and 0 < quote.pe_ttm <= policy.value_max_pe
+        if eligible(quote.symbol)
+        and quote.pe_ttm is not None and 0 < quote.pe_ttm <= policy.value_max_pe
         and quote.pb is not None and quote.pb > 0
         and quote.market_cap is not None and quote.market_cap >= policy.value_min_market_cap
         and "ST" not in quote.name.upper()
@@ -497,7 +521,8 @@ def build_channel_results(
     cyclical_excluded: list[ExcludedSecurity] = []
     cyclical_rows = [
         quote for quote in quotes.values()
-        if quote.industry in CYCLICAL_SECTORS
+        if eligible(quote.symbol)
+        and quote.industry in CYCLICAL_SECTORS
         and quote.pe_ttm is not None and quote.pe_ttm > 0
         and quote.pb is not None and quote.pb > 0
         and quote.market_cap is not None and quote.market_cap >= policy.cyclical_min_market_cap
@@ -537,6 +562,217 @@ def build_channel_results(
     def bounded(items: list[CandidateReason]) -> tuple[CandidateReason, ...]:
         return tuple(items[: policy.max_per_channel])
 
+    full_candidates = {
+        CHANNEL_QUALITY: quality_candidates,
+        CHANNEL_DIVIDEND: dividend_candidates,
+        CHANNEL_VALUE: value_candidates,
+        CHANNEL_CYCLICAL: cyclical_candidates,
+    }
+
+    def name_for(symbol: str) -> str:
+        record = (official_universe or {}).get(symbol)
+        if record is not None:
+            return record.name
+        quote = quotes.get(symbol)
+        if quote is not None:
+            return quote.name
+        return symbol
+
+    def profile_for(symbol: str) -> str:
+        quote = quotes.get(symbol)
+        if quote is not None:
+            return _profile_status(quote)
+        fin = financial.get(symbol)
+        if fin is not None and fin.model_type in FINANCIAL_MODEL_TYPES:
+            return PROFILE_UNSUPPORTED
+        record = (official_universe or {}).get(symbol)
+        if record is not None and record.official_industry:
+            return PROFILE_SUPPORTED
+        return PROFILE_UNKNOWN
+
+    def evaluation(
+        channel: str,
+        symbol: str,
+        status: str,
+        reason: str,
+    ) -> ChannelEvaluation:
+        return ChannelEvaluation(
+            symbol=symbol,
+            name=name_for(symbol),
+            channel=channel,
+            status=status,
+            reason=reason,
+            profile_status=profile_for(symbol),
+            evidence_date=quote_date,
+        )
+
+    def candidate_reason_for(
+        channel_candidates: list[CandidateReason],
+        symbol: str,
+    ) -> str:
+        for candidate in channel_candidates:
+            if candidate.symbol == symbol:
+                return "；".join(candidate.reasons)
+        return ""
+
+    if official_universe is not None:
+        evaluation_symbols = set(official_universe)
+    else:
+        evaluation_symbols = set(quotes) | set(financial) | set(dividends)
+        for candidates in full_candidates.values():
+            evaluation_symbols.update(candidate.symbol for candidate in candidates)
+
+    quality_excluded_by_symbol = {
+        item.symbol: item.reason for item in quality_missing
+    }
+    dividend_excluded_by_symbol = {
+        item.symbol: item.reason for item in dividend_excluded
+    }
+    value_excluded_by_symbol = {
+        item.symbol: item.reason for item in value_excluded
+    }
+    cyclical_excluded_by_symbol = {
+        item.symbol: item.reason for item in cyclical_excluded
+    }
+
+    evaluations: dict[str, list[ChannelEvaluation]] = {
+        channel: [] for channel in CHANNELS
+    }
+    for symbol in sorted(evaluation_symbols):
+        quote = quotes.get(symbol)
+        fin = financial.get(symbol)
+        dividend = dividends.get(symbol)
+
+        if profile_for(symbol) == PROFILE_UNSUPPORTED:
+            quality_status = EVALUATION_UNSUPPORTED
+            quality_reason = "金融画像需专用模型，不进入通用 Quality 通道"
+        elif fin is None:
+            quality_status = EVALUATION_DATA_GAP
+            quality_reason = "当前快照缺少同一报告期、可验证的财务质量证据"
+        elif fin.model_type in FINANCIAL_MODEL_TYPES:
+            quality_status = EVALUATION_UNSUPPORTED
+            quality_reason = f"{fin.model_type} 金融画像需专用模型，不进入通用 Quality 通道"
+        elif quote is None:
+            quality_status = EVALUATION_DATA_GAP
+            quality_reason = quality_excluded_by_symbol.get(symbol, "有财务证据但没有同一会话报价")
+        elif fin.quality_status != "已验证" or fin.total_score is None or fin.total_score < policy.quality_min_score:
+            quality_status = EVALUATION_REJECTED
+            quality_reason = f"财务质量状态为 {fin.quality_status or 'UNKNOWN'}，未通过 {policy.quality_min_score} 分门禁"
+        elif fin.coverage_ratio is None or fin.coverage_ratio < policy.quality_min_coverage:
+            quality_status = EVALUATION_REJECTED
+            quality_reason = quality_excluded_by_symbol.get(symbol, f"财务证据覆盖不足 {policy.quality_min_coverage}")
+        elif any(candidate.symbol == symbol for candidate in quality_candidates):
+            quality_status = EVALUATION_CONFLICT if quote.price_conflict else EVALUATION_PASS
+            quality_reason = candidate_reason_for(quality_candidates, symbol)
+        else:
+            quality_status = EVALUATION_REJECTED
+            quality_reason = "未满足 Quality 通道的全部数据与质量门禁"
+        evaluations[CHANNEL_QUALITY].append(
+            evaluation(CHANNEL_QUALITY, symbol, quality_status, quality_reason)
+        )
+
+        if dividend is None:
+            dividend_status = EVALUATION_NOT_EVALUATED
+            dividend_reason = "当前快照没有该证券的现金分红预案或已宣告记录"
+        elif quote is None:
+            dividend_status = EVALUATION_DATA_GAP
+            dividend_reason = "有分红证据但没有同一会话报价"
+        elif profile_for(symbol) == PROFILE_UNSUPPORTED:
+            dividend_status = EVALUATION_UNSUPPORTED
+            dividend_reason = dividend_excluded_by_symbol.get(symbol, "金融画像不进入通用现金回报通道")
+        elif quote.market_cap is None or quote.market_cap < policy.dividend_min_market_cap:
+            dividend_status = EVALUATION_REJECTED
+            dividend_reason = f"总市值低于现金回报通道下限 {policy.dividend_min_market_cap}"
+        elif dividend.declared_yield < policy.dividend_min_yield:
+            dividend_status = EVALUATION_REJECTED
+            dividend_reason = f"参考股息率低于 {policy.dividend_min_yield}"
+        elif any(candidate.symbol == symbol for candidate in dividend_candidates):
+            dividend_status = EVALUATION_CONFLICT if quote.price_conflict else EVALUATION_PASS
+            dividend_reason = candidate_reason_for(dividend_candidates, symbol)
+        else:
+            dividend_status = EVALUATION_REJECTED
+            dividend_reason = "未满足现金回报通道的全部数据与质量门禁"
+        evaluations[CHANNEL_DIVIDEND].append(
+            evaluation(CHANNEL_DIVIDEND, symbol, dividend_status, dividend_reason)
+        )
+
+        if quote is None:
+            value_status = EVALUATION_DATA_GAP
+            value_reason = "当前快照没有可用于 Value 通道的报价"
+        elif profile_for(symbol) == PROFILE_UNSUPPORTED:
+            value_status = EVALUATION_UNSUPPORTED
+            value_reason = value_excluded_by_symbol.get(symbol, "金融画像不进入通用 Value 通道")
+        elif "ST" in quote.name.upper():
+            value_status = EVALUATION_REJECTED
+            value_reason = "ST/风险警示证券不进入通用 Value 通道"
+        elif quote.pe_ttm is None or quote.pb is None or quote.market_cap is None:
+            value_status = EVALUATION_DATA_GAP
+            value_reason = "PE、PB 或总市值缺失，无法完成 Value 通道校验"
+        elif quote.market_cap < policy.value_min_market_cap:
+            value_status = EVALUATION_REJECTED
+            value_reason = f"总市值低于 Value 通道下限 {policy.value_min_market_cap}"
+        elif quote.pe_ttm > policy.value_max_pe:
+            value_status = EVALUATION_REJECTED
+            value_reason = f"TTM PE {quote.pe_ttm} 高于 {policy.value_max_pe}"
+        elif quote.pb / quote.pe_ttm < policy.value_min_implied_roe:
+            value_status = EVALUATION_REJECTED
+            value_reason = f"市场隐含 ROE 低于 {policy.value_min_implied_roe}"
+        elif any(candidate.symbol == symbol for candidate in value_candidates):
+            value_status = EVALUATION_CONFLICT if quote.price_conflict else EVALUATION_PASS
+            value_reason = candidate_reason_for(value_candidates, symbol)
+        else:
+            value_status = EVALUATION_REJECTED
+            value_reason = "未满足 Value 通道的全部数据与质量门禁"
+        evaluations[CHANNEL_VALUE].append(
+            evaluation(CHANNEL_VALUE, symbol, value_status, value_reason)
+        )
+
+        if quote is None:
+            cyclical_status = EVALUATION_DATA_GAP
+            cyclical_reason = "当前快照没有可用于周期通道的报价"
+        elif profile_for(symbol) == PROFILE_UNSUPPORTED:
+            cyclical_status = EVALUATION_UNSUPPORTED
+            cyclical_reason = cyclical_excluded_by_symbol.get(symbol, "金融画像不进入周期通道")
+        elif quote.industry is None:
+            cyclical_status = EVALUATION_NOT_EVALUATED
+            cyclical_reason = "申万行业映射缺失，周期适用性未知"
+        elif quote.industry not in CYCLICAL_SECTORS:
+            cyclical_status = EVALUATION_NOT_EVALUATED
+            cyclical_reason = f"行业 {quote.industry} 不在当前周期通道适用清单"
+        elif quote.pe_ttm is None or quote.pb is None or quote.market_cap is None:
+            cyclical_status = EVALUATION_DATA_GAP
+            cyclical_reason = "PE、PB 或总市值缺失，无法完成周期通道校验"
+        elif quote.market_cap < policy.cyclical_min_market_cap:
+            cyclical_status = EVALUATION_REJECTED
+            cyclical_reason = f"总市值低于周期通道下限 {policy.cyclical_min_market_cap}"
+        elif any(candidate.symbol == symbol for candidate in cyclical_candidates):
+            cyclical_status = EVALUATION_CONFLICT if quote.price_conflict else EVALUATION_PASS
+            cyclical_reason = candidate_reason_for(cyclical_candidates, symbol)
+        else:
+            cyclical_status = EVALUATION_REJECTED
+            cyclical_reason = "未满足周期通道的全部数据与质量门禁"
+        evaluations[CHANNEL_CYCLICAL].append(
+            evaluation(CHANNEL_CYCLICAL, symbol, cyclical_status, cyclical_reason)
+        )
+
+    for channel, channel_candidates in full_candidates.items():
+        by_symbol = {item.symbol: item for item in evaluations[channel]}
+        for symbol in [item.symbol for item in channel_candidates[policy.max_per_channel :]]:
+            item = by_symbol[symbol]
+            by_symbol[symbol] = ChannelEvaluation(
+                symbol=item.symbol,
+                name=item.name,
+                channel=item.channel,
+                status=EVALUATION_BUDGET_EXCLUDED,
+                reason=(
+                    f"已通过通道规则，但超出单通道展示预算 {policy.max_per_channel}；"
+                    "仍保留在覆盖率分母，未静默删除"
+                ),
+                profile_status=item.profile_status,
+                evidence_date=item.evidence_date,
+            )
+        evaluations[channel] = [by_symbol[symbol] for symbol in sorted(by_symbol)]
+
     return {
         CHANNEL_QUALITY: ChannelResult(
             CHANNEL_QUALITY,
@@ -545,6 +781,7 @@ def build_channel_results(
             (),
             tuple(quality_missing),
             policy.rule_version,
+            tuple(evaluations[CHANNEL_QUALITY]),
         ),
         CHANNEL_DIVIDEND: ChannelResult(
             CHANNEL_DIVIDEND,
@@ -553,6 +790,7 @@ def build_channel_results(
             tuple(dividend_excluded),
             (),
             policy.rule_version,
+            tuple(evaluations[CHANNEL_DIVIDEND]),
         ),
         CHANNEL_VALUE: ChannelResult(
             CHANNEL_VALUE,
@@ -561,6 +799,7 @@ def build_channel_results(
             tuple(value_excluded),
             (),
             policy.rule_version,
+            tuple(evaluations[CHANNEL_VALUE]),
         ),
         CHANNEL_CYCLICAL: ChannelResult(
             CHANNEL_CYCLICAL,
@@ -569,6 +808,7 @@ def build_channel_results(
             tuple(cyclical_excluded),
             (),
             policy.rule_version,
+            tuple(evaluations[CHANNEL_CYCLICAL]),
         ),
     }
 
@@ -628,11 +868,14 @@ def build_legacy_comparison(
     quotes: Mapping[str, SecurityQuote],
     channel_results: Mapping[str, ChannelResult],
     policy: M2ScreeningPolicy,
+    official_symbols: set[str] | frozenset[str] = frozenset(),
 ) -> LegacyComparison:
     from .market import screen_rows
 
     rows = []
     for quote in quotes.values():
+        if official_symbols and quote.symbol not in official_symbols:
+            continue
         if quote.price_conflict or "ST" in quote.name.upper():
             continue
         if any(value is None for value in (quote.current_price, quote.pe_ttm, quote.pb, quote.market_cap)):
@@ -693,24 +936,39 @@ def build_discovery_receipt(
         quote_date=quote_date,
         price_tolerance=policy.price_tolerance,
     )
+    official_quotes = {
+        symbol: quote
+        for symbol, quote in quotes.items()
+        if symbol in official_by_symbol
+    }
     names = {record.symbol: record.name for record in universe.records}
-    names.update({symbol: quote.name for symbol, quote in quotes.items() if quote.name})
-    sectors = {symbol: quote.industry for symbol, quote in quotes.items()}
-    financial = build_financial_evidence(
+    names.update({symbol: quote.name for symbol, quote in official_quotes.items() if quote.name})
+    sectors = {symbol: quote.industry for symbol, quote in official_quotes.items()}
+    financial = {
+        symbol: evidence
+        for symbol, evidence in build_financial_evidence(
         financial_points,
         names,
         sectors,
         evaluation_date=generated_at.date(),
-    )
-    dividends = build_dividend_evidence(
+        ).items()
+        if symbol in official_by_symbol
+    }
+    dividends = {
+        symbol: evidence
+        for symbol, evidence in build_dividend_evidence(
         parse_eastmoney_dividends(dividend_payload),
         fetched_at=generated_at,
         raw_sha256=str(run_refs["dividend"].sha256),
-    )
+        known_at=generated_at.date(),
+        ).items()
+        if symbol in official_by_symbol
+    }
     channel_results = build_channel_results(
-        quotes,
+        official_quotes,
         financial,
         dividends,
+        official_universe=official_by_symbol,
         run_refs=run_refs,
         policy=policy,
         quote_date=quote_date,
@@ -723,7 +981,12 @@ def build_discovery_receipt(
         price_conflict_count=len(conflicts),
         policy=policy,
     )
-    legacy = build_legacy_comparison(quotes, channel_results, policy)
+    legacy = build_legacy_comparison(
+        official_quotes,
+        channel_results,
+        policy,
+        official_symbols=frozenset(official_by_symbol),
+    )
     return DiscoveryRunReceipt(
         schema_version=M2_SCHEMA_VERSION,
         run_id=run_id,
@@ -736,5 +999,6 @@ def build_discovery_receipt(
         channel_results=channel_results,
         legacy_comparison=legacy,
         evidence_refs=tuple(run_refs.values()),
+        coverage_signature=coverage_signature(channel_results),
         candidate_signature=candidate_signature(channel_results),
     )
