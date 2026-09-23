@@ -1,5 +1,27 @@
 # Changelog
 
+## v2026.09.24-github-upload-reconciliation
+
+### Release Scope
+
+补齐全部 13 个公开 Excel 工作簿的版本清单和 GitHub 上传对账，不修改业务代码、Excel
+字节、数据库或任何投资结论。
+
+### Change
+
+- `docs/excel-artifact-version-record-20260924.md` 的“当前公开工作簿清单”补齐
+  M3 历史链、M4 仓位与股息、M4 组合风险三个此前漏列的工作簿，并把提交引用统一为
+  实际 Git short hash。
+- 新增上传对账说明：仓库 13 个工作簿均已跟踪并推送到公开仓库，WPS 云盘同名副本
+  逐字节一致。
+- 明确不公开上传 `runtime/`、`.pytest-tmp-*`、顶层 `*.manifest.json` 和 WPS 本地
+  回退/人工资料。
+
+### Acceptance Boundary
+
+- `M2=PENDING_HUMAN_REVIEW`，`M3/M4/M5=PARTIAL`，全部候选 `action=no_order`。
+- 本版本只是版本记录对账，不改变任何 Excel 或投资状态。
+
 ## v2026.09.24-m5-materiality-bridge
 
 ### Release Scope
