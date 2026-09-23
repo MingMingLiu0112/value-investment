@@ -1,0 +1,42 @@
+{
+  "schema_version": "m6-operational-preflight-v1",
+  "action": "no_order",
+  "target_rpo_hours": 24,
+  "target_rto_hours": 4,
+  "minimum_real_sessions": 20,
+  "minimum_real_events": 1,
+  "restore_target": {
+    "host": "127.0.0.1",
+    "port": 5433,
+    "database": "value_agent_restore"
+  },
+  "resource_limits": {
+    "memory_mb": 256,
+    "cpu_cores": 0.5
+  },
+  "required_files": [
+    "src/value_investment_agent/backup.py",
+    "src/value_investment_agent/backup_snapshot.py",
+    "deploy/server/run_restore_drill.sh",
+    "deploy/server/test_evidence_in_restore.sh",
+    "deploy/server/value-investment-agent-restore-drill.service",
+    "deploy/server/value-investment-agent-restore-drill.timer",
+    "docs/data-and-evidence-policy.md",
+    "docs/m6-operational-preflight-20260924.md"
+  ],
+  "stage_status": {
+    "m1": "DONE",
+    "m2": "PENDING_HUMAN_REVIEW",
+    "m3": "PARTIAL",
+    "m4": "PARTIAL",
+    "m5": "PARTIAL",
+    "m6": "NOT_STARTED",
+    "m7": "PARTIAL"
+  },
+  "authorization_required": [
+    "production migration scope",
+    "real portfolio and account data scope",
+    "notification targets and schedule scope",
+    "PTA resource baseline and rollback plan"
+  ]
+}
