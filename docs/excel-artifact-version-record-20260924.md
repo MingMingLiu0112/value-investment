@@ -5,8 +5,8 @@
 
 ## 基线
 
-- 本地 Git：`main @ 1c57462391d5a506f708dac7a006e45e57f7cc4f`
-- 对应提交：`Add preregistered M2 coverage audit`
+- 本地 Git：`main @ 2c2e54125197890c875aae5a23481ad7ab12b5d6`
+- 对应提交：`Add Excel artifact version record`
 - GitHub 远端：`https://github.com/MingMingLiu0112/value-investment.git`
 - 公开工作簿快照共 6 个，与 WPS 云盘 `价投跟踪` 目录中的同名文件字节一致。
 
@@ -33,6 +33,13 @@
 - `docs/m2-ac9-stratified-coverage-audit-20260923.md`
 - `CHANGELOG.md`
 - `docs/execution-status.md`
+
+## 2026-09-24 AC8 核对
+
+本轮新增 M2 AC8 研究报告代码、配置、脚本、测试和文档，但未生成新的工作簿，也未修改
+WPS 生产工作簿。上述 6 个公开仓库快照于本轮重新按 SHA-256 与 WPS 云盘同名文件核对，
+结果仍为 6/6 字节一致；新增报告保存在被 `.gitignore` 排除的 `runtime/` 下，不进入
+公开仓库，证据哈希见 [m2-ac8-research-reports-20260924.md](m2-ac8-research-reports-20260924.md)。
 
 ## 不上传的本地文件
 

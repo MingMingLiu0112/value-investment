@@ -1,5 +1,58 @@
 # Changelog
 
+## v2026.09.24-m2-ac8-research-reports
+
+### Release Scope
+
+为 M2 AC8 建立预注册、证据绑定的实质研究与通道否决报告。工具只消费 AC9
+`selected_leads` 已封存样本和固定 SHA-256 的真实 M2 输入，不按报告结果后验选择公司；
+本版本继续 `action=no_order`，不生成估值、BUY、ADD、仓位、订单或回测收益。
+
+### New Capability
+
+- 新增 `config/m2-ac8-research-report-v1.json`，固定 AC9 审计、M2 收据、财务点与
+  分红输入的路径及 SHA-256，并声明 3 份实质报告、2 个实质通道的最低门。
+- 新增 `src/value_investment_agent/m2_research_report.py`：
+  - 只读取 AC9 `selected_leads` 中的 `LEAD + DATA_PARTIAL` 样本；
+  - 收据、财务点、分红文件 Hash 不匹配即拒绝，报告期晚于注册
+    `latest_financial_period` 的点不进入证据；
+  - 输出 `PENDING_DEEP_RESEARCH`、`REJECTED_FOR_CHANNEL` 或
+    `INSUFFICIENT_EVIDENCE`，每份保留来源 URL、原件 Hash、报告期、正反证据与缺口；
+  - `INSUFFICIENT_EVIDENCE` 不计入实质报告数量。
+- 新增离线命令 `scripts/build_m2_research_reports.py`，只写新的 runtime 报告和 manifest。
+- 新增 7 项确定性、最低门、防篡改、禁止执行键和未来报告期拒绝回归测试，并加入
+  GitHub Core Gate。
+
+### Real Evidence
+
+- 报告：`runtime/m2-ac8-research-reports-20260924-v1/report.json`，SHA-256
+  `dd55c02c75dec17ff766fa6b6ae529030d02a31376b305c02ddd0a8f5443c8a6`。
+- 总计 18 份报告；16 份实质报告，覆盖 `dividend_cash_return`、`value`、`cyclical`
+  三个通道；3 份 `PENDING_DEEP_RESEARCH`、13 份 `REJECTED_FOR_CHANNEL`、
+  2 份 `INSUFFICIENT_EVIDENCE`。
+- 代表案例：600011 华能国际保留为股息深研线索；600582 天地科技因经营现金流或
+  自由现金流为负被通道否决；603799 华友钴业因扩张资本开支导致自由现金流为负且缺少
+  正常化周期证据被否决；000151 中成股份因固定输入缺少核心财务点而诚实记录为证据不足。
+- `machine_status=MACHINE_CHECKS_PASS`，`acceptance_status=AC8_REVIEW_PENDING`；
+  全部产物不含 BUY/ADD/仓位/订单键。
+
+### Verification
+
+- M2 AC8 与 AC9 定向回归：28 passed。
+- 仓库全量离线回归：2143 passed、6 skipped、18 warnings、0 failed。
+- `git diff --check` 通过。
+
+### Status
+
+`M2 / PARTIAL`。本版提供 AC8 真实研究报告证据，但不单独宣告 M2 完成；原 Excel 统一
+发布、W6/W7 联合验收与用户可见审核仍继续。
+
+### Excel
+
+本轮未生成新的工作簿，也未改动 WPS 生产工作簿。仓库内 6 个已公开工作簿仍与 WPS
+云盘同名文件逐字节一致，版本清单继续由
+[docs/excel-artifact-version-record-20260924.md](docs/excel-artifact-version-record-20260924.md) 记录。
+
 ## v2026.09.24-excel-artifact-version-record
 
 ### Release Scope

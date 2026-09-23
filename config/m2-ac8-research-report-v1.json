@@ -1,0 +1,24 @@
+{
+  "schema_version": "m2-ac8-research-report-policy-v1",
+  "policy_version": "20260924-v1",
+  "as_of": "2026-09-23",
+  "action": "no_order",
+  "sampling": {
+    "audit_report_path": "runtime/m2-ac9-coverage-audit-20260923-v2/report.json",
+    "audit_report_sha256": "3c30936a6e567bd55b8d03bf67163071c49d223ca10def66b93fcdc336a84695",
+    "sampling_version": "20260923-v1",
+    "stratum_id": "selected_leads",
+    "selection_rule": "Use every pre-registered AC9 selected_leads sample. No company, channel, outcome, or return-based filtering is introduced at AC8 report time."
+  },
+  "evidence": {
+    "receipt_path": "runtime/m2-live-20260923-v3/receipt.json",
+    "receipt_sha256": "869044a72c514be2d274308383c4479f7536bb393bfbf5ca10e492eee24bc220",
+    "financial_points_path": "runtime/m2-live-20260923-v3/retained-financial-points.json",
+    "financial_points_sha256": "d0c6184cd5a878997c7065488168519ac55c11fdda7ef45549872c6faeeb12ca",
+    "dividend_path": "runtime/m2-live-20260923-v3/eastmoney-dividends.json",
+    "dividend_sha256": "41888fcd8339eef12fb963c963b2cbe4e7f0ed90196e9547266c30a0b0a7f19f"
+  },
+  "minimum_substantive_reports": 3,
+  "minimum_channels": 2,
+  "latest_financial_period": "2026-06-30"
+}

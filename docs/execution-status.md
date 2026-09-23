@@ -1,6 +1,22 @@
 # 当前执行状态
 
-更新：2026-09-23。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
+更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
+
+## M2 AC8 研究报告生成：2026-09-24
+
+本节记录 AC8 的预注册报告工具与真实运行证据。M2 仍为 `PARTIAL`，AC8 单项目前为
+`AC8_REVIEW_PENDING`，`action=no_order`。
+
+- 新增 `m2_research_report.py`、离线命令、固定输入配置与回归测试；只消费 AC9
+  `selected_leads` 已封存样本，不按结果后验选公司。
+- 真实报告：`runtime/m2-ac8-research-reports-20260924-v1/report.json`，SHA-256
+  `dd55c02c75dec17ff766fa6b6ae529030d02a31376b305c02ddd0a8f5443c8a6`。
+- 总计 18 份报告，其中 16 份实质报告，覆盖股息、价值、周期三个通道；3 份待深研、
+  13 份通道否决、2 份证据不足。证据不足不冒充实质结论。
+- 本轮未连接生产 PostgreSQL、未触碰服务器项目或调度、未生成新 Excel，也未覆盖 WPS
+  生产工作簿。
+- 详细证据见 [m2-ac8-research-reports-20260924.md](m2-ac8-research-reports-20260924.md)。
+  AC8 数量门已有机器证据，但仍需与 AC10/W6/W7 一起完成 M2 用户可见验收。
 
 ## 用户扩大总Goal至M7：2026-09-23
 

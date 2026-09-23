@@ -60,6 +60,7 @@ jobs:
           tests/test_m1_post_review_receipts_boundary.py
           tests/test_m2_opportunity_discovery.py
           tests/test_m2_coverage_sampling.py
+          tests/test_m2_research_report.py
 
   postgres-integration:
     runs-on: ubuntu-latest
