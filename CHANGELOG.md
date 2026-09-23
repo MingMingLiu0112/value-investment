@@ -1,5 +1,42 @@
 # Changelog
 
+## v2026.09.24-m3-history-original-workbook-overlay
+
+### Release Scope
+
+把五页显式模拟的 M3 论点连续性历史链追加到已受保护的 M3 决策复核候选，形成 60 页
+公开叠加候选。本版本不发布 canonical，不读取真实账户、IPS、持仓或真实 Entry，不生成
+仓位或订单。
+
+### New Capability
+
+- 新增 `scripts/build_m3_history_original_workbook_candidate.py`：
+  绑定 M3 决策复核候选、独立历史链候选和模拟历史输入三个 SHA-256。
+- 扩展 `scripts/stage_frontend_package.py` 的 `graft`，附加页保留输入 ZipInfo
+  时间戳，保证候选跨机器重建字节稳定。
+- 新增 `src/value_investment_agent/m3_history_original_workbook_acceptance_audit.py`
+  与 `scripts/audit_m3_history_original_workbook.py`，固定 source、addon、输入、
+  candidate、manifest、WPS 收据和 canonical Hash，执行 `hoc1-hoc7` 审计门。
+- 新增 `scripts/verify_m3_history_original_workbook_wps.ps1`，实际 WPS 只读打开
+  60 页，核对历史页顺序、模拟边界、决策页 fail-closed 字段和打开前后 Hash。
+- 新增 4 项回归并纳入 GitHub Core Research Gate。
+
+### Verification
+
+- 新增候选字节数 13,208,437，SHA-256：
+  `67e720f2326443bb3d36003db707a86169483bcd2f2be10a97dbda6d3bfacd4d`。
+- 55 个源页面、111 个未替换源 ZIP 部件逐字节保留；前 5 页历史链为
+  `600887` 显式模拟，`action=no_order`。
+- 定向离线回归 11 passed；本地机器门 `hoc1-hoc5` 全部 `DONE`，`hoc6` 待 GitHub CI，
+  `hoc7` 保持 `PENDING_HUMAN_REVIEW`。
+- WPS 只读收据 `passed`；WPS 云盘同名候选与仓库候选逐字节一致，canonical 未改变。
+
+### Acceptance Boundary
+
+- `M2=PENDING_HUMAN_REVIEW`，`M3/M4/M5=PARTIAL`，全部动作 `action=no_order`。
+- 本候选只演示模拟理由链与 M3 决策页叠加形态，不替代 Checkpoint B、真实历史链或
+  实盘准入。
+
 ## v2026.09.24-m3-original-workbook-acceptance-audit
 
 ### Release Scope

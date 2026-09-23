@@ -177,6 +177,7 @@ def graft(source, addon, output, expected):
             }
             suffix += 1
         mapping = mapped_candidates
+        copied_source_names = {target: source_name for source_name, target in mapping.items()}
         content_types = xml(src.read('[Content_Types].xml'))
         new_types = xml(new.read('[Content_Types].xml'))
         known_ext = {x.get('Extension') for x in content_types}
@@ -278,7 +279,9 @@ def graft(source, addon, output, expected):
                 # writestr updates ZipInfo offsets; never mutate the source index.
                 out.writestr(deepcopy(item), replacements.get(item.filename, src.read(item.filename)))
             for name, data in copied.items():
-                out.writestr(name, data)
+                info = deepcopy(new.getinfo(copied_source_names[name]))
+                info.filename = name
+                out.writestr(info, data)
         with ZipFile(output) as result:
             unchanged = [p for p in src.namelist() if p not in replacements]
             assert all(result.read(p) == src.read(p) for p in unchanged)

@@ -2,6 +2,27 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M3 论点连续性历史链叠加候选：2026-09-24
+
+本节记录把五页显式模拟历史链追加到已受保护的 M3 决策复核候选。M2 保持
+`PENDING_HUMAN_REVIEW`，M3、M4、M5 保持 `PARTIAL`；全部动作 `action=no_order`。
+
+- 新增 `scripts/build_m3_history_original_workbook_candidate.py`，绑定 M3 决策复核
+  候选、独立历史链候选和 `tests/fixtures/m3_history_demo.json` 三个 SHA-256。
+- 扩展 `stage_frontend_package.graft`，附加页复用输入 ZipInfo 时间戳，使公开候选
+  跨机器重建字节稳定，不再随本地构建时间变化。
+- 新增 60 页候选 `A股价值投资_Agent前端智能跟踪模板_M3历史链叠加候选_20260924.xlsx`：
+  前 5 页为历史链，后 55 页完整保留 M3 决策复核候选；55 个源页面和 111 个源 ZIP
+  部件保持不变。
+- 新增 WPS 只读验证、7 项审计门 `hoc1-hoc7` 和 4 项回归；`hoc1-hoc5` 本地机器
+  验证 `DONE`，`hoc6` 待 GitHub CI，`hoc7` 保持 `PENDING_HUMAN_REVIEW`。
+- 候选 SHA-256：
+  `67e720f2326443bb3d36003db707a86169483bcd2f2be10a97dbda6d3bfacd4d`；
+  WPS 只读收据 `runtime/m3-history-overlay-wps-20260924/wps-verification.json`
+  为 `passed`，WPS 云盘副本与仓库候选逐字节一致，canonical 未被覆盖。
+- 示例链仅使用 `600887` 的显式模拟 Entry、Journal 与 Consistency；不读取真实账户，
+  不构成 Checkpoint B、投资结论或实盘准入。
+
 ## M5 真实披露待复核队列：2026-09-24
 
 本节记录真实 CNINFO 公告索引到人工材料性复核之间的离线队列。M2 保持
