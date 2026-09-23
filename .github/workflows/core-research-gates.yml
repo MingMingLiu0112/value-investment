@@ -52,6 +52,8 @@ jobs:
           tests/test_position_guidance.py
           tests/test_dividend_income_projection.py
           tests/test_m4_guidance_income_workbook.py
+          tests/test_m5_event_infrastructure.py
+          tests/test_m5_event_workbook.py
           tests/test_unified_fcff_valuation.py
           tests/test_residual_income_equity_valuation.py
           tests/test_cyclical_normalized_valuation.py

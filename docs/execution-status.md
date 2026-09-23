@@ -2,6 +2,33 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M5 事件基础设施离线合同：2026-09-24
+
+本节记录 M5 第一批纯领域与 run-once 离线工程。M2 保持
+`PENDING_HUMAN_REVIEW`，M3、M4、M5 保持 `PARTIAL`；所有动作
+`action=no_order`，未创建生产调度、通知投递、常驻服务或数据库改动。
+
+- 新增 `m5_event_core.py`：区分 `detected_at`、`effective_at`、`available_at`，
+  重复事件幂等，更正/取代显式引用前序事件，晚到事件保留 PIT 顺序，
+  未来事件与观察时间回退失败关闭。
+- 新增 `m5_event_watermark.py`、`m5_event_checkpoint.py`：扫描水位单调前进；
+  单 scope 任务锁带租约、token、续约与释放；检查点支持崩溃后幂等续接。
+- 新增 `m5_event_outbox.py`：PENDING/SENT/DELIVERED/ACKNOWLEDGED/retryable/
+  terminal 状态机，关键提醒去重，实际投递不在此层执行。
+- 新增 `m5_event_dependencies.py`：按事件类型有界失效依赖；价格事件只影响价格桥接
+  与当前状态，不把内在价值标记为需要重算。
+- 新增 `m5_event_run.py`：run-once 编排固定为 取锁 -> 检查点 -> 入账 ->
+  有界失效 -> outbox -> 提交 -> 释放；公开入口只接受 `SIMULATED`。
+- 独立候选 6 页、7 个输入、6 个当前有效事件、6 条失效记录、6 条 outbox 提醒，
+  固定 `action=no_order`；字节数 14,989，SHA-256
+  `2b86953f793df46e199c40c614f3291e19b249cc0e53e2a670b0000506403dae`。
+- M5 定向回归 24 passed；WPS 只读收据为 `passed`，WPS 云盘同名副本与仓库候选
+  逐字节一致。
+- 本仓库除 PostgreSQL 集成测试外的全量离线回归：2244 passed、2 skipped、
+  18 warnings、0 failed。
+- 真实公告采集、材料性判定、生产调度、通知目标和故障恢复尚未建设；本批不证明
+  M5 产品验收。
+
 ## M4 分层仓位与股息收入投影：2026-09-24
 
 本节记录 M4 的第二批非个人化领域工程与模拟 Excel 候选。M2 仍为

@@ -1,5 +1,53 @@
 # Changelog
 
+## v2026.09.24-m5-event-infrastructure
+
+### Release Scope
+
+建立 M5 事件账、水位/检查点、锁、outbox 与有界依赖失效的纯领域离线合同，
+并发布一个显式模拟的 6 页 Excel 候选。本版本不启动生产调度、不投递真实通知，
+也不修改 PostgreSQL 或原 55 页生产工作簿。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/m5_event_core.py`：
+  - `ChangeEventInput` / `ChangeEvent` / `EventLedger`；
+  - 区分发生、披露可用和抓取时间，重复事件幂等，更正显式引用前序事件；
+  - 晚到事件保留 point-in-time 顺序，未来事件与观察时间回退失败关闭。
+- 新增 `m5_event_watermark.py`、`m5_event_checkpoint.py`：
+  - 扫描水位单调前进；单 scope 任务锁带租约、token、续约与释放；
+  - 检查点记录运行状态、水位和已处理事件，支持崩溃后幂等续接。
+- 新增 `m5_event_outbox.py`：
+  - PENDING/SENT/DELIVERED/ACKNOWLEDGED/retryable/terminal 状态；
+  - 关键、源健康和普通提醒分账，只做 outbox 状态机，不执行真实投递。
+- 新增 `m5_event_dependencies.py`：
+  - 按事件类型有界失效事实、估值输入、股息、模型、论点、Entry、组合或价格节点；
+  - 价格变化不失效内在估值，超界依赖显式 deferred，不静默扩大重算。
+- 新增 `m5_event_run.py`：
+  - run-once 编排固定为 取锁 -> 检查点 -> 入账 -> 有界失效 -> outbox -> 提交 -> 释放；
+  - 公开入口只接受 `SIMULATED`，`action=no_order`。
+- 新增 `m5_event_workbook.py`，生成 6 页候选；新增 fixture、构建脚本、WPS 校验
+  脚本和 24 项定向回归，并纳入 GitHub Core Research Gate。
+
+### Verification
+
+- `tests/test_m5_event_infrastructure.py` 与
+  `tests/test_m5_event_workbook.py`：24 passed。
+- 模拟候选为 6 页、7 个输入、6 个当前有效事件、6 条失效记录、6 条 outbox 提醒，
+  固定 `action=no_order`；字节数 14,989，SHA-256
+  `2b86953f793df46e199c40c614f3291e19b249cc0e53e2a670b0000506403dae`。
+- WPS 只读打开、页序、公式错误、模拟标签、行数和 `no_order` 检查通过；
+  WPS 云盘同名副本与仓库候选逐字节一致。
+- 本仓库除 PostgreSQL 集成测试外的全量离线回归：2244 passed、2 skipped、
+  18 warnings、0 failed。
+- 未修改原 55 页生产工作簿，未创建常驻服务、生产调度或真实通知目标。
+
+### Acceptance Boundary
+
+- M2 当前为 `PENDING_HUMAN_REVIEW`，M3、M4、M5 均继续保持 `PARTIAL`。
+- 该候选只演示事件基础设施合同；真实公告采集、公告级材料性判定、Entry/组合复核、
+  生产调度、通知投递和真实故障恢复仍未建设，不得据此宣称持续市场监控已上线。
+
 ## v2026.09.24-m4-position-guidance-income
 
 ### Release Scope

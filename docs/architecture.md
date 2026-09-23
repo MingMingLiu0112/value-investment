@@ -141,5 +141,12 @@ BusinessQuality/CapitalAllocation 先随 M1 真实研究建立最小证据合同
 Starter/Normal/Max 上限，仅输出上限、剩余空间、共同预算冲突、停止加仓和减仓复核
 条件；后者区分已到账、已宣告、Forward、Normalized，普通/特别分红和税费状态，
 特别分红不自动年化。两个领域均只接受显式模拟公开工作簿，真实私人数据不得入库。
+2026-09-24 已增加 M5 事件基础设施离线合同：`ChangeEventInput`/`ChangeEvent`/
+`EventLedger` 区分发生、披露可用和抓取时间；`ScanWatermark`、`TaskLock` 与
+`TaskCheckpoint` 提供单调水位、单 scope 锁和崩溃后幂等续接；`EventAlert`/
+`OutboxLedger` 只维护投递状态机；`DependencyGraph`/`DependencyInvalidation`
+按事件类型有界失效依赖，价格变化不失效内在估值。公开 run-once 编排只接受
+`SIMULATED`，`action=no_order`。真实采集、材料性判定、生产调度、通知投递与
+故障恢复仍属于后续 M5/M6 运营工程，本批不证明持续市场监控已上线。
 缺少 Portfolio 输入不能自动批准 BUY/ADD；已证实的 Thesis Breaker 风险提示不能因缺价格而消失。旧数据未知不是 HOLD，更不是自动卖出。
 Entry 是用户确认行为的不可变研究基线，不是系统生成的成交；无历史理由只能标记事后重建。MarketContext 不直接修改内在价值。

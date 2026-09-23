@@ -1,0 +1,353 @@
+{
+  "schema_version": "m5-event-demo-v1",
+  "action": "no_order",
+  "namespace": "SIMULATED",
+  "run_id": "M5-simulated-20260924",
+  "generated_at": "2026-09-24T16:05:00+08:00",
+  "security_names": {
+    "600519": "贵州茅台",
+    "000333": "美的集团",
+    "601088": "中国神华"
+  },
+  "watermark": {
+    "watermark_id": "m5-sim-watermark-20260924",
+    "scope": "ALL",
+    "source": "simulated-source",
+    "coverage_through": "2026-09-24T16:00:00+08:00",
+    "retrieved_at": "2026-09-24T16:00:00+08:00",
+    "parser_version": "m5-fixture-v1",
+    "coverage_status": "COMPLETE",
+    "source_health": "HEALTHY",
+    "evidence_refs": [
+      {
+        "id": "simulated-source-scan"
+      }
+    ]
+  },
+  "events": [
+    {
+      "source_event_id": "600519-financial-report-001",
+      "symbol": "600519",
+      "event_type": "NEW_FINANCIAL_REPORT",
+      "detected_at": "2026-09-24T15:30:00+08:00",
+      "available_at": "2026-09-24T15:30:00+08:00",
+      "effective_at": "2026-09-24T15:30:00+08:00",
+      "previous_state": {},
+      "current_state": {
+        "report": "fixture"
+      },
+      "severity": "HIGH",
+      "reason": "模拟财报披露，仅演示事件账与依赖失效。",
+      "evidence_refs": [
+        {
+          "id": "sim-600519-report"
+        }
+      ],
+      "confidence": "HIGH",
+      "requires_human_review": true
+    },
+    {
+      "source_event_id": "600519-price-zone-001",
+      "symbol": "600519",
+      "event_type": "PRICE_ATTRACTIVENESS_CHANGED",
+      "detected_at": "2026-09-24T15:35:00+08:00",
+      "available_at": "2026-09-24T15:35:00+08:00",
+      "effective_at": "2026-09-24T15:35:00+08:00",
+      "previous_state": {
+        "zone": "moderate"
+      },
+      "current_state": {
+        "zone": "cheaper"
+      },
+      "severity": "MEDIUM",
+      "reason": "模拟价格区间变化，只影响桥接和当前状态，不修改内在价值。",
+      "evidence_refs": [
+        {
+          "id": "sim-600519-price"
+        }
+      ],
+      "confidence": "MEDIUM",
+      "requires_human_review": true
+    },
+    {
+      "source_event_id": "000333-dividend-001",
+      "symbol": "000333",
+      "event_type": "DIVIDEND_CHANGE",
+      "detected_at": "2026-09-24T15:40:00+08:00",
+      "available_at": "2026-09-24T15:40:00+08:00",
+      "effective_at": "2026-09-24T15:40:00+08:00",
+      "previous_state": {},
+      "current_state": {
+        "ordinary": "fixture"
+      },
+      "severity": "HIGH",
+      "reason": "模拟分红变化，仅演示股息与仓位依赖失效。",
+      "evidence_refs": [
+        {
+          "id": "sim-000333-dividend"
+        }
+      ],
+      "confidence": "HIGH",
+      "requires_human_review": true
+    },
+    {
+      "source_event_id": "600519-financial-report-001",
+      "symbol": "600519",
+      "event_type": "NEW_FINANCIAL_REPORT",
+      "detected_at": "2026-09-24T15:30:00+08:00",
+      "available_at": "2026-09-24T15:30:00+08:00",
+      "effective_at": "2026-09-24T15:30:00+08:00",
+      "previous_state": {},
+      "current_state": {
+        "report": "fixture"
+      },
+      "severity": "HIGH",
+      "reason": "模拟财报披露，仅演示事件账与依赖失效。",
+      "evidence_refs": [
+        {
+          "id": "sim-600519-report"
+        }
+      ],
+      "confidence": "HIGH",
+      "requires_human_review": true
+    },
+    {
+      "source_event_id": "600519-late-001",
+      "symbol": "600519",
+      "event_type": "MATERIAL_ANNOUNCEMENT",
+      "detected_at": "2026-09-23T10:05:00+08:00",
+      "available_at": "2026-09-23T10:00:00+08:00",
+      "effective_at": "2026-09-23T10:00:00+08:00",
+      "previous_state": {},
+      "current_state": {
+        "late": true
+      },
+      "severity": "LOW",
+      "reason": "模拟晚到公告，演示水位后的历史顺序保留。",
+      "evidence_refs": [
+        {
+          "id": "sim-600519-late"
+        }
+      ],
+      "confidence": "LOW",
+      "requires_human_review": true
+    },
+    {
+      "source_event_id": "601088-event-v1",
+      "symbol": "601088",
+      "event_type": "MATERIAL_ANNOUNCEMENT",
+      "detected_at": "2026-09-24T15:50:00+08:00",
+      "available_at": "2026-09-24T15:50:00+08:00",
+      "effective_at": "2026-09-24T15:50:00+08:00",
+      "previous_state": {},
+      "current_state": {
+        "value": "1.0"
+      },
+      "severity": "MEDIUM",
+      "reason": "模拟原始事件，后续事件将演示显式更正。",
+      "evidence_refs": [
+        {
+          "id": "sim-601088-v1"
+        }
+      ],
+      "confidence": "MEDIUM",
+      "requires_human_review": true
+    },
+    {
+      "source_event_id": "601088-event-v1",
+      "symbol": "601088",
+      "event_type": "MATERIAL_ANNOUNCEMENT",
+      "detected_at": "2026-09-24T16:00:00+08:00",
+      "available_at": "2026-09-24T16:00:00+08:00",
+      "effective_at": "2026-09-24T16:00:00+08:00",
+      "previous_state": {},
+      "current_state": {
+        "value": "2.0"
+      },
+      "severity": "HIGH",
+      "reason": "模拟更正事件，演示旧事件被显式取代且新值保留。",
+      "evidence_refs": [
+        {
+          "id": "sim-601088-v2"
+        }
+      ],
+      "confidence": "HIGH",
+      "requires_human_review": true,
+      "correction_of_source_event_id": "601088-event-v1"
+    }
+  ],
+  "observed_times": [
+    "2026-09-24T15:30:00+08:00",
+    "2026-09-24T15:35:00+08:00",
+    "2026-09-24T15:40:00+08:00",
+    "2026-09-24T15:45:00+08:00",
+    "2026-09-24T15:55:00+08:00",
+    "2026-09-24T15:56:00+08:00",
+    "2026-09-24T16:00:00+08:00"
+  ],
+  "graph": {
+    "schema_version": "m5-event-infrastructure-v1",
+    "nodes": [
+      {
+        "node_id": "facts",
+        "kind": "financial_facts",
+        "symbol": "600519",
+        "inputs": [],
+        "version": "fixture-v1",
+        "evidence_refs": [
+          {
+            "id": "sim-node-facts"
+          }
+        ]
+      },
+      {
+        "node_id": "valuation-inputs",
+        "kind": "valuation_inputs",
+        "symbol": "600519",
+        "inputs": [],
+        "version": "fixture-v1",
+        "evidence_refs": [
+          {
+            "id": "sim-node-inputs"
+          }
+        ]
+      },
+      {
+        "node_id": "distribution",
+        "kind": "distribution_history",
+        "symbol": "000333",
+        "inputs": [],
+        "version": "fixture-v1",
+        "evidence_refs": [
+          {
+            "id": "sim-node-distribution"
+          }
+        ]
+      },
+      {
+        "node_id": "model-validity",
+        "kind": "model_validity",
+        "symbol": "600519",
+        "inputs": [],
+        "version": "fixture-v1",
+        "evidence_refs": [
+          {
+            "id": "sim-node-model"
+          }
+        ]
+      },
+      {
+        "node_id": "valuation-result",
+        "kind": "valuation_result",
+        "symbol": "600519",
+        "inputs": [
+          "facts",
+          "valuation-inputs"
+        ],
+        "version": "fixture-v1",
+        "evidence_refs": [
+          {
+            "id": "sim-node-valuation"
+          }
+        ]
+      },
+      {
+        "node_id": "thesis",
+        "kind": "research_thesis",
+        "symbol": "600519",
+        "inputs": [],
+        "version": "fixture-v1",
+        "evidence_refs": [
+          {
+            "id": "sim-node-thesis"
+          }
+        ]
+      },
+      {
+        "node_id": "decision-review",
+        "kind": "decision_review",
+        "symbol": "600519",
+        "inputs": [
+          "thesis",
+          "valuation-result"
+        ],
+        "version": "fixture-v1",
+        "evidence_refs": [
+          {
+            "id": "sim-node-decision"
+          }
+        ]
+      },
+      {
+        "node_id": "entry-consistency",
+        "kind": "entry_consistency",
+        "symbol": "600519",
+        "inputs": [
+          "thesis",
+          "decision-review"
+        ],
+        "version": "fixture-v1",
+        "evidence_refs": [
+          {
+            "id": "sim-node-entry"
+          }
+        ]
+      },
+      {
+        "node_id": "price-attractiveness",
+        "kind": "price_attractiveness",
+        "symbol": "600519",
+        "inputs": [],
+        "version": "fixture-v1",
+        "evidence_refs": [
+          {
+            "id": "sim-node-price"
+          }
+        ]
+      },
+      {
+        "node_id": "price-bridge",
+        "kind": "price_bridge",
+        "symbol": "600519",
+        "inputs": [
+          "price-attractiveness",
+          "model-validity"
+        ],
+        "version": "fixture-v1",
+        "evidence_refs": [
+          {
+            "id": "sim-node-bridge"
+          }
+        ]
+      },
+      {
+        "node_id": "current-status",
+        "kind": "current_research_status",
+        "symbol": "600519",
+        "inputs": [
+          "price-attractiveness",
+          "valuation-result",
+          "decision-review"
+        ],
+        "version": "fixture-v1",
+        "evidence_refs": [
+          {
+            "id": "sim-node-current"
+          }
+        ]
+      },
+      {
+        "node_id": "source-health",
+        "kind": "source_health",
+        "symbol": "SYSTEM",
+        "inputs": [],
+        "version": "fixture-v1",
+        "evidence_refs": [
+          {
+            "id": "sim-node-source-health"
+          }
+        ]
+      }
+    ]
+  }
+}
