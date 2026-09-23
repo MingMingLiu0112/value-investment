@@ -60,6 +60,10 @@ WPS 只读校验只覆盖打开/计算、公式错误、工作表顺序和链接
 - 审计命令：`scripts/audit_m2_acceptance.py`
 - 回归测试：`tests/test_m2_acceptance_audit.py`
 
+后续 CI 修复提交把回归测试中的完整 audit 调用改为不依赖 Git 忽略目录 runtime/
+的封闭 AC1/AC12 单元回归。该修复只改测试与版本记录，三个公开工作簿快照和
+WPS 生产原表的字节、SHA-256 均保持不变。
+
 ## 被替换前的历史 canonical
 
 本轮替换前，仓库和 WPS 云盘的原工作簿版本为：

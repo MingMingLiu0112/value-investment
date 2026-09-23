@@ -9,10 +9,12 @@ import pytest
 from value_investment_agent.m2_acceptance_audit import (
     DEFAULT_POLICY_PATH,
     DONE,
+    PARTIAL,
     PENDING_HUMAN_REVIEW,
+    _audit_ac1,
+    _audit_ac12,
     _reject_execution_keys,
     _verify_pinned_json,
-    audit,
     load_acceptance_policy,
     write_receipt,
 )
@@ -67,45 +69,85 @@ def test_write_receipt_uses_versioned_path_and_pointer(tmp_path: Path):
     assert pointer["sha256"] == hashlib.sha256(receipt_path.read_bytes()).hexdigest()
 
 
-def test_machine_audit_preserves_human_review_boundary(monkeypatch):
-    import value_investment_agent.m2_acceptance_audit as auditor
+def test_ac1_reports_done_only_when_local_and_ci_are_green():
+    policy = load_acceptance_policy(DEFAULT_POLICY_PATH)
+    test_result = {
+        "passed": True,
+        "passed_count": 2149,
+        "skipped_count": 6,
+        "output_tail": "",
+    }
+    git_state = {"head": "afc804b4966b0f6e4b0610b6d2d6af2c6e90df31"}
 
-    monkeypatch.setattr(
-        auditor,
-        "_run_pytest",
-        lambda root: {
-            "passed": True,
-            "passed_count": 2144,
-            "skipped_count": 6,
-            "returncode": 0,
-            "output_tail": "",
-            "duration_seconds": 1.0,
+    result = _audit_ac1(
+        policy,
+        test_result,
+        {"status": "success"},
+        git_state,
+    )
+
+    assert result["status"] == DONE
+    assert all(item["passed"] for item in result["checks"])
+    assert result["blockers"] == []
+
+
+def test_ac12_preserves_human_review_boundary_without_runtime_evidence():
+    criteria = {
+        "ac1_stabilization_and_offline_green": {
+            "status": DONE,
+            "evidence": {"action": ACTION_NO_ORDER},
         },
-    )
+        "ac6_point_in_time_version_hash_replay": {
+            "status": DONE,
+            "evidence": {"action": ACTION_NO_ORDER},
+        },
+        "ac8_substantive_research_or_rejection": {
+            "status": PENDING_HUMAN_REVIEW,
+            "human_review": ["review reports"],
+            "evidence": {"action": ACTION_NO_ORDER},
+        },
+        "ac9_stratified_false_positive_review": {
+            "status": PENDING_HUMAN_REVIEW,
+            "human_review": ["review samples"],
+            "evidence": {"action": ACTION_NO_ORDER},
+        },
+        "ac10_original_excel_usability": {
+            "status": PENDING_HUMAN_REVIEW,
+            "human_review": ["open WPS workbook"],
+            "evidence": {"action": ACTION_NO_ORDER},
+        },
+        "ac11_authorization_and_resource_boundary": {
+            "status": DONE,
+            "evidence": {"action": ACTION_NO_ORDER},
+        },
+    }
 
-    result = audit(
-        ROOT,
-        run_tests=True,
-        ci_evidence={"status": "success"},
-    )
+    result = _audit_ac12(criteria)
 
     assert result["status"] == PENDING_HUMAN_REVIEW
-    assert result["criteria"]["ac1_stabilization_and_offline_green"]["status"] == DONE
-    assert result["criteria"]["ac6_point_in_time_version_hash_replay"]["status"] == DONE
-    assert (
-        result["criteria"]["ac8_substantive_research_or_rejection"]["status"]
-        == PENDING_HUMAN_REVIEW
-    )
-    assert (
-        result["criteria"]["ac9_stratified_false_positive_review"]["status"]
-        == PENDING_HUMAN_REVIEW
-    )
-    assert (
-        result["criteria"]["ac10_original_excel_usability"]["status"]
-        == PENDING_HUMAN_REVIEW
-    )
-    assert (
-        result["criteria"]["ac12_user_outcome_and_stage_boundary"]["status"]
-        == PENDING_HUMAN_REVIEW
-    )
-    assert result["summary"]["partial"] == []
+    assert result["blockers"] == []
+    assert result["evidence"]["pending_human_review"] == [
+        "ac8_substantive_research_or_rejection",
+        "ac9_stratified_false_positive_review",
+        "ac10_original_excel_usability",
+    ]
+    assert result["evidence"]["next_action"]
+
+
+def test_ac12_blocks_on_any_partial_machine_criterion():
+    criteria = {
+        "ac1_stabilization_and_offline_green": {
+            "status": PARTIAL,
+            "evidence": {"action": ACTION_NO_ORDER},
+        },
+        "ac8_substantive_research_or_rejection": {
+            "status": PENDING_HUMAN_REVIEW,
+            "human_review": ["review reports"],
+            "evidence": {"action": ACTION_NO_ORDER},
+        },
+    }
+
+    result = _audit_ac12(criteria)
+
+    assert result["status"] == PENDING_HUMAN_REVIEW
+    assert result["blockers"] == ["M2 machine evidence is incomplete"]

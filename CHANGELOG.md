@@ -1,5 +1,16 @@
 # Changelog
 
+## v2026.09.24-m2-acceptance-auditor-ci-fix
+
+### Fix
+
+- 修复 M2 审计器回归测试对 untime/ 本地证据的隐式依赖。该目录被 Git 忽略，
+  因此首次版本在 GitHub 干净 checkout 中执行完整 udit() 时会读取不到固定收据。
+- 将依赖真实运行产物的完整审计回归替换为三个封闭单元回归：AC1 本地与 CI 同时绿、
+  AC12 人工复核边界保留、任一机器项 PARTIAL 时产生 blocker。
+- 	ests/test_m2_acceptance_audit.py 当前为 7 passed。本提交不改变任何 Excel
+  文件字节或 SHA-256，不连接生产数据库，不生成交易指令。
+
 ## v2026.09.24-m2-ac12-acceptance-auditor
 
 ### Release Scope
