@@ -17,6 +17,21 @@
 `A股价值投资_Agent前端智能跟踪模板_M2候选_20260924.xlsx`；它们是同一内容的两个受保护
 快照，不表示 M3 已产生新的估值、买入、仓位或订单。
 
+## 2026-09-24 GitHub 上传核验
+
+- 基准提交：`0761b390e56a97695d328305d40b253cb6aab503`
+  `Add M3 shared decision domain contracts`
+  （提交时间 `2026-09-24T02:17:45+08:00`）。
+- `git status --short --branch` 为 `## main...origin/main`，工作树干净；
+  `git ls-remote` 核对远端 `origin/main` 与本地上传目标一致。
+- 新建 Excel `A股价值投资_Agent前端智能跟踪模板_M2候选_20260924.xlsx` 已于
+  `8fdb361`（`2026-09-24T01:02:06+08:00`）纳入公开仓库；当前文件字节数
+  `13,199,222`，SHA-256 保持
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- 仓库 canonical、同内容 M2 候选与 WPS 云盘生产原表三者继续逐字节一致；
+  本轮核验未产生新的 Excel 字节变更、未发现未跟踪工作簿，也未改变
+  `action=no_order` 边界。
+
 ## 本版发布事件
 
 本版把 M2 AC8 研究报告与证据并入原有 WPS 工作簿，并在受保护发布后统一仓库 canonical、
