@@ -1,5 +1,33 @@
 # Changelog
 
+## v2026.09.24-m3-original-workbook-acceptance-audit
+
+### Release Scope
+
+为上一批 M3 原工作簿决策复核候选新增受保护、可重复执行的验收审计。本版本不发布
+canonical，不生成 Entry、Journal、Consistency、组合结果或订单。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/m3_original_workbook_acceptance_audit.py`：
+  固定 canonical、候选、manifest、M1 输入、M1 预登记和 WPS 收据 Hash。
+- 机器门 `owc1-owc6` 重放三张负向卡，核对 55 页、54 个原页面、113 个未替换
+  ZIP 部件、WPS 云盘副本与生产 canonical 边界。
+- 新增命令行 `scripts/audit_m3_original_workbook.py`，支持本地回归、CI 状态和
+  版本化 receipt/pointer。
+- 新增 3 项审计回归并纳入 GitHub Core Research Gate。
+
+### Verification
+
+- M3 原工作簿定向回归：7 passed。
+- 机器门 `owc1-owc6` 全部 `DONE`；`owc7` 保持 `PENDING_HUMAN_REVIEW`。
+- 候选状态仍为 `candidate_verified_not_published`；全部动作 `action=no_order`。
+
+### Acceptance Boundary
+
+- `M2=PENDING_HUMAN_REVIEW`，`M3/M4/M5=PARTIAL`。
+- 本版本只证明候选机器证据可重复；Checkpoint B 仍需用户在 WPS 中阅读并复述理由与反证。
+
 ## v2026.09.24-m3-decision-review-original-workbook-candidate
 
 ### Release Scope

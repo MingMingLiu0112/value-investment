@@ -62,6 +62,20 @@
 - 新增 4 项定向回归并纳入 CI；M3 决策与发布层联合回归 18 passed。
 - 本候选不证明 Checkpoint B；用户仍需在 WPS 中阅读三张卡并复述理由与反证。
 
+## M3 原工作簿候选验收审计：2026-09-24
+
+本节记录把上一批 M3 原工作簿候选纳入受保护、可重复执行的机器审计。M2 保持
+`PENDING_HUMAN_REVIEW`，M3、M4、M5 保持 `PARTIAL`；全部动作 `action=no_order`。
+
+- 新增 `m3_original_workbook_acceptance_audit.py`：固定 canonical、候选、
+  manifest、M1 输入、M1 预登记与 WPS 只读收据 Hash。
+- 机器门 `owc1-owc6` 覆盖候选身份、三张负向卡重放、55 页/54 原页面/113 未替换
+  ZIP 部件、决策页 fail-closed、WPS 云盘副本和生产 canonical 边界。
+- 新增命令行 `scripts/audit_m3_original_workbook.py` 与 3 项审计回归，纳入
+  GitHub Core Research Gate；M3 原工作簿定向回归 7 passed。
+- 候选保持 `candidate_verified_not_published`；`owc7` 为
+  `PENDING_HUMAN_REVIEW`，Checkpoint B 仍必须由用户完成。
+
 ## M5 人工材料性判定接入：2026-09-24
 
 本节记录把已有人工 `EventMaterialityDecision` 接入 M5 事件管道的离线工程。M2 保持
