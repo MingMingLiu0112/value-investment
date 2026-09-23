@@ -1,5 +1,35 @@
 # Changelog
 
+## v2026.09.24-excel-artifact-version-record
+
+### Release Scope
+
+将仓库内 6 个工作簿快照与 WPS 云盘 `价投跟踪` 目录逐字节核对，并补交独立的
+工作簿版本清单。该清单列明文件名、字节数、SHA-256、最近提交和 WPS 一致性，
+不把 Excel 上传解释为交易就绪。
+
+### Workbooks
+
+- 原工作簿：12,210,200 bytes；SHA-256 `a62a6ae634ea949db36c3c209278515e2ee66ef3a61aaa25d59d2051d5954d58`
+- M2 原表候选：13,168,877 bytes；SHA-256 `95993fa8721d4d333463b8ac48677b1700cbeec98d7eb4aad4bb457385baef6a`
+- M2 机会发现：53,299 bytes；SHA-256 `a612a622cf476322724826c84b00783c51d65886fd3c9bb335159a509fa0c821`
+- M2 机会发现 v2：1,020,221 bytes；SHA-256 `4e2dc634fb5c093d7476ad99e41cf76ec642b5b98f6761a31f8d06f348368c63`
+- M1 三公司候选 03:30：17,357 bytes；SHA-256 `0cebce194667879d1fbae345cd9548c4cb1407b8528fade4b62e5dbdbbd51c3d34`
+- M1 三公司候选 12:20：17,025 bytes；SHA-256 `2b913f65f3d0f7bb7696431902c890943147a18139b4ecccc41f75da9c8cb1b8`
+
+上述 6 个仓库快照与 WPS 同名文件均字节一致。详细提交锚点见
+[docs/excel-artifact-version-record-20260924.md](docs/excel-artifact-version-record-20260924.md)。
+
+### Verification
+
+- `git status`：提交前工作树无未跟踪的公开源码或工作簿变更。
+- WPS/仓库工作簿 SHA-256：6/6 一致。
+- `action=no_order` 继续保持不变。
+
+### Status
+
+`M2 / PARTIAL`。本次为版本记录和上传确认，不推进 M2 完成验收。
+
 ## v2026.09.23-m2-ac9-stratified-coverage-audit
 
 ### Release Scope
