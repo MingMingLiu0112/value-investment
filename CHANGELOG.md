@@ -1,5 +1,61 @@
 # Changelog
 
+## v2026.09.24-m3-decision-card-read-model
+
+### Release Scope
+
+建立 M3.2 的公开非个人化 Decision Card 只读模型、冻结 M1 证据应用编排和独立 Excel
+候选。本版本不生成个人化 BUY/ADD/HOLD/REDUCE/EXIT，不合成 Entry、Journal 或
+Consistency，不修改原 55 页 WPS 生产工作簿。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/decision_read_model.py`：
+  - `DecisionCard` 保持 `requires_human_review=true`、`action=no_order`；
+  - 系统状态与个人组合缺失、原始 Entry 缺失、人工决策记录缺失分开表达；
+  - 保留决策时点、规则版本、Evidence Bundle、artifact refs、来源 SHA-256 与 blockers；
+  - 未提交决策意图时不伪造意图，也不生成任何正向复核状态。
+- 新增 `src/value_investment_agent/m3_decision_application.py`，消费已封存 M1
+  `integrated-runs.json`，逐证券解析 PreDecisionEligibility、计算七个证据段落的
+  canonical SHA-256，并以缺失组合前置和 `decision_intent=None` 失败关闭编排。
+- 新增 `src/value_investment_agent/m3_decision_card_workbook.py`，生成独立 4 页
+  候选：决策卡、缺失与阻断、来源哈希、证据引用；无公式重算，只做展示。
+- 新增 `scripts/build_m3_decision_card_candidate.py` 与
+  `scripts/verify_m3_decision_card_wps.ps1`，支持无覆盖、哈希固定的候选生成和
+  WPS 只读打开/计算/页序/链接校验。
+- 新增 13 项回归测试并纳入 GitHub Core Research Gate。
+
+### Real Artifacts
+
+- 输入收据：
+  `runtime/m1-post-review-20260923T114228Z/integrated-runs.json`，
+  SHA-256 `b1123333f2b4caa6beae16102bdca613b0894ad7fb72aa17329e838cd32b0459`。
+- 独立候选：
+  `A股价值投资_M3决策卡候选_20260924.xlsx`，15,102 bytes，
+  SHA-256 `589f19ef9e3d235401814e98450475d657c3e981b33637337ab5da9d33fb307d`。
+- WPS 云盘同名副本与仓库候选逐字节一致；WPS 只读验证 `status=passed`，
+  4 个工作表、31 个证据链接、0 个公式错误。
+- 三张真实卡片均为 `INSUFFICIENT_RESEARCH`、`reason_kind=RESEARCH_INCOMPLETE`、
+  `portfolio_status=MISSING`、`entry_status=NOT_REQUIRED`、
+  `decision_intent=null`、`action=no_order`。
+
+### Verification
+
+- M3.2 定向回归：13 passed。
+- Decision/PreDecision 联合回归：32 passed。
+- Core Research Gates 等价离线清单：330 passed。
+- 仓库全量离线回归：2177 passed、6 skipped、18 warnings、0 failed。
+- WPS 收据：`runtime/m3-decision-card-wps-20260924/receipt.json`。
+- `py_compile` 与 `git diff --check` 通过。
+
+### Acceptance Boundary
+
+- M2 继续保持 `PARTIAL`，M3 继续保持 `PARTIAL`。
+- 本版本是 M3.2 的独立展示候选，尚未写入原工作簿 `00_决策复核`，不能代表
+  Checkpoint B 或 M3 产品验收。
+- 原 canonical、M2 候选和 WPS 生产原表保持 SHA-256
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+
 ## v2026.09.24-m3-shared-decision-domain
 
 ### Release Scope

@@ -2,6 +2,33 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M3.2 Decision Card 只读模型与独立 Excel 候选：2026-09-24
+
+本节记录 M3 决策域的第一批可查看离线工程。M2 与 M3 均仍为 `PARTIAL`；本轮未写入
+原工作簿 `00_决策复核`，不生成个人化 BUY/ADD、Entry、Journal 或订单。
+
+- 新增 `decision_read_model.py`：把不可变 `InvestmentDecisionReview` 重建成公开
+  `DecisionCard`，固定 `requires_human_review=true`、`action=no_order`，并单独表达
+  系统负向状态、个人组合缺失、原始 Entry 缺失和人工决策记录缺失。
+- 新增 `m3_decision_application.py`：读取冻结 M1
+  `runtime/m1-post-review-20260923T114228Z/integrated-runs.json`，对研究门、人工审批、
+  估值、模型有效期、价格桥、价格吸引力和当前研究状态逐段做 canonical Hash 绑定，
+  再用缺失组合前置和无决策意图构建失败关闭卡片。
+- 三张真实卡片均为 `INSUFFICIENT_RESEARCH`，全部为 `no_order`、无决策意图、
+  组合输入缺失、原始 Entry 本轮不需要；未产生任何正向复核。
+- 新增独立候选
+  `A股价值投资_M3决策卡候选_20260924.xlsx`（15,102 bytes，SHA-256
+  `589f19ef9e3d235401814e98450475d657c3e981b33637337ab5da9d33fb307d`），已复制到
+  WPS 云盘同名文件。WPS 只读验证通过：4 页、31 个证据链接、无公式错误、打开前后
+  Hash 不变；收据 `runtime/m3-decision-card-wps-20260924/receipt.json`。
+- 原 55 页生产工作簿未改变，canonical、M2 候选和 WPS 生产原表继续保持 SHA-256
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- 测试事实：M3.2 定向 13 passed；Decision/PreDecision 联合 32 passed；
+  Core Research Gates 等价离线清单 330 passed；全量离线回归
+  2177 passed、6 skipped、18 warnings、0 failed。
+- 下一步先由用户在 WPS 云盘查看三张负向决策卡；完成机器验证后，再受保护地把同一
+  read model 并入原工作簿 `00_决策复核`，不能直接覆盖原 55 页。
+
 ## M3.1 共享决策域契约：2026-09-24
 
 本节记录 M3 解释性决策域的第一批离线工程。M2 仍为 `PARTIAL`，M3 仍为 `PARTIAL`；
