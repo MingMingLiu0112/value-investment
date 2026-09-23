@@ -30,6 +30,8 @@
   `589f19ef9e3d235401814e98450475d657c3e981b33637337ab5da9d33fb307d`；
   原生产工作簿继续为
   `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- GitHub 提交：`41ac62cf77a1e01aaf123c0809ad4baf4bea2a84`；Core Research Gates
+  的 `offline-core` 与 `postgres-integration` 均为 `success`。
 
 ### Acceptance Boundary
 

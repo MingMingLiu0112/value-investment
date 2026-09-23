@@ -36,6 +36,19 @@ M3.2 本轮只发布一个独立候选工作簿，不改写原 55 页生产工�
 SHA-256 继续为
 `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
 
+## M3 决策卡验收审计版本包
+
+`v2026.09.24-m3-decision-acceptance-audit` 只新增 M3 机器审计、测试、CI 与复核清单，
+不修改任何公开 Excel 字节。上表两个 M3/M2 公开工作簿和 WPS 云盘原表继续保持不变：
+
+- 提交：`41ac62cf77a1e01aaf123c0809ad4baf4bea2a84`
+- CI：[Core Research Gates](https://github.com/MingMingLiu0112/value-investment/actions/runs/35907116392)
+  `success`；`offline-core` 与 `postgres-integration` 均通过
+- M3 候选仍为 15,102 bytes，SHA-256
+  `589f19ef9e3d235401814e98450475d657c3e981b33637337ab5da9d33fb307d`
+- 原 55 页工作簿仍为
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`
+
 ## 2026-09-24 GitHub 上传核验
 
 - 基准提交：`0761b390e56a97695d328305d40b253cb6aab503`

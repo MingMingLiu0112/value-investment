@@ -20,6 +20,8 @@
 - M3 定向回归 29 passed；本次同时以全量离线回归复核 M2：AC1-AC7、AC11 为
   `DONE`，AC8/AC9/AC10/AC12 为 `PENDING_HUMAN_REVIEW`。全量
   2180 passed、6 skipped、18 warnings、0 failed。
+- 提交：`41ac62cf77a1e01aaf123c0809ad4baf4bea2a84`；GitHub CI
+  `Core Research Gates` 两 job 均为 `success`。
 - 未修改原 55 页生产工作簿、未写入 `00_决策复核`、未连接生产 PostgreSQL、
   未触碰服务器 PTA/Web App，也未创建任何 BUY/ADD/仓位或订单。
 
