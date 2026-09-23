@@ -9,6 +9,19 @@
 - 三家正常化股息情景仍 `NOT_READY`、全部估值仍 `conditional_research_only`、价格吸引力仍 `NOT_ASSESSABLE`。M1 完成只表示研究工作台闭环，不表示真实投资或交易准入。
 - 未启动 M2，未连接生产 PostgreSQL、未 SSH、未改 PTA 或计划任务。
 
+## M1 后人工复核纠偏与 M3/M5 决策门：2026-09-23
+
+执行输入是用户复核后的 [m1-post-review-decision-gate-20260923.md](m1-post-review-decision-gate-20260923.md)，基线为 `cbec189 Close M1 workbench and defer decision-stage reviews`。M1 仍保持 `DONE`，冻结估值包、历史收据和原 WPS Excel 未修改。
+
+- 新增五个 append-only 领域契约：`human_research_approval.py`、`event_materiality.py`、`valuation_bridge_review.py`、`interim_report_policy.py`、`pre_decision_eligibility.py`；Application、G3、ModelValidity、PriceBridge 和 CurrentStatus 已接入新门禁。
+- 三家公司正式人工 G3 回执：`000651=REJECTED_NEEDS_REWORK`、`600741=REJECTED_NEEDS_REWORK + HIGH`、`600887=APPROVED_CONDITIONAL_LOW_CONFIDENCE`。回执绑定估值、ResearchCase、Facts、Assumptions 的 SHA-256，依赖变化会变为 `SUPERSEDED`。
+- 24 条公告全部形成 EventMaterialityReview。分类为 2 `MATERIAL_REQUIRES_RECALCULATION`、4 `MATERIAL_RISK_MONITOR`、4 `MATERIAL_ALREADY_INCORPORATED`、5 `DUPLICATE_OR_DERIVED`、7 `NOT_MATERIAL`、1 `MATERIAL_SUPPORTING_EVIDENCE`、1 `REQUIRES_DECOMPOSITION`。格力和华域未解决资金桥接拆分保持 `UNRESOLVED`；伊利成本权益、留存/分红和减值归一化 ROE 仍为 `CONDITIONAL_REVIEW_PENDING`。
+- 未经审计半年报默认改为 `CONFIDENCE_MODIFIER`，保留 `previous_classification=HARD_BLOCKER` 和版本链；已核实来源存在冲突、更正、范围不匹配或审计问题时才继续升级 blocker。
+- 无有效人工 G3 时 Application 的价格吸引力强制为 `NOT_ASSESSABLE`。PreDecision Eligibility 要求 G0-G3、有效 Approval、当前 Event Review、`VALID`、`READY` 和可评估价格政策同时成立。
+- 正式 runtime 收据目录 `runtime/m1-post-review-20260923T114228Z/`，manifest 覆盖 9 个文件 Hash；三家 integrated runs 均为 `action=no_order`，分别保持 `REJECTED/STALE`、`REJECTED/VALID`、`CONDITIONAL_APPROVED/STALE`，均 `NOT_ELIGIBLE`。
+- 定向回归 `71 passed`；全量本地回归 `2107 passed, 6 skipped, 1 failed`，唯一失败仍是本文已记录的茅台旧 `daily_simulation_policy_implemented` runtime 指针断言，不在本轮改动路径内。GitHub Core Gate 已加入五个新契约测试文件。
+- 未修改 M1 冻结 Hash、生产 PostgreSQL、计划任务、服务器 PTA/Web App 或原 WPS Excel。
+
 ## 用户指定的前端调整：2026-09-23 已更新原 Excel
 
 独立于并行 M1 研究任务，本次只调整使用界面，不提升研究或交易准入状态。

@@ -35,6 +35,11 @@ jobs:
           tests/test_gap_classification.py
           tests/test_current_research_status.py
           tests/test_fixed_sample_admission.py
+          tests/test_human_research_approval.py
+          tests/test_event_materiality.py
+          tests/test_valuation_bridge_review.py
+          tests/test_interim_report_policy.py
+          tests/test_pre_decision_eligibility.py
           tests/test_unified_fcff_valuation.py
           tests/test_residual_income_equity_valuation.py
           tests/test_cyclical_normalized_valuation.py
