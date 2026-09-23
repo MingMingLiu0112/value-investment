@@ -1,5 +1,43 @@
 # Changelog
 
+## v2026.09.24-m5-real-disclosure-review-queue
+
+### Release Scope
+
+建立真实 CNINFO 公告索引到人工材料性复核之间的有界队列，并发布一个真实三公司、
+24 条候选的 4 页 Excel 候选。本版本不自动判定材料性，不生成 M5 事件，也不接入
+调度、通知或数据库。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/m5_disclosure_queue.py`：
+  - 原始索引、公告时间、来源 URL、规则类型、索引 Hash 和候选 PDF SHA-256 全量保留；
+  - 未知标题保留为人工候选；
+  - 重复 ID、未来时间和窗口外记录失败关闭；
+  - 候选 PDF 缺失或下载失败保持 `SOURCE_UNAVAILABLE` 与阻断，不降级为无事件；
+  - 单家公司源失败返回显式 `UNKNOWN / INCOMPLETE` 扫描，不阻塞其他公司。
+- 新增 4 页候选：`00_总览`、`01_待复核公告`、`02_来源覆盖`、`03_输入与边界`。
+- 新增真实运行脚本、WPS 只读校验脚本和 10 项定向回归，并纳入 GitHub Core
+  Research Gate。
+
+### Verification
+
+- 真实扫描：3 家公司、41 条公告、24 条待人工复核候选、24 份候选 PDF、
+  0 个来源失败。
+- runtime queue SHA-256：
+  `378f5366f76faaf7d9407b321419a40305baccb6126a67a4302526428a75c6b4`。
+- 工作簿 SHA-256：
+  `58b16bf00dd7ea57ee9cdcd6d7d7d00d80c0fc9669cd047f5171f500a9b16ec5`；
+  WPS 云盘同名副本逐字节一致，WPS 只读收据 `passed`。
+- M5 相关联合回归：58 passed；除 PostgreSQL 集成测试外的全量离线回归：
+  2262 passed、2 skipped、18 warnings、0 failed。
+
+### Acceptance Boundary
+
+- `M2=PENDING_HUMAN_REVIEW`，`M3/M4/M5=PARTIAL`，全部 `action=no_order`。
+- 本版本只证明真实披露可以被确定性归档和排队；材料性结论仍需用户逐条给出，
+  之后才允许进入已有 `M5MaterialityBridge`。
+
 ## v2026.09.24-github-upload-reconciliation
 
 ### Release Scope

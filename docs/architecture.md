@@ -153,5 +153,10 @@ Starter/Normal/Max 上限，仅输出上限、剩余空间、共同预算冲突�
 分别映射为有界依赖失效，不新增自动材料性判定。未注册领域和制品保留为
 `unmapped_*`；复核早于公告失败关闭；重算可进入模型有效性路径，拆分和风险监控
 不直接使模型失效。该桥接不改变 M5 生产门槛，也不让标题规则候选直接修改估值事实。
+同日增加真实 `CNINFO DisclosureReviewQueue`：它把每家公司完整原始公告索引转成
+`EventScanResult`，标题规则只产生 `PENDING_HUMAN_REVIEW` 候选并归档候选 PDF；
+未知标题保留，重复/未来/窗口外记录失败关闭，候选 PDF 缺失显式标记
+`SOURCE_UNAVAILABLE`，不会静默变成无事件。人工结论产生后才允许进入
+`M5MaterialityBridge`。
 缺少 Portfolio 输入不能自动批准 BUY/ADD；已证实的 Thesis Breaker 风险提示不能因缺价格而消失。旧数据未知不是 HOLD，更不是自动卖出。
 Entry 是用户确认行为的不可变研究基线，不是系统生成的成交；无历史理由只能标记事后重建。MarketContext 不直接修改内在价值。

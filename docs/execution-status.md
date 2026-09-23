@@ -2,6 +2,25 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M5 真实披露待复核队列：2026-09-24
+
+本节记录真实 CNINFO 公告索引到人工材料性复核之间的离线队列。M2 保持
+`PENDING_HUMAN_REVIEW`，M3、M4、M5 保持 `PARTIAL`；全部动作 `action=no_order`。
+
+- 新增 `m5_disclosure_queue.py` 与 4 页候选工作簿：标题规则只形成候选，未知标题
+  保留，未来/窗口外/重复记录失败关闭，候选 PDF 缺失保持 `SOURCE_UNAVAILABLE`。
+- 真实扫描三家 M1 公司，覆盖 2026-08-27 至 2026-09-24：41 条公告、24 条待人工
+  复核候选、24 份候选 PDF、0 个来源失败、3/3 覆盖完整。
+- runtime queue SHA-256
+  `378f5366f76faaf7d9407b321419a40305baccb6126a67a4302526428a75c6b4`；
+  工作簿 SHA-256
+  `58b16bf00dd7ea57ee9cdcd6d7d7d00d80c0fc9669cd047f5171f500a9b16ec5`。
+- WPS 云盘同名副本与仓库工作簿逐字节一致；WPS 只读收据为 `passed`。
+- 新增 10 项定向回归并纳入 CI；M5 联合回归 58 passed；除 PostgreSQL 集成外全量
+  离线回归 2262 passed、2 skipped、0 failed。
+- 未执行自动材料性判定、事件入账、依赖失效、生产调度、通知或数据库变更；下一步
+  由用户逐条给出 `EventMaterialityDecision` 后进入已有 M5 材料性桥。
+
 ## M5 人工材料性判定接入：2026-09-24
 
 本节记录把已有人工 `EventMaterialityDecision` 接入 M5 事件管道的离线工程。M2 保持
