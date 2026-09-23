@@ -1,5 +1,52 @@
 # Changelog
 
+## v2026.09.23-m2-ac9-stratified-coverage-audit
+
+### Release Scope
+
+为 M2 AC9 建立预注册分层覆盖审计：以固定 seed 和 SHA-256 排名规则抽取入选线索、
+拒绝、数据缺口、不支持、预算外、未评估、显式排除和 legacy/new 差异样本，并对真实
+2026-09-23 收据执行机器勾稽与抽样阅读。本版本继续 `action=no_order`。
+
+### New Capability
+
+- 新增 `config/m2-coverage-sampling-v1.json`，固定收据路径、SHA-256、run id、覆盖与候选签名。
+- 新增 `src/value_investment_agent/m2_coverage_sampling.py`：
+  - 8 个预注册层，每通道固定抽样 6 条，不按收益或结果后验挑样本；
+  - 收据文件 Hash、run id、日期和两个领域签名不匹配即拒绝；
+  - 检查每通道 5,568 分母、PASS/候选对账、预算外可追溯、无已核候选、
+    PARTIAL 证据语义、证据日期、legacy 记账和 Quality 空池解释；
+  - 报告明确 `MACHINE_CHECKS_PASS`，验收仍为 `AC9_REVIEW_PENDING`。
+- 新增离线命令 `scripts/audit_m2_coverage_sampling.py`，只写新 runtime 审计报告。
+- 新增 6 项防篡改、确定性、覆盖完整性、禁止执行键回归测试，并加入 GitHub Core Gate。
+
+### Real Audit Evidence
+
+- 收据：`runtime/m2-live-20260923-v3/receipt.json`，SHA-256
+  `869044a72c514be2d274308383c4479f7536bb393bfbf5ca10e492eee24bc220`。
+- 审计报告：`runtime/m2-ac9-coverage-audit-20260923-v2/report.json`，SHA-256
+  `3c30936a6e567bd55b8d03bf67163071c49d223ca10def66b93fcdc336a84695`。
+- 所有机器检查通过。Quality 空池被解释为 873/5,568 财务证据覆盖限制；
+  2,255 个通过对象因 50 条展示预算保留为 `BUDGET_EXCLUDED`；150 个展示对象均为
+  `LEAD` 和 `DATA_PARTIAL`，已核候选为 0。
+- 抽检未发现候选被错误升级为估值、BUY 或仓位。Value 文案“多指标便宜度”在下一版
+  rule text 中应更准确描述其 PE/PB 与推导 ROE 输入。
+
+### Artifacts
+
+- `docs/m2-ac9-stratified-coverage-audit-20260923.md`。
+
+### Verification
+
+- M2 分层覆盖审计定向回归：6 passed。
+- 仓库全量离线回归：2137 passed、6 skipped、18 warnings、0 failed。
+- `git diff --check` 通过。
+
+### Status
+
+`PARTIAL`。AC9 已有真实分层审计和抽样阅读证据，但不单独宣告 M2 完成；原 Excel 发布、
+至少三份新发现研究/否决和 W6/W7 联合验收仍继续。
+
 ## v2026.09.23-m2-pit-and-partial-evidence
 
 ### Release Scope

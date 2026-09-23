@@ -1,0 +1,95 @@
+{
+  "schema_version": "m2-coverage-sampling-v1",
+  "sampling_version": "20260923-v1",
+  "as_of": "2026-09-23",
+  "receipt": {
+    "path": "runtime/m2-live-20260923-v3/receipt.json",
+    "sha256": "869044a72c514be2d274308383c4479f7536bb393bfbf5ca10e492eee24bc220",
+    "run_id": "m2-replay-20260923T232854Z",
+    "coverage_signature": "4e1655de3e55b79bad0b2737cebf893d82049f4c495cf373a3e51344745cf805",
+    "candidate_signature": "f77fd5f0e139cf0ab283e9aee9fdd2f4f66695071c85816f303c9b31715cbe79",
+    "quote_date": "2026-09-23"
+  },
+  "action": "no_order",
+  "seed": "m2-ac9-stratified-coverage-20260923-v1",
+  "methodology": {
+    "selection_rule": "rank=SHA256(seed|stratum_id|channel|symbol); stable tie-break by symbol; take target_per_channel from the top.",
+    "sampling_frame": "Every official-universe security has one evaluation per channel in the pinned M2 receipt. Legacy buckets use the receipt's legacy/new symbol sets.",
+    "no_post_hoc_tuning": true,
+    "review_scope": "入选线索、REJECTED、DATA_GAP、UNSUPPORTED、BUDGET_EXCLUDED、NOT_EVALUATED、显式 excluded/missing、legacy/new 差异与 Quality 空池成因；不使用未来收益或回测收益挑样本。"
+  },
+  "strata": [
+    {
+      "id": "selected_leads",
+      "source": "candidate",
+      "statuses": [],
+      "channels": [],
+      "target_per_channel": 6,
+      "minimum_population": 1,
+      "purpose": "检查实际展示的线索与 PASS 结果、PARTIAL 证据语义和 Why Now 文本是否一致。"
+    },
+    {
+      "id": "rejected",
+      "source": "evaluation",
+      "statuses": ["REJECTED"],
+      "channels": [],
+      "target_per_channel": 6,
+      "minimum_population": 1,
+      "purpose": "检查未入选对象是否确有明确门禁原因，不被静默遗漏。"
+    },
+    {
+      "id": "data_gap",
+      "source": "evaluation",
+      "statuses": ["DATA_GAP"],
+      "channels": [],
+      "target_per_channel": 6,
+      "minimum_population": 1,
+      "purpose": "检查数据缺口是否逐证券保留，且没有被当成无机会或拒绝。"
+    },
+    {
+      "id": "unsupported",
+      "source": "evaluation",
+      "statuses": ["UNSUPPORTED"],
+      "channels": [],
+      "target_per_channel": 6,
+      "minimum_population": 1,
+      "purpose": "检查金融等不适用画像是否被显式隔离，未被错误纳入通用模型。"
+    },
+    {
+      "id": "budget_excluded",
+      "source": "evaluation",
+      "statuses": ["BUDGET_EXCLUDED"],
+      "channels": [],
+      "target_per_channel": 6,
+      "minimum_population": 1,
+      "purpose": "检查超出展示预算的通过对象是否保留在分母和可追溯原因中，而非被删除。"
+    },
+    {
+      "id": "not_evaluated",
+      "source": "evaluation",
+      "statuses": ["NOT_EVALUATED"],
+      "channels": [],
+      "target_per_channel": 6,
+      "minimum_population": 1,
+      "purpose": "检查不适用或行业未映射对象是否与 REJECTED 正确区分。"
+    },
+    {
+      "id": "excluded_security",
+      "source": "excluded_security",
+      "statuses": [],
+      "channels": [],
+      "target_per_channel": 6,
+      "minimum_population": 1,
+      "purpose": "检查 explicit excluded/missing 列表与原因是否保留，不因主要候选列表而丢失。"
+    },
+    {
+      "id": "legacy_set",
+      "source": "legacy_set",
+      "statuses": [],
+      "channels": [],
+      "target_per_channel": 6,
+      "minimum_population": 1,
+      "purpose": "检查 legacy/new 重叠、仅新、仅 legacy 的样本，评估旧影子规则与当前通道的差异。"
+    }
+  ]
+}

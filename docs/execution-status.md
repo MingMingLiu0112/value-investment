@@ -62,6 +62,31 @@
   `git diff --check` 通过。未连接生产 PostgreSQL、未改调度、
   未触碰服务器 PTA/Web App。
 
+## M2 AC9 分层覆盖审计：2026-09-23
+
+本节记录预注册抽样工具、真实收据审计和抽样阅读结论。M2 仍为 `PARTIAL`；AC9 单项有真实证据，
+不等于 M2 或总 Goal 完成。
+
+- 新增 `config/m2-coverage-sampling-v1.json`，固定真实收据 SHA-256
+  `869044a72c514be2d274308383c4479f7536bb393bfbf5ca10e492eee24bc220`、
+  run id、覆盖签名和候选签名，并声明 `action=no_order`。
+- 抽样规则在结果观察前登记：`SHA256(seed | stratum_id | channel | symbol)` 稳定排序，
+  8 个层每通道各抽 6 条；禁止收益、回测收益和阈值后验键。
+- 真实审计输出：`runtime/m2-ac9-coverage-audit-20260923-v2/report.json`，SHA-256
+  `3c30936a6e567bd55b8d03bf67163071c49d223ca10def66b93fcdc336a84695`。
+- 机器勾稽全部通过：每通道 5,568 与官方 Universe 对齐；PASS 与展示候选集合一致；
+  150 个展示对象均为 `LEAD`/`DATA_PARTIAL`；已核候选为 0；证据日期与 legacy 记账一致。
+- 分层人口：selected 150、REJECTED 7,564、DATA_GAP 6,829、UNSUPPORTED 469、
+  BUDGET_EXCLUDED 2,255、NOT_EVALUATED 5,005、显式 excluded/missing 186、legacy 差异 774。
+- 抽样阅读结论：Quality 0 的主要成因是财务证据只覆盖 873/5,568，不是全市场无质量公司；
+  Value/Cyclical 低 PE 样本仍只作 PARTIAL 研究线索；预算外对象保留分母与原因，但触发指标需
+  从原始输入重放才能完整复核；金融画像显式 `UNSUPPORTED`，未进入通用模型。
+- 未阻断问题：Value 文案“多指标便宜度”实际输入为 PE、PB 与推导 ROE，下一版规则文本应更精确；
+  本版不修改生产签名或历史收据。
+- 新增 6 项定向回归并纳入 GitHub Core Gate；未连接生产 PostgreSQL、未改调度、未触碰服务器
+  PTA/Web App、未覆盖 WPS 生产工作簿。完整报告见
+  [m2-ac9-stratified-coverage-audit-20260923.md](m2-ac9-stratified-coverage-audit-20260923.md)。
+
 ## 路线融合复审：2026-09-23，代码基线 f4bb55c
 
 本节是当前状态判断，优先于下方历史记录的“只差三报告”等当时结论。本轮仅审查与文档；未启动Goal、未改业务代码/Excel/数据库/计划任务，未SSH、未commit/push。
