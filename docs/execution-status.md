@@ -21,6 +21,27 @@
 - 未执行自动材料性判定、事件入账、依赖失效、生产调度、通知或数据库变更；下一步
   由用户逐条给出 `EventMaterialityDecision` 后进入已有 M5 材料性桥。
 
+## M5 真实披露人工复核回填：2026-09-24
+
+本节记录从真实披露队列到人工 `EventMaterialityReview` 的回填入口。M2 保持
+`PENDING_HUMAN_REVIEW`，M3、M4、M5 保持 `PARTIAL`；全部动作 `action=no_order`。
+
+- 新增 `m5_disclosure_review.py` 与 4 页回填工作簿：24 条候选必须覆盖且仅覆盖一次，
+  判定和说明从空值开始，缺件、重复、未来审核时间均失败关闭。
+- 回填表绑定 `queue_id`、队列语义 SHA-256 和候选 PDF SHA-256；候选 PDF 缺失时对应
+  扫描保持不完整，不降级放行。
+- 应用命令只输出 `EventMaterialityReview` 与 `MaterialityBridgeBatch`，不执行 M5
+  事件账、依赖失效、outbox、通知、数据库变更、调度或订单。
+- 工作簿字节数 13,885，SHA-256
+  `1ae75325fe02c93011201c3a44af73d739a49680e24af35a8f33fcd362a6c420`；
+  队列语义 SHA-256
+  `9ff56ebe8ab2902d4339fda881c0a0d4697a1066014f477053198dd00e4e905d`。
+- WPS 只读收据
+  `runtime/m5-disclosure-review-intake-20260924/wps-verification.json` 为
+  `passed`；WPS 云盘同名副本与仓库工作簿逐字节一致。
+- 新增定向回归 15 passed；M5 联合回归 56 passed。24 条材料性结论仍待用户逐条填写，
+  之后才允许显式调用材料性桥。
+
 ## M5 人工材料性判定接入：2026-09-24
 
 本节记录把已有人工 `EventMaterialityDecision` 接入 M5 事件管道的离线工程。M2 保持

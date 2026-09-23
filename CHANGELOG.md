@@ -1,5 +1,41 @@
 # Changelog
 
+## v2026.09.24-m5-disclosure-review-intake
+
+### Release Scope
+
+建立真实 CNINFO 待复核队列的人工材料性回填入口，发布三公司、24 条候选的 4 页
+Excel 回填表。本版本不预填任何判定，不执行 M5 事件、依赖失效、通知、数据库变更
+或调度，全部动作保持 `action=no_order`。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/m5_disclosure_review.py`：
+  绑定 `queue_id`、队列语义 SHA-256 和候选 PDF SHA-256；24 条候选必须覆盖且仅
+  覆盖一次；审核早于公告发布时间时失败关闭。
+- 新增 `src/value_investment_agent/m5_disclosure_review_workbook.py`，生成
+  `00_总览`、`01_人工判定`、`02_判定说明`、`03_边界` 四页回填表；24 条判定和
+  说明均从空值开始，不提供默认结论。
+- 新增构建、应用和 WPS 只读校验脚本。应用命令只生成 `EventMaterialityReview` 与
+  `MaterialityBridgeBatch`，不调用事件账、outbox、通知或数据库。
+- 未注册领域和制品保留为 `unmapped_domains` / `unmapped_artifacts`，不静默猜测。
+
+### Verification
+
+- 回填工作簿字节数 13,885，SHA-256
+  `1ae75325fe02c93011201c3a44af73d739a49680e24af35a8f33fcd362a6c420`。
+- 队列语义 SHA-256
+  `9ff56ebe8ab2902d4339fda881c0a0d4697a1066014f477053198dd00e4e905d`；
+  WPS 云盘同名副本与仓库文件逐字节一致，WPS 只读收据 `passed`。
+- 新增定向回归 15 passed；M5 队列、事件、材料性桥和回填联合回归 56 passed；
+  `compileall` 与 `git diff --check` 通过。
+
+### Acceptance Boundary
+
+- `M2=PENDING_HUMAN_REVIEW`，`M3/M4/M5=PARTIAL`，全部动作 `action=no_order`。
+- 本版本只让 24 条人工材料性判定可执行；结论仍由用户逐条给出，之后才允许显式
+  进入 M5 材料性桥。
+
 ## v2026.09.24-m5-real-disclosure-review-queue
 
 ### Release Scope
