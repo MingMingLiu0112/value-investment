@@ -4,15 +4,15 @@
 
 ## 目标与当前进度
 
-从 [AGENTS.md](AGENTS.md) 进入文档体系：[长期目标](docs/north-star.md)、[架构合同](docs/architecture.md)、[研究方法](docs/research-methodology.md)、[当前唯一任务](docs/current-stage-goal.md)、[数据证据政策](docs/data-and-evidence-policy.md)、[执行状态](docs/execution-status.md)。
+从 [AGENTS.md](AGENTS.md) 进入文档体系：[长期目标](docs/north-star.md)、[架构合同](docs/architecture.md)、[研究方法](docs/research-methodology.md)、[当前唯一任务](docs/current-stage-goal.md)、[数据证据政策](docs/data-and-evidence-policy.md)、[执行状态](docs/execution-status.md)、[版本记录](CHANGELOG.md)。
 可直接放入目标模式的文本见 [启动入口](docs/value-investment-goal-prompt.md)。文档审查与逐文件处置清单见 [2026-09-22 治理报告](docs/project-goal-consolidation-20260922.md)。
-未来多个长期 Goal 的路线、真实审查和毕业标准见 [LONG-TERM-GOAL.md](LONG-TERM-GOAL.md)。当前唯一待启动目标是 M1 固定样本研究工作台；C0-C3 工程冻结不等于投资决策就绪。
+未来多个长期 Goal 的路线、真实审查和毕业标准见 [LONG-TERM-GOAL.md](LONG-TERM-GOAL.md)。当前唯一活动目标是 M2 多通道机会发现，状态为 `PARTIAL`；C0-C3 与 M1 已冻结，不等于投资决策就绪。
 
 三公司工程与 Excel MVP 已冻结，研究级估值、股息可持续性和生产数据分别验收。以下运维命令仅供既有部署维护参考，不自动授权初始化、改任务、发布原表或恢复模拟/交易开发。
 
 ## 公开仓库范围
 
-本仓库是可复现的公开源码库，包含应用源码、测试、部署定义、数据库建表/迁移 SQL 和一份不含个人账户及交易记录的工作簿模板。当前服务器的应用源码以本仓库 `src/`、`scripts/`、`deploy/server/` 为维护源；服务器不会作为另一个未受版本控制的代码来源。
+本仓库是可复现的公开源码库，包含应用源码、测试、部署定义、数据库建表/迁移 SQL、工作簿模板和 M2 候选发现快照，均不含个人账户及交易记录。当前服务器的应用源码以本仓库 `src/`、`scripts/`、`deploy/server/` 为维护源；服务器不会作为另一个未受版本控制的代码来源。
 
 下列运行时资产绝不提交到 GitHub：`.env`、SSH 私钥、数据库导出及表数据、原始公告/PDF 证据、备份、Excel 故障回退副本、运行日志、个人持仓与交易记录。数据库结构可通过 `sql/server-schema-20260921.sql` 和迁移文件重建；生产数据应使用独立的加密备份和恢复演练机制管理。
 
