@@ -40,13 +40,22 @@ from .research_artifacts import (
     ARTIFACT_RESEARCH_CASE,
     SCOPE_REVIEW,
     ResearchArtifactIdentity,
-    canonicalize_artifact_payload,
-    sha256_text,
 )
 from .research_batch import (
     ResearchBatchCompanySpec,
     ResearchBatchService,
     ResearchBatchSpec,
+)
+from .research_input import (
+    ResearchInputDescriptor,
+    build_research_run_spec,
+    finalize_input_descriptor,
+)
+from .research_run_contract import (
+    INPUT_DESCRIPTOR_SCHEMA,
+    ResearchDependencyFingerprint,
+    ResearchPitFrame,
+    ResearchSourceDescriptor,
 )
 from .research_runtime_import import (
     RESEARCH_POINTER,
@@ -62,6 +71,7 @@ from .valuation_models.residual_income import (
     QualityCompounderFacts,
     ResidualIncomeScenarioInputs,
 )
+from .valuation_router import route_profile
 
 
 REPLAY_SCHEMA_VERSION = "c3-three-company-e2e-replay-v1"
@@ -454,24 +464,126 @@ def _quote_and_validity(
     )
 
 
-def _input_fingerprint(
+def _frozen_generated_at(payload: Mapping[str, Any]) -> datetime:
+    value = payload.get("generated_at")
+    if not isinstance(value, str):
+        raise ValueError("Frozen replay generated_at must be an ISO timestamp")
+    parsed = datetime.fromisoformat(value)
+    if parsed.tzinfo is None:
+        raise ValueError("Frozen replay generated_at must include timezone")
+    return parsed
+
+
+def _replay_sources(
+    bundle: FrozenReplayBundle,
     symbol: str,
-    case_payload: Mapping[str, Any],
-    valuation_payload: Mapping[str, Any],
-    company_payload: Mapping[str, Any],
-    manifest_entry: Any,
+    *,
     moutai_model_payload: Mapping[str, Any] | None,
-) -> str:
-    payload: dict[str, Any] = {
-        "symbol": symbol,
-        "case": dict(case_payload),
-        "valuation": dict(valuation_payload),
-        "admission": dict(company_payload),
-        "manifest": manifest_entry.as_policy_dict(),
-    }
+) -> tuple[ResearchSourceDescriptor, ...]:
+    generated_at = _frozen_generated_at(bundle.research_payload)
+    sources: list[ResearchSourceDescriptor] = []
+
+    def add(source_id: str, kind: str, pin: PinnedEvidence) -> None:
+        sources.append(
+            ResearchSourceDescriptor(
+                id=source_id,
+                kind=kind,
+                location=pin.pointer.as_posix(),
+                sha256=pin.sha256,
+                published_at=generated_at,
+                retrieved_at=generated_at,
+                parser_version="frozen-runtime-v1",
+            )
+        )
+
+    add(f"research-{symbol}", "research_case", bundle.research_pin)
+    add(f"valuation-{symbol}", "valuation", bundle.valuation_pins[symbol])
+    add(f"admission-{symbol}", "admission_distribution", bundle.review_pin)
     if moutai_model_payload is not None:
-        payload["moutai_current_model"] = dict(moutai_model_payload)
-    return sha256_text(canonicalize_artifact_payload(payload))
+        add(
+            f"valuation-model-{symbol}",
+            "valuation_model_inputs",
+            bundle.moutai_model_pin,
+        )
+    sources.append(
+        ResearchSourceDescriptor(
+            id=f"manifest-{symbol}",
+            kind="manifest",
+            location=bundle.manifest_path.relative_to(bundle.root).as_posix(),
+            sha256=bundle.manifest_sha256,
+            published_at=generated_at,
+            retrieved_at=generated_at,
+            parser_version="frozen-runtime-v1",
+        )
+    )
+    return tuple(sources)
+
+
+def _input_descriptor(
+    bundle: FrozenReplayBundle,
+    symbol: str,
+    profile_id: str,
+    entry: Any,
+    case: Any,
+    facts: Any,
+    quote: QuoteSnapshot | None,
+    validity_input: ModelValidityEvaluationInput | None,
+    distribution_result: Any,
+    *,
+    run_id: str,
+    moutai_model_payload: Mapping[str, Any] | None,
+) -> ResearchInputDescriptor:
+    route = route_profile(profile_id, entry.primary_model)
+    if route.status != "SUPPORTED":
+        raise ValueError(
+            f"Frozen replay model route is not supported for {symbol}"
+        )
+    generated_at = case.generated_at
+    if generated_at.tzinfo is None:
+        raise ValueError("Frozen replay case generated_at must include timezone")
+    valuation_payload = dict(bundle.valuation_payloads[symbol])
+    model_version = str(
+        valuation_payload["result"].get("model_version")
+        or f"frozen-c3-{profile_id}-v1"
+    )
+    descriptor = ResearchInputDescriptor(
+        schema_version=INPUT_DESCRIPTOR_SCHEMA,
+        descriptor_version=f"c3-frozen-{symbol}-v1",
+        symbol=symbol,
+        name=case.name,
+        profile_id=profile_id,
+        requested_model=entry.primary_model,
+        run_id=f"{run_id}:{symbol}",
+        point_in_time=ResearchPitFrame(
+            report_period=facts.as_of,
+            research_as_of=case.as_of,
+            valuation_date=facts.as_of,
+            available_at=generated_at,
+            computed_at=generated_at,
+        ),
+        dependencies=ResearchDependencyFingerprint(
+            rule_version=REPLAY_RULE_VERSION,
+            profile_id=profile_id,
+            model_id=route.selected_model,
+            model_version=model_version,
+            parser_version="frozen-runtime-v1",
+            scan_watermark=f"manifest-{bundle.manifest.manifest_version}",
+        ),
+        sources=_replay_sources(
+            bundle,
+            symbol,
+            moutai_model_payload=moutai_model_payload,
+        ),
+        research_case=case,
+        facts=facts,
+        assumptions=None,
+        assumption_bindings=(),
+        distribution_result=distribution_result,
+        quote=quote,
+        model_validity_input=validity_input,
+        valuation_approval=None,
+    )
+    return finalize_input_descriptor(descriptor)
 
 
 def build_replay_inputs(
@@ -493,7 +605,9 @@ def build_replay_inputs(
         case = decode_artifact(ARTIFACT_RESEARCH_CASE, case_payload)
         valuation_payload = dict(bundle.valuation_payloads[symbol])
         moutai_model = (
-            bundle.moutai_model_payload if symbol == "600519" else None
+            bundle.moutai_model_payload
+            if profile_id == "quality_compounder"
+            else None
         )
         facts = _facts_for(
             symbol,
@@ -502,18 +616,22 @@ def build_replay_inputs(
             moutai_model,
         )
         quote, validity_input = _quote_and_validity(valuation_payload)
-        spec = ResearchRunSpec(
-            run_id=f"{run_id}:{symbol}",
+        descriptor = _input_descriptor(
+            bundle,
             symbol=symbol,
             profile_id=profile_id,
-            research_case=case,
+            entry=entry,
+            case=case,
             facts=facts,
-            requested_model=entry.primary_model,
             quote=quote,
-            model_validity_input=validity_input,
+            validity_input=validity_input,
             distribution_result=_distribution_result(companies[symbol]),
-            as_of=case.as_of,
-            available_at=case.generated_at,
+            run_id=run_id,
+            moutai_model_payload=moutai_model,
+        )
+        spec = build_research_run_spec(
+            descriptor,
+            run_id=f"{run_id}:{symbol}",
         )
         pin = bundle.valuation_pins[symbol]
         inputs[symbol] = ReplayCompanyInput(
@@ -521,14 +639,7 @@ def build_replay_inputs(
             profile_id=profile_id,
             company_spec=ResearchBatchCompanySpec(
                 spec,
-                _input_fingerprint(
-                    symbol,
-                    case_payload,
-                    valuation_payload,
-                    companies[symbol],
-                    entry,
-                    moutai_model,
-                ),
+                descriptor.input_sha256,
             ),
             valuation_pointer=pin.pointer.as_posix(),
             valuation_sha256=pin.sha256,

@@ -1,14 +1,15 @@
 """Failure-isolated batch orchestration over the shared company runner.
 
 One company cannot break the batch. Missing data becomes an explicit gap;
-unsupported profiles remain unsupported; changed input fingerprints are the
-only reason a previously successful company is rerun.
+unsupported profiles remain unsupported; changed input fingerprints or
+dependency versions are the only reasons a previous company result is rerun.
 """
 from __future__ import annotations
 
+import hashlib
+import re
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
-import re
 from typing import Any, Callable, Mapping, Sequence
 
 from .gap_classification import (
@@ -35,6 +36,11 @@ from .research_artifacts import (
     ResearchArtifactIdentity,
     StoredResearchArtifact,
 )
+from .research_input import (
+    build_research_run_spec,
+    descriptor_from_payload,
+)
+from .research_run_contract import canonical_contract_payload
 
 
 BATCH_COMPLETED = "COMPLETED"
@@ -57,12 +63,29 @@ _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _SYMBOL = re.compile(r"^[0-9]{6}$")
 
 
+def _dependency_sha256(spec: ResearchRunSpec) -> str:
+    """Hash only the dependency versions that must invalidate a prior run."""
+
+    payload = {
+        "profile_id": spec.profile_id,
+        "requested_model": spec.requested_model,
+        "rule_version": spec.rule_version,
+        "model_version": spec.model_version,
+        "parser_version": spec.parser_version,
+        "scan_watermark": spec.scan_watermark,
+    }
+    return hashlib.sha256(
+        canonical_contract_payload(payload).encode("utf-8")
+    ).hexdigest()
+
+
 @dataclass(frozen=True)
 class ResearchBatchCompanySpec:
     """One company input plus a stable fingerprint for change detection."""
 
     research_spec: ResearchRunSpec
     input_sha256: str | None = None
+    dependency_sha256: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.research_spec, ResearchRunSpec):
@@ -71,6 +94,44 @@ class ResearchBatchCompanySpec:
             raise ValueError("Batch company symbol must contain six digits")
         if self.input_sha256 is not None and not _SHA256.fullmatch(self.input_sha256):
             raise ValueError("Batch input fingerprint must be SHA-256 hex")
+        expected_dependency_sha256 = _dependency_sha256(self.research_spec)
+        if self.dependency_sha256 is None:
+            object.__setattr__(self, "dependency_sha256", expected_dependency_sha256)
+        elif self.dependency_sha256 != expected_dependency_sha256:
+            raise ValueError(
+                "Batch dependency fingerprint does not match the run spec"
+            )
+
+
+@dataclass(frozen=True)
+class ResearchBatchInputFailure:
+    """One descriptor that could not be admitted, isolated from valid inputs."""
+
+    input_id: str
+    symbol: str | None
+    input_sha256: str | None
+    error: str
+
+    def __post_init__(self) -> None:
+        if not self.input_id.strip():
+            raise ValueError("Batch input failure id is required")
+        if self.symbol is not None and not _SYMBOL.fullmatch(self.symbol):
+            raise ValueError("Batch input failure symbol must contain six digits")
+        if self.input_sha256 is not None and not _SHA256.fullmatch(
+            self.input_sha256
+        ):
+            raise ValueError("Batch input failure hash must be SHA-256 hex")
+        if not self.error.strip():
+            raise ValueError("Batch input failure error is required")
+
+    def as_policy(self) -> dict[str, Any]:
+        return {
+            "input_id": self.input_id,
+            "symbol": self.symbol,
+            "input_sha256": self.input_sha256,
+            "error": self.error,
+            "action": "no_order",
+        }
 
 
 @dataclass(frozen=True)
@@ -82,14 +143,15 @@ class ResearchBatchSpec:
     companies: tuple[ResearchBatchCompanySpec, ...]
     started_at: datetime | None = None
     previous_run_id: str | None = None
+    input_failures: tuple[ResearchBatchInputFailure, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.run_id.strip():
             raise ValueError("Batch run id is required")
         if not self.rule_version.strip():
             raise ValueError("Batch rule version is required")
-        if not self.companies:
-            raise ValueError("Batch requires at least one company")
+        if not self.companies and not self.input_failures:
+            raise ValueError("Batch requires at least one company or input failure")
         symbols = [item.research_spec.symbol for item in self.companies]
         if len(set(symbols)) != len(symbols):
             raise ValueError("Batch company symbols must be unique")
@@ -108,6 +170,7 @@ class ResearchBatchSpec:
                     "Incremental batch requires input fingerprints for all companies"
                 )
         object.__setattr__(self, "companies", tuple(self.companies))
+        object.__setattr__(self, "input_failures", tuple(self.input_failures))
 
 
 @dataclass(frozen=True)
@@ -121,6 +184,7 @@ class BatchCompanyResult:
     blockers: tuple[str, ...]
     gaps: tuple[GapClassification, ...]
     artifact_ids: Mapping[str, str]
+    dependency_sha256: str | None = None
     outcome: CompanyResearchRunOutcome | None = None
     error: str | None = None
     unchanged_from_run_id: str | None = None
@@ -134,6 +198,10 @@ class BatchCompanyResult:
             raise ValueError("Batch company run id is required")
         if self.input_sha256 is not None and not _SHA256.fullmatch(self.input_sha256):
             raise ValueError("Batch input fingerprint must be SHA-256 hex")
+        if self.dependency_sha256 is not None and not _SHA256.fullmatch(
+            self.dependency_sha256
+        ):
+            raise ValueError("Batch dependency fingerprint must be SHA-256 hex")
         if self.status == BATCH_UNCHANGED and not self.unchanged_from_run_id:
             raise ValueError("An unchanged result requires its source run id")
         if self.status == BATCH_FAILED and not self.error:
@@ -148,6 +216,7 @@ class BatchCompanyResult:
             "status": self.status,
             "run_id": self.run_id,
             "input_sha256": self.input_sha256,
+            "dependency_sha256": self.dependency_sha256,
             "blockers": list(self.blockers),
             "gaps": [gap.as_policy() for gap in self.gaps],
             "artifact_ids": dict(self.artifact_ids),
@@ -166,6 +235,7 @@ class ResearchBatchResult:
     started_at: datetime
     finished_at: datetime
     results: tuple[BatchCompanyResult, ...]
+    input_failures: tuple[ResearchBatchInputFailure, ...] = ()
     stored_artifact: StoredResearchArtifact | None = None
 
     def __post_init__(self) -> None:
@@ -177,6 +247,7 @@ class ResearchBatchResult:
         if len(set(symbols)) != len(symbols):
             raise ValueError("Batch result symbols must be unique")
         object.__setattr__(self, "results", tuple(self.results))
+        object.__setattr__(self, "input_failures", tuple(self.input_failures))
 
     @property
     def results_by_symbol(self) -> dict[str, BatchCompanyResult]:
@@ -184,6 +255,10 @@ class ResearchBatchResult:
 
     @property
     def status(self) -> str:
+        if self.input_failures:
+            return BATCH_PARTIAL
+        if not self.results:
+            return BATCH_PARTIAL
         if all(result.status == BATCH_COMPLETED for result in self.results):
             return BATCH_COMPLETED
         if all(
@@ -220,6 +295,9 @@ class ResearchBatchResult:
             "finished_at": self.finished_at.isoformat(),
             "status": self.status,
             "results": [result.as_policy() for result in self.results],
+            "input_failures": [
+                failure.as_policy() for failure in self.input_failures
+            ],
             "action": "no_order",
         }
 
@@ -231,12 +309,22 @@ class ResearchBatchResult:
             _company_result_from_policy(item)
             for item in payload.get("results") or []
         )
+        input_failures = tuple(
+            ResearchBatchInputFailure(
+                input_id=str(item["input_id"]),
+                symbol=item.get("symbol"),
+                input_sha256=item.get("input_sha256"),
+                error=str(item["error"]),
+            )
+            for item in payload.get("input_failures") or []
+        )
         return cls(
             run_id=str(payload["run_id"]),
             rule_version=str(payload["rule_version"]),
             started_at=started_at,
             finished_at=finished_at,
             results=results,
+            input_failures=input_failures,
         )
 
 
@@ -265,11 +353,83 @@ def _company_result_from_policy(payload: Mapping[str, Any]) -> BatchCompanyResul
         status=str(payload["status"]),
         run_id=str(payload["run_id"]),
         input_sha256=payload.get("input_sha256"),
+        dependency_sha256=payload.get("dependency_sha256"),
         blockers=tuple(str(item) for item in payload.get("blockers") or []),
         gaps=gaps,
         artifact_ids=dict(payload.get("artifact_ids") or {}),
         error=payload.get("error"),
         unchanged_from_run_id=payload.get("unchanged_from_run_id"),
+    )
+
+
+def company_spec_from_descriptor_payload(
+    payload: Mapping[str, Any],
+    *,
+    run_id: str,
+) -> tuple[ResearchBatchCompanySpec | None, ResearchBatchInputFailure | None]:
+    """Admit one descriptor or return an isolated failure; never raise to caller."""
+
+    try:
+        descriptor = descriptor_from_payload(payload)
+        spec = build_research_run_spec(descriptor, run_id=run_id)
+    except Exception as error:
+        raw_symbol = payload.get("symbol") if isinstance(payload, Mapping) else None
+        symbol = (
+            str(raw_symbol)
+            if isinstance(raw_symbol, str) and _SYMBOL.fullmatch(raw_symbol)
+            else None
+        )
+        raw_hash = payload.get("input_sha256") if isinstance(payload, Mapping) else None
+        input_sha256 = (
+            str(raw_hash)
+            if isinstance(raw_hash, str) and _SHA256.fullmatch(raw_hash)
+            else None
+        )
+        raw_id = (
+            payload.get("descriptor_version")
+            if isinstance(payload, Mapping)
+            else None
+        )
+        input_id = str(raw_id or symbol or "unnamed-descriptor").strip()
+        return None, ResearchBatchInputFailure(
+            input_id=input_id,
+            symbol=symbol,
+            input_sha256=input_sha256,
+            error=f"{type(error).__name__}: {error}",
+        )
+    return (
+        ResearchBatchCompanySpec(
+            spec,
+            descriptor.input_sha256,
+        ),
+        None,
+    )
+
+
+def build_batch_spec_from_descriptor_payloads(
+    payloads: Sequence[Mapping[str, Any]],
+    *,
+    run_id: str,
+    rule_version: str,
+) -> ResearchBatchSpec:
+    if not payloads:
+        raise ValueError("Descriptor batch requires at least one input")
+    companies: list[ResearchBatchCompanySpec] = []
+    failures: list[ResearchBatchInputFailure] = []
+    for payload in payloads:
+        company, failure = company_spec_from_descriptor_payload(
+            payload,
+            run_id=run_id,
+        )
+        if company is not None:
+            companies.append(company)
+        if failure is not None:
+            failures.append(failure)
+    return ResearchBatchSpec(
+        run_id=run_id,
+        rule_version=rule_version,
+        companies=tuple(companies),
+        input_failures=tuple(failures),
     )
 
 
@@ -307,7 +467,9 @@ class ResearchBatchService:
             )
             if (
                 previous_result is not None
+                and previous.rule_version == spec.rule_version
                 and previous_result.input_sha256 == company.input_sha256
+                and previous_result.dependency_sha256 == company.dependency_sha256
                 and previous_result.status != BATCH_FAILED
             ):
                 results.append(
@@ -316,6 +478,7 @@ class ResearchBatchService:
                         status=BATCH_UNCHANGED,
                         run_id=previous_result.run_id,
                         input_sha256=company.input_sha256,
+                        dependency_sha256=company.dependency_sha256,
                         blockers=previous_result.blockers,
                         gaps=previous_result.gaps,
                         artifact_ids=previous_result.artifact_ids,
@@ -332,6 +495,7 @@ class ResearchBatchService:
             started_at=started_at,
             finished_at=finished_at,
             results=tuple(results),
+            input_failures=tuple(spec.input_failures),
         )
         stored = self._persist(batch_result)
         object.__setattr__(batch_result, "stored_artifact", stored)
@@ -353,6 +517,7 @@ class ResearchBatchService:
                 status=BATCH_FAILED,
                 run_id=company_run_id,
                 input_sha256=company.input_sha256,
+                dependency_sha256=company.dependency_sha256,
                 blockers=(f"{type(error).__name__}:{error}",),
                 gaps=(),
                 artifact_ids={},
@@ -384,6 +549,7 @@ class ResearchBatchService:
             status=status,
             run_id=company_run_id,
             input_sha256=company.input_sha256,
+            dependency_sha256=company.dependency_sha256,
             blockers=outcome.blockers,
             gaps=tuple(gaps),
             artifact_ids=artifact_ids,

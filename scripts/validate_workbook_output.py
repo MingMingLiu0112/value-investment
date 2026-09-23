@@ -31,8 +31,8 @@ for name in ['01_观察名单','02_质量评分','03_财务指标','04_估值跟
     actual={str(row[0]).zfill(6) for row in report[name].iter_rows(min_row=4,values_only=True) if row[0]}
     assert expected <= actual, (name, sorted(expected-actual))
     counts[name]=len(actual)
-from value_investment_agent.workbook_frontdoor import PRIMARY
-assert [s.title for s in report if s.sheet_state=='visible']==[s for s in PRIMARY if s in report], 'Frontdoor structure missing or regressed'
+from value_investment_agent.workbook_frontdoor import primary_sheet_names
+assert [s.title for s in report if s.sheet_state=='visible']==primary_sheet_names(report), 'Frontdoor structure missing or regressed'
 assert report.active.title=='00_首页Dashboard'
 assert report['00_公司总览']['A1'].value=='贵州茅台 | 单公司研究卡'
 assert report['00_待完成公司']['D3'].value=='工作进度'

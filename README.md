@@ -6,6 +6,7 @@
 
 从 [AGENTS.md](AGENTS.md) 进入文档体系：[长期目标](docs/north-star.md)、[架构合同](docs/architecture.md)、[研究方法](docs/research-methodology.md)、[当前唯一任务](docs/current-stage-goal.md)、[数据证据政策](docs/data-and-evidence-policy.md)、[执行状态](docs/execution-status.md)。
 可直接放入目标模式的文本见 [启动入口](docs/value-investment-goal-prompt.md)。文档审查与逐文件处置清单见 [2026-09-22 治理报告](docs/project-goal-consolidation-20260922.md)。
+未来多个长期 Goal 的路线、真实审查和毕业标准见 [LONG-TERM-GOAL.md](LONG-TERM-GOAL.md)。当前唯一待启动目标是 M1 固定样本研究工作台；C0-C3 工程冻结不等于投资决策就绪。
 
 三公司工程与 Excel MVP 已冻结，研究级估值、股息可持续性和生产数据分别验收。以下运维命令仅供既有部署维护参考，不自动授权初始化、改任务、发布原表或恢复模拟/交易开发。
 

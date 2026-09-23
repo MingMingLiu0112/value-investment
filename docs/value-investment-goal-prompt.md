@@ -1,19 +1,25 @@
 # 目标模式启动入口
 
-更新：2026-09-22。本文件仅启动当前阶段，不再叠加长期工作包。当前 C3 已 `PASSED_FOR_FREEZE`，请先读取 [current-stage-goal.md](current-stage-goal.md) 中的下一阶段唯一建议，不要重新执行已完成 C3。
-仓库：`D:/GPTProject/value-investment`。文档权威见 [AGENTS.md](../AGENTS.md)。
-下列文本可直接作为目标模式的目标：
+更新：2026-09-22。当前唯一待启动目标是 `M1-FIXED-SAMPLE-RESEARCH-WORKBENCH`。
+完整长期路线见 [LONG-TERM-GOAL.md](../LONG-TERM-GOAL.md)，执行范围见 [current-stage-goal.md](current-stage-goal.md)。
+本轮只完成审查和规划；下列文本由用户放入目标模式后启动，不启动全部六个Milestones。
 
 ```text
-在 D:\GPTProject\value-investment 工作。先读取 AGENTS.md、docs/current-stage-goal.md 和 docs/execution-status.md，再按其中引用的 north-star.md、architecture.md、research-methodology.md、data-and-evidence-policy.md 执行。
+在 D:\GPTProject\value-investment 执行长期目标 M1-FIXED-SAMPLE-RESEARCH-WORKBENCH。
 
-C0、C1、C2、C3 已通过并冻结，不重复执行。C3 已建立 append-only Research Artifact 存储、Repository、三公司 Runtime -> PostgreSQL importer、显式 ResearchRunSpec Application Runner、ValuationRouter/Model Registry、版本化 Fixed Sample Manifest、Batch Contract、离线 Core + disposable PostgreSQL CI，并完成三公司 E2E replay 与 Expansion Readiness Review。
+先读取 AGENTS.md、LONG-TERM-GOAL.md，以及 docs/north-star.md、docs/architecture.md、docs/research-methodology.md、docs/current-stage-goal.md、docs/data-and-evidence-policy.md、docs/execution-status.md。以 current-stage-goal.md 的 M1 为唯一范围，长期路线用于理解依赖，不授权自动开发 M2-M6。
 
-当前唯一后续建议是 C4-MANIFEST-DRIVEN-FIXED-SAMPLE-INPUT-ADAPTER：移除 replay 中的茅台 symbol 专用输入分支，建立 versioned per-company input descriptor，再以离线 fixture 和 disposable PostgreSQL replay 验收。未获用户明确授权前，不开始 C4、不新增第四家真实公司、不扩 20-50 家样本。
+先核查真实 Git HEAD、未提交改动、GitHub CI、测试、原 Excel 与 runtime 基线，继承并保护 Stage A/P0/P0.5/三公司 MVP/C0-C3，不重建已冻结成果，也不只相信 PASSED。
 
-所有研究结果继续 no_order；不自动交易、不改估值参数、不连接或迁移生产数据库、不改旧 valuation_results 语义、不改原 Excel、生产计划任务或服务器 PTA 服务。若继续后续任务，每次先核对真实 HEAD、测试、GitHub CI 和 execution-status，不把文档中的 PASSED 当作未经验证的完成。
+持续完成 M1 的可信输入与PIT/版本修复、原三公司回归、20家预登记样本分批入组、至少6家真实深研、跨至少2种适用模型的至少3家有界情景估值和反向估值、至少2家实质股息可持续性研究、当前有效报价桥接、隔离PostgreSQL冷启动replay，以及共同Application结果到原WPS Excel的安全发布。以文档具体数量和质量双门为准，不只完成一个adapter，不以20家全部占位/缺失或测试数量宣称完成。
+
+保留Facts/Assumptions、Intrinsic Value/Market Price、Engineering/Research/Current Data各自边界；所有关键结论可追溯，保留最强反证、Thesis Breaker、Confidence和拒绝原因。新增公司复用共同流程，禁止复制专用流水线。规则自行调查论证并预登记，不为了估值或交易调参数。
+
+外部数据未到不阻塞独立工程；真实数据、人工复核或发布验收未通过时保持PARTIAL或PENDING，不宣称达成。每批先交付可读研究增量，并客观审查下一批是否合理。
+
+全程no_order，不开发买卖/仓位/全市场/Web/新金融行业模型，不连接或迁移生产数据库，不改生产计划任务和PTA服务。保护原Excel人工区与历史，先候选校验、源Hash守卫及回退，再按政策原子发布。代码和schema可版本化，密钥、个人持仓、生产dump、未授权原件不得公开。
+
+完成M1全部验收后更新docs/execution-status.md，报告已提交与未提交状态、各类证据、用户可用成果、剩余限制和下一阶段合理性，然后停止。不要自动进入M2，不把工程通过称为实盘就绪。
 ```
 
-当前任务完整定义在 [current-stage-goal.md](current-stage-goal.md)；实际进度在 [execution-status.md](execution-status.md)。
-本次文档合并记录在 [审查与治理报告](project-goal-consolidation-20260922.md)。
-原启动文档已按字节归档：[2026-09-22 合并前原文](archive/goal-consolidation-20260922/value-investment-goal-prompt.md)，仅供追溯。
+C0-C3与原文档历史见execution-status及Git历史。此入口不创建第二条路线，不创建计划任务，不授权生产操作。

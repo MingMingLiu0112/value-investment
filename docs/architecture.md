@@ -24,7 +24,7 @@ ResearchGate + ValuationResult + PriceBridgeResult
 ```
 
 这是依赖关系，不是强制按字段串行执行的全局流水线。G3 消费估值就绪度，不能让“完整 ResearchGate 先通过”反过来阻止估值产生，形成循环依赖。
-股息域尚未开发，未来只按 Profile 与研究路径使用；非股息路径不因缺股息评分被机械阻断。
+股息域已有 C2 最小合同，完整真实研究仍未完成；只按 Profile 与研究路径使用，非股息路径不因缺股息评分被机械阻断。
 
 Domain Engine 不读取 Excel、网络或数据库；Application 负责编排、读取和保存；Provider / Repository / Publisher 负责 I/O。
 现有模块渐进整理，不为目录美观大搬迁。未来 FastAPI / Web 调用同一 Application 服务。
@@ -63,6 +63,10 @@ Domain Engine 不读取 Excel、网络或数据库；Application 负责编排、
 6. READY 是通过合同验证后的结果，直接构造对象、JSON 恢复与正常函数路径都必须维持同样不变量。
 
 C0 已通过并冻结上述身份与时点合同；该段旧“代码缺口”不再作为当前状态。新价格桥接仍必须保持这些不变量，不能被 C3 的 Repository/Application 层放宽。
+
+2026-09-22 长期审查发现 Application 输入日期/available_at 与 Batch 规则失效仍有缺口，详见 [长期路线第1节](../LONG-TERM-GOAL.md)。这是 C3 上层完整性待补，不推翻 C0 冻结。M1 必须明确 report_period / research_as_of / valuation_date / source_available_at / computed_at，验证实际输入的信息可用边界；不能用外层时间覆盖或伪装内层事实日期。登记 AssumptionSet 必须绑定实际 scenario_inputs，输入包可独立重放；规则/模型/解析器/Profile/事件扫描变化必须使旧增量结果失效。
+
+G3 当前代码仍读取 case.valuation_status，不能宣称已经由本次计算自动重建。M1 需落实 G0-G2、适用模型计算、绑定估值版本的 G3/研究批准顺序；算出数值不等于批准研究。
 
 ## Dividend / Distribution Domain：最小合同已实现
 
@@ -103,3 +107,21 @@ Excel publisher 目前仍有三公司 adapter，可作为技术债保留；同�
 新增公司专用脚本只允许独有的一手解析、法律/披露结构或有退出计划的迁移 adapter；复用计算、假设、重大性、价格判断优先放 Core。
 历史 20/30/40% 规则只属于原版本实验；不进入新 Router、研究结论或通用仓位规则。
 策略、模拟、账户与真实执行独立；研究结果无论是否 READY 均不授权订单。
+
+## 目标扩展边界（设计，不代表已实现）
+
+完整合同、时序和分期在 [LONG-TERM-GOAL.md 第4-8节](../LONG-TERM-GOAL.md)，不以本文新建另一套工作包。
+
+```text
+ResearchCase + BusinessQuality + CapitalAllocation + Distribution
+  + Valuation + ModelValidity + PriceBridge + CounterEvidence
+  -> InvestmentDecisionReview + DecisionEvidenceBundle
+  + PortfolioPreconditions / later PortfolioRiskAssessment
+  -> Human Review -> Human Decision
+  -> EntryThesisSnapshot + DecisionJournalEntry
+  -> New Evidence -> InvestmentConsistencyReview -> Decision Review
+```
+
+BusinessQuality/CapitalAllocation 先随 M1 真实研究建立最小证据合同；Decision/Entry/Journal/Consistency 属 M3；完整 Portfolio/Position 属 M4；ChangeEvent/依赖失效/通知运营属 M5。M1只保留必要依赖和版本，不提前建空领域层。
+缺少 Portfolio 输入不能自动批准 BUY/ADD；已证实的 Thesis Breaker 风险提示不能因缺价格而消失。旧数据未知不是 HOLD，更不是自动卖出。
+Entry 是用户确认行为的不可变研究基线，不是系统生成的成交；无历史理由只能标记事后重建。MarketContext 不直接修改内在价值。

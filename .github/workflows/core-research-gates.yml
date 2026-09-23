@@ -43,8 +43,13 @@ jobs:
           tests/test_research_artifact_repository.py
           tests/test_research_runtime_import.py
           tests/test_research_application.py
+          tests/test_research_input.py
+          tests/test_research_read_model.py
+          tests/test_m1_research_dossier_candidate.py
+          tests/test_research_dossier_workbook.py
           tests/test_valuation_model_registry.py
           tests/test_fixed_sample_manifest.py
+          tests/test_m1_sample_preregistration.py
           tests/test_research_batch.py
           tests/test_research_e2e_replay.py
 

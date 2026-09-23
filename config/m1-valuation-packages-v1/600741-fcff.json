@@ -1,0 +1,1453 @@
+{
+  "schema_version": "m1-valuation-package-v1",
+  "package_version": "20260923.2",
+  "descriptor_version": "600741-m1-valuation-v1",
+  "symbol": "600741",
+  "name": "华域汽车",
+  "profile_id": "mature_manufacturing",
+  "requested_model": "fcff",
+  "run_id": "600741-m1-valuation-20260923",
+  "point_in_time": {
+    "report_period": "2026-06-30",
+    "research_as_of": "2026-09-22",
+    "valuation_date": "2026-09-22",
+    "available_at": "2026-09-23T09:00:00+08:00",
+    "computed_at": "2026-09-23T09:10:00+08:00"
+  },
+  "dependencies": {
+    "rule_version": "m1-valuation-rules-v1",
+    "model_id": "fcff",
+    "model_version": "fcff-shared-scenario-v1",
+    "parser_version": "pdfium-m1-20260923",
+    "scan_watermark": "m1-cninfo-event-scan-v1:830ec520bb48f382"
+  },
+  "sources": [
+    {
+      "id": "huayu_fy2025_annual",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-valuation-filings-20260923/600741/2025-12-31-annual-fc0c682eeb07cc29ea4201e9113cfa5bb5febf805a3a5ff5eb4dfe1b861ce841.pdf",
+      "sha256": "19d879f380cc042f4f5d91cb952c939f95b4e953366e8045da1e3a58760065f4",
+      "published_at": "2026-03-30T16:00:00+00:00",
+      "retrieved_at": "2026-09-23T00:54:00+00:00",
+      "parser_version": "pdfium-m1-20260923"
+    },
+    {
+      "id": "huayu_2026h1",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-valuation-filings-20260923/600741/2026-06-30-interim-2b5ced0dc37827ad9d35036fb0d49b3b34e6ff47f2559222db0225f7519162c6.pdf",
+      "sha256": "77db47cdf18cc46123c4924cb869a75dc3d4404f718e132292e6c9132e65f2f9",
+      "published_at": "2026-08-27T16:00:00+00:00",
+      "retrieved_at": "2026-09-23T00:54:00+00:00",
+      "parser_version": "pdfium-m1-20260923"
+    },
+    {
+      "id": "china_cost_equity_20260923",
+      "kind": "valuation_reference",
+      "location": "runtime/valuation-research/china-cost-of-equity-m1-20260923/evidence.json",
+      "sha256": "aed2b12ef4f9cd16e08f9962782b73d3709aa2d4cf94d89549728233aa5a27a7",
+      "retrieved_at": "2026-09-23T00:53:00+00:00",
+      "parser_version": "valuation-evidence-v1"
+    },
+    {
+      "id": "huayu_quote_20260922",
+      "kind": "quote_session",
+      "location": "runtime/quote-sessions/20260923T005634211464Z/bundle.json",
+      "sha256": "5e49dc79bbc0132b040175e993e2f5dd5a3813c7167ade7aa2afc5c51cea19c0",
+      "retrieved_at": "2026-09-23T00:56:34+00:00",
+      "parser_version": "quote-session-collection-v1"
+    }
+  ],
+  "research_case": {
+    "symbol": "600741",
+    "name": "华域汽车",
+    "as_of": "2026-09-22",
+    "run_id": "600741-m1-valuation-20260923",
+    "generated_at": "2026-09-23T08:00:00+08:00",
+    "research_version": "600741-m1-valuation-v1",
+    "industry": "汽车零部件",
+    "investment_path": "成熟制造 / 客户周期受限的现金回报",
+    "thesis": "智能座舱、底盘和动力总成平台已形成主要 OEM 配套规模，但客户集中、整车降价与行业下行要求把利润和再投资回报放在低置信度区间内检验。",
+    "return_driver": "外部客户项目与新能源配套放量、平台化产品切换和经营现金转换；同时受整车客户周期和供应商价格竞争制约。",
+    "mispricing_hypothesis": "未证明市场系统性低估。当前只检验低置信度 FCFF 区间能否容纳市价，不把当前价当作买入信号。",
+    "financial_summary": {
+      "period_end": "2026-06-30",
+      "revenue_2025_cny": "183998900513.66",
+      "parent_profit_2025_cny": "7207268139.61",
+      "parent_equity_2025_cny": "67144573278.18",
+      "weighted_roe_2025": "0.1073",
+      "h1_2026_parent_profit_yoy": "-0.0867"
+    },
+    "positives": [
+      {
+        "kind": "fact",
+        "text": "FY2025 审计报告签字确认，合并营业收入 1,839.99 亿元、归母净利润 72.07 亿元、归母净资产 671.45 亿元。",
+        "evidence_refs": [
+          "huayu_fy2025_annual"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "2026H1 主营业务收入汇总口径中，上汽集团以外整车客户占比 67.2%，智能底盘、座舱、动力总成等平台在多家外部客户量产或定点。",
+        "evidence_refs": [
+          "huayu_2026h1"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "FY2025 经营活动现金流净额 95.23 亿元，显著高于归母净利润，现金回款能力可观察。",
+        "evidence_refs": [
+          "huayu_fy2025_annual"
+        ]
+      }
+    ],
+    "counter_evidence": [
+      {
+        "kind": "fact",
+        "text": "2026H1 营业收入同比 -1.43%、归母净利润 -8.67%、扣非归母净利润 -14.29%，利润降幅大于收入降幅。",
+        "evidence_refs": [
+          "huayu_2026h1"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "2026H1 国内汽车产量/销量同比 -4.0%/-4.1%；整车价格竞争向供应商的传导未被量化。",
+        "evidence_refs": [
+          "huayu_2026h1"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "平台配套规模不能抵消客户周期和利润率压力；高现金流不等于可持续高资本回报。",
+        "evidence_refs": [
+          "huayu_fy2025_annual",
+          "huayu_2026h1"
+        ]
+      }
+    ],
+    "thesis_breakers": [
+      {
+        "kind": "hypothesis",
+        "text": "若国内汽车产销继续下降或主要客户项目出现重大调整，平台化增长论点需要下调。",
+        "evidence_refs": [
+          "huayu_2026h1"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "若分产品毛利率、扣非利润和价格传导持续恶化，客户议价与成本控制假设受损。",
+        "evidence_refs": [
+          "huayu_2026h1"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "若应收、存货和营运资本持续扩大，或经营现金流改善来自不可持续回款时间差，现金转换质量需要撤回。",
+        "evidence_refs": [
+          "huayu_fy2025_annual",
+          "huayu_2026h1"
+        ]
+      }
+    ],
+    "next_events": [
+      {
+        "kind": "fact",
+        "text": "观察下一份法定财务报告中的收入、分客户/分产品毛利率、经营现金流、应收、存货和资本开支。",
+        "evidence_refs": [
+          "huayu_2026h1"
+        ]
+      },
+      {
+        "kind": "gap",
+        "text": "补充独立的客户结构、价格传导、ROIC/增量 ROIC 和完整再投资回报证据后再做正式人工批准。",
+        "evidence_refs": [
+          "huayu_2026h1"
+        ]
+      }
+    ],
+    "evidence_status": "verified",
+    "valuation_status": "not_ready",
+    "research_status": "financial_scope_approved",
+    "blockers": [
+      "formal G3 human valuation approval not present",
+      "customer/cycle sensitivity and price transmission are not quantified",
+      "ROIC and incremental ROIC remain unverified",
+      "issuer-specific beta, credit spread and market-derived WACC remain unverified",
+      "H1 2026 interim report is unaudited"
+    ],
+    "evidence_refs": [
+      {
+        "id": "huayu_fy2025_annual",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600741/2025-12-31-annual-fc0c682eeb07cc29ea4201e9113cfa5bb5febf805a3a5ff5eb4dfe1b861ce841.pdf",
+        "sha256": "19d879f380cc042f4f5d91cb952c939f95b4e953366e8045da1e3a58760065f4"
+      },
+      {
+        "id": "huayu_2026h1",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600741/2026-06-30-interim-2b5ced0dc37827ad9d35036fb0d49b3b34e6ff47f2559222db0225f7519162c6.pdf",
+        "sha256": "77db47cdf18cc46123c4924cb869a75dc3d4404f718e132292e6c9132e65f2f9"
+      },
+      {
+        "id": "china_cost_equity_20260923",
+        "path": "runtime/valuation-research/china-cost-of-equity-m1-20260923/evidence.json",
+        "sha256": "aed2b12ef4f9cd16e08f9962782b73d3709aa2d4cf94d89549728233aa5a27a7"
+      }
+    ],
+    "quote_date": "2026-09-22",
+    "financial_period": "2026-06-30",
+    "missing_date_reasons": {}
+  },
+  "facts": {
+    "kind": "fcff",
+    "symbol": "600741",
+    "as_of": "2026-09-22",
+    "verified": true,
+    "confidence": "低",
+    "evidence_refs": [
+      {
+        "id": "huayu_fy2025_annual",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600741/2025-12-31-annual-fc0c682eeb07cc29ea4201e9113cfa5bb5febf805a3a5ff5eb4dfe1b861ce841.pdf",
+        "sha256": "19d879f380cc042f4f5d91cb952c939f95b4e953366e8045da1e3a58760065f4"
+      },
+      {
+        "id": "huayu_2026h1",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600741/2026-06-30-interim-2b5ced0dc37827ad9d35036fb0d49b3b34e6ff47f2559222db0225f7519162c6.pdf",
+        "sha256": "77db47cdf18cc46123c4924cb869a75dc3d4404f718e132292e6c9132e65f2f9"
+      }
+    ],
+    "blockers": [],
+    "operating_inputs": {
+      "ebit": "6724879712.52",
+      "cash_tax_rate": "0.137",
+      "depreciation": "6586275313.78",
+      "capex": "4752057698.59",
+      "working_capital_change": "3213137150.67",
+      "wacc": "0.085",
+      "net_debt": "17643806194.84",
+      "non_operating_assets": "59969757947.58",
+      "shares": "3152723984"
+    },
+    "scenario_inputs": {
+      "bear": {
+        "forecast": [
+          {
+            "year": 2026,
+            "ebit": "5200000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "5000000000",
+            "working_capital_increase": "3213137150.67",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          },
+          {
+            "year": 2027,
+            "ebit": "4900000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "5200000000",
+            "working_capital_increase": "2500000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          },
+          {
+            "year": 2028,
+            "ebit": "4700000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "5400000000",
+            "working_capital_increase": "2200000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          },
+          {
+            "year": 2029,
+            "ebit": "4600000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "5600000000",
+            "working_capital_increase": "2000000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          },
+          {
+            "year": 2030,
+            "ebit": "4600000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "5800000000",
+            "working_capital_increase": "1800000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          }
+        ],
+        "terminal": {
+          "next_year_nopat": "3969800000",
+          "growth": "0.02",
+          "roic": "0.06",
+          "wacc": "0.085",
+          "evidence_refs": [
+            "huayu_fy2025_annual",
+            "china_cost_equity_20260923"
+          ]
+        },
+        "bridge": [
+          {
+            "name": "cash_and_debt_investments",
+            "kind": "nonoperating_asset",
+            "value": "42248491420.70",
+            "exposure_ids": [
+              "huayu_cash",
+              "huayu_debt_investments"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          },
+          {
+            "name": "long_term_equity_and_other_financial_assets",
+            "kind": "nonoperating_asset",
+            "value": "17211651633.02",
+            "exposure_ids": [
+              "huayu_long_term_equity",
+              "huayu_other_financial"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          },
+          {
+            "name": "investment_property",
+            "kind": "nonoperating_asset",
+            "value": "509614893.86",
+            "exposure_ids": [
+              "huayu_investment_property"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          },
+          {
+            "name": "interest_bearing_debt",
+            "kind": "debt",
+            "value": "17643806194.84",
+            "exposure_ids": [
+              "huayu_debt"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          },
+          {
+            "name": "minority_interest",
+            "kind": "minority",
+            "value": "3993209722.41",
+            "exposure_ids": [
+              "huayu_minority"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          }
+        ],
+        "operating_exposure_ids": [
+          "huayu_consolidated_operations"
+        ],
+        "ordinary_shares": "3152723984",
+        "share_evidence_refs": [
+          "huayu_fy2025_annual"
+        ],
+        "currency": "CNY"
+      },
+      "base": {
+        "forecast": [
+          {
+            "year": 2026,
+            "ebit": "6724879712.52",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "4752057698.59",
+            "working_capital_increase": "3213137150.67",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          },
+          {
+            "year": 2027,
+            "ebit": "6700000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "4900000000",
+            "working_capital_increase": "1500000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          },
+          {
+            "year": 2028,
+            "ebit": "6700000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "5000000000",
+            "working_capital_increase": "1200000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          },
+          {
+            "year": 2029,
+            "ebit": "6750000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "5000000000",
+            "working_capital_increase": "1000000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          },
+          {
+            "year": 2030,
+            "ebit": "6800000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "5000000000",
+            "working_capital_increase": "800000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          }
+        ],
+        "terminal": {
+          "next_year_nopat": "5868400000",
+          "growth": "0.02",
+          "roic": "0.08",
+          "wacc": "0.085",
+          "evidence_refs": [
+            "huayu_fy2025_annual",
+            "china_cost_equity_20260923"
+          ]
+        },
+        "bridge": [
+          {
+            "name": "cash_and_debt_investments",
+            "kind": "nonoperating_asset",
+            "value": "42248491420.70",
+            "exposure_ids": [
+              "huayu_cash",
+              "huayu_debt_investments"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          },
+          {
+            "name": "long_term_equity_and_other_financial_assets",
+            "kind": "nonoperating_asset",
+            "value": "17211651633.02",
+            "exposure_ids": [
+              "huayu_long_term_equity",
+              "huayu_other_financial"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          },
+          {
+            "name": "investment_property",
+            "kind": "nonoperating_asset",
+            "value": "509614893.86",
+            "exposure_ids": [
+              "huayu_investment_property"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          },
+          {
+            "name": "interest_bearing_debt",
+            "kind": "debt",
+            "value": "17643806194.84",
+            "exposure_ids": [
+              "huayu_debt"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          },
+          {
+            "name": "minority_interest",
+            "kind": "minority",
+            "value": "3993209722.41",
+            "exposure_ids": [
+              "huayu_minority"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          }
+        ],
+        "operating_exposure_ids": [
+          "huayu_consolidated_operations"
+        ],
+        "ordinary_shares": "3152723984",
+        "share_evidence_refs": [
+          "huayu_fy2025_annual"
+        ],
+        "currency": "CNY"
+      },
+      "bull": {
+        "forecast": [
+          {
+            "year": 2026,
+            "ebit": "7800000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "4600000000",
+            "working_capital_increase": "3213137150.67",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          },
+          {
+            "year": 2027,
+            "ebit": "8000000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "4800000000",
+            "working_capital_increase": "800000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          },
+          {
+            "year": 2028,
+            "ebit": "8100000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "4900000000",
+            "working_capital_increase": "600000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          },
+          {
+            "year": 2029,
+            "ebit": "8150000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "5000000000",
+            "working_capital_increase": "400000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          },
+          {
+            "year": 2030,
+            "ebit": "8200000000",
+            "cash_tax_rate": "0.137",
+            "depreciation": "6586275313.78",
+            "capex": "5000000000",
+            "working_capital_increase": "200000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "huayu_fy2025_annual",
+              "huayu_2026h1"
+            ]
+          }
+        ],
+        "terminal": {
+          "next_year_nopat": "7076600000",
+          "growth": "0.02",
+          "roic": "0.10",
+          "wacc": "0.085",
+          "evidence_refs": [
+            "huayu_fy2025_annual",
+            "china_cost_equity_20260923"
+          ]
+        },
+        "bridge": [
+          {
+            "name": "cash_and_debt_investments",
+            "kind": "nonoperating_asset",
+            "value": "42248491420.70",
+            "exposure_ids": [
+              "huayu_cash",
+              "huayu_debt_investments"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          },
+          {
+            "name": "long_term_equity_and_other_financial_assets",
+            "kind": "nonoperating_asset",
+            "value": "17211651633.02",
+            "exposure_ids": [
+              "huayu_long_term_equity",
+              "huayu_other_financial"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          },
+          {
+            "name": "investment_property",
+            "kind": "nonoperating_asset",
+            "value": "509614893.86",
+            "exposure_ids": [
+              "huayu_investment_property"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          },
+          {
+            "name": "interest_bearing_debt",
+            "kind": "debt",
+            "value": "17643806194.84",
+            "exposure_ids": [
+              "huayu_debt"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          },
+          {
+            "name": "minority_interest",
+            "kind": "minority",
+            "value": "3993209722.41",
+            "exposure_ids": [
+              "huayu_minority"
+            ],
+            "evidence_refs": [
+              "huayu_fy2025_annual"
+            ]
+          }
+        ],
+        "operating_exposure_ids": [
+          "huayu_consolidated_operations"
+        ],
+        "ordinary_shares": "3152723984",
+        "share_evidence_refs": [
+          "huayu_fy2025_annual"
+        ],
+        "currency": "CNY"
+      }
+    }
+  },
+  "assumptions": {
+    "evidence_refs": [
+      {
+        "id": "huayu_fy2025_annual",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600741/2025-12-31-annual-fc0c682eeb07cc29ea4201e9113cfa5bb5febf805a3a5ff5eb4dfe1b861ce841.pdf",
+        "sha256": "19d879f380cc042f4f5d91cb952c939f95b4e953366e8045da1e3a58760065f4"
+      },
+      {
+        "id": "huayu_2026h1",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600741/2026-06-30-interim-2b5ced0dc37827ad9d35036fb0d49b3b34e6ff47f2559222db0225f7519162c6.pdf",
+        "sha256": "77db47cdf18cc46123c4924cb869a75dc3d4404f718e132292e6c9132e65f2f9"
+      },
+      {
+        "id": "china_cost_equity_20260923",
+        "path": "runtime/valuation-research/china-cost-of-equity-m1-20260923/evidence.json",
+        "sha256": "aed2b12ef4f9cd16e08f9962782b73d3709aa2d4cf94d89549728233aa5a27a7"
+      }
+    ],
+    "assumptions": [
+      {
+        "name": "wacc",
+        "unit": "decimal",
+        "bear": "0.085",
+        "base": "0.085",
+        "bull": "0.085",
+        "basis": "generic mature-manufacturing WACC proxy from dated China cost-of-equity evidence",
+        "rationale": "No issuer-specific credit spread or market-derived company WACC is claimed.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "china_cost_equity_20260923"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "cash_tax_rate",
+        "unit": "decimal",
+        "bear": "0.137",
+        "base": "0.137",
+        "bull": "0.137",
+        "basis": "FY2025 book effective tax expense divided by pretax profit",
+        "rationale": "The effective rate is used as a bounded proxy, not a cash-tax schedule.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "huayu_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "depreciation",
+        "unit": "cny",
+        "bear": "6586275313.78",
+        "base": "6586275313.78",
+        "bull": "6586275313.78",
+        "basis": "FY2025 consolidated cash-flow supplement D&A components",
+        "rationale": "The audited D&A sum is held flat and future asset additions are not modelled separately.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "huayu_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_ebit_2026",
+        "unit": "cny",
+        "bear": "5200000000",
+        "base": "6724879712.52",
+        "bull": "7800000000",
+        "basis": "FY2025 operating EBIT adjusted for customer-cycle pressure and platform revenue",
+        "rationale": "Explicit bounds only; no high-confidence company profit forecast is asserted.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "huayu_fy2025_annual"
+          },
+          {
+            "id": "huayu_2026h1"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_ebit_2030",
+        "unit": "cny",
+        "bear": "4600000000",
+        "base": "6800000000",
+        "bull": "8200000000",
+        "basis": "Bounded terminal-year continuation from the 2026 scenario",
+        "rationale": "The final explicit year converges to terminal economics without a claimed point forecast.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "huayu_fy2025_annual"
+          },
+          {
+            "id": "huayu_2026h1"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_capex_2026",
+        "unit": "cny",
+        "bear": "5000000000",
+        "base": "4752057698.59",
+        "bull": "4600000000",
+        "basis": "FY2025 audited capex with bear/base/bull reinvestment bounds",
+        "rationale": "Maintenance versus growth capex has not been separately verified.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "huayu_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "descending"
+      },
+      {
+        "name": "forecast_capex_2030",
+        "unit": "cny",
+        "bear": "5800000000",
+        "base": "5000000000",
+        "bull": "5000000000",
+        "basis": "Bounded continuation of future reinvestment intensity",
+        "rationale": "Higher bear-scenario capex reflects uncertain transition investment, not a prediction.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "huayu_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "descending"
+      },
+      {
+        "name": "working_capital_increase_2026",
+        "unit": "cny",
+        "bear": "3213137150.67",
+        "base": "3213137150.67",
+        "bull": "3213137150.67",
+        "basis": "FY2025 audited cash-flow working-capital reconciliation",
+        "rationale": "The observable change is applied once and then scenario-specific changes decay.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "huayu_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "working_capital_increase_2030",
+        "unit": "cny",
+        "bear": "1800000000",
+        "base": "800000000",
+        "bull": "200000000",
+        "basis": "Bounded terminal-year working-capital change",
+        "rationale": "Scenario bounds reflect uncertain receivable and inventory cycles.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "huayu_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "descending"
+      },
+      {
+        "name": "terminal_next_year_nopat",
+        "unit": "cny",
+        "bear": "3969800000",
+        "base": "5868400000",
+        "bull": "7076600000",
+        "basis": "Terminal-year EBIT after the effective tax proxy",
+        "rationale": "Terminal NOPAT is derived mechanically from the final explicit-year bound.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "huayu_fy2025_annual"
+          },
+          {
+            "id": "huayu_2026h1"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "terminal_growth",
+        "unit": "decimal",
+        "bear": "0.02",
+        "base": "0.02",
+        "bull": "0.02",
+        "basis": "Long-run nominal growth bound below WACC",
+        "rationale": "No company-specific high-growth terminal path is assumed.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "china_cost_equity_20260923"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "terminal_roic",
+        "unit": "decimal",
+        "bear": "0.06",
+        "base": "0.08",
+        "bull": "0.10",
+        "basis": "Bounded terminal incremental returns across mature auto-supplier economics",
+        "rationale": "Issuer ROIC and incremental ROIC remain unverified.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "huayu_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      }
+    ],
+    "blockers": []
+  },
+  "assumption_bindings": [
+    {
+      "assumption_name": "wacc",
+      "scenario": "bear",
+      "field_path": "forecast.0.wacc",
+      "expected_value": "0.085",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "cash_tax_rate",
+      "scenario": "bear",
+      "field_path": "forecast.0.cash_tax_rate",
+      "expected_value": "0.137",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "depreciation",
+      "scenario": "bear",
+      "field_path": "forecast.0.depreciation",
+      "expected_value": "6586275313.78",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_ebit_2026",
+      "scenario": "bear",
+      "field_path": "forecast.0.ebit",
+      "expected_value": "5200000000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_ebit_2030",
+      "scenario": "bear",
+      "field_path": "forecast.4.ebit",
+      "expected_value": "4600000000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_capex_2026",
+      "scenario": "bear",
+      "field_path": "forecast.0.capex",
+      "expected_value": "5000000000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_capex_2030",
+      "scenario": "bear",
+      "field_path": "forecast.4.capex",
+      "expected_value": "5800000000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "working_capital_increase_2026",
+      "scenario": "bear",
+      "field_path": "forecast.0.working_capital_increase",
+      "expected_value": "3213137150.67",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "working_capital_increase_2030",
+      "scenario": "bear",
+      "field_path": "forecast.4.working_capital_increase",
+      "expected_value": "1800000000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_next_year_nopat",
+      "scenario": "bear",
+      "field_path": "terminal.next_year_nopat",
+      "expected_value": "3969800000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "bear",
+      "field_path": "terminal.growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roic",
+      "scenario": "bear",
+      "field_path": "terminal.roic",
+      "expected_value": "0.06",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "wacc",
+      "scenario": "base",
+      "field_path": "forecast.0.wacc",
+      "expected_value": "0.085",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "cash_tax_rate",
+      "scenario": "base",
+      "field_path": "forecast.0.cash_tax_rate",
+      "expected_value": "0.137",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "depreciation",
+      "scenario": "base",
+      "field_path": "forecast.0.depreciation",
+      "expected_value": "6586275313.78",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_ebit_2026",
+      "scenario": "base",
+      "field_path": "forecast.0.ebit",
+      "expected_value": "6724879712.52",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_ebit_2030",
+      "scenario": "base",
+      "field_path": "forecast.4.ebit",
+      "expected_value": "6800000000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_capex_2026",
+      "scenario": "base",
+      "field_path": "forecast.0.capex",
+      "expected_value": "4752057698.59",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_capex_2030",
+      "scenario": "base",
+      "field_path": "forecast.4.capex",
+      "expected_value": "5000000000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "working_capital_increase_2026",
+      "scenario": "base",
+      "field_path": "forecast.0.working_capital_increase",
+      "expected_value": "3213137150.67",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "working_capital_increase_2030",
+      "scenario": "base",
+      "field_path": "forecast.4.working_capital_increase",
+      "expected_value": "800000000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_next_year_nopat",
+      "scenario": "base",
+      "field_path": "terminal.next_year_nopat",
+      "expected_value": "5868400000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "base",
+      "field_path": "terminal.growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roic",
+      "scenario": "base",
+      "field_path": "terminal.roic",
+      "expected_value": "0.08",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "wacc",
+      "scenario": "bull",
+      "field_path": "forecast.0.wacc",
+      "expected_value": "0.085",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "cash_tax_rate",
+      "scenario": "bull",
+      "field_path": "forecast.0.cash_tax_rate",
+      "expected_value": "0.137",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "depreciation",
+      "scenario": "bull",
+      "field_path": "forecast.0.depreciation",
+      "expected_value": "6586275313.78",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_ebit_2026",
+      "scenario": "bull",
+      "field_path": "forecast.0.ebit",
+      "expected_value": "7800000000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_ebit_2030",
+      "scenario": "bull",
+      "field_path": "forecast.4.ebit",
+      "expected_value": "8200000000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_capex_2026",
+      "scenario": "bull",
+      "field_path": "forecast.0.capex",
+      "expected_value": "4600000000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_capex_2030",
+      "scenario": "bull",
+      "field_path": "forecast.4.capex",
+      "expected_value": "5000000000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "working_capital_increase_2026",
+      "scenario": "bull",
+      "field_path": "forecast.0.working_capital_increase",
+      "expected_value": "3213137150.67",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "working_capital_increase_2030",
+      "scenario": "bull",
+      "field_path": "forecast.4.working_capital_increase",
+      "expected_value": "200000000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_next_year_nopat",
+      "scenario": "bull",
+      "field_path": "terminal.next_year_nopat",
+      "expected_value": "7076600000",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "bull",
+      "field_path": "terminal.growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roic",
+      "scenario": "bull",
+      "field_path": "terminal.roic",
+      "expected_value": "0.10",
+      "evidence_refs": [
+        {
+          "id": "huayu_fy2025_annual"
+        },
+        {
+          "id": "huayu_2026h1"
+        }
+      ]
+    }
+  ],
+  "quote": {
+    "symbol": "600741",
+    "ref_id": "huayu_quote_20260922",
+    "bundle_path": "runtime/quote-sessions/20260923T005634211464Z/bundle.json",
+    "bundle_sha256": "5e49dc79bbc0132b040175e993e2f5dd5a3813c7167ade7aa2afc5c51cea19c0"
+  },
+  "model_validity_input": {
+    "model_id": "fcff-shared-scenario-v1",
+    "valid_from": "2026-09-22",
+    "events": [],
+    "event_scan_evidence_refs": [
+      {
+        "id": "600741-event-scan-20260923T051018Z",
+        "symbol": "600741",
+        "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600741/evidence.json",
+        "sha256": "830ec520bb48f382f80e9483d0e577b53a9a94acfd27bfa101b778cd8769c8d3"
+      }
+    ],
+    "blockers": [],
+    "event_scan_ref": {
+      "id": "600741-event-scan-20260923T051018Z",
+      "symbol": "600741",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600741/evidence.json",
+      "sha256": "830ec520bb48f382f80e9483d0e577b53a9a94acfd27bfa101b778cd8769c8d3"
+    }
+  },
+  "blockers": [
+    "G3 human approval pending",
+    "valuation is conditional_research_only and must never imply a buy decision",
+    "pre-model event-scan disclosures require human review"
+  ]
+}

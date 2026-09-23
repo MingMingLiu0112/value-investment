@@ -68,11 +68,11 @@ def _write_pinned(root: Path, pointer_name: str, payload: dict) -> None:
     )
 
 
-def _case(symbol: str, name: str) -> dict:
+def _case(symbol: str, name: str, as_of: str = "2026-09-21") -> dict:
     return {
         "symbol": symbol,
         "name": name,
-        "as_of": "2026-09-21",
+        "as_of": as_of,
         "run_id": "fixture-run",
         "generated_at": "2026-09-21T12:00:00+00:00",
         "research_version": "v1",
@@ -237,26 +237,28 @@ def _cash_return(
     profile_id: str,
     *,
     yield_types: tuple[str, ...] = (),
+    as_of: date = AS_OF,
 ) -> dict:
+    record_year = as_of.year - 1
     record = DividendRecord(
         symbol=symbol,
-        fiscal_period="FY2025",
+        fiscal_period=f"FY{record_year}",
         dividend_type=DIVIDEND_ORDINARY,
         status=DIVIDEND_PAID,
         dividend_per_share=Decimal("1"),
         currency="CNY",
-        announcement_date=date(2026, 3, 1),
-        approval_date=date(2026, 4, 1),
-        ex_date=date(2026, 5, 1),
-        payment_date=date(2026, 6, 1),
-        known_at=date(2026, 6, 1),
+        announcement_date=date(record_year, 3, 1),
+        approval_date=date(record_year, 4, 1),
+        ex_date=date(record_year, 5, 1),
+        payment_date=date(record_year, 6, 1),
+        known_at=date(record_year, 6, 1),
         share_basis="ordinary shares",
         evidence_refs=[REF],
     )
     history = DividendHistory(
         symbol=symbol,
         records=(record,),
-        as_of=AS_OF,
+        as_of=as_of,
         evidence_refs=[REF],
         status=HISTORY_PARTIAL,
         blockers=["history_partial"],
@@ -264,7 +266,7 @@ def _cash_return(
     capacity = DistributionCapacity(
         symbol=symbol,
         profile_id=profile_id,
-        as_of=AS_OF,
+        as_of=as_of,
         evidence_refs=[REF],
         status=CAPACITY_PARTIAL,
         blockers=["capacity_partial"],
@@ -272,7 +274,7 @@ def _cash_return(
     sustainability = DividendSustainabilityAssessment(
         symbol=symbol,
         profile_id=profile_id,
-        as_of=AS_OF,
+        as_of=as_of,
         status=SUSTAINABILITY_UNKNOWN,
         coverage_context="not assessed",
         capital_requirements="not assessed",
@@ -294,7 +296,7 @@ def _cash_return(
         yield_snapshots=tuple(
             _yield_snapshot(symbol, yield_type) for yield_type in yield_types
         ),
-        as_of=AS_OF,
+        as_of=as_of,
     ).as_policy()
 
 
@@ -358,12 +360,16 @@ def write_fixed_sample_runtime_fixture(root: Path) -> None:
         ),
     }
     research_records = [
-        {"case": _case(symbol, name), "gate": _gate()}
+        {
+            "case": _case(symbol, name, as_of=valuation_date),
+            "gate": _gate(),
+        }
         for symbol, name in (
             ("600519", "Moutai"),
             ("000333", "Midea"),
             ("601088", "Shenhua"),
         )
+        for _, _, valuation_date, _ in (profiles[symbol],)
     ]
     _write_pinned(
         root,
@@ -430,6 +436,7 @@ def write_fixed_sample_runtime_fixture(root: Path) -> None:
                     symbol,
                     profile_id,
                     yield_types=yield_types[symbol],
+                    as_of=date.fromisoformat(profiles[symbol][2]),
                 ),
             }
         )

@@ -61,7 +61,12 @@ def merge_evidence_refs(
             ref_id = ref.get("id")
             if not ref_id:
                 raise ValueError("Valuation evidence references require ids")
-            if ref_id in merged and merged[ref_id] != ref:
-                raise ValueError(f"Valuation evidence id conflict: {ref_id}")
-            merged[ref_id] = ref
+            existing = merged.get(ref_id)
+            if existing is None:
+                merged[ref_id] = ref
+                continue
+            for key, value in ref.items():
+                if key in existing and existing[key] != value:
+                    raise ValueError(f"Valuation evidence id conflict: {ref_id}")
+                existing[key] = value
     return list(merged.values())

@@ -10,7 +10,7 @@ from openpyxl import load_workbook
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
-from value_investment_agent.workbook_frontdoor import apply_frontdoor, HOME, PRIMARY
+from value_investment_agent.workbook_frontdoor import apply_frontdoor, HOME, PRIMARY, primary_sheet_names
 from value_investment_agent.workbook_simple_overview import DERIVED, OVERVIEW, PENDING, GUIDE
 from value_investment_agent.workbook_compat import load_wps_workbook
 
@@ -94,8 +94,8 @@ def verify_navigation(book, result):
     assert done == set(result['groups']), 'A company was lost from the MVP overview'
     assert pending <= done, 'Pending page contains an unknown company'
     assert len(pending) == result['pending_count']
-    assert book.active.title == HOME
-    assert [s.title for s in book if s.sheet_state == 'visible'] == [s for s in PRIMARY if s in book]
+    assert book.active.title == primary_sheet_names(book)[0]
+    assert [s.title for s in book if s.sheet_state == 'visible'] == primary_sheet_names(book)
     internal = 0
     for sheet in book:
         for row in sheet:

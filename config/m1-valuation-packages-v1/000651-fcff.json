@@ -1,0 +1,1469 @@
+{
+  "schema_version": "m1-valuation-package-v1",
+  "package_version": "20260923.1",
+  "descriptor_version": "000651-m1-valuation-v1",
+  "symbol": "000651",
+  "name": "格力电器",
+  "profile_id": "mature_manufacturing",
+  "requested_model": "fcff",
+  "run_id": "000651-m1-valuation-20260923",
+  "point_in_time": {
+    "report_period": "2026-06-30",
+    "research_as_of": "2026-09-22",
+    "valuation_date": "2026-09-22",
+    "available_at": "2026-09-23T09:00:00+08:00",
+    "computed_at": "2026-09-23T09:10:00+08:00"
+  },
+  "dependencies": {
+    "rule_version": "m1-valuation-rules-v1",
+    "model_id": "fcff",
+    "model_version": "fcff-shared-scenario-v1",
+    "parser_version": "pdfium-m1-20260923",
+    "scan_watermark": "m1-cninfo-event-scan-v1:14350b3efd541a10"
+  },
+  "sources": [
+    {
+      "id": "gree_fy2025_annual",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-valuation-filings-20260923/000651/2025-12-31-annual-9afdfdd459e8bca7be30fdcc32e333e9759b0b44737e8464b2cb64a8978022e3.pdf",
+      "sha256": "7cc972f2d199e2ec3797cc5da479e8268afa59b77875770de3bcd3648242fb8c",
+      "published_at": "2026-04-28T16:00:00+00:00",
+      "retrieved_at": "2026-09-23T00:52:00+00:00",
+      "parser_version": "pdfium-m1-20260923"
+    },
+    {
+      "id": "gree_2026h1",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-valuation-filings-20260923/000651/2026-06-30-interim-1eecac2793533cffcfe4bef5f7ef434aef9b5661a8015cc2880cdedcebb0cf4a.pdf",
+      "sha256": "50da2e03fddbe9dd424d8fe7881f47fb34efa5d38c96aa9449c12e445c3b2dec",
+      "published_at": "2026-08-27T16:00:00+00:00",
+      "retrieved_at": "2026-09-23T00:52:00+00:00",
+      "parser_version": "pdfium-m1-20260923"
+    },
+    {
+      "id": "china_cost_equity_20260923",
+      "kind": "valuation_reference",
+      "location": "runtime/valuation-research/china-cost-of-equity-m1-20260923/evidence.json",
+      "sha256": "aed2b12ef4f9cd16e08f9962782b73d3709aa2d4cf94d89549728233aa5a27a7",
+      "retrieved_at": "2026-09-23T00:53:00+00:00",
+      "parser_version": "valuation-evidence-v1"
+    }
+  ],
+  "research_case": {
+    "symbol": "000651",
+    "name": "格力电器",
+    "as_of": "2026-09-22",
+    "run_id": "000651-m1-valuation-20260923",
+    "generated_at": "2026-09-23T08:00:00+08:00",
+    "research_version": "000651-m1-valuation-v1",
+    "industry": "家用电器",
+    "investment_path": "成熟制造 / 品牌渠道与金融资产混业",
+    "thesis": "空调品牌、渠道和制造效率支持稳定工业现金回报，但海外下滑、国内价格带下移以及财务公司/受限资金规模要求把工业 FCFF 与金融资产严格拆分后才能讨论估值。",
+    "return_driver": "消费电器结构优化、工业制品第二曲线和经营现金转换；同时受行业需求、海外策略与金融业务资金占用影响。",
+    "mispricing_hypothesis": "未证明市场系统性低估。当前只检验低置信度工业 FCFF 与账面金融资产拆分后的权益价值区间，不形成任何价格结论。",
+    "financial_summary": {
+      "period_end": "2026-06-30",
+      "revenue_2025_cny": "170447058533.57",
+      "parent_profit_2025_cny": "29003103411.66",
+      "parent_equity_2025_cny": "145929297804.02",
+      "weighted_roe_2025": "0.1988",
+      "h1_2026_parent_profit_yoy": "-0.0787"
+    },
+    "positives": [
+      {
+        "kind": "fact",
+        "text": "FY2025 合并工业营业收入 1,704.47 亿元，归母净利润 290.03 亿元，归母净资产 1,459.29 亿元。",
+        "evidence_refs": [
+          "gree_fy2025_annual"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "FY2025 经营活动现金流净额 463.83 亿元，资本开支仅 17.17 亿元，工业现金流转换能力可观察。",
+        "evidence_refs": [
+          "gree_fy2025_annual"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "2026H1 主营业务收入占营业收入 95.37%、同比提升 5.47 个百分点，净利率 14.81%。",
+        "evidence_refs": [
+          "gree_2026h1"
+        ]
+      }
+    ],
+    "counter_evidence": [
+      {
+        "kind": "fact",
+        "text": "2026H1 营业总收入同比 -8.14%，归母净利润 -7.87%，外销主营业务收入 -21.98%。",
+        "evidence_refs": [
+          "gree_2026h1"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "2026H1 国内家用空调出货端/零售端销量同比 -5.6%/-13.1%，2,100 元以下机型零售占比升至 54.45%。",
+        "evidence_refs": [
+          "gree_2026h1"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "短期借款、财务公司、受限现金和大量金融资产使合并报表不能直接作为工业 FCFF；现金充沛本身不能证明金融资产可按账面价值回收。",
+        "evidence_refs": [
+          "gree_fy2025_annual",
+          "gree_2026h1"
+        ]
+      }
+    ],
+    "thesis_breakers": [
+      {
+        "kind": "hypothesis",
+        "text": "若国内价格带继续下移或海外收入继续明显下滑，工业 EBIT 情景需要下调。",
+        "evidence_refs": [
+          "gree_2026h1"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "若财务公司、受限资金、金融资产和短期借款的法人层级拆分仍不可得，工业/金融资产桥接不能解锁。",
+        "evidence_refs": [
+          "gree_fy2025_annual",
+          "gree_2026h1"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "若渠道库存、合同负债或经营现金流出现不可持续波动，工业现金转换质量需要撤回。",
+        "evidence_refs": [
+          "gree_fy2025_annual",
+          "gree_2026h1"
+        ]
+      }
+    ],
+    "next_events": [
+      {
+        "kind": "fact",
+        "text": "观察下一份法定财务报告中的收入、分部毛利率、经营现金流、合同负债、库存、金融资产和短期借款。",
+        "evidence_refs": [
+          "gree_2026h1"
+        ]
+      },
+      {
+        "kind": "gap",
+        "text": "补充财务公司、受限资金、融资负债、金融资产公允价值和法人层级现金流后再做正式人工批准。",
+        "evidence_refs": [
+          "gree_2026h1"
+        ]
+      }
+    ],
+    "evidence_status": "verified",
+    "valuation_status": "not_ready",
+    "research_status": "financial_scope_approved",
+    "blockers": [
+      "formal G3 human valuation approval not present",
+      "treasury/financial company scope and restricted cash remain unresolved",
+      "issuer-specific beta, credit spread and market-derived WACC remain unverified",
+      "ROIC and incremental ROIC remain unverified",
+      "H1 2026 interim report is unaudited"
+    ],
+    "evidence_refs": [
+      {
+        "id": "gree_fy2025_annual",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/000651/2025-12-31-annual-9afdfdd459e8bca7be30fdcc32e333e9759b0b44737e8464b2cb64a8978022e3.pdf",
+        "sha256": "7cc972f2d199e2ec3797cc5da479e8268afa59b77875770de3bcd3648242fb8c"
+      },
+      {
+        "id": "gree_2026h1",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/000651/2026-06-30-interim-1eecac2793533cffcfe4bef5f7ef434aef9b5661a8015cc2880cdedcebb0cf4a.pdf",
+        "sha256": "50da2e03fddbe9dd424d8fe7881f47fb34efa5d38c96aa9449c12e445c3b2dec"
+      },
+      {
+        "id": "china_cost_equity_20260923",
+        "path": "runtime/valuation-research/china-cost-of-equity-m1-20260923/evidence.json",
+        "sha256": "aed2b12ef4f9cd16e08f9962782b73d3709aa2d4cf94d89549728233aa5a27a7"
+      }
+    ],
+    "quote_date": null,
+    "financial_period": "2026-06-30",
+    "missing_date_reasons": {
+      "quote_date": "no archived quote session for 000651; production quote is pending external data"
+    }
+  },
+  "facts": {
+    "kind": "fcff",
+    "symbol": "000651",
+    "as_of": "2026-09-22",
+    "verified": true,
+    "confidence": "低",
+    "evidence_refs": [
+      {
+        "id": "gree_fy2025_annual",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/000651/2025-12-31-annual-9afdfdd459e8bca7be30fdcc32e333e9759b0b44737e8464b2cb64a8978022e3.pdf",
+        "sha256": "7cc972f2d199e2ec3797cc5da479e8268afa59b77875770de3bcd3648242fb8c"
+      },
+      {
+        "id": "gree_2026h1",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/000651/2026-06-30-interim-1eecac2793533cffcfe4bef5f7ef434aef9b5661a8015cc2880cdedcebb0cf4a.pdf",
+        "sha256": "50da2e03fddbe9dd424d8fe7881f47fb34efa5d38c96aa9449c12e445c3b2dec"
+      }
+    ],
+    "blockers": [],
+    "operating_inputs": {
+      "ebit": "28839181614.31",
+      "cash_tax_rate": "0.15",
+      "depreciation": "5054584486.97",
+      "capex": "1717311068.10",
+      "working_capital_change": "-4965811678.62",
+      "wacc": "0.085",
+      "net_debt": "71744407416.55",
+      "non_operating_assets": "238298832557.32",
+      "shares": "5601405741"
+    },
+    "scenario_inputs": {
+      "bear": {
+        "forecast": [
+          {
+            "year": 2026,
+            "ebit": "24000000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "2500000000",
+            "working_capital_increase": "-4965811678.62",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          },
+          {
+            "year": 2027,
+            "ebit": "23000000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "3000000000",
+            "working_capital_increase": "-2000000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          },
+          {
+            "year": 2028,
+            "ebit": "22000000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "3000000000",
+            "working_capital_increase": "-1000000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          },
+          {
+            "year": 2029,
+            "ebit": "21000000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "3000000000",
+            "working_capital_increase": "0",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          },
+          {
+            "year": 2030,
+            "ebit": "20000000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "3000000000",
+            "working_capital_increase": "1000000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          }
+        ],
+        "terminal": {
+          "next_year_nopat": "17000000000",
+          "growth": "0.02",
+          "roic": "0.06",
+          "wacc": "0.085",
+          "evidence_refs": [
+            "gree_fy2025_annual",
+            "china_cost_equity_20260923"
+          ]
+        },
+        "bridge": [
+          {
+            "name": "cash_and_liquid_financial_assets",
+            "kind": "nonoperating_asset",
+            "value": "153186167311.92",
+            "exposure_ids": [
+              "gree_cash",
+              "gree_trading_financial_assets",
+              "gree_receivables_financing",
+              "gree_buyback_resale"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          },
+          {
+            "name": "longer_term_financial_assets",
+            "kind": "nonoperating_asset",
+            "value": "84752161911.55",
+            "exposure_ids": [
+              "gree_one_year_noncurrent",
+              "gree_other_current_financial",
+              "gree_other_debt_investments",
+              "gree_loans",
+              "gree_long_term_equity",
+              "gree_other_equity",
+              "gree_other_noncurrent_financial"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          },
+          {
+            "name": "investment_property",
+            "kind": "nonoperating_asset",
+            "value": "360503333.85",
+            "exposure_ids": [
+              "gree_investment_property"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          },
+          {
+            "name": "interest_bearing_debt",
+            "kind": "debt",
+            "value": "71744407416.55",
+            "exposure_ids": [
+              "gree_debt"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          },
+          {
+            "name": "minority_interest",
+            "kind": "minority",
+            "value": "3861982870.68",
+            "exposure_ids": [
+              "gree_minority"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          }
+        ],
+        "operating_exposure_ids": [
+          "gree_industrial_operations"
+        ],
+        "ordinary_shares": "5601405741",
+        "share_evidence_refs": [
+          "gree_fy2025_annual"
+        ],
+        "currency": "CNY"
+      },
+      "base": {
+        "forecast": [
+          {
+            "year": 2026,
+            "ebit": "28839181614.31",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "1717311068.10",
+            "working_capital_increase": "-4965811678.62",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          },
+          {
+            "year": 2027,
+            "ebit": "28500000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "2500000000",
+            "working_capital_increase": "-1000000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          },
+          {
+            "year": 2028,
+            "ebit": "28500000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "3000000000",
+            "working_capital_increase": "0",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          },
+          {
+            "year": 2029,
+            "ebit": "28500000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "3000000000",
+            "working_capital_increase": "0",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          },
+          {
+            "year": 2030,
+            "ebit": "28500000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "3000000000",
+            "working_capital_increase": "0",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          }
+        ],
+        "terminal": {
+          "next_year_nopat": "24225000000",
+          "growth": "0.02",
+          "roic": "0.09",
+          "wacc": "0.085",
+          "evidence_refs": [
+            "gree_fy2025_annual",
+            "china_cost_equity_20260923"
+          ]
+        },
+        "bridge": [
+          {
+            "name": "cash_and_liquid_financial_assets",
+            "kind": "nonoperating_asset",
+            "value": "153186167311.92",
+            "exposure_ids": [
+              "gree_cash",
+              "gree_trading_financial_assets",
+              "gree_receivables_financing",
+              "gree_buyback_resale"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          },
+          {
+            "name": "longer_term_financial_assets",
+            "kind": "nonoperating_asset",
+            "value": "84752161911.55",
+            "exposure_ids": [
+              "gree_one_year_noncurrent",
+              "gree_other_current_financial",
+              "gree_other_debt_investments",
+              "gree_loans",
+              "gree_long_term_equity",
+              "gree_other_equity",
+              "gree_other_noncurrent_financial"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          },
+          {
+            "name": "investment_property",
+            "kind": "nonoperating_asset",
+            "value": "360503333.85",
+            "exposure_ids": [
+              "gree_investment_property"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          },
+          {
+            "name": "interest_bearing_debt",
+            "kind": "debt",
+            "value": "71744407416.55",
+            "exposure_ids": [
+              "gree_debt"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          },
+          {
+            "name": "minority_interest",
+            "kind": "minority",
+            "value": "3861982870.68",
+            "exposure_ids": [
+              "gree_minority"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          }
+        ],
+        "operating_exposure_ids": [
+          "gree_industrial_operations"
+        ],
+        "ordinary_shares": "5601405741",
+        "share_evidence_refs": [
+          "gree_fy2025_annual"
+        ],
+        "currency": "CNY"
+      },
+      "bull": {
+        "forecast": [
+          {
+            "year": 2026,
+            "ebit": "32000000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "1717311068.10",
+            "working_capital_increase": "-4965811678.62",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          },
+          {
+            "year": 2027,
+            "ebit": "33000000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "2500000000",
+            "working_capital_increase": "-3000000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          },
+          {
+            "year": 2028,
+            "ebit": "34000000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "3000000000",
+            "working_capital_increase": "-2000000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          },
+          {
+            "year": 2029,
+            "ebit": "35000000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "3500000000",
+            "working_capital_increase": "-1000000000",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          },
+          {
+            "year": 2030,
+            "ebit": "35000000000",
+            "cash_tax_rate": "0.15",
+            "depreciation": "5054584486.97",
+            "capex": "3500000000",
+            "working_capital_increase": "0",
+            "wacc": "0.085",
+            "evidence_refs": [
+              "gree_fy2025_annual",
+              "gree_2026h1"
+            ]
+          }
+        ],
+        "terminal": {
+          "next_year_nopat": "29750000000",
+          "growth": "0.02",
+          "roic": "0.12",
+          "wacc": "0.085",
+          "evidence_refs": [
+            "gree_fy2025_annual",
+            "china_cost_equity_20260923"
+          ]
+        },
+        "bridge": [
+          {
+            "name": "cash_and_liquid_financial_assets",
+            "kind": "nonoperating_asset",
+            "value": "153186167311.92",
+            "exposure_ids": [
+              "gree_cash",
+              "gree_trading_financial_assets",
+              "gree_receivables_financing",
+              "gree_buyback_resale"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          },
+          {
+            "name": "longer_term_financial_assets",
+            "kind": "nonoperating_asset",
+            "value": "84752161911.55",
+            "exposure_ids": [
+              "gree_one_year_noncurrent",
+              "gree_other_current_financial",
+              "gree_other_debt_investments",
+              "gree_loans",
+              "gree_long_term_equity",
+              "gree_other_equity",
+              "gree_other_noncurrent_financial"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          },
+          {
+            "name": "investment_property",
+            "kind": "nonoperating_asset",
+            "value": "360503333.85",
+            "exposure_ids": [
+              "gree_investment_property"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          },
+          {
+            "name": "interest_bearing_debt",
+            "kind": "debt",
+            "value": "71744407416.55",
+            "exposure_ids": [
+              "gree_debt"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          },
+          {
+            "name": "minority_interest",
+            "kind": "minority",
+            "value": "3861982870.68",
+            "exposure_ids": [
+              "gree_minority"
+            ],
+            "evidence_refs": [
+              "gree_fy2025_annual"
+            ]
+          }
+        ],
+        "operating_exposure_ids": [
+          "gree_industrial_operations"
+        ],
+        "ordinary_shares": "5601405741",
+        "share_evidence_refs": [
+          "gree_fy2025_annual"
+        ],
+        "currency": "CNY"
+      }
+    }
+  },
+  "assumptions": {
+    "evidence_refs": [
+      {
+        "id": "gree_fy2025_annual",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/000651/2025-12-31-annual-9afdfdd459e8bca7be30fdcc32e333e9759b0b44737e8464b2cb64a8978022e3.pdf",
+        "sha256": "7cc972f2d199e2ec3797cc5da479e8268afa59b77875770de3bcd3648242fb8c"
+      },
+      {
+        "id": "gree_2026h1",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/000651/2026-06-30-interim-1eecac2793533cffcfe4bef5f7ef434aef9b5661a8015cc2880cdedcebb0cf4a.pdf",
+        "sha256": "50da2e03fddbe9dd424d8fe7881f47fb34efa5d38c96aa9449c12e445c3b2dec"
+      },
+      {
+        "id": "china_cost_equity_20260923",
+        "path": "runtime/valuation-research/china-cost-of-equity-m1-20260923/evidence.json",
+        "sha256": "aed2b12ef4f9cd16e08f9962782b73d3709aa2d4cf94d89549728233aa5a27a7"
+      }
+    ],
+    "assumptions": [
+      {
+        "name": "wacc",
+        "unit": "decimal",
+        "bear": "0.085",
+        "base": "0.085",
+        "bull": "0.085",
+        "basis": "generic mature-manufacturing WACC proxy from dated China cost-of-equity evidence",
+        "rationale": "No issuer-specific credit spread or market-derived company WACC is claimed.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "china_cost_equity_20260923"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "cash_tax_rate",
+        "unit": "decimal",
+        "bear": "0.15",
+        "base": "0.15",
+        "bull": "0.15",
+        "basis": "bounded effective tax rate below the consolidated statutory range",
+        "rationale": "Industrial tax is held as a simple rate; no deferred or cash-tax schedule is modelled.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "gree_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "depreciation",
+        "unit": "cny",
+        "bear": "5054584486.97",
+        "base": "5054584486.97",
+        "bull": "5054584486.97",
+        "basis": "FY2025 consolidated cash-flow supplement fixed-asset, investment-property, right-of-use and intangible amortization",
+        "rationale": "The audited D&A sum is held flat because industrial and financial-scope depreciation are not separately disclosed.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "gree_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_ebit_2026",
+        "unit": "cny",
+        "bear": "24000000000",
+        "base": "28839181614.31",
+        "bull": "32000000000",
+        "basis": "FY2025 industrial revenue less industrial operating costs, excluding finance and investment income",
+        "rationale": "Explicit bounds only; the consolidated financial-business scope is excluded from operating EBIT.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "gree_fy2025_annual"
+          },
+          {
+            "id": "gree_2026h1"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_ebit_2030",
+        "unit": "cny",
+        "bear": "20000000000",
+        "base": "28500000000",
+        "bull": "35000000000",
+        "basis": "Bounded terminal-year continuation from the 2026 scenario",
+        "rationale": "The final explicit year converges to terminal economics without a claimed point forecast.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "gree_fy2025_annual"
+          },
+          {
+            "id": "gree_2026h1"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_capex_2026",
+        "unit": "cny",
+        "bear": "2500000000",
+        "base": "1717311068.10",
+        "bull": "1717311068.10",
+        "basis": "FY2025 audited purchase of fixed/intangible/long-term assets with scenario bounds",
+        "rationale": "Maintenance versus growth capex has not been separately verified.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "gree_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "descending"
+      },
+      {
+        "name": "forecast_capex_2030",
+        "unit": "cny",
+        "bear": "3000000000",
+        "base": "3000000000",
+        "bull": "3500000000",
+        "basis": "Bounded continuation of future reinvestment intensity",
+        "rationale": "Higher bull-scenario capex reflects industrial expansion, not a prediction.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "gree_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "working_capital_increase_2026",
+        "unit": "cny",
+        "bear": "-4965811678.62",
+        "base": "-4965811678.62",
+        "bull": "-4965811678.62",
+        "basis": "FY2025 audited inventory, receivable and payable changes, excluding the large restricted-cash reconciliation item",
+        "rationale": "The observable working-capital release is applied once and then scenario changes decay.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "gree_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "working_capital_increase_2030",
+        "unit": "cny",
+        "bear": "1000000000",
+        "base": "0",
+        "bull": "0",
+        "basis": "Bounded terminal-year working-capital change",
+        "rationale": "Finance-scope receivables and restricted cash remain unresolved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "gree_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "descending"
+      },
+      {
+        "name": "terminal_next_year_nopat",
+        "unit": "cny",
+        "bear": "17000000000",
+        "base": "24225000000",
+        "bull": "29750000000",
+        "basis": "Terminal-year industrial EBIT after the simple tax proxy",
+        "rationale": "Terminal NOPAT is derived mechanically from the final explicit-year bound.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "gree_fy2025_annual"
+          },
+          {
+            "id": "gree_2026h1"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "terminal_growth",
+        "unit": "decimal",
+        "bear": "0.02",
+        "base": "0.02",
+        "bull": "0.02",
+        "basis": "Long-run nominal growth bound below WACC",
+        "rationale": "No company-specific high-growth terminal path is assumed.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "china_cost_equity_20260923"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "terminal_roic",
+        "unit": "decimal",
+        "bear": "0.06",
+        "base": "0.09",
+        "bull": "0.12",
+        "basis": "Bounded terminal incremental returns across mature consumer-industrial economics",
+        "rationale": "Issuer ROIC and incremental ROIC remain unverified.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "gree_fy2025_annual"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      }
+    ],
+    "blockers": []
+  },
+  "assumption_bindings": [
+    {
+      "assumption_name": "wacc",
+      "scenario": "bear",
+      "field_path": "forecast.0.wacc",
+      "expected_value": "0.085",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "cash_tax_rate",
+      "scenario": "bear",
+      "field_path": "forecast.0.cash_tax_rate",
+      "expected_value": "0.15",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "depreciation",
+      "scenario": "bear",
+      "field_path": "forecast.0.depreciation",
+      "expected_value": "5054584486.97",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_ebit_2026",
+      "scenario": "bear",
+      "field_path": "forecast.0.ebit",
+      "expected_value": "24000000000",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_ebit_2030",
+      "scenario": "bear",
+      "field_path": "forecast.4.ebit",
+      "expected_value": "20000000000",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_capex_2026",
+      "scenario": "bear",
+      "field_path": "forecast.0.capex",
+      "expected_value": "2500000000",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_capex_2030",
+      "scenario": "bear",
+      "field_path": "forecast.4.capex",
+      "expected_value": "3000000000",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "working_capital_increase_2026",
+      "scenario": "bear",
+      "field_path": "forecast.0.working_capital_increase",
+      "expected_value": "-4965811678.62",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "working_capital_increase_2030",
+      "scenario": "bear",
+      "field_path": "forecast.4.working_capital_increase",
+      "expected_value": "1000000000",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_next_year_nopat",
+      "scenario": "bear",
+      "field_path": "terminal.next_year_nopat",
+      "expected_value": "17000000000",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "bear",
+      "field_path": "terminal.growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roic",
+      "scenario": "bear",
+      "field_path": "terminal.roic",
+      "expected_value": "0.06",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "wacc",
+      "scenario": "base",
+      "field_path": "forecast.0.wacc",
+      "expected_value": "0.085",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "cash_tax_rate",
+      "scenario": "base",
+      "field_path": "forecast.0.cash_tax_rate",
+      "expected_value": "0.15",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "depreciation",
+      "scenario": "base",
+      "field_path": "forecast.0.depreciation",
+      "expected_value": "5054584486.97",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_ebit_2026",
+      "scenario": "base",
+      "field_path": "forecast.0.ebit",
+      "expected_value": "28839181614.31",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_ebit_2030",
+      "scenario": "base",
+      "field_path": "forecast.4.ebit",
+      "expected_value": "28500000000",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_capex_2026",
+      "scenario": "base",
+      "field_path": "forecast.0.capex",
+      "expected_value": "1717311068.10",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_capex_2030",
+      "scenario": "base",
+      "field_path": "forecast.4.capex",
+      "expected_value": "3000000000",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "working_capital_increase_2026",
+      "scenario": "base",
+      "field_path": "forecast.0.working_capital_increase",
+      "expected_value": "-4965811678.62",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "working_capital_increase_2030",
+      "scenario": "base",
+      "field_path": "forecast.4.working_capital_increase",
+      "expected_value": "0",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_next_year_nopat",
+      "scenario": "base",
+      "field_path": "terminal.next_year_nopat",
+      "expected_value": "24225000000",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "base",
+      "field_path": "terminal.growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roic",
+      "scenario": "base",
+      "field_path": "terminal.roic",
+      "expected_value": "0.09",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "wacc",
+      "scenario": "bull",
+      "field_path": "forecast.0.wacc",
+      "expected_value": "0.085",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "cash_tax_rate",
+      "scenario": "bull",
+      "field_path": "forecast.0.cash_tax_rate",
+      "expected_value": "0.15",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "depreciation",
+      "scenario": "bull",
+      "field_path": "forecast.0.depreciation",
+      "expected_value": "5054584486.97",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_ebit_2026",
+      "scenario": "bull",
+      "field_path": "forecast.0.ebit",
+      "expected_value": "32000000000",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_ebit_2030",
+      "scenario": "bull",
+      "field_path": "forecast.4.ebit",
+      "expected_value": "35000000000",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_capex_2026",
+      "scenario": "bull",
+      "field_path": "forecast.0.capex",
+      "expected_value": "1717311068.10",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_capex_2030",
+      "scenario": "bull",
+      "field_path": "forecast.4.capex",
+      "expected_value": "3500000000",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "working_capital_increase_2026",
+      "scenario": "bull",
+      "field_path": "forecast.0.working_capital_increase",
+      "expected_value": "-4965811678.62",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "working_capital_increase_2030",
+      "scenario": "bull",
+      "field_path": "forecast.4.working_capital_increase",
+      "expected_value": "0",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_next_year_nopat",
+      "scenario": "bull",
+      "field_path": "terminal.next_year_nopat",
+      "expected_value": "29750000000",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "bull",
+      "field_path": "terminal.growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roic",
+      "scenario": "bull",
+      "field_path": "terminal.roic",
+      "expected_value": "0.12",
+      "evidence_refs": [
+        {
+          "id": "gree_fy2025_annual"
+        },
+        {
+          "id": "gree_2026h1"
+        }
+      ]
+    }
+  ],
+  "quote": {
+    "kind": "historical_dual_source_close",
+    "manifest_path": "runtime/m1-historical-quote-crosscheck/20260923T041647491012Z/manifest.json",
+    "manifest_sha256": "390886a093daf039e3588864ede6dfa5dbe1bd7db2665c0fbd8a2699b8c9abc3"
+  },
+  "model_validity_input": {
+    "model_id": "fcff-shared-scenario-v1",
+    "valid_from": "2026-09-22",
+    "events": [],
+    "event_scan_evidence_refs": [
+      {
+        "id": "000651-event-scan-20260923T051018Z",
+        "symbol": "000651",
+        "path": "runtime/company-research/m1-event-scans/20260923T051018Z/000651/evidence.json",
+        "sha256": "14350b3efd541a1034ea13458d2325ca17deae19772100bd2ed047a2c8b98278"
+      }
+    ],
+    "blockers": [],
+    "event_scan_ref": {
+      "id": "000651-event-scan-20260923T051018Z",
+      "symbol": "000651",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/000651/evidence.json",
+      "sha256": "14350b3efd541a1034ea13458d2325ca17deae19772100bd2ed047a2c8b98278"
+    }
+  },
+  "blockers": [
+    "G3 human approval pending",
+    "treasury/financial company scope and restricted cash remain unresolved",
+    "valuation is conditional_research_only and must never imply a buy decision",
+    "pre-model event-scan disclosures require human review"
+  ]
+}

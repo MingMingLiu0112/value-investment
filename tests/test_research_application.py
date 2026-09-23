@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, datetime, timezone
 from decimal import Decimal as D
 
@@ -30,10 +31,16 @@ from value_investment_agent.research_artifacts import (
     ARTIFACT_PRICE_BRIDGE,
     ARTIFACT_QUOTE_SNAPSHOT,
     ARTIFACT_RESEARCH_CASE,
+    ARTIFACT_RESEARCH_GATE,
     ARTIFACT_VALUATION_RESULT,
     SCOPE_SECURITY,
 )
 from value_investment_agent.research_case import ResearchCase
+from value_investment_agent.research_gate import GATE_VALUATION
+from value_investment_agent.research_run_contract import (
+    ResearchValuationApproval,
+    valuation_result_sha256,
+)
 from value_investment_agent.valuation_models.cyclical import CyclicalFacts
 from value_investment_agent.valuation_models.fcff import FinancialFacts
 from value_investment_agent.valuation_models.residual_income import (
@@ -241,6 +248,63 @@ def test_verified_quote_and_validity_produce_a_ready_bridge():
     )
 
 
+def test_application_does_not_auto_promote_g3_without_approval():
+    repository = InMemoryResearchArtifactRepository()
+    spec, app = quality_spec(
+        run_id="g3-approval",
+        repository=repository,
+    )
+    referenced = {
+        "kind": "fact",
+        "text": "evidence-backed",
+        "evidence_refs": ["source"],
+    }
+    approved_case = replace(
+        spec.research_case,
+        evidence_status="verified",
+        research_status="financial_scope_approved",
+        valuation_status="approved",
+        evidence_refs=[{"id": "source"}],
+        thesis="thesis",
+        return_driver="driver",
+        mispricing_hypothesis="hypothesis",
+        positives=[referenced] * 3,
+        counter_evidence=[referenced] * 3,
+        thesis_breakers=[referenced] * 3,
+        next_events=[{"kind": "hypothesis", "text": "next event"}],
+    )
+    spec = replace(spec, research_case=approved_case)
+
+    without_approval = app.run_company_research(spec)
+    assert without_approval.gate.results[GATE_VALUATION] is False
+
+    approval = ResearchValuationApproval(
+        model_id="residual_income_or_equity_value",
+        model_type=without_approval.valuation.model_type,
+        model_version=without_approval.valuation.model_version,
+        valuation_date=without_approval.valuation.valuation_date,
+        result_sha256=valuation_result_sha256(without_approval.valuation),
+        approved_at=AVAILABLE_AT,
+        approver="human-reviewer",
+        evidence_refs=[{"id": "approval"}],
+    )
+    with_approval = app.run_company_research(
+        replace(spec, valuation_approval=approval)
+    )
+
+    assert with_approval.gate.results[GATE_VALUATION] is True
+    assert with_approval.gate.ready_for_price_assessment is True
+    stored_gate = app.repository.load_latest(
+        SCOPE_SECURITY,
+        "600519",
+        ARTIFACT_RESEARCH_GATE,
+    )
+    assert any(
+        ref.get("id") == "approval"
+        for ref in stored_gate.envelope.evidence_refs
+    )
+
+
 def test_verified_quote_without_validity_contract_fails_closed_as_invalid_bridge():
     spec, app = quality_spec(run_id="missing-validity")
     spec = ResearchRunSpec(
@@ -350,4 +414,3 @@ def test_review_company_research_preserves_research_only_boundary():
     assert review.production_valuation_available is False
     assert review.research_sample_members == ("600519",)
     assert review.companies[0].action == "no_order"
-

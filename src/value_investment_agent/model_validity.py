@@ -7,7 +7,14 @@ import json
 import re
 from typing import Any
 
-from .valuation_models.base import ValuationResult
+from .event_scan import (
+    COVERAGE_COMPLETE,
+    SCAN_COMPLETE_MATERIAL_EVENTS,
+    SCAN_COMPLETE_NO_MATERIAL_EVENT,
+    SCAN_PENDING_HUMAN_REVIEW,
+    EventScanResult,
+)
+from .valuation_models.base import ValuationResult, merge_evidence_refs
 
 
 VALIDITY_STATUSES = {"VALID", "STALE", "UNKNOWN", "INVALID"}
@@ -84,6 +91,7 @@ def evaluate_model_validity(
     events: list[MaterialEvent],
     event_scan_evidence_refs: list[dict[str, Any]],
     blockers: list[str] | None = None,
+    event_scan: EventScanResult | None = None,
 ) -> ModelValidity:
     """Evaluate whether a model remains valid at a later quote date."""
     base_blockers = list(blockers or [])
@@ -103,6 +111,152 @@ def evaluate_model_validity(
             base_blockers + ["quote date precedes model validity window"],
             [],
         )
+    if event_scan is not None:
+        if events:
+            raise ValueError(
+                "event_scan and legacy material events cannot both be supplied"
+            )
+        if event_scan.symbol != symbol:
+            raise ValueError("event_scan symbol does not match the validity symbol")
+        if event_scan.validity_from != valid_from:
+            return ModelValidity(
+                model_id,
+                symbol,
+                model_as_of,
+                valid_from,
+                quote_date,
+                None,
+                None,
+                None,
+                "INVALID",
+                base_blockers + ["event scan validity window starts on a different date"],
+                merge_evidence_refs(event_scan_evidence_refs, event_scan.evidence_refs),
+            )
+        if event_scan.scan_to < quote_date or event_scan.validity_to < quote_date:
+            return ModelValidity(
+                model_id,
+                symbol,
+                model_as_of,
+                valid_from,
+                quote_date,
+                None,
+                None,
+                None,
+                "INVALID",
+                base_blockers + ["event scan does not cover the quote date"],
+                merge_evidence_refs(event_scan_evidence_refs, event_scan.evidence_refs),
+            )
+        if event_scan.coverage_status != COVERAGE_COMPLETE:
+            return ModelValidity(
+                model_id,
+                symbol,
+                model_as_of,
+                valid_from,
+                quote_date,
+                None,
+                None,
+                None,
+                "UNKNOWN",
+                [*base_blockers, "event scan coverage is incomplete", *event_scan.blockers],
+                merge_evidence_refs(event_scan_evidence_refs, event_scan.evidence_refs),
+            )
+        if event_scan.status == SCAN_PENDING_HUMAN_REVIEW:
+            return ModelValidity(
+                model_id,
+                symbol,
+                model_as_of,
+                valid_from,
+                quote_date,
+                None,
+                None,
+                None,
+                "UNKNOWN",
+                [*base_blockers, "event scan is pending human review", *event_scan.blockers],
+                merge_evidence_refs(event_scan_evidence_refs, event_scan.evidence_refs),
+            )
+        scan_events = [
+            MaterialEvent(
+                event_date=item.published_at.date(),
+                kind=item.rule_kind,
+                description=item.title,
+                evidence_refs=list(item.evidence_refs),
+            )
+            for item in event_scan.validity_material_candidates
+        ]
+        material_events = [
+            event
+            for event in scan_events
+            if model_as_of <= event.event_date <= quote_date
+        ]
+        if event_scan.status == SCAN_COMPLETE_MATERIAL_EVENTS and not material_events:
+            return ModelValidity(
+                model_id,
+                symbol,
+                model_as_of,
+                valid_from,
+                quote_date,
+                None,
+                None,
+                None,
+                "UNKNOWN",
+                [*base_blockers, "event scan reports material events outside the model window"],
+                merge_evidence_refs(event_scan_evidence_refs, event_scan.evidence_refs),
+            )
+        if material_events:
+            latest = max(event.event_date for event in material_events)
+            financial_changed = any(
+                event.kind in {"financial_statement", "financial_report"}
+                for event in material_events
+            )
+            capital_changed = any(
+                event.kind in {"capital_structure", "share_capital", "buyback"}
+                for event in material_events
+            )
+            refs = merge_evidence_refs(
+                event_scan_evidence_refs,
+                event_scan.evidence_refs,
+                *(event.evidence_refs for event in material_events),
+            )
+            return ModelValidity(
+                model_id,
+                symbol,
+                model_as_of,
+                valid_from,
+                quote_date,
+                financial_changed,
+                capital_changed,
+                True,
+                "STALE",
+                [*base_blockers, f"material event at {latest.isoformat()}"],
+                refs,
+            )
+        if event_scan.status != SCAN_COMPLETE_NO_MATERIAL_EVENT:
+            return ModelValidity(
+                model_id,
+                symbol,
+                model_as_of,
+                valid_from,
+                quote_date,
+                None,
+                None,
+                None,
+                "UNKNOWN",
+                [*base_blockers, f"unknown event scan status: {event_scan.status}"],
+                merge_evidence_refs(event_scan_evidence_refs, event_scan.evidence_refs),
+            )
+        return ModelValidity(
+            model_id,
+            symbol,
+            model_as_of,
+            valid_from,
+            quote_date,
+            False,
+            False,
+            False,
+            "VALID",
+            [*base_blockers, *event_scan.blockers],
+            merge_evidence_refs(event_scan_evidence_refs, event_scan.evidence_refs),
+        )
     material_events = [
         event
         for event in events
@@ -118,9 +272,10 @@ def evaluate_model_validity(
             event.kind in {"capital_structure", "share_capital", "buyback"}
             for event in material_events
         )
-        refs = [*event_scan_evidence_refs]
-        for event in material_events:
-            refs.extend(event.evidence_refs)
+        refs = merge_evidence_refs(
+            event_scan_evidence_refs,
+            *(event.evidence_refs for event in material_events),
+        )
         return ModelValidity(
             model_id,
             symbol,
@@ -159,7 +314,7 @@ def evaluate_model_validity(
         False,
         "VALID",
         base_blockers,
-        event_scan_evidence_refs,
+        merge_evidence_refs(event_scan_evidence_refs),
     )
 
 

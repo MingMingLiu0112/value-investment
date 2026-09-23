@@ -100,6 +100,81 @@ def _request_json(data: dict[str, str]) -> dict:
         session.close()
 
 
+def search_announcement_window(
+    symbol: str,
+    start_date: str,
+    end_date: str,
+    issuer_name: str | None = None,
+    *,
+    page_size: int = 100,
+) -> dict:
+    """Return one issuer's complete CNINFO announcement index for a date window.
+
+    The result is a source index, not a materiality conclusion. Callers must
+    retain the raw response and verify exact symbol, date range and counts.
+    """
+    if not re.fullmatch(r"[0-9]{6}", symbol):
+        raise ValueError("CNINFO announcement search requires a six-digit symbol")
+    if not 1 <= page_size <= 100:
+        raise ValueError("CNINFO announcement page size must be 1..100")
+    column, fallback = _cninfo_security_id(symbol)
+    security_id = _discover_security_id(
+        symbol,
+        column,
+        fallback,
+        issuer_name or SYMBOL_NAMES.get(symbol),
+    )
+    base = {
+        "pageNum": "1",
+        "pageSize": str(page_size),
+        "tabName": "fulltext",
+        "column": column,
+        "stock": f"{symbol},{security_id}",
+        "searchkey": "",
+        "secid": "",
+        "plate": "",
+        "category": "",
+        "trade": "",
+        "seDate": f"{start_date}~{end_date}",
+        "sortName": "",
+        "sortType": "",
+        "isHLtitle": "true",
+    }
+    first = _request_json(base)
+    total = int(first.get("totalAnnouncement") or 0)
+    announcements = list(first.get("announcements") or [])
+    while len(announcements) < total:
+        page = _request_json({
+            **base,
+            "pageNum": str(len(announcements) // page_size + 1),
+        })
+        records = page.get("announcements") or []
+        if not records:
+            raise ValueError("CNINFO announcement pagination stopped before the total")
+        announcements.extend(records)
+    announcements = [
+        item
+        for item in announcements
+        if str(item.get("secCode", "")) == symbol
+    ]
+    if len({str(item.get("announcementId")) for item in announcements}) != len(announcements):
+        raise ValueError("CNINFO announcement window contains duplicate ids")
+    return {
+        "url": SEARCH_URL,
+        "parameters": {
+            **{key: value for key, value in base.items() if key != "pageNum"},
+        },
+        "total_announcements": total,
+        "announcements": announcements,
+    }
+
+
+def download_disclosure_pdf(source_url: str, target: Path) -> str:
+    """Archive one statutory disclosure PDF and return its SHA-256."""
+
+    return _download(source_url, target)
+
+
 REPORT_CATEGORIES = {
     "annual": "category_ndbg_szsh",
     "interim": "category_bndbg_szsh",

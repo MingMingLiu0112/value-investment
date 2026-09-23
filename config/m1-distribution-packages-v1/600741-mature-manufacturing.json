@@ -1,0 +1,267 @@
+{
+  "schema_version": "m1-distribution-package-v1",
+  "package_version": "20260923.2",
+  "run_id": "600741-m1-dividend-20260923-lifecycle-v1",
+  "symbol": "600741",
+  "name": "华域汽车",
+  "profile_id": "mature_manufacturing",
+  "research_as_of": "2026-09-22",
+  "action": "no_order",
+  "sources": [
+    {
+      "id": "huayu_fy2025_annual",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-valuation-filings-20260923/600741/2025-12-31-annual-fc0c682eeb07cc29ea4201e9113cfa5bb5febf805a3a5ff5eb4dfe1b861ce841.pdf",
+      "sha256": "19d879f380cc042f4f5d91cb952c939f95b4e953366e8045da1e3a58760065f4",
+      "published_at": "2026-03-30T16:00:00+00:00",
+      "retrieved_at": "2026-09-23T00:54:00+00:00",
+      "parser_version": "pdfium-m1-20260923"
+    },
+    {
+      "id": "huayu_2026h1",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-valuation-filings-20260923/600741/2026-06-30-interim-2b5ced0dc37827ad9d35036fb0d49b3b34e6ff47f2559222db0225f7519162c6.pdf",
+      "sha256": "77db47cdf18cc46123c4924cb869a75dc3d4404f718e132292e6c9132e65f2f9",
+      "published_at": "2026-08-27T16:00:00+00:00",
+      "retrieved_at": "2026-09-23T00:54:00+00:00",
+      "parser_version": "pdfium-m1-20260923"
+    },
+    {
+      "id": "huayu_fy2024_final_proposal",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600741/huayu_fy2024_final_proposal.pdf",
+      "sha256": "e2ec89996bb6b95c3ccda8fda89ba42fa447117f324fe7c227fc3c45e8f4a4c4",
+      "published_at": "2025-04-29T16:00:00+08:00",
+      "retrieved_at": "2026-09-23T05:23:12.881652+00:00",
+      "parser_version": "pdfium-m1-dividend-lifecycle-v1"
+    },
+    {
+      "id": "huayu_fy2024_final_agm_resolution",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600741/huayu_fy2024_final_agm_resolution.pdf",
+      "sha256": "ff1b7fdd6998942af6b28d94ec2853b78babc32c28958ebf2e08923ae92b1b01",
+      "published_at": "2025-06-28T16:00:00+08:00",
+      "retrieved_at": "2026-09-23T05:23:12.881652+00:00",
+      "parser_version": "pdfium-m1-dividend-lifecycle-v1"
+    },
+    {
+      "id": "huayu_fy2024_final_implementation",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600741/huayu_fy2024_final_implementation.pdf",
+      "sha256": "304e5d2ee49249bc514aadb3b0537083952aec19ecca4e184d1960070d7234df",
+      "published_at": "2025-07-19T16:00:00+08:00",
+      "retrieved_at": "2026-09-23T05:23:12.881652+00:00",
+      "parser_version": "pdfium-m1-dividend-lifecycle-v1"
+    },
+    {
+      "id": "huayu_quote_20260922",
+      "kind": "quote_session",
+      "location": "runtime/quote-sessions/20260923T005634211464Z/bundle.json",
+      "sha256": "5e49dc79bbc0132b040175e993e2f5dd5a3813c7167ade7aa2afc5c51cea19c0",
+      "retrieved_at": "2026-09-23T00:56:34.211437+00:00",
+      "parser_version": "quote-session-collection-v1"
+    }
+  ],
+  "dividend_result": {
+    "symbol": "600741",
+    "profile_id": "mature_manufacturing",
+    "history": {
+      "symbol": "600741",
+      "records": [
+        {
+          "symbol": "600741",
+          "fiscal_period": "FY2024-final",
+          "dividend_type": "ordinary",
+          "status": "paid",
+          "dividend_per_share": "0.80",
+          "currency": "CNY",
+          "announcement_date": "2025-04-29",
+          "approval_date": "2025-06-27",
+          "ex_date": "2025-07-25",
+          "payment_date": "2025-07-25",
+          "known_at": "2026-09-22",
+          "share_basis": "ordinary-share-600741",
+          "evidence_refs": [
+            {"id": "huayu_fy2024_final_proposal"},
+            {"id": "huayu_fy2024_final_agm_resolution"},
+            {"id": "huayu_fy2024_final_implementation"}
+          ],
+          "blockers": []
+        },
+        {
+          "symbol": "600741",
+          "fiscal_period": "FY2025-final",
+          "dividend_type": "ordinary",
+          "status": "proposed",
+          "dividend_per_share": "1.00",
+          "currency": "CNY",
+          "announcement_date": "2026-03-27",
+          "approval_date": null,
+          "ex_date": null,
+          "payment_date": null,
+          "known_at": "2026-09-22",
+          "share_basis": "ordinary-share-600741",
+          "evidence_refs": [{"id": "huayu_fy2025_annual"}],
+          "blockers": ["FY2025 final proposal remains subject to shareholder approval"]
+        }
+      ],
+      "as_of": "2026-09-22",
+      "evidence_refs": [
+        {"id": "huayu_fy2025_annual"},
+        {"id": "huayu_fy2024_final_proposal"},
+        {"id": "huayu_fy2024_final_agm_resolution"},
+        {"id": "huayu_fy2024_final_implementation"}
+      ],
+      "status": "PARTIAL",
+      "blockers": [
+        "history is limited to retained FY2024/FY2025 lifecycle facts"
+      ]
+    },
+    "capacity": {
+      "symbol": "600741",
+      "profile_id": "mature_manufacturing",
+      "as_of": "2026-09-22",
+      "earnings_basis": {
+        "fy2025_parent_profit_cny": "7207268139.61",
+        "fy2025_proposed_cash_dividend_cny": "3152723984.00",
+        "fy2025_proposed_payout_ratio": "0.4374"
+      },
+      "cash_flow_basis": {
+        "fy2025_operating_cash_flow_cny": "9523102797.47",
+        "h1_2026_operating_cash_flow_cny": "7968284037.38"
+      },
+      "maintenance_reinvestment": {
+        "fy2025_capex_paid_cny": "4752057698.59",
+        "fy2025_depreciation_amortization_cny": "6586275313.78"
+      },
+      "debt_constraints": {
+        "fy2025_net_debt_cny": "17643806194.84"
+      },
+      "restricted_cash_or_upstream_constraints": {},
+      "capital_allocation_context": {
+        "fy2025_final_proposal_per_share_cny": "1.00",
+        "fy2025_proposed_cash_dividend_total_cny": "3152723984.00",
+        "fy2025_proposed_payout_ratio": "0.4374",
+        "fy2024_final_paid_per_share_cny": "0.80",
+        "fy2024_final_paid_cash_dividend_total_cny": "2522179187.20",
+        "special_dividend_observation": "none identified in retained lifecycle evidence",
+        "fact_policy_forecast_separation": "paid/proposed ordinary dividends are facts; no forward payout forecast or normalized scenario is claimed",
+        "long_term_policy_observation": "issuer states it has paid an annual cash dividend every year since its 2009 listing and reports cumulative cash dividends of CNY 30.830 billion for 2009-2023",
+        "h1_2026_decision": "no interim distribution"
+      },
+      "bear_capacity": null,
+      "base_capacity": null,
+      "bull_capacity": null,
+      "confidence": "低",
+      "evidence_refs": [{"id": "huayu_fy2025_annual"}, {"id": "huayu_2026h1"}],
+      "blockers": [
+        "customer concentration, pricing pass-through and working-capital cycle are not independently quantified",
+        "legal-entity distributable cash has not been reconciled from consolidated cash flow",
+        "the payout ratio is a proposed FY2025 allocation, not an approved or paid distribution"
+      ],
+      "status": "PARTIAL"
+    },
+    "sustainability": {
+      "symbol": "600741",
+      "profile_id": "mature_manufacturing",
+      "as_of": "2026-09-22",
+      "status": "LOW",
+      "coverage_context": "The retained statutory lifecycle shows FY2024 final ordinary cash dividend proposed 2025-04-29, approved 2025-06-27 and implemented with 2025-07-25 ex/payment dates at CNY 0.80 per share; FY2025 final remains a CNY 1.00 ordinary proposal. No special dividend is identified and no forward payout forecast is claimed.",
+      "capital_requirements": "The supplier business requires substantial fixed capital and ongoing platform investment, so maintenance and growth capex must be separated before a durable free-cash-flow claim.",
+      "balance_sheet_pressure": "Consolidated net debt is visible in the FCFF bridge, while H1 2026 profit fell faster than revenue and the cash-flow increase has not been decomposed.",
+      "cycle_risk": "Vehicle production, customer project concentration and OEM price pressure are direct risks to earnings and distributable cash.",
+      "growth_source": "Smart cockpit, chassis and powertrain platform wins are disclosed growth drivers, but customer-cycle resilience and incremental ROIC remain unverified.",
+      "breakers": [
+        "sustained vehicle-production decline or major customer project loss",
+        "continued margin and price-pass-through deterioration",
+        "working-capital or capital-expenditure growth absorbing distributable cash"
+      ],
+      "confidence": "低",
+      "reasons": [
+        "The payout history and proposed FY2025 dividend are observable, but capacity is tied to a cyclical customer base.",
+        "Unverified net-debt and legal-entity cash-flow boundaries prevent a HIGH confidence assessment."
+      ],
+      "blockers": [
+        "customer and cycle sensitivity is not quantified",
+        "consolidated net debt and legal-entity distributable cash remain unresolved"
+      ],
+      "evidence_refs": [
+        {"id": "huayu_fy2025_annual"},
+        {"id": "huayu_2026h1"},
+        {"id": "huayu_fy2024_final_proposal"},
+        {"id": "huayu_fy2024_final_agm_resolution"},
+        {"id": "huayu_fy2024_final_implementation"}
+      ]
+    },
+    "yield_snapshots": [
+      {
+        "symbol": "600741",
+        "basis_type": "trailing_paid",
+        "dividend_basis_period": "2025-09-22/2026-09-22",
+        "dividend_per_share": null,
+        "dividend_known_at": null,
+        "quote_date": null,
+        "current_price": null,
+        "currency": "CNY",
+        "share_basis": "ordinary-share-600741",
+        "dividend_yield": null,
+        "yield_type": "current",
+        "evidence_refs": [
+          {"id": "huayu_fy2025_annual"},
+          {"id": "huayu_quote_20260922"}
+        ],
+        "status": "NOT_READY",
+        "blockers": ["no paid dividend has an ex-date in the trailing one-year window"]
+      },
+      {
+        "symbol": "600741",
+        "basis_type": "declared",
+        "dividend_basis_period": "FY2025-final-proposal",
+        "dividend_per_share": "1.00",
+        "dividend_known_at": "2026-03-27",
+        "quote_date": "2026-09-22",
+        "current_price": "14.92",
+        "currency": "CNY",
+        "share_basis": "ordinary-share-600741",
+        "dividend_yield": "0.06702412868632707775",
+        "yield_type": "current",
+        "evidence_refs": [
+          {"id": "huayu_fy2025_annual"},
+          {"id": "huayu_quote_20260922"}
+        ],
+        "status": "READY",
+        "blockers": []
+      },
+      {
+        "symbol": "600741",
+        "basis_type": "normalized_scenario",
+        "dividend_basis_period": "through-cycle-normalized-not-assessed",
+        "dividend_per_share": null,
+        "dividend_known_at": null,
+        "quote_date": null,
+        "current_price": null,
+        "currency": "CNY",
+        "share_basis": "ordinary-share-600741",
+        "dividend_yield": null,
+        "yield_type": "normalized",
+        "evidence_refs": [],
+        "status": "NOT_READY",
+        "blockers": ["normalized dividend basis is not assessed"]
+      }
+    ],
+    "as_of": "2026-09-22",
+    "blockers": [
+      "no paid dividend has an ex-date in the trailing one-year window",
+      "normalized dividend basis is not assessed"
+    ],
+    "evidence_refs": [
+      {"id": "huayu_fy2025_annual"},
+      {"id": "huayu_2026h1"},
+      {"id": "huayu_fy2024_final_proposal"},
+      {"id": "huayu_fy2024_final_agm_resolution"},
+      {"id": "huayu_fy2024_final_implementation"},
+      {"id": "huayu_quote_20260922"}
+    ],
+    "action": "no_order"
+  }
+}

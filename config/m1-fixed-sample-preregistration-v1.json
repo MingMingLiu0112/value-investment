@@ -1,0 +1,365 @@
+{
+  "schema_version": "m1-fixed-sample-preregistration-v1",
+  "preregistration_version": "20260923.1",
+  "as_of": "2026-09-23",
+  "action": "no_order",
+  "methodology": {
+    "data_sources": [
+      "CNINFO/company IR/exchange official filings for source-of-truth facts",
+      "AkShare and market snapshots only for discovery, cross-check and explicit gaps",
+      "No price level is used to select or rank companies"
+    ],
+    "field_requirements": [
+      "Identity, scope, unit, period, source URL, original-file hash and parser version",
+      "Model-specific facts must satisfy the registered ValuationModel facts contract",
+      "Assumptions must be bounded, evidenced and bound to actual scenario inputs"
+    ],
+    "research_depth": {
+      "target_deep_research": 6,
+      "target_registered_companies": 20,
+      "deep_workstream": "W3",
+      "expansion_workstream": "W4"
+    },
+    "budget": {
+      "maximum_registered_companies": 20,
+      "allowed_new_company_workstreams": [
+        "W1 preregistration",
+        "W3 first six readable research dossiers",
+        "W4 evidence-gated 12-to-20 expansion"
+      ],
+      "no_full_market_engine": true
+    },
+    "stop_rules": [
+      "Stop adding companies when the registered list reaches 20",
+      "Pause a company when its material model/data blocker remains unresolved after three evidence attempts",
+      "Never overwrite the frozen three-company manifest or production workbook",
+      "Never fabricate a READY state to meet a company-count target"
+    ],
+    "acceptance_criteria": [
+      "At least six readable dossiers with evidence, counter-evidence, breakers and next events",
+      "Unsupported, insufficient and negative cases remain visible as non-READY",
+      "All results preserve action=no_order and human confirmation boundaries"
+    ]
+  },
+  "companies": [
+    {
+      "symbol": "600519",
+      "name": "贵州茅台",
+      "exchange": "SSE",
+      "industry": "食品饮料-白酒",
+      "profile_id": "quality_compounder",
+      "primary_model": "residual_income_or_equity_value",
+      "selection_bucket": "ORIGINAL_CASE",
+      "initial_research_depth": "FROZEN_PLATFORM_CASE",
+      "selection_reason": "C0-C3 retained quality-compounder case; current production valuation remains not available.",
+      "evidence_basis": "Existing versioned annual/interim filings and frozen platform artifacts; not a new production claim.",
+      "known_blockers": [
+        "G3 formal valuation and human approval not complete",
+        "Current corporate-action and equity-denominator evidence must be refreshed"
+      ]
+    },
+    {
+      "symbol": "000333",
+      "name": "美的集团",
+      "exchange": "SZSE",
+      "industry": "家用电器",
+      "profile_id": "mature_manufacturing",
+      "primary_model": "fcff",
+      "selection_bucket": "ORIGINAL_CASE",
+      "initial_research_depth": "FROZEN_PLATFORM_CASE",
+      "selection_reason": "Retained mature-manufacturing FCFF case with unresolved input and share-denominator gaps.",
+      "evidence_basis": "Existing research case and disclosure scope records; production valuation remains not ready.",
+      "known_blockers": [
+        "Current ordinary-share denominator excluding treasury shares",
+        "EBIT, cash tax, D&A, working capital, WACC and net debt inputs"
+      ]
+    },
+    {
+      "symbol": "601088",
+      "name": "中国神华",
+      "exchange": "SSE",
+      "industry": "煤炭",
+      "profile_id": "cyclical_cash_return",
+      "primary_model": "cyclical_normalized",
+      "selection_bucket": "ORIGINAL_CASE",
+      "initial_research_depth": "FROZEN_PLATFORM_CASE",
+      "selection_reason": "Retained commodity-cycle normalized-earnings case; production valuation paused by design.",
+      "evidence_basis": "Existing cycle-research scope and frozen artifacts; external price/cost reconciliation remains open.",
+      "known_blockers": [
+        "Normalized profit, maintenance capex, unit cost and resource life",
+        "Independent coal-price and cost/transport reconciliation"
+      ]
+    },
+    {
+      "symbol": "600887",
+      "name": "伊利股份",
+      "exchange": "SSE",
+      "industry": "食品饮料-乳制品",
+      "profile_id": "quality_compounder",
+      "primary_model": "residual_income_or_equity_value",
+      "selection_bucket": "PROFILE_REPLICATION",
+      "initial_research_depth": "DEEP_CANDIDATE",
+      "selection_reason": "Second quality-compounder case with a different durable-brand and distribution economics.",
+      "evidence_basis": "Existing local company-research and screening records; valuation inputs are not yet production-verified.",
+      "known_blockers": [
+        "Common-share count, distributable cash and reinvestment evidence",
+        "Bounded scenario assumptions for franchise duration and margin"
+      ]
+    },
+    {
+      "symbol": "000651",
+      "name": "格力电器",
+      "exchange": "SZSE",
+      "industry": "家用电器",
+      "profile_id": "mature_manufacturing",
+      "primary_model": "fcff",
+      "selection_bucket": "PROFILE_REPLICATION",
+      "initial_research_depth": "DEEP_CANDIDATE",
+      "selection_reason": "Second mature-manufacturing case, selected for model replication rather than price appeal.",
+      "evidence_basis": "Existing screening records only; FCFF inputs require official-statement extraction and verification.",
+      "known_blockers": [
+        "Verified FCFF input package",
+        "Channel, inventory and maintenance-capex assumptions"
+      ]
+    },
+    {
+      "symbol": "600188",
+      "name": "兖矿能源",
+      "exchange": "SSE",
+      "industry": "煤炭",
+      "profile_id": "cyclical_cash_return",
+      "primary_model": "cyclical_normalized",
+      "selection_bucket": "PROFILE_REPLICATION",
+      "initial_research_depth": "DEEP_CANDIDATE",
+      "selection_reason": "Second commodity-cycle cash-return case; not selected because current yield or price is attractive.",
+      "evidence_basis": "Existing screening records only; normalized cycle inputs need source and PIT verification.",
+      "known_blockers": [
+        "Normalized earnings and cost curve",
+        "Resource life, maintenance capex and consolidation scope"
+      ]
+    },
+    {
+      "symbol": "000858",
+      "name": "五粮液",
+      "exchange": "SZSE",
+      "industry": "食品饮料-白酒",
+      "profile_id": "quality_compounder",
+      "primary_model": "residual_income_or_equity_value",
+      "selection_bucket": "PROFILE_DIVERSIFICATION",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "Additional quality-compounder candidate for a same-industry contrast with Moutai.",
+      "evidence_basis": "Existing screening records only; no new filing collection is claimed in W1.",
+      "known_blockers": [
+        "Full official financial and capital-allocation package"
+      ]
+    },
+    {
+      "symbol": "600690",
+      "name": "海尔智家",
+      "exchange": "SSE",
+      "industry": "家用电器",
+      "profile_id": "mature_manufacturing",
+      "primary_model": "fcff",
+      "selection_bucket": "PROFILE_DIVERSIFICATION",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "Global manufacturing and governance contrast to the domestic-heavy first cases.",
+      "evidence_basis": "Existing screening records only; cross-border consolidation scope remains open.",
+      "known_blockers": [
+        "A/H and subsidiary consolidation scope",
+        "Working-capital and reinvestment input package"
+      ]
+    },
+    {
+      "symbol": "600741",
+      "name": "华域汽车",
+      "exchange": "SSE",
+      "industry": "汽车零部件",
+      "profile_id": "mature_manufacturing",
+      "primary_model": "fcff",
+      "selection_bucket": "PROFILE_DIVERSIFICATION",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "Supplier exposure to auto-cycle and customer concentration tests the manufacturing profile boundary.",
+      "evidence_basis": "Existing screening records only; official annual facts are not yet model-ready.",
+      "known_blockers": [
+        "Customer/cycle sensitivity",
+        "FCFF facts and cycle-adjusted assumptions"
+      ]
+    },
+    {
+      "symbol": "600028",
+      "name": "中国石化",
+      "exchange": "SSE",
+      "industry": "石油石化",
+      "profile_id": "cyclical_cash_return",
+      "primary_model": "cyclical_normalized",
+      "selection_bucket": "PROFILE_DIVERSIFICATION",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "Integrated energy cycle case with processing margins distinct from coal normalization.",
+      "evidence_basis": "Existing screening records only; refining/chemical normalized inputs are unresolved.",
+      "known_blockers": [
+        "Refining and chemical normalized margin",
+        "Capital intensity and maintenance-capex split"
+      ]
+    },
+    {
+      "symbol": "601857",
+      "name": "中国石油",
+      "exchange": "SSE",
+      "industry": "石油石化",
+      "profile_id": "cyclical_cash_return",
+      "primary_model": "cyclical_normalized",
+      "selection_bucket": "PROFILE_DIVERSIFICATION",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "Upstream resource-life and price-cycle counterexample to coal normalization.",
+      "evidence_basis": "Existing screening records only; A/H equity and resource-life assumptions remain open.",
+      "known_blockers": [
+        "A/H ordinary-share denominator",
+        "Resource life, decline and normalized price"
+      ]
+    },
+    {
+      "symbol": "600585",
+      "name": "海螺水泥",
+      "exchange": "SSE",
+      "industry": "建筑材料",
+      "profile_id": "cyclical_cash_return",
+      "primary_model": "cyclical_normalized",
+      "selection_bucket": "PROFILE_DIVERSIFICATION",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "Domestic-demand-cycle cash-return case with a different supply/demand mechanism.",
+      "evidence_basis": "Existing screening records only; normalized demand/price evidence is not complete.",
+      "known_blockers": [
+        "Normalized cement demand and price",
+        "Maintenance capex and balance-sheet cash"
+      ]
+    },
+    {
+      "symbol": "600036",
+      "name": "招商银行",
+      "exchange": "SSE",
+      "industry": "银行",
+      "profile_id": "unsupported_profile",
+      "primary_model": null,
+      "selection_bucket": "UNSUPPORTED_MODEL",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "Bank accounting and capital regulation cannot use the current three industrial valuation models.",
+      "evidence_basis": "Existing screening records only; no new financial-sector model is authorized in M1.",
+      "known_blockers": [
+        "No registered bank valuation model",
+        "Capital adequacy and credit-cycle evidence outside current contracts"
+      ]
+    },
+    {
+      "symbol": "601318",
+      "name": "中国平安",
+      "exchange": "SSE",
+      "industry": "非银金融-保险",
+      "profile_id": "unsupported_profile",
+      "primary_model": null,
+      "selection_bucket": "UNSUPPORTED_MODEL",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "Insurance embedded value and accounting are deliberately unsupported by the current models.",
+      "evidence_basis": "Existing screening records only; no insurance model is registered or authorized.",
+      "known_blockers": [
+        "No registered insurance valuation model",
+        "Embedded-value and investment-asset scope"
+      ]
+    },
+    {
+      "symbol": "000001",
+      "name": "平安银行",
+      "exchange": "SZSE",
+      "industry": "银行",
+      "profile_id": "unsupported_profile",
+      "primary_model": null,
+      "selection_bucket": "UNSUPPORTED_MODEL",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "Second bank case retained as a visible unsupported boundary, not converted into a fake FCFF result.",
+      "evidence_basis": "Existing screening records only; financial-sector verification remains a gap.",
+      "known_blockers": [
+        "No registered bank valuation model",
+        "Asset-quality and capital-scope evidence"
+      ]
+    },
+    {
+      "symbol": "601390",
+      "name": "中国中铁",
+      "exchange": "SSE",
+      "industry": "建筑装饰-基础设施",
+      "profile_id": "unsupported_profile",
+      "primary_model": null,
+      "selection_bucket": "RISK_COUNTEREXAMPLE",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "High leverage, thin contracting margins and lumpy project cash flows test the manufacturing FCFF boundary.",
+      "evidence_basis": "Existing screening records only; construction working-capital and project-risk evidence is incomplete.",
+      "known_blockers": [
+        "Project cash-flow and working-capital scope",
+        "Leverage and off-balance-sheet exposure"
+      ]
+    },
+    {
+      "symbol": "002928",
+      "name": "华夏航空",
+      "exchange": "SZSE",
+      "industry": "交通运输-航空",
+      "profile_id": "unsupported_profile",
+      "primary_model": null,
+      "selection_bucket": "DATA_INSUFFICIENT",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "Airline fixed costs, fuel price and demand volatility require evidence the current contracts do not cover.",
+      "evidence_basis": "Existing screening records only; official multi-year model inputs are not collected or verified.",
+      "known_blockers": [
+        "No applicable registered model",
+        "Fuel, capacity, fixed-cost and balance-sheet evidence insufficient"
+      ]
+    },
+    {
+      "symbol": "300750",
+      "name": "宁德时代",
+      "exchange": "SZSE",
+      "industry": "电力设备-电池",
+      "profile_id": "unsupported_profile",
+      "primary_model": null,
+      "selection_bucket": "RISK_COUNTEREXAMPLE",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "Technology transition, customer concentration and reinvestment risk are outside the three mature-industry profiles.",
+      "evidence_basis": "Existing local company-research record; no registered growth-technology valuation model.",
+      "known_blockers": [
+        "No registered growth-technology model",
+        "Technology transition, capacity and reinvestment assumptions"
+      ]
+    },
+    {
+      "symbol": "300888",
+      "name": "稳健医疗",
+      "exchange": "SZSE",
+      "industry": "医药生物-医疗用品",
+      "profile_id": "quality_compounder",
+      "primary_model": "residual_income_or_equity_value",
+      "selection_bucket": "DATA_INSUFFICIENT",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "Smaller durable-consumer/medical case retained to expose incomplete input coverage without upgrading it to READY.",
+      "evidence_basis": "Existing screening records only; residual-income inputs and capital-allocation evidence are incomplete.",
+      "known_blockers": [
+        "Verified equity, return and reinvestment inputs",
+        "Moat and franchise-duration evidence"
+      ]
+    },
+    {
+      "symbol": "600941",
+      "name": "中国移动",
+      "exchange": "SSE",
+      "industry": "通信运营",
+      "profile_id": "unsupported_profile",
+      "primary_model": null,
+      "selection_bucket": "UNSUPPORTED_MODEL",
+      "initial_research_depth": "GAP_TRIAGE",
+      "selection_reason": "Regulated telecom cash flow resembles a quality profile but needs a separate regulated/ROCE policy.",
+      "evidence_basis": "Existing screening records only; regulated return and reinvestment policy evidence is incomplete.",
+      "known_blockers": [
+        "No registered regulated-telecom model",
+        "Regulatory return, spectrum investment and distribution policy"
+      ]
+    }
+  ]
+}

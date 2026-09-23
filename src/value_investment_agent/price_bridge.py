@@ -35,11 +35,16 @@ def _merge_refs(*groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for refs in groups:
         for ref in refs:
             ref_id = ref.get("id")
-            if ref_id in merged and merged[ref_id] != ref:
-                raise ValueError(
-                    f"Evidence references with the same id must match: {ref_id}"
-                )
-            merged[ref_id] = dict(ref)
+            existing = merged.get(ref_id)
+            if existing is None:
+                merged[ref_id] = dict(ref)
+                continue
+            for key, value in ref.items():
+                if key in existing and existing[key] != value:
+                    raise ValueError(
+                        f"Evidence references with the same id must match: {ref_id}"
+                    )
+                existing[key] = value
     return list(merged.values())
 
 

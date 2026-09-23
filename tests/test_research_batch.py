@@ -23,12 +23,23 @@ from value_investment_agent.research_batch import (
     BATCH_PARTIAL,
     BATCH_UNCHANGED,
     BATCH_UNSUPPORTED,
+    build_batch_spec_from_descriptor_payloads,
     ResearchBatchCompanySpec,
     ResearchBatchResult,
     ResearchBatchService,
     ResearchBatchSpec,
 )
 from value_investment_agent.research_case import ResearchCase
+from value_investment_agent.research_input import (
+    ResearchInputDescriptor,
+    descriptor_from_payload,
+    finalize_input_descriptor,
+)
+from value_investment_agent.research_run_contract import (
+    ResearchDependencyFingerprint,
+    ResearchPitFrame,
+    ResearchSourceDescriptor,
+)
 from value_investment_agent.valuation_models.cyclical import CyclicalFacts
 from value_investment_agent.valuation_models.fcff import FinancialFacts
 from value_investment_agent.valuation_models.residual_income import (
@@ -114,6 +125,63 @@ def quality_spec(*, fingerprint: str | None = None) -> ResearchRunSpec:
         facts=residual_facts(),
         available_at=NOW,
     )
+
+
+def descriptor_payload() -> dict:
+    descriptor = ResearchInputDescriptor(
+        schema_version="m1-fixed-sample-input-v1",
+        descriptor_version="batch-descriptor-fixture-v1",
+        symbol="600519",
+        name="贵州茅台",
+        profile_id="quality_compounder",
+        requested_model=None,
+        run_id="descriptor-input-600519",
+        point_in_time=ResearchPitFrame(
+            report_period=AS_OF,
+            research_as_of=AS_OF,
+            valuation_date=AS_OF,
+            available_at=NOW,
+            computed_at=NOW,
+        ),
+        dependencies=ResearchDependencyFingerprint(
+            rule_version="research-batch-v1",
+            profile_id="quality_compounder",
+            model_id="residual_income_or_equity_value",
+            model_version="residual-income-equity-shared-v1",
+            parser_version="parser-v1",
+            scan_watermark="scan-v1",
+        ),
+        sources=(
+            ResearchSourceDescriptor(
+                id="facts-source",
+                kind="filing",
+                location="tests/fixtures/facts.json",
+                sha256="d" * 64,
+                published_at=datetime(2025, 12, 31, tzinfo=timezone.utc),
+                retrieved_at=datetime(2025, 12, 31, tzinfo=timezone.utc),
+                parser_version="parser-v1",
+            ),
+        ),
+        research_case=case("600519"),
+        facts=residual_facts(),
+        assumptions=None,
+        assumption_bindings=(),
+        distribution_result=None,
+        quote=None,
+        model_validity_input=None,
+        valuation_approval=None,
+    )
+    return finalize_input_descriptor(descriptor).as_policy()
+
+
+def descriptor_payload_with_dependencies(**changes: str) -> dict:
+    payload = descriptor_payload()
+    payload["dependencies"] = {
+        **payload["dependencies"],
+        **changes,
+    }
+    payload.pop("input_sha256", None)
+    return descriptor_from_payload(payload).as_policy()
 
 
 def fcff_gap_spec(*, fingerprint: str | None = None) -> ResearchRunSpec:
@@ -335,6 +403,10 @@ def test_batch_receipt_round_trips_and_remains_no_order():
 
     assert restored.as_policy() == result.as_policy()
     assert restored.as_policy()["action"] == "no_order"
+    assert (
+        restored.results_by_symbol["600519"].dependency_sha256
+        == result.results_by_symbol["600519"].dependency_sha256
+    )
     assert restored.results_by_symbol["600519"].status == BATCH_COMPLETED_WITH_BLOCKERS
 
 
@@ -346,3 +418,187 @@ def test_incremental_batch_requires_input_fingerprints():
             previous_run_id="previous",
             companies=(ResearchBatchCompanySpec(quality_spec()),),
         )
+
+
+def test_rule_version_change_reruns_company_with_identical_input_hash():
+    repository = InMemoryResearchArtifactRepository()
+    service = ResearchBatchService(repository, now_utc=lambda: NOW)
+    first = service.run(
+        ResearchBatchSpec(
+            run_id="batch-rule-v1",
+            rule_version="research-batch-v1",
+            companies=(ResearchBatchCompanySpec(quality_spec(), "9" * 64),),
+        )
+    )
+    before = len(
+        repository.list_versions(
+            SCOPE_SECURITY, "600519", ARTIFACT_VALUATION_RESULT
+        )
+    )
+
+    second = service.run(
+        ResearchBatchSpec(
+            run_id="batch-rule-v2",
+            rule_version="research-batch-v2",
+            previous_run_id="batch-rule-v1",
+            companies=(ResearchBatchCompanySpec(quality_spec(), "9" * 64),),
+        )
+    )
+
+    assert first.results_by_symbol["600519"].status == BATCH_COMPLETED_WITH_BLOCKERS
+    assert second.results_by_symbol["600519"].status == BATCH_COMPLETED_WITH_BLOCKERS
+    assert second.results_by_symbol["600519"].unchanged_from_run_id is None
+    assert second.results_by_symbol["600519"].run_id == "batch-rule-v2:600519"
+    assert len(
+        repository.list_versions(
+            SCOPE_SECURITY, "600519", ARTIFACT_VALUATION_RESULT
+        )
+    ) == before
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("model_version", "model-v2"),
+        ("parser_version", "parser-v2"),
+        ("scan_watermark", "scan-v2"),
+        ("requested_model", "residual_income_or_equity_value"),
+        ("profile_id", "mature_manufacturing"),
+    ],
+)
+def test_dependency_version_change_reruns_identical_input_hash(field, value):
+    repository = InMemoryResearchArtifactRepository()
+    service = ResearchBatchService(repository, now_utc=lambda: NOW)
+    first = service.run(
+        ResearchBatchSpec(
+            run_id="batch-dependency-v1",
+            rule_version="research-batch-v1",
+            companies=(ResearchBatchCompanySpec(quality_spec(), "8" * 64),),
+        )
+    )
+
+    changed_spec = replace(quality_spec(), **{field: value})
+    second = service.run(
+        ResearchBatchSpec(
+            run_id="batch-dependency-v2",
+            rule_version="research-batch-v1",
+            previous_run_id="batch-dependency-v1",
+            companies=(
+                ResearchBatchCompanySpec(changed_spec, "8" * 64),
+            ),
+        )
+    )
+
+    result = second.results_by_symbol["600519"]
+    assert first.results_by_symbol["600519"].status != BATCH_UNCHANGED
+    assert result.status != BATCH_UNCHANGED
+    assert result.unchanged_from_run_id is None
+    assert result.run_id == "batch-dependency-v2:600519"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("model_version", "model-v2"),
+        ("parser_version", "parser-v2"),
+        ("scan_watermark", "scan-v2"),
+    ],
+)
+def test_descriptor_dependency_change_changes_hash_and_reruns(field, value):
+    repository = InMemoryResearchArtifactRepository()
+    service = ResearchBatchService(repository, now_utc=lambda: NOW)
+    first_payload = descriptor_payload()
+    changed_payload = descriptor_payload_with_dependencies(**{field: value})
+    assert changed_payload["input_sha256"] != first_payload["input_sha256"]
+
+    first = service.run(
+        build_batch_spec_from_descriptor_payloads(
+            (first_payload,),
+            run_id="batch-descriptor-dependency-v1",
+            rule_version="research-batch-v1",
+        )
+    )
+    second_spec = build_batch_spec_from_descriptor_payloads(
+        (changed_payload,),
+        run_id="batch-descriptor-dependency-v2",
+        rule_version="research-batch-v1",
+    )
+    second = service.run(
+        replace(
+            second_spec,
+            previous_run_id="batch-descriptor-dependency-v1",
+        )
+    )
+
+    result = second.results_by_symbol["600519"]
+    assert result.unchanged_from_run_id is None
+    assert result.run_id == "batch-descriptor-dependency-v2:600519"
+    assert first.results_by_symbol["600519"].input_sha256 != result.input_sha256
+
+
+def test_future_availability_input_is_isolated_without_blocking_admitted_company():
+    good = descriptor_payload()
+    future = dict(good)
+    future["point_in_time"] = dict(future["point_in_time"])
+    future["point_in_time"]["available_at"] = datetime(
+        2026, 9, 23, 12, 0, tzinfo=timezone.utc
+    ).isoformat()
+    future.pop("input_sha256", None)
+
+    spec = build_batch_spec_from_descriptor_payloads(
+        (future, good),
+        run_id="batch-future-availability",
+        rule_version="research-batch-v1",
+    )
+    assert len(spec.companies) == 1
+    assert len(spec.input_failures) == 1
+    assert "availability" in spec.input_failures[0].error
+
+    result = ResearchBatchService(
+        InMemoryResearchArtifactRepository(),
+        now_utc=lambda: NOW,
+    ).run(spec)
+
+    assert result.status == BATCH_PARTIAL
+    assert result.results_by_symbol["600519"].status == BATCH_COMPLETED_WITH_BLOCKERS
+    assert len(result.input_failures) == 1
+    assert result.results_by_symbol["600519"].input_sha256 == good["input_sha256"]
+
+
+def test_descriptor_batch_isolates_bad_and_unknown_inputs():
+    good = descriptor_payload()
+    tampered = dict(good)
+    tampered["facts"] = dict(good["facts"])
+    tampered["facts"]["operating_inputs"] = dict(
+        good["facts"]["operating_inputs"]
+    )
+    tampered["facts"]["operating_inputs"]["start_book_equity"] = "999"
+    unknown = dict(good)
+    unknown["profile_id"] = "unknown_economic_profile"
+
+    spec = build_batch_spec_from_descriptor_payloads(
+        (good, tampered, unknown),
+        run_id="batch-descriptor-isolation",
+        rule_version="research-batch-v1",
+    )
+    assert len(spec.companies) == 1
+    assert len(spec.input_failures) == 2
+
+    repository = InMemoryResearchArtifactRepository()
+    result = ResearchBatchService(
+        repository,
+        now_utc=lambda: NOW,
+    ).run(spec)
+
+    assert result.status == BATCH_PARTIAL
+    assert result.results_by_symbol["600519"].status == BATCH_COMPLETED_WITH_BLOCKERS
+    assert len(result.input_failures) == 2
+    assert result.input_failures[0].symbol == "600519"
+    assert result.as_policy()["action"] == "no_order"
+    stored = repository.load_latest(
+        SCOPE_BATCH,
+        "batch-descriptor-isolation",
+        ARTIFACT_BATCH_RUN_RESULT,
+    )
+    restored = ResearchBatchResult.from_policy(stored.envelope.payload_object())
+    assert restored.input_failures == result.input_failures

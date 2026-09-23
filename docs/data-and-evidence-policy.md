@@ -56,3 +56,11 @@ openpyxl 保存成功不证明公式缓存已重算；本地 runtime 路径不�
 恢复到隔离数据库，校验源/目标身份、按稳定主键规范化的表行数/Hash、原件/配置/Excel，并记录真实 RPO/RTO。目标 RPO <= 24 小时、RTO <= 4 小时是待测目标，不是当前通过声明。
 重试有预算，既有调度和锁避免重复 worker；子任务失败不得被退出 0 掩盖。此文档不授权部署、停服务、清理服务器或创建新任务。
 
+## 长期研究与决策证据链
+
+[LONG-TERM-GOAL.md](../LONG-TERM-GOAL.md) 的分期不能降低本政策。M1 先补完整实际输入包：每个结果绑定用于计算的 Facts/Assumptions、Profile/Model/Parser/Rule 版本、研究信息截止日、原件引用和Hash。保存假设对象但计算另一套scenario_inputs不算完成追溯。
+区分报告期、估值基准日、研究截止日、source available_at、系统生成日；最终结果的可用时间不得早于必要输入。今天计算的历史replay保存实际computed_at与历史cutoff，不能伪装成历史当天已有的研究结果。
+Facts、Assumptions、模型、规则、解析器、Profile、报价或事件扫描水位变化时，增量结果必须重新校验依赖；调用方传同一input hash不允许绕过这一要求。
+Future DecisionEvidenceBundle 还必须绑定 Distribution、Price、ModelValidity、Portfolio Snapshot、Entry和Decision Rule。原始买入理由只在人明确确认后封存，更正追加；系统建议、用户决定、实际成交和模拟行为分开记录。
+个人IPS/资产/持仓/Journal仅存私有受控环境；公开CI只用脱敏或合成fixture。合成fixture、真实封存replay、最新生产数据验证分别出收据，不能相互冒名。
+Event同时保存effective/available/detected时间，更正保留原始版本；源失联不等于没有事件。用户通知、生产迁移和调度需在对应阶段另行确认，不能由路线图自动授权。

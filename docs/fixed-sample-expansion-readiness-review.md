@@ -2,6 +2,8 @@
 
 更新：2026-09-22。范围：C3 W12。
 
+本页保留C3冻结时的审查结果。后续长期规划已将下方独立C4建议吸收进M1研究工作台，实际执行范围见 [current-stage-goal.md](current-stage-goal.md)；不得据本历史页阻止已获授权且通过输入安全门的M1样本扩展。
+
 ## Final Verdict
 
 ```text

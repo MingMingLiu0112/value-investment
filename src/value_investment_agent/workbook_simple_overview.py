@@ -15,7 +15,7 @@ from .current_research_status import current_research_status_from_payloads
 from .gap_classification import classify_blockers
 from .price_attractiveness import PRICE_ATTRACTIVENESS_DISPLAY
 from .research_gate import CONCLUSION_RESEARCH_READY
-from .workbook_frontdoor import HOME, PRIMARY, VERSION, _rows, _band, _link, repair_internal_links
+from .workbook_frontdoor import HOME, PRIMARY, VERSION, _rows, _band, _link, repair_internal_links, primary_sheet_names
 
 OVERVIEW = '00_公司总览'
 PENDING = '00_待完成公司'
@@ -1314,7 +1314,7 @@ def apply_simple_overview(wb, *, root=None):
     _pending(wb, pending)
     _home(wb, done, pending, metadata)
     _guide(wb, refs, metadata)
-    visible = [name for name in PRIMARY if name in wb]
+    visible = primary_sheet_names(wb)
     for ws in wb:
         ws.sheet_state = 'visible' if ws.title in visible else 'hidden'
         ws.sheet_view.tabSelected = False

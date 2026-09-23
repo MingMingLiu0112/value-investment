@@ -27,3 +27,7 @@ Thumbs.db
 # cloud-generated duplicates of versioned deployment definitions.
 deploy/server/*-副本*.service
 deploy/server/*-副本*.timer
+
+# Local-only portable PostgreSQL environment
+.m1-postgres-venv/
+.m1-postgres-binary*/

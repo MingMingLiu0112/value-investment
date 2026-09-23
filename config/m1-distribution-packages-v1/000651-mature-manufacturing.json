@@ -1,0 +1,275 @@
+{
+  "schema_version": "m1-distribution-package-v1",
+  "package_version": "20260923.2",
+  "run_id": "000651-m1-dividend-20260923",
+  "symbol": "000651",
+  "name": "格力电器",
+  "profile_id": "mature_manufacturing",
+  "research_as_of": "2026-09-22",
+  "action": "no_order",
+  "sources": [
+    {
+      "id": "gree_fy2025_annual",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-valuation-filings-20260923/000651/2025-12-31-annual-9afdfdd459e8bca7be30fdcc32e333e9759b0b44737e8464b2cb64a8978022e3.pdf",
+      "sha256": "7cc972f2d199e2ec3797cc5da479e8268afa59b77875770de3bcd3648242fb8c",
+      "published_at": "2026-04-28T16:00:00+00:00",
+      "retrieved_at": "2026-09-23T00:52:00+00:00",
+      "parser_version": "pdfium-m1-20260923"
+    },
+    {
+      "id": "gree_2026h1",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-valuation-filings-20260923/000651/2026-06-30-interim-1eecac2793533cffcfe4bef5f7ef434aef9b5661a8015cc2880cdedcebb0cf4a.pdf",
+      "sha256": "50da2e03fddbe9dd424d8fe7881f47fb34efa5d38c96aa9449c12e445c3b2dec",
+      "published_at": "2026-08-27T16:00:00+00:00",
+      "retrieved_at": "2026-09-23T00:52:00+00:00",
+      "parser_version": "pdfium-m1-20260923"
+    },
+    {
+      "id": "gree_fy2024_final_implementation",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-dividend-lifecycles/20260923T055500Z/000651/gree_fy2024_final_implementation.pdf",
+      "sha256": "8d4b488560f9d3ec81c9349757cda9d9bdee4cdbbecb97911761e2f6a93b4b64",
+      "published_at": "2025-08-21T16:00:00+00:00",
+      "retrieved_at": "2026-09-23T05:46:39.696910+00:00",
+      "parser_version": "pdfium-m1-dividend-lifecycle-v1"
+    },
+    {
+      "id": "gree_fy2025_interim_implementation",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-dividend-lifecycles/20260923T055500Z/000651/gree_fy2025_interim_implementation.pdf",
+      "sha256": "89ab10370d6601c698426eb6a37dba664687ca03ee59a46208e104068d62d3dd",
+      "published_at": "2026-01-15T16:00:00+00:00",
+      "retrieved_at": "2026-09-23T05:46:39.696910+00:00",
+      "parser_version": "pdfium-m1-dividend-lifecycle-v1"
+    },
+    {
+      "id": "gree_quote_20260922",
+      "kind": "quote_session",
+      "location": "runtime/m1-historical-quote-crosscheck/20260923T041647491012Z/manifest.json",
+      "sha256": "390886a093daf039e3588864ede6dfa5dbe1bd7db2665c0fbd8a2699b8c9abc3",
+      "retrieved_at": "2026-09-23T04:16:47.491498+00:00",
+      "parser_version": "m1-dual-source-historical-close-v1"
+    }
+  ],
+  "dividend_result": {
+    "symbol": "000651",
+    "profile_id": "mature_manufacturing",
+    "history": {
+      "symbol": "000651",
+      "records": [
+        {
+          "symbol": "000651",
+          "fiscal_period": "FY2024-final",
+          "dividend_type": "ordinary",
+          "status": "paid",
+          "dividend_per_share": "2.00",
+          "currency": "CNY",
+          "announcement_date": "2025-04-25",
+          "approval_date": "2025-06-30",
+          "ex_date": "2025-08-29",
+          "payment_date": "2025-08-29",
+          "known_at": "2026-09-22",
+          "share_basis": "ordinary-share-000651",
+          "evidence_refs": [
+            {"id": "gree_fy2025_annual"},
+            {"id": "gree_fy2024_final_implementation"}
+          ],
+          "blockers": []
+        },
+        {
+          "symbol": "000651",
+          "fiscal_period": "FY2025-interim",
+          "dividend_type": "ordinary",
+          "status": "paid",
+          "dividend_per_share": "1.00",
+          "currency": "CNY",
+          "announcement_date": "2025-10-30",
+          "approval_date": "2025-11-24",
+          "ex_date": "2026-01-23",
+          "payment_date": "2026-01-23",
+          "known_at": "2026-09-22",
+          "share_basis": "ordinary-share-000651",
+          "evidence_refs": [
+            {"id": "gree_fy2025_annual"},
+            {"id": "gree_fy2025_interim_implementation"}
+          ],
+          "blockers": []
+        },
+        {
+          "symbol": "000651",
+          "fiscal_period": "FY2025-final",
+          "dividend_type": "ordinary",
+          "status": "proposed",
+          "dividend_per_share": "2.00",
+          "currency": "CNY",
+          "announcement_date": "2026-04-28",
+          "approval_date": null,
+          "ex_date": null,
+          "payment_date": null,
+          "known_at": "2026-09-22",
+          "share_basis": "ordinary-share-000651",
+          "evidence_refs": [{"id": "gree_fy2025_annual"}],
+          "blockers": ["FY2025 final proposal remains subject to shareholder approval"]
+        }
+      ],
+      "as_of": "2026-09-22",
+      "evidence_refs": [
+        {"id": "gree_fy2025_annual"},
+        {"id": "gree_fy2024_final_implementation"},
+        {"id": "gree_fy2025_interim_implementation"}
+      ],
+      "status": "PARTIAL",
+      "blockers": [
+        "history is limited to retained FY2024/FY2025 lifecycle facts"
+      ]
+    },
+    "capacity": {
+      "symbol": "000651",
+      "profile_id": "mature_manufacturing",
+      "as_of": "2026-09-22",
+      "earnings_basis": {
+        "fy2025_parent_profit_cny": "29003103411.66",
+        "fy2025_approved_cash_dividend_cny": "16755416223.00",
+        "fy2025_approved_payout_ratio": "0.5777"
+      },
+      "cash_flow_basis": {
+        "fy2025_operating_cash_flow_cny": "46383114754.02",
+        "h1_2026_operating_cash_flow_cny": "18809000000.00"
+      },
+      "maintenance_reinvestment": {
+        "fy2025_capex_paid_cny": "1717311068.10",
+        "fy2025_depreciation_amortization_cny": "5054584486.97"
+      },
+      "debt_constraints": {
+        "h1_2026_short_term_borrowings_cny": "79719240399.52",
+        "h1_2026_long_term_borrowings_cny": "2128656424.92"
+      },
+      "restricted_cash_or_upstream_constraints": {
+        "h1_2026_restricted_cash_cny": "13963044908.63"
+      },
+      "capital_allocation_context": {
+        "fy2025_final_proposal_per_share_cny": "2.00",
+        "fy2025_approved_interim_cash_dividend_cny": "5585138741.00",
+        "fy2025_approved_fy2024_final_cash_dividend_cny": "11170277482.00",
+        "cumulative_listing_cash_dividend_narrative": "issuer reports more than CNY 158.8 billion cumulative cash dividends since listing in the H1 2026 report",
+        "buyback_context": "2020-2026 disclosed buyback history includes approximately 617 million shares and about CNY 30 billion; a 2026 buyback plan is CNY 5-10 billion with at least 70% intended for cancellation",
+        "special_dividend_observation": "none identified in retained lifecycle evidence",
+        "fact_policy_forecast_separation": "paid/proposed ordinary dividends are facts; no forward payout forecast or normalized scenario is claimed",
+        "h1_2026_decision": "no interim cash dividend proposed"
+      },
+      "bear_capacity": null,
+      "base_capacity": null,
+      "bull_capacity": null,
+      "confidence": "低",
+      "evidence_refs": [{"id": "gree_fy2025_annual"}, {"id": "gree_2026h1"}],
+      "blockers": [
+        "treasury/finance company, restricted cash and legal-entity distributable cash are not separated",
+        "financial assets and interest-bearing debt make consolidated free cash flow an invalid direct dividend-capacity input",
+        "the H1 operating-cash-flow figure is rounded from issuer narrative and requires exact re-extraction"
+      ],
+      "status": "PARTIAL"
+    },
+    "sustainability": {
+      "symbol": "000651",
+      "profile_id": "mature_manufacturing",
+      "as_of": "2026-09-22",
+      "status": "LOW",
+      "coverage_context": "The retained statutory lifecycle shows FY2024 final ordinary cash dividend approved 2025-06-30 and implemented with 2025-08-29 ex/payment dates at CNY 2.00 per share; FY2025 interim was approved 2025-11-24 and implemented with 2026-01-23 ex/payment dates at CNY 1.00 per share; FY2025 final remains a CNY 2.00 ordinary proposal. No special dividend is identified and no forward payout forecast is claimed.",
+      "capital_requirements": "Industrial capex is low in the reported period, but treasury/finance-company assets and debt create a separate capital-use boundary that has not been bridged.",
+      "balance_sheet_pressure": "H1 2026 short-term borrowings are large, restricted cash is CNY 13.963 billion, and financial assets cannot be assumed to be book-value distributable cash.",
+      "cycle_risk": "Domestic appliance demand, price-band migration and overseas exposure directly affect attributable profit and cash flow.",
+      "growth_source": "Consumer-appliance mix and the industrial-products second curve are disclosed growth sources, but the finance-company and financial-asset layer obscures distributable cash.",
+      "breakers": [
+        "continued price-band migration and domestic volume decline",
+        "sustained overseas revenue decline or channel risk",
+        "further restricted cash, finance-company or debt constraints on the parent distribution channel"
+      ],
+      "confidence": "低",
+      "reasons": [
+        "The visible cash-return history is substantial, but it is tied to a mixed industrial/financial balance sheet.",
+        "Without a legal-entity bridge, the current dividend policy cannot be classified as independently sustainable."
+      ],
+      "blockers": [
+        "treasury/financial-company scope and restricted cash remain unresolved",
+        "parent legal-entity distributable cash has not been mapped"
+      ],
+      "evidence_refs": [
+        {"id": "gree_fy2025_annual"},
+        {"id": "gree_2026h1"},
+        {"id": "gree_fy2024_final_implementation"},
+        {"id": "gree_fy2025_interim_implementation"}
+      ]
+    },
+    "yield_snapshots": [
+      {
+        "symbol": "000651",
+        "basis_type": "trailing_paid",
+        "dividend_basis_period": "2025-09-22/2026-09-22",
+        "dividend_per_share": "3.00",
+        "dividend_known_at": "2026-01-23",
+        "quote_date": "2026-09-22",
+        "current_price": "38.18",
+        "currency": "CNY",
+        "share_basis": "ordinary-share-000651",
+        "dividend_yield": "0.07857517024620220010476689366",
+        "yield_type": "current",
+        "evidence_refs": [
+          {"id": "gree_fy2024_final_implementation"},
+          {"id": "gree_fy2025_interim_implementation"},
+          {"id": "gree_quote_20260922"}
+        ],
+        "status": "READY",
+        "blockers": []
+      },
+      {
+        "symbol": "000651",
+        "basis_type": "declared",
+        "dividend_basis_period": "FY2025-final-proposal",
+        "dividend_per_share": "2.00",
+        "dividend_known_at": "2026-04-28",
+        "quote_date": "2026-09-22",
+        "current_price": "38.18",
+        "currency": "CNY",
+        "share_basis": "ordinary-share-000651",
+        "dividend_yield": "0.05238344683080146673651126244",
+        "yield_type": "current",
+        "evidence_refs": [
+          {"id": "gree_fy2025_annual"},
+          {"id": "gree_quote_20260922"}
+        ],
+        "status": "READY",
+        "blockers": []
+      },
+      {
+        "symbol": "000651",
+        "basis_type": "normalized_scenario",
+        "dividend_basis_period": "through-cycle-normalized-not-assessed",
+        "dividend_per_share": null,
+        "dividend_known_at": null,
+        "quote_date": null,
+        "current_price": null,
+        "currency": "CNY",
+        "share_basis": "ordinary-share-000651",
+        "dividend_yield": null,
+        "yield_type": "normalized",
+        "evidence_refs": [],
+        "status": "NOT_READY",
+        "blockers": ["normalized dividend basis is not assessed"]
+      }
+    ],
+    "as_of": "2026-09-22",
+    "blockers": [
+      "normalized dividend basis is not assessed"
+    ],
+    "evidence_refs": [
+      {"id": "gree_fy2025_annual"},
+      {"id": "gree_2026h1"},
+      {"id": "gree_fy2024_final_implementation"},
+      {"id": "gree_fy2025_interim_implementation"},
+      {"id": "gree_quote_20260922"}
+    ],
+    "action": "no_order"
+  }
+}

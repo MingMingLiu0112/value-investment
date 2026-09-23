@@ -236,6 +236,28 @@ def test_missing_daily_run_does_not_display_initial_screen_price(tmp_path):
     assert wb['04_估值跟踪']['C4'].value is None
 
 
+def test_frontdoor_preserves_existing_staged_user_views(tmp_path):
+    from value_investment_agent.workbook_frontdoor import (
+        apply_frontdoor, primary_sheet_names, STAGE_FRONTEND,
+    )
+    path, payload = fixture(tmp_path)
+    output = tmp_path / 'staged.xlsx'
+    build_report(path, payload, output)
+    book = load_workbook(output)
+    for name in STAGE_FRONTEND:
+        sheet = book.create_sheet(name)
+        sheet['A1'] = 'Archived research; decision engine not connected'
+        sheet['A2'] = '=1+2'
+    before = {name: list(book[name].values) for name in STAGE_FRONTEND}
+    for _ in range(2):
+        apply_frontdoor(book)
+    assert book.active.title == STAGE_FRONTEND[0]
+    assert book.sheetnames[:6] == list(STAGE_FRONTEND)
+    assert [s.title for s in book if s.sheet_state == 'visible'] == primary_sheet_names(book)
+    assert before == {name: list(book[name].values) for name in STAGE_FRONTEND}
+    book.close()
+
+
 def test_historical_research_keeps_financial_evidence_without_reentering_pool(tmp_path):
     path, p = fixture(tmp_path)
     book = load_workbook(path)

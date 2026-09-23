@@ -1,0 +1,351 @@
+{
+  "schema_version": "m1-distribution-package-v1",
+  "package_version": "20260923.2",
+  "run_id": "600887-m1-dividend-20260923-lifecycle-v1",
+  "symbol": "600887",
+  "name": "伊利股份",
+  "profile_id": "quality_compounder",
+  "research_as_of": "2026-09-22",
+  "action": "no_order",
+  "sources": [
+    {
+      "id": "yili_fy2025_annual",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+      "published_at": "2026-04-30T00:00:00+08:00",
+      "retrieved_at": "2026-09-23T00:52:00+00:00",
+      "parser_version": "pdfium-m1-20260923"
+    },
+    {
+      "id": "yili_2026h1",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "retrieved_at": "2026-09-23T00:52:00+00:00",
+      "parser_version": "pdfium-m1-20260923"
+    },
+    {
+      "id": "yili_fy2024_final_proposal",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2024_final_proposal.pdf",
+      "sha256": "6eea01f4354edc3e0a4b8b09518cb3fcf851227643a90da2bfa66859262a3d57",
+      "published_at": "2025-04-30T16:00:00+08:00",
+      "retrieved_at": "2026-09-23T05:23:12.881652+00:00",
+      "parser_version": "pdfium-m1-dividend-lifecycle-v1"
+    },
+    {
+      "id": "yili_fy2024_final_agm_resolution",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2024_final_agm_resolution.pdf",
+      "sha256": "b8fa0f976e2dc153301fd318b451e12013af45bc3011dd0c211631560be5bed6",
+      "published_at": "2025-05-21T16:00:00+08:00",
+      "retrieved_at": "2026-09-23T05:23:12.881652+00:00",
+      "parser_version": "pdfium-m1-dividend-lifecycle-v1"
+    },
+    {
+      "id": "yili_fy2024_final_total_adjustment",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2024_final_total_adjustment.pdf",
+      "sha256": "f4cd79b575790aa3f0be3cc069ad2339b3e7d05fe0cdd8be5e993d413dcb6c6a",
+      "published_at": "2025-05-22T16:00:00+08:00",
+      "retrieved_at": "2026-09-23T05:23:12.881652+00:00",
+      "parser_version": "pdfium-m1-dividend-lifecycle-v1"
+    },
+    {
+      "id": "yili_fy2024_final_implementation",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2024_final_implementation.pdf",
+      "sha256": "94999a4f3f922ab372895488f872b8be864e1f3d5f8c9c78e34d3c3dc6ae0b3f",
+      "published_at": "2025-05-30T16:00:00+08:00",
+      "retrieved_at": "2026-09-23T05:23:12.881652+00:00",
+      "parser_version": "pdfium-m1-dividend-lifecycle-v1"
+    },
+    {
+      "id": "yili_fy2025_interim_proposal",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2025_interim_proposal.pdf",
+      "sha256": "0cfd028967a72c6298079a3fdd5135fb0a1abae1fc8f3a681b3f541684675475",
+      "published_at": "2025-10-31T16:00:00+08:00",
+      "retrieved_at": "2026-09-23T05:23:12.881652+00:00",
+      "parser_version": "pdfium-m1-dividend-lifecycle-v1"
+    },
+    {
+      "id": "yili_shareholder_return_plan_2025_2027",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_shareholder_return_plan_2025_2027.pdf",
+      "sha256": "db504d2c8cba3e330ef73667217c1bb43b2946275fc60e9217ef8f850331f837",
+      "published_at": "2025-11-18T16:00:00+08:00",
+      "retrieved_at": "2026-09-23T05:23:12.881652+00:00",
+      "parser_version": "pdfium-m1-dividend-lifecycle-v1"
+    },
+    {
+      "id": "yili_fy2025_interim_egm_resolution",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2025_interim_egm_resolution.pdf",
+      "sha256": "31b7eb2bbc8e35c0fbee1abd27fe68731eeb0f76bc2a75f91af486b032d6b260",
+      "published_at": "2025-11-29T16:00:00+08:00",
+      "retrieved_at": "2026-09-23T05:23:12.881652+00:00",
+      "parser_version": "pdfium-m1-dividend-lifecycle-v1"
+    },
+    {
+      "id": "yili_fy2025_interim_implementation",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2025_interim_implementation.pdf",
+      "sha256": "cb0f2870dd2ed48799ec5c3403c402dc09129270b030b533818ba7b9662f0322",
+      "published_at": "2025-12-09T16:00:00+08:00",
+      "retrieved_at": "2026-09-23T05:23:12.881652+00:00",
+      "parser_version": "pdfium-m1-dividend-lifecycle-v1"
+    },
+    {
+      "id": "yili_quote_20260922",
+      "kind": "quote_session",
+      "location": "runtime/quote-sessions/20260923T005634211464Z/bundle.json",
+      "sha256": "5e49dc79bbc0132b040175e993e2f5dd5a3813c7167ade7aa2afc5c51cea19c0",
+      "retrieved_at": "2026-09-23T00:56:34.211437+00:00",
+      "parser_version": "quote-session-collection-v1"
+    }
+  ],
+  "dividend_result": {
+    "symbol": "600887",
+    "profile_id": "quality_compounder",
+    "history": {
+      "symbol": "600887",
+      "records": [
+        {
+          "symbol": "600887",
+          "fiscal_period": "FY2024-final",
+          "dividend_type": "ordinary",
+          "status": "paid",
+          "dividend_per_share": "1.22",
+          "currency": "CNY",
+          "announcement_date": "2025-04-30",
+          "approval_date": "2025-05-20",
+          "ex_date": "2025-06-06",
+          "payment_date": "2025-06-06",
+          "known_at": "2026-09-22",
+          "share_basis": "ordinary-share-600887",
+          "evidence_refs": [
+            {"id": "yili_fy2024_final_proposal"},
+            {"id": "yili_fy2024_final_agm_resolution"},
+            {"id": "yili_fy2024_final_total_adjustment"},
+            {"id": "yili_fy2024_final_implementation"}
+          ],
+          "blockers": []
+        },
+        {
+          "symbol": "600887",
+          "fiscal_period": "FY2025-interim",
+          "dividend_type": "ordinary",
+          "status": "paid",
+          "dividend_per_share": "0.48",
+          "currency": "CNY",
+          "announcement_date": "2025-10-31",
+          "approval_date": "2025-11-28",
+          "ex_date": "2025-12-17",
+          "payment_date": "2025-12-17",
+          "known_at": "2026-09-22",
+          "share_basis": "ordinary-share-600887",
+          "evidence_refs": [
+            {"id": "yili_fy2025_interim_proposal"},
+            {"id": "yili_fy2025_interim_egm_resolution"},
+            {"id": "yili_fy2025_interim_implementation"}
+          ],
+          "blockers": []
+        },
+        {
+          "symbol": "600887",
+          "fiscal_period": "FY2025-final",
+          "dividend_type": "ordinary",
+          "status": "proposed",
+          "dividend_per_share": "0.90",
+          "currency": "CNY",
+          "announcement_date": "2026-04-30",
+          "approval_date": null,
+          "ex_date": null,
+          "payment_date": null,
+          "known_at": "2026-09-22",
+          "share_basis": "ordinary-share-600887",
+          "evidence_refs": [{"id": "yili_fy2025_annual"}],
+          "blockers": ["FY2025 final proposal remains subject to shareholder approval"]
+        }
+      ],
+      "as_of": "2026-09-22",
+      "evidence_refs": [
+        {"id": "yili_fy2025_annual"},
+        {"id": "yili_2026h1"},
+        {"id": "yili_fy2024_final_proposal"},
+        {"id": "yili_fy2024_final_agm_resolution"},
+        {"id": "yili_fy2024_final_total_adjustment"},
+        {"id": "yili_fy2024_final_implementation"},
+        {"id": "yili_fy2025_interim_proposal"},
+        {"id": "yili_fy2025_interim_egm_resolution"},
+        {"id": "yili_fy2025_interim_implementation"},
+        {"id": "yili_shareholder_return_plan_2025_2027"}
+      ],
+      "status": "PARTIAL",
+      "blockers": [
+        "history is a partial point-in-time ledger, not a complete rolling record"
+      ]
+    },
+    "capacity": {
+      "symbol": "600887",
+      "profile_id": "quality_compounder",
+      "as_of": "2026-09-22",
+      "earnings_basis": {
+        "fy2025_parent_profit_cny": "11565166497.81",
+        "fy2025_cash_dividend_total_cny": "8728997720.46",
+        "fy2025_payout_ratio": "0.7548"
+      },
+      "cash_flow_basis": {
+        "fy2025_operating_cash_flow_cny": "14343920490.32",
+        "h1_2026_operating_cash_flow_cny": "9759147483.18"
+      },
+      "maintenance_reinvestment": {
+        "h1_2026_capex_paid_cny": "1304262044.68"
+      },
+      "debt_constraints": {
+        "h1_2026_short_term_borrowings_cny": "64677193034.15"
+      },
+      "restricted_cash_or_upstream_constraints": {},
+      "capital_allocation_context": {
+        "fy2025_final_proposal_per_share_cny": "0.90",
+        "fy2024_final_paid_per_share_cny": "1.22",
+        "fy2024_final_paid_cash_dividend_total_cny": "7716940013.74",
+        "fy2025_interim_paid_total_cny": "3036173120.16",
+        "fy2025_total_cash_dividend_cny": "8728997720.46",
+        "policy_2025_2027": "annual cash dividend payout at least 75% of attributable parent profit and per-share cash dividend at least the FY2024 level of CNY 1.22",
+        "special_dividend_observation": "none identified in retained lifecycle evidence",
+        "fact_policy_forecast_separation": "paid/proposed ordinary dividends are facts; the 2025-2027 shareholder-return plan is policy; no forward payout forecast is claimed",
+        "h1_2026_decision": "no interim distribution",
+        "h1_2026_buyback_paid_cny": "251737303.29"
+      },
+      "bear_capacity": null,
+      "base_capacity": null,
+      "bull_capacity": null,
+      "confidence": "低",
+      "evidence_refs": [{"id": "yili_fy2025_annual"}, {"id": "yili_2026h1"}],
+      "blockers": [
+        "parent-company distributable cash was not independently reconciled",
+        "short-term borrowing and working-capital movements need a legal-entity cash-flow bridge",
+        "policy floor is a corporate plan, not a forecast of future distributable profit"
+      ],
+      "status": "PARTIAL"
+    },
+    "sustainability": {
+      "symbol": "600887",
+      "profile_id": "quality_compounder",
+      "as_of": "2026-09-22",
+      "status": "LOW",
+      "coverage_context": "Retained statutory lifecycle shows FY2024 final ordinary dividend of CNY 1.22 per share with ex/payment date 2025-06-06, and FY2025 interim ordinary dividend of CNY 0.48 per share with ex/payment date 2025-12-17; FY2025 final remains a CNY 0.90 ordinary proposal and the 2025-2027 shareholder-return plan is policy. No special dividend is identified and no forward payout forecast is claimed.",
+      "capital_requirements": "The consumer business is capital-light in the reported period, but continued brand, product and acquisition reinvestment and the buyback compete with cash distribution.",
+      "balance_sheet_pressure": "H1 2026 short-term borrowings rose 41.74%, contract liabilities fell 53.15%, and CNY 2.456 billion of impairment was recorded.",
+      "cycle_risk": "Dairy demand, product mix, raw-material costs and consumer price competition can lower attributable profit below the policy payout base.",
+      "growth_source": "Premium product mix, infant/adult milk powder share and new products are disclosed growth drivers, but incremental return evidence remains incomplete.",
+      "breakers": [
+        "sustained attributable-profit decline after impairment",
+        "material impairment or acquisition-return shortfall",
+        "withdrawal or revision of the 2025-2027 shareholder-return plan",
+        "operating cash flow falling below distributable-cash requirements"
+      ],
+      "confidence": "低",
+      "reasons": [
+        "The disclosed policy and FY2025 payout are observable, but forward sustainability depends on unverified distributable profit.",
+        "The current H1 profit and balance-sheet trend do not support a HIGH confidence assessment."
+      ],
+      "blockers": [
+        "legal-entity distributable cash and upstream cash flow remain unverified",
+        "2025-2027 shareholder-return plan is pending annual general meeting approval"
+      ],
+      "evidence_refs": [
+        {"id": "yili_fy2025_annual"},
+        {"id": "yili_2026h1"},
+        {"id": "yili_fy2024_final_proposal"},
+        {"id": "yili_fy2024_final_agm_resolution"},
+        {"id": "yili_fy2024_final_total_adjustment"},
+        {"id": "yili_fy2024_final_implementation"},
+        {"id": "yili_fy2025_interim_proposal"},
+        {"id": "yili_fy2025_interim_egm_resolution"},
+        {"id": "yili_fy2025_interim_implementation"},
+        {"id": "yili_shareholder_return_plan_2025_2027"}
+      ]
+    },
+    "yield_snapshots": [
+      {
+        "symbol": "600887",
+        "basis_type": "trailing_paid",
+        "dividend_basis_period": "2025-09-22/2026-09-22",
+        "dividend_per_share": "0.48",
+        "dividend_known_at": "2025-12-17",
+        "quote_date": "2026-09-22",
+        "current_price": "26.77",
+        "currency": "CNY",
+        "share_basis": "ordinary-share-600887",
+        "dividend_yield": "0.01793051923795293239",
+        "yield_type": "current",
+        "evidence_refs": [
+          {"id": "yili_fy2025_interim_proposal"},
+          {"id": "yili_fy2025_interim_egm_resolution"},
+          {"id": "yili_fy2025_interim_implementation"},
+          {"id": "yili_quote_20260922"}
+        ],
+        "status": "READY",
+        "blockers": []
+      },
+      {
+        "symbol": "600887",
+        "basis_type": "declared",
+        "dividend_basis_period": "FY2025-final-proposal",
+        "dividend_per_share": "0.90",
+        "dividend_known_at": "2026-04-30",
+        "quote_date": "2026-09-22",
+        "current_price": "26.77",
+        "currency": "CNY",
+        "share_basis": "ordinary-share-600887",
+        "dividend_yield": "0.03361972357116174823",
+        "yield_type": "current",
+        "evidence_refs": [
+          {"id": "yili_fy2025_annual"},
+          {"id": "yili_quote_20260922"}
+        ],
+        "status": "READY",
+        "blockers": []
+      },
+      {
+        "symbol": "600887",
+        "basis_type": "normalized_scenario",
+        "dividend_basis_period": "through-cycle-normalized-not-assessed",
+        "dividend_per_share": null,
+        "dividend_known_at": null,
+        "quote_date": null,
+        "current_price": null,
+        "currency": "CNY",
+        "share_basis": "ordinary-share-600887",
+        "dividend_yield": null,
+        "yield_type": "normalized",
+        "evidence_refs": [],
+        "status": "NOT_READY",
+        "blockers": ["normalized dividend basis is not assessed"]
+      }
+    ],
+    "as_of": "2026-09-22",
+    "blockers": [
+      "normalized dividend basis is not assessed"
+    ],
+    "evidence_refs": [
+      {"id": "yili_fy2025_annual"},
+      {"id": "yili_2026h1"},
+      {"id": "yili_fy2024_final_proposal"},
+      {"id": "yili_fy2024_final_agm_resolution"},
+      {"id": "yili_fy2024_final_total_adjustment"},
+      {"id": "yili_fy2024_final_implementation"},
+      {"id": "yili_fy2025_interim_proposal"},
+      {"id": "yili_fy2025_interim_egm_resolution"},
+      {"id": "yili_fy2025_interim_implementation"},
+      {"id": "yili_shareholder_return_plan_2025_2027"},
+      {"id": "yili_quote_20260922"}
+    ],
+    "action": "no_order"
+  }
+}

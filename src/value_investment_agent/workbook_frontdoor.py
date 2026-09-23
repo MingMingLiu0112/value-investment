@@ -7,7 +7,14 @@ HOME = '00_首页Dashboard'
 PRIMARY = [HOME, '00_公司总览', '00_待完成公司', '21_决策验证',
            '05_仓位管理', '08_交易记录', '09_公司研究', '04_估值跟踪',
            '18_指标证据', '00_使用说明']
+STAGE_FRONTEND = ('00_投资工作台', '00_研究看板', '00_研究逻辑卡',
+                  '00_决策复核', '00_组合与股息', '00_跟踪与数据')
 GREEN, INK, GREY, AMBER = '18755D', '24312D', 'EFF3F1', 'FFF1D6'
+
+
+def primary_sheet_names(wb):
+    """Preserve the staged user frontend when present; never synthesize its data."""
+    return [name for name in (*STAGE_FRONTEND, *PRIMARY) if name in wb]
 
 
 def _rows(sheet):

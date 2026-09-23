@@ -18,6 +18,7 @@ from .current_research_status import (
     evaluate_current_research_status,
 )
 from .distribution import DividendResearchResult
+from .event_scan import EventScanResult
 from .fixed_sample_admission import (
     FixedSampleAdmissionPolicy,
     FixedSampleAdmissionReview,
@@ -68,8 +69,17 @@ from .research_artifacts import (
     StoredResearchArtifact,
 )
 from .research_case import ResearchCase
-from .research_gate import ResearchGate, evaluate as evaluate_research_gate
+from .research_gate import (
+    ResearchGate,
+    evaluate_with_valuation,
+)
 from .research_profile import PROFILES
+from .research_run_contract import (
+    AssumptionScenarioBinding,
+    ResearchSourceDescriptor,
+    ResearchValuationApproval,
+    validate_assumption_bindings,
+)
 from .valuation_assumptions import ValuationAssumptionSet
 from .valuation_models.base import ValuationResult
 from .valuation_router import (
@@ -99,11 +109,16 @@ def _merge_evidence_refs(
             ref_id = ref.get("id")
             if not ref_id:
                 raise ValueError("Research evidence references require ids")
-            if ref_id in merged and merged[ref_id] != ref:
-                raise ValueError(
-                    f"Research evidence id conflict: {ref_id}"
-                )
-            merged[ref_id] = ref
+            existing = merged.get(ref_id)
+            if existing is None:
+                merged[ref_id] = ref
+                continue
+            for key, value in ref.items():
+                if key in existing and existing[key] != value:
+                    raise ValueError(
+                        f"Research evidence id conflict: {ref_id}"
+                    )
+                existing[key] = value
     return list(merged.values())
 
 
@@ -115,6 +130,7 @@ class ModelValidityEvaluationInput:
     valid_from: date
     events: tuple[MaterialEvent, ...] = ()
     event_scan_evidence_refs: tuple[dict[str, Any], ...] = ()
+    event_scan: EventScanResult | None = None
     blockers: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -128,6 +144,10 @@ class ModelValidityEvaluationInput:
             "event_scan_evidence_refs",
             tuple(dict(ref) for ref in self.event_scan_evidence_refs),
         )
+        if self.event_scan is not None and not isinstance(
+            self.event_scan, EventScanResult
+        ):
+            raise TypeError("Model validity event_scan must be an EventScanResult")
         object.__setattr__(
             self,
             "blockers",
@@ -148,9 +168,20 @@ class ResearchRunSpec:
     assumptions: ValuationAssumptionSet | None = None
     quote: QuoteSnapshot | None = None
     model_validity_input: ModelValidityEvaluationInput | None = None
+    valuation_approval: ResearchValuationApproval | None = None
     distribution_result: DividendResearchResult | None = None
     as_of: date | None = None
     available_at: datetime | None = None
+    report_period: date | None = None
+    valuation_date: date | None = None
+    computed_at: datetime | None = None
+    input_sources: tuple[ResearchSourceDescriptor, ...] = ()
+    assumption_bindings: tuple[AssumptionScenarioBinding, ...] = ()
+    rule_version: str | None = None
+    model_version: str | None = None
+    parser_version: str | None = None
+    scan_watermark: str | None = None
+    input_descriptor_sha256: str | None = None
 
     def __post_init__(self) -> None:
         if not self.run_id.strip():
@@ -190,6 +221,88 @@ class ResearchRunSpec:
             raise ValueError("Research available_at must include timezone")
         if self.as_of is not None and not isinstance(self.as_of, date):
             raise ValueError("Research as_of must be a date")
+        facts_as_of = getattr(self.facts, "as_of", None)
+        if not isinstance(facts_as_of, date):
+            raise ValueError("Research facts require a typed as_of date")
+        if self.as_of is not None and self.as_of != facts_as_of:
+            raise ValueError("Research as_of cannot override the facts date")
+        if self.research_case.as_of != facts_as_of:
+            raise ValueError("Research case and facts as_of must match")
+        if self.available_at is not None and self.available_at.date() < facts_as_of:
+            raise ValueError("Research availability cannot precede facts as-of")
+        if self.input_sources and self.available_at is None:
+            raise ValueError("Research input sources require available_at")
+        for source in self.input_sources:
+            if not isinstance(source, ResearchSourceDescriptor):
+                raise TypeError("Research input sources must use the shared contract")
+            if (
+                source.published_at is not None
+                and source.published_at > self.available_at
+            ):
+                raise ValueError(
+                    "Research source cannot be published after availability"
+                )
+            if (
+                source.retrieved_at is not None
+                and source.retrieved_at > self.available_at
+            ):
+                raise ValueError(
+                    "Research source cannot be retrieved after availability"
+                )
+        if self.report_period is not None and self.report_period > facts_as_of:
+            raise ValueError("Research report period cannot follow facts as-of")
+        if self.valuation_date is not None and self.valuation_date != facts_as_of:
+            raise ValueError("Research valuation date must match facts as-of")
+        if self.computed_at is not None:
+            if self.computed_at.tzinfo is None:
+                raise ValueError("Research computed_at must include timezone")
+            if (
+                self.available_at is not None
+                and self.available_at > self.computed_at
+            ):
+                raise ValueError("Research availability cannot follow computation")
+        if self.quote is not None and self.quote.quote_date is not None:
+            if self.quote.quote_date > facts_as_of:
+                raise ValueError("Quote date cannot follow research as-of")
+        if self.model_validity_input is not None:
+            if self.model_validity_input.valid_from > facts_as_of:
+                raise ValueError("Model validity cannot begin after research as-of")
+        if self.valuation_approval is not None:
+            if not isinstance(
+                self.valuation_approval,
+                ResearchValuationApproval,
+            ):
+                raise TypeError(
+                    "Research valuation approval must use the shared contract"
+                )
+            if self.valuation_approval.valuation_date != facts_as_of:
+                raise ValueError(
+                    "Research valuation approval date must match facts as-of"
+                )
+            if (
+                self.computed_at is not None
+                and self.valuation_approval.approved_at > self.computed_at
+            ):
+                raise ValueError(
+                    "Research valuation approval cannot follow computation"
+                )
+        if self.distribution_result is not None:
+            if self.distribution_result.as_of > facts_as_of:
+                raise ValueError("Distribution as-of cannot follow research as-of")
+        if self.assumptions is not None and self.assumptions.as_of != facts_as_of:
+            raise ValueError("Assumption as_of does not match the research facts")
+        if self.rule_version is not None and not self.rule_version.strip():
+            raise ValueError("Research rule_version cannot be empty")
+        if self.input_descriptor_sha256 is not None and not re.fullmatch(
+            r"[0-9a-f]{64}", self.input_descriptor_sha256
+        ):
+            raise ValueError("Research input descriptor hash must be SHA-256 hex")
+        object.__setattr__(self, "input_sources", tuple(self.input_sources))
+        object.__setattr__(
+            self,
+            "assumption_bindings",
+            tuple(self.assumption_bindings),
+        )
 
 
 @dataclass(frozen=True)
@@ -290,23 +403,28 @@ class ResearchApplicationService:
 
         self._validate_route_contract(spec, route)
         as_of = spec.as_of or self._facts_as_of(spec)
-        if self._case_as_of(spec) != as_of:
-            raise ValueError("Research case and facts as_of must match")
-        if spec.assumptions is not None and spec.assumptions.as_of != as_of:
-            raise ValueError("Assumption as_of does not match the research facts")
+        binding_blockers = validate_assumption_bindings(
+            spec.facts,
+            spec.assumption_bindings,
+        )
 
-        gate = evaluate_research_gate(spec.research_case)
         model = route.build_model()
         valuation = model.value(spec.facts, spec.research_case)
         if not isinstance(valuation, ValuationResult):
             raise TypeError("Registered model returned a non-valuation result")
+        gate = evaluate_with_valuation(
+            spec.research_case,
+            valuation,
+            model_id=route.selected_model,
+            approval=spec.valuation_approval,
+        )
 
         validity, quote = self._resolve_validity_and_quote(spec, valuation)
         price_bridge = self._resolve_price_bridge(
             valuation,
             validity,
             quote,
-            blockers=[],
+            blockers=list(validity.blockers) if validity is not None else [],
         )
         price_attractiveness = assess_price_attractiveness(
             gate,
@@ -327,6 +445,7 @@ class ResearchApplicationService:
                 [
                     *gate.blockers,
                     *valuation.blockers,
+                    *binding_blockers,
                     *price_bridge.blockers,
                     *price_attractiveness.blockers,
                     *current_status.blockers,
@@ -473,6 +592,7 @@ class ResearchApplicationService:
                 validity_input.event_scan_evidence_refs
             ),
             blockers=list(validity_input.blockers),
+            event_scan=validity_input.event_scan,
         )
         return validity, quote
 
@@ -598,11 +718,17 @@ class ResearchApplicationService:
             spec.research_case.as_of,
             spec.research_case.evidence_refs,
         )
+        gate_evidence_refs = _merge_evidence_refs(
+            spec.research_case.evidence_refs,
+            spec.valuation_approval.evidence_refs
+            if spec.valuation_approval is not None
+            else (),
+        )
         save(
             gate,
             ARTIFACT_RESEARCH_GATE,
             spec.research_case.as_of,
-            spec.research_case.evidence_refs,
+            gate_evidence_refs,
         )
         if spec.assumptions is not None:
             save(
