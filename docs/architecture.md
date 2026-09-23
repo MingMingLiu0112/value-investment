@@ -127,5 +127,8 @@ ResearchCase + BusinessQuality + CapitalAllocation + Distribution
 ```
 
 BusinessQuality/CapitalAllocation 先随 M1 真实研究建立最小证据合同；Decision/Entry/Journal/Consistency 属 M3；完整 Portfolio/Position 属 M4；ChangeEvent/依赖失效/通知运营属 M5。M1只保留必要依赖和版本，不提前建空领域层。
+2026-09-24 已增加 M4 非个人化输入合同 `InvestorPolicyStatement`、`PortfolioHolding`、
+`PortfolioSnapshot` 和 `PortfolioInputBundle`；它们只校验人工确认的 IPS/持仓输入与
+缺失字段，不计算 PositionGuidance、风险或股息预测，也不允许从缺输入补出默认百分比。
 缺少 Portfolio 输入不能自动批准 BUY/ADD；已证实的 Thesis Breaker 风险提示不能因缺价格而消失。旧数据未知不是 HOLD，更不是自动卖出。
 Entry 是用户确认行为的不可变研究基线，不是系统生成的成交；无历史理由只能标记事后重建。MarketContext 不直接修改内在价值。

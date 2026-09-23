@@ -1,5 +1,36 @@
 # Changelog
 
+## v2026.09.24-m4-portfolio-input-contracts
+
+### Release Scope
+
+建立 M4 非个人化组合输入合同：IPS、持仓快照与组合输入包。本版本不读取真实账户，
+不计算仓位、风险或股息预测，不使用通用百分比，也不生成任何订单。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/portfolio_contracts.py`：
+  - `InvestorPolicyStatement` 保存人工确认的 IPS、集中度上限、现金/期限/风险口径；
+  - `PortfolioHolding` 保存数量确认状态、公司行为调整状态和证据；
+  - `PortfolioSnapshot` 区分实盘/模拟、对账状态、现金和持仓；
+  - `PortfolioInputBundle` 联合 IPS/快照并校验账户范围和时点顺序。
+- 所有对象固定 `action=no_order` 和 `PRIVATE_USER_CONFIRMED`；缺失字段失败关闭，
+ 不补零值或默认 20%。
+- 新增 `tests/test_portfolio_contracts.py` 并纳入 GitHub Core Research Gate。
+
+### Verification
+
+- M4 输入合同定向回归：7 passed。
+- 覆盖缺失关闭、非法金额/百分比、重复持仓、未对账/模拟快照、JSON 往返、
+  账户范围不匹配和时点顺序。
+
+### Acceptance Boundary
+
+- M2、M3、M4 均继续保持 `PARTIAL`。
+- 未实现 PositionGuidance、PortfolioRiskAssessment、DividendIncomeProjection、
+  私有持久化或真实账户导入。
+- 本版本没有读取或提交任何真实持仓、现金、IPS 或账户数据。
+
 ## v2026.09.24-m3-decision-acceptance-audit
 
 ### Release Scope

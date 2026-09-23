@@ -2,6 +2,22 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M4 组合输入合同：2026-09-24
+
+本节记录 M4 的第一批非个人化输入合同。M2、M3 与 M4 均仍为 `PARTIAL`；
+本轮没有读取真实账户，不计算仓位、风险或股息预测，也不生成任何订单。
+
+- 新增 `portfolio_contracts.py`，建立 `InvestorPolicyStatement`、
+  `PortfolioHolding`、`PortfolioSnapshot` 和 `PortfolioInputBundle`。
+- 所有对象固定 `action=no_order`、`sensitivity=PRIVATE_USER_CONFIRMED`；
+  缺失输入失败关闭，不补零值或默认 20% 仓位。
+- IPS 人工确认门槛、持仓对账门槛和缺失字段均已显式化，见
+  [m4-portfolio-input-contracts-20260924.md](m4-portfolio-input-contracts-20260924.md)。
+- 新增 7 项回归测试并纳入 GitHub Core Research Gate。
+- 尚未实现 PositionGuidance、PortfolioRiskAssessment、DividendIncomeProjection、
+  私有持久化、真实账户导入或原 Excel M4 展示。
+- 本批未修改任何 Excel 字节，原 55 页生产工作簿和 M3 独立候选 Hash 均保持不变。
+
 ## M3 决策卡可重复验收审计与 M2 机器门复核：2026-09-24
 
 本节记录当前 HEAD 的机器证据，不把人工验收改写成已完成。M2 与 M3 仍均为
