@@ -27,13 +27,6 @@ from .m5_event_core import (
     ChangeEventInput,
     EventIngestResult,
     EventLedger,
-    EVENT_TYPE_DIVIDEND_CHANGE,
-    EVENT_TYPE_MODEL_STALE,
-    EVENT_TYPE_POSITION_RISK_CHANGED,
-    EVENT_TYPE_SOURCE_SCAN_FAILED,
-    EVENT_TYPE_SOURCE_SCAN_RECOVERED,
-    EVENT_TYPE_THESIS_BREAKER_TRIGGERED,
-    EVENT_TYPE_THESIS_WEAKENED,
     INGEST_ACCEPTED,
     INGEST_CORRECTION_ACCEPTED,
     INGEST_DUPLICATE,
@@ -44,15 +37,9 @@ from .m5_event_core import (
 )
 from .m5_event_dependencies import DependencyGraph, DependencyInvalidation
 from .m5_event_outbox import (
-    ALERT_TYPE_CRITICAL_BREAKER,
-    ALERT_TYPE_DIVIDEND_ALERT,
-    ALERT_TYPE_MODEL_STALE,
-    ALERT_TYPE_POSITION_RISK,
-    ALERT_TYPE_REVIEW_DUE,
-    ALERT_TYPE_SYSTEM_HEALTH,
-    ALERT_TYPE_THESIS_ALERT,
     EventAlert,
     OutboxLedger,
+    alert_type_for_event_type,
 )
 from .m5_event_watermark import (
     LOCK_ACQUIRED,
@@ -72,17 +59,6 @@ from .m5_event_state_store import M5EventRunStateStore, M5StateStoreConflict
 RUN_HEALTHY = "HEALTHY"
 RUN_ATTENTION = "ATTENTION"
 RUN_HEALTH_STATUSES = frozenset({RUN_HEALTHY, RUN_ATTENTION})
-
-_ALERT_BY_EVENT_TYPE = {
-    EVENT_TYPE_THESIS_BREAKER_TRIGGERED: ALERT_TYPE_CRITICAL_BREAKER,
-    EVENT_TYPE_THESIS_WEAKENED: ALERT_TYPE_THESIS_ALERT,
-    EVENT_TYPE_MODEL_STALE: ALERT_TYPE_MODEL_STALE,
-    EVENT_TYPE_DIVIDEND_CHANGE: ALERT_TYPE_DIVIDEND_ALERT,
-    EVENT_TYPE_POSITION_RISK_CHANGED: ALERT_TYPE_POSITION_RISK,
-    EVENT_TYPE_SOURCE_SCAN_FAILED: ALERT_TYPE_SYSTEM_HEALTH,
-    EVENT_TYPE_SOURCE_SCAN_RECOVERED: ALERT_TYPE_SYSTEM_HEALTH,
-}
-
 
 @dataclass(frozen=True)
 class M5EventRunReceipt:
@@ -548,10 +524,7 @@ def run_event_batch(
                     direct_kinds=tuple(custom_kinds) if custom_kinds else None,
                 )
             )
-            alert_type = _ALERT_BY_EVENT_TYPE.get(
-                result.event.event_type,
-                ALERT_TYPE_REVIEW_DUE,
-            )
+            alert_type = alert_type_for_event_type(result.event.event_type)
             enqueued = working.outbox.enqueue_for_event(
                 event=result.event,
                 alert_type=alert_type,

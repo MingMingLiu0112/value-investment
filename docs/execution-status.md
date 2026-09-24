@@ -2,6 +2,19 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M5 事件与 canonical outbox 提醒绑定
+
+运行状态此前只验证“outbox 中的提醒必须引用已有事件”，没有验证“已有事件必须有
+自己的提醒”。删除提醒或把提醒类型改成 `SYSTEM_HEALTH` 后，状态仍可能显示健康。
+
+- 事件到提醒类型的映射移到 outbox 领域，run 协调器与状态恢复共用同一个 canonical
+  映射，避免后续重复维护后漂移。
+- `M5EventRunState` 现在逐事件要求 canonical alert、规范 dedupe key、一致严重度和
+  人工复核标志；缺失或伪造会失败关闭。
+- 系统源扫描事件强制 `requires_human_review=true`，不能通过输入关闭源健康人工复核。
+- 新增四项反向覆盖；全部 M5 定向回归 `97 passed`，本地全量离线回归
+  `2456 passed, 6 skipped, 18 warnings, 0 failed`。`action=no_order`。
+
 ## 2026-09-24 M5 本地 StateStore 与 CAS 持久化
 
 上一批 `expected_revision` 只能检查调用方快照；如果状态只留在内存，进程退出或并发

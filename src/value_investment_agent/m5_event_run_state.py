@@ -30,8 +30,9 @@ from .m5_event_core import (
     event_ledger_from_payload,
 )
 from .m5_event_outbox import (
-    ALERT_TYPE_SYSTEM_HEALTH,
+    EventAlert,
     OutboxLedger,
+    alert_type_for_event_type,
     outbox_ledger_from_payload,
 )
 from .m5_event_watermark import WatermarkLedger, watermark_ledger_from_payload
@@ -226,21 +227,34 @@ class M5EventRunState:
             raise ValueError("Watermarks require a committed checkpoint")
 
         events_by_id = {event.event_id: event for event in events}
+        alerts_by_event_id: dict[str, list[EventAlert]] = {}
         for alert in self.outbox.alerts():
             if alert.event_id is None:
                 continue
-            source_event = events_by_id.get(alert.event_id)
-            if source_event is None:
+            if alert.event_id not in events_by_id:
                 raise ValueError("Outbox alert references an unknown event")
-            if alert.severity != source_event.severity:
-                raise ValueError("Outbox alert severity does not match its event")
-            if (
-                alert.alert_type != ALERT_TYPE_SYSTEM_HEALTH
-                and alert.requires_human_review != source_event.requires_human_review
+            alerts_by_event_id.setdefault(alert.event_id, []).append(alert)
+
+        for event in events:
+            linked_alerts = alerts_by_event_id.get(event.event_id, [])
+            expected_alert_type = alert_type_for_event_type(event.event_type)
+            expected_dedupe_key = f"event:{event.event_id}:{expected_alert_type}"
+            if not any(
+                alert.alert_type == expected_alert_type
+                and alert.dedupe_key == expected_dedupe_key
+                for alert in linked_alerts
             ):
-                raise ValueError(
-                    "Outbox alert review requirement does not match its event"
-                )
+                raise ValueError("Event is missing its expected outbox alert")
+            source_event = events_by_id[event.event_id]
+            for alert in linked_alerts:
+                if alert.severity != source_event.severity:
+                    raise ValueError(
+                        "Outbox alert severity does not match its event"
+                    )
+                if alert.requires_human_review != source_event.requires_human_review:
+                    raise ValueError(
+                        "Outbox alert review requirement does not match its event"
+                    )
 
         if not self.batch_records:
             if self.revision != 0:

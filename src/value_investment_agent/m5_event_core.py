@@ -300,6 +300,11 @@ class ChangeEventInput:
             "requires_human_review",
             _required_bool(self.requires_human_review, "requires_human_review"),
         )
+        if (
+            self.event_type in _SYSTEM_EVENT_TYPES
+            and not self.requires_human_review
+        ):
+            raise ValueError("System source events must require human review")
         object.__setattr__(
             self,
             "correction_of_event_id",

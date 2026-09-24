@@ -1,5 +1,29 @@
 # Changelog
 
+## v2026.09.24-m5-canonical-outbox-alert-binding
+
+### Scope
+
+收紧 M5 运行状态中事件与 outbox 提醒的跨账本绑定。该批次不发送通知、不接生产源、
+不改变 M5 `PARTIAL` 状态或 `action=no_order` 边界。
+
+### Changes
+
+- 事件到提醒类型的映射移入 outbox 领域，由唯一 canonical 函数提供，避免 run 协调器
+  与状态重放各维护一份映射后漂移。
+- `M5EventRunState` 恢复时要求每个事件都存在对应类型的 canonical alert、dedupe key、
+  严重度和人工复核标志；删除提醒、替换为 `SYSTEM_HEALTH` 或伪造 dedupe key 均失败
+  关闭，避免“事件存在但无提醒且状态显示健康”。
+- 系统源扫描事件必须保留 `requires_human_review=true`，不允许通过事件输入关闭源健康
+  人工复核。
+- 新增缺失提醒、错误提醒类型、伪造 dedupe key 和系统事件绕过复核的反向回归。
+
+### Verification
+
+- 全部 M5 定向回归：`97 passed`。
+- 本地全量离线回归：`2456 passed, 6 skipped, 18 warnings, 0 failed`。
+- `compileall` 与 `git diff --check` 通过；`M5` 仍为 `PARTIAL`，`action=no_order`。
+
 ## v2026.09.24-m5-local-state-store-cas
 
 ### Scope

@@ -116,6 +116,20 @@
 
 `action=no_order`；M5 仍为 `PARTIAL`，不得把本层等同于 M5/M6 产品验收。
 
+## 2026-09-24 事件与 canonical outbox 提醒绑定
+
+运行状态恢复此前仅验证 outbox 引用存在，未验证每个事件都有对应提醒。本轮把事件到
+提醒类型的映射收敛到 outbox 领域，并在 `M5EventRunState` 中执行双向校验：
+
+- 每个事件必须具备 canonical alert type、`event:{event_id}:{alert_type}` dedupe key、
+  与事件一致的严重度和人工复核标志；删除提醒或把类型替换为 `SYSTEM_HEALTH` 均失败。
+- 系统源扫描事件必须要求人工复核，不能在输入边界关闭。
+- 缺失提醒、错误类型、伪造 dedupe key 和系统事件绕过四项反向回归通过；全部 M5 定向
+  回归 `97 passed`，本地全量离线回归
+  `2456 passed, 6 skipped, 18 warnings, 0 failed`。
+
+本批仍不发送通知、不接生产源，`action=no_order`。
+
 ## 未完成边界
 
 真实公告采集器、公告级材料性判定、Entry/组合复核、生产调度、通知目标和

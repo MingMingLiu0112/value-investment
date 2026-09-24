@@ -14,6 +14,7 @@ from value_investment_agent.investment_decision import ACTION_NO_ORDER
 from value_investment_agent.m5_event_core import (
     CONFIDENCE_HIGH,
     EVENT_TYPE_NEW_FINANCIAL_REPORT,
+    EVENT_TYPE_SOURCE_SCAN_FAILED,
     NAMESPACE_ACTUAL,
     NAMESPACE_SIMULATED,
     SEVERITY_HIGH,
@@ -334,6 +335,21 @@ def test_cross_ledger_reference_and_checkpoint_holes_fail_closed() -> None:
     with pytest.raises(ValueError, match="review requirement"):
         m5_event_run_state_from_payload(no_review_alert)
 
+    missing_alert = _payload(first.state)
+    missing_alert["outbox"]["alerts"] = []
+    with pytest.raises(ValueError, match="missing its expected outbox alert"):
+        m5_event_run_state_from_payload(missing_alert)
+
+    wrong_alert_type = _payload(first.state)
+    wrong_alert_type["outbox"]["alerts"][0]["alert_type"] = "SYSTEM_HEALTH"
+    with pytest.raises(ValueError, match="missing its expected outbox alert"):
+        m5_event_run_state_from_payload(wrong_alert_type)
+
+    wrong_dedupe_key = _payload(first.state)
+    wrong_dedupe_key["outbox"]["alerts"][0]["dedupe_key"] = "event:forged"
+    with pytest.raises(ValueError, match="missing its expected outbox alert"):
+        m5_event_run_state_from_payload(wrong_dedupe_key)
+
     checkpoint_hole = _payload(first.state)
     checkpoint = checkpoint_hole["checkpoints"]["checkpoints"][0]
     checkpoint["last_sequence"] = 0
@@ -347,6 +363,16 @@ def test_cross_ledger_reference_and_checkpoint_holes_fail_closed() -> None:
     duplicate_event["event_ledger"]["events"].append(duplicated)
     with pytest.raises(ValueError, match="duplicate event_id"):
         m5_event_run_state_from_payload(duplicate_event)
+
+
+def test_system_source_event_cannot_disable_human_review() -> None:
+    with pytest.raises(ValueError, match="must require human review"):
+        replace(
+            _event(source_event_id="source-outage", observed_at=OBSERVED),
+            symbol="SYSTEM",
+            event_type=EVENT_TYPE_SOURCE_SCAN_FAILED,
+            requires_human_review=False,
+        )
 
 
 def test_revision_sequence_and_watermark_regressions_fail_closed() -> None:
