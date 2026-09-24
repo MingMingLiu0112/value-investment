@@ -17,6 +17,12 @@ namespace 的事件桥接候选，7 条为静默的 NOT_MATERIAL / SUPPORTING / 
 已生成 7 节点的实际图收据（Research Case、Gate、Valuation、ModelValidity、PriceBridge、
 Dividend Research、Current Status）；它是后续两个事件的 bounded invalidation 输入，不构成重估完成。
 
+M5 state v3 现允许受控的离线 `ACTUAL` receipt，但必须内嵌 `USER_CONFIRMED_DELEGATED_REVIEW`
+授权、Review/Queue/Graph SHA-256，且显式禁用 scheduler、notification 与 production database write。
+历史 v1/v2 simulated state 保持可读。对本批 600519 事件的运行时钟检查发现队列水位只覆盖至
+`2026-09-09`、抓取时间为 `2026-09-24T08:47:15Z`，早于 `2026-09-25` 人工复核；因此未写入
+ACTUAL state，等待一次新的 CNINFO 完整扫描来证明复核后的公告覆盖。该水位限制不阻塞其他离线工程。
+
 ## 2026-09-25 全量回归与私有测试隔离
 
 跨平台 Git 工作树边界修复后，完整测试套件使用仓库内 disposable base temp 重放为
