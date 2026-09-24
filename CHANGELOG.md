@@ -1,5 +1,34 @@
 # Changelog
 
+## v2026.09.24-m3-checkpoint-b-partial-human-receipt
+
+### Scope
+
+记录用户完成的 M3 Checkpoint B 人工语义复核。三张负向卡的可理解性和无错误
+BUY/ADD 子检查通过，但整体因 strict contemporaneous-rule PIT 未证明保持
+`PARTIAL`。本批次不新增 M8、不改变投资规则、不生成 Entry、Journal、仓位或订单。
+
+### Changes
+
+- `HumanMilestoneReviewReceipt` 新增可选 `supplemental_decisions`，精确记录 M3
+  子项、PIT blocker、M4 私人输入等待和 M6 未授权边界；旧收据没有该字段时序列化
+  和 Hash 保持不变。
+- 新增 sequence 3 partial 人工收据，绑定 sequence 2 收据文件 Hash
+  `9a18b7f...e6f20`，不覆盖任何历史收据。
+- 新增 `scripts/build_m3_checkpoint_b_human_acceptance.py`，校验冻结 Checkpoint B
+  包和 strict PIT `NOT_PROVEN` 收据后生成只读 partial 验收包。
+- M3 三张卡保持 `000651 / 600741 / 600887` 均为研究证据不足、`action=no_order`；
+  strict PIT blocker 等待未来真实 contemporaneous rule chain，不伪造历史证据。
+
+### Verification
+
+- `tests/test_human_milestone_review.py` 与
+  `tests/test_m3_checkpoint_b_human_acceptance.py`：`12 passed`。
+- M3 Checkpoint B 相关复核回归：`16 passed`。
+- 收据、partial packet 和 manifest 均已按 SHA-256 固定；详情见
+  `docs/m3-checkpoint-b-human-acceptance-20260924.md`。
+- 本批次未触及 canonical、WPS、生产数据库、计划任务、通知、服务器或 PTA。
+
 ## v2026.09.24-m5-outbox-transition-workbook
 
 ### Scope

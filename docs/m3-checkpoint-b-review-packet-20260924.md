@@ -3,6 +3,12 @@
 更新：2026-09-24。本文件由 `scripts/build_m3_checkpoint_b_review_packet.py` 只读生成，
 只汇总 Hash 固定的 M3 证据并列出用户待办；代理不能替用户签收 Checkpoint B。
 
+人工结果（2026-09-24）：三项负向卡子检查已通过，但整体记录为
+`M3_CHECKPOINT_B=PARTIAL`，阻断项为
+`STRICT_CONTEMPORANEOUS_RULE_PIT_NOT_PROVEN`。本节以下的
+`PENDING_HUMAN_REVIEW` 文本保留为复核前的历史快照；新的 sequence 3 partial
+收据见 [m3-checkpoint-b-human-acceptance-20260924.md](m3-checkpoint-b-human-acceptance-20260924.md)。
+
 ```text
 goal_id=VALUE-INVESTMENT-M2-M7-INITIAL_ASSISTED-USE
 action=no_order

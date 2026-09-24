@@ -1712,3 +1712,43 @@ M2 Checkpoint A 收口后回到原总 Goal 的 M3 主线，新增只读的 Check
 
 本工作包不判定任何公告重大性，不产生 M5 事件、依赖失效、调度、通知或 M6 运营
 验收；九条公告仍由用户逐条给出 `EventMaterialityDecision`。
+
+## 2026-09-24 M3 Checkpoint B 人工 partial 收据
+
+用户已完成三张负向决策卡的实际阅读和语义复核。记录结果时严格区分三项通过的
+子检查与整体 Checkpoint B，不把子项通过扩大为 `HUMAN_PASS`：
+
+```text
+M3_NEGATIVE_CARD_HUMAN_REVIEW = PASS
+M3_HUMAN_UNDERSTANDABILITY = PASS
+M3_NO_FALSE_BUY_ADD = PASS
+
+M3_CHECKPOINT_B = PARTIAL
+M3_BLOCKER = STRICT_CONTEMPORANEOUS_RULE_PIT_NOT_PROVEN
+M4_PERSONALIZED_ACCEPTANCE = PENDING_USER_PRIVATE_INPUT
+M6_PRODUCTION_AUTHORIZATION = NOT_YET
+action = no_order
+```
+
+| 产物 | 路径 | SHA-256 |
+| --- | --- | --- |
+| Human receipt sequence 3 | `runtime/m3-checkpoint-b-human-acceptance-20260924-v1/receipt.json` | `933f81ace48da1119d6afb26c9fc92ddb0e8de142a83d043df8f43122ea62c98` |
+| partial acceptance packet | `runtime/m3-checkpoint-b-human-acceptance-20260924-v1/checkpoint-b-partial-packet.json` | `27c489828cf116e5b1d97473f6cc072fb6bace9ad9cfa396665c7039c56fab7a` |
+| manifest | `runtime/m3-checkpoint-b-human-acceptance-20260924-v1/manifest.json` | `f418f7a36c2635507c3c603a3497e4f46e2822c577ef3380996274791c51255a` |
+
+- 新收据绑定 sequence 2 文件 Hash
+  `9a18b7fcb08b4ba4196a989f88561939b0e9257982b03198b650669b378e6f20`，
+  不覆盖历史。
+- `HumanMilestoneReviewReceipt` 新增可选 `supplemental_decisions`；没有该字段的旧收据
+  序列化与 Hash 不变。
+- 三张卡保持 `000651 / 600741 / 600887` 的 `INSUFFICIENT_RESEARCH`、
+  `RESEARCH_INCOMPLETE`、`action=no_order`。
+- strict PIT 的规则版本为 `RETROSPECTIVE_RESEARCH_EXTENSION`，
+  `future_rule_version_used=true`；不伪造历史规则登记证据，也不降低标准。
+- 新增定向回归 `12 passed`；M3 相关复核回归 `16 passed`。
+- 详细边界见
+  [m3-checkpoint-b-human-acceptance-20260924.md](m3-checkpoint-b-human-acceptance-20260924.md)。
+
+该 blocker 不阻止 M4/M5 中依赖已满足的离线工程继续。M4 个人化验收仍等待真实
+IPS/组合输入；M6 仍只允许 preflight、dry-run、backup/restore、health、
+emergency-stop 和 shadow tooling，不授权生产迁移、调度、通知或真实账户导入。

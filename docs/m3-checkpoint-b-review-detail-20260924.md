@@ -3,6 +3,10 @@
 本文件记录 M3 Checkpoint B 的人工理解辅助包，不构成 Checkpoint B 通过、研究批准、
 Entry、Journal、仓位或订单。
 
+人工结果（2026-09-24）：三张卡的可理解性与无错误 BUY/ADD 子检查通过；整体
+`M3_CHECKPOINT_B` 因 strict contemporaneous-rule PIT 未证明保持 `PARTIAL`。
+本文以下 `PENDING_HUMAN_REVIEW` 文本是复核前历史快照。
+
 ## 产物
 
 | 产物 | 路径 | SHA-256 |

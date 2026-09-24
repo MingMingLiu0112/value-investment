@@ -100,6 +100,51 @@ def test_receipt_accepts_explicit_human_pass_for_checkpoint_a():
     assert receipt.action == ACTION_NO_ORDER
 
 
+def test_receipt_records_partial_checkpoint_b_with_explicit_subreview():
+    decisions = dict(DECISIONS)
+    decisions.update(
+        {
+            "M3_CHECKPOINT_B": "PARTIAL",
+            "M4_PRIVATE_INPUT": "PENDING_USER_PRIVATE_INPUT",
+            "M6_AUTHORIZATION": "NOT_YET",
+        }
+    )
+    supplemental = {
+        "M3_NEGATIVE_CARD_HUMAN_REVIEW": "PASS",
+        "M3_HUMAN_UNDERSTANDABILITY": "PASS",
+        "M3_NO_FALSE_BUY_ADD": "PASS",
+        "M3_BLOCKER": "STRICT_CONTEMPORANEOUS_RULE_PIT_NOT_PROVEN",
+        "M4_PERSONALIZED_ACCEPTANCE": "PENDING_USER_PRIVATE_INPUT",
+        "M6_PRODUCTION_AUTHORIZATION": "NOT_YET",
+    }
+    receipt = HumanMilestoneReviewReceipt(
+        receipt_id="human-review-v4-partial",
+        sequence=3,
+        reviewed_at=REVIEWED_AT,
+        review_scope="M3 Checkpoint B partial human review",
+        decisions=decisions,
+        supplemental_decisions=supplemental,
+        previous_receipt_sha256="9" * 64,
+    )
+
+    policy = receipt.as_policy()
+    assert policy["decisions"]["M3_CHECKPOINT_B"] == "PARTIAL"
+    assert policy["supplemental_decisions"] == supplemental
+    assert "HUMAN_PASS" not in json.dumps(policy, ensure_ascii=False)
+
+
+def test_receipt_rejects_unknown_supplemental_decision():
+    with pytest.raises(ValueError, match="Unknown supplemental"):
+        HumanMilestoneReviewReceipt(
+            receipt_id="bad-supplemental",
+            sequence=1,
+            reviewed_at=REVIEWED_AT,
+            review_scope="bad",
+            decisions=DECISIONS,
+            supplemental_decisions={"M3_UNKNOWN": "PASS"},
+        )
+
+
 def test_m5_binding_is_hash_bound_and_not_an_order():
     binding = _binding()
     assert binding.pdf_sha256 == "7c669db8bb3b5a362ecad92c6a96745a3b5039a3288f5e13b498e9e72971111c"

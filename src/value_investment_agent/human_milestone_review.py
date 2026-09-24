@@ -6,7 +6,7 @@ never turn a sub-item approval into an overall milestone approval.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 import hashlib
 import json
@@ -53,12 +53,21 @@ DECISION_VALUES = {
         "HUMAN_PASS",
     },
     "M3_NEGATIVE_CARDS": {"PASS"},
-    "M3_CHECKPOINT_B": {"PARTIAL_NOT_APPROVED"},
+    "M3_CHECKPOINT_B": {"PARTIAL_NOT_APPROVED", "PARTIAL"},
     "M5_1225578520": M5_MATERIALITY_DECISIONS,
     "M7_SEMANTIC_STRUCTURE": {"PASS"},
-    "M4_PRIVATE_INPUT": {"PENDING"},
-    "M6_AUTHORIZATION": {"PENDING"},
+    "M4_PRIVATE_INPUT": {"PENDING", "PENDING_USER_PRIVATE_INPUT"},
+    "M6_AUTHORIZATION": {"PENDING", "NOT_YET"},
     "M7_FINAL_UX": {"PENDING"},
+}
+
+SUPPLEMENTAL_DECISION_VALUES = {
+    "M3_NEGATIVE_CARD_HUMAN_REVIEW": {"PASS"},
+    "M3_HUMAN_UNDERSTANDABILITY": {"PASS"},
+    "M3_NO_FALSE_BUY_ADD": {"PASS"},
+    "M3_BLOCKER": {"STRICT_CONTEMPORANEOUS_RULE_PIT_NOT_PROVEN"},
+    "M4_PERSONALIZED_ACCEPTANCE": {"PENDING_USER_PRIVATE_INPUT"},
+    "M6_PRODUCTION_AUTHORIZATION": {"NOT_YET"},
 }
 
 
@@ -130,6 +139,7 @@ class HumanMilestoneReviewReceipt:
     review_scope: str
     decisions: Mapping[str, str]
     m5_bindings: Sequence[M5HumanMaterialityBinding] = ()
+    supplemental_decisions: Mapping[str, str] = field(default_factory=dict)
     previous_receipt_sha256: str | None = None
     action: str = ACTION_NO_ORDER
 
@@ -152,6 +162,26 @@ class HumanMilestoneReviewReceipt:
                 raise ValueError(f"Unknown human milestone decision for {key}: {value}")
             normalized_decisions[key] = value
         object.__setattr__(self, "decisions", normalized_decisions)
+
+        supplemental = dict(self.supplemental_decisions)
+        unknown_supplemental = set(supplemental) - set(SUPPLEMENTAL_DECISION_VALUES)
+        if unknown_supplemental:
+            raise ValueError(
+                "Unknown supplemental human milestone decisions: "
+                + ", ".join(sorted(unknown_supplemental))
+            )
+        normalized_supplemental: dict[str, str] = {}
+        for key, allowed in SUPPLEMENTAL_DECISION_VALUES.items():
+            if key not in supplemental:
+                continue
+            value = _required_text(supplemental[key], key)
+            if value not in allowed:
+                raise ValueError(
+                    f"Unknown supplemental human milestone decision for {key}: {value}"
+                )
+            normalized_supplemental[key] = value
+        object.__setattr__(self, "supplemental_decisions", normalized_supplemental)
+
         bindings = tuple(self.m5_bindings)
         if len({item.announcement_id for item in bindings}) != len(bindings):
             raise ValueError("Human milestone receipt has duplicate M5 bindings")
@@ -166,7 +196,7 @@ class HumanMilestoneReviewReceipt:
             raise ValueError("Human milestone receipt must remain no_order")
 
     def as_policy(self) -> dict[str, Any]:
-        return {
+        payload = {
             "schema_version": HUMAN_MILESTONE_RECEIPT_SCHEMA,
             "receipt_id": self.receipt_id,
             "sequence": self.sequence,
@@ -177,6 +207,9 @@ class HumanMilestoneReviewReceipt:
             "previous_receipt_sha256": self.previous_receipt_sha256,
             "action": self.action,
         }
+        if self.supplemental_decisions:
+            payload["supplemental_decisions"] = dict(self.supplemental_decisions)
+        return payload
 
     def sha256(self) -> str:
         return canonical_digest(self.as_policy())
@@ -209,6 +242,7 @@ def load_human_milestone_receipt(path: Path) -> HumanMilestoneReviewReceipt:
         review_scope=payload["review_scope"],
         decisions=payload["decisions"],
         m5_bindings=bindings,
+        supplemental_decisions=payload.get("supplemental_decisions") or {},
         previous_receipt_sha256=payload.get("previous_receipt_sha256"),
         action=payload.get("action", ACTION_NO_ORDER),
     )

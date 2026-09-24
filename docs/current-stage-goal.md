@@ -1,6 +1,7 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-更新：2026-09-24 / M2 Checkpoint A 已由用户签收，当前继续 M3。
+更新：2026-09-24 / M2 Checkpoint A 已签收；M3 Checkpoint B 已完成人工语义复核，
+但 strict contemporaneous-rule PIT 未证明，整体保持 PARTIAL。
 用户已将下一Goal扩到M7，不在M2完成后退出。
 总Goal ID：`VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`。
 当前产品聚焦为 M3 Decision Review / Checkpoint B；工程已推进到 M7 Daily
@@ -17,7 +18,7 @@ Workbench 候选，但不得把工程推进速度当阶段验收。
 ```text
 M1  Engineering DONE | Research Workbench DONE | 已完成人工 G3 初审
 M2  ENGINEERING_DONE | DONE                   | HUMAN_PASS
-M3  ENGINEERING_PARTIAL_PLUS | PARTIAL        | PENDING_HUMAN_REVIEW
+M3  ENGINEERING_PARTIAL_PLUS | PARTIAL        | HUMAN_REVIEWED_PARTIAL / STRICT_PIT_BLOCKER
 M4  ENGINEERING_DONE_SIMULATED | PARTIAL      | PENDING_PRIVATE_INPUT
 M5  ENGINEERING_DONE_OFFLINE | PARTIAL        | PENDING_RECONCILIATION / OPERATIONS
 M6  PREFLIGHT_DONE | operationally NOT_STARTED | PENDING_AUTHORIZATION / SHADOW
@@ -28,8 +29,10 @@ M7  DISPLAY_ENGINEERING_DONE | PARTIAL        | PENDING_USER_ACCEPTANCE
 Channel Verification、M5 旧人工 review Hash reconciliation、M3
 Historical Research Replay（事实/报价 PIT，规则为追溯并显式标记；strict
 contemporaneous-rule PIT 尚未证明），以及 M7
-10 个日常主入口工作台。Checkpoint A 已人工签收；Checkpoint B-D、真实
-IPS/Portfolio 与 M6 运营验收仍保持人工待办。
+10 个日常主入口工作台。Checkpoint A 已人工签收；Checkpoint B 的三张负向卡、
+可理解性和无错误 BUY/ADD 子项已人工通过，但整体因
+`STRICT_CONTEMPORANEOUS_RULE_PIT_NOT_PROVEN` 保持 `PARTIAL`。真实
+IPS/Portfolio、Checkpoint C-D 与 M6 运营验收仍保持人工待办。
 
 M7 Daily v2 用户查看、完整性核验、故障与回退入口见
 [m7-assisted-use-runbook-20260924.md](m7-assisted-use-runbook-20260924.md)。
@@ -40,6 +43,8 @@ M2-M7 当前全部人工待办与签收边界见
 [m2-m7-human-review-handoff-20260924.md](m2-m7-human-review-handoff-20260924.md)。
 M3 Checkpoint B 的版本化只读复核包见
 [m3-checkpoint-b-review-packet-20260924.md](m3-checkpoint-b-review-packet-20260924.md)。
+M3 Checkpoint B 的 sequence 3 人工 partial 收据见
+[m3-checkpoint-b-human-acceptance-20260924.md](m3-checkpoint-b-human-acceptance-20260924.md)。
 M2 签收时保留的两项非阻断方法债见
 [m2-non-blocking-method-debt-20260924.md](m2-non-blocking-method-debt-20260924.md)。
 

@@ -75,14 +75,29 @@ v4 只把 M2 状态改为 `DONE / HUMAN_PASS` 并加入 M3/M5 新证据层，不
 `runtime/m2-checkpoint-a-human-acceptance-20260924-v3/receipt.json`，sequence=2
 并绑定前序收据 Hash。M2 正式收口为 `DONE`；总 Goal 仍为 `PARTIAL`。
 
-## 3. M3 Checkpoint B：用户要确认什么
+## 3. M3 Checkpoint B：人工复核已完成，整体保持 PARTIAL
 
 本轮已生成版本化、只读、Hash 固定的复核包，见
 [m3-checkpoint-b-review-packet-20260924.md](m3-checkpoint-b-review-packet-20260924.md)。
-运行时可复核包位于 `runtime/m3-checkpoint-b-human-review-20260924-v1/`；它保持
-`PENDING_HUMAN_REVIEW`，不会替用户签收。
+运行时可复核包位于 `runtime/m3-checkpoint-b-human-review-20260924-v1/`；该包保留
+历史 `PENDING_HUMAN_REVIEW` 状态，用户实际人工结果已另建 sequence 3 收据。
 只读逐卡明细位于
 `runtime/m3-checkpoint-b-review-detail-20260924-v2/review-detail.md`。
+
+用户已完成阅读并明确记录：
+
+```text
+M3_NEGATIVE_CARD_HUMAN_REVIEW = PASS
+M3_HUMAN_UNDERSTANDABILITY = PASS
+M3_NO_FALSE_BUY_ADD = PASS
+
+M3_CHECKPOINT_B = PARTIAL
+M3_BLOCKER = STRICT_CONTEMPORANEOUS_RULE_PIT_NOT_PROVEN
+```
+
+三类子检查通过，不等于整体 Checkpoint B 通过。partial 人工收据为 sequence 3，
+绑定 sequence 2 收据 Hash，不覆盖历史；详情与 Hash 见
+[m3-checkpoint-b-human-acceptance-20260924.md](m3-checkpoint-b-human-acceptance-20260924.md)。
 
 三份候选都只需要看负向决策信息：
 
@@ -162,5 +177,7 @@ M6 只有在前序产品验收、真实恢复演练、20 个连续真实交易�
 不把 18 个 LEAD、0 个 VERIFIED 或测试通过数当成真实研究/产品通过
 ```
 
-M2 Checkpoint A 已记录交接。下一单步继续 M3 Decision Review / Checkpoint B，
-同时推进依赖已满足的离线工程；在 M7 用户验收前，总目标保持 `PARTIAL`。
+M3 Checkpoint B 已记录人工 partial 收据并冻结已通过子项；strict PIT blocker
+等待未来真实 contemporaneous rule chain，不阻塞依赖已满足的 M4/M5 离线工程。
+M4 个性化部分等待私人输入，M6 等待生产授权；在 M7 用户验收前，总目标保持
+`PARTIAL`。
