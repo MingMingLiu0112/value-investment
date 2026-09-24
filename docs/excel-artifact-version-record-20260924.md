@@ -18,6 +18,9 @@ Research Replay 的时点表述，不覆盖 v1 候选、不改 canonical 或投�
 - WPS 只读验证：`runtime/m7-daily-wps-v2-20260924/receipt.json`，`passed`。
 - WPS 云盘同名 v2 候选与仓库文件逐字节一致。
 - 事实/行情 PIT 与追溯规则边界已在工作簿内明示，不再写成“真实 PIT / 当时规则”。
+- WPS 验证收据新增
+  `historical_replay_boundary.facts_quote_pit=true`、
+  `contemporaneous_rule_pit=false`、`future_rule_version_used=true`。
 
 ## 2026-09-24 最终公开工作簿上传记录
 

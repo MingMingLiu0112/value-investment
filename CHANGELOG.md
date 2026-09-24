@@ -16,12 +16,15 @@ M7 Daily Workbench v1 引用的 M3 Historical Research Replay 收据已经记录
   `8d0ee32b463a2612374504bec8f9e0a55ec411adc00b40cef356a763afb77bf6`
 - manifest 由 `scripts/build_m7_daily_workbench.py` 自动生成。
 - WPS 只读验证 `passed`，canonical SHA-256 前后不变。
+- WPS 验证脚本进一步断言“规则时点 PIT=NOT CLAIMED”与
+  `future_rule_version_used=True`，并拒绝误导性旧文案。
 
 ### Verification
 
 - M7 定向回归：8 passed。
 - 非神华离线回归：2245 passed、6 skipped、0 failed。
 - GitHub Core Research Gates run `35953368838`：`success`。
+- 校验脚本强化提交后的 Core Research Gates run `35953940241`：`success`。
 - `action=no_order`；未执行生产迁移、计划任务、通知或真实账户导入。
 - v1 每日工作台候选保留，当前用户验收对象改为 v2。
 
