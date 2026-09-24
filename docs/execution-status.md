@@ -22,6 +22,9 @@ payload 是否包含扩展字段选择旧/新签名算法；旧格式继续可�
 - `verify_m7_daily_workbench_wps.ps1` 自动创建收据目录；按手册中的命令实跑为
   `passed`，10 个可见页、2 个隐藏页、canonical Hash 均通过。
 - `action=no_order`；未修改 canonical、冻结运行收据或生产服务。
+- GitHub Core Research Gates run
+  [35957882562](https://github.com/MingMingLiu0112/value-investment/actions/runs/35957882562)
+  的两个 job 均为 `success`。
 
 ## 2026-09-24 可重复执行 WPS 云盘副本审计
 

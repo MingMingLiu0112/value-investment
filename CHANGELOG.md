@@ -22,6 +22,7 @@ trigger metrics、trigger reasons、policy version 和预算前排名，导致
 - M7 运行手册中的 WPS 复核命令实跑为 `passed`，候选与 canonical Hash 不变。
 - 新增用户手册：`docs/m7-assisted-use-runbook-20260924.md`。
 - `action=no_order`；未修改冻结 M2 收据、canonical 工作簿或生产服务。
+- Core Research Gates run `35957882562`：两个 job 均 `success`。
 
 ## v2026.09.24-repeatable-public-workbook-wps-audit
 
