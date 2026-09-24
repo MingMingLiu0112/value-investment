@@ -2,6 +2,29 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M5 Outbox 迁移日志与历史不可改写
+
+M5 状态此前只能把 outbox 状态与事件批次 revision 绑在一起，提醒从 `PENDING` 到
+`SENT/DELIVERED/ACKNOWLEDGED` 的过程没有独立、可重放的追加日志。本轮补齐离线
+迁移日志，不接通知网络，也不改变 `M5=PARTIAL`。
+
+- 新增 `outbox_revision` 与不可变 `outbox_transitions`；成功、失败、重试迁移可以
+  在不伪造事件批次或 checkpoint 的情况下持久化。
+- `M5EventRunStateStore` 允许同一事件批次 revision 追加一个合法 outbox successor，
+  同时继续拒绝陈旧 writer 和无关摘要改写。
+- event-batch successor 现在校验旧事件、checkpoint、watermark 和 outbox alert 的
+  历史边界；旧事件只能逐字段不变，或由明确 correction/supersede 将
+  `ACTIVE` 改为 `SUPERSEDED`。
+- 对抗审查复现并修复了“伪造第三批次改写旧事件 `ingested_at`，同时保持日志外观”
+  的高优先级反例，新增 store rejection 回归。
+- 事件身份新增 canonical `source-id-v2`，并保留 v1/legacy 精确兼容；v1 批次
+  fingerprint 不变，v2 绑定 PIT 时间，混合 v1 -> v2 correction 链按输入事件 ID
+  精确重放，冻结 demo 继续复现历史事件 ID。
+- 迁移/StateStore/事件/工作簿边界定向回归 `77 passed`，全部 M5 定向回归
+  `115 passed`，本地全量离线回归 `2474 passed, 6 skipped, 18 warnings, 0 failed`。
+- 未发送任何真实通知，未接生产源；外部单调/签名防回滚、掉电级耐久性、生产采集、
+  通知投递、身份版本展示和真实恢复演练仍未完成。`action=no_order`。
+
 ## 2026-09-24 M5 事件与 canonical outbox 提醒绑定
 
 运行状态此前只验证“outbox 中的提醒必须引用已有事件”，没有验证“已有事件必须有

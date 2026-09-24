@@ -75,6 +75,18 @@ EVENT_STATUS_ACTIVE = "ACTIVE"
 EVENT_STATUS_SUPERSEDED = "SUPERSEDED"
 EVENT_STATUSES = frozenset({EVENT_STATUS_ACTIVE, EVENT_STATUS_SUPERSEDED})
 
+EVENT_IDENTITY_CURRENT = "source-id-v2"
+EVENT_IDENTITY_SOURCE_ID_V1 = "source-id-v1"
+EVENT_IDENTITY_LEGACY = "legacy-no-source-id-v1"
+EVENT_IDENTITY_VERSIONS = frozenset(
+    {
+        EVENT_IDENTITY_CURRENT,
+        EVENT_IDENTITY_SOURCE_ID_V1,
+        EVENT_IDENTITY_LEGACY,
+    }
+)
+LEGACY_EVENT_SOURCE_ID = "unspecified-source"
+
 INGEST_ACCEPTED = "ACCEPTED"
 INGEST_DUPLICATE = "DUPLICATE"
 INGEST_CORRECTION_ACCEPTED = "CORRECTION_ACCEPTED"
@@ -180,6 +192,42 @@ def _digest(*parts: object) -> str:
 
 
 def _event_fingerprint(event: "ChangeEventInput") -> str:
+    return hashlib.sha256(
+        json.dumps(
+            {
+                "identity_version": EVENT_IDENTITY_CURRENT,
+                "namespace": event.namespace,
+                "symbol": event.symbol,
+                "source_id": event.source_id,
+                "source_event_id": event.source_event_id,
+                "event_type": event.event_type,
+                "previous_state": event.previous_state,
+                "current_state": event.current_state,
+                "severity": event.severity,
+                "reason": event.reason,
+                "evidence_refs": [dict(item) for item in event.evidence_refs],
+                "confidence": event.confidence,
+                "detected_at": event.detected_at.isoformat(),
+                "available_at": event.available_at.isoformat(),
+                "effective_at": (
+                    event.effective_at.isoformat()
+                    if event.effective_at
+                    else None
+                ),
+                "requires_human_review": event.requires_human_review,
+                "correction_of_event_id": event.correction_of_event_id,
+                "supersedes_event_id": event.supersedes_event_id,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _source_id_v1_event_fingerprint(event: "ChangeEventInput") -> str:
+    """Reproduce the source-id-v1 fingerprint without changing its encoding."""
     return _digest(
         "event",
         event.namespace,
@@ -240,7 +288,8 @@ class ChangeEventInput:
     supersedes_event_id: str | None = None
     namespace: str = NAMESPACE_ACTUAL
     action: str = ACTION_NO_ORDER
-    source_id: str = "unspecified-source"
+    source_id: str = LEGACY_EVENT_SOURCE_ID
+    event_identity_version: str = EVENT_IDENTITY_CURRENT
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -253,6 +302,15 @@ class ChangeEventInput:
             "source_id",
             _required_text(self.source_id, "source_id"),
         )
+        if self.event_identity_version not in EVENT_IDENTITY_VERSIONS:
+            raise ValueError("Unknown event identity version")
+        if (
+            self.event_identity_version == EVENT_IDENTITY_LEGACY
+            and self.source_id != LEGACY_EVENT_SOURCE_ID
+        ):
+            raise ValueError(
+                "Legacy event identity requires unspecified-source"
+            )
         object.__setattr__(self, "symbol", _required_text(self.symbol, "symbol"))
         if not _SYMBOL.fullmatch(self.symbol):
             raise ValueError("Event symbol must be six digits or SYSTEM")
@@ -324,6 +382,10 @@ class ChangeEventInput:
 
     @property
     def source_fingerprint(self) -> str:
+        if self.event_identity_version == EVENT_IDENTITY_LEGACY:
+            return _legacy_event_fingerprint(self)
+        if self.event_identity_version == EVENT_IDENTITY_SOURCE_ID_V1:
+            return _source_id_v1_event_fingerprint(self)
         return _event_fingerprint(self)
 
     @property
@@ -331,7 +393,7 @@ class ChangeEventInput:
         return self.symbol, self.source_id, self.source_event_id
 
     def as_policy(self) -> dict[str, Any]:
-        return {
+        payload = {
             "source_event_id": self.source_event_id,
             "source_id": self.source_id,
             "symbol": self.symbol,
@@ -351,6 +413,11 @@ class ChangeEventInput:
             "namespace": self.namespace,
             "action": self.action,
         }
+        if self.event_identity_version == EVENT_IDENTITY_CURRENT:
+            payload["event_identity_version"] = EVENT_IDENTITY_CURRENT
+        elif self.event_identity_version == EVENT_IDENTITY_LEGACY:
+            payload.pop("source_id", None)
+        return payload
 
 
 @dataclass(frozen=True)
@@ -379,6 +446,7 @@ class ChangeEvent:
     status: str
     ingested_at: datetime
     sequence: int
+    event_identity_version: str = EVENT_IDENTITY_CURRENT
 
     @classmethod
     def from_input(
@@ -410,6 +478,7 @@ class ChangeEvent:
             supersedes_event_id=event.supersedes_event_id,
             namespace=event.namespace,
             action=event.action,
+            event_identity_version=event.event_identity_version,
             status=status,
             ingested_at=ingested_at,
             sequence=sequence,
@@ -425,6 +494,15 @@ class ChangeEvent:
         object.__setattr__(self, "sequence", _positive_int(self.sequence, "sequence"))
         if self.status not in EVENT_STATUSES:
             raise ValueError("Unknown event status")
+        if self.event_identity_version not in EVENT_IDENTITY_VERSIONS:
+            raise ValueError("Unknown event identity version")
+        if (
+            self.event_identity_version == EVENT_IDENTITY_LEGACY
+            and self.source_id != LEGACY_EVENT_SOURCE_ID
+        ):
+            raise ValueError(
+                "Legacy event identity requires unspecified-source"
+            )
         if self.action != ACTION_NO_ORDER:
             raise ValueError("Event infrastructure must remain no_order")
         object.__setattr__(self, "previous_state", deepcopy(self.previous_state))
@@ -452,6 +530,7 @@ class ChangeEvent:
             supersedes_event_id=self.supersedes_event_id,
             namespace=self.namespace,
             action=self.action,
+            event_identity_version=self.event_identity_version,
         )
 
     @property
@@ -563,12 +642,20 @@ class EventLedger:
         *,
         symbol: str,
         source_event_id: str,
-        source_id: str = "unspecified-source",
+        source_id: str = LEGACY_EVENT_SOURCE_ID,
     ) -> ChangeEvent | None:
         event_id = self._latest_by_key.get(
             (symbol, _required_text(source_id, "source_id"), source_event_id)
         )
         return self._events.get(event_id) if event_id else None
+
+    def expected_event_id(self, event: ChangeEventInput) -> str:
+        """Return the immutable id that this input must have in the ledger."""
+        if not isinstance(event, ChangeEventInput):
+            raise ValueError("event must be a ChangeEventInput")
+        if event.namespace != self.namespace:
+            raise ValueError("Event namespace does not match ledger namespace")
+        return _compute_event_id(event)
 
     def ordered_by_available_at(self) -> tuple[ChangeEvent, ...]:
         return tuple(
@@ -630,6 +717,15 @@ class EventLedger:
                     message="Changed source event requires an explicit correction link",
                 )
 
+        event_id = _compute_event_id(event)
+        if event_id in self._events:
+            return EventIngestResult(
+                status=INGEST_CONFLICT_REJECTED,
+                observed_at=observed_at,
+                event=None,
+                message="Computed event id already exists in the ledger",
+            )
+
         if target_id is not None:
             target = self._events.get(target_id)
             if (
@@ -654,7 +750,6 @@ class EventLedger:
             self._replace_event(target, replace(target, status=EVENT_STATUS_SUPERSEDED))
 
         sequence = len(self._order) + 1
-        event_id = _compute_event_id(event)
         accepted = ChangeEvent.from_input(
             event,
             event_id=event_id,
@@ -715,11 +810,35 @@ def _change_event_from_payload(payload: Mapping[str, Any]) -> ChangeEvent:
         raise ValueError("Event must be an object")
     data = dict(payload)
     has_source_id = "source_id" in data
+    has_identity_version = "event_identity_version" in data
+    identity_version = (
+        _required_text(
+            data["event_identity_version"],
+            "event_identity_version",
+        )
+        if has_identity_version
+        else (
+            EVENT_IDENTITY_SOURCE_ID_V1
+            if has_source_id
+            else EVENT_IDENTITY_LEGACY
+        )
+    )
+    if identity_version not in EVENT_IDENTITY_VERSIONS:
+        raise ValueError("Unknown event identity version")
+    if identity_version == EVENT_IDENTITY_LEGACY:
+        if has_source_id:
+            raise ValueError(
+                "Legacy event identity cannot include source_id"
+            )
+    elif not has_source_id:
+        raise ValueError(
+            "Versioned event identity requires source_id"
+        )
     event = ChangeEvent(
         event_id=_required_text(data["event_id"], "event_id"),
         source_event_id=_required_text(data["source_event_id"], "source_event_id"),
         source_id=_required_text(
-            data.get("source_id", "unspecified-source"),
+            data.get("source_id", LEGACY_EVENT_SOURCE_ID),
             "source_id",
         ),
         symbol=_required_text(data["symbol"], "symbol"),
@@ -766,13 +885,10 @@ def _change_event_from_payload(payload: Mapping[str, Any]) -> ChangeEvent:
             "ingested_at",
         ),
         sequence=_positive_int(data["sequence"], "sequence"),
+        event_identity_version=identity_version,
     )
-    expected_fingerprint = (
-        event.input.source_fingerprint
-        if has_source_id
-        else _legacy_event_fingerprint(event.input)
-    )
-    if not has_source_id:
+    expected_fingerprint = event.input.source_fingerprint
+    if identity_version == EVENT_IDENTITY_LEGACY:
         if not event.requires_human_review:
             raise ValueError("Legacy event payload must require human review")
         if event.effective_at not in {None, event.available_at}:

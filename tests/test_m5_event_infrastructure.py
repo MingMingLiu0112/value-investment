@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -14,6 +15,9 @@ from value_investment_agent.m5_event_checkpoint import (
 )
 from value_investment_agent.m5_event_core import (
     CONFIDENCE_HIGH,
+    EVENT_IDENTITY_CURRENT,
+    EVENT_IDENTITY_LEGACY,
+    EVENT_IDENTITY_SOURCE_ID_V1,
     EVENT_STATUS_ACTIVE,
     EVENT_STATUS_SUPERSEDED,
     EVENT_TYPE_DIVIDEND_CHANGE,
@@ -163,6 +167,10 @@ def test_event_acceptance_has_deterministic_identity_and_round_trip():
     assert result.event.event_id.startswith("m5-")
     assert result.event.sequence == 1
     assert result.event.status == EVENT_STATUS_ACTIVE
+    assert result.event.event_identity_version == EVENT_IDENTITY_CURRENT
+    assert result.event.as_policy()["event_identity_version"] == (
+        EVENT_IDENTITY_CURRENT
+    )
 
     restored = event_ledger_from_payload(ledger.as_policy())
     assert len(restored) == 1
@@ -179,15 +187,119 @@ def test_legacy_event_id_fallback_requires_source_id_to_be_absent():
     payload = ledger.as_policy()
     raw = payload["events"][0]
     raw.pop("source_id")
+    raw.pop("event_identity_version")
     raw["event_id"] = "m5-0ce1fd855cc78a903589a628b7b44135"
 
     restored = event_ledger_from_payload(payload)
     assert restored.events()[0].source_id == "unspecified-source"
     assert restored.events()[0].event_id == raw["event_id"]
+    restored_payload = restored.as_policy()
+    assert "source_id" not in restored_payload["events"][0]
+    round_tripped = event_ledger_from_payload(restored_payload)
+    assert (
+        round_tripped.events()[0].source_fingerprint
+        == restored.events()[0].source_fingerprint
+    )
+    duplicate = restored.append(
+        restored.events()[0].input,
+        observed_at=OBSERVED_LATER,
+    )
+    assert duplicate.status == INGEST_DUPLICATE
+    assert len(restored) == 1
 
     raw["source_id"] = "cninfo"
     with pytest.raises(ValueError, match="id does not match"):
         event_ledger_from_payload(payload)
+
+
+def test_legacy_identity_requires_unspecified_source():
+    with pytest.raises(ValueError, match="unspecified-source"):
+        replace(
+            _event(source_event_id="legacy-source-identity"),
+            source_id="cninfo",
+            event_identity_version=EVENT_IDENTITY_LEGACY,
+        )
+
+
+def test_source_id_v1_payload_keeps_its_original_identity_on_replay():
+    event = replace(
+        _event(source_event_id="600519-report-v1"),
+        source_id="cninfo",
+        event_identity_version=EVENT_IDENTITY_SOURCE_ID_V1,
+    )
+    ledger = _ledger()
+    accepted = ledger.append(event, observed_at=OBSERVED)
+    assert accepted.status == INGEST_ACCEPTED
+    assert accepted.event is not None
+
+    raw = ledger.as_policy()["events"][0]
+    assert "event_identity_version" not in raw
+    restored = event_ledger_from_payload(ledger.as_policy())
+    restored_event = restored.events()[0]
+    assert restored_event.event_id == accepted.event.event_id
+    assert restored_event.event_identity_version == EVENT_IDENTITY_SOURCE_ID_V1
+    assert restored_event.source_fingerprint == event.source_fingerprint
+
+    duplicate = restored.append(restored_event.input, observed_at=OBSERVED_LATER)
+    assert duplicate.status == INGEST_DUPLICATE
+    assert len(restored) == 1
+
+
+def test_source_id_v1_is_inferred_only_for_unversioned_source_id_payloads():
+    event = replace(
+        _event(source_event_id="600519-report-v1-inferred"),
+        source_id="cninfo",
+        event_identity_version=EVENT_IDENTITY_SOURCE_ID_V1,
+    )
+    ledger = _ledger()
+    accepted = ledger.append(event, observed_at=OBSERVED)
+    assert accepted.event is not None
+    payload = ledger.as_policy()
+    raw = payload["events"][0]
+    assert "event_identity_version" not in raw
+
+    restored = event_ledger_from_payload(payload)
+    restored_event = restored.events()[0]
+    assert restored_event.event_id == accepted.event.event_id
+    assert restored_event.event_identity_version == EVENT_IDENTITY_SOURCE_ID_V1
+
+    raw.pop("source_id")
+    raw["event_identity_version"] = EVENT_IDENTITY_SOURCE_ID_V1
+    with pytest.raises(ValueError, match="Versioned event identity requires source_id"):
+        event_ledger_from_payload(payload)
+
+
+def test_event_fingerprint_separates_ambiguous_source_fields():
+    base = _event(source_event_id="c")
+    first = replace(base, source_id="a|b")
+    second = replace(base, source_id="a", source_event_id="b|c")
+    assert first.source_fingerprint != second.source_fingerprint
+
+    ledger = _ledger()
+    assert ledger.append(first, observed_at=OBSERVED).status == INGEST_ACCEPTED
+    assert (
+        ledger.append(second, observed_at=OBSERVED_LATER).status
+        == INGEST_ACCEPTED
+    )
+    assert len({event.event_id for event in ledger.events()}) == 2
+
+
+def test_v2_identity_binds_pit_available_and_detected_times():
+    ledger = _ledger()
+    accepted = ledger.append(
+        _event(source_event_id="600519-report-pit-bound"),
+        observed_at=OBSERVED,
+    )
+    assert accepted.event is not None
+    payload = ledger.as_policy()
+    raw = payload["events"][0]
+    original_event_id = raw["event_id"]
+    raw["available_at"] = _dt(9).isoformat()
+    raw["detected_at"] = _dt(9).isoformat()
+
+    with pytest.raises(ValueError, match="Event id does not match"):
+        event_ledger_from_payload(payload)
+    assert raw["event_id"] == original_event_id
 
 
 def test_exact_duplicate_is_ignored_without_new_sequence():

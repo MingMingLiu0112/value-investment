@@ -19,6 +19,8 @@ from .m5_event_checkpoint import (
     checkpoint_ledger_from_payload,
 )
 from .m5_event_core import (
+    EVENT_STATUS_ACTIVE,
+    EVENT_STATUS_SUPERSEDED,
     M5_EVENT_SCHEMA,
     NAMESPACE_SIMULATED,
     EventLedger,
@@ -30,15 +32,23 @@ from .m5_event_core import (
     event_ledger_from_payload,
 )
 from .m5_event_outbox import (
+    ALERT_PENDING,
     EventAlert,
     OutboxLedger,
     alert_type_for_event_type,
     outbox_ledger_from_payload,
 )
+from .m5_event_outbox_transition import (
+    OutboxTransitionRecord,
+    outbox_transitions_as_policy,
+    outbox_transitions_from_payload,
+    replay_outbox_transitions,
+)
 from .m5_event_watermark import WatermarkLedger, watermark_ledger_from_payload
 
 
-M5_RUN_STATE_SCHEMA = "m5-event-run-state-v1"
+M5_RUN_STATE_SCHEMA_V1 = "m5-event-run-state-v1"
+M5_RUN_STATE_SCHEMA = "m5-event-run-state-v2"
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -139,6 +149,8 @@ class M5EventRunState:
     outbox: OutboxLedger
     batch_records: tuple[M5EventBatchRecord, ...] = ()
     action: str = ACTION_NO_ORDER
+    outbox_revision: int = 0
+    outbox_transitions: tuple[OutboxTransitionRecord, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -176,6 +188,27 @@ class M5EventRunState:
         object.__setattr__(self, "batch_records", records)
         if self.action != ACTION_NO_ORDER:
             raise ValueError("M5 run state must remain no_order")
+        object.__setattr__(
+            self,
+            "outbox_revision",
+            _required_int(self.outbox_revision, "outbox_revision"),
+        )
+        if self.outbox_revision < 0:
+            raise ValueError("Outbox revision cannot be negative")
+        transitions = tuple(self.outbox_transitions)
+        if any(
+            not isinstance(item, OutboxTransitionRecord)
+            for item in transitions
+        ):
+            raise ValueError(
+                "outbox_transitions must contain OutboxTransitionRecord"
+            )
+        object.__setattr__(self, "outbox_transitions", transitions)
+        if self.outbox_revision != len(transitions):
+            raise ValueError("Outbox revision does not match its transition history")
+        for index, transition in enumerate(transitions, start=1):
+            if transition.outbox_revision != index:
+                raise ValueError("Outbox transition revisions must be contiguous")
         self._validate_cross_ledger_integrity()
 
     def _validate_cross_ledger_integrity(self) -> None:
@@ -256,6 +289,13 @@ class M5EventRunState:
                         "Outbox alert review requirement does not match its event"
                     )
 
+        replayed = replay_outbox_transitions(
+            events=events,
+            transitions=self.outbox_transitions,
+        )
+        if replayed.as_policy() != self.outbox.as_policy():
+            raise ValueError("Outbox ledger does not match its transition history")
+
         if not self.batch_records:
             if self.revision != 0:
                 raise ValueError("State revision without batch records is invalid")
@@ -284,6 +324,153 @@ class M5EventRunState:
         if self.revision != len(self.batch_records):
             raise ValueError("State revision does not match its latest batch record")
 
+    def _same_non_outbox_payload(self, other: "M5EventRunState") -> bool:
+        left = self.as_policy()
+        right = other.as_policy()
+        for key in ("outbox", "outbox_revision", "outbox_transitions"):
+            left.pop(key)
+            right.pop(key)
+        return left == right
+
+    def is_outbox_transition_successor_of(
+        self,
+        previous: "M5EventRunState",
+    ) -> bool:
+        """Return whether this state is an append-only outbox successor."""
+        if not isinstance(previous, M5EventRunState):
+            return False
+        return (
+            self.state_key == previous.state_key
+            and self.revision == previous.revision
+            and self.outbox_revision == previous.outbox_revision + 1
+            and self.outbox_transitions[:-1] == previous.outbox_transitions
+            and self._same_non_outbox_payload(previous)
+        )
+
+    def is_event_batch_successor_of(
+        self,
+        previous: "M5EventRunState",
+    ) -> bool:
+        """Return whether this state advances only the event-batch dimension."""
+        if not isinstance(previous, M5EventRunState):
+            return False
+        return (
+            self.state_key == previous.state_key
+            and self.namespace == previous.namespace
+            and self.action == previous.action
+            and self.revision == previous.revision + 1
+            and self.outbox_revision == previous.outbox_revision
+            and self.outbox_transitions == previous.outbox_transitions
+            and self.batch_records[:-1] == previous.batch_records
+            and self._has_append_only_event_history(previous)
+            and self._has_append_only_checkpoint_history(previous)
+            and self._has_append_only_watermark_history(previous)
+            and self._has_append_only_outbox_alerts(previous)
+        )
+
+    def _has_append_only_event_history(
+        self,
+        previous: "M5EventRunState",
+    ) -> bool:
+        previous_events = previous.event_ledger.events()
+        current_events = self.event_ledger.events()
+        if len(current_events) < len(previous_events):
+            return False
+        appended_events = current_events[len(previous_events) :]
+        for previous_event, current_event in zip(previous_events, current_events):
+            previous_payload = previous_event.as_policy()
+            current_payload = current_event.as_policy()
+            previous_status = previous_payload.pop("status")
+            current_status = current_payload.pop("status")
+            if previous_payload != current_payload:
+                return False
+            if previous_status == current_status:
+                continue
+            if (
+                previous_status != EVENT_STATUS_ACTIVE
+                or current_status != EVENT_STATUS_SUPERSEDED
+            ):
+                return False
+            successors = tuple(
+                event
+                for event in appended_events
+                if event.correction_of_event_id == previous_event.event_id
+                or event.supersedes_event_id == previous_event.event_id
+            )
+            if len(successors) != 1:
+                return False
+        return True
+
+    def _has_append_only_checkpoint_history(
+        self,
+        previous: "M5EventRunState",
+    ) -> bool:
+        previous_checkpoints = tuple(
+            item.as_policy() for item in previous.checkpoints.checkpoints()
+        )
+        current_checkpoints = tuple(
+            item.as_policy() for item in self.checkpoints.checkpoints()
+        )
+        return (
+            len(current_checkpoints) >= len(previous_checkpoints)
+            and current_checkpoints[: len(previous_checkpoints)]
+            == previous_checkpoints
+        )
+
+    def _has_append_only_watermark_history(
+        self,
+        previous: "M5EventRunState",
+    ) -> bool:
+        previous_by_key = {
+            (item.scope, item.source): item
+            for item in previous.watermarks.watermarks()
+        }
+        current_by_key = {
+            (item.scope, item.source): item
+            for item in self.watermarks.watermarks()
+        }
+        if not previous_by_key.keys() <= current_by_key.keys():
+            return False
+        for key, previous_watermark in previous_by_key.items():
+            current_watermark = current_by_key[key]
+            if current_watermark.as_policy() == previous_watermark.as_policy():
+                continue
+            if current_watermark.watermark_id == previous_watermark.watermark_id:
+                return False
+            if current_watermark.coverage_through < previous_watermark.coverage_through:
+                return False
+            if (
+                current_watermark.coverage_through
+                == previous_watermark.coverage_through
+                and current_watermark.retrieved_at
+                <= previous_watermark.retrieved_at
+            ):
+                return False
+        return True
+
+    def _has_append_only_outbox_alerts(
+        self,
+        previous: "M5EventRunState",
+    ) -> bool:
+        previous_alerts = tuple(
+            item.as_policy() for item in previous.outbox.alerts()
+        )
+        current_alerts = tuple(item.as_policy() for item in self.outbox.alerts())
+        if len(current_alerts) < len(previous_alerts):
+            return False
+        if current_alerts[: len(previous_alerts)] != previous_alerts:
+            return False
+        for alert in self.outbox.alerts()[len(previous_alerts) :]:
+            if alert.status != ALERT_PENDING:
+                return False
+            if alert.attempts != 0 or alert.last_error is not None:
+                return False
+            if alert.sent_at is not None or alert.delivered_at is not None:
+                return False
+            if alert.next_attempt_at != alert.created_at:
+                return False
+        return True
+
     def as_policy(self) -> dict[str, Any]:
         return {
             "schema_version": M5_RUN_STATE_SCHEMA,
@@ -294,6 +481,10 @@ class M5EventRunState:
             "watermarks": self.watermarks.as_policy(),
             "checkpoints": self.checkpoints.as_policy(),
             "outbox": self.outbox.as_policy(),
+            "outbox_revision": self.outbox_revision,
+            "outbox_transitions": outbox_transitions_as_policy(
+                self.outbox_transitions
+            ),
             "batch_records": [item.as_policy() for item in self.batch_records],
             "action": self.action,
         }
@@ -328,6 +519,8 @@ class M5EventRunState:
             checkpoints=CheckpointLedger(),
             outbox=OutboxLedger(),
             batch_records=(),
+            outbox_revision=0,
+            outbox_transitions=(),
         )
 
 
@@ -335,8 +528,25 @@ def m5_event_run_state_from_payload(payload: Mapping[str, Any]) -> M5EventRunSta
     if not isinstance(payload, Mapping):
         raise ValueError("M5 run state must be an object")
     data = dict(payload)
-    if data.get("schema_version") != M5_RUN_STATE_SCHEMA:
+    schema_version = data.get("schema_version")
+    if schema_version not in {M5_RUN_STATE_SCHEMA_V1, M5_RUN_STATE_SCHEMA}:
         raise ValueError("Unknown M5 run state schema")
+    if schema_version == M5_RUN_STATE_SCHEMA and (
+        "outbox_revision" not in data or "outbox_transitions" not in data
+    ):
+        raise ValueError("Current M5 run state requires outbox transition history")
+    outbox_revision = (
+        0
+        if schema_version == M5_RUN_STATE_SCHEMA_V1
+        else _required_int(data["outbox_revision"], "outbox_revision")
+    )
+    outbox_transitions = (
+        ()
+        if schema_version == M5_RUN_STATE_SCHEMA_V1
+        else outbox_transitions_from_payload(
+            data["outbox_transitions"]
+        )
+    )
     batch_records: list[M5EventBatchRecord] = []
     for raw in data.get("batch_records") or ():
         if not isinstance(raw, Mapping):
@@ -377,4 +587,6 @@ def m5_event_run_state_from_payload(payload: Mapping[str, Any]) -> M5EventRunSta
         outbox=outbox_ledger_from_payload(data.get("outbox") or {}),
         batch_records=tuple(batch_records),
         action=str(data.get("action", ACTION_NO_ORDER)),
+        outbox_revision=outbox_revision,
+        outbox_transitions=outbox_transitions,
     )

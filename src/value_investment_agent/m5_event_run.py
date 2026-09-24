@@ -279,10 +279,8 @@ def _replayed_ingest_results(
 ) -> tuple[EventIngestResult, ...]:
     results: list[EventIngestResult] = []
     for event, observed_at in zip(events, observed_times):
-        existing = state.event_ledger.latest_for(
-            symbol=event.symbol,
-            source_id=event.source_id,
-            source_event_id=event.source_event_id,
+        existing = state.event_ledger.get(
+            state.event_ledger.expected_event_id(event)
         )
         if existing is None:
             results.append(
@@ -310,16 +308,14 @@ def _alerts_for_batch(
     state: M5EventRunState,
     events: Sequence[ChangeEventInput],
 ) -> tuple[EventAlert, ...]:
-    identities = {
-        (event.symbol, event.source_id, event.source_event_id) for event in events
-    }
     event_ids = {
-        event.event_id
-        for event in state.event_ledger.events()
-        if (event.symbol, event.source_id, event.source_event_id) in identities
+        state.event_ledger.expected_event_id(event)
+        for event in events
     }
     return tuple(
-        alert for alert in state.outbox.alerts() if alert.event_id in event_ids
+        alert
+        for alert in state.outbox.alerts()
+        if alert.event_id in event_ids
     )
 
 
@@ -595,6 +591,8 @@ def run_event_batch(
             checkpoints=working.checkpoints,
             outbox=working.outbox,
             batch_records=working.batch_records + (record,),
+            outbox_revision=working.outbox_revision,
+            outbox_transitions=working.outbox_transitions,
         )
         health_status, silent_ok, review_due = _receipt_health(
             state=next_state,

@@ -130,6 +130,40 @@
 
 本批仍不发送通知、不接生产源，`action=no_order`。
 
+## 2026-09-24 Outbox 迁移日志与事件批次历史不可改写
+
+事件批次 revision 之前同时承担 outbox 状态变化，无法在不制造虚假批次的情况下
+持久记录提醒投递结果。现在 outbox 使用独立的追加日志，并补齐事件批次 successor
+对旧历史的不可改写约束：
+
+- `M5EventRunState` v2 增加 `outbox_revision` 和不可变
+  `outbox_transitions`；StateStore 可在同一事件批次 revision 接受恰好一个合法
+  outbox successor，陈旧 writer 和无关 same-revision 改写仍失败关闭。
+- `apply_outbox_transition()` 记录 `PENDING/SENT/DELIVERED/ACKNOWLEDGED` 与
+  retryable/terminal failure 迁移；重复请求幂等，重放重建同一 outbox。该函数只
+  记录调用方已确认的 transport 结果，不发送通知。
+- event-batch successor 现在逐字段比较旧事件，只允许明确的 correction/supersede
+  将 `ACTIVE` 改为 `SUPERSEDED`；旧 checkpoint、watermark 和 outbox alert 也必须保持
+  合法前缀或单调推进。
+- 对抗审查构造了伪造第三批次改写旧事件 `ingested_at`、同时重建 outbox 的反例；
+  当前 StateStore 会拒绝该状态，并已加入回归。
+- 事件身份以 canonical JSON `source-id-v2` 生成新 ID；带 `source_id` 的历史 payload
+  继续按原 `source-id-v1` 算法校验，更早的无 `source_id` payload 按 legacy 算法
+  校验。v1 序列化不增加版本字段，因此旧 batch fingerprint 与旧事件 ID 保持一致。
+- v2 fingerprint 同时绑定 `detected_at`、`available_at` 和 `effective_at`；修改
+  PIT 时间但不重新计算 ID 会在事件账恢复时失败关闭。
+- 旧批次重放和提醒恢复按该批次输入对应的精确 event ID 查询，不再取相同来源的最新
+  事件，因此允许历史 v1 事件由新的 v2 correction 显式取代，同时保持旧回执幂等。
+- 冻结 M5 demo fixture 显式按 legacy 身份构造，并固定回归首个历史事件 ID
+  `m5-4b18852347f226b8aa172d96aec307af`，避免发布工作簿因默认算法变化而漂移。
+- 迁移/StateStore/事件/工作簿边界定向回归 `77 passed`；全部 M5 定向回归
+  `115 passed`；本地全量离线回归
+  `2474 passed, 6 skipped, 18 warnings, 0 failed`。
+
+本批仍不发送真实通知、不接生产源，也不承诺外部单调/签名防回滚或掉电级耐久性；
+工作簿暂未展示身份版本，v1/legacy 为冻结兼容也不能补绑 PIT 时间字段。`M5`
+保持 `PARTIAL`，`action=no_order`。
+
 ## 未完成边界
 
 真实公告采集器、公告级材料性判定、Entry/组合复核、生产调度、通知目标和

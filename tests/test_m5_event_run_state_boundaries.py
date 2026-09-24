@@ -13,6 +13,8 @@ import value_investment_agent.m5_event_run as m5_event_run
 from value_investment_agent.investment_decision import ACTION_NO_ORDER
 from value_investment_agent.m5_event_core import (
     CONFIDENCE_HIGH,
+    EVENT_IDENTITY_CURRENT,
+    EVENT_IDENTITY_SOURCE_ID_V1,
     EVENT_TYPE_NEW_FINANCIAL_REPORT,
     EVENT_TYPE_SOURCE_SCAN_FAILED,
     NAMESPACE_ACTUAL,
@@ -231,6 +233,106 @@ def test_same_batch_replay_is_noop_and_changed_inputs_fail_closed() -> None:
     assert len(first.state.event_ledger) == 1
 
 
+def test_source_id_v1_batch_fingerprint_keeps_pre_version_encoding() -> None:
+    event = replace(
+        _event(source_event_id="event-v1", observed_at=OBSERVED),
+        event_identity_version=EVENT_IDENTITY_SOURCE_ID_V1,
+    )
+    watermark = _watermark(watermark_id="scan-batch-v1", at=OBSERVED)
+    old_fingerprint = _state_digest(
+        {
+            "events": [event.as_policy()],
+            "observed_times": [OBSERVED.isoformat()],
+            "watermark": watermark.as_policy(),
+            "dependency_graph": _graph().as_policy(),
+            "direct_kinds_by_source_event_id": {},
+        }
+    )
+    assert "event_identity_version" not in event.as_policy()
+
+    first = run_event_batch(
+        events=(event,),
+        observed_times=(OBSERVED,),
+        watermark=watermark,
+        graph=_graph(),
+        run_id="m5-run-v1",
+        generated_at=OBSERVED,
+        batch_id="batch-v1",
+    )
+    assert first.state.batch_records[0].request_fingerprint == old_fingerprint
+
+    replay = run_event_batch(
+        events=(event,),
+        observed_times=(OBSERVED,),
+        watermark=watermark,
+        graph=_graph(),
+        run_id="m5-run-v1",
+        generated_at=OBSERVED,
+        state=first.state,
+        batch_id="batch-v1",
+    )
+    assert replay.idempotent_noop is True
+    assert replay.receipt_id == first.receipt_id
+
+
+def test_v1_batch_replay_targets_original_event_after_v2_correction() -> None:
+    v1_event = replace(
+        _event(source_event_id="event-v1-chain", observed_at=OBSERVED),
+        event_identity_version=EVENT_IDENTITY_SOURCE_ID_V1,
+    )
+    first_watermark = _watermark(watermark_id="scan-batch-v1-chain", at=OBSERVED)
+    first = run_event_batch(
+        events=(v1_event,),
+        observed_times=(OBSERVED,),
+        watermark=first_watermark,
+        graph=_graph(),
+        run_id="m5-run-v1-chain",
+        generated_at=OBSERVED,
+        batch_id="batch-v1-chain",
+    )
+    v1_event_id = first.state.event_ledger.events()[0].event_id
+
+    v2_correction = replace(
+        _event(
+            source_event_id="event-v1-chain",
+            observed_at=OBSERVED_LATER,
+            current_state={"value": "2.0"},
+        ),
+        correction_of_event_id=v1_event_id,
+    )
+    second = run_event_batch(
+        events=(v2_correction,),
+        observed_times=(OBSERVED_LATER,),
+        watermark=_watermark(watermark_id="scan-batch-v2-chain", at=OBSERVED_LATER),
+        graph=_graph(),
+        run_id="m5-run-v1-chain",
+        generated_at=OBSERVED_LATER,
+        state=first.state,
+        batch_id="batch-v2-chain",
+    )
+    assert [
+        event.event_identity_version
+        for event in second.state.event_ledger.events()
+    ] == [
+        EVENT_IDENTITY_SOURCE_ID_V1,
+        EVENT_IDENTITY_CURRENT,
+    ]
+
+    replay = run_event_batch(
+        events=(v1_event,),
+        observed_times=(OBSERVED,),
+        watermark=first_watermark,
+        graph=_graph(),
+        run_id="m5-run-v1-chain",
+        generated_at=OBSERVED,
+        state=second.state,
+        batch_id="batch-v1-chain",
+    )
+    assert replay.idempotent_noop is True
+    assert [item.event.event_id for item in replay.ingest_results] == [v1_event_id]
+    assert [item.event_id for item in replay.alerts] == [v1_event_id]
+
+
 def test_rejected_new_batch_is_committed_not_claimed_as_replay() -> None:
     first = _run(state=None, batch_id="batch-1", event_id="event-1")
     future_event = _event(source_event_id="event-future", observed_at=OBSERVED_LATER)
@@ -429,6 +531,7 @@ def test_legacy_event_id_without_source_id_loads_but_new_field_tampering_fails()
     legacy_payload = deepcopy(ledger.as_policy())
     legacy_event = legacy_payload["events"][0]
     del legacy_event["source_id"]
+    del legacy_event["event_identity_version"]
     del legacy_event["effective_at"]
     legacy_event["event_id"] = _legacy_event_id(legacy_event)
 

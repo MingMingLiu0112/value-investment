@@ -1,5 +1,43 @@
 # Changelog
 
+## v2026.09.24-m5-outbox-transition-journal
+
+### Scope
+
+为 M5 离线 outbox 增加独立于事件批次 revision 的 append-only 状态迁移日志。该批次
+只记录发送、投递、确认和失败结果，不调用通知网络，也不改变 M5 `PARTIAL` 或
+`action=no_order` 边界。
+
+### Changes
+
+- `M5EventRunState` schema 升级为 v2，新增 `outbox_revision` 与不可变
+  `outbox_transitions`；事件批次 revision 与提醒投递 revision 分开推进。
+- 支持 `PENDING -> SENT -> DELIVERED -> ACKNOWLEDGED`、retryable/terminal failure
+  及失败后重试的确定性记录和重放；状态迁移 ID 绑定 alert、前后状态、时间和错误。
+- StateStore CAS 允许同一事件批次 revision 只追加一个 outbox successor，陈旧 writer
+  和无关 same-revision 改写继续失败关闭。
+- event-batch successor 现在要求旧事件除明确的 `ACTIVE -> SUPERSEDED` 外逐字段不变，
+  并保持旧 checkpoint、watermark 和 outbox alert 历史不可改写；修复了伪造批次可
+  重写旧事件 `ingested_at` 的高优先级反例。
+- 新事件改用 canonical JSON `source-id-v2`，同时保留 `source-id-v1` 与无
+  `source_id` legacy payload 的精确导入；v1 批次 fingerprint 保持升级前编码，
+  v2 身份绑定 `detected_at`/`available_at`，防止 PIT 时间在不改事件 ID 时被改写。
+- 混合 v1 -> v2 correction 链的旧批次重放改为按输入对应的精确 event ID 定位，不再
+  误用同一来源的最新事件；冻结 M5 demo fixture 继续复现原历史事件 ID。
+- 新增迁移持久化、幂等重放、失败重试、legacy/v1/v2 兼容、旧批次兼容、混合修正链、
+  PIT 篡改和历史改写拒绝回归。
+
+### Verification
+
+- 迁移/StateStore/事件/工作簿边界定向回归：`77 passed`。
+- 全部 M5 定向回归：`115 passed`。
+- 本地全量离线回归：`2474 passed, 6 skipped, 18 warnings, 0 failed`。
+- `compileall` 与 `git diff --check` 通过。
+- 仅证明离线日志与 CAS 合同；真实通知投递、外部单调/签名防回滚、掉电级耐久性、
+  生产采集和真实恢复演练仍未完成。v1/legacy 事件 ID 为历史兼容而冻结，不能事后
+  补绑 PIT 时间字段；工作簿身份版本展示和真实 outbox 迁移仍需后续工程。
+  `M5` 仍为 `PARTIAL`。
+
 ## v2026.09.24-m5-canonical-outbox-alert-binding
 
 ### Scope

@@ -9,11 +9,14 @@ from pathlib import Path
 
 from value_investment_agent.investment_decision import ACTION_NO_ORDER
 from value_investment_agent.m5_event_core import (
+    EVENT_IDENTITY_LEGACY,
+    EVENT_IDENTITY_SOURCE_ID_V1,
     EVENT_STATUS_ACTIVE,
     INGEST_ACCEPTED,
     INGEST_CORRECTION_ACCEPTED,
     INGEST_DUPLICATE,
     INGEST_SUPERSEDES_ACCEPTED,
+    LEGACY_EVENT_SOURCE_ID,
     NAMESPACE_SIMULATED,
     ChangeEventInput,
     EventLedger,
@@ -54,8 +57,15 @@ def _datetime(value: object, field: str) -> datetime:
 
 
 def _event_from_payload(payload: dict) -> ChangeEventInput:
+    identity_version = payload.get("event_identity_version")
+    if identity_version is None:
+        identity_version = (
+            EVENT_IDENTITY_SOURCE_ID_V1
+            if "source_id" in payload
+            else EVENT_IDENTITY_LEGACY
+        )
     return ChangeEventInput(
-        source_id=str(payload.get("source_id") or "m5-input"),
+        source_id=str(payload.get("source_id", LEGACY_EVENT_SOURCE_ID)),
         source_event_id=str(payload["source_event_id"]),
         symbol=str(payload["symbol"]),
         event_type=str(payload["event_type"]),
@@ -72,6 +82,7 @@ def _event_from_payload(payload: dict) -> ChangeEventInput:
         confidence=str(payload["confidence"]),
         requires_human_review=bool(payload["requires_human_review"]),
         namespace=NAMESPACE_SIMULATED,
+        event_identity_version=str(identity_version),
     )
 
 
@@ -135,6 +146,7 @@ def prepare_event_batch(
                 requires_human_review=event.requires_human_review,
                 correction_of_event_id=target.event_id,
                 namespace=NAMESPACE_SIMULATED,
+                event_identity_version=event.event_identity_version,
             )
         else:
             result = resolver.append(event, observed_at=observed_at)

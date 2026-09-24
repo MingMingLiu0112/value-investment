@@ -9,6 +9,7 @@ from scripts.build_m5_event_infrastructure_candidate import (
     build_models,
     load_input,
 )
+from value_investment_agent.m5_event_core import EVENT_IDENTITY_LEGACY
 from value_investment_agent.m5_event_workbook import (
     build_m5_event_workbook,
     write_m5_event_workbook,
@@ -17,6 +18,19 @@ from value_investment_agent.m5_event_workbook import (
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "m5_event_infrastructure_demo.json"
+
+
+def test_frozen_demo_fixture_reproduces_its_legacy_event_ids():
+    payload, _ = load_input(FIXTURE)
+    receipt, _ = build_models(payload)
+
+    assert [
+        event.event_identity_version
+        for event in receipt.state.event_ledger.events()
+    ] == [EVENT_IDENTITY_LEGACY] * 6
+    assert receipt.state.event_ledger.events()[0].event_id == (
+        "m5-4b18852347f226b8aa172d96aec307af"
+    )
 
 
 def test_simulated_m5_workbook_has_expected_sheets_and_boundary(tmp_path):

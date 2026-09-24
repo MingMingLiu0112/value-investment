@@ -84,17 +84,67 @@ def _validate_next_state(
             raise M5StateStoreConflict("Initial state revision must be 0 or 1")
         if any(record.state_revision != 1 for record in state.batch_records):
             raise M5StateStoreConflict("Initial persisted state is inconsistent")
+        if state.outbox_revision != 0 or state.outbox_transitions:
+            raise M5StateStoreConflict(
+                "Initial persisted state cannot contain outbox transitions"
+            )
         return
     if state.state_key != current.state_key:
         raise ValueError("Stored state_key cannot change")
     if state.revision == expected_revision:
-        if state.state_sha256() != current.state_sha256():
+        if state.state_sha256() == current.state_sha256():
+            return
+        if state.is_outbox_transition_successor_of(current):
+            return
+        raise M5StateStoreConflict(
+            "Same revision cannot replace a different state digest"
+        )
+    if state.revision == expected_revision + 1:
+        if not state.is_event_batch_successor_of(current):
             raise M5StateStoreConflict(
-                "Same revision cannot replace a different state digest"
+                "Event batch successor cannot change outbox history"
             )
         return
-    if state.revision != expected_revision + 1:
-        raise M5StateStoreConflict("State revision must advance by exactly one")
+    raise M5StateStoreConflict("State revision must advance by exactly one")
+
+
+def _round_trip_state(state: M5EventRunState) -> M5EventRunState:
+    """Return a validated snapshot before any state is persisted."""
+    if not isinstance(state, M5EventRunState):
+        raise ValueError("state must be an M5EventRunState")
+    try:
+        payload = json.loads(state.to_json())
+        snapshot = m5_event_run_state_from_payload(payload)
+    except (TypeError, ValueError, KeyError) as error:
+        raise M5StateStoreConflict(
+            "M5 state failed round-trip validation"
+        ) from error
+    if snapshot.state_sha256() != state.state_sha256():
+        raise M5StateStoreConflict("M5 state digest changed during round-trip")
+    if not _same_semantic_state(state, snapshot):
+        raise M5StateStoreConflict(
+            "M5 state changed semantically during round-trip"
+        )
+    return snapshot
+
+
+def _same_semantic_state(
+    original: M5EventRunState,
+    snapshot: M5EventRunState,
+) -> bool:
+    return (
+        original.state_key == snapshot.state_key
+        and original.namespace == snapshot.namespace
+        and original.revision == snapshot.revision
+        and original.action == snapshot.action
+        and original.event_ledger.events() == snapshot.event_ledger.events()
+        and original.watermarks.watermarks() == snapshot.watermarks.watermarks()
+        and original.checkpoints.checkpoints() == snapshot.checkpoints.checkpoints()
+        and original.outbox.alerts() == snapshot.outbox.alerts()
+        and original.outbox_revision == snapshot.outbox_revision
+        and original.outbox_transitions == snapshot.outbox_transitions
+        and original.batch_records == snapshot.batch_records
+    )
 
 
 class InMemoryM5EventRunStateStore:
@@ -119,8 +169,9 @@ class InMemoryM5EventRunStateStore:
     ) -> None:
         if not isinstance(state, M5EventRunState):
             raise ValueError("state must be an M5EventRunState")
+        snapshot = _round_trip_state(state)
         with self._lock:
-            current = self._states.get(state.state_key)
+            current = self._states.get(snapshot.state_key)
             _, digest = _validate_expected(
                 expected_revision=expected_revision,
                 expected_sha256=expected_sha256,
@@ -129,13 +180,11 @@ class InMemoryM5EventRunStateStore:
             _validate_next_state(
                 current=current,
                 expected_revision=expected_revision,
-                state=state,
+                state=snapshot,
             )
-            if current is not None and state.revision == current.revision:
-                if state.state_sha256() != digest:
-                    raise M5StateStoreConflict("Stored state digest mismatch")
+            if current is not None and snapshot.state_sha256() == current.state_sha256():
                 return
-            self._states[state.state_key] = state.clone()
+            self._states[snapshot.state_key] = snapshot
 
 
 @contextmanager
@@ -239,8 +288,9 @@ class JsonM5EventRunStateStore:
     ) -> None:
         if not isinstance(state, M5EventRunState):
             raise ValueError("state must be an M5EventRunState")
+        snapshot = _round_trip_state(state)
         with self._locked():
-            current = self._load_unlocked(state.state_key)
+            current = self._load_unlocked(snapshot.state_key)
             _, digest = _validate_expected(
                 expected_revision=expected_revision,
                 expected_sha256=expected_sha256,
@@ -249,10 +299,8 @@ class JsonM5EventRunStateStore:
             _validate_next_state(
                 current=current,
                 expected_revision=expected_revision,
-                state=state,
+                state=snapshot,
             )
-            if current is not None and state.revision == current.revision:
-                if state.state_sha256() != digest:
-                    raise M5StateStoreConflict("Stored state digest mismatch")
+            if current is not None and snapshot.state_sha256() == current.state_sha256():
                 return
-            self._write_unlocked(state)
+            self._write_unlocked(snapshot)
