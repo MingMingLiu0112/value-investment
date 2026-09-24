@@ -2,6 +2,21 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M4 私有组合输入加密边界
+
+新增 `private_portfolio_intake.py`，补足 M4 合同与未来真实私有输入之间的最小安全边界。
+
+- 只接受人工确认、已对账且 `ACTUAL` 的 `PortfolioInputBundle`，以 AES-256-GCM
+  写入新密文；文件不可覆盖，加载后重新执行原有领域验证。
+- 私有根必须在仓库之外；可配置的 WPS 等同步根、仓库路径、密钥与私有根同址均失败关闭。
+  密钥必须是私有根外部的独立 32-byte hex 常规文件。
+- 解密只在内存中进行；输出回执只有密文 SHA-256、密钥标识、创建时间和 `no_order`，
+  不含 IPS、现金、持仓或账户数据。`.viportfolio` 已加入 Git 忽略。
+- 新增 3 个合成 fixture 回归，覆盖往返、无敏感回执、仓库/WPS/密钥隔离、不可覆盖、
+  错误密钥和篡改密文；相关 M4 合同和 M6 加密回归为 `16 passed`。
+- 未读取真实账户、未做账户导入、未持久化明文、未产生个性化仓位/订单。M4 仍为
+  `ENGINEERING_DONE_SIMULATED / PARTIAL / PENDING_PRIVATE_INPUT`。
+
 ## 2026-09-24 M6 历史 ingest 拒绝聚合视图
 
 新增只读聚合入口 `scripts/audit_m6_historical_ingest_rejections.py`，解决后续完整扫描

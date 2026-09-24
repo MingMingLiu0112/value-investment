@@ -9,6 +9,7 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .pytest-tmp*/
+.pytest-local-temp*/
 node_modules/
 
 # Runtime data and backups
@@ -17,6 +18,7 @@ backups/
 *.dump
 *.manifest.json
 *.receipt.json
+*.viportfolio
 *.m3-decision-addon.xlsx
 evidence-archive/
 .agents/
