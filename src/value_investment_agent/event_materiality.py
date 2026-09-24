@@ -114,6 +114,9 @@ class EventMaterialityDecision:
         if not _SHA256.fullmatch(self.source_sha256):
             raise ValueError("Event source hash must be SHA-256 hex")
         object.__setattr__(self, "source_sha256", self.source_sha256.lower())
+        source_sha256 = self.source_ref.get("sha256")
+        if source_sha256 is not None and str(source_sha256).lower() != self.source_sha256:
+            raise ValueError("Event source hash must match source_ref.sha256")
         if not self.source_ref.get("id"):
             raise ValueError("Event source reference requires an id")
         object.__setattr__(self, "source_ref", dict(self.source_ref))
@@ -227,6 +230,8 @@ class EventMaterialityReview:
         object.__setattr__(self, "scan_sha256", self.scan_sha256.lower())
         if self.scan_to < self.scan_from:
             raise ValueError("Event scan window cannot end before it starts")
+        if self.scan_to > self.review_as_of:
+            raise ValueError("Event scan window cannot extend beyond the review date")
         if self.review_as_of < self.scan_from:
             raise ValueError("Event review date cannot precede the scan window")
         if self.reviewed_at.tzinfo is None:
@@ -241,6 +246,11 @@ class EventMaterialityReview:
             raise ValueError("Event materiality review requires decisions")
         if any(item.symbol != self.symbol for item in self.decisions):
             raise ValueError("Every event decision must match the review symbol")
+        if any(
+            item.reviewed_at is not None and item.reviewed_at > self.reviewed_at
+            for item in self.decisions
+        ):
+            raise ValueError("Event decision time cannot follow the review time")
         ids = [item.announcement_id for item in self.decisions]
         if len(ids) != len(set(ids)):
             raise ValueError("Event review contains a duplicate announcement id")

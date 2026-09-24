@@ -42,7 +42,7 @@ SCAN_FROM = date(2026, 8, 27)
 SCAN_TO = date(2026, 9, 24)
 RETRIEVED_AT = datetime(2026, 9, 24, 8, 0, tzinfo=timezone.utc)
 PUBLISHED_AT = datetime(2026, 9, 2, 0, 0, tzinfo=timezone(timedelta(hours=8)))
-REVIEWED_AT = datetime(2026, 9, 23, 5, 30, tzinfo=timezone.utc)
+REVIEWED_AT = datetime(2026, 9, 24, 8, 30, tzinfo=timezone.utc)
 AS_OF = datetime(2026, 9, 24, 9, 0, tzinfo=timezone.utc)
 
 

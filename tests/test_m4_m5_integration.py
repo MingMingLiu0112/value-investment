@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import json
 
@@ -9,6 +10,7 @@ from openpyxl import load_workbook
 
 from scripts.build_m4_m5_integrated_candidate import build_models, load_input
 from value_investment_agent.m4_m5_integration import (
+    M4M5ArtifactDefinition,
     STATUS_NEGATIVE,
     STATUS_PAUSED,
     STATUS_PARTIAL,
@@ -19,6 +21,24 @@ from value_investment_agent.m4_m5_integration import (
 from value_investment_agent.m4_m5_integration_workbook import (
     build_m4_m5_integration_workbook,
     write_m4_m5_integration_workbook,
+)
+from value_investment_agent.m5_event_core import (
+    CONFIDENCE_HIGH,
+    EVENT_TYPE_NEW_FINANCIAL_REPORT,
+    NAMESPACE_SIMULATED,
+    SEVERITY_HIGH,
+    ChangeEventInput,
+)
+from value_investment_agent.m5_event_dependencies import (
+    KIND_FACTS,
+    DependencyGraph,
+    DependencyNode,
+)
+from value_investment_agent.m5_event_run import run_event_batch
+from value_investment_agent.m5_event_watermark import (
+    SOURCE_HEALTHY,
+    WATERMARK_COVERAGE_COMPLETE,
+    ScanWatermark,
 )
 
 
@@ -202,3 +222,186 @@ def test_joint_workbook_writer_pins_hash_and_rejects_existing_output(models, tmp
             security_names=payload["security_names"],
         )
     assert "target_weight" not in json.dumps(write_result, ensure_ascii=False)
+
+
+def test_deferred_only_artifact_is_partial_instead_of_invalid_paused() -> None:
+    observed = datetime(2026, 9, 24, 16, 0, tzinfo=timezone(timedelta(hours=8)))
+    graph = DependencyGraph(
+        tuple(
+            DependencyNode(
+                node_id=f"n{index:02d}",
+                kind=KIND_FACTS,
+                symbol="600519",
+                inputs=() if index == 0 else (f"n{index - 1:02d}",),
+                version="deferred-boundary-v1",
+                evidence_refs=({"id": f"node-{index:02d}"},),
+            )
+            for index in range(26)
+        )
+    )
+    event = ChangeEventInput(
+        source_id="cninfo",
+        source_event_id="600519-deferred-only",
+        symbol="600519",
+        event_type=EVENT_TYPE_NEW_FINANCIAL_REPORT,
+        detected_at=observed - timedelta(minutes=5),
+        available_at=observed - timedelta(minutes=5),
+        effective_at=observed - timedelta(minutes=5),
+        previous_state={},
+        current_state={"report": "fixture"},
+        severity=SEVERITY_HIGH,
+        reason="synthetic deferred-only dependency boundary",
+        evidence_refs=({"id": "deferred-only-source"},),
+        confidence=CONFIDENCE_HIGH,
+        requires_human_review=True,
+        namespace=NAMESPACE_SIMULATED,
+    )
+    receipt = run_event_batch(
+        events=(event,),
+        observed_times=(observed,),
+        watermark=ScanWatermark(
+            watermark_id="deferred-only-scan",
+            scope="ALL",
+            source="cninfo",
+            coverage_through=observed,
+            retrieved_at=observed,
+            parser_version="deferred-boundary-v1",
+            coverage_status=WATERMARK_COVERAGE_COMPLETE,
+            source_health=SOURCE_HEALTHY,
+            evidence_refs=({"id": "deferred-only-scan"},),
+        ),
+        graph=graph,
+        run_id="deferred-only-run",
+        generated_at=observed,
+    )
+    definition = M4M5ArtifactDefinition(
+        artifact_id="deferred-only",
+        kind=KIND_FACTS,
+        symbol="600519",
+        node_ids=("n25",),
+    )
+
+    result = build_m4_m5_integration(
+        receipt=receipt,
+        graph=graph,
+        artifacts=(definition,),
+        baseline_statuses={"deferred-only": STATUS_READY},
+        generated_at=observed,
+    )
+
+    state = result.artifact("deferred-only")
+    assert state.status == STATUS_PARTIAL
+    assert state.invalidated_node_ids == ()
+    assert state.deferred_node_ids == ("n25",)
+    assert state.triggering_event_ids == ("600519-deferred-only",)
+    assert result.affected_artifact_count() == 1
+
+
+def test_integration_rejects_cross_symbol_forgery_and_binds_result_identity() -> None:
+    observed = datetime(2026, 9, 24, 16, 0, tzinfo=timezone(timedelta(hours=8)))
+    graph = DependencyGraph(
+        (
+            DependencyNode(
+                node_id="facts-600519",
+                kind=KIND_FACTS,
+                symbol="600519",
+                inputs=(),
+                version="cross-symbol-v1",
+                evidence_refs=({"id": "facts-600519"},),
+            ),
+            DependencyNode(
+                node_id="facts-601088",
+                kind=KIND_FACTS,
+                symbol="601088",
+                inputs=(),
+                version="cross-symbol-v1",
+                evidence_refs=({"id": "facts-601088"},),
+            ),
+        )
+    )
+    event = ChangeEventInput(
+        source_id="cninfo",
+        source_event_id="600519-cross-symbol",
+        symbol="600519",
+        event_type=EVENT_TYPE_NEW_FINANCIAL_REPORT,
+        detected_at=observed - timedelta(minutes=5),
+        available_at=observed - timedelta(minutes=5),
+        effective_at=observed - timedelta(minutes=5),
+        previous_state={},
+        current_state={"report": "fixture"},
+        severity=SEVERITY_HIGH,
+        reason="synthetic cross-symbol invalidation fixture",
+        evidence_refs=({"id": "cross-symbol-source"},),
+        confidence=CONFIDENCE_HIGH,
+        requires_human_review=True,
+        namespace=NAMESPACE_SIMULATED,
+    )
+    receipt = run_event_batch(
+        events=(event,),
+        observed_times=(observed,),
+        watermark=ScanWatermark(
+            watermark_id="cross-symbol-scan",
+            scope="ALL",
+            source="cninfo",
+            coverage_through=observed,
+            retrieved_at=observed,
+            parser_version="cross-symbol-v1",
+            coverage_status=WATERMARK_COVERAGE_COMPLETE,
+            source_health=SOURCE_HEALTHY,
+            evidence_refs=({"id": "cross-symbol-scan"},),
+        ),
+        graph=graph,
+        run_id="cross-symbol-run",
+        generated_at=observed,
+    )
+    definition = M4M5ArtifactDefinition(
+        artifact_id="foreign-facts",
+        kind=KIND_FACTS,
+        symbol="601088",
+        node_ids=("facts-601088",),
+    )
+    forged_item = replace(
+        receipt.invalidations[0].affected_nodes[0],
+        node_id="facts-601088",
+        kind=KIND_FACTS,
+        reason="forged cross-symbol invalidation",
+    )
+    forged_invalidation = replace(
+        receipt.invalidations[0],
+        affected_nodes=(forged_item,),
+    )
+    forged_receipt = replace(
+        receipt,
+        invalidations=(forged_invalidation,),
+    )
+
+    with pytest.raises(ValueError, match="crosses event and graph symbols"):
+        build_m4_m5_integration(
+            receipt=forged_receipt,
+            graph=graph,
+            artifacts=(definition,),
+            baseline_statuses={"foreign-facts": STATUS_READY},
+            generated_at=observed,
+        )
+
+    local_definition = M4M5ArtifactDefinition(
+        artifact_id="local-facts",
+        kind=KIND_FACTS,
+        symbol="600519",
+        node_ids=("facts-600519",),
+    )
+    ready = build_m4_m5_integration(
+        receipt=receipt,
+        graph=graph,
+        artifacts=(local_definition,),
+        baseline_statuses={"local-facts": STATUS_READY},
+        generated_at=observed,
+    )
+    partial = build_m4_m5_integration(
+        receipt=receipt,
+        graph=graph,
+        artifacts=(local_definition,),
+        baseline_statuses={"local-facts": STATUS_PARTIAL},
+        generated_at=observed,
+    )
+    assert ready.result_id != partial.result_id

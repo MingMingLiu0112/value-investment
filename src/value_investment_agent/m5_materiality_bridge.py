@@ -30,6 +30,9 @@ from .m5_event_core import (
     CONFIDENCE_MEDIUM,
     EVENT_NAMESPACES,
     EVENT_TYPE_MATERIAL_ANNOUNCEMENT,
+    HUMAN_MATERIALITY_EVIDENCE_TYPE,
+    MATERIALITY_BRIDGE_SOURCE_ID,
+    MATERIALITY_PENDING_STATUS,
     SEVERITY_HIGH,
     SEVERITY_MEDIUM,
     ChangeEventInput,
@@ -195,15 +198,23 @@ def materiality_event_from_decision(
     confidence = CONFIDENCE_MEDIUM if decision.human_decision == DECISION_RISK_MONITOR else CONFIDENCE_HIGH
     _, unmapped_domains = _mapped_domain_kinds(decision)
     _, unmapped_artifacts = _artifact_kinds(decision)
-    evidence_refs = [dict(decision.source_ref)]
+    source_ref = dict(decision.source_ref)
+    source_ref["sha256"] = decision.source_sha256
+    evidence_refs = [source_ref]
     evidence_refs.append(
         {
             "id": decision.event_decision_id,
-            "type": "human_event_materiality_review",
+            "type": HUMAN_MATERIALITY_EVIDENCE_TYPE,
+            "source_sha256": decision.source_sha256,
         }
     )
     current_state: dict[str, Any] = {
         "materiality_status": decision.human_decision,
+        "source_sha256": decision.source_sha256,
+        "source_ref_id": source_ref["id"],
+        "source_ref_sha256": decision.source_sha256,
+        "supersedes_event_id": decision.supersedes_event_id,
+        "event_cluster_id": decision.event_cluster_id,
         "affected_domains": list(decision.affected_domains),
         "affected_fact_fields": list(decision.affected_fact_fields),
         "affected_assumptions": list(decision.affected_assumptions),
@@ -215,14 +226,14 @@ def materiality_event_from_decision(
         "unmapped_artifacts": unmapped_artifacts,
     }
     return ChangeEventInput(
-        source_id="human-materiality-review",
+        source_id=MATERIALITY_BRIDGE_SOURCE_ID,
         source_event_id=f"materiality-review:{decision.event_decision_id}",
         symbol=decision.symbol,
         event_type=EVENT_TYPE_MATERIAL_ANNOUNCEMENT,
         detected_at=decision.reviewed_at,
         available_at=decision.published_at,
         effective_at=decision.published_at,
-        previous_state={"materiality_status": "PENDING_HUMAN_REVIEW"},
+        previous_state={"materiality_status": MATERIALITY_PENDING_STATUS},
         current_state=current_state,
         severity=severity,
         reason=(

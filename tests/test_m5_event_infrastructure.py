@@ -518,6 +518,19 @@ def test_system_health_event_requires_system_symbol():
     assert system.symbol == "SYSTEM"
 
 
+def test_material_announcement_requires_human_review_in_all_identity_versions():
+    with pytest.raises(ValueError, match="human materiality review"):
+        replace(
+            _event(
+                source_event_id="legacy-material-without-review",
+                event_type=EVENT_TYPE_NEW_FINANCIAL_REPORT,
+            ),
+            event_type="MATERIAL_ANNOUNCEMENT",
+            event_identity_version=EVENT_IDENTITY_SOURCE_ID_V1,
+            requires_human_review=False,
+        )
+
+
 def test_watermark_advance_is_monotonic_and_rejects_regression():
     store = WatermarkLedger()
     first = _watermark(coverage_through=_dt(15, day=23))

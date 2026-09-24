@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import json
 import threading
@@ -9,7 +10,10 @@ import pytest
 
 from value_investment_agent.m5_event_core import (
     CONFIDENCE_HIGH,
+    EVENT_IDENTITY_SOURCE_ID_V2,
     EVENT_TYPE_NEW_FINANCIAL_REPORT,
+    INGEST_CONFLICT_REJECTED,
+    INGEST_DUPLICATE,
     NAMESPACE_SIMULATED,
     SEVERITY_HIGH,
     ChangeEventInput,
@@ -123,6 +127,117 @@ def test_persisted_batch_round_trip_and_replay_are_idempotent() -> None:
     assert replay.idempotent_noop is True
     assert replay.receipt_id == first.receipt_id
     assert store.load(state_key=first.state.state_key).to_json() == loaded.to_json()
+
+
+def test_source_id_v2_event_identity_remains_frozen() -> None:
+    event = replace(
+        _event(source_event_id="event-1", at=OBSERVED),
+        event_identity_version=EVENT_IDENTITY_SOURCE_ID_V2,
+    )
+    ledger = EventLedger(namespace=NAMESPACE_SIMULATED)
+
+    accepted = ledger.append(event, observed_at=OBSERVED)
+
+    assert accepted.event is not None
+    assert accepted.event.event_id == "m5-1d4c3461284b3d5fecdf91885f91beea"
+
+
+def test_v2_identity_cannot_be_silently_mixed_with_v3_dedupe() -> None:
+    event = _event(source_event_id="event-version-mix", at=OBSERVED)
+    v2_event = replace(
+        event,
+        event_identity_version=EVENT_IDENTITY_SOURCE_ID_V2,
+    )
+    ledger = EventLedger(namespace=NAMESPACE_SIMULATED)
+    first = ledger.append(v2_event, observed_at=OBSERVED)
+    assert first.event is not None
+
+    second = ledger.append(event, observed_at=OBSERVED_LATER)
+
+    assert second.status == INGEST_CONFLICT_REJECTED
+    assert second.event is None
+    assert len(ledger) == 1
+
+
+def test_v3_identity_normalizes_equivalent_timezone_offsets() -> None:
+    local = _event(source_event_id="event-timezone-equivalent", at=OBSERVED)
+    utc = replace(
+        local,
+        detected_at=local.detected_at.astimezone(timezone.utc),
+        available_at=local.available_at.astimezone(timezone.utc),
+        effective_at=local.effective_at.astimezone(timezone.utc),
+    )
+
+    assert local.source_fingerprint == utc.source_fingerprint
+    local_ledger = EventLedger(namespace=NAMESPACE_SIMULATED)
+    local_event = local_ledger.append(local, observed_at=OBSERVED).event
+    utc_event = local_ledger.append(utc, observed_at=OBSERVED_LATER)
+    assert local_event is not None
+    assert utc_event.status == INGEST_DUPLICATE
+    assert utc_event.event is not None
+    assert utc_event.event.event_id == local_event.event_id
+
+
+def test_persisted_pre_commit_failure_retries_once() -> None:
+    store = InMemoryM5EventRunStateStore()
+
+    def fail_commit(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("synthetic persisted pre-commit failure")
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(store, "commit", fail_commit)
+        with pytest.raises(RuntimeError, match="pre-commit"):
+            run_event_batch_persisted(
+                store=store,
+                **_kwargs(batch_id="batch-retry", event_id="event-retry"),
+            )
+
+    assert store.load(state_key="m5-persisted-run") is None
+
+    retry = run_event_batch_persisted(
+        store=store,
+        **_kwargs(batch_id="batch-retry", event_id="event-retry"),
+    )
+
+    persisted = store.load(state_key=retry.state.state_key)
+    assert persisted is not None
+    assert persisted.revision == 1
+    assert len(persisted.event_ledger) == 1
+    assert len(persisted.checkpoints.checkpoints()) == 1
+    assert len(persisted.outbox.alerts()) == 1
+
+
+def test_persisted_ambiguous_post_commit_retry_is_idempotent() -> None:
+    store = InMemoryM5EventRunStateStore()
+    original_commit = store.commit
+
+    def commit_then_fail(*args: object, **kwargs: object) -> None:
+        original_commit(*args, **kwargs)
+        raise RuntimeError("synthetic persisted post-commit failure")
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(store, "commit", commit_then_fail)
+        with pytest.raises(RuntimeError, match="post-commit"):
+            run_event_batch_persisted(
+                store=store,
+                **_kwargs(batch_id="batch-ambiguous", event_id="event-ambiguous"),
+            )
+
+    durable = store.load(state_key="m5-persisted-run")
+    assert durable is not None
+    assert durable.revision == 1
+    assert len(durable.event_ledger) == 1
+    assert len(durable.checkpoints.checkpoints()) == 1
+    assert len(durable.outbox.alerts()) == 1
+
+    replay = run_event_batch_persisted(
+        store=store,
+        **_kwargs(batch_id="batch-ambiguous", event_id="event-ambiguous"),
+    )
+
+    assert replay.idempotent_noop is True
+    assert replay.state.to_json() == durable.to_json()
+    assert len(store.load(state_key=durable.state_key).outbox.alerts()) == 1
 
 
 def test_commit_rejects_stale_revision_and_same_revision_replacement() -> None:

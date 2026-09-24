@@ -216,6 +216,29 @@ M7 仍固定引用 v1；v2 不替换 canonical，也不接入通知网络。
 当前恢复入口会失败关闭；在出现真实 v1 非 pending 状态前记录为 backlog，不伪造迁移
 历史。`M5` 保持 `PARTIAL`，`action=no_order`。
 
+## 2026-09-24 fail-closed 加固
+
+本轮对 M5 离线域做了第二轮对抗审查，修复了身份兼容、批次 replay、水位时效、
+invalidation 投影和材料性 Hash 的真实反例：
+
+- `source-id-v3` 使用 UTC-normalized canonical JSON；v2/v1/legacy 保持原算法和冻结
+  event ID。v2 与 v3 相同 dedupe key 但不同内容时，无显式 correction 即拒绝。
+- batch replay 从 checkpoint 的 pre-batch prefix 重建，不再把已提交批次重复追加；
+  first/replay 的 ingest verdict、invalidation、alert 必须一致，且 accepted event IDs
+  必须精确等于 checkpoint 记录。
+- duplicate 事件的 replay 不携带旧 alert；incomplete batch 在后续 complete scan 后
+  replay 仍保持原 `ATTENTION/silent_ok=false`。
+- 新批次禁止 future watermark；运行时钟必须不早于所有 observed times，默认超过
+  15 分钟的水位视为 stale 并失败关闭。
+- M4/M5 投影前校验 invalidation 的 event/type/symbol/policy/node kind/图内节点；
+  跨标伪造不再影响其他公司。`result_id` 绑定完整图、receipt state 和最终 artifacts。
+- materiality decision/source/human evidence/current-state 的 SHA-256、review window
+  和 decision clock 均失败关闭；所有身份版本的 material announcement 都要人工复核。
+- 定向回归 `146 passed`；全量离线回归 `2507 passed, 5 skipped, 18 warnings, 0 failed`。
+
+真实 review workbook 仍没有 durable run request 和 receipt publish/read contract，
+apply 只到 bridge artifact。600519 9 条真实公告保持待人工判断，不在此轮代签。
+
 ## 未完成边界
 
 真实公告采集器、公告级材料性判定、Entry/组合复核、生产调度、通知目标和

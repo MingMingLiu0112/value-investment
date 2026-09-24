@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
@@ -72,6 +72,7 @@ def _decision(
         source_ref={
             "id": f"pdf-{announcement_id}",
             "path": f"fixtures/{announcement_id}.pdf",
+            "sha256": "a" * 64,
         },
         source_sha256="a" * 64,
         machine_candidate_reason="rule candidate from title",
@@ -193,6 +194,17 @@ def test_recalculation_decision_maps_to_precise_event_and_dependencies():
     assert event.available_at == PUBLISHED_AT
     assert event.detected_at == REVIEWED_AT
     assert event.current_state["materiality_status"] == DECISION_REQUIRES_RECALCULATION
+    assert event.current_state["source_sha256"] == "a" * 64
+    assert event.current_state["source_ref_id"] == "pdf-1225542476"
+    assert event.current_state["source_ref_sha256"] == "a" * 64
+    assert event.evidence_refs[0]["sha256"] == "a" * 64
+    human_refs = tuple(
+        ref
+        for ref in event.evidence_refs
+        if ref.get("type") == "human_event_materiality_review"
+    )
+    assert len(human_refs) == 1
+    assert human_refs[0]["source_sha256"] == "a" * 64
     kinds = materiality_direct_kinds(decision)
     assert KIND_FACTS in kinds
     assert KIND_MODEL_VALIDITY in kinds
@@ -244,6 +256,45 @@ def test_review_cannot_precede_publication():
             decision,
             namespace=NAMESPACE_SIMULATED,
         )
+
+
+def test_review_window_and_decision_clock_cannot_extend_beyond_review() -> None:
+    review = _review((_decision(DECISION_REQUIRES_RECALCULATION),))
+
+    with pytest.raises(ValueError, match="cannot extend beyond"):
+        replace(review, scan_to=review.review_as_of + timedelta(days=1))
+
+    late_decision = replace(
+        review.decisions[0],
+        reviewed_at=review.reviewed_at + timedelta(minutes=1),
+    )
+    with pytest.raises(ValueError, match="decision time cannot follow"):
+        replace(review, decisions=(late_decision,))
+
+
+def test_materiality_event_rejects_unbound_or_tampered_source_hashes():
+    event = materiality_event_from_decision(
+        _decision(DECISION_REQUIRES_RECALCULATION),
+        namespace=NAMESPACE_SIMULATED,
+    )
+    assert event is not None
+
+    mismatched_state = dict(event.current_state)
+    mismatched_state["source_sha256"] = "b" * 64
+    with pytest.raises(ValueError, match="source_ref_sha256"):
+        replace(event, current_state=mismatched_state)
+
+    tampered_evidence = tuple(dict(ref) for ref in event.evidence_refs)
+    for ref in tampered_evidence:
+        if ref.get("type") == "human_event_materiality_review":
+            ref["source_sha256"] = "b" * 64
+    with pytest.raises(ValueError, match="Human materiality evidence hash"):
+        replace(event, evidence_refs=tampered_evidence)
+
+    tampered_source = tuple(dict(ref) for ref in event.evidence_refs)
+    tampered_source[0]["sha256"] = "b" * 64
+    with pytest.raises(ValueError, match="source reference hash"):
+        replace(event, evidence_refs=tampered_source)
 
 
 def test_bridge_batch_preserves_silence_and_feeds_run_with_custom_policy():

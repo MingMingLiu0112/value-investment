@@ -1,5 +1,49 @@
 # Changelog
 
+## v2026.09.24-m5-fail-closed-hardening
+
+### Scope
+
+对 M5 离线事件链进行第二轮对抗审查与 fail-closed 加固。该批次不接生产源、不发送
+通知、不修改 PTA/数据库/计划任务，也不改变 `M5=PARTIAL` 或 `action=no_order`。
+
+### Changes
+
+- 事件身份升级为 `source-id-v3`，将等价时区的 `detected_at/available_at/effective_at`
+  规范化为 UTC；保留 `source-id-v2`、`source-id-v1` 和 legacy 的冻结身份算法与
+  历史重放兼容。v2/v3 不能在无显式 correction 的情况下静默去重。
+- 已接受批次从 checkpoint 的 pre-batch prefix 重放，而不再把当前批次事件重复追加；
+  replay 现在保留原始 ingest verdict、invalidation 和 alert，并校验重放事件 ID 与
+  committed checkpoint 完全一致。
+- 新批次 duplicate 事件不再创建 alert；该批次 replay 也不会错误携带旧 alert。
+- 运行时钟要求 `generated_at >= max(observed_at)`，水位 retrieval 不得晚于运行时钟，
+  默认超过 15 分钟的 stale watermark 失败关闭；未来 watermarked scan 不再生成
+  `HEALTHY/silent_ok=true`。
+- M4/M5 集成校验 invalidation 的 event、event type、symbol、policy version、node kind、
+  节点存在性和同标的关系；跨公司伪造 invalidation 会在投影前失败关闭。结果 identity
+  现在绑定 receipt state、graph 和最终 artifact states，避免不同结果复用同一 ID。
+- materiality decision/source/human evidence/current-state 的 source SHA-256 必须完全
+  一致；缺少绑定或任一字段被篡改均拒绝。人工材料性 review 的 `scan_to` 不得晚于
+  review 日期，decision clock 不得晚于 review clock；所有身份版本的
+  `MATERIAL_ANNOUNCEMENT` 都必须要求人工复核。
+- deferred-only artifact 使用 `PARTIAL` 而非伪造 `PAUSED`；incomplete scan 在后续
+  complete scan 后 replay 仍保持原 `ATTENTION/silent_ok=false`。
+
+### Verification
+
+- M4/M5 及人工 review reconciliation 定向回归：`146 passed`。
+- 本地全量离线回归：`2507 passed, 5 skipped, 18 warnings, 0 failed`。
+- `compileall` 与 `git diff --check` 通过。
+- 覆盖 v2/v3 身份冻结、等价时区、persisted pre/post-commit retry、future/stale
+  watermark、跨公司 invalidation、hash 篡改、旧批次精确 replay 和 deferred-only 状态。
+
+### Residual Boundary
+
+真实公告复核入口仍只生成 review/bridge artifacts，尚未把人工 decision 经可反序列化
+run request 写入 `run_event_batch_persisted()`，也没有 durable receipt reader/writer；
+600519 的 9 条真实公告继续保持 `PENDING_HUMAN_REVIEW`，不得机器代签。该闭环是下一
+个 M5 工程任务。`M5` 保持 `PARTIAL`，`action=no_order`。
+
 ## v2026.09.24-m3-checkpoint-b-partial-human-receipt
 
 ### Scope

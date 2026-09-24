@@ -115,7 +115,11 @@ class ScanWatermark:
             raise ValueError("Watermark must remain no_order")
 
     def covers(self, value: datetime) -> bool:
-        return value <= self.coverage_through
+        return (
+            self.coverage_status == WATERMARK_COVERAGE_COMPLETE
+            and self.source_health in {SOURCE_HEALTHY, SOURCE_RECOVERED}
+            and value <= self.coverage_through
+        )
 
     def as_policy(self) -> dict[str, Any]:
         return {

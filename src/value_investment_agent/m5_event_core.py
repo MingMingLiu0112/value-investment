@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 import json
 import re
@@ -75,17 +75,30 @@ EVENT_STATUS_ACTIVE = "ACTIVE"
 EVENT_STATUS_SUPERSEDED = "SUPERSEDED"
 EVENT_STATUSES = frozenset({EVENT_STATUS_ACTIVE, EVENT_STATUS_SUPERSEDED})
 
-EVENT_IDENTITY_CURRENT = "source-id-v2"
+EVENT_IDENTITY_CURRENT = "source-id-v3"
+EVENT_IDENTITY_SOURCE_ID_V2 = "source-id-v2"
 EVENT_IDENTITY_SOURCE_ID_V1 = "source-id-v1"
 EVENT_IDENTITY_LEGACY = "legacy-no-source-id-v1"
 EVENT_IDENTITY_VERSIONS = frozenset(
     {
         EVENT_IDENTITY_CURRENT,
+        EVENT_IDENTITY_SOURCE_ID_V2,
         EVENT_IDENTITY_SOURCE_ID_V1,
         EVENT_IDENTITY_LEGACY,
     }
 )
 LEGACY_EVENT_SOURCE_ID = "unspecified-source"
+
+MATERIALITY_BRIDGE_SOURCE_ID = "human-materiality-review"
+HUMAN_MATERIALITY_EVIDENCE_TYPE = "human_event_materiality_review"
+MATERIALITY_PENDING_STATUS = "PENDING_HUMAN_REVIEW"
+ACTIONABLE_HUMAN_MATERIALITY_DECISIONS = frozenset(
+    {
+        "MATERIAL_REQUIRES_RECALCULATION",
+        "MATERIAL_RISK_MONITOR",
+        "REQUIRES_DECOMPOSITION",
+    }
+)
 
 INGEST_ACCEPTED = "ACCEPTED"
 INGEST_DUPLICATE = "DUPLICATE"
@@ -107,6 +120,7 @@ INGEST_STATUSES = frozenset(
 )
 
 _SYMBOL = re.compile(r"^(?:[0-9]{6}|SYSTEM)$")
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _required_text(value: object, field: str) -> str:
@@ -192,6 +206,7 @@ def _digest(*parts: object) -> str:
 
 
 def _event_fingerprint(event: "ChangeEventInput") -> str:
+    """Return the UTC-normalized current event identity."""
     return hashlib.sha256(
         json.dumps(
             {
@@ -207,12 +222,46 @@ def _event_fingerprint(event: "ChangeEventInput") -> str:
                 "reason": event.reason,
                 "evidence_refs": [dict(item) for item in event.evidence_refs],
                 "confidence": event.confidence,
+                "detected_at": event.detected_at.astimezone(timezone.utc).isoformat(),
+                "available_at": event.available_at.astimezone(timezone.utc).isoformat(),
+                "effective_at": (
+                    event.effective_at.astimezone(timezone.utc).isoformat()
+                    if event.effective_at
+                    else None
+                ),
+                "requires_human_review": event.requires_human_review,
+                "correction_of_event_id": event.correction_of_event_id,
+                "supersedes_event_id": event.supersedes_event_id,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _source_id_v2_event_fingerprint(event: "ChangeEventInput") -> str:
+    """Reproduce the pre-UTC canonical fingerprint without changing its bytes."""
+    return hashlib.sha256(
+        json.dumps(
+            {
+                "identity_version": EVENT_IDENTITY_SOURCE_ID_V2,
+                "namespace": event.namespace,
+                "symbol": event.symbol,
+                "source_id": event.source_id,
+                "source_event_id": event.source_event_id,
+                "event_type": event.event_type,
+                "previous_state": event.previous_state,
+                "current_state": event.current_state,
+                "severity": event.severity,
+                "reason": event.reason,
+                "evidence_refs": [dict(item) for item in event.evidence_refs],
+                "confidence": event.confidence,
                 "detected_at": event.detected_at.isoformat(),
                 "available_at": event.available_at.isoformat(),
                 "effective_at": (
-                    event.effective_at.isoformat()
-                    if event.effective_at
-                    else None
+                    event.effective_at.isoformat() if event.effective_at else None
                 ),
                 "requires_human_review": event.requires_human_review,
                 "correction_of_event_id": event.correction_of_event_id,
@@ -363,6 +412,82 @@ class ChangeEventInput:
             and not self.requires_human_review
         ):
             raise ValueError("System source events must require human review")
+        if (
+            self.event_type == EVENT_TYPE_MATERIAL_ANNOUNCEMENT
+            and not self.requires_human_review
+        ):
+            raise ValueError(
+                "Material announcements must carry a human materiality review"
+            )
+        if (
+            self.event_type == EVENT_TYPE_MATERIAL_ANNOUNCEMENT
+            and self.event_identity_version
+            in {EVENT_IDENTITY_SOURCE_ID_V2, EVENT_IDENTITY_CURRENT}
+        ):
+            if self.source_id != MATERIALITY_BRIDGE_SOURCE_ID:
+                raise ValueError(
+                    "Material announcements must originate from the human materiality bridge"
+                )
+            if (
+                self.previous_state.get("materiality_status")
+                != MATERIALITY_PENDING_STATUS
+            ):
+                raise ValueError(
+                    "Material announcements must transition from pending human review"
+                )
+            if (
+                self.current_state.get("materiality_status")
+                not in ACTIONABLE_HUMAN_MATERIALITY_DECISIONS
+            ):
+                raise ValueError(
+                    "Material announcements require an actionable human decision"
+                )
+            source_sha256 = str(
+                self.current_state.get("source_sha256", "")
+            ).lower()
+            source_ref_id = str(self.current_state.get("source_ref_id", ""))
+            source_ref_sha256 = str(
+                self.current_state.get("source_ref_sha256", "")
+            ).lower()
+            if not _SHA256.fullmatch(source_sha256):
+                raise ValueError(
+                    "Material announcements require a valid source SHA-256"
+                )
+            if source_ref_sha256 != source_sha256:
+                raise ValueError(
+                    "Material announcement source hash must match source_ref_sha256"
+                )
+            if not source_ref_id:
+                raise ValueError(
+                    "Material announcements require a source_ref_id"
+                )
+            human_refs = tuple(
+                ref
+                for ref in self.evidence_refs
+                if ref.get("type") == HUMAN_MATERIALITY_EVIDENCE_TYPE
+            )
+            if len(human_refs) != 1 or not human_refs[0].get("id"):
+                raise ValueError(
+                    "Material announcements require exactly one human materiality evidence reference"
+                )
+            if (
+                str(human_refs[0].get("source_sha256", "")).lower()
+                != source_sha256
+            ):
+                raise ValueError(
+                    "Human materiality evidence hash must match source SHA-256"
+                )
+            source_refs = tuple(
+                ref for ref in self.evidence_refs if ref.get("id") == source_ref_id
+            )
+            if len(source_refs) != 1:
+                raise ValueError(
+                    "Material announcements require one matching source reference"
+                )
+            if str(source_refs[0].get("sha256", "")).lower() != source_sha256:
+                raise ValueError(
+                    "Material announcement source reference hash must match source SHA-256"
+                )
         object.__setattr__(
             self,
             "correction_of_event_id",
@@ -386,6 +511,8 @@ class ChangeEventInput:
             return _legacy_event_fingerprint(self)
         if self.event_identity_version == EVENT_IDENTITY_SOURCE_ID_V1:
             return _source_id_v1_event_fingerprint(self)
+        if self.event_identity_version == EVENT_IDENTITY_SOURCE_ID_V2:
+            return _source_id_v2_event_fingerprint(self)
         return _event_fingerprint(self)
 
     @property
@@ -413,8 +540,11 @@ class ChangeEventInput:
             "namespace": self.namespace,
             "action": self.action,
         }
-        if self.event_identity_version == EVENT_IDENTITY_CURRENT:
-            payload["event_identity_version"] = EVENT_IDENTITY_CURRENT
+        if self.event_identity_version in {
+            EVENT_IDENTITY_SOURCE_ID_V2,
+            EVENT_IDENTITY_CURRENT,
+        }:
+            payload["event_identity_version"] = self.event_identity_version
         elif self.event_identity_version == EVENT_IDENTITY_LEGACY:
             payload.pop("source_id", None)
         return payload

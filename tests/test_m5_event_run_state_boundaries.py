@@ -17,6 +17,7 @@ from value_investment_agent.m5_event_core import (
     EVENT_IDENTITY_SOURCE_ID_V1,
     EVENT_TYPE_NEW_FINANCIAL_REPORT,
     EVENT_TYPE_SOURCE_SCAN_FAILED,
+    INGEST_DUPLICATE,
     NAMESPACE_ACTUAL,
     NAMESPACE_SIMULATED,
     SEVERITY_HIGH,
@@ -30,6 +31,7 @@ from value_investment_agent.m5_event_dependencies import (
     DependencyNode,
 )
 from value_investment_agent.m5_event_run import run_event_batch
+from value_investment_agent.m5_event_run import RUN_ATTENTION, RUN_HEALTHY
 from value_investment_agent.m5_event_run_state import (
     M5EventRunState,
     m5_event_run_state_from_payload,
@@ -37,6 +39,7 @@ from value_investment_agent.m5_event_run_state import (
 from value_investment_agent.m5_event_watermark import (
     SOURCE_HEALTHY,
     WATERMARK_COVERAGE_COMPLETE,
+    WATERMARK_COVERAGE_INCOMPLETE,
     ScanWatermark,
     TaskLockStore,
 )
@@ -112,7 +115,12 @@ def _event(
     )
 
 
-def _watermark(*, watermark_id: str, at: datetime) -> ScanWatermark:
+def _watermark(
+    *,
+    watermark_id: str,
+    at: datetime,
+    coverage_status: str = WATERMARK_COVERAGE_COMPLETE,
+) -> ScanWatermark:
     return ScanWatermark(
         watermark_id=watermark_id,
         scope="ALL",
@@ -120,7 +128,7 @@ def _watermark(*, watermark_id: str, at: datetime) -> ScanWatermark:
         coverage_through=at,
         retrieved_at=at,
         parser_version="boundary-v1",
-        coverage_status=WATERMARK_COVERAGE_COMPLETE,
+        coverage_status=coverage_status,
         source_health=SOURCE_HEALTHY,
         evidence_refs=({"id": f"scan-{watermark_id}"},),
     )
@@ -220,6 +228,9 @@ def test_same_batch_replay_is_noop_and_changed_inputs_fail_closed() -> None:
     assert replay.idempotent_noop is True
     assert replay.receipt_id == first.receipt_id
     assert replay.state.to_json() == first.state.to_json()
+    assert replay.ingest_results == first.ingest_results
+    assert replay.invalidations == first.invalidations
+    assert replay.alerts == first.alerts
 
     with pytest.raises(ValueError, match="already used with different inputs"):
         _run(
@@ -368,6 +379,130 @@ def test_rejected_new_batch_is_committed_not_claimed_as_replay() -> None:
     assert replay.receipt_id == rejected.receipt_id
     assert replay.generated_at == rejected.generated_at
     assert replay.state.to_json() == rejected.state.to_json()
+    assert replay.ingest_results == rejected.ingest_results
+    assert replay.invalidations == rejected.invalidations
+
+
+def test_future_rejected_event_is_attention_and_does_not_advance_watermark() -> None:
+    future_event = _event(source_event_id="event-future", observed_at=OBSERVED_LATER)
+
+    receipt = run_event_batch(
+        events=(future_event,),
+        observed_times=(OBSERVED,),
+        watermark=_watermark(watermark_id="scan-future", at=OBSERVED),
+        graph=_graph(),
+        run_id="m5-run-future",
+        generated_at=OBSERVED,
+        batch_id="batch-future",
+    )
+
+    assert receipt.health_status == RUN_ATTENTION
+    assert receipt.silent_ok is False
+    assert receipt.state.watermarks.watermarks()[0].coverage_status == (
+        WATERMARK_COVERAGE_INCOMPLETE
+    )
+    assert receipt.ingest_results[0].status == "FUTURE_REJECTED"
+
+
+def test_future_rejection_after_complete_scan_keeps_prior_coverage_boundary() -> None:
+    first = _run(state=None, batch_id="batch-1", event_id="event-1")
+    future_event = _event(
+        source_event_id="event-future-after-complete",
+        observed_at=OBSERVED_LATER + timedelta(minutes=10),
+    )
+
+    rejected = run_event_batch(
+        events=(future_event,),
+        observed_times=(OBSERVED_LATER,),
+        watermark=_watermark(watermark_id="scan-future-after-complete", at=OBSERVED_LATER),
+        graph=_graph(),
+        run_id="m5-run-1",
+        generated_at=OBSERVED_LATER,
+        state=first.state,
+        batch_id="batch-future-after-complete",
+    )
+
+    watermark = rejected.state.watermarks.current(scope="ALL", source="cninfo")
+    assert watermark is not None
+    assert watermark.coverage_through == OBSERVED
+    assert watermark.coverage_status == WATERMARK_COVERAGE_INCOMPLETE
+    assert watermark.covers(OBSERVED_LATER) is False
+    assert rejected.health_status == RUN_ATTENTION
+    assert rejected.silent_ok is False
+
+
+def test_incomplete_scan_is_attention_and_does_not_claim_silent_day() -> None:
+    receipt = run_event_batch(
+        events=(),
+        observed_times=(),
+        watermark=_watermark(
+            watermark_id="scan-incomplete",
+            at=OBSERVED,
+            coverage_status=WATERMARK_COVERAGE_INCOMPLETE,
+        ),
+        graph=_graph(),
+        run_id="m5-run-incomplete",
+        generated_at=OBSERVED,
+        batch_id="batch-incomplete",
+    )
+
+    assert receipt.health_status == RUN_ATTENTION
+    assert receipt.silent_ok is False
+    assert receipt.state.watermarks.watermarks()[0].coverage_status == (
+        WATERMARK_COVERAGE_INCOMPLETE
+    )
+
+
+def test_incomplete_scan_replay_after_later_complete_scan_remains_attention() -> None:
+    first_watermark = _watermark(
+        watermark_id="scan-incomplete-replay",
+        at=OBSERVED,
+        coverage_status=WATERMARK_COVERAGE_INCOMPLETE,
+    )
+    first = run_event_batch(
+        events=(),
+        observed_times=(),
+        watermark=first_watermark,
+        graph=_graph(),
+        run_id="m5-run-incomplete-replay",
+        generated_at=OBSERVED,
+        batch_id="batch-incomplete-replay",
+    )
+    assert first.health_status == RUN_ATTENTION
+    assert first.silent_ok is False
+
+    later = run_event_batch(
+        events=(),
+        observed_times=(),
+        watermark=_watermark(
+            watermark_id="scan-complete-after-incomplete",
+            at=OBSERVED_LATER,
+        ),
+        graph=_graph(),
+        run_id="m5-run-incomplete-replay",
+        generated_at=OBSERVED_LATER,
+        state=first.state,
+        batch_id="batch-complete-after-incomplete",
+    )
+    assert later.health_status == RUN_HEALTHY
+    assert later.silent_ok is True
+
+    replay = run_event_batch(
+        events=(),
+        observed_times=(),
+        watermark=first_watermark,
+        graph=_graph(),
+        run_id="m5-run-incomplete-replay",
+        generated_at=OBSERVED_LATER,
+        state=later.state,
+        batch_id="batch-incomplete-replay",
+    )
+
+    assert replay.idempotent_noop is True
+    assert replay.receipt_id == first.receipt_id
+    assert replay.generated_at == first.generated_at
+    assert replay.health_status == RUN_ATTENTION
+    assert replay.silent_ok is False
 
 
 def test_old_batch_replays_after_later_watermark() -> None:
@@ -394,6 +529,55 @@ def test_old_batch_replays_after_later_watermark() -> None:
     ]
 
 
+def test_duplicate_event_in_new_batch_does_not_create_or_replay_alert() -> None:
+    event = _event(source_event_id="event-duplicate", observed_at=OBSERVED)
+    first = run_event_batch(
+        events=(event,),
+        observed_times=(OBSERVED,),
+        watermark=_watermark(watermark_id="scan-duplicate-1", at=OBSERVED),
+        graph=_graph(),
+        run_id="m5-run-duplicate",
+        generated_at=OBSERVED,
+        batch_id="batch-duplicate-1",
+    )
+    assert len(first.alerts) == 1
+
+    duplicate = run_event_batch(
+        events=(event,),
+        observed_times=(OBSERVED_LATER,),
+        watermark=_watermark(
+            watermark_id="scan-duplicate-2",
+            at=OBSERVED_LATER,
+        ),
+        graph=_graph(),
+        run_id="m5-run-duplicate",
+        generated_at=OBSERVED_LATER,
+        state=first.state,
+        batch_id="batch-duplicate-2",
+    )
+
+    assert duplicate.ingest_results[0].status == INGEST_DUPLICATE
+    assert duplicate.alerts == ()
+    assert len(duplicate.state.outbox.alerts()) == 1
+
+    replay = run_event_batch(
+        events=(event,),
+        observed_times=(OBSERVED_LATER,),
+        watermark=_watermark(
+            watermark_id="scan-duplicate-2",
+            at=OBSERVED_LATER,
+        ),
+        graph=_graph(),
+        run_id="m5-run-duplicate",
+        generated_at=OBSERVED_LATER,
+        state=duplicate.state,
+        batch_id="batch-duplicate-2",
+    )
+    assert replay.idempotent_noop is True
+    assert replay.alerts == ()
+    assert len(replay.state.outbox.alerts()) == 1
+
+
 def test_expected_revision_blocks_stale_snapshot_without_mutation() -> None:
     first = _run(state=None, batch_id="batch-1", event_id="event-1")
     payload_before = first.state.to_json()
@@ -417,6 +601,54 @@ def test_expected_revision_blocks_stale_snapshot_without_mutation() -> None:
         expected_revision=1,
     )
     assert committed.state.revision == 2
+
+
+def test_run_clock_rejects_future_stale_or_regressed_watermarks() -> None:
+    with pytest.raises(ValueError, match="Watermark retrieval cannot follow"):
+        run_event_batch(
+            events=(),
+            observed_times=(),
+            watermark=_watermark(
+                watermark_id="scan-future",
+                at=OBSERVED_LATER,
+            ),
+            graph=_graph(),
+            run_id="m5-run-clock",
+            generated_at=OBSERVED,
+            batch_id="batch-future",
+        )
+
+    with pytest.raises(ValueError, match="stale"):
+        run_event_batch(
+            events=(),
+            observed_times=(),
+            watermark=_watermark(
+                watermark_id="scan-stale",
+                at=OBSERVED - timedelta(minutes=16),
+            ),
+            graph=_graph(),
+            run_id="m5-run-clock",
+            generated_at=OBSERVED,
+            batch_id="batch-stale",
+        )
+
+    observed_event = _event(
+        source_event_id="event-after-run-clock",
+        observed_at=OBSERVED_LATER,
+    )
+    with pytest.raises(ValueError, match="generated_at cannot precede"):
+        run_event_batch(
+            events=(observed_event,),
+            observed_times=(OBSERVED_LATER,),
+            watermark=_watermark(
+                watermark_id="scan-regressed-clock",
+                at=OBSERVED,
+            ),
+            graph=_graph(),
+            run_id="m5-run-clock",
+            generated_at=OBSERVED,
+            batch_id="batch-regressed-clock",
+        )
 
 
 def test_cross_ledger_reference_and_checkpoint_holes_fail_closed() -> None:

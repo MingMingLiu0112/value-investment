@@ -6,8 +6,8 @@ but does not schedule a service, notify a human or touch production state.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime
+from dataclasses import dataclass, replace
+from datetime import datetime, timedelta
 from typing import Any, Mapping, Sequence
 
 from .investment_decision import ACTION_NO_ORDER
@@ -31,6 +31,8 @@ from .m5_event_core import (
     INGEST_CORRECTION_ACCEPTED,
     INGEST_DUPLICATE,
     INGEST_CONFLICT_REJECTED,
+    INGEST_FUTURE_REJECTED,
+    INGEST_OBSERVED_TIME_REGRESSION_REJECTED,
     INGEST_SUPERSEDES_ACCEPTED,
     SEVERITY_CRITICAL,
     _state_digest,
@@ -47,6 +49,8 @@ from .m5_event_watermark import (
     SOURCE_HEALTHY,
     SOURCE_DEGRADED,
     SOURCE_OUTAGE,
+    WATERMARK_COVERAGE_COMPLETE,
+    WATERMARK_COVERAGE_INCOMPLETE,
     WATERMARK_REGRESSION_REJECTED,
     ScanWatermark,
     TaskLockStore,
@@ -59,6 +63,22 @@ from .m5_event_state_store import M5EventRunStateStore, M5StateStoreConflict
 RUN_HEALTHY = "HEALTHY"
 RUN_ATTENTION = "ATTENTION"
 RUN_HEALTH_STATUSES = frozenset({RUN_HEALTHY, RUN_ATTENTION})
+DEFAULT_MAX_WATERMARK_AGE = timedelta(minutes=15)
+
+_ACCEPTED_INGEST_STATUSES = frozenset(
+    {
+        INGEST_ACCEPTED,
+        INGEST_CORRECTION_ACCEPTED,
+        INGEST_SUPERSEDES_ACCEPTED,
+    }
+)
+_REJECTED_INGEST_STATUSES = frozenset(
+    {
+        INGEST_FUTURE_REJECTED,
+        INGEST_CONFLICT_REJECTED,
+        INGEST_OBSERVED_TIME_REGRESSION_REJECTED,
+    }
+)
 
 @dataclass(frozen=True)
 class M5EventRunReceipt:
@@ -271,47 +291,76 @@ def _checkpoint_for_replay(state: M5EventRunState, checkpoint_id: str) -> TaskCh
     raise ValueError("Recorded batch checkpoint is missing")
 
 
-def _replayed_ingest_results(
+def _replayed_batch(
     *,
     state: M5EventRunState,
+    checkpoint: TaskCheckpoint,
     events: Sequence[ChangeEventInput],
     observed_times: Sequence[datetime],
-) -> tuple[EventIngestResult, ...]:
+    watermark: ScanWatermark,
+    graph: DependencyGraph,
+    direct_kinds_by_source_event_id: Mapping[str, Sequence[str]],
+) -> tuple[tuple[EventIngestResult, ...], tuple[DependencyInvalidation, ...]]:
+    """Replay the recorded batch from its durable checkpoint prefix.
+
+    The aggregate does not store receipt snapshots. Replaying the original
+    request against the checkpoint prefix therefore reconstructs the original
+    ingest verdicts and dependency invalidations without trusting later state.
+    """
+
+    ledger = EventLedger(namespace=state.namespace)
+    prefix_end = checkpoint.last_sequence - len(checkpoint.ingested_event_ids)
+    if prefix_end < 0:
+        raise ValueError("Recorded batch checkpoint prefix is invalid")
+    for previous in state.event_ledger.events():
+        if previous.sequence > prefix_end:
+            break
+        restored = ledger.append(
+            previous.input,
+            observed_at=previous.ingested_at,
+            coverage_watermark=watermark,
+        )
+        if restored.status not in _ACCEPTED_INGEST_STATUSES:
+            raise ValueError("Recorded batch prefix cannot be replayed")
+        if restored.event is None or restored.event.event_id != previous.event_id:
+            raise ValueError("Recorded batch prefix event identity changed")
+
     results: list[EventIngestResult] = []
+    invalidations: list[DependencyInvalidation] = []
     for event, observed_at in zip(events, observed_times):
-        existing = state.event_ledger.get(
-            state.event_ledger.expected_event_id(event)
+        result = ledger.append(
+            event,
+            observed_at=observed_at,
+            coverage_watermark=watermark,
         )
-        if existing is None:
-            results.append(
-                EventIngestResult(
-                    status=INGEST_CONFLICT_REJECTED,
-                    observed_at=observed_at,
-                    event=None,
-                    message="Recorded batch has no active matching event to replay",
-                )
-            )
+        results.append(result)
+        if result.event is None or result.status not in _ACCEPTED_INGEST_STATUSES:
             continue
-        results.append(
-            EventIngestResult(
-                status=INGEST_DUPLICATE,
-                observed_at=observed_at,
-                event=existing,
-                duplicate_event_id=existing.event_id,
-                message="Recorded batch replay is idempotent",
+        custom_kinds = direct_kinds_by_source_event_id.get(
+            result.event.source_event_id
+        )
+        invalidations.append(
+            graph.invalidate(
+                result.event,
+                direct_kinds=tuple(custom_kinds) if custom_kinds else None,
             )
         )
-    return tuple(results)
+    replayed_event_ids = tuple(
+        result.event.event_id
+        for result in results
+        if result.event is not None
+        and result.status in _ACCEPTED_INGEST_STATUSES
+    )
+    if replayed_event_ids != checkpoint.ingested_event_ids:
+        raise ValueError("Replayed batch does not match its committed checkpoint")
+    return tuple(results), tuple(invalidations)
 
 
 def _alerts_for_batch(
     state: M5EventRunState,
-    events: Sequence[ChangeEventInput],
+    checkpoint: TaskCheckpoint,
 ) -> tuple[EventAlert, ...]:
-    event_ids = {
-        state.event_ledger.expected_event_id(event)
-        for event in events
-    }
+    event_ids = set(checkpoint.ingested_event_ids)
     return tuple(
         alert
         for alert in state.outbox.alerts()
@@ -329,12 +378,27 @@ def _active_alerts(state: M5EventRunState) -> tuple[EventAlert, ...]:
 def _receipt_health(
     *,
     state: M5EventRunState,
-    effective_watermark: ScanWatermark,
+    scan_watermark: ScanWatermark,
+    persisted_watermark: ScanWatermark,
+    ingest_results: Sequence[EventIngestResult],
+    generated_at: datetime,
+    max_watermark_age: timedelta,
 ) -> tuple[str, bool, tuple[str, ...]]:
-    source_health_ok = effective_watermark.source_health not in {
-        SOURCE_OUTAGE,
-        SOURCE_DEGRADED,
-    }
+    source_health_ok = all(
+        watermark.source_health not in {SOURCE_OUTAGE, SOURCE_DEGRADED}
+        for watermark in (scan_watermark, persisted_watermark)
+    )
+    coverage_ok = all(
+        watermark.coverage_status == WATERMARK_COVERAGE_COMPLETE
+        for watermark in (scan_watermark, persisted_watermark)
+    )
+    freshness_ok = (
+        generated_at - scan_watermark.retrieved_at <= max_watermark_age
+        and generated_at - persisted_watermark.retrieved_at <= max_watermark_age
+    )
+    rejected_ingest = any(
+        result.status in _REJECTED_INGEST_STATUSES for result in ingest_results
+    )
     active_alerts = _active_alerts(state)
     review_due = tuple(
         sorted(
@@ -345,12 +409,58 @@ def _receipt_health(
             }
         )
     )
-    has_attention = not source_health_ok or bool(active_alerts)
+    has_attention = (
+        not source_health_ok
+        or not coverage_ok
+        or not freshness_ok
+        or rejected_ingest
+        or bool(active_alerts)
+    )
     return (
         RUN_ATTENTION if has_attention else RUN_HEALTHY,
-        not active_alerts and source_health_ok,
+        not active_alerts
+        and source_health_ok
+        and coverage_ok
+        and freshness_ok
+        and not rejected_ingest,
         review_due,
     )
+
+
+def _unaccepted_coverage_mark(
+    watermark: ScanWatermark,
+    previous: ScanWatermark | None,
+) -> ScanWatermark:
+    """Persist a scan boundary without claiming complete coverage."""
+    return replace(
+        watermark,
+        coverage_through=(
+            previous.coverage_through
+            if previous is not None
+            else watermark.coverage_through
+        ),
+        coverage_status=WATERMARK_COVERAGE_INCOMPLETE,
+    )
+
+
+def _validate_run_clock(
+    *,
+    generated_at: datetime,
+    observed_times: Sequence[datetime],
+    watermark: ScanWatermark,
+    max_watermark_age: object,
+) -> timedelta:
+    if not isinstance(max_watermark_age, timedelta):
+        raise ValueError("max_watermark_age must be a timedelta")
+    if max_watermark_age < timedelta(0):
+        raise ValueError("max_watermark_age cannot be negative")
+    if any(observed_at > generated_at for observed_at in observed_times):
+        raise ValueError("generated_at cannot precede an observed event time")
+    if watermark.retrieved_at > generated_at:
+        raise ValueError("Watermark retrieval cannot follow generated_at")
+    if generated_at - watermark.retrieved_at > max_watermark_age:
+        raise ValueError("Watermark is stale relative to the run clock")
+    return max_watermark_age
 
 
 def run_event_batch(
@@ -370,6 +480,7 @@ def run_event_batch(
     batch_id: str | None = None,
     expected_revision: int | None = None,
     lock_store: TaskLockStore | None = None,
+    max_watermark_age: timedelta = DEFAULT_MAX_WATERMARK_AGE,
 ) -> M5EventRunReceipt:
     """Ingest one bounded batch and return an atomically exportable next state."""
 
@@ -378,6 +489,9 @@ def run_event_batch(
     run_id = _required_text(run_id, "run_id")
     batch_id = _required_text(batch_id or run_id, "batch_id")
     generated_at = _required_datetime(generated_at, "generated_at")
+    observed_times = tuple(
+        _required_datetime(item, "observed_at") for item in observed_times
+    )
     if namespace != NAMESPACE_SIMULATED:
         raise ValueError("Public run-once coordinator accepts SIMULATED only")
     if state is not None and not isinstance(state, M5EventRunState):
@@ -390,6 +504,12 @@ def run_event_batch(
         raise ValueError("events must contain ChangeEventInput objects")
     if any(event.namespace != namespace for event in events):
         raise ValueError("All events must use the requested namespace")
+    max_watermark_age = _validate_run_clock(
+        generated_at=generated_at,
+        observed_times=observed_times,
+        watermark=watermark,
+        max_watermark_age=max_watermark_age,
+    )
     direct_kinds_by_source_event_id = {
         _required_text(key, "direct dependency source_event_id"): tuple(
             _required_text(item, "direct dependency kind")
@@ -445,9 +565,22 @@ def run_event_batch(
             source=watermark.source,
         )
         effective_watermark = current_watermark or watermark
+        replayed_results, replayed_invalidations = _replayed_batch(
+            state=working,
+            checkpoint=checkpoint,
+            events=events,
+            observed_times=observed_times,
+            watermark=watermark,
+            graph=graph,
+            direct_kinds_by_source_event_id=direct_kinds_by_source_event_id,
+        )
         health_status, silent_ok, review_due = _receipt_health(
             state=working,
-            effective_watermark=effective_watermark,
+            scan_watermark=watermark,
+            persisted_watermark=watermark,
+            ingest_results=replayed_results,
+            generated_at=generated_at,
+            max_watermark_age=max_watermark_age,
         )
         return M5EventRunReceipt(
             receipt_id=existing_record.receipt_id,
@@ -456,13 +589,9 @@ def run_event_batch(
             stream_id=working.state_key,
             namespace=namespace,
             generated_at=generated_at,
-            ingest_results=_replayed_ingest_results(
-                state=working,
-                events=events,
-                observed_times=observed_times,
-            ),
-            invalidations=(),
-            alerts=_alerts_for_batch(working, events),
+            ingest_results=replayed_results,
+            invalidations=replayed_invalidations,
+            alerts=_alerts_for_batch(working, checkpoint),
             checkpoint=checkpoint,
             health_status=health_status,
             silent_ok=silent_ok,
@@ -491,10 +620,16 @@ def run_event_batch(
         )
     lock_acquired = True
     try:
-        watermark_result = working.watermarks.advance(watermark)
-        if watermark_result.status == WATERMARK_REGRESSION_REJECTED:
+        current_watermark = working.watermarks.current(
+            scope=watermark.scope,
+            source=watermark.source,
+        )
+        if (
+            current_watermark is not None
+            and watermark.coverage_through < current_watermark.coverage_through
+        ):
             raise ValueError("Watermark regresses the run state")
-        effective_watermark = watermark_result.watermark or watermark
+        effective_watermark = current_watermark or watermark
         ingest_results: list[EventIngestResult] = []
         invalidations: list[DependencyInvalidation] = []
         new_alerts: list[EventAlert] = []
@@ -502,14 +637,10 @@ def run_event_batch(
             result = working.event_ledger.append(
                 event,
                 observed_at=observed_at,
-                coverage_watermark=effective_watermark,
+                coverage_watermark=watermark,
             )
             ingest_results.append(result)
-            if result.event is None or result.status not in {
-                INGEST_ACCEPTED,
-                INGEST_CORRECTION_ACCEPTED,
-                INGEST_SUPERSEDES_ACCEPTED,
-            }:
+            if result.event is None or result.status not in _ACCEPTED_INGEST_STATUSES:
                 continue
             custom_kinds = direct_kinds_by_source_event_id.get(
                 result.event.source_event_id
@@ -528,6 +659,24 @@ def run_event_batch(
             )
             if enqueued.alert is not None:
                 new_alerts.append(enqueued.alert)
+
+        coverage_safe_to_advance = (
+            watermark.coverage_status == WATERMARK_COVERAGE_COMPLETE
+            and watermark.source_health == SOURCE_HEALTHY
+            and not any(
+                result.status in _REJECTED_INGEST_STATUSES
+                for result in ingest_results
+            )
+        )
+        persisted_watermark = (
+            watermark
+            if coverage_safe_to_advance
+            else _unaccepted_coverage_mark(watermark, current_watermark)
+        )
+        watermark_result = working.watermarks.advance(persisted_watermark)
+        if watermark_result.status == WATERMARK_REGRESSION_REJECTED:
+            raise ValueError("Watermark regresses the run state")
+        effective_watermark = watermark_result.watermark or persisted_watermark
 
         checkpoint_result = working.checkpoints.start(
             run_id=working.state_key,
@@ -596,7 +745,11 @@ def run_event_batch(
         )
         health_status, silent_ok, review_due = _receipt_health(
             state=next_state,
-            effective_watermark=effective_watermark,
+            scan_watermark=watermark,
+            persisted_watermark=effective_watermark,
+            ingest_results=ingest_results,
+            generated_at=generated_at,
+            max_watermark_age=max_watermark_age,
         )
         return M5EventRunReceipt(
             receipt_id=receipt_id,

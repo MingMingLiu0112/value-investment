@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 import hashlib
+import json
 from typing import Any, Mapping, Sequence
 
 from .investment_decision import ACTION_NO_ORDER
@@ -111,6 +112,7 @@ class M4M5ArtifactState:
     symbol: str
     baseline_status: str
     invalidated_node_ids: tuple[str, ...]
+    deferred_node_ids: tuple[str, ...]
     triggering_event_ids: tuple[str, ...]
     status: str
     action: str = ACTION_NO_ORDER
@@ -134,6 +136,11 @@ class M4M5ArtifactState:
         )
         object.__setattr__(
             self,
+            "deferred_node_ids",
+            tuple(_required_text(item, "deferred_node_id") for item in self.deferred_node_ids),
+        )
+        object.__setattr__(
+            self,
             "triggering_event_ids",
             tuple(_required_text(item, "triggering_event_id") for item in self.triggering_event_ids),
         )
@@ -151,6 +158,7 @@ class M4M5ArtifactState:
             "symbol": self.symbol,
             "baseline_status": self.baseline_status,
             "invalidated_node_ids": list(self.invalidated_node_ids),
+            "deferred_node_ids": list(self.deferred_node_ids),
             "triggering_event_ids": list(self.triggering_event_ids),
             "status": self.status,
             "action": self.action,
@@ -196,6 +204,7 @@ class M4M5IntegrationResult:
     def affected_artifact_count(self) -> int:
         return sum(
             artifact.status in {STATUS_PAUSED, STATUS_NEGATIVE}
+            or bool(artifact.deferred_node_ids)
             for artifact in self.artifacts
         )
 
@@ -248,9 +257,61 @@ def _invalidations_by_node(
     }
 
 
+def _node_matches_event_symbol(node_symbol: str, event_symbol: str) -> bool:
+    if node_symbol == "*":
+        return True
+    if event_symbol == "SYSTEM":
+        return node_symbol == "SYSTEM"
+    return node_symbol == event_symbol
+
+
+def _validate_invalidation(
+    *,
+    invalidation: Any,
+    event: Any,
+    graph: DependencyGraph,
+    graph_nodes: Mapping[str, Any],
+) -> None:
+    if invalidation.event_id != event.event_id:
+        raise ValueError("Invalidation event identity does not match its event")
+    if invalidation.event_type != event.event_type:
+        raise ValueError("Invalidation event type does not match its event")
+    if invalidation.symbol != event.symbol:
+        raise ValueError("Invalidation symbol does not match its event")
+    if invalidation.policy_version != graph.schema_version:
+        raise ValueError("Invalidation policy version does not match the graph")
+    items = invalidation.affected_nodes
+    node_ids = tuple(item.node_id for item in items)
+    if len(node_ids) != len(set(node_ids)):
+        raise ValueError("Invalidation contains duplicate affected nodes")
+    deferred_ids = tuple(invalidation.deferred_node_ids)
+    if len(deferred_ids) != len(set(deferred_ids)):
+        raise ValueError("Invalidation contains duplicate deferred nodes")
+    if set(node_ids) & set(deferred_ids):
+        raise ValueError("Affected and deferred invalidation nodes overlap")
+    if invalidation.truncated != bool(deferred_ids):
+        raise ValueError("Invalidation truncation flag does not match deferred nodes")
+    for item in items:
+        node = graph_nodes.get(item.node_id)
+        if node is None:
+            raise ValueError("Invalidation references a node outside the graph")
+        if item.kind != node.kind:
+            raise ValueError("Invalidation node kind does not match the graph")
+        if not _node_matches_event_symbol(node.symbol, event.symbol):
+            raise ValueError("Invalidation crosses event and graph symbols")
+    for node_id in deferred_ids:
+        node = graph_nodes.get(node_id)
+        if node is None:
+            raise ValueError("Deferred invalidation references a node outside the graph")
+        if not _node_matches_event_symbol(node.symbol, event.symbol):
+            raise ValueError("Deferred invalidation crosses event and graph symbols")
+
+
 def _status_for(
     baseline_status: str,
     events: tuple[Any, ...],
+    invalidated_node_ids: tuple[str, ...],
+    deferred_node_ids: tuple[str, ...],
 ) -> str:
     if any(
         event.event_type == EVENT_TYPE_THESIS_BREAKER_TRIGGERED
@@ -258,9 +319,19 @@ def _status_for(
         for event in events
     ):
         return STATUS_NEGATIVE
-    if events:
+    if invalidated_node_ids:
         return STATUS_PAUSED
+    if deferred_node_ids:
+        return STATUS_PARTIAL
     return baseline_status
+
+
+def _symbol_is_compatible(artifact_symbol: str, node_symbol: str) -> bool:
+    if node_symbol == "*":
+        return True
+    if artifact_symbol == "*":
+        return node_symbol in {"*", "SYSTEM"}
+    return artifact_symbol == node_symbol
 
 
 def build_m4_m5_integration(
@@ -278,19 +349,33 @@ def build_m4_m5_integration(
         raise ValueError("Public M4/M5 integration requires a simulated receipt")
     if receipt.action != ACTION_NO_ORDER:
         raise ValueError("M4/M5 integration receipt must remain no_order")
+    if generated_at < receipt.generated_at:
+        raise ValueError("M4/M5 integration cannot precede its receipt")
 
-    graph_nodes = {node.node_id for node in graph.nodes()}
+    graph_nodes = {node.node_id: node for node in graph.nodes()}
     definitions = tuple(artifacts)
     if not definitions:
         raise ValueError("M4/M5 integration requires artifact definitions")
     if len({item.artifact_id for item in definitions}) != len(definitions):
         raise ValueError("M4/M5 integration artifact ids must be unique")
     for definition in definitions:
-        missing = sorted(set(definition.node_ids) - graph_nodes)
+        missing = sorted(set(definition.node_ids) - set(graph_nodes))
         if missing:
             raise ValueError(
                 f"Integration artifact {definition.artifact_id} references missing nodes: {', '.join(missing)}"
             )
+        for node_id in definition.node_ids:
+            node = graph_nodes[node_id]
+            if node.kind != definition.kind:
+                raise ValueError(
+                    f"Integration artifact {definition.artifact_id} maps {node_id} "
+                    f"to kind {node.kind}, expected {definition.kind}"
+                )
+            if not _symbol_is_compatible(definition.symbol, node.symbol):
+                raise ValueError(
+                    f"Integration artifact {definition.artifact_id} maps {node_id} "
+                    f"to symbol {node.symbol}, expected {definition.symbol}"
+                )
         if definition.artifact_id not in baseline_statuses:
             raise ValueError(
                 f"Missing baseline status for integration artifact {definition.artifact_id}"
@@ -299,6 +384,21 @@ def build_m4_m5_integration(
     events = _events_by_id(receipt)
     invalidations = _invalidations_by_node(receipt, events)
     states: list[M4M5ArtifactState] = []
+    deferred_by_node: dict[str, list[Any]] = {}
+    for invalidation in receipt.invalidations:
+        event = events.get(invalidation.event_id)
+        if event is None:
+            raise ValueError(
+                f"Invalidation references an inactive event: {invalidation.event_id}"
+            )
+        _validate_invalidation(
+            invalidation=invalidation,
+            event=event,
+            graph=graph,
+            graph_nodes=graph_nodes,
+        )
+        for node_id in invalidation.deferred_node_ids:
+            deferred_by_node.setdefault(node_id, []).append(event)
     for definition in definitions:
         baseline = str(baseline_statuses[definition.artifact_id])
         if baseline not in VALID_BASELINE_STATUSES:
@@ -308,9 +408,14 @@ def build_m4_m5_integration(
         invalidated_nodes = tuple(
             node_id for node_id in definition.node_ids if node_id in invalidations
         )
+        deferred_nodes = tuple(
+            node_id for node_id in definition.node_ids if node_id in deferred_by_node
+        )
         relevant_events: list[Any] = []
         for node_id in invalidated_nodes:
             relevant_events.extend(invalidations[node_id])
+        for node_id in deferred_nodes:
+            relevant_events.extend(deferred_by_node[node_id])
         event_catalog = {
             event.event_id: event
             for event in relevant_events
@@ -323,16 +428,36 @@ def build_m4_m5_integration(
                 symbol=definition.symbol,
                 baseline_status=baseline,
                 invalidated_node_ids=invalidated_nodes,
+                deferred_node_ids=deferred_nodes,
                 triggering_event_ids=tuple(
                     event.source_event_id for event in relevant_events
                 ),
-                status=_status_for(baseline, tuple(relevant_events)),
+                status=_status_for(
+                    baseline,
+                    tuple(relevant_events),
+                    invalidated_nodes,
+                    deferred_nodes,
+                ),
                 action=ACTION_NO_ORDER,
             )
         )
 
+    identity_payload = {
+        "schema_version": SCHEMA_VERSION,
+        "receipt_id": receipt.receipt_id,
+        "state_sha256": receipt.state_sha256,
+        "generated_at": generated_at.isoformat(),
+        "graph": graph.as_policy(),
+        "artifacts": [artifact.as_policy() for artifact in states],
+    }
     result_id = "m4m5-" + hashlib.sha256(
-        f"{SCHEMA_VERSION}|{receipt.receipt_id}|{generated_at.isoformat()}".encode("utf-8")
+        json.dumps(
+            identity_payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
     ).hexdigest()[:32]
     return M4M5IntegrationResult(
         result_id=result_id,

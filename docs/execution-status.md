@@ -2,6 +2,29 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M5 fail-closed 加固
+
+第二轮对抗审查针对事件身份、批次 replay、水位时钟、invalidation 投影和人工材料性
+边界构造反例；本轮修复后，相关错误均失败关闭，但真实公告到 persisted state 的离线
+产品链仍未收口。
+
+- 事件身份升级为 `source-id-v3` 并把 PIT 时间规范化为 UTC；v2/v1/legacy 身份算法保持
+  冻结兼容，v2 与 v3 不能在无显式 correction 时静默混合去重。
+- 已接受批次现在从 checkpoint 的 pre-batch prefix 精确 replay，原 ingest verdict、
+  invalidation 和 alert 与首次 receipt 一致；duplicate 新批次不会重复创建 alert。
+- 运行时钟不得早于事件 observed time；未来水位被拒绝，默认 stale 超过 15 分钟的
+  watermark 失败关闭，不再产生静默 `HEALTHY`。
+- M4/M5 投影拒绝跨公司或跨 kind 的伪造 invalidation；`result_id` 绑定 receipt state、
+  dependency graph 和最终 artifact states。
+- materiality source hash 必须跨 decision/source ref/human evidence/current state 一致；
+  review 扫描窗口不得覆盖未来，decision clock 不得晚于 review clock；所有身份版本的
+  material announcement 都必须人工复核。
+- M4/M5 及人工 review reconciliation 定向回归 `146 passed`；本地全量离线回归
+  `2507 passed, 5 skipped, 18 warnings, 0 failed`；`compileall` 和 `git diff --check` 通过。
+- 尚未实现可反序列化的 bridge/run request 和 durable receipt writer/reader，apply
+  仍停在 bridge artifact；600519 的 9 条真实公告保持 `PENDING_HUMAN_REVIEW`。
+  `M5=PARTIAL`，`action=no_order`。
+
 ## 2026-09-24 M5 Outbox 迁移展示候选 v2
 
 冻结的 6 页 M5 事件候选之外新增独立 v2 展示候选，使提醒投递状态、身份版本和来源
