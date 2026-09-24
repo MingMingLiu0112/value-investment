@@ -570,4 +570,5 @@ WPS 生产原表的字节、SHA-256 均保持不变。
 - WPS 只读收据：
   `runtime/m5-600519-disclosure-queue-20260924/wps-receipt.json`，`passed`。
 - WPS 云盘同名副本与仓库文件逐字节一致。
+- 加入该文件后，公开工作簿 WPS 云盘全量字节审计为 `27/27 MATCH`。
 - `action=no_order`；不生成事件、仓位、订单或通知。

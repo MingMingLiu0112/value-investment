@@ -1437,3 +1437,7 @@ Checkpoint B 及后续人工/生产验收继续按原边界保持待办。详细
 
 九条待复核公告和原件 Hash 见
 [m5-600519-disclosure-review-20260924.md](m5-600519-disclosure-review-20260924.md)。
+
+公开工作簿 WPS 云盘全量字节审计已重跑为 `27/27 MATCH`；对应 GitHub Core
+Research Gates run `35977515495` 为 `success`。新增文件仍未改变任何公告材料性
+结论，所有候选继续等待人工决策。
