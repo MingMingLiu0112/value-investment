@@ -30,6 +30,7 @@ from value_investment_agent.m5_event_outbox import (
 )
 from value_investment_agent.m5_event_outbox_state import apply_outbox_transition
 from value_investment_agent.m5_event_outbox_transition import (
+    outbox_transition_id,
     replay_outbox_transitions,
 )
 from value_investment_agent.m5_event_run import (
@@ -55,6 +56,26 @@ from value_investment_agent.m5_event_watermark import (
 
 TZ = timezone(timedelta(hours=8))
 OBSERVED = datetime(2026, 9, 24, 16, 0, tzinfo=TZ)
+
+
+def test_outbox_transition_id_canonicalizes_equivalent_instants() -> None:
+    shanghai = datetime(2026, 9, 24, 16, 6, tzinfo=TZ)
+    utc = datetime(2026, 9, 24, 8, 6, tzinfo=timezone.utc)
+
+    assert shanghai == utc
+    assert outbox_transition_id(
+        alert_id="alert-1",
+        from_status=ALERT_PENDING,
+        to_status=ALERT_SENT,
+        occurred_at=shanghai,
+        error=None,
+    ) == outbox_transition_id(
+        alert_id="alert-1",
+        from_status=ALERT_PENDING,
+        to_status=ALERT_SENT,
+        occurred_at=utc,
+        error=None,
+    )
 
 
 def _event(*, source_event_id: str, at: datetime) -> ChangeEventInput:

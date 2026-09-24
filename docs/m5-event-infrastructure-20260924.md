@@ -45,7 +45,7 @@
 - 工作表：`00_总览`、`01_事件账`、`02_水位与检查点`、
   `03_依赖失效与重算`、`04_Outbox`、`05_输入与边界`
 - 示例输入：7 个事件输入，覆盖财报、价格、分红、重复、晚到、更正；
-  当前有效事件 6 个，依赖失效记录 6 个，outbox 提醒 6 个。
+  v1 receipt 口径当前有效事件 6 个，依赖失效记录 6 个，outbox 提醒 6 个。
 - WPS 只读收据：
   `runtime/m5-event-wps-20260924/receipt.json`，`passed`
 - WPS 云盘同名副本与仓库候选 SHA-256 一致。
@@ -161,8 +161,60 @@
   `2474 passed, 6 skipped, 18 warnings, 0 failed`。
 
 本批仍不发送真实通知、不接生产源，也不承诺外部单调/签名防回滚或掉电级耐久性；
-工作簿暂未展示身份版本，v1/legacy 为冻结兼容也不能补绑 PIT 时间字段。`M5`
+当时冻结的 v1 工作簿尚未展示身份版本，v1/legacy 为兼容也不能补绑 PIT 时间字段。`M5`
 保持 `PARTIAL`，`action=no_order`。
+
+## 2026-09-24 Outbox 迁移展示候选 v2
+
+在原 6 页冻结候选之外新增独立 v2 展示候选，把事件身份版本、来源 ID、提醒发送时间、
+追加式迁移日志和 final state 摘要放到同一可审计工作簿。v1 文件及 SHA-256 保持不变，
+M7 仍固定引用 v1；v2 不替换 canonical，也不接入通知网络。
+
+- 文件：`A股价值投资_M5事件监控候选_v2_20260924.xlsx`
+- 字节数：17,652
+- SHA-256：
+  `5c3f1e7aee518029a6cc5da10139a86aecd61a9acf5caf37a56dfe69d747d1bc`
+- 工作表：`00_总览`、`01_事件账`、`02_水位与检查点`、
+  `03_依赖失效与重算`、`04_Outbox`、`05_Outbox迁移`、`06_输入与边界`。
+- v2 事件账显示 `身份版本` 与 `来源ID`；被 correction 取代的旧事件显示
+  `已被替代`，不再用输入时状态冒充当前生命周期状态。
+- v2 总览显示 7 个输入、5 个当前有效事件、6 个提醒、outbox revision 7、
+  7 条迁移记录和 `action=no_order`。v1 的 `6` 是冻结 receipt 级 accepted-event
+  快照计数；v2 的 `5` 来自当前 event ledger，两者的语义和展示边界已明确区分。
+- `05_Outbox迁移` 直接展示来源事件 ID、来源 ID、身份版本、alert ID、前后状态、
+  发生时间、错误和动作，可从工作簿逐行追溯到 base fixture、迁移 fixture 和 manifest。
+- base fixture SHA-256：
+  `0bba84f6450f308a02dff0a703c17eab9f77d5f65a13a6184be7f8c52b9ca8f4`。
+- 迁移 fixture SHA-256：
+  `f70deb515c10557c25246dda34e772fb2a7717e9ba70f2dfb9634f8c26e5d8be`；
+  其 `generated_at=2026-09-24T16:10:00+08:00` 是全部迁移时间的确定性上界。
+- base state SHA-256：
+  `486cdc0fe6dc25a8d84e4dccb9c6edf3b19b1c2e859ada60459a1d1ac2430542`。
+- final state SHA-256：
+  `7a7c82434b4bf41a11ef68e95c1b384cf605f9455c75438f440966fd05764955`。
+- manifest 使用 `m5-outbox-transition-candidate-v2` schema，绑定 base/迁移文件
+  Hash、workbook/state Hash、6 个提醒终态、冻结 v1 parent Hash，以及 builder/
+  workbook module 的字节 Hash；manifest 自身保持本地运行产物，不进入公开仓库。
+- 迁移解析同时检查 `source_event_id + alert_type` 的唯一性；存在 correction 版本
+  歧义时失败关闭。迁移时间必须位于对应 run 之后且不晚于迁移批次 generated_at；
+  同一 alert 必须按时间顺序追加。等价的时区表达统一按 UTC 计算 transition ID。
+- 构建使用独占发布锁，输出或 manifest 已存在、已有一轮发布会进行中时拒绝覆盖。
+
+验证：
+
+- `tests/test_m5_outbox_transition_candidate.py`：`8 passed`。
+- 全部 M5 定向回归：`120 passed`。
+- 本地全量离线回归：
+  `2483 passed, 6 skipped, 18 warnings, 0 failed`。
+- WPS 只读收据：
+  `runtime/m5-outbox-transition-wps-v2-20260924/receipt.json`，`passed`；
+  WPS 云盘同名 v2 副本与仓库文件 SHA-256 一致。
+- 公开工作簿 WPS 云盘全量字节审计：`30/30 MATCH`。
+
+本工作包仍不发送真实通知、不接生产源、不承诺外部单调/签名防回滚或掉电级耐久性。
+另有非阻断兼容债：schema v1 若带有非 `PENDING` 的旧 outbox 状态且没有迁移历史，
+当前恢复入口会失败关闭；在出现真实 v1 非 pending 状态前记录为 backlog，不伪造迁移
+历史。`M5` 保持 `PARTIAL`，`action=no_order`。
 
 ## 未完成边界
 

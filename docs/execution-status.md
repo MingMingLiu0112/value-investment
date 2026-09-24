@@ -2,6 +2,31 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M5 Outbox 迁移展示候选 v2
+
+冻结的 6 页 M5 事件候选之外新增独立 v2 展示候选，使提醒投递状态、身份版本和来源
+字段可在原 Excel 中直接审计。v1 文件与 SHA-256 不变，M7 继续固定引用 v1。
+
+- 新文件 `A股价值投资_M5事件监控候选_v2_20260924.xlsx`，7 页、17,652 bytes、
+  SHA-256 `5c3f1e7aee518029a6cc5da10139a86aecd61a9acf5caf37a56dfe69d747d1bc`。
+- `01_事件账` 新增身份版本、来源 ID，并把被 correction 取代的旧版本显示为
+  `已被替代`；`05_Outbox迁移` 新增逐行来源事件 ID、来源 ID、身份版本和动作。
+- 总览固定 7 个输入、5 个当前有效事件、6 个提醒、outbox revision 7、7 条迁移和
+  `action=no_order`。v1 的 6 是冻结 receipt 快照计数，v2 的 5 是当前 active ledger
+  计数，版本记录已明确区分。
+- manifest 升级为 `m5-outbox-transition-candidate-v2`，绑定 base/迁移 fixture、
+  workbook/state Hash、6 个提醒终态、冻结 v1 parent Hash 和 builder/module Hash。
+- 对抗审查发现并修复：多版本 alert 解析歧义、未来迁移时间、receipt/current_state
+  脱钩、发布竞态、迁移行来源缺失、终态清单不完整、被替代事件误标为已接受，以及
+  等价时区的 transition ID 不幂等问题。v1 非 `PENDING` 且无迁移历史的旧状态仍作为
+  非阻断兼容债记录，不伪造迁移历史。
+- `tests/test_m5_outbox_transition_candidate.py` 8 passed；全部 M5 定向回归
+  `120 passed`；本地全量离线回归 `2483 passed, 6 skipped, 18 warnings, 0 failed`。
+- WPS 只读收据 `runtime/m5-outbox-transition-wps-v2-20260924/receipt.json` 为
+  `passed`；WPS 云盘同名 v2 副本与仓库文件 SHA-256 一致。
+- 公开工作簿 WPS 云盘全量字节审计更新为 `30/30 MATCH`。
+- 未发送通知、未接生产源、未修改 PTA、数据库或调度；`M5=PARTIAL`。
+
 ## 2026-09-24 M5 Outbox 迁移日志与历史不可改写
 
 M5 状态此前只能把 outbox 状态与事件批次 revision 绑在一起，提醒从 `PENDING` 到

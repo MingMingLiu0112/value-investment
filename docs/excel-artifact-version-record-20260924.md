@@ -609,3 +609,34 @@ M3 重建证据连续性和 600519 真实披露待复核队列，不覆盖 v3、
   `runtime/m7-daily-post-checkpoint-a-wps-20260924/receipt.json`，`passed`。
 - WPS 云盘同名候选与仓库文件逐字节一致。
 - `action=no_order`；M2 状态记录为 `DONE / HUMAN_PASS`，但不扩大 M3-M7 验收。
+
+## 2026-09-24 M5 Outbox 迁移展示候选 v2
+
+新增第 30 个受 Git 跟踪的公开工作簿，作为冻结 v1 的独立后继展示候选。它不覆盖
+`A股价值投资_M5事件监控候选_20260924.xlsx`，也不替换 M7 当前固定的 v1 输入。
+
+- 文件：`A股价值投资_M5事件监控候选_v2_20260924.xlsx`
+- 字节数：17,652
+- SHA-256：
+  `5c3f1e7aee518029a6cc5da10139a86aecd61a9acf5caf37a56dfe69d747d1bc`
+- 工作表：`00_总览`、`01_事件账`、`02_水位与检查点`、
+  `03_依赖失效与重算`、`04_Outbox`、`05_Outbox迁移`、`06_输入与边界`。
+- 冻结 v1 parent SHA-256：
+  `2b86953f793df46e199c40c614f3291e19b249cc0e53e2a670b0000506403dae`。
+- base fixture SHA-256：
+  `0bba84f6450f308a02dff0a703c17eab9f77d5f65a13a6184be7f8c52b9ca8f4`。
+- 迁移 fixture SHA-256：
+  `f70deb515c10557c25246dda34e772fb2a7717e9ba70f2dfb9634f8c26e5d8be`。
+- final state SHA-256：
+  `7a7c82434b4bf41a11ef68e95c1b384cf605f9455c75438f440966fd05764955`。
+- 构建入口：`scripts/build_m5_outbox_transition_candidate.py`。
+- WPS 只读收据：
+  `runtime/m5-outbox-transition-wps-v2-20260924/receipt.json`，`passed`。
+- WPS 云盘同名 v2 副本与仓库文件逐字节一致。
+- 公开工作簿 WPS 云盘全量字节审计更新为 `30/30 MATCH`，收据
+  `runtime/public-workbook-wps-audit-m5-v2-20260924/receipt.json`。
+- 7 条迁移覆盖 acknowledged、retryable failure -> sent 和 terminal failure；
+  6 个提醒在 manifest 中均有最终状态，`action=no_order`。
+
+本记录只确认公开工作簿字节、Hash、迁移来源和 WPS 只读展示一致性；不证明真实通知
+投递、生产采集、M6 恢复演练、估值有效性或实盘准入。

@@ -1,0 +1,66 @@
+{
+  "schema_version": "m5-outbox-transition-demo-v1",
+  "action": "no_order",
+  "namespace": "SIMULATED",
+  "generated_at": "2026-09-24T16:10:00+08:00",
+  "base_input": "tests/fixtures/m5_event_infrastructure_demo.json",
+  "base_input_sha256": "0bba84f6450f308a02dff0a703c17eab9f77d5f65a13a6184be7f8c52b9ca8f4",
+  "operations": [
+    {
+      "source_event_id": "600519-financial-report-001",
+      "alert_type": "REVIEW_DUE",
+      "from_status": "PENDING",
+      "to_status": "SENT",
+      "occurred_at": "2026-09-24T16:06:00+08:00",
+      "error": null
+    },
+    {
+      "source_event_id": "600519-financial-report-001",
+      "alert_type": "REVIEW_DUE",
+      "from_status": "SENT",
+      "to_status": "DELIVERED",
+      "occurred_at": "2026-09-24T16:07:00+08:00",
+      "error": null
+    },
+    {
+      "source_event_id": "600519-financial-report-001",
+      "alert_type": "REVIEW_DUE",
+      "from_status": "DELIVERED",
+      "to_status": "ACKNOWLEDGED",
+      "occurred_at": "2026-09-24T16:08:00+08:00",
+      "error": null
+    },
+    {
+      "source_event_id": "000333-dividend-001",
+      "alert_type": "DIVIDEND_ALERT",
+      "from_status": "PENDING",
+      "to_status": "FAILED_RETRYABLE",
+      "occurred_at": "2026-09-24T16:06:00+08:00",
+      "error": "模拟的临时传输失败"
+    },
+    {
+      "source_event_id": "000333-dividend-001",
+      "alert_type": "DIVIDEND_ALERT",
+      "from_status": "FAILED_RETRYABLE",
+      "to_status": "SENT",
+      "occurred_at": "2026-09-24T16:07:00+08:00",
+      "error": null
+    },
+    {
+      "source_event_id": "600519-price-zone-001",
+      "alert_type": "REVIEW_DUE",
+      "from_status": "PENDING",
+      "to_status": "SENT",
+      "occurred_at": "2026-09-24T16:06:00+08:00",
+      "error": null
+    },
+    {
+      "source_event_id": "600519-price-zone-001",
+      "alert_type": "REVIEW_DUE",
+      "from_status": "SENT",
+      "to_status": "FAILED_TERMINAL",
+      "occurred_at": "2026-09-24T16:07:00+08:00",
+      "error": "模拟的提供方拒绝"
+    }
+  ]
+}

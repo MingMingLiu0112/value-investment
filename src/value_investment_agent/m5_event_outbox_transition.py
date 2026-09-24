@@ -8,7 +8,7 @@ replay; it does not call a network or notification transport.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Mapping, Sequence
 
 from .investment_decision import ACTION_NO_ORDER
@@ -66,7 +66,7 @@ def outbox_transition_id(
         alert_id,
         from_status,
         to_status,
-        occurred_at.isoformat(),
+        occurred_at.astimezone(timezone.utc).isoformat(),
         error or "",
     )[:32]
 

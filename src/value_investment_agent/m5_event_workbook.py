@@ -11,12 +11,16 @@ from openpyxl.utils import get_column_letter
 
 from .investment_decision import ACTION_NO_ORDER
 from .m5_event_core import (
+    EVENT_IDENTITY_CURRENT,
+    EVENT_IDENTITY_LEGACY,
+    EVENT_IDENTITY_SOURCE_ID_V1,
     EVENT_STATUS_SUPERSEDED,
     INGEST_CORRECTION_ACCEPTED,
     INGEST_DUPLICATE,
     INGEST_SUPERSEDES_ACCEPTED,
 )
 from .m5_event_run import M5EventRunReceipt, RUN_ATTENTION, RUN_HEALTHY
+from .m5_event_run_state import M5EventRunState
 from .m5_event_watermark import ScanWatermark
 
 
@@ -26,6 +30,8 @@ WATERMARK_SHEET = "02_水位与检查点"
 INVALIDATION_SHEET = "03_依赖失效与重算"
 OUTBOX_SHEET = "04_Outbox"
 BOUNDARY_SHEET = "05_输入与边界"
+OUTBOX_TRANSITION_SHEET = "05_Outbox迁移"
+BOUNDARY_SHEET_WITH_TRANSITIONS = "06_输入与边界"
 
 INK = "24312D"
 GREEN = "18755D"
@@ -46,6 +52,7 @@ _STATUS_LABELS = {
     "FUTURE_REJECTED": "未来事件拒绝",
     "CONFLICT_REJECTED": "冲突拒绝",
     "OBSERVED_TIME_REGRESSION_REJECTED": "观察时间回退拒绝",
+    "SUPERSEDED": "已被替代",
 }
 _SEVERITY_LABELS = {
     "CRITICAL": "严重",
@@ -81,6 +88,11 @@ _ALERT_LABELS = {
     "DIVIDEND_ALERT": "股息提醒",
     "POSITION_RISK": "仓位风险",
     "SYSTEM_HEALTH": "系统健康",
+}
+_IDENTITY_LABELS = {
+    EVENT_IDENTITY_LEGACY: "历史兼容（无来源ID）",
+    EVENT_IDENTITY_SOURCE_ID_V1: "source-id-v1",
+    EVENT_IDENTITY_CURRENT: "source-id-v2",
 }
 
 
@@ -123,6 +135,9 @@ def _overview(
     wb: Workbook,
     receipt: M5EventRunReceipt,
     names: Mapping[str, str],
+    *,
+    current_state: M5EventRunState | None = None,
+    include_outbox_transitions: bool = False,
 ) -> None:
     sheet = wb.create_sheet(OVERVIEW_SHEET)
     sheet.sheet_view.showGridLines = False
@@ -142,21 +157,48 @@ def _overview(
         item.status == INGEST_DUPLICATE for item in receipt.ingest_results
     )
     late_count = sum(item.is_late for item in receipt.ingest_results)
+    alerts = (
+        current_state.outbox.alerts()
+        if current_state is not None
+        else receipt.alerts
+    )
+    active_event_count = (
+        len(current_state.event_ledger.active_events())
+        if current_state is not None
+        else len(receipt.active_events)
+    )
     metrics = [
         ("命名空间", receipt.namespace, "公开工作簿只接受显式模拟输入。"),
         ("运行状态", _HEALTH_LABELS[receipt.health_status], "有需要人工复核的提醒时为需关注。"),
         ("事件输入数", len(receipt.ingest_results), "包含重复和更正输入。"),
         ("有效接受数", receipt.accepted_event_count, "重复输入不会增加新版本。"),
-        ("当前有效事件数", len(receipt.active_events), "被更正或替代的旧事件不计入。"),
+        ("当前有效事件数", active_event_count, "被更正或替代的旧事件不计入。"),
         ("更正数", correction_count, "更正显式绑定旧事件 ID。"),
         ("重复忽略数", duplicate_count, "相同来源与内容只保留一次。"),
         ("晚到事件数", late_count, "保留历史可用时间，不重写成当前时间。"),
         ("依赖失效记录数", len(receipt.invalidations), "只重算受影响的依赖节点。"),
-        ("Outbox 提醒数", len(receipt.alerts), "不执行真实投递，仅记录状态。"),
-        ("关键提醒数", receipt.critical_alert_count, "关键提醒不参与普通去重。"),
+        ("Outbox 提醒数", len(alerts), "不执行真实投递，仅记录状态。"),
+        ("关键提醒数", sum(item.severity == "CRITICAL" for item in alerts), "关键提醒不参与普通去重。"),
         ("静默合法", "是" if receipt.silent_ok else "否", "正常日 0 提醒合法。"),
-        ("动作", ACTION_NO_ORDER, "所有复核仍由人工决定。"),
     ]
+    if include_outbox_transitions:
+        if current_state is None:
+            raise ValueError("Outbox transitions require current state")
+        metrics.extend(
+            [
+                (
+                    "Outbox修订",
+                    current_state.outbox_revision,
+                    "提醒投递状态独立于事件批次 revision。",
+                ),
+                (
+                    "迁移记录数",
+                    len(current_state.outbox_transitions),
+                    "只记录调用方确认的投递状态变化。",
+                ),
+            ]
+        )
+    metrics.append(("动作", ACTION_NO_ORDER, "所有复核仍由人工决定。"))
     for item in metrics:
         _write_row(sheet, row, list(item))
         row += 1
@@ -166,11 +208,13 @@ def _events(
     wb: Workbook,
     receipt: M5EventRunReceipt,
     names: Mapping[str, str],
+    *,
+    include_identity_metadata: bool = False,
 ) -> None:
     sheet = wb.create_sheet(EVENT_SHEET)
     sheet.sheet_view.showGridLines = False
     sheet.freeze_panes = "A4"
-    columns = [
+    base_columns = [
         "序号",
         "状态",
         "事件ID",
@@ -185,7 +229,17 @@ def _events(
         "人工复核",
         "说明",
     ]
-    _widths(sheet, [7, 18, 34, 16, 18, 18, 18, 18, 10, 9, 8, 10, 42])
+    columns = (
+        base_columns[:3] + ["身份版本", "来源ID"] + base_columns[3:]
+        if include_identity_metadata
+        else base_columns
+    )
+    widths = (
+        [7, 18, 34, 22, 24, 16, 20, 18, 18, 18, 10, 9, 8, 10, 42]
+        if include_identity_metadata
+        else [7, 18, 34, 16, 18, 18, 18, 18, 10, 9, 8, 10, 42]
+    )
+    _widths(sheet, widths)
     _title(
         sheet,
         "事件账",
@@ -193,11 +247,30 @@ def _events(
         len(columns),
     )
     row = _header(sheet, 4, columns)
+    lifecycle_events = (
+        {
+            event.event_id: event
+            for event in receipt.state.event_ledger.events()
+        }
+        if include_identity_metadata
+        else {}
+    )
     for index, result in enumerate(receipt.ingest_results, 1):
         event = result.event
+        lifecycle_event = (
+            lifecycle_events.get(event.event_id)
+            if event is not None
+            else None
+        )
         values = [
             index,
-            _STATUS_LABELS.get(result.status, result.status),
+            (
+                _STATUS_LABELS["SUPERSEDED"]
+                if include_identity_metadata
+                and lifecycle_event
+                and lifecycle_event.status == EVENT_STATUS_SUPERSEDED
+                else _STATUS_LABELS.get(result.status, result.status)
+            ),
             event.event_id if event else result.duplicate_event_id or "无",
             _name(event.symbol, names) if event else "无",
             _EVENT_LABELS.get(event.event_type, event.event_type) if event else "无",
@@ -210,6 +283,16 @@ def _events(
             "是" if event and event.requires_human_review else "否",
             result.message,
         ]
+        if include_identity_metadata:
+            values[3:3] = [
+                _IDENTITY_LABELS.get(
+                    event.event_identity_version,
+                    event.event_identity_version,
+                )
+                if event
+                else "无",
+                event.source_id if event else "无",
+            ]
         fill = AMBER if result.is_late else "FFFFFF"
         if event and event.status == EVENT_STATUS_SUPERSEDED:
             fill = GREY
@@ -301,11 +384,14 @@ def _outbox(
     wb: Workbook,
     receipt: M5EventRunReceipt,
     names: Mapping[str, str],
+    *,
+    current_state: M5EventRunState | None = None,
+    include_sent_at: bool = False,
 ) -> None:
     sheet = wb.create_sheet(OUTBOX_SHEET)
     sheet.sheet_view.showGridLines = False
     sheet.freeze_panes = "A4"
-    columns = [
+    base_columns = [
         "提醒ID",
         "类型",
         "严重度",
@@ -318,7 +404,17 @@ def _outbox(
         "投递时间",
         "错误",
     ]
-    _widths(sheet, [34, 18, 10, 15, 34, 10, 18, 9, 18, 18, 28])
+    columns = (
+        base_columns[:10] + ["发送时间"] + base_columns[10:]
+        if include_sent_at
+        else base_columns
+    )
+    widths = (
+        [34, 18, 10, 15, 34, 10, 18, 9, 18, 18, 18, 28]
+        if include_sent_at
+        else [34, 18, 10, 15, 34, 10, 18, 9, 18, 18, 28]
+    )
+    _widths(sheet, widths)
     _title(
         sheet,
         "Outbox 提醒账",
@@ -326,7 +422,12 @@ def _outbox(
         len(columns),
     )
     row = _header(sheet, 4, columns)
-    for alert in receipt.alerts:
+    alerts = (
+        current_state.outbox.alerts()
+        if current_state is not None
+        else receipt.alerts
+    )
+    for alert in alerts:
         event = next(
             (
                 result.event
@@ -335,28 +436,100 @@ def _outbox(
             ),
             None,
         )
+        values = [
+            alert.alert_id,
+            _ALERT_LABELS.get(alert.alert_type, alert.alert_type),
+            _SEVERITY_LABELS.get(alert.severity, alert.severity),
+            _name(event.symbol, names) if event else "系统",
+            alert.event_id or "无",
+            "是" if alert.requires_human_review else "否",
+            alert.status,
+            alert.attempts,
+            alert.next_attempt_at.isoformat() if alert.next_attempt_at else "无",
+            alert.delivered_at.isoformat() if alert.delivered_at else "无",
+            alert.last_error or "无",
+        ]
+        if include_sent_at:
+            values[10:10] = [
+                alert.sent_at.isoformat() if alert.sent_at else "无"
+            ]
+        _write_row(sheet, row, values)
+        row += 1
+
+
+def _outbox_transitions(
+    wb: Workbook,
+    state: M5EventRunState,
+    names: Mapping[str, str],
+) -> None:
+    sheet = wb.create_sheet(OUTBOX_TRANSITION_SHEET)
+    sheet.sheet_view.showGridLines = False
+    sheet.freeze_panes = "A4"
+    columns = [
+        "修订",
+        "迁移ID",
+        "提醒ID",
+        "来源事件ID",
+        "来源ID",
+        "身份版本",
+        "证券",
+        "事件ID",
+        "前状态",
+        "后状态",
+        "发生时间",
+        "错误",
+        "动作",
+    ]
+    _widths(sheet, [8, 36, 34, 28, 22, 22, 15, 34, 18, 20, 20, 34, 12])
+    _title(
+        sheet,
+        "Outbox 迁移日志",
+        "追加记录提醒状态变化；本页只展示调用方确认的结果，不执行真实通知。",
+        len(columns),
+    )
+    row = _header(sheet, 4, columns)
+    alerts_by_id = {item.alert_id: item for item in state.outbox.alerts()}
+    events_by_id = {
+        item.event_id: item for item in state.event_ledger.events()
+    }
+    for transition in state.outbox_transitions:
+        alert = alerts_by_id.get(transition.alert_id)
+        event = events_by_id.get(alert.event_id) if alert and alert.event_id else None
         _write_row(
             sheet,
             row,
             [
-                alert.alert_id,
-                _ALERT_LABELS.get(alert.alert_type, alert.alert_type),
-                _SEVERITY_LABELS.get(alert.severity, alert.severity),
+                transition.outbox_revision,
+                transition.transition_id,
+                transition.alert_id,
+                event.source_event_id if event else "无",
+                event.source_id if event else "无",
+                _IDENTITY_LABELS.get(
+                    event.event_identity_version,
+                    event.event_identity_version,
+                )
+                if event
+                else "无",
                 _name(event.symbol, names) if event else "系统",
-                alert.event_id or "无",
-                "是" if alert.requires_human_review else "否",
-                alert.status,
-                alert.attempts,
-                alert.next_attempt_at.isoformat() if alert.next_attempt_at else "无",
-                alert.delivered_at.isoformat() if alert.delivered_at else "无",
-                alert.last_error or "无",
+                alert.event_id if alert and alert.event_id else "无",
+                transition.from_status,
+                transition.to_status,
+                transition.occurred_at.isoformat(),
+                transition.error or "无",
+                transition.action,
             ],
+            fill=AMBER if transition.error else "FFFFFF",
         )
         row += 1
 
 
-def _boundaries(wb: Workbook) -> None:
-    sheet = wb.create_sheet(BOUNDARY_SHEET)
+def _boundaries(
+    wb: Workbook,
+    *,
+    sheet_name: str = BOUNDARY_SHEET,
+    include_outbox_transitions: bool = False,
+) -> None:
+    sheet = wb.create_sheet(sheet_name)
     sheet.sheet_view.showGridLines = False
     columns = ["边界", "状态", "说明"]
     _widths(sheet, [28, 14, 66])
@@ -376,10 +549,29 @@ def _boundaries(wb: Workbook) -> None:
         ("任务锁", "单锁/租约", "防止重复 worker；本候选不创建常驻任务。"),
         ("依赖重算", "有界", "超过上限时记录 deferred，不静默扩大范围。"),
         ("价格与估值", "隔离", "价格变化只影响桥接，不修改 Bear/Base/Bull。"),
-        ("通知投递", "未启用", "只记录 outbox 状态，不发送真实通知。"),
-        ("生产调度", "未授权", "本批不修改服务器、PTA、数据库或计划任务。"),
-        ("动作", ACTION_NO_ORDER, "所有决策仍由人工完成。"),
     ]
+    if include_outbox_transitions:
+        rows.extend(
+            [
+                (
+                    "事件身份",
+                    "分版本",
+                    "v1/legacy 保持历史 ID，新事件使用 source-id-v2。",
+                ),
+                (
+                    "Outbox迁移",
+                    "追加日志",
+                    "迁移记录与事件批次 revision 分开，重复请求幂等。",
+                ),
+            ]
+        )
+    rows.extend(
+        [
+            ("通知投递", "未启用", "只记录 outbox 状态，不发送真实通知。"),
+            ("生产调度", "未授权", "本批不修改服务器、PTA、数据库或计划任务。"),
+            ("动作", ACTION_NO_ORDER, "所有决策仍由人工完成。"),
+        ]
+    )
     for item in rows:
         _write_row(sheet, row, list(item))
         row += 1
@@ -390,16 +582,70 @@ def build_m5_event_workbook(
     watermark: ScanWatermark,
     *,
     security_names: Mapping[str, str] | None = None,
+    current_state: M5EventRunState | None = None,
+    include_outbox_transitions: bool = False,
+    include_identity_metadata: bool = False,
 ) -> Workbook:
+    if current_state is not None:
+        if not isinstance(current_state, M5EventRunState):
+            raise ValueError("current_state must be an M5EventRunState snapshot")
+        current_payload = current_state.as_policy()
+        receipt_payload = receipt.state.as_policy()
+        for key in ("outbox", "outbox_revision", "outbox_transitions"):
+            current_payload.pop(key)
+            receipt_payload.pop(key)
+        if current_payload != receipt_payload:
+            raise ValueError(
+                "current_state must share the receipt non-outbox payload"
+            )
+        if (
+            not include_outbox_transitions
+            and current_state.state_sha256() != receipt.state_sha256
+        ):
+            raise ValueError(
+                "Changed outbox state requires transition history display"
+            )
+    if include_outbox_transitions:
+        if not isinstance(current_state, M5EventRunState):
+            raise ValueError(
+                "Outbox transitions require an M5EventRunState snapshot"
+            )
     names = dict(security_names or {})
     wb = Workbook()
     wb.remove(wb.active)
-    _overview(wb, receipt, names)
-    _events(wb, receipt, names)
+    _overview(
+        wb,
+        receipt,
+        names,
+        current_state=current_state,
+        include_outbox_transitions=include_outbox_transitions,
+    )
+    _events(
+        wb,
+        receipt,
+        names,
+        include_identity_metadata=include_identity_metadata,
+    )
     _watermark_and_checkpoint(wb, receipt, watermark)
     _invalidations(wb, receipt, names)
-    _outbox(wb, receipt, names)
-    _boundaries(wb)
+    _outbox(
+        wb,
+        receipt,
+        names,
+        current_state=current_state,
+        include_sent_at=include_outbox_transitions,
+    )
+    if include_outbox_transitions:
+        _outbox_transitions(wb, current_state, names)
+    _boundaries(
+        wb,
+        sheet_name=(
+            BOUNDARY_SHEET_WITH_TRANSITIONS
+            if include_outbox_transitions
+            else BOUNDARY_SHEET
+        ),
+        include_outbox_transitions=include_outbox_transitions,
+    )
     return wb
 
 
@@ -410,6 +656,9 @@ def write_m5_event_workbook(
     output: Path,
     root: Path,
     security_names: Mapping[str, str] | None = None,
+    current_state: M5EventRunState | None = None,
+    include_outbox_transitions: bool = False,
+    include_identity_metadata: bool = False,
 ) -> dict[str, Any]:
     output = output.resolve()
     root = root.resolve()
@@ -421,15 +670,39 @@ def write_m5_event_workbook(
         receipt,
         watermark,
         security_names=security_names,
+        current_state=current_state,
+        include_outbox_transitions=include_outbox_transitions,
+        include_identity_metadata=include_identity_metadata,
     )
     wb.save(output)
-    return {
+    alerts = (
+        current_state.outbox.alerts()
+        if include_outbox_transitions and current_state is not None
+        else receipt.alerts
+    )
+    active_event_count = (
+        len(current_state.event_ledger.active_events())
+        if include_outbox_transitions and current_state is not None
+        else len(receipt.active_events)
+    )
+    result = {
         "workbook_path": str(output),
         "workbook_sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
         "sheet_count": len(wb.sheetnames),
         "event_count": len(receipt.ingest_results),
-        "active_event_count": len(receipt.active_events),
+        "active_event_count": active_event_count,
         "invalidation_count": len(receipt.invalidations),
-        "alert_count": len(receipt.alerts),
+        "alert_count": len(alerts),
         "action": receipt.action,
     }
+    if include_outbox_transitions and current_state is not None:
+        result.update(
+            {
+                "outbox_revision": current_state.outbox_revision,
+                "outbox_transition_count": len(
+                    current_state.outbox_transitions
+                ),
+                "state_sha256": current_state.state_sha256(),
+            }
+        )
+    return result

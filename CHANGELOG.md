@@ -1,5 +1,49 @@
 # Changelog
 
+## v2026.09.24-m5-outbox-transition-workbook
+
+### Scope
+
+在冻结的 M5 v1 候选之外发布独立 v2 展示工作簿，把 append-only Outbox 迁移、
+事件身份版本和来源字段接入原 Excel 可审计链路。该批次不发送真实通知、不接生产源、
+不替换 M7 引用的 v1，也不改变 `M5=PARTIAL` 或 `action=no_order`。
+
+### Changes
+
+- 新增 `A股价值投资_M5事件监控候选_v2_20260924.xlsx`：7 页、7 条显式迁移、
+  6 个提醒终态、`outbox_revision=7`；v2 当前有效事件数为 5，显式区别冻结 v1 的
+  receipt 快照计数 6。
+- 事件账新增身份版本、来源 ID 和 `已被替代` 生命周期显示；Outbox 新增发送时间；
+  迁移页新增来源事件 ID、来源 ID、身份版本和逐行动作。
+- 新增版本化 builder、迁移 fixture、manifest v2 和 WPS 只读 verifier。manifest
+  绑定 base/迁移文件 Hash、workbook/state Hash、冻结 v1 parent Hash、builder/
+  workbook module Hash、六项最终提醒状态和全部 resolved operations。
+- 迁移时间必须有确定性 `generated_at` 上界，且不得早于 base run；同一 alert 只能
+  按时间顺序推进。`source_event_id + alert_type` 存在多版本歧义时失败关闭。
+- transition ID 将等价时区表达规范化为 UTC；builder 使用独占发布锁，拒绝覆盖已有
+  workbook/manifest 或并发发布。
+- 修复对抗审查发现的 receipt/current_state 脱钩、被替代事件误标、迁移行来源缺失、
+  manifest 终态不完整和 WPS 失败重跑覆盖旧收据风险。
+
+### Verification
+
+- `tests/test_m5_outbox_transition_candidate.py`：`8 passed`。
+- 全部 M5 定向回归：`120 passed`。
+- 本地全量离线回归：`2483 passed, 6 skipped, 18 warnings, 0 failed`。
+- `tests/test_m5_outbox_transition.py` 增加等价时区 transition ID 幂等回归；
+  WPS 只读校验 `passed`，公开工作簿 WPS 云盘全量审计 `30/30 MATCH`，
+  同名前缀 v1 文件 Hash 保持不变。
+- `compileall` 与 `git diff --check` 通过。
+
+### Residual Boundary
+
+- WPS 只读校验证明当前 workbook/manifest 字节和展示映射一致，不在 PowerShell 内
+  独立重算 state Hash；状态 Hash 由 builder/回归测试和 manifest producer Hash 绑定。
+- schema v1 若带非 `PENDING` 旧 outbox 状态且没有迁移历史，恢复入口仍失败关闭。
+  当前没有此类真实状态，保留为非阻断兼容债，不伪造历史迁移。
+- 外部单调/签名防回滚、掉电级耐久性、真实通知投递、生产采集和 M6 真实恢复演练
+  仍未完成；`M5` 仍为 `PARTIAL`。
+
 ## v2026.09.24-m5-outbox-transition-journal
 
 ### Scope

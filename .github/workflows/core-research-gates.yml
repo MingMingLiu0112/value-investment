@@ -66,6 +66,7 @@ jobs:
           tests/test_m5_event_run_state_boundaries.py
           tests/test_m5_event_state_store.py
           tests/test_m5_event_workbook.py
+          tests/test_m5_outbox_transition_candidate.py
           tests/test_m5_materiality_bridge.py
           tests/test_m5_materiality_workbook.py
           tests/test_m5_disclosure_queue.py
