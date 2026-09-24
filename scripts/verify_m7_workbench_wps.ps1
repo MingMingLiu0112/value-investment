@@ -160,7 +160,13 @@ try {
         }
     }
 
-    $overviewText = [string]$overview.UsedRange.Text
+    # UsedRange.Text is unreliable through WPS COM. Materialize Value2 instead
+    # so the no_order text scan cannot silently become a no-op.
+    $overviewText = @()
+    foreach ($value in $overview.UsedRange.Value2) {
+        $overviewText += [string]$value
+    }
+    $overviewText = $overviewText -join [Environment]::NewLine
     foreach ($forbidden in @("买入", "加仓", "减仓", "目标仓位", "BUY", "ADD")) {
         if ($overviewText -match $forbidden) {
             throw "Forbidden decision text on M7 overview: $forbidden"
@@ -194,6 +200,10 @@ try {
         checked_at = [DateTimeOffset]::UtcNow.ToString("o")
         checks = @{
             overview = $overviewChecks
+            forbidden_decision_scan = @{
+                checked = $true
+                source = 'materialized UsedRange.Value2'
+            }
         }
         action = "no_order"
         check_scope = "WPS read-only open/read/calculate, formula-error scan, presentation sheet order, navigation targets, no_order text and canonical hash; no visual click verification"

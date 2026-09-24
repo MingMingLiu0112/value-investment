@@ -127,9 +127,13 @@ try {
         throw "Unexpected source row count: $($historyChecks.source_rows)"
     }
 
+    # UsedRange.Text is unreliable through WPS COM. Materialize the values so
+    # forbidden presentation text cannot pass through an empty scan.
     $historyText = ""
     foreach ($historyName in $historySheets) {
-        $historyText += [string]($book.Worksheets.Item($historyName).UsedRange.Text)
+        foreach ($value in $book.Worksheets.Item($historyName).UsedRange.Value2) {
+            $historyText += [string]$value
+        }
     }
     foreach ($forbidden in @("目标仓位", "下单", "自动卖出")) {
         if ($historyText -match $forbidden) {
