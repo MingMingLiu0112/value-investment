@@ -1,6 +1,18 @@
 # 当前执行状态
 
-更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
+更新：2026-09-25。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
+
+## 2026-09-25 M5 人工公告复核只读简报
+
+新增 `m5_disclosure_briefing.py` 和
+`scripts/build_m5_disclosure_review_briefing.py`。它在生成阅读辅助前逐条重算已归档
+PDF 的 SHA-256；原件缺失、路径越界、Hash 不一致或 PDF 解析失败都会失败关闭。输出仅包含
+公告身份、原件来源、页数、标题规则对应的阅读提示、文字命中页和受限片段，明确不含
+`EventMaterialityDecision`、受影响领域或交易结论。
+
+已对 600519 的 9 条待复核公告生成私有 runtime 简报；9 条仍全部为
+`PENDING_HUMAN_REVIEW`，不创建 ChangeEvent、通知、仓位或订单，`action=no_order`。
+模块及原有回填合同定向回归 `25 passed`；更广的 M4/M5/M6 边界回归 `197 passed`。
 
 ## 2026-09-25 M6 未授权生产授权包
 

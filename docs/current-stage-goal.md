@@ -26,13 +26,16 @@ M7  DISPLAY_ENGINEERING_DONE | PARTIAL        | PENDING_USER_ACCEPTANCE
 ```
 
 本轮纠偏后的机器门已覆盖：M3 正向价格门、M4 决策制品绑定、M2 二阶段
-Channel Verification、M5 旧人工 review Hash reconciliation、M3
+Channel Verification、M5 旧人工 review Hash reconciliation 与归档 PDF 绑定的只读阅读简报、M3
 Historical Research Replay（事实/报价 PIT，规则为追溯并显式标记；strict
 contemporaneous-rule PIT 尚未证明），以及 M7
 10 个日常主入口工作台。Checkpoint A 已人工签收；Checkpoint B 的三张负向卡、
 可理解性和无错误 BUY/ADD 子项已人工通过，但整体因
 `STRICT_CONTEMPORANEOUS_RULE_PIT_NOT_PROVEN` 保持 `PARTIAL`。真实
 IPS/Portfolio、Checkpoint C-D 与 M6 运营验收仍保持人工待办。
+
+M5 阅读简报只帮助人工定位已验证 PDF 中的候选段落；它不含材料性结论、受影响领域或
+事件创建路径，600519 的 9 条公告继续保持 `PENDING_HUMAN_REVIEW`。
 
 M7 Daily v2 用户查看、完整性核验、故障与回退入口见
 [m7-assisted-use-runbook-20260924.md](m7-assisted-use-runbook-20260924.md)。
