@@ -30,6 +30,10 @@
 - WPS 只读收据：`passed`，候选 SHA-256
   `353f6b4572cc6ee1be3d1f44011a984a1e475bf9a33a938975e0d3f593d92612`。
 - 联合结果：4 个事件、10 个产品 `PAUSED/NEGATIVE`、1 个无关财务事实 `READY`。
+- GitHub 发布：release commit `d6a3abd`，已推送 `origin/main`。
+- GitHub Core Research Gates：
+  [run 35939972803](https://github.com/MingMingLiu0112/value-investment/actions/runs/35939972803)，
+  `success`。
 
 ### Acceptance Boundary
 

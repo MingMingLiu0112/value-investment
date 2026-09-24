@@ -54,6 +54,10 @@ M4 已经分别交付组合风险、仓位与股息收入候选；M5 已经交�
   `runtime/m4m5-joint-wps-20260924/wps-verification.json`，`passed`。
 - 候选工作簿字节数：13,162。
 - 候选 SHA-256：`353f6b4572cc6ee1be3d1f44011a984a1e475bf9a33a938975e0d3f593d92612`。
+- GitHub 发布：release commit `d6a3abd`，已推送 `origin/main`。
+- GitHub Core Research Gates：
+  [run 35939972803](https://github.com/MingMingLiu0112/value-investment/actions/runs/35939972803)，
+  `success`。
 
 ## 边界
 

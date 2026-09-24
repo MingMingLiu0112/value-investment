@@ -59,6 +59,10 @@
 - WPS 只读收据：
   `runtime/m4m5-joint-wps-20260924/wps-verification.json`，`passed`
 - 定向回归 4 passed；M4/M5 联合回归 72 passed。
+- GitHub 发布：release commit `d6a3abd`，已推送 `origin/main`。
+- GitHub Core Research Gates：
+  [run 35939972803](https://github.com/MingMingLiu0112/value-investment/actions/runs/35939972803)，
+  对应 `head_sha=d6a3abd32609f0f93e12605b2656d98a9c14dc71`，结论 `success`。
 - 详细边界：[m4-m5-integration-20260924.md](m4-m5-integration-20260924.md)
 
 该候选只证明 M4 与 M5 能通过同一依赖失效结果联动，不等同 Checkpoint C、真实事件
