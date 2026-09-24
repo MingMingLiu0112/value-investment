@@ -25,6 +25,9 @@ PDF 的页数、阅读提示、命中页与受限原文片段；原 `01_人工�
 Hash 校验失败。现改为只读取已固定的 M6 receipt；后续 `latest` 预检不会改变冻结 M7
 候选的事实集。修复不升级 M6/M7 状态、不触发生产动作，`action=no_order`。
 
+同类审查随后确认 M3 audit 也曾保留 `latest` pointer 作为冻结工作台输入；现同样改为
+固定 receipt。M3 strict contemporaneous-rule PIT 的未证明状态不因此变化。
+
 ## 2026-09-25 M6 未授权生产授权包
 
 新增 [M6 生产授权包](m6-production-authorization-package-20260924.md)，把未来数据库

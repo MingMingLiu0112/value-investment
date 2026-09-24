@@ -36,7 +36,8 @@ DEFAULT_GENERATED_AT = datetime(2026, 9, 24, 10, 0, 0, tzinfo=timezone.utc)
 M2_REPORT = ROOT / "runtime" / "m2-channel-verification-20260924-v2" / "report.json"
 M2_MANIFEST = ROOT / "runtime" / "m2-channel-verification-20260924-v2" / "manifest.json"
 M2_LIVE_MANIFEST = ROOT / "runtime" / "m2-live-20260923-v3" / "manifest.json"
-M3_AUDIT_POINTER = ROOT / "runtime" / "m3-decision-acceptance-audit-latest.json"
+# M7 is a frozen candidate. It consumes the explicitly pinned M3 audit receipt,
+# never M3's mutable ``latest`` pointer.
 M3_AUDIT_RECEIPT = (
     ROOT
     / "runtime"
@@ -94,7 +95,6 @@ PINNED_SHA256 = {
     M2_REPORT: "310d56e408655c7c46ef510a4ce3aab44d99ab9aeb021c9ddd41f140a2fb1653",
     M2_MANIFEST: "520d175d5a7696b970c091c88be9e8b5996a7627a58828594671f524e360aabe",
     M2_LIVE_MANIFEST: "69bd1b4a134fcdf67e4cd15454373b4441783ffe24a2446daa375ea260b844a1",
-    M3_AUDIT_POINTER: "da72479bd03ab7e89a947b8bf8ae454dda8b67277f11ace81ff9dd9efb920720",
     M3_AUDIT_RECEIPT: "755c2ec01a21cf357de212014c9d3e11cf35f0595802814d24182c7a77069429",
     M3_DECISION_WORKBOOK: "589f19ef9e3d235401814e98450475d657c3e981b33637337ab5da9d33fb307d",
     M3_DECISION_MANIFEST: "c2b69ea02a0b5bdb0734b41c416ee03147ffad0eea8c78febc37ebf6b0ea2cc6",
@@ -231,12 +231,8 @@ def _m2_reason(report: dict[str, Any], row: dict[str, Any]) -> str:
 
 
 def _m3_packet() -> dict[str, Any]:
-    pointer = _load_json(M3_AUDIT_POINTER)
-    receipt_path = ROOT / pointer["path"] / "receipt.json"
-    if receipt_path not in PINNED_SHA256:
-        raise ValueError(f"M3 audit receipt is not pinned: {receipt_path}")
-    _verify_pinned(receipt_path)
-    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    _verify_pinned(M3_AUDIT_RECEIPT)
+    receipt = json.loads(M3_AUDIT_RECEIPT.read_text(encoding="utf-8"))
     decision_manifest = _load_json(M3_DECISION_MANIFEST)
     history_manifest = _load_json(M3_HISTORY_MANIFEST)
     integrated = _load_json_array(M3_INTEGRATED_RUNS)
@@ -273,8 +269,8 @@ def _m3_packet() -> dict[str, Any]:
         "decision_manifest": decision_manifest,
         "history_manifest": history_manifest,
         "audit_receipt": {
-            "path": str(receipt_path.relative_to(ROOT)),
-            "sha256": digest(receipt_path),
+            "path": str(M3_AUDIT_RECEIPT.relative_to(ROOT)),
+            "sha256": digest(M3_AUDIT_RECEIPT),
             "status": receipt.get("status"),
         },
     }

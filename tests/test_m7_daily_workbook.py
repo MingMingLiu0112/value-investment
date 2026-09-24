@@ -564,3 +564,10 @@ def test_frozen_m7_packet_does_not_follow_mutable_m6_latest_pointer():
     )
 
     assert packet["m6"]["status"] == "PREFLIGHT_DONE"
+
+
+def test_frozen_m7_packet_does_not_expose_an_m3_latest_pointer():
+    _require_post_checkpoint_a_real_artifacts()
+    builder = _load_post_checkpoint_a_builder()
+
+    assert "M3_AUDIT_POINTER" not in builder.BASE_BUILDER
