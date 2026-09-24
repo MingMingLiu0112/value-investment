@@ -856,6 +856,46 @@ def coverage_signature(channel_results: Mapping[str, ChannelResult]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+_COVERAGE_EXTENDED_FIELDS = {
+    "trigger_metrics",
+    "trigger_reasons",
+    "policy_version",
+    "raw_rank_before_budget",
+}
+
+
+def _coverage_signature_v1(channel_results: Mapping[str, ChannelResult]) -> str:
+    """Recompute the pre-2026-09-24 coverage signature for legacy receipts."""
+    entries = []
+    for channel in CHANNELS:
+        result = channel_results.get(channel)
+        if result is None:
+            raise ValueError(f"Missing channel result: {channel}")
+        for evaluation in result.evaluations:
+            entries.append(
+                {
+                    "channel": channel,
+                    "symbol": evaluation.symbol,
+                    "status": evaluation.status,
+                    "reason": evaluation.reason,
+                    "profile_status": evaluation.profile_status,
+                    "evidence_date": evaluation.evidence_date,
+                }
+            )
+    payload = json.dumps(entries, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _has_extended_coverage_fields(value: Mapping[str, Any]) -> bool:
+    for channel_payload in (value.get("channel_results") or {}).values():
+        if not isinstance(channel_payload, Mapping):
+            continue
+        for evaluation in channel_payload.get("evaluations") or []:
+            if isinstance(evaluation, Mapping) and _COVERAGE_EXTENDED_FIELDS & set(evaluation):
+                return True
+    return False
+
+
 def channel_evaluation_from_payload(value: Mapping[str, Any]) -> ChannelEvaluation:
     data = dict(value)
     return ChannelEvaluation(
@@ -935,7 +975,12 @@ def discovery_receipt_from_payload(value: Mapping[str, Any]) -> DiscoveryRunRece
         candidate_signature=str(data.get("candidate_signature") or ""),
         quote_date=str(data.get("quote_date")) if data.get("quote_date") else None,
     )
-    if receipt.coverage_signature != coverage_signature(receipt.channel_results):
+    coverage_algorithm = (
+        coverage_signature
+        if _has_extended_coverage_fields(data)
+        else _coverage_signature_v1
+    )
+    if receipt.coverage_signature != coverage_algorithm(receipt.channel_results):
         raise ValueError("Discovery coverage signature changed during decode")
     if receipt.candidate_signature != candidate_signature(receipt.channel_results):
         raise ValueError("Discovery candidate signature changed during decode")

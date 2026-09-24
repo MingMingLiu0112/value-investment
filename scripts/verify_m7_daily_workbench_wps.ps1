@@ -168,6 +168,8 @@ try {
         throw 'Read-only check changed the canonical workbook.'
     }
 
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $ReceiptPath) | Out-Null
+
     $receipt = @{
         status = 'passed'
         mode = 'm7_daily_workbench_read_only_candidate'

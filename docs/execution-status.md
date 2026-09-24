@@ -2,6 +2,27 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M2 历史签名兼容与 M7 使用手册
+
+复核发现，2026-09-24 人工审查纠偏扩展了 `ChannelEvaluation` 的 trigger/policy/rank
+字段，但 2026-09-23 生成的真实 M2 冻结收据仍使用旧六字段 coverage signature。这使
+`scripts/audit_m2_acceptance.py` 在解码真实 `m2-live-20260923-v3/receipt.json` 时误报
+“证据被篡改”。本轮不改冻结收据，而是在 `discovery_receipt_from_payload` 中按原始
+payload 是否包含扩展字段选择旧/新签名算法；旧格式继续可解码，未纳入旧签名的后补扩展
+字段不会被绕过。
+
+- 定向回归 `25 passed`；真实 M2 审计器已能解码固定 v3 收据并继续完成 AC2-AC12 检查。
+- 最终审计：AC1-AC7/AC11 `DONE`，AC8-AC10/AC12 `PENDING_HUMAN_REVIEW`，
+  `action=no_order`；收据
+  `runtime/m2-acceptance-audit-20260924T045545Z/receipt.json` 的 SHA-256 为
+  `327137c49d6c1122e96391cab1ada897cd4ff65c936981c7dab5cc28ea611638`。
+- 完整离线回归 `2361 passed、6 skipped、0 failed、18 warnings`。
+- 新增 `docs/m7-assisted-use-runbook-20260924.md`，记录 M7 Daily v2 查看顺序、
+  Hash 核验、WPS 复核、故障回退、私有数据与授权边界。
+- `verify_m7_daily_workbench_wps.ps1` 自动创建收据目录；按手册中的命令实跑为
+  `passed`，10 个可见页、2 个隐藏页、canonical Hash 均通过。
+- `action=no_order`；未修改 canonical、冻结运行收据或生产服务。
+
 ## 2026-09-24 可重复执行 WPS 云盘副本审计
 
 新增只读脚本 `scripts/audit_public_workbook_wps_copies.ps1`，对 Git 跟踪的全部公开

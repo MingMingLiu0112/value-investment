@@ -29,6 +29,7 @@ from value_investment_agent.m2_opportunity_discovery import (
     EVALUATION_NOT_EVALUATED,
     EvidenceReference,
     PROFILE_UNSUPPORTED,
+    _coverage_signature_v1,
     coverage_signature,
     discovery_receipt_from_payload,
 )
@@ -174,6 +175,42 @@ def test_receipt_round_trip_preserves_no_order_and_candidate_signature():
     assert restored.action == ACTION_NO_ORDER
     assert restored.coverage_signature == receipt.coverage_signature
     assert restored.candidate_signature == receipt.candidate_signature
+
+
+def test_legacy_coverage_receipt_without_extended_fields_still_decodes():
+    receipt = _receipt()
+    payload = receipt.as_policy()
+    for channel_payload in payload["channel_results"].values():
+        for evaluation in channel_payload["evaluations"]:
+            for field in ("trigger_metrics", "trigger_reasons", "policy_version", "raw_rank_before_budget"):
+                evaluation.pop(field, None)
+    payload["coverage_signature"] = _coverage_signature_v1(receipt.channel_results)
+
+    restored = discovery_receipt_from_payload(payload)
+
+    assert restored.coverage_signature == payload["coverage_signature"]
+    assert restored.candidate_signature == receipt.candidate_signature
+    assert all(
+        evaluation.trigger_metrics == {} and not evaluation.trigger_reasons
+        for channel_result in restored.channel_results.values()
+        for evaluation in channel_result.evaluations
+    )
+
+
+def test_legacy_coverage_signature_rejects_unhashed_extended_enrichment():
+    receipt = _receipt()
+    payload = receipt.as_policy()
+    for channel_payload in payload["channel_results"].values():
+        for evaluation in channel_payload["evaluations"]:
+            for field in ("trigger_metrics", "trigger_reasons", "policy_version", "raw_rank_before_budget"):
+                evaluation.pop(field, None)
+    payload["coverage_signature"] = _coverage_signature_v1(receipt.channel_results)
+    next(iter(payload["channel_results"].values()))["evaluations"][0][
+        "trigger_metrics"
+    ] = {"pe_ttm": "1.0"}
+
+    with pytest.raises(ValueError, match="coverage signature changed"):
+        discovery_receipt_from_payload(payload)
 
 
 def test_bank_is_isolated_and_never_enters_general_channels():

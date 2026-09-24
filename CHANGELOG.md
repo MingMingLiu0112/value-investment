@@ -1,5 +1,28 @@
 # Changelog
 
+## v2026.09.24-m2-legacy-coverage-signature-and-m7-runbook
+
+### Scope
+
+修复人工审查纠偏后 M2 coverage signature 扩展与既有冻结收据不兼容的问题。旧的
+`m2-live-20260923-v3` 收据只包含六字段 coverage signature，而新合同增加了
+trigger metrics、trigger reasons、policy version 和预算前排名，导致
+`scripts/audit_m2_acceptance.py` 解码真实收据时误报篡改。本轮按 payload 实际字段
+版本选择签名算法，不修改冻结证据；旧格式可重放，新增未签名字段不能绕过校验。
+同时新增 M7 Daily v2 用户运行手册，并让 WPS 验证器自动创建收据目录。
+
+### Verification
+
+- M2 opportunity/acceptance 定向回归：25 passed。
+- 本地完整离线回归：2361 passed、6 skipped、0 failed、18 warnings。
+- 真实 M2 审计器完成：AC1-AC7/AC11 `DONE`，AC8-AC10/AC12
+  `PENDING_HUMAN_REVIEW`；收据为
+  `runtime/m2-acceptance-audit-20260924T045545Z/receipt.json`，SHA-256
+  `327137c49d6c1122e96391cab1ada897cd4ff65c936981c7dab5cc28ea611638`。
+- M7 运行手册中的 WPS 复核命令实跑为 `passed`，候选与 canonical Hash 不变。
+- 新增用户手册：`docs/m7-assisted-use-runbook-20260924.md`。
+- `action=no_order`；未修改冻结 M2 收据、canonical 工作簿或生产服务。
+
 ## v2026.09.24-repeatable-public-workbook-wps-audit
 
 ### Scope
