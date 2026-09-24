@@ -1,5 +1,30 @@
 # Changelog
 
+## v2026.09.24-m7-daily-v4-post-checkpoint-a
+
+### Scope
+
+M2 Checkpoint A 收口后继续原总 Goal 的 M7 展示工程，生成新的只读 M7 Daily v4
+候选，并把 600519 重建证据连续性和真实 CNINFO 待复核队列接入现有工作台。
+
+### Changes
+
+- 新增 `scripts/build_m7_daily_workbench_post_checkpoint_a.py`。
+- M7 展示层增加可选的 M3 reconstructed continuity 和 M5 600519 disclosure
+  queue read models，均保持 `action=no_order`。
+- M2 展示状态更新为 `DONE / HUMAN_PASS`；v3、canonical 和统一工作台均未覆盖。
+- WPS 验证器增加 `-PostCheckpointA` 开关并检查两个新证据层。
+- 新增文档
+  [docs/m7-daily-workbench-v4-post-checkpoint-a-20260924.md](docs/m7-daily-workbench-v4-post-checkpoint-a-20260924.md)。
+
+### Verification
+
+- M7 Daily Workbench 定向回归 `14 passed`。
+- WPS 只读验证 `passed`；WPS 云盘同名候选逐字节一致。
+- M7 Daily v4 SHA-256
+  `569adf26fece3b45666138c050776b40cb077f0e0b9f498a0dd77445a83c2a59`。
+- `action=no_order`；未签发 Checkpoint B-D、组合、生产或 M7 交付验收。
+
 ## v2026.09.24-m2-checkpoint-a-human-pass
 
 ### Scope

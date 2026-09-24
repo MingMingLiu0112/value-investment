@@ -33,6 +33,9 @@ IPS/Portfolio 与 M6 运营验收仍保持人工待办。
 
 M7 Daily v2 用户查看、完整性核验、故障与回退入口见
 [m7-assisted-use-runbook-20260924.md](m7-assisted-use-runbook-20260924.md)。
+Checkpoint A 后的当前 M7 只读展示候选 v4 已接入 600519 重建披露连续性和真实
+CNINFO 待复核队列，细节与边界见
+[m7-daily-workbench-v4-post-checkpoint-a-20260924.md](m7-daily-workbench-v4-post-checkpoint-a-20260924.md)。
 M2-M7 当前全部人工待办与签收边界见
 [m2-m7-human-review-handoff-20260924.md](m2-m7-human-review-handoff-20260924.md)。
 M2 签收时保留的两项非阻断方法债见

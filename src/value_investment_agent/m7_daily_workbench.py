@@ -223,6 +223,30 @@ def _validate_packet(packet: Mapping[str, Any]) -> Mapping[str, Any]:
     _required_list(m3.get("negative_cards"), "m3.negative_cards")
     _required_mapping(m3.get("historical_replay"), "m3.historical_replay")
     _required_text(m3.get("positive_price_safety"), "m3.positive_price_safety")
+    reconstructed = m3.get("reconstructed_continuity")
+    if reconstructed is not None:
+        reconstructed = _required_mapping(
+            reconstructed, "m3.reconstructed_continuity"
+        )
+        _required_text(reconstructed.get("trace_id"), "m3.reconstructed_continuity.trace_id")
+        _required_text(
+            reconstructed.get("conclusion_status"),
+            "m3.reconstructed_continuity.conclusion_status",
+        )
+        _required_text(
+            reconstructed.get("strict_contemporaneous_rule_pit"),
+            "m3.reconstructed_continuity.strict_contemporaneous_rule_pit",
+        )
+        _required_list(
+            reconstructed.get("blockers"),
+            "m3.reconstructed_continuity.blockers",
+        )
+        _required_list(
+            reconstructed.get("comparisons"),
+            "m3.reconstructed_continuity.comparisons",
+        )
+        if reconstructed.get("action") != ACTION_NO_ORDER:
+            raise ValueError("m3.reconstructed_continuity.action must be no_order")
 
     m4 = _required_mapping(packet["m4"], "m4")
     _required_list(m4.get("required_inputs"), "m4.required_inputs")
@@ -241,6 +265,26 @@ def _validate_packet(packet: Mapping[str, Any]) -> Mapping[str, Any]:
     ):
         if not isinstance(m5.get(key), int) or m5[key] < 0:
             raise ValueError(f"m5.{key} must be a non-negative integer")
+
+    disclosure_queue = m5.get("disclosure_queue_600519")
+    if disclosure_queue is not None:
+        disclosure_queue = _required_mapping(
+            disclosure_queue, "m5.disclosure_queue_600519"
+        )
+        _required_list(
+            disclosure_queue.get("pending_items"),
+            "m5.disclosure_queue_600519.pending_items",
+        )
+        for key in ("total_announcements", "pending_count", "source_unavailable"):
+            if (
+                not isinstance(disclosure_queue.get(key), int)
+                or disclosure_queue[key] < 0
+            ):
+                raise ValueError(
+                    f"m5.disclosure_queue_600519.{key} must be a non-negative integer"
+                )
+        if disclosure_queue.get("action") != ACTION_NO_ORDER:
+            raise ValueError("m5.disclosure_queue_600519.action must be no_order")
 
     m6 = _required_mapping(packet["m6"], "m6")
     _required_list(m6.get("blockers"), "m6.blockers")
@@ -335,6 +379,45 @@ def _overview(packet: Mapping[str, Any], wb: Workbook) -> None:
     for name in VISIBLE_SHEETS[1:]:
         _hyperlink(ws, row, 2, name, name)
         row += 1
+
+    reconstructed = packet["m3"].get("reconstructed_continuity")
+    disclosure_queue = packet["m5"].get("disclosure_queue_600519")
+    if reconstructed or disclosure_queue:
+        row += 1
+        _style(ws.cell(row, 1, "新增证据"), fill=BLUE, bold=True, color=WHITE)
+        _style(ws.cell(row, 2, "以下内容只用于证据连续性，不签发任何投资结论。"), fill=GREY, bold=True)
+        row += 1
+    if reconstructed:
+        row = _label_value(
+            ws,
+            row,
+            "M3 重建证据连续性",
+            (
+                f"{reconstructed.get('symbol')} / {reconstructed.get('baseline_date')}："
+                f"{reconstructed.get('conclusion_status')}；"
+                f"strict PIT={reconstructed.get('strict_contemporaneous_rule_pit')}；"
+                f"actual_entry={reconstructed.get('actual_entry_present')}；"
+                f"human_decision={reconstructed.get('human_decision')}；"
+                f"action={reconstructed.get('action')}。"
+            ),
+            2,
+        )
+    if disclosure_queue:
+        row = _label_value(
+            ws,
+            row,
+            "M5 600519 真实披露队列",
+            (
+                f"CNINFO {disclosure_queue.get('scan_from')} 至 "
+                f"{disclosure_queue.get('scan_to')}："
+                f"{disclosure_queue.get('total_announcements')} 条公告，"
+                f"{disclosure_queue.get('pending_count')} 条待人工复核，"
+                f"{disclosure_queue.get('source_unavailable')} 条来源缺失；"
+                f"coverage={disclosure_queue.get('coverage_status')}；"
+                "机器不代理重大性判断。"
+            ),
+            2,
+        )
 
 
 def _market_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
@@ -516,6 +599,30 @@ def _decision_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
         ),
         5,
     )
+    reconstructed = m3.get("reconstructed_continuity")
+    if reconstructed:
+        row = _label_value(
+            ws,
+            row,
+            "600519 官方披露连续性（重建）",
+            (
+                f"{reconstructed.get('trace_id')}；"
+                f"结论 {reconstructed.get('conclusion_status')}；"
+                f"同期规则 PIT={reconstructed.get('strict_contemporaneous_rule_pit')}；"
+                f"future_rule_version_used="
+                f"{reconstructed.get('future_rule_version_used')}；"
+                f"实际 Entry={reconstructed.get('actual_entry_present')}；"
+                f"人工决策={reconstructed.get('human_decision')}。"
+            ),
+            5,
+        )
+        row = _label_value(
+            ws,
+            row,
+            "重建证据阻断",
+            "\n".join(str(item) for item in reconstructed.get("blockers") or []),
+            5,
+        )
 
 
 def _position_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
@@ -615,6 +722,39 @@ def _event_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
         row += 1
     row += 1
     row = _label_value(ws, row, "持续监控", str(m5.get("continuous_ops_status") or ""), 5)
+
+    disclosure_queue = m5.get("disclosure_queue_600519")
+    if disclosure_queue:
+        row += 1
+        row = _label_value(
+            ws,
+            row,
+            "600519 新增真实披露待复核队列",
+            (
+                f"{disclosure_queue.get('queue_id')}；"
+                f"{disclosure_queue.get('total_announcements')} 条公告，"
+                f"{disclosure_queue.get('pending_count')} 条待人工复核，"
+                f"{disclosure_queue.get('source_unavailable')} 条来源缺失；"
+                f"coverage={disclosure_queue.get('coverage_status')}。"
+                "标题规则只登记候选，不判定重大性。"
+            ),
+            5,
+        )
+        row = _header(ws, row, ["证券代码", "公告ID", "标题", "规则类别", "PDF SHA-256"])
+        for item in disclosure_queue.get("pending_items") or []:
+            values = [
+                str(disclosure_queue.get("symbol") or ""),
+                str(item.get("announcement_id") or ""),
+                str(item.get("title") or ""),
+                str(item.get("rule_kind") or ""),
+                str(item.get("pdf_sha256") or ""),
+            ]
+            for column, value in enumerate(values, 1):
+                _style(ws.cell(row, column, value), fill=AMBER)
+            ws.row_dimensions[row].height = max(
+                24, len(values[2]) // 23 * 15 + 18
+            )
+            row += 1
 
 
 def _research_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
@@ -733,6 +873,23 @@ def _history_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
         _style(ws.cell(row, 2, item))
         row += 1
 
+    reconstructed = packet["m3"].get("reconstructed_continuity")
+    if reconstructed:
+        row = _label_value(
+            ws,
+            row,
+            "600519 重建证据连续性",
+            (
+                f"{reconstructed.get('trace_id')} / "
+                f"{reconstructed.get('conclusion_status')} / "
+                f"strict PIT={reconstructed.get('strict_contemporaneous_rule_pit')} / "
+                f"actual_entry={reconstructed.get('actual_entry_present')} / "
+                f"human_decision={reconstructed.get('human_decision')} / "
+                f"action={reconstructed.get('action')}。"
+            ),
+            2,
+        )
+
 
 def _audit_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
     ws = wb.create_sheet(VISIBLE_SHEETS[9])
@@ -773,7 +930,7 @@ def _status_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
     statuses = packet.get("stage_statuses") or {}
     labels = {
         "m1": ("M1", "DONE", "DONE as Research Workbench", "已完成人工 G3 初审"),
-        "m2": ("M2", "ENGINEERING_DONE", "PARTIAL", "PENDING_HUMAN_REVIEW"),
+        "m2": ("M2", "ENGINEERING_DONE", "DONE", "HUMAN_PASS"),
         "m3": ("M3", "ENGINEERING_PARTIAL_PLUS", "PARTIAL", "PENDING_HUMAN_REVIEW"),
         "m4": ("M4", "ENGINEERING_DONE_SIMULATED", "PARTIAL", "PENDING_PRIVATE_INPUT"),
         "m5": ("M5", "ENGINEERING_DONE_OFFLINE", "PARTIAL", "PENDING_RECONCILIATION / OPERATIONS"),
@@ -868,7 +1025,20 @@ def write_daily_workbench(
         "summary": {
             "m2_verified_for_deep_research": packet["m2"]["verified_count"],
             "m2_rejected_after_verification": packet["m2"]["rejected_count"],
+            "m2_checkpoint_a_status": str(
+                packet["m2"].get("checkpoint_a_status") or "HUMAN_PASS"
+            ),
             "m5_new_pending_reviews": packet["m5"]["pending_human_review"],
+            "m5_600519_pending_reviews": int(
+                (packet["m5"].get("disclosure_queue_600519") or {}).get(
+                    "pending_count", 0
+                )
+            ),
+            "m3_reconstructed_continuity_status": str(
+                (packet["m3"].get("reconstructed_continuity") or {}).get(
+                    "conclusion_status", "ABSENT"
+                )
+            ),
             "m4_private_input_status": packet["m4"]["private_input_status"],
             "m6_operational_status": packet["m6"]["operational_status"],
         },

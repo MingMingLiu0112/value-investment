@@ -182,8 +182,9 @@ def _m2_packet() -> dict[str, Any]:
     rows = report["human_review_packet"]["rows"]
     verification_channel_counts = report["coverage_summary"]["by_channel"]
     return {
-        "status": "PENDING_HUMAN_REVIEW",
-        "acceptance_status": report["acceptance_status"],
+        "status": "DONE",
+        "checkpoint_a_status": "HUMAN_PASS",
+        "acceptance_status": "HUMAN_PASS",
         "lead_count": summary["lead_count"],
         "verified_count": summary["verified_for_deep_research"],
         "rejected_count": summary["rejected_after_verification"],
@@ -380,7 +381,7 @@ def build_packet(generated_at: datetime) -> dict[str, Any]:
         "audit": _audit_packet(),
         "stage_statuses": {
             "m1": ["M1", "DONE", "DONE as Research Workbench", "已完成人工 G3 初审"],
-            "m2": ["M2", "ENGINEERING_DONE", "PARTIAL", "PENDING_HUMAN_REVIEW"],
+            "m2": ["M2", "ENGINEERING_DONE", "DONE", "HUMAN_PASS"],
             "m3": ["M3", "ENGINEERING_PARTIAL_PLUS", "PARTIAL", "PENDING_HUMAN_REVIEW"],
             "m4": ["M4", "ENGINEERING_DONE_SIMULATED", "PARTIAL", "PENDING_PRIVATE_INPUT"],
             "m5": ["M5", "ENGINEERING_DONE_OFFLINE", "PARTIAL", "PENDING_RECONCILIATION / OPERATIONS"],

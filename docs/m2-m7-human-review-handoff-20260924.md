@@ -59,6 +59,16 @@ UNSUPPORTED = 0
 M2_CHECKPOINT_A = HUMAN_PASS
 ```
 
+v3 是 Checkpoint A 签收时审阅的冻结版本。当前展示后继候选为 v4：
+
+```text
+A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v4_20260924.xlsx
+SHA-256=569adf26fece3b45666138c050776b40cb077f0e0b9f498a0dd77445a83c2a59
+```
+
+v4 只把 M2 状态改为 `DONE / HUMAN_PASS` 并加入 M3/M5 新证据层，不覆盖 v3、
+不改变 Checkpoint A 的审阅对象，也不签发 Checkpoint B-D 或 M7 交付。
+
 机器重提包位于
 `runtime/m2-checkpoint-a-human-resubmission-20260924-v2/checkpoint-a-packet.json`，
 该历史人工里程碑收据位于同目录 `receipt.json`。新的 append-only 签收收据位于

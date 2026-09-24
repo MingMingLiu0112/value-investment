@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import copy
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 
@@ -15,6 +17,8 @@ from value_investment_agent.m7_daily_workbench import (
     build_daily_workbench,
     write_daily_workbench,
 )
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _packet() -> dict:
@@ -219,6 +223,77 @@ def _packet() -> dict:
     }
 
 
+def _post_checkpoint_a_packet() -> dict:
+    packet = copy.deepcopy(_packet())
+    packet["m2"].update(
+        {
+            "status": "DONE",
+            "checkpoint_a_status": "HUMAN_PASS",
+            "acceptance_status": "HUMAN_PASS",
+        }
+    )
+    packet["m3"]["reconstructed_continuity"] = {
+        "trace_id": "600519-reconstructed-evidence-continuity-2024-06-21-v1",
+        "symbol": "600519",
+        "baseline_date": "2024-06-21",
+        "future_rule_version_used": True,
+        "strict_contemporaneous_rule_pit": "NOT_PROVEN",
+        "conclusion_status": "RECONSTRUCTED_EVIDENCE_ONLY",
+        "actual_entry_present": False,
+        "human_decision": None,
+        "requires_human_review": True,
+        "blockers": [
+            "strict_contemporaneous_rule_pit_not_proven",
+            "reconstructed_not_actual_entry",
+            "action_no_order",
+        ],
+        "comparisons": [
+            {
+                "dimension": "parent_profit",
+                "baseline_value": "74734071550.75",
+                "observation_id": "600519-2024-annual",
+                "observation_value": "86228146421.62",
+                "change_direction": "UP",
+                "impact": "STRENGTHENED",
+                "arithmetic_note": "FY2024 parent profit is higher.",
+            }
+        ],
+        "action": ACTION_NO_ORDER,
+    }
+    packet["m5"]["disclosure_queue_600519"] = {
+        "queue_id": "cninfo-review-2026-06-01-20260924T084715Z",
+        "symbol": "600519",
+        "provider": "cninfo",
+        "parser_version": "m5-cninfo-announcement-title-v1",
+        "scan_from": "2026-06-01",
+        "scan_to": "2026-09-09",
+        "retrieved_at": "2026-09-24T08:47:15Z",
+        "coverage_status": "COMPLETE",
+        "total_announcements": 16,
+        "pending_count": 9,
+        "source_unavailable": 0,
+        "pending_items": [
+            {
+                "announcement_id": "1225475868",
+                "published_at": "2026-08-15T00:00:00+08:00",
+                "title": "贵州茅台2026年半年度报告",
+                "rule_kind": "financial_statement",
+                "review_status": "PENDING_HUMAN_REVIEW",
+                "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+                "pdf_sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            }
+        ],
+        "action": ACTION_NO_ORDER,
+    }
+    packet["stage_statuses"]["m2"] = [
+        "M2",
+        "ENGINEERING_DONE",
+        "DONE",
+        "HUMAN_PASS",
+    ]
+    return packet
+
+
 def _all_text(workbook) -> str:
     values = []
     for sheet in workbook.worksheets:
@@ -378,3 +453,102 @@ def test_never_overwrites_existing_candidate(tmp_path: Path):
     write_daily_workbench(_packet(), output=output, root=tmp_path)
     with pytest.raises(ValueError, match="already exists"):
         write_daily_workbench(_packet(), output=output, root=tmp_path)
+
+
+def test_post_checkpoint_a_evidence_layers_are_fail_closed(tmp_path: Path):
+    packet = _post_checkpoint_a_packet()
+    write_daily_workbench(packet, output=tmp_path / "daily.xlsx", root=tmp_path)
+    workbook = load_workbook(tmp_path / "daily.xlsx", data_only=True)
+    text = _all_text(workbook)
+
+    assert "M3 重建证据连续性" in text
+    assert "RECONSTRUCTED_EVIDENCE_ONLY" in text
+    assert "strict PIT=NOT_PROVEN" in text
+    assert "actual_entry=False" in text
+    assert "human_decision=None" in text
+    assert "CNINFO 2026-06-01 至 2026-09-09" in text
+    assert "16 条公告，9 条待人工复核，0 条来源缺失" in text
+    assert "机器不代理重大性判断" in text
+    assert "贵州茅台2026年半年度报告" in text
+    assert "1225475868" in text
+    for forbidden in ("建议买入", "建议加仓", "目标仓位", "下单"):
+        assert forbidden not in text
+
+
+def test_post_checkpoint_a_manifest_keeps_human_and_pit_boundaries(tmp_path: Path):
+    output = tmp_path / "daily.xlsx"
+    receipt = write_daily_workbench(
+        _post_checkpoint_a_packet(),
+        output=output,
+        root=tmp_path,
+    )
+    manifest_path = output.with_name(
+        output.stem + ".m7-daily-workbench-manifest.json"
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    assert manifest["action"] == ACTION_NO_ORDER
+    assert manifest["summary"]["m2_checkpoint_a_status"] == "HUMAN_PASS"
+    assert manifest["summary"]["m3_reconstructed_continuity_status"] == (
+        "RECONSTRUCTED_EVIDENCE_ONLY"
+    )
+    assert manifest["summary"]["m5_600519_pending_reviews"] == 9
+    assert manifest["summary"]["m4_private_input_status"] == (
+        "PENDING_USER_PRIVATE_INPUT"
+    )
+    assert manifest["summary"]["m6_operational_status"] == "NOT_STARTED"
+    assert manifest["stage_statuses"]["m2"] == [
+        "M2",
+        "ENGINEERING_DONE",
+        "DONE",
+        "HUMAN_PASS",
+    ]
+    assert receipt["manifest_sha256"] == _digest(manifest_path)
+
+
+def _require_post_checkpoint_a_real_artifacts() -> None:
+    required = (
+        "runtime/m3-reconstructed-continuity-20260924T083028Z/manifest.json",
+        "runtime/m3-reconstructed-continuity-20260924T083028Z/trace.json",
+        "runtime/m3-reconstructed-continuity-20260924T083028Z/input-payload.json",
+        "runtime/m3-reconstructed-continuity-20260924T083028Z/A股价值投资_M3重建证据连续性候选_20260924.xlsx",
+        "runtime/m5-600519-disclosure-queue-20260924/source/queue.json",
+        "runtime/m5-600519-disclosure-queue-20260924/wps-receipt.json",
+        "A股价值投资_M5真实披露待复核队列_600519_20260924.xlsx",
+    )
+    if any(not (ROOT / item).exists() for item in required):
+        pytest.skip("Post-Checkpoint A runtime artifacts are not present in clean CI")
+
+
+def _load_post_checkpoint_a_builder():
+    spec = importlib.util.spec_from_file_location(
+        "post_checkpoint_a_daily_workbench_builder",
+        ROOT / "scripts" / "build_m7_daily_workbench_post_checkpoint_a.py",
+    )
+    assert spec is not None and spec.loader is not None
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    return builder
+
+
+def test_real_post_checkpoint_a_builder_pins_new_evidence():
+    _require_post_checkpoint_a_real_artifacts()
+    builder = _load_post_checkpoint_a_builder()
+    from datetime import datetime, timezone
+
+    packet = builder.build_packet(
+        datetime(2026, 9, 24, 12, 0, 0, tzinfo=timezone.utc)
+    )
+
+    reconstructed = packet["m3"]["reconstructed_continuity"]
+    queue = packet["m5"]["disclosure_queue_600519"]
+    assert packet["action"] == ACTION_NO_ORDER
+    assert packet["m2"]["checkpoint_a_status"] == "HUMAN_PASS"
+    assert reconstructed["conclusion_status"] == "RECONSTRUCTED_EVIDENCE_ONLY"
+    assert reconstructed["strict_contemporaneous_rule_pit"] == "NOT_PROVEN"
+    assert reconstructed["actual_entry_present"] is False
+    assert queue["total_announcements"] == 16
+    assert queue["pending_count"] == 9
+    assert queue["source_unavailable"] == 0
+    assert all(item["review_status"] == "PENDING_HUMAN_REVIEW" for item in queue["pending_items"])
+    assert all(item["pdf_sha256"] for item in queue["pending_items"])

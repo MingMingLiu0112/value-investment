@@ -4,7 +4,8 @@ param(
     [Parameter(Mandatory = $true)][string]$ExpectedSha256,
     [Parameter(Mandatory = $true)][string]$PackagePath,
     [Parameter(Mandatory = $true)][string]$CanonicalPath,
-    [Parameter(Mandatory = $true)][string]$ExpectedCanonicalSha256
+    [Parameter(Mandatory = $true)][string]$ExpectedCanonicalSha256,
+    [switch]$PostCheckpointA
 )
 $ErrorActionPreference = 'Stop'
 [Console]::InputEncoding = [Text.UTF8Encoding]::new()
@@ -112,8 +113,9 @@ try {
     if ($conclusion -notmatch [regex]::Escape('当前无任何可用订单')) {
         throw "M7 daily overview conclusion is not fail-closed: $conclusion"
     }
-    if ($package.stage_statuses.m2[3] -ne 'PENDING_HUMAN_REVIEW') {
-        throw 'M7 daily manifest lost the M2 human-review status.'
+    $expectedM2HumanStatus = if ($PostCheckpointA) { 'HUMAN_PASS' } else { 'PENDING_HUMAN_REVIEW' }
+    if ($package.stage_statuses.m2[3] -ne $expectedM2HumanStatus) {
+        throw "M7 daily manifest lost the M2 human-review status: $($package.stage_statuses.m2[3])"
     }
     if ($package.summary.m4_private_input_status -ne 'PENDING_USER_PRIVATE_INPUT') {
         throw 'M7 daily manifest lost the M4 private-input status.'
@@ -135,6 +137,23 @@ try {
     foreach ($misleading in @('真实 PIT 历史重放', '当时规则')) {
         if ($historicalBoundaryText -match [regex]::Escape($misleading)) {
             throw "M7 daily candidate contains misleading historical PIT wording: $misleading"
+        }
+    }
+    if ($PostCheckpointA) {
+        if ($visibleText -notmatch [regex]::Escape('M3 重建证据连续性')) {
+            throw 'Post-Checkpoint A M7 candidate is missing the reconstructed M3 evidence layer.'
+        }
+        if ($visibleText -notmatch [regex]::Escape('600519 新增真实披露待复核队列')) {
+            throw 'Post-Checkpoint A M7 candidate is missing the 600519 disclosure queue layer.'
+        }
+        if ($visibleText -notmatch [regex]::Escape('strict PIT=NOT_PROVEN')) {
+            throw 'Post-Checkpoint A M7 candidate lost the strict-PIT NOT_PROVEN boundary.'
+        }
+        if ($package.summary.m5_600519_pending_reviews -ne 9) {
+            throw 'Post-Checkpoint A M7 candidate lost the 600519 pending-review count.'
+        }
+        if ($package.summary.m3_reconstructed_continuity_status -ne 'RECONSTRUCTED_EVIDENCE_ONLY') {
+            throw 'Post-Checkpoint A M7 candidate lost the reconstructed-evidence status.'
         }
     }
     foreach ($forbidden in @('建议买入', '建议加仓', '目标仓位', '下单')) {
@@ -185,7 +204,8 @@ try {
         checked_at = [DateTimeOffset]::UtcNow.ToString('o')
         checks = $checks
         action = 'no_order'
-        check_scope = 'WPS read-only open/read/calculate, formula-error scan, visible/hidden sheet contract, fail-closed status text, all-visible-sheet recommendation scan, M3 replay PIT wording boundary and no_order boundary'
+        post_checkpoint_a = [bool]$PostCheckpointA
+        check_scope = 'WPS read-only open/read/calculate, formula-error scan, visible/hidden sheet contract, fail-closed status text, all-visible-sheet recommendation scan, M3 replay PIT wording boundary, optional post-Checkpoint A evidence layers and no_order boundary'
     }
     $receipt | ConvertTo-Json -Depth 6 |
         Set-Content -LiteralPath $ReceiptPath -Encoding utf8

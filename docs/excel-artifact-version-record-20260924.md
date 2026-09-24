@@ -2,7 +2,7 @@
 
 更新：2026-09-24。本文件记录公开仓库工作簿快照、WPS 云盘字节核对和 M2 原表统一发布
 边界，不改变投资逻辑，不生成交易指令。当前项目状态为
-`M2 / PENDING_HUMAN_REVIEW`、`M3 / M4 / M5 / PARTIAL`、
+`M2 / DONE | Checkpoint A / HUMAN_PASS`、`M3 / M4 / M5 / PARTIAL`、
 `M6 / NOT_STARTED`、`M7 / PARTIAL`，全部候选 `action=no_order`。
 
 ## 2026-09-24 M4 Decision Binding v2 候选
@@ -572,3 +572,21 @@ WPS 生产原表的字节、SHA-256 均保持不变。
 - WPS 云盘同名副本与仓库文件逐字节一致。
 - 加入该文件后，公开工作簿 WPS 云盘全量字节审计为 `27/27 MATCH`。
 - `action=no_order`；不生成事件、仓位、订单或通知。
+
+## 2026-09-24 M7 Daily Workbench v4：Checkpoint A 后候选
+
+新增第 28 个受 Git 跟踪的公开工作簿，只在既有 10 个可见页、2 个隐藏页中加入
+M3 重建证据连续性和 600519 真实披露待复核队列，不覆盖 v3、统一工作台或 canonical。
+
+- 文件：
+  `A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v4_20260924.xlsx`
+- 字节数：28,010
+- SHA-256：
+  `569adf26fece3b45666138c050776b40cb077f0e0b9f498a0dd77445a83c2a59`
+- manifest SHA-256：
+  `f8b461a66f7f5a3274fc517e6232f37848f3d9dead4d109fea8fcda05ceae106`
+- 构建入口：`scripts/build_m7_daily_workbench_post_checkpoint_a.py`
+- WPS 只读收据：
+  `runtime/m7-daily-post-checkpoint-a-wps-20260924/receipt.json`，`passed`。
+- WPS 云盘同名候选与仓库文件逐字节一致。
+- `action=no_order`；M2 状态记录为 `DONE / HUMAN_PASS`，但不扩大 M3-M7 验收。

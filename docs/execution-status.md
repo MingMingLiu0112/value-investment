@@ -1441,3 +1441,29 @@ Checkpoint B 及后续人工/生产验收继续按原边界保持待办。详细
 公开工作簿 WPS 云盘全量字节审计已重跑为 `27/27 MATCH`；对应 GitHub Core
 Research Gates run `35977515495` 为 `success`。新增文件仍未改变任何公告材料性
 结论，所有候选继续等待人工决策。
+
+## 2026-09-24 M7 Daily v4：Checkpoint A 后展示闭环
+
+M2 收口后，继续原总 Goal 中依赖已满足的 M7 展示工程，不覆盖已冻结的 v3 候选或
+canonical。新 v4 候选把 M3 重建证据连续性和 600519 真实披露待复核队列接入既有
+10+2 页每日工作台，并把 M2 状态在展示层更新为 `DONE / HUMAN_PASS`。
+
+| 产物 | 路径 | SHA-256 |
+| --- | --- | --- |
+| M7 Daily v4 | `A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v4_20260924.xlsx` | `569adf26fece3b45666138c050776b40cb077f0e0b9f498a0dd77445a83c2a59` |
+| manifest | 同名 `.m7-daily-workbench-manifest.json` | `f8b461a66f7f5a3274fc517e6232f37848f3d9dead4d109fea8fcda05ceae106` |
+
+- 新接入层保持 `RECONSTRUCTED_EVIDENCE_ONLY`、`strict PIT=NOT_PROVEN`、
+  9 条待人工复核、`action=no_order`。
+- WPS 只读验证 `passed`；WPS 云盘同名候选与仓库文件逐字节一致。
+- 定向回归 `14 passed`；canonical SHA-256 保持
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- 隔离 basetemp 全量离线回归：`2403 passed、6 skipped、1 failed`；唯一失败仍是
+  仓库既有 `test_moutai_current_valuation_admission.py` 的
+  `daily_simulation_policy_implemented` runtime 指针断言，不在本轮 M7 改动路径内。
+- 公开工作簿 WPS 云盘全量字节审计更新为 `28/28 MATCH`。
+- 详细边界见
+  [m7-daily-workbench-v4-post-checkpoint-a-20260924.md](m7-daily-workbench-v4-post-checkpoint-a-20260924.md)。
+
+本候选不构成 Checkpoint B/C/D、真实 IPS/组合、生产授权、M6 运营验收或 M7
+最终交付；总 Goal 继续按原依赖推进。
