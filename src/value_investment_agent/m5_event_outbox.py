@@ -77,6 +77,7 @@ class EventAlert:
     next_attempt_at: datetime | None
     last_error: str | None
     delivered_at: datetime | None
+    sent_at: datetime | None = None
     action: str = ACTION_NO_ORDER
 
     def __post_init__(self) -> None:
@@ -133,10 +134,52 @@ class EventAlert:
             if self.delivered_at is None
             else _required_datetime(self.delivered_at, "delivered_at"),
         )
-        if self.status == ALERT_FAILED_RETRYABLE and self.next_attempt_at is None:
-            raise ValueError("Retryable failure requires next_attempt_at")
-        if self.status == ALERT_DELIVERED and self.delivered_at is None:
-            raise ValueError("Delivered alert requires delivered_at")
+        object.__setattr__(
+            self,
+            "sent_at",
+            None
+            if self.sent_at is None
+            else _required_datetime(self.sent_at, "sent_at"),
+        )
+        if self.next_attempt_at is not None and self.next_attempt_at < self.created_at:
+            raise ValueError("Alert next attempt cannot precede creation")
+        if self.sent_at is not None and self.sent_at < self.created_at:
+            raise ValueError("Alert sent time cannot precede creation")
+        if self.delivered_at is not None and self.delivered_at < self.created_at:
+            raise ValueError("Alert delivery cannot precede creation")
+        if (
+            self.delivered_at is not None
+            and self.sent_at is not None
+            and self.delivered_at < self.sent_at
+        ):
+            raise ValueError("Alert delivery cannot precede its send attempt")
+        if self.status == ALERT_PENDING:
+            if self.attempts != 0 or self.next_attempt_at is None:
+                raise ValueError("Pending alert requires zero attempts and next_attempt_at")
+            if self.sent_at is not None or self.delivered_at is not None:
+                raise ValueError("Pending alert cannot have send or delivery times")
+        elif self.status == ALERT_SENT:
+            if self.attempts < 1 or self.next_attempt_at is not None:
+                raise ValueError("Sent alert requires attempts and no retry time")
+            if self.sent_at is None or self.delivered_at is not None:
+                raise ValueError("Sent alert requires sent_at and no delivered_at")
+        elif self.status in {ALERT_DELIVERED, ALERT_ACKNOWLEDGED}:
+            if self.attempts < 1 or self.next_attempt_at is not None:
+                raise ValueError("Delivered alert requires attempts and no retry time")
+            if self.delivered_at is None:
+                raise ValueError("Delivered alert requires delivered_at")
+            if self.sent_at is None:
+                raise ValueError("Delivered alert requires sent_at")
+        elif self.status == ALERT_FAILED_RETRYABLE:
+            if self.attempts < 1 or self.next_attempt_at is None:
+                raise ValueError("Retryable failure requires attempts and next_attempt_at")
+            if self.delivered_at is not None:
+                raise ValueError("Retryable failure cannot have delivered_at")
+        elif self.status == ALERT_FAILED_TERMINAL:
+            if self.attempts < 1 or self.next_attempt_at is not None:
+                raise ValueError("Terminal failure requires attempts and no retry time")
+            if self.delivered_at is not None:
+                raise ValueError("Terminal failure cannot have delivered_at")
         if self.action != ACTION_NO_ORDER:
             raise ValueError("Event alert must remain no_order")
 
@@ -156,6 +199,7 @@ class EventAlert:
             else None,
             "last_error": self.last_error,
             "delivered_at": self.delivered_at.isoformat() if self.delivered_at else None,
+            "sent_at": self.sent_at.isoformat() if self.sent_at else None,
             "action": self.action,
         }
 
@@ -230,7 +274,7 @@ class OutboxLedger:
             alert_type=ALERT_TYPE_SYSTEM_HEALTH,
             severity=event.severity,
             event_id=event.event_id,
-            dedupe_key=f"health:{event.source_event_id}",
+            dedupe_key=f"health:{event.event_id}",
             requires_human_review=True,
             now=now,
             critical=False,
@@ -285,12 +329,16 @@ class OutboxLedger:
         alert = self._require(alert_id)
         if alert.status not in {ALERT_PENDING, ALERT_FAILED_RETRYABLE}:
             raise ValueError("Only pending or retryable alerts can be sent")
+        now = _required_datetime(now, "now")
+        if alert.next_attempt_at is not None and now < alert.next_attempt_at:
+            raise ValueError("Alert cannot be sent before its next attempt time")
         updated = self._copy_with(
             alert,
             status=ALERT_SENT,
             attempts=alert.attempts + 1,
             next_attempt_at=None,
             last_error=None,
+            sent_at=now,
         )
         self._replace(alert, updated)
         return updated
@@ -299,6 +347,9 @@ class OutboxLedger:
         alert = self._require(alert_id)
         if alert.status != ALERT_SENT:
             raise ValueError("Only sent alerts can be delivered")
+        now = _required_datetime(now, "now")
+        if alert.sent_at is not None and now < alert.sent_at:
+            raise ValueError("Alert delivery cannot precede its send attempt")
         updated = self._copy_with(
             alert,
             status=ALERT_DELIVERED,
@@ -311,6 +362,9 @@ class OutboxLedger:
         alert = self._require(alert_id)
         if alert.status != ALERT_DELIVERED:
             raise ValueError("Only delivered alerts can be acknowledged")
+        now = _required_datetime(now, "now")
+        if alert.delivered_at is not None and now < alert.delivered_at:
+            raise ValueError("Alert acknowledgement cannot precede delivery")
         updated = self._copy_with(alert, status=ALERT_ACKNOWLEDGED)
         self._replace(alert, updated)
         return updated
@@ -326,7 +380,15 @@ class OutboxLedger:
         alert = self._require(alert_id)
         if alert.status not in {ALERT_PENDING, ALERT_SENT, ALERT_FAILED_RETRYABLE}:
             raise ValueError("Alert cannot be retried from its current status")
-        backoff_seconds = min(300, 30 * (2 ** (alert.attempts - 1)))
+        now = _required_datetime(now, "now")
+        for label, timestamp in (
+            ("creation", alert.created_at),
+            ("next attempt", alert.next_attempt_at),
+            ("send attempt", alert.sent_at),
+        ):
+            if timestamp is not None and now < timestamp:
+                raise ValueError(f"Alert failure cannot precede its {label} time")
+        backoff_seconds = min(300, 30 * (2 ** max(alert.attempts, 1)))
         updated = self._copy_with(
             alert,
             status=ALERT_FAILED_TERMINAL if terminal else ALERT_FAILED_RETRYABLE,
@@ -346,7 +408,11 @@ class OutboxLedger:
                 (
                     item
                     for item in self._alerts
-                    if item.status == ALERT_PENDING
+                    if (
+                        item.status == ALERT_PENDING
+                        and item.next_attempt_at is not None
+                        and item.next_attempt_at <= now
+                    )
                     or (
                         item.status == ALERT_FAILED_RETRYABLE
                         and item.next_attempt_at is not None
@@ -380,3 +446,74 @@ class OutboxLedger:
             "schema_version": self.schema_version,
             "alerts": [item.as_policy() for item in self._alerts],
         }
+
+
+def outbox_ledger_from_payload(payload: Mapping[str, Any]) -> OutboxLedger:
+    if not isinstance(payload, Mapping):
+        raise ValueError("Outbox ledger must be an object")
+    data = dict(payload)
+    if data.get("schema_version") != M5_EVENT_SCHEMA:
+        raise ValueError("Unknown outbox ledger schema")
+    ledger = OutboxLedger(schema_version=str(data["schema_version"]))
+    seen_alert_ids: set[str] = set()
+    for raw in data.get("alerts") or ():
+        item = dict(raw)
+        alert = EventAlert(
+            alert_id=_required_text(item["alert_id"], "alert_id"),
+            alert_type=_required_text(item["alert_type"], "alert_type"),
+            severity=_required_text(item["severity"], "severity"),
+            event_id=(
+                None
+                if item.get("event_id") is None
+                else _required_text(item["event_id"], "event_id")
+            ),
+            dedupe_key=_required_text(item["dedupe_key"], "dedupe_key"),
+            requires_human_review=_required_bool(
+                item["requires_human_review"],
+                "requires_human_review",
+            ),
+            created_at=_required_datetime(
+                datetime.fromisoformat(str(item["created_at"])),
+                "created_at",
+            ),
+            status=_required_text(item["status"], "status"),
+            attempts=_required_int(item["attempts"], "attempts"),
+            next_attempt_at=(
+                _required_datetime(
+                    datetime.fromisoformat(str(item["next_attempt_at"])),
+                    "next_attempt_at",
+                )
+                if item.get("next_attempt_at")
+                else None
+            ),
+            last_error=(
+                None
+                if item.get("last_error") is None
+                else _required_text(item["last_error"], "last_error")
+            ),
+            delivered_at=(
+                _required_datetime(
+                    datetime.fromisoformat(str(item["delivered_at"])),
+                    "delivered_at",
+                )
+                if item.get("delivered_at")
+                else None
+            ),
+            sent_at=(
+                _required_datetime(
+                    datetime.fromisoformat(str(item["sent_at"])),
+                    "sent_at",
+                )
+                if item.get("sent_at")
+                else None
+            ),
+            action=str(item.get("action", ACTION_NO_ORDER)),
+        )
+        if alert.alert_id in seen_alert_ids:
+            raise ValueError("Outbox ledger contains a duplicate alert id")
+        if alert.dedupe_key in ledger._by_dedupe:
+            raise ValueError("Outbox ledger contains a duplicate dedupe key")
+        seen_alert_ids.add(alert.alert_id)
+        ledger._alerts.append(alert)
+        ledger._by_dedupe[alert.dedupe_key] = alert
+    return ledger

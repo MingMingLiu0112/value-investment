@@ -44,6 +44,7 @@ LOCK_ALREADY_HELD = "ALREADY_HELD"
 LOCK_CONFLICT = "CONFLICT"
 LOCK_RELEASED = "RELEASED"
 LOCK_ALREADY_RELEASED = "ALREADY_RELEASED"
+LOCK_OWNER_MISMATCH = "OWNER_MISMATCH"
 LOCK_TOKEN_MISMATCH = "TOKEN_MISMATCH"
 LOCK_RENEWED = "RENEWED"
 LOCK_EXPIRED = "EXPIRED"
@@ -56,6 +57,7 @@ LOCK_RESULT_STATUSES = frozenset(
         LOCK_CONFLICT,
         LOCK_RELEASED,
         LOCK_ALREADY_RELEASED,
+        LOCK_OWNER_MISMATCH,
         LOCK_TOKEN_MISMATCH,
         LOCK_RENEWED,
         LOCK_EXPIRED,
@@ -284,6 +286,8 @@ class TaskLock:
             if self.released_at is None
             else _required_datetime(self.released_at, "released_at"),
         )
+        if self.released_at is not None and self.released_at < self.acquired_at:
+            raise ValueError("Lock release cannot precede acquisition")
         if self.action != ACTION_NO_ORDER:
             raise ValueError("Task lock must remain no_order")
 
@@ -360,7 +364,7 @@ class TaskLockStore:
         lease_seconds = _positive_int(lease_seconds, "lease_seconds")
         existing = self._locks.get(scope)
         if existing is not None and existing.is_active(now):
-            if existing.token == token:
+            if existing.owner == owner and existing.token == token:
                 return TaskLockResult(
                     status=LOCK_ALREADY_HELD,
                     lock=existing,
@@ -372,6 +376,14 @@ class TaskLockStore:
                 conflicting_lock=existing,
                 message="Another owner holds an unexpired lock",
             )
+        if existing is not None and now < existing.acquired_at:
+            raise ValueError("Lock acquisition time cannot precede the prior lock")
+        if (
+            existing is not None
+            and existing.released_at is not None
+            and now < existing.released_at
+        ):
+            raise ValueError("Lock acquisition cannot precede the prior release")
         lock = TaskLock(
             lock_id="m5-lock-" + _digest(scope, owner, token, now.isoformat())[:32],
             scope=scope,
@@ -388,8 +400,16 @@ class TaskLockStore:
             message="Lock acquired after expiry" if existing else "Lock acquired",
         )
 
-    def release(self, *, scope: str, token: str, now: datetime) -> TaskLockResult:
+    def release(
+        self,
+        *,
+        scope: str,
+        owner: str,
+        token: str,
+        now: datetime,
+    ) -> TaskLockResult:
         scope = _required_text(scope, "scope")
+        owner = _required_text(owner, "owner")
         token = _required_text(token, "token")
         now = _required_datetime(now, "now")
         existing = self._locks.get(scope)
@@ -399,6 +419,13 @@ class TaskLockStore:
                 lock=None,
                 message="No lock exists for this scope",
             )
+        if existing.owner != owner:
+            return TaskLockResult(
+                status=LOCK_OWNER_MISMATCH,
+                lock=None,
+                conflicting_lock=existing,
+                message="Release owner does not match the held lock",
+            )
         if existing.token != token:
             return TaskLockResult(
                 status=LOCK_TOKEN_MISMATCH,
@@ -406,6 +433,8 @@ class TaskLockStore:
                 conflicting_lock=existing,
                 message="Release token does not match the held lock",
             )
+        if now < existing.acquired_at:
+            raise ValueError("Lock release time cannot precede acquisition")
         if existing.released_at is not None:
             return TaskLockResult(
                 status=LOCK_ALREADY_RELEASED,
@@ -432,11 +461,13 @@ class TaskLockStore:
         self,
         *,
         scope: str,
+        owner: str,
         token: str,
         now: datetime,
         lease_seconds: int,
     ) -> TaskLockResult:
         scope = _required_text(scope, "scope")
+        owner = _required_text(owner, "owner")
         token = _required_text(token, "token")
         now = _required_datetime(now, "now")
         lease_seconds = _positive_int(lease_seconds, "lease_seconds")
@@ -446,6 +477,13 @@ class TaskLockStore:
                 status=LOCK_NOT_FOUND,
                 lock=None,
                 message="No lock exists for this scope",
+            )
+        if existing.owner != owner:
+            return TaskLockResult(
+                status=LOCK_OWNER_MISMATCH,
+                lock=None,
+                conflicting_lock=existing,
+                message="Renew owner does not match the held lock",
             )
         if existing.token != token:
             return TaskLockResult(
@@ -460,6 +498,8 @@ class TaskLockStore:
                 lock=existing,
                 message="Lock is released or expired",
             )
+        if now < existing.acquired_at:
+            raise ValueError("Lock renewal time cannot precede acquisition")
         renewed = TaskLock(
             lock_id=existing.lock_id,
             scope=existing.scope,

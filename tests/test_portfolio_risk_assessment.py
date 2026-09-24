@@ -31,6 +31,7 @@ from value_investment_agent.portfolio_risk import (
     STATUS_VIOLATION,
     SecurityRiskAttributes,
     build_portfolio_risk_assessment,
+    security_risk_attributes_from_payload,
 )
 
 
@@ -237,6 +238,14 @@ def test_explicit_simulated_assessment_is_usable_but_publicly_labeled():
 def test_missing_security_attribute_fails_closed():
     with pytest.raises(ValueError, match="Missing security risk attributes"):
         _assessment(security_attributes={})
+
+
+def test_risk_attribute_loader_rejects_string_boolean():
+    payload = _attributes().as_policy()
+    payload["cyclical"] = "false"
+
+    with pytest.raises(ValueError, match="must be boolean"):
+        security_risk_attributes_from_payload(payload)
 
 
 def test_risk_payload_has_no_position_or_order_columns():

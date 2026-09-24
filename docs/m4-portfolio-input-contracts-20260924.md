@@ -47,6 +47,17 @@ IPS 至少需要用户确认：
 - 私有数据持久化、加密备份和真实账户导入；
 - 原 Excel 的 M4 展示页。
 
+## 2026-09-24 输入完整性收紧
+
+- JSON boolean 字段不再经过 `bool()` 的宽松转换；字符串 `"false"` 直接失败关闭。
+- 组合及嵌套持仓/证据对象递归拒绝执行字段。
+- 仓位指引要求每个已对账持仓都有证券风险属性；缺失时保持 `INCOMPLETE`，不把未知
+  持仓的行业和周期暴露当成零。
+- 指引日期不得早于 IPS、快照或 tier policy。
+
+本轮 M4 合同、风险、仓位、股息和展示联合定向回归为 `59 passed`，仍全部为
+`action=no_order`。
+
 `PortfolioRiskAssessment`、`PositionGuidance` 和 `DividendIncomeProjection` 已在
 同日后续批次完成；真实个人化风险、仓位和收入报告仍需用户确认 IPS 与持仓后生成。
 

@@ -184,6 +184,28 @@ def _event_fingerprint(event: "ChangeEventInput") -> str:
         "event",
         event.namespace,
         event.symbol,
+        event.source_id,
+        event.source_event_id,
+        event.event_type,
+        _state_digest(event.previous_state),
+        _state_digest(event.current_state),
+        event.severity,
+        event.reason,
+        _state_digest({"refs": tuple(dict(item) for item in event.evidence_refs)}),
+        event.confidence,
+        event.effective_at.isoformat() if event.effective_at else "",
+        str(event.requires_human_review).lower(),
+        event.correction_of_event_id or "",
+        event.supersedes_event_id or "",
+    )
+
+
+def _legacy_event_fingerprint(event: "ChangeEventInput") -> str:
+    """Reproduce pre-source_id event identity for frozen v1 payloads."""
+    return _digest(
+        "event",
+        event.namespace,
+        event.symbol,
         event.source_event_id,
         event.event_type,
         _state_digest(event.previous_state),
@@ -218,12 +240,18 @@ class ChangeEventInput:
     supersedes_event_id: str | None = None
     namespace: str = NAMESPACE_ACTUAL
     action: str = ACTION_NO_ORDER
+    source_id: str = "unspecified-source"
 
     def __post_init__(self) -> None:
         object.__setattr__(
             self,
             "source_event_id",
             _required_text(self.source_event_id, "source_event_id"),
+        )
+        object.__setattr__(
+            self,
+            "source_id",
+            _required_text(self.source_id, "source_id"),
         )
         object.__setattr__(self, "symbol", _required_text(self.symbol, "symbol"))
         if not _SYMBOL.fullmatch(self.symbol):
@@ -294,12 +322,13 @@ class ChangeEventInput:
         return _event_fingerprint(self)
 
     @property
-    def dedupe_key(self) -> tuple[str, str]:
-        return self.symbol, self.source_event_id
+    def dedupe_key(self) -> tuple[str, str, str]:
+        return self.symbol, self.source_id, self.source_event_id
 
     def as_policy(self) -> dict[str, Any]:
         return {
             "source_event_id": self.source_event_id,
+            "source_id": self.source_id,
             "symbol": self.symbol,
             "event_type": self.event_type,
             "detected_at": self.detected_at.isoformat(),
@@ -325,6 +354,7 @@ class ChangeEvent:
 
     event_id: str
     source_event_id: str
+    source_id: str
     symbol: str
     event_type: str
     detected_at: datetime
@@ -358,6 +388,7 @@ class ChangeEvent:
         return cls(
             event_id=event_id,
             source_event_id=event.source_event_id,
+            source_id=event.source_id,
             symbol=event.symbol,
             event_type=event.event_type,
             detected_at=event.detected_at,
@@ -399,6 +430,7 @@ class ChangeEvent:
     def input(self) -> ChangeEventInput:
         return ChangeEventInput(
             source_event_id=self.source_event_id,
+            source_id=self.source_id,
             symbol=self.symbol,
             event_type=self.event_type,
             detected_at=self.detected_at,
@@ -497,7 +529,7 @@ class EventLedger:
         self.namespace = namespace
         self._events: dict[str, ChangeEvent] = {}
         self._order: list[str] = []
-        self._latest_by_key: dict[tuple[str, str], str] = {}
+        self._latest_by_key: dict[tuple[str, str, str], str] = {}
         self._last_observed_at: datetime | None = None
 
     def __len__(self) -> int:
@@ -521,8 +553,16 @@ class EventLedger:
     def get(self, event_id: str) -> ChangeEvent | None:
         return self._events.get(event_id)
 
-    def latest_for(self, *, symbol: str, source_event_id: str) -> ChangeEvent | None:
-        event_id = self._latest_by_key.get((symbol, source_event_id))
+    def latest_for(
+        self,
+        *,
+        symbol: str,
+        source_event_id: str,
+        source_id: str = "unspecified-source",
+    ) -> ChangeEvent | None:
+        event_id = self._latest_by_key.get(
+            (symbol, _required_text(source_id, "source_id"), source_event_id)
+        )
         return self._events.get(event_id) if event_id else None
 
     def ordered_by_available_at(self) -> tuple[ChangeEvent, ...]:
@@ -591,6 +631,13 @@ class EventLedger:
                 target is None
                 or target.symbol != event.symbol
                 or target.status != EVENT_STATUS_ACTIVE
+                or (
+                    event.correction_of_event_id is not None
+                    and (
+                        target.source_id != event.source_id
+                        or target.source_event_id != event.source_event_id
+                    )
+                )
             ):
                 return EventIngestResult(
                     status=INGEST_CONFLICT_REJECTED,
@@ -662,9 +709,14 @@ def _change_event_from_payload(payload: Mapping[str, Any]) -> ChangeEvent:
     if not isinstance(payload, Mapping):
         raise ValueError("Event must be an object")
     data = dict(payload)
+    has_source_id = "source_id" in data
     event = ChangeEvent(
         event_id=_required_text(data["event_id"], "event_id"),
         source_event_id=_required_text(data["source_event_id"], "source_event_id"),
+        source_id=_required_text(
+            data.get("source_id", "unspecified-source"),
+            "source_id",
+        ),
         symbol=_required_text(data["symbol"], "symbol"),
         event_type=_required_text(data["event_type"], "event_type"),
         detected_at=_required_datetime(
@@ -710,7 +762,19 @@ def _change_event_from_payload(payload: Mapping[str, Any]) -> ChangeEvent:
         ),
         sequence=_positive_int(data["sequence"], "sequence"),
     )
-    expected_id = _compute_event_id(event.input)
+    expected_fingerprint = (
+        event.input.source_fingerprint
+        if has_source_id
+        else _legacy_event_fingerprint(event.input)
+    )
+    if not has_source_id:
+        if not event.requires_human_review:
+            raise ValueError("Legacy event payload must require human review")
+        if event.effective_at not in {None, event.available_at}:
+            raise ValueError(
+                "Legacy event effective_at must equal its available_at"
+            )
+    expected_id = "m5-" + _digest("event-id", expected_fingerprint)[:32]
     if event.event_id != expected_id:
         raise ValueError("Event id does not match its immutable payload")
     return event
@@ -738,10 +802,101 @@ def event_ledger_from_payload(payload: Mapping[str, Any]) -> EventLedger:
             raise ValueError("Event ledger contains a duplicate event_id")
         ledger._events[event.event_id] = event
         ledger._order.append(event.event_id)
-        ledger._latest_by_key[(event.symbol, event.source_event_id)] = event.event_id
+        ledger._latest_by_key[
+            (event.symbol, event.source_id, event.source_event_id)
+        ] = event.event_id
     if data.get("last_observed_at"):
         ledger._last_observed_at = _required_datetime(
             datetime.fromisoformat(str(data["last_observed_at"])),
             "last_observed_at",
         )
+    _validate_serialized_event_ledger(ledger, data)
     return ledger
+
+
+def _validate_serialized_event_ledger(
+    ledger: EventLedger,
+    payload: Mapping[str, Any],
+) -> None:
+    """Validate replay integrity that is implicit while appending incrementally."""
+
+    events = ledger.events()
+    successors_by_target: dict[str, list[str]] = {}
+    event_ids_by_key: dict[tuple[str, str, str], list[str]] = {}
+    previous_ingested_at: datetime | None = None
+
+    for event in events:
+        if previous_ingested_at is not None and event.ingested_at < previous_ingested_at:
+            raise ValueError("Event ledger ingested_at cannot move backwards")
+        if event.detected_at > event.ingested_at or event.available_at > event.ingested_at:
+            raise ValueError("Event ledger contains an event not available at ingestion")
+        event_ids_by_key.setdefault(
+            (event.symbol, event.source_id, event.source_event_id),
+            [],
+        ).append(event.event_id)
+
+        target_id = event.correction_of_event_id or event.supersedes_event_id
+        if target_id is not None:
+            target = ledger.get(target_id)
+            if target is None:
+                raise ValueError(
+                    "Event ledger correction or supersede target is missing"
+                )
+            if target.sequence >= event.sequence:
+                raise ValueError(
+                    "Event ledger correction or supersede target must precede its successor"
+                )
+            if target.symbol != event.symbol:
+                raise ValueError(
+                    "Event ledger correction or supersede target symbol mismatch"
+                )
+            if (
+                event.correction_of_event_id is not None
+                and (
+                    target.source_id != event.source_id
+                    or target.source_event_id != event.source_event_id
+                )
+            ):
+                raise ValueError(
+                    "Event ledger correction target source identity mismatch"
+                )
+            successors_by_target.setdefault(target_id, []).append(event.event_id)
+        previous_ingested_at = event.ingested_at
+
+    for target_id, successor_ids in successors_by_target.items():
+        if len(successor_ids) != 1:
+            raise ValueError("Event ledger target has multiple successors")
+        target = ledger.get(target_id)
+        if target is None or target.status != EVENT_STATUS_SUPERSEDED:
+            raise ValueError("Event ledger target status is not superseded")
+
+    for event in events:
+        is_target = event.event_id in successors_by_target
+        if event.status == EVENT_STATUS_SUPERSEDED and not is_target:
+            raise ValueError("Superseded event is missing a successor")
+        if event.status == EVENT_STATUS_ACTIVE and is_target:
+            raise ValueError("Active event cannot be a correction or supersede target")
+
+    for event_ids in event_ids_by_key.values():
+        if any(
+            ledger.get(event_id).status != EVENT_STATUS_SUPERSEDED
+            for event_id in event_ids[:-1]
+        ):
+            raise ValueError(
+                "Event ledger earlier version for a source event must be superseded"
+            )
+
+    if events:
+        serialized_last = payload.get("last_observed_at")
+        if not serialized_last:
+            raise ValueError("Event ledger must record last_observed_at")
+        last_observed_at = _required_datetime(
+            datetime.fromisoformat(str(serialized_last)),
+            "last_observed_at",
+        )
+        if last_observed_at != events[-1].ingested_at:
+            raise ValueError(
+                "Event ledger last_observed_at does not match the final accepted event"
+            )
+    elif payload.get("last_observed_at") is not None:
+        raise ValueError("Empty event ledger cannot record last_observed_at")

@@ -466,15 +466,23 @@ class DecisionHistoryChain:
                 )
             if journal.previous_journal_id is not None:
                 predecessor = journal_by_id[journal.previous_journal_id]
-                if predecessor.decision_at > journal.decision_at:
+                if predecessor.decision_at >= journal.decision_at:
                     raise ValueError(
-                        "Decision history journal correction cannot precede its predecessor"
+                        "Decision history journal correction must be strictly later than its predecessor"
                     )
+            if journal.decision_at < self.entry.confirmed_at:
+                raise ValueError(
+                    "Decision history journal cannot precede the confirmed entry"
+                )
             journal_by_id[journal.journal_id] = journal
         review_ids: set[str] = set()
         for review in self.consistency_reviews:
             if review.review_id in review_ids:
                 raise ValueError("Decision history consistency review ids must be unique")
+            if review.as_of < self.entry.entry_date:
+                raise ValueError(
+                    "Decision history consistency review cannot precede the entry date"
+                )
             review_ids.add(review.review_id)
         if any(
             review.symbol != self.symbol or review.entry_id != self.entry.entry_id

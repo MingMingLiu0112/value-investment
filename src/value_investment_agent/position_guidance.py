@@ -138,6 +138,12 @@ def _optional_decimal(value: object, field: str) -> Decimal | None:
     return None if value is None else _decimal(value, field)
 
 
+def _required_bool(value: object, field: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field} must be boolean")
+    return value
+
+
 def _decimal_text(value: Decimal | None) -> str | None:
     return str(value) if value is not None else None
 
@@ -317,6 +323,16 @@ class PositionCandidateInput:
             raise ValueError("Unknown position candidate confidence")
         if self.liquidity_profile not in LIQUIDITY_PROFILES:
             raise ValueError("Unknown candidate liquidity profile")
+        for field, value in (
+            ("research_gate_passed", self.research_gate_passed),
+            ("human_approval_valid", self.human_approval_valid),
+            ("event_review_clean", self.event_review_clean),
+            ("model_valid", self.model_valid),
+            ("price_assessable", self.price_assessable),
+            ("cyclical", self.cyclical),
+            ("decision_binding_required", self.decision_binding_required),
+        ):
+            _required_bool(value, field)
         object.__setattr__(
             self,
             "thesis_breakers",
@@ -635,6 +651,29 @@ class PositionGuidanceResult:
             raise ValueError("Unknown position guidance namespace")
         if self.assessment_namespace != self.bundle.snapshot.namespace:
             raise ValueError("Position guidance namespace must match its snapshot")
+        if self.as_of < max(
+            self.bundle.policy.as_of,
+            self.bundle.snapshot.as_of,
+            self.tier_policy.as_of,
+        ):
+            raise ValueError("Position guidance date cannot precede its inputs")
+        if self.generated_at < self.bundle.snapshot.available_at:
+            raise ValueError(
+                "Position guidance cannot be generated before its snapshot is available"
+            )
+        if self.generated_at.date() < self.as_of:
+            raise ValueError("Position guidance cannot be generated before its date")
+        future_decisions = sorted(
+            symbol
+            for symbol, candidate in self.candidates.items()
+            if candidate.decision_as_of is not None
+            and candidate.decision_as_of > self.as_of
+        )
+        if future_decisions:
+            raise ValueError(
+                "Position guidance cannot use decisions dated after its as_of: "
+                + ", ".join(future_decisions)
+            )
         if self.tier_policy.can_support_guidance():
             policy = self.bundle.policy
             if policy.max_single_security_pct is None:
@@ -661,6 +700,11 @@ class PositionGuidanceResult:
             missing.append("snapshot.holding_quantity_confirmation")
         if any(holding.market_value_cny is None for holding in snapshot.holdings):
             missing.append("snapshot.holding_market_value")
+        for holding in snapshot.holdings:
+            if holding.symbol not in self.candidates:
+                missing.append(
+                    f"snapshot.holding_risk_attributes.{holding.symbol}"
+                )
         if self.assessment_namespace == NAMESPACE_ACTUAL and snapshot.namespace != NAMESPACE_ACTUAL:
             missing.append("snapshot.actual_namespace")
         missing.extend(
@@ -1028,15 +1072,27 @@ def position_candidate_from_payload(payload: Mapping[str, Any]) -> PositionCandi
         symbol=str(data["symbol"]),
         review_intent=str(data["review_intent"]),
         confidence=str(data["confidence"]),
-        research_gate_passed=bool(data["research_gate_passed"]),
-        human_approval_valid=bool(data["human_approval_valid"]),
-        event_review_clean=bool(data["event_review_clean"]),
-        model_valid=bool(data["model_valid"]),
-        price_assessable=bool(data["price_assessable"]),
+        research_gate_passed=_required_bool(
+            data["research_gate_passed"],
+            "research_gate_passed",
+        ),
+        human_approval_valid=_required_bool(
+            data["human_approval_valid"],
+            "human_approval_valid",
+        ),
+        event_review_clean=_required_bool(
+            data["event_review_clean"],
+            "event_review_clean",
+        ),
+        model_valid=_required_bool(data["model_valid"], "model_valid"),
+        price_assessable=_required_bool(
+            data["price_assessable"],
+            "price_assessable",
+        ),
         thesis_breakers=tuple(str(item) for item in data.get("thesis_breakers") or ()),
         liquidity_profile=str(data.get("liquidity_profile", LIQUIDITY_LIQUID)),
         industry=str(data.get("industry", "")),
-        cyclical=bool(data.get("cyclical", False)),
+        cyclical=_required_bool(data.get("cyclical", False), "cyclical"),
         evidence_refs=tuple(dict(item) for item in data.get("evidence_refs") or ()),
         decision_review_id=(
             str(data["decision_review_id"]) if data.get("decision_review_id") else None
@@ -1059,7 +1115,10 @@ def position_candidate_from_payload(payload: Mapping[str, Any]) -> PositionCandi
             if data.get("price_attractiveness_status")
             else None
         ),
-        decision_binding_required=bool(data.get("decision_binding_required", False)),
+        decision_binding_required=_required_bool(
+            data.get("decision_binding_required", False),
+            "decision_binding_required",
+        ),
     )
 
 

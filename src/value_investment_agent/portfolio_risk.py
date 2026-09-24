@@ -91,6 +91,12 @@ def _optional_decimal(value: object, field: str) -> Decimal | None:
     return None if value is None else _decimal(value, field)
 
 
+def _required_bool(value: object, field: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field} must be boolean")
+    return value
+
+
 def _decimal_text(value: Decimal | None) -> str | None:
     return str(value) if value is not None else None
 
@@ -135,6 +141,11 @@ class SecurityRiskAttributes:
         if not _SYMBOL.fullmatch(self.symbol):
             raise ValueError("Risk symbol must contain six digits")
         object.__setattr__(self, "industry", _required_text(self.industry, "industry"))
+        object.__setattr__(
+            self,
+            "cyclical",
+            _required_bool(self.cyclical, "cyclical"),
+        )
         if self.liquidity_profile not in LIQUIDITY_PROFILES:
             raise ValueError("Unknown security liquidity profile")
         object.__setattr__(
@@ -169,7 +180,7 @@ def security_risk_attributes_from_payload(
     return SecurityRiskAttributes(
         symbol=str(data["symbol"]),
         industry=str(data["industry"]),
-        cyclical=bool(data["cyclical"]),
+        cyclical=_required_bool(data["cyclical"], "cyclical"),
         liquidity_profile=str(data["liquidity_profile"]),
         common_factors=tuple(str(item) for item in data.get("common_factors") or ()),
         evidence_refs=tuple(dict(item) for item in data.get("evidence_refs") or ()),

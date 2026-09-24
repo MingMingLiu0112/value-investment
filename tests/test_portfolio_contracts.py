@@ -159,6 +159,18 @@ def test_snapshot_requires_reconciliation_and_unique_confirmed_holdings():
         _snapshot(holdings=(_holding(source=QUANTITY_PENDING_RECONCILIATION),))
 
 
+def test_snapshot_loader_rejects_string_boolean_and_nested_execution_key():
+    payload = _snapshot().as_policy()
+    payload["holdings"][0]["corporate_action_adjusted"] = "false"
+    with pytest.raises(ValueError, match="must be boolean"):
+        portfolio_snapshot_from_payload(payload)
+
+    payload = _snapshot().as_policy()
+    payload["holdings"][0]["target_weight"] = "10"
+    with pytest.raises(ValueError, match="execution keys"):
+        portfolio_snapshot_from_payload(payload)
+
+
 def test_unreconciled_and_simulated_snapshots_cannot_drive_real_guidance():
     unreconciled = _snapshot(
         reconciliation=RECONCILIATION_UNCONFIRMED,

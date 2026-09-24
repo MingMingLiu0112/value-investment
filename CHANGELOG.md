@@ -1,5 +1,163 @@
 # Changelog
 
+## v2026.09.24-m5-run-state-replay-closure
+
+### Scope
+
+收口 M5 离线事件运行状态的可恢复性、批次幂等和跨账本一致性。该批次仍不接生产源、
+不发送通知、不生成仓位或订单，也不替代 M6 的真实运行验收。
+
+### Changes
+
+- 新增版本化 `M5EventRunState` 聚合与失败关闭恢复入口，联合校验事件账、水位、
+  checkpoint、outbox 和 batch record 的引用、顺序、revision 与 Hash。
+- 事件身份加入 `source_id`，去重键改为证券 + 来源 + 来源事件 ID；来源变化不再
+  被错误吞掉。旧格式只在缺少 `source_id` 且安全字段保持可验证默认值时兼容。
+- run-once 协调器增加稳定的 `M5:state:{state_key}` 锁、可选的
+  `expected_revision`、批次请求指纹、原始 `run_id/namespace/generated_at` 和
+  receipt/checkpoint 交叉绑定。
+- 新批次即便全部被拒绝，也会留下 committed checkpoint 与 batch record，不再伪装成
+  `idempotent_noop`；历史批次可在后续 watermark 前进后按原 fingerprint 重放。
+- 同一 batch ID 仅允许原 `run_id` 和原输入重放；输入变化、跨 run 复用或跨
+  namespace 复用失败关闭。重放返回原 generated_at、receipt ID 和已落账 alerts。
+- checkpoint 与 outbox 恢复增加重复 ID、时间线、未知事件引用、严重度/人工复核
+  一致性校验；嵌套执行键也在组合输入中递归拒绝。
+- 新增独立边界测试 `tests/test_m5_event_run_state_boundaries.py`（13 项），覆盖
+  export/import 后继续批次、pre/post-commit 异常、旧批次重放、锁争抢、状态回归、
+  namespace/action 绕过和 legacy event ID 降级攻击。
+
+### Verification
+
+- M5 定向回归：`88 passed`。
+- 本地全量离线回归：`2447 passed, 6 skipped, 18 warnings, 0 failed`。
+- `compileall` 与 `git diff --check` 通过。
+- `M5` 仍为 `PARTIAL`；`action=no_order`。原子持久化 StateStore/CAS、真实采集、
+  通知投递和生产恢复演练仍归 M5/M6 后续工作，不能由本批次宣称完成。
+
+## v2026.09.24-m4-input-integrity-fail-closed
+
+### Scope
+
+收紧 M4 私有组合输入与仓位候选的布尔、嵌套执行字段、持仓风险属性和时点完整性。
+该批次只处理离线合同，不读取真实账户、不生成个人化仓位或订单。
+
+### Changes
+
+- 组合持仓、证券风险属性和仓位候选不再使用 `bool()` 解析 JSON；字符串 `"false"`
+  等非布尔值现在失败关闭。
+- `PortfolioHolding.corporate_action_adjusted`、`SecurityRiskAttributes.cyclical`
+  以及仓位候选五项前置条件均在对象构造层校验，而不只在测试数据层依赖真值语义。
+- 组合输入递归拒绝持仓/证据对象中的 `target_weight`、`position_size`、
+  `order_quantity` 等执行字段，避免嵌套字段被静默忽略。
+- 若已对账组合存在未收录于候选风险属性映射的持仓，仓位指引返回
+  `INCOMPLETE`，不忽略该持仓的行业与周期暴露。
+- 仓位指引日期不得早于 IPS、快照或 tier policy 日期。
+- 新增五项反向回归；M4 合同/风险/仓位/股息/联合定向回归 `59 passed`。
+
+### Verification
+
+- `tests/test_portfolio_contracts.py`、`test_portfolio_risk_assessment.py`、
+  `test_position_guidance.py`、`test_dividend_income_projection.py` 与 M4 展示/
+  联合回归：`59 passed`。
+- `action=no_order`；未构造真实 IPS、持仓、目标仓位或订单。
+
+## v2026.09.24-m6-operational-control-integrity
+
+### Scope
+
+收紧 M6 离线运营控制状态的历史链、时间和权限反序列化合同。该工作不迁移生产、
+不开启 staging/shadow、不修改计划任务或通知，也不解除 `action=no_order`。
+
+### Changes
+
+- `ModeChange` 现在校验模式、变更方向、时区、原因、操作者与授权字段。
+- 模式切换时间必须严格向前，且不得把同一模式重复记录为一次状态切换。
+- `from_dict` 不再静默接受缺失 schema/action、字符串假布尔值或任意历史链。
+- 恢复状态必须与历史最后一步的 mode、授权、时间、原因和操作者完全一致；历史必须
+  从 `OFFLINE_ENGINEERING` 连续推进，紧急停止与恢复授权规则同样在重放时复核。
+- 新增四项 M6 反向回归：时间回退、同模式切换、非布尔权限和历史快照/连续性篡改。
+
+### Verification
+
+- `tests/test_m6_operational_control.py`：`9 passed`。
+- M6 control + readiness 联合定向回归：`18 passed`。
+- `M6` 仍为 preflight engineering done / operational `NOT_STARTED`；
+  `action=no_order`。
+
+## v2026.09.24-m5-event-state-replay-integrity
+
+### Scope
+
+收紧 M5 事件账在显式更正月与序列化重放时的链路完整性。该工作不改变事件类型、
+不接入生产源、不发送通知，也不生成仓位或订单。
+
+### Changes
+
+- `correction_of_event_id` 只能更正相同证券、相同 `source_event_id` 的当前有效事件；
+  跨来源身份不得伪装成同一事件更正。
+- `event_ledger_from_payload` 现在复核更正/替代目标存在、时间顺序、证券一致性和
+  单后继关系，并拒绝缺失后继、重复后继、活动目标或状态不一致的账本。
+- 重放进一步校验同一来源事件的历史版本、`ingested_at` 单调性和
+  `last_observed_at` 与最后一个已接受事件一致。
+- 新增 `checkpoint_ledger_from_payload`：校验 checkpoint ID、尝试时间不重叠、序号
+  不回退、运行中检查点不得声称已提交进度；提交序号同样禁止回退。
+- 新增 `outbox_ledger_from_payload` 并收紧 Alert 状态不变量：pending/sent/delivered/
+  acknowledged/retryable/terminal 的尝试次数、重试时间与投递时间必须自洽。
+- 租约增加 owner+token 双重绑定，拒绝跨 owner 的 token 碰撞，以及 release/renew
+  时间早于锁获取时间的倒置输入。
+- 新增八项反向/往返回归：跨来源更正、缺失后继、活动更正目标、最后观察时间缺失/
+  错配、checkpoint 序号回退、重复 dedupe key、无投递时间的确认状态和跨 owner token。
+
+### Verification
+
+- `tests/test_m5_event_infrastructure.py` 与 `tests/test_m5_event_workbook.py`：
+  `32 passed`。
+- 全部 M5 定向回归：`70 passed`。
+- 状态保持 `M5=PARTIAL`、`action=no_order`；未修改冻结候选或生产服务。
+
+## v2026.09.24-m3-checkpoint-b-review-detail-v2
+
+### Scope
+
+为 M3 Checkpoint B 人工复核补充只读逐卡明细。该明细绑定基础复核包和三家公司
+冻结研究档案，不签收 Checkpoint B，不重新生成或覆盖三份候选。
+
+### Changes
+
+- 新增 `scripts/build_m3_checkpoint_b_review_detail.py`，逐卡展示最强阻断、反证、
+  论点破坏条件、下一次事件、研究缺口和来源 Hash。
+- 新增 `tests/test_m3_checkpoint_b_review_detail.py`，覆盖冻结档案 Hash 校验和
+  `action=no_order` / `PENDING_HUMAN_REVIEW` 边界。
+- 将 Checkpoint B 基础复核包测试与明细测试同时纳入 GitHub Core Research Gate。
+
+### Verification
+
+- 定向回归 `2 passed`。
+- 生成 `runtime/m3-checkpoint-b-review-detail-20260924-v2/`；
+  JSON SHA-256 `0d9f938b9fd2c3d003e8d035cd0912f7187ebed63f5f4e089103994b6d8c7a42`，
+  Markdown SHA-256 `fab6040c893ec37752393b624fa07c22e918c08fc53e7e9b96e5f821a1ce9313`。
+- v1 因 Markdown 中研究缺口渲染缺陷由 v2 替代，不覆盖或删除 v1。
+
+## v2026.09.24-m3-history-chain-chronology
+
+### Scope
+
+Checkpoint B 等待人工复核期间，继续收紧 M3 公开历史链的时序完整性。不重新生成
+冻结候选，不签收 Checkpoint B。
+
+### Changes
+
+- `DecisionHistoryChain` 要求日志更正严格晚于前任，拒绝同一时间戳更正。
+- 任一日志不能早于冻结 Entry 的确认时间。
+- 一致性复核日期不能早于冻结 Entry 的 Entry 日期。
+- 新增四个反向测试并纳入 GitHub Core Research Gate 既有 M3 回归文件。
+
+### Verification
+
+- M3 相关定向回归 `86 passed`（含 M3 专项、基础/明细复核包、`test_investment_decision`、
+  `test_decision_read_model` 与发布层替换回归）。
+- 不重新计算 Checkpoint B 冻结候选 Hash；`action=no_order`。
+
 ## v2026.09.24-m3-journal-chain-integrity
 
 ### Scope

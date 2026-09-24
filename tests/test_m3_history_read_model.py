@@ -269,10 +269,45 @@ def test_public_history_rejects_correction_that_precedes_predecessor():
     payloads[2]["previous_journal_id"] = payloads[1]["journal_id"]
     payloads[2]["decision_at"] = "2026-09-10T02:05:00+00:00"
 
-    with pytest.raises(ValueError, match="cannot precede its predecessor"):
+    with pytest.raises(ValueError, match="must be strictly later"):
         build_history_chain_from_payloads(
             entry_payload=_entry_payload(),
             journal_payloads=payloads,
+        )
+
+
+def test_public_history_rejects_correction_at_the_same_timestamp_as_predecessor():
+    payloads = _journal_payloads()
+    payloads[2]["previous_journal_id"] = payloads[1]["journal_id"]
+    payloads[2]["decision_at"] = payloads[1]["decision_at"]
+
+    with pytest.raises(ValueError, match="must be strictly later"):
+        build_history_chain_from_payloads(
+            entry_payload=_entry_payload(),
+            journal_payloads=payloads,
+        )
+
+
+def test_public_history_rejects_journal_before_entry_confirmation():
+    payloads = _journal_payloads()
+    payloads[0]["decision_at"] = "2026-08-31T02:00:00+00:00"
+
+    with pytest.raises(ValueError, match="cannot precede the confirmed entry"):
+        build_history_chain_from_payloads(
+            entry_payload=_entry_payload(),
+            journal_payloads=payloads,
+        )
+
+
+def test_public_history_rejects_consistency_review_before_entry_date():
+    payloads = _consistency_payloads()
+    payloads[0]["as_of"] = "2026-08-31"
+
+    with pytest.raises(ValueError, match="cannot precede the entry date"):
+        build_history_chain_from_payloads(
+            entry_payload=_entry_payload(),
+            journal_payloads=_journal_payloads(),
+            consistency_payloads=payloads,
         )
 
 

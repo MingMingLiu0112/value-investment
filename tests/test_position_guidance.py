@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import json
 
@@ -56,6 +56,7 @@ from value_investment_agent.position_guidance import (
     PositionCandidateInput,
     PositionTierPolicy,
     build_position_guidance,
+    position_candidate_from_payload,
 )
 from value_investment_agent.price_attractiveness import (
     STATUS_RESEARCH_ATTRACTIVE,
@@ -445,10 +446,12 @@ def test_all_cash_with_no_candidates_is_a_valid_ready_state():
 
 
 def test_missing_private_inputs_and_namespace_mismatch_fail_closed():
+    missing_bundle = PortfolioInputBundle.missing(as_of=AS_OF)
     missing = _result(
-        bundle=PortfolioInputBundle.missing(as_of=AS_OF),
+        bundle=missing_bundle,
         candidates={},
         tier_policy=PositionTierPolicy.missing(as_of=AS_OF),
+        generated_at=missing_bundle.snapshot.available_at,
     )
 
     assert missing.status == STATUS_INCOMPLETE
@@ -460,6 +463,35 @@ def test_missing_private_inputs_and_namespace_mismatch_fail_closed():
             namespace=POSITION_NAMESPACE_ACTUAL,
             snapshot=_snapshot(namespace=NAMESPACE_SIMULATED),
         )
+
+
+def test_untracked_holding_risk_attributes_fail_closed():
+    result = _result(
+        snapshot=_snapshot(
+            cash=Decimal("200000"),
+            holdings=(
+                _holding("601398", market_value=Decimal("100000")),
+            ),
+        ),
+        candidates={"600519": _candidate()},
+    )
+
+    assert result.status == STATUS_INCOMPLETE
+    assert "snapshot.holding_risk_attributes.601398" in result.missing_inputs()
+    assert result.lines() == ()
+
+
+def test_candidate_payload_rejects_string_boolean():
+    payload = _candidate().as_policy()
+    payload["human_approval_valid"] = "false"
+
+    with pytest.raises(ValueError, match="must be boolean"):
+        position_candidate_from_payload(payload)
+
+
+def test_guidance_date_cannot_precede_its_inputs():
+    with pytest.raises(ValueError, match="cannot precede its inputs"):
+        _result(as_of=AS_OF - timedelta(days=1))
 
 
 def test_guidance_payload_never_contains_order_or_position_columns():

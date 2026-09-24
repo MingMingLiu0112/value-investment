@@ -10,6 +10,7 @@ from value_investment_agent.m5_event_checkpoint import (
     CHECKPOINT_FAILED,
     CHECKPOINT_RUNNING,
     CheckpointLedger,
+    checkpoint_ledger_from_payload,
 )
 from value_investment_agent.m5_event_core import (
     CONFIDENCE_HIGH,
@@ -65,6 +66,7 @@ from value_investment_agent.m5_event_outbox import (
     ALERT_TYPE_REVIEW_DUE,
     ALERT_TYPE_SYSTEM_HEALTH,
     OutboxLedger,
+    outbox_ledger_from_payload,
 )
 from value_investment_agent.m5_event_watermark import (
     LOCK_ACQUIRED,
@@ -168,6 +170,26 @@ def test_event_acceptance_has_deterministic_identity_and_round_trip():
     assert restored.events()[0].source_fingerprint == event.source_fingerprint
 
 
+def test_legacy_event_id_fallback_requires_source_id_to_be_absent():
+    ledger = _ledger()
+    ledger.append(
+        _event(source_event_id="600519-report-legacy"),
+        observed_at=OBSERVED,
+    )
+    payload = ledger.as_policy()
+    raw = payload["events"][0]
+    raw.pop("source_id")
+    raw["event_id"] = "m5-0ce1fd855cc78a903589a628b7b44135"
+
+    restored = event_ledger_from_payload(payload)
+    assert restored.events()[0].source_id == "unspecified-source"
+    assert restored.events()[0].event_id == raw["event_id"]
+
+    raw["source_id"] = "cninfo"
+    with pytest.raises(ValueError, match="id does not match"):
+        event_ledger_from_payload(payload)
+
+
 def test_exact_duplicate_is_ignored_without_new_sequence():
     ledger = _ledger()
     event = _event(source_event_id="600519-report-001")
@@ -214,6 +236,90 @@ def test_explicit_correction_supersedes_previous_event():
     assert result.superseded_event_ids == (original.event_id,)
     assert ledger.get(original.event_id).status == EVENT_STATUS_SUPERSEDED
     assert ledger.active_events()[0].current_state == {"value": "2.0"}
+
+
+def test_explicit_correction_requires_same_source_event_identity():
+    ledger = _ledger()
+    original = ledger.append(
+        _event(source_event_id="600519-report-001"),
+        observed_at=OBSERVED,
+    ).event
+    assert original is not None
+    correction = _event(
+        source_event_id="600519-report-002",
+        current_state={"value": "2.0"},
+        correction_of_event_id=original.event_id,
+    )
+
+    result = ledger.append(correction, observed_at=OBSERVED_LATER)
+
+    assert result.status == INGEST_CONFLICT_REJECTED
+    assert result.event is None
+    assert len(ledger) == 1
+    assert ledger.get(original.event_id).status == EVENT_STATUS_ACTIVE
+
+
+def test_serialized_ledger_rejects_superseded_event_without_successor():
+    ledger = _ledger()
+    original = ledger.append(
+        _event(source_event_id="600519-report-001"),
+        observed_at=OBSERVED,
+    ).event
+    assert original is not None
+    ledger.append(
+        _event(
+            source_event_id="600519-report-001",
+            current_state={"value": "2.0"},
+            correction_of_event_id=original.event_id,
+        ),
+        observed_at=OBSERVED_LATER,
+    )
+    payload = ledger.as_policy()
+    payload["events"] = payload["events"][:1]
+
+    with pytest.raises(ValueError, match="missing a successor"):
+        event_ledger_from_payload(payload)
+
+
+def test_serialized_ledger_rejects_active_correction_target():
+    ledger = _ledger()
+    original = ledger.append(
+        _event(source_event_id="600519-report-001"),
+        observed_at=OBSERVED,
+    ).event
+    assert original is not None
+    ledger.append(
+        _event(
+            source_event_id="600519-report-001",
+            current_state={"value": "2.0"},
+            correction_of_event_id=original.event_id,
+        ),
+        observed_at=OBSERVED_LATER,
+    )
+    payload = ledger.as_policy()
+    payload["events"][0]["status"] = EVENT_STATUS_ACTIVE
+
+    with pytest.raises(ValueError, match="target status is not superseded"):
+        event_ledger_from_payload(payload)
+
+
+def test_serialized_ledger_rejects_missing_or_mismatched_last_observed_at():
+    ledger = _ledger()
+    ledger.append(
+        _event(source_event_id="600519-report-001"),
+        observed_at=OBSERVED,
+    )
+    payload = ledger.as_policy()
+
+    missing = dict(payload)
+    missing.pop("last_observed_at")
+    with pytest.raises(ValueError, match="must record last_observed_at"):
+        event_ledger_from_payload(missing)
+
+    mismatched = dict(payload)
+    mismatched["last_observed_at"] = OBSERVED_LATER.isoformat()
+    with pytest.raises(ValueError, match="does not match the final accepted event"):
+        event_ledger_from_payload(mismatched)
 
 
 def test_late_event_is_accepted_without_reordering_history():
@@ -367,6 +473,7 @@ def test_task_lock_blocks_second_owner_and_renews_with_token():
 
     renewed = store.renew(
         scope="M5-scan",
+        owner="worker-a",
         token="token-a",
         now=OBSERVED + timedelta(seconds=30),
         lease_seconds=120,
@@ -376,6 +483,7 @@ def test_task_lock_blocks_second_owner_and_renews_with_token():
 
     wrong = store.release(
         scope="M5-scan",
+        owner="worker-a",
         token="wrong",
         now=OBSERVED + timedelta(seconds=40),
     )
@@ -383,10 +491,47 @@ def test_task_lock_blocks_second_owner_and_renews_with_token():
 
     released = store.release(
         scope="M5-scan",
+        owner="worker-a",
         token="token-a",
         now=OBSERVED + timedelta(seconds=40),
     )
     assert released.status == LOCK_RELEASED
+
+
+def test_task_lock_rejects_cross_owner_token_and_time_regression():
+    store = TaskLockStore()
+    store.acquire(
+        scope="M5-scan",
+        owner="worker-a",
+        token="shared-token",
+        now=OBSERVED,
+        lease_seconds=60,
+    )
+
+    cross_owner = store.acquire(
+        scope="M5-scan",
+        owner="worker-b",
+        token="shared-token",
+        now=OBSERVED + timedelta(seconds=5),
+        lease_seconds=60,
+    )
+    assert cross_owner.status == LOCK_CONFLICT
+
+    with pytest.raises(ValueError, match="renewal time cannot precede"):
+        store.renew(
+            scope="M5-scan",
+            owner="worker-a",
+            token="shared-token",
+            now=OBSERVED - timedelta(seconds=1),
+            lease_seconds=60,
+        )
+    with pytest.raises(ValueError, match="release time cannot precede"):
+        store.release(
+            scope="M5-scan",
+            owner="worker-a",
+            token="shared-token",
+            now=OBSERVED - timedelta(seconds=1),
+        )
 
 
 def test_checkpoint_commit_and_failure_are_recorded():
@@ -432,6 +577,55 @@ def test_checkpoint_commit_and_failure_are_recorded():
     )
     assert failed.status == CHECKPOINT_FAILED
     assert failed.checkpoint.error == "fixture scan interruption"
+
+
+def test_checkpoint_ledger_round_trip_and_rejects_regression():
+    store = CheckpointLedger()
+    first = store.start(
+        run_id="M5-round-trip",
+        scope="ALL",
+        started_at=OBSERVED,
+        evidence_refs=({"id": "checkpoint-round-trip"},),
+    ).checkpoint
+    assert first is not None
+    store.commit(
+        checkpoint_id=first.checkpoint_id,
+        completed_at=OBSERVED_LATER,
+        last_sequence=2,
+        watermark_ids=("scan-1",),
+        ingested_event_ids=("event-1", "event-2"),
+    )
+    second_started = OBSERVED_LATER + timedelta(minutes=10)
+    second = store.start(
+        run_id="M5-round-trip",
+        scope="ALL",
+        started_at=second_started,
+        evidence_refs=({"id": "checkpoint-round-trip-2"},),
+    ).checkpoint
+    assert second is not None
+    store.commit(
+        checkpoint_id=second.checkpoint_id,
+        completed_at=second_started + timedelta(minutes=5),
+        last_sequence=3,
+        watermark_ids=("scan-2",),
+        ingested_event_ids=("event-3",),
+    )
+
+    restored = checkpoint_ledger_from_payload(store.as_policy())
+    assert restored.as_policy() == store.as_policy()
+
+    payload = store.as_policy()
+    payload["checkpoints"][1]["last_sequence"] = 1
+    with pytest.raises(ValueError, match="sequence cannot regress"):
+        checkpoint_ledger_from_payload(payload)
+
+    with pytest.raises(ValueError, match="prior terminal checkpoint"):
+        store.start(
+            run_id="M5-round-trip",
+            scope="ALL",
+            started_at=OBSERVED,
+            evidence_refs=({"id": "checkpoint-regression"},),
+        )
 
 
 def test_outbox_deduplicates_normal_alerts_but_retains_critical_events():
@@ -512,6 +706,56 @@ def test_outbox_transitions_retry_and_recovery_without_network():
     assert delivered.status == ALERT_DELIVERED
     assert acknowledged.status == ALERT_ACKNOWLEDGED
     assert resent.attempts == 3
+
+
+def test_outbox_ledger_round_trip_and_rejects_duplicate_dedupe_key():
+    outbox = OutboxLedger()
+    event = _ledger().append(
+        _event(source_event_id="600519-outbox-round-trip"),
+        observed_at=OBSERVED,
+    ).event
+    queued = outbox.enqueue_for_event(
+        event=event,
+        alert_type=ALERT_TYPE_REVIEW_DUE,
+        now=OBSERVED,
+    )
+    outbox.mark_sent(alert_id=queued.alert.alert_id, now=OBSERVED_LATER)
+    outbox.mark_failed(
+        alert_id=queued.alert.alert_id,
+        now=OBSERVED_LATER,
+        error="fixture retry",
+    )
+
+    restored = outbox_ledger_from_payload(outbox.as_policy())
+    assert restored.as_policy() == outbox.as_policy()
+
+    payload = outbox.as_policy()
+    duplicate = dict(payload["alerts"][0])
+    duplicate["alert_id"] = "m5-alert-duplicate-dedupe"
+    payload["alerts"].append(duplicate)
+    with pytest.raises(ValueError, match="duplicate dedupe key"):
+        outbox_ledger_from_payload(payload)
+
+
+def test_outbox_ledger_rejects_acknowledgement_without_delivery():
+    outbox = OutboxLedger()
+    event = _ledger().append(
+        _event(source_event_id="600519-outbox-ack"),
+        observed_at=OBSERVED,
+    ).event
+    queued = outbox.enqueue_for_event(
+        event=event,
+        alert_type=ALERT_TYPE_REVIEW_DUE,
+        now=OBSERVED,
+    )
+    payload = outbox.as_policy()
+    payload["alerts"][0]["status"] = ALERT_ACKNOWLEDGED
+    payload["alerts"][0]["attempts"] = 1
+    payload["alerts"][0]["next_attempt_at"] = None
+    payload["alerts"][0]["delivered_at"] = None
+
+    with pytest.raises(ValueError, match="requires delivered_at"):
+        outbox_ledger_from_payload(payload)
 
 
 def test_source_health_alert_is_explicit_and_not_a_normal_day():

@@ -63,3 +63,17 @@
 
 M7 统一工作台候选可以继续完善只读展示，但不能用展示层替代 M6 的真实运营
 证据。只有 M6 通过后才能进行最终用户签收和 `INITIAL_ASSISTED_USE` 交付。
+
+## 2026-09-24 运营控制恢复完整性收紧
+
+运营控制状态文件现在会重放完整历史链，而不只读取当前 mode 和 permissions：
+
+- 模式变化时间必须严格向前，且不能把同一模式记录为一次切换。
+- 历史必须从 `OFFLINE_ENGINEERING` 连续推进；紧急停止保留当前授权，解除停止后
+  必须使用新授权并先回到离线工程状态。
+- 当前快照必须与历史最后一步一致。
+- schema/action 必须精确匹配，权限字段必须为 JSON boolean，字符串 `"false"` 不再
+  被静默当成真值。
+
+`test_m6_operational_control.py` 为 `9 passed`，M6 control + readiness 联合回归为
+`18 passed`。本批仍只收紧离线合同，不执行任何生产动作。

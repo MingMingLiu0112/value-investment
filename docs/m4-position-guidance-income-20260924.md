@@ -55,6 +55,16 @@
 - M5 事件驱动失效、有界重算和通知恢复；
 - 真实组合对账和用户确认后的个人化仓位/收入报告。
 
+## 2026-09-24 仓位候选失败关闭补强
+
+- `position_candidate_from_payload` 不再把字符串假值转换为真；候选的 research、
+  approval、event、model、price 与 cyclical 字段需要真实 JSON boolean。
+- 已对账组合中存在未提供行业/周期风险属性的持仓时，指引保持 `INCOMPLETE`，
+  防止遗漏持仓被当作零暴露。
+- 指引 as-of 不能早于 IPS、组合快照或 tier policy。
+
+相关 M4 联合定向回归为 `59 passed`。
+
 这些项目继续按总Goal推进；真实 IPS/持仓仍由用户确认后提供，系统不猜测风险
 偏好、不默认 20% 仓位，也不生成订单。
 

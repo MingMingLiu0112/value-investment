@@ -41,6 +41,11 @@ M2_CHECKPOINT_A=HUMAN_PASS
 
 ## 机器与治理证据
 
+只读复核明细 v2 位于
+`runtime/m3-checkpoint-b-review-detail-20260924-v2/review-detail.md`，它逐卡绑定
+冻结研究档案中的反证、论点破坏条件、下一次事件和研究缺口；v1 因 Markdown 展示
+缺陷被 v2 替代。该明细不改变三份候选 Hash，不签收 Checkpoint B。
+
 M3 三份审计分别保持 `m3c7 / owc7 / hoc7 = PENDING_HUMAN_REVIEW`，其余机器门为
 `DONE`。M2 Checkpoint A append-only 收据仍为 sequence 2，Hash 为
 `9a18b7fcb08b4ba4196a989f88561939b0e9257982b03198b650669b378e6f20`。

@@ -21,6 +21,7 @@ from .m5_event_core import (
     NAMESPACE_SIMULATED,
     _digest,
     _required_datetime,
+    _required_int,
     _required_text,
     ChangeEvent,
     ChangeEventInput,
@@ -35,8 +36,11 @@ from .m5_event_core import (
     EVENT_TYPE_THESIS_WEAKENED,
     INGEST_ACCEPTED,
     INGEST_CORRECTION_ACCEPTED,
+    INGEST_DUPLICATE,
+    INGEST_CONFLICT_REJECTED,
     INGEST_SUPERSEDES_ACCEPTED,
     SEVERITY_CRITICAL,
+    _state_digest,
 )
 from .m5_event_dependencies import DependencyGraph, DependencyInvalidation
 from .m5_event_outbox import (
@@ -51,12 +55,17 @@ from .m5_event_outbox import (
     OutboxLedger,
 )
 from .m5_event_watermark import (
+    LOCK_ACQUIRED,
+    LOCK_REPLACED_EXPIRED,
+    SOURCE_HEALTHY,
     SOURCE_DEGRADED,
     SOURCE_OUTAGE,
+    WATERMARK_REGRESSION_REJECTED,
     ScanWatermark,
     TaskLockStore,
     WatermarkLedger,
 )
+from .m5_event_run_state import M5EventBatchRecord, M5EventRunState
 
 
 RUN_HEALTHY = "HEALTHY"
@@ -78,6 +87,8 @@ _ALERT_BY_EVENT_TYPE = {
 class M5EventRunReceipt:
     receipt_id: str
     run_id: str
+    batch_id: str
+    stream_id: str
     namespace: str
     generated_at: datetime
     ingest_results: tuple[EventIngestResult, ...]
@@ -87,6 +98,9 @@ class M5EventRunReceipt:
     health_status: str
     silent_ok: bool
     review_due: tuple[str, ...]
+    state: M5EventRunState
+    state_sha256: str
+    idempotent_noop: bool = False
     action: str = ACTION_NO_ORDER
 
     def __post_init__(self) -> None:
@@ -96,6 +110,16 @@ class M5EventRunReceipt:
             _required_text(self.receipt_id, "receipt_id"),
         )
         object.__setattr__(self, "run_id", _required_text(self.run_id, "run_id"))
+        object.__setattr__(
+            self,
+            "batch_id",
+            _required_text(self.batch_id, "batch_id"),
+        )
+        object.__setattr__(
+            self,
+            "stream_id",
+            _required_text(self.stream_id, "stream_id"),
+        )
         object.__setattr__(self, "namespace", _required_text(self.namespace, "namespace"))
         object.__setattr__(
             self,
@@ -132,10 +156,38 @@ class M5EventRunReceipt:
         )
         if not isinstance(self.checkpoint, TaskCheckpoint):
             raise ValueError("checkpoint must be a TaskCheckpoint")
+        if not isinstance(self.state, M5EventRunState):
+            raise ValueError("state must be an M5EventRunState")
+        if self.stream_id != self.state.state_key:
+            raise ValueError("Receipt stream_id must match its run state")
+        if self.namespace != self.state.namespace:
+            raise ValueError("Receipt namespace must match its run state")
+        object.__setattr__(
+            self,
+            "state_sha256",
+            _required_text(self.state_sha256, "state_sha256").lower(),
+        )
+        if self.state_sha256 != self.state.state_sha256():
+            raise ValueError("Receipt state hash does not match its run state")
         if self.health_status not in RUN_HEALTH_STATUSES:
             raise ValueError("Unknown event run health status")
         if self.checkpoint.status != CHECKPOINT_COMMITTED:
             raise ValueError("Event run receipt requires a committed checkpoint")
+        matching_checkpoints = tuple(
+            item
+            for item in self.state.checkpoints.checkpoints()
+            if item.checkpoint_id == self.checkpoint.checkpoint_id
+        )
+        if matching_checkpoints != (self.checkpoint,):
+            raise ValueError("Receipt checkpoint must belong to its run state")
+        expected_receipt_id = "m5-run-" + _digest(
+            "run-receipt",
+            self.run_id,
+            self.batch_id,
+            self.generated_at.isoformat(),
+        )[:32]
+        if self.receipt_id != expected_receipt_id:
+            raise ValueError("Receipt id does not match its immutable payload")
         object.__setattr__(
             self,
             "review_due",
@@ -143,6 +195,19 @@ class M5EventRunReceipt:
         )
         if self.action != ACTION_NO_ORDER:
             raise ValueError("Event run receipt must remain no_order")
+
+    def verify(self) -> None:
+        if self.state_sha256 != self.state.state_sha256():
+            raise ValueError("Receipt state hash no longer matches its run state")
+        if self.namespace != self.state.namespace:
+            raise ValueError("Receipt namespace no longer matches its run state")
+        matching_checkpoints = tuple(
+            item
+            for item in self.state.checkpoints.checkpoints()
+            if item.checkpoint_id == self.checkpoint.checkpoint_id
+        )
+        if matching_checkpoints != (self.checkpoint,):
+            raise ValueError("Receipt checkpoint no longer matches its run state")
 
     @property
     def active_events(self) -> tuple[ChangeEvent, ...]:
@@ -176,9 +241,12 @@ class M5EventRunReceipt:
         )
 
     def as_policy(self) -> dict[str, Any]:
+        self.verify()
         return {
             "receipt_id": self.receipt_id,
             "run_id": self.run_id,
+            "batch_id": self.batch_id,
+            "stream_id": self.stream_id,
             "namespace": self.namespace,
             "generated_at": self.generated_at.isoformat(),
             "ingest_results": [item.as_policy() for item in self.ingest_results],
@@ -188,8 +256,128 @@ class M5EventRunReceipt:
             "health_status": self.health_status,
             "silent_ok": self.silent_ok,
             "review_due": list(self.review_due),
+            "state": self.state.as_policy(),
+            "state_sha256": self.state_sha256,
+            "idempotent_noop": self.idempotent_noop,
             "action": self.action,
         }
+
+
+def _batch_request_fingerprint(
+    *,
+    events: Sequence[ChangeEventInput],
+    observed_times: Sequence[datetime],
+    watermark: ScanWatermark,
+    graph: DependencyGraph,
+    direct_kinds_by_source_event_id: Mapping[str, Sequence[str]],
+) -> str:
+    return _state_digest(
+        {
+            "events": [event.as_policy() for event in events],
+            "observed_times": [item.isoformat() for item in observed_times],
+            "watermark": watermark.as_policy(),
+            "dependency_graph": graph.as_policy(),
+            "direct_kinds_by_source_event_id": {
+                key: list(value)
+                for key, value in sorted(direct_kinds_by_source_event_id.items())
+            },
+        }
+    )
+
+
+def _checkpoint_for_replay(state: M5EventRunState, checkpoint_id: str) -> TaskCheckpoint:
+    for checkpoint in state.checkpoints.checkpoints():
+        if checkpoint.checkpoint_id == checkpoint_id:
+            if checkpoint.status != CHECKPOINT_COMMITTED:
+                raise ValueError("Recorded batch checkpoint is not committed")
+            return checkpoint
+    raise ValueError("Recorded batch checkpoint is missing")
+
+
+def _replayed_ingest_results(
+    *,
+    state: M5EventRunState,
+    events: Sequence[ChangeEventInput],
+    observed_times: Sequence[datetime],
+) -> tuple[EventIngestResult, ...]:
+    results: list[EventIngestResult] = []
+    for event, observed_at in zip(events, observed_times):
+        existing = state.event_ledger.latest_for(
+            symbol=event.symbol,
+            source_id=event.source_id,
+            source_event_id=event.source_event_id,
+        )
+        if existing is None:
+            results.append(
+                EventIngestResult(
+                    status=INGEST_CONFLICT_REJECTED,
+                    observed_at=observed_at,
+                    event=None,
+                    message="Recorded batch has no active matching event to replay",
+                )
+            )
+            continue
+        results.append(
+            EventIngestResult(
+                status=INGEST_DUPLICATE,
+                observed_at=observed_at,
+                event=existing,
+                duplicate_event_id=existing.event_id,
+                message="Recorded batch replay is idempotent",
+            )
+        )
+    return tuple(results)
+
+
+def _alerts_for_batch(
+    state: M5EventRunState,
+    events: Sequence[ChangeEventInput],
+) -> tuple[EventAlert, ...]:
+    identities = {
+        (event.symbol, event.source_id, event.source_event_id) for event in events
+    }
+    event_ids = {
+        event.event_id
+        for event in state.event_ledger.events()
+        if (event.symbol, event.source_id, event.source_event_id) in identities
+    }
+    return tuple(
+        alert for alert in state.outbox.alerts() if alert.event_id in event_ids
+    )
+
+
+def _active_alerts(state: M5EventRunState) -> tuple[EventAlert, ...]:
+    terminal = {"ACKNOWLEDGED", "FAILED_TERMINAL"}
+    return tuple(
+        item for item in state.outbox.alerts() if item.status not in terminal
+    )
+
+
+def _receipt_health(
+    *,
+    state: M5EventRunState,
+    effective_watermark: ScanWatermark,
+) -> tuple[str, bool, tuple[str, ...]]:
+    source_health_ok = effective_watermark.source_health not in {
+        SOURCE_OUTAGE,
+        SOURCE_DEGRADED,
+    }
+    active_alerts = _active_alerts(state)
+    review_due = tuple(
+        sorted(
+            {
+                item.alert_type
+                for item in active_alerts
+                if item.requires_human_review
+            }
+        )
+    )
+    has_attention = not source_health_ok or bool(active_alerts)
+    return (
+        RUN_ATTENTION if has_attention else RUN_HEALTHY,
+        not active_alerts and source_health_ok,
+        review_due,
+    )
 
 
 def run_event_batch(
@@ -205,20 +393,37 @@ def run_event_batch(
     lock_token: str = "m5-offline-token",
     lease_seconds: int = 120,
     direct_kinds_by_source_event_id: Mapping[str, Sequence[str]] | None = None,
+    state: M5EventRunState | None = None,
+    batch_id: str | None = None,
+    expected_revision: int | None = None,
+    lock_store: TaskLockStore | None = None,
 ) -> M5EventRunReceipt:
-    """Ingest one bounded batch and return a fail-closed run receipt."""
+    """Ingest one bounded batch and return an atomically exportable next state."""
 
     if len(events) != len(observed_times):
         raise ValueError("Every event requires one observed_at timestamp")
     run_id = _required_text(run_id, "run_id")
+    batch_id = _required_text(batch_id or run_id, "batch_id")
     generated_at = _required_datetime(generated_at, "generated_at")
-    if namespace not in {NAMESPACE_SIMULATED}:
+    if namespace != NAMESPACE_SIMULATED:
         raise ValueError("Public run-once coordinator accepts SIMULATED only")
+    if state is not None and not isinstance(state, M5EventRunState):
+        raise ValueError("state must be an M5EventRunState")
+    if expected_revision is not None:
+        expected_revision = _required_int(expected_revision, "expected_revision")
+        if expected_revision < 0:
+            raise ValueError("expected_revision cannot be negative")
+    if any(not isinstance(event, ChangeEventInput) for event in events):
+        raise ValueError("events must contain ChangeEventInput objects")
     if any(event.namespace != namespace for event in events):
         raise ValueError("All events must use the requested namespace")
-    direct_kinds_by_source_event_id = dict(
-        direct_kinds_by_source_event_id or {}
-    )
+    direct_kinds_by_source_event_id = {
+        _required_text(key, "direct dependency source_event_id"): tuple(
+            _required_text(item, "direct dependency kind")
+            for item in value
+        )
+        for key, value in dict(direct_kinds_by_source_event_id or {}).items()
+    }
     event_source_ids = {event.source_event_id for event in events}
     if any(
         source_event_id not in event_source_ids
@@ -226,104 +431,223 @@ def run_event_batch(
     ):
         raise ValueError("Every custom dependency policy must match an event")
 
-    ledger = EventLedger(namespace=namespace)
-    watermarks = WatermarkLedger()
-    watermarks.advance(watermark)
-    locks = TaskLockStore()
+    working = (
+        state.clone()
+        if state is not None
+        else M5EventRunState.empty(state_key=run_id, namespace=namespace)
+    )
+    if expected_revision is not None and working.revision != expected_revision:
+        raise ValueError(
+            "M5 run state revision does not match expected_revision"
+        )
+    request_fingerprint = _batch_request_fingerprint(
+        events=events,
+        observed_times=observed_times,
+        watermark=watermark,
+        graph=graph,
+        direct_kinds_by_source_event_id=direct_kinds_by_source_event_id,
+    )
+    existing_record = next(
+        (
+            item
+            for item in working.batch_records
+            if item.batch_id == batch_id
+        ),
+        None,
+    )
+    if existing_record is not None:
+        if existing_record.request_fingerprint != request_fingerprint:
+            raise ValueError("Batch id was already used with different inputs")
+        if existing_record.run_id != run_id:
+            raise ValueError("Batch id was already used by a different run_id")
+        if existing_record.namespace != namespace:
+            raise ValueError("Batch id was already used in a different namespace")
+        generated_at = existing_record.generated_at
+        checkpoint = _checkpoint_for_replay(
+            working,
+            existing_record.checkpoint_id,
+        )
+        current_watermark = working.watermarks.current(
+            scope=watermark.scope,
+            source=watermark.source,
+        )
+        effective_watermark = current_watermark or watermark
+        health_status, silent_ok, review_due = _receipt_health(
+            state=working,
+            effective_watermark=effective_watermark,
+        )
+        return M5EventRunReceipt(
+            receipt_id=existing_record.receipt_id,
+            run_id=run_id,
+            batch_id=batch_id,
+            stream_id=working.state_key,
+            namespace=namespace,
+            generated_at=generated_at,
+            ingest_results=_replayed_ingest_results(
+                state=working,
+                events=events,
+                observed_times=observed_times,
+            ),
+            invalidations=(),
+            alerts=_alerts_for_batch(working, events),
+            checkpoint=checkpoint,
+            health_status=health_status,
+            silent_ok=silent_ok,
+            review_due=review_due,
+            state=working,
+            state_sha256=working.state_sha256(),
+            idempotent_noop=True,
+        )
+
+    effective_lock_owner = f"{lock_owner}:run:{run_id}"
+    effective_lock_token = f"{lock_token}:batch:{batch_id}"
+    locks = lock_store or TaskLockStore()
     lock_result = locks.acquire(
-        scope=f"M5:{run_id}",
-        owner=lock_owner,
-        token=lock_token,
+        scope=f"M5:state:{working.state_key}",
+        owner=effective_lock_owner,
+        token=effective_lock_token,
         now=generated_at,
         lease_seconds=lease_seconds,
     )
-    if lock_result.lock is None:
-        raise ValueError("Could not acquire the M5 run lock")
-
-    checkpoints = CheckpointLedger()
-    checkpoint_result = checkpoints.start(
-        run_id=run_id,
-        scope="ALL",
-        started_at=generated_at,
-        evidence_refs=(
-            {"id": "m5-run-start"},
-            {"id": watermark.watermark_id},
-        ),
-    )
-    if checkpoint_result.checkpoint is None:
-        locks.release(scope=lock_result.lock.scope, token=lock_token, now=generated_at)
-        raise ValueError("Could not start the M5 run checkpoint")
-
-    outbox = OutboxLedger()
-    ingest_results: list[EventIngestResult] = []
-    invalidations: list[DependencyInvalidation] = []
-    for event, observed_at in zip(events, observed_times):
-        result = ledger.append(
-            event,
-            observed_at=observed_at,
-            coverage_watermark=watermark,
+    if (
+        lock_result.lock is None
+        or lock_result.status not in {LOCK_ACQUIRED, LOCK_REPLACED_EXPIRED}
+    ):
+        raise ValueError(
+            f"Could not acquire the M5 state lock: {lock_result.status}"
         )
-        ingest_results.append(result)
-        if result.event is None or result.status not in {
-            INGEST_ACCEPTED,
-            INGEST_CORRECTION_ACCEPTED,
-            INGEST_SUPERSEDES_ACCEPTED,
-        }:
-            continue
-        custom_kinds = direct_kinds_by_source_event_id.get(
-            result.event.source_event_id
-        )
-        invalidations.append(
-            graph.invalidate(
-                result.event,
-                direct_kinds=tuple(custom_kinds) if custom_kinds else None,
+    lock_acquired = True
+    try:
+        watermark_result = working.watermarks.advance(watermark)
+        if watermark_result.status == WATERMARK_REGRESSION_REJECTED:
+            raise ValueError("Watermark regresses the run state")
+        effective_watermark = watermark_result.watermark or watermark
+        ingest_results: list[EventIngestResult] = []
+        invalidations: list[DependencyInvalidation] = []
+        new_alerts: list[EventAlert] = []
+        for event, observed_at in zip(events, observed_times):
+            result = working.event_ledger.append(
+                event,
+                observed_at=observed_at,
+                coverage_watermark=effective_watermark,
             )
-        )
-        alert_type = _ALERT_BY_EVENT_TYPE.get(
-            result.event.event_type,
-            ALERT_TYPE_REVIEW_DUE,
-        )
-        outbox.enqueue_for_event(
-            event=result.event,
-            alert_type=alert_type,
-            now=observed_at,
-        )
+            ingest_results.append(result)
+            if result.event is None or result.status not in {
+                INGEST_ACCEPTED,
+                INGEST_CORRECTION_ACCEPTED,
+                INGEST_SUPERSEDES_ACCEPTED,
+            }:
+                continue
+            custom_kinds = direct_kinds_by_source_event_id.get(
+                result.event.source_event_id
+            )
+            invalidations.append(
+                graph.invalidate(
+                    result.event,
+                    direct_kinds=tuple(custom_kinds) if custom_kinds else None,
+                )
+            )
+            alert_type = _ALERT_BY_EVENT_TYPE.get(
+                result.event.event_type,
+                ALERT_TYPE_REVIEW_DUE,
+            )
+            enqueued = working.outbox.enqueue_for_event(
+                event=result.event,
+                alert_type=alert_type,
+                now=observed_at,
+            )
+            if enqueued.alert is not None:
+                new_alerts.append(enqueued.alert)
 
-    committed = checkpoints.commit(
-        checkpoint_id=checkpoint_result.checkpoint.checkpoint_id,
-        completed_at=generated_at,
-        last_sequence=len(ledger),
-        watermark_ids=(watermark.watermark_id,),
-        ingested_event_ids=tuple(
-            result.event.event_id
-            for result in ingest_results
-            if result.event is not None
-        ),
-    )
-    if committed.checkpoint is None:
-        raise ValueError("Could not commit the M5 run checkpoint")
-    locks.release(scope=lock_result.lock.scope, token=lock_token, now=generated_at)
+        checkpoint_result = working.checkpoints.start(
+            run_id=working.state_key,
+            scope="ALL",
+            started_at=generated_at,
+            evidence_refs=(
+                {"id": f"batch:{batch_id}"},
+                {"id": effective_watermark.watermark_id},
+            ),
+        )
+        if checkpoint_result.checkpoint is None:
+            raise ValueError("Could not start the M5 run checkpoint")
+        prior_committed = [
+            item
+            for item in working.checkpoints.checkpoints()
+            if item.status == CHECKPOINT_COMMITTED
+        ]
+        prior_sequence = prior_committed[-1].last_sequence if prior_committed else 0
+        ingested_event_ids = tuple(
+            event.event_id
+            for event in working.event_ledger.events()[prior_sequence:]
+        )
+        committed = working.checkpoints.commit(
+            checkpoint_id=checkpoint_result.checkpoint.checkpoint_id,
+            completed_at=generated_at,
+            last_sequence=len(working.event_ledger),
+            watermark_ids=tuple(
+                sorted(
+                    item.watermark_id
+                    for item in working.watermarks.watermarks()
+                )
+            ),
+            ingested_event_ids=ingested_event_ids,
+        )
+        if committed.checkpoint is None:
+            raise ValueError("Could not commit the M5 run checkpoint")
 
-    alerts = outbox.alerts()
-    source_health_ok = watermark.source_health not in {SOURCE_OUTAGE, SOURCE_DEGRADED}
-    has_attention = not source_health_ok or any(
-        item.requires_human_review for item in alerts
-    )
-    review_due = tuple(
-        sorted({item.alert_type for item in alerts if item.requires_human_review})
-    )
-    return M5EventRunReceipt(
-        receipt_id="m5-run-" + _digest("run-receipt", run_id, generated_at.isoformat())[
-            :32
-        ],
-        run_id=run_id,
-        namespace=namespace,
-        generated_at=generated_at,
-        ingest_results=tuple(ingest_results),
-        invalidations=tuple(invalidations),
-        alerts=alerts,
-        checkpoint=committed.checkpoint,
-        health_status=RUN_ATTENTION if has_attention else RUN_HEALTHY,
-        silent_ok=not alerts and source_health_ok,
-        review_due=review_due,
-    )
+        receipt_id = "m5-run-" + _digest(
+            "run-receipt",
+            run_id,
+            batch_id,
+            generated_at.isoformat(),
+        )[:32]
+        next_revision = working.revision + 1
+        record = M5EventBatchRecord(
+            batch_id=batch_id,
+            run_id=run_id,
+            namespace=namespace,
+            generated_at=generated_at,
+            request_fingerprint=request_fingerprint,
+            receipt_id=receipt_id,
+            checkpoint_id=committed.checkpoint.checkpoint_id,
+            state_revision=next_revision,
+        )
+        next_state = M5EventRunState(
+            state_key=working.state_key,
+            namespace=working.namespace,
+            revision=next_revision,
+            event_ledger=working.event_ledger,
+            watermarks=working.watermarks,
+            checkpoints=working.checkpoints,
+            outbox=working.outbox,
+            batch_records=working.batch_records + (record,),
+        )
+        health_status, silent_ok, review_due = _receipt_health(
+            state=next_state,
+            effective_watermark=effective_watermark,
+        )
+        return M5EventRunReceipt(
+            receipt_id=receipt_id,
+            run_id=run_id,
+            batch_id=batch_id,
+            stream_id=next_state.state_key,
+            namespace=namespace,
+            generated_at=generated_at,
+            ingest_results=tuple(ingest_results),
+            invalidations=tuple(invalidations),
+            alerts=tuple(new_alerts),
+            checkpoint=committed.checkpoint,
+            health_status=health_status,
+            silent_ok=silent_ok,
+            review_due=review_due,
+            state=next_state,
+            state_sha256=next_state.state_sha256(),
+        )
+    finally:
+        if lock_acquired:
+            locks.release(
+                scope=lock_result.lock.scope,
+                owner=effective_lock_owner,
+                token=effective_lock_token,
+                now=generated_at,
+            )

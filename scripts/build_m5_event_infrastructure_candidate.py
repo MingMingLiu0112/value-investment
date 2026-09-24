@@ -55,6 +55,7 @@ def _datetime(value: object, field: str) -> datetime:
 
 def _event_from_payload(payload: dict) -> ChangeEventInput:
     return ChangeEventInput(
+        source_id=str(payload.get("source_id") or "m5-input"),
         source_event_id=str(payload["source_event_id"]),
         symbol=str(payload["symbol"]),
         event_type=str(payload["event_type"]),
@@ -111,12 +112,14 @@ def prepare_event_batch(
             target = resolver.latest_for(
                 symbol=event.symbol,
                 source_event_id=str(correction_source),
+                source_id=event.source_id,
             )
             if target is None or target.status != EVENT_STATUS_ACTIVE:
                 raise ValueError(
                     f"Correction target is unavailable: {correction_source}"
                 )
             event = ChangeEventInput(
+                source_id=event.source_id,
                 source_event_id=event.source_event_id,
                 symbol=event.symbol,
                 event_type=event.event_type,

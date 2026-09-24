@@ -215,6 +215,7 @@ def materiality_event_from_decision(
         "unmapped_artifacts": unmapped_artifacts,
     }
     return ChangeEventInput(
+        source_id="human-materiality-review",
         source_event_id=f"materiality-review:{decision.event_decision_id}",
         symbol=decision.symbol,
         event_type=EVENT_TYPE_MATERIAL_ANNOUNCEMENT,

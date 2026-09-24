@@ -2,6 +2,106 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M5 运行状态与批次重放收口
+
+在 M5 离线事件基础设施上完成状态聚合、批次幂等和恢复边界收口。该工作不接生产源、
+不发送通知、不创建常驻服务，也不改变 `M5=PARTIAL` 或人工/运营待办。
+
+- 新增 `M5EventRunState`，把事件账、水位、checkpoint、outbox 与 batch record 作为
+  单个可版本化状态导出并失败关闭恢复。
+- 事件去重键加入 `source_id`；旧事件 ID 兼容只在缺少来源字段且人工复核/生效时间
+  保持安全默认值时启用，禁止通过删除字段降级校验。
+- run-once 协调器使用稳定 state lock、批次请求 fingerprint、原始
+  `run_id/namespace/generated_at` 和 receipt/checkpoint 交叉绑定。
+- 新增 `expected_revision` 以防陈旧快照被调用方误提交；完整原子 StateStore/CAS
+  仍属后续工程，本批次不宣称具备生产级并发持久化。
+- 新批次即使全部拒绝也保留审计 checkpoint；同 batch ID 仅原 run/原输入可重放；
+  watermark 前进后仍可重放旧批次，不再错误拒绝或误报 no-op。
+- checkpoint、outbox、watermark、event、batch record 和 receipt 的跨账本引用、
+  时间、严重度与人工复核一致性均失败关闭。
+- 新增 `tests/test_m5_event_run_state_boundaries.py` 13 项边界回归；M5 定向回归
+  `88 passed`。
+- 本地全量离线回归：`2447 passed, 6 skipped, 18 warnings, 0 failed`。
+- 未接生产、未发送通知、未生成仓位或订单；`action=no_order`。
+
+## 2026-09-24 M4 输入完整性与失败关闭收紧
+
+人工审查 M4 非个人化合同时发现，JSON 加载器使用 `bool()` 会把字符串 `"false"`
+解析为真值；组合中未进入候选映射的持仓也不会计入行业和周期暴露，可能高估未来
+可加仓空间。
+
+- 组合持仓、风险属性和仓位候选的布尔字段改为严格 JSON boolean，字符串假值失败关闭。
+- 组合输入递归拒绝嵌套执行字段，避免 `target_weight` 等字段藏在持仓对象中被忽略。
+- 对账组合中的每个持仓必须存在证券风险属性；缺失时仓位指引为 `INCOMPLETE`，不输出
+  行业/周期可加仓空间。
+- 指引日期必须不早于 IPS、持仓快照和 tier policy 日期。
+- 新增五项反向回归；M4 合同/风险/仓位/股息/联合定向回归 `59 passed`。
+- 未读取真实账户/IPS/持仓，未生成目标仓位或订单；`action=no_order`。
+
+## 2026-09-24 M6 运营控制历史与恢复完整性
+
+M6 预检的状态文件可导出 JSON，但恢复入口原来只校验当前 mode 与 permissions，
+没有确认 history 是否连续、最后一步是否就是当前快照，也会把字符串 `"false"` 当成
+真值。该缺口可让审计文件展示一个未经真实状态机产生的生产权限状态。
+
+- `ModeChange` 与状态切换增加模式、方向、时区、原因、操作者和授权校验；时间必须
+  严格向前，同一模式不得重复记录为切换。
+- `from_dict` 要求 schema/action 精确匹配、permissions 必须是布尔值，并重放整条
+  历史链验证 `OFFLINE_ENGINEERING -> STAGING -> SHADOW -> LIMITED_USE`、
+  紧急停止和重置授权规则。
+- 当前快照必须与历史最后一步的 mode、授权、时间、原因和操作者完全一致。
+- 新增四项反向回归；`test_m6_operational_control.py` 为 `9 passed`，M6
+  control + readiness 联合回归为 `18 passed`。
+- 状态仍为 preflight engineering done / operational `NOT_STARTED`；
+  未连接生产、未开启 shadow、`action=no_order`。
+
+## 2026-09-24 M5 事件账重放完整性收紧
+
+Checkpoint B 继续等待人工复核，本轮在 M5 离线事件基础设施上补做序列化重放审计。
+原实现只在增量追加时依赖内存状态，没有在 `event_ledger_from_payload` 重放时完整
+验证更正/替代链路。损坏或人工篡改的事件账可能带有缺失目标、跨来源更正、活动目标
+或没有后继的 `SUPERSEDED` 事件。
+
+- `correction_of_event_id` 现在必须指向相同证券且相同 `source_event_id` 的当前有效
+  事件；跨来源变化若确需替代，只能使用语义独立的 `supersedes_event_id`。
+- 序列化账本校验目标存在、目标先于后继、证券一致、每目标唯一后继，以及
+  `SUPERSEDED` 与引用关系互相对应。
+- 同一来源事件的历史版本不得保持活动；`ingested_at` 不得回退，
+  `last_observed_at` 必须等于最后一条已接受事件的观察时间。
+- 增加 checkpoint 与 outbox 的失败关闭恢复入口：检查点尝试不得重叠、序号不得
+  回退；提醒的尝试次数、重试时间和投递时间必须与状态自洽。
+- 租约要求 owner 与 token 同时匹配，并拒绝 release/renew 时间倒置。
+- 新增八项反向/往返回归；定向回归 `32 passed`，全部 M5 定向回归 `70 passed`。
+- 不改变事件类型、生产采集、通知投递、M5 人工材料性结论或冻结候选；
+  `M5=PARTIAL`、`action=no_order`。
+
+## 2026-09-24 M3 Checkpoint B 只读逐卡复核明细
+
+在不改变三份冻结候选 Hash 的前提下，新增逐卡明细 v2，绑定基础复核包和二〇二六
+年九月二十三日冻结的三家公司研究档案：
+
+- 每家公司保留冻结档案中的反证、论点破坏条件、下一次事件和研究缺口。
+- 明细仅作人工理解辅助，状态固定 `PENDING_HUMAN_REVIEW`、`action=no_order`。
+- v1 因研究缺口 Markdown 渲染缺陷被 v2 替代；历史 v1 保留，不删除、不覆盖。
+- 明细 JSON SHA-256
+  `0d9f938b9fd2c3d003e8d035cd0912f7187ebed63f5f4e089103994b6d8c7a42`，Markdown
+  SHA-256 `fab6040c893ec37752393b624fa07c22e918c08fc53e7e9b96e5f821a1ce9313`。
+- 定向回归 `2 passed`；未生成 Entry、Journal、仓位、订单或人工收据。
+
+## 2026-09-24 M3 公开历史链时序完整性续收
+
+Checkpoint B 继续等待人工复核，不生成新候选或人工收据。在上一轮
+Journal/Consistency ID 与 Entry 归属检查基础上，补上公开 `DecisionHistoryChain`
+的剩余时序合同：
+
+- 日志更正必须严格晚于被更正的前任；同一时间戳不再作为可排序更正接受。
+- 任一日志时间不能早于冻结 Entry 的人工确认时间。
+- 一致性复核日期不能早于冻结 Entry 的 Entry 日期。
+
+新增四个反向测试，防止“更正与前任同刻”、日志倒置 Entry 和一致性复核穿越历史。
+M3 相关定向回归 `86 passed`。本工作不重算 Checkpoint B 三份冻结候选，不改变其 Hash，
+`action=no_order`。
+
 ## 2026-09-24 M3 决策日志链完整性收紧
 
 在 Checkpoint B 等待人工签收期间，继续 M3 可独立完成的领域合同工作。复核发现

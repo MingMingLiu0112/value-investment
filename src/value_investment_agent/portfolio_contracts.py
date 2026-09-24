@@ -140,6 +140,12 @@ def _optional_bool(value: object, field: str) -> bool | None:
     return value
 
 
+def _required_bool(value: object, field: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field} must be boolean")
+    return value
+
+
 def _normalize_refs(refs: Sequence[Mapping[str, Any]]) -> tuple[dict[str, Any], ...]:
     normalized = []
     for index, ref in enumerate(refs):
@@ -153,10 +159,18 @@ def _normalize_refs(refs: Sequence[Mapping[str, Any]]) -> tuple[dict[str, Any], 
     return tuple(normalized)
 
 
-def _reject_public_execution_keys(value: Mapping[str, Any]) -> None:
-    forbidden = sorted(_FORBIDDEN_PUBLIC_KEYS & set(value))
-    if forbidden:
-        raise ValueError(f"Portfolio contracts contain execution keys: {forbidden}")
+def _reject_public_execution_keys(value: object) -> None:
+    if isinstance(value, Mapping):
+        forbidden = sorted(_FORBIDDEN_PUBLIC_KEYS & set(value))
+        if forbidden:
+            raise ValueError(
+                f"Portfolio contracts contain execution keys: {forbidden}"
+            )
+        for nested in value.values():
+            _reject_public_execution_keys(nested)
+    elif isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        for item in value:
+            _reject_public_execution_keys(item)
 
 
 @dataclass(frozen=True)
@@ -383,6 +397,14 @@ class PortfolioHolding:
             raise ValueError("Unknown portfolio holding exchange")
         if self.quantity_source not in QUANTITY_SOURCES:
             raise ValueError("Unknown holding quantity source")
+        object.__setattr__(
+            self,
+            "corporate_action_adjusted",
+            _required_bool(
+                self.corporate_action_adjusted,
+                "corporate_action_adjusted",
+            ),
+        )
         object.__setattr__(
             self,
             "quantity",
@@ -645,7 +667,10 @@ def portfolio_holding_from_payload(payload: Mapping[str, Any]) -> PortfolioHoldi
         cost_basis_cny=_decimal(data.get("cost_basis_cny"), "cost_basis_cny"),
         market_value_cny=_decimal(data.get("market_value_cny"), "market_value_cny"),
         quantity_source=str(data["quantity_source"]),
-        corporate_action_adjusted=bool(data["corporate_action_adjusted"]),
+        corporate_action_adjusted=_required_bool(
+            data["corporate_action_adjusted"],
+            "corporate_action_adjusted",
+        ),
         evidence_refs=tuple(dict(item) for item in data.get("evidence_refs") or ()),
     )
 

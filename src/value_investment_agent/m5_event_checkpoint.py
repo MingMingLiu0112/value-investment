@@ -75,19 +75,23 @@ class TaskCheckpoint:
         )
         if self.last_sequence < 0:
             raise ValueError("last_sequence cannot be negative")
-        object.__setattr__(
-            self,
-            "watermark_ids",
-            tuple(_required_text(item, "watermark_id") for item in self.watermark_ids),
+        watermark_ids = tuple(
+            _required_text(item, "watermark_id") for item in self.watermark_ids
         )
-        object.__setattr__(
-            self,
-            "ingested_event_ids",
-            tuple(
-                _required_text(item, "ingested_event_id")
-                for item in self.ingested_event_ids
-            ),
+        ingested_event_ids = tuple(
+            _required_text(item, "ingested_event_id")
+            for item in self.ingested_event_ids
         )
+        if len(set(watermark_ids)) != len(watermark_ids):
+            raise ValueError("Checkpoint watermark ids must be unique")
+        if len(set(ingested_event_ids)) != len(ingested_event_ids):
+            raise ValueError("Checkpoint ingested event ids must be unique")
+        object.__setattr__(self, "watermark_ids", watermark_ids)
+        object.__setattr__(self, "ingested_event_ids", ingested_event_ids)
+        if self.status == CHECKPOINT_RUNNING and (
+            self.last_sequence != 0 or watermark_ids or ingested_event_ids
+        ):
+            raise ValueError("Running checkpoint cannot claim committed progress")
         object.__setattr__(
             self,
             "error",
@@ -175,15 +179,31 @@ class CheckpointLedger:
         started_at = _required_datetime(started_at, "started_at")
         refs = _required_refs(evidence_refs)
         existing = self.latest(run_id)
-        if existing is not None and existing.status == CHECKPOINT_RUNNING:
+        if existing is not None:
+            if existing.status == CHECKPOINT_RUNNING:
+                return CheckpointResult(
+                    status=LOCK_CONFLICT,
+                    checkpoint=None,
+                    message="Run already has an open checkpoint",
+                )
+            if started_at < existing.completed_at:
+                raise ValueError(
+                    "Checkpoint start cannot precede the prior terminal checkpoint"
+                )
+        checkpoint_id = "m5-checkpoint-" + _digest(
+            run_id,
+            scope,
+            started_at.isoformat(),
+            len(self._checkpoints),
+        )[:32]
+        if any(item.checkpoint_id == checkpoint_id for item in self._checkpoints):
             return CheckpointResult(
                 status=LOCK_CONFLICT,
                 checkpoint=None,
-                message="Run already has an open checkpoint",
+                message="Checkpoint id already exists",
             )
         checkpoint = TaskCheckpoint(
-            checkpoint_id="m5-checkpoint-"
-            + _digest(run_id, scope, started_at.isoformat())[:32],
+            checkpoint_id=checkpoint_id,
             run_id=run_id,
             scope=scope,
             status=CHECKPOINT_RUNNING,
@@ -212,6 +232,14 @@ class CheckpointLedger:
         ingested_event_ids: Sequence[str] = (),
     ) -> CheckpointResult:
         checkpoint = self._require_open_checkpoint(checkpoint_id)
+        prior = [
+            item
+            for item in self._checkpoints
+            if item.run_id == checkpoint.run_id
+            and item.status == CHECKPOINT_COMMITTED
+        ]
+        if prior and last_sequence < prior[-1].last_sequence:
+            raise ValueError("Committed checkpoint sequence cannot regress")
         committed = TaskCheckpoint(
             checkpoint_id=checkpoint.checkpoint_id,
             run_id=checkpoint.run_id,
@@ -281,3 +309,73 @@ class CheckpointLedger:
             "schema_version": self.schema_version,
             "checkpoints": [item.as_policy() for item in self._checkpoints],
         }
+
+
+def checkpoint_ledger_from_payload(payload: Mapping[str, Any]) -> CheckpointLedger:
+    if not isinstance(payload, Mapping):
+        raise ValueError("Checkpoint ledger must be an object")
+    data = dict(payload)
+    if data.get("schema_version") != M5_EVENT_SCHEMA:
+        raise ValueError("Unknown checkpoint ledger schema")
+    ledger = CheckpointLedger(schema_version=str(data["schema_version"]))
+    seen_ids: set[str] = set()
+    prior_by_run: dict[str, TaskCheckpoint] = {}
+    for raw in data.get("checkpoints") or ():
+        item = dict(raw)
+        checkpoint = TaskCheckpoint(
+            checkpoint_id=_required_text(item["checkpoint_id"], "checkpoint_id"),
+            run_id=_required_text(item["run_id"], "run_id"),
+            scope=_required_text(item["scope"], "scope"),
+            status=_required_text(item["status"], "status"),
+            started_at=_required_datetime(
+                datetime.fromisoformat(str(item["started_at"])),
+                "started_at",
+            ),
+            completed_at=(
+                _required_datetime(
+                    datetime.fromisoformat(str(item["completed_at"])),
+                    "completed_at",
+                )
+                if item.get("completed_at")
+                else None
+            ),
+            last_sequence=_required_int(item["last_sequence"], "last_sequence"),
+            watermark_ids=tuple(str(value) for value in item.get("watermark_ids") or ()),
+            ingested_event_ids=tuple(
+                str(value) for value in item.get("ingested_event_ids") or ()
+            ),
+            error=None if item.get("error") is None else str(item["error"]),
+            evidence_refs=_required_refs(item.get("evidence_refs")),
+            action=str(item.get("action", ACTION_NO_ORDER)),
+        )
+        expected_id = "m5-checkpoint-" + _digest(
+            checkpoint.run_id,
+            checkpoint.scope,
+            checkpoint.started_at.isoformat(),
+            len(ledger._checkpoints),
+        )[:32]
+        legacy_id = "m5-checkpoint-" + _digest(
+            checkpoint.run_id,
+            checkpoint.scope,
+            checkpoint.started_at.isoformat(),
+        )[:32]
+        if checkpoint.checkpoint_id not in {expected_id, legacy_id}:
+            raise ValueError("Checkpoint id does not match its immutable payload")
+        if checkpoint.checkpoint_id in seen_ids:
+            raise ValueError("Checkpoint ledger contains a duplicate checkpoint id")
+        prior = prior_by_run.get(checkpoint.run_id)
+        if prior is not None:
+            if prior.status == CHECKPOINT_RUNNING:
+                raise ValueError("Checkpoint ledger contains an open prior attempt")
+            if checkpoint.started_at < prior.completed_at:
+                raise ValueError("Checkpoint attempts overlap in time")
+            if (
+                checkpoint.status == CHECKPOINT_COMMITTED
+                and prior.status == CHECKPOINT_COMMITTED
+                and checkpoint.last_sequence < prior.last_sequence
+            ):
+                raise ValueError("Checkpoint sequence cannot regress")
+        seen_ids.add(checkpoint.checkpoint_id)
+        prior_by_run[checkpoint.run_id] = checkpoint
+        ledger._checkpoints.append(checkpoint)
+    return ledger

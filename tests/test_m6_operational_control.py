@@ -93,6 +93,37 @@ def test_staged_progression_requires_authorization_and_sequential_modes(tmp_path
     assert len(limited.history) == 3
 
 
+def test_transition_requires_forward_time_and_a_mode_change():
+    state = initial_state(operator_id="operator", now=_now(9))
+    staging = transition(
+        state,
+        target_mode=MODE_STAGING,
+        authorization_id="auth-staging",
+        reason="approved staging",
+        operator_id="operator",
+        changed_at=_now(10),
+    )
+
+    with pytest.raises(ValueError, match="strictly forward"):
+        transition(
+            staging,
+            target_mode=MODE_SHADOW,
+            authorization_id="auth-shadow",
+            reason="backward clock",
+            operator_id="operator",
+            changed_at=_now(9),
+        )
+    with pytest.raises(ValueError, match="must alter the mode"):
+        transition(
+            staging,
+            target_mode=MODE_STAGING,
+            authorization_id="auth-staging-2",
+            reason="same mode",
+            operator_id="operator",
+            changed_at=_now(11),
+        )
+
+
 def test_emergency_stop_is_always_allowed_and_blocks_publication(tmp_path):
     state = initial_state(operator_id="operator", now=_now(9))
     staging = transition(
@@ -176,4 +207,55 @@ def test_deserialization_rejects_inconsistent_permissions(tmp_path):
     payload["mode"] = MODE_STOPPED
     payload["permissions"]["publish_allowed"] = True
     with pytest.raises(ValueError, match="permissions"):
+        from_dict(payload)
+
+
+def test_deserialization_rejects_non_boolean_permissions():
+    state = initial_state(operator_id="operator", now=_now())
+    payload = state.as_dict()
+    payload["permissions"]["publish_allowed"] = "false"
+
+    with pytest.raises(ValueError, match="must be boolean"):
+        from_dict(payload)
+
+
+def test_deserialization_rejects_history_snapshot_mismatch():
+    state = initial_state(operator_id="operator", now=_now(9))
+    staging = transition(
+        state,
+        target_mode=MODE_STAGING,
+        authorization_id="auth-staging",
+        reason="approved staging",
+        operator_id="operator",
+        changed_at=_now(10),
+    )
+    payload = staging.as_dict()
+    payload["reason"] = "tampered snapshot reason"
+
+    with pytest.raises(ValueError, match="snapshot does not match its history"):
+        from_dict(payload)
+
+
+def test_deserialization_rejects_non_contiguous_history_chain():
+    state = initial_state(operator_id="operator", now=_now(9))
+    staging = transition(
+        state,
+        target_mode=MODE_STAGING,
+        authorization_id="auth-staging",
+        reason="approved staging",
+        operator_id="operator",
+        changed_at=_now(10),
+    )
+    shadow = transition(
+        staging,
+        target_mode=MODE_SHADOW,
+        authorization_id="auth-shadow",
+        reason="approved shadow",
+        operator_id="operator",
+        changed_at=_now(11),
+    )
+    payload = shadow.as_dict()
+    payload["history"][0]["from_mode"] = MODE_SHADOW
+
+    with pytest.raises(ValueError, match="not contiguous"):
         from_dict(payload)

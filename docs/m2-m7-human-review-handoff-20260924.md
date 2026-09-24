@@ -81,6 +81,8 @@ v4 只把 M2 状态改为 `DONE / HUMAN_PASS` 并加入 M3/M5 新证据层，不
 [m3-checkpoint-b-review-packet-20260924.md](m3-checkpoint-b-review-packet-20260924.md)。
 运行时可复核包位于 `runtime/m3-checkpoint-b-human-review-20260924-v1/`；它保持
 `PENDING_HUMAN_REVIEW`，不会替用户签收。
+只读逐卡明细位于
+`runtime/m3-checkpoint-b-review-detail-20260924-v2/review-detail.md`。
 
 三份候选都只需要看负向决策信息：
 

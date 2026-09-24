@@ -15,7 +15,8 @@
     加强、削弱、兑现和破坏。
   - `DecisionHistoryChain`：校验证券、Entry、日志前驱和一致性引用；公开链
     只接受 `simulated`。同链日志与一致性 ID 必须唯一，Journal 的 Entry 引用
-    必须指向冻结 Entry，更正前任必须存在且不早于当前日志。
+    必须指向冻结 Entry。更正前任必须存在、时间必须严格晚于前任；日志不得
+    早于 Entry 确认时间，一致性复核不得早于 Entry 日期。
 - `src/value_investment_agent/investment_decision.py`
   - `DecisionJournalEntry` 对人工确认决定和复核状态做同向绑定，非交易决定
     不能携带确认价。
@@ -38,6 +39,9 @@
 - 定向回归：4 passed。
 - M3 日志链完整性反向回归：5 passed；新增重复 ID、错 Entry、乱序更正与
   决定/状态矛盾四类。
+- M3 历史链时序反向回归：新增同时间戳更正、日志早于 Entry、一致性复核早于
+  Entry 日期三类；相关 M3 定向回归 `86 passed`（含 `test_decision_read_model`
+  与发布层替换回归）。
 - M3/M4 相关定向回归：40 passed。
 - 示例候选：5 页、1 条模拟链、`action=no_order`，字节数 12,121。
 - 候选 SHA-256：
