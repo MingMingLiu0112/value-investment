@@ -1,5 +1,51 @@
 # Changelog
 
+## v2026.09.24-m5-600519-reconciliation-intake
+
+### Scope
+
+M3 Checkpoint B 等待人工复核期间，继续 M5 离线工作：对 600519 真实 CNINFO 队列
+执行既有人工台账 Hash 对账，并生成九条公告的空白人工材料性回填表。
+
+### Changes
+
+- 新增运行时对账目录
+  `runtime/m5-600519-human-review-reconciliation-20260924-v1/`。
+- 新增公开空白回填表
+  `A股价值投资_M5真实披露人工复核回填_600519_20260924.xlsx`。
+- 更新 M5 披露复核与 M2-M7 人工交接文档。
+
+### Verification
+
+- 对账结果 9 条待人工复核、0 条历史结转、0 条 Hash 冲突。
+- WPS 只读验证 `passed`；WPS 云盘副本逐字节一致。
+- 空白回填表 SHA-256
+  `6451f986c81c4db1277f795e6a0666c22810728d621524070935b21edc4e7f0c`。
+- `action=no_order`；未生成事件、调度、通知或材料性结论。
+
+## v2026.09.24-m3-checkpoint-b-review-packet
+
+### Scope
+
+M2 Checkpoint A 已人工签收后回到 M3 主线，新增版本化、只读、Hash 固定的
+Checkpoint B 人工复核包，汇总三份 M3 候选、机器审计、strict PIT 证据和 M2
+append-only 收据。本包不签收 Checkpoint B。
+
+### Changes
+
+- 新增 `scripts/build_m3_checkpoint_b_review_packet.py`。
+- 新增 `tests/test_m3_checkpoint_b_review_packet.py` 并纳入 Core Research Gate。
+- 新增
+  [docs/m3-checkpoint-b-review-packet-20260924.md](docs/m3-checkpoint-b-review-packet-20260924.md)。
+- 更新当前阶段、执行状态与 M2-M7 人工交接清单。
+
+### Verification
+
+- M3 Checkpoint B 定向回归 `2 passed`。
+- 复核包 manifest SHA-256
+  `76082bb8b359964445954293495208cacf385a44374d717629a77ca5f6f23de4`。
+- 状态保持 `PENDING_HUMAN_REVIEW`、`strict PIT=NOT_PROVEN`、`action=no_order`。
+
 ## v2026.09.24-m7-daily-v4-post-checkpoint-a
 
 ### Scope

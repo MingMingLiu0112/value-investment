@@ -77,6 +77,11 @@ v4 只把 M2 状态改为 `DONE / HUMAN_PASS` 并加入 M3/M5 新证据层，不
 
 ## 3. M3 Checkpoint B：用户要确认什么
 
+本轮已生成版本化、只读、Hash 固定的复核包，见
+[m3-checkpoint-b-review-packet-20260924.md](m3-checkpoint-b-review-packet-20260924.md)。
+运行时可复核包位于 `runtime/m3-checkpoint-b-human-review-20260924-v1/`；它保持
+`PENDING_HUMAN_REVIEW`，不会替用户签收。
+
 三份候选都只需要看负向决策信息：
 
 ```text
@@ -126,6 +131,17 @@ PDF SHA-256=7c669db8bb3b5a362ecad92c6a96745a3b5039a3288f5e13b498e9e72971111c
 
 该结论只表示这条员工持股计划购买完成公告不要求当前估值、模型有效性、股息可持续性
 或价格吸引力立即重算。它不表示伊利是买入目标，也不表示 M5 持续事件监控已经通过。
+
+600519 的独立真实披露窗口另有 9 条公告等待逐条人工判定。本轮已完成 Hash 对账并
+生成空白回填表，详见
+[m5-600519-disclosure-review-20260924.md](m5-600519-disclosure-review-20260924.md)。
+空白回填表为：
+
+```text
+A股价值投资_M5真实披露人工复核回填_600519_20260924.xlsx
+```
+
+9 条公告全部为 `PENDING_HUMAN_REVIEW`，没有因 600519 无历史人工台账而结转旧结论。
 
 ## 6. M6 / M7：当前不签收
 

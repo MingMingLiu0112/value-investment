@@ -38,6 +38,8 @@ CNINFO 待复核队列，细节与边界见
 [m7-daily-workbench-v4-post-checkpoint-a-20260924.md](m7-daily-workbench-v4-post-checkpoint-a-20260924.md)。
 M2-M7 当前全部人工待办与签收边界见
 [m2-m7-human-review-handoff-20260924.md](m2-m7-human-review-handoff-20260924.md)。
+M3 Checkpoint B 的版本化只读复核包见
+[m3-checkpoint-b-review-packet-20260924.md](m3-checkpoint-b-review-packet-20260924.md)。
 M2 签收时保留的两项非阻断方法债见
 [m2-non-blocking-method-debt-20260924.md](m2-non-blocking-method-debt-20260924.md)。
 

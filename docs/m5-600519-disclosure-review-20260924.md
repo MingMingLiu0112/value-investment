@@ -60,3 +60,16 @@ ACTION = no_order
 - 九条公告仍需要用户逐条给出 `EventMaterialityDecision`；机器不代理重大性判断。
 - 得到真实人工结论后，才能通过既有 `m5_materiality_bridge` 进入事件与依赖失效层。
 - 本队列不构成 M5 Checkpoint C、生产调度、通知或 M6 运营验收。
+
+## 后续 Hash 对账与空白回填表
+
+本轮继续生成两个只读交付物，九条公告全部保持待人工判定：
+
+| 产物 | 路径 | SHA-256 |
+| --- | --- | --- |
+| 对账结果 | `runtime/m5-600519-human-review-reconciliation-20260924-v1/reconciliation.json` | `5b9cea760461fb6821777474b05878a7682f08d85cdcbf5a78b917365e4f27ea` |
+| 待复核队列 | `runtime/m5-600519-human-review-reconciliation-20260924-v1/pending-queue.json` | `63a168587738b262ca06e1aa01ea8d37d3535982385f87f453ef79e3f5159e6b` |
+| 空白人工回填表 | `A股价值投资_M5真实披露人工复核回填_600519_20260924.xlsx` | `6451f986c81c4db1277f795e6a0666c22810728d621524070935b21edc4e7f0c` |
+
+对账结果：当前 9 条候选、历史结转 0、待人工复核 9、Hash 冲突 0。空白回填表
+WPS 只读验证 `passed`，WPS 云盘副本逐字节一致，判定列与复核说明列均从空值开始。

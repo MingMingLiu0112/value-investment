@@ -5,6 +5,24 @@
 `M2 / DONE | Checkpoint A / HUMAN_PASS`、`M3 / M4 / M5 / PARTIAL`、
 `M6 / NOT_STARTED`、`M7 / PARTIAL`，全部候选 `action=no_order`。
 
+## 2026-09-24 M5 600519 空白人工复核回填表
+
+新增第 29 个受 Git 跟踪的公开工作簿，作为 600519 真实 CNINFO 队列的人工材料性
+判定输入表。九条公告的判定列和复核说明列均从空值开始，不预填任何结论。
+
+- 文件：`A股价值投资_M5真实披露人工复核回填_600519_20260924.xlsx`
+- 字节数：11,904
+- SHA-256：
+  `6451f986c81c4db1277f795e6a0666c22810728d621524070935b21edc4e7f0c`
+- 队列 ID：`cninfo-review-2026-06-01-20260924T084715Z`
+- 队列语义 SHA-256：
+  `bcdc059dee1acba7e030020046d4b5bff52989cd740fff47430ac52040b350ca`
+- WPS 只读收据：
+  `runtime/m5-600519-disclosure-review-intake-wps-20260924/receipt.json`，
+  `passed`。
+- WPS 云盘同名副本与仓库文件逐字节一致。
+- `action=no_order`；不自动判定重大性、生成事件、仓位或订单。
+
 ## 2026-09-24 M4 Decision Binding v2 候选
 
 M4 收紧 `BUY_REVIEW` / `ADD_REVIEW` 必须强绑定 M3 Decision Artifact 后，新增两个

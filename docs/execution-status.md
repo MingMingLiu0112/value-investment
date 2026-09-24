@@ -1467,3 +1467,48 @@ canonical。新 v4 候选把 M3 重建证据连续性和 600519 真实披露待�
 
 本候选不构成 Checkpoint B/C/D、真实 IPS/组合、生产授权、M6 运营验收或 M7
 最终交付；总 Goal 继续按原依赖推进。
+
+## 2026-09-24 M3 Checkpoint B 版本化人工复核包
+
+M2 Checkpoint A 收口后回到原总 Goal 的 M3 主线，新增只读的 Checkpoint B 人工
+复核包生成器，把三份 M3 候选、机器审计、strict PIT 证据和 M2 append-only 收据
+合并为同一版本化入口。生成器只汇总证据，不写人工收据，不把 Checkpoint B 标为
+通过，不生成 Entry、Journal、个人组合、仓位或订单。
+
+| 产物 | 路径 | SHA-256 |
+| --- | --- | --- |
+| Checkpoint B packet | `runtime/m3-checkpoint-b-human-review-20260924-v1/checkpoint-b-packet.json` | `fab538fb283b55b449d6c52be908216cbe2df06880a2c66848901371a15c7eb4` |
+| 人工复核说明 | `runtime/m3-checkpoint-b-human-review-20260924-v1/checkpoint-b-review.md` | `b7d0b16cebb6c98537865a878764617a1c102fb3508cd6564022540966a2c712` |
+| manifest | `runtime/m3-checkpoint-b-human-review-20260924-v1/manifest.json` | `76082bb8b359964445954293495208cacf385a44374d717629a77ca5f6f23de4` |
+
+- 三张卡保持 `000651 / 600741 / 600887` 均为 `INSUFFICIENT_RESEARCH`、
+  `RESEARCH_INCOMPLETE`、`action=no_order`。
+- M3 三份审计保持 m3c7 / owc7 / hoc7 `PENDING_HUMAN_REVIEW`。
+- strict contemporaneous-rule Historical PIT 保持 `NOT_PROVEN`。
+- M2 Checkpoint A 收据保持 sequence=2 与固定 Hash，没有覆盖历史收据。
+- 新增定向回归 `2 passed`，并纳入 GitHub Core Research Gate。
+
+用户实际完成三份候选阅读、逐卡复述阻断/反证/重开条件并明确给出
+`M3_CHECKPOINT_B=HUMAN_PASS` 后，才会新增下一份 append-only 人工收据；当前包
+不构成 Checkpoint B 通过或后续阶段升级。
+
+## 2026-09-24 M5 600519 Hash 对账与空白人工回填表
+
+在 Checkpoint B 等待人工签收期间，继续原总 Goal 中依赖已满足的 M5 离线工作。对
+600519 / 2026-06-01 至 2026-09-09 的真实 CNINFO 队列执行既有人工台账 Hash 对账，
+并生成九条公告的空白人工材料性回填表。
+
+- 对账结果：当前候选 9、历史结转 0、待人工复核 9、Hash 冲突 0。
+- 对账收据：
+  `runtime/m5-600519-human-review-reconciliation-20260924-v1/reconciliation.json`
+  SHA-256
+  `5b9cea760461fb6821777474b05878a7682f08d85cdcbf5a78b917365e4f27ea`。
+- 空白回填表：
+  `A股价值投资_M5真实披露人工复核回填_600519_20260924.xlsx`
+  SHA-256
+  `6451f986c81c4db1277f795e6a0666c22810728d621524070935b21edc4e7f0c`。
+- WPS 只读验证 `passed`；WPS 云盘同名副本与仓库文件逐字节一致。
+- 判定列和复核说明列均从空值开始，`action=no_order`。
+
+本工作包不判定任何公告重大性，不产生 M5 事件、依赖失效、调度、通知或 M6 运营
+验收；九条公告仍由用户逐条给出 `EventMaterialityDecision`。
