@@ -20,6 +20,8 @@ M7 Daily Workbench v1 引用的 M3 Historical Research Replay 收据已经记录
 ### Verification
 
 - M7 定向回归：8 passed。
+- 非神华离线回归：2245 passed、6 skipped、0 failed。
+- GitHub Core Research Gates run `35953368838`：`success`。
 - `action=no_order`；未执行生产迁移、计划任务、通知或真实账户导入。
 - v1 每日工作台候选保留，当前用户验收对象改为 v2。
 

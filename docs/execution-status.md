@@ -68,6 +68,12 @@
 - WPS 只读验证 `passed`：10 个可见页、2 个隐藏页、公式错误 0、canonical
   Hash 不变，收据 `runtime/m7-daily-wps-v2-20260924/receipt.json`。
 - M7 定向回归 `8 passed`；全量离线回归留待提交后统一复算。
+- 提交 `b654897` 后复算：非神华离线回归
+  `2245 passed、6 skipped、0 failed、18 warnings`；跳过项为既有
+  PostgreSQL/外部服务条件，不接触神华 PDF 审计尾集。
+- GitHub Core Research Gates
+  [run 35953368838](https://github.com/MingMingLiu0112/value-investment/actions/runs/35953368838)
+  为 `success`，`offline-core` 与 `postgres-integration` 均通过。
 
 上一版 v1 候选继续保留，作为人工审查前的历史制品；当前用户验收对象使用 v2。
 
