@@ -1,5 +1,59 @@
 # Changelog
 
+## v2026.09.24-m5-durable-run-request-and-receipt
+
+### Scope
+
+把 M5 离线事件链从「能算出结论」推进到「一次请求只提交一次、收据可持久重放」。
+该批次不接生产源、不发送通知、不修改 PTA/数据库/计划任务，不改变 `M5=PARTIAL`，
+也不改变 `action=no_order`。真实 600519 公告仍待人工逐条判定。
+
+### Changes
+
+- 新增 `m5_run_request.py`：自包含、版本化、可重放的运行请求（events、observed
+  times、完整 `ScanWatermark`、`DependencyGraph`、direct kinds、run/batch/stream
+  id），并由 `request_id` + SHA-256 固定。`from_payload()` 要求 payload 往返到
+  canonical 形式，手工改写的请求无法静默改变重放语义。
+- `batch_request_fingerprint()` 成为唯一指纹实现：run state 的批次记录与 run
+  request 共用同一算法，发布收据前校验 `request_fingerprint` 一致。
+- `MaterialityBridgeBatch.from_payload()`，以及 plan 级 `supersedes_event_id` /
+  `event_cluster_id`：`DUPLICATE_OR_DERIVED` 等静默人工判定不再丢失已声明的来源
+  关系。
+- 补齐严格解析器：`ChangeEventInput`、ingest verdict、`ScanWatermark`、outbox
+  alert、dependency invalidation；未知键、缺失键和非法时间一律失败关闭。
+- `M5EventRunReceipt.to_json()` / `from_payload()`：durable artifact 带
+  `receipt_sha256` 与 `audit_fingerprint`；收据会重新校验每条 ingest verdict、
+  alert、invalidation 确实存在于其自身 state，只容忍 ledger 拥有的 `status`
+  迁移。
+- `JsonM5EventRunReceiptStore`：write-once、临时文件 + fsync + 原子替换、复用
+  state store 的文件锁；同一 `receipt_id` 仅在 audit fingerprint 一致时视为已
+  发布，否则冲突失败关闭。
+- `apply_run_request()`：一个固定请求 → 一次 state commit + 一次 durable
+  receipt；commit 前崩溃重试只提交一次，commit 后崩溃重试为 idempotent replay。
+- `_active_alerts` 不再把 `FAILED_TERMINAL` 视为已结案：通知失败且无人确认时保持
+  `ATTENTION`，不会静默回到 `HEALTHY`。
+- 人工复核对账拒绝重复的 prior `review_id`，避免把另一份 review 的 Hash 携带到
+  当前判定上。
+
+### Verification
+
+- 新增 `tests/test_m5_run_request.py`：`12 passed`，覆盖请求与桥接 canonical
+  round-trip、篡改拒绝、silent-only 请求、跨进程重开重放、pre/post-commit 崩溃
+  恢复、artifact 篡改、请求绑定与同 `receipt_id` 不同批次冲突。
+- 新增 3 条 fail-closed 回归：终端通知失败保持 `ATTENTION`、重复 prior review id
+  拒绝、静默重复判定保留关系字段。
+- 本地全量离线回归：`2522 passed, 5 skipped, 18 warnings, 0 failed`。
+
+### Residual Boundary
+
+- 归档 PDF 仍未在 intake 重算字节 SHA-256（当前信任队列记录值）；在接入真实
+  apply 前必须补真实重算。
+- 回填工作簿仍未贯通 `supersedes_event_id` / `event_cluster_id` 列与原件
+  hyperlink。
+- 当前 run health 只描述本次运行；历史上被拒的 ingest 需要在 M6 运营聚合视图
+  单独呈现，不能靠单次 `HEALTHY` 掩盖。
+- 600519 九条真实公告保持 `PENDING_HUMAN_REVIEW`，本批不代签。
+
 ## v2026.09.24-m5-fail-closed-hardening
 
 ### Scope

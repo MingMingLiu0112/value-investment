@@ -244,3 +244,66 @@ apply 只到 bridge artifact。600519 9 条真实公告保持待人工判断，�
 真实公告采集器、公告级材料性判定、Entry/组合复核、生产调度、通知目标和
 真实故障恢复仍等待对应数据、人工授权与 M6 方案。本批不证明 M5 产品验收，
 也不证明系统已持续监控真实市场。
+
+## 2026-09-24 durable run request 与 receipt publish 契约
+
+上一轮结束时，人工材料性 review 只生成 `intake.json` / `reviews.json` /
+`bridge_batches.json`，manifest 明确写着 `events_not_applied: true`：bridge artifact
+不是可重放请求，也没有 durable receipt。本轮把这段补齐，全部使用合成数据验证，
+不触碰 600519 九条真实公告。
+
+闭环现在固定为：
+
+```text
+human materiality review
+  -> MaterialityBridgeBatch.from_payload()          # 人工判定可反序列化
+  -> M5EventRunRequest                               # 自包含 + request_id + SHA-256
+  -> apply_run_request()                             # 一次提交 + 一次收据
+  -> M5EventRunReceipt artifact                      # receipt_sha256 / audit_fingerprint
+  -> JsonM5EventRunReceiptStore                      # write-once + 原子替换
+```
+
+关键事实：
+
+- `M5EventRunRequest` 嵌入 events、observed times、完整 `ScanWatermark`、
+  `DependencyGraph`、direct dependency kinds，以及 run/batch/stream id 和
+  `generated_at`；`from_payload()` 要求 payload 往返到 canonical 形式，缺键、多键、
+  改时间或改 fingerprint 都会失败关闭。
+- `batch_request_fingerprint()` 是唯一实现：run state 的 `M5EventBatchRecord` 与
+  run request 共用同一指纹算法，收据发布前逐一比对，防止「请求 A、提交 B」。
+- `M5EventRunReceipt` artifact 记录 `receipt_sha256`（content hash）与
+  `audit_fingerprint`（仅覆盖批次事实：verdicts、invalidations、checkpoint、
+  run/batch/stream、generated_at）。重试在同批次上复现相同 audit fingerprint，
+  同时不假装 ambient state（水位、outbox 投递状态、state revision）从未变化。
+- `JsonM5EventRunReceiptStore.publish()` 是 write-once：临时文件 + `fsync` +
+  `os.replace`，并与 state store 共用文件锁。同一 `receipt_id` 再次发布且 audit
+  fingerprint 一致时返回 `ALREADY_PUBLISHED`；不一致时抛
+  `M5StateStoreConflict`，不覆盖既有证据。
+- 两个崩溃窗口都有测试：state commit 前失败 → 重试只提交一次（revision 1、
+  1 条 batch record、1 个 committed checkpoint）；state commit 后、receipt 发布前
+  失败 → 重试为 `idempotent_noop` replay，并把收据补写一次。
+- 收据自身 `verify()` 会要求每条 accepted ingest verdict、每个 alert、
+  每条 invalidation 都存在于其内嵌 state；只容忍 ledger 拥有的 `status` 迁移
+  （例如后续批次 supersede），其余字段不一致即拒绝。
+- silent-only 批次（例如 `MATERIAL_ALREADY_INCORPORATED`）生成 events 为空的合法
+  请求，仍然只推进覆盖水位、不产生事件、不产生 `BUY/ADD`。
+
+对抗审查同时修掉两个 fail-open：
+
+- `FAILED_TERMINAL` 通知失败原先被视为「已结案」，会让后续 run 报 `HEALTHY` 且
+  `silent_ok=true`。现在只有 `ACKNOWLEDGED` 才算结案，通知未到达人工时保持
+  `ATTENTION` 并出现在 `review_due`。
+- 复核对账原先允许重复 prior `review_id` 覆盖 Hash，可能把另一份 review 的 Hash
+  携带到当前判定；现在重复 id 直接失败关闭。
+
+验证：`tests/test_m5_run_request.py` `12 passed`，M5 定向回归 `58 passed`，本地全量
+离线回归 `2522 passed, 5 skipped, 18 warnings, 0 failed`。
+
+仍未完成、且必须在接入真实 apply 前补齐：
+
+1. 归档 PDF 的字节 SHA-256 需要在 intake 重新计算，不能继续信任队列记录的 Hash；
+2. 回填工作簿尚未贯通 `supersedes_event_id` / `event_cluster_id` 列与原件 hyperlink；
+3. 当前 run health 只描述本次运行，历史被拒 ingest 需要在 M6 运营聚合视图中单独
+   呈现；
+4. 600519 九条真实公告仍保持 `PENDING_HUMAN_REVIEW`，等待用户逐条材料性判定；
+5. `M5` 保持 `PARTIAL`，`action=no_order`，不发送通知、不接生产调度。

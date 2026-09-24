@@ -251,3 +251,24 @@ def test_supersedes_relationship_is_recorded_without_forcing_repeat_review():
 
     assert result.carried_forward_count == 1
     assert result.resolutions[0].prior_supersedes_event_id == "1225510000"
+
+
+def test_duplicate_prior_review_id_fails_closed():
+    first = _review((_decision(),))
+    second = _review(
+        (
+            _decision(
+                announcement_id="1225542002",
+                source_hash="d" * 64,
+            ),
+        )
+    )
+
+    assert first.review_id == second.review_id
+    with pytest.raises(ValueError, match="Duplicate prior materiality review id"):
+        reconcile_m5_human_reviews(
+            queue=_queue((_candidate(),)),
+            prior_reviews=(first, second),
+            reconciliation_id="reconcile-duplicate-review-v1",
+            as_of=AS_OF,
+        )

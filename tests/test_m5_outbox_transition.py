@@ -24,6 +24,7 @@ from value_investment_agent.m5_event_dependencies import (
 from value_investment_agent.m5_event_outbox import (
     ALERT_ACKNOWLEDGED,
     ALERT_DELIVERED,
+    ALERT_FAILED_TERMINAL,
     ALERT_FAILED_RETRYABLE,
     ALERT_PENDING,
     ALERT_SENT,
@@ -34,6 +35,7 @@ from value_investment_agent.m5_event_outbox_transition import (
     replay_outbox_transitions,
 )
 from value_investment_agent.m5_event_run import (
+    RUN_ATTENTION,
     run_event_batch,
     run_event_batch_persisted,
 )
@@ -583,3 +585,30 @@ def test_legacy_v1_state_without_transitions_remains_readable() -> None:
     assert restored.outbox_revision == 0
     assert restored.outbox_transitions == ()
     assert restored.outbox.alerts()[0].status == ALERT_PENDING
+
+
+def test_terminal_alert_failure_keeps_replayed_run_in_attention() -> None:
+    initial = _initial_state()
+    alert = initial.outbox.alerts()[0]
+    assert alert.requires_human_review is True
+
+    failed = apply_outbox_transition(
+        state=initial,
+        alert_id=alert.alert_id,
+        from_status=alert.status,
+        to_status=ALERT_FAILED_TERMINAL,
+        occurred_at=OBSERVED + timedelta(minutes=1),
+        error="synthetic delivery failure",
+    )
+    assert failed.outbox.alerts()[0].status == ALERT_FAILED_TERMINAL
+
+    replay = run_event_batch(
+        **_kwargs(batch_id="batch-1", event_id="event-1"),
+        state=failed,
+    )
+
+    assert replay.idempotent_noop is True
+    assert replay.health_status == RUN_ATTENTION
+    assert replay.silent_ok is False
+    assert replay.review_due
+    assert replay.alerts[0].status == ALERT_FAILED_TERMINAL

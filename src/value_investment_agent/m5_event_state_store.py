@@ -11,16 +11,23 @@ power-loss-proof rollback resistance.
 from __future__ import annotations
 
 from contextlib import contextmanager
+from dataclasses import dataclass
 import hashlib
 import json
 import os
 from pathlib import Path
 import tempfile
 import threading
-from typing import Iterator, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Iterator, Protocol, runtime_checkable
 
+from .investment_decision import ACTION_NO_ORDER
 from .m5_event_core import _required_int, _required_text
 from .m5_event_run_state import M5EventRunState, m5_event_run_state_from_payload
+
+
+if TYPE_CHECKING:  # pragma: no cover - typing only, avoids an import cycle
+    from .m5_event_run import M5EventRunReceipt
+    from .m5_run_request import M5EventRunRequest
 
 
 class M5StateStoreConflict(RuntimeError):
@@ -41,6 +48,72 @@ class M5EventRunStateStore(Protocol):
         expected_sha256: str | None,
         state: M5EventRunState,
     ) -> None:
+        ...
+
+
+M5_RECEIPT_PUBLISHED = "PUBLISHED"
+M5_RECEIPT_ALREADY_PUBLISHED = "ALREADY_PUBLISHED"
+M5_RECEIPT_PUBLICATION_STATUSES = frozenset(
+    {M5_RECEIPT_PUBLISHED, M5_RECEIPT_ALREADY_PUBLISHED}
+)
+
+
+def _sha256_hex(value: object, field: str) -> str:
+    digest = _required_text(value, field).lower()
+    if len(digest) != 64 or any(
+        character not in "0123456789abcdef" for character in digest
+    ):
+        raise ValueError(f"{field} must be a SHA-256 hex digest")
+    return digest
+
+
+@dataclass(frozen=True)
+class M5ReceiptPublication:
+    """Outcome of publishing one immutable M5 run receipt."""
+
+    receipt_id: str
+    status: str
+    audit_fingerprint: str
+    artifact_sha256: str
+    path: str
+    action: str = ACTION_NO_ORDER
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "receipt_id",
+            _required_text(self.receipt_id, "receipt_id"),
+        )
+        if self.status not in M5_RECEIPT_PUBLICATION_STATUSES:
+            raise ValueError("Unknown M5 receipt publication status")
+        object.__setattr__(
+            self,
+            "audit_fingerprint",
+            _sha256_hex(self.audit_fingerprint, "audit_fingerprint"),
+        )
+        object.__setattr__(
+            self,
+            "artifact_sha256",
+            _sha256_hex(self.artifact_sha256, "artifact_sha256"),
+        )
+        object.__setattr__(self, "path", _required_text(self.path, "path"))
+        if self.action != ACTION_NO_ORDER:
+            raise ValueError("Receipt publication must remain no_order")
+
+
+@runtime_checkable
+class M5EventRunReceiptStore(Protocol):
+    """Publish-once contract for durable M5 run receipts."""
+
+    def publish(
+        self,
+        *,
+        receipt: "M5EventRunReceipt",
+        request: "M5EventRunRequest",
+    ) -> M5ReceiptPublication:
+        ...
+
+    def load(self, *, receipt_id: str) -> "M5EventRunReceipt | None":
         ...
 
 
@@ -304,3 +377,150 @@ class JsonM5EventRunStateStore:
             if current is not None and snapshot.state_sha256() == current.state_sha256():
                 return
             self._write_unlocked(snapshot)
+
+
+class JsonM5EventRunReceiptStore:
+    """One immutable JSON artifact per run receipt with atomic publish.
+
+    Receipts are write-once.  A retry of the same batch may republish only when
+    the deterministic audit fingerprint matches, so a retry can never rewrite
+    the evidence trail of an earlier run.
+    """
+
+    def __init__(self, root: str | os.PathLike[str]) -> None:
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
+        self._lock_path = self.root / ".m5-event-receipt-store.lock"
+        descriptor = os.open(
+            self._lock_path,
+            os.O_CREAT | os.O_RDWR,
+            0o600,
+        )
+        try:
+            if os.fstat(descriptor).st_size == 0:
+                os.write(descriptor, b"\0")
+                os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        self._thread_lock = threading.RLock()
+
+    def _receipt_path(self, receipt_id: str) -> Path:
+        digest = hashlib.sha256(receipt_id.encode("utf-8")).hexdigest()
+        return self.root / f"m5-receipt-{digest}.json"
+
+    @contextmanager
+    def _locked(self) -> Iterator[None]:
+        with self._thread_lock:
+            with _exclusive_file_lock(self._lock_path):
+                yield
+
+    def _load_unlocked(self, receipt_id: str) -> "M5EventRunReceipt | None":
+        from .m5_event_run import M5EventRunReceipt
+
+        path = self._receipt_path(receipt_id)
+        if not path.exists():
+            return None
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        receipt = M5EventRunReceipt.from_payload(payload)
+        if receipt.receipt_id != receipt_id:
+            raise ValueError(
+                "Stored M5 receipt does not match the requested receipt_id"
+            )
+        return receipt
+
+    def load(self, *, receipt_id: str) -> "M5EventRunReceipt | None":
+        key = _required_text(receipt_id, "receipt_id")
+        with self._locked():
+            return self._load_unlocked(key)
+
+    def publish(
+        self,
+        *,
+        receipt: "M5EventRunReceipt",
+        request: "M5EventRunRequest",
+    ) -> M5ReceiptPublication:
+        from .m5_event_run import M5EventRunReceipt
+        from .m5_run_request import M5EventRunRequest
+
+        if not isinstance(receipt, M5EventRunReceipt):
+            raise ValueError("receipt must be an M5EventRunReceipt")
+        if not isinstance(request, M5EventRunRequest):
+            raise ValueError("request must be an M5EventRunRequest")
+        receipt.verify()
+        request.verify()
+        if (
+            receipt.run_id != request.run_id
+            or receipt.batch_id != request.batch_id
+            or receipt.stream_id != request.stream_id
+            or receipt.namespace != request.namespace
+        ):
+            raise ValueError(
+                "Receipt does not belong to the pinned run request"
+            )
+        record = next(
+            (
+                item
+                for item in receipt.state.batch_records
+                if item.batch_id == request.batch_id
+            ),
+            None,
+        )
+        if record is None:
+            raise ValueError(
+                "Receipt does not contain the requested batch record"
+            )
+        if (
+            record.run_id != request.run_id
+            or record.namespace != request.namespace
+            or record.receipt_id != receipt.receipt_id
+            or record.request_fingerprint != request.request_fingerprint()
+        ):
+            raise ValueError("Receipt is not bound to the pinned run request")
+        audit_fingerprint = receipt.audit_fingerprint()
+        with self._locked():
+            path = self._receipt_path(receipt.receipt_id)
+            existing = self._load_unlocked(receipt.receipt_id)
+            if existing is not None:
+                if existing.audit_fingerprint() != audit_fingerprint:
+                    raise M5StateStoreConflict(
+                        "Stored M5 receipt describes a different batch"
+                    )
+                return M5ReceiptPublication(
+                    receipt_id=receipt.receipt_id,
+                    status=M5_RECEIPT_ALREADY_PUBLISHED,
+                    audit_fingerprint=audit_fingerprint,
+                    artifact_sha256=hashlib.sha256(
+                        path.read_bytes()
+                    ).hexdigest(),
+                    path=str(path),
+                )
+            artifact = receipt.to_json() + "\n"
+            descriptor, temporary_name = tempfile.mkstemp(
+                prefix=path.stem + ".",
+                suffix=".tmp",
+                dir=self.root,
+            )
+            temporary_path = Path(temporary_name)
+            try:
+                with os.fdopen(
+                    descriptor,
+                    "w",
+                    encoding="utf-8",
+                    newline="\n",
+                ) as handle:
+                    handle.write(artifact)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                os.replace(temporary_path, path)
+            finally:
+                if temporary_path.exists():
+                    temporary_path.unlink()
+            return M5ReceiptPublication(
+                receipt_id=receipt.receipt_id,
+                status=M5_RECEIPT_PUBLISHED,
+                audit_fingerprint=audit_fingerprint,
+                artifact_sha256=hashlib.sha256(
+                    artifact.encode("utf-8")
+                ).hexdigest(),
+                path=str(path),
+            )

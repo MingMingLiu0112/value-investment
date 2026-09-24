@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
+import json
 
 import pytest
 
 from value_investment_agent.event_materiality import (
     DECISION_ALREADY_INCORPORATED,
+    DECISION_DUPLICATE,
+    DECISION_NOT_MATERIAL,
     DECISION_REQUIRES_DECOMPOSITION,
     DECISION_REQUIRES_RECALCULATION,
     DECISION_RISK_MONITOR,
@@ -37,6 +40,7 @@ from value_investment_agent.m5_event_watermark import (
 )
 from value_investment_agent.m5_materiality_bridge import (
     MATERIALITY_BRIDGE_SCHEMA,
+    MaterialityBridgeBatch,
     build_materiality_bridge_batch,
     materiality_direct_kinds,
     materiality_event_from_decision,
@@ -337,3 +341,27 @@ def test_bridge_batch_preserves_silence_and_feeds_run_with_custom_policy():
     assert KIND_VALUATION_INPUTS in affected_kinds
     assert KIND_DECISION_REVIEW in affected_kinds
     assert receipt.action == "no_order"
+
+
+def test_silent_duplicate_plan_preserves_the_declared_relation():
+    decision = replace(
+        _decision(DECISION_NOT_MATERIAL),
+        human_decision=DECISION_DUPLICATE,
+        supersedes_event_id="1225510000",
+        event_cluster_id="cluster-1225510000",
+    )
+    batch = build_materiality_bridge_batch(
+        _review((decision,)),
+        namespace=NAMESPACE_SIMULATED,
+    )
+
+    plan = batch.plans[0]
+    assert plan.silent is True
+    assert plan.event is None
+    assert plan.supersedes_event_id == "1225510000"
+    assert plan.event_cluster_id == "cluster-1225510000"
+    payload = plan.as_policy()
+    assert payload["supersedes_event_id"] == "1225510000"
+    assert payload["event_cluster_id"] == "cluster-1225510000"
+    restored = MaterialityBridgeBatch.from_payload(json.loads(batch.to_json()))
+    assert restored.as_policy() == batch.as_policy()

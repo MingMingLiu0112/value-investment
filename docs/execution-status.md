@@ -1775,3 +1775,38 @@ action = no_order
 该 blocker 不阻止 M4/M5 中依赖已满足的离线工程继续。M4 个人化验收仍等待真实
 IPS/组合输入；M6 仍只允许 preflight、dry-run、backup/restore、health、
 emergency-stop 和 shadow tooling，不授权生产迁移、调度、通知或真实账户导入。
+
+## 2026-09-24 M5 durable run request / receipt 闭环
+
+在 M5 离线链路上补齐「一次请求只提交一次、收据可持久重放」的最小闭环，全部使用
+合成数据（symbol `600887`，`SYNTHETIC_OFFLINE_ONLY`），未读取或代签任何真实公告。
+
+```text
+M5 Engineering        = DONE_FOR_DURABLE_REQUEST_RECEIPT_LOOP  （新增，仅离线合成数据）
+M5 Product Acceptance = PARTIAL                                （不变）
+M5 Production         = NOT_AUTHORIZED                         （不变）
+M4 Personalized       = PENDING_USER_PRIVATE_INPUT             （不变）
+M6 Authorization      = NOT_YET                                （不变）
+action                = no_order
+```
+
+- 新增自包含 run request（events、observed times、完整 watermark、dependency
+  graph、direct kinds、run/batch/stream id），由 `request_id` + SHA-256 固定；
+  非 canonical payload 直接拒绝。
+- run state 的 batch record 与 run request 共用同一 `batch_request_fingerprint`，
+  receipt 发布前校验绑定，防止「请求 A / 提交 B」。
+- 新增 write-once receipt store：原子替换 + 文件锁；`audit_fingerprint` 相同才视为
+  `ALREADY_PUBLISHED`，不同即冲突，不覆盖既有证据。
+- pre-commit 与 post-commit 两个崩溃窗口都有恢复测试：前者只提交一次，后者为
+  idempotent replay 并补写一次收据。
+- 修复 `FAILED_TERMINAL` 通知失败被当作已结案导致 `HEALTHY` 的 fail-open；
+  现在保持 `ATTENTION` 并进入 `review_due`。
+- 修复复核对账允许重复 prior `review_id` 覆盖 Hash 的审计漏洞。
+- 新增回归 `tests/test_m5_run_request.py`（`12 passed`）与 3 条 fail-closed 回归；
+  本地全量离线回归 `2522 passed, 5 skipped, 18 warnings, 0 failed`。
+
+仍未完成，且阻断真实 apply：归档 PDF 字节 Hash 尚未在 intake 重算；工作簿尚未
+贯通 `supersedes_event_id` / `event_cluster_id` 列与原件 hyperlink；历史被拒
+ingest 需要 M6 运营聚合视图单独呈现。600519 九条真实公告保持
+`PENDING_HUMAN_REVIEW`，等待用户逐条材料性判定；本批不产生事件、不发送通知、
+不请求生产授权。

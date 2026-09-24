@@ -222,6 +222,41 @@ class WatermarkLedger:
         }
 
 
+def scan_watermark_from_payload(payload: Mapping[str, Any]) -> ScanWatermark:
+    """Parse a serialized scan watermark fail-closed."""
+
+    if not isinstance(payload, Mapping):
+        raise ValueError("Scan watermark must be an object")
+    data = dict(payload)
+    watermark = ScanWatermark(
+        watermark_id=_required_text(data["watermark_id"], "watermark_id"),
+        scope=_required_text(data["scope"], "scope"),
+        source=_required_text(data["source"], "source"),
+        coverage_through=_required_datetime(
+            datetime.fromisoformat(str(data["coverage_through"])),
+            "coverage_through",
+        ),
+        retrieved_at=_required_datetime(
+            datetime.fromisoformat(str(data["retrieved_at"])),
+            "retrieved_at",
+        ),
+        parser_version=_required_text(data["parser_version"], "parser_version"),
+        coverage_status=_required_text(data["coverage_status"], "coverage_status"),
+        source_health=_required_text(data["source_health"], "source_health"),
+        evidence_refs=_required_refs(data.get("evidence_refs")),
+        action=str(data.get("action", ACTION_NO_ORDER)),
+    )
+    expected = set(watermark.as_policy())
+    if set(data) != expected:
+        missing = sorted(expected - set(data))
+        extra = sorted(set(data) - expected)
+        raise ValueError(
+            "Scan watermark payload keys do not match the schema: "
+            f"missing={missing} extra={extra}"
+        )
+    return watermark
+
+
 def watermark_ledger_from_payload(payload: Mapping[str, Any]) -> WatermarkLedger:
     if not isinstance(payload, Mapping):
         raise ValueError("Watermark ledger must be an object")
@@ -230,25 +265,7 @@ def watermark_ledger_from_payload(payload: Mapping[str, Any]) -> WatermarkLedger
         raise ValueError("Unknown watermark ledger schema")
     ledger = WatermarkLedger(schema_version=str(data["schema_version"]))
     for raw in data.get("watermarks") or ():
-        item = dict(raw)
-        watermark = ScanWatermark(
-            watermark_id=_required_text(item["watermark_id"], "watermark_id"),
-            scope=_required_text(item["scope"], "scope"),
-            source=_required_text(item["source"], "source"),
-            coverage_through=_required_datetime(
-                datetime.fromisoformat(str(item["coverage_through"])),
-                "coverage_through",
-            ),
-            retrieved_at=_required_datetime(
-                datetime.fromisoformat(str(item["retrieved_at"])),
-                "retrieved_at",
-            ),
-            parser_version=_required_text(item["parser_version"], "parser_version"),
-            coverage_status=_required_text(item["coverage_status"], "coverage_status"),
-            source_health=_required_text(item["source_health"], "source_health"),
-            evidence_refs=_required_refs(item.get("evidence_refs")),
-            action=str(item.get("action", ACTION_NO_ORDER)),
-        )
+        watermark = scan_watermark_from_payload(raw)
         result = ledger.advance(watermark)
         if result.status == WATERMARK_REGRESSION_REJECTED:
             raise ValueError("Serialized watermarks contain a regression")

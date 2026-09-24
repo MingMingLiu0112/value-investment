@@ -8,6 +8,7 @@ from .investment_decision import ACTION_NO_ORDER
 from .m5_event_core import (
     M5_EVENT_SCHEMA,
     _digest,
+    _required_bool,
     _required_int,
     _required_refs,
     _required_text,
@@ -404,6 +405,62 @@ class DependencyInvalidation:
             "reason": self.reason,
             "action": self.action,
         }
+
+
+def dependency_invalidation_item_from_payload(
+    payload: Mapping[str, Any],
+) -> DependencyInvalidationItem:
+    if not isinstance(payload, Mapping):
+        raise ValueError("Dependency invalidation item must be an object")
+    data = dict(payload)
+    item = DependencyInvalidationItem(
+        node_id=_required_text(data["node_id"], "node_id"),
+        kind=_required_text(data["kind"], "kind"),
+        depth=_required_int(data["depth"], "depth"),
+        reason=_required_text(data["reason"], "reason"),
+    )
+    if set(data) != set(item.as_policy()):
+        raise ValueError("Dependency invalidation item keys do not match the schema")
+    return item
+
+
+def dependency_invalidation_from_payload(
+    payload: Mapping[str, Any],
+) -> DependencyInvalidation:
+    """Parse a serialized dependency invalidation fail-closed."""
+
+    if not isinstance(payload, Mapping):
+        raise ValueError("Dependency invalidation must be an object")
+    data = dict(payload)
+    invalidation = DependencyInvalidation(
+        invalidation_id=_required_text(
+            data["invalidation_id"],
+            "invalidation_id",
+        ),
+        event_id=_required_text(data["event_id"], "event_id"),
+        event_type=_required_text(data["event_type"], "event_type"),
+        symbol=_required_text(data["symbol"], "symbol"),
+        policy_version=_required_text(data["policy_version"], "policy_version"),
+        affected_nodes=tuple(
+            dependency_invalidation_item_from_payload(item)
+            for item in data.get("affected_nodes") or ()
+        ),
+        truncated=_required_bool(data["truncated"], "truncated"),
+        deferred_node_ids=tuple(
+            str(item) for item in data.get("deferred_node_ids") or ()
+        ),
+        reason=_required_text(data["reason"], "reason"),
+        action=str(data.get("action", ACTION_NO_ORDER)),
+    )
+    expected = set(invalidation.as_policy())
+    if set(data) != expected:
+        missing = sorted(expected - set(data))
+        extra = sorted(set(data) - expected)
+        raise ValueError(
+            "Dependency invalidation payload keys do not match the schema: "
+            f"missing={missing} extra={extra}"
+        )
+    return invalidation
 
 
 def dependency_node_from_payload(payload: Mapping[str, Any]) -> DependencyNode:

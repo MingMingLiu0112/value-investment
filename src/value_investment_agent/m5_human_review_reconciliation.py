@@ -306,6 +306,10 @@ def reconcile_m5_human_reviews(
     for review in prior_reviews:
         if review.schema_version != EVENT_MATERIALITY_SCHEMA:
             raise ValueError("Unsupported prior materiality review schema")
+        if review.review_id in prior_review_hashes:
+            raise ValueError(
+                f"Duplicate prior materiality review id: {review.review_id}"
+            )
         prior_review_hashes[review.review_id] = _canonical_digest(review.as_policy())
         for decision in review.decisions:
             key = (decision.symbol, decision.announcement_id)

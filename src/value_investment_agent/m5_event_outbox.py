@@ -471,6 +471,74 @@ class OutboxLedger:
         }
 
 
+def event_alert_from_payload(payload: Mapping[str, Any]) -> EventAlert:
+    """Parse a serialized outbox alert fail-closed."""
+
+    if not isinstance(payload, Mapping):
+        raise ValueError("Outbox alert must be an object")
+    data = dict(payload)
+    alert = EventAlert(
+        alert_id=_required_text(data["alert_id"], "alert_id"),
+        alert_type=_required_text(data["alert_type"], "alert_type"),
+        severity=_required_text(data["severity"], "severity"),
+        event_id=(
+            None
+            if data.get("event_id") is None
+            else _required_text(data["event_id"], "event_id")
+        ),
+        dedupe_key=_required_text(data["dedupe_key"], "dedupe_key"),
+        requires_human_review=_required_bool(
+            data["requires_human_review"],
+            "requires_human_review",
+        ),
+        created_at=_required_datetime(
+            datetime.fromisoformat(str(data["created_at"])),
+            "created_at",
+        ),
+        status=_required_text(data["status"], "status"),
+        attempts=_required_int(data["attempts"], "attempts"),
+        next_attempt_at=(
+            _required_datetime(
+                datetime.fromisoformat(str(data["next_attempt_at"])),
+                "next_attempt_at",
+            )
+            if data.get("next_attempt_at")
+            else None
+        ),
+        last_error=(
+            None
+            if data.get("last_error") is None
+            else _required_text(data["last_error"], "last_error")
+        ),
+        delivered_at=(
+            _required_datetime(
+                datetime.fromisoformat(str(data["delivered_at"])),
+                "delivered_at",
+            )
+            if data.get("delivered_at")
+            else None
+        ),
+        sent_at=(
+            _required_datetime(
+                datetime.fromisoformat(str(data["sent_at"])),
+                "sent_at",
+            )
+            if data.get("sent_at")
+            else None
+        ),
+        action=str(data.get("action", ACTION_NO_ORDER)),
+    )
+    expected = set(alert.as_policy())
+    if set(data) != expected:
+        missing = sorted(expected - set(data))
+        extra = sorted(set(data) - expected)
+        raise ValueError(
+            "Outbox alert payload keys do not match the schema: "
+            f"missing={missing} extra={extra}"
+        )
+    return alert
+
+
 def outbox_ledger_from_payload(payload: Mapping[str, Any]) -> OutboxLedger:
     if not isinstance(payload, Mapping):
         raise ValueError("Outbox ledger must be an object")
@@ -480,58 +548,7 @@ def outbox_ledger_from_payload(payload: Mapping[str, Any]) -> OutboxLedger:
     ledger = OutboxLedger(schema_version=str(data["schema_version"]))
     seen_alert_ids: set[str] = set()
     for raw in data.get("alerts") or ():
-        item = dict(raw)
-        alert = EventAlert(
-            alert_id=_required_text(item["alert_id"], "alert_id"),
-            alert_type=_required_text(item["alert_type"], "alert_type"),
-            severity=_required_text(item["severity"], "severity"),
-            event_id=(
-                None
-                if item.get("event_id") is None
-                else _required_text(item["event_id"], "event_id")
-            ),
-            dedupe_key=_required_text(item["dedupe_key"], "dedupe_key"),
-            requires_human_review=_required_bool(
-                item["requires_human_review"],
-                "requires_human_review",
-            ),
-            created_at=_required_datetime(
-                datetime.fromisoformat(str(item["created_at"])),
-                "created_at",
-            ),
-            status=_required_text(item["status"], "status"),
-            attempts=_required_int(item["attempts"], "attempts"),
-            next_attempt_at=(
-                _required_datetime(
-                    datetime.fromisoformat(str(item["next_attempt_at"])),
-                    "next_attempt_at",
-                )
-                if item.get("next_attempt_at")
-                else None
-            ),
-            last_error=(
-                None
-                if item.get("last_error") is None
-                else _required_text(item["last_error"], "last_error")
-            ),
-            delivered_at=(
-                _required_datetime(
-                    datetime.fromisoformat(str(item["delivered_at"])),
-                    "delivered_at",
-                )
-                if item.get("delivered_at")
-                else None
-            ),
-            sent_at=(
-                _required_datetime(
-                    datetime.fromisoformat(str(item["sent_at"])),
-                    "sent_at",
-                )
-                if item.get("sent_at")
-                else None
-            ),
-            action=str(item.get("action", ACTION_NO_ORDER)),
-        )
+        alert = event_alert_from_payload(raw)
         if alert.alert_id in seen_alert_ids:
             raise ValueError("Outbox ledger contains a duplicate alert id")
         if alert.dedupe_key in ledger._by_dedupe:

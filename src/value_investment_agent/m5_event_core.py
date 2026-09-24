@@ -730,6 +730,51 @@ class EventIngestResult:
         }
 
 
+def event_ingest_result_from_payload(
+    payload: Mapping[str, Any],
+) -> EventIngestResult:
+    """Parse a serialized ingest verdict fail-closed.
+
+    Replay receipts are the only caller; the payload must match the canonical
+    schema exactly so an edited verdict cannot be re-imported as evidence.
+    """
+
+    if not isinstance(payload, Mapping):
+        raise ValueError("Ingest result must be an object")
+    data = dict(payload)
+    event_payload = data.get("event")
+    result = EventIngestResult(
+        status=_required_text(data["status"], "status"),
+        observed_at=_required_datetime(
+            datetime.fromisoformat(str(data["observed_at"])),
+            "observed_at",
+        ),
+        event=(
+            None
+            if event_payload is None
+            else _change_event_from_payload(event_payload)
+        ),
+        superseded_event_ids=tuple(
+            str(item) for item in data.get("superseded_event_ids") or ()
+        ),
+        duplicate_event_id=_optional_text(
+            data.get("duplicate_event_id"),
+            "duplicate_event_id",
+        ),
+        is_late=_required_bool(data["is_late"], "is_late"),
+        message=str(data.get("message") or ""),
+    )
+    expected = set(result.as_policy())
+    if set(data) != expected:
+        missing = sorted(expected - set(data))
+        extra = sorted(set(data) - expected)
+        raise ValueError(
+            "Ingest result payload keys do not match the schema: "
+            f"missing={missing} extra={extra}"
+        )
+    return result
+
+
 class EventLedger:
     """Append-only ledger with dedupe, explicit correction and PIT replay."""
 
@@ -935,26 +980,123 @@ class EventLedger:
         )
 
 
+def _resolve_identity_version(
+    data: Mapping[str, Any],
+    *,
+    has_source_id: bool,
+) -> str:
+    if "event_identity_version" in data:
+        version = _required_text(
+            data["event_identity_version"],
+            "event_identity_version",
+        )
+    else:
+        version = (
+            EVENT_IDENTITY_SOURCE_ID_V1
+            if has_source_id
+            else EVENT_IDENTITY_LEGACY
+        )
+    if version not in EVENT_IDENTITY_VERSIONS:
+        raise ValueError("Unknown event identity version")
+    return version
+
+
+def change_event_input_from_payload(payload: Mapping[str, Any]) -> ChangeEventInput:
+    """Parse a serialized ``ChangeEventInput`` fail-closed.
+
+    Replay requests are the only caller.  The payload must round-trip to its
+    canonical policy form so an edited request cannot silently change meaning.
+    """
+
+    if not isinstance(payload, Mapping):
+        raise ValueError("Event input must be an object")
+    data = dict(payload)
+    has_source_id = "source_id" in data
+    identity_version = _resolve_identity_version(
+        data,
+        has_source_id=has_source_id,
+    )
+    if identity_version == EVENT_IDENTITY_LEGACY:
+        if has_source_id:
+            raise ValueError(
+                "Legacy event identity cannot include source_id"
+            )
+    elif not has_source_id:
+        raise ValueError(
+            "Versioned event identity requires source_id"
+        )
+    event = ChangeEventInput(
+        source_event_id=_required_text(data["source_event_id"], "source_event_id"),
+        source_id=_required_text(
+            data.get("source_id", LEGACY_EVENT_SOURCE_ID),
+            "source_id",
+        ),
+        symbol=_required_text(data["symbol"], "symbol"),
+        event_type=_required_text(data["event_type"], "event_type"),
+        detected_at=_required_datetime(
+            datetime.fromisoformat(str(data["detected_at"])),
+            "detected_at",
+        ),
+        available_at=_required_datetime(
+            datetime.fromisoformat(str(data["available_at"])),
+            "available_at",
+        ),
+        effective_at=(
+            _required_datetime(
+                datetime.fromisoformat(str(data["effective_at"])),
+                "effective_at",
+            )
+            if data.get("effective_at")
+            else None
+        ),
+        previous_state=_freeze_state(data.get("previous_state", {}), "previous_state"),
+        current_state=_freeze_state(data.get("current_state", {}), "current_state"),
+        severity=_required_text(data["severity"], "severity"),
+        reason=_required_text(data["reason"], "reason"),
+        evidence_refs=_required_refs(data.get("evidence_refs")),
+        confidence=_required_text(data["confidence"], "confidence"),
+        requires_human_review=_required_bool(
+            data["requires_human_review"],
+            "requires_human_review",
+        ),
+        correction_of_event_id=_optional_text(
+            data.get("correction_of_event_id"),
+            "correction_of_event_id",
+        ),
+        supersedes_event_id=_optional_text(
+            data.get("supersedes_event_id"),
+            "supersedes_event_id",
+        ),
+        namespace=_required_text(data["namespace"], "namespace"),
+        action=str(data.get("action", ACTION_NO_ORDER)),
+        event_identity_version=identity_version,
+    )
+    expected = event.as_policy()
+    candidate = dict(data)
+    if (
+        identity_version == EVENT_IDENTITY_SOURCE_ID_V1
+        and candidate.get("event_identity_version") == EVENT_IDENTITY_SOURCE_ID_V1
+    ):
+        candidate.pop("event_identity_version")
+    if candidate != expected:
+        missing = sorted(set(expected) - set(candidate))
+        extra = sorted(set(candidate) - set(expected))
+        raise ValueError(
+            "Event input payload does not round-trip to its canonical form: "
+            f"missing={missing} extra={extra}"
+        )
+    return event
+
+
 def _change_event_from_payload(payload: Mapping[str, Any]) -> ChangeEvent:
     if not isinstance(payload, Mapping):
         raise ValueError("Event must be an object")
     data = dict(payload)
     has_source_id = "source_id" in data
-    has_identity_version = "event_identity_version" in data
-    identity_version = (
-        _required_text(
-            data["event_identity_version"],
-            "event_identity_version",
-        )
-        if has_identity_version
-        else (
-            EVENT_IDENTITY_SOURCE_ID_V1
-            if has_source_id
-            else EVENT_IDENTITY_LEGACY
-        )
+    identity_version = _resolve_identity_version(
+        data,
+        has_source_id=has_source_id,
     )
-    if identity_version not in EVENT_IDENTITY_VERSIONS:
-        raise ValueError("Unknown event identity version")
     if identity_version == EVENT_IDENTITY_LEGACY:
         if has_source_id:
             raise ValueError(

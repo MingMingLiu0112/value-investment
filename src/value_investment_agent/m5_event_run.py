@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
+import json
 from typing import Any, Mapping, Sequence
 
 from .investment_decision import ACTION_NO_ORDER
@@ -27,6 +28,7 @@ from .m5_event_core import (
     ChangeEventInput,
     EventIngestResult,
     EventLedger,
+    event_ingest_result_from_payload,
     INGEST_ACCEPTED,
     INGEST_CORRECTION_ACCEPTED,
     INGEST_DUPLICATE,
@@ -37,11 +39,17 @@ from .m5_event_core import (
     SEVERITY_CRITICAL,
     _state_digest,
 )
-from .m5_event_dependencies import DependencyGraph, DependencyInvalidation
+from .m5_event_dependencies import (
+    DependencyGraph,
+    DependencyInvalidation,
+    dependency_invalidation_from_payload,
+)
 from .m5_event_outbox import (
+    ALERT_ACKNOWLEDGED,
     EventAlert,
     OutboxLedger,
     alert_type_for_event_type,
+    event_alert_from_payload,
 )
 from .m5_event_watermark import (
     LOCK_ACQUIRED,
@@ -56,14 +64,33 @@ from .m5_event_watermark import (
     TaskLockStore,
     WatermarkLedger,
 )
-from .m5_event_run_state import M5EventBatchRecord, M5EventRunState
-from .m5_event_state_store import M5EventRunStateStore, M5StateStoreConflict
+from .m5_event_run_state import (
+    M5EventBatchRecord,
+    M5EventRunState,
+    m5_event_run_state_from_payload,
+)
+from .m5_event_state_store import (
+    M5EventRunReceiptStore,
+    M5EventRunStateStore,
+    M5ReceiptPublication,
+    M5StateStoreConflict,
+)
+from .m5_run_request import M5EventRunRequest, batch_request_fingerprint
 
 
 RUN_HEALTHY = "HEALTHY"
 RUN_ATTENTION = "ATTENTION"
 RUN_HEALTH_STATUSES = frozenset({RUN_HEALTHY, RUN_ATTENTION})
 DEFAULT_MAX_WATERMARK_AGE = timedelta(minutes=15)
+M5_EVENT_RUN_RECEIPT_SCHEMA = "m5-event-run-receipt-v1"
+RUN_RECEIPT_ARTIFACT_KEYS = frozenset(
+    {
+        "schema_version",
+        "receipt",
+        "receipt_sha256",
+        "audit_fingerprint",
+    }
+)
 
 _ACCEPTED_INGEST_STATUSES = frozenset(
     {
@@ -205,6 +232,47 @@ class M5EventRunReceipt:
         )
         if matching_checkpoints != (self.checkpoint,):
             raise ValueError("Receipt checkpoint no longer matches its run state")
+        self._verify_evidence_binding()
+
+    def _verify_evidence_binding(self) -> None:
+        """Require every verdict and alert to exist in the receipt state."""
+
+        recorded_events = {
+            item.event_id: item.as_policy()
+            for item in self.state.event_ledger.events()
+        }
+        for result in self.ingest_results:
+            event = result.event
+            if event is None or result.status not in _ACCEPTED_INGEST_STATUSES:
+                continue
+            recorded = recorded_events.get(event.event_id)
+            if recorded is None:
+                raise ValueError(
+                    "Receipt ingest verdict is missing from its run state"
+                )
+            if _without_mutable_status(recorded) != _without_mutable_status(
+                event.as_policy()
+            ):
+                raise ValueError(
+                    "Receipt ingest verdict no longer matches its run state"
+                )
+        recorded_alerts = {
+            item.alert_id: item.as_policy()
+            for item in self.state.outbox.alerts()
+        }
+        for alert in self.alerts:
+            recorded = recorded_alerts.get(alert.alert_id)
+            if recorded is None:
+                raise ValueError("Receipt alert is missing from its run state")
+            if recorded != alert.as_policy():
+                raise ValueError(
+                    "Receipt alert no longer matches its run state"
+                )
+        for invalidation in self.invalidations:
+            if invalidation.event_id not in recorded_events:
+                raise ValueError(
+                    "Receipt invalidation is missing from its run state"
+                )
 
     @property
     def active_events(self) -> tuple[ChangeEvent, ...]:
@@ -259,6 +327,166 @@ class M5EventRunReceipt:
             "action": self.action,
         }
 
+    def audit_fingerprint(self) -> str:
+        """Hash the batch facts a retry must reproduce.
+
+        Call-level observations, the ambient run state and mutable outbox
+        delivery fields are deliberately excluded: retrying one request after
+        later batches ran must reproduce the same verdicts, not the same
+        surrounding state.
+        """
+
+        return _state_digest(
+            {
+                "receipt_id": self.receipt_id,
+                "run_id": self.run_id,
+                "batch_id": self.batch_id,
+                "stream_id": self.stream_id,
+                "namespace": self.namespace,
+                "generated_at": self.generated_at.isoformat(),
+                "ingest_results": [
+                    item.as_policy() for item in self.ingest_results
+                ],
+                "invalidations": [
+                    item.as_policy() for item in self.invalidations
+                ],
+                "checkpoint": self.checkpoint.as_policy(),
+                "action": self.action,
+            }
+        )
+
+    def to_artifact_payload(self) -> dict[str, Any]:
+        payload = self.as_policy()
+        return {
+            "schema_version": M5_EVENT_RUN_RECEIPT_SCHEMA,
+            "receipt": payload,
+            "receipt_sha256": _state_digest(payload),
+            "audit_fingerprint": self.audit_fingerprint(),
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(
+            self.to_artifact_payload(),
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=2,
+        )
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "M5EventRunReceipt":
+        """Parse a durable receipt artifact fail-closed."""
+
+        if not isinstance(payload, Mapping):
+            raise ValueError("M5 run receipt artifact must be an object")
+        data = dict(payload)
+        if data.get("schema_version") != M5_EVENT_RUN_RECEIPT_SCHEMA:
+            raise ValueError("Unknown M5 run receipt schema")
+        if set(data) != RUN_RECEIPT_ARTIFACT_KEYS:
+            missing = sorted(RUN_RECEIPT_ARTIFACT_KEYS - set(data))
+            extra = sorted(set(data) - RUN_RECEIPT_ARTIFACT_KEYS)
+            raise ValueError(
+                "M5 run receipt artifact keys do not match the schema: "
+                f"missing={missing} extra={extra}"
+            )
+        receipt_payload = data["receipt"]
+        if not isinstance(receipt_payload, Mapping):
+            raise ValueError("M5 run receipt artifact must embed a receipt")
+        receipt = m5_event_run_receipt_from_payload(receipt_payload)
+        if data["receipt_sha256"] != _state_digest(receipt.as_policy()):
+            raise ValueError(
+                "M5 run receipt artifact hash does not match its receipt"
+            )
+        if data["audit_fingerprint"] != receipt.audit_fingerprint():
+            raise ValueError(
+                "M5 run receipt audit fingerprint does not match its receipt"
+            )
+        return receipt
+
+
+def _without_mutable_status(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Drop the ledger-owned status so a later transition is not a conflict."""
+
+    return {
+        key: value for key, value in payload.items() if key != "status"
+    }
+
+
+def m5_event_run_receipt_from_payload(
+    payload: Mapping[str, Any],
+) -> M5EventRunReceipt:
+    """Rebuild a receipt from its serialized payload and re-verify it."""
+
+    if not isinstance(payload, Mapping):
+        raise ValueError("M5 run receipt must be an object")
+    data = dict(payload)
+    state_payload = data.get("state")
+    if not isinstance(state_payload, Mapping):
+        raise ValueError("M5 run receipt must embed its run state")
+    state = m5_event_run_state_from_payload(state_payload)
+    checkpoint_payload = data.get("checkpoint")
+    if not isinstance(checkpoint_payload, Mapping):
+        raise ValueError("M5 run receipt must embed its committed checkpoint")
+    checkpoint_id = _required_text(
+        checkpoint_payload.get("checkpoint_id"),
+        "checkpoint_id",
+    )
+    matches = tuple(
+        item
+        for item in state.checkpoints.checkpoints()
+        if item.checkpoint_id == checkpoint_id
+    )
+    if len(matches) != 1:
+        raise ValueError("Receipt checkpoint is missing from its run state")
+    checkpoint = matches[0]
+    if dict(checkpoint_payload) != checkpoint.as_policy():
+        raise ValueError(
+            "Receipt checkpoint payload does not match its run state"
+        )
+    receipt = M5EventRunReceipt(
+        receipt_id=_required_text(data["receipt_id"], "receipt_id"),
+        run_id=_required_text(data["run_id"], "run_id"),
+        batch_id=_required_text(data["batch_id"], "batch_id"),
+        stream_id=_required_text(data["stream_id"], "stream_id"),
+        namespace=_required_text(data["namespace"], "namespace"),
+        generated_at=_required_datetime(
+            datetime.fromisoformat(str(data["generated_at"])),
+            "generated_at",
+        ),
+        ingest_results=tuple(
+            event_ingest_result_from_payload(item)
+            for item in data.get("ingest_results") or ()
+        ),
+        invalidations=tuple(
+            dependency_invalidation_from_payload(item)
+            for item in data.get("invalidations") or ()
+        ),
+        alerts=tuple(
+            event_alert_from_payload(item)
+            for item in data.get("alerts") or ()
+        ),
+        checkpoint=checkpoint,
+        health_status=_required_text(data["health_status"], "health_status"),
+        silent_ok=bool(data["silent_ok"]),
+        review_due=tuple(
+            str(item) for item in data.get("review_due") or ()
+        ),
+        state=state,
+        state_sha256=_required_text(data["state_sha256"], "state_sha256"),
+        idempotent_noop=bool(data.get("idempotent_noop", False)),
+        action=str(data.get("action", ACTION_NO_ORDER)),
+    )
+    expected = receipt.as_policy()
+    if set(data) != set(expected):
+        missing = sorted(set(expected) - set(data))
+        extra = sorted(set(data) - set(expected))
+        raise ValueError(
+            "M5 run receipt keys do not match the schema: "
+            f"missing={missing} extra={extra}"
+        )
+    if data != expected:
+        raise ValueError("M5 run receipt does not round-trip to its canonical form")
+    return receipt
+
 
 def _batch_request_fingerprint(
     *,
@@ -268,17 +496,12 @@ def _batch_request_fingerprint(
     graph: DependencyGraph,
     direct_kinds_by_source_event_id: Mapping[str, Sequence[str]],
 ) -> str:
-    return _state_digest(
-        {
-            "events": [event.as_policy() for event in events],
-            "observed_times": [item.isoformat() for item in observed_times],
-            "watermark": watermark.as_policy(),
-            "dependency_graph": graph.as_policy(),
-            "direct_kinds_by_source_event_id": {
-                key: list(value)
-                for key, value in sorted(direct_kinds_by_source_event_id.items())
-            },
-        }
+    return batch_request_fingerprint(
+        events=events,
+        observed_times=observed_times,
+        watermark=watermark,
+        graph=graph,
+        direct_kinds_by_source_event_id=direct_kinds_by_source_event_id,
     )
 
 
@@ -369,9 +592,15 @@ def _alerts_for_batch(
 
 
 def _active_alerts(state: M5EventRunState) -> tuple[EventAlert, ...]:
-    terminal = {"ACKNOWLEDGED", "FAILED_TERMINAL"}
+    """Return alerts whose outcome is not yet settled by a human.
+
+    ``FAILED_TERMINAL`` means the notification never reached a human, so it
+    must keep the run in ``ATTENTION`` instead of quietly returning HEALTHY.
+    """
+
+    settled = {ALERT_ACKNOWLEDGED}
     return tuple(
-        item for item in state.outbox.alerts() if item.status not in terminal
+        item for item in state.outbox.alerts() if item.status not in settled
     )
 
 
@@ -845,3 +1074,126 @@ def run_event_batch_persisted(
         state=receipt.state,
     )
     return receipt
+
+
+@dataclass(frozen=True)
+class M5RunApplicationResult:
+    """Outcome of applying one pinned run request."""
+
+    request_id: str
+    receipt: M5EventRunReceipt
+    publication: M5ReceiptPublication | None
+    replayed: bool
+    action: str = ACTION_NO_ORDER
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "request_id",
+            _required_text(self.request_id, "request_id"),
+        )
+        if not isinstance(self.receipt, M5EventRunReceipt):
+            raise ValueError("result must embed an M5EventRunReceipt")
+        if self.publication is not None:
+            if not isinstance(self.publication, M5ReceiptPublication):
+                raise ValueError(
+                    "publication must be an M5ReceiptPublication"
+                )
+            if self.publication.receipt_id != self.receipt.receipt_id:
+                raise ValueError(
+                    "Receipt publication does not match its receipt"
+                )
+        if self.replayed != self.receipt.idempotent_noop:
+            raise ValueError("Result replay flag must match its receipt")
+        if self.action != ACTION_NO_ORDER:
+            raise ValueError("M5 run application must remain no_order")
+
+    def as_policy(self) -> dict[str, Any]:
+        return {
+            "request_id": self.request_id,
+            "replayed": self.replayed,
+            "receipt_id": self.receipt.receipt_id,
+            "audit_fingerprint": self.receipt.audit_fingerprint(),
+            "state_sha256": self.receipt.state_sha256,
+            "state_revision": self.receipt.state.revision,
+            "health_status": self.receipt.health_status,
+            "silent_ok": self.receipt.silent_ok,
+            "publication": (
+                None
+                if self.publication is None
+                else {
+                    "status": self.publication.status,
+                    "artifact_sha256": self.publication.artifact_sha256,
+                    "path": self.publication.path,
+                }
+            ),
+            "action": self.action,
+        }
+
+
+def apply_run_request(
+    *,
+    request: M5EventRunRequest,
+    store: M5EventRunStateStore,
+    receipt_store: M5EventRunReceiptStore | None = None,
+    lock_store: TaskLockStore | None = None,
+) -> M5RunApplicationResult:
+    """Apply one pinned request once, then publish its durable receipt.
+
+    Retries are safe in both crash windows.  Before the state commit nothing is
+    persisted, so the retry applies the batch exactly once.  After the commit
+    the batch record makes the retry an idempotent replay that reuses the first
+    verdicts, and the write-once receipt store republishes only an identical
+    audit fingerprint.
+    """
+
+    if not isinstance(request, M5EventRunRequest):
+        raise ValueError("request must be an M5EventRunRequest")
+    request.verify()
+    current = store.load(state_key=request.stream_id)
+    seed = (
+        M5EventRunState.empty(
+            state_key=request.stream_id,
+            namespace=request.namespace,
+        )
+        if current is None and request.stream_id != request.run_id
+        else None
+    )
+    receipt = run_event_batch_persisted(
+        events=request.events,
+        observed_times=request.observed_times,
+        watermark=request.watermark,
+        graph=request.dependency_graph,
+        run_id=request.run_id,
+        generated_at=request.generated_at,
+        store=store,
+        namespace=request.namespace,
+        direct_kinds_by_source_event_id=request.direct_kinds_by_source_event_id,
+        state=seed,
+        batch_id=request.batch_id,
+        lock_store=lock_store,
+    )
+    record = next(
+        (
+            item
+            for item in receipt.state.batch_records
+            if item.batch_id == request.batch_id
+        ),
+        None,
+    )
+    if (
+        record is None
+        or record.request_fingerprint != request.request_fingerprint()
+    ):
+        raise ValueError("Applied batch does not match the pinned run request")
+    publication = (
+        None
+        if receipt_store is None
+        else receipt_store.publish(receipt=receipt, request=request)
+    )
+    return M5RunApplicationResult(
+        request_id=request.request_id,
+        receipt=receipt,
+        publication=publication,
+        replayed=receipt.idempotent_noop,
+    )

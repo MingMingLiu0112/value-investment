@@ -36,6 +36,10 @@ from .m5_event_core import (
     SEVERITY_HIGH,
     SEVERITY_MEDIUM,
     ChangeEventInput,
+    _required_bool,
+    _required_text,
+    _optional_text,
+    change_event_input_from_payload,
 )
 from .m5_event_dependencies import (
     DEPENDENCY_KINDS,
@@ -259,6 +263,8 @@ class MaterialityDecisionPlan:
     severity: str
     confidence: str
     reason: str
+    supersedes_event_id: str | None = None
+    event_cluster_id: str | None = None
     action: str = ACTION_NO_ORDER
 
     def __post_init__(self) -> None:
@@ -281,6 +287,31 @@ class MaterialityDecisionPlan:
             raise ValueError("Actionable materiality decisions require M5 effects")
         if self.event is not None and self.event.symbol != self.symbol:
             raise ValueError("Materiality event symbol does not match the plan")
+        object.__setattr__(
+            self,
+            "supersedes_event_id",
+            _optional_text(self.supersedes_event_id, "supersedes_event_id"),
+        )
+        object.__setattr__(
+            self,
+            "event_cluster_id",
+            _optional_text(self.event_cluster_id, "event_cluster_id"),
+        )
+        if self.event is not None:
+            if (
+                self.event.current_state.get("supersedes_event_id")
+                != self.supersedes_event_id
+            ):
+                raise ValueError(
+                    "Materiality plan supersedes target does not match its event"
+                )
+            if (
+                self.event.current_state.get("event_cluster_id")
+                != self.event_cluster_id
+            ):
+                raise ValueError(
+                    "Materiality plan event cluster does not match its event"
+                )
 
     def as_policy(self) -> dict[str, Any]:
         return {
@@ -288,6 +319,8 @@ class MaterialityDecisionPlan:
             "symbol": self.symbol,
             "human_decision": self.human_decision,
             "silent": self.silent,
+            "supersedes_event_id": self.supersedes_event_id,
+            "event_cluster_id": self.event_cluster_id,
             "event": self.event.as_policy() if self.event else None,
             "direct_kinds": list(self.direct_kinds),
             "severity": self.severity,
@@ -295,6 +328,58 @@ class MaterialityDecisionPlan:
             "reason": self.reason,
             "action": self.action,
         }
+
+
+def materiality_decision_plan_from_payload(
+    payload: Mapping[str, Any],
+) -> MaterialityDecisionPlan:
+    """Parse one serialized materiality plan fail-closed."""
+
+    if not isinstance(payload, Mapping):
+        raise ValueError("Materiality decision plan must be an object")
+    data = dict(payload)
+    event_payload = data.get("event")
+    plan = MaterialityDecisionPlan(
+        decision_id=_required_text(data["decision_id"], "decision_id"),
+        symbol=_required_text(data["symbol"], "symbol"),
+        human_decision=_required_text(data["human_decision"], "human_decision"),
+        silent=_required_bool(data["silent"], "silent"),
+        event=(
+            None
+            if event_payload is None
+            else change_event_input_from_payload(event_payload)
+        ),
+        direct_kinds=tuple(str(item) for item in data.get("direct_kinds") or ()),
+        severity=_required_text(data["severity"], "severity"),
+        confidence=_required_text(data["confidence"], "confidence"),
+        reason=_required_text(data["reason"], "reason"),
+        supersedes_event_id=_optional_text(
+            data.get("supersedes_event_id"),
+            "supersedes_event_id",
+        ),
+        event_cluster_id=_optional_text(
+            data.get("event_cluster_id"),
+            "event_cluster_id",
+        ),
+        action=str(data.get("action", ACTION_NO_ORDER)),
+    )
+    if set(data) != set(plan.as_policy()):
+        raise ValueError("Materiality decision plan keys do not match the schema")
+    if plan.silent != (plan.human_decision in SILENT_MATERIALITY_DECISIONS):
+        raise ValueError(
+            "Materiality plan silence does not match its human decision"
+        )
+    if plan.event is not None:
+        declared = tuple(
+            str(item)
+            for item in plan.event.current_state.get("direct_dependency_kinds")
+            or ()
+        )
+        if declared != tuple(plan.direct_kinds):
+            raise ValueError(
+                "Materiality plan dependency kinds do not match its event payload"
+            )
+    return plan
 
 
 @dataclass(frozen=True)
@@ -360,6 +445,54 @@ class MaterialityBridgeBatch:
             indent=2,
         )
 
+    @classmethod
+    def from_payload(
+        cls,
+        payload: Mapping[str, Any],
+    ) -> "MaterialityBridgeBatch":
+        """Parse a serialized bridge batch fail-closed.
+
+        The payload must round-trip to its canonical form, so a hand-edited
+        bridge artifact cannot silently change a human materiality verdict.
+        """
+
+        if not isinstance(payload, Mapping):
+            raise ValueError("Materiality bridge batch must be an object")
+        data = dict(payload)
+        if data.get("schema_version") != MATERIALITY_BRIDGE_SCHEMA:
+            raise ValueError("Unknown materiality bridge schema")
+        coverage_through = _required_text(
+            data["coverage_through"],
+            "coverage_through",
+        )
+        datetime.fromisoformat(coverage_through)
+        batch = cls(
+            review_id=_required_text(data["review_id"], "review_id"),
+            symbol=_required_text(data["symbol"], "symbol"),
+            schema_version=MATERIALITY_BRIDGE_SCHEMA,
+            namespace=_required_text(data["namespace"], "namespace"),
+            coverage_through=coverage_through,
+            plans=tuple(
+                materiality_decision_plan_from_payload(item)
+                for item in data.get("plans") or ()
+            ),
+            action=str(data.get("action", ACTION_NO_ORDER)),
+        )
+        expected = batch.as_policy()
+        if set(data) != set(expected):
+            missing = sorted(set(expected) - set(data))
+            extra = sorted(set(data) - set(expected))
+            raise ValueError(
+                "Materiality bridge batch keys do not match the schema: "
+                f"missing={missing} extra={extra}"
+            )
+        if data != expected:
+            raise ValueError(
+                "Materiality bridge batch does not round-trip to its "
+                "canonical form"
+            )
+        return batch
+
 
 def build_materiality_bridge_batch(
     review: EventMaterialityReview,
@@ -397,6 +530,8 @@ def build_materiality_bridge_batch(
                 f"human_event_materiality={item.human_decision}; "
                 f"candidate_reason={item.machine_candidate_reason}"
             ),
+            supersedes_event_id=item.supersedes_event_id,
+            event_cluster_id=item.event_cluster_id,
         )
         for item in review.decisions
     )
