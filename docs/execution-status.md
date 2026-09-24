@@ -10,6 +10,9 @@
 “有效的仓库外私有根可以加密/读取”。这只是测试夹具纠偏：生产路径仍 fail-closed，不读取
 真实私人数据，不改变 M4/M5/M6/M7 状态，且保持 `action=no_order`。
 
+提交 `28c3826` 的 GitHub Actions [Core Research Gates #99](https://github.com/MingMingLiu0112/value-investment/actions/runs/36071527041)
+也已在 Linux / Python 3.12 成功；该 CI 是 workflow 覆盖范围内的独立验证，不替代上述全量本地回归。
+
 ## 2026-09-25 Core Research Gates 跨平台修复已验证
 
 此前 GitHub `offline-core` 在 Linux / Python 3.12 发现私有根边界测试没有构造真实 Git
