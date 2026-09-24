@@ -266,15 +266,20 @@ def _overview(packet: Mapping[str, Any], wb: Workbook) -> None:
     row = 4
     row = _label_value(ws, row, "数据时点", str(packet["as_of"]), 2)
     row = _label_value(ws, row, "生成时间", str(packet["generated_at"]), 2)
+    m2 = packet["m2"]
+    verified = m2.get("verified_symbols") or []
+    verification_summary = (
+        f"M2 Verification v2 已对 18 条预注册 LEAD 完成真实二阶段 resolution："
+        f"{m2['verified_count']} 条进入深研、{m2['rejected_count']} 条否决、"
+        f"{m2['insufficient_count']} 条证据不足。"
+    )
     row = _label_value(
         ws,
         row,
         "今日新发现",
-        "M2 二阶段验证完成 18 条预注册 LEAD；3 条进入深研队列。M5 仅新增 1 条公告待人工复核。",
+        verification_summary,
         2,
     )
-    m2 = packet["m2"]
-    verified = m2.get("verified_symbols") or []
     row = _label_value(
         ws,
         row,
@@ -314,7 +319,12 @@ def _overview(packet: Mapping[str, Any], wb: Workbook) -> None:
     _style(ws.cell(row, 1, "结论"), fill=ORANGE_FILL, bold=True)
     ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=2)
     _style(
-        ws.cell(row, 2, "3 个深研候选不等于 3 个买入目标；当前无任何可用订单。"),
+        ws.cell(
+            row,
+            2,
+            f"{m2['verified_count']} 个深研候选不等于 "
+            f"{m2['verified_count']} 个买入目标；当前无任何可用订单。",
+        ),
         fill=ORANGE_FILL,
         bold=True,
     )
@@ -420,13 +430,25 @@ def _candidate_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
     )
     m2 = packet["m2"]
     summary = (
-        f"LEAD {m2['lead_count']} | 进入深研 {m2['verified_count']} | "
-        f"通道否决 {m2['rejected_count']} | 证据不足 {m2['insufficient_count']} | "
-        f"不支持 {m2['unsupported_count']}"
+        f"LEAD {m2['lead_count']} | VERIFIED {m2['verified_count']} | "
+        f"REJECTED {m2['rejected_count']} | "
+        f"INSUFFICIENT {m2['insufficient_count']} | "
+        f"UNSUPPORTED {m2['unsupported_count']}"
     )
     ws.merge_cells(start_row=4, start_column=1, end_row=4, end_column=6)
     _style(ws.cell(4, 1, summary), fill=ORANGE_FILL, bold=True)
-    row = _header(ws, 6, ["证券代码", "公司", "通道", "二阶段结论", "原因", "证据数"])
+    channel_resolutions = m2.get("verification_channel_counts") or {}
+    resolution_parts = []
+    for channel in ("quality", "dividend_cash_return", "value", "cyclical"):
+        counts = channel_resolutions.get(channel) or {}
+        resolution_parts.append(
+            f"{CHANNEL_LABELS.get(channel, channel)} "
+            f"验证 {counts.get('verified', 0)} / 否决 {counts.get('rejected', 0)} / "
+            f"不足 {counts.get('insufficient', 0)}"
+        )
+    ws.merge_cells(start_row=5, start_column=1, end_row=5, end_column=6)
+    _style(ws.cell(5, 1, " | ".join(resolution_parts)), fill=GREY, bold=True)
+    row = _header(ws, 7, ["证券代码", "公司", "通道", "二阶段结论", "原因", "证据数"])
     for item in m2["rows"]:
         status = str(item.get("status") or "")
         fill = VERIFICATION_FILLS.get(status, WHITE)

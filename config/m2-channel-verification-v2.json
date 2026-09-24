@@ -1,0 +1,201 @@
+{
+  "schema_version": "m2-channel-verification-policy-v2",
+  "policy_version": "20260924-v2",
+  "as_of": "2026-09-23",
+  "action": "no_order",
+  "ac8_report_path": "runtime/m2-ac8-research-reports-20260924-v1/report.json",
+  "ac8_report_sha256": "dd55c02c75dec17ff766fa6b6ae529030d02a31376b305c02ddd0a8f5443c8a6",
+  "ac9_audit_report_path": "runtime/m2-ac9-coverage-audit-20260923-v2/report.json",
+  "ac9_audit_report_sha256": "3c30936a6e567bd55b8d03bf67163071c49d223ca10def66b93fcdc336a84695",
+  "m2_receipt_path": "runtime/m2-live-20260923-v3/receipt.json",
+  "m2_receipt_sha256": "869044a72c514be2d274308383c4479f7536bb393bfbf5ca10e492eee24bc220",
+  "financial_points_path": "runtime/m2-live-20260923-v3/retained-financial-points.json",
+  "financial_points_sha256": "d0c6184cd5a878997c7065488168519ac55c11fdda7ef45549872c6faeeb12ca",
+  "dividend_path": "runtime/m2-live-20260923-v3/eastmoney-dividends.json",
+  "dividend_sha256": "41888fcd8339eef12fb963c963b2cbe4e7f0ed90196e9547266c30a0b0a7f19f",
+  "minimum_second_stage_resolutions": 3,
+  "minimum_channels": 2,
+  "minimum_confidence": "LOW",
+  "channel_policies": {
+    "quality": {
+      "policy_version": "quality-verification-v2-20260924",
+      "profile_constraint": "non-financial supported profile; financial institutions require a dedicated profile",
+      "minimum_complete_fiscal_years": 3,
+      "required_checks": [
+        {
+          "id": "quality_profitability_history",
+          "label": "多财年 ROE",
+          "description": "至少三个完整财年的可追溯 ROE，单期高 ROE 不得通过。",
+          "minimum_periods": 3,
+          "required_fields": ["roe"]
+        },
+        {
+          "id": "quality_capital_return_history",
+          "label": "多财年 ROIC 或适用替代",
+          "description": "至少三个完整财年的资本回报证据。",
+          "minimum_periods": 3,
+          "any_of_fields": ["roic"]
+        },
+        {
+          "id": "quality_cash_conversion",
+          "label": "多财年经营现金转换",
+          "description": "经营现金流及现金转换率需要覆盖至少三个完整财年。",
+          "minimum_periods": 3,
+          "required_fields": ["operating_cash_flow", "operating_cash_flow_to_net_income"]
+        },
+        {
+          "id": "quality_balance_sheet",
+          "label": "多财年资产负债表质量",
+          "description": "负债率及有息负债或总负债需要覆盖至少三个完整财年。",
+          "minimum_periods": 3,
+          "required_fields": ["debt_ratio"],
+          "any_of_fields": ["interest_bearing_debt", "total_liabilities"]
+        }
+      ],
+      "normalization_requirements": [],
+      "blocking_negative_fields": ["free_cash_flow", "operating_cash_flow", "net_income"],
+      "blocking_counter_keywords": ["现金流质量恶化", "利润含金量不足", "会计政策异常"],
+      "evidence_freshness_days": 540
+    },
+    "dividend_cash_return": {
+      "policy_version": "dividend-verification-v2-20260924",
+      "profile_constraint": "ordinary cash dividend history required; special dividends cannot be annualized",
+      "minimum_complete_fiscal_years": 3,
+      "required_checks": [
+        {
+          "id": "dividend_paid_history",
+          "label": "已宣告普通股息历史",
+          "description": "至少三个完整财年的普通现金股息记录，特别股息不得替代。",
+          "minimum_periods": 3,
+          "required_fields": ["cash_dividend_per_share"]
+        },
+        {
+          "id": "dividend_cfo_coverage",
+          "label": "经营现金流覆盖",
+          "description": "至少三个完整财年的经营现金流覆盖派息。",
+          "minimum_periods": 3,
+          "required_fields": ["operating_cash_flow"]
+        },
+        {
+          "id": "dividend_fcf_coverage",
+          "label": "自由现金流覆盖",
+          "description": "至少三个完整财年的自由现金流覆盖派息。",
+          "minimum_periods": 3,
+          "required_fields": ["free_cash_flow"]
+        },
+        {
+          "id": "dividend_payout_and_yield",
+          "label": "派息率与当前收益率",
+          "description": "现金转换率和当前宣告收益率必须可核验。",
+          "minimum_periods": 3,
+          "required_fields": ["operating_cash_flow_to_net_income"],
+          "required_metrics": ["declared_yield"]
+        },
+        {
+          "id": "dividend_balance_sheet",
+          "label": "派息能力与负债资本强度",
+          "description": "负债率与有息负债需要覆盖至少三个完整财年。",
+          "minimum_periods": 3,
+          "required_fields": ["debt_ratio", "interest_bearing_debt"]
+        }
+      ],
+      "normalization_requirements": ["normalized_dividend_per_share"],
+      "blocking_negative_fields": ["free_cash_flow", "operating_cash_flow"],
+      "blocking_counter_keywords": ["特别股息", "一次性现金", "股息不可持续"],
+      "evidence_freshness_days": 540
+    },
+    "value": {
+      "policy_version": "value-verification-v2-20260924",
+      "profile_constraint": "general non-financial value profile; financial institutions require a dedicated profile",
+      "minimum_complete_fiscal_years": 3,
+      "required_checks": [
+        {
+          "id": "value_cash_earnings",
+          "label": "多财年现金收益",
+          "description": "净利润和经营现金流需要覆盖至少三个完整财年。",
+          "minimum_periods": 3,
+          "required_fields": ["net_income", "operating_cash_flow"]
+        },
+        {
+          "id": "value_fcf_or_replacement",
+          "label": "多财年自由现金流或适用替代",
+          "description": "至少三个完整财年的自由现金流证据。",
+          "minimum_periods": 3,
+          "required_fields": ["free_cash_flow"]
+        },
+        {
+          "id": "value_normalized_earnings",
+          "label": "多财年正常化收益",
+          "description": "正常化收益历史不得缺失或猜测。",
+          "minimum_periods": 3,
+          "required_fields": ["normalized_earnings"]
+        },
+        {
+          "id": "value_balance_sheet",
+          "label": "资产负债表质量",
+          "description": "负债率及有息负债或总负债需要覆盖至少三个完整财年。",
+          "minimum_periods": 3,
+          "required_fields": ["debt_ratio"],
+          "any_of_fields": ["interest_bearing_debt", "total_liabilities"]
+        },
+        {
+          "id": "value_market_metrics",
+          "label": "估值线索与市场指标",
+          "description": "PE 和 PB 只能作为线索，不构成低估证据。",
+          "minimum_periods": 1,
+          "required_metrics": ["pe_ttm", "pb"]
+        }
+      ],
+      "normalization_requirements": ["normalized_earnings"],
+      "blocking_negative_fields": ["free_cash_flow", "operating_cash_flow"],
+      "blocking_counter_keywords": ["低 PE", "低 PB", "单一估值指标"],
+      "evidence_freshness_days": 540
+    },
+    "cyclical": {
+      "policy_version": "cyclical-verification-v2-20260924",
+      "profile_constraint": "current low PE cannot imply cheap without mid-cycle normalized evidence",
+      "minimum_complete_fiscal_years": 3,
+      "required_checks": [
+        {
+          "id": "cyclical_current_margin",
+          "label": "多财年当前利润率",
+          "description": "当前利润率的周期位置需要多财年证据。",
+          "minimum_periods": 3,
+          "required_fields": ["net_margin"]
+        },
+        {
+          "id": "cyclical_normalized_earnings",
+          "label": "多财年正常化盈利区间",
+          "description": "缺少正常化盈利不得判断当前低 PE 是否为周期顶部。",
+          "minimum_periods": 3,
+          "required_fields": ["normalized_earnings"]
+        },
+        {
+          "id": "cyclical_cycle_position",
+          "label": "周期位置证据",
+          "description": "当前相对正常化 ROE 或正常化收益至少有一项。",
+          "minimum_periods": 1,
+          "any_of_metrics": ["normalized_earnings", "current_vs_normalized_roe"]
+        },
+        {
+          "id": "cyclical_cash_flow_and_debt",
+          "label": "现金流、资本开支与负债",
+          "description": "经营现金流与负债率需要覆盖至少三个完整财年。",
+          "minimum_periods": 3,
+          "required_fields": ["operating_cash_flow", "debt_ratio"]
+        },
+        {
+          "id": "cyclical_dividend",
+          "label": "当前或正常化股息",
+          "description": "适用时需要至少三个完整财年的股息记录。",
+          "minimum_periods": 3,
+          "any_of_fields": ["cash_dividend_per_share", "normalized_dividend_per_share"]
+        }
+      ],
+      "normalization_requirements": ["normalized_earnings"],
+      "blocking_negative_fields": ["free_cash_flow", "operating_cash_flow"],
+      "blocking_counter_keywords": ["周期顶部", "盈利峰值", "供给过剩"],
+      "evidence_freshness_days": 540
+    }
+  }
+}

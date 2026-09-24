@@ -26,13 +26,46 @@ def _packet() -> dict:
         "m2": {
             "status": "PENDING_HUMAN_REVIEW",
             "acceptance_status": "CHECKPOINT_A_READY_FOR_HUMAN_RESUBMISSION",
+            "verification_version": "v2",
+            "v1_status": "SEMANTICALLY_SUPERSEDED",
+            "pit_status": "PASS",
             "lead_count": 18,
-            "verified_count": 3,
+            "verified_count": 0,
             "rejected_count": 13,
-            "insufficient_count": 2,
+            "insufficient_count": 5,
             "unsupported_count": 0,
-            "verified_symbols": ["002327", "002867", "600011"],
-            "verified_channels": ["dividend_cash_return"],
+            "verified_symbols": [],
+            "verified_channels": [],
+            "verification_channel_counts": {
+                "quality": {
+                    "total_leads": 0,
+                    "verified": 0,
+                    "rejected": 0,
+                    "insufficient": 0,
+                    "unsupported": 0,
+                },
+                "dividend_cash_return": {
+                    "total_leads": 6,
+                    "verified": 0,
+                    "rejected": 3,
+                    "insufficient": 3,
+                    "unsupported": 0,
+                },
+                "value": {
+                    "total_leads": 6,
+                    "verified": 0,
+                    "rejected": 5,
+                    "insufficient": 1,
+                    "unsupported": 0,
+                },
+                "cyclical": {
+                    "total_leads": 6,
+                    "verified": 0,
+                    "rejected": 5,
+                    "insufficient": 1,
+                    "unsupported": 0,
+                },
+            },
             "channel_counts": {
                 "quality": 0,
                 "dividend_cash_return": 50,
@@ -62,17 +95,41 @@ def _packet() -> dict:
                     "symbol": "002327",
                     "name": "富安娜",
                     "channel": "dividend_cash_return",
-                    "status": "VERIFIED_FOR_DEEP_RESEARCH",
-                    "reason": "股息通道二阶段证据通过，进入深研队列，不是估值或 BUY。",
+                    "status": "INSUFFICIENT_EVIDENCE",
+                    "reason": "股息通道仍缺多财年普通股息、自由现金流覆盖与可持续性证据。",
                     "evidence_count": 16,
+                },
+                {
+                    "symbol": "002867",
+                    "name": "周大生",
+                    "channel": "dividend_cash_return",
+                    "status": "INSUFFICIENT_EVIDENCE",
+                    "reason": "普通股息与特别股息不可归一为多年可持续股息。",
+                    "evidence_count": 18,
                 },
                 {
                     "symbol": "600011",
                     "name": "华能国际",
                     "channel": "dividend_cash_return",
-                    "status": "REJECTED_AFTER_VERIFICATION",
-                    "reason": "二阶段证据不满足该通道。",
+                    "status": "INSUFFICIENT_EVIDENCE",
+                    "reason": "股息覆盖与正常化现金回报仍缺必要财年证据。",
                     "evidence_count": 14,
+                },
+                {
+                    "symbol": "000913",
+                    "name": "钱江摩托",
+                    "channel": "cyclical",
+                    "status": "REJECTED_AFTER_VERIFICATION",
+                    "reason": "低 PE/PB 不能替代正常化盈利与周期位置证据。",
+                    "evidence_count": 36,
+                },
+                {
+                    "symbol": "000151",
+                    "name": "中成股份",
+                    "channel": "value",
+                    "status": "INSUFFICIENT_EVIDENCE",
+                    "reason": "正常化收益与资产负债表质量证据不足。",
+                    "evidence_count": 0,
                 },
             ],
         },
@@ -193,14 +250,14 @@ def test_overview_is_explicitly_fail_closed_and_no_order(tmp_path: Path):
     workbook = load_workbook(tmp_path / "daily.xlsx", data_only=True)
     text = _all_text(workbook)
 
-    assert "3 个深研候选不等于 3 个买入目标" in text
+    assert "0 个深研候选不等于 0 个买入目标" in text
     assert "当前无任何可用订单" in text
     assert "0 条。当前没有 BUY / ADD 复核可进入" in text
     assert "真实 IPS / 持仓尚未由用户提供" in text
     for forbidden in ("建议买入", "建议加仓", "目标仓位", "下单"):
         assert forbidden not in text
     assert receipt["action"] == ACTION_NO_ORDER
-    assert receipt["summary"]["m2_verified_for_deep_research"] == 3
+    assert receipt["summary"]["m2_verified_for_deep_research"] == 0
     assert receipt["summary"]["m5_new_pending_reviews"] == 1
 
 
@@ -246,6 +303,27 @@ def test_decision_and_position_sheets_fail_closed(tmp_path: Path):
     assert "NOT_APPROVED_YET" in decision_text
     assert "PENDING_USER_PRIVATE_INPUT" in position_text
     assert "0。只有有效的 MANUAL_BUY_REVIEW / MANUAL_ADD_REVIEW" in position_text
+
+
+def test_candidate_sheet_exposes_v2_zero_verified_resolutions(tmp_path: Path):
+    packet = _packet()
+    write_daily_workbench(
+        packet,
+        output=tmp_path / "daily.xlsx",
+        root=tmp_path,
+    )
+    workbook = load_workbook(tmp_path / "daily.xlsx", data_only=True)
+    candidate = workbook[VISIBLE_SHEETS[2]]
+    text = _all_text(workbook)
+
+    assert "LEAD 18 | VERIFIED 0 | REJECTED 13 | INSUFFICIENT 5 | UNSUPPORTED 0" in text
+    assert "质量 验证 0 / 否决 0 / 不足 0" in text
+    assert "股息/现金回报 验证 0 / 否决 3 / 不足 3" in text
+    assert "价值 验证 0 / 否决 5 / 不足 1" in text
+    assert "周期 验证 0 / 否决 5 / 不足 1" in text
+    assert candidate["D8"].value == "证据不足"
+    assert candidate["D11"].value == "通道否决"
+    assert "3 个深研候选" not in text
 
 
 def test_manifest_is_written_with_hash_and_sheet_receipt(tmp_path: Path):

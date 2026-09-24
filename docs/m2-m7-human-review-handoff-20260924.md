@@ -1,59 +1,61 @@
 # M2-M7 人工复核交接清单：2026-09-24
 
-更新：2026-09-24。本文件只汇总用户本人需要确认的事项，不代表任何 Checkpoint
-已经签收。所有机器产物固定 `action=no_order`，真实 IPS、持仓、现金和生产操作仍
-需要用户单独提供或授权。
+更新：2026-09-24，M2 Verification v2 / Checkpoint A 重提。本文件只汇总用户本人
+需要确认的事项，不代表任何 Checkpoint 已经签收。所有机器产物固定
+`action=no_order`，真实 IPS、持仓、现金和生产操作仍需要用户单独提供或授权。
 
 ## 1. 本轮机器验收
 
-以下审计均按当前仓库真实文件重新计算，审计收据位于 `runtime/`，公开仓库不提交
-私人数据。
+以下审计均按当前仓库真实文件重新计算。运行时收据位于 `runtime/`，公开仓库不提交
+私人数据。M2 Verification v1 已标记 `SEMANTICALLY_SUPERSEDED`，不得再引用旧的
+“3 个 VERIFIED”结论。
 
 | 审计 | 机器结果 | 仅剩人工项 | 收据 SHA-256 |
 | --- | --- | --- | --- |
-| M2 全市场机会发现 | AC1-AC7、AC11 `DONE`；AC8-AC10、AC12 `PENDING_HUMAN_REVIEW` | 实质研究/否决报告、分层抽样、原工作簿可用性 | `2fb22e04f38c0ef5563429bf289804769c36c21eac394f13d0b38d992b11a878` |
+| M2 Verification v2 | `MACHINE_CHECKS_PASS`；`PIT=PASS`；v1 已语义替代 | 18 条 LEAD 的 0 / 13 / 5 resolution 语义复核 | report `310d56e408655c7c46ef510a4ce3aab44d99ab9aeb021c9ddd41f140a2fb1653` |
+| M2 Verification v2 manifest | `CHECKPOINT_A_READY_FOR_HUMAN_RESUBMISSION` | 不替用户签 Checkpoint A | `520d175d5a7696b970c091c88be9e8b5996a7627a58828594671f524e360aabe` |
 | M3 决策卡 | m3c1-m3c6 `DONE`；m3c7 人工 | 三张负向卡理解与 Checkpoint B | `755c2ec01a21cf357de212014c9d3e11cf35f0595802814d24182c7a77069429` |
 | M3 原工作簿候选 | owc1-owc6 `DONE`；owc7 人工 | 决策复核页阅读与 Checkpoint B 边界 | `9a083e943685cdb5c29802b430f414b5b11b15764314e7f230b09acdc421fef6` |
 | M3 历史链叠加 | hoc1-hoc6 `DONE`；hoc7 人工 | 模拟历史边界与 Checkpoint B 边界 | `5e56c6e18668e9b5c345a839f85d22afc5e548c9a855ecce09f9ffcf1fee508c` |
 | M6 运营预检 | 工程 `DONE`；运营 `NOT_STARTED` | 真实恢复演练、20 连续会话、1 真实事件、生产授权 | `cf079a92d93690ad60f717d4ef177237dfe5083507da86eb0b592515f87cc43f` |
-
-M2 收据来自 2026-09-24 的完整复算，包含本地全量回归
-`2369 passed、6 skipped、0 failed`；AC1 与 AC6 已由真实运行证据确认，不再因
-审计器未内嵌测试结果而显示 `PARTIAL`。
-M3 三份收据同样由当天复算生成：决策卡定向回归 `35 passed`、原工作簿
-`7 passed`、历史链 `11 passed`，机器项均 `DONE`，仅剩 Checkpoint B 人工项。
-
-M5 人工队列复核结果：24 条当前候选中 23 条与旧人工判断的公告 ID 和 PDF Hash
-一致，已 `CARRY_FORWARD_PRIOR_HUMAN_DECISION`；仅 1 条新公告需要人工看，
-无 Hash 冲突、无错误继承。新公告为 600887 伊利股份
-`1225578520`，标题为“关于2023年持股计划（第三期）完成股票购买的公告”。
-
-M7 Daily v2 的 WPS 只读复核仍为 `passed`，可见页 10 个、隐藏页 2 个，canonical
-工作簿未变化。
 
 ## 2. M2 Checkpoint A：用户要确认什么
 
 打开 WPS 云盘 `价投跟踪` 文件夹中的：
 
 ```text
-A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v2_20260924.xlsx
+A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v3_20260924.xlsx
 ```
 
 候选 SHA-256：
 
 ```text
-8d0ee32b463a2612374504bec8f9e0a55ec411adc00b40cef356a763afb77bf6
+d423ef1ab0114f97e4a20d2f7f770b85e74b3764d6484b63d2fec03c9da82718
 ```
 
+M2 Verification v2 对冻结的 18 条 LEAD 的真实结果：
+
+```text
+VERIFIED_FOR_DEEP_RESEARCH = 0
+REJECTED_AFTER_VERIFICATION = 13
+INSUFFICIENT_EVIDENCE = 5
+UNSUPPORTED = 0
+```
+
+0 个 VERIFIED 是允许且诚实的结果，不代表运行失败，也不代表 A 股没有质量公司。
 最少确认四件事：
 
 1. 在 `01_全市场与数据健康` 能看懂官方 Universe、四通道覆盖和 Quality 覆盖不足。
-2. 在 `02_候选与重点关注` 能区分 `LEAD` 与 `VERIFIED_FOR_DEEP_RESEARCH`，
-   不把候选数当买入数。
-3. 至少阅读一份 `07_公司研究` 中的实质研究或否决报告，能找到正反证据和原因。
+2. 在 `02_候选与重点关注` 能区分 `LEAD`、`VERIFIED`、`REJECTED` 和
+   `INSUFFICIENT`，不把候选数或旧 v1 结论当买入数。
+3. 至少阅读一条 `REJECTED_AFTER_VERIFICATION` 和一条 `INSUFFICIENT_EVIDENCE`，
+   能说明为什么低 PE、高股息或单期数据不足以进入深研队列。
 4. 在 `09_审计与证据` 能抽查一条 Hash 或来源链接，并确认没有 BUY/ADD/仓位列。
 
-完成以上理解后，用户才记录 `Checkpoint A`；Codex 不能代替用户完成这条签收。
+完成以上理解后，用户才记录新的 `Checkpoint A`；Codex 不能代替用户完成这条签收。
+机器重提包位于
+`runtime/m2-checkpoint-a-human-resubmission-20260924-v2/checkpoint-a-packet.json`，
+人工里程碑收据位于同目录 `receipt.json`。
 
 ## 3. M3 Checkpoint B：用户要确认什么
 
@@ -92,24 +94,26 @@ IPS 与投资期限
 
 这些内容不能进入公开 GitHub，应使用用户确认的私有、加密存储。
 
-## 5. M5：用户需要看的一条新公告
+## 5. M5：1225578520 已记录为 NOT_MATERIAL
 
-新公告：
+人工材料性结论：
 
 ```text
 symbol=600887
 announcement_id=1225578520
+human_decision=NOT_MATERIAL
 PDF SHA-256=7c669db8bb3b5a362ecad92c6a96745a3b5039a3288f5e13b498e9e72971111c
 本地路径=runtime/m5-disclosure-review-20260923T213249Z/600887/announcements/2026-09-24/1225578520.pdf
 ```
 
-其余 23 条公告已按公告 ID 和 PDF Hash 复用旧人工判断，用户不需要重新审核。
+该结论只表示这条员工持股计划购买完成公告不要求当前估值、模型有效性、股息可持续性
+或价格吸引力立即重算。它不表示伊利是买入目标，也不表示 M5 持续事件监控已经通过。
 
 ## 6. M6 / M7：当前不签收
 
 M6 只有在前序产品验收、真实恢复演练、20 个连续真实交易会话和至少 1 个真实
 财务/资本事件完成后，并在用户对生产迁移、调度、通知、资源和回退方案单独授权
-后，才能开始运营。M7 的最终交付签收必须在 M6 通过后进行。
+后，才能开始运营。M7 的最终交付签收必须在 M6 通过后由用户在常用设备实际操作确认。
 
 ## 7. 本轮不做什么
 
@@ -119,7 +123,7 @@ M6 只有在前序产品验收、真实恢复演练、20 个连续真实交易�
 不连接券商、不自动下单
 不迁移生产数据库、不新增生产计划任务或通知
 不修改服务器 PTA 项目
-不把 150 个 LEAD 或测试通过数当成真实研究/产品通过
+不把 18 个 LEAD、0 个 VERIFIED 或测试通过数当成真实研究/产品通过
 ```
 
 下一单步在用户完成 M2 Checkpoint A 后，继续记录交接并推进后续仍可执行的离线

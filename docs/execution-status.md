@@ -1279,3 +1279,73 @@ NEXT TASK: C4-MANIFEST-DRIVEN-FIXED-SAMPLE-INPUT-ADAPTER
 ```
 
 先移除三公司 replay 中的茅台 symbol 专用分支，建立 versioned per-company input descriptor，再以离线 fixture 和 disposable PostgreSQL replay 验收。验收前不新增第四家真实公司，也不自动扩样本。
+
+## 2026-09-24 M2 Verification v2 / Checkpoint A 重提
+
+M2 Verification v1 已标记 `SEMANTICALLY_SUPERSEDED`。v2 使用独立的四通道
+`ChannelVerificationPolicy`，不再允许
+`PENDING_DEEP_RESEARCH + evidence_count > 0 -> VERIFIED_FOR_DEEP_RESEARCH`。
+对冻结的 18 条 LEAD 重跑后的真实结果如下：
+
+```text
+VERIFIED_FOR_DEEP_RESEARCH = 0
+REJECTED_AFTER_VERIFICATION = 13
+INSUFFICIENT_EVIDENCE = 5
+UNSUPPORTED = 0
+PIT = PASS
+MACHINE_STATUS = MACHINE_CHECKS_PASS
+```
+
+分通道结果：
+
+| 通道 | 进入深研 | 否决 | 证据不足 |
+| --- | ---: | ---: | ---: |
+| Quality | 0 | 0 | 0 |
+| Dividend / Cash Return | 0 | 3 | 3 |
+| Value | 0 | 5 | 1 |
+| Cyclical | 0 | 5 | 1 |
+
+旧 v1 中被写成 VERIFIED 的 `002327 富安娜`、`002867 周大生`、`600011 华能国际`
+现在均按 v2 fail-closed 为 `INSUFFICIENT_EVIDENCE`。0 个 VERIFIED 是允许且诚实的
+结果，不降低研究标准，也不构成全市场“没有质量公司”的判断。
+
+关键冻结产物：
+
+| 产物 | 路径 | SHA-256 |
+| --- | --- | --- |
+| M2 v2 report | `runtime/m2-channel-verification-20260924-v2/report.json` | `310d56e408655c7c46ef510a4ce3aab44d99ab9aeb021c9ddd41f140a2fb1653` |
+| M2 v2 manifest | `runtime/m2-channel-verification-20260924-v2/manifest.json` | `520d175d5a7696b970c091c88be9e8b5996a7627a58828594671f524e360aabe` |
+| M7 Daily v3 workbook | `A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v3_20260924.xlsx` | `d423ef1ab0114f97e4a20d2f7f770b85e74b3764d6484b63d2fec03c9da82718` |
+| M7 Daily v3 manifest | 同名 `.m7-daily-workbench-manifest.json` | `31f918dbf43b0d9b7faaf1f933dace64c1b449d32b675d1058d330e00161e75b` |
+
+M7 Daily v3 的 WPS 只读验证 `passed`：10 个可见页、2 个隐藏页、公式错误扫描和
+禁词扫描均通过，打开前后工作簿与 canonical 的 Hash 未变化。同名候选已复制到
+WPS 云盘 `价投跟踪`，与仓库文件逐字节一致；没有覆盖 canonical 原表。
+
+本轮新增版本化、只追加、Hash 绑定的
+`HumanMilestoneReviewReceipt`。人工结论只记录为：
+
+```text
+M2_CHECKPOINT_A = NOT_APPROVED_PENDING_VERIFICATION_V2
+M3_NEGATIVE_CARDS = PASS
+M3_CHECKPOINT_B = PARTIAL_NOT_APPROVED
+M5_1225578520 = NOT_MATERIAL
+M7_SEMANTIC_STRUCTURE = PASS
+M4_PRIVATE_INPUT = PENDING
+M6_AUTHORIZATION = PENDING
+M7_FINAL_UX = PENDING
+```
+
+Checkpoint A 重提包目录为
+`runtime/m2-checkpoint-a-human-resubmission-20260924-v2`。人工收据
+`receipt.json` 的 SHA-256 为
+`5a29fad3af4b6c3521236aee6d7cd70884287b318b20d3c95535ba974567bd0a`，
+Checkpoint A packet 的 SHA-256 为
+`c5317f641a8cf56ee2bfddaf7910d0f6b0088c8a331d1c07255094bd416efc13`。
+M5 的 `NOT_MATERIAL` 已绑定
+`announcement_id=1225578520` 与 PDF SHA-256
+`7c669db8bb3b5a362ecad92c6a96745a3b5039a3288f5e13b498e9e72971111c`。
+
+以上内容不表示 Checkpoint A、Checkpoint B 或 M7 已签收；`action=no_order`，
+没有生产操作、数据库迁移、调度、通知、券商连接或 PTA 项目改动。M2 状态保持
+`PENDING_HUMAN_REVIEW`，等待用户重新复核 Checkpoint A。

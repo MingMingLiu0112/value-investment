@@ -29,18 +29,18 @@ from value_investment_agent.m7_daily_workbench import (  # noqa: E402
 
 DEFAULT_OUTPUT = (
     ROOT
-    / "A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v2_20260924.xlsx"
+    / "A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v3_20260924.xlsx"
 )
-DEFAULT_GENERATED_AT = datetime(2026, 9, 24, 2, 0, 0, tzinfo=timezone.utc)
+DEFAULT_GENERATED_AT = datetime(2026, 9, 24, 10, 0, 0, tzinfo=timezone.utc)
 
-M2_REPORT = ROOT / "runtime" / "m2-channel-verification-20260924-v1" / "report.json"
-M2_MANIFEST = ROOT / "runtime" / "m2-channel-verification-20260924-v1" / "manifest.json"
+M2_REPORT = ROOT / "runtime" / "m2-channel-verification-20260924-v2" / "report.json"
+M2_MANIFEST = ROOT / "runtime" / "m2-channel-verification-20260924-v2" / "manifest.json"
 M2_LIVE_MANIFEST = ROOT / "runtime" / "m2-live-20260923-v3" / "manifest.json"
 M3_AUDIT_POINTER = ROOT / "runtime" / "m3-decision-acceptance-audit-latest.json"
 M3_AUDIT_RECEIPT = (
     ROOT
     / "runtime"
-    / "m3-decision-acceptance-audit-20260923T190024Z"
+    / "m3-decision-acceptance-audit-20260924T062947Z"
     / "receipt.json"
 )
 M3_DECISION_WORKBOOK = ROOT / "A股价值投资_M3决策卡候选_20260924.xlsx"
@@ -80,7 +80,7 @@ M6_POINTER = ROOT / "runtime" / "m6-operational-preflight-latest.json"
 M6_RECEIPT = (
     ROOT
     / "runtime"
-    / "m6-operational-preflight-20260924T000810Z"
+    / "m6-operational-preflight-20260924T050357Z"
     / "receipt.json"
 )
 AUDIT_WORKBOOK = (
@@ -90,11 +90,11 @@ AUDIT_WORKBOOK = (
 CANONICAL_WORKBOOK = ROOT / "A股价值投资_Agent前端智能跟踪模板.xlsx"
 
 PINNED_SHA256 = {
-    M2_REPORT: "193e2cd9e398de625e5851d0f5d91cb3485b3ef660caa9ed8d22203e85c37ccf",
-    M2_MANIFEST: "454bd22c98244a4f2bd70af6a6179cda5dbed486d57b13cd11ef5e93096d5fd4",
+    M2_REPORT: "310d56e408655c7c46ef510a4ce3aab44d99ab9aeb021c9ddd41f140a2fb1653",
+    M2_MANIFEST: "520d175d5a7696b970c091c88be9e8b5996a7627a58828594671f524e360aabe",
     M2_LIVE_MANIFEST: "69bd1b4a134fcdf67e4cd15454373b4441783ffe24a2446daa375ea260b844a1",
-    M3_AUDIT_POINTER: "72ecc186b612ecc51e5d6b4e44e2dfdef02f5c0e719a7fe632e698a00e6b15f3",
-    M3_AUDIT_RECEIPT: "2bb49e94df6740330d2713dee03eec1c44bb2be753f3afbbd40b1560797c8259",
+    M3_AUDIT_POINTER: "da72479bd03ab7e89a947b8bf8ae454dda8b67277f11ace81ff9dd9efb920720",
+    M3_AUDIT_RECEIPT: "755c2ec01a21cf357de212014c9d3e11cf35f0595802814d24182c7a77069429",
     M3_DECISION_WORKBOOK: "589f19ef9e3d235401814e98450475d657c3e981b33637337ab5da9d33fb307d",
     M3_DECISION_MANIFEST: "c2b69ea02a0b5bdb0734b41c416ee03147ffad0eea8c78febc37ebf6b0ea2cc6",
     M3_HISTORY_MANIFEST: "8370c565f5253e2b8d4b4d5d2020dc25e35b197add46c686f1bcdbe0fbd77ece",
@@ -106,8 +106,8 @@ PINNED_SHA256 = {
     M5_MANIFEST: "ebe71545f98bf68f5bb9f42df40a305810ef211b79bd3d84c0a709e631c1ee3d",
     M5_RECONCILIATION: "0cc01a1c6258754578ce87e4d01845aa2942bdf6457c803587db307d8a082e18",
     M5_PENDING: "3372ea05dc915f7611b5cf779692cb234f95a30de4f937f20a1e10942d17b282",
-    M6_POINTER: "442e09db732b57a2b1f8d817bf5c07b3f8661fd61b385ee04f8a64e6a1afd6c0",
-    M6_RECEIPT: "9dadc9bdf3b7dcfb319ce35b5d7003827799a32c9dd4fe67fca74fceaba07dc3",
+    M6_POINTER: "15ba0fc0c621102676d01d08795f52303098d7e8088ef5cff2c15eefbe55898b",
+    M6_RECEIPT: "cf079a92d93690ad60f717d4ef177237dfe5083507da86eb0b592515f87cc43f",
     AUDIT_WORKBOOK: "d00c3363767d96010d9f6b429525cc0b35633160d1bfae967a286ea87c5130dc",
     CANONICAL_WORKBOOK: "64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911",
 }
@@ -180,6 +180,7 @@ def _m2_packet() -> dict[str, Any]:
         for channel in coverage
     }
     rows = report["human_review_packet"]["rows"]
+    verification_channel_counts = report["coverage_summary"]["by_channel"]
     return {
         "status": "PENDING_HUMAN_REVIEW",
         "acceptance_status": report["acceptance_status"],
@@ -190,6 +191,7 @@ def _m2_packet() -> dict[str, Any]:
         "unsupported_count": summary["unsupported"],
         "verified_symbols": list(summary["verified_symbols"]),
         "verified_channels": list(summary["verified_channels"]),
+        "verification_channel_counts": verification_channel_counts,
         "channel_counts": dict(channel_counts),
         "budget_by_channel": budget_by_channel,
         "budget_excluded_count": sum(budget_by_channel.values()),
@@ -218,7 +220,12 @@ def _m2_packet() -> dict[str, Any]:
 def _m2_reason(report: dict[str, Any], row: dict[str, Any]) -> str:
     for item in report["results"]:
         if item["symbol"] == row["symbol"] and item["channel"] == row["channel"]:
-            return item["reason"]
+            status = item["status"]
+            if status == "VERIFIED_FOR_DEEP_RESEARCH":
+                return item["why_verified"]
+            if status == "REJECTED_AFTER_VERIFICATION":
+                return item["why_rejected"]
+            return item["why_insufficient"]
     return ""
 
 
@@ -342,9 +349,9 @@ def _audit_packet() -> dict[str, Any]:
         "canonical_workbook_sha256": digest(CANONICAL_WORKBOOK),
         "production_actions": "NONE",
         "artifacts": [
-            _audit_artifact("M2 通道验证报告", M2_REPORT),
+            _audit_artifact("M2 通道验证报告 v2（v1 已语义替代）", M2_REPORT),
             _audit_artifact("M2 全市场 manifest", M2_LIVE_MANIFEST),
-            _audit_artifact("M3 决策审计收据", ROOT / "runtime/m3-decision-acceptance-audit-20260923T190024Z/receipt.json"),
+            _audit_artifact("M3 决策审计收据", M3_AUDIT_RECEIPT),
             _audit_artifact("M3 集成运行输入", M3_INTEGRATED_RUNS),
             _audit_artifact("M3 历史研究重放（事实/行情 PIT；规则非当时版本）", M3_REPLAY),
             _audit_artifact("M4 组合风险模拟 manifest", M4_RISK_MANIFEST),
