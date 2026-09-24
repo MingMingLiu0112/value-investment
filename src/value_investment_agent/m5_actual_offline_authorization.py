@@ -44,6 +44,8 @@ class M5ActualOfflineAuthorization:
                 raise ValueError(f"{field} must be SHA-256 hex")
             object.__setattr__(self, field, value)
         object.__setattr__(self, "authorized_at", _required_datetime(self.authorized_at, "authorized_at"))
+        if not all(isinstance(value, bool) for value in (self.scheduler_enabled, self.notification_enabled, self.production_database_write)):
+            raise ValueError("Actual offline authorization operation flags must be boolean")
         if self.scheduler_enabled or self.notification_enabled or self.production_database_write:
             raise ValueError("Actual offline authorization cannot enable production operations")
         if self.action != ACTION_NO_ORDER:
@@ -62,6 +64,27 @@ class M5ActualOfflineAuthorization:
             "production_database_write": self.production_database_write,
             "action": self.action,
         }
+
+
+def actual_offline_authorization_from_payload(payload: object) -> M5ActualOfflineAuthorization:
+    if not isinstance(payload, dict):
+        raise ValueError("Actual offline authorization must be an object")
+    data = dict(payload)
+    authorization = M5ActualOfflineAuthorization(
+        authorization_id=_required_text(data["authorization_id"], "authorization_id"),
+        review_provenance=_required_text(data["review_provenance"], "review_provenance"),
+        review_sha256=_required_text(data["review_sha256"], "review_sha256"),
+        queue_sha256=_required_text(data["queue_sha256"], "queue_sha256"),
+        dependency_graph_sha256=_required_text(data["dependency_graph_sha256"], "dependency_graph_sha256"),
+        authorized_at=_required_datetime(datetime.fromisoformat(str(data["authorized_at"])), "authorized_at"),
+        scheduler_enabled=data["scheduler_enabled"],
+        notification_enabled=data["notification_enabled"],
+        production_database_write=data["production_database_write"],
+        action=str(data.get("action", ACTION_NO_ORDER)),
+    )
+    if set(data) != set(authorization.as_policy()):
+        raise ValueError("Actual offline authorization keys do not match the schema")
+    return authorization
 
 
 def graph_sha256(graph: object) -> str:

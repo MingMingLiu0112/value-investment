@@ -12,6 +12,10 @@ import json
 from typing import Any, Mapping, Sequence
 
 from .investment_decision import ACTION_NO_ORDER
+from .m5_actual_offline_authorization import (
+    M5ActualOfflineAuthorization,
+    require_actual_offline_authorization,
+)
 from .m5_event_checkpoint import (
     CHECKPOINT_COMMITTED,
     CheckpointLedger,
@@ -771,6 +775,7 @@ def run_event_batch(
     expected_revision: int | None = None,
     lock_store: TaskLockStore | None = None,
     max_watermark_age: timedelta = DEFAULT_MAX_WATERMARK_AGE,
+    actual_offline_authorization: M5ActualOfflineAuthorization | None = None,
 ) -> M5EventRunReceipt:
     """Ingest one bounded batch and return an atomically exportable next state."""
 
@@ -782,8 +787,11 @@ def run_event_batch(
     observed_times = tuple(
         _required_datetime(item, "observed_at") for item in observed_times
     )
-    if namespace != NAMESPACE_SIMULATED:
-        raise ValueError("Public run-once coordinator accepts SIMULATED only")
+    require_actual_offline_authorization(
+        namespace=namespace,
+        authorization=actual_offline_authorization,
+        graph=graph,
+    )
     if state is not None and not isinstance(state, M5EventRunState):
         raise ValueError("state must be an M5EventRunState")
     if expected_revision is not None:
@@ -817,8 +825,16 @@ def run_event_batch(
     working = (
         state.clone()
         if state is not None
-        else M5EventRunState.empty(state_key=run_id, namespace=namespace)
+        else M5EventRunState.empty(
+            state_key=run_id,
+            namespace=namespace,
+            actual_offline_authorization=actual_offline_authorization,
+        )
     )
+    if namespace == "ACTUAL" and (
+        working.actual_offline_authorization != actual_offline_authorization
+    ):
+        raise ValueError("ACTUAL M5 run state authorization does not match the request")
     if expected_revision is not None and working.revision != expected_revision:
         raise ValueError(
             "M5 run state revision does not match expected_revision"
@@ -1097,6 +1113,7 @@ def run_event_batch_persisted(
     state: M5EventRunState | None = None,
     batch_id: str | None = None,
     lock_store: TaskLockStore | None = None,
+    actual_offline_authorization: M5ActualOfflineAuthorization | None = None,
 ) -> M5EventRunReceipt:
     """Run one batch and persist its next state with revision/digest CAS."""
 
@@ -1113,7 +1130,11 @@ def run_event_batch_persisted(
         working = (
             state.clone()
             if state is not None
-            else M5EventRunState.empty(state_key=state_key, namespace=namespace)
+            else M5EventRunState.empty(
+                state_key=state_key,
+                namespace=namespace,
+                actual_offline_authorization=actual_offline_authorization,
+            )
         )
     else:
         if state is not None and state.state_sha256() != current.state_sha256():
@@ -1138,6 +1159,7 @@ def run_event_batch_persisted(
         batch_id=batch_id,
         expected_revision=working.revision,
         lock_store=lock_store,
+        actual_offline_authorization=actual_offline_authorization,
     )
     store.commit(
         expected_revision=working.revision,

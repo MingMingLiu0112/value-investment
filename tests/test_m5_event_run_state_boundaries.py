@@ -733,9 +733,9 @@ def test_revision_sequence_and_watermark_regressions_fail_closed() -> None:
 
 
 def test_actual_unknown_namespace_and_non_no_order_action_fail_closed() -> None:
-    with pytest.raises(ValueError, match="SIMULATED"):
+    with pytest.raises(ValueError, match="requires offline authorization"):
         M5EventRunState.empty(state_key="actual-state", namespace=NAMESPACE_ACTUAL)
-    with pytest.raises(ValueError, match="SIMULATED"):
+    with pytest.raises(ValueError, match="namespace is unknown"):
         M5EventRunState.empty(state_key="unknown-state", namespace="UNKNOWN")
 
     first = _run(state=None, batch_id="batch-1", event_id="event-1")

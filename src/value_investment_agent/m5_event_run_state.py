@@ -13,6 +13,10 @@ import re
 from typing import Any, Mapping
 
 from .investment_decision import ACTION_NO_ORDER
+from .m5_actual_offline_authorization import (
+    M5ActualOfflineAuthorization,
+    actual_offline_authorization_from_payload,
+)
 from .m5_event_checkpoint import (
     CHECKPOINT_COMMITTED,
     CheckpointLedger,
@@ -22,6 +26,7 @@ from .m5_event_core import (
     EVENT_STATUS_ACTIVE,
     EVENT_STATUS_SUPERSEDED,
     M5_EVENT_SCHEMA,
+    NAMESPACE_ACTUAL,
     NAMESPACE_SIMULATED,
     EventLedger,
     _digest,
@@ -48,7 +53,8 @@ from .m5_event_watermark import WatermarkLedger, watermark_ledger_from_payload
 
 
 M5_RUN_STATE_SCHEMA_V1 = "m5-event-run-state-v1"
-M5_RUN_STATE_SCHEMA = "m5-event-run-state-v2"
+M5_RUN_STATE_SCHEMA_V2 = "m5-event-run-state-v2"
+M5_RUN_STATE_SCHEMA = "m5-event-run-state-v3"
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -170,6 +176,7 @@ class M5EventRunState:
     action: str = ACTION_NO_ORDER
     outbox_revision: int = 0
     outbox_transitions: tuple[OutboxTransitionRecord, ...] = ()
+    actual_offline_authorization: M5ActualOfflineAuthorization | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -182,8 +189,14 @@ class M5EventRunState:
             "namespace",
             _required_text(self.namespace, "namespace"),
         )
-        if self.namespace != NAMESPACE_SIMULATED:
-            raise ValueError("Public M5 run state must remain SIMULATED")
+        if self.namespace == NAMESPACE_SIMULATED:
+            if self.actual_offline_authorization is not None:
+                raise ValueError("Simulated M5 run state cannot carry actual authorization")
+        elif self.namespace == NAMESPACE_ACTUAL:
+            if not isinstance(self.actual_offline_authorization, M5ActualOfflineAuthorization):
+                raise ValueError("ACTUAL M5 run state requires offline authorization")
+        else:
+            raise ValueError("M5 run state namespace is unknown")
         object.__setattr__(
             self,
             "revision",
@@ -504,6 +517,10 @@ class M5EventRunState:
             "outbox_transitions": outbox_transitions_as_policy(
                 self.outbox_transitions
             ),
+            "actual_offline_authorization": (
+                self.actual_offline_authorization.as_policy()
+                if self.actual_offline_authorization is not None else None
+            ),
             "batch_records": [item.as_policy() for item in self.batch_records],
             "action": self.action,
         }
@@ -528,6 +545,7 @@ class M5EventRunState:
         *,
         state_key: str,
         namespace: str = NAMESPACE_SIMULATED,
+        actual_offline_authorization: M5ActualOfflineAuthorization | None = None,
     ) -> "M5EventRunState":
         return cls(
             state_key=state_key,
@@ -540,6 +558,7 @@ class M5EventRunState:
             batch_records=(),
             outbox_revision=0,
             outbox_transitions=(),
+            actual_offline_authorization=actual_offline_authorization,
         )
 
 
@@ -548,9 +567,9 @@ def m5_event_run_state_from_payload(payload: Mapping[str, Any]) -> M5EventRunSta
         raise ValueError("M5 run state must be an object")
     data = dict(payload)
     schema_version = data.get("schema_version")
-    if schema_version not in {M5_RUN_STATE_SCHEMA_V1, M5_RUN_STATE_SCHEMA}:
+    if schema_version not in {M5_RUN_STATE_SCHEMA_V1, M5_RUN_STATE_SCHEMA_V2, M5_RUN_STATE_SCHEMA}:
         raise ValueError("Unknown M5 run state schema")
-    if schema_version == M5_RUN_STATE_SCHEMA and (
+    if schema_version in {M5_RUN_STATE_SCHEMA_V2, M5_RUN_STATE_SCHEMA} and (
         "outbox_revision" not in data or "outbox_transitions" not in data
     ):
         raise ValueError("Current M5 run state requires outbox transition history")
@@ -616,4 +635,8 @@ def m5_event_run_state_from_payload(payload: Mapping[str, Any]) -> M5EventRunSta
         action=str(data.get("action", ACTION_NO_ORDER)),
         outbox_revision=outbox_revision,
         outbox_transitions=outbox_transitions,
+        actual_offline_authorization=(
+            actual_offline_authorization_from_payload(data["actual_offline_authorization"])
+            if data.get("actual_offline_authorization") is not None else None
+        ),
     )
