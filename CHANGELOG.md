@@ -1,5 +1,19 @@
 # Changelog
 
+## v2026.09.24-manual-review-pit-boundary
+
+### Scope
+
+修正 2026-09-24 人工审查纠偏记录中 M3 Historical Research Replay 的表述边界。
+该回放的财务事实、公告和报价是 point-in-time；Median-PE 规则本身是 2026 年
+追溯注册，收据必须继续显示 `future_rule_version_used=true`。本轮不补造一条
+不存在的同时期规则，也不把它升级为严格 contemporaneous-rule PIT。
+
+### Verification
+
+- 不改变任何投资逻辑、Excel 字节、运行收据或测试结果。
+- `action=no_order`；生产迁移、计划任务、通知、真实账户导入均未执行。
+
 ## v2026.09.24-m7-workbench-v2
 
 ### Release Scope

@@ -19,10 +19,13 @@
   `INSUFFICIENT_EVIDENCE`、0 条 `UNSUPPORTED`。Quality 覆盖 873/5568，
   状态 `COVERAGE_LIMITED`；Value 文案明确仅 PE/PB/隐含 ROE 初筛；预算外对象
   保留 trigger metrics 与原始触发逻辑。
-- M3 真实 PIT 重放：600519 / 2024-06-21，当时年报、派息公告、收盘价与
-  版本化规则，最终状态 `WAIT`；`valuation_approved=false`、
-  `trade_approved=false`、`future_facts_used=false`。重放不冒充估值、交易或
-  历史策略收益。
+- M3 Historical Research Replay：600519 / 2024-06-21。当时年报、派息公告与
+  收盘价严格取当日可知，`future_facts_used=false`；但所用 Median-PE 规则是
+  2026-09-12 注册的 `RETROSPECTIVE_RESEARCH_EXTENSION`，因此
+  `future_rule_version_used=true`。最终状态 `WAIT`、
+  `valuation_approved=false`、`trade_approved=false`。该制品证明事实/报价
+  PIT 与 fail-closed 行为，不冒充估值、交易、历史策略收益或严格同时期规则
+  PIT。
 - M5 旧人工复核复用：24 条当前候选中 23 条按
   `symbol + announcement_id + source PDF SHA-256` 继承，1 条新公告待复核，
   Hash 冲突 0、被取代待处理 0。

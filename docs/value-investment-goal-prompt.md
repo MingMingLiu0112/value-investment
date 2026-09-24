@@ -16,9 +16,10 @@ M7 Display Engineering DONE / User Acceptance Pending
 ```
 
 上一轮已完成 M3 正向价格门、M4 Decision 绑定、M2 Channel Verification、M5
-Review Reconciliation、M3 PIT Replay 与 M7 Daily Workbench 候选。恢复执行时先
-核对 Git HEAD、dirty diff、CI 和冻结 Hash，不要重复建设这些机器门，也不要宣称
-对应人工 Checkpoint 已通过。
+Review Reconciliation、M3 Historical Research Replay（事实/报价 PIT，规则
+追溯已标记）与 M7 Daily Workbench 候选。恢复执行时先核对 Git HEAD、dirty
+diff、CI 和冻结 Hash，不要重复建设这些机器门，也不要宣称对应人工 Checkpoint
+已通过。
 
 ## FINAL CODEX GOAL MODE PROMPT
 
