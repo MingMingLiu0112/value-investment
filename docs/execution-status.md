@@ -2,6 +2,14 @@
 
 更新：2026-09-25。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-25 全量回归与私有测试隔离
+
+跨平台 Git 工作树边界修复后，完整测试套件使用仓库内 disposable base temp 重放为
+`2555 passed, 6 skipped`（Python 3.13）。私有输入测试不再把通用 `tmp_path` 当作私有根，
+而是在仓库外创建并自动清理临时根目录；因此它同时验证“任意 Git worktree 必须拒绝”和
+“有效的仓库外私有根可以加密/读取”。这只是测试夹具纠偏：生产路径仍 fail-closed，不读取
+真实私人数据，不改变 M4/M5/M6/M7 状态，且保持 `action=no_order`。
+
 ## 2026-09-25 Core Research Gates 跨平台修复已验证
 
 此前 GitHub `offline-core` 在 Linux / Python 3.12 发现私有根边界测试没有构造真实 Git

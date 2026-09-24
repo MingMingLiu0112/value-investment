@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 
 import pytest
 
@@ -88,8 +89,17 @@ def _paths(tmp_path):
     return repository, private_root, key_path
 
 
-def test_private_bundle_round_trip_returns_only_non_sensitive_receipt(tmp_path):
-    repository, private_root, key_path = _paths(tmp_path)
+@pytest.fixture
+def private_tmp_path():
+    """Use a disposable path outside the checkout for private-input tests."""
+    base = Path.home() / ".codex" / "private-input-test-tmp"
+    base.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="value-investment-private-", dir=base) as directory:
+        yield Path(directory)
+
+
+def test_private_bundle_round_trip_returns_only_non_sensitive_receipt(private_tmp_path):
+    repository, private_root, key_path = _paths(private_tmp_path)
     encrypted = private_root / "inputs" / "portfolio-20260924.viportfolio"
 
     written = encrypt_private_portfolio_bundle(
@@ -107,8 +117,8 @@ def test_private_bundle_round_trip_returns_only_non_sensitive_receipt(tmp_path):
     assert "holdings" not in encrypted.read_text(encoding="utf-8")
 
 
-def test_private_payload_is_validated_before_encryption(tmp_path):
-    repository, private_root, key_path = _paths(tmp_path)
+def test_private_payload_is_validated_before_encryption(private_tmp_path):
+    repository, private_root, key_path = _paths(private_tmp_path)
     encrypted = private_root / "from-payload.viportfolio"
     receipt = encrypt_private_portfolio_payload(
         _bundle().as_policy(),
@@ -130,8 +140,8 @@ def test_private_payload_is_validated_before_encryption(tmp_path):
         )
 
 
-def test_private_input_rejects_repo_sync_roots_and_key_colocation(tmp_path):
-    repository, private_root, key_path = _paths(tmp_path)
+def test_private_input_rejects_repo_sync_roots_and_key_colocation(private_tmp_path):
+    repository, private_root, key_path = _paths(private_tmp_path)
     with pytest.raises(ValueError, match="separate from the repository"):
         encrypt_private_portfolio_bundle(
             _bundle(), repository / "portfolio.viportfolio", key_path,
@@ -148,9 +158,9 @@ def test_private_input_rejects_repo_sync_roots_and_key_colocation(tmp_path):
         encrypt_private_portfolio_bundle(
             _bundle(), private_root / "portfolio.viportfolio", key_path,
             private_root=private_root, repository_root=repository,
-            forbidden_sync_roots=(tmp_path,),
+            forbidden_sync_roots=(private_tmp_path,),
         )
-    wps_root = tmp_path / "WPSDrive" / "private"
+    wps_root = private_tmp_path / "WPSDrive" / "private"
     wps_root.mkdir(parents=True)
     with pytest.raises(ValueError, match="WPSDrive"):
         encrypt_private_portfolio_bundle(
@@ -164,8 +174,8 @@ def test_private_input_rejects_repo_sync_roots_and_key_colocation(tmp_path):
         )
 
 
-def test_private_input_detects_tampering_wrong_key_and_overwrite(tmp_path):
-    repository, private_root, key_path = _paths(tmp_path)
+def test_private_input_detects_tampering_wrong_key_and_overwrite(private_tmp_path):
+    repository, private_root, key_path = _paths(private_tmp_path)
     encrypted = private_root / "portfolio.viportfolio"
     encrypt_private_portfolio_bundle(
         _bundle(), encrypted, key_path, private_root=private_root, repository_root=repository
@@ -174,7 +184,7 @@ def test_private_input_detects_tampering_wrong_key_and_overwrite(tmp_path):
         encrypt_private_portfolio_bundle(
             _bundle(), encrypted, key_path, private_root=private_root, repository_root=repository
         )
-    wrong_key = tmp_path / "keys" / "wrong.key"
+    wrong_key = private_tmp_path / "keys" / "wrong.key"
     wrong_key.write_text("b" * 64, encoding="ascii")
     with pytest.raises(ValueError, match="invalid or authentication failed"):
         load_private_portfolio_bundle(
@@ -189,8 +199,8 @@ def test_private_input_detects_tampering_wrong_key_and_overwrite(tmp_path):
         )
 
 
-def test_private_input_cli_rejects_private_root_inside_repository(tmp_path):
-    repository, private_root, key_path = _paths(tmp_path)
+def test_private_input_cli_rejects_private_root_inside_repository(private_tmp_path):
+    repository, private_root, key_path = _paths(private_tmp_path)
     encrypted = private_root / "portfolio.viportfolio"
     encrypt_private_portfolio_bundle(
         _bundle(), encrypted, key_path, private_root=private_root, repository_root=repository
@@ -221,8 +231,8 @@ def test_private_input_cli_rejects_private_root_inside_repository(tmp_path):
     assert "holdings" not in completed.stderr
 
 
-def test_private_input_rejects_linked_worktree_git_file(tmp_path):
-    repository, private_root, key_path = _paths(tmp_path)
+def test_private_input_rejects_linked_worktree_git_file(private_tmp_path):
+    repository, private_root, key_path = _paths(private_tmp_path)
     encrypted = private_root / "portfolio.viportfolio"
     encrypt_private_portfolio_bundle(
         _bundle(), encrypted, key_path, private_root=private_root, repository_root=repository
