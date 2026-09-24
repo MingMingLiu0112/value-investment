@@ -2,6 +2,14 @@
 
 更新：2026-09-25。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-25 Core Research Gates 跨平台修复已验证
+
+此前 GitHub `offline-core` 在 Linux / Python 3.12 发现私有根边界测试没有构造真实 Git
+工作树。修复后，本地按 workflow 清单重放 `677 passed`，GitHub Actions 对提交
+`bc60a5d` 的 [Core Research Gates #97](https://github.com/MingMingLiu0112/value-investment/actions/runs/36029512736)
+结论为 `success`。该记录只证明工程/隐私合同回归通过；不改变 M4 个性化、M5 人工复核、
+M6 授权或任何投资决策状态。
+
 ## 2026-09-25 M5 人工公告复核只读简报
 
 新增 `m5_disclosure_briefing.py` 和
