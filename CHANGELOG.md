@@ -15,6 +15,7 @@ Workbench、90 页 M7 工作台、96 页 M7 v2 工作台和 M3 历史链验证�
   `passed`，候选与 canonical Hash 前后不变。
 - 本地完整离线回归 `2358 passed、6 skipped、0 failed、18 warnings`。
 - Core Research Gates run `35954917146`：`success`。
+- 公开工作簿 WPS 云盘副本全量复核：23/23 逐字节一致；补齐 3 个遗漏的同名副本。
 - `action=no_order`；未执行生产迁移、计划任务、通知或真实账户导入。
 
 ## v2026.09.24-m7-daily-workbench-v2-pit-wording

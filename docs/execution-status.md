@@ -101,6 +101,9 @@
 - 提交 `45219e9`、`3aab561`、`3bc6b20` 的 Core Research Gates 均通过；
   最后一个运行 [35954917146](https://github.com/MingMingLiu0112/value-investment/actions/runs/35954917146)
   的 `offline-core` 与 `postgres-integration` 均为 `success`。
+- 公开工作簿 WPS 云盘副本全量复核：23/23 逐字节一致。本轮补上此前缺少云盘
+  同名副本的 `M2候选_20260924`、`M7每日工作台候选_20260924` 和
+  `M2通道验证人工复核包候选_20260924`，未覆盖任何已有文件。
 
 ## M7 统一工作台 v2 候选：2026-09-24
 
