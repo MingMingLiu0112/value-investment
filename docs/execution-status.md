@@ -27,6 +27,21 @@
 `WAIT`、`action=no_order` 保存，不升级为 strict PIT。详细检索见
 [m3-historical-pit-evidence-20260924.md](m3-historical-pit-evidence-20260924.md)。
 
+## 2026-09-24 M3 三份机器验收复算
+
+在同一个干净 HEAD 上分别重新执行 M3 决策卡、原工作簿候选、历史链叠加候选的
+验收器，并内嵌对应定向回归证据：
+
+- M3 决策卡：m3c1-m3c6 `DONE`，定向回归 `35 passed`；m3c7 人工。
+- M3 原工作簿候选：owc1-owc6 `DONE`，定向回归 `7 passed`；owc7 人工。
+- M3 历史链叠加候选：hoc1-hoc6 `DONE`，定向回归 `11 passed`；hoc7 人工。
+- 三份收据均保持 `PENDING_HUMAN_REVIEW`、`action=no_order`，未生成 Entry、
+  Journal、个人组合或订单。
+- 收据目录：
+  `runtime/m3-decision-acceptance-audit-20260924T062947Z`、
+  `runtime/m3-original-workbook-audit-20260924T063010Z`、
+  `runtime/m3-history-original-workbook-audit-20260924T063017Z`。
+
 ## 2026-09-24 M4 Decision Binding v2 Excel 候选
 
 在 M4 正向容量绑定收紧后，重新生成并发布两个只读模拟候选，使 WPS 中的展示层与

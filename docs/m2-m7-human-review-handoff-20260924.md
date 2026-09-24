@@ -12,14 +12,16 @@
 | 审计 | 机器结果 | 仅剩人工项 | 收据 SHA-256 |
 | --- | --- | --- | --- |
 | M2 全市场机会发现 | AC1-AC7、AC11 `DONE`；AC8-AC10、AC12 `PENDING_HUMAN_REVIEW` | 实质研究/否决报告、分层抽样、原工作簿可用性 | `2fb22e04f38c0ef5563429bf289804769c36c21eac394f13d0b38d992b11a878` |
-| M3 决策卡 | m3c1-m3c6 `DONE`；m3c7 人工 | 三张负向卡理解与 Checkpoint B | `459f352a7eb61359ae52e2fa568918613db509cc2c33c603de0dab019ed7e278` |
-| M3 原工作簿候选 | owc1-owc6 `DONE`；owc7 人工 | 决策复核页阅读与 Checkpoint B 边界 | `94b27548e8d08e503154d9c3e2a85b10992aa315acb823203fcd268d9b3ebe89` |
-| M3 历史链叠加 | hoc1-hoc6 `DONE`；hoc7 人工 | 模拟历史边界与 Checkpoint B 边界 | `325f4a6566812dde12a2a339513a204914ae698461df8be2f0fc110be4462b2a` |
+| M3 决策卡 | m3c1-m3c6 `DONE`；m3c7 人工 | 三张负向卡理解与 Checkpoint B | `755c2ec01a21cf357de212014c9d3e11cf35f0595802814d24182c7a77069429` |
+| M3 原工作簿候选 | owc1-owc6 `DONE`；owc7 人工 | 决策复核页阅读与 Checkpoint B 边界 | `9a083e943685cdb5c29802b430f414b5b11b15764314e7f230b09acdc421fef6` |
+| M3 历史链叠加 | hoc1-hoc6 `DONE`；hoc7 人工 | 模拟历史边界与 Checkpoint B 边界 | `5e56c6e18668e9b5c345a839f85d22afc5e548c9a855ecce09f9ffcf1fee508c` |
 | M6 运营预检 | 工程 `DONE`；运营 `NOT_STARTED` | 真实恢复演练、20 连续会话、1 真实事件、生产授权 | `cf079a92d93690ad60f717d4ef177237dfe5083507da86eb0b592515f87cc43f` |
 
 M2 收据来自 2026-09-24 的完整复算，包含本地全量回归
 `2369 passed、6 skipped、0 failed`；AC1 与 AC6 已由真实运行证据确认，不再因
 审计器未内嵌测试结果而显示 `PARTIAL`。
+M3 三份收据同样由当天复算生成：决策卡定向回归 `35 passed`、原工作簿
+`7 passed`、历史链 `11 passed`，机器项均 `DONE`，仅剩 Checkpoint B 人工项。
 
 M5 人工队列复核结果：24 条当前候选中 23 条与旧人工判断的公告 ID 和 PDF Hash
 一致，已 `CARRY_FORWARD_PRIOR_HUMAN_DECISION`；仅 1 条新公告需要人工看，

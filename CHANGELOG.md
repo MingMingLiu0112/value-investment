@@ -1,5 +1,23 @@
 # Changelog
 
+## v2026.09.24-m3-full-acceptance-recompute
+
+### Scope
+
+重新执行 M3 决策卡、原工作簿候选与历史链叠加候选三个验收器，并内嵌对应定向
+回归证据，消除旧收据中的 `PENDING_CI`。
+
+### Result
+
+- M3 决策卡：m3c1-m3c6 `DONE`，定向回归 `35 passed`。
+- M3 原工作簿候选：owc1-owc6 `DONE`，定向回归 `7 passed`。
+- M3 历史链叠加候选：hoc1-hoc6 `DONE`，定向回归 `11 passed`。
+- 三份收据仅保留对应人工复核项，`action=no_order`。
+- 收据目录：
+  `runtime/m3-decision-acceptance-audit-20260924T062947Z`、
+  `runtime/m3-original-workbook-audit-20260924T063010Z`、
+  `runtime/m3-history-original-workbook-audit-20260924T063017Z`。
+
 ## v2026.09.24-m2-full-acceptance-recompute
 
 ### Scope
