@@ -83,6 +83,23 @@ def test_receipt_rejects_overall_checkpoint_pass():
         )
 
 
+def test_receipt_accepts_explicit_human_pass_for_checkpoint_a():
+    decisions = dict(DECISIONS)
+    decisions["M2_CHECKPOINT_A"] = "HUMAN_PASS"
+
+    receipt = HumanMilestoneReviewReceipt(
+        receipt_id="human-review-v2-human-pass",
+        sequence=2,
+        reviewed_at=REVIEWED_AT,
+        review_scope="M2 Checkpoint A acceptance",
+        decisions=decisions,
+        previous_receipt_sha256="5" * 64,
+    )
+
+    assert receipt.decisions["M2_CHECKPOINT_A"] == "HUMAN_PASS"
+    assert receipt.action == ACTION_NO_ORDER
+
+
 def test_m5_binding_is_hash_bound_and_not_an_order():
     binding = _binding()
     assert binding.pdf_sha256 == "7c669db8bb3b5a362ecad92c6a96745a3b5039a3288f5e13b498e9e72971111c"

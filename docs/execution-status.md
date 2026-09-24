@@ -1357,3 +1357,43 @@ M5 的 `NOT_MATERIAL` 已绑定
 以上内容不表示 Checkpoint A、Checkpoint B 或 M7 已签收；`action=no_order`，
 没有生产操作、数据库迁移、调度、通知、券商连接或 PTA 项目改动。M2 状态保持
 `PENDING_HUMAN_REVIEW`，等待用户重新复核 Checkpoint A。
+
+## 2026-09-24 M2 Checkpoint A 人工签收与 M2 收口
+
+用户完成 Checkpoint A 人工复核并给出正式结论：
+
+```text
+M2_CHECKPOINT_A = HUMAN_PASS
+```
+
+新的 append-only 人工收据为 sequence=2，不覆盖 sequence=1 的
+`NOT_APPROVED_PENDING_VERIFICATION_V2` 历史收据，并绑定其 SHA-256：
+
+| 产物 | 路径 | SHA-256 |
+| --- | --- | --- |
+| 人工收据 | `runtime/m2-checkpoint-a-human-acceptance-20260924-v3/receipt.json` | `9a18b7fcb08b4ba4196a989f88561939b0e9257982b03198b650669b378e6f20` |
+| Checkpoint A 验收包 | `runtime/m2-checkpoint-a-human-acceptance-20260924-v3/checkpoint-a-packet.json` | `b880b74752362deccd1991d23a43f7347f7e5a8348e0ae6ca0603a5931e8f306` |
+| 验收 manifest | `runtime/m2-checkpoint-a-human-acceptance-20260924-v3/manifest.json` | `a11552c0dd343564a6024c1feeadcfbca83f97d420aa5519ed4533e09937d501` |
+
+M2 正式状态更新为：
+
+```text
+M2 = DONE
+M2_CHECKPOINT_A = HUMAN_PASS
+OVERALL_PRODUCT = PARTIAL
+action = no_order
+```
+
+用户同时保留两项非阻断方法债，不影响 M2 收口：
+
+```text
+BL-20260924-001: Dividend payout ratio / cash-conversion 语义校正
+BL-20260924-002: Value EV/EBIT 或 Profile 等价指标
+```
+
+详细条件见
+[m2-non-blocking-method-debt-20260924.md](m2-non-blocking-method-debt-20260924.md)。
+M3 strict contemporaneous-rule Historical PIT 仍为 `NOT_PROVEN`；Checkpoint B、
+M4 私有输入、M6 授权和 M7 用户验收均不因 Checkpoint A 通过而自动签收。下一工作
+包回到原总 Goal：继续 M3 Decision Review / Checkpoint B，再按依赖推进
+M4/M5、M6、M7。

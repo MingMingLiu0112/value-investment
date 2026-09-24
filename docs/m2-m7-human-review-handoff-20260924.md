@@ -1,8 +1,9 @@
 # M2-M7 人工复核交接清单：2026-09-24
 
-更新：2026-09-24，M2 Verification v2 / Checkpoint A 重提。本文件只汇总用户本人
-需要确认的事项，不代表任何 Checkpoint 已经签收。所有机器产物固定
-`action=no_order`，真实 IPS、持仓、现金和生产操作仍需要用户单独提供或授权。
+更新：2026-09-24，M2 Checkpoint A 已由用户签收为 `HUMAN_PASS`。本文件汇总
+后续用户本人仍需确认的事项；Checkpoint A 通过不代表 Checkpoint B-D 已签收。
+所有机器产物固定 `action=no_order`，真实 IPS、持仓、现金和生产操作仍需要用户
+单独提供或授权。
 
 ## 1. 本轮机器验收
 
@@ -13,13 +14,13 @@
 | 审计 | 机器结果 | 仅剩人工项 | 收据 SHA-256 |
 | --- | --- | --- | --- |
 | M2 Verification v2 | `MACHINE_CHECKS_PASS`；`PIT=PASS`；v1 已语义替代 | 18 条 LEAD 的 0 / 13 / 5 resolution 语义复核 | report `310d56e408655c7c46ef510a4ce3aab44d99ab9aeb021c9ddd41f140a2fb1653` |
-| M2 Verification v2 manifest | `CHECKPOINT_A_READY_FOR_HUMAN_RESUBMISSION` | 不替用户签 Checkpoint A | `520d175d5a7696b970c091c88be9e8b5996a7627a58828594671f524e360aabe` |
+| M2 Verification v2 manifest | `CHECKPOINT_A_READY_FOR_HUMAN_RESUBMISSION` | 已用户签收 `HUMAN_PASS` | `520d175d5a7696b970c091c88be9e8b5996a7627a58828594671f524e360aabe` |
 | M3 决策卡 | m3c1-m3c6 `DONE`；m3c7 人工 | 三张负向卡理解与 Checkpoint B | `755c2ec01a21cf357de212014c9d3e11cf35f0595802814d24182c7a77069429` |
 | M3 原工作簿候选 | owc1-owc6 `DONE`；owc7 人工 | 决策复核页阅读与 Checkpoint B 边界 | `9a083e943685cdb5c29802b430f414b5b11b15764314e7f230b09acdc421fef6` |
 | M3 历史链叠加 | hoc1-hoc6 `DONE`；hoc7 人工 | 模拟历史边界与 Checkpoint B 边界 | `5e56c6e18668e9b5c345a839f85d22afc5e548c9a855ecce09f9ffcf1fee508c` |
 | M6 运营预检 | 工程 `DONE`；运营 `NOT_STARTED` | 真实恢复演练、20 连续会话、1 真实事件、生产授权 | `cf079a92d93690ad60f717d4ef177237dfe5083507da86eb0b592515f87cc43f` |
 
-## 2. M2 Checkpoint A：用户要确认什么
+## 2. M2 Checkpoint A：已完成人工复核
 
 打开 WPS 云盘 `价投跟踪` 文件夹中的：
 
@@ -52,10 +53,17 @@ UNSUPPORTED = 0
    能说明为什么低 PE、高股息或单期数据不足以进入深研队列。
 4. 在 `09_审计与证据` 能抽查一条 Hash 或来源链接，并确认没有 BUY/ADD/仓位列。
 
-完成以上理解后，用户才记录新的 `Checkpoint A`；Codex 不能代替用户完成这条签收。
+用户已完成以上理解并正式记录：
+
+```text
+M2_CHECKPOINT_A = HUMAN_PASS
+```
+
 机器重提包位于
 `runtime/m2-checkpoint-a-human-resubmission-20260924-v2/checkpoint-a-packet.json`，
-人工里程碑收据位于同目录 `receipt.json`。
+该历史人工里程碑收据位于同目录 `receipt.json`。新的 append-only 签收收据位于
+`runtime/m2-checkpoint-a-human-acceptance-20260924-v3/receipt.json`，sequence=2
+并绑定前序收据 Hash。M2 正式收口为 `DONE`；总 Goal 仍为 `PARTIAL`。
 
 ## 3. M3 Checkpoint B：用户要确认什么
 
@@ -118,7 +126,7 @@ M6 只有在前序产品验收、真实恢复演练、20 个连续真实交易�
 ## 7. 本轮不做什么
 
 ```text
-不替用户签 Checkpoint A-D
+不把 Checkpoint A 的 HUMAN_PASS 扩大为 Checkpoint B-D、BUY、M4 READY 或 M7 完成
 不伪造 IPS、持仓、现金、Entry 或历史交易
 不连接券商、不自动下单
 不迁移生产数据库、不新增生产计划任务或通知
@@ -126,5 +134,5 @@ M6 只有在前序产品验收、真实恢复演练、20 个连续真实交易�
 不把 18 个 LEAD、0 个 VERIFIED 或测试通过数当成真实研究/产品通过
 ```
 
-下一单步在用户完成 M2 Checkpoint A 后，继续记录交接并推进后续仍可执行的离线
-工程；在签收前，总目标保持 `PARTIAL`。
+M2 Checkpoint A 已记录交接。下一单步继续 M3 Decision Review / Checkpoint B，
+同时推进依赖已满足的离线工程；在 M7 用户验收前，总目标保持 `PARTIAL`。

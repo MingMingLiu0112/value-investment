@@ -1,5 +1,58 @@
 # Changelog
 
+## v2026.09.24-m2-checkpoint-a-human-pass
+
+### Scope
+
+记录用户对 M2 Checkpoint A 的正式人工结论：
+
+```text
+M2_CHECKPOINT_A = HUMAN_PASS
+```
+
+并新增 sequence=2 的 append-only `HumanMilestoneReviewReceipt`，绑定 sequence=1
+历史收据，不覆盖旧结论。同时把两项非阻断方法债写入 backlog。
+
+### Changes
+
+- M2 收口为 `DONE`，总 Goal 仍为 `PARTIAL`。
+- 新增
+  `scripts/build_m2_checkpoint_a_human_acceptance.py`。
+- 新收据目录
+  `runtime/m2-checkpoint-a-human-acceptance-20260924-v3/`。
+- 新增
+  [docs/m2-non-blocking-method-debt-20260924.md](docs/m2-non-blocking-method-debt-20260924.md)。
+
+### Verification
+
+- 定向回归 `7 passed`；`compileall` 与 `git diff --check` 通过。
+- 新收据 SHA-256
+  `9a18b7fcb08b4ba4196a989f88561939b0e9257982b03198b650669b378e6f20`。
+- Checkpoint A 验收包 SHA-256
+  `b880b74752362deccd1991d23a43f7347f7e5a8348e0ae6ca0603a5931e8f306`。
+- `action=no_order`；没有订单、仓位、生产数据库或 PTA 项目改动。
+
+## v2026.09.24-m3-strict-pit-evidence-intake
+
+### Scope
+
+新增 strict contemporaneous-rule Historical PIT 的可审计证据接收入口。真实候选
+证据缺失时保持 `NOT_PROVEN`，不会因以后找到证据而把当前状态写成已通过。
+
+### Changes
+
+- `CONTEMPORANEOUS_RULE` 必须绑定至少一条早于 `registered_at` 的独立证据。
+- 新增 `src/value_investment_agent/m3_strict_pit_evidence.py`、
+  `scripts/audit_m3_strict_pit_evidence.py` 与对应测试。
+- GitHub Core Research Gate 纳入 `test_m3_strict_pit_evidence.py`。
+
+### Verification
+
+- 定向回归 `26 passed`；真实 600519 / 2024-06-21 案例仍为
+  `NOT_PROVEN`、`action=no_order`。
+- 最新审计收据 SHA-256
+  `9d161d6e7a52e0c061c7129510933f7b3701245bd6c65a444450b50002dbdf3c`。
+
 ## v2026.09.24-m3-full-acceptance-recompute
 
 ### Scope
