@@ -116,6 +116,22 @@ try {
     if ($package.summary.m6_operational_status -ne 'NOT_STARTED') {
         throw 'M7 daily manifest lost the M6 operational status.'
     }
+    # WPS COM can return an empty string for UsedRange.Text, so read the
+    # contracted cells directly instead of weakening the boundary assertion.
+    $decisionText = [string]$book.Worksheets.Item('03_决策复核').Range('B11').Text
+    $researchText = [string]$book.Worksheets.Item('07_公司研究').Range('B11').Text
+    $historicalBoundaryText = $decisionText + [Environment]::NewLine + $researchText
+    if ($historicalBoundaryText -notmatch [regex]::Escape('规则时点 PIT=NOT CLAIMED')) {
+        throw 'M7 daily candidate lost the non-contemporaneous-rule PIT boundary.'
+    }
+    if ($historicalBoundaryText -notmatch [regex]::Escape('future_rule_version_used=True')) {
+        throw 'M7 daily candidate lost the future-rule-version marker.'
+    }
+    foreach ($misleading in @('真实 PIT 历史重放', '当时规则')) {
+        if ($historicalBoundaryText -match [regex]::Escape($misleading)) {
+            throw "M7 daily candidate contains misleading historical PIT wording: $misleading"
+        }
+    }
     foreach ($forbidden in @('建议买入', '建议加仓', '目标仓位', '下单')) {
         if ($overviewText -match $forbidden) {
             throw "M7 daily overview contains forbidden recommendation text: $forbidden"
@@ -126,6 +142,12 @@ try {
         boundary = [string]$overview.Range('A2').Text
         conclusion = $conclusion
         action = [string]$package.action
+        historical_replay_boundary = @{
+            facts_quote_pit = $true
+            contemporaneous_rule_pit = $false
+            future_rule_version_used = $true
+            checked = $true
+        }
     }
 
     $book.Close($false)
@@ -152,7 +174,7 @@ try {
         checked_at = [DateTimeOffset]::UtcNow.ToString('o')
         checks = $checks
         action = 'no_order'
-        check_scope = 'WPS read-only open/read/calculate, formula-error scan, visible/hidden sheet contract, fail-closed status text and no_order boundary'
+        check_scope = 'WPS read-only open/read/calculate, formula-error scan, visible/hidden sheet contract, fail-closed status text, M3 replay PIT wording boundary and no_order boundary'
     }
     $receipt | ConvertTo-Json -Depth 6 |
         Set-Content -LiteralPath $ReceiptPath -Encoding utf8
