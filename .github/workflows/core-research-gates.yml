@@ -55,6 +55,8 @@ jobs:
           tests/test_m7_workbench_candidate.py
           tests/test_m7_workbench_v2_candidate.py
           tests/test_portfolio_contracts.py
+          tests/test_private_portfolio_intake.py
+          tests/test_portfolio_reconciliation.py
           tests/test_portfolio_risk_assessment.py
           tests/test_m4_portfolio_risk_workbook.py
           tests/test_position_guidance.py

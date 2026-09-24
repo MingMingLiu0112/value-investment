@@ -104,6 +104,9 @@ python scripts/verify_private_portfolio_input.py `
 `PortfolioRiskAssessment`、`PositionGuidance` 和 `DividendIncomeProjection` 已在
 同日后续批次完成；真实个人化风险、仓位和收入报告仍需用户确认 IPS 与持仓后生成。
 
+非个人化工程审计及待用户输入清单见
+[M4 非个人化工程审计](m4-nonpersonal-engineering-audit-20260925.md)。
+
 这些项目只在 M3 人工决策链稳定且用户提供真实 IPS/持仓后继续，本轮不提前构造
 个人化结论。
 

@@ -18,6 +18,14 @@ migration、调度、通知、私有数据、资源、备份和 Shadow 的授权
 `INCOMPLETE`，差异为 `MISMATCH`。新增合成对账反例；M4 领域定向回归为 `59 passed`，
 无真实账户读取、无公开持久化、无仓位或订单，M4 仍为 `PARTIAL`。
 
+## 2026-09-25 M4 非个人化工程审计
+
+经代码与反例回归核对，M4 的 IPS/快照合同、私有加密边界、快照对账、现金预算、集中度、
+分层容量、股息投影、M3 决策绑定和 M5 失效投影均已具备非个人化实现。状态更新为
+`M4 non-personalized engineering = COMPLETE`，但 `M4 personalized acceptance =
+PENDING_USER_PRIVATE_INPUT` 不变。该结论不读取或猜测用户数据，不生成真实组合建议；
+详细矩阵见 [M4 非个人化工程审计](m4-nonpersonal-engineering-audit-20260925.md)。
+
 ## 2026-09-24 M6 预检阶段状态对账
 
 `config/m6-operational-preflight-v1.json` 曾保留旧的 `m2=PENDING_HUMAN_REVIEW`，
