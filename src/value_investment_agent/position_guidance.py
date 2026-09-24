@@ -21,6 +21,11 @@ from .investment_decision import (
     CONFIDENCE_LOW,
     CONFIDENCE_MEDIUM,
     CONFIDENCE_VALUES,
+    POSITIVE_REVIEW_STATUSES,
+    STATUS_HOLD,
+    STATUS_MANUAL_ADD_REVIEW,
+    STATUS_MANUAL_BUY_REVIEW,
+    InvestmentDecisionReview,
 )
 from .portfolio_contracts import (
     CONFIRMATION_DRAFT,
@@ -36,6 +41,7 @@ from .portfolio_risk import (
     LIQUIDITY_UNKNOWN,
     LIQUIDITY_PROFILES,
 )
+from .price_attractiveness import PRICE_ATTRACTIVENESS_STATUSES
 
 
 SCHEMA_VERSION = "m4-position-guidance-v1"
@@ -87,6 +93,7 @@ BUDGET_STATUSES = frozenset(
 )
 
 _SYMBOL = re.compile(r"^[0-9]{6}$")
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _FORBIDDEN_PUBLIC_KEYS = {
     "buy",
     "sell",
@@ -290,6 +297,12 @@ class PositionCandidateInput:
     industry: str = ""
     cyclical: bool = False
     evidence_refs: tuple[dict[str, Any], ...] = ()
+    decision_review_id: str | None = None
+    decision_review_sha256: str | None = None
+    decision_status: str | None = None
+    decision_as_of: date | None = None
+    price_attractiveness_status: str | None = None
+    decision_binding_required: bool = False
 
     def __post_init__(self) -> None:
         if not _SYMBOL.fullmatch(self.symbol):
@@ -316,6 +329,68 @@ class PositionCandidateInput:
         object.__setattr__(self, "evidence_refs", _normalize_refs(self.evidence_refs))
         if not self.evidence_refs:
             raise ValueError("Position candidate evidence is required")
+        object.__setattr__(
+            self,
+            "decision_review_id",
+            _optional_text(self.decision_review_id, "decision_review_id"),
+        )
+        if self.decision_review_sha256 is not None:
+            object.__setattr__(
+                self,
+                "decision_review_sha256",
+                _required_text(
+                    self.decision_review_sha256, "decision_review_sha256"
+                ).lower(),
+            )
+            if not _SHA256.fullmatch(self.decision_review_sha256):
+                raise ValueError("decision_review_sha256 must be SHA-256 hex")
+        object.__setattr__(
+            self,
+            "decision_status",
+            _optional_text(self.decision_status, "decision_status"),
+        )
+        if self.decision_as_of is not None:
+            object.__setattr__(
+                self, "decision_as_of", _date(self.decision_as_of, "decision_as_of")
+            )
+        object.__setattr__(
+            self,
+            "price_attractiveness_status",
+            _optional_text(
+                self.price_attractiveness_status,
+                "price_attractiveness_status",
+            ),
+        )
+        if self.price_attractiveness_status is not None and (
+            self.price_attractiveness_status not in PRICE_ATTRACTIVENESS_STATUSES
+        ):
+            raise ValueError("Unknown candidate price attractiveness status")
+        if self.decision_binding_required and not self.has_valid_decision_binding():
+            raise ValueError("Decision-bound candidates require complete M3 binding")
+        if (
+            not self.decision_binding_required
+            and any(
+                (
+                    self.decision_review_id,
+                    self.decision_review_sha256,
+                    self.decision_status,
+                    self.decision_as_of,
+                    self.price_attractiveness_status,
+                )
+            )
+        ):
+            raise ValueError("M3 decision binding requires decision_binding_required=True")
+
+    def has_valid_decision_binding(self) -> bool:
+        return all(
+            (
+                self.decision_review_id is not None,
+                self.decision_review_sha256 is not None,
+                self.decision_status is not None,
+                self.decision_as_of is not None,
+                self.price_attractiveness_status is not None,
+            )
+        )
 
     def preconditions_passed(self) -> bool:
         return all(
@@ -326,8 +401,18 @@ class PositionCandidateInput:
                 self.model_valid,
                 self.price_assessable,
                 not self.thesis_breakers,
+                not self.decision_binding_required or self.has_valid_decision_binding(),
             )
         )
+
+    def allows_new_buy_capacity(self) -> bool:
+        if self.review_intent not in {INTENT_BUY, INTENT_ADD}:
+            return False
+        if not self.preconditions_passed():
+            return False
+        if not self.decision_binding_required:
+            return True
+        return self.decision_status in POSITIVE_REVIEW_STATUSES
 
     def as_policy(self) -> dict[str, Any]:
         return {
@@ -344,6 +429,14 @@ class PositionCandidateInput:
             "industry": self.industry,
             "cyclical": self.cyclical,
             "evidence_refs": [dict(ref) for ref in self.evidence_refs],
+            "decision_review_id": self.decision_review_id,
+            "decision_review_sha256": self.decision_review_sha256,
+            "decision_status": self.decision_status,
+            "decision_as_of": (
+                self.decision_as_of.isoformat() if self.decision_as_of is not None else None
+            ),
+            "price_attractiveness_status": self.price_attractiveness_status,
+            "decision_binding_required": self.decision_binding_required,
         }
 
 
@@ -363,6 +456,11 @@ class PositionGuidanceLine:
     reduce_review_triggers: tuple[str, ...] = ()
     blockers: tuple[str, ...] = ()
     evidence_refs: tuple[dict[str, Any], ...] = ()
+    decision_review_id: str | None = None
+    decision_review_sha256: str | None = None
+    decision_status: str | None = None
+    decision_as_of: date | None = None
+    price_attractiveness_status: str | None = None
     action: str = ACTION_NO_ORDER
 
     def __post_init__(self) -> None:
@@ -419,6 +517,37 @@ class PositionGuidanceLine:
             tuple(_required_text(item, "blocker") for item in self.blockers),
         )
         object.__setattr__(self, "evidence_refs", _normalize_refs(self.evidence_refs))
+        object.__setattr__(
+            self,
+            "decision_review_id",
+            _optional_text(self.decision_review_id, "decision_review_id"),
+        )
+        if self.decision_review_sha256 is not None:
+            object.__setattr__(
+                self,
+                "decision_review_sha256",
+                _required_text(
+                    self.decision_review_sha256, "decision_review_sha256"
+                ).lower(),
+            )
+            if not _SHA256.fullmatch(self.decision_review_sha256):
+                raise ValueError("guidance decision_review_sha256 must be SHA-256 hex")
+        object.__setattr__(
+            self,
+            "decision_status",
+            _optional_text(self.decision_status, "decision_status"),
+        )
+        if self.decision_as_of is not None:
+            object.__setattr__(
+                self, "decision_as_of", _date(self.decision_as_of, "decision_as_of")
+            )
+        object.__setattr__(
+            self,
+            "price_attractiveness_status",
+            _optional_text(
+                self.price_attractiveness_status, "price_attractiveness_status"
+            ),
+        )
 
     def as_policy(self) -> dict[str, Any]:
         payload = {
@@ -434,6 +563,13 @@ class PositionGuidanceLine:
             "reduce_review_triggers": list(self.reduce_review_triggers),
             "blockers": list(self.blockers),
             "evidence_refs": [dict(ref) for ref in self.evidence_refs],
+            "decision_review_id": self.decision_review_id,
+            "decision_review_sha256": self.decision_review_sha256,
+            "decision_status": self.decision_status,
+            "decision_as_of": (
+                self.decision_as_of.isoformat() if self.decision_as_of is not None else None
+            ),
+            "price_attractiveness_status": self.price_attractiveness_status,
             "action": self.action,
         }
         _reject_public_execution_keys(payload)
@@ -509,6 +645,14 @@ class PositionGuidanceResult:
                 missing.append(f"candidate.{symbol}.symbol_mismatch")
             if not candidate.evidence_refs and candidate.preconditions_passed():
                 missing.append(f"candidate.{symbol}.evidence_refs")
+            if candidate.decision_binding_required and not candidate.has_valid_decision_binding():
+                missing.append(f"candidate.{symbol}.decision_review_binding")
+            if (
+                candidate.decision_binding_required
+                and candidate.review_intent in {INTENT_BUY, INTENT_ADD}
+                and candidate.decision_status not in POSITIVE_REVIEW_STATUSES
+            ):
+                missing.append(f"candidate.{symbol}.positive_decision_status")
             if candidate.review_intent not in {INTENT_BUY, INTENT_ADD, INTENT_HOLD}:
                 missing.append(f"candidate.{symbol}.review_intent")
         return tuple(dict.fromkeys(missing))
@@ -592,7 +736,7 @@ class PositionGuidanceResult:
         )
         tentative_remaining: list[Decimal] = []
         for candidate in self.candidates.values():
-            if not candidate.preconditions_passed():
+            if not candidate.allows_new_buy_capacity():
                 continue
             cap = tier_caps[candidate.confidence] / Decimal("100")
             current = self.current_weight(candidate.symbol)
@@ -624,15 +768,26 @@ class PositionGuidanceResult:
                         reduce_review_triggers=tuple(triggers),
                         blockers=tuple(blockers),
                         evidence_refs=candidate.evidence_refs,
+                        decision_review_id=candidate.decision_review_id,
+                        decision_review_sha256=candidate.decision_review_sha256,
+                        decision_status=candidate.decision_status,
+                        decision_as_of=candidate.decision_as_of,
+                        price_attractiveness_status=candidate.price_attractiveness_status,
                     )
                 )
                 continue
 
             ceiling_pct = tier_caps[candidate.confidence] / Decimal("100")
-            remaining = max(ceiling_pct - current, Decimal("0"))
             status = LINE_ELIGIBLE
             budget_status = BUDGET_AVAILABLE
             liquidity_restricted = candidate.liquidity_profile != LIQUIDITY_LIQUID
+
+            if candidate.review_intent == INTENT_HOLD:
+                remaining = None
+                budget_status = BUDGET_NOT_APPLICABLE
+                stop_add.append("hold_review_has_no_new_buy_capacity")
+            else:
+                remaining = max(ceiling_pct - current, Decimal("0"))
 
             if liquidity_restricted:
                 status = LINE_REVIEW_REQUIRED
@@ -660,22 +815,23 @@ class PositionGuidanceResult:
                 if cyclical_now > max_cyclical / Decimal("100"):
                     triggers.append("cyclical_exposure_exceeds_cap")
 
-            if free_budget_pct <= 0:
-                budget_status = BUDGET_EXHAUSTED
-                stop_add.append("shared_budget_exhausted")
-                remaining = Decimal("0")
-            elif remaining is not None and remaining > free_budget_pct:
-                budget_status = BUDGET_CONSTRAINED
-                stop_add.append("shared_budget_constrains_ceiling")
+            if candidate.review_intent != INTENT_HOLD:
+                if free_budget_pct <= 0:
+                    budget_status = BUDGET_EXHAUSTED
+                    stop_add.append("shared_budget_exhausted")
+                    remaining = Decimal("0")
+                elif remaining is not None and remaining > free_budget_pct:
+                    budget_status = BUDGET_CONSTRAINED
+                    stop_add.append("shared_budget_constrains_ceiling")
 
-            if (
-                remaining is not None
-                and remaining > Decimal("0")
-                and aggregate_budget_constrained
-                and budget_status == BUDGET_AVAILABLE
-            ):
-                budget_status = BUDGET_CONSTRAINED
-                stop_add.append("shared_budget_constrains_ceiling")
+                if (
+                    remaining is not None
+                    and remaining > Decimal("0")
+                    and aggregate_budget_constrained
+                    and budget_status == BUDGET_AVAILABLE
+                ):
+                    budget_status = BUDGET_CONSTRAINED
+                    stop_add.append("shared_budget_constrains_ceiling")
 
             if liquidity_restricted:
                 remaining = None
@@ -694,6 +850,11 @@ class PositionGuidanceResult:
                     reduce_review_triggers=tuple(dict.fromkeys(triggers)),
                     blockers=tuple(dict.fromkeys(blockers)),
                     evidence_refs=candidate.evidence_refs,
+                    decision_review_id=candidate.decision_review_id,
+                    decision_review_sha256=candidate.decision_review_sha256,
+                    decision_status=candidate.decision_status,
+                    decision_as_of=candidate.decision_as_of,
+                    price_attractiveness_status=candidate.price_attractiveness_status,
                 )
             )
         return tuple(result)
@@ -758,6 +919,60 @@ class PositionGuidanceResult:
         return json.dumps(self.as_policy(), ensure_ascii=False, allow_nan=False, indent=2)
 
 
+def position_candidate_from_decision_review(
+    *,
+    review: InvestmentDecisionReview,
+    liquidity_profile: str = LIQUIDITY_LIQUID,
+    industry: str,
+    cyclical: bool = False,
+) -> PositionCandidateInput:
+    if review.status not in {
+        STATUS_MANUAL_BUY_REVIEW,
+        STATUS_MANUAL_ADD_REVIEW,
+        STATUS_HOLD,
+    }:
+        raise ValueError(
+            "Production position guidance only consumes BUY, ADD or HOLD Decision Reviews"
+        )
+    if review.status == STATUS_MANUAL_BUY_REVIEW:
+        intent = INTENT_BUY
+    elif review.status == STATUS_MANUAL_ADD_REVIEW:
+        intent = INTENT_ADD
+    else:
+        intent = INTENT_HOLD
+    evidence_refs = (
+        *review.bundle.evidence_refs,
+        {
+            "id": f"decision-review-{review.review_id}",
+            "sha256": review.decision_review_sha256,
+        },
+    )
+    preconditions_passed = not review.blockers and review.confidence is not None
+    return PositionCandidateInput(
+        symbol=review.symbol,
+        review_intent=intent,
+        confidence=review.confidence or CONFIDENCE_LOW,
+        research_gate_passed=preconditions_passed,
+        human_approval_valid=preconditions_passed,
+        event_review_clean=preconditions_passed,
+        model_valid=preconditions_passed,
+        price_assessable=(
+            review.price_attractiveness_status != "NOT_ASSESSABLE"
+        ),
+        thesis_breakers=review.blockers,
+        liquidity_profile=liquidity_profile,
+        industry=industry,
+        cyclical=cyclical,
+        evidence_refs=tuple(evidence_refs),
+        decision_review_id=review.review_id,
+        decision_review_sha256=review.decision_review_sha256,
+        decision_status=review.status,
+        decision_as_of=review.decision_as_of,
+        price_attractiveness_status=review.price_attractiveness_status,
+        decision_binding_required=True,
+    )
+
+
 def build_position_guidance(
     *,
     bundle: PortfolioInputBundle,
@@ -795,6 +1010,28 @@ def position_candidate_from_payload(payload: Mapping[str, Any]) -> PositionCandi
         industry=str(data.get("industry", "")),
         cyclical=bool(data.get("cyclical", False)),
         evidence_refs=tuple(dict(item) for item in data.get("evidence_refs") or ()),
+        decision_review_id=(
+            str(data["decision_review_id"]) if data.get("decision_review_id") else None
+        ),
+        decision_review_sha256=(
+            str(data["decision_review_sha256"])
+            if data.get("decision_review_sha256")
+            else None
+        ),
+        decision_status=(
+            str(data["decision_status"]) if data.get("decision_status") else None
+        ),
+        decision_as_of=(
+            date.fromisoformat(str(data["decision_as_of"]))
+            if data.get("decision_as_of")
+            else None
+        ),
+        price_attractiveness_status=(
+            str(data["price_attractiveness_status"])
+            if data.get("price_attractiveness_status")
+            else None
+        ),
+        decision_binding_required=bool(data.get("decision_binding_required", False)),
     )
 
 

@@ -24,6 +24,7 @@ from value_investment_agent.investment_decision import (
     POSITIVE_ARTIFACT_TYPES,
     STATUS_HOLD,
     STATUS_INSUFFICIENT_RESEARCH,
+    STATUS_MANUAL_ADD_REVIEW,
     STATUS_MANUAL_BUY_REVIEW,
     STATUS_MANUAL_EXIT_REVIEW,
     STATUS_MANUAL_REDUCE_REVIEW,
@@ -50,6 +51,13 @@ from value_investment_agent.pre_decision_eligibility import (
     PreDecisionEligibility,
     STATUS_ELIGIBLE,
     STATUS_NOT_ELIGIBLE,
+)
+from value_investment_agent.price_attractiveness import (
+    STATUS_KEY_OBSERVATION,
+    STATUS_NOT_ASSESSABLE,
+    STATUS_PRICE_NOT_ATTRACTIVE,
+    STATUS_RESEARCH_ATTRACTIVE,
+    STATUS_WAITING_FOR_BETTER_PRICE,
 )
 from value_investment_agent.research_artifact_codecs import decode_artifact
 from value_investment_agent.research_artifact_repository import (
@@ -100,7 +108,23 @@ def _predecision(
     *,
     status: str = STATUS_ELIGIBLE,
     blockers: tuple[str, ...] = (),
+    price_status: str | None = None,
+    positive_price_eligible: bool | None = None,
 ) -> PreDecisionEligibility:
+    resolved_price_status = (
+        price_status
+        or (
+            STATUS_RESEARCH_ATTRACTIVE
+            if status == STATUS_ELIGIBLE
+            else STATUS_NOT_ASSESSABLE
+        )
+    )
+    resolved_positive_eligible = (
+        positive_price_eligible
+        if positive_price_eligible is not None
+        else status == STATUS_ELIGIBLE
+        and resolved_price_status == STATUS_RESEARCH_ATTRACTIVE
+    )
     return PreDecisionEligibility(
         symbol=SYMBOL,
         decision_as_of=AS_OF,
@@ -111,6 +135,8 @@ def _predecision(
         event_review_watermark=AS_OF,
         blockers=blockers,
         evidence_refs=({"id": "predecision"},),
+        price_attractiveness_status=resolved_price_status,
+        positive_price_review_eligible=resolved_positive_eligible,
     )
 
 
@@ -209,6 +235,66 @@ def test_non_eligible_predecision_produces_research_or_price_wait_not_buy():
     assert price_wait.status == STATUS_WAIT_FOR_PRICE
     assert research_gap.action == ACTION_NO_ORDER
     assert price_wait.action == ACTION_NO_ORDER
+
+
+@pytest.mark.parametrize(
+    ("price_status", "expected_status"),
+    [
+        (STATUS_NOT_ASSESSABLE, STATUS_INSUFFICIENT_RESEARCH),
+        (STATUS_WAITING_FOR_BETTER_PRICE, STATUS_WAIT_FOR_PRICE),
+        (STATUS_KEY_OBSERVATION, STATUS_WATCH),
+        (STATUS_PRICE_NOT_ATTRACTIVE, STATUS_WATCH),
+    ],
+)
+def test_non_attractive_price_statuses_never_become_positive_reviews(
+    price_status: str,
+    expected_status: str,
+):
+    result = evaluate_investment_decision(
+        predecision=_predecision(
+            price_status=price_status,
+            positive_price_eligible=False,
+        ),
+        bundle=_bundle(),
+        decision_as_of=AS_OF,
+        decision_intent="buy",
+        confidence="中",
+        portfolio_preconditions=_portfolio(),
+    )
+
+    assert result.status == expected_status
+    assert result.is_positive_review() is False
+    assert "positive_price_review_not_eligible" in result.blockers
+    assert result.action == ACTION_NO_ORDER
+
+
+@pytest.mark.parametrize(
+    ("decision_intent", "expected_status", "needs_entry"),
+    [
+        ("buy", STATUS_MANUAL_BUY_REVIEW, False),
+        ("add", STATUS_MANUAL_ADD_REVIEW, True),
+    ],
+)
+def test_research_attractive_price_can_only_reach_manual_positive_review(
+    decision_intent: str,
+    expected_status: str,
+    needs_entry: bool,
+):
+    result = evaluate_investment_decision(
+        predecision=_predecision(),
+        bundle=_bundle(),
+        decision_as_of=AS_OF,
+        decision_intent=decision_intent,
+        confidence="中",
+        portfolio_preconditions=_portfolio(),
+        entry=_entry() if needs_entry else None,
+        reason="Evidence improved" if needs_entry else None,
+    )
+
+    assert result.status == expected_status
+    assert result.price_attractiveness_status == STATUS_RESEARCH_ATTRACTIVE
+    assert result.requires_human_review is True
+    assert result.action == ACTION_NO_ORDER
 
 
 def test_eligible_research_still_requires_confirmed_portfolio_capacity():

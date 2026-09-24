@@ -6,7 +6,7 @@ that the production adapter must satisfy.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 import hashlib
@@ -498,6 +498,11 @@ class ChannelEvaluation:
     reason: str
     profile_status: str
     evidence_date: str
+    trigger_metrics: dict[str, str | None] = field(default_factory=dict)
+    trigger_reasons: tuple[str, ...] = ()
+    policy_version: str = ""
+    evidence_refs: tuple[EvidenceReference, ...] = ()
+    raw_rank_before_budget: int | None = None
 
     def __post_init__(self) -> None:
         if not _SYMBOL.fullmatch(self.symbol):
@@ -511,6 +516,12 @@ class ChannelEvaluation:
         if self.profile_status not in _PROFILE_STATUSES:
             raise ValueError("Evaluation profile status is invalid")
         object.__setattr__(self, "evidence_date", _required_text(self.evidence_date, "evaluation evidence date"))
+        object.__setattr__(self, "trigger_metrics", dict(self.trigger_metrics))
+        object.__setattr__(self, "trigger_reasons", tuple(self.trigger_reasons))
+        object.__setattr__(self, "policy_version", self.policy_version or "")
+        object.__setattr__(self, "evidence_refs", tuple(self.evidence_refs))
+        if self.raw_rank_before_budget is not None and self.raw_rank_before_budget < 1:
+            raise ValueError("raw_rank_before_budget must start at one")
 
     def as_policy(self) -> dict[str, Any]:
         return {
@@ -521,6 +532,11 @@ class ChannelEvaluation:
             "reason": self.reason,
             "profile_status": self.profile_status,
             "evidence_date": self.evidence_date,
+            "trigger_metrics": _json_value(self.trigger_metrics),
+            "trigger_reasons": list(self.trigger_reasons),
+            "policy_version": self.policy_version,
+            "evidence_refs": [reference.as_policy() for reference in self.evidence_refs],
+            "raw_rank_before_budget": self.raw_rank_before_budget,
         }
 
 
@@ -830,6 +846,10 @@ def coverage_signature(channel_results: Mapping[str, ChannelResult]) -> str:
                     "reason": evaluation.reason,
                     "profile_status": evaluation.profile_status,
                     "evidence_date": evaluation.evidence_date,
+                    "trigger_metrics": _json_value(evaluation.trigger_metrics),
+                    "trigger_reasons": list(evaluation.trigger_reasons),
+                    "policy_version": evaluation.policy_version,
+                    "raw_rank_before_budget": evaluation.raw_rank_before_budget,
                 }
             )
     payload = json.dumps(entries, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
@@ -846,6 +866,23 @@ def channel_evaluation_from_payload(value: Mapping[str, Any]) -> ChannelEvaluati
         reason=str(data.get("reason") or ""),
         profile_status=str(data.get("profile_status") or ""),
         evidence_date=str(data.get("evidence_date") or ""),
+        trigger_metrics={
+            str(key): None if item is None else str(item)
+            for key, item in (data.get("trigger_metrics") or {}).items()
+        },
+        trigger_reasons=tuple(
+            str(item) for item in data.get("trigger_reasons") or ()
+        ),
+        policy_version=str(data.get("policy_version") or ""),
+        evidence_refs=tuple(
+            evidence_reference_from_payload(item)
+            for item in data.get("evidence_refs") or []
+        ),
+        raw_rank_before_budget=(
+            int(data["raw_rank_before_budget"])
+            if data.get("raw_rank_before_budget") is not None
+            else None
+        ),
     )
 
 

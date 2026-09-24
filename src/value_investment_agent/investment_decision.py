@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
+import hashlib
 import json
 import re
 from typing import Any, Iterable, Mapping, Sequence
@@ -18,9 +19,17 @@ from .pre_decision_eligibility import (
     STATUS_ELIGIBLE,
     STATUS_NOT_ELIGIBLE,
 )
+from .price_attractiveness import (
+    PRICE_ATTRACTIVENESS_STATUSES,
+    STATUS_KEY_OBSERVATION,
+    STATUS_NOT_ASSESSABLE,
+    STATUS_RESEARCH_ATTRACTIVE,
+    STATUS_WAITING_FOR_BETTER_PRICE,
+)
 
 
-DECISION_SCHEMA = "m3-investment-decision-v1"
+DECISION_SCHEMA = "m3-investment-decision-v2"
+LEGACY_DECISION_SCHEMA = "m3-investment-decision-v1"
 ACTION_NO_ORDER = "no_order"
 
 STATUS_INSUFFICIENT_RESEARCH = "INSUFFICIENT_RESEARCH"
@@ -619,6 +628,7 @@ def evaluate_investment_decision(
             entry_id=entry_id,
             created_at=created_at or datetime.now(timezone.utc),
             rule_version=rule_version,
+            price_attractiveness_status=predecision.price_attractiveness_status,
         )
 
     if decision_intent in {"reduce", "exit"}:
@@ -656,6 +666,7 @@ def evaluate_investment_decision(
             entry_id=entry_id,
             created_at=created_at or datetime.now(timezone.utc),
             rule_version=rule_version,
+            price_attractiveness_status=predecision.price_attractiveness_status,
         )
 
     if predecision.status != STATUS_ELIGIBLE:
@@ -677,6 +688,39 @@ def evaluate_investment_decision(
             entry_id=entry_id,
             created_at=created_at or datetime.now(timezone.utc),
             rule_version=rule_version,
+            price_attractiveness_status=predecision.price_attractiveness_status,
+        )
+
+    if decision_intent in {"buy", "add"} and not predecision.positive_price_review_eligible:
+        blockers.append("positive_price_review_not_eligible")
+        if predecision.price_attractiveness_status == STATUS_NOT_ASSESSABLE:
+            status = STATUS_INSUFFICIENT_RESEARCH
+            summary = "当前价格吸引力不可评估，不能进入 BUY / ADD 人工复核。"
+        elif predecision.price_attractiveness_status == STATUS_WAITING_FOR_BETTER_PRICE:
+            status = STATUS_WAIT_FOR_PRICE
+            summary = "研究可评估但当前价格仍等待更有吸引力的条件，不能进入 BUY / ADD 人工复核。"
+        else:
+            status = STATUS_WATCH
+            summary = "当前价格状态仅为观察或缺乏吸引力，不能进入 BUY / ADD 人工复核。"
+        return InvestmentDecisionReview(
+            review_id=(
+                f"{predecision.symbol}-{decision_as_of.isoformat()}-"
+                f"{decision_intent}-{rule_version}"
+            ),
+            symbol=predecision.symbol,
+            decision_as_of=decision_as_of,
+            status=status,
+            summary=summary,
+            reasons=tuple(reasons),
+            blockers=tuple(dict.fromkeys(blockers)),
+            confidence=confidence,
+            bundle=bundle,
+            predecision_status=predecision.status,
+            portfolio_preconditions=portfolio,
+            entry_id=entry_id,
+            created_at=created_at or datetime.now(timezone.utc),
+            rule_version=rule_version,
+            price_attractiveness_status=predecision.price_attractiveness_status,
         )
 
     if not portfolio.allows_positive_review():
@@ -701,6 +745,7 @@ def evaluate_investment_decision(
             entry_id=entry_id,
             created_at=created_at or datetime.now(timezone.utc),
             rule_version=rule_version,
+            price_attractiveness_status=predecision.price_attractiveness_status,
         )
 
     if decision_intent == "buy":
@@ -759,9 +804,10 @@ def evaluate_investment_decision(
         predecision_status=predecision.status,
         portfolio_preconditions=portfolio,
         entry_id=entry_id,
-        created_at=created_at or datetime.now(timezone.utc),
-        rule_version=rule_version,
-    )
+            created_at=created_at or datetime.now(timezone.utc),
+            rule_version=rule_version,
+            price_attractiveness_status=predecision.price_attractiveness_status,
+        )
 
 
 def decision_artifact_reference_from_payload(
@@ -784,7 +830,7 @@ def decision_evidence_bundle_from_payload(
     payload: Mapping[str, Any],
 ) -> DecisionEvidenceBundle:
     data = dict(payload)
-    if data.get("schema_version") != DECISION_SCHEMA:
+    if data.get("schema_version") not in {DECISION_SCHEMA, LEGACY_DECISION_SCHEMA}:
         raise ValueError("Unknown decision evidence bundle schema")
     return DecisionEvidenceBundle(
         bundle_id=str(data["bundle_id"]),
@@ -804,7 +850,7 @@ def minimal_portfolio_preconditions_from_payload(
     payload: Mapping[str, Any],
 ) -> MinimalPortfolioPreconditions:
     data = dict(payload)
-    if data.get("schema_version") != DECISION_SCHEMA:
+    if data.get("schema_version") not in {DECISION_SCHEMA, LEGACY_DECISION_SCHEMA}:
         raise ValueError("Unknown portfolio preconditions schema")
     confirmed_at = data.get("confirmed_at")
     return MinimalPortfolioPreconditions(
@@ -826,7 +872,7 @@ def investment_decision_review_from_payload(
     payload: Mapping[str, Any],
 ) -> InvestmentDecisionReview:
     data = dict(payload)
-    if data.get("schema_version") != DECISION_SCHEMA:
+    if data.get("schema_version") not in {DECISION_SCHEMA, LEGACY_DECISION_SCHEMA}:
         raise ValueError("Unknown investment decision review schema")
     return InvestmentDecisionReview(
         review_id=str(data["review_id"]),
@@ -849,6 +895,9 @@ def investment_decision_review_from_payload(
         ),
         created_at=datetime.fromisoformat(str(data["created_at"])),
         rule_version=str(data["rule_version"]),
+        price_attractiveness_status=str(
+            data.get("price_attractiveness_status", STATUS_NOT_ASSESSABLE)
+        ),
         requires_human_review=bool(data.get("requires_human_review", True)),
         action=str(data.get("action", ACTION_NO_ORDER)),
     )
@@ -858,7 +907,7 @@ def entry_thesis_snapshot_from_payload(
     payload: Mapping[str, Any],
 ) -> EntryThesisSnapshot:
     data = dict(payload)
-    if data.get("schema_version") != DECISION_SCHEMA:
+    if data.get("schema_version") not in {DECISION_SCHEMA, LEGACY_DECISION_SCHEMA}:
         raise ValueError("Unknown entry thesis snapshot schema")
 
     def decimal_value(field: str) -> Decimal | None:
@@ -916,7 +965,7 @@ def decision_journal_entry_from_payload(
     payload: Mapping[str, Any],
 ) -> DecisionJournalEntry:
     data = dict(payload)
-    if data.get("schema_version") != DECISION_SCHEMA:
+    if data.get("schema_version") not in {DECISION_SCHEMA, LEGACY_DECISION_SCHEMA}:
         raise ValueError("Unknown decision journal schema")
     created_at = data.get("created_at")
     return DecisionJournalEntry(
@@ -965,7 +1014,7 @@ def investment_consistency_review_from_payload(
     payload: Mapping[str, Any],
 ) -> InvestmentConsistencyReview:
     data = dict(payload)
-    if data.get("schema_version") != DECISION_SCHEMA:
+    if data.get("schema_version") not in {DECISION_SCHEMA, LEGACY_DECISION_SCHEMA}:
         raise ValueError("Unknown investment consistency review schema")
     return InvestmentConsistencyReview(
         review_id=str(data["review_id"]),
@@ -1074,6 +1123,7 @@ class InvestmentDecisionReview:
     entry_id: str | None
     created_at: datetime
     rule_version: str
+    price_attractiveness_status: str
     requires_human_review: bool = True
     action: str = ACTION_NO_ORDER
 
@@ -1097,6 +1147,8 @@ class InvestmentDecisionReview:
             raise ValueError("Decision bundle identity must match the review")
         if self.predecision_status not in {STATUS_ELIGIBLE, STATUS_NOT_ELIGIBLE}:
             raise ValueError("Unknown predecision status in decision review")
+        if self.price_attractiveness_status not in PRICE_ATTRACTIVENESS_STATUSES:
+            raise ValueError("Unknown price attractiveness status in decision review")
         if not self.requires_human_review:
             raise ValueError("M3 reviews always require human confirmation")
         if self.action != ACTION_NO_ORDER:
@@ -1110,6 +1162,8 @@ class InvestmentDecisionReview:
         if self.status in POSITIVE_REVIEW_STATUSES:
             if self.predecision_status != STATUS_ELIGIBLE:
                 raise ValueError("Positive review requires predecision eligibility")
+            if self.price_attractiveness_status != STATUS_RESEARCH_ATTRACTIVE:
+                raise ValueError("Positive review requires RESEARCH_ATTRACTIVE price status")
             if not self.portfolio_preconditions.allows_positive_review():
                 raise ValueError("Positive review requires confirmed portfolio capacity")
             if self.confidence not in POSITIVE_MINIMUM_CONFIDENCE:
@@ -1139,9 +1193,20 @@ class InvestmentDecisionReview:
             "entry_id": self.entry_id,
             "created_at": self.created_at.isoformat(),
             "rule_version": self.rule_version,
+            "price_attractiveness_status": self.price_attractiveness_status,
             "requires_human_review": self.requires_human_review,
             "action": self.action,
         }
+
+    @property
+    def decision_review_sha256(self) -> str:
+        payload = json.dumps(
+            self.as_policy(),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     def to_json(self) -> str:
         return json.dumps(

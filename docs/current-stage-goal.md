@@ -1,12 +1,31 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-更新：2026-09-23 / roadmap-v3。用户已将下一Goal扩到M7，不再在M2完成后退出。
+更新：2026-09-24 / 人工审查纠偏版。用户已将下一Goal扩到M7，不再在M2完成后退出。
 总Goal ID：`VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`。
-当前聚焦阶段：`M2-MULTI-CHANNEL-OPPORTUNITY-DISCOVERY`，PARTIAL；M1与Post-M1稳定化保持DONE，M3-M7尚未验收。
+当前产品聚焦仍为 M2 与人工 Checkpoint A；工程已推进到 M7 Daily Workbench 候选，但不得把工程推进速度当阶段验收。
 总目标现已进入实现阶段；先从 M2 的 W1/W2 共同合同时点、官方身份、逐证券覆盖与通道合并开始，
 分阶段验收。不因总范围授权生产迁移、计划任务、通知、私人组合导入或公开推送。
 权威分工遵循AGENTS；唯一长期路线为 [LONG-TERM-GOAL.md](../LONG-TERM-GOAL.md)，本文件选择执行范围与交接门。
 旧m2-current-progress-review等文件是历史输入，不覆盖最新范围；W0-W7是M2内部工作流，不是Milestone M0-M7。
+
+## 2026-09-24 人工审查后的多维状态
+
+工程、研究/产品、人工/运营分别记录，禁止用一个 `READY` 掩盖其他维度：
+
+```text
+M1  Engineering DONE | Research Workbench DONE | 已完成人工 G3 初审
+M2  ENGINEERING_DONE | PARTIAL                | PENDING_HUMAN_REVIEW
+M3  ENGINEERING_PARTIAL_PLUS | PARTIAL        | PENDING_HUMAN_REVIEW
+M4  ENGINEERING_DONE_SIMULATED | PARTIAL      | PENDING_PRIVATE_INPUT
+M5  ENGINEERING_DONE_OFFLINE | PARTIAL        | PENDING_RECONCILIATION / OPERATIONS
+M6  PREFLIGHT_DONE | operationally NOT_STARTED | PENDING_AUTHORIZATION / SHADOW
+M7  DISPLAY_ENGINEERING_DONE | PARTIAL        | PENDING_USER_ACCEPTANCE
+```
+
+本轮纠偏后的机器门已覆盖：M3 正向价格门、M4 决策制品绑定、M2 二阶段
+Channel Verification、M5 旧人工 review Hash reconciliation、M3 真实 PIT
+Historical Research Replay，以及 M7 9 个日常主入口工作台。Checkpoint A-D、
+真实 IPS/Portfolio 与 M6 运营验收仍保持人工待办。
 
 ## 总体成果与阶段交接
 

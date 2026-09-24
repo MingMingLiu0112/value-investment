@@ -211,6 +211,15 @@ def _overview(wb: Workbook, receipt: DiscoveryRunReceipt, policy: M2ScreeningPol
     )
     lead_count = sum(len(items) for items in receipt.candidate_pool().values())
     verified_count = sum(len(items) for items in receipt.verified_candidate_pool().values())
+    quality_verified_count = len(
+        receipt.verified_candidate_pool().get(CHANNEL_QUALITY, ())
+    )
+    quality_evidence_count = receipt.data_health.financial_evidence_count
+    quality_coverage_status = (
+        "COVERAGE_LIMITED"
+        if quality_evidence_count < receipt.data_health.universe_count
+        else "COMPLETE"
+    )
     items = [
         ("产品结论", "系统只发现值得深研的公司，不生成估值、BUY、仓位或订单。"),
         ("Universe 分母", f"{receipt.data_health.universe_count} 家官方证券清单，行情匹配 {receipt.data_health.matched_quote_count} 家。"),
@@ -218,6 +227,19 @@ def _overview(wb: Workbook, receipt: DiscoveryRunReceipt, policy: M2ScreeningPol
         ("逐通道覆盖", coverage_text),
         ("候选总量", f"{receipt.legacy_comparison.new_candidate_count} 家，跨通道可能重复。"),
         ("研究层级", f"研究线索 {lead_count} 条；已核候选 {verified_count} 条。线索不视为研究完成。"),
+        (
+            "Quality 通道覆盖",
+            (
+                f"Quality Channel Coverage: {quality_evidence_count} / "
+                f"{receipt.data_health.universe_count} have usable quality evidence"
+            ),
+        ),
+        ("Quality 覆盖状态", quality_coverage_status),
+        ("Quality 已核线索", str(quality_verified_count)),
+        (
+            "Quality 覆盖解释",
+            "当前数据覆盖不足，不能把 0 候选解释成市场没有高质量公司。",
+        ),
         ("预算外通过者", f"各通道超出展示预算的通过者已在覆盖账中保留，不静默删除。"),
         ("Legacy 对比", f"{receipt.legacy_comparison.legacy_candidate_count} 家旧 PE/PB 阴影候选，与新池重叠 {receipt.legacy_comparison.overlap_count} 家。"),
         ("覆盖签名", receipt.coverage_signature),

@@ -2,6 +2,47 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 人工审查纠偏收口
+
+本节记录按同日人工审查手册完成的安全门、验证门与 M7 Daily Workbench。全部动作
+`action=no_order`，未执行生产迁移、计划任务、通知或真实账户导入。
+
+- M3 正向决策门：`PreDecisionEligibility` 保存
+  `positive_price_review_eligible`；只有正向价格状态可进入 BUY/ADD 人工复核。
+  `NOT_ASSESSABLE / WAITING_FOR_BETTER_PRICE / KEY_OBSERVATION` 不能产生
+  `MANUAL_BUY_REVIEW / MANUAL_ADD_REVIEW`。BUY/ADD 状态矩阵回归已覆盖。
+- M4 容量门：`PositionGuidance` 强绑定 typed M3 Decision Review 与
+  `decision_review_id + decision_review_sha256 + decision_status`；只有有效
+  `MANUAL_BUY_REVIEW / MANUAL_ADD_REVIEW` 允许新增容量，缺绑定失败关闭。
+- M2 二阶段验证：18 条预注册 LEAD 完成 resolution，3 条
+  `VERIFIED_FOR_DEEP_RESEARCH`、13 条 `REJECTED_AFTER_VERIFICATION`、2 条
+  `INSUFFICIENT_EVIDENCE`、0 条 `UNSUPPORTED`。Quality 覆盖 873/5568，
+  状态 `COVERAGE_LIMITED`；Value 文案明确仅 PE/PB/隐含 ROE 初筛；预算外对象
+  保留 trigger metrics 与原始触发逻辑。
+- M3 真实 PIT 重放：600519 / 2024-06-21，当时年报、派息公告、收盘价与
+  版本化规则，最终状态 `WAIT`；`valuation_approved=false`、
+  `trade_approved=false`、`future_facts_used=false`。重放不冒充估值、交易或
+  历史策略收益。
+- M5 旧人工复核复用：24 条当前候选中 23 条按
+  `symbol + announcement_id + source PDF SHA-256` 继承，1 条新公告待复核，
+  Hash 冲突 0、被取代待处理 0。
+- M7 Daily Workbench 候选：
+  `A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_20260924.xlsx`。
+  10 个可见主页面（今日总览、全市场、候选、决策、持仓、股息、事件、研究、
+  历史、审计）加 2 个隐藏技术页；90 页 v2 审计工作台继续保留。
+- M7 候选 SHA-256
+  `0230877890ad8f2e688e1218cd5707bb4c95b33a70a7da26e4c7afa8c3894409`。
+  WPS 只读验证 `passed`：12 页、页签显隐、公式错误 0、fail-closed 状态与
+  canonical Hash 通过，收据
+  `runtime/m7-daily-wps-20260924/receipt.json`。
+- M3/M4/M2/M5/M7 定向回归 84 passed；M3 历史读取器恢复兼容
+  `m3-investment-decision-v1` 旧快照，且继续接受 v2 新字段。
+- 全量离线回归 2356 passed、6 skipped、0 failed、18 warnings；skip 为既有的
+  PostgreSQL/外部服务条件项，warning 来自 Backtrader `utcnow()` 弃用，不改变
+ 投资结论。
+- M2 Checkpoint A 仅 `READY_FOR_HUMAN_RESUBMISSION`；M3 Checkpoint B、
+  M4 个性化、M5 持续运营、M6 运营验收与 M7 用户签收均未批准。
+
 ## M7 统一工作台 v2 候选：2026-09-24
 
 本节记录把 M4/M5 联合检查点候选接入 M7 只读统一入口的展示层准备。`M2` 保持

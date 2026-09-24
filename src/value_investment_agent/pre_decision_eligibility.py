@@ -20,6 +20,8 @@ from .human_research_approval import (
 from .model_validity import ModelValidity
 from .price_attractiveness import (
     STATUS_NOT_ASSESSABLE,
+    STATUS_RESEARCH_ATTRACTIVE,
+    PRICE_ATTRACTIVENESS_STATUSES,
     PriceAttractivenessAssessment,
 )
 from .price_bridge import PriceBridgeResult
@@ -27,10 +29,11 @@ from .research_gate import ResearchGate
 from .valuation_models.base import ValuationResult
 
 
-PREDECISION_SCHEMA = "post-m1-predecision-eligibility-v1"
+PREDECISION_SCHEMA = "post-m1-predecision-eligibility-v2"
 ACTION_NO_ORDER = "no_order"
 STATUS_ELIGIBLE = "ELIGIBLE_FOR_DECISION_REVIEW"
 STATUS_NOT_ELIGIBLE = "NOT_ELIGIBLE"
+POSITIVE_PRICE_REVIEW_STATUSES = frozenset({STATUS_RESEARCH_ATTRACTIVE})
 
 _SYMBOL = re.compile(r"^[0-9]{6}$")
 
@@ -67,6 +70,8 @@ class PreDecisionEligibility:
     event_review_watermark: date | None
     blockers: tuple[str, ...]
     evidence_refs: tuple[dict[str, Any], ...]
+    price_attractiveness_status: str = STATUS_NOT_ASSESSABLE
+    positive_price_review_eligible: bool = False
     action: str = ACTION_NO_ORDER
 
     def __post_init__(self) -> None:
@@ -76,6 +81,23 @@ class PreDecisionEligibility:
             raise ValueError("Unknown predecision status")
         if self.action != ACTION_NO_ORDER:
             raise ValueError("Predecision check must remain no_order")
+        if self.price_attractiveness_status not in PRICE_ATTRACTIVENESS_STATUSES:
+            raise ValueError("Unknown price attractiveness status")
+        if not isinstance(self.positive_price_review_eligible, bool):
+            raise ValueError("positive_price_review_eligible must be boolean")
+        if self.positive_price_review_eligible and (
+            self.price_attractiveness_status not in POSITIVE_PRICE_REVIEW_STATUSES
+        ):
+            raise ValueError(
+                "Positive price review eligibility requires RESEARCH_ATTRACTIVE"
+            )
+        if (
+            self.price_attractiveness_status in POSITIVE_PRICE_REVIEW_STATUSES
+            and not self.positive_price_review_eligible
+        ):
+            raise ValueError(
+                "RESEARCH_ATTRACTIVE must be marked positive price review eligible"
+            )
         if self.status == STATUS_ELIGIBLE and self.blockers:
             raise ValueError("An eligible predecision check cannot have blockers")
         if self.status == STATUS_NOT_ELIGIBLE and not self.blockers:
@@ -102,6 +124,8 @@ class PreDecisionEligibility:
             ),
             "blockers": list(self.blockers),
             "evidence_refs": [dict(ref) for ref in self.evidence_refs],
+            "price_attractiveness_status": self.price_attractiveness_status,
+            "positive_price_review_eligible": self.positive_price_review_eligible,
             "action": self.action,
         }
 
@@ -169,6 +193,14 @@ def evaluate_pre_decision_eligibility(
     blockers.extend(event_materiality.review_blockers)
 
     status = STATUS_ELIGIBLE if not blockers else STATUS_NOT_ELIGIBLE
+    price_attractiveness_status = (
+        price_attractiveness.status
+        if price_attractiveness is not None
+        else STATUS_NOT_ASSESSABLE
+    )
+    positive_price_review_eligible = (
+        price_attractiveness_status in POSITIVE_PRICE_REVIEW_STATUSES
+    )
     evidence_refs = _merge_refs(
         list(approval.evidence_refs),
         list(event_materiality.evidence_refs),
@@ -184,6 +216,8 @@ def evaluate_pre_decision_eligibility(
         event_review_watermark=event_materiality.coverage_watermark,
         blockers=tuple(dict.fromkeys(blockers)),
         evidence_refs=tuple(evidence_refs),
+        price_attractiveness_status=price_attractiveness_status,
+        positive_price_review_eligible=positive_price_review_eligible,
     )
 
 
@@ -191,7 +225,7 @@ def pre_decision_eligibility_from_payload(
     payload: Mapping[str, Any],
 ) -> PreDecisionEligibility:
     data = dict(payload)
-    if data.get("schema_version") != PREDECISION_SCHEMA:
+    if data.get("schema_version") not in {PREDECISION_SCHEMA, "post-m1-predecision-eligibility-v1"}:
         raise ValueError("Unknown predecision schema")
     watermark = data.get("event_review_watermark")
     return PreDecisionEligibility(
@@ -206,5 +240,11 @@ def pre_decision_eligibility_from_payload(
         ),
         blockers=tuple(str(item) for item in data.get("blockers") or ()),
         evidence_refs=tuple(dict(item) for item in data.get("evidence_refs") or ()),
+        price_attractiveness_status=str(
+            data.get("price_attractiveness_status", STATUS_NOT_ASSESSABLE)
+        ),
+        positive_price_review_eligible=bool(
+            data.get("positive_price_review_eligible", False)
+        ),
         action=str(data.get("action", ACTION_NO_ORDER)),
     )

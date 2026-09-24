@@ -33,6 +33,10 @@ from value_investment_agent.pre_decision_eligibility import (
     STATUS_ELIGIBLE,
     STATUS_NOT_ELIGIBLE,
 )
+from value_investment_agent.price_attractiveness import (
+    STATUS_NOT_ASSESSABLE,
+    STATUS_RESEARCH_ATTRACTIVE,
+)
 from value_investment_agent.research_artifacts import (
     canonicalize_artifact_payload,
     sha256_text,
@@ -77,6 +81,10 @@ def _predecision(*, blockers: tuple[str, ...], status: str = STATUS_NOT_ELIGIBLE
         event_review_watermark=AS_OF,
         blockers=blockers,
         evidence_refs=({"id": "predecision-evidence"},),
+        price_attractiveness_status=(
+            STATUS_RESEARCH_ATTRACTIVE if status == STATUS_ELIGIBLE else STATUS_NOT_ASSESSABLE
+        ),
+        positive_price_review_eligible=status == STATUS_ELIGIBLE,
     )
 
 

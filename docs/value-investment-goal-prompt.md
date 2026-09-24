@@ -4,6 +4,22 @@
 只有范围调整，不表示阶段已经验收，也不授权生产部署/通知/使用未确认个人数据。
 该总Goal当前已启动，执行范围与阶段门见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 人工审查状态
+
+```text
+M2 Engineering DONE / Human Pending
+M3 Engineering PARTIAL+ / Human Pending
+M4 Engineering DONE_SIMULATED / Private Input Pending
+M5 Engineering DONE_OFFLINE / Human + Operational Pending
+M6 Engineering Preflight DONE / Operational NOT_STARTED
+M7 Display Engineering DONE / User Acceptance Pending
+```
+
+上一轮已完成 M3 正向价格门、M4 Decision 绑定、M2 Channel Verification、M5
+Review Reconciliation、M3 PIT Replay 与 M7 Daily Workbench 候选。恢复执行时先
+核对 Git HEAD、dirty diff、CI 和冻结 Hash，不要重复建设这些机器门，也不要宣称
+对应人工 Checkpoint 已通过。
+
 ## FINAL CODEX GOAL MODE PROMPT
 
 ```text
@@ -16,7 +32,7 @@
 
 每次开始或恢复先核对HEAD、dirty diff、CI、运行收据、冻结Hash、原Excel和最新阶段检查点。审查基线f4bb55c只供参考，不回退已完成成果。
 M1与Post-M1稳定化保持DONE；保留原三公司、格力/华域/伊利的真实拒绝/低置信度/STALE结果。不得为了出现BUY放宽规则或重写历史。
-当前先完成M2时点/Universe/覆盖/合并/COMPLETE语义等实际缺口，而不是只补三份报告。
+继承 2026-09-24 人工审查纠偏成果；当前产品焦点是 M2 Checkpoint A 人工重提交与 M3/M4/M5 人工复核，不要用 M7 展示工程替代研究验收。
 
 M2：执行current-stage-goal的W0-W7和AC1-AC12。补齐官方Universe、逐证券逐通道覆盖、Quality/Dividend/Value/Cyclical、真实会话与PIT、候选多原因合并/Why Now/预算、误放漏筛抽查、至少3份系统新发现公司的实质研究或否决、原Excel统一入口。
 M2阶段仍无BUY/ADD/仓位；不做全市场DCF。高息/低PE只能触发线索，缺失不填0，画像不支持不默认FCFF，Legacy只作shadow，旧缓存不重标今日。

@@ -531,8 +531,8 @@ def build_channel_results(
             channel=CHANNEL_VALUE,
             reasons=(
                 f"TTM 市盈率 {quote.pe_ttm:.2f}、市净率 {quote.pb:.2f}，市场隐含 ROE 约 {implied_roe * 100:.1f}%",
-                "这是多指标便宜度候选，不是单一低 PE 结论",
-                "FCF Yield、EV/EBIT、正常化收益与资产负债表证据仍需补足",
+                "市场估值线索：PE/PB/隐含ROE初筛",
+                "尚未验证FCF Yield、EV/EBIT、正常化盈利和资产负债表质量",
             ),
             metrics={
                 "pe_ttm": _metric(quote.pe_ttm),
@@ -631,6 +631,8 @@ def build_channel_results(
         symbol: str,
         status: str,
         reason: str,
+        candidate: CandidateReason | None = None,
+        raw_rank_before_budget: int | None = None,
     ) -> ChannelEvaluation:
         return ChannelEvaluation(
             symbol=symbol,
@@ -640,16 +642,42 @@ def build_channel_results(
             reason=reason,
             profile_status=profile_for(symbol),
             evidence_date=quote_date,
+            trigger_metrics=dict(candidate.metrics) if candidate is not None else {},
+            trigger_reasons=(
+                candidate.reasons if candidate is not None else ()
+            ),
+            policy_version=policy.rule_version,
+            evidence_refs=(
+                candidate.evidence_refs if candidate is not None else ()
+            ),
+            raw_rank_before_budget=raw_rank_before_budget,
         )
+
+    def candidate_for(
+        channel_candidates: list[CandidateReason],
+        symbol: str,
+    ) -> CandidateReason | None:
+        for candidate in channel_candidates:
+            if candidate.symbol == symbol:
+                return candidate
+        return None
 
     def candidate_reason_for(
         channel_candidates: list[CandidateReason],
         symbol: str,
     ) -> str:
-        for candidate in channel_candidates:
-            if candidate.symbol == symbol:
-                return "；".join(candidate.reasons)
+        candidate = candidate_for(channel_candidates, symbol)
+        if candidate is not None:
+            return "；".join(candidate.reasons)
         return ""
+
+    def rank_before_budget(
+        channel_candidates: list[CandidateReason],
+        candidate: CandidateReason | None,
+    ) -> int | None:
+        if candidate is None:
+            return None
+        return channel_candidates.index(candidate) + 1
 
     if official_universe is not None:
         evaluation_symbols = set(official_universe)
@@ -678,6 +706,10 @@ def build_channel_results(
         quote = quotes.get(symbol)
         fin = financial.get(symbol)
         dividend = dividends.get(symbol)
+        quality_candidate = None
+        dividend_candidate = None
+        value_candidate = None
+        cyclical_candidate = None
 
         if profile_for(symbol) == PROFILE_UNSUPPORTED:
             quality_status = EVALUATION_UNSUPPORTED
@@ -697,14 +729,24 @@ def build_channel_results(
         elif fin.coverage_ratio is None or fin.coverage_ratio < policy.quality_min_coverage:
             quality_status = EVALUATION_REJECTED
             quality_reason = quality_excluded_by_symbol.get(symbol, f"财务证据覆盖不足 {policy.quality_min_coverage}")
-        elif any(candidate.symbol == symbol for candidate in quality_candidates):
+        elif candidate_for(quality_candidates, symbol) is not None:
+            quality_candidate = candidate_for(quality_candidates, symbol)
             quality_status = EVALUATION_CONFLICT if quote.price_conflict else EVALUATION_PASS
             quality_reason = candidate_reason_for(quality_candidates, symbol)
         else:
             quality_status = EVALUATION_REJECTED
             quality_reason = "未满足 Quality 通道的全部数据与质量门禁"
         evaluations[CHANNEL_QUALITY].append(
-            evaluation(CHANNEL_QUALITY, symbol, quality_status, quality_reason)
+            evaluation(
+                CHANNEL_QUALITY,
+                symbol,
+                quality_status,
+                quality_reason,
+                candidate=quality_candidate,
+                raw_rank_before_budget=rank_before_budget(
+                    quality_candidates, quality_candidate
+                ),
+            )
         )
 
         if dividend is None:
@@ -722,14 +764,24 @@ def build_channel_results(
         elif dividend.declared_yield < policy.dividend_min_yield:
             dividend_status = EVALUATION_REJECTED
             dividend_reason = f"参考股息率低于 {policy.dividend_min_yield}"
-        elif any(candidate.symbol == symbol for candidate in dividend_candidates):
+        elif candidate_for(dividend_candidates, symbol) is not None:
+            dividend_candidate = candidate_for(dividend_candidates, symbol)
             dividend_status = EVALUATION_CONFLICT if quote.price_conflict else EVALUATION_PASS
             dividend_reason = candidate_reason_for(dividend_candidates, symbol)
         else:
             dividend_status = EVALUATION_REJECTED
             dividend_reason = "未满足现金回报通道的全部数据与质量门禁"
         evaluations[CHANNEL_DIVIDEND].append(
-            evaluation(CHANNEL_DIVIDEND, symbol, dividend_status, dividend_reason)
+            evaluation(
+                CHANNEL_DIVIDEND,
+                symbol,
+                dividend_status,
+                dividend_reason,
+                candidate=dividend_candidate,
+                raw_rank_before_budget=rank_before_budget(
+                    dividend_candidates, dividend_candidate
+                ),
+            )
         )
 
         if quote is None:
@@ -753,14 +805,24 @@ def build_channel_results(
         elif quote.pb / quote.pe_ttm < policy.value_min_implied_roe:
             value_status = EVALUATION_REJECTED
             value_reason = f"市场隐含 ROE 低于 {policy.value_min_implied_roe}"
-        elif any(candidate.symbol == symbol for candidate in value_candidates):
+        elif candidate_for(value_candidates, symbol) is not None:
+            value_candidate = candidate_for(value_candidates, symbol)
             value_status = EVALUATION_CONFLICT if quote.price_conflict else EVALUATION_PASS
             value_reason = candidate_reason_for(value_candidates, symbol)
         else:
             value_status = EVALUATION_REJECTED
             value_reason = "未满足 Value 通道的全部数据与质量门禁"
         evaluations[CHANNEL_VALUE].append(
-            evaluation(CHANNEL_VALUE, symbol, value_status, value_reason)
+            evaluation(
+                CHANNEL_VALUE,
+                symbol,
+                value_status,
+                value_reason,
+                candidate=value_candidate,
+                raw_rank_before_budget=rank_before_budget(
+                    value_candidates, value_candidate
+                ),
+            )
         )
 
         if quote is None:
@@ -781,14 +843,24 @@ def build_channel_results(
         elif quote.market_cap < policy.cyclical_min_market_cap:
             cyclical_status = EVALUATION_REJECTED
             cyclical_reason = f"总市值低于周期通道下限 {policy.cyclical_min_market_cap}"
-        elif any(candidate.symbol == symbol for candidate in cyclical_candidates):
+        elif candidate_for(cyclical_candidates, symbol) is not None:
+            cyclical_candidate = candidate_for(cyclical_candidates, symbol)
             cyclical_status = EVALUATION_CONFLICT if quote.price_conflict else EVALUATION_PASS
             cyclical_reason = candidate_reason_for(cyclical_candidates, symbol)
         else:
             cyclical_status = EVALUATION_REJECTED
             cyclical_reason = "未满足周期通道的全部数据与质量门禁"
         evaluations[CHANNEL_CYCLICAL].append(
-            evaluation(CHANNEL_CYCLICAL, symbol, cyclical_status, cyclical_reason)
+            evaluation(
+                CHANNEL_CYCLICAL,
+                symbol,
+                cyclical_status,
+                cyclical_reason,
+                candidate=cyclical_candidate,
+                raw_rank_before_budget=rank_before_budget(
+                    cyclical_candidates, cyclical_candidate
+                ),
+            )
         )
 
     for channel, channel_candidates in full_candidates.items():
@@ -806,6 +878,11 @@ def build_channel_results(
                 ),
                 profile_status=item.profile_status,
                 evidence_date=item.evidence_date,
+                trigger_metrics=item.trigger_metrics,
+                trigger_reasons=item.trigger_reasons,
+                policy_version=item.policy_version,
+                evidence_refs=item.evidence_refs,
+                raw_rank_before_budget=item.raw_rank_before_budget,
             )
         evaluations[channel] = [by_symbol[symbol] for symbol in sorted(by_symbol)]
 

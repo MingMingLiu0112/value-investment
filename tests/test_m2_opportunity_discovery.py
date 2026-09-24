@@ -367,6 +367,21 @@ def test_workbook_is_presentation_only_and_contains_channel_sheets(tmp_path):
         for row in overview.iter_rows()
         for cell in row
     )
+    assert any(
+        "Quality Channel Coverage" in str(cell.value)
+        for row in overview.iter_rows()
+        for cell in row
+    )
+    assert any(
+        "COVERAGE_LIMITED" in str(cell.value)
+        for row in overview.iter_rows()
+        for cell in row
+    )
+    assert any(
+        "不能把 0 候选解释成市场没有高质量公司" in str(cell.value)
+        for row in overview.iter_rows()
+        for cell in row
+    )
 
 
 def test_cheap_screen_passes_remain_data_partial_until_deep_evidence_is_verified():

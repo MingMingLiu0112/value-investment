@@ -10,6 +10,14 @@ from value_investment_agent.investment_decision import (
     CONFIDENCE_HIGH,
     CONFIDENCE_LOW,
     CONFIDENCE_MEDIUM,
+    STATUS_HOLD,
+    STATUS_INSUFFICIENT_RESEARCH,
+    STATUS_MANUAL_ADD_REVIEW,
+    STATUS_MANUAL_BUY_REVIEW,
+    STATUS_MANUAL_EXIT_REVIEW,
+    STATUS_MANUAL_REDUCE_REVIEW,
+    STATUS_WATCH,
+    STATUS_WAIT_FOR_PRICE,
 )
 from value_investment_agent.portfolio_contracts import (
     CONFIRMATION_HUMAN,
@@ -49,6 +57,7 @@ from value_investment_agent.position_guidance import (
     PositionTierPolicy,
     build_position_guidance,
 )
+from value_investment_agent.price_attractiveness import STATUS_RESEARCH_ATTRACTIVE
 
 
 AS_OF = date(2026, 9, 22)
@@ -170,6 +179,24 @@ def _candidate(
     return PositionCandidateInput(**payload)
 
 
+def _decision_bound_candidate(
+    *,
+    status: str,
+    intent: str,
+    symbol: str = "600519",
+) -> PositionCandidateInput:
+    return _candidate(
+        symbol=symbol,
+        intent=intent,
+        decision_binding_required=True,
+        decision_review_id=f"{symbol}-decision-review-v1",
+        decision_review_sha256="b" * 64,
+        decision_status=status,
+        decision_as_of=AS_OF,
+        price_attractiveness_status=STATUS_RESEARCH_ATTRACTIVE,
+    )
+
+
 def _result(
     *,
     bundle=None,
@@ -214,6 +241,66 @@ def test_eligible_candidate_uses_confidence_specific_tier():
     assert medium.tier == TIER_NORMAL
     assert low.tier == TIER_STARTER
     assert low.ceiling_pct == Decimal("0.05")
+
+
+@pytest.mark.parametrize(
+    ("decision_status", "intent"),
+    [
+        (STATUS_MANUAL_BUY_REVIEW, INTENT_BUY),
+        (STATUS_MANUAL_ADD_REVIEW, INTENT_ADD),
+    ],
+)
+def test_only_valid_positive_decision_reviews_create_new_buy_capacity(
+    decision_status: str,
+    intent: str,
+):
+    candidate = _decision_bound_candidate(status=decision_status, intent=intent)
+
+    assert candidate.has_valid_decision_binding() is True
+    assert candidate.allows_new_buy_capacity() is True
+
+
+@pytest.mark.parametrize(
+    "decision_status",
+    [
+        STATUS_INSUFFICIENT_RESEARCH,
+        STATUS_WATCH,
+        STATUS_WAIT_FOR_PRICE,
+        STATUS_HOLD,
+        STATUS_MANUAL_REDUCE_REVIEW,
+        STATUS_MANUAL_EXIT_REVIEW,
+    ],
+)
+def test_non_positive_decision_statuses_never_create_new_buy_capacity(
+    decision_status: str,
+):
+    candidate = _decision_bound_candidate(
+        status=decision_status,
+        intent=INTENT_BUY,
+    )
+
+    assert candidate.allows_new_buy_capacity() is False
+
+
+def test_hold_decision_never_creates_new_buy_capacity():
+    candidate = _decision_bound_candidate(status=STATUS_HOLD, intent=INTENT_HOLD)
+
+    assert candidate.allows_new_buy_capacity() is False
+
+
+def test_incomplete_decision_binding_fails_closed():
+    with pytest.raises(ValueError, match="complete M3 binding"):
+        _candidate(decision_binding_required=True)
+
+    with pytest.raises(ValueError, match="SHA-256 hex"):
+        _candidate(
+            decision_binding_required=True,
+            decision_review_id="600519-decision-review-v1",
+            decision_review_sha256="not-a-hash",
+            decision_status=STATUS_MANUAL_BUY_REVIEW,
+            decision_as_of=AS_OF,
+            price_attractiveness_status=STATUS_RESEARCH_ATTRACTIVE,
+        )
 
 
 def test_missing_precondition_waits_without_a_ceiling():
