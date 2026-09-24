@@ -177,6 +177,9 @@ try {
         $overviewText += [string]$value
     }
     $overviewText = $overviewText -join [Environment]::NewLine
+    if ([string]::IsNullOrWhiteSpace($overviewText)) {
+        throw 'M7 v2 overview text could not be materialized.'
+    }
     foreach ($forbidden in @("买入", "加仓", "减仓", "目标仓位", "BUY", "ADD")) {
         if ($overviewText -match $forbidden) {
             throw "Forbidden decision text on M7 overview: $forbidden"

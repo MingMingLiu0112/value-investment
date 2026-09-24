@@ -105,6 +105,9 @@ try {
     # UsedRange.Text is unreliable through WPS COM. The values loop above has
     # already collected every visible cell, so scan that materialized text.
     $visibleText = $allText -join [Environment]::NewLine
+    if ([string]::IsNullOrWhiteSpace($visibleText)) {
+        throw 'M7 daily visible-cell text could not be materialized.'
+    }
     $conclusion = [string]$overview.Range('B15').Text
     if ($conclusion -notmatch [regex]::Escape('当前无任何可用订单')) {
         throw "M7 daily overview conclusion is not fail-closed: $conclusion"

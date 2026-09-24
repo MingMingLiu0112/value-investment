@@ -135,6 +135,9 @@ try {
             $historyText += [string]$value
         }
     }
+    if ([string]::IsNullOrWhiteSpace($historyText)) {
+        throw 'M3 history text could not be materialized.'
+    }
     foreach ($forbidden in @("目标仓位", "下单", "自动卖出")) {
         if ($historyText -match $forbidden) {
             throw "Forbidden presentation text on M3 history pages: $forbidden"
