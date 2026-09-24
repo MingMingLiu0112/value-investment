@@ -97,6 +97,25 @@
 验证：`tests/test_m5_event_run_state_boundaries.py` 13 passed；全部 M5 定向回归
 `88 passed`；本地全量离线回归 `2447 passed, 6 skipped, 18 warnings, 0 failed`。
 
+## 2026-09-24 本地 StateStore 与 CAS 持久化
+
+上一版仍把状态留在调用方内存，`expected_revision` 不能阻止进程重启后的状态丢失或
+两个陈旧 writer 覆盖。现在由独立的 `M5EventRunStateStore` 承载状态提交：
+
+- `InMemoryM5EventRunStateStore` 用于测试；`JsonM5EventRunStateStore` 每个 state key
+  使用独立 JSON 文件，并以本地文件锁串行化跨实例访问。
+- 写入先落同目录临时文件、`fsync`，再以 `os.replace` 原子替换；损坏 JSON 读取失败，
+  commit 不会覆盖无法解析的现有状态。
+- commit 必须提供 `expected_revision` 和 `expected_sha256`；同一 revision 只能幂等
+  写入相同摘要，陈旧 revision 或摘要均失败关闭。
+- `run_event_batch_persisted()` 从 store 加载最新状态、执行一个批次并 CAS 提交；
+  调用方传入的旧快照不能绕过加载后的摘要检查。
+- 新增 8 项存储边界回归；全部 M5 定向回归 `96 passed`。该层仍不是外部单调/签名
+  信任根，不承诺掉电级耐久性，也未实现生产采集、通知投递或恢复演练。本地全量
+  离线回归 `2455 passed, 6 skipped, 18 warnings, 0 failed`。
+
+`action=no_order`；M5 仍为 `PARTIAL`，不得把本层等同于 M5/M6 产品验收。
+
 ## 未完成边界
 
 真实公告采集器、公告级材料性判定、Entry/组合复核、生产调度、通知目标和

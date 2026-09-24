@@ -1,5 +1,32 @@
 # Changelog
 
+## v2026.09.24-m5-local-state-store-cas
+
+### Scope
+
+为 M5 离线 run-once 增加本地状态存储合同，使批次结果不再只停留在内存对象。
+该批次仍不接生产源、不发送通知、不生成仓位或订单，也不替代 M6 的真实恢复验收。
+
+### Changes
+
+- 新增 `M5EventRunStateStore` 协议，以及内存和每状态单文件 JSON 两种实现；提交合同
+  同时要求 `expected_revision` 与 `expected_sha256`，同一 revision 只能幂等写入同一
+  状态摘要。
+- JSON 存储使用同目录临时文件、文件 `fsync`、`os.replace` 和本地文件锁，避免并发
+  写入留下半截状态；损坏 JSON 失败关闭且不会被静默覆盖。
+- 新增 `run_event_batch_persisted()`：从存储加载当前状态，以当前 revision/digest
+  执行一批事件，再通过 CAS 提交新状态。陈旧调用方快照会在执行前失败关闭。
+- 并发 CAS 反例、损坏文件、陈旧 wrapper 快照和第二批次持久化已固化为 8 项回归。
+
+### Verification
+
+- `tests/test_m5_event_state_store.py`：`8 passed`。
+- 全部 M5 定向回归：`96 passed`。
+- 本地全量离线回归：`2455 passed, 6 skipped, 18 warnings, 0 failed`。
+- 存储只证明本地原子替换、进程内多实例 CAS 和失败关闭；不证明外部单调/签名防回滚、
+  掉电级耐久性、生产采集、通知投递或真实恢复演练。`M5` 仍为 `PARTIAL`，
+  `action=no_order`。
+
 ## v2026.09.24-m5-run-state-replay-closure
 
 ### Scope

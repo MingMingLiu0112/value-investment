@@ -2,6 +2,25 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M5 本地 StateStore 与 CAS 持久化
+
+上一批 `expected_revision` 只能检查调用方快照；如果状态只留在内存，进程退出或并发
+写入仍可能丢失批次结果。本轮在离线 M5 上新增独立本地状态存储层，不改变
+`M5=PARTIAL`，也不接入生产调度或通知。
+
+- 新增 `M5EventRunStateStore` 协议、`InMemoryM5EventRunStateStore` 和
+  `JsonM5EventRunStateStore`；commit 同时绑定 `expected_revision` 与
+  `expected_sha256`，同一 revision 只允许幂等写入同一状态摘要。
+- JSON 存储按 state key 分文件，使用同目录临时文件、文件 `fsync`、`os.replace`
+  和本地文件锁；损坏 JSON 失败关闭且不会被静默覆盖。
+- 新增 `run_event_batch_persisted()`，重新加载当前状态，以 CAS 执行一个批次并提交；
+  陈旧调用方快照在执行前失败关闭，竞争写入不会覆盖较新 revision。
+- 新增 8 项存储回归，覆盖往返、重放、陈旧 revision、跨实例 CAS、损坏 JSON、
+  陈旧 wrapper 快照和第二批次持久化。全部 M5 定向回归 `96 passed`。
+- 本地全量离线回归 `2455 passed, 6 skipped, 18 warnings, 0 failed`。
+- 该层只提供本地原子替换和进程内多实例 CAS；它不是外部单调/签名状态存储，不承诺
+  完整掉电耐久性，也未完成真实通知投递、生产采集或恢复演练。`action=no_order`。
+
 ## 2026-09-24 M5 运行状态与批次重放收口
 
 在 M5 离线事件基础设施上完成状态聚合、批次幂等和恢复边界收口。该工作不接生产源、

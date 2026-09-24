@@ -66,6 +66,7 @@ from .m5_event_watermark import (
     WatermarkLedger,
 )
 from .m5_event_run_state import M5EventBatchRecord, M5EventRunState
+from .m5_event_state_store import M5EventRunStateStore, M5StateStoreConflict
 
 
 RUN_HEALTHY = "HEALTHY"
@@ -651,3 +652,72 @@ def run_event_batch(
                 token=effective_lock_token,
                 now=generated_at,
             )
+
+
+def run_event_batch_persisted(
+    *,
+    events: Sequence[ChangeEventInput],
+    observed_times: Sequence[datetime],
+    watermark: ScanWatermark,
+    graph: DependencyGraph,
+    run_id: str,
+    generated_at: datetime,
+    store: M5EventRunStateStore,
+    namespace: str = NAMESPACE_SIMULATED,
+    lock_owner: str = "offline-m5-runner",
+    lock_token: str = "m5-offline-token",
+    lease_seconds: int = 120,
+    direct_kinds_by_source_event_id: Mapping[str, Sequence[str]] | None = None,
+    state: M5EventRunState | None = None,
+    batch_id: str | None = None,
+    lock_store: TaskLockStore | None = None,
+) -> M5EventRunReceipt:
+    """Run one batch and persist its next state with revision/digest CAS."""
+
+    if not isinstance(store, M5EventRunStateStore):
+        raise ValueError("store must implement M5EventRunStateStore")
+    run_id = _required_text(run_id, "run_id")
+    state_key = state.state_key if state is not None else run_id
+    current = store.load(state_key=state_key)
+    if current is None:
+        if state is not None and state.revision != 0:
+            raise M5StateStoreConflict(
+                "Cannot seed a persisted run from a non-empty snapshot"
+            )
+        working = (
+            state.clone()
+            if state is not None
+            else M5EventRunState.empty(state_key=state_key, namespace=namespace)
+        )
+    else:
+        if state is not None and state.state_sha256() != current.state_sha256():
+            raise M5StateStoreConflict(
+                "Provided M5 state snapshot is stale relative to the store"
+            )
+        working = current
+
+    receipt = run_event_batch(
+        events=events,
+        observed_times=observed_times,
+        watermark=watermark,
+        graph=graph,
+        run_id=run_id,
+        generated_at=generated_at,
+        namespace=namespace,
+        lock_owner=lock_owner,
+        lock_token=lock_token,
+        lease_seconds=lease_seconds,
+        direct_kinds_by_source_event_id=direct_kinds_by_source_event_id,
+        state=working,
+        batch_id=batch_id,
+        expected_revision=working.revision,
+        lock_store=lock_store,
+    )
+    store.commit(
+        expected_revision=working.revision,
+        expected_sha256=(
+            None if current is None else current.state_sha256()
+        ),
+        state=receipt.state,
+    )
+    return receipt
