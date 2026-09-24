@@ -6,6 +6,8 @@
 ## 状态
 
 - 阶段状态：`M6=NOT_STARTED`。
+- 预检配置的 `m2=DONE`，与 Checkpoint A 的 `HUMAN_PASS` 一致；M3-M5 仍为
+  `PARTIAL`，因此本配置不能将 M6 产品前置条件写成已满足。
 - 机器预检入口：`scripts/audit_m6_preflight.py`。
 - 配置：`config/m6-operational-preflight-v1.json`。
 - 加密备份入口：`scripts/package_encrypted_backup.py`。

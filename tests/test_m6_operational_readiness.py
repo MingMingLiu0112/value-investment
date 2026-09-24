@@ -104,6 +104,15 @@ def test_load_config_rejects_invalid_target_and_no_order(tmp_path):
         load_config(config_path)
 
 
+def test_repository_preflight_config_tracks_signed_m2_completion():
+    root = Path(__file__).resolve().parents[1]
+    config = load_config(root / "config" / "m6-operational-preflight-v1.json")
+
+    assert config.stage_status["m1"] == "DONE"
+    assert config.stage_status["m2"] == "DONE"
+    assert config.stage_status["m3"] == PARTIAL
+
+
 def test_repository_audit_passes_synthetic_engineering_boundary(tmp_path):
     root, config = _synthetic_repo(tmp_path)
     result = audit_repository(

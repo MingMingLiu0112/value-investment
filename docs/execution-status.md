@@ -2,6 +2,13 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M6 预检阶段状态对账
+
+`config/m6-operational-preflight-v1.json` 曾保留旧的 `m2=PENDING_HUMAN_REVIEW`，
+与当前 append-only Checkpoint A `HUMAN_PASS` 冲突。现已改为 `m2=DONE` 并增加直接读取
+正式配置的回归测试。M3-M5 仍为 `PARTIAL`，所以 M6 前置条件、生产授权和运营验收均没有
+升级；本变更只防止授权材料引用过期 M2 状态。
+
 ## 2026-09-24 M4 私有组合输入加密边界
 
 新增 `private_portfolio_intake.py`，补足 M4 合同与未来真实私有输入之间的最小安全边界。

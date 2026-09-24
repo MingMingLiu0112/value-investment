@@ -31,7 +31,7 @@
   ],
   "stage_status": {
     "m1": "DONE",
-    "m2": "PENDING_HUMAN_REVIEW",
+    "m2": "DONE",
     "m3": "PARTIAL",
     "m4": "PARTIAL",
     "m5": "PARTIAL",
