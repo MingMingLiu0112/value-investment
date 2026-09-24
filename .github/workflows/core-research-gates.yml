@@ -96,6 +96,7 @@ jobs:
           tests/test_m2_checkpoint_a_human_acceptance.py
           tests/test_m3_historical_research_replay.py
           tests/test_m3_strict_pit_evidence.py
+          tests/test_m3_reconstructed_evidence_continuity.py
           tests/test_m5_human_review_reconciliation.py
           tests/test_m7_daily_workbook.py
           tests/test_wps_verifier_text_scans.py

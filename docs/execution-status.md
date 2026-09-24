@@ -1397,3 +1397,22 @@ M3 strict contemporaneous-rule Historical PIT 仍为 `NOT_PROVEN`；Checkpoint B
 M4 私有输入、M6 授权和 M7 用户验收均不因 Checkpoint A 通过而自动签收。下一工作
 包回到原总 Goal：继续 M3 Decision Review / Checkpoint B，再按依赖推进
 M4/M5、M6、M7。
+
+## 2026-09-24 M3 重建证据连续性工作包
+
+在冻结的 600519 / 2024-06-21 追溯重放基础上，新增一个与真实 Entry、Journal 和
+人工决策完全隔离的官方披露连续性候选。它只重建披露数值的算术演变，不签发研究
+批准、价格结论、持有决定或执行动作。
+
+| 产物 | 路径 | SHA-256 |
+| --- | --- | --- |
+| 工作簿 | `runtime/m3-reconstructed-continuity-20260924T083028Z/A股价值投资_M3重建证据连续性候选_20260924.xlsx` | `719725a31749558d21070a1211862e2811d7b688082697ad9faad19ace930ccb` |
+| Trace | `runtime/m3-reconstructed-continuity-20260924T083028Z/trace.json` | `f49bc61c302e11c70e6ee954768d59389f17b9c2933a9b02364439be74d99cc6` |
+
+边界固定为 `RECONSTRUCTED_EVIDENCE_ONLY`、
+`RETROSPECTIVE_RESEARCH_EXTENSION`、`strict_contemporaneous_rule_pit=NOT_PROVEN`、
+`actual_entry_present=false`、`human_decision=null`、`action=no_order`。
+新增六个展示页：`00_重建边界`、`01_历史基准`、`02_官方披露演变`、
+`03_一致性观察`、`04_阻断与结论`、`05_来源哈希`。该候选不是 Checkpoint B；
+Checkpoint B 及后续人工/生产验收继续按原边界保持待办。详细来源和边界见
+[m3-reconstructed-evidence-continuity-20260924.md](m3-reconstructed-evidence-continuity-20260924.md)。
