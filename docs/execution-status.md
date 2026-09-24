@@ -2,6 +2,21 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M2 全量机器验收复算
+
+在包含真实全量本地回归的隔离 basetemp 下重新执行 M2 AC1-AC12 验收器，结果不再
+停留在“部分证据来自旧文本”的状态：
+
+- 本地完整离线回归：`2369 passed、6 skipped、0 failed、18 warnings`，
+  耗时约 323 秒。
+- AC1-AC7、AC11 全部 `DONE`；AC8-AC10、AC12 保持
+  `PENDING_HUMAN_REVIEW`，没有用机器结果代替用户复核。
+- 收据：
+  `runtime/m2-acceptance-audit-20260924T062704Z/receipt.json`
+  SHA-256
+  `2fb22e04f38c0ef5563429bf289804769c36c21eac394f13d0b38d992b11a878`。
+- `action=no_order`；未修改冻结 M2 输入、原工作簿或生产服务。
+
 ## 2026-09-24 M3 strict PIT 证据检索结论
 
 对仓库、`runtime/strategy-validation`、docs 与 config 检索后确认：最早 Git 提交

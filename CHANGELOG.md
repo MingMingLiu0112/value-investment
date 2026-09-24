@@ -1,5 +1,21 @@
 # Changelog
 
+## v2026.09.24-m2-full-acceptance-recompute
+
+### Scope
+
+重新执行 M2 AC1-AC12 验收器，并在隔离 basetemp 中内嵌真实全量离线回归证据。
+此前 AC1 与 AC6 因审计器未运行本地全量测试而只能显示 `PARTIAL`。
+
+### Result
+
+- 本地完整回归：`2369 passed、6 skipped、0 failed、18 warnings`。
+- AC1-AC7、AC11 `DONE`；AC8-AC10、AC12 保持 `PENDING_HUMAN_REVIEW`。
+- 收据 `runtime/m2-acceptance-audit-20260924T062704Z/receipt.json`，
+  SHA-256
+  `2fb22e04f38c0ef5563429bf289804769c36c21eac394f13d0b38d992b11a878`。
+- `action=no_order`；未修改冻结 M2 输入、原工作簿或生产服务。
+
 ## v2026.09.24-m3-strict-pit-evidence-search
 
 ### Scope
