@@ -1509,6 +1509,8 @@ M2 Checkpoint A 收口后回到原总 Goal 的 M3 主线，新增只读的 Check
   `6451f986c81c4db1277f795e6a0666c22810728d621524070935b21edc4e7f0c`。
 - WPS 只读验证 `passed`；WPS 云盘同名副本与仓库文件逐字节一致。
 - 判定列和复核说明列均从空值开始，`action=no_order`。
+- 公开工作簿 WPS 云盘全量字节审计更新为 `29/29 MATCH`，收据
+  `runtime/public-workbook-wps-audit-post-m3-m5-20260924/receipt.json`。
 
 本工作包不判定任何公告重大性，不产生 M5 事件、依赖失效、调度、通知或 M6 运营
 验收；九条公告仍由用户逐条给出 `EventMaterialityDecision`。

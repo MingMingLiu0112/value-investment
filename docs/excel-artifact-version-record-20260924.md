@@ -21,6 +21,7 @@
   `runtime/m5-600519-disclosure-review-intake-wps-20260924/receipt.json`，
   `passed`。
 - WPS 云盘同名副本与仓库文件逐字节一致。
+- 加入该文件后，公开工作簿 WPS 云盘全量字节审计为 `29/29 MATCH`。
 - `action=no_order`；不自动判定重大性、生成事件、仓位或订单。
 
 ## 2026-09-24 M4 Decision Binding v2 候选
