@@ -17,6 +17,9 @@
   "required_files": [
     "src/value_investment_agent/backup.py",
     "src/value_investment_agent/backup_snapshot.py",
+    "src/value_investment_agent/backup_security.py",
+    "scripts/package_encrypted_backup.py",
+    "config/m6-backup-security-v1.json",
     "deploy/server/run_restore_drill.sh",
     "deploy/server/test_evidence_in_restore.sh",
     "deploy/server/value-investment-agent-restore-drill.service",

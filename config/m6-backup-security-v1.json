@@ -1,0 +1,31 @@
+{
+  "schema_version": "m6-backup-security-v1",
+  "action": "no_order",
+  "algorithm": "AES-256-GCM",
+  "key_encoding": "hex",
+  "key_min_bytes": 32,
+  "chunk_bytes": 1048576,
+  "config_inventory": [
+    "pyproject.toml",
+    "config/m6-operational-preflight-v1.json",
+    "config/m6-backup-security-v1.json",
+    "docs/data-and-evidence-policy.md",
+    "docs/m6-operational-preflight-20260924.md",
+    "deploy/server/run_restore_drill.sh",
+    "deploy/server/test_evidence_in_restore.sh",
+    "deploy/server/Containerfile",
+    "deploy/server/Containerfile.pg16-tools",
+    ".github/workflows/core-research-gates.yml"
+  ],
+  "release_inventory": [
+    "A股价值投资_Agent前端智能跟踪模板.xlsx"
+  ],
+  "offsite": {
+    "sync_kind": "authorized_cloud_sync_required",
+    "forbidden_locations": [
+      "backup_root",
+      "key_file",
+      "offsite_staging"
+    ]
+  }
+}

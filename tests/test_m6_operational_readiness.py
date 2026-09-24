@@ -39,9 +39,9 @@ def _config(tmp_path: Path) -> M6PreflightConfig:
                 },
                 "resource_limits": {"memory_mb": 256, "cpu_cores": 0.5},
                 "required_files": [
-                    "backup.py",
-                    "run_restore_drill.sh",
-                    "test_evidence_in_restore.sh",
+                    "src/value_investment_agent/backup.py",
+                    "deploy/server/run_restore_drill.sh",
+                    "deploy/server/test_evidence_in_restore.sh",
                 ],
                 "stage_status": {
                     "m1": "DONE",
@@ -63,18 +63,20 @@ def _config(tmp_path: Path) -> M6PreflightConfig:
 def _synthetic_repo(tmp_path: Path) -> tuple[Path, M6PreflightConfig]:
     root = tmp_path / "repo"
     root.mkdir()
-    (root / "backup.py").write_text(
+    (root / "src" / "value_investment_agent").mkdir(parents=True)
+    (root / "deploy" / "server").mkdir(parents=True)
+    (root / "src" / "value_investment_agent" / "backup.py").write_text(
         "pg_export_snapshot\nREPEATABLE READ\nevidence_manifest\nsha256_file\n"
         "validate_restore_target\nvalue_agent_restore\n127.0.0.1\n5433\n"
         "--clean --no-owner --no-acl compare_checks\n",
         encoding="utf-8",
     )
-    (root / "run_restore_drill.sh").write_text(
+    (root / "deploy" / "server" / "run_restore_drill.sh").write_text(
         "--memory=256m --cpus=0.5\n127.0.0.1:5433:5432\nvalue_agent_restore\n"
         "trap 'podman rm -f value-investment-restore-postgres\n",
         encoding="utf-8",
     )
-    (root / "test_evidence_in_restore.sh").write_text(
+    (root / "deploy" / "server" / "test_evidence_in_restore.sh").write_text(
         "fair_value\nsha256 <> ''\n", encoding="utf-8"
     )
     return root, _config(root)
@@ -128,6 +130,73 @@ def test_repository_audit_rejects_sensitive_tracked_file(tmp_path):
     check = next(item for item in result["checks"] if item["label"] == "tracked repository contains no obvious secrets")
     assert check["passed"] is False
     assert "prod.dump" in check["detail"]
+
+
+def test_repository_audit_accepts_real_encrypted_backup_contract(tmp_path):
+    root, config = _synthetic_repo(tmp_path)
+    (root / "src" / "value_investment_agent" / "backup_security.py").write_text(
+        """
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+def load_key(*args, **kwargs):
+    pass
+
+def validate_key_separation(*args, **kwargs):
+    pass
+
+def _collect_named_items(*args, **kwargs):
+    pass
+
+def _manifest_payload(*args, **kwargs):
+    pass
+
+def encrypt_package(*args, **kwargs):
+    pass
+
+def decrypt_package(*args, **kwargs):
+    pass
+""",
+        encoding="utf-8",
+    )
+    policy = {
+        "schema_version": "m6-backup-security-v1",
+        "action": "no_order",
+        "algorithm": "AES-256-GCM",
+        "key_encoding": "hex",
+        "key_min_bytes": 32,
+        "chunk_bytes": 1048576,
+        "config_inventory": ["config.json"],
+        "release_inventory": ["release.json"],
+        "offsite": {
+            "sync_kind": "authorized_cloud_sync_required",
+            "forbidden_locations": ["backup_root", "key_file", "offsite_staging"],
+        },
+    }
+    (root / "config").mkdir()
+    (root / "config" / "m6-backup-security-v1.json").write_text(
+        json.dumps(policy), encoding="utf-8"
+    )
+    (root / "scripts").mkdir()
+    (root / "scripts" / "package_encrypted_backup.py").write_text("def main(): pass\n", encoding="utf-8")
+    config_path = root / "m6.json"
+    payload = json.loads(config_path.read_text(encoding="utf-8"))
+    payload["required_files"] += [
+        "src/value_investment_agent/backup_security.py",
+        "scripts/package_encrypted_backup.py",
+        "config/m6-backup-security-v1.json",
+    ]
+    config_path.write_text(json.dumps(payload), encoding="utf-8")
+    updated = load_config(config_path)
+
+    result = audit_repository(
+        root,
+        updated,
+        tracked_files=["README.md", ".env.example"],
+        clean=True,
+    )
+
+    assert result["status"] == "DONE"
+    assert "encrypted offsite backup" not in " ".join(result["blockers"])
 
 
 def test_session_ledger_counts_only_actual_successful_sessions(tmp_path):

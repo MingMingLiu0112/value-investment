@@ -8,6 +8,7 @@ observations into real operational evidence.
 """
 from __future__ import annotations
 
+import ast
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 import json
@@ -157,6 +158,26 @@ def _read_text(root: Path, relative: str) -> str | None:
     return path.read_text(encoding="utf-8", errors="replace")
 
 
+def _read_json(root: Path, relative: str) -> dict[str, Any]:
+    text = _read_text(root, relative)
+    if text is None:
+        return {}
+    payload = json.loads(text)
+    return payload if isinstance(payload, dict) else {}
+
+
+def _defined_functions(source: str) -> set[str]:
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return set()
+    return {
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+
+
 def _sensitive_tracked_files(tracked_files: Iterable[str]) -> list[str]:
     findings = []
     for relative in tracked_files:
@@ -194,6 +215,9 @@ def audit_repository(
     drill = _read_text(root, "deploy/server/run_restore_drill.sh") or ""
     evidence_drill = _read_text(root, "deploy/server/test_evidence_in_restore.sh") or ""
     backup_source = _read_text(root, "src/value_investment_agent/backup.py") or ""
+    security_source = _read_text(root, "src/value_investment_agent/backup_security.py") or ""
+    security_functions = _defined_functions(security_source)
+    security_policy = _read_json(root, "config/m6-backup-security-v1.json")
     checks.extend((
         _check(
             "restore drill is memory bounded",
@@ -239,12 +263,25 @@ def audit_repository(
     machine_failed = [item for item in checks if not item["passed"]]
     encryption_checks = [
         _check(
-            "backup package has an explicit encryption boundary",
-            any(marker in backup_source for marker in ("encrypt", "cipher", "age ")),
+            "encrypted backup package has encrypt/decrypt implementations",
+            {"encrypt_package", "decrypt_package"}.issubset(security_functions)
+            and "AESGCM" in security_source,
         ),
         _check(
-            "offsite/key-separation and config inventory are implemented",
-            any(marker in backup_source for marker in ("config_files", "key_file", "cloud")),
+            "backup key loading and key-separation validation exist",
+            {"load_key", "validate_key_separation"}.issubset(security_functions),
+        ),
+        _check(
+            "config and release inventories are part of the manifest",
+            {"_collect_named_items", "_manifest_payload"}.issubset(security_functions)
+            and bool(security_policy.get("config_inventory"))
+            and "release_inventory" in security_policy,
+        ),
+        _check(
+            "offsite contract declares no_order and excludes the key",
+            security_policy.get("action") == ACTION_NO_ORDER
+            and "key_file"
+            in (security_policy.get("offsite") or {}).get("forbidden_locations", []),
         ),
     ]
     status = PARTIAL if machine_failed or any(not item["passed"] for item in encryption_checks) else DONE
