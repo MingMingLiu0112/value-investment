@@ -59,6 +59,20 @@ IPS 至少需要用户确认：
 M4 个性化验收。真实 IPS/组合只会在用户另行提供私有输入并完成对账后，才可进入后续人工
 复核流程。
 
+## 私有快照对账：2026-09-25
+
+`portfolio_reconciliation.py` 提供 `reconcile_portfolio_snapshots`：它只比较同一账户、
+同一日期的两个 `ACTUAL` 快照，并把现金、持仓是否缺失、交易所、数量和公司行为调整的
+差异保留在私有报告中。报告状态只能是：
+
+- `MATCH_PENDING_HUMAN_CONFIRMATION`：比较一致，但仍必须由用户确认，绝不自动把快照
+  改为 `RECONCILED`；
+- `MISMATCH`：有明确、私有的差异项；
+- `INCOMPLETE`：缺少关键比较值，不能将未知当作一致。
+
+对账报告不写入公开 runtime、不提供公开序列化接口、不计算风险/仓位/订单；其输出固定
+`action=no_order`、`sensitivity=PRIVATE_USER_CONFIRMED`。
+
 使用时只允许对已加密输入执行校验，命令只打印脱敏回执：
 
 ```powershell

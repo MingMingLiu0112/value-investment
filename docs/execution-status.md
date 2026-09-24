@@ -10,6 +10,14 @@ migration、调度、通知、私有数据、资源、备份和 Shadow 的授权
 满足，不能代替用户授权。预检配置和加密备份清单绑定该文件；M6 仍为
 `PREFLIGHT_DONE / operationally NOT_STARTED / NOT_YET`，全程 `action=no_order`。
 
+## 2026-09-25 M4 私有快照对账合同
+
+新增 `portfolio_reconciliation.py`。该合同仅在私有内存中比较同账户、同日期的两个实际
+组合快照，分别检查现金、证券存在性、交易所、数量和公司行为调整状态。完全一致仅产生
+`MATCH_PENDING_HUMAN_CONFIRMATION`，不会自动将快照升级为已对账；现金缺失为
+`INCOMPLETE`，差异为 `MISMATCH`。新增合成对账反例；M4 领域定向回归为 `59 passed`，
+无真实账户读取、无公开持久化、无仓位或订单，M4 仍为 `PARTIAL`。
+
 ## 2026-09-24 M6 预检阶段状态对账
 
 `config/m6-operational-preflight-v1.json` 曾保留旧的 `m2=PENDING_HUMAN_REVIEW`，
