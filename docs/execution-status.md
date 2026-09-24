@@ -19,6 +19,11 @@ AC8-AC10/AC12 `PENDING_HUMAN_REVIEW`。M3 决策卡、原工作簿候选、历�
 - M5 复核结果保持 23 条旧判断 carry-forward、1 条新公告待人工、0 Hash 冲突。
 - 新增 [m2-m7-human-review-handoff-20260924.md](m2-m7-human-review-handoff-20260924.md)，
   汇总 Checkpoint A/B、私有组合输入、M5 新公告和 M6/M7 授权边界。
+- 修正 README 中过时的单一 M2 目标描述，补齐当前 M2-M7 活动 Goal 与人工状态；
+  自动运行章节明确生产调度、通知和服务器资源需单独授权，并保护 PTA 资源基线。
+- Core Research Gates run
+  [35958629202](https://github.com/MingMingLiu0112/value-investment/actions/runs/35958629202)
+  的 `offline-core` 与 `postgres-integration` 均为 `success`。
 - `action=no_order`；未修改 canonical、冻结研究证据或生产服务。
 
 ## 2026-09-24 M2 历史签名兼容与 M7 使用手册

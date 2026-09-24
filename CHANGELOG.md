@@ -1,5 +1,23 @@
 # Changelog
 
+## v2026.09.24-readme-goal-and-production-boundary-alignment
+
+### Scope
+
+同步 README 的当前 Goal、人工待办和生产调度边界。原来的 README 仍把当前活动
+目标描述为单一 M2，且未明确计划任务需要生产授权与 PTA 资源保护。
+
+### Verification
+
+- README 当前 Goal 更新为 `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`，
+  状态保持 `PARTIAL`，并链接 M2-M7 人工交接与 M7 使用手册。
+- 自动运行章节明确：生产调度、通知和服务器资源需单独授权，M6/M7 运营验收
+  尚未开始，注册计划任务不等于运营就绪。
+- Core Research Gates run
+  [35958629202](https://github.com/MingMingLiu0112/value-investment/actions/runs/35958629202)
+  的 `offline-core` 与 `postgres-integration` 均为 `success`。
+- `action=no_order`；未修改 canonical、冻结证据、PTA 或生产服务。
+
 ## v2026.09.24-current-head-m3-history-hash-fix-and-handoff
 
 ### Scope
