@@ -27,7 +27,8 @@
     "deploy/server/value-investment-agent-restore-drill.service",
     "deploy/server/value-investment-agent-restore-drill.timer",
     "docs/data-and-evidence-policy.md",
-    "docs/m6-operational-preflight-20260924.md"
+    "docs/m6-operational-preflight-20260924.md",
+    "docs/m6-production-authorization-package-20260924.md"
   ],
   "stage_status": {
     "m1": "DONE",

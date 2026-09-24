@@ -2,6 +2,14 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-25 M6 未授权生产授权包
+
+新增 [M6 生产授权包](m6-production-authorization-package-20260924.md)，把未来数据库
+migration、调度、通知、私有数据、资源、备份和 Shadow 的授权范围、停止条件与回退要求
+集中为显式清单。它明确记录 M3-M5 产品门、真实恢复、20 个真实交易会话和真实事件均未
+满足，不能代替用户授权。预检配置和加密备份清单绑定该文件；M6 仍为
+`PREFLIGHT_DONE / operationally NOT_STARTED / NOT_YET`，全程 `action=no_order`。
+
 ## 2026-09-24 M6 预检阶段状态对账
 
 `config/m6-operational-preflight-v1.json` 曾保留旧的 `m2=PENDING_HUMAN_REVIEW`，

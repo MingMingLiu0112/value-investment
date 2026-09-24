@@ -10,6 +10,8 @@
   `PARTIAL`，因此本配置不能将 M6 产品前置条件写成已满足。
 - 机器预检入口：`scripts/audit_m6_preflight.py`。
 - 配置：`config/m6-operational-preflight-v1.json`。
+- 未授权生产范围、资源、Shadow 与回退清单见
+  [M6 生产授权包](m6-production-authorization-package-20260924.md)。
 - 加密备份入口：`scripts/package_encrypted_backup.py`。
 - 运行控制入口：`scripts/m6_operational_control.py`。
 - 动作边界：`action=no_order`。
