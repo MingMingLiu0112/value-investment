@@ -59,6 +59,9 @@
 - WPS 只读验证：`runtime/m7-workbench-v2-wps-20260924/wps-verification.json`，
   `passed`；WPS 云盘同名副本与仓库候选逐字节一致。
 - M7 v1/v2 定向回归：6 passed。
+- GitHub 发布：release commit `0e922ab`；Core Research Gates
+  [run 35941189851](https://github.com/MingMingLiu0112/value-investment/actions/runs/35941189851)
+  为 `success`。
 - 详细边界：[m7-workbench-v2-candidate-20260924.md](m7-workbench-v2-candidate-20260924.md)
 
 该候选只证明 M4/M5 联合成果可以被同一个 M7 入口导航，不等同 Checkpoint D、

@@ -22,6 +22,10 @@
 - M7 v1/v2 定向回归 6 passed。
 - 全量离线回归：2317 passed、6 skipped、0 failed；M2 机器门仍只等当前提交的
   CI 与用户 Checkpoint A，不因离线通过改变人工验收边界。
+- GitHub Core Research Gates run `35941189851` 为 `success`；按该 commit 复算后，
+  M2 机器门 AC1-AC7、AC11 为 `DONE`，AC8-AC10、AC12 为
+  `PENDING_HUMAN_REVIEW`。最新 M2 收据
+  `runtime/m2-acceptance-audit-20260924T010927Z/receipt.json`。
 - 本候选不替代 Checkpoint C/D、真实组合、真实事件观察或 M6 运营验收。
 
 ## M4/M5 联合检查点候选：2026-09-24

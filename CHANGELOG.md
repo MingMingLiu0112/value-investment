@@ -28,8 +28,15 @@
   `d00c3363767d96010d9f6b429525cc0b35633160d1bfae967a286ea87c5130dc`。
 - WPS 实际只读验证：`passed`；96 页，canonical 打开前后 Hash 不变。
 - WPS 云盘同名候选与仓库候选逐字节一致。
-- 全量离线回归：2317 passed、6 skipped、0 failed；M2 机器验收收据
-  `runtime/m2-acceptance-audit-20260924T010139Z/receipt.json`。
+- 全量离线回归：2317 passed、6 skipped、0 failed；最终按当前 commit 复算的 M2
+  收据见下方 CI 后审计。
+- GitHub release commit `0e922ab`；Core Research Gates
+  [run 35941189851](https://github.com/MingMingLiu0112/value-investment/actions/runs/35941189851)
+  为 `success`。
+- CI 后复算 M2：AC1-AC7、AC11 `DONE`；AC8-AC10、AC12
+  `PENDING_HUMAN_REVIEW`。最新收据
+  `runtime/m2-acceptance-audit-20260924T010927Z/receipt.json`，SHA-256
+  `1445ca85c3e2e8e279c2310b244eef18600d7fbee63e878770a764b50ebb704f`。
 
 ### Acceptance Boundary
 

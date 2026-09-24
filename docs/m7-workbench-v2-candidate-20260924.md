@@ -55,6 +55,10 @@ v2 复用同一 M3 历史链叠加基底、canonical 和六个 M4/M5 候选，�
   `4fedb84a4f5da10379f683f9775f30d99899fec41ea896045b80559838fc8056`）
 - WPS 云盘同名候选与仓库候选逐字节一致。
 - 全量离线回归：2317 passed、6 skipped、0 failed。
+- GitHub Core Research Gates
+  [run 35941189851](https://github.com/MingMingLiu0112/value-investment/actions/runs/35941189851)
+  为 `success`；M2 机器门 AC1-AC7、AC11 经当前 commit 复算为 `DONE`，人工项仍为
+  `PENDING_HUMAN_REVIEW`。
 
 ## 状态边界
 
