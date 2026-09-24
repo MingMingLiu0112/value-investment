@@ -34,6 +34,19 @@ M4 已经分别交付组合风险、仓位与股息收入候选；M5 已经交�
 - 控制夹具：`tests/fixtures/m4_m5_integrated_demo.json`
 - 回归测试：`tests/test_m4_m5_integration.py`
 
+## 2026-09-24 M4 Decision Binding v2
+
+M4 guidance fixture 的正向 BUY/ADD 候选已改为强绑定 M3 Decision Artifact 后，
+重新生成联合检查点，保证 M4/M5 展示层与收紧后的领域合同一致：
+
+- 文件：`A股价值投资_M4M5联合检查点候选_v2_20260924.xlsx`
+- SHA-256：
+  `470c73209ee87b3855387eb47a890eb0187b3fc83d5cd15cf145d6e2eef9c10a`
+- WPS 只读收据：
+  `runtime/m4m5-joint-wps-v2-20260924/wps-verification.json`，`passed`。
+- WPS 云盘同名副本与仓库候选逐字节一致。
+- 联合状态仍为 `NEGATIVE`、`SIMULATED`、`action=no_order`；未增加正向结论。
+
 ## 场景
 
 控制夹具包含四个显式模拟事件：

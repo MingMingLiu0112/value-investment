@@ -11,7 +11,8 @@
   - `PositionTierPolicy`：人工确认的 Starter/Normal/Max 上限，不使用通用 20%；
     上限必须满足 Starter <= Normal <= Max <= IPS 单股上限。
   - `PositionCandidateInput`：研究、人工批准、事件复核、模型、价格、反证和
-    流动性前置条件。
+    流动性前置条件；`BUY_REVIEW` / `ADD_REVIEW` 必须强绑定同向 M3
+    `InvestmentDecisionReview`，不能只靠重建布尔前置绕过真实决策制品。
   - `PositionGuidanceLine`：只输出分层上限、当前权重、剩余上限空间、共同预算
     状态、停止加仓条件和减仓复核触发，不输出目标仓位或订单。
   - `PositionGuidanceResult`：组合共同预算、保留现金、行业/周期限制和候选间
@@ -28,6 +29,12 @@
     `03_股息收入`、`04_输入与边界`。
   - 候选文件 11,504 字节，SHA-256
     `764f8d201dfc798012a6e27f9080d927d2b6f7b0ada6bb53bf947c6a5ff2e45e`。
+- 2026-09-24 M4 Decision Binding v2 候选：
+  `A股价值投资_M4仓位与股息候选_v2_20260924.xlsx`
+  - 与 v1 相同的 5 页展示和模拟边界，正向候选改为显式 M3 binding。
+  - 候选文件 11,552 字节，SHA-256
+    `2f17b4926d8634fd45c8a57335b99b477aa6c9559616e6bd5053dbb506e9a037`。
+  - WPS 云盘同名副本逐字节一致，WPS 只读验证 `passed`。
 
 ## 风险与预算口径
 
@@ -52,6 +59,16 @@
 偏好、不默认 20% 仓位，也不生成订单。
 
 ## 验证
+
+2026-09-24 人工审查后，M4 正向容量层新增以下反例：
+
+- 未绑定 BUY / ADD 候选直接拒绝；
+- BUY 绑定 ADD 状态、ADD 绑定 BUY 状态均拒绝；
+- 正向 intent 使用非 `RESEARCH_ATTRACTIVE` 价格状态拒绝；
+- HOLD 仍可无绑定展示，但不能产生新增容量。
+
+定向回归 `51 passed`；仓库内隔离 basetemp 全量离线回归
+`2369 passed、6 skipped、0 failed、18 warnings`。
 
 - M4 合同/风险/仓位/股息/工作簿联合定向回归：36 passed。
 - 新增领域定向回归：`test_position_guidance.py` 11 passed、

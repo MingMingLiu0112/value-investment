@@ -1,5 +1,27 @@
 # Changelog
 
+## v2026.09.24-m4-decision-binding-v2-workbooks
+
+### Scope
+
+发布 M4 Decision Binding 修复后的 v2 模拟 Excel 候选，让 WPS 可见成果与当前
+领域合同一致。v1 文件保留，不覆盖历史版本。
+
+### Artifacts
+
+- `A股价值投资_M4仓位与股息候选_v2_20260924.xlsx`
+  - SHA-256 `2f17b4926d8634fd45c8a57335b99b477aa6c9559616e6bd5053dbb506e9a037`
+- `A股价值投资_M4M5联合检查点候选_v2_20260924.xlsx`
+  - SHA-256 `470c73209ee87b3855387eb47a890eb0187b3fc83d5cd15cf145d6e2eef9c10a`
+
+### Verification
+
+- 两个候选的 WPS 云盘副本与仓库逐字节一致。
+- M4 v2 WPS 只读验证 `passed`；M4/M5 v2 WPS 只读验证 `passed`。
+- 全量离线回归在绑定修复版本 `b4e73d1` 上为
+  `2369 passed、6 skipped、0 failed、18 warnings`。
+- `action=no_order`；未修改 canonical、v1 候选或生产服务。
+
 ## v2026.09.24-m4-positive-capacity-decision-binding
 
 ### Scope

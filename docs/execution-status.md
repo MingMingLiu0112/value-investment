@@ -2,6 +2,21 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M4 Decision Binding v2 Excel 候选
+
+在 M4 正向容量绑定收紧后，重新生成并发布两个只读模拟候选，使 WPS 中的展示层与
+当前领域合同一致。v1 文件保留，未覆盖。
+
+- M4 v2：`A股价值投资_M4仓位与股息候选_v2_20260924.xlsx`
+  - SHA-256 `2f17b4926d8634fd45c8a57335b99b477aa6c9559616e6bd5053dbb506e9a037`
+  - 5 页、`BUDGET_CONFLICT`、`action=no_order`。
+- M4/M5 v2：`A股价值投资_M4M5联合检查点候选_v2_20260924.xlsx`
+  - SHA-256 `470c73209ee87b3855387eb47a890eb0187b3fc83d5cd15cf145d6e2eef9c10a`
+  - 6 页、联合状态 `NEGATIVE`、`action=no_order`。
+- WPS 云盘副本逐字节一致；两个 WPS 只读验证均 `passed`。
+- 公开工作簿 WPS 云盘副本全量审计由 23/23 更新为 `25/25 MATCH`。
+- 未修改 canonical、v1 候选、M1/M2 冻结证据、生产原表或生产服务。
+
 ## 2026-09-24 M4 BUY/ADD 决策绑定缺口收紧
 
 复核 2026-09-24 人工审查手册第 22、23、41 节时发现，`PositionCandidateInput`

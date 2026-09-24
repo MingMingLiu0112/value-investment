@@ -5,6 +5,24 @@
 `M2 / PENDING_HUMAN_REVIEW`、`M3 / M4 / M5 / PARTIAL`、
 `M6 / NOT_STARTED`、`M7 / PARTIAL`，全部候选 `action=no_order`。
 
+## 2026-09-24 M4 Decision Binding v2 候选
+
+M4 收紧 `BUY_REVIEW` / `ADD_REVIEW` 必须强绑定 M3 Decision Artifact 后，新增两个
+只读模拟候选，保留 v1 文件作为历史版本：
+
+| 文件 | 字节数 | SHA-256 | WPS |
+| --- | ---: | --- | --- |
+| A股价值投资_M4仓位与股息候选_v2_20260924.xlsx | 11,552 | `2f17b4926d8634fd45c8a57335b99b477aa6c9559616e6bd5053dbb506e9a037` | MATCH |
+| A股价值投资_M4M5联合检查点候选_v2_20260924.xlsx | 13,162 | `470c73209ee87b3855387eb47a890eb0187b3fc83d5cd15cf145d6e2eef9c10a` | MATCH |
+
+- M4 v2 WPS 只读收据：
+  `runtime/m4-guidance-income-wps-v2-20260924/receipt.json`，`passed`。
+- M4/M5 v2 WPS 只读收据：
+  `runtime/m4m5-joint-wps-v2-20260924/wps-verification.json`，`passed`。
+- 两个 v2 文件均保持 `SIMULATED`、`action=no_order`；未覆盖 v1 或 canonical。
+- 新增后公开工作簿 WPS 云盘副本全量审计为 `25/25 MATCH`，收据
+  `runtime/public-workbook-wps-audit-v2-m4-20260924/receipt.json`。
+
 ## 2026-09-24 M7 Daily Workbench v2 表述纠偏
 
 新增第 21 个受 Git 跟踪的公开工作簿，只修正 M7 日常工作台对 M3 Historical
