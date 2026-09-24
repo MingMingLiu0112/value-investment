@@ -113,6 +113,13 @@ def test_private_input_rejects_repo_sync_roots_and_key_colocation(tmp_path):
             _bundle(), repository / "portfolio.viportfolio", key_path,
             private_root=repository, repository_root=repository,
         )
+    repository_key = repository / "portfolio.key"
+    repository_key.write_text("a" * 64, encoding="ascii")
+    with pytest.raises(ValueError, match="outside the repository"):
+        encrypt_private_portfolio_bundle(
+            _bundle(), private_root / "portfolio.viportfolio", repository_key,
+            private_root=private_root, repository_root=repository,
+        )
     with pytest.raises(ValueError, match="sync root"):
         encrypt_private_portfolio_bundle(
             _bundle(), private_root / "portfolio.viportfolio", key_path,

@@ -91,6 +91,8 @@ def _require_private_paths(
         raise ValueError("private_root must be an existing non-symbolic-link directory")
     if _is_within(root, repository) or _is_within(repository, root):
         raise ValueError("private_root must be separate from the repository")
+    if _is_within(key, repository):
+        raise ValueError("private portfolio key must be outside the repository")
     if any(_has_builtin_sync_directory(path) for path in (root, encrypted, key)):
         raise ValueError("private portfolio paths must not use WPSDrive")
     if not _is_within(encrypted, root):
