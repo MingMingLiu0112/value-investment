@@ -2,6 +2,16 @@
 
 更新：2026-09-25。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-25 M5 600519 用户确认委托复核已接入
+
+用户以 `USER_CONFIRMED_DELEGATED_REVIEW` 提供 600519 九条 CNINFO 公告的明确材料性结论。
+新增 JSON intake 入口复用原有队列对象 Hash、完整逐条覆盖、北京时间复核时间、归档 PDF
+字节 SHA-256 重验及 Materiality Bridge，避免改写空白人工工作簿或另建事件规则。实际运行形成
+9 条 append-only Review/Decision：2 条 `MATERIAL_REQUIRES_RECALCULATION` 进入 ACTUAL
+namespace 的事件桥接候选，7 条为静默的 NOT_MATERIAL / SUPPORTING / DUPLICATE 结论；事件
+尚未应用、未运行生产调度或通知，`action=no_order`。当前队列已完成 reconciliation；后续有界
+失效与事实重算必须以这两个桥接事件为输入，不能把“已失效”写成“已得到新估值结论”。
+
 ## 2026-09-25 全量回归与私有测试隔离
 
 跨平台 Git 工作树边界修复后，完整测试套件使用仓库内 disposable base temp 重放为

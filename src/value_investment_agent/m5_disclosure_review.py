@@ -516,8 +516,12 @@ def build_disclosure_materiality_reviews(
 
     if queue.queue_id != intake.queue_id:
         raise ValueError("Disclosure review intake queue id does not match")
-    if disclosure_queue_sha256(queue) != intake.queue_sha256:
-        raise ValueError("Disclosure review intake queue hash does not match")
+    actual_queue_sha256 = disclosure_queue_sha256(queue)
+    if actual_queue_sha256 != intake.queue_sha256:
+        raise ValueError(
+            "Disclosure review intake queue hash does not match: "
+            f"expected={actual_queue_sha256}, supplied={intake.queue_sha256}"
+        )
     reviewed_at = intake.reviewed_at.astimezone(CN_TZ)
     inputs = intake.by_key()
     reviews: list[EventMaterialityReview] = []
