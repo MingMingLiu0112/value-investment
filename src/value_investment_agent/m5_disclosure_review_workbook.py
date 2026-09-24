@@ -47,6 +47,7 @@ OVERVIEW_SHEET = "00_总览"
 INPUT_SHEET = "01_人工判定"
 GUIDE_SHEET = "02_判定说明"
 BOUNDARY_SHEET = "03_边界"
+BRIEFING_SHEET = "04_阅读简报"
 
 QUEUE_ID_LABEL = "队列ID"
 QUEUE_HASH_LABEL = "队列 SHA-256"
@@ -365,11 +366,58 @@ def _boundaries(wb: Workbook) -> None:
         row += 1
 
 
+def _briefing(wb: Workbook, briefing: Mapping[str, Any]) -> None:
+    """Render a verified reading aid without turning it into a verdict."""
+
+    if briefing.get("boundary") != "reading_aid_only_no_materiality_decision":
+        raise ValueError("Disclosure briefing has an unsafe boundary")
+    if briefing.get("action") != ACTION_NO_ORDER:
+        raise ValueError("Disclosure briefing must remain no_order")
+    sheet = wb.create_sheet(BRIEFING_SHEET)
+    sheet.sheet_view.showGridLines = False
+    sheet.freeze_panes = "A5"
+    columns = ["证券代码", "公告ID", "公告标题", "标题规则", "页数", "阅读提示", "命中页", "受限原文片段"]
+    _widths(sheet, [10, 13, 48, 18, 9, 28, 12, 72])
+    _title(
+        sheet,
+        "只读阅读简报",
+        "来自已校验 PDF 的文字定位；不含材料性判定、受影响领域或交易结论。",
+        len(columns),
+    )
+    row = _header(sheet, HEADER_ROW, columns)
+    for item in briefing.get("briefings") or ():
+        if item.get("human_decision") is not None:
+            raise ValueError("Disclosure briefing must not contain a human decision")
+        for term_row in item.get("literal_term_hits") or ():
+            hits = term_row.get("hits") or ()
+            page_text = "、".join(str(hit.get("page")) for hit in hits) or "未命中"
+            excerpt = "\n".join(str(hit.get("excerpt") or "") for hit in hits)
+            _write_row(
+                sheet,
+                row,
+                [
+                    item.get("symbol"),
+                    item.get("announcement_id"),
+                    item.get("title"),
+                    item.get("title_rule_kind"),
+                    item.get("page_count"),
+                    term_row.get("term"),
+                    page_text,
+                    excerpt or "未从可提取文本中定位；请直接阅读归档 PDF。",
+                ],
+                fill=GREY if not hits else "FFFFFF",
+            )
+            row += 1
+    if row == DATA_START_ROW:
+        _write_row(sheet, row, ["无待复核公告"] + [""] * (len(columns) - 1), fill=GREY)
+
+
 def build_m5_disclosure_review_workbook(
     queue: DisclosureReviewQueue,
     *,
     security_names: Mapping[str, str] | None = None,
     archive_root: Path | None = None,
+    briefing: Mapping[str, Any] | None = None,
 ) -> Workbook:
     names = dict(security_names or {})
     wb = Workbook()
@@ -378,6 +426,12 @@ def build_m5_disclosure_review_workbook(
     _input(wb, queue, names, archive_root=archive_root)
     _guide(wb)
     _boundaries(wb)
+    if briefing is not None:
+        if briefing.get("queue_id") != queue.queue_id:
+            raise ValueError("Disclosure briefing queue id does not match the loaded queue")
+        if briefing.get("queue_sha256") != disclosure_queue_sha256(queue):
+            raise ValueError("Disclosure briefing queue hash does not match the loaded queue")
+        _briefing(wb, briefing)
     return wb
 
 
@@ -387,6 +441,7 @@ def write_m5_disclosure_review_workbook(
     output: Path,
     root: Path,
     security_names: Mapping[str, str] | None = None,
+    briefing: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     output = output.resolve()
     root = root.resolve()
@@ -398,6 +453,7 @@ def write_m5_disclosure_review_workbook(
         queue,
         security_names=security_names,
         archive_root=root,
+        briefing=briefing,
     )
     wb.save(output)
     return {
@@ -409,6 +465,7 @@ def write_m5_disclosure_review_workbook(
         "queue_sha256": disclosure_queue_sha256(queue),
         "archive_root": str(root),
         "verified_pdf_count": len(queue.pending_candidates),
+        "briefing_included": briefing is not None,
         "action": queue.action,
     }
 

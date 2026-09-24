@@ -24,6 +24,7 @@ from value_investment_agent.m5_disclosure_review import (
     disclosure_queue_sha256,
 )
 from value_investment_agent.m5_disclosure_review_workbook import (
+    BRIEFING_SHEET,
     INPUT_SHEET,
     OVERVIEW_SHEET,
     QUEUE_HASH_LABEL,
@@ -115,6 +116,30 @@ def test_workbook_has_no_default_verdicts_and_reports_missing(tmp_path: Path):
     wb.save(output)
     with pytest.raises(ValueError, match="decision is missing.*1.*2"):
         read_m5_disclosure_review_workbook(output, queue)
+
+
+def test_optional_briefing_is_read_only_and_cannot_supply_a_verdict(tmp_path: Path):
+    queue = _queue(tmp_path, [_row("1")])
+    briefing = {
+        "queue_id": queue.queue_id,
+        "queue_sha256": disclosure_queue_sha256(queue),
+        "boundary": "reading_aid_only_no_materiality_decision",
+        "action": ACTION_NO_ORDER,
+        "briefings": [{
+            "symbol": "600887", "announcement_id": "1", "title": "关于回购公司股份的公告",
+            "title_rule_kind": "buyback", "page_count": 3, "human_decision": None,
+            "literal_term_hits": [{"term": "回购", "hits": [{"page": 2, "excerpt": "回购股份。"}]}],
+        }],
+    }
+
+    wb = build_m5_disclosure_review_workbook(queue, briefing=briefing)
+    assert BRIEFING_SHEET in wb.sheetnames
+    assert wb[BRIEFING_SHEET].cell(5, 7).value == "2"
+    assert all(wb[INPUT_SHEET].cell(row, 7).value in (None, "") for row in range(5, 6))
+
+    briefing["briefings"][0]["human_decision"] = "NOT_MATERIAL"
+    with pytest.raises(ValueError, match="must not contain a human decision"):
+        build_m5_disclosure_review_workbook(queue, briefing=briefing)
 
 
 def test_filled_workbook_round_trips_and_builds_reviews(tmp_path: Path):

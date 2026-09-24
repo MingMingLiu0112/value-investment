@@ -21,6 +21,9 @@ from value_investment_agent.m5_disclosure_review import (  # noqa: E402
     DISCLOSURE_REVIEW_INTAKE_SCHEMA,
     disclosure_queue_sha256,
 )
+from value_investment_agent.m5_disclosure_briefing import (  # noqa: E402
+    build_disclosure_review_briefing,
+)
 from value_investment_agent.m5_disclosure_review_workbook import (  # noqa: E402
     write_m5_disclosure_review_workbook,
 )
@@ -75,6 +78,7 @@ def main() -> int:
     if payload.get("action") != ACTION_NO_ORDER:
         raise ValueError("Disclosure review queue must remain no_order")
     queue = disclosure_review_queue_from_payload(payload)
+    briefing = build_disclosure_review_briefing(queue, archive_root=ROOT)
     queue_receipt = {
         "path": str(queue_path),
         "sha256": _digest(queue_path),
@@ -85,6 +89,7 @@ def main() -> int:
         output=output,
         root=ROOT,
         security_names=SYMBOL_NAMES,
+        briefing=briefing,
     )
     wps_result = None if args.no_wps else _copy_wps(output, args.wps_dir)
     manifest = {
