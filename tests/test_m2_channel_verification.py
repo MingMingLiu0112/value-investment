@@ -22,6 +22,19 @@ from value_investment_agent.m2_channel_verification import (
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _require_real_artifacts() -> None:
+    required = (
+        "runtime/m2-ac8-research-reports-20260924-v1/report.json",
+        "runtime/m2-ac9-coverage-audit-20260923-v2/report.json",
+        "runtime/m2-live-20260923-v3/receipt.json",
+    )
+    missing = [path for path in required if not (ROOT / path).exists()]
+    if missing:
+        pytest.skip(
+            "real pre-registered M2 runtime artifacts are not present in a clean CI checkout"
+        )
+
+
 def _policy() -> M2ChannelVerificationPolicy:
     return M2ChannelVerificationPolicy(
         schema_version="m2-channel-verification-policy-v1",
@@ -123,6 +136,7 @@ def test_verified_result_changes_candidate_class_only():
 
 
 def test_real_pre_registered_ac8_build_is_a_formal_second_stage_packet():
+    _require_real_artifacts()
     policy = _policy()
     batch = build_m2_channel_verification(
         policy,
@@ -146,6 +160,7 @@ def test_real_pre_registered_ac8_build_is_a_formal_second_stage_packet():
 
 
 def test_real_batch_human_packet_contains_verified_symbols_and_no_order():
+    _require_real_artifacts()
     policy = _policy()
     batch = build_m2_channel_verification(
         policy,
@@ -162,6 +177,7 @@ def test_real_batch_human_packet_contains_verified_symbols_and_no_order():
 
 
 def test_pinned_report_hash_change_fails_closed():
+    _require_real_artifacts()
     policy = _policy()
     changed = M2ChannelVerificationPolicy(
         schema_version=policy.schema_version,
@@ -186,6 +202,7 @@ def test_pinned_report_hash_change_fails_closed():
 
 
 def test_human_review_workbook_is_presentation_only(tmp_path):
+    _require_real_artifacts()
     from openpyxl import load_workbook
     from value_investment_agent.m2_channel_verification_workbook import (
         OVERVIEW_SHEET,

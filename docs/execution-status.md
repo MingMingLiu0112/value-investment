@@ -39,7 +39,10 @@
   `m3-investment-decision-v1` 旧快照，且继续接受 v2 新字段。
 - 全量离线回归 2356 passed、6 skipped、0 failed、18 warnings；skip 为既有的
   PostgreSQL/外部服务条件项，warning 来自 Backtrader `utcnow()` 弃用，不改变
- 投资结论。
+  投资结论。
+- CI 干净 checkout 不携带本地 `runtime/` 预注册制品，因此 M2 的 4 项真实制品
+  复算在 CI 显式 skip；本地工作台仍完整执行并保持 `6 passed`，不把本机专属
+  runtime 文件提交到公开仓库。
 - M2 Checkpoint A 仅 `READY_FOR_HUMAN_RESUBMISSION`；M3 Checkpoint B、
   M4 个性化、M5 持续运营、M6 运营验收与 M7 用户签收均未批准。
 
