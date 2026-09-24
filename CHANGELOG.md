@@ -1,5 +1,22 @@
 # Changelog
 
+## v2026.09.24-m3-strict-pit-evidence-search
+
+### Scope
+
+人工审查要求至少一条真实 contemporaneous-rule Historical PIT。检索当前仓库
+`runtime/strategy-validation`、docs 与 config 后确认：最早提交为 2026-09-01，
+600519 / 2024-06-21 所用规则登记于 2026-09-12，不存在可验证的当时规则登记。
+
+### Result
+
+- `STRICT_CONTEMPORANEOUS_RULE_PIT = NOT_PROVEN`。
+- 当前 replay 保持 `RETROSPECTIVE_RESEARCH_EXTENSION`、
+  `future_rule_version_used=true`、`WAIT`、`action=no_order`。
+- 不伪造历史规则登记，不把追溯扩展写成当时规则。
+- 新增 [docs/m3-historical-pit-evidence-20260924.md](docs/m3-historical-pit-evidence-20260924.md)
+  固化检索范围、证据与解除方式。
+
 ## v2026.09.24-m4-decision-binding-v2-workbooks
 
 ### Scope

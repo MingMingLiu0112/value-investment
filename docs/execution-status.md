@@ -2,6 +2,16 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M3 strict PIT 证据检索结论
+
+对仓库、`runtime/strategy-validation`、docs 与 config 检索后确认：最早 Git 提交
+为 2026-09-01，600519 / 2024-06-21 重放所用 Median-PE 规则登记于 2026-09-12。
+不存在可验证的当时已注册规则，因此 strict contemporaneous-rule Historical PIT
+保持 `NOT_PROVEN`，人工审查验收标准第 11 条仍未满足。当前重放继续按
+`RETROSPECTIVE_RESEARCH_EXTENSION`、`future_rule_version_used=true`、
+`WAIT`、`action=no_order` 保存，不升级为 strict PIT。详细检索见
+[m3-historical-pit-evidence-20260924.md](m3-historical-pit-evidence-20260924.md)。
+
 ## 2026-09-24 M4 Decision Binding v2 Excel 候选
 
 在 M4 正向容量绑定收紧后，重新生成并发布两个只读模拟候选，使 WPS 中的展示层与

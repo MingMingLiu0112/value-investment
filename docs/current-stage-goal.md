@@ -24,7 +24,8 @@ M7  DISPLAY_ENGINEERING_DONE | PARTIAL        | PENDING_USER_ACCEPTANCE
 
 本轮纠偏后的机器门已覆盖：M3 正向价格门、M4 决策制品绑定、M2 二阶段
 Channel Verification、M5 旧人工 review Hash reconciliation、M3
-Historical Research Replay（事实/报价 PIT，规则为追溯并显式标记），以及 M7
+Historical Research Replay（事实/报价 PIT，规则为追溯并显式标记；strict
+contemporaneous-rule PIT 尚未证明），以及 M7
 10 个日常主入口工作台。Checkpoint A-D、真实 IPS/Portfolio 与 M6 运营验收仍
 保持人工待办。
 
