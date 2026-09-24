@@ -2,6 +2,22 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 可重复执行 WPS 云盘副本审计
+
+新增只读脚本 `scripts/audit_public_workbook_wps_copies.ps1`，对 Git 跟踪的全部公开
+工作簿与 WPS 云盘同名副本逐项计算 SHA-256，并输出可复算 JSON 收据。当前实跑结果为
+`23/23 MATCH`，缺失或 Hash 不一致会失败关闭；脚本不含 `Copy-Item / Move-Item /
+Remove-Item`。新增 `tests/test_public_workbook_wps_audit.py` 进入 Core Research
+Gates，防止脚本退化为写入型操作或丢失 Unicode Git 路径兼容。
+
+- 定向测试：2 passed。
+- 本地完整离线回归：2359 passed、6 skipped、0 failed、18 warnings。
+- Core Research Gates run
+  [35956322034](https://github.com/MingMingLiu0112/value-investment/actions/runs/35956322034)：
+  `offline-core` 与 `postgres-integration` 均 `success`。
+- 收据：`runtime/public-workbook-wps-audit-final-20260924/receipt.json`。
+- `action=no_order`；未覆盖任何工作簿，也未执行生产迁移、计划任务、通知或真实账户导入。
+
 ## 2026-09-24 人工审查纠偏收口
 
 本节记录按同日人工审查手册完成的安全门、验证门与 M7 Daily Workbench。全部动作

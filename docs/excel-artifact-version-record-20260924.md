@@ -24,6 +24,17 @@ Research Replay 的时点表述，不覆盖 v1 候选、不改 canonical 或投�
 - WPS 验证器已改为从 `UsedRange.Value2` 物化文本，避免本机 WPS COM 对
   `UsedRange.Text` 返回空串；候选 Hash 未变化。
 
+## 2026-09-24 可重复执行 WPS 云盘副本审计
+
+新增只读脚本 `scripts/audit_public_workbook_wps_copies.ps1`，遍历 Git 跟踪的全部
+23 个公开工作簿，与 WPS 云盘同名副本逐项计算 SHA-256。实跑结果 `23/23 MATCH`；
+脚本只生成 JSON 收据，缺失或不一致时失败关闭，不复制、移动或删除工作簿。新增静态
+回归 `tests/test_public_workbook_wps_audit.py` 已进入 Core Research Gates。
+
+- 收据：`runtime/public-workbook-wps-audit-final-20260924/receipt.json`。
+- Core Research Gates run `35956322034`：`offline-core` 与 `postgres-integration`
+  均 `success`。
+
 ## 2026-09-24 WPS 云盘全量字节审计
 
 对 Git 跟踪的全部 23 个公开工作簿重新计算仓库与 WPS 云盘同名副本的 SHA-256，

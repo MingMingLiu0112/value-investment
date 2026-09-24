@@ -1,5 +1,23 @@
 # Changelog
 
+## v2026.09.24-repeatable-public-workbook-wps-audit
+
+### Scope
+
+把此前一次性执行的公开工作簿 WPS 云盘副本字节核对固化为只读、可重复的 PowerShell
+审计脚本，并增加 CI 静态回归。脚本遍历 Git 跟踪的全部 `.xlsx`，逐项计算仓库文件与
+WPS 云盘同名副本的 SHA-256，输出 JSON 收据；缺失或 Hash 不一致时失败关闭，不执行
+复制、移动或删除。
+
+### Verification
+
+- 审计脚本实跑 `23/23 MATCH`，收据
+  `runtime/public-workbook-wps-audit-final-20260924/receipt.json`。
+- 新增审计测试与 WPS 文本扫描回归：2 passed。
+- 本地完整离线回归 `2359 passed、6 skipped、0 failed、18 warnings`。
+- Core Research Gates run `35956322034`：两 job 均 `success`。
+- `action=no_order`；未执行生产迁移、计划任务、通知或真实账户导入。
+
 ## v2026.09.24-wps-verifier-text-materialization
 
 ### Scope
