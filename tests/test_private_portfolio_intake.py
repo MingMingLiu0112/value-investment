@@ -116,6 +116,13 @@ def test_private_input_rejects_repo_sync_roots_and_key_colocation(tmp_path):
             private_root=private_root, repository_root=repository,
             forbidden_sync_roots=(tmp_path,),
         )
+    wps_root = tmp_path / "WPSDrive" / "private"
+    wps_root.mkdir(parents=True)
+    with pytest.raises(ValueError, match="WPSDrive"):
+        encrypt_private_portfolio_bundle(
+            _bundle(), wps_root / "portfolio.viportfolio", key_path,
+            private_root=wps_root, repository_root=repository,
+        )
     with pytest.raises(ValueError, match="outside private_root"):
         encrypt_private_portfolio_bundle(
             _bundle(), private_root / "portfolio.viportfolio", private_root / "key",

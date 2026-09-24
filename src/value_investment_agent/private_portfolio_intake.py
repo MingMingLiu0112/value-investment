@@ -37,6 +37,7 @@ SCHEMA_VERSION = "m4-private-portfolio-intake-v1"
 ALGORITHM = "AES-256-GCM"
 KEY_ID_CONTEXT = b"value-investment-agent-private-portfolio-key-id-v1"
 _HEX_KEY = re.compile(r"^[0-9a-f]{64}$")
+_FORBIDDEN_SYNC_DIRECTORY_NAMES = frozenset({"wpsdrive"})
 
 
 @dataclass(frozen=True)
@@ -69,6 +70,10 @@ def _is_within(path: Path, root: Path) -> bool:
     return True
 
 
+def _has_builtin_sync_directory(path: Path) -> bool:
+    return any(part.casefold() in _FORBIDDEN_SYNC_DIRECTORY_NAMES for part in path.parts)
+
+
 def _require_private_paths(
     *,
     private_root: Path,
@@ -86,6 +91,8 @@ def _require_private_paths(
         raise ValueError("private_root must be an existing non-symbolic-link directory")
     if _is_within(root, repository) or _is_within(repository, root):
         raise ValueError("private_root must be separate from the repository")
+    if any(_has_builtin_sync_directory(path) for path in (root, encrypted, key)):
+        raise ValueError("private portfolio paths must not use WPSDrive")
     if not _is_within(encrypted, root):
         raise ValueError("encrypted portfolio input must live under private_root")
     if _is_within(key, root):
