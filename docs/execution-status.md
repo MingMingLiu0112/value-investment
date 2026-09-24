@@ -14,6 +14,13 @@ PDF 的 SHA-256；原件缺失、路径越界、Hash 不一致或 PDF 解析失�
 `PENDING_HUMAN_REVIEW`，不创建 ChangeEvent、通知、仓位或订单，`action=no_order`。
 模块及原有回填合同定向回归 `25 passed`；更广的 M4/M5/M6 边界回归 `197 passed`。
 
+## 2026-09-25 M7 冻结制品与 M6 可变指针隔离
+
+全量离线回归发现 M7 的冻结工作台生成器错误依赖 M6 的
+`m6-operational-preflight-latest.json`。一次新的预检运行会改变该指针，导致工作台固定
+Hash 校验失败。现改为只读取已固定的 M6 receipt；后续 `latest` 预检不会改变冻结 M7
+候选的事实集。修复不升级 M6/M7 状态、不触发生产动作，`action=no_order`。
+
 ## 2026-09-25 M6 未授权生产授权包
 
 新增 [M6 生产授权包](m6-production-authorization-package-20260924.md)，把未来数据库

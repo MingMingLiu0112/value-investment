@@ -552,3 +552,15 @@ def test_real_post_checkpoint_a_builder_pins_new_evidence():
     assert queue["source_unavailable"] == 0
     assert all(item["review_status"] == "PENDING_HUMAN_REVIEW" for item in queue["pending_items"])
     assert all(item["pdf_sha256"] for item in queue["pending_items"])
+
+
+def test_frozen_m7_packet_does_not_follow_mutable_m6_latest_pointer():
+    _require_post_checkpoint_a_real_artifacts()
+    builder = _load_post_checkpoint_a_builder()
+    from datetime import datetime, timezone
+
+    packet = builder.build_packet(
+        datetime(2026, 9, 24, 12, 0, 0, tzinfo=timezone.utc)
+    )
+
+    assert packet["m6"]["status"] == "PREFLIGHT_DONE"

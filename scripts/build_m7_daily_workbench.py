@@ -76,7 +76,8 @@ M5_PENDING = (
     / "m5-human-review-reconciliation-20260924-v1"
     / "pending-queue.json"
 )
-M6_POINTER = ROOT / "runtime" / "m6-operational-preflight-latest.json"
+# M7 is a frozen daily-workbench candidate.  It must not follow M6's mutable
+# ``latest`` pointer, otherwise a later preflight run changes its evidence set.
 M6_RECEIPT = (
     ROOT
     / "runtime"
@@ -106,7 +107,6 @@ PINNED_SHA256 = {
     M5_MANIFEST: "ebe71545f98bf68f5bb9f42df40a305810ef211b79bd3d84c0a709e631c1ee3d",
     M5_RECONCILIATION: "0cc01a1c6258754578ce87e4d01845aa2942bdf6457c803587db307d8a082e18",
     M5_PENDING: "3372ea05dc915f7611b5cf779692cb234f95a30de4f937f20a1e10942d17b282",
-    M6_POINTER: "15ba0fc0c621102676d01d08795f52303098d7e8088ef5cff2c15eefbe55898b",
     M6_RECEIPT: "cf079a92d93690ad60f717d4ef177237dfe5083507da86eb0b592515f87cc43f",
     AUDIT_WORKBOOK: "d00c3363767d96010d9f6b429525cc0b35633160d1bfae967a286ea87c5130dc",
     CANONICAL_WORKBOOK: "64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911",
@@ -325,12 +325,8 @@ def _m5_packet() -> dict[str, Any]:
 
 
 def _m6_packet() -> dict[str, Any]:
-    pointer = _load_json(M6_POINTER)
-    receipt_path = ROOT / pointer["path"] / "receipt.json"
-    if receipt_path not in PINNED_SHA256:
-        raise ValueError(f"M6 preflight receipt is not pinned: {receipt_path}")
-    _verify_pinned(receipt_path)
-    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    _verify_pinned(M6_RECEIPT)
+    receipt = json.loads(M6_RECEIPT.read_text(encoding="utf-8"))
     return {
         "status": "PREFLIGHT_DONE",
         "engineering_status": receipt["engineering_status"],
