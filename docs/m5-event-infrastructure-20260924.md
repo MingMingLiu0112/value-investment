@@ -299,11 +299,32 @@ human materiality review
 验证：`tests/test_m5_run_request.py` `12 passed`，M5 定向回归 `58 passed`，本地全量
 离线回归 `2522 passed, 5 skipped, 18 warnings, 0 failed`。
 
-仍未完成、且必须在接入真实 apply 前补齐：
+## 2026-09-24 归档 PDF 字节复核与工作簿关系字段
 
-1. 归档 PDF 的字节 SHA-256 需要在 intake 重新计算，不能继续信任队列记录的 Hash；
-2. 回填工作簿尚未贯通 `supersedes_event_id` / `event_cluster_id` 列与原件 hyperlink；
-3. 当前 run health 只描述本次运行，历史被拒 ingest 需要在 M6 运营聚合视图中单独
+此前 intake 只读取队列 JSON 中的 `sha256`，回填表也缺少关系字段和原件链接。现在
+人工材料性入口统一为以下 fail-closed 顺序：
+
+```text
+queue candidate
+  -> unique SOURCE_ARCHIVED PDF ref
+  -> canonical symbol/date/announcement path
+  -> reject links/traversal/outside-root paths
+  -> open file once, verify %PDF- magic
+  -> recompute SHA-256 from bytes
+  -> compare recorded digest
+  -> human decision / reconciliation
+```
+
+- 文件缺失、路径逃逸、多 PDF 引用、身份不匹配、PDF magic 错误或摘要不一致都会失败
+  关闭。复核对账不能仅凭 queue JSON 与 prior review JSON 的相同 Hash 直接结转旧判定。
+- `01_人工判定` 新增 `替代事件ID` / `事件簇ID` 两列；旧的 13 列工作簿仍可读取。
+  `PDF SHA-256` 保持纯文本并附加本地归档 PDF hyperlink。
+- 600519 v2 空白复核包绑定 9 条真实候选并完成现场 Hash 复核，但所有人工材料性字段
+  仍为空，等待用户逐条判断。
+
+仍未完成：
+
+1. 当前 run health 只描述本次运行，历史被拒 ingest 需要在 M6 运营聚合视图中单独
    呈现；
-4. 600519 九条真实公告仍保持 `PENDING_HUMAN_REVIEW`，等待用户逐条材料性判定；
-5. `M5` 保持 `PARTIAL`，`action=no_order`，不发送通知、不接生产调度。
+2. 600519 九条真实公告仍保持 `PENDING_HUMAN_REVIEW`，等待用户逐条材料性判定；
+3. `M5` 保持 `PARTIAL`，`action=no_order`，不发送通知、不接生产调度。

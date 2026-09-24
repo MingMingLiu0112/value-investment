@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
+from pathlib import Path
 import re
 from typing import Any, Mapping, Sequence
 
@@ -22,7 +23,11 @@ from .event_materiality import (
 from .event_scan import AnnouncementReview
 from .investment_decision import ACTION_NO_ORDER
 from .m5_disclosure_queue import DisclosureReviewQueue
-from .m5_disclosure_review import disclosure_queue_sha256
+from .m5_disclosure_review import (
+    ArchivedPdfVerificationError,
+    disclosure_queue_sha256,
+    verify_archived_pdf,
+)
 
 
 M5_RECONCILIATION_SCHEMA = "m5-human-review-reconciliation-v1"
@@ -88,23 +93,23 @@ def _normalize_refs(refs: Sequence[Mapping[str, Any]]) -> tuple[dict[str, Any], 
     return normalized
 
 
-def _source_pdf_hash(candidate: AnnouncementReview) -> str | None:
-    pdf_refs = [
-        ref
-        for ref in candidate.evidence_refs
-        if str(ref.get("path") or "").lower().endswith(".pdf")
-        or "-pdf-" in str(ref.get("id") or "")
-    ]
-    if not pdf_refs:
-        return None
-    if len(pdf_refs) != 1:
-        raise ValueError(
-            f"Announcement {candidate.announcement_id} has multiple PDF references"
+def _verified_source_pdf(
+    *,
+    symbol: str,
+    candidate: AnnouncementReview,
+    archive_root: Path,
+) -> tuple[str | None, str | None]:
+    try:
+        _, actual = verify_archived_pdf(
+            candidate,
+            archive_root=archive_root,
+            symbol=symbol,
         )
-    raw_hash = pdf_refs[0].get("sha256")
-    if raw_hash is None:
-        return None
-    return _sha256(raw_hash, "source_pdf_sha256")
+    except ArchivedPdfVerificationError as error:
+        if error.reason == "archive_hash_mismatch":
+            return error.actual_sha256, REASON_SOURCE_PDF_HASH_CHANGED
+        return None, REASON_SOURCE_PDF_HASH_MISSING
+    return actual, None
 
 
 def _valid_prior_decision(decision: EventMaterialityDecision) -> bool:
@@ -295,6 +300,7 @@ def reconcile_m5_human_reviews(
     queue: DisclosureReviewQueue,
     prior_reviews: Sequence[EventMaterialityReview],
     reconciliation_id: str,
+    archive_root: Path,
     as_of: datetime | None = None,
 ) -> M5HumanReviewReconciliation:
     if queue.action != ACTION_NO_ORDER:
@@ -341,8 +347,28 @@ def reconcile_m5_human_reviews(
         for candidate in scan.announcements:
             if not candidate.materiality_candidate:
                 continue
-            current_hash = _source_pdf_hash(candidate)
+            current_hash, source_error = _verified_source_pdf(
+                symbol=scan.symbol,
+                candidate=candidate,
+                archive_root=archive_root,
+            )
             prior = prior_by_key.get((scan.symbol, candidate.announcement_id))
+            if source_error is not None:
+                resolutions.append(
+                    M5ReviewResolution(
+                        symbol=scan.symbol,
+                        announcement_id=candidate.announcement_id,
+                        disposition=DISPOSITION_PENDING_HUMAN_REVIEW,
+                        reason=source_error,
+                        current_source_sha256=current_hash,
+                        prior_review_id=prior[0].review_id if prior else None,
+                        prior_event_decision_id=(
+                            prior[1].event_decision_id if prior else None
+                        ),
+                        evidence_refs=candidate.evidence_refs,
+                    )
+                )
+                continue
             if prior is None:
                 resolutions.append(
                     M5ReviewResolution(

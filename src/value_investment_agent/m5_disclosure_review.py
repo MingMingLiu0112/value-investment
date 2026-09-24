@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
+import os
+from pathlib import Path
 import re
 from typing import Any, Mapping
 
@@ -280,17 +282,157 @@ def disclosure_review_intake_from_payload(
     )
 
 
-def _pdf_ref(candidate: Any) -> dict[str, Any]:
+def _archived_pdf_ref(candidate: Any) -> dict[str, Any]:
     refs = [
         dict(ref)
         for ref in candidate.evidence_refs
-        if ref.get("source_status") == SOURCE_ARCHIVED and ref.get("sha256")
+        if ref.get("source_status") == SOURCE_ARCHIVED
+        or str(ref.get("path") or "").lower().endswith(".pdf")
+        or "-pdf-" in str(ref.get("id") or "")
     ]
-    if not refs:
-        raise ValueError(
-            f"Candidate PDF is unavailable or unhashed: {candidate.announcement_id}"
+    if len(refs) != 1:
+        raise ArchivedPdfVerificationError(
+            "Candidate must have exactly one PDF reference: "
+            f"{candidate.announcement_id}; found={len(refs)}",
+            reason="archive_reference_ambiguous",
         )
-    return refs[0]
+    ref = refs[0]
+    if ref.get("source_status") != SOURCE_ARCHIVED:
+        raise ArchivedPdfVerificationError(
+            f"Candidate PDF is not archived: {candidate.announcement_id}",
+            reason="archive_not_archived",
+        )
+    return ref
+
+
+class ArchivedPdfVerificationError(ValueError):
+    """A fail-closed source-archive verification failure."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        reason: str,
+        actual_sha256: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.reason = reason
+        self.actual_sha256 = actual_sha256
+
+
+def _assert_no_link_components(root: Path, relative_path: Path) -> None:
+    current = root
+    for part in relative_path.parts:
+        current = current / part
+        if current.is_symlink() or (
+            hasattr(os.path, "isjunction") and os.path.isjunction(current)
+        ):
+            raise ArchivedPdfVerificationError(
+                f"Candidate PDF path contains a link: {relative_path}",
+                reason="archive_path_link",
+            )
+
+
+def verify_archived_pdf(
+    candidate: Any,
+    *,
+    archive_root: Path,
+    symbol: str,
+) -> tuple[dict[str, Any], str]:
+    """Recompute the archived PDF digest before a human decision is converted.
+
+    The queue is an input, not a trust root. A recorded digest is accepted only
+    when the referenced regular PDF is still inside the supplied archive root
+    and its current bytes reproduce that digest.
+    """
+
+    ref = _archived_pdf_ref(candidate)
+    if not _SYMBOL.fullmatch(symbol):
+        raise ValueError("Archive verification symbol must contain six digits")
+    expected_id = f"{symbol}-pdf-{candidate.announcement_id}"
+    if ref.get("id") != expected_id:
+        raise ArchivedPdfVerificationError(
+            f"Candidate PDF reference id does not match: {candidate.announcement_id}",
+            reason="archive_identity_mismatch",
+        )
+    if ref.get("source_url") != candidate.source_url:
+        raise ArchivedPdfVerificationError(
+            f"Candidate PDF source URL does not match: {candidate.announcement_id}",
+            reason="archive_identity_mismatch",
+        )
+    recorded = ref.get("sha256")
+    if not isinstance(recorded, str) or not _SHA256.fullmatch(recorded):
+        raise ArchivedPdfVerificationError(
+            f"Candidate PDF hash is invalid: {candidate.announcement_id}",
+            reason="archive_hash_invalid",
+        )
+    raw_path = ref.get("path")
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        raise ArchivedPdfVerificationError(
+            f"Candidate PDF path is missing: {candidate.announcement_id}",
+            reason="archive_path_missing",
+        )
+
+    root = archive_root.resolve(strict=True)
+    if not root.is_dir():
+        raise ValueError(f"Archive root is not a directory: {root}")
+    relative_path = Path(raw_path)
+    expected_suffix = (
+        symbol,
+        "announcements",
+        candidate.published_at.astimezone(CN_TZ).date().isoformat(),
+        f"{candidate.announcement_id}.pdf",
+    )
+    if (
+        relative_path.is_absolute()
+        or relative_path.drive
+        or ".." in relative_path.parts
+        or tuple(relative_path.parts[-4:]) != expected_suffix
+    ):
+        raise ArchivedPdfVerificationError(
+            f"Candidate PDF path is not canonical: {candidate.announcement_id}",
+            reason="archive_path_invalid",
+        )
+    _assert_no_link_components(root, relative_path)
+    lexical_path = root / relative_path
+    try:
+        path = lexical_path.resolve(strict=True)
+    except FileNotFoundError as error:
+        raise ArchivedPdfVerificationError(
+            f"Candidate PDF is missing: {candidate.announcement_id}",
+            reason="archive_missing",
+        ) from error
+    if path != lexical_path or not path.is_relative_to(root):
+        raise ArchivedPdfVerificationError(
+            f"Candidate PDF escapes archive root: {candidate.announcement_id}",
+            reason="archive_path_escape",
+        )
+    if not path.is_file() or path.suffix.lower() != ".pdf":
+        raise ArchivedPdfVerificationError(
+            f"Candidate archive is not a regular PDF: {candidate.announcement_id}",
+            reason="archive_not_regular_pdf",
+        )
+
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        first_block = handle.read(1024 * 1024)
+        if not first_block.startswith(b"%PDF-"):
+            raise ArchivedPdfVerificationError(
+                f"Candidate archive is not a PDF: {candidate.announcement_id}",
+                reason="archive_magic_invalid",
+            )
+        digest.update(first_block)
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    actual = digest.hexdigest()
+    if actual != recorded.lower():
+        raise ArchivedPdfVerificationError(
+            "Candidate PDF hash mismatch: "
+            f"{candidate.announcement_id}; expected={recorded.lower()}, actual={actual}",
+            reason="archive_hash_mismatch",
+            actual_sha256=actual,
+        )
+    return ref, actual
 
 
 def _flags(human_decision: str) -> tuple[bool, bool, bool]:
@@ -305,6 +447,8 @@ def _build_decision(
     candidate: Any,
     input_row: DisclosureReviewDecisionInput,
     *,
+    archive_root: Path,
+    symbol: str,
     reviewed_at: datetime,
     decision_version: str,
 ) -> EventMaterialityDecision:
@@ -312,7 +456,11 @@ def _build_decision(
         raise ValueError(
             f"Review cannot precede publication: {candidate.announcement_id}"
         )
-    pdf_ref = _pdf_ref(candidate)
+    pdf_ref, source_sha256 = verify_archived_pdf(
+        candidate,
+        archive_root=archive_root,
+        symbol=symbol,
+    )
     recalc, stale, followup = _flags(input_row.human_decision)
     decision = EventMaterialityDecision(
         event_decision_id=(
@@ -323,7 +471,7 @@ def _build_decision(
         title=candidate.title,
         published_at=candidate.published_at,
         source_ref=pdf_ref,
-        source_sha256=str(pdf_ref["sha256"]),
+        source_sha256=source_sha256,
         machine_candidate_reason=(
             f"title-based machine candidate; rule_kind={candidate.rule_kind}"
         ),
@@ -361,6 +509,7 @@ def build_disclosure_materiality_reviews(
     queue: DisclosureReviewQueue,
     intake: DisclosureReviewIntake,
     *,
+    archive_root: Path,
     decision_version: str = DECISION_VERSION,
 ) -> tuple[EventMaterialityReview, ...]:
     """Bind every pending queue candidate to exactly one human decision."""
@@ -400,6 +549,8 @@ def build_disclosure_materiality_reviews(
             _build_decision(
                 candidate,
                 inputs[(scan.symbol, candidate.announcement_id)],
+                archive_root=archive_root,
+                symbol=scan.symbol,
                 reviewed_at=reviewed_at,
                 decision_version=decision_version,
             )

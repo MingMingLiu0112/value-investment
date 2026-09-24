@@ -47,6 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--prior-reviews", type=Path, default=DEFAULT_PRIOR_REVIEWS)
     parser.add_argument("--current-queue", type=Path, default=DEFAULT_CURRENT_QUEUE)
     parser.add_argument("--output-dir", type=Path)
+    parser.add_argument("--archive-root", type=Path, default=ROOT)
     parser.add_argument("--as-of", type=lambda value: datetime.fromisoformat(value))
     return parser.parse_args()
 
@@ -101,6 +102,7 @@ def main() -> int:
         raise ValueError("--as-of must include a timezone")
     prior_path = args.prior_reviews.resolve()
     queue_path = args.current_queue.resolve()
+    archive_root = args.archive_root.resolve()
     prior_reviews = _load_prior_reviews(prior_path)
     queue = _load_queue(queue_path)
 
@@ -117,6 +119,7 @@ def main() -> int:
         queue=queue,
         prior_reviews=prior_reviews,
         reconciliation_id=f"m5-human-review-reconciliation-{run_stamp}",
+        archive_root=archive_root,
         as_of=as_of,
     )
     titles = _current_title_map(queue)
@@ -151,6 +154,7 @@ def main() -> int:
             "path": str(queue_path),
             "sha256": _digest(queue_path),
         },
+        "archive_root": str(archive_root),
         "outputs": {
             "reconciliation": reconciliation_receipt,
             "pending_queue": pending_receipt,

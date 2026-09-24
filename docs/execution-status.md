@@ -2,6 +2,25 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M5 归档 PDF 字节复核与回填关系字段
+
+M5 人工材料性入口不再把队列 JSON 中的 PDF Hash 当作信任根。
+
+- 新增统一 `verify_archived_pdf()`：要求唯一归档 PDF 引用、canonical 公告路径、
+  归档根目录边界、非链接路径和 `%PDF-` magic，并从文件字节重新计算 SHA-256。
+- `build_disclosure_materiality_reviews()` 与 `reconcile_m5_human_reviews()` 共用该
+  验证器；历史判定只有在当前原件字节和 prior decision Hash 一致时才能结转。
+- 回填工作簿新增 `替代事件ID`、`事件簇ID`，旧 13 列工作簿保持可读；PDF Hash 单
+  元格附加本地归档 PDF hyperlink，单元格值仍是 Hash 文本而非公式。
+- 真实只读核对：既有 24 条候选全部 Hash 通过；600519 9 条候选全部 Hash 通过，
+  9 个摘要互不重复。
+- 生成 600519 空白 v2 人工复核包，9 条公告仍为 `PENDING_HUMAN_REVIEW`，判定和
+  复核说明均为空；WPS 云盘同名副本与仓库文件逐字节一致。
+- 归档 PDF/工作簿定向回归 `30 passed`，全部 M5 回归 `165 passed`，本地全量离线
+  回归 `2531 passed, 5 skipped, 18 warnings, 0 failed`；`compileall` 和
+  `git diff --check` 通过。
+- 不生成事件、通知、Entry、仓位或订单；`action=no_order`，`M5=PARTIAL`。
+
 ## 2026-09-24 M5 fail-closed 加固
 
 第二轮对抗审查针对事件身份、批次 replay、水位时钟、invalidation 投影和人工材料性

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
+import hashlib
+from pathlib import Path
 
 import pytest
 
@@ -44,22 +46,41 @@ RETRIEVED_AT = datetime(2026, 9, 24, 8, 0, tzinfo=timezone.utc)
 PUBLISHED_AT = datetime(2026, 9, 2, 0, 0, tzinfo=timezone(timedelta(hours=8)))
 REVIEWED_AT = datetime(2026, 9, 24, 8, 30, tzinfo=timezone.utc)
 AS_OF = datetime(2026, 9, 24, 9, 0, tzinfo=timezone.utc)
+PDF_BYTES = b"%PDF-reconcile-fixture"
+PDF_SHA256 = hashlib.sha256(PDF_BYTES).hexdigest()
 
 
-def _pdf_ref(hash_value: str) -> dict:
+def _pdf_ref(announcement_id: str, hash_value: str) -> dict:
     return {
-        "id": f"{SYMBOL}-pdf-1225542001",
-        "path": f"fixtures/600887/1225542001.pdf",
+        "id": f"{SYMBOL}-pdf-{announcement_id}",
+        "path": f"{SYMBOL}/announcements/2026-09-02/{announcement_id}.pdf",
         "sha256": hash_value,
-        "source_url": "https://example.test/1225542001.PDF",
+        "source_url": f"https://example.test/{announcement_id}.PDF",
         "source_status": "SOURCE_ARCHIVED",
     }
+
+
+def _write_pdf(
+    tmp_path: Path,
+    announcement_id: str,
+    content: bytes = PDF_BYTES,
+) -> str:
+    path = (
+        tmp_path
+        / SYMBOL
+        / "announcements"
+        / "2026-09-02"
+        / f"{announcement_id}.pdf"
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(content)
+    return hashlib.sha256(content).hexdigest()
 
 
 def _candidate(
     *,
     announcement_id: str = "1225542001",
-    pdf_hash: str | None = "a" * 64,
+    pdf_hash: str | None = PDF_SHA256,
 ) -> AnnouncementReview:
     refs = [
         {
@@ -70,12 +91,12 @@ def _candidate(
         }
     ]
     if pdf_hash is not None:
-        refs.append(_pdf_ref(pdf_hash))
+        refs.append(_pdf_ref(announcement_id, pdf_hash))
     return AnnouncementReview(
         announcement_id=announcement_id,
         published_at=PUBLISHED_AT,
         title="fixture disclosure",
-        source_url="https://example.test/announcement.pdf",
+        source_url=f"https://example.test/{announcement_id}.PDF",
         rule_kind="buyback",
         review_status=REVIEW_PENDING_HUMAN_REVIEW,
         materiality_candidate=True,
@@ -118,7 +139,7 @@ def _queue(candidates: tuple[AnnouncementReview, ...]) -> DisclosureReviewQueue:
 def _decision(
     *,
     announcement_id: str = "1225542001",
-    source_hash: str = "a" * 64,
+    source_hash: str = PDF_SHA256,
     reviewed_at: datetime | None = REVIEWED_AT,
     supersedes_event_id: str | None = None,
 ) -> EventMaterialityDecision:
@@ -168,11 +189,13 @@ def _review(decisions: tuple[EventMaterialityDecision, ...]) -> EventMateriality
     )
 
 
-def test_unchanged_pdf_hash_carries_forward_prior_human_decision():
+def test_unchanged_pdf_hash_carries_forward_prior_human_decision(tmp_path: Path):
+    _write_pdf(tmp_path, "1225542001")
     result = reconcile_m5_human_reviews(
         queue=_queue((_candidate(),)),
         prior_reviews=(_review((_decision(),)),),
         reconciliation_id="reconcile-carry-v1",
+        archive_root=tmp_path,
         as_of=AS_OF,
     )
 
@@ -188,11 +211,13 @@ def test_unchanged_pdf_hash_carries_forward_prior_human_decision():
     assert result.action == "no_order"
 
 
-def test_changed_pdf_hash_requires_new_human_review():
+def test_changed_pdf_hash_requires_new_human_review(tmp_path: Path):
+    current_hash = _write_pdf(tmp_path, "1225542001", b"%PDF-changed")
     result = reconcile_m5_human_reviews(
-        queue=_queue((_candidate(pdf_hash="b" * 64),)),
-        prior_reviews=(_review((_decision(source_hash="a" * 64),)),),
+        queue=_queue((_candidate(pdf_hash=current_hash),)),
+        prior_reviews=(_review((_decision(source_hash=PDF_SHA256),)),),
         reconciliation_id="reconcile-changed-v1",
+        archive_root=tmp_path,
         as_of=AS_OF,
     )
 
@@ -200,22 +225,46 @@ def test_changed_pdf_hash_requires_new_human_review():
     assert result.pending_human_review_count == 1
     resolution = result.pending_resolutions[0]
     assert resolution.reason == REASON_SOURCE_PDF_HASH_CHANGED
-    assert resolution.current_source_sha256 == "b" * 64
+    assert resolution.current_source_sha256 == current_hash
 
 
-def test_new_announcement_and_missing_pdf_hash_fail_to_human_review():
+def test_replaced_pdf_cannot_carry_forward_from_matching_json_hash(
+    tmp_path: Path,
+):
+    actual_hash = _write_pdf(tmp_path, "1225542001", b"%PDF-replaced")
+    result = reconcile_m5_human_reviews(
+        queue=_queue((_candidate(pdf_hash=PDF_SHA256),)),
+        prior_reviews=(_review((_decision(source_hash=PDF_SHA256),)),),
+        reconciliation_id="reconcile-replaced-v1",
+        archive_root=tmp_path,
+        as_of=AS_OF,
+    )
+
+    assert result.carried_forward_count == 0
+    assert result.hash_conflict_count == 1
+    resolution = result.pending_resolutions[0]
+    assert resolution.reason == REASON_SOURCE_PDF_HASH_CHANGED
+    assert resolution.current_source_sha256 == actual_hash
+
+
+def test_new_announcement_and_missing_pdf_hash_fail_to_human_review(
+    tmp_path: Path,
+):
+    new_hash = _write_pdf(tmp_path, "1225542002", b"%PDF-new")
     new_result = reconcile_m5_human_reviews(
         queue=_queue(
-            (_candidate(announcement_id="1225542002", pdf_hash="c" * 64),)
+            (_candidate(announcement_id="1225542002", pdf_hash=new_hash),)
         ),
         prior_reviews=(_review((_decision(),)),),
         reconciliation_id="reconcile-new-v1",
+        archive_root=tmp_path,
         as_of=AS_OF,
     )
     missing_result = reconcile_m5_human_reviews(
         queue=_queue((_candidate(pdf_hash=None),)),
         prior_reviews=(_review((_decision(),)),),
         reconciliation_id="reconcile-missing-v1",
+        archive_root=tmp_path,
         as_of=AS_OF,
     )
 
@@ -224,11 +273,13 @@ def test_new_announcement_and_missing_pdf_hash_fail_to_human_review():
     assert missing_result.pending_resolutions[0].current_source_sha256 is None
 
 
-def test_prior_review_hash_and_schema_are_preserved_in_policy():
+def test_prior_review_hash_and_schema_are_preserved_in_policy(tmp_path: Path):
+    _write_pdf(tmp_path, "1225542001")
     result = reconcile_m5_human_reviews(
         queue=_queue((_candidate(),)),
         prior_reviews=(_review((_decision(),)),),
         reconciliation_id="reconcile-policy-v1",
+        archive_root=tmp_path,
         as_of=AS_OF,
     )
 
@@ -240,12 +291,16 @@ def test_prior_review_hash_and_schema_are_preserved_in_policy():
     assert result.prior_review_ids == (f"{SYMBOL}-event-materiality-review-v1",)
 
 
-def test_supersedes_relationship_is_recorded_without_forcing_repeat_review():
+def test_supersedes_relationship_is_recorded_without_forcing_repeat_review(
+    tmp_path: Path,
+):
+    _write_pdf(tmp_path, "1225542001")
     decision = _decision(supersedes_event_id="1225510000")
     result = reconcile_m5_human_reviews(
         queue=_queue((_candidate(),)),
         prior_reviews=(_review((decision,)),),
         reconciliation_id="reconcile-supersedes-v1",
+        archive_root=tmp_path,
         as_of=AS_OF,
     )
 
@@ -253,7 +308,8 @@ def test_supersedes_relationship_is_recorded_without_forcing_repeat_review():
     assert result.resolutions[0].prior_supersedes_event_id == "1225510000"
 
 
-def test_duplicate_prior_review_id_fails_closed():
+def test_duplicate_prior_review_id_fails_closed(tmp_path: Path):
+    _write_pdf(tmp_path, "1225542001")
     first = _review((_decision(),))
     second = _review(
         (
@@ -270,5 +326,6 @@ def test_duplicate_prior_review_id_fails_closed():
             queue=_queue((_candidate(),)),
             prior_reviews=(first, second),
             reconciliation_id="reconcile-duplicate-review-v1",
+            archive_root=tmp_path,
             as_of=AS_OF,
         )

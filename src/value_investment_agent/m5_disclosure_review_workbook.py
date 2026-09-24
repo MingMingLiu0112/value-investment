@@ -39,6 +39,7 @@ from .m5_disclosure_review import (
     DisclosureReviewDecisionInput,
     DisclosureReviewIntake,
     disclosure_queue_sha256,
+    verify_archived_pdf,
 )
 
 
@@ -66,6 +67,8 @@ COLUMNS = [
     "受影响制品",
     "复核说明",
     "填写提示",
+    "替代事件ID",
+    "事件簇ID",
 ]
 REVIEWED_AT_COLUMN = 2
 HEADER_ROW = 4
@@ -128,6 +131,17 @@ def _pdf_hash(item) -> str:
         if ref.get("source_status") == SOURCE_ARCHIVED and ref.get("sha256"):
             return str(ref["sha256"])
     return ""
+
+
+def _pdf_link(item, symbol: str, archive_root: Path | None) -> str | None:
+    if archive_root is None:
+        return None
+    ref, _ = verify_archived_pdf(
+        item,
+        archive_root=archive_root,
+        symbol=symbol,
+    )
+    return (archive_root.resolve() / Path(str(ref["path"]))).resolve().as_uri()
 
 
 def _overview(
@@ -204,11 +218,16 @@ def _input(
     wb: Workbook,
     queue: DisclosureReviewQueue,
     names: Mapping[str, str],
+    *,
+    archive_root: Path | None,
 ) -> None:
     sheet = wb.create_sheet(INPUT_SHEET)
     sheet.sheet_view.showGridLines = False
     sheet.freeze_panes = "A5"
-    _widths(sheet, [10, 13, 20, 56, 12, 66, 24, 22, 22, 22, 22, 52, 30])
+    _widths(
+        sheet,
+        [10, 13, 20, 56, 12, 66, 24, 22, 22, 22, 22, 52, 30, 26, 26],
+    )
     _title(
         sheet,
         "材料性判定录入",
@@ -242,8 +261,20 @@ def _input(
                 "",
                 "",
                 "判定与复核说明必须由人工填写。",
+                "",
+                "",
             ],
         )
+        pdf_link = _pdf_link(item, symbol, archive_root)
+        if pdf_link is not None:
+            pdf_cell = sheet.cell(row, 6)
+            pdf_cell.hyperlink = pdf_link
+            pdf_cell.font = Font(
+                name="Microsoft YaHei",
+                size=11,
+                color="0563C1",
+                underline="single",
+            )
         row += 1
     last_data_row = row - 1
     if last_data_row < DATA_START_ROW:
@@ -338,12 +369,13 @@ def build_m5_disclosure_review_workbook(
     queue: DisclosureReviewQueue,
     *,
     security_names: Mapping[str, str] | None = None,
+    archive_root: Path | None = None,
 ) -> Workbook:
     names = dict(security_names or {})
     wb = Workbook()
     wb.remove(wb.active)
     _overview(wb, queue, names)
-    _input(wb, queue, names)
+    _input(wb, queue, names, archive_root=archive_root)
     _guide(wb)
     _boundaries(wb)
     return wb
@@ -365,6 +397,7 @@ def write_m5_disclosure_review_workbook(
     wb = build_m5_disclosure_review_workbook(
         queue,
         security_names=security_names,
+        archive_root=root,
     )
     wb.save(output)
     return {
@@ -374,6 +407,8 @@ def write_m5_disclosure_review_workbook(
         "pending_candidate_count": len(queue.pending_candidates),
         "queue_id": queue.queue_id,
         "queue_sha256": disclosure_queue_sha256(queue),
+        "archive_root": str(root),
+        "verified_pdf_count": len(queue.pending_candidates),
         "action": queue.action,
     }
 
@@ -415,6 +450,12 @@ def _workbook_tags(value: object) -> tuple[str, ...]:
     if len(parts) != len(set(parts)):
         raise ValueError("Workbook affected-value tags contain duplicates")
     return parts
+
+
+def _optional_column(row_values: tuple[Any, ...], index: int) -> str:
+    if len(row_values) <= index or row_values[index] is None:
+        return ""
+    return str(row_values[index]).strip()
 
 
 def read_m5_disclosure_review_workbook(
@@ -493,6 +534,8 @@ def read_m5_disclosure_review_workbook(
             affected_assumptions=_workbook_tags(row_values[9]),
             affected_artifacts=_workbook_tags(row_values[10]),
             review_notes=(str(row_values[11]).strip(),),
+            supersedes_event_id=_optional_column(row_values, 13) or None,
+            event_cluster_id=_optional_column(row_values, 14) or None,
         )
         for row_values in raw_rows
     )

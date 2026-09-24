@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -37,6 +38,8 @@ from value_investment_agent.m5_disclosure_review_workbook import (
 SCAN_FROM = date(2026, 8, 27)
 SCAN_TO = date(2026, 9, 24)
 RETRIEVED_AT = datetime(2026, 9, 24, 16, 0, tzinfo=timezone.utc)
+PDF_BYTES = b"%PDF-fixture"
+PDF_SHA256 = hashlib.sha256(PDF_BYTES).hexdigest()
 
 
 def _timestamp(day: int = 2) -> int:
@@ -55,8 +58,8 @@ def _row(announcement_id: str, *, day: int = 2) -> dict:
 
 def _downloader(source_url: str, target: Path) -> str:
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_bytes(b"%PDF-fixture")
-    return "a" * 64
+    target.write_bytes(PDF_BYTES)
+    return PDF_SHA256
 
 
 def _queue(tmp_path: Path, rows: list[dict]) -> DisclosureReviewQueue:
@@ -127,6 +130,8 @@ def test_filled_workbook_round_trips_and_builds_reviews(tmp_path: Path):
     input_sheet.cell(5, 7, DECISION_REQUIRES_RECALCULATION)
     input_sheet.cell(5, 8, "balance_sheet_risk")
     input_sheet.cell(5, 12, "liability facts changed")
+    input_sheet.cell(5, 14, "1225578520")
+    input_sheet.cell(5, 15, "dividend-cycle-2026")
     input_sheet.cell(6, 7, "NOT_MATERIAL")
     input_sheet.cell(6, 12, "routine buyback disclosure")
     overview = wb[OVERVIEW_SHEET]
@@ -137,10 +142,55 @@ def test_filled_workbook_round_trips_and_builds_reviews(tmp_path: Path):
     intake = read_m5_disclosure_review_workbook(output, queue)
     assert intake.action == ACTION_NO_ORDER
     assert len(intake.decisions) == 2
-    reviews = build_disclosure_materiality_reviews(queue, intake)
+    reviews = build_disclosure_materiality_reviews(
+        queue,
+        intake,
+        archive_root=tmp_path,
+    )
     assert len(reviews) == 1
-    assert reviews[0].decisions[0].source_sha256 == "a" * 64
+    assert reviews[0].decisions[0].source_sha256 == PDF_SHA256
     assert reviews[0].decisions[0].human_decision == DECISION_REQUIRES_RECALCULATION
+    assert reviews[0].decisions[0].supersedes_event_id == "1225578520"
+    assert reviews[0].decisions[0].event_cluster_id == "dividend-cycle-2026"
+
+
+def test_workbook_pdf_hash_links_to_verified_archive(tmp_path: Path):
+    queue = _queue(tmp_path, [_row("1")])
+    output = tmp_path / "review.xlsx"
+    write_m5_disclosure_review_workbook(
+        queue,
+        output=output,
+        root=tmp_path,
+    )
+
+    sheet = load_workbook(output)[INPUT_SHEET]
+    link = sheet.cell(5, 6).hyperlink
+    assert link is not None
+    assert link.target.endswith("/600887/announcements/2026-09-02/1.pdf")
+
+
+def test_legacy_13_column_workbook_remains_readable(tmp_path: Path):
+    queue = _queue(tmp_path, [_row("1")])
+    output = tmp_path / "legacy-review.xlsx"
+    write_m5_disclosure_review_workbook(
+        queue,
+        output=output,
+        root=tmp_path,
+    )
+    wb = load_workbook(output)
+    input_sheet = wb[INPUT_SHEET]
+    input_sheet.delete_cols(14, 2)
+    input_sheet.cell(5, 7, "NOT_MATERIAL")
+    input_sheet.cell(5, 12, "legacy human review")
+    overview = wb[OVERVIEW_SHEET]
+    row, column = _metadata_row(overview, REVIEWED_AT_LABEL)
+    overview.cell(row, column, "2026-09-24 18:00")
+    wb.save(output)
+
+    intake = read_m5_disclosure_review_workbook(output, queue)
+    assert len(intake.decisions) == 1
+    assert intake.decisions[0].supersedes_event_id is None
+    assert intake.decisions[0].event_cluster_id is None
 
 
 def test_missing_note_and_non_candidate_rows_fail(tmp_path: Path):
@@ -232,6 +282,8 @@ def test_apply_script_writes_reviews_and_batches_without_events(tmp_path: Path):
             str(queue_path),
             "--workbook",
             str(output),
+            "--archive-root",
+            str(tmp_path),
             "--runtime-root",
             str(runtime_root),
         ],

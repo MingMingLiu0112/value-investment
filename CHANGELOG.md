@@ -1,5 +1,47 @@
 # Changelog
 
+## v2026.09.24-m5-archive-pdf-rehash-and-workbook-bindings
+
+### Scope
+
+补齐 M5 人工材料性入口的最后一段来源可信边界：队列 JSON 中的 PDF Hash 只能作为待核
+声明，不能在 intake 或历史判定结转时直接当作事实。该批次不接生产源、不发送通知、
+不修改 PTA/数据库/计划任务，不改变 `M5=PARTIAL` 或 `action=no_order`；600519 九条
+真实公告仍保持空白、待人工逐条判定。
+
+### Changes
+
+- `verify_archived_pdf()` 现在现场打开归档文件并重算 SHA-256，而不是信任队列 JSON：
+  要求恰好一个 `SOURCE_ARCHIVED` PDF 引用，校验 ref id、`source_url`、公告日期/ID
+  对应的 canonical 相对路径、PDF `%PDF-` magic、归档根目录边界；拒绝绝对路径、
+  drive-relative、UNC、`..`、符号链接/junction 组件和扩展名伪装的非 PDF。
+- `build_disclosure_materiality_reviews()` 和人工复核对账共享同一个验证器。历史
+  `CARRY_FORWARD_PRIOR_HUMAN_DECISION` 现在必须先核对当前文件字节；文件被替换、
+  缺失、身份不匹配或 Hash 不一致时只能回到 `PENDING_HUMAN_REVIEW`，不会把旧结论
+  静默结转。
+- 回填工作簿新增 `替代事件ID`、`事件簇ID` 两列，原 13 列布局继续可读；PDF
+  SHA-256 单元格保留纯文本 Hash，并附加归档原件 hyperlink，避免把 `=HYPERLINK`
+  formula 当作数据读取。
+- 新增 600519 空白 v2 人工复核包，绑定当前队列 canonical SHA-256
+  `bcdc059dee1acba7e030020046d4b5bff52989cd740fff47430ac52040b350ca`，9 条 PDF
+  全部现场复核通过，材料性判定和复核说明仍为空。v1 文件保持字节不变。
+
+### Verification
+
+- 归档 PDF 定向回归 `30 passed`，全部 M5 回归 `165 passed`。
+- 真实 M5 队列只读核对：既有 24 条候选全部 Hash 通过；600519 9 条候选全部 Hash
+  通过，且 9 个摘要互不重复。
+- 本地全量离线回归：`2531 passed, 5 skipped, 18 warnings, 0 failed`。
+- 600519 v2 回填表 SHA-256
+  `dc0880d1bc492c8256b7e543b837cc9ae750a428b982691c1efa2f36cd88c7ef`；WPS
+  云盘同名副本逐字节一致。
+
+### Residual Boundary
+
+600519 九条真实公告仍未获得人工材料性判定；本次只证明它们的归档 PDF 与队列记录
+一致并能被打开、链接和追溯，不证明公告重大性、不创建事件、不产生提醒、仓位或订单。
+`M5` 保持 `PARTIAL`，`action=no_order`。
+
 ## v2026.09.24-m5-durable-run-request-and-receipt
 
 ### Scope

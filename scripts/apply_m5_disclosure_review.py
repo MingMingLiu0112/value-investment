@@ -43,6 +43,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--queue", type=Path, default=DEFAULT_QUEUE)
     parser.add_argument("--workbook", type=Path, default=DEFAULT_WORKBOOK)
     parser.add_argument("--runtime-root", type=Path)
+    parser.add_argument("--archive-root", type=Path, default=ROOT)
     return parser.parse_args()
 
 
@@ -54,6 +55,7 @@ def main() -> int:
     args = parse_args()
     queue_path = args.queue.resolve()
     workbook_path = args.workbook.resolve()
+    archive_root = args.archive_root.resolve()
     if not queue_path.is_file():
         raise ValueError(f"Disclosure queue is missing: {queue_path}")
     if not workbook_path.is_file():
@@ -64,7 +66,11 @@ def main() -> int:
     if queue.action != ACTION_NO_ORDER:
         raise ValueError("Disclosure review queue must remain no_order")
     intake = read_m5_disclosure_review_workbook(workbook_path, queue)
-    reviews = build_disclosure_materiality_reviews(queue, intake)
+    reviews = build_disclosure_materiality_reviews(
+        queue,
+        intake,
+        archive_root=archive_root,
+    )
     batches = [
         build_materiality_bridge_batch(review, namespace=NAMESPACE_SIMULATED)
         for review in reviews
@@ -120,6 +126,23 @@ def main() -> int:
         "reviewed_at": intake.reviewed_at.isoformat(),
         "review_count": len(reviews),
         "decision_count": len(intake.decisions),
+        "source_archive": {
+            "root": str(archive_root),
+            "verified_pdf_count": sum(
+                len(review.decisions) for review in reviews
+            ),
+            "verifications": [
+                {
+                    "symbol": decision.symbol,
+                    "announcement_id": decision.announcement_id,
+                    "path": decision.source_ref.get("path"),
+                    "source_url": decision.source_ref.get("source_url"),
+                    "sha256": decision.source_sha256,
+                }
+                for review in reviews
+                for decision in review.decisions
+            ],
+        },
         "event_count": sum(len(batch.events) for batch in batches),
         "silent_decision_count": sum(batch.silent_count for batch in batches),
         "files": {

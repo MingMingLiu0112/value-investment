@@ -73,3 +73,21 @@ ACTION = no_order
 
 对账结果：当前 9 条候选、历史结转 0、待人工复核 9、Hash 冲突 0。空白回填表
 WPS 只读验证 `passed`，WPS 云盘副本逐字节一致，判定列与复核说明列均从空值开始。
+
+## 2026-09-24 v2 归档原件复核包
+
+为避免把队列 JSON 中的 PDF Hash 当作事实，本次在既有空白回填表之外另发一个 v2，原
+文件保持字节不变。v2 对 9 条候选逐一现场重算归档 PDF 字节 SHA-256，并在 `PDF
+SHA-256` 单元格附加归档原件 hyperlink；同时增加 `替代事件ID`、`事件簇ID` 两列。
+
+| 产物 | 路径 | SHA-256 |
+| --- | --- | --- |
+| v2 空白人工回填表 | `A股价值投资_M5真实披露人工复核回填_600519_20260924_v2.xlsx` | `dc0880d1bc492c8256b7e543b837cc9ae750a428b982691c1efa2f36cd88c7ef` |
+| v2 manifest | `A股价值投资_M5真实披露人工复核回填_600519_20260924_v2.manifest.json` | `aacfbe979ff6f60ac245d1332ffc32991207520838d7fbc12f2fc435fa54f2a6` |
+
+- 绑定队列：`runtime/m5-600519-disclosure-queue-20260924/source/queue.json`，canonical
+  queue SHA-256 `bcdc059dee1acba7e030020046d4b5bff52989cd740fff47430ac52040b350ca`。
+- 9 条归档 PDF 现场 Hash 全部通过，9 个摘要互不重复；所有材料性判定、复核说明和
+  关系字段初始为空。
+- WPS 云盘同名 v2 副本与仓库文件 SHA-256 一致。该 v2 只是待人工判断输入包，不是
+  M5 Checkpoint C、事件创建、生产调度、通知或交易信号。
