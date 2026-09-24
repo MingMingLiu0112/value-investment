@@ -2,6 +2,26 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M4/M5 联合检查点候选：2026-09-24
+
+本节记录 M4 组合域与 M5 事件失效的只读联合候选。`M2` 保持
+`PENDING_HUMAN_REVIEW`，`M3/M4/M5` 保持 `PARTIAL`，全部动作
+`action=no_order`。
+
+- 新增 `src/value_investment_agent/m4_m5_integration.py`：把 M5 依赖失效精确
+  投影到组合风险、共同仓位边界、分配/股息和财务/决策链。
+- 模拟结果：仓位风险变化暂停组合风险与共同仓位边界；分红变化暂停分配、股息
+  可持续性与共同仓位边界；无关公司财报不误伤组合产品；论点破坏进入 `NEGATIVE`。
+- 新增 6 页只读工作簿
+  `A股价值投资_M4M5联合检查点候选_20260924.xlsx`，SHA-256
+  `353f6b4572cc6ee1be3d1f44011a984a1e475bf9a33a938975e0d3f593d92612`。
+- WPS 只读收据 `runtime/m4m5-joint-wps-20260924/wps-verification.json` 为
+  `passed`。
+- 定向回归 4 passed；M4/M5 联合回归 72 passed，并已加入 GitHub Core Research
+  Gate。
+- 本候选不构成 Checkpoint C、真实事件观察或实盘准入；真实组合与生产通知仍待
+  用户授权。
+
 ## M6 运营准入预检与运行控制：2026-09-24
 
 本节记录 M6 的非生产前置审计。`M6` 保持 `NOT_STARTED`，所有动作

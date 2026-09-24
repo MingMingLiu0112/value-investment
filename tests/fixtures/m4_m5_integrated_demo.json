@@ -1,0 +1,297 @@
+{
+  "schema_version": "m4-m5-integration-demo-v1",
+  "action": "no_order",
+  "assessment_namespace": "SIMULATED",
+  "generated_at": "2026-09-24T08:10:00+08:00",
+  "m4_risk_input": "tests/fixtures/m4_portfolio_risk_demo.json",
+  "m4_guidance_input": "tests/fixtures/m4_guidance_income_demo.json",
+  "security_names": {
+    "600519": "贵州茅台",
+    "000333": "美的集团",
+    "601088": "中国神华"
+  },
+  "artifacts": [
+    {
+      "artifact_id": "portfolio_risk",
+      "kind": "portfolio_risk",
+      "symbol": "*",
+      "node_ids": ["portfolio-risk"]
+    },
+    {
+      "artifact_id": "position_guidance",
+      "kind": "position_guidance",
+      "symbol": "*",
+      "node_ids": ["position-guidance"]
+    },
+    {
+      "artifact_id": "distribution_history_000333",
+      "kind": "distribution_history",
+      "symbol": "000333",
+      "node_ids": ["distribution-000333"]
+    },
+    {
+      "artifact_id": "dividend_sustainability_000333",
+      "kind": "dividend_sustainability",
+      "symbol": "000333",
+      "node_ids": ["dividend-sustainability-000333"]
+    },
+    {
+      "artifact_id": "financial_facts_601088",
+      "kind": "financial_facts",
+      "symbol": "601088",
+      "node_ids": ["facts-601088"]
+    },
+    {
+      "artifact_id": "financial_facts_600519",
+      "kind": "financial_facts",
+      "symbol": "600519",
+      "node_ids": ["facts-600519"]
+    },
+    {
+      "artifact_id": "valuation_inputs_601088",
+      "kind": "valuation_inputs",
+      "symbol": "601088",
+      "node_ids": ["valuation-inputs-601088"]
+    },
+    {
+      "artifact_id": "model_validity_601088",
+      "kind": "model_validity",
+      "symbol": "601088",
+      "node_ids": ["model-validity-601088"]
+    },
+    {
+      "artifact_id": "thesis_600519",
+      "kind": "research_thesis",
+      "symbol": "600519",
+      "node_ids": ["thesis-600519"]
+    },
+    {
+      "artifact_id": "decision_review_600519",
+      "kind": "decision_review",
+      "symbol": "600519",
+      "node_ids": ["decision-review-600519"]
+    },
+    {
+      "artifact_id": "entry_consistency_600519",
+      "kind": "entry_consistency",
+      "symbol": "600519",
+      "node_ids": ["entry-consistency-600519"]
+    }
+  ],
+  "m5": {
+    "schema_version": "m5-event-demo-v1",
+    "action": "no_order",
+    "namespace": "SIMULATED",
+    "run_id": "M4M5-joint-20260924",
+    "generated_at": "2026-09-24T08:10:00+08:00",
+    "security_names": {
+      "600519": "贵州茅台",
+      "000333": "美的集团",
+      "601088": "中国神华"
+    },
+    "watermark": {
+      "watermark_id": "m4m5-joint-watermark-20260924",
+      "scope": "ALL",
+      "source": "simulated-integration-source",
+      "coverage_through": "2026-09-24T08:05:00+08:00",
+      "retrieved_at": "2026-09-24T08:06:00+08:00",
+      "parser_version": "m4m5-fixture-v1",
+      "coverage_status": "COMPLETE",
+      "source_health": "HEALTHY",
+      "evidence_refs": [
+        {
+          "id": "m4m5-simulated-watermark"
+        }
+      ]
+    },
+    "events": [
+      {
+        "source_event_id": "600519-portfolio-risk-001",
+        "symbol": "600519",
+        "event_type": "POSITION_RISK_CHANGED",
+        "detected_at": "2026-09-24T08:01:00+08:00",
+        "available_at": "2026-09-24T08:01:00+08:00",
+        "effective_at": "2026-09-24T08:01:00+08:00",
+        "previous_state": {
+          "single_security_pct": "25.0"
+        },
+        "current_state": {
+          "single_security_pct": "28.0"
+        },
+        "severity": "HIGH",
+        "reason": "模拟单股集中度变化，组合风险与共同仓位边界需要重算。",
+        "evidence_refs": [
+          {
+            "id": "sim-portfolio-risk-600519"
+          }
+        ],
+        "confidence": "HIGH",
+        "requires_human_review": true
+      },
+      {
+        "source_event_id": "000333-dividend-change-001",
+        "symbol": "000333",
+        "event_type": "DIVIDEND_CHANGE",
+        "detected_at": "2026-09-24T08:02:00+08:00",
+        "available_at": "2026-09-24T08:02:00+08:00",
+        "effective_at": "2026-09-24T08:02:00+08:00",
+        "previous_state": {
+          "ordinary_dividend": "1.0"
+        },
+        "current_state": {
+          "ordinary_dividend": "1.2"
+        },
+        "severity": "MEDIUM",
+        "reason": "模拟分红口径变化，分配历史、股息可持续性与共同仓位边界需要重算。",
+        "evidence_refs": [
+          {
+            "id": "sim-dividend-change-000333"
+          }
+        ],
+        "confidence": "HIGH",
+        "requires_human_review": true
+      },
+      {
+        "source_event_id": "601088-financial-report-001",
+        "symbol": "601088",
+        "event_type": "NEW_FINANCIAL_REPORT",
+        "detected_at": "2026-09-24T08:03:00+08:00",
+        "available_at": "2026-09-24T08:03:00+08:00",
+        "effective_at": "2026-09-24T08:03:00+08:00",
+        "previous_state": {},
+        "current_state": {
+          "report": "simulated"
+        },
+        "severity": "MEDIUM",
+        "reason": "模拟无关公司财报事件，应只失效 601088 财务链，不误伤组合仓位边界。",
+        "evidence_refs": [
+          {
+            "id": "sim-financial-report-601088"
+          }
+        ],
+        "confidence": "HIGH",
+        "requires_human_review": true
+      },
+      {
+        "source_event_id": "600519-thesis-breaker-001",
+        "symbol": "600519",
+        "event_type": "THESIS_BREAKER_TRIGGERED",
+        "detected_at": "2026-09-24T08:04:00+08:00",
+        "available_at": "2026-09-24T08:04:00+08:00",
+        "effective_at": "2026-09-24T08:04:00+08:00",
+        "previous_state": {},
+        "current_state": {
+          "breaker": "simulated"
+        },
+        "severity": "CRITICAL",
+        "reason": "模拟论点破坏事件，相关决策复核进入 NEGATIVE，需人工处理。",
+        "evidence_refs": [
+          {
+            "id": "sim-thesis-breaker-600519"
+          }
+        ],
+        "confidence": "HIGH",
+        "requires_human_review": true
+      }
+    ],
+    "observed_times": [
+      "2026-09-24T08:01:00+08:00",
+      "2026-09-24T08:02:00+08:00",
+      "2026-09-24T08:03:00+08:00",
+      "2026-09-24T08:04:00+08:00"
+    ],
+    "graph": {
+      "schema_version": "m5-event-infrastructure-v1",
+      "nodes": [
+        {
+          "node_id": "portfolio-risk",
+          "kind": "portfolio_risk",
+          "symbol": "*",
+          "inputs": [],
+          "version": "m4m5-fixture-v1",
+          "evidence_refs": [{"id": "sim-node-portfolio-risk"}]
+        },
+        {
+          "node_id": "position-guidance",
+          "kind": "position_guidance",
+          "symbol": "*",
+          "inputs": ["portfolio-risk"],
+          "version": "m4m5-fixture-v1",
+          "evidence_refs": [{"id": "sim-node-position-guidance"}]
+        },
+        {
+          "node_id": "distribution-000333",
+          "kind": "distribution_history",
+          "symbol": "000333",
+          "inputs": [],
+          "version": "m4m5-fixture-v1",
+          "evidence_refs": [{"id": "sim-node-distribution-000333"}]
+        },
+        {
+          "node_id": "dividend-sustainability-000333",
+          "kind": "dividend_sustainability",
+          "symbol": "000333",
+          "inputs": ["distribution-000333"],
+          "version": "m4m5-fixture-v1",
+          "evidence_refs": [{"id": "sim-node-dividend-sustainability-000333"}]
+        },
+        {
+          "node_id": "facts-601088",
+          "kind": "financial_facts",
+          "symbol": "601088",
+          "inputs": [],
+          "version": "m4m5-fixture-v1",
+          "evidence_refs": [{"id": "sim-node-facts-601088"}]
+        },
+        {
+          "node_id": "facts-600519",
+          "kind": "financial_facts",
+          "symbol": "600519",
+          "inputs": [],
+          "version": "m4m5-fixture-v1",
+          "evidence_refs": [{"id": "sim-node-facts-600519"}]
+        },
+        {
+          "node_id": "valuation-inputs-601088",
+          "kind": "valuation_inputs",
+          "symbol": "601088",
+          "inputs": ["facts-601088"],
+          "version": "m4m5-fixture-v1",
+          "evidence_refs": [{"id": "sim-node-valuation-inputs-601088"}]
+        },
+        {
+          "node_id": "model-validity-601088",
+          "kind": "model_validity",
+          "symbol": "601088",
+          "inputs": ["valuation-inputs-601088"],
+          "version": "m4m5-fixture-v1",
+          "evidence_refs": [{"id": "sim-node-model-validity-601088"}]
+        },
+        {
+          "node_id": "thesis-600519",
+          "kind": "research_thesis",
+          "symbol": "600519",
+          "inputs": [],
+          "version": "m4m5-fixture-v1",
+          "evidence_refs": [{"id": "sim-node-thesis-600519"}]
+        },
+        {
+          "node_id": "decision-review-600519",
+          "kind": "decision_review",
+          "symbol": "600519",
+          "inputs": ["thesis-600519"],
+          "version": "m4m5-fixture-v1",
+          "evidence_refs": [{"id": "sim-node-decision-review-600519"}]
+        },
+        {
+          "node_id": "entry-consistency-600519",
+          "kind": "entry_consistency",
+          "symbol": "600519",
+          "inputs": ["decision-review-600519"],
+          "version": "m4m5-fixture-v1",
+          "evidence_refs": [{"id": "sim-node-entry-consistency-600519"}]
+        }
+      ]
+    }
+  }
+}

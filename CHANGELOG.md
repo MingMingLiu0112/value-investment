@@ -1,5 +1,42 @@
 # Changelog
 
+## v2026.09.24-m4m5-joint-checkpoint
+
+### Release Scope
+
+新增 M4/M5 联合检查点候选。它把已计算的 M4 组合风险、仓位边界和股息收入基线，
+与 M5 有界依赖失效结果汇合为一个只读联合状态，用于验证 Checkpoint C 前的跨域
+联动契约。本版本不重新计算仓位、不连接生产数据库、不修改 canonical，也不创建订单。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/m4_m5_integration.py`：
+  - 把依赖节点失效精确投影到 `portfolio_risk`、`position_guidance`、
+    `distribution_history`、`dividend_sustainability`、财务链与决策链；
+  - `POSITION_RISK_CHANGED` 暂停组合风险与共同仓位边界；
+  - `DIVIDEND_CHANGE` 暂停分配、股息可持续性与共同仓位边界；
+  - 无关公司的财务事件不误伤组合产品，关键论点破坏进入 `NEGATIVE`；
+  - 输出固定为 `SIMULATED`、`action=no_order`。
+- 新增 6 页只读工作簿 `m4_m5_integration_workbook.py`，明确
+  `READY / PARTIAL / PAUSED / NEGATIVE` 四种联合状态。
+- 新增控制夹具和构建脚本，绑定 M4 风险、M4 仓位/股息与嵌入 M5 事件批的输入
+  SHA-256。
+- 新增 WPS 只读验证脚本和 4 项回归测试，并纳入 GitHub Core Research Gate。
+
+### Verification
+
+- 定向回归：4 passed。
+- M4/M5 联合回归：72 passed。
+- WPS 只读收据：`passed`，候选 SHA-256
+  `353f6b4572cc6ee1be3d1f44011a984a1e475bf9a33a938975e0d3f593d92612`。
+- 联合结果：4 个事件、10 个产品 `PAUSED/NEGATIVE`、1 个无关财务事实 `READY`。
+
+### Acceptance Boundary
+
+- `M4/M5` 继续为 `PARTIAL`；本候选不构成 Checkpoint C、真实组合输入、真实事件
+  观察或生产通知授权。
+- 真实 IPS、持仓、用户理解与交付签收仍需用户确认。
+
 ## v2026.09.24-public-workbook-upload-record
 
 ### Release Scope
