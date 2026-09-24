@@ -102,7 +102,9 @@ try {
     }
 
     $overview = $book.Worksheets.Item('00_今日总览')
-    $overviewText = [string]$overview.UsedRange.Text
+    # UsedRange.Text is unreliable through WPS COM. The values loop above has
+    # already collected every visible cell, so scan that materialized text.
+    $visibleText = $allText -join [Environment]::NewLine
     $conclusion = [string]$overview.Range('B15').Text
     if ($conclusion -notmatch [regex]::Escape('当前无任何可用订单')) {
         throw "M7 daily overview conclusion is not fail-closed: $conclusion"
@@ -133,8 +135,8 @@ try {
         }
     }
     foreach ($forbidden in @('建议买入', '建议加仓', '目标仓位', '下单')) {
-        if ($overviewText -match $forbidden) {
-            throw "M7 daily overview contains forbidden recommendation text: $forbidden"
+        if ($visibleText -match $forbidden) {
+            throw "M7 daily visible sheets contain forbidden recommendation text: $forbidden"
         }
     }
     $checks = @{
@@ -142,6 +144,10 @@ try {
         boundary = [string]$overview.Range('A2').Text
         conclusion = $conclusion
         action = [string]$package.action
+        forbidden_recommendation_scan = @{
+            checked = $true
+            scope = 'all visible sheets'
+        }
         historical_replay_boundary = @{
             facts_quote_pit = $true
             contemporaneous_rule_pit = $false
@@ -174,7 +180,7 @@ try {
         checked_at = [DateTimeOffset]::UtcNow.ToString('o')
         checks = $checks
         action = 'no_order'
-        check_scope = 'WPS read-only open/read/calculate, formula-error scan, visible/hidden sheet contract, fail-closed status text, M3 replay PIT wording boundary and no_order boundary'
+        check_scope = 'WPS read-only open/read/calculate, formula-error scan, visible/hidden sheet contract, fail-closed status text, all-visible-sheet recommendation scan, M3 replay PIT wording boundary and no_order boundary'
     }
     $receipt | ConvertTo-Json -Depth 6 |
         Set-Content -LiteralPath $ReceiptPath -Encoding utf8

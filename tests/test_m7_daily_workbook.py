@@ -197,6 +197,8 @@ def test_overview_is_explicitly_fail_closed_and_no_order(tmp_path: Path):
     assert "当前无任何可用订单" in text
     assert "0 条。当前没有 BUY / ADD 复核可进入" in text
     assert "真实 IPS / 持仓尚未由用户提供" in text
+    for forbidden in ("建议买入", "建议加仓", "目标仓位", "下单"):
+        assert forbidden not in text
     assert receipt["action"] == ACTION_NO_ORDER
     assert receipt["summary"]["m2_verified_for_deep_research"] == 3
     assert receipt["summary"]["m5_new_pending_reviews"] == 1
