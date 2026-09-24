@@ -21,6 +21,8 @@ Research Replay 的时点表述，不覆盖 v1 候选、不改 canonical 或投�
 - WPS 验证收据新增
   `historical_replay_boundary.facts_quote_pit=true`、
   `contemporaneous_rule_pit=false`、`future_rule_version_used=true`。
+- WPS 验证器已改为从 `UsedRange.Value2` 物化文本，避免本机 WPS COM 对
+  `UsedRange.Text` 返回空串；候选 Hash 未变化。
 
 ## 2026-09-24 最终公开工作簿上传记录
 

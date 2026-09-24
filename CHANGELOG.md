@@ -1,5 +1,22 @@
 # Changelog
 
+## v2026.09.24-wps-verifier-text-materialization
+
+### Scope
+
+修复 WPS COM 在本机对 `UsedRange.Text` 返回空串造成的验证盲区。M7 Daily
+Workbench、90 页 M7 工作台、96 页 M7 v2 工作台和 M3 历史链验证器原先把
+`UsedRange.Text` 拼接为文本再扫描禁止决策词，实际扫描为空。本轮改为物化
+`UsedRange.Value2`，物化结果为空时失败关闭，并增加 CI 静态回归。
+
+### Verification
+
+- M7 Daily、90 页 M7、96 页 M7 v2、60 页 M3 历史链四组 WPS 只读验证均为
+  `passed`，候选与 canonical Hash 前后不变。
+- 本地完整离线回归 `2358 passed、6 skipped、0 failed、18 warnings`。
+- Core Research Gates run `35954917146`：`success`。
+- `action=no_order`；未执行生产迁移、计划任务、通知或真实账户导入。
+
 ## v2026.09.24-m7-daily-workbench-v2-pit-wording
 
 ### Scope

@@ -82,6 +82,26 @@
 
 上一版 v1 候选继续保留，作为人工审查前的历史制品；当前用户验收对象使用 v2。
 
+## WPS 验证器文本扫描加固：2026-09-24
+
+实机复核发现 WPS COM 在本机对 `UsedRange.Text` 返回空串，导致三个统一工作台
+验证器的禁止决策文案扫描实际成为 no-op。本轮不降低断言，改为从
+`UsedRange.Value2` 物化单元格文本，并在物化结果为空时失败关闭：
+
+- M7 Daily Workbench 改为扫描全部 10 个可见主页面；禁止
+  `建议买入 / 建议加仓 / 目标仓位 / 下单`。
+- 90 页 M7 工作台与 96 页 M7 v2 工作台总览恢复
+  `买入 / 加仓 / 减仓 / 目标仓位 / BUY / ADD` 扫描。
+- M3 历史链前 5 页恢复 `目标仓位 / 下单 / 自动卖出` 扫描。
+- 新增静态回归 `tests/test_wps_verifier_text_scans.py` 并纳入 GitHub Core
+  Research Gate，防止以后重新使用不可靠的 `UsedRange.Text`。
+- 四个候选均完成实际 WPS 只读重验，工作簿 Hash 与 canonical Hash 前后不变。
+- 本地完整离线回归 `2358 passed、6 skipped、0 failed、18 warnings`，包含神华
+  PDF 尾集；warning 仍为 Backtrader `utcnow()` 弃用提示。
+- 提交 `45219e9`、`3aab561`、`3bc6b20` 的 Core Research Gates 均通过；
+  最后一个运行 [35954917146](https://github.com/MingMingLiu0112/value-investment/actions/runs/35954917146)
+  的 `offline-core` 与 `postgres-integration` 均为 `success`。
+
 ## M7 统一工作台 v2 候选：2026-09-24
 
 本节记录把 M4/M5 联合检查点候选接入 M7 只读统一入口的展示层准备。`M2` 保持
