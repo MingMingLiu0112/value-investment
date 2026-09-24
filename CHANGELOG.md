@@ -1,5 +1,44 @@
 # Changelog
 
+## v2026.09.24-m6-encrypted-backup-security-contract
+
+### Release Scope
+
+补齐 M6 的离线加密备份边界。新增流式 AES-256-GCM 备份封装、密钥文件分离
+校验、配置/发布文件 Hash 清单和同机解密校验命令。本版本只读写本地路径，
+不连接生产 PostgreSQL、不触发云盘同步、不修改服务器服务或计划任务。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/backup_security.py`：
+  - 使用 `cryptography` 的 AES-256-GCM，按 1 MiB 分块流式写入，避免整包
+    读入内存；
+  - 包内包含版本化 `backup-manifest.json`，记录源码、配置、发布 Excel 和
+    原件 Hash；Header 固定 `manifest_sha256` 与 HMAC key id；
+  - 强制密钥文件位于备份源、输出目录和 offsite staging 之外；
+  - 解密到空目录后逐文件校验大小与 SHA-256，篡改或错误密钥 fail-closed。
+- 新增 `scripts/package_encrypted_backup.py` 的 `package` / `verify` 本地命令。
+- 新增 `config/m6-backup-security-v1.json`，声明配置清单、发布清单和
+  `authorized_cloud_sync_required`，但策略不含任何密钥或云端凭据。
+- 更新 M6 预检，从字符串探测改为解析真实函数与安全策略，并纳入 CI。
+
+### Verification
+
+- 定向回归：`tests/test_backup_security.py` 与 M6 预检共 14 passed。
+- 全量离线回归：2306 passed、6 skipped、0 failed。
+- 临时目录命令行 smoke test：加密打包与解密校验均成功，`action=no_order`。
+- 干净工作树预检：`engineering_status=DONE`，
+  `operational_acceptance_status=NOT_STARTED`。
+- 收据：`runtime/m6-operational-preflight-20260924T000810Z/receipt.json`，
+  SHA-256：
+  `9dadc9bdf3b7dcfb319ce35b5d7003827799a32c9dd4fe67fca74fceaba07dc3`。
+
+### Acceptance Boundary
+
+- 工程能力可离线使用，但 `M6` 仍为 `NOT_STARTED`。
+- 尚未实施真实云盘同步、真实隔离恢复、真实 RPO/RTO、20 个连续真实交易
+  会话或生产授权；这些不能用本地 package/verify 测试替代。
+
 ## v2026.09.24-m6-operational-readiness-preflight
 
 ### Release Scope

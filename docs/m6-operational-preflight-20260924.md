@@ -8,11 +8,12 @@
 - 阶段状态：`M6=NOT_STARTED`。
 - 机器预检入口：`scripts/audit_m6_preflight.py`。
 - 配置：`config/m6-operational-preflight-v1.json`。
+- 加密备份入口：`scripts/package_encrypted_backup.py`。
 - 动作边界：`action=no_order`。
 - 干净工作树预检收据：
-  `runtime/m6-operational-preflight-20260923T234552Z/receipt.json`
+  `runtime/m6-operational-preflight-20260924T000810Z/receipt.json`
   （SHA-256：
-  `759a13d55f3315caee25b6e8d46685977dda501bc209b695ad402a48a3c62423`）
+  `9dadc9bdf3b7dcfb319ce35b5d7003827799a32c9dd4fe67fca74fceaba07dc3`）
 
 当前可验证的是工程安全和恢复机制；真实 RPO/RTO、真实事件、20 个连续真实
 交易会话和生产授权均不能由本地测试替代，仍保持未完成。
@@ -25,11 +26,16 @@
   SHA-256、磁盘预留和 `--clean --if-exists --no-owner --no-acl`。
 - 证据演练同时验证恢复后的财务事实、原件 Hash、月度快照和估值状态。
 - 公开仓库扫描不包含 `.env`、密钥、数据库 dump、口令或个人持仓文件。
+- 加密备份采用流式 AES-256-GCM，强制密钥文件位于备份源、输出目录和
+  offsite staging 之外，并在解密后逐文件校验 SHA-256。
+- 版本化 manifest 固定代码版本、配置清单、发布 Excel 和原件 Hash。
 
 ## 当前明确缺口
 
-1. 独立加密备份、云端同步和解密密钥分离尚未实现。
-2. 备份 manifest 尚缺代码版本、配置清单和 Excel Hash 的完整发布清单。
+1. 加密备份工程已离线实现，但实际云端同步部署、云盘密钥保管和密钥轮换
+   方案尚未取得授权。
+2. manifest 已具备代码版本、配置清单和发布 Excel Hash；仍需在真实生产
+   备份作业中启用并验证。
 3. 尚未执行一次真实生产快照到新库的恢复演练，因此没有可证明的 RPO/RTO。
 4. 尚未建立真实 shadow 会话账本，20 个连续真实交易会话计数为 0。
 5. 尚未提交并获得生产 migration、调度、通知、账户数据和回退方案授权。
@@ -45,8 +51,9 @@
 未取得上述授权前，不实施任何生产动作；预检只输出
 `OPERATIONAL_ACCEPTANCE_STATUS=NOT_STARTED`。
 
-预检结果同时确认当前 `engineering_status=PARTIAL`：隔离恢复、资源上限、
-事务快照和公开仓库隐私扫描可用，但独立加密备份/云端同步/密钥分离仍缺失。
+预检结果同时确认当前 `engineering_status=DONE`：隔离恢复、资源上限、
+事务快照、公开仓库隐私扫描、加密备份、密钥分离和完整清单均可用；真实
+云端同步和运行验收仍未开始，`operational_acceptance_status=NOT_STARTED`。
 
 ## 与 M7 的关系
 
