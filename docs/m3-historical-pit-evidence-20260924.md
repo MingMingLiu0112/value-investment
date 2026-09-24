@@ -62,3 +62,46 @@ NOT_ACHIEVED
 
 或者改用仓库中真实存在、且登记日不晚于目标决策日的另一个历史时点。证据补齐前，
 当前 retrospective replay 继续作为唯一诚实可用的版本，`action=no_order`。
+
+## 2026-09-24 可验证证据入口加固
+
+为不把“以后找到证据”写成已经通过，本轮把 strict PIT 的证据接收改成机器可审计：
+
+- `HistoricalRuleBinding` 只有 `CONTEMPORANEOUS_RULE` 状态必须绑定至少一条
+  `archived_document / publication / source_commit / versioned_file` 证据；
+  证据的 `available_at` 不得晚于 `registered_at`。
+- 新增 `src/value_investment_agent/m3_strict_pit_evidence.py` 与
+  `scripts/audit_m3_strict_pit_evidence.py`，对候选证据检查规则版本、replay 身份、
+  replay 日期、本地原件 SHA-256 与时间边界，再构造同期规则绑定。
+- 对现有 600519 / 2024-06-21 重放的真实审计结果为
+  `NOT_PROVEN`、`action=no_order`。收据：
+  `runtime/m3-strict-pit-evidence-audit-20260924T080000Z/receipt.json`，
+  SHA-256
+  `9d161d6e7a52e0c061c7129510933f7b3701245bd6c65a444450b50002dbdf3c`。
+- 新测试 `tests/test_m3_strict_pit_evidence.py` 已纳入 GitHub Core Research
+  Gate。
+
+候选证据文件的建议结构：
+
+```json
+{
+  "schema_version": "m3-strict-pit-evidence-candidate-v1",
+  "rule_version": "moutai-pe-mid-paper-contract-v2-2025-extension",
+  "replay_id": "m3-historical-research-replay-600519-2024-06-21-v1",
+  "replay_date": "2024-06-21",
+  "evidence": [
+    {
+      "evidence_id": "external-rule-v1",
+      "evidence_kind": "versioned_file",
+      "path": "runtime/m3-strict-pit-evidence/rule-v1.json",
+      "sha256": "<64位十六进制>",
+      "source_url": "<可独立核验 URL>",
+      "available_at": "2024-06-20T12:00:00+08:00"
+    }
+  ]
+}
+```
+
+该入口只证明候选证据可以被安全绑定；仍需要以同一绑定重建
+`HistoricalResearchReplay`，并将 `future_rule_version_used=false` 后，才能把对应
+案例写成 strict contemporaneous-rule PIT。

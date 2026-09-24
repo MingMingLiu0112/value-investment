@@ -10,6 +10,7 @@ from value_investment_agent.m3_historical_research_replay import (
     REPLAY_NAMESPACE,
     REPLAY_SCHEMA,
     RULE_REGISTRATION_CONTEMPORANEOUS,
+    RULE_REGISTRATION_EVIDENCE_KINDS,
     HistoricalEvidenceReference,
     HistoricalResearchReplay,
     HistoricalRuleBinding,
@@ -152,6 +153,15 @@ def test_retrospective_rule_must_mark_future_rule_version():
 
 
 def test_contemporaneous_rule_cannot_be_registered_after_replay_date():
+    evidence = HistoricalEvidenceReference(
+        ref_id="rule-evidence-v1",
+        kind="versioned_file",
+        path="fixtures/rule-v1.json",
+        sha256="c" * 64,
+        source_url="https://example.test/rule-v1.json",
+        available_at=datetime(2024, 6, 1, tzinfo=CN_TZ),
+        role="contemporaneous rule registration evidence",
+    )
     rule = HistoricalRuleBinding(
         rule_version="contemporaneous-v1",
         model_scope="relative_pe_research_only",
@@ -160,6 +170,7 @@ def test_contemporaneous_rule_cannot_be_registered_after_replay_date():
         entry_margin=Decimal("0.30"),
         research_quantity=100,
         exit_rule="close exceeds that day's median-relative value",
+        registration_evidence=(evidence,),
     )
 
     with pytest.raises(ValueError, match="cannot postdate the replay date"):
@@ -167,6 +178,15 @@ def test_contemporaneous_rule_cannot_be_registered_after_replay_date():
 
 
 def test_contemporaneous_rule_rejects_future_rule_flag():
+    evidence = HistoricalEvidenceReference(
+        ref_id="rule-evidence-v1",
+        kind="versioned_file",
+        path="fixtures/rule-v1.json",
+        sha256="c" * 64,
+        source_url="https://example.test/rule-v1.json",
+        available_at=datetime(2024, 6, 1, tzinfo=CN_TZ),
+        role="contemporaneous rule registration evidence",
+    )
     rule = HistoricalRuleBinding(
         rule_version="contemporaneous-v1",
         model_scope="relative_pe_research_only",
@@ -175,6 +195,7 @@ def test_contemporaneous_rule_rejects_future_rule_flag():
         entry_margin=Decimal("0.30"),
         research_quantity=100,
         exit_rule="close exceeds that day's median-relative value",
+        registration_evidence=(evidence,),
     )
 
     with pytest.raises(ValueError, match="cannot use a future rule version"):
@@ -182,6 +203,15 @@ def test_contemporaneous_rule_rejects_future_rule_flag():
 
 
 def test_contemporaneous_rule_before_replay_date_is_valid():
+    evidence = HistoricalEvidenceReference(
+        ref_id="rule-evidence-v1",
+        kind="versioned_file",
+        path="fixtures/rule-v1.json",
+        sha256="c" * 64,
+        source_url="https://example.test/rule-v1.json",
+        available_at=datetime(2024, 6, 1, tzinfo=CN_TZ),
+        role="contemporaneous rule registration evidence",
+    )
     rule = HistoricalRuleBinding(
         rule_version="contemporaneous-v1",
         model_scope="relative_pe_research_only",
@@ -190,9 +220,67 @@ def test_contemporaneous_rule_before_replay_date_is_valid():
         entry_margin=Decimal("0.30"),
         research_quantity=100,
         exit_rule="close exceeds that day's median-relative value",
+        registration_evidence=(evidence,),
     )
 
     replay = _replay(rule=rule, future_rule_version_used=False)
 
     assert replay.rule.is_retrospective_rule is False
     assert replay.future_rule_version_used is False
+    assert replay.rule.as_policy()["registration_evidence"][0]["id"] == "rule-evidence-v1"
+
+
+def test_contemporaneous_rule_requires_dated_source_evidence():
+    with pytest.raises(ValueError, match="requires dated source evidence"):
+        HistoricalRuleBinding(
+            rule_version="contemporaneous-v1",
+            model_scope="relative_pe_research_only",
+            registered_at=datetime(2024, 6, 20, tzinfo=CN_TZ),
+            rule_registration_status=RULE_REGISTRATION_CONTEMPORANEOUS,
+            entry_margin=Decimal("0.30"),
+            research_quantity=100,
+            exit_rule="close exceeds that day's median-relative value",
+        )
+
+
+def test_contemporaneous_rule_rejects_undated_or_postdated_evidence():
+    late = HistoricalEvidenceReference(
+        ref_id="rule-evidence-late",
+        kind="publication",
+        path="fixtures/rule-late.json",
+        sha256="d" * 64,
+        source_url="https://example.test/rule-late.json",
+        available_at=datetime(2024, 6, 21, tzinfo=CN_TZ),
+        role="late rule evidence",
+    )
+    with pytest.raises(ValueError, match="cannot postdate"):
+        HistoricalRuleBinding(
+            rule_version="contemporaneous-v1",
+            model_scope="relative_pe_research_only",
+            registered_at=datetime(2024, 6, 20, tzinfo=CN_TZ),
+            rule_registration_status=RULE_REGISTRATION_CONTEMPORANEOUS,
+            entry_margin=Decimal("0.30"),
+            research_quantity=100,
+            exit_rule="close exceeds that day's median-relative value",
+            registration_evidence=(late,),
+        )
+
+    unsupported = _ref("prices")
+    with pytest.raises(ValueError, match="independently dated source"):
+        HistoricalRuleBinding(
+            rule_version="contemporaneous-v1",
+            model_scope="relative_pe_research_only",
+            registered_at=datetime(2024, 6, 20, tzinfo=CN_TZ),
+            rule_registration_status=RULE_REGISTRATION_CONTEMPORANEOUS,
+            entry_margin=Decimal("0.30"),
+            research_quantity=100,
+            exit_rule="close exceeds that day's median-relative value",
+            registration_evidence=(unsupported,),
+        )
+
+    assert RULE_REGISTRATION_EVIDENCE_KINDS == {
+        "archived_document",
+        "publication",
+        "source_commit",
+        "versioned_file",
+    }

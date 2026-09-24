@@ -31,6 +31,15 @@ RULE_REGISTRATION_STATUSES = frozenset(
     }
 )
 
+RULE_REGISTRATION_EVIDENCE_KINDS = frozenset(
+    {
+        "archived_document",
+        "publication",
+        "source_commit",
+        "versioned_file",
+    }
+)
+
 OUTCOME_WAIT = "WAIT"
 OUTCOMES = frozenset(
     {
@@ -216,6 +225,7 @@ class HistoricalRuleBinding:
     entry_margin: Decimal
     research_quantity: int
     exit_rule: str
+    registration_evidence: tuple[HistoricalEvidenceReference, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -245,6 +255,27 @@ class HistoricalRuleBinding:
         if self.research_quantity <= 0:
             raise ValueError("research_quantity must be positive")
         object.__setattr__(self, "exit_rule", _required_text(self.exit_rule, "exit_rule"))
+        object.__setattr__(
+            self,
+            "registration_evidence",
+            tuple(dict.fromkeys(self.registration_evidence)),
+        )
+        for evidence in self.registration_evidence:
+            if evidence.kind not in RULE_REGISTRATION_EVIDENCE_KINDS:
+                raise ValueError(
+                    "Contemporaneous rule evidence kind must be an independently dated source"
+                )
+            if evidence.available_at > self.registered_at:
+                raise ValueError(
+                    "Contemporaneous rule evidence cannot postdate the registered_at timestamp"
+                )
+        if (
+            self.rule_registration_status == RULE_REGISTRATION_CONTEMPORANEOUS
+            and not self.registration_evidence
+        ):
+            raise ValueError(
+                "Contemporaneous rule registration requires dated source evidence"
+            )
 
     @property
     def is_retrospective_rule(self) -> bool:
@@ -259,6 +290,9 @@ class HistoricalRuleBinding:
             "entry_margin": str(self.entry_margin),
             "research_quantity": self.research_quantity,
             "exit_rule": self.exit_rule,
+            "registration_evidence": [
+                evidence.as_policy() for evidence in self.registration_evidence
+            ],
         }
 
 

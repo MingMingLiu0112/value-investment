@@ -27,6 +27,14 @@
 `WAIT`、`action=no_order` 保存，不升级为 strict PIT。详细检索见
 [m3-historical-pit-evidence-20260924.md](m3-historical-pit-evidence-20260924.md)。
 
+同日进一步收紧同期规则合同：`CONTEMPORANEOUS_RULE` 现在必须绑定至少一条
+早于 `registered_at` 的独立规则证据，并新增 strict-PIT 证据审计入口。对现有
+2024-06-21 案例的真实审计仍为 `NOT_PROVEN`，收据
+`runtime/m3-strict-pit-evidence-audit-20260924T080000Z/receipt.json`，
+SHA-256
+`9d161d6e7a52e0c061c7129510933f7b3701245bd6c65a444450b50002dbdf3c`。
+该收据证明缺证据没有被机器状态美化，也未把追溯规则升级为同期规则。
+
 ## 2026-09-24 M3 三份机器验收复算
 
 在同一个干净 HEAD 上分别重新执行 M3 决策卡、原工作簿候选、历史链叠加候选的
