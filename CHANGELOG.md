@@ -1,5 +1,44 @@
 # Changelog
 
+## v2026.09.24-m6-operational-control
+
+### Release Scope
+
+新增 M6 的版本化运行控制状态机与本地命令，用于记录
+`OFFLINE_ENGINEERING -> STAGING -> SHADOW -> LIMITED_USE` 的逐级授权
+推进，并保证任何阶段都可立即进入 `STOPPED`。本版本只读写 `runtime/` 下的
+本地状态文件，不连接生产 PostgreSQL、不修改服务器服务/计划任务、不发布
+工作簿、不读取真实持仓，也不创建订单。
+
+### New Capability
+
+- 新增 `src/value_investment_agent/m6_operational_control.py`：
+  - 初始状态固定为 `OFFLINE_ENGINEERING`，发布与新增复核均 fail-closed；
+  - 非停止模式必须逐级推进，并需要非空 authorization id；
+  - 紧急停止始终允许且立即阻断发布与新增复核；
+  - 从停止状态恢复必须使用新的 authorization id，并先回到离线工程状态；
+  - 权限与模式在反序列化时交叉校验，状态文件原子替换写入。
+- 新增 `scripts/m6_operational_control.py` 的 `status` / `advance` /
+  `stop` 本地命令，所有输出固定 `action=no_order`。
+- 新增 5 项状态机回归测试，并纳入 GitHub Core Research Gate 的
+  `offline-core` 作业。
+
+### Verification
+
+- 定向回归：`tests/test_m6_operational_control.py` 5 passed。
+- 本地 CLI smoke test：`status -> advance STAGING -> stop` 成功，输出
+  `publish_allowed=false` 且最终 `mode=STOPPED`。
+- 本版本不修改任何 Excel 文件字节；WPS 云盘与仓库中当前受跟踪的 18 个
+  xlsx 工作簿继续逐字节一致，canonical SHA-256 仍为
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+
+### Acceptance Boundary
+
+- `M6=NOT_STARTED`；本状态机只是 M6 授权后的运行控制合同，不代表 staging、
+  shadow、真实运营、真实 RPO/RTO 或 20 个真实交易会话已经完成。
+- 生产模式推进仍需用户逐次提供真实 authorization id；本地测试使用的授权
+  标识只用于状态机回归，不具备生产效力。
+
 ## v2026.09.24-m6-encrypted-backup-security-contract
 
 ### Release Scope

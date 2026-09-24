@@ -2,7 +2,7 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
-## M6 运营准入预检：2026-09-24
+## M6 运营准入预检与运行控制：2026-09-24
 
 本节记录 M6 的非生产前置审计。`M6` 保持 `NOT_STARTED`，所有动作
 `action=no_order`。
@@ -27,6 +27,13 @@
   连续真实交易会话、至少一个真实财务或资本事件、生产迁移/调度/通知授权。
 - 本预检未连接生产 PostgreSQL、未修改服务器项目或 PTA、未读取真实持仓，
   也不能把本地测试或 fixture 当作 M6 运营验收。
+- 新增 `src/value_investment_agent/m6_operational_control.py` 和
+  `scripts/m6_operational_control.py`：版本化
+  `OFFLINE_ENGINEERING -> STAGING -> SHADOW -> LIMITED_USE` 授权推进、
+  任意阶段紧急停止、从停止状态以新授权先回到离线工程。状态文件位于
+  `runtime/`，不会进入公开仓库。
+- 定向回归 `tests/test_m6_operational_control.py` 5 passed，并已加入
+  GitHub Core Research Gate 的 `offline-core` 作业。
 
 ## M2 机器验收最新收据：2026-09-24
 

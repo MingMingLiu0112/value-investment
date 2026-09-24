@@ -67,6 +67,7 @@ jobs:
           tests/test_m5_disclosure_review_workbook.py
           tests/test_backup_security.py
           tests/test_m6_operational_readiness.py
+          tests/test_m6_operational_control.py
           tests/test_unified_fcff_valuation.py
           tests/test_residual_income_equity_valuation.py
           tests/test_cyclical_normalized_valuation.py

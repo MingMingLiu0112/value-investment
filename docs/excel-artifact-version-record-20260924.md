@@ -4,6 +4,16 @@
 边界，不改变投资逻辑，不生成交易指令。当前项目状态为 `M2 / PENDING_HUMAN_REVIEW`，
 `M3 / M4 / M5 / PARTIAL`，`action=no_order`。
 
+## M6 运行控制上传记录
+
+版本包 `v2026.09.24-m6-operational-control` 只新增 M6 运行控制状态机、
+CLI、回归测试和 CI 配置，不修改任何公开 Excel 字节。本轮 Git 工作树中的
+`.xlsx` 均无未提交修改；WPS 云盘与仓库中当前受跟踪的 18 个工作簿逐字节一致。
+最新 M7 统一工作台候选继续为 13,262,051 字节，SHA-256
+`829f743acc3f628e60bd9e210b196965865ad2306dea7e520d9f9d62b402d582`；
+canonical 继续为
+`64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+
 ## M7 统一工作台展示候选
 
 本批新增第 18 个受 Git 跟踪的公开工作簿。它把 M3 历史链叠加候选与六个 M4/M5

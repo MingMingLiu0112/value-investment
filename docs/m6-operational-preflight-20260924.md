@@ -9,6 +9,7 @@
 - 机器预检入口：`scripts/audit_m6_preflight.py`。
 - 配置：`config/m6-operational-preflight-v1.json`。
 - 加密备份入口：`scripts/package_encrypted_backup.py`。
+- 运行控制入口：`scripts/m6_operational_control.py`。
 - 动作边界：`action=no_order`。
 - 干净工作树预检收据：
   `runtime/m6-operational-preflight-20260924T000810Z/receipt.json`
@@ -29,6 +30,9 @@
 - 加密备份采用流式 AES-256-GCM，强制密钥文件位于备份源、输出目录和
   offsite staging 之外，并在解密后逐文件校验 SHA-256。
 - 版本化 manifest 固定代码版本、配置清单、发布 Excel 和原件 Hash。
+- 运行控制只允许按 `OFFLINE_ENGINEERING -> STAGING -> SHADOW ->
+  LIMITED_USE` 逐级授权；任何阶段都可紧急停止，恢复时必须使用新授权并
+  先回到离线工程状态。
 
 ## 当前明确缺口
 
