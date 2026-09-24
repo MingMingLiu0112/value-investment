@@ -95,6 +95,7 @@ def test_builder_overlays_renamed_layers_with_overview(tmp_path: Path):
 
     assert manifest["action"] == "no_order"
     assert manifest["status"] == "candidate_verified_not_published"
+    assert manifest["schema_version"] == "m7-workbench-candidate-v1"
     assert manifest["candidate_sha256"] == _digest(output)
     assert manifest["sheet_count"] == 7
     assert manifest["final_sheet_order"] == [
@@ -188,6 +189,28 @@ def test_builder_rejects_changed_sources(tmp_path: Path):
             generated_at=GENERATED_AT,
             project_root=tmp_path,
         )
+
+
+def test_builder_accepts_versioned_manifest_schema(tmp_path: Path):
+    base, risk, event, canonical = _synthetic_project(tmp_path)
+    output = tmp_path / "m7-v2-schema.xlsx"
+    manifest = BUILDER.build_candidate(
+        base=base,
+        canonical=canonical,
+        output=output,
+        expected_base_sha256=_digest(base),
+        expected_canonical_sha256=_digest(canonical),
+        addon_specs=tuple(_specs(base, (risk, event), canonical)),
+        generated_at=GENERATED_AT,
+        project_root=tmp_path,
+        manifest_schema="m7-workbench-candidate-v2",
+    )
+
+    assert manifest["schema_version"] == "m7-workbench-candidate-v2"
+    manifest_path = output.with_name(output.stem + ".candidate.manifest.json")
+    assert json.loads(manifest_path.read_text(encoding="utf-8"))["schema_version"] == (
+        "m7-workbench-candidate-v2"
+    )
 
 
 def test_overview_rejects_forbidden_text(tmp_path: Path):

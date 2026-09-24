@@ -2,6 +2,28 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## M7 统一工作台 v2 候选：2026-09-24
+
+本节记录把 M4/M5 联合检查点候选接入 M7 只读统一入口的展示层准备。`M2` 保持
+`PENDING_HUMAN_REVIEW`，`M3/M4/M5/M7` 保持 `PARTIAL`，`M6` 为
+`NOT_STARTED`；全部动作 `action=no_order`。
+
+- 新增 `scripts/build_m7_workbench_v2_candidate.py`，复用 v1 受保护 graft；
+  新增 `m7-workbench-candidate-v2` manifest schema 和
+  `scripts/verify_m7_workbench_v2_wps.ps1`。
+- 新候选把 6 页 `M4M5联合_*` 作为第七层放在 M5 展示层与 M3 基底之间，形成
+  96 页统一工作台；原 90 页 v1 候选、构建器和 Hash 保持不变。
+- 候选文件
+  `A股价值投资_Agent前端智能跟踪模板_M7统一工作台候选_v2_20260924.xlsx`，
+  字节数 13,271,164，SHA-256
+  `d00c3363767d96010d9f6b429525cc0b35633160d1bfae967a286ea87c5130dc`。
+- WPS 只读验证为 `passed`；96 页、37 个展示页顺序、10 个导航入口和 canonical
+  Hash 均通过。WPS 云盘同名副本与仓库候选逐字节一致。
+- M7 v1/v2 定向回归 6 passed。
+- 全量离线回归：2317 passed、6 skipped、0 failed；M2 机器门仍只等当前提交的
+  CI 与用户 Checkpoint A，不因离线通过改变人工验收边界。
+- 本候选不替代 Checkpoint C/D、真实组合、真实事件观察或 M6 运营验收。
+
 ## M4/M5 联合检查点候选：2026-09-24
 
 本节记录 M4 组合域与 M5 事件失效的只读联合候选。`M2` 保持

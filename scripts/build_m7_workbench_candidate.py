@@ -243,6 +243,7 @@ def build_candidate(
     addon_specs: tuple[dict, ...],
     generated_at: datetime,
     project_root: Path | None = None,
+    manifest_schema: str = MANIFEST_SCHEMA,
 ) -> dict:
     """Overlay all candidates, preserving every source worksheet byte."""
     project_root = (project_root or ROOT).resolve()
@@ -329,7 +330,7 @@ def build_candidate(
             final_sheet_order = [sheet.get("name") for sheet, _path in sheets]
         candidate_sha256 = digest(output)
         manifest = {
-            "schema_version": MANIFEST_SCHEMA,
+            "schema_version": manifest_schema,
             "generated_at": generated_at.isoformat(),
             "action": "no_order",
             "presentation_namespace": "read_model_candidate",

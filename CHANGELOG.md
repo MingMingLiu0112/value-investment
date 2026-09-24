@@ -1,5 +1,42 @@
 # Changelog
 
+## v2026.09.24-m7-workbench-v2
+
+### Release Scope
+
+把刚交付的 M4/M5 联合检查点候选作为第七个只读展示层接入 M7 统一工作台，形成
+独立的 96 页 v2 展示候选。原 90 页 v1 候选及其构建器、Hash 和复现入口保持不变。
+本版本不发布 canonical、不导入真实组合、不重算研究或仓位，也不创建订单。
+
+### New Capability
+
+- 新增 `scripts/build_m7_workbench_v2_candidate.py`：复用 v1 受保护 graft
+  实现，把 `M4M5联合_*` 六个页面放在 M5 展示层与 M3 基底之间，固定
+  `m7-workbench-candidate-v2` manifest schema。
+- 扩展 v1 基础构建器 `build_candidate()`，增加向后兼容的 `manifest_schema`
+  参数；未传参时仍生成原 v1 schema。
+- 新增 `scripts/verify_m7_workbench_v2_wps.ps1`：验证 96 页、37 个展示页顺序、
+  10 个总览导航入口、M4/M5 联合页、公式错误、no_order 边界和 canonical Hash。
+- 新增 96 页候选：
+  `A股价值投资_Agent前端智能跟踪模板_M7统一工作台候选_v2_20260924.xlsx`。
+
+### Verification
+
+- M7 v1/v2 定向回归：6 passed。
+- 候选字节数：13,271,164。
+- 候选 SHA-256：
+  `d00c3363767d96010d9f6b429525cc0b35633160d1bfae967a286ea87c5130dc`。
+- WPS 实际只读验证：`passed`；96 页，canonical 打开前后 Hash 不变。
+- WPS 云盘同名候选与仓库候选逐字节一致。
+- 全量离线回归：2317 passed、6 skipped、0 failed；M2 机器验收收据
+  `runtime/m2-acceptance-audit-20260924T010139Z/receipt.json`。
+
+### Acceptance Boundary
+
+- `M7` 继续为 `PARTIAL`；v2 只是展示入口准备，不替代 Checkpoint A-D。
+- `M4/M5` 继续为 `PARTIAL`；联合页面仍是显式模拟，真实 IPS、持仓、事件观察与
+  生产通知仍需用户授权。
+
 ## v2026.09.24-m4m5-joint-checkpoint
 
 ### Release Scope
