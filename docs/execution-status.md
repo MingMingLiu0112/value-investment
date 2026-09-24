@@ -12,6 +12,11 @@ namespace 的事件桥接候选，7 条为静默的 NOT_MATERIAL / SUPPORTING / 
 尚未应用、未运行生产调度或通知，`action=no_order`。当前队列已完成 reconciliation；后续有界
 失效与事实重算必须以这两个桥接事件为输入，不能把“已失效”写成“已得到新估值结论”。
 
+随后新增 `m5_research_artifact_graph.py`：它从被冻结的 runtime import candidates 建立每只证券的
+实际依赖图，节点绑定制品 source SHA-256 与证据引用，缺任一必需上游制品即失败关闭。600519
+已生成 7 节点的实际图收据（Research Case、Gate、Valuation、ModelValidity、PriceBridge、
+Dividend Research、Current Status）；它是后续两个事件的 bounded invalidation 输入，不构成重估完成。
+
 ## 2026-09-25 全量回归与私有测试隔离
 
 跨平台 Git 工作树边界修复后，完整测试套件使用仓库内 disposable base temp 重放为
