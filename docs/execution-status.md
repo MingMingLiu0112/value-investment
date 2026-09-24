@@ -49,6 +49,28 @@
 - M2 Checkpoint A 仅 `READY_FOR_HUMAN_RESUBMISSION`；M3 Checkpoint B、
   M4 个性化、M5 持续运营、M6 运营验收与 M7 用户签收均未批准。
 
+## M7 Daily Workbench v2 时点表述纠偏：2026-09-24
+
+在上一版人工审查收口后复核发现，M7 Daily Workbench 虽然引用的
+`m3-historical-research-replay` 收据已正确记录
+`future_rule_version_used=true`，但工作簿页签仍写成“真实 PIT 历史重放 /
+当时规则”，会把追溯注册的 Median-PE 规则误读成同时期规则。
+
+本轮只修正展示层表述，不改重放收据、研究结论、审批状态或 canonical：
+
+- 生成
+  `A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v2_20260924.xlsx`。
+- 统一表述为：财务事实、公告和收盘价为 point-in-time；
+  Median-PE 规则为 `RETROSPECTIVE_RESEARCH_EXTENSION`，
+  `future_rule_version_used=true`；不声称 strict contemporaneous-rule PIT。
+- M7 v2 SHA-256：
+  `8d0ee32b463a2612374504bec8f9e0a55ec411adc00b40cef356a763afb77bf6`。
+- WPS 只读验证 `passed`：10 个可见页、2 个隐藏页、公式错误 0、canonical
+  Hash 不变，收据 `runtime/m7-daily-wps-v2-20260924/receipt.json`。
+- M7 定向回归 `8 passed`；全量离线回归留待提交后统一复算。
+
+上一版 v1 候选继续保留，作为人工审查前的历史制品；当前用户验收对象使用 v2。
+
 ## M7 统一工作台 v2 候选：2026-09-24
 
 本节记录把 M4/M5 联合检查点候选接入 M7 只读统一入口的展示层准备。`M2` 保持

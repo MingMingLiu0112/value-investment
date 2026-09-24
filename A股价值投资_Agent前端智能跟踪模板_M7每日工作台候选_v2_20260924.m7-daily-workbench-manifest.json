@@ -1,0 +1,73 @@
+{
+  "schema_version": "m7-daily-workbench-v1",
+  "generated_at": "2026-09-24T02:00:00+00:00",
+  "as_of": "2026-09-24",
+  "action": "no_order",
+  "workbook_path": "A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v2_20260924.xlsx",
+  "workbook_sha256": "8d0ee32b463a2612374504bec8f9e0a55ec411adc00b40cef356a763afb77bf6",
+  "visible_sheet_count": 10,
+  "hidden_sheet_count": 2,
+  "visible_sheets": [
+    "00_今日总览",
+    "01_全市场与数据健康",
+    "02_候选与重点关注",
+    "03_决策复核",
+    "04_当前持仓与仓位",
+    "05_股息现金流",
+    "06_事件与预警",
+    "07_公司研究",
+    "08_买卖逻辑与历史",
+    "09_审计与证据"
+  ],
+  "stage_statuses": {
+    "m1": [
+      "M1",
+      "DONE",
+      "DONE as Research Workbench",
+      "已完成人工 G3 初审"
+    ],
+    "m2": [
+      "M2",
+      "ENGINEERING_DONE",
+      "PARTIAL",
+      "PENDING_HUMAN_REVIEW"
+    ],
+    "m3": [
+      "M3",
+      "ENGINEERING_PARTIAL_PLUS",
+      "PARTIAL",
+      "PENDING_HUMAN_REVIEW"
+    ],
+    "m4": [
+      "M4",
+      "ENGINEERING_DONE_SIMULATED",
+      "PARTIAL",
+      "PENDING_PRIVATE_INPUT"
+    ],
+    "m5": [
+      "M5",
+      "ENGINEERING_DONE_OFFLINE",
+      "PARTIAL",
+      "PENDING_RECONCILIATION / OPERATIONS"
+    ],
+    "m6": [
+      "M6",
+      "PREFLIGHT_DONE",
+      "NOT_STARTED operationally",
+      "PENDING_AUTHORIZATION / SHADOW"
+    ],
+    "m7": [
+      "M7",
+      "DISPLAY_ENGINEERING_DONE",
+      "PARTIAL",
+      "PENDING_USER_ACCEPTANCE"
+    ]
+  },
+  "summary": {
+    "m2_verified_for_deep_research": 3,
+    "m2_rejected_after_verification": 13,
+    "m5_new_pending_reviews": 1,
+    "m4_private_input_status": "PENDING_USER_PRIVATE_INPUT",
+    "m6_operational_status": "NOT_STARTED"
+  }
+}

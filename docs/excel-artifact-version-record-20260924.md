@@ -5,6 +5,20 @@
 `M2 / PENDING_HUMAN_REVIEW`、`M3 / M4 / M5 / PARTIAL`、
 `M6 / NOT_STARTED`、`M7 / PARTIAL`，全部候选 `action=no_order`。
 
+## 2026-09-24 M7 Daily Workbench v2 表述纠偏
+
+新增第 21 个受 Git 跟踪的公开工作簿，只修正 M7 日常工作台对 M3 Historical
+Research Replay 的时点表述，不覆盖 v1 候选、不改 canonical 或投资结论。
+
+- 文件：
+  `A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v2_20260924.xlsx`
+- SHA-256：
+  `8d0ee32b463a2612374504bec8f9e0a55ec411adc00b40cef356a763afb77bf6`
+- 构建入口：`scripts/build_m7_daily_workbench.py`
+- WPS 只读验证：`runtime/m7-daily-wps-v2-20260924/receipt.json`，`passed`。
+- WPS 云盘同名 v2 候选与仓库文件逐字节一致。
+- 事实/行情 PIT 与追溯规则边界已在工作簿内明示，不再写成“真实 PIT / 当时规则”。
+
 ## 2026-09-24 最终公开工作簿上传记录
 
 本轮核对基点为 `main` HEAD `19cd9b5`，该提交与 `origin/main` 一致且工作树干净。

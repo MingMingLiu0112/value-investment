@@ -100,6 +100,8 @@ def _packet() -> dict:
                 "valuation_approved": False,
                 "trade_approved": False,
                 "blockers": ["valuation_approved_false", "trade_approved_false"],
+                "future_facts_used": False,
+                "future_rule_version_used": True,
                 "then_known_facts": {"source_id": "cninfo:1219506510"},
                 "then_known_quote": {"close_cny": "1471.00"},
                 "rule": {"rule_version": "moutai-pe-mid-paper-contract-v2-2025-extension"},
@@ -260,6 +262,23 @@ def test_manifest_is_written_with_hash_and_sheet_receipt(tmp_path: Path):
     assert manifest["visible_sheet_count"] == 10
     assert manifest["hidden_sheet_count"] == 2
     assert receipt["manifest_sha256"] == _digest(manifest_path)
+
+
+def test_historical_replay_does_not_claim_contemporaneous_rule_pit(tmp_path: Path):
+    write_daily_workbench(
+        _packet(),
+        output=tmp_path / "daily.xlsx",
+        root=tmp_path,
+    )
+    workbook = load_workbook(tmp_path / "daily.xlsx", data_only=True)
+    text = _all_text(workbook)
+
+    assert "事实/行情 PIT" in text
+    assert "规则时点 PIT=NOT CLAIMED" in text
+    assert "future_rule_version_used=True" in text
+    assert "所用规则（事后注册，非当时版本）" in text
+    assert "真实 PIT 历史重放" not in text
+    assert "当时规则" not in text
 
 
 def test_rejects_non_no_order_or_truthy_execution_keys(tmp_path: Path):

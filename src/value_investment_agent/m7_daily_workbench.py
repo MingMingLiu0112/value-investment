@@ -483,11 +483,14 @@ def _decision_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
     row = _label_value(
         ws,
         row,
-        "真实 PIT 历史重放",
+        "历史研究重放（事实/行情 PIT，规则非当时版本）",
         (
             f"{replay.get('symbol')} / {replay.get('replay_date')} / "
             f"最终状态 {replay.get('final_decision')}；valuation_approved="
             f"{replay.get('valuation_approved')}；trade_approved={replay.get('trade_approved')}。"
+            f"事实/行情 PIT=YES；规则时点 PIT=NOT CLAIMED；"
+            f"future_facts_used={replay.get('future_facts_used')}；"
+            f"future_rule_version_used={replay.get('future_rule_version_used')}。"
         ),
         5,
     )
@@ -625,7 +628,7 @@ def _research_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
     row = _label_value(
         ws,
         row,
-        "历史 PIT 研究样例",
+        "历史研究重放样例（事实/行情 PIT）",
         (
             f"{replay.get('symbol')} / {replay.get('replay_date')}，"
             f"采用当时年报 {replay.get('then_known_facts', {}).get('source_id')}、"
@@ -633,7 +636,24 @@ def _research_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
         ),
         5,
     )
-    row = _label_value(ws, row, "当时规则", str(replay.get("rule", {}).get("rule_version") or ""), 5)
+    row = _label_value(
+        ws,
+        row,
+        "所用规则（事后注册，非当时版本）",
+        str(replay.get("rule", {}).get("rule_version") or ""),
+        5,
+    )
+    row = _label_value(
+        ws,
+        row,
+        "规则时点声明",
+        (
+            f"future_facts_used={replay.get('future_facts_used')}；"
+            f"future_rule_version_used={replay.get('future_rule_version_used')}；"
+            "不得称为完整当时点 PIT。"
+        ),
+        5,
+    )
     row = _label_value(
         ws,
         row,
@@ -670,7 +690,8 @@ def _history_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
         (
             f"{packet['m3']['historical_replay'].get('symbol')} / "
             f"{packet['m3']['historical_replay'].get('final_decision')}，"
-            "这是当时信息下的研究重放，不是策略收益。"
+            "事实与行情采用当日可知版本；所用 Median-PE 规则是 2026-09-12 注册的"
+            "事后研究扩展，因此不声称规则当时点 PIT，也不是策略收益。"
         ),
         2,
     )

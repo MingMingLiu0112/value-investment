@@ -29,7 +29,7 @@ from value_investment_agent.m7_daily_workbench import (  # noqa: E402
 
 DEFAULT_OUTPUT = (
     ROOT
-    / "A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_20260924.xlsx"
+    / "A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v2_20260924.xlsx"
 )
 DEFAULT_GENERATED_AT = datetime(2026, 9, 24, 2, 0, 0, tzinfo=timezone.utc)
 
@@ -346,7 +346,7 @@ def _audit_packet() -> dict[str, Any]:
             _audit_artifact("M2 全市场 manifest", M2_LIVE_MANIFEST),
             _audit_artifact("M3 决策审计收据", ROOT / "runtime/m3-decision-acceptance-audit-20260923T190024Z/receipt.json"),
             _audit_artifact("M3 集成运行输入", M3_INTEGRATED_RUNS),
-            _audit_artifact("M3 历史 PIT 重放", M3_REPLAY),
+            _audit_artifact("M3 历史研究重放（事实/行情 PIT；规则非当时版本）", M3_REPLAY),
             _audit_artifact("M4 组合风险模拟 manifest", M4_RISK_MANIFEST),
             _audit_artifact("M4 仓位/股息模拟 manifest", M4_GUIDANCE_MANIFEST),
             _audit_artifact("M4/M5 联合模拟 manifest", M4_M5_MANIFEST),

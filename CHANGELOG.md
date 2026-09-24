@@ -1,5 +1,28 @@
 # Changelog
 
+## v2026.09.24-m7-daily-workbench-v2-pit-wording
+
+### Scope
+
+M7 Daily Workbench v1 引用的 M3 Historical Research Replay 收据已经记录
+`future_rule_version_used=true`，但工作簿仍把该回放称为“真实 PIT / 当时规则”。
+本版新增 v2 展示候选，把事实、公告、报价的 point-in-time 性质与 Median-PE
+规则的追溯注册身份分开表述，不补造同时期规则，也不改变研究或审批状态。
+
+### Artifacts
+
+- `A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v2_20260924.xlsx`
+- 候选 SHA-256：
+  `8d0ee32b463a2612374504bec8f9e0a55ec411adc00b40cef356a763afb77bf6`
+- manifest 由 `scripts/build_m7_daily_workbench.py` 自动生成。
+- WPS 只读验证 `passed`，canonical SHA-256 前后不变。
+
+### Verification
+
+- M7 定向回归：8 passed。
+- `action=no_order`；未执行生产迁移、计划任务、通知或真实账户导入。
+- v1 每日工作台候选保留，当前用户验收对象改为 v2。
+
 ## v2026.09.24-manual-review-pit-boundary
 
 ### Scope
