@@ -195,6 +195,9 @@ def test_private_input_cli_rejects_private_root_inside_repository(tmp_path):
     encrypt_private_portfolio_bundle(
         _bundle(), encrypted, key_path, private_root=private_root, repository_root=repository
     )
+    # This models a private folder accidentally created inside a Git worktree.
+    # The verifier must detect the actual marker on every platform.
+    (private_root / ".git").mkdir()
     script = Path(__file__).resolve().parents[1] / "scripts" / "verify_private_portfolio_input.py"
 
     completed = subprocess.run(
@@ -213,6 +216,20 @@ def test_private_input_cli_rejects_private_root_inside_repository(tmp_path):
     )
 
     assert completed.returncode != 0
-    assert "private_root must be separate from the repository" in completed.stderr
+    assert "private_root must be separate from every git repository" in completed.stderr
     assert "cash_cny" not in completed.stderr
     assert "holdings" not in completed.stderr
+
+
+def test_private_input_rejects_linked_worktree_git_file(tmp_path):
+    repository, private_root, key_path = _paths(tmp_path)
+    encrypted = private_root / "portfolio.viportfolio"
+    encrypt_private_portfolio_bundle(
+        _bundle(), encrypted, key_path, private_root=private_root, repository_root=repository
+    )
+    (private_root / ".git").write_text("gitdir: /private/worktree", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="separate from every git repository"):
+        load_private_portfolio_bundle(
+            encrypted, key_path, private_root=private_root, repository_root=repository
+        )

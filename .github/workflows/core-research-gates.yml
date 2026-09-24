@@ -74,6 +74,7 @@ jobs:
           tests/test_m5_disclosure_queue.py
           tests/test_m5_disclosure_queue_workbook.py
           tests/test_m5_disclosure_review.py
+          tests/test_m5_disclosure_briefing.py
           tests/test_m5_disclosure_review_workbook.py
           tests/test_backup_security.py
           tests/test_m6_operational_readiness.py

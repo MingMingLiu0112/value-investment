@@ -28,6 +28,16 @@ Hash 校验失败。现改为只读取已固定的 M6 receipt；后续 `latest` 
 同类审查随后确认 M3 audit 也曾保留 `latest` pointer 作为冻结工作台输入；现同样改为
 固定 receipt。M3 strict contemporaneous-rule PIT 的未证明状态不因此变化。
 
+## 2026-09-25 M4 私有输入 Git 工作树边界
+
+GitHub Linux CI 暴露出一项跨平台测试缺口：CLI 只验证项目根目录，测试却把普通临时目录
+误当作仓库。现在私有根还会拒绝位于任何 `.git` 目录或 linked-worktree `.git` 文件下的
+路径；测试构造真实 Git marker，因此 Windows 与 Linux 都验证同一隐私边界。该变更不读取
+实际组合，不打印私有字段，仍保持 `action=no_order`。
+
+`test_m5_disclosure_briefing.py` 也已加入 `offline-core`，确保后续简报生成不会绕过
+PDF Hash 复核或无结论边界。
+
 ## 2026-09-25 M6 未授权生产授权包
 
 新增 [M6 生产授权包](m6-production-authorization-package-20260924.md)，把未来数据库

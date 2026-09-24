@@ -70,6 +70,21 @@ def _is_within(path: Path, root: Path) -> bool:
     return True
 
 
+def _containing_git_root(path: Path) -> Path | None:
+    """Return the nearest Git worktree marker without invoking Git.
+
+    Private inputs must remain outside every local worktree, not merely outside
+    this project's currently checked-out root.  A ``.git`` file is also valid
+    for linked worktrees, so both supported Git marker forms are rejected.
+    """
+
+    for candidate in (path, *path.parents):
+        marker = candidate / ".git"
+        if marker.is_dir() or marker.is_file():
+            return candidate
+    return None
+
+
 def _has_builtin_sync_directory(path: Path) -> bool:
     return any(part.casefold() in _FORBIDDEN_SYNC_DIRECTORY_NAMES for part in path.parts)
 
@@ -91,6 +106,8 @@ def _require_private_paths(
         raise ValueError("private_root must be an existing non-symbolic-link directory")
     if _is_within(root, repository) or _is_within(repository, root):
         raise ValueError("private_root must be separate from the repository")
+    if _containing_git_root(root) is not None:
+        raise ValueError("private_root must be separate from every git repository")
     if _is_within(key, repository):
         raise ValueError("private portfolio key must be outside the repository")
     if any(_has_builtin_sync_directory(path) for path in (root, encrypted, key)):
