@@ -1,5 +1,23 @@
 # Changelog
 
+## v2026.09.24-current-head-m3-history-hash-fix-and-handoff
+
+### Scope
+
+按当前 HEAD 重新执行 M2/M3/M6 只读验收，修复 M3 历史链审计中的过期 WPS
+收据 Hash，并新增 M2-M7 人工复核交接清单。机器门不替代 Checkpoint A-D，
+M6 运营验收仍为 `NOT_STARTED`。
+
+### Verification
+
+- M3 决策卡、M3 原工作簿候选、M3 历史链叠加候选的机器验收项均 `DONE`。
+- M3 历史链 `hoc5` 从误报 `PARTIAL` 修复为 `DONE`，固定 Hash 与当前
+  `passed` 收据一致。
+- M2 保持 AC1-AC7/AC11 `DONE`，AC8-AC10/AC12 `PENDING_HUMAN_REVIEW`。
+- M6 工程预检 `DONE`，真实恢复、20 连续会话、真实事件和生产授权仍未开始。
+- 新增 `docs/m2-m7-human-review-handoff-20260924.md`。
+- 所有输出 `action=no_order`；未修改 canonical、冻结证据、PTA 或生产服务。
+
 ## v2026.09.24-m2-legacy-coverage-signature-and-m7-runbook
 
 ### Scope

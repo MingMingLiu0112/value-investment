@@ -30,6 +30,8 @@ Historical Research Replay（事实/报价 PIT，规则为追溯并显式标记�
 
 M7 Daily v2 用户查看、完整性核验、故障与回退入口见
 [m7-assisted-use-runbook-20260924.md](m7-assisted-use-runbook-20260924.md)。
+M2-M7 当前全部人工待办与签收边界见
+[m2-m7-human-review-handoff-20260924.md](m2-m7-human-review-handoff-20260924.md)。
 
 ## 总体成果与阶段交接
 

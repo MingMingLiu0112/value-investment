@@ -2,6 +2,25 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 当前 HEAD 跨阶段复核与人工交接
+
+按当前 HEAD 重新计算 M2/M3/M6 只读验收器。M2 仍为 AC1-AC7/AC11 `DONE`，
+AC8-AC10/AC12 `PENDING_HUMAN_REVIEW`。M3 决策卡、原工作簿候选、历史链叠加
+候选的机器门均 `DONE`，只保留对应人工复核项。M6 工程预检 `DONE`，运营验收仍
+`NOT_STARTED`。
+
+- 修复 M3 历史链审计固定 WPS 收据 Hash 过期问题：当前收据语义 `passed` 且绑定
+  正确候选，但代码仍固定旧 Hash，导致 `hoc5` 误报 `PARTIAL`。本轮同步为
+  `c446268c31cecbaff42c9589beec660bfe89b47883f385beeeb94ed80970d991`。
+- 当前机器审计收据：M3 决策卡
+  `runtime/m3-decision-acceptance-audit-20260924T050428Z/receipt.json`、
+  原工作簿 `runtime/m3-original-workbook-audit-20260924T050431Z/receipt.json`、
+  历史链 `runtime/m3-history-original-workbook-audit-20260924T050601Z/receipt.json`。
+- M5 复核结果保持 23 条旧判断 carry-forward、1 条新公告待人工、0 Hash 冲突。
+- 新增 [m2-m7-human-review-handoff-20260924.md](m2-m7-human-review-handoff-20260924.md)，
+  汇总 Checkpoint A/B、私有组合输入、M5 新公告和 M6/M7 授权边界。
+- `action=no_order`；未修改 canonical、冻结研究证据或生产服务。
+
 ## 2026-09-24 M2 历史签名兼容与 M7 使用手册
 
 复核发现，2026-09-24 人工审查纠偏扩展了 `ChannelEvaluation` 的 trigger/policy/rank
