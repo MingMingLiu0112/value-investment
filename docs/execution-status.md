@@ -1416,3 +1416,24 @@ M4/M5、M6、M7。
 `03_一致性观察`、`04_阻断与结论`、`05_来源哈希`。该候选不是 Checkpoint B；
 Checkpoint B 及后续人工/生产验收继续按原边界保持待办。详细来源和边界见
 [m3-reconstructed-evidence-continuity-20260924.md](m3-reconstructed-evidence-continuity-20260924.md)。
+
+## 2026-09-24 M5 贵州茅台真实披露队列扩展
+
+在 M3 重建证据连续性候选完成后，继续原总 Goal 中依赖已满足的 M5 离线工作：
+使用既有 `scripts/build_m5_disclosure_queue.py` 重建 600519 的真实 CNINFO
+公告窗口，不修改既有 3 家公司队列、reconciliation 或 canonical。
+
+- 窗口：`2026-06-01` 至 `2026-09-09`，检索时间
+  `2026-09-24T08:47:15Z`。
+- 结果：16 条公告，9 条待人工复核，0 条来源缺失，覆盖状态 `COMPLETE`。
+- 公开工作簿：
+  `A股价值投资_M5真实披露待复核队列_600519_20260924.xlsx`，
+  SHA-256
+  `02cd3499ed4e805f2d76d0f7f0aba89d02be123b02ae3723b43e80f1509eaa3c`。
+- WPS 只读验证 `passed`；WPS 云盘同名副本与仓库文件逐字节一致。
+- 标题规则只生成待复核候选；9 条公告仍由用户逐条给出
+  `EventMaterialityDecision`，系统不自动判定重大性或产生事件。
+- `action=no_order`；不构成 Checkpoint C、生产调度、通知或 M6 运营验收。
+
+九条待复核公告和原件 Hash 见
+[m5-600519-disclosure-review-20260924.md](m5-600519-disclosure-review-20260924.md)。
