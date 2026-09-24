@@ -26,6 +26,11 @@ migration、调度、通知、私有数据、资源、备份和 Shadow 的授权
 PENDING_USER_PRIVATE_INPUT` 不变。该结论不读取或猜测用户数据，不生成真实组合建议；
 详细矩阵见 [M4 非个人化工程审计](m4-nonpersonal-engineering-audit-20260925.md)。
 
+为使未来私有输入不必进入聊天、WPS 或 Git，新增
+`scripts/encrypt_private_portfolio_input.py`：它只读取私有根内的 UTF-8 JSON、按原有
+领域合同校验后写入不可覆盖的 AES-256-GCM 密文，并只输出脱敏回执。临时明文不会被命令
+删除或写入 runtime；后续处理仍由用户的私有保留政策决定。M4 定向回归为 `75 passed`。
+
 ## 2026-09-24 M6 预检阶段状态对账
 
 `config/m6-operational-preflight-v1.json` 曾保留旧的 `m2=PENDING_HUMAN_REVIEW`，

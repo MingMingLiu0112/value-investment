@@ -209,6 +209,30 @@ def encrypt_private_portfolio_bundle(
     return _receipt(encrypted, key_id=key_id, created_at=timestamp)
 
 
+def encrypt_private_portfolio_payload(
+    payload: Mapping[str, Any],
+    encrypted_path: Path,
+    key_path: Path,
+    *,
+    private_root: Path,
+    repository_root: Path,
+    forbidden_sync_roots: Iterable[Path] = (),
+    created_at: datetime | None = None,
+) -> PrivatePortfolioIntakeReceipt:
+    """Validate a private JSON payload before encrypting it as one new bundle."""
+    if not isinstance(payload, Mapping):
+        raise ValueError("private portfolio payload must be an object")
+    return encrypt_private_portfolio_bundle(
+        portfolio_input_bundle_from_payload(payload),
+        encrypted_path,
+        key_path,
+        private_root=private_root,
+        repository_root=repository_root,
+        forbidden_sync_roots=forbidden_sync_roots,
+        created_at=created_at,
+    )
+
+
 def load_private_portfolio_bundle(
     encrypted_path: Path,
     key_path: Path,

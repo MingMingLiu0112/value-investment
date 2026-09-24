@@ -85,6 +85,19 @@ python scripts/verify_private_portfolio_input.py `
 
 该命令不会输出解密后的资产、持仓或 IPS 内容。
 
+首次封装由同样受限的本地命令完成。临时 JSON 与输出密文都必须在私有根内，密钥则必须
+在仓库、私有根和 WPS 之外；命令不删除临时 JSON，操作者应在校验密文成功后按其私有保留
+政策处理该临时文件。
+
+```powershell
+python scripts/encrypt_private_portfolio_input.py `
+  --input <private-root>\portfolio-input.json `
+  --encrypted <private-root>\inputs\portfolio.viportfolio `
+  --key-file <key-outside-private-root>\portfolio.key `
+  --private-root <private-root> `
+  --forbidden-sync-root C:\Users\we\WPSDrive
+```
+
 ## 尚未实现
 
 - 私有数据的长期持久化/轮换/恢复运营流程和真实账户导入；

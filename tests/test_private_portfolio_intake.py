@@ -22,6 +22,7 @@ from value_investment_agent.portfolio_contracts import (
 )
 from value_investment_agent.private_portfolio_intake import (
     encrypt_private_portfolio_bundle,
+    encrypt_private_portfolio_payload,
     load_private_portfolio_bundle,
 )
 
@@ -104,6 +105,29 @@ def test_private_bundle_round_trip_returns_only_non_sensitive_receipt(tmp_path):
     assert receipt.guidance_input_status == "PRIVATE_ACTUAL_HUMAN_CONFIRMED"
     assert "cash_cny" not in receipt.as_policy()
     assert "holdings" not in encrypted.read_text(encoding="utf-8")
+
+
+def test_private_payload_is_validated_before_encryption(tmp_path):
+    repository, private_root, key_path = _paths(tmp_path)
+    encrypted = private_root / "from-payload.viportfolio"
+    receipt = encrypt_private_portfolio_payload(
+        _bundle().as_policy(),
+        encrypted,
+        key_path,
+        private_root=private_root,
+        repository_root=repository,
+    )
+
+    loaded, _ = load_private_portfolio_bundle(
+        encrypted, key_path, private_root=private_root, repository_root=repository
+    )
+    assert loaded == _bundle()
+    assert receipt.action == "no_order"
+    with pytest.raises(ValueError, match="payload must be an object"):
+        encrypt_private_portfolio_payload(
+            [], encrypted.with_name("bad.viportfolio"), key_path,
+            private_root=private_root, repository_root=repository,
+        )
 
 
 def test_private_input_rejects_repo_sync_roots_and_key_colocation(tmp_path):
