@@ -3,6 +3,9 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 from decimal import Decimal
 import json
+from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
@@ -153,3 +156,32 @@ def test_private_input_detects_tampering_wrong_key_and_overwrite(tmp_path):
         load_private_portfolio_bundle(
             encrypted, key_path, private_root=private_root, repository_root=repository
         )
+
+
+def test_private_input_cli_rejects_private_root_inside_repository(tmp_path):
+    repository, private_root, key_path = _paths(tmp_path)
+    encrypted = private_root / "portfolio.viportfolio"
+    encrypt_private_portfolio_bundle(
+        _bundle(), encrypted, key_path, private_root=private_root, repository_root=repository
+    )
+    script = Path(__file__).resolve().parents[1] / "scripts" / "verify_private_portfolio_input.py"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--encrypted",
+            str(encrypted),
+            "--key-file",
+            str(key_path),
+            "--private-root",
+            str(private_root),
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode != 0
+    assert "private_root must be separate from the repository" in completed.stderr
+    assert "cash_cny" not in completed.stderr
+    assert "holdings" not in completed.stderr

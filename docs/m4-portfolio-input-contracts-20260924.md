@@ -58,6 +58,18 @@ IPS 至少需要用户确认：
 M4 个性化验收。真实 IPS/组合只会在用户另行提供私有输入并完成对账后，才可进入后续人工
 复核流程。
 
+使用时只允许对已加密输入执行校验，命令只打印脱敏回执：
+
+```powershell
+python scripts/verify_private_portfolio_input.py `
+  --encrypted <private-root>\inputs\portfolio.viportfolio `
+  --key-file <key-outside-private-root>\portfolio.key `
+  --private-root <private-root> `
+  --forbidden-sync-root C:\Users\we\WPSDrive
+```
+
+该命令不会输出解密后的资产、持仓或 IPS 内容。
+
 ## 尚未实现
 
 - 私有数据的长期持久化/轮换/恢复运营流程和真实账户导入；
