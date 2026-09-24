@@ -97,6 +97,7 @@ jobs:
           tests/test_m5_human_review_reconciliation.py
           tests/test_m7_daily_workbook.py
           tests/test_wps_verifier_text_scans.py
+          tests/test_public_workbook_wps_audit.py
 
   postgres-integration:
     runs-on: ubuntu-latest
