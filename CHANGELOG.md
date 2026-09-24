@@ -1,5 +1,29 @@
 # Changelog
 
+## v2026.09.24-public-workbook-upload-record
+
+### Release Scope
+
+文档与版本记录提交：确认当前 `main` HEAD 已包含全部 18 个公开 Excel 工作簿，并补齐
+最终上传清单、SHA-256、WPS 云盘逐字节核对结果和本地不公开边界。本提交不修改任何
+Excel 字节、投资逻辑、数据库、服务器服务、调度或订单。
+
+### Upload Record
+
+- 18 个公开工作簿均已由 Git 跟踪并位于 `origin/main`；WPS 云盘同名公开副本与仓库
+  文件逐字节一致。
+- 最新 canonical 与 `M2候选_20260924` SHA-256 均为
+  `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+- 最新 M7 统一工作台候选 SHA-256 为
+  `829f743acc3f628e60bd9e210b196965865ad2306dea7e520d9f9d62b402d582`。
+- 不上传本地 WPS 回退件、checks/manifest/receipt、`runtime/`、密钥或 M3 中间替换页。
+
+### Acceptance Boundary
+
+- 状态边界不变：`M2=PENDING_HUMAN_REVIEW`，`M3/M4/M5=PARTIAL`，
+  `M6=NOT_STARTED`，`M7=PARTIAL`，全部候选 `action=no_order`。
+- 上传记录不是人工验收、估值正确、真实事件验证或实盘准入证明。
+
 ## v2026.09.24-m6-operational-control
 
 ### Release Scope
