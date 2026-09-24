@@ -107,6 +107,40 @@ _REJECTED_INGEST_STATUSES = frozenset(
     }
 )
 
+
+def _receipt_audit_fingerprint(
+    *,
+    receipt_id: str,
+    run_id: str,
+    batch_id: str,
+    stream_id: str,
+    namespace: str,
+    generated_at: datetime,
+    ingest_results: Sequence[EventIngestResult],
+    invalidations: Sequence[DependencyInvalidation],
+    checkpoint: TaskCheckpoint,
+    action: str,
+) -> str:
+    return _state_digest(
+        {
+            "receipt_id": receipt_id,
+            "run_id": run_id,
+            "batch_id": batch_id,
+            "stream_id": stream_id,
+            "namespace": namespace,
+            "generated_at": generated_at.isoformat(),
+            "ingest_results": [
+                item.as_policy() for item in ingest_results
+            ],
+            "invalidations": [
+                item.as_policy() for item in invalidations
+            ],
+            "checkpoint": checkpoint.as_policy(),
+            "action": action,
+        }
+    )
+
+
 @dataclass(frozen=True)
 class M5EventRunReceipt:
     receipt_id: str
@@ -212,6 +246,23 @@ class M5EventRunReceipt:
         )[:32]
         if self.receipt_id != expected_receipt_id:
             raise ValueError("Receipt id does not match its immutable payload")
+        matching_batch_records = tuple(
+            item
+            for item in self.state.batch_records
+            if item.receipt_id == self.receipt_id
+        )
+        if len(matching_batch_records) != 1:
+            raise ValueError("Receipt is missing its unique run-state batch record")
+        matching_record = matching_batch_records[0]
+        if (
+            matching_record.batch_id != self.batch_id
+            or matching_record.run_id != self.run_id
+            or matching_record.namespace != self.namespace
+            or matching_record.generated_at != self.generated_at
+            or matching_record.checkpoint_id != self.checkpoint.checkpoint_id
+            or matching_record.state_revision > self.state.revision
+        ):
+            raise ValueError("Receipt does not match its run-state batch record")
         object.__setattr__(
             self,
             "review_due",
@@ -232,6 +283,22 @@ class M5EventRunReceipt:
         )
         if matching_checkpoints != (self.checkpoint,):
             raise ValueError("Receipt checkpoint no longer matches its run state")
+        matching_batch_records = tuple(
+            item
+            for item in self.state.batch_records
+            if item.receipt_id == self.receipt_id
+        )
+        if len(matching_batch_records) != 1:
+            raise ValueError("Receipt is missing its unique run-state batch record")
+        matching_record = matching_batch_records[0]
+        if (
+            matching_record.receipt_audit_fingerprint is not None
+            and matching_record.receipt_audit_fingerprint
+            != self.audit_fingerprint()
+        ):
+            raise ValueError(
+                "Receipt audit fingerprint does not match its run-state batch record"
+            )
         self._verify_evidence_binding()
 
     def _verify_evidence_binding(self) -> None:
@@ -336,23 +403,17 @@ class M5EventRunReceipt:
         surrounding state.
         """
 
-        return _state_digest(
-            {
-                "receipt_id": self.receipt_id,
-                "run_id": self.run_id,
-                "batch_id": self.batch_id,
-                "stream_id": self.stream_id,
-                "namespace": self.namespace,
-                "generated_at": self.generated_at.isoformat(),
-                "ingest_results": [
-                    item.as_policy() for item in self.ingest_results
-                ],
-                "invalidations": [
-                    item.as_policy() for item in self.invalidations
-                ],
-                "checkpoint": self.checkpoint.as_policy(),
-                "action": self.action,
-            }
+        return _receipt_audit_fingerprint(
+            receipt_id=self.receipt_id,
+            run_id=self.run_id,
+            batch_id=self.batch_id,
+            stream_id=self.stream_id,
+            namespace=self.namespace,
+            generated_at=self.generated_at,
+            ingest_results=self.ingest_results,
+            invalidations=self.invalidations,
+            checkpoint=self.checkpoint,
+            action=self.action,
         )
 
     def to_artifact_payload(self) -> dict[str, Any]:
@@ -959,6 +1020,18 @@ def run_event_batch(
             receipt_id=receipt_id,
             checkpoint_id=committed.checkpoint.checkpoint_id,
             state_revision=next_revision,
+            receipt_audit_fingerprint=_receipt_audit_fingerprint(
+                receipt_id=receipt_id,
+                run_id=run_id,
+                batch_id=batch_id,
+                stream_id=working.state_key,
+                namespace=namespace,
+                generated_at=generated_at,
+                ingest_results=ingest_results,
+                invalidations=invalidations,
+                checkpoint=committed.checkpoint,
+                action=ACTION_NO_ORDER,
+            ),
         )
         next_state = M5EventRunState(
             state_key=working.state_key,

@@ -64,6 +64,7 @@ class M5EventBatchRecord:
     receipt_id: str
     checkpoint_id: str
     state_revision: int
+    receipt_audit_fingerprint: str | None = None
     action: str = ACTION_NO_ORDER
 
     def __post_init__(self) -> None:
@@ -111,6 +112,19 @@ class M5EventBatchRecord:
         )
         if self.state_revision < 1:
             raise ValueError("Batch state revision must be positive")
+        if self.receipt_audit_fingerprint is not None:
+            object.__setattr__(
+                self,
+                "receipt_audit_fingerprint",
+                _required_text(
+                    self.receipt_audit_fingerprint,
+                    "receipt_audit_fingerprint",
+                ).lower(),
+            )
+            if not _SHA256.fullmatch(self.receipt_audit_fingerprint):
+                raise ValueError(
+                    "Batch receipt audit fingerprint must be SHA-256 hex"
+                )
         expected_receipt_id = "m5-run-" + _digest(
             "run-receipt",
             self.run_id,
@@ -123,7 +137,7 @@ class M5EventBatchRecord:
             raise ValueError("Batch record must remain no_order")
 
     def as_policy(self) -> dict[str, Any]:
-        return {
+        payload = {
             "batch_id": self.batch_id,
             "run_id": self.run_id,
             "namespace": self.namespace,
@@ -134,6 +148,11 @@ class M5EventBatchRecord:
             "state_revision": self.state_revision,
             "action": self.action,
         }
+        if self.receipt_audit_fingerprint is not None:
+            payload["receipt_audit_fingerprint"] = (
+                self.receipt_audit_fingerprint
+            )
+        return payload
 
 
 @dataclass(frozen=True)
@@ -573,6 +592,14 @@ def m5_event_run_state_from_payload(payload: Mapping[str, Any]) -> M5EventRunSta
                 state_revision=_required_int(
                     item["state_revision"],
                     "state_revision",
+                ),
+                receipt_audit_fingerprint=(
+                    None
+                    if item.get("receipt_audit_fingerprint") is None
+                    else _required_text(
+                        item["receipt_audit_fingerprint"],
+                        "receipt_audit_fingerprint",
+                    )
                 ),
                 action=str(item.get("action", ACTION_NO_ORDER)),
             )

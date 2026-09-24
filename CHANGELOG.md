@@ -1,5 +1,45 @@
 # Changelog
 
+## v2026.09.24-m6-historical-ingest-rejection-view
+
+### Scope
+
+补齐 M6 离线运营的第一块历史证据聚合：历史被拒绝的 ingest verdict 不再依赖当前批次
+的 `HEALTHY` 状态展示。该批次仍只读、离线、`action=no_order`，不接生产数据库、
+调度、通知、Excel 发布或订单，也不改变 `M6=NOT_STARTED`。
+
+### Changes
+
+- 新增 `m6_historical_ingest_rejections.py` 和只读 CLI
+  `scripts/audit_m6_historical_ingest_rejections.py`。聚合以当前 M5 state 的
+  batch/checkpoint 历史为锚点，逐个重读 durable receipt 字节并验证严格 JSON、文件
+  名/receipt id、`receipt_sha256`、`audit_fingerprint`、内嵌 state/checkpoint 和
+  `no_order`。
+- 每个当前 state revision 必须有且仅有一份 receipt。缺失、重复、额外、跨 stream、
+  文件名不符、state rollback、过期/非前缀绑定和损坏收据全部失败关闭。
+- `M5EventBatchRecord` 新增可选 `receipt_audit_fingerprint`，保持旧 state 序列化兼容；
+  新 run receipt 必须与该字段一致。被拒 ingest 没有 event 时，单改 receipt 并重算
+  内部 Hash 也不能伪造历史拒绝项。
+- 聚合结果把历史拒绝与最新运行健康分开显示：后续 `HEALTHY` 不会清除历史
+  `FUTURE_REJECTED / CONFLICT_REJECTED / OBSERVED_TIME_REGRESSION_REJECTED`。
+- 当前输入强制 `SIMULATED`，输出明确 `SIMULATED_OFFLINE_ONLY`、真实运营计数 false；
+  本地文件字节 Hash 没有独立签名/WORM 锚点时，仅声明 `LOCAL_CONSISTENCY_ONLY`，
+  不冒充生产真实性。
+
+### Verification
+
+- 新增 `tests/test_m6_historical_ingest_rejections.py`：`10 passed`，覆盖三类拒绝、
+  后续 healthy 掩盖、重算内部 Hash 的伪造、缺收据、state rollback、重复 JSON key、
+  非预期文件、文件名错配、空历史和只读 CLI 无写入。
+- M5/M6 联合定向回归：`132 passed`。
+- 本地全量离线回归：`2541 passed, 5 skipped, 18 warnings, 0 failed`。
+
+### Residual Boundary
+
+receipt 文件仍是本地未签名制品；如果攻击者能同时重写 receipt 和最新 state，本地
+无外部锚点不能证明发布字节未变。该能力需要后续 M6 备份 manifest/WORM 或签名链，
+当前不得声称防篡改或运营就绪。
+
 ## v2026.09.24-m5-archive-pdf-rehash-and-workbook-bindings
 
 ### Scope

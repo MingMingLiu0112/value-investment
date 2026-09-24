@@ -2,6 +2,29 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M6 历史 ingest 拒绝聚合视图
+
+新增只读聚合入口 `scripts/audit_m6_historical_ingest_rejections.py`，解决后续完整扫描
+返回 `HEALTHY` 后历史 ingest 拒绝从当前 run health 消失的问题。
+
+- 从 durable M5 receipt 文件重新读取字节，严格解析 JSON，验证文件名/receipt id、
+  `receipt_sha256`、`audit_fingerprint`、内嵌 state/checkpoint 和
+  `no_order` 边界。
+- 最新 state 的 `batch_records`/checkpoints 是链锚点；每个历史 revision 必须有且仅有
+  一份 receipt，batch/run/namespace/time/checkpoint/request fingerprint 必须一致。
+- 新增 batch record `receipt_audit_fingerprint`，默认保持旧状态序列化兼容；新 receipt
+  必须与该字段一致。这样 rejected result 没有 event 时，单改 receipt 并重算内部 Hash
+  也不能伪造历史拒绝。
+- 损坏、重复、额外、缺失、跨 stream、state rollback 或绑定不符均失败关闭；后续
+  `HEALTHY` 不能清除历史 `FUTURE_REJECTED / CONFLICT_REJECTED /
+  OBSERVED_TIME_REGRESSION_REJECTED`，聚合状态保持 `ATTENTION`。
+- 输出固定 `action=no_order`，明确 `SIMULATED_OFFLINE_ONLY`、真实运营计数 false 和
+  `LOCAL_CONSISTENCY_ONLY` 真实性边界；读取入口不实例化可写 store，不接数据库、
+  调度、通知、Excel 发布或订单。
+- 新增定向回归 `10 passed`；M5/M6 联合回归 `132 passed`；全量离线回归
+  `2541 passed, 5 skipped, 18 warnings, 0 failed`。M6 仍为
+  `PREFLIGHT_DONE / operationally NOT_STARTED / PENDING_AUTHORIZATION`。
+
 ## 2026-09-24 M5 归档 PDF 字节复核与回填关系字段
 
 M5 人工材料性入口不再把队列 JSON 中的 PDF Hash 当作信任根。

@@ -77,3 +77,41 @@ M7 统一工作台候选可以继续完善只读展示，但不能用展示层�
 
 `test_m6_operational_control.py` 为 `9 passed`，M6 control + readiness 联合回归为
 `18 passed`。本批仍只收紧离线合同，不执行任何生产动作。
+
+## 2026-09-24 历史 ingest 拒绝聚合视图
+
+新增只读入口：
+
+```powershell
+.\.m1-postgres-venv\Scripts\python.exe scripts\audit_m6_historical_ingest_rejections.py `
+  --state-key <M5 stream_id> `
+  --state-root <M5 state JSON 目录> `
+  --receipt-root <M5 durable receipt 目录>
+```
+
+该视图以最新 M5 state 的 `batch_records` 和 committed checkpoints 为链锚点，逐条重新读取
+durable receipt 文件字节并验证：
+
+- 文件名与 `receipt_id` 的 SHA-256 映射一致；JSON 必须是严格 UTF-8、无重复 key，且大小
+  有上限；
+- `receipt_sha256`、`audit_fingerprint`、内嵌 state/checkpoint 和 receipt id 重新解析并
+  往返验证；
+- receipt 的 `batch_id`、`run_id`、`namespace`、`generated_at`、`checkpoint_id` 与最新
+  state 中唯一的 batch record 完全一致；
+- 新收到的 receipt 必须与 batch record 保存的 `receipt_audit_fingerprint` 一致，避免在
+  被拒 ingest 没有 event 的情况下单改 receipt 并重算内部 Hash 伪造拒绝项；
+- state 中每个历史 revision 都必须有且仅有一份 receipt；缺失、重复、额外、跨 stream、
+  损坏、rollback 或伪造绑定全部失败关闭。
+
+输出固定为 `action=no_order`。历史拒绝与当前运行健康分开呈现：后续 receipt 可以是
+`HEALTHY`，但任何历史 `FUTURE_REJECTED`、`CONFLICT_REJECTED` 或
+`OBSERVED_TIME_REGRESSION_REJECTED` 仍使聚合状态为 `ATTENTION`。
+
+当前所有 M5 durable receipt 输入都强制为 `SIMULATED`。视图明确输出
+`evidence_class=SIMULATED_OFFLINE_ONLY`，真实运营会话数和真实事件数均固定为 false，
+不得用于 M6 授权或验收计数。文件字节 Hash 会在读取时重算，但仓库目前没有独立签名或
+外部 WORM manifest，因此真实性边界只能声明为 `LOCAL_CONSISTENCY_ONLY`；这不能被写成
+防篡改或生产就绪。
+
+本入口不实例化可写 M5 store、不连接 PostgreSQL、不创建 scheduler、不发送通知、不发布
+Excel，也不产生订单。M6 仍为 `PREFLIGHT_DONE / operationally NOT_STARTED`。
