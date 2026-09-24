@@ -9,6 +9,7 @@ from value_investment_agent.m3_historical_research_replay import (
     ACTION_NO_ORDER,
     REPLAY_NAMESPACE,
     REPLAY_SCHEMA,
+    RULE_REGISTRATION_CONTEMPORANEOUS,
     HistoricalEvidenceReference,
     HistoricalResearchReplay,
     HistoricalRuleBinding,
@@ -143,3 +144,55 @@ def test_historical_replay_policy_does_not_contain_order_fields():
     assert "position_size" not in text
     assert "order_quantity" not in text
     assert "sell" not in text.lower()
+
+
+def test_retrospective_rule_must_mark_future_rule_version():
+    with pytest.raises(ValueError, match="must mark future_rule_version_used"):
+        _replay(future_rule_version_used=False)
+
+
+def test_contemporaneous_rule_cannot_be_registered_after_replay_date():
+    rule = HistoricalRuleBinding(
+        rule_version="contemporaneous-v1",
+        model_scope="relative_pe_research_only",
+        registered_at=datetime(2024, 6, 22, tzinfo=CN_TZ),
+        rule_registration_status=RULE_REGISTRATION_CONTEMPORANEOUS,
+        entry_margin=Decimal("0.30"),
+        research_quantity=100,
+        exit_rule="close exceeds that day's median-relative value",
+    )
+
+    with pytest.raises(ValueError, match="cannot postdate the replay date"):
+        _replay(rule=rule, future_rule_version_used=False)
+
+
+def test_contemporaneous_rule_rejects_future_rule_flag():
+    rule = HistoricalRuleBinding(
+        rule_version="contemporaneous-v1",
+        model_scope="relative_pe_research_only",
+        registered_at=datetime(2024, 6, 20, tzinfo=CN_TZ),
+        rule_registration_status=RULE_REGISTRATION_CONTEMPORANEOUS,
+        entry_margin=Decimal("0.30"),
+        research_quantity=100,
+        exit_rule="close exceeds that day's median-relative value",
+    )
+
+    with pytest.raises(ValueError, match="cannot use a future rule version"):
+        _replay(rule=rule, future_rule_version_used=True)
+
+
+def test_contemporaneous_rule_before_replay_date_is_valid():
+    rule = HistoricalRuleBinding(
+        rule_version="contemporaneous-v1",
+        model_scope="relative_pe_research_only",
+        registered_at=datetime(2024, 6, 20, tzinfo=CN_TZ),
+        rule_registration_status=RULE_REGISTRATION_CONTEMPORANEOUS,
+        entry_margin=Decimal("0.30"),
+        research_quantity=100,
+        exit_rule="close exceeds that day's median-relative value",
+    )
+
+    replay = _replay(rule=rule, future_rule_version_used=False)
+
+    assert replay.rule.is_retrospective_rule is False
+    assert replay.future_rule_version_used is False

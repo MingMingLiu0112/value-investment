@@ -1,5 +1,28 @@
 # Changelog
 
+## v2026.09.24-m3-historical-rule-version-consistency
+
+### Scope
+
+收紧 M3 Historical Research Replay 的规则版本边界。此前 `HistoricalRuleBinding`
+允许任意登记状态，且 `future_rule_version_used` 可以不与登记时间和 replay 日期
+一致，未来调用可能把追溯规则误标为严格同期 PIT。
+
+### Changes
+
+- `HistoricalRuleBinding` 只接受 `RETROSPECTIVE_RESEARCH_EXTENSION` 或
+  `CONTEMPORANEOUS_RULE`。
+- 追溯规则必须标记 `future_rule_version_used=true`；同期规则不得标记该字段。
+- 同期规则的登记日不能晚于 replay 日期；日期统一按 A 股时区 UTC+8 折算。
+- 新增正反回归测试，覆盖追溯规则误标、同期规则未来登记和未来规则误标。
+
+### Verification
+
+- 定向回归 `23 passed`；全量离线回归 `2365 passed、6 skipped、0 failed`。
+- 真实固定 Moutai 2024-06-21 输入重放成功，仍为 `WAIT`、
+  `future_rule_version_used=true`、`action=no_order`。
+- `action=no_order`；未修改 canonical、冻结收据或生产服务。
+
 ## v2026.09.24-readme-goal-and-production-boundary-alignment
 
 ### Scope

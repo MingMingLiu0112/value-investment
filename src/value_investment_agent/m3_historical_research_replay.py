@@ -8,7 +8,7 @@ contemporaneously registered rule.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 import hashlib
 import json
@@ -20,6 +20,16 @@ from .investment_decision import ACTION_NO_ORDER
 
 REPLAY_SCHEMA = "m3-historical-research-replay-v1"
 REPLAY_NAMESPACE = "HISTORICAL_RESEARCH_REPLAY"
+CN_TZ = timezone(timedelta(hours=8))
+
+RULE_REGISTRATION_CONTEMPORANEOUS = "CONTEMPORANEOUS_RULE"
+RULE_REGISTRATION_RETROSPECTIVE = "RETROSPECTIVE_RESEARCH_EXTENSION"
+RULE_REGISTRATION_STATUSES = frozenset(
+    {
+        RULE_REGISTRATION_CONTEMPORANEOUS,
+        RULE_REGISTRATION_RETROSPECTIVE,
+    }
+)
 
 OUTCOME_WAIT = "WAIT"
 OUTCOMES = frozenset(
@@ -225,6 +235,8 @@ class HistoricalRuleBinding:
                 "rule_registration_status",
             ),
         )
+        if self.rule_registration_status not in RULE_REGISTRATION_STATUSES:
+            raise ValueError("Unknown historical rule registration status")
         object.__setattr__(
             self, "entry_margin", _decimal(self.entry_margin, "entry_margin")
         )
@@ -236,7 +248,7 @@ class HistoricalRuleBinding:
 
     @property
     def is_retrospective_rule(self) -> bool:
-        return self.rule_registration_status == "RETROSPECTIVE_RESEARCH_EXTENSION"
+        return self.rule_registration_status == RULE_REGISTRATION_RETROSPECTIVE
 
     def as_policy(self) -> dict[str, Any]:
         return {
@@ -308,8 +320,21 @@ class HistoricalResearchReplay:
         )
         if self.future_facts_used:
             raise ValueError("Historical replay cannot use future facts")
-        if not self.rule.is_retrospective_rule and self.rule.registered_at > self.generated_at:
-            raise ValueError("Contemporaneous rule registration cannot be in the future")
+        rule_as_of = self.rule.registered_at.astimezone(CN_TZ).date()
+        if self.rule.is_retrospective_rule:
+            if not self.future_rule_version_used:
+                raise ValueError(
+                    "Retrospective rule replay must mark future_rule_version_used"
+                )
+        else:
+            if self.future_rule_version_used:
+                raise ValueError(
+                    "Contemporaneous rule replay cannot use a future rule version"
+                )
+            if rule_as_of > self.replay_date:
+                raise ValueError(
+                    "Contemporaneous rule registration cannot postdate the replay date"
+                )
 
     @property
     def replay_sha256(self) -> str:

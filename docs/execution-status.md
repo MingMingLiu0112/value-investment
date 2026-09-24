@@ -2,6 +2,20 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M3 历史规则版本一致性加固
+
+人工审查手册要求 Historical Research Replay 的规则、事实、报价和估值分别版本化，
+且不得把追溯注册规则冒充严格同期 PIT。本轮在展示层已有 v2 纠偏之外，补上领域合同
+级约束：
+
+- `HistoricalRuleBinding` 只接受 `RETROSPECTIVE_RESEARCH_EXTENSION` 或
+  `CONTEMPORANEOUS_RULE` 两种登记状态。
+- 追溯规则必须显式标记 `future_rule_version_used=true`，同期规则不得误标为未来规则。
+- 同期规则登记日不得晚于 replay 日期，日期统一按 UTC+8 折算，避免时区边界误判。
+- 固定 Moutai 2024-06-21 输入重放仍为 `WAIT`、`future_rule_version_used=true`、
+  `action=no_order`，不把该案例升级为 strict contemporaneous-rule PIT。
+- 定向回归 `23 passed`；全量离线回归 `2365 passed、6 skipped、0 failed`。
+
 ## 2026-09-24 当前 HEAD 跨阶段复核与人工交接
 
 按当前 HEAD 重新计算 M2/M3/M6 只读验收器。M2 仍为 AC1-AC7/AC11 `DONE`，
