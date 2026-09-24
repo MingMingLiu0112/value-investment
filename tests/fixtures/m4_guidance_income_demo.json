@@ -102,7 +102,13 @@
       "liquidity_profile": "LIQUID",
       "industry": "耐用制造",
       "cyclical": false,
-      "evidence_refs": [{"id": "sim-candidate-000333"}]
+      "evidence_refs": [{"id": "sim-candidate-000333"}],
+      "decision_review_id": "sim-decision-review-000333",
+      "decision_review_sha256": "310f252767e7b103fc8bc8412b00836b0a8aff269211c75df792aba90eb6a0e2",
+      "decision_status": "MANUAL_ADD_REVIEW",
+      "decision_as_of": "2026-09-22",
+      "price_attractiveness_status": "RESEARCH_ATTRACTIVE",
+      "decision_binding_required": true
     },
     "601088": {
       "symbol": "601088",
@@ -117,7 +123,13 @@
       "liquidity_profile": "LIQUID",
       "industry": "能源",
       "cyclical": true,
-      "evidence_refs": [{"id": "sim-candidate-601088"}]
+      "evidence_refs": [{"id": "sim-candidate-601088"}],
+      "decision_review_id": "sim-decision-review-601088",
+      "decision_review_sha256": "87d187c86e27662742df212727da77e69819b896f7baabc1c21853790573e7a2",
+      "decision_status": "MANUAL_BUY_REVIEW",
+      "decision_as_of": "2026-09-22",
+      "price_attractiveness_status": "RESEARCH_ATTRACTIVE",
+      "decision_binding_required": true
     },
     "600036": {
       "symbol": "600036",
@@ -132,7 +144,13 @@
       "liquidity_profile": "LIQUID",
       "industry": "工业",
       "cyclical": false,
-      "evidence_refs": [{"id": "sim-candidate-600036"}]
+      "evidence_refs": [{"id": "sim-candidate-600036"}],
+      "decision_review_id": "sim-decision-review-600036",
+      "decision_review_sha256": "fbbc201b516073595e863c1576d5498973114b39a79a061ea59a59e4c1a4fbbd",
+      "decision_status": "MANUAL_BUY_REVIEW",
+      "decision_as_of": "2026-09-22",
+      "price_attractiveness_status": "RESEARCH_ATTRACTIVE",
+      "decision_binding_required": true
     }
   },
   "security_projections": {

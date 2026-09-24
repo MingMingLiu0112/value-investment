@@ -2,6 +2,29 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M4 BUY/ADD 决策绑定缺口收紧
+
+复核 2026-09-24 人工审查手册第 22、23、41 节时发现，`PositionCandidateInput`
+虽然已经提供 M3 binding 字段，但 `decision_binding_required=False` 时仍允许
+`BUY_REVIEW` / `ADD_REVIEW` 在满足手工布尔前置后产生新增容量。该路径可以由错误
+adapter 绕过真实 `InvestmentDecisionReview`，与 Workstream E 冲突。本轮收紧为
+fail-closed：
+
+- `BUY_REVIEW` 必须绑定 `MANUAL_BUY_REVIEW`，`ADD_REVIEW` 必须绑定
+  `MANUAL_ADD_REVIEW`；未绑定的正向 intent 在领域对象构造阶段直接拒绝。
+- 两个正向 intent 的价格状态必须是 `RESEARCH_ATTRACTIVE`；
+  `WAITING_FOR_BETTER_PRICE`、`KEY_OBSERVATION`、`NOT_ASSESSABLE` 均不能进入
+  M4 容量层。
+- `decision_status` 只接受正式 `DECISION_STATUSES`，避免任意字符串绕过
+  `POSITIVE_REVIEW_STATUSES`。
+- `allows_new_buy_capacity()` 不再因 `decision_binding_required=False` 放行；
+  模拟 M4 fixture 的正向候选同步改为显式 M3 binding，HOLD 仍可无绑定展示。
+- 新增未绑定 BUY/ADD、状态不匹配、非 `RESEARCH_ATTRACTIVE` 价格三类反例测试。
+
+定向回归 `51 passed`；仓库内隔离 basetemp 全量离线回归
+`2369 passed、6 skipped、0 failed、18 warnings`。
+`action=no_order`；未修改 canonical、冻结研究证据、M1/M2 历史产物或生产服务。
+
 ## 2026-09-24 M3 历史规则版本一致性加固
 
 人工审查手册要求 Historical Research Replay 的规则、事实、报价和估值分别版本化，

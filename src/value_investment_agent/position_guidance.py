@@ -21,6 +21,7 @@ from .investment_decision import (
     CONFIDENCE_LOW,
     CONFIDENCE_MEDIUM,
     CONFIDENCE_VALUES,
+    DECISION_STATUSES,
     POSITIVE_REVIEW_STATUSES,
     STATUS_HOLD,
     STATUS_MANUAL_ADD_REVIEW,
@@ -41,7 +42,10 @@ from .portfolio_risk import (
     LIQUIDITY_UNKNOWN,
     LIQUIDITY_PROFILES,
 )
-from .price_attractiveness import PRICE_ATTRACTIVENESS_STATUSES
+from .price_attractiveness import (
+    PRICE_ATTRACTIVENESS_STATUSES,
+    STATUS_RESEARCH_ATTRACTIVE,
+)
 
 
 SCHEMA_VERSION = "m4-position-guidance-v1"
@@ -349,6 +353,11 @@ class PositionCandidateInput:
             "decision_status",
             _optional_text(self.decision_status, "decision_status"),
         )
+        if (
+            self.decision_status is not None
+            and self.decision_status not in DECISION_STATUSES
+        ):
+            raise ValueError("Unknown candidate decision status")
         if self.decision_as_of is not None:
             object.__setattr__(
                 self, "decision_as_of", _date(self.decision_as_of, "decision_as_of")
@@ -365,6 +374,23 @@ class PositionCandidateInput:
             self.price_attractiveness_status not in PRICE_ATTRACTIVENESS_STATUSES
         ):
             raise ValueError("Unknown candidate price attractiveness status")
+        if self.review_intent in {INTENT_BUY, INTENT_ADD}:
+            if not self.decision_binding_required:
+                raise ValueError(
+                    "BUY/ADD position candidates require an M3 decision binding"
+                )
+            expected_status = {
+                INTENT_BUY: STATUS_MANUAL_BUY_REVIEW,
+                INTENT_ADD: STATUS_MANUAL_ADD_REVIEW,
+            }[self.review_intent]
+            if self.decision_status != expected_status:
+                raise ValueError(
+                    f"{self.review_intent} requires decision status {expected_status}"
+                )
+            if self.price_attractiveness_status != STATUS_RESEARCH_ATTRACTIVE:
+                raise ValueError(
+                    "BUY/ADD position candidates require RESEARCH_ATTRACTIVE price status"
+                )
         if self.decision_binding_required and not self.has_valid_decision_binding():
             raise ValueError("Decision-bound candidates require complete M3 binding")
         if (
@@ -393,6 +419,10 @@ class PositionCandidateInput:
         )
 
     def preconditions_passed(self) -> bool:
+        requires_decision_binding = (
+            self.review_intent in {INTENT_BUY, INTENT_ADD}
+            or self.decision_binding_required
+        )
         return all(
             (
                 self.research_gate_passed,
@@ -401,7 +431,7 @@ class PositionCandidateInput:
                 self.model_valid,
                 self.price_assessable,
                 not self.thesis_breakers,
-                not self.decision_binding_required or self.has_valid_decision_binding(),
+                not requires_decision_binding or self.has_valid_decision_binding(),
             )
         )
 
@@ -410,8 +440,6 @@ class PositionCandidateInput:
             return False
         if not self.preconditions_passed():
             return False
-        if not self.decision_binding_required:
-            return True
         return self.decision_status in POSITIVE_REVIEW_STATUSES
 
     def as_policy(self) -> dict[str, Any]:

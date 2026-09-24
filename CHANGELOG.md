@@ -1,5 +1,28 @@
 # Changelog
 
+## v2026.09.24-m4-positive-capacity-decision-binding
+
+### Scope
+
+收紧 M4 `PositionCandidateInput` 对 M3 `InvestmentDecisionReview` 的强绑定。
+此前未设置 `decision_binding_required=True` 的 `BUY_REVIEW` / `ADD_REVIEW`
+候选仍可依靠手工布尔前置产生新增容量，可能绕过真实 M3 决策制品。
+
+### Changes
+
+- `BUY_REVIEW` 只能绑定 `MANUAL_BUY_REVIEW`，`ADD_REVIEW` 只能绑定
+  `MANUAL_ADD_REVIEW`；未绑定正向 intent 直接拒绝。
+- 正向 intent 必须携带 `RESEARCH_ATTRACTIVE` 价格状态。
+- `decision_status` 校验进入正式 `DECISION_STATUSES` 集合。
+- `allows_new_buy_capacity()` 删除未绑定时的无条件放行分支。
+- 模拟 M4 guidance fixture 为三条 BUY/ADD 候选补齐显式 binding；新增反例测试。
+
+### Verification
+
+- 定向回归 `51 passed`。
+- 仓库内隔离 basetemp 全量离线回归 `2369 passed、6 skipped、0 failed`。
+- `action=no_order`；未修改 canonical、冻结研究证据、M1/M2 历史产物或生产服务。
+
 ## v2026.09.24-m3-historical-rule-version-consistency
 
 ### Scope

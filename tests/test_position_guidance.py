@@ -57,7 +57,10 @@ from value_investment_agent.position_guidance import (
     PositionTierPolicy,
     build_position_guidance,
 )
-from value_investment_agent.price_attractiveness import STATUS_RESEARCH_ATTRACTIVE
+from value_investment_agent.price_attractiveness import (
+    STATUS_RESEARCH_ATTRACTIVE,
+    STATUS_WAITING_FOR_BETTER_PRICE,
+)
 
 
 AS_OF = date(2026, 9, 22)
@@ -184,10 +187,14 @@ def _decision_bound_candidate(
     status: str,
     intent: str,
     symbol: str = "600519",
+    industry: str = "白酒",
+    cyclical: bool = False,
 ) -> PositionCandidateInput:
     return _candidate(
         symbol=symbol,
         intent=intent,
+        industry=industry,
+        cyclical=cyclical,
         decision_binding_required=True,
         decision_review_id=f"{symbol}-decision-review-v1",
         decision_review_sha256="b" * 64,
@@ -276,10 +283,37 @@ def test_non_positive_decision_statuses_never_create_new_buy_capacity(
 ):
     candidate = _decision_bound_candidate(
         status=decision_status,
-        intent=INTENT_BUY,
+        intent=INTENT_HOLD,
     )
 
     assert candidate.allows_new_buy_capacity() is False
+
+
+@pytest.mark.parametrize("intent", [INTENT_BUY, INTENT_ADD])
+def test_unbound_positive_intent_fails_closed(intent: str):
+    with pytest.raises(ValueError, match="M3 decision binding"):
+        _candidate(intent=intent)
+
+
+def test_buy_candidate_requires_matching_positive_decision_artifact():
+    with pytest.raises(ValueError, match="requires decision status MANUAL_BUY_REVIEW"):
+        _decision_bound_candidate(
+            status=STATUS_MANUAL_ADD_REVIEW,
+            intent=INTENT_BUY,
+        )
+
+
+def test_buy_candidate_requires_research_attractive_price():
+    with pytest.raises(ValueError, match="RESEARCH_ATTRACTIVE price status"):
+        _candidate(
+            intent=INTENT_BUY,
+            decision_binding_required=True,
+            decision_review_id="600519-decision-review-v1",
+            decision_review_sha256="b" * 64,
+            decision_status=STATUS_MANUAL_BUY_REVIEW,
+            decision_as_of=AS_OF,
+            price_attractiveness_status=STATUS_WAITING_FOR_BETTER_PRICE,
+        )
 
 
 def test_hold_decision_never_creates_new_buy_capacity():
@@ -326,13 +360,15 @@ def test_known_thesis_breaker_never_produces_positive_capacity():
 def test_shared_budget_is_conserved_instead_of_allocated_to_each_candidate():
     candidates = {
         "600519": _candidate(symbol="600519"),
-        "000333": _candidate(
+        "000333": _decision_bound_candidate(
             symbol="000333",
+            status=STATUS_MANUAL_BUY_REVIEW,
             intent=INTENT_BUY,
             industry="耐用制造",
         ),
-        "601088": _candidate(
+        "601088": _decision_bound_candidate(
             symbol="601088",
+            status=STATUS_MANUAL_BUY_REVIEW,
             intent=INTENT_BUY,
             industry="能源",
             cyclical=True,
@@ -358,7 +394,12 @@ def test_existing_exposure_at_ceiling_stops_adds():
             cash=Decimal("100000"),
             holdings=(_holding(market_value=Decimal("150000")),),
         ),
-        candidates={"600519": _candidate(intent=INTENT_ADD)},
+        candidates={
+            "600519": _decision_bound_candidate(
+                status=STATUS_MANUAL_ADD_REVIEW,
+                intent=INTENT_ADD,
+            )
+        },
     )
     line = result.lines()[0]
 
