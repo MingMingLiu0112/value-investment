@@ -242,6 +242,52 @@ def test_public_history_rejects_actual_namespace():
         )
 
 
+def test_public_history_rejects_journal_bound_to_another_entry():
+    payloads = _journal_payloads()
+    payloads[0]["entry_id"] = f"{SYMBOL}-other-entry-v1"
+
+    with pytest.raises(ValueError, match="does not match the frozen entry"):
+        build_history_chain_from_payloads(
+            entry_payload=_entry_payload(),
+            journal_payloads=payloads,
+        )
+
+
+def test_public_history_rejects_duplicate_journal_ids():
+    payloads = _journal_payloads()
+    payloads[1]["journal_id"] = payloads[0]["journal_id"]
+
+    with pytest.raises(ValueError, match="journal ids must be unique"):
+        build_history_chain_from_payloads(
+            entry_payload=_entry_payload(),
+            journal_payloads=payloads,
+        )
+
+
+def test_public_history_rejects_correction_that_precedes_predecessor():
+    payloads = _journal_payloads()
+    payloads[2]["previous_journal_id"] = payloads[1]["journal_id"]
+    payloads[2]["decision_at"] = "2026-09-10T02:05:00+00:00"
+
+    with pytest.raises(ValueError, match="cannot precede its predecessor"):
+        build_history_chain_from_payloads(
+            entry_payload=_entry_payload(),
+            journal_payloads=payloads,
+        )
+
+
+def test_public_history_rejects_duplicate_consistency_review_ids():
+    payloads = _consistency_payloads()
+    payloads[1]["review_id"] = payloads[0]["review_id"]
+
+    with pytest.raises(ValueError, match="review ids must be unique"):
+        build_history_chain_from_payloads(
+            entry_payload=_entry_payload(),
+            journal_payloads=_journal_payloads(),
+            consistency_payloads=payloads,
+        )
+
+
 def test_workbook_displays_simulated_chain_without_order_or_position_columns():
     workbook = build_history_workbook(_collection(), security_names=NAMES)
 

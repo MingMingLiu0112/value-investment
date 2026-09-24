@@ -1,5 +1,28 @@
 # Changelog
 
+## v2026.09.24-m3-journal-chain-integrity
+
+### Scope
+
+Checkpoint B 等待人工复核期间，收紧 M3 Decision Journal 与公开历史链的完整性
+合同。不重新生成冻结候选，不签收 Checkpoint B。
+
+### Changes
+
+- `DecisionJournalEntry` 强制人工决定与复核状态同向，并禁止 REJECT/DEFER/
+  CANCEL/HOLD 附带确认价。
+- `DecisionHistoryChain` 拒绝重复 Journal/Consistency ID、Journal 绑定其他
+  Entry、未知前任及早于前任的更正。
+- 新增五个反向测试，复用现有 GitHub Core Research Gate。
+
+### Verification
+
+- M3 定向回归 `53 passed`。
+- GitHub Core Research Gate 同清单本地运行
+  `549 passed、4 skipped、0 failed`。
+- `compileall` 与 `git diff --check` 通过。
+- Checkpoint B 保持 `PENDING_HUMAN_REVIEW`；`action=no_order`。
+
 ## v2026.09.24-m5-600519-reconciliation-intake
 
 ### Scope

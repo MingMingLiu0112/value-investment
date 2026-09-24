@@ -466,6 +466,35 @@ def test_journal_is_append_only_and_confirmed_decisions_need_entry():
     assert rejected.is_correction() is False
 
 
+def test_journal_rejects_decision_status_and_confirmed_price_contradictions():
+    common = {
+        "journal_id": f"{SYMBOL}-journal-v1",
+        "symbol": SYMBOL,
+        "decision_at": CONFIRMED_AT,
+        "review_id": f"{SYMBOL}-decision-v1",
+        "system_reason": "System reason",
+        "human_reason": "Human reason",
+        "entry_id": _entry().entry_id,
+        "namespace": "simulated",
+    }
+
+    with pytest.raises(ValueError, match="does not match review status"):
+        DecisionJournalEntry(
+            **common,
+            review_status=STATUS_MANUAL_ADD_REVIEW,
+            human_decision=HUMAN_CONFIRM_BUY,
+            confirmed_price=Decimal("20"),
+        )
+
+    with pytest.raises(ValueError, match="cannot confirm a price"):
+        DecisionJournalEntry(
+            **common,
+            review_status=STATUS_HOLD,
+            human_decision=HUMAN_REJECT,
+            confirmed_price=Decimal("20"),
+        )
+
+
 def test_consistency_status_is_conservative_and_validated():
     neutral = ConsistencyComparison(
         dimension=DIMENSION_THESIS,

@@ -445,6 +445,44 @@ class DecisionHistoryChain:
             raise ValueError("Decision history entry symbol does not match")
         if self.entry.entry_type != PUBLIC_NAMESPACE:
             raise ValueError("Public decision history must be simulated")
+        journal_by_id: dict[str, DecisionJournalLine] = {}
+        for journal in self.journals:
+            if journal.symbol != self.symbol or journal.namespace != PUBLIC_NAMESPACE:
+                raise ValueError(
+                    "Decision history journal must match symbol and simulation namespace"
+                )
+            if journal.journal_id in journal_by_id:
+                raise ValueError("Decision history journal ids must be unique")
+            if journal.entry_id is not None and journal.entry_id != self.entry.entry_id:
+                raise ValueError(
+                    "Decision history journal entry id does not match the frozen entry"
+                )
+            if (
+                journal.previous_journal_id is not None
+                and journal.previous_journal_id not in journal_by_id
+            ):
+                raise ValueError(
+                    "Decision history journal correction has an unknown predecessor"
+                )
+            if journal.previous_journal_id is not None:
+                predecessor = journal_by_id[journal.previous_journal_id]
+                if predecessor.decision_at > journal.decision_at:
+                    raise ValueError(
+                        "Decision history journal correction cannot precede its predecessor"
+                    )
+            journal_by_id[journal.journal_id] = journal
+        review_ids: set[str] = set()
+        for review in self.consistency_reviews:
+            if review.review_id in review_ids:
+                raise ValueError("Decision history consistency review ids must be unique")
+            review_ids.add(review.review_id)
+        if any(
+            review.symbol != self.symbol or review.entry_id != self.entry.entry_id
+            for review in self.consistency_reviews
+        ):
+            raise ValueError(
+                "Decision history consistency card must match symbol and entry"
+            )
         object.__setattr__(
             self,
             "journals",
@@ -455,27 +493,6 @@ class DecisionHistoryChain:
             "consistency_reviews",
             tuple(sorted(self.consistency_reviews, key=lambda item: (item.as_of, item.review_id))),
         )
-        journal_ids: set[str] = set()
-        for journal in self.journals:
-            if journal.symbol != self.symbol or journal.namespace != PUBLIC_NAMESPACE:
-                raise ValueError(
-                    "Decision history journal must match symbol and simulation namespace"
-                )
-            if (
-                journal.previous_journal_id is not None
-                and journal.previous_journal_id not in journal_ids
-            ):
-                raise ValueError(
-                    "Decision history journal correction has an unknown predecessor"
-                )
-            journal_ids.add(journal.journal_id)
-        if any(
-            review.symbol != self.symbol or review.entry_id != self.entry.entry_id
-            for review in self.consistency_reviews
-        ):
-            raise ValueError(
-                "Decision history consistency card must match symbol and entry"
-            )
 
     @property
     def namespace(self) -> str:

@@ -14,7 +14,11 @@
   - `ConsistencyReviewCard`：逐维度比较 Original 与 Current，区分未变化、
     加强、削弱、兑现和破坏。
   - `DecisionHistoryChain`：校验证券、Entry、日志前驱和一致性引用；公开链
-    只接受 `simulated`。
+    只接受 `simulated`。同链日志与一致性 ID 必须唯一，Journal 的 Entry 引用
+    必须指向冻结 Entry，更正前任必须存在且不早于当前日志。
+- `src/value_investment_agent/investment_decision.py`
+  - `DecisionJournalEntry` 对人工确认决定和复核状态做同向绑定，非交易决定
+    不能携带确认价。
 - `src/value_investment_agent/m3_history_workbook.py`
   - 5 页独立候选：`00_历史链`、`01_原Entry`、`02_决策日志`、
     `03_一致性复核`、`04_来源哈希`。
@@ -32,6 +36,8 @@
 ## 验证
 
 - 定向回归：4 passed。
+- M3 日志链完整性反向回归：5 passed；新增重复 ID、错 Entry、乱序更正与
+  决定/状态矛盾四类。
 - M3/M4 相关定向回归：40 passed。
 - 示例候选：5 页、1 条模拟链、`action=no_order`，字节数 12,121。
 - 候选 SHA-256：

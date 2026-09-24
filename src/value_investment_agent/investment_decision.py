@@ -106,6 +106,23 @@ HUMAN_DECISIONS = frozenset(
     }
 )
 
+CONFIRM_DECISION_REVIEW_STATUS = {
+    HUMAN_CONFIRM_BUY: STATUS_MANUAL_BUY_REVIEW,
+    HUMAN_CONFIRM_ADD: STATUS_MANUAL_ADD_REVIEW,
+    HUMAN_CONFIRM_HOLD: STATUS_HOLD,
+    HUMAN_CONFIRM_REDUCE: STATUS_MANUAL_REDUCE_REVIEW,
+    HUMAN_CONFIRM_EXIT: STATUS_MANUAL_EXIT_REVIEW,
+}
+
+TRANSACTION_HUMAN_DECISIONS = frozenset(
+    {
+        HUMAN_CONFIRM_BUY,
+        HUMAN_CONFIRM_ADD,
+        HUMAN_CONFIRM_REDUCE,
+        HUMAN_CONFIRM_EXIT,
+    }
+)
+
 CONSISTENCY_CONSISTENT = "CONSISTENT"
 CONSISTENCY_WEAKENED = "WEAKENED"
 CONSISTENCY_BROKEN = "BROKEN"
@@ -374,31 +391,27 @@ class DecisionJournalEntry:
             raise ValueError("Journal review status is unknown")
         if self.human_decision not in HUMAN_DECISIONS:
             raise ValueError("Journal human decision is unknown")
+        required_status = CONFIRM_DECISION_REVIEW_STATUS.get(self.human_decision)
+        if required_status is not None and self.review_status != required_status:
+            raise ValueError("Journal human decision does not match review status")
         if self.namespace not in {ENTRY_TYPE_ACTUAL, ENTRY_TYPE_SIMULATED}:
             raise ValueError("Journal namespace must be actual or simulated")
         if self.action != ACTION_NO_ORDER:
             raise ValueError("Journal entry must remain no_order")
         if self.previous_journal_id == self.journal_id:
             raise ValueError("Journal correction cannot link to itself")
-        if self.human_decision in {
-            HUMAN_CONFIRM_BUY,
-            HUMAN_CONFIRM_ADD,
-            HUMAN_CONFIRM_HOLD,
-            HUMAN_CONFIRM_REDUCE,
-            HUMAN_CONFIRM_EXIT,
-        } and not self.entry_id:
+        if self.human_decision in CONFIRM_DECISION_REVIEW_STATUS and not self.entry_id:
             raise ValueError("Confirmed decisions require an entry id")
         if (
-            self.human_decision
-            in {
-                HUMAN_CONFIRM_BUY,
-                HUMAN_CONFIRM_ADD,
-                HUMAN_CONFIRM_REDUCE,
-                HUMAN_CONFIRM_EXIT,
-            }
+            self.human_decision in TRANSACTION_HUMAN_DECISIONS
             and self.confirmed_price is None
         ):
             raise ValueError("Transaction confirmations require a confirmed price")
+        if (
+            self.human_decision not in TRANSACTION_HUMAN_DECISIONS
+            and self.confirmed_price is not None
+        ):
+            raise ValueError("Non-transaction journal entries cannot confirm a price")
         if self.confirmed_price is not None and (
             not self.confirmed_price.is_finite() or self.confirmed_price <= 0
         ):

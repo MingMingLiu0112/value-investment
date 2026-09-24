@@ -2,6 +2,24 @@
 
 更新：2026-09-24。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-24 M3 决策日志链完整性收紧
+
+在 Checkpoint B 等待人工签收期间，继续 M3 可独立完成的领域合同工作。复核发现
+`DecisionJournalEntry` 尚未强制“人工决定”与“复核状态”同向，`DecisionHistoryChain`
+也只检查更正前任 ID 是否存在，没有检查重复日志、Entry 归属和更正时间顺序。该缺口
+可能让自相矛盾或错误链接的决策记录进入公开历史链。
+
+- `CONFIRM_BUY/ADD/HOLD/REDUCE/EXIT` 现在必须匹配对应
+  `MANUAL_BUY_REVIEW/MANUAL_ADD_REVIEW/HOLD/MANUAL_REDUCE_REVIEW/
+  MANUAL_EXIT_REVIEW` 状态。
+- 只有 BUY/ADD/REDUCE/EXIT 可以携带确认价；REJECT/DEFER/CANCEL/HOLD 不能再附带
+  成交价。
+- 公开 `DecisionHistoryChain` 拒绝重复 Journal/Consistency ID、日志绑定其他 Entry、
+  未知前任和早于前任时间的更正。
+- 新增五个反向测试；M3 定向回归 `53 passed`，GitHub Core Research Gate 同清单本地
+  运行 `549 passed、4 skipped、0 failed`。
+- 不重新生成 Checkpoint B 候选，不改变其冻结 Hash；`action=no_order`。
+
 ## 2026-09-24 M2 全量机器验收复算
 
 在包含真实全量本地回归的隔离 basetemp 下重新执行 M2 AC1-AC12 验收器，结果不再
