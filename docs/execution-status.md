@@ -1,5 +1,17 @@
 # 当前执行状态
 
+## 2026-09-25 INTERRUPT 复核：253eddc 与剩余 DAG
+
+以干净且与 `origin/main` 一致的 `253eddc6fb68a17138fa7c4ab240fea5e9c7f5b1` 为基线。该提交的 [Core Research Gates 36125635715](https://github.com/MingMingLiu0112/value-investment/actions/runs/36125635715) 已完成，`offline-core` 与 `postgres-integration` 均为 `success`；仅证明本提交的工程测试通过，不构成真实运营或投资有效性验收。
+
+最新只读 M6 预检 `runtime/m6-operational-preflight-20260925T104504Z/receipt.json` 的 SHA-256 为 `215663f3ad4e6e164f51aa780894120d127147efcb791f331b8c94481120db67`。15 项准入中仅 `m6c2_repository_and_privacy=DONE`；恢复机制、日历、紧急停止等仍为 `PARTIAL`，真实隔离恢复、会话和事件均未开始/未通过。`engineering_status=DONE` 是预检生成器的局部工程声明，不是 M6 产品或运营完成。此收据为本地忽略文件，尚未形成可独立取得的发布证据。
+
+`INTERRUPTION_AUDIT`：M2/Checkpoint A 为 `DONE/HUMAN_PASS`。M3 strict contemporaneous-rule PIT 未证明（R6）；M4 个性化验收等真实 IPS/Portfolio（R2）；M5 600519 九条已审、零待审、五项 H1 事实及两条重大事件已核，但 scenario=`NEED_MORE_EVIDENCE`、recalculation=`STILL_NOT_READY`、new valuation=`null`（R6）。M6 只处于 preflight，生产授权未授予（R3），已验真实 Shadow 会话/事件均为 0，连续至少 20 个真实交易会话及真实隔离恢复验收未满足。M7 仅展示工程候选，最终用户验收和 Checkpoint D 未开始/未通过（R5）。
+
+剩余独立 R0 DAG：生产实例身份与仓库外信任根的绑定、不可事后补写的运行/见证时间锚、真实事件原件与 M5 review/event ID 和授权 M6 运行制品的端到端验证合同。现有签名会话只可列为 `signed_candidate_sessions`，不得记入真实会话；历史 M5 replay 不可充当真实运营事件。恢复机制的 CI 与代码 Hash 绑定、真实隔离恢复收据及 M7 最新预检只读投影仍可独立核验，但不能借此升级运营状态。由于安全 R0 尚未耗尽，不生成 `REMAINING-GATES-TO-INITIAL-ASSISTED-USE` 的“仅剩外部门”清单。
+
+`TOTAL_GOAL_STATUS=IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`；`INITIAL_ASSISTED_USE=NOT_REACHED`。任何 `WORK_PACKAGE_DONE`、`SPECIALIZED_GOAL_DONE` 或 `MILESTONE_ENGINEERING_DONE` 均不得简写为总 Goal 完成。永久 `action=no_order`，最终投资决定由用户作出；不启用生产 Shadow 或修改正式 WPS 表。
+
 ## 2026-09-25 M6 准入摘要逐项化 R0
 
 预检现把备份、隔离恢复、资源、健康、紧急停止、官方日历、调度、通知、生产授权、真实会话、真实事件及总运营准入分项记录，逐项包含 `status/evidence_refs/evidence_sha256/verified_at/blockers/reopen_condition/review_class`。原先没有证据引用的恢复机制 `DONE` 改为 `PARTIAL`：可核对本地代码与测试文件 Hash，但当前提交的 CI 收据未绑定到预检；仓库/隐私 `DONE` 仅在必需文件 Hash 可列出时保留。日历来源已验证时，重开条件改为尚缺的授权交易所范围及覆盖。新增条目只展示真实缺口，不把合成代码测试升级为生产验收。`M6_OPERATIONAL=NOT_STARTED`，`action=no_order`。
