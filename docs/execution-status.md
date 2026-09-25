@@ -1,5 +1,9 @@
 # 当前执行状态
 
+## 2026-09-25 Review治理语义与M7状态完整性核验
+
+以`origin/main`的`cbe543e`为基线，长期路线、阶段目标和仓库入口已区分R0-R6及局部等待；M2仍为DONE/Checkpoint A `HUMAN_PASS`，M3 Checkpoint B仍PARTIAL，M4私人输入、M5事件后证据、M6生产/真实会话及M7最终签收均未因此过门。M7清单不再在缺少Checkpoint A字段时推断`HUMAN_PASS`，M2声称DONE却缺少该字段时拒绝输出。定向测试`32 passed, 4 skipped`；离线Core Gate清单`684 passed, 40 skipped`，额外跳过主要因为此独立工作树没有Git忽略的冻结runtime证据，不可当作真实证据复验。未修改生产、私人账户或正式WPS工作簿。
+
 更新：2026-09-25。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
 ## 2026-09-25 M5 专项主线集成与当前结果

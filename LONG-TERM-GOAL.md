@@ -1,8 +1,30 @@
 # LONG-TERM VALUE INVESTMENT SYSTEM ROADMAP
 
-版本：2026-09-23 / roadmap-v3。按用户最新要求，下一总Goal贯穿M2-M7；M1与Post-M1 Stabilization已完成，M2为PARTIAL，M3-M7尚未产品验收。审查代码基线：`f4bb55cd686838b874b6a8b0c601492c8bd7aab5`。路线与当前执行范围已经冻结，实际实现由 [current-stage-goal.md](docs/current-stage-goal.md) 控制。
+版本：2026-09-25 / roadmap-v3，治理语义修订。总Goal贯穿M2-M7；M2已完成并获Checkpoint A `HUMAN_PASS`，M3 Checkpoint B仍为PARTIAL，M4-M7未完成产品/运营验收。第1节保留2026-09-23基线`f4bb55cd686838b874b6a8b0c601492c8bd7aab5`的历史审计，不覆盖当前状态。当前事实以 [current-stage-goal.md](docs/current-stage-goal.md) 和 [execution-status.md](docs/execution-status.md) 的最新快照及原始收据为准。
 
-本文件仍是唯一跨阶段路线，不新建平行Roadmap。用户已将下一总Goal扩展为 `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`：从M2逐阶段推进至M7，不必每过一关重新建立Goal。M1保持冻结；当前聚焦M2，执行范围和交接门见 [current-stage-goal.md](docs/current-stage-goal.md)，事实见 [execution-status.md](docs/execution-status.md)。内部阶段完成后必须审查、记录证据再继续，不能因总目标扩大跳过验收；生产操作、私人资料和人工研究批准仍有独立授权边界。
+本文件仍是唯一跨阶段路线，不新建平行Roadmap。总Goal为 `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`：继承已通过的M2，聚焦M3并推进依赖已满足的M4-M7独立工作；不必每过一关重新建立Goal。内部阶段完成后须核验证据再继续，不能因总目标扩大跳过验收。真实私人资料、生产操作、最终投资决定和最终产品验收仍有独立用户边界；研究复核按下述R1规则处理，不自动等同用户签字。
+
+## Review, Interruption and SubAgent Governance (2026-09-25)
+
+`DEFAULT_EXECUTION_POLICY = CONTINUE`。每次遇到Review、Approval或Checkpoint，先分类再决定处理者；名称中有`human`不自动构成停机点。局部缺口只阻断依赖它的DAG节点，记录状态、证据和重开条件，继续不依赖该节点的工作。以下规则解释本文件旧有“人工Review”文字，不降低任何历史或未来验收标准。
+
+| 类别 | 处理者及结果 | 何时请求用户 |
+| --- | --- | --- |
+| R0 `MACHINE_VERIFICATION` | Root或SubAgent完成测试、Hash、PIT、replay、来源绑定、WPS及恢复核验；失败时安全修复并重跑 | 不请求；真实外部不可用则登记精确节点并继续 |
+| R1 `INDEPENDENT_RESEARCH_REVIEW` | 独立研究Reviewer/SubAgent可复核材料性、商业判断、估值方法、假设、反证与证据充分性；Root裁决并追加收据 | 默认不请求；可合法记录`NEED_MORE_EVIDENCE`、`NOT_READY`或拒绝并继续 |
+| R2 `USER_PRIVATE_INPUT` | 用户独有的IPS、账户/持仓/现金、成本、流动性及风险约束；机器先备好最小私有输入包 | 仅对个人化组合节点一次性请求，不阻断其他DAG |
+| R3 `USER_PRODUCTION_AUTHORIZATION` | 生产迁移、调度、通知、账户导入、服务器/网络/备份恢复或正式Shadow启用；先完成离线预检和回退包 | 仅对具体不可逆或高影响生产动作请求 |
+| R4 `USER_INVESTMENT_DECISION` | 系统只给`MANUAL_*_REVIEW`、`HOLD`等决策支持；真实资金买/加/减/退由用户决定 | 仅实际投资决定请求；始终`requires_human_review=true`、`action=no_order` |
+| R5 `USER_PRODUCT_ACCEPTANCE` | M7最终独立使用、Checkpoint D及`INITIAL_ASSISTED_USE`由用户签收 | 仅最终用户可见产品验收请求；中间候选不触发 |
+| R6 `NATURAL_TIME_GATE` | 等待未来公告、真实事件、严格同时点PIT形成或M6不少于20个真实交易会话 | 不反复请求；登记触发器和重开条件，继续其他DAG |
+
+研究Reviewer不是用户；research approval不是投资决定，valuation approval不是trade approval。独立研究复核可采用有来源标识的delegated review，但不得编造事实、私人约束、未来规则或估值输入，不得把synthetic写成ACTUAL，也不得自动批准假设。研究证据不足时保持原受阻状态；新证据到达只重开R1，不自动重算或放行交易。最终投资、私人输入、生产授权和最终产品签收分别保留R4、R2、R3、R5门。Checkpoint A/B/C/D是产品里程碑，不是每次中间复核的停机点。
+
+Root是总Goal的Principal Engineer和唯一集成负责人。中等以上工作包优先考虑2-3个有边界的SubAgent并行：Explorer读代码/证据，Adversarial Reviewer寻找PIT、Hash、状态升级和错误放行反例，Test/Evidence Agent补边界与重放测试；研究方法复核用独立R1 Reviewer。Root保有全局上下文，SubAgent只得到完成其任务所需的最小上下文。独立只读工作可并行，共享可变文件须串行；Domain合同、Application/Router、事件状态机、三份Goal/状态文档和CI配置由Root统一集成。SubAgent写代码须限定互不重叠的小文件集；Root核对原始代码和证据、解决分歧、运行集成测试并统一提交。SubAgent不得签`HUMAN_PASS`、`PRODUCTION_AUTHORIZED`、`BUY/ADD`或`INITIAL_ASSISTED_USE`。
+
+每个SubAgent返回`TASK / SCOPE / FILES_READ / FILES_CHANGED / FINDINGS / RISKS / TESTS / BLOCKERS / RECOMMENDATION / CONFIDENCE`；阻断须指明`BLOCKS_WHICH_DAG_NODE`，不能泛称项目阻塞。准备停下或请求用户前，Root须做`INTERRUPTION_AUDIT`：能否机器验证、独立/委托研究复核、记录`NEED_MORE_EVIDENCE`、继续别的DAG？是否确为R2私有输入、R3高影响生产、R4真实资金决定、R5最终产品签收或R6自然时间？前四项任一可行就继续，存在独立DAG不得宣告全局阻塞。只有当前安全工程、机器验证、委托研究和可得公开证据均处理完，剩余节点全属R2-R6，才可逐节点报告等待及重开条件；不得以局部等待降低验收门槛或擅自暂停总Goal。
+
+永久保持：`action=no_order`；Research Attractive不等于买入，高股息率不等于买入，股息削减不自动卖出，跌价不自动加仓，价格不具吸引力不等于卖出，安全边际不等于仓位。所有研究、估值、监控及组合指导均只支持用户最终决策。
 
 ## 1. Current Reality Audit
 
@@ -407,15 +429,15 @@ Quality 通道重视持续盈利、现金转换、资本效率、健康资产负
 4. 给出一份简明使用/故障处置/恢复/停止发布说明、私有数据位置和授权清单、已知限制、支持画像及复审日期；运行失败有降级，无需用户每天排查日志。
 5. M6不少于20个真实交易会话与恢复验收仍有效，无未关闭P0/P1错误放行、证据或运营安全问题；不以盈利、真实下单或出现BUY作为交付门。
 
-**Forbidden scope**：自动下单、收益保证、用户未确认的风险偏好/研究批准、额外行业/策略/Web扩张、无限优化、修改原验收使之更容易通过、追加无必要常驻服务或损害PTA。
+**Forbidden scope**：自动下单、收益保证、用户未提供的私人风险偏好、未经证据复核的研究批准、额外行业/策略/Web扩张、无限优化、修改原验收使之更容易通过、追加无必要常驻服务或损害PTA。
 
 **Exit criteria**：最终验收表分别列Engineering/Research/Current Data/Decision/Portfolio/Operations/User Acceptance，全部有据且用户确认后标 `INITIAL_ASSISTED_USE`，完成总Goal并停止。缺任一项仍为PARTIAL/具体等待，不用“框架完成”替代交付。不自动增加M8、继续功能扩展或创建维护自动化。
 
 ## 10. Milestone Dependencies
 
 ```text
-CURRENT: M1 DONE + Post-M1 DONE + M2 PARTIAL
-  -> M2: 可信四通道主动发现 / Checkpoint A
+CURRENT: M1 DONE + Post-M1 DONE + M2 DONE / Checkpoint A HUMAN_PASS; M3 Checkpoint B PARTIAL
+  -> M2: 可信四通道主动发现 / Checkpoint A (completed)
   -> M3: 解释性决策 + Entry/Journal/Consistency / Checkpoint B
   -> M4 Portfolio域  ||  M5 Event基础设施
   -> M4+M5集成验收 / Checkpoint C
@@ -479,7 +501,7 @@ Engineering Ready、Research Reviewed、Current Data Valid、User Ready分别验
 4. 准入/参数在观察前登记；没有收益后验挑选、没有为了3份估值降低标准。未达到数量与质量双门只报PARTIAL。
 5. 每次内部工作包完成都交付可读增量，不等最后才让用户看到；不以此把中间包自称Milestone毕业。
 
-状态分别记录 Engineering / Research / Valuation / Dividend / Current Data / Price Assessment / Decision / Portfolio / Operations。阶段用 NOT_STARTED、IN_PROGRESS、PARTIAL、PENDING_EXTERNAL_DATA、PENDING_HUMAN_REVIEW、PASSED_FOR_FREEZE；禁止单一READY掩盖其他维度。
+状态分别记录 Engineering / Research / Valuation / Dividend / Current Data / Price Assessment / Decision / Portfolio / Operations。阶段可用 NOT_STARTED、IN_PROGRESS、PARTIAL、PASSED_FOR_FREEZE；等待须按R0-R6记录为机器待核、独立研究待复核、证据不足、用户私有输入、生产授权、真实投资决定、最终用户签收或自然时间，不再把这些合并成泛化的`PENDING_HUMAN_REVIEW`。禁止单一READY掩盖其他维度。
 
 ## 12. Production Readiness Criteria
 
@@ -534,6 +556,6 @@ Engineering Ready、Research Reviewed、Current Data Valid、User Ready分别验
 
 按用户最新要求，终点由单独M2扩大到M7。继承f4bb55c及后续成果：M2主动发现 -> M3解释性决策/Entry一致性 -> M4/M5组合与事件有界并行 -> M6真实运营准入 -> M7用户交付。M1不重做，安全门不放宽。
 
-每个阶段通过后记录证据并自动继续，不要求用户重新建Goal；真实研究批准、私人IPS/持仓、生产迁移/调度/通知和用户签收仍需对应人工输入/授权。当前聚焦M2，具体阶段门在 [current-stage-goal.md](docs/current-stage-goal.md)，可复制总Goal文本在 [value-investment-goal-prompt.md](docs/value-investment-goal-prompt.md)。
+每个阶段通过后记录证据并自动继续，不要求用户重新建Goal；独立研究复核按R1留痕继续，私人IPS/持仓、生产迁移/调度/通知、真实资金决定和最终产品签收分别遵守R2-R5边界。当前M2已完成、M3为PARTIAL，具体阶段门在 [current-stage-goal.md](docs/current-stage-goal.md)，兼容启动入口在 [value-investment-goal-prompt.md](docs/value-investment-goal-prompt.md)。
 
 M7全部条件成立后才完成总Goal并停止。外部/人工/自然时间未满足时分别记录具体等待及已完成工程，不能以阶段代码齐全宣称INITIAL_ASSISTED_USE。

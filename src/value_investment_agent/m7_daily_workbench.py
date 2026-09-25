@@ -196,6 +196,8 @@ def _validate_packet(packet: Mapping[str, Any]) -> Mapping[str, Any]:
         _required_mapping(packet.get(key), key)
 
     m2 = _required_mapping(packet["m2"], "m2")
+    if m2.get("status") == "DONE" and m2.get("checkpoint_a_status") != "HUMAN_PASS":
+        raise ValueError("M2 DONE requires a bound Checkpoint A HUMAN_PASS status")
     _required_list(m2.get("rows"), "m2.rows")
     quality = _required_mapping(m2.get("quality"), "m2.quality")
     for key in (
@@ -1112,7 +1114,7 @@ def write_daily_workbench(
             "m2_verified_for_deep_research": packet["m2"]["verified_count"],
             "m2_rejected_after_verification": packet["m2"]["rejected_count"],
             "m2_checkpoint_a_status": str(
-                packet["m2"].get("checkpoint_a_status") or "HUMAN_PASS"
+                packet["m2"].get("checkpoint_a_status") or "NOT_RECORDED"
             ),
             "m5_new_pending_reviews": packet["m5"]["pending_human_review"],
             "m5_600519_pending_reviews": int(

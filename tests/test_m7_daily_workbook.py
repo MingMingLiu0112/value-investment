@@ -333,7 +333,15 @@ def test_overview_is_explicitly_fail_closed_and_no_order(tmp_path: Path):
         assert forbidden not in text
     assert receipt["action"] == ACTION_NO_ORDER
     assert receipt["summary"]["m2_verified_for_deep_research"] == 0
+    assert receipt["summary"]["m2_checkpoint_a_status"] == "NOT_RECORDED"
     assert receipt["summary"]["m5_new_pending_reviews"] == 1
+
+
+def test_m2_done_cannot_infer_checkpoint_a_pass_from_missing_input(tmp_path: Path):
+    packet = _post_checkpoint_a_packet()
+    del packet["m2"]["checkpoint_a_status"]
+    with pytest.raises(ValueError, match="M2 DONE requires a bound Checkpoint A HUMAN_PASS"):
+        write_daily_workbench(packet, output=tmp_path / "missing-checkpoint.xlsx", root=tmp_path)
 
 
 def test_actual_event_sheet_explains_dependency_and_not_ready_boundary():
