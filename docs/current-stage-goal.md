@@ -2,6 +2,23 @@
 
 ## 当前执行门禁（2026-09-25）
 
+```text
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+INITIAL_ASSISTED_USE = NOT_REACHED
+SPECIALIZED_GOAL_STATUS = ENGINEERING_DONE_WITH_VALIDATED_NOT_READY
+SPECIALIZED_GOAL_SCOPE = M5_ACTUAL_EVENT_BOUNDED_NOT_READY_ENGINEERING_ONLY
+M5_PRODUCT_ACCEPTED = false
+M6_OPERATIONAL_COMPLETE = false
+M7_USER_ACCEPTED = false
+CHECKPOINT_D = NOT_PASSED
+action = no_order
+```
+
+`WORK_PACKAGE_DONE`、`SPECIALIZED_GOAL_DONE`、`MILESTONE_ENGINEERING_DONE`、
+`MILESTONE_PRODUCT_ACCEPTED`、`TOTAL_GOAL_COMPLETE` 为不同层级，不可互相简写。
+总 Goal 退出仍须 LONG-TERM-GOAL 的 Engineering、Research、Current Data、
+Decision、Portfolio、Operations、User Acceptance 全部证据及 M6/M7 门禁。
+
 按 [LONG-TERM-GOAL 的R0-R6治理规则](../LONG-TERM-GOAL.md) 默认继续；机器校验R0与独立/委托研究复核R1不因名称含“人工/Review/Checkpoint”而中断。R2私人IPS/组合只阻断个性化M4，R3生产授权只阻断对应生产动作，R4真实资金决定始终由用户做，R5最终产品验收由用户签收；R6自然时间只记录触发和重开条件。请求用户或拟停止前先做`INTERRUPTION_AUDIT`并继续所有独立DAG。
 
 当前：M2及Checkpoint A已完成；M3 Checkpoint B为PARTIAL，strict contemporaneous-rule PIT未证明（R6）；M4非个人化工程完成，个人化输入待R2；M5 600519已审9条、待审0条、已核H1事实5项、重大事件2条，情景研究`HUMAN_REVIEWED_NEED_MORE_EVIDENCE`，两条仍`STILL_NOT_READY`且无新估值。事件后证据到达只`REOPEN_RESEARCH`进入R1，不重复请求用户批准同一组假设。M6离线预检属R0、生产启动属R3、真实会话属R6；M7展示集成属R0，最终签收属R5。上述局部门不构成总Goal阻塞，永久`action=no_order`。

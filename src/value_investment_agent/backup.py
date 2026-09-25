@@ -114,19 +114,30 @@ def validate_restore_target(database_url: str, restore_database_url: str) -> Non
         raise RuntimeError('Restore target is not the dedicated local drill database')
 
 
+def _manifest_file(manifest_path: Path, value: str, *, dump: bool = False) -> Path:
+    if not isinstance(value, str) or not value or '\\' in value:
+        raise RuntimeError('Backup manifest contains an invalid file path')
+    relative = Path(value)
+    if relative.anchor or '..' in relative.parts or (dump and len(relative.parts) != 1):
+        raise RuntimeError('Backup manifest file path escapes the backup directory')
+    root = manifest_path.parent.resolve()
+    candidate = (root / relative).resolve()
+    if not candidate.is_relative_to(root) or not candidate.is_file():
+        raise RuntimeError('Backup manifest file is missing or outside the backup directory')
+    return candidate
+
+
 def verify_restore(database_url: str, restore_database_url: str, backup_manifest: Path, container_runtime: str = 'podman', restore_container_name: str = 'value-investment-restore-postgres') -> dict:
     validate_restore_target(database_url, restore_database_url)
     pg_restore = shutil.which('pg_restore')
     manifest = json.loads(backup_manifest.read_text(encoding='utf-8'))
     if manifest.get('table_check_version') != 1 or not manifest.get('table_checks'):
         raise RuntimeError('Backup has no snapshot content baseline; create a new backup')
-    dump_path = backup_manifest.with_name(manifest['database_dump'])
+    dump_path = _manifest_file(backup_manifest, manifest['database_dump'], dump=True)
     if sha256_file(dump_path) != manifest['sha256']:
         raise RuntimeError('备份 Hash 不匹配，已拒绝恢复。')
     for evidence in manifest.get('evidence_files', []):
-        evidence_path = backup_manifest.parent / evidence['path']
-        if not evidence_path.is_file():
-            raise RuntimeError(f"证据原件缺失，已拒绝恢复验证：{evidence['path']}")
+        evidence_path = _manifest_file(backup_manifest, evidence['path'])
         if sha256_file(evidence_path) != evidence['sha256']:
             raise RuntimeError(f"证据原件 Hash 不匹配，已拒绝恢复验证：{evidence['path']}")
     started = time.monotonic()

@@ -1,5 +1,30 @@
 # 当前执行状态
 
+## 2026-09-25 总 Goal 状态纠偏与 INTERRUPTION_AUDIT
+
+最新 `main` 基线 `21aaf156a29d34f8fff4d0663e2b22c0cea85e7f`：
+`TOTAL_GOAL_STATUS=IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`，
+`INITIAL_ASSISTED_USE=NOT_REACHED`。此前
+`SPECIALIZED_GOAL_STATUS=ENGINEERING_DONE_WITH_VALIDATED_NOT_READY` 仅指 M5
+actual-event bounded NOT_READY 的 A1-A10 工程验收，不是 M5 产品完成，
+也不是 M6 运营、M7 用户验收或总 Goal 完成。
+
+INTERRUPTION_AUDIT：M2/Checkpoint A 已通过；M3 strict contemporaneous PIT
+仍缺自然形成的证明（R6）；M4 个性化输入待用户私人 IPS/组合（R2）；
+M5 600519 九条已审、零待审、五项已核 H1 事实及两条重大事件均不改变
+`NEED_MORE_EVIDENCE`、`STILL_NOT_READY`、`new_valuation=null`（R6）。
+M6 仅预检，生产授权未授予（R3），未独立证实任何真实 shadow 会话，
+20 连续真实交易会话及真实事件观察未满足（R6）；隔离恢复也没有
+manifest/dump/restore/verifier 完整绑定的通过收据。M7 仅展示工程可用，
+最终用户验收及 Checkpoint D 未通过（R5）。独立 R0 工作仍存在：
+恢复验证结果与 M6 准入摘要的证据绑定；故不能宣称所有安全工程已耗尽，
+也不生成“仅剩外部门”清单。永久 `action=no_order`，最终投资决定由用户作出。
+
+本轮 R0 安全修复：`verify_restore` 现拒绝 manifest 指向备份目录外的 dump/原件，
+包括 `..`、根路径和符号链接逃逸；在读取外部文件或接触数据库前失败关闭。
+恢复目标、M6 定向回归 `28 passed`。这只是路径边界修复，未执行真实恢复、
+未绑定 M6 准入收据，不能升级恢复验收或运营状态。
+
 ## 2026-09-25 Review治理语义与M7状态完整性核验
 
 以`origin/main`的`cbe543e`为基线，长期路线、阶段目标和仓库入口已区分R0-R6及局部等待；M2仍为DONE/Checkpoint A `HUMAN_PASS`，M3 Checkpoint B仍PARTIAL，M4私人输入、M5事件后证据、M6生产/真实会话及M7最终签收均未因此过门。M7清单不再在缺少Checkpoint A字段时推断`HUMAN_PASS`，M2声称DONE却缺少该字段时拒绝输出。定向测试`32 passed, 4 skipped`；离线Core Gate清单`684 passed, 40 skipped`，额外跳过主要因为此独立工作树没有Git忽略的冻结runtime证据，不可当作真实证据复验。未修改生产、私人账户或正式WPS工作簿。
