@@ -481,6 +481,7 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
 
 def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path):
     import hashlib
+    import json
     from types import SimpleNamespace
 
     from value_investment_agent.m5_bounded_refresh import (
@@ -493,8 +494,9 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
     from value_investment_agent.m5_materiality_bridge import materiality_direct_kinds
     from value_investment_agent.m5_research_artifact_graph import attach_valuation_input_descriptor
     from value_investment_agent.research_artifacts import (
-        ARTIFACT_VALUATION_RESULT, SCOPE_SECURITY, canonicalize_artifact_payload,
-        sha256_text,
+        ARTIFACT_TYPES, ARTIFACT_VALUATION_RESULT, SCOPE_SECURITY,
+        ResearchArtifactEnvelope, ResearchArtifactIdentity,
+        canonicalize_artifact_payload, sha256_text,
     )
     from value_investment_agent.quote_snapshot import QUOTE_STATUS_VERIFIED_CLOSE, QuoteSnapshot
     from value_investment_agent.research_application import ModelValidityEvaluationInput
@@ -647,6 +649,45 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
     assert row["new_valuation_result"]["artifact_id"] == refreshed.artifact_id
     assert row["requires_human_decision_review"] is True
     assert row["action"] == "no_order"
+    saved = {}
+    for artifact_type in ARTIFACT_TYPES:
+        for artifact in repository.list_versions(SCOPE_SECURITY, "600519", artifact_type):
+            saved[artifact.artifact_id] = artifact
+    bundle = [{
+        "artifact_id": artifact.artifact_id,
+        "identity": artifact.envelope.identity.as_dict(),
+        "canonical_payload": artifact.envelope.canonical_payload,
+        "payload_sha256": artifact.envelope.payload_sha256,
+        "evidence_refs": list(artifact.envelope.evidence_refs),
+        "run_id": artifact.envelope.run_id,
+    } for artifact in sorted(saved.values(), key=lambda item: item.artifact_id)]
+    bundle_path = tmp_path / "research-artifact-bundle.json"
+    bundle_path.write_text(json.dumps(bundle, ensure_ascii=False), encoding="utf-8")
+    restored = InMemoryResearchArtifactRepository()
+    for entry in json.loads(bundle_path.read_text(encoding="utf-8")):
+        identity = entry["identity"]
+        envelope = ResearchArtifactEnvelope(
+            identity=ResearchArtifactIdentity(
+                scope_type=identity["scope_type"], scope_key=identity["scope_key"],
+                artifact_type=identity["artifact_type"],
+                schema_version=identity["schema_version"],
+                as_of=date.fromisoformat(identity["as_of"]) if identity["as_of"] else None,
+                available_at=datetime.fromisoformat(identity["available_at"]),
+            ),
+            canonical_payload=entry["canonical_payload"],
+            payload_sha256=entry["payload_sha256"],
+            evidence_refs=tuple(entry["evidence_refs"]), run_id=entry["run_id"],
+        )
+        assert restored.save(envelope).artifact_id == entry["artifact_id"]
+    validate_bounded_research_refresh(result, **{**validation, "repository": restored})
+    replayed = build_actual_event_read_model(
+        queue=queue, reviews=[{"decisions": [decision.as_policy()]}],
+        receipt=receipt, graph=graph, plan=plan, facts_artifact=facts_artifact,
+        outcome_receipt=result, facts_source_sha256="d" * 64,
+        refresh_descriptor=descriptor, refresh_prior_candidate=prior_candidate,
+        refresh_repository=restored,
+    )
+    assert replayed == read_model
     prior_path.write_text("tampered", encoding="utf-8")
     with pytest.raises(ValueError, match="source bytes"):
         validate_bounded_research_refresh(result, **validation)
