@@ -21,6 +21,28 @@ LOCAL_ROOT = Path(__file__).resolve().parents[1]
 QUEUE = SOURCE_ROOT / "runtime/m5-600519-disclosure-queue-20260924/source/queue.json"
 
 
+def test_actual_nine_review_decisions_bind_original_pdf_and_manifest_bytes():
+    inputs = _inputs()
+    review_dir = SOURCE_ROOT / (
+        "runtime/m5-600519-disclosure-queue-20260924/"
+        "delegated-review-application-20260925"
+    )
+    reviews_path = review_dir / "reviews.json"
+    manifest = json.loads((review_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["files"]["reviews.json"]["sha256"] == hashlib.sha256(
+        reviews_path.read_bytes()
+    ).hexdigest()
+    assert manifest["queue"]["sha256"] == hashlib.sha256(QUEUE.read_bytes()).hexdigest()
+    decisions = [item for review in inputs["reviews"]
+                 for item in review["decisions"]]
+    assert len(decisions) == 9
+    for decision in decisions:
+        source = (SOURCE_ROOT / decision["source_ref"]["path"]).resolve()
+        assert source.is_relative_to(SOURCE_ROOT.resolve())
+        assert source.is_file()
+        assert hashlib.sha256(source.read_bytes()).hexdigest() == decision["source_sha256"]
+
+
 def _inputs():
     if not QUEUE.is_file():
         pytest.skip("Archived ACTUAL 600519 evidence is unavailable in this checkout")
