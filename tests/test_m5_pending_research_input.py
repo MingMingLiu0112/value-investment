@@ -88,3 +88,26 @@ def test_pending_descriptor_rejects_facts_unbound_to_actual_event(field, value):
     inputs["facts_file_bytes"] = json.dumps(artifact).encode("utf-8")
     with pytest.raises(ValueError, match="not bound to exactly one ACTUAL event"):
         build_pending_research_input(**inputs)
+
+
+def test_actual_pending_descriptor_cannot_register_valuation_input_node():
+    from value_investment_agent.m5_event_dependencies import DependencyGraph, DependencyNode
+    from value_investment_agent.m5_research_artifact_graph import attach_valuation_input_descriptor
+
+    inputs = _inputs()
+    descriptor = build_pending_research_input(**inputs)
+    graph = DependencyGraph((
+        DependencyNode(
+            node_id="verified-facts", kind="financial_facts", symbol=descriptor.symbol,
+            inputs=(), version=hashlib.sha256(inputs["facts_file_bytes"]).hexdigest(),
+            evidence_refs=({"id": "pdf"},),
+        ),
+        DependencyNode(
+            node_id="research-case", kind="research_thesis", symbol=descriptor.symbol,
+            inputs=(), version="a" * 64, evidence_refs=({"id": "case"},),
+        ),
+    ))
+    with pytest.raises(ValueError, match="incomplete"):
+        attach_valuation_input_descriptor(
+            graph=graph, descriptor=descriptor, receipt=inputs["receipt"],
+        )

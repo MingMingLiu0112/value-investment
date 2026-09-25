@@ -380,6 +380,85 @@ def test_versioned_refresh_preserves_prior_valuation_and_validity_artifacts():
     assert not hasattr(second_outcome, "order")
 
 
+def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
+    from types import SimpleNamespace
+
+    from value_investment_agent.m5_event_dependencies import DependencyGraph, DependencyNode
+    from value_investment_agent.m5_research_artifact_graph import attach_valuation_input_descriptor
+
+    facts_node = DependencyNode(
+        node_id="verified-facts", kind="financial_facts", symbol="600519",
+        inputs=(), version="d" * 64, evidence_refs=({"id": "facts"},),
+    )
+    thesis_node = DependencyNode(
+        node_id="research-case", kind="research_thesis", symbol="600519",
+        inputs=(), version="a" * 64, evidence_refs=({"id": "case"},),
+    )
+    graph = DependencyGraph((facts_node, thesis_node))
+    receipt = SimpleNamespace(
+        namespace="ACTUAL", action="no_order", state_sha256="2" * 64,
+        generated_at=datetime(2026, 9, 20, tzinfo=timezone.utc),
+        active_events=(SimpleNamespace(
+            symbol="600519", evidence_refs=(
+                {"id": "filing", "sha256": "3" * 64,
+                 "source_url": "https://static.cninfo.com.cn/finalpage/report.PDF"},
+            ),
+        ),),
+    )
+    descriptor = _descriptor()
+    descriptor = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None,
+        sources=(*descriptor.sources,
+                 ResearchSourceDescriptor(id="actual-receipt", kind="research_artifact",
+                                          location="receipt.json", sha256=receipt.state_sha256),
+                 ResearchSourceDescriptor(id="filing", kind="filing",
+                                          location="https://static.cninfo.com.cn/finalpage/report.PDF",
+                                          sha256="3" * 64)),
+    ))
+    attached = attach_valuation_input_descriptor(
+        graph=graph, descriptor=descriptor, receipt=receipt,
+    )
+    node = next(item for item in attached.nodes() if item.kind == "valuation_inputs")
+    assert node.version == descriptor.input_sha256
+    assert node.inputs == (facts_node.node_id, thesis_node.node_id)
+    assert attached.node(node.node_id).action == "no_order"
+
+    with pytest.raises(ValueError, match="incomplete"):
+        attach_valuation_input_descriptor(
+            graph=graph,
+            descriptor=finalize_input_descriptor(replace(
+                descriptor, input_sha256=None, blockers=("scenario_inputs_not_approved",),
+            )),
+            receipt=receipt,
+        )
+    with pytest.raises(ValueError, match="every ACTUAL event PDF"):
+        attach_valuation_input_descriptor(
+            graph=graph,
+            descriptor=finalize_input_descriptor(replace(
+                descriptor, input_sha256=None, sources=descriptor.sources[:-1],
+            )),
+            receipt=receipt,
+        )
+    wrong_url = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None,
+        sources=(*descriptor.sources[:-1], replace(
+            descriptor.sources[-1], location="https://static.cninfo.com.cn/other.PDF",
+        )),
+    ))
+    with pytest.raises(ValueError, match="every ACTUAL event PDF"):
+        attach_valuation_input_descriptor(
+            graph=graph, descriptor=wrong_url, receipt=receipt,
+        )
+    missing_scenarios = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None,
+        facts=replace(descriptor.facts, scenario_inputs=None), assumption_bindings=(),
+    ))
+    with pytest.raises(ValueError, match="model preflight remains not ready"):
+        attach_valuation_input_descriptor(
+            graph=graph, descriptor=missing_scenarios, receipt=receipt,
+        )
+
+
 def test_application_adds_binding_mismatch_blocker_without_order():
     descriptor = _descriptor()
     spec = build_research_run_spec(descriptor)
