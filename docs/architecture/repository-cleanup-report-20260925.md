@@ -57,6 +57,18 @@ src/value_investment_agent/domain/research/research_case.py
 The old path is a forwarding shim. No source-path or SHA consumer was found;
 the contract itself and all existing imports remain unchanged.
 
+The cohesive research-contract group then moved together:
+
+```text
+src/value_investment_agent/domain/research/research_run_contract.py
+src/value_investment_agent/domain/research/human_research_approval.py
+src/value_investment_agent/domain/research/research_gate.py
+```
+
+These modules remain pure domain code. Their same-directory relative imports
+preserve the original dependency graph, and all legacy root paths forward
+without duplicating behavior.
+
 ### Provenance Rollback
 
 The first attempted domain migration moved

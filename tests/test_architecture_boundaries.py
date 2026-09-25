@@ -98,6 +98,46 @@ def test_research_case_domain_and_legacy_shim_export_same_contracts():
         assert getattr(legacy, name) is getattr(domain, name)
 
 
+def test_research_gate_contracts_domain_and_legacy_shims_export_same_objects():
+    cases = (
+        (
+            "value_investment_agent.human_research_approval",
+            "value_investment_agent.domain.research.human_research_approval",
+            (
+                "artifact_fingerprint",
+                "HumanResearchApprovalReceipt",
+                "resolve_human_research_approval",
+            ),
+        ),
+        (
+            "value_investment_agent.research_gate",
+            "value_investment_agent.domain.research.research_gate",
+            (
+                "ResearchGate",
+                "evaluate",
+                "evaluate_with_human_approval",
+                "evaluate_with_valuation",
+            ),
+        ),
+        (
+            "value_investment_agent.research_run_contract",
+            "value_investment_agent.domain.research.research_run_contract",
+            (
+                "ResearchValuationApproval",
+                "AssumptionScenarioBinding",
+                "canonical_contract_payload",
+                "valuation_result_sha256",
+            ),
+        ),
+    )
+
+    for legacy_name, domain_name, contracts in cases:
+        legacy = importlib.import_module(legacy_name)
+        domain = importlib.import_module(domain_name)
+        for contract in contracts:
+            assert getattr(legacy, contract) is getattr(domain, contract)
+
+
 def test_new_layers_do_not_import_presentation_operations_or_scripts():
     forbidden_prefixes = (
         "openpyxl",
