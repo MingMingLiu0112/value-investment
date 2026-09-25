@@ -98,6 +98,8 @@ python scripts/m6_operational_control.py stop --reason <reason> --operator <oper
 计算受影响窗口。M6 至少需要连续 20 个真实交易会话和一件真实财务/资本配置事件；模拟、
 replay 和补填不计入。
 
+授权后会话的三层签名与独立见证要求见 [M6 Shadow 收据验证合同](m6-shadow-receipt-contract.md)。当前只有离线验证器与合成测试，未配置生产信任根，真实会话计数仍为 0。
+
 ## 未来授权收据
 
 真正授权时必须新增 append-only 收据，绑定授权人、时间、Git commit、容器/配置 Hash、

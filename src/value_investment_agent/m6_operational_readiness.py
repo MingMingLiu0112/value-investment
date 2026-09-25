@@ -320,6 +320,8 @@ def assess_session_ledger(
     *,
     calendar_evidence: Mapping[str, Any] | None = None,
     verify_live_calendar: bool = False,
+    signed_session_bundle: Mapping[str, Any] | None = None,
+    trusted_shadow_root: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     schedule = None
     live_calendar = None
@@ -336,6 +338,14 @@ def assess_session_ledger(
             live_calendar = refetch_official_calendar(list(calendar_evidence['documents']))
     elif verify_live_calendar:
         raise ValueError('Live calendar verification requires archived source documents')
+    verified_receipts: dict[str, str] = {}
+    if signed_session_bundle is not None or trusted_shadow_root is not None:
+        if (signed_session_bundle is None or trusted_shadow_root is None
+                or schedule is None or live_calendar is None):
+            raise ValueError('Signed Shadow sessions require a pinned root and live official calendar')
+        from .m6_shadow_receipts import verify_shadow_bundle
+        verified_receipts = verify_shadow_bundle(
+            signed_session_bundle, trusted_shadow_root, schedule, cutoff)
     seen_dates: set[date] = set()
     failures: list[str] = []
     normalized = []
@@ -373,6 +383,8 @@ def assess_session_ledger(
             "status": status,
             "resource_baseline_ok": bool(record.get("resource_baseline_ok")),
             "real_event_materialized": bool(record.get("real_event_materialized")),
+            "verified": (record.get('session_receipt_sha256') == verified_receipts.get(
+                session_date.isoformat()) and session_date.isoformat() in verified_receipts),
         })
 
     normalized.sort(key=lambda item: item["session_date"])
@@ -398,9 +410,17 @@ def assess_session_ledger(
         for item in normalized
     )
     simulated = sum(item["observed"] == "simulated" for item in normalized)
-    verified_sessions = 0
+    verified_sessions = sum(item['verified'] for item in eligible)
     verified_streak = 0
     verified_events = 0
+    if schedule is not None:
+        by_date = {item['session_date']: item for item in normalized}
+        for day in reversed(schedule_dates):
+            item = by_date.get(day)
+            if (item is None or not item['verified'] or item['observed'] != 'actual'
+                    or item['status'] != 'success' or not item['resource_baseline_ok']):
+                break
+            verified_streak += 1
     blockers = []
     if verified_streak < config.minimum_real_sessions:
         blockers.append(
@@ -414,7 +434,8 @@ def assess_session_ledger(
         blockers.append("session dates are not bound to an official exchange calendar and observation cutoff")
     if schedule is not None:
         blockers = [item for item in blockers if not item.startswith('session dates are not bound')]
-        blockers.append('calendar membership does not authenticate real shadow run or production authorization')
+        if not verified_receipts:
+            blockers.append('calendar membership does not authenticate real shadow run or production authorization')
     return _criterion(
         NOT_STARTED,
         [
@@ -575,6 +596,8 @@ def build_preflight_receipt(
     session_records: Sequence[Mapping[str, Any]] = (),
     calendar_evidence: Mapping[str, Any] | None = None,
     verify_live_calendar: bool = False,
+    signed_session_bundle: Mapping[str, Any] | None = None,
+    trusted_shadow_root: Mapping[str, str] | None = None,
     restore_records: Sequence[Mapping[str, Any]] = (),
     restore_receipt_path: Path | None = None,
     source_database_url: str | None = None,
@@ -589,7 +612,9 @@ def build_preflight_receipt(
     )
     sessions = assess_session_ledger(
         config, session_records, calendar_evidence=calendar_evidence,
-        verify_live_calendar=verify_live_calendar)
+        verify_live_calendar=verify_live_calendar,
+        signed_session_bundle=signed_session_bundle,
+        trusted_shadow_root=trusted_shadow_root)
     session_evidence = sessions.get('evidence') or {}
     restore = assess_restore_evidence(
         config, restore_records, receipt_path=restore_receipt_path,
@@ -681,6 +706,12 @@ def build_preflight_receipt(
         calendar['evidence_refs'] = [doc['source_url'] for doc in calendar_evidence['documents']]
         calendar['evidence_sha256'] = session_evidence.get('calendar_source_sha256', [])
         calendar['verified_at'] = session_evidence.get('calendar_live_verified_at')
+    if signed_session_bundle is not None:
+        import hashlib
+        encoded = json.dumps(signed_session_bundle, sort_keys=True, separators=(',', ':'),
+                             ensure_ascii=False).encode('utf-8')
+        criteria['m6c5_real_sessions_and_events']['evidence_sha256'] = [
+            hashlib.sha256(encoded).hexdigest()]
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
