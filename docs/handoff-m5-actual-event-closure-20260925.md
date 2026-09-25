@@ -26,6 +26,14 @@ The exact offline Core Gate file list passed `716 passed, 18 skipped` with the
 main checkout supplied as the local ACTUAL evidence root. These checks do not
 approve event-bound scenario inputs or a real refreshed valuation.
 
+The visual-inspection successor
+`runtime/m7-actual-review-replayed-v2-20260925.xlsx` (SHA-256
+`4ed565e0c47a135a30994cf18e5f60135fcaa541038f8a249a61e78e5376418f`)
+shows the four review blockers and eight evidence-reopen triggers as separate
+rows with Chinese descriptions and original audit keys. The two event rows
+remain `STILL_NOT_READY`. WPS read-only verification passed; it is still an
+isolated candidate and does not replace the formal workbook.
+
 This branch adds an offline, fail-closed replay for the 600519 actual event receipts. It verifies five half-year financial facts against archived PDF bytes and announcement metadata, builds a versioned fact artifact, derives a bounded recalculation plan, and projects the result into an M7 workbook candidate. No order, production database, scheduler, notification, or account action is performed.
 
 The two actual receipts remain `STILL_NOT_READY`: `valuation_inputs` is missing, `model_executed=false`, and `new_valuation_result=null`. The workbook is a candidate, not the published WPS original or a trading recommendation. The current v5 candidate SHA-256 is `ff4a1412b41b313e347b9177207caab8a498a2bf04dd31742cfb1b2858fc460a`.

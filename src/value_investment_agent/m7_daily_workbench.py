@@ -78,6 +78,21 @@ VERIFICATION_FILLS = {
     "UNSUPPORTED": "EEEEEE",
 }
 
+RESEARCH_REVIEW_LABELS = {
+    "POST_EVENT_OPERATING_EVIDENCE_INSUFFICIENT": "提价后的销量、渠道与实际价格证据不足",
+    "EVENT_DATE_DISCOUNT_INPUTS_NOT_REVIEWED": "事件日折现参数尚未复核",
+    "DISTRIBUTION_RETENTION_NOT_REVIEWED": "分配、现金流与留存假设尚未复核",
+    "TERMINAL_ASSUMPTIONS_NOT_REVIEWED": "长期 ROE 与终值增长假设尚未复核",
+    "post_event_target_sku_volume": "目标产品提价后的销量或动销",
+    "post_event_channel_mix": "提价后的渠道结构与经销状态",
+    "post_event_realized_price_margin": "实际成交价、收入与利润率",
+    "next_official_post_event_report": "事件后的下一份正式报告",
+    "updated_parent_consolidated_cash_flow": "母公司及合并现金流更新",
+    "distribution_remittance_capital_allocation": "分红上缴与资本配置证据",
+    "dated_cny_discount_inputs": "同一时点的人民币折现输入",
+    "forecast_horizon_roe_fade_terminal_evidence": "预测期 ROE 回落及终值依据",
+}
+
 
 def _style(
     cell,
@@ -782,10 +797,7 @@ def _event_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
             row = _label_value(
                 ws, row, "情景研究复核",
                 "NEED_MORE_EVIDENCE；A-E 假设均未批准；无新估值、无交易指令。"
-                f"\n复核 SHA-256：{actual['research_review_sha256']}"
-                "\n研究阻断：" + "、".join(actual["research_review_blockers"])
-                + "\n证据触发（仅重开研究）："
-                + "、".join(item["kind"] for item in actual["evidence_triggers"]), 5,
+                f"\n复核 SHA-256：{actual['research_review_sha256']}", 5,
             )
         row = _header(ws, row, ["公告ID", "人工结论", "标题", "影响依赖 / 重算状态", "证据与事件"])
         for item in actual["rows"]:
@@ -812,6 +824,24 @@ def _event_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
                 _style(ws.cell(row, column, value), fill=AMBER)
             ws.row_dimensions[row].height = max(60, detail.count("\n") * 15 + 25)
             row += 1
+        if actual.get("research_review_status"):
+            row += 1
+            row = _header(ws, row, ["类别", "状态", "核对内容", "审计键 / 对应阻断", "到达后处理"])
+            for blocker in actual["research_review_blockers"]:
+                values = ["研究阻断", "未通过", RESEARCH_REVIEW_LABELS[blocker], blocker,
+                          "保持 STILL_NOT_READY；不得刷新估值"]
+                for column, value in enumerate(values, 1):
+                    _style(ws.cell(row, column, value), fill=RED_FILL)
+                ws.row_dimensions[row].height = 34
+                row += 1
+            for trigger in actual["evidence_triggers"]:
+                values = ["证据触发", "待证据", RESEARCH_REVIEW_LABELS[trigger["kind"]],
+                          f"{trigger['kind']}\n对应：{trigger['addresses']}",
+                          "仅重新开启研究；不自动批准参数或重算"]
+                for column, value in enumerate(values, 1):
+                    _style(ws.cell(row, column, value), fill=AMBER)
+                ws.row_dimensions[row].height = 46
+                row += 1
     elif disclosure_queue:
         row += 1
         row = _label_value(

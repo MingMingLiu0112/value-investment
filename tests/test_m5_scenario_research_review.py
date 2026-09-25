@@ -129,12 +129,19 @@ def test_reviewed_candidate_shows_blockers_without_recalculation(tmp_path):
     packet["m5"]["actual_event_chain"] = model
     output = tmp_path / "review.xlsx"
     write_daily_workbench(packet, output=output, root=tmp_path)
-    workbook = load_workbook(output, read_only=True, data_only=True)
+    workbook = load_workbook(output, data_only=True)
     values = [str(value) for row in workbook["06_事件与预警"].values for value in row if value is not None]
     assert any("NEED_MORE_EVIDENCE" in value and "无交易指令" in value for value in values)
-    assert sum("STILL_NOT_READY" in value for value in values) == 2
+    assert sum(row[0].value in {"1225431263", "1225475868"}
+               and "STILL_NOT_READY" in str(row[3].value)
+               for row in workbook["06_事件与预警"].iter_rows()) == 2
     assert any("TERMINAL_ASSUMPTIONS_NOT_REVIEWED" in value for value in values)
     assert any("forecast_horizon_roe_fade_terminal_evidence" in value for value in values)
+    sheet = workbook["06_事件与预警"]
+    assert sum(row[0].value == "研究阻断" for row in sheet.iter_rows()) == 4
+    assert sum(row[0].value == "证据触发" for row in sheet.iter_rows()) == 8
+    assert all(sheet.row_dimensions[row[0].row].height >= 46
+               for row in sheet.iter_rows() if row[0].value == "证据触发")
     downgraded = copy.deepcopy(packet)
     del downgraded["m5"]["actual_event_chain"]["research_review_status"]
     with pytest.raises(ValueError, match="research review must remain blocked"):
