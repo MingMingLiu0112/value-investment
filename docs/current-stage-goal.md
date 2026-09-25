@@ -1,5 +1,15 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
+## 2026-09-25 人工情景研究复核
+
+600519 两条 ACTUAL 重大事件已收到人工研究结论 `NEED_MORE_EVIDENCE`，
+见 [只追加复核回执](receipts/600519-event-bound-scenario-human-review-20260925.json)。
+A-E 五组估值假设均为 `NOT_APPROVED`；新增的四项研究阻断分别涉及事件后经营证据、
+事件日折现输入、分配与留存、终值假设。八类新证据到达时仅 `REOPEN_RESEARCH`，
+不自动批准参数或重算。原始有界重算的 `missing_dependency_node:valuation_inputs`
+仍独立存在，两条事件均为 `STILL_NOT_READY`、`model_executed=false`、
+`new_valuation_result=null`、`action=no_order`。M7 只读候选供目查；正式 WPS 表格未替换。
+
 ## 当前状态快照（2026-09-25）
 
 M5 ACTUAL 离线专项已 fast-forward 整合至 `main` 的 `8db5994`；该 SHA 的

@@ -19,6 +19,10 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-root", required=True, type=Path)
     parser.add_argument("--read-model", required=True, type=Path)
+    parser.add_argument("--scenario-review", type=Path)
+    parser.add_argument("--review-source", type=Path)
+    parser.add_argument("--review-package", type=Path)
+    parser.add_argument("--pending-input", type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
     source_root = args.source_root.resolve()
@@ -27,6 +31,23 @@ def main() -> int:
     if (model.get("schema_version") != "m5-actual-event-read-model-v1"
         or model.get("action") != "no_order" or model.get("pending_human_review") != 0):
         raise ValueError("Actual M5 read model is not complete or no_order")
+    if model.get("research_review_status") is not None:
+        paths = (args.scenario_review, args.review_source, args.review_package, args.pending_input)
+        if any(path is None for path in paths):
+            raise ValueError("Reviewed candidate requires review, source, package and pending input")
+        review = json.loads(args.scenario_review.read_text(encoding="utf-8"))
+        digest = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+        if (review.get("decision") != "NEED_MORE_EVIDENCE"
+            or review.get("review_sha256") != model.get("research_review_sha256")
+            or digest(args.scenario_review) != model.get("scenario_review_file_sha256")
+            or digest(args.review_source) != review.get("source_sha256")
+            or digest(args.review_package) != review.get("review_package_sha256")
+            or digest(args.pending_input) != review.get("pending_input_file_sha256")
+            or model.get("recalculation_result_sha256") != review.get("bounded_result_sha256")):
+            raise ValueError("Reviewed candidate evidence binding differs")
+        from value_investment_agent.m5_scenario_research_review import _sha
+        if _sha({key: value for key, value in review.items() if key != "review_sha256"}) != review["review_sha256"]:
+            raise ValueError("Reviewed candidate receipt hash differs")
     generated_at = datetime.now(timezone.utc)
     builder = runpy.run_path(str(source_root / "scripts" / "build_m7_daily_workbench_post_checkpoint_a.py"))
     packet = builder["build_packet"](generated_at)

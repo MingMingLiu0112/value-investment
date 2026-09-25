@@ -1,0 +1,98 @@
+{
+  "schema_version": "m5-event-bound-scenario-review-v1",
+  "symbol": "600519",
+  "recorded_at": "2026-09-25T05:56:59.128371+00:00",
+  "reviewer_type": "user",
+  "provenance": "USER_SUPPLIED_HUMAN_RESEARCH_REVIEW",
+  "source_sha256": "a470a4a00e55d139ea5e0bb1ed09ea486081224e67b75c2d09712dd0ca9483bb",
+  "review_package_sha256": "2b5a3b6a4c0ae96dfe95aa46c034cfeeb3c7736bee78a7bd29cf990baba80020",
+  "receipt_id": "m5-run-56f1d3a52fb26e69a04cbc735f8d451a",
+  "receipt_state_sha256": "8315eeb043b77adddb0a4c3a3772e404539a80731d092dbb0b8aca1423fd63ea",
+  "graph_sha256": "5254ad4e202e6af6e9258e0ed41bf149a393f81e508b4ee4b442052eede86c13",
+  "facts_payload_sha256": "574f269c9668a4378b49fb817d193041267186f6b65f4cbc1516c4f0584317e9",
+  "facts_file_sha256": "3481dd1773ec74fd705de1eaca47c7862e94562b5137f30a96912d75379a9fdb",
+  "pending_input_sha256": "4e4bae0e877e599f5d54b17c4fcec0909752005f87b2adeebaaff320697105fd",
+  "pending_input_file_sha256": "2a53dd84b652ab0e0b3997dd1d764bf37d891ce4fde19884f61564914a9bf5d5",
+  "bounded_result_sha256": "a3e2c22dec2b5d08ddae4042afdfc63fe34e4e6e35d089b5b9c15507ef9f2f5a",
+  "material_events": [
+    {
+      "event_id": "m5-1f43cb646a5884b860d3cd98cdd5ff32",
+      "source_event_id": "materiality-review:cninfo-600519-1225431263-20260924.1",
+      "materiality_decision_id": "cninfo-600519-1225431263-20260924.1",
+      "announcement_id": "1225431263",
+      "pdf_sha256": "24e51c43dfc6da7d3a19c67b88081715a3a3b4a26c2d83ec51a557e3e5692873",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-18/1225431263.PDF"
+    },
+    {
+      "event_id": "m5-29224038bc5cd91d56cdb050ad05a998",
+      "source_event_id": "materiality-review:cninfo-600519-1225475868-20260924.1",
+      "materiality_decision_id": "cninfo-600519-1225475868-20260924.1",
+      "announcement_id": "1225475868",
+      "pdf_sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF"
+    }
+  ],
+  "axis_decisions": {
+    "base_roe_path": "NOT_APPROVED",
+    "bear_roe_path": "NOT_APPROVED",
+    "bull_roe_path": "NOT_APPROVED",
+    "terminal_roe_growth": "NOT_APPROVED",
+    "cost_of_equity_retention": "NOT_APPROVED"
+  },
+  "decision": "NEED_MORE_EVIDENCE",
+  "event_bound_scenario_inputs_approved": false,
+  "valuation_refresh_approved": false,
+  "blockers": [
+    "POST_EVENT_OPERATING_EVIDENCE_INSUFFICIENT",
+    "EVENT_DATE_DISCOUNT_INPUTS_NOT_REVIEWED",
+    "DISTRIBUTION_RETENTION_NOT_REVIEWED",
+    "TERMINAL_ASSUMPTIONS_NOT_REVIEWED"
+  ],
+  "evidence_triggers": [
+    {
+      "kind": "post_event_target_sku_volume",
+      "addresses": "POST_EVENT_OPERATING_EVIDENCE_INSUFFICIENT",
+      "on_evidence": "REOPEN_RESEARCH"
+    },
+    {
+      "kind": "post_event_channel_mix",
+      "addresses": "POST_EVENT_OPERATING_EVIDENCE_INSUFFICIENT",
+      "on_evidence": "REOPEN_RESEARCH"
+    },
+    {
+      "kind": "post_event_realized_price_margin",
+      "addresses": "POST_EVENT_OPERATING_EVIDENCE_INSUFFICIENT",
+      "on_evidence": "REOPEN_RESEARCH"
+    },
+    {
+      "kind": "next_official_post_event_report",
+      "addresses": "POST_EVENT_OPERATING_EVIDENCE_INSUFFICIENT",
+      "on_evidence": "REOPEN_RESEARCH"
+    },
+    {
+      "kind": "updated_parent_consolidated_cash_flow",
+      "addresses": "DISTRIBUTION_RETENTION_NOT_REVIEWED",
+      "on_evidence": "REOPEN_RESEARCH"
+    },
+    {
+      "kind": "distribution_remittance_capital_allocation",
+      "addresses": "DISTRIBUTION_RETENTION_NOT_REVIEWED",
+      "on_evidence": "REOPEN_RESEARCH"
+    },
+    {
+      "kind": "dated_cny_discount_inputs",
+      "addresses": "EVENT_DATE_DISCOUNT_INPUTS_NOT_REVIEWED",
+      "on_evidence": "REOPEN_RESEARCH"
+    },
+    {
+      "kind": "forecast_horizon_roe_fade_terminal_evidence",
+      "addresses": "TERMINAL_ASSUMPTIONS_NOT_REVIEWED",
+      "on_evidence": "REOPEN_RESEARCH"
+    }
+  ],
+  "recalculation_status": "STILL_NOT_READY",
+  "model_executed": false,
+  "new_valuation_result": null,
+  "action": "no_order",
+  "review_sha256": "531a0a2967507f5b1044e0107f56550578585b6829159ecc7f6460bf3d70cf1f"
+}

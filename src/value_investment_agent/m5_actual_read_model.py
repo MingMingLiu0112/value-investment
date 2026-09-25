@@ -25,6 +25,10 @@ def build_actual_event_read_model(
     refresh_operating_basis_bytes: bytes | None = None,
     refresh_assumption_package_bytes: bytes | None = None,
     refresh_review: Mapping[str, Any] | None = None,
+    scenario_review: Mapping[str, Any] | None = None,
+    scenario_review_source_bytes: bytes | None = None,
+    scenario_review_package_bytes: bytes | None = None,
+    scenario_review_pending_input_bytes: bytes | None = None,
 ) -> dict[str, Any]:
     if receipt.namespace != "ACTUAL" or receipt.action != "no_order" or plan.action != "no_order":
         raise ValueError("Actual no-order receipt and plan are required")
@@ -41,6 +45,12 @@ def build_actual_event_read_model(
         raise ValueError("Recalculation plan omits or changes invalidated dependencies")
     outcomes_by_event = {}
     review_accepted = False
+    if scenario_review is not None and (outcome_receipt is None
+        or outcome_receipt.get("schema_version") != "m5-bounded-recalculation-result-v1"
+        or facts_artifact is None or facts_source_sha256 is None
+        or scenario_review_source_bytes is None or scenario_review_package_bytes is None
+        or scenario_review_pending_input_bytes is None):
+        raise ValueError("Negative scenario review requires complete blocked ACTUAL evidence")
     if outcome_receipt is not None:
         if outcome_receipt.get("schema_version") == "m5-bounded-research-refresh-v1":
             if (facts_artifact is None or facts_source_sha256 is None
@@ -79,6 +89,23 @@ def build_actual_event_read_model(
         outcomes_by_event = {item["event_id"]: item for item in outcome_receipt["outcomes"]}
         if len(outcomes_by_event) != len(outcome_receipt["outcomes"]):
             raise ValueError("Duplicate bounded recalculation outcome")
+    if scenario_review is not None:
+        from .m5_scenario_research_review import validate_need_more_evidence_review
+        validate_need_more_evidence_review(
+            scenario_review,
+            source_bytes=scenario_review_source_bytes,
+            review_package_bytes=scenario_review_package_bytes,
+            pending_input_bytes=scenario_review_pending_input_bytes,
+            receipt=receipt,
+            decisions=[item for review in reviews for item in review.get("decisions", ())],
+            graph_sha256=plan.graph_sha256,
+            facts_payload_sha256=facts_artifact["payload_sha256"],
+            facts_file_sha256=facts_source_sha256,
+            bounded_result_sha256=outcome_receipt["result_sha256"],
+        )
+        if any(item["status"] != "STILL_NOT_READY" or item["model_executed"] is not False
+               or item["new_valuation_result"] is not None for item in outcomes_by_event.values()):
+            raise ValueError("Negative scenario review cannot accompany model execution")
     scans = queue.get("scans") or ()
     if len(scans) != 1:
         raise ValueError("Read model requires exactly one pinned security scan")
@@ -165,6 +192,8 @@ def build_actual_event_read_model(
             "new_valuation_result": new_valuation_result,
             "requires_human_decision_review": bool(tasks),
             "action": "no_order",
+            **({"research_review_status": "HUMAN_REVIEWED_NEED_MORE_EVIDENCE"}
+               if scenario_review is not None and event is not None else {}),
         })
     if represented_sources != set(active_by_source):
         raise ValueError("ACTUAL active events are not covered by reviewed M7 rows")
@@ -200,4 +229,12 @@ def build_actual_event_read_model(
     }
     if refresh_review is not None:
         result["event_refresh_review_sha256"] = refresh_review["review_sha256"]
+    if scenario_review is not None:
+        result.update({
+            "research_review_status": "HUMAN_REVIEWED_NEED_MORE_EVIDENCE",
+            "research_review_sha256": scenario_review["review_sha256"],
+            "research_review_blockers": scenario_review["blockers"],
+            "evidence_triggers": scenario_review["evidence_triggers"],
+            "next_trigger": "waiting_for_post_event_evidence",
+        })
     return result

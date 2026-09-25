@@ -294,6 +294,21 @@ def _validate_packet(packet: Mapping[str, Any]) -> Mapping[str, Any]:
             or actual.get("pending_human_review") != 0
             or any(row.get("action") != ACTION_NO_ORDER for row in rows)):
             raise ValueError("Actual event read model has inconsistent review or action state")
+        if actual.get("research_review_status") is not None:
+            from .m5_scenario_research_review import BLOCKERS, TRIGGERS, TRIGGER_BLOCKERS
+            triggers = _required_list(actual.get("evidence_triggers"), "m5.actual_event_chain.evidence_triggers")
+            if (actual.get("research_review_status") != "HUMAN_REVIEWED_NEED_MORE_EVIDENCE"
+                or not re.fullmatch(r"[0-9a-f]{64}", str(actual.get("research_review_sha256", "")))
+                or actual.get("research_review_blockers") != list(BLOCKERS)
+                or triggers != [{"kind": kind, "addresses": TRIGGER_BLOCKERS[kind],
+                                  "on_evidence": "REOPEN_RESEARCH"} for kind in TRIGGERS]
+                or actual.get("next_trigger") != "waiting_for_post_event_evidence"
+                or not rows or any(row.get("event_id") and
+                    (row.get("research_review_status") != "HUMAN_REVIEWED_NEED_MORE_EVIDENCE"
+                     or row.get("recalculation_status") != "STILL_NOT_READY"
+                     or row.get("new_valuation_result") is not None)
+                    for row in rows)):
+                raise ValueError("Actual event research review must remain blocked and evidence-bound")
         if any(row.get("recalculation_status") == "RECALCULATED" for row in rows):
             if (not re.fullmatch(r"[0-9a-f]{64}", str(actual.get("event_refresh_review_sha256", "")))
                 or any(row.get("recalculation_status") == "RECALCULATED"
@@ -761,6 +776,15 @@ def _event_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
             f"已核半年报事实 {actual['verified_fact_count']} 项；"
             "新估值未就绪时保持原结论失效。", 5,
         )
+        if actual.get("research_review_status"):
+            row = _label_value(
+                ws, row, "情景研究复核",
+                "NEED_MORE_EVIDENCE；A-E 假设均未批准；无新估值、无交易指令。"
+                f"\n复核 SHA-256：{actual['research_review_sha256']}"
+                "\n研究阻断：" + "、".join(actual["research_review_blockers"])
+                + "\n证据触发（仅重开研究）："
+                + "、".join(item["kind"] for item in actual["evidence_triggers"]), 5,
+            )
         row = _header(ws, row, ["公告ID", "人工结论", "标题", "影响依赖 / 重算状态", "证据与事件"])
         for item in actual["rows"]:
             dependencies = ", ".join(item["affected_dependencies"]) or "无重算依赖"
