@@ -363,9 +363,7 @@ def assess_session_ledger(
     )
     simulated = sum(item["observed"] == "simulated" for item in normalized)
     criterion_status = NOT_STARTED
-    if latest_streak >= config.minimum_real_sessions and real_events >= config.minimum_real_events:
-        criterion_status = DONE
-    elif eligible:
+    if eligible:
         criterion_status = PARTIAL
     blockers = []
     if latest_streak < config.minimum_real_sessions:
@@ -376,14 +374,17 @@ def assess_session_ledger(
         blockers.append(
             f"need {config.minimum_real_events} real financial/capital event; current={real_events}"
         )
+    if eligible:
+        blockers.append("session dates are not bound to an official exchange calendar and observation cutoff")
     return _criterion(
         criterion_status,
         [
             _check("all records are no_order", not failures),
             _check("no duplicate session dates", len(seen_dates) == len(records)),
-            _check("latest consecutive real session streak", latest_streak >= config.minimum_real_sessions, str(latest_streak)),
+            _check("reported latest session streak", latest_streak >= config.minimum_real_sessions, str(latest_streak)),
             _check("real event count", real_events >= config.minimum_real_events, str(real_events)),
             _check("simulated sessions are excluded", True, str(simulated)),
+            _check("official exchange calendar and cutoff verified", False),
         ],
         blockers=blockers,
         evidence={
@@ -450,7 +451,7 @@ def assess_restore_evidence(
         and latest["rto_seconds"] <= config.target_rto_hours * 3600
     )
     complete = latest["table_check_count"] > 0 and latest["evidence_files"] > 0
-    status = DONE if within_targets and complete else PARTIAL
+    status = PARTIAL
     blockers = []
     if not within_targets:
         blockers.append(
@@ -458,12 +459,14 @@ def assess_restore_evidence(
         )
     if not complete:
         blockers.append("latest drill lacks table or evidence verification")
+    blockers.append("restore summary is not bound to a verified manifest, dump and isolated restore result")
     return _criterion(
         status,
         [
-            _check("latest drill targets the isolated database", True),
-            _check("latest drill has content checks", complete),
-            _check("latest drill meets RPO/RTO targets", within_targets),
+            _check("declared restore target matches isolated database config", True),
+            _check("reported drill has content checks", complete),
+            _check("reported drill meets RPO/RTO targets", within_targets),
+            _check("restore artifacts and verifier result independently bound", False),
         ],
         blockers=blockers,
         evidence=latest,
@@ -541,8 +544,8 @@ def build_preflight_receipt(
                 for blocker in item.get("blockers") or []
             ],
             "next_action": (
-                "完成 M2/M3 用户复核与 M4 真实组合确认；提交 M6 生产迁移、调度、通知、"
-                "资源和回退方案并取得单独授权。"
+                "绑定 M6 官方交易日历与隔离恢复原始证据；继续 M5/M7 独立工作。"
+                "M4 私人输入和 M6 生产启用仅阻断各自依赖节点。"
             ),
         },
     }

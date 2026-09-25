@@ -222,8 +222,9 @@ def test_session_ledger_counts_only_actual_successful_sessions(tmp_path):
     assert result["action"] == "no_order" if "action" in result else True
 
     result = assess_session_ledger(config, records[:-1])
-    assert result["status"] == "DONE"
+    assert result["status"] == PARTIAL
     assert result["evidence"]["latest_streak"] == 20
+    assert any("official exchange calendar" in blocker for blocker in result["blockers"])
 
 
 def test_failed_latest_session_resets_streak_and_cannot_pass(tmp_path):
@@ -275,6 +276,10 @@ def test_restore_evidence_rejects_wrong_target_and_slow_drill(tmp_path):
     slow = {**base, "rto_seconds": 5 * 3600}
     result = assess_restore_evidence(config, [slow])
     assert result["status"] == PARTIAL
+
+    result = assess_restore_evidence(config, [base])
+    assert result["status"] == PARTIAL
+    assert any("verified manifest" in blocker for blocker in result["blockers"])
 
 
 def test_preflight_never_claims_operational_acceptance(tmp_path):
