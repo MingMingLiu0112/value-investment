@@ -365,6 +365,7 @@ def test_actual_event_sheet_explains_dependency_and_not_ready_boundary():
     overview = "\n".join(str(value) for row in workbook[VISIBLE_SHEETS[0]].iter_rows(values_only=True)
                          for value in row if value is not None)
     assert "真实公告已复核 1 条，待复核 0 条；1 条事件仍缺重算证据" in overview
+    assert "其他 M5 队列待复核 1 条" in overview
     assert "新增待人工复核事件 1 条" not in overview
     assert "经过研究复核的完整估值输入；无新估值" in overview
     sheet = workbook[VISIBLE_SHEETS[6]]

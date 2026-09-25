@@ -133,6 +133,7 @@ def test_reviewed_candidate_shows_blockers_without_recalculation(tmp_path):
     overview = [str(value) for row in workbook["00_今日总览"].values for value in row if value is not None]
     assert any("真实公告已复核 9 条，待复核 0 条；2 条事件仍缺重算证据" in value
                for value in overview)
+    assert any("其他 M5 队列待复核 1 条" in value for value in overview)
     assert not any("新增待人工复核事件 9 条" in value for value in overview)
     values = [str(value) for row in workbook["06_事件与预警"].values for value in row if value is not None]
     assert any("NEED_MORE_EVIDENCE" in value and "无交易指令" in value for value in values)

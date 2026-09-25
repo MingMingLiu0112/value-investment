@@ -407,7 +407,8 @@ def _overview(packet: Mapping[str, Any], wb: Workbook) -> None:
     actual = m5.get("actual_event_chain")
     event_risk = (
         f"真实公告已复核 {actual['reviewed_count']} 条，待复核 {actual['pending_human_review']} 条；"
-        f"{sum(item['recalculation_status'] == 'STILL_NOT_READY' for item in actual['rows'])} 条事件仍缺重算证据。"
+        f"{sum(item['recalculation_status'] == 'STILL_NOT_READY' for item in actual['rows'])} 条事件仍缺重算证据；"
+        f"其他 M5 队列待复核 {m5['pending_human_review']} 条。"
         if actual else
         f"新增待人工复核事件 {m5['pending_human_review']} 条；"
         f"Hash 冲突 {m5['hash_conflicts']} 条。"
