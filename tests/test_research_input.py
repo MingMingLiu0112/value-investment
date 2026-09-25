@@ -479,6 +479,130 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
         )
 
 
+def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path):
+    import hashlib
+    from types import SimpleNamespace
+
+    from value_investment_agent.m5_bounded_refresh import (
+        execute_bounded_research_refresh, validate_bounded_research_refresh,
+    )
+    from value_investment_agent.m5_event_dependencies import DependencyGraph, DependencyNode
+    from value_investment_agent.m5_recalculation_plan import build_bounded_recalculation_plan
+    from value_investment_agent.m5_research_artifact_graph import attach_valuation_input_descriptor
+    from value_investment_agent.research_artifacts import (
+        ARTIFACT_VALUATION_RESULT, SCOPE_SECURITY, canonicalize_artifact_payload,
+        sha256_text,
+    )
+    from value_investment_agent.quote_snapshot import QUOTE_STATUS_VERIFIED_CLOSE, QuoteSnapshot
+    from value_investment_agent.research_application import ModelValidityEvaluationInput
+
+    repository = InMemoryResearchArtifactRepository()
+    application = ResearchApplicationService(repository)
+    application.run_company_research(build_research_run_spec(_descriptor()))
+    prior = repository.load_latest(SCOPE_SECURITY, "600519", ARTIFACT_VALUATION_RESULT)
+    prior_path = tmp_path / "prior-valuation.json"
+    prior_path.write_text(canonicalize_artifact_payload(prior.envelope.payload_object()),
+                          encoding="utf-8")
+    prior_sha = hashlib.sha256(prior_path.read_bytes()).hexdigest()
+    prior_candidate = SimpleNamespace(
+        symbol="600519", artifact_type=ARTIFACT_VALUATION_RESULT,
+        source_path=prior_path, source_sha256=prior_sha,
+        payload=prior.envelope.payload_object(),
+    )
+    pdf_ref = {"id": "filing", "sha256": "3" * 64,
+               "source_url": "https://static.cninfo.com.cn/finalpage/report.PDF"}
+    at = datetime(2026, 9, 22, tzinfo=timezone.utc)
+    event = SimpleNamespace(
+        event_id="event-1", source_event_id="review-1", symbol="600519",
+        current_state={"direct_dependency_kinds": ["valuation_inputs", "valuation_result"]},
+        evidence_refs=(pdf_ref,),
+    )
+    receipt = SimpleNamespace(
+        namespace="ACTUAL", action="no_order", receipt_id="receipt-1",
+        state_sha256="2" * 64, generated_at=at,
+        active_events=(event,), invalidations=(SimpleNamespace(event_id="event-1"),),
+    )
+    graph = DependencyGraph((
+        DependencyNode(node_id="verified-facts", kind="financial_facts",
+                       symbol="600519", inputs=(), version="d" * 64,
+                       evidence_refs=(pdf_ref,)),
+        DependencyNode(node_id="research-case", kind="research_thesis",
+                       symbol="600519", inputs=(), version="a" * 64,
+                       evidence_refs=({"id": "case"},)),
+        DependencyNode(node_id="prior-valuation", kind="valuation_result",
+                       symbol="600519", inputs=("research-case",),
+                       version=prior_sha, evidence_refs=({"id": "prior"},)),
+    ))
+    old = _descriptor()
+    descriptor = finalize_input_descriptor(replace(
+        old, input_sha256=None, run_id="bounded-refresh-1",
+        facts=replace(old.facts,
+                      operating_inputs={**old.facts.operating_inputs,
+                                        "start_book_equity": Decimal("1200")},
+                      evidence_refs=[{"id": "verified-facts", "sha256": "d" * 64},
+                                     {"id": "actual-receipt", "sha256": receipt.state_sha256}]),
+        sources=(*old.sources,
+                 ResearchSourceDescriptor(id="actual-receipt", kind="research_artifact",
+                                          location="receipt.json", sha256=receipt.state_sha256),
+                 ResearchSourceDescriptor(id="filing", kind="filing",
+                                          location=pdf_ref["source_url"], sha256=pdf_ref["sha256"])),
+        quote=QuoteSnapshot(symbol="600519", quote_date=AS_OF,
+                            current_price=Decimal("5"), status=QUOTE_STATUS_VERIFIED_CLOSE,
+                            evidence_refs=[{"id": "quote", "sha256": "e" * 64}]),
+        model_validity_input=ModelValidityEvaluationInput(
+            model_id="residual-income-equity-shared-v1", valid_from=AS_OF,
+            event_scan_evidence_refs=({"id": "event-scan", "sha256": receipt.state_sha256},),
+        ),
+        point_in_time=replace(old.point_in_time,
+                              available_at=datetime(2026, 9, 23, 12, tzinfo=timezone.utc),
+                              computed_at=datetime(2026, 9, 23, 13, tzinfo=timezone.utc)),
+    ))
+    graph = attach_valuation_input_descriptor(graph=graph, descriptor=descriptor,
+                                              receipt=receipt)
+    plan = build_bounded_recalculation_plan(receipt=receipt, graph=graph, generated_at=at)
+    fact_payload = {"schema_version": "m5-verified-financial-facts-v1",
+                    "symbol": "600519", "pdf_sha256": pdf_ref["sha256"],
+                    "source_url": pdf_ref["source_url"],
+                    "facts": [{"field": "operating_revenue", "value": "1"}],
+                    "action": "no_order"}
+    facts_artifact = {
+        "identity": {"artifact_type": "financial_facts", "scope_key": "600519"},
+        "payload": fact_payload,
+        "payload_sha256": sha256_text(canonicalize_artifact_payload(fact_payload)),
+        "evidence_refs": [pdf_ref],
+    }
+    result = execute_bounded_research_refresh(
+        receipt=receipt, graph=graph, plan=plan, facts_artifact=facts_artifact,
+        facts_source_sha256="d" * 64, descriptor=descriptor,
+        prior_candidate=prior_candidate, application=application,
+        evaluated_at=datetime(2026, 9, 23, 14, tzinfo=timezone.utc),
+    )
+    refreshed = repository.load_latest(SCOPE_SECURITY, "600519", ARTIFACT_VALUATION_RESULT)
+    assert refreshed.artifact_id != prior.artifact_id
+    assert repository.load_by_id(prior.artifact_id) == prior
+    assert len(repository.list_versions(SCOPE_SECURITY, "600519", ARTIFACT_VALUATION_RESULT)) == 2
+    assert result["outcomes"][0]["status"] == "MODEL_STALE"
+    assert result["outcomes"][0]["new_valuation_result"]["artifact_id"] == refreshed.artifact_id
+    assert result["outcomes"][0]["new_valuation_result"]["event_validity_status"] == "UNRECONCILED"
+    assert result["outcomes"][0]["requires_human_review"] is True
+    assert result["action"] == "no_order"
+    validation = dict(
+        receipt=receipt, graph=graph, plan=plan, facts_artifact=facts_artifact,
+        facts_source_sha256="d" * 64, descriptor=descriptor,
+        prior_candidate=prior_candidate, repository=repository,
+    )
+    validate_bounded_research_refresh(result, **validation)
+    forged = {**result, "outcomes": [{**result["outcomes"][0], "status": "RECALCULATED"}]}
+    from value_investment_agent.m5_recalculation_plan import _sha
+    forged["result_sha256"] = _sha({key: value for key, value in forged.items()
+                                      if key != "result_sha256"})
+    with pytest.raises(ValueError, match="persisted artifacts"):
+        validate_bounded_research_refresh(forged, **validation)
+    prior_path.write_text("tampered", encoding="utf-8")
+    with pytest.raises(ValueError, match="source bytes"):
+        validate_bounded_research_refresh(result, **validation)
+
+
 def test_application_adds_binding_mismatch_blocker_without_order():
     descriptor = _descriptor()
     spec = build_research_run_spec(descriptor)
