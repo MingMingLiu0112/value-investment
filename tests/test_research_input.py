@@ -634,6 +634,7 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
     from value_investment_agent.m5_recalculation_plan import build_bounded_recalculation_plan
     from value_investment_agent.m5_materiality_bridge import materiality_direct_kinds
     from value_investment_agent.m5_research_artifact_graph import attach_valuation_input_descriptor
+    from value_investment_agent.m5_pending_research_input import attach_completed_event_research_input
     from value_investment_agent.research_artifacts import (
         ARTIFACT_TYPES, ARTIFACT_VALUATION_RESULT, SCOPE_SECURITY,
         ResearchArtifactEnvelope, ResearchArtifactIdentity,
@@ -718,6 +719,8 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
                       evidence_refs=[{"id": "verified-facts", "sha256": "d" * 64},
                                      {"id": "issuer-equity-basis", "sha256": basis_sha},
                                      {"id": "actual-receipt", "sha256": receipt.state_sha256}]),
+        research_case=replace(old.research_case,
+                              evidence_refs=[*old.research_case.evidence_refs, pdf_ref]),
         sources=(*old.sources,
                  ResearchSourceDescriptor(id="scenario-assumptions", kind="research_artifact",
                                           location="assumptions.json", sha256="c" * 64),
@@ -740,11 +743,43 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
                               available_at=datetime(2026, 9, 23, 12, tzinfo=timezone.utc),
                               computed_at=datetime(2026, 9, 23, 13, tzinfo=timezone.utc)),
     ))
-    graph = attach_valuation_input_descriptor(
-        graph=graph, descriptor=descriptor, receipt=receipt,
+    pending_sources = tuple(source for source in descriptor.sources
+                            if source.id not in {"scenario-assumptions", "assumption-package"})
+    pending = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None, run_id="bounded-refresh-pending",
+        sources=pending_sources, assumptions=None, assumption_bindings=(),
+        facts=replace(descriptor.facts, verified=False, scenario_inputs=None,
+                      blockers=["scenario_inputs_not_approved"]),
+        quote=None, model_validity_input=None,
+        blockers=("scenario_inputs_not_approved",),
+    ))
+    promotion = dict(
+        pending=pending, completed=descriptor, receipt=receipt, graph=graph,
         operating_basis_bytes=basis_bytes,
         assumption_package_bytes=assumption_bytes,
     )
+    missing_event_pending = finalize_input_descriptor(replace(
+        pending, input_sha256=None,
+        sources=tuple(source for source in pending.sources if source.id != "filing"),
+    ))
+    with pytest.raises(ValueError, match="missing an ACTUAL event PDF"):
+        attach_completed_event_research_input(
+            **{**promotion, "pending": missing_event_pending},
+        )
+    dropped_source = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None,
+        sources=tuple(source for source in descriptor.sources if source.id != "facts-source"),
+    ))
+    with pytest.raises(ValueError, match="drops or changes a pending source"):
+        attach_completed_event_research_input(**{**promotion, "completed": dropped_source})
+    dropped_event_ref = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None,
+        research_case=replace(descriptor.research_case,
+                              evidence_refs=old.research_case.evidence_refs),
+    ))
+    with pytest.raises(ValueError, match="does not retain pending evidence"):
+        attach_completed_event_research_input(**{**promotion, "completed": dropped_event_ref})
+    graph = attach_completed_event_research_input(**promotion)
     plan = build_bounded_recalculation_plan(receipt=receipt, graph=graph, generated_at=at)
     fact_payload = {"schema_version": "m5-verified-financial-facts-v1",
                     "symbol": "600519", "pdf_sha256": pdf_ref["sha256"],

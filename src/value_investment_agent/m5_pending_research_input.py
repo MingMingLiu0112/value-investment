@@ -9,9 +9,11 @@ import re
 from typing import Any, Mapping
 
 from .m5_event_run import M5EventRunReceipt
+from .m5_event_dependencies import DependencyGraph
+from .m5_research_artifact_graph import attach_valuation_input_descriptor
 from .research_artifacts import canonicalize_artifact_payload, sha256_text
 from .research_case import ResearchCase
-from .research_input import ResearchInputDescriptor, finalize_input_descriptor
+from .research_input import ResearchInputDescriptor, descriptor_sha256, finalize_input_descriptor
 from .research_profile import PROFILES
 from .research_run_contract import (
     INPUT_DESCRIPTOR_SCHEMA, ResearchDependencyFingerprint, ResearchPitFrame,
@@ -176,3 +178,48 @@ def build_pending_research_input(
         model_validity_input=None, valuation_approval=None, blockers=blockers,
     )
     return finalize_input_descriptor(descriptor)
+
+
+def attach_completed_event_research_input(
+    *, pending: ResearchInputDescriptor, completed: ResearchInputDescriptor,
+    receipt: M5EventRunReceipt, graph: DependencyGraph,
+    operating_basis_bytes: bytes, assumption_package_bytes: bytes,
+) -> DependencyGraph:
+    """Attach complete model inputs only when pending event lineage is preserved."""
+    if (pending.input_sha256 is None
+        or pending.input_sha256 != descriptor_sha256(pending)
+        or completed.input_sha256 is None
+        or completed.input_sha256 != descriptor_sha256(completed)
+        or not pending.blockers or pending.assumptions is not None
+        or completed.blockers or completed.run_id == pending.run_id):
+        raise ValueError("Event input promotion requires pending and completed immutable versions")
+    pending_locations = {(source.sha256, source.location) for source in pending.sources}
+    if receipt.state_sha256 not in {source.sha256 for source in pending.sources}:
+        raise ValueError("Pending input is not bound to the ACTUAL receipt")
+    for event in receipt.active_events:
+        pdf_refs = [ref for ref in event.evidence_refs
+                    if ref.get("sha256") and ref.get("source_url")]
+        if (len(pdf_refs) != 1
+            or (pdf_refs[0]["sha256"], pdf_refs[0]["source_url"]) not in pending_locations):
+            raise ValueError("Pending input is missing an ACTUAL event PDF")
+    if (pending.symbol != completed.symbol
+        or pending.profile_id != completed.profile_id
+        or pending.requested_model != completed.requested_model
+        or pending.point_in_time.report_period != completed.point_in_time.report_period
+        or pending.point_in_time.valuation_date != completed.point_in_time.valuation_date
+        or completed.point_in_time.available_at < pending.point_in_time.available_at
+        or completed.point_in_time.computed_at < pending.point_in_time.computed_at
+        or completed.point_in_time.research_as_of < pending.point_in_time.research_as_of
+        or completed.facts.operating_inputs != pending.facts.operating_inputs):
+        raise ValueError("Completed event input changes the pending PIT or operating basis")
+    completed_sources = {source.id: source for source in completed.sources}
+    if any(completed_sources.get(source.id) != source for source in pending.sources):
+        raise ValueError("Completed event input drops or changes a pending source")
+    case_refs = completed.research_case.evidence_refs
+    if any(ref not in case_refs for ref in pending.research_case.evidence_refs):
+        raise ValueError("Completed event research does not retain pending evidence")
+    return attach_valuation_input_descriptor(
+        graph=graph, descriptor=completed, receipt=receipt,
+        operating_basis_bytes=operating_basis_bytes,
+        assumption_package_bytes=assumption_package_bytes,
+    )
