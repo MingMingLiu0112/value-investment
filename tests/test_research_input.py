@@ -316,6 +316,12 @@ def test_later_research_date_keeps_older_filing_valuation_date():
     defaulted = ResearchApplicationService(InMemoryResearchArtifactRepository()).run_company_research(
         replace(spec, as_of=None)
     )
+    assert defaulted.as_of == research_date
+
+    with pytest.raises(ValueError, match="cannot precede"):
+        replace(spec, research_case=replace(spec.research_case, as_of=date(2025, 1, 1),
+                                             financial_period=date(2024, 12, 31)),
+                as_of=date(2025, 1, 1))
 
 
 def _fully_bound_quality_descriptor(descriptor):
@@ -365,12 +371,11 @@ def _issuer_basis_bytes(*, equity: str) -> bytes:
             "issued_shares": "100",
         },
     }, sort_keys=True).encode("utf-8")
-    assert defaulted.as_of == research_date
 
-    with pytest.raises(ValueError, match="cannot precede"):
-        replace(spec, research_case=replace(spec.research_case, as_of=date(2025, 1, 1),
-                                             financial_period=date(2024, 12, 31)),
-                as_of=date(2025, 1, 1))
+
+def _assumption_package_bytes(descriptor) -> bytes:
+    return json.dumps(descriptor.assumptions.as_policy(), ensure_ascii=False,
+                      sort_keys=True).encode("utf-8")
 
 
 def test_versioned_refresh_preserves_prior_valuation_and_validity_artifacts():
@@ -462,9 +467,12 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
     basis_sha = hashlib.sha256(basis_bytes).hexdigest()
 
     def attach_valuation_input_descriptor(**kwargs):
-        return attach_raw(operating_basis_bytes=basis_bytes, **kwargs)
+        return attach_raw(operating_basis_bytes=basis_bytes,
+                          assumption_package_bytes=assumption_bytes, **kwargs)
 
     descriptor = _fully_bound_quality_descriptor(_descriptor())
+    assumption_bytes = _assumption_package_bytes(descriptor)
+    assumption_sha = hashlib.sha256(assumption_bytes).hexdigest()
     descriptor = finalize_input_descriptor(replace(
         descriptor, input_sha256=None,
         facts=replace(descriptor.facts,
@@ -473,6 +481,8 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
         sources=(*descriptor.sources,
                  ResearchSourceDescriptor(id="scenario-assumptions", kind="research_artifact",
                                           location="assumptions.json", sha256="c" * 64),
+                 ResearchSourceDescriptor(id="assumption-package", kind="research_artifact",
+                                          location="assumption-package.json", sha256=assumption_sha),
                  ResearchSourceDescriptor(id="issuer-equity-basis", kind="research_artifact",
                                           location="issuer-equity.json", sha256=basis_sha),
                  ResearchSourceDescriptor(id="actual-receipt", kind="research_artifact",
@@ -488,6 +498,22 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
     assert node.version == descriptor.input_sha256
     assert node.inputs == (facts_node.node_id, thesis_node.node_id)
     assert attached.node(node.node_id).action == "no_order"
+
+    changed_assumptions = json.loads(assumption_bytes)
+    changed_assumptions["assumptions"][0]["confidence"] = "high"
+    changed_assumption_bytes = json.dumps(changed_assumptions, ensure_ascii=False,
+                                          sort_keys=True).encode("utf-8")
+    changed_assumption_sha = hashlib.sha256(changed_assumption_bytes).hexdigest()
+    repinned_descriptor = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None,
+        sources=tuple(replace(source, sha256=changed_assumption_sha)
+                      if source.id == "assumption-package" else source
+                      for source in descriptor.sources),
+    ))
+    with pytest.raises(ValueError, match="assumption package bytes"):
+        attach_raw(graph=graph, descriptor=repinned_descriptor, receipt=receipt,
+                   operating_basis_bytes=basis_bytes,
+                   assumption_package_bytes=changed_assumption_bytes)
 
     changed_package = json.loads(basis_bytes)
     changed_package["current_disclosed_basis"]["parent_equity_cny"] = "999"
@@ -505,7 +531,8 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
     ))
     with pytest.raises(ValueError, match="operating inputs do not match"):
         attach_raw(graph=graph, descriptor=changed_descriptor, receipt=receipt,
-                   operating_basis_bytes=changed_bytes)
+                   operating_basis_bytes=changed_bytes,
+                   assumption_package_bytes=assumption_bytes)
 
     with pytest.raises(ValueError, match="incomplete"):
         attach_valuation_input_descriptor(
@@ -578,7 +605,7 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
             evidence_refs=list(descriptor.assumptions.evidence_refs),
         ),
     ))
-    with pytest.raises(ValueError, match="evidenced assumption"):
+    with pytest.raises(ValueError, match="Scenario input does not match"):
         attach_valuation_input_descriptor(
             graph=graph, descriptor=wrong_assumptions, receipt=receipt,
         )
@@ -681,6 +708,8 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
     basis_bytes = _issuer_basis_bytes(equity="1200")
     basis_sha = hashlib.sha256(basis_bytes).hexdigest()
     old = _fully_bound_quality_descriptor(_descriptor())
+    assumption_bytes = _assumption_package_bytes(old)
+    assumption_sha = hashlib.sha256(assumption_bytes).hexdigest()
     descriptor = finalize_input_descriptor(replace(
         old, input_sha256=None, run_id="bounded-refresh-1",
         facts=replace(old.facts,
@@ -692,6 +721,8 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
         sources=(*old.sources,
                  ResearchSourceDescriptor(id="scenario-assumptions", kind="research_artifact",
                                           location="assumptions.json", sha256="c" * 64),
+                 ResearchSourceDescriptor(id="assumption-package", kind="research_artifact",
+                                          location="assumption-package.json", sha256=assumption_sha),
                  ResearchSourceDescriptor(id="issuer-equity-basis", kind="research_artifact",
                                           location="issuer-equity.json", sha256=basis_sha),
                  ResearchSourceDescriptor(id="actual-receipt", kind="research_artifact",
@@ -712,6 +743,7 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
     graph = attach_valuation_input_descriptor(
         graph=graph, descriptor=descriptor, receipt=receipt,
         operating_basis_bytes=basis_bytes,
+        assumption_package_bytes=assumption_bytes,
     )
     plan = build_bounded_recalculation_plan(receipt=receipt, graph=graph, generated_at=at)
     fact_payload = {"schema_version": "m5-verified-financial-facts-v1",
@@ -729,6 +761,7 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
         receipt=receipt, graph=graph, plan=plan, facts_artifact=facts_artifact,
         facts_source_sha256="d" * 64, descriptor=descriptor,
         prior_candidate=prior_candidate, operating_basis_bytes=basis_bytes,
+        assumption_package_bytes=assumption_bytes,
         application=application,
         evaluated_at=datetime(2026, 9, 23, 14, tzinfo=timezone.utc),
     )
@@ -745,6 +778,7 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
         receipt=receipt, graph=graph, plan=plan, facts_artifact=facts_artifact,
         facts_source_sha256="d" * 64, descriptor=descriptor,
         prior_candidate=prior_candidate, operating_basis_bytes=basis_bytes,
+        assumption_package_bytes=assumption_bytes,
         repository=repository,
     )
     validate_bounded_research_refresh(result, **validation)
@@ -768,6 +802,7 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
         outcome_receipt=result, facts_source_sha256="d" * 64,
         refresh_descriptor=descriptor, refresh_prior_candidate=prior_candidate,
         refresh_repository=repository, refresh_operating_basis_bytes=basis_bytes,
+        refresh_assumption_package_bytes=assumption_bytes,
     )
     row = read_model["rows"][0]
     assert row["recalculation_status"] == "MODEL_STALE"
@@ -811,6 +846,7 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
         outcome_receipt=result, facts_source_sha256="d" * 64,
         refresh_descriptor=descriptor, refresh_prior_candidate=prior_candidate,
         refresh_repository=restored, refresh_operating_basis_bytes=basis_bytes,
+        refresh_assumption_package_bytes=assumption_bytes,
     )
     assert replayed == read_model
     prior_path.write_text("tampered", encoding="utf-8")

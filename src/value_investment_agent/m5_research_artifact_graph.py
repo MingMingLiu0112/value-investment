@@ -39,7 +39,7 @@ from .research_artifacts import (
 from .research_runtime_import import RuntimeArtifactCandidate
 from .research_input import ResearchInputDescriptor, descriptor_sha256
 from .m5_event_run import M5EventRunReceipt
-from .valuation_assumptions import STATUS_READY
+from .valuation_assumptions import STATUS_READY, assumption_set_from_payload
 from .valuation_models.residual_income import QualityCompounderFacts
 from .valuation_router import ROUTE_SUPPORTED, route_profile
 
@@ -120,6 +120,7 @@ def build_research_artifact_dependency_graph(
 def attach_valuation_input_descriptor(
     *, graph: DependencyGraph, descriptor: ResearchInputDescriptor,
     receipt: M5EventRunReceipt, operating_basis_bytes: bytes,
+    assumption_package_bytes: bytes,
 ) -> DependencyGraph:
     """Register complete event-bound model inputs without promoting pending research."""
     if receipt.namespace != "ACTUAL" or receipt.action != "no_order":
@@ -179,6 +180,11 @@ def attach_valuation_input_descriptor(
         raise ValueError("Valuation inputs already have a dependency node")
     source_hashes = {source.sha256 for source in descriptor.sources}
     source_locations = {(source.sha256, source.location) for source in descriptor.sources}
+    assumption_sha = hashlib.sha256(assumption_package_bytes).hexdigest()
+    registered_assumptions = assumption_set_from_payload(json.loads(assumption_package_bytes))
+    if (assumption_sha not in source_hashes
+        or registered_assumptions.as_policy() != descriptor.assumptions.as_policy()):
+        raise ValueError("Model assumptions do not match pinned assumption package bytes")
     if (not descriptor.assumptions.evidence_refs
         or any(ref.get("sha256") not in source_hashes
                for ref in descriptor.assumptions.evidence_refs)

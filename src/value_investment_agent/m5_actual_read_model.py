@@ -23,6 +23,7 @@ def build_actual_event_read_model(
     refresh_prior_candidate: RuntimeArtifactCandidate | None = None,
     refresh_repository: ResearchArtifactRepository | None = None,
     refresh_operating_basis_bytes: bytes | None = None,
+    refresh_assumption_package_bytes: bytes | None = None,
 ) -> dict[str, Any]:
     if receipt.namespace != "ACTUAL" or receipt.action != "no_order" or plan.action != "no_order":
         raise ValueError("Actual no-order receipt and plan are required")
@@ -42,7 +43,8 @@ def build_actual_event_read_model(
         if outcome_receipt.get("schema_version") == "m5-bounded-research-refresh-v1":
             if (facts_artifact is None or facts_source_sha256 is None
                 or refresh_descriptor is None or refresh_prior_candidate is None
-                or refresh_repository is None or refresh_operating_basis_bytes is None):
+                or refresh_repository is None or refresh_operating_basis_bytes is None
+                or refresh_assumption_package_bytes is None):
                 raise ValueError("M7 refresh projection requires complete persisted artifact evidence")
             from .m5_bounded_refresh import validate_bounded_research_refresh
             validate_bounded_research_refresh(
@@ -51,6 +53,7 @@ def build_actual_event_read_model(
                 facts_source_sha256=facts_source_sha256,
                 descriptor=refresh_descriptor, prior_candidate=refresh_prior_candidate,
                 operating_basis_bytes=refresh_operating_basis_bytes,
+                assumption_package_bytes=refresh_assumption_package_bytes,
                 repository=refresh_repository,
             )
         else:
