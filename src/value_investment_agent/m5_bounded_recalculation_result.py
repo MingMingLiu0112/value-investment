@@ -106,7 +106,8 @@ def evaluate_bounded_recalculation(
 
 def validate_bounded_recalculation_result(
     payload: Mapping[str, Any], *, receipt: M5EventRunReceipt,
-    plan: BoundedRecalculationPlan,
+    graph: DependencyGraph, plan: BoundedRecalculationPlan,
+    facts_artifact: Mapping[str, Any], facts_source_sha256: str,
 ) -> None:
     if (payload.get("schema_version") != "m5-bounded-recalculation-result-v1"
         or payload.get("receipt_id") != receipt.receipt_id
@@ -145,3 +146,10 @@ def validate_bounded_recalculation_result(
             or item.get("model_executed") is not False
             or item.get("action") != "no_order"):
             raise ValueError("Recalculation outcome does not match its bounded tasks")
+    expected = evaluate_bounded_recalculation(
+        receipt=receipt, graph=graph, plan=plan,
+        facts_artifact=facts_artifact, facts_source_sha256=facts_source_sha256,
+        evaluated_at=datetime.fromisoformat(payload["evaluated_at"]),
+    )
+    if body != {key: value for key, value in expected.items() if key != "result_sha256"}:
+        raise ValueError("Recalculation result does not match frozen graph and facts")

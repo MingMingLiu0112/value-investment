@@ -58,7 +58,12 @@ def build_actual_event_read_model(
             )
         else:
             from .m5_bounded_recalculation_result import validate_bounded_recalculation_result
-            validate_bounded_recalculation_result(outcome_receipt, receipt=receipt, plan=plan)
+            if facts_artifact is None or facts_source_sha256 is None:
+                raise ValueError("M7 blocked-result projection requires pinned facts evidence")
+            validate_bounded_recalculation_result(
+                outcome_receipt, receipt=receipt, graph=graph, plan=plan,
+                facts_artifact=facts_artifact, facts_source_sha256=facts_source_sha256,
+            )
         outcomes_by_event = {item["event_id"]: item for item in outcome_receipt["outcomes"]}
         if len(outcomes_by_event) != len(outcome_receipt["outcomes"]):
             raise ValueError("Duplicate bounded recalculation outcome")

@@ -39,6 +39,14 @@ def _inputs():
                 evaluated_at=at, facts_source_sha256="b" * 64)
 
 
+def _validate(result, args):
+    validate_bounded_recalculation_result(
+        result, receipt=args["receipt"], graph=args["graph"], plan=args["plan"],
+        facts_artifact=args["facts_artifact"],
+        facts_source_sha256=args["facts_source_sha256"],
+    )
+
+
 def test_missing_registered_valuation_inputs_produces_hashed_not_ready_result():
     args = _inputs()
     result = evaluate_bounded_recalculation(**args)
@@ -46,7 +54,7 @@ def test_missing_registered_valuation_inputs_produces_hashed_not_ready_result():
     assert result["outcomes"][0]["router_status"] == "NOT_READY_MISSING_VALUATION_INPUTS"
     assert result["outcomes"][0]["model_executed"] is False
     assert result["outcomes"][0]["new_valuation_result"] is None
-    validate_bounded_recalculation_result(result, receipt=args["receipt"], plan=args["plan"])
+    _validate(result, args)
 
 
 def test_tampered_not_ready_result_cannot_claim_recalculated():
@@ -54,7 +62,7 @@ def test_tampered_not_ready_result_cannot_claim_recalculated():
     result = evaluate_bounded_recalculation(**args)
     result["outcomes"][0]["status"] = "RECALCULATED"
     with pytest.raises(ValueError, match="hash mismatch"):
-        validate_bounded_recalculation_result(result, receipt=args["receipt"], plan=args["plan"])
+        _validate(result, args)
 
 
 def test_rehashed_false_status_is_rejected():
@@ -64,7 +72,18 @@ def test_rehashed_false_status_is_rejected():
     result["result_sha256"] = _sha({key: value for key, value in result.items()
                                     if key != "result_sha256"})
     with pytest.raises(ValueError, match="bounded tasks"):
-        validate_bounded_recalculation_result(result, receipt=args["receipt"], plan=args["plan"])
+        _validate(result, args)
+
+
+@pytest.mark.parametrize("field", ["graph_sha256", "facts_payload_sha256"])
+def test_rehashed_result_cannot_rebind_frozen_graph_or_facts(field):
+    args = _inputs()
+    result = evaluate_bounded_recalculation(**args)
+    result[field] = "0" * 64
+    result["result_sha256"] = _sha({key: value for key, value in result.items()
+                                    if key != "result_sha256"})
+    with pytest.raises(ValueError, match="frozen graph and facts"):
+        _validate(result, args)
 
 
 def test_wrong_facts_file_version_is_rejected():
@@ -81,7 +100,7 @@ def test_rehashed_duplicate_outcome_is_rejected():
     result["result_sha256"] = _sha({key: value for key, value in result.items()
                                     if key != "result_sha256"})
     with pytest.raises(ValueError, match="exactly once"):
-        validate_bounded_recalculation_result(result, receipt=args["receipt"], plan=args["plan"])
+        _validate(result, args)
 
 
 def test_wrong_facts_pdf_evidence_is_rejected():

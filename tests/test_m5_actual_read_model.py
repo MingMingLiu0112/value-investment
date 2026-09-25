@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -34,6 +35,7 @@ def _inputs():
         graph=dependency_graph_from_payload(load(graph_path)["graph"]),
         plan=bounded_recalculation_plan_from_payload(load(plan_path)),
         facts_artifact=load(facts_path),
+        facts_source_sha256=hashlib.sha256(facts_path.read_bytes()).hexdigest(),
         outcome_receipt=load(outcome_path),
     )
 
@@ -77,7 +79,7 @@ def test_actual_read_model_rejects_tampered_facts_payload():
     inputs = _inputs()
     inputs["facts_artifact"] = copy.deepcopy(inputs["facts_artifact"])
     inputs["facts_artifact"]["payload"]["facts"][0]["value"] = "0"
-    with pytest.raises(ValueError, match="Verified facts artifact"):
+    with pytest.raises(ValueError, match="financial facts are not verified"):
         build_actual_event_read_model(**inputs)
 
 
@@ -92,7 +94,7 @@ def test_actual_read_model_rejects_tampered_execution_outcome():
 def test_actual_read_model_rejects_wrong_facts_file_version():
     inputs = _inputs()
     inputs["facts_source_sha256"] = "0" * 64
-    with pytest.raises(ValueError, match="Verified facts artifact"):
+    with pytest.raises(ValueError, match="facts file hash"):
         build_actual_event_read_model(**inputs)
 
 
@@ -106,5 +108,5 @@ def test_actual_read_model_rejects_outcome_bound_to_different_facts():
     inputs["outcome_receipt"]["result_sha256"] = hashlib.sha256(
         json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
-    with pytest.raises(ValueError, match="Verified facts artifact"):
+    with pytest.raises(ValueError, match="frozen graph and facts"):
         build_actual_event_read_model(**inputs)
