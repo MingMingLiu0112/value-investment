@@ -64,7 +64,8 @@ def _validated_context(
     if (prior.envelope.payload_sha256
         != sha256_text(canonicalize_artifact_payload(prior_candidate.payload))
         or prior.envelope.identity.artifact_type != ARTIFACT_VALUATION_RESULT
-        or prior.envelope.identity.scope_key != descriptor.symbol):
+        or prior.envelope.identity.scope_key != descriptor.symbol
+        or prior.envelope.identity.available_at >= descriptor.point_in_time.available_at):
         raise ValueError("Prior persisted valuation differs from the pinned source")
     return baseline, prior
 
@@ -97,7 +98,10 @@ def execute_bounded_research_refresh(
     application.repository.verify(refreshed)
     if (refreshed.artifact_id == prior.artifact_id
         or refreshed.envelope.run_id != descriptor.run_id
-        or refreshed.envelope.identity.available_at != descriptor.point_in_time.available_at):
+        or refreshed.envelope.identity.available_at != descriptor.point_in_time.available_at
+        or application.repository.load_latest(
+            SCOPE_SECURITY, descriptor.symbol, ARTIFACT_VALUATION_RESULT,
+        ).artifact_id != refreshed.artifact_id):
         raise ValueError("Bounded refresh did not persist a distinct new valuation version")
     validity = stored.get(ARTIFACT_MODEL_VALIDITY)
     if validity is not None:
@@ -140,6 +144,12 @@ def execute_bounded_research_refresh(
     payload["result_sha256"] = hashlib.sha256(json.dumps(
         payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
     ).encode("utf-8")).hexdigest()
+    validate_bounded_research_refresh(
+        payload, receipt=receipt, graph=graph, plan=plan,
+        facts_artifact=facts_artifact, facts_source_sha256=facts_source_sha256,
+        descriptor=descriptor, prior_candidate=prior_candidate,
+        repository=application.repository,
+    )
     return payload
 
 
@@ -189,11 +199,14 @@ def validate_bounded_research_refresh(
         or val_identity.available_at != descriptor.point_in_time.available_at
         or refreshed.envelope.run_id != descriptor.run_id
         or refreshed.artifact_id == prior.artifact_id
-        or refreshed.envelope.payload_sha256 == prior.envelope.payload_sha256
         or val_payload.get("status") == "not_ready"
         or any(val_payload.get(key) is None for key in
                ("bear_value", "base_value", "bull_value"))):
         raise ValueError("Refreshed valuation artifact is not a distinct complete result")
+    if repository.load_latest(
+        SCOPE_SECURITY, descriptor.symbol, ARTIFACT_VALUATION_RESULT,
+    ).artifact_id != refreshed.artifact_id:
+        raise ValueError("Refreshed valuation is no longer the current research version")
     validity_id = first_ref.get("model_validity_artifact_id")
     validity = repository.load_by_id(validity_id) if validity_id else None
     if validity is not None:

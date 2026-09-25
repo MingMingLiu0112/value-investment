@@ -650,6 +650,19 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
     prior_path.write_text("tampered", encoding="utf-8")
     with pytest.raises(ValueError, match="source bytes"):
         validate_bounded_research_refresh(result, **validation)
+    prior_path.write_text(canonicalize_artifact_payload(prior.envelope.payload_object()),
+                          encoding="utf-8")
+    successor = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None, run_id="bounded-refresh-successor",
+        point_in_time=replace(
+            descriptor.point_in_time,
+            available_at=datetime(2026, 9, 24, 12, tzinfo=timezone.utc),
+            computed_at=datetime(2026, 9, 24, 13, tzinfo=timezone.utc),
+        ),
+    ))
+    application.run_company_research(build_research_run_spec(successor))
+    with pytest.raises(ValueError, match="no longer the current"):
+        validate_bounded_research_refresh(result, **validation)
 
 
 def test_application_adds_binding_mismatch_blocker_without_order():
