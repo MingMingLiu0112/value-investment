@@ -48,6 +48,8 @@ def test_graph_is_hash_pinned_and_reaches_current_status():
     assert all(node.version.startswith("a") for node in nodes)
     status = next(node for node in nodes if node.kind == "current_research_status")
     assert len(status.inputs) == 5
+    valuation = next(node for node in nodes if node.kind == "valuation_result")
+    assert valuation.node_id.startswith("artifact:600519:valuation_result:")
 
 
 def test_graph_refuses_missing_required_upstream_artifact():

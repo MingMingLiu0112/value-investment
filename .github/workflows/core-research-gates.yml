@@ -109,6 +109,10 @@ jobs:
           tests/test_m3_strict_pit_evidence.py
           tests/test_m3_reconstructed_evidence_continuity.py
           tests/test_m5_human_review_reconciliation.py
+          tests/test_m5_financial_fact_verification.py
+          tests/test_m5_bounded_recalculation_result.py
+          tests/test_m5_actual_read_model.py
+          tests/test_m5_research_artifact_graph.py
           tests/test_m7_daily_workbook.py
           tests/test_wps_verifier_text_scans.py
           tests/test_public_workbook_wps_audit.py

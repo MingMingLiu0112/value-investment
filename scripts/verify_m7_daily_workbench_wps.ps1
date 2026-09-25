@@ -5,7 +5,8 @@ param(
     [Parameter(Mandatory = $true)][string]$PackagePath,
     [Parameter(Mandatory = $true)][string]$CanonicalPath,
     [Parameter(Mandatory = $true)][string]$ExpectedCanonicalSha256,
-    [switch]$PostCheckpointA
+    [switch]$PostCheckpointA,
+    [switch]$ActualEventReadModel
 )
 $ErrorActionPreference = 'Stop'
 [Console]::InputEncoding = [Text.UTF8Encoding]::new()
@@ -143,14 +144,22 @@ try {
         if ($visibleText -notmatch [regex]::Escape('M3 重建证据连续性')) {
             throw 'Post-Checkpoint A M7 candidate is missing the reconstructed M3 evidence layer.'
         }
-        if ($visibleText -notmatch [regex]::Escape('600519 新增真实披露待复核队列')) {
-            throw 'Post-Checkpoint A M7 candidate is missing the 600519 disclosure queue layer.'
+        $expectedEventLabel = if ($ActualEventReadModel) { '600519 实际事件闭环' } else { '600519 新增真实披露待复核队列' }
+        if ($visibleText -notmatch [regex]::Escape($expectedEventLabel)) {
+            throw 'Post-Checkpoint A M7 candidate is missing the required 600519 event layer.'
         }
         if ($visibleText -notmatch [regex]::Escape('strict PIT=NOT_PROVEN')) {
             throw 'Post-Checkpoint A M7 candidate lost the strict-PIT NOT_PROVEN boundary.'
         }
-        if ($package.summary.m5_600519_pending_reviews -ne 9) {
+        $expectedPending = if ($ActualEventReadModel) { 0 } else { 9 }
+        if ($package.summary.m5_600519_pending_reviews -ne $expectedPending) {
             throw 'Post-Checkpoint A M7 candidate lost the 600519 pending-review count.'
+        }
+        if ($ActualEventReadModel) {
+            if ($visibleText -notmatch [regex]::Escape('STILL_NOT_READY') -or
+                $visibleText -notmatch [regex]::Escape('missing_dependency_node:valuation_inputs')) {
+                throw 'Actual M5 workbench lost the bounded-recalculation blocker.'
+            }
         }
         if ($package.summary.m3_reconstructed_continuity_status -ne 'RECONSTRUCTED_EVIDENCE_ONLY') {
             throw 'Post-Checkpoint A M7 candidate lost the reconstructed-evidence status.'

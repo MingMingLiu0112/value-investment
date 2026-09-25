@@ -16,13 +16,21 @@ from pypdf import PdfReader
 
 
 HEADINGS = ("合并资产负债表", "合并利润表", "合并现金流量表")
+SECTION_HEADINGS = (*HEADINGS, "母公司资产负债表", "母公司利润表", "母公司现金流量表")
 FACT_PATTERNS = {
-    "operating_revenue": re.compile(r"营业收入\s+43\s+([-\d,]+\.\d{2})"),
-    "operating_cost": re.compile(r"营业成本\s+43\s+([-\d,]+\.\d{2})"),
-    "net_profit": re.compile(r"四、净利润.*?\s+([-\d,]+\.\d{2})\s+[-\d,]+\.\d{2}", re.S),
-    "cash_received_from_sales": re.compile(r"销售商品、提供劳务收到的现金\s+([-\d,]+\.\d{2})"),
-    "cash_and_cash_equivalents": re.compile(r"货币资金\s+1\s+([-\d,]+\.\d{2})"),
+    "consolidated_balance_sheet": {
+        "monetary_funds": re.compile(r"(?m)^货币资金\s+1\s+([-\d,]+\.\d{2})\s+[-\d,]+\.\d{2}"),
+    },
+    "consolidated_income_statement": {
+        "operating_revenue": re.compile(r"(?m)^其中：营业收入\s+43\s+([-\d,]+\.\d{2})\s+[-\d,]+\.\d{2}"),
+        "operating_cost": re.compile(r"(?m)^其中：营业成本\s+43\s+([-\d,]+\.\d{2})\s+[-\d,]+\.\d{2}"),
+        "net_profit": re.compile(r"五、净利润[^\n]{0,45}\n[^\n]{0,8}\s+([-\d,]+\.\d{2})\s+[-\d,]+\.\d{2}"),
+    },
+    "consolidated_cash_flow_statement": {
+        "cash_received_from_sales": re.compile(r"(?m)^销售商品、提供劳务收到的现金\s+([-\d,]+\.\d{2})\s+[-\d,]+\.\d{2}"),
+    },
 }
+SECTION_BY_HEADING = dict(zip(HEADINGS, FACT_PATTERNS))
 
 
 def digest(path: Path) -> str:
@@ -44,6 +52,7 @@ def main() -> int:
     reader = PdfReader(str(pdf))
     hits = []
     numeric_candidates = []
+    section = None
     for page_number, page in enumerate(reader.pages, 1):
         text = page.extract_text() or ""
         matched = tuple(item for item in HEADINGS if item in text)
@@ -54,21 +63,37 @@ def main() -> int:
                 "text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
                 "excerpt": text[:1200],
             })
-        for field, pattern in FACT_PATTERNS.items():
-            if any(item["field"] == field for item in numeric_candidates):
+        boundaries = sorted(
+            (match.start(), match.group(0))
+            for heading in SECTION_HEADINGS
+            for match in re.finditer(r"(?m)^" + re.escape(heading) + r"$", text)
+        )
+        starts = [(0, section), *[(position, SECTION_BY_HEADING.get(heading)) for position, heading in boundaries]]
+        for index, (start, active_section) in enumerate(starts):
+            end = starts[index + 1][0] if index + 1 < len(starts) else len(text)
+            if active_section is None:
                 continue
-            match = pattern.search(text)
-            if match:
-                line = match.group(0).replace("\n", " ")
-                numeric_candidates.append({
-                    "field": field,
-                    "value": match.group(1).replace(",", ""),
-                    "unit": "CNY",
-                    "page_number": page_number,
-                    "source_line": line[:500],
-                    "page_text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
-                    "verification_status": "PENDING_HUMAN_FINANCIAL_FACT_VERIFICATION",
-                })
+            segment = text[start:end]
+            for field, pattern in FACT_PATTERNS[active_section].items():
+                if any(item["field"] == field for item in numeric_candidates):
+                    continue
+                match = pattern.search(segment)
+                if match:
+                    numeric_candidates.append({
+                        "field": field,
+                        "value": match.group(1).replace(",", ""),
+                        "unit": "CNY",
+                        "unit_basis": "yuan",
+                        "statement_scope": "consolidated",
+                        "statement_type": active_section,
+                        "column_basis": "current_period_first_column",
+                        "page_number": page_number,
+                        "source_line": match.group(0).replace("\n", " ")[:500],
+                        "page_text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                        "verification_status": "PENDING_HUMAN_FINANCIAL_FACT_VERIFICATION",
+                    })
+        if boundaries:
+            section = SECTION_BY_HEADING.get(boundaries[-1][1])
     payload = {
         "schema_version": "m5-financial-fact-candidate-extraction-v1",
         "symbol": args.symbol,

@@ -1,14 +1,19 @@
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PDF = ROOT / "runtime/m5-600519-disclosure-queue-20260924/source/600519/announcements/2026-08-15/1225475868.pdf"
+EVIDENCE_ROOT = Path(os.environ.get("M5_ACTUAL_EVIDENCE_ROOT", ROOT))
+PDF = EVIDENCE_ROOT / "runtime/m5-600519-disclosure-queue-20260924/source/600519/announcements/2026-08-15/1225475868.pdf"
 
 
 def test_half_year_pdf_extracts_statement_navigation_without_promoting_facts(tmp_path):
+    if not PDF.is_file():
+        pytest.skip("Actual report PDF is not available in this checkout")
     output = tmp_path / "candidates.json"
     completed = subprocess.run(
         [
@@ -27,7 +32,7 @@ def test_half_year_pdf_extracts_statement_navigation_without_promoting_facts(tmp
     assert {
         item["field"] for item in payload["numeric_facts"]
     } == {
-        "cash_and_cash_equivalents",
+        "monetary_funds",
         "operating_revenue",
         "operating_cost",
         "net_profit",
@@ -39,6 +44,7 @@ def test_half_year_pdf_extracts_statement_navigation_without_promoting_facts(tmp
         and item["source_line"]
         for item in payload["numeric_facts"]
     )
+    assert all(item["statement_scope"] == "consolidated" for item in payload["numeric_facts"])
     assert {heading for page in payload["matched_statement_pages"] for heading in page["headings"]} == {
         "合并资产负债表", "合并利润表", "合并现金流量表"
     }

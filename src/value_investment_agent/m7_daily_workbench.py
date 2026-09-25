@@ -285,6 +285,14 @@ def _validate_packet(packet: Mapping[str, Any]) -> Mapping[str, Any]:
                 )
         if disclosure_queue.get("action") != ACTION_NO_ORDER:
             raise ValueError("m5.disclosure_queue_600519.action must be no_order")
+    actual = m5.get("actual_event_chain")
+    if actual is not None:
+        actual = _required_mapping(actual, "m5.actual_event_chain")
+        rows = _required_list(actual.get("rows"), "m5.actual_event_chain.rows")
+        if (actual.get("action") != ACTION_NO_ORDER or actual.get("reviewed_count") != len(rows)
+            or actual.get("pending_human_review") != 0
+            or any(row.get("action") != ACTION_NO_ORDER for row in rows)):
+            raise ValueError("Actual event read model has inconsistent review or action state")
 
     m6 = _required_mapping(packet["m6"], "m6")
     _required_list(m6.get("blockers"), "m6.blockers")
@@ -402,7 +410,15 @@ def _overview(packet: Mapping[str, Any], wb: Workbook) -> None:
             ),
             2,
         )
-    if disclosure_queue:
+    actual = packet["m5"].get("actual_event_chain")
+    if actual:
+        row = _label_value(
+            ws, row, "600519 真实公告进度",
+            f"{actual['reviewed_count']} 条已复核，{actual['pending_human_review']} 条待复核；"
+            f"{actual['verified_fact_count']} 项半年报事实已按 PDF 核对。"
+            "需重算事件仍等待完整估值输入及人工决策复核。", 2,
+        )
+    elif disclosure_queue:
         row = _label_value(
             ws,
             row,
@@ -723,8 +739,27 @@ def _event_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
     row += 1
     row = _label_value(ws, row, "持续监控", str(m5.get("continuous_ops_status") or ""), 5)
 
+    actual = m5.get("actual_event_chain")
     disclosure_queue = m5.get("disclosure_queue_600519")
-    if disclosure_queue:
+    if actual:
+        row += 1
+        row = _label_value(
+            ws, row, "600519 实际事件闭环",
+            f"人工已复核 {actual['reviewed_count']} 条；待复核 {actual['pending_human_review']} 条；"
+            f"已核半年报事实 {actual['verified_fact_count']} 项；"
+            "新估值未就绪时保持原结论失效。", 5,
+        )
+        row = _header(ws, row, ["公告ID", "人工结论", "标题", "重算状态 / 阻断", "PDF SHA-256"])
+        for item in actual["rows"]:
+            detail = item["recalculation_status"]
+            if item["blockers"]:
+                detail += " | " + ", ".join(item["blockers"])
+            values = [item["announcement_id"], item["materiality"], item["title"], detail, item["pdf_sha256"]]
+            for column, value in enumerate(values, 1):
+                _style(ws.cell(row, column, value), fill=AMBER)
+            ws.row_dimensions[row].height = max(24, len(values[2]) // 23 * 15 + 18)
+            row += 1
+    elif disclosure_queue:
         row += 1
         row = _label_value(
             ws,

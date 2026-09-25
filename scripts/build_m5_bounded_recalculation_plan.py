@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
@@ -25,14 +25,15 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--receipt", required=True, type=Path)
     parser.add_argument("--graph-receipt", required=True, type=Path)
-    parser.add_argument("--generated-at", required=True, type=datetime.fromisoformat)
+    parser.add_argument("--generated-at", type=datetime.fromisoformat)
     parser.add_argument("--output", required=True, type=Path)
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    if args.generated_at.tzinfo is None:
+    generated_at = args.generated_at or datetime.now(timezone.utc)
+    if generated_at.tzinfo is None:
         raise ValueError("--generated-at must include a timezone")
     receipt_path = args.receipt.resolve()
     graph_path = args.graph_receipt.resolve()
@@ -44,7 +45,7 @@ def main() -> int:
     graph_artifact = json.loads(graph_path.read_text(encoding="utf-8"))
     graph = dependency_graph_from_payload(graph_artifact["graph"])
     plan = build_bounded_recalculation_plan(
-        receipt=receipt, graph=graph, generated_at=args.generated_at,
+        receipt=receipt, graph=graph, generated_at=generated_at,
     )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(plan.as_policy(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

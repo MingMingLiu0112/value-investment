@@ -136,9 +136,9 @@ def build_bounded_recalculation_plan(
         raise ValueError("Receipt must remain no_order")
     if generated_at.tzinfo is None or generated_at < receipt.generated_at:
         raise ValueError("Plan cannot precede its receipt")
-    nodes_by_kind: dict[str, list[str]] = {}
+    nodes_by_kind: dict[tuple[str, str], list[str]] = {}
     for node in graph.nodes():
-        nodes_by_kind.setdefault(node.kind, []).append(node.node_id)
+        nodes_by_kind.setdefault((node.symbol, node.kind), []).append(node.node_id)
     event_by_id = {event.event_id: event for event in receipt.active_events}
     grouped: dict[tuple[str, str], dict[str, Any]] = {}
     for invalidation in receipt.invalidations:
@@ -157,7 +157,9 @@ def build_bounded_recalculation_plan(
                 entry["refs"][str(ref["id"])] = dict(ref)
     tasks = []
     for (symbol, kind), entry in sorted(grouped.items()):
-        node_ids = tuple(sorted(nodes_by_kind.get(kind, ())))
+        node_ids = tuple(sorted(
+            (*nodes_by_kind.get((symbol, kind), ()), *nodes_by_kind.get(("*", kind), ()))
+        ))
         event_ids = tuple(sorted(entry["events"]))
         status = STATUS_EVIDENCE_REQUIRED if kind == "financial_facts" else STATUS_REVIEW_REQUIRED
         blockers: tuple[str, ...] = ()
@@ -179,3 +181,23 @@ def build_bounded_recalculation_plan(
         receipt_id=receipt.receipt_id, receipt_sha256=receipt_sha,
         graph_sha256=graph_sha, tasks=tuple(tasks),
     )
+
+
+def bounded_recalculation_plan_from_payload(payload: Mapping[str, Any]) -> BoundedRecalculationPlan:
+    if payload.get("schema_version") != PLAN_SCHEMA:
+        raise ValueError("Unsupported recalculation plan schema")
+    tasks = tuple(BoundedRecalculationTask(
+        task_id=item["task_id"], symbol=item["symbol"],
+        event_ids=tuple(item["event_ids"]), dependency_kind=item["dependency_kind"],
+        node_ids=tuple(item["node_ids"]), status=item["status"],
+        blockers=tuple(item["blockers"]), evidence_refs=tuple(item["evidence_refs"]),
+        action=item["action"],
+    ) for item in payload["tasks"])
+    plan = BoundedRecalculationPlan(
+        plan_id=payload["plan_id"], generated_at=datetime.fromisoformat(payload["generated_at"]),
+        receipt_id=payload["receipt_id"], receipt_sha256=payload["receipt_sha256"],
+        graph_sha256=payload["graph_sha256"], tasks=tasks, action=payload["action"],
+    )
+    if dict(payload) != plan.as_policy():
+        raise ValueError("Recalculation plan payload is not canonical")
+    return plan
