@@ -96,7 +96,7 @@ Domain must not import:
 | Domain / Decision | `investment_decision.py`, `decision_read_model.py`, `pre_decision_eligibility.py` | 大文件先不拆，确认职责后再拆 |
 | Domain / Portfolio | `portfolio_contracts.py`, `portfolio_risk.py`, `position_guidance.py`, `dividend_income_projection.py` | 私人数据边界保持不变 |
 | Domain / Events | `event_materiality.py`, `m5_event_*.py` | 事件合同与运营编排分开 |
-| Domain / Historical Validation | `domain/historical_validation/admission.py`；旧 `historical_validation.py` 为 shim | 已开始边界迁移，统一 admission/PIT/replay 边界 |
+| Domain / Historical Validation | `historical_validation.py` 由冻结 receipt 按原路径和 SHA-256 绑定 | provenance-frozen，不移动、不改写；新的只读校验用例进入 `application/historical_validation/` |
 | Application | `research_application.py`, `research_batch.py`, `research_e2e_replay.py` | 作为应用编排，不导入 Excel/DB 业务实现 |
 | Infrastructure | `db.py`, `disclosures.py`, `market.py`, `backup*.py`, `private_portfolio_intake.py` | 保持 I/O、持久化、外部数据和密钥边界 |
 | Presentation | `excel_report.py`, `workbook_simple_overview.py`, `*_workbook.py` | 只消费 Product Read Model / typed result，不重算投资结论 |
@@ -191,13 +191,20 @@ canonical workbook / current pointer / receipt-bound artifact 不得为目录美
 ```text
 TARGET_ARCHITECTURE_DEFINED = true
 NEW_CODE_PLACEMENT_RULES = ACTIVE
-FIRST_DOMAIN_MIGRATION = historical_validation
+RECEIPT_AUDIT_APPLICATION_MIGRATION = historical_validation
+HISTORICAL_VALIDATION_DOMAIN_MIGRATION = BLOCKED_BY_FROZEN_RECEIPT_HASH
 ROOT_ARTIFACT_CLUTTER = INVENTORY_IN_PROGRESS
 CURRENT_ARTIFACT_ENTRY = config/current-trial-workbook.json
 DOCS_CURRENT_VS_ARCHIVE = INVENTORY_IN_PROGRESS
 CORE_BEHAVIOR_CHANGED = false
 action = no_order
 ```
+
+`src/value_investment_agent/historical_validation.py` 不是普通的 legacy module。现有历史验证
+receipt 将路径 `src/value_investment_agent/historical_validation.py` 和 SHA-256
+`806d890817611000a588c9ee76ee00cc18a2529d5e1ee9769c092cc00452c5ba` 一起纳入不可变
+input manifest。将该文件改成 shim 会使旧 receipt 无法复验。因此它必须保持原字节，任何
+新行为必须通过新的 v2 admission/receipt 链建立，而不是原地迁移。
 
 每批迁移必须满足：
 

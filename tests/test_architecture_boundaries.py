@@ -1,22 +1,18 @@
 from __future__ import annotations
 
 import ast
-import importlib
+import hashlib
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_historical_validation_domain_and_legacy_shim_export_same_contracts():
-    legacy = importlib.import_module("value_investment_agent.historical_validation")
-    domain = importlib.import_module(
-        "value_investment_agent.domain.historical_validation"
-    )
+def test_hash_bound_historical_validation_contract_is_byte_for_byte_frozen():
+    path = ROOT / "src" / "value_investment_agent" / "historical_validation.py"
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
 
-    assert domain.__all__
-    for name in domain.__all__:
-        assert getattr(legacy, name) is getattr(domain, name)
+    assert digest == "806d890817611000a588c9ee76ee00cc18a2529d5e1ee9769c092cc00452c5ba"
 
 
 def test_historical_validation_domain_has_no_infrastructure_or_presentation_imports():
@@ -24,9 +20,7 @@ def test_historical_validation_domain_has_no_infrastructure_or_presentation_impo
         ROOT
         / "src"
         / "value_investment_agent"
-        / "domain"
-        / "historical_validation"
-        / "admission.py"
+        / "historical_validation.py"
     )
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     imported: set[str] = set()
@@ -62,3 +56,4 @@ def test_new_code_placement_rules_are_recorded():
     assert "## New Code Placement Rules" in rules
     assert "DEPRECATED_COMPATIBILITY_SHIM" in rules
     assert "NEW_CODE_PLACEMENT_RULES = ACTIVE" in inventory
+    assert "HISTORICAL_VALIDATION_DOMAIN_MIGRATION" in inventory

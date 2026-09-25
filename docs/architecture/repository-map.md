@@ -13,7 +13,8 @@
 | `src/value_investment_agent/m5_*` | Event Domain / Application / Operations | Active | M5 scripts | 事件事实、材料性、运营编排分层 |
 | `src/value_investment_agent/m6_*` | Operations | Active offline only | M6 preflight/control CLI | 生产授权仍未授予 |
 | `src/value_investment_agent/m7_daily_workbench.py` | Presentation / Operations | Active candidate | M7 trial pointer | 只读候选，不是正式原表 |
-| `src/value_investment_agent/domain/historical_validation/admission.py` | Historical Validation Domain | Active | admission scripts | 旧 `historical_validation.py` 为 compatibility shim |
+| `src/value_investment_agent/historical_validation.py` | Historical Validation Domain | Provenance-frozen | admission scripts | receipt-bound byte-for-byte；不得移动或改写 |
+| `src/value_investment_agent/application/historical_validation/` | Historical Validation Application | Active | `scripts/audit_historical_validation_receipt.py` | 只读 receipt audit；不替代冻结的 admission contract |
 | `src/value_investment_agent/db.py` | Infrastructure / Database | Active | CLI / application | PostgreSQL 结构化事实底座 |
 | `src/value_investment_agent/backup*.py`、`m6_*recovery*` | Infrastructure / Operations | Active offline | ops scripts | 真实恢复演练仍需隔离环境 |
 | `src/value_investment_agent/excel_report.py`、`workbook_simple_overview.py` | Presentation / Excel | Legacy active | publication scripts | 新代码使用 Product Read Model |
