@@ -21,4 +21,5 @@ def test_vfinal_authorization_package_is_complete_but_not_authorized():
     assert prepared["shadow"]["minimum_consecutive_real_sessions"] == 20
     assert prepared["shadow"]["minimum_real_financial_or_capital_event"] == 1
     assert prepared["shadow"]["candidate_signers"] == 4
+    assert "separately_pinned_event_admission" in prepared["shadow"]["event_observation"]
     assert all(value is None for value in package["user_to_authorize"].values())

@@ -324,6 +324,7 @@ def assess_session_ledger(
     trusted_shadow_root: Mapping[str, str] | None = None,
     operational_shadow_bundle: Mapping[str, Any] | None = None,
     operational_shadow_trust_root: Mapping[str, Any] | None = None,
+    operational_event_evidence: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     schedule = None
     live_calendar = None
@@ -397,6 +398,7 @@ def assess_session_ledger(
             "status": status,
             "resource_baseline_ok": bool(record.get("resource_baseline_ok")),
             "real_event_materialized": bool(record.get("real_event_materialized")),
+            "session_receipt_sha256": record.get("session_receipt_sha256"),
             "signed_candidate": (record.get('session_receipt_sha256') == verified_receipts.get(
                 session_date.isoformat()) and session_date.isoformat() in verified_receipts),
             "operationally_admitted": (
@@ -441,7 +443,37 @@ def assess_session_ledger(
                     or not item["resource_baseline_ok"]):
                 break
             verified_streak += 1
-    verified_events = 0
+    verified_event_ids: set[str] = set()
+    if operational_event_evidence:
+        if operational_shadow_bundle is None or operational_shadow_trust_root is None:
+            raise ValueError("Operational events require the admitted Shadow bundle")
+        from .m6_event_admission import verify_operational_event_observation
+        admitted_by_date = {
+            item["session_date"]: item for item in operational_eligible
+            if item["real_event_materialized"]
+        }
+        for evidence in operational_event_evidence:
+            if set(evidence) != {
+                "candidate_evidence", "event_admission",
+                "approved_event_admission_sha256",
+            }:
+                raise ValueError("Operational event evidence schema differs")
+            result = verify_operational_event_observation(
+                candidate_evidence=evidence["candidate_evidence"],
+                operational_shadow_bundle=operational_shadow_bundle,
+                operational_shadow_trust_root=operational_shadow_trust_root,
+                event_admission=evidence["event_admission"],
+                approved_event_admission_sha256=evidence["approved_event_admission_sha256"],
+                required_sessions=config.minimum_real_sessions,
+                required_events=config.minimum_real_events,
+            )
+            ledger_row = admitted_by_date.get(result["session_date"])
+            if (ledger_row is None
+                    or ledger_row["session_receipt_sha256"] != result["session_receipt_sha256"]
+                    or result["event_id"] in verified_event_ids):
+                raise ValueError("Operational event is absent, mismatched or duplicated in ledger")
+            verified_event_ids.add(result["event_id"])
+    verified_events = len(verified_event_ids)
     blockers = []
     if verified_streak < config.minimum_real_sessions:
         blockers.append(
@@ -474,6 +506,7 @@ def assess_session_ledger(
             "eligible_sessions": verified_sessions,
             "latest_streak": verified_streak,
             "real_events": verified_events,
+            "verified_event_ids": sorted(verified_event_ids),
             "declared_eligible_sessions": len(eligible),
             "declared_latest_streak": declared_streak,
             "declared_real_events": declared_events,

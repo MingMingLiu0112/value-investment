@@ -1,5 +1,18 @@
 # 当前执行状态
 
+## 2026-09-25 M6 真实事件运营准入合同 R0
+
+新增 `m6-event-admission-v1`，把现有事件候选、公告原件/CNINFO 索引、M5 review/receipt、
+已准入 M6 会话、生产授权、运营 admission 与 intake 链头组合验证。第五方 admission
+密钥需对每个具体事件另行签收，并由包外固定精确收据 Hash；完整重签但改变任一绑定
+字段仍失败关闭。`assess_session_ledger` 只接受该组合结果，并要求账本同日明确声明事件且
+会话收据 Hash 相同；普通布尔声明、离线候选、历史 600519 回放及仅有会话 admission
+继续计 0。定向事件/会话回归 `89 passed`。
+
+这完成的是未来真实事件的机器侧准入合同，不是已经观察到真实事件。当前未启动 Shadow，
+`verified_actual_sessions=0`、`real_events=0`、`M6_OPERATIONAL=NOT_STARTED`、
+`production_authorization_granted=false`，永久 `action=no_order`。
+
 ## 2026-09-25 M6 五方运营准入与 vFinal 授权提案
 
 新增 `m6-shadow-admission-v1`：第五把独立 admission 公钥与包外批准收据 Hash 绑定

@@ -75,6 +75,7 @@
       "intake": "Alibaba_OSS_object_lock_server_timestamp_and_monotonic_chain",
       "candidate_signers": 4,
       "admission_signer": "fifth_distinct_Ed25519_key",
+      "event_observation": "source_to_M5_to_session_lineage_plus_separately_pinned_event_admission",
       "historical_replay_counts": false,
       "synthetic_session_counts": false
     },
