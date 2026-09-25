@@ -358,7 +358,7 @@ def _overview(packet: Mapping[str, Any], wb: Workbook) -> None:
     _title(
         ws,
         "A股价值投资 Agent 每日工作台",
-        "只读展示候选。所有 Review 均需人工决策，本表不生成订单、仓位或交易结论。",
+        "只读展示候选。研究复核不等于资金决策；真实交易由用户决定。本表不生成订单、仓位或交易结论。",
         2,
     )
     row = 4
@@ -404,12 +404,19 @@ def _overview(packet: Mapping[str, Any], wb: Workbook) -> None:
     )
     row = _label_value(ws, row, "需要减仓 / 退出复核", "0 条。", 2)
     m5 = packet["m5"]
+    actual = m5.get("actual_event_chain")
+    event_risk = (
+        f"真实公告已复核 {actual['reviewed_count']} 条，待复核 {actual['pending_human_review']} 条；"
+        f"{sum(item['recalculation_status'] == 'STILL_NOT_READY' for item in actual['rows'])} 条事件仍缺重算证据。"
+        if actual else
+        f"新增待人工复核事件 {m5['pending_human_review']} 条；"
+        f"Hash 冲突 {m5['hash_conflicts']} 条。"
+    )
     row = _label_value(
         ws,
         row,
         "分红 / 事件风险",
-        f"新增待人工复核事件 {m5['pending_human_review']} 条；"
-        f"Hash 冲突 {m5['hash_conflicts']} 条。",
+        event_risk,
         2,
     )
     row = _label_value(ws, row, "数据源失效", "未发现。质量通道仍为 COVERAGE_LIMITED，不是数据源故障。", 2)
@@ -456,13 +463,12 @@ def _overview(packet: Mapping[str, Any], wb: Workbook) -> None:
             ),
             2,
         )
-    actual = packet["m5"].get("actual_event_chain")
     if actual:
         row = _label_value(
             ws, row, "600519 真实公告进度",
             f"{actual['reviewed_count']} 条已复核，{actual['pending_human_review']} 条待复核；"
             f"{actual['verified_fact_count']} 项半年报事实已按 PDF 核对。"
-            "需重算事件仍等待完整估值输入及人工决策复核。", 2,
+            "需重算事件仍等待经过研究复核的完整估值输入；无新估值。", 2,
         )
     elif disclosure_queue:
         row = _label_value(

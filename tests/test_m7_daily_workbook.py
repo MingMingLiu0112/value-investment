@@ -329,6 +329,8 @@ def test_overview_is_explicitly_fail_closed_and_no_order(tmp_path: Path):
     assert "当前无任何可用订单" in text
     assert "0 条。当前没有 BUY / ADD 复核可进入" in text
     assert "真实 IPS / 持仓尚未由用户提供" in text
+    assert "研究复核不等于资金决策；真实交易由用户决定" in text
+    assert "所有 Review 均需人工决策" not in text
     for forbidden in ("建议买入", "建议加仓", "目标仓位", "下单"):
         assert forbidden not in text
     assert receipt["action"] == ACTION_NO_ORDER
@@ -359,7 +361,13 @@ def test_actual_event_sheet_explains_dependency_and_not_ready_boundary():
         }],
         "action": ACTION_NO_ORDER,
     }
-    sheet = build_daily_workbench(packet)[VISIBLE_SHEETS[6]]
+    workbook = build_daily_workbench(packet)
+    overview = "\n".join(str(value) for row in workbook[VISIBLE_SHEETS[0]].iter_rows(values_only=True)
+                         for value in row if value is not None)
+    assert "真实公告已复核 1 条，待复核 0 条；1 条事件仍缺重算证据" in overview
+    assert "新增待人工复核事件 1 条" not in overview
+    assert "经过研究复核的完整估值输入；无新估值" in overview
+    sheet = workbook[VISIBLE_SHEETS[6]]
     text = "\n".join(str(value) for row in sheet.iter_rows(values_only=True)
                      for value in row if value is not None)
     for expected in ("1225475868", "financial_facts, valuation_inputs", "STILL_NOT_READY",
