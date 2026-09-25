@@ -1,8 +1,10 @@
 from datetime import datetime, timezone
+from dataclasses import replace
 import hashlib
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -39,7 +41,8 @@ def _inputs():
 
 
 def test_actual_pending_descriptor_routes_to_null_not_ready_valuation():
-    descriptor = build_pending_research_input(**_inputs())
+    inputs = _inputs()
+    descriptor = build_pending_research_input(**inputs)
     restored = descriptor_from_payload(descriptor.as_policy())
     assert restored.input_sha256 == descriptor.input_sha256
     assert restored.facts.operating_inputs["start_book_equity"] == 251253594419.50
@@ -49,6 +52,18 @@ def test_actual_pending_descriptor_routes_to_null_not_ready_valuation():
     assert restored.assumptions is None
     assert restored.point_in_time.report_period.isoformat() == "2026-06-30"
     assert restored.point_in_time.research_as_of.isoformat() == "2026-09-25"
+    event_pdfs = {(ref["sha256"], ref["source_url"])
+                  for event in inputs["receipt"].active_events
+                  for ref in event.evidence_refs if ref.get("source_url")}
+    source_pdfs = {(source.sha256, source.location) for source in restored.sources
+                   if source.kind == "filing"}
+    case_pdfs = {(ref["sha256"], ref["source_url"])
+                 for ref in restored.research_case.evidence_refs if ref.get("source_url")}
+    assert len(event_pdfs) == 2
+    assert source_pdfs == case_pdfs == event_pdfs
+    assert any(source.id == "actual-receipt"
+               and source.sha256 == inputs["receipt"].state_sha256
+               for source in restored.sources)
 
     spec = build_research_run_spec(restored)
     outcome = ResearchApplicationService(InMemoryResearchArtifactRepository()).run_company_research(spec)
@@ -65,6 +80,22 @@ def test_pending_descriptor_rejects_unrelated_equity_filing():
     equity["current_disclosed_basis"]["raw_file_hash"] = "0" * 64
     inputs["equity_file_bytes"] = json.dumps(equity).encode("utf-8")
     with pytest.raises(ValueError, match="not tied"):
+        build_pending_research_input(**inputs)
+
+
+def test_pending_descriptor_rejects_event_without_unique_pinned_pdf():
+    inputs = _inputs()
+    original = inputs["receipt"]
+    event = original.active_events[0]
+    changed = replace(event, evidence_refs=tuple(ref for ref in event.evidence_refs
+                                                  if not ref.get("source_url")))
+    inputs["receipt"] = SimpleNamespace(
+        namespace=original.namespace, action=original.action,
+        active_events=(changed, *original.active_events[1:]),
+        generated_at=original.generated_at, receipt_id=original.receipt_id,
+        state_sha256=original.state_sha256,
+    )
+    with pytest.raises(ValueError, match="one pinned source PDF"):
         build_pending_research_input(**inputs)
 
 

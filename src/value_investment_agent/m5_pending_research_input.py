@@ -85,6 +85,24 @@ def build_pending_research_input(
     route = route_profile(profile_id)
     if route.facts_contract is not QualityCompounderFacts:
         raise ValueError("This adapter only accepts the registered quality-compounder facts contract")
+    filing_sources = []
+    filing_refs = []
+    for event in sorted(receipt.active_events, key=lambda item: item.event_id):
+        pdf_refs = [ref for ref in event.evidence_refs
+                    if ref.get("sha256") and ref.get("source_url")]
+        if (len(pdf_refs) != 1
+            or pdf_refs[0]["sha256"] != event.current_state.get("source_sha256")):
+            raise ValueError("Every ACTUAL event requires one pinned source PDF")
+        ref = pdf_refs[0]
+        if ref["sha256"] == facts["pdf_sha256"] and ref["source_url"] == facts["source_url"]:
+            continue
+        filing_refs.append({"id": f"actual-event-pdf:{event.event_id}",
+                            "source_url": ref["source_url"], "sha256": ref["sha256"]})
+        filing_sources.append(ResearchSourceDescriptor(
+            id=f"actual-event-pdf:{event.event_id}", kind="filing",
+            location=ref["source_url"], sha256=ref["sha256"],
+            published_at=event.available_at,
+        ))
     refs = [
         {"id": f"official-pdf:{facts['announcement_id']}", "source_url": facts["source_url"],
          "sha256": facts["pdf_sha256"]},
@@ -116,7 +134,7 @@ def build_pending_research_input(
         positives=[], counter_evidence=[], thesis_breakers=[], next_events=[],
         evidence_status="partial", valuation_status="not_ready",
         research_status="event_revalidation_pending", blockers=list(blockers),
-        evidence_refs=refs, quote_date=None, financial_period=period,
+        evidence_refs=[*refs, *filing_refs], quote_date=None, financial_period=period,
         missing_date_reasons={"quote_date": "No quote is used in this event input preflight."},
     )
     sources = (
@@ -134,6 +152,11 @@ def build_pending_research_input(
             sha256=equity_file_sha256,
             retrieved_at=datetime.fromisoformat(basis["assessment_available_at"]),
         ),
+        ResearchSourceDescriptor(
+            id="actual-receipt", kind="run_receipt", location="m5-actual-receipt",
+            sha256=receipt.state_sha256, retrieved_at=receipt.generated_at,
+        ),
+        *filing_sources,
     )
     descriptor = ResearchInputDescriptor(
         schema_version=INPUT_DESCRIPTOR_SCHEMA, descriptor_version="m5-actual-pending-v1",
