@@ -314,6 +314,41 @@ def test_later_research_date_keeps_older_filing_valuation_date():
     defaulted = ResearchApplicationService(InMemoryResearchArtifactRepository()).run_company_research(
         replace(spec, as_of=None)
     )
+
+
+def _fully_bound_quality_descriptor(descriptor):
+    fields = ("cost_of_equity", "terminal_roe", "terminal_growth", "retention",
+              "forecast_roes.0")
+    assumptions = []
+    bindings = []
+    for field in fields:
+        values = {}
+        for scenario_name, scenario in descriptor.facts.scenario_inputs.items():
+            value = scenario.forecast_roes[0] if field == "forecast_roes.0" else getattr(scenario, field)
+            values[scenario_name] = value
+        ref = {"id": "assumption-" + field, "sha256": "c" * 64}
+        assumptions.append(ValuationAssumption(
+            name=field, unit="ratio", bear=values["bear"], base=values["base"],
+            bull=values["bull"], basis="synthetic offline model contract",
+            rationale="explicit test scenario", as_of=AS_OF, confidence="low",
+            sensitivity="high", evidence_refs=[ref], blockers=[],
+        ))
+        for scenario_name, value in values.items():
+            bindings.append(AssumptionScenarioBinding(
+                assumption_name=field, scenario=scenario_name,
+                field_path=field, expected_value=value,
+                evidence_refs=(ref,),
+            ))
+    assumption_set = build_valuation_assumption_set(
+        symbol=descriptor.symbol, profile_id=descriptor.profile_id,
+        model_type=descriptor.assumptions.model_type, as_of=AS_OF,
+        assumptions=assumptions,
+        evidence_refs=[{"id": "scenario-assumptions", "sha256": "c" * 64}],
+    )
+    return finalize_input_descriptor(replace(
+        descriptor, input_sha256=None, assumptions=assumption_set,
+        assumption_bindings=tuple(bindings),
+    ))
     assert defaulted.as_of == research_date
 
     with pytest.raises(ValueError, match="cannot precede"):
@@ -405,12 +440,14 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
             ),
         ),),
     )
-    descriptor = _descriptor()
+    descriptor = _fully_bound_quality_descriptor(_descriptor())
     descriptor = finalize_input_descriptor(replace(
         descriptor, input_sha256=None,
         facts=replace(descriptor.facts,
                       evidence_refs=[{"id": "verified-facts", "sha256": "d" * 64}]),
         sources=(*descriptor.sources,
+                 ResearchSourceDescriptor(id="scenario-assumptions", kind="research_artifact",
+                                          location="assumptions.json", sha256="c" * 64),
                  ResearchSourceDescriptor(id="actual-receipt", kind="research_artifact",
                                           location="receipt.json", sha256=receipt.state_sha256),
                  ResearchSourceDescriptor(id="filing", kind="filing",
@@ -476,6 +513,38 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
     with pytest.raises(ValueError, match="Research case does not reference"):
         attach_valuation_input_descriptor(
             graph=graph, descriptor=wrong_case, receipt=receipt,
+        )
+    missing_binding = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None,
+        assumption_bindings=descriptor.assumption_bindings[:-1],
+    ))
+    with pytest.raises(ValueError, match="every consumed model input"):
+        attach_valuation_input_descriptor(
+            graph=graph, descriptor=missing_binding, receipt=receipt,
+        )
+    altered = [replace(item, base=Decimal("0.11")) if item.name == "terminal_roe"
+               else item for item in descriptor.assumptions.assumptions]
+    wrong_assumptions = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None,
+        assumptions=build_valuation_assumption_set(
+            symbol=descriptor.symbol, profile_id=descriptor.profile_id,
+            model_type=descriptor.assumptions.model_type, as_of=AS_OF,
+            assumptions=altered,
+            evidence_refs=list(descriptor.assumptions.evidence_refs),
+        ),
+    ))
+    with pytest.raises(ValueError, match="evidenced assumption"):
+        attach_valuation_input_descriptor(
+            graph=graph, descriptor=wrong_assumptions, receipt=receipt,
+        )
+    unpinned_assumptions = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None,
+        sources=tuple(source for source in descriptor.sources
+                      if source.id != "scenario-assumptions"),
+    ))
+    with pytest.raises(ValueError, match="not pinned to input sources"):
+        attach_valuation_input_descriptor(
+            graph=graph, descriptor=unpinned_assumptions, receipt=receipt,
         )
 
 
@@ -564,7 +633,7 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
                        symbol="600519", inputs=("research-case",),
                        version="7" * 64, evidence_refs=({"id": "review"},)),
     ))
-    old = _descriptor()
+    old = _fully_bound_quality_descriptor(_descriptor())
     descriptor = finalize_input_descriptor(replace(
         old, input_sha256=None, run_id="bounded-refresh-1",
         facts=replace(old.facts,
@@ -573,6 +642,8 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
                       evidence_refs=[{"id": "verified-facts", "sha256": "d" * 64},
                                      {"id": "actual-receipt", "sha256": receipt.state_sha256}]),
         sources=(*old.sources,
+                 ResearchSourceDescriptor(id="scenario-assumptions", kind="research_artifact",
+                                          location="assumptions.json", sha256="c" * 64),
                  ResearchSourceDescriptor(id="actual-receipt", kind="research_artifact",
                                           location="receipt.json", sha256=receipt.state_sha256),
                  ResearchSourceDescriptor(id="filing", kind="filing",

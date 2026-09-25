@@ -36,6 +36,7 @@ from .research_runtime_import import RuntimeArtifactCandidate
 from .research_input import ResearchInputDescriptor, descriptor_sha256
 from .m5_event_run import M5EventRunReceipt
 from .valuation_assumptions import STATUS_READY
+from .valuation_models.residual_income import QualityCompounderFacts
 from .valuation_router import ROUTE_SUPPORTED, route_profile
 
 
@@ -137,6 +138,28 @@ def attach_valuation_input_descriptor(
             preflight.bear_value, preflight.base_value, preflight.bull_value,
         ))):
         raise ValueError("Valuation input model preflight remains not ready")
+    if not isinstance(descriptor.facts, QualityCompounderFacts):
+        raise ValueError("Complete model-input binding policy is not registered for this profile")
+    required = {}
+    for scenario_name, scenario in descriptor.facts.scenario_inputs.items():
+        for field in ("cost_of_equity", "terminal_roe", "terminal_growth", "retention"):
+            required[(scenario_name, field)] = getattr(scenario, field)
+        for index, value in enumerate(scenario.forecast_roes):
+            required[(scenario_name, f"forecast_roes.{index}")] = value
+    bindings = {(item.scenario, item.field_path): item
+                for item in descriptor.assumption_bindings}
+    assumptions = {item.name: item for item in descriptor.assumptions.assumptions}
+    if len(bindings) != len(descriptor.assumption_bindings) or set(bindings) != set(required):
+        raise ValueError("Scenario assumptions do not bind every consumed model input")
+    for key, value in required.items():
+        binding = bindings[key]
+        assumption = assumptions.get(binding.assumption_name)
+        if (assumption is None
+            or str(getattr(assumption, binding.scenario)) != str(value)
+            or str(binding.expected_value) != str(value)
+            or not binding.evidence_refs
+            or any(ref not in assumption.evidence_refs for ref in binding.evidence_refs)):
+            raise ValueError("Scenario input does not match its evidenced assumption")
     if descriptor.point_in_time.available_at < receipt.generated_at:
         raise ValueError("Valuation inputs precede the ACTUAL event receipt")
     if {event.symbol for event in receipt.active_events} != {descriptor.symbol}:
@@ -152,6 +175,14 @@ def attach_valuation_input_descriptor(
         raise ValueError("Valuation inputs already have a dependency node")
     source_hashes = {source.sha256 for source in descriptor.sources}
     source_locations = {(source.sha256, source.location) for source in descriptor.sources}
+    if (not descriptor.assumptions.evidence_refs
+        or any(ref.get("sha256") not in source_hashes
+               for ref in descriptor.assumptions.evidence_refs)
+        or any(not assumption.evidence_refs
+               or any(ref.get("sha256") not in source_hashes
+                      for ref in assumption.evidence_refs)
+               for assumption in descriptor.assumptions.assumptions)):
+        raise ValueError("Scenario assumption evidence is not pinned to input sources")
     if facts_nodes[0].version not in source_hashes or receipt.state_sha256 not in source_hashes:
         raise ValueError("Valuation inputs are not bound to facts and ACTUAL receipt bytes")
     if not any(ref.get("sha256") == facts_nodes[0].version
