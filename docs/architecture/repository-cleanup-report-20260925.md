@@ -69,6 +69,21 @@ These modules remain pure domain code. Their same-directory relative imports
 preserve the original dependency graph, and all legacy root paths forward
 without duplicating behavior.
 
+### First Script Thinning
+
+The company valuation builder's research-case parsing, FCFF construction,
+PriceBridge creation and evidence hashing moved to:
+
+```text
+src/value_investment_agent/application/valuation/company_valuation_result.py
+```
+
+`scripts/build_company_valuation_result.py` now only parses arguments,
+enforces project-root path boundaries, invokes the application service and
+writes the existing output. Its historical `build(...)` import surface remains
+as a thin wrapper. The explicit FCFF-only behavior is intentionally unchanged
+in this refactor.
+
 ### Provenance Rollback
 
 The first attempted domain migration moved

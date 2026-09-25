@@ -224,6 +224,16 @@ def test_script_business_logic_growth_is_blocked():
     }
 
 
+def test_company_valuation_builder_delegates_to_application_service():
+    path = ROOT / "scripts" / "build_company_valuation_result.py"
+    text = path.read_text(encoding="utf-8")
+
+    assert "FCFFValuationModel" not in text
+    assert "FinancialFacts" not in text
+    assert "build_company_valuation_result" in text
+    assert _line_count(path) <= 90
+
+
 def test_new_domain_and_application_code_has_no_symbol_literals():
     symbol = re.compile(r"[0-9]{6}")
     for layer in ("domain", "application"):
