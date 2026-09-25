@@ -281,7 +281,7 @@ def test_run_request_round_trips_and_rejects_tampering():
         M5EventRunRequest.from_payload(payload)
 
 
-def test_actual_run_request_requires_and_binds_offline_authorization():
+def test_actual_run_request_requires_and_binds_offline_authorization(tmp_path):
     graph = _graph()
     batch = build_materiality_bridge_batch(
         _review(_decision(DECISION_REQUIRES_RECALCULATION)),
@@ -309,6 +309,16 @@ def test_actual_run_request_requires_and_binds_offline_authorization():
     assert request.actual_offline_authorization == authorization
     restored = M5EventRunRequest.from_payload(json.loads(request.to_json()))
     assert restored.as_policy() == request.as_policy()
+    applied = apply_run_request(
+        request=request,
+        store=JsonM5EventRunStateStore(tmp_path / "state"),
+        receipt_store=JsonM5EventRunReceiptStore(tmp_path / "receipts"),
+    )
+    assert applied.receipt.state.actual_offline_authorization == authorization
+    assert (
+        applied.receipt.state.batch_records[0].request_fingerprint
+        == request.request_fingerprint()
+    )
     payload = json.loads(request.to_json())
     payload["actual_offline_authorization"] = None
     with pytest.raises(ValueError, match="require explicit authorization"):

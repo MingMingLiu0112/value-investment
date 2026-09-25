@@ -560,6 +560,7 @@ def _batch_request_fingerprint(
     watermark: ScanWatermark,
     graph: DependencyGraph,
     direct_kinds_by_source_event_id: Mapping[str, Sequence[str]],
+    actual_offline_authorization: M5ActualOfflineAuthorization | None = None,
 ) -> str:
     return batch_request_fingerprint(
         events=events,
@@ -567,6 +568,7 @@ def _batch_request_fingerprint(
         watermark=watermark,
         graph=graph,
         direct_kinds_by_source_event_id=direct_kinds_by_source_event_id,
+        actual_offline_authorization=actual_offline_authorization,
     )
 
 
@@ -845,6 +847,7 @@ def run_event_batch(
         watermark=watermark,
         graph=graph,
         direct_kinds_by_source_event_id=direct_kinds_by_source_event_id,
+        actual_offline_authorization=actual_offline_authorization,
     )
     existing_record = next(
         (
@@ -1060,6 +1063,7 @@ def run_event_batch(
             batch_records=working.batch_records + (record,),
             outbox_revision=working.outbox_revision,
             outbox_transitions=working.outbox_transitions,
+            actual_offline_authorization=working.actual_offline_authorization,
         )
         health_status, silent_ok, review_due = _receipt_health(
             state=next_state,
