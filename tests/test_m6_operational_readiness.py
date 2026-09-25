@@ -302,6 +302,35 @@ def test_preflight_never_claims_operational_acceptance(tmp_path):
     assert any("not authorized" in blocker for blocker in receipt["summary"]["blockers"])
 
 
+def test_preflight_separates_all_operational_gates_and_binds_engineering_sources(monkeypatch):
+    from value_investment_agent import m6_operational_readiness as readiness
+
+    root = Path(__file__).parents[1]
+    monkeypatch.setattr(readiness, 'audit_repository', lambda *_, **__: {
+        'status': 'DONE', 'blockers': [], 'evidence': {},
+    })
+    receipt = build_preflight_receipt(root, root / 'config/m6-operational-preflight-v1.json')
+    criteria = receipt['criteria']
+    assert set(criteria) >= {
+        'm6c4_real_restore_rpo_rto', 'm6c5_real_sessions_and_events',
+        'm6c6_production_authorization', 'm6c7_official_exchange_calendar',
+        'm6c8_backup_readiness', 'm6c9_resource_readiness',
+        'm6c10_health_readiness', 'm6c11_emergency_stop_readiness',
+        'm6c12_scheduler_readiness', 'm6c13_notification_readiness',
+        'm6c14_real_event_observation', 'm6c15_operational_acceptance',
+    }
+    for item in criteria.values():
+        assert {'status', 'evidence_refs', 'evidence_sha256', 'verified_at',
+                'blockers', 'reopen_condition', 'review_class'} <= set(item)
+    assert criteria['m6c2_repository_and_privacy']['status'] == 'DONE'
+    assert criteria['m6c2_repository_and_privacy']['evidence_refs']
+    assert len(criteria['m6c2_repository_and_privacy']['evidence_refs']) == len(
+        criteria['m6c2_repository_and_privacy']['evidence_sha256'])
+    assert criteria['m6c3_isolated_restore_mechanism']['status'] == PARTIAL
+    assert criteria['m6c3_isolated_restore_mechanism']['evidence_refs']
+    assert criteria['m6c15_operational_acceptance']['status'] == NOT_STARTED
+
+
 def test_write_receipt_creates_hash_pointer(tmp_path):
     root, config = _synthetic_repo(tmp_path)
     receipt = build_preflight_receipt(

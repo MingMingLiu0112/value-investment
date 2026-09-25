@@ -383,7 +383,7 @@ def assess_session_ledger(
             "status": status,
             "resource_baseline_ok": bool(record.get("resource_baseline_ok")),
             "real_event_materialized": bool(record.get("real_event_materialized")),
-            "verified": (record.get('session_receipt_sha256') == verified_receipts.get(
+            "signed_candidate": (record.get('session_receipt_sha256') == verified_receipts.get(
                 session_date.isoformat()) and session_date.isoformat() in verified_receipts),
         })
 
@@ -410,17 +410,10 @@ def assess_session_ledger(
         for item in normalized
     )
     simulated = sum(item["observed"] == "simulated" for item in normalized)
-    verified_sessions = sum(item['verified'] for item in eligible)
+    signed_candidates = sum(item['signed_candidate'] for item in eligible)
+    verified_sessions = 0
     verified_streak = 0
     verified_events = 0
-    if schedule is not None:
-        by_date = {item['session_date']: item for item in normalized}
-        for day in reversed(schedule_dates):
-            item = by_date.get(day)
-            if (item is None or not item['verified'] or item['observed'] != 'actual'
-                    or item['status'] != 'success' or not item['resource_baseline_ok']):
-                break
-            verified_streak += 1
     blockers = []
     if verified_streak < config.minimum_real_sessions:
         blockers.append(
@@ -436,6 +429,8 @@ def assess_session_ledger(
         blockers = [item for item in blockers if not item.startswith('session dates are not bound')]
         if not verified_receipts:
             blockers.append('calendar membership does not authenticate real shadow run or production authorization')
+        else:
+            blockers.append('signed session claims lack independently anchored real-time receipt and pinned production trust')
     return _criterion(
         NOT_STARTED,
         [
@@ -454,6 +449,7 @@ def assess_session_ledger(
             "declared_eligible_sessions": len(eligible),
             "declared_latest_streak": declared_streak,
             "declared_real_events": declared_events,
+            "signed_candidate_sessions": signed_candidates,
             "simulated_sessions": simulated,
             "failures": failures,
             "verified_actual_sessions": verified_sessions,
@@ -641,12 +637,23 @@ def build_preflight_receipt(
         blockers=["production migration, scheduling, notification and data scope are not authorized"],
         evidence={"required_items": list(config.authorization_required)},
     )
+    def pending(label: str, blocker: str, status: str = NOT_STARTED) -> dict[str, Any]:
+        return _criterion(status, [_check(label, False)], blockers=[blocker])
+
+    mechanism_files = [root / 'src/value_investment_agent/backup.py',
+                       root / 'tests/test_restore_receipt_binding.py']
+    mechanism_available = all(path.is_file() for path in mechanism_files)
+    emergency_script = root / 'scripts/m6_operational_control.py'
     criteria = {
         "m6c1_product_prerequisites": prerequisites,
         "m6c2_repository_and_privacy": repository,
         "m6c3_isolated_restore_mechanism": _criterion(
-            DONE,
-            [_check("backup/restore unit and failure tests exist", True)],
+            PARTIAL,
+            [_check("backup/restore code is available", mechanism_available),
+             _check("current commit CI result is bound to this preflight", False)],
+            blockers=(["backup/restore source or verifier test is absent"]
+                      if not mechanism_available else []) +
+                     ["current commit restore test receipt is not bound to this preflight"],
         ),
         "m6c4_real_restore_rpo_rto": restore,
         "m6c5_real_sessions_and_events": sessions,
@@ -672,6 +679,37 @@ def build_preflight_receipt(
                 'verified_venue': calendar_evidence['venue'] if session_evidence.get('calendar_live_verified_at') else None,
             } if calendar_evidence is not None else None,
         ),
+        "m6c8_backup_readiness": pending(
+            "current source backup and originals are registered",
+            "no current source backup manifest and offsite copy are verified"),
+        "m6c9_resource_readiness": pending(
+            "PTA and database resource headroom is measured",
+            "production PTA baseline and bounded resource observation are absent"),
+        "m6c10_health_readiness": pending(
+            "authorized production health checks are observed",
+            "production health observations are absent"),
+        "m6c11_emergency_stop_readiness": _criterion(
+            PARTIAL,
+            [_check("local emergency stop contract exists", emergency_script.is_file()),
+             _check("authorized deployment stop and restart drill passed", False)],
+            blockers=(["local emergency stop script is absent"]
+                      if not emergency_script.is_file() else []) +
+                     ["production emergency stop and controlled restart are untested"],
+        ),
+        "m6c12_scheduler_readiness": pending(
+            "authorized scheduler scope is deployed",
+            "production scheduler scope and run receipts are not authorized",
+            REQUIRES_AUTHORIZATION),
+        "m6c13_notification_readiness": pending(
+            "authorized notification delivery is observed",
+            "notification target and delivery scope are not authorized",
+            REQUIRES_AUTHORIZATION),
+        "m6c14_real_event_observation": pending(
+            "one real financial or capital event is observed in authorized Shadow",
+            "no independently verified real-event operational observation exists"),
+        "m6c15_operational_acceptance": pending(
+            "all M6 product and operational gates pass together",
+            "production authorization, restore, real sessions, event and user gates are not passed"),
     }
     review_classes = {
         'm6c1_product_prerequisites': 'R2/R6',
@@ -681,6 +719,14 @@ def build_preflight_receipt(
         'm6c5_real_sessions_and_events': 'R6',
         'm6c6_production_authorization': 'R3',
         'm6c7_official_exchange_calendar': 'R0',
+        'm6c8_backup_readiness': 'R3',
+        'm6c9_resource_readiness': 'R3',
+        'm6c10_health_readiness': 'R3/R6',
+        'm6c11_emergency_stop_readiness': 'R0/R3',
+        'm6c12_scheduler_readiness': 'R3',
+        'm6c13_notification_readiness': 'R3',
+        'm6c14_real_event_observation': 'R6',
+        'm6c15_operational_acceptance': 'R3/R6',
     }
     reopen = {
         'm6c1_product_prerequisites': 'M3-M5 product gates accepted with evidence',
@@ -689,7 +735,18 @@ def build_preflight_receipt(
         'm6c4_real_restore_rpo_rto': 'hash-bound receipt reverified against isolated database',
         'm6c5_real_sessions_and_events': 'authorized real session and event receipts observed',
         'm6c6_production_authorization': 'user grants scoped production authorization',
-        'm6c7_official_exchange_calendar': 'official source documents and cutoff verified',
+        'm6c7_official_exchange_calendar': (
+            'authorized venue scope defined and its source coverage verified'
+            if session_evidence.get('calendar_live_verified_at') else
+            'official source documents and cutoff independently verified'),
+        'm6c8_backup_readiness': 'authorized source backup and offsite artifact verified',
+        'm6c9_resource_readiness': 'PTA baseline and production resource headroom observed',
+        'm6c10_health_readiness': 'authorized health observations recorded',
+        'm6c11_emergency_stop_readiness': 'authorized stop and restart drill passes',
+        'm6c12_scheduler_readiness': 'specific scheduler scope authorized and verified',
+        'm6c13_notification_readiness': 'specific notification scope authorized and delivery verified',
+        'm6c14_real_event_observation': 'future actual event observed and evidence-bound',
+        'm6c15_operational_acceptance': 'all M6 gates pass with independent evidence',
     }
     for key, item in criteria.items():
         item['review_class'] = review_classes[key]
@@ -697,6 +754,28 @@ def build_preflight_receipt(
         item['verified_at'] = (item.get('evidence') or {}).get('verified_at')
         item['evidence_refs'] = []
         item['evidence_sha256'] = []
+    import hashlib
+    checked_files = [config_path, *(root / name for name in config.required_files)]
+    if repository['status'] == DONE and all(path.is_file() for path in checked_files):
+        repository['evidence_refs'] = [str(path) for path in checked_files]
+        repository['evidence_sha256'] = [hashlib.sha256(path.read_bytes()).hexdigest()
+                                         for path in checked_files]
+        repository['verified_at'] = datetime.now(timezone.utc).isoformat()
+    elif repository['status'] == DONE:
+        repository['status'] = PARTIAL
+        repository.setdefault('blockers', []).append('repository audit lacks hash-bound source files')
+        repository['reopen_condition'] = 'repository/privacy audit rerun with hash-bound source files'
+    if mechanism_available:
+        mechanism = criteria['m6c3_isolated_restore_mechanism']
+        mechanism['evidence_refs'] = [str(path) for path in mechanism_files]
+        mechanism['evidence_sha256'] = [hashlib.sha256(path.read_bytes()).hexdigest()
+                                        for path in mechanism_files]
+        mechanism['verified_at'] = datetime.now(timezone.utc).isoformat()
+    if emergency_script.is_file():
+        stop = criteria['m6c11_emergency_stop_readiness']
+        stop['evidence_refs'] = [str(emergency_script)]
+        stop['evidence_sha256'] = [hashlib.sha256(emergency_script.read_bytes()).hexdigest()]
+        stop['verified_at'] = datetime.now(timezone.utc).isoformat()
     if restore_receipt_path is not None:
         criteria['m6c4_real_restore_rpo_rto']['evidence_refs'] = [str(restore_receipt_path)]
         criteria['m6c4_real_restore_rpo_rto']['evidence_sha256'] = [

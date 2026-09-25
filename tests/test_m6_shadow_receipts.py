@@ -116,7 +116,8 @@ def test_synthetic_signatures_verify_contract_but_never_prove_real_event(monkeyp
     result = assess_session_ledger(
         _config(), records, calendar_evidence=calendar, verify_live_calendar=True,
         signed_session_bundle=bundle, trusted_shadow_root=trust)
-    assert result['evidence']['latest_streak'] == 2
+    assert result['evidence']['signed_candidate_sessions'] == 2
+    assert result['evidence']['latest_streak'] == 0
     assert result['evidence']['real_events'] == 0
     assert result['status'] == 'NOT_STARTED'
     assert assess_session_ledger(_config(), records, calendar_evidence=calendar)[
@@ -178,7 +179,8 @@ def test_witnessed_failed_session_breaks_the_verified_streak(monkeypatch):
     result = assess_session_ledger(
         _config(), records, calendar_evidence=calendar, verify_live_calendar=True,
         signed_session_bundle=bundle, trusted_shadow_root=trust)
-    assert result['evidence']['latest_streak'] == 1
+    assert result['evidence']['signed_candidate_sessions'] == 1
+    assert result['evidence']['latest_streak'] == 0
 
 
 def test_signer_reuse_is_not_independent_witness():

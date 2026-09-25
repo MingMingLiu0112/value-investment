@@ -104,5 +104,7 @@ def test_live_refetch_proves_one_venue_without_claiming_all_venue_readiness(monk
     assert receipt['criteria']['m6c7_official_exchange_calendar']['status'] == PARTIAL
     assert receipt['criteria']['m6c7_official_exchange_calendar']['evidence']['verified_venue'] == 'SSE'
     assert receipt['criteria']['m6c7_official_exchange_calendar']['checks'][1]['passed'] is True
+    assert receipt['criteria']['m6c7_official_exchange_calendar']['reopen_condition'] == (
+        'authorized venue scope defined and its source coverage verified')
     assert receipt['criteria']['m6c5_real_sessions_and_events']['status'] == 'NOT_STARTED'
     assert receipt['operational_acceptance_status'] == 'NOT_STARTED'
