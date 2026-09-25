@@ -51,7 +51,25 @@ def test_actual_read_model_rejects_wrong_review_pdf_hash():
     inputs = _inputs()
     inputs["reviews"] = copy.deepcopy(inputs["reviews"])
     inputs["reviews"][0]["decisions"][0]["source_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="source hash|PDF hash"):
+        build_actual_event_read_model(**inputs)
+
+
+def test_actual_read_model_rejects_changed_review_source_url():
+    inputs = _inputs()
+    inputs["reviews"] = copy.deepcopy(inputs["reviews"])
+    inputs["reviews"][0]["decisions"][0]["source_ref"]["source_url"] = "https://example.invalid/other.pdf"
     with pytest.raises(ValueError, match="PDF hash"):
+        build_actual_event_read_model(**inputs)
+
+
+def test_actual_read_model_rejects_changed_materiality_details():
+    inputs = _inputs()
+    inputs["reviews"] = copy.deepcopy(inputs["reviews"])
+    decision = next(item for item in inputs["reviews"][0]["decisions"]
+                    if item["human_decision"] == "MATERIAL_REQUIRES_RECALCULATION")
+    decision["affected_fact_fields"].append("invented_fact")
+    with pytest.raises(ValueError, match="Actual event is not bound"):
         build_actual_event_read_model(**inputs)
 
 

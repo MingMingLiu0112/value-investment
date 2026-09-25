@@ -6,6 +6,8 @@ from typing import Any, Mapping, Sequence
 from .m5_event_dependencies import DependencyGraph
 from .m5_event_run import M5EventRunReceipt
 from .m5_recalculation_plan import BoundedRecalculationPlan
+from .event_materiality import event_materiality_decision_from_payload
+from .m5_materiality_bridge import materiality_direct_kinds
 
 
 def build_actual_event_read_model(
@@ -52,20 +54,34 @@ def build_actual_event_read_model(
     if len(active_by_source) != len(receipt.active_events):
         raise ValueError("Duplicate actual source event")
     for announcement_id, decision in sorted(by_announcement.items()):
+        reviewed_decision = event_materiality_decision_from_payload(decision)
+        if reviewed_decision.as_policy() != decision:
+            raise ValueError("Human materiality decision is not canonical")
         source = announcements.get(announcement_id)
-        if source is None or decision["symbol"] != symbol or decision["published_at"] != source["published_at"]:
+        if (source is None or decision["symbol"] != symbol
+            or decision["published_at"] != source["published_at"]
+            or decision["title"] != source["title"]):
             raise ValueError("Human decision is not bound to this announcement")
         refs = [ref for ref in source.get("evidence_refs", ())
                 if ref.get("sha256") == decision["source_sha256"]
                 and ref.get("source_url") == source["source_url"]]
-        if len(refs) != 1 or decision["source_ref"]["sha256"] != decision["source_sha256"]:
+        if len(refs) != 1 or decision["source_ref"] != refs[0]:
             raise ValueError("Human decision PDF hash does not match archived source")
         materiality = decision["human_decision"]
         event = active_by_source.get("materiality-review:" + decision["event_decision_id"])
         if materiality == "MATERIAL_REQUIRES_RECALCULATION" and event is None:
             raise ValueError("Recalculation decision is missing its active actual event")
         if event is not None:
-            if event.symbol != symbol or event.current_state.get("source_sha256") != decision["source_sha256"]:
+            state = event.current_state
+            if (event.symbol != symbol or state.get("source_sha256") != decision["source_sha256"]
+                or state.get("materiality_status") != materiality
+                or state.get("event_cluster_id") != decision["event_cluster_id"]
+                or state.get("supersedes_event_id") != decision["supersedes_event_id"]
+                or state.get("affected_domains") != decision["affected_domains"]
+                or state.get("affected_fact_fields") != decision["affected_fact_fields"]
+                or state.get("affected_assumptions") != decision["affected_assumptions"]
+                or state.get("affected_artifacts") != decision["affected_artifacts"]
+                or tuple(state.get("direct_dependency_kinds", ())) != materiality_direct_kinds(reviewed_decision)):
                 raise ValueError("Actual event is not bound to the reviewed PDF")
             tasks = [task for task in plan.tasks if event.event_id in task.event_ids]
             if not tasks:
