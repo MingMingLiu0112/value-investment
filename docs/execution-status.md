@@ -23,6 +23,29 @@ M5 state v3 现允许受控的离线 `ACTUAL` receipt，但必须内嵌 `USER_CO
 `2026-09-09`、抓取时间为 `2026-09-24T08:47:15Z`，早于 `2026-09-25` 人工复核；因此未写入
 ACTUAL state，等待一次新的 CNINFO 完整扫描来证明复核后的公告覆盖。该水位限制不阻塞其他离线工程。
 
+## 2026-09-25 M5 600519 真实离线事件收据
+
+随后以新的 CNINFO 完整扫描解除上述**旧水位**限制：扫描覆盖至 `2026-09-25`，检索于
+`2026-09-25T00:05:27.848712+00:00`，9 条候选的归档 PDF 字节 Hash 全部与用户已确认
+复核一致。对账收据结果为 `9 CARRY_FORWARD_PRIOR_HUMAN_DECISION / 0 pending / 0 hash conflict`；
+这只沿用相同原件的既有人工结论，不由机器重新判定材料性。
+
+新增 `scripts/apply_m5_actual_offline_request.py`。它要求当前完整水位、零待人工/Hash 冲突的
+对账、原 Review/Queue/Graph Hash 和 `USER_CONFIRMED_DELEGATED_REVIEW` 同时匹配；命令拒绝未来
+`generated_at`，并始终禁用 scheduler、notification 与 production database write。
+
+基于以上输入，本机生成一份 append-only `ACTUAL` 离线收据：接受 2 条
+`MATERIAL_REQUIRES_RECALCULATION` 事件、形成 2 条有界 invalidation 与 2 条仅本地 `REVIEW_DUE`
+outbox 项，状态为 `ATTENTION`，没有生成新事实、估值、价格结论、Decision Review、通知或订单。
+收据路径为 `runtime/m5-600519-disclosure-rescan-20260925/actual-valid-application-20260925`，其
+`receipt_id` 为 `m5-run-56f1d3a52fb26e69a04cbc735f8d451a`，`state_sha256` 为
+`8315eeb043b77adddb0a4c3a3772e404539a80731d092dbb0b8aca1423fd63ea`。这证明事件失效链已经进入
+真实离线状态，不证明重算完成，更不构成 M5 产品验收或 M6 生产授权。
+
+一次本地试运行曾提供未来 `generated_at`，已在其 runtime 目录内显式标注为无效，未进入任何服务或
+用户展示；新命令已增加未来时间拒绝。有效收据使用 `2026-09-25T08:10:00+08:00`，处于新水位的
+15 分钟时钟约束内。
+
 ## 2026-09-25 全量回归与私有测试隔离
 
 跨平台 Git 工作树边界修复后，完整测试套件使用仓库内 disposable base temp 重放为
