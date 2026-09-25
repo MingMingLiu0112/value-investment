@@ -20,6 +20,23 @@ This is a responsibility hierarchy, not permission for a stage goal to weaken ar
 `LONG-TERM-GOAL.md` is the cross-stage roadmap and graduation contract for future Goal Runs. It is subordinate to these permanent architecture/methodology/evidence boundaries; only `docs/current-stage-goal.md` selects the authorized Goal envelope and currently focused milestone. The user has extended the next Goal through M7: proceed within that envelope after evidence-backed stage gates, not outside it. This document revision does not itself launch the Goal or authorize production actions.
 Old P0/P0.5, Excel MVP, funnel and v2/v3 goal paths are redirect pages. Their original bytes and hashes are preserved under `docs/archive/goal-consolidation-20260922/`.
 
+## New Code Placement Rules
+
+The package name `value_investment_agent` remains stable while its internal boundaries converge. New code must follow [docs/architecture/repository-architecture.md](docs/architecture/repository-architecture.md):
+
+- `domain/`: durable business and investment contracts, calculations and state transitions. It must not import Excel, database drivers, network clients, operations, scripts or test fixtures.
+- `application/`: use-case orchestration and typed results. It may depend on domain and infrastructure interfaces, but not on a concrete Excel renderer.
+- `infrastructure/`: database, evidence storage, external data, filings, backup and security adapters.
+- `presentation/`: Excel and read-model adapters. It must not recalculate valuation, materiality, portfolio or decision logic.
+- `operations/`: M6 shadow, recovery, health and authorization runtime boundaries.
+- `scripts/`: thin CLI only: parse args, load config, construct a service, invoke, print/write a result and return an exit code. Do not add new financial, valuation, PIT, portfolio, event or decision logic directly to `scripts/`.
+
+Do not add new modules directly to the root of `src/value_investment_agent/` when a target layer is clear. Temporary compatibility shims are allowed and must be marked `DEPRECATED_COMPATIBILITY_SHIM`; they forward instead of duplicating behavior.
+
+Company-specific research, parsers and one-off experiments belong in a case/tool boundary, not in a symbol branch inside general Domain code. New root-level `.xlsx`, `.manifest.json` and candidate workbooks are not allowed; use `artifacts/current/` for checked-in current artifacts and `artifacts/archive/` for historical artifacts after provenance checks. Existing hash- or receipt-bound paths must remain in place until a verifier proves safe relocation.
+
+Architecture cleanup is `INCREMENTAL_REFACTOR_ONLY`, behavior-preserving, test-gated and rollbackable. It must never change valuation formulas, investment thresholds, M2-M7 acceptance rules, database schema semantics or `action=no_order` in the same commit.
+
 ## Start Each Goal Run
 
 Read this file, `docs/current-stage-goal.md` and `docs/execution-status.md`, then the relevant architecture/methodology/policy sections.
