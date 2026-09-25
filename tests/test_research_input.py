@@ -286,13 +286,40 @@ def test_run_spec_rejects_as_of_masking_and_future_availability():
 
     with pytest.raises(ValueError, match="cannot override"):
         replace(spec, as_of=date(2025, 12, 30))
-    with pytest.raises(ValueError, match="case and facts"):
+    with pytest.raises(ValueError, match="cannot override"):
         replace(spec, facts=old_facts, as_of=old_facts.as_of)
     with pytest.raises(ValueError, match="availability cannot precede"):
         replace(
             spec,
             available_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
         )
+
+
+def test_later_research_date_keeps_older_filing_valuation_date():
+    base = _descriptor()
+    research_date = date(2026, 9, 21)
+    descriptor = finalize_input_descriptor(replace(
+        base,
+        point_in_time=replace(base.point_in_time, research_as_of=research_date),
+        research_case=replace(base.research_case, as_of=research_date),
+        input_sha256=None,
+    ))
+    spec = build_research_run_spec(descriptor)
+
+    assert spec.as_of == research_date
+    assert spec.facts.as_of == spec.valuation_date == AS_OF
+    outcome = ResearchApplicationService(InMemoryResearchArtifactRepository()).run_company_research(spec)
+    assert outcome.as_of == research_date
+    assert outcome.valuation.valuation_date == AS_OF
+    defaulted = ResearchApplicationService(InMemoryResearchArtifactRepository()).run_company_research(
+        replace(spec, as_of=None)
+    )
+    assert defaulted.as_of == research_date
+
+    with pytest.raises(ValueError, match="cannot precede"):
+        replace(spec, research_case=replace(spec.research_case, as_of=date(2025, 1, 1),
+                                             financial_period=date(2024, 12, 31)),
+                as_of=date(2025, 1, 1))
 
 
 def test_application_adds_binding_mismatch_blocker_without_order():

@@ -243,12 +243,12 @@ class ResearchRunSpec:
         facts_as_of = getattr(self.facts, "as_of", None)
         if not isinstance(facts_as_of, date):
             raise ValueError("Research facts require a typed as_of date")
-        if self.as_of is not None and self.as_of != facts_as_of:
-            raise ValueError("Research as_of cannot override the facts date")
-        if self.research_case.as_of != facts_as_of:
-            raise ValueError("Research case and facts as_of must match")
-        if self.available_at is not None and self.available_at.date() < facts_as_of:
-            raise ValueError("Research availability cannot precede facts as-of")
+        if self.as_of is not None and self.as_of != self.research_case.as_of:
+            raise ValueError("Research as_of cannot override the case date")
+        if self.research_case.as_of < facts_as_of:
+            raise ValueError("Research case cannot precede its financial facts")
+        if self.available_at is not None and self.available_at.date() < self.research_case.as_of:
+            raise ValueError("Research availability cannot precede research as-of")
         if self.input_sources and self.available_at is None:
             raise ValueError("Research input sources require available_at")
         for source in self.input_sources:
@@ -281,10 +281,10 @@ class ResearchRunSpec:
             ):
                 raise ValueError("Research availability cannot follow computation")
         if self.quote is not None and self.quote.quote_date is not None:
-            if self.quote.quote_date > facts_as_of:
+            if self.quote.quote_date > self.research_case.as_of:
                 raise ValueError("Quote date cannot follow research as-of")
         if self.model_validity_input is not None:
-            if self.model_validity_input.valid_from > facts_as_of:
+            if self.model_validity_input.valid_from > self.research_case.as_of:
                 raise ValueError("Model validity cannot begin after research as-of")
         if self.valuation_approval is not None:
             if not isinstance(
@@ -488,7 +488,7 @@ class ResearchApplicationService:
                 current_status=None,
                 blockers=tuple(route.blockers),
                 stored_artifacts=(),
-                as_of=spec.as_of or self._facts_as_of(spec),
+                as_of=spec.as_of or spec.research_case.as_of,
                 available_at=available_at,
                 human_research_approval=None,
                 event_materiality_review=None,
@@ -498,7 +498,7 @@ class ResearchApplicationService:
             )
 
         self._validate_route_contract(spec, route)
-        as_of = spec.as_of or self._facts_as_of(spec)
+        as_of = spec.as_of or spec.research_case.as_of
         binding_blockers = validate_assumption_bindings(
             spec.facts,
             spec.assumption_bindings,
