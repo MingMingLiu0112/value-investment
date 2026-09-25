@@ -114,6 +114,7 @@ jobs:
           tests/test_m5_actual_read_model.py
           tests/test_m5_actual_durable_replay.py
           tests/test_m5_archived_valuation_input_evidence.py
+          tests/test_m5_pending_research_input.py
           tests/test_m5_research_artifact_graph.py
           tests/test_m7_daily_workbook.py
           tests/test_wps_verifier_text_scans.py

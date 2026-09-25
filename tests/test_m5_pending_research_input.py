@@ -1,0 +1,68 @@
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+
+import pytest
+
+from value_investment_agent.m5_event_run import m5_event_run_receipt_from_payload
+from value_investment_agent.m5_pending_research_input import build_pending_research_input
+from value_investment_agent.research_application import ResearchApplicationService
+from value_investment_agent.research_input import build_research_run_spec, descriptor_from_payload
+from value_investment_agent.research_artifact_repository import InMemoryResearchArtifactRepository
+
+
+ROOT = Path(os.environ.get("M5_ACTUAL_EVIDENCE_ROOT", Path(__file__).resolve().parents[1]))
+LOCAL = Path(__file__).resolve().parents[1]
+BASE = ROOT / "runtime/m5-600519-disclosure-rescan-20260925"
+RECEIPT = BASE / "actual-valid-receipts/m5-receipt-44a756ccad5433e236c3d74ff3ce3a75d65be835de52109407ad6ac4f0e0576d.json"
+FACTS = LOCAL / "runtime/m5-verified-facts-actual-20260925.json"
+EQUITY_POINTER = ROOT / "runtime/company-research/600519-consolidated-parent-equity-inputs-latest.json"
+AT = datetime(2026, 9, 25, 12, 0, tzinfo=timezone.utc)
+
+
+def _inputs():
+    if any(not path.is_file() for path in (RECEIPT, FACTS, EQUITY_POINTER)):
+        pytest.skip("ACTUAL 600519 evidence is unavailable")
+    pointer = json.loads(EQUITY_POINTER.read_text(encoding="utf-8"))
+    equity_path = (ROOT / pointer["path"] / "evidence.json").resolve()
+    assert equity_path.is_relative_to(ROOT.resolve())
+    equity_sha = hashlib.sha256(equity_path.read_bytes()).hexdigest()
+    assert equity_sha == pointer["sha256"]
+    return dict(
+        receipt=m5_event_run_receipt_from_payload(json.loads(RECEIPT.read_text(encoding="utf-8"))["receipt"]),
+        facts_artifact=json.loads(FACTS.read_text(encoding="utf-8")),
+        facts_file_sha256=hashlib.sha256(FACTS.read_bytes()).hexdigest(),
+        equity_package=json.loads(equity_path.read_text(encoding="utf-8")),
+        equity_file_sha256=equity_sha, name="贵州茅台", profile_id="quality_compounder",
+        evaluated_at=AT,
+    )
+
+
+def test_actual_pending_descriptor_routes_to_null_not_ready_valuation():
+    descriptor = build_pending_research_input(**_inputs())
+    restored = descriptor_from_payload(descriptor.as_policy())
+    assert restored.input_sha256 == descriptor.input_sha256
+    assert restored.facts.operating_inputs["start_book_equity"] == 251253594419.50
+    assert restored.facts.operating_inputs["ordinary_shares"] == 1250081601
+    assert restored.facts.scenario_inputs is None
+    assert restored.facts.verified is False
+    assert restored.assumptions is None
+    assert restored.point_in_time.report_period.isoformat() == "2026-06-30"
+    assert restored.point_in_time.research_as_of.isoformat() == "2026-09-25"
+
+    spec = build_research_run_spec(restored)
+    outcome = ResearchApplicationService(InMemoryResearchArtifactRepository()).run_company_research(spec)
+    assert outcome.valuation.status == "not_ready"
+    assert (outcome.valuation.bear_value, outcome.valuation.base_value,
+            outcome.valuation.bull_value) == (None, None, None)
+    assert "quality_compounder_scenario_inputs_not_registered" in outcome.valuation.blockers
+    assert outcome.valuation.valuation_date.isoformat() == "2026-06-30"
+
+
+def test_pending_descriptor_rejects_unrelated_equity_filing():
+    inputs = _inputs()
+    inputs["equity_package"]["current_disclosed_basis"]["raw_file_hash"] = "0" * 64
+    with pytest.raises(ValueError, match="not tied"):
+        build_pending_research_input(**inputs)
