@@ -92,7 +92,7 @@ Domain must not import:
 | 层 | 当前代表模块 | 迁移策略 |
 | --- | --- | --- |
 | Domain / Research | `domain/research/gap_classification.py`、`research_profile.py`、`research_case.py`、`research_run_contract.py`、`human_research_approval.py`、`research_gate.py`；旧根路径为 shim；`fixed_sample_*` 仍待迁移 | 从纯规则、低消费者模块开始，旧路径保留兼容 shim |
-| Domain / Valuation | `valuation_router.py`, `valuation_assumptions.py`, `price_bridge.py`, `model_validity.py` | 保留公式和行为，先建边界，不修改模型 |
+| Domain / Valuation | `domain/valuation/confidence.py`，旧路径为 shim；`valuation_router.py`, `valuation_assumptions.py`, `price_bridge.py`, `model_validity.py` 仍待迁移 | 保留公式和行为，先迁纯规则，不修改模型 |
 | Domain / Decision | `investment_decision.py`, `decision_read_model.py`, `pre_decision_eligibility.py` | 大文件先不拆，确认职责后再拆 |
 | Domain / Portfolio | `portfolio_contracts.py`, `portfolio_risk.py`, `position_guidance.py`, `dividend_income_projection.py` | 私人数据边界保持不变 |
 | Domain / Events | `event_materiality.py`, `m5_event_*.py` | 事件合同与运营编排分开 |
@@ -194,6 +194,7 @@ NEW_CODE_PLACEMENT_RULES = ACTIVE
 RECEIPT_AUDIT_APPLICATION_MIGRATION = historical_validation
 HISTORICAL_VALIDATION_DOMAIN_MIGRATION = BLOCKED_BY_FROZEN_RECEIPT_HASH
 FIRST_SAFE_DOMAIN_MIGRATION = gap_classification + research_profile
+SECOND_SAFE_DOMAIN_MIGRATION = valuation_confidence
 ROOT_ARTIFACT_CLUTTER = REDUCED
 CURRENT_ARTIFACT_ENTRY = config/current-trial-workbook.json
 DOCS_CURRENT_VS_ARCHIVE = CLEAR

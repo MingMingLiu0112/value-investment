@@ -7,7 +7,7 @@
 | --- | --- | --- | --- | --- |
 | `src/value_investment_agent/domain/research/gap_classification.py` | Research Domain | Active | legacy shim / application imports | 首个纯规则迁移；旧路径只转发 |
 | `src/value_investment_agent/research_*` | Research Domain / Application | Active | CLI / replay scripts | 剩余模块逐步拆到 `domain/research`、`application/research` |
-| `src/value_investment_agent/valuation*`、`price_bridge.py`、`model_validity.py` | Valuation Domain | Active | Application | 公式冻结，只做边界迁移 |
+| `src/value_investment_agent/valuation*`、`price_bridge.py`、`model_validity.py` | Valuation Domain | Active | Application | 公式冻结；confidence 已迁入 `domain/valuation`，其余逐步迁移 |
 | `src/value_investment_agent/investment_decision.py` | Decision Domain | Active | Decision application / workbook | 暂缓拆分，先确认职责 |
 | `src/value_investment_agent/m3_*` | Decision Application / Presentation | Active | M3 scripts | Presentation adapter 与 domain 分开 |
 | `src/value_investment_agent/portfolio_*`、`position_guidance.py` | Portfolio Domain | Active | private/synthetic application | 私人数据不得入库或公开 |
@@ -27,6 +27,7 @@
 | `tests/` | Verification | Active | pytest / CI | 新测试按目标层逐步落位 |
 | src/value_investment_agent/domain/research/research_profile.py | Research Domain | Active | legacy shim / application imports | Pure profile contract migration; old path only forwards |
 | src/value_investment_agent/domain/research/research_case.py | Research Domain | Active | legacy shim / application imports | Pure research-case contract migration; old path only forwards |
+| src/value_investment_agent/domain/valuation/confidence.py | Valuation Domain | Active | legacy shim / valuation models | Deterministic confidence policy migration; old path only forwards |
 | `src/value_investment_agent/domain/research/research_run_contract.py` | Research Domain | Active | legacy shim / application imports | Versioned research input contracts; old path only forwards |
 | `src/value_investment_agent/domain/research/human_research_approval.py` | Research Domain | Active | legacy shim / application imports | Byte-bound human G3 approval contract; old path only forwards |
 | `src/value_investment_agent/domain/research/research_gate.py` | Research Domain | Active | legacy shim / application imports | G0-G3 research gates; old path only forwards |

@@ -124,6 +124,17 @@ def test_research_case_domain_and_legacy_shim_export_same_contracts():
         assert getattr(legacy, name) is getattr(domain, name)
 
 
+def test_valuation_confidence_domain_and_legacy_shim_export_same_contracts():
+    legacy = importlib.import_module("value_investment_agent.valuation_confidence")
+    domain = importlib.import_module(
+        "value_investment_agent.domain.valuation.confidence"
+    )
+
+    assert domain.__all__
+    for name in domain.__all__:
+        assert getattr(legacy, name) is getattr(domain, name)
+
+
 def test_research_gate_contracts_domain_and_legacy_shims_export_same_objects():
     cases = (
         (
