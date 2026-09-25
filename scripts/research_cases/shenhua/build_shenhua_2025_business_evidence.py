@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 SOURCE = ROOT / "runtime" / "shenhua-2025-official.pdf"
 OUT = ROOT / "runtime" / "company-research" / "shenhua-2025-business-evidence-20260921"
 SOURCE_URL = "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0330/2026033004060_c.pdf"
