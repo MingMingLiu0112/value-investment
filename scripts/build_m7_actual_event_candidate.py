@@ -13,6 +13,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from value_investment_agent.m7_daily_workbench import write_daily_workbench  # noqa: E402
+from value_investment_agent.m5_actual_read_model import build_actual_event_read_model  # noqa: E402
+from value_investment_agent.m5_event_dependencies import dependency_graph_from_payload  # noqa: E402
+from value_investment_agent.m5_event_run import m5_event_run_receipt_from_payload  # noqa: E402
+from value_investment_agent.m5_recalculation_plan import bounded_recalculation_plan_from_payload  # noqa: E402
 
 
 def main() -> int:
@@ -23,6 +27,8 @@ def main() -> int:
     parser.add_argument("--review-source", type=Path)
     parser.add_argument("--review-package", type=Path)
     parser.add_argument("--pending-input", type=Path)
+    for name in ("queue", "reviews", "receipt", "graph", "plan", "facts", "outcome"):
+        parser.add_argument("--" + name, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
     source_root = args.source_root.resolve()
@@ -31,7 +37,11 @@ def main() -> int:
     if (model.get("schema_version") != "m5-actual-event-read-model-v1"
         or model.get("action") != "no_order" or model.get("pending_human_review") != 0):
         raise ValueError("Actual M5 read model is not complete or no_order")
-    if model.get("research_review_status") is not None:
+    review_requested = any(getattr(args, name) is not None for name in
+                           ("scenario_review", "review_source", "review_package", "pending_input"))
+    if review_requested or "scenario_review_file_sha256" in model:
+        if model.get("research_review_status") != "HUMAN_REVIEWED_NEED_MORE_EVIDENCE":
+            raise ValueError("Reviewed candidate cannot downgrade human research review")
         paths = (args.scenario_review, args.review_source, args.review_package, args.pending_input)
         if any(path is None for path in paths):
             raise ValueError("Reviewed candidate requires review, source, package and pending input")
@@ -48,6 +58,28 @@ def main() -> int:
         from value_investment_agent.m5_scenario_research_review import _sha
         if _sha({key: value for key, value in review.items() if key != "review_sha256"}) != review["review_sha256"]:
             raise ValueError("Reviewed candidate receipt hash differs")
+        evidence_names = ("queue", "reviews", "receipt", "graph", "plan", "facts", "outcome")
+        if any(getattr(args, name) is None for name in evidence_names):
+            raise ValueError("Reviewed candidate requires complete ACTUAL replay evidence")
+        evidence_paths = {name: getattr(args, name) for name in evidence_names}
+        if any(digest(path) != model.get("input_sha256", {}).get(name)
+               for name, path in evidence_paths.items()):
+            raise ValueError("Reviewed candidate ACTUAL replay input hash differs")
+        load = lambda name: json.loads(evidence_paths[name].read_text(encoding="utf-8"))
+        rebuilt = build_actual_event_read_model(
+            queue=load("queue"), reviews=load("reviews"),
+            receipt=m5_event_run_receipt_from_payload(load("receipt")["receipt"]),
+            graph=dependency_graph_from_payload(load("graph")["graph"]),
+            plan=bounded_recalculation_plan_from_payload(load("plan")),
+            facts_artifact=load("facts"), outcome_receipt=load("outcome"),
+            facts_source_sha256=digest(evidence_paths["facts"]),
+            scenario_review=review,
+            scenario_review_source_bytes=args.review_source.read_bytes(),
+            scenario_review_package_bytes=args.review_package.read_bytes(),
+            scenario_review_pending_input_bytes=args.pending_input.read_bytes(),
+        )
+        if any(model.get(key) != value for key, value in rebuilt.items()):
+            raise ValueError("Reviewed candidate read model differs from ACTUAL evidence replay")
     generated_at = datetime.now(timezone.utc)
     builder = runpy.run_path(str(source_root / "scripts" / "build_m7_daily_workbench_post_checkpoint_a.py"))
     packet = builder["build_packet"](generated_at)

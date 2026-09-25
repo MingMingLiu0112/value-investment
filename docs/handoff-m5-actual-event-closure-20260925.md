@@ -1,5 +1,39 @@
 # M5 actual event replay handoff (2026-09-25)
 
+## 2026-09-25 negative scenario review and replay update
+
+The user reviewed the 600519 event-bound scenario package and returned
+`NEED_MORE_EVIDENCE`. The append-only receipt
+`docs/receipts/600519-event-bound-scenario-human-review-20260925.json` binds the
+source review, proposal, two original event PDFs, ACTUAL receipt, graph, five-fact
+artifact, pending descriptor and bounded result. All five scenario axes remain
+`NOT_APPROVED`; four research blockers and eight `REOPEN_RESEARCH` triggers are
+separate from the original `missing_dependency_node:valuation_inputs` blocker.
+Both material events remain `STILL_NOT_READY`, with no model execution, new
+valuation or order.
+
+The reviewed M7 candidate now requires full ACTUAL evidence replay, not only a
+read-model JSON and matching receipt hashes. Cross-worktree checkout exposed
+CRLF conversion of the hash-bound research package and review receipt;
+`.gitattributes` now pins both to LF, restoring their recorded SHA-256 bytes.
+The replayed candidate is
+`runtime/m7-actual-review-replayed-20260925.xlsx` (SHA-256
+`a29d85dd951acdc2fcee2efe0989471cd3ec471145caad2c407634c602b529d0`).
+WPS/Excel read-only verification passed: 10 visible and two hidden sheets, no
+formula errors, no recommendation or order, and the formal workbook stayed at
+SHA-256 `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`.
+The exact offline Core Gate file list passed `716 passed, 18 skipped` with the
+main checkout supplied as the local ACTUAL evidence root. These checks do not
+approve event-bound scenario inputs or a real refreshed valuation.
+
+The visual-inspection successor
+`runtime/m7-actual-review-replayed-v2-20260925.xlsx` (SHA-256
+`4ed565e0c47a135a30994cf18e5f60135fcaa541038f8a249a61e78e5376418f`)
+shows the four review blockers and eight evidence-reopen triggers as separate
+rows with Chinese descriptions and original audit keys. The two event rows
+remain `STILL_NOT_READY`. WPS read-only verification passed; it is still an
+isolated candidate and does not replace the formal workbook.
+
 This branch adds an offline, fail-closed replay for the 600519 actual event receipts. It verifies five half-year financial facts against archived PDF bytes and announcement metadata, builds a versioned fact artifact, derives a bounded recalculation plan, and projects the result into an M7 workbook candidate. No order, production database, scheduler, notification, or account action is performed.
 
 The two actual receipts remain `STILL_NOT_READY`: `valuation_inputs` is missing, `model_executed=false`, and `new_valuation_result=null`. The workbook is a candidate, not the published WPS original or a trading recommendation. The current v5 candidate SHA-256 is `ff4a1412b41b313e347b9177207caab8a498a2bf04dd31742cfb1b2858fc460a`.
