@@ -46,6 +46,16 @@ outbox 项，状态为 `ATTENTION`，没有生成新事实、估值、价格结�
 用户展示；新命令已增加未来时间拒绝。有效收据使用 `2026-09-25T08:10:00+08:00`，处于新水位的
 15 分钟时钟约束内。
 
+## 2026-09-25 M5 有界重算计划与图缺口
+
+新增只读 `m5_recalculation_plan.py` 及其生成命令。它从冻结的 receipt、事件、图和原件引用
+派生任务，不执行任何事实抽取、估值计算或决策更新。600519 的真实计划绑定上述 ACTUAL receipt，
+明确产生 `financial_facts` 和 `valuation_result` 两个 `BLOCKED_GRAPH_GAP`：当前冻结图只含
+估值输入制品而没有可替换的事实/结果节点。其余模型有效性、研究论点、估值输入和决策复核均保持
+`REVIEW_REQUIRED`。因此系统下一步必须先建立带原件 Hash 的更新事实节点，不能把旧估值解释为
+已重算。计划制品为 `runtime/m5-600519-disclosure-rescan-20260925/actual-valid-recalculation-plan-20260925.json`，
+`action=no_order`。
+
 ## 2026-09-25 全量回归与私有测试隔离
 
 跨平台 Git 工作树边界修复后，完整测试套件使用仓库内 disposable base temp 重放为
