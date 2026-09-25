@@ -91,7 +91,7 @@ Domain must not import:
 
 | 层 | 当前代表模块 | 迁移策略 |
 | --- | --- | --- |
-| Domain / Research | `domain/research/gap_classification.py`；旧 `gap_classification.py` 为 shim；`research_gate.py`, `research_case.py`, `research_profile.py`, `fixed_sample_*` 仍待迁移 | 从纯规则、低消费者模块开始，旧路径保留兼容 shim |
+| Domain / Research | `domain/research/gap_classification.py`、`research_profile.py`、`research_case.py`；旧根路径为 shim；`research_gate.py`, `fixed_sample_*` 仍待迁移 | 从纯规则、低消费者模块开始，旧路径保留兼容 shim |
 | Domain / Valuation | `valuation_router.py`, `valuation_assumptions.py`, `price_bridge.py`, `model_validity.py` | 保留公式和行为，先建边界，不修改模型 |
 | Domain / Decision | `investment_decision.py`, `decision_read_model.py`, `pre_decision_eligibility.py` | 大文件先不拆，确认职责后再拆 |
 | Domain / Portfolio | `portfolio_contracts.py`, `portfolio_risk.py`, `position_guidance.py`, `dividend_income_projection.py` | 私人数据边界保持不变 |

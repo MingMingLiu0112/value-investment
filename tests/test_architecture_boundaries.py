@@ -87,6 +87,17 @@ def test_research_profile_domain_and_legacy_shim_export_same_contracts():
         assert getattr(legacy, name) is getattr(domain, name)
 
 
+def test_research_case_domain_and_legacy_shim_export_same_contracts():
+    legacy = importlib.import_module("value_investment_agent.research_case")
+    domain = importlib.import_module(
+        "value_investment_agent.domain.research.research_case"
+    )
+
+    assert domain.__all__ == ["ResearchCase"]
+    for name in domain.__all__:
+        assert getattr(legacy, name) is getattr(domain, name)
+
+
 def test_new_layers_do_not_import_presentation_operations_or_scripts():
     forbidden_prefixes = (
         "openpyxl",

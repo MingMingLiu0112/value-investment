@@ -48,6 +48,15 @@ The old `src/value_investment_agent/gap_classification.py` path is a
 `DEPRECATED_COMPATIBILITY_SHIM`. Existing imports and behavior remain stable;
 the new domain module has no I/O or presentation dependency.
 
+The pure `ResearchCase` contract then moved to:
+
+```text
+src/value_investment_agent/domain/research/research_case.py
+```
+
+The old path is a forwarding shim. No source-path or SHA consumer was found;
+the contract itself and all existing imports remain unchanged.
+
 ### Provenance Rollback
 
 The first attempted domain migration moved

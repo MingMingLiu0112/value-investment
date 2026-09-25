@@ -25,6 +25,10 @@
 | `docs/` | Governance / Methodology / History | Mixed | docs index / current files | 逐步分为 current/architecture/operations/archive |
 | `tests/` | Verification | Active | pytest / CI | 新测试按目标层逐步落位 |
 | src/value_investment_agent/domain/research/research_profile.py | Research Domain | Active | legacy shim / application imports | Pure profile contract migration; old path only forwards |
+| src/value_investment_agent/domain/research/research_case.py | Research Domain | Active | legacy shim / application imports | Pure research-case contract migration; old path only forwards |
+| src/value_investment_agent/domain/research/research_case.py | Research Domain | Active | legacy shim / application imports | Pure research-case contract migration; old path only forwards |
+| docs/architecture/artifact-relocation-inventory-20260925.json | Governance / Artifact Audit | Active | scripts/audit_artifact_relocation.py | Machine-readable root artifact hash and consumer inventory |
+| docs/architecture/adversarial-findings-20260925.md | Governance / Security Audit | Open findings | docs/execution-status.md | P0/P1/P2 replay, authorization, PIT and CI findings; not fixed here |
 
 ## Current Entries
 
