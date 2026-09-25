@@ -2,8 +2,9 @@
 
 Read-only adversarial review baseline: 2135be59. The architecture-only
 cleanup commit c87bc1c did not change valuation formulas, investment gates,
-database schema semantics, or action=no_order; these findings remain open
-unless a later verification receipt says otherwise.
+database schema semantics, or action=no_order. The later verifier v2 below is
+an independent gate; findings stay open until every relevant consumer invokes
+it and the old paths fail closed.
 
 ## P0 Findings
 
@@ -18,7 +19,11 @@ Minimum fix: add an independent replay-time verifier that checks exact
 available_at <= replay_date, validates quote dates and evidence hashes, and
 rejects future disclosures, quotes, and price files with negative tests.
 
-Status: OPEN_NOT_FIXED.
+Status: PARTIAL_MITIGATION_BY_PIT_CONFORMANCE_VERIFIER_V2. The new read-only
+verifier independently rechecks facts, filings, quote dates, evidence
+availability, file existence, hashes, coverage, and rule registration before
+returning PASS. The legacy M3 replay consumer has not yet been wired to invoke
+it, so this finding is not fully closed.
 
 ### ADV-P0-002 - Historical admission PIT is caller-declared
 
@@ -33,8 +38,12 @@ application/historical_validation; do not edit or move the frozen
 historical_validation.py file. The verifier must recompute temporal and
 coverage predicates and must fail closed when the evidence cannot prove them.
 
-Status: OPEN_NOT_FIXED; current first-case conclusion remains
-NOT_PIT_SAFE / NOT_ADMITTED.
+Status: PARTIAL_MITIGATION_BY_PIT_CONFORMANCE_VERIFIER_V2. The verifier checks
+benchmark identity/version/as_of, universe snapshot and survivorship controls,
+evidence-dimension bijection, execution semantics, and one approved
+model-session proof per claimed session. The frozen admission contract itself
+remains unchanged and legacy consumers do not yet require this verifier.
+Current first-case conclusion remains NOT_PIT_SAFE / NOT_ADMITTED.
 
 ## P1 Findings
 
@@ -83,10 +92,20 @@ Backtest != M6 Shadow
 
 ## Next Task
 
-NEXT TASK: PIT_CONFORMANCE_VERIFIER_V2
+NEXT TASK: PIT_CONFORMANCE_CONSUMER_ENFORCEMENT
 
-Goal: independently verify point-in-time availability, quote dates, evidence
-coverage, benchmark version, universe, and survivorship before any historical
-replay or admission result can be consumed. It must reuse existing engines,
-leave the frozen historical-validation bytes untouched, and remain read-only
-with respect to production and private data.
+Goal: make every path that consumes a historical replay or admission result
+require a fresh `pit-conformance-verifier-v2` PASS, while preserving the frozen
+historical-validation bytes and the current first-case NOT_PIT_SAFE result.
+
+Files likely affected: the M3 replay/admission consumer adapters, their thin
+CLIs, and focused integration tests.
+
+Forbidden changes: editing `historical_validation.py`, weakening PIT checks,
+changing valuation formulas, or treating verifier PASS as a buy/order,
+performance claim, or production authorization.
+
+Acceptance criteria: forged/early/missing evidence reaches no strict consumer
+without failure; retrospective and zero-model-session cases remain
+`NOT_PROVEN`/`NOT_ADMITTED`; verifier results bind the exact subject and
+manifest bytes; full offline regression and Core Research Gates pass.

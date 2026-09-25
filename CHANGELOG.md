@@ -1,5 +1,41 @@
 # Changelog
 
+## v2026.09.25-pit-conformance-verifier-v2
+
+### Scope
+
+关闭历史 replay/admission 中“调用方自报 PIT”的独立验证缺口。新增只读
+`pit-conformance-verifier-v2`，但它不批准估值、绩效、回测、订单、仓位或生产操作；
+现有第一案例继续保持 `NOT_PIT_SAFE / NOT_ADMITTED` 和 `action=no_order`。
+
+### Changes
+
+- 新增 `config/pit-conformance-policy-v2.json`，固定 `PASS / FAIL / NOT_PROVEN`
+  语义、Asia/Shanghai 信息截止点、日期精度下一日零点规则和永久 `no_order` 边界。
+- 新增 `application/historical_validation/pit_conformance.py` 和薄 CLI
+  `scripts/audit_pit_conformance_v2.py`。验证器独立读取 subject 与 input manifest，
+  重新计算本地文件 SHA-256，并检查路径逃逸、重复身份、证据覆盖、kind/dimension 绑定、
+  `available_at <= cutoff`、日期精度、规则登记时间、benchmark version/as_of、universe
+  survivorship 控制和逐 session approved value-model 证明。
+- 缺失 policy、policy 版本不一致、缺失 proof、时间或覆盖无法证明时 fail closed；
+  只有完整独立证明才返回 `PASS`。CLI 退出码固定为 `PASS=0 / FAIL=1 / NOT_PROVEN=2`。
+- 新增 `tests/test_pit_conformance_verifier_v2.py` 并加入 GitHub Core Research Gates。
+
+### Verification
+
+- verifier 定向回归：`34 passed`。
+- replay/admission/receipt/architecture 联合回归：`89 passed`。
+- 本地全量离线回归：`2845 passed, 30 skipped, 18 warnings, 0 failed`。
+- frozen `src/value_investment_agent/historical_validation.py` SHA-256 仍为
+  `806d890817611000a588c9ee76ee00cc18a2529d5e1ee9769c092cc00452c5ba`。
+
+### Residual Boundary
+
+验证器已经存在，但旧 replay/admission consumer 尚未强制调用它。因此当前只声明
+`PARTIAL_MITIGATION`，不声明 P0-001/P0-002 已完全修复；下一任务是把该入口接入所有
+strict replay/admission 消费路径并以现有反例回归。永久保持 `action=no_order`，
+`Research Attractive != Buy Signal`，`Good Backtest != Buy Signal`。
+
 ## v2026.09.25-architecture-consolidation
 
 ### Scope

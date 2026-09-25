@@ -62,3 +62,39 @@ user-readable status report
 ```
 
 所有文件保留 SHA-256、窗口、信息截止点、规则版本、证据引用、阻断原因和 `action=no_order`。
+
+## 7. Independent PIT Conformance Verifier v2
+
+`HistoricalValidationAdmission` 和 `HistoricalResearchReplay` 只是合同；它们本身不能证明
+调用方声明的 PIT。独立的 `pit-conformance-verifier-v2` 必须重新读取 subject 和
+`pit-conformance-input-v2` manifest，并重算证据 Hash 与时间关系。
+
+每个 evidence record 至少包含：
+
+```text
+evidence_id
+kind
+path
+sha256
+availability_basis       # timestamp | date_only
+available_at             # aware timestamp or date-only publication date
+source_authority
+dimensions
+```
+
+验证器要求证据路径位于项目根目录内、证据身份唯一、dimension/kind 合法、coverage
+bijective、规则登记字节和时间早于首个 decision cutoff，并为 benchmark、universe
+survivorship 与每个 claimed approved model session 提供独立证明。缺失证明不能升级为
+`PASS`；`PASS` 只表示本地 PIT predicate 通过，不表示绩效有效、估值获准或可以交易。
+
+只读命令：
+
+```text
+python scripts/audit_pit_conformance_v2.py \
+  --root . \
+  --subject <replay-or-admission.json> \
+  --manifest <pit-conformance-input-v2.json>
+```
+
+退出码：`PASS=0`、`FAIL=1`、`NOT_PROVEN=2`。旧 consumer 在完成接入前仍不得把未经过
+该验证器的 replay/admission 当作 strict PIT。

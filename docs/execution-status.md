@@ -1,5 +1,24 @@
 # 当前执行状态
 
+## 2026-09-25 PIT Conformance Verifier v2
+
+新增只读 `pit-conformance-verifier-v2` 与薄 CLI `audit_pit_conformance_v2.py`。
+它不读取生产数据库、不运行真实 replay、不修改 Excel 或 receipt，只对 subject 和独立
+input manifest 做逐字节、逐时点和逐覆盖证明校验。缺失 policy/proof 返回
+`NOT_PROVEN`；未来事实、未来 quote、路径逃逸、Hash 不符、重复身份、规则日期矛盾、
+benchmark/universe/model-session 覆盖矛盾或版本不一致返回 `FAIL`；只有完整证明返回
+`PASS`。`PASS` 仍不代表绩效、估值、买入、仓位或生产授权。
+
+本轮新增 34 个 verifier 测试；replay/admission/receipt/architecture 联合回归
+`89 passed`，本地全量离线回归 `2845 passed, 30 skipped, 18 warnings, 0 failed`。
+frozen `historical_validation.py` 字节 Hash 未变。当前第一案例仍是
+`NOT_PIT_SAFE / NOT_ADMITTED`、`approved_value_model_sessions=0`、
+`walk_forward=NOT_RUN`、永久 `action=no_order`。
+
+验证器尚未被旧 replay/admission consumer 强制调用；因此 ADV-P0-001/002 只记为
+`PARTIAL_MITIGATION`，下一工程任务是把 verifier 接入所有 strict consumer，不能把
+“代码存在”写成“链路已经安全”。
+
 ## 2026-09-25 M6 P0 授权证明对象收口
 
 `transition()` 不再接受裸 `authorization_id`。它现在只接受由签名授权验证器签发的
