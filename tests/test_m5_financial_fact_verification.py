@@ -1,5 +1,8 @@
 from datetime import date, datetime, timezone
 import hashlib
+import json
+import os
+from pathlib import Path
 
 import pytest
 
@@ -20,6 +23,44 @@ PAGE = """合并利润表
 四、净利润（净亏损以“-”号填
 列） 17,062,381,326.67 18,679,911,266.59
 """
+
+
+def test_actual_half_year_pdf_replays_frozen_verified_fact_artifact():
+    local_root = Path(__file__).resolve().parents[1]
+    evidence_root = Path(os.environ.get("M5_ACTUAL_EVIDENCE_ROOT", local_root))
+    candidate_path = local_root / "runtime/m5-fact-candidate-local-check.json"
+    expected_path = local_root / "runtime/m5-verified-facts-actual-20260925.json"
+    queue_path = evidence_root / "runtime/m5-600519-disclosure-queue-20260924/source/queue.json"
+    pdf_path = evidence_root / (
+        "runtime/m5-600519-disclosure-queue-20260924/source/600519/"
+        "announcements/2026-08-15/1225475868.pdf"
+    )
+    missing = [path for path in (candidate_path, expected_path, queue_path, pdf_path)
+               if not path.is_file()]
+    if missing:
+        if os.environ.get("M5_ACTUAL_EVIDENCE_ROOT"):
+            pytest.fail(f"Required ACTUAL PDF verification inputs are missing: {missing}")
+        pytest.skip("Archived ACTUAL PDF verification inputs are unavailable")
+    candidate = json.loads(candidate_path.read_text(encoding="utf-8"))
+    expected = json.loads(expected_path.read_text(encoding="utf-8"))
+    queue = json.loads(queue_path.read_text(encoding="utf-8"))
+    records = [item for scan in queue["scans"] for item in scan["announcements"]
+               if item["announcement_id"] == candidate["announcement_id"]
+               and scan["symbol"] == candidate["symbol"]]
+    assert len(records) == 1
+    payload = expected["payload"]
+    envelope, pending = verify(
+        candidate=candidate, pdf=pdf_path, source_record=records[0],
+        period_start=date(2026, 1, 1), period_end=date(2026, 6, 30),
+        available_at=datetime.fromisoformat(payload["available_at"]),
+        verified_at=datetime.fromisoformat(payload["verified_at"]),
+        run_id=expected["run_id"],
+    )
+    assert envelope is not None and not pending
+    assert envelope.identity.as_dict() == expected["identity"]
+    assert envelope.payload_object() == payload
+    assert envelope.payload_sha256 == expected["payload_sha256"]
+    assert list(envelope.evidence_refs) == expected["evidence_refs"]
 
 
 class _Page:
