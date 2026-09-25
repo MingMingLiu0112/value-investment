@@ -8,7 +8,10 @@ from typing import Any, Mapping
 
 from .m5_event_dependencies import DependencyGraph
 from .m5_event_run import M5EventRunReceipt
-from .m5_recalculation_plan import BoundedRecalculationPlan, STATUS_BLOCKED_GRAPH_GAP, _sha
+from .m5_recalculation_plan import (
+    BoundedRecalculationPlan, STATUS_BLOCKED_GRAPH_GAP, _sha,
+    build_bounded_recalculation_plan,
+)
 from .research_artifacts import canonicalize_artifact_payload, sha256_text
 
 
@@ -24,6 +27,11 @@ def evaluate_bounded_recalculation(
     if (plan.receipt_id != receipt.receipt_id or plan.receipt_sha256 != receipt.state_sha256
         or plan.graph_sha256 != _sha(graph.as_policy())):
         raise ValueError("Recalculation inputs do not match the frozen plan")
+    expected_plan = build_bounded_recalculation_plan(
+        receipt=receipt, graph=graph, generated_at=plan.generated_at,
+    )
+    if plan.as_policy() != expected_plan.as_policy():
+        raise ValueError("Recalculation plan omits or changes invalidated dependencies")
     facts = facts_artifact["payload"]
     identity = facts_artifact["identity"]
     if (facts.get("schema_version") != "m5-verified-financial-facts-v1"

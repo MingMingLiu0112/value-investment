@@ -22,6 +22,12 @@ def build_actual_event_read_model(
     from .m5_recalculation_plan import _sha
     if plan.graph_sha256 != _sha(graph.as_policy()):
         raise ValueError("Recalculation plan does not bind the dependency graph")
+    from .m5_recalculation_plan import build_bounded_recalculation_plan
+    expected_plan = build_bounded_recalculation_plan(
+        receipt=receipt, graph=graph, generated_at=plan.generated_at,
+    )
+    if plan.as_policy() != expected_plan.as_policy():
+        raise ValueError("Recalculation plan omits or changes invalidated dependencies")
     outcomes_by_event = {}
     if outcome_receipt is not None:
         from .m5_bounded_recalculation_result import validate_bounded_recalculation_result

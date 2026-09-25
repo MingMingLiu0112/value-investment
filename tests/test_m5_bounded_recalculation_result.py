@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from dataclasses import replace
 from types import SimpleNamespace
 
 import pytest
@@ -8,31 +9,25 @@ from value_investment_agent.m5_bounded_recalculation_result import (
 )
 from value_investment_agent.m5_event_dependencies import DependencyGraph, DependencyNode
 from value_investment_agent.m5_recalculation_plan import (
-    BoundedRecalculationPlan, BoundedRecalculationTask, STATUS_BLOCKED_GRAPH_GAP, _sha,
+    STATUS_BLOCKED_GRAPH_GAP, _sha, build_bounded_recalculation_plan,
 )
 from value_investment_agent.research_artifacts import canonicalize_artifact_payload, sha256_text
 
 
 def _inputs():
-    event = SimpleNamespace(event_id="event-1", source_event_id="review-1", symbol="600519")
-    receipt = SimpleNamespace(namespace="ACTUAL", action="no_order", receipt_id="receipt-1",
-                              state_sha256="a" * 64, active_events=(event,))
+    at = datetime(2026, 9, 25, tzinfo=timezone.utc)
     ref = {"id": "official-pdf", "source_url": "https://static.cninfo.com.cn/finalpage/a.pdf", "sha256": "c" * 64}
+    event = SimpleNamespace(event_id="event-1", source_event_id="review-1", symbol="600519",
+                            current_state={"direct_dependency_kinds": ["valuation_inputs"]},
+                            evidence_refs=(ref,))
+    receipt = SimpleNamespace(namespace="ACTUAL", action="no_order", receipt_id="receipt-1",
+                              state_sha256="a" * 64, active_events=(event,), generated_at=at,
+                              invalidations=(SimpleNamespace(event_id="event-1"),))
     graph = DependencyGraph((DependencyNode(
         node_id="facts-1", kind="financial_facts", symbol="600519", inputs=(),
         version="b" * 64, evidence_refs=(ref,),
     ),))
-    task = BoundedRecalculationTask(
-        task_id="task-1", symbol="600519", event_ids=(event.event_id,),
-        dependency_kind="valuation_inputs", node_ids=(), status=STATUS_BLOCKED_GRAPH_GAP,
-        blockers=("missing_dependency_node:valuation_inputs",),
-        evidence_refs=({"id": "official-pdf"},),
-    )
-    at = datetime(2026, 9, 25, tzinfo=timezone.utc)
-    plan = BoundedRecalculationPlan(
-        plan_id="plan-1", generated_at=at, receipt_id=receipt.receipt_id,
-        receipt_sha256=receipt.state_sha256, graph_sha256=_sha(graph.as_policy()), tasks=(task,),
-    )
+    plan = build_bounded_recalculation_plan(receipt=receipt, graph=graph, generated_at=at)
     payload = {"schema_version": "m5-verified-financial-facts-v1", "symbol": "600519",
                "pdf_sha256": "c" * 64, "source_url": ref["source_url"],
                "facts": [{"field": "operating_revenue", "value": "1"}], "action": "no_order"}
@@ -94,4 +89,17 @@ def test_wrong_facts_pdf_evidence_is_rejected():
         args["facts_artifact"]["evidence_refs"][0], sha256="0" * 64,
     )
     with pytest.raises(ValueError, match="PDF evidence"):
+        evaluate_bounded_recalculation(**args)
+
+
+def test_plan_that_omits_one_invalidated_dependency_is_rejected():
+    args = _inputs()
+    args["receipt"].active_events[0].current_state["direct_dependency_kinds"] = [
+        "financial_facts", "valuation_inputs",
+    ]
+    full_plan = build_bounded_recalculation_plan(
+        receipt=args["receipt"], graph=args["graph"], generated_at=args["evaluated_at"],
+    )
+    args["plan"] = replace(full_plan, tasks=full_plan.tasks[:1])
+    with pytest.raises(ValueError, match="omits or changes"):
         evaluate_bounded_recalculation(**args)
