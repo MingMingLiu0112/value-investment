@@ -22,7 +22,8 @@
   receipt-bound artifact 不移位。
 - 新增 `config/architecture-frozen-paths-v1.json` 和
   `config/architecture-root-artifact-allowlist-v1.json`，对所有 receipt-bound
-  历史验证路径和根目录 workbook/manifest 建立精确 Hash/allowlist 防线。
+  历史验证路径和 Git-tracked 根目录 workbook/manifest 建立精确 Hash/allowlist
+  防线；被 `.gitignore` 明确排除的本地生成 add-on 不进入版本基线。
 - 架构测试覆盖跨层 import（含 relative import）、冻结路径字节、根目录产物增长、
   文档与 workbook relocation Hash，以及无 Git 工作树时的只读 inventory CLI。
 

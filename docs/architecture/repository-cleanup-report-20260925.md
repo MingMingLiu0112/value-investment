@@ -217,6 +217,7 @@ config/architecture-root-artifact-allowlist-v1.json
 relative-import resolution in the layer boundary test
 relocation-hash verification for both archive records
 non-Git operation for scripts/audit_artifact_relocation.py
+tracked-root scoping for the root workbook and manifest allowlist
 ```
 
 These checks preserve behavior while making accidental provenance or boundary

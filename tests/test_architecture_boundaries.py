@@ -6,6 +6,9 @@ import importlib
 import json
 from pathlib import Path
 import re
+import subprocess
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +40,19 @@ def _imported_modules(path: Path) -> set[str]:
                     alias.name for alias in node.names if alias.name
                 )
     return imported
+
+
+def _tracked_root_names() -> set[str]:
+    result = subprocess.run(
+        ["git", "-C", str(ROOT), "ls-files", "-z"],
+        check=True,
+        capture_output=True,
+    )
+    return {
+        item.decode("utf-8")
+        for item in result.stdout.split(b"\0")
+        if item and b"/" not in item
+    }
 
 
 def test_all_receipt_bound_paths_are_byte_for_byte_frozen():
@@ -179,18 +195,21 @@ def test_root_artifact_clutter_does_not_grow():
             encoding="utf-8"
         )
     )
-    root_xlsx = {path.name for path in ROOT.glob("*.xlsx")}
+    try:
+        tracked_root = _tracked_root_names()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        pytest.skip(f"Git index unavailable: {exc}")
+
+    root_xlsx = {name for name in tracked_root if name.endswith(".xlsx")}
     root_manifests = {
-        path
-        for path in ROOT.glob("*.json")
-        if path.name.endswith(".manifest.json") or path.name.endswith(".receipt.json")
+        name
+        for name in tracked_root
+        if name.endswith(".manifest.json") or name.endswith(".receipt.json")
     }
 
     assert allowlist["action"] == "no_order"
     assert root_xlsx == set(allowlist["workbooks"])
-    assert {path.name for path in root_manifests} == set(
-        allowlist["manifests_and_receipts"]
-    )
+    assert root_manifests == set(allowlist["manifests_and_receipts"])
 
 
 def test_relative_import_resolution_flags_layer_escapes(tmp_path: Path):
