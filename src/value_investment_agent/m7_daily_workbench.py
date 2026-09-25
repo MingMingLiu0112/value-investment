@@ -460,7 +460,8 @@ def _overview(packet: Mapping[str, Any], wb: Workbook) -> None:
     if criteria_status:
         row = _label_value(
             ws, row, "M6 运营准入",
-            "恢复：{restore}；交易日历：{calendar}；生产授权：{authorization}；"
+            "恢复机制：{mechanism}；真实恢复：{restore}；交易日历：{calendar}；\n"
+            "生产授权：{authorization}；"
             "真实 Shadow：{shadow}。运营验收：NOT_STARTED。".format(**criteria_status), 2,
         )
     _style(ws.cell(row, 1, "快速入口"), fill=BLUE, bold=True, color=WHITE)

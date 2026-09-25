@@ -12,6 +12,7 @@ def _receipt():
         "engineering_status": "DONE",
         "operational_acceptance_status": "NOT_STARTED",
         "criteria": {
+            "m6c3_isolated_restore_mechanism": {"status": "DONE"},
             "m6c4_real_restore_rpo_rto": {"status": "PARTIAL"},
             "m6c5_real_sessions_and_events": {"status": "NOT_STARTED"},
             "m6c6_production_authorization": {"status": "REQUIRES_AUTHORIZATION"},
@@ -26,7 +27,7 @@ def test_m7_projects_only_bounded_m6_preflight(tmp_path):
     view = project_m6_preflight(path)
     assert view["operational_status"] == "NOT_STARTED"
     assert view["criteria_status"] == {
-        "restore": "PARTIAL", "shadow": "NOT_STARTED",
+        "mechanism": "DONE", "restore": "PARTIAL", "shadow": "NOT_STARTED",
         "authorization": "REQUIRES_AUTHORIZATION", "calendar": "NOT_PROVEN",
     }
     assert len(view["receipt_sha256"]) == 64

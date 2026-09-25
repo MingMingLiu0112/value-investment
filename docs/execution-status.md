@@ -1,5 +1,15 @@
 # 当前执行状态
 
+## 2026-09-25 当前提交 CI、M6 收据与 M7 v16 候选
+
+`4e45fbeb8ef205a6d26bfc173a15b3237046d11c` 的 [Core Research Gates 36127009539](https://github.com/MingMingLiu0112/value-investment/actions/runs/36127009539) 中 `offline-core`、`postgres-integration` 均为 `success`。在该干净提交上实时查询 GitHub run/job/step/附件元数据后的本地 M6 收据为 `runtime/m6-operational-preflight-20260925T110154Z/receipt.json`，SHA-256 `1b8f2e5aa8d7b82624b8c15da3c86c8de6b66d55f8da3d5bc21125efc374506c`。`m6c3` 恢复机制工程 `DONE`，`m6c4` 真实隔离恢复 `NOT_STARTED`；真实会话 0，真实事件观察 `NOT_STARTED`，运营准入 `NOT_STARTED`。GitHub 合成附件元数据不是生产备份内容或 RPO/RTO 证明。
+
+600519 R1 追加只读核验：隔离工作树 graph 文件 SHA-256 与复核文档一致，graph policy SHA-256 与人工 receipt 的 `5254ad4e202e6af6e9258e0ed41bf149a393f81e508b4ee4b442052eede86c13` 一致，8 个 graph 输入制品均存在且逐件 SHA-256 匹配。两条事件与一手 PDF Hash 未见冲突。这只加强既有证据链核验，不批准任何新估值或历史事件的 M6 运营计数。
+
+新的只读 M7 候选 `runtime/m7-actual-reviewed-candidate-v16-20260925.xlsx` SHA-256 `71d6674da29074df8211b423a0ea946c974e4c68a15b40f62683a9492308d197`，首页分列恢复机制与真实恢复状态；WPS 收据 `runtime/m7-actual-reviewed-candidate-v16-wps-receipt.json` 为 `passed`，10 可见/2 隐藏、`no_order`、无订单建议。正式 WPS 原表 SHA-256 仍为 `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`，未替换；M7 最终用户验收未开始。
+
+`TOTAL_GOAL_STATUS=IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`；`INITIAL_ASSISTED_USE=NOT_REACHED`。永久 `action=no_order`，最终投资决定由用户作出。
+
 ## 2026-09-25 M6 CI 绑定与 600519 独立 R1 复核
 
 新增 `--verify-ci` 的只读工程入口：仅在干净 `HEAD` 的本仓库 `main` push、指定 workflow/job/恢复测试步骤成功且同 run 的合成附件未过期时，才允许将 M6 恢复**机制** `m6c3` 记为 `DONE`。缺证据时保持 `PARTIAL` 或失败关闭。定向回归 `23 passed`，包括旧提交、PR、rerun、失败步骤、过期/错绑附件、脏工作树及 workflow 不再运行恢复测试的反例。此时尚未对新提交执行 live CI 绑定；真实恢复 `m6c4` 仍为 `NOT_STARTED`，不能由合成 CI 附件替代。

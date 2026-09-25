@@ -70,6 +70,7 @@ def project_m6_preflight(path: Path) -> dict:
         raise ValueError("M6 preflight cannot certify operational acceptance")
     criteria = payload.get("criteria") or {}
     keys = {
+        "mechanism": "m6c3_isolated_restore_mechanism",
         "restore": "m6c4_real_restore_rpo_rto",
         "calendar": "m6c7_official_exchange_calendar",
         "shadow": "m6c5_real_sessions_and_events",
