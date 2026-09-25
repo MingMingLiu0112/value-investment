@@ -1,5 +1,33 @@
 # 当前执行状态
 
+## 2026-09-25 日结节点
+
+本轮按原总 Goal 继续推进 M4/M6/M7，不以工程提交替代产品验收。今日新增并验证的关键节点为：
+
+- M4 形成 `READY_FOR_PRIVATE_INPUT` 的单一路径，包括仓库外私有输入、独立密钥、加密、
+  双密文对账与显式确认合同；未提供真实 IPS/组合前，个性化 M4 仍为 `WAITING_R2`，不生成
+  个人化仓位结论。
+- M7 只读试用入口固定到 Hash/WPS 回执约束的 v16 候选，正式 WPS 原表未替换；试用和最终
+  用户验收仍未通过，`M7_USER_ACCEPTED=false`。
+- M6 离线 R0 增加授权制品逐字节绑定、五方 Shadow 准入、独立 append-only intake、真实事件
+  admission，以及只接受签名授权和包外批准 Hash 的本地模式转换门。它们都是未来运营门禁，
+  没有启动生产 Shadow、没有 SSH、没有创建 OSS、没有改数据库或 PTA 任务。
+
+当前事实状态保持不变：`M2=DONE`；M3 strict contemporaneous-rule PIT 为 `NOT_PROVEN`；
+M4 为非个人化工程完成、个人化输入待 R2；M5 600519 已审 9 条公告、待审 0 条、已核 5 项 H1
+事实和 2 条重大事件，但研究仍为 `HUMAN_REVIEWED_NEED_MORE_EVIDENCE`，重算
+`STILL_NOT_READY` 且没有新估值；M6 为 `PREFLIGHT_DONE / operationally NOT_STARTED`，
+生产授权 `NOT_YET`，已验真实 Shadow 会话和真实事件均为 0；M7 为只读候选可用，
+`M7_USER_ACCEPTED=false`；`INITIAL_ASSISTED_USE=NOT_REACHED`。永久 `action=no_order`。
+
+验证证据：M6 定向回归 `59 passed`；本地全量离线回归 `2761 passed, 30 skipped,
+18 warnings, 0 failed`。全量回归只证明工程合同和离线行为一致，不证明历史策略有效性、
+真实生产数据完整性或投资结果。
+
+下次继续时的入口不变：用户可先运行 M7 只读试用并向系统反馈问题；私人 IPS/组合仍由用户
+决定是否提供；M6 生产授权包只可审查，未经逐项批准不得执行。工程侧继续时仍优先补历史
+PIT/验证证据和 600519 事件后研究证据，不用自然时间等待阻塞其他安全工作。
+
 ## 2026-09-25 M6 受验证授权的本地模式转换 R0
 
 `m6_operational_control.py advance` 不再接受自报 `authorization_id`。它现在必须读取签名授权
