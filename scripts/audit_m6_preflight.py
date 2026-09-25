@@ -101,6 +101,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--calendar-bundle", type=Path)
     parser.add_argument("--calendar-symbol")
     parser.add_argument("--verify-live-calendar", action="store_true")
+    parser.add_argument("--verify-ci", action="store_true",
+                        help="Bind exact clean HEAD to live GitHub restore CI evidence")
     parser.add_argument("--restore", type=Path)
     parser.add_argument("--verified-restore-receipt", type=Path)
     parser.add_argument("--json-only", action="store_true")
@@ -135,6 +137,7 @@ def main(argv: list[str] | None = None) -> int:
         restore_receipt_path=args.verified_restore_receipt.resolve() if args.verified_restore_receipt else None,
         source_database_url=source,
         restore_database_url=target,
+        verify_ci=args.verify_ci,
     )
     output = write_receipt(receipt, root=root)
     if args.json_only:

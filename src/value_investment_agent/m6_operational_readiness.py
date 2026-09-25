@@ -598,8 +598,13 @@ def build_preflight_receipt(
     restore_receipt_path: Path | None = None,
     source_database_url: str | None = None,
     restore_database_url: str | None = None,
+    verify_ci: bool = False,
 ) -> dict[str, Any]:
     config = load_config(config_path)
+    ci_evidence = None
+    if verify_ci:
+        from value_investment_agent.m6_ci_evidence import verify_restore_ci
+        ci_evidence = verify_restore_ci(root)
     repository = audit_repository(
         root,
         config,
@@ -648,12 +653,15 @@ def build_preflight_receipt(
         "m6c1_product_prerequisites": prerequisites,
         "m6c2_repository_and_privacy": repository,
         "m6c3_isolated_restore_mechanism": _criterion(
-            PARTIAL,
+            DONE if mechanism_available and ci_evidence is not None else PARTIAL,
             [_check("backup/restore code is available", mechanism_available),
-             _check("current commit CI result is bound to this preflight", False)],
+             _check("current commit CI result is bound to this preflight",
+                    ci_evidence is not None)],
             blockers=(["backup/restore source or verifier test is absent"]
                       if not mechanism_available else []) +
-                     ["current commit restore test receipt is not bound to this preflight"],
+                     ([] if ci_evidence is not None else
+                      ["current commit restore test receipt is not bound to this preflight"]),
+            evidence={"ci": ci_evidence} if ci_evidence is not None else None,
         ),
         "m6c4_real_restore_rpo_rto": restore,
         "m6c5_real_sessions_and_events": sessions,
@@ -770,7 +778,15 @@ def build_preflight_receipt(
         mechanism['evidence_refs'] = [str(path) for path in mechanism_files]
         mechanism['evidence_sha256'] = [hashlib.sha256(path.read_bytes()).hexdigest()
                                         for path in mechanism_files]
-        mechanism['verified_at'] = datetime.now(timezone.utc).isoformat()
+        if ci_evidence is not None:
+            mechanism['evidence_refs'] += [str(root / ci_evidence['workflow_path']),
+                                           ("https://api.github.com/repos/"
+                                            "MingMingLiu0112/value-investment/actions/artifacts/"
+                                            f"{ci_evidence['artifact_id']}/zip")]
+            mechanism['evidence_sha256'] += [ci_evidence['workflow_sha256'],
+                                            ci_evidence['artifact_digest'].removeprefix('sha256:')]
+        mechanism['verified_at'] = (ci_evidence or {}).get('verified_at') or datetime.now(
+            timezone.utc).isoformat()
     if emergency_script.is_file():
         stop = criteria['m6c11_emergency_stop_readiness']
         stop['evidence_refs'] = [str(emergency_script)]

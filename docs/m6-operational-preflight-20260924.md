@@ -40,6 +40,14 @@
 
 ## 当前明确缺口
 
+`audit_m6_preflight.py --verify-ci` 可只读查询 GitHub API，要求干净的本地
+`HEAD` 对应本仓库 `main` push 的一次成功 Core Research Gates：指定
+`postgres-integration` 作业和恢复测试步骤均成功、首轮 run attempt、合成恢复附件
+存在且未过期，并绑定 workflow 文件及附件摘要。只有这种当前提交的工程证据可把
+`m6c3_isolated_restore_mechanism` 从 `PARTIAL` 提为 `DONE`；缺失或不一致时失败
+关闭。GitHub 附件摘要来自 API 元数据，不代表已下载并复验用户真实备份。此选项不
+改变 `m6c4_real_restore_rpo_rto`、真实 Shadow 会话/事件或 M6 运营准入。
+
 1. 加密备份工程已离线实现，但实际云端同步部署、云盘密钥保管和密钥轮换
    方案尚未取得授权。
 2. manifest 已具备代码版本、配置清单和发布 Excel Hash；仍需在真实生产

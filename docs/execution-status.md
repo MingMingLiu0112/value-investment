@@ -1,5 +1,13 @@
 # 当前执行状态
 
+## 2026-09-25 M6 CI 绑定与 600519 独立 R1 复核
+
+新增 `--verify-ci` 的只读工程入口：仅在干净 `HEAD` 的本仓库 `main` push、指定 workflow/job/恢复测试步骤成功且同 run 的合成附件未过期时，才允许将 M6 恢复**机制** `m6c3` 记为 `DONE`。缺证据时保持 `PARTIAL` 或失败关闭。定向回归 `23 passed`，包括旧提交、PR、rerun、失败步骤、过期/错绑附件、脏工作树及 workflow 不再运行恢复测试的反例。此时尚未对新提交执行 live CI 绑定；真实恢复 `m6c4` 仍为 `NOT_STARTED`，不能由合成 CI 附件替代。
+
+独立 R1 复核核对了 600519 两条重大事件的 decision/event ID 与归档 CNINFO PDF SHA-256，未发现冲突。隔离工作树的 graph 文件 SHA-256 `9e14506c939b7359b86332515a89cc5d2e6c4e9c820b02986c1ad3531df9fa88` 与现有研究复核文档所列文件 Hash 一致；这不同于 receipt 中的 graph policy SHA。已定位 Hash 匹配的 verified-facts 文件和 complete-sources pending-input 文件。此复核不补足事件后 SKU、渠道、利润、分配与折现证据，`NEED_MORE_EVIDENCE` / `STILL_NOT_READY` 不变；历史 M5 事件不得计作 M6 真实运营观察。
+
+总目标仍为 `IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`，`INITIAL_ASSISTED_USE=NOT_REACHED`；永久 `action=no_order`，最终投资决定由用户作出。
+
 ## 2026-09-25 INTERRUPT 复核：253eddc 与剩余 DAG
 
 以干净且与 `origin/main` 一致的 `253eddc6fb68a17138fa7c4ab240fea5e9c7f5b1` 为基线。该提交的 [Core Research Gates 36125635715](https://github.com/MingMingLiu0112/value-investment/actions/runs/36125635715) 已完成，`offline-core` 与 `postgres-integration` 均为 `success`；仅证明本提交的工程测试通过，不构成真实运营或投资有效性验收。
