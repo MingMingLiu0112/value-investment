@@ -15,3 +15,11 @@ def test_legacy_reference_is_visible_but_cannot_unblock_historical_orders():
     assert all(row["state"] == "blocked" and row["action"] == "no_order" for row in decisions)
     assert all(row["legacy_reference_status"].startswith("unapproved_") for row in decisions)
     assert all("unapproved_legacy_pe_pb_reference" in row["reasons"] for row in decisions)
+
+
+def test_paper_decision_summary_stays_not_pit_safe_and_no_order():
+    source = (ROOT / "scripts" / "run_moutai_paper_decisions.py").read_text(encoding="utf-8")
+    assert '"validation_classification": NOT_PIT_SAFE' in source
+    assert '"validation_admission_status": "NOT_ADMITTED"' in source
+    assert '"approved_value_model_sessions": 0' in source
+    assert '"orders": 0' in source

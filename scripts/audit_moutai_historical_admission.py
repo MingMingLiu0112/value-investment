@@ -4,11 +4,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from value_investment_agent.historical_validation import NOT_PIT_SAFE  # noqa: E402
+
 INPUT = ROOT / "runtime/strategy-validation/moutai-daily-research-inputs-20260909T161900156334Z/daily-inputs.json"
 INPUT_HASH = "2a3e748c43f1f25371da12aed478bfd1f1c96d0fe957609720e53043207e7a9f"
 
@@ -40,6 +45,9 @@ def audit(rows: list[dict]) -> dict:
         "blocker_counts": dict(sorted(blockers.items())),
         "annual_source_session_counts": dict(sorted(sources.items())),
         "admission": {"historical_trade_backtest_complete": False, "trade_approved": False,
+                      "validation_classification": NOT_PIT_SAFE,
+                      "validation_admission_status": "NOT_ADMITTED",
+                      "performance_claim_allowed": False,
                       "conclusion": "No session can enter a trading strategy replay until the required historical valuation and execution contracts are met."},
     }
 

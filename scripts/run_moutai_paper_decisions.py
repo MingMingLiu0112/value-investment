@@ -19,6 +19,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+from value_investment_agent.historical_validation import NOT_PIT_SAFE
 from value_investment_agent.simulation_state import DecisionInput, evaluate
 
 INPUT = ROOT / "runtime/strategy-validation/moutai-daily-research-inputs-20260909T161900156334Z/daily-inputs.json"
@@ -92,7 +93,9 @@ def main() -> int:
         "symbol": "600519", "rule_version": RULE_VERSION, "input_path": str(INPUT.relative_to(ROOT)),
         "input_sha256": INPUT_HASH, "rows": len(decisions), "first_date": decisions[0]["date"],
         "last_date": decisions[-1]["date"], "states": dict(Counter(row["state"] for row in decisions)),
-        "orders": 0, "strategy_backtest_complete": False, "trade_approved": False,
+        "orders": 0, "validation_classification": NOT_PIT_SAFE,
+        "validation_admission_status": "NOT_ADMITTED", "approved_value_model_sessions": 0,
+        "strategy_backtest_complete": False, "trade_approved": False,
         "legacy_reference": {"path": str(LEGACY_INPUT.relative_to(ROOT)), "sha256": LEGACY_INPUT_HASH,
                              "status": "PE18/PB4 equal blend is visible for counterevidence only, not an approved historical value."},
         "interpretation": "Historical daily decision trace completed, but all dates are blocked because no approved historical value, paper account or execution admission exists. The old PE18/PB4 reference is retained as counterevidence, not promoted to value.",

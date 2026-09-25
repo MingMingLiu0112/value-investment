@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from replay_moutai_distributions import digest, load_inputs, write_json
+from value_investment_agent.historical_validation import NOT_PIT_SAFE
 from value_investment_agent.paper_sizing import size_entry_or_add
 from value_investment_agent.virtual_account import VirtualAccount, dated_research_fee, replay
 
@@ -199,6 +200,9 @@ def main() -> int:
     result = {
         "symbol": "600519", "run_type": "historical_research_range_sensitivity",
         "window": [bars[0]["date"], bars[-1]["date"]], "sessions": len(bars), "results": results,
+        "validation_classification": NOT_PIT_SAFE,
+        "validation_admission_status": "NOT_ADMITTED",
+        "approved_value_model_sessions": 0,
         "formal_fair_value": None, "valuation_approved": False, "strategy_backtest_complete": False,
         "simulation_eligible": False, "trade_approved": False, "live_eligible": False,
         "interpretation": "All displayed range endpoints and registered margins are replayed together. Gross research returns are scenario diagnostics only and must not be read as a validated strategy result or investment recommendation.",

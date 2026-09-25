@@ -31,3 +31,10 @@ def test_registered_periods_are_chronological_and_non_overlapping():
     periods = MODULE.PERIODS
     assert [row[0] for row in periods] == ["development", "validation", "sealed_test"]
     assert periods[0][2] < periods[1][1] < periods[1][2] < periods[2][1]
+
+
+def test_range_result_keeps_the_retrospective_experiment_out_of_strategy_validation():
+    source = (ROOT / "scripts" / "replay_moutai_experimental_range_strategy.py").read_text(encoding="utf-8")
+    assert '"validation_classification": NOT_PIT_SAFE' in source
+    assert '"approved_value_model_sessions": 0' in source
+    assert '"strategy_backtest_complete": False' in source

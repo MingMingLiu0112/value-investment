@@ -1,0 +1,88 @@
+{
+  "schema_version": "historical-validation-policy-v1",
+  "policy_version": "historical-validation-policy-20260925.1",
+  "action": "no_order",
+  "classification": {
+    "STRICT_CONTEMPORANEOUS_REPLAY": {
+      "meaning": "All decision-critical facts, assumptions, valuation, quote, corporate-action, portfolio, benchmark and universe inputs were available under a contemporaneous rule version.",
+      "performance_claim_allowed": true,
+      "requires": [
+        "approved_value_model_sessions_greater_than_zero",
+        "all_critical_pit_dimensions_verified",
+        "rule_registration_status=CONTEMPORANEOUS_RULE",
+        "rule_registration_evidence_present",
+        "survivorship_status=CONTROLLED",
+        "execution_contract_status=VERIFIED_or_CONSERVATIVE"
+      ]
+    },
+    "RETROSPECTIVE_POLICY_REPLAY": {
+      "meaning": "The data and execution chain is PIT-safe enough to test a policy, but the rule version was registered after the decision date.",
+      "performance_claim_allowed": false,
+      "requires": [
+        "approved_value_model_sessions_greater_than_zero",
+        "no_UNSUPPORTED_or_NOT_PROVEN_critical_dimension",
+        "rule_registration_status=RETROSPECTIVE_RESEARCH_EXTENSION"
+      ]
+    },
+    "NOT_PIT_SAFE": {
+      "meaning": "At least one decision-critical input, valuation, execution, benchmark, universe or survivorship requirement cannot be proven under the declared cutoff policy.",
+      "performance_claim_allowed": false,
+      "requires": [
+        "fail_closed"
+      ]
+    }
+  },
+  "required_dimensions": [
+    "facts_pit",
+    "assumptions_pit",
+    "valuation_pit",
+    "quote_pit",
+    "corporate_actions_pit",
+    "fees_pit",
+    "execution_contract",
+    "portfolio_context",
+    "benchmark_contract",
+    "universe_pit"
+  ],
+  "pit_statuses": [
+    "VERIFIED",
+    "CONSERVATIVE",
+    "UNSUPPORTED",
+    "NOT_PROVEN",
+    "NOT_APPLICABLE"
+  ],
+  "information_cutoff": {
+    "decision_clock": "Each decision is evaluated at the close of its SSE session.",
+    "input_rule": "Every fact, filing, quote, benchmark level, assumption and rule version used by a decision must have available_at <= decision_at.",
+    "late_or_corrected_data": "Late or corrected data cannot be used before its first verified availability time; it only reopens research.",
+    "publication_precision": "A date-only publication uses an exclusive next-day upper bound in China Standard Time.",
+    "future_price_rule": "Future prices may be used only by the execution ledger after a decision has already been frozen; they must never enter the decision input."
+  },
+  "execution_contract": {
+    "signal_to_fill": "next_session_open",
+    "settlement": "T+1",
+    "board_lot": 100,
+    "cash": "cash-only, no leverage, no shorting, explicit fees and taxes before fill",
+    "suspension": "an absent stock session must not be filled at a stale price",
+    "price_limit": "missing or invalid daily limits block the order",
+    "liquidity": "daily-bar results are research assumptions unless order-book or volume evidence supports the fill binding",
+    "corporate_actions": "record-date entitlement; ex-date and payment-date handled separately; bonuses locked until listing; no double count",
+    "fees": "dated statutory components plus an explicitly declared broker-commission scenario; early-SSE rules without a verified basis are UNSUPPORTED"
+  },
+  "walk_forward": {
+    "minimum_requirement": "A walk-forward result may be produced only after a strict or explicit retrospective admission with a frozen approved value model for every scored session.",
+    "forbidden": [
+      "parameter search using validation or sealed-test outcomes",
+      "survivorship-selected universe presented as historical",
+      "current assumptions backfilled into past decision dates",
+      "gross experiment returns labelled validated strategy performance"
+    ]
+  },
+  "permanent_boundaries": {
+    "action": "no_order",
+    "research_attractive_is_not_buy": true,
+    "backtest_return_is_not_future_return": true,
+    "good_backtest_is_not_buy_signal": true,
+    "good_backtest_is_not_production_authorization": true
+  }
+}

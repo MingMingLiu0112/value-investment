@@ -36,6 +36,8 @@ try {
     Start-Transcript -LiteralPath $transcript -Append | Out-Null
     Set-Location $root
     $python = Get-Python
+    $admission = Invoke-AgentJson $python @('scripts/build_moutai_historical_validation_admission.py') 'Historical validation admission'
+    $receiptAudit = Invoke-AgentJson $python @('scripts/audit_historical_validation_receipt.py') 'Historical validation receipt audit'
     $range = Invoke-AgentJson $python @('scripts/replay_moutai_experimental_range_strategy.py') 'Historical range replay'
     $closure = Invoke-AgentJson $python @('scripts/run_moutai_simulation_closure.py') 'Historical execution closure'
     [PSCustomObject]@{
@@ -43,6 +45,9 @@ try {
         mode = 'offline_historical_validation'
         uses_live_quote = $false
         waits_for_next_trading_day = $false
+        validation_classification = $admission.classification
+        validation_admission_status = $admission.admission_status
+        receipt_audit_status = $receiptAudit.status
         range_experiment = $range.output
         closure = $closure.output
         strategy_backtest_complete = $false
