@@ -28,8 +28,9 @@ PAGE = """合并利润表
 def test_actual_half_year_pdf_replays_frozen_verified_fact_artifact():
     local_root = Path(__file__).resolve().parents[1]
     evidence_root = Path(os.environ.get("M5_ACTUAL_EVIDENCE_ROOT", local_root))
-    candidate_path = local_root / "runtime/m5-fact-candidate-local-check.json"
-    expected_path = local_root / "runtime/m5-verified-facts-actual-20260925.json"
+    fact_root = Path(os.environ.get("M5_ACTUAL_FACT_ROOT", local_root))
+    candidate_path = fact_root / "runtime/m5-fact-candidate-local-check.json"
+    expected_path = fact_root / "runtime/m5-verified-facts-actual-20260925.json"
     queue_path = evidence_root / "runtime/m5-600519-disclosure-queue-20260924/source/queue.json"
     pdf_path = evidence_root / (
         "runtime/m5-600519-disclosure-queue-20260924/source/600519/"
@@ -38,7 +39,7 @@ def test_actual_half_year_pdf_replays_frozen_verified_fact_artifact():
     missing = [path for path in (candidate_path, expected_path, queue_path, pdf_path)
                if not path.is_file()]
     if missing:
-        if os.environ.get("M5_ACTUAL_EVIDENCE_ROOT"):
+        if os.environ.get("M5_ACTUAL_EVIDENCE_ROOT") or os.environ.get("M5_ACTUAL_FACT_ROOT"):
             pytest.fail(f"Required ACTUAL PDF verification inputs are missing: {missing}")
         pytest.skip("Archived ACTUAL PDF verification inputs are unavailable")
     candidate = json.loads(candidate_path.read_text(encoding="utf-8"))
