@@ -25,6 +25,16 @@ from value_investment_agent.historical_validation import (
 )
 
 
+ROOT = Path(__file__).resolve().parents[1]
+LOCAL_FIRST_CASE_EVIDENCE = (
+    ROOT
+    / "runtime"
+    / "strategy-validation"
+    / "moutai-historical-window-registration-20260918T121703Z"
+    / "evidence.json"
+)
+
+
 def assessment(status=PIT_VERIFIED, name="dimension"):
     if status in (PIT_VERIFIED, PIT_CONSERVATIVE):
         return PitAssessment(status, f"{name} evidence", evidence_refs=("evidence",))
@@ -178,14 +188,18 @@ def test_admission_requires_an_explicit_blocker_when_not_pit_safe():
         admission(approved_value_model_sessions=0, blockers=())
 
 
+@pytest.mark.skipif(
+    not LOCAL_FIRST_CASE_EVIDENCE.is_file(),
+    reason="Builder integration requires ignored local runtime evidence, not available in a clean checkout",
+)
 def test_builder_keeps_the_first_600519_case_at_not_pit_safe():
     import importlib.util
 
-    path = Path(__file__).resolve().parents[1] / "scripts" / "build_moutai_historical_validation_admission.py"
+    path = ROOT / "scripts" / "build_moutai_historical_validation_admission.py"
     spec = importlib.util.spec_from_file_location("historical_validation_builder", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    result, manifest = module.build_admission(Path(__file__).resolve().parents[1])
+    result, manifest = module.build_admission(ROOT)
     assert result.symbol == "600519"
     assert result.classification == NOT_PIT_SAFE
     assert result.admission_status == NOT_ADMITTED
