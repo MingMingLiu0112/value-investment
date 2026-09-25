@@ -98,9 +98,9 @@ Domain must not import:
 | Domain / Events | `event_materiality.py`, `m5_event_*.py` | 事件合同与运营编排分开 |
 | Domain / Historical Validation | `historical_validation.py` 由冻结 receipt 按原路径和 SHA-256 绑定 | provenance-frozen，不移动、不改写；新的只读校验用例进入 `application/historical_validation/` |
 | Application | `research_application.py`, `research_batch.py`, `research_e2e_replay.py` | 作为应用编排，不导入 Excel/DB 业务实现 |
-| Infrastructure | `db.py`, `disclosures.py`, `market.py`, `backup*.py`, `private_portfolio_intake.py` | 保持 I/O、持久化、外部数据和密钥边界 |
-| Presentation | `excel_report.py`, `workbook_simple_overview.py`, `*_workbook.py` | 只消费 Product Read Model / typed result，不重算投资结论 |
-| Operations | `m6_*.py`, `m7_daily_workbench.py` 的发布入口 | M6 运行控制、M7 展示发布分开 |
+| Infrastructure | `infrastructure/filings/pdf_text.py`、`infrastructure/evidence/evidence_tiering.py`、`infrastructure/backup/backup_snapshot.py`；`db.py`、`disclosures.py`、`market.py` 仍待迁移 | 保持 I/O、持久化、外部数据和密钥边界 |
+| Presentation | `presentation/excel/`、`presentation/read_models/research_read_model.py`；`excel_report.py`、`workbook_simple_overview.py` 仍为核心 legacy 实现 | 只消费 Product Read Model / typed result，不重算投资结论 |
+| Operations | `operations/authorization/m6_authorization_artifacts.py`；其余 `m6_*.py` 仍待迁移 | M6 运行控制、M7 展示发布分开 |
 | Compatibility / Legacy | 根层旧模块和 `scripts/*` wrapper | 只保留迁移期 shim，不再增长 |
 
 ## 公司特定代码边界
@@ -195,12 +195,32 @@ RECEIPT_AUDIT_APPLICATION_MIGRATION = historical_validation
 HISTORICAL_VALIDATION_DOMAIN_MIGRATION = BLOCKED_BY_FROZEN_RECEIPT_HASH
 FIRST_SAFE_DOMAIN_MIGRATION = gap_classification + research_profile
 SECOND_SAFE_DOMAIN_MIGRATION = valuation_confidence
-ROOT_ARTIFACT_CLUTTER = REDUCED
+ROOT_ARTIFACT_CLUTTER = LOGICALLY_REDUCED
+ROOT_ARTIFACT_PHYSICAL_BATCH_2 = NO_SAFE_MOVE
 CURRENT_ARTIFACT_ENTRY = config/current-trial-workbook.json
-DOCS_CURRENT_VS_ARCHIVE = CLEAR
+DOCS_CURRENT_ENTRY = FUNCTIONAL
+DOCS_CURRENT_VS_ARCHIVE = OPERATIONALLY_CLEAR
+SCRIPT_INVENTORY = COMPLETE
+CURRENT_SUPPORTED_CLIS = 43
+SCRIPT_ROOT_PYTHON_BASELINE = 528
+PRESENTATION_DIRECTORY = ACTIVE
+OPERATIONS_DIRECTORY = ACTIVE
+INFRASTRUCTURE_DIRECTORY = ACTIVE
+COMPATIBILITY_SHIMS = REGISTERED
+COMPANY_SPECIFIC_TOOLING = CLASSIFIED
+NEW_CODE_ROOT_GROWTH = BLOCKED
 CORE_BEHAVIOR_CHANGED = false
 action = no_order
 ```
+
+Phase 2 的根 artifact 审计结论是：当前 58 个根 artifact 均被 canonical、pointer、
+manifest、receipt、静态消费者或未跟踪本地证据绑定，因此没有可证明安全的物理移动批次。
+当前通过 `artifacts/current/artifact-registry-v1.json` 提供逻辑导航，而不是为了降低目录数量
+破坏 Hash 证据。物理根工作簿仍为 29 个。
+
+当前脚本分类入口为 `config/current-cli-entrypoints-v1.json`（43 个受支持 CLI）和
+`docs/architecture/script-inventory-v1.json`（完整机器可读清单）。`scripts/` 根层默认不再
+增长，诊断、历史验证和公司 case 开始进入明确子目录；旧实现通过已登记 shim 保留路径兼容。
 
 `src/value_investment_agent/historical_validation.py` 不是普通的 legacy module。现有历史验证
 receipt 将路径 `src/value_investment_agent/historical_validation.py` 和 SHA-256

@@ -44,6 +44,13 @@
       "introduced_at": "2026-09-26",
       "consumers_remaining": ["src/value_investment_agent/backup.py", "tests/test_backup_snapshot.py"],
       "removal_condition": "Backup and restore consumers import the infrastructure path and legacy callers are retired."
+    },
+    {
+      "old_path": "src/value_investment_agent/research_read_model.py",
+      "new_path": "src/value_investment_agent/presentation/read_models/research_read_model.py",
+      "introduced_at": "2026-09-26",
+      "consumers_remaining": ["src/value_investment_agent/m1_application_workbook.py", "research dossier scripts"],
+      "removal_condition": "Research presentation consumers import the read_models path and external callers are retired."
     }
   ]
 }
