@@ -23,8 +23,19 @@ def test_restore_runner_uses_fixed_source_and_bounded_resources():
     assert 'RESTORE_POSTGRES_PASSWORD' in script
     assert 'postgres.env' not in script.replace('restore-postgres.env', '')
     assert 'M6_RESTORE_ATTEMPT_STARTED_AT' in script
+    assert 'podman run --rm -d --name value-investment-restore-postgres' in script
+    assert 'value_investment_restore_postgres:/var/lib/postgresql/data' not in script
 
 
 def test_restore_service_has_bounded_total_deadline():
     unit = (Path(__file__).parents[1] / 'deploy/server/value-investment-agent-restore-drill.service').read_text(encoding='utf-8')
     assert 'TimeoutStartSec=4h15min' in unit
+
+
+def test_evidence_smoke_test_never_reuses_production_password_or_old_cluster():
+    script = (Path(__file__).parents[1] / 'deploy/server/test_evidence_in_restore.sh').read_text(encoding='utf-8')
+    assert 'source /etc/value-investment-agent/restore-postgres.env' in script
+    assert 'source /etc/value-investment-agent/postgres.env' not in script
+    assert 'podman run --rm -d --name value-investment-restore-postgres' in script
+    assert 'value_investment_restore_postgres:/var/lib/postgresql/data' not in script
+    assert "!= 0 &&" not in script

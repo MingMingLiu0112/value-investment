@@ -179,7 +179,7 @@ def main() -> int:
         m6_path = args.m6_receipt.resolve()
         packet["m6"] = project_m6_preflight(m6_path)
         packet["audit"]["artifacts"].append({
-            "label": "M6 最新只读预检收据", "path": str(m6_path),
+            "label": "M6 指定只读预检收据", "path": str(m6_path),
             "sha256": packet["m6"]["receipt_sha256"],
         })
     if args.followup_queue is not None:

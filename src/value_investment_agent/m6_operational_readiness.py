@@ -465,8 +465,11 @@ def assess_restore_evidence(
             raise ValueError('Verified restore receipt targets the wrong database')
         rpo = float(verified_receipt['backup_age_seconds'])
         rto = float(verified_receipt['rto_seconds'])
+        drill_age = (datetime.now(timezone.utc) - datetime.fromisoformat(
+            verified_receipt['restore_completed_at'])).total_seconds()
+        current_drill = 0 <= drill_age <= 32 * 24 * 3600
         within = (0 <= rpo <= config.target_rpo_hours * 3600
-                  and 0 <= rto <= config.target_rto_hours * 3600)
+                  and 0 <= rto <= config.target_rto_hours * 3600 and current_drill)
         checks = verified_receipt.get('table_checks') or {}
         if (not checks or not verified_receipt.get('receipt_file_sha256')
                 or not verified_receipt.get('evidence_file_sha256')):
@@ -474,8 +477,11 @@ def assess_restore_evidence(
         return _criterion(
             DONE if within else PARTIAL,
             [_check('manifest, dump, originals and live isolated database reverified', True),
-             _check('backup age and restore duration within targets', within)],
-            blockers=[] if within else ['verified drill exceeds RPO/RTO target'],
+             _check('backup age and restore duration within targets',
+                    0 <= rpo <= config.target_rpo_hours * 3600
+                    and 0 <= rto <= config.target_rto_hours * 3600),
+             _check('isolated drill completed within monthly acceptance window', current_drill)],
+            blockers=[] if within else ['verified drill is stale or exceeds RPO/RTO target'],
             evidence={
                 'receipt_sha256': verified_receipt['receipt_file_sha256'],
                 'backup_manifest_sha256': verified_receipt['backup_manifest_sha256'],
@@ -483,6 +489,7 @@ def assess_restore_evidence(
                 'verified_at': verified_receipt['verified_at'],
                 'backup_age_seconds': rpo,
                 'rto_seconds': rto,
+                'drill_age_seconds': drill_age,
                 'table_check_count': len(checks),
             },
         )

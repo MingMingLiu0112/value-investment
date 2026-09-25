@@ -10,17 +10,16 @@ source /etc/value-investment-agent/restore-postgres.env
 : "${RESTORE_POSTGRES_PASSWORD:?Dedicated restore database password is required}"
 attempt_started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 manifest_name="$(basename "$1")"
-# The drill database is disposable. Remove its stopped container so a passed
-# or failed drill cannot accumulate stale container metadata between months.
+# The drill database is disposable. --rm removes its anonymous data volume,
+# so an old cluster/password cannot survive into the next drill.
 trap 'podman rm -f value-investment-restore-postgres >/dev/null 2>&1 || true' EXIT
 podman rm -f value-investment-restore-postgres 2>/dev/null || true
-podman run -d --name value-investment-restore-postgres \
+podman run --rm -d --name value-investment-restore-postgres \
   --memory=256m --memory-reservation=128m --memory-swap=384m --cpus=0.5 \
   -p 127.0.0.1:5433:5432 \
   -e POSTGRES_DB=value_agent_restore \
   -e POSTGRES_USER=value_agent_admin \
   -e POSTGRES_PASSWORD="$RESTORE_POSTGRES_PASSWORD" \
-  -v value_investment_restore_postgres:/var/lib/postgresql/data:Z \
   docker.io/library/postgres:16-alpine \
   -c shared_buffers=64MB -c max_connections=10
 ready=false

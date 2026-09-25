@@ -110,3 +110,34 @@ def test_restore_never_writes_receipt_after_source_audit_or_command_failure(tmp_
         backup.verify_restore('postgresql://127.0.0.1:5432/value_agent',
                               'postgresql://127.0.0.1:5433/value_agent_restore', manifest)
     assert not list(tmp_path.glob('restore-*.json'))
+
+
+def test_restore_requires_pg_restore_for_explicit_target(tmp_path, monkeypatch):
+    dump = tmp_path / 'test.dump'
+    dump.write_bytes(b'fixture')
+    payload = {
+        'database_dump': dump.name, 'sha256': backup.sha256_file(dump),
+        'backup_id': 'test', 'snapshot_at': '2026-09-24T00:00:00+00:00',
+        'table_check_version': 1,
+        'table_checks': {'data_points': {'rows': 1, 'sha256': 'a' * 64}},
+    }
+    manifest = tmp_path / 'test.manifest.json'
+    manifest.write_text(json.dumps(payload), encoding='utf-8')
+
+    class Source:
+        def execute(self, *_):
+            return self
+
+        def fetchone(self):
+            return {'sha256': payload['sha256'], 'manifest': payload}
+
+    @contextmanager
+    def source_connect(*_):
+        yield Source()
+
+    monkeypatch.setattr(backup, 'connect', source_connect)
+    monkeypatch.setattr(backup.shutil, 'which', lambda _: None)
+    with pytest.raises(RuntimeError, match='pg_restore is required'):
+        backup.verify_restore('postgresql://127.0.0.1:5432/value_agent',
+                              'postgresql://127.0.0.1:5433/value_agent_restore', manifest)
+    assert not list(tmp_path.glob('restore-*.json'))

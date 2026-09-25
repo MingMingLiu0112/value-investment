@@ -37,6 +37,7 @@ def _seal(receipt):
 
 @pytest.fixture
 def bundle(tmp_path):
+    snapshot_at = datetime.now(timezone.utc) - timedelta(seconds=100)
     dump = tmp_path / "backup.dump"
     dump.write_bytes(b"database dump")
     evidence = tmp_path / "evidence.pdf"
@@ -47,7 +48,7 @@ def bundle(tmp_path):
         "sha256": backup.sha256_file(dump),
         "evidence_files": [{"path": evidence.name, "sha256": backup.sha256_file(evidence)}],
         "table_check_version": 1, "table_checks": checks, "schema_version": "001_init",
-        "snapshot_at": "2026-01-01T00:00:00+00:00",
+        "snapshot_at": snapshot_at.isoformat(),
     }
     manifest_path = tmp_path / "backup.manifest.json"
     _write_json(manifest_path, manifest)
@@ -67,9 +68,9 @@ def bundle(tmp_path):
         "schema_migration_version": "001_init", "backup_age_seconds": 100,
         "evidence_files": 1, "verified_tables": 1,
         "rto_seconds": 30,
-        "restore_started_at": "2026-01-01T00:01:10+00:00",
-        "restore_completed_at": "2026-01-01T00:01:40+00:00",
-        "snapshot_at": "2026-01-01T00:00:00+00:00",
+        "restore_started_at": (snapshot_at + timedelta(seconds=70)).isoformat(),
+        "restore_completed_at": (snapshot_at + timedelta(seconds=100)).isoformat(),
+        "snapshot_at": snapshot_at.isoformat(),
     }
     _seal(receipt)
     receipt_path = tmp_path / "restore.json"
@@ -212,6 +213,18 @@ def test_verified_receipt_exceeding_rpo_or_rto_is_partial(bundle, live_checks, f
     verifier.assert_called_once_with(SOURCE, TARGET, bundle[0])
     assert result["status"] == PARTIAL
     assert result["blockers"]
+
+
+def test_historically_valid_receipt_cannot_pass_current_monthly_preflight(bundle, live_checks):
+    verified = _verify(bundle[0])
+    verified['restore_completed_at'] = (datetime.now(timezone.utc) - timedelta(days=33)).isoformat()
+    with patch.object(backup, 'verify_restore_receipt', return_value=verified):
+        result = assess_restore_evidence(
+            _config(), [], receipt_path=bundle[0], source_database_url=SOURCE,
+            restore_database_url=TARGET,
+        )
+    assert result['status'] == PARTIAL
+    assert result['evidence']['drill_age_seconds'] > 32 * 24 * 3600
 
 
 def test_m6_rejects_wrong_verified_target(bundle, live_checks):

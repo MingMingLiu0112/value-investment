@@ -167,22 +167,17 @@ def verify_restore(database_url: str, restore_database_url: str, backup_manifest
     if (not registered or registered['sha256'] != manifest['sha256']
             or registered['manifest'] != manifest):
         raise RuntimeError('Backup manifest does not match the registered source audit')
-    if pg_restore:
-        result = subprocess.run(
-            [pg_restore, '--clean', '--if-exists', '--no-owner', '--no-acl', '--dbname', restore_database_url, str(dump_path)],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=RESTORE_TIMEOUT_SECONDS,
-        )
-        if result.returncode:
-            raise RuntimeError(f'pg_restore failed: {result.stderr.strip()}')
-    else:
-        runtime = shutil.which(container_runtime)
-        if not runtime:
-            raise RuntimeError(f'找不到 pg_restore 或容器运行时 {container_runtime}。')
-        with dump_path.open('rb') as input_file:
-            subprocess.run([runtime, 'exec', '-i', restore_container_name, 'pg_restore', '--clean', '--if-exists', '--no-owner', '-U', 'value_agent_admin', '-d', 'value_agent_restore'], stdin=input_file, check=True, timeout=RESTORE_TIMEOUT_SECONDS)
+    if not pg_restore:
+        raise RuntimeError('pg_restore is required for the verified isolated target')
+    result = subprocess.run(
+        [pg_restore, '--clean', '--if-exists', '--no-owner', '--no-acl', '--dbname', restore_database_url, str(dump_path)],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=RESTORE_TIMEOUT_SECONDS,
+    )
+    if result.returncode:
+        raise RuntimeError(f'pg_restore failed: {result.stderr.strip()}')
     with connect(restore_database_url) as restored:
         restored.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
         restored_checks = table_checks(restored)

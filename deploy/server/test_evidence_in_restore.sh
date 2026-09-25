@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source /etc/value-investment-agent/postgres.env
+source /etc/value-investment-agent/restore-postgres.env
+: "${RESTORE_POSTGRES_PASSWORD:?Dedicated restore database password is required}"
 manifest_path="$(find /opt/value-investment-agent/backups -name '*.manifest.json' -printf '%T@ %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
 if [[ -z "$manifest_path" ]]; then
   echo "No backup manifest available" >&2
@@ -11,13 +12,12 @@ test_dir="$(mktemp -d)"
 trap 'podman rm -f value-investment-restore-postgres >/dev/null 2>&1 || true; rm -rf "$test_dir"' EXIT
 
 podman rm -f value-investment-restore-postgres >/dev/null 2>&1 || true
-podman run -d --name value-investment-restore-postgres \
+podman run --rm -d --name value-investment-restore-postgres \
   --memory=256m --memory-reservation=128m --memory-swap=384m \
   -p 127.0.0.1:5433:5432 \
   -e POSTGRES_DB=value_agent_restore \
   -e POSTGRES_USER=value_agent_admin \
-  -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-  -v value_investment_restore_postgres:/var/lib/postgresql/data:Z \
+  -e POSTGRES_PASSWORD="$RESTORE_POSTGRES_PASSWORD" \
   docker.io/library/postgres:16-alpine \
   -c shared_buffers=64MB -c max_connections=10 >/dev/null
 until podman exec value-investment-restore-postgres pg_isready -U value_agent_admin -d value_agent_restore >/dev/null; do sleep 1; done
@@ -27,12 +27,12 @@ dump_name="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["da
 printf 'isolated official evidence smoke test\n' > "$test_dir/filing.pdf"
 python3 -c 'import json,sys; json.dump({"source_name":"Shanghai Stock Exchange","source_url":"https://www.sse.com.cn/disclosure/listedinfo/announcement/","source_type":"exchange","evidence_file":"filing.pdf","published_at":"2026-09-01T00:00:00+00:00","validation_status":"verified","human_reviewed":True,"reviewed_by":"restore-test@example.com","reviewed_at":"2026-09-01T01:00:00+00:00","points":[{"symbol":"600519","field_name":"fair_value","period_label":"2026-09-01","value":"1600","unit":"CNY/share","calculation_method":"restore-test","calculation_formula":"documented test valuation","assumptions":{"purpose":"restore smoke test"},"valuation_as_of":"2026-09-01"}]},open(sys.argv[1],"w"))' "$test_dir/evidence.json"
 
-DATABASE_URL="postgresql://value_agent_admin:${POSTGRES_PASSWORD}@127.0.0.1:5433/value_agent_restore"
+DATABASE_URL="postgresql://value_agent_admin:${RESTORE_POSTGRES_PASSWORD}@127.0.0.1:5433/value_agent_restore"
 restore_output="$(podman run --rm --network host --memory=256m --memory-reservation=128m --memory-swap=384m \
   -e "RESTORE_DATABASE_URL=$DATABASE_URL" \
   -v /opt/value-investment-agent/backups:/app/backups:Z \
   value-investment-agent:latest sh -c 'pg_restore --clean --if-exists --no-owner --no-acl --dbname "$RESTORE_DATABASE_URL" "/app/backups/$1"' -- "$dump_name" 2>&1)" || restore_status=$?
-if [[ "${restore_status:-0}" -ne 0 && "$restore_output" != *'unrecognized configuration parameter "transaction_timeout"'* ]]; then
+if [[ "${restore_status:-0}" -ne 0 ]]; then
   printf '%s\n' "$restore_output" >&2
   exit "$restore_status"
 fi
