@@ -24,6 +24,7 @@ def build_actual_event_read_model(
     refresh_repository: ResearchArtifactRepository | None = None,
     refresh_operating_basis_bytes: bytes | None = None,
     refresh_assumption_package_bytes: bytes | None = None,
+    refresh_review: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     if receipt.namespace != "ACTUAL" or receipt.action != "no_order" or plan.action != "no_order":
         raise ValueError("Actual no-order receipt and plan are required")
@@ -39,6 +40,7 @@ def build_actual_event_read_model(
     if plan.as_policy() != expected_plan.as_policy():
         raise ValueError("Recalculation plan omits or changes invalidated dependencies")
     outcomes_by_event = {}
+    review_accepted = False
     if outcome_receipt is not None:
         if outcome_receipt.get("schema_version") == "m5-bounded-research-refresh-v1":
             if (facts_artifact is None or facts_source_sha256 is None
@@ -47,16 +49,26 @@ def build_actual_event_read_model(
                 or refresh_assumption_package_bytes is None):
                 raise ValueError("M7 refresh projection requires complete persisted artifact evidence")
             from .m5_bounded_refresh import validate_bounded_research_refresh
-            validate_bounded_research_refresh(
-                dict(outcome_receipt), receipt=receipt, graph=graph, plan=plan,
-                facts_artifact=dict(facts_artifact),
-                facts_source_sha256=facts_source_sha256,
+            refresh_validation = dict(
+                receipt=receipt, graph=graph, plan=plan,
+                facts_artifact=dict(facts_artifact), facts_source_sha256=facts_source_sha256,
                 descriptor=refresh_descriptor, prior_candidate=refresh_prior_candidate,
                 operating_basis_bytes=refresh_operating_basis_bytes,
                 assumption_package_bytes=refresh_assumption_package_bytes,
                 repository=refresh_repository,
             )
+            if refresh_review is None:
+                validate_bounded_research_refresh(dict(outcome_receipt), **refresh_validation)
+            else:
+                from .m5_event_refresh_review import validate_event_refresh_review
+                review_accepted = validate_event_refresh_review(
+                    refresh_review, refresh=dict(outcome_receipt),
+                    decisions=[item for review in reviews for item in review.get("decisions", ())],
+                    refresh_validation=refresh_validation,
+                )
         else:
+            if refresh_review is not None:
+                raise ValueError("Event refresh review requires a persisted model refresh")
             from .m5_bounded_recalculation_result import validate_bounded_recalculation_result
             if facts_artifact is None or facts_source_sha256 is None:
                 raise ValueError("M7 blocked-result projection requires pinned facts evidence")
@@ -129,6 +141,12 @@ def build_actual_event_read_model(
                 recalculation_status = outcome["status"]
                 blockers = outcome["blockers"]
                 new_valuation_result = outcome["new_valuation_result"]
+                if review_accepted:
+                    recalculation_status = "RECALCULATED"
+                    blockers = []
+                    new_valuation_result = {
+                        **new_valuation_result, "event_validity_status": "RECONCILED",
+                    }
             else:
                 recalculation_status = "RECALCULATION_PENDING"
                 new_valuation_result = None
@@ -171,7 +189,7 @@ def build_actual_event_read_model(
             raise ValueError("Verified facts artifact is not bound to this security")
     elif outcome_receipt is not None:
         raise ValueError("Bounded recalculation outcome requires verified facts")
-    return {
+    result = {
         "schema_version": "m5-actual-event-read-model-v1", "symbol": symbol,
         "queue_id": queue["queue_id"], "receipt_id": receipt.receipt_id,
         "plan_id": plan.plan_id, "graph_sha256": plan.graph_sha256,
@@ -180,3 +198,6 @@ def build_actual_event_read_model(
         "verified_fact_count": len(facts_artifact["payload"]["facts"]) if facts_artifact else 0,
         "rows": rows, "requires_human_review": True, "action": "no_order",
     }
+    if refresh_review is not None:
+        result["event_refresh_review_sha256"] = refresh_review["review_sha256"]
+    return result

@@ -880,6 +880,88 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
     assert row["new_valuation_result"]["artifact_id"] == refreshed.artifact_id
     assert row["requires_human_decision_review"] is True
     assert row["action"] == "no_order"
+    value_ref = result["outcomes"][0]["new_valuation_result"]
+    review = {
+        "schema_version": "m5-event-refresh-review-v1",
+        "receipt_id": receipt.receipt_id,
+        "receipt_sha256": receipt.state_sha256,
+        "plan_id": plan.plan_id,
+        "plan_sha256": _sha(plan.as_policy()),
+        "graph_sha256": _sha(graph.as_policy()),
+        "refresh_result_sha256": result["result_sha256"],
+        "facts_payload_sha256": facts_artifact["payload_sha256"],
+        "assumption_package_sha256": hashlib.sha256(assumption_bytes).hexdigest(),
+        "reviewer_id": "synthetic-human-reviewer",
+        "reviewer_type": "human_research_lead",
+        "reviewed_at": "2026-09-23T15:00:00+00:00",
+        "event_reviews": [{
+            "event_id": event.event_id,
+            "source_event_id": event.source_event_id,
+            "materiality_decision_id": decision.event_decision_id,
+            "pdf_sha256": pdf_ref["sha256"],
+            "affected_domains": list(decision.affected_domains),
+            "affected_fact_fields": list(decision.affected_fact_fields),
+            "affected_assumptions": list(decision.affected_assumptions),
+            "affected_artifacts": list(decision.affected_artifacts),
+            "valuation_artifact_id": value_ref["artifact_id"],
+            "verdict": "EVENT_REFRESH_ACCEPTED",
+            "review_notes": "Synthetic test-only review of all affected model inputs.",
+            "evidence_sha256": sorted({
+                pdf_ref["sha256"], receipt.state_sha256,
+                facts_artifact["payload_sha256"],
+                hashlib.sha256(assumption_bytes).hexdigest(),
+                value_ref["payload_sha256"],
+            }),
+        }],
+        "requires_human_decision_review": True,
+        "action": "no_order",
+    }
+    review["review_sha256"] = _sha(review)
+    review_projection = dict(
+        queue=queue, reviews=[{"decisions": [decision.as_policy()]}],
+        receipt=receipt, graph=graph, plan=plan, facts_artifact=facts_artifact,
+        outcome_receipt=result, facts_source_sha256="d" * 64,
+        refresh_descriptor=descriptor, refresh_prior_candidate=prior_candidate,
+        refresh_repository=repository, refresh_operating_basis_bytes=basis_bytes,
+        refresh_assumption_package_bytes=assumption_bytes,
+    )
+    reconciled = build_actual_event_read_model(**review_projection, refresh_review=review)
+    assert reconciled["rows"][0]["recalculation_status"] == "RECALCULATED"
+    assert reconciled["rows"][0]["new_valuation_result"]["event_validity_status"] == "RECONCILED"
+    assert reconciled["rows"][0]["requires_human_decision_review"] is True
+    assert reconciled["action"] == "no_order"
+    assert value_ref["model_validity_status"] == "VALID"
+    rejected_review = json.loads(json.dumps(review))
+    rejected_review["event_reviews"][0]["verdict"] = "EVENT_REFRESH_REJECTED"
+    rejected_review["review_sha256"] = _sha({key: value for key, value in rejected_review.items()
+                                               if key != "review_sha256"})
+    rejected = build_actual_event_read_model(**review_projection, refresh_review=rejected_review)
+    assert rejected["rows"][0]["recalculation_status"] == "MODEL_STALE"
+    missing_row = json.loads(json.dumps(review))
+    missing_row["event_reviews"] = []
+    missing_row["review_sha256"] = _sha({key: value for key, value in missing_row.items()
+                                          if key != "review_sha256"})
+    with pytest.raises(ValueError, match="every active event"):
+        build_actual_event_read_model(**review_projection, refresh_review=missing_row)
+    wrong_reviewer = json.loads(json.dumps(review))
+    wrong_reviewer["reviewer_type"] = "automated_agent"
+    wrong_reviewer["review_sha256"] = _sha({key: value for key, value in wrong_reviewer.items()
+                                             if key != "review_sha256"})
+    with pytest.raises(ValueError, match="validated evidence"):
+        build_actual_event_read_model(**review_projection, refresh_review=wrong_reviewer)
+    for field, value in (("pdf_sha256", "0" * 64), ("valuation_artifact_id", "other")):
+        forged_review = json.loads(json.dumps(review))
+        forged_review["event_reviews"][0][field] = value
+        forged_review["review_sha256"] = _sha({key: value for key, value in forged_review.items()
+                                                if key != "review_sha256"})
+        with pytest.raises(ValueError, match="does not reconcile"):
+            build_actual_event_read_model(**review_projection, refresh_review=forged_review)
+    forged_review = json.loads(json.dumps(review))
+    forged_review["assumption_package_sha256"] = "0" * 64
+    forged_review["review_sha256"] = _sha({key: value for key, value in forged_review.items()
+                                            if key != "review_sha256"})
+    with pytest.raises(ValueError, match="validated evidence"):
+        build_actual_event_read_model(**review_projection, refresh_review=forged_review)
     saved = {}
     for artifact_type in ARTIFACT_TYPES:
         for artifact in repository.list_versions(SCOPE_SECURITY, "600519", artifact_type):

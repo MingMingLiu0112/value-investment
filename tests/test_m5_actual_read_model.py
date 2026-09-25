@@ -106,6 +106,13 @@ def test_actual_read_model_rejects_duplicate_review_identity():
         build_actual_event_read_model(**inputs)
 
 
+def test_blocked_actual_outcome_cannot_accept_refresh_review():
+    inputs = _inputs()
+    inputs["refresh_review"] = {"action": "no_order"}
+    with pytest.raises(ValueError, match="requires a persisted model refresh"):
+        build_actual_event_read_model(**inputs)
+
+
 def test_actual_read_model_rejects_wrong_review_pdf_hash():
     inputs = _inputs()
     inputs["reviews"] = copy.deepcopy(inputs["reviews"])

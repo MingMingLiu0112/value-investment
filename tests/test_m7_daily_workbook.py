@@ -390,6 +390,36 @@ def test_actual_event_sheet_shows_versioned_result_but_keeps_event_stale():
         assert expected in text
 
 
+def test_actual_event_sheet_requires_review_before_showing_recalculated():
+    packet = _packet()
+    packet["m5"]["actual_event_chain"] = {
+        "reviewed_count": 1, "pending_human_review": 0, "verified_fact_count": 5,
+        "rows": [{
+            "announcement_id": "1225475868", "materiality": "MATERIAL_REQUIRES_RECALCULATION",
+            "title": "2026 half-year report", "affected_dependencies": ["valuation_inputs"],
+            "recalculation_status": "RECALCULATED", "blockers": [],
+            "pdf_sha256": "a" * 64, "event_id": "event-1",
+            "requires_human_decision_review": True,
+            "new_valuation_result": {
+                "valuation_date": "2026-06-30", "model_version": "residual-income-v1",
+                "artifact_id": "version-2", "payload_sha256": "b" * 64,
+                "event_validity_status": "RECONCILED",
+            },
+            "action": ACTION_NO_ORDER,
+        }],
+        "action": ACTION_NO_ORDER,
+    }
+    with pytest.raises(ValueError, match="reconciled review evidence"):
+        build_daily_workbench(packet)
+    packet["m5"]["actual_event_chain"]["event_refresh_review_sha256"] = "c" * 64
+    sheet = build_daily_workbench(packet)[VISIBLE_SHEETS[6]]
+    text = "\n".join(str(value) for row in sheet.iter_rows(values_only=True)
+                     for value in row if value is not None)
+    assert "RECALCULATED" in text
+    assert "事件有效性：RECONCILED" in text
+    assert "人工决策复核：需要" in text
+
+
 def test_market_sheet_shows_limited_quality_coverage_and_value_scope(tmp_path: Path):
     packet = _packet()
     receipt = write_daily_workbench(

@@ -10,6 +10,7 @@ from datetime import datetime
 import hashlib
 import json
 from pathlib import Path
+import re
 from typing import Any, Mapping
 
 from openpyxl import Workbook
@@ -293,6 +294,15 @@ def _validate_packet(packet: Mapping[str, Any]) -> Mapping[str, Any]:
             or actual.get("pending_human_review") != 0
             or any(row.get("action") != ACTION_NO_ORDER for row in rows)):
             raise ValueError("Actual event read model has inconsistent review or action state")
+        if any(row.get("recalculation_status") == "RECALCULATED" for row in rows):
+            if (not re.fullmatch(r"[0-9a-f]{64}", str(actual.get("event_refresh_review_sha256", "")))
+                or any(row.get("recalculation_status") != "RECALCULATED"
+                       or row.get("blockers")
+                       or row.get("requires_human_decision_review") is not True
+                       or not isinstance(row.get("new_valuation_result"), Mapping)
+                       or row["new_valuation_result"].get("event_validity_status") != "RECONCILED"
+                       for row in rows if row.get("event_id"))):
+                raise ValueError("Recalculated event view requires reconciled review evidence")
 
     m6 = _required_mapping(packet["m6"], "m6")
     _required_list(m6.get("blockers"), "m6.blockers")
