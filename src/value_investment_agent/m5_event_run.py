@@ -1267,6 +1267,7 @@ def apply_run_request(
         state=seed,
         batch_id=request.batch_id,
         lock_store=lock_store,
+        actual_offline_authorization=request.actual_offline_authorization,
     )
     record = next(
         (

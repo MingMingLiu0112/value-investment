@@ -14,7 +14,13 @@ import json
 from typing import Any, Mapping, Sequence
 
 from .investment_decision import ACTION_NO_ORDER
+from .m5_actual_offline_authorization import (
+    M5ActualOfflineAuthorization,
+    actual_offline_authorization_from_payload,
+    require_actual_offline_authorization,
+)
 from .m5_event_core import (
+    NAMESPACE_ACTUAL,
     NAMESPACE_SIMULATED,
     ChangeEventInput,
     _digest,
@@ -32,7 +38,8 @@ from .m5_event_watermark import ScanWatermark, scan_watermark_from_payload
 from .m5_materiality_bridge import MaterialityBridgeBatch
 
 
-M5_RUN_REQUEST_SCHEMA = "m5-event-run-request-v1"
+M5_RUN_REQUEST_SCHEMA_V1 = "m5-event-run-request-v1"
+M5_RUN_REQUEST_SCHEMA = "m5-event-run-request-v2"
 
 
 def batch_request_fingerprint(
@@ -42,11 +49,11 @@ def batch_request_fingerprint(
     watermark: ScanWatermark,
     graph: DependencyGraph,
     direct_kinds_by_source_event_id: Mapping[str, Sequence[str]],
+    actual_offline_authorization: M5ActualOfflineAuthorization | None = None,
 ) -> str:
     """Canonical fingerprint of every input that can change a verdict."""
 
-    return _state_digest(
-        {
+    payload: dict[str, Any] = {
             "events": [event.as_policy() for event in events],
             "observed_times": [item.isoformat() for item in observed_times],
             "watermark": watermark.as_policy(),
@@ -58,7 +65,11 @@ def batch_request_fingerprint(
                 )
             },
         }
-    )
+    if actual_offline_authorization is not None:
+        payload["actual_offline_authorization"] = (
+            actual_offline_authorization.as_policy()
+        )
+    return _state_digest(payload)
 
 
 def request_id_for(
@@ -95,6 +106,7 @@ class M5EventRunRequest:
     review_id: str | None = None
     source_symbol: str | None = None
     action: str = ACTION_NO_ORDER
+    actual_offline_authorization: M5ActualOfflineAuthorization | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -118,8 +130,6 @@ class M5EventRunRequest:
             "namespace",
             _required_text(self.namespace, "namespace"),
         )
-        if self.namespace != NAMESPACE_SIMULATED:
-            raise ValueError("M5 run requests accept the SIMULATED namespace only")
         object.__setattr__(
             self,
             "generated_at",
@@ -144,6 +154,11 @@ class M5EventRunRequest:
             raise ValueError(
                 "Run request dependency graph must be a DependencyGraph"
             )
+        require_actual_offline_authorization(
+            namespace=self.namespace,
+            authorization=self.actual_offline_authorization,
+            graph=self.dependency_graph,
+        )
         object.__setattr__(
             self,
             "direct_kinds_by_source_event_id",
@@ -207,6 +222,7 @@ class M5EventRunRequest:
             watermark=self.watermark,
             graph=self.dependency_graph,
             direct_kinds_by_source_event_id=self.direct_kinds_by_source_event_id,
+            actual_offline_authorization=self.actual_offline_authorization,
         )
 
     @property
@@ -239,6 +255,10 @@ class M5EventRunRequest:
                 )
             },
             "action": self.action,
+            "actual_offline_authorization": (
+                self.actual_offline_authorization.as_policy()
+                if self.actual_offline_authorization is not None else None
+            ),
         }
 
     def request_sha256(self) -> str:
@@ -263,7 +283,11 @@ class M5EventRunRequest:
         if not isinstance(payload, Mapping):
             raise ValueError("M5 run request must be an object")
         data = dict(payload)
-        if data.get("schema_version") != M5_RUN_REQUEST_SCHEMA:
+        schema_version = data.get("schema_version")
+        if schema_version not in {
+            M5_RUN_REQUEST_SCHEMA_V1,
+            M5_RUN_REQUEST_SCHEMA,
+        }:
             raise ValueError("Unknown M5 run request schema")
         raw_kinds = data.get("direct_kinds_by_source_event_id") or {}
         if not isinstance(raw_kinds, Mapping):
@@ -305,8 +329,19 @@ class M5EventRunRequest:
                 "source_symbol",
             ),
             action=str(data.get("action", ACTION_NO_ORDER)),
+            actual_offline_authorization=(
+                actual_offline_authorization_from_payload(data["actual_offline_authorization"])
+                if data.get("actual_offline_authorization") is not None else None
+            ),
         )
-        expected = request.as_policy()
+        if schema_version == M5_RUN_REQUEST_SCHEMA_V1:
+            if request.namespace != NAMESPACE_SIMULATED:
+                raise ValueError("M5 v1 requests may only use SIMULATED namespace")
+            expected = request.as_policy()
+            expected["schema_version"] = M5_RUN_REQUEST_SCHEMA_V1
+            expected.pop("actual_offline_authorization")
+        else:
+            expected = request.as_policy()
         if set(data) != set(expected):
             missing = sorted(set(expected) - set(data))
             extra = sorted(set(data) - set(expected))
@@ -339,6 +374,7 @@ def build_run_request(
     namespace: str = NAMESPACE_SIMULATED,
     review_id: str | None = None,
     source_symbol: str | None = None,
+    actual_offline_authorization: M5ActualOfflineAuthorization | None = None,
 ) -> M5EventRunRequest:
     """Build one pinned run request from explicit, already-reviewed inputs."""
 
@@ -361,6 +397,7 @@ def build_run_request(
         watermark=watermark,
         graph=graph,
         direct_kinds_by_source_event_id=normalized_kinds,
+        actual_offline_authorization=actual_offline_authorization,
     )
     return M5EventRunRequest(
         request_id=request_id_for(
@@ -381,6 +418,7 @@ def build_run_request(
         direct_kinds_by_source_event_id=normalized_kinds,
         review_id=review_id,
         source_symbol=source_symbol,
+        actual_offline_authorization=actual_offline_authorization,
     )
 
 
@@ -393,18 +431,19 @@ def build_run_request_from_bridge_batch(
     graph: DependencyGraph,
     batch_id: str | None = None,
     stream_id: str | None = None,
+    actual_offline_authorization: M5ActualOfflineAuthorization | None = None,
 ) -> M5EventRunRequest:
     """Convert one reviewed bridge batch into a replayable run request.
 
     The bridge batch already decided which human verdicts become events; this
-    function only embeds that decision together with the boundary it was
-    reviewed against.
+    function only embeds that decision together with its reviewed boundary and,
+    for ACTUAL data only, an explicitly offline authorization.
     """
 
     if not isinstance(batch, MaterialityBridgeBatch):
         raise ValueError("batch must be a MaterialityBridgeBatch")
-    if batch.namespace != NAMESPACE_SIMULATED:
-        raise ValueError("Offline run requests accept SIMULATED batches only")
+    if batch.namespace not in {NAMESPACE_SIMULATED, NAMESPACE_ACTUAL}:
+        raise ValueError("Offline run request batch namespace is unknown")
     return build_run_request(
         run_id=run_id,
         generated_at=generated_at,
@@ -418,4 +457,5 @@ def build_run_request_from_bridge_batch(
         namespace=batch.namespace,
         review_id=batch.review_id,
         source_symbol=batch.symbol,
+        actual_offline_authorization=actual_offline_authorization,
     )
