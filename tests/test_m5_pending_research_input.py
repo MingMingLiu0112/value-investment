@@ -66,3 +66,23 @@ def test_pending_descriptor_rejects_unrelated_equity_filing():
     inputs["equity_package"]["current_disclosed_basis"]["raw_file_hash"] = "0" * 64
     with pytest.raises(ValueError, match="not tied"):
         build_pending_research_input(**inputs)
+
+
+@pytest.mark.parametrize("field,value", [
+    ("pdf_sha256", "0" * 64),
+    ("source_url", "https://static.cninfo.com.cn/finalpage/unrelated.PDF"),
+    ("announcement_id", "unrelated-announcement"),
+])
+def test_pending_descriptor_rejects_facts_unbound_to_actual_event(field, value):
+    inputs = _inputs()
+    inputs["facts_artifact"]["payload"][field] = value
+    from value_investment_agent.research_artifacts import canonicalize_artifact_payload, sha256_text
+    inputs["facts_artifact"]["payload_sha256"] = sha256_text(
+        canonicalize_artifact_payload(inputs["facts_artifact"]["payload"])
+    )
+    if field in {"pdf_sha256", "source_url"}:
+        inputs["facts_artifact"]["evidence_refs"][0][
+            "sha256" if field == "pdf_sha256" else "source_url"
+        ] = value
+    with pytest.raises(ValueError, match="not bound to exactly one ACTUAL event"):
+        build_pending_research_input(**inputs)

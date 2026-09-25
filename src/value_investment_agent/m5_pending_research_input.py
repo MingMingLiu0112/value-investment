@@ -37,6 +37,13 @@ def build_pending_research_input(
     symbol = facts["symbol"]
     if {event.symbol for event in receipt.active_events} != {symbol}:
         raise ValueError("Receipt events do not match the verified facts")
+    matching_events = [event for event in receipt.active_events
+                       if any(ref.get("sha256") == facts["pdf_sha256"]
+                              and ref.get("source_url") == facts["source_url"]
+                              for ref in event.evidence_refs)]
+    if (len(matching_events) != 1
+        or facts["announcement_id"] not in matching_events[0].source_event_id):
+        raise ValueError("Verified facts filing is not bound to exactly one ACTUAL event")
     period = date.fromisoformat(facts["facts"][0]["report_period_end"])
     if any(item["report_period_end"] != period.isoformat() for item in facts["facts"]):
         raise ValueError("Verified facts contain inconsistent periods")
