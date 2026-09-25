@@ -1,5 +1,9 @@
 # 当前执行状态
 
+## 2026-09-25 M7 双交易所预检只读候选
+
+从现存 M5 隔离工作树取回逐文件 SHA 与 reviewed read model 完全匹配的 graph、plan、facts、outcome、scenario source 和 pending input；现有构建器重放通过，不更改 M5 研究结论。`runtime/m7-actual-reviewed-candidate-v14-20260925.xlsx` SHA-256 `f67ea05e3bab3ba87f9b3a15eadfa02c36bd6eea3dc97c90e8993464e061f915`，审计页绑定较新的双交易所 M6 预检收据 `runtime/m6-operational-preflight-20260925T091253Z/receipt.json`（SHA-256 `d5cfdf469c397454e483b436ce5ffa6472d0e961a19624fa24fa7f54a3dcb233`）。`runtime/m7-actual-reviewed-candidate-v14-wps-receipt.json` 只读 WPS 核验 `passed`：10 可见/2 隐藏、无订单、全可见页禁用建议扫描。正式 WPS 表 SHA-256 仍为 `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`，未发布或替换。M6 仍只预检、真实 Shadow 0；M7 用户验收未通过。
+
 ## 2026-09-25 原件备份快照与隔离恢复 R0
 
 日常备份容器原先未挂载生产原件目录，manifest 仅枚举备份目录中已有 PDF；已修正为只读挂载 `evidence`，将 PDF 字节复制到备份根下内容寻址对象，记录原相对路径、大小及 SHA-256。隔离恢复校验从备份对象复制到全新临时目录并复核逐件内容；收据版本升级为 `isolated-restore-v2`，旧版不能冒充已完成原件恢复。复制失败、路径逃逸、缺原件及 Hash 不一致均失败关闭。隔离测试删除源 PDF 后仍能从备份对象验证原件；未操作远端或正式 WPS。
