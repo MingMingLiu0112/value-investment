@@ -119,10 +119,9 @@ walk_forward_status: NOT_RUN
 action: no_order
 targeted tests: 18 passed
 full offline suite: 2796 passed, 30 skipped, 18 warnings
+clean-checkout targeted CI subset: 24 passed, 1 skipped
+GitHub Core Research Gates: success
 ```
-
-The final architecture batch must also pass the repository-wide offline test
-suite and GitHub Core Research Gates before this report is accepted.
 
 ## Next Safe Batch
 
