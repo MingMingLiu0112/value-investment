@@ -528,7 +528,7 @@ def main() -> None:
     elif args.command == 'snapshot-month':
         snapshot_month(args.month)
     elif args.command == 'backup':
-        print(create_backup(settings.database_url, settings.backup_directory, settings.container_runtime, settings.postgres_container_name))
+        print(create_backup(settings.database_url, settings.backup_directory, settings.container_runtime, settings.postgres_container_name, settings.evidence_directory))
     elif args.command == 'collect-filings':
         requested_symbols = None
         if args.symbols:

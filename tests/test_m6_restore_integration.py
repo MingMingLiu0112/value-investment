@@ -44,6 +44,7 @@ def test_disposable_backup_restore_receipt_and_m6_binding(tmp_path):
         evidence_dir.mkdir()
         (evidence_dir / 'synthetic-original.pdf').write_bytes(b'isolated synthetic evidence')
         manifest = create_backup(source, tmp_path)
+        (evidence_dir / 'synthetic-original.pdf').unlink()
         result = verify_restore(source, RESTORE_DSN, manifest)
         verified = verify_restore_receipt(source, RESTORE_DSN, Path(result['receipt_path']))
         criterion = assess_restore_evidence(
@@ -54,6 +55,7 @@ def test_disposable_backup_restore_receipt_and_m6_binding(tmp_path):
         assert criterion['status'] == DONE
         assert criterion['evidence']['table_check_count'] == 2
         assert verified['database_verifier_result'] == 'table_checks_equal'
+        assert verified['evidence_recovery_result'] == 'copied_and_hash_verified'
         assert verified['receipt_sha256'] == result['receipt_sha256']
         artifact_dir = os.environ.get('M6_TEST_ARTIFACT_DIR')
         if artifact_dir:

@@ -472,6 +472,7 @@ def assess_restore_evidence(
                   and 0 <= rto <= config.target_rto_hours * 3600 and current_drill)
         checks = verified_receipt.get('table_checks') or {}
         if (not checks or not verified_receipt.get('receipt_file_sha256')
+                or verified_receipt.get('evidence_recovery_result') != 'copied_and_hash_verified'
                 or not verified_receipt.get('evidence_file_sha256')):
             raise ValueError('Verified restore receipt lacks content-bound evidence')
         return _criterion(

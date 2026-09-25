@@ -4,6 +4,7 @@ import hashlib
 import json
 import shutil
 import subprocess
+import tempfile
 import time
 import uuid
 from datetime import datetime, timezone
@@ -15,7 +16,7 @@ from .db import connect
 from .backup_snapshot import compare_checks, table_checks
 
 
-RESTORE_VERIFIER_VERSION = 'isolated-restore-v1'
+RESTORE_VERIFIER_VERSION = 'isolated-restore-v2'
 RESTORE_TIMEOUT_SECONDS = 4 * 3600
 
 
@@ -55,12 +56,49 @@ def evidence_manifest(evidence_directory: Path) -> list[dict[str, str | int]]:
     return records
 
 
-def check_backup_space(target_dir: Path, database_bytes: int) -> dict[str, int]:
+def snapshot_evidence(evidence_directory: Path, backup_directory: Path) -> list[dict[str, str | int]]:
+    if not evidence_directory.is_dir():
+        raise RuntimeError('Evidence source directory is unavailable; backup refused')
+    root = evidence_directory.resolve()
+    originals = sorted(path for path in evidence_directory.rglob('*')
+                       if path.suffix.lower() == '.pdf')
+    records: list[dict[str, str | int]] = []
+    objects = backup_directory / 'evidence-objects'
+    for original in originals:
+        if not original.resolve().is_relative_to(root) or not original.is_file():
+            raise RuntimeError('Evidence source path escapes the evidence directory')
+        digest = sha256_file(original)
+        destination = objects / f'{digest}.pdf'
+        if destination.is_symlink() or not destination.resolve().is_relative_to(backup_directory.resolve()):
+            raise RuntimeError('Backup evidence object escapes the backup directory')
+        if not destination.is_file():
+            objects.mkdir(parents=True, exist_ok=True)
+            temporary = objects / f'{digest}.{uuid.uuid4().hex}.tmp'
+            try:
+                shutil.copyfile(original, temporary)
+                if sha256_file(temporary) != digest or sha256_file(original) != digest:
+                    raise RuntimeError('Evidence changed during backup copy')
+                temporary.replace(destination)
+            finally:
+                temporary.unlink(missing_ok=True)
+        if sha256_file(destination) != digest:
+            raise RuntimeError('Backup evidence object hash mismatch')
+        records.append({
+            'path': destination.relative_to(backup_directory).as_posix(),
+            'original_path': original.relative_to(evidence_directory).as_posix(),
+            'size_bytes': destination.stat().st_size, 'sha256': digest,
+        })
+    return records
+
+
+def check_backup_space(target_dir: Path, database_bytes: int, evidence_bytes: int = 0) -> dict[str, int]:
     """Conservative admission check, not a reservation against concurrent writers."""
     if type(database_bytes) is not int or database_bytes <= 0:
         raise RuntimeError('Database size unavailable; backup refused')
+    if type(evidence_bytes) is not int or evidence_bytes < 0:
+        raise RuntimeError('Evidence size unavailable; backup refused')
     reserve = 2 * 1024**3
-    estimate = 2 * database_bytes + 64 * 1024**2
+    estimate = 2 * database_bytes + evidence_bytes + 64 * 1024**2
     free = shutil.disk_usage(target_dir).free
     if free < reserve + estimate:
         raise RuntimeError(f'Insufficient backup space: free={free}, '
@@ -68,21 +106,26 @@ def check_backup_space(target_dir: Path, database_bytes: int) -> dict[str, int]:
     return {'free_bytes': free, 'estimated_write_bytes': estimate, 'reserve_bytes': reserve}
 
 
-def create_backup(database_url: str, target_dir: Path, container_runtime: str = 'podman', container_name: str = 'value-investment-postgres') -> Path:
+def create_backup(database_url: str, target_dir: Path, container_runtime: str = 'podman', container_name: str = 'value-investment-postgres', evidence_directory: Path | None = None) -> Path:
     pg_dump = shutil.which('pg_dump')
     target_dir.mkdir(parents=True, exist_ok=True)
     backup_id = uuid.uuid4()
     now = datetime.now(timezone.utc)
     dump_path = target_dir / f'value-agent-{now:%Y%m%dT%H%M%SZ}-{backup_id}.dump'
+    source_evidence = evidence_directory or target_dir / 'evidence'
+    if not source_evidence.is_dir():
+        raise RuntimeError('Evidence source directory is unavailable; backup refused')
+    evidence_bytes = sum(path.stat().st_size for path in source_evidence.rglob('*')
+                         if path.suffix.lower() == '.pdf')
     with connect(database_url) as snapshot_connection:
         snapshot_connection.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
         database_bytes = snapshot_connection.execute(
             'SELECT pg_database_size(current_database()) AS bytes').fetchone()['bytes']
-        check_backup_space(target_dir, database_bytes)
+        check_backup_space(target_dir, database_bytes, evidence_bytes)
         snapshot = snapshot_connection.execute(
             'SELECT pg_export_snapshot() AS id, transaction_timestamp() AS captured_at').fetchone()
         checks = table_checks(snapshot_connection)
-        space_check = check_backup_space(target_dir, database_bytes)
+        space_check = check_backup_space(target_dir, database_bytes, evidence_bytes)
         if pg_dump:
             subprocess.run([pg_dump, '--snapshot', snapshot['id'], '--format=custom',
                             '--file', str(dump_path), database_url], check=True)
@@ -94,10 +137,11 @@ def create_backup(database_url: str, target_dir: Path, container_runtime: str = 
                 subprocess.run([runtime, 'exec', container_name, 'pg_dump',
                     '--snapshot', snapshot['id'], '-Fc', '-U', 'value_agent_admin',
                     'value_agent'], stdout=output, check=True)
+    original_records = snapshot_evidence(source_evidence, target_dir)
     manifest = {
         'backup_id': str(backup_id), 'created_at': now.isoformat(), 'database_dump': dump_path.name,
         'sha256': sha256_file(dump_path), 'schema_version': '001_init',
-        'evidence_files': evidence_manifest(target_dir / 'evidence'),
+        'evidence_files': original_records,
         'table_check_version': 1, 'table_checks': checks,
         'snapshot_at': snapshot['captured_at'].isoformat(),
         'space_preflight': space_check,
@@ -138,6 +182,29 @@ def _manifest_file(manifest_path: Path, value: str, *, dump: bool = False) -> Pa
     if not candidate.is_relative_to(root) or not candidate.is_file():
         raise RuntimeError('Backup manifest file is missing or outside the backup directory')
     return candidate
+
+
+def verify_recovered_originals(manifest_path: Path, evidence_files: list[dict]) -> None:
+    if not evidence_files:
+        raise RuntimeError('Backup contains no evidence originals to recover')
+    with tempfile.TemporaryDirectory(prefix='isolated-evidence-', dir=manifest_path.parent) as temporary:
+        root = Path(temporary).resolve()
+        for item in evidence_files:
+            original_path = item.get('original_path')
+            if not isinstance(original_path, str) or not original_path or '\\' in original_path:
+                raise RuntimeError('Evidence recovery path is invalid')
+            relative = Path(original_path)
+            if relative.anchor or '..' in relative.parts:
+                raise RuntimeError('Evidence recovery path escapes the isolated directory')
+            source = _manifest_file(manifest_path, item['path'])
+            destination = (root / relative).resolve()
+            if not destination.is_relative_to(root) or destination == root or destination.exists():
+                raise RuntimeError('Evidence recovery target is unsafe or duplicated')
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, destination)
+            if (sha256_file(destination) != item['sha256']
+                    or destination.stat().st_size != item['size_bytes']):
+                raise RuntimeError('Recovered evidence original differs from backup')
 
 
 def verify_restore(database_url: str, restore_database_url: str, backup_manifest: Path, container_runtime: str = 'podman', restore_container_name: str = 'value-investment-restore-postgres', attempt_started_at: datetime | None = None) -> dict:
@@ -182,6 +249,7 @@ def verify_restore(database_url: str, restore_database_url: str, backup_manifest
         restored.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
         restored_checks = table_checks(restored)
     compare_checks(manifest['table_checks'], restored_checks)
+    verify_recovered_originals(backup_manifest, manifest.get('evidence_files', []))
     source_count = manifest['table_checks']['data_points']['rows']
     restore_duration_seconds = round(time.monotonic() - started, 2)
     completed_at = datetime.now(timezone.utc)
@@ -212,6 +280,7 @@ def verify_restore(database_url: str, restore_database_url: str, backup_manifest
         'schema_migration_version': manifest.get('schema_version'),
         'restore_command_result': 'exit_0',
         'database_verifier_result': 'table_checks_equal',
+        'evidence_recovery_result': 'copied_and_hash_verified',
     }
     receipt['receipt_sha256'] = hashlib.sha256(_canonical_bytes(receipt)).hexdigest()
     receipt_path = backup_manifest.with_name(f"restore-{receipt['receipt_sha256']}.json")
@@ -246,7 +315,8 @@ def verify_restore_receipt(
             or receipt.get('observed') != 'actual'
             or receipt.get('status') != 'passed'
             or receipt.get('restore_command_result') != 'exit_0'
-            or receipt.get('database_verifier_result') != 'table_checks_equal'):
+            or receipt.get('database_verifier_result') != 'table_checks_equal'
+            or receipt.get('evidence_recovery_result') != 'copied_and_hash_verified'):
         raise RuntimeError('Restore receipt is not an accepted verifier result')
     if (receipt.get('source_database_identity') != _database_identity(database_url)
             or receipt.get('restore_target_identity') != _database_identity(restore_database_url)):
@@ -279,6 +349,7 @@ def verify_restore_receipt(
     for item in evidence:
         if sha256_file(_manifest_file(manifest_path, item['path'])) != item['sha256']:
             raise RuntimeError('Restore evidence file hash mismatch')
+    verify_recovered_originals(manifest_path, evidence)
     if (manifest.get('table_check_version') != receipt.get('table_check_version')
             or manifest.get('table_checks') != receipt.get('table_checks')
             or manifest.get('schema_version') != receipt.get('schema_migration_version')

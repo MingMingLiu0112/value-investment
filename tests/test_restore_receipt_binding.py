@@ -46,7 +46,9 @@ def bundle(tmp_path):
     manifest = {
         "backup_id": "backup-1", "database_dump": dump.name,
         "sha256": backup.sha256_file(dump),
-        "evidence_files": [{"path": evidence.name, "sha256": backup.sha256_file(evidence)}],
+        "evidence_files": [{"path": evidence.name, "original_path": evidence.name,
+                            "size_bytes": evidence.stat().st_size,
+                            "sha256": backup.sha256_file(evidence)}],
         "table_check_version": 1, "table_checks": checks, "schema_version": "001_init",
         "snapshot_at": snapshot_at.isoformat(),
     }
@@ -57,6 +59,7 @@ def bundle(tmp_path):
         "verifier_version": backup.RESTORE_VERIFIER_VERSION,
         "action": "no_order", "observed": "actual", "status": "passed",
         "restore_command_result": "exit_0", "database_verifier_result": "table_checks_equal",
+        "evidence_recovery_result": "copied_and_hash_verified",
         "source_database_identity": backup._database_identity(SOURCE),
         "restore_target_identity": backup._database_identity(TARGET),
         "backup_manifest": manifest_path.name,

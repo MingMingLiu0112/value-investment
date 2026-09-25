@@ -24,6 +24,7 @@ def test_reserve_boundary(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize('drop_after_checks', [False, True])
 def test_low_disk_never_starts_dump_or_creates_manifest(tmp_path, monkeypatch, drop_after_checks):
+    (tmp_path / 'evidence').mkdir()
     connection = Mock()
     connection.execute.return_value.fetchone.return_value = {'bytes': 100, 'id': 'snapshot'}
 
@@ -41,5 +42,5 @@ def test_low_disk_never_starts_dump_or_creates_manifest(tmp_path, monkeypatch, d
     with pytest.raises(RuntimeError, match='Insufficient'):
         backup.create_backup('unused', tmp_path)
     run.assert_not_called()
-    assert list(tmp_path.iterdir()) == []
+    assert list(tmp_path.iterdir()) == [tmp_path / 'evidence']
     assert checks.call_count == int(drop_after_checks)

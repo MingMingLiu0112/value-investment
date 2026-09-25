@@ -39,10 +39,11 @@ data_status=0
 backup_status=0
 run_data_stages || data_status=$?
 podman run --rm --network host --memory=256m --memory-reservation=128m --memory-swap=384m \
-  -e PYTHONPATH=/app/src \
+  -e PYTHONPATH=/app/src -e EVIDENCE_DIRECTORY=/app/evidence \
   --env-file /etc/value-investment-agent/agent.env \
   -v /opt/value-investment-agent/src:/app/src:ro,Z \
   -v /opt/value-investment-agent/backups:/app/backups:Z \
+  -v /opt/value-investment-agent/evidence:/app/evidence:ro,Z \
   localhost/value-investment-agent:pg16-tools python -m value_investment_agent backup || backup_status=$?
 printf 'daily_update data_exit=%s backup_exit=%s\n' "$data_status" "$backup_status"
 if [[ "$backup_status" != 0 ]]; then exit "$backup_status"; fi
