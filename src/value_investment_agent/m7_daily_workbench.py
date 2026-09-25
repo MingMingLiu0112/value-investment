@@ -749,15 +749,23 @@ def _event_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
             f"已核半年报事实 {actual['verified_fact_count']} 项；"
             "新估值未就绪时保持原结论失效。", 5,
         )
-        row = _header(ws, row, ["公告ID", "人工结论", "标题", "重算状态 / 阻断", "PDF SHA-256"])
+        row = _header(ws, row, ["公告ID", "人工结论", "标题", "影响依赖 / 重算状态", "证据与事件"])
         for item in actual["rows"]:
-            detail = item["recalculation_status"]
+            dependencies = ", ".join(item["affected_dependencies"]) or "无重算依赖"
+            detail = f"影响：{dependencies}\n状态：{item['recalculation_status']}"
             if item["blockers"]:
-                detail += " | " + ", ".join(item["blockers"])
-            values = [item["announcement_id"], item["materiality"], item["title"], detail, item["pdf_sha256"]]
+                detail += "\n阻断：" + ", ".join(item["blockers"])
+            detail += ("\n人工决策复核：需要" if item["requires_human_decision_review"]
+                       else "\n人工决策复核：不适用")
+            detail += ("\n新估值：" + str(item["new_valuation_result"])
+                       if item["new_valuation_result"] else "\n新估值：未生成")
+            evidence = f"PDF SHA-256: {item['pdf_sha256']}"
+            if item["event_id"]:
+                evidence += f"\nEvent ID: {item['event_id']}"
+            values = [item["announcement_id"], item["materiality"], item["title"], detail, evidence]
             for column, value in enumerate(values, 1):
                 _style(ws.cell(row, column, value), fill=AMBER)
-            ws.row_dimensions[row].height = max(24, len(values[2]) // 23 * 15 + 18)
+            ws.row_dimensions[row].height = max(60, detail.count("\n") * 15 + 25)
             row += 1
     elif disclosure_queue:
         row += 1

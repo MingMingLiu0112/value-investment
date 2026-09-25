@@ -336,6 +336,30 @@ def test_overview_is_explicitly_fail_closed_and_no_order(tmp_path: Path):
     assert receipt["summary"]["m5_new_pending_reviews"] == 1
 
 
+def test_actual_event_sheet_explains_dependency_and_not_ready_boundary():
+    packet = _packet()
+    packet["m5"]["actual_event_chain"] = {
+        "reviewed_count": 1, "pending_human_review": 0, "verified_fact_count": 1,
+        "rows": [{
+            "announcement_id": "1225475868", "materiality": "MATERIAL_REQUIRES_RECALCULATION",
+            "title": "2026 half-year report", "affected_dependencies": ["financial_facts", "valuation_inputs"],
+            "recalculation_status": "STILL_NOT_READY",
+            "blockers": ["missing_dependency_node:valuation_inputs"],
+            "pdf_sha256": "a" * 64, "event_id": "event-1",
+            "requires_human_decision_review": True, "new_valuation_result": None,
+            "action": ACTION_NO_ORDER,
+        }],
+        "action": ACTION_NO_ORDER,
+    }
+    sheet = build_daily_workbench(packet)[VISIBLE_SHEETS[6]]
+    text = "\n".join(str(value) for row in sheet.iter_rows(values_only=True)
+                     for value in row if value is not None)
+    for expected in ("1225475868", "financial_facts, valuation_inputs", "STILL_NOT_READY",
+                     "missing_dependency_node:valuation_inputs", "人工决策复核：需要",
+                     "新估值：未生成", "Event ID: event-1"):
+        assert expected in text
+
+
 def test_market_sheet_shows_limited_quality_coverage_and_value_scope(tmp_path: Path):
     packet = _packet()
     receipt = write_daily_workbench(

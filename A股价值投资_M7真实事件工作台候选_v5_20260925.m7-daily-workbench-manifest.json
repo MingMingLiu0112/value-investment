@@ -1,10 +1,10 @@
 {
   "schema_version": "m7-daily-workbench-v1",
-  "generated_at": "2026-09-25T01:25:22.405207+00:00",
+  "generated_at": "2026-09-25T01:38:19.065527+00:00",
   "as_of": "2026-09-25",
   "action": "no_order",
-  "workbook_path": "A股价值投资_M7真实事件工作台候选_v4_20260925.xlsx",
-  "workbook_sha256": "0278e9528580e18122d8f72ff80202699d9a73bc13313ad43d1e0cff57fa316e",
+  "workbook_path": "A股价值投资_M7真实事件工作台候选_v5_20260925.xlsx",
+  "workbook_sha256": "ff4a1412b41b313e347b9177207caab8a498a2bf04dd31742cfb1b2858fc460a",
   "visible_sheet_count": 10,
   "hidden_sheet_count": 2,
   "visible_sheets": [
