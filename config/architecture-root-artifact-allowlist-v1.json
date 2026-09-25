@@ -31,5 +31,13 @@
     "A股价值投资_M7真实事件工作台候选_v6_20260925.xlsx",
     "A股价值投资_M7真实事件工作台候选_v7_20260925.xlsx"
   ],
-  "manifests_and_receipts": []
+  "manifests_and_receipts": [
+    "A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_20260924.m7-daily-workbench-manifest.json",
+    "A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v2_20260924.m7-daily-workbench-manifest.json",
+    "A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v3_20260924.m7-daily-workbench-manifest.json",
+    "A股价值投资_Agent前端智能跟踪模板_M7每日工作台候选_v4_20260924.m7-daily-workbench-manifest.json",
+    "A股价值投资_M7真实事件工作台候选_v5_20260925.m7-daily-workbench-manifest.json",
+    "A股价值投资_M7真实事件工作台候选_v6_20260925.m7-daily-workbench-manifest.json",
+    "A股价值投资_M7真实事件工作台候选_v7_20260925.m7-daily-workbench-manifest.json"
+  ]
 }

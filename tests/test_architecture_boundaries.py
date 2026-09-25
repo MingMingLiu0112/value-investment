@@ -215,7 +215,7 @@ def test_root_artifact_clutter_does_not_grow():
     root_manifests = {
         name
         for name in tracked_root
-        if name.endswith(".manifest.json") or name.endswith(".receipt.json")
+        if name.endswith("manifest.json") or name.endswith("receipt.json")
     }
 
     assert allowlist["action"] == "no_order"
@@ -242,6 +242,66 @@ def test_current_artifact_entry_is_documented():
 
     assert "config/current-trial-workbook.json" in current_index
     assert "WORKBOOK_PATH" in current_index
+
+
+def test_current_cli_registry_is_explicit_and_bounded():
+    registry = json.loads(
+        (ROOT / "config" / "current-cli-entrypoints-v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    entries = registry["entrypoints"]
+
+    assert registry["action"] == "no_order"
+    assert 20 <= len(entries) <= 50
+    assert len({entry["path"] for entry in entries}) == len(entries)
+    assert {
+        entry["category"] for entry in entries
+    } == {
+        "CURRENT_OPERATIONAL_CLI",
+        "CURRENT_PRODUCT_CLI",
+        "CURRENT_RESEARCH_CLI",
+    }
+    for entry in entries:
+        path = ROOT / entry["path"]
+        assert path.is_file(), path
+        if entry.get("status") == "FROZEN_INPUT":
+            assert hashlib.sha256(path.read_bytes()).hexdigest() == entry["sha256"]
+
+
+def test_script_inventory_covers_all_tooling_files():
+    inventory = json.loads(
+        (ROOT / "docs" / "architecture" / "script-inventory-v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    entries = inventory["entries"]
+    paths = {entry["path"] for entry in entries}
+
+    assert inventory["action"] == "no_order"
+    assert inventory["current_entrypoint_count"] == 43
+    assert len(paths) == len(entries)
+    assert sum(inventory["counts"].values()) == len(entries)
+    assert "scripts/diagnostics/audit_script_inventory.py" in paths
+    assert "scripts/research_cases/moutai/build_moutai_product_ttm.py" in paths
+    assert "scripts/research_cases/shenhua/build_shenhua_2025_business_evidence.py" in paths
+    assert not (ROOT / "scripts" / "build_moutai_product_ttm.py").exists()
+
+
+def test_compatibility_shims_are_registered_and_forwarding():
+    registry = json.loads(
+        (ROOT / "docs" / "architecture" / "compatibility-shims-v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert registry["action"] == "no_order"
+    for item in registry["shims"]:
+        old_path = ROOT / item["old_path"]
+        new_path = ROOT / item["new_path"]
+        assert old_path.is_file(), old_path
+        assert new_path.is_file(), new_path
+        assert "DEPRECATED_COMPATIBILITY_SHIM" in old_path.read_text(encoding="utf-8")
 
 
 def test_new_code_placement_rules_are_recorded():

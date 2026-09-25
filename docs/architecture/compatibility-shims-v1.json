@@ -1,0 +1,49 @@
+{
+  "schema_version": "compatibility-shims-v1",
+  "action": "no_order",
+  "policy": "A shim forwards to its replacement and must not duplicate behavior or become a new business-logic home.",
+  "shims": [
+    {
+      "old_path": "src/value_investment_agent/workbook_compat.py",
+      "new_path": "src/value_investment_agent/presentation/excel/workbook_compat.py",
+      "introduced_at": "2026-09-26",
+      "consumers_remaining": ["src/value_investment_agent/excel_report.py", "scripts/validate_workbook_output.py"],
+      "removal_condition": "All consumers import the presentation path and no external callers use the legacy module."
+    },
+    {
+      "old_path": "src/value_investment_agent/m6_authorization_artifacts.py",
+      "new_path": "src/value_investment_agent/operations/authorization/m6_authorization_artifacts.py",
+      "introduced_at": "2026-09-26",
+      "consumers_remaining": ["src/value_investment_agent/m6_shadow_receipts.py"],
+      "removal_condition": "Shadow receipt verification imports the operations path and legacy callers are retired."
+    },
+    {
+      "old_path": "src/value_investment_agent/pdf_text.py",
+      "new_path": "src/value_investment_agent/infrastructure/filings/pdf_text.py",
+      "introduced_at": "2026-09-26",
+      "consumers_remaining": ["legacy scripts and filing adapters"],
+      "removal_condition": "Current and retained callers migrate without changing monkeypatch or decoder semantics."
+    },
+    {
+      "old_path": "src/value_investment_agent/evidence_tiering.py",
+      "new_path": "src/value_investment_agent/infrastructure/evidence/evidence_tiering.py",
+      "introduced_at": "2026-09-26",
+      "consumers_remaining": ["scripts/build_cold_archive_manifest.py", "scripts/cleanup_cold_archive.py"],
+      "removal_condition": "Evidence archive callers import the infrastructure path and no external caller uses the legacy module."
+    },
+    {
+      "old_path": "src/value_investment_agent/workbook_frontdoor.py",
+      "new_path": "src/value_investment_agent/presentation/excel/workbook_frontdoor.py",
+      "introduced_at": "2026-09-26",
+      "consumers_remaining": ["src/value_investment_agent/workbook_simple_overview.py", "workbook publication scripts"],
+      "removal_condition": "Workbook consumers import the presentation path and the legacy private-symbol surface is no longer used."
+    },
+    {
+      "old_path": "src/value_investment_agent/backup_snapshot.py",
+      "new_path": "src/value_investment_agent/infrastructure/backup/backup_snapshot.py",
+      "introduced_at": "2026-09-26",
+      "consumers_remaining": ["src/value_investment_agent/backup.py", "tests/test_backup_snapshot.py"],
+      "removal_condition": "Backup and restore consumers import the infrastructure path and legacy callers are retired."
+    }
+  ]
+}
