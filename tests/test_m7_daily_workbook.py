@@ -346,7 +346,7 @@ def test_m2_done_cannot_infer_checkpoint_a_pass_from_missing_input(tmp_path: Pat
         write_daily_workbench(packet, output=tmp_path / "missing-checkpoint.xlsx", root=tmp_path)
 
 
-def test_actual_event_sheet_explains_dependency_and_not_ready_boundary():
+def test_actual_event_sheet_explains_dependency_and_not_ready_boundary(tmp_path):
     packet = _packet()
     packet["m5"]["actual_event_chain"] = {
         "reviewed_count": 1, "pending_human_review": 0, "verified_fact_count": 1,
@@ -368,6 +368,29 @@ def test_actual_event_sheet_explains_dependency_and_not_ready_boundary():
     assert "其他 M5 队列待复核 1 条" in overview
     assert "新增待人工复核事件 1 条" not in overview
     assert "经过研究复核的完整估值输入；无新估值" in overview
+    packet["m5"]["followup_scan"] = {
+        "symbol": "600519", "provider": "cninfo", "scan_from": "2026-09-10",
+        "scan_to": "2026-09-25", "coverage_status": "COMPLETE",
+        "announcement_count": 0, "queue_sha256": "b" * 64,
+        "index_sha256": "c" * 64, "action": ACTION_NO_ORDER,
+    }
+    packet["m5"]["actual_event_chain"]["symbol"] = "600519"
+    packet["as_of"] = "2026-09-25"
+    packet["m5"]["disclosure_queue_600519"] = {
+        "scan_to": "2026-09-09", "pending_items": [], "total_announcements": 0,
+        "pending_count": 0, "source_unavailable": 0, "action": ACTION_NO_ORDER,
+    }
+    followed = build_daily_workbench(packet)
+    event_text = "\n".join(str(value) for row in followed[VISIBLE_SHEETS[6]].iter_rows(values_only=True)
+                           for value in row if value is not None)
+    assert "CNINFO 2026-09-10 至 2026-09-25：0 条公告" in event_text
+    assert "单源零公告不代表经营证据充分" in event_text
+    receipt = write_daily_workbench(packet, output=tmp_path / "followup.xlsx", root=tmp_path)
+    assert receipt["summary"]["m5_600519_followup_scan_to"] == "2026-09-25"
+    assert receipt["summary"]["m5_600519_followup_queue_sha256"] == "b" * 64
+    packet["m5"]["followup_scan"]["scan_from"] = "2026-09-11"
+    with pytest.raises(ValueError, match="gap or future coverage"):
+        build_daily_workbench(packet)
     sheet = workbook[VISIBLE_SHEETS[6]]
     text = "\n".join(str(value) for row in sheet.iter_rows(values_only=True)
                      for value in row if value is not None)

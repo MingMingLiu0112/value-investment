@@ -340,6 +340,24 @@ def _validate_packet(packet: Mapping[str, Any]) -> Mapping[str, Any]:
                        for row in rows if row.get("event_id"))):
                 raise ValueError("Recalculated event view requires reconciled review evidence")
 
+    followup = m5.get("followup_scan")
+    if followup is not None:
+        followup = _required_mapping(followup, "m5.followup_scan")
+        if (actual is None or disclosure_queue is None
+            or followup.get("symbol") != actual.get("symbol")
+            or followup.get("provider") != "cninfo"
+            or followup.get("coverage_status") != "COMPLETE"
+            or followup.get("announcement_count") != 0
+            or followup.get("action") != ACTION_NO_ORDER
+            or any(not re.fullmatch(r"[0-9a-f]{64}", str(followup.get(key, "")))
+                   for key in ("queue_sha256", "index_sha256"))):
+            raise ValueError("Follow-up scan is not bound to a complete ACTUAL event view")
+        from datetime import date, timedelta
+        if (date.fromisoformat(followup["scan_from"])
+                != date.fromisoformat(disclosure_queue["scan_to"]) + timedelta(days=1)
+            or date.fromisoformat(followup["scan_to"]) > date.fromisoformat(packet["as_of"])):
+            raise ValueError("Follow-up scan has a gap or future coverage")
+
     m6 = _required_mapping(packet["m6"], "m6")
     _required_list(m6.get("blockers"), "m6.blockers")
     audit = _required_mapping(packet["audit"], "audit")
@@ -413,6 +431,8 @@ def _overview(packet: Mapping[str, Any], wb: Workbook) -> None:
         f"新增待人工复核事件 {m5['pending_human_review']} 条；"
         f"Hash 冲突 {m5['hash_conflicts']} 条。"
     )
+    if actual and m5.get("followup_scan"):
+        event_risk += f"\nCNINFO公告补扫至 {m5['followup_scan']['scan_to']}；单源零公告不代表经营证据充分。"
     row = _label_value(
         ws,
         row,
@@ -802,6 +822,14 @@ def _event_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
             f"已核半年报事实 {actual['verified_fact_count']} 项；"
             "新估值未就绪时保持原结论失效。", 5,
         )
+        if m5.get("followup_scan"):
+            followup = m5["followup_scan"]
+            row = _label_value(
+                ws, row, "公告后续扫描",
+                f"CNINFO {followup['scan_from']} 至 {followup['scan_to']}："
+                "0 条公告；单源零公告不代表经营证据充分。"
+                f"\n索引 SHA-256：{followup['index_sha256']}", 5,
+            )
         if actual.get("research_review_status"):
             row = _label_value(
                 ws, row, "情景研究复核",
@@ -1160,6 +1188,12 @@ def write_daily_workbench(
                 (packet["m5"].get("disclosure_queue_600519") or {}).get(
                     "pending_count", 0
                 )
+            ),
+            "m5_600519_followup_scan_to": (
+                (packet["m5"].get("followup_scan") or {}).get("scan_to")
+            ),
+            "m5_600519_followup_queue_sha256": (
+                (packet["m5"].get("followup_scan") or {}).get("queue_sha256")
             ),
             "m3_reconstructed_continuity_status": str(
                 (packet["m3"].get("reconstructed_continuity") or {}).get(

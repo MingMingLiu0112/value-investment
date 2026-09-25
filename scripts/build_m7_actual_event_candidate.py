@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import hashlib
 import json
 from pathlib import Path
@@ -17,12 +17,56 @@ from value_investment_agent.m5_actual_read_model import build_actual_event_read_
 from value_investment_agent.m5_event_dependencies import dependency_graph_from_payload  # noqa: E402
 from value_investment_agent.m5_event_run import m5_event_run_receipt_from_payload  # noqa: E402
 from value_investment_agent.m5_recalculation_plan import bounded_recalculation_plan_from_payload  # noqa: E402
+from value_investment_agent.m5_disclosure_queue import disclosure_review_queue_from_payload  # noqa: E402
+
+
+def verified_followup_scan(path: Path, *, root: Path, symbol: str,
+                           previous_scan_to: str, as_of: str) -> dict:
+    path = path.resolve()
+    root = root.resolve()
+    if not path.is_relative_to(root):
+        raise ValueError("Follow-up queue escapes the project root")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    queue = disclosure_review_queue_from_payload(payload)
+    if queue.as_policy() != payload:
+        raise ValueError("Follow-up queue is not canonical")
+    if (len(queue.scans) != 1 or queue.scans[0].symbol != symbol
+        or queue.scan_from != date.fromisoformat(previous_scan_to) + timedelta(days=1)
+        or queue.scan_to > date.fromisoformat(as_of)
+        or queue.retrieved_at.date() < queue.scan_to):
+        raise ValueError("Follow-up scan identity or coverage window differs")
+    scan = queue.scans[0]
+    if (scan.coverage_status != "COMPLETE" or scan.announcements
+        or len(scan.evidence_refs) != 1 or queue.unavailable_source_count):
+        raise ValueError("Follow-up scan cannot claim zero complete announcements")
+    ref = scan.evidence_refs[0]
+    index_path = (root / ref["path"]).resolve()
+    if (not index_path.is_relative_to(root) or not index_path.is_file()
+        or hashlib.sha256(index_path.read_bytes()).hexdigest() != ref["sha256"]):
+        raise ValueError("Follow-up CNINFO index is missing or changed")
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    params = index.get("parameters") or {}
+    if (ref.get("source_url") != "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        or ref.get("announcement_count") != 0
+        or index.get("total_announcements") != 0 or index.get("announcements") != []
+        or params.get("seDate") != f"{queue.scan_from}~{queue.scan_to}"
+        or str(params.get("stock", "")).split(",", 1)[0] != symbol):
+        raise ValueError("Follow-up CNINFO index does not match the requested scan")
+    return {
+        "symbol": symbol, "provider": queue.provider,
+        "scan_from": queue.scan_from.isoformat(), "scan_to": queue.scan_to.isoformat(),
+        "retrieved_at": queue.retrieved_at.isoformat(),
+        "coverage_status": scan.coverage_status, "announcement_count": 0,
+        "queue_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "index_sha256": ref["sha256"], "action": "no_order",
+    }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-root", required=True, type=Path)
     parser.add_argument("--read-model", required=True, type=Path)
+    parser.add_argument("--followup-queue", type=Path)
     parser.add_argument("--scenario-review", type=Path)
     parser.add_argument("--review-source", type=Path)
     parser.add_argument("--review-package", type=Path)
@@ -90,6 +134,16 @@ def main() -> int:
     queue["pending_count"] = model["pending_human_review"]
     queue["pending_items"] = []
     packet["m5"]["actual_event_chain"] = model
+    if args.followup_queue is not None:
+        followup = verified_followup_scan(
+            args.followup_queue, root=source_root, symbol=model["symbol"],
+            previous_scan_to=queue["scan_to"], as_of=packet["as_of"],
+        )
+        packet["m5"]["followup_scan"] = followup
+        packet["audit"]["artifacts"].append({
+            "label": "M5 后续 CNINFO 公告覆盖", "path": str(args.followup_queue.resolve()),
+            "sha256": followup["queue_sha256"],
+        })
     packet["stage_statuses"]["m5"] = [
         "M5", "ACTUAL_OFFLINE_PARTIAL", "PARTIAL", "BOUNDED_RECALCULATION_NOT_READY",
     ]
