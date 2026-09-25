@@ -6,6 +6,9 @@ M4 Private Input Package 已形成单一安全入口，合成链覆盖草稿、�
 显式人工确认；真实 R2 输入仍未提供，M4 个性化状态不升级。M7 只读试用入口已固定到
 受 Hash/WPS 回执约束的 v16 候选；正式原表未替换，M6 仍为
 `NOT_STARTED operationally`，M7 R5 签收未开始。两项均保持 `action=no_order`。
+M6 离线授权的裸 ID 领域入口已关闭：模式转换只接受签名验证器签发的证明对象，并保存授权
+Hash、目标模式、操作者和有效期绑定；`LIMITED_USE` 继续无入口。历史验证第一案例保持
+`NOT_PIT_SAFE / NOT_ADMITTED`，不运行策略绩效或 walk-forward。
 
 ```text
 TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES

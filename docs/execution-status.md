@@ -1,5 +1,36 @@
 # 当前执行状态
 
+## 2026-09-25 M6 P0 授权证明对象收口
+
+`transition()` 不再接受裸 `authorization_id`。它现在只接受由签名授权验证器签发的
+`OperationalAuthorizationProof`，证明绑定授权 Hash、授权模式、目标模式、操作者、交易所、
+有效期、验证时间与 `action=no_order`；控制状态同时持久化当前授权 SHA-256。直接传字符串、
+目标模式不符、操作者不符、过期、未来验证或从急停后复用旧授权都会失败关闭。
+`LIMITED_USE` 继续没有任何可执行入口。
+
+这只是离线 R0 领域合同，不构成生产授权，也没有运行 `advance`。当前
+`M6_OPERATIONAL=NOT_STARTED`、`production_authorization_granted=false`、
+`verified_actual_sessions=0`、`real_events=0`，永久 `action=no_order`。
+
+## 2026-09-25 历史验证第一案例 admission
+
+新增 `historical-validation-policy-v1`、`HistoricalValidationAdmission`、600519 admission
+builder 与 receipt auditor。第一案例 2015-01-05 至 2015-01-30 的结论为：
+
+```text
+CLASSIFICATION = NOT_PIT_SAFE
+ADMISSION_STATUS = NOT_ADMITTED
+APPROVED_VALUE_MODEL_SESSIONS = 0
+RULE_REGISTRATION = RETROSPECTIVE_RESEARCH_EXTENSION
+WALK_FORWARD = NOT_RUN
+action = no_order
+```
+
+2015-2025 range experiment 继续只能称为
+`RETROSPECTIVE_RESEARCH_RANGE_EXPERIMENT`，不能称为 validated strategy backtest。
+历史验证审计会重新计算证据文件 Hash，但通用 admission dataclass 的文件存在性检查仍是
+下一批非阻断技术债。
+
 ## 2026-09-25 日结节点
 
 本轮按原总 Goal 继续推进 M4/M6/M7，不以工程提交替代产品验收。今日新增并验证的关键节点为：
