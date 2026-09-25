@@ -1,0 +1,19 @@
+{
+  "schema_version": "repository-document-relocation-record-v1",
+  "moved_at": "2026-09-26",
+  "action": "no_order",
+  "records": [
+    {"old_path": "docs/000411-financing-debt-scope.md", "new_path": "docs/archive/legacy-financing-debt-20260926/000411-financing-debt-scope.md", "sha256": "9e4290c85eaa71bfccc3d8dd308a2e3cca806e16b24e4eec405002f38de19ed3", "action": "ARCHIVE", "reason": "legacy issuer research note with no current consumer"},
+    {"old_path": "docs/000429-financing-scope-review.md", "new_path": "docs/archive/legacy-financing-debt-20260926/000429-financing-scope-review.md", "sha256": "d791eab51a76a9ef41d428947a11659724ddbd29d13e87ed354cb4c26d0f4bc1", "action": "ARCHIVE", "reason": "legacy issuer research note with no current consumer"},
+    {"old_path": "docs/000683-debt-scope-audit.md", "new_path": "docs/archive/legacy-financing-debt-20260926/000683-debt-scope-audit.md", "sha256": "4adf5978ee79cc0d3ff48512922a8d46518f27e4129747ee935ace9efb9acdfe", "action": "ARCHIVE", "reason": "legacy issuer research note with no current consumer"},
+    {"old_path": "docs/001233-debt-scope-20260909.md", "new_path": "docs/archive/legacy-financing-debt-20260926/001233-debt-scope-20260909.md", "sha256": "9b236456c76c21328dcdb1ff2dccab010a05272d877682ef2859383906793ce6", "action": "ARCHIVE", "reason": "legacy issuer research note with no current consumer"},
+    {"old_path": "docs/001872-financing-scope-20260909.md", "new_path": "docs/archive/legacy-financing-debt-20260926/001872-financing-scope-20260909.md", "sha256": "026b8dd2e5aa30d28f575043346735d6c357b2b777882a3e473d575c1696a641", "action": "ARCHIVE", "reason": "legacy issuer research note with no current consumer"},
+    {"old_path": "docs/600012-financing-scope-20260909.md", "new_path": "docs/archive/legacy-financing-debt-20260926/600012-financing-scope-20260909.md", "sha256": "4e6d7d844a727644da40dfba2ec37b0caaa7c541d5c9652367c7dfe8d0cc223d", "action": "ARCHIVE", "reason": "legacy issuer research note with no current consumer"},
+    {"old_path": "docs/600060-debt-scope-20260909.md", "new_path": "docs/archive/legacy-financing-debt-20260926/600060-debt-scope-20260909.md", "sha256": "0033553fe6f1b15c784177b117e2b218ad0af3004390ce23fe24919752671c85", "action": "ARCHIVE", "reason": "legacy issuer research note with no current consumer"},
+    {"old_path": "docs/600267-debt-scope-20260909.md", "new_path": "docs/archive/legacy-financing-debt-20260926/600267-debt-scope-20260909.md", "sha256": "de98b49ae84bb4dbae7651a875ed1c6bdc02ec9ad66e6845151230b221e4a290", "action": "ARCHIVE", "reason": "legacy issuer research note with no current consumer"},
+    {"old_path": "docs/600496-cross-page-verified-20260909.md", "new_path": "docs/archive/legacy-financing-debt-20260926/600496-cross-page-verified-20260909.md", "sha256": "131ee5dbbcfef9a8d72dd4fed3cf9713efa06558177e244b595b04dd81243863", "action": "ARCHIVE", "reason": "legacy issuer research note with no current consumer"},
+    {"old_path": "docs/600900-filing-retry-20260908.md", "new_path": "docs/archive/legacy-financing-debt-20260926/600900-filing-retry-20260908.md", "sha256": "1cc3ab4a5df11292493b6180f795b1bba173bc48cd4c6a9154da8eedf4c8fb20", "action": "ARCHIVE", "reason": "legacy issuer research note with no current consumer"},
+    {"old_path": "docs/601800-verified-refresh-20260909.md", "new_path": "docs/archive/legacy-financing-debt-20260926/601800-verified-refresh-20260909.md", "sha256": "8dbc3fc5bf88d3fdb78da8ba85ed9d7332731ce14d41c53d508c8871ae3da30a", "action": "ARCHIVE", "reason": "legacy issuer research note with no current consumer"},
+    {"old_path": "docs/920174-annual-diagnosis.md", "new_path": "docs/archive/legacy-financing-debt-20260926/920174-annual-diagnosis.md", "sha256": "2e001144efd67fb3a035ab330f22b901d88056482659ab844b2005807a283536", "action": "ARCHIVE", "reason": "legacy issuer research note with no current consumer"}
+  ]
+}

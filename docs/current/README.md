@@ -1,20 +1,26 @@
 # Current Documentation
 
-This directory is an index of currently authoritative documents. The stable
-file paths remain unchanged until all references and receipt bindings are
-audited.
+This directory is the current documentation entry. It points to authoritative
+files without duplicating their content. Historical stage notes live under
+`docs/archive/` and are read-only context, never a task queue.
 
-```text
-AGENTS.md                                  permanent execution boundaries
-LONG-TERM-GOAL.md                          long-term M2-M7 envelope
-docs/current-stage-goal.md                 currently authorized work
-docs/execution-status.md                   dated execution evidence
-docs/north-star.md                         product purpose
-docs/architecture.md                       architecture contracts
-docs/data-and-evidence-policy.md           provenance and evidence policy
-docs/architecture/repository-architecture.md  repository placement rules
-docs/architecture/repository-map.md        module and entry-point map
-```
+## Current Entries
+
+| Need | Authoritative entry |
+| --- | --- |
+| Current goal | `docs/current-stage-goal.md` |
+| Current execution status | `docs/execution-status.md` |
+| M4 private input | `docs/m4-private-input-package.md` |
+| M6 authorization | `docs/m6-production-authorization-package-20260924.md` |
+| M7 trial | `config/current-trial-workbook.json` and `docs/m7-readonly-user-trial.md` |
+| Historical validation status | `docs/historical-validation-current-status.md` |
+| Architecture status | `docs/architecture/repository-architecture.md` |
+| Permanent boundaries | `AGENTS.md` |
+| Long-term envelope | `LONG-TERM-GOAL.md` |
+| Product purpose | `docs/north-star.md` |
+| Methodology | `docs/research-methodology.md` |
+| Evidence policy | `docs/data-and-evidence-policy.md` |
+| Current CLI | `config/current-cli-entrypoints-v1.json` |
 
 `docs/execution-status.md` is factual history, not a backlog. Historical stage
 acceptance files are read-only context and do not create new work.

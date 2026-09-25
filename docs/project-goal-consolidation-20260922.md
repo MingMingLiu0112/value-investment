@@ -152,19 +152,19 @@ MERGE/ARCHIVE 文件的原内容保存在版本化归档，原路径变为跳转
 | --- | --- | --- | --- |
 | [AGENTS.md](../AGENTS.md) | Authority / Policy | UPDATE | 原位重写权威、当前任务与长期边界，原文归档 |
 | [README.md](../README.md) | North Star / Navigation | UPDATE | 更新定位与文档导航，保留运维说明 |
-| [000411-financing-debt-scope.md](000411-financing-debt-scope.md) | Execution Status / Archive | KEEP | 原位只读保留证据/研究/历史进度；不执行其中旧下一步 |
-| [000429-financing-scope-review.md](000429-financing-scope-review.md) | Execution Status / Archive | KEEP | 原位只读保留证据/研究/历史进度；不执行其中旧下一步 |
-| [000683-debt-scope-audit.md](000683-debt-scope-audit.md) | Execution Status / Archive | KEEP | 原位只读保留证据/研究/历史进度；不执行其中旧下一步 |
-| [001233-debt-scope-20260909.md](001233-debt-scope-20260909.md) | Execution Status / Archive | KEEP | 原位只读保留证据/研究/历史进度；不执行其中旧下一步 |
-| [001872-financing-scope-20260909.md](001872-financing-scope-20260909.md) | Execution Status / Archive | KEEP | 原位只读保留证据/研究/历史进度；不执行其中旧下一步 |
-| [600012-financing-scope-20260909.md](600012-financing-scope-20260909.md) | Execution Status / Archive | KEEP | 原位只读保留证据/研究/历史进度；不执行其中旧下一步 |
-| [600060-debt-scope-20260909.md](600060-debt-scope-20260909.md) | Execution Status / Archive | KEEP | 原位只读保留证据/研究/历史进度；不执行其中旧下一步 |
-| [600267-debt-scope-20260909.md](600267-debt-scope-20260909.md) | Execution Status / Archive | KEEP | 原位只读保留证据/研究/历史进度；不执行其中旧下一步 |
-| [600496-cross-page-verified-20260909.md](600496-cross-page-verified-20260909.md) | Execution Status / Archive | KEEP | 原位只读保留证据/研究/历史进度；不执行其中旧下一步 |
+| [000411-financing-debt-scope.md](archive/legacy-financing-debt-20260926/000411-financing-debt-scope.md) | Execution Status / Archive | ARCHIVE | 只读保留证据/研究/历史进度；不执行其中旧下一步 |
+| [000429-financing-scope-review.md](archive/legacy-financing-debt-20260926/000429-financing-scope-review.md) | Execution Status / Archive | ARCHIVE | 只读保留证据/研究/历史进度；不执行其中旧下一步 |
+| [000683-debt-scope-audit.md](archive/legacy-financing-debt-20260926/000683-debt-scope-audit.md) | Execution Status / Archive | ARCHIVE | 只读保留证据/研究/历史进度；不执行其中旧下一步 |
+| [001233-debt-scope-20260909.md](archive/legacy-financing-debt-20260926/001233-debt-scope-20260909.md) | Execution Status / Archive | ARCHIVE | 只读保留证据/研究/历史进度；不执行其中旧下一步 |
+| [001872-financing-scope-20260909.md](archive/legacy-financing-debt-20260926/001872-financing-scope-20260909.md) | Execution Status / Archive | ARCHIVE | 只读保留证据/研究/历史进度；不执行其中旧下一步 |
+| [600012-financing-scope-20260909.md](archive/legacy-financing-debt-20260926/600012-financing-scope-20260909.md) | Execution Status / Archive | ARCHIVE | 只读保留证据/研究/历史进度；不执行其中旧下一步 |
+| [600060-debt-scope-20260909.md](archive/legacy-financing-debt-20260926/600060-debt-scope-20260909.md) | Execution Status / Archive | ARCHIVE | 只读保留证据/研究/历史进度；不执行其中旧下一步 |
+| [600267-debt-scope-20260909.md](archive/legacy-financing-debt-20260926/600267-debt-scope-20260909.md) | Execution Status / Archive | ARCHIVE | 只读保留证据/研究/历史进度；不执行其中旧下一步 |
+| [600496-cross-page-verified-20260909.md](archive/legacy-financing-debt-20260926/600496-cross-page-verified-20260909.md) | Execution Status / Archive | ARCHIVE | 只读保留证据/研究/历史进度；不执行其中旧下一步 |
 | [600519-readiness-assessment-20260913.md](600519-readiness-assessment-20260913.md) | Execution Status / Archive | KEEP | 原位只读保留证据/研究/历史进度；不执行其中旧下一步 |
-| [600900-filing-retry-20260908.md](600900-filing-retry-20260908.md) | Execution Status / Archive | KEEP | 原位只读保留证据/研究/历史进度；不执行其中旧下一步 |
-| [601800-verified-refresh-20260909.md](601800-verified-refresh-20260909.md) | Execution Status / Archive | KEEP | 原位只读保留证据/研究/历史进度；不执行其中旧下一步 |
-| [920174-annual-diagnosis.md](920174-annual-diagnosis.md) | Execution Status / Archive | KEEP | 原位只读保留证据/研究/历史进度；不执行其中旧下一步 |
+| [600900-filing-retry-20260908.md](archive/legacy-financing-debt-20260926/600900-filing-retry-20260908.md) | Execution Status / Archive | ARCHIVE | 只读保留证据/研究/历史进度；不执行其中旧下一步 |
+| [601800-verified-refresh-20260909.md](archive/legacy-financing-debt-20260926/601800-verified-refresh-20260909.md) | Execution Status / Archive | ARCHIVE | 只读保留证据/研究/历史进度；不执行其中旧下一步 |
+| [920174-annual-diagnosis.md](archive/legacy-financing-debt-20260926/920174-annual-diagnosis.md) | Execution Status / Archive | ARCHIVE | 只读保留证据/研究/历史进度；不执行其中旧下一步 |
 | [财报候选复核操作.md](财报候选复核操作.md) | Policy | KEEP | 操作/结构参考；不作为阶段完成或实时部署证明 |
 | [财报候选自动验证说明.md](财报候选自动验证说明.md) | Policy | KEEP | 操作/结构参考；不作为阶段完成或实时部署证明 |
 | [官方证据清单说明.md](官方证据清单说明.md) | Policy | KEEP | 操作/结构参考；不作为阶段完成或实时部署证明 |
