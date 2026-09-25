@@ -331,6 +331,47 @@ def test_preflight_separates_all_operational_gates_and_binds_engineering_sources
     assert criteria['m6c15_operational_acceptance']['status'] == NOT_STARTED
 
 
+def test_preflight_forwards_operational_event_admission_inputs(monkeypatch, tmp_path):
+    from value_investment_agent import m6_operational_readiness as readiness
+
+    root, _ = _synthetic_repo(tmp_path)
+    captured = {}
+
+    def fake_assess(config, records, **kwargs):
+        captured['config'] = config
+        captured['records'] = records
+        captured.update(kwargs)
+        return {
+            'status': NOT_STARTED,
+            'checks': [],
+            'blockers': [],
+            'evidence': {},
+        }
+
+    monkeypatch.setattr(readiness, 'audit_repository', lambda *_, **__: {
+        'status': 'DONE', 'blockers': [], 'evidence': {},
+    })
+    monkeypatch.setattr(readiness, 'assess_session_ledger', fake_assess)
+
+    bundle = {'candidate_bundle': {}, 'admission': {}}
+    trust_root = {'candidate_trust_root': {}, 'admission_public_key': '0' * 64,
+                  'approved_admission_sha256': '1' * 64}
+    records = [{'candidate_evidence': {}, 'event_admission': {},
+                'approved_event_admission_sha256': '2' * 64}]
+    receipt = build_preflight_receipt(
+        root,
+        root / 'm6.json',
+        operational_shadow_bundle=bundle,
+        operational_shadow_trust_root=trust_root,
+        operational_event_evidence=records,
+    )
+
+    assert captured['operational_shadow_bundle'] is bundle
+    assert captured['operational_shadow_trust_root'] is trust_root
+    assert captured['operational_event_evidence'] is records
+    assert len(receipt['criteria']['m6c5_real_sessions_and_events']['evidence_sha256']) == 3
+
+
 def test_write_receipt_creates_hash_pointer(tmp_path):
     root, config = _synthetic_repo(tmp_path)
     receipt = build_preflight_receipt(

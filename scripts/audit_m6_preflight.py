@@ -56,6 +56,15 @@ def _load_optional_list(path: Path | None) -> list[dict]:
     return payload
 
 
+def _load_optional_object(path: Path | None) -> dict | None:
+    if path is None:
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"Expected a JSON object: {path}")
+    return payload
+
+
 def _calendar_from_bundle(path: Path, symbol: str) -> dict:
     raw = path.read_bytes()
     bundle = json.loads(raw)
@@ -103,6 +112,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--verify-live-calendar", action="store_true")
     parser.add_argument("--verify-ci", action="store_true",
                         help="Bind exact clean HEAD to live GitHub restore CI evidence")
+    parser.add_argument(
+        "--operational-shadow-bundle", type=Path,
+        help="Read-only five-party operational Shadow admission bundle",
+    )
+    parser.add_argument(
+        "--operational-shadow-trust-root", type=Path,
+        help="Externally pinned operational Shadow trust root",
+    )
+    parser.add_argument(
+        "--operational-event-evidence", type=Path,
+        help="JSON list of event candidate, admission and approved hash records",
+    )
     parser.add_argument("--restore", type=Path)
     parser.add_argument("--verified-restore-receipt", type=Path)
     parser.add_argument("--json-only", action="store_true")
@@ -112,8 +133,32 @@ def main(argv: list[str] | None = None) -> int:
     if args.verify_live_calendar and not (args.calendar_bundle or args.calendar_evidence):
         parser.error('--verify-live-calendar requires archived calendar evidence')
 
+    operational_bundle = _load_optional_object(
+        args.operational_shadow_bundle.resolve() if args.operational_shadow_bundle else None)
+    operational_trust_root = _load_optional_object(
+        args.operational_shadow_trust_root.resolve()
+        if args.operational_shadow_trust_root else None)
+    operational_events = _load_optional_list(
+        args.operational_event_evidence.resolve()
+        if args.operational_event_evidence else None)
+    if (operational_bundle is None) != (operational_trust_root is None):
+        parser.error('--operational-shadow-bundle and --operational-shadow-trust-root must be supplied together')
+    if operational_events and operational_bundle is None:
+        parser.error('--operational-event-evidence requires both operational Shadow inputs')
+    if (operational_bundle is not None or operational_events) and not (
+            args.calendar_bundle or args.calendar_evidence):
+        parser.error('operational Shadow inputs require archived official calendar evidence')
+    if (operational_bundle is not None or operational_events) and not args.verify_live_calendar:
+        parser.error('operational Shadow inputs require --verify-live-calendar')
+
     root = args.root.resolve()
     config = args.config.resolve()
+    calendar_evidence = (
+        _calendar_from_bundle(args.calendar_bundle.resolve(), args.calendar_symbol)
+        if args.calendar_bundle else
+        json.loads(args.calendar_evidence.read_text(encoding='utf-8'))
+        if args.calendar_evidence else None
+    )
     tracked_files, clean = _git_files(root)
     source = None
     target = None
@@ -128,11 +173,11 @@ def main(argv: list[str] | None = None) -> int:
         tracked_files=tracked_files,
         clean=clean,
         session_records=_load_optional_list(args.sessions.resolve() if args.sessions else None),
-        calendar_evidence=(_calendar_from_bundle(args.calendar_bundle.resolve(), args.calendar_symbol)
-                           if args.calendar_bundle else
-                           json.loads(args.calendar_evidence.read_text(encoding='utf-8'))
-                           if args.calendar_evidence else None),
+        calendar_evidence=calendar_evidence,
         verify_live_calendar=args.verify_live_calendar,
+        operational_shadow_bundle=operational_bundle,
+        operational_shadow_trust_root=operational_trust_root,
+        operational_event_evidence=operational_events,
         restore_records=_load_optional_list(args.restore.resolve() if args.restore else None),
         restore_receipt_path=args.verified_restore_receipt.resolve() if args.verified_restore_receipt else None,
         source_database_url=source,

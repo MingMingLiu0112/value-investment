@@ -23,7 +23,7 @@ def _sha(value):
     return hashlib.sha256(_bytes(value)).hexdigest()
 
 
-def _fixture(monkeypatch):
+def _fixture(monkeypatch, mutate_candidate=None):
     key = Ed25519PrivateKey.generate()
     public = key.public_key().public_bytes(
         serialization.Encoding.Raw, serialization.PublicFormat.Raw).hex()
@@ -45,6 +45,8 @@ def _fixture(monkeypatch):
         "source_index_sha256": "3" * 64, "observation_sha256": "4" * 64,
         "session_receipt_sha256": "5" * 64, "action": "no_order",
     }
+    if mutate_candidate is not None:
+        mutate_candidate(result)
     observation = {"observed_at": "2026-09-24T15:08:00+08:00"}
     candidate_evidence = {
         "shadow_bundle": candidate_bundle, "trust_root": candidate_root,
@@ -97,6 +99,27 @@ def test_event_admission_fails_closed_when_any_binding_changes(monkeypatch, fiel
     envelope["signature"] = key.sign(
         admission.PURPOSE + _bytes(envelope["payload"])).hex()
     with pytest.raises(ValueError):
+        admission.verify_operational_event_observation(
+            candidate_evidence=candidate, operational_shadow_bundle=bundle,
+            operational_shadow_trust_root=root, event_admission=envelope,
+            approved_event_admission_sha256=_sha(envelope),
+            required_sessions=20, required_events=1)
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("offline_candidate_valid", False),
+    ("operational_event_proven", True),
+    ("verified_real_event_count", 1),
+    ("action", "BUY"),
+])
+def test_event_admission_rejects_promoted_candidate_even_if_resigned(
+        monkeypatch, field, value):
+    def mutate(candidate):
+        candidate[field] = value
+
+    candidate, bundle, root, envelope, _ = _fixture(
+        monkeypatch, mutate_candidate=mutate)
+    with pytest.raises(ValueError, match="offline-only|schema differs"):
         admission.verify_operational_event_observation(
             candidate_evidence=candidate, operational_shadow_bundle=bundle,
             operational_shadow_trust_root=root, event_admission=envelope,

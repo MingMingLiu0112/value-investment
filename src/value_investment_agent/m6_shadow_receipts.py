@@ -16,6 +16,12 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from .m6_authorization_artifacts import verify_authorization_artifacts
 from .m6_independent_intake import verify_independent_intake_chain
+from .m6_operational_control import (
+    MODE_OFFLINE_ENGINEERING,
+    MODE_SHADOW,
+    MODE_STAGING,
+    OperationalAuthorizationProof,
+)
 
 
 VERSION = 'm6-shadow-receipt-v1'
@@ -95,6 +101,32 @@ def verify_shadow_authorization(
     if valid_from >= valid_until or (when is not None and not valid_from <= when <= valid_until):
         raise ValueError('Shadow authorization is outside its validity window')
     return authorization, authorization_hash
+
+
+def verify_shadow_authorization_for_control(
+    bundle: Mapping[str, Any],
+    trust_root: Mapping[str, str],
+    *,
+    target_mode: str,
+    operator_id: str,
+    at: datetime,
+) -> OperationalAuthorizationProof:
+    """Issue a transition proof only after the signed authorization passes audit."""
+    if target_mode not in {MODE_OFFLINE_ENGINEERING, MODE_STAGING, MODE_SHADOW}:
+        raise ValueError('operational control target mode is not enabled')
+    authorization, authorization_hash = verify_shadow_authorization(
+        bundle, trust_root, at=at)
+    return OperationalAuthorizationProof._issue(
+        authorization_id=authorization['authorization_id'],
+        authorization_sha256=authorization_hash,
+        authorization_mode=authorization['mode'],
+        target_mode=target_mode,
+        operator_id=operator_id,
+        venue=authorization['venue'],
+        valid_from=_timestamp(authorization['valid_from']),
+        valid_until=_timestamp(authorization['valid_until']),
+        verified_at=at.astimezone(timezone.utc),
+    )
 
 
 def verify_shadow_bundle(bundle: Mapping[str, Any], trust_root: Mapping[str, str],

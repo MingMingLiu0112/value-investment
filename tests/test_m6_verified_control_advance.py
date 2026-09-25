@@ -42,6 +42,7 @@ def test_signed_approved_authorization_can_advance_local_state(monkeypatch, tmp_
     payload = json.loads(state_path.read_text(encoding="utf-8"))
     assert payload["mode"] == "STAGING"
     assert payload["authorization_id"] == "synthetic-only"
+    assert payload["authorization_sha256"] == root["approved_authorization_sha256"]
     assert payload["permissions"]["publish_allowed"] is False
 
 

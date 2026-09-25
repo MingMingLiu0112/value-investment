@@ -655,6 +655,9 @@ def build_preflight_receipt(
     verify_live_calendar: bool = False,
     signed_session_bundle: Mapping[str, Any] | None = None,
     trusted_shadow_root: Mapping[str, str] | None = None,
+    operational_shadow_bundle: Mapping[str, Any] | None = None,
+    operational_shadow_trust_root: Mapping[str, Any] | None = None,
+    operational_event_evidence: Sequence[Mapping[str, Any]] = (),
     restore_records: Sequence[Mapping[str, Any]] = (),
     restore_receipt_path: Path | None = None,
     source_database_url: str | None = None,
@@ -676,7 +679,11 @@ def build_preflight_receipt(
         config, session_records, calendar_evidence=calendar_evidence,
         verify_live_calendar=verify_live_calendar,
         signed_session_bundle=signed_session_bundle,
-        trusted_shadow_root=trusted_shadow_root)
+        trusted_shadow_root=trusted_shadow_root,
+        operational_shadow_bundle=operational_shadow_bundle,
+        operational_shadow_trust_root=operational_shadow_trust_root,
+        operational_event_evidence=operational_event_evidence,
+    )
     session_evidence = sessions.get('evidence') or {}
     restore = assess_restore_evidence(
         config, restore_records, receipt_path=restore_receipt_path,
@@ -868,6 +875,20 @@ def build_preflight_receipt(
                              ensure_ascii=False).encode('utf-8')
         criteria['m6c5_real_sessions_and_events']['evidence_sha256'] = [
             hashlib.sha256(encoded).hexdigest()]
+    operational_session_evidence = {
+        'operational_shadow_bundle': operational_shadow_bundle,
+        'operational_shadow_trust_root': operational_shadow_trust_root,
+        'operational_event_evidence': operational_event_evidence,
+    }
+    for label, value in operational_session_evidence.items():
+        if value is None or value == () or value == []:
+            continue
+        encoded = json.dumps(value, sort_keys=True, separators=(',', ':'),
+                             ensure_ascii=False).encode('utf-8')
+        criteria['m6c5_real_sessions_and_events']['evidence_refs'].append(
+            f'provided:{label}')
+        criteria['m6c5_real_sessions_and_events']['evidence_sha256'].append(
+            hashlib.sha256(encoded).hexdigest())
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),

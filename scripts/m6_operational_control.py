@@ -21,12 +21,15 @@ from value_investment_agent.m6_operational_control import (  # noqa: E402
     MODE_SHADOW,
     MODE_STAGING,
     apply_emergency_stop,
+    control_state_lock,
     initial_state,
     read_control_state,
     transition,
     write_control_state,
 )
-from value_investment_agent.m6_shadow_receipts import verify_shadow_authorization  # noqa: E402
+from value_investment_agent.m6_shadow_receipts import (  # noqa: E402
+    verify_shadow_authorization_for_control,
+)
 
 
 DEFAULT_STATE = ROOT / "runtime" / "m6-operational-control-state.json"
@@ -58,29 +61,39 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     path = args.state.resolve()
-    state = _load(path)
     now = datetime.now(timezone.utc)
-    if args.command == "stop":
-        state = apply_emergency_stop(
-            state,
-            reason=args.reason,
-            operator_id=args.operator,
-            changed_at=now,
-        )
-        write_control_state(path, state)
-    elif args.command == "advance":
+    authorization = None
+    if args.command == "advance":
         bundle = json.loads(args.authorization_bundle.read_text(encoding="utf-8"))
         trust_root = json.loads(args.authorization_trust_root.read_text(encoding="utf-8"))
-        authorization, _ = verify_shadow_authorization(bundle, trust_root, at=now)
-        state = transition(
-            state,
+        authorization = verify_shadow_authorization_for_control(
+            bundle,
+            trust_root,
             target_mode=args.target,
-            authorization_id=authorization["authorization_id"],
-            reason=args.reason,
             operator_id=args.operator,
-            changed_at=now,
+            at=now,
         )
-        write_control_state(path, state)
+
+    with control_state_lock(path):
+        state = _load(path)
+        if args.command == "stop":
+            state = apply_emergency_stop(
+                state,
+                reason=args.reason,
+                operator_id=args.operator,
+                changed_at=now,
+            )
+            write_control_state(path, state)
+        elif args.command == "advance":
+            state = transition(
+                state,
+                target_mode=args.target,
+                authorization=authorization,
+                reason=args.reason,
+                operator_id=args.operator,
+                changed_at=now,
+            )
+            write_control_state(path, state)
     print(json.dumps(state.as_dict(), ensure_ascii=False, indent=2))
     return 0
 

@@ -1,7 +1,7 @@
 """Operational admission for one evidence-bound M6 event observation."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import hashlib
 import json
 from typing import Any, Mapping
@@ -9,7 +9,10 @@ from typing import Any, Mapping
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-from .m6_event_observation import verify_event_observation_candidate
+from .m6_event_observation import (
+    SCHEMA as CANDIDATE_SCHEMA,
+    verify_event_observation_candidate,
+)
 from .m6_exchange_sessions import completed_exchange_sessions
 from .m6_shadow_admission import verify_operational_shadow_bundle
 
@@ -22,6 +25,12 @@ FIELDS = frozenset({
     "observation_sha256", "session_receipt_sha256",
     "operational_admission_sha256", "authorization_sha256",
     "intake_head_sha256", "admitted_at",
+})
+CANDIDATE_FIELDS = frozenset({
+    "schema_version", "offline_candidate_valid", "operational_event_proven",
+    "verified_real_event_count", "event_id", "session_date", "source_sha256",
+    "source_index_sha256", "observation_sha256", "session_receipt_sha256",
+    "action",
 })
 
 
@@ -39,6 +48,37 @@ def _time(value: object) -> datetime:
     if parsed.tzinfo is None:
         raise ValueError("M6 event admission time must be timezone-aware")
     return parsed.astimezone(timezone.utc)
+
+
+def _is_sha256(value: object) -> bool:
+    return (isinstance(value, str) and len(value) == 64
+            and all(character in "0123456789abcdef" for character in value))
+
+
+def _require_offline_candidate_contract(candidate: object) -> Mapping[str, Any]:
+    """Reject a promoted result even if an admission signer signs its hash."""
+    if not isinstance(candidate, Mapping) or set(candidate) != CANDIDATE_FIELDS:
+        raise ValueError("M6 event candidate contract schema differs")
+    try:
+        date.fromisoformat(str(candidate["session_date"]))
+    except ValueError as error:
+        raise ValueError("M6 event candidate contract session date is invalid") from error
+    if (
+        candidate["schema_version"] != CANDIDATE_SCHEMA
+        or candidate["offline_candidate_valid"] is not True
+        or candidate["operational_event_proven"] is not False
+        or type(candidate["verified_real_event_count"]) is not int
+        or candidate["verified_real_event_count"] != 0
+        or candidate["action"] != "no_order"
+        or not isinstance(candidate["event_id"], str)
+        or not candidate["event_id"]
+        or not all(_is_sha256(candidate[field]) for field in (
+            "source_sha256", "source_index_sha256", "observation_sha256",
+            "session_receipt_sha256",
+        ))
+    ):
+        raise ValueError("M6 event candidate contract is not offline-only")
+    return candidate
 
 
 def verify_operational_event_observation(
@@ -65,7 +105,8 @@ def verify_operational_event_observation(
     operational_sessions = verify_operational_shadow_bundle(
         operational_shadow_bundle, operational_shadow_trust_root, schedule, cutoff,
         required_sessions=required_sessions, required_events=required_events)
-    candidate = verify_event_observation_candidate(**candidate_evidence)
+    candidate = _require_offline_candidate_contract(
+        verify_event_observation_candidate(**candidate_evidence))
 
     if (not isinstance(event_admission, Mapping)
             or set(event_admission) != {"version", "payload", "signature"}):
