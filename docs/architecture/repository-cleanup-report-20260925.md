@@ -118,6 +118,7 @@ admission_status: NOT_ADMITTED
 walk_forward_status: NOT_RUN
 action: no_order
 targeted tests: 18 passed
+full offline suite: 2796 passed, 30 skipped, 18 warnings
 ```
 
 The final architecture batch must also pass the repository-wide offline test
