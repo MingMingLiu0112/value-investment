@@ -408,6 +408,8 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
     descriptor = _descriptor()
     descriptor = finalize_input_descriptor(replace(
         descriptor, input_sha256=None,
+        facts=replace(descriptor.facts,
+                      evidence_refs=[{"id": "verified-facts", "sha256": "d" * 64}]),
         sources=(*descriptor.sources,
                  ResearchSourceDescriptor(id="actual-receipt", kind="research_artifact",
                                           location="receipt.json", sha256=receipt.state_sha256),
@@ -456,6 +458,24 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
     with pytest.raises(ValueError, match="model preflight remains not ready"):
         attach_valuation_input_descriptor(
             graph=graph, descriptor=missing_scenarios, receipt=receipt,
+        )
+    wrong_facts = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None,
+        facts=replace(descriptor.facts,
+                      evidence_refs=[{"id": "other-facts", "sha256": "4" * 64}]),
+    ))
+    with pytest.raises(ValueError, match="Model facts do not reference"):
+        attach_valuation_input_descriptor(
+            graph=graph, descriptor=wrong_facts, receipt=receipt,
+        )
+    wrong_case = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None,
+        research_case=replace(descriptor.research_case,
+                              evidence_refs=[{"id": "e-1", "sha256": "5" * 64}]),
+    ))
+    with pytest.raises(ValueError, match="Research case does not reference"):
+        attach_valuation_input_descriptor(
+            graph=graph, descriptor=wrong_case, receipt=receipt,
         )
 
 

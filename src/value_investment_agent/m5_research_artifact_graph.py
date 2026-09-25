@@ -154,6 +154,12 @@ def attach_valuation_input_descriptor(
     source_locations = {(source.sha256, source.location) for source in descriptor.sources}
     if facts_nodes[0].version not in source_hashes or receipt.state_sha256 not in source_hashes:
         raise ValueError("Valuation inputs are not bound to facts and ACTUAL receipt bytes")
+    if not any(ref.get("sha256") == facts_nodes[0].version
+               for ref in descriptor.facts.evidence_refs):
+        raise ValueError("Model facts do not reference the verified facts node")
+    if not any(ref.get("sha256") == thesis_nodes[0].version
+               for ref in descriptor.research_case.evidence_refs):
+        raise ValueError("Research case does not reference the thesis node")
     for event in receipt.active_events:
         pdf_refs = [ref for ref in event.evidence_refs
                     if ref.get("sha256") and ref.get("source_url")]
