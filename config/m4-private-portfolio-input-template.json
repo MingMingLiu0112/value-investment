@@ -1,0 +1,42 @@
+{
+  "schema_version": "m4-portfolio-contracts-v1",
+  "policy": {
+    "policy_id": "FILL_POLICY_ID",
+    "policy_version": "v1",
+    "as_of": "2026-09-25",
+    "confirmation_status": "DRAFT",
+    "confirmed_at": null,
+    "account_scope": "FILL_PRIVATE_ACCOUNT_SCOPE",
+    "investable_assets_cny": null,
+    "minimum_cash_cny": null,
+    "emergency_cash_cny": null,
+    "liquidity_needs_cny": null,
+    "time_horizon_years": null,
+    "max_single_security_pct": null,
+    "max_single_industry_pct": null,
+    "max_cyclical_exposure_pct": null,
+    "dividend_income_goal_cny": null,
+    "risk_tolerance": "UNKNOWN",
+    "concentration_allowed": null,
+    "tax_regime": null,
+    "restrictions": ["no_order"],
+    "evidence_refs": [],
+    "action": "no_order"
+  },
+  "snapshot": {
+    "snapshot_id": "FILL_SNAPSHOT_ID",
+    "snapshot_version": "v1",
+    "as_of": "2026-09-25",
+    "available_at": "2026-09-25T00:00:00+08:00",
+    "account_scope": "FILL_PRIVATE_ACCOUNT_SCOPE",
+    "namespace": "ACTUAL",
+    "cash_cny": null,
+    "holdings": [],
+    "reconciliation_status": "PENDING_RECONCILIATION",
+    "reconciled_at": null,
+    "evidence_refs": [],
+    "action": "no_order"
+  },
+  "sensitivity": "PRIVATE_USER_CONFIRMED",
+  "action": "no_order"
+}

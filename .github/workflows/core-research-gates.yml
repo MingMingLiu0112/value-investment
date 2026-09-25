@@ -56,6 +56,7 @@ jobs:
           tests/test_m7_workbench_v2_candidate.py
           tests/test_portfolio_contracts.py
           tests/test_private_portfolio_intake.py
+          tests/test_setup_private_portfolio.py
           tests/test_portfolio_reconciliation.py
           tests/test_portfolio_risk_assessment.py
           tests/test_m4_portfolio_risk_workbook.py
@@ -131,6 +132,7 @@ jobs:
           tests/test_m5_pending_research_input.py
           tests/test_m5_research_artifact_graph.py
           tests/test_m7_daily_workbook.py
+          tests/test_current_trial_workbook.py
           tests/test_m7_actual_followup_scan.py
           tests/test_wps_verifier_text_scans.py
           tests/test_public_workbook_wps_audit.py

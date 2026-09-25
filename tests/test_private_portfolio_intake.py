@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, datetime, timezone
 from decimal import Decimal
 import json
@@ -138,6 +139,33 @@ def test_private_payload_is_validated_before_encryption(private_tmp_path):
             [], encrypted.with_name("bad.viportfolio"), key_path,
             private_root=private_root, repository_root=repository,
         )
+
+
+def test_pending_actual_bundle_can_be_encrypted_but_cannot_support_guidance(private_tmp_path):
+    repository, private_root, key_path = _paths(private_tmp_path)
+    encrypted = private_root / "pending.viportfolio"
+    pending = replace(
+        _bundle(),
+        snapshot=replace(
+            _bundle().snapshot,
+            reconciliation_status="PENDING_RECONCILIATION",
+            reconciled_at=None,
+        ),
+    )
+
+    receipt = encrypt_private_portfolio_bundle(
+        pending, encrypted, key_path,
+        private_root=private_root, repository_root=repository,
+    )
+    loaded, verified = load_private_portfolio_bundle(
+        encrypted, key_path,
+        private_root=private_root, repository_root=repository,
+    )
+
+    assert receipt.guidance_input_status == "PRIVATE_ACTUAL_PENDING_REVIEW"
+    assert verified == receipt
+    assert loaded.can_support_guidance() is False
+    assert "snapshot.reconciliation" in loaded.missing_guidance_inputs()
 
 
 def test_private_input_rejects_repo_sync_roots_and_key_colocation(private_tmp_path):

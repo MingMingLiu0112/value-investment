@@ -26,7 +26,6 @@ from cryptography.exceptions import InvalidTag
 
 from .investment_decision import ACTION_NO_ORDER
 from .portfolio_contracts import (
-    CONFIRMATION_HUMAN,
     NAMESPACE_ACTUAL,
     PortfolioInputBundle,
     portfolio_input_bundle_from_payload,
@@ -87,6 +86,66 @@ def _containing_git_root(path: Path) -> Path | None:
 
 def _has_builtin_sync_directory(path: Path) -> bool:
     return any(part.casefold() in _FORBIDDEN_SYNC_DIRECTORY_NAMES for part in path.parts)
+
+
+def require_private_data_path(
+    path: Path,
+    *,
+    private_root: Path,
+    repository_root: Path,
+    forbidden_sync_roots: Iterable[Path] = (),
+    must_exist: bool = False,
+) -> Path:
+    """Validate any private plaintext/ciphertext path without reading it."""
+    root = private_root.resolve()
+    repository = repository_root.resolve()
+    candidate = path.resolve()
+    forbidden = tuple(item.resolve() for item in forbidden_sync_roots)
+    if not root.is_dir() or root.is_symlink():
+        raise ValueError("private_root must be an existing non-symbolic-link directory")
+    if _is_within(root, repository) or _is_within(repository, root):
+        raise ValueError("private_root must be separate from the repository")
+    if _containing_git_root(root) is not None:
+        raise ValueError("private_root must be separate from every git repository")
+    if _has_builtin_sync_directory(root) or _has_builtin_sync_directory(candidate):
+        raise ValueError("private portfolio paths must not use WPSDrive")
+    if any(_is_within(root, item) or _is_within(candidate, item) for item in forbidden):
+        raise ValueError("private portfolio input must not live in a configured sync root")
+    if not _is_within(candidate, root):
+        raise ValueError("private portfolio data must live under private_root")
+    if candidate.is_symlink():
+        raise ValueError("private portfolio data must not be a symbolic link")
+    if must_exist and not candidate.is_file():
+        raise ValueError("private portfolio data must be a regular file")
+    return candidate
+
+
+def require_private_key_path(
+    path: Path,
+    *,
+    private_root: Path,
+    repository_root: Path,
+    forbidden_sync_roots: Iterable[Path] = (),
+    must_exist: bool = False,
+) -> Path:
+    """Validate that key material is isolated from data, Git and sync roots."""
+    candidate = path.resolve()
+    root = private_root.resolve()
+    repository = repository_root.resolve()
+    forbidden = tuple(item.resolve() for item in forbidden_sync_roots)
+    if _is_within(candidate, root) or _is_within(candidate, repository):
+        raise ValueError("key file must be outside repository and private root")
+    if _containing_git_root(candidate.parent) is not None:
+        raise ValueError("key file must be outside every git repository")
+    if _has_builtin_sync_directory(candidate):
+        raise ValueError("private portfolio key must not use WPSDrive")
+    if any(_is_within(candidate, item) for item in forbidden):
+        raise ValueError("private portfolio key must not live in a configured sync root")
+    if candidate.is_symlink():
+        raise ValueError("private portfolio key must not be a symbolic link")
+    if must_exist and not candidate.is_file():
+        raise ValueError("private portfolio key must be a regular file")
+    return candidate
 
 
 def _require_private_paths(
@@ -150,7 +209,19 @@ def _canonical_header(*, key_id: str, created_at: str) -> bytes:
     return json.dumps(header, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
-def _receipt(encrypted_path: Path, *, key_id: str, created_at: str) -> PrivatePortfolioIntakeReceipt:
+def _guidance_input_status(bundle: PortfolioInputBundle) -> str:
+    if bundle.can_support_guidance():
+        return "PRIVATE_ACTUAL_HUMAN_CONFIRMED"
+    return "PRIVATE_ACTUAL_PENDING_REVIEW"
+
+
+def _receipt(
+    encrypted_path: Path,
+    *,
+    key_id: str,
+    created_at: str,
+    bundle: PortfolioInputBundle,
+) -> PrivatePortfolioIntakeReceipt:
     digest = hashlib.sha256(encrypted_path.read_bytes()).hexdigest()
     return PrivatePortfolioIntakeReceipt(
         schema_version=SCHEMA_VERSION,
@@ -158,20 +229,15 @@ def _receipt(encrypted_path: Path, *, key_id: str, created_at: str) -> PrivatePo
         encrypted_sha256=digest,
         key_id=key_id,
         created_at=created_at,
-        guidance_input_status="PRIVATE_ACTUAL_HUMAN_CONFIRMED",
+        guidance_input_status=_guidance_input_status(bundle),
     )
 
 
 def _validate_actual_bundle(bundle: PortfolioInputBundle) -> None:
     if bundle.action != ACTION_NO_ORDER:
         raise ValueError("private portfolio input must remain no_order")
-    if bundle.policy.confirmation_status != CONFIRMATION_HUMAN:
-        raise ValueError("private portfolio input requires human-confirmed policy")
     if bundle.snapshot.namespace != NAMESPACE_ACTUAL:
         raise ValueError("private portfolio input requires ACTUAL snapshot namespace")
-    missing = bundle.missing_guidance_inputs()
-    if missing:
-        raise ValueError(f"private portfolio input cannot support guidance: {', '.join(missing)}")
 
 
 def encrypt_private_portfolio_bundle(
@@ -223,7 +289,7 @@ def encrypt_private_portfolio_bundle(
     except BaseException:
         temporary.unlink(missing_ok=True)
         raise
-    return _receipt(encrypted, key_id=key_id, created_at=timestamp)
+    return _receipt(encrypted, key_id=key_id, created_at=timestamp, bundle=bundle)
 
 
 def encrypt_private_portfolio_payload(
@@ -299,4 +365,9 @@ def load_private_portfolio_bundle(
         raise ValueError("encrypted private portfolio payload must be an object")
     bundle = portfolio_input_bundle_from_payload(payload)
     _validate_actual_bundle(bundle)
-    return bundle, _receipt(encrypted, key_id=key_id, created_at=created_at)
+    return bundle, _receipt(
+        encrypted,
+        key_id=key_id,
+        created_at=created_at,
+        bundle=bundle,
+    )

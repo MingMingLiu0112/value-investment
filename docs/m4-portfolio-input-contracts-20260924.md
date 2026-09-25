@@ -46,8 +46,9 @@ IPS 至少需要用户确认：
 
 `private_portfolio_intake.py` 现提供一个只在私有受控目录中运行的最小封装边界：
 
-- `encrypt_private_portfolio_bundle` 仅接受已人工确认、已对账、`ACTUAL` 的
-  `PortfolioInputBundle`，以 AES-256-GCM 写入新的不可覆盖密文；
+- `encrypt_private_portfolio_bundle` 接受合同合法的 `ACTUAL` 输入，以 AES-256-GCM
+  写入新的不可覆盖密文；未确认或未对账输入的脱敏回执明确为
+  `PRIVATE_ACTUAL_PENDING_REVIEW`，且仍不能支持个性化指引；
 - `load_private_portfolio_bundle` 仅在内存中解密并重新运行全部领域合同，不把 IPS、
   现金、持仓或交易信息写入仓库、公开 runtime 或回执；
 - 私有根目录必须与仓库隔离；`WPSDrive` 是内置失败关闭规则，调用者还可显式传入
@@ -85,18 +86,15 @@ python scripts/verify_private_portfolio_input.py `
 
 该命令不会输出解密后的资产、持仓或 IPS 内容。
 
-首次封装由同样受限的本地命令完成。临时 JSON 与输出密文都必须在私有根内，密钥则必须
-在仓库、私有根和 WPS 之外；命令不删除临时 JSON，操作者应在校验密文成功后按其私有保留
-政策处理该临时文件。
+统一入口为 `scripts/setup_private_portfolio.py`，完整最短流程和模板见
+[M4 私人组合输入包](m4-private-input-package.md)。旧的独立 encrypt/verify 命令继续兼容，
+但不再是推荐入口。临时 JSON、密文和私人对账报告都必须在私有根内，密钥则必须在仓库、
+私有根和 WPS 之外；操作者应在校验密文成功后按其私有保留政策处理临时明文。
 
-```powershell
-python scripts/encrypt_private_portfolio_input.py `
-  --input <private-root>\portfolio-input.json `
-  --encrypted <private-root>\inputs\portfolio.viportfolio `
-  --key-file <key-outside-private-root>\portfolio.key `
-  --private-root <private-root> `
-  --forbidden-sync-root C:\Users\we\WPSDrive
-```
+`setup_private_portfolio.py reconcile` 现在比较现金、持仓成员、交易所、数量、成本、
+市值和公司行为调整状态；缺市值保持 `INCOMPLETE`。匹配后仍只得到
+`MATCH_PENDING_HUMAN_CONFIRMATION`，必须通过显式 `confirm-reconciliation` 生成新的
+不可覆盖密文，源密文和绑定 Hash 均保留。
 
 ## 尚未实现
 

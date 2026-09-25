@@ -1,0 +1,14 @@
+{
+  "schema_version": "m7-current-trial-workbook-v1",
+  "status": "READONLY_USER_TRIAL_READY",
+  "workbook": "runtime/m7-actual-reviewed-candidate-v16-20260925.xlsx",
+  "workbook_sha256": "71d6674da29074df8211b423a0ea946c974e4c68a15b40f62683a9492308d197",
+  "manifest": "runtime/m7-actual-reviewed-candidate-v16-20260925.m7-daily-workbench-manifest.json",
+  "wps_receipt": "runtime/m7-actual-reviewed-candidate-v16-wps-receipt.json",
+  "as_of": "2026-09-25",
+  "m6_operational_status": "NOT_STARTED",
+  "m4_personalized_status": "PENDING_USER_PRIVATE_INPUT",
+  "initial_assisted_use": "NOT_REACHED",
+  "candidate_not_formal_workbook": true,
+  "action": "no_order"
+}

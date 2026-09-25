@@ -102,6 +102,33 @@ def test_reconciliation_reports_missing_holding_and_exchange_difference():
     assert [item.kind for item in exchange.differences] == ["exchange"]
 
 
+def test_reconciliation_compares_market_value_and_cost_basis():
+    reported = replace(
+        _holding(), market_value_cny=Decimal("15000"), cost_basis_cny=Decimal("14000")
+    )
+    report = reconcile_portfolio_snapshots(
+        _snapshot(snapshot_id="reported", holdings=(reported,), pending=True),
+        _snapshot(snapshot_id="confirmed"),
+        report_id="report-values",
+        generated_at=NOW,
+    )
+
+    assert {item.kind for item in report.differences} == {"market_value", "cost_basis"}
+    assert report.status == STATUS_MISMATCH
+
+
+def test_reconciliation_is_incomplete_when_market_value_is_missing_on_both_sides():
+    missing = replace(_holding(), market_value_cny=None)
+    report = reconcile_portfolio_snapshots(
+        _snapshot(snapshot_id="reported", holdings=(missing,), pending=True),
+        _snapshot(snapshot_id="confirmed", holdings=(missing,)),
+        report_id="report-missing-market-value",
+        generated_at=NOW,
+    )
+
+    assert report.status == STATUS_INCOMPLETE
+
+
 def test_reconciliation_fails_closed_for_incomplete_or_cross_scope_inputs():
     report = reconcile_portfolio_snapshots(
         _snapshot(snapshot_id="reported", cash=None, pending=True),

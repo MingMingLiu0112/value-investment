@@ -1,0 +1,52 @@
+{
+  "example_classification": "SYNTHETIC_EXAMPLE_ONLY",
+  "schema_version": "m4-portfolio-contracts-v1",
+  "policy": {
+    "policy_id": "synthetic-policy-v1",
+    "policy_version": "v1",
+    "as_of": "2026-09-25",
+    "confirmation_status": "HUMAN_CONFIRMED",
+    "confirmed_at": "2026-09-25T09:00:00+08:00",
+    "account_scope": "SYNTHETIC_EXAMPLE_ONLY",
+    "investable_assets_cny": "1000000",
+    "minimum_cash_cny": "100000",
+    "emergency_cash_cny": "100000",
+    "liquidity_needs_cny": "50000",
+    "time_horizon_years": "10",
+    "max_single_security_pct": "20",
+    "max_single_industry_pct": "35",
+    "max_cyclical_exposure_pct": "25",
+    "dividend_income_goal_cny": "30000",
+    "risk_tolerance": "BALANCED",
+    "concentration_allowed": false,
+    "tax_regime": "SYNTHETIC_EXAMPLE_ONLY",
+    "restrictions": ["no_order"],
+    "evidence_refs": [{"id": "synthetic-user-confirmation"}],
+    "action": "no_order"
+  },
+  "snapshot": {
+    "snapshot_id": "synthetic-snapshot-v1",
+    "snapshot_version": "v1",
+    "as_of": "2026-09-25",
+    "available_at": "2026-09-25T09:00:00+08:00",
+    "account_scope": "SYNTHETIC_EXAMPLE_ONLY",
+    "namespace": "SIMULATED",
+    "cash_cny": "400000",
+    "holdings": [{
+      "symbol": "600519",
+      "exchange": "SSE",
+      "quantity": "100",
+      "cost_basis_cny": "500000",
+      "market_value_cny": "500000",
+      "quantity_source": "HUMAN_CONFIRMED",
+      "corporate_action_adjusted": true,
+      "evidence_refs": [{"id": "synthetic-statement"}]
+    }],
+    "reconciliation_status": "RECONCILED",
+    "reconciled_at": "2026-09-25T09:00:00+08:00",
+    "evidence_refs": [{"id": "synthetic-reconciliation"}],
+    "action": "no_order"
+  },
+  "sensitivity": "PRIVATE_USER_CONFIRMED",
+  "action": "no_order"
+}

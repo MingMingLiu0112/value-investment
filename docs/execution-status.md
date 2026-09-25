@@ -1,5 +1,21 @@
 # 当前执行状态
 
+## 2026-09-25 M4 私人输入包与 M7 唯一试用入口
+
+M4 新增统一入口 `scripts/setup_private_portfolio.py`、最小草稿模板、明确标记为
+`SYNTHETIC_EXAMPLE_ONLY` 的示例和极简说明。用户现在可以在仓库/WPS/同步盘之外完成
+草稿校验、独立密钥生成、AES-256-GCM 加密、内存解密校验、双密文对账及显式人工确认。
+未确认或未对账的合法 ACTUAL 包可以先安全加密，但回执固定为
+`PRIVATE_ACTUAL_PENDING_REVIEW`，仍不能进入个性化仓位指引。对账已覆盖现金、成员、
+交易所、数量、成本、市值及公司行为；缺市值为 `INCOMPLETE`，匹配也只到
+`MATCH_PENDING_HUMAN_CONFIRMATION`。确认操作生成新的不可覆盖密文并绑定源密文 Hash，
+不修改源包。真实 IPS/持仓尚未提供，`M4_PERSONALIZED=WAITING_R2`。
+
+M7 新增 `config/current-trial-workbook.json` 与受 Hash 校验的单一打开入口，当前钉住
+v16 候选、manifest 和 WPS passed 回执。该候选仍不是正式原表；M6 运营状态明确为
+`NOT_STARTED`，`INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`。M7 最终用户
+验收尚未通过。M4/M7 定向回归 `17 passed`；Ruff 未安装，本批另执行 Python compileall。
+
 ## 2026-09-25 M6 公告覆盖与签名日历补审
 
 离线候选索引现要求 600519 SSE 的完整无筛选查询参数，并要求选中公告日期落在 M5 review 扫描窗口内。反例覆盖重算 Hash 后的过滤查询、错误证券 ID 和越窗公告。独立签名会话已在推导的 2026-09-24 官方交易日上验证，并测试错误日历 Hash 必须拒绝。这仍不是 CNINFO 实时来源认证或生产独立见证；真实会话/事件均为 0，`M6_OPERATIONAL=NOT_STARTED`，`TOTAL_GOAL_STATUS=IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`，`INITIAL_ASSISTED_USE=NOT_REACHED`。永久 `action=no_order`；最终投资决定由用户作出。

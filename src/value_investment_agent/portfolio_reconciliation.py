@@ -31,6 +31,8 @@ KIND_CASH = "cash"
 KIND_HOLDING_MISSING = "holding_missing"
 KIND_EXCHANGE = "exchange"
 KIND_QUANTITY = "quantity"
+KIND_COST_BASIS = "cost_basis"
+KIND_MARKET_VALUE = "market_value"
 KIND_CORPORATE_ACTION = "corporate_action_adjustment"
 DIFFERENCE_KINDS = frozenset(
     {
@@ -38,6 +40,8 @@ DIFFERENCE_KINDS = frozenset(
         KIND_HOLDING_MISSING,
         KIND_EXCHANGE,
         KIND_QUANTITY,
+        KIND_COST_BASIS,
+        KIND_MARKET_VALUE,
         KIND_CORPORATE_ACTION,
     }
 )
@@ -171,6 +175,8 @@ def _holding_differences(
     for kind, reported_value, confirmed_value, reason in (
         (KIND_EXCHANGE, reported.exchange, confirmed.exchange, "exchange differs"),
         (KIND_QUANTITY, reported.quantity, confirmed.quantity, "confirmed quantity differs"),
+        (KIND_COST_BASIS, reported.cost_basis_cny, confirmed.cost_basis_cny, "cost basis differs"),
+        (KIND_MARKET_VALUE, reported.market_value_cny, confirmed.market_value_cny, "market value differs"),
         (
             KIND_CORPORATE_ACTION,
             reported.corporate_action_adjusted,
@@ -234,7 +240,17 @@ def reconcile_portfolio_snapshots(
                     confirmed_holdings.get(symbol),
                 )
             )
-        status = STATUS_MISMATCH if differences else STATUS_MATCH_PENDING_HUMAN_CONFIRMATION
+        missing_market_value = any(
+            holding.market_value_cny is None
+            for holding in (*reported_snapshot.holdings, *confirmed_snapshot.holdings)
+        )
+        status = (
+            STATUS_INCOMPLETE
+            if missing_market_value
+            else STATUS_MISMATCH
+            if differences
+            else STATUS_MATCH_PENDING_HUMAN_CONFIRMATION
+        )
 
     return PortfolioReconciliationReport(
         report_id=report_id,
