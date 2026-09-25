@@ -14,6 +14,11 @@ subject 与 v2 manifest 的原始字节 Hash。验证期间文件被替换会失
 `PIT=YES`，而是明确标记
 `REPORTED_NOT_V2_VERIFIED`。这些改动不批准估值、绩效、订单或生产运行。
 
+验证结果：PIT/M3/历史 receipt/M7 定向回归 `85 passed`；架构与 valuation-confidence
+迁移回归 `49 passed`；本地全量离线回归 `2857 passed, 30 skipped, 18 warnings, 0 failed`。
+被 receipt-bound 的 `build_moutai_historical_validation_admission.py` 和
+`historical_validation.py` 均保持原始字节 Hash。
+
 ## 2026-09-25 PIT Conformance Verifier v2
 
 新增只读 `pit-conformance-verifier-v2` 与薄 CLI `audit_pit_conformance_v2.py`。
@@ -29,9 +34,9 @@ frozen `historical_validation.py` 字节 Hash 未变。当前第一案例仍是
 `NOT_PIT_SAFE / NOT_ADMITTED`、`approved_value_model_sessions=0`、
 `walk_forward=NOT_RUN`、永久 `action=no_order`。
 
-验证器尚未被旧 replay/admission consumer 强制调用；因此 ADV-P0-001/002 只记为
-`PARTIAL_MITIGATION`，下一工程任务是把 verifier 接入所有 strict consumer，不能把
-“代码存在”写成“链路已经安全”。
+该历史入口已由上方 `PIT Conformance Consumer Enforcement` 取代：M3 strict evidence
+与 historical-validation receipt 入口现已强制调用 verifier；旧段落中的
+`PARTIAL_MITIGATION` 不再是当前状态。
 
 ## 2026-09-25 M6 P0 授权证明对象收口
 

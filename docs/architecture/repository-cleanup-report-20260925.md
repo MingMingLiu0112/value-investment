@@ -222,3 +222,25 @@ tracked-root scoping for the root workbook and manifest allowlist
 
 These checks preserve behavior while making accidental provenance or boundary
 drift fail in CI.
+
+## Third Pass: Valuation Confidence Domain Boundary
+
+The pure deterministic `valuation_confidence.py` policy was moved to
+`src/value_investment_agent/domain/valuation/confidence.py`. The original root
+path remains as a `DEPRECATED_COMPATIBILITY_SHIM` that forwards the same class
+and function objects. No valuation formula, threshold, public input, database
+behavior, or `action=no_order` semantic changed.
+
+This batch deliberately leaves the root Python module count unchanged because
+the compatibility shim is part of the rollbackable migration. The architecture
+test now checks that legacy and domain imports resolve to identical contracts.
+The receipt-bound builder and frozen historical-validation module were not
+moved or modified.
+
+Verification:
+
+```text
+architecture + valuation-confidence targeted tests: 49 passed
+PIT/strict-consumer targeted tests: 85 passed
+full offline suite: 2857 passed, 30 skipped, 18 warnings, 0 failed
+```
