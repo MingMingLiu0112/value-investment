@@ -1,6 +1,8 @@
 from dataclasses import replace
 from datetime import date, datetime, timezone
 from decimal import Decimal
+import hashlib
+import json
 
 import pytest
 
@@ -349,6 +351,20 @@ def _fully_bound_quality_descriptor(descriptor):
         descriptor, input_sha256=None, assumptions=assumption_set,
         assumption_bindings=tuple(bindings),
     ))
+
+
+def _issuer_basis_bytes(*, equity: str) -> bytes:
+    return json.dumps({
+        "symbol": "600519",
+        "current_disclosed_basis": {
+            "period_end": AS_OF.isoformat(),
+            "source_url": "https://static.cninfo.com.cn/finalpage/report.PDF",
+            "raw_file_hash": "3" * 64,
+            "assessment_available_at": "2026-09-19T00:00:00+00:00",
+            "parent_equity_cny": equity,
+            "issued_shares": "100",
+        },
+    }, sort_keys=True).encode("utf-8")
     assert defaulted.as_of == research_date
 
     with pytest.raises(ValueError, match="cannot precede"):
@@ -419,7 +435,9 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
     from types import SimpleNamespace
 
     from value_investment_agent.m5_event_dependencies import DependencyGraph, DependencyNode
-    from value_investment_agent.m5_research_artifact_graph import attach_valuation_input_descriptor
+    from value_investment_agent.m5_research_artifact_graph import (
+        attach_valuation_input_descriptor as attach_raw,
+    )
 
     facts_node = DependencyNode(
         node_id="verified-facts", kind="financial_facts", symbol="600519",
@@ -440,14 +458,23 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
             ),
         ),),
     )
+    basis_bytes = _issuer_basis_bytes(equity="1000")
+    basis_sha = hashlib.sha256(basis_bytes).hexdigest()
+
+    def attach_valuation_input_descriptor(**kwargs):
+        return attach_raw(operating_basis_bytes=basis_bytes, **kwargs)
+
     descriptor = _fully_bound_quality_descriptor(_descriptor())
     descriptor = finalize_input_descriptor(replace(
         descriptor, input_sha256=None,
         facts=replace(descriptor.facts,
-                      evidence_refs=[{"id": "verified-facts", "sha256": "d" * 64}]),
+                      evidence_refs=[{"id": "verified-facts", "sha256": "d" * 64},
+                                     {"id": "issuer-equity-basis", "sha256": basis_sha}]),
         sources=(*descriptor.sources,
                  ResearchSourceDescriptor(id="scenario-assumptions", kind="research_artifact",
                                           location="assumptions.json", sha256="c" * 64),
+                 ResearchSourceDescriptor(id="issuer-equity-basis", kind="research_artifact",
+                                          location="issuer-equity.json", sha256=basis_sha),
                  ResearchSourceDescriptor(id="actual-receipt", kind="research_artifact",
                                           location="receipt.json", sha256=receipt.state_sha256),
                  ResearchSourceDescriptor(id="filing", kind="filing",
@@ -461,6 +488,24 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
     assert node.version == descriptor.input_sha256
     assert node.inputs == (facts_node.node_id, thesis_node.node_id)
     assert attached.node(node.node_id).action == "no_order"
+
+    changed_package = json.loads(basis_bytes)
+    changed_package["current_disclosed_basis"]["parent_equity_cny"] = "999"
+    changed_bytes = json.dumps(changed_package, sort_keys=True).encode("utf-8")
+    changed_sha = hashlib.sha256(changed_bytes).hexdigest()
+    changed_descriptor = finalize_input_descriptor(replace(
+        descriptor, input_sha256=None,
+        facts=replace(descriptor.facts, evidence_refs=[
+            {**ref, "sha256": changed_sha} if ref["id"] == "issuer-equity-basis" else ref
+            for ref in descriptor.facts.evidence_refs
+        ]),
+        sources=tuple(replace(source, sha256=changed_sha)
+                      if source.id == "issuer-equity-basis" else source
+                      for source in descriptor.sources),
+    ))
+    with pytest.raises(ValueError, match="operating inputs do not match"):
+        attach_raw(graph=graph, descriptor=changed_descriptor, receipt=receipt,
+                   operating_basis_bytes=changed_bytes)
 
     with pytest.raises(ValueError, match="incomplete"):
         attach_valuation_input_descriptor(
@@ -633,6 +678,8 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
                        symbol="600519", inputs=("research-case",),
                        version="7" * 64, evidence_refs=({"id": "review"},)),
     ))
+    basis_bytes = _issuer_basis_bytes(equity="1200")
+    basis_sha = hashlib.sha256(basis_bytes).hexdigest()
     old = _fully_bound_quality_descriptor(_descriptor())
     descriptor = finalize_input_descriptor(replace(
         old, input_sha256=None, run_id="bounded-refresh-1",
@@ -640,10 +687,13 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
                       operating_inputs={**old.facts.operating_inputs,
                                         "start_book_equity": Decimal("1200")},
                       evidence_refs=[{"id": "verified-facts", "sha256": "d" * 64},
+                                     {"id": "issuer-equity-basis", "sha256": basis_sha},
                                      {"id": "actual-receipt", "sha256": receipt.state_sha256}]),
         sources=(*old.sources,
                  ResearchSourceDescriptor(id="scenario-assumptions", kind="research_artifact",
                                           location="assumptions.json", sha256="c" * 64),
+                 ResearchSourceDescriptor(id="issuer-equity-basis", kind="research_artifact",
+                                          location="issuer-equity.json", sha256=basis_sha),
                  ResearchSourceDescriptor(id="actual-receipt", kind="research_artifact",
                                           location="receipt.json", sha256=receipt.state_sha256),
                  ResearchSourceDescriptor(id="filing", kind="filing",
@@ -659,8 +709,10 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
                               available_at=datetime(2026, 9, 23, 12, tzinfo=timezone.utc),
                               computed_at=datetime(2026, 9, 23, 13, tzinfo=timezone.utc)),
     ))
-    graph = attach_valuation_input_descriptor(graph=graph, descriptor=descriptor,
-                                              receipt=receipt)
+    graph = attach_valuation_input_descriptor(
+        graph=graph, descriptor=descriptor, receipt=receipt,
+        operating_basis_bytes=basis_bytes,
+    )
     plan = build_bounded_recalculation_plan(receipt=receipt, graph=graph, generated_at=at)
     fact_payload = {"schema_version": "m5-verified-financial-facts-v1",
                     "symbol": "600519", "pdf_sha256": pdf_ref["sha256"],
@@ -676,7 +728,8 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
     result = execute_bounded_research_refresh(
         receipt=receipt, graph=graph, plan=plan, facts_artifact=facts_artifact,
         facts_source_sha256="d" * 64, descriptor=descriptor,
-        prior_candidate=prior_candidate, application=application,
+        prior_candidate=prior_candidate, operating_basis_bytes=basis_bytes,
+        application=application,
         evaluated_at=datetime(2026, 9, 23, 14, tzinfo=timezone.utc),
     )
     refreshed = repository.load_latest(SCOPE_SECURITY, "600519", ARTIFACT_VALUATION_RESULT)
@@ -691,7 +744,8 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
     validation = dict(
         receipt=receipt, graph=graph, plan=plan, facts_artifact=facts_artifact,
         facts_source_sha256="d" * 64, descriptor=descriptor,
-        prior_candidate=prior_candidate, repository=repository,
+        prior_candidate=prior_candidate, operating_basis_bytes=basis_bytes,
+        repository=repository,
     )
     validate_bounded_research_refresh(result, **validation)
     forged = {**result, "outcomes": [{**result["outcomes"][0], "status": "RECALCULATED"}]}
@@ -713,7 +767,7 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
         receipt=receipt, graph=graph, plan=plan, facts_artifact=facts_artifact,
         outcome_receipt=result, facts_source_sha256="d" * 64,
         refresh_descriptor=descriptor, refresh_prior_candidate=prior_candidate,
-        refresh_repository=repository,
+        refresh_repository=repository, refresh_operating_basis_bytes=basis_bytes,
     )
     row = read_model["rows"][0]
     assert row["recalculation_status"] == "MODEL_STALE"
@@ -756,7 +810,7 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
         receipt=receipt, graph=graph, plan=plan, facts_artifact=facts_artifact,
         outcome_receipt=result, facts_source_sha256="d" * 64,
         refresh_descriptor=descriptor, refresh_prior_candidate=prior_candidate,
-        refresh_repository=restored,
+        refresh_repository=restored, refresh_operating_basis_bytes=basis_bytes,
     )
     assert replayed == read_model
     prior_path.write_text("tampered", encoding="utf-8")

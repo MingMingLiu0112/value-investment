@@ -110,4 +110,5 @@ def test_actual_pending_descriptor_cannot_register_valuation_input_node():
     with pytest.raises(ValueError, match="incomplete"):
         attach_valuation_input_descriptor(
             graph=graph, descriptor=descriptor, receipt=inputs["receipt"],
+            operating_basis_bytes=inputs["equity_file_bytes"],
         )

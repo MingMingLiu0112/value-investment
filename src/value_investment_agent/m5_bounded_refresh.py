@@ -25,7 +25,8 @@ def _validated_context(
     plan: BoundedRecalculationPlan, facts_artifact: dict,
     facts_source_sha256: str, descriptor: ResearchInputDescriptor,
     prior_candidate: RuntimeArtifactCandidate,
-    repository: ResearchArtifactRepository, evaluated_at: datetime,
+    operating_basis_bytes: bytes, repository: ResearchArtifactRepository,
+    evaluated_at: datetime,
     prior_artifact_id: str | None = None,
 ):
     baseline = evaluate_bounded_recalculation(
@@ -45,6 +46,7 @@ def _validated_context(
     base_graph = DependencyGraph(node for node in graph.nodes() if node != input_nodes[0])
     rebuilt = attach_valuation_input_descriptor(
         graph=base_graph, descriptor=descriptor, receipt=receipt,
+        operating_basis_bytes=operating_basis_bytes,
     )
     if rebuilt.as_policy() != graph.as_policy():
         raise ValueError("Frozen graph valuation inputs do not match the descriptor")
@@ -75,13 +77,15 @@ def execute_bounded_research_refresh(
     plan: BoundedRecalculationPlan, facts_artifact: dict,
     facts_source_sha256: str, descriptor: ResearchInputDescriptor,
     prior_candidate: RuntimeArtifactCandidate,
-    application: ResearchApplicationService, evaluated_at: datetime,
+    operating_basis_bytes: bytes, application: ResearchApplicationService,
+    evaluated_at: datetime,
 ) -> dict:
     """Compute only the affected company's new research; never make an order."""
     baseline, prior = _validated_context(
         receipt=receipt, graph=graph, plan=plan, facts_artifact=facts_artifact,
         facts_source_sha256=facts_source_sha256, descriptor=descriptor,
-        prior_candidate=prior_candidate, repository=application.repository,
+        prior_candidate=prior_candidate, operating_basis_bytes=operating_basis_bytes,
+        repository=application.repository,
         evaluated_at=evaluated_at,
     )
     outcome = application.run_company_research(build_research_run_spec(descriptor))
@@ -148,6 +152,7 @@ def execute_bounded_research_refresh(
         payload, receipt=receipt, graph=graph, plan=plan,
         facts_artifact=facts_artifact, facts_source_sha256=facts_source_sha256,
         descriptor=descriptor, prior_candidate=prior_candidate,
+        operating_basis_bytes=operating_basis_bytes,
         repository=application.repository,
     )
     return payload
@@ -157,7 +162,7 @@ def validate_bounded_research_refresh(
     payload: dict, *, receipt: M5EventRunReceipt, graph: DependencyGraph,
     plan: BoundedRecalculationPlan, facts_artifact: dict,
     facts_source_sha256: str, descriptor: ResearchInputDescriptor,
-    prior_candidate: RuntimeArtifactCandidate,
+    prior_candidate: RuntimeArtifactCandidate, operating_basis_bytes: bytes,
     repository: ResearchArtifactRepository,
 ) -> None:
     if payload.get("schema_version") != "m5-bounded-research-refresh-v1":
@@ -169,7 +174,8 @@ def validate_bounded_research_refresh(
     baseline, prior = _validated_context(
         receipt=receipt, graph=graph, plan=plan, facts_artifact=facts_artifact,
         facts_source_sha256=facts_source_sha256, descriptor=descriptor,
-        prior_candidate=prior_candidate, repository=repository,
+        prior_candidate=prior_candidate, operating_basis_bytes=operating_basis_bytes,
+        repository=repository,
         evaluated_at=evaluated_at,
         prior_artifact_id=payload.get("prior_valuation_artifact_id"),
     )

@@ -7,6 +7,10 @@ already produced a replacement value.
 """
 from __future__ import annotations
 
+from datetime import datetime
+from decimal import Decimal
+import hashlib
+import json
 from typing import Iterable
 
 from .m5_event_dependencies import (
@@ -115,7 +119,7 @@ def build_research_artifact_dependency_graph(
 
 def attach_valuation_input_descriptor(
     *, graph: DependencyGraph, descriptor: ResearchInputDescriptor,
-    receipt: M5EventRunReceipt,
+    receipt: M5EventRunReceipt, operating_basis_bytes: bytes,
 ) -> DependencyGraph:
     """Register complete event-bound model inputs without promoting pending research."""
     if receipt.namespace != "ACTUAL" or receipt.action != "no_order":
@@ -197,6 +201,27 @@ def attach_valuation_input_descriptor(
         if (len(pdf_refs) != 1
             or (pdf_refs[0]["sha256"], pdf_refs[0]["source_url"]) not in source_locations):
             raise ValueError("Valuation inputs do not cover every ACTUAL event PDF")
+    package = json.loads(operating_basis_bytes)
+    basis = package["current_disclosed_basis"]
+    basis_sha = hashlib.sha256(operating_basis_bytes).hexdigest()
+    matched_filing = any(
+        ref.get("sha256") == basis.get("raw_file_hash")
+        and ref.get("source_url") == basis.get("source_url")
+        for event in receipt.active_events for ref in event.evidence_refs
+    )
+    if (package.get("symbol") != descriptor.symbol
+        or basis.get("period_end") != descriptor.facts.as_of.isoformat()
+        or not matched_filing
+        or basis_sha not in source_hashes
+        or not any(ref.get("sha256") == basis_sha
+                   for ref in descriptor.facts.evidence_refs)
+        or datetime.fromisoformat(basis["assessment_available_at"])
+           > descriptor.point_in_time.available_at
+        or Decimal(str(basis["parent_equity_cny"]))
+           != descriptor.facts.operating_inputs.get("start_book_equity")
+        or Decimal(str(basis["issued_shares"]))
+           != descriptor.facts.operating_inputs.get("ordinary_shares")):
+        raise ValueError("Model operating inputs do not match pinned issuer equity bytes")
     evidence_refs = tuple({"id": source.id, "sha256": source.sha256,
                            "source_url": source.location}
                           for source in descriptor.sources)
