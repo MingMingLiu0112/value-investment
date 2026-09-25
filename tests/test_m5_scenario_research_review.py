@@ -130,6 +130,10 @@ def test_reviewed_candidate_shows_blockers_without_recalculation(tmp_path):
     output = tmp_path / "review.xlsx"
     write_daily_workbench(packet, output=output, root=tmp_path)
     workbook = load_workbook(output, data_only=True)
+    overview = [str(value) for row in workbook["00_今日总览"].values for value in row if value is not None]
+    assert any("真实公告已复核 9 条，待复核 0 条；2 条事件仍缺重算证据" in value
+               for value in overview)
+    assert not any("新增待人工复核事件 9 条" in value for value in overview)
     values = [str(value) for row in workbook["06_事件与预警"].values for value in row if value is not None]
     assert any("NEED_MORE_EVIDENCE" in value and "无交易指令" in value for value in values)
     assert sum(row[0].value in {"1225431263", "1225475868"}
