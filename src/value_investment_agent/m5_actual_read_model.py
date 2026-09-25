@@ -13,6 +13,7 @@ def build_actual_event_read_model(
     receipt: M5EventRunReceipt, graph: DependencyGraph,
     plan: BoundedRecalculationPlan, facts_artifact: Mapping[str, Any] | None = None,
     outcome_receipt: Mapping[str, Any] | None = None,
+    facts_source_sha256: str | None = None,
 ) -> dict[str, Any]:
     if receipt.namespace != "ACTUAL" or receipt.action != "no_order" or plan.action != "no_order":
         raise ValueError("Actual no-order receipt and plan are required")
@@ -95,12 +96,19 @@ def build_actual_event_read_model(
     if facts_artifact is not None:
         facts = facts_artifact["payload"]
         from .research_artifacts import canonicalize_artifact_payload, sha256_text
+        fact_nodes = [node for node in graph.nodes()
+                      if node.symbol == symbol and node.kind == "financial_facts"]
         if (facts["symbol"] != symbol or facts["action"] != "no_order"
             or facts_artifact["identity"]["artifact_type"] != "financial_facts"
             or sha256_text(canonicalize_artifact_payload(facts)) != facts_artifact["payload_sha256"]
-            or not any(node.symbol == symbol and node.kind == "financial_facts"
-                       for node in graph.nodes())):
+            or len(fact_nodes) != 1
+            or (facts_source_sha256 is not None and fact_nodes[0].version != facts_source_sha256)
+            or tuple(fact_nodes[0].evidence_refs) != tuple(facts_artifact.get("evidence_refs", ()))
+            or (outcome_receipt is not None
+                and outcome_receipt["facts_payload_sha256"] != facts_artifact["payload_sha256"])):
             raise ValueError("Verified facts artifact is not bound to this security")
+    elif outcome_receipt is not None:
+        raise ValueError("Bounded recalculation outcome requires verified facts")
     return {
         "schema_version": "m5-actual-event-read-model-v1", "symbol": symbol,
         "queue_id": queue["queue_id"], "receipt_id": receipt.receipt_id,

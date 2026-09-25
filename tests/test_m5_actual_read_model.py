@@ -69,3 +69,24 @@ def test_actual_read_model_rejects_tampered_execution_outcome():
     inputs["outcome_receipt"]["outcomes"][0]["status"] = "RECALCULATED"
     with pytest.raises(ValueError, match="hash mismatch"):
         build_actual_event_read_model(**inputs)
+
+
+def test_actual_read_model_rejects_wrong_facts_file_version():
+    inputs = _inputs()
+    inputs["facts_source_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="Verified facts artifact"):
+        build_actual_event_read_model(**inputs)
+
+
+def test_actual_read_model_rejects_outcome_bound_to_different_facts():
+    inputs = _inputs()
+    inputs["outcome_receipt"] = copy.deepcopy(inputs["outcome_receipt"])
+    inputs["outcome_receipt"]["facts_payload_sha256"] = "0" * 64
+    body = {key: value for key, value in inputs["outcome_receipt"].items()
+            if key not in {"result_sha256", "input_file_sha256"}}
+    import hashlib
+    inputs["outcome_receipt"]["result_sha256"] = hashlib.sha256(
+        json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    with pytest.raises(ValueError, match="Verified facts artifact"):
+        build_actual_event_read_model(**inputs)

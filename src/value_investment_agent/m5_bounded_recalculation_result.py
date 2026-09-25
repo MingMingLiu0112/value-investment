@@ -15,7 +15,7 @@ from .research_artifacts import canonicalize_artifact_payload, sha256_text
 def evaluate_bounded_recalculation(
     *, receipt: M5EventRunReceipt, graph: DependencyGraph,
     plan: BoundedRecalculationPlan, facts_artifact: Mapping[str, Any],
-    evaluated_at: datetime,
+    evaluated_at: datetime, facts_source_sha256: str | None = None,
 ) -> dict[str, Any]:
     if evaluated_at.tzinfo is None or evaluated_at < plan.generated_at:
         raise ValueError("Recalculation result needs a real, later timestamp")
@@ -35,8 +35,18 @@ def evaluate_bounded_recalculation(
     symbols = {event.symbol for event in receipt.active_events}
     if symbols != {facts["symbol"]}:
         raise ValueError("Financial facts do not match the actual event security")
-    if not any(node.symbol == facts["symbol"] and node.kind == "financial_facts" for node in graph.nodes()):
+    fact_nodes = [node for node in graph.nodes()
+                  if node.symbol == facts["symbol"] and node.kind == "financial_facts"]
+    if len(fact_nodes) != 1:
         raise ValueError("Verified facts are absent from the dependency graph")
+    fact_node = fact_nodes[0]
+    if (facts_source_sha256 is not None and fact_node.version != facts_source_sha256):
+        raise ValueError("Verified facts file hash does not match the dependency node")
+    if (len(facts_artifact.get("evidence_refs", ())) != 1
+        or facts_artifact["evidence_refs"][0].get("sha256") != facts.get("pdf_sha256")
+        or facts_artifact["evidence_refs"][0].get("source_url") != facts.get("source_url")
+        or tuple(fact_node.evidence_refs) != tuple(facts_artifact["evidence_refs"])):
+        raise ValueError("Verified facts PDF evidence does not match the dependency node")
     outcomes = []
     for event in receipt.active_events:
         tasks = [task for task in plan.tasks if event.event_id in task.event_ids]
@@ -91,6 +101,28 @@ def validate_bounded_recalculation_result(
     if hashlib.sha256(json.dumps(body, ensure_ascii=False, sort_keys=True,
                            separators=(",", ":")).encode("utf-8")).hexdigest() != payload.get("result_sha256"):
         raise ValueError("Bounded recalculation result hash mismatch")
-    if any(item.get("new_valuation_result") is not None or item.get("model_executed") is not False
-           or item.get("action") != "no_order" for item in payload.get("outcomes", ())):
-        raise ValueError("Unexecuted model cannot claim a new valuation")
+    events = {event.event_id: event for event in receipt.active_events}
+    outcomes = payload.get("outcomes", ())
+    if len(outcomes) != len(events) or {item.get("event_id") for item in outcomes} != set(events):
+        raise ValueError("Recalculation outcomes must cover active events exactly once")
+    for item in outcomes:
+        event = events[item["event_id"]]
+        tasks = [task for task in plan.tasks if event.event_id in task.event_ids]
+        blockers = sorted({blocker for task in tasks for blocker in task.blockers})
+        graph_gap = any(task.status == STATUS_BLOCKED_GRAPH_GAP for task in tasks)
+        expected_status = "STILL_NOT_READY" if graph_gap else "EVIDENCE_REQUIRED"
+        expected_router = ("NOT_READY_MISSING_VALUATION_INPUTS"
+                           if "missing_dependency_node:valuation_inputs" in blockers
+                           else "NOT_READY_GRAPH_GAP") if graph_gap else "NOT_READY_PENDING_DOMAIN_REVALIDATION"
+        if (not tasks or item.get("source_event_id") != event.source_event_id
+            or item.get("symbol") != event.symbol
+            or set(item.get("task_ids", ())) != {task.task_id for task in tasks}
+            or len(item.get("task_ids", ())) != len(tasks)
+            or item.get("blockers") != blockers
+            or item.get("status") != expected_status
+            or item.get("router_status") != expected_router
+            or item.get("requires_human_review") is not True
+            or item.get("new_valuation_result") is not None
+            or item.get("model_executed") is not False
+            or item.get("action") != "no_order"):
+            raise ValueError("Recalculation outcome does not match its bounded tasks")

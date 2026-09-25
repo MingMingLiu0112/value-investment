@@ -30,6 +30,7 @@ def main() -> int:
         graph=dependency_graph_from_payload(load(args.graph)["graph"]),
         plan=bounded_recalculation_plan_from_payload(load(args.plan)),
         facts_artifact=load(args.facts), evaluated_at=datetime.now(timezone.utc),
+        facts_source_sha256=hashlib.sha256(args.facts.read_bytes()).hexdigest(),
     )
     payload["input_file_sha256"] = {
         name: hashlib.sha256(getattr(args, name).read_bytes()).hexdigest()

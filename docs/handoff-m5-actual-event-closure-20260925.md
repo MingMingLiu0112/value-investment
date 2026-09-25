@@ -6,4 +6,8 @@ The two actual receipts remain `STILL_NOT_READY`: `valuation_inputs` is missing,
 
 Verification in this isolated checkout: 22 targeted tests passed and 6 evidence-dependent tests skipped. Eight pre-existing outbox fixture failures were traced to Windows CRLF conversion; the fixture now retains LF bytes and those eight tests pass. The full repository suite is not green here (`2244 passed, 44 skipped, 208 failed, 87 errors`), principally because the isolated checkout lacks ignored `runtime` research evidence used by unrelated tests. Do not treat that run as production acceptance.
 
+Follow-up binding audit: the result validator now checks exact active-event coverage and the status/blockers/task set implied by the frozen plan, even when a forged result is rehashed. Both the evaluator and M7 reader bind the facts artifact to the graph node's file-byte SHA and PDF evidence. An isolated replay regenerated two `STILL_NOT_READY` outcomes and a nine-review M7 read model; the replay files remain ignored under `runtime/`.
+
+With `M5_ACTUAL_EVIDENCE_ROOT` pointing at the existing local evidence archive, the scoped M5/M7 regression is `34 passed` with no skips. This does not supersede the separate full-repository result above.
+
 Next engineering gate: create a source-bound, versioned `valuation_inputs` artifact, rerun the model through the unified valuation interface, and verify that the new result is tied to the actual event and facts before changing any decision presentation. Keep the formal workbook unchanged until that gate is met.

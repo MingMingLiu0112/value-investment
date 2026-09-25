@@ -40,6 +40,7 @@ def main() -> int:
         receipt=m5_event_run_receipt_from_payload(data["receipt"]["receipt"]),
         graph=graph, plan=bounded_recalculation_plan_from_payload(data["plan"]),
         facts_artifact=facts, outcome_receipt=data["outcome"],
+        facts_source_sha256=hashlib.sha256(args.facts.read_bytes()).hexdigest() if args.facts else None,
     )
     model["input_sha256"] = {
         name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in paths.items()
