@@ -1,23 +1,5 @@
-"""PDFium text decoding for issuer PDFs with nonstandard embedded fonts."""
-from pathlib import Path
+"""DEPRECATED_COMPATIBILITY_SHIM: forward to the filings PDF adapter."""
 
-import pypdfium2 as pdfium
+from .infrastructure.filings.pdf_text import extract_pages
 
-
-def extract_pages(path: Path, limit: int | None = None) -> list[str]:
-    document = pdfium.PdfDocument(path)
-    pages = []
-    try:
-        for index in range(min(len(document),limit) if limit else len(document)):
-            page = document[index]
-            try:
-                text_page = page.get_textpage()
-                try:
-                    pages.append(text_page.get_text_range())
-                finally:
-                    text_page.close()
-            finally:
-                page.close()
-    finally:
-        document.close()
-    return pages
+__all__ = ["extract_pages"]

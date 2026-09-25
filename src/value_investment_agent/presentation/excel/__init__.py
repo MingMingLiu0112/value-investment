@@ -1,0 +1,1 @@
+"""Excel/WPS presentation adapters."""
