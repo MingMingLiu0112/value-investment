@@ -294,7 +294,9 @@ def _validate_packet(packet: Mapping[str, Any]) -> Mapping[str, Any]:
             or actual.get("pending_human_review") != 0
             or any(row.get("action") != ACTION_NO_ORDER for row in rows)):
             raise ValueError("Actual event read model has inconsistent review or action state")
-        if actual.get("research_review_status") is not None:
+        review_fields = {"research_review_status", "research_review_sha256",
+                         "research_review_blockers", "evidence_triggers", "next_trigger"}
+        if review_fields & actual.keys():
             from .m5_scenario_research_review import BLOCKERS, TRIGGERS, TRIGGER_BLOCKERS
             triggers = _required_list(actual.get("evidence_triggers"), "m5.actual_event_chain.evidence_triggers")
             if (actual.get("research_review_status") != "HUMAN_REVIEWED_NEED_MORE_EVIDENCE"

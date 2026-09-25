@@ -1,6 +1,7 @@
 import copy
 from datetime import datetime, timezone
 import json
+import os
 from types import SimpleNamespace
 
 import pytest
@@ -116,20 +117,30 @@ def test_reviewed_candidate_shows_blockers_without_recalculation(tmp_path):
     import runpy
 
     root = Path(__file__).resolve().parents[1]
-    model_path = root / "runtime" / "m5-actual-read-model-human-reviewed-need-more-evidence-20260925.json"
+    evidence_root = Path(os.environ.get("M5_ACTUAL_EVIDENCE_ROOT", root))
+    model_path = evidence_root / "runtime" / "m5-actual-read-model-human-reviewed-need-more-evidence-20260925.json"
     if not model_path.exists():
         pytest.skip("local ACTUAL reviewed read model is unavailable")
-    builder = runpy.run_path(str(root / "scripts" / "build_m7_daily_workbench_post_checkpoint_a.py"))
+    builder = runpy.run_path(str(evidence_root / "scripts" / "build_m7_daily_workbench_post_checkpoint_a.py"))
     packet = builder["build_packet"](datetime(2026, 9, 25, tzinfo=timezone.utc))
     packet["m5"]["disclosure_queue_600519"]["pending_count"] = 0
     packet["m5"]["disclosure_queue_600519"]["pending_items"] = []
     model = json.loads(model_path.read_text(encoding="utf-8"))
     packet["m5"]["actual_event_chain"] = model
     output = tmp_path / "review.xlsx"
-    write_daily_workbench(packet, output=output, root=root)
+    write_daily_workbench(packet, output=output, root=tmp_path)
     workbook = load_workbook(output, read_only=True, data_only=True)
     values = [str(value) for row in workbook["06_事件与预警"].values for value in row if value is not None]
     assert any("NEED_MORE_EVIDENCE" in value and "无交易指令" in value for value in values)
     assert sum("STILL_NOT_READY" in value for value in values) == 2
     assert any("TERMINAL_ASSUMPTIONS_NOT_REVIEWED" in value for value in values)
     assert any("forecast_horizon_roe_fade_terminal_evidence" in value for value in values)
+    downgraded = copy.deepcopy(packet)
+    del downgraded["m5"]["actual_event_chain"]["research_review_status"]
+    with pytest.raises(ValueError, match="research review must remain blocked"):
+        write_daily_workbench(downgraded, output=tmp_path / "downgraded.xlsx", root=tmp_path)
+    forged = copy.deepcopy(packet)
+    material = next(row for row in forged["m5"]["actual_event_chain"]["rows"] if row["event_id"])
+    material["recalculation_status"] = "RECALCULATED"
+    with pytest.raises(ValueError, match="research review must remain blocked"):
+        write_daily_workbench(forged, output=tmp_path / "forged.xlsx", root=tmp_path)
