@@ -296,6 +296,8 @@ def _validate_packet(packet: Mapping[str, Any]) -> Mapping[str, Any]:
             raise ValueError("Actual event read model has inconsistent review or action state")
         if any(row.get("recalculation_status") == "RECALCULATED" for row in rows):
             if (not re.fullmatch(r"[0-9a-f]{64}", str(actual.get("event_refresh_review_sha256", "")))
+                or any(row.get("recalculation_status") == "RECALCULATED"
+                       and not row.get("event_id") for row in rows)
                 or any(row.get("recalculation_status") != "RECALCULATED"
                        or row.get("blockers")
                        or row.get("requires_human_decision_review") is not True

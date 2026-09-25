@@ -418,6 +418,9 @@ def test_actual_event_sheet_requires_review_before_showing_recalculated():
     assert "RECALCULATED" in text
     assert "事件有效性：RECONCILED" in text
     assert "人工决策复核：需要" in text
+    packet["m5"]["actual_event_chain"]["rows"][0]["event_id"] = None
+    with pytest.raises(ValueError, match="reconciled review evidence"):
+        build_daily_workbench(packet)
 
 
 def test_market_sheet_shows_limited_quality_coverage_and_value_scope(tmp_path: Path):
