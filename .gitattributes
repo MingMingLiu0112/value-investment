@@ -1,3 +1,15 @@
 tests/fixtures/m5_event_infrastructure_demo.json text eol=lf
 docs/600519-event-bound-scenario-review-20260925.md text eol=lf
 docs/receipts/600519-event-bound-scenario-human-review-20260925.json text eol=lf
+
+# Byte-frozen historical-validation evidence. Keep checkout bytes stable even
+# when core.autocrlf is enabled; changing these files invalidates old receipts.
+src/value_investment_agent/historical_validation.py -text
+src/value_investment_agent/virtual_account.py -text
+config/historical-validation-policy-v1.json -text
+docs/reviewed-cash-distributions.json -text
+docs/historical-trading-fees.md -text
+docs/historical-corporate-actions.md -text
+docs/historical-dividend-tax.md -text
+docs/historical-price-crosscheck.md -text
+scripts/build_moutai_historical_validation_admission.py -text

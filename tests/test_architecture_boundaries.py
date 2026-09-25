@@ -2,10 +2,22 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import importlib
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _imported_modules(path: Path) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    imported: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imported.add(node.module)
+    return imported
 
 
 def test_hash_bound_historical_validation_contract_is_byte_for_byte_frozen():
@@ -22,14 +34,6 @@ def test_historical_validation_domain_has_no_infrastructure_or_presentation_impo
         / "value_investment_agent"
         / "historical_validation.py"
     )
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    imported: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            imported.update(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            imported.add(node.module)
-
     forbidden_prefixes = (
         "openpyxl",
         "psycopg",
@@ -42,9 +46,62 @@ def test_historical_validation_domain_has_no_infrastructure_or_presentation_impo
     )
     assert not any(
         name == prefix or name.startswith(prefix + ".")
-        for name in imported
+        for name in _imported_modules(path)
         for prefix in forbidden_prefixes
     )
+
+
+def test_gap_classification_domain_and_legacy_shim_export_same_contracts():
+    legacy = importlib.import_module("value_investment_agent.gap_classification")
+    domain = importlib.import_module(
+        "value_investment_agent.domain.research.gap_classification"
+    )
+
+    assert domain.__all__
+    for name in domain.__all__:
+        assert getattr(legacy, name) is getattr(domain, name)
+
+
+def test_new_layers_do_not_import_presentation_operations_or_scripts():
+    forbidden_prefixes = (
+        "openpyxl",
+        "psycopg",
+        "requests",
+        "httpx",
+        "scripts",
+        "tests",
+        "value_investment_agent.presentation",
+        "value_investment_agent.operations",
+    )
+    for layer in ("domain", "application"):
+        for path in (ROOT / "src" / "value_investment_agent" / layer).rglob("*.py"):
+            imported = _imported_modules(path)
+            assert not any(
+                name == prefix or name.startswith(prefix + ".")
+                for name in imported
+                for prefix in forbidden_prefixes
+            ), path
+
+
+def test_root_artifact_clutter_does_not_grow():
+    root_xlsx = list(ROOT.glob("*.xlsx"))
+    root_manifests = [
+        path
+        for path in ROOT.glob("*.json")
+        if path.name.endswith(".manifest.json") or path.name.endswith(".receipt.json")
+    ]
+
+    assert len(root_xlsx) <= 35
+    assert len(root_manifests) <= 40
+
+
+def test_current_artifact_entry_is_documented():
+    current_index = (ROOT / "artifacts" / "current" / "README.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "config/current-trial-workbook.json" in current_index
+    assert "WORKBOOK_PATH" in current_index
 
 
 def test_new_code_placement_rules_are_recorded():

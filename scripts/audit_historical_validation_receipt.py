@@ -9,8 +9,9 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+PACKAGE_ROOT = ROOT / "src"
+if str(PACKAGE_ROOT) not in sys.path:
+    sys.path.insert(0, str(PACKAGE_ROOT))
 
 from value_investment_agent.application.historical_validation import (  # noqa: E402
     digest,

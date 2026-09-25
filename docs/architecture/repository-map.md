@@ -5,7 +5,8 @@
 
 | Module / Area | Layer | Status | Public Entry | Replacement / Note |
 | --- | --- | --- | --- | --- |
-| `src/value_investment_agent/research_*` | Research Domain / Application | Active | CLI / replay scripts | 逐步拆到 `domain/research`、`application/research` |
+| `src/value_investment_agent/domain/research/gap_classification.py` | Research Domain | Active | legacy shim / application imports | 首个纯规则迁移；旧路径只转发 |
+| `src/value_investment_agent/research_*` | Research Domain / Application | Active | CLI / replay scripts | 剩余模块逐步拆到 `domain/research`、`application/research` |
 | `src/value_investment_agent/valuation*`、`price_bridge.py`、`model_validity.py` | Valuation Domain | Active | Application | 公式冻结，只做边界迁移 |
 | `src/value_investment_agent/investment_decision.py` | Decision Domain | Active | Decision application / workbook | 暂缓拆分，先确认职责 |
 | `src/value_investment_agent/m3_*` | Decision Application / Presentation | Active | M3 scripts | Presentation adapter 与 domain 分开 |
