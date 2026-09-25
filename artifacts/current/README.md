@@ -20,6 +20,13 @@ It resolves to the reviewed M7 candidate and binds its SHA-256. The candidate
 currently lives under ignored `runtime/`; it must be included in local evidence
 archives even though it is not a Git-tracked payload.
 
+## Logical Artifact Registry
+
+`artifacts/current/artifact-registry-v1.json` lists every retained root
+artifact, its hash, current/historical interpretation, successor pointer and
+the provenance reason it remains in place. It is a navigation registry, not a
+license to move or delete path-bound evidence.
+
 ## Current Human Evidence
 
 Current append-only human evidence is under `docs/receipts/`. Existing receipt

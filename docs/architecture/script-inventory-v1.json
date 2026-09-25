@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 12,
     "CURRENT_PRODUCT_CLI": 7,
-    "CURRENT_RESEARCH_CLI": 173,
+    "CURRENT_RESEARCH_CLI": 174,
     "HISTORICAL_VALIDATION_TOOL": 57,
     "COMPANY_RESEARCH_CASE_TOOL": 211,
     "MIGRATION_TOOL": 13,
@@ -3875,6 +3875,17 @@
       "risk": "LOW",
       "line_count": 47,
       "sha256": "8d6859869743a91cecdf2ef3c1be44deebf8009875f62bf37f9275484ac7d1d7"
+    },
+    {
+      "path": "scripts/diagnostics/build_current_artifact_registry.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 81,
+      "sha256": "ce650dc7cd545cd04209e2e862d9b2feefd34095a5304b3e81ba34cd82b2a6ac"
     },
     {
       "path": "scripts/diagnostics/check_pdfium_text.py",

@@ -382,6 +382,58 @@ def test_artifact_archive_preserves_relocation_hashes():
         assert hashlib.sha256(path.read_bytes()).hexdigest() == item["sha256"]
 
 
+def test_current_artifact_registry_matches_relocation_inventory():
+    inventory = json.loads(
+        (
+            ROOT
+            / "docs"
+            / "architecture"
+            / "artifact-relocation-inventory-20260925.json"
+        ).read_text(encoding="utf-8")
+    )
+    registry = json.loads(
+        (
+            ROOT / "artifacts" / "current" / "artifact-registry-v1.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert registry["action"] == "no_order"
+    assert registry["artifact_count"] == inventory["artifact_count"]
+    assert {
+        (item["path"], item["sha256"]) for item in registry["records"]
+    } == {
+        (item["path"], item["sha256"]) for item in inventory["artifacts"]
+    }
+
+
+def test_phase2_document_archive_preserves_relocation_hashes():
+    archive = ROOT / "docs" / "archive" / "legacy-financing-debt-20260926"
+    record = json.loads(
+        (archive / "relocation-record.json").read_text(encoding="utf-8")
+    )
+
+    assert record["action"] == "no_order"
+    assert len(record["records"]) == 12
+    for item in record["records"]:
+        path = ROOT / item["new_path"]
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == item["sha256"]
+
+
+def test_current_docs_index_points_to_required_phase2_entries():
+    index = (ROOT / "docs" / "current" / "README.md").read_text(encoding="utf-8")
+
+    for expected in (
+        "docs/current-stage-goal.md",
+        "docs/execution-status.md",
+        "docs/m4-private-input-package.md",
+        "docs/m6-production-authorization-package-20260924.md",
+        "config/current-trial-workbook.json",
+        "docs/historical-validation-current-status.md",
+        "docs/architecture/repository-architecture.md",
+    ):
+        assert expected in index
+
+
 def test_new_domain_and_application_code_has_no_symbol_literals():
     symbol = re.compile(r"[0-9]{6}")
     for layer in ("domain", "application"):
