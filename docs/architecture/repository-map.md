@@ -24,6 +24,7 @@
 | `runtime/` | Local evidence / candidates | Ignored | config pointers | 不把运行时目录当源码层 |
 | `docs/` | Governance / Methodology / History | Mixed | docs index / current files | 逐步分为 current/architecture/operations/archive |
 | `tests/` | Verification | Active | pytest / CI | 新测试按目标层逐步落位 |
+| src/value_investment_agent/domain/research/research_profile.py | Research Domain | Active | legacy shim / application imports | Pure profile contract migration; old path only forwards |
 
 ## Current Entries
 

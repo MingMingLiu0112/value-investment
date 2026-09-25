@@ -109,6 +109,17 @@ setup_private_portfolio.py still assumes an editable installation or suitable
 These are engineering risks, not reasons to stop the current M6/M7 or
 historical-validation workstreams.
 
+## First Physical Archive Batch
+
+Six superseded root workbooks with documentation-only references were moved
+byte-for-byte to rtifacts/archive/legacy-root-20260925/. Their original
+paths and SHA-256 values are recorded in elocation-record.json. No current
+pointer, code consumer, test consumer, or sibling manifest binding was found
+by the relocation audit before the move.
+
+Root workbook count changed from 35 to 29. The canonical workbook, current
+M7 pointer target, and all receipt-bound artifacts remain in place.
+
 ## Verification
 
 ```text
@@ -129,3 +140,21 @@ The next useful cleanup is a machine-readable hash-consumer and relocation
 inventory. It should answer which consumer reads each path/hash and which files
 can never move. Only after that verifier exists should any physical artifact
 move begin.
+
+## Second Pass: Relocation Inventory
+
+The read-only relocation inventory is now implemented in
+src/value_investment_agent/application/architecture/artifact_relocation.py
+and exposed by the thin CLI scripts/audit_artifact_relocation.py. It records
+each root workbook SHA-256, tracked status, and every code, configuration,
+pointer, documentation, or JSON consumer found in the bounded reference scope.
+
+The inventory is intentionally conservative: JSON consumers are marked as
+possible hash/receipt bindings and cannot be moved until a relocation verifier
+proves the old path and digest still resolve. Canonical workbooks and current
+pointers are always KEEP. A documentation-only reference can become an
+archive candidate, but only after those references are updated and the
+targeted regression suite passes.
+
+This pass does not alter any workbook, manifest, receipt, runtime pointer,
+database, or scheduled task.

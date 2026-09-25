@@ -18,7 +18,7 @@ src/value_investment_agent/*.py = 199
 scripts/*                      = 546
 tests/*.py                     = 455
 docs/*                         = 191
-root *.xlsx                    = 35
+root *.xlsx                    = 29
 ```
 
 这不是“文件数量必须下降”的目标，而是说明根层职责已经过度集中。当前冻结的正式入口仍是：
@@ -193,10 +193,10 @@ TARGET_ARCHITECTURE_DEFINED = true
 NEW_CODE_PLACEMENT_RULES = ACTIVE
 RECEIPT_AUDIT_APPLICATION_MIGRATION = historical_validation
 HISTORICAL_VALIDATION_DOMAIN_MIGRATION = BLOCKED_BY_FROZEN_RECEIPT_HASH
-FIRST_SAFE_DOMAIN_MIGRATION = gap_classification
-ROOT_ARTIFACT_CLUTTER = INVENTORY_IN_PROGRESS
+FIRST_SAFE_DOMAIN_MIGRATION = gap_classification + research_profile
+ROOT_ARTIFACT_CLUTTER = REDUCED
 CURRENT_ARTIFACT_ENTRY = config/current-trial-workbook.json
-DOCS_CURRENT_VS_ARCHIVE = INVENTORY_IN_PROGRESS
+DOCS_CURRENT_VS_ARCHIVE = CLEAR
 CORE_BEHAVIOR_CHANGED = false
 action = no_order
 ```

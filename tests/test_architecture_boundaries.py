@@ -3,10 +3,24 @@ from __future__ import annotations
 import ast
 import hashlib
 import importlib
+import json
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _load_growth_baseline() -> dict[str, object]:
+    return json.loads(
+        (ROOT / "config" / "architecture-growth-baseline-v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+
+def _line_count(path: Path) -> int:
+    return sum(1 for _ in path.open("r", encoding="utf-8"))
 
 
 def _imported_modules(path: Path) -> set[str]:
@@ -62,6 +76,17 @@ def test_gap_classification_domain_and_legacy_shim_export_same_contracts():
         assert getattr(legacy, name) is getattr(domain, name)
 
 
+def test_research_profile_domain_and_legacy_shim_export_same_contracts():
+    legacy = importlib.import_module("value_investment_agent.research_profile")
+    domain = importlib.import_module(
+        "value_investment_agent.domain.research.research_profile"
+    )
+
+    assert domain.__all__
+    for name in domain.__all__:
+        assert getattr(legacy, name) is getattr(domain, name)
+
+
 def test_new_layers_do_not_import_presentation_operations_or_scripts():
     forbidden_prefixes = (
         "openpyxl",
@@ -91,8 +116,8 @@ def test_root_artifact_clutter_does_not_grow():
         if path.name.endswith(".manifest.json") or path.name.endswith(".receipt.json")
     ]
 
-    assert len(root_xlsx) <= 35
-    assert len(root_manifests) <= 40
+    assert len(root_xlsx) <= 29
+    assert len(root_manifests) <= 29
 
 
 def test_current_artifact_entry_is_documented():
@@ -114,3 +139,52 @@ def test_new_code_placement_rules_are_recorded():
     assert "DEPRECATED_COMPATIBILITY_SHIM" in rules
     assert "NEW_CODE_PLACEMENT_RULES = ACTIVE" in inventory
     assert "HISTORICAL_VALIDATION_DOMAIN_MIGRATION" in inventory
+
+
+def test_new_root_python_module_growth_is_blocked():
+    baseline = _load_growth_baseline()
+    allowed = set(baseline["allowed_root_modules"])
+    current = {
+        path.name
+        for path in (ROOT / "src" / "value_investment_agent").glob("*.py")
+    }
+
+    assert current <= allowed
+
+
+def test_script_business_logic_growth_is_blocked():
+    baseline = _load_growth_baseline()
+    threshold = int(baseline["script_business_logic_threshold_lines"])
+    oversized = dict(baseline["oversized_scripts"])
+    current = {
+        path.name: _line_count(path)
+        for path in (ROOT / "scripts").glob("*.py")
+    }
+
+    assert not {
+        name
+        for name, lines in current.items()
+        if lines > threshold and name not in oversized
+    }
+    assert not {
+        name
+        for name, limit in oversized.items()
+        if current.get(name, 0) > int(limit)
+    }
+
+
+def test_new_domain_and_application_code_has_no_symbol_literals():
+    symbol = re.compile(r"[0-9]{6}")
+    for layer in ("domain", "application"):
+        for path in (ROOT / "src" / "value_investment_agent" / layer).rglob(
+            "*.py"
+        ):
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            literals = {
+                node.value
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Constant)
+                and isinstance(node.value, str)
+                and symbol.fullmatch(node.value)
+            }
+            assert not literals, (path, literals)

@@ -1,0 +1,49 @@
+{
+  "schema_version": "repository-artifact-relocation-record-v1",
+  "moved_at": "2026-09-25",
+  "action": "no_order",
+  "records": [
+    {
+      "old_path": "A股价值投资_Agent前端智能跟踪模板_M2候选_20260923.xlsx",
+      "new_path": "artifacts/archive/legacy-root-20260925/A股价值投资_Agent前端智能跟踪模板_M2候选_20260923.xlsx",
+      "sha256": "95993fa8721d4d333463b8ac48677b1700cbeec98d7eb4aad4bb457385baef6a",
+      "action": "ARCHIVE",
+      "reason": "superseded historical candidate; no current code/config/test consumer"
+    },
+    {
+      "old_path": "A股价值投资_Agent前端智能跟踪模板_M2候选_20260924.xlsx",
+      "new_path": "artifacts/archive/legacy-root-20260925/A股价值投资_Agent前端智能跟踪模板_M2候选_20260924.xlsx",
+      "sha256": "64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911",
+      "action": "ARCHIVE",
+      "reason": "superseded historical candidate; no current code/config/test consumer"
+    },
+    {
+      "old_path": "A股价值投资_M2机会发现_20260923.xlsx",
+      "new_path": "artifacts/archive/legacy-root-20260925/A股价值投资_M2机会发现_20260923.xlsx",
+      "sha256": "a612a622cf476322724826c84b00783c51d65886fd3c9bb335159a509fa0c821",
+      "action": "ARCHIVE",
+      "reason": "superseded historical candidate; no current code/config/test consumer"
+    },
+    {
+      "old_path": "A股价值投资_M2机会发现_v2_20260923.xlsx",
+      "new_path": "artifacts/archive/legacy-root-20260925/A股价值投资_M2机会发现_v2_20260923.xlsx",
+      "sha256": "4e2dc634fb5c093d7476ad99e41cf76ec642b5b98f6761a31f8d06f348368c63",
+      "action": "ARCHIVE",
+      "reason": "superseded historical candidate; no current code/config/test consumer"
+    },
+    {
+      "old_path": "M1_三公司研究Application候选_20260923_033001.xlsx",
+      "new_path": "artifacts/archive/legacy-root-20260925/M1_三公司研究Application候选_20260923_033001.xlsx",
+      "sha256": "0cebce194667879d1fbae345cd9548c4cb1407b8528fade4b62e5dbbd51c3d34",
+      "action": "ARCHIVE",
+      "reason": "superseded historical candidate; no current code/config/test consumer"
+    },
+    {
+      "old_path": "M1_三公司研究Application候选_20260923_122010.xlsx",
+      "new_path": "artifacts/archive/legacy-root-20260925/M1_三公司研究Application候选_20260923_122010.xlsx",
+      "sha256": "2b913f65f3d0f7bb7696431902c890943147a18139b4ecccc41f75da9c8cb1b8",
+      "action": "ARCHIVE",
+      "reason": "superseded historical candidate; no current code/config/test consumer"
+    }
+  ]
+}
