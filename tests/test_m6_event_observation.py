@@ -14,6 +14,7 @@ from value_investment_agent.m6_event_observation import (
     _verify_cninfo_index, verify_event_observation_candidate,
 )
 from value_investment_agent.m6_shadow_receipts import VERSION
+from value_investment_agent.m6_independent_intake import PURPOSE as INTAKE_PURPOSE, VERSION as INTAKE_VERSION
 from value_investment_agent.m6_exchange_sessions import completed_exchange_sessions
 from value_investment_agent.m6_shadow_receipts import verify_shadow_bundle
 from value_investment_agent.event_materiality import event_materiality_review_from_payload
@@ -63,7 +64,7 @@ def _fixture(*, mutate=None, valid_from="2026-07-01T00:00:00+08:00"):
     event = next(item["event"] for item in json.loads(receipt)["receipt"]["ingest_results"]
                  if item.get("event", {}).get("event_id") ==
                  "m5-1f43cb646a5884b860d3cd98cdd5ff32")
-    auth_key, runtime_key, witness_key = (Ed25519PrivateKey.generate() for _ in range(3))
+    auth_key, runtime_key, witness_key, intake_key = (Ed25519PrivateKey.generate() for _ in range(4))
     deployment = _bytes({"action": "no_order", "deployment_id": "synthetic-deployment"})
     config = _bytes({"action": "no_order", "config_id": "synthetic-config"})
     scope = _bytes({
@@ -119,11 +120,29 @@ def _fixture(*, mutate=None, valid_from="2026-07-01T00:00:00+08:00"):
         "received_at": "2026-09-24T15:11:00+08:00", "sequence": 1,
         "previous_witness_sha256": None,
     }, witness_key, "M6-WITNESS")
+    session_raw = _bytes(session)
+    intake_payload = {
+        "action": "no_order", "intake_id": "synthetic-intake", "key_epoch": "2026-q3",
+        "deployment_sha256": authorization["payload"]["deployment_sha256"],
+        "receipt_sha256": _sha(session_raw), "received_at": "2026-09-24T15:10:30+08:00",
+        "sequence": 1, "previous_record_sha256": None,
+    }
+    intake = {"version": INTAKE_VERSION, "payload": intake_payload,
+              "signature": intake_key.sign(INTAKE_PURPOSE + _bytes(intake_payload)).hex()}
     bundle = {"authorization": authorization, "authorization_artifacts": artifacts,
-              "sessions": [{"session": session, "witness": witness}]}
+              "sessions": [{"session": session, "witness": witness}],
+              "intake_records": [{"receipt_raw_base64": base64.b64encode(session_raw).decode(),
+                                  "record": intake}]}
     trust = {"authorization_public_key": _public(auth_key),
              "witness_public_key": _public(witness_key),
-             "approved_authorization_sha256": _sha(_bytes(authorization))}
+             "approved_authorization_sha256": _sha(_bytes(authorization)),
+             "intake_trust_root": {
+                 "intake_id": "synthetic-intake", "intake_public_key": _public(intake_key),
+                 "key_epoch": "2026-q3",
+                 "deployment_sha256": authorization["payload"]["deployment_sha256"],
+             },
+             "pinned_intake_head": {"record_sha256": _sha(_bytes(intake)), "sequence": 1,
+                                    "pinned_at": "2026-09-24T15:12:00+08:00"}}
     raw_calendar = "\n".join(SSE_2026_NOTICE_MARKERS).encode("utf-8")
     document = {"source_url": SSE_2026_CLOSURE_NOTICE_URL,
                 "fetched_at": "2026-09-24T07:00:00+00:00",

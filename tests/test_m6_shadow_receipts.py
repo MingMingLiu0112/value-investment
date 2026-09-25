@@ -14,6 +14,7 @@ from value_investment_agent.m6_operational_readiness import (
     M6PreflightConfig, RestoreTarget, assess_session_ledger,
 )
 from value_investment_agent.m6_shadow_receipts import VERSION, verify_shadow_bundle
+from value_investment_agent.m6_independent_intake import PURPOSE as INTAKE_PURPOSE, VERSION as INTAKE_VERSION
 from value_investment_agent.quote_sessions import (
     SSE_2026_CLOSURE_NOTICE_URL, SSE_2026_NOTICE_MARKERS,
 )
@@ -56,6 +57,27 @@ def _authorization_artifacts():
     }
 
 
+def _intake_for_sessions(sessions, deployment_sha256, intake_key):
+    intake_records = []
+    previous = None
+    for sequence, item in enumerate(sessions, 1):
+        session_raw = _bytes(item['session'])
+        day = item['session']['payload']['session_date']
+        payload = {
+            'action': 'no_order', 'intake_id': 'synthetic-intake',
+            'key_epoch': '2026-q3', 'deployment_sha256': deployment_sha256,
+            'receipt_sha256': hashlib.sha256(session_raw).hexdigest(),
+            'received_at': day + 'T15:10:30+08:00', 'sequence': sequence,
+            'previous_record_sha256': previous,
+        }
+        envelope = {'version': INTAKE_VERSION, 'payload': payload,
+                    'signature': intake_key.sign(INTAKE_PURPOSE + _bytes(payload)).hex()}
+        previous = _hash(envelope)
+        intake_records.append({'receipt_raw_base64': base64.b64encode(session_raw).decode(),
+                               'record': envelope})
+    return intake_records, previous
+
+
 def _fixture():
     raw = '\n'.join(SSE_2026_NOTICE_MARKERS).encode()
     document = {'source_url': SSE_2026_CLOSURE_NOTICE_URL,
@@ -67,7 +89,7 @@ def _fixture():
     schedule = exchange.completed_exchange_sessions(
         'SSE', [document], datetime.fromisoformat(calendar['observation_cutoff']))
     days = [item['session_date'] for item in schedule['sessions'][-2:]]
-    auth_key, run_key, witness_key = [Ed25519PrivateKey.generate() for _ in range(3)]
+    auth_key, run_key, witness_key, intake_key = [Ed25519PrivateKey.generate() for _ in range(4)]
     artifacts = _authorization_artifacts()
     auth = _sign({
         'action': 'no_order', 'authorization_id': 'synthetic-only', 'mode': 'SHADOW',
@@ -111,8 +133,22 @@ def _fixture():
             'real_event_materialized': False, 'session_receipt_sha256': _hash(session),
         })
         previous_session, previous_witness = _hash(session), _hash(witness)
-    return ({'authorization': auth, 'authorization_artifacts': artifacts, 'sessions': sessions}, trust, calendar, schedule,
-            records, (auth_key, run_key, witness_key))
+    intake_records, previous_intake = _intake_for_sessions(
+        sessions, auth['payload']['deployment_sha256'], intake_key)
+    trust.update({
+        'intake_trust_root': {
+            'intake_id': 'synthetic-intake', 'intake_public_key': _public(intake_key),
+            'key_epoch': '2026-q3',
+            'deployment_sha256': auth['payload']['deployment_sha256'],
+        },
+        'pinned_intake_head': {
+            'record_sha256': previous_intake, 'sequence': len(intake_records),
+            'pinned_at': days[-1] + 'T15:12:00+08:00',
+        },
+    })
+    return ({'authorization': auth, 'authorization_artifacts': artifacts,
+             'sessions': sessions, 'intake_records': intake_records}, trust, calendar, schedule,
+            records, (auth_key, run_key, witness_key, intake_key))
 
 
 def _config():
@@ -172,7 +208,7 @@ def test_signed_bundle_without_live_calendar_or_external_root_cannot_count():
 
 
 def test_witnessed_failed_session_breaks_the_verified_streak(monkeypatch):
-    bundle, trust, calendar, schedule, records, (_, run_key, witness_key) = _fixture()
+    bundle, trust, calendar, schedule, records, (_, run_key, witness_key, intake_key) = _fixture()
     first = bundle['sessions'][0]
     failed = dict(first['session']['payload'], status='failed', resource_baseline_ok=False)
     first['session'] = _sign(failed, run_key, 'M6-SESSION')
@@ -190,6 +226,9 @@ def test_witnessed_failed_session_breaks_the_verified_streak(monkeypatch):
     records[0].update(status='failed', resource_baseline_ok=False,
                       session_receipt_sha256=_hash(first['session']))
     records[1]['session_receipt_sha256'] = _hash(second['session'])
+    bundle['intake_records'], head = _intake_for_sessions(
+        bundle['sessions'], bundle['authorization']['payload']['deployment_sha256'], intake_key)
+    trust['pinned_intake_head']['record_sha256'] = head
     verified = verify_shadow_bundle(bundle, trust, schedule,
                                     datetime.fromisoformat(calendar['observation_cutoff']))
     assert list(verified) == [records[1]['session_date']]
@@ -213,7 +252,7 @@ def test_signer_reuse_is_not_independent_witness():
 
 
 def test_correctly_signed_but_late_witness_is_rejected():
-    bundle, trust, calendar, schedule, _, (_, _, witness_key) = _fixture()
+    bundle, trust, calendar, schedule, _, (_, _, witness_key, _) = _fixture()
     first = bundle['sessions'][0]
     first['witness'] = _sign(dict(first['witness']['payload'],
                                   received_at=first['session']['payload']['session_date'] + 'T16:10:00+08:00'),
@@ -229,5 +268,14 @@ def test_authorization_hashes_are_recomputed_from_actual_artifact_bytes(artifact
     bundle = deepcopy(bundle)
     bundle['authorization_artifacts'][artifact]['raw_base64'] = base64.b64encode(b'{}').decode()
     with pytest.raises(ValueError, match='hash differs'):
+        verify_shadow_bundle(bundle, trust, schedule,
+                             datetime.fromisoformat(calendar['observation_cutoff']))
+
+
+def test_signed_session_without_matching_independent_intake_bytes_is_rejected():
+    bundle, trust, calendar, schedule, _, _ = _fixture()
+    bundle = deepcopy(bundle)
+    bundle['intake_records'][0]['receipt_raw_base64'] = base64.b64encode(b'other-session').decode()
+    with pytest.raises(ValueError):
         verify_shadow_bundle(bundle, trust, schedule,
                              datetime.fromisoformat(calendar['observation_cutoff']))

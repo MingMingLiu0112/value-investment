@@ -15,6 +15,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from .m6_authorization_artifacts import verify_authorization_artifacts
+from .m6_independent_intake import verify_independent_intake_chain
 
 
 VERSION = 'm6-shadow-receipt-v1'
@@ -71,18 +72,23 @@ def verify_shadow_bundle(bundle: Mapping[str, Any], trust_root: Mapping[str, str
                          schedule: Mapping[str, Any], cutoff: datetime) -> dict[str, str]:
     """Return authenticated session-date -> receipt-hash mappings, never event credit."""
     if set(trust_root) != {'authorization_public_key', 'witness_public_key',
-                           'approved_authorization_sha256'}:
+                           'approved_authorization_sha256', 'intake_trust_root',
+                           'pinned_intake_head'}:
         raise ValueError('An externally pinned Shadow trust root is required')
-    if set(bundle) != {'authorization', 'authorization_artifacts', 'sessions'} or not isinstance(bundle['sessions'], list):
+    if (set(bundle) != {'authorization', 'authorization_artifacts', 'sessions', 'intake_records'}
+            or not isinstance(bundle['sessions'], list)
+            or not isinstance(bundle['intake_records'], list)):
         raise ValueError('Shadow evidence bundle schema differs')
     authorization, authorization_hash = _signed(
         bundle['authorization'], trust_root['authorization_public_key'],
         'M6-AUTHORIZATION', _AUTH_FIELDS)
     if authorization_hash != trust_root['approved_authorization_sha256']:
         raise ValueError('Shadow authorization is not the approved external receipt')
-    if len({trust_root['authorization_public_key'], trust_root['witness_public_key'],
-            authorization['runtime_public_key']}) != 3:
-        raise ValueError('Shadow authorization, runtime and witness signers must be distinct')
+    intake_root = trust_root['intake_trust_root']
+    if (not isinstance(intake_root, Mapping)
+            or len({trust_root['authorization_public_key'], trust_root['witness_public_key'],
+                    authorization['runtime_public_key'], intake_root.get('intake_public_key')}) != 4):
+        raise ValueError('Shadow authorization, runtime, witness and intake signers must be distinct')
     if (authorization['mode'] != 'SHADOW' or authorization['venue'] != schedule['venue']
             or not authorization['authorization_id']
             or not _SHA256.fullmatch(authorization['deployment_sha256'])
@@ -95,6 +101,10 @@ def verify_shadow_bundle(bundle: Mapping[str, Any], trust_root: Mapping[str, str
     valid_until = _timestamp(authorization['valid_until'])
     if valid_from >= valid_until:
         raise ValueError('Shadow authorization validity window is invalid')
+    if intake_root.get('deployment_sha256') != authorization['deployment_sha256']:
+        raise ValueError('Shadow intake trust root is not bound to the authorized deployment')
+    intake_receipts = verify_independent_intake_chain(
+        bundle['intake_records'], intake_root, trust_root['pinned_intake_head'], cutoff=cutoff)
     calendar = {item['session_date']: item for item in schedule['sessions']}
     verified: dict[str, str] = {}
     previous_session = None
@@ -119,6 +129,7 @@ def verify_shadow_bundle(bundle: Mapping[str, Any], trust_root: Mapping[str, str
                 or session['mode'] != 'SHADOW' or session['status'] not in {'success', 'failed'}
                 or type(session['resource_baseline_ok']) is not bool
                 or session['authorization_sha256'] != authorization_hash
+                or session_hash not in intake_receipts
                 or session['deployment_sha256'] != authorization['deployment_sha256']
                 or session['config_sha256'] != authorization['config_sha256']
                 or session['calendar_sha256'] != proof['sha256']

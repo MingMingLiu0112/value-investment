@@ -1,5 +1,18 @@
 # 当前执行状态
 
+## 2026-09-25 M6 独立 append-only 接收链 R0
+
+新增 `m6-independent-intake-v1`：每条独立接收记录绑定原始会话收据字节 Hash、服务端
+接收时间、严格递增序号、密钥纪元、授权部署 Hash 和前序记录 Hash；包外 trust root
+固定 intake 身份/公钥/纪元/部署，包外 pinned head 固定链头 Hash、序号与钉住时间。
+Shadow 验证器现在要求授权、运行、见证、intake 四把公钥互异，并要求每份会话收据的
+规范字节已进入该链。缺链、换字节、错纪元、错部署、倒序、回写时间或链头不符均失败
+关闭。联合定向回归 `66 passed`，另有接收链/会话不匹配反例。
+
+该合同仍不把本地生成的签名或时间升级为生产事实。真正计数必须由 R3 授权范围外的
+受控 intake 服务和独立钉住链头支持；当前 `verified_actual_sessions=0`、真实事件 0、
+`M6_OPERATIONAL=NOT_STARTED`、`action=no_order`。
+
 ## 2026-09-25 M6 授权制品实际字节绑定
 
 Shadow 授权验证不再只检查三个 64 位字符串。证据包必须携带 scope manifest、部署
