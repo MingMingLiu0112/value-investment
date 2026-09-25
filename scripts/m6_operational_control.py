@@ -18,11 +18,15 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from value_investment_agent.m6_operational_control import (  # noqa: E402
+    MODE_SHADOW,
+    MODE_STAGING,
     apply_emergency_stop,
     initial_state,
     read_control_state,
+    transition,
     write_control_state,
 )
+from value_investment_agent.m6_shadow_receipts import verify_shadow_authorization  # noqa: E402
 
 
 DEFAULT_STATE = ROOT / "runtime" / "m6-operational-control-state.json"
@@ -42,9 +46,10 @@ def build_parser() -> argparse.ArgumentParser:
     stop = subparsers.add_parser("stop", help="write an emergency-stop state")
     stop.add_argument("--reason", required=True)
     stop.add_argument("--operator", required=True)
-    advance = subparsers.add_parser("advance", help="reserved until signed authorization verification is available")
-    advance.add_argument("--target", required=True)
-    advance.add_argument("--authorization-id", required=True)
+    advance = subparsers.add_parser("advance", help="advance local state using an externally approved signed authorization")
+    advance.add_argument("--target", required=True, choices=[MODE_STAGING, MODE_SHADOW])
+    advance.add_argument("--authorization-bundle", type=Path, required=True)
+    advance.add_argument("--authorization-trust-root", type=Path, required=True)
     advance.add_argument("--reason", required=True)
     advance.add_argument("--operator", required=True)
     return parser
@@ -64,9 +69,18 @@ def main(argv: list[str] | None = None) -> int:
         )
         write_control_state(path, state)
     elif args.command == "advance":
-        raise RuntimeError(
-            'M6 mode advance is disabled: an authorization ID is not a verified user authorization receipt'
+        bundle = json.loads(args.authorization_bundle.read_text(encoding="utf-8"))
+        trust_root = json.loads(args.authorization_trust_root.read_text(encoding="utf-8"))
+        authorization, _ = verify_shadow_authorization(bundle, trust_root, at=now)
+        state = transition(
+            state,
+            target_mode=args.target,
+            authorization_id=authorization["authorization_id"],
+            reason=args.reason,
+            operator_id=args.operator,
+            changed_at=now,
         )
+        write_control_state(path, state)
     print(json.dumps(state.as_dict(), ensure_ascii=False, indent=2))
     return 0
 

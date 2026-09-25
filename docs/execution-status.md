@@ -1,5 +1,17 @@
 # 当前执行状态
 
+## 2026-09-25 M6 受验证授权的本地模式转换 R0
+
+`m6_operational_control.py advance` 不再接受自报 `authorization_id`。它现在必须读取签名授权
+及 scope/部署/配置原始制品，并使用仓库外提供的批准授权 Hash 与公钥验证签名、逐字节 Hash、
+有效期和 `action=no_order`；验证所得授权 ID 才能驱动逐级本地状态转换。CLI 仍只写本地控制
+状态，不连接 SSH/systemd、数据库或生产任务；仅开放 `STAGING`/`SHADOW`，`LIMITED_USE`
+继续无入口。急停保持随时可用，停止后的重启仍需新授权并先回到离线工程模式。
+
+这只是未来授权后的执行门禁代码，不构成用户生产授权，也没有运行该 `advance`。当前
+`production_authorization_granted=false`、`shadow_start_allowed=false`、
+`M6_OPERATIONAL=NOT_STARTED`，永久 `action=no_order`。
+
 ## 2026-09-25 M6 真实事件运营准入合同 R0
 
 新增 `m6-event-admission-v1`，把现有事件候选、公告原件/CNINFO 索引、M5 review/receipt、

@@ -97,6 +97,8 @@ jobs:
           tests/test_m7_m6_preflight_projection.py
           tests/test_m6_operational_control.py
           tests/test_m6_operational_control_cli.py
+          tests/test_m6_verified_control_advance.py
+          tests/test_m6_operational_control_cli.py
           tests/test_unified_fcff_valuation.py
           tests/test_residual_income_equity_valuation.py
           tests/test_cyclical_normalized_valuation.py

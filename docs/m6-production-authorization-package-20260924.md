@@ -15,6 +15,8 @@
 
 用户不再需要设计工程参数，只需整体批准或拒绝 JSON 中五项 `user_to_authorize`：既有 rootful 运行方案、OSS 私有桶及费用、服务器真实隔离恢复、systemd/local-outbox Shadow 范围、全部前置门通过后的 SSE/SZSE Shadow 启动。当前全部为 `null`，`production_authorization_granted=false`、`shadow_start_allowed=false`，本文件仍不是授权。
 
+授权后的本地模式转换入口只接受签名授权包、实际 scope/部署/配置字节及包外钉住的授权公钥和精确 Hash；自报授权 ID 不能推进状态。该入口只产生本地控制状态，不自行部署或启动 systemd。真实执行仍必须在本文件被用户明确批准且全部 start criteria 通过之后进行。
+
 更新：2026-09-24。本文件为未来授权审查准备边界，不批准或执行生产操作。
 
 ```text

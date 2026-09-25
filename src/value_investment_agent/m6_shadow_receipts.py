@@ -68,6 +68,35 @@ def _signed(envelope: Mapping[str, Any], public_key_hex: str, purpose: str,
     return payload, digest
 
 
+def verify_shadow_authorization(
+    bundle: Mapping[str, Any], trust_root: Mapping[str, str], *, at: datetime | None,
+) -> tuple[dict[str, Any], str]:
+    """Verify an exact externally approved authorization and its artifact bytes."""
+    if set(bundle) != {'authorization', 'authorization_artifacts'}:
+        raise ValueError('Shadow authorization bundle schema differs')
+    if set(trust_root) != {'authorization_public_key', 'approved_authorization_sha256'}:
+        raise ValueError('Externally pinned Shadow authorization root is required')
+    if at is not None and at.tzinfo is None:
+        raise ValueError('Shadow authorization verification time must be timezone-aware')
+    authorization, authorization_hash = _signed(
+        bundle['authorization'], trust_root['authorization_public_key'],
+        'M6-AUTHORIZATION', _AUTH_FIELDS)
+    if authorization_hash != trust_root['approved_authorization_sha256']:
+        raise ValueError('Shadow authorization is not the approved external receipt')
+    if (authorization['mode'] != 'SHADOW' or not authorization['authorization_id']
+            or not _SHA256.fullmatch(authorization['deployment_sha256'])
+            or not _SHA256.fullmatch(authorization['config_sha256'])
+            or not _SHA256.fullmatch(authorization['scope_manifest_sha256'])):
+        raise ValueError('Shadow authorization scope is invalid')
+    verify_authorization_artifacts(authorization, bundle['authorization_artifacts'])
+    valid_from = _timestamp(authorization['valid_from'])
+    valid_until = _timestamp(authorization['valid_until'])
+    when = at.astimezone(timezone.utc) if at is not None else None
+    if valid_from >= valid_until or (when is not None and not valid_from <= when <= valid_until):
+        raise ValueError('Shadow authorization is outside its validity window')
+    return authorization, authorization_hash
+
+
 def verify_shadow_bundle(bundle: Mapping[str, Any], trust_root: Mapping[str, str],
                          schedule: Mapping[str, Any], cutoff: datetime) -> dict[str, str]:
     """Return authenticated session-date -> receipt-hash mappings, never event credit."""
@@ -79,28 +108,22 @@ def verify_shadow_bundle(bundle: Mapping[str, Any], trust_root: Mapping[str, str
             or not isinstance(bundle['sessions'], list)
             or not isinstance(bundle['intake_records'], list)):
         raise ValueError('Shadow evidence bundle schema differs')
-    authorization, authorization_hash = _signed(
-        bundle['authorization'], trust_root['authorization_public_key'],
-        'M6-AUTHORIZATION', _AUTH_FIELDS)
-    if authorization_hash != trust_root['approved_authorization_sha256']:
-        raise ValueError('Shadow authorization is not the approved external receipt')
+    authorization, authorization_hash = verify_shadow_authorization(
+        {'authorization': bundle['authorization'],
+         'authorization_artifacts': bundle['authorization_artifacts']},
+        {'authorization_public_key': trust_root['authorization_public_key'],
+         'approved_authorization_sha256': trust_root['approved_authorization_sha256']},
+        at=None,
+    )
     intake_root = trust_root['intake_trust_root']
     if (not isinstance(intake_root, Mapping)
             or len({trust_root['authorization_public_key'], trust_root['witness_public_key'],
                     authorization['runtime_public_key'], intake_root.get('intake_public_key')}) != 4):
         raise ValueError('Shadow authorization, runtime, witness and intake signers must be distinct')
-    if (authorization['mode'] != 'SHADOW' or authorization['venue'] != schedule['venue']
-            or not authorization['authorization_id']
-            or not _SHA256.fullmatch(authorization['deployment_sha256'])
-            or not _SHA256.fullmatch(authorization['config_sha256'])):
+    if (authorization['venue'] != schedule['venue']):
         raise ValueError('Shadow authorization scope is invalid')
-    if not _SHA256.fullmatch(authorization['scope_manifest_sha256']):
-        raise ValueError('Shadow authorization scope manifest is invalid')
-    verify_authorization_artifacts(authorization, bundle['authorization_artifacts'])
     valid_from = _timestamp(authorization['valid_from'])
     valid_until = _timestamp(authorization['valid_until'])
-    if valid_from >= valid_until:
-        raise ValueError('Shadow authorization validity window is invalid')
     if intake_root.get('deployment_sha256') != authorization['deployment_sha256']:
         raise ValueError('Shadow intake trust root is not bound to the authorized deployment')
     intake_receipts = verify_independent_intake_chain(
