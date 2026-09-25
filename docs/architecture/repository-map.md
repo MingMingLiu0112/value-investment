@@ -31,7 +31,8 @@
 | `src/value_investment_agent/domain/research/research_gate.py` | Research Domain | Active | legacy shim / application imports | G0-G3 research gates; old path only forwards |
 | `src/value_investment_agent/application/valuation/company_valuation_result.py` | Valuation Application | Active | `scripts/build_company_valuation_result.py` | Research-only valuation orchestration; explicit model selection preserved |
 | `scripts/build_company_valuation_result.py` | Tooling / CLI | Thinned | explicit FCFF invocation | Argument and path-boundary wrapper only; business logic lives in application/valuation |
-| src/value_investment_agent/domain/research/research_case.py | Research Domain | Active | legacy shim / application imports | Pure research-case contract migration; old path only forwards |
+| `config/architecture-frozen-paths-v1.json` | Governance / Provenance | Active | tests/test_architecture_boundaries.py | Exact hashes for every receipt-bound historical-validation path |
+| `config/architecture-root-artifact-allowlist-v1.json` | Governance / Artifacts | Active | tests/test_architecture_boundaries.py | Exact root workbook and manifest allowlist; additions require an explicit relocation decision |
 | docs/architecture/artifact-relocation-inventory-20260925.json | Governance / Artifact Audit | Active | scripts/audit_artifact_relocation.py | Machine-readable root artifact hash and consumer inventory |
 | docs/architecture/adversarial-findings-20260925.md | Governance / Security Audit | Open findings | docs/execution-status.md | P0/P1/P2 replay, authorization, PIT and CI findings; not fixed here |
 

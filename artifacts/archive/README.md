@@ -5,7 +5,7 @@ successor or belong to a frozen stage.
 
 The first bounded payload archive is in legacy-root-20260925/. It contains
 six superseded root workbooks whose bytes, original paths, and SHA-256 values
-are recorded in elocation-record.json. No receipt-bound or current-pointer
+are recorded in relocation-record.json. No receipt-bound or current-pointer
 artifact was moved.
 
 The following classes are logically archived even while their bytes remain at

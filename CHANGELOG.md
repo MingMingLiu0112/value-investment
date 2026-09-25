@@ -1,5 +1,47 @@
 # Changelog
 
+## v2026.09.25-architecture-consolidation
+
+### Scope
+
+在不改变投资业务行为、估值公式、研究门槛、数据库语义或
+`action=no_order` 的前提下，执行第一阶段仓库架构治理。该工作把已存在的
+`ARCHITECTURE-CONSOLIDATION-AND-REPOSITORY-CLEANUP` 落成可验证的代码边界、
+归档规则和 provenance 防线，不新增 Milestone、M8 或 Roadmap。
+
+### Changes
+
+- 建立 `docs/architecture/repository-architecture.md` 和 `repository-map.md`，
+  明确 Domain / Application / Infrastructure / Presentation / Operations /
+  Historical Validation 的依赖方向、公司特定代码边界和禁止新增位置。
+- 将 `ResearchCase`、ResearchGate 相关合同及公司估值构建逻辑按职责迁入
+  `domain/research` 和 `application/valuation`；旧路径保留 forwarding shim，
+  不复制业务逻辑，不改变调用合同。
+- 将四份无当前引用历史研究文档和六份 superseded 根目录 workbook 按字节归档，
+  分别记录 old path、new path 和 SHA-256；当前指针、canonical workbook 与
+  receipt-bound artifact 不移位。
+- 新增 `config/architecture-frozen-paths-v1.json` 和
+  `config/architecture-root-artifact-allowlist-v1.json`，对所有 receipt-bound
+  历史验证路径和根目录 workbook/manifest 建立精确 Hash/allowlist 防线。
+- 架构测试覆盖跨层 import（含 relative import）、冻结路径字节、根目录产物增长、
+  文档与 workbook relocation Hash，以及无 Git 工作树时的只读 inventory CLI。
+
+### Verification
+
+- 架构与归档定向回归：`36 passed`。
+- 最终本地全量离线回归：`2811 passed, 30 skipped, 18 warnings, 0 failed`。
+- Historical validation receipt audit：`AUDIT_OK / NOT_PIT_SAFE / NOT_ADMITTED /
+  NOT_RUN / action=no_order`。
+- tracked 文件控制字符扫描：`NO_CONTROL_CHAR_ANOMALIES`。
+- GitHub Core Research Gates 在推送后复核。
+
+### Residual Boundary
+
+本次只完成第一阶段低风险治理，仍有根层 legacy module、庞大 `scripts/` 和待分类
+历史资产。它们不会因目录整理被强行搬迁；后续迁移必须继续满足
+`INCREMENTAL_REFACTOR_ONLY / BEHAVIOR_PRESERVING / TEST_GATED / ROLLBACKABLE`，
+且不得与估值、门槛或决策语义变更混在同一提交。
+
 ## v2026.09.24-m6-historical-ingest-rejection-view
 
 ### Scope
@@ -1800,8 +1842,8 @@ Consistency，不修改原 55 页 WPS 生产工作簿。
 
 ### Fix
 
-- 修复 M2 审计器回归测试对 untime/ 本地证据的隐式依赖。该目录被 Git 忽略，
-  因此首次版本在 GitHub 干净 checkout 中执行完整 udit() 时会读取不到固定收据。
+- 修复 M2 审计器回归测试对 `runtime/` 本地证据的隐式依赖。该目录被 Git 忽略，
+  因此首次版本在 GitHub 干净 checkout 中执行完整 audit() 时会读取不到固定收据。
 - 将依赖真实运行产物的完整审计回归替换为三个封闭单元回归：AC1 本地与 CI 同时绿、
   AC12 人工复核边界保留、任一机器项 PARTIAL 时产生 blocker。
 - 	ests/test_m2_acceptance_audit.py 当前为 7 passed。本提交不改变任何 Excel

@@ -29,16 +29,26 @@ def _imported_modules(path: Path) -> set[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             imported.update(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            imported.add(node.module)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                imported.add(node.module)
+            if node.level:
+                imported.update(
+                    alias.name for alias in node.names if alias.name
+                )
     return imported
 
 
-def test_hash_bound_historical_validation_contract_is_byte_for_byte_frozen():
-    path = ROOT / "src" / "value_investment_agent" / "historical_validation.py"
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+def test_all_receipt_bound_paths_are_byte_for_byte_frozen():
+    manifest = json.loads(
+        (ROOT / "config" / "architecture-frozen-paths-v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
 
-    assert digest == "806d890817611000a588c9ee76ee00cc18a2529d5e1ee9769c092cc00452c5ba"
+    assert manifest["action"] == "no_order"
+    for relative, expected in manifest["paths"].items():
+        assert hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() == expected
 
 
 def test_historical_validation_domain_has_no_infrastructure_or_presentation_imports():
@@ -148,6 +158,10 @@ def test_new_layers_do_not_import_presentation_operations_or_scripts():
         "tests",
         "value_investment_agent.presentation",
         "value_investment_agent.operations",
+        "presentation",
+        "operations",
+        "scripts",
+        "tests",
     )
     for layer in ("domain", "application"):
         for path in (ROOT / "src" / "value_investment_agent" / layer).rglob("*.py"):
@@ -160,15 +174,35 @@ def test_new_layers_do_not_import_presentation_operations_or_scripts():
 
 
 def test_root_artifact_clutter_does_not_grow():
-    root_xlsx = list(ROOT.glob("*.xlsx"))
-    root_manifests = [
+    allowlist = json.loads(
+        (ROOT / "config" / "architecture-root-artifact-allowlist-v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    root_xlsx = {path.name for path in ROOT.glob("*.xlsx")}
+    root_manifests = {
         path
         for path in ROOT.glob("*.json")
         if path.name.endswith(".manifest.json") or path.name.endswith(".receipt.json")
-    ]
+    }
 
-    assert len(root_xlsx) <= 29
-    assert len(root_manifests) <= 29
+    assert allowlist["action"] == "no_order"
+    assert root_xlsx == set(allowlist["workbooks"])
+    assert {path.name for path in root_manifests} == set(
+        allowlist["manifests_and_receipts"]
+    )
+
+
+def test_relative_import_resolution_flags_layer_escapes(tmp_path: Path):
+    module = tmp_path / "module.py"
+    module.write_text(
+        "from ...presentation.excel import Workbook\nfrom . import operations\n",
+        encoding="utf-8",
+    )
+
+    imported = _imported_modules(module)
+    assert "presentation.excel" in imported
+    assert "operations" in imported
 
 
 def test_current_artifact_entry_is_documented():
@@ -236,6 +270,18 @@ def test_company_valuation_builder_delegates_to_application_service():
 
 def test_legacy_research_archive_preserves_relocation_hashes():
     archive = ROOT / "docs" / "archive" / "legacy-research-20260925"
+    record = json.loads(
+        (archive / "relocation-record.json").read_text(encoding="utf-8")
+    )
+
+    assert record["action"] == "no_order"
+    for item in record["records"]:
+        path = ROOT / item["new_path"]
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == item["sha256"]
+
+
+def test_artifact_archive_preserves_relocation_hashes():
+    archive = ROOT / "artifacts" / "archive" / "legacy-root-20260925"
     record = json.loads(
         (archive / "relocation-record.json").read_text(encoding="utf-8")
     )

@@ -20,11 +20,14 @@ from value_investment_agent.application.architecture import (  # noqa: E402
 
 
 def _tracked_paths(root: Path) -> tuple[str, ...]:
-    result = subprocess.run(
-        ["git", "-C", str(root), "ls-files", "-z"],
-        check=True,
-        capture_output=True,
-    )
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "-z"],
+            check=True,
+            capture_output=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return ()
     return tuple(
         item.decode("utf-8")
         for item in result.stdout.split(b"\0")

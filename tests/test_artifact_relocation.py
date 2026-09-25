@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from hashlib import sha256
+import importlib.util
 import json
 from pathlib import Path
+
+import pytest
 
 from value_investment_agent.application.architecture import (
     ARTIFACT_RELOCATION_SCHEMA,
@@ -11,6 +14,19 @@ from value_investment_agent.application.architecture import (
 from value_investment_agent.application.architecture.artifact_relocation import (
     CANONICAL_WORKBOOK,
 )
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _load_audit_cli_module():
+    spec = importlib.util.spec_from_file_location(
+        "audit_artifact_relocation",
+        ROOT / "scripts" / "audit_artifact_relocation.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_inventory_keeps_canonical_and_current_pointer_artifacts(tmp_path: Path):
@@ -114,3 +130,15 @@ def test_inventory_treats_sibling_manifest_as_hash_binding(tmp_path: Path):
         by_name["candidate.daily-manifest.json"]["recommended_action"]
         == "KEEP_PROVENANCE"
     )
+
+
+def test_tracked_paths_is_optional_outside_a_git_worktree(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    module = _load_audit_cli_module()
+
+    def fail(*args, **kwargs):
+        raise module.subprocess.CalledProcessError(128, args[0])
+
+    monkeypatch.setattr(module.subprocess, "run", fail)
+    assert module._tracked_paths(tmp_path) == ()

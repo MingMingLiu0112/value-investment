@@ -19,9 +19,7 @@ root *.xlsx: 35
 root manifests/receipts: 22
 ```
 
-The repository had no missing static imports. Three independent read-only
-audits covered architecture, redundancy, and regression risk. No payload was
-deleted, moved, renamed, or re-signed.
+The repository had no missing static imports. Three independent read-only audits covered architecture, redundancy, and regression risk. The initial audit pass did not delete, move, rename or re-sign payload; bounded archive batches below are explicit exceptions.
 
 ## Changes Applied
 
@@ -130,9 +128,10 @@ direction for new domain and application modules.
 
 ## Deliberate Non-Actions
 
-No root workbook or manifest was moved. The redundancy audit found that current
-pointers, tests, documentation, or immutable receipts reference the existing
-paths. Moving them would trade cognitive clutter for broken provenance.
+No receipt-bound, canonical, or current-pointer root workbook was moved, and no
+manifest was moved. The redundancy audit found that current pointers, tests,
+documentation, or immutable receipts reference the remaining existing paths.
+Moving them would trade cognitive clutter for broken provenance.
 
 No script was deleted solely because it lacked a direct text reference. Several
 scripts are reached through `runpy`, delayed imports, tests, or historical
@@ -160,8 +159,8 @@ historical-validation workstreams.
 ## First Physical Archive Batch
 
 Six superseded root workbooks with documentation-only references were moved
-byte-for-byte to rtifacts/archive/legacy-root-20260925/. Their original
-paths and SHA-256 values are recorded in elocation-record.json. No current
+byte-for-byte to artifacts/archive/legacy-root-20260925/. Their original
+paths and SHA-256 values are recorded in relocation-record.json. No current
 pointer, code consumer, test consumer, or sibling manifest binding was found
 by the relocation audit before the move.
 
@@ -206,3 +205,19 @@ targeted regression suite passes.
 
 This pass does not alter any workbook, manifest, receipt, runtime pointer,
 database, or scheduled task.
+
+### Guardrail Hardening
+
+The follow-up adversarial review found that the first architecture tests were
+too permissive. The cleanup now adds:
+
+```text
+config/architecture-frozen-paths-v1.json
+config/architecture-root-artifact-allowlist-v1.json
+relative-import resolution in the layer boundary test
+relocation-hash verification for both archive records
+non-Git operation for scripts/audit_artifact_relocation.py
+```
+
+These checks preserve behavior while making accidental provenance or boundary
+drift fail in CI.

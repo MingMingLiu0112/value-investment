@@ -1,0 +1,15 @@
+{
+  "schema_version": "architecture-frozen-paths-v1",
+  "action": "no_order",
+  "paths": {
+    "src/value_investment_agent/historical_validation.py": "806d890817611000a588c9ee76ee00cc18a2529d5e1ee9769c092cc00452c5ba",
+    "src/value_investment_agent/virtual_account.py": "89d93e23d50fcafb936104049ce02f8273bc28c105f6b5f3923818cd904e07cd",
+    "config/historical-validation-policy-v1.json": "bddc62c602b1837a5cb52f6a62ec16cb91395effd1d3d09e6b5fc11c68ba6870",
+    "docs/reviewed-cash-distributions.json": "ab15bdef761774593cd0a8ea96effe1cefa51424643673de492366c9c492312f",
+    "docs/historical-trading-fees.md": "3280c81358f07eedc9626d923eb19e5ec5a64585f23bb2079dd70c4bcf820513",
+    "docs/historical-corporate-actions.md": "657d40abe78579f52865dfd61d257a3a2acfa2901ff047e90412bc0b1a9e1f9e",
+    "docs/historical-dividend-tax.md": "2d31d471dab768a30bd86cb859e23c886347fbdc9738e3b238a4af27b762edb7",
+    "docs/historical-price-crosscheck.md": "197e2bb2723cfa6edcfcf91a3e6b7bd28eeef5991410b8cf39b8ef927ac22a0d",
+    "scripts/build_moutai_historical_validation_admission.py": "6f8a55ea6fbcd4f1db37e614b9cfc7e05a5084d927bee1810b63e39afb022e60"
+  }
+}
