@@ -4,9 +4,12 @@ Calendar membership is not evidence of a successful shadow run or execution.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
+import hashlib
 import json
 from urllib.parse import parse_qs
+
+import requests
 
 from .quote_sessions import (
     CALENDAR_PATH,
@@ -90,3 +93,21 @@ def completed_exchange_sessions(
         "latest_completed_session": latest,
         "sessions": sessions,
     }
+
+
+def refetch_official_calendar(documents: list[dict]) -> dict:
+    """Independently compare retained official bytes with a fresh TLS response."""
+    hashes = []
+    with requests.Session() as session:
+        session.trust_env = False
+        for document in documents:
+            url = document['source_url']
+            response = session.get(url, timeout=(10, 20))
+            response.raise_for_status()
+            if response.url != url or len(response.content) > 1_000_000:
+                raise ValueError('Official calendar refetch URL or response size differs')
+            digest = hashlib.sha256(response.content).hexdigest()
+            if digest != document['sha256']:
+                raise ValueError('Official calendar live response differs from archived source')
+            hashes.append(digest)
+    return {'source_sha256': hashes, 'verified_at': datetime.now(timezone.utc).isoformat()}

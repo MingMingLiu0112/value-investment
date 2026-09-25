@@ -22,8 +22,11 @@ Decision、Portfolio、Operations、User Acceptance 全部证据及 M6/M7 门禁
 M6 新增离线 R0 合同：恢复命令写内容寻址收据，绑定已登记 manifest、dump、
 原件 Hash、隔离库表内容指纹和实际耗时；预检必须重新连接隔离库验证收据，
 手填摘要仍不能 `DONE`。官方 SSE/SZSE 日历可校验完整已收盘会话，账本缺日即
-中断连续段；目前官方抓取来源独立认证、授权后真实运行收据及真实隔离恢复
+中断连续段；目前全范围官方抓取来源认证、授权后真实运行收据及真实备份隔离恢复
 均未取得，因此 `M6_OPERATIONAL=NOT_STARTED`、已验真实 Shadow 会话为 0。
+现已对 600519 所在 SSE 的 2026 官方休市公告完成归档与第二次独立 HTTPS
+逐字节比对；这仅证明该单一交易所公告来源，SZSE 和未来实际 Shadow 范围尚待绑定，
+M6 整体日历项仍为 `PARTIAL`。
 本机 Docker 引擎未运行且无本地 PostgreSQL 恢复工具，不能声称本轮完成真实 drill。
 一次性 CI 双 PostgreSQL 实例的合成恢复测试已通过；它只证明工程链在隔离环境
 可运行，不是用户真实备份、真实 RPO/RTO 或 M6 运营恢复验收。

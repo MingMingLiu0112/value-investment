@@ -7,7 +7,9 @@ import json
 
 import pytest
 
-from value_investment_agent.m6_exchange_sessions import completed_exchange_sessions
+from value_investment_agent.m6_exchange_sessions import (
+    completed_exchange_sessions, refetch_official_calendar,
+)
 from value_investment_agent.quote_sessions import (
     SSE_2026_CLOSURE_NOTICE_URL,
     SSE_2026_NOTICE_MARKERS,
@@ -96,3 +98,40 @@ def test_unsupported_venue_or_naive_cutoff_fails_closed():
         completed_exchange_sessions("BSE", [], datetime(2026, 9, 25, 8, tzinfo=timezone.utc))
     with pytest.raises(ValueError, match="Timezone-aware"):
         completed_exchange_sessions("SSE", [_sse()], datetime(2026, 9, 25, 16))
+
+
+def test_independent_official_refetch_requires_identical_tls_response(monkeypatch):
+    document = _sse()
+    raw = base64.b64decode(document['raw_base64'])
+
+    class Response:
+        url = document['source_url']
+        content = raw
+
+        def raise_for_status(self):
+            pass
+
+    class Session:
+        trust_env = True
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            pass
+
+        def get(self, url, *, timeout):
+            assert self.trust_env is False
+            assert timeout == (10, 20)
+            return Response()
+
+    from value_investment_agent import m6_exchange_sessions as module
+    monkeypatch.setattr(module.requests, 'Session', Session)
+    assert refetch_official_calendar([document])['source_sha256'] == [document['sha256']]
+    Response.content = raw + b'changed'
+    with pytest.raises(ValueError, match='differs'):
+        refetch_official_calendar([document])
+    Response.content = raw
+    Response.url = 'https://example.com/redirect'
+    with pytest.raises(ValueError, match='URL'):
+        refetch_official_calendar([document])

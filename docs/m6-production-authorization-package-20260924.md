@@ -34,6 +34,29 @@ action = no_order
 
 不得以“同意部署”等笼统措辞替代单项决定。
 
+## 授权前运行边界清单
+
+以下是拟授权时必须逐项填写的最小边界；`未确定`不是默认同意。
+
+| 边界 | 当前机器侧事实 | 授权前仍需明确 |
+| --- | --- | --- |
+| 部署主机/环境 | 当前只做离线预检和一次性 CI 合成恢复 | 生产主机、服务账号、启动窗口及 PTA 资源基线 |
+| 数据库/端口/网络暴露 | 恢复靶库固定 `127.0.0.1:5433/value_agent_restore`；它不是生产连接参数 | 生产库身份、端口、防火墙、允许来源、最小权限及 TLS |
+| 调度与频率 | 未启用 | 交易日收盘后时间、公告检查频率、并发/锁/失败预算 |
+| 通知 | 未配置 | 渠道、接收人、严重度、静默窗口和确认机制 |
+| 凭据与私人数据 | 不入 Git/WPS/公开 runtime；当前无真实 IPS/组合 | 私有根、密钥管理、访问人、保留/删除周期及导入范围 |
+| CPU/RAM/磁盘 | 隔离恢复上限 0.5 CPU/256 MiB，预检要求至少保留 2 GiB；未测生产余量 | 生产限额、PTA 基线、越界停止及磁盘告警 |
+| 日志与备份 | 备份/恢复代码及合成 CI drill 可用；真实备份恢复未验收 | 日志保留期、每日备份、异地加密副本、密钥隔离及真实恢复负责人 |
+| RPO/RTO/回退 | 目标 24h/4h；合成测试不是生产测量 | 真实备份点、隔离恢复收据、回退命令/窗口和复核人 |
+| 紧急停止 | 本地 `stop` 可执行；无可信授权收据时 `advance` 禁止 | 生产 stop/restart 值班人与复机门禁 |
+| 官方日历/Shadow | SSE 2026 休市公告已归档且二次 HTTPS Hash 一致；已验真实会话 0 | SZSE/授权范围覆盖、会话运行收据、连续 20 日及真实事件标准 |
+| 安全边界 | `action=no_order`，不连券商、不自动下单 | 授权范围外的操作一律拒绝，最终投资决定仍由用户作出 |
+
+开始条件是 M3-M5 产品前置、私人输入、官方日历来源、真实备份恢复及逐项
+生产授权均有证据；停止条件包括数据/Hash/资源/PTA 异常或 P0/P1 错误放行；
+复机须新授权收据、根因关闭和受影响观察窗口重置。当前任一条件不满足时
+`SHADOW_START=FORBIDDEN`。
+
 ## 永久边界
 
 - 不修改、重启或挤占 `web_app_integrated.py` / `web-app-pta`。
@@ -62,12 +85,12 @@ ps -eo pid,ppid,%mem,%cpu,cmd --sort=-%mem | head -n 25
 ## Shadow 规则与紧急停止
 
 Shadow 必须按 `OFFLINE_ENGINEERING -> STAGING -> SHADOW` 逐级推进，每次转换需要新的
-明确授权 ID。当前命令只写本地控制证据，不触碰生产：
+明确、可验证授权收据。当前本地控制命令只允许只读查看与紧急停止；`advance`
+已被拒绝，因为任意非空授权 ID 不足以证明用户生产授权，不触碰生产：
 
 ```powershell
 python scripts/m6_operational_control.py status
 python scripts/m6_operational_control.py stop --reason <reason> --operator <operator>
-python scripts/m6_operational_control.py advance --target STAGING --authorization-id <approved-id> --reason <reason> --operator <operator>
 ```
 
 数据完整性失败、时钟/水位回退、Hash 不匹配、资源越界、PTA 异常、私有边界失败、

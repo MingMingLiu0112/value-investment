@@ -1,11 +1,13 @@
 import base64
+from dataclasses import replace
 from datetime import datetime, timezone
 import hashlib
 
 import pytest
 
 from value_investment_agent.m6_operational_readiness import (
-    M6PreflightConfig, RestoreTarget, PARTIAL, assess_session_ledger,
+    M6PreflightConfig, RestoreTarget, PARTIAL, DONE,
+    assess_session_ledger, build_preflight_receipt,
 )
 from value_investment_agent.m6_exchange_sessions import completed_exchange_sessions
 from value_investment_agent.quote_sessions import (
@@ -82,3 +84,24 @@ def test_calendar_rejects_invalid_session_observation(change):
         record['observed_at'] = '2026-09-24T17:00:00+08:00'
     with pytest.raises(ValueError):
         assess_session_ledger(_config(), [record], calendar_evidence=calendar)
+
+
+def test_live_refetch_proves_one_venue_without_claiming_all_venue_readiness(monkeypatch, tmp_path):
+    from value_investment_agent import m6_exchange_sessions as calendar_module
+    from value_investment_agent import m6_operational_readiness as readiness
+    calendar = _calendar()
+    monkeypatch.setattr(calendar_module, 'refetch_official_calendar', lambda documents: {
+        'source_sha256': [documents[0]['sha256']],
+        'verified_at': '2026-09-24T08:31:00+00:00',
+    })
+    config = replace(_config(), stage_status={key: 'PARTIAL' for key in ('m1', 'm2', 'm3', 'm4', 'm5')})
+    monkeypatch.setattr(readiness, 'load_config', lambda path: config)
+    monkeypatch.setattr(readiness, 'audit_repository', lambda *args, **kwargs: {'status': DONE})
+    receipt = build_preflight_receipt(
+        tmp_path, tmp_path / 'config.json', calendar_evidence=calendar,
+        verify_live_calendar=True)
+    assert receipt['criteria']['m6c7_official_exchange_calendar']['status'] == PARTIAL
+    assert receipt['criteria']['m6c7_official_exchange_calendar']['evidence']['verified_venue'] == 'SSE'
+    assert receipt['criteria']['m6c7_official_exchange_calendar']['checks'][1]['passed'] is True
+    assert receipt['criteria']['m6c5_real_sessions_and_events']['status'] == 'NOT_STARTED'
+    assert receipt['operational_acceptance_status'] == 'NOT_STARTED'

@@ -319,8 +319,10 @@ def assess_session_ledger(
     records: Sequence[Mapping[str, Any]],
     *,
     calendar_evidence: Mapping[str, Any] | None = None,
+    verify_live_calendar: bool = False,
 ) -> dict[str, Any]:
     schedule = None
+    live_calendar = None
     schedule_dates: list[str] = []
     if calendar_evidence is not None:
         from .m6_exchange_sessions import completed_exchange_sessions
@@ -329,6 +331,11 @@ def assess_session_ledger(
             str(calendar_evidence['venue']), list(calendar_evidence['documents']), cutoff)
         schedule_dates = [item['session_date'] for item in schedule['sessions']]
         schedule_lookup = {item['session_date']: item for item in schedule['sessions']}
+        if verify_live_calendar:
+            from .m6_exchange_sessions import refetch_official_calendar
+            live_calendar = refetch_official_calendar(list(calendar_evidence['documents']))
+    elif verify_live_calendar:
+        raise ValueError('Live calendar verification requires archived source documents')
     seen_dates: set[date] = set()
     failures: list[str] = []
     normalized = []
@@ -428,6 +435,8 @@ def assess_session_ledger(
             "verified_actual_sessions": 0,
             "calendar_source_sha256": sorted({item['sha256'] for item in schedule['sessions']}) if schedule else [],
             "latest_completed_exchange_session": schedule['latest_completed_session'] if schedule else None,
+            "calendar_live_verified_at": live_calendar['verified_at'] if live_calendar else None,
+            "calendar_live_sha256": live_calendar['source_sha256'] if live_calendar else [],
         },
     )
 
@@ -554,6 +563,7 @@ def build_preflight_receipt(
     clean: bool = True,
     session_records: Sequence[Mapping[str, Any]] = (),
     calendar_evidence: Mapping[str, Any] | None = None,
+    verify_live_calendar: bool = False,
     restore_records: Sequence[Mapping[str, Any]] = (),
     restore_receipt_path: Path | None = None,
     source_database_url: str | None = None,
@@ -566,7 +576,9 @@ def build_preflight_receipt(
         tracked_files=tracked_files,
         clean=clean,
     )
-    sessions = assess_session_ledger(config, session_records, calendar_evidence=calendar_evidence)
+    sessions = assess_session_ledger(
+        config, session_records, calendar_evidence=calendar_evidence,
+        verify_live_calendar=verify_live_calendar)
     restore = assess_restore_evidence(
         config, restore_records, receipt_path=restore_receipt_path,
         source_database_url=source_database_url,
@@ -606,14 +618,21 @@ def build_preflight_receipt(
             PARTIAL if calendar_evidence is not None else NOT_STARTED,
             [_check('exchange calendar syntax and completed-session cutoff verified',
                     calendar_evidence is not None),
-             _check('official retrieval provenance independently bound', False)],
-            blockers=['official retrieval provenance is not independently bound']
-            if calendar_evidence is not None else
+             _check('official retrieval provenance independently bound',
+                    bool(sessions['evidence']['calendar_live_verified_at']))],
+            blockers=['authorized venue coverage is not yet defined']
+            if sessions['evidence']['calendar_live_verified_at'] else
+            ['official retrieval provenance is not independently bound'] if calendar_evidence is not None else
             ['official exchange calendar evidence is not supplied'],
             evidence={
                 'venue': calendar_evidence['venue'],
                 'observation_cutoff': calendar_evidence['observation_cutoff'],
                 'source_sha256': sessions['evidence']['calendar_source_sha256'],
+                'source_bundle_sha256': calendar_evidence.get('source_bundle_sha256'),
+                'source_report_sha256': calendar_evidence.get('source_report_sha256'),
+                'live_refetch_sha256': sessions['evidence']['calendar_live_sha256'],
+                'verified_at': sessions['evidence']['calendar_live_verified_at'],
+                'verified_venue': calendar_evidence['venue'] if sessions['evidence']['calendar_live_verified_at'] else None,
             } if calendar_evidence is not None else None,
         ),
     }
@@ -649,7 +668,7 @@ def build_preflight_receipt(
         calendar = criteria['m6c7_official_exchange_calendar']
         calendar['evidence_refs'] = [doc['source_url'] for doc in calendar_evidence['documents']]
         calendar['evidence_sha256'] = sessions['evidence']['calendar_source_sha256']
-        calendar['verified_at'] = datetime.now(timezone.utc).isoformat()
+        calendar['verified_at'] = sessions['evidence']['calendar_live_verified_at']
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),

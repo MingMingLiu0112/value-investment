@@ -1,5 +1,21 @@
 # 当前执行状态
 
+## 2026-09-25 M6 SSE 官方日历与授权控制补充审计
+
+只读 `collect_quote_sessions.py --symbols 600519` 将 SSE 2026 官方休市公告归档于
+`runtime/quote-sessions/20260925T090141596768Z/bundle.json`，bundle SHA-256
+`ebc4f2d3f90e2e495e8e5eadede6228fe5c754c56f3fb0f202f0a4b0d2307766`。
+M6 日历解析确认最近已完成 SSE 会话为 2026-09-24，官方原件 SHA-256
+`4e260b815ce1309175ed994e6490a4ccd51b998a5f92bcdc41cec00fc6823dc7`；
+第二次独立 HTTPS 重取返回 HTTP 200 且原文字节 Hash 一致。新增预检入口核对
+bundle/report Hash、明确引用和原件来源，live refetch 为显式选项。
+这只覆盖 SSE 2026，不证明 SZSE 或未来已授权运行范围，M6 日历准入仍 `PARTIAL`；
+真实 Shadow 会话 0，运营 `NOT_STARTED`。
+
+本地 M6 控制 CLI 已禁用仅凭任意授权 ID 的 `advance`；`status` 和紧急 `stop`
+保留。授权包列出尚缺部署/DB/网络、调度通知、凭据、CPU/RAM/磁盘、日志备份、
+回退和 Shadow 启停范围。`INITIAL_ASSISTED_USE=NOT_REACHED`，`action=no_order`。
+
 ## 2026-09-25 M6 证据闭环工程与 M7 状态投影
 
 基线 `0707add` 后完成本地 R0 工程：恢复前核对来源库登记的 manifest/dump，
@@ -19,6 +35,13 @@ Docker 引擎未运行，本机无 `pg_restore`；无真实 RPO/RTO 或恢复验
 官方抓取来源仍需独立认证；生产授权、真实事件运营观察、20 连续真实交易会话、
 M7 用户验收均未通过。`TOTAL_GOAL_STATUS=IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`，
 `INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`。
+
+后续推送 `0ba4f47` 的 [Core Research Gates 36115714671](https://github.com/MingMingLiu0112/value-investment/actions/runs/36115714671)
+同样双作业成功，合成恢复制品 `m6-synthetic-restore-evidence` 已上传（3,213 字节，
+14 天留存）；它含 CI 一次性测试数据，不是用户的真实备份。M6 本地运营控制 CLI
+已拒绝仅凭非空授权 ID 升级模式；`status`/紧急 `stop` 仍可用，控制回归
+`10 passed`。授权包已列明尚待确认的主机/端口暴露、调度、资源、日志、备份、
+回退、私人数据与 Shadow 门。未经用户真实 R3 授权不得启用生产。
 
 推送 `9c4ab6e` 后 [Core Research Gates 36115217469](https://github.com/MingMingLiu0112/value-investment/actions/runs/36115217469)
 的 `offline-core` 与 `postgres-integration` 均为 success；后者包含一次性双库
