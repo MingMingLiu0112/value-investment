@@ -757,11 +757,18 @@ def _event_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
                 detail += "\n阻断：" + ", ".join(item["blockers"])
             detail += ("\n人工决策复核：需要" if item["requires_human_decision_review"]
                        else "\n人工决策复核：不适用")
-            detail += ("\n新估值：" + str(item["new_valuation_result"])
-                       if item["new_valuation_result"] else "\n新估值：未生成")
+            refreshed = item["new_valuation_result"]
+            if refreshed:
+                detail += (f"\n新估值：{refreshed['valuation_date']} / {refreshed['model_version']}"
+                           f"\n产物 ID：{refreshed['artifact_id']}"
+                           f"\n事件有效性：{refreshed['event_validity_status']}")
+            else:
+                detail += "\n新估值：未生成"
             evidence = f"PDF SHA-256: {item['pdf_sha256']}"
             if item["event_id"]:
                 evidence += f"\nEvent ID: {item['event_id']}"
+            if refreshed:
+                evidence += f"\nValuation SHA-256: {refreshed['payload_sha256']}"
             values = [item["announcement_id"], item["materiality"], item["title"], detail, evidence]
             for column, value in enumerate(values, 1):
                 _style(ws.cell(row, column, value), fill=AMBER)

@@ -8,6 +8,9 @@ from .m5_event_run import M5EventRunReceipt
 from .m5_recalculation_plan import BoundedRecalculationPlan
 from .event_materiality import event_materiality_decision_from_payload
 from .m5_materiality_bridge import materiality_direct_kinds
+from .research_artifact_repository import ResearchArtifactRepository
+from .research_input import ResearchInputDescriptor
+from .research_runtime_import import RuntimeArtifactCandidate
 
 
 def build_actual_event_read_model(
@@ -16,6 +19,9 @@ def build_actual_event_read_model(
     plan: BoundedRecalculationPlan, facts_artifact: Mapping[str, Any] | None = None,
     outcome_receipt: Mapping[str, Any] | None = None,
     facts_source_sha256: str | None = None,
+    refresh_descriptor: ResearchInputDescriptor | None = None,
+    refresh_prior_candidate: RuntimeArtifactCandidate | None = None,
+    refresh_repository: ResearchArtifactRepository | None = None,
 ) -> dict[str, Any]:
     if receipt.namespace != "ACTUAL" or receipt.action != "no_order" or plan.action != "no_order":
         raise ValueError("Actual no-order receipt and plan are required")
@@ -32,8 +38,22 @@ def build_actual_event_read_model(
         raise ValueError("Recalculation plan omits or changes invalidated dependencies")
     outcomes_by_event = {}
     if outcome_receipt is not None:
-        from .m5_bounded_recalculation_result import validate_bounded_recalculation_result
-        validate_bounded_recalculation_result(outcome_receipt, receipt=receipt, plan=plan)
+        if outcome_receipt.get("schema_version") == "m5-bounded-research-refresh-v1":
+            if (facts_artifact is None or facts_source_sha256 is None
+                or refresh_descriptor is None or refresh_prior_candidate is None
+                or refresh_repository is None):
+                raise ValueError("M7 refresh projection requires complete persisted artifact evidence")
+            from .m5_bounded_refresh import validate_bounded_research_refresh
+            validate_bounded_research_refresh(
+                dict(outcome_receipt), receipt=receipt, graph=graph, plan=plan,
+                facts_artifact=dict(facts_artifact),
+                facts_source_sha256=facts_source_sha256,
+                descriptor=refresh_descriptor, prior_candidate=refresh_prior_candidate,
+                repository=refresh_repository,
+            )
+        else:
+            from .m5_bounded_recalculation_result import validate_bounded_recalculation_result
+            validate_bounded_recalculation_result(outcome_receipt, receipt=receipt, plan=plan)
         outcomes_by_event = {item["event_id"]: item for item in outcome_receipt["outcomes"]}
         if len(outcomes_by_event) != len(outcome_receipt["outcomes"]):
             raise ValueError("Duplicate bounded recalculation outcome")
@@ -94,11 +114,14 @@ def build_actual_event_read_model(
                     raise ValueError("Recalculation outcome tasks do not match the plan")
                 recalculation_status = outcome["status"]
                 blockers = outcome["blockers"]
+                new_valuation_result = outcome["new_valuation_result"]
             else:
                 recalculation_status = "RECALCULATION_PENDING"
+                new_valuation_result = None
         else:
             tasks, dependencies, blockers = [], [], []
             recalculation_status = "NO_RECALCULATION_REQUIRED"
+            new_valuation_result = None
         rows.append({
             "symbol": symbol, "announcement_id": announcement_id,
             "title": source["title"], "published_at": source["published_at"],
@@ -107,7 +130,8 @@ def build_actual_event_read_model(
             "event_id": event.event_id if event else None,
             "affected_dependencies": dependencies, "recalculation_status": recalculation_status,
             "blockers": blockers, "recalculation_task_ids": [task.task_id for task in tasks],
-            "new_valuation_result": None, "requires_human_decision_review": bool(tasks),
+            "new_valuation_result": new_valuation_result,
+            "requires_human_decision_review": bool(tasks),
             "action": "no_order",
         })
     if set(by_announcement) != {

@@ -486,8 +486,11 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
     from value_investment_agent.m5_bounded_refresh import (
         execute_bounded_research_refresh, validate_bounded_research_refresh,
     )
+    from value_investment_agent.m5_actual_read_model import build_actual_event_read_model
     from value_investment_agent.m5_event_dependencies import DependencyGraph, DependencyNode
+    from value_investment_agent.event_materiality import EventMaterialityDecision
     from value_investment_agent.m5_recalculation_plan import build_bounded_recalculation_plan
+    from value_investment_agent.m5_materiality_bridge import materiality_direct_kinds
     from value_investment_agent.m5_research_artifact_graph import attach_valuation_input_descriptor
     from value_investment_agent.research_artifacts import (
         ARTIFACT_VALUATION_RESULT, SCOPE_SECURITY, canonicalize_artifact_payload,
@@ -512,9 +515,29 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
     pdf_ref = {"id": "filing", "sha256": "3" * 64,
                "source_url": "https://static.cninfo.com.cn/finalpage/report.PDF"}
     at = datetime(2026, 9, 22, tzinfo=timezone.utc)
+    decision = EventMaterialityDecision(
+        event_decision_id="review-1", symbol="600519", announcement_id="1234567890",
+        title="Interim filing", published_at=datetime(2026, 9, 21, tzinfo=timezone.utc),
+        source_ref=pdf_ref, source_sha256=pdf_ref["sha256"],
+        machine_candidate_reason="financial_statement",
+        human_decision="MATERIAL_REQUIRES_RECALCULATION",
+        affected_domains=(), affected_fact_fields=(), affected_assumptions=(),
+        affected_artifacts=(), requires_recalculation=True, requires_model_stale=True,
+        requires_followup=False, reviewed_at=at,
+    )
     event = SimpleNamespace(
-        event_id="event-1", source_event_id="review-1", symbol="600519",
-        current_state={"direct_dependency_kinds": ["valuation_inputs", "valuation_result"]},
+        event_id="event-1", source_event_id="materiality-review:review-1", symbol="600519",
+        current_state={
+            "direct_dependency_kinds": list(materiality_direct_kinds(decision)),
+            "source_sha256": decision.source_sha256,
+            "materiality_status": decision.human_decision,
+            "event_cluster_id": decision.event_cluster_id,
+            "supersedes_event_id": decision.supersedes_event_id,
+            "affected_domains": list(decision.affected_domains),
+            "affected_fact_fields": list(decision.affected_fact_fields),
+            "affected_assumptions": list(decision.affected_assumptions),
+            "affected_artifacts": list(decision.affected_artifacts),
+        },
         evidence_refs=(pdf_ref,),
     )
     receipt = SimpleNamespace(
@@ -532,6 +555,12 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
         DependencyNode(node_id="prior-valuation", kind="valuation_result",
                        symbol="600519", inputs=("research-case",),
                        version=prior_sha, evidence_refs=({"id": "prior"},)),
+        DependencyNode(node_id="prior-validity", kind="model_validity",
+                       symbol="600519", inputs=("prior-valuation",),
+                       version="6" * 64, evidence_refs=({"id": "validity"},)),
+        DependencyNode(node_id="prior-review", kind="decision_review",
+                       symbol="600519", inputs=("research-case",),
+                       version="7" * 64, evidence_refs=({"id": "review"},)),
     ))
     old = _descriptor()
     descriptor = finalize_input_descriptor(replace(
@@ -598,6 +627,26 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
                                       if key != "result_sha256"})
     with pytest.raises(ValueError, match="persisted artifacts"):
         validate_bounded_research_refresh(forged, **validation)
+    queue = {"queue_id": "synthetic-offline", "scans": [{
+        "symbol": "600519", "announcements": [{
+            "announcement_id": decision.announcement_id,
+            "published_at": decision.published_at.isoformat(),
+            "title": decision.title, "source_url": pdf_ref["source_url"],
+            "review_status": "PENDING_HUMAN_REVIEW", "evidence_refs": [pdf_ref],
+        }],
+    }]}
+    read_model = build_actual_event_read_model(
+        queue=queue, reviews=[{"decisions": [decision.as_policy()]}],
+        receipt=receipt, graph=graph, plan=plan, facts_artifact=facts_artifact,
+        outcome_receipt=result, facts_source_sha256="d" * 64,
+        refresh_descriptor=descriptor, refresh_prior_candidate=prior_candidate,
+        refresh_repository=repository,
+    )
+    row = read_model["rows"][0]
+    assert row["recalculation_status"] == "MODEL_STALE"
+    assert row["new_valuation_result"]["artifact_id"] == refreshed.artifact_id
+    assert row["requires_human_decision_review"] is True
+    assert row["action"] == "no_order"
     prior_path.write_text("tampered", encoding="utf-8")
     with pytest.raises(ValueError, match="source bytes"):
         validate_bounded_research_refresh(result, **validation)

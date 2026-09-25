@@ -360,6 +360,36 @@ def test_actual_event_sheet_explains_dependency_and_not_ready_boundary():
         assert expected in text
 
 
+def test_actual_event_sheet_shows_versioned_result_but_keeps_event_stale():
+    packet = _packet()
+    packet["m5"]["actual_event_chain"] = {
+        "reviewed_count": 1, "pending_human_review": 0, "verified_fact_count": 5,
+        "rows": [{
+            "announcement_id": "1225475868", "materiality": "MATERIAL_REQUIRES_RECALCULATION",
+            "title": "2026 half-year report", "affected_dependencies": ["valuation_inputs"],
+            "recalculation_status": "MODEL_STALE",
+            "blockers": ["event_bound_model_validity_not_reconciled"],
+            "pdf_sha256": "a" * 64, "event_id": "event-1",
+            "requires_human_decision_review": True,
+            "new_valuation_result": {
+                "valuation_date": "2026-06-30", "model_version": "residual-income-v1",
+                "artifact_id": "version-2", "payload_sha256": "b" * 64,
+                "event_validity_status": "UNRECONCILED",
+            },
+            "action": ACTION_NO_ORDER,
+        }],
+        "action": ACTION_NO_ORDER,
+    }
+    sheet = build_daily_workbench(packet)[VISIBLE_SHEETS[6]]
+    text = "\n".join(str(value) for row in sheet.iter_rows(values_only=True)
+                     for value in row if value is not None)
+    for expected in ("MODEL_STALE", "event_bound_model_validity_not_reconciled",
+                     "2026-06-30 / residual-income-v1", "产物 ID：version-2",
+                     "事件有效性：UNRECONCILED", "Valuation SHA-256: " + "b" * 64,
+                     "人工决策复核：需要"):
+        assert expected in text
+
+
 def test_market_sheet_shows_limited_quality_coverage_and_value_scope(tmp_path: Path):
     packet = _packet()
     receipt = write_daily_workbench(
