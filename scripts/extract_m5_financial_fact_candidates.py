@@ -10,11 +10,19 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+import re
 
 from pypdf import PdfReader
 
 
 HEADINGS = ("合并资产负债表", "合并利润表", "合并现金流量表")
+FACT_PATTERNS = {
+    "operating_revenue": re.compile(r"营业收入\s+43\s+([-\d,]+\.\d{2})"),
+    "operating_cost": re.compile(r"营业成本\s+43\s+([-\d,]+\.\d{2})"),
+    "net_profit": re.compile(r"四、净利润.*?\s+([-\d,]+\.\d{2})\s+[-\d,]+\.\d{2}", re.S),
+    "cash_received_from_sales": re.compile(r"销售商品、提供劳务收到的现金\s+([-\d,]+\.\d{2})"),
+    "cash_and_cash_equivalents": re.compile(r"货币资金\s+1\s+([-\d,]+\.\d{2})"),
+}
 
 
 def digest(path: Path) -> str:
@@ -35,6 +43,7 @@ def main() -> int:
         raise ValueError("PDF must exist and output must be new")
     reader = PdfReader(str(pdf))
     hits = []
+    numeric_candidates = []
     for page_number, page in enumerate(reader.pages, 1):
         text = page.extract_text() or ""
         matched = tuple(item for item in HEADINGS if item in text)
@@ -45,6 +54,21 @@ def main() -> int:
                 "text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
                 "excerpt": text[:1200],
             })
+        for field, pattern in FACT_PATTERNS.items():
+            if any(item["field"] == field for item in numeric_candidates):
+                continue
+            match = pattern.search(text)
+            if match:
+                line = match.group(0).replace("\n", " ")
+                numeric_candidates.append({
+                    "field": field,
+                    "value": match.group(1).replace(",", ""),
+                    "unit": "CNY",
+                    "page_number": page_number,
+                    "source_line": line[:500],
+                    "page_text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                    "verification_status": "PENDING_HUMAN_FINANCIAL_FACT_VERIFICATION",
+                })
     payload = {
         "schema_version": "m5-financial-fact-candidate-extraction-v1",
         "symbol": args.symbol,
@@ -53,7 +77,7 @@ def main() -> int:
         "pdf": {"path": str(pdf), "sha256": digest(pdf), "page_count": len(reader.pages)},
         "matched_statement_pages": hits,
         "verification_status": "PENDING_HUMAN_FINANCIAL_FACT_VERIFICATION",
-        "numeric_facts": [],
+        "numeric_facts": numeric_candidates,
         "action": "no_order",
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
