@@ -1,5 +1,17 @@
 # 当前执行状态
 
+## 2026-09-25 M6 授权制品实际字节绑定
+
+Shadow 授权验证不再只检查三个 64 位字符串。证据包必须携带 scope manifest、部署
+manifest 和运行配置的实际字节；验证器重算三个 SHA-256，与签名授权逐项核对，并要求
+scope 中的授权 ID、模式、交易所、有效期及部署/配置交叉 Hash 完全一致。部署与配置均
+固定 `action=no_order` 且必须有独立 ID。替换任一制品字节、Hash 或 scope 字段都会失败
+关闭。M6 会话/事件/运营联合定向回归 `67 passed`。
+
+这只关闭机器侧“声明 Hash 未绑定实际字节”的 R0 缺口。独立 append-only 接收时间锚、
+生产信任根、R3 授权、真实恢复、连续 20 个真实交易会话及真实事件仍未形成；
+`M6_OPERATIONAL=NOT_STARTED`、真实会话/事件均为 0、`action=no_order`。
+
 ## 2026-09-25 M4 私人输入包与 M7 唯一试用入口
 
 M4 新增统一入口 `scripts/setup_private_portfolio.py`、最小草稿模板、明确标记为

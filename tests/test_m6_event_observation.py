@@ -64,12 +64,28 @@ def _fixture(*, mutate=None, valid_from="2026-07-01T00:00:00+08:00"):
                  if item.get("event", {}).get("event_id") ==
                  "m5-1f43cb646a5884b860d3cd98cdd5ff32")
     auth_key, runtime_key, witness_key = (Ed25519PrivateKey.generate() for _ in range(3))
+    deployment = _bytes({"action": "no_order", "deployment_id": "synthetic-deployment"})
+    config = _bytes({"action": "no_order", "config_id": "synthetic-config"})
+    scope = _bytes({
+        "action": "no_order", "authorization_id": "synthetic-only", "mode": "SHADOW",
+        "venue": "SSE", "valid_from": valid_from,
+        "valid_until": "2026-09-26T00:00:00+08:00",
+        "deployment_sha256": _sha(deployment), "config_sha256": _sha(config),
+    })
+    artifacts = {
+        name: {"raw_base64": base64.b64encode(raw).decode(), "sha256": _sha(raw)}
+        for name, raw in {
+            "scope_manifest": scope,
+            "deployment_manifest": deployment,
+            "runtime_config": config,
+        }.items()
+    }
     authorization = _sign({
         "action": "no_order", "authorization_id": "synthetic-only", "mode": "SHADOW",
         "venue": "SSE", "valid_from": valid_from,
         "valid_until": "2026-09-26T00:00:00+08:00",
-        "deployment_sha256": "a" * 64, "config_sha256": "b" * 64,
-        "scope_manifest_sha256": "d" * 64, "runtime_public_key": _public(runtime_key),
+        "deployment_sha256": _sha(deployment), "config_sha256": _sha(config),
+        "scope_manifest_sha256": _sha(scope), "runtime_public_key": _public(runtime_key),
     }, auth_key, "M6-AUTHORIZATION")
     observation = {
         "schema_version": "m6-shadow-event-observation-v1", "action": "no_order",
@@ -95,7 +111,7 @@ def _fixture(*, mutate=None, valid_from="2026-07-01T00:00:00+08:00"):
         "resource_baseline_ok": True, "calendar_sha256": _sha(
             "\n".join(SSE_2026_NOTICE_MARKERS).encode("utf-8")),
         "calendar_source_url": SSE_2026_CLOSURE_NOTICE_URL,
-        "deployment_sha256": "a" * 64, "config_sha256": "b" * 64,
+        "deployment_sha256": _sha(deployment), "config_sha256": _sha(config),
         "artifact_sha256": _sha(observation_bytes), "previous_receipt_sha256": None,
     }, runtime_key, "M6-SESSION")
     witness = _sign({
@@ -103,7 +119,7 @@ def _fixture(*, mutate=None, valid_from="2026-07-01T00:00:00+08:00"):
         "received_at": "2026-09-24T15:11:00+08:00", "sequence": 1,
         "previous_witness_sha256": None,
     }, witness_key, "M6-WITNESS")
-    bundle = {"authorization": authorization,
+    bundle = {"authorization": authorization, "authorization_artifacts": artifacts,
               "sessions": [{"session": session, "witness": witness}]}
     trust = {"authorization_public_key": _public(auth_key),
              "witness_public_key": _public(witness_key),

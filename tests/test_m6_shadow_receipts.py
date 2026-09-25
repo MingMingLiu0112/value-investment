@@ -38,6 +38,24 @@ def _hash(envelope):
     return hashlib.sha256(_bytes(envelope)).hexdigest()
 
 
+def _authorization_artifacts():
+    deployment = _bytes({"action": "no_order", "deployment_id": "synthetic-deployment"})
+    config = _bytes({"action": "no_order", "config_id": "synthetic-config"})
+    scope = _bytes({
+        "action": "no_order", "authorization_id": "synthetic-only",
+        "mode": "SHADOW", "venue": "SSE",
+        "valid_from": "2026-09-01T00:00:00+00:00",
+        "valid_until": "2026-09-25T00:00:00+00:00",
+        "deployment_sha256": hashlib.sha256(deployment).hexdigest(),
+        "config_sha256": hashlib.sha256(config).hexdigest(),
+    })
+    raw = {"scope_manifest": scope, "deployment_manifest": deployment, "runtime_config": config}
+    return {
+        name: {"raw_base64": base64.b64encode(value).decode(), "sha256": hashlib.sha256(value).hexdigest()}
+        for name, value in raw.items()
+    }
+
+
 def _fixture():
     raw = '\n'.join(SSE_2026_NOTICE_MARKERS).encode()
     document = {'source_url': SSE_2026_CLOSURE_NOTICE_URL,
@@ -50,12 +68,14 @@ def _fixture():
         'SSE', [document], datetime.fromisoformat(calendar['observation_cutoff']))
     days = [item['session_date'] for item in schedule['sessions'][-2:]]
     auth_key, run_key, witness_key = [Ed25519PrivateKey.generate() for _ in range(3)]
+    artifacts = _authorization_artifacts()
     auth = _sign({
         'action': 'no_order', 'authorization_id': 'synthetic-only', 'mode': 'SHADOW',
         'venue': 'SSE', 'valid_from': '2026-09-01T00:00:00+00:00',
         'valid_until': '2026-09-25T00:00:00+00:00',
-        'deployment_sha256': 'a' * 64, 'config_sha256': 'b' * 64,
-        'scope_manifest_sha256': 'd' * 64,
+        'deployment_sha256': artifacts['deployment_manifest']['sha256'],
+        'config_sha256': artifacts['runtime_config']['sha256'],
+        'scope_manifest_sha256': artifacts['scope_manifest']['sha256'],
         'runtime_public_key': _public(run_key),
     }, auth_key, 'M6-AUTHORIZATION')
     trust = {'authorization_public_key': _public(auth_key),
@@ -71,7 +91,8 @@ def _fixture():
             'completed_at': day + 'T15:10:00+08:00', 'status': 'success',
             'resource_baseline_ok': True, 'calendar_sha256': document['sha256'],
             'calendar_source_url': document['source_url'],
-            'deployment_sha256': 'a' * 64, 'config_sha256': 'b' * 64,
+            'deployment_sha256': auth['payload']['deployment_sha256'],
+            'config_sha256': auth['payload']['config_sha256'],
             'artifact_sha256': 'c' * 64,
             'previous_receipt_sha256': previous_session,
         }, run_key, 'M6-SESSION')
@@ -90,7 +111,7 @@ def _fixture():
             'real_event_materialized': False, 'session_receipt_sha256': _hash(session),
         })
         previous_session, previous_witness = _hash(session), _hash(witness)
-    return ({'authorization': auth, 'sessions': sessions}, trust, calendar, schedule,
+    return ({'authorization': auth, 'authorization_artifacts': artifacts, 'sessions': sessions}, trust, calendar, schedule,
             records, (auth_key, run_key, witness_key))
 
 
@@ -198,5 +219,15 @@ def test_correctly_signed_but_late_witness_is_rejected():
                                   received_at=first['session']['payload']['session_date'] + 'T16:10:00+08:00'),
                              witness_key, 'M6-WITNESS')
     with pytest.raises(ValueError, match='scope and time'):
+        verify_shadow_bundle(bundle, trust, schedule,
+                             datetime.fromisoformat(calendar['observation_cutoff']))
+
+
+@pytest.mark.parametrize('artifact', ['scope_manifest', 'deployment_manifest', 'runtime_config'])
+def test_authorization_hashes_are_recomputed_from_actual_artifact_bytes(artifact):
+    bundle, trust, calendar, schedule, _, _ = _fixture()
+    bundle = deepcopy(bundle)
+    bundle['authorization_artifacts'][artifact]['raw_base64'] = base64.b64encode(b'{}').decode()
+    with pytest.raises(ValueError, match='hash differs'):
         verify_shadow_bundle(bundle, trust, schedule,
                              datetime.fromisoformat(calendar['observation_cutoff']))

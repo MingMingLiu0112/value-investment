@@ -14,6 +14,8 @@ from typing import Any, Mapping
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
+from .m6_authorization_artifacts import verify_authorization_artifacts
+
 
 VERSION = 'm6-shadow-receipt-v1'
 _SHA256 = re.compile(r'^[0-9a-f]{64}$')
@@ -71,7 +73,7 @@ def verify_shadow_bundle(bundle: Mapping[str, Any], trust_root: Mapping[str, str
     if set(trust_root) != {'authorization_public_key', 'witness_public_key',
                            'approved_authorization_sha256'}:
         raise ValueError('An externally pinned Shadow trust root is required')
-    if set(bundle) != {'authorization', 'sessions'} or not isinstance(bundle['sessions'], list):
+    if set(bundle) != {'authorization', 'authorization_artifacts', 'sessions'} or not isinstance(bundle['sessions'], list):
         raise ValueError('Shadow evidence bundle schema differs')
     authorization, authorization_hash = _signed(
         bundle['authorization'], trust_root['authorization_public_key'],
@@ -88,6 +90,7 @@ def verify_shadow_bundle(bundle: Mapping[str, Any], trust_root: Mapping[str, str
         raise ValueError('Shadow authorization scope is invalid')
     if not _SHA256.fullmatch(authorization['scope_manifest_sha256']):
         raise ValueError('Shadow authorization scope manifest is invalid')
+    verify_authorization_artifacts(authorization, bundle['authorization_artifacts'])
     valid_from = _timestamp(authorization['valid_from'])
     valid_until = _timestamp(authorization['valid_until'])
     if valid_from >= valid_until:
