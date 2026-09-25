@@ -6,7 +6,9 @@ if [[ $# -ne 1 ]]; then
   exit 2
 fi
 
-source /etc/value-investment-agent/postgres.env
+source /etc/value-investment-agent/restore-postgres.env
+: "${RESTORE_POSTGRES_PASSWORD:?Dedicated restore database password is required}"
+attempt_started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 manifest_name="$(basename "$1")"
 # The drill database is disposable. Remove its stopped container so a passed
 # or failed drill cannot accumulate stale container metadata between months.
@@ -17,7 +19,7 @@ podman run -d --name value-investment-restore-postgres \
   -p 127.0.0.1:5433:5432 \
   -e POSTGRES_DB=value_agent_restore \
   -e POSTGRES_USER=value_agent_admin \
-  -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+  -e POSTGRES_PASSWORD="$RESTORE_POSTGRES_PASSWORD" \
   -v value_investment_restore_postgres:/var/lib/postgresql/data:Z \
   docker.io/library/postgres:16-alpine \
   -c shared_buffers=64MB -c max_connections=10
@@ -35,6 +37,7 @@ if [[ "$ready" != true ]]; then
 fi
 podman run --rm --network host --memory=256m --memory-reservation=128m --memory-swap=384m \
   --cpus=0.5 -e PYTHONPATH=/app/src \
+  -e M6_RESTORE_ATTEMPT_STARTED_AT="$attempt_started_at" \
   --env-file /etc/value-investment-agent/agent.env \
   -v /opt/value-investment-agent/src:/app/src:ro,Z \
   -v /opt/value-investment-agent/backups:/app/backups:Z \

@@ -1,5 +1,12 @@
 # 当前执行状态
 
+## 2026-09-25 INTERRUPT 回查：隔离恢复配置 R0
+
+总 Goal 仍为 `IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`，`INITIAL_ASSISTED_USE=NOT_REACHED`。
+本轮仅加固 M6 恢复工程：隔离库采用独立凭据；安装脚本对新旧配置均生成/接入该凭据；恢复 RTO 从容器启动前计时，另记录恢复命令耗时；systemd 演练限时 4h15m；恢复单测进入 CI。恢复专项 40 项通过。全仓本机测试在约 85% 后长时间无进展而中止，不记为通过。未操作生产服务器或正式 WPS 表格，也未取得真实备份恢复验收。
+
+剩余 DAG 审计：M2/Checkpoint A 已通过；M3 strict contemporaneous PIT 尚未证明（R6）；M4 个性化 IPS/Portfolio 待私人输入（R2）；M5 两条 600519 事件仍为 `STILL_NOT_READY`，新估值为空，待未来真实研究证据（R6）；M6 生产授权未给（R3）、已验真实 Shadow 会话为 0、连续 20 会话及真实事件未满足、真实隔离恢复未通过（R6/R3）；M7 最终用户验收和 Checkpoint D 未通过（R5）。独立 R0 仍需检查 CI 与部署配置边界，故不生成“仅剩外部门”清单。永久 `action=no_order`；投资决定由用户作出。
+
 ## 2026-09-25 双交易所日历与真实会话计数纠偏
 
 在 SSE 只读归档之外，000333 的 SZSE 月度日历 bundle 已归档于

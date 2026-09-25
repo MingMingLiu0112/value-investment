@@ -3,8 +3,10 @@ from __future__ import annotations
 import argparse
 import json
 import hashlib
+import os
 import shutil
 from dataclasses import replace
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -558,7 +560,11 @@ def main() -> None:
     else:
         if not settings.restore_database_url:
             raise RuntimeError('请在 .env 配置隔离的 RESTORE_DATABASE_URL 后再做恢复演练。')
-        print(json.dumps(verify_restore(settings.database_url, settings.restore_database_url, args.manifest, settings.container_runtime, settings.restore_container_name), ensure_ascii=False))
+        attempt_started = os.environ.get('M6_RESTORE_ATTEMPT_STARTED_AT')
+        print(json.dumps(verify_restore(
+            settings.database_url, settings.restore_database_url, args.manifest,
+            settings.container_runtime, settings.restore_container_name,
+            datetime.fromisoformat(attempt_started) if attempt_started else None), ensure_ascii=False))
 
 
 if __name__ == '__main__':

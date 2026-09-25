@@ -19,3 +19,12 @@ def test_restore_runner_uses_fixed_source_and_bounded_resources():
     assert 'if [[ "$ready" != true ]]' in script
     assert "trap 'podman rm -f value-investment-restore-postgres" in script
     assert 'localhost/value-investment-agent:pg16-tools python' in script
+    assert 'restore-postgres.env' in script
+    assert 'RESTORE_POSTGRES_PASSWORD' in script
+    assert 'postgres.env' not in script.replace('restore-postgres.env', '')
+    assert 'M6_RESTORE_ATTEMPT_STARTED_AT' in script
+
+
+def test_restore_service_has_bounded_total_deadline():
+    unit = (Path(__file__).parents[1] / 'deploy/server/value-investment-agent-restore-drill.service').read_text(encoding='utf-8')
+    assert 'TimeoutStartSec=4h15min' in unit

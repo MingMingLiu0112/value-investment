@@ -140,9 +140,11 @@ def _manifest_file(manifest_path: Path, value: str, *, dump: bool = False) -> Pa
     return candidate
 
 
-def verify_restore(database_url: str, restore_database_url: str, backup_manifest: Path, container_runtime: str = 'podman', restore_container_name: str = 'value-investment-restore-postgres') -> dict:
+def verify_restore(database_url: str, restore_database_url: str, backup_manifest: Path, container_runtime: str = 'podman', restore_container_name: str = 'value-investment-restore-postgres', attempt_started_at: datetime | None = None) -> dict:
     validate_restore_target(database_url, restore_database_url)
-    started_at = datetime.now(timezone.utc)
+    started_at = attempt_started_at or datetime.now(timezone.utc)
+    if started_at.tzinfo is None or started_at > datetime.now(timezone.utc):
+        raise RuntimeError('Restore attempt start time is invalid')
     started = time.monotonic()
     pg_restore = shutil.which('pg_restore')
     manifest = json.loads(backup_manifest.read_text(encoding='utf-8'))
@@ -186,8 +188,9 @@ def verify_restore(database_url: str, restore_database_url: str, backup_manifest
         restored_checks = table_checks(restored)
     compare_checks(manifest['table_checks'], restored_checks)
     source_count = manifest['table_checks']['data_points']['rows']
-    rto_seconds = round(time.monotonic() - started, 2)
+    restore_duration_seconds = round(time.monotonic() - started, 2)
     completed_at = datetime.now(timezone.utc)
+    rto_seconds = round((completed_at - started_at).total_seconds(), 2)
     backup_age_seconds = (completed_at - datetime.fromisoformat(manifest['snapshot_at'])).total_seconds()
     if backup_age_seconds < 0:
         raise RuntimeError('Backup snapshot is in the future')
@@ -197,6 +200,7 @@ def verify_restore(database_url: str, restore_database_url: str, backup_manifest
         'action': 'no_order',
         'observed': 'actual',
         'backup_id': manifest['backup_id'], 'status': 'passed', 'rto_seconds': rto_seconds,
+        'restore_duration_seconds': restore_duration_seconds,
         'data_points': source_count, 'evidence_files': len(manifest.get('evidence_files', [])),
         'verified_tables': len(restored_checks), 'snapshot_at': manifest['snapshot_at'],
         'backup_manifest': backup_manifest.name,

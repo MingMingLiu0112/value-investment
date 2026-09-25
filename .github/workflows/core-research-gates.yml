@@ -82,6 +82,7 @@ jobs:
           tests/test_m6_calendar_readiness.py
           tests/test_m6_calendar_bundle.py
           tests/test_restore_command_failure.py
+          tests/test_restore_unit.py
           tests/test_restore_target.py
           tests/test_restore_receipt_binding.py
           tests/test_m7_m6_preflight_projection.py

@@ -4,6 +4,7 @@ import hashlib
 import json
 from contextlib import nullcontext
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -139,6 +140,15 @@ def test_artifact_tamper_is_rejected(bundle, live_checks, artifact):
     live_checks.assert_not_called()
 
 
+@pytest.mark.parametrize('artifact', ['dump', 'evidence'])
+def test_missing_restore_artifact_is_rejected(bundle, live_checks, artifact):
+    path = bundle[2] if artifact == 'dump' else bundle[3]
+    path.unlink()
+    with pytest.raises(RuntimeError, match='missing|outside'):
+        _verify(bundle[0])
+    live_checks.assert_not_called()
+
+
 def test_wrong_target_identity_is_rejected_even_with_valid_receipt_hash(bundle, live_checks):
     receipt = deepcopy(bundle[4])
     receipt["restore_target_identity"]["dbname"] = "wrong"
@@ -266,12 +276,16 @@ def test_restore_writes_content_addressed_receipt_and_reverifies_it(bundle, monk
     monkeypatch.setattr(backup.shutil, "which", lambda _: "/bin/pg_restore")
     monkeypatch.setattr(backup.subprocess, "run", lambda *args, **kwargs:
                         SimpleNamespace(returncode=0, stderr=""))
-    result = backup.verify_restore(SOURCE, TARGET, manifest_path)
+    result = backup.verify_restore(
+        SOURCE, TARGET, manifest_path,
+        attempt_started_at=datetime.now(timezone.utc) - timedelta(seconds=60))
     written_path = Path(result["receipt_path"])
     written = json.loads(written_path.read_text(encoding="utf-8"))
     assert written["receipt_sha256"] == result["receipt_sha256"]
     assert written["restore_command_result"] == "exit_0"
     assert written["table_checks"] == manifest["table_checks"]
+    assert result['rto_seconds'] >= 60
+    assert result['restore_duration_seconds'] < result['rto_seconds']
     assert written_path.name == f"restore-{result['receipt_sha256']}.json"
     source.execute.return_value.fetchone.return_value.update({
         'rto_seconds': result['rto_seconds'],

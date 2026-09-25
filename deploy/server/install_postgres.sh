@@ -29,7 +29,6 @@ EOF
   chmod 600 "$CONFIG_DIR/postgres.env"
   cat > "$CONFIG_DIR/agent.env" <<EOF
 DATABASE_URL=postgresql://value_agent_writer:$writer_password@127.0.0.1:5432/value_agent
-RESTORE_DATABASE_URL=postgresql://value_agent_admin:$admin_password@127.0.0.1:5433/value_agent_restore
 BACKUP_DIRECTORY=/app/backups
 OUTPUT_DIRECTORY=$APP_DIR/runtime
 DATA_MAX_AGE_HOURS=30
@@ -43,6 +42,18 @@ EOF
 DATABASE_URL=postgresql://value_agent_reader:$reader_password@YOUR_SERVER.tailnet.ts.net:5432/value_agent
 EOF
   chmod 600 "$CONFIG_DIR/reader-credentials.txt"
+fi
+
+if [[ ! -f "$CONFIG_DIR/restore-postgres.env" ]]; then
+  restore_password="$(openssl rand -hex 24)"
+  printf 'RESTORE_POSTGRES_PASSWORD=%s\n' "$restore_password" > "$CONFIG_DIR/restore-postgres.env"
+  chmod 600 "$CONFIG_DIR/restore-postgres.env"
+fi
+source "$CONFIG_DIR/restore-postgres.env"
+if grep -q '^RESTORE_DATABASE_URL=' "$CONFIG_DIR/agent.env"; then
+  sed -i "s#^RESTORE_DATABASE_URL=.*#RESTORE_DATABASE_URL=postgresql://value_agent_admin:$RESTORE_POSTGRES_PASSWORD@127.0.0.1:5433/value_agent_restore#" "$CONFIG_DIR/agent.env"
+else
+  printf 'RESTORE_DATABASE_URL=postgresql://value_agent_admin:%s@127.0.0.1:5433/value_agent_restore\n' "$RESTORE_POSTGRES_PASSWORD" >> "$CONFIG_DIR/agent.env"
 fi
 
 set -a
