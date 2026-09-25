@@ -2,8 +2,13 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import sys
 
 import pytest
+
+from value_investment_agent.application.historical_validation import (
+    StrictPitConsumerBlocked,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -90,6 +95,9 @@ def test_receipt_audit_verifies_hashes_and_keeps_not_pit_safe(tmp_path):
     result = MODULE.verify_bundle(root, bundle)
     assert result["status"] == "AUDIT_OK"
     assert result["classification"] == "NOT_PIT_SAFE"
+    assert result["strict_pit_consumer"] == "NOT_APPLICABLE"
+    assert result["strict_pit_admitted"] is False
+    assert result["strict_pit_enforcement"] is None
     assert result["action"] == "no_order"
 
 
@@ -98,3 +106,51 @@ def test_receipt_audit_detects_tampering(tmp_path):
     (bundle / "user-report.md").write_text("# changed\n", encoding="utf-8")
     with pytest.raises(ValueError, match="hash mismatch"):
         MODULE.verify_bundle(root, bundle)
+
+
+def test_receipt_audit_blocks_unverified_strict_claim(tmp_path):
+    root, bundle = synthetic_bundle(tmp_path)
+    admission = json.loads((bundle / "admission.json").read_text(encoding="utf-8"))
+    admission["classification"] = "STRICT_CONTEMPORANEOUS_REPLAY"
+    admission["admission_status"] = "ADMITTED_FOR_STRICT_REPLAY"
+    write_json(bundle / "admission.json", admission)
+    receipt = json.loads((bundle / "receipt.json").read_text(encoding="utf-8"))
+    receipt["classification"] = admission["classification"]
+    receipt["admission_status"] = admission["admission_status"]
+    receipt["admission_sha256"] = digest(bundle / "admission.json")
+    write_json(bundle / "receipt.json", receipt)
+
+    with pytest.raises(StrictPitConsumerBlocked, match="fresh verifier v2 PASS"):
+        MODULE.verify_bundle(root, bundle)
+
+
+def test_receipt_audit_cli_returns_one_for_unverified_strict_claim(
+    tmp_path, monkeypatch, capsys
+):
+    root, bundle = synthetic_bundle(tmp_path)
+    admission = json.loads((bundle / "admission.json").read_text(encoding="utf-8"))
+    admission["classification"] = "STRICT_CONTEMPORANEOUS_REPLAY"
+    admission["admission_status"] = "ADMITTED_FOR_STRICT_REPLAY"
+    write_json(bundle / "admission.json", admission)
+    receipt = json.loads((bundle / "receipt.json").read_text(encoding="utf-8"))
+    receipt["classification"] = admission["classification"]
+    receipt["admission_status"] = admission["admission_status"]
+    receipt["admission_sha256"] = digest(bundle / "admission.json")
+    write_json(bundle / "receipt.json", receipt)
+    monkeypatch.setattr(MODULE, "ROOT", root)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "audit_historical_validation_receipt.py",
+            "--root",
+            str(root),
+            "--receipt-dir",
+            str(bundle),
+        ],
+    )
+
+    assert MODULE.main() == 1
+    output = json.loads(capsys.readouterr().out)
+    assert output["status"] == "STRICT_PIT_BLOCKED"
+    assert output["action"] == "no_order"

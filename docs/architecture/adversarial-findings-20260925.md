@@ -19,11 +19,13 @@ Minimum fix: add an independent replay-time verifier that checks exact
 available_at <= replay_date, validates quote dates and evidence hashes, and
 rejects future disclosures, quotes, and price files with negative tests.
 
-Status: PARTIAL_MITIGATION_BY_PIT_CONFORMANCE_VERIFIER_V2. The new read-only
-verifier independently rechecks facts, filings, quote dates, evidence
-availability, file existence, hashes, coverage, and rule registration before
-returning PASS. The legacy M3 replay consumer has not yet been wired to invoke
-it, so this finding is not fully closed.
+Status: MITIGATED_FOR_REPOSITORY_STRICT_CONSUMERS. The verifier independently
+rechecks facts, filings, quote dates, evidence availability, file existence,
+hashes, coverage, and rule registration. `m3_strict_pit_evidence.audit` now
+requires a fresh in-process v2 PASS before returning
+`EVIDENCE_VALID_FOR_CONTEMPORANEOUS_BINDING`, the thin CLI distinguishes
+PASS/FAIL/NOT_PROVEN, and M7 labels the raw replay as
+`REPORTED_NOT_V2_VERIFIED` rather than claiming verified PIT.
 
 ### ADV-P0-002 - Historical admission PIT is caller-declared
 
@@ -38,11 +40,14 @@ application/historical_validation; do not edit or move the frozen
 historical_validation.py file. The verifier must recompute temporal and
 coverage predicates and must fail closed when the evidence cannot prove them.
 
-Status: PARTIAL_MITIGATION_BY_PIT_CONFORMANCE_VERIFIER_V2. The verifier checks
+Status: MITIGATED_FOR_REPOSITORY_STRICT_CONSUMERS. The verifier checks
 benchmark identity/version/as_of, universe snapshot and survivorship controls,
 evidence-dimension bijection, execution semantics, and one approved
-model-session proof per claimed session. The frozen admission contract itself
-remains unchanged and legacy consumers do not yet require this verifier.
+model-session proof per claimed session. The receipt auditor requires a fresh
+v2 PASS for strict admission claims and binds the enforcement to the exact
+admission bytes. The frozen 600519 builder remains byte-identical and still
+cannot produce a strict result; future strict writers must use a versioned
+successor with the same gate. The frozen domain contract remains unchanged.
 Current first-case conclusion remains NOT_PIT_SAFE / NOT_ADMITTED.
 
 ## P1 Findings
@@ -92,7 +97,7 @@ Backtest != M6 Shadow
 
 ## Next Task
 
-NEXT TASK: PIT_CONFORMANCE_CONSUMER_ENFORCEMENT
+NEXT TASK: VERIFY_AND_COMMIT_PIT_CONFORMANCE_CONSUMER_ENFORCEMENT
 
 Goal: make every path that consumes a historical replay or admission result
 require a fresh `pit-conformance-verifier-v2` PASS, while preserving the frozen

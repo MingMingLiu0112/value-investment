@@ -686,12 +686,12 @@ def _decision_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
     row = _label_value(
         ws,
         row,
-        "历史研究重放（事实/行情 PIT，规则非当时版本）",
+        "历史研究重放（事实/行情：本地声明，未独立验证）",
         (
             f"{replay.get('symbol')} / {replay.get('replay_date')} / "
             f"最终状态 {replay.get('final_decision')}；valuation_approved="
             f"{replay.get('valuation_approved')}；trade_approved={replay.get('trade_approved')}。"
-            f"事实/行情 PIT=YES；规则时点 PIT=NOT CLAIMED；"
+            f"事实/行情 PIT=REPORTED_NOT_V2_VERIFIED；规则时点 PIT=NOT CLAIMED；"
             f"future_facts_used={replay.get('future_facts_used')}；"
             f"future_rule_version_used={replay.get('future_rule_version_used')}。"
         ),
@@ -954,7 +954,7 @@ def _research_sheet(packet: Mapping[str, Any], wb: Workbook) -> None:
     row = _label_value(
         ws,
         row,
-        "历史研究重放样例（事实/行情 PIT）",
+        "历史研究重放样例（事实/行情声明，未独立验证）",
         (
             f"{replay.get('symbol')} / {replay.get('replay_date')}，"
             f"采用当时年报 {replay.get('then_known_facts', {}).get('source_id')}、"

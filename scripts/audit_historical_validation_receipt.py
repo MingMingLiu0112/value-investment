@@ -14,6 +14,7 @@ if str(PACKAGE_ROOT) not in sys.path:
     sys.path.insert(0, str(PACKAGE_ROOT))
 
 from value_investment_agent.application.historical_validation import (  # noqa: E402
+    StrictPitConsumerBlocked,
     digest,
     resolve_bundle,
     verify_bundle,
@@ -31,11 +32,24 @@ def main() -> int:
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--receipt-dir", type=Path)
     parser.add_argument("--pointer", type=Path, default=DEFAULT_POINTER)
+    parser.add_argument("--pit-manifest", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     root = args.root.resolve()
     bundle = args.receipt_dir or resolve_bundle(root, args.pointer)
-    result = verify_bundle(root, bundle)
+    try:
+        result = verify_bundle(root, bundle, pit_manifest=args.pit_manifest)
+    except StrictPitConsumerBlocked as error:
+        result = {
+            "schema_version": "historical-validation-receipt-audit-v1",
+            "status": "STRICT_PIT_BLOCKED",
+            "strict_pit_consumer": "BLOCKED",
+            "strict_pit_admitted": False,
+            "action": "no_order",
+            "error": str(error),
+        }
+        print(json.dumps(result, ensure_ascii=False))
+        return 1
     if args.output:
         output = args.output.resolve()
         if not output.is_relative_to(root):

@@ -1,7 +1,9 @@
 """Audit a user-provided strict contemporaneous-rule evidence packet.
 
 The command is read-only except for writing a versioned runtime receipt. It
-does not approve a trade, valuation or historical decision.
+does not approve a trade, valuation or historical decision. Exit codes are
+``0`` for a fully enforced binding, ``1`` for a concrete FAILED audit and
+``2`` for NOT_PROVEN or a blocked consumer gate.
 """
 from __future__ import annotations
 
@@ -36,6 +38,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--replay", type=Path, default=DEFAULT_REPLAY)
     parser.add_argument("--candidate", type=Path, default=DEFAULT_CANDIDATE)
+    parser.add_argument("--pit-manifest", type=Path)
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument(
         "--as-of",
@@ -55,7 +58,12 @@ def main() -> int:
     if as_of.tzinfo is None:
         raise ValueError("--as-of must include a timezone")
     candidate = args.candidate if args.candidate.is_file() else None
-    receipt = audit(ROOT, args.replay, candidate)
+    receipt = audit(
+        ROOT,
+        args.replay,
+        candidate,
+        pit_manifest_path=args.pit_manifest,
+    )
     receipt["audited_at"] = as_of.isoformat()
     output_dir = args.output_dir or (
         ROOT / "runtime" / f"m3-strict-pit-evidence-audit-{as_of:%Y%m%dT%H%M%SZ}"
@@ -68,6 +76,7 @@ def main() -> int:
         encoding="utf-8",
     )
     pointer = ROOT / "runtime" / "m3-strict-pit-evidence-audit-latest.json"
+    pointer.parent.mkdir(parents=True, exist_ok=True)
     pointer.write_text(
         json.dumps(
             {
@@ -82,7 +91,12 @@ def main() -> int:
         encoding="utf-8",
     )
     print(json.dumps(receipt, ensure_ascii=False, indent=2))
-    return 0
+    status = receipt.get("status")
+    if status == "EVIDENCE_VALID":
+        return 0
+    if status == "FAILED":
+        return 1
+    return 2
 
 
 if __name__ == "__main__":

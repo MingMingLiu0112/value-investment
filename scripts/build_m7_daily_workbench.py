@@ -346,7 +346,7 @@ def _audit_packet() -> dict[str, Any]:
             _audit_artifact("M2 全市场 manifest", M2_LIVE_MANIFEST),
             _audit_artifact("M3 决策审计收据", M3_AUDIT_RECEIPT),
             _audit_artifact("M3 集成运行输入", M3_INTEGRATED_RUNS),
-            _audit_artifact("M3 历史研究重放（事实/行情 PIT；规则非当时版本）", M3_REPLAY),
+            _audit_artifact("M3 历史研究重放（事实/行情本地声明；未独立验证）", M3_REPLAY),
             _audit_artifact("M4 组合风险模拟 manifest", M4_RISK_MANIFEST),
             _audit_artifact("M4 仓位/股息模拟 manifest", M4_GUIDANCE_MANIFEST),
             _audit_artifact("M4/M5 联合模拟 manifest", M4_M5_MANIFEST),

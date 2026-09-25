@@ -98,3 +98,29 @@ python scripts/audit_pit_conformance_v2.py \
 
 退出码：`PASS=0`、`FAIL=1`、`NOT_PROVEN=2`。旧 consumer 在完成接入前仍不得把未经过
 该验证器的 replay/admission 当作 strict PIT。
+
+### 7.1 Strict Consumer Enforcement
+
+验证器结果不是可持久复用的授权。真正会形成 strict PIT 结论的 consumer 必须在同一进程内调用
+`application.historical_validation.enforce_strict_pit_consumption`，重新运行 verifier v2，
+并要求：
+
+```text
+schema_version = pit-conformance-verifier-v2
+status = PASS
+strict_pit_admissible = true
+action = no_order
+subject.sha256 = 当前 admission/replay 原始字节 Hash
+manifest.sha256 = 当前 v2 manifest 原始字节 Hash
+```
+
+消费端返回的是与这些 Hash 对应的内存 payload，不是通过路径再次读取的另一份结果；验证期间字节
+发生变化时失败关闭。`m3_strict_pit_evidence.audit` 只有上述 gate 通过后才允许返回
+`EVIDENCE_VALID_FOR_CONTEMPORANEOUS_BINDING`；历史 validation receipt audit 只在 admission
+声称 `STRICT_CONTEMPORANEOUS_REPLAY` / `ADMITTED_FOR_STRICT_REPLAY` 时强制该 gate。非 strict
+的 retrospective replay 可以继续作为展示和研究输入，但不得升级为 strict 结论。
+
+冻结的 600519 builder 仍只生成 `NOT_PIT_SAFE`，不得原地改写其 receipt-bound 字节来添加
+新 gate。未来 strict 发布必须使用新的版本化 writer 并在替换 latest pointer 前通过同一 gate。
+只读工作台和 Excel 不再把原始 replay 写成 `PIT=YES`；没有执行上述 v2 消费验证时，只能显示
+`REPORTED_NOT_V2_VERIFIED` 或等价的“本地声明、未独立验证”标记。

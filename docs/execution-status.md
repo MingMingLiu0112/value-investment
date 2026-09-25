@@ -1,5 +1,19 @@
 # 当前执行状态
 
+## 2026-09-25 PIT Conformance Consumer Enforcement
+
+`pit-conformance-verifier-v2` 的结果现在不能作为可持久复用的授权。严格的 M3
+证据审计和 historical-validation receipt audit 都会在消费进程内重新运行 verifier，
+要求 `PASS`、`strict_pit_admissible=true` 和永久 `action=no_order`，并把结果绑定到
+subject 与 v2 manifest 的原始字节 Hash。验证期间文件被替换会失败关闭；非 strict 的
+`NOT_PIT_SAFE / NOT_ADMITTED` 仍可审查，但不会升级成同期规则 PIT。
+
+600519 admission builder 的 receipt-bound 字节保持不变，当前仍只生成
+`NOT_PIT_SAFE / NOT_ADMITTED`；未来 strict writer 必须使用版本化 successor 并在发布前
+取得同一 admission 字节的 fresh v2 PASS。M7 只读工作台不再把原始 replay 渲染成
+`PIT=YES`，而是明确标记
+`REPORTED_NOT_V2_VERIFIED`。这些改动不批准估值、绩效、订单或生产运行。
+
 ## 2026-09-25 PIT Conformance Verifier v2
 
 新增只读 `pit-conformance-verifier-v2` 与薄 CLI `audit_pit_conformance_v2.py`。

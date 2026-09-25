@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 import hashlib
+import importlib.util
 import json
+from pathlib import Path
+import sys
 
 import pytest
 
@@ -13,6 +16,17 @@ from value_investment_agent.m3_strict_pit_evidence import (
     audit,
     load_candidate,
 )
+import value_investment_agent.m3_strict_pit_evidence as strict_pit_module
+
+
+CLI_SPEC = importlib.util.spec_from_file_location(
+    "audit_m3_strict_pit_evidence",
+    Path(__file__).resolve().parents[1]
+    / "scripts"
+    / "audit_m3_strict_pit_evidence.py",
+)
+CLI = importlib.util.module_from_spec(CLI_SPEC)
+CLI_SPEC.loader.exec_module(CLI)
 
 
 REPLAY_DATE = date(2024, 6, 21)
@@ -135,7 +149,7 @@ def test_audit_missing_candidate_is_not_proven(tmp_path):
     assert receipt["required_input"]["replay_date"] == "2024-06-21"
 
 
-def test_audit_valid_pre_replay_evidence_binds_contemporaneous_rule(tmp_path):
+def test_audit_requires_fresh_strict_pit_consumer_verification(tmp_path):
     replay = _write_replay(tmp_path)
     candidate, _ = _write_candidate(
         tmp_path,
@@ -144,10 +158,46 @@ def test_audit_valid_pre_replay_evidence_binds_contemporaneous_rule(tmp_path):
 
     receipt = audit(tmp_path, replay, candidate)
 
+    assert receipt["status"] == NOT_PROVEN
+    assert receipt["strict_contemporaneous_rule_pit"] == NOT_PROVEN
+    assert receipt["consumer_enforcement"]["status"] == "BLOCKED"
+    assert receipt["consumer_enforcement"]["strict_pit_admitted"] is False
+
+
+def test_audit_after_verified_gate_binds_contemporaneous_rule(
+    tmp_path, monkeypatch
+):
+    replay = _write_replay(tmp_path)
+    candidate, _ = _write_candidate(
+        tmp_path,
+        "2024-06-01T12:00:00+08:00",
+    )
+
+    class Verified:
+        subject_sha256 = hashlib.sha256(replay.read_bytes()).hexdigest()
+
+        def as_receipt(self):
+            return {
+                "status": "PASS",
+                "strict_pit_admitted": True,
+                "action": "no_order",
+            }
+
+    def fake_enforcement(*args, **kwargs):
+        return Verified()
+
+    monkeypatch.setattr(
+        strict_pit_module,
+        "enforce_strict_pit_consumption",
+        fake_enforcement,
+    )
+    receipt = audit(tmp_path, replay, candidate)
+
     assert receipt["status"] == EVIDENCE_VALID
     assert receipt["strict_contemporaneous_rule_pit"] == (
         "EVIDENCE_VALID_FOR_CONTEMPORANEOUS_BINDING"
     )
+    assert receipt["consumer_enforcement"]["status"] == "PASS"
     binding = receipt["checks"][-1]["detail"]
     assert binding["rule_registration_status"] == "CONTEMPORANEOUS_RULE"
     assert binding["registered_at"] == "2024-06-01T12:00:00+08:00"
@@ -217,3 +267,32 @@ def test_candidate_parser_rejects_unsupported_or_duplicate_evidence(tmp_path):
     candidate.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="Duplicate evidence id"):
         load_candidate(candidate)
+
+
+def test_cli_returns_two_when_consumer_enforcement_blocks(tmp_path, monkeypatch):
+    replay = _write_replay(tmp_path)
+    candidate, _ = _write_candidate(
+        tmp_path,
+        "2024-06-01T12:00:00+08:00",
+    )
+    monkeypatch.setattr(CLI, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "audit_m3_strict_pit_evidence.py",
+            "--replay",
+            str(replay),
+            "--candidate",
+            str(candidate),
+            "--output-dir",
+            str(tmp_path / "audit-output"),
+        ],
+    )
+
+    assert CLI.main() == 2
+    receipt = json.loads(
+        (tmp_path / "audit-output" / "receipt.json").read_text(encoding="utf-8")
+    )
+    assert receipt["status"] == NOT_PROVEN
+    assert receipt["consumer_enforcement"]["status"] == "BLOCKED"

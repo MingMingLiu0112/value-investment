@@ -274,6 +274,22 @@ def _load_json_object(path: Path, label: str) -> dict[str, Any]:
     return payload
 
 
+def _load_json_object_with_digest(
+    path: Path, label: str
+) -> tuple[dict[str, Any], str]:
+    """Read, hash and parse one JSON object from the same byte read."""
+    if not path.is_file():
+        raise _MissingProof(f"{label} does not exist: {path}")
+    try:
+        raw = path.read_bytes()
+        payload = json.loads(raw.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise _InputError(f"{label} is not valid JSON: {path}") from error
+    if not isinstance(payload, dict):
+        raise _InputError(f"{label} must be a JSON object: {path}")
+    return payload, hashlib.sha256(raw).hexdigest()
+
+
 def _evidence_from_record(record: object, index: int) -> _Evidence:
     if not isinstance(record, Mapping):
         raise _InputError(f"evidence[{index}] must be a JSON object")
@@ -328,8 +344,10 @@ def _load_evidence_manifest(
     root: Path,
     manifest_path: Path,
     expected_policy_version: str,
-) -> tuple[dict[str, Any], dict[str, _Evidence]]:
-    manifest = _load_json_object(manifest_path, "PIT conformance manifest")
+) -> tuple[dict[str, Any], dict[str, _Evidence], str]:
+    manifest, manifest_sha256 = _load_json_object_with_digest(
+        manifest_path, "PIT conformance manifest"
+    )
     if manifest.get("schema_version") != PIT_CONFORMANCE_INPUT_SCHEMA:
         raise _InputError("Unsupported PIT conformance input manifest schema")
     if manifest.get("action") != ACTION_NO_ORDER:
@@ -357,7 +375,7 @@ def _load_evidence_manifest(
         if _digest(local_path) != item.sha256:
             raise _InputError(f"Evidence hash mismatch: {item.path}")
         parsed[item.evidence_id] = item
-    return manifest, parsed
+    return manifest, parsed, manifest_sha256
 
 
 def _reference_id(reference: Mapping[str, Any], field: str) -> str:
@@ -1364,6 +1382,8 @@ def _result(
     manifest_path: Path | None,
     audit: _Audit,
     subject_schema: str | None = None,
+    subject_sha256: str | None = None,
+    manifest_sha256: str | None = None,
 ) -> dict[str, Any]:
     return {
         "schema_version": PIT_CONFORMANCE_SCHEMA,
@@ -1374,8 +1394,12 @@ def _result(
         "subject": {
             "path": str(subject_path),
             "schema_version": subject_schema,
+            "sha256": subject_sha256,
         },
-        "manifest": {"path": str(manifest_path) if manifest_path else None},
+        "manifest": {
+            "path": str(manifest_path) if manifest_path else None,
+            "sha256": manifest_sha256,
+        },
         "checks": audit.checks,
         "blockers": audit.blockers,
         "strict_pit_admissible": status == STATUS_PASS,
@@ -1458,7 +1482,9 @@ def verify_pit_conformance_v2(
             audit=audit,
         )
     try:
-        subject = _load_json_object(resolved_subject, "PIT subject")
+        subject, subject_sha256 = _load_json_object_with_digest(
+            resolved_subject, "PIT subject"
+        )
     except _InputError as error:
         audit = _Audit()
         audit.fail("subject_valid", str(error))
@@ -1468,6 +1494,7 @@ def verify_pit_conformance_v2(
             verified_at=verified,
             subject_path=resolved_subject,
             manifest_path=manifest_path,
+            subject_sha256=subject_sha256,
             audit=audit,
         )
     subject_schema = subject.get("schema_version")
@@ -1480,6 +1507,7 @@ def verify_pit_conformance_v2(
             verified_at=verified,
             subject_path=resolved_subject,
             manifest_path=manifest_path,
+            subject_sha256=subject_sha256,
             audit=audit,
         )
     if manifest_path is None:
@@ -1492,12 +1520,13 @@ def verify_pit_conformance_v2(
             subject_path=resolved_subject,
             manifest_path=None,
             subject_schema=subject_schema,
+            subject_sha256=subject_sha256,
             audit=audit,
         )
 
     try:
         resolved_manifest = _resolve_path(root, manifest_path, "PIT manifest")
-        manifest, evidence_by_id = _load_evidence_manifest(
+        manifest, evidence_by_id, manifest_sha256 = _load_evidence_manifest(
             root, resolved_manifest, policy_version
         )
     except _MissingProof as error:
@@ -1510,6 +1539,7 @@ def verify_pit_conformance_v2(
             subject_path=resolved_subject,
             manifest_path=manifest_path,
             subject_schema=subject_schema,
+            subject_sha256=subject_sha256,
             audit=audit,
         )
     except (_InputError, OSError) as error:
@@ -1522,6 +1552,7 @@ def verify_pit_conformance_v2(
             subject_path=resolved_subject,
             manifest_path=manifest_path,
             subject_schema=subject_schema,
+            subject_sha256=subject_sha256,
             audit=audit,
         )
 
@@ -1547,5 +1578,7 @@ def verify_pit_conformance_v2(
         subject_path=resolved_subject,
         manifest_path=resolved_manifest,
         subject_schema=subject_schema,
+        subject_sha256=subject_sha256,
+        manifest_sha256=manifest_sha256,
         audit=audit,
     )

@@ -16,6 +16,7 @@
 | `src/value_investment_agent/m7_daily_workbench.py` | Presentation / Operations | Active candidate | M7 trial pointer | 只读候选，不是正式原表 |
 | `src/value_investment_agent/historical_validation.py` | Historical Validation Domain | Provenance-frozen | admission scripts | receipt-bound byte-for-byte；不得移动或改写 |
 | `src/value_investment_agent/application/historical_validation/` | Historical Validation Application | Active | `scripts/audit_historical_validation_receipt.py` | 只读 receipt audit；不替代冻结的 admission contract |
+| `src/value_investment_agent/application/historical_validation/consumer_enforcement.py` | Historical Validation Application | Active | strict PIT consumers | 每次消费重跑 verifier v2，并绑定 subject/manifest 原始字节；不是持久授权 |
 | `src/value_investment_agent/db.py` | Infrastructure / Database | Active | CLI / application | PostgreSQL 结构化事实底座 |
 | `src/value_investment_agent/backup*.py`、`m6_*recovery*` | Infrastructure / Operations | Active offline | ops scripts | 真实恢复演练仍需隔离环境 |
 | `src/value_investment_agent/excel_report.py`、`workbook_simple_overview.py` | Presentation / Excel | Legacy active | publication scripts | 新代码使用 Product Read Model |
@@ -34,7 +35,7 @@
 | `config/architecture-frozen-paths-v1.json` | Governance / Provenance | Active | tests/test_architecture_boundaries.py | Exact hashes for every receipt-bound historical-validation path |
 | `config/architecture-root-artifact-allowlist-v1.json` | Governance / Artifacts | Active | tests/test_architecture_boundaries.py | Exact root workbook and manifest allowlist; additions require an explicit relocation decision |
 | docs/architecture/artifact-relocation-inventory-20260925.json | Governance / Artifact Audit | Active | scripts/audit_artifact_relocation.py | Machine-readable root artifact hash and consumer inventory |
-| docs/architecture/adversarial-findings-20260925.md | Governance / Security Audit | Open findings | docs/execution-status.md | P0/P1/P2 replay, authorization, PIT and CI findings; not fixed here |
+| docs/architecture/adversarial-findings-20260925.md | Governance / Security Audit | P0 strict-consumer findings mitigated; P1/P2 open | docs/execution-status.md | P0/P1/P2 replay, authorization, PIT and CI findings |
 
 ## Current Entries
 

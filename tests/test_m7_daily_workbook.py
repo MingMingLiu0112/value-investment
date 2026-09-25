@@ -555,7 +555,7 @@ def test_historical_replay_does_not_claim_contemporaneous_rule_pit(tmp_path: Pat
     workbook = load_workbook(tmp_path / "daily.xlsx", data_only=True)
     text = _all_text(workbook)
 
-    assert "事实/行情 PIT" in text
+    assert "事实/行情 PIT=REPORTED_NOT_V2_VERIFIED" in text
     assert "规则时点 PIT=NOT CLAIMED" in text
     assert "future_rule_version_used=True" in text
     assert "所用规则（事后注册，非当时版本）" in text

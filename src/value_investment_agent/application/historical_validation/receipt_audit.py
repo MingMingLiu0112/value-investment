@@ -6,6 +6,16 @@ import json
 from pathlib import Path
 from typing import Any
 
+from value_investment_agent.historical_validation import (
+    ADMITTED_FOR_STRICT_REPLAY,
+    STRICT_CONTEMPORANEOUS_REPLAY,
+)
+
+from .consumer_enforcement import (
+    StrictPitConsumerBlocked,
+    enforce_strict_pit_consumption,
+)
+
 
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -28,7 +38,12 @@ def resolve_bundle(root: Path, pointer: Path | None) -> Path:
     return target
 
 
-def verify_bundle(root: Path, bundle: Path) -> dict[str, Any]:
+def verify_bundle(
+    root: Path,
+    bundle: Path,
+    *,
+    pit_manifest: Path | None = None,
+) -> dict[str, Any]:
     root = root.resolve()
     bundle = bundle.resolve()
     if not bundle.is_relative_to(root) or not bundle.is_dir():
@@ -37,6 +52,15 @@ def verify_bundle(root: Path, bundle: Path) -> dict[str, Any]:
     admission = _load_json(bundle / "admission.json")
     manifest = _load_json(bundle / "input-manifest.json")
     walk = _load_json(bundle / "walk-forward-result.json")
+
+    if pit_manifest is None:
+        sidecar = bundle / "pit-conformance-input-v2.json"
+        if sidecar.is_file():
+            pit_manifest = sidecar
+    strict_claim = (
+        admission.get("classification") == STRICT_CONTEMPORANEOUS_REPLAY
+        or admission.get("admission_status") == ADMITTED_FOR_STRICT_REPLAY
+    )
     expected = {
         "admission_sha256": bundle / "admission.json",
         "input_manifest_sha256": bundle / "input-manifest.json",
@@ -97,6 +121,24 @@ def verify_bundle(root: Path, bundle: Path) -> dict[str, Any]:
     ).encode("utf-8")
     if manifest.get("canonical_sha256") != hashlib.sha256(canonical).hexdigest():
         raise ValueError("Input manifest canonical hash mismatch")
+
+    strict_enforcement: dict[str, Any] | None = None
+    if strict_claim:
+        if pit_manifest is None:
+            raise StrictPitConsumerBlocked(
+                "strict historical admission requires a fresh verifier v2 PASS"
+            )
+        verified = enforce_strict_pit_consumption(
+            root,
+            subject_path=bundle / "admission.json",
+            manifest_path=pit_manifest,
+        )
+        strict_enforcement = verified.as_receipt()
+        if strict_enforcement["subject"]["sha256"] != receipt.get("admission_sha256"):
+            raise StrictPitConsumerBlocked(
+                "PIT verifier subject bytes do not match the receipt admission bytes"
+            )
+
     return {
         "schema_version": "historical-validation-receipt-audit-v1",
         "status": "AUDIT_OK",
@@ -104,5 +146,8 @@ def verify_bundle(root: Path, bundle: Path) -> dict[str, Any]:
         "admission_status": admission.get("admission_status"),
         "walk_forward_status": walk.get("status"),
         "evidence_files": len(files),
+        "strict_pit_consumer": "PASS" if strict_claim else "NOT_APPLICABLE",
+        "strict_pit_admitted": bool(strict_claim),
+        "strict_pit_enforcement": strict_enforcement,
         "action": "no_order",
     }

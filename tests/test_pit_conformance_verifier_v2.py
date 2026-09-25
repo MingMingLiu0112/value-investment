@@ -10,7 +10,9 @@ from pathlib import Path
 import pytest
 
 from value_investment_agent.application.historical_validation import (
+    StrictPitConsumerBlocked,
     PIT_CONFORMANCE_SCHEMA,
+    enforce_strict_pit_consumption,
     verify_pit_conformance_v2,
 )
 
@@ -932,3 +934,140 @@ def test_cli_exit_code_one_for_integrity_failure(tmp_path, capsys):
     ) == 1
     output = json.loads(capsys.readouterr().out)
     assert output["status"] == "FAIL"
+
+
+def test_verifier_result_binds_exact_subject_and_manifest_bytes(tmp_path):
+    subject_path, manifest_path, _ = _valid_replay_fixture(tmp_path)
+
+    result = _verify(tmp_path, subject_path, manifest_path)
+
+    assert result["status"] == "PASS"
+    assert result["subject"]["sha256"] == _sha(subject_path.read_bytes())
+    assert result["manifest"]["sha256"] == _sha(manifest_path.read_bytes())
+
+
+def test_consumer_enforcement_returns_byte_bound_no_order_receipt(tmp_path):
+    subject_path, manifest_path, _ = _valid_replay_fixture(tmp_path)
+
+    verified = enforce_strict_pit_consumption(
+        tmp_path,
+        subject_path=subject_path,
+        manifest_path=manifest_path,
+        consumed_at=NOW,
+    )
+    receipt = verified.as_receipt()
+
+    assert receipt["schema_version"] == "pit-conformance-consumer-enforcement-v1"
+    assert receipt["verification_mode"] == "IN_PROCESS_FRESH_RECHECK"
+    assert receipt["subject"]["sha256"] == _sha(subject_path.read_bytes())
+    assert receipt["manifest"]["sha256"] == _sha(manifest_path.read_bytes())
+    assert receipt["strict_pit_admitted"] is True
+    assert receipt["action"] == "no_order"
+    assert receipt["performance_claim_allowed"] is False
+    assert receipt["valuation_approved"] is False
+    assert receipt["trade_approved"] is False
+    assert receipt["production_authorized"] is False
+
+
+def test_consumer_enforcement_blocks_missing_or_retrospective_proof(tmp_path):
+    subject_path, manifest_path, _ = _valid_replay_fixture(tmp_path)
+
+    with pytest.raises(StrictPitConsumerBlocked):
+        enforce_strict_pit_consumption(
+            tmp_path,
+            subject_path=subject_path,
+            manifest_path=None,
+            consumed_at=NOW,
+        )
+
+    retrospective_subject, retrospective_manifest, _ = _valid_replay_fixture(
+        tmp_path / "retrospective",
+        rule_status="RETROSPECTIVE_RESEARCH_EXTENSION",
+        future_rule_used=True,
+    )
+    with pytest.raises(StrictPitConsumerBlocked) as error:
+        enforce_strict_pit_consumption(
+            tmp_path / "retrospective",
+            subject_path=retrospective_subject,
+            manifest_path=retrospective_manifest,
+            consumed_at=NOW,
+        )
+    assert error.value.verifier_result["status"] == "NOT_PROVEN"
+    assert error.value.verifier_result["strict_pit_admissible"] is False
+
+
+def test_consumer_enforcement_rejects_stale_or_forged_verifier_hashes(
+    tmp_path, monkeypatch
+):
+    subject_path, manifest_path, _ = _valid_replay_fixture(tmp_path)
+
+    def forged_verifier(*args, **kwargs):
+        return {
+            "schema_version": PIT_CONFORMANCE_SCHEMA,
+            "status": "PASS",
+            "strict_pit_admissible": True,
+            "action": "no_order",
+            "policy_version": "forged-policy",
+            "verified_at": NOW.isoformat(),
+            "subject": {"path": str(subject_path), "sha256": "0" * 64},
+            "manifest": {"path": str(manifest_path), "sha256": "1" * 64},
+        }
+
+    monkeypatch.setattr(
+        "value_investment_agent.application.historical_validation.consumer_enforcement.verify_pit_conformance_v2",
+        forged_verifier,
+    )
+
+    with pytest.raises(StrictPitConsumerBlocked, match="bytes changed"):
+        enforce_strict_pit_consumption(
+            tmp_path,
+            subject_path=subject_path,
+            manifest_path=manifest_path,
+            consumed_at=NOW,
+        )
+
+
+@pytest.mark.parametrize("target", ["subject", "manifest"])
+def test_consumer_enforcement_blocks_bytes_changed_during_verification(
+    tmp_path, monkeypatch, target
+):
+    subject_path, manifest_path, _ = _valid_replay_fixture(tmp_path)
+    changing_path = subject_path if target == "subject" else manifest_path
+
+    def racing_verifier(*args, **kwargs):
+        result = verify_pit_conformance_v2(*args, **kwargs)
+        changing_path.write_bytes(changing_path.read_bytes() + b" ")
+        return result
+
+    monkeypatch.setattr(
+        "value_investment_agent.application.historical_validation.consumer_enforcement.verify_pit_conformance_v2",
+        racing_verifier,
+    )
+
+    with pytest.raises(StrictPitConsumerBlocked, match="bytes changed"):
+        enforce_strict_pit_consumption(
+            tmp_path,
+            subject_path=subject_path,
+            manifest_path=manifest_path,
+            consumed_at=NOW,
+        )
+
+
+def test_consumer_enforcement_blocks_zero_model_sessions(tmp_path):
+    subject_path, manifest_path, _ = _valid_admission_fixture(
+        tmp_path, model_sessions=False
+    )
+
+    with pytest.raises(StrictPitConsumerBlocked) as error:
+        enforce_strict_pit_consumption(
+            tmp_path,
+            subject_path=subject_path,
+            manifest_path=manifest_path,
+            consumed_at=NOW,
+        )
+
+    assert error.value.verifier_result["status"] == "NOT_PROVEN"
+    assert any(
+        "model_session_count_positive" in item
+        for item in error.value.verifier_result["blockers"]
+    )

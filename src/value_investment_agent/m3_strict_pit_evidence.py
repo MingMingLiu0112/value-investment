@@ -24,6 +24,10 @@ from .m3_historical_research_replay import (
     HistoricalEvidenceReference,
     HistoricalRuleBinding,
 )
+from .application.historical_validation import (
+    StrictPitConsumerBlocked,
+    enforce_strict_pit_consumption,
+)
 
 
 SCHEMA_VERSION = "m3-strict-pit-evidence-audit-v1"
@@ -212,12 +216,15 @@ def audit(
     root: Path,
     replay_path: Path,
     candidate_path: Path | None = None,
+    *,
+    pit_manifest_path: Path | None = None,
 ) -> dict[str, Any]:
     """Audit a strict-PIT evidence packet against a frozen replay."""
     root = root.resolve()
     replay_path = replay_path.resolve()
     if not replay_path.is_file():
         raise ValueError(f"Historical replay does not exist: {replay_path}")
+    replay_input_sha256 = _digest(replay_path)
     replay = _load_replay(replay_path)
     replay_meta = {
         "replay_id": replay.get("replay_id"),
@@ -317,6 +324,48 @@ def audit(
             "detail": binding.as_policy(),
         },
     ]
+    try:
+        verified = enforce_strict_pit_consumption(
+            root,
+            subject_path=replay_path,
+            manifest_path=pit_manifest_path,
+        )
+        if verified.subject_sha256 != replay_input_sha256:
+            raise StrictPitConsumerBlocked(
+                "replay bytes changed between evidence binding and consumer enforcement"
+            )
+    except StrictPitConsumerBlocked as error:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "action": ACTION_NO_ORDER,
+            "status": NOT_PROVEN,
+            "strict_contemporaneous_rule_pit": NOT_PROVEN,
+            "replay": replay_meta,
+            "candidate": [item.as_policy() for item in evidence],
+            "checks": checks
+            + [
+                {
+                    "check": "strict_pit_consumer_enforcement",
+                    "status": NOT_PROVEN,
+                    "detail": str(error),
+                }
+            ],
+            "required_input": {
+                "verifier": "pit-conformance-verifier-v2",
+                "subject": str(replay_path),
+                "manifest": str(pit_manifest_path) if pit_manifest_path else None,
+            },
+            "next_action": (
+                "先让 replay 和独立 v2 manifest 通过 pit-conformance-verifier-v2；"
+                "未通过前不得把候选证据升级为 strict contemporaneous binding"
+            ),
+            "consumer_enforcement": {
+                "status": "BLOCKED",
+                "strict_pit_admitted": False,
+                "verifier_result": error.verifier_result,
+            },
+        }
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -327,5 +376,6 @@ def audit(
         "candidate": [item.as_policy() for item in evidence],
         "checks": checks,
         "required_input": {},
+        "consumer_enforcement": verified.as_receipt(),
         "next_action": "以该绑定重建 HistoricalResearchReplay，并把 future_rule_version_used 设为 false",
     }
