@@ -1,0 +1,122 @@
+{
+  "schema_version": "m6-production-authorization-vfinal-v1",
+  "status": "READY_FOR_USER_REVIEW_NOT_AUTHORIZED",
+  "action": "no_order",
+  "machine_prepared": {
+    "deployment_host": "47.100.97.88",
+    "install_operator": "root_via_existing_ssh_only_during_authorized_window",
+    "runtime_account": "root_scoped_systemd_and_rootful_podman_existing_baseline",
+    "application_root": "/opt/value-investment-agent",
+    "configuration_root": "/etc/value-investment-agent",
+    "private_data_root": "/var/lib/value-investment-agent/private",
+    "key_root": "/etc/value-investment-agent/keys",
+    "database": {
+      "container": "value-investment-postgres",
+      "engine": "PostgreSQL 16",
+      "database": "value_agent",
+      "bind": "127.0.0.1:5432",
+      "writer_role": "value_agent_writer",
+      "reader_role": "value_agent_reader",
+      "remote_access": "Tailscale_private_network_only",
+      "public_5432": false,
+      "tls_or_tunnel_required": true
+    },
+    "scheduler": {
+      "engine": "systemd_timer",
+      "timezone": "Asia/Shanghai",
+      "daily_update": "Mon..Fri 16:10",
+      "market_screen": "Mon..Fri 16:30",
+      "filing_scan": "every_2_hours_at_minute_20",
+      "monthly_snapshot": "day_1_00:20",
+      "monthly_restore_drill": "day_2_01:20",
+      "single_instance_lock_required": true
+    },
+    "data_sources": ["SSE", "SZSE", "CNINFO", "existing_public_quote_adapters"],
+    "notification": {
+      "shadow_mode": "local_outbox_only",
+      "external_delivery": false,
+      "silence_when_no_material_change": true,
+      "p0_p1_requires_human_ack": true
+    },
+    "resources": {
+      "postgres_memory_mb": 256,
+      "postgres_memory_swap_mb": 384,
+      "postgres_cpu_cores": 0.5,
+      "job_memory_mb": 384,
+      "job_memory_plus_swap_mb": 512,
+      "job_cpu_cores": 0.5,
+      "minimum_available_memory_mb_before_start": 1228,
+      "minimum_free_disk_mb_before_write": 2048,
+      "concurrency": 1,
+      "pta_priority": "absolute_stop_on_regression"
+    },
+    "logs": {
+      "backend": "journald_plus_content_addressed_receipts",
+      "retention_days": 30,
+      "maximum_local_mb": 200,
+      "secrets_redacted": true
+    },
+    "backup": {
+      "schedule": "after_each_weekday_update",
+      "algorithm": "AES-256-GCM",
+      "local_root": "/opt/value-investment-agent/backups",
+      "key_separate_from_backup": true,
+      "offsite": "Alibaba_OSS_private_versioned_object_locked_bucket",
+      "rpo_hours": 24,
+      "rto_hours": 4,
+      "restore_target": "127.0.0.1:5433/value_agent_restore"
+    },
+    "shadow": {
+      "venues": ["SSE", "SZSE"],
+      "minimum_consecutive_real_sessions": 20,
+      "minimum_real_financial_or_capital_event": 1,
+      "receipt_root": "/var/lib/value-investment-agent/m6/receipts",
+      "witness": "distinct_Ed25519_key",
+      "intake": "Alibaba_OSS_object_lock_server_timestamp_and_monotonic_chain",
+      "candidate_signers": 4,
+      "admission_signer": "fifth_distinct_Ed25519_key",
+      "historical_replay_counts": false,
+      "synthetic_session_counts": false
+    },
+    "start_criteria": [
+      "fresh_read_only_PTA_resource_baseline_passes",
+      "free_disk_exceeds_reserve_plus_estimated_write",
+      "production_authorization_receipt_exactly_matches_artifacts",
+      "real_isolated_restore_passes_RPO_RTO",
+      "official_calendar_scope_is_current",
+      "all_five_signer_keys_are_distinct_and_externally_pinned"
+    ],
+    "stop_criteria": [
+      "PTA_health_regression",
+      "resource_or_disk_limit",
+      "data_integrity_or_hash_failure",
+      "receipt_or_intake_chain_failure",
+      "clock_or_watermark_rollback",
+      "private_data_boundary_failure",
+      "P0_or_P1_fail_open"
+    ],
+    "restart_criteria": [
+      "root_cause_closed",
+      "new_signed_authorization_and_admission",
+      "fresh_PTA_and_resource_preflight",
+      "affected_observation_window_reset"
+    ],
+    "rollback": [
+      "stop_only_value_investment_timers_and_jobs",
+      "preserve_receipts_logs_database_and_evidence",
+      "restore_previous_pinned_git_commit_and_container_image",
+      "verify_PTA_unchanged_and_healthy",
+      "database_restore_requires_separate_explicit_authorization"
+    ]
+  },
+  "user_to_authorize": {
+    "approve_host_and_existing_rootful_runtime_design": null,
+    "approve_Alibaba_OSS_private_bucket_creation_and_cost": null,
+    "approve_real_isolated_restore_on_server": null,
+    "approve_systemd_timer_and_local_outbox_shadow_scope": null,
+    "approve_SSE_SZSE_shadow_start_after_all_preconditions": null,
+    "authorization_confirmed_at": null
+  },
+  "production_authorization_granted": false,
+  "shadow_start_allowed": false
+}

@@ -1,5 +1,20 @@
 # 当前执行状态
 
+## 2026-09-25 M6 五方运营准入与 vFinal 授权提案
+
+新增 `m6-shadow-admission-v1`：第五把独立 admission 公钥与包外批准收据 Hash 绑定
+授权、scope/部署/配置实际制品、intake 链头、交易所、有效期、20 会话/1 事件门槛和
+重置政策。`assess_session_ledger` 只有消费该完整运营包装器后才允许把候选会话记入
+`verified_actual_sessions/latest_streak`；没有独立事件证明时事件仍为 0，整体继续
+`NOT_STARTED`。包含 intake、会话、事件、日历、控制与授权包在内的 M6 定向回归
+`84 passed`。
+
+`config/m6-production-authorization-vfinal.json` 已把主机、数据库私网边界、现有调度、
+local-outbox、资源限额、备份/OSS 异地策略、RPO/RTO、回退、紧急停止、SSE/SZSE、
+五方签名及 20 会话规则全部固化为机器提案。用户只需审批五项明确 R3 选择；当前均为
+`null`，`production_authorization_granted=false`、`shadow_start_allowed=false`。本轮未 SSH、
+未创建 OSS、未运行真实恢复、未改 systemd/数据库/PTA，`M6_OPERATIONAL=NOT_STARTED`。
+
 ## 2026-09-25 M6 独立 append-only 接收链 R0
 
 新增 `m6-independent-intake-v1`：每条独立接收记录绑定原始会话收据字节 Hash、服务端

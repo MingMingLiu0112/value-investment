@@ -85,6 +85,8 @@ jobs:
           tests/test_m6_calendar_readiness.py
           tests/test_m6_shadow_receipts.py
           tests/test_m6_independent_intake.py
+          tests/test_m6_shadow_admission.py
+          tests/test_m6_production_authorization_vfinal.py
           tests/test_m6_event_observation_contract.py
           tests/test_m6_calendar_bundle.py
           tests/test_restore_command_failure.py

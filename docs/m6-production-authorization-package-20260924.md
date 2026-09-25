@@ -1,5 +1,20 @@
 # M6 生产授权包（未授权草案）
 
+## vFinal 机器准备状态（2026-09-25）
+
+规范化提案位于 `config/m6-production-authorization-vfinal.json`。机器侧设计已明确：
+
+- 主机为 `47.100.97.88`，沿用现有 root-scoped systemd/rootful Podman 基线；仅授权窗口由 root 安装或回退，不新增常驻 Web 服务；
+- PostgreSQL 16 只绑定 `127.0.0.1:5432`，跨设备只允许 Tailscale 私网与 reader 角色，禁止公网 5432；
+- 保留现有 16:10 日更、16:30 筛选、两小时公告、月度快照/恢复演练节奏，所有任务单实例；
+- Shadow 期间只写本地 outbox，不向外部渠道发通知；无重大变化保持静默；
+- PostgreSQL 256 MiB/0.5 CPU；单任务 384 MiB、含交换 512 MiB、0.5 CPU，并发 1；可用内存低于 1228 MiB、磁盘低于 2 GiB 加预计写入量或 PTA 异常立即拒绝；
+- 每个交易日更新后 AES-256-GCM 备份，RPO 24h/RTO 4h；异地方案固定为私有、版本化且 Object Lock 的阿里云 OSS，密钥与备份分离；
+- SSE/SZSE、20 个连续真实交易会话、至少 1 件真实财务/资本配置事件；四方候选签名与第五方 admission 签名互异，历史/合成不计数；
+- 停止只影响本项目，保留日志、收据、数据库与证据；数据库恢复另需单独明确授权，绝不触碰 PTA。
+
+用户不再需要设计工程参数，只需整体批准或拒绝 JSON 中五项 `user_to_authorize`：既有 rootful 运行方案、OSS 私有桶及费用、服务器真实隔离恢复、systemd/local-outbox Shadow 范围、全部前置门通过后的 SSE/SZSE Shadow 启动。当前全部为 `null`，`production_authorization_granted=false`、`shadow_start_allowed=false`，本文件仍不是授权。
+
 更新：2026-09-24。本文件为未来授权审查准备边界，不批准或执行生产操作。
 
 ```text

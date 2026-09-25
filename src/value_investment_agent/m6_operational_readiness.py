@@ -322,6 +322,8 @@ def assess_session_ledger(
     verify_live_calendar: bool = False,
     signed_session_bundle: Mapping[str, Any] | None = None,
     trusted_shadow_root: Mapping[str, str] | None = None,
+    operational_shadow_bundle: Mapping[str, Any] | None = None,
+    operational_shadow_trust_root: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     schedule = None
     live_calendar = None
@@ -346,6 +348,18 @@ def assess_session_ledger(
         from .m6_shadow_receipts import verify_shadow_bundle
         verified_receipts = verify_shadow_bundle(
             signed_session_bundle, trusted_shadow_root, schedule, cutoff)
+    operational_receipts: dict[str, str] = {}
+    if operational_shadow_bundle is not None or operational_shadow_trust_root is not None:
+        if (operational_shadow_bundle is None or operational_shadow_trust_root is None
+                or schedule is None or live_calendar is None):
+            raise ValueError('Operational Shadow sessions require admission, pinned roots and live official calendar')
+        from .m6_shadow_admission import verify_operational_shadow_bundle
+        operational_receipts = verify_operational_shadow_bundle(
+            operational_shadow_bundle, operational_shadow_trust_root, schedule, cutoff,
+            required_sessions=config.minimum_real_sessions,
+            required_events=config.minimum_real_events,
+        )
+        verified_receipts = operational_receipts
     seen_dates: set[date] = set()
     failures: list[str] = []
     normalized = []
@@ -385,6 +399,10 @@ def assess_session_ledger(
             "real_event_materialized": bool(record.get("real_event_materialized")),
             "signed_candidate": (record.get('session_receipt_sha256') == verified_receipts.get(
                 session_date.isoformat()) and session_date.isoformat() in verified_receipts),
+            "operationally_admitted": (
+                record.get('session_receipt_sha256') == operational_receipts.get(session_date.isoformat())
+                and session_date.isoformat() in operational_receipts
+            ),
         })
 
     normalized.sort(key=lambda item: item["session_date"])
@@ -411,8 +429,18 @@ def assess_session_ledger(
     )
     simulated = sum(item["observed"] == "simulated" for item in normalized)
     signed_candidates = sum(item['signed_candidate'] for item in eligible)
-    verified_sessions = 0
+    operational_eligible = [item for item in eligible if item["operationally_admitted"]]
+    verified_sessions = len(operational_eligible)
     verified_streak = 0
+    if schedule is not None:
+        by_date = {item['session_date']: item for item in normalized}
+        for day in reversed(schedule_dates):
+            item = by_date.get(day)
+            if (item is None or not item["operationally_admitted"]
+                    or item["observed"] != "actual" or item["status"] != "success"
+                    or not item["resource_baseline_ok"]):
+                break
+            verified_streak += 1
     verified_events = 0
     blockers = []
     if verified_streak < config.minimum_real_sessions:
@@ -429,7 +457,7 @@ def assess_session_ledger(
         blockers = [item for item in blockers if not item.startswith('session dates are not bound')]
         if not verified_receipts:
             blockers.append('calendar membership does not authenticate real shadow run or production authorization')
-        else:
+        elif not operational_receipts:
             blockers.append('signed session claims lack independently anchored real-time receipt and pinned production trust')
     return _criterion(
         NOT_STARTED,
