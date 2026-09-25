@@ -38,9 +38,8 @@ def main() -> int:
     load = lambda path: json.loads(path.read_text(encoding="utf-8"))
     descriptor = build_pending_research_input(
         receipt=M5EventRunReceipt.from_payload(load(args.receipt)),
-        facts_artifact=load(args.facts),
-        facts_file_sha256=hashlib.sha256(args.facts.read_bytes()).hexdigest(),
-        equity_package=load(equity_path), equity_file_sha256=equity_sha,
+        facts_file_bytes=args.facts.read_bytes(),
+        equity_file_bytes=equity_path.read_bytes(),
         name=args.name, profile_id=args.profile_id,
         evaluated_at=datetime.now(timezone.utc),
     )

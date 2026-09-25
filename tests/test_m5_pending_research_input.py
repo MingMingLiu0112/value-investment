@@ -32,10 +32,8 @@ def _inputs():
     assert equity_sha == pointer["sha256"]
     return dict(
         receipt=m5_event_run_receipt_from_payload(json.loads(RECEIPT.read_text(encoding="utf-8"))["receipt"]),
-        facts_artifact=json.loads(FACTS.read_text(encoding="utf-8")),
-        facts_file_sha256=hashlib.sha256(FACTS.read_bytes()).hexdigest(),
-        equity_package=json.loads(equity_path.read_text(encoding="utf-8")),
-        equity_file_sha256=equity_sha, name="贵州茅台", profile_id="quality_compounder",
+        facts_file_bytes=FACTS.read_bytes(), equity_file_bytes=equity_path.read_bytes(),
+        name="贵州茅台", profile_id="quality_compounder",
         evaluated_at=AT,
     )
 
@@ -63,7 +61,9 @@ def test_actual_pending_descriptor_routes_to_null_not_ready_valuation():
 
 def test_pending_descriptor_rejects_unrelated_equity_filing():
     inputs = _inputs()
-    inputs["equity_package"]["current_disclosed_basis"]["raw_file_hash"] = "0" * 64
+    equity = json.loads(inputs["equity_file_bytes"])
+    equity["current_disclosed_basis"]["raw_file_hash"] = "0" * 64
+    inputs["equity_file_bytes"] = json.dumps(equity).encode("utf-8")
     with pytest.raises(ValueError, match="not tied"):
         build_pending_research_input(**inputs)
 
@@ -75,14 +75,16 @@ def test_pending_descriptor_rejects_unrelated_equity_filing():
 ])
 def test_pending_descriptor_rejects_facts_unbound_to_actual_event(field, value):
     inputs = _inputs()
-    inputs["facts_artifact"]["payload"][field] = value
+    artifact = json.loads(inputs["facts_file_bytes"])
+    artifact["payload"][field] = value
     from value_investment_agent.research_artifacts import canonicalize_artifact_payload, sha256_text
-    inputs["facts_artifact"]["payload_sha256"] = sha256_text(
-        canonicalize_artifact_payload(inputs["facts_artifact"]["payload"])
+    artifact["payload_sha256"] = sha256_text(
+        canonicalize_artifact_payload(artifact["payload"])
     )
     if field in {"pdf_sha256", "source_url"}:
-        inputs["facts_artifact"]["evidence_refs"][0][
+        artifact["evidence_refs"][0][
             "sha256" if field == "pdf_sha256" else "source_url"
         ] = value
+    inputs["facts_file_bytes"] = json.dumps(artifact).encode("utf-8")
     with pytest.raises(ValueError, match="not bound to exactly one ACTUAL event"):
         build_pending_research_input(**inputs)

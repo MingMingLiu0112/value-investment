@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+import hashlib
+import json
 from typing import Any, Mapping
 
 from .m5_event_run import M5EventRunReceipt
@@ -19,13 +21,16 @@ from .valuation_router import route_profile
 
 
 def build_pending_research_input(
-    *, receipt: M5EventRunReceipt, facts_artifact: Mapping[str, Any],
-    facts_file_sha256: str, equity_package: Mapping[str, Any],
-    equity_file_sha256: str, name: str, profile_id: str,
+    *, receipt: M5EventRunReceipt, facts_file_bytes: bytes,
+    equity_file_bytes: bytes, name: str, profile_id: str,
     evaluated_at: datetime,
 ) -> ResearchInputDescriptor:
     if evaluated_at.tzinfo is None or receipt.namespace != "ACTUAL" or receipt.action != "no_order":
         raise ValueError("Pending descriptor requires an ACTUAL no-order receipt and timezone")
+    facts_artifact = json.loads(facts_file_bytes)
+    equity_package = json.loads(equity_file_bytes)
+    facts_file_sha256 = hashlib.sha256(facts_file_bytes).hexdigest()
+    equity_file_sha256 = hashlib.sha256(equity_file_bytes).hexdigest()
     facts = facts_artifact["payload"]
     identity = facts_artifact["identity"]
     if (facts.get("schema_version") != "m5-verified-financial-facts-v1"
