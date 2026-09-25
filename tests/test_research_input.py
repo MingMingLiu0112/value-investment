@@ -322,6 +322,64 @@ def test_later_research_date_keeps_older_filing_valuation_date():
                 as_of=date(2025, 1, 1))
 
 
+def test_versioned_refresh_preserves_prior_valuation_and_validity_artifacts():
+    from value_investment_agent.quote_snapshot import QUOTE_STATUS_VERIFIED_CLOSE, QuoteSnapshot
+    from value_investment_agent.research_application import ModelValidityEvaluationInput
+    from value_investment_agent.research_artifacts import (
+        ARTIFACT_MODEL_VALIDITY, ARTIFACT_VALUATION_RESULT, SCOPE_SECURITY,
+    )
+
+    repository = InMemoryResearchArtifactRepository()
+    service = ResearchApplicationService(repository)
+    quote = QuoteSnapshot(
+        symbol="600519", quote_date=AS_OF, current_price=Decimal("5"),
+        status=QUOTE_STATUS_VERIFIED_CLOSE,
+        evidence_refs=[{"id": "quote", "sha256": "e" * 64}],
+    )
+    validity_input = ModelValidityEvaluationInput(
+        model_id="residual-income-equity-shared-v1", valid_from=AS_OF,
+        event_scan_evidence_refs=({"id": "event-scan", "sha256": "f" * 64},),
+    )
+    first = finalize_input_descriptor(replace(
+        _descriptor(), quote=quote, model_validity_input=validity_input,
+        input_sha256=None,
+    ))
+    first_outcome = service.run_company_research(build_research_run_spec(first))
+    first_result = repository.load_latest(SCOPE_SECURITY, "600519", ARTIFACT_VALUATION_RESULT)
+    first_validity = repository.load_latest(SCOPE_SECURITY, "600519", ARTIFACT_MODEL_VALIDITY)
+
+    updated_facts = replace(
+        first.facts,
+        operating_inputs={**first.facts.operating_inputs,
+                          "start_book_equity": Decimal("1200")},
+        evidence_refs=[{"id": "f-2", "sha256": "1" * 64}],
+    )
+    second = finalize_input_descriptor(replace(
+        first, run_id="descriptor-refresh", facts=updated_facts,
+        input_sha256=None,
+        sources=(_source(), ResearchSourceDescriptor(
+            id="refreshed-facts", kind="research_artifact", location="facts-v2",
+            sha256="1" * 64, retrieved_at=AVAILABLE_AT,
+        )),
+        point_in_time=replace(first.point_in_time,
+                              available_at=datetime(2026, 9, 22, 12, tzinfo=timezone.utc),
+                              computed_at=datetime(2026, 9, 22, 13, tzinfo=timezone.utc)),
+    ))
+    second_outcome = service.run_company_research(build_research_run_spec(second))
+    second_result = repository.load_latest(SCOPE_SECURITY, "600519", ARTIFACT_VALUATION_RESULT)
+    second_validity = repository.load_latest(SCOPE_SECURITY, "600519", ARTIFACT_MODEL_VALIDITY)
+
+    assert first_outcome.valuation.base_value != second_outcome.valuation.base_value
+    assert first_outcome.model_validity.status == second_outcome.model_validity.status == "VALID"
+    assert first_result.artifact_id != second_result.artifact_id
+    assert first_result.envelope.payload_sha256 != second_result.envelope.payload_sha256
+    assert repository.load_by_id(first_result.artifact_id) == first_result
+    assert first_validity.artifact_id != second_validity.artifact_id
+    assert len(repository.list_versions(SCOPE_SECURITY, "600519", ARTIFACT_VALUATION_RESULT)) == 2
+    assert len(repository.list_versions(SCOPE_SECURITY, "600519", ARTIFACT_MODEL_VALIDITY)) == 2
+    assert not hasattr(second_outcome, "order")
+
+
 def test_application_adds_binding_mismatch_blocker_without_order():
     descriptor = _descriptor()
     spec = build_research_run_spec(descriptor)
