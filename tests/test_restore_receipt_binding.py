@@ -308,3 +308,27 @@ def test_restore_writes_content_addressed_receipt_and_reverifies_it(bundle, monk
         'rpo_seconds': result['backup_age_seconds'],
     })
     assert backup.verify_restore_receipt(SOURCE, TARGET, written_path)['receipt_sha256'] == result['receipt_sha256']
+
+
+def test_restore_uses_private_verified_dump_and_rejects_changed_source(bundle, monkeypatch):
+    _, manifest_path, dump_path, _, _ = bundle
+    manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+    source = MagicMock()
+    source.execute.return_value.fetchone.return_value = {
+        'sha256': manifest['sha256'], 'manifest': manifest,
+    }
+    monkeypatch.setattr(backup, 'connect', lambda _: nullcontext(source))
+    monkeypatch.setattr(backup.shutil, 'which', lambda _: '/bin/pg_restore')
+
+    def consume_verified_copy(command, **_):
+        consumed = Path(command[-1])
+        assert consumed != dump_path
+        assert consumed.read_bytes() == b'database dump'
+        assert consumed.parent.name.startswith('isolated-dump-')
+        dump_path.write_bytes(b'replaced after verification')
+        return SimpleNamespace(returncode=0, stderr='')
+
+    monkeypatch.setattr(backup.subprocess, 'run', consume_verified_copy)
+    with pytest.raises(RuntimeError, match='changed during isolated restore'):
+        backup.verify_restore(SOURCE, TARGET, manifest_path)
+    assert not list(manifest_path.parent.glob('restore-*.json'))

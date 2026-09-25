@@ -22,9 +22,20 @@ def test_reserve_boundary(tmp_path, monkeypatch):
     assert backup.check_backup_space(tmp_path, 100)['reserve_bytes'] == 2 * 1024**3
 
 
+def test_empty_evidence_directory_refuses_backup_before_database_access(tmp_path, monkeypatch):
+    (tmp_path / 'evidence').mkdir()
+    connect = Mock(side_effect=AssertionError('database must not be accessed'))
+    monkeypatch.setattr(backup, 'connect', connect)
+    with pytest.raises(RuntimeError, match='No evidence originals'):
+        backup.create_backup('unused', tmp_path)
+    connect.assert_not_called()
+    assert not list(tmp_path.glob('*.manifest.json'))
+
+
 @pytest.mark.parametrize('drop_after_checks', [False, True])
 def test_low_disk_never_starts_dump_or_creates_manifest(tmp_path, monkeypatch, drop_after_checks):
     (tmp_path / 'evidence').mkdir()
+    (tmp_path / 'evidence' / 'original.pdf').write_bytes(b'evidence')
     connection = Mock()
     connection.execute.return_value.fetchone.return_value = {'bytes': 100, 'id': 'snapshot'}
 

@@ -62,6 +62,8 @@ def snapshot_evidence(evidence_directory: Path, backup_directory: Path) -> list[
     root = evidence_directory.resolve()
     originals = sorted(path for path in evidence_directory.rglob('*')
                        if path.suffix.lower() == '.pdf')
+    if not originals:
+        raise RuntimeError('No evidence originals available; backup refused')
     records: list[dict[str, str | int]] = []
     objects = backup_directory / 'evidence-objects'
     for original in originals:
@@ -115,8 +117,10 @@ def create_backup(database_url: str, target_dir: Path, container_runtime: str = 
     source_evidence = evidence_directory or target_dir / 'evidence'
     if not source_evidence.is_dir():
         raise RuntimeError('Evidence source directory is unavailable; backup refused')
-    evidence_bytes = sum(path.stat().st_size for path in source_evidence.rglob('*')
-                         if path.suffix.lower() == '.pdf')
+    original_paths = [path for path in source_evidence.rglob('*') if path.suffix.lower() == '.pdf']
+    if not original_paths:
+        raise RuntimeError('No evidence originals available; backup refused')
+    evidence_bytes = sum(path.stat().st_size for path in original_paths)
     with connect(database_url) as snapshot_connection:
         snapshot_connection.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
         database_bytes = snapshot_connection.execute(
@@ -236,15 +240,24 @@ def verify_restore(database_url: str, restore_database_url: str, backup_manifest
         raise RuntimeError('Backup manifest does not match the registered source audit')
     if not pg_restore:
         raise RuntimeError('pg_restore is required for the verified isolated target')
-    result = subprocess.run(
-        [pg_restore, '--clean', '--if-exists', '--no-owner', '--no-acl', '--dbname', restore_database_url, str(dump_path)],
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=RESTORE_TIMEOUT_SECONDS,
-    )
+    if shutil.disk_usage(backup_manifest.parent).free < dump_path.stat().st_size + 2 * 1024**3:
+        raise RuntimeError('Insufficient isolated restore space for a verified dump copy')
+    with tempfile.TemporaryDirectory(prefix='isolated-dump-', dir=backup_manifest.parent) as temporary:
+        verified_dump = Path(temporary) / dump_path.name
+        shutil.copyfile(dump_path, verified_dump)
+        if sha256_file(verified_dump) != manifest['sha256']:
+            raise RuntimeError('Verified restore dump copy differs from manifest')
+        result = subprocess.run(
+            [pg_restore, '--clean', '--if-exists', '--no-owner', '--no-acl', '--dbname', restore_database_url, str(verified_dump)],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=RESTORE_TIMEOUT_SECONDS,
+        )
     if result.returncode:
         raise RuntimeError(f'pg_restore failed: {result.stderr.strip()}')
+    if sha256_file(dump_path) != manifest['sha256']:
+        raise RuntimeError('Backup dump changed during isolated restore')
     with connect(restore_database_url) as restored:
         restored.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
         restored_checks = table_checks(restored)

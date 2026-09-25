@@ -1,5 +1,11 @@
 # 当前执行状态
 
+## 2026-09-25 恢复链追加失败关闭检查
+
+独立审计发现空原件目录可登记无法恢复的备份，以及校验后 `pg_restore` 重新打开原 dump 的替换窗口。已在数据库连接和 dump 前拒绝空原件目录；恢复先复制 dump 到私有临时目录并核验 Hash，只把该副本交给 `pg_restore`，源文件在执行期间变化则不写通过收据。离线 Core Gate 同款清单 `800 passed, 22 skipped`。真实 PostgreSQL 集群身份仍缺独立可信证明，M6C4 与运营验收保持未通过。
+
+`INTERRUPTION_AUDIT`：会话账本目前只把普通 JSON 作为 `declared_*`，已验真实会话/事件仍为 0；授权后的真实运行收据验证合同尚未建立，属剩余 R0。R2 私人 IPS、R3 生产授权、R6 自然交易会话与新研究证据、R5 最终用户验收均未越门。不能生成“仅剩外部门”清单；永久 `action=no_order`。
+
 ## 2026-09-25 M7 双交易所预检只读候选
 
 从现存 M5 隔离工作树取回逐文件 SHA 与 reviewed read model 完全匹配的 graph、plan、facts、outcome、scenario source 和 pending input；现有构建器重放通过，不更改 M5 研究结论。`runtime/m7-actual-reviewed-candidate-v14-20260925.xlsx` SHA-256 `f67ea05e3bab3ba87f9b3a15eadfa02c36bd6eea3dc97c90e8993464e061f915`，审计页绑定较新的双交易所 M6 预检收据 `runtime/m6-operational-preflight-20260925T091253Z/receipt.json`（SHA-256 `d5cfdf469c397454e483b436ce5ffa6472d0e961a19624fa24fa7f54a3dcb233`）。`runtime/m7-actual-reviewed-candidate-v14-wps-receipt.json` 只读 WPS 核验 `passed`：10 可见/2 隐藏、无订单、全可见页禁用建议扫描。正式 WPS 表 SHA-256 仍为 `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`，未发布或替换。M6 仍只预检、真实 Shadow 0；M7 用户验收未通过。
