@@ -1,0 +1,35 @@
+{
+  "schema_version": "repository-document-relocation-record-v1",
+  "moved_at": "2026-09-25",
+  "action": "no_order",
+  "records": [
+    {
+      "old_path": "docs/000429-bond-reconciliation.json",
+      "new_path": "docs/archive/legacy-research-20260925/000429-bond-reconciliation.json",
+      "sha256": "7fc762f18e8588718a76517ad7524e92d99c9e5ed4dfe0a0a788917ff3a9040d",
+      "action": "ARCHIVE",
+      "reason": "historical issuer reconciliation evidence with no current consumer"
+    },
+    {
+      "old_path": "docs/m3-checkpoint-b-review-detail-20260924.md",
+      "new_path": "docs/archive/legacy-research-20260925/m3-checkpoint-b-review-detail-20260924.md",
+      "sha256": "023b72e8677f8c4ae696fed635a4acee9adc2b24958706fd23db66b507073412",
+      "action": "ARCHIVE",
+      "reason": "superseded pre-review aid; human acceptance receipt is the current evidence"
+    },
+    {
+      "old_path": "docs/m3-history-read-model-20260924.md",
+      "new_path": "docs/archive/legacy-research-20260925/m3-history-read-model-20260924.md",
+      "sha256": "36c8669cc58a19500f3de49105edc8b2ca8d9fdca110fc82fc30bb272612283a",
+      "action": "ARCHIVE",
+      "reason": "superseded stage-progress snapshot"
+    },
+    {
+      "old_path": "docs/m4-portfolio-risk-assessment-20260924.md",
+      "new_path": "docs/archive/legacy-research-20260925/m4-portfolio-risk-assessment-20260924.md",
+      "sha256": "b2c38c93d4e036c10311eca2a54cf397f284de00f1063d09be138661f1fb2c18",
+      "action": "ARCHIVE",
+      "reason": "superseded stage-progress snapshot with later engineering evidence"
+    }
+  ]
+}

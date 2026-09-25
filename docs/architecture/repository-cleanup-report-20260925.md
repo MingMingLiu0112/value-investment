@@ -84,6 +84,18 @@ writes the existing output. Its historical `build(...)` import surface remains
 as a thin wrapper. The explicit FCFF-only behavior is intentionally unchanged
 in this refactor.
 
+### Documentation Archive Pass
+
+Four reference-free historical documents moved byte-for-byte to:
+
+```text
+docs/archive/legacy-research-20260925/
+```
+
+`relocation-record.json` records each old path, new path and SHA-256. An
+architecture regression test recomputes those hashes. No active pointer,
+test, manifest or receipt referenced the moved paths.
+
 ### Provenance Rollback
 
 The first attempted domain migration moved

@@ -234,6 +234,18 @@ def test_company_valuation_builder_delegates_to_application_service():
     assert _line_count(path) <= 90
 
 
+def test_legacy_research_archive_preserves_relocation_hashes():
+    archive = ROOT / "docs" / "archive" / "legacy-research-20260925"
+    record = json.loads(
+        (archive / "relocation-record.json").read_text(encoding="utf-8")
+    )
+
+    assert record["action"] == "no_order"
+    for item in record["records"]:
+        path = ROOT / item["new_path"]
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == item["sha256"]
+
+
 def test_new_domain_and_application_code_has_no_symbol_literals():
     symbol = re.compile(r"[0-9]{6}")
     for layer in ("domain", "application"):

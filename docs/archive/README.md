@@ -9,6 +9,12 @@ The existing goal-consolidation manifest is:
 docs/archive/goal-consolidation-20260922/manifest.json
 ```
 
+The first archive pass for reference-free historical research material is:
+
+```text
+docs/archive/legacy-research-20260925/relocation-record.json
+```
+
 Many earlier stage, progress, candidate, parser, and research documents remain
 at their original `docs/` paths because they are referenced by current
 documents, tests, manifests, or receipts. They are logically archived but were
