@@ -57,13 +57,14 @@ def test_calendar_gap_breaks_streak_and_does_not_verify_real_shadow():
     days = [item['session_date'] for item in schedule['sessions'][-3:]]
     result = assess_session_ledger(_config(), [_record(day, calendar) for day in days[-2:]],
                                    calendar_evidence=calendar)
-    assert result['status'] == PARTIAL
-    assert result['evidence']['latest_streak'] == 2
+    assert result['status'] == 'NOT_STARTED'
+    assert result['evidence']['latest_streak'] == 0
+    assert result['evidence']['declared_latest_streak'] == 2
     assert result['evidence']['verified_actual_sessions'] == 0
     assert result['checks'][-1]['passed'] is True
     missing = assess_session_ledger(_config(), [_record(days[0], calendar),
                                                 _record(days[2], calendar)], calendar_evidence=calendar)
-    assert missing['evidence']['latest_streak'] == 1
+    assert missing['evidence']['declared_latest_streak'] == 1
 
 
 @pytest.mark.parametrize('change', ['weekend', 'future', 'venue', 'hash', 'intraday', 'after_cutoff'])

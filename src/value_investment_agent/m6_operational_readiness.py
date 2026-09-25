@@ -382,7 +382,7 @@ def assess_session_ledger(
         and item["status"] == "success"
         and item["resource_baseline_ok"]
     ]
-    latest_streak = 0
+    declared_streak = 0
     if schedule is None:
         streak_items = reversed(normalized)
     else:
@@ -392,23 +392,23 @@ def assess_session_ledger(
         if (item is None or item["observed"] != "actual" or item["status"] != "success"
             or not item["resource_baseline_ok"]):
             break
-        latest_streak += 1
-    real_events = sum(
+        declared_streak += 1
+    declared_events = sum(
         item["observed"] == "actual" and item["real_event_materialized"]
         for item in normalized
     )
     simulated = sum(item["observed"] == "simulated" for item in normalized)
-    criterion_status = NOT_STARTED
-    if eligible:
-        criterion_status = PARTIAL
+    verified_sessions = 0
+    verified_streak = 0
+    verified_events = 0
     blockers = []
-    if latest_streak < config.minimum_real_sessions:
+    if verified_streak < config.minimum_real_sessions:
         blockers.append(
-            f"need {config.minimum_real_sessions} consecutive real sessions; current={latest_streak}"
+            f"need {config.minimum_real_sessions} consecutive verified real sessions; current={verified_streak}"
         )
-    if real_events < config.minimum_real_events:
+    if verified_events < config.minimum_real_events:
         blockers.append(
-            f"need {config.minimum_real_events} real financial/capital event; current={real_events}"
+            f"need {config.minimum_real_events} verified real financial/capital event; current={verified_events}"
         )
     if eligible:
         blockers.append("session dates are not bound to an official exchange calendar and observation cutoff")
@@ -416,23 +416,26 @@ def assess_session_ledger(
         blockers = [item for item in blockers if not item.startswith('session dates are not bound')]
         blockers.append('calendar membership does not authenticate real shadow run or production authorization')
     return _criterion(
-        criterion_status,
+        NOT_STARTED,
         [
             _check("all records are no_order", not failures),
             _check("no duplicate session dates", len(seen_dates) == len(records)),
-            _check("reported latest session streak", latest_streak >= config.minimum_real_sessions, str(latest_streak)),
-            _check("real event count", real_events >= config.minimum_real_events, str(real_events)),
+            _check("verified latest session streak", verified_streak >= config.minimum_real_sessions, str(verified_streak)),
+            _check("verified real event count", verified_events >= config.minimum_real_events, str(verified_events)),
             _check("simulated sessions are excluded", True, str(simulated)),
             _check("declared official calendar bytes and cutoff parsed", schedule is not None),
         ],
         blockers=blockers,
         evidence={
-            "eligible_sessions": len(eligible),
-            "latest_streak": latest_streak,
-            "real_events": real_events,
+            "eligible_sessions": verified_sessions,
+            "latest_streak": verified_streak,
+            "real_events": verified_events,
+            "declared_eligible_sessions": len(eligible),
+            "declared_latest_streak": declared_streak,
+            "declared_real_events": declared_events,
             "simulated_sessions": simulated,
             "failures": failures,
-            "verified_actual_sessions": 0,
+            "verified_actual_sessions": verified_sessions,
             "calendar_source_sha256": sorted({item['sha256'] for item in schedule['sessions']}) if schedule else [],
             "latest_completed_exchange_session": schedule['latest_completed_session'] if schedule else None,
             "calendar_live_verified_at": live_calendar['verified_at'] if live_calendar else None,

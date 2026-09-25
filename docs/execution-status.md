@@ -1,5 +1,28 @@
 # 当前执行状态
 
+## 2026-09-25 双交易所日历与真实会话计数纠偏
+
+在 SSE 只读归档之外，000333 的 SZSE 月度日历 bundle 已归档于
+`runtime/quote-sessions/20260925T091240840369Z/bundle.json`，SHA-256
+`4a80318973e27449f182ceb9083e1ab36f81c4759f6c568de82952ed0c1a05fe`；
+独立 HTTPS 重取和完整已收盘日历解析通过，最近已完成会话同为 2026-09-24。
+SSE/SZSE 来源验证均为 R0 只读证据，不构成生产运行会话。生产授权运行范围仍
+未确定，M6 全局日历准入保持 `PARTIAL`。
+
+旧账本把自报 `actual/success` 列为候选 `latest_streak`，容易被误读为已验真实
+会话；现把 `declared_*` 与已验 `latest_streak`/`real_events` 分开。没有授权后
+运行收据时，已验真实会话、连续段和事件均为 **0**，M6 会话准入为
+`NOT_STARTED`。这不取消未来 20 连续交易会话、真实事件和独立恢复验收。
+当前提交前定向账本回归 `19 passed`，尚须新提交的 Core Gate 证明。
+
+干净主线 `c8a0a43` 的 M6 SSE 官方来源预检收据 SHA-256
+`77ded9f153a0235046adc4a18732fd9efb88cf834ede6bd5ec121e55b6fcd15f`，
+engineering `DONE`、operational `NOT_STARTED`。绑定该收据的 M7 v13 只读候选
+SHA-256 `a7b4d0deef5e41f474f45c20fb67aa7f3df377deb1c233fe416ee0af88083e3e`，
+WPS 只读复验 `passed`（10 可见/2 隐藏、无订单、正式表 Hash 不变）。
+[Core Research Gates 36117117710](https://github.com/MingMingLiu0112/value-investment/actions/runs/36117117710)
+的离线与 PostgreSQL 集成作业均为 success；此状态仍非 M6/M7 产品验收。
+
 ## 2026-09-25 M6 SSE 官方日历与授权控制补充审计
 
 只读 `collect_quote_sessions.py --symbols 600519` 将 SSE 2026 官方休市公告归档于

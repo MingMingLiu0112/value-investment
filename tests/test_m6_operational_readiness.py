@@ -216,14 +216,15 @@ def test_session_ledger_counts_only_actual_successful_sessions(tmp_path):
 
     result = assess_session_ledger(config, records)
 
-    assert result["status"] == PARTIAL
+    assert result["status"] == NOT_STARTED
     assert result["evidence"]["latest_streak"] == 0
     assert result["evidence"]["simulated_sessions"] == 1
     assert result["action"] == "no_order" if "action" in result else True
 
     result = assess_session_ledger(config, records[:-1])
-    assert result["status"] == PARTIAL
-    assert result["evidence"]["latest_streak"] == 20
+    assert result["status"] == NOT_STARTED
+    assert result["evidence"]["latest_streak"] == 0
+    assert result["evidence"]["declared_latest_streak"] == 20
     assert any("official exchange calendar" in blocker for blocker in result["blockers"])
 
 
@@ -234,8 +235,9 @@ def test_failed_latest_session_resets_streak_and_cannot_pass(tmp_path):
 
     result = assess_session_ledger(config, records)
 
-    assert result["status"] == PARTIAL
-    assert result["evidence"]["eligible_sessions"] == 20
+    assert result["status"] == NOT_STARTED
+    assert result["evidence"]["eligible_sessions"] == 0
+    assert result["evidence"]["declared_eligible_sessions"] == 20
     assert result["evidence"]["latest_streak"] == 0
 
 
