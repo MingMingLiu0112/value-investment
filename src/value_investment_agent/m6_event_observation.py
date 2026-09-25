@@ -11,8 +11,10 @@ import json
 from typing import Any, Mapping
 from urllib.parse import urlsplit
 
+from .disclosures import PDF_BASE_URL
 from .event_materiality import event_materiality_review_from_payload
 from .m5_event_run import M5EventRunReceipt
+from .m6_exchange_sessions import completed_exchange_sessions
 from .m6_shadow_receipts import verify_shadow_bundle
 
 
@@ -58,12 +60,69 @@ def _time(value: str) -> datetime:
     return parsed
 
 
+def _verify_cninfo_index(raw: bytes, expected_sha256: str, review: Any,
+                         decision: Any) -> None:
+    index = _json_object(raw, "CNINFO index")
+    refs = [item for item in review.evidence_refs
+            if item.get("id") == f"{review.symbol}-cninfo-index"]
+    if (len(refs) != 1 or _sha(raw) != expected_sha256
+            or review.scan_sha256 != expected_sha256
+            or refs[0].get("sha256") != expected_sha256
+            or refs[0].get("source_url") != "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+            or index.get("url") != refs[0]["source_url"]):
+        raise ValueError("CNINFO index is not bound to the materiality review")
+    params = index.get("parameters") or {}
+    rows = index.get("announcements")
+    if (not isinstance(params, dict) or not isinstance(rows, list)
+            or params.get("stock") != f"{review.symbol},gssh0{review.symbol}"
+            or params.get("column") != "sse"
+            or params.get("tabName") != "fulltext"
+            or params.get("pageSize") != "100"
+            or params.get("isHLtitle") != "true"
+            or any(params.get(key) != "" for key in (
+                "searchkey", "secid", "plate", "category", "trade",
+                "sortName", "sortType"))
+            or params.get("seDate") != f"{review.scan_from}~{review.scan_to}"
+            or type(index.get("total_announcements")) is not int
+            or index["total_announcements"] != len(rows)
+            or refs[0].get("announcement_count") != len(rows)
+            or any(not isinstance(item, dict) or item.get("secCode") != review.symbol
+                   for item in rows)):
+        raise ValueError("CNINFO index coverage or symbol differs")
+    ids = [str(item.get("announcementId")) for item in rows]
+    if len(ids) != len(set(ids)):
+        raise ValueError("CNINFO index contains duplicate announcement IDs")
+    matches = [item for item in rows
+               if str(item["announcementId"]) == decision.announcement_id]
+    if len(matches) != 1:
+        raise ValueError("Materiality decision has no unique CNINFO index row")
+    row = matches[0]
+    milliseconds = row.get("announcementTime")
+    if type(milliseconds) is not int:
+        raise ValueError("CNINFO announcement timestamp must be Unix milliseconds")
+    published = datetime.fromtimestamp(milliseconds / 1000,
+                                       timezone(timedelta(hours=8)))
+    adjunct = str(row.get("adjunctUrl") or "").lstrip("/")
+    pdf_url = PDF_BASE_URL + adjunct
+    expected_adjunct = f"finalpage/{published.date()}/{decision.announcement_id}.PDF"
+    if (not review.scan_from <= published.date() <= review.scan_to
+            or row.get("adjunctType") != "PDF"
+            or row.get("announcementTitle") != decision.title
+            or published != decision.published_at
+            or adjunct.lower() != expected_adjunct.lower()
+            or pdf_url != decision.source_ref.get("source_url")):
+        raise ValueError("CNINFO index row differs from materiality decision")
+
+
 def verify_event_observation_candidate(
-    *, source_bytes: bytes, materiality_review_bytes: bytes,
+    *, source_bytes: bytes, source_index_bytes: bytes,
+    materiality_review_bytes: bytes,
     m5_receipt_bytes: bytes, observation_bytes: bytes,
     shadow_bundle: Mapping[str, Any], trust_root: Mapping[str, str],
-    schedule: Mapping[str, Any], cutoff: datetime,
+    calendar_evidence: Mapping[str, Any], cutoff: datetime,
     expected_materiality_review_sha256: str, expected_m5_receipt_sha256: str,
+    expected_source_index_sha256: str,
+    expected_calendar_source_sha256: tuple[str, ...],
     approved_source_hosts: frozenset[str],
 ) -> dict[str, Any]:
     """Check exact source-to-Shadow lineage, returning zero operational credit."""
@@ -96,6 +155,8 @@ def verify_event_observation_candidate(
     if len(decisions) != 1 or len(events) != 1:
         raise ValueError("Event or materiality decision is missing or duplicated")
     decision, event = decisions[0], events[0]
+    _verify_cninfo_index(source_index_bytes, expected_source_index_sha256,
+                         review, decision)
     source_url = urlsplit(str(decision.source_ref.get("source_url", "")))
     if (decision.human_decision != "MATERIAL_REQUIRES_RECALCULATION"
             or decision.reviewed_at is None
@@ -122,6 +183,14 @@ def verify_event_observation_candidate(
             or observation["m5_state_sha256"] != receipt.state_sha256):
         raise ValueError("Original, materiality decision and M5 event lineage differ")
 
+    documents = calendar_evidence.get("documents")
+    if (not isinstance(documents, list) or not documents
+            or tuple(sorted(item.get("sha256", "") for item in documents))
+            != tuple(sorted(expected_calendar_source_sha256))
+            or calendar_evidence.get("observation_cutoff") != cutoff.isoformat()):
+        raise ValueError("Calendar documents lack separately supplied source hashes or cutoff")
+    schedule = completed_exchange_sessions(
+        str(calendar_evidence.get("venue")), documents, cutoff)
     session_hashes = verify_shadow_bundle(shadow_bundle, trust_root, schedule, cutoff)
     matches = [item["session"]["payload"] for item in shadow_bundle["sessions"]
                if item["session"]["payload"]["run_id"] == observation["m6_run_id"]
@@ -157,6 +226,7 @@ def verify_event_observation_candidate(
         "event_id": event.event_id,
         "session_date": observation["session_date"],
         "source_sha256": _sha(source_bytes),
+        "source_index_sha256": _sha(source_index_bytes),
         "observation_sha256": _sha(observation_bytes),
         "session_receipt_sha256": session_hashes[observation["session_date"]],
         "action": "no_order",

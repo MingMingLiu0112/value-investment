@@ -1,5 +1,15 @@
 # 当前执行状态
 
+## 2026-09-25 M6 公告覆盖与签名日历补审
+
+离线候选索引现要求 600519 SSE 的完整无筛选查询参数，并要求选中公告日期落在 M5 review 扫描窗口内。反例覆盖重算 Hash 后的过滤查询、错误证券 ID 和越窗公告。独立签名会话已在推导的 2026-09-24 官方交易日上验证，并测试错误日历 Hash 必须拒绝。这仍不是 CNINFO 实时来源认证或生产独立见证；真实会话/事件均为 0，`M6_OPERATIONAL=NOT_STARTED`，`TOTAL_GOAL_STATUS=IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`，`INITIAL_ASSISTED_USE=NOT_REACHED`。永久 `action=no_order`；最终投资决定由用户作出。
+
+## 2026-09-25 M6 候选来源索引与官方会话补强
+
+离线事件候选现接受独立的 CNINFO 索引字节及期望 SHA-256，绑定 M5 review 的 `scan_sha256`/evidence ref、查询证券与窗口、唯一公告 ID、标题、官方毫秒时间戳和 PDF URL。交易日不再由调用方手填；从归档 SSE/SZSE 原文构建完整已收盘会话表，并核对包外提供的日历原文 Hash。2026-09-25 为 SSE 休市，合成正向样例改为 2026-09-24；600519 的旧公告继续不能算作新的运营事件。定向索引/候选测试 `26 passed`，含重算索引 Hash 后篡改 ID、标题、时间、URL、条数与重复行的反例。
+
+这只证明归档材料与现有规则之间的离线一致性，不能证明索引在本次运行中由 CNINFO 实时返回；预期 Hash、密钥和日历文档仍可能同源自报。`operational_event_proven=false`、真实会话/事件 0、`M6_OPERATIONAL=NOT_STARTED` 均不变。生产受信任制品索引、公告来源独立认证和不可回填接收时间锚仍属 R0/R3/R6；总 Goal 未完成，`INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`。
+
 ## 2026-09-25 M6 事件运营候选见证 R0
 
 新增纯离线 `m6-shadow-event-observation-v1` 候选验证器，逐字节绑定归档 PDF、材料性 review、内部自洽的 ACTUAL M5 committed receipt、签名 Shadow 会话及其运行制品；review/receipt 期望 Hash 与允许来源主机为包外输入。上一官方会话收盘后到当前会话的时间窗口拒绝旧事件回放。返回永远是 `offline_candidate_valid`，`operational_event_proven=false`、`verified_real_event_count=0`；不接入 M6 实际事件计数或生产。
