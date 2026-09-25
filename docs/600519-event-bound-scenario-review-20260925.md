@@ -30,6 +30,12 @@ All amounts below are CNY, current-period first column, consolidated scope unles
 
 The separate issuer equity basis reports parent equity CNY `251253594419.50` and issued shares `1250081601` as of the H1 report. Shares are supported by physical page 22 and the equity rollforward by pages 28/37. The archived basis itself says `valuation_approved=false` and `as_of_registry_verified=false`; it is a model origin candidate, not a current capital certificate.
 
+### Cash-flow cross-check, not a promoted fact package
+
+The archived [CFO bridge](../runtime/company-research/600519-cfo-bridge-20260909T074037844099Z/evidence.json), file SHA `82963a3fdf83a60a14648e6fd83c2fceb49c414501e6f571c81f07b0778fd907`, reconciles H1 report pages 33-34. Consolidated reported CFO is CNY `70,690,750,119.06` (inflows `109,245,728,301.02` less outflows `38,554,978,181.96`), but explicitly identified finance-business net cash movement is CNY `32,720,132,963.99`. The remaining reported net is CNY `37,970,617,155.07`, versus CNY `37,262,223,808.80` in the comparative period. This remainder still includes shared taxes, staff and other flows: `industrial_cfo_approved=false`, `fcff_approved=false`. It is **not** a pure liquor-business CFO or free cash flow estimate. The 2025 comparative columns here are from the archived bridge, not the five newly verified facts.
+
+The separate [parent distribution-capacity analysis](../runtime/company-research/600519-distribution-capacity-evidence-20260921T130814Z/evidence.json), file SHA `795e30fb84b33ad2ecb78a00ab2a92fe4914bdf846d94220c33e183d5b6503f0`, cites H1 report pages 35-36: parent CFO CNY `15,224,606,455.02`, capex `828,735,611.53`, and distributions/interest paid `35,032,574,305.20`. Its calculated half-year CFO-after-capex coverage is only `0.410928`; remittance timing and full-year cash flow remain unknown. That analysis likewise has `valuation_approved=false`. Neither consolidated finance-company deposits nor restricted balances can be substituted for freely distributable parent cash.
+
 ## 2. Archived conditional assumptions versus the ACTUAL events
 
 Comparator: the [2026-09-24 conditional forward-assumption research](../runtime/company-research/600519-current-forward-assumptions-20260924T090504Z/evidence.json), SHA `57929708314a9255d02453aefb4053575ff8b1918d4506ee197ac777e2041f63`, and [conditional residual-income policy](../runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20260924T090504Z/evidence.json), SHA `ad8bbeec2058cea818002e23c57dfee4a7b6b18143b93242d3630b60648e370f`. These were prepared *after* the disclosures but are not the completed ACTUAL descriptor. `passed=true` applies only to conditional research; `valuation_approved=false`, `simulation_eligible=false`, `trade_approved=false`. Their numbers are comparison anchors, not inherited approvals.
@@ -37,7 +43,7 @@ Comparator: the [2026-09-24 conditional forward-assumption research](../runtime/
 | Archived conditional assumption | New verified event evidence | Challenge and direction | Magnitude known? | Judgment needed? |
 | --- | --- | --- | --- | --- |
 | Earnings-growth stresses -5% / 0% / +5%, no extra company-wide price uplift | July affected-SKU prices rose CNY 100; H1 revenue/profit/cost are now PDF-verified | Price may help exposed sales, but volume/mix and company exposure can offset; H1 predates price | No | Yes: price-volume-to-ROE bridge |
-| 75% payout (25% retention), stress payouts 50%/85% | H1 cash received from sales and monetary funds verified; parent equity/share bridge separately pinned | Cash receipts do not establish distributable cash; working capital, remittances and capital needs remain open | No | Yes: sustainable payout/retention |
+| 75% payout (25% retention), stress payouts 50%/85% | H1 cash received from sales and monetary funds verified; archived CFO bridge separates CNY 32.72bn of financial-line net movement; parent half-year coverage analysis is 0.411x, neither analysis approved for valuation | Cash receipts and consolidated CFO do not establish distributable cash; working capital, remittances and capital needs remain open | No | Yes: sustainable payout/retention |
 | Five explicit years plus five-year fade | New H1 and July events require renewed durability assessment | Franchise duration could shorten or extend; neither follows from one price notice | No | Yes: forecast horizon and ROE fade |
 | Terminal growth 2%, terminal ROE converges to cost of equity | No event-specific long-run reinvestment/ROE evidence | Terminal assumptions dominate long-run value; July one-off change is not recurring growth | No | Yes: terminal policy and sensitivity |
 | Archived CNY nominal cost-of-equity cases about 5.81% / 6.76% / 7.70% | No refreshed, synchronized discount-input package for this event-bound date | Required return may have changed independently of business facts | No | Yes: date-aligned discount range |
@@ -53,24 +59,32 @@ The notice changes the 2026 53%vol 500ml SKU's platform retail display price `15
 | Channel mix | Retail and upstream contract weights must be disjoint | Target-SKU mix, distributor/platform substitution and double-count prevention |
 | Company revenue | H1 90.703bn CNY was before July | Exposed recognized-sales weight; no company-wide +6.5%/+7.9% extrapolation |
 | Gross / operating margin | H1 consolidated gross margin 89.555% | Post-July product costs, selling expense, mix and operating leverage |
-| Cash conversion / working capital | H1 sales cash receipts exceed H1 revenue, but CFO was not among the five verified facts | Receivables, advances, inventory, taxes and actual CFO versus profit |
+| Cash conversion / working capital | H1 sales cash receipts exceed H1 revenue; archived CFO bridge separates finance-business cash movements, but CFO was not among the five newly verified facts | Receivables, advances, inventory, taxes and liquor-only CFO versus profit |
 | ROE path | Parent equity is pinned at H1; no post-July ROE is observed | Forecast net income attributable to parent, retention and opening-equity bridge |
 
 Strong contrary cases to retain: price-driven volume loss, channel inventory/wholesale-price stress, consumption weakness, H1 trend not extrapolating, one SKU repricing failing to sustain franchise ROE, cash/profit divergence, and terminal-value sensitivity. No single price increase establishes profit growth or intrinsic value.
 
 ## 4. Bear / base / bull leaves for the shared residual-income model
 
-The existing shared model consumes, **for each scenario**, `cost_of_equity`, every `forecast_roes[i]`, `terminal_roe`, `terminal_growth`, and `retention`; it also consumes starting parent equity and ordinary shares. No leaf below is approved or registerable as `valuation_inputs`. Old conditional figures are review anchors, not automatic values. A five-year explicit period is a *review question*, not a frozen horizon; if approved with another horizon, enumerate every year in the completed package.
+The existing shared model consumes, **for each scenario**, `cost_of_equity`, every `forecast_roes[i]`, `terminal_roe`, `terminal_growth`, and `retention`; it also consumes starting parent equity and ordinary shares. No leaf below is approved or registerable as `valuation_inputs`. Old conditional figures are review anchors, not automatic values. The archived conditional model used **ten explicit ROE years** (five earnings years and five fade years), while the completed shared-model horizon remains a *review question*. Whatever horizon is chosen, enumerate every year in the completed package.
 
 | Model leaf | Bear proposal | Base proposal | Bull proposal | Evidence / rationale | Sensitivity, counter-evidence, confidence |
 | --- | --- | --- | --- | --- | --- |
 | `cost_of_equity` | `UNKNOWN / NEEDS_RESEARCH` (old upper 7.70%) | `UNKNOWN / NEEDS_RESEARCH` (old central 6.76%) | `UNKNOWN / NEEDS_RESEARCH` (old lower 5.81%) | Archived discount policy in conditional model SHA `ad8bbeec...e370f`; needs synchronized event-date sovereign yield, beta and ERP inputs | +200bp stress in old policy; rates/beta asynchronous. **Low** |
-| `forecast_roes[0..4]` | Five values `UNKNOWN`; test volume loss and slower margin | Five values `UNKNOWN`; test price-volume balance without automatic uplift | Five values `UNKNOWN`; test realized demand resilience | H1 PDF SHA `0e10aa26...6a4f6`, July PDF SHA `24e51c43...92873`, equity basis SHA `efc4dc37...e91b`; earnings-growth -5/0/+5 is **not** an ROE path | Vary exposure, volume, mix, margin, cash and retention; H1 predates price. **Low** |
+| `forecast_roes[0..H-1]` | Every year `UNKNOWN`; test volume loss and slower margin | Every year `UNKNOWN`; test price-volume balance without automatic uplift | Every year `UNKNOWN`; test realized demand resilience | H1 PDF SHA `0e10aa26...6a4f6`, July PDF SHA `24e51c43...92873`, equity basis SHA `efc4dc37...e91b`; earnings-growth -5/0/+5 is **not** an ROE path | Vary exposure, volume, mix, margin, cash and retention; H1 predates price. **Low** |
 | `terminal_roe` | `UNKNOWN`; test convergence toward reviewed cost of equity | `UNKNOWN`; test same | `UNKNOWN`; test whether excess return persists only with evidence | Archived conditional policy assumed no permanent excess return, not an event approval | Recalculate at cost and lower ROE; franchise fade may be faster. **Low** |
 | `terminal_growth` | `UNKNOWN`; 0% stress reference | `UNKNOWN`; old 2% reference | `UNKNOWN`; old 2% is **not** a higher bull permission | Archived conditional policy SHA `ad8bbeec...e370f`; no perpetual growth evidence from July action | Test 0%/2%; require growth below cost of equity and terminal ROE. **Low** |
 | `retention` (1 - payout) | `UNKNOWN`; old 50% stress reference | `UNKNOWN`; old 25% reference | `UNKNOWN`; old 15% stress reference | Archived forward policy SHA `57929708...1f63`, H1 cash/profit evidence and equity bridge | Test payout 50%/75%/85%, working-capital needs and remittance constraints. **Low** |
 
 Starting book equity `251253594419.50` CNY and shares `1250081601` have a pinned issuer basis, but the completed descriptor must recheck its source bytes, as-of date and capital events. They are not scenario guesses. No Bear/Base/Bull value or valuation band is calculated from this incomplete table.
+
+For a concrete review comparator, the **unapproved archived conditional model** (SHA `ad8bbeec...e370f`) produced these ten annual ROE percentages. They already reflect that older model's earnings, retention and fade mechanics, but are **not independently evidenced event-bound forecast leaves** and must not be pasted into a completed descriptor. In particular, H1 ends before July's price action and target-SKU volume/mix is still unknown.
+
+| Scenario | Archived conditional ROE, years 1-5 | Archived fade ROE, years 6-10 |
+| --- | --- | --- |
+| Bear | 30.77, 27.14, 24.14, 21.63, 19.50% | 17.14, 14.78, 12.42, 10.06, 7.70% |
+| Base | 32.38, 29.96, 27.87, 26.06, 24.46% | 20.92, 17.38, 13.84, 10.30, 6.76% |
+| Bull | 34.00, 32.91, 31.93, 31.04, 30.25% | 25.36, 20.47, 15.59, 10.70, 5.81% |
 
 ### Reverse valuation
 
@@ -78,7 +92,7 @@ Not run. This package has no independently checked, date-matched 600519 market c
 
 ## 5. Human Research Review Required
 
-1. **A: Base path.** Is a stabilization case defensible after the H1 evidence and July SKU price change? Decide the explicit forecast horizon and each year's ROE only after reviewing actual target-SKU volume, channel mix and post-July realized margin. Old 0% earnings-growth stress is not a proposed ROE value.
+1. **A: Base path.** Is a stabilization case defensible after the H1 evidence and July SKU price change? Review the archived 32.38% -> 24.46% first-five-year and 20.92% -> 6.76% fade comparators, then decide horizon and each new ROE year only after checking target-SKU volume, channel mix and post-July realized margin. Old 0% earnings growth is not itself an ROE value.
 2. **B: Bear path.** Decide whether the archived -5% earnings stress is severe enough; examine -10% affected-SKU volume, channel inventory/price pressure, weaker margins and cash divergence. Specify every ROE year or request more evidence.
 3. **C: Bull path.** Require evidence of demand resilience and realized net-price/margin improvement before adopting any +5% earnings stress or higher ROE path. One-off list-price movement is insufficient.
 4. **D: Terminal.** Decide forecast length, fade, terminal ROE and growth; explicitly test no permanent excess return and 0%/2% growth. Reject perpetuity assumptions unsupported by business evidence.
