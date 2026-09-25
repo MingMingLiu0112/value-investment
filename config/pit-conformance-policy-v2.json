@@ -1,0 +1,40 @@
+{
+  "schema_version": "pit-conformance-policy-v2",
+  "policy_version": "pit-conformance-policy-20260925.2",
+  "action": "no_order",
+  "result_statuses": [
+    "PASS",
+    "FAIL",
+    "NOT_PROVEN"
+  ],
+  "result_semantics": {
+    "PASS": "All required local evidence and point-in-time predicates were independently checked. This does not approve a valuation, strategy, performance claim, order, portfolio action, or production operation.",
+    "FAIL": "A concrete contradiction was found, including future evidence, hash mismatch, path escape, malformed evidence, or inconsistent declared state.",
+    "NOT_PROVEN": "Required evidence or proof structure is absent. Missing proof never upgrades to PASS."
+  },
+  "information_cutoff": {
+    "timezone": "Asia/Shanghai",
+    "timestamp_rule": "available_at <= decision_at",
+    "date_only_rule": "A date-only publication is not available until the exclusive next-day boundary at 00:00 Asia/Shanghai.",
+    "future_rule": "Evidence available after a decision cutoff cannot prove that decision."
+  },
+  "required_admission_dimensions": [
+    "facts_pit",
+    "assumptions_pit",
+    "valuation_pit",
+    "quote_pit",
+    "corporate_actions_pit",
+    "fees_pit",
+    "portfolio_context",
+    "benchmark_contract",
+    "universe_pit"
+  ],
+  "required_admission_execution_contract": "execution_contract",
+  "permanent_boundaries": {
+    "action": "no_order",
+    "research_attractive_is_not_buy": true,
+    "pass_is_not_performance_claim": true,
+    "pass_is_not_backtest_admission": true,
+    "pass_is_not_production_authorization": true
+  }
+}

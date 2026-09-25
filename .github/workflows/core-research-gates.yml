@@ -130,6 +130,7 @@ jobs:
           tests/test_m3_reconstructed_evidence_continuity.py
           tests/test_historical_validation.py
           tests/test_historical_validation_receipt.py
+          tests/test_pit_conformance_verifier_v2.py
           tests/test_architecture_boundaries.py
           tests/test_artifact_relocation.py
           tests/test_m5_human_review_reconciliation.py
