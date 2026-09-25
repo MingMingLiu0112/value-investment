@@ -4,6 +4,8 @@
 
 以`origin/main`的`cbe543e`为基线，长期路线、阶段目标和仓库入口已区分R0-R6及局部等待；M2仍为DONE/Checkpoint A `HUMAN_PASS`，M3 Checkpoint B仍PARTIAL，M4私人输入、M5事件后证据、M6生产/真实会话及M7最终签收均未因此过门。M7清单不再在缺少Checkpoint A字段时推断`HUMAN_PASS`，M2声称DONE却缺少该字段时拒绝输出。定向测试`32 passed, 4 skipped`；离线Core Gate清单`684 passed, 40 skipped`，额外跳过主要因为此独立工作树没有Git忽略的冻结runtime证据，不可当作真实证据复验。未修改生产、私人账户或正式WPS工作簿。
 
+M6会话账本的“最新连续会话”现从全部记录末端计算；最新一条失败或模拟会话会中断连续段，不再把更早的20条成功记录误作当前连续达标。M6定向测试`30 passed`；加入该反例后的离线Core Gate清单为`685 passed, 40 skipped`，仅为合成合同验证。账本仍缺可审计的交易所会话日历及真实运行收据，因此`M6_OPERATIONAL=NOT_STARTED`，未计入任何真实Shadow会话。
+
 更新：2026-09-25。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
 ## 2026-09-25 M5 专项主线集成与当前结果

@@ -216,10 +216,26 @@ def test_session_ledger_counts_only_actual_successful_sessions(tmp_path):
 
     result = assess_session_ledger(config, records)
 
-    assert result["status"] == "DONE"
-    assert result["evidence"]["latest_streak"] == 20
+    assert result["status"] == PARTIAL
+    assert result["evidence"]["latest_streak"] == 0
     assert result["evidence"]["simulated_sessions"] == 1
     assert result["action"] == "no_order" if "action" in result else True
+
+    result = assess_session_ledger(config, records[:-1])
+    assert result["status"] == "DONE"
+    assert result["evidence"]["latest_streak"] == 20
+
+
+def test_failed_latest_session_resets_streak_and_cannot_pass(tmp_path):
+    config = _config(tmp_path)
+    records = [_actual_session(day, event=day == 20) for day in range(1, 21)]
+    records.append({**_actual_session(21), "status": "failed"})
+
+    result = assess_session_ledger(config, records)
+
+    assert result["status"] == PARTIAL
+    assert result["evidence"]["eligible_sessions"] == 20
+    assert result["evidence"]["latest_streak"] == 0
 
 
 def test_session_ledger_rejects_duplicate_dates_and_missing_baseline(tmp_path):

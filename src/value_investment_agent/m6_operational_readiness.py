@@ -352,10 +352,11 @@ def assess_session_ledger(
         and item["resource_baseline_ok"]
     ]
     latest_streak = 0
-    for item in reversed(eligible):
-        latest_streak += 1
-        if normalized.index(item) == 0 or normalized[normalized.index(item) - 1] not in eligible:
+    for item in reversed(normalized):
+        if (item["observed"] != "actual" or item["status"] != "success"
+            or not item["resource_baseline_ok"]):
             break
+        latest_streak += 1
     real_events = sum(
         item["observed"] == "actual" and item["real_event_materialized"]
         for item in normalized
