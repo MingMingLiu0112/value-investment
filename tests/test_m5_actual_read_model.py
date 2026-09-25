@@ -18,6 +18,7 @@ from value_investment_agent.m5_recalculation_plan import (
 
 SOURCE_ROOT = Path(os.environ.get("M5_ACTUAL_EVIDENCE_ROOT", Path(__file__).resolve().parents[1]))
 LOCAL_ROOT = Path(__file__).resolve().parents[1]
+FACT_ROOT = Path(os.environ.get("M5_ACTUAL_FACT_ROOT", LOCAL_ROOT))
 QUEUE = SOURCE_ROOT / "runtime/m5-600519-disclosure-queue-20260924/source/queue.json"
 
 
@@ -45,14 +46,20 @@ def test_actual_nine_review_decisions_bind_original_pdf_and_manifest_bytes():
 
 def _inputs():
     if not QUEUE.is_file():
+        if os.environ.get("M5_ACTUAL_EVIDENCE_ROOT"):
+            pytest.fail(f"Required ACTUAL queue is missing: {QUEUE}")
         pytest.skip("Archived ACTUAL 600519 evidence is unavailable in this checkout")
     source = SOURCE_ROOT / "runtime/m5-600519-disclosure-queue-20260924/delegated-review-application-20260925/reviews.json"
     receipt_path = SOURCE_ROOT / "runtime/m5-600519-disclosure-rescan-20260925/actual-valid-receipts/m5-receipt-44a756ccad5433e236c3d74ff3ce3a75d65be835de52109407ad6ac4f0e0576d.json"
-    graph_path = LOCAL_ROOT / "runtime/m5-actual-facts-graph-20260925.json"
-    plan_path = LOCAL_ROOT / "runtime/m5-actual-facts-plan-20260925.json"
-    facts_path = LOCAL_ROOT / "runtime/m5-verified-facts-actual-20260925.json"
-    outcome_path = LOCAL_ROOT / "runtime/m5-bounded-recalculation-result-20260925.json"
-    if any(not path.is_file() for path in (graph_path, plan_path, facts_path, outcome_path)):
+    graph_path = FACT_ROOT / "runtime/m5-actual-facts-graph-20260925.json"
+    plan_path = FACT_ROOT / "runtime/m5-actual-facts-plan-20260925.json"
+    facts_path = FACT_ROOT / "runtime/m5-verified-facts-actual-20260925.json"
+    outcome_path = FACT_ROOT / "runtime/m5-bounded-recalculation-result-20260925.json"
+    missing = [path for path in (source, receipt_path, graph_path, plan_path, facts_path, outcome_path)
+               if not path.is_file()]
+    if missing:
+        if os.environ.get("M5_ACTUAL_EVIDENCE_ROOT") or os.environ.get("M5_ACTUAL_FACT_ROOT"):
+            pytest.fail(f"Required ACTUAL replay inputs are missing: {missing}")
         pytest.skip("Verified-facts replay inputs are unavailable")
     load = lambda path: json.loads(path.read_text(encoding="utf-8"))
     return dict(

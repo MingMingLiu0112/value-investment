@@ -14,10 +14,11 @@ from pypdf import PdfReader
 
 ROOT = Path(os.environ.get("M5_ACTUAL_EVIDENCE_ROOT", Path(__file__).resolve().parents[1]))
 LOCAL = Path(__file__).resolve().parents[1]
+FACT_ROOT = Path(os.environ.get("M5_ACTUAL_FACT_ROOT", LOCAL))
 POINTER = ROOT / "runtime/company-research/600519-consolidated-parent-equity-inputs-latest.json"
 ASSUMPTIONS_POINTER = ROOT / "runtime/valuation-assumptions/600519-current-latest.json"
 PDF = ROOT / "runtime/m5-600519-disclosure-queue-20260924/source/600519/announcements/2026-08-15/1225475868.pdf"
-FACTS = LOCAL / "runtime/m5-verified-facts-actual-20260925.json"
+FACTS = FACT_ROOT / "runtime/m5-verified-facts-actual-20260925.json"
 
 
 def _sha(path: Path) -> str:
@@ -33,7 +34,10 @@ def _pinned(pointer_path: Path) -> dict:
 
 
 def test_archived_equity_shares_are_source_bound_but_not_new_valuation_inputs():
-    if any(not path.is_file() for path in (POINTER, ASSUMPTIONS_POINTER, PDF, FACTS)):
+    missing = [path for path in (POINTER, ASSUMPTIONS_POINTER, PDF, FACTS) if not path.is_file()]
+    if missing:
+        if os.environ.get("M5_ACTUAL_EVIDENCE_ROOT") or os.environ.get("M5_ACTUAL_FACT_ROOT"):
+            pytest.fail(f"Required archived valuation inputs are missing: {missing}")
         pytest.skip("Archived ACTUAL evidence is unavailable")
     equity = _pinned(POINTER)
     assumptions = _pinned(ASSUMPTIONS_POINTER)

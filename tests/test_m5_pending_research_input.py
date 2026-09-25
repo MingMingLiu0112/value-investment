@@ -17,15 +17,19 @@ from value_investment_agent.research_artifact_repository import InMemoryResearch
 
 ROOT = Path(os.environ.get("M5_ACTUAL_EVIDENCE_ROOT", Path(__file__).resolve().parents[1]))
 LOCAL = Path(__file__).resolve().parents[1]
+FACT_ROOT = Path(os.environ.get("M5_ACTUAL_FACT_ROOT", LOCAL))
 BASE = ROOT / "runtime/m5-600519-disclosure-rescan-20260925"
 RECEIPT = BASE / "actual-valid-receipts/m5-receipt-44a756ccad5433e236c3d74ff3ce3a75d65be835de52109407ad6ac4f0e0576d.json"
-FACTS = LOCAL / "runtime/m5-verified-facts-actual-20260925.json"
+FACTS = FACT_ROOT / "runtime/m5-verified-facts-actual-20260925.json"
 EQUITY_POINTER = ROOT / "runtime/company-research/600519-consolidated-parent-equity-inputs-latest.json"
 AT = datetime(2026, 9, 25, 12, 0, tzinfo=timezone.utc)
 
 
 def _inputs():
-    if any(not path.is_file() for path in (RECEIPT, FACTS, EQUITY_POINTER)):
+    missing = [path for path in (RECEIPT, FACTS, EQUITY_POINTER) if not path.is_file()]
+    if missing:
+        if os.environ.get("M5_ACTUAL_EVIDENCE_ROOT") or os.environ.get("M5_ACTUAL_FACT_ROOT"):
+            pytest.fail(f"Required ACTUAL research inputs are missing: {missing}")
         pytest.skip("ACTUAL 600519 evidence is unavailable")
     pointer = json.loads(EQUITY_POINTER.read_text(encoding="utf-8"))
     equity_path = (ROOT / pointer["path"] / "evidence.json").resolve()

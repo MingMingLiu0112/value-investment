@@ -14,6 +14,7 @@ from value_investment_agent.m5_recalculation_plan import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+FACT_ROOT = Path(os.environ.get("M5_ACTUAL_FACT_ROOT", ROOT))
 EVIDENCE_ROOT = Path(os.environ.get("M5_ACTUAL_EVIDENCE_ROOT", ROOT))
 RECEIPT = EVIDENCE_ROOT / "runtime/m5-600519-disclosure-rescan-20260925/actual-valid-receipts/m5-receipt-44a756ccad5433e236c3d74ff3ce3a75d65be835de52109407ad6ac4f0e0576d.json"
 GRAPH = EVIDENCE_ROOT / "runtime/m5-600519-disclosure-queue-20260924/m5-research-artifact-graph-600519-20260925.json"
@@ -46,9 +47,10 @@ def test_actual_receipt_recalculation_plan_surfaces_missing_fact_nodes():
 
 
 def test_new_actual_graph_resolves_real_fact_and_valuation_nodes():
-    path = ROOT / "runtime/m5-actual-facts-plan-20260925.json"
+    path = FACT_ROOT / "runtime/m5-actual-facts-plan-20260925.json"
     if not path.is_file():
-        import pytest
+        if os.environ.get("M5_ACTUAL_FACT_ROOT"):
+            pytest.fail(f"Required ACTUAL facts plan is missing: {path}")
         pytest.skip("Actual verified-facts replay is unavailable")
     plan = bounded_recalculation_plan_from_payload(json.loads(path.read_text(encoding="utf-8")))
     gaps = {task.dependency_kind for task in plan.tasks if task.status == STATUS_BLOCKED_GRAPH_GAP}
