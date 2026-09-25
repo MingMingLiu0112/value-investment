@@ -20,6 +20,19 @@ Docker 引擎未运行，本机无 `pg_restore`；无真实 RPO/RTO 或恢复验
 M7 用户验收均未通过。`TOTAL_GOAL_STATUS=IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`，
 `INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`。
 
+推送 `9c4ab6e` 后 [Core Research Gates 36115217469](https://github.com/MingMingLiu0112/value-investment/actions/runs/36115217469)
+的 `offline-core` 与 `postgres-integration` 均为 success；后者包含一次性双库
+合成备份、隔离恢复、内容指纹及收据二次验证测试。公开 API 的作业日志下载为
+403，故不从该结果推断生产数据恢复通过；后续 CI 增加限期上传合成原件/收据。
+M6 干净主线预检收据 `runtime/m6-operational-preflight-20260925T085227Z/receipt.json`
+SHA-256 `e381c19e44c4ccc2ad5713fc7a8edcb2d88f044c9a9ab1407ad11fed4fef7a2e`：
+engineering `DONE`、operational `NOT_STARTED`、真实恢复无记录、真实会话 0。
+M7 v12 只读候选 `runtime/m7-actual-reviewed-candidate-v12-20260925.xlsx`
+SHA-256 `1311f6444b88aeef8b972b81d61f0185465591262e96457b41a0447a0a39fc07`，
+WPS 只读核验 `passed`（10 可见/2 隐藏、首页无订单、全可见页禁用指令扫描）；
+正式 WPS 表 SHA-256 仍为 `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+这仅是候选展示工程，不是 M7 用户验收。
+
 ## 2026-09-25 总 Goal 状态纠偏与 INTERRUPTION_AUDIT
 
 最新 `main` 基线 `21aaf156a29d34f8fff4d0663e2b22c0cea85e7f`：

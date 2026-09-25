@@ -25,6 +25,8 @@ M6 新增离线 R0 合同：恢复命令写内容寻址收据，绑定已登记 
 中断连续段；目前官方抓取来源独立认证、授权后真实运行收据及真实隔离恢复
 均未取得，因此 `M6_OPERATIONAL=NOT_STARTED`、已验真实 Shadow 会话为 0。
 本机 Docker 引擎未运行且无本地 PostgreSQL 恢复工具，不能声称本轮完成真实 drill。
+一次性 CI 双 PostgreSQL 实例的合成恢复测试已通过；它只证明工程链在隔离环境
+可运行，不是用户真实备份、真实 RPO/RTO 或 M6 运营恢复验收。
 
 按 [LONG-TERM-GOAL 的R0-R6治理规则](../LONG-TERM-GOAL.md) 默认继续；机器校验R0与独立/委托研究复核R1不因名称含“人工/Review/Checkpoint”而中断。R2私人IPS/组合只阻断个性化M4，R3生产授权只阻断对应生产动作，R4真实资金决定始终由用户做，R5最终产品验收由用户签收；R6自然时间只记录触发和重开条件。请求用户或拟停止前先做`INTERRUPTION_AUDIT`并继续所有独立DAG。
 

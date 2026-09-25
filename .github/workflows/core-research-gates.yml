@@ -163,6 +163,7 @@ jobs:
         postgresql://research_agent:research_agent@localhost:5432/research_agent_test
       M6_TEST_RESTORE_DSN: >-
         postgresql://research_agent:research_agent@127.0.0.1:5433/value_agent_restore
+      M6_TEST_ARTIFACT_DIR: m6-ci-restore-artifacts
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -174,3 +175,11 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Verify disposable PostgreSQL research repository
         run: python -m pytest -q tests/test_postgres_research_artifacts.py tests/test_m6_restore_integration.py
+      - name: Retain synthetic isolated restore evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m6-synthetic-restore-evidence
+          path: m6-ci-restore-artifacts/
+          retention-days: 14
+          if-no-files-found: warn

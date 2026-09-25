@@ -55,6 +55,9 @@ def test_disposable_backup_restore_receipt_and_m6_binding(tmp_path):
         assert criterion['evidence']['table_check_count'] == 2
         assert verified['database_verifier_result'] == 'table_checks_equal'
         assert verified['receipt_sha256'] == result['receipt_sha256']
+        artifact_dir = os.environ.get('M6_TEST_ARTIFACT_DIR')
+        if artifact_dir:
+            shutil.copytree(tmp_path, Path(artifact_dir))
     finally:
         with psycopg.connect(SOURCE_DSN, autocommit=True) as admin:
             admin.execute(sql.SQL('DROP DATABASE {} WITH (FORCE)').format(sql.Identifier(database)))
