@@ -2,6 +2,24 @@
 
 更新：2026-09-25。本文只记录事实，不制定新任务。唯一活动任务见 [current-stage-goal.md](current-stage-goal.md)。
 
+## 2026-09-25 M5 专项主线集成与当前结果
+
+`codex/m5-actual-event-closure` 的 36 个提交以 fast-forward 保留历史并入
+`main`，远端 HEAD 为 `8db5994994670797ea5baf81c02ce31dcd818875`。
+该 SHA 的 [GitHub Core Research Gates](https://github.com/MingMingLiu0112/value-investment/actions/runs/36095275207)
+为 `success`。合并树在证据齐全的专项工作树中，M5/M7 定向测试为
+`66 passed, 3 skipped`；主线本地离线 Core Gate 为 `702 passed, 21 skipped`，
+其中额外跳过源于主工作树缺少 Git 忽略的冻结证据，不能把它写成真实证据验证。
+v7 候选通过 WPS 只读复验；正式 WPS 文件 SHA-256 保持
+`64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`。
+
+当前 600519 为九条已审、零条待审、两条重大 ACTUAL 事件、五项已验证 H1
+事实；两条有界结果均为 `STILL_NOT_READY`，未执行真实模型、无新估值。
+缺的是事件绑定且经研究复核的情景输入，不是数据抓取或工程回归。
+当前研究准备见 [事件绑定研究复核包](600519-event-bound-scenario-review-20260925.md)。
+下文较早时点的待审、未应用和图缺口记录仅保留审计历史，不覆盖本节当前状态。
+M3 strict PIT、M4 私人输入及 M6 生产授权状态互不改变；`action=no_order`。
+
 ## 2026-09-25 M5 600519 用户确认委托复核已接入
 
 用户以 `USER_CONFIRMED_DELEGATED_REVIEW` 提供 600519 九条 CNINFO 公告的明确材料性结论。

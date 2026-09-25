@@ -1,5 +1,30 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
+## 当前状态快照（2026-09-25）
+
+M5 ACTUAL 离线专项已 fast-forward 整合至 `main` 的 `8db5994`；该 SHA 的
+[Core Research Gates](https://github.com/MingMingLiu0112/value-investment/actions/runs/36095275207)
+通过。600519 九条公告已完成原件 Hash 绑定的人工材料性审查，**当前待审为 0**；
+其中两条为 `MATERIAL_REQUIRES_RECALCULATION`。半年报五项财务事实经原 PDF
+确定性复验。两条事件均产生有界 `STILL_NOT_READY` 结果：
+`model_executed=false`、`new_valuation_result=null`，阻断节点为
+`EVENT_BOUND_REVIEWED_SCENARIO_INPUTS_REQUIRED`。M7 v7 仅为只读候选，正式 WPS
+表格未发布或替换。详见 [专项交接](handoff-m5-actual-event-closure-20260925.md)
+与 [事件绑定研究复核包](600519-event-bound-scenario-review-20260925.md)。
+
+```text
+M5_ENGINEERING = ACTUAL_EVENT_OFFLINE_CHAIN_VALIDATED
+M5_PRODUCT = PARTIAL_WITH_VALIDATED_NOT_READY
+M3_CHECKPOINT_B = PARTIAL; STRICT_CONTEMPORANEOUS_RULE_PIT = NOT_PROVEN
+M4_NONPERSONALIZED_ENGINEERING = COMPLETE; M4_PERSONALIZED_ACCEPTANCE = PENDING_USER_PRIVATE_INPUT
+M6_PRODUCTION_AUTHORIZATION = NOT_YET; M6_OPERATIONAL = NOT_STARTED
+action = no_order
+```
+
+下文保留早期阶段计划和历史快照，不得将其旧的九条 `PENDING_HUMAN_REVIEW`
+描述用作当前状态。总 Goal 仍为 `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`；
+M5 的研究输入缺口不阻止 M4 私人输入准备、M6 授权前检查或 M7 其他展示验收。
+
 更新：2026-09-24 / M2 Checkpoint A 已签收；M3 Checkpoint B 已完成人工语义复核，
 但 strict contemporaneous-rule PIT 未证明，整体保持 PARTIAL。
 用户已将下一Goal扩到M7，不在M2完成后退出。
@@ -20,7 +45,7 @@ M1  Engineering DONE | Research Workbench DONE | 已完成人工 G3 初审
 M2  ENGINEERING_DONE | DONE                   | HUMAN_PASS
 M3  ENGINEERING_PARTIAL_PLUS | PARTIAL        | HUMAN_REVIEWED_PARTIAL / STRICT_PIT_BLOCKER
 M4  ENGINEERING_COMPLETE_NONPERSONALIZED | PARTIAL | PENDING_PRIVATE_INPUT
-M5  ENGINEERING_DONE_OFFLINE | PARTIAL        | PENDING_RECONCILIATION / OPERATIONS
+M5  ACTUAL_EVENT_OFFLINE_CHAIN_VALIDATED | PARTIAL_WITH_VALIDATED_NOT_READY | EVENT_BOUND_REVIEWED_SCENARIO_INPUTS_REQUIRED
 M6  PREFLIGHT_DONE | operationally NOT_STARTED | PENDING_AUTHORIZATION / SHADOW
 M7  DISPLAY_ENGINEERING_DONE | PARTIAL        | PENDING_USER_ACCEPTANCE
 ```
@@ -35,8 +60,8 @@ contemporaneous-rule PIT 尚未证明），以及 M7
 IPS/Portfolio、Checkpoint C-D 与 M6 运营验收仍保持人工待办。
 
 M5 阅读简报只帮助人工定位已验证 PDF 中的候选段落；它可作为可选 `04_阅读简报` 页
-进入新的复核候选工作簿，但不含材料性结论、受影响领域或事件创建路径。600519 的 9 条
-公告继续保持 `PENDING_HUMAN_REVIEW`。
+进入当时的复核候选工作簿，但不含材料性结论、受影响领域或事件创建路径。
+这是历史阶段描述；九条公告的当前结论见本文顶部状态快照。
 
 M7 Daily v2 用户查看、完整性核验、故障与回退入口见
 [m7-assisted-use-runbook-20260924.md](m7-assisted-use-runbook-20260924.md)。
