@@ -2,14 +2,18 @@ import copy
 import hashlib
 import json
 import os
+from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from value_investment_agent.m5_actual_read_model import build_actual_event_read_model
 from value_investment_agent.m5_event_dependencies import dependency_graph_from_payload
 from value_investment_agent.m5_event_run import m5_event_run_receipt_from_payload
-from value_investment_agent.m5_recalculation_plan import bounded_recalculation_plan_from_payload
+from value_investment_agent.m5_recalculation_plan import (
+    bounded_recalculation_plan_from_payload, build_bounded_recalculation_plan,
+)
 
 
 SOURCE_ROOT = Path(os.environ.get("M5_ACTUAL_EVIDENCE_ROOT", Path(__file__).resolve().parents[1]))
@@ -47,6 +51,37 @@ def test_actual_read_model_preserves_nine_reviews_and_two_not_ready_events():
     assert result["verified_fact_count"] == 5
     assert sum(row["recalculation_status"] == "STILL_NOT_READY" for row in result["rows"]) == 2
     assert all(row["new_valuation_result"] is None and row["action"] == "no_order" for row in result["rows"])
+
+
+def test_actual_read_model_rejects_unrepresented_active_event():
+    inputs = _inputs()
+    original = inputs["receipt"]
+    extra = replace(original.active_events[0], event_id="unreviewed-event",
+                    source_event_id="materiality-review:unreviewed")
+    receipt = SimpleNamespace(
+        namespace=original.namespace, action=original.action,
+        receipt_id=original.receipt_id, state_sha256=original.state_sha256,
+        generated_at=original.generated_at,
+        active_events=(*original.active_events, extra),
+        invalidations=(*original.invalidations,
+                       replace(original.invalidations[0], event_id=extra.event_id)),
+    )
+    inputs["receipt"] = receipt
+    inputs["plan"] = build_bounded_recalculation_plan(
+        receipt=receipt, graph=inputs["graph"], generated_at=inputs["plan"].generated_at,
+    )
+    inputs["outcome_receipt"] = None
+    with pytest.raises(ValueError, match="not covered by reviewed M7 rows"):
+        build_actual_event_read_model(**inputs)
+
+
+def test_actual_read_model_rejects_duplicate_review_identity():
+    inputs = _inputs()
+    inputs["reviews"] = copy.deepcopy(inputs["reviews"])
+    decisions = inputs["reviews"][0]["decisions"]
+    decisions[1]["event_decision_id"] = decisions[0]["event_decision_id"]
+    with pytest.raises(ValueError, match="Duplicate materiality review identity"):
+        build_actual_event_read_model(**inputs)
 
 
 def test_actual_read_model_rejects_wrong_review_pdf_hash():

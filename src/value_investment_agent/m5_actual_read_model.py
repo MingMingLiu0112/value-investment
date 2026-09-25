@@ -79,7 +79,10 @@ def build_actual_event_read_model(
     by_announcement = {item["announcement_id"]: item for item in decisions}
     if len(by_announcement) != len(decisions):
         raise ValueError("Duplicate materiality decision")
+    if len({item["event_decision_id"] for item in decisions}) != len(decisions):
+        raise ValueError("Duplicate materiality review identity")
     rows = []
+    represented_sources = set()
     active_by_source = {event.source_event_id: event for event in receipt.active_events}
     if len(active_by_source) != len(receipt.active_events):
         raise ValueError("Duplicate actual source event")
@@ -102,6 +105,7 @@ def build_actual_event_read_model(
         if materiality == "MATERIAL_REQUIRES_RECALCULATION" and event is None:
             raise ValueError("Recalculation decision is missing its active actual event")
         if event is not None:
+            represented_sources.add(event.source_event_id)
             state = event.current_state
             if (event.symbol != symbol or state.get("source_sha256") != decision["source_sha256"]
                 or state.get("materiality_status") != materiality
@@ -144,6 +148,8 @@ def build_actual_event_read_model(
             "requires_human_decision_review": bool(tasks),
             "action": "no_order",
         })
+    if represented_sources != set(active_by_source):
+        raise ValueError("ACTUAL active events are not covered by reviewed M7 rows")
     if set(by_announcement) != {
         item["announcement_id"] for item in scan["announcements"]
         if item.get("review_status") == "PENDING_HUMAN_REVIEW"
