@@ -17,7 +17,7 @@ from value_investment_agent.research_artifacts import canonicalize_artifact_payl
 def _inputs():
     at = datetime(2026, 9, 25, tzinfo=timezone.utc)
     ref = {"id": "official-pdf", "source_url": "https://static.cninfo.com.cn/finalpage/a.pdf", "sha256": "c" * 64}
-    event = SimpleNamespace(event_id="event-1", source_event_id="review-1", symbol="600519",
+    event = SimpleNamespace(event_id="event-1", source_event_id="review-1234567890", symbol="600519",
                             current_state={"direct_dependency_kinds": ["valuation_inputs"]},
                             evidence_refs=(ref,))
     receipt = SimpleNamespace(namespace="ACTUAL", action="no_order", receipt_id="receipt-1",
@@ -29,6 +29,7 @@ def _inputs():
     ),))
     plan = build_bounded_recalculation_plan(receipt=receipt, graph=graph, generated_at=at)
     payload = {"schema_version": "m5-verified-financial-facts-v1", "symbol": "600519",
+               "announcement_id": "1234567890",
                "pdf_sha256": "c" * 64, "source_url": ref["source_url"],
                "facts": [{"field": "operating_revenue", "value": "1"}], "action": "no_order"}
     facts = {"identity": {"artifact_type": "financial_facts", "scope_key": "600519"},
@@ -89,6 +90,24 @@ def test_wrong_facts_pdf_evidence_is_rejected():
         args["facts_artifact"]["evidence_refs"][0], sha256="0" * 64,
     )
     with pytest.raises(ValueError, match="PDF evidence"):
+        evaluate_bounded_recalculation(**args)
+
+
+def test_same_symbol_unrelated_filing_cannot_supply_actual_event_facts():
+    args = _inputs()
+    payload = args["facts_artifact"]["payload"]
+    payload["announcement_id"] = "9999999999"
+    args["facts_artifact"]["payload_sha256"] = sha256_text(canonicalize_artifact_payload(payload))
+    with pytest.raises(ValueError, match="exactly one ACTUAL event"):
+        evaluate_bounded_recalculation(**args)
+
+
+def test_announcement_id_must_match_a_complete_event_identifier():
+    args = _inputs()
+    payload = args["facts_artifact"]["payload"]
+    payload["announcement_id"] = "123456789"
+    args["facts_artifact"]["payload_sha256"] = sha256_text(canonicalize_artifact_payload(payload))
+    with pytest.raises(ValueError, match="exactly one ACTUAL event"):
         evaluate_bounded_recalculation(**args)
 
 

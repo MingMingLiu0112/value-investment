@@ -659,7 +659,7 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
                "source_url": "https://static.cninfo.com.cn/finalpage/report.PDF"}
     at = datetime(2026, 9, 22, tzinfo=timezone.utc)
     decision = EventMaterialityDecision(
-        event_decision_id="review-1", symbol="600519", announcement_id="1234567890",
+        event_decision_id="review-1234567890", symbol="600519", announcement_id="1234567890",
         title="Interim filing", published_at=datetime(2026, 9, 21, tzinfo=timezone.utc),
         source_ref=pdf_ref, source_sha256=pdf_ref["sha256"],
         machine_candidate_reason="financial_statement",
@@ -669,7 +669,7 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
         requires_followup=False, reviewed_at=at,
     )
     event = SimpleNamespace(
-        event_id="event-1", source_event_id="materiality-review:review-1", symbol="600519",
+        event_id="event-1", source_event_id="materiality-review:review-1234567890", symbol="600519",
         current_state={
             "direct_dependency_kinds": list(materiality_direct_kinds(decision)),
             "source_sha256": decision.source_sha256,
@@ -748,6 +748,7 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
     plan = build_bounded_recalculation_plan(receipt=receipt, graph=graph, generated_at=at)
     fact_payload = {"schema_version": "m5-verified-financial-facts-v1",
                     "symbol": "600519", "pdf_sha256": pdf_ref["sha256"],
+                    "announcement_id": "1234567890",
                     "source_url": pdf_ref["source_url"],
                     "facts": [{"field": "operating_revenue", "value": "1"}],
                     "action": "no_order"}

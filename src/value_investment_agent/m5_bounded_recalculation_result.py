@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 import hashlib
 import json
+import re
 from typing import Any, Mapping
 
 from .m5_event_dependencies import DependencyGraph
@@ -43,6 +44,16 @@ def evaluate_bounded_recalculation(
     symbols = {event.symbol for event in receipt.active_events}
     if symbols != {facts["symbol"]}:
         raise ValueError("Financial facts do not match the actual event security")
+    matching_events = [
+        event for event in receipt.active_events
+        if any(ref.get("sha256") == facts.get("pdf_sha256")
+               and ref.get("source_url") == facts.get("source_url")
+               for ref in event.evidence_refs)
+    ]
+    if (len(matching_events) != 1
+        or not isinstance(facts.get("announcement_id"), str)
+        or facts["announcement_id"] not in re.findall(r"\d+", matching_events[0].source_event_id)):
+        raise ValueError("Verified facts filing is not bound to exactly one ACTUAL event")
     fact_nodes = [node for node in graph.nodes()
                   if node.symbol == facts["symbol"] and node.kind == "financial_facts"]
     if len(fact_nodes) != 1:

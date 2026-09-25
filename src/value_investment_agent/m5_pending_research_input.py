@@ -5,6 +5,7 @@ from datetime import date, datetime
 from decimal import Decimal
 import hashlib
 import json
+import re
 from typing import Any, Mapping
 
 from .m5_event_run import M5EventRunReceipt
@@ -47,7 +48,8 @@ def build_pending_research_input(
                               and ref.get("source_url") == facts["source_url"]
                               for ref in event.evidence_refs)]
     if (len(matching_events) != 1
-        or facts["announcement_id"] not in matching_events[0].source_event_id):
+        or not isinstance(facts.get("announcement_id"), str)
+        or facts["announcement_id"] not in re.findall(r"\d+", matching_events[0].source_event_id)):
         raise ValueError("Verified facts filing is not bound to exactly one ACTUAL event")
     period = date.fromisoformat(facts["facts"][0]["report_period_end"])
     if any(item["report_period_end"] != period.isoformat() for item in facts["facts"]):
