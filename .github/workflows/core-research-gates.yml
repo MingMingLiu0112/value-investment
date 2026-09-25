@@ -78,6 +78,12 @@ jobs:
           tests/test_m5_disclosure_review_workbook.py
           tests/test_backup_security.py
           tests/test_m6_operational_readiness.py
+          tests/test_m6_exchange_sessions.py
+          tests/test_m6_calendar_readiness.py
+          tests/test_restore_command_failure.py
+          tests/test_restore_target.py
+          tests/test_restore_receipt_binding.py
+          tests/test_m7_m6_preflight_projection.py
           tests/test_m6_operational_control.py
           tests/test_unified_fcff_valuation.py
           tests/test_residual_income_equity_valuation.py
@@ -139,9 +145,24 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      restore-postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: value_agent_restore
+          POSTGRES_USER: research_agent
+          POSTGRES_PASSWORD: research_agent
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U research_agent -d value_agent_restore"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       C3_TEST_POSTGRES_DSN: >-
         postgresql://research_agent:research_agent@localhost:5432/research_agent_test
+      M6_TEST_RESTORE_DSN: >-
+        postgresql://research_agent:research_agent@127.0.0.1:5433/value_agent_restore
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -149,5 +170,7 @@ jobs:
           python-version: "3.12"
       - name: Install core test dependencies
         run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+      - name: Install PostgreSQL client for isolated restore drill
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Verify disposable PostgreSQL research repository
-        run: python -m pytest -q tests/test_postgres_research_artifacts.py
+        run: python -m pytest -q tests/test_postgres_research_artifacts.py tests/test_m6_restore_integration.py

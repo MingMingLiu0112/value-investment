@@ -1,5 +1,25 @@
 # 当前执行状态
 
+## 2026-09-25 M6 证据闭环工程与 M7 状态投影
+
+基线 `0707add` 后完成本地 R0 工程：恢复前核对来源库登记的 manifest/dump，
+校验原件与隔离库表行数/内容指纹，限定恢复命令超时，生成内容寻址且不覆盖的
+恢复收据；M6 准入只在读取收据并重验 manifest、dump、原件及隔离库时才可将
+恢复单项判为 `DONE`。手填摘要仍为 `PARTIAL`。新增 SSE 2026 官方休市公告及
+SZSE 月度日历的已收盘会话合同，账本核对交易所、日期、来源 Hash、cutoff 和
+缺失交易日；自报记录不能证明真实 Shadow，已验真实会话仍为 0。
+
+M7 ACTUAL 只读候选构建器可按 Hash 固定最新 M6 预检收据，将恢复、日历、
+授权、Shadow 分开投影并拒绝错误运营状态升级；尚未替换 WPS 正式表。
+定向集成 `78 passed`，新增恢复成功路径合同测试 `16 passed`；工作流 Core Gate
+`767 passed, 21 skipped`。全量本机回归首次 `2636 passed, 28 skipped, 5 failed`，
+五项均因测试基目录在仓库外触发历史 fixture 的路径假设；在仓库内临时目录
+逐项重跑 `5 passed`，不将其当业务失败。未执行真实隔离 PostgreSQL drill：
+Docker 引擎未运行，本机无 `pg_restore`；无真实 RPO/RTO 或恢复验收收据。
+官方抓取来源仍需独立认证；生产授权、真实事件运营观察、20 连续真实交易会话、
+M7 用户验收均未通过。`TOTAL_GOAL_STATUS=IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`，
+`INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`。
+
 ## 2026-09-25 总 Goal 状态纠偏与 INTERRUPTION_AUDIT
 
 最新 `main` 基线 `21aaf156a29d34f8fff4d0663e2b22c0cea85e7f`：

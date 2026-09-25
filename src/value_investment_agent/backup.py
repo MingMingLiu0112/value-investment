@@ -15,6 +15,19 @@ from .db import connect
 from .backup_snapshot import compare_checks, table_checks
 
 
+RESTORE_VERIFIER_VERSION = 'isolated-restore-v1'
+RESTORE_TIMEOUT_SECONDS = 4 * 3600
+
+
+def _canonical_bytes(payload: dict) -> bytes:
+    return json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+
+
+def _database_identity(database_url: str) -> dict[str, str]:
+    parts = conninfo_to_dict(database_url)
+    return {key: str(parts.get(key) or '') for key in ('host', 'port', 'dbname')}
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open('rb') as handle:
@@ -129,10 +142,14 @@ def _manifest_file(manifest_path: Path, value: str, *, dump: bool = False) -> Pa
 
 def verify_restore(database_url: str, restore_database_url: str, backup_manifest: Path, container_runtime: str = 'podman', restore_container_name: str = 'value-investment-restore-postgres') -> dict:
     validate_restore_target(database_url, restore_database_url)
+    started_at = datetime.now(timezone.utc)
+    started = time.monotonic()
     pg_restore = shutil.which('pg_restore')
     manifest = json.loads(backup_manifest.read_text(encoding='utf-8'))
     if manifest.get('table_check_version') != 1 or not manifest.get('table_checks'):
         raise RuntimeError('Backup has no snapshot content baseline; create a new backup')
+    if datetime.fromisoformat(manifest['snapshot_at']) > started_at:
+        raise RuntimeError('Backup snapshot is in the future')
     dump_path = _manifest_file(backup_manifest, manifest['database_dump'], dump=True)
     if sha256_file(dump_path) != manifest['sha256']:
         raise RuntimeError('备份 Hash 不匹配，已拒绝恢复。')
@@ -140,13 +157,21 @@ def verify_restore(database_url: str, restore_database_url: str, backup_manifest
         evidence_path = _manifest_file(backup_manifest, evidence['path'])
         if sha256_file(evidence_path) != evidence['sha256']:
             raise RuntimeError(f"证据原件 Hash 不匹配，已拒绝恢复验证：{evidence['path']}")
-    started = time.monotonic()
+    with connect(database_url) as source:
+        registered = source.execute(
+            'SELECT sha256, manifest FROM backup_audits WHERE backup_id = %s',
+            (manifest['backup_id'],),
+        ).fetchone()
+    if (not registered or registered['sha256'] != manifest['sha256']
+            or registered['manifest'] != manifest):
+        raise RuntimeError('Backup manifest does not match the registered source audit')
     if pg_restore:
         result = subprocess.run(
             [pg_restore, '--clean', '--if-exists', '--no-owner', '--no-acl', '--dbname', restore_database_url, str(dump_path)],
             check=False,
             capture_output=True,
             text=True,
+            timeout=RESTORE_TIMEOUT_SECONDS,
         )
         if result.returncode:
             raise RuntimeError(f'pg_restore failed: {result.stderr.strip()}')
@@ -155,21 +180,127 @@ def verify_restore(database_url: str, restore_database_url: str, backup_manifest
         if not runtime:
             raise RuntimeError(f'找不到 pg_restore 或容器运行时 {container_runtime}。')
         with dump_path.open('rb') as input_file:
-            subprocess.run([runtime, 'exec', '-i', restore_container_name, 'pg_restore', '--clean', '--if-exists', '--no-owner', '-U', 'value_agent_admin', '-d', 'value_agent_restore'], stdin=input_file, check=True)
+            subprocess.run([runtime, 'exec', '-i', restore_container_name, 'pg_restore', '--clean', '--if-exists', '--no-owner', '-U', 'value_agent_admin', '-d', 'value_agent_restore'], stdin=input_file, check=True, timeout=RESTORE_TIMEOUT_SECONDS)
     with connect(restore_database_url) as restored:
         restored.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
         restored_checks = table_checks(restored)
     compare_checks(manifest['table_checks'], restored_checks)
     source_count = manifest['table_checks']['data_points']['rows']
     rto_seconds = round(time.monotonic() - started, 2)
-    with connect(database_url) as connection:
-        connection.execute(
-            """UPDATE backup_audits SET restore_status = 'passed', rto_seconds = %s, verified_at = now()
-               WHERE backup_id = %s""",
-            (rto_seconds, manifest['backup_id']),
-        )
-    return {
+    completed_at = datetime.now(timezone.utc)
+    backup_age_seconds = (completed_at - datetime.fromisoformat(manifest['snapshot_at'])).total_seconds()
+    if backup_age_seconds < 0:
+        raise RuntimeError('Backup snapshot is in the future')
+    receipt = {
+        'schema_version': RESTORE_VERIFIER_VERSION,
+        'verifier_version': RESTORE_VERIFIER_VERSION,
+        'action': 'no_order',
+        'observed': 'actual',
         'backup_id': manifest['backup_id'], 'status': 'passed', 'rto_seconds': rto_seconds,
         'data_points': source_count, 'evidence_files': len(manifest.get('evidence_files', [])),
         'verified_tables': len(restored_checks), 'snapshot_at': manifest['snapshot_at'],
+        'backup_manifest': backup_manifest.name,
+        'backup_manifest_sha256': sha256_file(backup_manifest),
+        'database_dump_sha256': sha256_file(dump_path),
+        'evidence_file_sha256': [item['sha256'] for item in manifest.get('evidence_files', [])],
+        'source_database_identity': _database_identity(database_url),
+        'restore_target_identity': _database_identity(restore_database_url),
+        'restore_started_at': started_at.isoformat(),
+        'restore_completed_at': completed_at.isoformat(),
+        'backup_age_seconds': backup_age_seconds,
+        'table_check_version': manifest['table_check_version'],
+        'table_checks': restored_checks,
+        'schema_migration_version': manifest.get('schema_version'),
+        'restore_command_result': 'exit_0',
+        'database_verifier_result': 'table_checks_equal',
     }
+    receipt['receipt_sha256'] = hashlib.sha256(_canonical_bytes(receipt)).hexdigest()
+    receipt_path = backup_manifest.with_name(f"restore-{receipt['receipt_sha256']}.json")
+    with receipt_path.open('x', encoding='utf-8') as output:
+        json.dump(receipt, output, ensure_ascii=False, indent=2)
+        output.write('\n')
+    with connect(database_url) as connection:
+        updated = connection.execute(
+            """UPDATE backup_audits SET restore_status = 'passed', rto_seconds = %s,
+               rpo_seconds = %s, verified_at = now() WHERE backup_id = %s
+               AND sha256 = %s AND manifest = %s""",
+            (rto_seconds, receipt['backup_age_seconds'], manifest['backup_id'],
+             manifest['sha256'], json.dumps(manifest, ensure_ascii=False)),
+        )
+        if updated.rowcount != 1:
+            raise RuntimeError('Registered backup audit disappeared before restore receipt commit')
+    return {**receipt, 'receipt_path': str(receipt_path)}
+
+
+def verify_restore_receipt(
+    database_url: str, restore_database_url: str, receipt_path: Path,
+) -> dict:
+    """Read-only recheck against local isolated restore; never trusts a summary alone."""
+    validate_restore_target(database_url, restore_database_url)
+    receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+    expected_hash = receipt.pop('receipt_sha256', None)
+    if expected_hash != hashlib.sha256(_canonical_bytes(receipt)).hexdigest():
+        raise RuntimeError('Restore receipt hash mismatch')
+    if (receipt.get('schema_version') != RESTORE_VERIFIER_VERSION
+            or receipt.get('verifier_version') != RESTORE_VERIFIER_VERSION
+            or receipt.get('action') != 'no_order'
+            or receipt.get('observed') != 'actual'
+            or receipt.get('status') != 'passed'
+            or receipt.get('restore_command_result') != 'exit_0'
+            or receipt.get('database_verifier_result') != 'table_checks_equal'):
+        raise RuntimeError('Restore receipt is not an accepted verifier result')
+    if (receipt.get('source_database_identity') != _database_identity(database_url)
+            or receipt.get('restore_target_identity') != _database_identity(restore_database_url)):
+        raise RuntimeError('Restore receipt database identity mismatch')
+    try:
+        started_at = datetime.fromisoformat(receipt['restore_started_at'])
+        completed_at = datetime.fromisoformat(receipt['restore_completed_at'])
+        snapshot_at = datetime.fromisoformat(receipt['snapshot_at'])
+        wall_seconds = (completed_at - started_at).total_seconds()
+        backup_age = (completed_at - snapshot_at).total_seconds()
+        if (started_at.tzinfo is None or completed_at.tzinfo is None or snapshot_at.tzinfo is None
+                or wall_seconds < 0 or backup_age < 0
+                or abs(wall_seconds - float(receipt['rto_seconds'])) > 2
+                or abs(backup_age - float(receipt['backup_age_seconds'])) > 2):
+            raise ValueError('inconsistent timing')
+    except (KeyError, TypeError, ValueError) as exc:
+        raise RuntimeError('Restore receipt timing is invalid') from exc
+    manifest_path = _manifest_file(receipt_path, receipt['backup_manifest'], dump=True)
+    if sha256_file(manifest_path) != receipt.get('backup_manifest_sha256'):
+        raise RuntimeError('Restore manifest hash mismatch')
+    manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+    dump_path = _manifest_file(manifest_path, manifest['database_dump'], dump=True)
+    if (sha256_file(dump_path) != manifest.get('sha256')
+            or manifest.get('sha256') != receipt.get('database_dump_sha256')
+            or manifest.get('backup_id') != receipt.get('backup_id')):
+        raise RuntimeError('Restore dump or backup identity mismatch')
+    evidence = manifest.get('evidence_files', [])
+    if [item['sha256'] for item in evidence] != receipt.get('evidence_file_sha256'):
+        raise RuntimeError('Restore evidence inventory mismatch')
+    for item in evidence:
+        if sha256_file(_manifest_file(manifest_path, item['path'])) != item['sha256']:
+            raise RuntimeError('Restore evidence file hash mismatch')
+    if (manifest.get('table_check_version') != receipt.get('table_check_version')
+            or manifest.get('table_checks') != receipt.get('table_checks')
+            or manifest.get('schema_version') != receipt.get('schema_migration_version')
+            or manifest.get('snapshot_at') != receipt.get('snapshot_at')
+            or len(evidence) != receipt.get('evidence_files')
+            or len(manifest['table_checks']) != receipt.get('verified_tables')):
+        raise RuntimeError('Restore snapshot baseline mismatch')
+    with connect(database_url) as source:
+        registered = source.execute(
+            'SELECT sha256, manifest, restore_status, rto_seconds, rpo_seconds '
+            'FROM backup_audits WHERE backup_id = %s',
+            (manifest['backup_id'],),
+        ).fetchone()
+    if (not registered or registered['sha256'] != manifest['sha256']
+            or registered['manifest'] != manifest or registered['restore_status'] != 'passed'
+            or abs(float(registered['rto_seconds']) - float(receipt['rto_seconds'])) > 0.01
+            or abs(float(registered['rpo_seconds']) - backup_age) > 2):
+        raise RuntimeError('Restore receipt is not bound to a passed source audit')
+    with connect(restore_database_url) as restored:
+        restored.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
+        compare_checks(manifest['table_checks'], table_checks(restored))
+    return {**receipt, 'receipt_sha256': expected_hash,
+            'receipt_file_sha256': sha256_file(receipt_path),
+            'verified_at': datetime.now(timezone.utc).isoformat()}

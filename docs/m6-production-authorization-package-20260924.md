@@ -13,7 +13,9 @@ action = no_order
 
 - M3 Checkpoint B 是 `PARTIAL`，严格 contemporaneous-rule PIT 尚未证明；
 - M4 缺真实、人工确认且完成对账的私有 IPS/组合；
-- M5 尚缺真实事件产品闭环，600519 九条公告仍待用户材料性判定；
+- M5 已完成 600519 九条公告材料性复核、五项 H1 事实验证和两条重大事件的
+  有界离线链；情景研究仍为 `NEED_MORE_EVIDENCE`，重算 `STILL_NOT_READY`，
+  无新估值，尚未通过 M5 产品/运营门；
 - 无真实隔离恢复记录，实际 RPO/RTO 未测得；Shadow 会话和真实事件计数均为 0。
 
 因此本文件不是授权请求通过，也不允许开始 Shadow 计数。

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 import json
 import re
 from pathlib import Path
@@ -317,7 +317,18 @@ def _parse_date(value: Any, field: str) -> date:
 def assess_session_ledger(
     config: M6PreflightConfig,
     records: Sequence[Mapping[str, Any]],
+    *,
+    calendar_evidence: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
+    schedule = None
+    schedule_dates: list[str] = []
+    if calendar_evidence is not None:
+        from .m6_exchange_sessions import completed_exchange_sessions
+        cutoff = datetime.fromisoformat(str(calendar_evidence['observation_cutoff']))
+        schedule = completed_exchange_sessions(
+            str(calendar_evidence['venue']), list(calendar_evidence['documents']), cutoff)
+        schedule_dates = [item['session_date'] for item in schedule['sessions']]
+        schedule_lookup = {item['session_date']: item for item in schedule['sessions']}
     seen_dates: set[date] = set()
     failures: list[str] = []
     normalized = []
@@ -331,6 +342,19 @@ def assess_session_ledger(
         if status not in {"success", "failed", "missing"}:
             raise ValueError(f"session record {index} has invalid status")
         session_date = _parse_date(record.get("session_date"), f"session {index} date")
+        if schedule is not None:
+            proof = schedule_lookup.get(session_date.isoformat())
+            if proof is None or record.get('exchange') != schedule['venue']:
+                raise ValueError(f"session record {index} is not in the official completed exchange calendar")
+            if (record.get('calendar_sha256') != proof['sha256']
+                    or record.get('calendar_source_url') != proof['source_url']):
+                raise ValueError(f"session record {index} lacks matching official calendar identity")
+            observed_at = datetime.fromisoformat(str(record.get('observed_at')))
+            observed_local = observed_at.astimezone(timezone(timedelta(hours=8))) if observed_at.tzinfo else None
+            if (observed_local is None or observed_at > cutoff
+                    or observed_local.date() != session_date
+                    or observed_local.time() < time(15, 5)):
+                raise ValueError(f"session record {index} has invalid observation cutoff")
         if session_date in seen_dates:
             raise ValueError(f"duplicate session date: {session_date}")
         seen_dates.add(session_date)
@@ -352,8 +376,13 @@ def assess_session_ledger(
         and item["resource_baseline_ok"]
     ]
     latest_streak = 0
-    for item in reversed(normalized):
-        if (item["observed"] != "actual" or item["status"] != "success"
+    if schedule is None:
+        streak_items = reversed(normalized)
+    else:
+        by_date = {item['session_date']: item for item in normalized}
+        streak_items = (by_date.get(day) for day in reversed(schedule_dates))
+    for item in streak_items:
+        if (item is None or item["observed"] != "actual" or item["status"] != "success"
             or not item["resource_baseline_ok"]):
             break
         latest_streak += 1
@@ -376,6 +405,9 @@ def assess_session_ledger(
         )
     if eligible:
         blockers.append("session dates are not bound to an official exchange calendar and observation cutoff")
+    if schedule is not None:
+        blockers = [item for item in blockers if not item.startswith('session dates are not bound')]
+        blockers.append('calendar membership does not authenticate real shadow run or production authorization')
     return _criterion(
         criterion_status,
         [
@@ -384,7 +416,7 @@ def assess_session_ledger(
             _check("reported latest session streak", latest_streak >= config.minimum_real_sessions, str(latest_streak)),
             _check("real event count", real_events >= config.minimum_real_events, str(real_events)),
             _check("simulated sessions are excluded", True, str(simulated)),
-            _check("official exchange calendar and cutoff verified", False),
+            _check("declared official calendar bytes and cutoff parsed", schedule is not None),
         ],
         blockers=blockers,
         evidence={
@@ -393,6 +425,9 @@ def assess_session_ledger(
             "real_events": real_events,
             "simulated_sessions": simulated,
             "failures": failures,
+            "verified_actual_sessions": 0,
+            "calendar_source_sha256": sorted({item['sha256'] for item in schedule['sessions']}) if schedule else [],
+            "latest_completed_exchange_session": schedule['latest_completed_session'] if schedule else None,
         },
     )
 
@@ -400,7 +435,45 @@ def assess_session_ledger(
 def assess_restore_evidence(
     config: M6PreflightConfig,
     records: Sequence[Mapping[str, Any]],
+    *,
+    receipt_path: Path | None = None,
+    source_database_url: str | None = None,
+    restore_database_url: str | None = None,
 ) -> dict[str, Any]:
+    if receipt_path is not None:
+        if not source_database_url or not restore_database_url:
+            raise ValueError('Live isolated restore verification requires both database URLs')
+        from .backup import verify_restore_receipt
+        verified_receipt = verify_restore_receipt(
+            source_database_url, restore_database_url, receipt_path)
+        target = verified_receipt.get('restore_target_identity') or {}
+        if (target.get('host') != config.restore_target.host
+                or str(target.get('port')) != str(config.restore_target.port)
+                or target.get('dbname') != config.restore_target.database):
+            raise ValueError('Verified restore receipt targets the wrong database')
+        rpo = float(verified_receipt['backup_age_seconds'])
+        rto = float(verified_receipt['rto_seconds'])
+        within = (0 <= rpo <= config.target_rpo_hours * 3600
+                  and 0 <= rto <= config.target_rto_hours * 3600)
+        checks = verified_receipt.get('table_checks') or {}
+        if (not checks or not verified_receipt.get('receipt_file_sha256')
+                or not verified_receipt.get('evidence_file_sha256')):
+            raise ValueError('Verified restore receipt lacks content-bound evidence')
+        return _criterion(
+            DONE if within else PARTIAL,
+            [_check('manifest, dump, originals and live isolated database reverified', True),
+             _check('backup age and restore duration within targets', within)],
+            blockers=[] if within else ['verified drill exceeds RPO/RTO target'],
+            evidence={
+                'receipt_sha256': verified_receipt['receipt_file_sha256'],
+                'backup_manifest_sha256': verified_receipt['backup_manifest_sha256'],
+                'database_dump_sha256': verified_receipt['database_dump_sha256'],
+                'verified_at': verified_receipt['verified_at'],
+                'backup_age_seconds': rpo,
+                'rto_seconds': rto,
+                'table_check_count': len(checks),
+            },
+        )
     if not records:
         return _criterion(
             NOT_STARTED,
@@ -480,7 +553,11 @@ def build_preflight_receipt(
     tracked_files: Iterable[str] = (),
     clean: bool = True,
     session_records: Sequence[Mapping[str, Any]] = (),
+    calendar_evidence: Mapping[str, Any] | None = None,
     restore_records: Sequence[Mapping[str, Any]] = (),
+    restore_receipt_path: Path | None = None,
+    source_database_url: str | None = None,
+    restore_database_url: str | None = None,
 ) -> dict[str, Any]:
     config = load_config(config_path)
     repository = audit_repository(
@@ -489,8 +566,11 @@ def build_preflight_receipt(
         tracked_files=tracked_files,
         clean=clean,
     )
-    sessions = assess_session_ledger(config, session_records)
-    restore = assess_restore_evidence(config, restore_records)
+    sessions = assess_session_ledger(config, session_records, calendar_evidence=calendar_evidence)
+    restore = assess_restore_evidence(
+        config, restore_records, receipt_path=restore_receipt_path,
+        source_database_url=source_database_url,
+        restore_database_url=restore_database_url)
     prerequisites_complete = all(
         config.stage_status[key] == DONE for key in ("m1", "m2", "m3", "m4", "m5")
     )
@@ -522,7 +602,54 @@ def build_preflight_receipt(
         "m6c4_real_restore_rpo_rto": restore,
         "m6c5_real_sessions_and_events": sessions,
         "m6c6_production_authorization": authorization,
+        "m6c7_official_exchange_calendar": _criterion(
+            PARTIAL if calendar_evidence is not None else NOT_STARTED,
+            [_check('exchange calendar syntax and completed-session cutoff verified',
+                    calendar_evidence is not None),
+             _check('official retrieval provenance independently bound', False)],
+            blockers=['official retrieval provenance is not independently bound']
+            if calendar_evidence is not None else
+            ['official exchange calendar evidence is not supplied'],
+            evidence={
+                'venue': calendar_evidence['venue'],
+                'observation_cutoff': calendar_evidence['observation_cutoff'],
+                'source_sha256': sessions['evidence']['calendar_source_sha256'],
+            } if calendar_evidence is not None else None,
+        ),
     }
+    review_classes = {
+        'm6c1_product_prerequisites': 'R2/R6',
+        'm6c2_repository_and_privacy': 'R0',
+        'm6c3_isolated_restore_mechanism': 'R0',
+        'm6c4_real_restore_rpo_rto': 'R0',
+        'm6c5_real_sessions_and_events': 'R6',
+        'm6c6_production_authorization': 'R3',
+        'm6c7_official_exchange_calendar': 'R0',
+    }
+    reopen = {
+        'm6c1_product_prerequisites': 'M3-M5 product gates accepted with evidence',
+        'm6c2_repository_and_privacy': 'repository/privacy audit rerun',
+        'm6c3_isolated_restore_mechanism': 'restore engineering regression rerun',
+        'm6c4_real_restore_rpo_rto': 'hash-bound receipt reverified against isolated database',
+        'm6c5_real_sessions_and_events': 'authorized real session and event receipts observed',
+        'm6c6_production_authorization': 'user grants scoped production authorization',
+        'm6c7_official_exchange_calendar': 'official source documents and cutoff verified',
+    }
+    for key, item in criteria.items():
+        item['review_class'] = review_classes[key]
+        item['reopen_condition'] = reopen[key] if item['status'] != DONE else None
+        item['verified_at'] = (item.get('evidence') or {}).get('verified_at')
+        item['evidence_refs'] = []
+        item['evidence_sha256'] = []
+    if restore_receipt_path is not None:
+        criteria['m6c4_real_restore_rpo_rto']['evidence_refs'] = [str(restore_receipt_path)]
+        criteria['m6c4_real_restore_rpo_rto']['evidence_sha256'] = [
+            restore['evidence']['receipt_sha256']]
+    if calendar_evidence is not None:
+        calendar = criteria['m6c7_official_exchange_calendar']
+        calendar['evidence_refs'] = [doc['source_url'] for doc in calendar_evidence['documents']]
+        calendar['evidence_sha256'] = sessions['evidence']['calendar_source_sha256']
+        calendar['verified_at'] = datetime.now(timezone.utc).isoformat()
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),

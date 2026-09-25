@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -61,20 +62,34 @@ def main(argv: list[str] | None = None) -> int:
         default=ROOT / "config" / "m6-operational-preflight-v1.json",
     )
     parser.add_argument("--sessions", type=Path)
+    parser.add_argument("--calendar-evidence", type=Path)
     parser.add_argument("--restore", type=Path)
+    parser.add_argument("--verified-restore-receipt", type=Path)
     parser.add_argument("--json-only", action="store_true")
     args = parser.parse_args(argv)
 
     root = args.root.resolve()
     config = args.config.resolve()
     tracked_files, clean = _git_files(root)
+    source = None
+    target = None
+    if args.verified_restore_receipt:
+        source = os.environ.get('M6_DRILL_SOURCE_DSN')
+        target = os.environ.get('M6_DRILL_RESTORE_DSN')
+        if not source or not target:
+            raise ValueError('M6_DRILL_SOURCE_DSN and M6_DRILL_RESTORE_DSN are required for live verification')
     receipt = build_preflight_receipt(
         root,
         config,
         tracked_files=tracked_files,
         clean=clean,
         session_records=_load_optional_list(args.sessions.resolve() if args.sessions else None),
+        calendar_evidence=json.loads(args.calendar_evidence.read_text(encoding='utf-8'))
+        if args.calendar_evidence else None,
         restore_records=_load_optional_list(args.restore.resolve() if args.restore else None),
+        restore_receipt_path=args.verified_restore_receipt.resolve() if args.verified_restore_receipt else None,
+        source_database_url=source,
+        restore_database_url=target,
     )
     output = write_receipt(receipt, root=root)
     if args.json_only:

@@ -406,6 +406,14 @@ def _overview(packet: Mapping[str, Any], wb: Workbook) -> None:
         2,
     )
     row = _label_value(ws, row, "等待价格", "当前 0 条。M3 三张现有卡均为研究不足，不是等待更低价格。", 2)
+    m6_status = packet["m6"]
+    criteria_status = m6_status.get("criteria_status") or {}
+    if criteria_status:
+        row = _label_value(
+            ws, row, "M6 运营准入",
+            "恢复：{restore}；交易日历：{calendar}；生产授权：{authorization}；"
+            "真实 Shadow：{shadow}。运营验收：NOT_STARTED。".format(**criteria_status), 2,
+        )
     row = _label_value(
         ws,
         row,

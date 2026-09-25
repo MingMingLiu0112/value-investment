@@ -62,10 +62,39 @@ def verified_followup_scan(path: Path, *, root: Path, symbol: str,
     }
 
 
+def project_m6_preflight(path: Path) -> dict:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if (payload.get("schema_version") != "m6-operational-preflight-v1"
+        or payload.get("action") != "no_order"
+        or payload.get("operational_acceptance_status") != "NOT_STARTED"):
+        raise ValueError("M6 preflight cannot certify operational acceptance")
+    criteria = payload.get("criteria") or {}
+    keys = {
+        "restore": "m6c4_real_restore_rpo_rto",
+        "calendar": "m6c7_official_exchange_calendar",
+        "shadow": "m6c5_real_sessions_and_events",
+        "authorization": "m6c6_production_authorization",
+    }
+    statuses = {name: criteria[key]["status"] if key in criteria else "NOT_PROVEN"
+                for name, key in keys.items()}
+    if (statuses["authorization"] != "REQUIRES_AUTHORIZATION"
+        or statuses["shadow"] == "DONE"):
+        raise ValueError("M6 preflight overstates authorization or real shadow")
+    return {
+        "status": "PREFLIGHT_ONLY",
+        "engineering_status": payload["engineering_status"],
+        "operational_status": "NOT_STARTED",
+        "blockers": list(payload["summary"]["blockers"]),
+        "criteria_status": statuses,
+        "receipt_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-root", required=True, type=Path)
     parser.add_argument("--read-model", required=True, type=Path)
+    parser.add_argument("--m6-receipt", type=Path)
     parser.add_argument("--followup-queue", type=Path)
     parser.add_argument("--scenario-review", type=Path)
     parser.add_argument("--review-source", type=Path)
@@ -134,6 +163,25 @@ def main() -> int:
     queue["pending_count"] = model["pending_human_review"]
     queue["pending_items"] = []
     packet["m5"]["actual_event_chain"] = model
+    packet["stage_statuses"]["m3"] = [
+        "M3", "ENGINEERING_PARTIAL_PLUS", "PARTIAL", "STRICT_PIT_NOT_PROVEN / R6",
+    ]
+    packet["stage_statuses"]["m4"] = [
+        "M4", "NONPERSONALIZED_ENGINEERING_COMPLETE", "PARTIAL", "PENDING_PRIVATE_INPUT / R2",
+    ]
+    packet["stage_statuses"]["m6"] = [
+        "M6", "PREFLIGHT_ONLY", "NOT_STARTED operationally", "AUTHORIZATION / SHADOW PENDING",
+    ]
+    packet["stage_statuses"]["m7"] = [
+        "M7", "DISPLAY_ENGINEERING_AVAILABLE", "PARTIAL", "FINAL_USER_ACCEPTANCE_NOT_PASSED",
+    ]
+    if args.m6_receipt is not None:
+        m6_path = args.m6_receipt.resolve()
+        packet["m6"] = project_m6_preflight(m6_path)
+        packet["audit"]["artifacts"].append({
+            "label": "M6 最新只读预检收据", "path": str(m6_path),
+            "sha256": packet["m6"]["receipt_sha256"],
+        })
     if args.followup_queue is not None:
         followup = verified_followup_scan(
             args.followup_queue, root=source_root, symbol=model["symbol"],
@@ -145,7 +193,7 @@ def main() -> int:
             "sha256": followup["queue_sha256"],
         })
     packet["stage_statuses"]["m5"] = [
-        "M5", "ACTUAL_OFFLINE_PARTIAL", "PARTIAL", "BOUNDED_RECALCULATION_NOT_READY",
+        "M5", "ENGINEERING_DONE_WITH_VALIDATED_NOT_READY", "PARTIAL", "SCENARIO_NEED_MORE_EVIDENCE",
     ]
     packet["audit"]["artifacts"].append({
         "label": "M5 600519 ACTUAL 事件与有界重算状态",

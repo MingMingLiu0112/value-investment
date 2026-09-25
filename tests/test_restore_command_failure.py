@@ -1,4 +1,5 @@
 import json
+from contextlib import contextmanager
 from types import SimpleNamespace
 
 import pytest
@@ -17,13 +18,24 @@ def test_any_failed_restore_cannot_be_marked_passed(tmp_path, monkeypatch, stder
     manifest = tmp_path / 'test.manifest.json'
     manifest.write_text(json.dumps({'database_dump': dump.name,
         'sha256': backup.sha256_file(dump), 'backup_id': 'test',
+        'snapshot_at': '2026-09-24T00:00:00+00:00',
         'table_check_version': 1, 'table_checks': {'data_points': {'rows': 1, 'sha256': 'test'}}}), encoding='utf-8')
     monkeypatch.setattr(backup.shutil, 'which', lambda _: '/test/pg_restore')
     monkeypatch.setattr(backup.subprocess, 'run', lambda *args, **kwargs:
                         SimpleNamespace(returncode=1, stderr=stderr))
-    def forbidden_connect(*args):
-        pytest.fail('Failed restore must not proceed to success auditing')
-    monkeypatch.setattr(backup, 'connect', forbidden_connect)
+    class Source:
+        def execute(self, *_):
+            return self
+
+        def fetchone(self):
+            return {'sha256': backup.sha256_file(dump),
+                    'manifest': json.loads(manifest.read_text(encoding='utf-8'))}
+
+    @contextmanager
+    def source_connect(*_):
+        yield Source()
+
+    monkeypatch.setattr(backup, 'connect', source_connect)
     with pytest.raises(RuntimeError, match='pg_restore failed'):
         backup.verify_restore('postgresql://127.0.0.1:5432/value_agent',
                               'postgresql://127.0.0.1:5433/value_agent_restore', manifest)
@@ -45,6 +57,7 @@ def test_restore_rejects_manifest_paths_outside_backup(tmp_path, monkeypatch, fi
     manifest_data = {
         'database_dump': value if field == 'database_dump' else dump.name,
         'sha256': backup.sha256_file(dump),
+        'snapshot_at': '2026-09-24T00:00:00+00:00',
         'table_check_version': 1,
         'table_checks': {'data_points': {'rows': 1}},
         'evidence_files': ([{'path': value, 'sha256': backup.sha256_file(outside)}]
