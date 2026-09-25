@@ -83,6 +83,7 @@ jobs:
           tests/test_m6_exchange_sessions.py
           tests/test_m6_calendar_readiness.py
           tests/test_m6_shadow_receipts.py
+          tests/test_m6_event_observation_contract.py
           tests/test_m6_calendar_bundle.py
           tests/test_restore_command_failure.py
           tests/test_restore_unit.py

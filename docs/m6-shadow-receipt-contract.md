@@ -18,3 +18,9 @@
 - 任何停机、关键故障、签名密钥失控或部署 Hash 变化均依授权规则停算并重新判定受影响观察窗口。
 
 该合同是未来会话验收的工程前提，不是生产授权请求，也不改变 `M6_OPERATIONAL=NOT_STARTED` 或 `INITIAL_ASSISTED_USE=NOT_REACHED`。
+
+## 真实事件运营见证：离线候选合同
+
+`m6_event_observation.verify_event_observation_candidate` 校验传入的归档 PDF 字节与材料性复核来源 Hash、规范化材料性复核、内部自洽的 ACTUAL M5 收据、同一授权 Shadow 会话的签名链，以及该会话 `artifact_sha256` 对应的事件观察制品字节。M5 review/receipt 的期望 SHA-256 和允许的来源主机须从观察包外传入；验证器本身仍不能证明这些输入由独立机构钉住，也不能认证公告网页的发布时间。观察制品固定 `event_id`、`source_event_id`、决定 ID、来源 URL/Hash、M5 收据文件及状态 Hash、M6 授权 Hash、运行 ID、交易日和观察时间；跨运行/授权重放、上一交易会话之后未发布的旧事件、原件替换、ID/Hash 冲突和时间倒置均失败关闭。
+
+成功结果也只包含 `offline_candidate_valid=true`、`operational_event_proven=false`、`verified_real_event_count=0`。本地传入的信任根与签名者声称的 `received_at` 可事后制造，不能证明真实生产实例或不可补写的实时接收。后续若要给 M6 真实事件记 1，必须额外独立钉住生产授权/部署身份及密钥纪元、M5 制品索引及公告来源记录，并由与运行方隔离的 append-only intake 在到达时写入原始收据字节 Hash、服务端时间和单调序号；验证其不可回填、授权窗口、实际运行制品和事件到达时限。公开 CI 使用的是可移植的合成 lineage 测试；真实 M5/Shadow 联合测试仅在本机归档原件存在时运行，不能由 CI 的合成通过冒充。历史 600519 M5 回放及合成签名测试均不得作为运营证据。

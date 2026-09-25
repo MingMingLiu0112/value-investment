@@ -1,5 +1,13 @@
 # 当前执行状态
 
+## 2026-09-25 M6 事件运营候选见证 R0
+
+新增纯离线 `m6-shadow-event-observation-v1` 候选验证器，逐字节绑定归档 PDF、材料性 review、内部自洽的 ACTUAL M5 committed receipt、签名 Shadow 会话及其运行制品；review/receipt 期望 Hash 与允许来源主机为包外输入。上一官方会话收盘后到当前会话的时间窗口拒绝旧事件回放。返回永远是 `offline_candidate_valid`，`operational_event_proven=false`、`verified_real_event_count=0`；不接入 M6 实际事件计数或生产。
+
+定向测试 `41 passed`，包括可移植合成合同和本机归档 600519 的历史事件拒绝。公开 CI 的合成测试模拟 M5 解析和签名核验接口，仅检查候选跨链约束；本机真实原件测试使用真实解析器/Ed25519，但因原件不入公开仓库，在 CI 中会跳过。不能把本轮标为真实运营事件见证完成。独立钉住的 M5 制品索引与公告来源记录、生产授权/部署身份、不可补写的到达时间锚及实际授权 Shadow 运行仍是 R0/R3/R6 缺口。
+
+`M6_OPERATIONAL=NOT_STARTED`，真实会话/事件仍为 0，`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`；总 Goal 与 `INITIAL_ASSISTED_USE` 均未完成。永久 `action=no_order`，最终投资决定由用户作出。
+
 ## 2026-09-25 当前提交 CI、M6 收据与 M7 v16 候选
 
 `4e45fbeb8ef205a6d26bfc173a15b3237046d11c` 的 [Core Research Gates 36127009539](https://github.com/MingMingLiu0112/value-investment/actions/runs/36127009539) 中 `offline-core`、`postgres-integration` 均为 `success`。在该干净提交上实时查询 GitHub run/job/step/附件元数据后的本地 M6 收据为 `runtime/m6-operational-preflight-20260925T110154Z/receipt.json`，SHA-256 `1b8f2e5aa8d7b82624b8c15da3c86c8de6b66d55f8da3d5bc21125efc374506c`。`m6c3` 恢复机制工程 `DONE`，`m6c4` 真实隔离恢复 `NOT_STARTED`；真实会话 0，真实事件观察 `NOT_STARTED`，运营准入 `NOT_STARTED`。GitHub 合成附件元数据不是生产备份内容或 RPO/RTO 证明。
