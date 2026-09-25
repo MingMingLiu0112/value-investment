@@ -788,6 +788,41 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
                                       if key != "result_sha256"})
     with pytest.raises(ValueError, match="persisted artifacts"):
         validate_bounded_research_refresh(forged, **validation)
+    forged_payload = refreshed.envelope.payload_object()
+    forged_payload["base_value"] = str(Decimal(forged_payload["base_value"]) + 1)
+    forged_canonical = canonicalize_artifact_payload(forged_payload)
+    forged_repository = InMemoryResearchArtifactRepository()
+    existing = sorted((artifact for artifact_type in ARTIFACT_TYPES
+                       for artifact in repository.list_versions(
+                           SCOPE_SECURITY, "600519", artifact_type)),
+                      key=lambda artifact: artifact.artifact_id)
+    for artifact in existing:
+        envelope = artifact.envelope
+        if artifact.artifact_id == refreshed.artifact_id:
+            envelope = replace(envelope, canonical_payload=forged_canonical,
+                               payload_sha256=sha256_text(forged_canonical))
+        saved_artifact = forged_repository.save(envelope)
+        if artifact.artifact_id == refreshed.artifact_id:
+            forged_artifact = saved_artifact
+    forged_reference = {
+        **result["outcomes"][0]["new_valuation_result"],
+        "artifact_id": forged_artifact.artifact_id,
+        "payload_sha256": forged_artifact.envelope.payload_sha256,
+        "model_validity_artifact_id": None,
+        "model_validity_status": "UNKNOWN",
+    }
+    forged_result = {
+        **result,
+        "outcomes": [{**result["outcomes"][0],
+                      "new_valuation_result": forged_reference}],
+    }
+    forged_result["result_sha256"] = _sha({
+        key: value for key, value in forged_result.items() if key != "result_sha256"
+    })
+    with pytest.raises(ValueError, match="distinct complete result"):
+        validate_bounded_research_refresh(
+            forged_result, **{**validation, "repository": forged_repository},
+        )
     queue = {"queue_id": "synthetic-offline", "scans": [{
         "symbol": "600519", "announcements": [{
             "announcement_id": decision.announcement_id,

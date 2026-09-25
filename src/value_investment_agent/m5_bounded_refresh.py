@@ -18,6 +18,8 @@ from .research_artifacts import (
 )
 from .research_input import ResearchInputDescriptor, build_research_run_spec
 from .research_runtime_import import RuntimeArtifactCandidate
+from .research_artifact_codecs import artifact_payload
+from .valuation_router import route_profile
 
 
 def _validated_context(
@@ -207,11 +209,15 @@ def validate_bounded_research_refresh(
     repository.verify(refreshed)
     val_identity = refreshed.envelope.identity
     val_payload = refreshed.envelope.payload_object()
+    route = route_profile(descriptor.profile_id, descriptor.requested_model)
+    expected_valuation = route.build_model().value(descriptor.facts, descriptor.research_case)
+    _, expected_payload = artifact_payload(expected_valuation)
     if (val_identity.artifact_type != ARTIFACT_VALUATION_RESULT
         or val_identity.scope_key != descriptor.symbol
         or val_identity.available_at != descriptor.point_in_time.available_at
         or refreshed.envelope.run_id != descriptor.run_id
         or refreshed.artifact_id == prior.artifact_id
+        or val_payload != expected_payload
         or val_payload.get("status") == "not_ready"
         or any(val_payload.get(key) is None for key in
                ("bear_value", "base_value", "bull_value"))):
