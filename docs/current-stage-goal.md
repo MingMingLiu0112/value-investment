@@ -32,6 +32,10 @@ M6 整体日历项仍为 `PARTIAL`。
 本机 Docker 引擎未运行且无本地 PostgreSQL 恢复工具，不能声称本轮完成真实 drill。
 一次性 CI 双 PostgreSQL 实例的合成恢复测试已通过；它只证明工程链在隔离环境
 可运行，不是用户真实备份、真实 RPO/RTO 或 M6 运营恢复验收。
+当前 `18bc0ce` 的 [Core Research Gates](https://github.com/MingMingLiu0112/value-investment/actions/runs/36121893819)
+两项作业均通过：备份容器显式只读挂载原件目录，原件字节写入内容寻址备份对象，
+恢复 v2 收据在隔离临时目录重建并核对原件。CI 只使用合成 PDF 和一次性双库；
+真实集群身份、异地副本及生产恢复仍未验收。
 
 按 [LONG-TERM-GOAL 的R0-R6治理规则](../LONG-TERM-GOAL.md) 默认继续；机器校验R0与独立/委托研究复核R1不因名称含“人工/Review/Checkpoint”而中断。R2私人IPS/组合只阻断个性化M4，R3生产授权只阻断对应生产动作，R4真实资金决定始终由用户做，R5最终产品验收由用户签收；R6自然时间只记录触发和重开条件。请求用户或拟停止前先做`INTERRUPTION_AUDIT`并继续所有独立DAG。
 
