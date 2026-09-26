@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import tempfile
 from pathlib import Path
 from typing import Mapping
 
@@ -47,11 +48,31 @@ def trust_root_fingerprint(trust_root: object) -> str:
     return hashlib.sha256(_canonical(dict(trust_root))).hexdigest()
 
 
-def trust_registry_path() -> Path:
+def _pytest_test_override() -> Path | None:
+    """Return a temp-dir registry override, but only inside a pytest process.
+
+    The override exists so test fixtures can pin synthetic roots.  It must not
+    be a production bypass: outside a running pytest process the committed
+    registry is the only source of pins, and the override path must resolve
+    inside the operating-system temporary directory.
+    """
+    if not (os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("PYTEST_VERSION")):
+        return None
     override = os.environ.get(TRUST_REGISTRY_ENV)
-    if override:
-        return Path(override)
-    return DEFAULT_TRUST_REGISTRY_PATH
+    if not override:
+        return None
+    try:
+        resolved = Path(override).resolve()
+        temp_root = Path(tempfile.gettempdir()).resolve()
+    except OSError:
+        return None
+    if not resolved.is_relative_to(temp_root):
+        return None
+    return resolved
+
+
+def trust_registry_path() -> Path:
+    return _pytest_test_override() or DEFAULT_TRUST_REGISTRY_PATH
 
 
 def pinned_trust_root_fingerprints(*, registry_path: Path | None = None) -> frozenset[str]:

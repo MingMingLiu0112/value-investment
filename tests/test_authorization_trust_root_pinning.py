@@ -7,6 +7,7 @@ and that a later unpinning invalidates previously issued capabilities on read.
 from __future__ import annotations
 
 import json
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -28,15 +29,17 @@ from value_investment_agent.operations.authorization.m5_actual_approval_receipt 
     verify_m5_actual_approval_receipt,
 )
 from value_investment_agent.operations.authorization.trust_root_registry import (
+    DEFAULT_TRUST_REGISTRY_PATH,
     TRUST_REGISTRY_ENV,
     TRUST_REGISTRY_VERSION,
     TrustRootNotPinnedError,
+    trust_registry_path,
     trust_root_fingerprint,
 )
 
 
-def _empty_registry(tmp_path: Path) -> Path:
-    path = tmp_path / "empty-trust-roots.json"
+def _empty_registry() -> Path:
+    path = Path(tempfile.mkdtemp(prefix="via-empty-trust-registry-")) / "empty-trust-roots.json"
     path.write_text(
         json.dumps(
             {
@@ -70,10 +73,10 @@ def _m6_staging_bundle() -> tuple[dict, dict]:
 
 
 def test_m5_actual_receipt_is_rejected_when_its_trust_root_is_not_pinned(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixture = synthetic_actual_receipt()
-    monkeypatch.setenv(TRUST_REGISTRY_ENV, str(_empty_registry(tmp_path)))
+    monkeypatch.setenv(TRUST_REGISTRY_ENV, str(_empty_registry()))
 
     with pytest.raises(TrustRootNotPinnedError, match="not pinned"):
         verify_m5_actual_approval_receipt(
@@ -85,7 +88,7 @@ def test_m5_actual_receipt_is_rejected_when_its_trust_root_is_not_pinned(
 
 
 def test_m5_actual_receipt_verifies_only_while_the_root_stays_pinned(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixture = synthetic_actual_receipt()
     assert trust_root_fingerprint(fixture["trust_root"]) in pinned_test_registry_fingerprints()
@@ -97,7 +100,7 @@ def test_m5_actual_receipt_verifies_only_while_the_root_stays_pinned(
     )
     assert capability.action == "no_order"
 
-    monkeypatch.setenv(TRUST_REGISTRY_ENV, str(_empty_registry(tmp_path)))
+    monkeypatch.setenv(TRUST_REGISTRY_ENV, str(_empty_registry()))
     with pytest.raises(TrustRootNotPinnedError, match="not pinned"):
         capability.verify()
 
@@ -117,7 +120,7 @@ def test_m6_fresh_keypair_cannot_advance_an_operational_mode() -> None:
 
 
 def test_m6_operational_proof_fails_every_read_after_unpinning(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from test_m6_operational_control import _proof
 
@@ -125,9 +128,28 @@ def test_m6_operational_proof_fails_every_read_after_unpinning(
     payload = proof.as_dict(at=datetime(2026, 9, 24, 9, 30, tzinfo=timezone.utc))
     pin_test_trust_root(proof.trust_root)
 
-    monkeypatch.setenv(TRUST_REGISTRY_ENV, str(_empty_registry(tmp_path)))
+    monkeypatch.setenv(TRUST_REGISTRY_ENV, str(_empty_registry()))
     with pytest.raises(TrustRootNotPinnedError, match="not pinned"):
         OperationalAuthorizationProof.from_dict(
             payload,
             at=datetime(2026, 9, 24, 9, 30, tzinfo=timezone.utc),
         )
+
+
+def test_registry_override_is_inert_outside_pytest(monkeypatch: pytest.MonkeyPatch) -> None:
+    override = _empty_registry()
+    monkeypatch.setenv(TRUST_REGISTRY_ENV, str(override))
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.delenv("PYTEST_VERSION", raising=False)
+
+    assert trust_registry_path() == DEFAULT_TRUST_REGISTRY_PATH
+
+    monkeypatch.setenv("PYTEST_VERSION", "test")
+    assert trust_registry_path() == override.resolve()
+
+
+def test_registry_override_outside_the_temp_dir_is_ignored(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TRUST_REGISTRY_ENV, str(DEFAULT_TRUST_REGISTRY_PATH))
+    assert trust_registry_path() == DEFAULT_TRUST_REGISTRY_PATH
