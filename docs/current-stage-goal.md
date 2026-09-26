@@ -2,6 +2,19 @@
 
 ## 当前执行门禁（2026-09-26）
 
+### Real-use readiness factual checkpoint
+
+The 2026-09-26 bounded quote collection has retained matched-close data for
+the three fixed symbols, but the canonical Excel publisher has not consumed
+that bundle. It is therefore `DATA_PARTIAL`, not a current daily product run:
+`CANONICAL_DAILY_RUN=NOT_VERIFIED`. M6 `m6c2` and `m6c3` are re-verified on the
+current clean HEAD; `m6c7` is still `PARTIAL` because future authorized venue
+coverage is undefined. M4 was exercised only with synthetic data and remains
+`WAITING_R2`; M3 strict PIT remains `NOT_PROVEN`; M5 remains
+`PARTIAL_WITH_VALIDATED_NOT_READY`. See [current readiness matrix](current-readiness-matrix.md).
+No Excel publication, production activity, or decision action occurred;
+`action=no_order`.
+
 当前唯一阶段为 `PRODUCTIZATION-SECURITY-AND-REAL-USE-CLOSURE`。唯一用户 Excel
 入口为 `.env` 的 `WORKBOOK_PATH`，即 WPS 云盘中的
 `A股价值投资_Agent前端智能跟踪模板.xlsx`；M7 的五页产品入口只允许原位发布到该
