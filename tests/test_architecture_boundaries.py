@@ -462,6 +462,20 @@ def test_current_docs_index_points_to_required_phase2_entries():
         assert expected in index
 
 
+def test_phase2_cleanup_report_records_safe_scope():
+    report = (
+        ROOT
+        / "docs"
+        / "architecture"
+        / "repository-cleanup-report-phase2-20260926.md"
+    ).read_text(encoding="utf-8")
+
+    assert "ROOT_ARTIFACT_PHYSICAL_BATCH_2 = NO_SAFE_MOVE" in report
+    assert "SCRIPT_INVENTORY = COMPLETE" in report
+    assert "CORE_BEHAVIOR_CHANGED = false" in report
+    assert "action = no_order" in report
+
+
 def test_new_domain_and_application_code_has_no_symbol_literals():
     symbol = re.compile(r"[0-9]{6}")
     for layer in ("domain", "application"):
