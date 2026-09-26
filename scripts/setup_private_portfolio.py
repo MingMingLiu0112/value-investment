@@ -11,6 +11,10 @@ import secrets
 
 from value_investment_agent.portfolio_contracts import portfolio_input_bundle_from_payload
 from value_investment_agent.portfolio_reconciliation import reconcile_portfolio_snapshots
+from value_investment_agent.domain.portfolio.confirmation_receipt import (
+    USER_CONFIRMED_RECONCILIATION,
+    build_portfolio_confirmation_receipt,
+)
 from value_investment_agent.private_portfolio_intake import (
     encrypt_private_portfolio_payload,
     load_private_portfolio_bundle,
@@ -43,6 +47,13 @@ def _write_new(path: Path, text: str) -> None:
         raise FileExistsError(f"refusing to overwrite: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+def _public_fingerprint_path(path: Path) -> Path:
+    target = path.resolve()
+    if not target.is_relative_to(ROOT.resolve()):
+        raise ValueError("public confirmation fingerprint must remain under the project root")
+    return target
 
 
 def _blockers(payload: dict) -> tuple[str, ...]:
@@ -109,6 +120,13 @@ def _args() -> argparse.Namespace:
     confirm.add_argument("--encrypted", required=True, type=Path)
     confirm.add_argument("--confirmation-id", required=True)
     confirm.add_argument("--confirmed-at", required=True)
+    confirm.add_argument("--confirmation-receipt", type=Path)
+    confirm.add_argument("--public-fingerprint", type=Path)
+    confirm.add_argument(
+        "--user-confirmation",
+        default=USER_CONFIRMED_RECONCILIATION,
+        choices=(USER_CONFIRMED_RECONCILIATION,),
+    )
     _common_paths(confirm)
     return parser.parse_args()
 
@@ -170,7 +188,10 @@ def main() -> int:
     else:
         source_path = _private_path(args, args.source, must_exist=True)
         report_path = _private_path(args, args.private_report, must_exist=True)
-        report_payload = _json(report_path)
+        report_bytes = report_path.read_bytes()
+        report_payload = json.loads(report_bytes)
+        if not isinstance(report_payload, dict):
+            raise ValueError("reconciliation report must be a JSON object")
         report = report_payload.get("report", {})
         bindings = report_payload.get("bindings", {})
         source_sha = hashlib.sha256(source_path.read_bytes()).hexdigest()
@@ -184,15 +205,33 @@ def main() -> int:
         confirmed_at = datetime.fromisoformat(args.confirmed_at)
         if confirmed_at.utcoffset() is None:
             raise ValueError("confirmed_at must be timezone-aware")
+        confirmation_receipt = build_portfolio_confirmation_receipt(
+            reconciliation_bytes=report_bytes,
+            reconciliation_payload=report,
+            user_confirmation=args.user_confirmation,
+            confirmed_at=confirmed_at,
+            confirmation_id=args.confirmation_id,
+        )
         bundle, _ = load_private_portfolio_bundle(
             source_path, args.key_file, private_root=args.private_root,
             repository_root=ROOT, forbidden_sync_roots=args.forbidden_sync_root,
         )
+        if report.get("account_scope") != bundle.snapshot.account_scope:
+            raise ValueError("reconciliation account scope does not match the encrypted snapshot")
+        if report.get("as_of") != bundle.snapshot.as_of.isoformat():
+            raise ValueError("reconciliation snapshot date does not match the encrypted snapshot")
         snapshot = replace(
             bundle.snapshot,
             reconciliation_status="RECONCILED",
             reconciled_at=confirmed_at,
-            evidence_refs=(*bundle.snapshot.evidence_refs, {"id": args.confirmation_id, "report_id": report.get("report_id")}),
+            evidence_refs=(
+                *bundle.snapshot.evidence_refs,
+                {
+                    "id": args.confirmation_id,
+                    "report_id": report.get("report_id"),
+                    "confirmation_receipt_sha256": confirmation_receipt.receipt_sha256,
+                },
+            ),
         )
         receipt = encrypt_private_portfolio_payload(
             replace(bundle, snapshot=snapshot).as_policy(), args.encrypted, args.key_file,
@@ -200,7 +239,34 @@ def main() -> int:
             forbidden_sync_roots=args.forbidden_sync_root,
             created_at=confirmed_at,
         )
-        result = {**receipt.as_policy(), "confirmation_id": args.confirmation_id}
+        confirmation_path = _private_path(
+            args,
+            args.confirmation_receipt
+            or report_path.with_suffix(report_path.suffix + ".confirmation.json"),
+        )
+        _write_new(
+            confirmation_path,
+            json.dumps(
+                confirmation_receipt.as_private_policy(),
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+        )
+        public_fingerprint = confirmation_receipt.as_public_fingerprint()
+        if args.public_fingerprint is not None:
+            _write_new(
+                _public_fingerprint_path(args.public_fingerprint),
+                json.dumps(public_fingerprint, ensure_ascii=False, indent=2, sort_keys=True)
+                + "\n",
+            )
+        result = {
+            **receipt.as_policy(),
+            "confirmation_id": args.confirmation_id,
+            "confirmation_receipt_sha256": confirmation_receipt.receipt_sha256,
+            "public_fingerprint": public_fingerprint,
+        }
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0
 

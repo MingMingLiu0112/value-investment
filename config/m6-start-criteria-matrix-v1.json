@@ -1,0 +1,425 @@
+{
+  "schema_version": "m6-start-criteria-matrix-v1",
+  "action": "no_order",
+  "reviewed_at": "2026-09-26",
+  "M6_OPERATIONAL": "NOT_STARTED",
+  "production_authorization_requested": false,
+  "production_authorization_granted": false,
+  "shadow_start_allowed": false,
+  "decision": "BLOCKED_PENDING_HARD_START_GATES",
+  "classification_legend": {
+    "MACHINE_READY": "Can be completed by repository code or a deterministic machine check without new private input.",
+    "USER_INPUT_REQUIRED": "Needs a user-owned constraint, identity, acceptance, or private input.",
+    "USER_AUTHORIZATION_REQUIRED": "Needs separate explicit authorization for a high-impact production action.",
+    "NATURAL_TIME_REQUIRED": "Can only become true through elapsed real market sessions, events, or contemporaneous evidence.",
+    "RESEARCH_EVIDENCE_REQUIRED": "Needs new external or research evidence, but not production authorization."
+  },
+  "shadow_start_gate_legend": {
+    "HARD_START_GATE": "Must be satisfied before the first technical Shadow start.",
+    "SOFT_PRODUCT_GAP": "Matters for product maturity but does not block technical Shadow start.",
+    "NATURAL_TIME_GATE": "Must be satisfied after start by real elapsed time; it is not a pre-start precondition.",
+    "NOT_RELEVANT_TO_SHADOW_START": "Does not gate technical Shadow start under the current long-term contract."
+  },
+  "criteria": [
+    {
+      "criterion_id": "m3_strict_contemporaneous_pit",
+      "requirement": "M3 Checkpoint B and strict contemporaneous-PIT product acceptance are complete.",
+      "classification": "RESEARCH_EVIDENCE_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "M3 is PARTIAL and the strict contemporaneous PIT chain is not yet proven.",
+      "rationale": "LONG-TERM-GOAL names completed M1-M5 product acceptance as an M6 prerequisite. The pre-start gate is the research evidence itself: a real contemporaneous decision chain that can only accrue over elapsed market time. NATURAL_TIME_GATE is reserved for post-start observation windows, so this criterion is classified as research evidence while keeping the elapsed-time dependency in its reopen condition.",
+      "evidence_refs": [
+        "LONG-TERM-GOAL.md",
+        "config/m6-operational-preflight-v1.json",
+        "docs/current-stage-goal.md"
+      ],
+      "reopen_condition": "A real contemporaneous decision chain satisfies the strict PIT contract and M3 Checkpoint B is accepted."
+    },
+    {
+      "criterion_id": "m4_confirmed_private_portfolio",
+      "requirement": "M4 accepts one real, human-confirmed, reconciled private portfolio and IPS.",
+      "classification": "USER_INPUT_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "M4 personalized acceptance is WAITING_R2; only the private input contract and synthetic tests exist.",
+      "rationale": "M6 product prerequisites and data requirements include an actual personal portfolio.",
+      "evidence_refs": [
+        "LONG-TERM-GOAL.md",
+        "config/m6-operational-preflight-v1.json",
+        "docs/m4-private-input-package.md"
+      ],
+      "reopen_condition": "The user imports, confirms, and reconciles an actual private portfolio and IPS."
+    },
+    {
+      "criterion_id": "m5_product_event_loop",
+      "requirement": "M5 product acceptance for the authorized event scope is complete.",
+      "classification": "RESEARCH_EVIDENCE_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "M5 remains PARTIAL and the bounded event product gate has not been accepted.",
+      "rationale": "LONG-TERM-GOAL names completed M1-M5 product acceptance as an M6 prerequisite; this gate is scope-level, not symbol-specific.",
+      "evidence_refs": [
+        "LONG-TERM-GOAL.md",
+        "config/m6-operational-preflight-v1.json",
+        "docs/m6-production-authorization-package-20260924.md"
+      ],
+      "reopen_condition": "The M5 product event loop passes its acceptance criteria for the authorized scope."
+    },
+    {
+      "criterion_id": "m6_scoped_production_authorization",
+      "requirement": "A signed, artifact-bound production authorization receipt exists and matches the candidate deployment.",
+      "classification": "USER_AUTHORIZATION_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "production_authorization_granted=false; all user_to_authorize values remain null.",
+      "rationale": "The production authorization package is READY_FOR_USER_REVIEW_NOT_AUTHORIZED and explicitly says shadow_start_allowed=false.",
+      "evidence_refs": [
+        "config/m6-production-authorization-vfinal.json",
+        "docs/m6-production-authorization-package-20260924.md",
+        "docs/m6-shadow-receipt-contract.md"
+      ],
+      "reopen_condition": "The user grants the scoped production authorization and the signed receipt verifies against exact artifacts."
+    },
+    {
+      "criterion_id": "m6_authorize_existing_runtime",
+      "requirement": "The existing rootful systemd/rootful Podman runtime design is explicitly approved.",
+      "classification": "USER_AUTHORIZATION_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "approve_host_and_existing_rootful_runtime_design=null.",
+      "rationale": "Starting Shadow on the existing host is a high-impact production action.",
+      "evidence_refs": [
+        "config/m6-production-authorization-vfinal.json",
+        "docs/m6-production-authorization-package-20260924.md"
+      ],
+      "reopen_condition": "The user explicitly approves the host and runtime design scope."
+    },
+    {
+      "criterion_id": "m6_authorize_private_backup_bucket",
+      "requirement": "Creation and cost of the private versioned Alibaba OSS backup bucket are explicitly approved.",
+      "classification": "USER_AUTHORIZATION_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "approve_Alibaba_OSS_private_bucket_creation_and_cost=null.",
+      "rationale": "The production authorization package makes offsite encrypted backup part of start readiness.",
+      "evidence_refs": [
+        "config/m6-production-authorization-vfinal.json",
+        "docs/m6-production-authorization-package-20260924.md"
+      ],
+      "reopen_condition": "The user approves the private bucket, retention policy, and cost boundary."
+    },
+    {
+      "criterion_id": "m6_authorize_real_restore_drill",
+      "requirement": "A real isolated restore on the production server is explicitly approved.",
+      "classification": "USER_AUTHORIZATION_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "approve_real_isolated_restore_on_server=null; no production restore receipt exists.",
+      "rationale": "The long-term contract requires isolated restore evidence before M6 operation and forbids using file existence as proof.",
+      "evidence_refs": [
+        "config/m6-production-authorization-vfinal.json",
+        "docs/m6-production-authorization-package-20260924.md",
+        "config/m6-operational-preflight-v1.json"
+      ],
+      "reopen_condition": "The user authorizes the isolated restore window and a hash-bound restore passes RPO/RTO in a new database."
+    },
+    {
+      "criterion_id": "m6_authorize_shadow_scheduler_scope",
+      "requirement": "The systemd timer and local-outbox-only Shadow scope is explicitly approved.",
+      "classification": "USER_AUTHORIZATION_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "approve_systemd_timer_and_local_outbox_shadow_scope=null.",
+      "rationale": "Scheduler and notification scope are separately controlled production permissions.",
+      "evidence_refs": [
+        "config/m6-production-authorization-vfinal.json",
+        "docs/m6-production-authorization-package-20260924.md"
+      ],
+      "reopen_condition": "The user approves the exact timer, concurrency, failure budget, local outbox, and stop controls."
+    },
+    {
+      "criterion_id": "m6_authorize_sse_szse_start",
+      "requirement": "SSE/SZSE Shadow start is explicitly approved after every hard prerequisite passes.",
+      "classification": "USER_AUTHORIZATION_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "approve_SSE_SZSE_shadow_start_after_all_preconditions=null.",
+      "rationale": "The matrix records a future decision boundary; it does not request that decision now.",
+      "evidence_refs": [
+        "config/m6-production-authorization-vfinal.json",
+        "docs/m6-production-authorization-package-20260924.md"
+      ],
+      "reopen_condition": "The user separately approves Shadow start after all hard gates are independently verified."
+    },
+    {
+      "criterion_id": "m6c2_repository_privacy_audit",
+      "requirement": "The repository and privacy boundary audit is complete for the candidate revision.",
+      "classification": "MACHINE_READY",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "The current preflight has not bound a complete candidate-revision repository/privacy audit.",
+      "rationale": "Private data and secrets must remain outside Git and runtime publication before Shadow starts.",
+      "evidence_refs": [
+        "config/m6-operational-preflight-v1.json",
+        "src/value_investment_agent/m6_operational_readiness.py"
+      ],
+      "reopen_condition": "A machine-run repository/privacy audit is hash-bound to the candidate revision and passes."
+    },
+    {
+      "criterion_id": "m6c3_isolated_restore_mechanism",
+      "requirement": "Backup, restore, and verifier code are bound to the candidate revision and its CI result.",
+      "classification": "MACHINE_READY",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "The mechanism exists, but the current preflight lacks a candidate-bound CI restore receipt.",
+      "rationale": "A real restore cannot be trusted unless the restore mechanism itself is reproducible and bound to the candidate.",
+      "evidence_refs": [
+        "config/m6-operational-preflight-v1.json",
+        "src/value_investment_agent/m6_operational_readiness.py"
+      ],
+      "reopen_condition": "A candidate revision passes the CI restore-verifier suite and the result is bound to the preflight."
+    },
+    {
+      "criterion_id": "m6c4_real_restore_rpo_rto",
+      "requirement": "A real isolated restore passes the 24-hour RPO and 4-hour RTO targets.",
+      "classification": "USER_AUTHORIZATION_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "No real production restore drill or measured RPO/RTO receipt exists.",
+      "rationale": "LONG-TERM-GOAL requires independent encrypted backup and restore to a new database before operational acceptance.",
+      "evidence_refs": [
+        "LONG-TERM-GOAL.md",
+        "config/m6-production-authorization-vfinal.json",
+        "config/m6-operational-preflight-v1.json"
+      ],
+      "reopen_condition": "An authorized restore produces a verified manifest, dump, content fingerprint, and RPO/RTO receipt."
+    },
+    {
+      "criterion_id": "m6c7_official_calendar_scope",
+      "requirement": "The official SSE/SZSE calendar scope is current and bound to the authorized Shadow venues.",
+      "classification": "MACHINE_READY",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "Calendar artifacts are partial and no authorized venue-scope binding is complete.",
+      "rationale": "Session counting must follow official completed exchange sessions and cannot use synthetic or self-declared dates.",
+      "evidence_refs": [
+        "config/m6-operational-preflight-v1.json",
+        "docs/m6-shadow-receipt-contract.md"
+      ],
+      "reopen_condition": "Current official calendar documents are verified and bound to the authorized SSE/SZSE start scope."
+    },
+    {
+      "criterion_id": "m6c11_emergency_stop_restart",
+      "requirement": "Authorized emergency stop and controlled restart drills pass.",
+      "classification": "USER_AUTHORIZATION_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "The local stop contract exists, but production stop and restart drills have not run.",
+      "rationale": "PTA protection and bounded restart are explicit long-term prerequisites.",
+      "evidence_refs": [
+        "LONG-TERM-GOAL.md",
+        "config/m6-operational-preflight-v1.json"
+      ],
+      "reopen_condition": "Authorized stop and restart receipts show only project timers/jobs were affected and PTA stayed healthy."
+    },
+    {
+      "criterion_id": "m6c8_backup_readiness",
+      "requirement": "Current source, backup originals, and offsite copy are registered and verified.",
+      "classification": "USER_AUTHORIZATION_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "No current production source backup manifest or verified offsite copy exists.",
+      "rationale": "The production authorization package requires encrypted backup before Shadow operation.",
+      "evidence_refs": [
+        "config/m6-production-authorization-vfinal.json",
+        "config/m6-operational-preflight-v1.json"
+      ],
+      "reopen_condition": "Authorized backup and offsite-copy receipts verify the candidate source and database."
+    },
+    {
+      "criterion_id": "m6c9_resource_readiness",
+      "requirement": "A fresh read-only PTA baseline and database resource headroom pass.",
+      "classification": "MACHINE_READY",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "The production PTA baseline and bounded resource observation are absent.",
+      "rationale": "The start criteria require a fresh resource baseline and explicit PTA protection.",
+      "evidence_refs": [
+        "config/m6-production-authorization-vfinal.json",
+        "config/m6-operational-preflight-v1.json"
+      ],
+      "reopen_condition": "The authorized read-only baseline passes and records memory, CPU, and PTA health."
+    },
+    {
+      "criterion_id": "m6c9_disk_reserve",
+      "requirement": "Free disk exceeds the reserve plus estimated write volume.",
+      "classification": "MACHINE_READY",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "No authorized disk check is bound to the Shadow candidate.",
+      "rationale": "The production start criteria require a disk check with a 2 GiB reserve plus estimated writes.",
+      "evidence_refs": [
+        "config/m6-production-authorization-vfinal.json",
+        "config/m6-operational-preflight-v1.json"
+      ],
+      "reopen_condition": "A fresh disk check exceeds reserve plus estimated write volume."
+    },
+    {
+      "criterion_id": "m6c10_health_readiness",
+      "requirement": "Authorized production health checks and failure classification are ready.",
+      "classification": "MACHINE_READY",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "Production health observations are absent.",
+      "rationale": "M6 requires health checks and source-failure degradation before real operation.",
+      "evidence_refs": [
+        "LONG-TERM-GOAL.md",
+        "config/m6-operational-preflight-v1.json"
+      ],
+      "reopen_condition": "Health checks are deployed under authorization and produce baseline receipts without PTA regression."
+    },
+    {
+      "criterion_id": "m6c12_scheduler_readiness",
+      "requirement": "The authorized scheduler scope is deployed with single-instance locks and run receipts.",
+      "classification": "USER_AUTHORIZATION_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "Production scheduler scope and run receipts are not authorized.",
+      "rationale": "The timer schedule is part of the scoped production start.",
+      "evidence_refs": [
+        "config/m6-production-authorization-vfinal.json",
+        "config/m6-operational-preflight-v1.json"
+      ],
+      "reopen_condition": "The approved scheduler runs once under lock and produces the expected no_order receipt."
+    },
+    {
+      "criterion_id": "m6c5_distinct_signer_keys",
+      "requirement": "All five signer keys are distinct and externally pinned.",
+      "classification": "USER_INPUT_REQUIRED",
+      "shadow_start_gate": "HARD_START_GATE",
+      "current_satisfied": false,
+      "current_state": "The five external trust roots and signer identities are not established.",
+      "rationale": "Operational admission requires four candidate signers and one distinct admission signer pinned outside the bundle.",
+      "evidence_refs": [
+        "config/m6-production-authorization-vfinal.json",
+        "docs/m6-shadow-receipt-contract.md"
+      ],
+      "reopen_condition": "Five distinct externally pinned keys verify the authorization, candidate, intake, and admission roles."
+    },
+    {
+      "criterion_id": "m6c13_external_notification_delivery",
+      "requirement": "External notification delivery is configured and observed.",
+      "classification": "USER_AUTHORIZATION_REQUIRED",
+      "shadow_start_gate": "SOFT_PRODUCT_GAP",
+      "current_satisfied": false,
+      "current_state": "Shadow deliberately uses a local outbox and no external delivery.",
+      "rationale": "External delivery is a later product/operations capability, not a condition of technical Shadow start.",
+      "evidence_refs": [
+        "config/m6-production-authorization-vfinal.json",
+        "config/m6-operational-preflight-v1.json"
+      ],
+      "reopen_condition": "A later scoped authorization defines delivery targets, severity, silence, acknowledgement, and retries."
+    },
+    {
+      "criterion_id": "m6c5_twenty_real_sessions",
+      "requirement": "Twenty consecutive real completed exchange sessions are observed in authorized Shadow.",
+      "classification": "NATURAL_TIME_REQUIRED",
+      "shadow_start_gate": "NATURAL_TIME_GATE",
+      "current_satisfied": false,
+      "current_state": "Verified real Shadow sessions remain zero.",
+      "rationale": "The long-term contract counts natural daily market sessions, not repeated execution, replay, or synthetic receipts.",
+      "evidence_refs": [
+        "LONG-TERM-GOAL.md",
+        "docs/m6-shadow-receipt-contract.md",
+        "config/m6-operational-preflight-v1.json"
+      ],
+      "reopen_condition": "Twenty consecutive official completed sessions pass operational admission without a reset condition."
+    },
+    {
+      "criterion_id": "m6c14_one_real_event",
+      "requirement": "At least one real financial or capital-allocation event is observed and independently admitted.",
+      "classification": "NATURAL_TIME_REQUIRED",
+      "shadow_start_gate": "NATURAL_TIME_GATE",
+      "current_satisfied": false,
+      "current_state": "No real-event operational observation exists.",
+      "rationale": "The event must occur naturally and cannot be satisfied by historical replay or a synthetic receipt.",
+      "evidence_refs": [
+        "LONG-TERM-GOAL.md",
+        "docs/m6-shadow-receipt-contract.md",
+        "config/m6-operational-preflight-v1.json"
+      ],
+      "reopen_condition": "A real event arrives during authorized Shadow and passes source, M5, session, and admission verification."
+    },
+    {
+      "criterion_id": "m6c15_operational_acceptance",
+      "requirement": "All M6 product, restore, authorization, natural-session, and event gates pass together.",
+      "classification": "NATURAL_TIME_REQUIRED",
+      "shadow_start_gate": "NATURAL_TIME_GATE",
+      "current_satisfied": false,
+      "current_state": "M6_OPERATIONAL=NOT_STARTED and operational acceptance has not begun.",
+      "rationale": "Operational acceptance is the post-start outcome of the complete observation window.",
+      "evidence_refs": [
+        "LONG-TERM-GOAL.md",
+        "config/m6-operational-preflight-v1.json",
+        "docs/m6-production-authorization-package-20260924.md"
+      ],
+      "reopen_condition": "Every M6 gate passes together and an independent review issues OPERATIONAL_ACCEPTANCE_PASSED."
+    },
+    {
+      "criterion_id": "m7_product_ux_candidate",
+      "requirement": "The M7 product UX candidate and read model are ready for review.",
+      "classification": "MACHINE_READY",
+      "shadow_start_gate": "SOFT_PRODUCT_GAP",
+      "current_satisfied": true,
+      "current_state": "M7 Product Read Model and five-page Excel candidate are READY_FOR_REVIEW; final user acceptance is still not passed.",
+      "rationale": "M7 consumes M6 evidence; it must not delay the first technical Shadow start.",
+      "evidence_refs": [
+        "LONG-TERM-GOAL.md",
+        "docs/current-stage-goal.md"
+      ],
+      "reopen_condition": "The product read model and five-page UX candidate pass their own tests and review."
+    },
+    {
+      "criterion_id": "m7_final_user_acceptance",
+      "requirement": "The user completes final M7 assisted-use acceptance.",
+      "classification": "USER_INPUT_REQUIRED",
+      "shadow_start_gate": "NOT_RELEVANT_TO_SHADOW_START",
+      "current_satisfied": null,
+      "current_state": "Final user acceptance remains unreached.",
+      "rationale": "M7 follows M6 and cannot gate Shadow start.",
+      "evidence_refs": [
+        "LONG-TERM-GOAL.md"
+      ],
+      "reopen_condition": "After M6 operational acceptance, the user independently completes the defined workbench tasks."
+    },
+    {
+      "criterion_id": "moutai_600519_scenario_evidence",
+      "requirement": "600519 scenario research leaves NEED_MORE_EVIDENCE.",
+      "classification": "RESEARCH_EVIDENCE_REQUIRED",
+      "shadow_start_gate": "NOT_RELEVANT_TO_SHADOW_START",
+      "current_satisfied": null,
+      "current_state": "600519 remains NEED_MORE_EVIDENCE and STILL_NOT_READY.",
+      "rationale": "The long-term M6 contract does not make one issuer's research status a system-wide Shadow start prerequisite.",
+      "evidence_refs": [
+        "LONG-TERM-GOAL.md",
+        "docs/execution-status.md"
+      ],
+      "reopen_condition": "New external evidence reopens M5 only for the affected research object."
+    },
+    {
+      "criterion_id": "moutai_600519_historical_validation",
+      "requirement": "600519 historical validation becomes PIT-safe or admitted.",
+      "classification": "RESEARCH_EVIDENCE_REQUIRED",
+      "shadow_start_gate": "NOT_RELEVANT_TO_SHADOW_START",
+      "current_satisfied": null,
+      "current_state": "600519 historical validation is NOT_PIT_SAFE / NOT_ADMITTED and under EVIDENCE_STOP.",
+      "rationale": "The historical stop rule forbids further evidence grinding and does not make this company case a technical Shadow gate.",
+      "evidence_refs": [
+        "LONG-TERM-GOAL.md",
+        "docs/execution-status.md"
+      ],
+      "reopen_condition": "A newly available external source could materially change PIT admission; otherwise no work is opened."
+    }
+  ]
+}

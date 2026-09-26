@@ -6,12 +6,25 @@ from typing import Any
 
 import psycopg
 
+from .domain.execution import assert_simulation_execution, simulation_execution_marker
 from .virtual_account import VirtualAccount
+
+
+def _simulation_snapshot(account: VirtualAccount) -> dict[str, Any]:
+    """Bind the account snapshot to the immutable simulation-only marker."""
+    state = account.to_dict()
+    state.update(simulation_execution_marker())
+    assert_simulation_execution(state)
+    return state
 
 
 def load_account(connection: psycopg.Connection, account_id: str) -> VirtualAccount | None:
     row = connection.execute("SELECT state FROM virtual_accounts WHERE account_id=%s", (account_id,)).fetchone()
-    return None if row is None else VirtualAccount.from_dict(row["state"])
+    if row is None:
+        return None
+    state = row["state"]
+    assert_simulation_execution(state)
+    return VirtualAccount.from_dict(state)
 
 
 def save_checkpoint(connection: psycopg.Connection, *, account_id: str, symbol: str,
@@ -41,5 +54,5 @@ def save_checkpoint(connection: psycopg.Connection, *, account_id: str, symbol: 
            VALUES (%s, %s, %s::jsonb, clock_timestamp())
            ON CONFLICT (account_id) DO UPDATE SET symbol=EXCLUDED.symbol,
              state=EXCLUDED.state, updated_at=EXCLUDED.updated_at""",
-        (account_id, symbol, json.dumps(account.to_dict(), ensure_ascii=False)),
+        (account_id, symbol, json.dumps(_simulation_snapshot(account), ensure_ascii=False)),
     )
