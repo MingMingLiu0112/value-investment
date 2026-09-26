@@ -22,6 +22,7 @@ from .m6_operational_control import (
     MODE_STAGING,
     OperationalAuthorizationProof,
 )
+from .operations.authorization.trust_root_registry import require_pinned_trust_root
 
 
 VERSION = 'm6-shadow-receipt-v1'
@@ -145,6 +146,33 @@ def verify_shadow_authorization_for_control(
 def verify_shadow_bundle(bundle: Mapping[str, Any], trust_root: Mapping[str, str],
                          schedule: Mapping[str, Any], cutoff: datetime) -> dict[str, str]:
     """Return authenticated session-date -> receipt-hash mappings, never event credit."""
+    return _verify_shadow_bundle_contents(bundle, trust_root, schedule, cutoff)
+
+
+def _verify_shadow_bundle_contents(
+    bundle: Mapping[str, Any],
+    trust_root: Mapping[str, str],
+    schedule: Mapping[str, Any],
+    cutoff: datetime,
+    *,
+    operational_root: Mapping[str, Any] | None = None,
+) -> dict[str, str]:
+    """Verify bundle bytes under either a pinned candidate or pinned outer root.
+
+    Public callers use :func:`verify_shadow_bundle`, which passes no
+    ``operational_root`` and therefore requires the supplied candidate root to
+    be pinned. The operational admission path passes the enclosing operational
+    root; that root must be pinned and must contain the exact candidate root.
+    The helper itself therefore has no unpinned verification mode.
+    """
+    if operational_root is None:
+        require_pinned_trust_root(trust_root)
+    else:
+        require_pinned_trust_root(operational_root)
+        if operational_root.get("candidate_trust_root") != trust_root:
+            raise ValueError(
+                "Shadow candidate trust root is not bound to the pinned operational root"
+            )
     if set(trust_root) != {'authorization_public_key', 'witness_public_key',
                            'approved_authorization_sha256', 'intake_trust_root',
                            'pinned_intake_head'}:

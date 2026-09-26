@@ -15,6 +15,7 @@ from .m6_event_observation import (
 )
 from .m6_exchange_sessions import completed_exchange_sessions
 from .m6_shadow_admission import verify_operational_shadow_bundle
+from .operations.authorization.trust_root_registry import require_pinned_trust_root
 
 
 VERSION = "m6-event-admission-v1"
@@ -91,6 +92,7 @@ def verify_operational_event_observation(
     required_events: int,
 ) -> dict[str, Any]:
     """Promote one event only when candidate, session and admission all bind."""
+    require_pinned_trust_root(operational_shadow_trust_root)
     candidate_bundle = operational_shadow_bundle.get("candidate_bundle")
     candidate_root = operational_shadow_trust_root.get("candidate_trust_root")
     if (candidate_evidence.get("shadow_bundle") != candidate_bundle

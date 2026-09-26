@@ -146,6 +146,23 @@ transition and restart, so unpinning a root invalidates previously issued
 proofs. Negative tests cover an unpinned M5 receipt, a fresh M6 keypair, and a
 proof re-read after unpinning.
 
+### ADV2-P0-003 - M6 Shadow/event evidence accepted unpinned roots
+
+The M6 operational-control proof already rechecked the pinned root, but the
+session verifier, operational Shadow admission and event admission still
+accepted a complete, internally consistent evidence chain signed by a caller-
+supplied, unpinned root. An attacker could therefore inflate verified session
+or event counts without advancing an operational mode.
+
+Status: CLOSED_BY_EVIDENCE_BOUNDARY_PINNING. Public
+`verify_shadow_bundle` now requires the full root fingerprint in the pinned
+registry. Operational admission pins the enclosing operational root and uses
+its nested `candidate_trust_root` only through an internal byte verifier, so
+the inner root is bound by the outer fingerprint rather than needing a second
+registry entry. Event admission performs the same pin gate before reading any
+event evidence. Complete self-signed/unpinned chains are rejected; an outer
+pinned root with a bound inner candidate root remains valid.
+
 ### ADV2-P1-001 - M5 approvals had no expiry window
 
 Receipt payloads carry `authorized_at` but no `valid_until`, and a synthetic
@@ -227,6 +244,19 @@ criterion is classified `RESEARCH_EVIDENCE_REQUIRED` while staying a
 `HARD_START_GATE`; its elapsed-time dependency stays in the reopen condition,
 and `NATURAL_TIME_GATE` is reserved for post-start observation windows. The
 committed matrix still reports `shadow_start_allowed=false`.
+
+### ADV2-P1-007 - Test registry override could be spoofed from the environment
+
+The test-only registry override relied on `PYTEST_VERSION` or
+`PYTEST_CURRENT_TEST` plus an environment path. A normal Python process could
+set those strings and select a temporary registry, and the public pin helpers
+also accepted a caller-supplied registry path.
+
+Status: CLOSED. Registry selection is now a process-local test hook called by
+the pytest fixture; production lookup is fixed to the committed registry, the
+environment variables are inert, and the public pin helpers no longer accept a
+caller-supplied path. The hook rejects paths outside the operating-system
+temporary directory.
 
 ### ADV2-P2-001 - Run-specific disclosure tools were listed as product CLI
 

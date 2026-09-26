@@ -242,6 +242,7 @@ def test_witnessed_failed_session_breaks_the_verified_streak(monkeypatch):
     bundle['intake_records'], head = _intake_for_sessions(
         bundle['sessions'], bundle['authorization']['payload']['deployment_sha256'], intake_key)
     trust['pinned_intake_head']['record_sha256'] = head
+    pin_test_trust_root(trust)
     verified = verify_shadow_bundle(bundle, trust, schedule,
                                     datetime.fromisoformat(calendar['observation_cutoff']))
     assert list(verified) == [records[1]['session_date']]
@@ -259,6 +260,7 @@ def test_witnessed_failed_session_breaks_the_verified_streak(monkeypatch):
 def test_signer_reuse_is_not_independent_witness():
     bundle, trust, calendar, schedule, _, _ = _fixture()
     trust['witness_public_key'] = bundle['authorization']['payload']['runtime_public_key']
+    pin_test_trust_root(trust)
     with pytest.raises(ValueError, match='must be distinct'):
         verify_shadow_bundle(bundle, trust, schedule,
                              datetime.fromisoformat(calendar['observation_cutoff']))

@@ -1,5 +1,41 @@
 # Changelog
 
+## v2026.09.26-m6-evidence-trust-pinning
+
+### Scope
+
+关闭 M6 Shadow 会话、operational admission 与 event admission 仍可接受调用方
+自签 trust root 的残余缺口，并收紧测试专用 registry 注入。该提交不 pin 真实
+operator key、不启动 Shadow、调度、通知、迁移或真实账户导入，继续固定
+`action=no_order`。
+
+### Changes
+
+- 公开 `verify_shadow_bundle` 现在先要求完整 trust root 的 canonical fingerprint
+  出现在 pinned registry；完整自签会话链在未 pin 时失败关闭。
+- `verify_operational_shadow_bundle` 只 pin 外层 operational root。内层 candidate
+  root 必须作为外层 root 的嵌套字段被同一 fingerprint 绑定，并只通过内部
+  byte-verifier 使用；候选 root 不需要、也不能靠自身伪造 pin。
+- `verify_operational_event_observation` 在读取 candidate、session 或 event 证据前
+  同样执行 pin gate。
+- 测试 registry 改为显式进程内测试钩子；不再读取
+  `VIA_AUTHORIZATION_TRUST_REGISTRY`、`PYTEST_VERSION` 或
+  `PYTEST_CURRENT_TEST`，公开 pin API 不再接受 caller-supplied registry path。
+
+### Verification
+
+- M6/授权定向回归：`63 passed`；M6/M5 ACTUAL 相关回归：`207 passed, 14 skipped`。
+- 全量离线回归：`2953 passed, 30 skipped, 18 warnings, 0 failed`。
+- 普通 Python 进程同时伪造 `PYTEST_VERSION` 与
+  `VIA_AUTHORIZATION_TRUST_REGISTRY` 时，路径仍解析到 committed registry。
+
+### Residual Boundary
+
+真实 operator keystore/OS pin 仍未建立，committed registry 仍为空；真实
+ACTUAL/M6 授权继续 fail-closed。caller-supplied composition/test clock 与跨独立
+store 的全局 single-use journal marker 仍登记为后续生产授权前需要评估的边界，
+本轮不将其宣称为已完成。
+
 ## v2026.09.26-m5-approval-validity-and-legacy-runner-closure
 
 ### Scope

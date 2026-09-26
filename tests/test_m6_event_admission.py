@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 import hashlib
 import json
+from pathlib import Path
+import tempfile
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -10,6 +12,14 @@ import pytest
 
 from test_m6_shadow_admission import _admitted
 from test_m6_shadow_receipts import _config, _fixture as _shadow_fixture
+from authorization_trust_registry_fixture import (
+    pin_test_trust_root,
+    use_test_trust_registry,
+)
+from value_investment_agent.operations.authorization.trust_root_registry import (
+    TRUST_REGISTRY_VERSION,
+    TrustRootNotPinnedError,
+)
 from value_investment_agent import m6_event_admission as admission
 from value_investment_agent import m6_exchange_sessions as exchange
 from value_investment_agent.m6_operational_readiness import assess_session_ledger
@@ -37,6 +47,7 @@ def _fixture(monkeypatch, mutate_candidate=None):
         "candidate_bundle": candidate_bundle, "admission": shadow_admission}
     operational_root = {
         "candidate_trust_root": candidate_root, "admission_public_key": public}
+    pin_test_trust_root(operational_root)
     result = {
         "schema_version": "m6-shadow-event-observation-v1",
         "offline_candidate_valid": True, "operational_event_proven": False,
@@ -86,6 +97,36 @@ def test_exact_event_admission_grants_one_operational_event(monkeypatch):
     assert result["operational_event_proven"] is True
     assert result["verified_real_event_count"] == 1
     assert result["action"] == "no_order"
+
+
+def test_event_admission_rejects_unpinned_operational_root(
+    monkeypatch,
+):
+    candidate, bundle, root, envelope, _ = _fixture(monkeypatch)
+    registry = (
+        Path(tempfile.mkdtemp(prefix="via-empty-event-registry-"))
+        / "empty-trust-registry.json"
+    )
+    registry.write_text(
+        json.dumps(
+            {
+                "schema_version": TRUST_REGISTRY_VERSION,
+                "pinned_trust_root_sha256": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    with use_test_trust_registry(registry):
+        with pytest.raises(TrustRootNotPinnedError, match="not pinned"):
+            admission.verify_operational_event_observation(
+                candidate_evidence=candidate,
+                operational_shadow_bundle=bundle,
+                operational_shadow_trust_root=root,
+                event_admission=envelope,
+                approved_event_admission_sha256=_sha(envelope),
+                required_sessions=20,
+                required_events=1,
+            )
 
 
 @pytest.mark.parametrize("field", [

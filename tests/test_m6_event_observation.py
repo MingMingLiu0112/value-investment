@@ -21,6 +21,7 @@ from value_investment_agent.event_materiality import event_materiality_review_fr
 from value_investment_agent.quote_sessions import (
     SSE_2026_CLOSURE_NOTICE_URL, SSE_2026_NOTICE_MARKERS,
 )
+from authorization_trust_registry_fixture import pin_test_trust_root
 
 
 ROOT = Path(__file__).parents[1]
@@ -143,6 +144,7 @@ def _fixture(*, mutate=None, valid_from="2026-07-01T00:00:00+08:00"):
              },
              "pinned_intake_head": {"record_sha256": _sha(_bytes(intake)), "sequence": 1,
                                     "pinned_at": "2026-09-24T15:12:00+08:00"}}
+    pin_test_trust_root(trust)
     raw_calendar = "\n".join(SSE_2026_NOTICE_MARKERS).encode("utf-8")
     document = {"source_url": SSE_2026_CLOSURE_NOTICE_URL,
                 "fetched_at": "2026-09-24T07:00:00+00:00",

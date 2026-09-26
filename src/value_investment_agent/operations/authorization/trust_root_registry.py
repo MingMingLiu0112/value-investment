@@ -8,23 +8,24 @@ fresh keypair and self-authorize.
 
 The committed registry is intentionally empty until a real operator key is
 registered by an explicit, reviewed change, so ACTUAL/M6 authorization is
-fail-closed by default.  Tests point ``VIA_AUTHORIZATION_TRUST_REGISTRY`` at a
-temporary registry file; production code never sets that variable.
+fail-closed by default. Tests use a process-local test hook to select a
+temporary registry file; no environment variable or caller-supplied path can
+redirect the production trust-registry lookup.
 """
 from __future__ import annotations
 
 import hashlib
 import json
-import os
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Mapping
+from typing import Iterator, Mapping
 
 TRUST_REGISTRY_VERSION = "authorization-trust-root-registry-v1"
-TRUST_REGISTRY_ENV = "VIA_AUTHORIZATION_TRUST_REGISTRY"
 DEFAULT_TRUST_REGISTRY_PATH = (
     Path(__file__).resolve().parents[4] / "config" / "authorization-trust-roots-v1.json"
 )
+_TEST_REGISTRY_PATH: Path | None = None
 
 
 class TrustRootNotPinnedError(ValueError):
@@ -48,36 +49,43 @@ def trust_root_fingerprint(trust_root: object) -> str:
     return hashlib.sha256(_canonical(dict(trust_root))).hexdigest()
 
 
-def _pytest_test_override() -> Path | None:
-    """Return a temp-dir registry override, but only inside a pytest process.
-
-    The override exists so test fixtures can pin synthetic roots.  It must not
-    be a production bypass: outside a running pytest process the committed
-    registry is the only source of pins, and the override path must resolve
-    inside the operating-system temporary directory.
-    """
-    if not (os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("PYTEST_VERSION")):
-        return None
-    override = os.environ.get(TRUST_REGISTRY_ENV)
-    if not override:
-        return None
+def _validated_test_registry_path(path: Path) -> Path:
+    """Validate a test-only registry path without accepting environment data."""
     try:
-        resolved = Path(override).resolve()
+        resolved = Path(path).resolve()
         temp_root = Path(tempfile.gettempdir()).resolve()
-    except OSError:
-        return None
+    except OSError as error:
+        raise ValueError("test trust-registry path is not valid") from error
     if not resolved.is_relative_to(temp_root):
-        return None
+        raise ValueError("test trust-registry path must stay in the temporary directory")
     return resolved
 
 
+def _set_test_trust_registry(path: Path | None) -> None:
+    """Set the process-local registry used only by test fixtures."""
+    global _TEST_REGISTRY_PATH
+    _TEST_REGISTRY_PATH = None if path is None else _validated_test_registry_path(path)
+
+
+@contextmanager
+def _use_test_trust_registry(path: Path) -> Iterator[None]:
+    """Temporarily replace the process-local test registry."""
+    global _TEST_REGISTRY_PATH
+    previous = _TEST_REGISTRY_PATH
+    _set_test_trust_registry(path)
+    try:
+        yield
+    finally:
+        _TEST_REGISTRY_PATH = previous
+
+
 def trust_registry_path() -> Path:
-    return _pytest_test_override() or DEFAULT_TRUST_REGISTRY_PATH
+    return _TEST_REGISTRY_PATH or DEFAULT_TRUST_REGISTRY_PATH
 
 
-def pinned_trust_root_fingerprints(*, registry_path: Path | None = None) -> frozenset[str]:
+def pinned_trust_root_fingerprints() -> frozenset[str]:
     """Load the pinned fingerprints, failing closed when unavailable."""
-    path = registry_path or trust_registry_path()
+    path = trust_registry_path()
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
@@ -100,19 +108,17 @@ def pinned_trust_root_fingerprints(*, registry_path: Path | None = None) -> froz
     return frozenset(fingerprints)
 
 
-def is_pinned_trust_root(trust_root: object, *, registry_path: Path | None = None) -> bool:
+def is_pinned_trust_root(trust_root: object) -> bool:
     try:
         fingerprint = trust_root_fingerprint(trust_root)
     except ValueError:
         return False
-    return fingerprint in pinned_trust_root_fingerprints(registry_path=registry_path)
+    return fingerprint in pinned_trust_root_fingerprints()
 
 
-def require_pinned_trust_root(
-    trust_root: object, *, registry_path: Path | None = None
-) -> str:
+def require_pinned_trust_root(trust_root: object) -> str:
     fingerprint = trust_root_fingerprint(trust_root)
-    if fingerprint not in pinned_trust_root_fingerprints(registry_path=registry_path):
+    if fingerprint not in pinned_trust_root_fingerprints():
         raise TrustRootNotPinnedError(
             "authorization trust root is not pinned by the trust root registry"
         )
@@ -121,7 +127,6 @@ def require_pinned_trust_root(
 
 __all__ = [
     "DEFAULT_TRUST_REGISTRY_PATH",
-    "TRUST_REGISTRY_ENV",
     "TRUST_REGISTRY_VERSION",
     "TrustRootNotPinnedError",
     "is_pinned_trust_root",

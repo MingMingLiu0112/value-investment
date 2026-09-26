@@ -8,6 +8,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 import pytest
 
 from test_m6_shadow_receipts import _bytes, _config, _fixture, _hash
+from authorization_trust_registry_fixture import pin_test_trust_root
 from value_investment_agent import m6_exchange_sessions as exchange
 from value_investment_agent.m6_operational_readiness import assess_session_ledger
 from value_investment_agent.m6_shadow_admission import (
@@ -38,6 +39,7 @@ def _admitted():
         serialization.Encoding.Raw, serialization.PublicFormat.Raw).hex()
     root = {"candidate_trust_root": candidate_root, "admission_public_key": public,
             "approved_admission_sha256": _hash(envelope)}
+    pin_test_trust_root(root)
     bundle = {"candidate_bundle": candidate, "admission": envelope}
     cutoff = datetime.fromisoformat(calendar["observation_cutoff"])
     return bundle, root, schedule, cutoff, records

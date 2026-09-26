@@ -25,11 +25,14 @@ from value_investment_agent.m5_event_dependencies import (
 )
 from value_investment_agent.m5_event_core import NAMESPACE_ACTUAL
 from value_investment_agent.m5_actual_offline_authorization import (
+    actual_offline_authorization_from_payload,
     verify_m5_actual_approval_receipt,
 )
 from value_investment_agent.m5_event_run import (
     M5EventRunReceipt,
     apply_run_request,
+    run_event_batch,
+    run_event_batch_persisted,
 )
 from value_investment_agent.m5_event_state_store import (
     JsonM5EventRunReceiptStore,
@@ -618,3 +621,49 @@ def test_run_request_schema_is_versioned():
     payload["schema_version"] = "m5-event-run-request-v0"
     with pytest.raises(ValueError, match="Unknown M5 run request schema"):
         M5EventRunRequest.from_payload(payload)
+
+
+def test_synthetic_legacy_authorization_cannot_bypass_runner_gate(tmp_path):
+    legacy = actual_offline_authorization_from_payload(
+        {
+            "authorization_id": "synthetic-legacy-read-only",
+            "review_provenance": "USER_CONFIRMED_DELEGATED_REVIEW",
+            "review_sha256": "a" * 64,
+            "queue_sha256": "b" * 64,
+            "dependency_graph_sha256": "c" * 64,
+            "authorized_at": REVIEWED_AT.isoformat(),
+            "scheduler_enabled": False,
+            "notification_enabled": False,
+            "production_database_write": False,
+            "action": "no_order",
+        },
+        allow_legacy_read_only=True,
+    )
+    batch = _batch()
+
+    with pytest.raises(ValueError, match="read-only"):
+        run_event_batch(
+            events=batch.events,
+            observed_times=batch.observed_times,
+            watermark=_watermark(),
+            graph=_graph(),
+            run_id=RUN_ID,
+            generated_at=REVIEWED_AT,
+            namespace=NAMESPACE_ACTUAL,
+            batch_id=RUN_ID,
+            actual_offline_authorization=legacy,
+        )
+    with pytest.raises(ValueError, match="read-only"):
+        run_event_batch_persisted(
+            events=batch.events,
+            observed_times=batch.observed_times,
+            watermark=_watermark(),
+            graph=_graph(),
+            run_id=RUN_ID,
+            generated_at=REVIEWED_AT,
+            store=JsonM5EventRunStateStore(tmp_path / "state"),
+            namespace=NAMESPACE_ACTUAL,
+            batch_id=RUN_ID,
+            actual_offline_authorization=legacy,
+        )
+    assert not list((tmp_path / "state").glob("*.json"))

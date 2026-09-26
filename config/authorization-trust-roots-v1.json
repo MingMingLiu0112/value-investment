@@ -1,5 +1,5 @@
 {
   "schema_version": "authorization-trust-root-registry-v1",
-  "note": "Production authorization is not requested yet. ACTUAL/M6 authorization capabilities are fail-closed until a real operator key fingerprint is registered here by an explicit reviewed change. Tests use VIA_AUTHORIZATION_TRUST_REGISTRY to point at a temporary registry.",
+  "note": "Production authorization is not requested yet. ACTUAL/M6 authorization capabilities are fail-closed until a real operator key fingerprint is registered here by an explicit reviewed change. Tests use an explicit process-local temporary registry hook; environment variables cannot redirect this file.",
   "pinned_trust_root_sha256": []
 }

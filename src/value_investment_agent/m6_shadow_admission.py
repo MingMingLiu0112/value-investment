@@ -10,7 +10,8 @@ from typing import Any, Mapping
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-from .m6_shadow_receipts import verify_shadow_bundle
+from .m6_shadow_receipts import _verify_shadow_bundle_contents
+from .operations.authorization.trust_root_registry import require_pinned_trust_root
 
 
 VERSION = "m6-shadow-admission-v1"
@@ -52,9 +53,20 @@ def verify_operational_shadow_bundle(
         "candidate_trust_root", "admission_public_key", "approved_admission_sha256"
     }:
         raise ValueError("Externally pinned operational Shadow trust root is required")
+    require_pinned_trust_root(operational_trust_root)
     candidate = operational_bundle["candidate_bundle"]
     candidate_root = operational_trust_root["candidate_trust_root"]
-    verified = verify_shadow_bundle(candidate, candidate_root, schedule, cutoff)
+    # The candidate root is not independently pinned; it is a nested field in
+    # the operational root whose fingerprint was just checked against the
+    # registry. Re-running the public pin check here would reject correctly
+    # admitted bundles whose inner root is intentionally derived.
+    verified = _verify_shadow_bundle_contents(
+        candidate,
+        candidate_root,
+        schedule,
+        cutoff,
+        operational_root=operational_trust_root,
+    )
     envelope = operational_bundle["admission"]
     if not isinstance(envelope, Mapping) or set(envelope) != {"version", "payload", "signature"}:
         raise ValueError("M6 admission envelope schema differs")
