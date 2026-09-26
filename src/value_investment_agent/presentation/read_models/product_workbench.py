@@ -72,6 +72,10 @@ PORTFOLIO_METRIC_LABELS = {
 }
 
 EVENT_CATEGORY_LABELS = {
+    "LATE_MATERIAL_INFORMATION": "晚到的重要信息",
+    "CORRECTED_DISCLOSURE": "更正公告",
+    "EVIDENCE_GAP": "证据不足",
+    "MODEL_UNAVAILABLE": "暂不可评估",
     "MATERIAL_REQUIRES_RECALCULATION": "需要重新评估的重大事件",
     "MATERIAL_SUPPORTING_EVIDENCE": "支持现有判断的重大证据",
     "THESIS_RISK": "投资逻辑风险",
@@ -705,6 +709,36 @@ class EventCard:
 
 
 @dataclass(frozen=True)
+class EventAuditRecord:
+    event_id: str
+    state: str
+    disposition: str
+    visible: bool
+    evidence_refs: tuple[str, ...]
+    canonical_event_id: str | None = None
+    duplicate_event_id: str | None = None
+    correction_of_event_id: str | None = None
+    published_at: str | None = None
+    observed_at: str | None = None
+    previous_conclusion: str | None = None
+    corrected_conclusion: str | None = None
+    action: str = ACTION_NO_ORDER
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "event_id", _required_text(self.event_id, "audit event id"))
+        object.__setattr__(self, "evidence_refs", _ref_ids(self.evidence_refs))
+        if type(self.visible) is not bool or self.disposition not in {
+            "USER_VISIBLE_EVENT", "AUDIT_ONLY", "SUPPRESSED_DUPLICATE",
+            "EVIDENCE_GAP", "MODEL_NOT_AVAILABLE",
+        } or self.action != ACTION_NO_ORDER:
+            raise ValueError("Invalid event audit disposition or action")
+        if self.visible != (self.disposition in {
+            "USER_VISIBLE_EVENT", "EVIDENCE_GAP", "MODEL_NOT_AVAILABLE",
+        }):
+            raise ValueError("Event audit visibility differs from disposition")
+
+
+@dataclass(frozen=True)
 class SystemHealthCard:
     status: StatusView
     message: str
@@ -761,6 +795,7 @@ class ProductWorkbenchReadModel:
     portfolio: PortfolioCard
     events: tuple[EventCard, ...]
     audit_evidence: tuple[EvidenceRecord, ...]
+    event_audit_decisions: tuple[EventAuditRecord, ...] = ()
     action: str = ACTION_NO_ORDER
 
     def __post_init__(self) -> None:
@@ -795,7 +830,12 @@ class ProductWorkbenchReadModel:
             raise ValueError("Audit evidence ids must be unique")
 
         known = set(evidence_ids)
+        audit_event_ids = [item.event_id for item in self.event_audit_decisions]
+        if len(audit_event_ids) != len(set(audit_event_ids)):
+            raise ValueError("Event audit ids must be unique")
         referenced: set[str] = set()
+        for item in self.event_audit_decisions:
+            referenced.update(item.evidence_refs)
         for item in self.today_items:
             referenced.update(item.evidence_refs)
         for card in self.opportunities:
@@ -1209,6 +1249,26 @@ def product_workbench_from_payload(
             for item in _required_list(data.get("events") or [], "events")
         ),
         audit_evidence=evidence,
+        event_audit_decisions=tuple(
+            EventAuditRecord(
+                event_id=str(item.get("event_id") or ""),
+                state=str(item.get("state") or ""),
+                disposition=str(item.get("disposition") or ""),
+                visible=item.get("visible"),
+                evidence_refs=tuple(item.get("evidence_refs") or ()),
+                canonical_event_id=item.get("canonical_event_id"),
+                duplicate_event_id=item.get("duplicate_event_id"),
+                correction_of_event_id=item.get("correction_of_event_id"),
+                published_at=item.get("published_at"),
+                observed_at=item.get("observed_at"),
+                previous_conclusion=item.get("previous_conclusion"),
+                corrected_conclusion=item.get("corrected_conclusion"),
+                action=item.get("action", ACTION_NO_ORDER),
+            ) for item in _required_list(
+                _required_mapping(data.get("audit"), "audit").get("event_decisions") or [],
+                "audit.event_decisions",
+            )
+        ),
         action=str(data.get("action")),
     )
 
@@ -1220,6 +1280,7 @@ __all__ = [
     "CompanyCard",
     "CompanySection",
     "EventCard",
+    "EventAuditRecord",
     "EvidenceRecord",
     "OpportunityCard",
     "PortfolioCard",

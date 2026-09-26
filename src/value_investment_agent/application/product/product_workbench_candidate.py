@@ -808,6 +808,7 @@ def build_product_workbench_candidate_payload(
     packet: Mapping[str, Any],
     *,
     root: Path,
+    m5_event_projection: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a fail-closed product payload from one verified legacy packet."""
 
@@ -901,6 +902,34 @@ def build_product_workbench_candidate_payload(
         },
         "events": [_m6_event(m6_refs)],
     }
+    if m5_event_projection is not None:
+        projection = _required_mapping(m5_event_projection, "m5_event_projection")
+        if projection.get("action") != ACTION_NO_ORDER:
+            raise ValueError("M5 event projection must remain no_order")
+        projected_events = _required_list(projection.get("events"), "m5_event_projection.events")
+        projected_evidence = _required_list(
+            projection.get("audit_evidence"), "m5_event_projection.audit_evidence"
+        )
+        decisions = _required_list(
+            projection.get("audit_decisions"), "m5_event_projection.audit_decisions"
+        )
+        decision_ids = [item.get("event_id") for item in decisions]
+        projected_ids = [item.get("event_id") for item in projected_events]
+        if (len(decision_ids) != len(set(decision_ids))
+                or len(projected_ids) != len(set(projected_ids))
+                or set(projected_ids) != {
+                    item["event_id"] for item in decisions if item.get("visible") is True
+                }
+                or any(item.get("action") != ACTION_NO_ORDER for item in decisions)):
+            raise ValueError("M5 visible events differ from audited dispositions")
+        _verify_evidence_files(root, projected_evidence)
+        if {item["evidence_id"] for item in projected_evidence} & {
+            item["evidence_id"] for item in evidence
+        }:
+            raise ValueError("M5 projection reuses an existing evidence id")
+        payload["audit"]["evidence"].extend(projected_evidence)
+        payload["audit"]["event_decisions"] = decisions
+        payload["events"].extend(projected_events)
     validate_product_workbench_candidate_payload(payload)
     return payload
 

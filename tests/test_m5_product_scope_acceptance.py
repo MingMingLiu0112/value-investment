@@ -109,7 +109,6 @@ def test_material_event_reaches_read_model_and_excel_with_evidence() -> None:
         "CORRECTION",
         "NONMATERIAL",
         "INSUFFICIENT_EVIDENCE",
-        "MODEL_UNAVAILABLE",
     ),
 )
 def test_unmapped_m5_states_cannot_be_presented_as_event_categories(

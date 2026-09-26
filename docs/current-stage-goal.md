@@ -1,8 +1,8 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-## 当前阶段：STAGE-REAL-USE-READINESS-PRE-EXTERNAL-GATES（2026-09-26）
+## 当前阶段：STAGE-R0-CLOSURE-AND-EXTERNAL-GATE-HANDOFF（2026-09-26）
 
-本阶段只核验真实日常研究工作台、唯一 canonical Excel、M3/M4/M5/M6 剩余门禁和安全 R0/R1；不扩展交易、估值、筛选、前端或生产功能。以 `docs/execution-status.md` 顶部最新矩阵及不可变回执为事实记录。M6 生产授权未请求、Shadow 不可启动；`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`，`INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`。
+本阶段只关闭 `docs/execution-status.md` 顶部登记的三项安全 R0：M5 产品事件投影、内容级隐私审计、M6 资源/磁盘/健康预门禁表征。若 R0/R1 均归零，则只生成 external-gate handoff，不扩展工程。当前事实以最新已验证回执为准；静态 M6 start matrix 仅为基线合同。M6 生产授权未请求、Shadow 不可启动；`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`，`INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`。
 
 ## 当前执行门禁（2026-09-26）
 
@@ -13,13 +13,13 @@ three fixed symbols and is now bound to the canonical Excel publisher. The
 published product pages show the 2026-09-24 market-data observation with raw
 evidence references, while frozen research facts remain explicitly separate:
 this is not a valuation refresh, decision signal, or order. The WPS visual
-review remains pending. M6 `m6c2` and `m6c3` are re-verified on the current
-clean HEAD; `m6c7` is still `PARTIAL` because future authorized venue coverage
+review passed on the published canonical file. M6 `m6c2` and `m6c3` were
+re-verified on the cited preflight commit; `m6c7` is still `PARTIAL` because future authorized venue coverage
 is undefined. M4 was exercised only with synthetic data and remains
 `WAITING_R2`; M3 strict PIT remains `NOT_PROVEN`; M5 remains
 `PARTIAL_WITH_VALIDATED_NOT_READY`. The source-of-truth readiness matrix is in
 the latest `execution-status.md` checkpoint.
-No Excel publication, production activity, or decision action occurred;
+Canonical daily quote publication did occur. No production, Shadow, or decision action occurred;
 `action=no_order`.
 
 当前唯一阶段为 `PRODUCTIZATION-SECURITY-AND-REAL-USE-CLOSURE`。唯一用户 Excel

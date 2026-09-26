@@ -1,5 +1,27 @@
 # 当前执行状态
 
+## 2026-09-26 STAGE-R0-CLOSURE 有界复核（本地工作树，待 CI）
+
+```text
+R0-A_M5_PRODUCT_PROJECTION = SYNTHETIC_SEVEN_STATE_E2E_PASS; REAL_M5_RECEIPT_BINDING_NOT_PROVEN
+R0-B_CONTENT_LEVEL_PRIVACY = PARTIAL; TRACKED_XLSX_NUMERIC_CANDIDATES_UNCLASSIFIED
+R0-C_M6_RESOURCE_CHARACTERIZATION = DONE_WITH_FAIL_OBSERVED; FUTURE_R3_INFRASTRUCTURE_DECISION
+SAFE_R0_REMAINING = 2
+SAFE_R1_REMAINING = 0
+EXTERNAL_GATE_HANDOFF = NOT_READY
+SHADOW_START_ALLOWED = false
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+R0-A：新增七态显式上游判定到 Product Read Model、Excel 事件页和系统审计页的合成 E2E；重复事件被抑制，晚到、更正、证据不足及模型不可运行各有独立呈现/审计语义，证据文件 Hash 改动会拒绝候选构建。当前入口仍由调用者传入 `m5_event_projection`，没有证明它来自真实已验证 M5 收据，也未接入每日 canonical 发布。因此不将合成 E2E 简写为真实 M5 产品验收；剩余 R0 是真实收据到投影的身份、状态与证据绑定及负例验证，不涉及扩大公司研究。
+
+R0-B：对当前 Git 跟踪文本、34 个 Excel OOXML、workflow 与可访问的最新成功 CI 日志和附件做内容级扫描。CI run `36233929385` 的四项合成恢复附件 ZIP SHA-256 为 `a543801e37de0046b564df336ffed6c5ba4e58bae658bfcafc4a50eba7d26c59`；日志 ZIP SHA-256 为 `22798bdfad0f31d857eb600b785f41a63660aed62659ddb4913edc05c7e5c9a5`。附件含 synthetic/disposable 标识，扫描未命中高风险密钥特征。Excel OOXML 未命中高风险密钥特征，但发现 9461 个 16–19 位数字候选（292 个唯一值），尚无法可靠区分公开财务/Hash 数据与私人账号。仅靠正则不能给 `TRACKED_CONTENT=PASS`；公开 Git 中的私人输入缺席也不能仅凭命名推断。候选细节不得写入日志或公开文档。内容级隐私审计仍为 `PARTIAL`，需要有界上下文分类与独立复核。
+
+R0-C：有限只读重复采样的 `MemAvailable` 约 728–760 MiB，低于既定 1228 MiB；Swap 已用约 530 MiB，根盘可用约 5992 MiB，`web-app-pta` 为 active。该多次失败不是通过代码可关闭的容量缺口，归未来 R3 基础设施决策；不调整阈值、不修改 PTA。根盘扣除 2048 MiB 保留量后约 3944 MiB；按现有证据约 2231 MiB、备份约 242 MiB、数据库与隔离恢复卷各约 315/310 MiB、journal 约 353 MiB，完整备份/隔离恢复/临时 dump/日志的额外写入有界估计约 2.8–5.0 GiB。上界超过可用余量，磁盘准入不能判 PASS。此为授权前观察与容量估算，不是生产健康或恢复验收。未来 R3 必须先独立决定资源方案并复测内存与峰值磁盘余量。
+
+`INTERRUPTION_AUDIT`：剩余安全 R0 仅为 A 的真实收据绑定、B 的疑似私人数字候选分类；R1 当前无可安全推进的新证据。M3 同时点 PIT 仍等 R6，M4 真实私有输入等 R2，M6 生产操作等 R3 与 R6，M7 最终用户签收等 R5。R0 未归零，不生成 external-gate handoff，不请求生产授权或启动 Shadow。
+
 ## 2026-09-26 STAGE-REAL-USE-READINESS-PRE-EXTERNAL-GATES 核验
 
 预检基线提交 `ac58ab184b28945760b99da9eb1a48eb3f10b598` 的 [Core Research Gates 36230557757](https://github.com/MingMingLiu0112/value-investment/actions/runs/36230557757) 两项通过。最新合法已完成交易会话为 2026-09-24（9 月 25 日 SSE 休市，9 月 26 日非交易日）。既有真实采集包 `runtime/quote-sessions/20260926T081028140946Z/bundle.json` 的 SHA-256 为 `d161c6ed8acf2034544aa63fb101922d0ec22f537cdf2c69268243aaecb82974`；三只样例的腾讯/新浪报价日期均为 2026-09-24，且各自 `matched_close`，不存在跨日双源。采集完成于 2026-09-26T08:10:28Z；抓取时间不是报价时点。来源为 `qt.gtimg.cn` 与 `hq.sinajs.cn`；官方日历文档随包归档。覆盖仅 3 只样例，不代表全市场。

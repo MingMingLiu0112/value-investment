@@ -25,7 +25,10 @@ def main() -> int:
     args = parser.parse_args()
     matrix_path = args.matrix if args.matrix.is_absolute() else ROOT / args.matrix
     matrix = load_m6_start_criteria_matrix(matrix_path, root=ROOT)
-    print(json.dumps(matrix.as_policy(), ensure_ascii=False, indent=2))
+    payload = matrix.as_policy()
+    payload["state_semantics"] = "STATIC_BASELINE_NOT_CURRENT_READINESS"
+    payload["current_status_source"] = "latest verified m6 operational preflight receipt"
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
 
 

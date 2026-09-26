@@ -745,6 +745,26 @@ def _render_audit(ws: Worksheet, model: ProductWorkbenchReadModel) -> None:
         )
         row += 1
 
+    if model.event_audit_decisions:
+        row += 1
+        row = _section_title(ws, row, "事件分类审计", 6)
+        row = _header(ws, row, ["事件ID", "原始状态", "产品处置", "关联事件", "结论与时点", "证据ID"])
+        for decision in model.event_audit_decisions:
+            related = (decision.canonical_event_id or decision.correction_of_event_id
+                       or decision.duplicate_event_id or "-")
+            detail = "；".join(value for value in (
+                decision.previous_conclusion, decision.corrected_conclusion,
+                decision.published_at, decision.observed_at,
+            ) if value) or "-"
+            values = (
+                decision.event_id, decision.state, decision.disposition,
+                related, detail, ", ".join(decision.evidence_refs) or "-",
+            )
+            for column, value in enumerate(values, 1):
+                _style(ws.cell(row, column, value), border=True)
+            _fit_rows(ws, row, [(column, value, 1) for column, value in enumerate(values, 1)])
+            row += 1
+
 
 def build_product_workbench_workbook(
     model: ProductWorkbenchReadModel,

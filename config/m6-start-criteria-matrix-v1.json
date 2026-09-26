@@ -1,5 +1,7 @@
 {
   "schema_version": "m6-start-criteria-matrix-v1",
+  "state_semantics": "STATIC_BASELINE_NOT_CURRENT_READINESS",
+  "current_status_source": "latest verified m6 operational preflight receipt",
   "action": "no_order",
   "reviewed_at": "2026-09-26",
   "M6_OPERATIONAL": "NOT_STARTED",

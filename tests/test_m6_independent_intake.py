@@ -19,7 +19,7 @@ def _bytes(value):
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
 
 
-def _fixture():
+def _fixture(raws=(b"session-receipt-1", b"session-receipt-2")):
     key = Ed25519PrivateKey.generate()
     public = key.public_key().public_bytes(
         serialization.Encoding.Raw, serialization.PublicFormat.Raw
@@ -27,7 +27,7 @@ def _fixture():
     deployment = "a" * 64
     records = []
     previous = None
-    for sequence, raw in enumerate((b"session-receipt-1", b"session-receipt-2"), 1):
+    for sequence, raw in enumerate(raws, 1):
         payload = {
             "action": "no_order", "intake_id": "independent-intake-1",
             "key_epoch": "2026-q3", "deployment_sha256": deployment,
@@ -54,6 +54,12 @@ def test_independent_intake_binds_raw_receipts_chain_and_external_head():
         hashlib.sha256(b"session-receipt-1").hexdigest(),
         hashlib.sha256(b"session-receipt-2").hexdigest(),
     }
+
+
+def test_re_signed_duplicate_raw_receipt_still_fails_single_chain_use():
+    records, trust, head, cutoff = _fixture((b"same-receipt", b"same-receipt"))
+    with pytest.raises(ValueError, match="repeats receipt bytes"):
+        verify_independent_intake_chain(records, trust, head, cutoff=cutoff)
 
 
 @pytest.mark.parametrize("change", ["raw", "sequence", "deployment", "head", "time", "key_epoch"])

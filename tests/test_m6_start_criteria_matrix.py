@@ -95,7 +95,15 @@ def test_m6_start_criteria_cli_is_read_only_and_prints_the_matrix():
     assert payload["production_authorization_granted"] is False
     assert payload["shadow_start_allowed"] is False
     assert payload["action"] == "no_order"
+    assert payload["state_semantics"] == "STATIC_BASELINE_NOT_CURRENT_READINESS"
+    assert payload["current_status_source"] == "latest verified m6 operational preflight receipt"
     assert '"user_to_authorize":' not in completed.stdout
+
+
+def test_static_matrix_declares_that_its_false_values_are_baseline_only():
+    raw = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+    assert raw["state_semantics"] == "STATIC_BASELINE_NOT_CURRENT_READINESS"
+    assert raw["current_status_source"] == "latest verified m6 operational preflight receipt"
 
 
 def _with_all_hard_gates_satisfied() -> dict[str, object]:
