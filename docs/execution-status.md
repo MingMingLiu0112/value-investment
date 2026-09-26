@@ -2866,3 +2866,10 @@ action = no_order
 当前为周末，尚未形成晚于既有已完成交易会话的官方收盘事实；因此未刷新 Quote、未发布
 canonical workbook、未重跑模拟链。下一次仅在新的官方已完成会话或新的有界公共事件到达时，
 分别更新相应轨道；M6 保持 `NOT_STARTED`，未做服务器、Shadow、调度、通知或生产操作。
+
+实现提交 `fb8c8da8e9172078bdf7778592f85e9923b7c898` 的本地定向验证为 `37 passed`；
+GitHub Core Research Gates run `36280767561` 中 `offline-core` 与
+`postgres-integration` 均已 `success`。最终 runtime 登记回执绑定该提交，
+`registration_sha256=f42cc5ca2876098fb72f9717fabb2fd4ef3b0f532411123cb663110d37602c96`，
+并保留 `action=no_order`。这只证明前瞻登记合同和离线工程边界通过，不能证明任何
+公司估值正确、投资逻辑有效、生产数据可用或系统已进入实盘辅助状态。
