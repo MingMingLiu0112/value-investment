@@ -10,5 +10,8 @@
   "m4_personalized_status": "PENDING_USER_PRIVATE_INPUT",
   "m7_final_user_acceptance": "NOT_PASSED",
   "initial_assisted_use": "NOT_REACHED",
+  "single_canonical_excel": "PASS",
+  "m7_product_ux_in_canonical": "PASS",
+  "competing_current_workbooks": 0,
   "action": "no_order"
 }

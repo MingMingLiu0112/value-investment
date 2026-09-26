@@ -13,6 +13,9 @@ WORKBOOK_PATH_UNCHANGED = true
 PRODUCT_SHEETS_PRESENT = true
 PRESERVED_SHEETS_CONTENT_CHECK = PASS
 WPS_CANONICAL_OPEN = PASS
+SINGLE_CANONICAL_EXCEL = PASS
+M7_PRODUCT_UX_IN_CANONICAL = PASS
+COMPETING_CURRENT_WORKBOOKS = 0
 M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
 INITIAL_ASSISTED_USE = NOT_REACHED
 action = no_order
@@ -24,6 +27,11 @@ action = no_order
 超链接、合并区域、行列尺寸、冻结窗格、保护、批注、数据验证、条件格式、命名范围以及
 绘图/媒体/图表/关系 OOXML 部件的 fail-closed preservation audit。历史 runtime candidate
 不是 current pointer，也不是用户入口。
+
+提交 `122932e` 的 GitHub Core Research Gates 已通过 `offline-core` 与
+`postgres-integration` 两个作业。以上 PASS 仅确认单一 Excel 前端的发布与保护合同，
+不改变 `M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`、`INITIAL_ASSISTED_USE=NOT_REACHED` 或
+`action=no_order`。
 
 ## 2026-09-26 M7 五页产品工作台候选历史记录
 

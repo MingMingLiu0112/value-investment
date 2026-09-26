@@ -7,6 +7,9 @@
 `A股价值投资_Agent前端智能跟踪模板.xlsx`；M7 的五页产品入口只允许原位发布到该
 工作簿，`runtime` 中的候选文件不是用户入口。当前已完成原位发布的逐页保全、WPS 只读
 打开与可读性复核，故 `M7_PRODUCT_UX=INTEGRATED`；最终用户签收仍未完成。
+`SINGLE_CANONICAL_EXCEL=PASS`、`M7_PRODUCT_UX_IN_CANONICAL=PASS`、
+`COMPETING_CURRENT_WORKBOOKS=0` 已由 GitHub Core Research Gates 复验；这不构成投资
+辅助系统或最终用户验收通过。
 `M4_PERSONALIZED=WAITING_R2`，`M6_OPERATIONAL=NOT_STARTED`，
 `INITIAL_ASSISTED_USE=NOT_REACHED`，并永久保持 `action=no_order`。优先级是
 M7 五页产品体验、关闭 ADV-P1-003/004、通用产品入口、M4 合成接入演练、M6
