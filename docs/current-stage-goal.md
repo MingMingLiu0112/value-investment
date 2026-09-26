@@ -1,8 +1,8 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-## 当前阶段：STAGE-FINAL-R0-CLASSIFICATION-AND-EXTERNAL-GATE-HANDOFF（2026-09-26）
+## 当前阶段：STAGE-R2-REAL-PRIVATE-PORTFOLIO-ONBOARDING-AND-PERSONALIZED-READINESS（2026-09-26）
 
-安全 R0/R1 已归零。真实 current M5 receipt 需要 R3 受控身份/信任根与 R6 自然事件，不能继续误列为安全工程缺口；内容级隐私审计已完成有界分类。当前只保留 [external gate handoff](current/external-gate-handoff.md)，停止工程扩展。静态 M6 start matrix 仍仅为基线合同；M6 生产授权未请求、Shadow 不可启动；`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`，`INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`。
+安全 R0/R1 已归零。本阶段只接受用户明确提供、位于仓库和同步盘外的真实 R2 私人输入包；当前未提供 `PRIVATE_ROOT` 或合法输入路径，因此 `STAGE_STATUS=WAITING_R2_PRIVATE_INPUT`。不扫描用户磁盘、不猜测组合、不创建密钥、文件、Excel 或合成输入。现有 [M4 私人输入包](m4-private-input-package.md) 是唯一 onboarding 路径；真实 M5 receipt 仍需要 R3 受控身份/信任根与 R6 自然事件。M6 生产授权未请求、Shadow 不可启动；`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`，`INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`。
 
 ## 当前执行门禁（2026-09-26）
 

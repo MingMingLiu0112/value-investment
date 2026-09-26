@@ -1,5 +1,29 @@
 # 当前执行状态
 
+## 2026-09-26 R2 Private Portfolio Onboarding: Waiting for User Input
+
+```text
+STAGE_STATUS = WAITING_R2_PRIVATE_INPUT
+M4_REAL_PRIVATE_INPUT = NOT_PROVIDED
+M4_RECONCILIATION = NOT_STARTED
+M4_PERSONALIZED_READINESS = NOT_READY
+PRIVATE_DATA_BOUNDARY = PASS_FOR_NO_INPUT_STATE
+PERSONALIZED_GUIDANCE = NOT_GENERATED
+M6_PRODUCTION_AUTHORIZATION = NOT_REQUESTED
+SHADOW_START_ALLOWED = false
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+The private onboarding entry point was re-verified without creating or reading
+any private artifact. It requires an explicit `--private-root` and has no
+default location, so no repository, WPSDrive, sync folder, home directory or
+other user path was scanned. No legal R2 private-input location was supplied.
+The next permitted action is only user provision of an explicit private root
+outside the repository and sync folders; then the existing validation path may
+be used. Until then, no private data, key, draft, Excel workbook, synthetic
+input, CI fixture or guidance artifact is created.
+
 ## 2026-09-26 Final R0 Classification and External Handoff
 
 ```text
