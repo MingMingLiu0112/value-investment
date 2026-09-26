@@ -1,6 +1,6 @@
 # Repository Architecture Inventory
 
-更新：2026-09-25。本文是架构治理的事实清单和迁移方向，不是新的业务 Roadmap，也不改变
+更新：2026-09-26。本文是架构治理的事实清单和迁移方向，不是新的业务 Roadmap，也不改变
 任何估值、研究门槛、数据库语义或 `action=no_order`。
 
 ## 当前基线
@@ -99,7 +99,7 @@ Domain must not import:
 | Domain / Historical Validation | `historical_validation.py` 由冻结 receipt 按原路径和 SHA-256 绑定 | provenance-frozen，不移动、不改写；新的只读校验用例进入 `application/historical_validation/` |
 | Application | `research_application.py`, `research_batch.py`, `research_e2e_replay.py` | 作为应用编排，不导入 Excel/DB 业务实现 |
 | Infrastructure | `infrastructure/filings/pdf_text.py`、`infrastructure/evidence/evidence_tiering.py`、`infrastructure/backup/backup_snapshot.py`；`db.py`、`disclosures.py`、`market.py` 仍待迁移 | 保持 I/O、持久化、外部数据和密钥边界 |
-| Presentation | `presentation/excel/`、`presentation/read_models/research_read_model.py`；`excel_report.py`、`workbook_simple_overview.py` 仍为核心 legacy 实现 | 只消费 Product Read Model / typed result，不重算投资结论 |
+| Presentation | `presentation/excel/product_workbench.py`、`presentation/read_models/product_workbench.py`、`presentation/read_models/research_read_model.py`；`excel_report.py`、`workbook_simple_overview.py` 仍为核心 legacy 实现 | 只消费 Product Read Model / typed result，不重算投资结论；M7 五页用户界面不得展示 M2-M6 导航或执行语义 |
 | Operations | `operations/authorization/m6_authorization_artifacts.py`；其余 `m6_*.py` 仍待迁移 | M6 运行控制、M7 展示发布分开 |
 | Compatibility / Legacy | 根层旧模块和 `scripts/*` wrapper | 只保留迁移期 shim，不再增长 |
 
@@ -165,6 +165,17 @@ Excel renderer 不重新做：
 目标仓位计算
 ```
 
+M7 用户产品面固定为五页：
+
+```text
+今日 / 机会 / 公司 / 我的组合 / 事件
+```
+
+`系统/审计` 只作为次级页面。M2-M6 是后台阶段，不得成为用户导航。Product Read Model
+必须由 Application 层把已决定的 M2-M6 输出映射成用户语言；Presentation 层不得读取多个
+runtime manifest 后自行拼装、重算或升级投资状态。没有真实私人组合时，候选工作簿只能显示
+“尚未接入真实组合”，不得把 M4 模拟数字当作个人结论。
+
 ## Artifact 边界
 
 目标目录：
@@ -201,7 +212,11 @@ CURRENT_ARTIFACT_ENTRY = config/current-trial-workbook.json
 DOCS_CURRENT_ENTRY = FUNCTIONAL
 DOCS_CURRENT_VS_ARCHIVE = OPERATIONALLY_CLEAR
 SCRIPT_INVENTORY = COMPLETE
-CURRENT_SUPPORTED_CLIS = 43
+CURRENT_SUPPORTED_CLIS = 51 (17 product + 34 engineering; all 43 v1 paths preserved)
+M7_PRODUCT_READ_MODEL = READY
+M7_PRODUCT_UX_CANDIDATE = READY (runtime candidate; canonical pointer unchanged)
+ADV_P1_003_004 = CLOSED_WITH_TRUST_ROOT_RESIDUAL
+M4_SYNTHETIC_ONBOARDING_REHEARSAL = COMPLETED
 SCRIPT_ROOT_PYTHON_BASELINE = 528
 PRESENTATION_DIRECTORY = ACTIVE
 OPERATIONS_DIRECTORY = ACTIVE
@@ -218,8 +233,10 @@ manifest、receipt、静态消费者或未跟踪本地证据绑定，因此没�
 当前通过 `artifacts/current/artifact-registry-v1.json` 提供逻辑导航，而不是为了降低目录数量
 破坏 Hash 证据。物理根工作簿仍为 29 个。
 
-当前脚本分类入口为 `config/current-cli-entrypoints-v1.json`（43 个受支持 CLI）和
-`docs/architecture/script-inventory-v1.json`（完整机器可读清单）。`scripts/` 根层默认不再
+当前脚本分类入口为 `config/current-cli-entrypoints-v2.json`（17 个产品入口、34 个工程入口，
+51 个唯一路径；v1 的 43 个路径保留兼容）和 `docs/architecture/script-inventory-v1.json`
+（完整机器可读清单）。`config/current-cli-entrypoints-v1.json` 继续作为兼容哈希基线，不新增
+v1 条目。`scripts/` 根层默认不再
 增长，诊断、历史验证和公司 case 开始进入明确子目录；旧实现通过已登记 shim 保留路径兼容。
 
 `src/value_investment_agent/historical_validation.py` 不是普通的 legacy module。现有历史验证

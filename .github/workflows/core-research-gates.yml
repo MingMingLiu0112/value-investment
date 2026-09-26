@@ -54,9 +54,16 @@ jobs:
           tests/test_m3_history_original_workbook.py
           tests/test_m7_workbench_candidate.py
           tests/test_m7_workbench_v2_candidate.py
+          tests/test_product_workbench_read_model.py
+          tests/test_product_workbench_excel.py
+          tests/test_product_workbench_candidate.py
+          tests/test_product_cli_entrypoints.py
           tests/test_portfolio_contracts.py
           tests/test_private_portfolio_intake.py
           tests/test_setup_private_portfolio.py
+          tests/test_m4_confirmation_receipt.py
+          tests/test_m4_synthetic_onboarding_rehearsal.py
+          tests/test_simulation_only_enforcement.py
           tests/test_portfolio_reconciliation.py
           tests/test_portfolio_risk_assessment.py
           tests/test_m4_portfolio_risk_workbook.py
@@ -65,6 +72,9 @@ jobs:
           tests/test_m4_guidance_income_workbook.py
           tests/test_m4_m5_integration.py
           tests/test_m5_event_infrastructure.py
+          tests/test_m5_actual_offline_authorization.py
+          tests/test_authorization_trust_root_pinning.py
+          tests/test_m5_run_request.py
           tests/test_m5_outbox_transition.py
           tests/test_m5_event_run_state_boundaries.py
           tests/test_m5_event_state_store.py
@@ -81,6 +91,7 @@ jobs:
           tests/test_backup.py
           tests/test_backup_space.py
           tests/test_m6_operational_readiness.py
+          tests/test_m6_start_criteria_matrix.py
           tests/test_m6_exchange_sessions.py
           tests/test_m6_calendar_readiness.py
           tests/test_m6_shadow_receipts.py
@@ -139,6 +150,7 @@ jobs:
           tests/test_m5_actual_read_model.py
           tests/test_m5_scenario_research_review.py
           tests/test_m5_actual_durable_replay.py
+          tests/test_m5_recalculation_plan.py
           tests/test_m5_archived_valuation_input_evidence.py
           tests/test_m5_pending_research_input.py
           tests/test_m5_research_artifact_graph.py

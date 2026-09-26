@@ -8,6 +8,7 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+.pytest-*/
 .pytest-tmp*/
 .pytest-local-temp*/
 node_modules/

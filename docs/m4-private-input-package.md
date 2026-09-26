@@ -32,6 +32,27 @@ python scripts/setup_private_portfolio.py reconcile --private-root <private-root
 
 一致只会得到 `MATCH_PENDING_HUMAN_CONFIRMATION`，仍需本人确认后才能把最终快照标记为 `RECONCILED`。差异报告包含私人数据，只能留在私有目录；公开回执不含金额、数量或证券明细。
 
+人工确认时必须生成 byte-bound confirmation receipt：
+
+```powershell
+python scripts/setup_private_portfolio.py confirm-reconciliation --private-root <private-root> --source <private-root>\reported.viportfolio --private-report <private-root>\reconciliation.json --encrypted <private-root>\final.viportfolio --confirmation-id <human-confirmation-id> --confirmed-at <timezone-aware-iso-time> --confirmation-receipt <private-root>\reconciliation.confirmation.json --public-fingerprint <public-read-only-path>\reconciliation.fingerprint.json --key-file <separate-key-root>\portfolio.key --forbidden-sync-root C:\Users\we\WPSDrive
+```
+
+Receipt 绑定 reconciliation report 的精确字节、账户范围、快照日期、用户确认、确认时间和 confirmation id，并以 SHA-256 形成 receipt hash。私人 receipt 只留在私有目录；允许公开的是只含 receipt schema、receipt hash 和 `PUBLIC_FINGERPRINT_ONLY` 标记的 fingerprint，不含账户范围、日期、确认文本或对账内容。
+
+## 合成数据全链路演练
+
+真实输入到位前，可用固定合成数据运行完整工程链：
+
+```powershell
+python scripts/current/rehearse_m4_onboarding.py --run-id <synthetic-run-id>
+```
+
+它执行 init、validate、encrypt、verify、双快照 reconciliation、confirmation
+receipt、PortfolioRisk、PositionGuidance、DividendProjection、Product Read Model 和
+M7 candidate material，并输出 `SYNTHETIC_REHEARSAL_ONLY` receipt。成功只证明工程链
+可用，`M4_PERSONALIZED_ACCEPTANCE` 仍为 `WAITING_R2`。
+
 ## 永久边界
 
 - 不连接券商，不读取账户，不生成订单。

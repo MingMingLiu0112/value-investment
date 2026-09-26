@@ -61,7 +61,13 @@ human approval or reread the reviewed bytes.
 Minimum fix: make ACTUAL capability issuance depend on a separately verified,
 byte-bound approval receipt and add forged-hash negative tests.
 
-Status: OPEN_NOT_FIXED.
+Status: CLOSED_BY_SIGNED_APPROVAL_RECEIPT. Capability issuance now requires a
+separately verified, byte-bound, append-only human approval receipt and the
+reviewed event bytes, identity, graph and receipt chain are rechecked. Focused
+forged-hash/replay/identity negative tests pass. Trust-root provenance is now
+additionally pinned by the committed `authorization-trust-roots-v1.json`
+registry, so a self-minted keypair can no longer issue a capability; see
+ADV2-P0-002 and ADV2-OPEN-001 for the remaining keystore prerequisite.
 
 ### ADV-P1-004 - M6 proof can be forged inside the Python process
 
@@ -74,19 +80,157 @@ Minimum fix: use a signed token or non-exportable capability, bind persisted
 state to the original authorization bytes and trust root, and reverify on
 read and transition.
 
-Status: OPEN_NOT_FIXED; no Shadow or production action has been started.
+Status: CLOSED_BY_SIGNED_AUTHORIZATION_REVERIFICATION. The callable `_issue`
+path is removed; issuance and persisted-state reads/transitions verify the
+signed authorization artifact, scope, target mode, deployment/config hashes,
+operator, validity window and trust root. Legacy authorized v1 state fails
+closed. Trust-root provenance is pinned by the same committed registry, and an
+unpinned root invalidates previously issued proofs on read, transition and
+restart; see ADV2-P0-002. No Shadow or production action has been started.
 
 ## P2 Findings
 
-- Legacy simulation state still exposes review intents that are not orders,
-  but the virtual account path consumes state rather than a universal
-  action=no_order invariant. Add an explicit simulation-only order contract.
-- M4 private-intake RECONCILED currently accepts a CLI-supplied confirmation
-  id and timestamp without an independent external receipt. Keep private data
-  out of Git and require a byte-bound confirmation before calling it actual.
-- CI runs a selected core test list, not the full suite and not every negative
-  authorization/PIT counterexample. Add the smallest deterministic negative
-  tests to CI and report real-data-only checks as not run.
+- Legacy simulation state now carries an explicit simulation-only contract:
+  `SIMULATION_ONLY`, `trade_approved=false`, `live_eligible=false` and
+  `action=no_order`; tampered or unmarked snapshots fail closed. The frozen
+  legacy virtual-account module remains byte-identical, so the enforcement is
+  in the verifier/consumer boundary rather than by rewriting frozen bytes.
+- M4 private intake has a byte-bound confirmation receipt that binds the exact
+  reconciliation-report bytes, account scope, snapshot date and explicit user
+  confirmation. This is an integrity contract, not production authorization or
+  a signature. Private receipt storage and key separation remain mandatory.
+- CI now includes the smallest deterministic Product UX, CLI v2, M4
+  confirmation, M5 approval/run-request, M6 authorization/start-matrix and
+  existing PIT negative tests. It still runs a selected core list rather than
+  the full repository suite; production/private-data/natural-time checks remain
+  not run and must not be inferred from CI success.
+
+## Second Adversarial Review - 2026-09-26
+
+Read-only review of the productization round (baseline `5d8ba6d` plus the
+working tree). Every finding is recorded with the action actually taken;
+nothing here claims production readiness.
+
+### ADV2-P0-001 - Legacy M5 authorization could create a new ACTUAL run
+
+`apply_run_request(..., allow_legacy_read_only=True)` accepted an unsigned v1
+authorization against an empty store and published a fresh ACTUAL receipt for
+`600887-synthetic-run-20260924`. The unsigned payload, not a signature, was the
+only input needed.
+
+Status: CLOSED. Legacy read-only replay now requires the pinned request to
+already exist in the durable state store with an identical request
+fingerprint. An empty store raises `read-only replay only`, and neither the
+state store nor the receipt store is written. The archived 600519 cold-replay
+test now seeds the archived state, asserts an idempotent replay, and keeps a
+separate test proving a fresh run is refused.
+
+### ADV2-P0-002 - M5/M6 trust-root provenance was caller-controlled
+
+Verification used the caller-supplied public key and trust root, so a freshly
+generated keypair could self-authorize an M5 ACTUAL capability or advance M6 to
+`STAGING` with `authorization_id="synthetic-only"`.
+
+Status: CLOSED_BY_PINNED_TRUST_REGISTRY.
+`operations/authorization/trust_root_registry.py` now accepts a trust root only
+when its canonical fingerprint appears in
+`config/authorization-trust-roots-v1.json`. That committed registry is empty, so
+production ACTUAL and M6 authorization stay fail-closed until a real operator
+key is registered by a reviewed change. M5 re-checks the pin at capability
+issuance and on every `verify()`; M6 re-checks it on every proof read,
+transition and restart, so unpinning a root invalidates previously issued
+proofs. Negative tests cover an unpinned M5 receipt, a fresh M6 keypair, and a
+proof re-read after unpinning.
+
+### ADV2-P1-001 - M5 approvals had no expiry window
+
+Receipt payloads carry `authorized_at` but no `valid_until`, and a synthetic
+receipt still verified with a use time in 2099.
+
+Status: OPEN - replay hardening, non-blocking for this round. No v2 approval
+receipt exists outside synthetic fixtures and the pinned registry is empty, so
+no production approval can be issued or replayed today. A bounded
+`valid_until` window is required before the first real trust root is pinned.
+
+### ADV2-P1-002 - M4 RECONCILED was an unsigned self-assertion
+
+The confirmation receipt binds exact reconciliation bytes, scope, snapshot date
+and confirmation string, but carries no signature or signer identity, and the
+CLI supplied the confirmation id and timestamp.
+
+Status: CLOSED_BY_EXPLICIT_NON_AUTHORITATIVE_CONTRACT. The receipt contract now
+states that it is an unsigned human assertion whose acceptance authority is
+`NONE`, and its public fingerprint carries `authentication_basis =
+UNSIGNED_HUMAN_ASSERTION` and `acceptance_authority = NONE`.
+`M4_PERSONALIZED_ACCEPTANCE` remains a human milestone at `WAITING_R2` with no
+code path from this receipt to acceptance.
+
+### ADV2-P1-003 - Event review minted ACTUAL provenance from a default string
+
+`review_provenance` defaulted to `USER_CONFIRMED_DELEGATED_REVIEW` and was only
+compared as a string, so running the CLI silently produced ACTUAL bridge
+batches.
+
+Status: CLOSED_BY_EXPLICIT_CLAIM_AND_UNAUTHENTICATED_MANIFEST. The default is
+removed; callers and the CLI must state the claim explicitly, and the manifest
+records `provenance_authenticated=false` plus
+`requires_signed_approval_receipt_for_actual=true`. The authenticated boundary
+remains the signed, pinned M5 approval receipt at the run gate.
+
+### ADV2-P1-004 - M7 could present self-asserted portfolio values as real
+
+The read model trusted an upstream `real_data_available` boolean, so a payload
+with invented totals rendered as a real portfolio.
+
+Status: CLOSED_BY_PROVENANCE_GATE. Portfolio totals and positions render only
+when `portfolio_provenance.reconciled is true` and a non-empty confirmation
+receipt fingerprint are present; otherwise the page reports
+`PENDING_USER_PRIVATE_INPUT` with empty figures. The gate checks provenance
+presence and reconciliation state, not the receipt cryptographically - that
+remains an upstream responsibility.
+
+### ADV2-P1-005 - Candidate projection trusted legacy status when root was omitted
+
+`project_product_workbench_candidate` treated `root` as optional, so a direct
+caller could inject M3/M6 stage statuses without evidence files being checked.
+
+Status: CLOSED. `root` is now a required, runtime-validated keyword argument and
+evidence files are always hash-checked against it. The production CLI already
+passed `root`, so its behaviour is unchanged.
+
+### ADV2-P1-006 - The M6 matrix could not represent an allowed start
+
+All hard gates satisfied plus `shadow_start_allowed=true` still forced
+`BLOCKED_PENDING_HARD_START_GATES`, and the M3 criterion was classified
+`NATURAL_TIME_REQUIRED` while being a pre-start hard gate.
+
+Status: CLOSED. The matrix now supports `SHADOW_START_READY` and rejects a
+startable matrix that reports the blocked decision (and the reverse). The M3
+criterion is classified `RESEARCH_EVIDENCE_REQUIRED` while staying a
+`HARD_START_GATE`; its elapsed-time dependency stays in the reopen condition,
+and `NATURAL_TIME_GATE` is reserved for post-start observation windows. The
+committed matrix still reports `shadow_start_allowed=false`.
+
+### ADV2-P2-001 - Run-specific disclosure tools were listed as product CLI
+
+Status: CLOSED. `build_m5_disclosure_queue.py` and
+`apply_m5_disclosure_review.py` are engineering tools; the product surface is
+now 15 generic entrypoints with the run-specific ones excluded by test.
+
+### ADV2-P2-002 - Simulation-only marker had no production consumer
+
+Status: CLOSED. `virtual_account_store` writes the canonical simulation marker
+and fails closed on load when `simulation_only`, `trade_approved=false` or
+`live_eligible=false` is missing or contradicted. The frozen
+`virtual_account.py` bytes are unchanged.
+
+### ADV2-OPEN-001 - Trust roots remain repository-local
+
+The pinned registry closes self-minted keys, but it is a reviewed file in the
+same repository. A real operator key should live in an OS or hardware keystore,
+and registering the first fingerprint must be a signed, reviewable change. This
+is a documented prerequisite for the first real production authorization, not a
+claim made by this round.
 
 ## Permanent Semantics
 
@@ -97,20 +241,32 @@ Backtest != M6 Shadow
 
 ## Next Task
 
-NEXT TASK: VERIFY_AND_COMMIT_PIT_CONFORMANCE_CONSUMER_ENFORCEMENT
+## Next Task
 
-Goal: make every path that consumes a historical replay or admission result
-require a fresh `pit-conformance-verifier-v2` PASS, while preserving the frozen
-historical-validation bytes and the current first-case NOT_PIT_SAFE result.
+NEXT TASK: ADD_BOUNDED_VALIDITY_WINDOW_TO_ACTUAL_AUTHORIZATIONS
 
-Files likely affected: the M3 replay/admission consumer adapters, their thin
-CLIs, and focused integration tests.
+Goal: give the M5 v2 approval receipt and the M6 operational authorization
+proof a required, bounded `valid_until` that is re-checked on issuance, replay,
+transition, restart and read, with a negative test proving an approval cannot be
+consumed after expiry. This is the last self-owned gap from the 2026-09-26
+adversarial review and must land before the first real trust-root fingerprint
+is pinned.
 
-Forbidden changes: editing `historical_validation.py`, weakening PIT checks,
-changing valuation formulas, or treating verifier PASS as a buy/order,
-performance claim, or production authorization.
+Files likely affected:
+`src/value_investment_agent/operations/authorization/m5_actual_approval_receipt.py`,
+`src/value_investment_agent/m6_operational_control.py`,
+`src/value_investment_agent/m6_shadow_receipts.py`, the M5/M6 thin CLIs, the
+synthetic authorization fixtures and their focused tests.
 
-Acceptance criteria: forged/early/missing evidence reaches no strict consumer
-without failure; retrospective and zero-model-session cases remain
-`NOT_PROVEN`/`NOT_ADMITTED`; verifier results bind the exact subject and
-manifest bytes; full offline regression and Core Research Gates pass.
+Forbidden changes: editing `virtual_account.py`, `historical_validation.py` or
+`scripts/build_moutai_historical_validation_admission.py`; pinning a real trust
+root; requesting production authorization; starting Shadow, a scheduler,
+notifications, migrations or a real-account import; weakening any existing
+fail-closed check; treating an expiry window as production readiness.
+
+Acceptance criteria: a receipt or proof used after `valid_until` fails closed
+with a clear error on every path; receipts with an invalid or inverted window
+are refused; existing pinned-registry, legacy read-only and simulation-only
+tests still pass; full offline regression and Core Research Gates pass;
+`action=no_order`, `M6_OPERATIONAL=NOT_STARTED` and
+`INITIAL_ASSISTED_USE=NOT_REACHED` remain unchanged.

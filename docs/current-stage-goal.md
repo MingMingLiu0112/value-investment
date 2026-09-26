@@ -1,6 +1,22 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-## 当前执行门禁（2026-09-25）
+## 当前执行门禁（2026-09-26）
+
+当前唯一阶段为 `PRODUCTIZATION-SECURITY-AND-REAL-USE-CLOSURE`。优先级是
+M7 五页产品体验、关闭 ADV-P1-003/004、通用产品入口、M4 合成接入演练、M6
+启动条件矩阵和历史验证维护。该阶段不建立 M8、不扩大市场范围，也不授权生产、
+Shadow、调度、通知或账户导入。M2-M6 继续作为后台阶段，不得出现在用户导航中。
+M7 Product Read Model 与五页 Excel 候选已形成；ADV-P1-003/004 已通过签名审批
+收据和运行控制重验关闭。第二轮对抗审查后：legacy M5 授权只能对已存在的同指纹批次
+做只读重放，新建 ACTUAL 运行一律拒绝；M5/M6 的 trust root 必须命中已提交的 pin
+注册表，该注册表当前为空，因此真实 ACTUAL/M6 授权默认 fail-closed；M7 组合数值仅在
+M4 provenance 齐备时显示；M6 start matrix 支持 `SHADOW_START_READY`，但当前仍为
+`shadow_start_allowed=false`。真实 operator keystore 与 M5 授权有效期窗口仍是首次
+真实授权前的开放前置条件，不构成本轮工程阻塞。通用 CLI v2 将产品入口与工程入口分层
+（product 15 / engineering 36）；M4 合成全链路演练已完成，但
+`M4_PERSONALIZED_ACCEPTANCE=WAITING_R2` 不升级。M6 start matrix 完成，
+`M6_OPERATIONAL=NOT_STARTED`。600519 historical validation 保持
+`NOT_PIT_SAFE / NOT_ADMITTED / EVIDENCE_STOP`。
 
 M4 Private Input Package 已形成单一安全入口，合成链覆盖草稿、加密、双密文对账和
 显式人工确认；真实 R2 输入仍未提供，M4 个性化状态不升级。M7 只读试用入口已固定到

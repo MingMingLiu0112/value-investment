@@ -2412,3 +2412,73 @@ action                = no_order
 ingest 需要 M6 运营聚合视图单独呈现。600519 九条真实公告保持
 `PENDING_HUMAN_REVIEW`，等待用户逐条材料性判定；本批不产生事件、不发送通知、
 不请求生产授权。
+
+## 2026-09-26 Productization / security / real-use closure
+
+本轮没有启动生产、Shadow、调度、通知或真实账户导入。事实状态：
+
+```text
+M7_PRODUCT_READ_MODEL = READY
+M7_PRODUCT_UX_CANDIDATE = READY / NOT_USER_ACCEPTED
+ADV_P1_003 = CLOSED (signed byte-bound receipt + pinned trust root)
+ADV_P1_004 = CLOSED (proof re-verified on read/transition/restart + pinned trust root)
+ADV2_P0_001 = CLOSED (legacy M5 authorization is read-only replay only)
+ADV2_P0_002 = CLOSED (trust roots pinned; empty registry keeps ACTUAL/M6 fail-closed)
+ADV2_P1_001 = OPEN (M5 approval expiry window; required before the first real pin)
+M4_CONFIRMATION_CONTRACT = READY
+M4_SYNTHETIC_ONBOARDING_REHEARSAL = COMPLETED
+M4_PERSONALIZED_ACCEPTANCE = WAITING_R2
+GENERIC_PRODUCT_CLI = ACTIVE (15 product / 36 engineering / 51 unique; 43 v1 preserved)
+M6_START_CRITERIA_MATRIX = COMPLETE
+M6_OPERATIONAL = NOT_STARTED
+600519_HISTORICAL_VALIDATION = NOT_PIT_SAFE / NOT_ADMITTED / EVIDENCE_STOP
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+- M7 五页产品面为 `今日 / 机会 / 公司 / 我的组合 / 事件`，`系统/审计` 为次级页；
+  M2-M6 不再是用户导航。没有真实私人组合时只显示“尚未接入真实组合”，模拟 M4
+  数字不会作为个人指标展示。
+- 真实候选工作簿为 `runtime/m7-product-ux-candidate-v1-20260926.xlsx`，SHA-256
+  `7edc85cedbcf0b6c60738755d988754c4775c9cd2da1d1b3ba0a075e20ab07d2`；manifest
+  SHA-256
+  `365e81de0d76bdf271750524eabeda9d974988acb22b34b3b3207a42015f452d`。它由固定
+  M2-M6 packet 生成，来源 packet SHA-256
+  `8328bf5dc0427ef7ce66e216ae7f20f32451e95bf70f63ac6bf1be2e9adc7a0d`。
+  `final_user_acceptance=NOT_PASSED`、`canonical_pointer_modified=false`，正式 WPS
+  工作簿未被替换。
+- M4 合成全链路真实执行了 init、validate、encrypt、verify、双快照 reconciliation、
+  confirmation receipt、PortfolioRisk、PositionGuidance、DividendProjection、Product
+  Read Model 和 M7 candidate material。最终演练 receipt SHA-256
+  `7f6d68b3abcc18c01e95c6798a8647e9ef28afce46b3d4e4a9b88da9e6eae6fe`；分类为
+  `SYNTHETIC_REHEARSAL_ONLY`，没有使用或生成真实私人组合证据。
+- M5 ACTUAL 能力现在只能由签名、字节绑定、append-only 的人工审批收据签发。默认
+  解析、应用和新 CLI 都会拒绝旧式无签名授权；显式 `allow_legacy_read_only` 只允许
+  对 durable store 中已存在、request fingerprint 完全一致的批次做只读重放，空 store
+  会以 `read-only replay only` 失败关闭，不写 state、不发布 receipt。M6 运行控制证明
+  在读取、转换、推进和重启时重新验证签名制品、scope、目标模式、部署/配置 Hash、
+  操作者、有效期和 trust root。
+- 第二轮对抗审查关闭了 trust-root 自签问题：`config/authorization-trust-roots-v1.json`
+  目前 pin 列表为空，因此真实 ACTUAL/M6 授权默认 fail-closed；M5 在签发与每次
+  `verify()` 时重查 pin，M6 在每次读取、转换与重启时重查 pin，解除 pin 会让既有
+  capability 立即失效。负向测试覆盖未 pin 的 M5 收据、全新生成的 M6 keypair，以及
+  解除 pin 后重新读取证明。真实 operator key 仍应放在独立 keystore/OS pin 中，这
+  与 M5 授权有效期窗口一起登记为首次真实授权前的开放前置条件（ADV2-OPEN-001）。
+- 其余同轮修复：M7 组合数值只有在 M4 provenance（reconciled + 确认回执 fingerprint）
+  齐备时才显示；候选投影的 `root` 变为必填并逐个校验证据文件 Hash；M6 start matrix
+  支持 `SHADOW_START_READY` 但当前仍为 `shadow_start_allowed=false`；event review
+  不再默认声称人工 provenance，manifest 明确标注未认证并仍需签名审批收据；
+  `build_m5_disclosure_queue.py` 与 `apply_m5_disclosure_review.py` 从产品入口降级
+  为工程工具；`virtual_account_store` 强制 simulation-only 标记。
+- M4 confirmation receipt 绑定 exact reconciliation bytes、账户范围、快照日期和
+  用户确认；公开输出只含 fingerprint。公开 Git 不包含私人 IPS、持仓、现金、密钥
+  或明文组合。
+- 全量离线回归 `2936 passed, 30 skipped, 18 warnings, 0 failed`（第二轮审查新增
+  trust-root pinning、legacy 只读重放、simulation-only、矩阵可启动态等测试）。
+  过程中发现并修复多处真实兼容问题：两条历史 M5 ACTUAL 冷重放、一条 M6 旧 scope
+  fixture，以及依赖 CLI 自带 trust root 的 M6 集成用例；修复后历史只读路径与新签名
+  路径分离，不能用兼容层伪造新授权，测试夹具也改为显式 pin 自己的 trust root。
+
+本工作包仍不产生交易信号、目标仓位、订单、调度、通知、生产数据库写或 M6 运营
+验收。下一步只能由真实 R2 私人输入、R3 明确生产授权或 R6 自然时间证据推进对应
+门；600519 不重开无边界历史证据收集。
