@@ -1,5 +1,30 @@
 # Changelog
 
+## v2026.09.26-m7-user-copy-stage-token-guard
+
+### Scope
+
+收紧 M7 五页产品工作台的用户可见语言，确保后台阶段编号不会泄漏到用户界面。
+
+### Changes
+
+- Product Workbench payload 对 `overview`、`system_health`、`today_items`、
+  `opportunities`、`companies`、`portfolio`、`events` 执行 `M2`-`M6` 内部阶段词
+  拒绝；`evidence_refs` 保留机器引用，不作为用户文案扫描。
+- 无可用研究结论时的固定文案改为用户语言，不再直接显示后台阶段编号。
+- 候选工作簿生成的合成回归同时扫描所有用户可见单元格，并新增 malformed payload
+  负向测试。
+
+### Verification
+
+- Product Workbench 候选定向回归与全量离线回归均通过；全量结果仍为
+  `2953 passed, 30 skipped, 18 warnings, 0 failed`。
+
+### Residual Boundary
+
+M7 候选仍为 `READY / NOT_USER_ACCEPTED`，正式 WPS 工作簿指针未替换；没有真实
+组合、生产授权、调度、通知或订单能力。
+
 ## v2026.09.26-m6-evidence-trust-pinning
 
 ### Scope

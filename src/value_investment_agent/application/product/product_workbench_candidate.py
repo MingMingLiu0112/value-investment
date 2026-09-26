@@ -18,6 +18,16 @@ ACTION_NO_ORDER = "no_order"
 
 _SYMBOL = re.compile(r"^[0-9]{6}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_INTERNAL_STAGE_TOKEN = re.compile(r"\bM[2-6]\b")
+_USER_VISIBLE_SECTIONS = (
+    "overview",
+    "system_health",
+    "today_items",
+    "opportunities",
+    "companies",
+    "portfolio",
+    "events",
+)
 _EXECUTION_KEYS = frozenset(
     {
         "trade_approved",
@@ -127,7 +137,7 @@ _M2_ROW_STATUSES = frozenset(
     }
 )
 _M2_NEXT_TRIGGERS = {
-    "VERIFIED_FOR_DEEP_RESEARCH": "进入 M3 深入研究与人工复核。",
+    "VERIFIED_FOR_DEEP_RESEARCH": "进入深入研究与人工复核。",
     "REJECTED_AFTER_VERIFICATION": "仅在出现新的实质证据后重新进入复核。",
     "INSUFFICIENT_EVIDENCE": "补齐该通道的关键证据后重新复核。",
     "UNSUPPORTED": "保留为当前模型不支持的研究记录。",
@@ -258,6 +268,27 @@ def _reject_assessment_values(value: object, path: str = "payload") -> None:
     elif isinstance(value, list):
         for index, child in enumerate(value):
             _reject_assessment_values(child, f"{path}[{index}]")
+
+
+def _reject_internal_stage_tokens(
+    value: object,
+    *,
+    path: str,
+) -> None:
+    if isinstance(value, str):
+        if _INTERNAL_STAGE_TOKEN.search(value):
+            raise ValueError(
+                f"User-facing product payload contains an internal stage "
+                f"token at {path}"
+            )
+    elif isinstance(value, Mapping):
+        for key, child in value.items():
+            if key == "evidence_refs":
+                continue
+            _reject_internal_stage_tokens(child, path=f"{path}.{key}")
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            _reject_internal_stage_tokens(child, path=f"{path}[{index}]")
 
 
 def _verify_evidence_files(
@@ -595,8 +626,8 @@ def _companies(
     for card in cards:
         unavailable = _unavailable_assessment(
             status="NOT_READY",
-            reason="M3 尚未给出经人工批准的该字段结论。",
-            needed="M3 已验证且经人工批准的字段结论。",
+            reason="深入研究尚未给出经人工批准的该字段结论。",
+            needed="经人工批准的已验证字段结论。",
             evidence_refs=evidence_refs,
         )
         companies.append(
@@ -606,28 +637,28 @@ def _companies(
                 "research_status": "NEED_MORE_EVIDENCE",
                 "price": _unavailable_assessment(
                     status="UNAVAILABLE",
-                    reason="M3 尚未给出经人工批准的当前价格结论。",
+                    reason="深入研究尚未给出经人工批准的当前价格结论。",
                     needed="与同一研究时点绑定的已验证价格证据。",
                     evidence_refs=evidence_refs,
                 ),
                 "valuation": unavailable,
                 "margin_of_safety": _unavailable_assessment(
                     status="NOT_READY",
-                    reason="M3 研究尚未完成，不能形成安全边际结论。",
-                    needed="M3 已验证估值输入与人工批准的估值结论。",
+                    reason="深入研究尚未完成，不能形成安全边际结论。",
+                    needed="经人工批准的已验证估值输入与估值结论。",
                     evidence_refs=evidence_refs,
                 ),
                 "dividend": _unavailable_assessment(
                     status="NOT_READY",
-                    reason="M3 尚未给出经人工批准的股息结论。",
-                    needed="M3 已验证股息证据与人工批准结论。",
+                    reason="深入研究尚未给出经人工批准的股息结论。",
+                    needed="经人工批准的已验证股息证据与结论。",
                     evidence_refs=evidence_refs,
                 ),
                 "sections": [
                     {
                         "key": key,
                         "status": "BLOCKED",
-                        "summary": "M3 研究尚未完成，该模块没有经批准的可用结论。",
+                        "summary": "深入研究尚未完成，该模块没有经批准的可用结论。",
                         "evidence_refs": evidence_refs,
                     }
                     for key in _COMPANY_SECTION_KEYS
@@ -637,15 +668,15 @@ def _companies(
                         "key": key,
                         "assessment": _unavailable_assessment(
                             status="NOT_READY",
-                            reason="M3 尚未提供经人工批准的情景输入。",
-                            needed="M3 已验证的情景假设与结论。",
+                            reason="深入研究尚未提供经人工批准的情景输入。",
+                            needed="经人工批准的已验证情景假设与结论。",
                             evidence_refs=evidence_refs,
                         ),
                     }
                     for key in _SCENARIO_KEYS
                 ],
-                "latest_change": "M3 研究尚未完成，当前没有经批准的完整结论。",
-                "next_trigger": "完成 M3 研究阻断并取得人工研究批准后重新生成。",
+                "latest_change": "深入研究尚未完成，当前没有经批准的完整结论。",
+                "next_trigger": "完成研究阻断并取得人工研究批准后重新生成。",
                 "original_thesis": "当前候选包未包含经人工批准的原始投资逻辑。",
                 "thesis_change": "UNKNOWN",
                 "evidence_refs": evidence_refs,
@@ -687,7 +718,7 @@ def _today_items(
                 "category": "RESEARCH_CHANGE",
                 "company": card["name"],
                 "symbol": card["symbol"],
-                "what_happened": "M3 研究结论仍为证据不足。",
+                "what_happened": "公司研究结论仍为证据不足。",
                 "why_it_matters": "尚不能形成可用于估值或股息判断的批准结论。",
                 "current_status": "研究复核尚未完成。",
                 "next_step": "补齐研究阻断后重新进入复核。",
@@ -699,7 +730,7 @@ def _today_items(
             {
                 "category": "DATA_ISSUE",
                 "company": "系统",
-                "what_happened": "M6 运营预检完成，但真实监控尚未开始。",
+                "what_happened": "运营预检已完成，但真实监控尚未开始。",
                 "why_it_matters": "运营门尚未满足，系统继续只读运行。",
                 "current_status": "真实监控尚未开始。",
                 "next_step": "完成预检阻断并取得真实运营授权后重新评估。",
@@ -711,7 +742,7 @@ def _today_items(
             "category": "RESEARCH_CHANGE",
             "company": "初步筛选",
             "what_happened": (
-                f"M2 已完成 {m2['lead_count']} 条线索的二阶段结论："
+                f"初步筛选已完成 {m2['lead_count']} 条线索的二阶段结论："
                 f"{m2['verified_count']} 条进入深入研究，"
                 f"{m2['rejected_count']} 条未通过，"
                 f"{m2['insufficient_count']} 条证据不足。"
@@ -730,7 +761,7 @@ def _m6_event(m6_refs: list[str]) -> dict[str, Any]:
         "event_id": "m6-operational-preflight",
         "event_type": "SYSTEM_DATA_RISK",
         "company_name": "系统",
-        "what_happened": "M6 运营预检完成，但真实监控尚未开始。",
+        "what_happened": "运营预检已完成，但真实监控尚未开始。",
         "impact_area": "真实监控与运营准备。",
         "current_conclusion": "运营门尚未满足，系统保持只读状态。",
         "research_action": "PENDING_REVIEW",
@@ -747,6 +778,8 @@ def validate_product_workbench_candidate_payload(
 
     _reject_output_execution_keys(payload)
     _reject_assessment_values(payload)
+    for section in _USER_VISIBLE_SECTIONS:
+        _reject_internal_stage_tokens(payload.get(section), path=section)
 
 
 def build_product_workbench_candidate_payload(
@@ -830,7 +863,7 @@ def build_product_workbench_candidate_payload(
             "real_data_available": False,
             "status": "PENDING_USER_PRIVATE_INPUT",
             "connection_hint": (
-                "尚未收到真实个人组合输入；模拟 M4 结果不会显示为个人指标。"
+                "尚未收到真实个人组合输入；模拟演练结果不会显示为个人指标。"
             ),
             "summary": [],
             "positions": [],

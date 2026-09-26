@@ -212,7 +212,7 @@ CURRENT_ARTIFACT_ENTRY = config/current-trial-workbook.json
 DOCS_CURRENT_ENTRY = FUNCTIONAL
 DOCS_CURRENT_VS_ARCHIVE = OPERATIONALLY_CLEAR
 SCRIPT_INVENTORY = COMPLETE
-CURRENT_SUPPORTED_CLIS = 51 (17 product + 34 engineering; all 43 v1 paths preserved)
+CURRENT_SUPPORTED_CLIS = 51 (15 product + 36 engineering; all 43 v1 paths preserved)
 M7_PRODUCT_READ_MODEL = READY
 M7_PRODUCT_UX_CANDIDATE = READY (runtime candidate; canonical pointer unchanged)
 ADV_P1_003_004 = CLOSED_WITH_TRUST_ROOT_RESIDUAL
@@ -233,7 +233,7 @@ manifest、receipt、静态消费者或未跟踪本地证据绑定，因此没�
 当前通过 `artifacts/current/artifact-registry-v1.json` 提供逻辑导航，而不是为了降低目录数量
 破坏 Hash 证据。物理根工作簿仍为 29 个。
 
-当前脚本分类入口为 `config/current-cli-entrypoints-v2.json`（17 个产品入口、34 个工程入口，
+当前脚本分类入口为 `config/current-cli-entrypoints-v2.json`（15 个产品入口、36 个工程入口，
 51 个唯一路径；v1 的 43 个路径保留兼容）和 `docs/architecture/script-inventory-v1.json`
 （完整机器可读清单）。`config/current-cli-entrypoints-v1.json` 继续作为兼容哈希基线，不新增
 v1 条目。`scripts/` 根层默认不再

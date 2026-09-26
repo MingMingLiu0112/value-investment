@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 from datetime import datetime, timezone
 from pathlib import Path
+import re
 
 from openpyxl import load_workbook
 import pytest
@@ -76,6 +77,7 @@ def test_synthetic_packet_builds_five_page_candidate_without_portfolio_metrics(
     assert model.companies[0].research_status.user_label == "等待更多证据"
 
     user_text = _user_text(workbook)
+    assert not re.search(r"\bM[2-6]\b", user_text)
     for hidden in (
         "INSUFFICIENT_EVIDENCE",
         "INSUFFICIENT_RESEARCH",
@@ -202,4 +204,18 @@ def test_payload_validator_rejects_fake_numeric_placeholders(tmp_path: Path) -> 
     malformed["companies"][0]["valuation"]["value_text"] = "0.00"
 
     with pytest.raises(ValueError, match="numeric placeholder"):
+        validate_product_workbench_candidate_payload(malformed)
+
+
+def test_payload_validator_rejects_internal_stage_tokens_in_user_copy(
+    tmp_path: Path,
+) -> None:
+    packet = _materialized_packet(tmp_path)
+    payload = build_product_workbench_candidate_payload(packet, root=tmp_path)
+    malformed = copy.deepcopy(payload)
+    malformed["companies"][0]["valuation"]["unavailable_reason"] = (
+        "M3 尚未完成。"
+    )
+
+    with pytest.raises(ValueError, match="internal stage token"):
         validate_product_workbench_candidate_payload(malformed)

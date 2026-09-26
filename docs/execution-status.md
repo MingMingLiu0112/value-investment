@@ -2424,7 +2424,9 @@ ADV_P1_003 = CLOSED (signed byte-bound receipt + pinned trust root)
 ADV_P1_004 = CLOSED (proof re-verified on read/transition/restart + pinned trust root)
 ADV2_P0_001 = CLOSED (legacy M5 authorization is read-only replay only)
 ADV2_P0_002 = CLOSED (trust roots pinned; empty registry keeps ACTUAL/M6 fail-closed)
+ADV2_P0_003 = CLOSED (M6 session/operational/event evidence requires pinned roots)
 ADV2_P1_001 = CLOSED (M5 approval expiry window enforced on issuance and replay)
+ADV2_P1_007 = CLOSED (test registry cannot be redirected by environment/path)
 M4_CONFIRMATION_CONTRACT = READY
 M4_SYNTHETIC_ONBOARDING_REHEARSAL = COMPLETED
 M4_PERSONALIZED_ACCEPTANCE = WAITING_R2
@@ -2439,14 +2441,16 @@ action = no_order
 - M7 五页产品面为 `今日 / 机会 / 公司 / 我的组合 / 事件`，`系统/审计` 为次级页；
   M2-M6 不再是用户导航。没有真实私人组合时只显示“尚未接入真实组合”，模拟 M4
   数字不会作为个人指标展示。
-- 真实候选工作簿为 `runtime/m7-product-ux-candidate-v1-20260926.xlsx`，SHA-256
-  `7edc85cedbcf0b6c60738755d988754c4775c9cd2da1d1b3ba0a075e20ab07d2`；manifest
+- 当前候选工作簿为 `runtime/m7-product-ux-candidate-v2-20260926.xlsx`，SHA-256
+  `f3d29985f58f8a1e0925781c5161292cf5cf8c4643931cece64ed85fc4f452f3`；manifest
   SHA-256
-  `365e81de0d76bdf271750524eabeda9d974988acb22b34b3b3207a42015f452d`。它由固定
+  `0707513bab1df08bd01dca00f8d200afd105bb8d341e7b78ca18f56e4ab4e6ed`。v1
+  候选保留为历史制品但已被 v2 取代。v2 由固定
   M2-M6 packet 生成，来源 packet SHA-256
   `8328bf5dc0427ef7ce66e216ae7f20f32451e95bf70f63ac6bf1be2e9adc7a0d`。
   `final_user_acceptance=NOT_PASSED`、`canonical_pointer_modified=false`，正式 WPS
-  工作簿未被替换。
+  工作簿未被替换。五个用户页不再包含 `M2`-`M6` 阶段词；该约束由产品 payload
+  门禁和合成回归测试强制。
 - M4 合成全链路真实执行了 init、validate、encrypt、verify、双快照 reconciliation、
   confirmation receipt、PortfolioRisk、PositionGuidance、DividendProjection、Product
   Read Model 和 M7 candidate material。最终演练 receipt SHA-256
@@ -2468,6 +2472,13 @@ action = no_order
   capability 立即失效。负向测试覆盖未 pin 的 M5 收据、全新生成的 M6 keypair、
   授权窗口缺失/倒置/篡改/过期/重放，以及 legacy runner 旁路。真实 operator key 仍应
   放在独立 keystore/OS pin 中，这是首次真实授权前的开放前置条件（ADV2-OPEN-001）。
+- 后续证据边界复核关闭了 `ADV2-P0-003`：公开 `verify_shadow_bundle` 必须 pin 完整
+  root；operational admission 只 pin 外层 root，内层 candidate root 由外层完整
+  fingerprint 绑定并通过内部 byte verifier 使用；event admission 在读证据前执行同一
+  pin gate。`ADV2-P1-007` 同时关闭：测试 registry 改为进程内显式 hook，伪造
+  `PYTEST_VERSION`/`VIA_AUTHORIZATION_TRUST_REGISTRY` 或传入任意 registry path 均不再
+  影响生产 lookup。真实 key、caller-clock 和跨独立 store 的全局 single-use journal
+  marker 仍是生产授权前的外部门/后续边界，不在本轮宣称完成。
 - 其余同轮修复：M7 组合数值只有在 M4 provenance（reconciled + 确认回执 fingerprint）
   齐备时才显示；候选投影的 `root` 变为必填并逐个校验证据文件 Hash；M6 start matrix
   支持 `SHADOW_START_READY` 但当前仍为 `shadow_start_allowed=false`；event review
@@ -2477,7 +2488,7 @@ action = no_order
 - M4 confirmation receipt 绑定 exact reconciliation bytes、账户范围、快照日期和
   用户确认；公开输出只含 fingerprint。公开 Git 不包含私人 IPS、持仓、现金、密钥
   或明文组合。
-- 全量离线回归 `2945 passed, 30 skipped, 18 warnings, 0 failed`（第二轮审查新增
+- 全量离线回归 `2953 passed, 30 skipped, 18 warnings, 0 failed`（第二轮审查新增
   trust-root pinning、legacy 只读重放、simulation-only、矩阵可启动态等测试）。
   过程中发现并修复多处真实兼容问题：两条历史 M5 ACTUAL 冷重放、一条 M6 旧 scope
   fixture，以及依赖 CLI 自带 trust root 的 M6 集成用例；修复后历史只读路径与新签名
