@@ -1,5 +1,61 @@
 # Changelog
 
+## v2026.09.26-auth-trust-registry-override-hardening
+
+### Scope
+
+限制授权信任根注册表的测试覆盖入口，避免生产进程通过环境变量选择任意
+registry 路径。该提交不修改任何 trust root、审批、估值、决策或
+`action=no_order` 语义；已提交 registry 仍为空，真实 ACTUAL/M6 授权继续
+fail-closed。
+
+### Changes
+
+- `VIA_AUTHORIZATION_TRUST_REGISTRY` 仅在 pytest 进程内生效，且路径必须解析到
+  操作系统临时目录；生产读取固定提交的
+  `config/authorization-trust-roots-v1.json`。
+- 新增回归覆盖 pytest-only guard 以及临时目录之外的 override 被忽略。
+- 归档历史不可恢复的 runtime request 继续走 unsigned v1 read-only replay，
+  不允许通过 override 恢复新的 ACTUAL 授权。
+
+### Verification
+
+- 授权与运行控制联合回归：`52 passed`。
+- 最终全量离线回归：`2938 passed, 30 skipped, 18 warnings, 0 failed`。
+- `config/architecture-frozen-paths-v1.json` 的 9 个冻结路径 SHA-256 全部一致。
+
+### Residual Boundary
+
+真实 operator key 仍未 pin；`ADV2-OPEN-001` 继续是首次真实生产授权前的开放
+前置条件。M5 审批有效期窗口仍由下一步
+`ADD_BOUNDED_VALIDITY_WINDOW_TO_ACTUAL_AUTHORIZATIONS` 处理。
+
+## v2026.09.26-ci-runtime-fixture-isolation
+
+### Scope
+
+修复 GitHub `offline-core` 对 Git 未跟踪 `runtime/` 数据的隐式依赖，不改变
+Product Read Model、Excel renderer、候选 packet 合同或正式工作簿指针。
+
+### Changes
+
+- 新增高保真合成 legacy packet fixture，保留 18 条 M2 记录、13 条审计证据、
+  全部通道及 rejected/insufficient 分支。
+- Product candidate 测试改为把合成证据写入 pytest `tmp_path` 并重新计算
+  SHA-256；CI 不再读取或生成仓库 `runtime/` 数据。
+- Excel candidate manifest 测试改用 pytest `tmp_path`，不再要求
+  `runtime/` 目录预先存在。
+
+### Verification
+
+- 产品 UX 定向回归：`33 passed`。
+- 最终全量离线回归：`2938 passed, 30 skipped, 18 warnings, 0 failed`。
+
+### Residual Boundary
+
+合成的高保真 packet 验证的是 projection 合同，不是生产 runtime 数据真实性；
+不会把 fixture 结果声明为真实研究、估值、M6 Shadow 或用户验收。
+
 ## v2026.09.25-pit-conformance-verifier-v2
 
 ### Scope

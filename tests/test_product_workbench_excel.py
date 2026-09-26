@@ -5,7 +5,6 @@ import hashlib
 import json
 from pathlib import Path
 import re
-import tempfile
 
 from openpyxl import load_workbook
 
@@ -390,28 +389,28 @@ def test_all_wait_empty_candidate_renders_legal_empty_states() -> None:
     assert "尚未接入个人组合" in today_text
 
 
-def test_manifest_is_no_order_and_does_not_touch_canonical_pointer() -> None:
+def test_manifest_is_no_order_and_does_not_touch_canonical_pointer(
+    tmp_path: Path,
+) -> None:
     pointer = ROOT / "config" / "current-trial-workbook.json"
     pointer_before = hashlib.sha256(pointer.read_bytes()).hexdigest()
-    with tempfile.TemporaryDirectory(dir=ROOT / "runtime") as temporary:
-        temporary_root = Path(temporary)
-        output = temporary_root / "m7-product-ux-candidate.xlsx"
+    output = tmp_path / "m7-product-ux-candidate.xlsx"
 
-        receipt = write_product_workbench_candidate(
-            _model(),
-            output=output,
-            root=temporary_root,
-        )
+    receipt = write_product_workbench_candidate(
+        _model(),
+        output=output,
+        root=tmp_path,
+    )
 
-        assert output.exists()
-        assert receipt["action"] == ACTION_NO_ORDER
-        assert receipt["workbook_kind"] == "M7_PRODUCT_UX_CANDIDATE"
-        assert receipt["final_user_acceptance"] == "NOT_PASSED"
-        assert receipt["candidate_not_formal_workbook"] is True
-        assert receipt["canonical_pointer_modified"] is False
-        manifest_path = output.with_name(
-            output.stem + ".m7-product-workbench-candidate-manifest.json"
-        )
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        assert manifest["action"] == ACTION_NO_ORDER
+    assert output.exists()
+    assert receipt["action"] == ACTION_NO_ORDER
+    assert receipt["workbook_kind"] == "M7_PRODUCT_UX_CANDIDATE"
+    assert receipt["final_user_acceptance"] == "NOT_PASSED"
+    assert receipt["candidate_not_formal_workbook"] is True
+    assert receipt["canonical_pointer_modified"] is False
+    manifest_path = output.with_name(
+        output.stem + ".m7-product-workbench-candidate-manifest.json"
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["action"] == ACTION_NO_ORDER
     assert hashlib.sha256(pointer.read_bytes()).hexdigest() == pointer_before

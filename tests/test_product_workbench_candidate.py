@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import copy
 from datetime import datetime, timezone
-import importlib.util
 from pathlib import Path
-import tempfile
 
 from openpyxl import load_workbook
 import pytest
@@ -25,20 +23,23 @@ from value_investment_agent.presentation.read_models.product_workbench import (
     product_workbench_from_payload,
 )
 
-
-ROOT = Path(__file__).resolve().parents[1]
-GENERATED_AT = datetime(2026, 9, 26, 3, 0, tzinfo=timezone.utc)
-BUILDER_SPEC = importlib.util.spec_from_file_location(
-    "m7_product_candidate_legacy_builder",
-    ROOT / "scripts" / "build_m7_daily_workbench.py",
+from product_workbench_candidate_fixture import (
+    materialize_synthetic_legacy_packet,
+    synthetic_legacy_packet,
 )
-assert BUILDER_SPEC is not None and BUILDER_SPEC.loader is not None
-LEGACY_BUILDER = importlib.util.module_from_spec(BUILDER_SPEC)
-BUILDER_SPEC.loader.exec_module(LEGACY_BUILDER)
+
+
+GENERATED_AT = datetime(2026, 9, 26, 3, 0, tzinfo=timezone.utc)
 
 
 def _packet() -> dict:
-    return LEGACY_BUILDER.build_packet(GENERATED_AT)
+    return synthetic_legacy_packet(GENERATED_AT.isoformat())
+
+
+def _materialized_packet(root: Path) -> dict:
+    packet = _packet()
+    materialize_synthetic_legacy_packet(root, packet)
+    return packet
 
 
 def _user_text(workbook) -> str:
@@ -51,9 +52,11 @@ def _user_text(workbook) -> str:
     )
 
 
-def test_real_packet_builds_five_page_candidate_without_portfolio_metrics() -> None:
-    packet = _packet()
-    payload = build_product_workbench_candidate_payload(packet, root=ROOT)
+def test_synthetic_packet_builds_five_page_candidate_without_portfolio_metrics(
+    tmp_path: Path,
+) -> None:
+    packet = _materialized_packet(tmp_path)
+    payload = build_product_workbench_candidate_payload(packet, root=tmp_path)
     model = product_workbench_from_payload(payload)
     workbook = build_product_workbench_workbook(model)
 
@@ -131,19 +134,18 @@ def test_real_packet_builds_five_page_candidate_without_portfolio_metrics() -> N
     assert ACTION_NO_ORDER in audit_text
 
 
-def test_real_candidate_can_be_written_and_reopened() -> None:
-    packet = _packet()
-    payload = build_product_workbench_candidate_payload(packet, root=ROOT)
+def test_synthetic_candidate_can_be_written_and_reopened(tmp_path: Path) -> None:
+    packet = _materialized_packet(tmp_path)
+    payload = build_product_workbench_candidate_payload(packet, root=tmp_path)
     model = product_workbench_from_payload(payload)
     workbook = build_product_workbench_workbook(model)
-    with tempfile.TemporaryDirectory(dir=ROOT / "runtime") as temporary:
-        output = Path(temporary) / "m7-product-ux-candidate-v1-20260926.xlsx"
-        workbook.save(output)
+    output = tmp_path / "m7-product-ux-candidate-v1-20260926.xlsx"
+    workbook.save(output)
 
-        reopened = load_workbook(output, data_only=False)
+    reopened = load_workbook(output, data_only=False)
 
-        assert tuple(reopened.sheetnames) == WORKBOOK_SHEETS
-        assert reopened[SHEET_PORTFOLIO]["A4"].value == "尚未接入真实组合"
+    assert tuple(reopened.sheetnames) == WORKBOOK_SHEETS
+    assert reopened[SHEET_PORTFOLIO]["A4"].value == "尚未接入真实组合"
 
 
 def test_projection_fails_closed_on_missing_evidence() -> None:
@@ -151,13 +153,12 @@ def test_projection_fails_closed_on_missing_evidence() -> None:
     packet["audit"]["artifacts"] = []
 
     with pytest.raises(ValueError, match="Pinned audit evidence"):
-        build_product_workbench_candidate_payload(packet, root=ROOT)
+        build_product_workbench_candidate_payload(packet, root=Path.cwd())
 
 
-def test_projection_fails_closed_on_missing_evidence_file() -> None:
-    with tempfile.TemporaryDirectory(dir=ROOT / "runtime") as temporary:
-        with pytest.raises(ValueError, match="Missing evidence file"):
-            build_product_workbench_candidate_payload(_packet(), root=Path(temporary))
+def test_projection_fails_closed_on_missing_evidence_file(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="Missing evidence file"):
+        build_product_workbench_candidate_payload(_packet(), root=tmp_path)
 
 
 def test_projection_requires_an_evidence_root() -> None:
@@ -168,33 +169,35 @@ def test_projection_requires_an_evidence_root() -> None:
         build_product_workbench_candidate_payload(_packet(), root=None)  # type: ignore[arg-type]
 
 
-def test_projection_fails_closed_on_unsupported_status() -> None:
-    packet = _packet()
+def test_projection_fails_closed_on_unsupported_status(tmp_path: Path) -> None:
+    packet = _materialized_packet(tmp_path)
     packet["m2"]["rows"][0]["status"] = "M2_VERIFIED"
 
     with pytest.raises(ValueError, match="Unsupported m2 row status"):
-        build_product_workbench_candidate_payload(packet, root=ROOT)
+        build_product_workbench_candidate_payload(packet, root=tmp_path)
 
 
-def test_projection_fails_closed_on_execution_keys() -> None:
-    packet = _packet()
+def test_projection_fails_closed_on_execution_keys(tmp_path: Path) -> None:
+    packet = _materialized_packet(tmp_path)
     packet["m2"]["rows"][0]["target_weight"] = 0.1
 
     with pytest.raises(ValueError, match="active execution key"):
-        build_product_workbench_candidate_payload(packet, root=ROOT)
+        build_product_workbench_candidate_payload(packet, root=tmp_path)
 
 
-def test_projection_fails_closed_on_simulated_portfolio_metrics() -> None:
-    packet = _packet()
+def test_projection_fails_closed_on_simulated_portfolio_metrics(
+    tmp_path: Path,
+) -> None:
+    packet = _materialized_packet(tmp_path)
     packet["m4"]["normalized_annual_dividend"] = "0.00"
 
     with pytest.raises(ValueError, match="Simulated portfolio metric"):
-        build_product_workbench_candidate_payload(packet, root=ROOT)
+        build_product_workbench_candidate_payload(packet, root=tmp_path)
 
 
-def test_payload_validator_rejects_fake_numeric_placeholders() -> None:
-    packet = _packet()
-    payload = build_product_workbench_candidate_payload(packet, root=ROOT)
+def test_payload_validator_rejects_fake_numeric_placeholders(tmp_path: Path) -> None:
+    packet = _materialized_packet(tmp_path)
+    payload = build_product_workbench_candidate_payload(packet, root=tmp_path)
     malformed = copy.deepcopy(payload)
     malformed["companies"][0]["valuation"]["value_text"] = "0.00"
 
