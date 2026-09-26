@@ -83,6 +83,7 @@ EVENT_CATEGORY_LABELS = {
 TODAY_CATEGORY_LABELS = {
     "EVENT": "重要事件",
     "RESEARCH_CHANGE": "研究状态变化",
+    "MARKET_DATA": "市场数据更新",
     "PRICE_WATCH": "价格进入关注范围",
     "EVIDENCE_INVALIDATION": "证据失效",
     "PORTFOLIO_RISK": "组合风险变化",

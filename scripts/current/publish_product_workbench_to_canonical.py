@@ -14,10 +14,12 @@ import os
 import shutil
 import sys
 import zipfile
+from posixpath import dirname, join, normpath
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
+from xml.etree import ElementTree
 
 from openpyxl import load_workbook
 
@@ -25,7 +27,8 @@ from openpyxl import load_workbook
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
-from scripts.build_m7_daily_workbench import build_packet  # noqa: E402
+from scripts.current.daily_quote_binding import load_daily_quote_binding  # noqa: E402
+from scripts.current.daily_product_packet import build_daily_product_packet  # noqa: E402
 from value_investment_agent.application.product.product_workbench_candidate import (  # noqa: E402
     build_product_workbench_candidate_payload,
 )
@@ -116,11 +119,59 @@ def _advanced_sheet_fingerprint(sheet: Any) -> dict[str, Any]:
     }
 
 
+def _relationship_part(part: str) -> str:
+    return f"{dirname(part)}/_rels/{part.rsplit('/', 1)[-1]}.rels"
+
+
+def _target_part(owner: str, target: str) -> str:
+    if target.startswith("/"):
+        return normpath(target.lstrip("/"))
+    return normpath(join(dirname(owner), target))
+
+
 def _protected_ooxml_parts(path: Path) -> dict[str, str]:
-    """Pin drawing/media/chart and worksheet relationship payloads byte-for-byte."""
-    prefixes = ("xl/drawings/", "xl/media/", "xl/charts/", "xl/worksheets/_rels/")
+    """Pin only drawings/charts/media reachable from preserved worksheets.
+
+    Product sheets are intentionally regenerated. Their relationship IDs may
+    change during a valid refresh, so treating every worksheet relationship as
+    protected would make publication permanently impossible after integration.
+    """
+    workbook_ns = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+    rel_ns = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+    package_rel_ns = "{http://schemas.openxmlformats.org/package/2006/relationships}"
     with zipfile.ZipFile(path) as archive:
-        return {name: hashlib.sha256(archive.read(name)).hexdigest() for name in sorted(archive.namelist()) if name.startswith(prefixes)}
+        names = set(archive.namelist())
+        workbook = ElementTree.fromstring(archive.read("xl/workbook.xml"))
+        relations = ElementTree.fromstring(archive.read("xl/_rels/workbook.xml.rels"))
+        workbook_targets = {
+            relation.attrib["Id"]: _target_part("xl/workbook.xml", relation.attrib["Target"])
+            for relation in relations.findall(f"{package_rel_ns}Relationship")
+        }
+        queue = [
+            workbook_targets[sheet.attrib[rel_ns]]
+            for sheet in workbook.findall(f"{workbook_ns}sheets/{workbook_ns}sheet")
+            if sheet.attrib.get("name") not in WORKBOOK_SHEETS
+        ]
+        protected: set[str] = set()
+        while queue:
+            part = queue.pop()
+            if part in protected or part not in names:
+                continue
+            protected.add(part)
+            relationship_part = _relationship_part(part)
+            if relationship_part not in names:
+                continue
+            protected.add(relationship_part)
+            relations = ElementTree.fromstring(archive.read(relationship_part))
+            for relation in relations.findall(f"{package_rel_ns}Relationship"):
+                target = _target_part(part, relation.attrib["Target"])
+                if target.startswith(("xl/drawings/", "xl/media/", "xl/charts/")):
+                    queue.append(target)
+        relevant = {
+            name for name in protected
+            if name.startswith(("xl/drawings/", "xl/media/", "xl/charts/", "xl/worksheets/_rels/"))
+        }
+        return {name: hashlib.sha256(archive.read(name)).hexdigest() for name in sorted(relevant)}
 
 
 def _snapshot(path: Path) -> dict[str, Any]:
@@ -155,11 +206,15 @@ def _assert_retained(before: dict[str, Any], after: dict[str, Any]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--publish", action="store_true", help="Required explicit confirmation to replace the canonical workbook.")
+    parser.add_argument("--quote-bundle", type=Path, help="Required current, retained dual-source quote bundle.")
     args = parser.parse_args()
     if not args.publish:
         raise ValueError("refusing publish without --publish")
+    if args.quote_bundle is None:
+        raise ValueError("refusing publish without --quote-bundle")
 
     canonical = _workbook_path()
+    daily_quote = load_daily_quote_binding(root=ROOT, bundle_path=args.quote_bundle)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     backup_dir = ROOT / "runtime" / "workbook-backups"
     receipt_dir = ROOT / "runtime" / "publication-receipts"
@@ -175,7 +230,9 @@ def main() -> int:
     staging = canonical.with_name(f".{canonical.stem}.m7-staging-{uuid4().hex}{canonical.suffix}")
     shutil.copy2(canonical, staging)
     try:
-        packet = build_packet(datetime.now(timezone.utc))
+        packet = build_daily_product_packet(
+            root=ROOT, generated_at=datetime.now(timezone.utc), daily_quote=daily_quote
+        )
         model = product_workbench_from_payload(build_product_workbench_candidate_payload(packet, root=ROOT))
         workbook = load_workbook(staging, data_only=False, keep_links=True)
         try:
@@ -211,6 +268,7 @@ def main() -> int:
         "frozen_sheets_unchanged": True,
         "sheet_contract": {name: ("PRODUCT_MANAGED" if name in WORKBOOK_SHEETS else "PRESERVED") for name in after["sheet_order"]},
         "action": "no_order",
+        "daily_quote_binding": daily_quote,
     }
     receipt_path = receipt_dir / f"canonical-m7-product-publication-{stamp}.json"
     receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

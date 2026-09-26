@@ -6,8 +6,9 @@
 LATEST_COMPLETED_OFFICIAL_SESSION = 2026-09-24
 CURRENT_QUOTE_COLLECTION = 600519 / 000333 / 601088 dual-source matched_close
 QUOTE_BUNDLE_SHA256 = d161c6ed8acf2034544aa63fb101922d0ec22f537cdf2c69268243aaecb82974
-CURRENT_DATA_STATUS = DATA_PARTIAL
-CANONICAL_DAILY_RUN = NOT_VERIFIED
+CURRENT_MARKET_DATA_STATUS = MATCHED_CLOSE_FOR_2026-09-24
+CURRENT_RESEARCH_DATA_STATUS = FROZEN_RESEARCH_EVIDENCE
+CANONICAL_DAILY_RUN = PUBLISHED_PENDING_WPS_VISUAL_REVIEW
 M6C2_REPOSITORY_AND_PRIVACY = DONE
 M6C3_ISOLATED_RESTORE_MECHANISM = DONE
 M6C7_OFFICIAL_EXCHANGE_CALENDAR = PARTIAL
@@ -24,9 +25,17 @@ action = no_order
 ```
 
 `runtime/quote-sessions/20260926T081028140946Z/` contains retained raw quote and
-calendar evidence. It proves a bounded current-data collection, not a current
-Excel daily run: the canonical publisher remains tied to the frozen research
-packet, so no canonical workbook publication occurred in this phase. The
+calendar evidence. The daily quote binding verifies report/bundle Hashes, raw
+provider response Hashes, per-symbol `matched_close`, aligned completed session
+and `action=no_order`, then adds a presentation-only market-data item without
+altering intrinsic value, research state or decision status. The canonical
+workbook was published from that binding with receipt
+`runtime/publication-receipts/canonical-m7-product-publication-20260926T083623Z.json`:
+before SHA-256 `78d556b5a71b5f1c72d144e1aa37da5fab6869a4a73dd83db4569b131e0f580e`,
+after SHA-256 `ee99fd866d63a23317953f2bc00fdb8d360f1793f2a077b2e5213d5c73d77eff`.
+The receipt confirms preserved sheets and user-managed content are unchanged.
+This is not a valuation refresh, an approved signal, or user acceptance; WPS
+visual review remains pending. The
 preflight receipt `runtime/m6-operational-preflight-20260926T081452Z/receipt.json`
 binds `m6c2` and `m6c3` to clean commit `0ce39a7ddc900ce6830d94304b094b430b268112`
 and its successful disposable-PostgreSQL CI run. Its SSE calendar source was
@@ -51,11 +60,12 @@ database, or order path was accessed.
 | M6 real restore / resource / health / scheduler | Mechanisms exist where stated | No server, backup, scheduler, or production observations were touched | R3 | NOT_STARTED / REQUIRES_AUTHORIZATION | Explicitly scoped production authorization and independent observations |
 | M6 real sessions and real event | Contracts exist | Verified actual sessions = 0; verified real events = 0 | R6 | NOT_STARTED | Authorized future no-order observations across time |
 | M7 canonical Excel | DONE | `WORKBOOK_PATH` is the only user workbook; integrated product UX passed preservation and WPS-open checks | R5 | PRODUCT_READY_PENDING_USER_ACCEPTANCE | User acceptance of the canonical workbook |
-| Initial assisted use | — | No fresh daily packet has been safely bound to the canonical workbook; no user final acceptance | R0/R5 | NOT_REACHED | Bind a current daily packet to the canonical publisher, then complete user acceptance |
+| Initial assisted use | Daily quote binding and canonical publication DONE | Current market data is visible; research/valuation remains frozen and no user final acceptance exists | R5 | NOT_REACHED | WPS visual review and user acceptance |
 
-The remaining safe engineering issue is narrow: the daily packet-to-canonical-
-publication binding must be evidence-bound before a canonical workbook can
-describe current data. It must not be bypassed by publishing the frozen packet.
+The daily packet-to-canonical-publication binding is now evidence-bound. Any
+future publication without `--quote-bundle`, with a changed raw document, a
+coverage mismatch, a non-`matched_close` observation, or a changed protected
+sheet fails closed.
 
 ## 2026-09-26 Canonical Excel 发布纠偏与验收收尾
 

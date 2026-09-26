@@ -4,12 +4,14 @@
 
 ### Real-use readiness factual checkpoint
 
-The 2026-09-26 bounded quote collection has retained matched-close data for
-the three fixed symbols, but the canonical Excel publisher has not consumed
-that bundle. It is therefore `DATA_PARTIAL`, not a current daily product run:
-`CANONICAL_DAILY_RUN=NOT_VERIFIED`. M6 `m6c2` and `m6c3` are re-verified on the
-current clean HEAD; `m6c7` is still `PARTIAL` because future authorized venue
-coverage is undefined. M4 was exercised only with synthetic data and remains
+The 2026-09-26 bounded quote collection retained matched-close data for the
+three fixed symbols and is now bound to the canonical Excel publisher. The
+published product pages show the 2026-09-24 market-data observation with raw
+evidence references, while frozen research facts remain explicitly separate:
+this is not a valuation refresh, decision signal, or order. The WPS visual
+review remains pending. M6 `m6c2` and `m6c3` are re-verified on the current
+clean HEAD; `m6c7` is still `PARTIAL` because future authorized venue coverage
+is undefined. M4 was exercised only with synthetic data and remains
 `WAITING_R2`; M3 strict PIT remains `NOT_PROVEN`; M5 remains
 `PARTIAL_WITH_VALIDATED_NOT_READY`. The source-of-truth readiness matrix is in
 the latest `execution-status.md` checkpoint.

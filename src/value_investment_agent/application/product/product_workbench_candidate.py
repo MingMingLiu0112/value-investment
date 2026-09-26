@@ -697,8 +697,30 @@ def _today_items(
     m3_refs: list[str],
     m5_refs: list[str],
     m6_refs: list[str],
+    daily_quote: Mapping[str, Any] | None = None,
+    daily_quote_refs: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
+    if daily_quote is not None:
+        quotes = _required_list(daily_quote.get("quotes"), "daily_quote.quotes")
+        rendered = "；".join(
+            f"{_required_text(item.get('symbol'), 'daily_quote.symbol')} {item.get('price')} 元"
+            for item in quotes
+            if isinstance(item, Mapping)
+        )
+        if not rendered or not daily_quote_refs:
+            raise ValueError("daily_quote evidence is incomplete")
+        items.append(
+            {
+                "category": "MARKET_DATA",
+                "company": "市场数据",
+                "what_happened": f"{daily_quote['as_of']} 收盘行情已双源校验：{rendered}。",
+                "why_it_matters": "行情只用于展示与后续价格桥接，不会修改内在价值、研究结论或交易状态。",
+                "current_status": "当前行情已归档，仍需与可用研究结论分别判断。",
+                "next_step": "仅在研究、估值与价格桥接均满足门槛时进入人工复核。",
+                "evidence_refs": daily_quote_refs,
+            }
+        )
     for item in m5_items:
         items.append(
             {
@@ -830,6 +852,12 @@ def build_product_workbench_candidate_payload(
             "m6-operational-preflight-20260924T050357Z/receipt.json",
         )
     ]
+    daily_quote = packet.get("daily_quote")
+    daily_quote_refs = (
+        [_evidence_ref(evidence, _required_text(daily_quote.get("bundle_path"), "daily_quote.bundle_path"))]
+        if isinstance(daily_quote, Mapping)
+        else []
+    )
     symbol_names = {row["symbol"]: row["name"] for row in rows}
     symbol_names.update({card["symbol"]: card["name"] for card in m3_cards})
     today_items = _today_items(
@@ -842,6 +870,8 @@ def build_product_workbench_candidate_payload(
         m3_refs=m3_refs,
         m5_refs=m5_refs,
         m6_refs=m6_refs,
+        daily_quote=daily_quote if isinstance(daily_quote, Mapping) else None,
+        daily_quote_refs=daily_quote_refs,
     )
     pending_count = len(m3_cards) + len(m5_items) + int(bool(m6["blockers"]))
     payload = {
