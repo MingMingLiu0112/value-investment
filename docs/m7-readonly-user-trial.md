@@ -1,6 +1,6 @@
 # M7 只读用户试用
 
-当前唯一入口由 `config/current-trial-workbook.json` 固定。它是经过 Hash 与 WPS 回执校验的只读候选，不是正式原表，不代表 M6 已运营，也不是个性化投资建议。
+当前唯一试用入口是 `.env` 的 `WORKBOOK_PATH` 指向的 canonical workbook。M7 Product UX 已原位集成在同一份 Excel；`config/current-trial-workbook.json` 只保存逻辑来源 `WORKBOOK_PATH`，不保存 runtime workbook 路径。`runtime` candidate 仅为历史或临时预览，不是用户入口，不代表 M6 已运营，也不是个性化投资建议。
 
 ```powershell
 python scripts/open_current_trial_workbook.py --open

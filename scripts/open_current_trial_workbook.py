@@ -14,8 +14,9 @@ CANONICAL_NAME = "A股价值投资_Agent前端智能跟踪模板.xlsx"
 
 def _canonical_workbook() -> Path:
     value = os.environ.get("WORKBOOK_PATH")
-    if not value:
-        for line in (ROOT / ".env").read_text(encoding="utf-8").splitlines():
+    env_file = ROOT / ".env"
+    if not value and env_file.is_file():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
             if line.strip().startswith("WORKBOOK_PATH"):
                 value = line.split("=", 1)[1].strip()
                 break

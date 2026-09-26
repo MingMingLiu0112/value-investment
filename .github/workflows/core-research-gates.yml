@@ -156,6 +156,7 @@ jobs:
           tests/test_m5_research_artifact_graph.py
           tests/test_m7_daily_workbook.py
           tests/test_current_trial_workbook.py
+          tests/test_canonical_workbook_preservation.py
           tests/test_m7_actual_followup_scan.py
           tests/test_wps_verifier_text_scans.py
           tests/test_public_workbook_wps_audit.py

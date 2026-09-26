@@ -1,6 +1,31 @@
 # 当前执行状态
 
-## 2026-09-26 M7 五页产品工作台交付到用户入口
+## 2026-09-26 Canonical Excel 发布纠偏与验收收尾
+
+```text
+CANONICAL_WORKBOOK_SOURCE = WORKBOOK_PATH
+CURRENT_TRIAL_POINTER = CANONICAL_WORKBOOK
+M7_PRODUCT_UX = INTEGRATED
+CANONICAL_FILE_BEFORE_SHA256 = 64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911
+BACKUP_SHA256 = 64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911
+CANONICAL_FILE_AFTER_SHA256 = 78d556b5a71b5f1c72d144e1aa37da5fab6869a4a73dd83db4569b131e0f580e
+WORKBOOK_PATH_UNCHANGED = true
+PRODUCT_SHEETS_PRESENT = true
+PRESERVED_SHEETS_CONTENT_CHECK = PASS
+WPS_CANONICAL_OPEN = PASS
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+发布回执在 `runtime/publication-receipts/canonical-m7-product-publication-20260926T054332Z.json`，
+备份在 `runtime/workbook-backups/canonical-before-m7-product-ux-20260926T054332Z.xlsx`。WPS
+只读打开与可读性回执均通过。后续发布对所有非 `PRODUCT_MANAGED` 工作表执行单元格、公式、
+超链接、合并区域、行列尺寸、冻结窗格、保护、批注、数据验证、条件格式、命名范围以及
+绘图/媒体/图表/关系 OOXML 部件的 fail-closed preservation audit。历史 runtime candidate
+不是 current pointer，也不是用户入口。
+
+## 2026-09-26 M7 五页产品工作台候选历史记录
 
 本轮唯一目标 `DELIVER-M7-PRODUCT-UX-V2-TO-USER`。五页产品工作台候选
 `runtime/m7-product-ux-candidate-v2-20260926.xlsx`

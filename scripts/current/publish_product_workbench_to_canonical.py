@@ -13,6 +13,7 @@ import json
 import os
 import shutil
 import sys
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -50,8 +51,9 @@ def _sha256(path: Path) -> str:
 
 def _workbook_path() -> Path:
     value = os.environ.get("WORKBOOK_PATH")
-    if not value:
-        for line in (ROOT / ".env").read_text(encoding="utf-8").splitlines():
+    env_file = ROOT / ".env"
+    if not value and env_file.is_file():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
             if line.strip().startswith("WORKBOOK_PATH"):
                 value = line.split("=", 1)[1].strip()
                 break
@@ -87,13 +89,48 @@ def _cell_fingerprint(sheet: Any) -> dict[str, Any]:
     }
 
 
+def _stable_hash(value: Any) -> str:
+    encoded = json.dumps(value, ensure_ascii=False, default=str, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _advanced_sheet_fingerprint(sheet: Any) -> dict[str, Any]:
+    rows = [(key, value.height, value.hidden, value.outlineLevel, value.collapsed, value.style_id) for key, value in sheet.row_dimensions.items()]
+    columns = [(key, value.min, value.max, value.width, value.hidden, value.bestFit, value.outlineLevel, value.collapsed, value.style_id) for key, value in sheet.column_dimensions.items()]
+    validations = [
+        (str(item.sqref), item.type, item.operator, item.formula1, item.formula2, item.allow_blank, item.showErrorMessage, item.showInputMessage, item.showDropDown)
+        for item in sheet.data_validations.dataValidation
+    ]
+    conditional_rules = [(str(key), tuple(str(rule) for rule in rules)) for key, rules in sheet.conditional_formatting._cf_rules.items()]
+    comments = [(cell.coordinate, cell.comment.text, cell.comment.author, cell.comment.width, cell.comment.height) for cell in sheet._cells.values() if cell.comment is not None]
+    protection = {name: getattr(sheet.protection, name) for name in ("sheet", "objects", "scenarios", "formatCells", "formatColumns", "formatRows", "insertColumns", "insertRows", "insertHyperlinks", "deleteColumns", "deleteRows", "selectLockedCells", "sort", "autoFilter", "pivotTables", "selectUnlockedCells")}
+    return {
+        "merged_ranges": _stable_hash(sorted(str(item) for item in sheet.merged_cells.ranges)),
+        "row_dimensions": _stable_hash(rows),
+        "column_dimensions": _stable_hash(columns),
+        "freeze_panes": str(sheet.freeze_panes) if sheet.freeze_panes else None,
+        "protection": _stable_hash(protection),
+        "comments": _stable_hash(comments),
+        "data_validations": {"count": len(validations), "sha256": _stable_hash(validations)},
+        "conditional_formatting": {"count": len(conditional_rules), "sha256": _stable_hash(conditional_rules)},
+    }
+
+
+def _protected_ooxml_parts(path: Path) -> dict[str, str]:
+    """Pin drawing/media/chart and worksheet relationship payloads byte-for-byte."""
+    prefixes = ("xl/drawings/", "xl/media/", "xl/charts/", "xl/worksheets/_rels/")
+    with zipfile.ZipFile(path) as archive:
+        return {name: hashlib.sha256(archive.read(name)).hexdigest() for name in sorted(archive.namelist()) if name.startswith(prefixes)}
+
+
 def _snapshot(path: Path) -> dict[str, Any]:
     workbook = load_workbook(path, data_only=False, keep_links=True)
     try:
         return {
             "sheet_order": workbook.sheetnames,
-            "defined_names": sorted(name.name for name in workbook.defined_names.values()),
-            "sheets": {sheet.title: _cell_fingerprint(sheet) for sheet in workbook.worksheets},
+            "defined_names": sorted((name.name, name.attr_text, name.localSheetId, name.hidden) for name in workbook.defined_names.values()),
+            "sheets": {sheet.title: {**_cell_fingerprint(sheet), **_advanced_sheet_fingerprint(sheet)} for sheet in workbook.worksheets},
+            "protected_ooxml_parts": _protected_ooxml_parts(path),
         }
     finally:
         workbook.close()
@@ -106,6 +143,8 @@ def _assert_retained(before: dict[str, Any], after: dict[str, Any]) -> None:
         raise ValueError("retained sheet order changed")
     if before["defined_names"] != after["defined_names"]:
         raise ValueError("defined names changed")
+    if before["protected_ooxml_parts"] != after["protected_ooxml_parts"]:
+        raise ValueError("protected drawing, media, chart, or worksheet relationship parts changed")
     changed = [name for name in retained if before["sheets"][name] != after["sheets"].get(name)]
     if changed:
         raise ValueError("protected sheets changed: " + ", ".join(changed))
