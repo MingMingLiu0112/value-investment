@@ -135,15 +135,14 @@ def main() -> int:
     workbook_path = args.workbook.resolve()
     workbook = load_workbook(workbook_path)
     pages: dict[str, object] = {}
-    for name in workbook.sheetnames:
+    for name in USER_SHEETS + SECONDARY_SHEETS:
         pages[name] = audit_sheet(workbook[name])
 
     user_failures = [
         name for name in USER_SHEETS if pages.get(name, {}).get("verdict") != "PASS"
     ]
-    freeze_ok = all(
-        workbook[name].freeze_panes == "B4" for name in workbook.sheetnames
-    )
+    product_sheets = USER_SHEETS + SECONDARY_SHEETS
+    freeze_ok = all(workbook[name].freeze_panes == "B4" for name in product_sheets)
     rendered: dict[str, object] | None = None
     if args.rendered_pdf is not None:
         pdf_path = args.rendered_pdf.resolve()
@@ -159,7 +158,7 @@ def main() -> int:
     receipt = {
         "schema_version": "m7-product-ux-readability-audit-v1",
         "status": "passed" if passed else "failed",
-        "workbook": str(workbook_path.relative_to(ROOT)),
+        "workbook": str(workbook_path.relative_to(ROOT)) if workbook_path.is_relative_to(ROOT) else str(workbook_path),
         "workbook_sha256": _sha256(workbook_path),
         "user_sheets": list(USER_SHEETS),
         "secondary_sheets": list(SECONDARY_SHEETS),

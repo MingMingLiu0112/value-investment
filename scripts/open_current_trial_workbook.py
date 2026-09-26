@@ -1,8 +1,7 @@
-"""Resolve, verify and optionally open the one current M7 read-only trial workbook."""
+"""Resolve and optionally open the one configured canonical user workbook."""
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -10,6 +9,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 POINTER = ROOT / "config" / "current-trial-workbook.json"
+CANONICAL_NAME = "A股价值投资_Agent前端智能跟踪模板.xlsx"
+
+
+def _canonical_workbook() -> Path:
+    value = os.environ.get("WORKBOOK_PATH")
+    if not value:
+        for line in (ROOT / ".env").read_text(encoding="utf-8").splitlines():
+            if line.strip().startswith("WORKBOOK_PATH"):
+                value = line.split("=", 1)[1].strip()
+                break
+    if not value:
+        raise ValueError("CANONICAL_WORKBOOK_NOT_RESOLVED")
+    workbook = Path(value).expanduser().resolve()
+    if not workbook.is_file() or workbook.suffix.lower() != ".xlsx" or workbook.name != CANONICAL_NAME:
+        raise ValueError("CANONICAL_WORKBOOK_NOT_RESOLVED")
+    return workbook
 
 
 def main() -> int:
@@ -17,28 +32,16 @@ def main() -> int:
     parser.add_argument("--open", action="store_true", help="Open the verified workbook with the default Windows application.")
     args = parser.parse_args()
     contract = json.loads(POINTER.read_text(encoding="utf-8"))
-    workbook = (ROOT / contract["workbook"]).resolve()
-    manifest = (ROOT / contract["manifest"]).resolve()
-    receipt = (ROOT / contract["wps_receipt"]).resolve()
-    if not workbook.is_file() or not manifest.is_file() or not receipt.is_file():
-        raise ValueError("current trial workbook evidence set is incomplete")
-    actual_sha = hashlib.sha256(workbook.read_bytes()).hexdigest()
-    if actual_sha != contract["workbook_sha256"]:
-        raise ValueError("current trial workbook hash does not match the pinned pointer")
-    manifest_payload = json.loads(manifest.read_text(encoding="utf-8"))
-    receipt_payload = json.loads(receipt.read_text(encoding="utf-8"))
-    if manifest_payload.get("workbook_sha256") != actual_sha:
-        raise ValueError("current trial manifest does not bind the workbook")
-    if receipt_payload.get("sha256") != actual_sha or receipt_payload.get("status") != "passed":
-        raise ValueError("current trial WPS receipt is missing or failed")
-    if manifest_payload.get("action") != "no_order" or receipt_payload.get("action") != "no_order":
-        raise ValueError("current trial workbook must remain no_order")
+    if contract.get("workbook_source") != "WORKBOOK_PATH" or contract.get("action") != "no_order":
+        raise ValueError("current workbook pointer is not a canonical no_order contract")
+    workbook = _canonical_workbook()
+    actual_sha = __import__("hashlib").sha256(workbook.read_bytes()).hexdigest()
     result = {
         "status": contract["status"],
         "workbook": str(workbook),
         "sha256": actual_sha,
-        "m6_operational_status": contract["m6_operational_status"],
-        "initial_assisted_use": contract["initial_assisted_use"],
+        "m6_operational_status": contract.get("m6_operational_status"),
+        "initial_assisted_use": contract.get("initial_assisted_use"),
         "action": "no_order",
     }
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))

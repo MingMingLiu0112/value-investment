@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 
 from openpyxl import load_workbook
+from openpyxl import Workbook
 
 from value_investment_agent.presentation.excel.product_workbench import (
     SHEET_COMPANIES,
@@ -18,6 +19,7 @@ from value_investment_agent.presentation.excel.product_workbench import (
     USER_SHEETS,
     WORKBOOK_SHEETS,
     build_product_workbench_workbook,
+    apply_product_workbench_to_existing_workbook,
     write_product_workbench_candidate,
 )
 from value_investment_agent.presentation.read_models.product_workbench import (
@@ -282,6 +284,26 @@ def test_candidate_has_five_user_sheets_and_secondary_audit() -> None:
     assert tuple(workbook.sheetnames[:5]) == USER_SHEETS
     assert workbook.sheetnames[-1] == SHEET_SYSTEM_AUDIT
     assert workbook[USER_SHEETS[0]].sheet_view.showGridLines is False
+
+
+def test_product_surface_replaces_only_its_own_sheets_and_preserves_legacy_order() -> None:
+    workbook = Workbook()
+    legacy = workbook.active
+    legacy.title = "人工持仓"
+    legacy["A1"] = "用户输入"
+    legacy["B2"] = "=1+1"
+    frozen = workbook.create_sheet("冻结证据")
+    frozen["A1"] = "immutable"
+    frozen.sheet_state = "hidden"
+
+    sheets = apply_product_workbench_to_existing_workbook(workbook, _model())
+
+    assert sheets[:6] == WORKBOOK_SHEETS
+    assert sheets[6:] == ("人工持仓", "冻结证据")
+    assert workbook["人工持仓"]["A1"].value == "用户输入"
+    assert workbook["人工持仓"]["B2"].value == "=1+1"
+    assert workbook["冻结证据"]["A1"].value == "immutable"
+    assert workbook["冻结证据"].sheet_state == "hidden"
 
 
 def test_company_detail_is_reachable_within_three_clicks() -> None:

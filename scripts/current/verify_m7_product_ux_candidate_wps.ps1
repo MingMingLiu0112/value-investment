@@ -1,8 +1,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$WorkbookPath,
     [Parameter(Mandatory = $true)][string]$ReceiptPath,
-    [Parameter(Mandatory = $true)][string]$ExpectedSha256,
-    [Parameter(Mandatory = $true)][string]$PackagePath
+    [Parameter(Mandatory = $true)][string]$ExpectedSha256
 )
 $ErrorActionPreference = "Stop"
 [Console]::InputEncoding = [Text.UTF8Encoding]::new()
@@ -10,21 +9,10 @@ $ErrorActionPreference = "Stop"
 $OutputEncoding = [Console]::OutputEncoding
 
 $path = (Resolve-Path -LiteralPath $WorkbookPath).Path
-$packagePath = (Resolve-Path -LiteralPath $PackagePath).Path
-$package = Get-Content -Raw -LiteralPath $packagePath | ConvertFrom-Json
 $before = (Get-FileHash -LiteralPath $path).Hash.ToLowerInvariant()
 $expected = $ExpectedSha256.ToLowerInvariant()
 if ($before -ne $expected) {
     throw "M7 product candidate changed before WPS verification: $before"
-}
-if ($package.workbook_sha256 -ne $expected) {
-    throw "M7 product manifest does not bind the workbook hash."
-}
-if ($package.action -ne "no_order") {
-    throw "M7 product candidate is not no_order."
-}
-if ($package.schema_version -ne "m7-product-workbench-candidate-v1") {
-    throw "Unexpected M7 product manifest schema: $($package.schema_version)"
 }
 
 $expectedSheets = @(
@@ -60,8 +48,8 @@ try {
     if (-not $book.ReadOnly) {
         throw "M7 product candidate must open read-only."
     }
-    if ($book.Worksheets.Count -ne $expectedSheets.Count) {
-        throw "Unexpected worksheet count: $($book.Worksheets.Count)"
+    if ($book.Worksheets.Count -lt $expectedSheets.Count) {
+        throw "Canonical workbook has fewer than six product worksheets."
     }
 
     for ($i = 0; $i -lt $expectedSheets.Count; $i++) {
@@ -128,6 +116,8 @@ try {
     }
 
     $sheetCount = $book.Worksheets.Count
+    $visibleCount = @($book.Worksheets | Where-Object { $_.Visible -eq -1 }).Count
+    $hiddenCount = @($book.Worksheets | Where-Object { $_.Visible -ne -1 }).Count
     $book.Close($false)
     $book = $null
     if ((Get-FileHash -LiteralPath $path).Hash.ToLowerInvariant() -ne $before) {
@@ -140,8 +130,8 @@ try {
         sha256 = $before
         read_only = $true
         sheets = $sheetCount
-        visible_sheets = $sheetCount
-        hidden_sheets = 0
+        visible_sheets = $visibleCount
+        hidden_sheets = $hiddenCount
         user_sheets = $userSheets
         secondary_sheets = @("06_系统与审计")
         sheet_checks = $sheetChecks
@@ -150,8 +140,8 @@ try {
         checked_at = [DateTimeOffset]::UtcNow.ToString("o")
         action = "no_order"
         final_user_acceptance = "NOT_PASSED"
-        canonical_pointer_modified = $false
-        check_scope = "WPS read-only open/read/calculate, sheet contract, per-sheet frozen first column, formula-error scan, engineering-token scan and forbidden-decision scan on the five user pages, required empty-state and blocked-valuation wording, workbook hash stability"
+        canonical_workbook = $true
+        check_scope = "WPS read-only open/read/calculate of canonical workbook; first-six product sheet contract, per-product-sheet frozen first column, formula-error scan, engineering-token scan and forbidden-decision scan on the five user pages, required empty-state and blocked-valuation wording, workbook hash stability"
     }
     $receipt | ConvertTo-Json -Depth 6 |
         Set-Content -LiteralPath $ReceiptPath -Encoding utf8

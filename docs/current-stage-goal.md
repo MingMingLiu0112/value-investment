@@ -2,11 +2,17 @@
 
 ## 当前执行门禁（2026-09-26）
 
-当前唯一阶段为 `PRODUCTIZATION-SECURITY-AND-REAL-USE-CLOSURE`。优先级是
+当前唯一阶段为 `PRODUCTIZATION-SECURITY-AND-REAL-USE-CLOSURE`。唯一用户 Excel
+入口为 `.env` 的 `WORKBOOK_PATH`，即 WPS 云盘中的
+`A股价值投资_Agent前端智能跟踪模板.xlsx`；M7 的五页产品入口只允许原位发布到该
+工作簿，`runtime` 中的候选文件不是用户入口。当前已完成原位发布的逐页保全、WPS 只读
+打开与可读性复核，故 `M7_PRODUCT_UX=INTEGRATED`；最终用户签收仍未完成。
+`M4_PERSONALIZED=WAITING_R2`，`M6_OPERATIONAL=NOT_STARTED`，
+`INITIAL_ASSISTED_USE=NOT_REACHED`，并永久保持 `action=no_order`。优先级是
 M7 五页产品体验、关闭 ADV-P1-003/004、通用产品入口、M4 合成接入演练、M6
 启动条件矩阵和历史验证维护。该阶段不建立 M8、不扩大市场范围，也不授权生产、
 Shadow、调度、通知或账户导入。M2-M6 继续作为后台阶段，不得出现在用户导航中。
-M7 Product Read Model 与五页 Excel 候选已形成；ADV-P1-003/004 已通过签名审批
+M7 Product Read Model 与五页 Excel 产品页已形成并集成至唯一 canonical workbook；ADV-P1-003/004 已通过签名审批
 收据和运行控制重验关闭。第二轮对抗审查后：legacy M5 授权只能对已存在的同指纹批次
 做只读重放，新建 ACTUAL 运行一律拒绝；M5/M6 的 trust root 必须命中已提交的 pin
 注册表，该注册表当前为空，因此真实 ACTUAL/M6 授权默认 fail-closed；M7 组合数值仅在
@@ -21,8 +27,8 @@ M4 provenance 齐备时显示；M6 start matrix 支持 `SHADOW_START_READY`，�
 `NOT_PIT_SAFE / NOT_ADMITTED / EVIDENCE_STOP`。
 
 M4 Private Input Package 已形成单一安全入口，合成链覆盖草稿、加密、双密文对账和
-显式人工确认；真实 R2 输入仍未提供，M4 个性化状态不升级。M7 只读试用入口已固定到
-受 Hash/WPS 回执约束的 v16 候选；正式原表未替换，M6 仍为
+显式人工确认；真实 R2 输入仍未提供，M4 个性化状态不升级。M7 只读试用入口已改为
+`WORKBOOK_PATH` 的 canonical workbook；候选工作簿仅作为历史审计产物，M6 仍为
 `NOT_STARTED operationally`，M7 R5 签收未开始。两项均保持 `action=no_order`。
 M6 离线授权的裸 ID 领域入口已关闭：模式转换只接受签名验证器签发的证明对象，并保存授权
 Hash、目标模式、操作者和有效期绑定；`LIMITED_USE` 继续无入口。历史验证第一案例保持

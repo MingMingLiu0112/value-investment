@@ -796,6 +796,43 @@ def build_product_workbench_workbook(
     return workbook
 
 
+def apply_product_workbench_to_existing_workbook(
+    workbook: Workbook,
+    model: ProductWorkbenchReadModel,
+) -> tuple[str, ...]:
+    """Insert the managed M7 surface without rebuilding retained workbook sheets.
+
+    Only the six named product sheets are ever replaced.  Every other sheet,
+    including manual, historical and evidence tabs, remains in the workbook and
+    retains its relative order after the new front-door navigation.
+    """
+
+    if not isinstance(model, ProductWorkbenchReadModel):
+        raise TypeError("model must be ProductWorkbenchReadModel")
+    for title in WORKBOOK_SHEETS:
+        if title in workbook.sheetnames:
+            del workbook[title]
+    sheets = {
+        title: workbook.create_sheet(title, index=index)
+        for index, title in enumerate(WORKBOOK_SHEETS)
+    }
+    for sheet in sheets.values():
+        sheet.sheet_view.showGridLines = False
+        sheet.freeze_panes = "B4"
+    sheets[SHEET_TODAY].sheet_properties.tabColor = GREEN
+    sheets[SHEET_SYSTEM_AUDIT].sheet_properties.tabColor = MUTED
+
+    audit_rows = _audit_rows(model)
+    company_rows = _render_companies(sheets[SHEET_COMPANIES], model, audit_rows)
+    _render_today(sheets[SHEET_TODAY], model, company_rows, audit_rows)
+    _render_opportunities(sheets[SHEET_OPPORTUNITIES], model, company_rows, audit_rows)
+    _render_portfolio(sheets[SHEET_PORTFOLIO], model, audit_rows)
+    _render_events(sheets[SHEET_EVENTS], model, audit_rows)
+    _render_audit(sheets[SHEET_SYSTEM_AUDIT], model)
+    workbook.active = 0
+    return tuple(workbook.sheetnames)
+
+
 def write_product_workbench_candidate(
     model: ProductWorkbenchReadModel,
     *,
@@ -871,5 +908,6 @@ __all__ = [
     "USER_SHEETS",
     "WORKBOOK_SHEETS",
     "build_product_workbench_workbook",
+    "apply_product_workbench_to_existing_workbook",
     "write_product_workbench_candidate",
 ]

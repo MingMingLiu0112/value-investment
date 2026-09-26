@@ -8,7 +8,7 @@
 可直接放入目标模式的文本见 [启动入口](docs/value-investment-goal-prompt.md)。文档审查与逐文件处置清单见 [2026-09-22 治理报告](docs/project-goal-consolidation-20260922.md)。
 未来多个长期 Goal 的路线、真实审查和毕业标准见 [LONG-TERM-GOAL.md](LONG-TERM-GOAL.md)。当前活动 Goal 为 `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`，状态 `PARTIAL`：M2 Checkpoint A 已由用户签收，当前人工聚焦为 M3 Checkpoint B；Checkpoint B-D、私有 IPS/组合输入和 M6 生产授权仍未签收。C0-C3 与 M1 已冻结，不等于投资决策就绪。
 
-三公司工程与 Excel MVP 已冻结，研究级估值、股息可持续性和生产数据分别验收。最新人工待办与签收边界见 [M2-M7 人工复核交接清单](docs/m2-m7-human-review-handoff-20260924.md)，当前 M3 复核对象见 [Checkpoint B 复核包](docs/m3-checkpoint-b-review-packet-20260924.md)，M7 候选查看方式见 [运行手册](docs/m7-assisted-use-runbook-20260924.md)。以下运维命令仅供既有部署维护参考，不自动授权初始化、改任务、发布原表或恢复模拟/交易开发。
+三公司工程与 Excel MVP 已冻结，研究级估值、股息可持续性和生产数据分别验收。最新人工待办与签收边界见 [M2-M7 人工复核交接清单](docs/m2-m7-human-review-handoff-20260924.md)，当前 M3 复核对象见 [Checkpoint B 复核包](docs/m3-checkpoint-b-review-packet-20260924.md)。M7 从 `.env` 的 `WORKBOOK_PATH` 打开同一份 canonical workbook；候选文件仅保留为历史审计，不是产品入口。以下运维命令仅供既有部署维护参考，不自动授权初始化、改任务、发布原表或恢复模拟/交易开发。
 
 ## 当前入口导航
 

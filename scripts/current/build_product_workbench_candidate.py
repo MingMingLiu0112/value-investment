@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the five-page M7 product UX candidate from the pinned legacy packet."""
+"""Build an explicitly requested historical preview; never a user frontend."""
 from __future__ import annotations
 
 import argparse
@@ -29,9 +29,6 @@ from value_investment_agent.presentation.read_models.product_workbench import ( 
 )
 
 
-DEFAULT_OUTPUT = ROOT / "runtime" / "m7-product-ux-candidate-v1-20260926.xlsx"
-
-
 def _generated_at(value: str) -> datetime:
     parsed = datetime.fromisoformat(value)
     if parsed.utcoffset() is None:
@@ -41,7 +38,12 @@ def _generated_at(value: str) -> datetime:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--historical-preview",
+        action="store_true",
+        help="Required acknowledgement that this is a runtime-only historical preview.",
+    )
     parser.add_argument(
         "--generated-at",
         type=_generated_at,
@@ -52,7 +54,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if not args.historical_preview:
+        raise ValueError("refusing candidate creation without --historical-preview")
     output = args.output if args.output.is_absolute() else ROOT / args.output
+    if not output.resolve().is_relative_to(ROOT / "runtime"):
+        raise ValueError("historical preview must remain under runtime/")
     packet = build_packet(args.generated_at)
     payload = build_product_workbench_candidate_payload(packet, root=ROOT)
     model = product_workbench_from_payload(payload)
