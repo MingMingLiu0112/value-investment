@@ -37,6 +37,9 @@ GENERIC_PRODUCT_PATHS = {
     "scripts/current/build_current_workbench.py",
     "scripts/current/review_event.py",
 }
+NON_SYMBOL_PRODUCT_PATHS = {
+    "scripts/current/register_prospective_research.py",
+}
 ISSUER_SPECIFIC_PATHS = {
     "scripts/prepare_moutai_current_execution_contract.py",
     "scripts/publish_moutai_case_workbook.py",
@@ -73,6 +76,7 @@ def test_v2_cli_split_preserves_every_v1_path_and_bounds_product_surface():
     assert len(all_paths) == len(set(all_paths))
     assert set(v1_paths) <= set(all_paths)
     assert GENERIC_PRODUCT_PATHS <= set(product)
+    assert NON_SYMBOL_PRODUCT_PATHS <= set(product)
     assert ISSUER_SPECIFIC_PATHS.isdisjoint(product)
     assert ISSUER_SPECIFIC_PATHS <= set(engineering)
     assert v2["counts"] == {
@@ -107,6 +111,20 @@ def test_generic_product_cli_is_thin_symbol_parameterized_and_has_no_branch():
         )
         assert completed.returncode == 0, (relative, completed.stderr)
         assert "--symbol" in completed.stdout
+
+
+def test_prospective_registration_cli_is_thin_and_requires_explicit_output():
+    path = ROOT / "scripts/current/register_prospective_research.py"
+    text = path.read_text(encoding="utf-8")
+    assert "register_prospective_research_plan" in text
+    assert "--output" in text
+    assert "600519" not in text
+    assert sum(1 for _ in path.open("r", encoding="utf-8")) <= 90
+    completed = subprocess.run(
+        [sys.executable, str(path), "--help"], cwd=ROOT, capture_output=True, text=True,
+    )
+    assert completed.returncode == 0
+    assert "--output" in completed.stdout
 
 
 def test_product_application_layer_has_no_issuer_specific_branch():

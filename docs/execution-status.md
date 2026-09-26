@@ -2845,3 +2845,24 @@ action = no_order
   不生成任何个人组合数值或仓位建议。
 - 本地架构边界测试 `27 passed`，产品与目录纠偏测试 `38 passed`；GitHub Core Research
   Gates 运行 `36270833139` 的 `offline-core` 与 `postgres-integration` 均为成功。
+# 2026-09-27：公共研究连续推进阶段启动
+
+`STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-USE-ADVANCEMENT` 取代了将 R2 私人
+组合 onboarding 误作全局等待状态的表述。M4 仅在本地保持
+`M4_ENGINEERING=COMPLETE_FOR_CURRENT_SCOPE`、`M4_SYNTHETIC_REHEARSAL=COMPLETE`、
+`M4_PERSONALIZED=PARKED_WAITING_R2`；未读取、扫描、推断或发布任何私人组合数据。
+公共研究、公共事件和 canonical Excel 产品轨道继续独立运行，永久 `action=no_order`。
+
+已新增 `config/prospective-research-observation-plan-v1.json`：它在 2026-09-27
+09:30 +08:00 预登记 000333、600887、601088 三个公共观察案例，明确模型画像、公开
+来源定位器、待验证假设、基线截止和 PIT 规则，并明确排除 600519（现有 evidence-stop
+规则）及任何当前价格、个人组合、订单或结果导向筛选。登记命令
+`scripts/current/register_prospective_research.py` 只能将不可覆盖回执写到 `runtime/`，
+回执绑定计划 SHA-256 和运行时 Git revision，且明确 `outcomes_observed=false`、
+`valuation_executed=false`、`decision_signal_created=false`、`portfolio_data_used=false`。
+这建立了前瞻观察边界，不构成估值、投资建议、M3 strict PIT 证明、生产数据验证或 Excel
+发布。
+
+当前为周末，尚未形成晚于既有已完成交易会话的官方收盘事实；因此未刷新 Quote、未发布
+canonical workbook、未重跑模拟链。下一次仅在新的官方已完成会话或新的有界公共事件到达时，
+分别更新相应轨道；M6 保持 `NOT_STARTED`，未做服务器、Shadow、调度、通知或生产操作。

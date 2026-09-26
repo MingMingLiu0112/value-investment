@@ -1,10 +1,44 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-## 当前阶段：STAGE-R2-REAL-PRIVATE-PORTFOLIO-ONBOARDING-AND-PERSONALIZED-READINESS（2026-09-26）
+## 当前阶段：STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-USE-ADVANCEMENT（2026-09-27）
 
-安全 R0/R1 已归零。本阶段只接受用户明确提供、位于仓库和同步盘外的真实 R2 私人输入包；当前未提供 `PRIVATE_ROOT` 或合法输入路径，因此 `STAGE_STATUS=WAITING_R2_PRIVATE_INPUT`。不扫描用户磁盘、不猜测组合、不创建密钥、文件、Excel 或合成输入。现有 [M4 私人输入包](m4-private-input-package.md) 是唯一 onboarding 路径；真实 M5 receipt 仍需要 R3 受控身份/信任根与 R6 自然事件。M6 生产授权未请求、Shadow 不可启动；`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`，`INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`。
+本段是本文件唯一的当前授权范围，并覆盖下方所有日期早于 2026-09-27 的阶段标题、
+“当前”描述和交接快照。系统继续作为 A 股公共研究与人工决策辅助工具，永久
+`action=no_order`；不连接券商、不创建订单、不把模拟结果伪装成真实市场结论。
 
-## 当前执行门禁（2026-09-26）
+### 并行轨道与门禁
+
+| 轨道 | 当前状态 | 允许动作 | 不允许动作 |
+| --- | --- | --- | --- |
+| A：当前公共行情/报价 | `PENDING_NEXT_OFFICIAL_SESSION` | 仅在新的官方已完成交易会话后刷新并单独记录 quote 时间 | 用日历日或旧缓存伪造新收盘；将价格混入内在价值 |
+| B：前瞻同期研究/M3 | `ACTIVE` | 维护预先登记的 2-5 个公共 ResearchCase，后续事实按可用时间进入 PIT 记录 | 用历史回放、后验结果或当前价格替代前瞻登记 |
+| C：M5 公共事件/研究循环 | `ACTIVE_BOUNDED` | 从既有水位起做公开、有限、只读事件摄取；新材料只重开受影响研究 | 未授权 ACTUAL 应用、生产通知或重复扫描同一水位 |
+| D：M7 日常产品/Canonical Excel | `INTEGRATED` | 仅在有新的、可核验的公共事实状态时发布到 `WORKBOOK_PATH` | 创建新的 current candidate、覆盖人工区或因模拟数据发布 |
+| E：M6 生产前安全准备 | `PARKED_SAFE_ONLY` | 本地合同、CI、日历和安全验证 | 服务器部署、Shadow、调度、通知或生产数据库动作 |
+| M4：私人组合 | `PARKED_WAITING_R2` | 保留已完成的非个人化工程和合成演练证据 | 请求/扫描/猜测 IPS、现金、持仓或私有密钥；把 M4 当成其他轨道的阻塞 |
+
+`600519` 维持 `EVIDENCE_STOP`：除非出现新的重大外部证据，不重开同一研究循环。
+`M4_ENGINEERING=COMPLETE_FOR_CURRENT_SCOPE`、`M4_SYNTHETIC_REHEARSAL=COMPLETE`、
+`M4_PERSONALIZED=PARKED_WAITING_R2`。`M6_OPERATIONAL=NOT_STARTED`，
+`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`，`INITIAL_ASSISTED_USE=NOT_REACHED`。
+
+### 当前最小前瞻研究合同
+
+前瞻研究的唯一预登记入口是
+`config/prospective-research-observation-plan-v1.json`。它登记 000333、600887、
+601088 三个有界公共案例的画像、适用模型、来源定位器、待验证假设、PIT 截止时间与
+观察起点；登记本身不抓取数据、不执行估值、不生成 Decision Support、不写 Excel。
+`scripts/current/register_prospective_research.py` 只能向 `runtime/` 写入含计划 Hash 和
+Git revision 的不可覆盖回执。后续评估必须分别记录 research/facts/quote/event 的时间，
+不得将登记或历史样本称为生产验证。
+
+### 中断审计
+
+每次继续执行前，按 A-E 轨道选择最高优先级、无需 R2/R3/R6 自然时间且不会重复已有
+收据的节点。不得因 M4 缺少私人输入停下公共研究；也不得以反复模拟、重复回放或新增
+Excel 候选替代新的公共研究证据。
+
+## 历史快照（非当前授权）
 
 ### Real-use readiness factual checkpoint
 
