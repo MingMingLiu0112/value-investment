@@ -575,6 +575,7 @@ class CompanyCard:
     thesis_change: StatusView
     evidence_refs: tuple[str, ...] = ()
     action: str = ACTION_NO_ORDER
+    decision_review: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
         if not _SYMBOL.fullmatch(self.symbol):
@@ -593,6 +594,12 @@ class CompanyCard:
         if scenario_keys != SCENARIO_KEYS:
             raise ValueError("Company card requires Bear, Base and Bull scenarios")
         object.__setattr__(self, "evidence_refs", _ref_ids(self.evidence_refs))
+        review_rows: list[tuple[str, str]] = []
+        for label, value in self.decision_review:
+            review_rows.append(
+                (_required_text(label, "decision review label"), _required_text(value, "decision review value"))
+            )
+        object.__setattr__(self, "decision_review", tuple(review_rows))
         if self.action != ACTION_NO_ORDER:
             raise ValueError("Company cards must remain no_order")
 
@@ -1043,6 +1050,14 @@ def _parse_company(value: object) -> CompanyCard:
         ),
         evidence_refs=tuple(item.get("evidence_refs") or ()),
         action=str(item.get("action") or ACTION_NO_ORDER),
+        decision_review=tuple(
+            (
+                _required_text(entry.get("label"), "decision review label"),
+                _required_text(entry.get("value"), "decision review value"),
+            )
+            for entry in _required_list(item.get("decision_review") or [], "company.decision_review")
+            for entry in (_required_mapping(entry, "company.decision_review entry"),)
+        ),
     )
 
 

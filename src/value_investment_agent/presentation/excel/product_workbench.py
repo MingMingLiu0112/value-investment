@@ -618,6 +618,16 @@ def _render_companies(
             row += 1
         row += 1
 
+        if company.decision_review:
+            row = _section_title(ws, row, "决策复核", 6)
+            for label, value in company.decision_review:
+                _style(ws.cell(row, 1, label), fill=GREY, bold=True, border=True)
+                ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
+                _style(ws.cell(row, 2, value), border=True)
+                _fit_rows(ws, row, [(1, label, 1), (2, value, 5)])
+                row += 1
+            row += 1
+
         row = _section_title(ws, row, "Bear / Base / Bull", 6)
         for index, scenario in enumerate(company.scenarios):
             start_column = index * 2 + 1

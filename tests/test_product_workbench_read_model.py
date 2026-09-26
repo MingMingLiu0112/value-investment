@@ -193,6 +193,22 @@ def test_model_translates_internal_statuses_but_keeps_audit_code() -> None:
     assert model.action == ACTION_NO_ORDER
 
 
+def test_company_decision_review_is_optional_explanation_not_an_order() -> None:
+    payload = _payload()
+    payload["companies"][0]["decision_review"] = [
+        {"label": "模拟买入复核逻辑", "value": "仅在证据链完整后由人工判断。"},
+        {"label": "模拟退出条件", "value": "核心现金流假设被证伪时重新研究。"},
+    ]
+
+    model = product_workbench_from_payload(payload)
+
+    assert model.companies[0].decision_review == (
+        ("模拟买入复核逻辑", "仅在证据链完整后由人工判断。"),
+        ("模拟退出条件", "核心现金流假设被证伪时重新研究。"),
+    )
+    assert model.action == ACTION_NO_ORDER
+
+
 def test_execution_keys_fail_closed_at_any_depth() -> None:
     payload = _payload()
     payload["opportunities"][0]["position_size"] = 0

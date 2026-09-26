@@ -411,6 +411,26 @@ def test_all_wait_empty_candidate_renders_legal_empty_states() -> None:
     assert "尚未接入个人组合" in today_text
 
 
+def test_company_page_renders_optional_decision_review_explanation() -> None:
+    payload = _payload()
+    payload["companies"][0]["decision_review"] = [
+        {"label": "模拟买入复核逻辑", "value": "研究完整后仍需人工决定。"},
+        {"label": "模拟退出条件", "value": "核心假设被证伪时重新研究。"},
+    ]
+
+    workbook = build_product_workbench_workbook(product_workbench_from_payload(payload))
+    company_text = "\n".join(
+        str(cell.value)
+        for row in workbook[SHEET_COMPANIES].iter_rows()
+        for cell in row
+        if cell.value is not None
+    )
+
+    assert "决策复核" in company_text
+    assert "模拟买入复核逻辑" in company_text
+    assert "核心假设被证伪时重新研究。" in company_text
+
+
 def test_manifest_is_no_order_and_does_not_touch_canonical_pointer(
     tmp_path: Path,
 ) -> None:
