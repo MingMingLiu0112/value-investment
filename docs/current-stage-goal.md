@@ -11,7 +11,8 @@ that bundle. It is therefore `DATA_PARTIAL`, not a current daily product run:
 current clean HEAD; `m6c7` is still `PARTIAL` because future authorized venue
 coverage is undefined. M4 was exercised only with synthetic data and remains
 `WAITING_R2`; M3 strict PIT remains `NOT_PROVEN`; M5 remains
-`PARTIAL_WITH_VALIDATED_NOT_READY`. See [current readiness matrix](current-readiness-matrix.md).
+`PARTIAL_WITH_VALIDATED_NOT_READY`. The source-of-truth readiness matrix is in
+the latest `execution-status.md` checkpoint.
 No Excel publication, production activity, or decision action occurred;
 `action=no_order`.
 
