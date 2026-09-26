@@ -2,6 +2,13 @@
   "schema_version": "architecture-growth-baseline-v1",
   "action": "no_order",
   "script_business_logic_threshold_lines": 300,
+  "root_script_counts": {
+    ".py": 528,
+    ".ps1": 51,
+    ".mjs": 1,
+    ".sql": 1
+  },
+  "docs_root_file_count": 175,
   "allowed_root_modules": [
     "__init__.py",
     "__main__.py",

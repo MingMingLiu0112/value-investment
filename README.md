@@ -10,6 +10,21 @@
 
 三公司工程与 Excel MVP 已冻结，研究级估值、股息可持续性和生产数据分别验收。最新人工待办与签收边界见 [M2-M7 人工复核交接清单](docs/m2-m7-human-review-handoff-20260924.md)，当前 M3 复核对象见 [Checkpoint B 复核包](docs/m3-checkpoint-b-review-packet-20260924.md)，M7 候选查看方式见 [运行手册](docs/m7-assisted-use-runbook-20260924.md)。以下运维命令仅供既有部署维护参考，不自动授权初始化、改任务、发布原表或恢复模拟/交易开发。
 
+## 当前入口导航
+
+不要从平铺历史文件中猜当前入口。当前产品、命令和架构分别从以下位置进入：
+
+| 目的 | 入口 |
+| --- | --- |
+| 当前文档 | [docs/current/README.md](docs/current/README.md) |
+| 当前支持 CLI | [config/current-cli-entrypoints-v1.json](config/current-cli-entrypoints-v1.json) |
+| 当前 artifact 逻辑注册表 | [artifacts/current/artifact-registry-v1.json](artifacts/current/artifact-registry-v1.json) |
+| 脚本分类与历史工具说明 | [scripts/README.md](scripts/README.md) |
+| 机器可读脚本清单 | [docs/architecture/script-inventory-v1.json](docs/architecture/script-inventory-v1.json) |
+| 架构与迁移地图 | [docs/architecture/repository-architecture.md](docs/architecture/repository-architecture.md) |
+
+根目录候选 Excel、manifest 和旧研究文档仍可能因路径或 Hash 证据而原地保留；它们不再等同于当前入口。
+
 ## 公开仓库范围
 
 本仓库是可复现的公开源码库，包含应用源码、测试、部署定义、数据库建表/迁移 SQL、工作簿模板和 M2 候选发现快照，均不含个人账户及交易记录。当前服务器的应用源码以本仓库 `src/`、`scripts/`、`deploy/server/` 为维护源；服务器不会作为另一个未受版本控制的代码来源。

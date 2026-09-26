@@ -200,6 +200,17 @@ def test_new_layers_do_not_import_presentation_operations_or_scripts():
             ), path
 
 
+def test_physical_layers_do_not_import_scripts_or_tests():
+    for layer in ("presentation", "operations", "infrastructure"):
+        for path in (ROOT / "src" / "value_investment_agent" / layer).rglob("*.py"):
+            imported = _imported_modules(path)
+            assert not any(
+                name == prefix or name.startswith(prefix + ".")
+                for name in imported
+                for prefix in ("scripts", "tests")
+            ), path
+
+
 def test_root_artifact_clutter_does_not_grow():
     allowlist = json.loads(
         (ROOT / "config" / "architecture-root-artifact-allowlist-v1.json").read_text(
@@ -312,6 +323,8 @@ def test_new_code_placement_rules_are_recorded():
 
     assert "## New Code Placement Rules" in rules
     assert "DEPRECATED_COMPATIBILITY_SHIM" in rules
+    assert "config/current-cli-entrypoints-v1.json" in rules
+    assert "docs/current/README.md" in rules
     assert "NEW_CODE_PLACEMENT_RULES = ACTIVE" in inventory
     assert "HISTORICAL_VALIDATION_DOMAIN_MIGRATION" in inventory
 
@@ -325,6 +338,21 @@ def test_new_root_python_module_growth_is_blocked():
     }
 
     assert current <= allowed
+
+
+def test_legacy_script_and_docs_root_growth_is_blocked():
+    baseline = _load_growth_baseline()
+    root_scripts = ROOT / "scripts"
+    current_script_counts = {
+        suffix: len(list(root_scripts.glob(f"*{suffix}")))
+        for suffix in baseline["root_script_counts"]
+    }
+    docs_root_count = len(
+        [path for path in (ROOT / "docs").iterdir() if path.is_file()]
+    )
+
+    assert current_script_counts == baseline["root_script_counts"]
+    assert docs_root_count <= int(baseline["docs_root_file_count"])
 
 
 def test_script_business_logic_growth_is_blocked():

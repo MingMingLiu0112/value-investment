@@ -35,6 +35,8 @@ Do not add new modules directly to the root of `src/value_investment_agent/` whe
 
 Company-specific research, parsers and one-off experiments belong in a case/tool boundary, not in a symbol branch inside general Domain code. New root-level `.xlsx`, `.manifest.json` and candidate workbooks are not allowed; use `artifacts/current/` for checked-in current artifacts and `artifacts/archive/` for historical artifacts after provenance checks. Existing hash- or receipt-bound paths must remain in place until a verifier proves safe relocation.
 
+Repository navigation is explicit: current supported commands are only those in `config/current-cli-entrypoints-v1.json`; full script classification is in `docs/architecture/script-inventory-v1.json`; current documentation starts at `docs/current/README.md`; and retained root artifacts are interpreted through `artifacts/current/artifact-registry-v1.json`. Do not infer a current entrypoint from filename recency or directory position.
+
 Files registered in an immutable manifest by both path and SHA-256 are provenance-frozen. In particular, `src/value_investment_agent/historical_validation.py` must retain its historical bytes because the current historical-validation receipt binds that exact path and hash. New contracts or behavior require a new versioned admission/receipt chain; they must not be introduced by converting or moving a frozen file into a compatibility shim.
 
 Architecture cleanup is `INCREMENTAL_REFACTOR_ONLY`, behavior-preserving, test-gated and rollbackable. It must never change valuation formulas, investment thresholds, M2-M7 acceptance rules, database schema semantics or `action=no_order` in the same commit.
