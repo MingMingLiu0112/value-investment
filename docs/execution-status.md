@@ -50,6 +50,8 @@ SAFE_R1_REMAINING = 0
 
 三项安全 R0：① 用产品页端到端测试证明 M5 七类事件状态及来源/更正关系，缺任何状态就保留产品 PARTIAL；② 对 Git 跟踪内容、GitHub 合成工件和日志做内容级隐私复核（当前 m6c2 的文件名扫描不足以证明完全无私人内容）；③ 将服务器只读资源/磁盘/健康观察绑定候选部署写入量和明确阈值，同时设计仓库外生产身份/不可回填接收锚的验收合同，不启用它。R1 暂无可用新研究证据；到达后只重开对应研究。由于 R0 非零，不生成 `EXTERNAL-GATE-HANDOFF`，也不请求 R3。
 
+M5 产品范围合成回归新增 8 项：重大事件卡片可携证据链接进入读模型与 Excel；重复、晚到、更正、非重大、证据不足、模型不可运行六种原始 M5 状态目前因无产品映射而拒绝，空事件页有明确空态。它们只证明当前边界，不是七态 E2E 通过。Git 跟踪路径的初筛只有 SQL 迁移/查询脚本命中扩展名，`.env` 被忽略，高风险密钥特征扫描未命中；这些启发式检查不足以关闭内容级隐私 R0。CI 恢复附件由一次性合成测试生成，不应包含真实备份；仍需核验实际附件和日志的暴露边界。
+
 `INTERRUPTION_AUDIT`：M3 等未来严格 PIT（R6），M4 等真实私有输入（R2），M5 个股研究等未来证据（R6→R1），M6 生产授权/真实隔离恢复（R3）、真实会话与事件（R6），M7 等最终用户签收（R5）。独立安全 R0 仍在，继续限定范围处理；不得把 `WORK_PACKAGE_DONE`、`SPECIALIZED_GOAL_DONE` 或里程碑工程完成写成总 Goal 完成。`TOTAL_GOAL_STATUS=IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`，`INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`；最终投资决定由用户完成。
 
 ## 2026-09-26 Real-Use Readiness Pre-Gate Closure
