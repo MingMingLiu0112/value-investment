@@ -125,7 +125,7 @@ try {
     }
     $receipt = @{
         status = "passed"
-        mode = "m7_product_ux_read_only_candidate"
+        mode = "m7_product_ux_read_only_canonical"
         workbook = $path
         sha256 = $before
         read_only = $true
