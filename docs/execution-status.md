@@ -2424,7 +2424,7 @@ ADV_P1_003 = CLOSED (signed byte-bound receipt + pinned trust root)
 ADV_P1_004 = CLOSED (proof re-verified on read/transition/restart + pinned trust root)
 ADV2_P0_001 = CLOSED (legacy M5 authorization is read-only replay only)
 ADV2_P0_002 = CLOSED (trust roots pinned; empty registry keeps ACTUAL/M6 fail-closed)
-ADV2_P1_001 = OPEN (M5 approval expiry window; required before the first real pin)
+ADV2_P1_001 = CLOSED (M5 approval expiry window enforced on issuance and replay)
 M4_CONFIRMATION_CONTRACT = READY
 M4_SYNTHETIC_ONBOARDING_REHEARSAL = COMPLETED
 M4_PERSONALIZED_ACCEPTANCE = WAITING_R2
@@ -2454,16 +2454,20 @@ action = no_order
   `SYNTHETIC_REHEARSAL_ONLY`，没有使用或生成真实私人组合证据。
 - M5 ACTUAL 能力现在只能由签名、字节绑定、append-only 的人工审批收据签发。默认
   解析、应用和新 CLI 都会拒绝旧式无签名授权；显式 `allow_legacy_read_only` 只允许
-  对 durable store 中已存在、request fingerprint 完全一致的批次做只读重放，空 store
-  会以 `read-only replay only` 失败关闭，不写 state、不发布 receipt。M6 运行控制证明
-  在读取、转换、推进和重启时重新验证签名制品、scope、目标模式、部署/配置 Hash、
-  操作者、有效期和 trust root。
+  对 durable store 中已存在、request fingerprint 完全一致且已有绑定 receipt 的批次
+  做只读读取；底层 runner 不再接受 legacy 标志，空 store 或缺失 receipt 都会以
+  `read-only replay only` 失败关闭，不写 state、不发布 receipt。M5 v2 审批载荷新增
+  必填 `valid_until`，签发、能力恢复、每次能力验证和 durable application 都按
+  `authorized_at <= evaluation_time <= valid_until` 复核；应用 CLI 使用一次系统墙钟
+  评估时间，不把调用方提供的 `generated_at` 当成授权时钟。M6 运行控制证明在读取、
+  转换、推进和重启时重新验证签名制品、scope、目标模式、部署/配置 Hash、操作者、
+  有效期和 trust root。
 - 第二轮对抗审查关闭了 trust-root 自签问题：`config/authorization-trust-roots-v1.json`
   目前 pin 列表为空，因此真实 ACTUAL/M6 授权默认 fail-closed；M5 在签发与每次
   `verify()` 时重查 pin，M6 在每次读取、转换与重启时重查 pin，解除 pin 会让既有
-  capability 立即失效。负向测试覆盖未 pin 的 M5 收据、全新生成的 M6 keypair，以及
-  解除 pin 后重新读取证明。真实 operator key 仍应放在独立 keystore/OS pin 中，这
-  与 M5 授权有效期窗口一起登记为首次真实授权前的开放前置条件（ADV2-OPEN-001）。
+  capability 立即失效。负向测试覆盖未 pin 的 M5 收据、全新生成的 M6 keypair、
+  授权窗口缺失/倒置/篡改/过期/重放，以及 legacy runner 旁路。真实 operator key 仍应
+  放在独立 keystore/OS pin 中，这是首次真实授权前的开放前置条件（ADV2-OPEN-001）。
 - 其余同轮修复：M7 组合数值只有在 M4 provenance（reconciled + 确认回执 fingerprint）
   齐备时才显示；候选投影的 `root` 变为必填并逐个校验证据文件 Hash；M6 start matrix
   支持 `SHADOW_START_READY` 但当前仍为 `shadow_start_allowed=false`；event review
@@ -2473,7 +2477,7 @@ action = no_order
 - M4 confirmation receipt 绑定 exact reconciliation bytes、账户范围、快照日期和
   用户确认；公开输出只含 fingerprint。公开 Git 不包含私人 IPS、持仓、现金、密钥
   或明文组合。
-- 全量离线回归 `2936 passed, 30 skipped, 18 warnings, 0 failed`（第二轮审查新增
+- 全量离线回归 `2945 passed, 30 skipped, 18 warnings, 0 failed`（第二轮审查新增
   trust-root pinning、legacy 只读重放、simulation-only、矩阵可启动态等测试）。
   过程中发现并修复多处真实兼容问题：两条历史 M5 ACTUAL 冷重放、一条 M6 旧 scope
   fixture，以及依赖 CLI 自带 trust root 的 M6 集成用例；修复后历史只读路径与新签名

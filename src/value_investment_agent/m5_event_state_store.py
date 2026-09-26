@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import datetime
 import hashlib
 import json
 import os
@@ -110,6 +111,7 @@ class M5EventRunReceiptStore(Protocol):
         *,
         receipt: "M5EventRunReceipt",
         request: "M5EventRunRequest",
+        at: datetime | None = None,
     ) -> M5ReceiptPublication:
         ...
 
@@ -462,6 +464,7 @@ class JsonM5EventRunReceiptStore:
         *,
         receipt: "M5EventRunReceipt",
         request: "M5EventRunRequest",
+        at: datetime | None = None,
     ) -> M5ReceiptPublication:
         from .m5_event_run import M5EventRunReceipt
         from .m5_run_request import M5EventRunRequest
@@ -471,7 +474,7 @@ class JsonM5EventRunReceiptStore:
         if not isinstance(request, M5EventRunRequest):
             raise ValueError("request must be an M5EventRunRequest")
         receipt.verify()
-        request.verify()
+        request.verify(at=at)
         if (
             receipt.run_id != request.run_id
             or receipt.batch_id != request.batch_id

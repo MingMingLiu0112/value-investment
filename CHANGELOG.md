@@ -1,5 +1,41 @@
 # Changelog
 
+## v2026.09.26-m5-approval-validity-and-legacy-runner-closure
+
+### Scope
+
+关闭第二轮对抗审查中的 M5 审批有效期缺口，并封死 unsigned legacy v1
+authorization 通过底层 runner 新建 ACTUAL run 的旁路。该提交不 pin 真实 trust
+root、不启动 Shadow、调度、通知、迁移或真实账户导入，且继续固定
+`action=no_order`。
+
+### Changes
+
+- M5 v2 签名审批载荷新增必填 `valid_until`。授权窗口在签发、capability
+  restore、每次 capability 验证和 durable application 时按
+  `authorized_at <= evaluation_time <= valid_until` 复核。
+- 应用 CLI 在一次执行中冻结一个系统墙钟评估时间，并把它传递到 receipt
+  verification、request verification、state commit 与 receipt publication；
+  调用方提供的 `generated_at` 不再作为授权时钟。
+- legacy v1 authorization 只能从既有 durable state 中读取同 request
+  fingerprint、同 receipt audit fingerprint 的既有回执。底层
+  `run_event_batch` / `run_event_batch_persisted` 不再接受 legacy 标志，因此
+  unsigned payload 不能进入 executable runner。
+- 新增缺失、倒置、篡改、开始/结束边界、过期、能力重放和过期应用负向测试，
+  并保留归档 600519 read-only replay 回归。
+
+### Verification
+
+- M5/M6 受影响定向回归：`150 passed`。
+- 全量离线回归：`2945 passed, 30 skipped, 18 warnings, 0 failed`。
+- `config/architecture-frozen-paths-v1.json` 的 9 个冻结路径 SHA-256 全部一致。
+
+### Residual Boundary
+
+真实 operator keystore/OS pin 仍未建立，committed trust registry 仍为空；
+因此真实 ACTUAL/M6 授权继续 fail-closed。审批有效期通过不代表生产授权、
+Shadow、`M6_OPERATIONAL` 或 `INITIAL_ASSISTED_USE` 已完成。
+
 ## v2026.09.26-auth-trust-registry-override-hardening
 
 ### Scope
@@ -27,8 +63,8 @@ fail-closed。
 ### Residual Boundary
 
 真实 operator key 仍未 pin；`ADV2-OPEN-001` 继续是首次真实生产授权前的开放
-前置条件。M5 审批有效期窗口仍由下一步
-`ADD_BOUNDED_VALIDITY_WINDOW_TO_ACTUAL_AUTHORIZATIONS` 处理。
+前置条件。M5 审批有效期窗口已由后续
+`v2026.09.26-m5-approval-validity-and-legacy-runner-closure` 关闭。
 
 ## v2026.09.26-ci-runtime-fixture-isolation
 

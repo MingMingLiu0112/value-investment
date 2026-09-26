@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 import base64
 import hashlib
 import json
@@ -22,10 +22,11 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from .trust_root_registry import require_pinned_trust_root
 
 
-RECEIPT_VERSION = "m5-actual-approval-receipt-v1"
-BUNDLE_VERSION = "m5-actual-approval-receipt-bundle-v1"
+RECEIPT_VERSION_V1 = "m5-actual-approval-receipt-v1"
+RECEIPT_VERSION = "m5-actual-approval-receipt-v2"
+BUNDLE_VERSION = "m5-actual-approval-receipt-bundle-v2"
 TRUST_ROOT_VERSION = "m5-actual-approval-trust-root-v1"
-AUTHORIZATION_SCHEMA_VERSION = "m5-actual-offline-authorization-v2"
+AUTHORIZATION_SCHEMA_VERSION = "m5-actual-offline-authorization-v3"
 LEGACY_AUTHORIZATION_SCHEMA_VERSION = "m5-actual-offline-authorization-v1"
 PURPOSE = b"M5-ACTUAL-APPROVAL\0"
 
@@ -45,6 +46,7 @@ RECEIPT_FIELDS = frozenset(
         "authorization_id",
         "review_provenance",
         "authorized_at",
+        "valid_until",
         "sequence",
         "previous_receipt_sha256",
         "reviewed_artifact_sha256",
@@ -122,6 +124,25 @@ def _timestamp(value: object, field_name: str) -> datetime:
     if parsed.tzinfo is None:
         raise ValueError(f"{field_name} must be timezone-aware")
     return parsed
+
+
+def _use_time(value: datetime | None) -> datetime:
+    if value is None:
+        return datetime.now(timezone.utc)
+    if not isinstance(value, datetime) or value.tzinfo is None:
+        raise ValueError("M5 approval evaluation time must be timezone-aware")
+    return value.astimezone(timezone.utc)
+
+
+def _validity_window(
+    authorized_at: datetime,
+    valid_until: datetime,
+) -> tuple[datetime, datetime]:
+    authorized_at = _timestamp(authorized_at, "authorized_at")
+    valid_until = _timestamp(valid_until, "valid_until")
+    if authorized_at >= valid_until:
+        raise ValueError("M5 ACTUAL capability validity window is invalid")
+    return authorized_at, valid_until
 
 
 def _json_value(raw: bytes, field_name: str) -> Any:
@@ -359,6 +380,7 @@ def verify_m5_actual_approval_receipt(
     at: datetime | None = None,
 ) -> "M5ActualOfflineAuthorization":
     """Verify a receipt chain and return a sealed ACTUAL offline capability."""
+    evaluation_time = _use_time(at)
     if not isinstance(bundle, Mapping) or set(bundle) != {
         "schema_version",
         "receipt_chain",
@@ -413,7 +435,10 @@ def verify_m5_actual_approval_receipt(
         if receipt_hash in seen_hashes:
             raise ValueError("M5 approval receipt chain contains a duplicate receipt")
         seen_hashes.add(receipt_hash)
-        _timestamp(payload["authorized_at"], "authorized_at")
+        _validity_window(
+            _timestamp(payload["authorized_at"], "authorized_at"),
+            _timestamp(payload["valid_until"], "valid_until"),
+        )
         if payload["reviewed_artifact_sha256"] != hashes:
             raise ValueError("M5 approval receipt does not bind the supplied reviewed bytes")
         subject = _decode_subject(payload["subject"])
@@ -442,23 +467,28 @@ def verify_m5_actual_approval_receipt(
     # issued it must appear in the pinned registry, otherwise any caller could
     # mint a fresh keypair and self-authorize an ACTUAL run.
     require_pinned_trust_root(trust_root)
-    authorized_at = _timestamp(final_payload["authorized_at"], "authorized_at")
-    if at is not None:
-        if not isinstance(at, datetime) or at.tzinfo is None:
-            raise ValueError("M5 approval verification time must be timezone-aware")
-        if at < authorized_at:
-            raise ValueError("M5 ACTUAL capability cannot be used before its approval")
+    authorized_at, valid_until = _validity_window(
+        _timestamp(final_payload["authorized_at"], "authorized_at"),
+        _timestamp(final_payload["valid_until"], "valid_until"),
+    )
+    if evaluation_time < authorized_at:
+        raise ValueError("M5 ACTUAL capability cannot be used before its approval")
+    if evaluation_time > valid_until:
+        raise ValueError("M5 ACTUAL capability has expired")
     capability_id = _sha256(
         {
             "receipt_sha256": previous_hash,
             "subject": derived_subject,
             "reviewed_artifact_sha256": hashes,
+            "authorized_at": authorized_at.isoformat(),
+            "valid_until": valid_until.isoformat(),
         }
     )
     return _make_capability(
         authorization_id=_required_text(final_payload["authorization_id"], "authorization_id"),
         subject=derived_subject,
         authorized_at=authorized_at,
+        valid_until=valid_until,
         receipt_sha256=previous_hash,
         receipt_sequence=approved_sequence,
         previous_receipt_sha256=previous_root,
@@ -473,6 +503,7 @@ def _make_capability(
     authorization_id: str,
     subject: Mapping[str, Any],
     authorized_at: datetime,
+    valid_until: datetime,
     receipt_sha256: str,
     receipt_sequence: int,
     previous_receipt_sha256: str | None,
@@ -487,6 +518,7 @@ def _make_capability(
     object.__setattr__(capability, "review_provenance", USER_CONFIRMED_DELEGATED_REVIEW)
     object.__setattr__(capability, "subject", dict(subject))
     object.__setattr__(capability, "authorized_at", authorized_at)
+    object.__setattr__(capability, "valid_until", valid_until)
     object.__setattr__(capability, "receipt_sha256", _required_sha256(receipt_sha256, "receipt_sha256"))
     object.__setattr__(capability, "receipt_sequence", receipt_sequence)
     object.__setattr__(capability, "previous_receipt_sha256", previous_receipt_sha256)
@@ -512,6 +544,7 @@ class M5ActualOfflineAuthorization:
     review_provenance: str
     subject: dict[str, Any]
     authorized_at: datetime
+    valid_until: datetime | None
     receipt_sha256: str
     receipt_sequence: int
     previous_receipt_sha256: str | None
@@ -566,6 +599,7 @@ class M5ActualOfflineAuthorization:
             "authorized_at",
             _timestamp(payload["authorized_at"], "authorized_at"),
         )
+        object.__setattr__(legacy, "valid_until", None)
         object.__setattr__(legacy, "receipt_sha256", subject["review_sha256"])
         object.__setattr__(legacy, "receipt_sequence", 0)
         object.__setattr__(legacy, "previous_receipt_sha256", None)
@@ -631,6 +665,11 @@ class M5ActualOfflineAuthorization:
             raise ValueError("M5 ACTUAL authorization must remain no_order")
         if self.scheduler_enabled or self.notification_enabled or self.production_database_write:
             raise ValueError("M5 ACTUAL authorization cannot enable production operations")
+        if not isinstance(self.authorized_at, datetime) or not isinstance(
+            self.valid_until, datetime
+        ):
+            raise ValueError("M5 ACTUAL authorization validity window is invalid")
+        _validity_window(self.authorized_at, self.valid_until)
         if self.receipt_sequence < 1 or (
             self.previous_receipt_sha256 is not None
             and not _SHA256.fullmatch(self.previous_receipt_sha256)
@@ -646,6 +685,7 @@ class M5ActualOfflineAuthorization:
     def verify(
         self,
         *,
+        at: datetime | None = None,
         graph: object | None = None,
         events: Sequence[object] | None = None,
         observed_times: Sequence[datetime] | None = None,
@@ -660,11 +700,13 @@ class M5ActualOfflineAuthorization:
             if graph is not None and graph_sha256(graph) != self.dependency_graph_sha256:
                 raise ValueError("Legacy M5 ACTUAL authorization dependency graph hash does not match")
             return
+        evaluation_time = _use_time(at)
         verified = verify_m5_actual_approval_receipt(
             self.receipt_bundle,
             self.approval_trust_root,
             expected_subject=self.subject,
             expected_receipt_sha256=self.receipt_sha256,
+            at=evaluation_time,
         )
         if verified.capability_id != self.capability_id:
             raise ValueError("M5 ACTUAL authorization capability does not match its receipt")
@@ -707,6 +749,7 @@ class M5ActualOfflineAuthorization:
             "review_provenance": self.review_provenance,
             "subject": deepcopy(self.subject),
             "authorized_at": self.authorized_at.isoformat(),
+            "valid_until": self.valid_until.isoformat(),
             "receipt_sha256": self.receipt_sha256,
             "receipt_sequence": self.receipt_sequence,
             "previous_receipt_sha256": self.previous_receipt_sha256,
@@ -724,6 +767,7 @@ def actual_offline_authorization_from_payload(
     payload: object,
     *,
     allow_legacy_read_only: bool = False,
+    at: datetime | None = None,
 ) -> M5ActualOfflineAuthorization:
     if not isinstance(payload, Mapping):
         raise ValueError("Actual offline authorization must be an object")
@@ -741,6 +785,7 @@ def actual_offline_authorization_from_payload(
         data.get("approval_trust_root"),
         expected_subject=data.get("subject"),
         expected_receipt_sha256=data.get("receipt_sha256"),
+        at=at,
     )
     expected = capability.as_policy()
     if set(data) != set(expected):
@@ -762,6 +807,7 @@ def require_actual_offline_authorization(
     stream_id: str | None = None,
     symbol: str | None = None,
     allow_legacy_read_only: bool = False,
+    at: datetime | None = None,
 ) -> None:
     if namespace == "SIMULATED":
         if authorization is not None:
@@ -785,6 +831,7 @@ def require_actual_offline_authorization(
         batch_id=batch_id,
         stream_id=stream_id,
         symbol=symbol,
+        at=at,
     )
 
 

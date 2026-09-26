@@ -230,7 +230,7 @@ class _FailingPublishStore:
     def load(self, *, receipt_id: str):
         return self.inner.load(receipt_id=receipt_id)
 
-    def publish(self, *, receipt, request):
+    def publish(self, *, receipt, request, at=None):
         raise RuntimeError("simulated crash after the state commit")
 
 
@@ -318,6 +318,37 @@ def test_actual_run_request_requires_and_binds_offline_authorization(tmp_path):
     payload["actual_offline_authorization"] = None
     with pytest.raises(ValueError, match="require explicit authorization"):
         M5EventRunRequest.from_payload(payload)
+
+
+def test_actual_run_request_cannot_be_applied_after_authorization_expiry(tmp_path):
+    fixture = synthetic_actual_receipt()
+    authorization = verify_m5_actual_approval_receipt(
+        fixture["bundle"],
+        fixture["trust_root"],
+        expected_subject=fixture["subject"],
+        at=REVIEWED_AT,
+    )
+    request = build_run_request_from_bridge_batch(
+        fixture["batch"],
+        run_id=RUN_ID,
+        generated_at=REVIEWED_AT,
+        watermark=_watermark(),
+        graph=fixture["graph"],
+        actual_offline_authorization=authorization,
+    )
+    valid_until = datetime.fromisoformat(
+        fixture["bundle"]["receipt_chain"][0]["payload"]["valid_until"]
+    )
+    state_root = tmp_path / "state"
+
+    with pytest.raises(ValueError, match="expired"):
+        apply_run_request(
+            request=request,
+            store=JsonM5EventRunStateStore(state_root),
+            receipt_store=None,
+            at=valid_until + timedelta(microseconds=1),
+        )
+    assert not list(state_root.glob("*.json"))
 
 
 def test_v1_simulated_run_request_remains_replayable():

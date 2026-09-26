@@ -7,7 +7,7 @@ but does not schedule a service, notify a human or touch production state.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 from typing import Any, Mapping, Sequence
 
@@ -95,6 +95,12 @@ RUN_RECEIPT_ARTIFACT_KEYS = frozenset(
         "audit_fingerprint",
     }
 )
+
+
+def _evaluation_time(at: datetime | None) -> datetime:
+    if at is None:
+        return datetime.now(timezone.utc)
+    return _required_datetime(at, "M5 evaluation time").astimezone(timezone.utc)
 
 _ACCEPTED_INGEST_STATUSES = frozenset(
     {
@@ -791,7 +797,7 @@ def run_event_batch(
     lock_store: TaskLockStore | None = None,
     max_watermark_age: timedelta = DEFAULT_MAX_WATERMARK_AGE,
     actual_offline_authorization: M5ActualOfflineAuthorization | None = None,
-    allow_legacy_read_only: bool = False,
+    at: datetime | None = None,
 ) -> M5EventRunReceipt:
     """Ingest one bounded batch and return an atomically exportable next state."""
 
@@ -811,7 +817,7 @@ def run_event_batch(
         observed_times=observed_times,
         run_id=run_id,
         batch_id=batch_id,
-        allow_legacy_read_only=allow_legacy_read_only,
+        at=at,
     )
     if state is not None and not isinstance(state, M5EventRunState):
         raise ValueError("state must be an M5EventRunState")
@@ -1137,7 +1143,7 @@ def run_event_batch_persisted(
     batch_id: str | None = None,
     lock_store: TaskLockStore | None = None,
     actual_offline_authorization: M5ActualOfflineAuthorization | None = None,
-    allow_legacy_read_only: bool = False,
+    at: datetime | None = None,
 ) -> M5EventRunReceipt:
     """Run one batch and persist its next state with revision/digest CAS."""
 
@@ -1184,7 +1190,7 @@ def run_event_batch_persisted(
         expected_revision=working.revision,
         lock_store=lock_store,
         actual_offline_authorization=actual_offline_authorization,
-        allow_legacy_read_only=allow_legacy_read_only,
+        at=at,
     )
     store.commit(
         expected_revision=working.revision,
@@ -1258,6 +1264,7 @@ def apply_run_request(
     receipt_store: M5EventRunReceiptStore | None = None,
     lock_store: TaskLockStore | None = None,
     allow_legacy_read_only: bool = False,
+    at: datetime | None = None,
 ) -> M5RunApplicationResult:
     """Apply one pinned request once, then publish its durable receipt.
 
@@ -1274,7 +1281,8 @@ def apply_run_request(
         raise ValueError(
             "Legacy M5 ACTUAL replay requires an explicit read-only replay flag"
         )
-    request.verify()
+    evaluation_time = _evaluation_time(at)
+    request.verify(at=evaluation_time)
     if request.legacy_read_only_replay:
         # Legacy v1 authorizations carry no signature, so they can never
         # create a new ACTUAL run.  They may only reproduce a batch that
@@ -1300,6 +1308,40 @@ def apply_run_request(
                 "Legacy M5 ACTUAL authorization is read-only replay only and "
                 "cannot create a new run"
             )
+        if existing_record.receipt_audit_fingerprint is None:
+            raise ValueError(
+                "Legacy M5 ACTUAL replay requires an existing bound receipt"
+            )
+        if receipt_store is None:
+            raise ValueError(
+                "Legacy M5 ACTUAL replay requires the existing receipt store"
+            )
+        stored_receipt = receipt_store.load(
+            receipt_id=existing_record.receipt_id
+        )
+        if stored_receipt is None:
+            raise ValueError(
+                "Legacy M5 ACTUAL replay cannot find the existing receipt"
+            )
+        stored_receipt.verify()
+        if (
+            stored_receipt.receipt_id != existing_record.receipt_id
+            or stored_receipt.run_id != request.run_id
+            or stored_receipt.batch_id != request.batch_id
+            or stored_receipt.stream_id != request.stream_id
+            or stored_receipt.namespace != request.namespace
+            or stored_receipt.audit_fingerprint()
+            != existing_record.receipt_audit_fingerprint
+        ):
+            raise ValueError(
+                "Legacy M5 ACTUAL replay does not match the existing receipt"
+            )
+        return M5RunApplicationResult(
+            request_id=request.request_id,
+            receipt=stored_receipt,
+            publication=None,
+            replayed=stored_receipt.idempotent_noop,
+        )
     current = store.load(state_key=request.stream_id)
     seed = (
         M5EventRunState.empty(
@@ -1323,7 +1365,7 @@ def apply_run_request(
         batch_id=request.batch_id,
         lock_store=lock_store,
         actual_offline_authorization=request.actual_offline_authorization,
-        allow_legacy_read_only=allow_legacy_read_only,
+        at=evaluation_time,
     )
     record = next(
         (
@@ -1341,7 +1383,11 @@ def apply_run_request(
     publication = (
         None
         if receipt_store is None
-        else receipt_store.publish(receipt=receipt, request=request)
+        else receipt_store.publish(
+            receipt=receipt,
+            request=request,
+            at=evaluation_time,
+        )
     )
     return M5RunApplicationResult(
         request_id=request.request_id,

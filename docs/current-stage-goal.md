@@ -11,8 +11,10 @@ M7 Product Read Model 与五页 Excel 候选已形成；ADV-P1-003/004 已通过
 做只读重放，新建 ACTUAL 运行一律拒绝；M5/M6 的 trust root 必须命中已提交的 pin
 注册表，该注册表当前为空，因此真实 ACTUAL/M6 授权默认 fail-closed；M7 组合数值仅在
 M4 provenance 齐备时显示；M6 start matrix 支持 `SHADOW_START_READY`，但当前仍为
-`shadow_start_allowed=false`。真实 operator keystore 与 M5 授权有效期窗口仍是首次
-真实授权前的开放前置条件，不构成本轮工程阻塞。通用 CLI v2 将产品入口与工程入口分层
+`shadow_start_allowed=false`。M5 签名审批收据现已强制 `valid_until`，并在签发、
+恢复、验证和 durable application 路径按系统评估时间 fail-closed；调用方提供的
+`generated_at` 不再作为授权时钟。真实 operator keystore 仍是首次真实授权前的开放
+前置条件，不构成本轮工程阻塞。通用 CLI v2 将产品入口与工程入口分层
 （product 15 / engineering 36）；M4 合成全链路演练已完成，但
 `M4_PERSONALIZED_ACCEPTANCE=WAITING_R2` 不升级。M6 start matrix 完成，
 `M6_OPERATIONAL=NOT_STARTED`。600519 historical validation 保持

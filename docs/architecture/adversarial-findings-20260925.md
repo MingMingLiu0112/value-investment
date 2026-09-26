@@ -120,10 +120,14 @@ only input needed.
 
 Status: CLOSED. Legacy read-only replay now requires the pinned request to
 already exist in the durable state store with an identical request
-fingerprint. An empty store raises `read-only replay only`, and neither the
-state store nor the receipt store is written. The archived 600519 cold-replay
-test now seeds the archived state, asserts an idempotent replay, and keeps a
-separate test proving a fresh run is refused.
+fingerprint and returns the already-published receipt from a read-only receipt
+store; it no longer enters the executable runner. The runner itself no longer
+accepts the legacy flag, so a direct `run_event_batch` or
+`run_event_batch_persisted` call cannot turn an unsigned v1 payload into a new
+ACTUAL state or receipt. Empty stores, missing receipts and mismatched audit
+fingerprints fail closed. The archived 600519 cold-replay fixture now prepares
+the archived receipt explicitly and keeps negative tests for both `apply` and
+direct-runner bypass attempts.
 
 ### ADV2-P0-002 - M5/M6 trust-root provenance was caller-controlled
 
@@ -147,10 +151,23 @@ proof re-read after unpinning.
 Receipt payloads carry `authorized_at` but no `valid_until`, and a synthetic
 receipt still verified with a use time in 2099.
 
-Status: OPEN - replay hardening, non-blocking for this round. No v2 approval
-receipt exists outside synthetic fixtures and the pinned registry is empty, so
-no production approval can be issued or replayed today. A bounded
-`valid_until` window is required before the first real trust root is pinned.
+Status: CLOSED. The signed v2 receipt now requires `valid_until`; issuance,
+capability restore, every capability verification and durable application path
+re-check an inclusive `authorized_at <= evaluation_time <= valid_until` window.
+The application CLI freezes one wall-clock evaluation time instead of trusting
+the caller-controlled `generated_at`. Missing, inverted, tampered, expired and
+replayed windows fail closed, while unsigned v1 authorizations remain
+read-only replay only and are intentionally exempt from expiry. The committed
+trust-root registry remains empty, so no real ACTUAL authorization is enabled.
+
+Residual threat boundary: the optional `at` argument is a composition-root/test
+clock input for the trusted Python process; the production CLI supplies system
+wall time. An attacker who can execute arbitrary code inside that process is
+outside the current pinning model. Capability consumption is idempotent within
+one durable state store but is not yet a globally unique single-use ledger
+across independent stores. Because `action=no_order` remains fixed and no real
+trust root is pinned, this is not production execution authority and must not
+be presented as such.
 
 ### ADV2-P1-002 - M4 RECONCILED was an unsigned self-assertion
 
@@ -241,32 +258,17 @@ Backtest != M6 Shadow
 
 ## Next Task
 
-## Next Task
+NEXT TASK: CONTINUE_PRODUCTIZATION_WITH_SECURITY_GATES_FROZEN
 
-NEXT TASK: ADD_BOUNDED_VALIDITY_WINDOW_TO_ACTUAL_AUTHORIZATIONS
+All self-owned findings from the 2026-09-26 adversarial review are now closed
+or explicitly external. Continue the current
+`PRODUCTIZATION-SECURITY-AND-REAL-USE-CLOSURE` workstream without reopening the
+expiry contract. The remaining prerequisites for a first real authorization
+are external governance inputs: a real operator key outside the repository and
+an explicit production-authorization decision. Neither is requested by this
+round.
 
-Goal: give the M5 v2 approval receipt and the M6 operational authorization
-proof a required, bounded `valid_until` that is re-checked on issuance, replay,
-transition, restart and read, with a negative test proving an approval cannot be
-consumed after expiry. This is the last self-owned gap from the 2026-09-26
-adversarial review and must land before the first real trust-root fingerprint
-is pinned.
-
-Files likely affected:
-`src/value_investment_agent/operations/authorization/m5_actual_approval_receipt.py`,
-`src/value_investment_agent/m6_operational_control.py`,
-`src/value_investment_agent/m6_shadow_receipts.py`, the M5/M6 thin CLIs, the
-synthetic authorization fixtures and their focused tests.
-
-Forbidden changes: editing `virtual_account.py`, `historical_validation.py` or
-`scripts/build_moutai_historical_validation_admission.py`; pinning a real trust
-root; requesting production authorization; starting Shadow, a scheduler,
-notifications, migrations or a real-account import; weakening any existing
-fail-closed check; treating an expiry window as production readiness.
-
-Acceptance criteria: a receipt or proof used after `valid_until` fails closed
-with a clear error on every path; receipts with an invalid or inverted window
-are refused; existing pinned-registry, legacy read-only and simulation-only
-tests still pass; full offline regression and Core Research Gates pass;
-`action=no_order`, `M6_OPERATIONAL=NOT_STARTED` and
-`INITIAL_ASSISTED_USE=NOT_REACHED` remain unchanged.
+Forbidden changes remain unchanged: do not pin a real trust root, request
+production authorization, start Shadow, a scheduler, notifications,
+migrations, a real-account import, or weaken `action=no_order` and simulation
+boundaries.

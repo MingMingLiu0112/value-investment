@@ -7,7 +7,12 @@ from pathlib import Path
 
 import pytest
 
-from value_investment_agent.m5_event_run import apply_run_request, m5_event_run_receipt_from_payload
+from value_investment_agent.m5_event_run import (
+    apply_run_request,
+    m5_event_run_receipt_from_payload,
+    run_event_batch,
+    run_event_batch_persisted,
+)
 from value_investment_agent.m5_event_state_store import (
     JsonM5EventRunReceiptStore,
     JsonM5EventRunStateStore,
@@ -54,6 +59,45 @@ def test_legacy_actual_authorization_cannot_create_a_new_run(tmp_path: Path):
     assert not list((tmp_path / "empty-state").glob("*.json"))
 
 
+def test_legacy_authorization_cannot_bypass_read_only_runner_gate(tmp_path: Path):
+    if not REQUEST.is_file() or not RECEIPT.is_file():
+        pytest.skip("Archived 600519 ACTUAL request and receipt are unavailable")
+    request = M5EventRunRequest.from_payload(
+        json.loads(REQUEST.read_text(encoding="utf-8")),
+        allow_legacy_read_only=True,
+    )
+
+    with pytest.raises(ValueError, match="read-only"):
+        run_event_batch(
+            events=request.events,
+            observed_times=request.observed_times,
+            watermark=request.watermark,
+            graph=request.dependency_graph,
+            run_id=request.run_id,
+            generated_at=request.generated_at,
+            namespace=request.namespace,
+            batch_id=request.batch_id,
+            actual_offline_authorization=request.actual_offline_authorization,
+        )
+    with pytest.raises(ValueError, match="read-only"):
+        run_event_batch_persisted(
+            events=request.events,
+            observed_times=request.observed_times,
+            watermark=request.watermark,
+            graph=request.dependency_graph,
+            run_id=request.run_id,
+            generated_at=request.generated_at,
+            store=JsonM5EventRunStateStore(
+                tmp_path / "state",
+                allow_legacy_read_only=True,
+            ),
+            namespace=request.namespace,
+            batch_id=request.batch_id,
+            actual_offline_authorization=request.actual_offline_authorization,
+        )
+    assert not list((tmp_path / "state").glob("*.json"))
+
+
 def test_real_actual_request_replay_matches_archived_receipt(tmp_path: Path):
     if not REQUEST.is_file() or not RECEIPT.is_file():
         pytest.skip("Archived 600519 ACTUAL request and receipt are unavailable")
@@ -73,19 +117,23 @@ def test_real_actual_request_replay_matches_archived_receipt(tmp_path: Path):
         state=archived.state,
     )
 
-    replayed = apply_run_request(
-        request=M5EventRunRequest.from_payload(
-            json.loads(REQUEST.read_text(encoding="utf-8")),
-            allow_legacy_read_only=True,
-        ),
-        store=store,
-        receipt_store=JsonM5EventRunReceiptStore(
-            receipt_root,
-            allow_legacy_read_only=True,
-        ),
+    request = M5EventRunRequest.from_payload(
+        json.loads(REQUEST.read_text(encoding="utf-8")),
         allow_legacy_read_only=True,
     )
-    assert replayed.replayed is True
+    receipt_store = JsonM5EventRunReceiptStore(
+        receipt_root,
+        allow_legacy_read_only=True,
+    )
+    receipt_store.publish(receipt=archived, request=request)
+
+    replayed = apply_run_request(
+        request=request,
+        store=store,
+        receipt_store=receipt_store,
+        allow_legacy_read_only=True,
+    )
+    assert replayed.replayed is archived.idempotent_noop
     assert replayed.receipt.audit_fingerprint() == archived.audit_fingerprint()
     assert len(replayed.receipt.active_events) == 2
 
@@ -104,6 +152,6 @@ def test_real_actual_request_replay_matches_archived_receipt(tmp_path: Path):
         ),
         allow_legacy_read_only=True,
     )
-    assert second.replayed is True
+    assert second.replayed is archived.idempotent_noop
     assert second.receipt.audit_fingerprint() == archived.audit_fingerprint()
     assert second.receipt.state_sha256 == archived.state_sha256

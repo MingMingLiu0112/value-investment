@@ -155,18 +155,6 @@ class M5EventRunRequest:
             raise ValueError(
                 "Run request dependency graph must be a DependencyGraph"
             )
-        require_actual_offline_authorization(
-            namespace=self.namespace,
-            authorization=self.actual_offline_authorization,
-            graph=self.dependency_graph,
-            events=self.events,
-            observed_times=self.observed_times,
-            run_id=self.run_id,
-            batch_id=self.batch_id,
-            stream_id=self.stream_id,
-            symbol=self.source_symbol,
-            allow_legacy_read_only=self.legacy_read_only_replay,
-        )
         object.__setattr__(
             self,
             "direct_kinds_by_source_event_id",
@@ -194,11 +182,24 @@ class M5EventRunRequest:
             raise ValueError("M5 run request must remain no_order")
         self.verify()
 
-    def verify(self) -> None:
+    def verify(self, *, at: datetime | None = None) -> None:
         if len(self.events) != len(self.observed_times):
             raise ValueError(
                 "Every run request event requires one observed_at timestamp"
             )
+        require_actual_offline_authorization(
+            namespace=self.namespace,
+            authorization=self.actual_offline_authorization,
+            graph=self.dependency_graph,
+            events=self.events,
+            observed_times=self.observed_times,
+            run_id=self.run_id,
+            batch_id=self.batch_id,
+            stream_id=self.stream_id,
+            symbol=self.source_symbol,
+            allow_legacy_read_only=self.legacy_read_only_replay,
+            at=at,
+        )
         source_event_ids = {item.source_event_id for item in self.events}
         unknown = sorted(
             set(self.direct_kinds_by_source_event_id) - source_event_ids
@@ -237,8 +238,8 @@ class M5EventRunRequest:
     def direct_kinds(self) -> dict[str, tuple[str, ...]]:
         return dict(self.direct_kinds_by_source_event_id)
 
-    def as_policy(self) -> dict[str, Any]:
-        self.verify()
+    def as_policy(self, *, at: datetime | None = None) -> dict[str, Any]:
+        self.verify(at=at)
         return {
             "schema_version": M5_RUN_REQUEST_SCHEMA,
             "request_id": self.request_id,
@@ -269,12 +270,12 @@ class M5EventRunRequest:
             ),
         }
 
-    def request_sha256(self) -> str:
-        return _state_digest(self.as_policy())
+    def request_sha256(self, *, at: datetime | None = None) -> str:
+        return _state_digest(self.as_policy(at=at))
 
-    def to_json(self) -> str:
+    def to_json(self, *, at: datetime | None = None) -> str:
         return json.dumps(
-            self.as_policy(),
+            self.as_policy(at=at),
             ensure_ascii=False,
             allow_nan=False,
             indent=2,
@@ -286,6 +287,7 @@ class M5EventRunRequest:
         payload: Mapping[str, Any],
         *,
         allow_legacy_read_only: bool = False,
+        at: datetime | None = None,
     ) -> "M5EventRunRequest":
         """Parse a serialized run request fail-closed.
 
@@ -346,19 +348,21 @@ class M5EventRunRequest:
                 actual_offline_authorization_from_payload(
                     data["actual_offline_authorization"],
                     allow_legacy_read_only=allow_legacy_read_only,
+                    at=at,
                 )
                 if data.get("actual_offline_authorization") is not None else None
             ),
             legacy_read_only_replay=allow_legacy_read_only,
         )
+        request.verify(at=at)
         if schema_version == M5_RUN_REQUEST_SCHEMA_V1:
             if request.namespace != NAMESPACE_SIMULATED:
                 raise ValueError("M5 v1 requests may only use SIMULATED namespace")
-            expected = request.as_policy()
+            expected = request.as_policy(at=at)
             expected["schema_version"] = M5_RUN_REQUEST_SCHEMA_V1
             expected.pop("actual_offline_authorization")
         else:
-            expected = request.as_policy()
+            expected = request.as_policy(at=at)
         if set(data) != set(expected):
             missing = sorted(set(expected) - set(data))
             extra = sorted(set(data) - set(expected))

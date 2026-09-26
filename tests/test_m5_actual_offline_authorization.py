@@ -1,5 +1,5 @@
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import base64
 import hashlib
 import json
@@ -244,3 +244,136 @@ def test_actual_capability_cannot_be_repurposed_to_another_event_or_run():
         capability.verify(run_id="different-run")
     with pytest.raises(ValueError, match="event identity"):
         capability.verify(events=(), observed_times=())
+
+
+def _resign_receipt(
+    fixture: dict,
+    payload: dict,
+) -> tuple[dict, dict]:
+    receipt = deepcopy(fixture["bundle"]["receipt_chain"][0])
+    receipt["payload"] = payload
+    receipt["signature"] = fixture["private_key"].sign(
+        PURPOSE
+        + json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hex()
+    receipt_sha256 = hashlib.sha256(
+        json.dumps(
+            receipt,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    trust_root = deepcopy(fixture["trust_root"])
+    trust_root["approved_receipt_sha256"] = receipt_sha256
+    return receipt, trust_root
+
+
+def test_actual_receipt_requires_signed_valid_until():
+    fixture, _ = _verified()
+    payload = deepcopy(fixture["bundle"]["receipt_chain"][0]["payload"])
+    payload.pop("valid_until")
+    receipt, trust_root = _resign_receipt(fixture, payload)
+    bundle = deepcopy(fixture["bundle"])
+    bundle["receipt_chain"] = [receipt]
+
+    with pytest.raises(ValueError, match="payload schema differs"):
+        verify_m5_actual_approval_receipt(
+            bundle,
+            trust_root,
+            expected_subject=fixture["subject"],
+            at=REVIEWED_AT,
+        )
+
+
+def test_actual_receipt_rejects_inverted_validity_window():
+    fixture, _ = _verified()
+    payload = deepcopy(fixture["bundle"]["receipt_chain"][0]["payload"])
+    payload["valid_until"] = payload["authorized_at"]
+    receipt, trust_root = _resign_receipt(fixture, payload)
+    bundle = deepcopy(fixture["bundle"])
+    bundle["receipt_chain"] = [receipt]
+
+    with pytest.raises(ValueError, match="validity window is invalid"):
+        verify_m5_actual_approval_receipt(
+            bundle,
+            trust_root,
+            expected_subject=fixture["subject"],
+            at=REVIEWED_AT,
+        )
+
+
+def test_actual_receipt_enforces_inclusive_validity_boundaries():
+    fixture, _ = _verified()
+    payload = fixture["bundle"]["receipt_chain"][0]["payload"]
+    authorized_at = datetime.fromisoformat(payload["authorized_at"])
+    valid_until = datetime.fromisoformat(payload["valid_until"])
+
+    with pytest.raises(ValueError, match="before its approval"):
+        verify_m5_actual_approval_receipt(
+            fixture["bundle"],
+            fixture["trust_root"],
+            expected_subject=fixture["subject"],
+            at=authorized_at - timedelta(microseconds=1),
+        )
+    at_start = verify_m5_actual_approval_receipt(
+        fixture["bundle"],
+        fixture["trust_root"],
+        expected_subject=fixture["subject"],
+        at=authorized_at,
+    )
+    at_end = verify_m5_actual_approval_receipt(
+        fixture["bundle"],
+        fixture["trust_root"],
+        expected_subject=fixture["subject"],
+        at=valid_until,
+    )
+    assert at_start.valid_until == at_end.valid_until == valid_until
+
+    with pytest.raises(ValueError, match="expired"):
+        verify_m5_actual_approval_receipt(
+            fixture["bundle"],
+            fixture["trust_root"],
+            expected_subject=fixture["subject"],
+            at=valid_until + timedelta(microseconds=1),
+        )
+
+
+def test_actual_receipt_rejects_tampered_valid_until():
+    fixture, _ = _verified()
+    bundle = deepcopy(fixture["bundle"])
+    bundle["receipt_chain"][0]["payload"]["valid_until"] = (
+        datetime.fromisoformat(
+            bundle["receipt_chain"][0]["payload"]["valid_until"]
+        )
+        + timedelta(days=1)
+    ).isoformat()
+
+    with pytest.raises(ValueError, match="signature is invalid"):
+        verify_m5_actual_approval_receipt(
+            bundle,
+            fixture["trust_root"],
+            expected_subject=fixture["subject"],
+            at=REVIEWED_AT,
+        )
+
+
+def test_actual_capability_cannot_be_replayed_after_expiry():
+    fixture, capability = _verified()
+    valid_until = datetime.fromisoformat(
+        fixture["bundle"]["receipt_chain"][0]["payload"]["valid_until"]
+    )
+    after_expiry = valid_until + timedelta(microseconds=1)
+
+    with pytest.raises(ValueError, match="expired"):
+        capability.verify(at=after_expiry)
+    with pytest.raises(ValueError, match="expired"):
+        actual_offline_authorization_from_payload(
+            capability.as_policy(),
+            at=after_expiry,
+        )

@@ -199,11 +199,12 @@ def main() -> int:
         graph_receipt_sha256=_digest(paths["graph_receipt"]),
         reconciliation_sha256=_digest(paths["reconciliation"]),
     )
+    evaluation_time = datetime.now(timezone.utc)
     authorization = verify_m5_actual_approval_receipt(
         approval_bundle,
         approval_trust_root,
         expected_subject=subject,
-        at=args.generated_at,
+        at=evaluation_time,
     )
     authorization.verify(
         graph=graph,
@@ -213,6 +214,7 @@ def main() -> int:
         batch_id=args.run_id,
         stream_id=args.run_id,
         symbol=args.symbol,
+        at=evaluation_time,
     )
     scan = next((item for item in queue.scans if item.symbol == args.symbol), None)
     if scan is None or scan.coverage_status != WATERMARK_COVERAGE_COMPLETE:
@@ -240,6 +242,7 @@ def main() -> int:
         request=request,
         store=JsonM5EventRunStateStore(args.state_root.resolve()),
         receipt_store=JsonM5EventRunReceiptStore(args.receipt_root.resolve()),
+        at=evaluation_time,
     )
     output_dir.mkdir(parents=True)
     request_path = output_dir / "request.json"

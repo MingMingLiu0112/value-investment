@@ -170,10 +170,15 @@ def synthetic_actual_receipt(
     *,
     namespace: str = "ACTUAL",
     authorization_id: str = "m5-synthetic-approved",
+    valid_until: datetime | None = None,
     review_sha256: str | None = None,
     current_queue_bytes: bytes | None = None,
     bridge_bytes: bytes | None = None,
 ):
+    authorized_at = REVIEWED_AT - timedelta(minutes=1)
+    valid_until = valid_until or (REVIEWED_AT + timedelta(days=30))
+    if authorized_at.tzinfo is None or valid_until.tzinfo is None:
+        raise ValueError("synthetic M5 approval timestamps must be timezone-aware")
     review = _review()
     batch = build_materiality_bridge_batch(review, namespace=namespace)
     graph = _graph()
@@ -237,7 +242,8 @@ def synthetic_actual_receipt(
         "action": "no_order",
         "authorization_id": authorization_id,
         "review_provenance": "USER_CONFIRMED_DELEGATED_REVIEW",
-        "authorized_at": (REVIEWED_AT - timedelta(minutes=1)).isoformat(),
+        "authorized_at": authorized_at.isoformat(),
+        "valid_until": valid_until.isoformat(),
         "sequence": 1,
         "previous_receipt_sha256": None,
         "reviewed_artifact_sha256": {
