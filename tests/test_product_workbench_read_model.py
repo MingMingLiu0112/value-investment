@@ -209,6 +209,16 @@ def test_company_decision_review_is_optional_explanation_not_an_order() -> None:
     assert model.action == ACTION_NO_ORDER
 
 
+def test_company_decision_review_rejects_execution_fields() -> None:
+    payload = _payload()
+    payload["companies"][0]["decision_review"] = [
+        {"label": "错误输入", "value": "不应进入产品展示。", "order": "buy"}
+    ]
+
+    with pytest.raises(ValueError, match="execution keys"):
+        product_workbench_from_payload(payload)
+
+
 def test_execution_keys_fail_closed_at_any_depth() -> None:
     payload = _payload()
     payload["opportunities"][0]["position_size"] = 0
