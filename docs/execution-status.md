@@ -1,5 +1,35 @@
 # 当前执行状态
 
+## 2026-09-26 M7 五页产品工作台交付到用户入口
+
+本轮唯一目标 `DELIVER-M7-PRODUCT-UX-V2-TO-USER`。五页产品工作台候选
+`runtime/m7-product-ux-candidate-v2-20260926.xlsx`
+SHA-256 `f3d29985f58f8a1e0925781c5161292cf5cf8c4643931cece64ed85fc4f452f3`
+在 WPS 实际打开后暴露了一个真实可读性缺陷：行高只按显式换行计算，忽略软换行的
+实际行数，导致 `01_今日`、`02_机会`、`03_公司`、`05_事件` 与审计页上的中文长句被
+裁切（`01_今日` 第 4、11-16 行，`02_机会` 全部 18 行均受影响）。
+
+修复仅限展示层：行高改为按列宽和东亚字宽计算真实换行行数，
+冻结窗格由 `A4` 改为 `B4` 以在横向滚动时保留公司列。估值公式、研究门槛、
+事件材料性、组合容量、M6 准入与 `action=no_order` 均未改动。
+
+最终候选 `runtime/m7-product-ux-candidate-v3-20260926.xlsx`
+SHA-256 `bb98c9670218be3abbfe9adf665c14337c06893af382e9f2be4068905c1aa18b`，
+来源 packet SHA-256 与 v2 完全一致（`8328bf5dc0427ef7ce66e216ae7f20f32451e95bf70f63ac6bf1be2e9adc7a0d`）
+证明只改了呈现。WPS 只读回执
+`runtime/m7-product-ux-candidate-v3-wps-receipt.json` 为 `passed`
+（6 页可见、每页冻结首列、无公式错误、用户页无阶段码与买卖指令）。
+可读性审计 `runtime/m7-product-ux-candidate-v3-visual-review-receipt.json` 为
+`passed`，同一审计在 v2 上为 `failed`，因此该门禁不是空跑。
+
+`config/current-trial-workbook.json` 已从 legacy v16 切换到产品工作台：
+`M7_PRODUCT_UX=USER_VISIBLE_TRIAL_READY`、`CURRENT_TRIAL_POINTER=PRODUCT_UX`、
+`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`、`INITIAL_ASSISTED_USE=NOT_REACHED`、
+`action=no_order`。v16 候选与其 WPS 回执保留为历史，正式 WPS 原表
+SHA-256 仍为 `64c8deff1a237076d2ba0b00afc8905d23bd9d117cb132dfc6757071b5659911`，
+未替换、未发布。`python scripts/open_current_trial_workbook.py --open`
+已实测打开的是五页产品工作台而非 v16。
+
 ## 2026-09-25 PIT Conformance Consumer Enforcement
 
 `pit-conformance-verifier-v2` 的结果现在不能作为可持久复用的授权。严格的 M3

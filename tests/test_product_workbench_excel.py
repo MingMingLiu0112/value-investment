@@ -414,3 +414,47 @@ def test_manifest_is_no_order_and_does_not_touch_canonical_pointer(
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["action"] == ACTION_NO_ORDER
     assert hashlib.sha256(pointer.read_bytes()).hexdigest() == pointer_before
+
+
+def test_soft_wrapped_text_is_not_clipped_by_row_height() -> None:
+    payload = _payload()
+    long_text = "证据不足。" * 12
+    payload["today_items"][0]["what_happened"] = long_text
+
+    workbook = build_product_workbench_workbook(
+        product_workbench_from_payload(payload)
+    )
+    sheet = workbook[SHEET_TODAY]
+    target_row = None
+    for row in sheet.iter_rows():
+        for cell in row:
+            if cell.value == long_text:
+                target_row = cell.row
+    assert target_row is not None
+
+    height = sheet.row_dimensions[target_row].height
+    assert height is not None
+    # 120 columns of CJK text inside a 28-wide column needs several lines.
+    assert height >= 15 * 3 + 6
+
+
+def test_every_row_is_tall_enough_for_its_own_wrapped_content() -> None:
+    workbook = build_product_workbench_workbook(_model())
+
+    for sheet in workbook.worksheets:
+        for row in sheet.iter_rows():
+            texts = [str(cell.value) for cell in row if cell.value is not None]
+            if not texts:
+                continue
+            largest = max(texts, key=lambda value: value.count("\n") + len(value))
+            height = sheet.row_dimensions[row[0].row].height
+            if height is None:
+                continue
+            assert height >= 15 * (largest.count("\n") + 1) + 6
+
+
+def test_user_sheets_freeze_the_company_column_for_horizontal_scans() -> None:
+    workbook = build_product_workbench_workbook(_model())
+
+    for title in USER_SHEETS:
+        assert workbook[title].freeze_panes == "B4"

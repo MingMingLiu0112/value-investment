@@ -21,6 +21,8 @@
     "scripts/current/build_company_valuation.py",
     "scripts/current/build_current_workbench.py",
     "scripts/current/build_product_workbench_candidate.py",
+    "scripts/current/verify_m7_product_ux_candidate_wps.ps1",
+    "scripts/current/audit_m7_product_ux_readability.py",
     "scripts/current/review_event.py",
     "scripts/build_company_valuation_result.py",
     "scripts/run_m2_opportunity_discovery.py",
@@ -65,8 +67,8 @@
     "scripts/report_m1_research_dossiers.py"
   ],
   "counts": {
-    "product": 15,
+    "product": 17,
     "engineering": 36,
-    "total": 51
+    "total": 53
   }
 }

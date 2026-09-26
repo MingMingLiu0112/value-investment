@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -115,8 +116,63 @@ def _widths(ws: Worksheet, widths: list[int]) -> None:
         ws.column_dimensions[get_column_letter(index)].width = width
 
 
-def _set_height(ws: Worksheet, row: int, text: str, minimum: int = 20) -> None:
-    ws.row_dimensions[row].height = max(minimum, 15 * (str(text).count("\n") + 1) + 6)
+def _glyph_width(character: str) -> int:
+    """Return the column width a single character occupies in the rendered grid."""
+
+    return 2 if unicodedata.east_asian_width(character) in ("W", "F") else 1
+
+
+def _wrapped_lines(text: str, width_columns: int) -> int:
+    """Count the visual lines ``text`` needs inside ``width_columns``."""
+
+    limit = max(1, width_columns)
+    lines = 0
+    for paragraph in str(text).split("\n"):
+        if not paragraph:
+            lines += 1
+            continue
+        used = 1
+        current = 0
+        for character in paragraph:
+            size = _glyph_width(character)
+            if current + size > limit and current > 0:
+                used += 1
+                current = size
+            else:
+                current += size
+        lines += used
+    return max(lines, 1)
+
+
+def _column_width(ws: Worksheet, column: int) -> int:
+    dimension = ws.column_dimensions.get(get_column_letter(column))
+    width = getattr(dimension, "width", None)
+    return int(width) if width else 9
+
+
+def _fit_rows(
+    ws: Worksheet,
+    row: int,
+    cells: list[tuple[int, str, int]],
+    *,
+    minimum: int = 20,
+) -> None:
+    """Size a row from the wrapped height of the tallest cell in it.
+
+    ``cells`` carries ``(first_column, text, column_span)`` so merged blocks and
+    single cells are measured the way the renderer actually writes them. Counting
+    only explicit newlines left every soft-wrapped Chinese sentence clipped.
+    """
+
+    lines = 1
+    for column, text, span in cells:
+        if text is None:
+            continue
+        width = sum(
+            _column_width(ws, index) for index in range(column, column + span)
+        )
+        lines = max(lines, _wrapped_lines(text, width - 1))
+    ws.row_dimensions[row].height = max(minimum, 15 * lines + 6)
 
 
 def _hyperlink(cell: Cell, sheet: str, coordinate: str = "A1") -> None:
@@ -150,15 +206,17 @@ def _evidence_cell(
     column: int,
     refs: tuple[str, ...],
     audit_rows: dict[str, int],
-) -> None:
+) -> str:
     cell = ws.cell(row, column)
     if not refs:
         cell.value = "-"
         _style(cell, color=MUTED, border=True)
-        return
-    cell.value = f"查看证据 ({len(refs)})"
+        return "-"
+    text = f"查看证据 ({len(refs)})"
+    cell.value = text
     _style(cell, border=True)
     _hyperlink(cell, SHEET_SYSTEM_AUDIT, f"A{audit_rows[refs[0]]}")
+    return text
 
 
 def _company_link(
@@ -192,7 +250,18 @@ def _render_today(
     _style(ws.cell(row, 4, _status_text(model.system_health.status)), border=True)
     _style(ws.cell(row, 5, "待处理事项"), fill=GREY, bold=True, border=True)
     _style(ws.cell(row, 6, str(model.overview.pending_count)), border=True)
-    _set_height(ws, status_row, model.system_health.message)
+    _fit_rows(
+        ws,
+        status_row,
+        [
+            (1, "数据更新时间", 1),
+            (2, model.overview.data_updated_at.isoformat(), 1),
+            (3, "系统健康", 1),
+            (4, _status_text(model.system_health.status), 1),
+            (5, "待处理事项", 1),
+            (6, str(model.overview.pending_count), 1),
+        ],
+    )
     row += 2
 
     row = _section_title(ws, row, "我的组合", 6)
@@ -238,8 +307,19 @@ def _render_today(
         )
         for column, value in enumerate(values, 2):
             _style(ws.cell(row, column, value), border=True)
-        _evidence_cell(ws, row, 6, item.evidence_refs, audit_rows)
-        _set_height(ws, row, max(values, key=len))
+        evidence_text = _evidence_cell(ws, row, 6, item.evidence_refs, audit_rows)
+        _fit_rows(
+            ws,
+            row,
+            [
+                (1, item.company, 1),
+                (2, values[0], 1),
+                (3, values[1], 1),
+                (4, values[2], 1),
+                (5, values[3], 1),
+                (6, evidence_text, 1),
+            ],
+        )
         row += 1
 
 
@@ -289,8 +369,22 @@ def _render_opportunities(
         )
         for column, value in enumerate(values, 2):
             _style(ws.cell(row, column, value), border=True)
-        _evidence_cell(ws, row, 9, card.evidence_refs, audit_rows)
-        _set_height(ws, row, max(values, key=len))
+        evidence_text = _evidence_cell(ws, row, 9, card.evidence_refs, audit_rows)
+        _fit_rows(
+            ws,
+            row,
+            [
+                (1, f"{card.company_name} / {card.symbol}", 1),
+                (2, values[0], 1),
+                (3, values[1], 1),
+                (4, values[2], 1),
+                (5, values[3], 1),
+                (6, values[4], 1),
+                (7, values[5], 1),
+                (8, values[6], 1),
+                (9, evidence_text, 1),
+            ],
+        )
         row += 1
 
 
@@ -345,9 +439,23 @@ def _render_portfolio(
         )
         for column, value in enumerate(values, 1):
             _style(ws.cell(row, column, value), border=True)
-        _style(ws.cell(row, 5, _status_text(position.continuation_review) + "\n" + position.reason), border=True)
-        _evidence_cell(ws, row, 6, position.evidence_refs, audit_rows)
-        _set_height(ws, row, position.reason)
+        review_text = (
+            _status_text(position.continuation_review) + "\n" + position.reason
+        )
+        _style(ws.cell(row, 5, review_text), border=True)
+        evidence_text = _evidence_cell(ws, row, 6, position.evidence_refs, audit_rows)
+        _fit_rows(
+            ws,
+            row,
+            [
+                (1, values[0], 1),
+                (2, values[1], 1),
+                (3, values[2], 1),
+                (4, values[3], 1),
+                (5, review_text, 1),
+                (6, evidence_text, 1),
+            ],
+        )
         row += 1
 
 
@@ -398,8 +506,19 @@ def _render_events(
             _style(ws.cell(row, index + 1, label), fill=GREY, bold=True, border=True)
             _style(ws.cell(row + 1, index + 1, value), border=True)
         _style(ws.cell(row, 6, labels[5]), fill=GREY, bold=True, border=True)
-        _evidence_cell(ws, row + 1, 6, event.evidence_refs, audit_rows)
-        _set_height(ws, row + 1, max(values, key=len))
+        evidence_text = _evidence_cell(ws, row + 1, 6, event.evidence_refs, audit_rows)
+        _fit_rows(
+            ws,
+            row + 1,
+            [
+                (1, values[0], 1),
+                (2, values[1], 1),
+                (3, values[2], 1),
+                (4, values[3], 1),
+                (5, values[4], 1),
+                (6, evidence_text, 1),
+            ],
+        )
         row += 3
 
 
@@ -447,8 +566,19 @@ def _render_companies(
         )
         for column, value in enumerate(assessment_values, 1):
             _style(ws.cell(row, column, value), border=True)
-        _evidence_cell(ws, row, 6, company.evidence_refs, audit_rows)
-        _set_height(ws, row, max(assessment_values, key=len))
+        evidence_text = _evidence_cell(ws, row, 6, company.evidence_refs, audit_rows)
+        _fit_rows(
+            ws,
+            row,
+            [
+                (1, assessment_values[0], 1),
+                (2, assessment_values[1], 1),
+                (3, assessment_values[2], 1),
+                (4, assessment_values[3], 1),
+                (5, assessment_values[4], 1),
+                (6, evidence_text, 1),
+            ],
+        )
         row += 2
 
         row = _section_title(ws, row, "六块研究判断", 6)
@@ -459,8 +589,17 @@ def _render_companies(
             _style(ws.cell(row, 2, _status_text(section.status)), border=True)
             ws.merge_cells(start_row=row, start_column=3, end_row=row, end_column=5)
             _style(ws.cell(row, 3, section.summary), border=True)
-            _evidence_cell(ws, row, 6, section.evidence_refs, audit_rows)
-            _set_height(ws, row, section.summary)
+            evidence_text = _evidence_cell(ws, row, 6, section.evidence_refs, audit_rows)
+            _fit_rows(
+                ws,
+                row,
+                [
+                    (1, section.title, 1),
+                    (2, _status_text(section.status), 1),
+                    (3, section.summary, 3),
+                    (6, evidence_text, 1),
+                ],
+            )
             row += 1
         row += 1
 
@@ -475,7 +614,7 @@ def _render_companies(
             _style(ws.cell(row, 1, label), fill=GREY, bold=True, border=True)
             ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
             _style(ws.cell(row, 2, value), border=True)
-            _set_height(ws, row, value)
+            _fit_rows(ws, row, [(1, label, 1), (2, value, 5)])
             row += 1
         row += 1
 
@@ -497,6 +636,10 @@ def _render_companies(
                 border=True,
             )
         row += 1
+        scenario_texts = [
+            _assessment_text(scenario.assessment)
+            for scenario in company.scenarios
+        ]
         for index, scenario in enumerate(company.scenarios):
             start_column = index * 2 + 1
             ws.merge_cells(
@@ -505,9 +648,16 @@ def _render_companies(
                 end_row=row,
                 end_column=start_column + 1,
             )
-            text = _assessment_text(scenario.assessment)
-            _style(ws.cell(row, start_column, text), border=True)
-            _set_height(ws, row, text)
+            _style(ws.cell(row, start_column, scenario_texts[index]), border=True)
+        _fit_rows(
+            ws,
+            row,
+            [
+                (1, scenario_texts[0], 2),
+                (3, scenario_texts[1], 2),
+                (5, scenario_texts[2], 2),
+            ],
+        )
         row += 2
     return company_rows
 
@@ -546,7 +696,16 @@ def _render_audit(ws: Worksheet, model: ProductWorkbenchReadModel) -> None:
         _style(ws.cell(row, 3, stage.status.code), border=True)
         ws.merge_cells(start_row=row, start_column=4, end_row=row, end_column=6)
         _style(ws.cell(row, 4, stage.detail), border=True)
-        _set_height(ws, row, stage.detail)
+        _fit_rows(
+            ws,
+            row,
+            [
+                (1, stage.stage_label, 1),
+                (2, _status_text(stage.status), 1),
+                (3, stage.status.code, 1),
+                (4, stage.detail, 3),
+            ],
+        )
         row += 1
 
     row += 1
@@ -571,7 +730,19 @@ def _render_audit(ws: Worksheet, model: ProductWorkbenchReadModel) -> None:
         )
         for column, value in enumerate(values, 1):
             _style(ws.cell(row, column, value), border=True)
-        _set_height(ws, row, record.path, minimum=24)
+        _fit_rows(
+            ws,
+            row,
+            [
+                (1, values[0], 1),
+                (2, values[1], 1),
+                (3, values[2], 1),
+                (4, values[3], 1),
+                (5, values[4], 1),
+                (6, values[5], 1),
+            ],
+            minimum=24,
+        )
         row += 1
 
 
@@ -588,7 +759,7 @@ def build_product_workbench_workbook(
     sheets = {title: workbook.create_sheet(title) for title in WORKBOOK_SHEETS}
     for sheet in sheets.values():
         sheet.sheet_view.showGridLines = False
-        sheet.freeze_panes = "A4"
+        sheet.freeze_panes = "B4"
     sheets[SHEET_TODAY].sheet_properties.tabColor = GREEN
     sheets[SHEET_SYSTEM_AUDIT].sheet_properties.tabColor = MUTED
 
