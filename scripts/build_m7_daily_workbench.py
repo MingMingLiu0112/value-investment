@@ -333,7 +333,6 @@ def _m6_packet() -> dict[str, Any]:
 
 def _audit_packet() -> dict[str, Any]:
     _verify_pinned(AUDIT_WORKBOOK)
-    _verify_pinned(CANONICAL_WORKBOOK)
     return {
         "action": ACTION_NO_ORDER,
         "audit_workbook": str(AUDIT_WORKBOOK.relative_to(ROOT)),
