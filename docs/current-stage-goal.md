@@ -1,5 +1,9 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
+## 当前阶段：STAGE-REAL-USE-READINESS-PRE-EXTERNAL-GATES（2026-09-26）
+
+本阶段只核验真实日常研究工作台、唯一 canonical Excel、M3/M4/M5/M6 剩余门禁和安全 R0/R1；不扩展交易、估值、筛选、前端或生产功能。以 `docs/execution-status.md` 顶部最新矩阵及不可变回执为事实记录。M6 生产授权未请求、Shadow 不可启动；`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`，`INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`。
+
 ## 当前执行门禁（2026-09-26）
 
 ### Real-use readiness factual checkpoint
