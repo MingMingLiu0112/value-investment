@@ -1,8 +1,8 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-## 当前阶段：STAGE-FINAL-R0-EVIDENCE-CLOSURE-AND-EXTERNAL-GATE-HANDOFF（2026-09-26）
+## 当前阶段：STAGE-FINAL-R0-CLASSIFICATION-AND-EXTERNAL-GATE-HANDOFF（2026-09-26）
 
-本阶段只处理 `docs/execution-status.md` 顶部登记的剩余两项安全 R0：真实 M5 收据到产品投影的绑定，以及跟踪制品的内容级隐私分类。M6 资源表征已结束，容量问题属于未来 R3 决策，不重开。若 R0/R1 均归零，则只生成 external-gate handoff，不扩展工程；未归零则记录精确缺口。当前事实以最新已验证回执为准；静态 M6 start matrix 仅为基线合同。M6 生产授权未请求、Shadow 不可启动；`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`，`INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`。
+安全 R0/R1 已归零。真实 current M5 receipt 需要 R3 受控身份/信任根与 R6 自然事件，不能继续误列为安全工程缺口；内容级隐私审计已完成有界分类。当前只保留 [external gate handoff](current/external-gate-handoff.md)，停止工程扩展。静态 M6 start matrix 仍仅为基线合同；M6 生产授权未请求、Shadow 不可启动；`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`，`INITIAL_ASSISTED_USE=NOT_REACHED`，永久 `action=no_order`。
 
 ## 当前执行门禁（2026-09-26）
 

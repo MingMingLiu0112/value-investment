@@ -1,5 +1,55 @@
 # 当前执行状态
 
+## 2026-09-26 Final R0 Classification and External Handoff
+
+```text
+M5_PRODUCT_EVENT_PROJECTION_ENGINEERING = PASS
+M5_REAL_CURRENT_OPERATIONAL_OBSERVATION = WAITING_R3_R6
+CONTENT_LEVEL_PRIVACY = PASS
+CI_LOG_PRIVACY = BOUNDED_LIMITATION_LATEST_SUCCESSFUL_RUN_ONLY
+CI_ARTIFACT_PRIVACY = BOUNDED_LIMITATION_LATEST_SUCCESSFUL_RUN_ONLY
+M6_RESOURCE_CAPACITY = FAIL_OBSERVED / R3_INFRASTRUCTURE_DECISION
+M6_DISK_CAPACITY = NOT_READY_FOR_CURRENT_DEPLOYMENT / R3_INFRASTRUCTURE_DECISION
+SAFE_R0_REMAINING = 0
+SAFE_R1_REMAINING = 0
+EXTERNAL_GATE_HANDOFF = READY
+M6_PRODUCTION_AUTHORIZATION = NOT_REQUESTED
+M6_OPERATIONAL = NOT_STARTED
+SHADOW_START_ALLOWED = false
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+R0-A classification: the product projection has seven-state E2E coverage,
+Hash-bound evidence, duplicate/correction preservation and fail-closed negative
+tests. A new current operational M5 receipt additionally requires a controlled
+production trust root and operator/intake identity (R3), plus a naturally
+occurring source event (R6). It is therefore not safe R0. The existing 600519
+`NEED_MORE_EVIDENCE` state remains an issuer-specific research stop, not a
+system blocker.
+
+R0-B classification: `runtime/privacy-final-20260926.json` scanned all 34
+tracked workbooks without emitting a source token. Visible-cell results are
+6,241 candidates / 132 fingerprints: 6,031 are hash-or-receipt fragments and
+210 are public financial/market/source-audit values; there are no remaining
+private-context or unresolved visible fingerprints. The two earlier
+private-keyword-context fingerprints were independently adjudicated as SHA-256
+fragments in public broker research/announcement-source rows, not account data.
+Raw OOXML has 10,798 candidates / 293 fingerprints because it includes 9,461
+worksheet raw values plus 1,337 comments/other XML serializations; 162 are
+raw-only, but raw private-context fingerprints are zero. This is a bounded
+OOXML serialization difference, not evidence of private data. No confirmed
+private data was found in tracked Git content.
+
+The latest successful Core Research Gates run is `36241330080` on `bb53559`.
+CI log/artifact privacy coverage is deliberately limited to that latest
+accessible successful candidate run and its synthetic/disposable restore
+artifacts; it is not a claim about every historical CI run. The M4 private
+package boundary still keeps real inputs outside Git, public runtime, CI
+artifacts and canonical Excel. Resource observations remain a future R3 choice,
+not an engineering loop. See [external gate handoff](current/external-gate-handoff.md).
+
 ## 2026-09-26 STAGE-FINAL-R0-EVIDENCE-CLOSURE 复核
 
 ```text
