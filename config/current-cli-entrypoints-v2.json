@@ -45,6 +45,7 @@
     "scripts/m6_operational_control.py",
     "scripts/current/audit_m6_start_criteria.py",
     "scripts/current/rehearse_m4_onboarding.py",
+    "scripts/current/build_simulated_product_user_trial.py",
     "scripts/package_encrypted_backup.py",
     "scripts/audit_m6_historical_ingest_rejections.py",
     "scripts/audit_public_workbook_wps_copies.ps1",
@@ -68,7 +69,7 @@
   ],
   "counts": {
     "product": 17,
-    "engineering": 36,
-    "total": 53
+    "engineering": 37,
+    "total": 54
   }
 }

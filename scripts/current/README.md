@@ -14,3 +14,7 @@ without changing `config/current-trial-workbook.json`. M4 synthetic onboarding
 rehearsal is available as the engineering entry
 `rehearse_m4_onboarding.py` and never counts as real private-portfolio
 acceptance.
+
+`build_simulated_product_user_trial.py` is an engineering-only learning preview.
+It requires `--simulated-user-trial`, writes only under `runtime/`, and cannot
+replace the canonical workbook or accept private portfolio data.
