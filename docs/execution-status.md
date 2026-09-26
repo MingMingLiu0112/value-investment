@@ -1,5 +1,25 @@
 # 当前执行状态
 
+## 2026-09-26 Synthetic Product Demonstration
+
+```text
+M4_SYNTHETIC_PRODUCT_DEMONSTRATION = COMPLETED
+M4_SYNTHETIC_DEMO_RUN = product-demo-20260926
+M4_REAL_PRIVATE_INPUT = NOT_PROVIDED
+M4_PERSONALIZED_ACCEPTANCE = WAITING_R2
+CANONICAL_WORKBOOK = OPENED_AS_READONLY_TRIAL
+PRODUCT_DEMO_ACTION = no_order
+```
+
+The existing synthetic-only onboarding application path completed its full
+draft, validation, encryption, reconciliation, confirmation, portfolio-risk,
+position-guidance, dividend-projection and product-read-model exercise. The
+runtime receipt is explicitly classified `SYNTHETIC_REHEARSAL_ONLY`; it is not
+personalized guidance and did not write simulated holdings to the canonical
+workbook. The configured canonical workbook was contract-verified and opened
+as the single product trial entry. Product regression coverage passed locally
+with 35 tests.
+
 ## 2026-09-26 R2 Private Portfolio Onboarding: Waiting for User Input
 
 ```text
