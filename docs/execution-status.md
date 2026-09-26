@@ -1,6 +1,28 @@
 # 当前执行状态
 
-## 2026-09-26 STAGE-R0-CLOSURE 有界复核（本地工作树，待 CI）
+## 2026-09-26 STAGE-FINAL-R0-EVIDENCE-CLOSURE 复核
+
+```text
+R0-A_REAL_M5_RECEIPT_BINDING = NOT_PROVEN
+R0-B_CONTENT_LEVEL_PRIVACY = PARTIAL
+R0-C_RESOURCE_CAPACITY = CLOSED_AS_R3_INFRASTRUCTURE_DECISION
+SAFE_R0_REMAINING = 2
+SAFE_R1_REMAINING = 0
+EXTERNAL_GATE_HANDOFF = NOT_READY
+M6_OPERATIONAL = NOT_STARTED
+SHADOW_START_ALLOWED = false
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+R0-A：当前非测试的 600519 ACTUAL 请求仅有 2026-09-25 旧式离线授权链；`actual-valid-application-20260925/request.json` 的授权对象没有当前签名能力所需的 `valid_until`/受信任签名绑定，`config/authorization-trust-roots-v1.json` 的生产 pin 列表为空。当前规则只允许旧授权对既存同指纹批次作只读历史重放，不允许它进入 current 产品事件正例。仓库未发现另一条非测试的新版签名 ACTUAL 请求。既有七态合成映射与历史重放测试通过，但无法在不伪造真实授权的情况下证明“真实已验证 M5 收据 -> current Product -> Excel”；R0-A 保持开放。重开条件为出现经当前授权/信任根规则验证的真实 M5 收据及对应原件/复核字节链，然后完成 issuer-neutral adapter 和篡改反例；不以 600519 个股研究缺口替代此系统门。
+
+R0-B：对 34 个 Git 跟踪工作簿的 `openpyxl` 可见单元格做脱敏分类，发现 6,241 次长数字命中、132 个唯一指纹；其中 56 次、2 个指纹落在私人关键词上下文，尚未判定为真实私人数据，必须独立复核。2,804 次仍属未知类别。此前原始 OOXML 扫描有 9,461 次、292 个唯一值，两个扫描口径差异尚未解释；不能用较小的可见单元格覆盖量宣称内容安全。M4 私有根/密钥分离已有代码门禁，WPS 用户管理区的未来发布边界与最新 CI 可访问日志/附件本轮尚未全部复核。审计工具只输出类别、单元格坐标及指纹，不输出候选原值。未发现可确认的真实私人数据，也没有证据足以关闭 R0-B。重开条件为私有上下文命中和 OOXML 差异的有界分类、CI/发布边界核验及独立脱敏复核；如确认 Git 跟踪制品含真实私人数据，应停止公开变更并单独处理，不自行改写历史。
+
+`INTERRUPTION_AUDIT`：本轮可安全推进的 R0 已做取证，但 A 缺当前可信真实收据，B 缺足够分类与独立复核。R1 没有新的可用研究证据；M3 严格同时点 PIT 等 R6，M4 真实私有输入等 R2，M6 生产和资源方案等 R3/真实会话等 R6，M7 最终使用签收等 R5。两项 R0 均未达验收，因此不生成 external-gate handoff、不请求生产授权、不启动 Shadow；`action=no_order`。
+
+## 2026-09-26 STAGE-R0-CLOSURE 有界复核（历史快照；后续 CI 已通过）
 
 ```text
 R0-A_M5_PRODUCT_PROJECTION = SYNTHETIC_SEVEN_STATE_E2E_PASS; REAL_M5_RECEIPT_BINDING_NOT_PROVEN
