@@ -2819,3 +2819,29 @@ action = no_order
 本工作包仍不产生交易信号、目标仓位、订单、调度、通知、生产数据库写或 M6 运营
 验收。下一步只能由真实 R2 私人输入、R3 明确生产授权或 R6 自然时间证据推进对应
 门；600519 不重开无边界历史证据收集。
+
+## 2026-09-27 R2 simulated product boundary check
+
+本轮仅完善并验证了模拟产品体验，不读取、复制或发布任何真实个人组合数据。
+
+```text
+SIMULATED_PRODUCT_DECISION_REVIEW = READY
+M4_SYNTHETIC_ONBOARDING_REHEARSAL = COMPLETED_SYNTHETIC_ONLY
+M4_PERSONALIZED_ACCEPTANCE = WAITING_R2
+REAL_PRIVATE_INPUT_STATUS = NEEDS_INPUT
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+- 公司页新增可选“决策复核”展示区，用于呈现上游研究的关注重点、买入复核前提、
+  加仓纪律和退出/降级条件；该区块不计算估值、仓位或订单，且递归拒绝执行字段。
+- 模拟体验脚本位于 `scripts/current/build_simulated_product_user_trial.py`，只能显式确认后
+  在 `runtime/` 生成预览，不能替换 `WORKBOOK_PATH` 或写入正式用户入口。
+- R2 合成演练收据为
+  `runtime/m4-synthetic-onboarding-r2-product-boundary-20260927/receipt.json`，
+  SHA-256 `456cb073b2d25004a91fff4842c501c9903aafb7551f8ce7f2b150669975b1c7`；
+  分类为 `SYNTHETIC_REHEARSAL_ONLY`，明确不构成真实个人化验收。
+- 私有空白模板验证返回 `NEEDS_INPUT`，缺少 IPS 确认、现金、仓位快照与对账；
+  不生成任何个人组合数值或仓位建议。
+- 本地架构边界测试 `27 passed`，产品与目录纠偏测试 `38 passed`；GitHub Core Research
+  Gates 运行 `36270833139` 的 `offline-core` 与 `postgres-integration` 均为成功。
