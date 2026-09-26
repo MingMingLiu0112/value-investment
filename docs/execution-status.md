@@ -2,7 +2,7 @@
 
 ## 2026-09-26 STAGE-REAL-USE-READINESS-PRE-EXTERNAL-GATES 核验
 
-当前 HEAD `ac58ab184b28945760b99da9eb1a48eb3f10b598` 的 [Core Research Gates 36230557757](https://github.com/MingMingLiu0112/value-investment/actions/runs/36230557757) 两项通过。最新合法已完成交易会话为 2026-09-24（9 月 25 日 SSE 休市，9 月 26 日非交易日）。既有真实采集包 `runtime/quote-sessions/20260926T081028140946Z/bundle.json` 的 SHA-256 为 `d161c6ed8acf2034544aa63fb101922d0ec22f537cdf2c69268243aaecb82974`；三只样例的腾讯/新浪报价日期均为 2026-09-24，且各自 `matched_close`，不存在跨日双源。采集完成于 2026-09-26T08:10:28Z；抓取时间不是报价时点。来源为 `qt.gtimg.cn` 与 `hq.sinajs.cn`；官方日历文档随包归档。覆盖仅 3 只样例，不代表全市场。
+预检基线提交 `ac58ab184b28945760b99da9eb1a48eb3f10b598` 的 [Core Research Gates 36230557757](https://github.com/MingMingLiu0112/value-investment/actions/runs/36230557757) 两项通过。最新合法已完成交易会话为 2026-09-24（9 月 25 日 SSE 休市，9 月 26 日非交易日）。既有真实采集包 `runtime/quote-sessions/20260926T081028140946Z/bundle.json` 的 SHA-256 为 `d161c6ed8acf2034544aa63fb101922d0ec22f537cdf2c69268243aaecb82974`；三只样例的腾讯/新浪报价日期均为 2026-09-24，且各自 `matched_close`，不存在跨日双源。采集完成于 2026-09-26T08:10:28Z；抓取时间不是报价时点。来源为 `qt.gtimg.cn` 与 `hq.sinajs.cn`；官方日历文档随包归档。覆盖仅 3 只样例，不代表全市场。
 
 该包已于 2026-09-26 原位发布到唯一 `WORKBOOK_PATH`，发布回执 `runtime/publication-receipts/canonical-m7-product-publication-20260926T083623Z.json` 绑定原工作簿、备份、staging 和发布后 Hash；非产品页保全通过。之后的 WPS 只读打开/计算回执 `runtime/publication-receipts/canonical-m7-wps-readonly-20260926.json` 为 `passed`，仍是同一文件，SHA-256 `ee99fd866d63a23317953f2bc00fdb8d360f1793f2a077b2e5213d5c73d77eff`。六个产品页可见、无公式错误，`04_我的组合` 显示尚未接入真实组合。本轮未重复发布同一交易日数据。
 
@@ -28,7 +28,7 @@ M5_PRODUCT = PARTIAL; SEVEN_STATE_EVENT_TO_EXCEL_ACCEPTANCE_NOT_PROVEN
 M5_PRODUCTION = NOT_STARTED; FUTURE_SCOPED_R3_ONLY
 ```
 
-当前 HEAD 的只读 M6 预检 `runtime/m6-operational-preflight-20260926T093554Z/receipt.json`（SHA-256 `9e981527852d3f02e730fbaf9a779346acafa424b01bdb0ad96a250acbf975ec`）把 `m6c2_repository_and_privacy` 与 `m6c3_isolated_restore_mechanism` 判为工程 `DONE`，并绑定本提交 CI 合成隔离恢复工件；真实恢复 RPO/RTO 未通过。SSE 官方日历原文重新 HTTPS 核对通过，`m6c7` 仍因未来授权 venue scope 不明而 `PARTIAL`。服务器只读观察：内存 3563 MiB，总 available 886 MiB；Swap 4095 MiB、已用 558 MiB；根盘剩余 5.9 GiB（使用率 85%）；`web-app-pta` active，最大 python RSS 约 1969 MiB。该瞬时观测不是生产资源、磁盘写入预算或健康准入收据；未启动或修改任何服务。
+该基线提交的只读 M6 预检 `runtime/m6-operational-preflight-20260926T093554Z/receipt.json`（SHA-256 `9e981527852d3f02e730fbaf9a779346acafa424b01bdb0ad96a250acbf975ec`）把 `m6c2_repository_and_privacy` 与 `m6c3_isolated_restore_mechanism` 判为工程 `DONE`，并绑定该次预检所用提交的 CI 合成隔离恢复工件；真实恢复 RPO/RTO 未通过。SSE 官方日历原文重新 HTTPS 核对通过，`m6c7` 仍因未来授权 venue scope 不明而 `PARTIAL`。服务器只读观察：内存 3563 MiB，总 available 886 MiB；Swap 4095 MiB、已用 558 MiB；根盘剩余 5.9 GiB（使用率 85%）；`web-app-pta` active，最大 python RSS 约 1969 MiB。现有生产授权包要求可用内存至少 1228 MiB，因此**本次资源观察不通过**；磁盘虽高于 2 GiB 保留线，但尚无预计写入量，不能判定磁盘准入通过。该瞬时观测不是生产健康准入收据；未启动或修改任何服务。
 
 ### Current Readiness Matrix
 
@@ -38,7 +38,7 @@ M5_PRODUCTION = NOT_STARTED; FUTURE_SCOPED_R3_ONLY
 | M3 | 历史复核可重放 | Checkpoint B PARTIAL | 严格同时点规则未证明 | 不增加历史 verifier | 新证据才复核 | 无 | 无 | 非本阶段 | 同时点规则先于决策自然形成 | WAITING_FOR_REAL_CONTEMPORANEOUS_EVIDENCE | 新规则及全部输入在决策截止前登记 |
 | M4 | 合成接入链完成 | 个性化未验收 | 无真实 IPS/持仓/现金 | 接入路径已演练 | 无 | 真实私有包与用户确认 | 不授权账户导入 | 非本阶段 | 无 | READY_FOR_REAL_R2_INPUT | 用户安全提供并确认私有输入 |
 | M5 | ACTUAL 事件离线链与 bounded NOT_READY 已验证 | 系统级事件到产品页七态尚未验收 | 600519 新估值 null；每日事件未重扫 | 七态端到端证明待做 | 新研究证据到达再复核 | 无 | 真实生产采集待授权 | 非本阶段 | 新公告/财务证据 | PRODUCT_PARTIAL；ENGINEERING_BOUNDED_DONE；PRODUCTION_NOT_STARTED | 七态产品链通过且真实研究证据满足对应公司门 |
-| M6 | m6c2/m6c3 当前 HEAD DONE，m6c7 PARTIAL | 运营未开始 | 真实会话/事件 0；真实恢复未通过 | 资源阈值、隐私内容与证据锚仍需收敛 | 无现成新材料 | 外部密钥身份另行受控 | 未请求/未授予，Shadow 禁止 | 非本阶段 | 至少 20 连续真实会话及真实事件 | PREFLIGHT_ONLY | 产品前置门、授权与真实观察逐项通过 |
+| M6 | m6c2/m6c3 于 `ac58ab1` 预检 DONE，m6c7 PARTIAL | 运营未开始 | 真实会话/事件 0；真实恢复未通过；资源读数低于 1228 MiB | 资源阈值、隐私内容与证据锚仍需收敛 | 无现成新材料 | 外部密钥身份另行受控 | 未请求/未授予，Shadow 禁止 | 非本阶段 | 至少 20 连续真实会话及真实事件 | PREFLIGHT_ONLY；RESOURCE_OBSERVATION_FAIL | 产品前置门、资源、授权与真实观察逐项通过 |
 | M7 | 五页工作台集成，唯一 Excel 保全及 WPS 打开通过 | 稳定只读试用；最终签收未开始 | 行情 3 只当前，研究与事件部分冻结 | 修真实 P0/P1 才重开 | 无 | 组合页待 M4 | 无 | 用户最终独立验收/Checkpoint D | 依赖 M6 | STABLE_USER_TRIAL_READY；INITIAL_ASSISTED_USE_NOT_REACHED | M6 通过后用户实际完成最终验收 |
 
 当前 `config/m6-start-criteria-matrix-v1.json` 的 `m6c2/m6c3=false` 是生成预检之前的静态清单，不能取代上面当前 HEAD 回执；其授权字段仍全部 false。按 R0-R6 分类：`m6c2/m6c3` 为 R0 工程已验；`m6c7` 的来源证据属 R0、授权 venue 绑定属 R3；资源/磁盘/健康读数属 R0 观察、生产准入属 R3；真实恢复、调度、备份、停启、密钥托管和生产运行属 R3；真实连续会话与事件属 R6；M3 属 R6 后触发 R1，M4 私有输入属 R2，M7 最终签收属 R5，真实资金决定永远属 R4。
