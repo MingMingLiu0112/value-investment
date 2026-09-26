@@ -6,6 +6,7 @@ import json
 
 import pytest
 
+from m5_actual_authorization_fixture import synthetic_actual_receipt
 from value_investment_agent.event_materiality import (
     DECISION_ALREADY_INCORPORATED,
     DECISION_REQUIRES_RECALCULATION,
@@ -24,9 +25,7 @@ from value_investment_agent.m5_event_dependencies import (
 )
 from value_investment_agent.m5_event_core import NAMESPACE_ACTUAL
 from value_investment_agent.m5_actual_offline_authorization import (
-    M5ActualOfflineAuthorization,
-    USER_CONFIRMED_DELEGATED_REVIEW,
-    graph_sha256,
+    verify_m5_actual_approval_receipt,
 )
 from value_investment_agent.m5_event_run import (
     M5EventRunReceipt,
@@ -282,18 +281,14 @@ def test_run_request_round_trips_and_rejects_tampering():
 
 
 def test_actual_run_request_requires_and_binds_offline_authorization(tmp_path):
-    graph = _graph()
-    batch = build_materiality_bridge_batch(
-        _review(_decision(DECISION_REQUIRES_RECALCULATION)),
-        namespace=NAMESPACE_ACTUAL,
-    )
-    authorization = M5ActualOfflineAuthorization(
-        authorization_id="600887-user-confirmed-offline-20260925",
-        review_provenance=USER_CONFIRMED_DELEGATED_REVIEW,
-        review_sha256="a" * 64,
-        queue_sha256="b" * 64,
-        dependency_graph_sha256=graph_sha256(graph),
-        authorized_at=REVIEWED_AT,
+    fixture = synthetic_actual_receipt()
+    graph = fixture["graph"]
+    batch = fixture["batch"]
+    authorization = verify_m5_actual_approval_receipt(
+        fixture["bundle"],
+        fixture["trust_root"],
+        expected_subject=fixture["subject"],
+        at=REVIEWED_AT,
     )
 
     request = build_run_request_from_bridge_batch(

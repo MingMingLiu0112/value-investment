@@ -75,7 +75,15 @@ def _signed(envelope: Mapping[str, Any], public_key_hex: str, purpose: str,
 
 
 def verify_shadow_authorization(
-    bundle: Mapping[str, Any], trust_root: Mapping[str, str], *, at: datetime | None,
+    bundle: Mapping[str, Any],
+    trust_root: Mapping[str, str],
+    *,
+    at: datetime | None,
+    expected_target_mode: str | None = None,
+    expected_operator_id: str | None = None,
+    expected_authorization_id: str | None = None,
+    expected_deployment_sha256: str | None = None,
+    expected_config_sha256: str | None = None,
 ) -> tuple[dict[str, Any], str]:
     """Verify an exact externally approved authorization and its artifact bytes."""
     if set(bundle) != {'authorization', 'authorization_artifacts'}:
@@ -94,7 +102,18 @@ def verify_shadow_authorization(
             or not _SHA256.fullmatch(authorization['config_sha256'])
             or not _SHA256.fullmatch(authorization['scope_manifest_sha256'])):
         raise ValueError('Shadow authorization scope is invalid')
-    verify_authorization_artifacts(authorization, bundle['authorization_artifacts'])
+    if expected_authorization_id is not None and authorization['authorization_id'] != expected_authorization_id:
+        raise ValueError('Shadow authorization id differs from the expected binding')
+    if expected_deployment_sha256 is not None and authorization['deployment_sha256'] != expected_deployment_sha256:
+        raise ValueError('Shadow authorization deployment differs from the expected binding')
+    if expected_config_sha256 is not None and authorization['config_sha256'] != expected_config_sha256:
+        raise ValueError('Shadow authorization config differs from the expected binding')
+    verify_authorization_artifacts(
+        authorization,
+        bundle['authorization_artifacts'],
+        expected_target_mode=expected_target_mode,
+        expected_operator_id=expected_operator_id,
+    )
     valid_from = _timestamp(authorization['valid_from'])
     valid_until = _timestamp(authorization['valid_until'])
     when = at.astimezone(timezone.utc) if at is not None else None
@@ -114,18 +133,12 @@ def verify_shadow_authorization_for_control(
     """Issue a transition proof only after the signed authorization passes audit."""
     if target_mode not in {MODE_OFFLINE_ENGINEERING, MODE_STAGING, MODE_SHADOW}:
         raise ValueError('operational control target mode is not enabled')
-    authorization, authorization_hash = verify_shadow_authorization(
-        bundle, trust_root, at=at)
-    return OperationalAuthorizationProof._issue(
-        authorization_id=authorization['authorization_id'],
-        authorization_sha256=authorization_hash,
-        authorization_mode=authorization['mode'],
+    return OperationalAuthorizationProof._from_verified(
+        authorization_bundle=bundle,
+        trust_root=trust_root,
         target_mode=target_mode,
         operator_id=operator_id,
-        venue=authorization['venue'],
-        valid_from=_timestamp(authorization['valid_from']),
-        valid_until=_timestamp(authorization['valid_until']),
-        verified_at=at.astimezone(timezone.utc),
+        verified_at=at,
     )
 
 

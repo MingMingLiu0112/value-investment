@@ -11,8 +11,6 @@ from value_investment_agent.m5_event_run import apply_run_request, m5_event_run_
 from value_investment_agent.m5_event_state_store import (
     JsonM5EventRunReceiptStore,
     JsonM5EventRunStateStore,
-    M5_RECEIPT_ALREADY_PUBLISHED,
-    M5_RECEIPT_PUBLISHED,
 )
 from value_investment_agent.m5_run_request import M5EventRunRequest
 
@@ -23,32 +21,89 @@ REQUEST = BASE / "actual-valid-application-20260925/request.json"
 RECEIPT = BASE / "actual-valid-receipts/m5-receipt-44a756ccad5433e236c3d74ff3ce3a75d65be835de52109407ad6ac4f0e0576d.json"
 
 
-def test_real_actual_request_cold_replay_matches_archived_receipt(tmp_path: Path):
+def test_legacy_actual_request_requires_explicit_read_only_replay():
+    if not REQUEST.is_file():
+        pytest.skip("Archived 600519 ACTUAL request is unavailable")
+    with pytest.raises(ValueError, match="read-only"):
+        M5EventRunRequest.from_payload(
+            json.loads(REQUEST.read_text(encoding="utf-8"))
+        )
+
+
+def test_legacy_actual_authorization_cannot_create_a_new_run(tmp_path: Path):
     if not REQUEST.is_file() or not RECEIPT.is_file():
         pytest.skip("Archived 600519 ACTUAL request and receipt are unavailable")
-    request = M5EventRunRequest.from_payload(json.loads(REQUEST.read_text(encoding="utf-8")))
+    request = M5EventRunRequest.from_payload(
+        json.loads(REQUEST.read_text(encoding="utf-8")),
+        allow_legacy_read_only=True,
+    )
+    with pytest.raises(ValueError, match="read-only replay only"):
+        apply_run_request(
+            request=request,
+            store=JsonM5EventRunStateStore(
+                tmp_path / "empty-state",
+                allow_legacy_read_only=True,
+            ),
+            receipt_store=JsonM5EventRunReceiptStore(
+                tmp_path / "empty-receipts",
+                allow_legacy_read_only=True,
+            ),
+            allow_legacy_read_only=True,
+        )
+    assert not list((tmp_path / "empty-receipts").glob("*.json"))
+    assert not list((tmp_path / "empty-state").glob("*.json"))
+
+
+def test_real_actual_request_replay_matches_archived_receipt(tmp_path: Path):
+    if not REQUEST.is_file() or not RECEIPT.is_file():
+        pytest.skip("Archived 600519 ACTUAL request and receipt are unavailable")
     archived = m5_event_run_receipt_from_payload(
-        json.loads(RECEIPT.read_text(encoding="utf-8"))["receipt"]
+        json.loads(RECEIPT.read_text(encoding="utf-8"))["receipt"],
+        allow_legacy_read_only=True,
     )
     state_root = tmp_path / "state"
     receipt_root = tmp_path / "receipts"
-
-    first = apply_run_request(
-        request=request,
-        store=JsonM5EventRunStateStore(state_root),
-        receipt_store=JsonM5EventRunReceiptStore(receipt_root),
+    store = JsonM5EventRunStateStore(
+        state_root,
+        allow_legacy_read_only=True,
     )
-    assert first.replayed is False
-    assert first.publication.status == M5_RECEIPT_PUBLISHED
-    assert first.receipt.audit_fingerprint() == archived.audit_fingerprint()
-    assert len(first.receipt.active_events) == 2
+    store.commit(
+        expected_revision=0,
+        expected_sha256=None,
+        state=archived.state,
+    )
+
+    replayed = apply_run_request(
+        request=M5EventRunRequest.from_payload(
+            json.loads(REQUEST.read_text(encoding="utf-8")),
+            allow_legacy_read_only=True,
+        ),
+        store=store,
+        receipt_store=JsonM5EventRunReceiptStore(
+            receipt_root,
+            allow_legacy_read_only=True,
+        ),
+        allow_legacy_read_only=True,
+    )
+    assert replayed.replayed is True
+    assert replayed.receipt.audit_fingerprint() == archived.audit_fingerprint()
+    assert len(replayed.receipt.active_events) == 2
 
     second = apply_run_request(
-        request=M5EventRunRequest.from_payload(json.loads(REQUEST.read_text(encoding="utf-8"))),
-        store=JsonM5EventRunStateStore(state_root),
-        receipt_store=JsonM5EventRunReceiptStore(receipt_root),
+        request=M5EventRunRequest.from_payload(
+            json.loads(REQUEST.read_text(encoding="utf-8")),
+            allow_legacy_read_only=True,
+        ),
+        store=JsonM5EventRunStateStore(
+            state_root,
+            allow_legacy_read_only=True,
+        ),
+        receipt_store=JsonM5EventRunReceiptStore(
+            receipt_root,
+            allow_legacy_read_only=True,
+        ),
+        allow_legacy_read_only=True,
     )
     assert second.replayed is True
-    assert second.publication.status == M5_RECEIPT_ALREADY_PUBLISHED
-    assert second.receipt.audit_fingerprint() == first.receipt.audit_fingerprint()
-    assert second.receipt.state_sha256 == first.receipt.state_sha256
+    assert second.receipt.audit_fingerprint() == archived.audit_fingerprint()
+    assert second.receipt.state_sha256 == archived.state_sha256

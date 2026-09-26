@@ -3,6 +3,7 @@ import json
 
 import pytest
 
+from authorization_trust_registry_fixture import pin_test_trust_root
 from scripts import m6_operational_control as cli
 from test_m6_shadow_receipts import _fixture
 from value_investment_agent.m6_operational_control import initial_state, write_control_state
@@ -18,6 +19,7 @@ def test_signed_approved_authorization_can_advance_local_state(monkeypatch, tmp_
         "authorization_public_key": root["authorization_public_key"],
         "approved_authorization_sha256": root["approved_authorization_sha256"],
     }
+    pin_test_trust_root(trust)
     bundle_path = tmp_path / "bundle.json"
     root_path = tmp_path / "root.json"
     state_path = tmp_path / "state.json"
@@ -57,6 +59,9 @@ def test_rehashed_but_unapproved_authorization_cannot_advance(monkeypatch, tmp_p
         "authorization_public_key": root["authorization_public_key"],
         "approved_authorization_sha256": root["approved_authorization_sha256"],
     }
+    # Pin the root so this test still fails on the tampered signature rather
+    # than on an unpinned trust root.
+    pin_test_trust_root(trust)
     bundle_path = tmp_path / "bundle.json"
     root_path = tmp_path / "root.json"
     bundle_path.write_text(json.dumps(bundle), encoding="utf-8")

@@ -24,7 +24,8 @@ def test_actual_receipt_recalculation_plan_surfaces_missing_fact_nodes():
     if not RECEIPT.is_file() or not GRAPH.is_file():
         pytest.skip("Actual receipt and graph are not available in this checkout")
     receipt = m5_event_run_receipt_from_payload(
-        json.loads(RECEIPT.read_text(encoding="utf-8"))["receipt"]
+        json.loads(RECEIPT.read_text(encoding="utf-8"))["receipt"],
+        allow_legacy_read_only=True,
     )
     graph = dependency_graph_from_payload(
         json.loads(GRAPH.read_text(encoding="utf-8"))["graph"]

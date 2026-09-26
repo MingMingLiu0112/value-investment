@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime, timezone
+import base64
 import hashlib
 import json
 import multiprocessing
@@ -8,6 +10,8 @@ from pathlib import Path
 
 import pytest
 
+from authorization_trust_registry_fixture import pin_test_trust_root
+from test_m6_shadow_receipts import _fixture
 from value_investment_agent.m6_operational_control import (
     ACTION_NO_ORDER,
     MODE_LIMITED_USE,
@@ -24,6 +28,10 @@ from value_investment_agent.m6_operational_control import (
     transition,
     write_control_state,
 )
+from value_investment_agent.m6_shadow_receipts import (
+    verify_shadow_authorization,
+    verify_shadow_authorization_for_control,
+)
 
 
 def _now(hour: int = 10) -> datetime:
@@ -38,23 +46,32 @@ def _proof(
     verified_at: datetime | None = None,
     valid_from: datetime | None = None,
     valid_until: datetime | None = None,
-    digest: str | None = None,
 ) -> OperationalAuthorizationProof:
     authorization_id = authorization_id or f"auth-{target_mode.lower()}"
-    if digest is None:
-        digest = hashlib.sha256(
-            f"{authorization_id}:{target_mode}".encode("ascii")
-        ).hexdigest()
-    return OperationalAuthorizationProof._issue(
-        authorization_id=authorization_id,
-        authorization_sha256=digest,
-        authorization_mode=MODE_SHADOW,
+    valid_from = valid_from or datetime(2026, 9, 24, 0, 0, tzinfo=timezone.utc)
+    valid_until = valid_until or datetime(2099, 1, 1, 0, 0, tzinfo=timezone.utc)
+    candidate, trust_root, _, _, _, _ = _fixture(
         target_mode=target_mode,
         operator_id=operator_id,
-        venue="SSE",
-        valid_from=valid_from or datetime(2026, 9, 24, 0, 0, tzinfo=timezone.utc),
-        valid_until=valid_until or datetime(2026, 9, 25, 0, 0, tzinfo=timezone.utc),
-        verified_at=verified_at or _now(9),
+        authorization_id=authorization_id,
+        valid_from=valid_from.isoformat(),
+        valid_until=valid_until.isoformat(),
+    )
+    bundle = {
+        "authorization": candidate["authorization"],
+        "authorization_artifacts": candidate["authorization_artifacts"],
+    }
+    root = {
+        "authorization_public_key": trust_root["authorization_public_key"],
+        "approved_authorization_sha256": trust_root["approved_authorization_sha256"],
+    }
+    pin_test_trust_root(root)
+    return verify_shadow_authorization_for_control(
+        bundle,
+        root,
+        target_mode=target_mode,
+        operator_id=operator_id,
+        at=verified_at or _now(9),
     )
 
 
@@ -419,7 +436,7 @@ def test_deserialization_rejects_history_hash_tampering():
     payload = staging.as_dict()
     payload["authorization_sha256"] = "f" * 64
 
-    with pytest.raises(ValueError, match="snapshot does not match its history"):
+    with pytest.raises(ValueError, match="does not match its verified proof"):
         from_dict(payload)
 
 
@@ -446,3 +463,189 @@ def test_deserialization_rejects_non_contiguous_history_chain():
 
     with pytest.raises(ValueError, match="not contiguous"):
         from_dict(payload)
+
+
+def _signed_staging_proof():
+    candidate, trust_root, _, _, _, _ = _fixture(
+        target_mode=MODE_STAGING,
+        operator_id="operator",
+        authorization_id="auth-staging",
+    )
+    bundle = {
+        "authorization": candidate["authorization"],
+        "authorization_artifacts": candidate["authorization_artifacts"],
+    }
+    root = {
+        "authorization_public_key": trust_root["authorization_public_key"],
+        "approved_authorization_sha256": trust_root["approved_authorization_sha256"],
+    }
+    pin_test_trust_root(root)
+    return bundle, root
+
+
+def test_operational_proof_has_no_public_issue_or_forge_path():
+    assert not hasattr(OperationalAuthorizationProof, "_issue")
+    with pytest.raises(TypeError, match="signed verifier"):
+        OperationalAuthorizationProof()
+
+    bundle, root = _signed_staging_proof()
+    forged = deepcopy(bundle)
+    forged["authorization"]["payload"]["authorization_id"] = "forged"
+    with pytest.raises(ValueError, match="signature is invalid"):
+        OperationalAuthorizationProof._from_verified(
+            authorization_bundle=forged,
+            trust_root=root,
+            target_mode=MODE_STAGING,
+            operator_id="operator",
+            verified_at=_now(9),
+        )
+
+
+def test_shadow_authorization_binds_target_operator_deployment_and_config():
+    bundle, root = _signed_staging_proof()
+    with pytest.raises(ValueError, match="operator"):
+        verify_shadow_authorization_for_control(
+            bundle,
+            root,
+            target_mode=MODE_STAGING,
+            operator_id="other-operator",
+            at=_now(9),
+        )
+    with pytest.raises(ValueError, match="target mode"):
+        verify_shadow_authorization_for_control(
+            bundle,
+            root,
+            target_mode=MODE_SHADOW,
+            operator_id="operator",
+            at=_now(9),
+        )
+
+    tampered_trust = dict(root)
+    tampered_trust["approved_authorization_sha256"] = "f" * 64
+    with pytest.raises(ValueError, match="approved external receipt"):
+        verify_shadow_authorization(bundle, tampered_trust, at=_now(9))
+
+    tampered_bundle = deepcopy(bundle)
+    raw = b'{"action":"no_order","config_id":"tampered"}'
+    tampered_bundle["authorization_artifacts"]["runtime_config"] = {
+        "raw_base64": base64.b64encode(raw).decode("ascii"),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+    }
+    with pytest.raises(ValueError, match="bind the supplied artifact bytes"):
+        verify_shadow_authorization(tampered_bundle, root, at=_now(9))
+
+
+def test_persisted_authorized_state_reverifies_signed_bytes_on_read():
+    state = initial_state(operator_id="operator", now=_now(9))
+    staging = transition(
+        state,
+        target_mode=MODE_STAGING,
+        authorization=_proof(MODE_STAGING, authorization_id="auth-staging"),
+        reason="approved staging",
+        operator_id="operator",
+        changed_at=_now(10),
+    )
+    payload = staging.as_dict()
+    tampered = deepcopy(payload)
+    tampered["authorization_proof"]["authorization_bundle"]["authorization"]["payload"][
+        "authorization_id"
+    ] = "tampered"
+    with pytest.raises(ValueError, match="signature is invalid"):
+        from_dict(tampered)
+
+    id_only = deepcopy(payload)
+    id_only["authorization_proof"] = None
+    id_only["history"][0]["authorization_proof"] = None
+    with pytest.raises(ValueError, match="requires a verified authorization proof"):
+        from_dict(id_only)
+
+    legacy = deepcopy(payload)
+    legacy["schema_version"] = "m6-operational-control-v1"
+    with pytest.raises(ValueError, match="cannot revalidate authorization"):
+        from_dict(legacy)
+
+
+def test_transition_rejects_expired_or_mutated_verified_proof():
+    state = initial_state(operator_id="operator", now=_now(9))
+    expired = _proof(
+        MODE_STAGING,
+        authorization_id="expired-staging",
+        valid_from=_now(8),
+        valid_until=_now(9),
+    )
+    with pytest.raises(ValueError, match="validity window"):
+        transition(
+            state,
+            target_mode=MODE_STAGING,
+            authorization=expired,
+            reason="expired authorization",
+            operator_id="operator",
+            changed_at=_now(10),
+        )
+
+    valid = _proof(MODE_STAGING, authorization_id="mutated-proof")
+    object.__setattr__(valid, "authorization_sha256", "f" * 64)
+    with pytest.raises(ValueError, match="hash changed|payload changed"):
+        transition(
+            state,
+            target_mode=MODE_STAGING,
+            authorization=valid,
+            reason="mutated proof",
+            operator_id="operator",
+            changed_at=_now(10),
+        )
+
+
+def test_active_state_read_uses_current_time_for_expiry(tmp_path):
+    state = initial_state(operator_id="operator", now=_now(9))
+    staging = transition(
+        state,
+        target_mode=MODE_STAGING,
+        authorization=_proof(
+            MODE_STAGING,
+            authorization_id="short-lived-staging",
+            valid_from=_now(9),
+            valid_until=_now(11),
+        ),
+        reason="approved short-lived staging",
+        operator_id="operator",
+        changed_at=_now(10),
+    )
+    payload = staging.as_dict(at=_now(10))
+    assert from_dict(payload, at=_now(10)).mode == MODE_STAGING
+
+    with pytest.raises(ValueError, match="validity window"):
+        from_dict(payload, at=_now(12))
+
+    path = tmp_path / "state.json"
+    write_control_state(path, staging, at=_now(10))
+    with pytest.raises(ValueError, match="validity window"):
+        read_control_state(path, at=_now(12))
+
+
+def test_stopped_state_reverifies_preserved_signed_proof_on_read():
+    state = initial_state(operator_id="operator", now=_now(9))
+    staging = transition(
+        state,
+        target_mode=MODE_STAGING,
+        authorization=_proof(MODE_STAGING, authorization_id="auth-staging"),
+        reason="approved staging",
+        operator_id="operator",
+        changed_at=_now(10),
+    )
+    stopped = apply_emergency_stop(
+        staging,
+        reason="incident",
+        operator_id="oncall",
+        changed_at=_now(11),
+    )
+    payload = stopped.as_dict()
+    assert payload["authorization_proof"] is not None
+    assert from_dict(payload).as_dict() == payload
+
+    tampered = deepcopy(payload)
+    tampered["authorization_proof"]["authorization_bundle"]["authorization_artifacts"][
+        "runtime_config"
+    ]["raw_base64"] = base64.b64encode(b"{}").decode("ascii")
+    with pytest.raises(ValueError, match="hash differs from actual bytes"):
+        from_dict(tampered)

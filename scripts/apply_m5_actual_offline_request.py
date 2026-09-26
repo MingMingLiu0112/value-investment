@@ -20,9 +20,10 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from value_investment_agent.investment_decision import ACTION_NO_ORDER  # noqa: E402
 from value_investment_agent.m5_actual_offline_authorization import (  # noqa: E402
-    M5ActualOfflineAuthorization,
-    USER_CONFIRMED_DELEGATED_REVIEW,
+    build_subject,
+    event_identity_sha256,
     graph_sha256,
+    verify_m5_actual_approval_receipt,
 )
 from value_investment_agent.m5_disclosure_queue import (  # noqa: E402
     disclosure_review_queue_from_payload,
@@ -70,6 +71,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--state-root", required=True, type=Path)
     parser.add_argument("--receipt-root", required=True, type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument("--approval-bundle", required=True, type=Path)
+    parser.add_argument("--approval-trust-root", required=True, type=Path)
     return parser.parse_args()
 
 
@@ -130,6 +133,8 @@ def main() -> int:
             "current_queue": args.current_queue,
             "reconciliation": args.reconciliation,
             "graph_receipt": args.graph_receipt,
+            "approval_bundle": args.approval_bundle,
+            "approval_trust_root": args.approval_trust_root,
         }.items()
     }
     if any(not path.is_file() for path in paths.values()):
@@ -172,16 +177,42 @@ def main() -> int:
     graph = dependency_graph_from_payload(graph_receipt.get("graph"))
     if batch.review_id not in reconciliation.get("prior_review_ids", []):
         raise ValueError("reconciliation does not bind the bridge batch review")
-    authorization = M5ActualOfflineAuthorization(
-        authorization_id=(
-            f"{args.symbol}-reconciled-offline-"
-            f"{args.generated_at.strftime('%Y%m%dT%H%M%S%z')}"
+    approval_bundle = _read_json(paths["approval_bundle"])
+    approval_trust_root = _read_json(paths["approval_trust_root"])
+    if not isinstance(approval_bundle, dict) or not isinstance(approval_trust_root, dict):
+        raise ValueError("approval bundle and trust root must be JSON objects")
+    subject = build_subject(
+        run_id=args.run_id,
+        batch_id=args.run_id,
+        stream_id=args.run_id,
+        symbol=args.symbol,
+        review_id=batch.review_id,
+        event_ids=[event.source_event_id for event in batch.events],
+        event_identity_sha256_value=event_identity_sha256(
+            batch.events, batch.observed_times
         ),
-        review_provenance=USER_CONFIRMED_DELEGATED_REVIEW,
+        dependency_graph_sha256=graph_sha256(graph),
         review_sha256=review_sha256,
         queue_sha256=original_queue_sha256,
-        dependency_graph_sha256=graph_sha256(graph),
-        authorized_at=args.generated_at,
+        current_queue_sha256=_digest(paths["current_queue"]),
+        bridge_batches_sha256=_digest(paths["bridge_batches"]),
+        graph_receipt_sha256=_digest(paths["graph_receipt"]),
+        reconciliation_sha256=_digest(paths["reconciliation"]),
+    )
+    authorization = verify_m5_actual_approval_receipt(
+        approval_bundle,
+        approval_trust_root,
+        expected_subject=subject,
+        at=args.generated_at,
+    )
+    authorization.verify(
+        graph=graph,
+        events=batch.events,
+        observed_times=batch.observed_times,
+        run_id=args.run_id,
+        batch_id=args.run_id,
+        stream_id=args.run_id,
+        symbol=args.symbol,
     )
     scan = next((item for item in queue.scans if item.symbol == args.symbol), None)
     if scan is None or scan.coverage_status != WATERMARK_COVERAGE_COMPLETE:

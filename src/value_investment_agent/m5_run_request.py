@@ -8,7 +8,7 @@ schedules work, notifies anyone or touches production state.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 import json
 from typing import Any, Mapping, Sequence
@@ -107,6 +107,7 @@ class M5EventRunRequest:
     source_symbol: str | None = None
     action: str = ACTION_NO_ORDER
     actual_offline_authorization: M5ActualOfflineAuthorization | None = None
+    legacy_read_only_replay: bool = field(default=False, compare=False, repr=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -158,6 +159,13 @@ class M5EventRunRequest:
             namespace=self.namespace,
             authorization=self.actual_offline_authorization,
             graph=self.dependency_graph,
+            events=self.events,
+            observed_times=self.observed_times,
+            run_id=self.run_id,
+            batch_id=self.batch_id,
+            stream_id=self.stream_id,
+            symbol=self.source_symbol,
+            allow_legacy_read_only=self.legacy_read_only_replay,
         )
         object.__setattr__(
             self,
@@ -273,7 +281,12 @@ class M5EventRunRequest:
         )
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any]) -> "M5EventRunRequest":
+    def from_payload(
+        cls,
+        payload: Mapping[str, Any],
+        *,
+        allow_legacy_read_only: bool = False,
+    ) -> "M5EventRunRequest":
         """Parse a serialized run request fail-closed.
 
         The payload must round-trip to its canonical form so a hand-edited
@@ -330,9 +343,13 @@ class M5EventRunRequest:
             ),
             action=str(data.get("action", ACTION_NO_ORDER)),
             actual_offline_authorization=(
-                actual_offline_authorization_from_payload(data["actual_offline_authorization"])
+                actual_offline_authorization_from_payload(
+                    data["actual_offline_authorization"],
+                    allow_legacy_read_only=allow_legacy_read_only,
+                )
                 if data.get("actual_offline_authorization") is not None else None
             ),
+            legacy_read_only_replay=allow_legacy_read_only,
         )
         if schema_version == M5_RUN_REQUEST_SCHEMA_V1:
             if request.namespace != NAMESPACE_SIMULATED:

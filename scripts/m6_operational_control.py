@@ -83,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
                 operator_id=args.operator,
                 changed_at=now,
             )
-            write_control_state(path, state)
+            write_control_state(path, state, at=now)
         elif args.command == "advance":
             state = transition(
                 state,
@@ -93,8 +93,8 @@ def main(argv: list[str] | None = None) -> int:
                 operator_id=args.operator,
                 changed_at=now,
             )
-            write_control_state(path, state)
-    print(json.dumps(state.as_dict(), ensure_ascii=False, indent=2))
+            write_control_state(path, state, at=now)
+    print(json.dumps(state.as_dict(at=now), ensure_ascii=False, indent=2))
     return 0
 
 

@@ -438,7 +438,12 @@ class M5EventRunReceipt:
         )
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any]) -> "M5EventRunReceipt":
+    def from_payload(
+        cls,
+        payload: Mapping[str, Any],
+        *,
+        allow_legacy_read_only: bool = False,
+    ) -> "M5EventRunReceipt":
         """Parse a durable receipt artifact fail-closed."""
 
         if not isinstance(payload, Mapping):
@@ -456,7 +461,10 @@ class M5EventRunReceipt:
         receipt_payload = data["receipt"]
         if not isinstance(receipt_payload, Mapping):
             raise ValueError("M5 run receipt artifact must embed a receipt")
-        receipt = m5_event_run_receipt_from_payload(receipt_payload)
+        receipt = m5_event_run_receipt_from_payload(
+            receipt_payload,
+            allow_legacy_read_only=allow_legacy_read_only,
+        )
         if data["receipt_sha256"] != _state_digest(receipt.as_policy()):
             raise ValueError(
                 "M5 run receipt artifact hash does not match its receipt"
@@ -478,6 +486,8 @@ def _without_mutable_status(payload: Mapping[str, Any]) -> dict[str, Any]:
 
 def m5_event_run_receipt_from_payload(
     payload: Mapping[str, Any],
+    *,
+    allow_legacy_read_only: bool = False,
 ) -> M5EventRunReceipt:
     """Rebuild a receipt from its serialized payload and re-verify it."""
 
@@ -487,7 +497,10 @@ def m5_event_run_receipt_from_payload(
     state_payload = data.get("state")
     if not isinstance(state_payload, Mapping):
         raise ValueError("M5 run receipt must embed its run state")
-    state = m5_event_run_state_from_payload(state_payload)
+    state = m5_event_run_state_from_payload(
+        state_payload,
+        allow_legacy_read_only=allow_legacy_read_only,
+    )
     checkpoint_payload = data.get("checkpoint")
     if not isinstance(checkpoint_payload, Mapping):
         raise ValueError("M5 run receipt must embed its committed checkpoint")
@@ -778,6 +791,7 @@ def run_event_batch(
     lock_store: TaskLockStore | None = None,
     max_watermark_age: timedelta = DEFAULT_MAX_WATERMARK_AGE,
     actual_offline_authorization: M5ActualOfflineAuthorization | None = None,
+    allow_legacy_read_only: bool = False,
 ) -> M5EventRunReceipt:
     """Ingest one bounded batch and return an atomically exportable next state."""
 
@@ -793,6 +807,11 @@ def run_event_batch(
         namespace=namespace,
         authorization=actual_offline_authorization,
         graph=graph,
+        events=events,
+        observed_times=observed_times,
+        run_id=run_id,
+        batch_id=batch_id,
+        allow_legacy_read_only=allow_legacy_read_only,
     )
     if state is not None and not isinstance(state, M5EventRunState):
         raise ValueError("state must be an M5EventRunState")
@@ -1118,6 +1137,7 @@ def run_event_batch_persisted(
     batch_id: str | None = None,
     lock_store: TaskLockStore | None = None,
     actual_offline_authorization: M5ActualOfflineAuthorization | None = None,
+    allow_legacy_read_only: bool = False,
 ) -> M5EventRunReceipt:
     """Run one batch and persist its next state with revision/digest CAS."""
 
@@ -1164,6 +1184,7 @@ def run_event_batch_persisted(
         expected_revision=working.revision,
         lock_store=lock_store,
         actual_offline_authorization=actual_offline_authorization,
+        allow_legacy_read_only=allow_legacy_read_only,
     )
     store.commit(
         expected_revision=working.revision,
@@ -1236,6 +1257,7 @@ def apply_run_request(
     store: M5EventRunStateStore,
     receipt_store: M5EventRunReceiptStore | None = None,
     lock_store: TaskLockStore | None = None,
+    allow_legacy_read_only: bool = False,
 ) -> M5RunApplicationResult:
     """Apply one pinned request once, then publish its durable receipt.
 
@@ -1248,7 +1270,36 @@ def apply_run_request(
 
     if not isinstance(request, M5EventRunRequest):
         raise ValueError("request must be an M5EventRunRequest")
+    if request.legacy_read_only_replay != allow_legacy_read_only:
+        raise ValueError(
+            "Legacy M5 ACTUAL replay requires an explicit read-only replay flag"
+        )
     request.verify()
+    if request.legacy_read_only_replay:
+        # Legacy v1 authorizations carry no signature, so they can never
+        # create a new ACTUAL run.  They may only reproduce a batch that
+        # already exists in the durable store with the same request
+        # fingerprint, which keeps archived cold replays auditable without
+        # turning an unsigned payload into fresh authorization.
+        pinned_state = store.load(state_key=request.stream_id)
+        existing_record = (
+            None
+            if pinned_state is None
+            else next(
+                (
+                    item
+                    for item in pinned_state.batch_records
+                    if item.batch_id == request.batch_id
+                    and item.request_fingerprint == request.request_fingerprint()
+                ),
+                None,
+            )
+        )
+        if existing_record is None:
+            raise ValueError(
+                "Legacy M5 ACTUAL authorization is read-only replay only and "
+                "cannot create a new run"
+            )
     current = store.load(state_key=request.stream_id)
     seed = (
         M5EventRunState.empty(
@@ -1272,6 +1323,7 @@ def apply_run_request(
         batch_id=request.batch_id,
         lock_store=lock_store,
         actual_offline_authorization=request.actual_offline_authorization,
+        allow_legacy_read_only=allow_legacy_read_only,
     )
     record = next(
         (

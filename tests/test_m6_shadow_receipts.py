@@ -7,6 +7,8 @@ import json
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+from authorization_trust_registry_fixture import pin_test_trust_root
 import pytest
 
 from value_investment_agent import m6_exchange_sessions as exchange
@@ -39,14 +41,16 @@ def _hash(envelope):
     return hashlib.sha256(_bytes(envelope)).hexdigest()
 
 
-def _authorization_artifacts():
+def _authorization_artifacts(
+        *, authorization_id, target_mode, operator_id, valid_from, valid_until):
     deployment = _bytes({"action": "no_order", "deployment_id": "synthetic-deployment"})
     config = _bytes({"action": "no_order", "config_id": "synthetic-config"})
     scope = _bytes({
-        "action": "no_order", "authorization_id": "synthetic-only",
+        "action": "no_order", "authorization_id": authorization_id,
         "mode": "SHADOW", "venue": "SSE",
-        "valid_from": "2026-09-01T00:00:00+00:00",
-        "valid_until": "2026-09-25T00:00:00+00:00",
+        "target_mode": target_mode, "operator_id": operator_id,
+        "valid_from": valid_from,
+        "valid_until": valid_until,
         "deployment_sha256": hashlib.sha256(deployment).hexdigest(),
         "config_sha256": hashlib.sha256(config).hexdigest(),
     })
@@ -78,7 +82,10 @@ def _intake_for_sessions(sessions, deployment_sha256, intake_key):
     return intake_records, previous
 
 
-def _fixture():
+def _fixture(
+        *, target_mode="STAGING", operator_id="operator", authorization_id="synthetic-only",
+        valid_from="2026-09-01T00:00:00+00:00",
+        valid_until="2026-09-25T00:00:00+00:00"):
     raw = '\n'.join(SSE_2026_NOTICE_MARKERS).encode()
     document = {'source_url': SSE_2026_CLOSURE_NOTICE_URL,
                 'fetched_at': '2026-09-24T08:00:00+00:00',
@@ -90,11 +97,16 @@ def _fixture():
         'SSE', [document], datetime.fromisoformat(calendar['observation_cutoff']))
     days = [item['session_date'] for item in schedule['sessions'][-2:]]
     auth_key, run_key, witness_key, intake_key = [Ed25519PrivateKey.generate() for _ in range(4)]
-    artifacts = _authorization_artifacts()
+    artifacts = _authorization_artifacts(
+        authorization_id=authorization_id,
+        target_mode=target_mode,
+        operator_id=operator_id,
+        valid_from=valid_from,
+        valid_until=valid_until,
+    )
     auth = _sign({
-        'action': 'no_order', 'authorization_id': 'synthetic-only', 'mode': 'SHADOW',
-        'venue': 'SSE', 'valid_from': '2026-09-01T00:00:00+00:00',
-        'valid_until': '2026-09-25T00:00:00+00:00',
+        'action': 'no_order', 'authorization_id': authorization_id, 'mode': 'SHADOW',
+        'venue': 'SSE', 'valid_from': valid_from, 'valid_until': valid_until,
         'deployment_sha256': artifacts['deployment_manifest']['sha256'],
         'config_sha256': artifacts['runtime_config']['sha256'],
         'scope_manifest_sha256': artifacts['scope_manifest']['sha256'],
@@ -146,6 +158,7 @@ def _fixture():
             'pinned_at': days[-1] + 'T15:12:00+08:00',
         },
     })
+    pin_test_trust_root(trust)
     return ({'authorization': auth, 'authorization_artifacts': artifacts,
              'sessions': sessions, 'intake_records': intake_records}, trust, calendar, schedule,
             records, (auth_key, run_key, witness_key, intake_key))

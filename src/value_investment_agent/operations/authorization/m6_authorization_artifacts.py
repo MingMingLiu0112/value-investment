@@ -23,7 +23,11 @@ def _object(raw: bytes, label: str) -> dict[str, Any]:
 
 
 def verify_authorization_artifacts(
-    authorization: Mapping[str, Any], artifacts: Mapping[str, Any]
+    authorization: Mapping[str, Any],
+    artifacts: Mapping[str, Any],
+    *,
+    expected_target_mode: str | None = None,
+    expected_operator_id: str | None = None,
 ) -> dict[str, str]:
     """Hash actual bytes and verify their signed authorization relationships."""
     if set(artifacts) != ARTIFACT_KEYS:
@@ -64,6 +68,22 @@ def verify_authorization_artifacts(
     }
     if any(scope.get(key) != value for key, value in expected_scope.items()):
         raise ValueError("Shadow scope manifest differs from signed authorization")
+    if expected_target_mode is not None:
+        if scope.get("target_mode") != expected_target_mode:
+            raise ValueError("Shadow scope manifest target mode differs from the control transition")
+    elif "target_mode" in scope and (
+        not isinstance(scope.get("target_mode"), str)
+        or not scope["target_mode"].strip()
+    ):
+        raise ValueError("Shadow scope manifest target mode is invalid")
+    if expected_operator_id is not None:
+        if scope.get("operator_id") != expected_operator_id:
+            raise ValueError("Shadow scope manifest operator differs from the control operator")
+    elif "operator_id" in scope and (
+        not isinstance(scope.get("operator_id"), str)
+        or not scope["operator_id"].strip()
+    ):
+        raise ValueError("Shadow scope manifest operator is invalid")
     if deployment.get("action") != "no_order" or config.get("action") != "no_order":
         raise ValueError("Shadow deployment and config artifacts must remain no_order")
     if not deployment.get("deployment_id") or not config.get("config_id"):

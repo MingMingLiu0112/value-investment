@@ -187,7 +187,13 @@ def _round_trip_state(state: M5EventRunState) -> M5EventRunState:
         raise ValueError("state must be an M5EventRunState")
     try:
         payload = json.loads(state.to_json())
-        snapshot = m5_event_run_state_from_payload(payload)
+        snapshot = m5_event_run_state_from_payload(
+            payload,
+            allow_legacy_read_only=(
+                state.actual_offline_authorization is not None
+                and state.actual_offline_authorization.is_legacy_read_only
+            ),
+        )
     except (TypeError, ValueError, KeyError) as error:
         raise M5StateStoreConflict(
             "M5 state failed round-trip validation"
@@ -290,8 +296,14 @@ def _exclusive_file_lock(lock_path: Path) -> Iterator[None]:
 class JsonM5EventRunStateStore:
     """Local one-file-per-state store with atomic replace and CAS writes."""
 
-    def __init__(self, root: str | os.PathLike[str]) -> None:
+    def __init__(
+        self,
+        root: str | os.PathLike[str],
+        *,
+        allow_legacy_read_only: bool = False,
+    ) -> None:
         self.root = Path(root)
+        self.allow_legacy_read_only = allow_legacy_read_only
         self.root.mkdir(parents=True, exist_ok=True)
         self._lock_path = self.root / ".m5-event-state-store.lock"
         descriptor = os.open(
@@ -322,7 +334,10 @@ class JsonM5EventRunStateStore:
         if not path.exists():
             return None
         payload = json.loads(path.read_text(encoding="utf-8"))
-        state = m5_event_run_state_from_payload(payload)
+        state = m5_event_run_state_from_payload(
+            payload,
+            allow_legacy_read_only=self.allow_legacy_read_only,
+        )
         if state.state_key != state_key:
             raise ValueError("Stored M5 state does not match the requested state_key")
         return state
@@ -387,8 +402,14 @@ class JsonM5EventRunReceiptStore:
     the evidence trail of an earlier run.
     """
 
-    def __init__(self, root: str | os.PathLike[str]) -> None:
+    def __init__(
+        self,
+        root: str | os.PathLike[str],
+        *,
+        allow_legacy_read_only: bool = False,
+    ) -> None:
         self.root = Path(root)
+        self.allow_legacy_read_only = allow_legacy_read_only
         self.root.mkdir(parents=True, exist_ok=True)
         self._lock_path = self.root / ".m5-event-receipt-store.lock"
         descriptor = os.open(
@@ -421,7 +442,10 @@ class JsonM5EventRunReceiptStore:
         if not path.exists():
             return None
         payload = json.loads(path.read_text(encoding="utf-8"))
-        receipt = M5EventRunReceipt.from_payload(payload)
+        receipt = M5EventRunReceipt.from_payload(
+            payload,
+            allow_legacy_read_only=self.allow_legacy_read_only,
+        )
         if receipt.receipt_id != receipt_id:
             raise ValueError(
                 "Stored M5 receipt does not match the requested receipt_id"

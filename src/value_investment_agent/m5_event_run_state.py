@@ -537,7 +537,13 @@ class M5EventRunState:
         )
 
     def clone(self) -> "M5EventRunState":
-        return m5_event_run_state_from_payload(json.loads(self.to_json()))
+        return m5_event_run_state_from_payload(
+            json.loads(self.to_json()),
+            allow_legacy_read_only=(
+                self.actual_offline_authorization is not None
+                and self.actual_offline_authorization.is_legacy_read_only
+            ),
+        )
 
     @classmethod
     def empty(
@@ -562,7 +568,11 @@ class M5EventRunState:
         )
 
 
-def m5_event_run_state_from_payload(payload: Mapping[str, Any]) -> M5EventRunState:
+def m5_event_run_state_from_payload(
+    payload: Mapping[str, Any],
+    *,
+    allow_legacy_read_only: bool = False,
+) -> M5EventRunState:
     if not isinstance(payload, Mapping):
         raise ValueError("M5 run state must be an object")
     data = dict(payload)
@@ -636,7 +646,10 @@ def m5_event_run_state_from_payload(payload: Mapping[str, Any]) -> M5EventRunSta
         outbox_revision=outbox_revision,
         outbox_transitions=outbox_transitions,
         actual_offline_authorization=(
-            actual_offline_authorization_from_payload(data["actual_offline_authorization"])
+            actual_offline_authorization_from_payload(
+                data["actual_offline_authorization"],
+                allow_legacy_read_only=allow_legacy_read_only,
+            )
             if data.get("actual_offline_authorization") is not None else None
         ),
     )
