@@ -1,5 +1,5 @@
 {
-  "schema_version": "m5-event-v1",
+  "schema_version": "m5-event-infrastructure-v1",
   "action": "no_order",
   "watermarks": [
     {
