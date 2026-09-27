@@ -15,7 +15,8 @@ from urllib.parse import urlparse
 
 
 ACTION_NO_ORDER = "no_order"
-SCHEMA_VERSION = "prospective-research-registration-v1"
+SCHEMA_VERSION = "prospective-research-registration-v2"
+LEGACY_SCHEMA_VERSION = "prospective-research-registration-v1"
 _SYMBOL = re.compile(r"^[0-9]{6}$")
 
 
@@ -99,15 +100,15 @@ class ProspectiveResearchRegistration:
     """A preregistered bounded observation set with no execution semantics."""
 
     registration_id: str
-    registered_at: datetime
+    declared_registered_at: datetime
     action: str
     cases: tuple[ProspectiveResearchCase, ...]
     exclusions: tuple[str, ...]
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "registration_id", _text(self.registration_id, "registration_id"))
-        if self.registered_at.tzinfo is None:
-            raise ValueError("registered_at must include a timezone")
+        if self.declared_registered_at.tzinfo is None:
+            raise ValueError("declared_registered_at must include a timezone")
         if self.action != ACTION_NO_ORDER:
             raise ValueError("prospective research registration must remain action=no_order")
         if not 2 <= len(self.cases) <= 5:
@@ -116,14 +117,12 @@ class ProspectiveResearchRegistration:
         symbols = [case.symbol for case in self.cases]
         if len(case_ids) != len(set(case_ids)) or len(symbols) != len(set(symbols)):
             raise ValueError("prospective case ids and symbols must be unique")
-        if any(case.observation_start_at < self.registered_at for case in self.cases):
-            raise ValueError("observation_start_at cannot precede registered_at")
         exclusions = tuple(_text(item, "exclusions entry") for item in self.exclusions)
         object.__setattr__(self, "exclusions", exclusions)
 
     def as_policy(self) -> dict[str, Any]:
         payload = asdict(self)
-        payload["registered_at"] = self.registered_at.isoformat()
+        payload["declared_registered_at"] = self.declared_registered_at.isoformat()
         for case in payload["cases"]:
             case["observation_start_at"] = case["observation_start_at"].isoformat()
             case["baseline_cutoff_at"] = case["baseline_cutoff_at"].isoformat()
@@ -138,7 +137,8 @@ class ProspectiveResearchRegistration:
 def prospective_registration_from_payload(payload: Mapping[str, Any]) -> ProspectiveResearchRegistration:
     if not isinstance(payload, Mapping):
         raise ValueError("prospective registration must be an object")
-    if payload.get("schema_version") != SCHEMA_VERSION:
+    schema_version = payload.get("schema_version")
+    if schema_version not in {SCHEMA_VERSION, LEGACY_SCHEMA_VERSION}:
         raise ValueError("unsupported prospective registration schema")
     raw_cases = payload.get("cases")
     if not isinstance(raw_cases, list):
@@ -167,9 +167,14 @@ def prospective_registration_from_payload(payload: Mapping[str, Any]) -> Prospec
     exclusions = payload.get("exclusions", [])
     if not isinstance(exclusions, list):
         raise ValueError("prospective registration exclusions must be a list")
+    declared_value = (
+        payload.get("declared_registered_at")
+        if schema_version == SCHEMA_VERSION
+        else payload.get("registered_at")
+    )
     return ProspectiveResearchRegistration(
         registration_id=payload.get("registration_id"),
-        registered_at=_timestamp(payload.get("registered_at"), "registered_at"),
+        declared_registered_at=_timestamp(declared_value, "declared_registered_at"),
         action=payload.get("action"),
         cases=tuple(cases),
         exclusions=tuple(exclusions),
@@ -182,6 +187,7 @@ def canonical_registration_payload(registration: ProspectiveResearchRegistration
 
 __all__ = [
     "ACTION_NO_ORDER",
+    "LEGACY_SCHEMA_VERSION",
     "SCHEMA_VERSION",
     "ProspectiveResearchCase",
     "ProspectiveResearchRegistration",

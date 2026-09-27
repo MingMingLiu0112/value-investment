@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -37,13 +38,19 @@ def register_prospective_research_plan(
     registration = prospective_registration_from_payload(
         load_json_object(plan_file, "prospective registration plan")
     )
+    receipt_created_at = datetime.now(timezone.utc)
+    if any(receipt_created_at > case.observation_start_at for case in registration.cases):
+        raise ValueError("prospective receipt must be created on or before observation_start_at")
     canonical = canonical_registration_payload(registration).encode("utf-8")
     result: dict[str, Any] = {
-        "schema_version": "prospective-research-registration-receipt-v1",
+        "schema_version": "prospective-research-registration-receipt-v2",
         "registration": registration.as_policy(),
         "registration_sha256": hashlib.sha256(canonical).hexdigest(),
         "plan_sha256": sha256_file(plan_file),
         "git_commit": _git_head(root),
+        "receipt_created_at": receipt_created_at.isoformat(),
+        "declared_time_independently_proven": False,
+        "pit_time_anchor": "receipt_created_at",
         "action": "no_order",
         "outcomes_observed": False,
         "valuation_executed": False,

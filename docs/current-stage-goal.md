@@ -1,6 +1,6 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-## 当前阶段：STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-USE-ADVANCEMENT（2026-09-27）
+## CURRENT AUTHORIZATION：STAGE-PROSPECTIVE-PUBLIC-RESEARCH-AND-DAILY-RESEARCH-WORKBENCH（2026-09-27）
 
 本段是本文件唯一的当前授权范围，并覆盖下方所有日期早于 2026-09-27 的阶段标题、
 “当前”描述和交接快照。系统继续作为 A 股公共研究与人工决策辅助工具，永久
@@ -24,8 +24,10 @@
 
 ### 当前最小前瞻研究合同
 
-前瞻研究的唯一预登记入口是
-`config/prospective-research-observation-plan-v1.json`。它登记 000333、600887、
+前瞻研究的当前预登记入口是
+`config/prospective-research-observation-plan-v2.json`。v1 回执保留为历史记录，
+其 caller-controlled `registered_at` 不构成独立时间证明。v2 将声明时间与系统生成的
+`receipt_created_at` 分离，只有后者是 PIT 时间锚点，且必须不晚于观察起点。它登记 000333、600887、
 601088 三个有界公共案例的画像、适用模型、来源定位器、待验证假设、PIT 截止时间与
 观察起点；登记本身不抓取数据、不执行估值、不生成 Decision Support、不写 Excel。
 `scripts/current/register_prospective_research.py` 只能向 `runtime/` 写入含计划 Hash 和

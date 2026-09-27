@@ -1,0 +1,15 @@
+{
+  "schema_version": "prospective-research-registration-v2",
+  "registration_id": "public-research-observation-20260927-v2",
+  "declared_registered_at": "2026-09-27T08:45:00+08:00",
+  "action": "no_order",
+  "exclusions": [
+    "600519 is excluded by its evidence stop rule unless new material evidence arrives.",
+    "No current price, market outcome, portfolio position, order, or performance result is used to select these cases."
+  ],
+  "cases": [
+    {"case_id":"prospective-000333-20260927-v2","symbol":"000333","name":"美的集团","profile_id":"mature_manufacturing","valuation_model":"fcff","baseline_cutoff_at":"2026-09-27T08:45:00+08:00","observation_start_at":"2026-09-27T08:45:00+08:00","required_sources":[{"id":"000333-cninfo","role":"official filing locator","source_url":"https://www.cninfo.com.cn/"},{"id":"000333-ir","role":"company investor-relations locator","source_url":"https://www.midea.com/cn/investor/"}],"required_assumptions":["fcff operating cash conversion","maintenance and growth capex","ordinary-share denominator","cost of capital"],"pit_rules":["Every observed fact records published_at or available_at before its evaluation timestamp.","No later filing or market observation may be used when evaluating an earlier prospective checkpoint."]},
+    {"case_id":"prospective-600887-20260927-v2","symbol":"600887","name":"伊利股份","profile_id":"quality_compounder","valuation_model":"residual_income_or_equity_value","baseline_cutoff_at":"2026-09-27T08:45:00+08:00","observation_start_at":"2026-09-27T08:45:00+08:00","required_sources":[{"id":"600887-cninfo","role":"official filing locator","source_url":"https://www.cninfo.com.cn/"},{"id":"600887-ir","role":"company investor-relations locator","source_url":"https://www.yili.com/investor-relations/"}],"required_assumptions":["sustainable return on equity","distributable cash","reinvestment runway","equity return requirement"],"pit_rules":["Every observed fact records published_at or available_at before its evaluation timestamp.","No later filing or market observation may be used when evaluating an earlier prospective checkpoint."]},
+    {"case_id":"prospective-601088-20260927-v2","symbol":"601088","name":"中国神华","profile_id":"cyclical_cash_return","valuation_model":"cyclical_normalized","baseline_cutoff_at":"2026-09-27T08:45:00+08:00","observation_start_at":"2026-09-27T08:45:00+08:00","required_sources":[{"id":"601088-cninfo","role":"official filing locator","source_url":"https://www.cninfo.com.cn/"},{"id":"601088-ir","role":"company investor-relations locator","source_url":"https://www.shenhuachina.com/"}],"required_assumptions":["normalized commodity and unit cost range","maintenance capex","ordinary-share denominator","sustainable ordinary dividend"],"pit_rules":["Every observed fact records published_at or available_at before its evaluation timestamp.","No later filing or market observation may be used when evaluating an earlier prospective checkpoint."]}
+  ]
+}

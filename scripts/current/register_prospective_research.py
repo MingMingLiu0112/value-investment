@@ -18,7 +18,7 @@ from value_investment_agent.application.product.prospective_registration import 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--plan", type=Path, default=ROOT / "config" / "prospective-research-observation-plan-v1.json"
+        "--plan", type=Path, default=ROOT / "config" / "prospective-research-observation-plan-v2.json"
     )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()

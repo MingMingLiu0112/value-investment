@@ -1,4 +1,21 @@
-# 当前执行状态
+# CURRENT STATUS
+
+```text
+CURRENT_STAGE = STAGE-PROSPECTIVE-PUBLIC-RESEARCH-AND-DAILY-RESEARCH-WORKBENCH
+M4_PRIVATE_INPUT = PARKED_WAITING_R2_NONBLOCKING
+PUBLIC_RESEARCH = ACTIVE
+PROSPECTIVE_PIT = ACTIVE
+PUBLIC_EVENT_RESEARCH = ACTIVE_BOUNDED
+CANONICAL_WORKBOOK = ACTIVE
+M6_OPERATIONAL = NOT_STARTED
+action = no_order
+```
+
+This header is authoritative over every dated historical snapshot below. R2,
+R3, R5 and R6 park only their own DAG nodes; none is a total-goal stop while
+public research work remains open.
+
+# 历史快照：当前执行状态
 
 ## 2026-09-26 Synthetic Product Demonstration
 

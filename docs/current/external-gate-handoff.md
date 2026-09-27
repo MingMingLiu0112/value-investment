@@ -1,7 +1,12 @@
 # External Gate Handoff
 
-Current handoff date: 2026-09-26. This document records remaining external
-gates; it is not an authorization request. Every path remains `action=no_order`.
+Current handoff date: 2026-09-26. This document records only the corresponding
+parked DAG nodes; it is not a total-goal stop or an authorization request.
+Every path remains `action=no_order`. R2 parks only M4, R3 parks only
+production, R5 parks final acceptance, and R6 parks the affected natural-time
+node. Public research, prospective PIT, bounded public-event research and the
+canonical daily workbench remain active under the CURRENT AUTHORIZATION in
+`docs/current-stage-goal.md`.
 
 ## Current System State
 

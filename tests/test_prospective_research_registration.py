@@ -28,7 +28,7 @@ def test_committed_plan_is_bounded_no_order_and_excludes_moutai_stop_case():
 
     assert registration.action == "no_order"
     assert [case.symbol for case in registration.cases] == ["000333", "600887", "601088"]
-    assert all(case.observation_start_at >= registration.registered_at for case in registration.cases)
+    assert registration.declared_registered_at.isoformat() == "2026-09-27T09:30:00+08:00"
     assert any("600519" in reason for reason in registration.exclusions)
 
 
@@ -64,10 +64,32 @@ def test_registration_receipt_is_runtime_only_and_does_not_observe_outcomes(
     receipt = json.loads((runtime / "receipt.json").read_text(encoding="utf-8"))
     assert result["action"] == receipt["action"] == "no_order"
     assert receipt["git_commit"] == "a" * 40
+    assert receipt["receipt_created_at"].endswith("+00:00")
+    assert receipt["pit_time_anchor"] == "receipt_created_at"
     assert receipt["outcomes_observed"] is False
     assert receipt["valuation_executed"] is False
     assert receipt["decision_signal_created"] is False
     assert receipt["portfolio_data_used"] is False
+
+
+def test_receipt_after_observation_start_fails_closed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    root = tmp_path / "project"
+    config = root / "config"
+    config.mkdir(parents=True)
+    plan = config / "plan.json"
+    payload = _plan()
+    payload["schema_version"] = "prospective-research-registration-v2"
+    payload["declared_registered_at"] = payload.pop("registered_at")
+    for case in payload["cases"]:
+        case["observation_start_at"] = "2020-01-01T00:00:00+00:00"
+        case["baseline_cutoff_at"] = "2020-01-01T00:00:00+00:00"
+    plan.write_text(json.dumps(payload), encoding="utf-8")
+    monkeypatch.setattr(service, "_git_head", lambda _: "a" * 40)
+
+    with pytest.raises(ValueError, match="on or before observation_start_at"):
+        register_prospective_research_plan(
+            root=root, plan_path=plan, output_path=root / "runtime" / "receipt.json",
+        )
 
 
 def test_registration_refuses_non_runtime_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
