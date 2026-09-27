@@ -1,0 +1,42 @@
+{
+  "schema_version": "m5-event-v1",
+  "action": "no_order",
+  "watermarks": [
+    {
+      "watermark_id": "prospective-000333-initial-20260927",
+      "scope": "prospective:000333",
+      "source": "cninfo",
+      "coverage_through": "2026-09-27T00:24:16+00:00",
+      "retrieved_at": "2026-09-27T00:24:16+00:00",
+      "parser_version": "prospective-initial-watermark-v1",
+      "coverage_status": "INCOMPLETE",
+      "source_health": "HEALTHY",
+      "evidence_refs": [{"id": "prospective-receipt-fc1e811"}],
+      "action": "no_order"
+    },
+    {
+      "watermark_id": "prospective-600887-cninfo-20260923",
+      "scope": "prospective:600887",
+      "source": "cninfo",
+      "coverage_through": "2026-09-22T16:00:00+08:00",
+      "retrieved_at": "2026-09-23T05:10:18.014265+00:00",
+      "parser_version": "cninfo-announcement-window-v1",
+      "coverage_status": "COMPLETE",
+      "source_health": "HEALTHY",
+      "evidence_refs": [{"id": "600887-cninfo-event-index", "sha256": "f68b7e83d77c4c1d09c8d033a6e0054c97c0ce93c9f383349388bbc2d815ceea"}],
+      "action": "no_order"
+    },
+    {
+      "watermark_id": "prospective-601088-initial-20260927",
+      "scope": "prospective:601088",
+      "source": "cninfo",
+      "coverage_through": "2026-09-27T00:24:16+00:00",
+      "retrieved_at": "2026-09-27T00:24:16+00:00",
+      "parser_version": "prospective-initial-watermark-v1",
+      "coverage_status": "INCOMPLETE",
+      "source_health": "HEALTHY",
+      "evidence_refs": [{"id": "prospective-receipt-fc1e811"}],
+      "action": "no_order"
+    }
+  ]
+}
