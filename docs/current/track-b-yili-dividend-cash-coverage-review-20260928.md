@@ -146,8 +146,19 @@ projection, and canonical Excel remain unchanged; `action=no_order`.
 - FY2025 annual report retained copy SHA-256
   `d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac`;
   physical PDF pp. 7, 49-50, and 89-90 (printed pp. 3, 45-46, and 85-86).
-  The original announcement ID and source URL were not preserved with this
-  retained copy, so source-locator provenance remains incomplete.
+  The source locator is now bound by a bounded CNINFO exact-issuer snapshot:
+  announcement `1225259562`, [official PDF](https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF).
+  The retained PDF is 1,502,184 bytes and its SHA-256 matches the downloaded
+  official PDF. The scan index is
+  `runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/index.json`
+  (SHA-256 `172808bcfe7069e5e30017136089764804a7edb4b2370422703ef79b3d10f54a`);
+  its receipt is `scan-receipt.json` (SHA-256
+  `2f66ba7fb9aec7b295f257c00cecb333e2b9d9a79ed4fe869dc1377b182f553c`).
+  Since the CNINFO marker is date-only, use conservative
+  `available_at=2026-05-01T00:00:00+08:00`. The snapshot was retrieved after
+  the registered cutoff using an unattested local process clock; this closes
+  the locator-to-bytes gap but does not prove strict PIT, advance a watermark,
+  or change the registered baseline.
 - 2026H1 report CNINFO `1225511409`,
   [official PDF](https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF),
   SHA-256 `423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2`,

@@ -1,5 +1,23 @@
 # CURRENT STATUS
 
+## 2026-09-28 GitHub Review Checkpoint
+
+At the start of this documentation update, local `main` and GitHub `main`
+were both `1afa3b12f66594d5cfd72517cfe08890b892f090`. GitHub REST API
+confirmed Core Research Gates run `36412160361` completed successfully for
+that commit. The tracked worktree was clean; four untracked RFC 3161 timestamp
+experiment files were deliberately excluded because their targeted tests are
+not all passing and the CLI is not registered. The Yili annual-report source
+locator is bound in the [cash-coverage review](current/track-b-yili-dividend-cash-coverage-review-20260928.md);
+copy-specific Shenhua page references and segment/profit bridges are corrected
+in its [operating-series corrigendum](current/track-b-shenhua-operating-series-corrigendum-20260928.md).
+None of these documentation corrections changes a baseline, valuation,
+workbook, readiness gate, or `action=no_order`.
+
+The focused registration, baseline, observation-ledger, event-scan, watermark,
+and as-of projection regression set passed: `112 passed` across seven test
+files. The incomplete prospective timestamp experiment was not included.
+
 ```text
 CURRENT_STAGE = STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH
 M2 = DONE / CHECKPOINT_A_HUMAN_PASS

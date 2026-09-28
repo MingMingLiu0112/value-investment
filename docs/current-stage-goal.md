@@ -2,7 +2,7 @@
 
 ## CURRENT AUTHORIZATION：STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH（2026-09-28）
 
-本段是本文件唯一的当前授权范围，并覆盖下方旧阶段标题、“当前”描述和交接快照。前次成功远端核验时，仓库 HEAD 与 `origin/main` 均为 `c9449a4fe8881a0cec9ce2f992622b48693c413a`；该提交的 GitHub Core Research Gates run `36282732643` 成功，但不覆盖当前未提交工作区。本轮重新执行 `git fetch origin` 未能连接 GitHub 443，因此实时远端 HEAD 与最新 CI **未核验**；本地 HEAD 仍为 `c9449a4fe8881a0cec9ce2f992622b48693c413a`、当前分支为 `main`。工作树存在大量与当前研究有关的未提交改动，不执行 checkout/pull 以免干扰；无需切换分支。保持公共研究与人工决策辅助边界，永久 `action=no_order`。
+本段是本文件唯一的当前授权范围，并覆盖下方旧阶段标题、“当前”描述和交接快照。本轮进度核对开始时，本地 `main` 与 GitHub `main` 均为 `1afa3b12f66594d5cfd72517cfe08890b892f090`，GitHub Core Research Gates run `36412160361` 成功。经 GitHub REST API 实时核验；本地跟踪文件状态干净，另有四个未跟踪的 RFC 3161 时间戳实验文件，因测试尚未通过而不纳入发布。本轮发布只更新研究来源定位、页码勘误与状态记录，不改变研究基线或决策。保持公共研究与人工决策辅助边界，永久 `action=no_order`。
 
 ```text
 CURRENT_STAGE = STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH

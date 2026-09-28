@@ -15,10 +15,10 @@ separate CNINFO copy is
 SHA-256 `7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2`.
 They are two copies of the same annual report, not independent evidence.
 
-- The 2025 segment note is PDF physical page 279, printed page 278. The prior
-  baseline memo's printed-page citation is correct; any unqualified "physical
-  page 278" citation should be corrected to "PDF physical page 279 (printed
-  page 278)."
+- The 2025 segment note is PDF physical page 279 / printed page 278 in the
+  retained HKEX copy, and PDF physical page 278 / printed page 278 in the
+  retained CNINFO copy. These are two copies of the same report with different
+  PDF pagination, not independent evidence; citations must identify the copy.
 - The 2024 group blended coal price restated to CNY 563/t is on PDF physical
   page 30, printed page 29. PDF physical page 31 / printed page 30 is the
   customer-type table, not that blended-price row. The earlier classification
@@ -68,10 +68,13 @@ closure does not explain the acquisition-perimeter adjustments.
 
 ## Segment and operating bridge limits
 
-The FY2025 segment note is on PDF physical page 278 / printed page 278 (CNINFO
-copy SHA-256 `7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2`).
-The earlier sentence locating it on physical page 279 was incorrect; physical
-page 279 is the geographic-information note.
+The FY2025 segment note is on PDF physical page 278 / printed page 278 in the
+CNINFO copy (SHA-256
+`7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2`) and PDF
+physical page 279 / printed page 278 in the HKEX copy (SHA-256
+`460ea07ee14d3aeb2b7518a25f87b47833ea5473715d911c378c15f7425698fc`). The
+page difference is copy-specific pagination; page 279 in the CNINFO copy is
+the geographic-information note.
 
 The segment table distinguishes coal external revenue (CNY 182,874 million),
 coal inter-segment revenue (CNY 38,358 million), and coal-segment total revenue
@@ -87,10 +90,16 @@ line-by-line bridge for either residual.
 The aggregate FY2025 revenue and cost bridges do reconcile. External revenue
 for all segments sums to CNY 294,916 million. Total segment revenue of
 CNY 371,606 million less CNY 76,690 million segment eliminations also equals
-CNY 294,916 million. Segment costs of CNY 267,425 million less CNY 75,960
-million cost eliminations equal consolidated cost of CNY 191,465 million.
-This closes the aggregate revenue/cost arithmetic, not the coal product-to-
-segment residual or the bridge from segment profit to consolidated earnings.
+CNY 294,916 million. The note's unallocated-items column is CNY 794 million;
+named inter-segment revenue totals CNY 75,896 million, which reconciles to
+the CNY 76,690 million total eliminations. Segment costs of CNY 267,425
+million less CNY 75,960 million cost eliminations equal consolidated cost of
+CNY 191,465 million. Named segment profit totals CNY 75,083 million; adding
+CNY 4,275 million unallocated profit and subtracting CNY 19 million
+eliminations reconciles to consolidated profit before tax of CNY 79,339
+million. These checks close aggregate segment revenue, cost, and profit
+arithmetic, not the coal product-to-segment residual or the bridge from
+acquisition effects to normalized earnings.
 
 The FY2025 report states Hangjin Energy was acquired at 100% under common
 control on 2025-02-11 for CNY 853 million. It discloses Hangjin revenue/net
