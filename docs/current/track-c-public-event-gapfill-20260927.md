@@ -13,7 +13,22 @@ Raw response hashes are retained in the corresponding `runtime/prospective-publi
 
 ## Shenhua document review
 
-CNINFO IDs `1225579981` and `1225579977` are the third extraordinary shareholders' meeting resolution and board resolution, respectively. The shareholder resolution says the 2026 interim profit distribution proposal passed, but this resolution notice gives no per-share amount or payment date. Classification: `MATERIAL_SUPPORTING_EVIDENCE` for capital-allocation monitoring; dividend amount, cash coverage, sustainability, and valuation impact remain `INSUFFICIENT_EVIDENCE`. Do not infer yield or payment completion.
+CNINFO ID `1225531759` (2026-08-29) and meeting materials `1225546779`
+(2026-09-04) state a proposed **gross, pre-tax CNY 0.98 per share** interim
+distribution, estimated at CNY 21.256bn using the June 30 share count. CNINFO
+ID `1225579981` (2026-09-24) records that shareholders passed the proposal at
+the 2026-09-23 meeting; the resolution itself does not repeat the amount.
+Using the report's CNY 28.715bn H1 consolidated parent-attributable profit,
+the estimate is 74.0%; compared with H1 operating cash flow of CNY 54.664bn,
+it is 38.9%. These are context ratios, not distributable-cash, free-cash-flow
+coverage or sustainability conclusions. CNINFO date-only markers imply
+conservative `available_at` dates of 2026-08-30, 2026-09-05 and 2026-09-25,
+all before the registered observation start by calendar date; exact release
+times and strict PIT remain unproven. The proposal is **approved, but
+implementation and payment are unverified**. Classification remains
+`MATERIAL_SUPPORTING_EVIDENCE` for capital-allocation monitoring. Do not infer
+yield, recurring capacity or payment completion. The later section below
+contains the source hashes and detailed limits.
 
 CNINFO ID `1225579956`, URL `https://static.cninfo.com.cn/finalpage/2026-09-24/1225579956.PDF`, is an announcement that 457,665,903 restricted shares (2.11% of total share capital) will become tradable on 2026-10-08. The source PDF SHA-256 is `f7d78ed7a7270069f112060bd90cd2779b9fa81c774a522f826174f0fdb38cd2`. It also recites prior transaction registration and lock-up facts. Classification: `MATERIAL_RISK_MONITOR` for a dated potential float/supply event; not a new operating fact and not an automatic valuation or sell signal.
 

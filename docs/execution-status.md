@@ -3,19 +3,28 @@
 ## 2026-09-29 Continuous Public Research Continuation — current
 
 The current Goal and stage remain `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`
-and `STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH`. GitHub
-`main` was verified at `b57bc4805c1891ae73cf85c07e734d6f88994d20` before this
-status update. The v6 publication checkpoint's Core Research Gates run
-`36475593670` completed successfully: `offline-core=success` and
-`postgres-integration=success`. Its predecessor run `36467280788` had an
-anonymous API read failure (HTTP 403); that issue did not recur in the v6
-checkpoint run, though its root cause remains unconfirmed. The v6 checkpoint
-records the current workbook acceptance, bounded event projection, and the
-corrected issuer attribution in the Yili redemption analysis. This status-only
-follow-up has its own CI run separate from `36475593670`.
+and `STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH`. This
+continuation audited `main` at `1405cd770dedbe41668a8e43c0b442754913f1ea`,
+verified equal to `origin/main` after `fetch` and `pull --ff-only`. That base's
+Core Research Gates run `36476116732` completed successfully:
+`offline-core=success` and `postgres-integration=success`. The earlier run
+`36467280788` had an anonymous API read failure (HTTP 403); it did not recur
+in the later successful runs, though its root cause remains unconfirmed.
 The v6 projection and WPS/readability receipts are local `runtime/` evidence
 excluded from public Git. The published pointer records their paths and hashes,
 but a public clone cannot independently verify those local receipts.
+
+The v2 registration plan, runtime receipt and v9 baseline-verification
+configuration were re-bound locally: plan SHA-256
+`f98304dbfb73276073d57537e90aee37b6233821d8b0200df944718bf23a2c7a`, receipt
+SHA-256 `8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5`,
+baseline input SHA-256
+`e39386945fa67e653b2424f3c761c6c206f46a73cc522a0af35a8016b2453c6c`. The
+focused registration and baseline tests passed `48`; the default Windows
+pytest temp root was inaccessible, so the passing run used a newly verified
+isolated directory under ignored `runtime/`. Registration time remains
+process-clock-only and unattested; snapshot v13 remains frozen and strict PIT
+is still `NOT_PROVEN`.
 
 The formal prospective event watermarks remain bounded through 2026-09-27.
 Successor `config/prospective-public-event-watermarks-v9.json` preserves that
@@ -66,11 +75,31 @@ Financial-business cash/debt attribution remains unresolved; `net_debt=null`,
 v13 was not rewritten. See
 `docs/current/track-b-midea-cash-scope-correction-20260929.md`.
 
-The latest verified market session remains 2026-09-28. The scan timestamp is
-an unattested local process time and does not establish whether the 2026-09-29
-exchange session had completed. The canonical workbook was updated in place
-with the v6 bounded event view while retaining the 2026-09-28 quote snapshot;
-no later market close is implied. `action=no_order`.
+The same Midea H1 report's segment and consolidated income statements were
+cross-checked from rendered primary-source pages. Segment external revenue
+matches consolidated `营业总收入` after adding separately presented interest
+and commission revenue; there is no revenue discrepancy. The report places
+financial services within `other segments`, combines that group with
+unallocated amounts, and allocates indirect expenses by revenue. It therefore
+does not establish finance-only earnings, cash or debt. The segment profit
+bridge is descriptive only and contributes no FCFF input; v13 and
+`financial_scope_approved=false` remain unchanged. This is late-researched
+pre-start evidence, not strict PIT evidence.
+
+The Shenhua interim-distribution record is now summarized consistently in
+`docs/current/track-c-public-event-gapfill-20260927.md`: gross CNY 0.98/share,
+estimated CNY 21.256bn, approved at the 2026-09-23 meeting, but implementation
+and payment are unverified. The estimate is 74.0% of H1 consolidated
+parent-attributable profit and 38.9% of H1 operating cash flow; neither ratio
+proves normalized dividend capacity. These are pre-start public facts and do
+not change the frozen baseline or valuation state.
+
+At the verification time 2026-09-29 04:58 +08, the exchange had not opened;
+the latest verified market session therefore remains 2026-09-28. The canonical
+workbook remains at the previously verified v6 publication and 2026-09-28
+quote snapshot. This turn changed research documentation only; no new fact
+changed the product read-model state, so the workbook was not republished.
+`action=no_order`.
 
 Targeted regressions after the as-of guard, test-fixture correction,
 cross-platform UTF-8 child-process setting, and Midea v3 fact correction passed:
@@ -86,6 +115,8 @@ NEW_EVENTS_PROCESSED = 0_FORMALLY_APPLIED / Yili 1225584526 REVIEWED_AS_MATERIAL
 LATEST_VERIFIED_SESSION = 2026-09-28 / COMPLETE / 000333_600887_601088
 CANONICAL_UPDATED = true / V6_EVENT_VIEW / QUOTE_AS_OF_2026-09-28 / SHA256_849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb
 SAFE_PUBLIC_RESEARCH_REMAINING = YES / Midea, Yili, Shenhua evidence gaps remain
+RESEARCH_SUPPLEMENT = MIDEA_H1_SEGMENT_SCOPE / SHENHUA_INTERIM_DIVIDEND_STATUS / V13_UNCHANGED
+CANONICAL_UPDATED_THIS_TURN = false / NO_PRODUCT_STATE_CHANGE
 M4_R2 = PARKED_WAITING_R2_NONBLOCKING
 M6_R3 = PARKED / OPERATIONAL_NOT_STARTED
 M7_R5 = NOT_PASSED
@@ -101,8 +132,8 @@ action = no_order
 | --- | --- | --- |
 | Active prospective research remains | YES | Three registered company cases remain partial. |
 | A public evidence gap can change model applicability, confidence, or distribution status | YES | Midea scope/valuation inputs, Yili liquidity/cash capacity and Shenhua operating bridges remain open. |
-| A new available public event needs disposition | YES | Yili notice is captured; conservative availability is 2026-09-30, with only affected liquidity dependencies reopened. |
-| A new completed market session is pending | NO | The 2026-09-29 session had not completed at observation time. |
+| A new available public event needs disposition | YES | Midea notice 1225582141 remains a monitor candidate without a formal materiality decision; Yili notice is not available until 2026-09-30. Neither changes valuation state. |
+| A new completed market session is pending | NO | At 2026-09-29 04:58 +08 the exchange had not opened. |
 | A baseline or strict prospective decision chain is complete | NO | Baselines remain partial; timestamps are not independently attested. |
 | PIT/method validation can continue safely | YES | Preserve v2; do not backdate or retrofit strict PIT. |
 | A product projection changed from cutoff-eligible event evidence | YES | Midea notice 1225582141 is visible; Yili notice remains excluded until 2026-09-30; quote snapshot is unchanged. |
