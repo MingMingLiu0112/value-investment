@@ -1,0 +1,25 @@
+{
+  "schema_version": "prospective-observation-ledger-v1",
+  "action": "no_order",
+  "purpose": "Explicit observation inputs for bounded public research evaluation and canonical product publication.",
+  "records": [
+    {
+      "case_id": "prospective-000333-20260927-v2",
+      "observation_id": "prospective-676926f96e284002045c12b9a7142b56",
+      "path": "runtime/prospective-observations/000333/prospective-676926f96e284002045c12b9a7142b56.json",
+      "sha256": "379046d99cb5b1f6a7353397b63ec4133a58125c38bbc3180728e8eb4bc82f8f"
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "observation_id": "prospective-2c9c950216328f270a1614e9f357fce5",
+      "path": "runtime/prospective-observations/600887/prospective-2c9c950216328f270a1614e9f357fce5.json",
+      "sha256": "dc675d603f56c8303239f719448af06f95fa1dbe3987872d80898df1abc4515f"
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "observation_id": "prospective-cd9d6cc7382f67d1565132787949682b",
+      "path": "runtime/prospective-observations/600887/prospective-cd9d6cc7382f67d1565132787949682b.json",
+      "sha256": "76e7e48699dd184950f1a5e13517546d24b4ed56ef2476bf920ddc602f3f65f6"
+    }
+  ]
+}

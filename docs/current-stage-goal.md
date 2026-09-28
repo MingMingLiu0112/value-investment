@@ -1,21 +1,234 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-## CURRENT AUTHORIZATION：STAGE-PROSPECTIVE-PUBLIC-RESEARCH-AND-DAILY-RESEARCH-WORKBENCH（2026-09-27）
+## CURRENT AUTHORIZATION：STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH（2026-09-28）
 
-本段是本文件唯一的当前授权范围，并覆盖下方所有日期早于 2026-09-27 的阶段标题、
-“当前”描述和交接快照。系统继续作为 A 股公共研究与人工决策辅助工具，永久
-`action=no_order`；不连接券商、不创建订单、不把模拟结果伪装成真实市场结论。
+本段是本文件唯一的当前授权范围，并覆盖下方旧阶段标题、“当前”描述和交接快照。前次成功远端核验时，仓库 HEAD 与 `origin/main` 均为 `c9449a4fe8881a0cec9ce2f992622b48693c413a`；该提交的 GitHub Core Research Gates run `36282732643` 成功，但不覆盖当前未提交工作区。本轮重新执行 `git fetch origin` 未能连接 GitHub 443，因此实时远端 HEAD 与最新 CI **未核验**；本地 HEAD 仍为 `c9449a4fe8881a0cec9ce2f992622b48693c413a`、当前分支为 `main`。工作树存在大量与当前研究有关的未提交改动，不执行 checkout/pull 以免干扰；无需切换分支。保持公共研究与人工决策辅助边界，永久 `action=no_order`。
 
-### 并行轨道与门禁
+```text
+CURRENT_STAGE = STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH
+M2 = DONE / CHECKPOINT_A_HUMAN_PASS
+M3 = PARTIAL / STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN / R6
+M4 = NONPERSONALIZED_ENGINEERING_DONE / PERSONALIZED_PARKED_WAITING_R2_NONBLOCKING
+M5_600519 = NEED_MORE_EVIDENCE / STILL_NOT_READY / NO_NEW_VALUATION
+M5_EVENT_ASOF_GUARD = IMPLEMENTED / 123_RELATED_TESTS_PASS
+M5_EVENT_ASOF_SUCCESSOR = runtime/prospective-public-event-20260928/registered-public-event-projection-v5.json / 5e543f50690a71254a97ff5c39136cd2bb74d81d1e3c4d3600f023dc948487d6
+M5_EVENT_ASOF_PUBLICATION = PUBLISHED / WPS_READONLY_AND_READABILITY_PASS / FINAL_USER_ACCEPTANCE_NOT_PASSED
+M6 = PREFLIGHT_ONLY / OPERATIONAL_NOT_STARTED / VERIFIED_REAL_SESSIONS_0
+M6_REAL_RESTORE_ACCEPTANCE = NOT_PASSED
+M7 = DISPLAY_ENGINEERING_AVAILABLE / WPS_AND_ALL_PRODUCT_PAGE_READABILITY_PASS / FINAL_USER_ACCEPTANCE_NOT_PASSED
+CANONICAL_WORKBOOK_SHA256 = 2f72dc76bcf6a74449dec5a336cc41540ae84bb1e7935badb7248a4b8a6c1bcf
+M5_EVENT_PROJECTION = runtime/prospective-public-event-20260928/registered-public-event-projection-v5.json / 5e543f50690a71254a97ff5c39136cd2bb74d81d1e3c4d3600f023dc948487d6
+M7_WPS_READONLY = PASS / runtime/publication-receipts/wps-m7-price-display-20260928.json / FINAL_USER_ACCEPTANCE_NOT_PASSED
+M7_ALL_PRODUCT_PAGE_READABILITY = PASS / runtime/publication-receipts/readability-m7-product-opportunity-quote-20260928.json
+QUOTE_AS_OF = 2026-09-28 / COMPLETE / 000333_600887_601088
+PUBLIC_EVENT_PROJECTION = 8_BOUNDED_EVENTS / 000333_600887_601088 / FUTURE_AVAILABLE_NOTICE_EXCLUDED_FROM_CANONICAL
+CANONICAL_EVENT_VIEW = V5_ASOF_CORRECTION_PUBLISHED / EXCLUSION_DETAILS_HASH_BOUND_OUTSIDE_WORKBOOK
+PUBLIC_EVENT_OBSERVATION = 2026-09-28 10:00..10:02 +08 / CNINFO_SINGLE_DAY_SNAPSHOTS / NO_NEW_EVENT / PROCESS_CLOCK_UNATTESTED
+PUBLIC_EVENT_WATERMARKS = config/prospective-public-event-watermarks-v8.json / 000333_CNINFO_DATE_WINDOWS_COMPLETE_2026-03-31_TO_2026-09-27_BUT_FORMAL_INCOMPLETE; 600887_WINDOW_COMPLETE_TO_2026-09-27; 601088_CNINFO_DATE_CHAIN_COMPLETE_TO_2026-09-27; 2026-09-28_SNAPSHOTS_ONLY
+REGISTRATION_RECEIPT_VALIDATION = FUTURE_TIME_AND_FALSE_ATTESTATION_CLAIMS_FAIL_CLOSED / PROCESS_CLOCK_ONLY_UNATTESTED
+CHECKPOINT_D = NOT_PASSED
+R0_AUDIT_SNAPSHOT = HISTORICAL / R0-A_NOT_PROVEN / R0-B_PARTIAL
+R0_OPEN_NODES = 2 / NONBLOCKING_TO_PUBLIC_RESEARCH / REQUIRED_ARTIFACTS_UNAVAILABLE
+R0-C_RESOURCE_CAPACITY = CLOSED_AS_R3_INFRASTRUCTURE_DECISION
+SAFE_R0_REMAINING = 0_AFTER_CURRENT_PRODUCT_FIXES_AND_POINTER_REBUILD
+SAFE_R1_REMAINING = OPEN / YILI_DIVIDEND_CLASSIFICATION_AND_NORMALIZED_DISTRIBUTABLE_CASH; SHENHUA_PRODUCT_SEGMENT_AND_ACQUISITION_BRIDGES; FORWARD_ONLY_TSA_CHAIN_ENGINEERING
+EXTERNAL_GATE_HANDOFF = DAG_SCOPED_NOT_TOTAL_GOAL_STOP
+M6_OPERATIONAL = NOT_STARTED
+M6_PRODUCTION_AUTHORIZATION = NOT_GRANTED
+SHADOW_START_ALLOWED = false
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+## 2026-09-28 Verified Quote Display Correction
+
+The canonical workbook previously showed the three registered companies as
+having no usable price even though its bound daily quote receipt contained
+matched 2026-09-28 closes. The prospective opportunity projection now displays
+the symbol-specific matched close and date, labels the quote as verified while
+stating that price attractiveness cannot yet be assessed, and retains the
+unready valuation state and `action=no_order`.
+
+The same `WORKBOOK_PATH` workbook was updated in place. Its SHA-256 is
+`2f72dc76bcf6a74449dec5a336cc41540ae84bb1e7935badb7248a4b8a6c1bcf`; the prior
+`0bfc9fae...` bytes are preserved in
+`runtime/workbook-backups/canonical-before-m7-product-ux-20260928T085546Z.xlsx`.
+WPS read-only verification and all-page readability passed. The three visible
+prices are 000333 CNY 82.00, 600887 CNY 27.03 and 601088 CNY 48.39, all as of
+2026-09-28 close; none is a valuation or trading signal.
+
+Focused product regressions passed 51 tests. Strict contemporaneous PIT remains
+unproven; all three company valuations remain not ready; M4, M6 and M7 user
+acceptance gates remain unchanged; `action=no_order`.
+
+本阶段按持续轨道推进公共市场数据、三家预登记研究案例、公共事件、唯一 Canonical Excel 和方法验证。报价与事件只接受公开、可追溯证据；新交易会话按交易所日历判断，不以运行日期代替。每次研究状态变化保留旧状态、新状态、触发、证据和规则。基线中的登记/构建时间仍为 `PROCESS_CLOCK_ONLY_UNATTESTED`，不得称为严格同期 PIT。只在新公共事实、研究状态或证据缺口真实变化时原位更新工作簿；不因重复运行发布相同内容。
+
+2026-09-28 产品 as-of 复核发现，v3 曾在 09-28 观察截止下显示美的公告 `1225582141`，其保守 `available_at` 为 09-29。v4 将其移出活动事件、证据和决策集合；独立复核随后指出，即使标注隔离，把公告细节留在同一本截止日工作簿仍可能造成前视泄漏。追加 successor v5 将完整排除来源绑定在 runtime 审计投影中，而 canonical Excel 六个可见页均不显示公告 ID、事件 ID、标题、路径或来源哈希。123 项相关回归通过；最终工作簿已原位发布，WPS 只读验收与可读性审计通过。strict PIT、三家公司估值和交易状态不变，`action=no_order`。
+
+用户于 2026-09-28 明确收敛本阶段执行重点：唯一用户产品继续是 WPS `WORKBOOK_PATH` 指向的 canonical Excel；围绕 000333、600887、601088 推进真实前瞻研究、strict contemporaneous PIT、事件连续性和财务质量门，不以增加抽象、候选 Excel 或历史 replay 为主要产出。不得新增公司扩大范围；需要的代码变更必须对应真实链路失败或证据/安全风险。无新事实时允许不发布工作簿。根目录历史工作簿仅在逐项迁移验证通过后才能归档，不能因视觉整洁要求破坏哈希、收据或引用。
+
+当前研究主体为 `000333 / 600887 / 601088`，均未达到估值就绪。伊利快照中的 `yili-2026h1-financial-quality` 是无数值/单位/页码的报告级占位项；其六项具名 H1 原子事实已分别准入，不能将该占位项解释为缺少另一条财报指标，也不能据此宣称研究基线完整。详见本轮状态记录及独立审查。
+
+当前阶段继续 Track A-E 的有界公共研究、前瞻 PIT、公共事件和日常工作台。M4 私人组合仅为 `PARKED_WAITING_R2_NONBLOCKING`；它不阻断上述 DAG。R0-A/R0-B 的下方快照保留为上一专项审计结论，不构成本阶段停止条件；若后续具体任务触及它们，按证据与当前 R0/R1 规则单独重开。不得进入 M6 生产/Shadow，不请求 M4 私人输入，不代签 M7，不产生订单。
+
+本轮 R1 补充记录已形成：美的关联方主要母公司应收余额与合并财报的匹配及未调平事项见
+`docs/current/track-b-midea-related-party-bridge-review-20260928.md`；神华 2014–2025
+经营序列的年度来源、重述、范围断点和可用时间边界见
+`docs/current/track-b-shenhua-operating-series-classification-20260928.md`。神华文档经 R1 复核后
+更正收购标的为“杭锦能源”，并补上 2016/2018/2020 比较表的物理页码与 SHA；已核实的原始值/重述值版本事实也已追加。剩余神华逐字段重述/分部桥接仍开放。美的母公司层面匹配已完成，逐笔合并抵销和关联银行产品调节在留存公开披露中不可得，已分类为外部证据缺口；以上研究均不构成估值模型输入或 strict PIT 证明。
+
+2026-09-28 连续性勘误复核了各公司 10:00..10:02 +08 的 CNINFO 精确发行人快照：美的只返回已知公告 `1225582141`，伊利和神华为零条；无新事件，故不重建投影、不发布 Excel。神华 2026-03-31..2026-09-27 的留存窗口现可由哈希匹配且分页结束的索引接成无日期缺口 CNINFO 链，旧 gap-fill 文档中的“仍有缺口”结论已由独立勘误更正；这不覆盖发行人 IR/交易所渠道，也不证明检索时钟。美的留存日期窗口 2026-03-31..2026-09-27 连续，但正式初始水位仍 `INCOMPLETE`，不从回溯索引静默晋级。三家公司 09-28 快照时间均为本机进程时间、无独立时间戳；严格 PIT 仍 `NOT_PROVEN`。详情见 `docs/current/track-c-prospective-watermark-continuity-corrigendum-20260928.md`。
+
+神华 FY2023/FY2024 原始值与 FY2025 重述值已经按原件复核；页码勘误、利润算术勾稽及未解决的分部残差记录在 `docs/current/track-b-shenhua-operating-series-corrigendum-20260928.md`。这只收窄 ResearchCase 的证据缺口，不准入正常化利润，不改变估值门或 baseline。
+
+伊利分红研究现已核实 FY2021-FY2025 分红金额和 CFO 覆盖，其中 FY2021-FY2023 实际支付生命周期均有实施公告，FY2021-FY2023 另有年报 CFO 与长寿命资产购建现金支出。FY2022 扣除该购建支出后的有限覆盖约 1.023x；它不是 normalized FCF，亦未证明现金可分配。普通/特别性质分类和正常化可分配现金仍未知；研究卡见 `docs/current/track-b-yili-dividend-cash-coverage-review-20260928.md`，DividendSustainability 仍 `DATA_INCOMPLETE / UNKNOWN`。
+
+截至 2026-09-28 13:30 +08，CNINFO 实施公告 `1225335436` 已核实伊利 FY2025 末期股息 CNY 5,692,824,600.30（每股 CNY 0.90）于 2026-06-05 支付；上一状态摘要中“FY2025 末期支付方案尚待生命周期核实”已过时。该时点的 FY2021/FY2022 现金流缺项随后由官方年报补齐，见下方 13:50 状态更正。来源可用时间按 2026-05-30 00:00 +08 保守处理，抓取时间仍是未独立认证的本机进程时间，不构成 strict PIT 证据。
+
+截至 2026-09-28 13:50 +08，CNINFO 年报和实施公告补齐 FY2021-FY2023 支付生命周期、净利润、CFO 及购建固定/无形/其他长期资产现金支出；FY2021-FY2025 的现金分红/利润与 CFO 覆盖已量化。FY2022 扣除长寿命资产购建现金后的余额仅为分红的 1.023x。普通/特别分类及 normalized distributable cash 仍未建立；伊利分红可持续性仍 `DATA_INCOMPLETE / UNKNOWN`。相关原件 Hash 与计算口径见分红研究卡和执行状态最新增量；没有改变 prospective baseline、strict PIT、估值或交易状态。
+
+神华分部桥接勘误将 FY2025 CNY 8,086m/CNY 4,923m 差额更正为“煤炭分部总收入/成本与产品表之间的残差”，而非外部收入差额；集团分部总收入与成本的汇总算术可调平，产品残差、4.5 Mt 内部煤量差和杭锦并表贡献仍未解释。601088 仍 `CYCLICAL_MODEL_NOT_READY / VALUATION_NOT_READY`。
+
+当前 canonical workbook 指针绑定 WPS 发布回执
+`runtime/publication-receipts/canonical-m7-product-publication-20260928T074028Z.json`、
+只读验收回执 `runtime/publication-receipts/wps-m7-product-asof-v5-clean-20260928.json`、可读性回执
+`runtime/publication-receipts/readability-m7-product-asof-v5-clean-20260928.json` 和文件哈希
+`02a5f594c50a402858ddaed5b3520bafd396be1442114add7ae51df011698b47`。前一 v7 检查点在 v6 基础上
+追加三家 2026-09-28 约 05:14–05:15 +08:00 的 CNINFO 单日快照；美的重复发现公告
+`1225582141`，伊利、神华返回空结果。全天及多渠道覆盖未证明。后续 v8 检查点见下文。
+
+此前 R0 收尾专项的范围和结论归档为历史快照；它不覆盖本段当前授权。Prospective receipt verifier 现会拒绝未来创建时间、声称独立认证的本机时间、非 `receipt_created_at` PIT 锚及任何已观察结果/估值/信号/私人组合标志；对应定向回归通过。它不能证明历史本机时钟真实，故既有收据仍为 `PROCESS_CLOCK_ONLY_UNATTESTED`，strict PIT 仍 `NOT_PROVEN`。研究收据和工作簿仍为证据，不因阶段切换而覆盖或重做。
+
+## 本轮阶段增量（2026-09-27）
+
+Track C 对已有 CNINFO `1225185584`（国家能源集团财务有限公司风险评估报告）完成原件哈希绑定和有界研究，归为 `MATERIAL_RISK_MONITOR`，同时保留“发行人自评称 2025 年末无不良贷款”的证据限制。它是预登记前的历史公开材料，不是新的前瞻观察，不证明损失或独立信用质量，也不改变估值；详细记录见 `docs/current/track-b-shenhua-operations-and-capital-allocation-20260927.md`。
+
+同一 canonical Excel 已更新神华事件卡，并修复发现的审计链接偏移。最终工作簿 SHA-256 为 `01af2106d8e1a656750790b0d1f7ee79fd8264c9f24d5bd1d28899aa90eefee1`；发布回执、WPS 只读验收及证据链接复核记录在 `docs/execution-status.md` 本轮中断审计下。审计行包含本地原件路径、精确 SHA-256 和可点击 CNINFO URL。非产品用户管理页和冻结页通过发布器保全比较。
+
+仍保持 `STRICT_PIT=NOT_PROVEN`、三家公司 `VALUATION_NOT_READY`、`M6_OPERATIONAL=NOT_STARTED`、`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`、`INITIAL_ASSISTED_USE=NOT_REACHED`、`action=no_order`。截至 2026-09-28，神华 CNINFO 精确发行人已留存查询窗口由 watermark v4 形成无日期缺口链；范围不含发行人 IR、交易所渠道、后续更正或检索时点之后公告，且历史公告在预登记前已公开，不能作为 strict PIT 证明。
+
+## 本轮阶段增量（2026-09-28）
+
+随后同一工作簿依据三家已注册公司的公开事件研究状态原位更新。组合投影为
+runtime/prospective-public-event-20260927/registered-public-event-projection-v1.json
+（SHA-256 ecdce96a4a63a72b191942896b751cbae0da3a4087b9f5ef871aea7b0333f3a0），
+共 8 张事件卡：美的 3、伊利 1（证据不足/材料性未定）、神华 4。神华新增财务公司风险监控和限售股解禁事件；后者是已有股份流通状态变化，不是新增发行或卖出信号。Shenhua v1/v2 投影保持不变。发布后 canonical SHA-256 为
+f4b7a2721f2947a1e7b65087289c8660b48d6a423e32f22afabadd4edc748970；
+WPS 只读验收通过，六张产品页可读、公式无错误、保护页保持不变。
+config/current-trial-workbook.json 分别记录 quote-as-of（2026-09-24）与事件水位（2026-09-27），
+报价仍为部分覆盖并缺少 600887。2026-09-25..27 为休市/周末，无新完成交易会话，故本轮没有刷新行情。
+三家公司估值仍 NOT_READY，严格 PIT 仍 NOT_PROVEN，M6_OPERATIONAL=NOT_STARTED，
+M7_FINAL_USER_ACCEPTANCE=NOT_PASSED，INITIAL_ASSISTED_USE=NOT_REACHED，action=no_order。
+
+### 2026-09-28 后续增量
+
+美的 CNINFO 精确发行人单日扫描发现公告 `1225582141`。原件 SHA-256
+`94629a0271834020e0a1efd417837bbd04677f226650d940b4a6d523a26e9686`，原文确认
+2026-10-13 临时股东会，议程涉及限制性股票回购注销及 2026 中期利润分配方案。
+通知未新增注销数量、批准/实施结果或分红金额，故只登记治理/资本配置后续触发；
+不改变已准入事实、股份数、股息可持续性或估值。精确扫描与原件审阅边界见
+`docs/current/track-c-midea-egm-notice-20260928.md`。
+
+对美的 FY2025 年报及 2026H1 半年报原件另作逐页固定资产、在建工程和折旧核对。
+报告列有现金购建、固定资产新增/处置、在建工程转固和项目名称，但未区分维护与扩张
+用途，也无项目回报证据；维护 CapEx、增长 CapEx、正常化投入均继续 `UNKNOWN`，
+FCFF carve-out 和估值仍 `NOT_READY`。详情与原件 SHA-256 见
+`docs/current/track-b-midea-capex-fixed-assets-review-20260928.md`。
+
+`artifacts/current/artifact-registry-v2.json` 已替代 v1 成为当前逻辑导航索引：以本机
+`WORKBOOK_PATH` 解析 canonical Excel，仅记录其 SHA-256 与指针核验状态，不写入个人绝对路径；
+仓库根目录同名工作簿被标为历史参考快照。v1 字节未改，根目录及 WPS 工作簿均未改写。
+生成脚本在 hash 不一致时 fail-closed，连续两次重建得到相同 registry SHA-256
+`b833b84b9d646fa34b64ff9f5714eaa83d907e60dd649cb51c36cfa61a0107c4`（已按当前 canonical pointer 重建）。
+
+只读产品审查发现机会页名单滞后、若干审计来源缺可点击 URL、双证据卡只链接首条，以及
+公司页混入旧样本。已补测试并修复产品投影与链接组导航；美的三条既有公告 URL 传至审计页，
+伊利公告缺少留存官方 URL 时继续 fail-closed 不猜造。新增的美的股东会通知经原件审阅后，
+作为单条有界 M5 治理/资本配置监控事件形成 successor 并更新到同一 canonical Excel。
+现有机会页和公司页均为三家已注册对象；新卡跳转至审计行 A44，原件 URL、ID、SHA-256
+与可用日可见。组合投影为
+`runtime/prospective-public-event-20260928/registered-public-event-projection-v2.json`
+（SHA-256 `f5938dc5b381230efd686078c923b8b4d0aab3562148f33ccbfa6c4749a12609`），共 9 张卡。
+后续同一 canonical Excel 发布了 M4 个性化暂停状态，发布回执为
+`runtime/publication-receipts/canonical-m7-product-publication-20260927T204125Z.json`；
+最终 canonical SHA-256 `ef0523b9596b3bed682d85898fab20dd68b1ee889181cb7a00744ca4bb1136e8`，
+WPS 只读验收回执为 `runtime/publication-receipts/wps-m7-product-parked-20260928.json`。
+61 张表得到保全，6 张产品页可见、55 张旧页隐藏；该工程验收不等于 M7 最终用户验收。
+美的正式 watermark 仍为 `INCOMPLETE` 且 `public_event_as_of=2026-09-27`；新增的
+`public_event_observation_as_of=2026-09-28` 只表示单日精确 CNINFO 观察，不宣称全天、连续、
+多渠道覆盖或 strict PIT。行情仍为 2026-09-24 部分覆盖并缺少伊利。估值、M6、M7 最终用户验收
+及 `action=no_order` 状态均未改变。
+
+美的公告 `1225582141` 已追加到账本，`source_available_at=2026-09-29T00:00:00+08:00`；
+该日单窗口只作为 bounded evidence，000333 连续水位仍 `INCOMPLETE` 且 `coverage_through`
+不变。正式记录及 writer-generated time 边界见 `docs/execution-status.md` 当前增量。
+
+本轮全量本地回归 `3160 passed, 30 skipped`；canonical workbook 与 WPS 只读回执 hash
+一致，未在这轮水位更新中写入工作簿。v5/v6 水位与清单定向测试 `10 passed`。
+实时 GitHub fetch 因连接重置未完成，未对远端 CI 作新声明。
+
+神华 601088 的 CNINFO 窗口水位 append-only successor 为
+`config/prospective-public-event-watermarks-v5.json`（继承 v4）。保留的七个索引窗口从
+2026-03-31 连续覆盖至 2026-09-27 19:22:35 +08:00；覆盖仅指 CNINFO 精确发行人及已留存日期窗口，不等于全渠道公告完整性。v3 历史记录保留。窗口中 2026-09-04 会议材料 `1225546779` 披露中期分红税前每股 0.98 元、约 212.56 亿元，`1225579981` 记载股东会于 2026-09-23 通过；A 股实施、登记和支付日期尚待公告。`1225565223` 的 8 月运营统计是发行人自报且比较期已重述、含 4 月并入资产，仅作运营监控。办公地址变更 `1225567741` 与会议通知 `1225546775` 不构成需展示的经济事件。四份索引原件及 R1 边界见 `docs/current/track-c-public-event-gapfill-20260927.md`。
+
+配置的本地字节 Hash 已记录：v3 `f7f00ac96efab81c631c543d8ecb9ba98ff03a1d89c4371a8cd546d1cb9e7119`，v4 `a7dbb1f35a157a80daf202ed91537e7c8ae8b9c135c828ed4108c3cb39063cb8`，v5 `950078fa30652b8acb8a0d7d2161408580dd21bf45194f77d3fbfc142b243c05`。v3-v5 当前为未跟踪文件；v5 将 9/28 单日窗口作为非连续证据保留，Midea coverage status 仍为 `INCOMPLETE`。
+
+当前 watermark successor 为 `config/prospective-public-event-watermarks-v8.json`。
+v8 原样保留 v7 的四条既有记录，追加美的 2026-03-31..2026-09-27 的相邻完整 CNINFO 日期窗口，
+合计 106 条不重复公告。该日期区间的查询链已验证，但美的原始登记水位仍为 `INCOMPLETE`：
+回溯窗口不能补证最初前瞻登记边界。v8 另存三家公司 2026-09-28 10:00..10:02 +08 的单日快照，
+分别返回 1、0、0 条；美的仅重复已知公告 `1225582141`。所有抓取时间仍是未独立认证的本机进程时间，
+快照不证明全天或多渠道覆盖，strict PIT 仍为 `NOT_PROVEN`。无新增产品事件，Excel 不变且不重新发布。
+
+神华事件投影 v2 为
+`runtime/prospective-public-event-20260927/shenhua-event-projection-v2.json`
+（SHA-256 `1c88dd83902b766ac0c208f2b837fa157b91d40189a91a4ddb79bd33cf82a971`）。发布器 in-memory verification、三份原件 Hash 校验及保护页逐单元比较通过；同一 canonical Excel 已更新，最终 SHA-256
+`522f6b11a01c2d87024c45496a4a6a3f3d101dba315274d34cb88167e7d3f6d6`。WPS 只读检查、事件到审计行及 CNINFO 原文链接检查通过。行情沿用已验证的 2026-09-24 部分覆盖包，没有声称刷新 2026-09-28 收盘数据。以上不改变任何估值、交易、strict PIT 或生产门禁状态。
+
+### 2026-09-28 PIT 时间顺序与档案治理复核
+
+独立审查确认当前三家均无可证明的 strict contemporaneous PIT 链。v2 注册回执的时间来自本机进程时钟；本机记录/文件元数据显示前瞻 baseline snapshot v13 在声明的 2026-09-27 08:45 cutoff 之后生成（该时钟本身同样未获认证），因此不得把事后采集、按来源可用日筛选的资料描述为当时已观察到的完整研究链。
+
+美的 CNINFO `1225582141` 的保守 `source_available_at` 为 `2026-09-29T00:00:00+08:00`，既有观察记录却写 `observed_at=2026-09-28T01:36:33+08:00`。现将写入端和读取端均改为拒绝该时间倒置：原运行时文件及哈希保留作审计证据，但不得在任何更晚 cutoff 进入研究输入。此修复不更改 registration、baseline、事件水位、ResearchCase、估值或 Excel。
+
+CNINFO 水位复核：000333 在已留存的 2026-03-31..09-27 窗口内无日期缺口，但正式状态仍 `INCOMPLETE`；600887 的 `COMPLETE` 仅覆盖 09-23..09-27；601088 的连续链仅覆盖 03-31..09-27。三家 09-28 查询仍只是局部单日快照，均不代表多渠道或全天完整性。不重复重扫历史窗口。
+
+根目录只读盘点发现 29 个 `.xlsx`（1 个仓库参考快照、28 个历史候选）；全部仍有路径/哈希引用，当前没有候选能通过内容寻址迁移校验。没有移动或删除文件。实际 WPS canonical 仍由外部 `WORKBOOK_PATH` 指向，哈希保持 `b47141f63e57eec4857f83b42162738e6ce33ca040252f8ba9a15d6ff0133640`。
+
+相关读取器、事件投影及观察账本定向测试 `46 passed`。行情截至 2026-09-24 仍为部分覆盖并缺少伊利；2026-09-28 交易日尚未收盘。无新增可评估事件、无 Excel 发布。三家 baseline 仍为 `PARTIAL`、估值仍 `NOT_READY`，strict PIT 仍 `NOT_PROVEN`；`M4_R2` 非阻塞，`M6_R3` 未授权/未启动，`M7_R5` 未通过，`action=no_order`。
+
+## Historical R0 Audit Snapshot（2026-09-27；非当前授权）
+
+以下仅记录 R0 收尾阶段的历史范围与审计事实。R0-A 保持 `NOT_PROVEN`：真实 M5 receipt → Product → Excel 未形成可验证绑定，实际重放依赖的原始 graph/plan/verified-facts/bounded-recalculation 原件缺失。R0-B 保持 `PARTIAL`：162 个 raw-only 指纹中，154 个仅为规则标注的潜在公开数值，5 个存在私密上下文命中，3 个未知；独立审阅认为 8 个都不能放行，CI artifact 下载返回 403，WPS/M4 私密边界未闭合。R0-C 仍是 R3 基础设施决定。不得据此生成 External Gate Handoff、宣称总 Goal 完成或生产就绪。
+
+## Prospective Research Stage Evidence（当前阶段基线；逐项状态以新收据和下文当前执行回执更新）
+
+以下轨道状态、研究事实和公开事件结果是本阶段既有基线；只在有新证据时增量更新，不重做已覆盖工作。
+
+### 并行轨道与门禁（当前阶段基线）
 
 | 轨道 | 当前状态 | 允许动作 | 不允许动作 |
 | --- | --- | --- | --- |
-| A：当前公共行情/报价 | `PENDING_NEXT_OFFICIAL_SESSION` | 仅在新的官方已完成交易会话后刷新并单独记录 quote 时间 | 用日历日或旧缓存伪造新收盘；将价格混入内在价值 |
+| A：当前公共行情/报价 | `CURRENT_BUNDLE_RAW_REVALIDATED_PARTIAL` | 对当前保留 bundle 的原件重新解析并核验，显示已验证的部分覆盖；新交易会话后仅更新登记标的 | 将部分集合说成全覆盖；把公共行情源表述为交易所认证；用旧缓存伪造新收盘；将价格混入内在价值 |
 | B：前瞻同期研究/M3 | `ACTIVE` | 维护预先登记的 2-5 个公共 ResearchCase，后续事实按可用时间进入 PIT 记录 | 用历史回放、后验结果或当前价格替代前瞻登记 |
 | C：M5 公共事件/研究循环 | `ACTIVE_BOUNDED` | 从既有水位起做公开、有限、只读事件摄取；新材料只重开受影响研究 | 未授权 ACTUAL 应用、生产通知或重复扫描同一水位 |
 | D：M7 日常产品/Canonical Excel | `INTEGRATED` | 仅在有新的、可核验的公共事实状态时发布到 `WORKBOOK_PATH` | 创建新的 current candidate、覆盖人工区或因模拟数据发布 |
 | E：M6 生产前安全准备 | `PARKED_SAFE_ONLY` | 本地合同、CI、日历和安全验证 | 服务器部署、Shadow、调度、通知或生产数据库动作 |
 | M4：私人组合 | `PARKED_WAITING_R2` | 保留已完成的非个人化工程和合成演练证据 | 请求/扫描/猜测 IPS、现金、持仓或私有密钥；把 M4 当成其他轨道的阻塞 |
+
+当前行情 bundle 的原始腾讯/新浪响应由既有 `quote_sessions` 解析器重新计算，报告中的代码、双源价格、时点及基于归档交易所日历得出的交易会话必须一致；发布仅展示登记样本的报价，并显式标注缺失/排除代码。该重验证明展示值与所保留的响应字节一致，不证明数据供应商是交易所授权来源或其市场微观结构完整性。最新 canonical 产品发布与 WPS 只读复核见 `docs/execution-status.md` 顶部回执；该发布不是新行情采集，也不是最终用户验收。
+
+前瞻 baseline 只允许 item-level fact admission：事实类型必须在显式白名单内，数值、单位、报告期间、合并范围、来源标签、物理/印刷页码必须与 Hash 固定的 PDF 对应页及邻接页文本一致。只有文件 Hash 或公告编号不再足以将 report-level placeholder 提升为财务事实。Registration receipt 每次 admission/observation 都必须复核 canonical registration fingerprint、确切计划字节、Git ancestry、receipt 时间及计划语义；重复 baseline case ID、observation supersession 分叉均 fail-closed。无法验证的报告级条目进入 `unadmitted_fact_ids`，不进入 known facts、observation ledger 或研究结论。
+
+当前前瞻 baseline successor 为 `runtime/prospective-baseline-20260927/snapshot-v13-midea-h1-verified.json`（SHA-256 `ded9fb9176d8d302a97aa527a302744083bf5a37448f28efbf50441fb56269e5`）：美的 2025FY 三项摘要事实及 2026H1 三项摘要事实；伊利 2026H1 六项逐行核验事实；神华 2025FY 三项摘要事实及 2026H1 三项摘要事实。美的三项 H1 指标来自 CNINFO `1225531404` 原件物理第 7 页，PDF SHA-256 `576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8`，单位为人民币千元、报表未经审计，按日期级公告时间保守取 `2026-08-30` 可用。伊利和神华各有一项报告级条目未准入。神华 H1 数值绑定 CNINFO `1225531759` 原件及第 6 页；准入要求明确的“2026年上半年→2025年上半年”有序表头、行值、单位和范围匹配，比较列对应 2025H1 **重述后**口径。神华中期报表未经审计，附注册会计师有限审阅而非审计意见；伊利、神华 H1 可用时间为 `2026-08-28` 与 `2026-08-30`。Registration receipt 仍只有进程时钟证据、没有独立 TSA/签名，因此 snapshot 必须保持 `strict_pit_admissible=false`，不可计入 M3 strict contemporaneous PIT PASS。三家估值仍全部 `VALUATION_NOT_READY`，`action=no_order`。美的来源准入边界见 `docs/current/track-b-midea-2026h1-admission-20260927.md`。神华 2026-09-23..26 CNINFO gapfill 已补齐五份原件并完成局部审阅；随后 v4 通过留存查询窗口覆盖连续性校验，具体来源范围仍仅限 CNINFO 精确发行人及 2026-09-27 19:22:35 +08:00 之前的留存窗口。中期利润分配目前已知方案金额并已获股东会通过，但 A 股实施、登记和支付时间未见；限售股解禁是流通供给监测，不改变总股本。该历史公开材料不构成 strict PIT。校验收据与边界见 `docs/current/track-c-public-event-gapfill-20260927.md` 及 `docs/current/track-b-shenhua-2026h1-admission-20260927.md`。
+
+The Shenhua H1 source contract uses pypdfium2 character coordinates to bind the reported current-period value to the 2026H1 column group and the comparison values to the 2025H1 group. Missing or misaligned coordinates fail closed; this is a source-admission safeguard, not an audit or strict-PIT attestation.
+
+伊利 CNINFO 事件水位的 append-only successor 是 `config/prospective-public-event-watermarks-v3.json`：对齐此前 2026-09-22 水位后，使用精确发行人、未过滤、完整分页查询补扫 `2026-09-23..27`，原始响应、请求索引、分页状态和公告 PDF 均通过 Hash 绑定。连续 CNINFO 查询现覆盖至 `2026-09-27T10:00:05Z`；只确认既有公告 `1225578520`，它在预登记前已公开且材料性仍 `UNDETERMINED / INSUFFICIENT_EVIDENCE`，不算 post-registration event。该局部推进不改变伊利模型/估值状态，也不补齐 issuer-IR、交易所公告或更正覆盖。美的与神华仍为 `INCOMPLETE`，其局部窗口不能证明更早日期连续。
+
+已在有界 CNINFO 窗口补齐中国神华 2025FY A 股利润分配的股东会批准与实施公告证据链（每股含税 1.03 元，公告列示发放日 2026-07-13）；这属于历史资本配置/普通股息支持证据，不证明账户到账、未来可持续性或估值影响，也不推进 `601088` 的正式不完整事件水位。详情及原件 Hash 见 `docs/current/track-c-shenhua-dividend-followup-20260927.md`。
 
 `600519` 维持 `EVIDENCE_STOP`：除非出现新的重大外部证据，不重开同一研究循环。
 `M4_ENGINEERING=COMPLETE_FOR_CURRENT_SCOPE`、`M4_SYNTHETIC_REHEARSAL=COMPLETE`、
@@ -153,6 +366,9 @@ M5 ACTUAL 离线专项已 fast-forward 整合至 `main` 的 `8db5994`；该 SHA 
 `EVENT_BOUND_REVIEWED_SCENARIO_INPUTS_REQUIRED`。M7 v7 仅为只读候选，正式 WPS
 表格未发布或替换。详见 [专项交接](handoff-m5-actual-event-closure-20260925.md)
 与 [事件绑定研究复核包](600519-event-bound-scenario-review-20260925.md)。
+
+以下为 2026-09-25 专项收口时的历史快照，仅供审计；其中 M4 旧状态不再是当前授权，
+必须以本文顶部 `CURRENT AUTHORIZATION` 为准。
 
 ```text
 M5_ENGINEERING = ACTUAL_EVENT_OFFLINE_CHAIN_VALIDATED

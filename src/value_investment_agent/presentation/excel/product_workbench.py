@@ -46,8 +46,6 @@ USER_SHEETS = (
 SECONDARY_SHEETS = (SHEET_SYSTEM_AUDIT,)
 WORKBOOK_SHEETS = (*USER_SHEETS, *SECONDARY_SHEETS)
 
-AUDIT_EVIDENCE_START_ROW = 19
-
 INK = "20312B"
 WHITE = "FFFFFF"
 GREEN = "176B55"
@@ -186,6 +184,17 @@ def _hyperlink(cell: Cell, sheet: str, coordinate: str = "A1") -> None:
     )
 
 
+def _external_hyperlink(cell: Cell, url: str) -> None:
+    cell.hyperlink = url
+    cell.font = Font(
+        name="Microsoft YaHei",
+        size=10,
+        bold=True,
+        color=BLUE,
+        underline="single",
+    )
+
+
 def _status_text(status: StatusView) -> str:
     return status.user_label
 
@@ -206,16 +215,22 @@ def _evidence_cell(
     column: int,
     refs: tuple[str, ...],
     audit_rows: dict[str, int],
+    evidence_group_rows: dict[tuple[str, ...], int],
 ) -> str:
     cell = ws.cell(row, column)
     if not refs:
         cell.value = "-"
         _style(cell, color=MUTED, border=True)
         return "-"
-    text = f"查看证据 ({len(refs)})"
+    if len(refs) == 1:
+        text = "查看证据 (1)"
+        target_row = audit_rows[refs[0]]
+    else:
+        text = f"打开证据组 ({len(refs)})"
+        target_row = evidence_group_rows[refs]
     cell.value = text
     _style(cell, border=True)
-    _hyperlink(cell, SHEET_SYSTEM_AUDIT, f"A{audit_rows[refs[0]]}")
+    _hyperlink(cell, SHEET_SYSTEM_AUDIT, f"A{target_row}")
     return text
 
 
@@ -235,6 +250,7 @@ def _render_today(
     model: ProductWorkbenchReadModel,
     company_rows: dict[str, int],
     audit_rows: dict[str, int],
+    evidence_group_rows: dict[tuple[str, ...], int],
 ) -> None:
     _widths(ws, [18, 28, 34, 34, 28, 16])
     _title(
@@ -266,11 +282,14 @@ def _render_today(
 
     row = _section_title(ws, row, "我的组合", 6)
     if not model.portfolio.real_data_available:
-        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
-        _style(ws.cell(row, 1, "尚未接入个人组合"), fill=AMBER, bold=True, size=12, border=True)
-        link = ws.cell(row, 5, "查看接入说明")
-        _style(link, fill=AMBER, border=True)
-        _hyperlink(link, SHEET_SYSTEM_AUDIT, "A1")
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=5)
+        _style(
+            ws.cell(row, 1, "尚未接入真实组合；个性化分析已暂停"),
+            fill=AMBER,
+            bold=True,
+            size=12,
+            border=True,
+        )
         _style(ws.cell(row, 6, "-"), fill=AMBER, border=True, color=MUTED)
         row += 2
     else:
@@ -307,7 +326,9 @@ def _render_today(
         )
         for column, value in enumerate(values, 2):
             _style(ws.cell(row, column, value), border=True)
-        evidence_text = _evidence_cell(ws, row, 6, item.evidence_refs, audit_rows)
+        evidence_text = _evidence_cell(
+            ws, row, 6, item.evidence_refs, audit_rows, evidence_group_rows
+        )
         _fit_rows(
             ws,
             row,
@@ -328,6 +349,7 @@ def _render_opportunities(
     model: ProductWorkbenchReadModel,
     company_rows: dict[str, int],
     audit_rows: dict[str, int],
+    evidence_group_rows: dict[tuple[str, ...], int],
 ) -> None:
     _widths(ws, [24, 34, 20, 20, 20, 20, 30, 28, 16])
     _title(ws, "只显示已经进入关注范围或研究队列的公司，不展示内部阶段码。", 9)
@@ -369,7 +391,9 @@ def _render_opportunities(
         )
         for column, value in enumerate(values, 2):
             _style(ws.cell(row, column, value), border=True)
-        evidence_text = _evidence_cell(ws, row, 9, card.evidence_refs, audit_rows)
+        evidence_text = _evidence_cell(
+            ws, row, 9, card.evidence_refs, audit_rows, evidence_group_rows
+        )
         _fit_rows(
             ws,
             row,
@@ -392,9 +416,10 @@ def _render_portfolio(
     ws: Worksheet,
     model: ProductWorkbenchReadModel,
     audit_rows: dict[str, int],
+    evidence_group_rows: dict[tuple[str, ...], int],
 ) -> None:
     _widths(ws, [24, 34, 24, 42, 24, 16])
-    _title(ws, "没有真实组合输入时只显示接入状态，不生成模拟资产数字。", 6)
+    _title(ws, "个人组合状态", 6)
     row = 4
     if not model.portfolio.real_data_available:
         ws.merge_cells(start_row=row, start_column=1, end_row=row + 2, end_column=6)
@@ -403,10 +428,6 @@ def _render_portfolio(
         row += 4
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
         _style(ws.cell(row, 1, model.portfolio.connection_hint), fill=GREY, border=True)
-        row += 2
-        link = ws.cell(row, 1, "查看接入说明")
-        _style(link, border=True)
-        _hyperlink(link, SHEET_SYSTEM_AUDIT, "A1")
         return
 
     row = _section_title(ws, row, "组合摘要", 6)
@@ -443,7 +464,9 @@ def _render_portfolio(
             _status_text(position.continuation_review) + "\n" + position.reason
         )
         _style(ws.cell(row, 5, review_text), border=True)
-        evidence_text = _evidence_cell(ws, row, 6, position.evidence_refs, audit_rows)
+        evidence_text = _evidence_cell(
+            ws, row, 6, position.evidence_refs, audit_rows, evidence_group_rows
+        )
         _fit_rows(
             ws,
             row,
@@ -463,6 +486,7 @@ def _render_events(
     ws: Worksheet,
     model: ProductWorkbenchReadModel,
     audit_rows: dict[str, int],
+    evidence_group_rows: dict[tuple[str, ...], int],
 ) -> None:
     _widths(ws, [24, 54, 38, 28, 40, 16])
     _title(ws, "只显示已分类的重大、逻辑风险、股息、组合风险和系统数据风险。", 6)
@@ -506,7 +530,9 @@ def _render_events(
             _style(ws.cell(row, index + 1, label), fill=GREY, bold=True, border=True)
             _style(ws.cell(row + 1, index + 1, value), border=True)
         _style(ws.cell(row, 6, labels[5]), fill=GREY, bold=True, border=True)
-        evidence_text = _evidence_cell(ws, row + 1, 6, event.evidence_refs, audit_rows)
+        evidence_text = _evidence_cell(
+            ws, row + 1, 6, event.evidence_refs, audit_rows, evidence_group_rows
+        )
         _fit_rows(
             ws,
             row + 1,
@@ -526,6 +552,7 @@ def _render_companies(
     ws: Worksheet,
     model: ProductWorkbenchReadModel,
     audit_rows: dict[str, int],
+    evidence_group_rows: dict[tuple[str, ...], int],
 ) -> dict[str, int]:
     _widths(ws, [24, 32, 32, 32, 32, 16])
     _title(ws, "公司卡片只展示已封存的研究、估值和股息状态。", 6)
@@ -566,7 +593,9 @@ def _render_companies(
         )
         for column, value in enumerate(assessment_values, 1):
             _style(ws.cell(row, column, value), border=True)
-        evidence_text = _evidence_cell(ws, row, 6, company.evidence_refs, audit_rows)
+        evidence_text = _evidence_cell(
+            ws, row, 6, company.evidence_refs, audit_rows, evidence_group_rows
+        )
         _fit_rows(
             ws,
             row,
@@ -589,7 +618,14 @@ def _render_companies(
             _style(ws.cell(row, 2, _status_text(section.status)), border=True)
             ws.merge_cells(start_row=row, start_column=3, end_row=row, end_column=5)
             _style(ws.cell(row, 3, section.summary), border=True)
-            evidence_text = _evidence_cell(ws, row, 6, section.evidence_refs, audit_rows)
+            evidence_text = _evidence_cell(
+                ws,
+                row,
+                6,
+                section.evidence_refs,
+                audit_rows,
+                evidence_group_rows,
+            )
             _fit_rows(
                 ws,
                 row,
@@ -672,14 +708,64 @@ def _render_companies(
     return company_rows
 
 
+def _audit_layout(model: ProductWorkbenchReadModel) -> tuple[tuple[int, ...], int]:
+    """Return the rendered rows for stage summaries and the evidence table."""
+
+    stage_header_row = 11
+    first_stage_row = stage_header_row + 1
+    stage_rows = tuple(
+        first_stage_row + index for index, _ in enumerate(model.stage_summaries)
+    )
+    first_evidence_row = first_stage_row + len(stage_rows) + 3
+    return stage_rows, first_evidence_row
+
+
 def _audit_rows(model: ProductWorkbenchReadModel) -> dict[str, int]:
+    _, first_evidence_row = _audit_layout(model)
     return {
-        record.evidence_id: AUDIT_EVIDENCE_START_ROW + index
+        record.evidence_id: first_evidence_row + index
         for index, record in enumerate(model.audit_evidence)
     }
 
 
+def _evidence_groups(model: ProductWorkbenchReadModel) -> tuple[tuple[str, ...], ...]:
+    groups: list[tuple[str, ...]] = []
+    seen: set[tuple[str, ...]] = set()
+
+    def add(refs: tuple[str, ...]) -> None:
+        if len(refs) > 1 and refs not in seen:
+            seen.add(refs)
+            groups.append(refs)
+
+    for item in model.today_items:
+        add(item.evidence_refs)
+    for card in model.opportunities:
+        add(card.evidence_refs)
+    for position in model.portfolio.positions:
+        add(position.evidence_refs)
+    for event in model.events:
+        add(event.evidence_refs)
+    for company in model.companies:
+        add(company.evidence_refs)
+        for section in company.sections:
+            add(section.evidence_refs)
+    return tuple(groups)
+
+
+def _audit_evidence_group_rows(
+    model: ProductWorkbenchReadModel,
+) -> dict[tuple[str, ...], int]:
+    _, first_evidence_row = _audit_layout(model)
+    row = first_evidence_row + len(model.audit_evidence) + 2
+    result: dict[tuple[str, ...], int] = {}
+    for refs in _evidence_groups(model):
+        result[refs] = row
+        row += len(refs) + 3
+    return result
+
+
 def _render_audit(ws: Worksheet, model: ProductWorkbenchReadModel) -> None:
+    stage_rows, first_evidence_row = _audit_layout(model)
     _widths(ws, [18, 30, 22, 54, 70, 16])
     _title(ws, "次级页面：保留阶段码、证据路径和 SHA-256，供审计追溯。", 6)
     metadata = (
@@ -700,7 +786,8 @@ def _render_audit(ws: Worksheet, model: ProductWorkbenchReadModel) -> None:
     row = _section_title(ws, row, "后台阶段状态", 6)
     row = _header(ws, row, ["模块", "用户说明", "技术状态", "说明", "", ""])
     ws.merge_cells(start_row=row - 1, start_column=4, end_row=row - 1, end_column=6)
-    for stage in model.stage_summaries:
+    for stage, stage_row in zip(model.stage_summaries, stage_rows):
+        row = stage_row
         _style(ws.cell(row, 1, stage.stage_label), fill=GREY, bold=True, border=True)
         _style(ws.cell(row, 2, _status_text(stage.status)), border=True)
         _style(ws.cell(row, 3, stage.status.code), border=True)
@@ -720,11 +807,26 @@ def _render_audit(ws: Worksheet, model: ProductWorkbenchReadModel) -> None:
 
     row += 1
     row = _section_title(ws, row, "证据与审计索引", 6)
+    evidence_header_row = row
     row = _header(
         ws,
         row,
-        ["证据ID", "名称", "类型", "路径", "SHA-256", "可用时间"],
+        ["证据ID", "名称", "类型", "路径", "SHA-256", "最早可用时间（PIT保守口径）"],
     )
+    _fit_rows(
+        ws,
+        evidence_header_row,
+        [
+            (1, "证据ID", 1),
+            (2, "名称", 1),
+            (3, "类型", 1),
+            (4, "路径", 1),
+            (5, "SHA-256", 1),
+            (6, "最早可用时间（PIT保守口径）", 1),
+        ],
+        minimum=24,
+    )
+    row = first_evidence_row
     if not model.audit_evidence:
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
         _style(ws.cell(row, 1, "当前候选没有证据记录。"), fill=GREY, border=True)
@@ -740,6 +842,8 @@ def _render_audit(ws: Worksheet, model: ProductWorkbenchReadModel) -> None:
         )
         for column, value in enumerate(values, 1):
             _style(ws.cell(row, column, value), border=True)
+        if record.source_url:
+            _external_hyperlink(ws.cell(row, 2), record.source_url)
         _fit_rows(
             ws,
             row,
@@ -754,6 +858,42 @@ def _render_audit(ws: Worksheet, model: ProductWorkbenchReadModel) -> None:
             minimum=24,
         )
         row += 1
+
+    groups = _evidence_groups(model)
+    if groups:
+        row += 1
+        row = _section_title(ws, row, "卡片多来源证据组", 6)
+        for index, refs in enumerate(groups, 1):
+            row = _section_title(ws, row, f"证据组 {index} ({len(refs)} 项)", 6)
+            row = _header(
+                ws,
+                row,
+                ["证据ID", "名称", "类型", "路径", "SHA-256", "来源链接"],
+            )
+            records = {record.evidence_id: record for record in model.audit_evidence}
+            for evidence_id in refs:
+                record = records[evidence_id]
+                values = (
+                    record.evidence_id,
+                    record.title,
+                    record.artifact_type,
+                    record.path,
+                    record.sha256,
+                    "打开来源" if record.source_url else "-",
+                )
+                for column, value in enumerate(values, 1):
+                    _style(ws.cell(row, column, value), border=True)
+                _hyperlink(ws.cell(row, 1), SHEET_SYSTEM_AUDIT, f"A{_audit_rows(model)[evidence_id]}")
+                if record.source_url:
+                    _external_hyperlink(ws.cell(row, 6), record.source_url)
+                _fit_rows(
+                    ws,
+                    row,
+                    [(column, value, 1) for column, value in enumerate(values, 1)],
+                    minimum=24,
+                )
+                row += 1
+            row += 1
 
     if model.event_audit_decisions:
         row += 1
@@ -775,7 +915,6 @@ def _render_audit(ws: Worksheet, model: ProductWorkbenchReadModel) -> None:
             _fit_rows(ws, row, [(column, value, 1) for column, value in enumerate(values, 1)])
             row += 1
 
-
 def build_product_workbench_workbook(
     model: ProductWorkbenchReadModel,
 ) -> Workbook:
@@ -794,32 +933,38 @@ def build_product_workbench_workbook(
     sheets[SHEET_SYSTEM_AUDIT].sheet_properties.tabColor = MUTED
 
     audit_rows = _audit_rows(model)
+    evidence_group_rows = _audit_evidence_group_rows(model)
     company_rows = _render_companies(
         sheets[SHEET_COMPANIES],
         model,
         audit_rows,
+        evidence_group_rows,
     )
     _render_today(
         sheets[SHEET_TODAY],
         model,
         company_rows,
         audit_rows,
+        evidence_group_rows,
     )
     _render_opportunities(
         sheets[SHEET_OPPORTUNITIES],
         model,
         company_rows,
         audit_rows,
+        evidence_group_rows,
     )
     _render_portfolio(
         sheets[SHEET_PORTFOLIO],
         model,
         audit_rows,
+        evidence_group_rows,
     )
     _render_events(
         sheets[SHEET_EVENTS],
         model,
         audit_rows,
+        evidence_group_rows,
     )
     _render_audit(sheets[SHEET_SYSTEM_AUDIT], model)
     workbook.active = 0
@@ -853,11 +998,20 @@ def apply_product_workbench_to_existing_workbook(
     sheets[SHEET_SYSTEM_AUDIT].sheet_properties.tabColor = MUTED
 
     audit_rows = _audit_rows(model)
-    company_rows = _render_companies(sheets[SHEET_COMPANIES], model, audit_rows)
-    _render_today(sheets[SHEET_TODAY], model, company_rows, audit_rows)
-    _render_opportunities(sheets[SHEET_OPPORTUNITIES], model, company_rows, audit_rows)
-    _render_portfolio(sheets[SHEET_PORTFOLIO], model, audit_rows)
-    _render_events(sheets[SHEET_EVENTS], model, audit_rows)
+    evidence_group_rows = _audit_evidence_group_rows(model)
+    company_rows = _render_companies(
+        sheets[SHEET_COMPANIES], model, audit_rows, evidence_group_rows
+    )
+    _render_today(
+        sheets[SHEET_TODAY], model, company_rows, audit_rows, evidence_group_rows
+    )
+    _render_opportunities(
+        sheets[SHEET_OPPORTUNITIES], model, company_rows, audit_rows, evidence_group_rows
+    )
+    _render_portfolio(
+        sheets[SHEET_PORTFOLIO], model, audit_rows, evidence_group_rows
+    )
+    _render_events(sheets[SHEET_EVENTS], model, audit_rows, evidence_group_rows)
     _render_audit(sheets[SHEET_SYSTEM_AUDIT], model)
     workbook.active = 0
     return tuple(workbook.sheetnames)

@@ -230,7 +230,7 @@ action = no_order
 
 Phase 2 的根 artifact 审计结论是：当前 58 个根 artifact 均被 canonical、pointer、
 manifest、receipt、静态消费者或未跟踪本地证据绑定，因此没有可证明安全的物理移动批次。
-当前通过 `artifacts/current/artifact-registry-v1.json` 提供逻辑导航，而不是为了降低目录数量
+当前通过 `artifacts/current/artifact-registry-v2.json` 提供逻辑导航，而不是为了降低目录数量
 破坏 Hash 证据。物理根工作簿仍为 29 个。
 
 当前脚本分类入口为 `config/current-cli-entrypoints-v2.json`（15 个产品入口、36 个工程入口，

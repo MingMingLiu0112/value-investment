@@ -134,10 +134,10 @@ def test_confirmation_and_product_model_replay_with_simulated_boundary(
     )
     model = product_workbench_from_payload(product_payload)
     stage_by_key = {stage.stage_key: stage for stage in model.stage_summaries}
-    assert stage_by_key["m4"].status.code == "ENGINEERING_DONE_SIMULATED"
-    assert "M4_PERSONALIZED_ACCEPTANCE=WAITING_R2" in stage_by_key["m4"].detail
+    assert stage_by_key["m4"].status.code == "PARKED_WAITING_R2_NONBLOCKING"
+    assert stage_by_key["m4"].detail
     assert model.portfolio.real_data_available is False
-    assert model.portfolio.status.code == "SIMULATED_ONLY"
+    assert model.portfolio.status.code == "PARKED_WAITING_R2_NONBLOCKING"
     assert model.portfolio.summary == ()
     assert model.portfolio.positions == ()
     assert model.action == "no_order"

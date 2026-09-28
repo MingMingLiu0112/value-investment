@@ -15,8 +15,9 @@ import shutil
 import sys
 import zipfile
 from posixpath import dirname, join, normpath
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
+import re
 from typing import Any
 from uuid import uuid4
 from xml.etree import ElementTree
@@ -32,9 +33,16 @@ from scripts.current.daily_product_packet import build_daily_product_packet  # n
 from value_investment_agent.application.product.product_workbench_candidate import (  # noqa: E402
     build_product_workbench_candidate_payload,
 )
+from value_investment_agent.application.product.prospective_observation import (  # noqa: E402
+    load_verified_observation_ledger,
+)
+from value_investment_agent.application.product.prospective_registration import (  # noqa: E402
+    verify_prospective_registration_receipt,
+)
 from value_investment_agent.presentation.excel.product_workbench import (  # noqa: E402
     WORKBOOK_SHEETS,
     apply_product_workbench_to_existing_workbook,
+    build_product_workbench_workbook,
 )
 from value_investment_agent.presentation.read_models.product_workbench import (  # noqa: E402
     product_workbench_from_payload,
@@ -42,6 +50,9 @@ from value_investment_agent.presentation.read_models.product_workbench import ( 
 
 
 CANONICAL_NAME = "A股价值投资_Agent前端智能跟踪模板.xlsx"
+PROSPECTIVE_RECEIPT_PATH = "runtime/prospective-v2-fc1e811/receipt.json"
+PROSPECTIVE_RECEIPT_SHA256 = "8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5"
+PROSPECTIVE_PLAN_PATH = "config/prospective-research-observation-plan-v2.json"
 
 
 def _sha256(path: Path) -> str:
@@ -70,6 +81,26 @@ def _workbook_path() -> Path:
     return path
 
 
+def _registered_quote_context() -> dict[str, Any]:
+    try:
+        receipt, registration = verify_prospective_registration_receipt(
+            root=ROOT, receipt_path=PROSPECTIVE_RECEIPT_PATH,
+            receipt_sha256=PROSPECTIVE_RECEIPT_SHA256,
+            plan_path=PROSPECTIVE_PLAN_PATH,
+        )
+    except (OSError, ValueError) as error:
+        raise ValueError("CURRENT_QUOTE_REGISTRATION_NOT_BOUND") from error
+    symbols = tuple(sorted(case.symbol for case in registration.cases))
+    if not symbols or len(symbols) != len(set(symbols)):
+        raise ValueError("CURRENT_QUOTE_REGISTRATION_NOT_BOUND")
+    return {
+        "symbols": symbols,
+        "registration_receipt_sha256": PROSPECTIVE_RECEIPT_SHA256,
+        "registration_sha256": receipt["registration_sha256"],
+        "plan_sha256": receipt["plan_sha256"],
+    }
+
+
 def _cell_fingerprint(sheet: Any) -> dict[str, Any]:
     cells = []
     formulas = hyperlinks = 0
@@ -95,6 +126,176 @@ def _cell_fingerprint(sheet: Any) -> dict[str, Any]:
 def _stable_hash(value: Any) -> str:
     encoded = json.dumps(value, ensure_ascii=False, default=str, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _load_m5_event_projection(
+    root: Path, path: Path | None, expected_sha256: str | None,
+) -> tuple[dict[str, Any] | None, str | None]:
+    if (path is None) != (expected_sha256 is None):
+        raise ValueError("M5 projection path and SHA-256 must be supplied together")
+    if path is None:
+        return None, None
+    resolved = (path if path.is_absolute() else root / path).resolve()
+    runtime_root = (root / "runtime").resolve()
+    if not resolved.is_relative_to(runtime_root) or not resolved.is_file():
+        raise ValueError("M5 projection must be an existing file under runtime/")
+    actual_sha256 = _sha256(resolved)
+    if actual_sha256 != expected_sha256.lower():
+        raise ValueError("M5 projection SHA-256 mismatch")
+    document = json.loads(resolved.read_text(encoding="utf-8"))
+    if not isinstance(document, dict) or document.get("action") != "no_order":
+        raise ValueError("M5 projection must be a no_order object")
+    projection = document.get("projection", document)
+    if not isinstance(projection, dict) or projection.get("action") != "no_order":
+        raise ValueError("M5 projection payload must be a no_order object")
+    report = document.get("report")
+    if isinstance(report, dict):
+        cutoff = report.get("public_event_observation_as_of")
+        if cutoff is None:
+            appended = report.get("appended_observation")
+            if isinstance(appended, dict):
+                cutoff = appended.get("announcement_date")
+        if str(report.get("schema_version", "")).startswith("registered-public-event-projection-"):
+            if not isinstance(cutoff, str):
+                raise ValueError("M5 registered public-event projection requires an explicit as-of date")
+            projection = dict(projection)
+            projection["evaluation_cutoff_date"] = cutoff
+        elif cutoff is not None:
+            projection = dict(projection)
+            projection["evaluation_cutoff_date"] = cutoff
+    return projection, actual_sha256
+
+
+def _load_prospective_observation_ledger(
+    root: Path,
+    path: Path | None,
+    expected_sha256: str | None,
+    evaluation_cutoff: str | None,
+) -> tuple[tuple[dict[str, Any], ...] | None, str | None, str | None]:
+    """Validate the explicit observation input used by both publisher paths."""
+    if path is None and expected_sha256 is None and evaluation_cutoff is None:
+        return None, None, None
+    if path is None or expected_sha256 is None or evaluation_cutoff is None:
+        raise ValueError(
+            "observation ledger path, SHA-256 and evaluation cutoff must be supplied together"
+        )
+    try:
+        cutoff = datetime.fromisoformat(evaluation_cutoff)
+    except ValueError as error:
+        raise ValueError("observation evaluation cutoff must be ISO-8601") from error
+    rows = load_verified_observation_ledger(
+        root=root,
+        manifest_path=path,
+        manifest_sha256=expected_sha256,
+        evaluation_cutoff=cutoff,
+    )
+    return rows, expected_sha256.lower(), cutoff.isoformat()
+
+
+def _observation_ledger_binding_status(manifest_sha256: str | None) -> str:
+    return "BOUND" if manifest_sha256 else "NOT_BOUND"
+
+
+def _require_monotonic_quote_session(
+    root: Path, quote_as_of: str, canonical_sha256: str,
+) -> None:
+    root = root.resolve()
+    pointer_path = root / "config" / "current-trial-workbook.json"
+    try:
+        current = json.loads(pointer_path.read_text(encoding="utf-8"))
+        current_as_of = date.fromisoformat(current["quote_as_of"])
+        candidate_as_of = date.fromisoformat(quote_as_of)
+        pointer_sha256 = current["canonical_workbook_sha256"]
+        receipt_reference = Path(current["publication_receipt"])
+    except (OSError, KeyError, TypeError, ValueError) as error:
+        raise ValueError("CURRENT_QUOTE_SESSION_POINTER_INVALID") from error
+
+    receipt_dir = root / "runtime" / "publication-receipts"
+    receipt_dir_resolved = receipt_dir.resolve()
+    pointer_receipt_path = (root / receipt_reference).resolve()
+    if (
+        not re.fullmatch(r"[0-9a-f]{64}", str(pointer_sha256))
+        or not re.fullmatch(r"[0-9a-f]{64}", canonical_sha256)
+        or not pointer_receipt_path.is_relative_to(receipt_dir_resolved)
+    ):
+        raise ValueError("CURRENT_QUOTE_SESSION_POINTER_INVALID")
+
+    publication_statuses = {
+        "PUBLISHED_PENDING_WPS_VISUAL_REVIEW",
+        "PUBLISHED_WPS_READONLY_AND_READABILITY_VERIFIED",
+    }
+    recovery_status = "PUBLISHED_RESULT_RECOVERED_FROM_CAPTURED_OUTPUT"
+
+    def read_receipt(path: Path) -> dict[str, Any]:
+        try:
+            receipt = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID") from error
+        if not isinstance(receipt, dict):
+            raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID")
+        return receipt
+
+    def receipt_fields(receipt: dict[str, Any]) -> tuple[str, date | None] | None:
+        schema = receipt.get("schema_version")
+        if schema == "canonical-product-publication-v1":
+            if receipt.get("status") not in publication_statuses:
+                raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID")
+            after_sha256 = receipt.get("canonical_file_after_sha256")
+            quote_binding = receipt.get("daily_quote_binding")
+            if quote_binding is None:
+                published_as_of = None
+            else:
+                if not isinstance(quote_binding, dict):
+                    raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID")
+                try:
+                    published_as_of = date.fromisoformat(quote_binding["as_of"])
+                except (KeyError, TypeError, ValueError) as error:
+                    raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID") from error
+        elif schema == "canonical-product-publication-recovery-v1":
+            if receipt.get("status") != recovery_status:
+                raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID")
+            after_sha256 = receipt.get("canonical_file_after_sha256")
+            try:
+                published_as_of = date.fromisoformat(receipt["quote_as_of"])
+            except (KeyError, TypeError, ValueError) as error:
+                raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID") from error
+        else:
+            return None
+        if not isinstance(after_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", after_sha256):
+            raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID")
+        return after_sha256, published_as_of
+
+    if not pointer_receipt_path.is_file():
+        raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID")
+    pointer_receipt_fields = receipt_fields(read_receipt(pointer_receipt_path))
+    if pointer_receipt_fields is None or pointer_receipt_fields[0] != pointer_sha256:
+        raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID")
+    pointer_receipt_as_of = pointer_receipt_fields[1]
+
+    matching_receipt_dates: list[date] = []
+    if receipt_dir.exists():
+        for receipt_path in receipt_dir.glob("canonical-m7-product-publication-*.json"):
+            receipt = read_receipt(receipt_path)
+            fields = receipt_fields(receipt)
+            if fields is None or fields[0] != canonical_sha256:
+                continue
+            if fields[1] is None:
+                if pointer_sha256 == canonical_sha256:
+                    continue
+                raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID")
+            matching_receipt_dates.append(fields[1])
+
+    if not matching_receipt_dates and pointer_sha256 != canonical_sha256:
+        raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID")
+
+    latest_published_as_of = max([
+        current_as_of,
+        *matching_receipt_dates,
+        *([pointer_receipt_as_of] if pointer_receipt_as_of is not None else []),
+    ])
+
+    if candidate_as_of < latest_published_as_of:
+        raise ValueError("DAILY_QUOTE_SESSION_REGRESSION")
 
 
 def _advanced_sheet_fingerprint(sheet: Any) -> dict[str, Any]:
@@ -179,6 +380,7 @@ def _snapshot(path: Path) -> dict[str, Any]:
     try:
         return {
             "sheet_order": workbook.sheetnames,
+            "active_sheet": workbook.active.title if workbook.active else None,
             "defined_names": sorted((name.name, name.attr_text, name.localSheetId, name.hidden) for name in workbook.defined_names.values()),
             "sheets": {sheet.title: {**_cell_fingerprint(sheet), **_advanced_sheet_fingerprint(sheet)} for sheet in workbook.worksheets},
             "protected_ooxml_parts": _protected_ooxml_parts(path),
@@ -196,25 +398,115 @@ def _assert_retained(before: dict[str, Any], after: dict[str, Any]) -> None:
         raise ValueError("defined names changed")
     if before["protected_ooxml_parts"] != after["protected_ooxml_parts"]:
         raise ValueError("protected drawing, media, chart, or worksheet relationship parts changed")
-    changed = [name for name in retained if before["sheets"][name] != after["sheets"].get(name)]
+    changed = []
+    for name in retained:
+        previous = dict(before["sheets"][name])
+        current = dict(after["sheets"].get(name, {}))
+        previous_state = previous.pop("state")
+        current_state = current.pop("state")
+        state_ok = (
+            current_state == previous_state
+            if previous_state != "visible"
+            else current_state == "hidden"
+        )
+        if not state_ok or previous != current:
+            changed.append(name)
     if changed:
-        raise ValueError("protected sheets changed: " + ", ".join(changed))
+        raise ValueError("protected sheet content or non-navigation properties changed: " + ", ".join(changed))
     if tuple(after["sheet_order"][: len(WORKBOOK_SHEETS)]) != WORKBOOK_SHEETS:
         raise ValueError("product navigation is not the first six sheets")
+    if any(after["sheets"][name]["state"] == "visible" for name in retained):
+        raise ValueError("non-product worksheet remains visible in default navigation")
+    if after["active_sheet"] != WORKBOOK_SHEETS[0]:
+        raise ValueError("default active worksheet is not the product home page")
+
+
+def _hide_legacy_sheets(workbook: Any) -> list[str]:
+    if tuple(workbook.sheetnames[: len(WORKBOOK_SHEETS)]) != WORKBOOK_SHEETS:
+        raise ValueError("product pages must be first and in canonical order before navigation update")
+    hidden = []
+    for sheet in workbook.worksheets:
+        if sheet.title not in WORKBOOK_SHEETS and sheet.sheet_state == "visible":
+            sheet.sheet_state = "hidden"
+            hidden.append(sheet.title)
+    workbook.active = 0
+    return hidden
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--publish", action="store_true", help="Required explicit confirmation to replace the canonical workbook.")
+    parser.add_argument("--verify-only", action="store_true", help="Validate the same product model without writing the workbook.")
     parser.add_argument("--quote-bundle", type=Path, help="Required current, retained dual-source quote bundle.")
+    parser.add_argument("--prospective-snapshot", type=Path, help="Verified public research snapshot under runtime.")
+    parser.add_argument("--prospective-sha256", help="Pinned SHA-256 of the prospective snapshot.")
+    parser.add_argument("--m5-event-projection", type=Path, help="Hash-pinned M5 projection JSON under runtime.")
+    parser.add_argument("--m5-event-projection-sha256", help="Pinned SHA-256 of the M5 projection JSON.")
+    parser.add_argument("--prospective-observation-ledger", type=Path, help="Hash-pinned prospective observation manifest under config.")
+    parser.add_argument("--prospective-observation-ledger-sha256", help="Pinned SHA-256 of the prospective observation manifest.")
+    parser.add_argument("--prospective-observation-evaluation-cutoff", help="Timezone-aware ISO-8601 evaluation cutoff for the observation manifest.")
     args = parser.parse_args()
-    if not args.publish:
-        raise ValueError("refusing publish without --publish")
+    if args.publish == args.verify_only:
+        raise ValueError("choose exactly one of --publish or --verify-only")
     if args.quote_bundle is None:
         raise ValueError("refusing publish without --quote-bundle")
+    if (args.prospective_snapshot is None) != (args.prospective_sha256 is None):
+        raise ValueError("prospective snapshot path and SHA-256 must be supplied together")
+    m5_event_projection, m5_projection_sha256 = _load_m5_event_projection(
+        ROOT, args.m5_event_projection, args.m5_event_projection_sha256,
+    )
+    observation_rows, observation_manifest_sha256, observation_cutoff = _load_prospective_observation_ledger(
+        ROOT,
+        args.prospective_observation_ledger,
+        args.prospective_observation_ledger_sha256,
+        args.prospective_observation_evaluation_cutoff,
+    )
 
     canonical = _workbook_path()
-    daily_quote = load_daily_quote_binding(root=ROOT, bundle_path=args.quote_bundle)
+    registration = _registered_quote_context()
+    daily_quote = load_daily_quote_binding(
+        root=ROOT, bundle_path=args.quote_bundle,
+        registered_symbols=registration["symbols"],
+        registration_receipt_sha256=registration["registration_receipt_sha256"],
+        registration_sha256=registration["registration_sha256"],
+        plan_sha256=registration["plan_sha256"], excluded_symbols=("600519",),
+    )
+    _require_monotonic_quote_session(ROOT, daily_quote["as_of"], _sha256(canonical))
+    if args.verify_only:
+        packet = build_daily_product_packet(root=ROOT, generated_at=datetime.now(timezone.utc), daily_quote=daily_quote)
+        model = product_workbench_from_payload(build_product_workbench_candidate_payload(
+            packet, root=ROOT, prospective_snapshot_path=args.prospective_snapshot,
+            prospective_snapshot_sha256=args.prospective_sha256,
+            m5_event_projection=m5_event_projection,
+            prospective_observation_ledger_path=args.prospective_observation_ledger,
+            prospective_observation_ledger_sha256=observation_manifest_sha256,
+            prospective_observation_evaluation_cutoff=(
+                datetime.fromisoformat(observation_cutoff) if observation_cutoff else None
+            ),
+        ))
+        preview = build_product_workbench_workbook(model)
+        try:
+            if tuple(preview.sheetnames) != tuple(WORKBOOK_SHEETS):
+                raise ValueError("product sheet contract differs from canonical navigation")
+            print(json.dumps({
+                "status": "VERIFIED_IN_MEMORY_ONLY", "action": "no_order",
+                "canonical_before_sha256": _sha256(canonical),
+                "prospective_snapshot_sha256": args.prospective_sha256,
+                "m5_event_projection_sha256": m5_projection_sha256,
+                "prospective_observation_ledger_binding_status": _observation_ledger_binding_status(
+                    observation_manifest_sha256
+                ),
+                "prospective_observation_ledger_sha256": observation_manifest_sha256,
+                "prospective_observation_evaluation_cutoff": observation_cutoff,
+                "prospective_observation_ids": [row["observation_id"] for row in observation_rows or ()],
+                "prospective_observation_count": len(observation_rows or ()),
+                "company_symbols": [company.symbol for company in model.companies],
+                "quote_as_of": daily_quote.get("as_of"),
+                "workbook_modified": False,
+            }, ensure_ascii=False, indent=2))
+        finally:
+            preview.close()
+        return 0
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     backup_dir = ROOT / "runtime" / "workbook-backups"
     receipt_dir = ROOT / "runtime" / "publication-receipts"
@@ -233,10 +525,20 @@ def main() -> int:
         packet = build_daily_product_packet(
             root=ROOT, generated_at=datetime.now(timezone.utc), daily_quote=daily_quote
         )
-        model = product_workbench_from_payload(build_product_workbench_candidate_payload(packet, root=ROOT))
+        model = product_workbench_from_payload(build_product_workbench_candidate_payload(
+            packet, root=ROOT, prospective_snapshot_path=args.prospective_snapshot,
+            prospective_snapshot_sha256=args.prospective_sha256,
+            m5_event_projection=m5_event_projection,
+            prospective_observation_ledger_path=args.prospective_observation_ledger,
+            prospective_observation_ledger_sha256=observation_manifest_sha256,
+            prospective_observation_evaluation_cutoff=(
+                datetime.fromisoformat(observation_cutoff) if observation_cutoff else None
+            ),
+        ))
         workbook = load_workbook(staging, data_only=False, keep_links=True)
         try:
             apply_product_workbench_to_existing_workbook(workbook, model)
+            hidden_legacy_sheets = _hide_legacy_sheets(workbook)
             workbook.save(staging)
         finally:
             workbook.close()
@@ -265,10 +567,24 @@ def main() -> int:
         "workbook_path_unchanged": True,
         "product_sheets_present": True,
         "user_managed_sheets_preserved": True,
-        "frozen_sheets_unchanged": True,
+        "preserved_sheet_content_unchanged": True,
+        "default_navigation_limited_to_product_pages": True,
+        "legacy_sheets_hidden": hidden_legacy_sheets,
         "sheet_contract": {name: ("PRODUCT_MANAGED" if name in WORKBOOK_SHEETS else "PRESERVED") for name in after["sheet_order"]},
         "action": "no_order",
         "daily_quote_binding": daily_quote,
+        "prospective_snapshot_sha256": args.prospective_sha256,
+        "m5_event_projection_sha256": m5_projection_sha256,
+        "prospective_observation_ledger_path": (
+            str(args.prospective_observation_ledger) if args.prospective_observation_ledger else None
+        ),
+        "prospective_observation_ledger_binding_status": _observation_ledger_binding_status(
+            observation_manifest_sha256
+        ),
+        "prospective_observation_ledger_sha256": observation_manifest_sha256,
+        "prospective_observation_evaluation_cutoff": observation_cutoff,
+        "prospective_observation_ids": [row["observation_id"] for row in observation_rows or ()],
+        "prospective_observation_count": len(observation_rows or ()),
     }
     receipt_path = receipt_dir / f"canonical-m7-product-publication-{stamp}.json"
     receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

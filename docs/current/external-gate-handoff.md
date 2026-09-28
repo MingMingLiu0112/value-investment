@@ -1,5 +1,10 @@
 # External Gate Handoff
 
+> **Superseded snapshot:** this 2026-09-26 handoff is not currently ready or
+> actionable. The 2026-09-27 R0 re-audit keeps R0-A `NOT_PROVEN` and R0-B
+> `PARTIAL`; see the top of `docs/current-stage-goal.md` and `docs/execution-status.md`.
+> Do not treat the parked-node list below as a production authorization.
+
 Current handoff date: 2026-09-26. This document records only the corresponding
 parked DAG nodes; it is not a total-goal stop or an authorization request.
 Every path remains `action=no_order`. R2 parks only M4, R3 parks only

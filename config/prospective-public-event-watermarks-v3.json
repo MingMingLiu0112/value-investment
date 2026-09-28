@@ -1,0 +1,72 @@
+{
+  "schema_version": "m5-event-infrastructure-v3",
+  "action": "no_order",
+  "supersedes": "config/prospective-public-event-watermarks-v2.json",
+  "coverage_limit": "CNINFO exact-issuer queries only; no issuer-IR, exchange-site, later correction, or post-retrieval coverage. The 600887 interval 2026-09-23..27 is complete and contiguous after its prior 2026-09-22 watermark. 000333 and 601088 retain INCOMPLETE status because local later windows do not prove earlier continuity.",
+  "watermarks": [
+    {
+      "watermark_id": "prospective-000333-initial-20260927",
+      "scope": "prospective:000333",
+      "source": "cninfo",
+      "coverage_through": "2026-09-27T00:24:16+00:00",
+      "retrieved_at": "2026-09-27T00:24:16+00:00",
+      "parser_version": "prospective-initial-watermark-v1",
+      "coverage_status": "INCOMPLETE",
+      "source_health": "HEALTHY",
+      "evidence_refs": [{"id": "prospective-receipt-fc1e811"}],
+      "local_later_window_evidence": [
+        {"path": "runtime/prospective-public-event-20260927/gapfill-000333-20260927T045324325295Z/index.json", "sha256": "3cdaa42730c98f65d45c5bcdee65aaacb3c6a9d1faf22a7f1b7a488dd5e63601", "window": "2026-09-23..2026-09-26", "status": "COMPLETE_WINDOW_ONLY_NOT_CONTINUOUS_WATERMARK"},
+        {"path": "runtime/prospective-public-event-20260927/20260927T004835372Z/000333-page1.raw.json", "sha256": "c2a890bbf3a6a53ab02ddc6c1794bf1c72ba45799fe9f59dcc5ba2cc18467114", "window": "2026-09-27 as of 08:48:35 +08:00", "status": "COMPLETE_WINDOW_ONLY_NOT_CONTINUOUS_WATERMARK"}
+      ],
+      "action": "no_order"
+    },
+    {
+      "watermark_id": "prospective-600887-cninfo-20260927-rerun",
+      "supersedes_watermark_id": "prospective-600887-cninfo-20260923",
+      "scope": "prospective:600887",
+      "source": "cninfo",
+      "coverage_window": {
+        "start": "2026-09-23",
+        "end": "2026-09-27",
+        "coverage_scope": "CNINFO exact issuer and bounded date window only",
+        "status": "COMPLETE"
+      },
+      "coverage_through": "2026-09-27T10:00:05.035069+00:00",
+      "retrieved_at": "2026-09-27T10:00:05.035069+00:00",
+      "parser_version": "prospective-cninfo-window-index-v1",
+      "coverage_status": "COMPLETE",
+      "source_health": "HEALTHY",
+      "evidence_refs": [
+        {"id": "cninfo-window-index-600887-20260927", "path": "runtime/prospective-public-event-20260927/gapfill-600887-20260927T100004825304Z/index.json", "sha256": "7231cfb60764ee91a3446a77a63569f31ece34d2b4264af47e398e781ac482cd"},
+        {"id": "cninfo-window-raw-page-600887-20260927", "path": "runtime/prospective-public-event-20260927/gapfill-600887-20260927T100004825304Z/600887-page-1.raw.json", "sha256": "deb64898cd1e39774942c22fd858aa8aabbca8f51a133a183d5b6837b9f6acee"},
+        {"id": "official-source-scan-1225578520", "path": "runtime/prospective-public-event-20260927/gapfill-600887-20260927T100004825304Z/scan-evidence-1225578520.json", "sha256": "a4e6857a2b3ec3b60cd7b98fca0ab9839c29040cee5ec55562f1068bbbcdd360"},
+        {"id": "official-pdf-1225578520", "path": "runtime/prospective-public-event-20260927/20260927T004835372Z/600887-1225578520.pdf", "sha256": "7c669db8bb3b5a362ecad92c6a96745a3b5039a3288f5e13b498e9e72971111c"}
+      ],
+      "prior_bounded_scan": {
+        "path": "runtime/prospective-public-event-20260927/20260927T004835372Z/receipt.json",
+        "sha256": "730ea9ced3609192b659539f32757cc5dd0b3eb72e71b985cbdfab593fbfd3cf",
+        "status": "SUMMARY_PARSE_FAILED_NOT_USED_FOR_ADVANCE"
+      },
+      "announcement_ids": ["1225578520"],
+      "watermark_advance": "APPLIED: complete exact-issuer interval begins the day after the prior 2026-09-22 boundary and ends 2026-09-27; raw page, query contract, pagination, index, and source PDF were independently revalidated.",
+      "event_materiality": "UNDETERMINED_INSUFFICIENT_EVIDENCE",
+      "action": "no_order"
+    },
+    {
+      "watermark_id": "prospective-601088-initial-20260927",
+      "scope": "prospective:601088",
+      "source": "cninfo",
+      "coverage_through": "2026-09-27T00:24:16+00:00",
+      "retrieved_at": "2026-09-27T00:24:16+00:00",
+      "parser_version": "prospective-initial-watermark-v1",
+      "coverage_status": "INCOMPLETE",
+      "source_health": "HEALTHY",
+      "evidence_refs": [{"id": "prospective-receipt-fc1e811"}],
+      "local_later_window_evidence": [
+        {"path": "runtime/prospective-public-event-20260927/gapfill-601088-20260927T045325203193Z/index.json", "sha256": "0717da2e13c2c17f95015a3c28795cd447cd0a3bf920cb917ca9b1f950175e2a", "window": "2026-09-23..2026-09-26", "status": "COMPLETE_WINDOW_ONLY_NOT_CONTINUOUS_WATERMARK"},
+        {"path": "runtime/prospective-public-event-20260927/20260927T004835372Z/601088-page1.raw.json", "sha256": "c2a890bbf3a6a53ab02ddc6c1794bf1c72ba45799fe9f59dcc5ba2cc18467114", "window": "2026-09-27 as of 08:48:35 +08:00", "status": "COMPLETE_WINDOW_ONLY_NOT_CONTINUOUS_WATERMARK"}
+      ],
+      "action": "no_order"
+    }
+  ]
+}

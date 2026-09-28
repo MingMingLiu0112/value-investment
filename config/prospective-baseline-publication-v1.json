@@ -1,0 +1,8 @@
+{
+  "schema_version": "prospective-baseline-publication-v1",
+  "action": "no_order",
+  "snapshot_path": "runtime/prospective-baseline-20260927/snapshot-v6-yili-item-facts.json",
+  "snapshot_sha256": "0d455623c71fd675666ef8aba21aa98d2bbf6de45480031775d707a092176d53",
+  "registration_receipt_sha256": "8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5",
+  "baseline_input_sha256": "e39386945fa67e653b2424f3c761c6c206f46a73cc522a0af35a8016b2453c6c"
+}

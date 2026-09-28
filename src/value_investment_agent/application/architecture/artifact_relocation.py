@@ -57,6 +57,8 @@ _TEXT_SUFFIXES = {
 }
 _REFERENCE_SKIP_NAMES = {
     "artifact-relocation-inventory-20260925.json",
+    "artifact-registry-v1.json",
+    "artifact-registry-v2.json",
 }
 _MAX_REFERENCE_FILE_BYTES = 4 * 1024 * 1024
 

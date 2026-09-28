@@ -225,3 +225,44 @@ def test_code_identity_does_not_accept_conflicting_org_ids(monkeypatch):
         {'secCode': '605098', 'orgId': 'a'}, {'secCode': '605098', 'orgId': 'b'}]
         if params['searchkey'] == '605098' else []})
     assert disclosures._discover_security_id('605098', 'sse', 'fallback', 'XD action') == 'fallback'
+
+
+def test_announcement_window_advances_when_cninfo_returns_fewer_than_requested(monkeypatch):
+    def row(announcement_id):
+        return {"announcementId": str(announcement_id), "secCode": "600887"}
+
+    pages = iter([
+        {"totalAnnouncement": 5, "announcements": [row(1), row(2)]},
+        {"totalAnnouncement": 5, "announcements": [row(3), row(4)]},
+        {"totalAnnouncement": 5, "announcements": [row(5)]},
+    ])
+    calls = []
+    monkeypatch.setattr(disclosures, "_discover_security_id", lambda *_: "issuer-id")
+
+    def request(params):
+        calls.append((params["pageNum"], params["pageSize"]))
+        return next(pages)
+
+    monkeypatch.setattr(disclosures, "_request_json", request)
+    result = disclosures.search_announcement_window("600887", "2022-01-01", "2022-12-31")
+
+    assert calls == [("1", "30"), ("2", "30"), ("3", "30")]
+    assert [item["announcementId"] for item in result["announcements"]] == ["1", "2", "3", "4", "5"]
+
+
+def test_announcement_window_rejects_repeated_page(monkeypatch):
+    rows = [
+        {"announcementId": "1", "secCode": "600887"},
+        {"announcementId": "2", "secCode": "600887"},
+    ]
+    calls = []
+    monkeypatch.setattr(disclosures, "_discover_security_id", lambda *_: "issuer-id")
+
+    def request(params):
+        calls.append(params["pageNum"])
+        return {"totalAnnouncement": 5, "announcements": rows}
+
+    monkeypatch.setattr(disclosures, "_request_json", request)
+    with pytest.raises(ValueError, match="repeated or omitted ids"):
+        disclosures.search_announcement_window("600887", "2022-01-01", "2022-12-31")
+    assert calls == ["1", "2"]

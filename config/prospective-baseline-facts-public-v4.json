@@ -1,0 +1,272 @@
+{
+  "schema_version": "prospective-baseline-facts-v2",
+  "action": "no_order",
+  "facts": [
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "fact": {
+        "fact_id": "yili-2026h1-revenue",
+        "fact_type": "revenue",
+        "value": "64330936547.38",
+        "unit": "CNY",
+        "scope": "consolidated",
+        "scope_label": "合并利润表",
+        "source_label": "营业收入",
+        "physical_page": 52,
+        "printed_page": 49,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+        "source_document_id": "cninfo:1225511409",
+        "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+        "available_at": "2026-08-28T00:00:00+08:00",
+        "dependency_nodes": [
+          "financial_quality"
+        ],
+        "published_at": "2026-08-27T00:00:00+08:00"
+      }
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "fact": {
+        "fact_id": "yili-2026h1-parent-attributable-profit",
+        "fact_type": "parent_attributable_profit",
+        "value": "5758628097.79",
+        "unit": "CNY",
+        "scope": "consolidated",
+        "scope_label": "合并利润表",
+        "source_label": "归属于母公司股东的净利润",
+        "physical_page": 53,
+        "printed_page": 50,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+        "source_document_id": "cninfo:1225511409",
+        "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+        "available_at": "2026-08-28T00:00:00+08:00",
+        "dependency_nodes": [
+          "financial_quality"
+        ],
+        "published_at": "2026-08-27T00:00:00+08:00"
+      }
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "fact": {
+        "fact_id": "yili-2026h1-operating-cash-flow",
+        "fact_type": "operating_cash_flow",
+        "value": "9759147483.18",
+        "unit": "CNY",
+        "scope": "consolidated",
+        "scope_label": "合并现金流量表",
+        "source_label": "经营活动产生的现金流量净额",
+        "physical_page": 55,
+        "printed_page": 52,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+        "source_document_id": "cninfo:1225511409",
+        "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+        "available_at": "2026-08-28T00:00:00+08:00",
+        "dependency_nodes": [
+          "financial_quality"
+        ],
+        "published_at": "2026-08-27T00:00:00+08:00"
+      }
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "fact": {
+        "fact_id": "yili-2026h1-asset-impairment-loss",
+        "fact_type": "asset_impairment_loss",
+        "value": "-2455875173.02",
+        "unit": "CNY",
+        "scope": "consolidated",
+        "scope_label": "合并利润表",
+        "source_label": "资产减值损失",
+        "physical_page": 52,
+        "printed_page": 49,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+        "source_document_id": "cninfo:1225511409",
+        "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+        "available_at": "2026-08-28T00:00:00+08:00",
+        "dependency_nodes": [
+          "financial_quality"
+        ],
+        "published_at": "2026-08-27T00:00:00+08:00"
+      }
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "fact": {
+        "fact_id": "yili-2026h1-short-term-borrowing",
+        "fact_type": "short_term_borrowing",
+        "value": "64677193034.15",
+        "unit": "CNY",
+        "scope": "consolidated",
+        "scope_label": "合并资产负债表",
+        "source_label": "短期借款",
+        "physical_page": 49,
+        "printed_page": 46,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+        "source_document_id": "cninfo:1225511409",
+        "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+        "available_at": "2026-08-28T00:00:00+08:00",
+        "dependency_nodes": [
+          "financial_quality",
+          "capital_allocation"
+        ],
+        "published_at": "2026-08-27T00:00:00+08:00"
+      }
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "fact": {
+        "fact_id": "yili-2026h1-contract-liabilities",
+        "fact_type": "contract_liabilities",
+        "value": "4948856599.18",
+        "unit": "CNY",
+        "scope": "consolidated",
+        "scope_label": "合并资产负债表",
+        "source_label": "合同负债",
+        "physical_page": 49,
+        "printed_page": 46,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+        "source_document_id": "cninfo:1225511409",
+        "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+        "available_at": "2026-08-28T00:00:00+08:00",
+        "dependency_nodes": [
+          "financial_quality"
+        ],
+        "published_at": "2026-08-27T00:00:00+08:00"
+      }
+    },
+    {
+      "case_id": "prospective-000333-20260927-v2",
+      "fact": {
+        "fact_id": "midea-2025fy-revenue-summary",
+        "fact_type": "revenue",
+        "value": "456451731",
+        "unit": "CNY_THOUSAND",
+        "scope": "report_summary",
+        "scope_label": "主要会计数据和财务指标",
+        "source_label": "营业收入（千元）",
+        "physical_page": 9,
+        "printed_page": 8,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225065145.PDF",
+        "source_document_id": "cninfo:1225065145",
+        "source_sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6",
+        "available_at": "2026-04-01T00:00:00+08:00",
+        "dependency_nodes": [
+          "financial_quality"
+        ],
+        "published_at": "2026-03-31T00:00:00+08:00"
+      }
+    },
+    {
+      "case_id": "prospective-000333-20260927-v2",
+      "fact": {
+        "fact_id": "midea-2025fy-parent-profit-summary",
+        "fact_type": "parent_attributable_profit",
+        "value": "43945411",
+        "unit": "CNY_THOUSAND",
+        "scope": "report_summary",
+        "scope_label": "主要会计数据和财务指标",
+        "source_label": "归属于上市公司股东的净利润（千元）",
+        "physical_page": 9,
+        "printed_page": 8,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225065145.PDF",
+        "source_document_id": "cninfo:1225065145",
+        "source_sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6",
+        "available_at": "2026-04-01T00:00:00+08:00",
+        "dependency_nodes": [
+          "financial_quality"
+        ],
+        "published_at": "2026-03-31T00:00:00+08:00"
+      }
+    },
+    {
+      "case_id": "prospective-000333-20260927-v2",
+      "fact": {
+        "fact_id": "midea-2025fy-operating-cash-flow-summary",
+        "fact_type": "operating_cash_flow",
+        "value": "53345930",
+        "unit": "CNY_THOUSAND",
+        "scope": "report_summary",
+        "scope_label": "主要会计数据和财务指标",
+        "source_label": "经营活动产生的现金流量净额（千元）",
+        "physical_page": 9,
+        "printed_page": 8,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225065145.PDF",
+        "source_document_id": "cninfo:1225065145",
+        "source_sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6",
+        "available_at": "2026-04-01T00:00:00+08:00",
+        "dependency_nodes": [
+          "financial_quality"
+        ],
+        "published_at": "2026-03-31T00:00:00+08:00"
+      }
+    },
+    {
+      "case_id": "prospective-601088-20260927-v2",
+      "fact": {
+        "unit": "CNY_MILLION",
+        "scope": "report_summary",
+        "scope_label": "近三年主要会计数据和财务指标",
+        "physical_page": 9,
+        "printed_page": 8,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225064293.PDF",
+        "source_document_id": "cninfo:1225064293",
+        "source_sha256": "7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2",
+        "published_at": "2026-03-31T00:00:00+08:00",
+        "available_at": "2026-04-01T00:00:00+08:00",
+        "dependency_nodes": [
+          "financial_quality"
+        ],
+        "fact_id": "shenhua-2025fy-revenue-summary",
+        "fact_type": "revenue",
+        "value": "294916",
+        "source_label": "营业收入"
+      }
+    },
+    {
+      "case_id": "prospective-601088-20260927-v2",
+      "fact": {
+        "unit": "CNY_MILLION",
+        "scope": "report_summary",
+        "scope_label": "近三年主要会计数据和财务指标",
+        "physical_page": 9,
+        "printed_page": 8,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225064293.PDF",
+        "source_document_id": "cninfo:1225064293",
+        "source_sha256": "7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2",
+        "published_at": "2026-03-31T00:00:00+08:00",
+        "available_at": "2026-04-01T00:00:00+08:00",
+        "dependency_nodes": [
+          "financial_quality"
+        ],
+        "fact_id": "shenhua-2025fy-parent-profit-summary",
+        "fact_type": "parent_attributable_profit",
+        "value": "52849",
+        "source_label": "归属于本公司股东的净利润"
+      }
+    },
+    {
+      "case_id": "prospective-601088-20260927-v2",
+      "fact": {
+        "unit": "CNY_MILLION",
+        "scope": "report_summary",
+        "scope_label": "近三年主要会计数据和财务指标",
+        "physical_page": 9,
+        "printed_page": 8,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225064293.PDF",
+        "source_document_id": "cninfo:1225064293",
+        "source_sha256": "7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2",
+        "published_at": "2026-03-31T00:00:00+08:00",
+        "available_at": "2026-04-01T00:00:00+08:00",
+        "dependency_nodes": [
+          "financial_quality"
+        ],
+        "fact_id": "shenhua-2025fy-operating-cash-flow-summary",
+        "fact_type": "operating_cash_flow",
+        "value": "75059",
+        "source_label": "经营活动产生的现金流量净额"
+      }
+    }
+  ],
+  "availability_policy": "published_at records the CNINFO date marker; available_at is the conservative next Asia/Shanghai calendar day."
+}

@@ -16,6 +16,7 @@ from .product_workbench import (
 
 EventState = Literal[
     "material", "duplicate", "late", "correction", "nonmaterial",
+    "material_supporting_evidence", "material_risk_monitor",
     "insufficient_evidence", "model_unavailable",
 ]
 
@@ -91,6 +92,7 @@ class EventStateProjection:
                 "sha256": record.sha256,
                 "available_at": record.available_at.isoformat() if record.available_at else None,
                 "action": record.action,
+                "source_url": record.source_url,
             } for record in self.audit_evidence],
             "audit_decisions": [{
                 "event_id": decision.event_id, "state": decision.state,
@@ -152,7 +154,10 @@ def project_m5_event_states(inputs: tuple[EventStateInput, ...]) -> EventStatePr
             raise ValueError("Unavailable model requires reason and requirements")
 
         refs = tuple(record.evidence_id for record in item.evidence)
-        if item.state in {"material", "late", "correction"} and not refs:
+        if item.state in {
+            "material", "material_supporting_evidence", "material_risk_monitor",
+            "late", "correction",
+        } and not refs:
             raise ValueError("Visible material, late or corrected event requires evidence lineage")
         if len(refs) != len(set(refs)):
             raise ValueError("Duplicate evidence ids within event")
@@ -164,7 +169,10 @@ def project_m5_event_states(inputs: tuple[EventStateInput, ...]) -> EventStatePr
             evidence[record.evidence_id] = record
 
         visible = (
-            item.state in {"material", "insufficient_evidence", "model_unavailable"}
+            item.state in {
+                "material", "material_supporting_evidence", "material_risk_monitor",
+                "insufficient_evidence", "model_unavailable",
+            }
             or item.state == "late" and (
                 item.affects_research or item.affects_materiality or item.affects_dependencies
             )
@@ -172,6 +180,8 @@ def project_m5_event_states(inputs: tuple[EventStateInput, ...]) -> EventStatePr
         )
         disposition = (
             "SUPPRESSED_DUPLICATE" if item.state == "duplicate"
+            else "MATERIAL_SUPPORTING_EVIDENCE" if item.state == "material_supporting_evidence"
+            else "MATERIAL_RISK_MONITOR" if item.state == "material_risk_monitor"
             else "EVIDENCE_GAP" if item.state == "insufficient_evidence"
             else "MODEL_NOT_AVAILABLE" if item.state == "model_unavailable"
             else "USER_VISIBLE_EVENT" if visible else "AUDIT_ONLY"
@@ -190,6 +200,8 @@ def project_m5_event_states(inputs: tuple[EventStateInput, ...]) -> EventStatePr
             continue
         category = {
             "material": "MATERIAL_REQUIRES_RECALCULATION",
+            "material_supporting_evidence": "MATERIAL_SUPPORTING_EVIDENCE",
+            "material_risk_monitor": "MATERIAL_RISK_MONITOR",
             "late": "LATE_MATERIAL_INFORMATION",
             "correction": "CORRECTED_DISCLOSURE",
             "insufficient_evidence": "EVIDENCE_GAP",
@@ -201,6 +213,12 @@ def project_m5_event_states(inputs: tuple[EventStateInput, ...]) -> EventStatePr
         elif item.state == "model_unavailable":
             conclusion = f"暂不可评估；模型当前不可运行：{item.unavailable_reason}"
             next_step = f"需要：{item.model_requirements}"
+        elif item.state == "material_supporting_evidence":
+            conclusion = "原件已核验；仅作为支持性证据，不自动改变研究、估值或交易结论"
+            next_step = f"后续触发：{item.reopen_condition}" if item.reopen_condition else "继续监测后续披露"
+        elif item.state == "material_risk_monitor":
+            conclusion = "原件已核验；列为风险监控，不自动改变股本、费用或估值输入"
+            next_step = f"后续触发：{item.reopen_condition}" if item.reopen_condition else "继续监测后续披露"
         elif item.state == "correction":
             conclusion = f"原结论：{item.previous_conclusion}；更正后：{item.corrected_conclusion}；待复核"
             next_step = "复核更正原件及受影响的研究依赖"
@@ -220,7 +238,12 @@ def project_m5_event_states(inputs: tuple[EventStateInput, ...]) -> EventStatePr
             what_happened=happened,
             impact_area=item.impact_area,
             current_conclusion=conclusion,
-            research_action=_status("REOPEN_RESEARCH" if item.state == "insufficient_evidence" else "PENDING_REVIEW", RESEARCH_ACTION_LABELS),
+            research_action=_status(
+                "REOPEN_RESEARCH" if item.state == "insufficient_evidence"
+                else "MONITOR" if item.state in {"material_supporting_evidence", "material_risk_monitor"}
+                else "PENDING_REVIEW",
+                RESEARCH_ACTION_LABELS,
+            ),
             next_step=next_step,
             evidence_refs=refs,
         ))

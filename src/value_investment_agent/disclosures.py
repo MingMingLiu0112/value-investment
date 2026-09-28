@@ -12,7 +12,7 @@ import json
 import re
 import shutil
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
 
@@ -26,6 +26,33 @@ PDF_BASE_URL = "https://static.cninfo.com.cn/"
 SOURCE_NAME = "CNINFO statutory disclosure"
 USER_AGENT = "Mozilla/5.0 ValueInvestmentAgent/1.0"
 SYMBOL_NAMES = {symbol: name for symbol, name, *_ in UNIVERSE}
+
+
+def validate_cninfo_announcement_window(
+    announcements: list[dict], start_date: str, end_date: str,
+) -> None:
+    """Fail closed unless every CNINFO row has a valid in-window timestamp."""
+    try:
+        start = date.fromisoformat(start_date)
+        end = date.fromisoformat(end_date)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("CNINFO window boundaries must be ISO dates") from exc
+    if start.isoformat() != start_date or end.isoformat() != end_date or start > end:
+        raise ValueError("CNINFO window boundaries must be ordered ISO dates")
+
+    china_tz = timezone(timedelta(hours=8))
+    for item in announcements:
+        milliseconds = item.get("announcementTime")
+        if type(milliseconds) is not int:
+            raise ValueError("CNINFO announcement timestamp must be Unix milliseconds")
+        try:
+            published_date = datetime.fromtimestamp(
+                milliseconds / 1000, china_tz
+            ).date()
+        except (OverflowError, OSError, ValueError) as exc:
+            raise ValueError("CNINFO announcement timestamp is invalid") from exc
+        if not start <= published_date <= end:
+            raise ValueError("CNINFO announcement is outside its requested date window")
 
 
 def _cninfo_security_id(symbol: str) -> tuple[str, str]:
@@ -106,7 +133,7 @@ def search_announcement_window(
     end_date: str,
     issuer_name: str | None = None,
     *,
-    page_size: int = 100,
+    page_size: int = 30,
 ) -> dict:
     """Return one issuer's complete CNINFO announcement index for a date window.
 
@@ -115,8 +142,8 @@ def search_announcement_window(
     """
     if not re.fullmatch(r"[0-9]{6}", symbol):
         raise ValueError("CNINFO announcement search requires a six-digit symbol")
-    if not 1 <= page_size <= 100:
-        raise ValueError("CNINFO announcement page size must be 1..100")
+    if not 1 <= page_size <= 30:
+        raise ValueError("CNINFO announcement page size must be 1..30")
     column, fallback = _cninfo_security_id(symbol)
     security_id = _discover_security_id(
         symbol,
@@ -143,20 +170,42 @@ def search_announcement_window(
     first = _request_json(base)
     total = int(first.get("totalAnnouncement") or 0)
     announcements = list(first.get("announcements") or [])
+    page_number = 1
+    seen_ids = {
+        str(item.get("announcementId"))
+        for item in announcements
+        if item.get("announcementId") is not None
+    }
     while len(announcements) < total:
+        page_number += 1
         page = _request_json({
             **base,
-            "pageNum": str(len(announcements) // page_size + 1),
+            "pageNum": str(page_number),
         })
+        page_total = int(page.get("totalAnnouncement") or 0)
+        if page_total != total:
+            raise ValueError("CNINFO announcement total changed during pagination")
         records = page.get("announcements") or []
         if not records:
             raise ValueError("CNINFO announcement pagination stopped before the total")
+        page_ids = [
+            str(item.get("announcementId"))
+            for item in records
+            if item.get("announcementId") is not None
+        ]
+        if len(page_ids) != len(records) or seen_ids.intersection(page_ids):
+            raise ValueError("CNINFO announcement pagination repeated or omitted ids")
+        seen_ids.update(page_ids)
         announcements.extend(records)
+        if len(announcements) > total:
+            raise ValueError("CNINFO announcement pagination exceeded the reported total")
     announcements = [
         item
         for item in announcements
         if str(item.get("secCode", "")) == symbol
     ]
+    if len(announcements) != total:
+        raise ValueError("CNINFO announcement count differs from the reported total")
     if len({str(item.get("announcementId")) for item in announcements}) != len(announcements):
         raise ValueError("CNINFO announcement window contains duplicate ids")
     return {

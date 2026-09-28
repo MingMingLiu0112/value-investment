@@ -1,21 +1,1742 @@
 # CURRENT STATUS
 
 ```text
-CURRENT_STAGE = STAGE-PROSPECTIVE-PUBLIC-RESEARCH-AND-DAILY-RESEARCH-WORKBENCH
+CURRENT_STAGE = STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH
+M2 = DONE / CHECKPOINT_A_HUMAN_PASS
+M3 = PARTIAL / STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN / R6
+M4 = NONPERSONALIZED_ENGINEERING_DONE / PERSONALIZED_PARKED_WAITING_R2_NONBLOCKING
+M5_600519 = NEED_MORE_EVIDENCE / STILL_NOT_READY / NO_NEW_VALUATION
+M6 = PREFLIGHT_ONLY / OPERATIONAL_NOT_STARTED / VERIFIED_REAL_SESSIONS_0
+M6_REAL_RESTORE_ACCEPTANCE = NOT_PASSED
+M7 = DISPLAY_ENGINEERING_AVAILABLE / WPS_AND_ALL_PRODUCT_PAGE_READABILITY_PASS / FINAL_USER_ACCEPTANCE_NOT_PASSED
+CHECKPOINT_D = NOT_PASSED
+R0_AUDIT_SNAPSHOT = HISTORICAL / R0-A_NOT_PROVEN / R0-B_PARTIAL
+R0-C_RESOURCE_CAPACITY = CLOSED_AS_R3_INFRASTRUCTURE_DECISION
+R0_OPEN_NODES = 2 / NONBLOCKING_TO_PUBLIC_RESEARCH / REQUIRED_ARTIFACTS_UNAVAILABLE
+SAFE_R0_REMAINING = 0_AFTER_CURRENT_PRODUCT_FIXES_AND_POINTER_REBUILD
+SAFE_R1_REMAINING = OPEN / YILI_DIVIDEND_CLASSIFICATION_AND_NORMALIZED_DISTRIBUTABLE_CASH; SHENHUA_PRODUCT_SEGMENT_AND_ACQUISITION_BRIDGES; FORWARD_ONLY_TSA_CHAIN_ENGINEERING
+EXTERNAL_GATE_HANDOFF = DAG_SCOPED_NOT_TOTAL_GOAL_STOP
 M4_PRIVATE_INPUT = PARKED_WAITING_R2_NONBLOCKING
 PUBLIC_RESEARCH = ACTIVE
 PROSPECTIVE_PIT = ACTIVE
 PUBLIC_EVENT_RESEARCH = ACTIVE_BOUNDED
-CANONICAL_WORKBOOK = ACTIVE
+CANONICAL_WORKBOOK = ACTIVE / SAME_CANONICAL_PUBLISHED_AND_WPS_VERIFIED
 M6_OPERATIONAL = NOT_STARTED
+PROSPECTIVE_BASELINE = 000333_6_ADMITTED / 600887_6_ADMITTED_1_UNADMITTED / 601088_6_ADMITTED_1_UNADMITTED
+VALUATION = NOT_READY
+STRICT_PIT = NOT_PROVEN / PROCESS_CLOCK_ONLY_UNATTESTED
+REGISTRATION_RECEIPT_VALIDATION = FUTURE_TIME_AND_FALSE_ATTESTATION_CLAIMS_FAIL_CLOSED / PROCESS_CLOCK_ONLY_UNATTESTED
+CURRENT_EVENT_WATERMARKS = config/prospective-public-event-watermarks-v8.json / 000333_BOUNDED_DATE_WINDOWS_COMPLETE_BUT_FORMAL_INCOMPLETE; 600887_WINDOW_COMPLETE_TO_2026-09-27; 601088_CNINFO_DATE_CHAIN_COMPLETE_TO_2026-09-27; 2026-09-28_SINGLE_DAY_SNAPSHOTS_ONLY
+PROSPECTIVE_OBSERVATION_LEDGER = ACTIVE / 000333_CNINFO_1225582141_APPENDED / AVAILABLE_AT_2026-09-29T00:00+08:00 / PROCESS_CLOCK_UNATTESTED
+CANONICAL_WORKBOOK_SHA256 = 2f72dc76bcf6a74449dec5a336cc41540ae84bb1e7935badb7248a4b8a6c1bcf
+M5_EVENT_PROJECTION = runtime/prospective-public-event-20260928/registered-public-event-projection-v5.json / 5e543f50690a71254a97ff5c39136cd2bb74d81d1e3c4d3600f023dc948487d6
+M7_WPS_READONLY = PASS / runtime/publication-receipts/wps-m7-price-display-20260928.json / FINAL_USER_ACCEPTANCE_NOT_PASSED
+M7_ALL_PRODUCT_PAGE_READABILITY = PASS / runtime/publication-receipts/readability-m7-product-opportunity-quote-20260928.json
+QUOTE_AS_OF = 2026-09-28 / COMPLETE / 000333_600887_601088
+PUBLIC_EVENT_PROJECTION = 8_VERIFIED_BOUNDED_EVENTS / 000333_600887_601088 / FUTURE_AVAILABLE_NOTICE_ABSENT_FROM_WORKBOOK
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
 action = no_order
 ```
 
-This header is authoritative over every dated historical snapshot below. R2,
-R3, R5 and R6 park only their own DAG nodes; none is a total-goal stop while
-public research work remains open.
+## Verified Opportunity Quote Display — 2026-09-28
+
+The adversarial product review found a mismatch: the current publication was
+bound to complete, dual-source matched closes for all three prospective cases,
+but the opportunity projection still rendered each price as unavailable. The
+projection now uses the bound quote context to show the symbol-specific close
+and date, labels quote availability separately from valuation/attractiveness,
+and adds the quote-bundle evidence reference. It does not infer fair value,
+price attractiveness, a buy/sell state, or position size.
+
+The original WPS workbook was updated in place; no candidate/latest/final copy
+was created. Current SHA-256 is
+`2f72dc76bcf6a74449dec5a336cc41540ae84bb1e7935badb7248a4b8a6c1bcf` and its
+pre-publication backup is
+`runtime/workbook-backups/canonical-before-m7-product-ux-20260928T085546Z.xlsx`.
+Publisher receipt:
+`runtime/publication-receipts/canonical-m7-product-publication-20260928T085546Z.json`.
+WPS read-only receipt:
+`runtime/publication-receipts/wps-m7-price-display-20260928.json` (`passed`).
+All-page readability receipt:
+`runtime/publication-receipts/readability-m7-product-opportunity-quote-20260928.json`
+(`passed`, no clipped rows).
+
+The focused product regression set passed `51 tests`. M3 strict PIT remains
+unproven, all three valuations remain `NOT_READY`, M4 remains parked, M6
+operations remain `NOT_STARTED`, M7 final user acceptance remains
+`NOT_PASSED`, and `action=no_order`.
+
+## Quote Publication Update — 2026-09-28
+
+The retained dual-source quote bundle
+`runtime/quote-sessions/20260928T080412445154Z/bundle.json` (SHA-256
+`08d8dce83ba552ec77c4f6db0f95c7ec348b2b27b76dbc00dfbed86ec35088ea`) was
+validated in memory with the current hash-bound prospective snapshot, event
+projection and observation ledger before publication. It binds the completed
+2026-09-28 closes `000333=82.00`, `600887=27.03`, and `601088=48.39`.
+
+The existing `WORKBOOK_PATH` workbook was then published in place, preserving
+all user-managed sheets and the pre-publication bytes in
+`runtime/workbook-backups/canonical-before-m7-product-ux-20260928T081737Z.xlsx`.
+The canonical SHA-256 is now
+`0bfc9fae2b4c8e093493faaca1d6ba4f8294671db6c518c468f5ea67d24ea295`.
+Publication receipt
+`runtime/publication-receipts/canonical-m7-product-publication-20260928T081737Z.json`
+is `PUBLISHED_WPS_READONLY_AND_READABILITY_VERIFIED`; the WPS and readability
+receipts are respectively `wps-m7-product-asof-v5-quote-20260928.json` and
+`readability-m7-product-asof-v5-quote-20260928.json`. All six product pages
+passed, with no clipped rows, and the Midea date-only 2026-09-28 notice remains
+excluded because its conservative availability is 2026-09-29.
+
+One bounded post-close CNINFO scan per registered issuer returned only the
+already-known Midea notice `1225582141` and no Yili or Shenhua notices. These
+are retained snapshot evidence only; there is no new event disposition, formal
+watermark advance, strict PIT claim, valuation change, or additional workbook
+publication. `M4` remains `PARKED_WAITING_R2_NONBLOCKING`, `M6_OPERATIONAL`
+remains `NOT_STARTED`, `M7_FINAL_USER_ACCEPTANCE` remains `NOT_PASSED`, and
+`action=no_order`.
+
+### INTERRUPTION_AUDIT — quote-publication successor
+
+| Check | Result | Disposition |
+| --- | --- | --- |
+| Active prospective cases can still be researched | YES | All three remain baseline-partial and valuation-not-ready. |
+| A bounded public evidence gap can change research | YES | Continue only documented Yili distribution, Shenhua scope/normalization and Midea reconciliation gaps; unavailable public eliminations remain evidence-stop items. |
+| New announcement, dividend or repurchase needs disposition | NO | The post-close window found no new ID. |
+| New completed exchange session remains unprocessed | NO | The verified 2026-09-28 session was published exactly once. |
+| A ResearchCase baseline is incomplete | YES | `000333`, `600887` and `601088` remain partial. |
+| PIT/decision-consistency validation can be progressed now | PARTIAL | Contract checks continue; independently attested forward timestamps remain a natural-time evidence requirement. |
+| A product projection remains to publish | NO | The quote change is already published; no event or state change remains. |
+| All active cases have reached evidence stop | NO | Only specific unavailable sub-gaps are stopped. |
+
+`CURRENT_STAGE` remains
+`STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH` and total
+Goal status remains `IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`, rather than
+being blocked by R2, R3, R5, or R6.
+
+## Continuous Research Update — 2026-09-28
+
+The active authorization is `STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH`.
+`git fetch origin` confirmed local `main` and `origin/main` are both
+`c9449a4fe8881a0cec9ce2f992622b48693c413a`; the existing research worktree is
+dirty and was preserved. No pull or branch switch was needed.
+
+Track A checked the latest completed session using the existing collector:
+
+```text
+bundle = runtime/quote-sessions/20260928T005610106765Z/bundle.json
+bundle_sha256 = a57147ff0f96d4e60fe3fb24b80f30248d6fe1c192b2a4ad087d04ae122ca20e
+report = runtime/quote-sessions/20260928T005610106765Z/report.json
+status = collected_not_verified
+600887 = matched_close / 2026-09-24
+601088 = matched_close / 2026-09-24
+000333 = invalid_evidence
+new completed exchange session = none; session 2026-09-25 was closed
+```
+
+The collection is not promoted as a verified three-symbol quote package and
+does not change `config/current-trial-workbook.json` or the canonical Excel.
+The latest verified workbook quote remains `2026-09-24 / PARTIAL / missing
+600887`; the failed 000333 evidence remains excluded.
+
+R1 review of the latest Yili baseline snapshot found that
+`yili-2026h1-financial-quality` is a report-level `financial_report` placeholder
+with no numeric value, unit, label or page. It is correctly not admitted. Six
+specific Yili H1 facts are already admitted from CNINFO `1225511409`; no new
+financial field is missing from that filing solely because of this placeholder.
+Do not backfill it or upgrade the baseline on that basis. The case remains
+`BASELINE_PARTIAL`, and its model/valuation remain `MODEL_NOT_READY` /
+`VALUATION_NOT_READY`.
+
+The Shenhua R1 scope bridge added two field-level original/restated pairs to
+`docs/current/track-b-shenhua-operating-series-classification-20260928.md`:
+2023 group coal sales `450.0 / 454.6 Mt` and 2024 average coal price
+`564 / 563 CNY/t`. Both versions retain their distinct original annual-report
+and 2025 comparative sources, physical pages, hashes and report-date markers.
+The latter markers are not independently authenticated timestamps. The pairs
+do not identify acquisition contribution, earnings, cash flow or normalized
+profit; the wider Shenhua scope/restatement bridge remains open and
+`CYCLICAL_MODEL_NOT_READY`.
+
+The same canonical publisher's `--verify-only` path also passed with the
+hash-bound prospective snapshot, event projection and observation ledger at
+evaluation cutoff `2026-09-28T01:08:46+00:00`. It selected one observation
+(`prospective-cd9d6cc7382f67d1565132787949682b`, Yili / CNINFO `1225578520`)
+and resolved all three registered symbols in memory. That source was already
+public before the registration cutoff and its materiality remains unassessed;
+the run is product-contract verification, not new-event admission. The
+canonical workbook was not modified.
+
+The adversarial product review also verified that ledger readers fail closed
+on future observations and keep observations as research changes, not events.
+This turn clarified the user-visible and receipt contract: observation research
+changes explicitly state that the process clock is not independently attested
+and therefore is not strict contemporaneous PIT proof; publisher outputs now
+distinguish `BOUND` from `NOT_BOUND` observation-ledger input; publisher rejects
+a quote session earlier than the canonical quote pointer. These changes do not
+upgrade PIT, valuation, event materiality or investment state and no Excel
+publication was run.
+
+Focused verification after these changes:
+
+```text
+tests/test_canonical_m5_projection_binding.py
+tests/test_product_workbench_candidate.py
+tests/test_daily_quote_binding.py
+26 passed
+```
+
+```text
+STRICT_PIT = NOT_PROVEN / PROCESS_CLOCK_ONLY_UNATTESTED
+VALUATION = NOT_READY
+M6_OPERATIONAL = NOT_STARTED
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+## Verification Update — 2026-09-28
+
+The focused public-research regression suite was rerun with an isolated
+repository-local pytest temporary directory because the default Windows temp
+root was access-denied. The isolated run passed:
+
+```text
+95 passed
+scope = prospective registration, observation ledger, baseline admission,
+        public event scanning, and event watermark v7
+```
+
+This verifies implementation contracts only. It does not prove strict
+contemporaneous PIT, valuation readiness, M6 operations, or M7 final user
+acceptance.
+
+The R1 observation-ledger maintenance from this continuation is now covered
+without rewriting historical v2 records:
+
+```text
+new observation records = receipt_created_at + record_created_at compatibility
+future process/observation timestamps = fail closed
+reviewed-notice supersession = SHA-bound and fork-checked
+legacy v1 observations = still readable
+```
+
+The focused suite after these changes is `97 passed`. This closes the
+observation-ledger engineering gap, but does not close the remaining Shenhua
+restatement/scope bridge. `SAFE_R1_REMAINING` therefore remains open and
+bounded; `601088 = CYCLICAL_MODEL_NOT_READY` and `VALUATION = NOT_READY`.
+
+The subsequent compatibility correction keeps verified v1 observations
+visible at later evaluation cutoffs; a predecessor remains visible until a
+valid hash-bound successor supersedes it. The current cross-module regression after
+that correction is `122 passed`.
+
+The observation ledger is now an explicit, hash-pinned application input when
+the caller supplies `prospective-observation-ledger-v1` plus its evaluation
+cutoff. The Candidate layer validates only manifest-listed records and
+projects them into audit evidence and `RESEARCH_CHANGE` today items; it does
+not infer materiality, valuation, events, or trading actions. Runtime files
+are never globbed implicitly. Canonical Publisher `verify-only` and `publish`
+now accept the same three bound inputs and write the manifest SHA, evaluation
+cutoff, selected observation IDs and count into their output/receipt. No
+publication was run in this continuation: the current Midea observation has
+`source_available_at=2026-09-29T00:00:00+08:00`, beyond the current evaluation
+cutoff, so the canonical Excel remains unchanged.
+
+The repository manifest is `config/prospective-observation-ledger-v1.json`
+with SHA-256
+`857c7be610244039e4df7b3f98fa986e0ff253c763b2535f5db4c7523635ebe7`.
+Its 2026-09-28 replay selects only the superseding Yili observation; the
+Midea observation is excluded by its 2026-09-29 availability. The reader also
+preserves an explicitly SHA-bound legacy v1-to-v1 supersession chain without
+inventing an unattested creation timestamp.
+
+## Interruption Audit — 2026-09-28
+
+The current continuation was audited against the active Goal boundary and the
+canonical workbook evidence. No new exchange session, valuation input, or
+material public event was admitted in this audit.
+
+The M7 publication lifecycle had one stale label: the canonical publication
+receipt still said `PUBLISHED_PENDING_WPS_VISUAL_REVIEW`, while the subsequent
+WPS read-only receipt and all-product-page readability receipt both passed for
+the same canonical workbook SHA. The receipt was corrected to
+`PUBLISHED_WPS_READONLY_AND_READABILITY_VERIFIED`; this does not pass final
+user acceptance.
+
+The independent baseline audit confirms:
+
+```text
+000333 = BASELINE_PARTIAL / MODEL_NOT_READY / VALUATION_NOT_READY
+600887 = BASELINE_PARTIAL / MODEL_NOT_READY / VALUATION_NOT_READY
+601088 = BASELINE_PARTIAL / CYCLICAL_MODEL_NOT_READY / VALUATION_NOT_READY
+```
+
+Remaining R1 evidence work is bounded to the Shenhua restatement and scope
+bridge, plus unavailable Midea consolidation/elimination and financial-product
+reconciliation evidence. Missing public evidence remains `UNAVAILABLE`; it is
+not inferred and does not authorize a valuation or order. Dividend sub-field
+presentation is a documentation/read-model refinement only.
+
+```text
+SAFE_R0_REMAINING = 0_AFTER_RECEIPT_LIFECYCLE_CORRECTION
+SAFE_R1_REMAINING = OPEN / BOUNDED_PUBLIC_EVIDENCE_GAPS
+VALUATION = NOT_READY
+M6_OPERATIONAL = NOT_STARTED
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+## Current Public Research Update — 2026-09-28
+
+The public research stage continues under the existing bounded authorization;
+the repository working tree remains uncommitted. `git fetch origin` succeeded
+and confirmed both HEAD and live `origin/main` at
+`c9449a4fe8881a0cec9ce2f992622b48693c413a`. The public GitHub Actions API
+reports Core Research Gates run `36282732643` successful on that commit. This
+CI result predates and does not include the present local changes. No
+checkout/pull was performed because the worktree contains extensive research
+changes. No push, production, Shadow, scheduler, notification,
+private-portfolio access, or order occurred. `action=no_order`.
+
+The registration-receipt verifier now rejects future `receipt_created_at`,
+any claim that process-clock time was independently proven, a different PIT
+anchor, or outcome/valuation/signal/private-portfolio flags set true. The
+registration, baseline and observation suites passed `62` tests. These checks
+do not attest old machine-clock timestamps or change
+`PROCESS_CLOCK_ONLY_UNATTESTED` / `STRICT_PIT=NOT_PROVEN`.
+
+### 2026-09-28 Midea prospective observation and watermark successor
+
+CNINFO `1225582141` was captured in the exact-issuer 2026-09-28 single-day
+scan, independently page-reviewed, and appended to
+`runtime/prospective-observations/000333/prospective-676926f96e284002045c12b9a7142b56.json`.
+The record SHA-256 is
+`379046d99cb5b1f6a7353397b63ec4133a58125c38bbc3180728e8eb4bc82f8f`.
+It binds registration, scan receipt, index/raw response, review record and PDF
+bytes. `observed_at` is the recorded review time; `record_created_at` is
+writer-generated; both remain `PROCESS_CLOCK_ONLY_UNATTESTED`. Because CNINFO
+publishes a date-only marker, `source_available_at` is conservatively
+2026-09-29 00:00 +08:00. It is not eligible in an evaluation cutoff before that
+time, and this observation does not establish strict M3 PIT.
+
+Append-only watermark successor
+`config/prospective-public-event-watermarks-v5.json` SHA-256
+`950078fa30652b8acb8a0d7d2161408580dd21bf45194f77d3fbfc142b243c05`
+preserves v4 and adds the 2026-09-28 Midea single-day index plus latest
+document/hash. The formal 000333 watermark remains `INCOMPLETE` with its
+continuous `coverage_through` unchanged; the new date is explicitly
+`COMPLETE_WINDOW_ONLY_NOT_CONTINUOUS_WATERMARK`. The existing canonical Excel
+already displays the same notice event; no decision state changed, so no
+publication was made. `tests/test_prospective_event_watermarks_v5.py` and the
+prospective observation suite cover the successor and PIT cutoff behavior.
+
+Watermark v6 is an append-only successor adding the 600887 and 601088
+2026-09-28 exact-issuer CNINFO snapshots retrieved at about 01:27 +08:00. Each
+query returned zero announcements on one page with HTTP 200 and terminal
+`has_more=false`. Its focused tests bind both indexes, receipts and raw pages
+by SHA-256 and assert the v5 records are otherwise unchanged. Formal
+`coverage_through` and `coverage_status` do not advance; these snapshots do not
+represent full-day or multi-channel coverage.
+
+At the preceding v7 checkpoint, the append-only successor added the 2026-09-28
+05:14–05:15 +08:00 single-day CNINFO snapshots for 000333/600887/601088,
+returning 1/0/0 results. The Midea result is the already-recorded notice
+`1225582141`; no new material event or product state was found. Formal
+`coverage_through` and `coverage_status` remain unchanged. V7 tests bind every
+index, receipt and raw-page hash and preserve v6 history; each record's
+`latest_bounded_observation` points at the newest scan and its predecessor is
+retained explicitly. An earlier Yili attempt left only a 165-byte empty raw
+response with no index/receipt; it is preserved but excluded as incomplete
+evidence. The v7 plus v6 tests passed 4 cases; scanner tests passed 33 cases;
+`git diff --check` passed. There was no workbook write or republish.
+
+The full local regression after these changes completed with
+`3160 passed, 30 skipped, 20 warnings`; warnings are existing Backtrader UTC
+and openpyxl named-range deprecations. `git diff --check` passed. A later
+same-workbook publication parked M4 personalized analysis; its publication and
+WPS read-only receipts bind the current canonical SHA-256
+`b47141f63e57eec4857f83b42162738e6ce33ca040252f8ba9a15d6ff0133640`. The 61
+worksheets are preserved, with six product pages visible and 55 legacy pages
+hidden. M7 final user acceptance remains `NOT_PASSED`; `action=no_order`.
+Live GitHub fetch/CI could not be checked because the latest fetch connection
+was reset; local `origin/main` is cached only. No commit or push was made.
+
+```text
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+PUBLIC_RESEARCH_OPEN_NODES = baseline assumptions/unadmitted facts remain for all three cases; valuations NOT_READY
+PUBLIC_EVENT_OPEN_NODES = 000333 continuous CNINFO watermark INCOMPLETE; 600887 bounded only through 2026-09-27; 601088 retained CNINFO windows through 2026-09-27, not multi-channel
+CURRENT_DATA_OPEN_NODES = quote bundle as of 2026-09-24 PARTIAL / 600887 missing; no newer completed close is evidenced
+PRODUCT_OPEN_NODES = no verified product-state change requiring publication; final M7 acceptance remains R5
+R2_PARKED_NODES = M4 personalized portfolio only
+R3_PARKED_NODES = M6 production, restore and infrastructure authorization
+R5_PARKED_NODES = M7 final user acceptance
+R6_PARKED_NODES = strict contemporaneous M3 PIT; future real M6 sessions/events
+M6_OPERATIONAL = NOT_STARTED
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+### Current INTERRUPTION_AUDIT — 2026-09-28 (v8)
+
+1. R2 private data required now: **NO**; only personalized M4 is parked.
+2. R2 blocks only M4: **YES**; public research, event monitoring and the canonical workbench continue independently.
+3. Track A public market data can continue: **YES**, after a new completed exchange session. At the 2026-09-28 12:00 +08:00 audit time, the market had not closed; latest verified quote remains 2026-09-24, partial and missing 600887. Do not promote the incomplete 2026-09-28 collection.
+4. Track B prospective research can continue: **YES**. The Shenhua restatement/scope bridge remains open. Midea parent-only public matching is complete, while exact internal eliminations and bank-product reconciliation are unavailable in retained public disclosures. Yili's H1 cash-quality supplement now quantifies revenue/profit divergence and the CFO bridge, but multi-year ordinary-dividend sustainability and normalized cash coverage remain open.
+5. Track C public event research can continue: **YES**. Watermark v8 verifies the Midea adjacent CNINFO date windows through 2026-09-27 but keeps its formal status `INCOMPLETE`; Yili is bounded to 2026-09-23..09-27 and Shenhua to 2026-03-31..09-27. The three 2026-09-28 observations are single-day snapshots only (1/0/0), not full-day or multi-channel coverage and not strict PIT.
+6. Track D product/Excel can continue: **YES**, but the v8 review found no new event, valuation, decision state or other product-state change requiring publication. The existing canonical workbook remains unchanged.
+7. Unprocessed public evidence: **NO new item identified** in the retained v8 chains and 2026-09-28 snapshots as of this audit; coverage limits and the unattested process clock remain explicit.
+8. ResearchCase baseline incomplete: **YES**; 000333 and 600887 remain `BASELINE_PARTIAL / MODEL_NOT_READY / VALUATION_NOT_READY`; 601088 remains `BASELINE_PARTIAL / CYCLICAL_MODEL_NOT_READY / VALUATION_NOT_READY`.
+9. Current public announcement requiring a new disposition: **NO**; Midea `1225582141` is already registered and no new 2026-09-28 filing was found in the bounded snapshots.
+10. Safe R0/R1 work: current product/pointer R0 repairs are closed (`SAFE_R0_REMAINING=0`). The bounded Yili H1 cash-quality review is recorded, but the multi-year ordinary-dividend/cash-coverage question and Shenhua restatement/scope bridge remain open; exact Midea consolidation eliminations and bank-product reconciliation remain unavailable external evidence, not an invitation to infer values.
+11. Prospective v2 registration receipt: **MACHINE_VERIFIED** against `config/prospective-baseline-verification-v9.json`; `runtime/prospective-v2-fc1e811/receipt.json` matches SHA-256 `8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5`, its committed plan bytes and Git ancestry validate, and it binds 000333/600887/601088 with `action=no_order`. Its `receipt_created_at` remains process-clock-only (`declared_time_independently_proven=false`), so this does not establish strict PIT.
+12. Live repository source: this audit's `git fetch origin` failed to connect to GitHub port 443. HEAD remains `c9449a4fe8881a0cec9ce2f992622b48693c413a` on `main`; no checkout/pull was performed with the dirty worktree, and cached `origin/main` is not represented as a current live check.
+
+Strict contemporaneous PIT remains `NOT_PROVEN`: registration and retrieval times are process-clock-only and unattested. All three valuations remain not ready. The total Goal remains active; R2, R3, R5 and R6 nodes remain scoped or future-gated. No private input, production authorization, Shadow run, Excel publication, or order is requested. Reopen market/event/product work only on the next completed session or a genuinely new, evidenced public fact. `action=no_order`.
+
+## 2026-09-28 Yili H1 cash-quality reconciliation
+
+Read-only Root review and independent SubAgent cross-check used the retained
+CNINFO 2026H1 PDF `1225511409` (SHA-256
+`423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2`). The
+new supplement is `docs/current/track-b-yili-h1-cash-quality-review-20260928.md`.
+It matches revenue, consolidated net profit and operating cash flow by scope
+and period; 2026H1 revenue grew 4.13%, consolidated net profit fell 23.66%,
+and operating cash flow / consolidated net profit was 176.68% versus 40.97% in
+2025H1. The two largest operating cash lines explain a +CNY 7.033bn arithmetic
+change against a +CNY 6.795bn net CFO change, with the other operating lines
+netting -CNY 0.238bn. No causal attribution is claimed.
+
+The balance-sheet movements are 2026-06-30 versus 2025-12-31, not year-over-year;
+the note marks this explicitly. CapEx less CFO is labeled a limited proxy, and
+the equity distribution lines are not treated as proof of cash dividend paid
+or sustainable payout. This narrows the financial-quality description but
+does not change `BASELINE_PARTIAL`, `MODEL_NOT_READY`, `VALUATION_NOT_READY`, or
+dividend `DATA_INCOMPLETE / UNKNOWN`. The registered baseline, receipt, event
+ledger and canonical Excel remain unchanged; no event was admitted and no
+workbook was published. `action=no_order`.
+
+### Delegated R1 reviews — 2026-09-28
+
+Two independent read-only SubAgent reviews were completed within the current
+public-research scope:
+
+- Yili 2026H1 liquidity bridge (`docs/current/track-b-yili-liquidity-bridge-review-20260928.md`): no material issue. The reviewer rechecked the cited CNINFO PDF hash and page offsets, recalculated the borrowing increase and bill-discount share (60.5%), and confirmed the note does not net deposits against debt or infer that liquidity risk is cleared. Research and valuation states remain unchanged.
+- Midea notice `1225582141` (`docs/current/track-c-midea-egm-notice-20260928.md`): no broken source lineage. The official PDF at `runtime/prospective-public-event-20260927/gapfill-000333-20260927T172744007289Z/1225582141.PDF` hashes to `94629a0271834020e0a1efd417837bbd04677f226650d940b4a6d523a26e9686`; the scan/review records and current projections bind that source. A conflicting `ee125e...` value found by text search is synthetic rejection-test content, not another official PDF. The reviewer confirmed the notice remains a bounded 2026-09-28 snapshot, with no inference of vote or implementation.
+
+These are delegated research reviews, not user approvals, signed ACTUAL event
+authorization, strict-PIT evidence, valuation approval, or trade decisions. No
+files were changed by reviewers; no canonical workbook publication was needed.
+`action=no_order`.
+
+### Shenhua FY2025 source and admission-contract review — 2026-09-28
+
+Two bounded read-only SubAgent reviews were completed for registered case
+`601088`:
+
+- Source review verified the retained CNINFO annual-report PDF at
+  `runtime/prospective-baseline-20260927/shenhua-index-20260927T044701251789Z/shenhua-2025-annual.pdf`
+  against SHA-256 `7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2`.
+  It supported FY2025 coal sales of 4.309 hundred-million tonnes (430.9 million
+  tonnes), average coal price CNY 495/t excluding tax (physical/printed p.30),
+  self-produced coal unit cost CNY 171.6/t and self-produced-coal sales gross
+  margin 40.0% (p.32), and power sales 207.00bn kWh at CNY 386/MWh (pp.33-34).
+  The reviewer confirmed 2024 comparative figures are marked restated and the
+  operating statistics are issuer disclosures, not each independently audited
+  financial-statement facts. Coal sales include internal sales; 495/t is a
+  group average, not an external-customer-only price. This supports the cited
+  bounded observations only, not a normalized cycle, valuation, or dividend
+  sustainability conclusion.
+- Admission-contract review confirmed the existing item-level allowlist has no
+  additional FY2025 operating metric types; current admitted headline facts
+  (revenue, parent-attributable profit, and operating cash flow) are already
+  present. The cycle metrics remain supplemental source observations, not
+  admitted baseline/model inputs. No allowlist or verifier change was made.
+
+The research card remains `BASELINE_PARTIAL`,
+`CYCLICAL_MODEL_NOT_READY` / `VALUATION_NOT_READY`; the unadmitted generic
+`shenhua-2025-operating-facts` placeholder is not promoted to a financial fact.
+No Excel publication or research-state change was warranted. `action=no_order`.
+
+### Track C: Shenhua CNINFO Watermark and Events
+
+Append-only `config/prospective-public-event-watermarks-v4.json` preserves the
+v3 history and records a gapless chain of seven retained exact-issuer CNINFO
+query windows for 601088 from 2026-03-31 through the 2026-09-27 19:22:35 +08:00
+retrieval point. Independent review and focused tests bind the query indexes,
+raw response pages, page counts, `hasMore` termination, and referenced hashes.
+The local v3 SHA-256 is
+`f7f00ac96efab81c631c543d8ecb9ba98ff03a1d89c4371a8cd546d1cb9e7119` and v4
+SHA-256 is
+`a7dbb1f35a157a80daf202ed91537e7c8ae8b9c135c828ed4108c3cb39063cb8`. Both
+files are currently untracked; v4 preserves the v3 records semantically, but
+Git history does not establish v3 byte immutability.
+The status is bounded to those retained CNINFO windows: it does not cover
+issuer IR, exchange-site material, later corrections, or disclosures after the
+last query time. These disclosures predate the prospective observation start;
+the result is not strict contemporaneous PIT evidence.
+
+R1 disposition for the four recovered 2026-09-01..22 indexed originals:
+
+| CNINFO ID | Disposition | Evidence boundary |
+| --- | --- | --- |
+| `1225546779` | `MATERIAL_SUPPORTING_EVIDENCE` | Meeting materials propose a pre-tax CNY 0.98/share interim distribution, about CNY 21.256bn in total. |
+| `1225565223` | `MATERIAL_RISK_MONITOR` | Issuer-reported August operating statistics; comparison period restated and scope includes assets consolidated from April. Monitoring only. |
+| `1225567741` | `NONMATERIAL` | Registered office address change; no investment-relevant economic event identified. |
+| `1225546775` | `AUDIT_ONLY` | Meeting procedure notice; no independent economic event beyond the meeting materials. |
+
+The 2026-09-23 shareholder resolution `1225579981` separately confirms that
+the interim-distribution proposal passed on September 23. The A-share
+implementation, record date, ex-date, payment date, cash coverage and
+sustainability remain unestablished. R1 confirmed the proposal is about 74.0%
+of H1 parent-attributable profit under the stated accounting basis; this ratio
+is context, not a dividend-sustainability conclusion, yield or valuation input.
+
+Projection `runtime/prospective-public-event-20260927/shenhua-event-projection-v2.json`
+has SHA-256 `1c88dd83902b766ac0c208f2b837fa157b91d40189a91a4ddb79bd33cf82a971`.
+It projects the approved-but-not-yet-implemented interim distribution and the
+restated issuer-reported August operations only. Publisher verification
+recomputed evidence hashes and confirmed same-path publication with all
+user-managed and frozen sheets preserved. Publication receipt:
+`runtime/publication-receipts/canonical-m7-product-publication-20260927T161223Z.json`.
+Backup and final canonical workbook share SHA-256
+`522f6b11a01c2d87024c45496a4a6a3f3d101dba315274d34cb88167e7d3f6d6`.
+WPS read-only receipt `runtime/publication-receipts/m7-shenhua-event-wps-readonly-20260927-v2.json`
+passed; event evidence links target audit rows 34 and 36, and each evidence
+title links to its CNINFO original PDF. Quote data remains the existing
+partial bundle as of 2026-09-24; no 2026-09-28 close was inferred.
+
+These changes do not alter any valuation, price assessment, trade state, strict
+PIT status, M6 operation, M7 user acceptance, or total Goal completion:
+
+```text
+VALUATION = NOT_READY
+STRICT_PIT = NOT_PROVEN
+M6_OPERATIONAL = NOT_STARTED
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+### Track D: Registered-Company Events and Canonical Workbook
+
+The quote binding now carries the pinned registration receipt SHA-256,
+registration fingerprint, plan SHA-256, explicit bundle-finished PIT cutoff,
+and per-symbol Tencent/Sina/calendar source URLs, fetch times, and raw SHA-256s.
+It rejects evidence fetched after the bundle cutoff and future cutoffs. These
+checks improve reproducibility; the machine clock is not an independent
+timestamp authority and strict contemporaneous PIT remains NOT_PROVEN.
+
+The append-only composite projection
+runtime/prospective-public-event-20260927/registered-public-event-projection-v1.json
+has SHA-256
+ecdce96a4a63a72b191942896b751cbae0da3a4087b9f5ef871aea7b0333f3a0. Its eight
+visible event cards cover Midea (3), Yili (1 evidence-gap card), and Shenhua
+(4). Shenhua's added cards include the finance-company risk monitor (issuer
+self-assessment only) and 2026-10-08 restricted-share unlock (existing shares,
+not a new issuance or sell signal). Yili's materiality remains undetermined;
+the CNY 21,801.09 difference, funding mix, accounting period, and share-right
+treatment remain open. All cards retain evidence paths and SHA-256s, and every
+projection action is no_order. Existing Shenhua v1/v2 projections were not
+overwritten.
+
+The same WORKBOOK_PATH file was updated in place. Publication receipt:
+runtime/publication-receipts/canonical-m7-product-publication-20260927T170814Z.json.
+WPS read-only receipt:
+runtime/publication-receipts/wps-m7-product-readonly-20260928.json.
+Workbook SHA-256 changed from 522f6b11…e7d3f6d6 to
+f4b7a2721f2947a1e7b65087289c8660b48d6a423e32f22afabadd4edc748970.
+WPS confirmed all six product sheets readable, no formula errors, allowed
+decision wording, user/frozen sheets preserved, and workbook hash stability.
+The workbook includes the three registered research companies alongside the
+legacy two-company watchlist. Quote coverage remains partial at 2026-09-24;
+600887 is missing from the admitted quote bundle, so no current quote or
+decision is asserted for it.
+
+A quote collection attempt at 2026-09-27T16:59:06Z returned the same
+2026-09-24 close. The official 2026 SSE closure calendar marks 2026-09-25..27
+closed, so this did not establish a new completed session and was not used for
+publication. The non-advancing raw bundle is retained for audit; it does not
+advance Track A.
+
+Focused verification: registration/observation/quote and M5 product regression
+sets passed (74, 44, and 37 tests in their respective runs); WPS read-only
+verification passed. verify-only and final read-only WPS checks did not modify
+the canonical file.
+The final combined registration, PIT, quote, event-projection, product-model,
+and workbook regression run passed: 104 tests.
+
+### 2026-09-28 Single-Day Midea Notice and Product Consistency Successor
+
+CNINFO exact-issuer scan for 2026-09-28 returned one Midea announcement
+(`1225582141`), zero Yili announcements, and zero Shenhua announcements. The
+Midea source PDF SHA-256 is
+`94629a0271834020e0a1efd417837bbd04677f226650d940b4a6d523a26e9686`; the
+single-day scan, index, raw response and document-review JSON are hash-bound.
+The notice schedules a 2026-10-13 shareholder meeting and lists restricted-
+share cancellation and interim-dividend agenda items. Those are proposals;
+this notice establishes no vote result, cancellation quantity/completion,
+dividend amount, approval or implementation. It creates a bounded monitoring
+trigger only. See `docs/current/track-c-midea-egm-notice-20260928.md`.
+
+An immutable Midea notice projection successor and registered composite v2
+were built from the pinned sources. Composite hash:
+`f5938dc5b381230efd686078c923b8b4d0aab3562148f33ccbfa6c4749a12609`;
+it contains nine event cards. The notice observation is strictly one exact-
+issuer CNINFO snapshot; Midea's formal watermark remains `INCOMPLETE` and was
+not advanced. Continuous, full-day, multi-channel and strict-PIT coverage are
+not claimed. Valuation, dividend sustainability, share-count inputs and
+decision state did not change; `action=no_order`.
+
+Product review findings were fixed in code/tests: opportunities and company
+pages now share exactly the three registered companies when a verified
+prospective snapshot is present; legacy items are labeled as historical/old
+source; evidence groups expose every referenced source, hash and URL; Midea
+source URLs flow to audit rows; an unavailable Yili official URL remains null
+rather than being guessed. A duplicate-input check also caught and corrected a
+legacy company-card leak before publication.
+
+Publisher verify-only passed with the existing 2026-09-24 quote bundle and
+2026H1 baseline. The same WPS canonical workbook was updated in place, with
+user-managed and frozen sheets unchanged. Publication receipt:
+`runtime/publication-receipts/canonical-m7-product-publication-20260927T180756Z.json`.
+Canonical hash changed from `f4b7a272...c748970` to
+`b1c52fde...f6f1883d`. WPS opened the file read-only, calculated all six
+product sheets, found no formula errors, and confirmed hash stability; receipt:
+`runtime/publication-receipts/wps-m7-product-readonly-20260928-event-v2.json`.
+Independent openpyxl read-back located the new event at `05_事件!42`, linking
+to audit row `06_系统与审计!A44`; that row contains the official CNINFO URL,
+announcement ID, original SHA-256 and available date. No quote refresh was
+claimed; 600887 remains missing from the 2026-09-24 bundle.
+
+The current-trial pointer now names the composite-v2 observation separately
+from `public_event_as_of=2026-09-27`, preserves the formal watermark boundary,
+and records `public_event_observation_as_of=2026-09-28` with
+`SINGLE_DAY_SNAPSHOT_ONLY`. The current artifact navigation registry is v2;
+it resolves local `WORKBOOK_PATH` by hash without recording the user's absolute
+path, while the tracked root workbook is only a repository reference snapshot.
+Registry SHA-256 is `41561a2338a74073607773f8d90d22f7fa8dba7fc326feed7c73eee48cb4159b`;
+rebuilding twice produced the same hash, and the v1 historical snapshot hash
+remains `ce31a4b673f51101c43b89388a11653d1ad17f0564b32f95af7f557f345752d1`.
+
+Midea's FY2025 / 2026H1 CapEx and fixed-assets review found no basis to split
+maintenance from growth CapEx or produce normalized CapEx; those remain
+`UNKNOWN`, and FCFF/model applicability and valuation remain `NOT_READY`. See
+`docs/current/track-b-midea-capex-fixed-assets-review-20260928.md`.
+Strict PIT remains `NOT_PROVEN`, M6 operational validation has not started,
+M7 final user acceptance has not passed, and `action=no_order`.
+
+## 2026-09-28 SubAgent-Assisted Continuation Audit
+
+### Completed bounded R1 follow-ups and PIT record-time hardening
+
+- Track B R1 independently checked Yili 2026H1 liquidity disclosures against retained CNINFO PDF `1225511409` (SHA-256 `423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2`). The supplemental note `docs/current/track-b-yili-liquidity-bridge-review-20260928.md` records statement/notes page mapping and arithmetic: short-term borrowing rose CNY 19.0466bn; bill-discount borrowing rose CNY 11.5264bn (~60.5% of the increase); cash fell CNY 2.8782bn; the two identified deposit balances fell by about CNY 2.4794bn combined. It does not net deposits against debt because entity, currency, maturity, restriction, and transferability matching is missing. Valuation remains `NOT_READY`; dividend capacity `UNKNOWN`.
+- Track C R1 independently confirmed CNINFO `1225531407` is second support for the existing Midea interim-dividend proposal, not a new event. The supplemental disposition is in `docs/current/track-c-public-event-gapfill-20260927.md`; shareholder approval, implementation, payment, and cash sustainability remain unproven. The existing canonical event card still links to `1225531406` and correctly labels the proposal as pending. No workbook publication was made because this evidence adds no changed product decision/state; a later event-card evidence consolidation must be an append-only projection successor and go through the canonical publisher.
+- PIT observation writing now emits `prospective-public-observation-v2`, separating source `observed_at` from writer-generated UTC `record_created_at`. Historical readers require both record creation and source availability to be at or before cutoff; v1 observations without record-creation evidence are retained byte-for-byte but never admitted to PIT output. A successor may hide its predecessor only when that successor itself is visible by cutoff; source-observation times may be equal, while v2 record-creation times must be strictly ordered. Deterministic IDs and immutable replay behavior are retained. This does not retroactively establish M3 strict PIT; legacy chain status remains unproven.
+- Focused observation regression: `11 passed` using a repository-local pytest basetemp. This validates bounded writer/reader behavior only, not M3 or the real-world trustworthiness of the local clock.
+
+Three bounded independent reviews were used for Tracks B, C and D; the root
+thread reconciled their findings against retained sources and current
+artifacts. No agent edited files or published the workbook.
+
+- **Track B:** CNINFO `1225578520` was page-checked against the retained PDF
+  (`runtime/prospective-public-event-20260927/20260927T004835372Z/600887-1225578520.pdf`,
+  SHA-256 `7c669db8bb3b5a362ecad92c6a96745a3b5039a3288f5e13b498e9e72971111c`)
+  and board resolution `1225259570` (SHA-256
+  `7369a05f737a7c786b226237a5149d59b0a243619bc005a5a94e660bae94f697`). The
+  completion notice states 8,476,357 existing shares bought at an average
+  CNY 26.5441 per share for CNY 224,997,098.71 excluding fees, with a
+  12-month lockup. The board resolution states CNY 225,018,899.80 of after-tax
+  award funds transferred to the plan account. The CNY 21,801.09 difference
+  remains unexplained; these records do not establish the actual funding mix,
+  gross expense/recognition period, or share-voting/dividend rights. This
+  purchase is not a new issuance and does not change the ordinary-share
+  denominator by itself.
+  **Integration check:** all of these facts and limitations are already in
+  `docs/current/track-c-public-event-scan-20260927.md`,
+  `docs/current/track-b-yili-impairment-and-proceeds-review-20260927.md`, and
+  the 600887 `EVIDENCE_GAP` card in the current composite projection. The
+  delegated scan therefore adds no state change; do not create a duplicate
+  observation, revise valuation, or republish Excel. Reopen only on a formal
+  settlement disclosure or a financial report covering the post-purchase
+  period.
+- **Track C:** no immediately executable non-duplicate event task was found.
+  Midea notice `1225582141` awaits the 2026-10-13 meeting result and separate
+  implementation disclosures; Shenhua's planned 2026-10-08 share unlock
+  awaits actual listing/capital evidence. The existing 600887 evidence gap
+  waits for a settlement or subsequent report. No watermark is advanced.
+- **Track D:** read-only review found the Midea notice card at `05_事件!A42`
+  links through `F42` to `06_系统与审计!A44`, where the official URL, document
+  ID and source SHA-256 are present. The canonical file/config/publish/WPS
+  receipts agree at SHA-256
+  `b1c52fde10ba228c84c476411c8aaf6397dcd6f67beb0280bc3af388f6f1883d`.
+  No product defect or verified data-state change was found; no republish.
+- **Track A:** no new completed exchange session was established at this
+  checkpoint. Retain quote-as-of `2026-09-24`, partial coverage, and missing
+  `600887`; do not represent the old bundle as fresh.
+- **Interruption audit:** current work does not require R2; R2 remains parked
+  only for personalized M4. Tracks B-D remain active as future public evidence
+  and event triggers arrive. Track A reopens after a completed session.
+  Registered ResearchCase scaffolds exist, but unresolved facts/assumptions
+  keep all three valuations `NOT_READY`. No current local safe R0/R1 action was
+  identified. R3 production, R5 final acceptance, and R6 natural-time nodes
+  remain separately parked; M6 operational stays `NOT_STARTED`, strict PIT
+  stays `NOT_PROVEN`, and `action=no_order`.
+
+The requested objective commit `269f93f1f7cd107f82de55ed795b476ab56b492f`
+is an ancestor of the locally cached `origin/main` (`c9449a4`). A fresh fetch
+attempt failed because GitHub port 443 was unreachable in this continuation;
+the local worktree contains 83 changed paths. No checkout, pull, reset, or
+push was performed, and all uncommitted work was preserved.
+
+## 2026-09-27 Prospective Stage Interruption Audit (Historical)
+
+At the 2026-09-27 checkpoint, the interruption audit concluded that R2 parked
+only M4 and was not a total Goal or public-research blocker. This snapshot is
+superseded by the 2026-09-28 current header and evidence update above. The
+M4 private-input boundary remains closed:
+no IPS, holdings, cash, cost basis, account information, risk preference,
+private key, or private root was requested or inspected.
+
+| # | Question | Current answer | Evidence / action |
+| --- | --- | --- | --- |
+| 1 | Does current work require R2 private data? | `NO` | Public filing review and public-product integration only. |
+| 2 | Does missing R2 block only M4? | `YES` | `M4_PERSONALIZED=PARKED_WAITING_R2`; M4 synthetic/nonpersonalized work remains separate. |
+| 3 | Can Track A continue? | `YES, CONDITIONALLY` | Quote bundle remains raw-revalidated but partial as of 2026-09-24; 600887 is missing. 2026-09-27 is Sunday and no new completed exchange session is available; do not duplicate or relabel the old bundle. |
+| 4 | Can Track B prospective research continue? | `YES` | Three registered baselines and observation ledgers exist. Strict contemporaneous PIT remains `NOT_PROVEN`; 600887's 1225578520 is pre-start material and not a new prospective fact. Unresolved model inputs keep all three valuations not ready. |
+| 5 | Can Track C public-event research continue? | `YES` | 600887's v3 query covers 2026-09-23..27; 000333 has adjacent bounded coverage from 2026-03-31..09-27; 601088 remains `INCOMPLETE`, with unfilled intervals 2026-04-01..06-25 and 2026-09-01..09-22. Four indexed 601088 records in the latter interval have not been matched to local originals/review records. Do not rescan covered windows or advance its formal watermark. |
+| 6 | Can Track D Product / Excel continue? | `YES` | A verified 601088 historical risk-monitor projection was published to the same canonical workbook. The initial WPS check found an evidence link pointing to a blank row; the shared-layout mapping and source-URL display were fixed, tested, and republished. Final digest `01af2106d8e1a656750790b0d1f7ee79fd8264c9f24d5bd1d28899aa90eefee1` passed WPS read-only checks and exact link-target verification. |
+| 7 | Is there unprocessed public evidence? | `YES` | The four existing 601088 index rows remain without local originals/document-level dispositions. CNINFO 1225185584 has now been source-hash checked and boundedly reviewed; it is not a new observation. |
+| 8 | Is a ResearchCase baseline incomplete? | `NO` for baseline scaffold | Each of 000333, 600887 and 601088 has a versioned baseline and explicit admitted/unadmitted facts. Company valuation and unresolved assumptions remain explicitly `NOT_READY`, not filled with defaults. |
+| 9 | Is there a current public announcement to research? | `NO newly disclosed after the last bounded scans` | Existing available records include pre-start historical material; next research should process uncovered indexed evidence, not duplicate completed queries. |
+| 10 | Is any safe R0/R1 work executable? | `NO ADDITIONAL LOCAL ACTIONABLE ITEM IDENTIFIED` | The bounded evidence-row/source-URL product repair is complete. R0-A still requires original M5 dependency/recalculation inputs; R0-B requires CI artifact bytes and privacy-boundary evidence that are unavailable locally. Those missing inputs do not stop Tracks A-D. |
+
+### Current Public Evidence Disposition
+
+The R1-reviewed CNINFO `1225185584` is dated 2026-04-24 (conservative
+available date 2026-04-25), before the observation start. Its PDF SHA-256 is
+`6fce900be4fa9ea2a169513f01911d4bb47bb4f4dff9914873601a8f0d1f02af`; the
+scan-evidence SHA-256 is
+`4754e360349f74640412a12f5fffc5ddb1af81dc0e22e84c5b28caf98c71dfb4`. It
+identifies a related finance company and group-member deposits/services; the
+issuer's report says no non-performing loans as of 2025-12-31, which is
+self-assessment rather than independent credit assurance. It is classified
+`MATERIAL_RISK_MONITOR` with no allegation of loss, no valuation change, no
+baseline admission, and `action=no_order`. Detailed findings are in
+`docs/current/track-b-shenhua-operations-and-capital-allocation-20260927.md`.
+
+The 601088 projection is
+`runtime/prospective-public-event-20260927/shenhua-finance-risk-projection-v1.json`
+(SHA-256 `8368f16f59aac209005effb001ce017233dc57742952cb53fff6c9282b5ed12f`).
+Publisher receipt:
+`runtime/publication-receipts/canonical-m7-product-publication-20260927T153228Z.json`.
+It replaced the provisional 2026-09-27 15:12 publication only on the same
+canonical path. Backup SHA-256 is
+`6ca2dfdff1cfe68f63c9e2bdc191587b060c968b216b76d7ef00b20952faa224`; final
+canonical SHA-256 is
+`01af2106d8e1a656750790b0d1f7ee79fd8264c9f24d5bd1d28899aa90eefee1`.
+The final WPS read-only receipt is
+`runtime/publication-receipts/m7-shenhua-risk-wps-readonly-20260927-final.json`
+(`status=passed`). It opened the workbook read-only, checked the six product
+pages, freeze panes, formula-error and forbidden-decision tokens, required
+valuation/portfolio states, and workbook hash stability. A separate read-only
+cell/link check confirmed the 05_事件 link points to
+`06_系统与审计!A34`, whose first evidence ID is `scan-1225185584`; the
+`pdf-1225185584` audit title has a clickable HTTPS link to the original CNINFO
+PDF. The publisher reports `user_managed_sheets_preserved=true` and
+`frozen_sheets_unchanged=true`. No personal/manual cells were read or changed.
+
+The focused regression suite passed `64 tests` across workbook rendering,
+read-model, event projection, canonical binding, and product-candidate layers.
+The first local run hit `PermissionError` in an existing shared pytest temp
+directory; rerunning with an isolated temp directory inside `runtime/` passed.
+
+`M6_OPERATIONAL=NOT_STARTED`, `M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`,
+`INITIAL_ASSISTED_USE=NOT_REACHED`, and `action=no_order` remain unchanged.
+
+## Historical R0 Audit Metadata (NON_CURRENT)
+
+```text
+R0-A_REAL_M5_RECEIPT_BINDING = NOT_PROVEN
+R0-B_CONTENT_LEVEL_PRIVACY = PARTIAL
+R0-C_RESOURCE_CAPACITY = CLOSED_AS_R3_INFRASTRUCTURE_DECISION
+SAFE_R0_REMAINING = 2
+SAFE_R1_REMAINING = 0
+EXTERNAL_GATE_HANDOFF = NOT_READY
+LATEST_HEAD = c9449a4fe8881a0cec9ce2f992622b48693c413a
+LATEST_CORE_RESEARCH_GATES = 36282732643 / success / HEAD_ONLY
+```
+
+## Historical R0 Interruption Audit Snapshot — 2026-09-27 (NON_CURRENT)
+
+At that prior checkpoint, the user re-authorized `STAGE-FINAL-R0-EVIDENCE-CLOSURE-AND-EXTERNAL-GATE-HANDOFF`.
+`git fetch origin` completed; `HEAD` and `origin/main` both remain
+`c9449a4fe8881a0cec9ce2f992622b48693c413a`. The dirty worktree was preserved;
+no checkout, pull, commit, or push was performed. Current stage is not complete.
+
+### R0-A — Real M5 Receipt Binding: NOT_PROVEN
+
+The ACTUAL run receipt exists at
+`runtime/m5-600519-disclosure-rescan-20260925/actual-valid-receipts/m5-receipt-44a756ccad5433e236c3d74ff3ce3a75d65be835de52109407ad6ac4f0e0576d.json`
+with recomputed file SHA-256
+`b93ea107489c3ddecca4eb876547a45e44dac8e379f86de9f740db4b16a31b56`. Its two
+referenced 600519 source PDFs rehash to
+`24e51c43dfc6da7d3a19c67b88081715a3a3b4a26c2d83ec51a557e3e5692873` and
+`0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6`.
+This proves archived bytes, not an admissible current Product lineage. The
+current canonical publication receipt binds M5 projection bytes
+`2fd02d763b75e078073a6c0739cb52745bdccb5b3d92c3c25ed1520566ad1cac`, which
+are the 000333 historical public projection, not this 600519 ACTUAL run.
+
+The ACTUAL application used the legacy offline-authorization path, which is
+now limited to read-only historical replay; the current production trust-root
+pin registry is empty. The original verified-facts/dependency/recalculation
+inputs needed to revalidate the run are not all present. Current product code
+still accepts a caller-supplied projection. Synthetic projection and durable
+replay tests do not bridge that gap. Two independent reviews therefore keep
+R0-A open. Exact reopen condition: an admissible verified M5 event input with
+all original graph/plan/verified-facts/bounded-recalculation and review bytes;
+then rehash receipt/source/review/evidence bytes and prove issuer/event identity
+through an issuer-neutral adapter, product read model and Excel with tamper
+negative cases. Do not recreate missing originals or use legacy replay as a
+current event.
+
+### R0-B — Content-Level Privacy: PARTIAL
+
+The redacted context report
+`runtime/privacy-context-classification-20260927-exact.json` has SHA-256
+`41f96e1cabb7700d2692ac6152f46b1e7660ae4188b02ea78d58aad2292d18f9`. It scans
+34 tracked workbooks and reconciles 162 raw-only fingerprints: 154 are only
+rule-labeled potential public values, 5 have private-context hits, and 3 are
+unknown. Independent review blocks all 8 unresolved fingerprints; no raw
+candidate values were disclosed or accepted as public.
+
+For successful Core Research Gates run `36282732643` on HEAD, GitHub exposed
+one 3,368-byte synthetic restore artifact by metadata, but log download returned
+403 and artifact-byte download returned 401 in the independent check. Their
+contents remain unverified. M4 separation is verified only at the code/rule
+level; no real private package was inspected. The current `WORKBOOK_PATH` was
+resolved without disclosing it: it exists under the WPS Drive and outside the
+repository, is not Git-tracked, and its current bytes hash to
+`8bd50bd832802d00b73c12fdc6ac0ea04843d0f8f6cd59f36913e47b9f9eafb3`, matching
+the publication receipt. The WPS read-only receipt says `passed`, but does not
+record that exact workbook digest; user-managed content's exclusion from
+runtime/CI/public receipts is not fully proven. Do not inspect or disclose
+private cell contents to close this gap.
+
+Exact reopen conditions: independently substantiate each of the 8 redacted
+candidate classifications without exposing source values; obtain accessible
+CI log and artifact bytes and scan them without logging content; prove the M4
+private root/key boundary without opening private values; and bind the exact
+current WPS workbook digest/read-only check while proving user-managed regions
+are excluded from Git, CI artifacts, runtime publication and public receipts.
+
+### Verification and Remaining DAG
+
+Focused offline regression in an isolated project-local temp directory:
+`88 passed, 12 skipped`. The skipped cases require unavailable original M5
+verified-facts/recalculation inputs and are not passes. The committed HEAD's
+Core Research Gates run `36282732643` is green; it does not cover the dirty
+worktree. No Excel publication occurred. Current machine and reviewer evidence
+leaves exactly `SAFE_R0_REMAINING=2` (R0-A, R0-B) and
+`SAFE_R1_REMAINING=0`; R0-C remains closed as an R3 resource decision. No new
+External Gate Handoff is generated while either safe R0 remains. Preserve
+`TOTAL_GOAL_STATUS=IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`,
+`INITIAL_ASSISTED_USE=NOT_REACHED`, and `action=no_order`.
+
+| DAG_NODE | CURRENT_STATUS | WHY_REQUIRED | WHAT_IS_ALREADY_DONE | EXACT_EXTERNAL_INPUT | REOPEN_CONDITION | WHAT_CAN_CONTINUE_IN_PARALLEL |
+| --- | --- | --- | --- | --- | --- | --- |
+| R0-A real M5 receipt binding | `NOT_PROVEN` | Product must not accept caller-authored event state or historical replay as a current verified M5 event. | Archived ACTUAL receipt and its two source PDFs rehash correctly; existing durable replay and synthetic projection regressions pass. | A provenance-eligible M5 event artifact set with original graph, plan, verified facts, bounded recalculation and review bytes; no private data or production authorization is requested here. | All referenced bytes verify, issuer/event/state bindings are replayable from upstream evidence, and positive plus tamper-negative tests pass through Excel. | R0-B may proceed independently; keep investment conclusions and Excel bytes unchanged. |
+| R0-B content privacy and boundary | `PARTIAL` | Public Git/CI/runtime must not carry private values, and unresolved numeric candidates cannot be presumed public. | Tracked text/OOXML scan and redacted context classification exist; canonical path is confirmed under WPS and outside the repository; current file hash matches its publication receipt. | Accessible CI log and artifact bytes; evidence for the 8 redacted candidate classifications; exact-digest WPS read-only receipt and proof that user-managed content is excluded from Git/CI/runtime/public receipts. Do not supply raw personal values. | Independent bounded review accepts each candidate or records only explicitly bounded safe unknowns, CI content passes, and M4/WPS boundaries are hash-bound and independently verified. | R0-A may proceed independently; do not read private cells or republish the canonical workbook. |
+
+## Prior stage evidence — 2026-09-27 prospective PIT, event-watermark and Midea related-party audit
+
+Three bounded independent SubAgent reviews plus a local original-document
+review advanced the active public-research DAG. This is a research/evidence
+checkpoint only; it does not complete the total Goal or alter the canonical
+workbook.
+
+- **PIT audit:** v2 registration receipt SHA-256
+  `8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5`
+  records process-clock `receipt_created_at=2026-09-27T00:24:16.082830Z`
+  (08:24:16 China time), while `declared_registered_at` and the three cases'
+  observation starts say 08:45. The declared time is not independently
+  attested. v13's 18 report facts have source publication dates before cutoff,
+  but their retrieval/ledger observation times are after cutoff. Only Yili has
+  two observation JSONs; both bind the same pre-start CNINFO `1225578520` and
+  the successor corrects its classification to a re-observed preexisting
+  document. It is not two new prospective facts. No new valid post-start
+  observation was found. Strict contemporaneous PIT remains `NOT_PROVEN`.
+- **Midea investor event:** within the exact issuer CNINFO archive for
+  2026-08-29..09-27 (8 records, complete pagination) and the issuer IR pages
+  reviewed, no post-event Q&A/meeting record or transcript was located for the
+  2026-09-15 event. The search did not include the event organizer's platforms,
+  social media or inaccessible/unpublished video, so this is a bounded search
+  result, not proof of global nonexistence. The 09-11 notice `1225557650` is a
+  scheduling notice only and is not treated as Q&A evidence.
+- **CNINFO watermark audit:** 000333 verified indexes cover the bounded,
+  contiguous interval 2026-03-31..09-27, but do not establish coverage before
+  03-31 or connect to the old watermark whose evidence was a registration
+  receipt, not a query receipt. 601088 verified indexes only support separate
+  windows 03-31, 06-26..08-31, and 09-23..09-27; gaps remain 04-01..06-25 and
+  09-01..09-22. Both formal watermarks remain `INCOMPLETE`; no coverage is
+  inferred for issuer IR, exchange sources or corrections. Details and hashes
+  are recorded in `docs/current/track-c-public-event-scan-20260927.md`.
+- **Midea related-party originals:** CNINFO `1225058114` (2025 related-party
+  balances; SHA-256 `d1cec190f2507099b45ebdc17f3d0a7f692463888a25d9e6ca78ce5519a45e5e`)
+  and `1225058125` (2026 ordinary related-transaction estimate; SHA-256
+  `2d3c2172110a70e34d104015f1b9ff3facde5fbd88f0c54c648aa64ce34ece17`) were
+  downloaded and visually reviewed. The former's CNY 34.521bn balance total
+  includes subsidiary receivables; a separately listed CNY 6.294bn
+  related-bank financial-asset balance is not proven unrestricted industrial
+  cash. The latter estimates up to CNY 2.15bn of 2026 component/smart-home
+  procurement, versus CNY 1.547bn actual in 2025. Neither reconciles
+  finance-company standalone accounts,
+  consolidation eliminations, encumbrance/maturity, or industrial/financial
+  debt allocation. The source disclosures predate the registered cutoff but
+  were re-retrieved after it; they were not backfilled into v13 or counted as
+  post-start observations. Midea remains `MODEL_NOT_READY` /
+  `VALUATION_NOT_READY`.
+
+No watermark, baseline, observation, valuation or workbook was changed.
+`STRICT_PIT=NOT_PROVEN`, `000333_WATERMARK=INCOMPLETE`,
+`601088_WATERMARK=INCOMPLETE`, `M6_OPERATIONAL=NOT_STARTED`,
+`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`, `INITIAL_ASSISTED_USE=NOT_REACHED`,
+`action=no_order`.
+
+### M5 product projection binding and source correction — 2026-09-27
+
+Independent original-PDF review corrected one factual transcription in
+`docs/current/track-c-public-event-gapfill-20260927.md`: CNINFO `1225544342`
+reports CNY 87.71 as the highest and CNY 73.66 as the lowest repurchase price;
+73.66 is not the average. The other reviewed event descriptions remain bounded
+and unchanged. A targeted search found no other occurrence of that incorrect
+average-price claim.
+
+The canonical product publisher now accepts an optional M5 event projection
+only when its JSON is under `runtime/`, its exact SHA-256 is supplied, and its
+top-level action is `no_order`. The exact same loaded projection is passed into
+both `--verify-only` and `--publish`; the existing candidate layer continues
+to validate each referenced evidence file and hash. This is projection wiring,
+not M5 ACTUAL authorization, prospective-observation registration, production,
+or an investment conclusion. Targeted projection/publisher tests passed
+(`21 passed`). The projection was also built from the retained CNINFO files and
+passed the publisher's in-memory verification. An initial publication without
+the v13 snapshot was rejected by the WPS content assertions; the previous
+canonical file was preserved in the publisher backup. The corrected publication
+included both the unchanged v13 snapshot and event projection. Receipt:
+`runtime/publication-receipts/canonical-m7-product-publication-20260927T124434Z.json`.
+Final canonical SHA-256 is
+`65dc6770cf6c2e0895aba348025940696cb64bfe2f897c985f9254704be137ac`;
+backup SHA-256 is `6e895d4a11baf8e272f49c25548cbedaa7625281d42bb491efe2e78e4323d269`.
+WPS read-only verification passed and its receipt is
+`runtime/publication-receipts/m7-midea-event-wps-readonly-20260927.json`.
+The product event page now includes the three historical, pre-registration
+items, and the audit page retains local source paths and hashes; it still has
+no direct source-URL field. This does not alter the prospective ledger.
+All three valuation states remain `VALUATION_NOT_READY`; strict PIT remains
+unproven; M6 remains `NOT_STARTED`; M7 final user acceptance remains
+`NOT_PASSED`; `action=no_order`.
+
+### Midea R1 dispositions and canonical publication — 2026-09-27
+
+An independent research reviewer confirmed the source-supported classifications:
+CNINFO `1225531406` is `MATERIAL_SUPPORTING_EVIDENCE` (proposal only);
+`1225544342` and `1225544482` are `MATERIAL_RISK_MONITOR`. None justifies an
+immediate valuation recalculation, changed share-count/expense input, or trade.
+The product read model now distinguishes these dispositions and presents them
+as `MONITOR` with document-specific reopen triggers, rather than implying a
+pending human review. The detailed bounded rationale is in
+`docs/current/track-c-public-event-gapfill-20260927.md`.
+
+The new immutable projection is
+`runtime/midea-public-event-projection-v2-20260927.json` (SHA-256
+`2fd02d763b75e078073a6c0739cb52745bdccb5b3d92c3c25ed1520566ad1cac`). It
+remains explicitly pre-registration historical evidence and does not write the
+prospective ledger. Canonical publication receipt:
+`runtime/publication-receipts/canonical-m7-product-publication-20260927T131204Z.json`.
+The publisher preserved all non-product/manual sheets. Final workbook SHA-256:
+`8bd50bd832802d00b73c12fdc6ac0ea04843d0f8f6cd59f36913e47b9f9eafb3`;
+the verified source baseline snapshot remains v13 SHA-256
+`ded9fb9176d8d302a97aa527a302744083bf5a37448f28efbf50441fb56269e5`.
+WPS read-only validation passed at
+`runtime/publication-receipts/m7-midea-r1-dispositions-wps-readonly-20260927.json`.
+The Excel evidence audit still has no direct URL field; it retains local paths
+and source hashes, while official URLs are preserved in the projection report.
+No research valuation, price assessment, decision, portfolio state, or order
+was changed; `action=no_order`.
+
+### Prospective research follow-up — 2026-09-27
+
+The Midea supplemental baseline card now records a bounded consolidated
+cash/financial-asset bridge from the audited FY2025 and unaudited 2026H1
+reports. It separates balance-sheet monetary funds, cash-flow-statement cash
+and equivalents, interbank deposits, restricted monetary funds, total
+restricted assets, fair-value-measured financial assets, and current portions
+of non-current assets. Parent-company and consolidated balances are explicitly
+not added together. This narrows interpretation risk but does not establish an
+industrial net-cash/net-debt amount: finance-company standalone statements,
+business allocation, consolidation eliminations, maturity/encumbrance and
+industrial-versus-financial debt remain unresolved. No amounts were admitted
+to the baseline; Midea remains `MODEL_NOT_READY` / `VALUATION_NOT_READY`.
+
+A complete exact-issuer CNINFO calendar-year query for Yili 600887 returned 132
+records across five pages (retrieval index SHA-256
+`25be88f33af9e9bbe110d506efab95e3d0eec9d3a1959d1c521d88f143c455e2`). It
+identified the 2025-04-30 project-extension notice, board resolution and
+sponsor verification, plus the 2025-05-21 annual-shareholders' resolution.
+The retained originals corroborate the disclosed governance path for the
+December 2027 expected-use date. The same 2025 notice table and the 2026H1
+report table both say `不适用`; the mismatch remains unresolved, and there is
+no evidence of actual project completion. This is pre-registration historical
+evidence only. The report-level Yili claim remains unadmitted, baseline v13 and
+observation ledger are unchanged, and Yili remains
+`BASELINE_PARTIAL` / `VALUATION_NOT_READY`.
+
+An independent read-only review of Shenhua 601088 confirmed that the current
+2014-2025 evidence supports cycle description but not a comparable
+cycle-normalized profit series. BSPI/NCEI are distinct index series; operating
+prices, costs, volumes, power-segment breaks, 2024 restatements, maintenance
+capex and parent-available cash are not fully reconciled. No normalized
+earnings or valuation was generated; `VALUATION_NOT_READY` remains correct.
+
+Targeted prospective registration, observation, baseline, event-watermark,
+public-event, product-projection and quote-binding regressions returned
+`106 passed`. `git diff --check` passed before these documentation-only
+follow-ups; final check is recorded with this change. There was no new
+completed exchange session and no new verified event requiring a canonical
+workbook publication. The canonical workbook hash and all three valuation
+states remain unchanged; `action=no_order`.
+
+Historical R0 checkpoint (not the current stage):
+R0-A_REAL_M5_RECEIPT_BINDING = NOT_PROVEN
+R0-B_CONTENT_LEVEL_PRIVACY = PARTIAL
+R0-C_RESOURCE_CAPACITY = CLOSED_AS_R3_INFRASTRUCTURE_DECISION
+SAFE_R0_REMAINING = 2
+SAFE_R1_REMAINING = 0
+EXTERNAL_GATE_HANDOFF = NOT_READY
+
+R2 parks only M4 and is not a global blocker. Public research, prospective PIT,
+bounded public-event research and the canonical workbook are active under the
+current stage authorization. R0-A/R0-B remain unresolved DAG nodes; they must
+not be represented as passed, but do not stop independent public work.
+
+## Current Public-Research Increment — 2026-09-27
+
+Bounded exact-issuer CNINFO queries for 2026-09-27 were repeated once later in
+the same day to check for late-day filings. All three returned HTTP 200,
+complete pagination and zero announcements; this adds no event, does not repair
+the earlier continuity gaps for 000333/601088, and does not advance the
+registered watermarks. Raw page SHA-256 is
+`c2a890bbf3a6a53ab02ddc6c1794bf1c72ba45799fe9f59dcc5ba2cc18467114` for each
+empty response. The per-run indexes are:
+
+- 000333: `runtime/prospective-public-event-20260927/gapfill-000333-20260927T112218728018Z/index.json`, SHA-256 `65cfb6fc268bf07fbc11462ae5cdb51f31fa1d59ce4bcfea7ef9122b865b066c`.
+- 600887: `runtime/prospective-public-event-20260927/gapfill-600887-20260927T112225298646Z/index.json`, SHA-256 `4ad9a1190190322d339d9b8f2ee88e7728ede73055a0af54f68e9fc7b1c00b67`.
+- 601088: `runtime/prospective-public-event-20260927/gapfill-601088-20260927T112235104724Z/index.json`, SHA-256 `e2c3b27cc18386024e27e349790df0478852271cca720647308a43dd22ceb9cc`.
+
+The Midea and Yili cards now explicitly enumerate known facts, assumptions,
+unknowns and reopen triggers alongside quality, counterevidence and model
+readiness. Shenhua's separate cyclical card remains authoritative for its
+normalization gaps. No new facts changed the v13 baseline or canonical workbook;
+no publication was warranted. Regression for registration, baseline admission,
+observation PIT, bounded event scans/watermarks and product projection returned
+`80 passed` using isolated basetemp `runtime/pytest-goal-20260927-a`.
+
+### Midea bounded filing review — 2026-09-27
+
+An exact-issuer CNINFO gap fill for 000333 over 2026-08-29..2026-09-27
+returned 8 records with complete pagination. Three follow-up originals were
+downloaded, SHA-256 recorded, and visually reviewed; text extraction was not
+used because embedded-font decoding was garbled. The 2026 buyback progress
+notice reports 99,797,967 shares / 1.31% through 2026-08-31 for CNY
+8,019,722,850 excluding fees; its disclosed purpose is cancellation/reduction
+of registered capital, but final cancellation is not evidenced. A separate
+2025 buyback supplied 15,772,385 existing shares / 0.21% to the employee plan,
+locked through 2028-09-02; future share-based-compensation expense is
+unquantified. The investor-reception notice establishes only the scheduled
+event; Q&A content remains unreviewed. The interim dividend remains a
+proposal; this bounded result contains no later approval or payment notice.
+The 2026H1 related-party schedule (CNY 10,000 units) totals CNY 35.271bn at
+period end, including a CNY 24.980bn subsidiary balance and a separate
+related-bank financial-product line with CNY 6.294bn opening and CNY 2.644bn
+ending balances. Entity/consolidation
+scope and accounting must be reconciled; neither figure alone proves external
+receivable exposure, misappropriation or stress. Source IDs, hashes, event
+dispositions and limitations are recorded in
+`docs/current/track-c-public-event-gapfill-20260927.md`.
+
+These documents were public before the registered observation start and are
+not new prospective observations. The 000333 watermark remains `INCOMPLETE`;
+no baseline/valuation/decision input changed and no canonical publication was
+warranted. A later direct disk hash and current WPS read-only verification are
+recorded below; neither constitutes final user acceptance. `action=no_order`.
+
+### Canonical registration identity note — 2026-09-27
+
+The three-case baseline/publication chain uses
+`runtime/prospective-v2-fc1e811/receipt.json` (SHA-256
+`8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5`),
+as confirmed by publication-v7 and verification-v9 bindings. Its
+`receipt_created_at` is process-clock evidence only, not an independent
+timestamp attestation; strict contemporaneous PIT remains `NOT_PROVEN`. The
+separate `runtime/prospective-research-registration-20260927/receipt.json`
+(SHA-256 `e8f8f8cdab90c7cc020683b54f0901d342eff2329923242c0ac6f9a686e6d039`)
+is a v1 receipt with a declared 09:30 China-time cutoff and is not referenced
+by the current v13 publication chain. Do not treat it as the active cases'
+registration or time anchor. Both immutable receipts are preserved unchanged.
+
+### Earlier verification snapshot — 2026-09-27 (superseded by later publications)
+
+At the time of this earlier checkpoint, the canonical workbook matched the then-latest publication receipt
+`runtime/publication-receipts/canonical-m7-product-publication-20260927T093345Z.json`
+at SHA-256
+`68b218ed233973e0151fee747f822a485ca9a79f6a1bef69240f4361c66dc867`.
+The repository's read-only WPS UX verifier passed against these exact bytes;
+receipt is
+`runtime/publication-receipts/canonical-m7-product-wps-ux-20260927T-current.json`
+and records the same SHA, 61 sheets, required six leading product sheets,
+formula/layout/wording checks and `final_user_acceptance=NOT_PASSED`. The current
+workbook was unchanged at that checkpoint. This snapshot is superseded by the
+13:12 publication record below; it remains here only as historical evidence.
+
+Current-data check: the official SZSE September 2026 monthly calendar response
+(`runtime/exchange-calendar-probes/20260909T020102864128Z/2026-09.bin`, SHA-256
+`8c8482e9cdbbab6177af9b19cdbd38f2affa7e6a8d441df67b082b20f8698bc0`;
+`https://www.szse.cn/api/report/exchange/onepersistenthour/monthList?month=2026-09`)
+marks 2026-09-25 closed (`jybz=0`). SSE's official 2026 closure notice also
+states 2026-09-25..27 closed. Thus the retained 2026-09-24 quote is still the
+last completed exchange session; no duplicate or stale quote refresh was run.
+The next scheduled session is 2026-09-28, subject to its actual completion.
+
+Focused regression at that earlier checkpoint: `79 passed` across prospective
+registration, baseline admission, observation/PIT, public-event scan,
+watermark-manifest and product projection tests. `git diff --check` passed.
+Later in this Goal continuation, `git fetch origin` succeeded and confirmed
+local `main` and `origin/main` both at `c9449a4fe8881a0cec9ce2f992622b48693c413a`.
+The working tree still contains extensive pre-existing modifications, so no
+checkout, pull, commit or push was performed.
+
+```text
+PUBLIC_RESEARCH_OPEN_NODES = reconcile Midea related-party/financial-asset schedule to consolidated notes and eliminations; resolve the existing Yili project completion-date discrepancy and one unadmitted report-level claim; strengthen Shenhua cycle comparability/normalization or retain explicit NOT_READY
+PUBLIC_EVENT_OPEN_NODES = 000333 and 601088 CNINFO watermarks remain INCOMPLETE; 600887 is contiguous only for the recorded CNINFO window; future Midea cancellation, dividend implementation, employee-plan expense and investor-meeting Q&A remain event triggers
+CURRENT_DATA_OPEN_NODES = next planned session is 2026-09-28; latest matched quote remains 2026-09-24 and must not be duplicated before a new completed session
+PRODUCT_OPEN_NODES = Midea pre-registration event dispositions are published and WPS-verified; Excel audit page still lacks direct source-URL hyperlinks/column and relies on local path plus SHA-256
+R2_PARKED_NODES = M4 personalized portfolio only; no private input requested
+R3_PARKED_NODES = M6 production/infrastructure only; no deployment, shadow or schedule
+R6_PARKED_NODES = M3 strict contemporaneous PIT; future evidence; M6 real sessions/events and 20 consecutive-session gate
+R5_PARKED_NODES = M7 final user acceptance; user trial not passed
+SAFE_R0_REMAINING = 2; R0-A real M5 receipt lineage and R0-B privacy/artifact review remain open
+SAFE_R1_REMAINING = 0; this increment independently closed the three Midea event materiality/research dispositions
+M4_PERSONALIZED = PARKED_WAITING_R2
+M6_OPERATIONAL = NOT_STARTED
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+Historical R0 checkpoint details follow:
+R0-A remains open because no verified real M5 receipt-to-Product-to-Excel chain
+is bound; M5 actual replay cases skip when required graph/plan/facts/recalculation
+artifacts are absent. R0-B remains open because 8 of the 162 raw-only OOXML
+fingerprints remain unclassified for release (5 private-context hits, 3 unknown),
+and latest CI/WPS/current-worktree privacy boundaries are not fully evidenced.
+The current handoff is therefore
+NOT_READY; the 2026-09-26 handoff below is historical, not an authorization.
+R2, R3, R5 and R6 continue to park only their respective DAG nodes. No private
+input, production authorization, Shadow, schedule, notification or order is
+requested or enabled.
+
+### R0 Evidence Recount — 2026-09-27
+
+`HEAD` and fetched `origin/main` both resolve to `c9449a4fe8881a0cec9ce2f992622b48693c413a`;
+the worktree has unrelated uncommitted changes, so no checkout, merge, commit or
+push was performed. GitHub Core Research Gates run `36282732643` for this HEAD is
+green, but does not cover the dirty worktree. Focused local regression across M5,
+Product Workbench, privacy, canonical preservation, M6 start criteria,
+authorization and backup security returned **117 passed, 12 skipped**. The
+skipped M5 actual replay cases require graph, plan, verified-facts and bounded
+recalculation artifacts absent from this checkout; they are not passes.
+
+R0-A remains `NOT_PROVEN`. The self-consistent ACTUAL run artifact exists at
+`runtime/m5-600519-disclosure-rescan-20260925/actual-valid-receipts/m5-receipt-44a756ccad5433e236c3d74ff3ce3a75d65be835de52109407ad6ac4f0e0576d.json`
+(file SHA-256 `b93ea107489c3ddecca4eb876547a45e44dac8e379f86de9f740db4b16a31b56`),
+and the historical M5 read model exists (SHA-256
+`701cbaa9822d4ba17ba4edc47af2f6b1fef3636001338bf924693223a997b858`). These do
+not establish Product lineage: the current event projection still accepts a
+caller-supplied mapping, M7 publication evidence does not bind either artifact,
+and complete replay inputs are unavailable. Independent read-only review also
+confirmed the current tests exercise synthetic projection rather than a real
+receipt-to-Excel path. Exact reopen condition: restore the missing original
+M5 graph/plan/verified-facts/bounded-recalculation artifacts, bind the available
+review bytes and verify source bytes plus issuer/event identity, then implement and test an issuer-neutral fail-closed adapter through
+the product event sheet. Do not synthesize replacements. An independent
+read-only subagent review confirmed the Product→Excel E2E currently uses
+synthetic event inputs and that the product entry point accepts a caller-built
+projection; it found no real receipt-bound path in either HEAD or the worktree.
+
+R0-B remains `PARTIAL`; no confirmed real private data was found, which is not
+equivalent to a pass. The new redacted context report
+`runtime/privacy-context-classification-20260927-exact.json` has SHA-256
+`41f96e1cabb7700d2692ac6152f46b1e7660ae4188b02ea78d58aad2292d18f9`. It scans
+34 tracked workbooks and exactly reconciles the prior raw-only set: 10,798 raw
+OOXML occurrences / 293 fingerprints, of which the same 162 are absent from the
+openpyxl-visible fingerprint set. Per-occurrence context classification groups
+those 162 as 154 rule-labeled potential public financial/market values, 5
+fingerprints with private-context hits, and 3 unknown. This is a classification
+result, not a privacy pass. Independent read-only review is complete and
+concluded all 8 unresolved fingerprints must remain blocked; public-context
+labels do not independently establish that values are public. The report
+contains only fingerprints, sheet/cell/part
+locations, classifications and categorical signals; no source candidate value
+or context label is emitted. Latest Core Research Gates run `36282732643`
+exposes one 3,368-byte synthetic restore artifact; the GitHub artifact API
+returned 403 on byte download, so its content was not re-scanned. Latest CI logs
+were not re-downloaded. M4 checks establish code-level path/key separation only;
+no real private package was inspected. The canonical publication receipt and WPS
+read-only receipt agree on workbook SHA-256
+`68b218ed233973e0151fee747f822a485ca9a79f6a1bef69240f4361c66dc867` and manual
+sheet preservation, but do not prove the WPS user-managed/private boundary or
+bind M5 receipt inputs.
+
+`INTERRUPTION_AUDIT`: machine verification is green for committed HEAD;
+independent reviews found no basis to close R0-A or R0-B; security/product
+regressions pass in the focused set but contain no real M5 Product E2E; privacy
+remains open; canonical publication integrity matches its receipts; no new R1
+public evidence task is authorized in this stage. Therefore exactly two
+safe R0 DAG nodes remain (A and B), and safe R1 remaining is zero. Existing
+`docs/current/external-gate-handoff.md` is explicitly superseded and must not be
+used as a current handoff. No new handoff is generated until both R0 nodes are
+actually closed. `TOTAL_GOAL_STATUS=IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`;
+`INITIAL_ASSISTED_USE=NOT_REACHED`; permanent `action=no_order`.
+
+The 2025FY A-share dividend evidence gap is now closed at the public-document
+level: CNINFO shareholder resolution `1225393356` reports the proposal passed;
+the issuer's 2026-07-06 implementation notice `1225410284` states CNY 1.03
+gross per A-share and 2026-07-13 as the payment date. This confirms disclosed
+approval and implementation terms, not account-level receipt or future
+sustainability. The bounded 2026-06-26..2026-08-27 CNINFO query and source hashes
+are in `docs/current/track-c-shenhua-dividend-followup-20260927.md`. This is
+re-observed pre-registration material, does not advance the incomplete event
+watermark, and does not alter valuation or the canonical workbook.
+
+The prospective CNINFO scanner rejects missing, invalid or out-of-window
+announcement timestamps before writing a `COMPLETE` index. Its evidence builder
+revalidates every raw-page timestamp, requires the separately supplied expected
+window and full unfiltered exact-issuer query contract, and requires parsed
+index rows to exactly match the archived response rows. Regression result: 60
+passed, 4 legacy v3 fixture cases deselected because their historical evidence
+hashes remain stale; no historical pin was changed. The caller-supplied window
+and index-bound organization ID are local scope constraints, not independent
+signature/TSA-attested proof of the request parameters received by CNINFO.
+
+## 2026-09-27 Midea H1 source admission and canonical publication
+
+Midea's 2026H1 official CNINFO report `1225531404` was re-observed from the
+bounded exact-issuer query and three summary-row facts were admitted from
+physical PDF page 7. The PDF SHA-256 is
+`576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8`; values
+are CNY thousands: revenue `260042490`, parent-attributable profit `26446037`,
+and operating cash flow `37552090`. The report is unaudited and the
+conservative date-level availability is `2026-08-30`; these are pre-registration
+public facts, not a post-registration disclosure. The source memo is
+`docs/current/track-b-midea-2026h1-admission-20260927.md`.
+
+Append-only source facts `config/prospective-baseline-facts-public-v7.json`
+(SHA-256 `0bbc21f26fd5be480745f2e1624496930863945bd29cea4da8791f27532a5628`)
+passed verification config v9 (SHA-256
+`5c23fb2038efd6697066dc4839cb0b675ed1d00265608d6317652077c9759710`) and
+produced snapshot v13 (SHA-256
+`ded9fb9176d8d302a97aa527a302744083bf5a37448f28efbf50441fb56269e5`). New
+publication pin v7 (SHA-256
+`39746e4c54194b1acf51ca2d7306e57b7840011097218900f1e4cce128cd3bd2`)
+preserves v6 and binds the exact v13 bytes plus unchanged registration and
+baseline-input fingerprints. Product projection and baseline tests: `46
+passed`; in-memory publisher verification returned `VERIFIED_IN_MEMORY_ONLY`
+and `workbook_modified=false` before publication.
+
+The same configured WPS canonical workbook was updated in place. Publication
+receipt `runtime/publication-receipts/canonical-m7-product-publication-20260927T093345Z.json`
+SHA-256 `5ee8c727c3f590a73d00abdb41594fc4f267ede7804a1033427903607d2e54cd`;
+the preserved pre-publication backup has SHA-256
+`7bfaa5531bce0a1809afda8f011d62f5d551631251980298e3eb2e325e0a34e5`, matching
+the prior canonical. Published workbook SHA-256 is
+`68b218ed233973e0151fee747f822a485ca9a79f6a1bef69240f4361c66dc867`. WPS
+read-only verification receipt
+`runtime/publication-receipts/wps-readonly-verification-midea-h1-v13-final-20260927.json`
+SHA-256 `7007fedf063e499027eb44645a8e41b18b53faaebad6f7cbb7b5bee5aad04b6b`
+records all six product sheets readable/calculated, formula checks, product
+wording gates, required Midea and Shenhua facts, and unchanged workbook hash.
+The quote bundle remains the prior partial 2026-09-24 session (000333 and
+601088 only; 600887 missing); this publication does not claim a new quote.
+`strict_pit_admissible=false`, all three valuations remain not ready, M7 final
+user acceptance is not passed, and `action=no_order`.
+
+## 2026-09-27 Yili contiguous CNINFO watermark successor
+
+The malformed initial post-start scan receipt remains immutable and was not
+used to advance coverage. A fresh exact-issuer unfiltered query covers the
+contiguous window 2026-09-23..27 after the prior 2026-09-22 boundary. Its index
+SHA-256 is `7231cfb60764ee91a3446a77a63569f31ece34d2b4264af47e398e781ac482cd`;
+the raw page, full query contract, one-page completion (`hasMore=false`), and
+official filing scan evidence are hash-bound in the v3 watermark manifest.
+Only existing announcement `1225578520` was returned. The current CNINFO
+watermark for 600887 now ends at `2026-09-27T10:00:05.035069+00:00`; the
+document was public before registration and its materiality remains
+`UNDETERMINED / INSUFFICIENT_EVIDENCE`. The 000333 and 601088 watermarks remain
+`INCOMPLETE`; this does not establish issuer-IR, exchange-site, or later-
+correction coverage. No valuation, PIT status, decision, or workbook changed;
+`action=no_order`.
+
+## 2026-09-27 Shenhua H1 admitted and published
+
+The append-only facts input is `config/prospective-baseline-facts-public-v6.json`
+(SHA-256 `94e481589554613d4eafd22ef5606aeb59296545af8b7f4d39f399467e7b5f24`),
+validated by `config/prospective-baseline-verification-v8.json` and snapshot
+`runtime/prospective-baseline-20260927/snapshot-v12-h1-column-bound.json` (SHA-256
+`7de4c67f00f1096795b684d7cb1510f0c80418ae92f2ea677c1589e4d8dd988f`). The
+three admitted values are 2026H1 revenue CNY 189,338m, parent-attributable
+profit CNY 28,715m, and operating cash flow CNY 54,664m. CNINFO ID `1225531759`
+is bound to the archived index, scan evidence, and PDF bytes (PDF SHA-256
+`ff4a670c7aa9e0309dc610a0e225d490970731dcc14eda234d73bb8c9b9b54f4`). The
+verifier uses pypdfium2 character coordinates to bind the current value to the
+2026H1 column group and the comparisons to the 2025H1 group; missing or
+misaligned coordinates fail closed. The report's 2025H1 comparison is restated;
+the interim statements are unaudited
+and have a limited-assurance review report, not an audit opinion. The
+availability date is conservatively `2026-08-30T00:00:00+08:00` from CNINFO's
+date-level marker.
+
+Current product pin `config/prospective-baseline-publication-v6.json` binds
+this successor snapshot. The in-memory product gate passed without workbook
+write. Canonical publication receipt is
+`runtime/publication-receipts/canonical-m7-product-publication-20260927T074231Z.json`;
+the before/backup hash was `6ba73b62…ad8eb2`, the final canonical hash is
+`7bfaa553…0a34e5`, and all user-managed/frozen worksheets were preserved. The
+read-only WPS verification receipt is
+`runtime/publication-receipts/wps-readonly-verification-shenhua-h1-v12-20260927.json`;
+it checked all six product sheets, formula errors, freeze panes, forbidden
+decision wording, and the three values plus their assurance/date disclosure;
+the receipt records the exact passed company-content assertions.
+Quote coverage remains partial (000333 and 601088 present; 600887 missing),
+and its observation date remains 2026-09-24. This research update does not
+change valuation, strict PIT, operational readiness, or user acceptance:
+`VALUATION_NOT_READY`, `strict_pit_admissible=false`,
+`M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`, `INITIAL_ASSISTED_USE=NOT_REACHED`,
+`action=no_order`.
+
+Remote freshness note: `git fetch origin` completed successfully in this
+continuation (exit code 0). Local `HEAD` and refreshed `origin/main` both remain
+`c9449a4fe8881a0cec9ce2f992622b48693c413a`; no checkout, pull, commit, or push
+occurred. The working tree remains dirty, so no branch-changing operation was
+performed.
+
+## 2026-09-27 prospective observation time-order hardening
+
+Independent SubAgent review identified that the append-only observation writer
+bound the scan receipt and PDF bytes but did not cross-check receipt creation,
+index request/response, and PDF request/response ordering. It now requires the
+receipt observation start to equal the registered start, validates timezone-
+aware index and PDF times and HTTP success, requires each index response to
+precede the PDF request, and requires receipt creation to follow the PDF
+response. This is a local consistency check only: all timestamps remain
+process-clock claims without independent TSA/signature attestation, so
+`STRICT_PIT=NOT_PROVEN` is unchanged. Classification now treats a source whose
+conservative availability equals the observation start as pre-existing public
+material, not a post-registration disclosure.
+
+Focused verification across observation, registration, and baseline suites:
+`47 passed, 4 deselected`. The unfiltered run was `47 passed, 4 failed`; the four
+failures stop at stale historical v1 scan-evidence hashes before reaching their
+intended assertions. No historical hash or receipt was re-signed. No event
+watermark, baseline, valuation, canonical workbook, or product status changed;
+`action=no_order`.
+
+## Previous 2026-09-27 public baseline and canonical WPS verification (v10; superseded)
+
+At that earlier checkpoint, the immutable baseline was
+`runtime/prospective-baseline-20260927/snapshot-v10-fresh-source-facts.json`,
+SHA-256 `e9b55a4ecbbe095bcb3489e5d22e48490f53e9cbcfc09d68ac7729baa64ec1dc`.
+It binds fresh complete CNINFO report-category scans and original PDF evidence:
+000333 has 3 admitted facts and no unadmitted facts; 600887 has 6 admitted and
+1 explicitly unadmitted report-level fact; 601088 has 3 admitted and 1
+explicitly unadmitted operating-facts item. All three remain
+`VALUATION_NOT_READY`; strict PIT remains false because registration timing is
+only process-clock-attested. No value in this snapshot is a trade instruction.
+
+At that earlier checkpoint, the canonical WPS workbook was published in place using
+`config/prospective-baseline-publication-v4.json` and quote coverage remains
+partial (000333 and 601088 present, 600887 missing; 600519 excluded). Publisher
+receipt `runtime/publication-receipts/canonical-m7-product-publication-20260927T052648Z.json`
+binds before/backup and final hash; the distinct read-only WPS verification
+receipt is
+`runtime/publication-receipts/canonical-m7-product-wps-ux-20260927T052648Z.json`.
+WPS opened the canonical workbook read-only, checked all six product worksheets,
+41 visible/20 hidden sheets, frozen panes, formula errors, user-page decision
+wording and valuation/portfolio empty states. It passed without changing the
+canonical SHA-256 `4ce9ec6ce6b207c861459bd5f8c60ae0c99b201dda3da494694d19aaea357d90`.
+This is engineering UX verification only; `M7_FINAL_USER_ACCEPTANCE` remains
+`NOT_PASSED` and `action=no_order`.
+
+The independent read-only SubAgent audit found the workbook's admitted,
+unadmitted and citation counts consistent with snapshot v10 and found no
+decision-control mismatch. Its WPS inspection was not repeated; the primary
+session separately completed and retained the WPS read-only receipt above.
+
+Event watermark reconciliation is recorded in the append-only successor
+`config/prospective-public-event-watermarks-v2.json`; v1 remains unchanged.
+The later CNINFO window evidence is retained there but does not advance the
+formal watermarks: 000333 and 601088 remain `INCOMPLETE` because local
+2026-09-23..26 and 2026-09-27 windows do not establish their missing earlier
+continuous coverage; 600887 remains at its prior 2026-09-22 watermark because
+the later raw scan's receipt summary required a separate interpretation and a
+validated continuous successor receipt has not been produced. The 600887
+announcement `1225578520` remains in bounded review with broader funding and
+accounting materiality `UNDETERMINED / INSUFFICIENT_EVIDENCE`. Do not advance a
+watermark from these partial observations alone.
+
+The local 600887 event ledger contains 19 indexed announcements; 13 remain
+`PENDING_HUMAN_REVIEW`. All 13 linked PDF files currently match their recorded
+SHA-256 values. This is a bounded research queue, not evidence that all 13 are
+material; the queue remains open until document-level facts and dependencies
+are classified. The completed read-only SubAgent cross-check found that many
+already have scoped dispositions in
+`docs/m1-post-review-decision-gate-20260923.md`; queue status is not a claim
+that those documents were never analyzed. It identified the impairment
+announcement `1225511493` and proceeds report `1225511474` as open research
+dependencies, while actual buyback completion and guarantee utilization still
+require future issuer filings. Their linked sources were cross-checked into
+`docs/current/track-b-yili-impairment-and-proceeds-review-20260927.md` with
+original PDF hashes and printed/physical pages. Impairment remains
+`MATERIAL_REQUIRES_RECALCULATION`; proceeds remain `REQUIRES_DECOMPOSITION`.
+The review does not close either disposition or alter any current valuation.
+
+Targeted tests were run with a project-local pytest temporary directory after
+the default Windows temp location denied directory enumeration. Result:
+42 passed and 4 failed in the combined run. The four failures are legacy
+baseline fixture tests whose pinned 2026-09-23 Yili scan evidence bytes no
+longer match the file at that historical path; verification correctly fails
+closed before reaching their individual assertions. Do not re-sign or rewrite
+that historical pin. Subsequent focused tests that rely on pytest's default
+temp path also failed during fixture setup due to the same Windows temp access
+denial. The newly added v10 projection and public scan tests passed in the
+combined run. `git diff --check` reported no whitespace errors (only existing
+CRLF normalization notices).
+
+In the subsequent continuation, the focused current-path suite including the
+watermark-manifest regression test passed 24/24 using a unique project-local
+pytest temp root. The legacy v3 baseline fixture was not rewritten to conceal
+its historical receipt drift.
+
+The post-registration Yili document review used PyMuPDF text extraction after
+`pypdf` produced garbled Chinese glyphs. The impairment notice, proceeds report
+and H1 report were cross-checked by exact PDF hashes and page-level text. This
+produced a bounded memo only; no baseline, prospective observation, model input,
+event watermark, workbook, or valuation artifact was changed.
+
+The full focused rerun including baseline, product, event, observation,
+registration, quote-binding and watermark tests completed with 44 passed and
+4 failed. All four fail at the legacy v3 fixture's stale 2026-09-23 scan
+evidence hash before reaching their intended assertions; no historical pin was
+rewritten. The 24-test current-path subset remains green.
+
+### 2026-09-27 Legacy v3 fixture isolation retest
+
+The exact historical fixture bytes were recovered from retained pytest-isolated
+projects, not from the formal runtime path or Git history. Their SHA-256 values
+match the existing v3 pins: `evidence.json` is
+`a6a2dffac4a14726968979c3e401ce7e3b9f65a8d5c9c58a1f9dec1625f05a90`, and
+`cninfo-index.json` is
+`f68b7e83d77c4c1d09c8d033a6e0054c97c0ce93f9c383349388bbc2d815ceea`.
+
+Using the retained isolated fixture project as the test input root and a fresh
+pytest `basetemp` outside the repository, the four stale-fixture failures were
+rerun with five adjacent `_project()` boundary tests: 9 passed. The run excluded
+the test that verifies real Git registration ancestry and tests that directly
+read the canonical `ROOT`; this result is only an isolated fixture regression
+check, not a Git/PIT attestation. The formal runtime files remain unchanged and
+do not match the old v3 hashes; the verifier must continue to fail closed on
+those bytes. No pin, source evidence, workbook, or prior test record was
+rewritten. `action=no_order` remains in force.
+
+## 2026-09-27 Midea item-level baseline and canonical refresh
+
+The exact CNINFO annual-report-category query for code `000333`, date
+`2026-03-31`, returned 2 of 2 rows with unique announcement IDs; the target is
+`1225065145` (`2025年年度报告`). This is a narrow annual-category listing, not
+a full event-coverage scan. The HTTP response bytes are retained at
+`runtime/prospective-baseline-20260927/midea-index-20260927T041631898534Z/response.raw.json`,
+SHA-256 `3c6b95775cfe940191bd928ba822f68a7e75569a860cb74912a5caf5c5e44543`;
+the parsed index and scan evidence bind their query and retrieval time. The
+official PDF is `runtime/midea-2025-official.pdf`, SHA-256
+`16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6`.
+
+The versioned v5 verification input admits three report-summary values from
+physical page 9 / printed page 8, all in CNY thousand: revenue 456,451,731;
+parent-attributable net profit 43,945,411; and operating cash flow
+53,345,930. `published_at` records CNINFO's date marker 2026-03-31; because it
+does not establish an intraday release time, snapshot v8 conservatively sets
+`available_at=2026-04-01T00:00:00+08:00`. Yili's six H1 facts retain the
+parallel date-only treatment with availability 2026-08-28. This resolves the
+prior input-field ambiguity by separating `published_at` and `available_at`;
+v2/v4 inputs and v7 snapshot remain immutable history.
+
+Current snapshot:
+`runtime/prospective-baseline-20260927/snapshot-v8-public-item-facts.json`,
+SHA-256 `860e4daeabd44006fb9664ff076d7e54ee9a8b2ea451ecc56269aa25991004b5`.
+Midea and Yili are `BASELINE_PARTIAL`; Shenhua remains
+`BASELINE_EXPLICIT_NOT_READY`. All three remain `VALUATION_NOT_READY`;
+`registration_time_assurance=PROCESS_CLOCK_ONLY_UNATTESTED`,
+`strict_pit_admissible=false`, and `action=no_order`.
+
+The canonical WPS workbook was updated in place from the prior canonical hash
+`e2144c22721f614960b9696f1066acf480e1c90ba505f2ed54e2352a98b2d600` using
+publication pin v3 and snapshot v8. The publisher receipt is
+`runtime/publication-receipts/canonical-m7-product-publication-20260927T043343Z.json`,
+SHA-256 `4e1fed4aaf364cee6dcd508e2f81e55a634ad90fe28171ae431bdc9cd8ba7e15`;
+it binds the before/backup hash and final canonical hash
+`eecb864741d22e0573c4e28f844a8199f63bb846c59ad4d37117fa839a44299b`.
+The distinct WPS read-only receipt is
+`runtime/publication-receipts/canonical-m7-product-wps-ux-20260927T043900Z.json`,
+SHA-256 `2f924eba483e30f63faadc26fa8674e56ca20ed1ef40e88554d84eff08937253`;
+it passed on 61 sheets and reported no hash change. An independent review
+noticed the earlier 04:33 receipt labeled the COM compatibility name as
+`Microsoft Excel` despite the WPS application path; the verifier now records
+`application=WPS Office` and retains the COM name separately. The 04:39 check
+passed with the corrected identity fields. This remains engineering
+verification, not `M7_FINAL_USER_ACCEPTANCE`.
+
+Audit note: during the earlier 04:23 v7 publication, the WPS verification
+command was mistakenly given the publisher receipt path. The publisher output
+was captured, but its original JSON bytes were overwritten. That path now
+contains an explicitly labeled recovery record
+(`canonical-m7-product-publication-20260927T042335Z.json`); it is not claimed
+to be the original receipt and has no original receipt hash. Its WPS receipt
+was rerun into a distinct path. The later 04:33 v8 publication and WPS
+verification use separate receipt paths and retain their original files.
+
+## 2026-09-27 Yili item-level facts and PIT time boundary (historical checkpoint; superseded by v8)
+
+An immutable fact supplement was added without modifying the previous baseline
+input or v2/v3/v5 snapshots. The current snapshot is
+`runtime/prospective-baseline-20260927/snapshot-v6-yili-item-facts.json`, SHA-256
+`0d455623c71fd675666ef8aba21aa98d2bbf6de45480031775d707a092176d53`. It admits
+six 600887 2026H1 consolidated report rows from CNINFO PDF
+`cninfo:1225511409`: revenue CNY 64,330,936,547.38 (physical/printed pages
+52/49), parent-attributable profit CNY 5,758,628,097.79 (53/50), operating cash
+flow CNY 9,759,147,483.18 (55/52), asset impairment loss CNY
+-2,455,875,173.02 (52/49), short-term borrowing CNY 64,677,193,034.15 and
+contract liabilities CNY 4,948,856,599.18 (both 49/46). Each ledger entry binds
+the source PDF SHA-256 and conservative date-only availability
+`2026-08-28T00:00:00+08:00`; the report-level placeholder remains explicitly
+unadmitted. These facts do not alone establish ROIC, maintenance capex,
+distributable cash, dividend sustainability or valuation. 000333 and 601088
+remain `BASELINE_EXPLICIT_NOT_READY`; every valuation remains `VALUATION_NOT_READY`.
+
+The line verifier now parses the uniquely matching table row, strips the annual
+statement account-reference marker, requires at least two numeric period
+columns, converts values to `Decimal`, and compares against the first (current)
+period cell. Tests reject a comparative-period value and a short numeric
+substring while accepting all six independently page-cited reported values.
+
+The separate registration-time audit remains open: the receipt's
+`receipt_created_at` is generated by the process clock but is not protected by
+an independent trusted timestamp/signature. RFC 3161 endpoint probing was
+blocked with HTTP 403 in this environment. Therefore snapshot explicitly sets
+`registration_time_assurance=PROCESS_CLOCK_ONLY_UNATTESTED` and
+`strict_pit_admissible=false`; this build must not be counted as M3 strict PIT
+evidence. The product company page displays this limitation. A later verifiable
+timestamp may support future checkpoints, but cannot retroactively authenticate
+this registration time.
+
+The final 2026-09-27 adversarial follow-up found no bypass in the two P2 fixes:
+baseline company name must equal the registered issuer name, and the complete
+source document ID must equal `cninfo:{announcement_id}`. Rehashed wrong-name
+and wrong-namespace regressions cover both paths. The focused local test run
+passed 37 tests across quote binding, registration, baseline projection,
+item-level baseline admission and observation ledger suites. The first test
+attempt could not create pytest temporary directories under the user Temp
+ACL; rerunning with a repository-local `runtime/pytest-prospective-20260927`
+base directory passed. `git diff --check` passed. This is engineering and
+admission validation only; it does not upgrade strict PIT, valuation, M6, M7
+user acceptance, or total-goal status.
+
+The canonical WPS workbook was republished in place after final builder guards.
+Publication receipt
+`runtime/publication-receipts/canonical-m7-product-publication-20260927T031937Z.json`
+SHA-256 `d318854a980fb4bbf015faaf5f53f77b7815bb05445519306e1ab6cd342badf0`;
+backup SHA-256 was the prior canonical
+`326bf4248889111624a684f87166bd9fd74c129cfff3868fbb78ec012d1d300b`.
+New canonical SHA-256 is
+`63bddf29e7ab68196335261b72b73510dcecf3d3196bc94eed6dfe8c477f99fb`.
+WPS read-only receipt
+`runtime/publication-receipts/canonical-m7-product-wps-ux-20260927T031937Z.json`
+SHA-256 `66803006471518a36a32b395514935b9351b5064fe9fcb53147979d3171e7365`;
+61 sheets and all six product pages passed; final user acceptance remains
+`NOT_PASSED`. Focused regression is `73 passed`; the 2026-09-24 quote remains
+partial and no new market session is claimed. `action=no_order`.
+
+## 2026-09-27 PIT admission correction and canonical refresh (historical checkpoint; superseded by v8)
+
+An adversarial review found that the prior baseline validator admitted a
+report-level placeholder from PDF identity/hash alone, and the observation
+writer did not independently re-verify the registration receipt or reject
+supersession forks. Those paths are now fail-closed. Registration verification
+is shared by baseline admission and observation append and checks the canonical
+registration fingerprint, receipt bytes, exact plan bytes, ancestor commit and
+its plan blob, receipt timestamp, and plan/receipt semantic equality. Baseline
+case IDs must be unique. Item facts additionally require a whitelisted type and
+page-bound value, label, unit, report period, consolidation scope, and matching
+physical/printed page in the original PDF. Observation append and read reject
+forked supersession lineage.
+
+The new immutable successor is
+`runtime/prospective-baseline-20260927/snapshot-v3-item-verified.json`,
+SHA-256 `c7dbf885ee5c849ab1a3d741553d20e34c091e2c1773e24e9f079a356552cd51`.
+No current case has item-level facts that pass this admission contract:
+600887's source remains report-level only, and the current Midea/Shenhua claims
+still lack independently bound official listing evidence. All three baselines
+are therefore `BASELINE_EXPLICIT_NOT_READY`, all valuations remain
+`VALUATION_NOT_READY`, and `action=no_order`. The previous v2 snapshot and
+receipt remain unchanged historical artifacts. The unique current pin is
+`config/prospective-baseline-publication-v1.json`.
+
+The canonical WPS workbook at the configured `WORKBOOK_PATH` was refreshed
+in place after an in-memory verify-only pass. Publication receipt:
+`runtime/publication-receipts/canonical-m7-product-publication-20260927T024232Z.json`,
+SHA-256 `df0adf3a4f0e162b2772db85c18544bcc66a25d9c294320fedc089401cdd7cf9`;
+backup preserves the immediately prior workbook. Canonical workbook SHA-256 is
+`780c5214f678343659036adf30bc5bc2c7fd1b32fe6d03a41e04fea34dc8a9e1`.
+WPS read-only UX verification passed with a separate receipt at
+`runtime/publication-receipts/canonical-m7-product-wps-ux-20260927T024232Z.json`,
+SHA-256 `c3fb18d837461ec6864a4c24a61ea89ab67a5426cf9c53c651cd38dce9b85dd5`;
+61 sheets were read/calculated, the six product pages passed layout/wording/
+formula checks, and the workbook hash remained stable. This is engineering
+verification only: `M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`,
+`INITIAL_ASSISTED_USE=NOT_REACHED`.
+
+Focused regression: `69 passed` across product projection, prospective baseline, observation,
+registration and daily quote binding suites; `git diff --check` passed. The
+canonical product verify-only pass returned `workbook_modified=false` before
+publication. The quote observation remains 2026-09-24 with partial registered
+coverage (600887 missing); no quote refresh or new trading session is claimed.
+
+## 2026-09-27 Prospective public research checkpoint (historical checkpoint; superseded by v8)
+
+`runtime/prospective-v2-fc1e811/receipt.json` is the v2 registration time anchor:
+`receipt_created_at=2026-09-27T00:24:16.082830+00:00`, before the registered
+`observation_start_at=2026-09-27T08:45:00+08:00`. Its declared registration
+time is not independent proof. The current baseline successor is
+`runtime/prospective-baseline-20260927/snapshot-v2-date-safe.json`; SHA-256
+`06196121d0df57aa252ce9dc6ac0b879fb0f890b0dcfb5bd90fc3dc3f7cef9d4`.
+It binds the registration receipt, its ancestor Git commit and committed plan
+bytes, the baseline input, archived CNINFO index/scan evidence and original PDF
+bytes. One 600887 2026H1 report fact is admitted. 000333 has no admitted fact;
+the existing 601088 source claim is unadmitted pending an independently bound
+publication record. All three retain `VALUATION_NOT_READY`, `action=no_order`.
+The preceding `snapshot-v2.json` is superseded. The older v1 snapshot remains
+historical and is not a strict PIT admission.
+
+The canonical product projection was republished in place under
+`runtime/publication-receipts/canonical-m7-product-publication-20260927T020659Z.json`;
+receipt SHA-256 `919e688b88326da206d79cf4be158bb9988c0460d8720b110bc3c8f8849af89e`.
+Its pre-publication backup hash is
+`c7fe7222ec17034f07e1ded71ad462b30e2d82cfc101b6a3baba2488b2985a7f` and the
+published canonical workbook hash is
+`1a6e0d1cdf31d76efc984ef3112283101c3865e34f60c0927c68d9bf7276bb83`. WPS
+read-only UX verification passed under
+`runtime/publication-receipts/canonical-m7-product-wps-ux-20260927T020659Z.json`;
+receipt SHA-256 `427464466af950c9395991aab6a2672f1b2c399099394f4c611962f37fca6eea`,
+at `2026-09-27T02:09:07.3740763+00:00`, with no workbook hash change. It checks
+61 sheets, the six product sheets, protected first-column panes, formula errors,
+blocked/empty states and forbidden decision wording; it does not constitute
+final user acceptance. The canonical workbook remains
+`INITIAL_ASSISTED_USE=NOT_REACHED`.
+
+```text
+PUBLIC_RESEARCH_OPEN_NODES = 000333 official listing-response bytes and baseline fact extraction; 600887 report-level source admitted but model applicability and line-item fact extraction remain open; 601088 cycle normalization and model inputs remain open
+PUBLIC_EVENT_OPEN_NODES = 000333/601088 watermarks remain INCOMPLETE; 600887 2026-09-24 employee-plan share purchase materiality UNDETERMINED pending funding/accounting trace; post-start refetch is not a new event
+CURRENT_DATA_OPEN_NODES = quote bundle is revalidated from retained Tencent/Sina source bytes and official venue-calendar evidence for 2026-09-24, but only 000333 and 601088 are registered observations; 600887 is missing and excluded 600519 is present in the source bundle. Display coverage remains PARTIAL; after the next completed official session collect exactly 000333, 600887 and 601088. Provider cross-check is not exchange-source authentication.
+PRODUCT_OPEN_NODES = none for current projection; M7 final user acceptance remains the separate R5 node
+R2_PARKED_NODES = M4 personalized portfolio only
+R3_PARKED_NODES = M6 production/infrastructure only
+R6_PARKED_NODES = M3 strict contemporaneous decision proof; M6 real sessions/events
+M4_PERSONALIZED = PARKED_WAITING_R2
+M6_OPERATIONAL = NOT_STARTED
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+The 2026-09-27 corrective canonical publication includes only registered quote
+symbols in the visible quote list and labels missing `600887` and excluded
+`600519`; registered quote coverage remains partial. The quote-binding gate now
+re-runs the existing raw Tencent/Sina parser and venue-calendar evaluator,
+comparing parsed prices, times, identity, matched-close state and session with
+the report. Hash and URL checks prove consistency with retained response bytes,
+not that a provider is exchange-authorized. Regression tests use synthetic
+protocol-shaped data. No new market session was collected in this correction.
+
+Independent read-only review: Track B confirmed the Midea PDF byte identity but
+not an independently archived CNINFO listing response; for Shenhua, the
+reported HKEX minute-level release time is described in the research note but
+the official listing row bytes are not archived in the baseline evidence, so
+neither new company fact is admitted by this checkpoint. Yili's admitted item
+is report-level only; it does not admit unextracted financial line items.
+Track C confirmed that the latest public quote bundle contains 000333, 600519
+and 601088: registered 600887 is omitted and excluded 600519 is extra. Official
+SSE/SZSE calendars show 2026-09-25 through 2026-09-27 were closed; the next
+quote refresh is eligible only after a new official completed session and must
+cover exactly 000333, 600887 and 601088. The 000333/601088 watermarks remain
+`INCOMPLETE`; the 600887 registered watermark still ends 2026-09-22. These
+review findings do not change valuation, model applicability, or
+`action=no_order`.
+
+Track C's additional read-only event review found the 2026-09-17 Yili buyback
+proposal (`1225568022`) already has a scoped decision `MATERIAL_RISK_MONITOR`;
+the related creditor notice (`1225568017`) is `DUPLICATE_OR_DERIVED` within
+that event. Neither proves completed repurchases or cancellation. The
+2026-09-24 employee-plan purchase notice (`1225578520`) was already seen before
+the prospective observation start; its later fetch is not a new event, and its
+materiality remains `UNDETERMINED`. These findings do not promote research or
+valuation readiness and do not alter any model input.
+
+These open public nodes are independent of R2/R3. No private portfolio input is
+requested. The 600887 filing review recorded before 08:45 is background
+evidence, not a newly disclosed prospective event; its post-start refetch record
+is append-only and supersedes the earlier ambiguous observation classification.
+Its pre-start raw scan response was not retained, so the exact first-sighting
+claim remains non-reproducible. The canonical workbook is the configured WPS
+file; the latest publication/WPS receipts are listed above. The bound quote
+bundle contains 000333, 600519 and 601088, not the full registered case set;
+therefore its quote coverage is partial and must not be presented as a
+three-case current quote refresh. Pages for cases without admitted facts
+suppress the underlying unadmitted report assertions. This is M7 display
+engineering evidence only; final user acceptance remains `NOT_PASSED` and
+`INITIAL_ASSISTED_USE=NOT_REACHED`.
 
 # 历史快照：当前执行状态
+
+## 2026-09-27 Yili employee-plan funding/accounting boundary
+
+Official plan and board disclosures now quantify CNY 225,018,899.80 of
+third-phase after-tax award transferred to the employee plan account; the
+completion notice reports CNY 224,997,098.71 spent on existing shares. Scale
+ratios versus audited 2025 adjusted attributable net profit and operating cash
+flow are approximately 2.03% and 1.57%, respectively. These comparisons do
+not measure annual recognized expense or prove broader immateriality. Both
+the audited 2025 annual report (physical PDF page 239) and unaudited 2026H1
+report (physical PDF page 199) mark Note XV share-based-payment disclosures,
+including current-period expense, not applicable. This narrows that specific
+accounting path but does not exclude other employee-benefit/bonus recognition
+or establish zero total award cost; the H1 cutoff also precedes the September
+purchase completion. Current M5 remains
+`PENDING_HUMAN_REVIEW`, broader dependency materiality `UNDETERMINED`, and no
+valuation inputs changed. Evidence and limitations are detailed in
+`docs/current/track-c-public-event-scan-20260927.md`. Existing employee-plan
+watermark and prospective ledger remain unchanged; no Excel publication was
+warranted. `action=no_order`.
 
 ## 2026-09-26 Synthetic Product Demonstration
 
@@ -2890,3 +4611,687 @@ GitHub Core Research Gates run `36280767561` 中 `offline-core` 与
 `registration_sha256=f42cc5ca2876098fb72f9717fabb2fd4ef3b0f532411123cb663110d37602c96`，
 并保留 `action=no_order`。这只证明前瞻登记合同和离线工程边界通过，不能证明任何
 公司估值正确、投资逻辑有效、生产数据可用或系统已进入实盘辅助状态。
+
+## 2026-09-28 R1: Midea CapEx 页码纠正与 Yili 复核
+
+对美的 FY2025 年报和 2026H1 半年报开展两位独立只读复核。Root 直接以留存完整 PDF
+重新计算 SHA-256，并读取相关物理页文本；两份 PDF 哈希分别为
+`16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6` 和
+`576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8`，均与研究备忘录
+相符。独立 R1 找到两处页码定位错误，金额均可复现且没有发现所核事实数值错误：
+
+- FY2025 在建工程余额汇总（期末余额 3,071,226、减值准备 16,398、账面价值
+  3,054,828 千元）在物理页 202；项目变动明细在物理页 203。
+- 2026H1 在建工程余额汇总（期末余额 2,976,211、减值准备 16,398、账面价值
+  2,959,813 千元）在物理页 157；项目变动明细在物理页 158。
+
+原备忘录由收据以路径和 SHA-256 绑定，因此保持字节不变（当前哈希仍为
+`bf732e55b77eea455da71a6c82491a6a9fc324f3d7c27afb556f30a2c2dc5bee`）。页码更正以
+`docs/current/track-b-midea-capex-fixed-assets-review-corrigendum-20260928.md` 作为只追加
+勘误（SHA-256 `f74da843a08b42e51985c4d127baf85db7c54c658519e6b2df88d1385a4a827e`），
+不使旧收据失效。独立复核还确认原备忘录对维护/增长 CapEx、项目回报以及折旧
+代理边界的表述审慎；本次不改变 baseline、事实准入、FCFF/估值准备度或股息状态，
+不更新 Excel，不推导交易结论，`action=no_order`。
+
+伊利减值与募集资金备忘录由另一 SubAgent 对照七份留存 PDF 作 R1 复核：未发现重大
+事实或计算问题，核实了减值口径与商誉测试范围、933,865,021.35 元专户余额计算及
+延期信息的未决边界。复核没有把减值机械加回正常化利润，亦未作估值或预测推断；
+原件哈希与页码证据记录见 `docs/current/track-b-yili-impairment-and-proceeds-review-20260927.md`。
+备忘录未修改。
+
+本轮开始时工作树已有大量未提交改动，当前分支为 `main`。按阶段指令尝试
+`git fetch origin`，因 GitHub HTTPS 连接重置失败；不执行 checkout/pull，工作区保持原状。
+实时远端 HEAD 与 CI 状态未核验。只对本次两处文档修改运行 whitespace 检查，未跑全量
+测试（无代码变更）。
+# 2026-09-28 — bounded CNINFO snapshot successor v7
+
+三家公司完成 2026-09-28 的单日 CNINFO 精确发行人查询。美的返回一条已知公告
+`1225582141`，伊利与神华均返回零条。index、scan receipt 和 raw response 均由
+`config/prospective-public-event-watermarks-v7.json` 按 SHA-256 绑定；新增
+`tests/test_prospective_event_watermarks_v7.py` 锁定其单日范围、结果数与 v6 追加关系。
+v7 配置 SHA-256：`e4f2c802b1651797e27ff31d3fb83bf08a2ba6e256ba5b9a26cbeaba2309f966`。
+这些是检索时点快照，不是全天完整性、多渠道覆盖或严格同期 PIT 证明。正式水位和覆盖状态
+未推进，Excel 内容没有变化，未重发工作簿；`action=no_order`。
+
+## 2026-09-28 bounded Track B research supplements
+
+The following source reviews clarify existing registered cases without
+rewriting the baseline snapshot, admitting supplemental facts as valuation
+inputs, or changing the canonical workbook. Local process-clock time is not
+independently attested; these reviews do not establish strict contemporaneous
+PIT.
+
+- Midea's baseline card now explicitly distinguishes the registered FCFF
+  candidate from its applicability to the current consolidated reporting
+  boundary. Direct consolidated FCFF is not applicable until industrial and
+  finance-business scope, cash/debt, tax, working capital, invested capital,
+  and enterprise-value-to-common-equity are supportably bridged. This does not
+  select an alternative model or make the overall valuation ready.
+- Yili's 2026H1 liquidity memo is a post-cutoff research supplement, not a
+  baseline rewrite. It binds CNINFO interim report `1225511409` to SHA-256
+  `423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2` and
+  records that short-term borrowings rose CNY 19.0466bn, including CNY
+  11.5264bn of additional bill-discount financing (about 60.5% of that
+  increase). Cash and deposits also shifted across distinct categories; the
+  evidence does not support netting deposits against debt or concluding that
+  liquidity risk is resolved. Memo SHA-256:
+  `158c5a103085835aa7d0738d9bf7305e49c883f03a2abc07da34f01532de24c9`.
+  `MODEL_NOT_READY`, dividend `DATA_INCOMPLETE / UNKNOWN`, and
+  `action=no_order` remain unchanged.
+- The Shenhua card now states that a 2014-2025 operational-observation package
+  already exists, while remaining unapproved as model input. Its twelve-year
+  span is not a comparable normalized earnings or owner-cash-flow series;
+  remaining work is to classify definition, scope, source timing and bridges,
+  not to recollect the same series. Updated memo SHA-256:
+  `07b96581ef8ff174b3c114ef1f2a43f19b79da2d3b1dbcac194ca0074ed39d39`.
+
+These supplements do not change baseline snapshot v13, observation ledgers,
+event watermarks, valuation or dividend readiness, quote coverage, M6/M7
+  gates, or the published Excel. All cases remain research-only and
+  `action=no_order`.
+
+## 2026-09-28 product and Track B R1 closeout
+
+The canonical WPS workbook remains at its original WPS cloud path. The final
+publication receipt is
+`runtime/publication-receipts/canonical-m7-product-publication-20260927T224321Z.json`;
+its workbook SHA-256 is
+`b47141f63e57eec4857f83b42162738e6ce33ca040252f8ba9a15d6ff0133640`. The
+read-only WPS receipt and readability receipt bind this same hash. All six
+product pages, including the secondary audit page, passed the layout audit;
+WPS confirmed the evidence column explicitly labels
+`最早可用时间（PIT保守口径）`, with announcement date 2026-09-28 and conservative
+PIT availability date 2026-09-29. These checks are engineering verification,
+not final user acceptance. `action=no_order`.
+
+The first publication attempt after adding the baseline facts was not accepted
+because that snapshot was omitted; it was reissued with snapshot v13 and then
+verified. Two subsequent layout passes made the audit-page evidence-group rows
+and date header explicit-height. The final workbook preserves retained user
+managed sheets and is the single canonical workbook.
+
+Track B supplements:
+
+- Midea related-party bridge: five large parent-only subsidiary receivables
+  were matched to parent-only statement-note rows; the independent review
+  recomputed the CNY 26.969211bn FY2025 and CNY 31.153725bn 2026H1 totals and
+  confirmed cited PDF hashes/pages. Individual consolidation eliminations and
+  bank-product schedules remain unreconciled. See
+  `docs/current/track-b-midea-related-party-bridge-review-20260928.md`.
+- Shenhua operating-series classification: 2014-2025 data remain period facts,
+  not normalized model inputs. Independent review corrected the acquired
+  entity name to Hangjin Energy (杭锦能源) and required explicit comparative
+  report citations for later-disclosed self-produced coal sales; the local
+  review added those physical page references and hashes. Field-level
+  restatement and segment/consolidation bridges remain open. See
+  `docs/current/track-b-shenhua-operating-series-classification-20260928.md`.
+- Midea model-status wording distinguishes current FCFF candidate applicability,
+  industrial carve-out applicability pending scope bridges, and overall
+  `MODEL_NOT_READY`; independent review found no substantive contradiction.
+
+`SAFE_R0_REMAINING=0` applies only after the current product repairs, final
+WPS/readability checks and pointer/registry rebuild. `SAFE_R1_REMAINING` is
+still open for Shenhua restatement/scope bridging. Midea parent-only matching
+is complete for retained public evidence; exact internal elimination and
+bank-product reconciliation are unavailable external evidence. Strict PIT remains `NOT_PROVEN`, all
+three prospective cases remain valuation-not-ready, M6 remains not started,
+M7 final user acceptance remains not passed, Initial Assisted Use is not
+reached, and `action=no_order`.
+
+## 2026-09-28 continuous public-research run status
+
+```text
+ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
+BASELINE_COMPLETE = NO; current cards remain BASELINE_PARTIAL
+NEW_EVENTS_PROCESSED = 0
+LATEST_VERIFIED_SESSION = 2026-09-24
+CANONICAL_UPDATED = false
+M4_R2 = PARKED_NONBLOCKING
+M6_R3 = PARKED / NOT_STARTED
+M7_R5 = NOT_PASSED
+TOTAL_GOAL_STATUS = IN_PROGRESS
+action = no_order
+```
+
+The retained SSE/SZSE calendar evidence records 2026-09-25 as closed; 2026-09-26
+and 2026-09-27 were non-trading days. At the 2026-09-28 morning cutoff, that
+day's close did not yet exist. No duplicate quote run was performed. The
+latest quote evidence therefore remains 2026-09-24, with partial coverage and
+`600887` missing from the canonical workbook.
+
+At this earlier v7 checkpoint, the latest retained CNINFO observation was its bounded
+2026-09-28 single-day snapshot. It returned the already-known Midea
+shareholders' meeting notice and no Yili/Shenhua rows. This does not establish
+full-day or multi-channel completeness and did not advance the formal
+watermark. No new event was admitted or projected.
+
+An adversarial review found that quote monotonicity previously compared only
+the configuration date and could miss a newer successful publication receipt
+if that pointer lagged. The publisher now compares the candidate against the
+configuration floor and quote dates from successful publication receipts
+bound to the current canonical workbook SHA-256; it also validates the
+referenced receipt and recognizes hash-bound recovery receipts. No regression
+was observed in the current state: the workbook and pointer still match
+SHA-256 `b47141f63e57eec4857f83b42162738e6ce33ca040252f8ba9a15d6ff0133640`.
+Focused publisher, preservation and raw quote-binding tests: `23 passed`.
+The canonical WPS workbook was not opened for writing or republished.
+
+SAFE_R0_REMAINING=0 for this repaired quote-publication gate. Safe public
+research remains available: complete the Shenhua 2023-2025 restatement and
+segment/consolidation bridges from retained filings; continue Yili's ordinary
+dividend and cash-coverage analysis without treating lifecycle receipts as
+proof of sustainability; and process later official disclosures or completed
+sessions only when their evidence becomes available. These R1/R6 nodes do not
+block one another or the Goal. Strict PIT remains `NOT_PROVEN`; all three
+valuation states remain not ready; no baseline was rewritten; M6 is not
+started; final M7 acceptance and Initial Assisted Use remain unreached.
+
+## 2026-09-28 prospective-workbench continuation
+
+User-directed focus is now the single canonical Excel, forward research for
+000333 / 600887 / 601088, real event observations, financial-quality blockers,
+and strict contemporaneous PIT. Do not expand the universe or create parallel
+Excel products. Preserve old receipts and historical workbooks unless a
+content/hash/reference-aware relocation verifier clears a specific move.
+
+### Public event observation and continuity
+
+One later exact-issuer CNINFO snapshot per registered company was captured for
+2026-09-28. Each response was HTTP 200, one page, exact issuer, and terminal
+`hasMore=false`; each current raw-page SHA-256 matches its index. Results:
+
+- 000333 at local process time 10:00:41 +08: known notice `1225582141` only;
+  index `runtime/prospective-public-event-2026-09-28/gapfill-000333-20260928T020040966184Z/index.json`
+  SHA-256 `7fddbe9ea30ddfa2d7113debad410ae8d4f2618fc105d18f011431a29f874890`;
+  receipt SHA-256 `6e305597c2604c32a980b72178584ac13b3d3acabd33eccbed68172b71ba484f`.
+- 600887 at local process time 10:01:33 +08: zero rows;
+  index `runtime/prospective-public-event-2026-09-28/gapfill-600887-20260928T020132411066Z/index.json`
+  SHA-256 `39db16b37b92e136b425c7aa49ced860385e19013533fc6fea384ea77dc08e7b`;
+  receipt SHA-256 `1964967233fd4f8c3dbf5168902874f0b35539049e9d2caaa1d009548412d0d7`.
+- 601088 at local process time 10:02:00 +08: zero rows;
+  index `runtime/prospective-public-event-2026-09-28/gapfill-601088-20260928T020200717747Z/index.json`
+  SHA-256 `32a4a0f6f6e5da59443ca729f21e6eba5e8fd027fa3729ac7617733dca0225dc`;
+  receipt SHA-256 `53de05fdbe327ed9d98334f42817517be3074dc286c70b1a35f54ef3b9f05d53`.
+
+These are later retrieval snapshots, not new company facts. Their timestamps
+are local process-clock values with no independent attestation; the snapshots
+do not prove full-day completeness, later postings, other channels, or strict
+PIT. No event projection, baseline, valuation, decision, or Excel was changed.
+
+At this v7 checkpoint, the retained date-window indexes supported bounded CNINFO coverage through
+2026-09-27: 000333 from 2026-03-31 using adjacent 03-31..08-28 and
+08-29..09-27 windows, while its initial formal watermark stayed `INCOMPLETE`
+because the initial boundary is not tied to a verified query receipt; 600887
+from 2026-09-23..09-27; and 601088 from 2026-03-31..09-27 using seven
+adjacent/overlapping intervals. For 601088 all seven raw-page hash bindings
+and terminal pagination states were rechecked. This corrects the older
+gap-fill memo's remaining-date-gaps statement, while the v7 601088 `COMPLETE`
+status is limited to its specified CNINFO window chain. All three exclude issuer IR,
+exchange-site, correction and later same-day coverage. See
+`docs/current/track-c-prospective-watermark-continuity-corrigendum-20260928.md`.
+
+The v2 registration plan declares an observation start of 2026-09-27 08:45
++08, but its registration receipt uses the local process clock. That cannot
+anchor strict PIT. `M3=PARTIAL`, `STRICT_PIT=NOT_PROVEN`; no caller-entered
+timestamp or later retrieval time upgrades it.
+
+### Shenhua financial-quality bridge
+
+An independent read-only R1 review checked FY2023/FY2024 original and FY2025
+comparative report values, their stated page references, volume subtotals and
+the FY2024 consolidated profit bridge. FY2023 coal sales volumes reconcile
+450.0 Mt original and 454.6 Mt restated, each equal to self-produced plus
+purchased coal sales. FY2024 volumes reconcile 459.3 Mt original and 460.2 Mt
+restated. FY2024 restated parent profit of CNY 55,805m and NCI profit of
+CNY 10,194m sum to restated net profit of CNY 65,999m. No acquired-entity-only
+bridge was disclosed.
+
+Corrections are in
+`docs/current/track-b-shenhua-operating-series-corrigendum-20260928.md`; the
+two source memos and admitted baseline were not rewritten. The FY2025 segment
+note is PDF physical p.279 / printed p.278; the FY2024 restated blended coal
+price citation is physical p.30 / printed p.29, not p.31. Segment/product
+revenue and cost residuals of CNY 8,086m / CNY 4,923m and the 4.5 Mt internal
+coal-sales/consumption difference remain unexplained by the retained report.
+These facts keep `ACQUISITION_PERIMETER_BRIDGE_INCOMPLETE`,
+`SEGMENT_TO_CONSOLIDATED_BRIDGE_INCOMPLETE`, `NORMALIZED_EARNINGS_NOT_ESTABLISHED`,
+and `NORMALIZED_FCF_NOT_READY`; 601088 stays `CYCLICAL_MODEL_NOT_READY` and
+`VALUATION_NOT_READY`. The legacy FY2025 baseline candidate's 2026-03-30
+midnight `available_at` was not changed; the admitted v13 uses conservative
+CNINFO next-day availability pending consumer-chain verification.
+
+### Canonical workbook and repository artifacts
+
+Canonical WPS workbook remains SHA-256
+`b47141f63e57eec4857f83b42162738e6ce33ca040252f8ba9a15d6ff0133640`;
+there was no publication and no new Excel file. A read-only root-artifact
+audit found 29 root-level `.xlsx` files: the repository reference snapshot
+plus 28 historical candidates. All have live references; the relocation
+auditor has no content-addressed verifier that clears any move. No file was
+moved or deleted. The current v2 registry is an untracked working-tree result,
+not yet a committed governance baseline; the one untracked M3 addon also has
+a manifest reference and is not a safe exception.
+
+M2 remains done / Checkpoint A human pass; M3 partial; M4 non-personalized
+engineering done and personalized use parked on R2; all three prospective
+valuation states remain not ready; M6 operational work has not started and
+production authorization is not granted; M7 final user acceptance has not
+passed; Initial Assisted Use remains unreached; `action=no_order`.
+
+### 2026-09-28 watermark successor validation (v8)
+
+`config/prospective-public-event-watermarks-v8.json` is the current successor.
+It preserves all four v7 watermark objects unchanged and adds a separate
+000333 CNINFO date-chain record. The adjacent complete windows span
+2026-03-31..2026-08-28 and 2026-08-29..2026-09-27, with 106 unique
+announcement IDs and complete pagination. The query-window evidence is
+verified, but formal `coverage_status` remains `INCOMPLETE`: the retrospective
+windows do not bind the initial prospective registration boundary to an exact
+query receipt. The record's `coverage_through` is the time of the query that
+ended on 2026-09-27; its `retrieved_at` is the latest retrieval among the two
+referenced indexes and is later than that boundary. Both remain unattested
+local process-clock evidence, not trusted PIT anchors.
+
+The manifest separately binds 2026-09-28 10:00:41 / 10:01:33 / 10:02:00 +08
+snapshots for 000333 / 600887 / 601088 with counts 1 / 0 / 0. The Midea result
+is only the known notice `1225582141`. All three remain
+`SINGLE_DAY_SNAPSHOT_ONLY`, with `strict_pit_admissible=false`; no full-day or
+multi-channel completeness is claimed. No event projection, valuation,
+decision state or canonical workbook changed, and no Excel was published.
+
+The initial v8 focused test found that historical retrieval timestamps had
+been timezone-normalized in the successor. The source v7 values are now
+preserved, and the test checks manifest-to-index, receipt, and raw-page
+identity/query/pagination bindings plus timestamp ordering. The v8 manifest
+SHA-256 is `f1d13559580333165c48ecee52db22b96a040cd3af214cce64e3cd19cd1c78d4`.
+The focused event scan, manifest, and v5-v8 successor suite passed: `48 passed`.
+Canonical workbook preservation, product Excel/read-model, privacy, navigation,
+and event-projection gates passed: `66 passed` with two existing openpyxl
+named-range deprecation warnings. A full local suite run reached 87% but was
+interrupted after sustained high CPU and no test output; no full-suite pass is
+claimed. The remote fetch was unavailable, so no CI result is claimed for this
+uncommitted worktree. The local `Core Research Gates` offline-core file list
+from `.github/workflows/core-research-gates.yml` then passed: `1109 passed,
+23 skipped`, with only the same two existing openpyxl named-range warnings.
+
+## 2026-09-28 PIT chronology and artifact-governance correction
+
+An independent adversarial review found a real time-order defect in the
+prospective observation path. CNINFO supplies a date-level announcement
+marker; the conservative availability rule sets `available_at` to midnight
+on the next China-local day. For Midea notice `1225582141`, the retained
+record says `observed_at=2026-09-28T01:36:33+08:00` but
+`source_available_at=2026-09-29T00:00:00+08:00`. The prior reader checked both
+against a later evaluation cutoff but did not require source availability to
+precede observation, so the invalid record could have become visible on or
+after 2026-09-29.
+
+The writer now refuses a date-only source unless the conservative availability
+boundary precedes both the scan response and review time. The reader admits a
+record only when `source_available_at <= observed_at`; v2 records must also
+have `observed_at <= record_created_at`. This chronology guard is separate
+from the existing process-clock trust limitation. The old Midea observation
+bytes and hash were preserved, but this record is never selected at a later
+cutoff. Regression coverage verifies both the writer rejection and the
+verified-ledger exclusion. Focused observation tests: `19 passed`;
+observation, Midea event projection, canonical M5 binding and product-candidate
+tests: `46 passed`. No ResearchCase, baseline, watermark, valuation or workbook
+was changed. `STRICT_PIT=NOT_PROVEN` remains the truthful status.
+
+The v2 registration's `receipt_created_at` is a local process-clock value and
+`declared_time_independently_proven=false`. Baseline snapshot v13 was built
+after its declared 2026-09-27 08:45 cutoff (local metadata records 17:22 +08);
+source availability before a cutoff alone does not prove that the system had
+captured and used those inputs contemporaneously. No later TSA result can
+retroactively authenticate this registration. A future strict chain needs a
+new forward-only anchor binding the exact rules, baseline inputs and code
+revision before a subsequent verified source observation and decision review.
+
+A Sectigo RFC 3161 endpoint feasibility probe returned HTTP 200, matched the
+requested SHA-256 imprint, verified the CMS signature and built a certificate
+chain to the local trust store. Revocation was not checked and the response
+was not retained, so this probe is not an admitted time receipt and does not
+upgrade the current registration. It only identifies a possible route for a
+fresh forward-only anchor.
+
+An independent read-only watermark audit found no date gaps inside the retained
+CNINFO windows: 000333 spans 2026-03-31..09-27 but formal status remains
+`INCOMPLETE` because its initial boundary lacks an exact bound query receipt;
+600887 is `COMPLETE` only for 09-23..09-27; 601088 is complete only within its
+specified 03-31..09-27 CNINFO chain. Earlier coverage, issuer IR, exchange
+channels, corrections and later 09-28 postings are outside these bounded
+claims. No historical windows were rescanned.
+
+The root workbook audit found 29 `.xlsx` files: one repository reference
+snapshot and 28 historical candidates. All 29 have path/hash references in
+tracked text; 27 candidates are tracked and one M3 add-on is ignored/untracked.
+No candidate passed a content-addressed relocation proof, so none was moved
+or deleted. The current relocation auditor searches path names rather than
+proving all hash/receipt references and labels the repository snapshot as
+canonical by filename, although the actual WPS workbook is external under
+`WORKBOOK_PATH`. The canonical workbook remains SHA-256
+`b47141f63e57eec4857f83b42162738e6ce33ca040252f8ba9a15d6ff0133640`; no new
+Excel was created and no publication occurred.
+
+```text
+ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
+BASELINE_COMPLETE = 0/3
+WAITING_FOR_PUBLIC_EVIDENCE = Midea notice outcome; future official events and completed market sessions
+NEW_EVENTS_PROCESSED = 0
+LATEST_VERIFIED_SESSION = 2026-09-24 / PARTIAL / MISSING_600887
+CANONICAL_UPDATED = false
+SAFE_PUBLIC_RESEARCH_REMAINING = Yili ordinary/special classification and normalized distributable cash; Shenhua product/segment and acquisition-perimeter bridges; forward-only TSA-chain verifier
+M4_R2 = PARKED_NONBLOCKING
+M6_R3 = PARKED / NOT_STARTED
+M7_R5 = NOT_PASSED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+## 2026-09-28 public-event as-of cutoff correction
+
+An independent read-only review found that the v3 projection displayed Midea
+notice `1225582141` as a visible event even though its conservative,
+date-only `available_at` is 2026-09-29 and the bounded observation is dated
+2026-09-28. The original v3 projection and source evidence were not changed.
+
+The application now filters public-event evidence by an explicit date cutoff,
+removes events and audit decisions that depend on future-available evidence,
+and rejects missing availability times or dangling evidence references. The
+publisher binds the cutoff from the hash-pinned projection report. A v4
+successor was generated under `runtime/` with SHA-256
+`404cc518c40f6f7f83a866451eca2ab3957f680f3080585da2c61942d520fa5b`:
+8 visible event cards, 10 audit-evidence rows and 8 audit decisions. It records
+one exclusion (`cninfo-1225582141`, available 2026-09-29) and keeps
+`strict_pit_proven=false`, `valuation_or_trade_conclusion_changed=false`, and
+`action=no_order`.
+
+The full affected product, publication, protection and event-projection test
+selection passed: 115 passed, 2 existing openpyxl named-range deprecation
+warnings. The 18-source Yili lifecycle manifest and 18 extracted-text files
+were also independently rehashed: 36/36 matched. The current canonical workbook
+was not updated. A `--verify-only` attempt exited at the pre-existing WPS open
+workbook lock (`CANONICAL_PUBLICATION_BLOCKED_BY_OPEN_WORKBOOK`) before
+candidate generation or staging; no lock was bypassed, and no backup, staging
+workbook, publication receipt, or pointer update was created. The pointer
+therefore remains bound to v3 and the saved workbook has not been verified
+against this correction in this run.
+
+```text
+M5_V3_ASOF_DISPLAY_DEFECT = FOUND / FUTURE_AVAILABLE_NOTICE
+M5_ASOF_GUARD = IMPLEMENTED / 115_RELATED_TESTS_PASS
+M5_ASOF_SUCCESSOR = runtime/prospective-public-event-20260928/registered-public-event-projection-v4.json / 404cc518c40f6f7f83a866451eca2ab3957f680f3080585da2c61942d520fa5b
+M5_ASOF_SUCCESSOR_STATUS = READY_FOR_PRECHECK / NOT_PUBLISHED
+CANONICAL_WORKBOOK_POINTER = UNCHANGED / V3
+CANONICAL_WPS_PUBLICATION = BLOCKED_BY_OPEN_WORKBOOK / NO_WRITE_ATTEMPTED
+CANONICAL_UPDATED = false
+NEW_EXCEL_CREATED = false
+STRICT_PIT = NOT_PROVEN
+M3 = PARTIAL / STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN
+M4_PERSONALIZED = PARKED_WAITING_R2_NONBLOCKING
+M5 = THREE_PROSPECTIVE_CASES_NOT_VALUATION_READY
+M6_OPERATIONAL = NOT_STARTED / PRODUCTION_AUTHORIZATION_NOT_GRANTED
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+## 2026-09-28 public-research continuation
+
+The read-only research supplements are recorded in
+`docs/current/track-b-yili-dividend-cash-coverage-review-20260928.md` and
+`docs/current/track-b-shenhua-operating-series-corrigendum-20260928.md`.
+Yili's FY2022-2025 dividend-to-profit ratios are partly quantified, as are
+FY2023-2025 consolidated CFO coverage ratios. The figures distinguish fiscal-
+year distributions from actual calendar-year payments and exclude buybacks.
+Ordinary/special classification, FY2021 evidence, FY2022 CFO, and normalized
+distributable cash remain open. The FY2025 final-payment lifecycle has since
+been verified by the implementation notice described in the 13:30 update
+below. Yili's dividend state remains `DATA_INCOMPLETE / UNKNOWN`; no baseline
+or ResearchCase state changed.
+
+For Shenhua, the retained FY2025 CNINFO report hash was verified as
+`7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2`. The
+segment note is physical PDF page 278, not 279. Coal segment external revenue
+is CNY 182,874m, inter-segment revenue CNY 38,358m, and total revenue CNY
+221,232m. The CNY 8,086m revenue / CNY 4,923m cost residual compares segment
+total with the coal-product table. Aggregate segment revenue and cost
+reconcile to consolidated totals, but product/segment, internal coal-volume,
+and acquisition-perimeter bridges remain incomplete. No normalized earnings,
+valuation, or decision status changed.
+
+An adversarial PIT review found a technically possible forward-only path, but
+not a way to authenticate the 2026-09-27 registration retrospectively. A
+future chain would need ordered RFC 3161 attestations for (T0) exact rules,
+baseline/source closure, code and dependency state, (T1) a subsequent official
+source observation, and (T2) the later decision-review bundle; token imprint,
+nonce, signer chain, policy and revocation evidence must be retained and
+verified. No timestamp token was requested or admitted in this continuation.
+`STRICT_PIT=NOT_PROVEN` remains unchanged; this is a safe R1 engineering node,
+not a product or total-goal completion.
+
+Verification: prospective observation, event-watermark, M5 binding and
+baseline projection tests `48 passed`; the exact offline Core Research Gates
+selection `1109 passed, 23 skipped` (two existing openpyxl named-range
+deprecation warnings). `git diff --check` passed with existing LF/CRLF notices.
+`git fetch origin` succeeded and local `main` and `origin/main` both resolve to
+`c9449a4fe8881a0cec9ce2f992622b48693c413a`; the pre-existing dirty worktree
+was preserved, with no checkout, pull, commit, or push.
+
+The WPS canonical workbook still hashes to
+`b47141f63e57eec4857f83b42162738e6ce33ca040252f8ba9a15d6ff0133640`, matching
+the current pointer. No Excel was created or published. As of 2026-09-28
+12:46 +08, today's exchange session had not closed; latest verified quotes
+remain 2026-09-24, partial, missing 600887. There were no new admitted events.
+
+```text
+ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
+BASELINE_COMPLETE = 0/3
+NEW_EVENTS_PROCESSED = 0
+LATEST_VERIFIED_SESSION = 2026-09-24 / PARTIAL / MISSING_600887
+CANONICAL_UPDATED = false
+SAFE_PUBLIC_RESEARCH_REMAINING = Yili ordinary/special classification and normalized distributable cash; Shenhua product/segment and acquisition bridges; forward-only timestamp-chain engineering
+M3 = PARTIAL / STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN
+M4_R2 = PARKED_NONBLOCKING
+M5 = THREE PROSPECTIVE CASES NOT VALUATION READY
+M6_R3 = PARKED / NOT_STARTED
+M7_R5 = NOT_PASSED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+## 2026-09-28 13:30 +08 dividend-evidence correction
+
+The retained CNINFO search response identified Yili's FY2025 final-dividend
+implementation notice `1225335436`. The original confirms CNY
+5,692,824,600.30, or CNY 0.90 per share, paid on 2026-06-05. Its SHA-256 is
+`c8cd69e0a195ec9daa702306a2ba1ebf7cb8b53b1f5cae5d872cd590b0ba3c70`; the
+retained issuer-specific search response SHA-256 is
+`b327f5070b917c6cad0dbc172136e0f7eb31ac58b6b4257d19cb08f2239968ae`, and
+the corrected retrieval receipt SHA-256 is
+`7d6209f4344d7bb14f1c5686842c8c7fb92b83d2f780891336c9d45a3917d8f8`.
+Conservative `available_at` is 2026-05-30 00:00 +08. Retrieval time remains
+local-process evidence and is not independently attested.
+
+This closes only the FY2025 final-payment lifecycle. It does not classify the
+dividend as ordinary or special, recover missing FY2021 evidence or FY2022
+CFO, or establish normalized distributable cash. The 2026H1 CFO / this payment
+ratio is 1.715x and is explicitly a calendar-period comparison, not normalized
+dividend coverage. No admitted facts, baseline, ResearchCase, valuation,
+decision, product projection, or canonical workbook changed. No Excel was
+created or published. `STRICT_PIT=NOT_PROVEN`, Yili dividend sustainability
+remains `DATA_INCOMPLETE / UNKNOWN`, and `action=no_order`.
+
+```text
+YILI_FY2025_FINAL_PAYMENT = VERIFIED / PAID_2026-06-05 / CNINFO_1225335436
+YILI_ORDINARY_SPECIAL_CLASSIFICATION = UNKNOWN
+YILI_FY2021_EVIDENCE = MISSING_FROM_RETAINED_CHAIN
+YILI_FY2022_CFO = MISSING_FROM_RETAINED_CHAIN
+YILI_NORMALIZED_DISTRIBUTABLE_CASH = NOT_ESTABLISHED
+YILI_DIVIDEND_SUSTAINABILITY = DATA_INCOMPLETE / UNKNOWN
+SAFE_PUBLIC_RESEARCH_REMAINING = Yili_ordinary_special_classification_and_missing_year_cash_history; Shenhua_product_segment_and_acquisition_perimeter_bridges; forward_only_TSA_chain_engineering
+CANONICAL_UPDATED = false
+NEW_EXCEL_CREATED = false
+STRICT_PIT = NOT_PROVEN
+M3 = PARTIAL
+M4_PERSONALIZED = PARKED_WAITING_R2_NONBLOCKING
+M5 = THREE_PROSPECTIVE_CASES_NOT_VALUATION_READY
+M6_OPERATIONAL = NOT_STARTED / PRODUCTION_AUTHORIZATION_NOT_GRANTED
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+## 2026-09-28 13:50 +08 Yili lifecycle evidence and CNINFO paging correction
+
+The 13:30 dividend status above is an earlier snapshot and is superseded for
+FY2021-FY2023 evidence by this follow-up. A CNINFO query experiment exposed a
+real paging defect in `search_announcement_window`: the endpoint returns at
+most 30 rows and, with `pageSize=100`, repeated page 1 even when `pageNum`
+changed. The collector now requests no more than 30 rows, advances page
+numbers explicitly, checks stable totals and rejects duplicate/missing IDs or
+count mismatches. The focused disclosure suite passed `21 passed`; direct
+CNINFO queries returned 326/326 and 293/293 unique rows for two historical
+locator windows, plus 83/83 for the FY2023 source window. Those transient
+search indexes were not retained and are only source locators; all financial
+claims below bind directly to retained original CNINFO PDFs and their hashes.
+No registered event watermark was advanced.
+
+An independent read-only artifact audit confirms 29 root-level `.xlsx` files:
+one repository reference snapshot and 28 historical candidates. All 28
+candidates still have path/hash/receipt references; 27 are tracked and one is
+untracked. The current registry's name-based reference count omits runtime
+semantic references, and the relocation module does not prove hash/receipt
+consumers survive a move. No candidate has a safe relocation proof, so none
+was moved or deleted. The actual WPS canonical workbook remains bound to the
+existing pointer and hash; this turn did not publish it.
+
+An independent PIT adversarial review found no currently admitted strict chain:
+registration and capture timestamps remain local-process claims, v13 baseline
+was created after its declared cutoff, and the Midea 1225582141 observation
+whose available_at follows its observed_at is correctly excluded by current
+reader checks. The old Sectigo feasibility probe is not a retained receipt and
+did not check revocation. The next safe R1 engineering node is an offline
+RFC 3161 verifier/conformance contract covering imprint, nonce, signer chain,
+TSA EKU, policy, time validity, revocation, complete input closure and strict
+T0<T1<T2 ordering. No TSA token was requested or admitted in this turn.
+
+The updated dividend supplement
+`docs/current/track-b-yili-dividend-cash-coverage-review-20260928.md` now
+verifies FY2021, FY2022 and FY2023 final-payment lifecycles from notices
+`1213499389`, `1216991008` and `1220185740`, respectively. Payment dates are
+2022-06-01, 2023-06-13 and 2024-06-05. Annual reports `1213169501`,
+`1216664083` and `1219916433` provide parent-attributable profit, consolidated
+CFO and long-lived-asset purchase cash lines. Payout ratios are 70.58%, 70.21%
+and 73.25%; consolidated-CFO coverage is 2.527x, 2.027x and 2.394x. After
+subtracting only the reported long-lived-asset cash purchase line, residual
+coverage is 1.440x, 1.023x and 1.484x. These are limited cross-period proxies,
+not normalized FCF or proof of distributable cash; FY2022's residual coverage
+is narrow. The retained lifecycle documents do not explicitly establish an
+ordinary/special classification. The 18-original-file manifest is
+`runtime/company-research/m1-dividend-lifecycles/20260928T1347Z/manifest.json`,
+SHA-256 `d42cba4297ca8c015adc484c75eec5a046e86ffbc62e6e9c6224f0e4d2afc0bb`.
+
+An independent R1 reviewer recalculated 2026H1 consolidated CFO divided by the
+FY2025 final parent dividend: 1.7143x, rounded to 1.714x. The earlier 1.715x
+figure is corrected. CNY 1.38/share is now described as the FY2025 annual
+total (CNY 0.48 interim plus CNY 0.90 final), not as the final proposal. This
+ratio remains descriptive and does not establish normalized sustainability.
+
+No baseline, admitted financial-fact set, ResearchCase, observation ledger,
+valuation, decision, product projection or canonical workbook changed. New
+historical files were collected under `runtime/`; no Excel was created or
+published. The complete discovery-index response was not retained, so it is
+not treated as PIT or source-completeness evidence. Quote coverage and event
+watermarks are unchanged.
+
+```text
+YILI_FY2021_FY2023_PAYMENT_LIFECYCLES = VERIFIED / OFFICIAL_IMPLEMENTATION_NOTICES
+YILI_FY2021_FY2023_CFO_AND_ASSET_PURCHASES = VERIFIED / ANNUAL_REPORTS
+YILI_DIVIDEND_PAYOUT = FY2021_70.58%; FY2022_70.21%; FY2023_73.25%
+YILI_CFO_COVERAGE = FY2021_2.527x; FY2022_2.027x; FY2023_2.394x
+YILI_POST_ASSET_PURCHASE_COVERAGE = FY2021_1.440x; FY2022_1.023x; FY2023_1.484x
+YILI_ORDINARY_SPECIAL_CLASSIFICATION = UNKNOWN
+YILI_NORMALIZED_DISTRIBUTABLE_CASH = NOT_ESTABLISHED
+YILI_DIVIDEND_SUSTAINABILITY = DATA_INCOMPLETE / UNKNOWN
+CNINFO_PAGE_SIZE_BUG = FIXED / 21_DISCLOSURE_TESTS_PASSED
+CANONICAL_UPDATED = false
+NEW_EXCEL_CREATED = false
+STRICT_PIT = NOT_PROVEN
+M3 = PARTIAL / STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN
+M4_PERSONALIZED = PARKED_WAITING_R2_NONBLOCKING
+M5 = THREE_PROSPECTIVE_CASES_NOT_VALUATION_READY
+M6_OPERATIONAL = NOT_STARTED / PRODUCTION_AUTHORIZATION_NOT_GRANTED
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+## 2026-09-28 Canonical As-Of Publication
+
+After the user confirmed the WPS workbook was released, the v4 as-of correction
+was published in place. WPS verification then exposed a conflict with the old
+verifier: it expected the future-available Midea notice on the workbook audit
+page. An independent PIT review correctly identified that even an "audit-only"
+copy in the same 2026-09-28 workbook could expose post-cutoff information to a
+user. That interim workbook was superseded and backed up; no trade decision was
+made from it.
+
+The append-only v5 projection
+`runtime/prospective-public-event-20260928/registered-public-event-projection-v5.json`
+has SHA-256
+`5e543f50690a71254a97ff5c39136cd2bb74d81d1e3c4d3600f023dc948487d6`. It
+binds the v4 exclusion to the exact v3 source-evidence predecessor and original
+PDF while keeping the item outside active `events`, `audit_evidence` and
+`audit_decisions`. The canonical Excel does not display the excluded ID, event
+ID, title, path or source hash on any of its six visible product sheets. The
+WPS receipt independently verifies the v5 projection hash, source PDF hash,
+exclusion availability date, and absence from all six visible sheets.
+
+The existing canonical WPS workbook was updated in place, with its prior bytes
+preserved in
+`runtime/workbook-backups/canonical-before-m7-product-ux-20260928T074028Z.xlsx`
+(backup SHA-256 equals the prior canonical hash
+`f4db82e32e5b4786b918f8ce073653e14fe74a1cda400d9ef93a8576192da3e4`). Final
+workbook SHA-256 is
+`02a5f594c50a402858ddaed5b3520bafd396be1442114add7ae51df011698b47`.
+Publication receipt SHA-256 is
+`8c6d141fdfb9becfad4ed1dce38f6dae4588320834437c2050ebb53d23ff20f0`.
+Read-only WPS verification passed with receipt
+`runtime/publication-receipts/wps-m7-product-asof-v5-clean-20260928.json`
+(SHA-256 `b666294ba79dcaa412b837cca6e2ad1ea138e16a23b0dae627a3f0287ed0c51a`).
+All-page readability passed with receipt
+`runtime/publication-receipts/readability-m7-product-asof-v5-clean-20260928.json`
+(SHA-256 `4ab4d588fbc22a6d0f31f35863e33c19a177a2e1e2395ebac74170b88f9b807e`).
+The current pointer binds these final artifacts. The failed newer quote collection
+for 2026-09-28 was not promoted; publication used the raw-validated dual-source
+bundle `20260927T165906887834Z`, with all three closes matched at
+`2026-09-24`. The current pointer is therefore `COMPLETE` for those three
+symbols at that quote date, not a claim of newer prices.
+
+Focused product/as-of regression: `123 passed`, with two existing openpyxl
+named-range deprecation warnings. The v5 correction does not prove strict PIT:
+the observation clock remains unattested. M3 remains partial, all three
+valuations remain not ready, M6 operations remain not started, and M7 final
+user acceptance remains not passed. The publication is a product engineering
+update only; `action=no_order` and total Goal status remains in progress.
+
+```text
+CANONICAL_UPDATED = true / SAME_WPS_PATH / V5_ASOF_VIEW
+CANONICAL_WORKBOOK_SHA256 = 02a5f594c50a402858ddaed5b3520bafd396be1442114add7ae51df011698b47
+LATEST_VERIFIED_SESSION = 2026-09-24 / COMPLETE / 000333_600887_601088
+M5_ASOF_EXCLUSION = FUTURE_NOTICE_OUTSIDE_ACTIVE_PROJECTION_AND_ALL_VISIBLE_EXCEL_PAGES
+WPS_READONLY = PASS
+PRODUCT_READABILITY = PASS
+STRICT_PIT = NOT_PROVEN
+M3 = PARTIAL / STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN
+M5 = THREE_PROSPECTIVE_CASES_NOT_VALUATION_READY
+M6_OPERATIONAL = NOT_STARTED / PRODUCTION_AUTHORIZATION_NOT_GRANTED
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```

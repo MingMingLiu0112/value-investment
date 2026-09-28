@@ -29,6 +29,16 @@ def _load_audit_cli_module():
     return module
 
 
+def _load_registry_builder_module():
+    spec = importlib.util.spec_from_file_location(
+        "build_current_artifact_registry",
+        ROOT / "scripts" / "diagnostics" / "build_current_artifact_registry.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def test_inventory_keeps_canonical_and_current_pointer_artifacts(tmp_path: Path):
     canonical = tmp_path / CANONICAL_WORKBOOK
     canonical.write_bytes(b"canonical")
@@ -102,6 +112,24 @@ def test_inventory_does_not_modify_root_artifacts(tmp_path: Path):
     assert artifact.read_bytes() == before
 
 
+def test_inventory_ignores_generated_registries_as_consumers(tmp_path: Path):
+    artifact = tmp_path / "candidate.xlsx"
+    artifact.write_bytes(b"candidate")
+    current = tmp_path / "artifacts" / "current"
+    current.mkdir(parents=True)
+    for version in ("v1", "v2"):
+        (current / f"artifact-registry-{version}.json").write_text(
+            json.dumps({"path": artifact.name}),
+            encoding="utf-8",
+        )
+
+    inventory = build_artifact_relocation_inventory(tmp_path).as_dict()
+    record = next(item for item in inventory["artifacts"] if item["path"] == artifact.name)
+
+    assert record["classification"] == "UNREFERENCED"
+    assert record["references"] == []
+
+
 def test_inventory_treats_sibling_manifest_as_hash_binding(tmp_path: Path):
     artifact = tmp_path / "candidate.xlsx"
     artifact.write_bytes(b"candidate")
@@ -142,3 +170,85 @@ def test_tracked_paths_is_optional_outside_a_git_worktree(
 
     monkeypatch.setattr(module.subprocess, "run", fail)
     assert module._tracked_paths(tmp_path) == ()
+
+
+def test_registry_v2_distinguishes_external_canonical_from_repo_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    module = _load_registry_builder_module()
+    root = tmp_path / "repo"
+    (root / "config").mkdir(parents=True)
+    (root / "artifacts" / "current").mkdir(parents=True)
+    root_workbook = root / CANONICAL_WORKBOOK
+    root_workbook.write_bytes(b"repository reference")
+    external_workbook = tmp_path / "wps" / CANONICAL_WORKBOOK
+    external_workbook.parent.mkdir()
+    external_workbook.write_bytes(b"configured canonical")
+    external_hash = sha256(external_workbook.read_bytes()).hexdigest()
+    (root / "config" / "current-trial-workbook.json").write_text(
+        json.dumps({"canonical_workbook_sha256": external_hash}),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("WORKBOOK_PATH", str(external_workbook))
+
+    inventory = build_artifact_relocation_inventory(
+        root, tracked_paths={CANONICAL_WORKBOOK}
+    ).as_dict()
+    payload = module._registry_payload(root, inventory, external_workbook)
+    records = {item["path"]: item for item in payload["records"]}
+
+    assert payload["schema_version"] == "current-artifact-registry-v2"
+    assert records[CANONICAL_WORKBOOK]["status"] == "REPOSITORY_REFERENCE_SNAPSHOT"
+    assert records[CANONICAL_WORKBOOK]["current_or_historical"] == "HISTORICAL_OR_REFERENCE"
+    external = records["WORKBOOK_PATH (local path redacted)"]
+    assert external["status"] == "CANONICAL_WORKBOOK"
+    assert external["sha256"] == external_hash
+    assert external["verified_against_pointer"] is True
+    assert str(external_workbook) not in json.dumps(payload)
+
+
+def test_registry_v2_fails_closed_when_external_workbook_hash_disagrees(
+    tmp_path: Path,
+):
+    module = _load_registry_builder_module()
+    root = tmp_path / "repo"
+    (root / "config").mkdir(parents=True)
+    (root / "config" / "current-trial-workbook.json").write_text(
+        json.dumps({"canonical_workbook_sha256": "0" * 64}),
+        encoding="utf-8",
+    )
+    workbook = tmp_path / "workbook.xlsx"
+    workbook.write_bytes(b"actual workbook")
+
+    with pytest.raises(ValueError, match="does not match"):
+        module._registry_payload(root, {"artifacts": []}, workbook)
+
+
+def test_registry_builder_rejects_overwriting_v1_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    module = _load_registry_builder_module()
+    output = tmp_path / "artifact-registry-v1.json"
+    output.write_bytes(b"preserved v1")
+    monkeypatch.setattr(
+        module.argparse.ArgumentParser,
+        "parse_args",
+        lambda self: module.argparse.Namespace(root=tmp_path, output=output),
+    )
+    monkeypatch.setattr(
+        module,
+        "_tracked_paths",
+        lambda _root: (),
+    )
+    (tmp_path / "config").mkdir()
+    workbook = tmp_path / "workbook.xlsx"
+    workbook.write_bytes(b"workbook")
+    (tmp_path / "config" / "current-trial-workbook.json").write_text(
+        json.dumps({"canonical_workbook_sha256": sha256(b"workbook").hexdigest()}),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("WORKBOOK_PATH", str(workbook))
+
+    with pytest.raises(ValueError, match="preserved historical snapshot"):
+        module.main()
+    assert output.read_bytes() == b"preserved v1"

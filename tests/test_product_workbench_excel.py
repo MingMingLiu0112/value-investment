@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
+from copy import copy
 import hashlib
 import json
 from pathlib import Path
@@ -8,6 +9,7 @@ import re
 
 from openpyxl import load_workbook
 from openpyxl import Workbook
+import pytest
 
 from value_investment_agent.presentation.excel.product_workbench import (
     SHEET_COMPANIES,
@@ -25,7 +27,12 @@ from value_investment_agent.presentation.excel.product_workbench import (
 from value_investment_agent.presentation.read_models.product_workbench import (
     ACTION_NO_ORDER,
     PRODUCT_WORKBENCH_SCHEMA_VERSION,
+    EvidenceRecord,
     product_workbench_from_payload,
+)
+from value_investment_agent.presentation.read_models.m5_event_state_projection import (
+    EventStateInput,
+    project_m5_event_states,
 )
 
 
@@ -94,8 +101,8 @@ def _payload() -> dict:
             "m2": {"status": "DONE", "detail": "初筛已人工通过。"},
             "m3": {"status": "PARTIAL", "detail": "研究资料仍在补齐。"},
             "m4": {
-                "status": "PENDING_USER_PRIVATE_INPUT",
-                "detail": "尚未收到真实组合输入。",
+                "status": "PARKED_WAITING_R2_NONBLOCKING",
+                "detail": "个性化组合分析已暂停，不影响公共研究。",
             },
             "m5": {"status": "PENDING_HUMAN_REVIEW", "detail": "有事件待复核。"},
             "m6": {
@@ -181,8 +188,8 @@ def _payload() -> dict:
         ],
         "portfolio": {
             "real_data_available": False,
-            "status": "PENDING_USER_PRIVATE_INPUT",
-            "connection_hint": "通过受保护的私密入口接入真实组合。",
+            "status": "PARKED_WAITING_R2_NONBLOCKING",
+            "connection_hint": "个性化组合分析已暂停，不影响公共研究。",
             "summary": [],
             "positions": [],
             "action": ACTION_NO_ORDER,
@@ -348,7 +355,9 @@ def test_absent_portfolio_renders_only_unconnected_state() -> None:
     )
 
     assert "尚未接入真实组合" in text
-    assert "查看接入说明" in text
+    assert "个性化组合分析已暂停" in text
+    assert "查看接入说明" not in text
+    assert not any(cell.hyperlink for row in sheet.iter_rows() for cell in row)
     for simulated_metric in (
         "总资产",
         "股票仓位",
@@ -381,6 +390,160 @@ def test_evidence_link_reaches_audit_and_audit_contains_hash() -> None:
     assert "no_order" in audit_text
 
 
+def test_evidence_links_target_rendered_rows_when_stage_summary_count_varies() -> None:
+    payload = _payload()
+    payload["audit"]["evidence"].append(
+        {
+            **payload["audit"]["evidence"][0],
+            "evidence_id": "evidence-2",
+            "title": "第二条测试证据",
+        }
+    )
+    payload["opportunities"][0]["evidence_refs"] = ["evidence-2"]
+    model = product_workbench_from_payload(payload)
+
+    for stage_count in (1, 3, 5):
+        model_variant = copy(model)
+        object.__setattr__(
+            model_variant,
+            "stage_summaries",
+            model.stage_summaries[:stage_count],
+        )
+        workbook = build_product_workbench_workbook(
+            model_variant
+        )
+        evidence_link = next(
+            cell
+            for row in workbook[SHEET_OPPORTUNITIES].iter_rows()
+            for cell in row
+            if cell.value == "查看证据 (1)"
+        )
+        location = evidence_link.hyperlink.location or evidence_link.hyperlink.target
+        row_number = int(re.search(r"!A(\d+)$", location).group(1))
+
+        assert workbook[SHEET_SYSTEM_AUDIT].cell(row_number, 1).value == "evidence-2"
+
+
+def test_multi_source_event_evidence_opens_group_with_all_non_adjacent_sources() -> None:
+    payload = _payload()
+    first_url = "https://example.test/evidence-1.pdf"
+    middle_url = "https://example.test/evidence-2.pdf"
+    last_url = "https://example.test/evidence-3.pdf"
+    first_hash = "a" * 64
+    middle_hash = "c" * 64
+    last_hash = "d" * 64
+    payload["audit"]["evidence"][0].update(
+        sha256=first_hash,
+        source_url=first_url,
+    )
+    for evidence_id, digest, url in (
+        ("evidence-2", middle_hash, middle_url),
+        ("evidence-3", last_hash, last_url),
+    ):
+        payload["audit"]["evidence"].append(
+            {
+                **payload["audit"]["evidence"][0],
+                "evidence_id": evidence_id,
+                "title": f"测试证据 {evidence_id}",
+                "sha256": digest,
+                "source_url": url,
+            }
+        )
+    payload["events"][0]["evidence_refs"] = ["evidence-1", "evidence-3"]
+
+    workbook = build_product_workbench_workbook(
+        product_workbench_from_payload(payload)
+    )
+    event_link = next(
+        cell
+        for row in workbook[SHEET_EVENTS].iter_rows()
+        for cell in row
+        if cell.value == "打开证据组 (2)"
+    )
+    assert _link_sheet(event_link) == SHEET_SYSTEM_AUDIT
+    group_location = event_link.hyperlink.location or event_link.hyperlink.target
+    group_row = int(re.search(r"!A(\d+)$", group_location).group(1))
+
+    audit = workbook[SHEET_SYSTEM_AUDIT]
+    assert audit.cell(group_row, 1).value == "证据组 1 (2 项)"
+    first_group_row = group_row + 2
+    group_ids = {
+        audit.cell(row, 1).value
+        for row in (first_group_row, first_group_row + 1)
+    }
+    assert group_ids == {"evidence-1", "evidence-3"}
+    assert audit.cell(first_group_row, 5).value == first_hash
+    assert audit.cell(first_group_row + 1, 5).value == last_hash
+    assert audit.cell(first_group_row, 6).hyperlink.target == first_url
+    assert audit.cell(first_group_row + 1, 6).hyperlink.target == last_url
+    assert audit.row_dimensions[first_group_row].height is not None
+    assert audit.row_dimensions[first_group_row + 1].height is not None
+
+    evidence_header_row = next(
+        row for row in range(1, audit.max_row + 1)
+        if audit.cell(row, 1).value == "证据ID"
+    )
+    assert audit.cell(evidence_header_row, 6).value == "最早可用时间（PIT保守口径）"
+    assert audit.row_dimensions[evidence_header_row].height is not None
+
+    source_rows = {
+        audit.cell(row, 1).value: row
+        for row in range(1, group_row)
+        if audit.cell(row, 1).value in {"evidence-1", "evidence-2", "evidence-3"}
+    }
+    assert source_rows["evidence-3"] - source_rows["evidence-1"] == 2
+
+
+def test_601088_projection_source_url_reaches_audit_title_hyperlink() -> None:
+    source_url = "https://static.cninfo.com.cn/601088/shenhua-event.pdf"
+    evidence = EvidenceRecord(
+        evidence_id="shenhua-source",
+        title="神华公告原件",
+        artifact_type="cninfo_announcement",
+        path="evidence/601088-event.pdf",
+        sha256=SHA,
+        source_url=source_url,
+    )
+    projection = project_m5_event_states((
+        EventStateInput(
+            state="material_risk_monitor",
+            event_id="601088-risk",
+            company_name="中国神华",
+            what_happened="关联方资金风险需要持续跟踪。",
+            impact_area="现金质量",
+            evidence=(evidence,),
+        ),
+    ))
+    projected = projection.as_payload()
+    payload = _payload()
+    payload["audit"]["evidence"].append(projected["audit_evidence"][0])
+    payload["events"].extend(projected["events"])
+    model = product_workbench_from_payload(payload)
+    workbook = build_product_workbench_workbook(model)
+
+    audit = workbook[SHEET_SYSTEM_AUDIT]
+    evidence_row = next(
+        row
+        for row in range(1, audit.max_row + 1)
+        if audit.cell(row, 1).value == "shenhua-source"
+    )
+    assert model.audit_evidence[-1].source_url == source_url
+    assert audit.cell(evidence_row, 2).value == "神华公告原件"
+    assert audit.cell(evidence_row, 2).hyperlink.target == source_url
+
+
+def test_evidence_source_url_must_be_https() -> None:
+    with pytest.raises(ValueError, match="HTTPS URL"):
+        EvidenceRecord(
+            evidence_id="unsafe-source",
+            title="不安全来源",
+            artifact_type="test",
+            path="evidence/test.pdf",
+            sha256=SHA,
+            source_url="http://example.test/evidence.pdf",
+        )
+
+
 def test_unavailable_assessment_has_reason_and_no_empty_numeric_placeholder() -> None:
     workbook = build_product_workbench_workbook(_model())
     company_text = "\n".join(
@@ -408,7 +571,7 @@ def test_all_wait_empty_candidate_renders_legal_empty_states() -> None:
         if cell.value is not None
     )
     assert "当前没有已分类的今日事项" in today_text
-    assert "尚未接入个人组合" in today_text
+    assert "尚未接入真实组合" in today_text
 
 
 def test_company_page_renders_optional_decision_review_explanation() -> None:

@@ -348,8 +348,13 @@ def test_real_portfolio_without_confirmation_provenance_is_refused() -> None:
     model = product_workbench_from_payload(payload)
 
     assert model.portfolio.real_data_available is False
-    assert model.portfolio.status.code == "PENDING_USER_PRIVATE_INPUT"
+    assert model.portfolio.status.code == "PARKED_WAITING_R2_NONBLOCKING"
     assert model.portfolio.status.user_label == "尚未接入真实组合"
+    m4_stage = next(stage for stage in model.stage_summaries if stage.stage_key == "m4")
+    assert m4_stage.status.code == "PARKED_WAITING_R2_NONBLOCKING"
+    assert "暂停" in m4_stage.detail
+    assert "等待输入" not in m4_stage.detail
+    assert "接入" not in model.portfolio.connection_hint
     assert model.portfolio.summary == ()
     assert model.portfolio.positions == ()
     assert "1,000,000" not in model.portfolio.connection_hint
@@ -400,4 +405,7 @@ def test_all_wait_empty_candidate_is_legal() -> None:
     assert model.events == ()
     assert model.audit_evidence == ()
     assert model.portfolio.summary == ()
-    assert all(stage.status.code == "WAIT" for stage in model.stage_summaries)
+    assert all(
+        stage.status.code == ("PARKED_WAITING_R2_NONBLOCKING" if stage.stage_key == "m4" else "WAIT")
+        for stage in model.stage_summaries
+    )

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 import re
 from typing import Any, Mapping, Sequence
+from urllib.parse import urlsplit
 
 
 PRODUCT_WORKBENCH_SCHEMA_VERSION = "m7-product-workbench-v1"
@@ -78,6 +79,7 @@ EVENT_CATEGORY_LABELS = {
     "MODEL_UNAVAILABLE": "暂不可评估",
     "MATERIAL_REQUIRES_RECALCULATION": "需要重新评估的重大事件",
     "MATERIAL_SUPPORTING_EVIDENCE": "支持现有判断的重大证据",
+    "MATERIAL_RISK_MONITOR": "需要持续跟踪的风险事项",
     "THESIS_RISK": "投资逻辑风险",
     "DIVIDEND_CHANGE": "股息变化",
     "PORTFOLIO_RISK_CHANGE": "组合风险变化",
@@ -132,7 +134,7 @@ DIVIDEND_STATUS_LABELS = {
 }
 
 PRICE_STATUS_LABELS = {
-    "AVAILABLE": "已有可用价格",
+    "AVAILABLE": "行情已验证；吸引力待评估",
     "IN_WATCH_RANGE": "价格进入关注范围",
     "OUTSIDE_RANGE": "价格尚未进入关注范围",
     "WAIT_FOR_PRICE": "等待价格",
@@ -160,6 +162,7 @@ SECTION_STATUS_LABELS = {
 }
 
 PORTFOLIO_STATUS_LABELS = {
+    "PARKED_WAITING_R2_NONBLOCKING": "尚未接入真实组合",
     "PENDING_USER_PRIVATE_INPUT": "尚未接入真实组合",
     "NOT_STARTED": "尚未接入真实组合",
     "REAL_DATA_AVAILABLE": "真实组合已接入",
@@ -228,7 +231,8 @@ STAGE_STATUS_LABELS = {
         "BLOCKED": "研究暂时受阻",
     },
     "m4": {
-        "PENDING_USER_PRIVATE_INPUT": "尚未接入个人组合",
+        "PARKED_WAITING_R2_NONBLOCKING": "个性化分析已暂停，不影响其他研究",
+        "PENDING_USER_PRIVATE_INPUT": "个性化分析已暂停，不影响其他研究",
         "REAL_DATA_AVAILABLE": "真实组合已接入",
         "READY": "真实组合已接入",
         "SIMULATED_ONLY": "仅完成模拟演练，尚未接入真实组合",
@@ -378,6 +382,7 @@ class EvidenceRecord:
     sha256: str
     available_at: date | None = None
     action: str = ACTION_NO_ORDER
+    source_url: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -396,6 +401,12 @@ class EvidenceRecord:
         if not _SHA256.fullmatch(digest):
             raise ValueError("evidence sha256 must be SHA-256 hex")
         object.__setattr__(self, "sha256", digest)
+        if self.source_url is not None:
+            source_url = _required_text(self.source_url, "evidence source_url")
+            parsed_url = urlsplit(source_url)
+            if parsed_url.scheme != "https" or not parsed_url.hostname:
+                raise ValueError("evidence source_url must be an HTTPS URL")
+            object.__setattr__(self, "source_url", source_url)
         object.__setattr__(
             self,
             "available_at",
@@ -737,10 +748,12 @@ class EventAuditRecord:
         if type(self.visible) is not bool or self.disposition not in {
             "USER_VISIBLE_EVENT", "AUDIT_ONLY", "SUPPRESSED_DUPLICATE",
             "EVIDENCE_GAP", "MODEL_NOT_AVAILABLE",
+            "MATERIAL_SUPPORTING_EVIDENCE", "MATERIAL_RISK_MONITOR",
         } or self.action != ACTION_NO_ORDER:
             raise ValueError("Invalid event audit disposition or action")
         if self.visible != (self.disposition in {
             "USER_VISIBLE_EVENT", "EVIDENCE_GAP", "MODEL_NOT_AVAILABLE",
+            "MATERIAL_SUPPORTING_EVIDENCE", "MATERIAL_RISK_MONITOR",
         }):
             raise ValueError("Event audit visibility differs from disposition")
 
@@ -835,7 +848,6 @@ class ProductWorkbenchReadModel:
         evidence_ids = [record.evidence_id for record in self.audit_evidence]
         if len(evidence_ids) != len(set(evidence_ids)):
             raise ValueError("Audit evidence ids must be unique")
-
         known = set(evidence_ids)
         audit_event_ids = [item.event_id for item in self.event_audit_decisions]
         if len(audit_event_ids) != len(set(audit_event_ids)):
@@ -890,11 +902,27 @@ def _parse_evidence(value: object) -> EvidenceRecord:
         sha256=_required_text(item.get("sha256"), "evidence sha256"),
         available_at=parsed_date,
         action=str(item.get("action") or ACTION_NO_ORDER),
+        source_url=(
+            None
+            if item.get("source_url") in (None, "")
+            else _required_text(item.get("source_url"), "source_url")
+        ),
     )
 
 
 def _parse_stage(key: str, value: object) -> StageSummary:
     item = _required_mapping(value, f"stages.{key}")
+    if key == "m4":
+        return StageSummary(
+            stage_key=key,
+            stage_label=STAGE_LABELS[key],
+            status=_status_view(
+                "PARKED_WAITING_R2_NONBLOCKING",
+                STAGE_STATUS_LABELS[key],
+                f"stages.{key}.status",
+            ),
+            detail="个性化组合分析已暂停，不影响公共研究。",
+        )
     return StageSummary(
         stage_key=key,
         stage_label=STAGE_LABELS[key],
@@ -1073,11 +1101,11 @@ def _parse_portfolio(value: object) -> PortfolioCard:
         return PortfolioCard(
             real_data_available=False,
             status=_status_view(
-                "PENDING_USER_PRIVATE_INPUT",
+                "PARKED_WAITING_R2_NONBLOCKING",
                 PORTFOLIO_STATUS_LABELS,
                 "portfolio.status",
             ),
-            connection_hint="缺少已确认且已复核的组合收据，暂不显示真实组合数据。",
+            connection_hint="个性化组合分析已暂停，不影响公共研究。",
             summary=(),
             positions=(),
             action=str(item.get("action") or ACTION_NO_ORDER),
@@ -1138,11 +1166,15 @@ def _parse_portfolio(value: object) -> PortfolioCard:
     return PortfolioCard(
         real_data_available=real_data_available,
         status=_status_view(
-            item.get("status"),
+            item.get("status") if real_data_available else "PARKED_WAITING_R2_NONBLOCKING",
             PORTFOLIO_STATUS_LABELS,
             "portfolio.status",
         ),
-        connection_hint=_required_text(item.get("connection_hint"), "connection_hint"),
+        connection_hint=(
+            _required_text(item.get("connection_hint"), "connection_hint")
+            if real_data_available
+            else "个性化组合分析已暂停，不影响公共研究。"
+        ),
         summary=tuple(metrics),
         positions=tuple(positions),
         action=str(item.get("action") or ACTION_NO_ORDER),

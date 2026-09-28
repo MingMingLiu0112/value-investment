@@ -5,11 +5,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import posixpath
 import re
 import subprocess
 import zipfile
 from collections import Counter, defaultdict
 from pathlib import Path
+from xml.etree import ElementTree as ET
 
 from openpyxl import load_workbook
 
@@ -21,9 +23,7 @@ PUBLIC = re.compile(r"营业收入|营收|总股本|市值|净利润|现金流|�
 HASH = re.compile(r"sha256|hash|fingerprint|digest|receipt|校验|指纹", re.I)
 
 
-def classify(token: str, *, context: str, cell_type: str, number_format: str, formula: bool, value_text: str = "") -> str:
-    if HEX_DIGEST.search(value_text):
-        return "HASH_OR_RECEIPT_FRAGMENT"
+def classify(*, context: str, cell_type: str, number_format: str, formula: bool) -> str:
     if PRIVATE.search(context):
         return "REQUIRES_PRIVATE_REVIEW"
     if formula:
@@ -37,7 +37,7 @@ def classify(token: str, *, context: str, cell_type: str, number_format: str, fo
     return "UNKNOWN_LONG_NUMERIC"
 
 
-def audit(root: Path) -> dict:
+def audit(root: Path, *, include_raw_context: bool = False) -> dict:
     paths = subprocess.check_output(
         ["git", "ls-files", "-z", "--", "*.xlsx"], cwd=root
     ).decode("utf-8").split("\0")
@@ -64,7 +64,7 @@ def audit(root: Path) -> dict:
                             continue
                         context = " ".join((sheet.title, headers.get(cell.column, ""), row_context))
                         for token in matches:
-                            category = classify(token, context=context, cell_type=cell.data_type, number_format=cell.number_format, formula=cell.data_type == "f", value_text=value_text)
+                            category = classify(context=context, cell_type=cell.data_type, number_format=cell.number_format, formula=cell.data_type == "f")
                             fingerprint = hashlib.sha256(token.encode("ascii")).hexdigest()[:16]
                             counts[category] += 1
                             unique[category].add(fingerprint)
@@ -75,7 +75,12 @@ def audit(root: Path) -> dict:
                                 examples[category].append(example)
         finally:
             workbook.close()
-    raw = _raw_ooxml_audit(root, list(filter(None, paths)), set().union(*unique.values()) if unique else set())
+    visible = set().union(*unique.values()) if unique else set()
+    raw = _raw_ooxml_audit(root, list(filter(None, paths)), visible)
+    if include_raw_context:
+        raw["context_classification"] = classify_raw_only_candidates(
+            root, list(filter(None, paths)), visible_fingerprints=visible,
+        )
     return {"status": "REQUIRES_PRIVATE_REVIEW" if counts["REQUIRES_PRIVATE_REVIEW"] else "INDEPENDENT_REVIEW_REQUIRED", "coverage": "openpyxl-visible cells plus raw OOXML parts; all token output is fingerprint-only", "workbook_count": len(list(filter(None, paths))), "candidate_count": sum(counts.values()), "unique_fingerprint_count": len(set().union(*unique.values())) if unique else 0, "categories": {key: {"occurrences": counts[key], "unique_fingerprints": len(unique[key]), "redacted_examples": examples[key]} for key in sorted(counts)}, "raw_ooxml": raw}
 
 
@@ -128,11 +133,233 @@ def _raw_ooxml_audit(root: Path, paths: list[str], visible: set[str]) -> dict:
     return {"candidate_count": sum(counts.values()), "unique_fingerprint_count": len(set().union(*unique.values())) if unique else 0, "raw_only_unique_fingerprints": len(raw_only), "raw_only_private_context_fingerprints": len(private_context), "raw_private_context_fingerprint_samples": sorted(private_context)[:12], "part_categories": {key: {"occurrences": counts[key], "unique_fingerprints": len(unique[key])} for key in sorted(counts)}, "redacted_examples": examples, "reconciliation_basis": "raw-only values are bounded by OOXML part category; no raw token is emitted"}
 
 
+def _local_name(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1]
+
+
+def _workbook_sheets(archive: zipfile.ZipFile) -> dict[str, str]:
+    workbook = ET.fromstring(archive.read("xl/workbook.xml"))
+    relationships = ET.fromstring(archive.read("xl/_rels/workbook.xml.rels"))
+    targets = {
+        item.attrib["Id"]: item.attrib["Target"]
+        for item in relationships
+        if "Id" in item.attrib and "Target" in item.attrib
+    }
+    result = {}
+    for sheet in workbook.iter():
+        if _local_name(sheet.tag) != "sheet":
+            continue
+        name = sheet.attrib.get("name", "")
+        rel_id = next(
+            (value for key, value in sheet.attrib.items() if _local_name(key) == "id"),
+            None,
+        )
+        target = targets.get(rel_id or "")
+        if not name or not target:
+            continue
+        part = posixpath.normpath(
+            target.lstrip("/") if target.startswith("/") else posixpath.join("xl", target)
+        )
+        result[part] = name
+    return result
+
+
+def _shared_strings(archive: zipfile.ZipFile) -> list[str]:
+    if "xl/sharedStrings.xml" not in archive.namelist():
+        return []
+    root = ET.fromstring(archive.read("xl/sharedStrings.xml"))
+    return [
+        "".join(node.text or "" for node in item.iter() if _local_name(node.tag) == "t")
+        for item in root
+        if _local_name(item.tag) == "si"
+    ]
+
+
+def _cell_parts(cell: ET.Element, shared: list[str]) -> tuple[str, str, bool]:
+    value_node = next((node for node in cell if _local_name(node.tag) == "v"), None)
+    formula = any(_local_name(node.tag) == "f" for node in cell)
+    cell_type = cell.attrib.get("t", "n")
+    raw = "" if value_node is None else value_node.text or ""
+    if cell_type == "s" and raw.isdigit() and int(raw) < len(shared):
+        value = shared[int(raw)]
+    elif cell_type == "inlineStr":
+        value = "".join(
+            node.text or "" for node in cell.iter() if _local_name(node.tag) == "t"
+        )
+    else:
+        value = raw
+    return value, cell_type, formula
+
+
+def _safe_context_classification(
+    *, context: str, cell_type: str, formula: bool,
+) -> tuple[str, list[str], str]:
+    signals = []
+    if PRIVATE.search(context):
+        signals.append("private_context")
+    if HASH.search(context):
+        signals.append("hash_context")
+    if PUBLIC.search(context):
+        signals.append("public_financial_context")
+    if formula:
+        signals.append("formula_cell")
+    if cell_type == "n":
+        signals.append("numeric_cell")
+    category = classify(context=context, cell_type=cell_type, number_format="", formula=formula)
+    reason = {
+        "REQUIRES_PRIVATE_REVIEW": "PRIVATE_CONTEXT",
+        "HASH_OR_RECEIPT_FRAGMENT": "HASH_CONTEXT",
+        "FORMULA_OR_DERIVED_VALUE": "FORMULA_DERIVED",
+        "POTENTIAL_PUBLIC_FINANCIAL_OR_MARKET_VALUE": "PUBLIC_FINANCIAL_CONTEXT_NUMERIC",
+        "PUBLIC_DATE_OR_TIMESTAMP": "DATE_NUMBER_FORMAT",
+        "UNKNOWN_LONG_NUMERIC": "INSUFFICIENT_CONTEXT",
+    }[category]
+    return category, signals, reason
+
+
+def classify_raw_only_candidates(
+    root: Path, paths: list[str] | None = None,
+    visible_fingerprints: set[str] | None = None,
+) -> dict:
+    """Classify OOXML fingerprints absent from the openpyxl-visible set."""
+    if paths is None:
+        paths = subprocess.check_output(
+            ["git", "ls-files", "-z", "--", "*.xlsx"], cwd=root
+        ).decode("utf-8").split("\0")
+    paths = list(filter(None, paths))
+    visible_fingerprints = visible_fingerprints or set()
+    occurrences: dict[str, list[dict[str, str]]] = defaultdict(list)
+
+    for relative in paths:
+        workbook_fingerprint = hashlib.sha256(relative.encode("utf-8")).hexdigest()[:12]
+        with zipfile.ZipFile(root / relative) as archive:
+            sheets = _workbook_sheets(archive)
+            shared = _shared_strings(archive)
+            sheet_text: dict[str, dict[str, tuple[str, str, bool]]] = {}
+            for part, sheet_name in sheets.items():
+                if part not in archive.namelist():
+                    continue
+                xml = ET.fromstring(archive.read(part))
+                cells: dict[str, tuple[str, str, bool]] = {}
+                for cell in xml.iter():
+                    if _local_name(cell.tag) != "c":
+                        continue
+                    coordinate = cell.attrib.get("r")
+                    if coordinate:
+                        cells[coordinate] = _cell_parts(cell, shared)
+                sheet_text[sheet_name] = cells
+
+            for part, sheet_name in sheets.items():
+                cells = sheet_text.get(sheet_name, {})
+                headers_by_column: dict[str, list[str]] = defaultdict(list)
+                labels_by_row: dict[int, list[str]] = defaultdict(list)
+                for coordinate, (other_value, _type, _formula) in cells.items():
+                    other_match = re.fullmatch(r"([A-Z]+)(\d+)", coordinate)
+                    if (not other_match or LONG_DIGITS.search(other_value)
+                        or len(other_value) >= 100):
+                        continue
+                    other_column, other_row = other_match.group(1), int(other_match.group(2))
+                    if other_row <= 5:
+                        headers_by_column[other_column].append(other_value)
+                    labels_by_row[other_row].append(other_value)
+                for coordinate, (value, cell_type, formula) in cells.items():
+                    tokens = LONG_DIGITS.findall(value)
+                    if not tokens:
+                        continue
+                    match = re.fullmatch(r"([A-Z]+)(\d+)", coordinate)
+                    if not match:
+                        continue
+                    column, row = match.group(1), int(match.group(2))
+                    header_labels = headers_by_column[column]
+                    row_labels = [
+                        label for label in labels_by_row[row]
+                        if label not in headers_by_column[column]
+                    ]
+                    context = " ".join([sheet_name, *header_labels, *row_labels])
+                    category, signals, reason = _safe_context_classification(
+                        context=context, cell_type=cell_type, formula=formula,
+                    )
+                    for token in tokens:
+                        fingerprint = hashlib.sha256(token.encode("ascii")).hexdigest()[:16]
+                        if fingerprint in visible_fingerprints:
+                            continue
+                        occurrences[fingerprint].append({
+                            "workbook_fingerprint": workbook_fingerprint,
+                            "part_category": "CACHED_FORMULA_VALUE" if formula else "WORKSHEET_RAW_VALUE",
+                            "sheet": sheet_name,
+                            "cell": coordinate,
+                            "classification": category,
+                            "reason": reason,
+                            "signals": ",".join(signals),
+                        })
+
+            for part in archive.namelist():
+                if not part.endswith(".xml") or part.startswith("xl/worksheets/"):
+                    continue
+                text = archive.read(part).decode("utf-8", errors="ignore")
+                for match in LONG_DIGITS.finditer(text):
+                    token = match.group(0)
+                    fingerprint = hashlib.sha256(token.encode("ascii")).hexdigest()[:16]
+                    if fingerprint in visible_fingerprints:
+                        continue
+                    position = match.start()
+                    context = text[max(0, position - 256):position + len(token) + 256]
+                    category, signals, reason = _safe_context_classification(
+                        context=context, cell_type="s", formula=False,
+                    )
+                    occurrences[fingerprint].append({
+                        "workbook_fingerprint": workbook_fingerprint,
+                        "part_category": _part_category(part),
+                        "part": part,
+                        "classification": category,
+                        "reason": reason,
+                        "signals": ",".join(signals),
+                    })
+
+    candidates = []
+    category_counts: Counter[str] = Counter()
+    for fingerprint, evidence in sorted(occurrences.items()):
+        classes = {item["classification"] for item in evidence}
+        if "REQUIRES_PRIVATE_REVIEW" in classes:
+            category = "REQUIRES_PRIVATE_REVIEW"
+        elif "UNKNOWN_LONG_NUMERIC" in classes or len(classes) != 1:
+            category = "UNKNOWN_LONG_NUMERIC"
+        else:
+            category = next(iter(classes))
+        category_counts[category] += 1
+        candidates.append({
+            "fingerprint": fingerprint,
+            "classification": category,
+            "occurrences": len(evidence),
+            "evidence": evidence,
+        })
+    return {
+        "status": "REQUIRES_PRIVATE_REVIEW" if category_counts["REQUIRES_PRIVATE_REVIEW"] else "INDEPENDENT_REVIEW_REQUIRED",
+        "coverage": "tracked xlsx OOXML fingerprints absent from openpyxl-visible cells; each occurrence is context-classified without source tokens or context labels",
+        "workbook_count": len(paths),
+        "raw_only_unique_fingerprints": len(candidates),
+        "context_occurrence_count": sum(item["occurrences"] for item in candidates),
+        "category_fingerprint_counts": dict(sorted(category_counts.items())),
+        "candidates": candidates,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
+    parser.add_argument("--context-only", action="store_true")
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    print(json.dumps(audit(args.root), ensure_ascii=False, indent=2))
+    report = audit(args.root, include_raw_context=args.context_only)
+    output = json.dumps(report, ensure_ascii=False, indent=2)
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(output + "\n", encoding="utf-8")
+        print(json.dumps({key: report[key] for key in (
+            "status", "workbook_count", "candidate_count", "unique_fingerprint_count",
+        ) if key in report}, ensure_ascii=False))
+    else:
+        print(output)
 
 
 if __name__ == "__main__":

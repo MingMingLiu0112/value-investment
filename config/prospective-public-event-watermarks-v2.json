@@ -1,0 +1,64 @@
+{
+  "schema_version": "m5-event-infrastructure-v2",
+  "action": "no_order",
+  "supersedes": "config/prospective-public-event-watermarks-v1.json",
+  "coverage_limit": "CNINFO exact-issuer queries only; not issuer-IR, exchange-site, correction, or post-retrieval coverage. Local 2026-09-23..26 windows do not prove continuity before 2026-09-23 for 000333 or 601088, so their prior INCOMPLETE watermarks are retained.",
+  "watermarks": [
+    {
+      "watermark_id": "prospective-000333-initial-20260927",
+      "scope": "prospective:000333",
+      "source": "cninfo",
+      "coverage_through": "2026-09-27T00:24:16+00:00",
+      "retrieved_at": "2026-09-27T00:24:16+00:00",
+      "parser_version": "prospective-initial-watermark-v1",
+      "coverage_status": "INCOMPLETE",
+      "source_health": "HEALTHY",
+      "evidence_refs": [{"id": "prospective-receipt-fc1e811"}],
+      "local_later_window_evidence": [
+        {"path": "runtime/prospective-public-event-20260927/gapfill-000333-20260927T045324325295Z/index.json", "sha256": "3cdaa42730c98f65d45c5bcdee65aaacb3c6a9d1faf22a7f1b7a488dd5e63601", "window": "2026-09-23..2026-09-26", "status": "COMPLETE_WINDOW_ONLY_NOT_CONTINUOUS_WATERMARK"},
+        {"path": "runtime/prospective-public-event-20260927/20260927T004835372Z/000333-page1.raw.json", "sha256": "c2a890bbf3a6a53ab02ddc6c1794bf1c72ba45799fe9f59dcc5ba2cc18467114", "window": "2026-09-27 as of 08:48:35 +08:00", "status": "COMPLETE_WINDOW_ONLY_NOT_CONTINUOUS_WATERMARK"}
+      ],
+      "action": "no_order"
+    },
+    {
+      "watermark_id": "prospective-600887-cninfo-20260923",
+      "scope": "prospective:600887",
+      "source": "cninfo",
+      "coverage_through": "2026-09-22T16:00:00+08:00",
+      "retrieved_at": "2026-09-23T13:10:18.014265+08:00",
+      "parser_version": "cninfo-announcement-window-v1",
+      "coverage_status": "COMPLETE",
+      "source_health": "HEALTHY",
+      "evidence_refs": [{"id": "600887-cninfo-event-index", "sha256": "f68b7e83d77c4c1d09c8d033a6e0054c97c0ce93c9f383349388bbc2d815ceea"}],
+      "local_later_window_evidence": {
+        "path": "runtime/prospective-public-event-20260927/20260927T004835372Z/600887-page1.raw.json",
+        "sha256": "deb64898cd1e39774942c22fd858aa8aabbca8f51a133a183d5b6837b9f6acee",
+        "interpretation_path": "runtime/prospective-public-event-20260927/20260927T004835372Z/interpretation.json",
+        "interpretation_sha256": "4bcade44b280400396644ba7e698133ac479013d05d257b470affc50f406b18e",
+        "receipt_path": "runtime/prospective-public-event-20260927/20260927T004835372Z/receipt.json",
+        "receipt_sha256": "730ea9ced3609192b659539f32757cc5dd0b3eb72e71b985cbdfab593fbfd3cf",
+        "window": "2026-09-23..2026-09-27 as of 08:48:35 +08:00",
+        "announcement_ids": ["1225578520"],
+        "status": "BOUNDED_WINDOW_EVIDENCE_NOT_ADVANCED_TO_FORMAL_WATERMARK"
+      },
+      "watermark_advance": "NOT_APPLIED: receipt summary parsing failed and date-window continuity requires a validated successor receipt",
+      "action": "no_order"
+    },
+    {
+      "watermark_id": "prospective-601088-initial-20260927",
+      "scope": "prospective:601088",
+      "source": "cninfo",
+      "coverage_through": "2026-09-27T00:24:16+00:00",
+      "retrieved_at": "2026-09-27T00:24:16+00:00",
+      "parser_version": "prospective-initial-watermark-v1",
+      "coverage_status": "INCOMPLETE",
+      "source_health": "HEALTHY",
+      "evidence_refs": [{"id": "prospective-receipt-fc1e811"}],
+      "local_later_window_evidence": [
+        {"path": "runtime/prospective-public-event-20260927/gapfill-601088-20260927T045325203193Z/index.json", "sha256": "0717da2e13c2c17f95015a3c28795cd447cd0a3bf920cb917ca9b1f950175e2a", "window": "2026-09-23..2026-09-26", "status": "COMPLETE_WINDOW_ONLY_NOT_CONTINUOUS_WATERMARK"},
+        {"path": "runtime/prospective-public-event-20260927/20260927T004835372Z/601088-page1.raw.json", "sha256": "c2a890bbf3a6a53ab02ddc6c1794bf1c72ba45799fe9f59dcc5ba2cc18467114", "window": "2026-09-27 as of 08:48:35 +08:00", "status": "COMPLETE_WINDOW_ONLY_NOT_CONTINUOUS_WATERMARK"}
+      ],
+      "action": "no_order"
+    }
+  ]
+}

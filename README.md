@@ -18,7 +18,7 @@
 | --- | --- |
 | 当前文档 | [docs/current/README.md](docs/current/README.md) |
 | 当前支持 CLI | [config/current-cli-entrypoints-v1.json](config/current-cli-entrypoints-v1.json) |
-| 当前 artifact 逻辑注册表 | [artifacts/current/artifact-registry-v1.json](artifacts/current/artifact-registry-v1.json) |
+| 当前 artifact 逻辑注册表 | [artifacts/current/artifact-registry-v2.json](artifacts/current/artifact-registry-v2.json) |
 | 脚本分类与历史工具说明 | [scripts/README.md](scripts/README.md) |
 | 机器可读脚本清单 | [docs/architecture/script-inventory-v1.json](docs/architecture/script-inventory-v1.json) |
 | 架构与迁移地图 | [docs/architecture/repository-architecture.md](docs/architecture/repository-architecture.md) |

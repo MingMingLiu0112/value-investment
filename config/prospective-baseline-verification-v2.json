@@ -1,0 +1,19 @@
+{
+  "schema_version": "prospective-baseline-verification-v2",
+  "action": "no_order",
+  "registration_receipt_path": "runtime/prospective-v2-fc1e811/receipt.json",
+  "registration_receipt_sha256": "8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5",
+  "plan_path": "config/prospective-research-observation-plan-v2.json",
+  "baseline_input_path": "config/prospective-baseline-input-v1.json",
+  "baseline_input_sha256": "e39386945fa67e653b2424f3c761c6c206f46a73cc522a0af35a8016b2453c6c",
+  "verified_sources": {
+    "yili-2026h1-financial-quality": {
+      "scan_evidence_path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/evidence.json",
+      "scan_evidence_sha256": "a6a2dffac4a14726968979c3e401ce7e3b9f65a8d5c9c58a1f9dec1625f05a90",
+      "index_path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/cninfo-index.json",
+      "index_sha256": "f68b7e83d77c4c1d09c8d033a6e0054c97c0ce93c9f383349388bbc2d815ceea",
+      "source_path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511409.pdf",
+      "report_period": "2026H1"
+    }
+  }
+}

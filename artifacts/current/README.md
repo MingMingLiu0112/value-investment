@@ -22,10 +22,13 @@ archives even though it is not a Git-tracked payload.
 
 ## Logical Artifact Registry
 
-`artifacts/current/artifact-registry-v1.json` lists every retained root
-artifact, its hash, current/historical interpretation, successor pointer and
-the provenance reason it remains in place. It is a navigation registry, not a
-license to move or delete path-bound evidence.
+`artifacts/current/artifact-registry-v2.json` is the current navigation registry.
+It resolves the canonical workbook from local `WORKBOOK_PATH`, verifies its
+SHA-256 against `config/current-trial-workbook.json`, and omits the personal
+absolute path. The tracked root workbook is classified as a repository
+reference snapshot, not the user-facing canonical workbook. The v1 registry is
+preserved as a historical snapshot. Neither registry licenses moving or
+deleting path-bound evidence.
 
 ## Current Human Evidence
 

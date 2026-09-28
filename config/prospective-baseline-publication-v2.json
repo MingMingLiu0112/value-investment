@@ -1,0 +1,8 @@
+{
+  "schema_version": "prospective-baseline-publication-v2",
+  "action": "no_order",
+  "snapshot_path": "runtime/prospective-baseline-20260927/snapshot-v7-public-item-facts.json",
+  "snapshot_sha256": "cf61f5e86e701ea340b78fa75716a674d975951888a7f60b6719ec659a492e6d",
+  "registration_receipt_sha256": "8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5",
+  "baseline_input_sha256": "e39386945fa67e653b2424f3c761c6c206f46a73cc522a0af35a8016b2453c6c"
+}

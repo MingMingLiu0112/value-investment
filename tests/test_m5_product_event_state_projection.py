@@ -38,6 +38,25 @@ def test_material_visible_with_lineage_and_no_order():
         project_m5_event_states((event("material", evidence=()),))
 
 
+@pytest.mark.parametrize(
+    "state,category",
+    [
+        ("material_supporting_evidence", "MATERIAL_SUPPORTING_EVIDENCE"),
+        ("material_risk_monitor", "MATERIAL_RISK_MONITOR"),
+    ],
+)
+def test_reviewed_event_dispositions_monitor_without_manual_review(state, category):
+    result = project_m5_event_states((event(state),))
+    card = result.events[0]
+    decision = result.audit_decisions[0]
+    assert card.category.code == category
+    assert card.research_action.code == "MONITOR"
+    assert decision.disposition == category
+    assert "原件已核验" in card.current_conclusion
+    assert "取得已核原件" in card.next_step
+    assert card.action == result.action == "no_order"
+
+
 def test_duplicate_suppressed_with_both_ids_in_audit():
     result = project_m5_event_states((event(
         "duplicate", canonical_event_id="canonical", duplicate_event_id="duplicate",

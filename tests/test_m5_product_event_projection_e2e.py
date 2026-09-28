@@ -47,7 +47,12 @@ def _input(root, state):
         previous_conclusion="原结论待证据" if state == "correction" else None,
         corrected_conclusion="更正后仍待证据" if state == "correction" else None,
         missing_evidence="原件" if state == "insufficient_evidence" else None,
-        reopen_condition="原件可核验" if state == "insufficient_evidence" else None,
+        reopen_condition=(
+            "原件可核验" if state in {
+                "insufficient_evidence", "material_supporting_evidence",
+                "material_risk_monitor",
+            } else None
+        ),
         unavailable_reason="输入缺失" if state == "model_unavailable" else None,
         model_requirements="已核现金流" if state == "model_unavailable" else None,
     )
@@ -65,6 +70,8 @@ def _workbook(root, projection):
 
 @pytest.mark.parametrize("state,visible,disposition", [
     ("material", True, "USER_VISIBLE_EVENT"),
+    ("material_supporting_evidence", True, "MATERIAL_SUPPORTING_EVIDENCE"),
+    ("material_risk_monitor", True, "MATERIAL_RISK_MONITOR"),
     ("duplicate", False, "SUPPRESSED_DUPLICATE"),
     ("late", False, "AUDIT_ONLY"),
     ("correction", False, "AUDIT_ONLY"),
@@ -96,6 +103,12 @@ def test_seven_states_have_distinct_excel_and_audit_dispositions(
     if state == "model_unavailable":
         assert "暂不可评估" in event_text
         assert "已核现金流" in event_text
+    if state in {"material_supporting_evidence", "material_risk_monitor"}:
+        card = model.events[-1]
+        assert "原件已核验" in event_text
+        assert card.research_action.code == "MONITOR"
+        assert card.research_action.user_label == "继续观察"
+        assert "等待人工判断" not in card.research_action.user_label
 
 
 @pytest.mark.parametrize("state,changes", [
