@@ -28,3 +28,22 @@ The retained PDF hashes were recomputed and matched the existing research record
 Do not substitute gross issued shares, an EPS weighted average, or the FY2025 dividend-eligible base for the current point-in-time ordinary-share denominator in a per-share valuation. The exact 2026-06-30 number of treasury shares across cancellation and share-payment-plan holdings is not established by the cited notes. The point-in-time denominator remains `UNKNOWN / NOT_ADMITTED`; diluted EPS averages must also not be mistaken for a current diluted share count.
 
 Reopen only when an official filing or issuer/exchange disclosure supplies a date-bound count of all shares held in treasury (or an equally precise current outstanding-share count) and the share classes/bases reconcile. Even after that gap closes, Midea's FCFF model remains not ready: maintenance versus growth CapEx, operating/financing scope separation, and the enterprise-value-to-listed-equity bridge remain independent blockers.
+
+## 2026-09-29 Observation — H1 Interim-Dividend Share Base
+
+The 2026H1 report, CNINFO `1225531404` (physical p. 60; SHA-256
+`576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8`), states
+that its proposed 2026 interim cash dividend used **7,448,597,984 shares** as
+the allocation base: 7,628,798,092 total shares less 180,200,108 shares in
+the repurchase account as of the report-disclosure date. At CNY 0.50 per
+share, the proposal totals CNY 3,724,298,992; the report states this is 14.06%
+of 2026H1 parent-attributable profit. The report's date-level CNINFO marker is
+2026-08-29; use conservative availability 2026-08-30T00:00:00+08:00.
+
+This is a source-stated share base for that interim-dividend proposal, not
+proof that the proposal was paid, the eventual record-date base, or the exact
+ordinary-share denominator on 2026-09-29. Later share issuance, cancellation,
+or repurchase-account changes are not resolved here. The valuation denominator
+therefore remains `UNKNOWN / NOT_ADMITTED`; this late review does not alter
+the frozen baseline, strict-PIT status, model applicability, valuation, or
+`action=no_order`.

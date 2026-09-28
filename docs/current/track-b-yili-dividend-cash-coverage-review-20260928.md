@@ -83,6 +83,31 @@ both implementation notices state the respective payments. A stated payout
 policy is not evidence that future distributions are funded by normalized
 distributable cash.
 
+## Approval-state update — 2026-09-29
+
+The FY2025 annual report's phrase "subject to shareholder approval" records
+the proposal's state at that report date; the condition was later satisfied.
+The FY2025 distribution proposal (CNINFO `1225259343`, 2026-04-30, physical
+pp. 1-3, SHA-256
+`475c0185b5927d00b628fab09bb4e0055a68ea70aa61caeb1d5955e910394b94`) proposed
+CNY 0.90 per share for the final dividend. The shareholder meeting notice
+(`1225321219`, 2026-05-21, physical p. 2, SHA-256
+`bda5690cbb6f81b591c7b731f9091d157071abed3054269000b8c690d68a8934`) records
+that the meeting held on 2026-05-20 approved both the FY2025 distribution
+proposal and the 2025-2027 shareholder-return plan. The separately retained
+implementation notice verifies payment of the FY2025 final dividend on
+2026-06-05.
+
+The current governance state is therefore `APPROVED`, not pending shareholder
+approval. This approval does not formally classify distributions as ordinary
+or special, establish that the FY2025 interim dividend will recur, or prove
+normalized distributable cash or dividend sustainability. Existing coverage
+calculations and `DATA_INCOMPLETE / UNKNOWN` remain unchanged.
+
+The two approval sources are retained locally at
+`runtime/company-research/yili-dividend-approval-202605/1225259343.pdf` and
+`runtime/company-research/yili-dividend-approval-202605/1225321219.pdf`.
+
 For 2026H1, consolidated CFO was CNY 9.759bn. The cash-flow line for
 "dividends, profits or interest paid" was CNY 6.287bn and combines categories;
 its 1.552x CFO ratio is coverage of that mixed line, not dividend coverage.

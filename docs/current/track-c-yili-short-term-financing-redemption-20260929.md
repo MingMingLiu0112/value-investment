@@ -22,6 +22,25 @@ cash source, refinancing activity, post-redemption cash balance, or remaining
 short-term debt. The event therefore neither proves a liquidity improvement
 nor proves a liquidity deterioration.
 
+### Earlier issuance and maturity schedule
+
+The issuer's 2026 tenth-to-fourteenth super-short-term financing note
+issuance-results notice, CNINFO `1225412264` ([official PDF](https://static.cninfo.com.cn/finalpage/2026-07-07/1225412264.PDF)),
+dated 2026-07-07, reports five issues totaling CNY 45bn. Issues 12-14 totaled
+CNY 25bn principal, began accruing on 2026-07-03, and matured on 2026-09-24;
+issues 10-11 totaled CNY 20bn principal, began accruing on 2026-07-02, and
+were scheduled to mature on 2026-09-29. The July notice reports issue terms,
+not the actual use of proceeds, and does not connect the July proceeds to the
+September 24 repayment. The September 24 redemption notice verifies payment of
+issues 12-14 only.
+
+The July source was available before the registered 2026-09-27 research cutoff,
+but this is a late source review and does not establish that the registered
+baseline used it. It narrows the known maturity schedule; the source and
+post-redemption cash/debt bridges remain unknown. As of this bounded review,
+the September 29 maturity date for issues 10-11 has arrived, but no payment
+completion is inferred from the schedule or the limited CNINFO snapshot.
+
 ## Correction: issuer attribution and scale comparison
 
 An earlier version of this note incorrectly used Midea Group's 2026H1
@@ -56,6 +75,8 @@ facts. Reopen only the affected forward-looking dependencies:
 - Post-redemption cash and liquidity bridge.
 - Any net-debt bridge that uses post-June 30 balances.
 - Dividend-capacity context that depends on current cash or refinancing.
+- Whether the two CNY 10bn issues scheduled for 2026-09-29 were repaid or
+  refinanced, once an eligible official disclosure becomes available.
 
 Do not rewrite 2026H1 financial statements, infer a current debt balance, or
 change ordinary/special dividend classification, normalized distributable
@@ -87,3 +108,7 @@ coverage. Formal watermark coverage remains at the v8 registered boundary;
 the successor v9 records this snapshot without advancing that watermark.
 The canonical workbook is unchanged because its current cutoff is 2026-09-28
 and this notice's conservative availability begins on 2026-09-30.
+
+The earlier issuance-results PDF is retained at
+`runtime/company-research/yili-financing-results-20260707/1225412264.pdf`,
+SHA-256 `f8c529139b7f49d73f355ecd41c8dea44e68ff35765379538dd090ccba5f6a2d`.

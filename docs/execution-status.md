@@ -1,6 +1,143 @@
 # CURRENT STATUS
 
-## 2026-09-29 Continuous Public Research Continuation — current
+## 2026-09-29 06:13 +08 Continuous Public Research Continuation — latest
+
+This is a time/status refresh of the substantive 05:15 research snapshot
+below. The audit base remains `ddcaee886a94189458f0a77f4f73492f00e808be`;
+this review does not change the frozen baseline, valuation, or decision state.
+
+At 06:13 +08 the exchange session had not opened; the latest verified close
+remains 2026-09-28 for 000333, 600887 and 601088. Yili's CNY 20bn notes had a
+scheduled 2026-09-29 maturity date, but payment or refinancing completion has
+not been verified; no outcome is inferred. Notice `1225584526` retains
+conservative `available_at=2026-09-30T00:00:00+08:00` and remains unapplied.
+
+The canonical workbook remains recorded at SHA-256
+`849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`. No
+workbook bytes were changed. A read-only content inspection could not be
+completed because `@oai/artifact-tool` is unavailable in the configured
+workspace dependency environment; no alternate spreadsheet library was used.
+
+```text
+LATEST_VERIFIED_SESSION = 2026-09-28 / COMPLETE / 000333_600887_601088
+YILI_2026-09-29_MATURITY_OUTCOME = NOT_VERIFIED / NO_INFERENCE
+FORMAL_EVENT_WATERMARK = 2026-09-27 / v9 bounded snapshots do not advance it
+STRICT_PIT = NOT_PROVEN
+M4_R2 = PARKED_WAITING_R2_NONBLOCKING
+M6_R3 = PARKED / OPERATIONAL_NOT_STARTED / VERIFIED_REAL_SESSIONS_0
+M7_R5 = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+## 2026-09-29 05:15 +08 Continuous Public Research Continuation — previous snapshot
+
+Audit base `ddcaee886a94189458f0a77f4f73492f00e808be` is clean `main` and
+matches `origin/main`. Its GitHub Core Research Gates run `36483946481`
+completed successfully for that exact SHA. The earlier note below is the
+04:58 +08 snapshot, not a newer observation.
+
+The v2 prospective plan, v2 registration receipt, and v9 baseline-verification
+configuration were re-bound locally. Plan SHA-256
+`f98304dbfb73276073d57537e90aee37b6233821d8b0200df944718bf23a2c7a` matches
+the receipt; receipt SHA-256
+`8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5` matches
+v9; the supplemental-facts SHA matches `0bbc21f26fd5be480745f2e1624496930863945bd29cea4da8791f27532a5628`.
+The receipt binds 000333, 600887 and 601088 and preserves `action=no_order`,
+with no outcomes observed, valuation executed, decision signal, or portfolio
+data. Registration time remains process-clock-only and unattested. A focused
+rerun using an isolated project `runtime/` pytest base passed **48 tests**;
+the default Windows pytest temp root remains inaccessible and its setup
+errors did not reproduce with the isolated base. Snapshot v13 remains frozen;
+strict PIT remains `NOT_PROVEN`.
+
+A source-bound Shenhua supplement was added at
+`docs/current/track-b-shenhua-h1-acquisition-segment-capex-supplement-20260929.md`.
+The retained CNINFO H1 report `1225531759` SHA-256 was rechecked as
+`ff4a670c7aa9e0309dc610a0e225d490970731dcc14eda234d73bb8c9b9b54f4`; pages
+16, 23, 56-57, 65, 178 and 210 were rendered and checked. The supplemental
+acquisition and segment bridge distinguishes contractual terms from the
+common-control accounting table, separates consolidated investing cash flow
+from acquisition cash consideration, and keeps exploration/development spend
+separate from segment capex. The segment totals cross-foot to profit CNY
+45,494m / CNY 43,171m and capex CNY 23,290m / CNY 22,076m (2025H1 restated).
+These are not normalized earnings, owner cash flow, or maintenance-capex
+inputs; Shenhua remains `CYCLICAL_MODEL_NOT_READY / VALUATION_NOT_READY` and
+dividend sustainability remains `NOT_READY`.
+
+The Yili financing note record now includes the issuer's earlier July 7
+issuance-results notice `1225412264`, locally retained at
+`runtime/company-research/yili-financing-results-20260707/1225412264.pdf` and
+verified against SHA-256
+`f8c529139b7f49d73f355ecd41c8dea44e68ff35765379538dd090ccba5f6a2d`. It
+reports CNY 25bn principal scheduled for 2026-09-24 and another CNY 20bn
+scheduled for 2026-09-29. It does not identify the CNY 25.073bn redemption's
+funding source or reconcile post-redemption cash/debt. At this audit time,
+2026-09-29 05:15 +08, completion of the CNY 20bn due-date obligation is not
+known; no non-payment is inferred. Notice `1225584526` keeps conservative
+`available_at=2026-09-30T00:00:00+08:00` and remains unapplied. Yili's
+FY2025 distribution proposal and 2025-2027 shareholder-return plan were
+confirmed approved at the 2026-05-20 meeting by CNINFO `1225321219`; the
+current research card is corrected accordingly. Ordinary/special dividend
+classification remains unknown, as do normalized distributable cash and the
+FY2025 interim dividend's repeatability. These facts do not change the
+dividend-sustainability state.
+
+An independent Midea source review rendered H1 report p. 60 and confirmed the
+report-date base for the proposed 2026 interim dividend: 7,628,798,092 total
+shares less 180,200,108 repurchase-account shares equals 7,448,597,984 shares;
+CNY 0.50/share implies CNY 3,724,298,992. This narrows the dividend-proposal
+denominator at the report-disclosure date only; the 2026-09-29 valuation share
+denominator remains `UNKNOWN / NOT_ADMITTED`. No model input or valuation is
+updated. The same review found the current Midea CapEx memo SHA-256
+`b2d14f93f46806948d42c07dcf6f74b70380371d036242f373fbdb7023849e51` differs
+from the SHA-256 `bf732e55b77eea455da71a6c82491a6a9fc324f3d7c27afb556f30a2c2dc5bee`
+recorded in its machine receipt. The source PDF hashes match, but the current
+narrative bytes are not bound by that earlier receipt; this is recorded in
+`docs/current/track-b-midea-capex-receipt-binding-audit-20260929.md`.
+Midea remains `MODEL_NOT_READY / VALUATION_NOT_READY`.
+
+As of 05:15 +08 the exchange session had not opened; latest verified close
+remains 2026-09-28 for all three registered cases. Formal event watermark is
+still 2026-09-27; v9 contains only bounded later snapshots, not a continuous
+advance. No duplicate quote or event run was made. The single canonical
+workbook remains at SHA-256
+`849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`; this
+late source review did not alter admitted baseline inputs, decision state, or
+the product read model, so Excel was not republished.
+
+```text
+ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
+BASELINE_COMPLETE = 0/3 / ALL_BASELINE_PARTIAL / V2_BYTES_FROZEN
+WAITING_FOR_PUBLIC_EVIDENCE = Midea finance/capex/equity bridge, current share denominator and CapEx memo successor receipt; Yili source of redemption funding, post-maturity liquidity and dividend classification; Shenhua acquisition-adjusted earnings and capex split; future contemporaneous PIT
+NEW_EVENTS_PROCESSED = 0_FORMALLY_APPLIED / Yili 1225584526 remains future-available and unapplied
+LATEST_VERIFIED_SESSION = 2026-09-28 / COMPLETE / 000333_600887_601088
+CANONICAL_UPDATED_THIS_TURN = false / NO_ADMITTED_INPUT_OR_PRODUCT_STATE_CHANGE
+SAFE_PUBLIC_RESEARCH_REMAINING = YES
+M4_R2 = PARKED_WAITING_R2_NONBLOCKING
+M6_R3 = PARKED / OPERATIONAL_NOT_STARTED / VERIFIED_REAL_SESSIONS_0
+M7_R5 = NOT_PASSED
+STRICT_PIT = NOT_PROVEN
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+### INTERRUPT_AUDIT
+
+| Check | Result | Disposition |
+|---|---|---|
+| Active prospective case can still be researched | YES | Three registered cases remain partial. |
+| Public evidence gap can change model applicability or financial interpretation | YES | The three case-specific gaps above remain open; Yili's ordinary/special type remains unknown, while Midea's H1 dividend-base denominator narrows only that dated proposal and its current CapEx memo receipt binding remains unresolved. |
+| New public event is eligible to apply now | NO | Yili redemption notice remains unavailable until 2026-09-30; no formal event is applied. |
+| New completed market session exists | NO | At 05:15 +08 the exchange had not opened. |
+| Baseline or strict prospective decision chain is complete | NO | Baselines remain partial; registration/capture clocks do not prove strict PIT. |
+| PIT/method validation can continue safely | YES | Preserve v2; do not backdate or retrofit PIT. |
+| Product projection changed from newly admitted evidence | NO | No admitted input or product-state change; preserve the existing canonical workbook. |
+| All active cases are at evidence stop | NO | Safe bounded public research remains. |
+
+## 2026-09-29 04:58 +08 Continuous Public Research Continuation — previous snapshot
 
 The current Goal and stage remain `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`
 and `STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH`. This
