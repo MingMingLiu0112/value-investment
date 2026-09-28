@@ -16,9 +16,11 @@ files without duplicating their content. Historical stage notes live under
 | Shenhua cyclical baseline card | `docs/current/track-b-shenhua-cyclical-baseline-20260927.md` |
 | Shenhua operating and capital-allocation review | `docs/current/track-b-shenhua-operations-and-capital-allocation-20260927.md` |
 | Midea 2026H1 source admission | `docs/current/track-b-midea-2026h1-admission-20260927.md` |
+| Midea cash-scope correction and FY2026H1 liquidity facts | `docs/current/track-b-midea-cash-scope-correction-20260929.md` (v2 remains historical; current v3 separates monetary funds from cash equivalents; net debt remains unknown) |
 | Midea CapEx / fixed-assets review and page corrigendum | `docs/current/track-b-midea-capex-fixed-assets-review-20260928.md` (receipt-bound original); `docs/current/track-b-midea-capex-fixed-assets-review-corrigendum-20260928.md` |
 | Midea 2026 extraordinary shareholder meeting notice | `docs/current/track-c-midea-egm-notice-20260928.md` |
-| Current bounded public-event scans / gap fills / watermarks | `config/prospective-public-event-watermarks-v8.json` and `docs/current/track-c-prospective-watermark-continuity-corrigendum-20260928.md`; `docs/current/track-c-public-event-gapfill-20260927.md` is a historical scan note whose Shenhua gap statement is superseded by the corrigendum; 2026-09-28 Midea notice review: `docs/current/track-c-midea-egm-notice-20260928.md` |
+| Current bounded public-event scans / gap fills / watermarks | `config/prospective-public-event-watermarks-v9.json` (v8 remains the latest formal continuous watermark; v9 adds 2026-09-29 bounded snapshots without advancing it); `docs/current/track-c-prospective-watermark-continuity-corrigendum-20260928.md`; 2026-09-29 Yili financing-note redemption: `docs/current/track-c-yili-short-term-financing-redemption-20260929.md` |
+| Prior Midea meeting-notice review | `docs/current/track-c-midea-egm-notice-20260928.md` (re-observed after conservative availability in watermark v9; no new event) |
 | Prospective event continuity as of 2026-09-28 | `docs/current/track-c-prospective-watermark-continuity-corrigendum-20260928.md` (bounded date chains, latest CNINFO snapshots, missing intervals and clock limitations) |
 | Shenhua annual-series restatement corrigendum | `docs/current/track-b-shenhua-operating-series-corrigendum-20260928.md` (page corrections, checked restatement bridge and remaining ResearchCase blockers) |
 | Yili liquidity bridge follow-up | `docs/current/track-b-yili-liquidity-bridge-review-20260928.md` |

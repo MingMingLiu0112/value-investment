@@ -1,5 +1,123 @@
 # CURRENT STATUS
 
+## 2026-09-29 Continuous Public Research Continuation — current
+
+The current Goal and stage remain `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`
+and `STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH`. Local
+`main` is at `867488e8637fa394bac1c868b330f781d2e85fb5` with working-tree
+changes. The last verified `origin/main` remains `a43dd35533bb0f848bd0e68e2d0afd556f8a0165`;
+`git fetch origin` ended with a connection reset and HTTPS push ended with a
+low-speed failure. Remote HEAD and CI for the local commit are unverified.
+Core Research Gates run `36428450403` passed for `a43dd35` only.
+
+The formal prospective event watermarks remain bounded through 2026-09-27.
+Successor `config/prospective-public-event-watermarks-v9.json` preserves that
+boundary and appends three exact-issuer CNINFO snapshots for 2026-09-28..29;
+all retrieval times are local process time and unattested, so no continuous
+watermark advances and strict PIT remains `NOT_PROVEN`.
+
+| Symbol | Scan receipt | Result |
+| --- | --- | --- |
+| 000333 | `runtime/prospective-public-event-2026-09-29/gapfill-000333-20260928T164617774820Z/scan-receipt.json` / `c3462ea1cff9a06daf4d69918c5e7efc4f40c30c18ddb8ed2f830a9c4906a137` | Re-observed known notice `1225582141` after its conservative 2026-09-29 availability; no new event. |
+| 600887 | `runtime/prospective-public-event-2026-09-29/gapfill-600887-20260928T163118110265Z/scan-receipt.json` / `afa5db545de95f43415e5aa2eebfc281a002ae8fc4661d9f4916b00455976c1c` | New notice `1225584526`: three super-short-term notes with CNY 25bn principal were paid on 2026-09-24; reported total cash settlement is CNY 25,073,335,616.44. |
+| 601088 | `runtime/prospective-public-event-2026-09-29/gapfill-601088-20260928T164633324133Z/scan-receipt.json` / `7757bf32eee2a186783b510d92eb451c704cd3c12b8e962fe6a2cf9bdab798a9` | Zero announcements in this retrieval snapshot. |
+
+The Yili original was downloaded and hash-verified against CNINFO PDF SHA-256
+`4ef69c200e7b3d0cde3e1b667bcbb4304d15dd6aa406585ca796aa2c3ab4a270`. Since
+the notice is date-only, conservative `available_at` is 2026-09-30. It is a
+`MATERIAL_RISK_MONITOR_CANDIDATE`, not a formal applied M5 event decision. It
+confirms redemption of these notes but does not disclose the funding source or
+post-redemption cash/debt balance. Reopen only the affected post-H1 debt,
+liquidity, net-debt and dividend-capacity dependencies; do not infer a
+directional change to dividend sustainability, valuation or decision status.
+The current workbook remains at 2026-09-28 and was not republished.
+See `docs/current/track-c-yili-short-term-financing-redemption-20260929.md`.
+
+An independent source review found that the old Midea FY2025 evidence package
+misnamed CNY 85.24715bn of monetary funds as cash and cash equivalents. The
+versioned v3 package now separates monetary funds (CNY 85.24715bn) from cash
+and cash equivalents (CNY 68.50867bn), with the annual-report pages bound by
+SHA. The official 2026H1 report also supports consolidated cash and cash
+equivalents of CNY 74.614244bn and short-term borrowings of CNY 47.305038bn,
+among the separately scoped facts recorded in the current research note.
+Financial-business cash/debt attribution remains unresolved; `net_debt=null`,
+`MODEL_NOT_READY`, and `VALUATION_NOT_READY` remain in force. Frozen baseline
+v13 was not rewritten. See
+`docs/current/track-b-midea-cash-scope-correction-20260929.md`.
+
+The latest verified market session remains 2026-09-28. The scan timestamp is
+an unattested local process time and does not establish whether the 2026-09-29
+exchange session had completed. No new quote or product projection was
+published. The canonical workbook remains
+the existing `WORKBOOK_PATH`; `action=no_order`.
+
+Targeted regressions after the as-of guard, test-fixture correction,
+cross-platform UTF-8 child-process setting, and Midea v3 fact correction passed:
+`26 passed`. The full suite then completed with `3227 passed, 29 skipped,
+0 failed` in 354.89s. The 20 warnings are existing Backtrader UTC and
+openpyxl named-range deprecations.
+
+```text
+ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
+BASELINE_COMPLETE = 0/3 / ALL_BASELINE_PARTIAL / V2_BYTES_FROZEN
+WAITING_FOR_PUBLIC_EVIDENCE = Midea industrial/financial scope and valuation inputs; Yili post-redemption liquidity and normalized distributable cash; Shenhua segment/cost bridge; future PIT evidence
+NEW_EVENTS_PROCESSED = 0_FORMALLY_APPLIED / Yili 1225584526 REVIEWED_AS_MATERIAL_RISK_MONITOR_CANDIDATE
+LATEST_VERIFIED_SESSION = 2026-09-28 / COMPLETE / 000333_600887_601088
+CANONICAL_UPDATED = false / CURRENT_AS_OF_2026-09-28
+SAFE_PUBLIC_RESEARCH_REMAINING = YES / Midea, Yili, Shenhua evidence gaps remain
+M4_R2 = PARKED_WAITING_R2_NONBLOCKING
+M6_R3 = PARKED / OPERATIONAL_NOT_STARTED
+M7_R5 = NOT_PASSED
+STRICT_PIT = NOT_PROVEN
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+### INTERRUPTION_AUDIT
+
+| Check | Result | Disposition |
+| --- | --- | --- |
+| Active prospective research remains | YES | Three registered company cases remain partial. |
+| A public evidence gap can change model applicability, confidence, or distribution status | YES | Midea scope/valuation inputs, Yili liquidity/cash capacity and Shenhua operating bridges remain open. |
+| A new available public event needs disposition | YES | Yili notice is captured; conservative availability is 2026-09-30, with only affected liquidity dependencies reopened. |
+| A new completed market session is pending | NO | The 2026-09-29 session had not completed at observation time. |
+| A baseline or strict prospective decision chain is complete | NO | Baselines remain partial; timestamps are not independently attested. |
+| PIT/method validation can continue safely | YES | Preserve v2; do not backdate or retrofit strict PIT. |
+| A product projection should change from new facts | NO | Current workbook cutoff precedes Yili availability; no new close. |
+| All active cases are at evidence stop | NO | Safe public research remains. |
+
+## 2026-09-28 Continuation — Yili Payment-Lifecycle Successor
+
+An R1 read-only review found that the retained CNINFO implementation notice
+`1225335436` proves the FY2025 final Yili distribution was approved on
+2026-05-20 and paid on 2026-06-05, for CNY 5,692,824,600.30 (CNY 0.90 per
+share). The earlier dividend package, whose research date was 2026-09-22,
+still represented that distribution as proposed because the implementation
+notice had not yet been bound to the package. The old package bytes remain
+recoverable from Git history at the prior committed revision.
+
+The current local successor package is
+`config/m1-distribution-packages-v1/600887-quality-compounder.json`, version
+`20260928.1`, with the implementation PDF bound by SHA-256
+`c8cd69e0a195ec9daa702306a2ba1ebf7cb8b53b1f5cae5d872cd590b0ba3c70` and
+`dividend_type=unknown`. Its trailing paid dividend is now CNY 1.38 per share
+(FY2025 interim CNY 0.48 plus FY2025 final CNY 0.90) for the quote window
+2025-09-22 through 2026-09-22, yielding 5.1550% against the retained CNY
+26.77 quote. The declared proposal snapshot remains separately labeled; the
+normalized scenario remains `NOT_READY`.
+
+The correction does not change the registered prospective baseline, valuation,
+model applicability, dividend sustainability (`DATA_INCOMPLETE / UNKNOWN`),
+strict PIT, canonical Excel, or `action=no_order`. The parent-level cash bridge
+is still only a bounded proxy and is not normalized distributable cash. Targeted
+package, distribution, income-projection, and workbook regressions passed:
+`28 passed`.
+
+GitHub synchronization remains unverified: the local `main` contains the
+prior committed Yili classification correction `867488e`, while the last
+locally verified `origin/main` remains `a43dd35`; `git fetch origin` timed out.
+
 ## 2026-09-28 Continuous Public Research Continuation — current
 
 This continuation began from a clean `main` at

@@ -453,6 +453,15 @@ def build_descriptor(
     else:
         raise ValueError(f"Unknown valuation facts kind: {facts_kind}")
     dependencies = data["dependencies"]
+    distribution_result = optional_dividend_result_for_symbol(root, symbol)
+    blockers = [str(item) for item in data.get("blockers") or []]
+    if distribution_result is not None and distribution_result.as_of > facts.as_of:
+        blockers.append(
+            "Distribution package as-of "
+            f"{distribution_result.as_of.isoformat()} follows valuation facts as-of "
+            f"{facts.as_of.isoformat()}; excluded to preserve point-in-time integrity."
+        )
+        distribution_result = None
     descriptor = ResearchInputDescriptor(
         schema_version=INPUT_DESCRIPTOR_SCHEMA,
         descriptor_version=_required_text(
@@ -497,14 +506,14 @@ def build_descriptor(
             as_of=facts.as_of,
         ),
         assumption_bindings=build_bindings(data.get("assumption_bindings") or []),
-        distribution_result=optional_dividend_result_for_symbol(root, symbol),
+        distribution_result=distribution_result,
         quote=build_quote(data.get("quote"), root=root),
         model_validity_input=build_validity(
             data.get("model_validity_input"),
             root=root,
         ),
         valuation_approval=None,
-        blockers=tuple(str(item) for item in data.get("blockers") or []),
+        blockers=tuple(blockers),
         input_sha256=None,
     )
     return finalize_input_descriptor(descriptor)

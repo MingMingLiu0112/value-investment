@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from decimal import Decimal
 import shutil
 from pathlib import Path
 import json
@@ -43,11 +44,11 @@ def test_three_m1_dividend_packages_load_without_merging_lifecycle_states():
         for record in yili.history.records
         if record.fiscal_period == "FY2025-final"
     )
-    assert yili_final.status == "proposed"
+    assert yili_final.status == "paid"
     assert yili_final.dividend_type == "unknown"
-    assert yili_final.approval_date is None
-    assert yili_final.ex_date is None
-    assert yili_final.payment_date is None
+    assert yili_final.approval_date.isoformat() == "2026-05-20"
+    assert yili_final.ex_date.isoformat() == "2026-06-05"
+    assert yili_final.payment_date.isoformat() == "2026-06-05"
 
     gree = by_symbol["000651"].result
     gree_payload = json.loads(
@@ -104,6 +105,11 @@ def test_two_m1_dividend_packages_preserve_fact_policy_forecast_layers():
         for record in yili.history.records
         if record.fiscal_period == "FY2025-interim"
     )
+    yili_2025_final = next(
+        record
+        for record in yili.history.records
+        if record.fiscal_period == "FY2025-final"
+    )
     assert yili_final.status == "paid"
     assert yili_final.ex_date.isoformat() == "2025-06-06"
     assert yili_final.payment_date.isoformat() == "2025-06-06"
@@ -112,16 +118,21 @@ def test_two_m1_dividend_packages_preserve_fact_policy_forecast_layers():
     assert yili_interim.payment_date.isoformat() == "2025-12-17"
     assert yili_final.dividend_type == "unknown"
     assert yili_interim.dividend_type == "unknown"
+    assert yili_2025_final.status == "paid"
+    assert yili_2025_final.payment_date.isoformat() == "2026-06-05"
     assert "do not classify it as ordinary or special" in yili_final.blockers[0]
     assert {
         snapshot.yield_type
         for snapshot in yili.yield_snapshots
     } == {"current", "normalized"}
-    assert next(
+    trailing_paid = next(
         snapshot
         for snapshot in yili.yield_snapshots
         if snapshot.basis_type == "trailing_paid"
-    ).status == "READY"
+    )
+    assert trailing_paid.status == "READY"
+    assert trailing_paid.dividend_per_share == Decimal("1.38")
+    assert trailing_paid.dividend_yield == Decimal("0.05155024280911468061")
     assert next(
         snapshot
         for snapshot in yili.yield_snapshots
@@ -180,17 +191,18 @@ def test_two_m1_dividend_packages_preserve_fact_policy_forecast_layers():
     assert "no forward payout forecast" in gree.sustainability.coverage_context
 
 
-def test_valuation_descriptor_attaches_the_matching_dividend_package():
+def test_valuation_descriptor_excludes_later_distribution_package_for_pit():
     descriptor = build_descriptor(
         load_descriptor_payloads(ROOT)["600887"],
         root=ROOT,
     )
 
-    assert descriptor.distribution_result is not None
-    assert descriptor.distribution_result.symbol == "600887"
-    assert descriptor.distribution_result.sustainability.status == "LOW"
-    assert descriptor.distribution_result.cash_return_status == "PARTIAL"
-    assert descriptor.distribution_result.action == "no_order"
+    assert descriptor.distribution_result is None
+    assert any(
+        "Distribution package as-of 2026-09-28 follows valuation facts as-of 2026-09-22"
+        in blocker
+        for blocker in descriptor.blockers
+    )
 
 
 def test_dividend_package_rejects_changed_source_hash():

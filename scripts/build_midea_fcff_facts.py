@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "runtime" / "midea-2025-official.pdf"
-OUT = ROOT / "runtime" / "company-research" / "midea-fcff-facts-20260922"
+OUT = ROOT / "runtime" / "company-research" / "midea-fcff-facts-20260929"
 POINTER = ROOT / "runtime" / "company-research" / "midea-fcff-facts-latest.json"
 
 
@@ -16,7 +16,7 @@ def main() -> None:
     sha256 = hashlib.sha256(SOURCE.read_bytes()).hexdigest()
     payload = {
         "symbol": "000333", "as_of_period": "2025-12-31", "basis": "2025 consolidated cash-flow statement",
-        "package_version": "midea-fcff-facts-v2",
+        "package_version": "midea-fcff-facts-v3",
         "financial_scope_approved": False,
         "fcff_inputs": {"capex": "11141889000", "ebit": None, "cash_tax_rate": None,
                         "depreciation": None, "working_capital_change": None, "wacc": None,
@@ -24,7 +24,8 @@ def main() -> None:
         "observed_facts": {
             "operating_cash_flow_cny": "53345930000",
             "capex_cash_outflow_cny": "11141889000",
-            "cash_and_cash_equivalents_cny": "85247150000",
+            "monetary_funds_cny": "85247150000",
+            "cash_and_cash_equivalents_cny": "68508670000",
             "short_term_borrowings_cny": "43904550000",
             "current_portion_noncurrent_liabilities_cny": "5821777000",
             "long_term_borrowings_cny": "12658843000",
@@ -49,6 +50,9 @@ def main() -> None:
                           {"id": "midea_2025_official_balance_sheet_pages_132_133",
                            "path": "runtime/midea-2025-official.pdf", "sha256": sha256,
                            "pages": [132, 133], "unit": "CNY thousands"},
+                          {"id": "midea_2025_official_cash_equivalents_pages_234_235",
+                           "path": "runtime/midea-2025-official.pdf", "sha256": sha256,
+                           "pages": [234, 235], "unit": "CNY thousands"},
                           {"id": "midea_2025_official_tax_page_230",
                            "path": "runtime/midea-2025-official.pdf", "sha256": sha256,
                            "page": 230, "unit": "CNY thousands"},
@@ -73,9 +77,12 @@ def main() -> None:
     }
     OUT.mkdir(parents=True, exist_ok=True)
     target = OUT / "evidence.json"
+    manifest_path = OUT / "manifest.json"
+    if target.exists() or manifest_path.exists():
+        raise FileExistsError(f"Refusing to overwrite versioned evidence package: {OUT}")
     target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     digest = hashlib.sha256(target.read_bytes()).hexdigest()
-    (OUT / "manifest.json").write_text(json.dumps({
+    manifest_path.write_text(json.dumps({
         "script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "evidence_sha256": digest,
         "source_sha256": sha256,

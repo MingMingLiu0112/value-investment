@@ -67,8 +67,9 @@ def test_v5_rejects_tampered_projection_chain(tmp_path, relative):
         builder.build_projection_payload(root)
 
 
-def test_v5_writer_refuses_to_overwrite_existing_successor(tmp_path):
+def test_v5_writer_refuses_to_overwrite_existing_successor(tmp_path, monkeypatch):
     root = _case_repo(tmp_path)
+    monkeypatch.setattr(builder, "ROOT", root)
     output = root / "runtime/prospective-public-event-20260928/registered-public-event-projection-v5.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("preserve", encoding="utf-8")

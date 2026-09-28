@@ -42,6 +42,39 @@ interim dividend paid on December 17. These are distributions for two
 different fiscal-year plans and should not be represented as FY2025-only
 dividend coverage.
 
+### Parent-Level Calendar-Year Cash Bridge
+
+The parent-only cash-flow statements provide a separate view of cash visible
+at the listed parent. Matching calendar-year shareholder payments to the
+same calendar year's parent-only statement gives this limited screen (CNY
+bn):
+
+| Calendar year | Parent CFO | Cash investment income received | Long-lived-asset cash purchases | Partial cash proxy | Shareholder dividends actually paid | Proxy / paid dividends |
+|---|---:|---:|---:|---:|---:|---:|
+| 2022 | 31.535 | 0.360 | 0.364 | 31.530 | 6.144 | 5.132x |
+| 2023 | 8.435 | 3.400 | 0.597 | 11.238 | 6.621 | 1.697x |
+| 2024 | 17.917 | 8.502 | 0.775 | 25.644 | 7.639 | 3.357x |
+| 2025 | 7.150 | 5.035 | 0.632 | 11.553 | 10.753 | 1.074x |
+
+`Partial cash proxy = parent-only CFO + "cash received from investment
+income" - cash purchases of fixed, intangible, and other long-lived assets.`
+The 2022-2023 parent statements are on physical PDF p. 93 of the FY2023 annual
+report; the 2024-2025 statements are on physical PDF p. 91 of the FY2025 annual
+report. Actual shareholder-payment amounts come from implementation notices:
+FY2021 final paid in 2022; FY2022 final in 2023; FY2023 final in 2024; and
+FY2024 final plus FY2025 interim in 2025. The FY2025 final dividend paid on
+2026-06-05 is not included in calendar 2025.
+
+This is not free cash flow, distributable cash, or a dividend forecast. It
+does not deduct investment purchases or acquisitions, debt repayment,
+interest, minority distributions, required working capital, restricted cash,
+or other commitments. Parent-only CFO also moved materially between years;
+cash investment income is not assumed to recur. The parent statement's own
+"dividends, profits or interest paid" line is mixed and is not used as the
+shareholder-dividend numerator. The 2025 proxy is only 1.074x actual listed-
+company shareholder payments before those omitted uses: a cautionary
+observation, not proof of a shortfall or of sustainable coverage.
+
 The FY2025 annual report states a 2025-2027 shareholder-return plan targeting
 annual cash dividends of at least 75% of parent-attributable profit and at
 least CNY 1.22 per share, subject to shareholder approval. The FY2025 annual
@@ -111,13 +144,16 @@ projection, and canonical Excel remain unchanged; `action=no_order`.
 An independent R1 review of the retained CNINFO dividend proposals,
 resolutions, adjustments and implementation notices found no issuer wording
 that explicitly classifies the reviewed FY2024 final, FY2025 interim or FY2025
-final distribution as ordinary or special. The final FY2025 proposal remains
-proposed, not paid. Accordingly, the three corresponding typed package records
-now use `dividend_type=unknown` with explicit blockers. “No special dividend
+final distribution as ordinary or special. The FY2025 final distribution was
+approved on 2026-05-20 and paid on 2026-06-05; the implementation notice is
+bound below. Accordingly, the three corresponding typed package records use
+`dividend_type=unknown` with explicit blockers. “No special dividend
 identified” is retained only as a search result and is not treated as proof of
-ordinary classification. Historical amounts, dates, trailing paid-yield math,
-registered baseline, and workbook were not changed. Unknown classifications
-are rejected for forward and normalized dividend-income estimates.
+ordinary classification. Historical amounts and dates are retained, and the
+successor package refreshes trailing paid-yield math to include the paid FY2025
+final distribution. Registered baseline, observation ledger, product
+projection, and workbook were not changed. Unknown classifications are
+rejected for forward and normalized dividend-income estimates.
 
 ## Sources and provenance
 
@@ -127,6 +163,8 @@ are rejected for forward and normalized dividend-income estimates.
 - FY2022 final-dividend proposal CNINFO `1216666155`, [official PDF](https://static.cninfo.com.cn/finalpage/2023-04-28/1216666155.PDF), SHA-256 `1cacac501708ff614e053c56fff5c28cf0908632a807005993c8c57bb3655b77`. The post-share-cancellation adjustment is CNINFO `1216921418`, [official PDF](https://static.cninfo.com.cn/finalpage/2023-05-27/1216921418.PDF), SHA-256 `7ba71a24dea3ade2025a007f5c6bcdf3fa78aa2e89781a7f0c6637dfee5c7251`, PDF pp. 1-2. The implementation is CNINFO `1216991008`, [official PDF](https://static.cninfo.com.cn/finalpage/2023-06-06/1216991008.PDF), SHA-256 `b5eaca3d13afe8f554a61bf37c6285bee535ba78d549393503c65d4bc6dc0bf8`, PDF pp. 1-3; it confirms CNY 1.04 per share, CNY 6,621,108,317.20 total, and payment on 2023-06-13.
 - FY2023 annual report CNINFO `1219916433`, [official PDF](https://static.cninfo.com.cn/finalpage/2024-04-30/1219916433.PDF), SHA-256 `d56b0be917eb89a07f092a3ecf1c269aea9f1698c51b648a53f69a0759ef44fe`, physical PDF pp. 7, 91-92. It reports parent-attributable profit CNY 10,428,540,457.94, consolidated CFO CNY 18,290,357,650.56, and long-lived-asset cash purchases CNY 6,955,597,704.25.
 - FY2023 final-dividend proposal CNINFO `1219916470`, [official PDF](https://static.cninfo.com.cn/finalpage/2024-04-30/1219916470.PDF), SHA-256 `f2788e7dd4ddc34914ad8f3cd7e5249b403130d344831db2886cc7e27b741b37`. The implementation is CNINFO `1220185740`, [official PDF](https://static.cninfo.com.cn/finalpage/2024-05-29/1220185740.PDF), SHA-256 `fb5dda4300dc4e782c231c5d351e38086575fb55991eea0524cdb4a672f07c52`, PDF pp. 1-2; it confirms CNY 1.20 per share, CNY 7,639,318,446.00 total, and payment on 2024-06-05.
+- Parent-only cash-flow statement, FY2023 annual report CNINFO `1219916433`, [official PDF](https://static.cninfo.com.cn/finalpage/2024-04-30/1219916433.PDF), SHA-256 `d56b0be917eb89a07f092a3ecf1c269aea9f1698c51b648a53f69a0759ef44fe`, physical PDF p. 93 (printed p. 89). The statement reports 2023/2022 parent CFO of CNY 8,434,869,082.25 / CNY 31,534,620,457.75, investment income cash receipts of CNY 3,399,685,750.49 / CNY 359,501,527.43, and long-lived-asset cash purchases of CNY 596,760,629.99 / CNY 364,203,513.16.
+- Parent-only cash-flow statement, FY2025 annual report CNINFO `1225259562`, [official PDF](https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF), SHA-256 `d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac`, physical PDF p. 91 (printed p. 87). The statement reports 2025/2024 parent CFO of CNY 7,150,459,122.43 / CNY 17,916,866,506.69, investment income cash receipts of CNY 5,034,946,747.60 / CNY 8,502,296,479.35, and long-lived-asset cash purchases of CNY 631,984,543.41 / CNY 775,497,717.02. The parent financing cash-flow line "dividends, profits or interest paid" is a mixed category, not pure shareholder distributions.
 - The 18-original-file collection manifest is `runtime/company-research/m1-dividend-lifecycles/20260928T1347Z/manifest.json`, SHA-256 `d42cba4297ca8c015adc484c75eec5a046e86ffbc62e6e9c6224f0e4d2afc0bb`; each retained PDF and parsed-text file is separately hash-bound there. Retrieval timestamps are local-process evidence, not an independent time attestation.
 
 - FY2022-FY2024 dividend proposal and historical totals: CNINFO `1223421147`,
@@ -191,10 +229,13 @@ are rejected for forward and normalized dividend-income estimates.
 ## ResearchCase effect
 
 The cash-return record now includes verified FY2021-FY2025 dividend amounts,
-FY2021-FY2023 payment lifecycles, and FY2021-FY2025 consolidated CFO coverage.
+FY2021-FY2023 payment lifecycles, FY2021-FY2025 consolidated CFO coverage,
+and the parent-level calendar-year cash screen above.
 The ordinary/special classification for the reviewed years and normalized
 cash available after required investment and financing needs remain
-unresolved; FY2022 post-purchase residual coverage is only 1.023x. The FY2025
+unresolved; FY2022 consolidated post-purchase residual coverage is only
+1.023x, and the 2025 parent-level partial cash proxy is 1.074x of actual
+calendar-year shareholder payments before omitted uses. The FY2025
 final-payment lifecycle is also verified. Keep dividend sustainability
 `DATA_INCOMPLETE / UNKNOWN`, financial
 quality `PARTIAL`, model applicability `MODEL_NOT_READY`, and valuation
