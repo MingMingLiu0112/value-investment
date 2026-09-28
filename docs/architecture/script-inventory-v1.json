@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 12,
     "CURRENT_PRODUCT_CLI": 7,
-    "CURRENT_RESEARCH_CLI": 198,
+    "CURRENT_RESEARCH_CLI": 199,
     "HISTORICAL_VALIDATION_TOOL": 57,
     "COMPANY_RESEARCH_CASE_TOOL": 216,
     "MIGRATION_TOOL": 13,
@@ -1641,8 +1641,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 88,
-      "sha256": "54798ceff62c731e4a722012fa8a23e129e0a7613669162fba092282c975ff5d"
+      "line_count": 95,
+      "sha256": "306271dde9b50593d0bea93488c61ce827a655fdac597e403da7027ac3aa7e51"
     },
     {
       "path": "scripts/build_midea_finance_co_size_observation.py",
@@ -2747,6 +2747,17 @@
       "risk": "LOW",
       "line_count": 165,
       "sha256": "903ea554104bd2a138679d9eab07ad297cca2c1f3de6597e681f513f154841a3"
+    },
+    {
+      "path": "scripts/cases/build_registered_public_event_projection_v6.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 276,
+      "sha256": "01eed518ed51d269e1c090b700e0289ac2fa9bf9f55548d051db493e5b206c48"
     },
     {
       "path": "scripts/cases/build_shenhua_public_event_projection.py",
@@ -3946,12 +3957,12 @@
       "path": "scripts/current/verify_m7_product_ux_candidate_wps.ps1",
       "category": "DIAGNOSTIC_TOOL",
       "current_consumers": [],
-      "imports_business_logic": false,
+      "imports_business_logic": true,
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 281,
-      "sha256": "5f298529032d3c61ead15c5801284f2331d85fbc743c5f25937ae3a5f89580af"
+      "line_count": 505,
+      "sha256": "c7a8c620fecf96415a9a0a6d64e1038e3bcabeb433f08bb0b70a2691485d368a"
     },
     {
       "path": "scripts/deploy_attributable_profit_adapter.py",

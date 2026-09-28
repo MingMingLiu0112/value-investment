@@ -22,11 +22,29 @@ cash source, refinancing activity, post-redemption cash balance, or remaining
 short-term debt. The event therefore neither proves a liquidity improvement
 nor proves a liquidity deterioration.
 
-For scale only, CNY 25bn equals 33.51% of the 2026H1 consolidated cash and
-cash-equivalent balance of CNY 74.614244bn, and 52.85% of 2026H1 short-term
-borrowings of CNY 47.305038bn. These are cross-date size comparisons, not a
-netting calculation: the three notes were issued after the June 30 balance
-sheet date and redeemed on September 24.
+## Correction: issuer attribution and scale comparison
+
+An earlier version of this note incorrectly used Midea Group's 2026H1
+consolidated figures as Yili figures. The CNY 74.614244bn cash-equivalent
+balance and CNY 47.305038bn short-term borrowings belong to Midea Group, not
+Yili; those figures and the resulting 33.51% and 52.85% comparisons are
+withdrawn from the Yili analysis. They are verified in Midea's 2026H1 report,
+CNINFO document `1225531404`, SHA-256
+`576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8`.
+
+Yili's own 2026H1 report, CNINFO document `1225511409`, reports consolidated
+short-term borrowings of CNY 64,677,193,034.15 on printed page 46 (PDF page
+49), and ending cash and cash equivalents of CNY 13,914,277,571.64 on printed
+pages 170-171 (PDF pages 173-174). The retained report SHA-256 is
+`423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2`.
+
+For scale only, the CNY 25bn note principal is approximately 179.67% of
+Yili's June 30 cash and cash equivalents and 38.65% of its June 30 short-term
+borrowings. These compare a September 24 redemption with June 30 balances;
+they are not a post-redemption cash/debt bridge, netting calculation, or
+standalone measure of liquidity pressure. The redemption notice does not
+disclose the funding source or balances after redemption, so no direction of
+liquidity change can be inferred.
 
 ## Materiality and dependency disposition
 

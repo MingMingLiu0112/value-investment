@@ -3,12 +3,18 @@
 ## 2026-09-29 Continuous Public Research Continuation — current
 
 The current Goal and stage remain `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`
-and `STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH`. Local
-`main` is at `867488e8637fa394bac1c868b330f781d2e85fb5` with working-tree
-changes. The last verified `origin/main` remains `a43dd35533bb0f848bd0e68e2d0afd556f8a0165`;
-`git fetch origin` ended with a connection reset and HTTPS push ended with a
-low-speed failure. Remote HEAD and CI for the local commit are unverified.
-Core Research Gates run `36428450403` passed for `a43dd35` only.
+and `STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH`. GitHub
+`main` was verified at `a7f5c483ecb87375025b33862d25288eca830abb` before this
+publication checkpoint. Its CI run `36467280788` reports
+`postgres-integration=success` and `offline-core=failure`; the latter's
+anonymous API read returned HTTP 403, with root cause not yet confirmed. This
+checkpoint records the current workbook v6 acceptance, bounded event projection
+v6, and the corrected issuer attribution in the Yili redemption analysis. The
+checkpoint commit is the current publication commit in Git history; its CI is
+separate from the predecessor run above.
+The v6 projection and WPS/readability receipts are local `runtime/` evidence
+excluded from public Git. The published pointer records their paths and hashes,
+but a public clone cannot independently verify those local receipts.
 
 The formal prospective event watermarks remain bounded through 2026-09-27.
 Successor `config/prospective-public-event-watermarks-v9.json` preserves that
@@ -30,7 +36,21 @@ confirms redemption of these notes but does not disclose the funding source or
 post-redemption cash/debt balance. Reopen only the affected post-H1 debt,
 liquidity, net-debt and dividend-capacity dependencies; do not infer a
 directional change to dividend sustainability, valuation or decision status.
-The current workbook remains at 2026-09-28 and was not republished.
+The canonical workbook was updated in place and WPS-read-only verified at
+SHA-256 `849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`.
+Quote as-of remains 2026-09-28. Projection v6 is only a single-day bounded
+observation through 2026-09-29; the formal event watermark remains 2026-09-27,
+strict PIT remains unproven, and the Yili notice remains excluded until its
+conservative 2026-09-30 availability. The WPS read-only and readability
+receipts passed; final user acceptance has not passed.
+
+The Yili redemption note was corrected after independent report-level review:
+its previous CNY 74.614244bn cash-equivalent and CNY 47.305038bn short-term
+borrowing figures were Midea H1 values, not Yili values. The corrected note
+uses Yili H1 cash and cash equivalents of CNY 13.91427757164bn and short-term
+borrowings of CNY 64.67719303415bn. The resulting 179.67% and 38.65% are
+cross-date scale comparisons only; no post-redemption liquidity direction is
+inferred.
 See `docs/current/track-c-yili-short-term-financing-redemption-20260929.md`.
 
 An independent source review found that the old Midea FY2025 evidence package
@@ -47,9 +67,9 @@ v13 was not rewritten. See
 
 The latest verified market session remains 2026-09-28. The scan timestamp is
 an unattested local process time and does not establish whether the 2026-09-29
-exchange session had completed. No new quote or product projection was
-published. The canonical workbook remains
-the existing `WORKBOOK_PATH`; `action=no_order`.
+exchange session had completed. The canonical workbook was updated in place
+with the v6 bounded event view while retaining the 2026-09-28 quote snapshot;
+no later market close is implied. `action=no_order`.
 
 Targeted regressions after the as-of guard, test-fixture correction,
 cross-platform UTF-8 child-process setting, and Midea v3 fact correction passed:
@@ -63,7 +83,7 @@ BASELINE_COMPLETE = 0/3 / ALL_BASELINE_PARTIAL / V2_BYTES_FROZEN
 WAITING_FOR_PUBLIC_EVIDENCE = Midea industrial/financial scope and valuation inputs; Yili post-redemption liquidity and normalized distributable cash; Shenhua segment/cost bridge; future PIT evidence
 NEW_EVENTS_PROCESSED = 0_FORMALLY_APPLIED / Yili 1225584526 REVIEWED_AS_MATERIAL_RISK_MONITOR_CANDIDATE
 LATEST_VERIFIED_SESSION = 2026-09-28 / COMPLETE / 000333_600887_601088
-CANONICAL_UPDATED = false / CURRENT_AS_OF_2026-09-28
+CANONICAL_UPDATED = true / V6_EVENT_VIEW / QUOTE_AS_OF_2026-09-28 / SHA256_849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb
 SAFE_PUBLIC_RESEARCH_REMAINING = YES / Midea, Yili, Shenhua evidence gaps remain
 M4_R2 = PARKED_WAITING_R2_NONBLOCKING
 M6_R3 = PARKED / OPERATIONAL_NOT_STARTED
@@ -84,7 +104,7 @@ action = no_order
 | A new completed market session is pending | NO | The 2026-09-29 session had not completed at observation time. |
 | A baseline or strict prospective decision chain is complete | NO | Baselines remain partial; timestamps are not independently attested. |
 | PIT/method validation can continue safely | YES | Preserve v2; do not backdate or retrofit strict PIT. |
-| A product projection should change from new facts | NO | Current workbook cutoff precedes Yili availability; no new close. |
+| A product projection changed from cutoff-eligible event evidence | YES | Midea notice 1225582141 is visible; Yili notice remains excluded until 2026-09-30; quote snapshot is unchanged. |
 | All active cases are at evidence stop | NO | Safe public research remains. |
 
 ## 2026-09-28 Continuation — Yili Payment-Lifecycle Successor
@@ -4306,7 +4326,7 @@ M2 仍为 `PARTIAL`，AC8 仍为 `AC8_REVIEW_PENDING`，AC10 为机器检查通�
 - 收束后聚焦回归 `82 passed`；`compileall` 与 `git diff --check` 通过。当前 WPS 工作簿 SHA-256 仍为 `a62a6ae634ea949db36c3c209278515e2ee66ef3a61aaa25d59d2051d5954d58`，未再改动。
 - 新增可重复执行的本地验收审计器 `scripts/audit_m1_acceptance.py`：只读核对 dossier、输入/估值/股息包、PIT replay、PostgreSQL 冷回放与 WPS 发布收据，并可选重跑 AC1/AC2 回归。审计器 schema v2 区分 M1 机器验收与 M3/M5/M6 后续人工复核；最新运行收据见“机器复算入口”节。
 - 新增 `scripts/render_m1_human_review_packet.py`，从冻结 Application/事件扫描包生成 [m1-human-review-packet-20260923.md](m1-human-review-packet-20260923.md)：当前 24 条待人工阅读公告均给出本地原件、CNINFO 原件和 SHA-256 前段，另有三家公司 G3 决策表。生成器只读，`action=no_order`。
-- 当前脏工作树按 GitHub offline-core 同款 30 个测试文件重放：`226 passed`。系统默认 `C:\Users\we\AppData\Local\Temp\pytest-of-Ming` 因 Windows 权限拒绝导致 4 个 setup error；使用项目内 `runtime/pytest-tmp-ci-full` basetemp 后全部通过，未修改系统目录权限，未把环境错误写成代码失败。
+- 当前脏工作树按 GitHub offline-core 同款 30 个测试文件重放：`226 passed`。Windows 默认 pytest 临时目录因权限拒绝导致 4 个 setup error；改用项目内临时目录后全部通过，未修改系统目录权限，未把环境错误写成代码失败。
 
 M1 已在上述口径下完成。`VALID` 或 `READY` 仍不能写成价格吸引力或交易准入；条件研究、正常化股息缺口和后续人工复核状态全部保留。
 

@@ -760,8 +760,8 @@
     },
     {
       "path": "WORKBOOK_PATH (local path redacted)",
-      "sha256": "2f72dc76bcf6a74449dec5a336cc41540ae84bb1e7935badb7248a4b8a6c1bcf",
-      "size_bytes": 13298427,
+      "sha256": "849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb",
+      "size_bytes": 13297154,
       "tracked": false,
       "status": "CANONICAL_WORKBOOK",
       "current_or_historical": "CURRENT",
