@@ -46,6 +46,7 @@
     "scripts/audit_m6_preflight.py",
     "scripts/m6_operational_control.py",
     "scripts/current/audit_m6_start_criteria.py",
+    "scripts/current/stamp_prospective_checkpoint.py",
     "scripts/current/rehearse_m4_onboarding.py",
     "scripts/current/build_simulated_product_user_trial.py",
     "scripts/package_encrypted_backup.py",
@@ -71,7 +72,7 @@
   ],
   "counts": {
     "product": 19,
-    "engineering": 37,
-    "total": 56
+    "engineering": 38,
+    "total": 57
   }
 }

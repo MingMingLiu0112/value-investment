@@ -288,10 +288,20 @@ def test_script_inventory_covers_all_tooling_files():
     )
     entries = inventory["entries"]
     paths = {entry["path"] for entry in entries}
+    script_root = ROOT / "scripts"
+    actual_paths = {
+        path.relative_to(ROOT).as_posix()
+        for path in script_root.rglob("*")
+        if path.is_file()
+        and path.suffix in {".py", ".ps1", ".mjs", ".sql"}
+        and "__pycache__" not in path.parts
+        and "node_modules" not in path.parts
+    }
 
     assert inventory["action"] == "no_order"
     assert inventory["current_entrypoint_count"] == 43
     assert len(paths) == len(entries)
+    assert paths == actual_paths
     assert sum(inventory["counts"].values()) == len(entries)
     assert "scripts/diagnostics/audit_script_inventory.py" in paths
     assert "scripts/research_cases/moutai/build_moutai_product_ttm.py" in paths
