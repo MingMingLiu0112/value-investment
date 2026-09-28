@@ -1,5 +1,133 @@
 # CURRENT STATUS
 
+## 2026-09-28 Continuous Public Research Checkpoint — current
+
+The active Goal remains `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`,
+stage `STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH`. At
+continuation start the local `main` and `origin/main` were clean at
+`4de728c18b1ee7ce7d9c07eef571fce7a49d84cf`. GitHub Core Research Gates run
+`36421866347` completed successfully for that exact HEAD. The RFC 3161 helper
+and tests are now part of that commit; this is engineering evidence, not PIT
+admission.
+
+The v2 registration receipt
+`runtime/prospective-v2-fc1e811/receipt.json` has SHA-256
+`8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5` and
+still declares its process-clock time unattested. The registered plan's exact
+bytes (SHA-256
+`f98304dbfb73276073d57537e90aee37b6233821d8b0200df944718bf23a2c7a`) were
+submitted to DigiCert and independently re-verified from
+`runtime/prospective-timestamp-chains/workbench-review-20260928/`; receipt
+SHA-256 is
+`2006de88f0bc226d7191f5ee8fa5727a37b48cbb7373b252d9abf2c6fa981e18`, with
+signed `genTime=2026-09-28T12:01:56Z`. The chain verifies the SHA-256 imprint,
+nonce, policy, signature and certificate path at signed time. Its claim is
+only that the plan bytes existed no later than that signed time. It does not
+prove the claimed 2026-09-27 registration time, timestamp the v13 baseline or
+observation ledger, establish complete model-input closure, or prove strict
+`T0<T1<T2`; `strict_pit_admissible=false` remains mandatory.
+
+A separate DigiCert RFC 3161 timestamp was then obtained for the existing
+canonical public-workbench publication receipt, not for the historical
+registration or baseline. The independently re-verified chain is retained at
+`runtime/prospective-timestamp-chains/canonical-public-workbench-20260928/`;
+receipt SHA-256 is
+`9fe94fd0b8219e7729264bbb7789ffd3290c634114024d900274e51ed7670da3`, with
+signed `genTime=2026-09-28T13:17:06Z`. Its payload SHA-256 is
+`1568cc2404b9ad32a42230c7ba00b9342684785f7ff52a9ff5c63c686db33ec4` and
+binds the canonical publication receipt, including the quote bundle, v13
+baseline, event projection, observation ledger and `action=no_order`. Imprint,
+nonce and signature-chain verification passed. This proves only that those
+receipt bytes existed no later than the signed time; it does not complete
+model-input closure or future observations, and `strict_pit_admissible=false`
+remains unchanged.
+
+The current immutable baseline file remains
+`runtime/prospective-baseline-20260927/snapshot-v13-midea-h1-verified.json`,
+SHA-256
+`ded9fb9176d8d302a97aa527a302744083bf5a37448f28efbf50441fb56269e5`. It
+contains three `BASELINE_PARTIAL` cards and all three valuations remain
+`VALUATION_NOT_READY`. Their bounded open inputs remain distinct: Midea's
+point-in-time ordinary-share denominator, maintenance/growth CapEx and
+enterprise-to-equity bridge; Yili's ordinary/special distribution
+classification and normalized distributable cash; Shenhua's matched-period
+acquisition/perimeter, product-segment, unit-cost and maintenance-CapEx
+bridges. Existing research cards and source hashes remain the evidence; no
+baseline was rewritten from later information.
+
+Track A already processed the 2026-09-28 close for the three registered
+companies in bundle
+`runtime/quote-sessions/20260928T080412445154Z/bundle.json`, SHA-256
+`08d8dce83ba552ec77c4f6db0f95c7ec348b2b27b76dbc00dfbed86ec35088ea`:
+000333 CNY 82.00, 600887 CNY 27.03 and 601088 CNY 48.39. The same canonical
+WPS workbook is bound to that completed session and had already passed
+read-only and all-page readability checks. No later completed session exists
+on 2026-09-28; do not duplicate the daily market run.
+
+The post-close bounded CNINFO snapshots at 2026-09-28 16:13 +08 are retained
+under `runtime/prospective-public-event-2026-09-28/`. Their scan-receipt hashes
+are `2a2f34d5a96162211aaa1b05f46197fdbf4e6dd426d4208072181f6ba4f0e8c1`
+(000333), `b4ea0c6ced0ace760f650b49070b240252f7709ea68df4df42ac03696174f121`
+(600887), and
+`e2a0bc27d9fd298efbf7e178700df504e0dcbdb21fb9cfe1e206b125c377ec54`
+(601088). They return only the already-known Midea meeting notice
+`1225582141` (conservative availability 2026-09-29) and zero Yili/Shenhua
+rows. These are retrieval-time snapshots, not full-day coverage; their process
+clock is unattested, they do not advance the formal v8 watermarks, and the
+future-available Midea notice remains outside the 2026-09-28 canonical view.
+No new event disposition or workbook publication is warranted.
+
+The actual configured Canonical WPS workbook was read-only hashed and matches
+the pointer at
+`2f72dc76bcf6a74449dec5a336cc41540ae84bb1e7935badb7248a4b8a6c1bcf`.
+`artifacts/current/artifact-registry-v2.json` had still described the prior
+`b47141...` workbook; the registry was regenerated without changing the
+workbook and now hashes to
+`80e81d35279dac1a44fbae13982d2445806f2979dc78e3d6a7bcb191d894ae25`.
+Seven hidden `.m7-staging` files were observed in the WPS directory and left
+untouched; no evidence authorized deleting or relocating them. Artifact
+registry regressions passed `9` tests.
+
+Focused local regressions passed: `119` registration/baseline/observation/
+event-watermark/quote/product-projection tests, plus `37` timestamp and
+architecture tests. GitHub Core Research Gates passed. A prior attempted
+full local suite was not a valid completion signal: its external pytest temp
+root caused an unrelated repository-path test to fail, and a later run stalled
+near its end and was interrupted. No full-suite pass is claimed.
+
+```text
+ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
+BASELINE_COMPLETE = 0/3 / ALL_BASELINE_PARTIAL
+WAITING_FOR_PUBLIC_EVIDENCE = specific research gaps only; nonblocking to other tracks
+NEW_EVENTS_PROCESSED = 0 / only previously known future-available Midea notice in post-close snapshot
+LATEST_VERIFIED_SESSION = 2026-09-28 / COMPLETE / 000333_600887_601088
+CANONICAL_UPDATED = false in this continuation / hash matches current pointer
+SAFE_PUBLIC_RESEARCH_REMAINING = Midea denominator/CapEx/equity bridge; Yili distribution classification/cash normalization; Shenhua scope/segment/cost bridge; prospective strict timestamped observation evidence
+M4_R2 = PARKED_WAITING_R2_NONBLOCKING
+M6_R3 = PARKED / OPERATIONAL_NOT_STARTED
+M7_R5 = NOT_PASSED
+STRICT_PIT = NOT_PROVEN
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+### INTERRUPTION_AUDIT
+
+| Check | Result | Disposition |
+| --- | --- | --- |
+| Active prospective company research remains | YES | Three baselines are partial; continue only decision-relevant, bounded evidence work. |
+| A public evidence gap can still change applicability or confidence | YES | Keep the listed per-company gaps open; do not fill them with assumptions or stop unrelated tracks. |
+| A new public event requires disposition | NO | The 16:13 snapshots found no new available event; the Midea notice is future-available and already excluded. |
+| A new completed market session is pending | NO | 2026-09-28 was already processed and published once. |
+| A baseline or prospective decision chain is complete | NO | All three baseline cards are partial; no strict T0/T1/T2 chain exists. |
+| PIT/method validation can continue safely | YES | Preserve the verified forward timestamp boundary and use future facts only after a valid prior anchor. |
+| A product projection should change from new facts | NO | No new admitted fact or state change; only the stale artifact-registry hash was corrected. |
+| All active cases are at evidence stop | NO | Several bounded company-research gaps remain open. |
+
+The Goal remains active. R2, R3, R5 and R6 park only their own DAG nodes; none
+is a total-Goal stop reason.
+
 ## 2026-09-28 GitHub Review Checkpoint
 
 At the start of this documentation update, local `main` and GitHub `main`
