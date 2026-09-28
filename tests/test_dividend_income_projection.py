@@ -10,6 +10,7 @@ from value_investment_agent.distribution import (
     DIVIDEND_APPROVED,
     DIVIDEND_ORDINARY,
     DIVIDEND_SPECIAL,
+    DIVIDEND_UNKNOWN,
 )
 from value_investment_agent.dividend_income_projection import (
     BASIS_DECLARED,
@@ -247,6 +248,27 @@ def test_special_dividend_is_not_merged_or_annualized_into_forward_or_normalized
             period_end=date(2027, 8, 31),
             evidence_refs=({"id": "bad-special"},),
         )
+
+
+def test_unclassified_dividend_is_historical_only():
+    historical = _paid(dividend_type=DIVIDEND_UNKNOWN)
+    assert historical.dividend_type == DIVIDEND_UNKNOWN
+
+    for basis in (BASIS_FORWARD, BASIS_NORMALIZED):
+        with pytest.raises(ValueError, match="Unclassified dividends"):
+            DividendIncomeObservation(
+                observation_id=f"unknown-{basis}-600519",
+                symbol="600519",
+                basis=basis,
+                dividend_type=DIVIDEND_UNKNOWN,
+                gross_per_share=Decimal("5"),
+                quantity=Decimal("100"),
+                as_of=AS_OF,
+                confidence="medium",
+                period_start=date(2026, 9, 1),
+                period_end=date(2027, 8, 31),
+                evidence_refs=({"id": f"unknown-{basis}"},),
+            )
 
 
 def test_unsettled_declared_and_forward_income_keeps_tax_unknown():

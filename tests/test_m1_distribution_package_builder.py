@@ -44,6 +44,7 @@ def test_three_m1_dividend_packages_load_without_merging_lifecycle_states():
         if record.fiscal_period == "FY2025-final"
     )
     assert yili_final.status == "proposed"
+    assert yili_final.dividend_type == "unknown"
     assert yili_final.approval_date is None
     assert yili_final.ex_date is None
     assert yili_final.payment_date is None
@@ -109,6 +110,9 @@ def test_two_m1_dividend_packages_preserve_fact_policy_forecast_layers():
     assert yili_interim.status == "paid"
     assert yili_interim.ex_date.isoformat() == "2025-12-17"
     assert yili_interim.payment_date.isoformat() == "2025-12-17"
+    assert yili_final.dividend_type == "unknown"
+    assert yili_interim.dividend_type == "unknown"
+    assert "do not classify it as ordinary or special" in yili_final.blockers[0]
     assert {
         snapshot.yield_type
         for snapshot in yili.yield_snapshots
@@ -124,6 +128,9 @@ def test_two_m1_dividend_packages_preserve_fact_policy_forecast_layers():
         if snapshot.yield_type == "normalized"
     ).status == "NOT_READY"
     assert "special_dividend_observation" in yili.capacity.capital_allocation_context
+    assert "classification is unknown" in yili.capacity.capital_allocation_context[
+        "fact_policy_forecast_separation"
+    ]
     assert "no forward payout forecast" in yili.sustainability.coverage_context
 
     huayu = by_symbol["600741"].result

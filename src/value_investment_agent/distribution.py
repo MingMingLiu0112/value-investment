@@ -19,7 +19,8 @@ from .research_profile import PROFILES
 
 DIVIDEND_ORDINARY = "ordinary"
 DIVIDEND_SPECIAL = "special"
-DIVIDEND_TYPES = {DIVIDEND_ORDINARY, DIVIDEND_SPECIAL}
+DIVIDEND_UNKNOWN = "unknown"
+DIVIDEND_TYPES = {DIVIDEND_ORDINARY, DIVIDEND_SPECIAL, DIVIDEND_UNKNOWN}
 
 DIVIDEND_PROPOSED = "proposed"
 DIVIDEND_APPROVED = "approved"
@@ -724,7 +725,11 @@ def build_trailing_paid_yield_snapshot(
     merged = DividendRecord(
         symbol=history.symbol,
         fiscal_period=f"trailing-{window_start.isoformat()}/{quote.quote_date.isoformat()}",
-        dividend_type=DIVIDEND_ORDINARY,
+        dividend_type=(
+            DIVIDEND_ORDINARY
+            if all(record.dividend_type == DIVIDEND_ORDINARY for record in paid_records)
+            else DIVIDEND_UNKNOWN
+        ),
         status=DIVIDEND_PAID,
         dividend_per_share=dps,
         currency=paid_records[0].currency,

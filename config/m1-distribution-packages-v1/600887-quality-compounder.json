@@ -116,7 +116,7 @@
         {
           "symbol": "600887",
           "fiscal_period": "FY2024-final",
-          "dividend_type": "ordinary",
+          "dividend_type": "unknown",
           "status": "paid",
           "dividend_per_share": "1.22",
           "currency": "CNY",
@@ -132,12 +132,12 @@
             {"id": "yili_fy2024_final_total_adjustment"},
             {"id": "yili_fy2024_final_implementation"}
           ],
-          "blockers": []
+          "blockers": ["issuer filings state the annual distribution period but do not classify it as ordinary or special"]
         },
         {
           "symbol": "600887",
           "fiscal_period": "FY2025-interim",
-          "dividend_type": "ordinary",
+          "dividend_type": "unknown",
           "status": "paid",
           "dividend_per_share": "0.48",
           "currency": "CNY",
@@ -152,12 +152,12 @@
             {"id": "yili_fy2025_interim_egm_resolution"},
             {"id": "yili_fy2025_interim_implementation"}
           ],
-          "blockers": []
+          "blockers": ["issuer filings state the interim distribution period but do not classify it as ordinary or special"]
         },
         {
           "symbol": "600887",
           "fiscal_period": "FY2025-final",
-          "dividend_type": "ordinary",
+          "dividend_type": "unknown",
           "status": "proposed",
           "dividend_per_share": "0.90",
           "currency": "CNY",
@@ -168,7 +168,7 @@
           "known_at": "2026-09-22",
           "share_basis": "ordinary-share-600887",
           "evidence_refs": [{"id": "yili_fy2025_annual"}],
-          "blockers": ["FY2025 final proposal remains subject to shareholder approval"]
+          "blockers": ["FY2025 final proposal remains subject to shareholder approval", "issuer filing does not classify the proposal as ordinary or special"]
         }
       ],
       "as_of": "2026-09-22",
@@ -216,8 +216,8 @@
         "fy2025_interim_paid_total_cny": "3036173120.16",
         "fy2025_total_cash_dividend_cny": "8728997720.46",
         "policy_2025_2027": "annual cash dividend payout at least 75% of attributable parent profit and per-share cash dividend at least the FY2024 level of CNY 1.22",
-        "special_dividend_observation": "none identified in retained lifecycle evidence",
-        "fact_policy_forecast_separation": "paid/proposed ordinary dividends are facts; the 2025-2027 shareholder-return plan is policy; no forward payout forecast is claimed",
+        "special_dividend_observation": "none identified in retained lifecycle evidence; this does not establish that other distributions are ordinary",
+        "fact_policy_forecast_separation": "paid/proposed amounts and annual/interim periods are facts; ordinary-versus-special classification is unknown unless issuer wording establishes it; the 2025-2027 shareholder-return plan is policy; no forward payout forecast is claimed",
         "h1_2026_decision": "no interim distribution",
         "h1_2026_buyback_paid_cny": "251737303.29"
       },
@@ -238,7 +238,7 @@
       "profile_id": "quality_compounder",
       "as_of": "2026-09-22",
       "status": "LOW",
-      "coverage_context": "Retained statutory lifecycle shows FY2024 final ordinary dividend of CNY 1.22 per share with ex/payment date 2025-06-06, and FY2025 interim ordinary dividend of CNY 0.48 per share with ex/payment date 2025-12-17; FY2025 final remains a CNY 0.90 ordinary proposal and the 2025-2027 shareholder-return plan is policy. No special dividend is identified and no forward payout forecast is claimed.",
+      "coverage_context": "Retained statutory lifecycle shows FY2024 final distribution of CNY 1.22 per share with ex/payment date 2025-06-06, and FY2025 interim distribution of CNY 0.48 per share with ex/payment date 2025-12-17; FY2025 final remains a CNY 0.90 proposal. The reviewed issuer wording does not classify these distributions as ordinary or special. The 2025-2027 shareholder-return plan is policy; no forward payout forecast is claimed.",
       "capital_requirements": "The consumer business is capital-light in the reported period, but continued brand, product and acquisition reinvestment and the buyback compete with cash distribution.",
       "balance_sheet_pressure": "H1 2026 short-term borrowings rose 41.74%, contract liabilities fell 53.15%, and CNY 2.456 billion of impairment was recorded.",
       "cycle_risk": "Dairy demand, product mix, raw-material costs and consumer price competition can lower attributable profit below the policy payout base.",
@@ -255,6 +255,7 @@
         "The current H1 profit and balance-sheet trend do not support a HIGH confidence assessment."
       ],
       "blockers": [
+        "issuer filings do not establish ordinary-versus-special classification for the reviewed distributions",
         "legal-entity distributable cash and upstream cash flow remain unverified",
         "2025-2027 shareholder-return plan is pending annual general meeting approval"
       ],

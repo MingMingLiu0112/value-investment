@@ -10,7 +10,7 @@ This is a later research reconciliation of filings published before the declared
 
 | Filing | Official source and retained bytes | Physical pages used |
 | --- | --- | --- |
-| FY2025 audited annual report, CNINFO `1225065145` | [Official PDF](https://static.cninfo.com.cn/finalpage/2026-03-31/1225065145.PDF); `runtime/midea-2025-official.pdf`; SHA-256 `16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbbe83acbad9f4b6` | 231 (EPS); 258 (post-balance-sheet dividend proposal) |
+| FY2025 audited annual report, CNINFO `1225065145` | [Official PDF](https://static.cninfo.com.cn/finalpage/2026-03-31/1225065145.PDF); `runtime/midea-2025-official.pdf`; SHA-256 `16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6` | 231 (EPS); 258 (post-balance-sheet dividend proposal) |
 | 2026 H1 interim report, CNINFO `1225531404` | [Official PDF](https://static.cninfo.com.cn/finalpage/2026-08-29/1225531404.PDF); `runtime/prospective-public-event-20260927/gapfill-000333-20260927T091704729284Z/1225531404.pdf`; SHA-256 `576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8` | 87-88 (share movement and buyback); 169 (share capital and treasury-stock carrying value); 175-176 (EPS) |
 
 The retained PDF hashes were recomputed and matched the existing research records. Page references are physical PDF pages; the annual report's printed page numbers are one lower on the cited pages.

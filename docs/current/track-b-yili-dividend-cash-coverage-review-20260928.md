@@ -108,6 +108,17 @@ prove impairment beyond booked allowances or a liquidity failure. Keep
 `VALUATION_NOT_READY`. The registered baseline, observation ledger, product
 projection, and canonical Excel remain unchanged; `action=no_order`.
 
+An independent R1 review of the retained CNINFO dividend proposals,
+resolutions, adjustments and implementation notices found no issuer wording
+that explicitly classifies the reviewed FY2024 final, FY2025 interim or FY2025
+final distribution as ordinary or special. The final FY2025 proposal remains
+proposed, not paid. Accordingly, the three corresponding typed package records
+now use `dividend_type=unknown` with explicit blockers. “No special dividend
+identified” is retained only as a search result and is not treated as proof of
+ordinary classification. Historical amounts, dates, trailing paid-yield math,
+registered baseline, and workbook were not changed. Unknown classifications
+are rejected for forward and normalized dividend-income estimates.
+
 ## Sources and provenance
 
 - FY2021 annual report CNINFO `1213169501`, [official PDF](https://static.cninfo.com.cn/finalpage/2022-04-28/1213169501.PDF), SHA-256 `49935af2e517fe10592bc943f3de4321ecd837d7dda0cf26f86495325b9ed6eb`, physical PDF pp. 7, 88-89. It reports parent-attributable profit CNY 8,704,915,103.95, consolidated CFO CNY 15,527,519,680.07, and long-lived-asset cash purchases CNY 6,682,734,083.34.

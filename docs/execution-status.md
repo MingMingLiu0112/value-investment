@@ -1,6 +1,107 @@
 # CURRENT STATUS
 
-## 2026-09-28 Continuous Public Research Checkpoint — current
+## 2026-09-28 Continuous Public Research Continuation — current
+
+This continuation began from a clean `main` at
+`a43dd35533bb0f848bd0e68e2d0afd556f8a0165`, matching `origin/main`.
+GitHub Core Research Gates run `36428450403` completed successfully for that
+exact HEAD. The long-term Goal and current-stage contract were read from the
+latest checkout; the three registered cases and M6/M7 gates remain unchanged.
+
+The canonical prospective v2 registration receipt at
+`runtime/prospective-v2-fc1e811/receipt.json` was re-hashed to
+`8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5`, matching
+the value bound by the v13 baseline and publication contracts. Its process
+clock remains unattested. This resolves the apparent path mismatch raised by
+an independent reviewer; it does not prove historical registration time.
+
+The retained Midea FY2025 official annual-report PDF was re-hashed to
+`16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6`.
+Two research notes had one extra `b` in the printed hash; both citations were
+corrected. The report bytes and all underlying research values are unchanged.
+The exact point-in-time ordinary-share denominator, maintenance/growth CapEx,
+industrial operating-scope bridge and WACC remain separate blockers; Midea
+stays `MODEL_NOT_READY / VALUATION_NOT_READY`.
+
+An independent R1 review of Yili's retained official dividend lifecycle found
+no issuer wording that explicitly classifies the reviewed FY2024 final,
+FY2025 interim, or FY2025 final proposal as ordinary or special. The typed
+package had incorrectly labeled them `ordinary`; its three records now say
+`unknown` with blockers. The shared domain accepts unknown historical
+classification but rejects it for forward/normalized estimates. Paid/proposed
+amounts, dates, yields, the registered baseline and workbook are unchanged.
+Normalized distributable cash remains unestablished. The correction-focused
+dividend regression run passed: `13 passed`.
+
+After the prior 2026-09-28 16:13 +08 snapshot, one additional exact-issuer
+CNINFO date-window query was run per registered issuer. The local process
+clock reports 21:36:51 through 21:38:40 +08 and is not independently attested.
+The bounded receipts are:
+
+| Symbol | Receipt | SHA-256 | Result |
+| --- | --- | --- | --- |
+| 000333 | `runtime/prospective-public-event-2026-09-28/gapfill-000333-20260928T133651400346Z/scan-receipt.json` | `695082f4c4db4d981fd696dae71a6d97d5b1bf5a8786b5ae3f4bd48123273a45` | One previously known notice `1225582141`; conservative `available_at=2026-09-29`; no new event |
+| 600887 | `runtime/prospective-public-event-2026-09-28/gapfill-600887-20260928T133816904422Z/scan-receipt.json` | `d150108dbd2b7a71708c96a1a5555898746ded37337fc64e3728dd0ea97639a6` | Zero announcements |
+| 601088 | `runtime/prospective-public-event-2026-09-28/gapfill-601088-20260928T133840001626Z/scan-receipt.json` | `37b682cfd0e6a200fb404d0fcc46686fe54f90ad8888c829aae98ac20457d6cd` | Zero announcements |
+
+The Yili and Shenhua queries used identity indexes whose path and SHA were
+retained by earlier exact-issuer CNINFO scans. A first Yili attempt without
+that binding was rejected by the scanner's guessed-ID guard and was not used.
+These later same-day retrieval snapshots do not advance formal watermark v8,
+prove multi-channel/day-complete coverage, or establish strict PIT. No event
+disposition, valuation, baseline, or canonical workbook changed.
+
+The existing WPS Canonical workbook remains
+`2f72dc76bcf6a74449dec5a336cc41540ae84bb1e7935badb7248a4b8a6c1bcf`; a
+read-only hash check matches its entry in
+`artifacts/current/artifact-registry-v2.json` (registry SHA-256
+`80e81d35279dac1a44fbae13982d2445806f2979dc78e3d6a7bcb191d894ae25`). The
+2026-09-28 market session was already verified and published; no duplicate
+quote run or Excel publication was warranted.
+
+Focused regression tests for prospective timestamps, baselines, observations,
+event scans, watermarks, and as-of projection passed: `113 passed` before the
+Yili classification correction. The correction-focused dividend tests passed
+separately: `13 passed`. No baseline, valuation, event projection, or workbook
+content changed.
+
+After the Yili correction, the expanded dividend, income projection, M1
+workbook, and fixed-sample regression set passed: `38 passed` across five test
+modules.
+
+```text
+ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
+BASELINE_COMPLETE = 0/3 / ALL_BASELINE_PARTIAL
+WAITING_FOR_PUBLIC_EVIDENCE = specific research gaps only; nonblocking to other tracks
+NEW_EVENTS_PROCESSED = 0 / known Midea notice repeated; Yili and Shenhua zero
+LATEST_VERIFIED_SESSION = 2026-09-28 / COMPLETE / 000333_600887_601088
+CANONICAL_UPDATED = false / physical workbook hash matches pointer
+SAFE_PUBLIC_RESEARCH_REMAINING = Midea denominator/CapEx/equity bridge; Yili dividend classification/cash normalization; Shenhua scope/segment/cost bridge; strict future T0/T1/T2 evidence
+M4_R2 = PARKED_WAITING_R2_NONBLOCKING
+M6_R3 = PARKED / OPERATIONAL_NOT_STARTED
+M7_R5 = NOT_PASSED
+STRICT_PIT = NOT_PROVEN
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+### INTERRUPTION_AUDIT
+
+| Check | Result | Disposition |
+| --- | --- | --- |
+| Active prospective company research remains | YES | Three baselines are partial; bounded company-specific public evidence work remains. |
+| A public evidence gap can change model applicability, confidence, or distribution status | YES | Keep the separate Midea, Yili, and Shenhua blockers open. |
+| A new available public event needs disposition | NO | The only Midea notice remains conservatively available 2026-09-29. |
+| A new completed market session is pending | NO | The 2026-09-28 close was already processed once. |
+| A baseline or strict prospective decision chain is complete | NO | All three baseline cards are partial; strict `T0<T1<T2` is unproven. |
+| PIT/method validation can continue safely | YES | Preserve forward-only timestamps; do not repair historical time claims. |
+| A product projection should change from new facts | NO | No newly available fact or disposition; do not republish the workbook. |
+| All active cases are at evidence stop | NO | R1 evidence reviews remain in progress; no broad company expansion is authorized. |
+
+The Goal remains active. R2, R3, R5 and R6 park only their own DAG nodes.
+
+## 2026-09-28 Continuous Public Research Checkpoint — prior continuation
 
 The active Goal remains `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`,
 stage `STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH`. At
@@ -54,6 +155,17 @@ classification and normalized distributable cash; Shenhua's matched-period
 acquisition/perimeter, product-segment, unit-cost and maintenance-CapEx
 bridges. Existing research cards and source hashes remain the evidence; no
 baseline was rewritten from later information.
+
+An independent R1 provenance review flagged a transcription mismatch in the
+FY2025 Midea report hash in the share-denominator and related-party research
+notes. The retained PDF was re-hashed as
+`16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6`; both
+notes now match the file. Separately, the exact registered v2 receipt at
+`runtime/prospective-v2-fc1e811/receipt.json` hashes to
+`8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5`, matching
+the baseline and publication bindings. This closes a transcription/custody
+check only; it does not independently attest the receipt's process-clock
+creation time or change any baseline, valuation, or PIT status.
 
 Track A already processed the 2026-09-28 close for the three registered
 companies in bundle

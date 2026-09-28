@@ -19,6 +19,7 @@ from .distribution import (
     DIVIDEND_APPROVED,
     DIVIDEND_ORDINARY,
     DIVIDEND_SPECIAL,
+    DIVIDEND_UNKNOWN,
     DIVIDEND_TYPES,
 )
 from .dividend_tax import (
@@ -291,6 +292,11 @@ class DividendIncomeObservation:
             BASIS_NORMALIZED,
         }:
             raise ValueError("Special dividends cannot be forward-estimated or normalized")
+        if self.dividend_type == DIVIDEND_UNKNOWN and self.basis in {
+            BASIS_FORWARD,
+            BASIS_NORMALIZED,
+        }:
+            raise ValueError("Unclassified dividends cannot be forward-estimated or normalized")
         object.__setattr__(
             self,
             "gross_per_share",

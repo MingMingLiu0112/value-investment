@@ -33,7 +33,7 @@ Bank deposits and certificates are not proven to be immediately liquid, unrestri
 | Source | Local artifact and SHA-256 | Relevant pages |
 |---|---|---|
 | FY2025 related-party funds schedule, CNINFO `1225058114` | `runtime/prospective-public-event-20260927/midea-related-party/1225058114.PDF`; `d1cec190f2507099b45ebdc17f3d0a7f692463888a25d9e6ca78ce5519a45e5e` | Physical PDF pp. 1-3 |
-| FY2025 annual report | `runtime/midea-2025-official.pdf`; `16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbbe83acbad9f4b6` | Consolidated and parent-only balance sheets pp. 132-133; consolidated related parties p. 255; parent-only top-five receivables p. 272 |
+| FY2025 annual report | `runtime/midea-2025-official.pdf`; `16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6` | Consolidated and parent-only balance sheets pp. 132-133; consolidated related parties p. 255; parent-only top-five receivables p. 272 |
 | 2026H1 related-party funds schedule, CNINFO `1225531405` | `runtime/prospective-public-event-20260927/midea-baseline-originals-20260927T112500Z/1225531405.pdf`; `a7c61ed6737c28071b28582c1db0faa40512e2c45521bb0df561e9e705a94344` | Physical PDF pp. 1-5 |
 | 2026H1 interim report | `runtime/prospective-public-event-20260927/gapfill-000333-20260927T091704729284Z/1225531404.pdf`; `576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8` | Balance sheets pp. 96-97; cash and financial assets p. 146; restricted assets / short debt p. 164; consolidated related parties p. 191; parent-only receivables pp. 200-201; cash-flow supplement p. 177 |
 
