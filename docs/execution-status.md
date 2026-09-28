@@ -4,14 +4,15 @@
 
 The current Goal and stage remain `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`
 and `STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH`. GitHub
-`main` was verified at `a7f5c483ecb87375025b33862d25288eca830abb` before this
-publication checkpoint. Its CI run `36467280788` reports
-`postgres-integration=success` and `offline-core=failure`; the latter's
-anonymous API read returned HTTP 403, with root cause not yet confirmed. This
-checkpoint records the current workbook v6 acceptance, bounded event projection
-v6, and the corrected issuer attribution in the Yili redemption analysis. The
-checkpoint commit is the current publication commit in Git history; its CI is
-separate from the predecessor run above.
+`main` was verified at `b57bc4805c1891ae73cf85c07e734d6f88994d20` before this
+status update. The v6 publication checkpoint's Core Research Gates run
+`36475593670` completed successfully: `offline-core=success` and
+`postgres-integration=success`. Its predecessor run `36467280788` had an
+anonymous API read failure (HTTP 403); that issue did not recur in the v6
+checkpoint run, though its root cause remains unconfirmed. The v6 checkpoint
+records the current workbook acceptance, bounded event projection, and the
+corrected issuer attribution in the Yili redemption analysis. This status-only
+follow-up has its own CI run separate from `36475593670`.
 The v6 projection and WPS/readability receipts are local `runtime/` evidence
 excluded from public Git. The published pointer records their paths and hashes,
 but a public clone cannot independently verify those local receipts.

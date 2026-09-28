@@ -2,7 +2,7 @@
 
 ## CURRENT AUTHORIZATION：STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH（2026-09-29）
 
-本段是本文件唯一的当前授权范围，并覆盖下方旧阶段标题、“当前”描述和交接快照。总 Goal 仍为 `IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`，`INITIAL_ASSISTED_USE=NOT_REACHED`。GitHub `main` 在本轮发布前已核实为 `a7f5c483ecb87375025b33862d25288eca830abb`；本检查点记录 v6 工作簿验收、v6 有界事件投影及伊利数据归属纠正。该前序提交的 CI：`postgres-integration` 通过，`offline-core` 因匿名 API 读取返回 HTTP 403 失败；原因尚未确认，新检查点 CI 需另行查看。保持 v2 prospective baseline 冻结、PIT 时间声明不升级。2026-09-28..29 三家发行人有界 CNINFO 快照保留于 watermark v9：美的重复发现已知公告 1225582141；伊利发现公告 1225584526，确认 2026-09-24 兑付 250 亿元超短融，保守 `available_at=2026-09-30`，标记为风险监控候选且未正式应用 ChangeEvent；神华零条。三份均为本机时间未认证的快照，不推进正式连续水位。纠正伊利研究页曾将美的 2026H1 现金等价物和短期借款错作伊利数据；现改用伊利半年报原件，比例仅作跨日期规模比较，不推断兑付后流动性方向。Midea FY2025 证据包 v3 已纠正货币资金/现金及现金等价物混淆；工业/金融业务边界和净债务仍未知。当前唯一 Canonical Excel 已原位更新至 SHA-256 `849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`，WPS 只读验收及可读性检查通过；正式事件水位仍为 2026-09-27，v6 仅为截至 2026-09-29 的单日快照，维持 `action=no_order`。
+本段是本文件唯一的当前授权范围，并覆盖下方旧阶段标题、“当前”描述和交接快照。总 Goal 仍为 `IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`，`INITIAL_ASSISTED_USE=NOT_REACHED`。GitHub `main` 已发布检查点 `b57bc4805c1891ae73cf85c07e734d6f88994d20`，Core Research Gates run `36475593670` 成功，`offline-core` 与 `postgres-integration` 均通过。该检查点记录 v6 工作簿验收、v6 有界事件投影及伊利数据归属纠正。保持 v2 prospective baseline 冻结、PIT 时间声明不升级。2026-09-28..29 三家发行人有界 CNINFO 快照保留于 watermark v9：美的重复发现已知公告 1225582141；伊利发现公告 1225584526，确认 2026-09-24 兑付 250 亿元超短融，保守 `available_at=2026-09-30`，标记为风险监控候选且未正式应用 ChangeEvent；神华零条。三份均为本机时间未认证的快照，不推进正式连续水位。纠正伊利研究页曾将美的 2026H1 现金等价物和短期借款错作伊利数据；现改用伊利半年报原件，比例仅作跨日期规模比较，不推断兑付后流动性方向。Midea FY2025 证据包 v3 已纠正货币资金/现金及现金等价物混淆；工业/金融业务边界和净债务仍未知。当前唯一 Canonical Excel 已原位更新至 SHA-256 `849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`，WPS 只读验收及可读性检查通过；正式事件水位仍为 2026-09-27，v6 仅为截至 2026-09-29 的单日快照，维持 `action=no_order`。
 
 ```text
 CURRENT_STAGE = STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH
@@ -17,8 +17,8 @@ M6 = PREFLIGHT_ONLY / OPERATIONAL_NOT_STARTED / VERIFIED_REAL_SESSIONS_0
 M6_REAL_RESTORE_ACCEPTANCE = NOT_PASSED
 M7 = DISPLAY_ENGINEERING_AVAILABLE / WPS_AND_ALL_PRODUCT_PAGE_READABILITY_PASS / FINAL_USER_ACCEPTANCE_NOT_PASSED
 LATEST_MAIN = CURRENT_GITHUB_PUBLICATION_CHECKPOINT / COMMIT_RECORDED_IN_GIT_HISTORY
-LAST_VERIFIED_ORIGIN_MAIN = a7f5c483ecb87375025b33862d25288eca830abb / VERIFIED_BEFORE_THIS_CHECKPOINT
-LATEST_CORE_RESEARCH_GATES = PREDECESSOR a7f5c48 / POSTGRES_INTEGRATION_PASS / OFFLINE_CORE_FAIL_HTTP_403 / ROOT_CAUSE_UNCONFIRMED
+LAST_VERIFIED_ORIGIN_MAIN = b57bc4805c1891ae73cf85c07e734d6f88994d20 / VERIFIED_AND_CI_PASS
+LATEST_CORE_RESEARCH_GATES = 36475593670 / SUCCESS / OFFLINE_CORE_PASS / POSTGRES_INTEGRATION_PASS / FOR b57bc48
 LATEST_FULL_TESTS = PREVIOUS_BASE 3227_PASSED / 29_SKIPPED; CURRENT_TARGETED 53_PASSED / FULL_SUITE_NOT_RERUN
 PROSPECTIVE_REGISTRATION = v2 / receipt 8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5 / process_clock_only_unattested
 PROSPECTIVE_BASELINE = snapshot-v13 / ded9fb9176d8d302a97aa527a302744083bf5a37448f28efbf50441fb56269e5 / 3_BASELINE_PARTIAL
