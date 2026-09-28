@@ -39,6 +39,26 @@ INITIAL_ASSISTED_USE = NOT_REACHED
 action = no_order
 ```
 
+## 2026-09-28 Midea Share-Denominator Research Reconciliation
+
+Rechecked the FY2025 audited report and 2026 H1 report against their retained PDF hashes and physical pages. The H1 report confirms 7,613,438,907 total issued shares at 2026-06-30 and a separate 68,679,031-share buyback for cancellation; its 7,470,497,000 basic-EPS denominator is a period-weighted average. The treasury-stock note reports carrying values in RMB thousands, not the complete units held for share-payment plans. The current point-in-time ordinary-share denominator therefore remains `UNKNOWN / NOT_ADMITTED`; no per-share valuation input, baseline, or Excel value was changed. This is later research over pre-cutoff filings and does not establish contemporaneous PIT. Detailed page/hash reconciliation and reopen condition: `docs/current/track-b-midea-share-denominator-review-20260928.md`. Midea remains `MODEL_NOT_READY / VALUATION_NOT_READY`; its CapEx and enterprise-to-listed-equity bridge blockers remain independent. `action=no_order`.
+
+## 2026-09-28 Yili Cash-Distribution Counter-Evidence Review
+
+Read-only R1 adversarial review of Yili's retained 2026H1 report was
+independently page-checked (SHA-256
+`423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2`;
+physical pp. 49, 55, 57, 113-116 and 148). It confirms the receivable build,
+an individually assessed CNY 881.4m receivable balance with collection
+difficulty cited, increased short-term bill-discount borrowings, and a sharp
+parent-only CFO/supplier-payment swing not mirrored by consolidated supplier
+payments. These qualify cash-conversion interpretation but do not establish
+normalized distributable cash or a decision-state transition. The evidence is
+appended to
+`docs/current/track-b-yili-dividend-cash-coverage-review-20260928.md`; no
+baseline, product projection, or canonical Excel change was made. Dividend
+sustainability remains `DATA_INCOMPLETE / UNKNOWN`; `action=no_order`.
+
 ## Verified Opportunity Quote Display — 2026-09-28
 
 The adversarial product review found a mismatch: the current publication was

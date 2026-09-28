@@ -67,6 +67,47 @@ payment lifecycles, profits, CFO and cash purchases of long-lived assets are
 now retained from original filings; this does not fill the ordinary/special
 classification or normalized distributable-cash gaps.
 
+## R1 Counter-Evidence Addendum — 2026-09-28
+
+A read-only adversarial review was checked against the retained CNINFO 2026H1
+report `1225511409` (SHA-256
+`423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2`;
+[official PDF](https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF)).
+The following facts qualify cash-conversion and distribution-capacity claims;
+they are not a new filing, a strict-PIT observation, or an earnings forecast.
+
+- Gross receivables increased from CNY 3.184bn at 2025-12-31 to CNY 4.279bn
+  at 2026-06-30; net receivables increased from CNY 2.987bn to CNY 4.078bn.
+  The report attributes the increase mainly to e-commerce and supermarket
+  customer balances (physical pp. 113-116).
+- CNY 881.399m of receivables were individually assessed; CNY 124.324m was
+  provided (14.11%), and the stated reason is collection difficulty. The top
+  five receivable/contract-asset balances were CNY 1.794bn (41.93%); the first
+  was CNY 857.607m (20.04%). These are overlapping views of the same
+  receivable population and must not be added together. No corresponding
+  subsequent-cash-receipt reconciliation was found in the retained H1 filing.
+- Consolidated short-term borrowings rose from CNY 45.631bn to CNY 64.677bn.
+  Bill-discount borrowings rose from CNY 36.615bn to CNY 48.141bn; the report
+  says the increase in short-term borrowings was mainly caused by higher
+  discounted bank-acceptance bills (physical pp. 49 and 148). This is a
+  reported financing balance, not evidence that all cash/deposits are
+  unrestricted or freely upstreamable.
+- Parent-only H1 operating cash flow moved from negative CNY 2.891bn in 2025
+  to positive CNY 35.552bn in 2026, while parent-only cash paid to suppliers
+  fell from CNY 47.876bn to CNY 16.440bn. Consolidated supplier payments moved
+  from CNY 45.486bn to CNY 42.392bn, and consolidated CFO was CNY 9.759bn
+  (physical pp. 55 and 57). The report does not establish that the parent-only
+  swing is a recurring operating improvement; no causal attribution is made.
+
+The above is counter-evidence against treating a high cash-receipts/revenue
+ratio or a single H1 CFO figure as normalized distributable cash. It does not
+prove impairment beyond booked allowances or a liquidity failure. Keep
+`financial_quality=PARTIAL`,
+`dividend_sustainability=DATA_INCOMPLETE / UNKNOWN`,
+`ordinary_special_classification=UNKNOWN`, `MODEL_NOT_READY`, and
+`VALUATION_NOT_READY`. The registered baseline, observation ledger, product
+projection, and canonical Excel remain unchanged; `action=no_order`.
+
 ## Sources and provenance
 
 - FY2021 annual report CNINFO `1213169501`, [official PDF](https://static.cninfo.com.cn/finalpage/2022-04-28/1213169501.PDF), SHA-256 `49935af2e517fe10592bc943f3de4321ecd837d7dda0cf26f86495325b9ed6eb`, physical PDF pp. 7, 88-89. It reports parent-attributable profit CNY 8,704,915,103.95, consolidated CFO CNY 15,527,519,680.07, and long-lived-asset cash purchases CNY 6,682,734,083.34.
