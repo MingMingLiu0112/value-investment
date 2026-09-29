@@ -417,8 +417,9 @@ class ResidualIncomeEquityValuationModel:
             confidence=confidence,
             assumptions={
                 "scope": (
-                    "explicit residual income plus independently reconciled "
-                    "dividend capacity"
+                    "conditional residual income with an algebraic dividend-path "
+                    "cross-check; not evidence of issuer distributable cash or "
+                    "dividend sustainability"
                 ),
                 "formula": (
                     "Equity value = opening equity + PV(explicit residual income) "

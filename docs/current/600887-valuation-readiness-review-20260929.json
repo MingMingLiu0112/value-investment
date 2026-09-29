@@ -12,6 +12,14 @@
     "model_version": "residual-income-equity-shared-v1",
     "calculation_status": "conditional_research_only",
     "confidence": "低",
+    "shared_model_binding": {
+      "artifact_path": "docs/current/600887-shared-valuation-result-20260929.json",
+      "artifact_sha256": "0ee6b27b220b136b709dd413c5d1d415f1152c1e99df6c12d90e71154306fdce",
+      "source_package_sha256": "e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803",
+      "input_descriptor_sha256": "8ee8e489c002c06413d5c06002aff10d87ddbf55860bf3221a5ead7c3c0e5c04",
+      "valuation_result_sha256": "51eafc6f61bb4f69a24bf5d921417e2748401ef2ddb4c85485c0926e07bc02e6",
+      "status": "REPLAYED_THROUGH_REGISTERED_SHARED_MODEL"
+    },
     "bear_base_bull_per_share_cny_at_9pct_cost_2pct_growth": {
       "bear": "8.0475940479",
       "base": "11.0233748917",
@@ -79,8 +87,16 @@
       "bull": "105.8"
     },
     "close_vs_full_sensitivity_high": "27.03 remains 79.8% above CNY 15.0336",
-    "decision_review": "WAIT",
-    "decision_semantics": "Research review only; not a sell instruction. The current close is above every reviewed scenario. No personalized holdings or risk budget were used."
+    "model_validity": {
+      "status": "NOT_ESTABLISHED",
+      "valuation_basis_as_of": "2026-06-30",
+      "quote_as_of": "2026-09-28",
+      "event_coverage": "A formal CNINFO exact-issuer watermark and bounded 2026-09-28 snapshot exist, but issuer-IR/exchange-channel completeness and an independently time-attested, hash-bound event review through the quote date are not established.",
+      "blocker": "No ModelValidity artifact binds the June 30 valuation assumptions to the September 28 quote after a source-complete material-event review.",
+      "consequence": "Scenario-to-price comparisons are arithmetic only and cannot support a current price-attractiveness decision."
+    },
+    "decision_review": "NOT_ASSESSABLE",
+    "decision_semantics": "The verified close is numerically above every reviewed scenario, but model validity through the quote date is not established. This is not a validated current WAIT state, sell instruction, position recommendation, or order. No personalized holdings or risk budget were used."
   },
   "distributable_cash_scenarios": {
     "status": "SCENARIO_PROXY_NOT_VERIFIED_DISTRIBUTABLE_CASH",
@@ -100,7 +116,21 @@
       "The proxy does not deduct acquisitions, debt service, restricted cash, minority distributions, full working-capital requirements, or all other commitments.",
       "The 50%/30%/15% haircuts are analyst stress assumptions, not reported facts.",
       "Dividend sustainability remains DATA_INCOMPLETE / UNKNOWN; this range is not a payment forecast or distributable-cash certification."
-    ]
+    ],
+    "policy_floor_stress_check": {
+      "policy_dividend_per_share_cny": "1.22",
+      "share_count_basis": "6325360667 at 2026-06-30; not confirmed as the actual payment-date denominator",
+      "implied_amount_cny_bn": "7.71694001374",
+      "bear_proxy_shortfall_cny_bn": "4.32994001374",
+      "base_proxy_headroom_before_unmodeled_uses_cny_bn": "0.19805998626",
+      "model_retention_assumption_pct": 25,
+      "modeled_dividends_per_share_cny_first_two_explicit_years": {
+        "bear": ["0.764", "0.722"],
+        "base": ["1.146", "1.131"],
+        "bull": ["1.340", "1.340"]
+      },
+      "interpretation": "The base cash-generation proxy exceeds the implied policy amount by only about 2.6% before unmodeled cash uses; the bear proxy is below it. Under the model's 25% retention assumption, bear/base first-two-year dividend paths also sit below CNY 1.22 per share. The valuation does not impose the policy floor or establish it is feasible; forcing it would require supported payout, retention, and funding inputs plus a rerun. This is a stress comparison, not proof the policy will or will not be met, and it does not establish dividend sustainability."
+    }
   },
   "blocker_classification": {
     "counts_are_retrospective_reconstruction": true,
@@ -113,14 +143,15 @@
   },
   "decision": {
     "research_readiness": "CONDITIONAL_VALUATION_READY",
-    "research_decision_review": "WAIT",
+    "research_decision_review": "NOT_ASSESSABLE",
     "action": "no_order",
     "human_final_decision": true,
     "reopen_conditions": [
       "An official post-2026-06-30 capital action changes or contradicts the share basis.",
       "The next statutory filing materially changes parent equity, normalized profit, cash conversion, or impairment evidence.",
       "New official distribution materials explicitly classify ordinary/special distributions or establish a changed payout policy.",
-      "A thesis-breaking deterioration invalidates the assumed ROE path or residual-income applicability."
+      "A thesis-breaking deterioration invalidates the assumed ROE path or residual-income applicability.",
+      "A hash-bound, source-complete material-event review through the quote date and a shared-model input/output binding are completed before any current price decision is reconsidered."
     ]
   },
   "evidence": [
@@ -177,7 +208,7 @@
       "sha256": "08d8dce83ba552ec77c4f6db0f95c7ec348b2b27b76dbc00dfbed86ec35088ea",
       "symbol": "600887",
       "close_cny": "27.03"
-    },
+    }
   ],
-  "reviewer_conclusion": "An independent adversarial review rejects the earlier no-fade terminal-ROE interpretation, but confirms that an explicitly bounded low-confidence sensitivity set can be CONDITIONALLY_VALUATION_READY under the supplied definition, provided the full grid and date caveats are retained. It is not an evidence-backed forecast or fair-value opinion."
+  "reviewer_conclusion": "An independent adversarial review rejects the earlier no-fade terminal-ROE interpretation and confirms that an explicitly bounded low-confidence sensitivity set can be CONDITIONALLY_VALUATION_READY under the supplied definition, provided the full grid and date caveats are retained. The shared-model input and output are now hash-bound and replayable using only Yili issuer evidence. The arithmetic is not an evidence-backed forecast or fair-value opinion. Because ModelValidity through the quote date is not established, the current price Decision Review remains NOT_ASSESSABLE."
 }

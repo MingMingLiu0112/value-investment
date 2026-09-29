@@ -2,7 +2,62 @@
 
 ## CURRENT AUTHORIZATION：STAGE-EXECUTION-CORRECTION（2026-09-29）
 
-本段是本文件唯一的当前授权范围，并覆盖下方旧阶段标题、“当前”描述和交接快照。审计入口基线为 `main@24ec94bff754b4139169cf79f9bbc1f356c0c71b`，当时与 GitHub `origin/main` 匹配；本地随后集成 issuer identity fail-closed gate（`24f4de3`），并修复通用架构边界及冻结 replay 断言。三家公司 A/B/C/D 分类已完成；`600887` 从回溯重建的 A=2 推进至 A=0，并以共享 residual-income 模型形成 `CONDITIONAL_VALUATION_READY`、低置信度情景与 `WAIT` 研究复核。该状态不等于 baseline 完整、预测、公允价值或交易建议。`000333` 仍有 1 个 A 类 blocker，`601088` 仍有 1 个 A 类 blocker；其历史 A 分类未记录，不伪造数值 burn-down。详情见 [执行纠偏与 blocker burn-down](docs/current/track-b-execution-correction-20260929.md) 和 [伊利机器可读估值复核](docs/current/600887-valuation-readiness-review-20260929.json)。
+本段是本轮唯一授权范围，覆盖 600887、000333、601088 的 blocker 分类与 burn-down、伊利共享估值尝试，以及直接依赖估值结果的报价有效性检查。暂停 TSA/PIT 方法论扩张和宽泛财报调查；不新增公司、M8、Excel、生产/Shadow/券商动作或订单。长期总 Goal 仍为 `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`，本阶段结果不代表总 Goal 完成。下方旧阶段文本仅为历史/下游上下文，不扩大本轮范围。
+
+执行纠偏研究包已完成核心研究验收：三家公司 A/B/C/D 分类完成；伊利通过共享 residual-income 模型形成低置信度 `CONDITIONAL_VALUATION_READY`，其模型输入、结果、结果文件哈希及五条伊利 CNINFO 证据已绑定并通过回放测试。现金情景仅为现金生成 proxy；每股 CNY 1.22 政策压力检查显示 Bear/Base 前两年模型股息低于该值，分红可持续性仍未知。美的正常化 ROE 已由 A 降为 B，普通股分母仍为唯一 A；神华对现有并购范围披露和材料索引做完有界核验，确认无具名目标级审计/交易报告可供归因，具体公开证据路径进入 `EVIDENCE_STOP`。伊利结果不改变冻结 baseline，也不代表严格 PIT、预测、公允价值或交易建议。对抗复核发现报价日有效性链缺失，因此伊利当前价格决策必须记为 `NOT_ASSESSABLE`，不能把旧 `WAIT` 当作有效当前结论。详见 [执行纠偏与 blocker burn-down](docs/current/track-b-execution-correction-20260929.md) 与 [伊利机器可读估值复核](docs/current/600887-valuation-readiness-review-20260929.json)。
+
+```text
+CURRENT_STAGE = STAGE-EXECUTION-CORRECTION
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+M2 = DONE / CHECKPOINT_A_HUMAN_PASS
+M3 = PARTIAL / STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN / R6
+M4 = NONPERSONALIZED_ENGINEERING_DONE / PERSONALIZED_PARKED_WAITING_R2_NONBLOCKING
+M5_600519 = NEED_MORE_EVIDENCE / STILL_NOT_READY / NO_REOPEN
+M5_000333 = VALUATION_NOT_READY / A1_CURRENT_ORDINARY_SHARE_DENOMINATOR / FCFF_NOT_APPLICABLE_FOR_CURRENT_PUBLIC_SCOPE
+M5_600887 = CONDITIONAL_VALUATION_READY / A0 / LOW_CONFIDENCE_RESEARCH_ONLY
+M5_600887_PRICE_REVIEW = NOT_ASSESSABLE / MODEL_VALIDITY_THROUGH_2026-09-29_NOT_ESTABLISHED
+M5_600887_SHARED_RESULT = BOUND / SHARED_MODEL_REPLAY_PASS / YILI_CNINFO_ONLY
+M5_600887_DIVIDEND = DATA_INCOMPLETE / CASH_GENERATION_PROXY_ONLY / MODEL_BEAR_BASE_BELOW_POLICY_FLOOR
+M5_601088 = VALUATION_NOT_READY / A1 / TARGET_SCOPE_EVIDENCE_STOP
+PROSPECTIVE_BASELINE = snapshot-v13 / ded9fb9176d8d302a97aa527a302744083bf5a37448f28efbf50441fb56269e5 / BASELINE_PARTIAL_3_OF_3
+STRICT_PIT = NOT_PROVEN / REGISTRATION_AND_BUILD_TIMES_UNATTESTED
+QUOTE_AS_OF = 2026-09-29 / 000333=81.66; 600887=27.24; 601088=47.30 / MATCHED_CLOSE
+QUOTE_BUNDLE = runtime/quote-sessions/20260929T080056442563Z/bundle.json / SHA256=c7e14a9626db695c489a485fa7134bbba4568238b67a85cc3805c8cd4ba10395
+2026-09-29_MARKET_SESSION = VERIFIED_COMPLETED / DUAL_SOURCE_AND_EXCHANGE_CALENDAR / RAW_REPLAY_PASS
+PUBLIC_EVENT_WATERMARKS = FORMAL_NO_ADVANCE / 9-29_CNINFO_SNAPSHOTS_ONLY / MIDEA_INCOMPLETE
+YILI_NOTICE_1225584526 = CONSERVATIVE_AVAILABLE_AT_2026-09-30 / NOT_APPLIED
+MIDEA_ROE_CANDIDATE_CHECK = 11_OF_11_SOURCE_HASHES_MATCH / ROE_DOWNGRADED_TO_B_SCENARIO / COMMON_SHARE_DENOMINATOR_A1
+MIDEA_DENOMINATOR_REVIEW = A1_RETAINED / NO_EVIDENCE_BOUNDED_2026-09-29_RANGE / REOPEN_ON_OFFICIAL_SHARE_AND_TREASURY_RECONCILIATION
+SHENHUA_TARGET_REPORT_REVIEW = BOUNDED_REVIEW_COMPLETE / EVIDENCE_STOP / REOPEN_ON_NEW_NAMED_OFFICIAL_REPORT
+CANONICAL_WORKBOOK_SHA256 = 849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb / PHYSICAL_WPS_FILE_MATCHES
+CANONICAL_UPDATED_FOR_2026-09-29_QUOTE = NO / MODEL_VALIDITY_NOT_ESTABLISHED / APPROVED_ARTIFACT_TOOL_UNAVAILABLE
+M6 = PREFLIGHT_ONLY / OPERATIONAL_NOT_STARTED / REAL_SESSIONS_0 / RESTORE_ACCEPTANCE_NOT_PASSED
+M6_PRODUCTION_AUTHORIZATION = NOT_GRANTED
+M7 = DISPLAY_ENGINEERING_AVAILABLE / FINAL_USER_ACCEPTANCE_NOT_PASSED
+CHECKPOINT_D = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+此前的 2026-09-29 13:35 +08 记录是盘中快照，当时最新完整收盘为 9 月 28 日；本文件上方收盘后证据更新已取代其行情状态。盘中 CNINFO 检查约在 13:24 +08 运行，晚于其 13:18 截止且没有持久化响应收据，不得证明精确截止覆盖或推进正式水位。Yili `1225584526` 仍只能在保守可用日 2026-09-30 起评估，不能据此推断 9 月 29 日到期融资的支付/续作结果。
+
+Midea 的 2014–2024 归母权益/归母利润候选序列已完成有界复核，11 份年报原件哈希均匹配。相邻年末权益均值代理约从 2015–2019 年 25.6%–28.7%降至 2024–2025 年约 20.0%；这不是发行人披露的加权 ROE、预测或准入模型输入，故由 A 降为 B 情景输入。当前唯一 A 为普通股分母，仍不可用加权 EPS 股数或分红基数替代。Shenhua 对 CNINFO `1225531759` 公司层面并购披露及现有材料索引完成有界审阅，仓库内无具名目标公司的审计/交易报告可用于归因；当前中周期归母盈利无法建立，该具体公开证据路径记为 `EVIDENCE_STOP`，有新目标级官方材料时才重开。
+
+Canonical Excel 的物理文件哈希仍为 `849f3999…5c43eb`，与当前指针一致；它尚未包含本轮研究状态。伊利共享模型结果已绑定并可重放，但报价日决策仍须先完成 valid-through-quote `ModelValidity`，才可将价格比较作为有效结论；目前 `@oai/artifact-tool` 也未出现在本机会话依赖包中，故不得改用其他表格库或生成替代表。M6/M7 门禁、自然交易日和 R2/R3/R5/R6 均不阻断上述安全公共研究，但绝不降低其各自验收标准。
+
+## 2026-09-29 收盘后公共证据更新
+
+9 月 29 日的深交所/上交所交易日历与腾讯、新浪原始报价已通过现有报价会话校验，三家公司均为 `matched_close`：000333 CNY 81.66、600887 CNY 27.24、601088 CNY 47.30。共享原始包为 `runtime/quote-sessions/20260929T080056442563Z/bundle.json`，SHA-256 `c7e14a9626db695c489a485fa7134bbba4568238b67a85cc3805c8cd4ba10395`；对绑定包与 v13 prospective snapshot 的只读产品校验返回 `VERIFIED_IN_MEMORY_ONLY`，三个登记股票均进入同一产品模型，`workbook_modified=false`。采集/扫描的本机进程时钟未经独立认证，因此这不改变 `STRICT_PIT=NOT_PROVEN`。
+
+收盘后 CNINFO 有界查询在约 16:02–16:03 +08 返回：000333 已知公告 `1225582141` 一条、600887 已知公告 `1225584526` 一条、601088 零条；没有发现新的公告 ID。它们只是查询时点快照，不能证明全日完整、多渠道完整或正式连续水位；美的正式水位仍 `INCOMPLETE`，伊利和神华正式覆盖仍至 9 月 27 日，正式水位未推进。伊利 `1225584526` 仅有公告日期，保守 `available_at=2026-09-30`，不用于 9 月 29 日结论。
+
+伊利仍为低置信度 `CONDITIONAL_VALUATION_READY`，研究情景为 Bear/Base/Bull CNY 8.05/11.02/13.13，完整敏感区间 CNY 7.10–15.03。9 月 29 日收盘虽已验证，但没有覆盖至该报价日且完成候选处置的来源完整事件审阅，因此没有生成有效 `ModelValidity`、`PriceBridge` 或价格吸引力结论；`Decision Review=NOT_ASSESSABLE`。情景与现价的算术差异不能被表述成当前 `WAIT`、买入/卖出建议。
+
+唯一工作簿的实体哈希与现有指针仍为 `849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`，指针报价日仍为 9 月 28 日。本轮没有修改正式 watermark、trial pointer 或 Excel；获准的 `@oai/artifact-tool` 不在当前工作区依赖中，不用其他表格库替代，也不创建新 Excel。9 月 29 日行情尚未展示在 Excel。
+
+## 历史阶段快照：STAGE-EXECUTION-CORRECTION（2026-09-29，模型绑定前）
+
+此处记录执行纠偏阶段当时的范围和审计快照，不再授权当前工作。审计入口基线为 `main@24ec94bff754b4139169cf79f9bbc1f356c0c71b`，当时与 GitHub `origin/main` 匹配；本地随后集成 issuer identity fail-closed gate（`24f4de3`），并修复通用架构边界及冻结 replay 断言。三家公司 A/B/C/D 分类和伊利条件估值已完成；对抗复核对报价日有效性追加的纠正，以本文件上方当前授权和对应复核文件为准。
 
 本次估值输入账面基准日为 2026-06-30、报价日为 2026-09-28，日期差已披露；伊利股息可持续性仍 `DATA_INCOMPLETE / UNKNOWN`，严格 PIT 仍 `NOT_PROVEN`。Canonical Excel 因批准的 `@oai/artifact-tool` 依赖缺失未能原位更新，工作簿仍显示旧状态；没有创建替代 Excel。Issuer Identity Gate 已集成到 `main`，CNINFO/HKEX issuer registry 随包作为数据资源发布；身份门、架构边界与 replay 聚焦测试 `34 passed`。CI 同款 139 个离线测试文件本地结果为 `1142 passed, 23 skipped`，2 条 openpyxl 弃用警告；ACTUAL 私有回放素材未随仓库发布，按默认条件跳过。GitHub Core Research Gates run `36524898780` 对代码提交 `8bf11cd` 的 `offline-core` 与 `postgres-integration` 均成功。完整仓库测试未运行。
 

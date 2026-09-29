@@ -1,6 +1,78 @@
 # CURRENT STATUS
 
-## 2026-09-29 Execution Correction — current
+## 2026-09-29 Post-Close Public Evidence Update — current
+
+The latest completed official exchange session is now 2026-09-29. The bounded
+collector retained Tencent/Sina quote responses and the applicable exchange
+calendar. All three registered cases replayed as `matched_close`: 000333 CNY
+81.66, 600887 CNY 27.24 and 601088 CNY 47.30. Bundle SHA-256 is
+`c7e14a9626db695c489a485fa7134bbba4568238b67a85cc3805c8cd4ba10395` at
+`runtime/quote-sessions/20260929T080056442563Z/bundle.json`. The read-only
+canonical product publisher verified the same bundle with frozen baseline v13
+and returned `VERIFIED_IN_MEMORY_ONLY`, all three prospective symbols,
+`quote_as_of=2026-09-29`, and `workbook_modified=false`. Capture process time
+is not independently attested; this does not establish strict PIT.
+
+Bounded CNINFO snapshots around 16:02-16:03 +08 returned the already-known
+Midea notice `1225582141` (one row), Yili notice `1225584526` (one row), and
+zero rows for Shenhua. No new announcement ID was found. These are query-time
+snapshots, not proof of full-day or multi-channel coverage, and they did not
+advance formal watermarks. Midea remains `INCOMPLETE`; Yili and Shenhua's
+formal coverage remains through 2026-09-27. Yili `1225584526` has date-only
+availability and remains conservatively unavailable until 2026-09-30; it is
+not applied to a 2026-09-29 conclusion. Parallel bounded scans created
+duplicate runtime receipts; they are preserved and are not counted as
+independent new events. Representative receipt bindings are:
+
+| Case | Runtime scan receipt | SHA-256 |
+| --- | --- | --- |
+| 000333 | `runtime/prospective-public-event-2026-09-29/gapfill-000333-20260929T080238767578Z/scan-receipt.json` | `56fcd8add54b82cfff62128cc5afe24188e3e8e9f1ba64d5071b1221b2285b5c` |
+| 600887 | `runtime/prospective-public-event-2026-09-29/gapfill-600887-20260929T080255204325Z/scan-receipt.json` | `afe6dcb41be2941ded45e7eb9d7526bf8d29739771f4fdcabf856669804ae25a` |
+| 601088 | `runtime/prospective-public-event-2026-09-29/gapfill-601088-20260929T080309644951Z/scan-receipt.json` | `91263463ee0bdb042dd08a06523e06957d72064cb261bee1605f4855b2d3b549` |
+
+The bounded Midea ordinary-share denominator review retains its single A
+blocker. The 2026H1 report states 7,613,438,907 issued shares as of June 30
+(6,962,590,407 A shares and 650,848,500 H shares), but does not disclose the
+employee-incentive treasury-share count. The 7,448,597,984 share figure in
+2026-08-29 announcement `1225531407` is a dividend calculation base, not the
+2026-09-29 valuation denominator; the announced total share count does not
+prove a target-date upper bound. Report SHA-256 is
+`576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8`, and
+announcement SHA-256 is
+`669fcc91ff5c791d7d71d860a2153324d81c8fb59af01e0d47574a818d0e0feb`.
+No defensible low/base/high denominator range can be formed from these
+materials. Stop reviewing this same document set; reopen only on official
+issuer/exchange disclosures that reconcile target-date A/H issued shares,
+all treasury-stock uses and subsequent issuance/cancellation/buyback/vesting.
+
+Yili remains `CONDITIONAL_VALUATION_READY` at low confidence, with central
+Bear/Base/Bull CNY 8.05/11.02/13.13 per share and full sensitivity CNY
+7.10-15.03. No hash-bound, source-complete event review through the 2026-09-29
+quote date has resolved all candidate and channel-coverage conditions, so no
+valid `ModelValidity` or current `PriceBridge` was produced. `PriceAttractiveness`
+and `Decision Review` remain `NOT_ASSESSABLE`; the scenario/price arithmetic is
+not a valid current `WAIT` or a buy/sell conclusion.
+
+The in-memory product validation did not change the canonical workbook. Its
+physical SHA-256 remains
+`849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`, and the
+workbook pointer remains at quote date 2026-09-28. The approved
+`@oai/artifact-tool` is unavailable in this workspace; no alternate spreadsheet
+library or replacement workbook was used. The verified 2026-09-29 quote is
+therefore not yet visible in Excel.
+
+```text
+LATEST_VERIFIED_SESSION = 2026-09-29 / 000333=81.66; 600887=27.24; 601088=47.30
+QUOTE_BUNDLE_SHA256 = c7e14a9626db695c489a485fa7134bbba4568238b67a85cc3805c8cd4ba10395
+PRODUCT_VERIFY_ONLY = PASS / THREE_PROSPECTIVE_CASES / WORKBOOK_UNMODIFIED
+EVENT_SNAPSHOTS = CNINFO_ONLY / NO_NEW_IDS / NO_FORMAL_WATERMARK_ADVANCE
+600887_MODEL_VALIDITY = NOT_ESTABLISHED_THROUGH_2026-09-29
+600887_PRICE_BRIDGE = NOT_PRODUCED / DECISION_REVIEW_NOT_ASSESSABLE
+CANONICAL_EXCEL_UPDATED = NO / APPROVED_SPREADSHEET_DEPENDENCY_MISSING
+action = no_order
+```
+
+## 2026-09-29 Execution Correction — research closeout snapshot
 
 This phase reclassified the registered 000333, 600887 and 601088 research cases
 into A/B/C/D blocker groups and produced a bounded blocker burn-down. The audit
@@ -14,15 +86,19 @@ scenario/caveat. The shared `residual-income-equity-shared-v1` model was run
 with explicit low-confidence Bear/Base/Bull assumptions. It yields CNY
 8.05/11.02/13.13 per share at the central sensitivity point and a full grid
 range of CNY 7.10-15.03, versus the verified 2026-09-28 close of CNY 27.03.
-Research disposition is `CONDITIONAL_VALUATION_READY` and `WAIT`; this is not a
-forecast, unique fair-value conclusion, sell signal or order. Dividend
-sustainability remains `DATA_INCOMPLETE / UNKNOWN`; strict PIT remains
-`NOT_PROVEN`.
+Research disposition is `CONDITIONAL_VALUATION_READY`. The current price
+Decision Review is `NOT_ASSESSABLE`: valid-through-quote `ModelValidity` is not
+established, so the earlier `WAIT` is not a valid current-price decision. This
+is not a forecast, unique fair-value conclusion, sell signal or order.
+Dividend sustainability remains `DATA_INCOMPLETE / UNKNOWN`; strict PIT
+remains `NOT_PROVEN`.
 
-000333 remains A=1, B=6, C=0, D=3. Its original consolidated FCFF is not
-applicable and no evidence-supported substitute is ready. 601088 remains
-A=1, B=4, C=3, D=0; its current-perimeter mid-cycle attributable earnings are
-not established. The Shenhua CNY 2.577bn acquisition figure is a difference
+000333 remains A=1, B=6, C=0, D=3: the ordinary-share denominator is the A
+blocker; normalized ROE is a B scenario input based on a non-admitted proxy.
+Its original consolidated FCFF is not applicable and no evidence-supported
+substitute is ready. 601088 remains A=1, B=4, C=3, D=1; its current-perimeter
+mid-cycle attributable earnings are not established and the bounded review of
+identified target materials ended in `EVIDENCE_STOP`. The Shenhua CNY 2.577bn acquisition figure is a difference
 between disclosures with different perimeters, not a reconciled cash shortfall.
 Its three C-class items are non-blocking only for consolidated valuation.
 Prior A/B/C/D counts for Midea and Shenhua were not recorded and are not
@@ -64,6 +140,60 @@ INITIAL_ASSISTED_USE = NOT_REACHED
 TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
 action = no_order
 ```
+
+## 2026-09-29 Shared-Model Binding and Blocker Closeout
+
+The Yili `600887` conditional valuation now replays through the registered
+`quality_compounder` / shared `residual_income_or_equity_value` route with
+issuer identity `VERIFIED`. The replay input is restricted to five issuer
+CNINFO sources for security `600887`; the prior Moutai discount-rate evidence
+and file-alias citations are excluded. The model's dividend-path check is now
+described accurately as an algebraic cross-check under assumed retention, not
+independent evidence of issuer distributable cash or dividend sustainability.
+
+```text
+valuation_basis = 2026-06-30
+shares = 6325360667
+bear_base_bull_cny_per_share = 8.047594 / 11.023375 / 13.133453
+confidence = LOW / conditional_research_only
+source_package_sha256 = e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803
+input_descriptor_sha256 = 8ee8e489c002c06413d5c06002aff10d87ddbf55860bf3221a5ead7c3c0e5c04
+valuation_result_sha256 = 51eafc6f61bb4f69a24bf5d921417e2748401ef2ddb4c85485c0926e07bc02e6
+result_artifact_sha256 = 0ee6b27b220b136b709dd413c5d1d415f1152c1e99df6c12d90e71154306fdce
+price_review = NOT_ASSESSABLE / quote-date ModelValidity not established
+```
+
+The Yili dividend check compares the CNY 1.22/share policy value against a
+June 30 share-count proxy of about CNY 7.717bn and against model dividends.
+With 25% retention, bear/base first-two-year modeled dividends are about
+CNY 0.764/0.722 and CNY 1.146/1.131 per share, below the policy value. This
+does not show the policy will fail; the model does not force that floor, and
+the proxy cash amounts omit material cash uses. Dividend sustainability
+remains `DATA_INCOMPLETE / UNKNOWN`.
+
+Midea's 11 retained 2014-2024 report hashes match their source files. A
+parent-profit / adjacent-year-end-equity average is retained only as an
+unadmitted ROE proxy; it is downgraded from A to B scenario input. Midea's sole
+remaining A blocker is the current ordinary-share denominator. Shenhua's
+bounded review of company-level acquisition-scope disclosure and the existing
+evidence index found no named, retained target-level audit/transaction report
+that can attribute earnings to the acquired perimeter. The current-scope
+mid-cycle earnings blocker remains; that public-evidence path is now
+`EVIDENCE_STOP`, reopening only on a newly named official target-level report
+with sufficient comparable financial detail.
+
+No Canonical Excel was changed: its current price review remains
+`NOT_ASSESSABLE`, ModelValidity is absent, and the approved
+`@oai/artifact-tool` dependency is unavailable. No replacement workbook was
+created. Total Goal and operational states remain unchanged; `action=no_order`.
+
+Verification after these changes: focused binding, residual-income, issuer,
+application, input, registry and architecture tests passed (`92 passed`). The
+exact `offline-core` selection from `core-research-gates.yml` passed locally
+(`1142 passed, 23 skipped`, two existing named-range deprecation warnings).
+The PostgreSQL integration job was not run locally because no local PostgreSQL
+service or client is available; the older GitHub run above is for its recorded
+older commit, not this working tree.
 
 ## 2026-09-29 08:54 +08 Continuous Public Research Continuation — latest
 
@@ -6111,6 +6241,72 @@ STRICT_PIT = NOT_PROVEN
 M3 = PARTIAL / STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN
 M5 = THREE_PROSPECTIVE_CASES_NOT_VALUATION_READY
 M6_OPERATIONAL = NOT_STARTED / PRODUCTION_AUTHORIZATION_NOT_GRANTED
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+## 2026-09-29 Execution-Correction Review and Historical Handoff (Superseded)
+
+This is a point-in-time handoff from before the shared-model binding and
+Shenhua bounded-review closeout recorded near the top of this file. Its open
+actions are historical and are not the current task queue.
+
+The execution-correction research package has classified blockers for all
+three registered cases. Yili `600887` has zero current A blockers and a
+low-confidence `CONDITIONAL_VALUATION_READY` residual-income scenario set;
+Midea `000333` and Shenhua `601088` each retain one A blocker. The registered
+baseline v13 remains frozen and `BASELINE_COMPLETE=0/3`; this work does not
+establish strict PIT, a forecast, fair value, or an investment instruction.
+
+An adversarial review independently recalculated the Yili scenario arithmetic
+but found no `ModelValidity` artifact binding the 2026-06-30 valuation basis to
+the 2026-09-28 quote after a source-complete event review. The scenario/price
+comparison remains arithmetic only. The current Decision Review is therefore
+`NOT_ASSESSABLE`; the earlier `WAIT` is withdrawn as a current price decision.
+The review JSON and execution-correction memo were corrected accordingly.
+The shared-model input/output binding is also still required before product
+projection.
+
+The read-only CNINFO event review identified no new Yili event eligible for the
+2026-09-29 cutoff. Announcement `1225584526` is date-only and conservatively
+available from 2026-09-30; it was not applied early. The query ran after the
+review's 13:18 cutoff and was not retained as a receipt, so it does not certify
+the exact cutoff or advance a formal watermark. Midea's 2026-09-28 meeting
+notice was already in the bounded event projection. The 2026-09-29 session had
+not closed at the last review; the latest complete quote remains 2026-09-28.
+The retained CNINFO coverage is documented through 2026-09-27 for Yili and
+Shenhua; Midea's formal initial watermark remains incomplete. These are
+issuer-specific CNINFO states, not complete issuer-IR/exchange-channel proofs.
+
+A read-only integrity check found all 11 source-PDF hashes in the existing
+Midea 2014-2024 equity-return candidate series match retained originals. A
+simple parent-profit divided by adjacent year-end parent-equity proxy trends
+from roughly 25.6%-28.7% in 2015-2019 to about 20.0% in 2024-2025. This is not
+issuer-reported weighted ROE, not a forecast, and not an admitted model input;
+the Midea A blocker remains. Shenhua's bounded next action is one review of
+identified target-level audit/transaction reports, not another broad filing
+search.
+
+The physical WPS canonical workbook hash remains
+`849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`, matching
+the current pointer. It still reflects the prior `VALUATION_NOT_READY` product
+view. The approved `@oai/artifact-tool` package is absent from the available
+workspace dependencies, so no workbook library substitution, workbook write,
+or replacement file was made. Existing WPS/readability receipts only verify
+the prior workbook contents.
+
+```text
+CURRENT_STAGE = STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH
+M2 = DONE / CHECKPOINT_A_HUMAN_PASS
+M3 = PARTIAL / STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN
+M4_PERSONALIZED = PARKED_WAITING_R2_NONBLOCKING
+M5_000333 = VALUATION_NOT_READY / A1
+M5_600887 = CONDITIONAL_VALUATION_READY / A0 / LOW_CONFIDENCE
+M5_600887_PRICE_REVIEW = NOT_ASSESSABLE / MODEL_VALIDITY_NOT_ESTABLISHED
+M5_601088 = VALUATION_NOT_READY / A1
+M6 = PREFLIGHT_ONLY / OPERATIONAL_NOT_STARTED / REAL_SESSIONS_0
 M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
 INITIAL_ASSISTED_USE = NOT_REACHED
 TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES

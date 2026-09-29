@@ -10,8 +10,10 @@ files without duplicating their content. Historical stage notes live under
 | --- | --- |
 | Current goal | `docs/current-stage-goal.md` |
 | Current execution status | `docs/execution-status.md` |
+| Latest verified public close | 2026-09-29 dual-source close bundle for 000333 / 600887 / 601088 (runtime-only, SHA-256 `c7e14a9626db695c489a485fa7134bbba4568238b67a85cc3805c8cd4ba10395`); product verification passed in memory, Canonical Excel not updated |
 | Current execution-correction review and three-company blocker burn-down | `docs/current/track-b-execution-correction-20260929.md` |
-| Yili conditional valuation result and full sensitivity grid | `docs/current/600887-valuation-readiness-review-20260929.json` (research-only; Canonical Excel projection is pending the approved spreadsheet dependency) |
+| Yili shared-model result binding | `docs/current/600887-shared-valuation-result-20260929.json` (input/result/source-package and artifact hashes; replay uses only 600887 CNINFO source refs) |
+| Yili conditional valuation result and full sensitivity grid | `docs/current/600887-valuation-readiness-review-20260929.json` (research-only; current price review is NOT_ASSESSABLE until ModelValidity through quote date; Canonical Excel unchanged because the approved spreadsheet dependency is unavailable) |
 | Root workbook governance audit | `docs/execution-status.md` (2026-09-28 update: 29 referenced root workbooks; no safe relocation proof) |
 | Current R0 audit state | `docs/execution-status.md` (open R0 nodes; non-blocking to public research) |
 | Midea and Yili baseline cards | `docs/current/track-b-midea-yili-baseline-cards-20260927.md` |
