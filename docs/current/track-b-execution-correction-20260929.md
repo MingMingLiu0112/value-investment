@@ -8,21 +8,21 @@
 
 | 公司 | Hard blockers before → now | 当前 B / C / D | 当前估值裁决 | 仍独立存在的报价日门禁 |
 |---|---|---|---|---|
-| 600887 伊利 | 研究估值 A：2 → 0（回溯重建）；报价日 A：1 → 1 | 5 / 2 / 1 | `CONDITIONAL_VALUATION_READY`，低置信度；共享模型 Bear/Base/Bull CNY 8.05 / 11.02 / 13.13，敏感区间 CNY 7.10–15.03 | SCP010/011 合计 CNY 20bn 到期处置与偿付后现金/债务桥未验证；`ModelValidity` 未成立，`PriceBridge=null`，`Decision Review=NOT_ASSESSABLE` |
-| 000333 美的 | 模型路由 A：1 → 0；2026-06-30 分母 A：1 → 1；9/29 后日分母子项：1 → 0 | 6 / 0 / 3 | `A1/B6/C0/D3`；FCFF 对当前公开并表范围 `MODEL_NOT_APPLICABLE`；共享 residual-income 已由 profile 显式授权，但 6/30 分母未界定，整体 `VALUATION_NOT_READY`，无每股结果 | 9 月 29 日分母仅适用后日，不回填 6 月 30 日估值基准或该日收盘前决策 |
-| 601088 中国神华 | 收购后当前范围中周期归母盈利 A：1 → 1 | 3 / 3 / 0 | 共享周期模型 `NOT_READY`；Bear/Base/Bull 估值值均为 null | 不生成价格桥或 Decision Review |
+| 600887 伊利 | 研究估值 A：2 → 0（回溯重建）；报价日研究 A：1 → 0（证据停止） | 5 / 2 / 1（研究）；报价日另 D1 | `CONDITIONAL_VALUATION_READY`，低置信度；共享模型 Bear/Base/Bull CNY 8.05 / 11.02 / 13.13，敏感区间 CNY 7.10–15.03 | SCP010/011 CNY 20bn 到期结果在已审 CNINFO/SSE 索引未核实，设范围内 `EVIDENCE_STOP`；不推定兑付/续作/违约；`ModelValidity` 未成立，`PriceBridge=null`，`Decision Review=NOT_ASSESSABLE` |
+| 000333 美的 | 模型路由 A：1 → 0；2026-06-30 分母 A：1 → 0（D stop）；9/29 后日分母子项：1 → 0 | 6 / 0 / 4 | `A0/B6/C0/D4`；FCFF 对当前公开并表范围 `MODEL_NOT_APPLICABLE`；共享 residual-income 已由 profile 显式授权，但 6/30 分母进入范围内 `EVIDENCE_STOP`，当前 case `INSUFFICIENT_PUBLIC_EVIDENCE`，无每股结果 | 后日分母仅用于 9/29，不回填 6/30。只有新的正式时点披露能列明全部库存股数量/用途时重开 |
+| 601088 中国神华 | 收购后当前范围中周期归母盈利 A：1 → 0（D stop） | 3 / 3 / 1 | `A0/B3/C3/D1`；共享周期模型诊断仍 `NOT_READY`；当前 case `INSUFFICIENT_PUBLIC_EVIDENCE`，估值值均为 null | 停止重读同一重组报告和周期序列；只有能桥接最终收购范围、税、少数股东、融资及跨周期的正式证据才重开 |
 
 伊利已完成本阶段要求的估值准备复核并形成可披露边界的研究估值。报告的 18 格敏感性以共享模型计算函数重算，18/18 与存档结果一致；这是情景算术复核，不代表预测或报价日决策有效。伊利剩余事件/报价门禁不得反向抹去其 2026-06-30 研究估值的 `CONDITIONAL_VALUATION_READY`。
 
-**分类范围统一（2026-09-30）：**当前分类分别为美的 `A1/B6/C0/D3`、伊利 `A0/B5/C2/D1`、神华 `A1/B3/C3/D0`。美的通用 `mature_manufacturing` profile 已明确授权共享 residual-income 替代路由，FCFF 仍为默认；因此原模型路由 A 已关闭，但 2026-06-30 普通股分母仍是唯一整体估值 A，A 总数没有下降。金融业务拆分、内部抵销和项目级 CapEx 三项 `EVIDENCE_STOP` 仅限定于不适用的 FCFF 路径，不再作为股权估值 blocker，也不重复搜索。模型变更不回写冻结 baseline。
+**分类范围统一（2026-09-30）：**按现存、已复核公开证据集，当前研究分类为美的 `A0/B6/C0/D4`、伊利 `A0/B5/C2/D1`、神华 `A0/B3/C3/D1`。伊利报价日另有 `D1/EVIDENCE_STOP`，不混入 6/30 研究估值计数。两个新 stop 只说明当前审阅集合不足以支持结论，不宣称互联网上不存在其他材料；均不得继续重复同一证据搜索。美的通用 `mature_manufacturing` profile 显式授权共享 residual-income 替代路由，FCFF 仍默认；H1 披露的已发行股数、库存股账面金额、单一回购批次和期间加权 EPS 仍无法组成 6/30 普通股分母的有证据区间，因此该研究输入从 A blocker 结案为 D stop，当前 case 为 `INSUFFICIENT_PUBLIC_EVIDENCE`。FCFF 金融业务拆分、内部抵销和项目级 CapEx 三项 D 仅限定于 FCFF 路径。模型变更不回写冻结 baseline。
 
 **Prospective case 后续运行（2026-09-30）：** 对已登记 case `prospective-600887-20260927-v2` 使用新的 `ResearchInputDescriptor` 调用共享 `ResearchApplicationService` 并重新计算；本次 run ID 为 `prospective-600887-20260927-v2-followup-20260930T031923+0800`，descriptor SHA-256 为 `545c52ae909e842dc2d4aca55d091dfaa3c087c4a96937525cf0f767b0933b76`。输入哈希绑定了 v13 注册回执、冻结 baseline、伊利 readiness review、前序共享结果和 issuer-identified 原始来源；未为既有官方原件虚构新的 retrieval 时间。后续 valuation readiness 为 `CONDITIONAL_VALUATION_READY`，共享模型输出仍为 Bear/Base/Bull CNY 8.0476 / 11.0234 / 13.1335。冻结 baseline v13 及其卡片没有改写，仍为 `BASELINE_PARTIAL / VALUATION_NOT_READY`；运行发生在 cutoff 之后，不能证明 strict PIT。该运行不是报价日模型有效性审查：`ModelValidity=NOT_ESTABLISHED`，服务诊断的价格桥为 `PENDING_EXTERNAL_DATA`、现价为空；admitted `PriceBridge=null`，`Decision Review=NOT_ASSESSABLE`，`action=no_order`。完整输入绑定和机器复跑见 [follow-up artifact](600887-prospective-case-followup-20260930.json)。
 
 该 follow-up 的独立算术复核还发现，前序 readiness review 用已四舍五入展示值 CNY 7.915bn 计算 Base 现金代理余量。按未舍入的 `11.307 × (1 - 30%) = 7.9149bn` 计算，减去政策金额 CNY 7.71694001374bn 后，精确余量应为 CNY 0.19795998626bn，而不是 0.19805998626bn。新 follow-up 明确记录该数值更正；旧 review 保持原样，估值结果和就绪状态不受影响。
 
-截至 2026-09-29，扣除库存股后的 A/H 普通股为 7,445,382,896 股；这关闭的是后日分母，不是 2026-06-30 权益基准所需股数。注册 FCFF 路径不适用于当前公开并表范围；通用 `mature_manufacturing` profile 现已显式允许共享 residual-income 替代模型，默认仍为 FCFF。H1 报告支持 6/30 归母权益与权益变动表，但无法界定 6/30 全部库存/员工计划持股后的普通股分母，因此保留一个 A，当前不生成每股估值。不得按 symbol 建模，也不重复搜索已停止的 FCFF 金融业务拆分、内部抵销与项目级 CapEx 材料。
+截至 2026-09-29，扣除库存股后的 A/H 普通股为 7,445,382,896 股；这只关闭后日分母，不回填 2026-06-30。H1 报告支持 6/30 归母权益与权益变动表，但库存股附注仅披露账面金额 15,117,924 千元，未给出全部用途对应股数；已知 68,679,031 股回购只覆盖单一项目，H1 EPS 股数是期间加权平均。现有证据不能形成分母区间，故按本阶段 D 规则将该输入记为范围内 `EVIDENCE_STOP / INSUFFICIENT_PUBLIC_EVIDENCE`，不生成每股估值。重开触发仅为新正式披露能给出 6/30 全部库存股/员工计划持股数量及口径。不得按 symbol 建模，也不重复搜索已停止的 FCFF 材料。
 
-神华的一个 A blocker 不能仅靠把参数范围放宽来降级：现有煤价、销量、单位成本等是分年度、分字段锚点，不是收购后同范围的联合盈利情景；重组报告的备考扣非归母净利润增量为税后归母口径，不能填进模型要求的税前归母经营利润后再扣现金税。其维护性 CapEx、归母净现金、普通股息能力仍属于未定界 B 输入；其他小额差异保留为 C，不再升级为硬门禁。停止重复分析同一报告，只有新正式证据能建立当前收购后范围的可比跨周期盈利边界时才重开 A。
+神华的现存证据集不能支持可比跨周期归母盈利联合情景：煤价、销量、单位成本是分年度锚点；重组报告的备考扣非归母净利润增量为税后归母口径，不能填入税前归母经营利润后再次扣税。已复核的标的模拟表不能完成最终收购范围、实际持股/联营、内部抵销、税、少数股东和融资桥。按停止规则，该根因从 A blocker 收敛为范围内 `EVIDENCE_STOP / INSUFFICIENT_PUBLIC_EVIDENCE`（D1），当前不估值；维护性 CapEx、归母净现金、普通股息能力仍为 B 情景输入，小额残差保留 C。只有新正式证据能建立上述桥接并校准跨周期范围时重开。
 
 ```text
 Baseline Complete: 0/3
@@ -120,7 +120,7 @@ CNINFO 公告 `1225584526` 保守 `available_at=2026-09-30T00:00:00+08:00`，因
 | `1225397626` | 优然牧业认购 HKD 1.17306bn 于 2026-06-29 前完成，早于 6 月 30 日估值基准。 | C：应由 H1 基准反映，不在基准日后重复扣减；原件不能单独证明账面金额或可归属利润。 |
 | `1225397623` | 第 5–9 期本金 CNY 45bn 于 2026-06-25/26 兑付完成，本息合计 CNY 45,145,254,794.53。 | C：发生在 H1 基准日前，由 6 月 30 日报表承接，不重复扣减。 |
 
-对 10 条候选的分类计数为 `A=1`（仅针对 9 月 29 日报价日融资状态/ModelValidity）、`B=2`、`C=7`、`D=0`。这不改变伊利 6 月 30 日条件估值的 `A=0`；原有股息 ordinary/special 分类仍为独立 `D=1 / EVIDENCE_STOP`。公告 `1225584526` 不是上述 10 条之一：它确认 25bn 于 9 月 24 日兑付，但 date-only `available_at=2026-09-30T00:00+08:00`，不得用于 9 月 29 日收盘判断；同日到期的 20bn 仍无兑付、续作或偿付后余额证明。
+该 10 条候选在 2026-09-29 首轮复核时计为 `A=1/B=2/C=7/D=0`；2026-09-30 有界 Evidence-stop 裁决已将其中的报价日融资 outcome 项从 A 改为 D，因此当前计数为 `A=0/B=2/C=7/D=1`。这不改变伊利 6 月 30 日条件估值的 `A=0`；原有股息 ordinary/special 分类仍为独立研究 `D=1 / EVIDENCE_STOP`。公告 `1225584526` 不是上述 10 条之一：它确认 25bn 于 9 月 24 日兑付，但 date-only `available_at=2026-09-30T00:00+08:00`，不得用于 9 月 29 日收盘判断；同日到期的 20bn 仍无兑付、续作或偿付后余额证明。
 
 独立 R1 对三家公司复核 `3/3`：伊利 `A=0` 只支持低置信度 `CONDITIONAL_VALUATION_READY` 研究情景；现金数为历史 CFO 减长期资产购建并施加分析折扣，不能称“已验证可分配现金”；ROE 路径是带 H1 反证的分析假设，不是可持续 ROE 事实。Residual income 可作为条件性研究模型，但清洁盈余关系、25% 留存率和减值正常化没有被充分验证。为避免字段误导，机器可读复核现在将 `price_bridge` 设为 `null`，未验证的数值比较另列为 `unvalidated_arithmetic_comparison`；有效报价日 `PriceBridge` 仍未生成。
 
@@ -214,13 +214,21 @@ Issuer Identity Gate 已在共享输入边界 fail closed：研究证券、Finan
 ## 下一步（仅限能改变估值或报价日判断的触发）
 
 - **600887：** 取得可核验的 9 月 29 日 CNY 20bn 短融到期偿付/续作及偿付后现金、债务余额，并完成报价日前的 issuer-IR/交易所/CNINFO 重大事件候选处置与来源覆盖证明；然后重算 `ModelValidity` 和 `PriceBridge`。在此之前保留条件估值，不给当前价格判断。
-- **000333：** 仅当发行人/交易所正式披露能逐项勾稽估值日 A/H 股数、各用途库存股及期后变动时，重开分母 blocker 并重估模型适用性。继续搜索同一文件集不会改变结果。
-- **601088：** 仅当正式材料能把收购资产与遗留业务的煤价、产销量、单位成本、电力/运输、税和归母/少数股东口径做可比桥接，并提供跨周期实绩或足以校准周期范围的数据时，重开唯一 A blocker。新的 maintenance/growth CapEx 披露只更新 B 类现金流/分红情景。
+- **000333：** 分母已为当前披露集执行 `EVIDENCE_STOP`。仅当发行人/交易所发布新的正式时点材料，能逐项列明估值日 A/H 股数和全部用途库存股数量时，才重开 stop 并运行共享模型；不重查现有文件。
+- **601088：** 当前收购范围跨周期归母盈利已为现存披露集执行 `EVIDENCE_STOP`。仅当新正式材料能桥接最终并表范围、煤价/产销量/单位成本、电力/运输、税、少数股东与融资，并足以校准跨周期范围时，才重开；maintenance/growth CapEx 新披露只更新 B 类现金流/分红情景。
 - **Canonical Excel：** 研究状态已有真实变化；获准的 `@oai/artifact-tool` 可用后，才将条件估值与未就绪原因投影到唯一原表并验收。当前依赖缺失，不用其他表格库替代。
+
+### 2026-09-30 有界 Evidence-stop 独立复核
+
+本节是对现存证据集的只读 adjudication，不改写 v13 或运行时适用性收据。三家公司当前研究 A blocker 计数为 0；合法结果分别为伊利 `CONDITIONAL_VALUATION_READY`、美的和神华 `INSUFFICIENT_PUBLIC_EVIDENCE`。美的 denominator stop 的依据是 CNINFO `1225531404`（SHA-256 `576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8`）披露 7,613,438,907 已发行股、库存股金额但未列全用途股数；68,679,031 股是单一回购项目，EPS 股数是加权平均，9/29 精确分母是后日事实。复核文件为 [股数口径审查](track-b-midea-share-denominator-review-20260928.md)。不再搜索同一报告；仅新正式时点股份/库存用途明细可重开。
+
+神华 D1 的具体根因为没有可把并购标的模拟报表桥接至最终收购范围并校准跨周期归母盈利的完整证据。CNINFO `1224979750`（SHA-256 `533bc24a80aeb1fbf2357218c5c19825cb0ab23176eb7d25d8ecd2d1f1256703`）提供 12 家标的 2023-2025/07 模拟数据与近期备考增量，但持股、联营、抵销、税、少数股东、融资及期间可比性仍未闭合。该 stop 仅覆盖当前已留存重组/周期材料；新的正式并表归属桥及跨周期数据才重开。
+
+伊利研究估值分类仍是 `A0/B5/C2/D1`（普通/特别股利分类 stop）；报价日单独 `D1`：上交所已留存索引 30 条（2026-06-17..09-29），CNINFO 精确 9/30 查询为零条，均未提供 SCP010/011 合计 CNY 20bn 到期结果或兑付后现金/债务桥。此 stop 不表示兑付、续作或违约，也不使 9/29 `ModelValidity` 有效；保留 `PriceBridge=null` 与 `Decision Review=NOT_ASSESSABLE`。仅后续正式兑付/融资或现金债务披露可重开。以上是有界证据停止，不声明其他尚未检索的公开渠道不存在材料。
 
 ## 产品发布状态
 
-研究状态已改变，且伊利共享模型输入/输出现已哈希绑定并可回放；但报价日价格判断仍为 `NOT_ASSESSABLE`，因为 valid-through-quote `ModelValidity` 未建立。唯一 canonical Excel 不创建替代文件。本机依赖加载器提供的 Node packages 路径内没有 `@oai/artifact-tool`，不得换用其他表格库。因此 **Canonical Excel Updated = NO**；当前工作簿仍保留旧 `VALUATION_NOT_READY` 展示。只有在有效性门禁通过、获准工具可用且状态适合投影后，才原位更新同一工作簿并验收。
+研究状态已改变，且伊利共享模型输入/输出现已哈希绑定并可回放；但报价日价格判断仍为 `NOT_ASSESSABLE`，因为 valid-through-quote `ModelValidity` 未建立。唯一 canonical Excel 不创建替代文件。本机依赖加载器提供的 Node packages 路径内没有 `@oai/artifact-tool`，不得换用其他表格库。因此 **Canonical Excel Updated = NO**；当前工作簿仍保留旧 `VALUATION_NOT_READY` 展示。发布器现已在替换前复核 canonical 源 Hash，并在候选生成期间源文件变化时拒绝覆盖；保全测试 `3 passed`。只有有效性门禁通过且获准工具可用时，才原位更新同一工作簿并验收。
 
 本轮没有新公司、没有重开 600519、没有新增 M8、没有扩展 TSA/PKI、没有生产/Shadow/定时任务/券商动作，也没有订单。总 Goal 仍为 `IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`，`INITIAL_ASSISTED_USE=NOT_REACHED`。
 
@@ -244,4 +252,4 @@ Issuer Identity Gate 已在共享输入边界 fail closed：研究证券、Finan
 - **伊利研究估值不变。** 低置信度 `CONDITIONAL_VALUATION_READY` 仍只适用于 2026-06-30 研究基准，报价日 review 仍 `NOT_ASSESSABLE`。对现有 18 格敏感性使用共享 residual-income 函数逐格重算，18/18 数值匹配；该核验不提升置信度、分红可持续性或价格决策状态。9 月 30 日官方上交所索引未出现 10/11 期兑付/续作公告，详见既有[伊利短融审查](track-c-yili-short-term-financing-redemption-20260929.md)。
 - **神华仍为 `A1/B3/C3/D0`，估值 `NOT_READY`。** B 类只有部分经营驱动有历史/压力锚，不等于维护性 CapEx、归母净现金和股息能力已获得估值级范围。重组报告备考扣非归母净利润不得直接当作模型税前归母经营利润后再次扣税；唯一 A 仍是收购后当前范围、跨周期、可归属且可用于共享模型的利润边界缺失。原始模型的 `trough_parent_operating_profit` 是合同门禁输入但当前算术仅回传；本阶段不扩大模型合同或调整代码。
 
-此前伊利敏感性网格 18/18 重算一致，且此前的路由/身份定向集为 53 passed。本轮 2026-09-30 定向回归为 66 passed；Core Research Gates 同款离线清单为 1,157 passed、23 skipped、2 warnings。全仓库未执行。A/H 股数或索引补记没有产生可发布的报价日 Decision Review。Canonical Excel 未更新，获准的 `@oai/artifact-tool` 当前不可用；没有替代工作簿，`action=no_order`。
+此前伊利敏感性网格 18/18 重算一致，且此前的路由/身份定向集为 53 passed。本轮 2026-09-30 路由/身份定向回归为 66 passed，工作簿发布保护测试为 3 passed；CI Core Research Gates 同款 139 文件离线清单为 1,158 passed、23 skipped、3 warnings（Windows UTF-8 环境）。全仓库未执行。A/H 股数或索引补记没有产生可发布的报价日 Decision Review。Canonical Excel 未更新，获准的 `@oai/artifact-tool` 当前不可用；没有替代工作簿，`action=no_order`。

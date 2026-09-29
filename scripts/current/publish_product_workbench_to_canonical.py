@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Publish the M7 product surface into the one configured canonical workbook.
 
-This deliberately never creates a second user-facing workbook.  It copies the
-configured workbook to a staging file beside it, proves retained sheets did not
-change at cell level, then atomically replaces the original.
+This deliberately never creates a second user-facing workbook. It stages beside
+the configured workbook, proves retained sheets did not change, and uses a
+backup-aware Windows replacement to detect and recover a concurrent source edit.
 """
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -55,12 +56,228 @@ PROSPECTIVE_RECEIPT_SHA256 = "8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d
 PROSPECTIVE_PLAN_PATH = "config/prospective-research-observation-plan-v2.json"
 
 
+class _PreservePublicationArtifacts(RuntimeError):
+    """Signal that recovery files must remain available for manual repair."""
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def _assert_canonical_source_unchanged(canonical: Path, expected_sha256: str) -> None:
+    if not canonical.is_file() or _sha256(canonical) != expected_sha256:
+        raise ValueError("canonical workbook changed during staging; refusing to replace")
+
+
+def _assert_workbook_not_open(canonical: Path) -> None:
+    if (canonical.parent / f"~${canonical.name}").exists():
+        raise RuntimeError("CANONICAL_PUBLICATION_BLOCKED_BY_OPEN_WORKBOOK")
+
+
+def _replace_file_with_backup(destination: Path, replacement: Path, backup: Path) -> None:
+    if os.name != "nt":
+        raise RuntimeError("canonical workbook publication requires Windows ReplaceFileW")
+    if backup.exists():
+        raise FileExistsError(backup)
+
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    replace_file = kernel32.ReplaceFileW
+    replace_file.argtypes = [
+        wintypes.LPCWSTR,
+        wintypes.LPCWSTR,
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        wintypes.LPVOID,
+        wintypes.LPVOID,
+    ]
+    replace_file.restype = wintypes.BOOL
+    if not replace_file(str(destination), str(replacement), str(backup), 0, None, None):
+        raise ctypes.WinError(ctypes.get_last_error())
+
+
+@contextmanager
+def _canonical_write_guard(canonical: Path):
+    if os.name != "nt":
+        raise RuntimeError("canonical workbook publication requires Windows file sharing")
+
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    create_file = kernel32.CreateFileW
+    create_file.argtypes = [
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.LPVOID,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.HANDLE,
+    ]
+    create_file.restype = wintypes.HANDLE
+    close_handle = kernel32.CloseHandle
+    close_handle.argtypes = [wintypes.HANDLE]
+    close_handle.restype = wintypes.BOOL
+
+    handle = create_file(
+        str(canonical),
+        0x80000000,
+        0x00000001 | 0x00000004,
+        None,
+        3,
+        0x00000080,
+        None,
+    )
+    if handle == ctypes.c_void_p(-1).value:
+        error_code = ctypes.get_last_error()
+        error = ctypes.WinError(error_code)
+        if error_code in (32, 33):
+            raise RuntimeError("CANONICAL_PUBLICATION_BLOCKED_BY_OPEN_WORKBOOK") from error
+        raise error
+    try:
+        yield
+    finally:
+        close_handle(handle)
+
+
+def _preserve_artifacts(message: str, *paths: Path) -> _PreservePublicationArtifacts:
+    retained = [str(path) for path in paths if path.exists()]
+    return _PreservePublicationArtifacts(
+        f"{message}; retained artifacts: {', '.join(retained) if retained else 'none'}"
+    )
+
+
+def _replace_canonical_staging(
+    canonical: Path,
+    staging: Path,
+    *,
+    expected_source_sha256: str,
+    staging_sha256: str,
+) -> str:
+    _assert_canonical_source_unchanged(canonical, expected_source_sha256)
+    _assert_workbook_not_open(canonical)
+    if _sha256(staging) != staging_sha256:
+        raise ValueError("staging workbook changed before replacement; refusing to publish")
+
+    with _canonical_write_guard(canonical):
+        _assert_canonical_source_unchanged(canonical, expected_source_sha256)
+        _assert_workbook_not_open(canonical)
+        if _sha256(staging) != staging_sha256:
+            raise ValueError("staging workbook changed before replacement; refusing to publish")
+
+        displaced = canonical.with_name(f".{canonical.name}.displaced-{uuid4().hex}.xlsx")
+        rollback = canonical.with_name(f".{canonical.name}.rollback-{uuid4().hex}.xlsx")
+        try:
+            _replace_file_with_backup(canonical, staging, displaced)
+        except OSError as error:
+            if displaced.exists() and not canonical.exists():
+                try:
+                    displaced.rename(canonical)
+                except OSError as restore_error:
+                    raise _preserve_artifacts(
+                        "atomic replacement failed and the canonical path is missing",
+                        canonical, displaced, staging, rollback,
+                    ) from restore_error
+                if _sha256(canonical) != expected_source_sha256:
+                    raise ValueError(
+                        "atomic replacement failed; displaced concurrent version restored; refusing to publish"
+                    ) from error
+                raise
+            if displaced.exists():
+                if canonical.is_file() and _sha256(canonical) == expected_source_sha256:
+                    if _sha256(displaced) == expected_source_sha256:
+                        try:
+                            displaced.unlink()
+                        except OSError as cleanup_error:
+                            raise _preserve_artifacts(
+                                "atomic replacement failed; duplicate source could not be cleaned up",
+                                canonical, displaced, staging, rollback,
+                            ) from cleanup_error
+                    else:
+                        raise _preserve_artifacts(
+                            "atomic replacement failed; canonical source and displaced version differ",
+                            canonical, displaced, staging, rollback,
+                        ) from error
+                else:
+                    raise _preserve_artifacts(
+                        "atomic replacement failed; canonical and displaced files need recovery",
+                        canonical, displaced, staging, rollback,
+                    ) from error
+            raise
+
+        if not displaced.is_file():
+            raise _preserve_artifacts(
+                "atomic replacement did not preserve the displaced workbook",
+                canonical, displaced, staging, rollback,
+            )
+        displaced_sha256 = _sha256(displaced)
+        if displaced_sha256 != expected_source_sha256:
+            try:
+                with _canonical_write_guard(canonical):
+                    _assert_workbook_not_open(canonical)
+                    _replace_file_with_backup(canonical, displaced, rollback)
+                    restored_sha256 = _sha256(canonical) if canonical.is_file() else None
+                    if restored_sha256 != displaced_sha256:
+                        raise _preserve_artifacts(
+                            "canonical changed during replacement; rollback did not verify",
+                            canonical, displaced, staging, rollback,
+                        )
+                    if rollback.is_file() and _sha256(rollback) == staging_sha256:
+                        rollback.unlink()
+            except (OSError, RuntimeError) as error:
+                if not canonical.exists() and displaced.exists():
+                    try:
+                        displaced.rename(canonical)
+                    except OSError as restore_error:
+                        raise _preserve_artifacts(
+                            "rollback failed and the canonical path is missing",
+                            canonical, displaced, staging, rollback,
+                        ) from restore_error
+                    if _sha256(canonical) != displaced_sha256:
+                        raise _preserve_artifacts(
+                            "rollback recovery did not verify the displaced workbook",
+                            canonical, displaced, staging, rollback,
+                        ) from error
+                    raise ValueError(
+                        "canonical changed during replacement; concurrent version restored; "
+                        "product candidate retained for recovery"
+                    ) from error
+                raise _preserve_artifacts(
+                    "canonical changed during replacement; rollback failed",
+                    canonical, displaced, staging, rollback,
+                ) from error
+            raise ValueError(
+                "canonical changed during replacement; concurrent version restored; refusing to publish"
+            )
+
+        try:
+            with _canonical_write_guard(canonical):
+                after_sha256 = _sha256(canonical)
+                if after_sha256 != staging_sha256:
+                    raise _preserve_artifacts(
+                        "canonical changed before publication could be finalized",
+                        canonical, displaced, staging, rollback,
+                    )
+                displaced.unlink()
+                after_sha256 = _sha256(canonical)
+                if after_sha256 != staging_sha256:
+                    raise _preserve_artifacts(
+                        "canonical workbook changed immediately after replacement",
+                        canonical, displaced, staging, rollback,
+                    )
+                return after_sha256
+        except RuntimeError as error:
+            raise _preserve_artifacts(
+                "canonical could not be locked to finalize publication",
+                canonical, displaced, staging, rollback,
+            ) from error
 
 
 def _workbook_path() -> Path:
@@ -76,8 +293,7 @@ def _workbook_path() -> Path:
     path = Path(value).expanduser().resolve()
     if not path.is_file() or path.suffix.lower() != ".xlsx" or path.name != CANONICAL_NAME:
         raise ValueError("CANONICAL_WORKBOOK_NOT_RESOLVED")
-    if (path.parent / f"~${path.name}").exists():
-        raise RuntimeError("CANONICAL_PUBLICATION_BLOCKED_BY_OPEN_WORKBOOK")
+    _assert_workbook_not_open(path)
     return path
 
 
@@ -545,11 +761,23 @@ def main() -> int:
         after_staging = _snapshot(staging)
         _assert_retained(before, after_staging)
         staging_sha = _sha256(staging)
-        os.replace(staging, canonical)
-        after_sha = _sha256(canonical)
+        _assert_canonical_source_unchanged(canonical, before_sha)
+        after_sha = _replace_canonical_staging(
+            canonical,
+            staging,
+            expected_source_sha256=before_sha,
+            staging_sha256=staging_sha,
+        )
         after = _snapshot(canonical)
         _assert_retained(before, after)
-    except Exception:
+    except _PreservePublicationArtifacts:
+        raise
+    except Exception as error:
+        if not canonical.is_file():
+            raise _preserve_artifacts(
+                "publication failed and canonical path is missing",
+                canonical, backup, staging,
+            ) from error
         if staging.exists():
             staging.unlink()
         raise

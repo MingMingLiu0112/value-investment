@@ -1,5 +1,17 @@
 # CURRENT STATUS
 
+## 2026-09-30 Scoped Evidence-stop Adjudication — Current
+
+This read-only adjudication supersedes earlier current-status paragraphs in this file for blocker classification only. It does not rewrite the immutable v13 baseline, valuation diagnostics, source artifacts, event watermarks, or product workbook. Reviewers audited only the retained, hash-bound public-source set and stopped repeat searches; this is not a claim that no other public material exists.
+
+Current research classifications for `000333 / 600887 / 601088` are respectively `A0/B6/C0/D4`, `A0/B5/C2/D1`, and `A0/B3/C3/D1`. Research A blockers are now `0/3`: Yili remains low-confidence `CONDITIONAL_VALUATION_READY`; Midea and Shenhua current cases are `INSUFFICIENT_PUBLIC_EVIDENCE`, not valued. Their v13 baseline cards remain `BASELINE_PARTIAL / VALUATION_NOT_READY`.
+
+- **Midea:** the 2026-06-30 ordinary-share denominator is a scoped `D1 / EVIDENCE_STOP`. CNINFO H1 filing `1225531404` discloses 7,613,438,907 issued shares and treasury-stock book value, but not the complete share count by treasury/employee-plan use. A single disclosed 68,679,031-share repurchase cannot bound all treasury shares; weighted-average EPS shares and the verified 2026-09-29 denominator cannot be substituted. Reopen only on a new official date-matched disclosure of all relevant share counts and definitions. The existing applicability-v3 artifact retains its earlier A1 diagnostic and is not rewritten.
+- **Shenhua:** the current acquisition-perimeter through-cycle attributable-profit input is a scoped `D1 / EVIDENCE_STOP`. Reorganization report `1224979750` confirms recent acquired earnings but does not bridge final scope, associate interests, eliminations, tax, minority interests and financing to a comparable through-cycle parent-profit range. Stop rereading the same acquisition and cycle files; reopen only on new official evidence capable of completing that bridge and calibration. The shared-model `NOT_READY` diagnostic is preserved as historical input validation, not promoted to an estimate.
+- **Yili quote date:** SCP010/011's CNY 20bn maturity outcome is a separate quote-day `EVIDENCE_STOP`. CNINFO returned zero rows for the exact issuer/date query at 01:00 +08, based on a local process clock; the retained SSE set is only pages 1-3 of 151 (30 rows). These snapshots do not establish full-day or cross-channel coverage, nor payment, rollover, default, or post-maturity cash/debt. Therefore quote-day `ModelValidity` remains unestablished, `PriceBridge=null`, and `Decision Review=NOT_ASSESSABLE`; only a later eligible official settlement/refinancing or balance disclosure reopens it. Yili's 2026-06-30 conditional research valuation is unchanged.
+
+Canonical Excel remains unchanged: `@oai/artifact-tool` is unavailable and no current 2026-09-29 workbook candidate exists. An adversarial review found a time-of-check/time-of-use window after the publisher's source-hash check. The publisher now acquires a Windows file handle that denies write sharing before replacement, revalidates the source hash under that guard, and holds write-denying guards while verifying the installed candidate and cleaning the displaced source. Partial `ReplaceFileW` failure restores a displaced original when possible; rollback failure preserves the actual recovery artifacts and reports their paths. The focused publisher, preservation, quote-binding, and monotonic-publication regression set passed `36` tests with three existing openpyxl named-range deprecation warnings. The exact 139-file offline-core suite passed `1167 passed, 23 skipped, 3 warnings` under the system Python 3.13 environment with UTF-8 I/O and a short unique pytest temporary path. No canonical write or publication was attempted. Do not substitute another workbook library or touch the eight historical staging files. `STRICT_PIT=NOT_PROVEN`, M6 remains preflight-only, M7 acceptance is pending, total Goal remains in progress, and `action=no_order`.
+
 ## 2026-09-30 Yili Prospective Case Follow-up — current
 
 The registered case `prospective-600887-20260927-v2` now has a distinct,
@@ -39,9 +51,9 @@ warnings are existing openpyxl `create_named_range` deprecations in workbook
 preservation tests.
 
 Latest continuation verification after the 2026-09-30 model-route correction:
-the exact 139-file offline-core list passed `1157 passed, 23 skipped, 2
+the exact 139-file offline-core list passed `1158 passed, 23 skipped, 3
 warnings`; the focused routing/applicability/identity/architecture set passed
-`66` tests. The two warnings remain the existing openpyxl deprecations.
+`66` tests. The three warnings are existing openpyxl named-range deprecations.
 
 ## 2026-09-30 Midea Post-Period Denominator and June Valuation Blocker — current
 
