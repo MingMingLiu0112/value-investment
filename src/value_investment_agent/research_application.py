@@ -84,6 +84,7 @@ from .domain.research.issuer_identity import (
     ISSUER_IDENTITY_VERIFIED,
     IssuerIdentityAssessment,
     assess_issuer_identity,
+    event_evidence_refs_from_case,
 )
 from .research_gate import (
     ResearchGate,
@@ -218,9 +219,13 @@ class ResearchRunSpec:
         if not isinstance(self.research_case, ResearchCase):
             raise TypeError("Research run requires a typed ResearchCase")
         if self.research_case.symbol != self.symbol:
-            raise ValueError("Research case symbol does not match the run spec")
+            raise ValueError(
+                "REJECTED_ISSUER_MISMATCH: research case symbol does not match the run spec"
+            )
         if getattr(self.facts, "symbol", None) != self.symbol:
-            raise ValueError("Research facts symbol does not match the run spec")
+            raise ValueError(
+                "REJECTED_ISSUER_MISMATCH: financial facts symbol does not match the run spec"
+            )
         if self.assumptions is not None:
             if not isinstance(self.assumptions, ValuationAssumptionSet):
                 raise TypeError("Research assumptions must be typed")
@@ -380,15 +385,19 @@ class ResearchRunSpec:
 
     @property
     def issuer_identity_assessment(self) -> IssuerIdentityAssessment:
-        facts_symbol = getattr(self.facts, "symbol", None)
-        if isinstance(self.facts_payload, Mapping) and "symbol" in self.facts_payload:
-            raw_symbol = self.facts_payload.get("symbol")
-            facts_symbol = raw_symbol if isinstance(raw_symbol, str) else None
+        identity_kwargs = {}
+        if isinstance(self.facts_payload, Mapping):
+            identity_kwargs["facts_payload_symbol"] = self.facts_payload.get(
+                "symbol"
+            )
         return assess_issuer_identity(
             symbol=self.symbol,
-            facts_symbol=facts_symbol,
+            facts_symbol=getattr(self.facts, "symbol", None),
+            research_case_symbol=self.research_case.symbol,
             fact_evidence_refs=getattr(self.facts, "evidence_refs", ()) or (),
             sources=self.input_sources,
+            event_evidence_refs=event_evidence_refs_from_case(self.research_case),
+            **identity_kwargs,
         )
 
 

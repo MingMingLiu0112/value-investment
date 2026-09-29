@@ -29,8 +29,11 @@ class CyclicalFacts:
     confidence: str
     evidence_refs: list[dict]
     blockers: list[str]
-    operating_inputs: dict[str, Decimal | None] = field(default_factory=dict)
+    operating_inputs: dict[str, Decimal | int | None] = field(default_factory=dict)
     confidence_evidence: ConfidenceEvidence | None = None
+    scenario_operating_inputs: dict[str, dict[str, Decimal | int | None]] = field(
+        default_factory=dict
+    )
 
     REQUIRED_CYCLICAL_INPUTS = (
         "bear_normalized_parent_operating_profit",
@@ -47,11 +50,35 @@ class CyclicalFacts:
         "trough_parent_operating_profit",
         "unit_cost",
     )
+    SCENARIOS = ("bear", "base", "bull")
+    SCENARIO_PROFIT_INPUTS = frozenset({
+        "bear_normalized_parent_operating_profit",
+        "base_normalized_parent_operating_profit",
+        "bull_normalized_parent_operating_profit",
+    })
+    SCENARIO_OVERRIDABLE_INPUTS = frozenset(
+        set(REQUIRED_CYCLICAL_INPUTS) - SCENARIO_PROFIT_INPUTS
+    )
 
     @property
     def missing_cyclical_inputs(self) -> list[str]:
-        return [name for name in self.REQUIRED_CYCLICAL_INPUTS
-                if self.operating_inputs.get(name) is None]
+        missing: list[str] = []
+        for name in self.REQUIRED_CYCLICAL_INPUTS:
+            if name in self.SCENARIO_PROFIT_INPUTS:
+                if self.operating_inputs.get(name) is None:
+                    missing.append(name)
+                continue
+            absent = [
+                scenario for scenario in self.SCENARIOS
+                if self.scenario_operating_inputs.get(scenario, {}).get(
+                    name, self.operating_inputs.get(name)
+                ) is None
+            ]
+            if len(absent) == len(self.SCENARIOS):
+                missing.append(name)
+            else:
+                missing.extend(f"{scenario}_{name}" for scenario in absent)
+        return missing
 
 
 class CyclicalValuationModel(Protocol):
@@ -71,7 +98,10 @@ def value_normalized_equity(*, facts: CyclicalFacts, scenario_name: str) -> dict
     This is explicit arithmetic only. It never converts a current profit into a
     permanent value and never uses a generic price multiple as the primary model.
     """
-    inputs = facts.operating_inputs
+    inputs = {
+        **facts.operating_inputs,
+        **facts.scenario_operating_inputs.get(scenario_name, {}),
+    }
     profit_name = scenario_name + "_normalized_parent_operating_profit"
     if profit_name not in facts.REQUIRED_CYCLICAL_INPUTS:
         raise ValueError("Unknown cyclical scenario")
@@ -102,7 +132,12 @@ def value_normalized_equity(*, facts: CyclicalFacts, scenario_name: str) -> dict
     distributable_cash = profit * (1 - cash_tax_rate) - maintenance_capex - working_capital_change
     if distributable_cash <= 0:
         return {"scenario": scenario_name, "status": "blocked",
-                "reason": "normalized_distributable_cash_must_be_positive"}
+                "reason": "normalized_distributable_cash_must_be_positive",
+                "normalized_parent_operating_profit": profit,
+                "normalized_distributable_cash": distributable_cash,
+                "cash_tax_rate": cash_tax_rate,
+                "maintenance_capex": maintenance_capex,
+                "normalized_working_capital_change": working_capital_change}
 
     with localcontext() as context:
         context.prec = 40
@@ -122,8 +157,18 @@ def value_normalized_equity(*, facts: CyclicalFacts, scenario_name: str) -> dict
         "normalized_parent_operating_profit": profit,
         "normalized_distributable_cash": distributable_cash,
         "resource_life_years": resource_life,
+        "cash_tax_rate": cash_tax_rate,
+        "maintenance_capex": maintenance_capex,
+        "normalized_working_capital_change": working_capital_change,
+        "discount_rate": discount_rate,
+        "long_term_growth": long_term_growth,
         "present_value_of_normalized_cash": present_value,
         "net_cash_attributable_to_parent": net_cash,
+        "ordinary_shares": ordinary_shares,
+        "unit_cost": _number(inputs["unit_cost"], "unit cost"),
+        "trough_parent_operating_profit": _number(
+            inputs["trough_parent_operating_profit"], "trough profit"
+        ),
         "ordinary_equity_value": equity_value,
         "per_share_value": per_share_value,
         "arithmetic_authenticated": False,
@@ -142,6 +187,15 @@ class CyclicalNormalizedValuationModel:
             raise ValueError("Cyclical facts and research case symbols must match")
         if facts.confidence not in {"高", "中", "低"}:
             raise ValueError("Cyclical confidence must be 高, 中 or 低")
+        unknown_scenarios = set(facts.scenario_operating_inputs) - set(facts.SCENARIOS)
+        unknown_inputs = {
+            name
+            for scenario_inputs in facts.scenario_operating_inputs.values()
+            for name in scenario_inputs
+            if name not in facts.SCENARIO_OVERRIDABLE_INPUTS
+        }
+        if unknown_scenarios or unknown_inputs:
+            raise ValueError("Unknown scenario-specific cyclical input")
         refs = merge_evidence_refs(facts.evidence_refs, case.evidence_refs)
         if not refs:
             raise ValueError("Cyclical research requires named evidence references")
@@ -151,6 +205,17 @@ class CyclicalNormalizedValuationModel:
             *("cyclical_input_missing:" + name for name in facts.missing_cyclical_inputs),
         ]))
         if blockers:
+            scenario_inputs = {
+                scenario: {
+                    name: str(value)
+                    for name, value in {
+                        **facts.operating_inputs,
+                        **facts.scenario_operating_inputs.get(scenario, {}),
+                    }.items()
+                    if name in facts.REQUIRED_CYCLICAL_INPUTS and value is not None
+                }
+                for scenario in facts.SCENARIOS
+            }
             return ValuationResult(
                 symbol=case.symbol,
                 model_type=self.model_type,
@@ -159,7 +224,11 @@ class CyclicalNormalizedValuationModel:
                 base_value=None,
                 bull_value=None,
                 confidence=facts.confidence,
-                assumptions={"scope": "cyclical input gate; no scenario arithmetic before verified mid-cycle facts"},
+                assumptions={
+                    "scope": "cyclical input gate; no valuation arithmetic while required inputs are unresolved",
+                    "scenario_inputs": scenario_inputs,
+                    "missing_inputs": facts.missing_cyclical_inputs,
+                },
                 sensitivities=[],
                 evidence_refs=refs,
                 blockers=blockers or ["cyclical_scenario_inputs_not_registered"],
@@ -173,6 +242,13 @@ class CyclicalNormalizedValuationModel:
         failed = [item for item in scenarios.values() if item["status"] != "computed"]
         if failed:
             blockers = ["cyclical_scenario_blocked:" + item["scenario"] + ":" + item["reason"] for item in failed]
+            scenario_outputs = [
+                {
+                    key: str(value) if isinstance(value, Decimal) else value
+                    for key, value in item.items()
+                }
+                for item in scenarios.values()
+            ]
             return ValuationResult(
                 symbol=case.symbol,
                 model_type=self.model_type,
@@ -181,8 +257,11 @@ class CyclicalNormalizedValuationModel:
                 base_value=None,
                 bull_value=None,
                 confidence=facts.confidence,
-                assumptions={"scope": "cyclical scenario gate"},
-                sensitivities=[],
+                assumptions={
+                    "scope": "cyclical scenario gate",
+                    "scenario_outputs": scenario_outputs,
+                },
+                sensitivities=scenario_outputs,
                 evidence_refs=refs,
                 blockers=blockers,
                 status="not_ready",
@@ -190,6 +269,32 @@ class CyclicalNormalizedValuationModel:
             )
 
         values = {name: item["per_share_value"] for name, item in scenarios.items()}
+        if not values["bear"] <= values["base"] <= values["bull"]:
+            scenario_outputs = [
+                {
+                    key: str(value) if isinstance(value, Decimal) else value
+                    for key, value in item.items()
+                }
+                for item in scenarios.values()
+            ]
+            return ValuationResult(
+                symbol=case.symbol,
+                model_type=self.model_type,
+                valuation_date=facts.as_of,
+                bear_value=None,
+                base_value=None,
+                bull_value=None,
+                confidence=facts.confidence,
+                assumptions={
+                    "scope": "cyclical scenario ordering gate",
+                    "scenario_outputs": scenario_outputs,
+                },
+                sensitivities=scenario_outputs,
+                evidence_refs=refs,
+                blockers=["cyclical_scenario_values_not_monotonic"],
+                status="not_ready",
+                model_version=MODEL_VERSION,
+            )
         confidence = facts.confidence
         confidence_policy = None
         if facts.confidence_evidence is not None:
@@ -209,12 +314,33 @@ class CyclicalNormalizedValuationModel:
                 "formula": "PV(normalized profit after cash tax - maintenance capex - normalized WC change; resource life; discount and growth) + net cash, divided by ordinary shares",
                 "status": "conditional_research_only",
                 "disclaimer": "No market price, margin of safety, position or order is produced here.",
+                "scenario_inputs": {
+                    name: {
+                        key: str(value)
+                        for key, value in {
+                            **facts.operating_inputs,
+                            **facts.scenario_operating_inputs.get(name, {}),
+                        }.items()
+                        if key in facts.REQUIRED_CYCLICAL_INPUTS
+                    }
+                    for name in facts.SCENARIOS
+                },
                 **({"confidence_assessment": confidence_policy}
                    if confidence_policy is not None else {}),
             },
             sensitivities=[
                 {"scenario": item["scenario"], "normalized_profit": str(item["normalized_parent_operating_profit"]),
                  "distributable_cash": str(item["normalized_distributable_cash"]),
+                 "cash_tax_rate": str(item["cash_tax_rate"]),
+                 "maintenance_capex": str(item["maintenance_capex"]),
+                 "normalized_working_capital_change": str(item["normalized_working_capital_change"]),
+                 "discount_rate": str(item["discount_rate"]),
+                 "long_term_growth": str(item["long_term_growth"]),
+                 "resource_life_years": item["resource_life_years"],
+                 "net_cash_attributable_to_parent": str(item["net_cash_attributable_to_parent"]),
+                 "ordinary_shares": str(item["ordinary_shares"]),
+                 "unit_cost": str(item["unit_cost"]),
+                 "trough_parent_operating_profit": str(item["trough_parent_operating_profit"]),
                  "ordinary_equity_value": str(item["ordinary_equity_value"]),
                  "per_share_value": str(item["per_share_value"])}
                 for item in scenarios.values()

@@ -1,5 +1,98 @@
 # Changelog
 
+## 2026-09-29 Shenhua scenario envelope and blocked-run diagnostics
+
+- Classified retained 2014-2025 Shenhua operating observations into independent
+  downside endpoints, 2017-2025 medians, and favorable endpoints; kept the
+  2026H1 acquisition-scope segment anchors separate. These are sensitivity
+  references, not jointly observed cases or normalized earnings.
+- Recorded explicit boundaries for tax, maintenance capex, working capital,
+  attributable net cash, resource life, and ordinary-dividend capacity. No
+  unsupported parent-profit bridge or valuation output was created.
+- The shared cyclical model now preserves supplied scenario inputs and the
+  exact missing-input list on its early fail-closed return. It also rejects
+  inverted Bear/Base/Bull values without discarding scenario diagnostics.
+  Shenhua remains `not_ready`, with all three values null and one research-level
+  A root blocker. The issuer gate validates declared metadata consistency; it
+  does not independently authenticate issuer identity from original PDF bytes.
+- Verification: cyclical tests 10 passed; exact 139-file Core Research Gates
+  selection 1,154 passed, 23 skipped, 2 existing warnings. The initial
+  Core run using the shared pytest temp root had setup-only permission errors;
+  the isolated `--basetemp` rerun passed.
+- No workbook, baseline, PIT state, event watermark, production state, or
+  `action=no_order` changed. Full repository tests and PostgreSQL integration
+  were not run.
+
+## 2026-09-29 PriceBridge review blocker propagation
+
+- Fixed `bridge_with_quote` to retain `ModelValidity.blockers` on all bridge
+  outcomes, including READY. Model-valid risk-monitor and follow-up events no
+  longer disappear from the downstream price review artifact.
+- Added a regression using a real `MATERIAL_RISK_MONITOR` review and asserting
+  that its follow-up blocker survives into a READY bridge.
+- Verification: focused tests 28 passed; GitHub `offline-core` test list
+  1148 passed, 23 skipped, 2 existing warnings. Full-repository tests remain
+  incomplete because the local pytest temp root is permission-blocked and the
+  unbounded run stalled near 89%.
+- No valuation or company readiness changed. Yili quote-day review remains
+  `NOT_ASSESSABLE`; no workbook, PIT, event watermark, production state, or
+  action state was changed. No commit or push was made.
+
+## 2026-09-29 bounded official evidence review
+
+### Changes
+
+- Added a local hash manifest and retained four original CNINFO PDFs for three
+  Yili event groups: employee share-plan purchase, approved buyback/cancellation,
+  and a subsidiary guarantee. Classified their bounded valuation impact without
+  treating planned actions as completed or guarantees as realized losses.
+- Corrected the Shenhua acquisition-scope record: the retained restructuring
+  report contains 2023, 2024 and 2025 January-July audited simulated statements
+  for 12 target companies; the current-perimeter attributable mid-cycle bridge
+  remains an A blocker because ownership, pro forma adjustments and earnings
+  definitions prevent mechanical aggregation.
+- Kept Yili quote-day ModelValidity/PriceBridge unestablished because the CNY 20bn
+  maturity settlement and post-settlement liquidity bridge remain unverified.
+  Canonical Excel, event watermark, PIT state and trade/action state were not
+  advanced; no commit or push was made.
+
+### Verification
+
+- Four CNINFO PDFs were confirmed as PDF originals and their SHA-256 values were
+  independently recalculated after retaining them under `runtime/`.
+- Focused identity and shared-valuation regression: `36 passed`.
+
+## v2026.09.29-execution-correction-issuer-identity
+
+### Scope
+
+收紧现有发行人身份门，阻止研究证券、ResearchCase、typed/payload FinancialFacts、
+财务来源和已引用事件来源之间的跨发行人错配。
+
+### Changes
+
+- ResearchRunSpec 对 ResearchCase 与 typed facts 的证券错配继续构造期拒绝，并标记
+  REJECTED_ISSUER_MISMATCH；payload symbol 不再覆盖 typed facts symbol，两者分别与
+  run symbol 比较。
+- 事实来源仍按 id + SHA-256 绑定；CNINFO/HKEX 证券代码、issuer name、
+  organization id 与随包 issuer registry 不一致时拒绝。
+- ResearchCase.next_events 引用解析到 case 的哈希绑定证据；具有官方身份元数据的
+  事件来源若跨发行人则在估值模型运行前拒绝。
+- 遗留估值入口同样检查 case 身份和事件引用。新增美的来源误入伊利、发行人名称、
+  事件来源、case/facts/payload symbol 冲突回归。
+
+### Verification
+
+- 身份门、600887 共享模型绑定、PriceBridge 及 RunSpec 边界定向集：57 passed。
+- CI 同口径离线 Core Research Gates：1147 passed, 23 skipped, 2 warnings。
+- 未执行 commit/push；canonical Excel 未修改。
+
+### Residual Boundary
+
+Gate 将来源描述符中的身份声明与正式 issuer registry 对照，并将声明绑定到 source
+id/hash；它不自行解析原始 PDF 字节。原件身份字段的提取真实性仍由来源采集/解析层负责。
+不带可验证 issuer identity 的历史 M1 输入继续 fail closed，不纳入本轮三家公司估值。
+
 ## v2026.09.26-m7-user-copy-stage-token-guard
 
 ### Scope

@@ -375,6 +375,21 @@ def test_registered_cninfo_name_alias_is_accepted():
     assert assessment.status == ISSUER_IDENTITY_VERIFIED
 
 
+def test_registered_cninfo_identity_rejects_wrong_issuer_name():
+    assessment = _assess_identity(
+        identity=ResearchIssuerIdentity(
+            venue="CNINFO",
+            security_code="600519",
+            issuer_name="美的集团",
+            organization_id="gssh0600519",
+        ),
+    )
+
+    assert assessment.status == ISSUER_IDENTITY_REJECTED
+    assert any("issuer_identity_mismatch:sec_name" in item
+               for item in assessment.blockers)
+
+
 def test_fact_symbol_mismatch_is_rejected_even_when_source_is_hash_bound():
     assessment = _assess_identity(
         symbol="000333",
@@ -389,22 +404,25 @@ def test_fact_symbol_mismatch_is_rejected_even_when_source_is_hash_bound():
     assert "issuer_identity_mismatch:financial_facts_symbol" in assessment.blockers
 
 
-def _application_spec(*, facts_payload_symbol: str, source_symbol: str):
+def _application_spec(
+    *, facts_payload_symbol: str, source_symbol: str, research_symbol="000333"
+):
     source_identity = {
         "600519": ("gssh0600519", "贵州茅台"),
         "000333": ("9900005965", "美的集团"),
         "601088": ("9900003701", "中国神华"),
+        "600887": ("gssh0600887", "伊利股份"),
     }
     organization_id, issuer_name = source_identity[source_symbol]
     facts = FinancialFacts(
-        symbol="000333",
+        symbol=research_symbol,
         as_of=AS_OF,
         verified=True,
         evidence_refs=[{"id": "facts", "sha256": FACTS_HASH}],
         blockers=[],
     )
     case = ResearchCase(
-        symbol="000333",
+        symbol=research_symbol,
         name="caller declaration is not identity evidence",
         as_of=AS_OF,
         run_id="identity-gate-test",
@@ -437,7 +455,7 @@ def _application_spec(*, facts_payload_symbol: str, source_symbol: str):
     )
     return ResearchRunSpec(
         run_id="identity-gate-test",
-        symbol="000333",
+        symbol=research_symbol,
         profile_id="mature_manufacturing",
         research_case=case,
         facts=facts,
@@ -498,8 +516,111 @@ def test_shared_application_rejects_financial_fact_scope_mismatch_before_model(
     outcome = ResearchApplicationService().run_company_research(spec)
 
     assert outcome.issuer_identity_status == ISSUER_IDENTITY_REJECTED
-    assert "issuer_identity_mismatch:financial_facts_symbol" in outcome.blockers
+    assert (
+        "issuer_identity_mismatch:financial_facts_payload_symbol"
+        in outcome.blockers
+    )
     assert outcome.valuation.status == "not_ready"
+
+
+def test_shared_application_rejects_midea_source_bound_to_yili_facts_before_model(
+    monkeypatch,
+):
+    def model_must_not_run(self):
+        raise AssertionError("valuation model ran before issuer identity admission")
+
+    monkeypatch.setattr(ValuationRoute, "build_model", model_must_not_run)
+    spec = _application_spec(
+        facts_payload_symbol="600887",
+        source_symbol="000333",
+        research_symbol="600887",
+    )
+
+    outcome = ResearchApplicationService().run_company_research(spec)
+
+    assert outcome.issuer_identity_status == ISSUER_IDENTITY_REJECTED
+    assert "issuer_identity_mismatch:sec_code:facts" in outcome.blockers
+    assert outcome.valuation.status == "not_ready"
+    assert outcome.valuation.base_value is None
+
+
+def test_shared_application_rejects_cross_issuer_event_evidence_before_model(
+    monkeypatch,
+):
+    def model_must_not_run(self):
+        raise AssertionError("valuation model ran before issuer identity admission")
+
+    monkeypatch.setattr(ValuationRoute, "build_model", model_must_not_run)
+    spec = _application_spec(
+        facts_payload_symbol="600887",
+        source_symbol="600887",
+        research_symbol="600887",
+    )
+    event_hash = "c" * 64
+    case = replace(
+        spec.research_case,
+        evidence_refs=[
+            *spec.research_case.evidence_refs,
+            {"id": "event-midea", "sha256": event_hash},
+        ],
+        next_events=[{
+            "kind": "fact",
+            "text": "Issuer event evidence must match the research case.",
+            "evidence_refs": ["event-midea"],
+        }],
+    )
+    event_source = _source(
+        symbol="000333",
+        organization_id="9900005965",
+        issuer_name="美的集团",
+        sha256=event_hash,
+        source_id="event-midea",
+    )
+    spec = replace(spec, research_case=case, input_sources=(
+        *spec.input_sources,
+        event_source,
+    ))
+
+    outcome = ResearchApplicationService().run_company_research(spec)
+
+    assert outcome.issuer_identity_status == ISSUER_IDENTITY_REJECTED
+    assert "issuer_identity_mismatch:event_scope:sec_code:event-midea" in outcome.blockers
+    assert outcome.valuation.base_value is None
+
+
+def test_run_spec_rejects_research_case_symbol_mismatch_with_identity_code():
+    spec = _application_spec(
+        facts_payload_symbol="600887",
+        source_symbol="600887",
+        research_symbol="600887",
+    )
+    case = replace(spec.research_case, symbol="000333")
+    with pytest.raises(ValueError, match="REJECTED_ISSUER_MISMATCH.*research case symbol"):
+        replace(spec, research_case=case)
+
+    assessment = assess_issuer_identity(
+        symbol="600887",
+        facts_symbol="600887",
+        research_case_symbol="000333",
+        fact_evidence_refs=[{"id": "facts", "sha256": FACTS_HASH}],
+        sources=(_source(
+            symbol="600887",
+            organization_id="gssh0600887",
+            issuer_name="伊利股份",
+        ),),
+    )
+    assert assessment.status == ISSUER_IDENTITY_REJECTED
+    assert "issuer_identity_mismatch:research_case_symbol" in assessment.blockers
+
+
+def test_run_spec_rejects_typed_fact_symbol_mismatch_with_identity_code():
+    spec = _application_spec(
+        facts_payload_symbol="600887",
+        source_symbol="600887",
+        research_symbol="600887",
+    )
+    with pytest.raises(ValueError, match="REJECTED_ISSUER_MISMATCH.*facts symbol"):
+        replace(spec, facts=replace(spec.facts, symbol="000333"))
 
 
 def test_non_cninfo_exchange_identity_is_venue_aware_without_cninfo_organization_id():

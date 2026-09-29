@@ -187,7 +187,7 @@ def bridge_with_quote(
     if not isinstance(quote, QuoteSnapshot):
         raise ValueError("Price bridge requires a QuoteSnapshot")
 
-    base_blockers = list(blockers or [])
+    bridge_blockers = list(dict.fromkeys([*(blockers or []), *validity.blockers]))
     identity_blockers = model_validity_identity_blockers(validity, valuation)
     if quote.symbol != valuation.symbol:
         identity_blockers.append("valuation and quote symbols differ")
@@ -197,7 +197,7 @@ def bridge_with_quote(
             validity,
             quote,
             "INVALID",
-            [*base_blockers, *identity_blockers],
+            [*bridge_blockers, *identity_blockers],
         )
 
     if quote.status == QUOTE_STATUS_PENDING_EXTERNAL_DATA:
@@ -206,7 +206,7 @@ def bridge_with_quote(
             validity,
             quote,
             "PENDING_EXTERNAL_DATA",
-            [*base_blockers, "等待已验证收盘行情"],
+            [*bridge_blockers, "等待已验证收盘行情"],
         )
 
     if quote.status != QUOTE_STATUS_VERIFIED_CLOSE:
@@ -215,7 +215,7 @@ def bridge_with_quote(
             validity,
             quote,
             "INVALID",
-            [*base_blockers, "报价未通过核验"],
+            [*bridge_blockers, "报价未通过核验"],
         )
 
     if quote.quote_date is not None and quote.quote_date < validity.valid_from:
@@ -224,7 +224,7 @@ def bridge_with_quote(
             validity,
             quote,
             "INVALID",
-            [*base_blockers, "quote date precedes model validity window"],
+            [*bridge_blockers, "quote date precedes model validity window"],
         )
     if (
         quote.quote_date is not None
@@ -234,13 +234,13 @@ def bridge_with_quote(
     ):
         return _rejected_bridge(
             valuation,
-            validity,
-            quote,
-            "INVALID",
-            [
-                *base_blockers,
-                "model validity has not been checked through the quote date",
-            ],
+                validity,
+                quote,
+                "INVALID",
+                [
+                    *bridge_blockers,
+                    "model validity has not been checked through the quote date",
+                ],
         )
 
     if validity.status != "VALID":
@@ -249,7 +249,7 @@ def bridge_with_quote(
             validity,
             quote,
             "STALE_MODEL" if validity.status == "STALE" else "INVALID",
-            [*base_blockers, *validity.blockers],
+            bridge_blockers,
         )
 
     if (
@@ -263,7 +263,7 @@ def bridge_with_quote(
             validity,
             quote,
             "INVALID",
-            [*base_blockers, "估值情景或已验证报价不完整"],
+            [*bridge_blockers, "估值情景或已验证报价不完整"],
         )
 
     return PriceBridgeResult(
@@ -282,7 +282,7 @@ def bridge_with_quote(
         bridge_status="READY",
         evidence_refs=_merge_refs(validity.evidence_refs, quote.evidence_refs),
         quote_evidence_refs=list(quote.evidence_refs),
-        blockers=list(dict.fromkeys(base_blockers)),
+        blockers=bridge_blockers,
         model_id=validity.model_id,
         model_version=valuation.model_version,
         model_as_of=validity.model_as_of,

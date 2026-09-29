@@ -1,5 +1,113 @@
 # CURRENT STATUS
 
+## 2026-09-29 Shenhua Scenario Envelope and Shared Model Gate — current
+
+The execution-correction review now has a source-bounded operating-driver
+envelope for 601088 rather than another search of the same acquisition filing.
+Bear endpoints, 2017-2025 medians (with 2024 restated as disclosed in the 2025
+annual report), and Bull endpoints are recorded per variable in
+`docs/current/track-b-execution-correction-20260929.md`. They are independent
+period anchors, not jointly observed cases or a normalized-profit forecast.
+2019-2020 power-price observations are excluded for the documented scope break;
+2026H1 post-acquisition segment results remain a separate current-period anchor.
+The 2014-2025 source series is hash-pinned but remains period evidence only,
+`financial_scope_approved=false`.
+
+A read-only call to `CyclicalNormalizedValuationModel` used the June 30 share
+count (21,689,434,304) and three self-produced unit-cost sensitivity anchors.
+It returned `not_ready` with Bear/Base/Bull values all `null`. The exact
+6 missing model fields are retained in the stage memo; the three normalized
+parent-profit inputs and trough-profit input trace to one research A root cause:
+no comparable acquisition-adjusted, pre-tax parent-attributable operating-profit
+bridge across the cycle. B-class tax, working-capital, discount/growth,
+resource-life and cost uncertainties have explicit scenario anchors and are not
+additional A blockers. Maintenance CapEx and current attributable net cash
+remain unadmitted model inputs. No normalized-profit, maintenance-capex or
+attributable-net-cash input was inferred from segment profit, cash-flow proxies
+or target-company aggregates.
+
+The shared model now preserves supplied scenario assumptions and the exact
+missing-input list on its early fail-closed path, so a blocked run remains
+diagnosable. It also rejects inverted Bear/Base/Bull per-share values while
+preserving their arithmetic diagnostics. `tests/test_cyclical_normalized_valuation.py`: 10 passed. The exact
+139-file `offline-core` selection in `.github/workflows/core-research-gates.yml`
+passed with an isolated pytest temp directory: 1,154 passed, 23 skipped, 2
+existing deprecation warnings. An initial repeat without `--basetemp` failed in
+test setup because Windows denied access to the shared pytest temp root; it is
+not counted as a test failure. Full-repository tests and PostgreSQL integration
+were not run in this update.
+
+No share-price bridge or decision review was produced for Shenhua. The three
+case readiness states remain unchanged; canonical Excel, baseline v13, event
+watermarks, PIT registration, production and `action=no_order` are unchanged.
+
+## 2026-09-29 Bounded Issuer/Event Evidence Review — current
+
+Four additional Yili filings were obtained from CNINFO as official PDF originals,
+signature-checked and SHA-256 verified under
+`runtime/company-research/yili-official-event-review-20260929/`. They resolve
+three distinct event groups: the employee plan bought existing shares on-market
+(no new issuance; the filing does not establish the plan's funding source); an approved CNY 1-2bn buyback
+with 0.40%-0.80% estimated cancellation is a bounded future scenario, not an
+executed capital change; and a new EUR 30m subsidiary guarantee is a contingent
+credit/liquidity scenario, not a realized loss or automatic equity deduction.
+The creditor notice duplicates the same buyback event and is not counted twice.
+
+The quote-day hard gate remains open: no official evidence found for settlement
+or rollover of the CNY 20bn short-term notes due 2026-09-29 or a post-settlement
+cash/debt bridge. The separate 2026-09-29-dated CNY 25bn redemption notice
+concerns the 2026-09-24 maturities; under the date-only availability rule it is
+not used for the 2026-09-29 close. The 2026-09-29 close of CNY 27.24 is verified,
+but quote-day `ModelValidity` is not established, `PriceBridge` is null and the
+price review remains `NOT_ASSESSABLE`. No event watermark or canonical workbook
+was advanced.
+
+For Shenhua, the retained CNINFO restructuring report's physical pages
+1281-1322 contain audited simulated financial statements for 12 target
+companies for 2023, 2024 and 2025 January-July. This corrects any claim that
+target-company historical statements are absent. The company-level periods
+cannot be mechanically aggregated to current listed-company attributable
+earnings because of disposal/pro forma adjustments, differing acquisition
+stakes and consolidation/equity-method treatment, non-recurring-profit
+definition differences, and absent through-cycle current-perimeter attribution.
+The A blocker remains one narrowly defined current-perimeter mid-cycle
+attributable-earnings bridge; no spurious scenario valuation was emitted.
+
+This review did not change the three-case valuation statuses: 000333 remains
+`VALUATION_NOT_READY` (A1), 600887 remains low-confidence
+`CONDITIONAL_VALUATION_READY` for its 2026-06-30 research basis (A0), and 601088
+remains `VALUATION_NOT_READY` (A1). The separate 600887 quote-day gate remains
+open. Canonical Excel remains unchanged because no valid quote-day review was
+produced and the approved spreadsheet runtime is unavailable. `action=no_order`.
+
+## 2026-09-29 Issuer Identity Gate Scope Correction — current
+
+Independent review found that the shared gate did not bind ResearchCase next_events
+references to the case issuer, and the run input allowed facts_payload.symbol to
+replace rather than independently agree with typed FinancialFacts.symbol. Both are
+corrected. ResearchCase.symbol, run symbol, typed facts symbol, and any supplied
+payload symbol must agree; source id + SHA-256 must resolve to an official issuer
+descriptor whose CNINFO/HKEX identity matches the committed registry; an explicitly
+mismatched issuer on a hash-bound event source is rejected before model execution.
+Existing RunSpec case/facts constructor guards remain fail-closed and identify the
+REJECTED_ISSUER_MISMATCH classification.
+
+The targeted identity/shared-valuation/PriceBridge/RunSpec set passed 57 tests. The
+exact offline test selection from the GitHub workflow passed locally with UTF-8
+process settings: 1147 passed, 23 skipped, 2 warnings. An unfiltered repository
+run exposed four legacy M1 package tests whose local filing descriptors lack
+official issuer identity metadata; they remain fail-closed and are outside the
+Core Research Gates selection. The full unfiltered suite was not rerun after the
+test-harness encoding and constructor-boundary corrections.
+
+This gate validates issuer identity metadata against the committed registry and
+binds it to the evidence reference hash. It does not independently parse original
+PDF bytes or prove that the caller-provided descriptor's identity fields were
+truthfully extracted. It establishes consistency of declared metadata, not
+authenticity of the original issuer document; source-byte identity extraction
+remains an upstream trust boundary. No research baseline, PIT registration, canonical
+workbook, quote pointer, watermark, or valuation result changed.
+
 ## 2026-09-29 Post-Close Public Evidence Update — current
 
 The latest completed official exchange session is now 2026-09-29. The bounded
@@ -72,6 +180,27 @@ CANONICAL_EXCEL_UPDATED = NO / APPROVED_SPREADSHEET_DEPENDENCY_MISSING
 action = no_order
 ```
 
+## 2026-09-29 22:09 +08 PriceBridge review blocker propagation
+
+Corrected `bridge_with_quote` so `ModelValidity.blockers` are retained alongside
+caller blockers for READY, PENDING_EXTERNAL_DATA, INVALID and STALE_MODEL
+results. `VALID` may still carry explicit risk-monitor/follow-up review items;
+the bridge must not erase them. A regression builds an actual
+`MATERIAL_RISK_MONITOR` review, confirms the model remains VALID, then verifies
+the review blocker survives in the READY bridge. READY means the model and quote
+can be compared, not that decision review, human approval or trading admission
+has passed.
+
+Verification: `tests/test_price_bridge.py` plus
+`tests/test_event_materiality.py`: 28 passed. The offline-core test list from
+`.github/workflows/core-research-gates.yml` passed locally with an isolated
+pytest base directory and UTF-8 process settings: 1148 passed, 23 skipped, 2
+existing openpyxl warnings. The full repository suite was not completed: its
+initial run stopped making progress near 89%; a fail-fast attempt exposed
+`PermissionError` on the user-level `pytest-of-Ming` temp root. No company
+valuation state, quote-day validity, workbook, PIT record, event watermark,
+production state, or `action=no_order` changed.
+
 ## 2026-09-29 Execution-Correction Continuation — current research state
 
 The execution-correction stage is the active priority. It does not change the
@@ -123,9 +252,11 @@ STRICT_PIT = NOT_PROVEN
 BLOCKER_COUNTS = 000333_A1_B6_C0_D3; 600887_A0_B5_C2_D1; 601088_A1_B3_C3_D0
 VALUATION_READY = 0/3
 CONDITIONAL_VALUATION_READY = 1/3 / 600887 / LOW_CONFIDENCE
-ISSUER_IDENTITY_GATE = INTEGRATED / FAIL_CLOSED / REGRESSION_TESTED
-FOCUSED_REGRESSION = 31_PASSED / YILI_SHARED_BINDING + ISSUER_IDENTITY
-OFFLINE_CORE_RESEARCH_GATES = 125_FILES / 1086_PASSED / 2_SKIPPED
+ISSUER_IDENTITY_GATE = FAIL_CLOSED / RUN_CASE_FACTS_PAYLOAD_SOURCE_EVENT_SCOPE / SOURCE_IDENTITY_METADATA_UPSTREAM_BOUND
+IDENTITY_FOCUSED_REGRESSION = 57_PASSED / prior identity and shared-binding selection
+PRICE_BRIDGE_MATERIALITY_REGRESSION = 28_PASSED
+OFFLINE_CORE_RESEARCH_GATES = 1148_PASSED / 23_SKIPPED / 2_WARNINGS
+FULL_REPOSITORY_TESTS = INCOMPLETE / local pytest temp-root permission and stall
 CANONICAL_EXCEL_UPDATED = NO / SPREADSHEET_DEPENDENCY_UNAVAILABLE
 NEW_EXCEL = 0
 action = no_order

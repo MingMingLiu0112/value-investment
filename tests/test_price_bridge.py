@@ -1,10 +1,16 @@
 from dataclasses import replace
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 import json
 
 import pytest
 
+from value_investment_agent.event_materiality import (
+    DECISION_RISK_MONITOR,
+    EVENT_MATERIALITY_SCHEMA,
+    EventMaterialityDecision,
+    EventMaterialityReview,
+)
 from value_investment_agent.model_validity import (
     MaterialEvent,
     ModelValidity,
@@ -127,6 +133,68 @@ def test_evaluator_allows_later_quote_after_no_material_event():
     )
     assert checked.status == "VALID"
     assert outcome.bridge_status == "READY"
+
+
+def test_ready_bridge_preserves_model_validity_risk_monitor_blocker():
+    reviewed_at = datetime(2026, 9, 18, 12, tzinfo=timezone.utc)
+    event = EventMaterialityDecision(
+        event_decision_id="event-decision-1225",
+        symbol="600519",
+        announcement_id="1225",
+        title="Risk monitor fixture",
+        published_at=datetime(2026, 9, 17, 9, tzinfo=timezone.utc),
+        source_ref={"id": "announcement", "sha256": "a" * 64},
+        source_sha256="a" * 64,
+        machine_candidate_reason="risk candidate",
+        human_decision=DECISION_RISK_MONITOR,
+        affected_domains=("liquidity_risk",),
+        affected_fact_fields=(),
+        affected_assumptions=(),
+        affected_artifacts=(),
+        requires_recalculation=False,
+        requires_model_stale=False,
+        requires_followup=True,
+        reviewed_at=reviewed_at,
+        review_notes=("monitor through next review",),
+    )
+    review = EventMaterialityReview(
+        review_id="600519-event-review-20260918",
+        schema_version=EVENT_MATERIALITY_SCHEMA,
+        symbol="600519",
+        scan_id="600519-scan-20260918",
+        scan_sha256="b" * 64,
+        scan_from=date(2026, 9, 16),
+        scan_to=date(2026, 9, 18),
+        reviewed_at=reviewed_at,
+        review_as_of=date(2026, 9, 18),
+        reviewer_type="human_research_lead",
+        decisions=(event,),
+        evidence_refs=({"id": "event-scan", "sha256": "b" * 64},),
+    )
+    checked = evaluate_model_validity(
+        model_id="fixture-v1",
+        symbol="600519",
+        model_as_of=date(2026, 9, 16),
+        valid_from=date(2026, 9, 16),
+        quote_date=date(2026, 9, 18),
+        events=[],
+        event_scan_evidence_refs=[{"id": "event-scan", "sha256": "b" * 64}],
+        event_materiality=review,
+    )
+
+    outcome = bridge(
+        valuation(),
+        checked,
+        quote_date=date(2026, 9, 18),
+        current_price=Decimal("450"),
+        quote_status="verified_close",
+        evidence_refs=[QUOTE_REF],
+    )
+
+    assert checked.status == "VALID"
+    assert "event_risk_monitor:1225" in checked.blockers
+    assert outcome.bridge_status == "READY"
+    assert "event_risk_monitor:1225" in outcome.blockers
 
 
 def test_evaluator_stales_model_when_new_filing_precedes_quote():

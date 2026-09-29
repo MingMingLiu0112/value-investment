@@ -39,6 +39,7 @@ _CNINFO_HOSTS = frozenset({"www.cninfo.com.cn", "static.cninfo.com.cn"})
 _HKEX_HOSTS = frozenset({"www1.hkexnews.hk", "www.hkexnews.hk"})
 _DERIVED_SOURCE_KINDS = frozenset({"research_artifact"})
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_UNSET = object()
 
 
 @dataclass(frozen=True)
@@ -46,6 +47,36 @@ class IssuerIdentityAssessment:
     status: str
     blockers: tuple[str, ...]
     matched_source_ids: tuple[str, ...] = ()
+
+
+def event_evidence_refs_from_case(case: Any) -> tuple[Mapping[str, Any], ...]:
+    """Resolve case event source ids to the case's hash-bound references."""
+    if isinstance(case, Mapping):
+        case_refs = case.get("evidence_refs", ())
+        events = case.get("next_events", ())
+    else:
+        case_refs = getattr(case, "evidence_refs", ())
+        events = getattr(case, "next_events", ())
+    refs_by_id = {
+        ref.get("id"): ref
+        for ref in case_refs or ()
+        if isinstance(ref, Mapping) and isinstance(ref.get("id"), str)
+    }
+    resolved: list[Mapping[str, Any]] = []
+    for event in events or ():
+        if not isinstance(event, Mapping):
+            resolved.append({})
+            continue
+        event_refs = event.get("evidence_refs", ())
+        if not isinstance(event_refs, (list, tuple)):
+            resolved.append({"id": "invalid-event-reference"})
+            continue
+        for ref_id in event_refs:
+            if not isinstance(ref_id, str):
+                resolved.append({})
+            else:
+                resolved.append(refs_by_id.get(ref_id, {"id": ref_id}))
+    return tuple(resolved)
 
 
 def _canonical_name(value: str) -> str:
@@ -73,6 +104,9 @@ def assess_issuer_identity(
     facts_symbol: str | None,
     fact_evidence_refs: Sequence[Mapping[str, Any]],
     sources: Sequence[ResearchSourceDescriptor],
+    research_case_symbol: str | None | object = _UNSET,
+    facts_payload_symbol: str | None | object = _UNSET,
+    event_evidence_refs: Sequence[Mapping[str, Any]] = (),
 ) -> IssuerIdentityAssessment:
     """Assess identity only from hash-bound official-source descriptors.
 
@@ -81,13 +115,32 @@ def assess_issuer_identity(
     exactly match a financial-facts evidence reference.
     """
     blockers: list[str] = []
-    if not isinstance(facts_symbol, str) or not facts_symbol.strip():
-        blockers.append("issuer_identity_unverified:financial_facts_symbol_missing")
-    elif facts_symbol.strip() != symbol:
-        blockers.append("issuer_identity_mismatch:financial_facts_symbol")
+    symbol_observations: list[tuple[str, object]] = [
+        ("financial_facts_symbol", facts_symbol),
+    ]
+    if research_case_symbol is not _UNSET:
+        symbol_observations.append(("research_case_symbol", research_case_symbol))
+    if facts_payload_symbol is not _UNSET:
+        symbol_observations.append(
+            ("financial_facts_payload_symbol", facts_payload_symbol)
+        )
+    for field, observed in symbol_observations:
+        if not isinstance(observed, str) or not observed.strip():
+            blockers.append(f"issuer_identity_unverified:{field}_missing")
+        elif observed.strip() != symbol:
+            blockers.append(f"issuer_identity_mismatch:{field}")
 
     if blockers and any(item.startswith("issuer_identity_mismatch:") for item in blockers):
         return IssuerIdentityAssessment(ISSUER_IDENTITY_REJECTED, tuple(blockers))
+
+    event_assessment = None
+    if event_evidence_refs:
+        event_assessment = assess_issuer_identity(
+            symbol=symbol,
+            facts_symbol=symbol,
+            fact_evidence_refs=event_evidence_refs,
+            sources=sources,
+        )
 
     refs: list[tuple[str, str]] = []
     hashes_by_id: dict[str, set[str]] = {}
@@ -244,26 +297,51 @@ def assess_issuer_identity(
                 if _source_venue(source.location) is not None
             )
 
-    if any(item.startswith("issuer_identity_mismatch:") for item in blockers):
+    event_blockers: list[str] = []
+    if event_assessment is not None:
+        for blocker in event_assessment.blockers:
+            for prefix in (
+                "issuer_identity_mismatch:",
+                "issuer_identity_unverified:",
+            ):
+                if blocker.startswith(prefix):
+                    event_blockers.append(
+                        f"{prefix}event_scope:{blocker[len(prefix):]}"
+                    )
+                    break
+            else:
+                event_blockers.append(f"issuer_identity_event_scope:{blocker}")
+
+    matched_source_ids = tuple(dict.fromkeys([
+        *verified_issuer_source_ids,
+        *(event_assessment.matched_source_ids if event_assessment else ()),
+    ]))
+    if (
+        any(item.startswith("issuer_identity_mismatch:") for item in blockers)
+        or (event_assessment is not None
+            and event_assessment.status == ISSUER_IDENTITY_REJECTED)
+    ):
         return IssuerIdentityAssessment(
             ISSUER_IDENTITY_REJECTED,
-            tuple(dict.fromkeys(blockers)),
-            tuple(dict.fromkeys(verified_issuer_source_ids)),
+            tuple(dict.fromkeys([*blockers, *event_blockers])),
+            matched_source_ids,
         )
     if (
         len(resolved_fact_ref_ids) != len(refs)
         or any(item.startswith("issuer_identity_unverified:") for item in blockers)
         or not verified_issuer_source_ids
+        or (event_assessment is not None
+            and event_assessment.status != ISSUER_IDENTITY_VERIFIED)
     ):
         if not blockers:
             blockers.append("issuer_identity_unverified:identity_not_established")
         return IssuerIdentityAssessment(
             ISSUER_IDENTITY_NOT_READY,
-            tuple(dict.fromkeys(blockers)),
-            tuple(dict.fromkeys(verified_issuer_source_ids)),
+            tuple(dict.fromkeys([*blockers, *event_blockers])),
+            matched_source_ids,
         )
     return IssuerIdentityAssessment(
         ISSUER_IDENTITY_VERIFIED,
-        tuple(dict.fromkeys(blockers)),
-        tuple(dict.fromkeys(verified_issuer_source_ids)),
+        tuple(dict.fromkeys([*blockers, *event_blockers])),
+        matched_source_ids,
     )

@@ -6,7 +6,7 @@
 
 用户最新阶段指令覆盖此前“持续公共研究工作台”的工作优先级：暂停 TSA/PKI 扩张、历史 PIT 补证和重复扫描；不新增公司、框架、版本族或工作簿，不重开 600519；baseline v13 和原始收据保持 immutable。R2、R3、R5、R6 仅阻断各自 DAG 节点。M4 不读取私人组合，M6 维持未启动，永久 `action=no_order`，由用户作最终投资决定。
 
-本阶段现有基线与执行状态：三家公司 A/B/C/D 分类为 3/3。按 `000333 / 600887 / 601088` 顺序，估值 A blocker 为 `1 / 0 / 1`；当前分类数分别为美的 `A1/B6/C0/D3`、伊利 `A0/B5/C2/D1`、神华 `A1/B3/C3/D0`。伊利另有独立报价日有效性门禁，不计作 6 月 30 日研究估值 A blocker。伊利已由共享 residual-income 模型产生低置信度 `CONDITIONAL_VALUATION_READY`（Bear/Base/Bull CNY 8.05/11.02/13.13；敏感区间 CNY 7.10-15.03）。美的目标日普通股分母无法形成可辩护区间，当前材料已设 evidence stop；神华留存重组报告可核对近期并购增量，但无法证明并购后当前范围的中周期归母盈利。伊利现有 CNINFO 10 个候选已完成有界处置（A1/B2/C7/D0），但不等于跨渠道完整事件覆盖；2026-09-29 双源收盘 CNY 27.24 已核验，报价日 `ModelValidity` 仍未建立，故 `PriceBridge` 不生成、`Decision Review=NOT_ASSESSABLE`。详见 `docs/current/track-b-execution-correction-20260929.md` 与 `docs/execution-status.md`。
+本阶段现有基线与执行状态：三家公司 A/B/C/D 分类为 3/3。按 `000333 / 600887 / 601088` 顺序，估值 A blocker 为 `1 / 0 / 1`；当前分类数分别为美的 `A1/B6/C0/D3`、伊利 `A0/B5/C2/D1`、神华 `A1/B3/C3/D0`。伊利另有独立报价日有效性门禁，不计作 6 月 30 日研究估值 A blocker。伊利已由共享 residual-income 模型产生低置信度 `CONDITIONAL_VALUATION_READY`（Bear/Base/Bull CNY 8.05/11.02/13.13；敏感区间 CNY 7.10-15.03）。美的目标日普通股分母无法形成可辩护区间，当前材料已设 evidence stop。神华已形成按 2017-2025 近期历史中位数及独立周期端点构造的经营驱动包络，并将 2026H1 收购后分部表现作为单独近期锚；这些不是利润预测或合并情景。共享周期模型只读调用返回 `not_ready`、三个估值值均为 `null`，6 个缺失模型字段已留存；研究级 A blocker 仍只有一个：收购后税前归母经营利润无法跨周期界定。伊利现有 CNINFO 10 个候选已完成有界处置（A1/B2/C7/D0），但不等于跨渠道完整事件覆盖；2026-09-29 双源收盘 CNY 27.24 已核验，报价日 `ModelValidity` 仍未建立，故 `PriceBridge` 不生成、`Decision Review=NOT_ASSESSABLE`。详见 `docs/current/track-b-execution-correction-20260929.md` 与 `docs/execution-status.md`。
 
 ```text
 CURRENT_STAGE = STAGE-EXECUTION-CORRECTION-CONTINUATION
@@ -19,14 +19,20 @@ STRICT_PIT = NOT_PROVEN / registration and build times unattested
 LATEST_VERIFIED_SESSION = 2026-09-29 / all three matched-close quotes
 BLOCKER_CLASSIFICATION = 3/3 / 000333=A1/B6/C0/D3; 600887=A0/B5/C2/D1; 601088=A1/B3/C3/D0
 YILI_2026_09_29_CNINFO_CANDIDATES = 10/10 dispositioned / A1/B2/C7/D0; bounded CNINFO only, no watermark advance
+YILI_POSTCLOSE_EVENT_SUPPLEMENT = 4 CNINFO originals hash-verified / 3 event groups / B2/C1; not a complete event scan
+YILI_QUOTE_DAY_REVIEW = 2026-09-29 close CNY 27.24 verified / 20bn maturity settlement and post-settlement cash-debt bridge unverified / ModelValidity not established
 MIDEA_SHARE_DENOMINATOR = A_BLOCKER / current file set stopped / reopen only on official target-date A/H shares, treasury-share uses and post-period movements
-SHENHUA_ACQUISITION_REPORT = CNINFO 1224979750 / local retained SHA-256 bound / no separate manifest / recent contribution only, not a cycle range
-ISSUER_IDENTITY_GATE = FAIL_CLOSED / mismatch regression tests present
+SHENHUA_ACQUISITION_REPORT = CNINFO 1224979750 / SHA-256 bound / 12 target-company audited simulated statements for 2023, 2024 and 2025-01..07 present / no current-perimeter attributable-earnings bridge
+SHENHUA_SCENARIO_ENVELOPE = HISTORICAL_DRIVER_ANCHORS_PREPARED / NOT_JOINT_SCENARIOS / NOT_PROFIT_FORECAST
+SHENHUA_SHARED_MODEL_DIAGNOSTIC = NOT_READY / 6_MISSING_INPUT_FIELDS / BEAR_BASE_BULL_VALUES_NULL / RESEARCH_A_ROOT_CAUSE_1
+ISSUER_IDENTITY_DECLARATION_GATE = FAIL_CLOSED_ON_DECLARED_MISMATCH / run-case-typed+payload facts-and-cited-events / source identity authenticity remains upstream and is not independently established here
 VALUATION_READY = 0/3
 CONDITIONAL_VALUATION_READY = 1/3 / 600887 / low-confidence research-only
 600887_PRICE_REVIEW = NOT_ASSESSABLE / quote-day ModelValidity not established / price_bridge=null
 FORMAL_EVENT_WATERMARK_ADVANCE = 0 / 10 Yili candidate dispositions do not establish cross-channel completeness
 CANONICAL_UPDATED = NO / approved artifact-tool unavailable; quote pointer remains 2026-09-28
+LATEST_CORE_RESEARCH_GATES = 1154_PASSED / 23_SKIPPED / 2_WARNINGS
+LATEST_CYCLICAL_FOCUSED_TESTS = 10_PASSED
 SAME_PACKET_A_BLOCKER_REDUCTION_REMAINING = NO / Midea and Shenhua require their explicit official-evidence reopen triggers; Yili quote review requires verified post-maturity liquidity and source-complete event coverage
 M4_R2 = PARKED_NONBLOCKING
 M6_R3 = PARKED / NOT_STARTED
@@ -59,11 +65,19 @@ YILI_MODEL_VALIDITY_THROUGH_QUOTE = NOT_ESTABLISHED
 SHENHUA_ACQUISITION_REPORT = FOUND / RECENT_PRO_FORMA_INCREMENT_VERIFIED
 SHENHUA_MID_CYCLE_A_BLOCKER = OPEN
 MIDEA_SHARE_DENOMINATOR_A_BLOCKER = OPEN
+PRICE_BRIDGE_REVIEW_BLOCKERS = PROPAGATED / risk-monitor and follow-up flags are retained
+OFFLINE_CORE_RESEARCH_GATES = PASS / 1148 passed, 23 skipped, 2 warnings
 CANONICAL_EXCEL_UPDATED = NO
 NEW_EXCEL = 0
 STRICT_PIT = NOT_PROVEN
 action = no_order
 ```
+
+## 2026-09-29 22:09 +08 PriceBridge blocker 传递修复
+
+代码审查发现：`ModelValidity.status=VALID` 可以同时保留 `MATERIAL_RISK_MONITOR` 或 `REQUIRES_DECOMPOSITION` 复核项；原 `bridge_with_quote` 在 READY、PENDING 和部分 INVALID 分支未统一传递这些 blocker，可能使价格桥隐藏仍待跟进的风险。现已统一合并调用方与 ModelValidity blockers，并在 READY 路径增加实际事件材料性回归。此修复只保留审查提示，不把 risk-monitor 自动改成模型失效；不会使未覆盖事件的伊利报价日门通过。
+
+验证：定向 `test_price_bridge.py` 与 `test_event_materiality.py` 为 `28 passed`；GitHub `offline-core` 同清单本地复跑为 `1148 passed, 23 skipped, 2 warnings`，采用隔离 pytest 临时目录和 UTF-8 环境。全仓库测试未完成：初次运行在约 89% 连续无进度后中断；fail-fast 重跑遇到用户级 `pytest-of-Ming` 临时目录 `PermissionError`。因此不将全仓库结果宣称为通过。此次没有改变三家公司分类、估值或当前 Decision Review，没有改 Excel、watermark、PIT、交易状态或总 Goal 状态。
 
 ## 历史阶段快照：STAGE-EXECUTION-CORRECTION（2026-09-29，模型绑定前）
 

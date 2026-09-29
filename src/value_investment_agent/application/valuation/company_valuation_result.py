@@ -18,6 +18,7 @@ from ...domain.research.issuer_identity import (
     ISSUER_IDENTITY_NOT_READY,
     ISSUER_IDENTITY_REJECTED,
     assess_issuer_identity,
+    event_evidence_refs_from_case,
 )
 from ...price_bridge import pending_price_bridge_for_incomplete_valuation
 from ...valuation_models.fcff import FCFFValuationModel, FinancialFacts
@@ -115,17 +116,23 @@ def build_company_valuation_result(
     case = _case(json.loads(case_path.read_text(encoding="utf-8")), symbol)
     audit = json.loads(facts_path.read_text(encoding="utf-8"))
     facts_payload_symbol = audit.get("symbol")
+    source_descriptors = (
+        *_fact_sources(audit),
+        *_fact_sources({"evidence_refs": case.evidence_refs}),
+    )
     identity = assess_issuer_identity(
         symbol=symbol,
         facts_symbol=(
             facts_payload_symbol
             if isinstance(facts_payload_symbol, str) else None
         ),
+        research_case_symbol=case.symbol,
         fact_evidence_refs=(
             audit.get("evidence_refs")
             if isinstance(audit.get("evidence_refs"), list) else []
         ),
-        sources=_fact_sources(audit),
+        sources=source_descriptors,
+        event_evidence_refs=event_evidence_refs_from_case(case),
     )
     identity_status = identity.status
     identity_blockers = identity.blockers
