@@ -6,7 +6,7 @@
 
 用户最新阶段指令覆盖此前“持续公共研究工作台”的工作优先级：暂停 TSA/PKI 扩张、历史 PIT 补证和重复扫描；不新增公司、框架、版本族或工作簿，不重开 600519；baseline v13 和原始收据保持 immutable。R2、R3、R5、R6 仅阻断各自 DAG 节点。M4 不读取私人组合，M6 维持未启动，永久 `action=no_order`，由用户作最终投资决定。
 
-本阶段现有基线与执行状态：三家公司 A/B/C/D 分类为 3/3。按 `000333 / 600887 / 601088` 顺序，当前 A blocker 为 `1 / 0 / 1`；600887 已由共享 residual-income 模型产生低置信度 `CONDITIONAL_VALUATION_READY`（Bear/Base/Bull CNY 8.05/11.02/13.13；敏感区间 CNY 7.10-15.03）。美的普通股分母无法形成可辩护区间；神华新取得正式重组报告后，近期并购增量已可核对，但并购后当前范围的中周期归母盈利仍无有证据边界的区间。600887 的 2026-09-29 双源收盘 CNY 27.24 已核验，但报价日 `ModelValidity` 仍未建立，故 `PriceBridge` 不生成、`Decision Review=NOT_ASSESSABLE`。详见 `docs/current/track-b-execution-correction-20260929.md` 与 `docs/execution-status.md`。
+本阶段现有基线与执行状态：三家公司 A/B/C/D 分类为 3/3。按 `000333 / 600887 / 601088` 顺序，估值 A blocker 为 `1 / 0 / 1`；当前分类数分别为美的 `A1/B6/C0/D3`、伊利 `A0/B5/C2/D1`、神华 `A1/B3/C3/D0`。伊利另有独立报价日有效性门禁，不计作 6 月 30 日研究估值 A blocker。伊利已由共享 residual-income 模型产生低置信度 `CONDITIONAL_VALUATION_READY`（Bear/Base/Bull CNY 8.05/11.02/13.13；敏感区间 CNY 7.10-15.03）。美的目标日普通股分母无法形成可辩护区间，当前材料已设 evidence stop；神华留存重组报告可核对近期并购增量，但无法证明并购后当前范围的中周期归母盈利。伊利现有 CNINFO 10 个候选已完成有界处置（A1/B2/C7/D0），但不等于跨渠道完整事件覆盖；2026-09-29 双源收盘 CNY 27.24 已核验，报价日 `ModelValidity` 仍未建立，故 `PriceBridge` 不生成、`Decision Review=NOT_ASSESSABLE`。详见 `docs/current/track-b-execution-correction-20260929.md` 与 `docs/execution-status.md`。
 
 ```text
 CURRENT_STAGE = STAGE-EXECUTION-CORRECTION-CONTINUATION
@@ -17,13 +17,17 @@ BASELINE_COMPLETE = 0/3 / snapshot-v13 is frozen, all cards remain BASELINE_PART
 DESCRIPTIVE_RESEARCH_CARD_FIELDS = 3/3 / R1_REVIEWED / NOT_A_FORMAL_BASELINE_PASS
 STRICT_PIT = NOT_PROVEN / registration and build times unattested
 LATEST_VERIFIED_SESSION = 2026-09-29 / all three matched-close quotes
-BLOCKER_CLASSIFICATION = 3/3 / A=1,0,1 for 000333/600887/601088; Shenhua prior absence-of-report D stop superseded by new official report
+BLOCKER_CLASSIFICATION = 3/3 / 000333=A1/B6/C0/D3; 600887=A0/B5/C2/D1; 601088=A1/B3/C3/D0
+YILI_2026_09_29_CNINFO_CANDIDATES = 10/10 dispositioned / A1/B2/C7/D0; bounded CNINFO only, no watermark advance
+MIDEA_SHARE_DENOMINATOR = A_BLOCKER / current file set stopped / reopen only on official target-date A/H shares, treasury-share uses and post-period movements
+SHENHUA_ACQUISITION_REPORT = CNINFO 1224979750 / local retained SHA-256 bound / no separate manifest / recent contribution only, not a cycle range
+ISSUER_IDENTITY_GATE = FAIL_CLOSED / mismatch regression tests present
 VALUATION_READY = 0/3
 CONDITIONAL_VALUATION_READY = 1/3 / 600887 / low-confidence research-only
-600887_PRICE_REVIEW = NOT_ASSESSABLE / quote-day ModelValidity not established
-NEW_EVENTS_PROCESSED = 0 / bounded CNINFO snapshots only; formal watermarks unchanged
+600887_PRICE_REVIEW = NOT_ASSESSABLE / quote-day ModelValidity not established / price_bridge=null
+FORMAL_EVENT_WATERMARK_ADVANCE = 0 / 10 Yili candidate dispositions do not establish cross-channel completeness
 CANONICAL_UPDATED = NO / approved artifact-tool unavailable; quote pointer remains 2026-09-28
-SAFE_BLOCKER_REDUCTION_REMAINING = YES / Midea share denominator and Shenhua mid-cycle earnings; Yili quote validity is a separate Decision Review gate, not an A valuation blocker
+SAME_PACKET_A_BLOCKER_REDUCTION_REMAINING = NO / Midea and Shenhua require their explicit official-evidence reopen triggers; Yili quote review requires verified post-maturity liquidity and source-complete event coverage
 M4_R2 = PARKED_NONBLOCKING
 M6_R3 = PARKED / NOT_STARTED
 M7_R5 = NOT_PASSED

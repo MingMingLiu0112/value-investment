@@ -1,5 +1,5 @@
 {
-  "schema_version": "valuation-readiness-review-v1",
+  "schema_version": "valuation-readiness-review-v2",
   "review_id": "600887-valuation-readiness-review-20260929",
   "symbol": "600887",
   "issuer": "伊利股份",
@@ -74,7 +74,9 @@
     ],
     "model_boundary": "Research-only equity valuation; no market-price input, price attractiveness approval, portfolio sizing, order, or trading instruction is emitted by the model."
   },
-  "price_bridge": {
+  "price_bridge": null,
+  "unvalidated_arithmetic_comparison": {
+    "status": "ARITHMETIC_ONLY_NOT_DECISION_GRADE",
     "verified_close_cny": "27.03",
     "scenario_values_at_9pct_cost_2pct_growth": {
       "bear_cny": "8.0475940479",

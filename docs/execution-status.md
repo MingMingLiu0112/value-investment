@@ -72,9 +72,68 @@ CANONICAL_EXCEL_UPDATED = NO / APPROVED_SPREADSHEET_DEPENDENCY_MISSING
 action = no_order
 ```
 
-### Continuous Public Research Stage and Repository Audit
+## 2026-09-29 Execution-Correction Continuation — current research state
 
-This status supersedes the execution-correction authorization above; it does not rewrite any frozen research baseline or evidence receipt. The active stage is the continuous public-research workbench, not a one-time completion checkpoint.
+The execution-correction stage is the active priority. It does not change the
+frozen prospective baseline v13, formal event watermarks, strict-PIT status,
+or the M2-M7 graduation gates. Independent R1 reviews cover all three cases.
+
+| Symbol | Current A/B/C/D | Valuation disposition | Actual remaining A blocker |
+|---|---:|---|---|
+| 600887 | 0 / 5 / 2 / 1 | `CONDITIONAL_VALUATION_READY`, low-confidence research-only; shared residual-income scenarios CNY 8.05 / 11.02 / 13.13, full sensitivity CNY 7.10-15.03 | None for the 2026-06-30 research valuation. A separate quote-date event/`ModelValidity` gate remains open; no `PriceBridge`, `PriceAttractiveness`, or assessable `Decision Review`. |
+| 000333 | 1 / 6 / 0 / 3 | No valuation result; registered consolidated FCFF is not applicable for current public scope and no alternative model is admitted | Target-date ordinary-share denominator cannot be bounded from available official disclosures. It blocks per-share value and price assessment, not descriptive research. |
+| 601088 | 1 / 3 / 3 / 0 | No valuation result; normalized cyclical model remains not ready | Acquired assets' current-perimeter mid-cycle attributable earnings contribution is unbounded. Legacy coal/electricity/transport ranges and disclosed H1 facts remain scenario inputs, not standalone company valuation blockers. |
+
+Yili's bounded CNINFO window yielded 10/10 candidate dispositions
+(`A=1/B=2/C=7/D=0` for the **2026-09-29 quote-validity review only**). This
+does not advance a formal watermark or establish issuer-IR/exchange-channel
+completeness. Announcement `1225584526` is unavailable for the September 29
+close under the conservative date-only rule; the CNY 20bn note due that day
+still lacks a verified redemption/rollover and post-payment cash/debt bridge.
+The readiness JSON separates the research scenario from arithmetic-only price
+comparison and has `price_bridge=null`.
+
+Midea's current evidence set is stopped: reopen only on official
+issuer/exchange material that reconciles target-date A/H issued shares,
+treasury-share uses, and post-period share movements. Its three D items are
+public-scope evidence stops, not reasons to keep searching the same filings.
+Shenhua's old D stop for lacking a named transaction report is superseded by
+the retained CNINFO `1224979750` restructuring report, SHA-256
+`533bc24a80aeb1fbf2357218c5c19825cb0ab23176eb7d25d8ecd2d1f1256703`; the
+runtime file has no retained manifest and is not in a public clone. Its one
+full-year plus seven-month pro forma evidence does not close the cycle A
+blocker; do not annualize or merge target aggregate profit into attributable
+group profit.
+
+The issuer identity gate is already integrated and fails closed on
+symbol/source-issuer mismatches; regression coverage is in
+`tests/test_issuer_identity_gate.py` and the shared Yili binding test. The WPS
+canonical workbook remains SHA-256
+`849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`, with the
+quote pointer at 2026-09-28. The approved `@oai/artifact-tool` package is
+unavailable; no alternative spreadsheet library or competing workbook was
+used.
+
+```text
+CURRENT_STAGE = STAGE-EXECUTION-CORRECTION-CONTINUATION
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+INITIAL_ASSISTED_USE = NOT_REACHED
+BASELINE_V13 = FROZEN / 0_OF_3_FORMAL_BASELINE_PASSES
+STRICT_PIT = NOT_PROVEN
+BLOCKER_COUNTS = 000333_A1_B6_C0_D3; 600887_A0_B5_C2_D1; 601088_A1_B3_C3_D0
+VALUATION_READY = 0/3
+CONDITIONAL_VALUATION_READY = 1/3 / 600887 / LOW_CONFIDENCE
+ISSUER_IDENTITY_GATE = INTEGRATED / FAIL_CLOSED / REGRESSION_TESTED
+FOCUSED_REGRESSION = 31_PASSED / YILI_SHARED_BINDING + ISSUER_IDENTITY
+OFFLINE_CORE_RESEARCH_GATES = 125_FILES / 1086_PASSED / 2_SKIPPED
+CANONICAL_EXCEL_UPDATED = NO / SPREADSHEET_DEPENDENCY_UNAVAILABLE
+NEW_EXCEL = 0
+action = no_order
+```
+
+### Historical Continuous Public Research Snapshot — superseded
+
+The following dated snapshot predates and is superseded by the execution-correction continuation above. It remains historical context only and does not authorize the former continuous public-research task queue. It does not rewrite any frozen research baseline or evidence receipt.
 
 #### Repository and verification
 
@@ -128,9 +187,9 @@ G product projection can use new public facts: YES, but Excel publication is too
 H all active cases at Evidence Stop: NO
 ```
 
-Therefore `STAGE_STATUS=STAGE_ACTIVE`, not idle and not blocked by R2/R3/R5/R6. Next public work is to complete descriptive case research from already admitted materials without rewriting v13, then process future event evidence only when its conservative `available_at` is reached; continue the Yili event-validity review from retained evidence rather than repeating a scan. The canonical workbook and all human records remain untouched.
+At the time of this historical snapshot, `STAGE_STATUS=STAGE_ACTIVE`, not idle and not blocked by R2/R3/R5/R6. Its next-work sentence was contemporary guidance then, not the current task queue. The active execution-correction scope and latest dispositions are documented above. The canonical workbook and all human records remained untouched in that snapshot.
 
-## 2026-09-29 Execution Correction — research closeout snapshot
+## 2026-09-29 Execution Correction — prior closeout snapshot
 
 This phase reclassified the registered 000333, 600887 and 601088 research cases
 into A/B/C/D blocker groups and produced a bounded blocker burn-down. The audit

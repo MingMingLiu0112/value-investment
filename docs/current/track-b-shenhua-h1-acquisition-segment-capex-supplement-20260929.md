@@ -15,6 +15,36 @@ is 2026-08-29; the admitted conservative availability is 2026-08-30T00:00:00+08:
 This is a late review of a pre-existing report, not proof of contemporaneous
 capture or strict PIT. Physical report pages are cited below.
 
+## Separate retained restructuring report review
+
+A second official filing was reviewed as a bounded follow-up to the acquisition-perimeter question. It is a different document from the 2026 interim report above: CNINFO announcement `1224979750`, retained at
+`runtime/company-research/shenhua-acquisition-2026-02/1224979750.pdf`.
+The file is 20,495,810 bytes and its directly measured SHA-256 is
+`533bc24a80aeb1fbf2357218c5c19825cb0ab23176eb7d25d8ecd2d1f1256703`.
+No separate manifest was retained in that directory; the PDF is under ignored
+`runtime/` and is not included in a public GitHub clone. The hash therefore
+binds this local retained file for this review, not an independently signed or
+publicly reproducible source package. Do not substitute it for the H1 report's
+`1225531759` / `ff4a670c7aa9e0309dc610a0e225d490970731dcc14eda234d73bb8c9b9b54f4`.
+
+The PDF contains 2,886 physical pages and has no PDF page labels. The physical
+page numbers below differ by one from the printed page numbers:
+
+| PDF physical page | Printed page | Bounded observation |
+|---:|---|---|
+| 20 | `1-1-19` | Target companies' aggregate 2024 adjusted net profit attributable to parent was CNY 9.428bn; excluding long-lived-asset impairment, CNY 10.570bn. |
+| 555 | `1-1-554` | Pro forma adjusted net profit attributable to parent increased from CNY 58.962bn to CNY 66.851bn for 2024 (CNY 7.889bn transaction increment); for 2025 January-July, from CNY 29.255bn to CNY 32.637bn (CNY 3.382bn increment). |
+| 1281-1322 | `1-1-1280` onward | Target-company financial statements. |
+| 1323-1328 | `1-1-1322` onward | Pro forma consolidated financial statements. |
+
+This bounded review establishes recent target-level and pro forma contribution,
+not current-perimeter mid-cycle earnings. It contains one full year plus seven
+months for the pro forma comparison; do not annualize the seven-month result,
+splice target-company aggregate profit directly into Shenhua attributable
+profit, or treat the report's valuation forecasts as a cross-cycle operating
+series. It does not change frozen baseline v13, prove strict PIT, or close the
+valuation A blocker.
+
 ## Facts
 
 ### Acquisition perimeter and funding disclosures
@@ -103,18 +133,21 @@ Still unknown are acquisition-adjusted steady-state segment earnings over a
 comparable full period; target attribution of the CNY 2,577m contractual/cash
 residual; maintenance versus growth capex by asset and the timing/scope bridge
 between cash paid and segment capex; project returns; and the acquired assets'
-contribution across a full comparable period. Target-level audited transaction
-and financial reports have been identified for a bounded follow-up review but
-have not yet been admitted here.
+contribution across a full comparable period. The retained restructuring report
+has now received the bounded review above, but it does not supply a full
+comparable post-acquisition cycle or a defensible mid-cycle earnings range.
+Stop reviewing this same report; reopen only if new official evidence changes
+the current-perimeter cycle bounds or resolves one of the stated blockers.
 
 ## Research effect
 
-The report adds a source-bound acquisition and H1 segment/capex bridge,
-including distinct consolidated cash-capex and company-only acquisition cash
-facts, and clarifies the changed consolidation perimeter. It does not establish
-normalized cyclical earnings, owner cash flow, or sustainable ordinary
-dividend capacity. Keep `CYCLICAL_MODEL_NOT_READY`, `VALUATION_NOT_READY`, and
-dividend sustainability `NOT_READY`. Do not update the frozen prospective
-baseline, valuation, canonical workbook, or decision status from this evidence
-alone. It does not advance the formal event watermark or prove strict PIT.
-`action=no_order`.
+The two separately hash-described reports add bounded acquisition-perimeter
+observations: the H1 report provides 2026H1 segment/capex facts, and the
+retained restructuring report provides recent target and pro forma results.
+The latter's local file hash has no retained manifest and is not present in the
+public repository. Neither report establishes normalized cyclical earnings,
+owner cash flow, or sustainable ordinary dividend capacity. Keep
+`CYCLICAL_MODEL_NOT_READY`, `VALUATION_NOT_READY`, and dividend sustainability
+`NOT_READY`. Do not update frozen baseline v13, valuation, canonical workbook,
+or decision status from this evidence alone. It does not advance the formal
+event watermark or prove strict PIT. `action=no_order`.

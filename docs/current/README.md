@@ -11,14 +11,14 @@ files without duplicating their content. Historical stage notes live under
 | Current goal | `docs/current-stage-goal.md` |
 | Current execution status | `docs/execution-status.md` |
 | Latest verified public close | 2026-09-29 dual-source close bundle for 000333 / 600887 / 601088 (runtime-only, SHA-256 `c7e14a9626db695c489a485fa7134bbba4568238b67a85cc3805c8cd4ba10395`); product verification passed in memory, Canonical Excel not updated |
-| Current execution-correction review and three-company blocker burn-down | `docs/current/track-b-execution-correction-20260929.md` |
+| Current execution-correction review and three-company blocker burn-down | `docs/current/track-b-execution-correction-20260929.md` (current A/B/C/D counts, remaining A blockers, evidence stops, Yili bounded candidate dispositions and R1 findings) |
 | Yili shared-model result binding | `docs/current/600887-shared-valuation-result-20260929.json` (input/result/source-package and artifact hashes; replay uses only 600887 CNINFO source refs) |
-| Yili conditional valuation result and full sensitivity grid | `docs/current/600887-valuation-readiness-review-20260929.json` (research-only; current price review is NOT_ASSESSABLE until ModelValidity through quote date; Canonical Excel unchanged because the approved spreadsheet dependency is unavailable) |
+| Yili conditional valuation result and full sensitivity grid | `docs/current/600887-valuation-readiness-review-20260929.json` (research-only; `price_bridge=null`, Decision Review is NOT_ASSESSABLE because quote-date ModelValidity is not established; Canonical Excel remains unchanged) |
 | Root workbook governance audit | `docs/execution-status.md` (2026-09-28 update: 29 referenced root workbooks; no safe relocation proof) |
 | Current R0 audit state | `docs/execution-status.md` (open R0 nodes; non-blocking to public research) |
 | Midea and Yili baseline cards | `docs/current/track-b-midea-yili-baseline-cards-20260927.md` |
 | Shenhua cyclical baseline card | `docs/current/track-b-shenhua-cyclical-baseline-20260927.md` |
-| Shenhua 2026H1 acquisition, segment and capex supplement | `docs/current/track-b-shenhua-h1-acquisition-segment-capex-supplement-20260929.md` (source-bound observation; not a normalized model input) |
+| Shenhua 2026H1 acquisition, segment and capex supplement | `docs/current/track-b-shenhua-h1-acquisition-segment-capex-supplement-20260929.md` (keeps H1 and restructuring reports separately identified; retained restructuring PDF has no manifest and does not close the mid-cycle earnings blocker) |
 | Shenhua operating and capital-allocation review | `docs/current/track-b-shenhua-operations-and-capital-allocation-20260927.md` |
 | Midea 2026H1 source admission | `docs/current/track-b-midea-2026h1-admission-20260927.md` |
 | Midea cash-scope correction and FY2026H1 liquidity facts | `docs/current/track-b-midea-cash-scope-correction-20260929.md` (v2 remains historical; current v3 separates monetary funds from cash equivalents; net debt remains unknown) |

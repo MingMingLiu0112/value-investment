@@ -179,6 +179,11 @@ def test_yili_result_replays_through_registered_model_and_issuer_gate():
     assert outcome.price_bridge.model_validity_status == "UNKNOWN"
     assert result_artifact["product_boundary"]["price_review"] == "NOT_ASSESSABLE"
     assert result_artifact["product_boundary"]["action"] == "no_order"
+    assert review["price_bridge"] is None
+    comparison = review["unvalidated_arithmetic_comparison"]
+    assert comparison["status"] == "ARITHMETIC_ONLY_NOT_DECISION_GRADE"
+    assert comparison["model_validity"]["status"] == "NOT_ESTABLISHED"
+    assert comparison["decision_review"] == "NOT_ASSESSABLE"
     binding = review["model"]["shared_model_binding"]
     assert binding["artifact_path"] == str(RESULT_PATH.relative_to(ROOT)).replace("\\", "/")
     assert binding["artifact_sha256"] == hashlib.sha256(RESULT_PATH.read_bytes()).hexdigest()
