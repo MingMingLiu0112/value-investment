@@ -10,6 +10,15 @@ from typing import Any
 
 from ...domain.research.research_case import ResearchCase
 from ...domain.research.research_profile import PROFILES
+from ...domain.research.research_run_contract import (
+    ResearchIssuerIdentity,
+    ResearchSourceDescriptor,
+)
+from ...domain.research.issuer_identity import (
+    ISSUER_IDENTITY_NOT_READY,
+    ISSUER_IDENTITY_REJECTED,
+    assess_issuer_identity,
+)
 from ...price_bridge import pending_price_bridge_for_incomplete_valuation
 from ...valuation_models.fcff import FCFFValuationModel, FinancialFacts
 from ...valuation_router import ROUTE_SUPPORTED, ValuationRouter
@@ -33,6 +42,50 @@ def _case(payload: dict[str, Any], symbol: str) -> ResearchCase:
             raw["generated_at"] = datetime.fromisoformat(raw["generated_at"])
             return ResearchCase(**raw)
     raise ValueError(f"ResearchCase not found: {symbol}")
+
+
+def _fact_sources(audit: dict[str, Any]) -> tuple[ResearchSourceDescriptor, ...]:
+    sources = []
+    refs = audit.get("evidence_refs")
+    if not isinstance(refs, list):
+        return ()
+    for raw in refs:
+        if not isinstance(raw, dict):
+            continue
+        ref_id = raw.get("id")
+        digest = raw.get("sha256")
+        location = raw.get("source_url") or raw.get("path") or raw.get("location")
+        if not all(isinstance(value, str) and value.strip() for value in (ref_id, digest, location)):
+            continue
+        raw_identity = raw.get("issuer_identity")
+        identity = None
+        if isinstance(raw_identity, dict) and isinstance(raw_identity.get("venue"), str):
+            identity = ResearchIssuerIdentity(
+                venue=raw_identity["venue"],
+                security_code=(
+                    str(raw_identity["security_code"])
+                    if raw_identity.get("security_code") is not None else None
+                ),
+                issuer_name=(
+                    str(raw_identity["issuer_name"])
+                    if raw_identity.get("issuer_name") is not None else None
+                ),
+                organization_id=(
+                    str(raw_identity["organization_id"])
+                    if raw_identity.get("organization_id") is not None else None
+                ),
+            )
+        try:
+            sources.append(ResearchSourceDescriptor(
+                id=ref_id,
+                kind=str(raw.get("kind") or "financial_fact_evidence"),
+                location=location,
+                sha256=digest.lower(),
+                issuer_identity=identity,
+            ))
+        except (TypeError, ValueError):
+            continue
+    return tuple(sources)
 
 
 def build_company_valuation_result(
@@ -61,12 +114,37 @@ def build_company_valuation_result(
             )
     case = _case(json.loads(case_path.read_text(encoding="utf-8")), symbol)
     audit = json.loads(facts_path.read_text(encoding="utf-8"))
+    facts_payload_symbol = audit.get("symbol")
+    identity = assess_issuer_identity(
+        symbol=symbol,
+        facts_symbol=(
+            facts_payload_symbol
+            if isinstance(facts_payload_symbol, str) else None
+        ),
+        fact_evidence_refs=(
+            audit.get("evidence_refs")
+            if isinstance(audit.get("evidence_refs"), list) else []
+        ),
+        sources=_fact_sources(audit),
+    )
+    identity_status = identity.status
+    identity_blockers = identity.blockers
     facts = FinancialFacts(
         symbol=symbol,
         as_of=date.fromisoformat(audit["as_of_period"]),
-        verified=audit["financial_scope_approved"] is True,
-        evidence_refs=[_reference(root, "financial_scope", facts_path)],
-        blockers=list(audit.get("per_share_blockers", [])),
+        verified=(audit.get("financial_scope_approved") is True
+                  and identity_status not in {ISSUER_IDENTITY_NOT_READY, ISSUER_IDENTITY_REJECTED}),
+        evidence_refs=[
+            _reference(root, "financial_scope", facts_path),
+            *(
+                [dict(ref) for ref in audit["evidence_refs"] if isinstance(ref, dict)]
+                if isinstance(audit.get("evidence_refs"), list) else []
+            ),
+        ],
+        blockers=list(dict.fromkeys([
+            *audit.get("per_share_blockers", []),
+            *identity_blockers,
+        ])),
         operating_inputs={
             key: (None if value is None else Decimal(str(value)))
             for key, value in audit.get("fcff_inputs", {}).items()
@@ -86,6 +164,10 @@ def build_company_valuation_result(
         "formal_fair_value": None,
         "trade_approved": False,
         "live_eligible": False,
+        "action": "no_order",
+        "facts_payload_symbol": facts_payload_symbol,
+        "issuer_identity_status": identity_status,
+        "issuer_identity_blockers": list(identity_blockers),
     }
     if route is not None:
         payload["valuation_route"] = route.as_policy()

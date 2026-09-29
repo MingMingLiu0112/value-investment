@@ -46,6 +46,7 @@ def build_company_valuation_for_symbol(
     write_new_json(target, payload)
     return {
         "result": payload,
+        "issuer_identity_status": payload["issuer_identity_status"],
         "receipt": receipt(
             command="company_valuation",
             symbol=normalized,

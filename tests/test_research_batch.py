@@ -37,6 +37,7 @@ from value_investment_agent.research_input import (
 )
 from value_investment_agent.research_run_contract import (
     ResearchDependencyFingerprint,
+    ResearchIssuerIdentity,
     ResearchPitFrame,
     ResearchSourceDescriptor,
 )
@@ -50,6 +51,24 @@ from value_investment_agent.valuation_models.residual_income import (
 
 AS_OF = date(2025, 12, 31)
 NOW = datetime(2026, 9, 22, 12, 0, tzinfo=timezone.utc)
+
+
+def verified_fact_source(source_id: str = "facts") -> ResearchSourceDescriptor:
+    return ResearchSourceDescriptor(
+        id=source_id,
+        kind="annual_report",
+        location="https://static.cninfo.com.cn/finalpage/fixture.pdf",
+        sha256="b" * 64,
+        published_at=datetime(2025, 12, 31, tzinfo=timezone.utc),
+        retrieved_at=datetime(2025, 12, 31, tzinfo=timezone.utc),
+        parser_version="parser-v1",
+        issuer_identity=ResearchIssuerIdentity(
+            venue="CNINFO",
+            security_code="600519",
+            issuer_name="贵州茅台",
+            organization_id="gssh0600519",
+        ),
+    )
 
 
 def case(symbol: str) -> ResearchCase:
@@ -124,6 +143,7 @@ def quality_spec(*, fingerprint: str | None = None) -> ResearchRunSpec:
         research_case=case("600519"),
         facts=residual_facts(),
         available_at=NOW,
+        input_sources=(verified_fact_source(),),
     )
 
 
@@ -153,13 +173,19 @@ def descriptor_payload() -> dict:
         ),
         sources=(
             ResearchSourceDescriptor(
-                id="facts-source",
-                kind="filing",
-                location="tests/fixtures/facts.json",
-                sha256="d" * 64,
+                id="facts",
+                kind="annual_report",
+                location="https://static.cninfo.com.cn/finalpage/fixture.pdf",
+                sha256="b" * 64,
                 published_at=datetime(2025, 12, 31, tzinfo=timezone.utc),
                 retrieved_at=datetime(2025, 12, 31, tzinfo=timezone.utc),
                 parser_version="parser-v1",
+                issuer_identity=ResearchIssuerIdentity(
+                    venue="CNINFO",
+                    security_code="600519",
+                    issuer_name="贵州茅台",
+                    organization_id="gssh0600519",
+                ),
             ),
         ),
         research_case=case("600519"),

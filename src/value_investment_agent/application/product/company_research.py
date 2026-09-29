@@ -59,6 +59,7 @@ def _serialize_outcome(outcome: Any) -> dict[str, Any]:
         "symbol": outcome.symbol,
         "profile_id": outcome.profile_id,
         "status": outcome.status,
+        "issuer_identity_status": outcome.issuer_identity_status,
         "action": ACTION_NO_ORDER,
         "as_of": outcome.as_of.isoformat(),
         "available_at": outcome.available_at.isoformat(),

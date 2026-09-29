@@ -39,6 +39,8 @@ from value_investment_agent.research_artifacts import (
 from value_investment_agent.research_case import ResearchCase
 from value_investment_agent.research_gate import GATE_VALUATION
 from value_investment_agent.research_run_contract import (
+    ResearchIssuerIdentity,
+    ResearchSourceDescriptor,
     ResearchValuationApproval,
     valuation_result_sha256,
 )
@@ -123,6 +125,28 @@ def residual_facts(symbol: str = "600519") -> QualityCompounderFacts:
     )
 
 
+def _identity_source(symbol: str = "600519") -> ResearchSourceDescriptor:
+    registered = {
+        "600519": ("gssh0600519", "贵州茅台"),
+        "000333": ("9900005965", "美的集团"),
+        "601088": ("9900003701", "中国神华"),
+        "600887": ("gssh0600887", "伊利股份"),
+    }
+    organization_id, issuer_name = registered[symbol]
+    return ResearchSourceDescriptor(
+        id="facts",
+        kind="annual_report",
+        location="https://www.cninfo.com.cn/annual-report.pdf",
+        sha256="b" * 64,
+        issuer_identity=ResearchIssuerIdentity(
+            venue="CNINFO",
+            security_code=symbol,
+            issuer_name=issuer_name,
+            organization_id=organization_id,
+        ),
+    )
+
+
 def quality_spec(*, run_id: str, repository=None) -> tuple[ResearchRunSpec, ResearchApplicationService]:
     app = ResearchApplicationService(repository)
     spec = ResearchRunSpec(
@@ -132,6 +156,7 @@ def quality_spec(*, run_id: str, repository=None) -> tuple[ResearchRunSpec, Rese
         research_case=case("600519", industry="消费品"),
         facts=residual_facts(),
         available_at=AVAILABLE_AT,
+        input_sources=(_identity_source(),),
     )
     return spec, app
 
@@ -180,6 +205,7 @@ def test_three_profiles_execute_through_one_symbol_free_runner():
             research_case=case(symbol),
             facts=facts,
             available_at=AVAILABLE_AT,
+            input_sources=(_identity_source(symbol),),
         )
         outcome = app.run_company_research(spec)
 
@@ -215,6 +241,7 @@ def test_verified_quote_and_validity_produce_a_ready_bridge():
         research_case=spec.research_case,
         facts=spec.facts,
         available_at=spec.available_at,
+        input_sources=spec.input_sources,
         quote=QuoteSnapshot(
             symbol="600519",
             quote_date=AS_OF,
@@ -321,6 +348,7 @@ def test_verified_quote_without_validity_contract_fails_closed_as_invalid_bridge
         research_case=spec.research_case,
         facts=spec.facts,
         available_at=spec.available_at,
+        input_sources=spec.input_sources,
         quote=QuoteSnapshot(
             symbol="600519",
             quote_date=AS_OF,

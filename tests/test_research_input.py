@@ -24,6 +24,7 @@ from value_investment_agent.research_input import (
 from value_investment_agent.research_run_contract import (
     AssumptionScenarioBinding,
     ResearchDependencyFingerprint,
+    ResearchIssuerIdentity,
     ResearchPitFrame,
     ResearchSourceDescriptor,
     ResearchValuationApproval,
@@ -152,13 +153,19 @@ def _assumptions():
 
 def _source(*, published_at=None):
     return ResearchSourceDescriptor(
-        id="facts-source",
+        id="f-1",
         kind="filing",
-        location="tests/fixtures/facts.json",
-        sha256="d" * 64,
+        location="https://www.cninfo.com.cn/annual-report.pdf",
+        sha256="b" * 64,
         published_at=published_at,
         retrieved_at=datetime(2026, 9, 20, 12, 0, tzinfo=timezone.utc),
         parser_version="parser-v1",
+        issuer_identity=ResearchIssuerIdentity(
+            venue="CNINFO",
+            security_code="600519",
+            issuer_name="贵州茅台",
+            organization_id="gssh0600519",
+        ),
     )
 
 
@@ -414,8 +421,15 @@ def test_versioned_refresh_preserves_prior_valuation_and_validity_artifacts():
         first, run_id="descriptor-refresh", facts=updated_facts,
         input_sha256=None,
         sources=(_source(), ResearchSourceDescriptor(
-            id="refreshed-facts", kind="research_artifact", location="facts-v2",
+            id="refreshed-facts", kind="research_artifact",
+            location="https://www.cninfo.com.cn/facts-v2",
             sha256="1" * 64, retrieved_at=AVAILABLE_AT,
+            issuer_identity=ResearchIssuerIdentity(
+                venue="CNINFO",
+                security_code="600519",
+                issuer_name="贵州茅台",
+                organization_id="gssh0600519",
+            ),
         )),
         point_in_time=replace(first.point_in_time,
                               available_at=datetime(2026, 9, 22, 12, tzinfo=timezone.utc),
@@ -479,6 +493,15 @@ def test_actual_valuation_input_node_requires_complete_event_bound_descriptor():
                       evidence_refs=[{"id": "verified-facts", "sha256": "d" * 64},
                                      {"id": "issuer-equity-basis", "sha256": basis_sha}]),
         sources=(*descriptor.sources,
+                 ResearchSourceDescriptor(
+                     id="verified-facts", kind="filing",
+                     location="https://static.cninfo.com.cn/verified-facts.pdf",
+                     sha256="d" * 64,
+                     issuer_identity=ResearchIssuerIdentity(
+                         venue="CNINFO", security_code="600519",
+                         issuer_name="贵州茅台", organization_id="gssh0600519",
+                     ),
+                 ),
                  ResearchSourceDescriptor(id="scenario-assumptions", kind="research_artifact",
                                           location="assumptions.json", sha256="c" * 64),
                  ResearchSourceDescriptor(id="assumption-package", kind="research_artifact",
@@ -722,6 +745,15 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
         research_case=replace(old.research_case,
                               evidence_refs=[*old.research_case.evidence_refs, pdf_ref]),
         sources=(*old.sources,
+                 ResearchSourceDescriptor(
+                     id="verified-facts", kind="filing",
+                     location="https://static.cninfo.com.cn/verified-facts.pdf",
+                     sha256="d" * 64,
+                     issuer_identity=ResearchIssuerIdentity(
+                         venue="CNINFO", security_code="600519",
+                         issuer_name="贵州茅台", organization_id="gssh0600519",
+                     ),
+                 ),
                  ResearchSourceDescriptor(id="scenario-assumptions", kind="research_artifact",
                                           location="assumptions.json", sha256="c" * 64),
                  ResearchSourceDescriptor(id="assumption-package", kind="research_artifact",
@@ -768,7 +800,7 @@ def test_complete_actual_bounded_refresh_persists_new_research_version(tmp_path)
         )
     dropped_source = finalize_input_descriptor(replace(
         descriptor, input_sha256=None,
-        sources=tuple(source for source in descriptor.sources if source.id != "facts-source"),
+        sources=tuple(source for source in descriptor.sources if source.id != "f-1"),
     ))
     with pytest.raises(ValueError, match="drops or changes a pending source"):
         attach_completed_event_research_input(**{**promotion, "completed": dropped_source})

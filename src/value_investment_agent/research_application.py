@@ -79,6 +79,12 @@ from .research_artifacts import (
     StoredResearchArtifact,
 )
 from .research_case import ResearchCase
+from .domain.research.issuer_identity import (
+    ISSUER_IDENTITY_NOT_READY,
+    ISSUER_IDENTITY_VERIFIED,
+    IssuerIdentityAssessment,
+    assess_issuer_identity,
+)
 from .research_gate import (
     ResearchGate,
     evaluate_with_human_approval,
@@ -372,6 +378,19 @@ class ResearchRunSpec:
             tuple(self.bridge_contribution_reviews),
         )
 
+    @property
+    def issuer_identity_assessment(self) -> IssuerIdentityAssessment:
+        facts_symbol = getattr(self.facts, "symbol", None)
+        if isinstance(self.facts_payload, Mapping) and "symbol" in self.facts_payload:
+            raw_symbol = self.facts_payload.get("symbol")
+            facts_symbol = raw_symbol if isinstance(raw_symbol, str) else None
+        return assess_issuer_identity(
+            symbol=self.symbol,
+            facts_symbol=facts_symbol,
+            fact_evidence_refs=getattr(self.facts, "evidence_refs", ()) or (),
+            sources=self.input_sources,
+        )
+
 
 @dataclass(frozen=True)
 class CompanyResearchRunOutcome:
@@ -400,6 +419,7 @@ class CompanyResearchRunOutcome:
     pre_decision_eligibility: PreDecisionEligibility | None = None
     bridge_contribution_reviews: tuple[BridgeContributionAssessment, ...] = ()
     interim_report_policy: InterimReportPolicyDecision | None = None
+    issuer_identity_status: str = ISSUER_IDENTITY_NOT_READY
 
     def __post_init__(self) -> None:
         if self.status not in RUN_STATUSES:
@@ -468,6 +488,7 @@ class ResearchApplicationService:
             raise TypeError("Research run requires a ResearchRunSpec")
 
         available_at = spec.available_at or self.now_utc()
+        identity = spec.issuer_identity_assessment
         profile = PROFILES[spec.profile_id]
         route = self.router.route(profile, spec.requested_model)
         if route.status != ROUTE_SUPPORTED:
@@ -495,6 +516,7 @@ class ResearchApplicationService:
                 pre_decision_eligibility=None,
                 bridge_contribution_reviews=(),
                 interim_report_policy=None,
+                issuer_identity_status=identity.status,
             )
 
         self._validate_route_contract(spec, route)
@@ -504,12 +526,39 @@ class ResearchApplicationService:
             spec.assumption_bindings,
         )
 
-        model = route.build_model()
-        valuation = model.value(spec.facts, spec.research_case)
-        if not isinstance(valuation, ValuationResult):
-            raise TypeError("Registered model returned a non-valuation result")
+        if identity.status == ISSUER_IDENTITY_VERIFIED:
+            model = route.build_model()
+            valuation = model.value(spec.facts, spec.research_case)
+            if not isinstance(valuation, ValuationResult):
+                raise TypeError("Registered model returned a non-valuation result")
+        else:
+            evidence_refs = list(
+                getattr(spec.facts, "evidence_refs", ())
+                or spec.research_case.evidence_refs
+            )
+            valuation = ValuationResult(
+                symbol=spec.symbol,
+                model_type=route.model_type or "unresolved",
+                valuation_date=getattr(spec.facts, "as_of"),
+                bear_value=None,
+                base_value=None,
+                bull_value=None,
+                confidence="低",
+                assumptions={"scope": "issuer identity admission blocked before model execution"},
+                sensitivities=[],
+                evidence_refs=evidence_refs,
+                blockers=list(dict.fromkeys([
+                    *getattr(spec.facts, "blockers", ()),
+                    *identity.blockers,
+                ])),
+                status="not_ready",
+                model_version=spec.model_version or route.selected_model,
+            )
         approval_decision = None
-        if spec.human_research_approval is not None:
+        if (
+            identity.status == ISSUER_IDENTITY_VERIFIED
+            and spec.human_research_approval is not None
+        ):
             case_payload, facts_payload, assumptions_payload = (
                 self._human_approval_payloads(spec)
             )
@@ -535,7 +584,10 @@ class ResearchApplicationService:
                 spec.research_case,
                 valuation,
                 model_id=route.selected_model,
-                approval=spec.valuation_approval,
+                approval=(
+                    spec.valuation_approval
+                    if identity.status == ISSUER_IDENTITY_VERIFIED else None
+                ),
             )
 
         validity, quote = self._resolve_validity_and_quote(spec, valuation)
@@ -569,6 +621,8 @@ class ResearchApplicationService:
 
         pre_decision = None
         if (
+            identity.status == ISSUER_IDENTITY_VERIFIED
+            and
             spec.human_research_approval is not None
             and spec.event_materiality_review is not None
             and validity is not None
@@ -598,6 +652,7 @@ class ResearchApplicationService:
                     *gate.blockers,
                     *valuation.blockers,
                     *binding_blockers,
+                    *identity.blockers,
                     *price_bridge.blockers,
                     *price_attractiveness.blockers,
                     *current_status.blockers,
@@ -654,6 +709,7 @@ class ResearchApplicationService:
             pre_decision_eligibility=pre_decision,
             bridge_contribution_reviews=spec.bridge_contribution_reviews,
             interim_report_policy=spec.interim_report_policy,
+            issuer_identity_status=identity.status,
         )
 
     def review_company_research(

@@ -36,6 +36,7 @@ from .research_run_contract import (
     INPUT_DESCRIPTOR_SCHEMA,
     AssumptionScenarioBinding,
     ResearchDependencyFingerprint,
+    ResearchIssuerIdentity,
     ResearchPitFrame,
     ResearchSourceDescriptor,
     ResearchValuationApproval,
@@ -470,6 +471,27 @@ def _source_from_payload(value: object) -> ResearchSourceDescriptor:
     if not isinstance(value, Mapping):
         raise ValueError("input source must be an object")
     data = dict(value)
+    raw_identity = data.get("issuer_identity")
+    if raw_identity is not None and not isinstance(raw_identity, Mapping):
+        raise ValueError("source issuer_identity must be an object")
+    identity_data = dict(raw_identity) if isinstance(raw_identity, Mapping) else None
+    issuer_identity = None
+    if identity_data is not None and isinstance(identity_data.get("venue"), str):
+        issuer_identity = ResearchIssuerIdentity(
+            venue=identity_data["venue"],
+            security_code=(
+                str(identity_data["security_code"])
+                if identity_data.get("security_code") is not None else None
+            ),
+            issuer_name=(
+                str(identity_data["issuer_name"])
+                if identity_data.get("issuer_name") is not None else None
+            ),
+            organization_id=(
+                str(identity_data["organization_id"])
+                if identity_data.get("organization_id") is not None else None
+            ),
+        )
     return ResearchSourceDescriptor(
         id=_string(data.get("id"), "source.id"),
         kind=_string(data.get("kind"), "source.kind"),
@@ -487,6 +509,7 @@ def _source_from_payload(value: object) -> ResearchSourceDescriptor:
             _string(data["parser_version"], "source.parser_version")
             if data.get("parser_version") else None
         ),
+        issuer_identity=issuer_identity,
     )
 
 

@@ -49,6 +49,35 @@ def _json_value(value: Any) -> Any:
 
 
 @dataclass(frozen=True)
+class ResearchIssuerIdentity:
+    """Issuer identity extracted for one venue-bound source artifact."""
+
+    venue: str
+    security_code: str | None = None
+    issuer_name: str | None = None
+    organization_id: str | None = None
+
+    def __post_init__(self) -> None:
+        venue = self.venue.strip().upper()
+        if not venue:
+            raise ValueError("Research issuer identity venue is required")
+        object.__setattr__(self, "venue", venue)
+        for field in ("security_code", "issuer_name", "organization_id"):
+            value = getattr(self, field)
+            if value is not None:
+                normalized = value.strip()
+                object.__setattr__(self, field, normalized or None)
+
+    def as_policy(self) -> dict[str, str | None]:
+        return {
+            "venue": self.venue,
+            "security_code": self.security_code,
+            "issuer_name": self.issuer_name,
+            "organization_id": self.organization_id,
+        }
+
+
+@dataclass(frozen=True)
 class ResearchSourceDescriptor:
     """Hash-verified source identity plus parser and availability timestamps."""
 
@@ -59,6 +88,7 @@ class ResearchSourceDescriptor:
     published_at: datetime | None = None
     retrieved_at: datetime | None = None
     parser_version: str | None = None
+    issuer_identity: ResearchIssuerIdentity | None = None
 
     def __post_init__(self) -> None:
         if not self.id.strip() or not self.kind.strip() or not self.location.strip():
@@ -72,9 +102,13 @@ class ResearchSourceDescriptor:
         object.__setattr__(self, "id", self.id.strip())
         object.__setattr__(self, "kind", self.kind.strip())
         object.__setattr__(self, "location", self.location.strip())
+        if self.issuer_identity is not None and not isinstance(
+            self.issuer_identity, ResearchIssuerIdentity
+        ):
+            raise TypeError("Research source issuer identity must use its typed contract")
 
     def as_policy(self) -> dict[str, Any]:
-        return {
+        policy = {
             "id": self.id,
             "kind": self.kind,
             "location": self.location,
@@ -87,6 +121,9 @@ class ResearchSourceDescriptor:
             ),
             "parser_version": self.parser_version,
         }
+        if self.issuer_identity is not None:
+            policy["issuer_identity"] = self.issuer_identity.as_policy()
+        return policy
 
 
 @dataclass(frozen=True)
