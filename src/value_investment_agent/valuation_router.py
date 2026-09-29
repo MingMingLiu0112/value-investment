@@ -99,6 +99,7 @@ class ValuationModelRegistry:
                 model_id
                 for model_id in (
                     profile.primary_valuation_model,
+                    *profile.authorized_alternative_models,
                     *profile.cross_check_models,
                 )
                 if model_id not in profile.unsupported_models
@@ -195,16 +196,22 @@ class ValuationRouter:
         selected_model = requested_model or primary_model
         blockers: list[str] = []
 
-        authorized_models = {primary_model, *profile.cross_check_models}
+        authorized_alternatives = set(profile.authorized_alternative_models)
+        cross_check_models = set(profile.cross_check_models)
         rejected_models = set(profile.unsupported_models)
-        if selected_model not in authorized_models | rejected_models:
+        if selected_model not in {
+            primary_model,
+            *authorized_alternatives,
+            *cross_check_models,
+            *rejected_models,
+        }:
             blockers.append(f"model_not_authorized_for_profile:{selected_model}")
             return ValuationRoute(
                 profile.profile_id, requested_model, selected_model, ROUTE_UNSUPPORTED,
                 None, None, None, blockers, (),
             )
 
-        if selected_model != primary_model:
+        if selected_model in cross_check_models | rejected_models:
             blockers.append(
                 f"model_not_primary_for_profile:{selected_model}:{primary_model}"
             )
@@ -213,9 +220,9 @@ class ValuationRouter:
                 ROUTE_MODEL_NOT_APPLICABLE, None, None, None, blockers, (),
             )
 
-        registration = self.registry.get(primary_model)
+        registration = self.registry.get(selected_model)
         if registration is None:
-            blockers.append(f"generic_engine_not_registered:{primary_model}")
+            blockers.append(f"generic_engine_not_registered:{selected_model}")
             return ValuationRoute(
                 profile.profile_id, requested_model, selected_model, ROUTE_UNSUPPORTED,
                 None, None, None, blockers, (),

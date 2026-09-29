@@ -68,7 +68,11 @@ def test_profile_allowed_models_do_not_use_symbol_or_unsupported_models():
 
         assert allowed[0] == profile.primary_valuation_model
         assert set(allowed) == (
-            {profile.primary_valuation_model, *profile.cross_check_models}
+            {
+                profile.primary_valuation_model,
+                *profile.authorized_alternative_models,
+                *profile.cross_check_models,
+            }
             - set(profile.unsupported_models)
         )
         assert not set(allowed) & set(profile.unsupported_models)
@@ -128,4 +132,3 @@ def test_router_accepts_an_explicit_registry_instance():
     assert route.status == "SUPPORTED"
     assert route.model_type == "residual_income_or_equity_value"
     assert route.required_inputs
-

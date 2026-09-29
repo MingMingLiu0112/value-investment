@@ -231,6 +231,50 @@ def test_three_profiles_execute_through_one_symbol_free_runner():
             assert artifact.envelope.run_id == spec.run_id
 
 
+def test_manufacturing_profile_explicit_equity_route_uses_shared_facts_contract():
+    spec = ResearchRunSpec(
+        run_id="run-explicit-equity-route",
+        symbol="000333",
+        profile_id="mature_manufacturing",
+        research_case=case("000333", industry="制造业"),
+        facts=residual_facts("000333"),
+        requested_model="residual_income_or_equity_value",
+        available_at=AVAILABLE_AT,
+        input_sources=(_identity_source("000333"),),
+    )
+
+    outcome = service().run_company_research(spec)
+
+    assert outcome.status == RUN_COMPLETED_WITH_BLOCKERS
+    assert outcome.route is not None
+    assert outcome.route.as_policy()["requested_model"] == "residual_income_or_equity_value"
+    assert outcome.valuation is not None
+    assert outcome.valuation.model_type == "residual_income_or_equity_value"
+    assert outcome.valuation.status == "conditional_research_only"
+
+
+def test_manufacturing_equity_route_rejects_fcff_facts_without_fallback():
+    spec = ResearchRunSpec(
+        run_id="run-equity-route-wrong-facts",
+        symbol="000333",
+        profile_id="mature_manufacturing",
+        research_case=case("000333", industry="制造业"),
+        facts=FinancialFacts(
+            symbol="000333",
+            as_of=AS_OF,
+            verified=True,
+            evidence_refs=[{"id": "facts", "sha256": "b" * 64}],
+            blockers=[],
+        ),
+        requested_model="residual_income_or_equity_value",
+        available_at=AVAILABLE_AT,
+        input_sources=(_identity_source("000333"),),
+    )
+
+    with pytest.raises(TypeError, match="residual_income_or_equity_value facts require QualityCompounderFacts"):
+        service().run_company_research(spec)
+
+
 def test_verified_quote_and_validity_produce_a_ready_bridge():
     repository = InMemoryResearchArtifactRepository()
     spec, app = quality_spec(run_id="ready-bridge", repository=repository)

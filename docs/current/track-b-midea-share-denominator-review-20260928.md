@@ -160,18 +160,40 @@ monthly return `2026090402241`,
 Original PDFs are retained under
 `runtime/company-research/midea-share-denominator-followup-20260930/`.
 
-Therefore the share-count item is closed; it is no longer a reason to prevent
-per-share research. The evidence was retrieved after its 2026-09-29 report
-date under the conservative date-only convention, so it cannot be used to claim
-that the denominator was known at the 2026-09-29 close. Separately, the
-registered consolidated FCFF route is
-`FCFF_NOT_APPLICABLE_FOR_CURRENT_PUBLIC_SCOPE`: public filings do not separate
+The 2026-09-29 share-count item is closed for that date and later research.
+The evidence was retrieved after its report date under the conservative
+date-only convention, so it cannot be used to claim that the denominator was
+known at the 2026-09-29 close or backdated to 2026-06-30.
+
+## 2026-09-30 Valuation-Route and June 30 Denominator Review
+
+The FCFF scope conclusion is unchanged:
+`FCFF_NOT_APPLICABLE_FOR_CURRENT_PUBLIC_SCOPE`. Public filings do not separate
 the financial-business cash/debt and invested-capital scope needed for a
-defensible industrial FCFF/equity bridge. The current shared registry does not
-authorize the residual-income candidate for the `mature_manufacturing` profile,
-and no alternative valuation result was run or admitted. The present case
-disposition is `MODEL_NOT_APPLICABLE`, not a share-denominator blocker; stop
-repeating searches for the same financial-service, internal-elimination or
-project-level CapEx disclosures. Those public-scope stops remain limited to
-the FCFF path. No model, workbook, baseline, quote-day decision or trade state
-was changed; `action=no_order`.
+defensible industrial FCFF/equity bridge. The generic `mature_manufacturing`
+profile now explicitly authorizes the shared `residual_income_or_equity_value`
+model as an alternative when requested. FCFF remains the default. The route
+change is dated 2026-09-30, uses no symbol-specific branch or new valuation
+formula, and does not rewrite frozen baseline v13.
+
+The alternative model uses 2026-06-30 parent equity CNY 212.861055bn from the
+issuer's 2026H1 interim report. Its equity-change statement on physical pages
+97-100 reconciles attributable comprehensive income, distributions and
+treasury-share movements (source PDF SHA-256
+`576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8`). The
+remaining A blocker is the matching 2026-06-30 ordinary-share denominator:
+the report's 7,613,438,907 issued-share count is not net of all treasury or
+employee-plan shares, and its 7,470,497,000 basic / 7,540,304,000 diluted
+weighted-average EPS counts are period averages, not date-end shares. The
+treasury-share note does not provide a complete date-end share count by use,
+so no defensible low/base/high interval is currently evidenced. The verified
+7,445,382,896 shares at 2026-09-29 are a different date and are not backdated.
+
+Historical ROE proxies and capital-allocation history may inform explicit
+Bear/Base/Bull sensitivity assumptions, but are not registered model facts.
+Equity cost, ROE fade, retention, terminal ROE and growth remain B-class
+scenario inputs. No Midea `ValuationResult` is emitted until the dated share
+denominator is resolved and these assumptions are registered. The public
+FCFF-scope evidence stops remain limited to financial-business carve-out,
+internal eliminations and project-level CapEx; do not repeat those searches
+for the residual-income path. `action=no_order`.

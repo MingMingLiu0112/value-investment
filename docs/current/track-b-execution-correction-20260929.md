@@ -9,18 +9,18 @@
 | 公司 | Hard blockers before → now | 当前 B / C / D | 当前估值裁决 | 仍独立存在的报价日门禁 |
 |---|---|---|---|---|
 | 600887 伊利 | 研究估值 A：2 → 0（回溯重建）；报价日 A：1 → 1 | 5 / 2 / 1 | `CONDITIONAL_VALUATION_READY`，低置信度；共享模型 Bear/Base/Bull CNY 8.05 / 11.02 / 13.13，敏感区间 CNY 7.10–15.03 | SCP010/011 合计 CNY 20bn 到期处置与偿付后现金/债务桥未验证；`ModelValidity` 未成立，`PriceBridge=null`，`Decision Review=NOT_ASSESSABLE` |
-| 000333 美的 | 股数分母子项 A：1 → 0；整体估值模型门禁 A：1 → 1 | 6 / 0 / 3 | `A1/B6/C0/D3`；注册 FCFF 对当前公开并表范围 `MODEL_NOT_APPLICABLE`，残余收益替代候选未获 `mature_manufacturing` profile 授权；整体 `VALUATION_NOT_READY`，没有估值结果 | 9 月 29 日分母披露不回填该日决策；没有适用且获准模型，故不形成有效报价日估值 |
+| 000333 美的 | 模型路由 A：1 → 0；2026-06-30 分母 A：1 → 1；9/29 后日分母子项：1 → 0 | 6 / 0 / 3 | `A1/B6/C0/D3`；FCFF 对当前公开并表范围 `MODEL_NOT_APPLICABLE`；共享 residual-income 已由 profile 显式授权，但 6/30 分母未界定，整体 `VALUATION_NOT_READY`，无每股结果 | 9 月 29 日分母仅适用后日，不回填 6 月 30 日估值基准或该日收盘前决策 |
 | 601088 中国神华 | 收购后当前范围中周期归母盈利 A：1 → 1 | 3 / 3 / 0 | 共享周期模型 `NOT_READY`；Bear/Base/Bull 估值值均为 null | 不生成价格桥或 Decision Review |
 
 伊利已完成本阶段要求的估值准备复核并形成可披露边界的研究估值。报告的 18 格敏感性以共享模型计算函数重算，18/18 与存档结果一致；这是情景算术复核，不代表预测或报价日决策有效。伊利剩余事件/报价门禁不得反向抹去其 2026-06-30 研究估值的 `CONDITIONAL_VALUATION_READY`。
 
-**分类范围统一（2026-09-30）：**本表 A/B/C/D 对美的统计的是“当前公开资料与已获准共享模型是否能产出可复核估值”。股数分母这一具体 A 子项已关闭，但它不等于整体估值 A 清零。FCFF 对公开并表范围不适用，替代残余收益尚未获 profile 授权，因此整体仍有一个模型适用性/授权 A 门禁；它不是新的数据未知项。金融业务拆分、内部抵销和项目级 CapEx 三项 `EVIDENCE_STOP` 只适用于 FCFF 路径，不重复搜索。若以后作通用 profile/model 路由变更，须先记录适用性证据、模型变更理由与时间，再以新运行评估；不得回写冻结 baseline。
+**分类范围统一（2026-09-30）：**当前分类分别为美的 `A1/B6/C0/D3`、伊利 `A0/B5/C2/D1`、神华 `A1/B3/C3/D0`。美的通用 `mature_manufacturing` profile 已明确授权共享 residual-income 替代路由，FCFF 仍为默认；因此原模型路由 A 已关闭，但 2026-06-30 普通股分母仍是唯一整体估值 A，A 总数没有下降。金融业务拆分、内部抵销和项目级 CapEx 三项 `EVIDENCE_STOP` 仅限定于不适用的 FCFF 路径，不再作为股权估值 blocker，也不重复搜索。模型变更不回写冻结 baseline。
 
 **Prospective case 后续运行（2026-09-30）：** 对已登记 case `prospective-600887-20260927-v2` 使用新的 `ResearchInputDescriptor` 调用共享 `ResearchApplicationService` 并重新计算；本次 run ID 为 `prospective-600887-20260927-v2-followup-20260930T031923+0800`，descriptor SHA-256 为 `545c52ae909e842dc2d4aca55d091dfaa3c087c4a96937525cf0f767b0933b76`。输入哈希绑定了 v13 注册回执、冻结 baseline、伊利 readiness review、前序共享结果和 issuer-identified 原始来源；未为既有官方原件虚构新的 retrieval 时间。后续 valuation readiness 为 `CONDITIONAL_VALUATION_READY`，共享模型输出仍为 Bear/Base/Bull CNY 8.0476 / 11.0234 / 13.1335。冻结 baseline v13 及其卡片没有改写，仍为 `BASELINE_PARTIAL / VALUATION_NOT_READY`；运行发生在 cutoff 之后，不能证明 strict PIT。该运行不是报价日模型有效性审查：`ModelValidity=NOT_ESTABLISHED`，服务诊断的价格桥为 `PENDING_EXTERNAL_DATA`、现价为空；admitted `PriceBridge=null`，`Decision Review=NOT_ASSESSABLE`，`action=no_order`。完整输入绑定和机器复跑见 [follow-up artifact](600887-prospective-case-followup-20260930.json)。
 
 该 follow-up 的独立算术复核还发现，前序 readiness review 用已四舍五入展示值 CNY 7.915bn 计算 Base 现金代理余量。按未舍入的 `11.307 × (1 - 30%) = 7.9149bn` 计算，减去政策金额 CNY 7.71694001374bn 后，精确余量应为 CNY 0.19795998626bn，而不是 0.19805998626bn。新 follow-up 明确记录该数值更正；旧 review 保持原样，估值结果和就绪状态不受影响。
 
-美的的关闭项仅是目标日股数：截至 2026-09-29，扣除库存股后的 A/H 普通股为 7,445,382,896 股，港交所证据及 SHA-256 见[分母复核](track-b-midea-share-denominator-review-20260928.md)。注册 FCFF 路径不适用于当前公开并表范围；existing profile 不允许将 quality-compounder residual-income 模型直接套到 `mature_manufacturing`。这不是公司整体估值方法均不适用的证明，准确状态是“FCFF 路径不适用、替代路径未授权/未建立、整体估值尚未就绪”。本轮不伪造适用性、不创建美的专属模型，也不重复搜索已停止的金融业务拆分、内部抵销与项目级 CapEx 材料。只有通用模型合同/路由有经论证的适用性结论，或出现可验证的新公开输入时才重开。
+截至 2026-09-29，扣除库存股后的 A/H 普通股为 7,445,382,896 股；这关闭的是后日分母，不是 2026-06-30 权益基准所需股数。注册 FCFF 路径不适用于当前公开并表范围；通用 `mature_manufacturing` profile 现已显式允许共享 residual-income 替代模型，默认仍为 FCFF。H1 报告支持 6/30 归母权益与权益变动表，但无法界定 6/30 全部库存/员工计划持股后的普通股分母，因此保留一个 A，当前不生成每股估值。不得按 symbol 建模，也不重复搜索已停止的 FCFF 金融业务拆分、内部抵销与项目级 CapEx 材料。
 
 神华的一个 A blocker 不能仅靠把参数范围放宽来降级：现有煤价、销量、单位成本等是分年度、分字段锚点，不是收购后同范围的联合盈利情景；重组报告的备考扣非归母净利润增量为税后归母口径，不能填进模型要求的税前归母经营利润后再扣现金税。其维护性 CapEx、归母净现金、普通股息能力仍属于未定界 B 输入；其他小额差异保留为 C，不再升级为硬门禁。停止重复分析同一报告，只有新正式证据能建立当前收购后范围的可比跨周期盈利边界时才重开 A。
 
@@ -53,7 +53,7 @@ CONDITIONAL_VALUATION_READY：1/3（600887）
 | 公司 | Hard blockers before | Hard blockers now | B / C / D 当前分组数 | 当前估值裁决 |
 |---|---|---|---|---|
 | 600887 伊利 | 2（回溯重建：股数分母、可约束的正常化 ROE 路径） | 0 | 5 / 2 / 1 | `CONDITIONAL_VALUATION_READY` |
-| 000333 美的 | 旧基线未分类，不能可靠还原 | 1：当前普通股分母未能可靠确定或约束 | 6 / 0 / 3 | 原合并 FCFF `MODEL_NOT_APPLICABLE`；当前替代模型未就绪 |
+| 000333 美的 | 旧基线未分类，不能可靠还原 | 1：2026-06-30 普通股分母未能可靠确定或约束 | 6 / 0 / 3 | FCFF `MODEL_NOT_APPLICABLE`；共享 residual-income 已获 profile 授权，但没有每股估值输入 |
 | 601088 中国神华 | 旧基线未分类，不能可靠还原 | 1：收购后当前合并范围的中周期归母盈利贡献无法由现有证据界定 | 3 / 3 / 0 | `CYCLICAL_MODEL_NOT_READY / VALUATION_NOT_READY` |
 
 分组数按估值依赖项统计，不把同一底层缺口拆成许多字段来夸大进度。美的、神华的“之前”计数缺失，所以只报告当前分类。
@@ -144,9 +144,9 @@ CNINFO 四份原件均验证 `%PDF-` 签名并由本机复算 SHA-256；逐文�
 - **C=0。** 当前没有额外确认会影响估值但可单独忽略的已量化 C 组。
 - **D=3。** 现有公开披露未提供：(1) 工业与金融业务独立现金、债务、利润和资本需求桥；(2) 逐项内部抵销/关联银行产品调节；(3) 项目级维护与增长 CapEx 用途及收益拆分。停止重复翻查相同披露；仅在发行人发布可分拆材料时重开。
 
-原登记 consolidated FCFF 因金融服务与其他/未分配业务并表而 `MODEL_NOT_APPLICABLE`，不得硬套工业 FCFF。ROE 缺口已从 A 降为 B，但普通股分母的 A blocker 仍阻止每股结果；当前公开证据也不足以切换到 equity/SOTP/normalized earnings 并完成每股价值桥。残余收益等每股模型同样需要可信普通股数。8 月 29 日之前的披露集合已停止重复检查；9 月 3 日之后的新正式股本/库存股证据按明确触发单独审查。上述是**估值可推进性裁决**，不是永久停止公司研究。
+原登记 consolidated FCFF 因金融服务与其他/未分配业务并表而 `MODEL_NOT_APPLICABLE`，不得硬套工业 FCFF。通用 profile 现显式授权共享 residual-income 路由，未创建美的专属公式。ROE 等情景输入归 B；唯一 A 是 2026-06-30 普通股分母仍无法从时点一致公开资料界定，不能将 9/29 后日分母或期间加权 EPS 股数倒填。FCFF 的三项证据停止不限制共享股权模型。8 月 29 日前的披露集合及 9 月 3 日后已审材料不重复搜索；仅在正式材料能给出目标日库存股全量勾稽时重开分母 A。这是**估值可推进性裁决**，不是永久停止公司研究。
 
-**模型/估值执行：** 本轮未生成每股估值或价格桥。主模型 FCFF 对现有并表公开范围不适用；任何替代模型也仍需可信分母与可追溯的盈利/权益假设。当前估值状态是 `VALUATION_NOT_READY`，并非全公司研究停止。
+**模型/估值执行：** 本轮未生成每股估值或价格桥。Residual-income 已可通过共享服务显式选择，但模型契约要求普通股分母，故在唯一 A 未关闭前不运行。新适用性结果 `midea-valuation-applicability-v4` 位于 `runtime/company-research/midea-valuation-applicability-20260930-v3/evidence.json`，SHA-256 `aebcaf46591cc6814e2e40e117665edb8d58fe3fd9ff6423db949a3a5d750973`；其 logical latest pointer 已更新，v13 未改。当前估值状态仍为 `VALUATION_NOT_READY`，不是全公司研究停止。
 
 ## 601088 中国神华
 
@@ -240,8 +240,8 @@ Issuer Identity Gate 已在共享输入边界 fail closed：研究证券、Finan
 
 本节更新 9 月 29 日报告中发生新变化的状态，不改写冻结 baseline v13 或上述历史分析。
 
-- **美的分母 A blocker 已关闭。** 港交所 9 月 29 日翌日披露与 H 股变动原件将发行股数、库存股和非库存股勾稽为 7,629,915,859 / 184,532,963 / 7,445,382,896；来源、物理页和 SHA-256 见[分母复核补记](track-b-midea-share-denominator-review-20260928.md)。该股数披露在报价日之后可用，不回填 9 月 29 日价格决策。现分类 `A0/B6/C0/D3`。注册 FCFF 对当前公开并表范围不适用；Residual Income 候选没有被 `mature_manufacturing` profile 授权，本轮没有运行或登记替代估值，当前裁决为 `MODEL_NOT_APPLICABLE`。原金融业务分拆、内部抵销和项目级 CapEx 的 D 停止项限定在 FCFF 路径，不继续搜索相同材料。
+- **美的模型切换与分母门禁（2026-09-30）。** 模型适用性包 v4 将共享 residual-income 登记为 `mature_manufacturing` 的显式替代路由，默认 FCFF 不变；没有使用美的专属公式。6/30 归母权益及权益变动表已由 H1 原件支持，但 6/30 普通股分母仍属唯一 A，H1 加权 EPS 股数和 9/29 后日股数均不能代替。ROE、权益成本、留存/终值假设列为待登记 B 情景；当前不运行估值、不修改 v13。FCFF 专属的三项 D 停止不重开。
 - **伊利研究估值不变。** 低置信度 `CONDITIONAL_VALUATION_READY` 仍只适用于 2026-06-30 研究基准，报价日 review 仍 `NOT_ASSESSABLE`。对现有 18 格敏感性使用共享 residual-income 函数逐格重算，18/18 数值匹配；该核验不提升置信度、分红可持续性或价格决策状态。9 月 30 日官方上交所索引未出现 10/11 期兑付/续作公告，详见既有[伊利短融审查](track-c-yili-short-term-financing-redemption-20260929.md)。
 - **神华仍为 `A1/B3/C3/D0`，估值 `NOT_READY`。** B 类只有部分经营驱动有历史/压力锚，不等于维护性 CapEx、归母净现金和股息能力已获得估值级范围。重组报告备考扣非归母净利润不得直接当作模型税前归母经营利润后再次扣税；唯一 A 仍是收购后当前范围、跨周期、可归属且可用于共享模型的利润边界缺失。原始模型的 `trough_parent_operating_profit` 是合同门禁输入但当前算术仅回传；本阶段不扩大模型合同或调整代码。
 
-本轮定向回归：53 passed（issuer identity、Yili shared binding、residual-income、cyclical）；伊利敏感性网格 18/18 重算一致。Core Research Gates 最近完整结果仍为 1,154 passed、23 skipped、2 warnings；没有重跑完整仓库测试。A/H 股数或索引补记没有产生可发布的报价日 Decision Review。Canonical Excel 未更新，获准的 `@oai/artifact-tool` 当前不可用；没有替代工作簿，`action=no_order`。
+此前伊利敏感性网格 18/18 重算一致，且此前的路由/身份定向集为 53 passed。本轮 2026-09-30 定向回归为 66 passed；Core Research Gates 同款离线清单为 1,157 passed、23 skipped、2 warnings。全仓库未执行。A/H 股数或索引补记没有产生可发布的报价日 Decision Review。Canonical Excel 未更新，获准的 `@oai/artifact-tool` 当前不可用；没有替代工作簿，`action=no_order`。

@@ -16,6 +16,7 @@ class ResearchProfile:
     cross_check_models: tuple[str, ...]
     cycle_profile: str | None
     unsupported_models: tuple[str, ...]
+    authorized_alternative_models: tuple[str, ...] = ()
 
 
 QUALITY_COMPOUNDER = ResearchProfile(
@@ -27,6 +28,7 @@ MATURE_MANUFACTURING = ResearchProfile(
     "mature_manufacturing", "制造业", "家电与智能制造", "成长价值 / 成熟经营", "成熟",
     ("ebit", "capex", "working_capital_change", "net_debt", "shares"),
     "fcff", ("fcf_yield", "relative_multiple"), None, (),
+    ("residual_income_or_equity_value",),
 )
 CYCLICAL_CASH_RETURN = ResearchProfile(
     "cyclical_cash_return", "周期资源", "煤炭与综合能源", "周期正常化 / 现金回报", "周期",

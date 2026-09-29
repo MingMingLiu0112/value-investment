@@ -38,27 +38,33 @@ follow-up/shared-binding/issuer-identity set passed `37` tests. The two
 warnings are existing openpyxl `create_named_range` deprecations in workbook
 preservation tests.
 
-## 2026-09-30 Midea A/H Denominator Closeout — current
+Latest continuation verification after the 2026-09-30 model-route correction:
+the exact 139-file offline-core list passed `1157 passed, 23 skipped, 2
+warnings`; the focused routing/applicability/identity/architecture set passed
+`66` tests. The two warnings remain the existing openpyxl deprecations.
+
+## 2026-09-30 Midea Post-Period Denominator and June Valuation Blocker — current
 
 The latest target-date share denominator is verified from official HKEX
 disclosures and source hashes in
 `docs/current/track-b-midea-share-denominator-review-20260928.md`: as of
 2026-09-29, 7,629,915,859 A/H shares were issued, 184,532,963 were issuer-held
 treasury shares, and 7,445,382,896 ordinary shares were outstanding excluding
-treasury. The source became available after the 2026-09-29 close; it closes the
-share-count A blocker for subsequent research but cannot be backdated into the
-2026-09-29 quote decision or baseline v13.
+treasury. The source became available after the 2026-09-29 close and verifies
+that later date only; it cannot close the 2026-06-30 denominator blocker or be
+backdated into the 2026-09-29 quote decision or baseline v13.
 
-Midea's share-denominator sub-blocker is closed, but the overall valuation
-readiness classification is `A1/B6/C0/D3`: the registered FCFF route is
-`FCFF_NOT_APPLICABLE_FOR_CURRENT_PUBLIC_SCOPE`, and the shared registry does
-not authorize its residual-income candidate for `mature_manufacturing`. Thus
-no applicable, profile-authorized model is currently available and the case
-remains `VALUATION_NOT_READY`. This is one model-admissibility A blocker, not
-an invitation to repeat disclosure searches. The three public-scope stops
-remain limited to the FCFF path. A future general profile/model route change
-would require an explicit applicability rationale and a new prospective
-valuation run; no Midea-specific model or baseline rewrite is authorized here.
+Midea's 2026-09-29 denominator is verified, but it cannot be backdated to the
+2026-06-30 equity basis. The overall classification remains `A1/B6/C0/D3`:
+the single A blocker is the unbounded 2026-06-30 ordinary-share denominator,
+not model authorization. The registered FCFF route is
+`FCFF_NOT_APPLICABLE_FOR_CURRENT_PUBLIC_SCOPE`; the generic profile now
+explicitly authorizes the shared residual-income alternative while keeping
+FCFF as default. No Midea valuation was run because the date-matched per-share
+denominator is unresolved. The three public-scope stops remain limited to the
+FCFF path; do not repeat those disclosure searches for residual income. The
+route change applies only to new prospective runs and does not rewrite v13.
+The current applicability output is `runtime/company-research/midea-valuation-applicability-20260930-v3/evidence.json`, SHA-256 `aebcaf46591cc6814e2e40e117665edb8d58fe3fd9ff6423db949a3a5d750973`.
 
 ## 2026-09-30 Yili Official Exchange-Index Recheck — current
 
@@ -320,7 +326,7 @@ or the M2-M7 graduation gates. Independent R1 reviews cover all three cases.
 | Symbol | Current A/B/C/D | Valuation disposition | Actual remaining A blocker |
 |---|---:|---|---|
 | 600887 | 0 / 5 / 2 / 1 | `CONDITIONAL_VALUATION_READY`, low-confidence research-only; shared residual-income scenarios CNY 8.05 / 11.02 / 13.13, full sensitivity CNY 7.10-15.03 | None for the 2026-06-30 research valuation. A separate quote-date event/`ModelValidity` gate remains open; no `PriceBridge`, `PriceAttractiveness`, or assessable `Decision Review`. |
-| 000333 | 1 / 6 / 0 / 3 | Registered FCFF route `MODEL_NOT_APPLICABLE`; the case has no applicable profile-authorized model and remains `VALUATION_NOT_READY` | Share-denominator sub-blocker is closed. Remaining A is model-admissibility; no per-share valuation was run under an admitted alternative model. |
+| 000333 | 1 / 6 / 0 / 3 | Registered FCFF scope `MODEL_NOT_APPLICABLE`; shared residual-income is explicitly profile-authorized but the case remains `VALUATION_NOT_READY` | Exact 2026-06-30 share denominator is not bounded; verified 2026-09-29 shares are not backdated. No per-share valuation was run. |
 | 601088 | 1 / 3 / 3 / 0 | No valuation result; normalized cyclical model remains not ready | Acquired assets' current-perimeter mid-cycle attributable earnings contribution is unbounded. Legacy coal/electricity/transport ranges and disclosed H1 facts remain scenario inputs, not standalone company valuation blockers. |
 
 Yili's bounded CNINFO window yielded 10/10 candidate dispositions
@@ -332,9 +338,9 @@ still lacks a verified redemption/rollover and post-payment cash/debt bridge.
 The readiness JSON separates the research scenario from arithmetic-only price
 comparison and has `price_bridge=null`.
 
-Midea's share-denominator A sub-blocker is closed by the 2026-09-29 A/H
-reconciliation; the case retains one separate A blocker because there is no
-applicable profile-authorized model. Its three D items are stops for the inapplicable FCFF scope,
+Midea's 2026-09-29 A/H denominator is verified but does not close the
+2026-06-30 model-date share denominator A blocker. The explicit residual-income
+alternative is profile-authorized; its three D items remain stops for the inapplicable FCFF scope,
 not reasons to keep searching the same filings. Reopen those only if a new
 official disclosure supplies a finance-business carve-out, a material
 consolidation bridge, or project-level CapEx facts relevant to a newly admitted
