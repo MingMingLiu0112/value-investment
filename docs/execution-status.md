@@ -38,9 +38,12 @@ workflow `offline-core` selection across 139 test files passed locally:
 1,142 passed, 23 skipped, 2 openpyxl deprecation warnings. ACTUAL replay tests
 that require ignored local evidence were skipped under the workflow's default
 environment; this is not a successful ACTUAL evidence replay. The full
-repository suite was not run. GitHub CI for the unpushed working changes is
-pending. Canonical Excel state changed but was not published because the
-approved workspace dependency `@oai/artifact-tool` is absent. The one WPS
+repository suite was not run. GitHub Core Research Gates run `36524898780`
+passed both `offline-core` and `postgres-integration` for code commit
+`8bf11cdba1b8cec1feb11c481855d69d6fb049ad`.
+
+Canonical Excel state changed but was not published because the approved
+workspace dependency `@oai/artifact-tool` is absent. The one WPS
 workbook was not modified and no substitute workbook was created. The machine-
 readable review and burn-down are indexed in `docs/current/README.md`.
 
@@ -51,7 +54,7 @@ VALUATION_READY = 0/3
 CONDITIONAL_VALUATION_READY = 1/3 / 600887
 ISSUER_IDENTITY_GATE = INTEGRATED_LOCAL_MAIN_24f4de3 / FAIL_CLOSED / FOCUSED_34_PASS
 CORE_RESEARCH_GATES_LOCAL = OFFLINE_CORE_1142_PASS_23_SKIP / 139_FILES
-CORE_RESEARCH_GATES_GITHUB = PENDING_PUSH
+CORE_RESEARCH_GATES_GITHUB = 36524898780 / SUCCESS / BOTH_JOBS / FOR_8bf11cd
 CANONICAL_EXCEL_UPDATED = NO / APPROVED_SPREADSHEET_DEPENDENCY_MISSING
 NEW_EXCEL_CREATED = 0
 STRICT_PIT = NOT_PROVEN
