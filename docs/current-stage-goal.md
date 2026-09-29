@@ -1,25 +1,29 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-## CURRENT AUTHORIZATION：STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH（2026-09-29）
+## CURRENT AUTHORIZATION：STAGE-EXECUTION-CORRECTION-CONTINUATION（2026-09-29）
 
-本阶段取代 `STAGE-EXECUTION-CORRECTION`，继续唯一长期总 Goal `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`。阶段是持续公共研究与人工决策支持，不是单次 checkpoint，也不代表总 Goal 完成。按 Track A-E 和预登记的三个 ResearchCase 继续；先处理新材料性公告、已完成交易会话、现有研究缺口与 baseline，再做产品投影和 PIT/方法验证。不得为维持进度重复扫描同一水位、重放相同测试、重发相同 Excel、扩大公司数量或新增框架。
+本阶段承接唯一长期总 Goal `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`，优先把已有研究推进到可复核估值和决策审查，不以继续增加未知项或研究档案为进度。完成口径是：分类现存问题、关闭真实 A 类 blocker、将可容忍不确定性纳入情景、对证据不足路径执行 `EVIDENCE_STOP`，并只在模型有效性与报价日事件覆盖成立时形成有效 `PriceBridge` / `Decision Review`。本阶段不代表总 Goal、产品或用户验收完成。
 
-R2 私人输入、R3 生产授权、R5 最终验收和 R6 自然时间只 PARK 各自 DAG 节点，不能成为公共研究停止理由。M4 不请求、推断或扫描私人组合；M6 保持 `PARKED_SAFE_ONLY / NOT_STARTED`；600519 维持 `EVIDENCE_STOP / NOT_PIT_SAFE / NOT_ADMITTED`，没有新重大外部证据不重开。当前最多跟踪六个预登记 profile 覆盖案例；不得因价格或预期收益更换公司、移动 observation start、修改原始 baseline 或追认历史 PIT。
+用户最新阶段指令覆盖此前“持续公共研究工作台”的工作优先级：暂停 TSA/PKI 扩张、历史 PIT 补证和重复扫描；不新增公司、框架、版本族或工作簿，不重开 600519；baseline v13 和原始收据保持 immutable。R2、R3、R5、R6 仅阻断各自 DAG 节点。M4 不读取私人组合，M6 维持未启动，永久 `action=no_order`，由用户作最终投资决定。
 
-当前机器证据和状态摘要见本文件紧随其后的 2026-09-29 行情/事件更新及 `docs/execution-status.md` 当前状态节。snapshot v13 与其登记、输入、事件和价格收据保持 immutable；它报告三家公司 `BASELINE_PARTIAL`，登记与构建时钟不能证明严格 PIT。三家描述性研究卡的必需字段经 R1 复核覆盖 3/3，但不等于形式化 `ProspectiveDecisionBaseline` 验收或 strict PIT 通过。伊利已有共享 residual-income 低置信度 `CONDITIONAL_VALUATION_READY`，但价格日 `ModelValidity` 未建立、`Decision Review=NOT_ASSESSABLE`；2026-06-30 普通股数已有 H1 原件支持，当前主要未决项是持续分配能力、流动性和报价日事件有效性。美的仍为 `FCFF_NOT_APPLICABLE_FOR_CURRENT_PUBLIC_SCOPE`，普通股分母未约束；这不阻止其描述性研究卡继续完成。神华的目标级并购归因路径保持 `EVIDENCE_STOP`，直至新具名官方材料出现。具体状态及重开条件见 `docs/current/track-b-execution-correction-20260929.md` 和本文件最新状态块。
+本阶段现有基线与执行状态：三家公司 A/B/C/D 分类为 3/3。按 `000333 / 600887 / 601088` 顺序，当前 A blocker 为 `1 / 0 / 1`；600887 已由共享 residual-income 模型产生低置信度 `CONDITIONAL_VALUATION_READY`（Bear/Base/Bull CNY 8.05/11.02/13.13；敏感区间 CNY 7.10-15.03）。美的普通股分母无法形成可辩护区间；神华新取得正式重组报告后，近期并购增量已可核对，但并购后当前范围的中周期归母盈利仍无有证据边界的区间。600887 的 2026-09-29 双源收盘 CNY 27.24 已核验，但报价日 `ModelValidity` 仍未建立，故 `PriceBridge` 不生成、`Decision Review=NOT_ASSESSABLE`。详见 `docs/current/track-b-execution-correction-20260929.md` 与 `docs/execution-status.md`。
 
 ```text
-CURRENT_STAGE = STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH
-STAGE_STATUS = STAGE_ACTIVE
+CURRENT_STAGE = STAGE-EXECUTION-CORRECTION-CONTINUATION
+STAGE_STATUS = ACTIVE
 TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
 ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
 BASELINE_COMPLETE = 0/3 / snapshot-v13 is frozen, all cards remain BASELINE_PARTIAL
 DESCRIPTIVE_RESEARCH_CARD_FIELDS = 3/3 / R1_REVIEWED / NOT_A_FORMAL_BASELINE_PASS
 STRICT_PIT = NOT_PROVEN / registration and build times unattested
 LATEST_VERIFIED_SESSION = 2026-09-29 / all three matched-close quotes
-NEW_EVENTS_PROCESSED = 0 / bounded snapshots only; formal watermarks unchanged
+BLOCKER_CLASSIFICATION = 3/3 / A=1,0,1 for 000333/600887/601088; Shenhua prior absence-of-report D stop superseded by new official report
+VALUATION_READY = 0/3
+CONDITIONAL_VALUATION_READY = 1/3 / 600887 / low-confidence research-only
+600887_PRICE_REVIEW = NOT_ASSESSABLE / quote-day ModelValidity not established
+NEW_EVENTS_PROCESSED = 0 / bounded CNINFO snapshots only; formal watermarks unchanged
 CANONICAL_UPDATED = NO / approved artifact-tool unavailable; quote pointer remains 2026-09-28
-SAFE_PUBLIC_RESEARCH_REMAINING = YES / prospective baselines and bounded Yili price-validity review
+SAFE_BLOCKER_REDUCTION_REMAINING = YES / Midea share denominator and Shenhua mid-cycle earnings; Yili quote validity is a separate Decision Review gate, not an A valuation blocker
 M4_R2 = PARKED_NONBLOCKING
 M6_R3 = PARKED / NOT_STARTED
 M7_R5 = NOT_PASSED
@@ -37,6 +41,25 @@ action = no_order
 伊利仍为低置信度 `CONDITIONAL_VALUATION_READY`，研究情景为 Bear/Base/Bull CNY 8.05/11.02/13.13，完整敏感区间 CNY 7.10–15.03。9 月 29 日收盘虽已验证，但没有覆盖至该报价日且完成候选处置的来源完整事件审阅，因此没有生成有效 `ModelValidity`、`PriceBridge` 或价格吸引力结论；`Decision Review=NOT_ASSESSABLE`。情景与现价的算术差异不能被表述成当前 `WAIT`、买入/卖出建议。
 
 唯一工作簿的实体哈希与现有指针仍为 `849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`，指针报价日仍为 9 月 28 日。本轮没有修改正式 watermark、trial pointer 或 Excel；获准的 `@oai/artifact-tool` 不在当前工作区依赖中，不用其他表格库替代，也不创建新 Excel。9 月 29 日行情尚未展示在 Excel。
+
+## 2026-09-29 18:00 +08 执行纠偏更新
+
+伊利 CNINFO 单发行人补查覆盖 2026-06-30 至 2026-08-26：10 条、单页完整，`index.json` SHA-256 `4f2d018f82e0b9c23b1963b099264f847278dd407dc9622f388bf818b88ed81e`，查询回执 SHA-256 `ca54e80b473a2fcb7dca88c5888c5485957e3c46fe08af8c98982bd9d2422332`。这是有限日期窗的 CNINFO 检索快照，不是跨渠道覆盖、正式水位推进或完整事件处置；融资券发行/兑付、担保及境外投资等候选不能以“没有新编号”替代审阅。9 月 28-29 日快照另含公告 `1225584526`，日期级发布时间按规则保守视为 2026-09-30 可用，不能用于 9 月 29 日结论。该公告确认 9 月 24 日偿付 CNY 25bn 短融；7 月发行公告显示另有 CNY 20bn 短融于 9 月 29 日到期，但当日偿付/续作及偿付后现金余额没有留存证据。因此伊利估值情景不变，报价日 `ModelValidity` 仍未成立。
+
+神华正式重组报告 CNINFO `1224979750` 原件 SHA-256 为 `533bc24a80aeb1fbf2357218c5c19825cb0ab23176eb7d25d8ecd2d1f1256703`。报告第 20 页披露标的 2024 年扣非归母净利润 CNY 9.428bn（剔除长期资产减值影响后 CNY 10.570bn）；第 555 页备考扣非归母净利润显示 2024 年交易增量 CNY 7.889bn、2025 年 1-7 月增量 CNY 3.382bn。该材料推翻旧的“没有具名交易报告”证据停止理由，但单个完整年度加七个月不能证明并购后当前范围跨煤价周期的中周期盈利；神华 A blocker 仍为 1，不将短期备考数或简单年化冒充周期情景。
+
+```text
+YILI_2026_09_29_CLOSE = CNY 27.24 / DUAL_SOURCE_VERIFIED
+YILI_CNINFO_GAPFILL_2026_06_30_TO_08_26 = 10 ROWS / COMPLETE_SINGLE_CHANNEL_WINDOW_ONLY
+YILI_MODEL_VALIDITY_THROUGH_QUOTE = NOT_ESTABLISHED
+SHENHUA_ACQUISITION_REPORT = FOUND / RECENT_PRO_FORMA_INCREMENT_VERIFIED
+SHENHUA_MID_CYCLE_A_BLOCKER = OPEN
+MIDEA_SHARE_DENOMINATOR_A_BLOCKER = OPEN
+CANONICAL_EXCEL_UPDATED = NO
+NEW_EXCEL = 0
+STRICT_PIT = NOT_PROVEN
+action = no_order
+```
 
 ## 历史阶段快照：STAGE-EXECUTION-CORRECTION（2026-09-29，模型绑定前）
 

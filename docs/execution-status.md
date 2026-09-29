@@ -199,6 +199,70 @@ TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
 action = no_order
 ```
 
+## 2026-09-29 execution-correction follow-up (18:00 +08)
+
+This entry supersedes only the quote-date, bounded Yili event-scan, and
+Shenhua acquisition-report facts in the immediately preceding historical
+handoff. It does not change baseline v13, any registered observation, formal
+event watermark, valuation artifact, workbook, or total-goal status.
+
+For Yili `600887`, the 2026-09-29 matched close is CNY 27.24 in the verified
+three-symbol quote bundle
+`runtime/quote-sessions/20260929T080056442563Z/bundle.json` (SHA-256
+`c7e14a9626db695c489a485fa7134bbba4568238b67a85cc3805c8cd4ba10395`). The
+retained exact-issuer CNINFO gapfill for 2026-06-30..2026-08-26 returned 10/10
+rows on one terminal page. Its index SHA-256 is
+`4f2d018f82e0b9c23b1963b099264f847278dd407dc9622f388bf818b88ed81e`; its
+scan-receipt SHA-256 is
+`ca54e80b473a2fcb7dca88c5888c5485957e3c46fe08af8c98982bd9d2422332`. This
+is a bounded CNINFO-only retrieval snapshot, not cross-channel completeness,
+formal watermark advancement, or completed materiality disposition for every
+candidate. Notice `1225584526` remains conservatively available on 2026-09-30,
+so it is not used for the Sep 29 quote review. It verifies repayment of CNY
+25bn of notes on Sep 24; the separate CNY 20bn notes scheduled to mature Sep
+29 have no retained repayment/refinancing or post-redemption cash confirmation.
+Consequently Yili remains `CONDITIONAL_VALUATION_READY`, but quote-date
+`ModelValidity` is not established, `PriceBridge` is not emitted, and Decision
+Review stays `NOT_ASSESSABLE`.
+
+For Shenhua `601088`, the retained official restructuring report CNINFO
+`1224979750` at
+`runtime/company-research/shenhua-acquisition-2026-02/1224979750.pdf` has
+SHA-256
+`533bc24a80aeb1fbf2357218c5c19825cb0ab23176eb7d25d8ecd2d1f1256703`. Page
+20 reports 2024 target-company adjusted attributable profit of CNY 9.428bn
+(CNY 10.570bn excluding long-lived-asset impairment); page 555 gives
+transaction pro-forma adjusted attributable-profit increments of CNY 7.889bn
+for 2024 and CNY 3.382bn for Jan-Jul 2025. This supersedes the earlier
+absence-of-a-named-transaction-report `EVIDENCE_STOP`. It does not close the
+A blocker: this recent period does not establish current-scope mid-cycle
+earnings, and must not be annualized or spliced onto the pre-acquisition
+2014-2025 operating series as a cycle range. No Shenhua valuation is emitted.
+
+Independent read-only reviews reconfirmed Midea `000333` share denominator
+`A=1`: June 30 issued shares, the August dividend calculation base and
+weighted-average EPS shares do not determine a Sep 29 ordinary-share
+denominator or a defensible range. Do not substitute any of those values.
+
+```text
+BLOCKER_CLASSIFICATION = 3/3
+A_BLOCKERS = 000333:1; 600887:0; 601088:1
+CURRENT_VALUATION_READY = 0/3
+CONDITIONAL_VALUATION_READY = 1/3 / 600887 / LOW_CONFIDENCE
+601088_PRIOR_ABSENCE_OF_REPORT_D_STOP = SUPERSEDED / CURRENT_D_COUNT=0
+600887_QUOTE_DATE_MODEL_VALIDITY = NOT_ESTABLISHED
+BASELINE_V13 = UNCHANGED / FROZEN
+FORMAL_WATERMARKS = UNCHANGED
+CANONICAL_EXCEL_UPDATED = NO / NEW_EXCEL=0
+STRICT_PIT = NOT_PROVEN
+M4 = PARKED_NONBLOCKING
+M6 = NOT_STARTED
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
 ## 2026-09-29 Shared-Model Binding and Blocker Closeout
 
 The Yili `600887` conditional valuation now replays through the registered
