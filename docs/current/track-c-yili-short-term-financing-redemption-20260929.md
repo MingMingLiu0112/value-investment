@@ -112,3 +112,69 @@ and this notice's conservative availability begins on 2026-09-30.
 The earlier issuance-results PDF is retained at
 `runtime/company-research/yili-financing-results-20260707/1225412264.pdf`,
 SHA-256 `f8c529139b7f49d73f355ecd41c8dea44e68ff35765379538dd090ccba5f6a2d`.
+
+### Late-day recheck — 2026-09-29 23:59 +08
+
+A final exact-issuer CNINFO query for 2026-09-29 completed at
+`2026-09-29T15:59:36.986363Z` (23:59:36 +08 by the local process clock).
+It returned one row, the same `1225584526` notice, across one complete page;
+no later CNINFO announcement was present in this retrieval snapshot. The
+retained index SHA-256 is
+`e811ea059ce561aaff22e3e4e60ab6645d42b729d2e7f14d70aaec733ce1747d`, and the
+scan receipt SHA-256 is
+`0a32b0fed3862239f452c2685cda99b2492cf957d7cd09c38872215247b19d69` under
+`runtime/prospective-public-event-2026-09-29/gapfill-600887-20260929T155936776833Z/`.
+The raw-page SHA-256 is
+`65d438a26ce3115f9eb6871234ee68a672c3cf2f640127f5df7c9a8a66ea8597`.
+
+The notice timestamp resolves to date-only midnight, so conservative
+availability remains 2026-09-30. The recheck does not establish whether the
+CNY 20bn due on 2026-09-29 was paid or refinanced, and does not prove full-day,
+issuer-IR, exchange-site or multi-channel coverage. Process timestamps are
+not independently attested. No event watermark, valuation, `ModelValidity`,
+`PriceBridge`, decision state or workbook was changed.
+
+### Exact-date CNINFO recheck — 2026-09-30 01:00 +08
+
+After the date-only availability boundary, the existing exact-issuer scanner
+queried only 2026-09-30 using the previously hash-bound Yili identity index
+`runtime/prospective-public-event-2026-09-28/gapfill-600887-20260928T020132411066Z/index.json`
+(SHA-256 `39db16b37b92e136b425c7aa49ced860385e19013533fc6fea384ea77dc08e7b`).
+The query completed with HTTP 200 and zero announcements in one complete page.
+The index is
+`runtime/prospective-public-event-2026-09-30/gapfill-600887-20260929T170009966904Z/index.json`
+(SHA-256 `afafd3f29cf089feda91886209126ae151db70611bcf42aee15d0a65f80344ba`);
+the scan receipt is in the same directory (SHA-256
+`e666f32041c75d742bc7b5f7797482d635a25b527d4ca4e39b854091d7bddf87`).
+The retrieval timestamp is a local process clock and is not independently
+attested. This is an exact-date CNINFO retrieval snapshot only; it cannot
+establish later same-day postings, issuer-IR or other market-channel coverage,
+or strict PIT, and it does not advance a formal event watermark.
+
+No 2026-09-29 settlement or rollover evidence was found by this CNINFO
+recheck for issues SCP010/011 totaling CNY 20bn. Their outcome and the
+post-settlement cash/debt bridge remain unverified. The 2026-09-29 quote-day
+`ModelValidity` and `PriceBridge` remain unavailable, `Decision Review` remains
+`NOT_ASSESSABLE`, and valuation, workbook and `action=no_order` are unchanged.
+
+### Official exchange disclosure-index recheck — 2026-09-30 01:20 +08
+
+The first three pages of the official SSE listed-company disclosure index
+contain 30 records dated 2026-06-17 through 2026-09-29, 10 records per page.
+The retained raw JSON files are
+`runtime/company-research/yili-sseinfo-notice-index-20260930/page-1.json`
+(SHA-256 `F6B57194475BABFBA318B2958A6D5B7CE68F8FE55ED74F85B4F9A0CB2FE51E3E`),
+`page-2.json` (SHA-256
+`1D501BB75749428627F37AA58592D4879E598530A960810E62D359ECF2A285D0`) and
+`page-3.json` (SHA-256
+`145FB11289479FFFDAECA13FA49EEF05F0F373541F55CC25DCB17E0DCBFF6FF1`). The
+local capture time is not independently attested. The listing includes the
+2026-07-07 issue-results notice for SCP010/SCP011 and SCP012-014, and the
+2026-09-29 redemption notice explicitly names SCP012-014 only. No settlement,
+rollover or default notice for SCP010/SCP011 appears in these 30 records.
+
+This is a bounded official-index retrieval, not a complete,
+independently-time-attested multi-channel event scan. It does not prove
+non-payment or default, and does not supply a post-maturity cash/debt bridge.
+The SCP010/011 outcome remains `UNVERIFIED`; quote-day `ModelValidity` is not
+established, `PriceBridge` remains null, and `Decision Review=NOT_ASSESSABLE`.

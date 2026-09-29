@@ -1,5 +1,101 @@
 # CURRENT STATUS
 
+## 2026-09-30 Yili Prospective Case Follow-up — current
+
+The registered case `prospective-600887-20260927-v2` now has a distinct,
+post-registration shared-application research run. Its new input descriptor
+binds the v13 registration receipt and immutable baseline snapshot, the
+existing Yili readiness review and prior shared result, and hash-bound official
+issuer sources. The descriptor SHA-256 is
+`545c52ae909e842dc2d4aca55d091dfaa3c087c4a96937525cf0f767b0933b76`; issuer
+identity was `VERIFIED`. The shared residual-income model was executed again
+for this follow-up, producing low-confidence research-only Bear/Base/Bull
+values of CNY 8.0476 / 11.0234 / 13.1335 per share.
+
+This is a follow-up valuation state, not a rewrite of the baseline: the v13
+snapshot remains `BASELINE_PARTIAL / VALUATION_NOT_READY`, and
+`STRICT_PIT=NOT_PROVEN`. The run has no quote. Quote-date `ModelValidity` is
+`NOT_ESTABLISHED`; the service diagnostic bridge is `PENDING_EXTERNAL_DATA`
+with no current price, so there is no admitted `PriceBridge` and
+`Decision Review=NOT_ASSESSABLE`. Dividend sustainability remains
+`DATA_INCOMPLETE / UNKNOWN`; the cash range is a haircut proxy, not certified
+distributable cash. The artifact and replay test are
+`docs/current/600887-prospective-case-followup-20260930.json` and
+`tests/test_600887_prospective_case_followup.py`. No workbook was changed;
+`action=no_order`.
+
+The replay audit corrected one inherited arithmetic field without rewriting
+the pinned 2026-09-29 readiness review: exact Base proxy cash is CNY 7.9149bn,
+so headroom after the CNY 7.71694001374bn policy-floor stress amount is CNY
+0.19795998626bn. The prior artifact used the rounded display value CNY 7.915bn
+and overstated headroom by CNY 0.0001bn; valuation results and readiness are
+unchanged.
+
+Validation on 2026-09-30: the CI-defined offline Core Research Gates list plus
+the Yili follow-up and prior shared-valuation binding tests passed with
+`1156 passed, 23 skipped, 2 warnings` across 141 test files. The focused
+follow-up/shared-binding/issuer-identity set passed `37` tests. The two
+warnings are existing openpyxl `create_named_range` deprecations in workbook
+preservation tests.
+
+## 2026-09-30 Midea A/H Denominator Closeout — current
+
+The latest target-date share denominator is verified from official HKEX
+disclosures and source hashes in
+`docs/current/track-b-midea-share-denominator-review-20260928.md`: as of
+2026-09-29, 7,629,915,859 A/H shares were issued, 184,532,963 were issuer-held
+treasury shares, and 7,445,382,896 ordinary shares were outstanding excluding
+treasury. The source became available after the 2026-09-29 close; it closes the
+share-count A blocker for subsequent research but cannot be backdated into the
+2026-09-29 quote decision or baseline v13.
+
+Midea's share-denominator sub-blocker is closed, but the overall valuation
+readiness classification is `A1/B6/C0/D3`: the registered FCFF route is
+`FCFF_NOT_APPLICABLE_FOR_CURRENT_PUBLIC_SCOPE`, and the shared registry does
+not authorize its residual-income candidate for `mature_manufacturing`. Thus
+no applicable, profile-authorized model is currently available and the case
+remains `VALUATION_NOT_READY`. This is one model-admissibility A blocker, not
+an invitation to repeat disclosure searches. The three public-scope stops
+remain limited to the FCFF path. A future general profile/model route change
+would require an explicit applicability rationale and a new prospective
+valuation run; no Midea-specific model or baseline rewrite is authorized here.
+
+## 2026-09-30 Yili Official Exchange-Index Recheck — current
+
+The first three pages of the official SSE issuer-disclosure index contain 30
+records dated 2026-06-17..2026-09-29. Hashes and the bounded search result are
+recorded in `docs/current/track-c-yili-short-term-financing-redemption-20260929.md`.
+The index shows the July issuance of SCP010/011 and SCP012-014, followed by a
+September 29 redemption notice for SCP012-014 only. It contains no settlement,
+rollover or default notice for SCP010/011. This does not prove non-payment or
+default and does not establish complete event coverage. The CNY 20bn outcome
+and post-maturity cash/debt bridge remain unverified; Yili's quote-day
+`ModelValidity` is not established, `PriceBridge=null`, and
+`Decision Review=NOT_ASSESSABLE`. No valuation or workbook state changed;
+`action=no_order`.
+
+## 2026-09-30 Midea Official Post-Period A-Share Movement — partial, superseded
+
+A targeted CNINFO exact-issuer query for 2026-08-30..2026-09-29 returned four
+announcements on one complete page. Two new official originals bind distinct
+A-share movements: `1225544482` reports 15,772,385 existing shares transferred
+on 2026-09-03 from the issuer's repurchase account to the 2026 A-share employee
+plan account; `1225544342` reports 99,797,967 shares cumulatively bought under
+the separate 2026 capital-reduction program through 2026-08-31. Original PDF
+hashes, exact page references, official URLs, the complete query-window
+receipt and limitations are recorded in
+`docs/current/track-b-midea-share-denominator-review-20260928.md`.
+
+These counts have different source programs, uses and dates. They cannot be
+netted with one another or with the 7,448,597,984 interim-dividend base
+(7,628,798,092 total shares less 180,200,108 repurchase-account shares on
+2026-08-29). A target-date 2026-09-29 A/H issued-share and all-use treasury
+share bridge was still not admitted at this intermediate review; September
+repurchases after 2026-08-31, other plan-held share counts and target-date
+H-share movements remained open. Those gaps were subsequently closed for the
+2026-09-29 share-count basis by the full A/H reconciliation above. This partial
+review remains historical evidence; `action=no_order`.
+
 ## 2026-09-29 Shenhua Scenario Envelope and Shared Model Gate — current
 
 The execution-correction review now has a source-bounded operating-driver
@@ -138,6 +234,17 @@ independent new events. Representative receipt bindings are:
 | 600887 | `runtime/prospective-public-event-2026-09-29/gapfill-600887-20260929T080255204325Z/scan-receipt.json` | `afe6dcb41be2941ded45e7eb9d7526bf8d29739771f4fdcabf856669804ae25a` |
 | 601088 | `runtime/prospective-public-event-2026-09-29/gapfill-601088-20260929T080309644951Z/scan-receipt.json` | `91263463ee0bdb042dd08a06523e06957d72064cb261bee1605f4855b2d3b549` |
 
+A final bounded 600887 query at 23:59:36 +08 for the 2026-09-29 announcement
+date returned the same single notice `1225584526`; no additional CNINFO item
+was present in that retrieval snapshot. Its index SHA-256 is
+`e811ea059ce561aaff22e3e4e60ab6645d42b729d2e7f14d70aaec733ce1747d`, and its
+receipt SHA-256 is
+`0a32b0fed3862239f452c2685cda99b2492cf957d7cd09c38872215247b19d69`. The
+receipt and raw page are retained under
+`runtime/prospective-public-event-2026-09-29/gapfill-600887-20260929T155936776833Z/`.
+This remains a single-channel, retrieval-time snapshot with an unattested
+process clock; it neither proves note settlement nor advances event coverage.
+
 The bounded Midea ordinary-share denominator review retains its single A
 blocker. The 2026H1 report states 7,613,438,907 issued shares as of June 30
 (6,962,590,407 A shares and 650,848,500 H shares), but does not disclose the
@@ -149,9 +256,12 @@ prove a target-date upper bound. Report SHA-256 is
 announcement SHA-256 is
 `669fcc91ff5c791d7d71d860a2153324d81c8fb59af01e0d47574a818d0e0feb`.
 No defensible low/base/high denominator range can be formed from these
-materials. Stop reviewing this same document set; reopen only on official
-issuer/exchange disclosures that reconcile target-date A/H issued shares,
-all treasury-stock uses and subsequent issuance/cancellation/buyback/vesting.
+materials. This review closed the evidence available through 2026-08-29; the
+new 2026-09-03 CNINFO share-transfer and buyback notices are separately
+reviewed in the 2026-09-30 update above and the dedicated denominator review.
+Do not repeat the 2026-08-29 filing set; continue only with new official
+issuer/exchange evidence that reconciles target-date A/H issued shares, all
+treasury-stock uses, and subsequent issuance/cancellation/buyback/vesting.
 
 Yili remains `CONDITIONAL_VALUATION_READY` at low confidence, with central
 Bear/Base/Bull CNY 8.05/11.02/13.13 per share and full sensitivity CNY
@@ -210,7 +320,7 @@ or the M2-M7 graduation gates. Independent R1 reviews cover all three cases.
 | Symbol | Current A/B/C/D | Valuation disposition | Actual remaining A blocker |
 |---|---:|---|---|
 | 600887 | 0 / 5 / 2 / 1 | `CONDITIONAL_VALUATION_READY`, low-confidence research-only; shared residual-income scenarios CNY 8.05 / 11.02 / 13.13, full sensitivity CNY 7.10-15.03 | None for the 2026-06-30 research valuation. A separate quote-date event/`ModelValidity` gate remains open; no `PriceBridge`, `PriceAttractiveness`, or assessable `Decision Review`. |
-| 000333 | 1 / 6 / 0 / 3 | No valuation result; registered consolidated FCFF is not applicable for current public scope and no alternative model is admitted | Target-date ordinary-share denominator cannot be bounded from available official disclosures. It blocks per-share value and price assessment, not descriptive research. |
+| 000333 | 1 / 6 / 0 / 3 | Registered FCFF route `MODEL_NOT_APPLICABLE`; the case has no applicable profile-authorized model and remains `VALUATION_NOT_READY` | Share-denominator sub-blocker is closed. Remaining A is model-admissibility; no per-share valuation was run under an admitted alternative model. |
 | 601088 | 1 / 3 / 3 / 0 | No valuation result; normalized cyclical model remains not ready | Acquired assets' current-perimeter mid-cycle attributable earnings contribution is unbounded. Legacy coal/electricity/transport ranges and disclosed H1 facts remain scenario inputs, not standalone company valuation blockers. |
 
 Yili's bounded CNINFO window yielded 10/10 candidate dispositions
@@ -222,10 +332,13 @@ still lacks a verified redemption/rollover and post-payment cash/debt bridge.
 The readiness JSON separates the research scenario from arithmetic-only price
 comparison and has `price_bridge=null`.
 
-Midea's current evidence set is stopped: reopen only on official
-issuer/exchange material that reconciles target-date A/H issued shares,
-treasury-share uses, and post-period share movements. Its three D items are
-public-scope evidence stops, not reasons to keep searching the same filings.
+Midea's share-denominator A sub-blocker is closed by the 2026-09-29 A/H
+reconciliation; the case retains one separate A blocker because there is no
+applicable profile-authorized model. Its three D items are stops for the inapplicable FCFF scope,
+not reasons to keep searching the same filings. Reopen those only if a new
+official disclosure supplies a finance-business carve-out, a material
+consolidation bridge, or project-level CapEx facts relevant to a newly admitted
+model.
 Shenhua's old D stop for lacking a named transaction report is superseded by
 the retained CNINFO `1224979750` restructuring report, SHA-256
 `533bc24a80aeb1fbf2357218c5c19825cb0ab23176eb7d25d8ecd2d1f1256703`; the

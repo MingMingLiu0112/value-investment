@@ -6,7 +6,7 @@
 
 用户最新阶段指令覆盖此前“持续公共研究工作台”的工作优先级：暂停 TSA/PKI 扩张、历史 PIT 补证和重复扫描；不新增公司、框架、版本族或工作簿，不重开 600519；baseline v13 和原始收据保持 immutable。R2、R3、R5、R6 仅阻断各自 DAG 节点。M4 不读取私人组合，M6 维持未启动，永久 `action=no_order`，由用户作最终投资决定。
 
-本阶段现有基线与执行状态：三家公司 A/B/C/D 分类为 3/3。按 `000333 / 600887 / 601088` 顺序，估值 A blocker 为 `1 / 0 / 1`；当前分类数分别为美的 `A1/B6/C0/D3`、伊利 `A0/B5/C2/D1`、神华 `A1/B3/C3/D0`。伊利另有独立报价日有效性门禁，不计作 6 月 30 日研究估值 A blocker。伊利已由共享 residual-income 模型产生低置信度 `CONDITIONAL_VALUATION_READY`（Bear/Base/Bull CNY 8.05/11.02/13.13；敏感区间 CNY 7.10-15.03）。美的目标日普通股分母无法形成可辩护区间，当前材料已设 evidence stop。神华已形成按 2017-2025 近期历史中位数及独立周期端点构造的经营驱动包络，并将 2026H1 收购后分部表现作为单独近期锚；这些不是利润预测或合并情景。共享周期模型只读调用返回 `not_ready`、三个估值值均为 `null`，6 个缺失模型字段已留存；研究级 A blocker 仍只有一个：收购后税前归母经营利润无法跨周期界定。伊利现有 CNINFO 10 个候选已完成有界处置（A1/B2/C7/D0），但不等于跨渠道完整事件覆盖；2026-09-29 双源收盘 CNY 27.24 已核验，报价日 `ModelValidity` 仍未建立，故 `PriceBridge` 不生成、`Decision Review=NOT_ASSESSABLE`。详见 `docs/current/track-b-execution-correction-20260929.md` 与 `docs/execution-status.md`。
+本阶段现有基线与执行状态：三家公司 A/B/C/D 分类为 3/3。按 `000333 / 600887 / 601088` 顺序，整体估值就绪 A blocker 为 `1 / 0 / 1`；分类数分别为美的 `A1/B6/C0/D3`、伊利 `A0/B5/C2/D1`、神华 `A1/B3/C3/D0`。美的股数分母子项已由 A 降为 0，但整体估值仍有一个 A：注册 FCFF 对当前公开并表范围不适用，且 `mature_manufacturing` profile 尚无获准替代模型；该门禁是模型适用性/授权问题，不是可通过重复披露搜索关闭的数据项。其三项 `EVIDENCE_STOP` 仅限定于 FCFF 所需的金融业务拆分、内部抵销和项目级 CapEx。伊利另有独立报价日有效性门禁，不计作 2026-06-30 研究估值 A blocker。已对注册的 `prospective-600887-20260927-v2` 实际执行一个后续共享研究运行：新 `ResearchInputDescriptor` 同时绑定 case ID、注册回执、冻结的 v13 snapshot、来源复核和共享模型结果，issuer identity 为 `VERIFIED`；结果为低置信度 `CONDITIONAL_VALUATION_READY`（Bear/Base/Bull CNY 8.05/11.02/13.13；敏感区间 CNY 7.10-15.03）。这不改写 v13：baseline 仍 `BASELINE_PARTIAL / VALUATION_NOT_READY`，且 `STRICT_PIT=NOT_PROVEN`。18 格敏感性以共享计算函数重算 18/18 匹配。神华已形成历史周期驱动锚，但它们不是联合情景/利润预测；维护性 CapEx、归母净现金与股息能力也尚无估值级区间。其唯一研究 A blocker 是收购后当前范围归母盈利未能跨周期界定。伊利报价日 `ModelValidity` 仍未建立，故没有可用 `PriceBridge`，`Decision Review=NOT_ASSESSABLE`。详见当前 follow-up 结果和三家公司复核记录。
 
 ```text
 CURRENT_STAGE = STAGE-EXECUTION-CORRECTION-CONTINUATION
@@ -19,28 +19,37 @@ STRICT_PIT = NOT_PROVEN / registration and build times unattested
 LATEST_VERIFIED_SESSION = 2026-09-29 / all three matched-close quotes
 BLOCKER_CLASSIFICATION = 3/3 / 000333=A1/B6/C0/D3; 600887=A0/B5/C2/D1; 601088=A1/B3/C3/D0
 YILI_2026_09_29_CNINFO_CANDIDATES = 10/10 dispositioned / A1/B2/C7/D0; bounded CNINFO only, no watermark advance
+YILI_2026_09_30_OFFICIAL_SSE_INDEX = 30 records / 2026-06-17..2026-09-29 / SCP010-011 outcome absent from bounded index / no default inference
 YILI_POSTCLOSE_EVENT_SUPPLEMENT = 4 CNINFO originals hash-verified / 3 event groups / B2/C1; not a complete event scan
 YILI_QUOTE_DAY_REVIEW = 2026-09-29 close CNY 27.24 verified / 20bn maturity settlement and post-settlement cash-debt bridge unverified / ModelValidity not established
-MIDEA_SHARE_DENOMINATOR = A_BLOCKER / current file set stopped / reopen only on official target-date A/H shares, treasury-share uses and post-period movements
+MIDEA_SHARE_DENOMINATOR = VERIFIED_2026-09-29 / 7,445,382,896 outstanding A/H shares excluding treasury / post-date disclosure; no baseline backdating
+MIDEA_MODEL_DISPOSITION = MODEL_NOT_APPLICABLE / FCFF_NOT_APPLICABLE_FOR_CURRENT_PUBLIC_SCOPE / residual-income route not authorized for mature_manufacturing
+MIDEA_OVERALL_A_BLOCKER = 1 / no applicable profile-authorized valuation model; denominator sub-blocker is closed
 SHENHUA_ACQUISITION_REPORT = CNINFO 1224979750 / SHA-256 bound / 12 target-company audited simulated statements for 2023, 2024 and 2025-01..07 present / no current-perimeter attributable-earnings bridge
 SHENHUA_SCENARIO_ENVELOPE = HISTORICAL_DRIVER_ANCHORS_PREPARED / NOT_JOINT_SCENARIOS / NOT_PROFIT_FORECAST
 SHENHUA_SHARED_MODEL_DIAGNOSTIC = NOT_READY / 6_MISSING_INPUT_FIELDS / BEAR_BASE_BULL_VALUES_NULL / RESEARCH_A_ROOT_CAUSE_1
 ISSUER_IDENTITY_DECLARATION_GATE = FAIL_CLOSED_ON_DECLARED_MISMATCH / run-case-typed+payload facts-and-cited-events / source identity authenticity remains upstream and is not independently established here
 VALUATION_READY = 0/3
 CONDITIONAL_VALUATION_READY = 1/3 / 600887 / low-confidence research-only
+YILI_PROSPECTIVE_FOLLOWUP = prospective-600887-20260927-v2 / run prospective-600887-20260927-v2-followup-20260930T031923+0800 / descriptor 545c52ae909e842dc2d4aca55d091dfaa3c087c4a96937525cf0f767b0933b76 / issuer VERIFIED
+YILI_FROZEN_BASELINE = snapshot-v13 unchanged / BASELINE_PARTIAL / VALUATION_NOT_READY / STRICT_PIT_NOT_PROVEN
+FCFF_NOT_APPLICABLE = 1/3 / 000333 / current consolidated public scope
+MIDEA_ALTERNATE_MODEL = NOT_AUTHORIZED / NOT_ESTABLISHED / no admitted replacement result
+VALUATION_NOT_READY = 2/3 / 000333 (model-admissibility A1); 601088 (research A1)
 600887_PRICE_REVIEW = NOT_ASSESSABLE / quote-day ModelValidity not established / price_bridge=null
 FORMAL_EVENT_WATERMARK_ADVANCE = 0 / 10 Yili candidate dispositions do not establish cross-channel completeness
 CANONICAL_UPDATED = NO / approved artifact-tool unavailable; quote pointer remains 2026-09-28
-LATEST_CORE_RESEARCH_GATES = 1154_PASSED / 23_SKIPPED / 2_WARNINGS
-LATEST_CYCLICAL_FOCUSED_TESTS = 10_PASSED
-SAME_PACKET_A_BLOCKER_REDUCTION_REMAINING = NO / Midea and Shenhua require their explicit official-evidence reopen triggers; Yili quote review requires verified post-maturity liquidity and source-complete event coverage
+LATEST_CORE_RESEARCH_GATES = 1156_PASSED / 23_SKIPPED / 2_WARNINGS / CI offline-core list + 2 Yili binding files
+LATEST_STAGE_FOCUSED_TESTS = 37_PASSED / prospective-case follow-up replay, prior M1 shared valuation binding, issuer identity gate
+YILI_SENSITIVITY_GRID = 18/18 recomputed by shared model function / zero mismatches
+SAME_PACKET_A_BLOCKER_REDUCTION_REMAINING = NO / Midea denominator A closed; Shenhua A requires new acquisition-adjusted through-cycle attributable-profit evidence; Yili quote review requires verified maturity outcome and source-complete event coverage
 M4_R2 = PARKED_NONBLOCKING
 M6_R3 = PARKED / NOT_STARTED
 M7_R5 = NOT_PASSED
 action = no_order
 ```
 
-详情见 [伊利共享估值结果](docs/current/600887-shared-valuation-result-20260929.json)、[伊利估值就绪复核](docs/current/600887-valuation-readiness-review-20260929.json) 与 [执行纠偏研究记录](docs/current/track-b-execution-correction-20260929.md)。任何研究状态变化须给出旧状态、新状态、触发、证据和规则；价格只影响价格位置/吸引力，不改企业质量、Bear/Base/Bull 或股息可持续性。所有结论都保持 `action=no_order`，人工作最终投资决定。
+详情见 [伊利 prospective case 后续估值运行](docs/current/600887-prospective-case-followup-20260930.json)、[伊利共享估值结果](docs/current/600887-shared-valuation-result-20260929.json)、[伊利估值就绪复核](docs/current/600887-valuation-readiness-review-20260929.json) 与 [执行纠偏研究记录](docs/current/track-b-execution-correction-20260929.md)。任何研究状态变化须给出旧状态、新状态、触发、证据和规则；价格只影响价格位置/吸引力，不改企业质量、Bear/Base/Bull 或股息可持续性。所有结论都保持 `action=no_order`，人工作最终投资决定。
 
 ## 2026-09-29 收盘后公共证据更新
 
