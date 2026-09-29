@@ -10,6 +10,8 @@ files without duplicating their content. Historical stage notes live under
 | --- | --- |
 | Current goal | `docs/current-stage-goal.md` |
 | Current execution status | `docs/execution-status.md` |
+| Current execution-correction review and three-company blocker burn-down | `docs/current/track-b-execution-correction-20260929.md` |
+| Yili conditional valuation result and full sensitivity grid | `docs/current/600887-valuation-readiness-review-20260929.json` (research-only; Canonical Excel projection is pending the approved spreadsheet dependency) |
 | Root workbook governance audit | `docs/execution-status.md` (2026-09-28 update: 29 referenced root workbooks; no safe relocation proof) |
 | Current R0 audit state | `docs/execution-status.md` (open R0 nodes; non-blocking to public research) |
 | Midea and Yili baseline cards | `docs/current/track-b-midea-yili-baseline-cards-20260927.md` |

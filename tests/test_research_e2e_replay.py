@@ -65,7 +65,13 @@ def test_self_contained_frozen_replay_matches_required_semantics():
             for symbol in by_symbol
         }
         moutai = outcomes["600519"].valuation
-        assert moutai.bear_value < moutai.base_value < moutai.bull_value
+        assert moutai.bear_value is None
+        assert moutai.base_value is None
+        assert moutai.bull_value is None
+        assert any(
+            blocker.startswith("issuer_identity_unverified:")
+            for blocker in moutai.blockers
+        )
         assert outcomes["000333"].valuation.bear_value is None
         assert outcomes["601088"].valuation.bear_value is None
         assert by_symbol["601088"].current_normalized_distinct is True

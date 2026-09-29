@@ -1,0 +1,183 @@
+{
+  "schema_version": "valuation-readiness-review-v1",
+  "review_id": "600887-valuation-readiness-review-20260929",
+  "symbol": "600887",
+  "issuer": "伊利股份",
+  "review_as_of": "2026-09-29",
+  "valuation_basis_as_of": "2026-06-30",
+  "quote_as_of": "2026-09-28",
+  "readiness": "CONDITIONAL_VALUATION_READY",
+  "model": {
+    "model_id": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-v1",
+    "calculation_status": "conditional_research_only",
+    "confidence": "低",
+    "bear_base_bull_per_share_cny_at_9pct_cost_2pct_growth": {
+      "bear": "8.0475940479",
+      "base": "11.0233748917",
+      "bull": "13.1334527290"
+    },
+    "sensitivity_range_per_share_cny": {
+      "low": "7.1017550049",
+      "high": "15.0335665561",
+      "cost_of_equity_pct": [8, 9, 10],
+      "terminal_growth_pct": [1, 2]
+    },
+    "assumptions": {
+      "opening_parent_equity_cny": "53711364981.99",
+      "ordinary_shares_as_of_2026_06_30": "6325360667",
+      "forecast_roe_pct": {
+        "bear": [12, 11, 10, 9, 9],
+        "base": [18, 17, 16, 15, 14],
+        "bull": [21, 20, 19, 18, 17]
+      },
+      "terminal_roe_pct": {
+        "bear": 8,
+        "base": 9,
+        "bull": 10
+      },
+      "explicit_period_retention_pct": 25,
+      "terminal_growth_sensitivity_pct": [1, 2],
+      "cost_of_equity_sensitivity_pct": [8, 9, 10],
+      "assumption_status": "LOW_CONFIDENCE_SCENARIOS_NOT_FORECASTS",
+      "terminal_assumption_rationale": "Terminal ROE is deliberately bounded at 8%-10%; the base terminal ROE equals the 9% central cost of equity, so no perpetual base-case excess return is assumed. Growth and required return are sensitivity assumptions, not issuer facts.",
+      "cost_of_equity_provenance": "Analyst sensitivity grid only; no Yili-specific beta or uniquely correct required return is claimed.",
+      "terminal_growth_provenance": "Analyst sensitivity grid only; the 2% assumption used in an Ausnutria impairment test is not treated as Yili long-run growth evidence."
+    },
+    "sensitivity_grid": [
+      {"scenario": "bear", "cost_of_equity_pct": 8, "terminal_growth_pct": 1, "terminal_roe_pct": 8, "per_share_cny": "9.3053680280"},
+      {"scenario": "bear", "cost_of_equity_pct": 8, "terminal_growth_pct": 2, "terminal_roe_pct": 8, "per_share_cny": "9.3053680280"},
+      {"scenario": "bear", "cost_of_equity_pct": 9, "terminal_growth_pct": 1, "terminal_roe_pct": 8, "per_share_cny": "8.1593652529"},
+      {"scenario": "bear", "cost_of_equity_pct": 9, "terminal_growth_pct": 2, "terminal_roe_pct": 8, "per_share_cny": "8.0475940479"},
+      {"scenario": "bear", "cost_of_equity_pct": 10, "terminal_growth_pct": 1, "terminal_roe_pct": 8, "per_share_cny": "7.2678607001"},
+      {"scenario": "bear", "cost_of_equity_pct": 10, "terminal_growth_pct": 2, "terminal_roe_pct": 8, "per_share_cny": "7.1017550049"},
+      {"scenario": "base", "cost_of_equity_pct": 8, "terminal_growth_pct": 1, "terminal_roe_pct": 9, "per_share_cny": "12.4568655892"},
+      {"scenario": "base", "cost_of_equity_pct": 8, "terminal_growth_pct": 2, "terminal_roe_pct": 9, "per_share_cny": "12.6242700307"},
+      {"scenario": "base", "cost_of_equity_pct": 9, "terminal_growth_pct": 1, "terminal_roe_pct": 9, "per_share_cny": "11.0233748917"},
+      {"scenario": "base", "cost_of_equity_pct": 9, "terminal_growth_pct": 2, "terminal_roe_pct": 9, "per_share_cny": "11.0233748917"},
+      {"scenario": "base", "cost_of_equity_pct": 10, "terminal_growth_pct": 1, "terminal_roe_pct": 9, "per_share_cny": "9.9030704792"},
+      {"scenario": "base", "cost_of_equity_pct": 10, "terminal_growth_pct": 2, "terminal_roe_pct": 9, "per_share_cny": "9.8139783944"},
+      {"scenario": "bull", "cost_of_equity_pct": 8, "terminal_growth_pct": 1, "terminal_roe_pct": 10, "per_share_cny": "14.6865097124"},
+      {"scenario": "bull", "cost_of_equity_pct": 8, "terminal_growth_pct": 2, "terminal_roe_pct": 10, "per_share_cny": "15.0335665561"},
+      {"scenario": "bull", "cost_of_equity_pct": 9, "terminal_growth_pct": 1, "terminal_roe_pct": 10, "per_share_cny": "13.0091678859"},
+      {"scenario": "bull", "cost_of_equity_pct": 9, "terminal_growth_pct": 2, "terminal_roe_pct": 10, "per_share_cny": "13.1334527290"},
+      {"scenario": "bull", "cost_of_equity_pct": 10, "terminal_growth_pct": 1, "terminal_roe_pct": 10, "per_share_cny": "11.697313187995"},
+      {"scenario": "bull", "cost_of_equity_pct": 10, "terminal_growth_pct": 2, "terminal_roe_pct": 10, "per_share_cny": "11.697313187995"}
+    ],
+    "model_boundary": "Research-only equity valuation; no market-price input, price attractiveness approval, portfolio sizing, order, or trading instruction is emitted by the model."
+  },
+  "price_bridge": {
+    "verified_close_cny": "27.03",
+    "scenario_values_at_9pct_cost_2pct_growth": {
+      "bear_cny": "8.0475940479",
+      "base_cny": "11.0233748917",
+      "bull_cny": "13.1334527290"
+    },
+    "close_premium_to_scenario_pct": {
+      "bear": "235.9",
+      "base": "145.2",
+      "bull": "105.8"
+    },
+    "close_vs_full_sensitivity_high": "27.03 remains 79.8% above CNY 15.0336",
+    "decision_review": "WAIT",
+    "decision_semantics": "Research review only; not a sell instruction. The current close is above every reviewed scenario. No personalized holdings or risk budget were used."
+  },
+  "distributable_cash_scenarios": {
+    "status": "SCENARIO_PROXY_NOT_VERIFIED_DISTRIBUTABLE_CASH",
+    "historical_cfo_less_long_lived_asset_purchases_cny_bn": {
+      "2021": "8.845",
+      "2022": "6.774",
+      "2023": "11.335",
+      "2024": "17.761",
+      "2025": "11.307"
+    },
+    "formula": "historical proxy statistic * (1 - explicit analyst liquidity/working-capital reserve haircut)",
+    "haircut_basis": "Combined reserve scenarios for uncertain reinvestment, working capital, debt and liquidity uses; percentages are stress assumptions, not measured company cash needs.",
+    "bear": {"proxy_cny_bn": "6.774", "haircut_pct": 50, "scenario_cny_bn": "3.387"},
+    "base": {"proxy_cny_bn": "11.307", "haircut_pct": 30, "scenario_cny_bn": "7.915"},
+    "bull": {"proxy_cny_bn": "17.761", "haircut_pct": 15, "scenario_cny_bn": "15.097"},
+    "limitations": [
+      "The proxy does not deduct acquisitions, debt service, restricted cash, minority distributions, full working-capital requirements, or all other commitments.",
+      "The 50%/30%/15% haircuts are analyst stress assumptions, not reported facts.",
+      "Dividend sustainability remains DATA_INCOMPLETE / UNKNOWN; this range is not a payment forecast or distributable-cash certification."
+    ]
+  },
+  "blocker_classification": {
+    "counts_are_retrospective_reconstruction": true,
+    "A_BLOCKING_UNKNOWN": {"before": 2, "now": 0, "items_closed_or_downgraded": ["June 30 ordinary-share basis verified from H1 share-capital note", "normalized ROE moved into explicit low-confidence bear/base/bull assumptions"]},
+    "B_SCENARIO_RANGE_INPUT": {"count": 5, "items": ["forward and terminal ROE", "cost of equity", "terminal growth", "cash/distribution capacity", "June 30 equity/share basis carried to September 28 quote"]},
+    "C_NON_BLOCKING_UNCERTAINTY": {"count": 2, "items": ["ROIC/incremental ROIC is not an input to this residual-income calculation", "2026H1 filing is unaudited and impairment normalization is not independently established"]},
+    "D_EVIDENCE_STOP": {"count": 1, "items": ["Reviewed dividend proposals, approvals, adjustments and implementation notices do not explicitly classify all reviewed payments as ordinary or special"]},
+    "dividend_sustainability": "DATA_INCOMPLETE / UNKNOWN",
+    "strict_pit": "NOT_PROVEN"
+  },
+  "decision": {
+    "research_readiness": "CONDITIONAL_VALUATION_READY",
+    "research_decision_review": "WAIT",
+    "action": "no_order",
+    "human_final_decision": true,
+    "reopen_conditions": [
+      "An official post-2026-06-30 capital action changes or contradicts the share basis.",
+      "The next statutory filing materially changes parent equity, normalized profit, cash conversion, or impairment evidence.",
+      "New official distribution materials explicitly classify ordinary/special distributions or establish a changed payout policy.",
+      "A thesis-breaking deterioration invalidates the assumed ROE path or residual-income applicability."
+    ]
+  },
+  "evidence": [
+    {
+      "id": "cninfo:1225511409",
+      "kind": "issuer_interim_report",
+      "url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+      "supports": ["2026-06-30 parent equity", "share capital 6,325,360,667 at period start/end", "H1 weighted ROE 10.09%", "H1 earnings and counterevidence", "impairment and liquidity facts"],
+      "issuer_identity": {"venue": "CNINFO", "security_code": "600887", "issuer_name": "伊利股份", "organization_id": "gssh0600887"}
+    },
+    {
+      "id": "cninfo:1225259562",
+      "kind": "issuer_audited_annual_report",
+      "url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+      "supports": ["FY2024-FY2025 audited financial indicators and weighted ROE", "parent cash-flow statement"],
+      "issuer_identity": {"venue": "CNINFO", "security_code": "600887", "issuer_name": "伊利股份", "organization_id": "gssh0600887"}
+    },
+    {
+      "id": "cninfo:1213169501",
+      "kind": "issuer_audited_annual_report",
+      "url": "https://static.cninfo.com.cn/finalpage/2022-04-28/1213169501.PDF",
+      "sha256": "49935af2e517fe10592bc943f3de4321ecd837d7dda0cf26f86495325b9ed6eb",
+      "supports": ["FY2021 reported weighted ROE"],
+      "issuer_identity": {"venue": "CNINFO", "security_code": "600887", "issuer_name": "伊利股份", "organization_id": "gssh0600887"}
+    },
+    {
+      "id": "cninfo:1216664083",
+      "kind": "issuer_audited_annual_report",
+      "url": "https://static.cninfo.com.cn/finalpage/2023-04-28/1216664083.PDF",
+      "sha256": "9b555197f8a45f40ea4b9f336aae05345798fe6d96ad116c0c3f2bf4e19edab8",
+      "supports": ["FY2022 reported weighted ROE"],
+      "issuer_identity": {"venue": "CNINFO", "security_code": "600887", "issuer_name": "伊利股份", "organization_id": "gssh0600887"}
+    },
+    {
+      "id": "cninfo:1219916433",
+      "kind": "issuer_audited_annual_report",
+      "url": "https://static.cninfo.com.cn/finalpage/2024-04-30/1219916433.PDF",
+      "sha256": "d56b0be917eb89a07f092a3ecf1c269aea9f1698c51b648a53f69a0759ef44fe",
+      "supports": ["FY2023 reported weighted ROE"],
+      "issuer_identity": {"venue": "CNINFO", "security_code": "600887", "issuer_name": "伊利股份", "organization_id": "gssh0600887"}
+    },
+    {
+      "id": "yili-fy2021-fy2025-dividend-cash-coverage-review",
+      "kind": "source_bound_research_review",
+      "path": "docs/current/track-b-yili-dividend-cash-coverage-review-20260928.md",
+      "supports": ["FY2021-FY2025 CFO and long-lived asset cash purchases", "dividend lifecycle and payout history", "ordinary/special classification gap"]
+    },
+    {
+      "id": "quote-bundle-20260928",
+      "kind": "verified_dual_source_close_bundle",
+      "as_of": "2026-09-28",
+      "sha256": "08d8dce83ba552ec77c4f6db0f95c7ec348b2b27b76dbc00dfbed86ec35088ea",
+      "symbol": "600887",
+      "close_cny": "27.03"
+    },
+  ],
+  "reviewer_conclusion": "An independent adversarial review rejects the earlier no-fade terminal-ROE interpretation, but confirms that an explicitly bounded low-confidence sensitivity set can be CONDITIONALLY_VALUATION_READY under the supplied definition, provided the full grid and date caveats are retained. It is not an evidence-backed forecast or fair-value opinion."
+}

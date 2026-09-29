@@ -28,3 +28,6 @@ testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"value_investment_agent.domain.research" = ["issuer_identity_registry.json"]

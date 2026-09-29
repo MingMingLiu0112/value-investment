@@ -85,14 +85,14 @@ SYMBOLS = ("600519", "000333", "601088")
 EXPECTED_REPLAY_SEMANTICS: dict[str, dict[str, Any]] = {
     "600519": {
         "profile_id": "quality_compounder",
-        "valuation_status": "conditional_research_only",
+        "valuation_status": "not_ready",
         "confidence": "\u4f4e",
         "model_validity_present": True,
-        "bridge_status": "READY",
+        "bridge_status": "INVALID",
         "cash_return_status": "PARTIAL",
         "decision": "CONTINUE_CONDITIONAL_MODEL",
         "production_valuation_status": "NOT_AVAILABLE",
-        "bounded_value_judgment": "CONDITIONAL",
+        "bounded_value_judgment": "NOT_AVAILABLE",
         "action": "no_order",
         "current_normalized_distinct": False,
     },

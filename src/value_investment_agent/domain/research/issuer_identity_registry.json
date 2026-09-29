@@ -1,0 +1,26 @@
+{
+  "cninfo": {
+    "600519": {
+      "organization_id": "gssh0600519",
+      "issuer_names": ["贵州茅台", "贵州茅台酒股份有限公司"]
+    },
+    "000333": {
+      "organization_id": "9900005965",
+      "issuer_names": ["美的集团", "美的集团股份有限公司"]
+    },
+    "601088": {
+      "organization_id": "9900003701",
+      "issuer_names": ["中国神华", "中国神华能源股份有限公司"]
+    },
+    "600887": {
+      "organization_id": "gssh0600887",
+      "issuer_names": ["伊利股份", "内蒙古伊利实业集团股份有限公司"]
+    }
+  },
+  "hkex": {
+    "601088": {
+      "security_code": "01088",
+      "issuer_names": ["中国神华", "中國神華"]
+    }
+  }
+}

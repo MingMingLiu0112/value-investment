@@ -1,15 +1,17 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-## CURRENT AUTHORIZATION：STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH（2026-09-29）
+## CURRENT AUTHORIZATION：STAGE-EXECUTION-CORRECTION（2026-09-29）
 
-本段是本文件唯一的当前授权范围，并覆盖下方旧阶段标题、“当前”描述和交接快照。总 Goal 仍为 `IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`，`INITIAL_ASSISTED_USE=NOT_REACHED`。本轮审计基线为 GitHub `main@56354774972dccf15f9a1897a5446c6467dbda4c`，与 `origin/main` 一致；Core Research Gates run `36491639226` 对该 SHA 的 `offline-core` 与 `postgres-integration` 均通过。v2 注册计划/回执、v9 baseline verifier 与 v13 snapshot 的字节哈希已复核；相关 48 项聚焦测试为前次验证。2026-09-28..29 三家发行人有界 CNINFO 快照仍保留于 watermark v9，不推进正式连续水位：美的 1225582141 是可跟踪的风险监控候选但没有正式材料性判定；伊利 1225584526 确认 2026-09-24 兑付 250 亿元超短融，保守 `available_at=2026-09-30` 且未正式应用 ChangeEvent；神华该快照零条。伊利数据归属已纠正为其自身半年报，不推断兑付后流动性方向。Midea FY2025 现金字段和来源定位已纠正；FY2026H1 分部外部收入与合并“营业总收入”由利息及手续费收入勾稽，但金融服务仍与其他业务/未分配金额合并，工业/金融业务独立现金、债务与利润桥未建立。神华 2026 中期方案为税前 0.98 元/股、估算 212.56 亿元，股东会已通过但实施/付款未验证；相对 H1 归母净利润和经营现金流仅作背景比较，不构成可持续性结论。上述均属迟到研究的既有公开资料，不改变 v13、估值或交易状态。当前唯一 Canonical Excel 仍为 SHA-256 `849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`，本轮研究没有造成产品状态变化，因此不重复发布；正式事件水位仍为 2026-09-27，v6 仅为截至 2026-09-29 的单日快照，维持 `action=no_order`。
+本段是本文件唯一的当前授权范围，并覆盖下方旧阶段标题、“当前”描述和交接快照。审计入口基线为 `main@24ec94bff754b4139169cf79f9bbc1f356c0c71b`，当时与 GitHub `origin/main` 匹配；本地随后集成 issuer identity fail-closed gate（`24f4de3`），并修复通用架构边界及冻结 replay 断言。三家公司 A/B/C/D 分类已完成；`600887` 从回溯重建的 A=2 推进至 A=0，并以共享 residual-income 模型形成 `CONDITIONAL_VALUATION_READY`、低置信度情景与 `WAIT` 研究复核。该状态不等于 baseline 完整、预测、公允价值或交易建议。`000333` 仍有 1 个 A 类 blocker，`601088` 仍有 1 个 A 类 blocker；其历史 A 分类未记录，不伪造数值 burn-down。详情见 [执行纠偏与 blocker burn-down](docs/current/track-b-execution-correction-20260929.md) 和 [伊利机器可读估值复核](docs/current/600887-valuation-readiness-review-20260929.json)。
+
+本次估值输入账面基准日为 2026-06-30、报价日为 2026-09-28，日期差已披露；伊利股息可持续性仍 `DATA_INCOMPLETE / UNKNOWN`，严格 PIT 仍 `NOT_PROVEN`。Canonical Excel 因批准的 `@oai/artifact-tool` 依赖缺失未能原位更新，工作簿仍显示旧状态；没有创建替代 Excel。Issuer Identity Gate 已集成到本地 `main`，CNINFO/HKEX issuer registry 随包作为数据资源发布；身份门、架构边界与 replay 聚焦测试 `34 passed`。CI 同款 139 个离线测试文件本地结果为 `1142 passed, 23 skipped`，2 条 openpyxl 弃用警告；ACTUAL 私有回放素材未随仓库发布，按默认条件跳过。完整仓库测试未运行，GitHub 对本地未推送提交的门禁仍待验证。
 
 截至 2026-09-29 08:54 +08，交易所尚未开市，最近已验证收盘仍为 2026-09-28。前向 `prospective-timestamp-chain-v2` 吊销证据校验已完成本地工程验证：绑定 CMS signer 与唯一配置 CA 路径、核验路径证书的完整 CRL 及 genTime 覆盖、拒绝未知 critical CRL entry extension；TSA 与 CRL 网络请求固定到已解析公网 IP、忽略代理环境并拒绝重定向。72 项相关测试与 CI `offline-core` 集合 1112 项通过、23 项跳过。完整仓库测试曾运行至 87% 后停滞并中断，不计为通过。CRL 哈希目前写入收到时间戳后生成的 JSON 回执，回执与 CRL 清单本身未再由 RFC 3161 签名；因此可发现单独文件漂移，但不能证明回执与 CRL 未被同时改写。验证范围为单 signer 测试令牌及直接、完整 CRL，不等于通用 PKI 兼容或严格 PIT 证据。该改动没有请求真实 TSA 时间戳、生成运行时收据或更改历史收据；`STRICT_PIT=NOT_PROVEN`、M3 partial、三家公司估值未就绪、M6 未启动、M7 未验收及 `action=no_order` 均保持不变。
 
 截至 2026-09-29 07:03 +08，交易所尚未开市，最近已验证收盘仍为 2026-09-28；伊利 2026-09-29 到期的 200 亿元短融付款/续作结果未验证。Midea PIT 反审确认 GitHub PushEvent `22282999048`（报告时间 `2026-09-27T00:24:06Z`）最多支持提交中精确 v2 计划字节当时已公开，不能给 runtime receipt、事实采集或决策生成定时。回执自报 `receipt_created_at=2026-09-27T00:24:16.082830Z`，比计划 `declared_registered_at=00:45Z` 早约 20 分 44 秒，且 `declared_time_independently_proven=false`；校验器没有要求回执时钟晚于声明注册时钟。该先后关系语义未解决，不重解释、不改时间。v13 自报构建时间 `2026-09-27T09:22:55Z`（17:22 +08）晚于 cutoff；其后 RFC 3161 令牌分别绑定计划字节和工作台发布回执字节，均晚于原 cutoff，不能追认 v13。snapshot v13 仍 `strict_pit_admissible=false`，本轮不改变预登记起点/基线或严格 PIT 状态。原 GitHub API 响应留在本机忽略目录 `runtime/prospective-timing-audit-20260929/`，Hash `0690a327...13bcc867`；只作有范围限制的补充时间线索。
 
 ```text
-CURRENT_STAGE = STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH
+CURRENT_STAGE = STAGE-EXECUTION-CORRECTION
 M2 = DONE / CHECKPOINT_A_HUMAN_PASS
 M3 = PARTIAL / STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN / R6
 M4 = NONPERSONALIZED_ENGINEERING_DONE / PERSONALIZED_PARKED_WAITING_R2_NONBLOCKING
@@ -20,17 +22,23 @@ M5_EVENT_ASOF_PUBLICATION = PUBLISHED / BOUNDED_SINGLE_DAY_SNAPSHOT / FORMAL_WAT
 M6 = PREFLIGHT_ONLY / OPERATIONAL_NOT_STARTED / VERIFIED_REAL_SESSIONS_0
 M6_REAL_RESTORE_ACCEPTANCE = NOT_PASSED
 M7 = DISPLAY_ENGINEERING_AVAILABLE / WPS_AND_ALL_PRODUCT_PAGE_READABILITY_PASS / FINAL_USER_ACCEPTANCE_NOT_PASSED
-CURRENT_AUDIT_BASE = 56354774972dccf15f9a1897a5446c6467dbda4c / ORIGIN_MAIN_MATCH
+CURRENT_AUDIT_BASE = 24ec94bff754b4139169cf79f9bbc1f356c0c71b / ORIGIN_MAIN_MATCH_AT_ENTRY
 LAST_VERIFIED_CORE_RESEARCH_GATES = 36491639226 / SUCCESS / OFFLINE_CORE_PASS / POSTGRES_INTEGRATION_PASS / FOR_5635477
-LATEST_FULL_TESTS = CI_OFFLINE_CORE_1112_PASSED_23_SKIPPED / TARGETED_72_PASSED / FULL_REPOSITORY_SUITE_INTERRUPTED_AT_87_PERCENT
+LATEST_CORE_TESTS = LOCAL_CI_OFFLINE_CORE_1142_PASSED_23_SKIPPED / IDENTITY_REPLAY_FOCUS_34_PASSED / 2_OPENPYXL_DEPRECATION_WARNINGS
+FULL_REPOSITORY_TESTS = NOT_RUN_THIS_TURN / PRIVATE_ACTUAL_FIXTURE_TESTS_SKIPPED_BY_DEFAULT
 PROSPECTIVE_REGISTRATION = v2 / receipt 8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5 / process_clock_only_unattested
 PROSPECTIVE_BASELINE = snapshot-v13 / ded9fb9176d8d302a97aa527a302744083bf5a37448f28efbf50441fb56269e5 / 3_BASELINE_PARTIAL
-VALUATION = 000333_NOT_READY; 600887_NOT_READY; 601088_NOT_READY
+BASELINE_COMPLETE = 0/3 / EXISTING_V13_FROZEN_AND_UNCHANGED
+BLOCKER_CLASSIFICATION = 3/3 / A_B_C_D
+VALUATION_READY = 0/3
+CONDITIONAL_VALUATION_READY = 1/3 / 600887 / LOW_CONFIDENCE_RESEARCH_ONLY
+VALUATION = 000333_NOT_READY_A1; 600887_CONDITIONAL_READY_A0; 601088_NOT_READY_A1
+ISSUER_IDENTITY_GATE = INTEGRATED_LOCAL_MAIN_24f4de3 / FAIL_CLOSED_AND_ARCHITECTURE_REPLAY_TESTS_PASS
 FORWARD_TSA_PLAN = VERIFIED / 2006de88f0bc226d7191f5ee8fa5727a37b48cbb7373b252d9abf2c6fa981e18 / PLAN_BYTES_ONLY / STRICT_PIT_FALSE
 PROSPECTIVE_TIMESTAMP_CHAIN_V2 = IMPLEMENTED_AND_LOCALLY_VERIFIED / NO_REAL_TSA_REQUEST_OR_RUNTIME_RECEIPT / STRICT_PIT_FALSE
 CANONICAL_PUBLIC_WORKBENCH_TSA = VERIFIED / receipt 9fe94fd0b8219e7729264bbb7789ffd3290c634114024d900274e51ed7670da3 / genTime=2026-09-28T13:17:06Z / PUBLICATION_RECEIPT_BYTES_ONLY / STRICT_PIT_FALSE
 CANONICAL_WORKBOOK_SHA256 = 849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb
-CANONICAL_UPDATED_THIS_TURN = false / NO_PRODUCT_STATE_CHANGE
+CANONICAL_UPDATED_THIS_TURN = false / STATE_CHANGED_BUT_APPROVED_ARTIFACT_TOOL_MISSING
 ARTIFACT_REGISTRY = V2_REGENERATED_FROM_CURRENT_POINTER / PERSONAL_PATH_REDACTED
 M5_EVENT_PROJECTION = runtime/prospective-public-event-20260929/registered-public-event-projection-v6.json / 169ee7f1e59ecd0ef0df9d96c5560e6a7b05e80ff2e712c127ffb5d2b23772a9
 M7_WPS_READONLY = PASS / runtime/publication-receipts/wps-m7-product-v6-20260928T192230Z.json / FINAL_USER_ACCEPTANCE_NOT_PASSED

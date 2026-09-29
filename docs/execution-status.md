@@ -1,5 +1,67 @@
 # CURRENT STATUS
 
+## 2026-09-29 Execution Correction — current
+
+This phase reclassified the registered 000333, 600887 and 601088 research cases
+into A/B/C/D blocker groups and produced a bounded blocker burn-down. The audit
+baseline at entry was `main@24ec94bff754b4139169cf79f9bbc1f356c0c71b`, matching
+`origin/main`.
+
+600887's retrospectively reconstructed A blockers moved from 2 to 0: the
+2026-06-30 share denominator is supported by the retained CNINFO half-year
+report, while the dated denominator-to-quote difference is disclosed as a
+scenario/caveat. The shared `residual-income-equity-shared-v1` model was run
+with explicit low-confidence Bear/Base/Bull assumptions. It yields CNY
+8.05/11.02/13.13 per share at the central sensitivity point and a full grid
+range of CNY 7.10-15.03, versus the verified 2026-09-28 close of CNY 27.03.
+Research disposition is `CONDITIONAL_VALUATION_READY` and `WAIT`; this is not a
+forecast, unique fair-value conclusion, sell signal or order. Dividend
+sustainability remains `DATA_INCOMPLETE / UNKNOWN`; strict PIT remains
+`NOT_PROVEN`.
+
+000333 remains A=1, B=6, C=0, D=3. Its original consolidated FCFF is not
+applicable and no evidence-supported substitute is ready. 601088 remains
+A=1, B=4, C=3, D=0; its current-perimeter mid-cycle attributable earnings are
+not established. The Shenhua CNY 2.577bn acquisition figure is a difference
+between disclosures with different perimeters, not a reconciled cash shortfall.
+Its three C-class items are non-blocking only for consolidated valuation.
+Prior A/B/C/D counts for Midea and Shenhua were not recorded and are not
+invented.
+
+Issuer identity admission is integrated on local `main` at `24f4de3`. The
+registered CNINFO/HKEX identity data is shipped as a package JSON resource,
+keeping symbol-specific literals out of domain/application Python. Missing
+hash-bound official issuer evidence blocks model execution; the frozen replay
+now asserts that its unbound Moutai evidence produces no valuation. Focused
+identity, architecture-boundary and replay tests passed (34 passed). The exact
+workflow `offline-core` selection across 139 test files passed locally:
+1,142 passed, 23 skipped, 2 openpyxl deprecation warnings. ACTUAL replay tests
+that require ignored local evidence were skipped under the workflow's default
+environment; this is not a successful ACTUAL evidence replay. The full
+repository suite was not run. GitHub CI for the unpushed working changes is
+pending. Canonical Excel state changed but was not published because the
+approved workspace dependency `@oai/artifact-tool` is absent. The one WPS
+workbook was not modified and no substitute workbook was created. The machine-
+readable review and burn-down are indexed in `docs/current/README.md`.
+
+```text
+BASELINE_COMPLETE = 0/3 / frozen v13 unchanged
+BLOCKER_CLASSIFICATION = 3/3
+VALUATION_READY = 0/3
+CONDITIONAL_VALUATION_READY = 1/3 / 600887
+ISSUER_IDENTITY_GATE = INTEGRATED_LOCAL_MAIN_24f4de3 / FAIL_CLOSED / FOCUSED_34_PASS
+CORE_RESEARCH_GATES_LOCAL = OFFLINE_CORE_1142_PASS_23_SKIP / 139_FILES
+CORE_RESEARCH_GATES_GITHUB = PENDING_PUSH
+CANONICAL_EXCEL_UPDATED = NO / APPROVED_SPREADSHEET_DEPENDENCY_MISSING
+NEW_EXCEL_CREATED = 0
+STRICT_PIT = NOT_PROVEN
+M6 = PREFLIGHT_ONLY / OPERATIONAL_NOT_STARTED
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
 ## 2026-09-29 08:54 +08 Continuous Public Research Continuation — latest
 
 Audit baseline is `main@56354774972dccf15f9a1897a5446c6467dbda4c` and was

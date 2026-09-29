@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from importlib.resources import files
+import json
 import re
 from typing import Any, Mapping, Sequence
 from urllib.parse import urlsplit
@@ -13,23 +15,25 @@ ISSUER_IDENTITY_VERIFIED = "VERIFIED"
 ISSUER_IDENTITY_NOT_READY = "NOT_READY"
 ISSUER_IDENTITY_REJECTED = "REJECTED_ISSUER_MISMATCH"
 
+_IDENTITY_REGISTRY = json.loads(
+    files(__package__).joinpath("issuer_identity_registry.json").read_text(
+        encoding="utf-8"
+    )
+)
 _CNINFO_ORG_IDS = {
-    "600519": "gssh0600519",
-    "000333": "9900005965",
-    "601088": "9900003701",
-    "600887": "gssh0600887",
+    symbol: identity["organization_id"]
+    for symbol, identity in _IDENTITY_REGISTRY["cninfo"].items()
 }
 _CNINFO_NAMES = {
-    "600519": frozenset({"贵州茅台", "贵州茅台酒股份有限公司"}),
-    "000333": frozenset({"美的集团", "美的集团股份有限公司"}),
-    "601088": frozenset({"中国神华", "中国神华能源股份有限公司"}),
-    "600887": frozenset({
-        "伊利股份",
-        "内蒙古伊利实业集团股份有限公司",
-    }),
+    symbol: frozenset(identity["issuer_names"])
+    for symbol, identity in _IDENTITY_REGISTRY["cninfo"].items()
 }
 _HKEX_IDENTITIES = {
-    "601088": ("01088", frozenset({"中国神华", "中國神華"})),
+    symbol: (
+        identity["security_code"],
+        frozenset(identity["issuer_names"]),
+    )
+    for symbol, identity in _IDENTITY_REGISTRY["hkex"].items()
 }
 _CNINFO_HOSTS = frozenset({"www.cninfo.com.cn", "static.cninfo.com.cn"})
 _HKEX_HOSTS = frozenset({"www1.hkexnews.hk", "www.hkexnews.hk"})
