@@ -44,6 +44,25 @@ CNY 36,007m in 2026H1, versus restated CNY 31,432m in 2025H1. This is a total
 cash-flow measure, not the acquisition payment amount; it does not resolve the
 cash-consideration reconciliation.
 
+Page 91 separately reports consolidated cash paid to acquire fixed assets,
+intangible assets and other long-lived assets of CNY 29,579m in 2026H1,
+versus restated CNY 32,163m in 2025H1. These are cash payments, distinct from
+the page 210 segment-capex measure. Cash payments fell about 8.0% while
+reported segment capex rose about 5.5%; the respective differences are
+CNY 6,289m and CNY 10,087m. The report does not reconcile these differences
+here, and they must not be assigned to maintenance or growth spending without
+asset-level evidence.
+
+Page 93's **company-only** cash-flow statement separately reports CNY 90,942m
+cash paid to acquire subsidiaries in 2026H1. This matches the CNY 90,942m cash
+component in the page 178 common-control combination table for 11 controlled
+subsidiaries. This is a useful perimeter cross-check, not a consolidated
+cash-flow bridge or proof of the funding source. The page 56 contractual
+cash terms, including the separately described CNY 7,728m Inner Mongol
+JianTou payment, exceed this amount by CNY 2,577m; the residual is not
+attributed to a target or consideration component without target-level
+source support.
+
 ### Segment results and reported capex
 
 The segment table on page 210 labels 2025H1 as restated. Amounts below are
@@ -81,14 +100,18 @@ assume segment profit is distributable cash, segment capex is cash paid, or
 any capex is maintenance or growth spend.
 
 Still unknown are acquisition-adjusted steady-state segment earnings over a
-comparable full period; the complete cash-flow bridge for acquisition payments;
-maintenance versus growth capex by asset; project returns; and the acquired
-assets' contribution across a full comparable period.
+comparable full period; target attribution of the CNY 2,577m contractual/cash
+residual; maintenance versus growth capex by asset and the timing/scope bridge
+between cash paid and segment capex; project returns; and the acquired assets'
+contribution across a full comparable period. Target-level audited transaction
+and financial reports have been identified for a bounded follow-up review but
+have not yet been admitted here.
 
 ## Research effect
 
-The report adds a source-bound acquisition and H1 segment/capex bridge and
-clarifies the changed consolidation perimeter. It does not establish
+The report adds a source-bound acquisition and H1 segment/capex bridge,
+including distinct consolidated cash-capex and company-only acquisition cash
+facts, and clarifies the changed consolidation perimeter. It does not establish
 normalized cyclical earnings, owner cash flow, or sustainable ordinary
 dividend capacity. Keep `CYCLICAL_MODEL_NOT_READY`, `VALUATION_NOT_READY`, and
 dividend sustainability `NOT_READY`. Do not update the frozen prospective

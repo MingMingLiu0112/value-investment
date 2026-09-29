@@ -38,7 +38,7 @@ def main() -> int:
 
     verify = commands.add_parser("verify", help="reverify a saved timestamp chain")
     verify.add_argument("--chain-dir", type=Path, required=True)
-    verify.add_argument("--ca-bundle", type=Path, required=True)
+    verify.add_argument("--ca-bundle", type=Path)
     verify.add_argument("--policy-oid", default=DIGICERT_POLICY_OID)
     verify.add_argument("--openssl-bin", type=Path)
 
@@ -57,7 +57,7 @@ def main() -> int:
     else:
         result = verify_prospective_timestamp_chain(
             chain_dir=_rooted(args.chain_dir),
-            ca_bundle_path=_rooted(args.ca_bundle),
+            ca_bundle_path=_rooted(args.ca_bundle) if args.ca_bundle is not None else None,
             expected_policy_oid=args.policy_oid,
             openssl_binary=args.openssl_bin,
         )

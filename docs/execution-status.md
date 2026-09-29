@@ -1,10 +1,181 @@
 # CURRENT STATUS
 
-## 2026-09-29 06:13 +08 Continuous Public Research Continuation — latest
+## 2026-09-29 08:54 +08 Continuous Public Research Continuation — latest
 
-This is a time/status refresh of the substantive 05:15 research snapshot
-below. The audit base remains `ddcaee886a94189458f0a77f4f73492f00e808be`;
-this review does not change the frozen baseline, valuation, or decision state.
+Audit baseline is `main@56354774972dccf15f9a1897a5446c6467dbda4c` and was
+clean/equal to `origin/main` at the start of this continuation. GitHub Core
+Research Gates run `36491639226` passed for that exact SHA. This snapshot adds
+forward-only TSA revocation-evidence engineering and updates research/status
+Markdown. It does not change a frozen baseline, valuation, canonical workbook
+or order state.
+
+The prospective `timestamp-chain-v2` verifier now binds the CMS signer to a
+unique path ending at a configured trust anchor, validates complete CRLs for
+each non-anchor path certificate at the token `genTime`, and fails closed on
+unsupported critical extensions on the matching CRL entry. TSA and CRL HTTP
+requests resolve DNS once, reject non-public addresses, connect to the selected
+IP while preserving TLS hostname validation, ignore proxy environment settings,
+and reject redirects. Existing v1 receipts retain their legacy validation
+path. No real TSA request or runtime receipt was created or modified.
+
+The CRL hashes are recorded in a JSON receipt written after the signed token is
+received; that receipt/CRL manifest is not itself covered by the RFC 3161 token.
+Verification therefore detects isolated file drift but cannot prove the receipt
+and CRLs were not modified together. Validation is bounded to a single-signer
+test token and direct, full-scope CRLs; this work does not establish general PKI
+interoperability or strict PIT evidence.
+
+Focused tests for timestamp-chain, prospective baseline and registration passed
+**72 tests**. The exact CI `offline-core` selection passed **1112 tests**, with
+**23 skipped**, under `PYTHONUTF8=1`; its first local run without that setting
+had one unrelated child-process GBK decoding failure. A full repository test
+run was interrupted at 87% after it stopped making progress; it is not counted
+as passing. `git diff --check` passed. Strict PIT remains unproven.
+
+Re-bound the registered v2 plan, runtime receipt, baseline inputs, supplemental
+facts and frozen v13 snapshot against verification v9. V13 still has
+`strict_pit_admissible=false`; all three cases remain
+`BASELINE_PARTIAL / VALUATION_NOT_READY`.
+
+The Midea PIT-anchor adversarial review confirms GitHub PushEvent `22282999048`
+reports the exact registered v2 plan commit public on `main` at
+`2026-09-27T00:24:06Z`, but does not timestamp the runtime receipt, source
+capture, or evaluation. The receipt self-reports `00:24:16.082830Z`, about
+20m44s before the plan's declared `registered_at=00:45Z`; its timestamp is
+explicitly unattested and the verifier does not enforce that ordering. This
+semantic ambiguity is left unresolved: no timestamp or registration field is
+reinterpreted. V13 self-reports build time `2026-09-27T09:22:55Z` (17:22 +08),
+after its cutoff. The later RFC 3161 tokens bind the plan bytes and a workbook
+publication receipt, respectively; neither retroactively attests the full
+baseline/source closure. Strict PIT remains unproven.
+
+R1 independently checked China Shenhua's retained CNINFO 2026H1 report
+`1225531759` (SHA-256
+`ff4a670c7aa9e0309dc610a0e225d490970731dcc14eda234d73bb8c9b9b54f4`);
+Root re-extracted the cited report pages. Printed p. 91 reports consolidated
+cash paid for long-lived assets of CNY 29,579m in 2026H1 versus restated
+CNY 32,163m in 2025H1, while p. 210 reports segment capex of CNY 23,290m
+versus CNY 22,076m. These measures move in opposite directions and remain
+unreconciled; neither identifies maintenance versus growth capex. Printed
+p. 93's company-only statement reports CNY 90,942m cash paid to acquire
+subsidiaries, matching the p. 178 cash component for 11 controlled entities.
+It narrows the accounting-perimeter question, not the target-level residual
+or source-of-funds bridge. A bounded R1 review of the transaction and target
+audit package is now in progress. No normalized earnings, valuation input,
+dividend readiness or baseline admission follows from these facts.
+
+At 08:54 +08 the exchange session had not opened; latest verified close remains
+2026-09-28. Yili notice `1225584526` is dated 2026-09-29 and reports the
+2026-09-24 CNY 25bn redemption; date-only policy conservatively makes it
+available 2026-09-30. It does not verify the separate CNY 20bn note due
+2026-09-29. The Midea meeting notice remains a bounded monitor candidate, not
+a newly applied formal ChangeEvent. No quote or duplicate event scan was run.
+The canonical workbook remains SHA-256
+`849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`.
+
+```text
+ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
+BASELINE_COMPLETE = 0/3 / ALL_BASELINE_PARTIAL
+WAITING_FOR_PUBLIC_EVIDENCE = Midea financial business/equity bridge; Yili normalized distributable cash, dividend classification and 2026-09-29 maturity outcome; Shenhua target-level acquisition earnings/cash residual and maintenance-growth capex; future T0/T1/T2 validation
+NEW_EVENTS_PROCESSED = 0_FORMALLY_APPLIED
+LATEST_VERIFIED_SESSION = 2026-09-28 / COMPLETE / 000333_600887_601088
+CANONICAL_UPDATED_THIS_TURN = false
+SAFE_PUBLIC_RESEARCH_REMAINING = YES / Shenhua target audit-package review in progress; Midea PIT-anchor review complete with no strict-PIT upgrade
+M4_R2 = PARKED_WAITING_R2_NONBLOCKING
+M6_R3 = PARKED / OPERATIONAL_NOT_STARTED / VERIFIED_REAL_SESSIONS_0
+M7_R5 = NOT_PASSED
+STRICT_PIT = NOT_PROVEN / GITHUB_EVENT_ANCHORS_PLAN_PUBLICATION_ONLY
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+### INTERRUPT_AUDIT
+
+| Check | Result | Disposition |
+|---|---|---|
+| Active prospective cases can still be researched | YES | Shenhua target-level audited history is under bounded R1 review. |
+| Public evidence gap can change a named case state | YES | Shenhua acquisition-adjusted earnings/capex bridge and Midea model inputs remain incomplete. |
+| New public event is eligible to apply now | NO | Yili notice remains date-conservatively available 2026-09-30; the Midea notice remains monitor-only with no decision-changing result. |
+| New completed market session exists | NO | The 2026-09-29 session had not opened at audit time. |
+| A baseline or strict prospective decision chain is complete | NO | V13 is partial and the runtime registration/evaluation timestamps remain unattested. |
+| PIT/method validation can continue safely | YES | The adversarial review is complete; retain its ordering ambiguity and do not mutate registered dates or v13. |
+| Product projection changed from admitted evidence | NO | No newly admitted quote, event or ResearchCase state change. |
+| All active cases are at evidence stop | NO | Bounded Shenhua and Midea research remains available. |
+
+## 2026-09-29 06:32 +08 Continuous Public Research Continuation — previous snapshot
+
+Audit base is public `main@56354774972dccf15f9a1897a5446c6467dbda4c`, clean
+and equal to `origin/main`. GitHub Core Research Gates run `36491639226`
+completed successfully for that exact SHA. The commit publishes seven
+research/status Markdown files only; it did not include the workbook, runtime
+PDFs, database, server files, or credentials.
+
+The v2 plan SHA-256 (`f98304dbfb73276073d57537e90aee37b6233821d8b0200df944718bf23a2c7a`),
+registration receipt SHA-256 (`8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5`),
+baseline-input SHA-256 (`e39386945fa67e653b2424f3c761c6c206f46a73cc522a0af35a8016b2453c6c`),
+supplemental-facts SHA-256 (`0bbc21f26fd5be480745f2e1624496930863945bd29cea4da8791f27532a5628`),
+and frozen v13 snapshot SHA-256 (`ded9fb9176d8d302a97aa527a302744083bf5a37448f28efbf50441fb56269e5`)
+match the verification configuration. V13 remains `strict_pit_admissible=false`;
+all three cases remain `BASELINE_PARTIAL / VALUATION_NOT_READY`.
+
+A GitHub public repository `PushEvent` (`22282999048`) reports `main` moving
+from `269f93f1f7cd107f82de55ed795b476ab56b492f` to
+`fc1e8116c50d62a0cbd71ded6bc81a1a195bc94e` at
+`2026-09-27T00:24:06Z`. That commit's tree contains the exact v2 plan bytes
+(SHA-256 above). This supports the plan's public availability before its
+declared 08:45 +08 observation start; it does not independently timestamp the
+runtime registration receipt, data capture, or evaluation. The receipt claims
+`receipt_created_at=2026-09-27T00:24:16.082830Z` on the local process clock,
+while its embedded plan declares 08:45 +08; the receipt itself still says
+`declared_time_independently_proven=false`. The GitHub event is provider event
+metadata, not a cryptographically signed receipt. Raw API page 1 is retained
+locally at `runtime/prospective-timing-audit-20260929/github-repository-events-page1.json`
+(SHA-256 `0690a327f54204628cc9c4124662bcbd2be47e7d59b81db6be109f9e13bcc867`);
+it is ignored runtime evidence and is not part of public Git. Do not alter the
+registered start, receipt, v13, or strict-PIT status from this finding alone.
+
+At 06:32 +08 the exchange session had not opened; the latest verified close
+remains 2026-09-28 for all three cases. Yili's CNY 20bn notes had a scheduled
+2026-09-29 maturity date, but payment/refinancing completion is not verified.
+No new quote or event run was performed. The canonical workbook pointer and
+`action=no_order` remain unchanged.
+
+```text
+ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
+BASELINE_COMPLETE = 0/3 / ALL_BASELINE_PARTIAL
+WAITING_FOR_PUBLIC_EVIDENCE = Midea finance/capex/share/equity bridge; Yili normalized distributable cash, dividend classification and 2026-09-29 maturity outcome; Shenhua acquisition-adjusted earnings/capex split; future T0/T1/T2 validation
+NEW_EVENTS_PROCESSED = 0_FORMALLY_APPLIED
+LATEST_VERIFIED_SESSION = 2026-09-28 / COMPLETE / 000333_600887_601088
+CANONICAL_UPDATED_THIS_TURN = false
+SAFE_PUBLIC_RESEARCH_REMAINING = YES / 3 bounded company R1 reviews and PIT-anchor adversarial review in progress
+M4_R2 = PARKED_WAITING_R2_NONBLOCKING
+M6_R3 = PARKED / OPERATIONAL_NOT_STARTED / VERIFIED_REAL_SESSIONS_0
+M7_R5 = NOT_PASSED
+STRICT_PIT = NOT_PROVEN / GITHUB_EVENT_ONLY_NARROWS_PLAN_PUBLICATION_TIME
+INITIAL_ASSISTED_USE = NOT_REACHED
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+action = no_order
+```
+
+### INTERRUPT_AUDIT
+
+| Check | Result | Disposition |
+|---|---|---|
+| Active prospective cases can still be researched | YES | Three company-specific R1 reviews are in progress. |
+| Public evidence gap can change a named case state | YES | Midea, Yili and Shenhua each retain independent research gaps. |
+| New public event is eligible to apply now | NO | Yili's 2026-09-29 scheduled maturity outcome is not verified and its notice remains conservatively future-available. |
+| New completed market session exists | NO | The 2026-09-29 session had not opened at audit time. |
+| A baseline or strict prospective decision chain is complete | NO | V13 is partial; plan publication time is better bounded, but receipt/capture/evaluation timestamps are not independently bound. |
+| PIT/method validation can continue safely | YES | Adversarially review GitHub event's timing scope; preserve registered dates and fail-closed status. |
+| Product projection changed from admitted evidence | NO | No baseline/event/quote input was newly admitted. |
+| All active cases are at evidence stop | NO | Bounded public research remains in progress. |
+
+## 2026-09-29 06:13 +08 Continuous Public Research Continuation — previous snapshot
+
+This was a time/status refresh of the substantive 05:15 research snapshot
+below. The audit base was `ddcaee886a94189458f0a77f4f73492f00e808be`;
+that review did not change the frozen baseline, valuation, or decision state.
 
 At 06:13 +08 the exchange session had not opened; the latest verified close
 remains 2026-09-28 for 000333, 600887 and 601088. Yili's CNY 20bn notes had a
