@@ -178,3 +178,22 @@ independently-time-attested multi-channel event scan. It does not prove
 non-payment or default, and does not supply a post-maturity cash/debt bridge.
 The SCP010/011 outcome remains `UNVERIFIED`; quote-day `ModelValidity` is not
 established, `PriceBridge` remains null, and `Decision Review=NOT_ASSESSABLE`.
+
+### Exact-date official-source delta — 2026-09-30 07:11-07:12 +08
+
+A single post-01:00 delta check queried only the 2026-09-30 publication date.
+The CNINFO issuer query for `600887` (`column=sse`, `tabName=fulltext`, page
+1/100 rows) returned zero announcements at 07:12:39 +08; decoded-response
+SHA-256: `c2a890bbf3a6a53ab02ddc6c1794bf1c72ba45799fe9f59dcc5ba2cc18467114`.
+The SSE issuer query for `600887` (exact date, page 1/50 rows) returned zero
+records at 07:11:47 +08; decoded-response SHA-256:
+`76575076312bebe6bf9332f26fa28c69bc1fb7e41f75bf8bb41fe5d7669b7cdd`.
+These are local retrieval times and bounded date-specific responses, not
+independently attested full-day or cross-channel coverage.
+
+No new official filing was returned in this delta to establish settlement,
+refinancing, default, or a post-maturity cash/debt bridge for SCP010/011.
+Absence from these responses proves neither payment nor non-payment. The
+existing scoped `EVIDENCE_STOP` remains; no watermark, valuation, quote-day
+`ModelValidity`, `PriceBridge`, `Decision Review`, workbook, or `action=no_order`
+state changed.

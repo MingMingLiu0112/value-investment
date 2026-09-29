@@ -21,7 +21,8 @@ BLOCKER_CLASSIFICATION = 3/3 / 000333=A0/B6/C0/D4; 600887=A0/B5/C2/D1; 601088=A0
 RESEARCH_A_BLOCKERS = 0/3 / remaining case stops are bounded INSUFFICIENT_PUBLIC_EVIDENCE
 YILI_2026_09_29_CNINFO_CANDIDATES = 10/10 dispositioned / A0/B2/C7/D1; bounded CNINFO only, no watermark advance; quote-day financing outcome is evidence-stopped
 YILI_2026_09_30_OFFICIAL_SSE_INDEX = first 3/151 pages (30 rows) / 2026-06-17..2026-09-29 / SCP010-011 outcome absent from retained pages only / no default inference
-YILI_2026_09_30_CNINFO_SNAPSHOT = 0 rows / exact issuer+date query at 01:00 +08 / local clock only / not full-day or cross-channel coverage
+YILI_2026_09_30_CNINFO_SNAPSHOT = 0 rows at 01:00 and 07:12 +08 / exact issuer+date only / local clocks / not full-day or cross-channel coverage
+YILI_2026_09_30_SSE_DELTA = 0 rows / exact issuer+date query at 07:11 +08 / local clock / no SCP010-011 outcome established
 YILI_POSTCLOSE_EVENT_SUPPLEMENT = 4 CNINFO originals hash-verified / 3 event groups / B2/C1; not a complete event scan
 YILI_QUOTE_DAY_REVIEW = 2026-09-29 close CNY 27.24 verified / SCP010-011 CNY 20bn outcome EVIDENCE_STOP in bounded official-source set / ModelValidity not established
 MIDEA_SHARE_DENOMINATOR = VERIFIED_2026-09-29 / 7,445,382,896 outstanding A/H shares excluding treasury / post-date disclosure; no baseline backdating
@@ -31,6 +32,7 @@ MIDEA_APPLICABILITY_V4 = runtime/company-research/midea-valuation-applicability-
 SHENHUA_ACQUISITION_REPORT = CNINFO 1224979750 / SHA-256 bound / 12 target-company audited simulated statements for 2023, 2024 and 2025-01..07 present / no current-perimeter attributable-earnings bridge
 SHENHUA_SCENARIO_ENVELOPE = HISTORICAL_DRIVER_ANCHORS_PREPARED / NOT_JOINT_SCENARIOS / NOT_PROFIT_FORECAST
 SHENHUA_SHARED_MODEL_DIAGNOSTIC = NOT_READY / 6_MISSING_INPUT_FIELDS / BEAR_BASE_BULL_VALUES_NULL / current disposition INSUFFICIENT_PUBLIC_EVIDENCE / D1
+SHENHUA_2026_09_30_CNINFO_DELTA = 0 rows / exact date query through about 07:11 +08 / no reopen trigger observed / other current issuer-source coverage unconfirmed
 ISSUER_IDENTITY_DECLARATION_GATE = FAIL_CLOSED_ON_DECLARED_MISMATCH / run-case-typed+payload facts-and-cited-events / source identity authenticity remains upstream and is not independently established here
 VALUATION_READY = 0/3
 CONDITIONAL_VALUATION_READY = 1/3 / 600887 / low-confidence research-only
