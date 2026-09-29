@@ -72,6 +72,64 @@ CANONICAL_EXCEL_UPDATED = NO / APPROVED_SPREADSHEET_DEPENDENCY_MISSING
 action = no_order
 ```
 
+### Continuous Public Research Stage and Repository Audit
+
+This status supersedes the execution-correction authorization above; it does not rewrite any frozen research baseline or evidence receipt. The active stage is the continuous public-research workbench, not a one-time completion checkpoint.
+
+#### Repository and verification
+
+The local checkout is `main` at `a25f58a7230752d7a485b74f6acdb5b4ee16e0b7`, with a clean worktree before this documentation update. Direct `git fetch` and `git pull --ff-only` could not connect to GitHub on port 443. GitHub REST independently returned the same `origin/main` SHA, and its check-runs for this SHA report `offline-core=success` and `postgres-integration=success` (run `36542831846`). No remote change was omitted at this SHA; no force update or branch change was made.
+
+#### Track status
+
+```text
+CURRENT_STAGE = STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH
+STAGE_STATUS = STAGE_ACTIVE
+TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
+ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
+PROSPECTIVE_REGISTRATION = v2 / receipt 8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5
+PROSPECTIVE_BASELINE = snapshot-v13 / ded9fb9176d8d302a97aa527a302744083bf5a37448f28efbf50441fb56269e5 / FROZEN
+BASELINE_COMPLETE = 0/3 / all published cards BASELINE_PARTIAL; do not rewrite v13
+STRICT_PIT = NOT_PROVEN / registration and snapshot build times are unattested
+DESCRIPTIVE_RESEARCH_CARD_FIELDS = 3/3 / R1 reviewed; Yili cash-coverage supplement linked below
+DESCRIPTIVE_RESEARCH_CARDS != FORMAL_PROSPECTIVE_BASELINE_OR_STRICT_PIT_PASS
+LATEST_VERIFIED_SESSION = 2026-09-29 / 000333=81.66; 600887=27.24; 601088=47.30 / matched close
+QUOTE_BUNDLE = runtime/quote-sessions/20260929T080056442563Z/bundle.json / c7e14a9626db695c489a485fa7134bbba4568238b67a85cc3805c8cd4ba10395
+NEW_EVENTS_PROCESSED = 0 / 2026-09-29 bounded CNINFO snapshots only; formal watermarks unchanged
+CANONICAL_UPDATED = NO / pointer remains 2026-09-28; approved @oai/artifact-tool unavailable
+NEW_EXCEL_CREATED = 0
+SAFE_PUBLIC_RESEARCH_REMAINING = YES
+M4_R2 = PARKED_NONBLOCKING
+M6_R3 = PARKED / OPERATIONAL_NOT_STARTED
+M7_R5 = NOT_PASSED
+action = no_order
+```
+
+Track B remains open without upgrading any valuation or decision state:
+
+- `000333`: six verified FY2025/2026H1 facts are in frozen v13. The ordinary-share denominator remains an A blocker; the company-level FCFF scope is `NOT_APPLICABLE_FOR_CURRENT_PUBLIC_SCOPE` because financial-service perimeter, industrial cash/debt, CapEx split and equity bridge are not bounded. This blocks FCFF valuation, not descriptive research. The September 28 EGM notice is a meeting notice, not evidence that a share cancellation or distribution occurred.
+- `600887`: six 2026H1 facts remain bound to CNINFO `1225511409`. Its 2026-06-30 ordinary-share basis of `6,325,360,667` is supported by that report; it does not establish later share changes or payment-date shares. The shared residual-income result remains low-confidence `CONDITIONAL_VALUATION_READY` (`8.05/11.02/13.13` CNY Bear/Base/Bull), while dividend sustainability is `DATA_INCOMPLETE / UNKNOWN`. `ModelValidity` through the 2026-09-29 close is not established, so current price review remains `NOT_ASSESSABLE`. Notice `1225584526` is conservatively usable no earlier than 2026-09-30 and says nothing about the September 29 CNY 20bn maturity outcome. A separate post-cutoff review ([cash-coverage review](docs/current/track-b-yili-dividend-cash-coverage-review-20260928.md), SHA-256 `7264384c47239cb0607dab5b0496734409718e55692f5af4100b69dc905d474c`) records FY2021-FY2025 payout and cash-coverage history: FY2022 coverage after reported long-lived-asset purchases was `1.023x`, while the 2025 parent-level partial-cash proxy covered calendar-year shareholder payments by `1.074x` before omitted uses. These are limited historical proxies, not sustainable distributable cash. The v13 phrase “no interim distribution” is scoped to the reviewed 2026 interim period; it does not negate the FY2025 interim `CNY 0.48/share` payment in December 2025 or the `CNY 0.90/share` final payment in June 2026. This supplement remains a dated follow-on, not a v13 baseline rewrite or strict-PIT evidence.
+- `601088`: six admitted FY2025/2026H1 facts remain in v13. Normalized earnings across the current acquisition perimeter remain the valuation A blocker. The bounded target-level public-document path is `EVIDENCE_STOP`; reopen only on a new named official report. Minor accounting residuals are not promoted to hard blockers.
+
+Track C found no new announcement ID in the retained September 29 bounded snapshots; they do not establish complete cross-channel coverage and did not advance formal watermarks. The existing Yili price-validity gap is not closed. An auxiliary read-only reviewer reported an unreceipted query attempt for an older Yili window; it is not admitted as a source-complete event scan or a basis to advance a watermark. Do not repeat that query merely to recreate the same result; any future gap-fill must bind the exact query, issuer identity, response, source originals and candidate dispositions.
+
+Track A has already processed the September 29 completed session. Do not rerun that daily update. Track D did not publish the new quote to Excel: the sole pointer and workbook hash still refer to September 28. The dependency loader returned bundled runtimes, but `@oai/artifact-tool` is absent from the available package set; under spreadsheet-tooling rules, no alternate workbook library, candidate workbook or in-place write was used. This is a product publication gap, not a reason to stop public research.
+
+#### Interruption audit
+
+```text
+A active prospective case can be researched: YES
+B legal public-evidence gap remains: YES (Yili price-validity coverage and descriptive baseline gaps)
+C new material public event accepted this run: NO
+D new completed session after 2026-09-29: NO (the 2026-09-29 session was already processed)
+E formal prospective baseline remains incomplete: YES (0/3; immutable v13 retained)
+F PIT/decision-consistency work can continue: YES, forward-only; no historical timestamp repair
+G product projection can use new public facts: YES, but Excel publication is tool-gated
+H all active cases at Evidence Stop: NO
+```
+
+Therefore `STAGE_STATUS=STAGE_ACTIVE`, not idle and not blocked by R2/R3/R5/R6. Next public work is to complete descriptive case research from already admitted materials without rewriting v13, then process future event evidence only when its conservative `available_at` is reached; continue the Yili event-validity review from retained evidence rather than repeating a scan. The canonical workbook and all human records remain untouched.
+
 ## 2026-09-29 Execution Correction — research closeout snapshot
 
 This phase reclassified the registered 000333, 600887 and 601088 research cases

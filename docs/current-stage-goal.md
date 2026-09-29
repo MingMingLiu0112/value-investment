@@ -1,49 +1,32 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-## CURRENT AUTHORIZATION：STAGE-EXECUTION-CORRECTION（2026-09-29）
+## CURRENT AUTHORIZATION：STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH（2026-09-29）
 
-本段是本轮唯一授权范围，覆盖 600887、000333、601088 的 blocker 分类与 burn-down、伊利共享估值尝试，以及直接依赖估值结果的报价有效性检查。暂停 TSA/PIT 方法论扩张和宽泛财报调查；不新增公司、M8、Excel、生产/Shadow/券商动作或订单。长期总 Goal 仍为 `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`，本阶段结果不代表总 Goal 完成。下方旧阶段文本仅为历史/下游上下文，不扩大本轮范围。
+本阶段取代 `STAGE-EXECUTION-CORRECTION`，继续唯一长期总 Goal `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`。阶段是持续公共研究与人工决策支持，不是单次 checkpoint，也不代表总 Goal 完成。按 Track A-E 和预登记的三个 ResearchCase 继续；先处理新材料性公告、已完成交易会话、现有研究缺口与 baseline，再做产品投影和 PIT/方法验证。不得为维持进度重复扫描同一水位、重放相同测试、重发相同 Excel、扩大公司数量或新增框架。
 
-执行纠偏研究包已完成核心研究验收：三家公司 A/B/C/D 分类完成；伊利通过共享 residual-income 模型形成低置信度 `CONDITIONAL_VALUATION_READY`，其模型输入、结果、结果文件哈希及五条伊利 CNINFO 证据已绑定并通过回放测试。现金情景仅为现金生成 proxy；每股 CNY 1.22 政策压力检查显示 Bear/Base 前两年模型股息低于该值，分红可持续性仍未知。美的正常化 ROE 已由 A 降为 B，普通股分母仍为唯一 A；神华对现有并购范围披露和材料索引做完有界核验，确认无具名目标级审计/交易报告可供归因，具体公开证据路径进入 `EVIDENCE_STOP`。伊利结果不改变冻结 baseline，也不代表严格 PIT、预测、公允价值或交易建议。对抗复核发现报价日有效性链缺失，因此伊利当前价格决策必须记为 `NOT_ASSESSABLE`，不能把旧 `WAIT` 当作有效当前结论。详见 [执行纠偏与 blocker burn-down](docs/current/track-b-execution-correction-20260929.md) 与 [伊利机器可读估值复核](docs/current/600887-valuation-readiness-review-20260929.json)。
+R2 私人输入、R3 生产授权、R5 最终验收和 R6 自然时间只 PARK 各自 DAG 节点，不能成为公共研究停止理由。M4 不请求、推断或扫描私人组合；M6 保持 `PARKED_SAFE_ONLY / NOT_STARTED`；600519 维持 `EVIDENCE_STOP / NOT_PIT_SAFE / NOT_ADMITTED`，没有新重大外部证据不重开。当前最多跟踪六个预登记 profile 覆盖案例；不得因价格或预期收益更换公司、移动 observation start、修改原始 baseline 或追认历史 PIT。
+
+当前机器证据和状态摘要见本文件紧随其后的 2026-09-29 行情/事件更新及 `docs/execution-status.md` 当前状态节。snapshot v13 与其登记、输入、事件和价格收据保持 immutable；它报告三家公司 `BASELINE_PARTIAL`，登记与构建时钟不能证明严格 PIT。三家描述性研究卡的必需字段经 R1 复核覆盖 3/3，但不等于形式化 `ProspectiveDecisionBaseline` 验收或 strict PIT 通过。伊利已有共享 residual-income 低置信度 `CONDITIONAL_VALUATION_READY`，但价格日 `ModelValidity` 未建立、`Decision Review=NOT_ASSESSABLE`；2026-06-30 普通股数已有 H1 原件支持，当前主要未决项是持续分配能力、流动性和报价日事件有效性。美的仍为 `FCFF_NOT_APPLICABLE_FOR_CURRENT_PUBLIC_SCOPE`，普通股分母未约束；这不阻止其描述性研究卡继续完成。神华的目标级并购归因路径保持 `EVIDENCE_STOP`，直至新具名官方材料出现。具体状态及重开条件见 `docs/current/track-b-execution-correction-20260929.md` 和本文件最新状态块。
 
 ```text
-CURRENT_STAGE = STAGE-EXECUTION-CORRECTION
+CURRENT_STAGE = STAGE-CONTINUOUS-PUBLIC-RESEARCH-AND-REAL-INVESTMENT-WORKBENCH
+STAGE_STATUS = STAGE_ACTIVE
 TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
-M2 = DONE / CHECKPOINT_A_HUMAN_PASS
-M3 = PARTIAL / STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN / R6
-M4 = NONPERSONALIZED_ENGINEERING_DONE / PERSONALIZED_PARKED_WAITING_R2_NONBLOCKING
-M5_600519 = NEED_MORE_EVIDENCE / STILL_NOT_READY / NO_REOPEN
-M5_000333 = VALUATION_NOT_READY / A1_CURRENT_ORDINARY_SHARE_DENOMINATOR / FCFF_NOT_APPLICABLE_FOR_CURRENT_PUBLIC_SCOPE
-M5_600887 = CONDITIONAL_VALUATION_READY / A0 / LOW_CONFIDENCE_RESEARCH_ONLY
-M5_600887_PRICE_REVIEW = NOT_ASSESSABLE / MODEL_VALIDITY_THROUGH_2026-09-29_NOT_ESTABLISHED
-M5_600887_SHARED_RESULT = BOUND / SHARED_MODEL_REPLAY_PASS / YILI_CNINFO_ONLY
-M5_600887_DIVIDEND = DATA_INCOMPLETE / CASH_GENERATION_PROXY_ONLY / MODEL_BEAR_BASE_BELOW_POLICY_FLOOR
-M5_601088 = VALUATION_NOT_READY / A1 / TARGET_SCOPE_EVIDENCE_STOP
-PROSPECTIVE_BASELINE = snapshot-v13 / ded9fb9176d8d302a97aa527a302744083bf5a37448f28efbf50441fb56269e5 / BASELINE_PARTIAL_3_OF_3
-STRICT_PIT = NOT_PROVEN / REGISTRATION_AND_BUILD_TIMES_UNATTESTED
-QUOTE_AS_OF = 2026-09-29 / 000333=81.66; 600887=27.24; 601088=47.30 / MATCHED_CLOSE
-QUOTE_BUNDLE = runtime/quote-sessions/20260929T080056442563Z/bundle.json / SHA256=c7e14a9626db695c489a485fa7134bbba4568238b67a85cc3805c8cd4ba10395
-2026-09-29_MARKET_SESSION = VERIFIED_COMPLETED / DUAL_SOURCE_AND_EXCHANGE_CALENDAR / RAW_REPLAY_PASS
-PUBLIC_EVENT_WATERMARKS = FORMAL_NO_ADVANCE / 9-29_CNINFO_SNAPSHOTS_ONLY / MIDEA_INCOMPLETE
-YILI_NOTICE_1225584526 = CONSERVATIVE_AVAILABLE_AT_2026-09-30 / NOT_APPLIED
-MIDEA_ROE_CANDIDATE_CHECK = 11_OF_11_SOURCE_HASHES_MATCH / ROE_DOWNGRADED_TO_B_SCENARIO / COMMON_SHARE_DENOMINATOR_A1
-MIDEA_DENOMINATOR_REVIEW = A1_RETAINED / NO_EVIDENCE_BOUNDED_2026-09-29_RANGE / REOPEN_ON_OFFICIAL_SHARE_AND_TREASURY_RECONCILIATION
-SHENHUA_TARGET_REPORT_REVIEW = BOUNDED_REVIEW_COMPLETE / EVIDENCE_STOP / REOPEN_ON_NEW_NAMED_OFFICIAL_REPORT
-CANONICAL_WORKBOOK_SHA256 = 849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb / PHYSICAL_WPS_FILE_MATCHES
-CANONICAL_UPDATED_FOR_2026-09-29_QUOTE = NO / MODEL_VALIDITY_NOT_ESTABLISHED / APPROVED_ARTIFACT_TOOL_UNAVAILABLE
-M6 = PREFLIGHT_ONLY / OPERATIONAL_NOT_STARTED / REAL_SESSIONS_0 / RESTORE_ACCEPTANCE_NOT_PASSED
-M6_PRODUCTION_AUTHORIZATION = NOT_GRANTED
-M7 = DISPLAY_ENGINEERING_AVAILABLE / FINAL_USER_ACCEPTANCE_NOT_PASSED
-CHECKPOINT_D = NOT_PASSED
-INITIAL_ASSISTED_USE = NOT_REACHED
+ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
+BASELINE_COMPLETE = 0/3 / snapshot-v13 is frozen, all cards remain BASELINE_PARTIAL
+DESCRIPTIVE_RESEARCH_CARD_FIELDS = 3/3 / R1_REVIEWED / NOT_A_FORMAL_BASELINE_PASS
+STRICT_PIT = NOT_PROVEN / registration and build times unattested
+LATEST_VERIFIED_SESSION = 2026-09-29 / all three matched-close quotes
+NEW_EVENTS_PROCESSED = 0 / bounded snapshots only; formal watermarks unchanged
+CANONICAL_UPDATED = NO / approved artifact-tool unavailable; quote pointer remains 2026-09-28
+SAFE_PUBLIC_RESEARCH_REMAINING = YES / prospective baselines and bounded Yili price-validity review
+M4_R2 = PARKED_NONBLOCKING
+M6_R3 = PARKED / NOT_STARTED
+M7_R5 = NOT_PASSED
 action = no_order
 ```
 
-此前的 2026-09-29 13:35 +08 记录是盘中快照，当时最新完整收盘为 9 月 28 日；本文件上方收盘后证据更新已取代其行情状态。盘中 CNINFO 检查约在 13:24 +08 运行，晚于其 13:18 截止且没有持久化响应收据，不得证明精确截止覆盖或推进正式水位。Yili `1225584526` 仍只能在保守可用日 2026-09-30 起评估，不能据此推断 9 月 29 日到期融资的支付/续作结果。
-
-Midea 的 2014–2024 归母权益/归母利润候选序列已完成有界复核，11 份年报原件哈希均匹配。相邻年末权益均值代理约从 2015–2019 年 25.6%–28.7%降至 2024–2025 年约 20.0%；这不是发行人披露的加权 ROE、预测或准入模型输入，故由 A 降为 B 情景输入。当前唯一 A 为普通股分母，仍不可用加权 EPS 股数或分红基数替代。Shenhua 对 CNINFO `1225531759` 公司层面并购披露及现有材料索引完成有界审阅，仓库内无具名目标公司的审计/交易报告可用于归因；当前中周期归母盈利无法建立，该具体公开证据路径记为 `EVIDENCE_STOP`，有新目标级官方材料时才重开。
-
-Canonical Excel 的物理文件哈希仍为 `849f3999…5c43eb`，与当前指针一致；它尚未包含本轮研究状态。伊利共享模型结果已绑定并可重放，但报价日决策仍须先完成 valid-through-quote `ModelValidity`，才可将价格比较作为有效结论；目前 `@oai/artifact-tool` 也未出现在本机会话依赖包中，故不得改用其他表格库或生成替代表。M6/M7 门禁、自然交易日和 R2/R3/R5/R6 均不阻断上述安全公共研究，但绝不降低其各自验收标准。
+详情见 [伊利共享估值结果](docs/current/600887-shared-valuation-result-20260929.json)、[伊利估值就绪复核](docs/current/600887-valuation-readiness-review-20260929.json) 与 [执行纠偏研究记录](docs/current/track-b-execution-correction-20260929.md)。任何研究状态变化须给出旧状态、新状态、触发、证据和规则；价格只影响价格位置/吸引力，不改企业质量、Bear/Base/Bull 或股息可持续性。所有结论都保持 `action=no_order`，人工作最终投资决定。
 
 ## 2026-09-29 收盘后公共证据更新
 
