@@ -197,3 +197,18 @@ denominator is resolved and these assumptions are registered. The public
 FCFF-scope evidence stops remain limited to financial-business carve-out,
 internal eliminations and project-level CapEx; do not repeat those searches
 for the residual-income path. `action=no_order`.
+
+### Subsequent bounded-stop disposition (2026-09-30)
+
+The A1 statement above is the earlier model-input snapshot, not the current
+ResearchCase classification. After the bounded review found no defensible
+2026-06-30 denominator range in the retained official materials, the current
+disposition classifies that root as D1 `EVIDENCE_STOP` and the case as
+`INSUFFICIENT_PUBLIC_EVIDENCE` (`A0/B6/C0/D4`, including three FCFF-only
+stops). The denominator is not resolved, the shared residual-income model is
+not run, and no per-share valuation is emitted. Reopen only on new official
+dated disclosure that enumerates all treasury/employee-plan shares for the
+valuation date; do not repeat review of the existing filing set.
+
+The model-route record retains only `effective_date=2026-09-30`; an exact
+time-of-day was not recorded. Do not infer or backfill one from file timestamps.

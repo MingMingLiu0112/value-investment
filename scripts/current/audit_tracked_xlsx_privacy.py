@@ -20,12 +20,23 @@ HEX_DIGEST = re.compile(r"\b[0-9a-f]{32,128}\b", re.I)
 OOXML_CELL = re.compile(r"<c\b[^>]*>.*?</c>", re.S)
 PRIVATE = re.compile(r"姓名|身份证|银行卡|账户|账号|手机号|手机|电话|客户号|券商|资金账号|密码|现金余额|持仓成本|私人|个人|IPS", re.I)
 PUBLIC = re.compile(r"营业收入|营收|总股本|市值|净利润|现金流|总资产|股本|财务|估值|报告期|公告编号|成交|价格|分红|利润|收入|资产|负债|权益|资本|数据源|来源|证据|审计|market|revenue|profit|cashflow|shares|valuation", re.I)
-HASH = re.compile(r"sha256|hash|fingerprint|digest|receipt|校验|指纹", re.I)
+HASH = re.compile(r"sha-?256|hash|fingerprint|digest|receipt|校验|指纹", re.I)
 
 
-def classify(*, context: str, cell_type: str, number_format: str, formula: bool) -> str:
+def classify(
+    *, context: str, cell_type: str, number_format: str, formula: bool,
+    value: str | None = None,
+) -> str:
+    if value is not None and HEX_DIGEST.fullmatch(value.strip()) and HASH.search(context):
+        return "HASH_OR_RECEIPT_FRAGMENT"
     if PRIVATE.search(context):
         return "REQUIRES_PRIVATE_REVIEW"
+    if (
+        value is not None
+        and re.fullmatch(r"[0-9a-f]{64}", value.strip(), re.I)
+        and re.search(r"[a-f]", value.strip(), re.I)
+    ):
+        return "HASH_OR_RECEIPT_FRAGMENT"
     if formula:
         return "FORMULA_OR_DERIVED_VALUE"
     if HASH.search(context):
@@ -35,6 +46,31 @@ def classify(*, context: str, cell_type: str, number_format: str, formula: bool)
     if cell_type == "n" and ("yy" in number_format.lower() or "dd" in number_format.lower()):
         return "PUBLIC_DATE_OR_TIMESTAMP"
     return "UNKNOWN_LONG_NUMERIC"
+
+
+def _column_number(column: str) -> int:
+    value = 0
+    for character in column:
+        value = value * 26 + ord(character.upper()) - ord("A") + 1
+    return value
+
+
+def _nearby_row_context(labels: list[tuple[int, str]], column: int) -> str:
+    return " ".join(
+        label for label_column, label in labels
+        if abs(label_column - column) <= 2
+    )
+
+
+def _nearby_grid_context(
+    labels_by_row: dict[int, list[tuple[int, str]]], row: int, column: int,
+) -> str:
+    return " ".join(
+        label
+        for nearby_row in range(max(1, row - 2), row + 3)
+        for label_column, label in labels_by_row.get(nearby_row, [])
+        if abs(label_column - column) <= 2
+    )
 
 
 def audit(root: Path, *, include_raw_context: bool = False) -> dict:
@@ -48,23 +84,37 @@ def audit(root: Path, *, include_raw_context: bool = False) -> dict:
         workbook = load_workbook(root / relative, read_only=True, data_only=False)
         try:
             for sheet in workbook:
-                headers: dict[int, str] = {}
+                headers: dict[int, list[str]] = defaultdict(list)
                 for row in sheet.iter_rows():
-                    labels = [str(cell.value) for cell in row if isinstance(cell.value, str) and len(cell.value) < 100 and not LONG_DIGITS.search(cell.value)]
-                    row_context = " ".join(labels[:12])
+                    labels = [
+                        (cell.column, str(cell.value)) for cell in row
+                        if isinstance(cell.value, str) and len(cell.value) < 100
+                        and not LONG_DIGITS.search(cell.value)
+                    ]
                     for cell in row:
                         value = cell.value
                         if value is None:
                             continue
                         if cell.row <= 4 and isinstance(value, str) and len(value) < 100:
-                            headers[cell.column] = value
+                            label = value.strip()
+                            if (
+                                label
+                                and not HEX_DIGEST.fullmatch(label)
+                                and label not in headers[cell.column]
+                            ):
+                                headers[cell.column].append(label)
                         value_text = str(value)
                         matches = LONG_DIGITS.findall(value_text)
                         if not matches:
                             continue
-                        context = " ".join((sheet.title, headers.get(cell.column, ""), row_context))
+                        row_context = _nearby_row_context(labels, cell.column)
+                        context = " ".join((sheet.title, *headers.get(cell.column, []), row_context))
                         for token in matches:
-                            category = classify(context=context, cell_type=cell.data_type, number_format=cell.number_format, formula=cell.data_type == "f")
+                            category = classify(
+                                context=context, cell_type=cell.data_type,
+                                number_format=cell.number_format,
+                                formula=cell.data_type == "f", value=value_text,
+                            )
                             fingerprint = hashlib.sha256(token.encode("ascii")).hexdigest()[:16]
                             counts[category] += 1
                             unique[category].add(fingerprint)
@@ -252,16 +302,17 @@ def classify_raw_only_candidates(
             for part, sheet_name in sheets.items():
                 cells = sheet_text.get(sheet_name, {})
                 headers_by_column: dict[str, list[str]] = defaultdict(list)
-                labels_by_row: dict[int, list[str]] = defaultdict(list)
+                labels_by_row: dict[int, list[tuple[int, str]]] = defaultdict(list)
                 for coordinate, (other_value, _type, _formula) in cells.items():
                     other_match = re.fullmatch(r"([A-Z]+)(\d+)", coordinate)
                     if (not other_match or LONG_DIGITS.search(other_value)
                         or len(other_value) >= 100):
                         continue
                     other_column, other_row = other_match.group(1), int(other_match.group(2))
+                    column_number = _column_number(other_column)
                     if other_row <= 5:
                         headers_by_column[other_column].append(other_value)
-                    labels_by_row[other_row].append(other_value)
+                    labels_by_row[other_row].append((column_number, other_value))
                 for coordinate, (value, cell_type, formula) in cells.items():
                     tokens = LONG_DIGITS.findall(value)
                     if not tokens:
@@ -271,10 +322,9 @@ def classify_raw_only_candidates(
                         continue
                     column, row = match.group(1), int(match.group(2))
                     header_labels = headers_by_column[column]
-                    row_labels = [
-                        label for label in labels_by_row[row]
-                        if label not in headers_by_column[column]
-                    ]
+                    row_labels = _nearby_grid_context(
+                        labels_by_row, row, _column_number(column),
+                    )
                     context = " ".join([sheet_name, *header_labels, *row_labels])
                     category, signals, reason = _safe_context_classification(
                         context=context, cell_type=cell_type, formula=formula,

@@ -4,7 +4,8 @@ import zipfile
 from openpyxl import Workbook
 
 from scripts.current.audit_tracked_xlsx_privacy import (
-    _raw_ooxml_audit, classify, classify_raw_only_candidates,
+    _nearby_grid_context, _nearby_row_context, _raw_ooxml_audit, audit, classify,
+    classify_raw_only_candidates,
 )
 
 
@@ -21,11 +22,75 @@ def test_unlabeled_number_stays_unknown():
     assert classify(context="Sheet1", cell_type="n", number_format="General", formula=False) == "UNKNOWN_LONG_NUMERIC"
 
 
+def test_row_context_does_not_cross_horizontal_table_gaps():
+    assert _nearby_row_context(
+        [(4, "账户"), (18, "营业收入")], 22,
+    ) == ""
+    assert _nearby_row_context(
+        [(20, "资金账户"), (22, "净利润")], 22,
+    ) == "资金账户 净利润"
+
+
+def test_raw_context_includes_local_multiline_field_labels_only():
+    labels = {
+        74: [(5, "营业收入")],
+        76: [(14, "账户")],
+    }
+
+    assert _nearby_grid_context(labels, row=76, column=6) == "营业收入"
+
+
 def test_unrelated_hash_context_does_not_override_private_keyword():
     assert classify(
         context="券商 sha256", cell_type="s", number_format="General",
         formula=False,
     ) == "REQUIRES_PRIVATE_REVIEW"
+
+
+def test_full_sha256_value_is_not_misclassified_by_neighboring_broker_label():
+    assert classify(
+        context="券商 原件SHA-256", cell_type="s", number_format="General",
+        formula=False, value="a" * 64,
+    ) == "HASH_OR_RECEIPT_FRAGMENT"
+    assert classify(
+        context="券商 原件SHA-256", cell_type="s", number_format="General",
+        formula=False, value="1234567890123456",
+    ) == "REQUIRES_PRIVATE_REVIEW"
+
+
+def test_unlabeled_64_character_hex_value_is_a_hash_but_not_a_numeric_token():
+    assert classify(
+        context="Sheet1", cell_type="s", number_format="General",
+        formula=False, value="a" * 64,
+    ) == "HASH_OR_RECEIPT_FRAGMENT"
+    assert classify(
+        context="Sheet1", cell_type="s", number_format="General",
+        formula=False, value="1" * 64,
+    ) == "UNKNOWN_LONG_NUMERIC"
+
+
+def test_audit_keeps_digest_header_when_first_rows_contain_hash_values(
+    tmp_path, monkeypatch,
+):
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "19_金融专用指标"
+    sheet["L3"] = "原文SHA-256"
+    sheet["L4"] = "1234567890123456789" + "a" * 45
+    sheet["A108"] = "券商"
+    sheet["L108"] = "9876543210987654321" + "b" * 45
+    workbook.save(tmp_path / "tracked.xlsx")
+    monkeypatch.setattr(
+        "scripts.current.audit_tracked_xlsx_privacy.subprocess.check_output",
+        lambda *args, **kwargs: b"tracked.xlsx\0",
+    )
+
+    report = audit(tmp_path)
+
+    assert report["categories"]["HASH_OR_RECEIPT_FRAGMENT"]["occurrences"] == 2
+    assert report["categories"].get("REQUIRES_PRIVATE_REVIEW", {}).get(
+        "occurrences", 0,
+    ) == 0
 
 
 def test_raw_ooxml_audit_is_redacted_and_reports_private_context_count(tmp_path):
