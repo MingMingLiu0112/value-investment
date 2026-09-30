@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import pytest
 
 from openpyxl import Workbook
 
@@ -40,14 +41,19 @@ def _run(root: Path, workbook_path: Path | None) -> subprocess.CompletedProcess[
     )
 
 
-def test_current_trial_pointer_resolves_only_temp_canonical_workbook(tmp_path: Path):
+@pytest.mark.parametrize("simulation_only", [True, False])
+def test_current_trial_pointer_resolves_only_temp_canonical_workbook(tmp_path: Path, simulation_only: bool):
     pointer = json.loads((ROOT / "config/current-trial-workbook.json").read_text(encoding="utf-8"))
     assert pointer["workbook_source"] == "WORKBOOK_PATH"
     assert "workbook" not in pointer
     assert "candidate" not in json.dumps(pointer, ensure_ascii=False).lower()
     canonical = tmp_path / CANONICAL_NAME
     Workbook().save(canonical)
-    completed = _run(_script_root(tmp_path), canonical)
+    root = _script_root(tmp_path)
+    fixture_pointer = dict(pointer, simulation_only=simulation_only,
+                           quote_coverage_status="SIMULATION_ONLY_NOT_VERIFIED" if simulation_only else "NO_ADMITTED_CURRENT_PRICE_BRIDGE")
+    (root / "config/current-trial-workbook.json").write_text(json.dumps(fixture_pointer), encoding="utf-8")
+    completed = _run(root, canonical)
     assert completed.returncode == 0, completed.stderr
     result = json.loads(completed.stdout)
     assert result["workbook"] == str(canonical.resolve())
@@ -55,6 +61,8 @@ def test_current_trial_pointer_resolves_only_temp_canonical_workbook(tmp_path: P
     assert result["m6_operational_status"] == "NOT_STARTED"
     assert result["initial_assisted_use"] == "NOT_REACHED"
     assert result["action"] == "no_order"
+    assert result["simulation_only"] is simulation_only
+    assert result["quote_coverage_status"] == fixture_pointer["quote_coverage_status"]
 
 
 def test_current_trial_pointer_fails_closed_without_or_with_wrong_workbook_path(tmp_path: Path):

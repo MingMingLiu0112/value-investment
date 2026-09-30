@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 import sys
 
@@ -31,6 +32,8 @@ from value_investment_agent.presentation.read_models.product_workbench import ( 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--synthetic-packet", type=Path)
+    parser.add_argument("--evidence-root", type=Path)
     parser.add_argument(
         "--simulated-user-trial",
         action="store_true",
@@ -75,8 +78,22 @@ def main() -> int:
     if not output.is_relative_to(ROOT / "runtime"):
         raise ValueError("simulated user trial must remain under runtime/")
 
-    packet = build_packet(datetime.now(timezone.utc))
-    payload = build_product_workbench_candidate_payload(packet, root=ROOT)
+    evidence_root = ROOT
+    if bool(args.synthetic_packet) != bool(args.evidence_root):
+        raise ValueError("--synthetic-packet and --evidence-root must be supplied together")
+    if args.synthetic_packet is not None:
+        packet_path = args.synthetic_packet.resolve()
+        evidence_root = args.evidence_root.resolve()
+        if not all(path.is_relative_to(ROOT / "runtime") for path in (packet_path, evidence_root)):
+            raise ValueError("synthetic input and evidence root must remain under runtime/")
+        packet = json.loads(packet_path.read_text(encoding="utf-8"))
+        if not isinstance(packet, dict) or packet.get("simulation_only") is not True:
+            raise ValueError("synthetic packet must explicitly declare simulation_only=true")
+        if packet.get("action") != "no_order":
+            raise ValueError("synthetic packet action must remain no_order")
+    else:
+        packet = build_packet(datetime.now(timezone.utc))
+    payload = build_product_workbench_candidate_payload(packet, root=evidence_root)
     payload["system_health"]["message"] = "模拟产品体验：所有结论均待真实证据与人工复核。"
     for company in payload["companies"]:
         company["decision_review"] = _review_rows(company["symbol"])

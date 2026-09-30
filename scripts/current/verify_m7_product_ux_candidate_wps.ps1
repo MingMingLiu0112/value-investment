@@ -89,7 +89,7 @@ if ($projectionSchema -eq "registered-public-event-projection-v5") {
         source_sha256 = $sourceHash
         reason = $exclusion.reason
         related_event_ids = @($exclusion.event_ids)
-        absent_from_all_six_visible_product_sheets = $true
+        absent_from_all_visible_product_sheets = $true
     }
 } elseif ($projectionSchema -eq "registered-public-event-projection-v6") {
     $expectedPredecessorSha = "5e543f50690a71254a97ff5c39136cd2bb74d81d1e3c4d3600f023dc948487d6"
@@ -239,12 +239,13 @@ if ($projectionSchema -eq "registered-public-event-projection-v5") {
 $expectedSheets = @(
     "01_今日",
     "02_机会",
+    "决策过程",
     "03_公司",
     "04_我的组合",
     "05_事件",
     "06_系统与审计"
 )
-$userSheets = $expectedSheets[0..4]
+$userSheets = $expectedSheets[0..5]
 $forbiddenDecision = @("建议买入", "建议加仓", "目标仓位", "下单", "买入", "加仓", "减仓", "BUY", "ADD")
 $forbiddenToken = "\b(DONE|PARTIAL|NOT_STARTED|BLOCKED|PENDING_[A-Z_]+|ENGINEERING_[A-Z_]+|PREFLIGHT_[A-Z_]+|VERIFIED|REJECTED|INSUFFICIENT)\b"
 
@@ -270,12 +271,12 @@ try {
         throw "M7 product candidate must open read-only."
     }
     if ($book.Worksheets.Count -lt $expectedSheets.Count) {
-        throw "Canonical workbook has fewer than six product worksheets."
+        throw "Canonical workbook has fewer than seven product worksheets."
     }
 
     $visibleSheetNames = @($book.Worksheets | Where-Object { $_.Visible -eq -1 } | ForEach-Object { [string]$_.Name })
     if (($visibleSheetNames -join "|") -ne ($expectedSheets -join "|")) {
-        throw "Default workbook navigation must expose exactly the six product pages."
+        throw "Default workbook navigation must expose exactly the seven product pages."
     }
     if ([string]$book.Worksheets.Item(1).Name -ne "01_今日") {
         throw "The product home page must be the first worksheet."
@@ -317,7 +318,16 @@ try {
             throw "Sheet $name does not freeze the first column and the title rows."
         }
         if ($userSheets -contains $name) {
-            if ($joined -match $forbiddenToken) {
+            $tokenScanText = $joined
+            if ($name -eq "决策过程") {
+                $tokenScanText = $tokenScanText -replace '\bBLOCKED\b', ''
+                foreach ($stepTitle in @("事实是否齐全", "商业质量是否合格", "估值模型是否适用", "Bear/Base/Bull 是否生成", "当前价格是否有效桥接", "研究门是否通过", "组合风险是否通过", "最终建议状态")) {
+                    if (-not $joined.Contains($stepTitle)) {
+                        throw "Decision process is missing step: $stepTitle"
+                    }
+                }
+            }
+            if ($tokenScanText -match $forbiddenToken) {
                 throw "Engineering stage token leaked onto user page $name : $($Matches[0])"
             }
             foreach ($word in $forbiddenDecision) {
@@ -489,7 +499,7 @@ try {
         action = "no_order"
         final_user_acceptance = "NOT_PASSED"
         canonical_workbook = $true
-        check_scope = "WPS read-only open/read/calculate of canonical workbook; exactly six visible product tabs with product home active, retained legacy tabs hidden without content changes, per-product-sheet frozen first column, formula-error scan, engineering-token scan and forbidden-decision scan on the five user pages, schema-specific hash-bound M5 v5 exclusion or v6 bounded-observation/event closure, future-available evidence absent from all six visible product sheets, v6 event-to-audit-to-CNINFO hyperlink verification, parked portfolio state, blocked-valuation wording, admitted H1 values and assurance boundaries, workbook hash stability"
+        check_scope = "WPS read-only open/read/calculate; seven visible product tabs, eight decision-process steps, retained legacy tabs hidden, frozen first column, formula-error scan, stage-token scan with BLOCKED allowed on the decision-process page, forbidden-decision scan, hash-bound event/source checks and workbook hash stability"
     }
     $receipt | ConvertTo-Json -Depth 6 |
         Set-Content -LiteralPath $ReceiptPath -Encoding utf8

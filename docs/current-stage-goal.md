@@ -1,22 +1,35 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-## CURRENT AUTHORIZATION：STAGE-PRODUCT-CLOSEOUT-DIRECTORY-CI（2026-09-30）
+## CURRENT AUTHORIZATION：VALUE-INVESTMENT-TRADING-ASSISTANT-V1 / 阶段 1收尾与阶段 2单票工程（2026-09-30）
+
+最新发布（2026-09-30）：唯一正式 Excel 已更新为伊利现有真实条件性研究估值展示，`simulation_only=false`，非当前交易建议。七页导航、55 个保留页和实际 WPS 打开核验通过；估值步骤 CONDITIONAL，其余七步 BLOCKED，最终 NOT_READY/no_order。当前仅完成阶段 2 的研究结果展示部分，Strict PIT、ModelValidity、当前 PriceBridge、完整研究评估及用户验收仍未通过。下述模拟发布为历史基线。
+
+最新用户目标为 [交易助手执行目标](current/value-investment-trading-assistant-goal-prompt.md)。继承既有研究、证据和门禁；当前聚焦 Excel 产品收敛和统一决策过程展示。用户授权使用明确标记的合成数据推进产品流程，模拟展示只验证工程，不替代真实估值、PIT、影子运行、恢复或用户验收。
+
+阶段 1 仍为 `PARTIAL`（用户理解度验收与远端 CI 未完成），但不阻塞阶段 2相关工程。先前 `CANONICAL_SIMULATED_FLOW_PUBLISHED` 为历史发布记录；最新原表已使用伊利真实条件性研究内容，`simulation_only=false`，并非当前交易建议。继续接通共享应用输入、研究与后续事实对账、独立模型有效性和价格桥接；不得把研究卡片或估值算术完成当作门禁批准。永远 `action=no_order`。
+
+## PRIOR AUTHORIZATION：STAGE-PRODUCT-CLOSEOUT-DIRECTORY-CI（2026-09-30，保留基线）
 
 本阶段承接唯一长期总 Goal `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`，不扩展公司研究、估值或产品页。按用户要求优先完成唯一 Canonical Excel 同步审查、目录治理、CI 稳定化和 Evidence Stop 调度器收口；其中任何工程完成都不等于产品、M7 或总 Goal 完成。研究状态保持 `600887=CONDITIONAL_VALUATION_READY`（低置信度、无当前 PriceBridge）、`000333/601088=INSUFFICIENT_PUBLIC_EVIDENCE`、Strict PIT 未证明、M6 未启动、M7 用户验收未通过，永久 `action=no_order`。
 
-当前执行结论：修复提交 `0a70f20775c1da7928418ff0e1c0ae3c65b50723` 已推送，run `36673042770` 的两个 job 均通过。随后诊断产物路径修复提交 `8c1d14e8c84796d2aa23754d82abc4b762bc5d39` 的 run `36673521898` 也通过；Core JUnit artifact（27 KB）与 PostgreSQL restore artifact 均已上传。前一 run `36665479304` 的两项 Midea provenance 失败，原因为 fresh checkout 缺少 runtime JSON；现已改用测试内合成输入，不提交整个 runtime、不删除 provenance 断言。本机按当前 workflow 的 141 个模块验证为 `1194 passed, 32 skipped, 3 warnings`；M4 synthetic 单独步骤为 `2 passed, 2 skipped`。
+当前执行结论：修复提交 `0a70f20775c1da7928418ff0e1c0ae3c65b50723` 已推送，run `36673042770` 的两个 job 均通过。随后诊断产物路径修复提交 `8c1d14e8c84796d2aa23754d82abc4b762bc5d39` 的 run `36673521898` 也通过；Core JUnit artifact（27 KB）与 PostgreSQL restore artifact 均已上传。前一 run `36665479304` 的两项 Midea provenance 失败，原因为 fresh checkout 缺少 runtime JSON；现已改用测试内合成输入，不提交整个 runtime、不删除 provenance 断言。本机按当前 workflow 的 141 个 offline-core 模块最新验证为 `1198 passed, 32 skipped, 3 warnings`（65.73s）；最新备份/M6/M4/Evidence Stop 组合为 `44 passed, 3 skipped`，备份安全单测为 `9 passed`。本轮将 synthetic key temp 显式约束到项目临时根，增加路径/清理断言，并令两个 CI job 在安装依赖前创建 `.tmp/`。M4 两项端到端仍受仓库内 scratch 与真实 private-root 隔离规则冲突影响而跳过。备份安全现使用项目内受限 plaintext scratch；Windows 上 DACL 已验证为仅当前运行用户、SYSTEM、Administrators，且解密期间从项目父目录、项目根、`.tmp` 到目标目录逐级持有拒绝删除共享的句柄，并以 `OPEN_REPARSE_POINT` 拒绝 reparse point。解密输出也必须位于独立、空的项目 `.tmp` 子目录并通过同一 ACL 验证；tar 解包或 manifest/hash 校验失败时清空本次输出目录，成功时保留供隔离恢复验证。POSIX 路径强制 `0700`。以上均为合成测试；未读取真实备份/密钥，未执行真实恢复，未进行并发攻击压力测试。
 
-唯一 Canonical Excel 仍为 WPS `WORKBOOK_PATH`，哈希 `849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`，本轮未修改、未创建副本。批准的 workspace Node runtime 不含 `@oai/artifact-tool`；同时仓库在 D:、Canonical 在 C:，项目内 staging 与恢复文件无法和 Canonical 同卷。依据发布保护合同 fail closed，不生成候选、不在 C: 创建项目 staging、不用替代 Excel 库，也不宣称后台状态已同步到表格。
+唯一 Canonical Excel 仍为 WPS `WORKBOOK_PATH`，哈希 `849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`，本轮未修改、未创建副本。依赖加载器重新核验后，批准的 workspace Node runtime 仍不含 `@oai/artifact-tool`；用户允许 D: 制作后复制至 C:，但现有同卷原子发布合同未变，且无可用 Excel 编辑工具，因此不生成候选、不覆盖 Canonical、不用替代 Excel 库，也不宣称后台状态已同步到表格。
 
-目录审计：根目录仍有 55 个 `.pytest-tmp*` 历史目录（约 2.32 GB），其中包含需保留核查的证据、收据、Hash 和工作簿；不得盲删。OS Temp 中此前形成的项目测试前缀目录仍有 145,001 个；本轮 pytest 将 TMPDIR/TMP/TEMP 指向项目 `.tmp/`，新建的测试输出仅在项目内。清理命令曾被执行策略拒绝，本轮不通过其他工具绕过；剩余项和复制归档的美的原始字节在执行状态文档登记。
+目录审计：根目录仍有 55 个 `.pytest-tmp*` 历史目录，共 23,916 个文件、2,320,206,911 bytes；只读枚举未发现文件或目录级 reparse point。全部文件的 SHA-256 均成功读取，归并为 3,336 个唯一指纹、1,006 个重复内容组（20,580 个额外副本）。Git 跟踪文本中有 636 处哈希引用命中 61 个唯一临时文件指纹，涉及 3,886 个文件实例；没有发现 55 个完整目录名的精确引用。运行时目录有 109,093 个文件、17,652,610,339 bytes，`git ls-files runtime` 为 0；只扫描 JSON/Python/Markdown/TXT/CSV/YAML/TOML 后缀，共发现 596,414 个哈希 token，其中 80,626 次命中 224 个唯一临时文件指纹，涉及 10,020 个文件实例；没有发现完整历史目录名。此次未读取 PDF、XLSX、database dump、证书/密钥等非文本类型，也未写持久 manifest。重复内容不等于可删除；根目录临时内容还含 JSON、PDF、XLSX、`.key`/`.pem`、数据库 dump/lock、PKI/timestamp 文件等，因此 55 个目录仍全部 `KEEP`，`ARCHIVE=0 / SAFE_DELETE=0`。P4 路径/Hash 引用交叉匹配尚未完成，不得盲删。OS Temp 中此前形成的项目测试前缀目录仍有 145,001 个；本轮 pytest 将 TMPDIR/TMP/TEMP 指向项目 `.tmp/`，新建的测试输出仅在项目内。清理命令曾被执行策略拒绝，本轮不通过其他工具绕过；剩余项和复制归档的美的原始字节在执行状态文档登记。
+
+补充只读元数据核对（2026-09-30）：在 55 个根临时目录与 runtime 文件路径中发现 26 个路径项命中通用目录名 `.pytest-tmp`（12 个目录、14 个 JSON/XLSX 文件），均位于 `runtime/.pytest-tmp`；这是 basename 碰撞，不是随机临时目录 ID 命中。14 个文件没有与项目根 `.pytest-tmp` 下相同的相对路径，且在全部 55 个根目录产物中均无相同扩展名和长度的候选，因此未发现直接字节副本。另对 1,708 个根临时 XLSX 和 5,933 个 runtime XLSX 仅读 ZIP 中央目录成员名：6,632 个可解析，1,009 个目录读取失败；可解析成员名中没有临时目录名匹配。未解压或读取 XML、单元格、PDF、dump、密钥/证书正文。此结果仅排除所检路径/成员名层面的线索；内容级引用仍未知，55 个目录继续 `KEEP`，`ARCHIVE=0 / SAFE_DELETE=0`。
 
 执行顺序：P0 保持唯一 Excel 不变并记录真实阻塞；P1 修复干净 checkout 可复现的 CI 失败并等待实际远端验证；P2 保持 Evidence Stop 对精确已登记范围的负门作用，Fresh ResearchCase 没有匹配 stop 时允许正常研究；P3 仅对已有 admission 生成显式 recovery receipt，不自动重跑；P4 按 KEEP/ARCHIVE/SAFE_DELETE 审计临时文件和 provenance。暂停新公司研究、估值框架、TSA/PKI 扩展和重复扫描；M4/R2、M6/R3、M7/R5/R6 等门保持原状态。
 
 本阶段现有基线与执行状态：三家公司 A/B/C/D 分类为 3/3。对现存官方材料完成有界复核后，研究估值层的 A blocker 为 `0 / 0 / 0`；按 `000333 / 600887 / 601088` 顺序，分类数分别为美的 `A0/B6/C0/D4`、伊利 `A0/B5/C2/D1`、神华 `A0/B3/C3/D1`。分类语义为：A 是仍可由有限证据工作关闭的估值硬 blocker；D 是当前公开证据集上的终止性 `EVIDENCE_STOP`，不再作为待办继续搜索，也不代表缺失输入已解决或已被情景覆盖。仅有 D 的 case 当前结论可以是 `INSUFFICIENT_PUBLIC_EVIDENCE`，不产生估值结果；这是证据处置结论，不伪装成 `VALUATION_READY`，也不把同一事项同时计入 A 和 D。另将伊利 2026-09-29 报价日短融结果单独列为 `EVIDENCE_STOP`，不混入其研究估值分类。美的 `mature_manufacturing` profile 显式授权共享 residual-income 替代模型，FCFF 默认和交易模块不变；但 2026-06-30 普通股分母不能由库存股账面金额、单一回购批次或期间加权 EPS 得到可信区间，当前 case disposition 为 `INSUFFICIENT_PUBLIC_EVIDENCE`，停止重复审查同一披露。后日 9 月 29 日 A/H 分母不回填 6 月 30 日。美的另外三项 `EVIDENCE_STOP` 仅限定于 FCFF 的金融业务拆分、内部抵销和项目级 CapEx。伊利的后续共享研究运行绑定了 case、注册回执、冻结 v13 snapshot、来源复核和共享模型结果，issuer identity 为 `VERIFIED`；低置信度 `CONDITIONAL_VALUATION_READY`（Bear/Base/Bull CNY 8.05/11.02/13.13；敏感区间 CNY 7.10-15.03）。18 格敏感性以共享函数复算 18/18 匹配。该结果不改写 v13：baseline 仍 `BASELINE_PARTIAL / VALUATION_NOT_READY`，且 `STRICT_PIT=NOT_PROVEN`。伊利 SCP010/011 到期结果在已保留的 CNINFO 与上交所索引中仍不可核实，标记为报价日范围内的 `EVIDENCE_STOP`；不得推定兑付、续作或违约，故 `ModelValidity` 未建立、没有 `PriceBridge`，`Decision Review=NOT_ASSESSABLE`。神华并购报告证明近期标的盈利贡献非零，但无法桥接到收购后当前范围的跨周期、可归属归母盈利；当前研究 case disposition 为 `INSUFFICIENT_PUBLIC_EVIDENCE`，停止重复检查同一组报告和周期序列。上述 stop 均只描述当前已审、已哈希绑定的证据集；只有出现新的、能填补明示缺口的正式证据才重开，不声称全互联网不存在其他披露。详见本文件下方状态和当前纠偏研究记录。
 
 ```text
-CURRENT_STAGE = STAGE-EVENT-DRIVEN-EVIDENCE-STOP
+CURRENT_STAGE = STAGE-PRODUCT-CLOSEOUT-DIRECTORY-CI
 STAGE_STATUS = ACTIVE
+P4_ROOT_TEMP_PROVENANCE = 55/55_KEEP / SHA256=23916/23916 / TRACKED_TEXT_MATCHES=61_HASHES_3886_FILE_INSTANCES / UNTRACKED_RUNTIME_TEXT_MATCHES=224_HASHES_10020_FILE_INSTANCES_80626_OCCURRENCES / EXACT_ROOT_NAME_REFERENCES=0 / NON_TEXT_RUNTIME_UNSCANNED / ARCHIVE=0 / SAFE_DELETE=0 / provenance matching still open
+P3_RECOVERY_ELIGIBILITY = NO_EXISTING_EVIDENCE_STOP_ADMISSION_RECEIPT / NO_RECOVERY_WRITTEN
+P4_METADATA_ONLY_FOLLOWUP = RUNTIME_PATH_SEGMENT_MATCHES=26 (12_DIRS,14_FILES) / GENERIC_.pytest-tmp_BASENAME_ONLY / SAME_RELATIVE_PATH=0 / POSSIBLE_EXACT_CONTENT_COPIES_BY_EXTENSION_AND_LENGTH=0 / XLSX_ZIP_DIRECTORY=6632_READABLE_1009_FAILED / MEMBER_NAME_MATCHES=0 / CONTENT_UNSCANNED / KEEP_ALL_55
 TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
 ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
 BASELINE_COMPLETE = 0/3 / snapshot-v13 is frozen, all cards remain BASELINE_PARTIAL
@@ -57,10 +70,11 @@ EVIDENCE_STOP_EMPTY_POLICY = REJECTED_OUTSIDE_EXPLICIT_FROZEN_REPLAY
 UNREGISTERED_RESEARCH_SCOPE = new company research not authorized in this stage; a Fresh ResearchCase without matching stop is not globally blocked
 EVIDENCE_STOP_AND_CANONICAL_PROTECTION_TESTS = 54_PASSED_1_WINDOWS_PERMISSION_SKIP / shared run; native ReplaceFileW integration is platform-gated
 EVIDENCE_STOP_RECOVERY = recover_admitted_schedule records existing admission recovery receipt; no automatic execution or retry
+BACKUP_RESTORE_SCRATCH = PROJECT_LOCAL_PRIVATE_PATH_VERIFIED / SYNTHETIC_ONLY / REAL_RESTORE_NOT_RUN
 CLOSEOUT_CODE_CORE_RESEARCH_GATES = PASS / run 36673521898 / commit 8c1d14e8c84796d2aa23754d82abc4b762bc5d39 / both jobs passed
 CORE_JUNIT_ARTIFACT = UPLOADED / run 36673521898 / 27 KB / hidden .tmp included
 PREVIOUS_CI_FAILURES = run 36665479304 / two Midea provenance tests expected untracked runtime JSON; fixed with test-local synthetic inputs
-LOCAL_OFFLINE_CORE = 1194_PASSED_32_SKIPPED_3_WARNINGS / 141_MODULES / workflow-equivalent local run
+LOCAL_OFFLINE_CORE = 1198_PASSED_32_SKIPPED_3_WARNINGS / 141_MODULES / workflow-equivalent local run
 LOCAL_M4_SYNTHETIC = 2_PASSED_2_SKIPPED
 CLOSEOUT_CODE_COMMIT = 0a70f20775c1da7928418ff0e1c0ae3c65b50723 / PUSHED / REMOTE_CI_PASS
 LEGACY_M1_ASSERTIONS = 4_OUTSIDE_CORE_GATES / old package snapshots still assert conditional_research_only; not changed in this stage

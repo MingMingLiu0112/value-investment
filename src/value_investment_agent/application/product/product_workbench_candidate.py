@@ -701,6 +701,25 @@ def _companies(
                 "symbol": card["symbol"],
                 "company_name": card["name"],
                 "research_status": "NEED_MORE_EVIDENCE",
+                "decision_process": [
+                    {
+                        "key": key,
+                        "status": "BLOCKED",
+                        "reason": reason,
+                        "next_action": next_action,
+                        "evidence_refs": evidence_refs,
+                    }
+                    for key, reason, next_action in (
+                        ("financial_facts", "候选包没有提供已准入的财务事实及时间点核验结果。", "绑定原始财报、事实口径与 available_at，并完成事实准入。"),
+                        ("business_quality", "候选包没有提供已验证的商业质量审查。", "审查竞争优势、现金转换、资本配置、负债和最强反证。"),
+                        ("model_applicability", "尚无与当前公司经济结构绑定的模型适用性结果。", "通过公司 profile 和模型路由确认适用模型；不默认采用 FCFF。"),
+                        ("valuation", "尚无与已准入事实及假设绑定的 Bear/Base/Bull 结果。", "由适用共享模型生成情景估值、置信度和敏感性。"),
+                        ("price_bridge", "没有与当前估值、模型有效性绑定的已验证价格桥接。", "核验价格日期、证券及股本口径、重大事件和 ModelValidity。"),
+                        ("research_gate", "候选身份不等于研究门通过，当前没有绑定估值的正式门禁结果。", "评估证据、财务、论点及估值门，保留反证和 blockers。"),
+                        ("portfolio_gate", "候选包没有提供用户投资政策和账户约束的组合门结果。", "提供人工确认的投资政策及组合快照；未提供时不输出个性化仓位。"),
+                        ("decision_gate", "关键前置门尚未通过，当前建议为 NOT_READY，不产生买卖指令。", "前置结果准入后再计算可解释的人工复核状态，保持 action=no_order。"),
+                    )
+                ],
                 "price": _unavailable_assessment(
                     status="UNAVAILABLE",
                     reason="没有与当前研究时点绑定的已验证价格证据。",

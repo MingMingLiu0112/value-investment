@@ -19,6 +19,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+from value_investment_agent.infrastructure.evidence.pinned_artifact import load_pinned_json, read_pinned_artifact_bytes
 
 from value_investment_agent.m7_daily_workbench import (  # noqa: E402
     ACTION_NO_ORDER,
@@ -125,7 +126,11 @@ VALUE_DISCLAIMER = (
 
 
 def digest(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return hashlib.sha256(_artifact_bytes(path)).hexdigest()
+
+
+def _artifact_bytes(path: Path) -> bytes:
+    return read_pinned_artifact_bytes(path, root=ROOT, pins=PINNED_SHA256)
 
 
 def _verify_pinned(path: Path) -> None:
@@ -138,21 +143,11 @@ def _verify_pinned(path: Path) -> None:
 
 
 def _load_json(path: Path) -> dict[str, Any]:
-    _verify_pinned(path)
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"Expected JSON object: {path}")
-    if "action" in payload and payload.get("action") != ACTION_NO_ORDER:
-        raise ValueError(f"{path.relative_to(ROOT)} is not no_order")
-    return payload
+    return load_pinned_json(path, root=ROOT, pins=PINNED_SHA256, expected_type=dict)
 
 
 def _load_json_array(path: Path) -> list[dict[str, Any]]:
-    _verify_pinned(path)
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, list):
-        raise ValueError(f"Expected JSON array: {path}")
-    return payload
+    return load_pinned_json(path, root=ROOT, pins=PINNED_SHA256, expected_type=list)
 
 
 def _audit_artifact(label: str, path: Path) -> dict[str, str]:

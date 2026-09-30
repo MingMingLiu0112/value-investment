@@ -31,6 +31,7 @@ PRODUCT_WORKBENCH_CANDIDATE_SCHEMA_VERSION = "m7-product-workbench-candidate-v1"
 
 SHEET_TODAY = "01_今日"
 SHEET_OPPORTUNITIES = "02_机会"
+SHEET_DECISION_PROCESS = "决策过程"
 SHEET_COMPANIES = "03_公司"
 SHEET_PORTFOLIO = "04_我的组合"
 SHEET_EVENTS = "05_事件"
@@ -39,6 +40,7 @@ SHEET_SYSTEM_AUDIT = "06_系统与审计"
 USER_SHEETS = (
     SHEET_TODAY,
     SHEET_OPPORTUNITIES,
+    SHEET_DECISION_PROCESS,
     SHEET_COMPANIES,
     SHEET_PORTFOLIO,
     SHEET_EVENTS,
@@ -280,6 +282,18 @@ def _render_today(
     )
     row += 2
 
+    for column, sheet_name in enumerate(USER_SHEETS, 1):
+        label = sheet_name.split("_", 1)[-1]
+        _style(ws.cell(row, column, label), fill=GREY, bold=True, border=True)
+        _hyperlink(ws.cell(row, column), sheet_name)
+    _style(ws.cell(row + 1, 6, "系统与审计"), color=MUTED)
+    _hyperlink(ws.cell(row + 1, 6), SHEET_SYSTEM_AUDIT)
+    row += 3
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+    _style(ws.cell(row, 1, model.system_health.message), fill=AMBER, border=True)
+    _fit_rows(ws, row, [(1, model.system_health.message, 6)], minimum=24)
+    row += 2
+
     row = _section_title(ws, row, "我的组合", 6)
     if not model.portfolio.real_data_available:
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=5)
@@ -344,6 +358,37 @@ def _render_today(
         row += 1
 
 
+def _render_decision_process(
+    ws: Worksheet,
+    model: ProductWorkbenchReadModel,
+    company_rows: dict[str, int],
+    audit_rows: dict[str, int],
+    evidence_group_rows: dict[tuple[str, ...], int],
+) -> None:
+    _widths(ws, [20, 28, 16, 44, 44, 18])
+    subtitle = f"{model.system_health.message}\n数据截止：{model.as_of.isoformat()} | action=no_order"
+    _title(ws, subtitle, 6)
+    _fit_rows(ws, 2, [(1, subtitle, 6)], minimum=36)
+    row = 4
+    if not model.companies:
+        _style(ws.cell(row, 1, "暂无已接入的公司评估。"), fill=AMBER)
+    for company in model.companies:
+        row = _section_title(ws, row, f"{company.symbol} {company.company_name}", 6)
+        _hyperlink(ws.cell(row - 1, 1), SHEET_COMPANIES, f"A{company_rows[company.symbol]}")
+        _style(ws.cell(row - 1, 1), fill=NAVY, color=WHITE, bold=True, size=11)
+        row = _header(ws, row, ["公司", "检查步骤", "评估状态", "原因 / 缺口", "下一步", "证据"])
+        for step in company.decision_process:
+            values = (company.symbol, step.title, step.status, step.reason, step.next_action)
+            for column, value in enumerate(values, 1):
+                _style(ws.cell(row, column, value), border=True)
+            fill = {"PASS": GREY, "CONDITIONAL": AMBER, "BLOCKED": RED_FILL}[step.status]
+            _style(ws.cell(row, 3), fill=fill, bold=True, border=True)
+            evidence_text = _evidence_cell(ws, row, 6, step.evidence_refs, audit_rows, evidence_group_rows)
+            _fit_rows(ws, row, [(i, value, 1) for i, value in enumerate((*values, evidence_text), 1)])
+            row += 1
+        row += 1
+
+
 def _render_opportunities(
     ws: Worksheet,
     model: ProductWorkbenchReadModel,
@@ -351,8 +396,8 @@ def _render_opportunities(
     audit_rows: dict[str, int],
     evidence_group_rows: dict[tuple[str, ...], int],
 ) -> None:
-    _widths(ws, [24, 34, 20, 20, 20, 20, 30, 28, 16])
-    _title(ws, "只显示已经进入关注范围或研究队列的公司，不展示内部阶段码。", 9)
+    _widths(ws, [24, 34, 20, 48, 20, 32, 30, 28, 16, 36])
+    _title(ws, "只显示已经进入关注范围或研究队列的公司，不展示内部阶段码。", 10)
     row = _header(
         ws,
         4,
@@ -360,16 +405,17 @@ def _render_opportunities(
             "公司",
             "为什么现在关注",
             "研究状态",
-            "估值状态",
+            "估值区间 / 日期 / 置信度",
             "股息状态",
-            "当前价格状态",
+            "当前价格 / 日期",
             "主要风险",
             "下一触发",
             "证据",
+            "当前建议与原因",
         ],
     )
     if not model.opportunities:
-        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=9)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=10)
         _style(
             ws.cell(row, 1, "当前没有公司进入关注范围，研究队列仍可保持等待。"),
             fill=GREY,
@@ -377,15 +423,25 @@ def _render_opportunities(
         )
         return
 
+    companies = {company.symbol: company for company in model.companies}
     for card in model.opportunities:
+        company = companies.get(card.symbol)
+        valuation_text = _status_text(card.valuation_status)
+        price_text = _status_text(card.price_status)
+        decision_text = "尚未就绪：缺少公司研究卡片。"
+        if company is not None:
+            valuation_text = _status_text(company.valuation.status) + "\n" + _assessment_text(company.valuation)
+            price_text = _status_text(company.price.status) + "\n" + _assessment_text(company.price)
+            decision = next(step for step in company.decision_process if step.key == "decision_gate")
+            decision_text = f"{decision.status}\n{decision.reason}"
         _style(ws.cell(row, 1, f"{card.company_name} / {card.symbol}"), border=True)
         _company_link(ws.cell(row, 1), card.symbol, company_rows)
         values = (
             card.why_now,
             _status_text(card.research_status),
-            _status_text(card.valuation_status),
+            valuation_text,
             _status_text(card.dividend_status),
-            _status_text(card.price_status),
+            price_text,
             card.main_risk,
             card.next_trigger,
         )
@@ -394,6 +450,7 @@ def _render_opportunities(
         evidence_text = _evidence_cell(
             ws, row, 9, card.evidence_refs, audit_rows, evidence_group_rows
         )
+        _style(ws.cell(row, 10, decision_text), border=True)
         _fit_rows(
             ws,
             row,
@@ -407,6 +464,7 @@ def _render_opportunities(
                 (7, values[5], 1),
                 (8, values[6], 1),
                 (9, evidence_text, 1),
+                (10, decision_text, 1),
             ],
         )
         row += 1
@@ -654,16 +712,6 @@ def _render_companies(
             row += 1
         row += 1
 
-        if company.decision_review:
-            row = _section_title(ws, row, "决策复核", 6)
-            for label, value in company.decision_review:
-                _style(ws.cell(row, 1, label), fill=GREY, bold=True, border=True)
-                ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
-                _style(ws.cell(row, 2, value), border=True)
-                _fit_rows(ws, row, [(1, label, 1), (2, value, 5)])
-                row += 1
-            row += 1
-
         row = _section_title(ws, row, "Bear / Base / Bull", 6)
         for index, scenario in enumerate(company.scenarios):
             start_column = index * 2 + 1
@@ -705,6 +753,15 @@ def _render_companies(
             ],
         )
         row += 2
+        if company.decision_review:
+            row = _section_title(ws, row, "决策复核", 6)
+            for label, value in company.decision_review:
+                _style(ws.cell(row, 1, label), fill=GREY, bold=True, border=True)
+                ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
+                _style(ws.cell(row, 2, value), border=True)
+                _fit_rows(ws, row, [(1, label, 1), (2, value, 5)])
+                row += 1
+            row += 1
     return company_rows
 
 
@@ -749,6 +806,8 @@ def _evidence_groups(model: ProductWorkbenchReadModel) -> tuple[tuple[str, ...],
         add(company.evidence_refs)
         for section in company.sections:
             add(section.evidence_refs)
+        for step in company.decision_process:
+            add(step.evidence_refs)
     return tuple(groups)
 
 
@@ -915,6 +974,19 @@ def _render_audit(ws: Worksheet, model: ProductWorkbenchReadModel) -> None:
             _fit_rows(ws, row, [(column, value, 1) for column, value in enumerate(values, 1)])
             row += 1
 
+    assessed_steps = [(company, step) for company in model.companies
+                      for step in company.decision_process if step.assessment_id]
+    if assessed_steps:
+        row = _section_title(ws, row + 1, "决策过程评估审计", 6)
+        row = _header(ws, row, ["公司", "步骤", "评估状态", "评估编号", "评估说明", "证据"])
+        for company, step in assessed_steps:
+            values = (company.symbol, step.key, step.status, step.assessment_id, step.reason)
+            for column, value in enumerate(values, 1):
+                _style(ws.cell(row, column, value), border=True)
+            evidence_text = _evidence_cell(ws, row, 6, step.evidence_refs, _audit_rows(model), _audit_evidence_group_rows(model))
+            _fit_rows(ws, row, [(column, value, 1) for column, value in enumerate((*values, evidence_text), 1)])
+            row += 1
+
 def build_product_workbench_workbook(
     model: ProductWorkbenchReadModel,
 ) -> Workbook:
@@ -960,6 +1032,7 @@ def build_product_workbench_workbook(
         audit_rows,
         evidence_group_rows,
     )
+    _render_decision_process(sheets[SHEET_DECISION_PROCESS], model, company_rows, audit_rows, evidence_group_rows)
     _render_events(
         sheets[SHEET_EVENTS],
         model,
@@ -977,7 +1050,7 @@ def apply_product_workbench_to_existing_workbook(
 ) -> tuple[str, ...]:
     """Insert the managed M7 surface without rebuilding retained workbook sheets.
 
-    Only the six named product sheets are ever replaced.  Every other sheet,
+    Only the named product sheets are ever replaced. Every other sheet,
     including manual, historical and evidence tabs, remains in the workbook and
     retains its relative order after the new front-door navigation.
     """
@@ -1012,6 +1085,7 @@ def apply_product_workbench_to_existing_workbook(
         sheets[SHEET_PORTFOLIO], model, audit_rows, evidence_group_rows
     )
     _render_events(sheets[SHEET_EVENTS], model, audit_rows, evidence_group_rows)
+    _render_decision_process(sheets[SHEET_DECISION_PROCESS], model, company_rows, audit_rows, evidence_group_rows)
     _render_audit(sheets[SHEET_SYSTEM_AUDIT], model)
     workbook.active = 0
     return tuple(workbook.sheetnames)
@@ -1084,6 +1158,7 @@ __all__ = [
     "PRODUCT_WORKBENCH_CANDIDATE_SCHEMA_VERSION",
     "SECONDARY_SHEETS",
     "SHEET_COMPANIES",
+    "SHEET_DECISION_PROCESS",
     "SHEET_EVENTS",
     "SHEET_OPPORTUNITIES",
     "SHEET_PORTFOLIO",

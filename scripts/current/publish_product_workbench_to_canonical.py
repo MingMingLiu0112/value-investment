@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """Publish the M7 product surface into the one configured canonical workbook.
 
-This deliberately never creates a second user-facing workbook. It stages under
-the project root, proves retained sheets did not change, and uses a backup-aware
-Windows replacement to detect and recover a concurrent source edit. Publishing
-fails closed when project staging and the configured workbook are on different
-volumes because an atomic replacement would be impossible under that boundary.
+This deliberately never creates a second user-facing workbook. It stages on
+the canonical volume, proves retained sheets did not change, and uses a
+backup-aware Windows replacement to detect and recover a concurrent source edit.
 """
 from __future__ import annotations
 
@@ -58,7 +56,7 @@ PROSPECTIVE_RECEIPT_SHA256 = "8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d
 PROSPECTIVE_PLAN_PATH = "config/prospective-research-observation-plan-v2.json"
 
 
-def _project_staging_directory(project_root: Path, canonical: Path) -> Path:
+def _project_staging_directory(project_root: Path, canonical: Path, *, authorized_external: bool = False) -> Path:
     root = project_root.resolve()
     staging_dir = root / ".tmp"
     resolved_staging = staging_dir.resolve()
@@ -70,9 +68,23 @@ def _project_staging_directory(project_root: Path, canonical: Path) -> Path:
     except OSError as error:
         raise RuntimeError("could not verify the publication volume boundary") from error
     if project_device != canonical_device:
-        raise RuntimeError(
-            "project-contained atomic publication is unavailable across filesystem volumes"
+        if not authorized_external:
+            raise RuntimeError(
+                "project-contained atomic publication is unavailable across filesystem volumes"
+            )
+        approved = Path("C:/Users/we/AppData/Local/value-investment/publication-staging")
+        staging_dir = approved.resolve()
+        packaged = Path(
+            "C:/Users/we/AppData/Local/Packages/OpenAI.Codex_2p2nqsd0c76g0/"
+            "LocalCache/Local/value-investment/publication-staging"
         )
+        if staging_dir not in (approved.absolute(), packaged.absolute()):
+            raise RuntimeError("authorized staging path must not resolve through a redirect")
+        ancestor = staging_dir
+        while not ancestor.exists():
+            ancestor = ancestor.parent
+        if _filesystem_device(ancestor) != canonical_device:
+            raise RuntimeError("authorized staging is not on the canonical volume")
     staging_dir.mkdir(parents=True, exist_ok=True)
     return staging_dir
 
@@ -192,8 +204,8 @@ def _replace_canonical_staging(
     if _sha256(staging) != staging_sha256:
         raise ValueError("staging workbook changed before replacement; refusing to publish")
     scratch = (scratch_dir or canonical.parent).resolve()
-    if scratch_dir is not None and not scratch.is_relative_to(ROOT.resolve()):
-        raise ValueError("publication recovery files must remain under the project root")
+    if scratch_dir is not None and scratch != _project_staging_directory(ROOT, canonical, authorized_external=True):
+        raise ValueError("publication recovery files must remain in the designated staging directory")
     if _filesystem_device(scratch) != _filesystem_device(canonical.parent.resolve()):
         raise RuntimeError("atomic replacement scratch files must share the canonical volume")
 
@@ -595,11 +607,15 @@ def _protected_ooxml_parts(path: Path) -> dict[str, str]:
             relation.attrib["Id"]: _target_part("xl/workbook.xml", relation.attrib["Target"])
             for relation in relations.findall(f"{package_rel_ns}Relationship")
         }
-        queue = [
-            workbook_targets[sheet.attrib[rel_ns]]
+        preserved_sheets = {
+            workbook_targets[sheet.attrib[rel_ns]]: sheet.attrib["name"]
             for sheet in workbook.findall(f"{workbook_ns}sheets/{workbook_ns}sheet")
             if sheet.attrib.get("name") not in WORKBOOK_SHEETS
-        ]
+        }
+        queue = list(preserved_sheets)
+        relationship_owners = {
+            _relationship_part(part): title for part, title in preserved_sheets.items()
+        }
         protected: set[str] = set()
         while queue:
             part = queue.pop()
@@ -619,7 +635,11 @@ def _protected_ooxml_parts(path: Path) -> dict[str, str]:
             name for name in protected
             if name.startswith(("xl/drawings/", "xl/media/", "xl/charts/", "xl/worksheets/_rels/"))
         }
-        return {name: hashlib.sha256(archive.read(name)).hexdigest() for name in sorted(relevant)}
+        return {
+            (f"worksheet-relationships:{relationship_owners[name]}" if name in relationship_owners else name):
+            hashlib.sha256(archive.read(name)).hexdigest()
+            for name in sorted(relevant)
+        }
 
 
 def _snapshot(path: Path) -> dict[str, Any]:
@@ -661,7 +681,7 @@ def _assert_retained(before: dict[str, Any], after: dict[str, Any]) -> None:
     if changed:
         raise ValueError("protected sheet content or non-navigation properties changed: " + ", ".join(changed))
     if tuple(after["sheet_order"][: len(WORKBOOK_SHEETS)]) != WORKBOOK_SHEETS:
-        raise ValueError("product navigation is not the first six sheets")
+        raise ValueError("product navigation does not match the managed sheet contract")
     if any(after["sheets"][name]["state"] == "visible" for name in retained):
         raise ValueError("non-product worksheet remains visible in default navigation")
     if after["active_sheet"] != WORKBOOK_SHEETS[0]:
@@ -680,10 +700,107 @@ def _hide_legacy_sheets(workbook: Any) -> list[str]:
     return hidden
 
 
+def _reviewed_research_publication(
+    root: Path, canonical: Path, folder: Path, proof_sha256: str, *, publish: bool,
+) -> dict[str, Any]:
+    """Publish an already reviewed research preview, not a current-price packet."""
+    root = root.resolve()
+    folder = folder.resolve()
+    if not folder.is_relative_to(root / "runtime"):
+        raise ValueError("reviewed research proofs must remain under runtime")
+    candidate = folder / "canonical-integration-historical-preview.xlsx"
+    proof_path = folder / "canonical-preservation.json"
+    wps_path = folder / "integrated-wps-verification.json"
+    if not wps_path.exists():
+        wps_path = folder / "native-review/receipt.json"
+    readability_path = folder / "readability.json"
+    for path in (candidate, proof_path, wps_path, readability_path):
+        if not path.resolve().is_relative_to(folder) or not path.is_file():
+            raise ValueError("reviewed research artifact missing or outside proof folder")
+    if not re.fullmatch(r"[0-9a-f]{64}", proof_sha256) or _sha256(proof_path) != proof_sha256:
+        raise ValueError("reviewed research proof hash mismatch")
+    proof = json.loads(proof_path.read_text(encoding="utf-8-sig"))
+    if (proof.get("preservation") != "PASS" or proof.get("action") != "no_order"
+            or proof.get("simulation_only") is not False or proof.get("historical_preview") is not True
+            or proof.get("canonical_touched") is not False):
+        raise ValueError("reviewed research proof scope not admitted")
+    candidate_sha = _sha256(candidate)
+    if candidate_sha != proof.get("candidate_sha256"):
+        raise ValueError("reviewed research preview changed")
+    wps = json.loads(wps_path.read_text(encoding="utf-8-sig"))
+    native_ok = (wps.get("readonly_open") == "PASS" or
+                 (wps.get("status") == "SEVEN_NATIVE_EXPORTS_COMPLETE"
+                  and wps.get("readonly") is True and len(wps.get("sheets", [])) == 7))
+    if not native_ok or wps.get("workbook_sha256") != candidate_sha:
+        raise ValueError("reviewed research WPS proof mismatch")
+    readability = json.loads(readability_path.read_text(encoding="utf-8-sig"))
+    if readability.get("status") != "passed" or readability.get("workbook_sha256") != candidate_sha:
+        raise ValueError("reviewed research readability proof mismatch")
+    _assert_canonical_source_unchanged(canonical, proof["source_sha256"])
+    before = _snapshot(canonical)
+    after_preview = _snapshot(candidate)
+    _assert_retained(before, after_preview)
+    count = len([name for name in before["sheet_order"] if name not in WORKBOOK_SHEETS])
+    if proof.get("preserved_sheet_count") != count:
+        raise ValueError("reviewed research preserved-sheet count mismatch")
+    receipt = dict(
+        schema_version="canonical-reviewed-research-publication-v1", action="no_order",
+        status="VERIFIED_RESEARCH_PREVIEW_ONLY", workbook_source="WORKBOOK_PATH",
+        workbook_path_unchanged=True, simulation_only=False,
+        before_sha256=proof["source_sha256"], candidate_sha256=candidate_sha,
+        preservation_proof_sha256=proof_sha256, wps_proof_sha256=_sha256(wps_path),
+        readability_proof_sha256=_sha256(readability_path), preserved_sheet_count=count,
+        strict_pit="NOT_PROVEN", current_price_bridge="NOT_ADMITTED",
+        M7_FINAL_USER_ACCEPTANCE="NOT_PASSED", INITIAL_ASSISTED_USE="NOT_REACHED",
+        canonical_written=False,
+    )
+    if not publish:
+        _assert_canonical_source_unchanged(canonical, proof["source_sha256"])
+        return receipt
+    _assert_workbook_not_open(canonical)
+    staging_dir = _project_staging_directory(root, canonical, authorized_external=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex[:8]
+    backups = root / "runtime/workbook-backups"
+    receipts = root / "runtime/publication-receipts"
+    backups.mkdir(parents=True, exist_ok=True)
+    receipts.mkdir(parents=True, exist_ok=True)
+    backup = backups / f"canonical-before-reviewed-research-{stamp}.xlsx"
+    shutil.copy2(canonical, backup)
+    if _sha256(backup) != proof["source_sha256"]:
+        raise ValueError("reviewed research backup mismatch")
+    staging = staging_dir / f"canonical-reviewed-research-{stamp}.xlsx"
+    shutil.copy2(candidate, staging)
+    if _sha256(staging) != candidate_sha:
+        staging.unlink()
+        raise ValueError("reviewed research staging hash mismatch")
+    try:
+        _assert_retained(before, _snapshot(staging))
+        after_sha = _replace_canonical_staging(
+            canonical, staging, expected_source_sha256=proof["source_sha256"],
+            staging_sha256=candidate_sha, scratch_dir=staging_dir,
+        )
+        _assert_retained(before, _snapshot(canonical))
+    except _PreservePublicationArtifacts:
+        raise
+    except Exception:
+        if staging.exists():
+            staging.unlink()
+        raise
+    receipt.update(status="PUBLISHED_PENDING_WPS_VERIFICATION", canonical_written=True,
+                   after_sha256=after_sha, backup_sha256=_sha256(backup),
+                   backup=backup.relative_to(root).as_posix())
+    receipt_path = receipts / f"canonical-reviewed-research-{stamp}.json"
+    with receipt_path.open("x", encoding="utf-8") as handle:
+        json.dump(receipt, handle, ensure_ascii=False, indent=2)
+    return {**receipt, "receipt": receipt_path.relative_to(root).as_posix()}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--publish", action="store_true", help="Required explicit confirmation to replace the canonical workbook.")
     parser.add_argument("--verify-only", action="store_true", help="Validate the same product model without writing the workbook.")
+    parser.add_argument("--reviewed-research-folder", type=Path, help="Previously reviewed runtime-only research preview and proofs; no current-price admission.")
+    parser.add_argument("--reviewed-research-proof-sha256")
     parser.add_argument("--quote-bundle", type=Path, help="Required current, retained dual-source quote bundle.")
     parser.add_argument("--prospective-snapshot", type=Path, help="Verified public research snapshot under runtime.")
     parser.add_argument("--prospective-sha256", help="Pinned SHA-256 of the prospective snapshot.")
@@ -695,6 +812,24 @@ def main() -> int:
     args = parser.parse_args()
     if args.publish == args.verify_only:
         raise ValueError("choose exactly one of --publish or --verify-only")
+    if args.reviewed_research_folder is not None or args.reviewed_research_proof_sha256 is not None:
+        if args.reviewed_research_folder is None or args.reviewed_research_proof_sha256 is None:
+            raise ValueError("reviewed research folder and proof hash must be supplied together")
+        if any(value is not None for value in (
+            args.quote_bundle, args.prospective_snapshot, args.prospective_sha256,
+            args.m5_event_projection, args.m5_event_projection_sha256,
+            args.prospective_observation_ledger, args.prospective_observation_ledger_sha256,
+            args.prospective_observation_evaluation_cutoff,
+        )):
+            raise ValueError("reviewed research mode excludes daily quote and observation inputs")
+        folder = args.reviewed_research_folder
+        if not folder.is_absolute():
+            folder = ROOT / folder
+        result = _reviewed_research_publication(
+            ROOT, _workbook_path(), folder, args.reviewed_research_proof_sha256, publish=args.publish,
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
     if args.quote_bundle is None:
         raise ValueError("refusing publish without --quote-bundle")
     if (args.prospective_snapshot is None) != (args.prospective_sha256 is None):
@@ -754,7 +889,7 @@ def main() -> int:
         finally:
             preview.close()
         return 0
-    staging_dir = _project_staging_directory(ROOT, canonical)
+    staging_dir = _project_staging_directory(ROOT, canonical, authorized_external=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     backup_dir = ROOT / "runtime" / "workbook-backups"
     receipt_dir = ROOT / "runtime" / "publication-receipts"

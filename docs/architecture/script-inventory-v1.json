@@ -12,9 +12,20 @@
     "MIGRATION_TOOL": 13,
     "DIAGNOSTIC_TOOL": 134,
     "SUPERSEDED": 0,
-    "DELETE_CANDIDATE": 0
+    "DELETE_CANDIDATE": 1
   },
   "entries": [
+    {
+      "path": "scripts/current/update_canonical_quote_display.py",
+      "category": "DELETE_CANDIDATE",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": "scripts/current/publish_product_workbench_to_canonical.py",
+      "recommended_action": "DISABLED_FAIL_CLOSED_ORIGINAL_RETAINED_IN_RUNTIME",
+      "risk": "HIGH",
+      "line_count": 91,
+      "sha256": "509ac8f1c5e3cf078a9d12060de208cde1ea397b9f94a272d3c3fd153087d1a9"
+    },
     {
       "path": "scripts/analyze_moutai_cash_anchor_equity_coverage.py",
       "category": "COMPANY_RESEARCH_CASE_TOOL",

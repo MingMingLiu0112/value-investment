@@ -8,8 +8,11 @@ database, server, cloud destination or broker.
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import base64
+import ctypes
 import hashlib
 import hmac
 import io
@@ -17,10 +20,14 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
+import stat
+import subprocess
 import tarfile
 import tempfile
 import uuid
-from typing import Any, BinaryIO, Iterable, Mapping, Sequence
+from ctypes import wintypes
+from typing import Any, BinaryIO, Iterable, Iterator, Mapping, Sequence
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -62,6 +69,255 @@ class ArchiveItem:
     source_path: Path
     size_bytes: int
     sha256: str
+
+
+def _validate_private_project_path(path: Path) -> Path:
+    project_root = Path(__file__).resolve().parents[2]
+    temporary_root = project_root / ".tmp"
+    candidate = Path(path)
+    if not candidate.is_absolute():
+        candidate = Path.cwd() / candidate
+    candidate = Path(os.path.abspath(candidate))
+    if candidate == temporary_root or not candidate.is_relative_to(temporary_root):
+        raise ValueError("decrypted backup output must stay below the project .tmp directory")
+    for directory in (candidate, *candidate.parents):
+        if directory == temporary_root.parent:
+            break
+        is_junction = getattr(directory, "is_junction", lambda: False)
+        if directory.is_symlink() or is_junction():
+            raise PermissionError("private backup path cannot use a link or junction")
+    return candidate
+
+
+def _clear_private_directory_contents(path: Path) -> None:
+    for child in path.iterdir():
+        is_junction = getattr(child, "is_junction", lambda: False)
+        if child.is_symlink():
+            child.unlink()
+        elif is_junction():
+            child.rmdir()
+        elif child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+
+
+@contextmanager
+def _private_backup_plaintext_directory(path: Path) -> Iterator[Path]:
+    project_root = Path(__file__).resolve().parents[2]
+    temporary_root = project_root / ".tmp"
+    candidate = _validate_private_project_path(path)
+    directory_handles: list[int] = []
+    try:
+        if os.name == "nt":
+            directory_handles = _open_windows_private_path_guards(
+                project_root, temporary_root, candidate
+            )
+        else:
+            temporary_root.mkdir(mode=0o700, parents=True, exist_ok=True)
+            candidate.mkdir(mode=0o700, parents=True, exist_ok=True)
+
+        resolved = candidate.resolve()
+        if not resolved.is_relative_to(temporary_root.resolve()):
+            raise PermissionError(
+                "private backup path must stay inside the project .tmp directory"
+            )
+        if any(resolved.iterdir()):
+            raise PermissionError("private backup directory must be empty before ACL changes")
+
+        if os.name == "nt":
+            _protect_windows_backup_scratch(resolved)
+        else:
+            resolved.chmod(0o700)
+            if stat.S_IMODE(resolved.stat().st_mode) != 0o700:
+                raise PermissionError("private backup scratch permissions are too broad")
+        if any(resolved.iterdir()):
+            raise PermissionError("private backup directory must be empty before use")
+        try:
+            yield resolved
+        except BaseException:
+            try:
+                _clear_private_directory_contents(resolved)
+            except OSError as cleanup_error:
+                raise PermissionError(
+                    "could not remove partial private backup plaintext"
+                ) from cleanup_error
+            raise
+    finally:
+        for directory_handle in reversed(directory_handles):
+            _close_windows_directory_guard(directory_handle)
+
+
+@contextmanager
+def _private_backup_scratch() -> Iterator[Path]:
+    project_root = Path(__file__).resolve().parents[2]
+    path = project_root / ".tmp" / "backup-restore-plaintext"
+    with _private_backup_plaintext_directory(path) as scratch:
+        yield scratch
+
+
+def _open_windows_directory_guard(path: Path) -> int:
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateFileW.argtypes = [
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        ctypes.c_void_p,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.HANDLE,
+    ]
+    kernel32.CreateFileW.restype = wintypes.HANDLE
+    kernel32.GetFileAttributesW.argtypes = [wintypes.LPCWSTR]
+    kernel32.GetFileAttributesW.restype = wintypes.DWORD
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+
+    handle = kernel32.CreateFileW(
+        str(path),
+        0x00000080,
+        0x00000003,
+        None,
+        3,
+        0x02000000 | 0x00200000,
+        None,
+    )
+    handle_value = ctypes.cast(handle, ctypes.c_void_p).value if handle else None
+    if handle_value in (None, ctypes.c_void_p(-1).value):
+        raise PermissionError("could not hold private backup scratch directory")
+    attributes = kernel32.GetFileAttributesW(str(path))
+    if attributes == 0xFFFFFFFF or not attributes & 0x10 or attributes & 0x400:
+        kernel32.CloseHandle(handle)
+        raise PermissionError("private backup scratch is not a stable local directory")
+    return handle_value
+
+
+def _open_windows_private_path_guards(
+    project_root: Path,
+    temporary_root: Path,
+    candidate: Path,
+) -> list[int]:
+    handles: list[int] = []
+    try:
+        for directory in (project_root.parent, project_root):
+            handles.append(_open_windows_directory_guard(directory))
+
+        temporary_root.mkdir(mode=0o700, exist_ok=True)
+        handles.append(_open_windows_directory_guard(temporary_root))
+
+        current = temporary_root
+        for part in candidate.relative_to(temporary_root).parts:
+            current = current / part
+            current.mkdir(mode=0o700, exist_ok=True)
+            handles.append(_open_windows_directory_guard(current))
+        return handles
+    except BaseException:
+        for handle in reversed(handles):
+            _close_windows_directory_guard(handle)
+        raise
+
+
+def _close_windows_directory_guard(handle: int) -> None:
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+    if not kernel32.CloseHandle(wintypes.HANDLE(handle)):
+        raise OSError(ctypes.get_last_error(), "could not release private scratch directory")
+
+
+def _protect_windows_backup_scratch(path: Path) -> None:
+    candidates = [
+        os.environ.get("VALUE_INVESTMENT_PWSH"),
+        shutil.which("pwsh"),
+    ]
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data:
+        candidates.append(str(Path(local_app_data) / "Programs/PowerShell/7/pwsh.exe"))
+    candidates.append(r"C:\Program Files\PowerShell\7\pwsh.exe")
+    executable = next(
+        (candidate for candidate in candidates if candidate and Path(candidate).is_file()),
+        None,
+    )
+    if executable is None:
+        raise PermissionError("PowerShell 7 is required to protect backup scratch ACLs")
+
+    script = r"""
+$ErrorActionPreference = 'Stop'
+$path = [System.IO.Path]::GetFullPath($env:VALUE_INVESTMENT_BACKUP_SCRATCH)
+$owner = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+$system = [System.Security.Principal.SecurityIdentifier]::new('S-1-5-18')
+$administrators = [System.Security.Principal.SecurityIdentifier]::new('S-1-5-32-544')
+$principals = @($owner, $system, $administrators)
+$allowed = @($principals | ForEach-Object { $_.Value } | Sort-Object -Unique)
+$systemDirectory = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::System)
+$aclCommand = Join-Path $systemDirectory 'icacls.exe'
+if (-not [System.IO.File]::Exists($aclCommand)) {
+    throw 'system icacls.exe was not found'
+}
+$resetArguments = @($path, '/reset')
+& $aclCommand @resetArguments | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    throw 'icacls could not reset the private backup DACL'
+}
+$inheritanceArguments = @($path, '/inheritance:r')
+& $aclCommand @inheritanceArguments | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    throw 'icacls could not protect the private backup DACL'
+}
+$grantArguments = @($path, '/grant:r')
+foreach ($sid in $allowed) {
+    $grantArguments += "*$($sid):(OI)(CI)F"
+}
+& $aclCommand @grantArguments | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    throw 'icacls could not grant the private backup principals'
+}
+$inheritance = [System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit
+$actual = Get-Acl -LiteralPath $path
+$rules = @($actual.Access)
+$actualOwner = ([System.Security.Principal.NTAccount]::new($actual.Owner)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+if ($actualOwner -ne $owner.Value) {
+    throw 'private backup scratch owner differs from the current process user'
+}
+if (-not $actual.AreAccessRulesProtected -or $rules.Count -ne $allowed.Count) {
+    throw 'backup scratch DACL is not protected or has unexpected entries'
+}
+$seen = @()
+$fullControl = [int64][System.Security.AccessControl.FileSystemRights]::FullControl
+foreach ($rule in $rules) {
+    $sid = $rule.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value
+    $rights = [int64]$rule.FileSystemRights
+    if ($sid -notin $allowed -or $rule.AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow -or (($rights -band $fullControl) -ne $fullControl) -or (($rule.InheritanceFlags -band $inheritance) -ne $inheritance)) {
+        throw 'backup scratch DACL contains an unapproved permission'
+    }
+    $seen += $sid
+}
+if (@($allowed | Where-Object { $_ -notin $seen }).Count -ne 0) {
+    throw 'backup scratch DACL is missing a required principal'
+}
+"""
+    encoded = base64.b64encode(script.encode("utf-16-le")).decode("ascii")
+    environment = os.environ.copy()
+    environment["VALUE_INVESTMENT_BACKUP_SCRATCH"] = str(path)
+    try:
+        result = subprocess.run(
+            [executable, "-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", encoded],
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=20,
+            env=environment,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise PermissionError("private backup scratch ACL verification failed") from exc
+    if result.returncode:
+        detail = (result.stderr or result.stdout).strip()
+        raise PermissionError(
+            "private backup scratch ACL verification failed"
+            + (f": {detail[-500:]}" if detail else "")
+        )
 
 
 def _load_json_object(path: Path) -> dict[str, Any]:
@@ -451,11 +707,13 @@ def _read_header(handle: BinaryIO) -> tuple[dict[str, Any], int]:
     return header, chunk_bytes
 
 
-def _decrypt_to_temp(handle: BinaryIO, *, key: bytes, key_id: str) -> tuple[BinaryIO, dict[str, Any]]:
+def _decrypt_to_temp(
+    handle: BinaryIO, *, key: bytes, key_id: str, scratch_dir: Path
+) -> tuple[BinaryIO, dict[str, Any]]:
     header, _ = _read_header(handle)
     if header["key_id"] != key_id:
         raise ValueError("backup key does not match encrypted package")
-    decrypted = tempfile.TemporaryFile()
+    decrypted = tempfile.TemporaryFile(dir=scratch_dir)
     try:
         while True:
             raw_length = handle.read(4)
@@ -476,7 +734,7 @@ def _decrypt_to_temp(handle: BinaryIO, *, key: bytes, key_id: str) -> tuple[Bina
         decrypted.flush()
         decrypted.seek(0)
         return decrypted, header
-    except Exception:
+    except BaseException:
         decrypted.close()
         raise
 
@@ -489,45 +747,62 @@ def decrypt_package(
 ) -> dict[str, Any]:
     policy = load_policy(policy_path)
     key, key_id = load_key(key_path, policy)
-    output = output_dir.resolve()
-    if output.exists() and any(output.iterdir()):
-        raise FileExistsError(f"decrypt output directory is not empty: {output}")
-    output.mkdir(parents=True, exist_ok=True)
+    output = _validate_private_project_path(output_dir)
+    scratch_root = (
+        Path(__file__).resolve().parents[2]
+        / ".tmp"
+        / "backup-restore-plaintext"
+    )
+    if output == scratch_root or output.is_relative_to(scratch_root):
+        raise ValueError("decrypted output must be separate from the private scratch directory")
     with input_path.open("rb") as source_handle:
-        decrypted, header = _decrypt_to_temp(source_handle, key=key, key_id=key_id)
-        with decrypted:
-            with tarfile.open(fileobj=decrypted, mode="r|*") as archive:
-                archive.extractall(output, filter="data")
-    manifest_path = output / MANIFEST_ARCHIVE_PATH
-    payload = manifest_path.read_bytes()
-    manifest_sha256 = hashlib.sha256(payload).hexdigest()
-    if manifest_sha256 != header["manifest_sha256"]:
-        raise ValueError("decrypted backup manifest hash does not match header")
-    manifest = json.loads(payload.decode("utf-8"))
-    if manifest.get("schema_version") != SCHEMA_VERSION or manifest.get("action") != ACTION_NO_ORDER:
-        raise ValueError("decrypted backup manifest has an invalid contract")
-    verified = []
-    for item in manifest.get("items") or []:
-        path = output / str(item["archive_path"])
-        if not path.is_file() or path.is_symlink():
-            raise ValueError(f"decrypted file is missing: {item[archive_path]}")
-        if path.stat().st_size != int(item["size_bytes"]):
-            raise ValueError(f"decrypted file size differs: {item[archive_path]}")
-        actual_hash = sha256_file(path)
-        if actual_hash != item["sha256"]:
-            raise ValueError(f"decrypted file hash differs: {item[archive_path]}")
-        verified.append(
-            {
-                "kind": item["kind"],
-                "archive_path": item["archive_path"],
-                "sha256": actual_hash,
-            }
-        )
-    return {
-        "output_dir": str(output),
-        "backup_id": manifest.get("backup_id"),
-        "manifest_sha256": manifest_sha256,
-        "key_id": key_id,
-        "verified_files": verified,
-        "action": ACTION_NO_ORDER,
-    }
+        with _private_backup_scratch() as scratch_dir:
+            with _private_backup_plaintext_directory(output) as secure_output:
+                decrypted, header = _decrypt_to_temp(
+                    source_handle, key=key, key_id=key_id, scratch_dir=scratch_dir
+                )
+                with decrypted:
+                    with tarfile.open(fileobj=decrypted, mode="r|*") as archive:
+                        archive.extractall(secure_output, filter="data")
+                manifest_path = secure_output / MANIFEST_ARCHIVE_PATH
+                payload = manifest_path.read_bytes()
+                manifest_sha256 = hashlib.sha256(payload).hexdigest()
+                if manifest_sha256 != header["manifest_sha256"]:
+                    raise ValueError("decrypted backup manifest hash does not match header")
+                manifest = json.loads(payload.decode("utf-8"))
+                if (
+                    manifest.get("schema_version") != SCHEMA_VERSION
+                    or manifest.get("action") != ACTION_NO_ORDER
+                ):
+                    raise ValueError("decrypted backup manifest has an invalid contract")
+                verified = []
+                for item in manifest.get("items") or []:
+                    path = secure_output / str(item["archive_path"])
+                    if not path.is_file() or path.is_symlink():
+                        raise ValueError(
+                            f"decrypted file is missing: {item['archive_path']}"
+                        )
+                    if path.stat().st_size != int(item["size_bytes"]):
+                        raise ValueError(
+                            f"decrypted file size differs: {item['archive_path']}"
+                        )
+                    actual_hash = sha256_file(path)
+                    if actual_hash != item["sha256"]:
+                        raise ValueError(
+                            f"decrypted file hash differs: {item['archive_path']}"
+                        )
+                    verified.append(
+                        {
+                            "kind": item["kind"],
+                            "archive_path": item["archive_path"],
+                            "sha256": actual_hash,
+                        }
+                    )
+                return {
+                    "output_dir": str(secure_output),
+                    "backup_id": manifest.get("backup_id"),
+                    "manifest_sha256": manifest_sha256,
+                    "key_id": key_id,
+                    "verified_files": verified,
+                    "action": ACTION_NO_ORDER,
+                }

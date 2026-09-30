@@ -16,12 +16,14 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from openpyxl import load_workbook  # noqa: E402
 from openpyxl.utils import get_column_letter  # noqa: E402
+from value_investment_agent.presentation.excel.product_workbench import (  # noqa: E402
+    USER_SHEETS,
+    SECONDARY_SHEETS,
+)
 
 
 LINE_POINTS = 15
 LINE_PADDING = 6
-USER_SHEETS = ("01_今日", "02_机会", "03_公司", "04_我的组合", "05_事件")
-SECONDARY_SHEETS = ("06_系统与审计",)
 
 
 def _glyph_width(character: str) -> int:

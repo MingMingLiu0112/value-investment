@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
+import hashlib
+import io
 import json
+import os
 from pathlib import Path
+import stat
 
 import pytest
 
+from value_investment_agent import backup_security
 from value_investment_agent.backup_security import (
     ACTION_NO_ORDER,
     MANIFEST_ARCHIVE_PATH,
@@ -131,6 +137,116 @@ def test_encrypt_decrypt_round_trip_and_hash_verification(tmp_path):
     assert manifest["code_version"] == "0.1.0-test"
     assert all(item["sha256"] for item in manifest["items"])
     assert json.dumps(manifest) != "" and "backup.key" not in json.dumps(manifest)
+
+
+def test_private_backup_scratch_is_project_local_and_restrictive(monkeypatch):
+    project_root = Path(backup_security.__file__).resolve().parents[2]
+    guarded = []
+    open_guard = backup_security._open_windows_directory_guard
+
+    def tracked_guard(path):
+        handle = open_guard(path)
+        guarded.append(Path(path))
+        return handle
+
+    if os.name == "nt":
+        monkeypatch.setattr(backup_security, "_open_windows_directory_guard", tracked_guard)
+
+    with backup_security._private_backup_scratch() as scratch:
+        assert scratch.is_relative_to(project_root / ".tmp")
+        assert not scratch.is_symlink()
+        if os.name != "nt":
+            assert stat.S_IMODE(scratch.stat().st_mode) == 0o700
+        else:
+            assert guarded == [
+                project_root.parent,
+                project_root,
+                project_root / ".tmp",
+                scratch,
+            ]
+
+
+def test_decrypt_refuses_output_directory_outside_project_temp_root(tmp_path):
+    _, _, _, key, policy, package = _package(tmp_path)
+    project_root = Path(backup_security.__file__).resolve().parents[2]
+    outside = project_root / (
+        f"forbidden-restore-{tmp_path.parent.name}-{tmp_path.name}"
+    )
+
+    with pytest.raises(ValueError, match=r"project \.tmp"):
+        decrypt_package(package, outside, key, policy)
+
+    assert not outside.exists()
+
+
+def test_decryption_uses_private_scratch_and_closes_on_authentication_failure(
+    tmp_path, monkeypatch
+):
+    _, _, _, key, policy, output = _package(tmp_path)
+    scratch = tmp_path / "private-scratch"
+    scratch.mkdir(mode=0o700)
+    monkeypatch.setattr(
+        backup_security, "_private_backup_scratch", lambda: nullcontext(scratch)
+    )
+    real_temporary_file = backup_security.tempfile.TemporaryFile
+    opened = []
+
+    def tracked_temporary_file(*args, **kwargs):
+        assert Path(kwargs["dir"]).resolve() == scratch.resolve()
+        handle = real_temporary_file(*args, **kwargs)
+        opened.append(handle)
+        return handle
+
+    monkeypatch.setattr(
+        backup_security.tempfile, "TemporaryFile", tracked_temporary_file
+    )
+    tampered = tmp_path / "tampered-private-scratch.enc"
+    data = bytearray(output.read_bytes())
+    data[-1] ^= 1
+    tampered.write_bytes(data)
+
+    with pytest.raises(ValueError, match="authentication failed"):
+        decrypt_package(tampered, tmp_path / "restore-tampered", key, policy)
+
+    assert len(opened) == 1
+    assert opened[0].closed
+
+
+def test_decrypt_clears_partial_output_when_manifest_validation_fails(
+    tmp_path, monkeypatch
+):
+    _, _, _, key, policy, package = _package(tmp_path)
+    output = tmp_path / "restore-invalid"
+    manifest_payload = b"{"
+
+    def fake_decrypt(_handle, *, key, key_id, scratch_dir):
+        return io.BytesIO(b"decrypted"), {
+            "manifest_sha256": hashlib.sha256(manifest_payload).hexdigest()
+        }
+
+    class PartialArchive:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def extractall(self, destination, *, filter):
+            partial = destination / "source" / "data.txt"
+            partial.parent.mkdir(parents=True)
+            partial.write_text("partial plaintext", encoding="utf-8")
+            manifest = destination / MANIFEST_ARCHIVE_PATH
+            manifest.parent.mkdir(parents=True)
+            manifest.write_bytes(manifest_payload)
+
+    monkeypatch.setattr(backup_security, "_decrypt_to_temp", fake_decrypt)
+    monkeypatch.setattr(backup_security.tarfile, "open", lambda **_kwargs: PartialArchive())
+
+    with pytest.raises(json.JSONDecodeError):
+        decrypt_package(package, output, key, policy)
+
+    assert output.is_dir()
+    assert not any(output.iterdir())
 
 
 def test_multiple_encryption_chunks_round_trip(tmp_path):

@@ -288,7 +288,7 @@ def test_candidate_has_five_user_sheets_and_secondary_audit() -> None:
     workbook = build_product_workbench_workbook(_model())
 
     assert tuple(workbook.sheetnames) == WORKBOOK_SHEETS
-    assert tuple(workbook.sheetnames[:5]) == USER_SHEETS
+    assert tuple(workbook.sheetnames[:len(USER_SHEETS)]) == USER_SHEETS
     assert workbook.sheetnames[-1] == SHEET_SYSTEM_AUDIT
     assert workbook[USER_SHEETS[0]].sheet_view.showGridLines is False
 
@@ -305,8 +305,8 @@ def test_product_surface_replaces_only_its_own_sheets_and_preserves_legacy_order
 
     sheets = apply_product_workbench_to_existing_workbook(workbook, _model())
 
-    assert sheets[:6] == WORKBOOK_SHEETS
-    assert sheets[6:] == ("人工持仓", "冻结证据")
+    assert sheets[:len(WORKBOOK_SHEETS)] == WORKBOOK_SHEETS
+    assert sheets[len(WORKBOOK_SHEETS):] == ("人工持仓", "冻结证据")
     assert workbook["人工持仓"]["A1"].value == "用户输入"
     assert workbook["人工持仓"]["B2"].value == "=1+1"
     assert workbook["冻结证据"]["A1"].value == "immutable"
@@ -663,3 +663,37 @@ def test_user_sheets_freeze_the_company_column_for_horizontal_scans() -> None:
 
     for title in USER_SHEETS:
         assert workbook[title].freeze_panes == "B4"
+
+
+def test_decision_process_is_navigable_and_keeps_unknown_steps_blocked():
+    from value_investment_agent.presentation.excel.product_workbench import SHEET_DECISION_PROCESS
+    workbook = build_product_workbench_workbook(_model())
+    sheet = workbook[SHEET_DECISION_PROCESS]
+    assert _click_distance(workbook, SHEET_TODAY, SHEET_DECISION_PROCESS) == 1
+    assert _click_distance(workbook, SHEET_DECISION_PROCESS, SHEET_COMPANIES) == 1
+    statuses = [cell.value for cell in sheet["C"] if cell.value in {"PASS", "CONDITIONAL", "BLOCKED"}]
+    assert statuses == ["BLOCKED"] * (8 * len(_model().companies))
+    text = "\n".join(str(cell.value) for row in sheet for cell in row if cell.value)
+    assert "NOT_READY" in text
+    assert "当前价格是否有效桥接" in text
+
+
+def test_decision_process_preserves_upstream_status_and_audit_links():
+    from value_investment_agent.presentation.excel.product_workbench import SHEET_DECISION_PROCESS
+    from value_investment_agent.presentation.read_models.product_workbench import DECISION_STEP_TITLES
+    payload = _payload()
+    steps = [dict(key=key, status="PASS", reason="已记录的上游评估。", next_action="跟踪新证据。",
+                  assessment_id=f"assessment-{key}", evidence_refs=["evidence-1"])
+             for key in DECISION_STEP_TITLES]
+    steps[1]["status"] = "CONDITIONAL"
+    steps[-1]["status"] = "BLOCKED"
+    payload["companies"][0]["decision_process"] = steps
+    workbook = build_product_workbench_workbook(product_workbench_from_payload(payload))
+    sheet = workbook[SHEET_DECISION_PROCESS]
+    actual = [cell.value for cell in sheet["C"] if cell.value in {"PASS", "CONDITIONAL", "BLOCKED"}]
+    assert actual == [step["status"] for step in steps]
+    links = [cell for row in sheet for cell in row if cell.hyperlink and str(cell.value).startswith("查看证据")]
+    assert len(links) == 8
+    assert all(SHEET_SYSTEM_AUDIT in cell.hyperlink.target for cell in links)
+    audit_text = "\n".join(str(cell.value) for row in workbook[SHEET_SYSTEM_AUDIT] for cell in row if cell.value)
+    assert "assessment-financial_facts" in audit_text

@@ -1,5 +1,25 @@
 # Staged Excel Frontend
 
+## Current Trading Assistant Navigation (2026-09-30)
+
+The latest user objective supersedes the historical six-tab design below with
+seven managed pages in this order: `01_今日`, `02_机会`, `决策过程`, `03_公司`,
+`04_我的组合`, `05_事件`, `06_系统与审计`. Retained sheet names are unchanged.
+The home page links to all seven. The decision-process page shows eight ordered
+checks: financial facts, business quality, model applicability, scenario
+valuation, price bridge, research gate, portfolio gate and final decision.
+
+It displays upstream `PASS / CONDITIONAL / BLOCKED`, reason, next action and
+evidence links. Passed/conditional display records require an assessment ID and
+audit evidence. Missing assessments produce explicit blocked placeholders;
+price fields, research text or numeric valuations do not establish a passed
+gate. Assessment IDs are retained on the audit page. This is a presentation
+contract; the actual investment gate evaluators remain upstream.
+
+The seven-page renderer is implemented and testable with synthetic data.
+Canonical publication and WPS/user acceptance remain incomplete. The material
+below describes the retained historical staged design, not current navigation.
+
 User-directed presentation change, 2026-09-23. This does not graduate M1,
 authorize new decisions, or replace the domain/application research contracts.
 

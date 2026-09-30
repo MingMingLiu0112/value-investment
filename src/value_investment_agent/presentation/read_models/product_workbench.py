@@ -570,6 +570,45 @@ class ScenarioCard:
 
 
 @dataclass(frozen=True)
+class DecisionStepView:
+    key: str
+    status: str
+    reason: str
+    next_action: str
+    evidence_refs: tuple[str, ...] = ()
+    assessment_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.key not in DECISION_STEP_TITLES:
+            raise ValueError("Unknown decision process step")
+        if self.status not in {"PASS", "CONDITIONAL", "BLOCKED"}:
+            raise ValueError("Decision process status must be PASS, CONDITIONAL or BLOCKED")
+        object.__setattr__(self, "reason", _required_text(self.reason, "decision step reason"))
+        object.__setattr__(self, "next_action", _required_text(self.next_action, "decision next action"))
+        object.__setattr__(self, "evidence_refs", _ref_ids(self.evidence_refs))
+        if self.status != "BLOCKED":
+            _required_text(self.assessment_id, "decision assessment id")
+            if not self.evidence_refs:
+                raise ValueError("Assessed decision steps require evidence")
+
+    @property
+    def title(self) -> str:
+        return DECISION_STEP_TITLES[self.key]
+
+
+DECISION_STEP_TITLES = {
+    "financial_facts": "事实是否齐全",
+    "business_quality": "商业质量是否合格",
+    "model_applicability": "估值模型是否适用",
+    "valuation": "Bear/Base/Bull 是否生成",
+    "price_bridge": "当前价格是否有效桥接",
+    "research_gate": "研究门是否通过",
+    "portfolio_gate": "组合风险是否通过",
+    "decision_gate": "最终建议状态",
+}
+
+
+@dataclass(frozen=True)
 class CompanyCard:
     symbol: str
     company_name: str
@@ -587,6 +626,7 @@ class CompanyCard:
     evidence_refs: tuple[str, ...] = ()
     action: str = ACTION_NO_ORDER
     decision_review: tuple[tuple[str, str], ...] = ()
+    decision_process: tuple[DecisionStepView, ...] = ()
 
     def __post_init__(self) -> None:
         if not _SYMBOL.fullmatch(self.symbol):
@@ -611,6 +651,18 @@ class CompanyCard:
                 (_required_text(label, "decision review label"), _required_text(value, "decision review value"))
             )
         object.__setattr__(self, "decision_review", tuple(review_rows))
+        if not self.decision_process:
+            object.__setattr__(self, "decision_process", tuple(
+                DecisionStepView(
+                    key=key,
+                    status="BLOCKED",
+                    reason=("当前建议：未就绪（NOT_READY）；尚未接入正式决策评估。"
+                            if key == "decision_gate" else f"尚未提供“{title}”的正式评估结果。"),
+                    next_action=f"补齐{title}的评估记录、证据和复核结果。",
+                ) for key, title in DECISION_STEP_TITLES.items()
+            ))
+        if tuple(step.key for step in self.decision_process) != tuple(DECISION_STEP_TITLES):
+            raise ValueError("Decision process requires all eight steps in order")
         if self.action != ACTION_NO_ORDER:
             raise ValueError("Company cards must remain no_order")
 
@@ -798,6 +850,8 @@ def _company_evidence_refs(card: CompanyCard) -> tuple[str, ...]:
         refs.extend(section.evidence_refs)
     for scenario in card.scenarios:
         refs.extend(scenario.assessment.evidence_refs)
+    for step in card.decision_process:
+        refs.extend(step.evidence_refs)
     return tuple(refs)
 
 
@@ -1086,6 +1140,18 @@ def _parse_company(value: object) -> CompanyCard:
             for entry in _required_list(item.get("decision_review") or [], "company.decision_review")
             for entry in (_required_mapping(entry, "company.decision_review entry"),)
         ),
+        decision_process=tuple(
+            DecisionStepView(
+                key=_required_text(step.get("key"), "decision step key"),
+                status=_required_text(step.get("status"), "decision step status"),
+                reason=_required_text(step.get("reason"), "decision step reason"),
+                next_action=_required_text(step.get("next_action"), "decision next action"),
+                evidence_refs=tuple(step.get("evidence_refs") or ()),
+                assessment_id=step.get("assessment_id"),
+            )
+            for step in _required_list(item.get("decision_process") or [], "company.decision_process")
+            for step in (_required_mapping(step, "decision step"),)
+        ),
     )
 
 
@@ -1326,6 +1392,8 @@ __all__ = [
     "AssessmentView",
     "CompanyCard",
     "CompanySection",
+    "DecisionStepView",
+    "DECISION_STEP_TITLES",
     "EventCard",
     "EventAuditRecord",
     "EvidenceRecord",

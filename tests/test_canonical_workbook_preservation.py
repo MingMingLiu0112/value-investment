@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from contextlib import nullcontext
+import json
+import shutil
 import os
 from pathlib import Path
 
@@ -48,6 +50,76 @@ def _workbook(path: Path) -> None:
     sheet.conditional_formatting.add("H1", CellIsRule(operator="greaterThan", formula=["0"]))
     workbook.create_named_range("manual_input", sheet, "A1")
     workbook.save(path)
+
+
+def test_legacy_direct_quote_rewrite_is_disabled_before_workbook_access(tmp_path, monkeypatch):
+    import scripts.current.update_canonical_quote_display as legacy
+    monkeypatch.setattr(legacy, 'CANONICAL', tmp_path / 'must-not-be-created.xlsx')
+    with pytest.raises(RuntimeError, match='DEPRECATED_UNSAFE_QUOTE_REWRITE_DISABLED'):
+        legacy.main()
+    assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize('publish', [False, True])
+@pytest.mark.parametrize('fault', [None, 'proof_hash', 'preview_hash', 'wps', 'readability',
+                                 'source_changed', 'preserved_content', 'simulation', 'count'])
+def test_reviewed_research_publication_requires_all_proofs(tmp_path, monkeypatch, fault, publish):
+    canonical = tmp_path / 'canonical.xlsx'
+    _workbook(canonical)
+    before = publisher._sha256(canonical)
+    folder = tmp_path / 'runtime/review'
+    folder.mkdir(parents=True)
+    candidate = folder / 'canonical-integration-historical-preview.xlsx'
+    shutil.copy2(canonical, candidate)
+    book = load_workbook(candidate)
+    publisher._hide_legacy_sheets(book)
+    if fault == 'preserved_content': book['人工持仓']['A1'] = 'changed'
+    book.save(candidate)
+    book.close()
+    candidate_sha = publisher._sha256(candidate)
+    proof = dict(preservation='PASS', action='no_order', simulation_only=fault == 'simulation',
+                 historical_preview=True, canonical_touched=False, source_sha256=before,
+                 candidate_sha256='a' * 64 if fault == 'preview_hash' else candidate_sha,
+                 preserved_sheet_count=2 if fault == 'count' else 1)
+    proof_path = folder / 'canonical-preservation.json'
+    proof_path.write_text(json.dumps(proof), encoding='utf-8')
+    (folder / 'integrated-wps-verification.json').write_text(json.dumps(dict(
+        readonly_open='FAIL' if fault == 'wps' else 'PASS', workbook_sha256=candidate_sha)), encoding='utf-8')
+    (folder / 'readability.json').write_text(json.dumps(dict(
+        status='failed' if fault == 'readability' else 'passed', workbook_sha256=candidate_sha)), encoding='utf-8')
+    if fault == 'source_changed':
+        with canonical.open('ab') as handle: handle.write(b'concurrent change')
+    source_at_call = publisher._sha256(canonical)
+    digest = 'a' * 64 if fault == 'proof_hash' else publisher._sha256(proof_path)
+    staging = tmp_path / '.tmp'
+    staging.mkdir()
+    monkeypatch.setattr(publisher, '_assert_workbook_not_open', lambda path: None)
+    monkeypatch.setattr(publisher, '_project_staging_directory', lambda *args, **kwargs: staging)
+    def transport(canonical, staged, *, expected_source_sha256, staging_sha256, scratch_dir):
+        publisher._assert_canonical_source_unchanged(canonical, expected_source_sha256)
+        assert publisher._sha256(staged) == staging_sha256
+        shutil.copy2(staged, canonical)
+        staged.unlink()
+        return publisher._sha256(canonical)
+    # The Windows atomic transport has separate tests; this checks orchestration.
+    monkeypatch.setattr(publisher, '_replace_canonical_staging', transport)
+    if fault:
+        with pytest.raises(ValueError):
+            publisher._reviewed_research_publication(tmp_path, canonical, folder, digest, publish=publish)
+    else:
+        receipt = publisher._reviewed_research_publication(tmp_path, canonical, folder, digest, publish=publish)
+        assert receipt['status'] == ('PUBLISHED_PENDING_WPS_VERIFICATION' if publish else 'VERIFIED_RESEARCH_PREVIEW_ONLY')
+        assert receipt['canonical_written'] is publish
+        assert receipt['current_price_bridge'] == 'NOT_ADMITTED'
+        assert receipt['action'] == 'no_order'
+        if publish:
+            assert receipt['backup_sha256'] == before
+            assert publisher._sha256(tmp_path / receipt['backup']) == before
+            assert publisher._sha256(canonical) == candidate_sha
+            assert (tmp_path / receipt['receipt']).is_file()
+    if fault or not publish:
+        assert publisher._sha256(canonical) == source_at_call
+        assert not (tmp_path / 'runtime/workbook-backups').exists()
 
 
 def test_canonical_snapshot_covers_advanced_preservation_contract(tmp_path: Path):
@@ -100,6 +172,24 @@ def test_publish_refuses_when_canonical_changes_during_staging(tmp_path: Path):
         _assert_canonical_source_unchanged(path, expected_sha256)
 
 
+def test_relationship_fingerprint_tracks_sheet_identity_not_position(tmp_path: Path):
+    from openpyxl import Workbook
+    book = Workbook()
+    sheet = book.active
+    sheet.title = "retained"
+    sheet["A1"] = "source"
+    sheet["A1"].hyperlink = "https://example.com/original"
+    first, shifted, changed = (tmp_path / name for name in ("first.xlsx", "shifted.xlsx", "changed.xlsx"))
+    book.save(first)
+    book.create_sheet(publisher.WORKBOOK_SHEETS[0], index=0)
+    book.save(shifted)
+    assert publisher._protected_ooxml_parts(first) == publisher._protected_ooxml_parts(shifted)
+    sheet["A1"].hyperlink = "https://example.com/changed"
+    book.save(changed)
+    assert publisher._protected_ooxml_parts(first) != publisher._protected_ooxml_parts(changed)
+    book.close()
+
+
 def test_publication_staging_uses_project_tmp_on_the_canonical_volume(tmp_path: Path):
     project_root = tmp_path / "project"
     project_root.mkdir()
@@ -112,13 +202,19 @@ def test_publication_staging_uses_project_tmp_on_the_canonical_volume(tmp_path: 
     assert staging_dir.resolve().is_relative_to(project_root.resolve())
 
 
+@pytest.mark.parametrize("has_local_appdata", [True, False])
 def test_publication_rejects_cross_volume_before_creating_temp_files(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path, monkeypatch, has_local_appdata: bool,
 ):
     project_root = tmp_path / "project"
     project_root.mkdir()
     canonical = tmp_path / "canonical.xlsx"
     canonical.write_bytes(b"canonical")
+    local_appdata = tmp_path / "local-appdata"
+    if has_local_appdata:
+        monkeypatch.setenv("LOCALAPPDATA", str(local_appdata))
+    else:
+        monkeypatch.delenv("LOCALAPPDATA", raising=False)
     monkeypatch.setattr(
         publisher,
         "_filesystem_device",
@@ -129,6 +225,7 @@ def test_publication_rejects_cross_volume_before_creating_temp_files(
         _project_staging_directory(project_root, canonical)
 
     assert not (project_root / ".tmp").exists()
+    assert not local_appdata.exists()
 
 
 def test_publish_detects_change_before_write_guard_is_acquired(tmp_path: Path, monkeypatch):

@@ -116,7 +116,9 @@ def _private_workspace() -> Iterator[tuple[Path, Path]]:
     with tempfile.TemporaryDirectory(
         prefix="m4-synthetic-data-", dir=temporary_root
     ) as data_directory:
-        with tempfile.TemporaryDirectory(prefix="m4-synthetic-key-") as key_directory:
+        with tempfile.TemporaryDirectory(
+            prefix="m4-synthetic-key-", dir=temporary_root
+        ) as key_directory:
             private_root = Path(data_directory).resolve()
             key_path = Path(key_directory).resolve() / "portfolio.key"
             key_path.write_text(secrets.token_hex(32) + "\n", encoding="ascii")

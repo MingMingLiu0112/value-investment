@@ -20,6 +20,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare project-local temporary directory
+        run: mkdir -p .tmp
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -64,6 +66,11 @@ jobs:
           tests/test_product_workbench_read_model.py
           tests/test_product_workbench_excel.py
           tests/test_product_workbench_candidate.py
+          tests/test_simulated_product_user_trial.py
+          tests/test_pinned_artifact.py
+          tests/test_bound_valuation_step.py
+          tests/test_research_case_card.py
+          tests/test_existing_valuation.py
           tests/test_product_cli_entrypoints.py
           tests/test_portfolio_contracts.py
           tests/test_private_portfolio_intake.py
@@ -220,6 +227,8 @@ jobs:
       M6_TEST_ARTIFACT_DIR: .tmp/m6-ci-restore-artifacts
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare project-local temporary directory
+        run: mkdir -p .tmp
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

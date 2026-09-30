@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 
 import pytest
 
@@ -68,6 +69,26 @@ def test_rehearsal_refuses_external_default_temp_before_creating_files(monkeypat
 def test_rehearsal_output_refuses_paths_outside_project_root():
     with pytest.raises(ValueError, match="under the project root"):
         rehearsal._fresh_output_directory(ROOT.parent / "outside", "test")
+
+
+def test_private_workspace_keeps_data_and_key_under_project_temp(monkeypatch):
+    project_temp = ROOT / ".tmp"
+    project_temp.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(
+        prefix="test-m4-workspace-", dir=project_temp
+    ) as scratch:
+        scratch_path = Path(scratch).resolve()
+        monkeypatch.setattr(
+            rehearsal.tempfile, "gettempdir", lambda: str(scratch_path)
+        )
+
+        with rehearsal._private_workspace() as (private_root, key_path):
+            assert private_root.parent == scratch_path
+            assert key_path.parent.parent == scratch_path
+            assert key_path.is_file()
+
+        assert not private_root.exists()
+        assert not key_path.parent.exists()
 
 
 def test_synthetic_onboarding_rehearsal_is_complete_and_cannot_claim_acceptance(

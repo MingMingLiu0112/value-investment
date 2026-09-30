@@ -65,7 +65,7 @@ def test_synthetic_packet_builds_five_page_candidate_without_portfolio_metrics(
 
     assert model.action == ACTION_NO_ORDER
     assert tuple(workbook.sheetnames) == WORKBOOK_SHEETS
-    assert tuple(workbook.sheetnames[:5]) == USER_SHEETS
+    assert tuple(workbook.sheetnames[:len(USER_SHEETS)]) == USER_SHEETS
     assert workbook.sheetnames[-1] == SHEET_SYSTEM_AUDIT
     assert len(model.today_items) == 6
     assert len(model.opportunities) == 18

@@ -14,6 +14,43 @@ from value_investment_agent.presentation.read_models.product_workbench import (
 SHA = "a" * 64
 
 
+def test_missing_decision_assessments_are_blocked_without_inferred_pass():
+    model = product_workbench_from_payload(_payload())
+    steps = model.companies[0].decision_process
+    assert len(steps) == 8
+    assert all(step.status == "BLOCKED" for step in steps)
+    assert "NOT_READY" in steps[-1].reason
+    assert all(step.next_action for step in steps)
+
+
+def _decision_steps():
+    from value_investment_agent.presentation.read_models.product_workbench import DECISION_STEP_TITLES
+    return [dict(key=key, status="PASS", reason="已有评估结果。", next_action="跟踪下一次变化。",
+                 assessment_id=f"assessment-{key}", evidence_refs=["evidence-1"])
+            for key in DECISION_STEP_TITLES]
+
+
+def test_decision_assessments_require_evidence_and_complete_order():
+    payload = _payload()
+    payload["companies"][0]["decision_process"] = _decision_steps()
+    model = product_workbench_from_payload(payload)
+    assert all(step.status == "PASS" for step in model.companies[0].decision_process)
+    payload["companies"][0]["decision_process"][0]["evidence_refs"] = []
+    with pytest.raises(ValueError, match="require evidence"):
+        product_workbench_from_payload(payload)
+    payload["companies"][0]["decision_process"] = _decision_steps()[1:]
+    with pytest.raises(ValueError, match="eight steps in order"):
+        product_workbench_from_payload(payload)
+
+
+def test_decision_assessment_cannot_reference_unknown_evidence():
+    payload = _payload()
+    payload["companies"][0]["decision_process"] = _decision_steps()
+    payload["companies"][0]["decision_process"][0]["evidence_refs"] = ["missing"]
+    with pytest.raises(ValueError, match="missing audit evidence"):
+        product_workbench_from_payload(payload)
+
+
 def _assessment(
     *,
     status: str,
