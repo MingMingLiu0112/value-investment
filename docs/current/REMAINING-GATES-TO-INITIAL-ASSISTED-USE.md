@@ -127,8 +127,8 @@ Current code/artifact scope check (2026-09-30):
 - DAG_NODE: REAL_RESTORE_AND_STAGE_6_USER_ACCEPTANCE
 - CURRENT_STATUS: NOT_STARTED
 - WHY_REQUIRED: Test fixtures and WPS open receipts cannot prove recoverability of actual assets or user comprehension.
-- WHAT_IS_ALREADY_DONE: Synthetic preview and read-only WPS checks; neither equals real restore or human acceptance.
-- EXACT_EXTERNAL_INPUT: Authorized real backup assets/configuration and isolated restore target; user review of the canonical workbook and explicit comprehension/acceptance confirmation. Private portfolio/IPS inputs are required before personalized position guidance.
+- WHAT_IS_ALREADY_DONE: October 1 server inventory independently verifies the real September 30 database dump and all twenty declared official PDFs; fourteen table hashes are declared but not restored/compared. A real pre-publication workbook backup was restored to an ignored isolated local directory, byte-hash and all 55 protected sheets verified, then opened read-only in WPS. It predates the newest product explanation and does not prove latest product-view or full-system recovery. Current local workbook/runtime/config coverage remains missing from the server manifest; user acceptance is still pending.
+- EXACT_EXTERNAL_INPUT: Scoped isolated-target restore authorization plus complete backup coverage of the current canonical workbook, research runtime and configuration; user review of the canonical workbook and explicit comprehension/acceptance confirmation. Private portfolio/IPS inputs are required before personalized position guidance. Database backup assets have now been found; do not keep describing them as unavailable.
 - REOPEN_CONDITION: Restore with verified hashes/table checks and measured RTO/RPO; user traces a financial fact and explains a decision, risk blocker and state change. Final investment decisions remain human.
 - WHAT_CAN_CONTINUE_IN_PARALLEL: Synthetic recovery tests and nonpersonalized product flow; missing private inputs remain explicitly unprovided.
 
