@@ -178,6 +178,7 @@ jobs:
         with:
           name: core-research-gates-pytest-results
           path: .tmp/*.xml
+          include-hidden-files: true
           retention-days: 14
           if-no-files-found: warn
 
