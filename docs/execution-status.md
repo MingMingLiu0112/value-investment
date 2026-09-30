@@ -1,5 +1,11 @@
 # CURRENT STATUS
 
+## 2026-10-01 Canonical Engineering CI Closure
+
+- Commit `bdf7aa2bdc6682df2a505e6a43bd97deb57747dd` was pushed through the configured proxy. GitHub Core Research Gates run `36751414792` completed successfully: `offline-core` and disposable `postgres-integration` both SUCCESS. Evidence: https://github.com/MingMingLiu0112/value-investment/actions/runs/36751414792 . This confirms the committed engineering baseline, not investment readiness.
+- Canonical workbook SHA-256 was rechecked unchanged: `d9865ad6d51864e1c6cdf89810cfd518daba0c19368593157888b4b48a5a4c6e`. Existing publication preservation, native seven-page WPS and readability receipts remain applicable. `SINGLE_CANONICAL_EXCEL=PASS`, `M7_PRODUCT_UX_IN_CANONICAL=PASS`, `COMPETING_CURRENT_WORKBOOKS=0`. No workbook was republished for this status update.
+- `M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`, `INITIAL_ASSISTED_USE=NOT_REACHED`, current admission NOT_READY and `action=no_order` remain unchanged. Next work stays on the real single-company evidence/validity loop; no new feature stage or automatic order path is authorized.
+
 ## 2026-10-01 Independent Git Snapshot Regression
 
 - Projected staged tree `8bae21ac341122db862835d0a2bf4cc47906bf74` was archived into `.tmp/public-ci-fixed-tree-20261001` and tested with its own Git index, without the user WPS workbook. Offline Core Research Gates: 1288 passed, 51 skipped, 21 existing named-range deprecation warnings; receipt `.tmp/public-ci-fixed-tests-20261001.xml`.
