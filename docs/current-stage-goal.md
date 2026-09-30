@@ -4,7 +4,7 @@
 
 本阶段承接唯一长期总 Goal `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`，不扩展公司研究、估值或产品页。按用户要求优先完成唯一 Canonical Excel 同步审查、目录治理、CI 稳定化和 Evidence Stop 调度器收口；其中任何工程完成都不等于产品、M7 或总 Goal 完成。研究状态保持 `600887=CONDITIONAL_VALUATION_READY`（低置信度、无当前 PriceBridge）、`000333/601088=INSUFFICIENT_PUBLIC_EVIDENCE`、Strict PIT 未证明、M6 未启动、M7 用户验收未通过，永久 `action=no_order`。
 
-当前执行结论：修复提交 `0a70f20775c1da7928418ff0e1c0ae3c65b50723` 已推送。其 GitHub Actions run `36673042770` 的 `offline-core` 与 `postgres-integration` 均通过。前一 run `36665479304` 的两项 Midea provenance 失败，原因为 fresh checkout 缺少 runtime JSON；现已改用测试内合成输入，不提交整个 runtime、不删除 provenance 断言。本机按当前 workflow 的 141 个模块验证为 `1194 passed, 32 skipped, 3 warnings`；M4 synthetic 单独步骤为 `2 passed, 2 skipped`。
+当前执行结论：修复提交 `0a70f20775c1da7928418ff0e1c0ae3c65b50723` 已推送，run `36673042770` 的两个 job 均通过。随后诊断产物路径修复提交 `8c1d14e8c84796d2aa23754d82abc4b762bc5d39` 的 run `36673521898` 也通过；Core JUnit artifact（27 KB）与 PostgreSQL restore artifact 均已上传。前一 run `36665479304` 的两项 Midea provenance 失败，原因为 fresh checkout 缺少 runtime JSON；现已改用测试内合成输入，不提交整个 runtime、不删除 provenance 断言。本机按当前 workflow 的 141 个模块验证为 `1194 passed, 32 skipped, 3 warnings`；M4 synthetic 单独步骤为 `2 passed, 2 skipped`。
 
 唯一 Canonical Excel 仍为 WPS `WORKBOOK_PATH`，哈希 `849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`，本轮未修改、未创建副本。批准的 workspace Node runtime 不含 `@oai/artifact-tool`；同时仓库在 D:、Canonical 在 C:，项目内 staging 与恢复文件无法和 Canonical 同卷。依据发布保护合同 fail closed，不生成候选、不在 C: 创建项目 staging、不用替代 Excel 库，也不宣称后台状态已同步到表格。
 
@@ -57,7 +57,8 @@ EVIDENCE_STOP_EMPTY_POLICY = REJECTED_OUTSIDE_EXPLICIT_FROZEN_REPLAY
 UNREGISTERED_RESEARCH_SCOPE = new company research not authorized in this stage; a Fresh ResearchCase without matching stop is not globally blocked
 EVIDENCE_STOP_AND_CANONICAL_PROTECTION_TESTS = 54_PASSED_1_WINDOWS_PERMISSION_SKIP / shared run; native ReplaceFileW integration is platform-gated
 EVIDENCE_STOP_RECOVERY = recover_admitted_schedule records existing admission recovery receipt; no automatic execution or retry
-CLOSEOUT_CODE_CORE_RESEARCH_GATES = PASS / run 36673042770 / commit 0a70f20775c1da7928418ff0e1c0ae3c65b50723 / both jobs passed
+CLOSEOUT_CODE_CORE_RESEARCH_GATES = PASS / run 36673521898 / commit 8c1d14e8c84796d2aa23754d82abc4b762bc5d39 / both jobs passed
+CORE_JUNIT_ARTIFACT = UPLOADED / run 36673521898 / 27 KB / hidden .tmp included
 PREVIOUS_CI_FAILURES = run 36665479304 / two Midea provenance tests expected untracked runtime JSON; fixed with test-local synthetic inputs
 LOCAL_OFFLINE_CORE = 1194_PASSED_32_SKIPPED_3_WARNINGS / 141_MODULES / workflow-equivalent local run
 LOCAL_M4_SYNTHETIC = 2_PASSED_2_SKIPPED
