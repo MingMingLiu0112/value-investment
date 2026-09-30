@@ -1,0 +1,75 @@
+{
+  "schema_version": "research-evidence-stop-ledger-v1",
+  "stops": [
+    {
+      "stop_id": "000333-share-denominator-2026-06-30",
+      "symbol": "000333",
+      "source_id": "CNINFO",
+      "period": "2026-06-30",
+      "research_question_id": "midea_ordinary_share_denominator",
+      "blocker_id": "ordinary_share_denominator_unbounded",
+      "reviewed_evidence_ids": ["1225531404", "midea_2026h1_equity_change_report", "midea_2026_09_29_hkex_share_report"],
+      "reopen_condition": "A new official date-matched disclosure enumerates issued A/H shares and all treasury-share uses at 2026-06-30."
+    },
+    {
+      "stop_id": "000333-fcff-finance-business-scope",
+      "symbol": "000333",
+      "source_id": "CNINFO",
+      "period": "2025-FY-2026-H1",
+      "research_question_id": "midea_industrial_fcff_scope",
+      "blocker_id": "financial_business_cash_debt_split_missing",
+      "reviewed_evidence_ids": ["midea_finance_company_size_observation", "midea_ebit_scope", "midea_2026h1_equity_change_report"],
+      "reopen_condition": "A new official finance-business disclosure materially changes the cash, debt or operating-scope bridge."
+    },
+    {
+      "stop_id": "000333-fcff-internal-eliminations",
+      "symbol": "000333",
+      "source_id": "CNINFO",
+      "period": "2025-FY-2026-H1",
+      "research_question_id": "midea_industrial_fcff_scope",
+      "blocker_id": "internal_eliminations_missing",
+      "reviewed_evidence_ids": ["midea_ebit_scope", "midea_consolidated_equity_scope", "midea_2026h1_equity_change_report"],
+      "reopen_condition": "A new official segment disclosure quantifies eliminations sufficiently to change the FCFF scope bridge."
+    },
+    {
+      "stop_id": "000333-fcff-project-capex",
+      "symbol": "000333",
+      "source_id": "CNINFO",
+      "period": "2025-FY-2026-H1",
+      "research_question_id": "midea_industrial_fcff_capex",
+      "blocker_id": "project_level_maintenance_growth_capex_missing",
+      "reviewed_evidence_ids": ["midea_ebit_scope", "midea_finance_company_size_observation"],
+      "reopen_condition": "A new official project-level disclosure materially separates maintenance from growth CapEx."
+    },
+    {
+      "stop_id": "601088-acquisition-adjusted-through-cycle-profit",
+      "symbol": "601088",
+      "source_id": "CNINFO",
+      "period": "2014-2025-07",
+      "research_question_id": "shenhua_acquisition_adjusted_through_cycle_parent_profit",
+      "blocker_id": "current_perimeter_parent_earnings_bridge_incomplete",
+      "reviewed_evidence_ids": ["1224979750"],
+      "reopen_condition": "New official evidence bridges the final consolidation perimeter, attribution, tax/NCI and financing, with enough comparable history to calibrate the cycle."
+    },
+    {
+      "stop_id": "600887-dividend-type-classification",
+      "symbol": "600887",
+      "source_id": "CNINFO",
+      "period": "2025-FY-2026-H1",
+      "research_question_id": "yili_ordinary_special_dividend_classification",
+      "blocker_id": "ordinary_vs_special_dividend_basis_unresolved",
+      "reviewed_evidence_ids": ["yili_fy2025_annual", "yili_2026h1"],
+      "reopen_condition": "A new official dividend proposal, payment notice or filing clarifies the ordinary versus special dividend basis and materially changes sustainable distribution capacity."
+    },
+    {
+      "stop_id": "600887-scp010-011-quote-day-liquidity",
+      "symbol": "600887",
+      "source_id": "SSE+CNINFO",
+      "period": "2026-09-29",
+      "research_question_id": "yili_scp010_011_maturity_outcome",
+      "blocker_id": "settlement_refinancing_and_post_maturity_cash_debt_unverified",
+      "reviewed_evidence_ids": ["yili_quote_20260922", "yili_sse_disclosure_index_20260930", "yili_cninfo_snapshot_20260930_0712"],
+      "reopen_condition": "A later eligible official settlement/refinancing or cash/debt disclosure establishes the CNY 20bn maturity outcome and liquidity bridge."
+    }
+  ]
+}

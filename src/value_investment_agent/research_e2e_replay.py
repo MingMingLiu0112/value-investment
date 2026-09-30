@@ -769,8 +769,11 @@ def run_three_company_replay(
     inputs = build_replay_inputs(bundle, run_id=run_id)
 
     application = ResearchApplicationService(repository, now_utc=now)
+    # This path replays frozen fixtures; it is not a live research scheduler.
     batch_service = ResearchBatchService(
         repository,
+        evidence_stops=(),
+        frozen_replay_mode=True,
         application_service=application,
         now_utc=now,
     )

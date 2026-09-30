@@ -88,15 +88,48 @@ def test_nonmaterial_audit_only():
     assert result.audit_evidence == (SOURCE,)
 
 
-def test_insufficient_evidence_reopens_without_promotion():
+def test_insufficient_evidence_waits_for_new_evidence_without_promotion():
     result = project_m5_event_states((event(
         "insufficient_evidence", evidence=(), missing_evidence="filing receipt",
     ),))
     card = result.events[0]
-    assert card.research_action.code == "REOPEN_RESEARCH"
-    assert "取得已核原件" in card.next_step
+    assert card.research_action.code == "MONITOR"
+    assert "绑定未审阅的新证据 ID" in card.next_step
     assert "原研究结论不变" in card.current_conclusion
     assert result.audit_evidence == ()
+    assert result.audit_decisions[0].reopen_condition_met is False
+    assert result.audit_decisions[0].reopen_evidence_refs == ()
+
+
+def test_insufficient_evidence_reopens_only_on_new_bound_evidence_id():
+    new_source = EvidenceRecord(
+        evidence_id="source-2", title="New source", artifact_type="event_source",
+        path="fixtures/new-source.json", sha256="b" * 64,
+    )
+    result = project_m5_event_states((event(
+        "insufficient_evidence", evidence=(SOURCE, new_source),
+        missing_evidence="filing receipt", reopen_condition_met=True,
+        reviewed_evidence_ids=(SOURCE.evidence_id,),
+        new_evidence_ids=(new_source.evidence_id,),
+    ),))
+    card = result.events[0]
+    assert card.research_action.code == "REOPEN_RESEARCH"
+    assert new_source.evidence_id in card.next_step
+    assert result.audit_decisions[0].reopen_evidence_refs == (new_source.evidence_id,)
+
+
+def test_insufficient_evidence_rejects_reused_or_unbound_reopen_evidence():
+    with pytest.raises(ValueError, match="not previously reviewed"):
+        project_m5_event_states((event(
+            "insufficient_evidence", missing_evidence="filing receipt",
+            reopen_condition_met=True, reviewed_evidence_ids=(SOURCE.evidence_id,),
+            new_evidence_ids=(SOURCE.evidence_id,),
+        ),))
+    with pytest.raises(ValueError, match="requires a new evidence id"):
+        project_m5_event_states((event(
+            "insufficient_evidence", missing_evidence="filing receipt",
+            reopen_condition_met=True,
+        ),))
 
 
 def test_model_unavailable_has_reason_requirements_and_no_numeric_value():

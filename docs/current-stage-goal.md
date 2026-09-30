@@ -1,15 +1,19 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
-## CURRENT AUTHORIZATION：STAGE-EXECUTION-CORRECTION-CONTINUATION（2026-09-30）
+## CURRENT AUTHORIZATION：STAGE-EVENT-DRIVEN-EVIDENCE-STOP（2026-09-30）
 
-本阶段承接唯一长期总 Goal `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`，优先把已有研究推进到可复核估值和决策审查，不以继续增加未知项或研究档案为进度。完成口径是：分类现存问题、关闭真实 A 类 blocker、将可容忍不确定性纳入情景、对证据不足路径执行 `EVIDENCE_STOP`，并只在模型有效性与报价日事件覆盖成立时形成有效 `PriceBridge` / `Decision Review`。本阶段不代表总 Goal、产品或用户验收完成。
+本阶段承接唯一长期总 Goal `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`，不再扩大公司研究或重复估值。当前核心工作是修复共享工程回归、确保 ResearchCase/read model/产品状态一致、让 `EVIDENCE_STOP` 真正阻止相同任务重复排队，并把项目切换为有新合格证据才触发的事件驱动运行。只有批准的 Excel runtime 可用后，才原位同步唯一 `WORKBOOK_PATH`；本阶段不代表总 Goal、产品或用户验收完成。
 
-用户最新阶段指令覆盖此前“持续公共研究工作台”的工作优先级：暂停 TSA/PKI 扩张、历史 PIT 补证和重复扫描；不新增公司、框架、版本族或工作簿，不重开 600519；baseline v13 和原始收据保持 immutable。R2、R3、R5、R6 仅阻断各自 DAG 节点。M4 不读取私人组合，M6 维持未启动，永久 `action=no_order`，由用户作最终投资决定。
+执行顺序固定为：P0 最新 Core Research Gates 全绿；P1 三家公司状态与冻结证据语义一致；P2 调度器按 source/period/question/blocker 阻断重复 Evidence Stop，只有显式重开条件和新哈希绑定 evidence ID 才能入队；P3 保留 Windows 发布锁、回滚和源文件保护；P4 runtime 可用后同步唯一 Canonical Excel。暂停 TSA/PKI 扩张、历史 PIT 补证和重复扫描；不新增公司、估值框架、工作簿或 roadmap，不重开 600519；baseline v13 和原始收据保持 immutable。R2、R3、R5、R6 仅阻断各自 DAG 节点。M4 不读取私人组合，M6 维持未启动，永久 `action=no_order`，由用户作最终投资决定。
+
+截至本轮：GitHub 最新 `Core Research Gates` run `36656024717` 对已提交基线 `66375faa3e0614dd2fdcf7b77901806ae86f4ee1` 的 `offline-core` 与 `postgres-integration` 均通过；历史三项 Linux 写锁失败已由 `36c187f` 修复，并经后续 run `36655599773`、`36656024717` 验证。最新 run 不覆盖本地未提交改动。跨平台 Canonical 发布保护、Evidence Stop、batch 哈希绑定、一次性消费、M5 状态投影及 Midea provenance 组合定向测试为 `54 passed, 1 skipped`；Core workflow 已纳入专项测试，需由本轮提交触发远端复验。三家公司当前分类仍为 `600887=CONDITIONAL_VALUATION_READY`、`000333/601088=INSUFFICIENT_PUBLIC_EVIDENCE`。Canonical Excel 尚未更新：WPS 原表存在且 SHA-256 未变；批准的 workspace runtime 不含 `@oai/artifact-tool`，因此没有生成候选或写原表，也没有替代使用其他 workbook library。
+
+本机当前未提交工作树按 Core workflow 的 142 个 offline-core 模块复跑：`1180 passed, 31 skipped, 5 failed`。5 个失败均为本机原有 35 项删除导致的旧候选资产缺失（4 项依赖 `A股价值投资_M5事件监控候选_20260924.xlsx`，1 项依赖 `A股价值投资_M3决策卡候选_20260924.manifest.json`），不是断言回归；删除项未恢复。此次没有提交或推送，因此当前工作树仍待远端 Core gates 复验。
 
 本阶段现有基线与执行状态：三家公司 A/B/C/D 分类为 3/3。对现存官方材料完成有界复核后，研究估值层的 A blocker 为 `0 / 0 / 0`；按 `000333 / 600887 / 601088` 顺序，分类数分别为美的 `A0/B6/C0/D4`、伊利 `A0/B5/C2/D1`、神华 `A0/B3/C3/D1`。分类语义为：A 是仍可由有限证据工作关闭的估值硬 blocker；D 是当前公开证据集上的终止性 `EVIDENCE_STOP`，不再作为待办继续搜索，也不代表缺失输入已解决或已被情景覆盖。仅有 D 的 case 当前结论可以是 `INSUFFICIENT_PUBLIC_EVIDENCE`，不产生估值结果；这是证据处置结论，不伪装成 `VALUATION_READY`，也不把同一事项同时计入 A 和 D。另将伊利 2026-09-29 报价日短融结果单独列为 `EVIDENCE_STOP`，不混入其研究估值分类。美的 `mature_manufacturing` profile 显式授权共享 residual-income 替代模型，FCFF 默认和交易模块不变；但 2026-06-30 普通股分母不能由库存股账面金额、单一回购批次或期间加权 EPS 得到可信区间，当前 case disposition 为 `INSUFFICIENT_PUBLIC_EVIDENCE`，停止重复审查同一披露。后日 9 月 29 日 A/H 分母不回填 6 月 30 日。美的另外三项 `EVIDENCE_STOP` 仅限定于 FCFF 的金融业务拆分、内部抵销和项目级 CapEx。伊利的后续共享研究运行绑定了 case、注册回执、冻结 v13 snapshot、来源复核和共享模型结果，issuer identity 为 `VERIFIED`；低置信度 `CONDITIONAL_VALUATION_READY`（Bear/Base/Bull CNY 8.05/11.02/13.13；敏感区间 CNY 7.10-15.03）。18 格敏感性以共享函数复算 18/18 匹配。该结果不改写 v13：baseline 仍 `BASELINE_PARTIAL / VALUATION_NOT_READY`，且 `STRICT_PIT=NOT_PROVEN`。伊利 SCP010/011 到期结果在已保留的 CNINFO 与上交所索引中仍不可核实，标记为报价日范围内的 `EVIDENCE_STOP`；不得推定兑付、续作或违约，故 `ModelValidity` 未建立、没有 `PriceBridge`，`Decision Review=NOT_ASSESSABLE`。神华并购报告证明近期标的盈利贡献非零，但无法桥接到收购后当前范围的跨周期、可归属归母盈利；当前研究 case disposition 为 `INSUFFICIENT_PUBLIC_EVIDENCE`，停止重复检查同一组报告和周期序列。上述 stop 均只描述当前已审、已哈希绑定的证据集；只有出现新的、能填补明示缺口的正式证据才重开，不声称全互联网不存在其他披露。详见本文件下方状态和当前纠偏研究记录。
 
 ```text
-CURRENT_STAGE = STAGE-EXECUTION-CORRECTION-CONTINUATION
+CURRENT_STAGE = STAGE-EVENT-DRIVEN-EVIDENCE-STOP
 STAGE_STATUS = ACTIVE
 TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
 ACTIVE_PROSPECTIVE_CASES = 000333, 600887, 601088
@@ -45,6 +49,16 @@ FROZEN_BASELINE = all three v13 cards remain BASELINE_PARTIAL / VALUATION_NOT_RE
 600887_PRICE_REVIEW = NOT_ASSESSABLE / quote-day event outcome EVIDENCE_STOP / ModelValidity not established / price_bridge=null
 FORMAL_EVENT_WATERMARK_ADVANCE = 0 / 10 Yili candidate dispositions do not establish cross-channel completeness
 CANONICAL_UPDATED = NO / approved artifact-tool unavailable; quote pointer remains 2026-09-28
+EVIDENCE_STOP_SCHEDULER = ENFORCED_AT_COMPANY_AND_BATCH_ENTRY / exact four-part scope required / official source bytes SHA-256 verified / reopen request admitted once with persistent receipt
+EVIDENCE_STOP_READ_MODEL = WAIT_FOR_NEW_EVIDENCE_BY_DEFAULT / REOPEN_RESEARCH only with new unreviewed evidence ID
+EVIDENCE_STOP_EMPTY_POLICY = REJECTED_OUTSIDE_EXPLICIT_FROZEN_REPLAY
+UNREGISTERED_RESEARCH_SCOPE = BLOCKED / includes 600519; no new company research authorized
+EVIDENCE_STOP_AND_CANONICAL_PROTECTION_TESTS = 54_PASSED_1_WINDOWS_PERMISSION_SKIP / shared run; native ReplaceFileW integration is platform-gated
+LATEST_GITHUB_CORE_RESEARCH_GATES = PASS / run 36656024717 / offline-core + postgres-integration
+CURRENT_UNCOMMITTED_DIFF_REMOTE_CI = NOT_RUN
+LOCAL_OFFLINE_CORE = 1180_PASSED_31_SKIPPED_5_MISSING_LOCAL_ARTIFACT_FAILURES / 142_MODULES
+LEGACY_M1_ASSERTIONS = 4_OUTSIDE_CORE_GATES / old package snapshots still assert conditional_research_only; not changed in this stage
+LEGACY_SERVER_DAILY_REFRESH = ACTIVE / track-candidates then refresh-valuations / event-driven production change not applied without R3 authorization
 CANONICAL_PUBLISHER_CONCURRENT_WRITE_GUARD = WINDOWS_CREATEFILE_WRITE_DENY + REPLACEFILE_BACKUP_COMPARE_AND_ROLLBACK / 36 focused tests passed / no workbook write
 LATEST_CORE_RESEARCH_GATES = 1167_PASSED / 23_SKIPPED / 3_WARNINGS / CI offline-core list (139 files, UTF-8)
 LATEST_STAGE_FOCUSED_TESTS = 66_PASSED / explicit alternate-model routing, Midea applicability, issuer identity, architecture line-budget regression

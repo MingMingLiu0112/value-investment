@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timezone
 from decimal import Decimal as D
+import hashlib
 
 import pytest
 
@@ -21,6 +22,7 @@ from value_investment_agent.research_batch import (
     BATCH_FAILED,
     BATCH_GAP,
     BATCH_PARTIAL,
+    BATCH_STOPPED,
     BATCH_UNCHANGED,
     BATCH_UNSUPPORTED,
     build_batch_spec_from_descriptor_payloads,
@@ -28,6 +30,10 @@ from value_investment_agent.research_batch import (
     ResearchBatchResult,
     ResearchBatchService,
     ResearchBatchSpec,
+)
+from value_investment_agent.domain.research.evidence_stop import (
+    EvidenceStop,
+    schedule_request_from_payload,
 )
 from value_investment_agent.research_case import ResearchCase
 from value_investment_agent.research_input import (
@@ -253,7 +259,10 @@ class BadFacts:
 
 def test_batch_isolates_gaps_unsupported_routes_and_unexpected_failures():
     repository = InMemoryResearchArtifactRepository()
-    service = ResearchBatchService(repository, now_utc=lambda: NOW)
+    service = ResearchBatchService(
+        repository, evidence_stops=(), frozen_replay_mode=True,
+        now_utc=lambda: NOW,
+    )
     companies = (
         ResearchBatchCompanySpec(quality_spec(), "1" * 64),
         ResearchBatchCompanySpec(fcff_gap_spec(), "2" * 64),
@@ -288,9 +297,162 @@ def test_batch_isolates_gaps_unsupported_routes_and_unexpected_failures():
     assert result.results_by_symbol["999999"].error
 
 
+def test_batch_requires_an_explicit_evidence_stop_policy():
+    with pytest.raises(ValueError, match="explicit Evidence Stop policy"):
+        ResearchBatchService()
+    with pytest.raises(ValueError, match="restricted to frozen replay"):
+        ResearchBatchService(evidence_stops=())
+
+
+def test_batch_blocks_stopped_task_and_reopens_only_once_with_hash_bound_source(tmp_path):
+    repository = InMemoryResearchArtifactRepository()
+    stop = EvidenceStop(
+        stop_id="000333-share-denominator",
+        symbol="000333",
+        source_id="CNINFO",
+        period="2026-06-30",
+        research_question_id="midea_ordinary_share_denominator",
+        blocker_id="ordinary_share_denominator_unbounded",
+        reviewed_evidence_ids=("1225531404",),
+        reopen_condition="A new official date-matched share disclosure.",
+    )
+    service = ResearchBatchService(
+        repository, evidence_stops=(stop,), evidence_root=tmp_path,
+        now_utc=lambda: NOW,
+    )
+    first = service.run(ResearchBatchSpec(
+        run_id="batch-evidence-stop-v1",
+        rule_version="research-batch-v1",
+        companies=(ResearchBatchCompanySpec(fcff_gap_spec(), "a" * 64),),
+    ))
+    stopped = first.results_by_symbol["000333"]
+    assert stopped.status == BATCH_STOPPED
+    assert stopped.outcome is None
+    assert stopped.schedule_gate["status"] == "BLOCKED_SCOPE_REQUIRED"
+    assert stopped.schedule_gate["policy_sha256"] == service.evidence_stop_policy_sha256
+
+    reopened = schedule_request_from_payload({
+        "schema_version": "research-schedule-request-v1",
+        "symbol": "000333",
+        "source_id": "CNINFO",
+        "period": "2026-06-30",
+        "research_question_id": "midea_ordinary_share_denominator",
+        "blocker_id": "ordinary_share_denominator_unbounded",
+        "reopen_condition_met": True,
+        "new_evidence_ids": ["cninfo_1230000000"],
+    })
+    source_path = tmp_path / "fixtures" / "new-share-filing.pdf"
+    source_path.parent.mkdir(parents=True)
+    source_path.write_bytes(b"official share filing bytes")
+    new_source = ResearchSourceDescriptor(
+        id="cninfo_1230000000",
+        kind="official_issuer_filing",
+        location="fixtures/new-share-filing.pdf",
+        sha256=hashlib.sha256(source_path.read_bytes()).hexdigest(),
+        published_at=datetime(2026, 9, 20, tzinfo=timezone.utc),
+        retrieved_at=datetime(2026, 9, 21, tzinfo=timezone.utc),
+        issuer_identity=ResearchIssuerIdentity(
+            venue="CNINFO",
+            security_code="000333",
+            issuer_name="Midea Group",
+            organization_id="gssh0000333",
+        ),
+    )
+    reopened_spec = replace(
+        fcff_gap_spec(), input_sources=(new_source,), available_at=NOW,
+    )
+    second = service.run(ResearchBatchSpec(
+        run_id="batch-evidence-stop-v2",
+        rule_version="research-batch-v1",
+        previous_run_id=first.run_id,
+        companies=(ResearchBatchCompanySpec(
+            reopened_spec, "a" * 64, schedule_request=reopened,
+        ),),
+    ))
+    reopened_result = second.results_by_symbol["000333"]
+    assert reopened_result.status != BATCH_UNCHANGED
+    assert reopened_result.schedule_gate["status"] == "REOPENED_WITH_NEW_EVIDENCE"
+    assert reopened_result.schedule_gate["consumption"]["created"] is True
+    assert reopened_result.outcome is not None
+
+    duplicate_service = ResearchBatchService(
+        repository, evidence_stops=(stop,), evidence_root=tmp_path,
+        now_utc=lambda: NOW,
+    )
+    duplicate = duplicate_service.run(ResearchBatchSpec(
+        run_id="batch-evidence-stop-v3",
+        rule_version="research-batch-v1",
+        companies=(ResearchBatchCompanySpec(
+            reopened_spec, "a" * 64, schedule_request=reopened,
+        ),),
+    )).results_by_symbol["000333"]
+    assert duplicate.status == BATCH_STOPPED
+    assert duplicate.outcome is None
+    assert duplicate.schedule_gate["status"] == "BLOCKED_EVIDENCE_ALREADY_CONSUMED"
+
+
+def test_batch_refuses_reopen_when_source_hash_does_not_match_bytes(tmp_path):
+    stop = EvidenceStop(
+        stop_id="000333-share-denominator",
+        symbol="000333",
+        source_id="CNINFO",
+        period="2026-06-30",
+        research_question_id="midea_ordinary_share_denominator",
+        blocker_id="ordinary_share_denominator_unbounded",
+        reviewed_evidence_ids=("1225531404",),
+        reopen_condition="A new official date-matched share disclosure.",
+    )
+    request = schedule_request_from_payload({
+        "schema_version": "research-schedule-request-v1",
+        "symbol": "000333",
+        "source_id": "CNINFO",
+        "period": "2026-06-30",
+        "research_question_id": "midea_ordinary_share_denominator",
+        "blocker_id": "ordinary_share_denominator_unbounded",
+        "reopen_condition_met": True,
+        "new_evidence_ids": ["cninfo_1230000000"],
+    })
+    source_path = tmp_path / "fixtures" / "new-share-filing.pdf"
+    source_path.parent.mkdir(parents=True)
+    source_path.write_bytes(b"tampered filing bytes")
+    bad_source = ResearchSourceDescriptor(
+        id="cninfo_1230000000",
+        kind="official_issuer_filing",
+        location="fixtures/new-share-filing.pdf",
+        sha256="c" * 64,
+        published_at=datetime(2026, 9, 20, tzinfo=timezone.utc),
+        retrieved_at=datetime(2026, 9, 21, tzinfo=timezone.utc),
+        issuer_identity=ResearchIssuerIdentity(
+            venue="CNINFO",
+            security_code="000333",
+            issuer_name="Midea Group",
+            organization_id="gssh0000333",
+        ),
+    )
+    spec = ResearchBatchSpec(
+        run_id="batch-evidence-stop-bad-hash",
+        rule_version="research-batch-v1",
+        companies=(ResearchBatchCompanySpec(
+            replace(fcff_gap_spec(), input_sources=(bad_source,), available_at=NOW),
+            "a" * 64,
+            schedule_request=request,
+        ),),
+    )
+    result = ResearchBatchService(
+        InMemoryResearchArtifactRepository(), evidence_stops=(stop,),
+        evidence_root=tmp_path, now_utc=lambda: NOW,
+    ).run(spec).results_by_symbol["000333"]
+    assert result.status == BATCH_STOPPED
+    assert result.outcome is None
+    assert result.schedule_gate["status"] == "BLOCKED_UNBOUND_EVIDENCE_ID"
+
+
 def test_batch_marks_unsupported_profile_without_cascade():
     repository = InMemoryResearchArtifactRepository()
-    service = ResearchBatchService(repository, now_utc=lambda: NOW)
+    service = ResearchBatchService(
+        repository, evidence_stops=(), frozen_replay_mode=True,
+        now_utc=lambda: NOW,
+    )
     spec = ResearchBatchSpec(
         run_id="batch-unsupported",
         rule_version="research-batch-v1",
@@ -326,7 +488,10 @@ def test_batch_marks_unsupported_profile_without_cascade():
 
 def test_incremental_batch_only_reruns_changed_company():
     repository = InMemoryResearchArtifactRepository()
-    service = ResearchBatchService(repository, now_utc=lambda: NOW)
+    service = ResearchBatchService(
+        repository, evidence_stops=(), frozen_replay_mode=True,
+        now_utc=lambda: NOW,
+    )
     first = service.run(
         ResearchBatchSpec(
             run_id="batch-v1",
@@ -387,7 +552,10 @@ def test_incremental_batch_only_reruns_changed_company():
 
 def test_repeated_identical_batch_is_idempotent_at_artifact_level():
     repository = InMemoryResearchArtifactRepository()
-    service = ResearchBatchService(repository, now_utc=lambda: NOW)
+    service = ResearchBatchService(
+        repository, evidence_stops=(), frozen_replay_mode=True,
+        now_utc=lambda: NOW,
+    )
     spec = ResearchBatchSpec(
         run_id="batch-idempotent",
         rule_version="research-batch-v1",
@@ -415,7 +583,10 @@ def test_repeated_identical_batch_is_idempotent_at_artifact_level():
 
 def test_batch_receipt_round_trips_and_remains_no_order():
     repository = InMemoryResearchArtifactRepository()
-    service = ResearchBatchService(repository, now_utc=lambda: NOW)
+    service = ResearchBatchService(
+        repository, evidence_stops=(), frozen_replay_mode=True,
+        now_utc=lambda: NOW,
+    )
     spec = ResearchBatchSpec(
         run_id="batch-roundtrip",
         rule_version="research-batch-v1",
@@ -448,7 +619,10 @@ def test_incremental_batch_requires_input_fingerprints():
 
 def test_rule_version_change_reruns_company_with_identical_input_hash():
     repository = InMemoryResearchArtifactRepository()
-    service = ResearchBatchService(repository, now_utc=lambda: NOW)
+    service = ResearchBatchService(
+        repository, evidence_stops=(), frozen_replay_mode=True,
+        now_utc=lambda: NOW,
+    )
     first = service.run(
         ResearchBatchSpec(
             run_id="batch-rule-v1",
@@ -494,7 +668,10 @@ def test_rule_version_change_reruns_company_with_identical_input_hash():
 )
 def test_dependency_version_change_reruns_identical_input_hash(field, value):
     repository = InMemoryResearchArtifactRepository()
-    service = ResearchBatchService(repository, now_utc=lambda: NOW)
+    service = ResearchBatchService(
+        repository, evidence_stops=(), frozen_replay_mode=True,
+        now_utc=lambda: NOW,
+    )
     first = service.run(
         ResearchBatchSpec(
             run_id="batch-dependency-v1",
@@ -532,7 +709,10 @@ def test_dependency_version_change_reruns_identical_input_hash(field, value):
 )
 def test_descriptor_dependency_change_changes_hash_and_reruns(field, value):
     repository = InMemoryResearchArtifactRepository()
-    service = ResearchBatchService(repository, now_utc=lambda: NOW)
+    service = ResearchBatchService(
+        repository, evidence_stops=(), frozen_replay_mode=True,
+        now_utc=lambda: NOW,
+    )
     first_payload = descriptor_payload()
     changed_payload = descriptor_payload_with_dependencies(**{field: value})
     assert changed_payload["input_sha256"] != first_payload["input_sha256"]
@@ -582,6 +762,8 @@ def test_future_availability_input_is_isolated_without_blocking_admitted_company
 
     result = ResearchBatchService(
         InMemoryResearchArtifactRepository(),
+        evidence_stops=(),
+        frozen_replay_mode=True,
         now_utc=lambda: NOW,
     ).run(spec)
 
@@ -613,6 +795,8 @@ def test_descriptor_batch_isolates_bad_and_unknown_inputs():
     repository = InMemoryResearchArtifactRepository()
     result = ResearchBatchService(
         repository,
+        evidence_stops=(),
+        frozen_replay_mode=True,
         now_utc=lambda: NOW,
     ).run(spec)
 

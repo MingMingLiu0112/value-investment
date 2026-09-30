@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import hashlib
 import re
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from .gap_classification import (
@@ -40,6 +41,15 @@ from .research_input import (
     build_research_run_spec,
     descriptor_from_payload,
 )
+from .domain.research.evidence_stop import (
+    EvidenceStop,
+    ResearchScheduleRequest,
+    evaluate_research_schedule,
+)
+from .infrastructure.evidence.evidence_stop_schedule import (
+    claim_research_schedule_once,
+    verified_official_package_source_ids,
+)
 from .research_run_contract import canonical_contract_payload
 
 
@@ -49,6 +59,7 @@ BATCH_UNCHANGED = "UNCHANGED"
 BATCH_UNSUPPORTED = "UNSUPPORTED"
 BATCH_GAP = "GAP"
 BATCH_FAILED = "FAILED"
+BATCH_STOPPED = "BLOCKED_BY_RESEARCH_SCHEDULER"
 BATCH_PARTIAL = "PARTIAL"
 BATCH_STATUSES = {
     BATCH_COMPLETED,
@@ -57,6 +68,7 @@ BATCH_STATUSES = {
     BATCH_UNSUPPORTED,
     BATCH_GAP,
     BATCH_FAILED,
+    BATCH_STOPPED,
 }
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -86,14 +98,37 @@ class ResearchBatchCompanySpec:
     research_spec: ResearchRunSpec
     input_sha256: str | None = None
     dependency_sha256: str | None = None
+    schedule_request: ResearchScheduleRequest | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.research_spec, ResearchRunSpec):
             raise TypeError("Batch company requires a typed ResearchRunSpec")
+        if self.schedule_request is not None and not isinstance(
+            self.schedule_request, ResearchScheduleRequest
+        ):
+            raise TypeError("Batch schedule request must use the shared contract")
         if not _SYMBOL.fullmatch(self.research_spec.symbol):
             raise ValueError("Batch company symbol must contain six digits")
         if self.input_sha256 is not None and not _SHA256.fullmatch(self.input_sha256):
             raise ValueError("Batch input fingerprint must be SHA-256 hex")
+        if self.schedule_request is not None and self.input_sha256 is not None:
+            request_payload = {
+                "symbol": self.schedule_request.symbol,
+                "source_id": self.schedule_request.source_id,
+                "period": self.schedule_request.period,
+                "research_question_id": self.schedule_request.research_question_id,
+                "blocker_id": self.schedule_request.blocker_id,
+                "reopen_condition_met": self.schedule_request.reopen_condition_met,
+                "new_evidence_ids": sorted(self.schedule_request.new_evidence_ids),
+            }
+            request_sha256 = hashlib.sha256(
+                canonical_contract_payload(request_payload).encode("utf-8")
+            ).hexdigest()
+            combined_sha256 = hashlib.sha256(canonical_contract_payload({
+                "input_sha256": self.input_sha256,
+                "schedule_request_sha256": request_sha256,
+            }).encode("utf-8")).hexdigest()
+            object.__setattr__(self, "input_sha256", combined_sha256)
         expected_dependency_sha256 = _dependency_sha256(self.research_spec)
         if self.dependency_sha256 is None:
             object.__setattr__(self, "dependency_sha256", expected_dependency_sha256)
@@ -188,6 +223,7 @@ class BatchCompanyResult:
     outcome: CompanyResearchRunOutcome | None = None
     error: str | None = None
     unchanged_from_run_id: str | None = None
+    schedule_gate: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not _SYMBOL.fullmatch(self.symbol):
@@ -209,6 +245,7 @@ class BatchCompanyResult:
         object.__setattr__(self, "blockers", tuple(self.blockers))
         object.__setattr__(self, "gaps", tuple(self.gaps))
         object.__setattr__(self, "artifact_ids", dict(self.artifact_ids))
+        object.__setattr__(self, "schedule_gate", dict(self.schedule_gate))
 
     def as_policy(self) -> dict[str, Any]:
         return {
@@ -222,6 +259,7 @@ class BatchCompanyResult:
             "artifact_ids": dict(self.artifact_ids),
             "error": self.error,
             "unchanged_from_run_id": self.unchanged_from_run_id,
+            "schedule_gate": dict(self.schedule_gate),
             "action": "no_order",
         }
 
@@ -359,6 +397,7 @@ def _company_result_from_policy(payload: Mapping[str, Any]) -> BatchCompanyResul
         artifact_ids=dict(payload.get("artifact_ids") or {}),
         error=payload.get("error"),
         unchanged_from_run_id=payload.get("unchanged_from_run_id"),
+        schedule_gate=dict(payload.get("schedule_gate") or {}),
     )
 
 
@@ -440,10 +479,30 @@ class ResearchBatchService:
         self,
         repository: ResearchArtifactRepository | None = None,
         *,
+        evidence_stops: tuple[EvidenceStop, ...] | None = None,
+        evidence_root: Path | None = None,
+        frozen_replay_mode: bool = False,
         application_service: ResearchApplicationService | None = None,
         now_utc: Callable[[], datetime] | None = None,
     ) -> None:
+        if evidence_stops is None:
+            raise ValueError("ResearchBatchService requires an explicit Evidence Stop policy")
+        if not evidence_stops and not frozen_replay_mode:
+            raise ValueError("An empty Evidence Stop policy is restricted to frozen replay")
+        if frozen_replay_mode and evidence_stops:
+            raise ValueError("Frozen replay cannot carry an active Evidence Stop policy")
+        if any(not isinstance(stop, EvidenceStop) for stop in evidence_stops):
+            raise TypeError("Evidence Stop policy must use shared EvidenceStop records")
         self.repository = repository or InMemoryResearchArtifactRepository()
+        self.evidence_stops = tuple(evidence_stops)
+        self.evidence_root = evidence_root
+        self.frozen_replay_mode = frozen_replay_mode
+        policy_payload = [asdict(stop) for stop in sorted(
+            self.evidence_stops, key=lambda item: item.stop_id,
+        )]
+        self.evidence_stop_policy_sha256 = hashlib.sha256(
+            canonical_contract_payload({"stops": policy_payload}).encode("utf-8")
+        ).hexdigest()
         self.application = application_service or ResearchApplicationService(
             self.repository
         )
@@ -460,6 +519,49 @@ class ResearchBatchService:
         )
         results: list[BatchCompanyResult] = []
         for company in spec.companies:
+            active_stops = tuple(
+                stop for stop in self.evidence_stops
+                if stop.symbol == company.research_spec.symbol
+            )
+            if self.frozen_replay_mode:
+                schedule_gate = {
+                    "allowed": True,
+                    "status": "FROZEN_REPLAY_ONLY",
+                    "matched_stop_ids": [],
+                }
+            else:
+                verified_ids = frozenset()
+                if (
+                    company.schedule_request is not None
+                    and active_stops
+                    and self.evidence_root is not None
+                ):
+                    verified_ids = verified_official_package_source_ids(
+                        self.evidence_root,
+                        [asdict(source) for source in company.research_spec.input_sources],
+                        company.schedule_request.new_evidence_ids,
+                        symbol=company.schedule_request.symbol,
+                    )
+                schedule_gate = evaluate_research_schedule(
+                    symbol=company.research_spec.symbol,
+                    stops=self.evidence_stops,
+                    request=company.schedule_request,
+                    verified_evidence_ids=verified_ids,
+                )
+            schedule_gate["policy_sha256"] = self.evidence_stop_policy_sha256
+            if not schedule_gate["allowed"]:
+                results.append(BatchCompanyResult(
+                    symbol=company.research_spec.symbol,
+                    status=BATCH_STOPPED,
+                    run_id=f"{spec.run_id}:{company.research_spec.symbol}",
+                    input_sha256=company.input_sha256,
+                    dependency_sha256=company.dependency_sha256,
+                    blockers=(f"EVIDENCE_STOP:{schedule_gate['status']}",),
+                    gaps=(),
+                    artifact_ids={},
+                    schedule_gate=schedule_gate,
+                ))
+                continue
             previous_result = (
                 previous.results_by_symbol.get(company.research_spec.symbol)
                 if previous is not None
@@ -470,7 +572,7 @@ class ResearchBatchService:
                 and previous.rule_version == spec.rule_version
                 and previous_result.input_sha256 == company.input_sha256
                 and previous_result.dependency_sha256 == company.dependency_sha256
-                and previous_result.status != BATCH_FAILED
+                and previous_result.status not in {BATCH_FAILED, BATCH_STOPPED}
             ):
                 results.append(
                     BatchCompanyResult(
@@ -483,10 +585,58 @@ class ResearchBatchService:
                         gaps=previous_result.gaps,
                         artifact_ids=previous_result.artifact_ids,
                         unchanged_from_run_id=previous_result.run_id,
+                        schedule_gate=schedule_gate,
                     )
                 )
                 continue
-            results.append(self._run_company(spec.run_id, company))
+            if (
+                company.schedule_request is not None
+                and active_stops
+                and schedule_gate.get("new_evidence_ids")
+            ):
+                if self.evidence_root is None:
+                    schedule_gate = {
+                        **schedule_gate,
+                        "allowed": False,
+                        "status": "BLOCKED_SCHEDULER_STORE_UNAVAILABLE",
+                    }
+                else:
+                    request_payload = {
+                        "symbol": company.schedule_request.symbol,
+                        "scope_key": list(company.schedule_request.key),
+                        "reopen_condition_met": company.schedule_request.reopen_condition_met,
+                        "new_evidence_ids": sorted(company.schedule_request.new_evidence_ids),
+                    }
+                    consumption = claim_research_schedule_once(
+                        root=self.evidence_root,
+                        request=company.schedule_request,
+                        decision=schedule_gate,
+                        ledger_sha256=self.evidence_stop_policy_sha256,
+                        request_sha256=hashlib.sha256(
+                            canonical_contract_payload(request_payload).encode("utf-8")
+                        ).hexdigest(),
+                    )
+                    schedule_gate["consumption"] = consumption
+                    if not consumption["created"]:
+                        schedule_gate = {
+                            **schedule_gate,
+                            "allowed": False,
+                            "status": "BLOCKED_EVIDENCE_ALREADY_CONSUMED",
+                        }
+                if not schedule_gate["allowed"]:
+                    results.append(BatchCompanyResult(
+                        symbol=company.research_spec.symbol,
+                        status=BATCH_STOPPED,
+                        run_id=f"{spec.run_id}:{company.research_spec.symbol}",
+                        input_sha256=company.input_sha256,
+                        dependency_sha256=company.dependency_sha256,
+                        blockers=(f"EVIDENCE_STOP:{schedule_gate['status']}",),
+                        gaps=(),
+                        artifact_ids={},
+                        schedule_gate=schedule_gate,
+                    ))
+                    continue
+            results.append(self._run_company(spec.run_id, company, schedule_gate))
 
         finished_at = self.now_utc()
         batch_result = ResearchBatchResult(
@@ -505,6 +655,7 @@ class ResearchBatchService:
         self,
         batch_run_id: str,
         company: ResearchBatchCompanySpec,
+        schedule_gate: Mapping[str, Any],
     ) -> BatchCompanyResult:
         symbol = company.research_spec.symbol
         company_run_id = f"{batch_run_id}:{symbol}"
@@ -522,14 +673,16 @@ class ResearchBatchService:
                 gaps=(),
                 artifact_ids={},
                 error=f"{type(error).__name__}: {error}",
+                schedule_gate=schedule_gate,
             )
-        return self._map_outcome(company, company_run_id, outcome)
+        return self._map_outcome(company, company_run_id, outcome, schedule_gate)
 
     @staticmethod
     def _map_outcome(
         company: ResearchBatchCompanySpec,
         company_run_id: str,
         outcome: CompanyResearchRunOutcome,
+        schedule_gate: Mapping[str, Any],
     ) -> BatchCompanyResult:
         gaps = classify_blockers(outcome.symbol, list(outcome.blockers))
         if outcome.status == RUN_UNSUPPORTED:
@@ -554,6 +707,7 @@ class ResearchBatchService:
             gaps=tuple(gaps),
             artifact_ids=artifact_ids,
             outcome=outcome,
+            schedule_gate=schedule_gate,
         )
 
     def _load_previous(self, run_id: str) -> ResearchBatchResult | None:

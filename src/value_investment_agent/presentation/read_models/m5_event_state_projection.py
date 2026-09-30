@@ -42,6 +42,9 @@ class EventStateInput:
     corrected_conclusion: str | None = None
     missing_evidence: str | None = None
     reopen_condition: str | None = None
+    reopen_condition_met: bool = False
+    reviewed_evidence_ids: tuple[str, ...] = ()
+    new_evidence_ids: tuple[str, ...] = ()
     unavailable_reason: str | None = None
     model_requirements: str | None = None
     action: str = ACTION_NO_ORDER
@@ -61,6 +64,8 @@ class EventAuditDecision:
     observed_at: datetime | None = None
     previous_conclusion: str | None = None
     corrected_conclusion: str | None = None
+    reopen_condition_met: bool = False
+    reopen_evidence_refs: tuple[str, ...] = ()
     action: str = ACTION_NO_ORDER
 
 
@@ -105,6 +110,8 @@ class EventStateProjection:
                 "observed_at": decision.observed_at.isoformat() if decision.observed_at else None,
                 "previous_conclusion": decision.previous_conclusion,
                 "corrected_conclusion": decision.corrected_conclusion,
+                "reopen_condition_met": decision.reopen_condition_met,
+                "reopen_evidence_refs": list(decision.reopen_evidence_refs),
                 "action": decision.action,
             } for decision in self.audit_decisions],
         }
@@ -128,6 +135,7 @@ def project_m5_event_states(inputs: tuple[EventStateInput, ...]) -> EventStatePr
         seen_events.add(item.event_id)
         if item.state not in EventState.__args__:
             raise ValueError("Unknown event state")
+        refs = tuple(record.evidence_id for record in item.evidence)
         if item.state == "duplicate" and (
             not item.canonical_event_id or not item.duplicate_event_id
             or item.canonical_event_id == item.duplicate_event_id
@@ -148,12 +156,30 @@ def project_m5_event_states(inputs: tuple[EventStateInput, ...]) -> EventStatePr
             not item.missing_evidence or not item.reopen_condition
         ):
             raise ValueError("Missing evidence and reopen condition must be identified")
+        if item.state == "insufficient_evidence":
+            if not isinstance(item.reopen_condition_met, bool):
+                raise ValueError("reopen_condition_met must be boolean")
+            if item.reopen_condition_met and not item.new_evidence_ids:
+                raise ValueError("A satisfied reopen condition requires a new evidence id")
+            if len(item.new_evidence_ids) != len(set(item.new_evidence_ids)):
+                raise ValueError("New evidence ids must be unique")
+            if len(item.reviewed_evidence_ids) != len(set(item.reviewed_evidence_ids)):
+                raise ValueError("Reviewed evidence ids must be unique")
+            if any(not isinstance(evidence_id, str) or not evidence_id for evidence_id in (
+                *item.reviewed_evidence_ids, *item.new_evidence_ids,
+            )):
+                raise ValueError("Evidence ids must be nonempty strings")
+            if any(evidence_id not in refs for evidence_id in item.new_evidence_ids):
+                raise ValueError("New evidence ids must bind to event evidence lineage")
+            if any(evidence_id in item.reviewed_evidence_ids for evidence_id in item.new_evidence_ids):
+                raise ValueError("Reopening requires evidence ids not previously reviewed")
+        elif item.reopen_condition_met or item.reviewed_evidence_ids or item.new_evidence_ids:
+            raise ValueError("Reopen metadata is only valid for insufficient-evidence events")
         if item.state == "model_unavailable" and (
             not item.unavailable_reason or not item.model_requirements
         ):
             raise ValueError("Unavailable model requires reason and requirements")
 
-        refs = tuple(record.evidence_id for record in item.evidence)
         if item.state in {
             "material", "material_supporting_evidence", "material_risk_monitor",
             "late", "correction",
@@ -195,6 +221,8 @@ def project_m5_event_states(inputs: tuple[EventStateInput, ...]) -> EventStatePr
             published_at=item.published_at, observed_at=item.observed_at,
             previous_conclusion=item.previous_conclusion,
             corrected_conclusion=item.corrected_conclusion,
+            reopen_condition_met=item.reopen_condition_met,
+            reopen_evidence_refs=item.new_evidence_ids,
         ))
         if not visible:
             continue
@@ -209,7 +237,16 @@ def project_m5_event_states(inputs: tuple[EventStateInput, ...]) -> EventStatePr
         }[item.state]
         if item.state == "insufficient_evidence":
             conclusion = f"证据不足：{item.missing_evidence}；原研究结论不变"
-            next_step = f"重开条件：{item.reopen_condition}"
+            if item.reopen_condition_met and item.new_evidence_ids:
+                next_step = (
+                    f"新证据已绑定：{', '.join(item.new_evidence_ids)}；"
+                    f"可进入限定复核。重开条件：{item.reopen_condition}"
+                )
+            else:
+                next_step = (
+                    f"停止重复研究；仅当重开条件满足并绑定未审阅的新证据 ID 后再排队："
+                    f"{item.reopen_condition}"
+                )
         elif item.state == "model_unavailable":
             conclusion = f"暂不可评估；模型当前不可运行：{item.unavailable_reason}"
             next_step = f"需要：{item.model_requirements}"
@@ -239,8 +276,13 @@ def project_m5_event_states(inputs: tuple[EventStateInput, ...]) -> EventStatePr
             impact_area=item.impact_area,
             current_conclusion=conclusion,
             research_action=_status(
-                "REOPEN_RESEARCH" if item.state == "insufficient_evidence"
+                "REOPEN_RESEARCH" if (
+                    item.state == "insufficient_evidence"
+                    and item.reopen_condition_met
+                    and item.new_evidence_ids
+                )
                 else "MONITOR" if item.state in {"material_supporting_evidence", "material_risk_monitor"}
+                else "MONITOR" if item.state == "insufficient_evidence"
                 else "PENDING_REVIEW",
                 RESEARCH_ACTION_LABELS,
             ),
