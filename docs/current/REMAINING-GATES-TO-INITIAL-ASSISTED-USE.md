@@ -68,8 +68,8 @@ the synthetic investment results or pass user acceptance.
 - CURRENT_STATUS: PARTIAL
 - WHY_REQUIRED: The user must see the seven-page workbench in the existing WORKBOOK_PATH, not a competing preview.
 - WHAT_IS_ALREADY_DONE: Unique canonical seven-page frontend published with real conditional research content; 55 retained sheets preserved, WPS verified, pointer/hash aligned. C-volume staging exception already authorized.
-- EXACT_EXTERNAL_INPUT: User comprehension and final product acceptance; no further staging-path decision is required. Updated GitHub CI for the new working state is an engineering gate, not a new user data request.
-- REOPEN_CONDITION: Complete user acceptance and verify updated remote CI; future publications still require fresh source guard, preservation, backup, atomic replacement and WPS checks.
+- EXACT_EXTERNAL_INPUT: User comprehension and final product acceptance; no further staging-path decision is required. Engineering CI passed for `dad6eb3109f7e8393fc7a8d2a11cdbfe441b8b0f` in GitHub run `36751736846`; this is not user acceptance.
+- REOPEN_CONDITION: Complete user acceptance; subsequent code changes still need updated CI, and future publications require fresh source guard, preservation, backup, atomic replacement and WPS checks.
 - WHAT_CAN_CONTINUE_IN_PARALLEL: Shared application projection of actual assessments, isolated tests and replay. Do not modify WORKBOOK_PATH or create another current workbook.
 
 ## Single-company evidence and price bridge
@@ -77,7 +77,7 @@ the synthetic investment results or pass user acceptance.
 - DAG_NODE: STAGE_2_REAL_RESEARCH_CLOSURE
 - CURRENT_STATUS: PARTIAL
 - WHY_REQUIRED: Display and simulated results cannot establish a usable current investment conclusion.
-- WHAT_IS_ALREADY_DONE: Existing Yili shared-model replay, nine-original hash verification, shared Application reader, typed research/valuation presentation and canonical integration. None establishes current ModelValidity/PriceBridge or strict PIT. Other cases retain explicit evidence stops.
+- WHAT_IS_ALREADY_DONE: Existing Yili shared-model replay, nine-original hash verification, shared Application reader, typed research/valuation presentation and canonical integration. October 1 retained H1 review reconciles six existing atomic facts plus the cash bridge, with explicit dividend/FCFF scope limits (`docs/current/600887-financial-quality-review-20261001.md`). None establishes full financial approval, current ModelValidity/PriceBridge or strict PIT. Other cases retain explicit evidence stops.
 - EXACT_EXTERNAL_INPUT: New official, hash-bound evidence meeting each registered case-specific reopen trigger; verified quote and complete applicable event coverage for the intended cutoff.
 - REOPEN_CONDITION: Admitted facts/assumptions and applicable model produce a reproducible result; issuer identity, available_at, model validity and price basis checks pass. Missing data stays NOT_READY/WATCH.
 - WHAT_CAN_CONTINUE_IN_PARALLEL: Consolidate reusable real-artifact projection, reconcile dated research with successor facts, test independent gate behavior and prepare legitimate replay inputs; no repeated search of stopped evidence scopes.
