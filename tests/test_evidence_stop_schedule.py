@@ -9,6 +9,7 @@ import pytest
 
 from value_investment_agent.application.product import run_company_research_for_symbol
 from value_investment_agent.application.product.company_research import _verified_source_ids
+from value_investment_agent.application.product import company_research
 from value_investment_agent.domain.research.evidence_stop import (
     evaluate_research_schedule,
     evidence_stops_from_payload,
@@ -16,6 +17,7 @@ from value_investment_agent.domain.research.evidence_stop import (
 )
 from value_investment_agent.infrastructure.evidence.evidence_stop_schedule import (
     claim_research_schedule_once,
+    recover_admitted_schedule,
 )
 
 
@@ -40,12 +42,55 @@ def _request(**overrides):
     return schedule_request_from_payload(payload)
 
 
+def _recovery_fixture(root: Path, *, source_bytes: bytes = b"official filing bytes"):
+    config_dir = root / "config"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    ledger_bytes = json.dumps(LEDGER, ensure_ascii=False, indent=2).encode("utf-8")
+    (config_dir / "research-evidence-stop-ledger-v1.json").write_bytes(ledger_bytes)
+    evidence_path = root / "evidence" / "new-filing.pdf"
+    evidence_path.parent.mkdir(parents=True, exist_ok=True)
+    evidence_path.write_bytes(source_bytes)
+    source = {
+        "id": "cninfo_1230000000",
+        "kind": "official_issuer_filing",
+        "location": "evidence/new-filing.pdf",
+        "sha256": hashlib.sha256(source_bytes).hexdigest(),
+        "issuer_identity": {"security_code": "000333"},
+    }
+    request = _request()
+    decision = evaluate_research_schedule(
+        symbol="000333",
+        stops=STOPS,
+        request=request,
+        verified_evidence_ids=frozenset({"cninfo_1230000000"}),
+    )
+    admission = claim_research_schedule_once(
+        root=root,
+        request=request,
+        decision=decision,
+        ledger_sha256=hashlib.sha256(ledger_bytes).hexdigest(),
+        request_sha256="b" * 64,
+    )
+    assert admission["created"] is True
+    return request, source, hashlib.sha256(ledger_bytes).hexdigest()
+
+
 def test_same_stopped_question_is_blocked_without_new_verified_evidence():
     decision = evaluate_research_schedule(
         symbol="000333", stops=STOPS, request=_request(),
     )
     assert decision["allowed"] is False
     assert decision["status"] == "BLOCKED_UNBOUND_EVIDENCE_ID"
+
+
+def test_exact_registered_stop_stays_blocked_without_valid_new_evidence():
+    request = _request()
+    decision = evaluate_research_schedule(
+        symbol="000333", stops=STOPS, request=request,
+    )
+    assert decision["allowed"] is False
+    assert decision["status"] == "BLOCKED_UNBOUND_EVIDENCE_ID"
+    assert decision["matched_stop_ids"] == ["000333-share-denominator-2026-06-30"]
 
 
 def test_same_stopped_question_reopens_only_with_true_condition_and_new_bound_id():
@@ -151,7 +196,131 @@ def test_consumption_receipt_refuses_symlink_path_outside_project_root(tmp_path)
     assert not list(outside.iterdir())
 
 
-def test_other_scoped_question_is_blocked_without_a_registered_trigger():
+def test_recovery_requires_existing_admission_and_revalidates_official_source(tmp_path):
+    request, source, ledger_hash = _recovery_fixture(tmp_path)
+    evidence_path = tmp_path / source["location"]
+    evidence_path.write_bytes(b"changed after admission")
+    with pytest.raises(ValueError, match="issuer, hash and reopen validation"):
+        recover_admitted_schedule(
+            root=tmp_path,
+            request=request,
+            evidence_sources=[source],
+            ledger_sha256=ledger_hash,
+            request_sha256="b" * 64,
+            interrupted_run_id="crashed-run-001",
+        )
+    assert not (tmp_path / "runtime" / "research-evidence-stop-recoveries").exists()
+
+
+def test_recovery_requires_an_explicit_interrupted_run_id(tmp_path):
+    request, source, ledger_hash = _recovery_fixture(tmp_path)
+    with pytest.raises(ValueError, match="interrupted_run_id is required"):
+        recover_admitted_schedule(
+            root=tmp_path,
+            request=request,
+            evidence_sources=[source],
+            ledger_sha256=ledger_hash,
+            request_sha256="b" * 64,
+            interrupted_run_id=" ",
+        )
+    assert not (tmp_path / "runtime" / "research-evidence-stop-recoveries").exists()
+
+
+def test_recovery_rejects_issuer_mismatch(tmp_path):
+    request, source, ledger_hash = _recovery_fixture(tmp_path)
+    source["issuer_identity"]["security_code"] = "600519"
+    with pytest.raises(ValueError, match="issuer, hash and reopen validation"):
+        recover_admitted_schedule(
+            root=tmp_path,
+            request=request,
+            evidence_sources=[source],
+            ledger_sha256=ledger_hash,
+            request_sha256="b" * 64,
+            interrupted_run_id="crashed-run-001",
+        )
+    assert not (tmp_path / "runtime" / "research-evidence-stop-recoveries").exists()
+
+
+def test_recovery_requires_a_prior_admission_receipt(tmp_path):
+    request, source, ledger_hash = _recovery_fixture(tmp_path)
+    admission_path = next(
+        (tmp_path / "runtime" / "research-evidence-stop-consumptions").glob("*.json")
+    )
+    admission_path.unlink()
+    with pytest.raises(ValueError, match="admission receipt must be a file"):
+        recover_admitted_schedule(
+            root=tmp_path,
+            request=request,
+            evidence_sources=[source],
+            ledger_sha256=ledger_hash,
+            request_sha256="b" * 64,
+            interrupted_run_id="crashed-run-001",
+        )
+    assert not (tmp_path / "runtime" / "research-evidence-stop-recoveries").exists()
+
+
+def test_recovery_receipt_is_auditable_and_repeated_calls_do_not_retry(tmp_path):
+    request, source, ledger_hash = _recovery_fixture(tmp_path)
+    first = recover_admitted_schedule(
+        root=tmp_path,
+        request=request,
+        evidence_sources=[source],
+        ledger_sha256=ledger_hash,
+        request_sha256="b" * 64,
+        interrupted_run_id="crashed-run-001",
+    )
+    second = recover_admitted_schedule(
+        root=tmp_path,
+        request=request,
+        evidence_sources=[source],
+        ledger_sha256=ledger_hash,
+        request_sha256="b" * 64,
+        interrupted_run_id="crashed-run-001",
+    )
+    assert first["created"] is True
+    assert first["status"] == "RECOVERY_RECORDED_AWAITING_EXPLICIT_RESUME"
+    assert first["automatic_retry"] is False
+    assert first["resume_performed"] is False
+    assert second["created"] is False
+    assert second["status"] == "RECOVERY_ALREADY_RECORDED"
+    assert second["automatic_retry"] is False
+    assert second["resume_performed"] is False
+    receipts = list((tmp_path / "runtime" / "research-evidence-stop-recoveries").glob("*.json"))
+    assert len(receipts) == 1
+    saved = json.loads(receipts[0].read_text(encoding="utf-8"))
+    assert saved["schema_version"] == "research-evidence-stop-recovery-v1"
+    assert saved["new_evidence_ids"] == ["cninfo_1230000000"]
+    assert saved["admission_receipt_sha256"]
+    assert saved["interrupted_run_id"] == "crashed-run-001"
+    assert saved["automatic_retry"] is False
+    assert saved["resume_performed"] is False
+    assert saved["action"] == "no_order"
+
+
+def test_recovery_rejects_changed_ledger_or_request_hash(tmp_path):
+    request, source, ledger_hash = _recovery_fixture(tmp_path)
+    with pytest.raises(ValueError, match="ledger hash"):
+        recover_admitted_schedule(
+            root=tmp_path,
+            request=request,
+            evidence_sources=[source],
+            ledger_sha256="c" * 64,
+            request_sha256="b" * 64,
+            interrupted_run_id="crashed-run-001",
+        )
+    with pytest.raises(ValueError, match="does not match the requested recovery"):
+        recover_admitted_schedule(
+            root=tmp_path,
+            request=request,
+            evidence_sources=[source],
+            ledger_sha256=ledger_hash,
+            request_sha256="d" * 64,
+            interrupted_run_id="crashed-run-001",
+        )
+    assert not (tmp_path / "runtime" / "research-evidence-stop-recoveries").exists()
+
+
+def test_other_scoped_question_is_normal_research_without_a_matching_trigger():
     request = _request(
         research_question_id="new_official_issue",
         blocker_id="new_material_event",
@@ -159,14 +328,45 @@ def test_other_scoped_question_is_blocked_without_a_registered_trigger():
     blocked = evaluate_research_schedule(
         symbol="000333", stops=STOPS, request=request,
     )
-    assert blocked["allowed"] is False
-    assert blocked["status"] == "BLOCKED_UNREGISTERED_SCOPE"
+    assert blocked["allowed"] is True
+    assert blocked["status"] == "ALLOW_NORMAL_RESEARCH"
+    assert blocked["matched_stop_ids"] == []
     allowed = evaluate_research_schedule(
         symbol="000333", stops=STOPS, request=request,
         verified_evidence_ids=frozenset({"cninfo_1230000000"}),
     )
-    assert allowed["allowed"] is False
-    assert allowed["status"] == "BLOCKED_UNREGISTERED_SCOPE"
+    assert allowed["allowed"] is True
+    assert allowed["status"] == "ALLOW_NORMAL_RESEARCH"
+    assert "new_evidence_ids" not in allowed
+
+
+def test_normal_research_scope_does_not_consume_or_reopen_a_registered_stop(tmp_path):
+    request = _request(
+        research_question_id="new_official_issue",
+        blocker_id="new_material_event",
+    )
+    decision = evaluate_research_schedule(
+        symbol="000333",
+        stops=STOPS,
+        request=request,
+        verified_evidence_ids=frozenset({"cninfo_1230000000"}),
+    )
+    result = claim_research_schedule_once(
+        root=tmp_path,
+        request=request,
+        decision=decision,
+        ledger_sha256="a" * 64,
+        request_sha256="b" * 64,
+    )
+    assert decision["status"] == "ALLOW_NORMAL_RESEARCH"
+    assert result == {
+        "created": True,
+        "consumed": False,
+        "status": "NORMAL_RESEARCH_NOT_CONSUMED",
+        "schedule_id": None,
+        "receipt_path": None,
+    }
+    assert not (tmp_path / "runtime").exists()
 
 
 def test_company_research_entrypoint_blocks_unscoped_stopped_case_before_package_lookup():
@@ -176,15 +376,84 @@ def test_company_research_entrypoint_blocks_unscoped_stopped_case_before_package
     assert result["result"]["action"] == "no_order"
 
 
-def test_case_without_registered_scope_is_blocked_by_gate():
+def test_fresh_case_without_registered_stop_allows_normal_research():
+    request = _request(symbol="000651")
     decision = evaluate_research_schedule(
-        symbol="000651", stops=STOPS, request=None,
+        symbol="000651", stops=STOPS, request=request,
+    )
+    assert decision["allowed"] is True
+    assert decision["status"] == "ALLOW_NORMAL_RESEARCH"
+    assert decision["matched_stop_ids"] == []
+
+
+def test_fresh_case_reaches_research_application_without_consuming_a_stop(
+    tmp_path, monkeypatch,
+):
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    (config_dir / "research-evidence-stop-ledger-v1.json").write_bytes(
+        LEDGER_PATH.read_bytes()
+    )
+    package = tmp_path / "synthetic-package.json"
+    package.write_text('{"symbol":"000651"}\n', encoding="utf-8")
+    called = {}
+
+    class RecordingResearchService:
+        def __init__(self, repository):
+            pass
+
+        def run_company_research(self, spec):
+            called["spec"] = spec
+            return {"completed": True}
+
+    monkeypatch.setattr(
+        company_research, "_package_for_symbol", lambda *_args: package
+    )
+    monkeypatch.setattr(
+        company_research, "build_descriptor", lambda _payload, *, root: {}
+    )
+    monkeypatch.setattr(
+        company_research, "build_research_run_spec", lambda descriptor: descriptor
+    )
+    monkeypatch.setattr(
+        company_research, "ResearchApplicationService", RecordingResearchService
+    )
+    monkeypatch.setattr(
+        company_research, "_serialize_outcome", lambda outcome: outcome
+    )
+
+    request_payload = {
+        "schema_version": "research-schedule-request-v1",
+        "symbol": "000651",
+        "source_id": "CNINFO",
+        "period": "2025-12-31",
+        "research_question_id": "fresh_company_scope",
+        "blocker_id": "initial_research",
+        "reopen_condition_met": False,
+        "new_evidence_ids": [],
+    }
+    result = run_company_research_for_symbol(
+        root=tmp_path,
+        symbol="000651",
+        package_path=package,
+        schedule_request=request_payload,
+        schedule_request_sha256="b" * 64,
+    )
+
+    assert called["spec"] == {}
+    assert result["result"]["schedule_gate"]["status"] == "ALLOW_NORMAL_RESEARCH"
+    assert "schedule_consumption" not in result["result"]
+
+
+def test_symbol_without_research_case_scope_remains_blocked():
+    decision = evaluate_research_schedule(
+        symbol="600519", stops=STOPS, request=None,
     )
     assert decision == {
         "allowed": False,
         "status": "BLOCKED_NO_REGISTERED_SCOPE",
         "matched_stop_ids": [],
-        "reason": "Research requires an explicitly registered trigger scope.",
+        "reason": "A fresh ResearchCase scope is required for normal research.",
     }
 
 

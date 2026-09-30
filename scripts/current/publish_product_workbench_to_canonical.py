@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Publish the M7 product surface into the one configured canonical workbook.
 
-This deliberately never creates a second user-facing workbook. It stages beside
-the configured workbook, proves retained sheets did not change, and uses a
-backup-aware Windows replacement to detect and recover a concurrent source edit.
+This deliberately never creates a second user-facing workbook. It stages under
+the project root, proves retained sheets did not change, and uses a backup-aware
+Windows replacement to detect and recover a concurrent source edit. Publishing
+fails closed when project staging and the configured workbook are on different
+volumes because an atomic replacement would be impossible under that boundary.
 """
 from __future__ import annotations
 
@@ -54,6 +56,29 @@ CANONICAL_NAME = "A股价值投资_Agent前端智能跟踪模板.xlsx"
 PROSPECTIVE_RECEIPT_PATH = "runtime/prospective-v2-fc1e811/receipt.json"
 PROSPECTIVE_RECEIPT_SHA256 = "8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5"
 PROSPECTIVE_PLAN_PATH = "config/prospective-research-observation-plan-v2.json"
+
+
+def _project_staging_directory(project_root: Path, canonical: Path) -> Path:
+    root = project_root.resolve()
+    staging_dir = root / ".tmp"
+    resolved_staging = staging_dir.resolve()
+    if not resolved_staging.is_relative_to(root):
+        raise ValueError("publication staging directory must remain under the project root")
+    try:
+        project_device = _filesystem_device(root)
+        canonical_device = _filesystem_device(canonical.parent.resolve())
+    except OSError as error:
+        raise RuntimeError("could not verify the publication volume boundary") from error
+    if project_device != canonical_device:
+        raise RuntimeError(
+            "project-contained atomic publication is unavailable across filesystem volumes"
+        )
+    staging_dir.mkdir(parents=True, exist_ok=True)
+    return staging_dir
+
+
+def _filesystem_device(path: Path) -> int:
+    return path.stat().st_dev
 
 
 class _PreservePublicationArtifacts(RuntimeError):
@@ -160,11 +185,17 @@ def _replace_canonical_staging(
     *,
     expected_source_sha256: str,
     staging_sha256: str,
+    scratch_dir: Path | None = None,
 ) -> str:
     _assert_canonical_source_unchanged(canonical, expected_source_sha256)
     _assert_workbook_not_open(canonical)
     if _sha256(staging) != staging_sha256:
         raise ValueError("staging workbook changed before replacement; refusing to publish")
+    scratch = (scratch_dir or canonical.parent).resolve()
+    if scratch_dir is not None and not scratch.is_relative_to(ROOT.resolve()):
+        raise ValueError("publication recovery files must remain under the project root")
+    if _filesystem_device(scratch) != _filesystem_device(canonical.parent.resolve()):
+        raise RuntimeError("atomic replacement scratch files must share the canonical volume")
 
     with _canonical_write_guard(canonical):
         _assert_canonical_source_unchanged(canonical, expected_source_sha256)
@@ -172,8 +203,8 @@ def _replace_canonical_staging(
         if _sha256(staging) != staging_sha256:
             raise ValueError("staging workbook changed before replacement; refusing to publish")
 
-        displaced = canonical.with_name(f".{canonical.name}.displaced-{uuid4().hex}.xlsx")
-        rollback = canonical.with_name(f".{canonical.name}.rollback-{uuid4().hex}.xlsx")
+        displaced = scratch / f".{canonical.name}.displaced-{uuid4().hex}.xlsx"
+        rollback = scratch / f".{canonical.name}.rollback-{uuid4().hex}.xlsx"
         try:
             _replace_file_with_backup(canonical, staging, displaced)
         except OSError as error:
@@ -723,6 +754,7 @@ def main() -> int:
         finally:
             preview.close()
         return 0
+    staging_dir = _project_staging_directory(ROOT, canonical)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     backup_dir = ROOT / "runtime" / "workbook-backups"
     receipt_dir = ROOT / "runtime" / "publication-receipts"
@@ -735,7 +767,7 @@ def main() -> int:
     if _sha256(backup) != before_sha:
         raise ValueError("backup hash mismatch")
 
-    staging = canonical.with_name(f".{canonical.stem}.m7-staging-{uuid4().hex}{canonical.suffix}")
+    staging = staging_dir / f".{canonical.stem}.m7-staging-{uuid4().hex}{canonical.suffix}"
     shutil.copy2(canonical, staging)
     try:
         packet = build_daily_product_packet(
@@ -767,6 +799,7 @@ def main() -> int:
             staging,
             expected_source_sha256=before_sha,
             staging_sha256=staging_sha,
+            scratch_dir=staging_dir,
         )
         after = _snapshot(canonical)
         _assert_retained(before, after)

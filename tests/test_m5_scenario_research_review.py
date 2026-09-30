@@ -121,6 +121,22 @@ def test_reviewed_candidate_shows_blockers_without_recalculation(tmp_path):
     model_path = evidence_root / "runtime" / "m5-actual-read-model-human-reviewed-need-more-evidence-20260925.json"
     if not model_path.exists():
         pytest.skip("local ACTUAL reviewed read model is unavailable")
+    base_builder = runpy.run_path(str(evidence_root / "scripts" / "build_m7_daily_workbench.py"))
+    required_m3_inputs = (
+        "M3_AUDIT_RECEIPT",
+        "M3_DECISION_WORKBOOK",
+        "M3_DECISION_MANIFEST",
+        "M3_HISTORY_MANIFEST",
+        "M3_INTEGRATED_RUNS",
+        "M3_REPLAY",
+    )
+    missing_m3_inputs = [
+        str(base_builder[name])
+        for name in required_m3_inputs
+        if not Path(base_builder[name]).is_file()
+    ]
+    if missing_m3_inputs:
+        pytest.skip("historical M3 input set is incomplete: " + ", ".join(missing_m3_inputs))
     builder = runpy.run_path(str(evidence_root / "scripts" / "build_m7_daily_workbench_post_checkpoint_a.py"))
     packet = builder["build_packet"](datetime(2026, 9, 25, tzinfo=timezone.utc))
     packet["m5"]["disclosure_queue_600519"]["pending_count"] = 0

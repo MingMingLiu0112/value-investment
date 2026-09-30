@@ -127,13 +127,27 @@ def evaluate_research_schedule(
     request: ResearchScheduleRequest | None,
     verified_evidence_ids: frozenset[str] = frozenset(),
 ) -> dict[str, Any]:
-    active = tuple(stop for stop in stops if stop.symbol == symbol)
-    if not active:
+    if request is not None and request.symbol != symbol:
         return {
             "allowed": False,
-            "status": "BLOCKED_NO_REGISTERED_SCOPE",
+            "status": "BLOCKED_SYMBOL_MISMATCH",
             "matched_stop_ids": [],
-            "reason": "Research requires an explicitly registered trigger scope.",
+            "reason": "Schedule request symbol does not match the requested company.",
+        }
+    active = tuple(stop for stop in stops if stop.symbol == symbol)
+    if not active:
+        if request is None:
+            return {
+                "allowed": False,
+                "status": "BLOCKED_NO_REGISTERED_SCOPE",
+                "matched_stop_ids": [],
+                "reason": "A fresh ResearchCase scope is required for normal research.",
+            }
+        return {
+            "allowed": True,
+            "status": "ALLOW_NORMAL_RESEARCH",
+            "matched_stop_ids": [],
+            "reason": "No Evidence Stop is registered for this research case.",
         }
     if request is None:
         return {
@@ -146,14 +160,6 @@ def evaluate_research_schedule(
             ],
             "reason": "Active Evidence Stops require a scoped, evidence-bound research request.",
         }
-    if request.symbol != symbol:
-        return {
-            "allowed": False,
-            "status": "BLOCKED_SYMBOL_MISMATCH",
-            "matched_stop_ids": [],
-            "reason": "Schedule request symbol does not match the requested company.",
-        }
-
     matching = tuple(stop for stop in active if stop.key == request.key)
     scope_key = {
         "source_id": request.source_id,
@@ -163,12 +169,12 @@ def evaluate_research_schedule(
     }
     if not matching:
         return {
-            "allowed": False,
-            "status": "BLOCKED_UNREGISTERED_SCOPE",
+            "allowed": True,
+            "status": "ALLOW_NORMAL_RESEARCH",
             "matched_stop_ids": [],
             "scope_key": scope_key,
             "active_stop_ids": [stop.stop_id for stop in active],
-            "reason": "A new research scope requires its own registered event trigger.",
+            "reason": "No Evidence Stop matches this research case scope.",
         }
     reviewed_ids = {
         evidence_id

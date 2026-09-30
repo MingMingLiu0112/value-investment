@@ -5,7 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
 import pytest
 
 from scripts.build_m5_event_infrastructure_candidate import (
@@ -17,6 +17,7 @@ from scripts.build_m5_outbox_transition_candidate import (
     build_candidate,
     load_transition_input,
 )
+import scripts.build_m5_outbox_transition_candidate as transition_builder
 from value_investment_agent.m5_event_core import EVENT_IDENTITY_LEGACY
 from value_investment_agent.m5_event_outbox import (
     ALERT_ACKNOWLEDGED,
@@ -49,7 +50,10 @@ def _sheet_rows(workbook, sheet_name: str) -> list[dict[str, object]]:
     ]
 
 
-def _build(tmp_path: Path):
+def _build(tmp_path: Path, monkeypatch):
+    parent_workbook = tmp_path / "synthetic-parent-v1.xlsx"
+    Workbook().save(parent_workbook)
+    monkeypatch.setattr(transition_builder, "PARENT_V1_WORKBOOK", parent_workbook)
     output = tmp_path / "m5-outbox-transition.xlsx"
     manifest, state = build_candidate(
         base_input_path=BASE_FIXTURE,
@@ -82,8 +86,8 @@ def _expected_alert_ids() -> dict[tuple[str, str], str]:
     return expected
 
 
-def test_candidate_is_v2_identity_workbook_with_explicit_transitions(tmp_path):
-    output, manifest, state = _build(tmp_path)
+def test_candidate_is_v2_identity_workbook_with_explicit_transitions(tmp_path, monkeypatch):
+    output, manifest, state = _build(tmp_path, monkeypatch)
     workbook = load_workbook(output, data_only=True)
 
     assert workbook.sheetnames == [
@@ -167,8 +171,8 @@ def test_candidate_is_v2_identity_workbook_with_explicit_transitions(tmp_path):
     assert manifest["state_sha256"] == state.state_sha256()
 
 
-def test_manifest_binds_inputs_workbook_and_final_statuses(tmp_path):
-    output, manifest, _ = _build(tmp_path)
+def test_manifest_binds_inputs_workbook_and_final_statuses(tmp_path, monkeypatch):
+    output, manifest, _ = _build(tmp_path, monkeypatch)
     manifest_path = output.with_suffix(".manifest.json")
 
     assert manifest["base_input"]["sha256"] == _sha256(BASE_FIXTURE)
@@ -183,7 +187,7 @@ def test_manifest_binds_inputs_workbook_and_final_statuses(tmp_path):
         "src/value_investment_agent/m5_event_workbook.py"
     )
     assert manifest["producer"]["parent_v1_workbook"]["sha256"] == (
-        "2b86953f793df46e199c40c614f3291e19b249cc0e53e2a670b0000506403dae"
+        _sha256(tmp_path / "synthetic-parent-v1.xlsx")
     )
     assert manifest["base_state_sha256"] != manifest["state_sha256"]
     assert manifest["event_identity_counts"] == {
@@ -318,8 +322,8 @@ def test_current_state_must_share_receipt_payload_and_require_history_display():
         )
 
 
-def test_candidate_and_manifest_refuse_existing_outputs(tmp_path):
-    output, manifest, _ = _build(tmp_path)
+def test_candidate_and_manifest_refuse_existing_outputs(tmp_path, monkeypatch):
+    output, manifest, _ = _build(tmp_path, monkeypatch)
 
     with pytest.raises(ValueError, match="output already exists"):
         build_candidate(
@@ -340,8 +344,8 @@ def test_candidate_and_manifest_refuse_existing_outputs(tmp_path):
     assert manifest["action"] == "no_order"
 
 
-def test_candidate_contains_no_trade_or_position_instruction(tmp_path):
-    output, manifest, _ = _build(tmp_path)
+def test_candidate_contains_no_trade_or_position_instruction(tmp_path, monkeypatch):
+    output, manifest, _ = _build(tmp_path, monkeypatch)
     workbook = load_workbook(output, data_only=True)
     text = "\n".join(
         str(cell.value)

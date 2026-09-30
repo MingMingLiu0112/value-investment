@@ -4,7 +4,6 @@ from datetime import datetime
 import hashlib
 import json
 from pathlib import Path
-import tempfile
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -100,13 +99,10 @@ def test_exact_event_admission_grants_one_operational_event(monkeypatch):
 
 
 def test_event_admission_rejects_unpinned_operational_root(
-    monkeypatch,
+    monkeypatch, tmp_path,
 ):
     candidate, bundle, root, envelope, _ = _fixture(monkeypatch)
-    registry = (
-        Path(tempfile.mkdtemp(prefix="via-empty-event-registry-"))
-        / "empty-trust-registry.json"
-    )
+    registry = tmp_path / "empty-event-registry.json"
     registry.write_text(
         json.dumps(
             {

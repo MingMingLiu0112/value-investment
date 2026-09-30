@@ -4,6 +4,7 @@
 !.env.example
 
 # Python and test artifacts
+.tmp/
 __pycache__/
 *.py[cod]
 *.egg-info/

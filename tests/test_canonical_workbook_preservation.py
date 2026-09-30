@@ -16,6 +16,7 @@ from scripts.current.publish_product_workbench_to_canonical import (
     _assert_canonical_source_unchanged,
     _assert_retained,
     _hide_legacy_sheets,
+    _project_staging_directory,
     _replace_canonical_staging,
     _replace_file_with_backup,
     _sha256,
@@ -97,6 +98,37 @@ def test_publish_refuses_when_canonical_changes_during_staging(tmp_path: Path):
 
     with pytest.raises(ValueError, match="canonical workbook changed during staging"):
         _assert_canonical_source_unchanged(path, expected_sha256)
+
+
+def test_publication_staging_uses_project_tmp_on_the_canonical_volume(tmp_path: Path):
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    canonical = tmp_path / "canonical.xlsx"
+    canonical.write_bytes(b"canonical")
+
+    staging_dir = _project_staging_directory(project_root, canonical)
+
+    assert staging_dir == project_root / ".tmp"
+    assert staging_dir.resolve().is_relative_to(project_root.resolve())
+
+
+def test_publication_rejects_cross_volume_before_creating_temp_files(
+    tmp_path: Path, monkeypatch,
+):
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    canonical = tmp_path / "canonical.xlsx"
+    canonical.write_bytes(b"canonical")
+    monkeypatch.setattr(
+        publisher,
+        "_filesystem_device",
+        lambda path: 1 if path == project_root.resolve() else 2,
+    )
+
+    with pytest.raises(RuntimeError, match="across filesystem volumes"):
+        _project_staging_directory(project_root, canonical)
+
+    assert not (project_root / ".tmp").exists()
 
 
 def test_publish_detects_change_before_write_guard_is_acquired(tmp_path: Path, monkeypatch):

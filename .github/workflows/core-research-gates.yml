@@ -8,6 +8,12 @@ on:
 permissions:
   contents: read
 
+env:
+  TMPDIR: ${{ github.workspace }}/.tmp
+  TMP: ${{ github.workspace }}/.tmp
+  TEMP: ${{ github.workspace }}/.tmp
+  PYTHONDONTWRITEBYTECODE: "1"
+
 jobs:
   offline-core:
     runs-on: ubuntu-latest
@@ -21,7 +27,7 @@ jobs:
         run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
       - name: Verify fail-closed offline research gates
         run: >-
-          python -m pytest -q
+          mkdir -p .tmp && python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest --junitxml=.tmp/offline-core-results.xml
           tests/test_research_gate.py
           tests/test_valuation_result.py
           tests/test_price_bridge.py
@@ -63,7 +69,6 @@ jobs:
           tests/test_private_portfolio_intake.py
           tests/test_setup_private_portfolio.py
           tests/test_m4_confirmation_receipt.py
-          tests/test_m4_synthetic_onboarding_rehearsal.py
           tests/test_simulation_only_enforcement.py
           tests/test_portfolio_reconciliation.py
           tests/test_portfolio_risk_assessment.py
@@ -165,6 +170,17 @@ jobs:
           tests/test_m5_product_event_state_projection.py
           tests/test_midea_unified_valuation_provenance.py
 
+      - name: Verify isolated synthetic private-workspace rehearsal
+        run: python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest-m4-synthetic --junitxml=.tmp/m4-synthetic-results.xml tests/test_m4_synthetic_onboarding_rehearsal.py
+      - name: Retain offline-core test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-research-gates-pytest-results
+          path: .tmp/*.xml
+          retention-days: 14
+          if-no-files-found: warn
+
   postgres-integration:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -200,7 +216,7 @@ jobs:
         postgresql://research_agent:research_agent@localhost:5432/research_agent_test
       M6_TEST_RESTORE_DSN: >-
         postgresql://research_agent:research_agent@127.0.0.1:5433/value_agent_restore
-      M6_TEST_ARTIFACT_DIR: m6-ci-restore-artifacts
+      M6_TEST_ARTIFACT_DIR: .tmp/m6-ci-restore-artifacts
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -211,12 +227,13 @@ jobs:
       - name: Install PostgreSQL client for isolated restore drill
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Verify disposable PostgreSQL research repository
-        run: python -m pytest -q tests/test_postgres_research_artifacts.py tests/test_m6_restore_integration.py
+        run: mkdir -p .tmp && python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest --junitxml=.tmp/postgres-integration-results.xml tests/test_postgres_research_artifacts.py tests/test_m6_restore_integration.py
       - name: Retain synthetic isolated restore evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: m6-synthetic-restore-evidence
-          path: m6-ci-restore-artifacts/
+          path: .tmp/m6-ci-restore-artifacts/
+          include-hidden-files: true
           retention-days: 14
           if-no-files-found: warn

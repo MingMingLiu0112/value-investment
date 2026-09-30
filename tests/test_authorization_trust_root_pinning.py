@@ -7,7 +7,6 @@ and that a later unpinning invalidates previously issued capabilities on read.
 from __future__ import annotations
 
 import json
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -46,7 +45,9 @@ from value_investment_agent.operations.authorization.trust_root_registry import 
 
 
 def _empty_registry() -> Path:
-    path = Path(tempfile.mkdtemp(prefix="via-empty-trust-registry-")) / "empty-trust-roots.json"
+    directory = trust_registry_path().parent / "empty-trust-registry"
+    directory.mkdir(exist_ok=True)
+    path = directory / "empty-trust-roots.json"
     path.write_text(
         json.dumps(
             {

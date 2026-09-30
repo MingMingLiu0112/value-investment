@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 import json
-import tempfile
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -36,10 +35,13 @@ def _write() -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def configure_test_trust_registry() -> Path:
-    """Point the process-local test hook at a temporary registry file."""
+def configure_test_trust_registry(directory: Path | None = None) -> Path:
+    """Point the process-local test hook at a pytest-owned temporary file."""
     if _STATE["path"] is None:
-        directory = Path(tempfile.mkdtemp(prefix="via-trust-registry-"))
+        if directory is None:
+            raise RuntimeError("pytest-owned trust-registry directory is required")
+        directory = directory.resolve()
+        directory.mkdir(parents=True, exist_ok=False)
         _STATE["path"] = directory / "trust-roots.json"
         _STATE["pinned"] = []
         _write()
@@ -47,11 +49,18 @@ def configure_test_trust_registry() -> Path:
     return _STATE["path"]
 
 
-def reset_test_trust_registry() -> Path:
+def reset_test_trust_registry(directory: Path) -> Path:
     """Start each test with a fresh temporary registry and pin set."""
     _STATE["path"] = None
     _STATE["pinned"] = []
-    return configure_test_trust_registry()
+    return configure_test_trust_registry(directory)
+
+
+def clear_test_trust_registry() -> None:
+    """Remove the process-local hook after the owning pytest temp scope."""
+    _STATE["path"] = None
+    _STATE["pinned"] = []
+    _set_test_trust_registry(None)
 
 
 @contextmanager
@@ -78,6 +87,7 @@ def pinned_test_registry_fingerprints() -> frozenset[str]:
 
 __all__ = [
     "configure_test_trust_registry",
+    "clear_test_trust_registry",
     "pin_test_trust_root",
     "pinned_test_registry_fingerprints",
     "reset_test_trust_registry",

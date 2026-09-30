@@ -106,8 +106,16 @@ def _write_bytes(path: Path, value: bytes) -> str:
 
 @contextmanager
 def _private_workspace() -> Iterator[tuple[Path, Path]]:
-    """Create disposable encrypted-input paths outside the checkout."""
-    with tempfile.TemporaryDirectory(prefix="m4-synthetic-data-") as data_directory:
+    """Create synthetic scratch only when the configured temp root is project-contained."""
+    project_root = ROOT.resolve()
+    temporary_root = Path(tempfile.gettempdir()).resolve()
+    if not temporary_root.is_relative_to(project_root):
+        raise RuntimeError(
+            "M4 synthetic rehearsal refuses to create private test files outside the project root"
+        )
+    with tempfile.TemporaryDirectory(
+        prefix="m4-synthetic-data-", dir=temporary_root
+    ) as data_directory:
         with tempfile.TemporaryDirectory(prefix="m4-synthetic-key-") as key_directory:
             private_root = Path(data_directory).resolve()
             key_path = Path(key_directory).resolve() / "portfolio.key"
@@ -117,6 +125,8 @@ def _private_workspace() -> Iterator[tuple[Path, Path]]:
 
 def _fresh_output_directory(runtime_root: Path, run_id: str | None) -> tuple[Path, str]:
     root = runtime_root.resolve()
+    if not root.is_relative_to(ROOT.resolve()):
+        raise ValueError("synthetic rehearsal output must remain under the project root")
     if run_id is None:
         run_id = (
             datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")

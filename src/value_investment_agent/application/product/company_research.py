@@ -158,12 +158,13 @@ def run_company_research_for_symbol(
         decision = evaluate_research_schedule(
             symbol=normalized, stops=stops, request=request,
         )
-        return _blocked_result(
-            root=root, symbol=normalized, decision=decision,
-            ledger_sha256=sha256_file(ledger_path),
-            schedule_request_sha256=schedule_request_sha256,
-            output_path=output_path,
-        )
+        if not decision["allowed"]:
+            return _blocked_result(
+                root=root, symbol=normalized, decision=decision,
+                ledger_sha256=sha256_file(ledger_path),
+                schedule_request_sha256=schedule_request_sha256,
+                output_path=output_path,
+            )
     if active_stops and request is None:
         decision = evaluate_research_schedule(
             symbol=normalized, stops=stops, request=None,

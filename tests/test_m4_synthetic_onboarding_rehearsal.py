@@ -6,12 +6,15 @@ from pathlib import Path
 import subprocess
 import sys
 
+import pytest
+
 from value_investment_agent.domain.portfolio.confirmation_receipt import (
     portfolio_confirmation_receipt_from_payload,
 )
 from value_investment_agent.presentation.read_models.product_workbench import (
     product_workbench_from_payload,
 )
+from value_investment_agent.application.portfolio import m4_onboarding_rehearsal as rehearsal
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,9 +55,28 @@ def _run(runtime_root: Path, run_id: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def test_rehearsal_refuses_external_default_temp_before_creating_files(monkeypatch):
+    monkeypatch.setattr(
+        rehearsal.tempfile, "gettempdir", lambda: str(ROOT.parent.resolve())
+    )
+
+    with pytest.raises(RuntimeError, match="outside the project root"):
+        with rehearsal._private_workspace():
+            pytest.fail("external temp must be rejected before workspace creation")
+
+
+def test_rehearsal_output_refuses_paths_outside_project_root():
+    with pytest.raises(ValueError, match="under the project root"):
+        rehearsal._fresh_output_directory(ROOT.parent / "outside", "test")
+
+
 def test_synthetic_onboarding_rehearsal_is_complete_and_cannot_claim_acceptance(
     tmp_path: Path,
 ) -> None:
+    if tmp_path.resolve().is_relative_to(ROOT.resolve()):
+        pytest.skip(
+            "the successful private-input rehearsal requires a scratch location outside Git worktrees"
+        )
     runtime_root = tmp_path / "runtime"
     completed = _run(runtime_root, "focused-test")
 
@@ -103,6 +125,10 @@ def test_synthetic_onboarding_rehearsal_is_complete_and_cannot_claim_acceptance(
 def test_confirmation_and_product_model_replay_with_simulated_boundary(
     tmp_path: Path,
 ) -> None:
+    if tmp_path.resolve().is_relative_to(ROOT.resolve()):
+        pytest.skip(
+            "the successful private-input replay requires a scratch location outside Git worktrees"
+        )
     completed = _run(tmp_path / "runtime", "replay-test")
     assert completed.returncode == 0, completed.stderr
     output = Path(json.loads(completed.stdout)["output_dir"])

@@ -36,7 +36,7 @@ def _run(root: Path, workbook_path: Path | None) -> subprocess.CompletedProcess[
         environment["WORKBOOK_PATH"] = str(workbook_path)
     return subprocess.run(
         [sys.executable, "-X", "utf8", str(root / "scripts" / "open_current_trial_workbook.py")],
-        cwd=root, capture_output=True, text=True, env=environment,
+        cwd=root, capture_output=True, text=True, encoding="utf-8", env=environment,
     )
 
 
