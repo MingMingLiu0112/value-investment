@@ -4,7 +4,7 @@
 
 本阶段承接唯一长期总 Goal `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`，不扩展公司研究、估值或产品页。按用户要求优先完成唯一 Canonical Excel 同步审查、目录治理、CI 稳定化和 Evidence Stop 调度器收口；其中任何工程完成都不等于产品、M7 或总 Goal 完成。研究状态保持 `600887=CONDITIONAL_VALUATION_READY`（低置信度、无当前 PriceBridge）、`000333/601088=INSUFFICIENT_PUBLIC_EVIDENCE`、Strict PIT 未证明、M6 未启动、M7 用户验收未通过，永久 `action=no_order`。
 
-当前执行结论：GitHub Actions run `36665479304`（commit `d937bf6730c9df4ff3302759bb03f085d573d95e`）的 `postgres-integration` 通过、`offline-core` 失败。远端日志确认仅有两项 Midea provenance 测试依赖 fresh checkout 中不存在的 `runtime/valuation-results/000333-fcff-stage-b-latest.json` 与 `runtime/valuation-results/000333-fcff-stage-b/evidence.json`；两测试已改为测试内合成输入，不提交整个 runtime、不删 provenance 断言。本机按当前 workflow 的 141 个模块验证为 `1194 passed, 32 skipped, 3 warnings`；M4 synthetic 单独步骤为 `2 passed, 2 skipped`。这些本机结果尚未被新的 GitHub Actions run 验证。
+当前执行结论：修复提交 `0a70f20775c1da7928418ff0e1c0ae3c65b50723` 已推送。其 GitHub Actions run `36673042770` 的 `offline-core` 与 `postgres-integration` 均通过。前一 run `36665479304` 的两项 Midea provenance 失败，原因为 fresh checkout 缺少 runtime JSON；现已改用测试内合成输入，不提交整个 runtime、不删除 provenance 断言。本机按当前 workflow 的 141 个模块验证为 `1194 passed, 32 skipped, 3 warnings`；M4 synthetic 单独步骤为 `2 passed, 2 skipped`。
 
 唯一 Canonical Excel 仍为 WPS `WORKBOOK_PATH`，哈希 `849f3999129e57f8068f6cc9ed1bc301b0da158697492e9a3258aeb4865c43eb`，本轮未修改、未创建副本。批准的 workspace Node runtime 不含 `@oai/artifact-tool`；同时仓库在 D:、Canonical 在 C:，项目内 staging 与恢复文件无法和 Canonical 同卷。依据发布保护合同 fail closed，不生成候选、不在 C: 创建项目 staging、不用替代 Excel 库，也不宣称后台状态已同步到表格。
 
@@ -57,11 +57,11 @@ EVIDENCE_STOP_EMPTY_POLICY = REJECTED_OUTSIDE_EXPLICIT_FROZEN_REPLAY
 UNREGISTERED_RESEARCH_SCOPE = new company research not authorized in this stage; a Fresh ResearchCase without matching stop is not globally blocked
 EVIDENCE_STOP_AND_CANONICAL_PROTECTION_TESTS = 54_PASSED_1_WINDOWS_PERMISSION_SKIP / shared run; native ReplaceFileW integration is platform-gated
 EVIDENCE_STOP_RECOVERY = recover_admitted_schedule records existing admission recovery receipt; no automatic execution or retry
-LATEST_GITHUB_CORE_RESEARCH_GATES = FAIL / run 36665479304 / offline-core 2 failed, postgres-integration passed
-LATEST_CI_FAILURES = Midea provenance tests expected untracked runtime JSON; fixed with test-local synthetic inputs, pending remote rerun
+CLOSEOUT_CODE_CORE_RESEARCH_GATES = PASS / run 36673042770 / commit 0a70f20775c1da7928418ff0e1c0ae3c65b50723 / both jobs passed
+PREVIOUS_CI_FAILURES = run 36665479304 / two Midea provenance tests expected untracked runtime JSON; fixed with test-local synthetic inputs
 LOCAL_OFFLINE_CORE = 1194_PASSED_32_SKIPPED_3_WARNINGS / 141_MODULES / workflow-equivalent local run
 LOCAL_M4_SYNTHETIC = 2_PASSED_2_SKIPPED
-WORKTREE_CHANGES_REMOTE_CI = NOT_RUN / no new commit or workflow run yet
+CLOSEOUT_CODE_COMMIT = 0a70f20775c1da7928418ff0e1c0ae3c65b50723 / PUSHED / REMOTE_CI_PASS
 LEGACY_M1_ASSERTIONS = 4_OUTSIDE_CORE_GATES / old package snapshots still assert conditional_research_only; not changed in this stage
 LEGACY_SERVER_DAILY_REFRESH = ACTIVE / track-candidates then refresh-valuations / event-driven production change not applied without R3 authorization
 CANONICAL_PUBLISHER_CONCURRENT_WRITE_GUARD = WINDOWS_CREATEFILE_WRITE_DENY + REPLACEFILE_BACKUP_COMPARE_AND_ROLLBACK / 36 focused tests passed / no workbook write
