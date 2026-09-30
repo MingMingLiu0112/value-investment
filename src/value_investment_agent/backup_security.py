@@ -62,6 +62,28 @@ class BackupSecurityPolicy:
     offsite: OffsiteContract
 
 
+def resolve_release_inventory(
+    root: Path, inventory: Sequence[str], *, workbook_path: str | None,
+) -> list[Path]:
+    """Resolve the canonical release input without falling back to a root copy."""
+    paths = []
+    for item in inventory:
+        if item not in {"WORKBOOK_PATH", "A股价值投资_Agent前端智能跟踪模板.xlsx"}:
+            paths.append(root / item)
+            continue
+        if not workbook_path or not workbook_path.strip():
+            raise ValueError("CANONICAL_BACKUP_WORKBOOK_NOT_RESOLVED")
+        path = Path(workbook_path).expanduser()
+        if not path.is_absolute():
+            path = root / path
+        path = path.resolve()
+        if (not path.is_file()
+                or path.name != "A股价值投资_Agent前端智能跟踪模板.xlsx"):
+            raise ValueError("CANONICAL_BACKUP_WORKBOOK_NOT_RESOLVED")
+        paths.append(path)
+    return paths
+
+
 @dataclass(frozen=True)
 class ArchiveItem:
     kind: str

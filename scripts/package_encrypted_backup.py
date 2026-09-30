@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 import tomllib
@@ -21,7 +22,9 @@ from value_investment_agent.backup_security import (  # noqa: E402
     decrypt_package,
     encrypt_package,
     load_policy,
+    resolve_release_inventory,
 )
+from value_investment_agent.settings import _load_dotenv
 
 
 def _policy_path(value: Path) -> Path:
@@ -58,7 +61,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "package":
         policy = load_policy(_policy_path(args.policy))
         config_paths = args.config_file or [args.root / item for item in policy.config_inventory]
-        release_paths = args.release_file or [args.root / item for item in policy.release_inventory]
+        _load_dotenv(args.root / ".env")
+        release_paths = args.release_file or resolve_release_inventory(
+            args.root, policy.release_inventory, workbook_path=os.environ.get("WORKBOOK_PATH"),
+        )
         result = encrypt_package(
             args.source,
             args.output,

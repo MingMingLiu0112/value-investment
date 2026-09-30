@@ -1,5 +1,12 @@
 # CURRENT STATUS
 
+## 2026-10-01 Backup Release Source Follows The Canonical Workbook
+
+- Found the package CLI's default release inventory still resolving the canonical filename under the code root, although the user workbook lives at WORKBOOK_PATH. Fixed this existing entry to resolve both the legacy canonical filename and explicit WORKBOOK_PATH inventory marker through configured WORKBOOK_PATH (environment or the selected project .env), without a silent root-copy fallback. Existing generic release inventories and explicit release-file inputs remain compatible. The retained policy file itself is unchanged.
+- Actual read-only resolution selected one workbook with SHA-256 `719fef5f9af7e6746d9690329ed5b5ddb0140203661d28eb34a29ad39d8269a9`, matching the current publication. No workbook write, key read, package creation, database connection, server/PTA or scheduler operation was performed by that check.
+- 28 backup/readiness tests passed, including temporary-directory CLI orchestration: canonical selection from the selected project .env, rejection when configuration is absent, and no packaging call after rejection. Receipt `.tmp/canonical-backup-cli-20261001.xml`. Prior full offline run before the additional CLI test: 1310 passed, 34 skipped, 21 existing deprecation warnings, `.tmp/canonical-backup-full-core-20261001.xml`.
+- This repairs a real backup-input defect but does not establish an actual encrypted database backup, offsite delivery or isolated restore. REAL_RESTORE remains NOT_STARTED and INITIAL_ASSISTED_USE NOT_REACHED. Investment status and `action=no_order` unchanged. No new security subsystem or financial rule was introduced.
+
 ## 2026-10-01 H1 Financial Explanation Published In Canonical Company Card
 
 - Published the reviewed 600887 H1 financial explanation through the existing protected publisher, not a new current workbook. Company financial-quality text now shows the six numerical facts, comparison periods, physical PDF pages and incomplete-admission boundary. Added the cash/dividend scope counterevidence and a source-bound audit link. Existing decision-step statuses, valuation scenarios, pending PriceBridge, unknown model validity and portfolio state were retained.

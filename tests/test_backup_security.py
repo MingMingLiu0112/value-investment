@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import nullcontext
 import hashlib
 import io
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -17,9 +18,73 @@ from value_investment_agent.backup_security import (
     decrypt_package,
     encrypt_package,
     load_policy,
+    resolve_release_inventory,
     validate_key_separation,
 )
 
+
+def test_canonical_backup_inventory_uses_configured_workbook_not_root_copy(tmp_path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    name = "A股价值投资_Agent前端智能跟踪模板.xlsx"
+    (root / name).write_bytes(b"old-root-copy")
+    cloud = tmp_path / "cloud"
+    cloud.mkdir()
+    canonical = cloud / name
+    canonical.write_bytes(b"canonical-test-only")
+    assert resolve_release_inventory(root, ["WORKBOOK_PATH"], workbook_path=str(canonical)) == [canonical]
+    assert resolve_release_inventory(root, [name], workbook_path=str(canonical)) == [canonical]
+    with pytest.raises(ValueError, match="CANONICAL_BACKUP_WORKBOOK_NOT_RESOLVED"):
+        resolve_release_inventory(root, ["WORKBOOK_PATH"], workbook_path=None)
+    with pytest.raises(ValueError, match="CANONICAL_BACKUP_WORKBOOK_NOT_RESOLVED"):
+        resolve_release_inventory(root, [name], workbook_path=None)
+
+
+@pytest.mark.parametrize("value", ["", "missing.xlsx", "candidate.xlsx"])
+def test_canonical_backup_inventory_rejects_unresolved_or_competing_file(tmp_path, value):
+    if value == "candidate.xlsx":
+        (tmp_path / value).write_bytes(b"not-canonical")
+    with pytest.raises(ValueError, match="CANONICAL_BACKUP_WORKBOOK_NOT_RESOLVED"):
+        resolve_release_inventory(tmp_path, ["WORKBOOK_PATH"], workbook_path=value)
+
+
+def test_noncanonical_release_inventory_compatibility_is_preserved(tmp_path):
+    assert resolve_release_inventory(tmp_path, ["release.json"], workbook_path=None) == [tmp_path / "release.json"]
+
+
+def test_package_cli_resolves_dotenv_canonical_release_before_packaging(tmp_path, monkeypatch):
+    specification = importlib.util.spec_from_file_location(
+        "canonical_backup_cli", Path(__file__).resolve().parents[1] / "scripts/package_encrypted_backup.py",
+    )
+    cli = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(cli)
+    root = tmp_path / "project"
+    root.mkdir()
+    canonical = tmp_path / "A股价值投资_Agent前端智能跟踪模板.xlsx"
+    canonical.write_bytes(b"temporary-canonical-fixture")
+    (root / ".env").write_text(f"WORKBOOK_PATH={canonical}\n", encoding="utf-8")
+    (root / "pyproject.toml").write_text('[project]\nversion="test"\n', encoding="utf-8")
+    policy_path = _policy_path(tmp_path)
+    policy = json.loads(policy_path.read_text(encoding="utf-8"))
+    policy["release_inventory"] = [canonical.name]
+    policy_path.write_text(json.dumps(policy), encoding="utf-8")
+    monkeypatch.delenv("WORKBOOK_PATH", raising=False)
+    captured = []
+    def package(*args, **kwargs):
+        captured.append(kwargs["release_paths"])
+        return {"action": "no_order", "status": "test_stub_only"}
+    monkeypatch.setattr(cli, "encrypt_package", package)
+    assert cli.main(["package", "--root", str(root), "--policy", str(policy_path),
+                     "--source", str(tmp_path / "source"), "--key", str(tmp_path / "key"),
+                     "--output", str(tmp_path / "package")]) == 0
+    assert captured == [[canonical]]
+    monkeypatch.delenv("WORKBOOK_PATH", raising=False)
+    (root / ".env").unlink()
+    with pytest.raises(ValueError, match="CANONICAL_BACKUP_WORKBOOK_NOT_RESOLVED"):
+        cli.main(["package", "--root", str(root), "--policy", str(policy_path),
+                  "--source", str(tmp_path / "source"), "--key", str(tmp_path / "key"),
+                  "--output", str(tmp_path / "package")])
+    assert captured == [[canonical]]
 
 def _policy_path(tmp_path: Path, *, chunk_bytes: int = 4096) -> Path:
     path = tmp_path / "backup-security.json"
