@@ -208,6 +208,7 @@ def test_publish_refuses_while_workbook_has_an_open_writer(tmp_path: Path):
     assert staging.read_bytes() == b"product candidate"
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows file-sharing integration test")
 def test_publish_preserves_source_if_new_canonical_is_opened_for_write(
     tmp_path: Path,
     monkeypatch,
@@ -266,6 +267,7 @@ def test_partial_replacefilew_failure_restores_displaced_source(tmp_path: Path, 
     staging.write_bytes(b"product candidate")
     expected_source = _sha256(canonical)
     staging_sha = _sha256(staging)
+    monkeypatch.setattr(publisher, "_canonical_write_guard", lambda _path: nullcontext())
 
     def partial_failure(destination: Path, replacement: Path, backup: Path) -> None:
         os.replace(destination, backup)
@@ -293,6 +295,7 @@ def test_partial_replacefilew_recovery_failure_preserves_all_files(tmp_path: Pat
     staging.write_bytes(b"product candidate")
     expected_source = _sha256(canonical)
     staging_sha = _sha256(staging)
+    monkeypatch.setattr(publisher, "_canonical_write_guard", lambda _path: nullcontext())
 
     def partial_failure_and_recreate_path(destination: Path, replacement: Path, backup: Path) -> None:
         os.replace(destination, backup)
