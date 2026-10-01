@@ -68,7 +68,7 @@ the synthetic investment results or pass user acceptance.
 - CURRENT_STATUS: PARTIAL
 - WHY_REQUIRED: The user must see the seven-page workbench in the existing WORKBOOK_PATH, not a competing preview.
 - WHAT_IS_ALREADY_DONE: Unique canonical seven-page frontend published with real conditional research content; 55 retained sheets preserved, WPS verified, pointer/hash aligned. C-volume staging exception already authorized.
-- EXACT_EXTERNAL_INPUT: User comprehension and final product acceptance; no further staging-path decision is required. Engineering CI passed for `dad6eb3109f7e8393fc7a8d2a11cdbfe441b8b0f` in GitHub run `36751736846`; this is not user acceptance.
+- EXACT_EXTERNAL_INPUT: Final product acceptance tasks not yet explicitly confirmed, including fact tracing and review of a risk blocker/state change. On 2026-10-01 the user confirmed reading the canonical workbook and authorized continuation; initial reading is no longer outstanding and must not block engineering. No further staging-path decision is required. Engineering CI passed for `dad6eb3109f7e8393fc7a8d2a11cdbfe441b8b0f` in GitHub run `36751736846`; this is not final user acceptance.
 - REOPEN_CONDITION: Complete user acceptance; subsequent code changes still need updated CI, and future publications require fresh source guard, preservation, backup, atomic replacement and WPS checks.
 - WHAT_CAN_CONTINUE_IN_PARALLEL: Shared application projection of actual assessments, isolated tests and replay. Do not modify WORKBOOK_PATH or create another current workbook.
 
