@@ -151,4 +151,14 @@ def render_cutoff_replay_report(payload: dict) -> str:
         'No historical execution, strategy effectiveness, strict PIT admission or current investment advice is established.',
         'Current model validity, price bridge, research approval and portfolio gates remain outstanding.',
         '', f"Source workbench SHA-256: {payload['workbench_sha256']}", 'action=no_order', ''])
+    reconstruction = payload.get('reconstructed_financial_inputs')
+    if reconstruction is not None:
+        lines.extend(['## Separate Retrospective Financial Inputs', '',
+            'Disclosure dates are taken from the hash-bound official index. Date-only records are usable conservatively from the following midnight.',
+            'This is not historical registration of assumptions or strict PIT admission.', '',
+            '| Cutoff | Eligible reviewed facts | Missing facts |', '| --- | --- | --- |'])
+        for point in reconstruction['cutoffs']:
+            names = ', '.join(fact['fact_name'] for fact in point['eligible_facts']) or 'none'
+            lines.append(f"| {point['cutoff']} | {names} | {', '.join(point['missing_facts']) or 'none'} |")
+        lines.extend(['', 'Numeric-source review does not establish a complete FinancialFacts gate, model validity, quote or investment approval.', ''])
     return '\n'.join(lines)

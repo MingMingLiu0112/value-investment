@@ -40,3 +40,11 @@ Do not repeatedly reopen stopped research inputs or let them block independent h
 It rehashes original evidence and uses the latest of workbench generation and source-observation timestamps. Before that boundary no valuation is shown. After it the existing blocked research is visible without orders, fills, current price or portfolio guidance. Cutoff timestamps are not asserted to be trading sessions.
 
 This contract deliberately does **not** reconstruct earlier public-information availability, run valuation-based decisions, validate execution mechanics, prove strict PIT or measure returns. The old Median-PE replay is a retained retrospective experiment; the old daily simulator still includes legacy 30% margin rules and must not become the default shared path. Full historical execution acceptance remains outstanding.
+
+## Separate Financial Input Reconstruction
+
+The same replay CLI optionally accepts paired `--arithmetic-input` / `--arithmetic-input-sha256` and `--disclosure-index` / `--disclosure-index-sha256`. All four are required together. This adds a separately scoped `reconstructed_financial_inputs` section; it never changes the observed-result timeline or strict PIT verifier.
+
+The application reuses the existing residual-income arithmetic replay, requiring original source hashes and the two reviewed basis inputs. The infrastructure adapter matches announcement ID, security code and official file URL against a pinned CNINFO index. Since the retained announcement timestamp does not establish precise intraday publication, availability is conservatively the following midnight in China time. Later source-review dates are preserved, not rewritten.
+
+Forecast assumptions are explicitly retrospective pinned scenarios, not contemporaneous forecasts or registered historical rules. Source excerpt semantics, complete FinancialFacts admission, current ModelValidity, price and portfolio gates remain unapproved. Model arithmetic agreement plus date-level disclosure reconstruction alone does not validate a trading strategy.

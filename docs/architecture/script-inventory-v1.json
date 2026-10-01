@@ -23,8 +23,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 36,
-      "sha256": "0461096631ece57b6a92155050e3d3064597af8b8c97084a37402d5c4625bed3"
+      "line_count": 56,
+      "sha256": "09038167bf3d50d5e4b54e6e62d7e141ef779290978844ed69d24c16ea1e7024"
     },
     {
       "path": "scripts/current/update_canonical_quote_display.py",
