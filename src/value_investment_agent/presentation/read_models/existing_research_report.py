@@ -225,4 +225,13 @@ def render_cutoff_replay_report(payload: dict) -> str:
                 checked_price = format(Decimal(row['forward_reconciled_price']), '.2f')
                 lines.append(f"| {row['scenario']} | {row['market_price']} | {original_roe} | {implied_roe} | {checked_price} |")
         lines.extend(['', expectations['limitation'], 'A high implied ROE can reflect different assumptions, risk or model inadequacy; it does not prove mispricing.', ''])
+    metrics = payload.get('disclosed_metric_review')
+    if metrics is not None:
+        lines.extend(['## Source-Bound Reported Metrics', '',
+            'Later annual-report comparative figures are not backdated to their original financial periods.',
+            'Reported weighted ROE is not forecast ROE on opening book equity. Operating cash flow is not free cash flow.', '',
+            '| Metric | Period | Value | Unit | Physical page |', '| --- | --- | --- | --- | --- |'])
+        for fact in metrics['facts']:
+            lines.append(f"| {fact['metric_name']} | {fact['period']} | {fact['value']} | {fact['unit']} | {fact['physical_page']} |")
+        lines.extend(['', metrics['limitation'], 'Financial gate and forecast assumptions remain unapproved; action=no_order.', ''])
     return '\n'.join(lines)
