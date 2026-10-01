@@ -14,6 +14,7 @@ from value_investment_agent.application.product.common import write_new_json
 from value_investment_agent.application.historical_validation.event_evidence_audit import audit_event_evidence
 from value_investment_agent.application.historical_validation.historical_price_bridge import replay_historical_bridge
 from value_investment_agent.application.historical_validation.event_source_review import prepare_event_source_review
+from value_investment_agent.application.historical_validation.execution_scenario import replay_execution_scenario
 
 
 def main() -> int:
@@ -33,6 +34,8 @@ def main() -> int:
     parser.add_argument('--quote-bundle-sha256')
     parser.add_argument('--recovered-event-original', action='append', default=[], metavar='ID=PATH')
     parser.add_argument('--event-source-pages', action='store_true')
+    parser.add_argument('--execution-scenario', type=Path)
+    parser.add_argument('--execution-scenario-sha256')
     args = parser.parse_args()
     recovered_originals = {}
     for binding in args.recovered_event_original:
@@ -80,6 +83,12 @@ def main() -> int:
         result['event_source_review'] = prepare_event_source_review(root=ROOT,
             path=ROOT / args.event_scan, expected_sha256=args.event_scan_sha256,
             symbol=result['symbol'], recovered_originals=recovered_originals)
+    if args.execution_scenario is not None or args.execution_scenario_sha256 is not None:
+        if not all((args.execution_scenario, args.execution_scenario_sha256)):
+            raise ValueError('execution scenario requires paired path and hash')
+        result['execution_engineering_scenario'] = replay_execution_scenario(root=ROOT,
+            path=ROOT / args.execution_scenario, expected_sha256=args.execution_scenario_sha256,
+            symbol=result['symbol'])
     write_new_json(output, result)
     if report is not None:
         report.parent.mkdir(parents=True, exist_ok=True)

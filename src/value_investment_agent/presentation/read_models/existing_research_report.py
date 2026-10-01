@@ -196,4 +196,16 @@ def render_cutoff_replay_report(payload: dict) -> str:
                         *('> ' + line for line in page['text'][:1800].splitlines()), ''])
             lines.extend('- ' + question for question in event['unresolved_questions'])
             lines.append('')
+    scenario = payload.get('execution_engineering_scenario')
+    if scenario is not None:
+        lines.extend(['## Synthetic Execution Mechanism Scenario', '',
+            'SYNTHETIC ENGINEERING FIXTURE: prices, capital and proposals are NOT real investment decisions.',
+            'This does not pass historical execution, strategy effectiveness, strict PIT or production gates.', '',
+            '| Session | Fixture state | Synthetic fill | Rejection | Shares | Cash events |',
+            '| --- | --- | --- | --- | --- | --- |'])
+        for row in scenario['journal']:
+            fill = row.get('fill')
+            summary = 'none' if fill is None else f"{fill['side']} {fill['quantity']} @ {fill['price']}; fee {fill['fee_cny']}"
+            lines.append(f"| {row['date']} | {row['decision']} | {summary} | {row.get('rejected_order_reason') or 'none'} | {row['holding_shares']} | {len(row['cash_events'])} |")
+        lines.extend(['', *scenario['cost_limitations'], 'No performance claim; action=no_order.', ''])
     return '\n'.join(lines)
