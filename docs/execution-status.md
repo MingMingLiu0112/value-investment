@@ -1,5 +1,15 @@
 # CURRENT STATUS
 
+## 2026-10-01 Shared Historical Integration And Conditional Expectations
+
+- Engineering delivery: shared cutoff CLI now supports original event integrity/recovery, page-level original-source review, explicitly synthetic bounded virtual execution and conditional price-implied terminal ROE. These reuse existing quote, validity, bridge, PDF and account engines; no copied company pipeline or investment threshold changes.
+- Original index recovery: sealed hash f68b7e83d77c4c1d09c8d033a6e0054c97c0ce93c9f383349388bbc2d815ceea was found in the earlier 600887 scan archive. The mismatched old path and failed audit remain preserved. Recovery is content verification, not research approval.
+- Actual readable evidence: runtime/historical-bridge-recovery-reviewed-20261001/, runtime/historical-event-source-review-20261001/ (19 original announcements), runtime/shared-execution-scenario-20261001/ (synthetic only), runtime/shared-reverse-equity-expectations-20261001/ (historical price with retrospective pinned assumptions). No historical decision is backdated to these later-created results.
+- Conditional inverse reconciles the September 22 price CNY26.77 with the existing forward model by varying terminal ROE only. Implied ROE approximately 23.7%-28.9% is not a forecast, proof of mispricing or sell recommendation. Pre-model event incorporation, forecast justification, real decision/execution inputs and strict PIT remain unapproved.
+- Offline Core Gates: 1349 passed / 32 skipped / 28 warnings; evidence .tmp/reverse-core-20261001.xml. Whole-repository test invocation earlier was interrupted after prolonged no-output and failures; whole-repository success is not established. Remote CI for this new inverse change is not yet verified.
+- Canonical SHA-256 rechecked: 74439baa82f9ff9f648cb32858af9d3fab03ade06d4f43b1cbdde15fcdef4582; no workbook publication in this work package, no server/database/scheduler changes. Existing user-reading/key-custody/WPS-visibility confirmations are inherited.
+- CURRENT_RESEARCH_ADMISSION=NOT_READY; STRICT_PIT=NOT_PROVEN; HISTORICAL_EXECUTION_VALIDATED=false; INITIAL_ASSISTED_USE=NOT_REACHED; TOTAL_GOAL_STATUS=IN_PROGRESS; action=no_order.
+
 ## 2026-10-01 User Reviewed Canonical Workbook And Authorized Continuation
 
 - User explicitly reports reviewing the WPS project workbook modified around 01:00 and authorizes continuation. USER_WORKBOOK_REVIEW=CONFIRMED; CONTINUATION=AUTHORIZED. Lack of initial workbook reading is no longer a blocker; do not request that same confirmation again.

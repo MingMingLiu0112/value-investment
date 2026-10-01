@@ -208,4 +208,21 @@ def render_cutoff_replay_report(payload: dict) -> str:
             summary = 'none' if fill is None else f"{fill['side']} {fill['quantity']} @ {fill['price']}; fee {fill['fee_cny']}"
             lines.append(f"| {row['date']} | {row['decision']} | {summary} | {row.get('rejected_order_reason') or 'none'} | {row['holding_shares']} | {len(row['cash_events'])} |")
         lines.extend(['', *scenario['cost_limitations'], 'No performance claim; action=no_order.', ''])
+    expectations = payload.get('reverse_equity_expectations')
+    if expectations is not None:
+        lines.extend(['## Conditional Historical Price Expectations', '',
+            f"Quote date: {expectations['quote_date']}; model basis date: {expectations['valuation_date']}",
+            'Only terminal ROE is inverted; all other pinned assumptions remain fixed.',
+            'This comparison uses retrospective scenarios, not then-known forecasts or a current recommendation.', '',
+            '| Scenario | Price | Original terminal ROE | Price-implied terminal ROE | Forward check |',
+            '| --- | --- | --- | --- | --- |'])
+        for row in expectations['scenarios']:
+            if row['status'] == 'NOT_ASSESSABLE':
+                lines.append(f"| {row['scenario']} | unavailable | unavailable | NOT_ASSESSABLE | unavailable |")
+            else:
+                original_roe = format(Decimal(row['original_terminal_roe']), '.1%')
+                implied_roe = format(Decimal(row['implied_terminal_roe']), '.1%')
+                checked_price = format(Decimal(row['forward_reconciled_price']), '.2f')
+                lines.append(f"| {row['scenario']} | {row['market_price']} | {original_roe} | {implied_roe} | {checked_price} |")
+        lines.extend(['', expectations['limitation'], 'A high implied ROE can reflect different assumptions, risk or model inadequacy; it does not prove mispricing.', ''])
     return '\n'.join(lines)

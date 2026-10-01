@@ -15,6 +15,7 @@ from value_investment_agent.application.historical_validation.event_evidence_aud
 from value_investment_agent.application.historical_validation.historical_price_bridge import replay_historical_bridge
 from value_investment_agent.application.historical_validation.event_source_review import prepare_event_source_review
 from value_investment_agent.application.historical_validation.execution_scenario import replay_execution_scenario
+from value_investment_agent.application.historical_validation.reverse_equity_expectations import reverse_equity_expectations
 
 
 def main() -> int:
@@ -36,6 +37,7 @@ def main() -> int:
     parser.add_argument('--event-source-pages', action='store_true')
     parser.add_argument('--execution-scenario', type=Path)
     parser.add_argument('--execution-scenario-sha256')
+    parser.add_argument('--reverse-equity-expectations', action='store_true')
     args = parser.parse_args()
     recovered_originals = {}
     for binding in args.recovered_event_original:
@@ -63,6 +65,13 @@ def main() -> int:
             index_path=ROOT / args.disclosure_index, index_sha256=args.disclosure_index_sha256,
             cutoffs=args.cutoff)
     output = (ROOT / args.output).resolve()
+    if args.reverse_equity_expectations:
+        if not all((args.arithmetic_input, args.arithmetic_input_sha256, args.quote_bundle, args.quote_bundle_sha256)):
+            raise ValueError('reverse expectations require pinned arithmetic and quote inputs')
+        result['reverse_equity_expectations'] = reverse_equity_expectations(root=ROOT,
+            workbench_path=ROOT / args.workbench, workbench_sha256=args.workbench_sha256,
+            arithmetic_path=ROOT / args.arithmetic_input, arithmetic_sha256=args.arithmetic_input_sha256,
+            quote_path=ROOT / args.quote_bundle, quote_sha256=args.quote_bundle_sha256)
     if args.event_scan is not None or args.event_scan_sha256 is not None:
         if args.event_scan is None or args.event_scan_sha256 is None:
             raise ValueError('event scan requires paired path and hash')

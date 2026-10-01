@@ -37,6 +37,7 @@ jobs:
           tests/test_historical_price_bridge_replay.py
           tests/test_event_source_review.py
           tests/test_execution_scenario.py
+          tests/test_residual_income_reverse.py
           tests/test_valuation_result.py
           tests/test_price_bridge.py
           tests/test_research_profile.py
