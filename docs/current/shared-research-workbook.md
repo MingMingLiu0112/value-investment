@@ -104,3 +104,18 @@ The actual 600887 annual-report review in `runtime/yili-reported-roe-readable-20
 `--reported-cash-proxy` requires pinned transcriptions of consolidated CNY CFO and cash capex from the same original and financial period. The row reviewer can bind an adjacent preceding statement-header page for a continuation row; parent-company and consolidated scope are explicit and cannot be mixed. Missing paired facts return NOT_ASSESSABLE rather than substituting zero capex.
 
 The domain calculates only a descriptive CFO-minus-cash-capex residual. It explicitly denies FCFF, FCFE, maintenance-capex identification and distributable-cash proof. The application cannot admit financial quality, dividend sustainability or valuation from this residual. Actual 600887 evidence in `runtime/yili-cash-capex-review-20261001/` gives CNY11,307,276,333.64 for 2025 and CNY17,761,422,072.42 for 2024. Working capital, necessary investment, financial-subsidiary flows, acquisitions and shareholder cash claims remain review dependencies.
+### 披露财务解释与单公司卡片集成（2026-10-01）
+
+`scripts/current/build_product_workbench_candidate.py` 支持重复的
+`--metric-transcription PATH SHA256`，与已有 workbench、expectations 和
+`--read-model-only --read-model-report` 同时使用。每个输入重新核验原 PDF、
+披露行、单位、报告期、物理页及报表范围；不信任缓存的数字复核结果。
+只有明确合并现金流量表的 CFO 与现金资本开支配对后才计算描述性余额。
+领域计算不在 presentation 内进行；presentation 仅展示结果和原件入口。
+不会修改 Financial Gate、估值、PriceBridge、建议或仓位。
+
+实际产品产物位于 `runtime/shared-financial-company-card-linked-20261001/`；包含
+FY2023–2025 已披露利润、ROE、CFO，FY2024–2025 合并现金资本开支和
+条件性历史价格反向估值。后期报告比较数不代表原年份当时可得；现金余额
+不是 FCFF、FCFE 或可分红现金。当前行情、正式模型批准、事件有效性与
+个性化仓位仍未准入。该路径不写正式 Excel，不绕过发布工具和保护规则。
