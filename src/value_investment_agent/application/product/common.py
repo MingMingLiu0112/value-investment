@@ -20,11 +20,16 @@ def normalize_symbol(value: str) -> str:
     return symbol
 
 
-def load_json_object(path: Path, label: str) -> dict[str, Any]:
+def load_json_value(path: Path, label: str) -> Any:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ValueError(f"{label} must be valid UTF-8 JSON") from error
+    return payload
+
+
+def load_json_object(path: Path, label: str) -> dict[str, Any]:
+    payload = load_json_value(path, label)
     if not isinstance(payload, dict):
         raise ValueError(f"{label} must be a JSON object")
     return payload

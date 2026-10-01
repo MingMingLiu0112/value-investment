@@ -1,75 +1,72 @@
-from __future__ import annotations
-
+import hashlib
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
 import pytest
-
 from openpyxl import Workbook
 
-
 ROOT = Path(__file__).resolve().parents[1]
+NAME = 'A股价值投资_Agent前端智能跟踪模板.xlsx'
 
 
-CANONICAL_NAME = "A股价值投资_Agent前端智能跟踪模板.xlsx"
-
-
-def _script_root(tmp_path: Path) -> Path:
-    root = tmp_path / "project"
-    (root / "scripts").mkdir(parents=True)
-    (root / "config").mkdir()
-    (root / "scripts" / "open_current_trial_workbook.py").write_text(
-        (ROOT / "scripts" / "open_current_trial_workbook.py").read_text(encoding="utf-8"),
-        encoding="utf-8",
-    )
-    (root / "config" / "current-trial-workbook.json").write_text(
-        (ROOT / "config" / "current-trial-workbook.json").read_text(encoding="utf-8"),
-        encoding="utf-8",
-    )
+def fixture(tmp_path):
+    root = tmp_path / 'project'
+    (root / 'scripts').mkdir(parents=True)
+    (root / 'config').mkdir()
+    for relative in ('scripts/open_current_trial_workbook.py', 'config/current-trial-workbook.json'):
+        (root / relative).write_bytes((ROOT / relative).read_bytes())
     return root
 
 
-def _run(root: Path, workbook_path: Path | None) -> subprocess.CompletedProcess[str]:
-    environment = {key: value for key, value in os.environ.items() if key != "WORKBOOK_PATH"}
-    if workbook_path is not None:
-        environment["WORKBOOK_PATH"] = str(workbook_path)
-    return subprocess.run(
-        [sys.executable, "-X", "utf8", str(root / "scripts" / "open_current_trial_workbook.py")],
-        cwd=root, capture_output=True, text=True, encoding="utf-8", env=environment,
-    )
+def run(root, workbook=None, *args):
+    env = dict(os.environ)
+    env.pop('WORKBOOK_PATH', None)
+    if workbook is not None: env['WORKBOOK_PATH'] = str(workbook)
+    return subprocess.run([sys.executable, '-X', 'utf8', str(root/'scripts/open_current_trial_workbook.py'), *args],
+        cwd=root, env=env, capture_output=True, text=True, encoding='utf-8')
 
 
-@pytest.mark.parametrize("simulation_only", [True, False])
-def test_current_trial_pointer_resolves_only_temp_canonical_workbook(tmp_path: Path, simulation_only: bool):
-    pointer = json.loads((ROOT / "config/current-trial-workbook.json").read_text(encoding="utf-8"))
-    assert pointer["workbook_source"] == "WORKBOOK_PATH"
-    assert "workbook" not in pointer
-    assert "candidate" not in json.dumps(pointer, ensure_ascii=False).lower()
-    canonical = tmp_path / CANONICAL_NAME
-    Workbook().save(canonical)
-    root = _script_root(tmp_path)
-    fixture_pointer = dict(pointer, simulation_only=simulation_only,
-                           quote_coverage_status="SIMULATION_ONLY_NOT_VERIFIED" if simulation_only else "NO_ADMITTED_CURRENT_PRICE_BRIDGE")
-    (root / "config/current-trial-workbook.json").write_text(json.dumps(fixture_pointer), encoding="utf-8")
-    completed = _run(root, canonical)
-    assert completed.returncode == 0, completed.stderr
-    result = json.loads(completed.stdout)
-    assert result["workbook"] == str(canonical.resolve())
-    assert result["status"] == "CANONICAL_READONLY_TRIAL_READY"
-    assert result["m6_operational_status"] == "NOT_STARTED"
-    assert result["initial_assisted_use"] == "NOT_REACHED"
-    assert result["action"] == "no_order"
-    assert result["simulation_only"] is simulation_only
-    assert result["quote_coverage_status"] == fixture_pointer["quote_coverage_status"]
+def test_current_entry_is_only_the_temporary_canonical_workbook(tmp_path):
+    root = fixture(tmp_path)
+    path = tmp_path / NAME
+    Workbook().save(path)
+    pointer = json.loads((root/'config/current-trial-workbook.json').read_text(encoding='utf-8'))
+    assert pointer['workbook_source'] == 'WORKBOOK_PATH'
+    assert pointer['current_trial_pointer'] == 'CANONICAL_WORKBOOK'
+    assert 'workbook' not in pointer and 'workbook_path' not in pointer
+    result = run(root, path)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)['workbook'] == str(path.resolve())
+    assert json.loads(result.stdout)['action'] == 'no_order'
 
 
-def test_current_trial_pointer_fails_closed_without_or_with_wrong_workbook_path(tmp_path: Path):
-    root = _script_root(tmp_path)
-    missing = _run(root, None)
-    wrong = _run(root, tmp_path / "other.xlsx")
-    assert missing.returncode != 0
-    assert wrong.returncode != 0
-    assert "CANONICAL_WORKBOOK_NOT_RESOLVED" in missing.stderr
-    assert "CANONICAL_WORKBOOK_NOT_RESOLVED" in wrong.stderr
+@pytest.mark.parametrize('value', [None, 'missing.xlsx', 'other.xlsx'])
+def test_missing_or_wrong_workbook_path_fails_closed(tmp_path, value):
+    root = fixture(tmp_path)
+    path = None if value is None else tmp_path/value
+    if value == 'other.xlsx': Workbook().save(path)
+    assert run(root, path).returncode != 0
+
+
+def test_runtime_preview_requires_explicit_flag_and_hash(tmp_path):
+    root = fixture(tmp_path)
+    (root/'runtime').mkdir()
+    preview = root/'runtime/preview.xlsx'
+    Workbook().save(preview)
+    digest = hashlib.sha256(preview.read_bytes()).hexdigest()
+    result = run(root, None, '--historical-preview', 'runtime/preview.xlsx', '--preview-sha256', digest)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)['current_trial_pointer'] == 'NOT_CURRENT'
+    assert run(root, None, '--historical-preview', 'runtime/preview.xlsx').returncode != 0
+    assert run(root, None, '--historical-preview', 'runtime/preview.xlsx', '--preview-sha256', '0'*64).returncode != 0
+
+
+def test_runtime_source_cannot_become_default_pointer(tmp_path):
+    root = fixture(tmp_path)
+    pointer_path = root/'config/current-trial-workbook.json'
+    pointer = json.loads(pointer_path.read_text(encoding='utf-8'))
+    pointer['workbook_source'] = 'PRODUCT_UX_RUNTIME'
+    pointer_path.write_text(json.dumps(pointer), encoding='utf-8')
+    assert run(root).returncode != 0

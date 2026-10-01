@@ -105,6 +105,152 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _normalise_bound_source_path(root: Path, value: Any) -> tuple[Path, str]:
+    """Resolve one declared source path without allowing a workspace escape."""
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("bound source path must be a non-empty project-relative path")
+    relative = Path(value.replace("\\", "/"))
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError("bound source path escapes the project root")
+    resolved = (root / relative).resolve()
+    if not resolved.is_relative_to(root.resolve()) or not resolved.is_file():
+        raise ValueError("bound source is missing or outside the project root")
+    return resolved, relative.as_posix()
+
+
+def _collect_bound_source_pairs(value: Any) -> list[tuple[Any, Any]]:
+    """Collect declared path/hash pairs from a source-binding receipt."""
+    pairs: list[tuple[Any, Any]] = []
+
+    def visit(node: Any) -> None:
+        if isinstance(node, dict):
+            digest = node.get("sha256")
+            path = node.get("path")
+            if path is not None and digest is not None:
+                pairs.append((path, digest))
+            location = node.get("location")
+            if (
+                location is not None
+                and digest is not None
+                and not str(location).startswith(("http://", "https://"))
+            ):
+                pairs.append((location, digest))
+            for child in node.values():
+                visit(child)
+        elif isinstance(node, list):
+            for child in node:
+                visit(child)
+
+    visit(value)
+    return pairs
+
+
+def _verify_bound_source_pairs(
+    root: Path,
+    pairs: list[tuple[Any, Any]],
+) -> tuple[list[tuple[str, str]], int]:
+    """Verify every declared local source pair and return a stable set hash."""
+    verified: dict[str, str] = {}
+    for raw_path, raw_digest in pairs:
+        if not isinstance(raw_digest, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", raw_digest):
+            raise ValueError("bound source hash must be a 64-character SHA-256")
+        resolved, relative = _normalise_bound_source_path(root, raw_path)
+        expected = raw_digest.lower()
+        if _sha256(resolved) != expected:
+            raise ValueError(f"bound source hash mismatch: {relative}")
+        existing = verified.get(relative)
+        if existing is not None and existing != expected:
+            raise ValueError(f"conflicting bound source hashes: {relative}")
+        verified[relative] = expected
+    normalised = sorted(verified.items())
+    return normalised, len(normalised)
+
+
+def _source_set_sha256(pairs: list[tuple[str, str]]) -> str:
+    payload = json.dumps(pairs, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _verify_reviewed_research_source_bindings(
+    root: Path,
+    candidate: Path,
+    proof_path: Path,
+    receipt_path: Path,
+) -> dict[str, Any]:
+    """Require the candidate source receipt to bind all reviewed local sources."""
+    if not receipt_path.is_file():
+        raise ValueError("reviewed research source-binding receipt missing")
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8-sig"))
+    if not isinstance(receipt, dict):
+        raise ValueError("reviewed research source-binding receipt is not an object")
+    if receipt.get("schema_version") != "existing-workbench-preview-bindings-v1":
+        raise ValueError("reviewed research source-binding receipt schema mismatch")
+    if (
+        receipt.get("integrated_canonical") is not True
+        or receipt.get("historical_preview") is not True
+        or receipt.get("canonical_written") is not False
+        or receipt.get("action") != "no_order"
+    ):
+        raise ValueError("reviewed research source-binding receipt scope is not admitted")
+    if receipt.get("workbook_sha256") != _sha256(candidate):
+        raise ValueError("reviewed research source-binding workbook hash mismatch")
+    if receipt.get("output_manifest_sha256") != _sha256(proof_path):
+        raise ValueError("reviewed research source-binding manifest hash mismatch")
+
+    declared: list[tuple[Any, Any]] = _collect_bound_source_pairs(receipt)
+    for path_key, digest_key in (
+        ("base_payload_path", "base_payload_sha256"),
+        ("existing_workbench_path", "existing_workbench_sha256"),
+        ("expectations_replay_path", "expectations_replay_sha256"),
+    ):
+        if receipt.get(path_key) is not None:
+            declared.append((receipt.get(path_key), receipt.get(digest_key)))
+
+    for binding_key, expected_schema in (
+        ("historical_closure_binding", "historical-company-closure-v1"),
+        ("historical_execution_replay_binding", "historical-execution-replay-v1"),
+    ):
+        binding = receipt.get(binding_key)
+        if binding is None:
+            continue
+        if not isinstance(binding, dict):
+            raise ValueError(f"reviewed research {binding_key} is not an object")
+        bound_path, bound_digest = binding.get("path"), binding.get("sha256")
+        resolved, relative = _normalise_bound_source_path(root, bound_path)
+        if not isinstance(bound_digest, str) or _sha256(resolved) != bound_digest.lower():
+            raise ValueError(f"reviewed research {binding_key} hash mismatch")
+        document = json.loads(resolved.read_text(encoding="utf-8-sig"))
+        if not isinstance(document, dict) or document.get("schema_version") != expected_schema:
+            raise ValueError(f"reviewed research {binding_key} schema mismatch")
+        if document.get("action") != "no_order" or document.get("strict_pit_admitted") is not False:
+            raise ValueError(f"reviewed research {binding_key} boundary was elevated")
+        if document.get("historical_execution_validated") is not False:
+            raise ValueError(f"reviewed research {binding_key} execution status was elevated")
+        if binding_key == "historical_closure_binding" and (
+            document.get("current_research_admission") != "NOT_READY"
+            or document.get("performance_claim_allowed") is not False
+        ):
+            raise ValueError("reviewed research closure admission was elevated")
+        nested = document.get("source_bindings")
+        if not isinstance(nested, list) or not nested:
+            raise ValueError(f"reviewed research {binding_key} source bindings missing")
+        for source in nested:
+            if not isinstance(source, dict):
+                raise ValueError(f"reviewed research {binding_key} source binding invalid")
+            declared.append((source.get("path"), source.get("sha256")))
+        declared.append((relative, bound_digest))
+
+    verified, count = _verify_bound_source_pairs(root, declared)
+    if count == 0:
+        raise ValueError("reviewed research source-binding receipt contains no local sources")
+    return {
+        "source_bindings_path": receipt_path.relative_to(root).as_posix(),
+        "source_bindings_sha256": _sha256(receipt_path),
+        "verified_source_count": count,
+        "source_set_sha256": _source_set_sha256(verified),
+    }
+
+
 def _assert_canonical_source_unchanged(canonical: Path, expected_sha256: str) -> None:
     if not canonical.is_file() or _sha256(canonical) != expected_sha256:
         raise ValueError("canonical workbook changed during staging; refusing to replace")
@@ -590,7 +736,7 @@ def _target_part(owner: str, target: str) -> str:
 
 
 def _protected_ooxml_parts(path: Path) -> dict[str, str]:
-    """Pin only drawings/charts/media reachable from preserved worksheets.
+    """Pin non-cell OOXML reachable from preserved worksheets.
 
     Product sheets are intentionally regenerated. Their relationship IDs may
     change during a valid refresh, so treating every worksheet relationship as
@@ -607,20 +753,32 @@ def _protected_ooxml_parts(path: Path) -> dict[str, str]:
             relation.attrib["Id"]: _target_part("xl/workbook.xml", relation.attrib["Target"])
             for relation in relations.findall(f"{package_rel_ns}Relationship")
         }
-        preserved_sheets = {
-            workbook_targets[sheet.attrib[rel_ns]]: sheet.attrib["name"]
-            for sheet in workbook.findall(f"{workbook_ns}sheets/{workbook_ns}sheet")
-            if sheet.attrib.get("name") not in WORKBOOK_SHEETS
-        }
+        preserved_sheets = {}
+        for sheet in workbook.findall(f"{workbook_ns}sheets/{workbook_ns}sheet"):
+            if sheet.attrib.get("name") in WORKBOOK_SHEETS:
+                continue
+            target = workbook_targets.get(sheet.attrib.get(rel_ns))
+            if target is None:
+                raise ValueError("preserved worksheet relationship target is missing")
+            preserved_sheets[target] = sheet.attrib["name"]
         queue = list(preserved_sheets)
         relationship_owners = {
             _relationship_part(part): title for part, title in preserved_sheets.items()
         }
         protected: set[str] = set()
+        protected_prefixes = (
+            "xl/drawings/",
+            "xl/media/",
+            "xl/charts/",
+            "xl/tables/",
+            "xl/comments/",
+        )
         while queue:
             part = queue.pop()
-            if part in protected or part not in names:
+            if part in protected:
                 continue
+            if part not in names:
+                raise ValueError(f"protected internal OOXML part is missing: {part}")
             protected.add(part)
             relationship_part = _relationship_part(part)
             if relationship_part not in names:
@@ -628,12 +786,16 @@ def _protected_ooxml_parts(path: Path) -> dict[str, str]:
             protected.add(relationship_part)
             relations = ElementTree.fromstring(archive.read(relationship_part))
             for relation in relations.findall(f"{package_rel_ns}Relationship"):
+                if relation.attrib.get("TargetMode") == "External":
+                    continue
                 target = _target_part(part, relation.attrib["Target"])
-                if target.startswith(("xl/drawings/", "xl/media/", "xl/charts/")):
+                if target.startswith(protected_prefixes):
+                    if target not in names:
+                        raise ValueError(f"protected OOXML relationship target is missing: {target}")
                     queue.append(target)
         relevant = {
             name for name in protected
-            if name.startswith(("xl/drawings/", "xl/media/", "xl/charts/", "xl/worksheets/_rels/"))
+            if name.startswith(protected_prefixes) or name.startswith("xl/worksheets/_rels/")
         }
         return {
             (f"worksheet-relationships:{relationship_owners[name]}" if name in relationship_owners else name):
@@ -664,7 +826,7 @@ def _assert_retained(before: dict[str, Any], after: dict[str, Any]) -> None:
     if before["defined_names"] != after["defined_names"]:
         raise ValueError("defined names changed")
     if before["protected_ooxml_parts"] != after["protected_ooxml_parts"]:
-        raise ValueError("protected drawing, media, chart, or worksheet relationship parts changed")
+        raise ValueError("protected OOXML drawing, media, chart, table, comment, or relationship parts changed")
     changed = []
     for name in retained:
         previous = dict(before["sheets"][name])
@@ -744,11 +906,13 @@ def _reviewed_research_publication(
         raise ValueError("reviewed research proofs must remain under runtime")
     candidate = folder / "canonical-integration-historical-preview.xlsx"
     proof_path = folder / "canonical-preservation.json"
+    source_bindings_path = candidate.with_name(candidate.stem + ".source-bindings.json")
     wps_path = folder / "integrated-wps-verification.json"
     if not wps_path.exists():
         wps_path = folder / "native-review/receipt.json"
     readability_path = folder / "readability.json"
-    for path in (candidate, proof_path, wps_path, readability_path):
+    visual_path = folder / "visual-review.json"
+    for path in (candidate, proof_path, source_bindings_path, wps_path, readability_path, visual_path):
         if not path.resolve().is_relative_to(folder) or not path.is_file():
             raise ValueError("reviewed research artifact missing or outside proof folder")
     if not re.fullmatch(r"[0-9a-f]{64}", proof_sha256) or _sha256(proof_path) != proof_sha256:
@@ -756,7 +920,9 @@ def _reviewed_research_publication(
     proof = json.loads(proof_path.read_text(encoding="utf-8-sig"))
     if (proof.get("preservation") != "PASS" or proof.get("action") != "no_order"
             or proof.get("simulation_only") is not False or proof.get("historical_preview") is not True
-            or proof.get("canonical_touched") is not False):
+            or proof.get("canonical_touched") is not False
+            or proof.get("strict_pit") != "NOT_PROVEN"
+            or proof.get("current_price_bridge") != "NOT_ADMITTED"):
         raise ValueError("reviewed research proof scope not admitted")
     candidate_sha = _sha256(candidate)
     if candidate_sha != proof.get("candidate_sha256"):
@@ -770,13 +936,22 @@ def _reviewed_research_publication(
     readability = json.loads(readability_path.read_text(encoding="utf-8-sig"))
     if readability.get("status") != "passed" or readability.get("workbook_sha256") != candidate_sha:
         raise ValueError("reviewed research readability proof mismatch")
-    visual_path = folder / "visual-review.json"
-    if visual_path.exists():
-        visual = json.loads(visual_path.read_text(encoding="utf-8-sig"))
-        if (visual.get("status") != "PASS" or visual.get("publication_allowed") is not True
-                or visual.get("action") != "no_order"
-                or visual.get("workbook_sha256") != candidate_sha):
-            raise ValueError("reviewed research visual review not admitted")
+    visual = json.loads(visual_path.read_text(encoding="utf-8-sig"))
+    if (visual.get("status") != "PASS" or visual.get("publication_allowed") is not True
+            or visual.get("action") != "no_order"
+            or visual.get("workbook_sha256") != candidate_sha):
+        raise ValueError("reviewed research visual review not admitted")
+    source_binding = _verify_reviewed_research_source_bindings(
+        root, candidate, proof_path, source_bindings_path
+    )
+    reviewed_hashes = {
+        candidate: candidate_sha,
+        proof_path: proof_sha256,
+        source_bindings_path: _sha256(source_bindings_path),
+        wps_path: _sha256(wps_path),
+        readability_path: _sha256(readability_path),
+        visual_path: _sha256(visual_path),
+    }
     _assert_canonical_source_unchanged(canonical, proof["source_sha256"])
     before = _snapshot(canonical)
     after_preview = _snapshot(candidate)
@@ -791,7 +966,9 @@ def _reviewed_research_publication(
         before_sha256=proof["source_sha256"], candidate_sha256=candidate_sha,
         preservation_proof_sha256=proof_sha256, wps_proof_sha256=_sha256(wps_path),
         readability_proof_sha256=_sha256(readability_path), preserved_sheet_count=count,
-        visual_review_sha256=_sha256(visual_path) if visual_path.exists() else None,
+        visual_review_sha256=_sha256(visual_path),
+        source_binding_status="VERIFIED",
+        **source_binding,
         strict_pit="NOT_PROVEN", current_price_bridge="NOT_ADMITTED",
         M7_FINAL_USER_ACCEPTANCE="NOT_PASSED", INITIAL_ASSISTED_USE="NOT_REACHED",
         canonical_written=False,
@@ -800,6 +977,9 @@ def _reviewed_research_publication(
         _assert_canonical_source_unchanged(canonical, proof["source_sha256"])
         return receipt
     _assert_workbook_not_open(canonical)
+    for path, expected_sha256 in reviewed_hashes.items():
+        if not path.is_file() or _sha256(path) != expected_sha256:
+            raise ValueError("reviewed research artifact changed before publication")
     staging_dir = _project_staging_directory(root, canonical, authorized_external=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex[:8]
     backups = root / "runtime/workbook-backups"

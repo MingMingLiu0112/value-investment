@@ -336,12 +336,70 @@ def test_user_pages_hide_internal_codes_hashes_and_execution_semantics() -> None
         "target_weight",
         "position_size",
         "trade_approved",
+        "action=no_order",
+        "BLOCKED",
+        "NOT_READY",
+        "UNKNOWN",
         "建议买入",
         "目标仓位",
         "下单",
     ):
         assert hidden not in text
-    assert workbook[SHEET_OPPORTUNITIES]["C5"].value == "研究完成，等待价格"
+    opportunity_text = "\n".join(
+        str(cell.value)
+        for row in workbook[SHEET_OPPORTUNITIES].iter_rows()
+        for cell in row
+        if cell.value is not None
+    )
+    assert "研究完成，等待价格" in opportunity_text
+
+
+def test_user_pages_translate_internal_provenance_and_status_codes() -> None:
+    payload = _payload()
+    payload["companies"][0]["decision_review"] = [
+        {
+            "label": "研究限制",
+            "value": (
+                "RESEARCH_NOT_READY_FOR_PRICE_ASSESSMENT；估值批准为 false；"
+                "PIT；issuer-specific beta evidence missing: generic beta=1 assumption used"
+            ),
+        },
+        {
+            "label": "待复核公告 1",
+            "value": (
+                "披露时间：2026-09-01；原件：https://example.test/a.pdf；"
+                f"SHA256={SHA}；页数=1；文本状态=TEXT_EXTRACTED_NOT_SEMANTICALLY_VERIFIED"
+            ),
+        },
+        {
+            "label": "股息记录 FY2025",
+            "value": f"每股1.00 CNY；普通/特别分类：unknown。 原件：runtime/private/a.pdf；SHA256={SHA}",
+        },
+    ]
+
+    workbook = build_product_workbench_workbook(product_workbench_from_payload(payload))
+    text = "\n".join(
+        str(cell.value)
+        for row in workbook[SHEET_COMPANIES].iter_rows()
+        for cell in row
+        if cell.value is not None
+    )
+
+    for hidden in ("RESEARCH_NOT_READY_FOR_PRICE_ASSESSMENT", "估值批准为 false", "PIT", "SHA256", SHA, "runtime/", "unknown"):
+        assert hidden not in text
+    assert "研究结果暂不支持价格评估" in text
+    assert "估值尚未获得正式批准" in text
+    assert "严格历史时点" in text
+    assert "原件及哈希见系统与审计页" in text
+    assert "文本已提取，尚未做语义核验" not in text
+
+
+def test_opportunity_card_header_has_visible_height() -> None:
+    workbook = build_product_workbench_workbook(_model())
+    sheet = workbook[SHEET_OPPORTUNITIES]
+
+    assert sheet["A4"].value == "测试公司 / 600000"
+    assert sheet.row_dimensions[4].height == 28
 
 
 def test_absent_portfolio_renders_only_unconnected_state() -> None:
@@ -671,10 +729,11 @@ def test_decision_process_is_navigable_and_keeps_unknown_steps_blocked():
     sheet = workbook[SHEET_DECISION_PROCESS]
     assert _click_distance(workbook, SHEET_TODAY, SHEET_DECISION_PROCESS) == 1
     assert _click_distance(workbook, SHEET_DECISION_PROCESS, SHEET_COMPANIES) == 1
-    statuses = [cell.value for cell in sheet["C"] if cell.value in {"PASS", "CONDITIONAL", "BLOCKED"}]
-    assert statuses == ["BLOCKED"] * (8 * len(_model().companies))
+    statuses = [cell.value for cell in sheet["C"] if cell.value == "暂未通过"]
+    assert statuses == ["暂未通过"] * (8 * len(_model().companies))
     text = "\n".join(str(cell.value) for row in sheet for cell in row if cell.value)
-    assert "NOT_READY" in text
+    assert "尚未就绪" in text
+    assert "NOT_READY" not in text
     assert "当前价格是否有效桥接" in text
 
 
@@ -690,8 +749,9 @@ def test_decision_process_preserves_upstream_status_and_audit_links():
     payload["companies"][0]["decision_process"] = steps
     workbook = build_product_workbench_workbook(product_workbench_from_payload(payload))
     sheet = workbook[SHEET_DECISION_PROCESS]
-    actual = [cell.value for cell in sheet["C"] if cell.value in {"PASS", "CONDITIONAL", "BLOCKED"}]
-    assert actual == [step["status"] for step in steps]
+    actual = [cell.value for cell in sheet["C"] if cell.value in {"通过", "有条件通过", "暂未通过"}]
+    expected = {"PASS": "通过", "CONDITIONAL": "有条件通过", "BLOCKED": "暂未通过"}
+    assert actual == [expected[step["status"]] for step in steps]
     links = [cell for row in sheet for cell in row if cell.hyperlink and str(cell.value).startswith("查看证据")]
     assert len(links) == 8
     assert all(SHEET_SYSTEM_AUDIT in cell.hyperlink.target for cell in links)

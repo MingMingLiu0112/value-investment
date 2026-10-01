@@ -15,6 +15,8 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
 from scripts.build_m7_daily_workbench import build_packet  # noqa: E402
+from value_investment_agent.application.product.workbench import load_stopped_workbench_for_presentation
+from value_investment_agent.presentation.read_models.research_readiness import project_research_readiness
 from value_investment_agent.application.product.common import (  # noqa: E402
     encode_json_bytes,
     sha256_bytes,
@@ -26,6 +28,14 @@ from value_investment_agent.application.product.common import (  # noqa: E402
 from value_investment_agent.application.product.workbench import load_existing_workbench_for_presentation  # noqa: E402
 from value_investment_agent.application.historical_validation.reverse_equity_expectations import load_reverse_expectations_for_presentation
 from value_investment_agent.presentation.read_models.conditional_expectations import project_conditional_expectations, render_company_review_cards
+from value_investment_agent.presentation.read_models.historical_company_closure import (
+    project_historical_company_closure,
+    render_historical_reviews,
+)
+from value_investment_agent.presentation.read_models.historical_execution_replay import (
+    project_historical_execution_replay,
+    render_historical_execution_replays,
+)
 from value_investment_agent.presentation.read_models.product_workbench import EvidenceRecord
 from value_investment_agent.application.historical_validation.disclosed_metric_review import review_disclosed_metrics
 from value_investment_agent.application.historical_validation.reported_cash_proxy import reported_cash_proxies
@@ -36,6 +46,7 @@ from value_investment_agent.application.historical_validation.reported_cash_chan
 from value_investment_agent.application.product.dividend_history import read_dividend_history
 from value_investment_agent.presentation.read_models.dividend_history import project_dividend_history
 from value_investment_agent.application.product.research_recipe import load_research_recipe
+from value_investment_agent.application.product.valuation_drivers import describe_valuation_drivers
 from value_investment_agent.presentation.read_models.existing_research_report import project_existing_research_workbench, public_workbench_payload_from_snapshot  # noqa: E402
 from value_investment_agent.application.product.product_workbench_candidate import (  # noqa: E402
     build_product_workbench_candidate_payload,
@@ -63,7 +74,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-payload-sha256")
     parser.add_argument("--base-read-model-snapshot", action="store_true")
     parser.add_argument("--existing-workbench", type=Path)
+    parser.add_argument("--research-readiness", nargs=2, action="append", default=[], metavar=("PATH", "SHA256"))
     parser.add_argument("--existing-workbench-sha256")
+    parser.add_argument("--historical-closure", nargs=2, metavar=("PATH", "SHA256"),
+                        help="Pin an already verified historical company closure for audit-only projection.")
+    parser.add_argument("--historical-execution-replay", nargs=2, metavar=("PATH", "SHA256"),
+                        help="Pin a verified historical execution reconstruction for audit-only projection.")
     parser.add_argument('--expectations-replay', type=Path)
     parser.add_argument('--expectations-replay-sha256')
     parser.add_argument('--metric-transcription', nargs=2, action='append', default=[],
@@ -94,7 +110,13 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    args.research_readiness = getattr(args, 'research_readiness', [])
     recipe_binding = None
+    historical_closure_binding = None
+    historical_execution_replay_binding = None
+    readiness_bindings = []
+    if args.research_readiness and not args.read_model_only:
+        raise ValueError('research readiness currently requires read-model-only')
     if getattr(args, 'research_recipe', None):
         if (not args.read_model_only or args.integrate_canonical or args.base_payload is not None
                 or args.existing_workbench is not None or args.expectations_replay is not None
@@ -102,7 +124,8 @@ def main() -> int:
                 or args.recovered_event_original or args.cash_change_periods
                 or args.presentation_as_of is not None or args.base_payload_sha256
                 or args.existing_workbench_sha256 or args.expectations_replay_sha256
-                or args.base_read_model_snapshot):
+                or args.base_read_model_snapshot or args.historical_closure is not None
+                or args.historical_execution_replay is not None or args.research_readiness):
             raise ValueError('recipe requires read-model-only and excludes individual input overrides')
         path, digest = args.research_recipe
         recipe = load_research_recipe(root=ROOT, path=ROOT / path, expected_sha256=digest)
@@ -122,6 +145,10 @@ def main() -> int:
         args.recovered_event_original = [(item['id'], item['path']) for item in recipe.get('recovered_event_originals', [])]
         args.dividend_package = None if not recipe.get('dividend_package') else (
             recipe['dividend_package']['path'], recipe['dividend_package']['sha256'])
+        args.historical_closure = None if not recipe.get('historical_closure') else (
+            recipe['historical_closure']['path'], recipe['historical_closure']['sha256'])
+        args.historical_execution_replay = None if not recipe.get('historical_execution_replay') else (
+            recipe['historical_execution_replay']['path'], recipe['historical_execution_replay']['sha256'])
         recipe_binding = dict(path=str(path), sha256=digest, symbol=recipe['symbol'])
     if getattr(args, 'read_model_report', None) is not None and not getattr(args, 'read_model_only', False):
         raise ValueError('read-model report requires read-model-only mode')
@@ -171,6 +198,10 @@ def main() -> int:
         expectations = load_reverse_expectations_for_presentation(root=ROOT,
             path=expectations_path, expected_sha256=expectations_hash,
             workbench_sha256=args.existing_workbench_sha256)
+        arithmetic = expectations['source_bindings']['arithmetic']
+        expectations = dict(expectations, valuation_drivers=describe_valuation_drivers(root=ROOT,
+            workbench_path=ROOT / args.existing_workbench, workbench_sha256=args.existing_workbench_sha256,
+            arithmetic_path=ROOT / arithmetic['path'], arithmetic_sha256=arithmetic['sha256']))
         evidence = EvidenceRecord(f"{expectations['symbol']}-conditional-expectations-{expectations_hash[:12]}",
             '条件性历史价格预期（非当前建议）', 'retrospective_expectations',
             expectations_path.relative_to(ROOT).as_posix(), expectations_hash,
@@ -235,6 +266,58 @@ def main() -> int:
             path.relative_to(ROOT).as_posix(), digest, datetime.fromisoformat(history['observed_at']).date())
         model = project_dividend_history(model, history, evidence)
         dividend_binding = dict(path=path.relative_to(ROOT).as_posix(), sha256=digest, history=history)
+    if getattr(args, 'historical_closure', None):
+        path, digest = args.historical_closure
+        path = require_inside(ROOT, ROOT / path, 'historical closure')
+        if sha256_file(path) != digest:
+            raise ValueError('historical closure hash mismatch')
+        closure = load_json_object(path, 'historical closure')
+        model = project_historical_company_closure(
+            model,
+            closure=closure,
+            closure_path=path.relative_to(ROOT).as_posix(),
+            closure_sha256=digest,
+        )
+        historical_closure_binding = dict(
+            path=path.relative_to(ROOT).as_posix(),
+            sha256=digest,
+            symbol=closure.get('symbol'),
+            company_name=closure.get('company_name'),
+        )
+    if getattr(args, 'historical_execution_replay', None):
+        path, digest = args.historical_execution_replay
+        path = require_inside(ROOT, ROOT / path, 'historical execution replay')
+        if sha256_file(path) != digest:
+            raise ValueError('historical execution replay hash mismatch')
+        replay = load_json_object(path, 'historical execution replay')
+        for source in replay.get('source_bindings', []):
+            if not isinstance(source, dict) or 'path' not in source or 'sha256' not in source:
+                raise ValueError('historical execution replay source binding is invalid')
+            source_path = require_inside(
+                ROOT,
+                ROOT / str(source['path']).replace('\\', '/'),
+                'historical execution replay source',
+            )
+            if sha256_file(source_path) != source['sha256']:
+                raise ValueError('historical execution replay source hash mismatch')
+        model = project_historical_execution_replay(
+            model,
+            replay=replay,
+            replay_path=path.relative_to(ROOT).as_posix(),
+            replay_sha256=digest,
+        )
+        historical_execution_replay_binding = dict(
+            path=path.relative_to(ROOT).as_posix(),
+            sha256=digest,
+            symbol=replay.get('symbol'),
+            company_name=replay.get('company_name'),
+            scenario=replay.get('scenario'),
+            recipe_sha256=replay.get('recipe_sha256'),
+        )
+    for source, digest in args.research_readiness:
+        readiness = load_stopped_workbench_for_presentation(root=ROOT, path=ROOT / source, expected_sha256=digest)
+        model = project_research_readiness(model, readiness)
+        readiness_bindings.extend(readiness["source_bindings"])
     if getattr(args, 'read_model_only', False):
         if output.suffix != '.json' or getattr(args, 'integrate_canonical', False):
             raise ValueError('read-model-only requires JSON output without workbook publication')
@@ -250,12 +333,22 @@ def main() -> int:
             disclosed_financial_bindings=metric_bindings,
             event_source_binding=event_binding,
             dividend_history_binding=dividend_binding,
+            historical_closure_binding=historical_closure_binding,
+            historical_execution_replay_binding=historical_execution_replay_binding,
             research_recipe_binding=recipe_binding,
+            readiness_bindings=readiness_bindings,
             canonical_written=False, historical_preview=True, action='no_order'))
         if report_path is not None:
             report_path.parent.mkdir(parents=True, exist_ok=True)
             with report_path.open('x', encoding='utf-8') as handle:
-                handle.write(render_company_review_cards(model))
+                report = render_company_review_cards(model).rstrip()
+                historical_report = render_historical_reviews(model).strip() if model.historical_reviews else ''
+                replay_report = (
+                    render_historical_execution_replays(model).strip()
+                    if model.historical_execution_replays else ''
+                )
+                handle.write(report + ('\n\n' + historical_report if historical_report else '')
+                             + ('\n\n' + replay_report if replay_report else '') + '\n')
         print(json.dumps(dict(output=str(output), sha256=sha256_file(output),
                               canonical_written=False, action='no_order'), indent=2))
         return 0
@@ -276,6 +369,8 @@ def main() -> int:
             "existing_workbench_sha256": args.existing_workbench_sha256,
             "base_payload_sha256": args.base_payload_sha256,
             "expectations_replay_sha256": expectations_hash,
+            "historical_closure_binding": historical_closure_binding,
+            "historical_execution_replay_binding": historical_execution_replay_binding,
         }
     )
     write_new_json(source_receipt, {
@@ -291,6 +386,8 @@ def main() -> int:
         "disclosed_financial_bindings": metric_bindings,
         "event_source_binding": event_binding,
         "dividend_history_binding": dividend_binding,
+        "historical_closure_binding": historical_closure_binding,
+        "historical_execution_replay_binding": historical_execution_replay_binding,
         "output_manifest_sha256": receipt["manifest_sha256"],
         "workbook_sha256": receipt["workbook_sha256"],
         "historical_preview": True, "canonical_written": False, "action": "no_order",

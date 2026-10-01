@@ -6,37 +6,15 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 12,
     "CURRENT_PRODUCT_CLI": 7,
-    "CURRENT_RESEARCH_CLI": 199,
-    "HISTORICAL_VALIDATION_TOOL": 58,
+    "CURRENT_RESEARCH_CLI": 200,
+    "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 216,
     "MIGRATION_TOOL": 13,
-    "DIAGNOSTIC_TOOL": 134,
+    "DIAGNOSTIC_TOOL": 136,
     "SUPERSEDED": 0,
-    "DELETE_CANDIDATE": 1
+    "DELETE_CANDIDATE": 0
   },
   "entries": [
-    {
-      "path": "scripts/current/replay_workbench_cutoffs.py",
-      "category": "HISTORICAL_VALIDATION_TOOL",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 56,
-      "sha256": "09038167bf3d50d5e4b54e6e62d7e141ef779290978844ed69d24c16ea1e7024"
-    },
-    {
-      "path": "scripts/current/update_canonical_quote_display.py",
-      "category": "DELETE_CANDIDATE",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": "scripts/current/publish_product_workbench_to_canonical.py",
-      "recommended_action": "DISABLED_FAIL_CLOSED_ORIGINAL_RETAINED_IN_RUNTIME",
-      "risk": "HIGH",
-      "line_count": 91,
-      "sha256": "509ac8f1c5e3cf078a9d12060de208cde1ea397b9f94a272d3c3fd153087d1a9"
-    },
     {
       "path": "scripts/analyze_moutai_cash_anchor_equity_coverage.py",
       "category": "COMPANY_RESEARCH_CASE_TOOL",
@@ -1527,8 +1505,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 410,
-      "sha256": "cbb7171555fb807dea6cbaaa55a07ff0018c22600a1f22770122ff133b01cc36"
+      "line_count": 405,
+      "sha256": "b4980b79de7b854e195036a49ceac3f49499fc80eefe9956b67b2e6780c877a8"
     },
     {
       "path": "scripts/build_m7_daily_workbench_post_checkpoint_a.py",
@@ -1703,12 +1681,12 @@
       "path": "scripts/build_midea_valuation_applicability.py",
       "category": "COMPANY_RESEARCH_CASE_TOOL",
       "current_consumers": [],
-      "imports_business_logic": true,
+      "imports_business_logic": false,
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 321,
-      "sha256": "5175dd327c96063ffa75337c6703cdc9e5ecf67332b6222aacf0039c047ffaa6"
+      "line_count": 296,
+      "sha256": "dc23720365f505345ca571e45c4d3200564409eb1095d73365cfc1e74d493837"
     },
     {
       "path": "scripts/build_moutai_2014_q3_parent_equity.py",
@@ -3796,8 +3774,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 182,
-      "sha256": "ddb14306803466e6afb6b6cc45eb54ebee98801ec17a0fc82b62f20d3600e2ce"
+      "line_count": 184,
+      "sha256": "936420be74d938824fd37f7ee760171eec0cd0c8e66c51c2ff8581ce4092bea6"
     },
     {
       "path": "scripts/current/audit_tracked_xlsx_privacy.py",
@@ -3807,8 +3785,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 366,
-      "sha256": "a49c3ed4a3846f4a95c866e250c0818559ac08ee695dce5d887f4d175fe9f106"
+      "line_count": 416,
+      "sha256": "cb93803c3abea53f6a4636714463413947f38f7dba852378b50eba7823c6341a"
     },
     {
       "path": "scripts/current/build_company_valuation.py",
@@ -3829,19 +3807,41 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 37,
-      "sha256": "f042278d0b14313015628ff5d0bc3c544a9b7072975ab2fb60317f5f4caaa2f0"
+      "line_count": 57,
+      "sha256": "25b13489c86467f1cc91aa94ebb240143c2d2915308d6397d927740ad7d714c1"
     },
     {
-      "path": "scripts/current/build_product_workbench_candidate.py",
-      "category": "CURRENT_RESEARCH_CLI",
+      "path": "scripts/current/build_historical_company_closure.py",
+      "category": "HISTORICAL_VALIDATION_TOOL",
       "current_consumers": [],
       "imports_business_logic": false,
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 82,
-      "sha256": "1f2aa0e25310592072d5ea5599558a1eb0c556bf6e2ac331e42ac80d578cd598"
+      "line_count": 58,
+      "sha256": "4752bfe459ea234721322527bc7bc435b887588ce261617c9b1f29b22429d380"
+    },
+    {
+      "path": "scripts/current/build_historical_execution_replay.py",
+      "category": "HISTORICAL_VALIDATION_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 78,
+      "sha256": "c252bcae8821cf71a1e5cb8ac1d2908c3bba38ea4d9c787f11511222b4e7e71d"
+    },
+    {
+      "path": "scripts/current/build_product_workbench_candidate.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": true,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 389,
+      "sha256": "1e339ca46b93db43f326e4815f69fe70a5a00a39766a22c30a0232b54af4222f"
     },
     {
       "path": "scripts/current/build_prospective_baselines.py",
@@ -3873,8 +3873,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 90,
-      "sha256": "b71c66a35c456e29393761f1ceff18403805f7da917043d7a008a19be0fe7ba8"
+      "line_count": 107,
+      "sha256": "0be8aeafdb5acfc6c5435945ba5f13e0c711224daa8fd55eddbc140319513232"
     },
     {
       "path": "scripts/current/daily_product_packet.py",
@@ -3884,8 +3884,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 28,
-      "sha256": "e8b7626b371b0f75b7d5dcef2c8f6afcadf629492e4f628a7940ebe6fc528680"
+      "line_count": 35,
+      "sha256": "c277c727d3303a05109c9093836db4048522c459c71234850fd9e01854058af8"
     },
     {
       "path": "scripts/current/daily_quote_binding.py",
@@ -3906,8 +3906,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 596,
-      "sha256": "44697461aa3b372d52e6b9cbd386619dd8c6673ba2bc54734b4cc0d969b65550"
+      "line_count": 1034,
+      "sha256": "6a810a310718e7aee0cc645f9db4a925958a2ea8c95c480cb3a849e7c835a9c9"
     },
     {
       "path": "scripts/current/record_prospective_public_observation.py",
@@ -3943,6 +3943,17 @@
       "sha256": "a4b8d1547c995647d6d35352262139b0d811bac53b74059393c7d43e8e7917cb"
     },
     {
+      "path": "scripts/current/replay_workbench_cutoffs.py",
+      "category": "HISTORICAL_VALIDATION_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 153,
+      "sha256": "f208e9d8ee1e95382b6d2bca56ede3c184bc90d4a3c85ec2854cf979772e508d"
+    },
+    {
       "path": "scripts/current/review_event.py",
       "category": "CURRENT_RESEARCH_CLI",
       "current_consumers": [],
@@ -3961,8 +3972,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 39,
-      "sha256": "e5f86b91723eb68613be7f445babb66dcc04faf26ba5d995cc98505a76141f58"
+      "line_count": 80,
+      "sha256": "65998c28474679796640045f30c73f1cdef3416cf298091af7c1d64bb667f20f"
     },
     {
       "path": "scripts/current/stamp_prospective_checkpoint.py",
@@ -3973,7 +3984,18 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 69,
-      "sha256": "f0c506db06d064a3f9eed3ad46aea66f91a03cb4c308539cd3708b548878a61d"
+      "sha256": "0756212ddd11fce28d6441e88109c45e861c62fa73654e93d843d90b9a436912"
+    },
+    {
+      "path": "scripts/current/update_canonical_quote_display.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 91,
+      "sha256": "509ac8f1c5e3cf078a9d12060de208cde1ea397b9f94a272d3c3fd153087d1a9"
     },
     {
       "path": "scripts/current/verify_m7_product_ux_candidate_wps.ps1",
@@ -3983,8 +4005,30 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 505,
-      "sha256": "c7a8c620fecf96415a9a0a6d64e1038e3bcabeb433f08bb0b70a2691485d368a"
+      "line_count": 515,
+      "sha256": "a53246f153d42e25bb4dce53f61debfd8263867a545f31dcf4f3e378e0584c56"
+    },
+    {
+      "path": "scripts/current/verify_m7_product_ux_trial_visuals.py",
+      "category": "DIAGNOSTIC_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 229,
+      "sha256": "d0579efa5560e123a0997d001af8487b9b79e41ecf3293d10472af183c40bdc4"
+    },
+    {
+      "path": "scripts/current/verify_m7_product_ux_trial_wps.ps1",
+      "category": "DIAGNOSTIC_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 128,
+      "sha256": "05644352b789bc8bfc3ef88b43569f2db9eecc5987039815fba412d22cdc01c9"
     },
     {
       "path": "scripts/deploy_attributable_profit_adapter.py",
@@ -4968,8 +5012,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "MEDIUM",
-      "line_count": 57,
-      "sha256": "04403ac29e85ea2c99d3cfaad35fefb4a3f068623128aca7220953a2a54a7d96"
+      "line_count": 104,
+      "sha256": "0f595ff7f4ce0f2572d8f43bc82e6722ea2efae39a209459e5a5bf386f7a279c"
     },
     {
       "path": "scripts/package_encrypted_backup.py",
@@ -4981,8 +5025,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "MEDIUM",
-      "line_count": 84,
-      "sha256": "2db528cd19b662768403f178c006b8a5753a3957880fe4fc41cbbf1de97f4932"
+      "line_count": 90,
+      "sha256": "1dc7f2545274f8559c4abb91a776733159760e0c3465995f28c808031535bbdb"
     },
     {
       "path": "scripts/parse_retained_institution.py",

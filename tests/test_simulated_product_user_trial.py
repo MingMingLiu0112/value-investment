@@ -58,7 +58,8 @@ def test_synthetic_cli_runs_without_production_artifacts(tmp_path, monkeypatch):
         assert "available_at" in decision_text
         assert "不默认采用 FCFF" in decision_text
         assert "未提供时不输出个性化仓位" in decision_text
-        assert "NOT_READY" in decision_text
+        assert "尚未就绪" in decision_text
+        assert "NOT_READY" not in decision_text
     finally:
         workbook.close()
     manifest = json.loads(output.with_name(output.stem + ".m7-product-workbench-candidate-manifest.json").read_text(encoding="utf-8"))

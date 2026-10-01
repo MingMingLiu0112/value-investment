@@ -88,17 +88,34 @@ def build_current_workbench_for_symbol(
         package_path=package_path,
         output_path=None,
     )
+    outcome = research["result"]
+    stopped = outcome["status"] == "BLOCKED_BY_RESEARCH_SCHEDULER"
+    evidence_stops = []
+    if stopped:
+        ledger = root / "config" / "research-evidence-stop-ledger-v1.json"
+        expected = research["receipt"]["input_sha256"]["evidence_stop_ledger"]
+        if sha256_file(ledger) != expected:
+            raise ValueError("evidence-stop ledger changed during workbench read")
+        evidence_stops = [item for item in load_json_object(ledger, "evidence-stop ledger")["stops"]
+                          if item["symbol"] == normalized]
+        if sha256_file(ledger) != expected:
+            raise ValueError("evidence-stop ledger changed during workbench read")
     payload = {
         "schema_version": "product-current-workbench-request-v1",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "command": "current_workbench",
         "symbol": normalized,
         "action": ACTION_NO_ORDER,
-        "research_status": research["result"]["status"],
-        "research_blockers": research["result"]["blockers"],
-        "current_status": research["result"]["current_status"],
-        "valuation": research["result"]["valuation"],
-        "price_bridge": research["result"]["price_bridge"],
+        "research_status": outcome["status"],
+        "research_blockers": outcome["blockers"],
+        "current_status": None if stopped else outcome["current_status"],
+        "valuation": None if stopped else outcome["valuation"],
+        "price_bridge": None if stopped else outcome["price_bridge"],
+        "schedule_gate": outcome.get("schedule_gate"),
+        "evidence_stops": evidence_stops,
+        "suggested_state": "NOT_READY",
+        "position_guidance": None,
+        "canonical_workbook_written": False,
         "requires_product_renderer": True,
         "research_receipt": research["receipt"],
     }
@@ -114,3 +131,36 @@ def build_current_workbench_for_symbol(
         )
         | {"output_sha256": sha256_file(target)},
     }
+
+
+def load_stopped_workbench_for_presentation(*, root: Path, path: Path, expected_sha256: str) -> dict[str, Any]:
+    """Recheck the stopped result against the current source ledger, without research."""
+    path = require_inside(root, path, "stopped workbench")
+    if sha256_file(path) != expected_sha256:
+        raise ValueError("stopped workbench hash mismatch")
+    payload = load_json_object(path, "stopped workbench")
+    if (payload.get("schema_version") != "product-current-workbench-request-v1"
+            or payload.get("action") != ACTION_NO_ORDER
+            or payload.get("research_status") != "BLOCKED_BY_RESEARCH_SCHEDULER"
+            or payload.get("suggested_state") != "NOT_READY"
+            or payload.get("position_guidance") is not None
+            or payload.get("canonical_workbook_written") is not False
+            or any(payload.get(key) is not None for key in ("valuation", "price_bridge", "current_status"))):
+        raise ValueError("stopped workbench scope mismatch")
+    symbol = normalize_symbol(payload["symbol"])
+    gate = payload.get("schedule_gate")
+    if not isinstance(gate, dict) or gate.get("allowed") is not False:
+        raise ValueError("stopped workbench requires denied schedule gate")
+    ledger = root / "config/research-evidence-stop-ledger-v1.json"
+    expected = payload["research_receipt"]["input_sha256"]["evidence_stop_ledger"]
+    if sha256_file(ledger) != expected:
+        raise ValueError("stopped workbench ledger hash mismatch")
+    registered = [stop for stop in load_json_object(ledger, "evidence-stop ledger")["stops"]
+                  if stop["symbol"] == symbol]
+    if not registered or registered != payload.get("evidence_stops"):
+        raise ValueError("stopped workbench questions differ from ledger")
+    if sha256_file(ledger) != expected or sha256_file(path) != expected_sha256:
+        raise ValueError("stopped workbench source changed during read")
+    return {"result": payload, "observed_at": datetime.now(timezone.utc).isoformat(),
+            "source_bindings": [{"path": str(path.relative_to(root.resolve())), "sha256": expected_sha256},
+                                {"path": str(ledger.relative_to(root.resolve())), "sha256": expected}]}

@@ -48,6 +48,7 @@ jobs:
           tests/test_dividend_history_presentation.py
           tests/test_research_recipe.py
           tests/test_company_review_readability.py
+          tests/test_valuation_driver_explanation.py
           tests/test_valuation_result.py
           tests/test_price_bridge.py
           tests/test_research_profile.py
@@ -169,6 +170,8 @@ jobs:
           tests/test_m3_historical_research_replay.py
           tests/test_m3_strict_pit_evidence.py
           tests/test_m3_reconstructed_evidence_continuity.py
+          tests/test_historical_company_closure.py
+          tests/test_historical_execution_replay.py
           tests/test_historical_validation.py
           tests/test_historical_validation_receipt.py
           tests/test_pit_conformance_verifier_v2.py

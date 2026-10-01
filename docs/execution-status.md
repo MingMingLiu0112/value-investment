@@ -1,5 +1,57 @@
 # CURRENT STATUS
 
+## 2026-10-01 Canonical Entry Reconciliation After Shared-Session Integration
+
+Default entry is again `WORKBOOK_PATH` / `CANONICAL_WORKBOOK`. Runtime v3 and
+its visual/source receipts remain historical evidence, accessible only with
+explicit `--historical-preview PATH --preview-sha256 SHA256`. Earlier sections
+claiming PRODUCT_UX_RUNTIME as the current entry are superseded, not deleted.
+Actual resolver verified canonical SHA256
+`74439baa82f9ff9f648cb32858af9d3fab03ade06d4f43b1cbdde15fcdef4582`;
+no workbook bytes were written and no WPS launch was performed in this run.
+Six test-local pointer cases passed without reading the user's WPS file.
+Final user/production admission remains NOT_PASSED / NOT_REACHED; action=no_order.
+These are uncommitted shared-worktree changes, not remote CI acceptance.
+
+## 2026-10-01 Reviewed-Research Publication Boundary Hardened
+
+- The canonical-reviewed-research publisher now requires the candidate source-binding receipt, rehashes every declared local source, transits through the historical closure and execution-replay nested source sets, makes visual review mandatory, and rejects any proof that elevates `strict_pit` or `current_price_bridge`.
+- Preserved-sheet OOXML protection now includes reachable `xl/tables/` and `xl/comments/` parts, ignores external relationships, and fails closed on missing internal relationship targets. Negative tests cover missing visual review, missing/drifted source receipts, boundary elevation, nested closure drift, missing internal OOXML targets, and table/comment preservation.
+- Fresh verification of the existing 62-sheet preview passed with 52 unique bound sources, source-set SHA-256 `1d626787c3feeb416f5f9573fa8d85e61a3e5e2f83c28f1a358556479cfe9aea`, and receipt `runtime/publication-receipts/canonical-reviewed-research-verification-20261001-hardened.json` (SHA-256 `cb951cf402ba10039a2eb9f6777be66826cc625c7e91cdf0096095689759ad63`).
+- This is verification-only. `canonical_written=false`; canonical SHA remains `74439baa82f9ff9f648cb32858af9d3fab03ade06d4f43b1cbdde15fcdef4582`. No production publication, scheduler, database or PTA change occurred. `action=no_order`.
+
+## 2026-10-01 M7 Product UX v3 User-Visible Trial Reconfirmed
+
+- Current pointer is restored to the five-page product trial `runtime/m7-product-ux-candidate-v3-20261001.xlsx` (`7437a155c41d73882d9b5a1c751f690c9d9bd62e6ef484188d04a711793ca769`). `python scripts/open_current_trial_workbook.py --open` was actually launched and WPS opened the workbook read-only; this is not legacy v16 and not the canonical workbook.
+- Fresh WPS native export and visual review receipts are `runtime/m7-product-ux-candidate-v3-20261001-delivery-wps.json` and `runtime/m7-product-ux-candidate-v3-20261001-delivery-visual.json`. All 274 string cells checked across the five primary pages plus the supporting decision page were present in WPS PDF output; 70 evidence hyperlinks, `B4` freeze panes, six-column width and no internal user-page tokens were verified.
+- The review found no P0/P1 reading defect requiring a workbook edit, so no v4 was created. The 62-sheet canonical integration preview remains historical audit evidence only. `canonical_written=false`; canonical SHA remains `74439baa82f9ff9f648cb32858af9d3fab03ade06d4f43b1cbdde15fcdef4582`.
+- `M7_FINAL_USER_ACCEPTANCE=NOT_PASSED`, `INITIAL_ASSISTED_USE=NOT_REACHED`, M6 operational status remains `NOT_STARTED`, and `action=no_order`.
+
+## 2026-10-01 真实输入历史执行回放接入共享产品数据包
+
+- 工程交付：`scripts/current/build_historical_execution_replay.py` 产出的真实输入历史执行回放（600519 / upper-30pct，2674 个交易日、4 次成交、期末 NAV 1076905.53 元、研究性总回报 7.6906%）已通过 `scripts/current/build_product_workbench_candidate.py --historical-execution-replay` 接入共享产品数据包，只出现在次级 `06_系统与审计` 的“历史执行回放审计（非当前建议）”区，不进入今日/机会/公司/组合/事件五个产品页。
+- 可复现产物：`runtime/historical-replay-shared-product-20261001/product-workbench.xlsx`（SHA-256 `d3c57a622ea2ce2438021e99f336ffe472908a1b26177c02b77b03a761029d91`）、manifest `e31c3b7cc9f7de6a392091ce3a19419deaf624c05a198f64943d7425b3a9249b`（counts 含 `historical_execution_replays=1`、`historical_reviews=1`、`evidence_records=33`）、来源收据 `product-workbench.source-bindings.json`（`b9e3a45fdcf7cf927964996b7a830ca282e9e6228d194cb5300f5133ae58c972`，其 `output_manifest_sha256`/`workbook_sha256` 与上述两个文件一致）、同源 JSON `read-model.json`（`2c28ee81fde56c2ff9a02ae638ae6c15b6a8b2e50b51498051cded671275bc51`）与可读报告 `company-card.md`（`203137b35c2f38075e9a2127b9f5201c0913b76bff1826f3231dab39bf91c18c`）。
+- WPS Office 只读打开该候选并逐页导出七个工作表，用户页内部词元扫描全部通过，导出前后工作簿 hash 不变：`runtime/historical-replay-shared-product-20261001/product-workbench-wps-open-receipt.json`（`adfa7509400110a03cedf5c758768670578189fbfcc6cbb61c5860df2c4f1e4d`）。Canonical 工作簿未被替换，仍为 `74439baa82f9ff9f648cb32858af9d3fab03ade06d4f43b1cbdde15fcdef4582`。
+- 本轮修正两处会影响后续返工的工程债：脚本清单按生成器重建（644 条、`current_entrypoint_count=43`）并把此前被手工改成 45 的断言恢复为生成值，同时把回放 CLI 登记进 `config/current-cli-entrypoints-v2.json` 工程层（engineering 41 / total 60）；`tests/test_existing_valuation.py` 中仍指向旧十列机会卡的 `D5/F5/J5` 断言改为按标签定位当前两列卡片的取值单元格，并保留“用户页不出现 BLOCKED”的边界。
+- 验证范围：完整离线 Core Gates（workflow 内 169 个模块）`1433 passed, 39 skipped`，证据 `.tmp/offline-core-replay-20261001.xml`；`tests/test_historical_execution_replay.py` 新增投影/拒绝用例覆盖 action、schema、符号、来源角色、对照计数、未来生成时间与 6 个准入标志。测试通过只证明共享路径与失败关闭行为，不证明历史可成交或策略有效。
+- 边界：`engineering_delivery=DELIVERED`、`current_research_admission=NOT_READY`、`strict_pit_admitted=false`、`historical_execution_validated=false`、`investment_rule_validated=false`、`performance_claim_allowed=false`、`validation_classification=NOT_PIT_SAFE`、`validation_admission_status=NOT_ADMITTED`、`action=no_order`。
+
+## 2026-10-01 M7 Product UX User-Visible Trial Delivery
+
+- Final read-only product trial: `runtime/m7-product-ux-candidate-v3-20261001.xlsx`, SHA-256 `7437a155c41d73882d9b5a1c751f690c9d9bd62e6ef484188d04a711793ca769`. The v2 candidate remains historical provenance and is not the current entry.
+- WPS Office actually opened the v3 workbook read-only, exported every sheet natively, and preserved the workbook hash. Receipt: `runtime/m7-product-ux-candidate-v3-20261001-wps-open-receipt.json`. Visual/layout receipt: `runtime/m7-product-ux-candidate-v3-20261001-visual-review.json`. Readability receipt: `runtime/m7-product-ux-candidate-v3-20261001-readability.json`. The earlier receipt pair is preserved provenance; the pointer now names `runtime/m7-product-ux-candidate-v3-20261001-wps-delivery-recheck.json` and `runtime/m7-product-ux-candidate-v3-20261001-visual-review-delivery.json`.
+- Independent delivery recheck: WPS reopened the same hash-bound workbook read-only, exported all seven sheets, and a per-cell comparison confirmed every workbook cell string appears in full in the native PDF export, so no line is clipped. Frozen `B4` panes, 70 evidence hyperlinks, empty formula-error set and a clean internal-token scan on the six user pages all held; `python scripts/open_current_trial_workbook.py --open` verified the pointer and opened the five-page Product UX workbench rather than legacy v16 or the canonical workbook. 33 focused pointer/workbook tests passed. Residual P2 (non-blocking): the `03_公司` appendix still prints three hash-suffixed labels such as `财报原件入口（600887-disclosed-rows-6b9d62552ff0）`; it wraps without clipping, so it is polish for the next M7 UX pass rather than a reading blocker.
+- User pages now hide internal engineering tokens; the opportunity card header is visible; the five primary pages are `01_今日`, `02_机会`, `03_公司`, `04_我的组合`, `05_事件`; `决策过程` remains supporting product explanation and `06_系统与审计` remains secondary.
+- `config/current-trial-workbook.json` now points to the Product UX runtime trial. Running `python scripts/open_current_trial_workbook.py --open` actually opened `m7-product-ux-candidate-v3-20261001.xlsx` in WPS, not legacy v16 and not the canonical workbook.
+- The canonical WPS workbook was not replaced or modified. Canonical SHA-256 remains `74439baa82f9ff9f648cb32858af9d3fab03ade06d4f43b1cbdde15fcdef4582`.
+- Status: `M7_PRODUCT_UX = USER_VISIBLE_TRIAL_READY`; `CURRENT_TRIAL_POINTER = PRODUCT_UX`; `M7_FINAL_USER_ACCEPTANCE = NOT_PASSED`; `INITIAL_ASSISTED_USE = NOT_REACHED`; `action = no_order`.
+
+## 2026-10-01 600519 Historical Closure Engineering Delivery
+
+- `scripts/current/build_historical_company_closure.py` now reproduces one readable 600519 historical research closure from hash-pinned M3 replay, no-decision execution clock and nine range-diagnostic scenarios. Report: `runtime/historical-company-closure-600519-20261001/company-historical-closure.md`, file SHA-256 `13f4ecd399bc6521a941417132fe94b04676f6101bf78de45a0d5b0080be2092`.
+- A fresh no-overwrite run against the pinned recipe produced the same result after excluding only `generated_at`; the Markdown was byte-identical. The readable report distinguishes the no-decision execution clock from retrospective range diagnostics and translates blockers into Chinese while the JSON retains raw blocker codes.
+- This is engineering delivery only: `current_research_admission=NOT_READY`, `strict_pit_admitted=false`, `historical_execution_validated=false`, `performance_claim_allowed=false`, `action=no_order`.
+
 ## 2026-10-01 Shared Historical Integration And Conditional Expectations
 
 - Engineering delivery: shared cutoff CLI now supports original event integrity/recovery, page-level original-source review, explicitly synthetic bounded virtual execution and conditional price-implied terminal ROE. These reuse existing quote, validity, bridge, PDF and account engines; no copied company pipeline or investment threshold changes.
@@ -7170,3 +7222,36 @@ action = no_order
 - Actual command produced `runtime/shared-real-input-reconstruction-20261001/result.json` and `report.md`. At 2026-08-27 15:00 both facts are excluded; from 2026-08-28 00:00 they enter the separately labeled reconstruction. Existing observed-workbench output still is not backdated to those times. No current quote, order, fill, personal position guidance, financial-gate approval or strict PIT admission is produced. This is a real-input reconstruction component, not completed historical execution/backtest acceptance.
 - 78 targeted tests passed. Full workflow-selected updated offline suite: 1332 passed / 34 skipped / 28 existing named-range deprecation warnings; `.tmp/reconstructed-input-full-20261001.xml`. Tests include issuer/URL/index mismatch, duplicate/missing announcement, invalid timestamp, date-level conservative boundary, preserving later review time and refusing changed index bytes. Application orchestration unit test substitutes already-reviewed arithmetic; actual command separately reruns the real arithmetic/source chain.
 - Canonical workbook, server PTA, database and schedules were untouched. Remaining next dependency is historical ModelValidity/current-to-historical quote linkage and decision/execution orchestration using real admitted inputs, not the legacy Median-PE or 30% rule path. Final readiness remains NOT_REACHED/action=no_order.
+# 2026-10-01 历史提议与执行逐笔关联（共享工作树）
+
+历史执行回放新增 `decision_outcomes`，用冻结 decision_id 关联账本 fill / rejected_order / deferred_order_id，区分提议日与成交日；报告新增原提议与执行对照。拒绝之后 pending_order_id 被清空不再导致错误归属。未匹配执行明确为 UNRESOLVED，投资理由保持 NOT_RECONSTRUCTED，不生成或批准新买卖逻辑。
+
+真实冻结 600519 upper-30pct 输入产物：`runtime/execution-proposal-link-20261001/report.md` 与 `result.json`；结果 SHA-256 `bd4592e76c6cebb7303c0dcfce32c6be34e348fdb00a579ccdf945ca3edfb9e3`。重建 journal SHA-256 `4b84cd278b32b1a2d7d81f368524535442f2ed4e6b4e75c28775675cd838d4a9`。相关集成测试 34 项通过。代码仍属含其他会话改动的未提交工作树；不代表 GitHub CI 或生产验收通过。
+
+只扩充历史审计可读报告，不改当前公司、组合与信号，不写 canonical、不改服务器或定时任务。CURRENT_RESEARCH_ADMISSION=NOT_READY；strict_pit_admitted=false；historical_execution_validated=false；performance_claim_allowed=false；action=no_order。完整 Goal 尚未完成。
+
+# 2026-10-01 冻结历史决策解释接入共享研究报告
+
+实际依赖：hash-pinned recipe -> 原 execution input / range config / range journal -> 共享账本机械重建 -> 提议执行关联 -> 冻结决策解释 -> ProductWorkbench 次级历史审计 / Markdown。另一独立路径为公开 facts / workbench / arithmetic -> 条件性估值与披露数字 -> 当前公司研究卡；canonical 发布仍要求唯一 WORKBOOK_PATH、来源重验、备份、保留页与原生视觉验收。历史解释不改变当前研究门禁，也不替代发布或严格 PIT。
+
+本轮新增完整的冻结实验解释包：记录提议日收盘、实验价值端点、日志安全边际、原实验分批预算、执行明细和原买入关联；没有数字时保留未记录，不反推、不新增投资规则。只有已执行 entry 可关联后续退出，拒绝 entry 不视为已持仓。企业 Thesis 一致性为 NOT_ASSESSABLE，缺项包括 EntryThesisSnapshot、当时业务判断、反证和 Thesis Breaker 复核。规则实际登记时间 2026-09-25 原样呈现，不能声称在 2015 年已运行或预注册。
+
+真实输入产物 `runtime/frozen-decision-explanation-20261001/report.md`，结果 SHA-256 `380fc807a6625e6e363c1bf4d1f96d3bfd3502579f561353e0cb33d47a20de25`。共享研究报告 `runtime/frozen-logic-shared-product-20261001/company-card.md`；read-model SHA-256 `477f3da15e9f7f99ea750464b2d550ad764aa840438b8e7ccf2f66097a75102c`。共享输出使用原公开 base、现有估值与财务转录输入，并添加新的历史审计；不是原 Excel 已发布的声明。账本 SHA-256 仍为 `4b84cd278b32b1a2d7d81f368524535442f2ed4e6b4e75c28775675cd838d4a9`，数值和执行规则未改变。
+
+新增解释准入防提升、未执行买入关联保护与 read-model snapshot 往返测试。历史解释文件测试 31 项通过。工作树仍包含其他会话未提交变更；远端 CI 不据此宣称通过。没有修改原 Excel、服务器、定时任务或数据库，action=no_order；当前研究准入 NOT_READY，最终运营验收 NOT_REACHED。
+
+# 2026-10-01 三家公司共享证据停止展示闭环
+
+实际缺口是 current-workbench 入口直接索引调度停止结果中不存在的 current_status/valuation/price_bridge，导致 KeyError，且 --report 原先仅支持 existing-result。现在停止结果显式保留 null、NOT_READY、no_order，并在重验 ledger SHA-256 后绑定该公司的问题、期间、已查材料和原始重开条件。通用报告不运行 build_descriptor、不消耗重开请求、不批准估值/仓位、不重搜同一证据。
+
+同一个 `scripts/current/build_current_workbench.py --symbol ... --report ...` 实际跑通 000333 / 600887 / 601088。产物在 `runtime/shared-three-company-readiness-20261001/<symbol>/result.json` 与 `research-readiness.md`，分别呈现 4 / 2 / 1 项真实台账缺口。来源是现有停止台账，不伪装为本轮新财报数字审查；现有封存研究继续保留，不清空旧估值。
+
+相关集成测试 46 项通过，包括三公司停止展示、禁止再次构建研究输入、禁止将停止结果提升为已准入估值和通用 CLI 边界。工作树未提交，不能据此宣称远端 CI 已绿。未修改原 Excel、数据库、服务器或定时任务；当前研究准入和最终运营验收仍未通过。action=no_order。
+
+# 2026-10-01 研究缺项接入同一公司卡
+
+共享缺项入口进一步接入 ProductWorkbench，而非只产生独立报告。Application 在投影前重验结果 Hash、停止台账 Hash 和该公司所有问题的精确匹配；Presentation 只增加 decision_review 与审计引用，拒绝继承已通过的非估值决策门禁，不改变 scenarios、估值、当前价、decision_process、组合或今日提示。
+
+实际伊利产物 `runtime/research-readiness-product-20261001/company-card.md` 与 `read-model.json`，read-model SHA-256 `6c7d6f8b93df6a9c351d254270e8ef22b0faf102e2215c81bbb7f6b7cb20b29d`。输入为原公开卡、现有来源绑定 workbench、条件性估值解释、财务转录和 600887 停止结果；缺项记录引用当前 ledger 的 `14bed2d1609e5479e1f43a90e01bb314d332000fe988b903a3c8adec9f628330`。其中材料编号只是台账记载，不提升为本轮新财报数字或历史可用时间验证。
+
+同一路径在 000333 / 600887 / 601088 测试中验证，且测试台账漂移失败关闭、原估值与决策/组合保持不变。相关测试 46 项通过。`--research-readiness PATH SHA256` 目前仅允许 read-model-only，与 recipe 输入覆盖互斥；不宣称正式 Excel 已发布。当前工作树仍未提交，远端 CI 未验证，完整 Goal 未完成，action=no_order。

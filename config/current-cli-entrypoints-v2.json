@@ -1,7 +1,7 @@
 {
   "schema_version": "current-cli-entrypoints-v2",
   "action": "no_order",
-  "reviewed_at": "2026-09-26",
+  "reviewed_at": "2026-10-01",
   "policy": "Product and operations start with generic symbol-argument entrypoints. Engineering and diagnostic tools are discoverable separately and do not masquerade as the product surface.",
   "v1_compatibility": {
     "registry": "config/current-cli-entrypoints-v1.json",
@@ -31,6 +31,8 @@
     "scripts/build_m5_disclosure_review_briefing.py"
   ],
   "SUPPORTED_ENGINEERING_CLI": [
+    "scripts/current/build_historical_company_closure.py",
+    "scripts/current/build_historical_execution_replay.py",
     "scripts/current/replay_workbench_cutoffs.py",
     "scripts/build_m5_disclosure_queue.py",
     "scripts/apply_m5_disclosure_review.py",
@@ -73,7 +75,7 @@
   ],
   "counts": {
     "product": 19,
-    "engineering": 39,
-    "total": 58
+    "engineering": 41,
+    "total": 60
   }
 }

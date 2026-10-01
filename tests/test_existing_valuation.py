@@ -223,19 +223,36 @@ def test_existing_application_result_renders_scenarios_without_passing_other_gat
     with_workbook = load_workbook(output)
     try:
         values = [str(cell.value) for row in with_workbook['03_公司'] for cell in row if cell.value is not None]
-        assert 'CNY 8.00 / 股' in values
-        assert 'CNY 11.00 / 股' in values
-        assert 'CNY 13.00 / 股' in values
+        assert '人民币 8.00 / 股' in values
+        assert '人民币 11.00 / 股' in values
+        assert '人民币 13.00 / 股' in values
         scenario_row = next(cell.row for row in with_workbook['03_公司'] for cell in row
                             if cell.value == 'Bear / Base / Bull')
         review_rows = [cell.row for row in with_workbook['03_公司'] for cell in row if cell.value == '决策复核']
         assert all(scenario_row < row for row in review_rows)
         opportunity = with_workbook['02_机会']
-        assert '8.00/11.00/13.00' in opportunity['D5'].value
-        assert '2026-06-30' in opportunity['D5'].value
-        assert '置信度' in opportunity['D5'].value
-        assert '暂不可评估' in opportunity['F5'].value
-        assert opportunity['J5'].value.startswith('BLOCKED')
+        labels = {
+            str(cell.value): cell.row
+            for row in opportunity.iter_rows(min_col=1, max_col=1)
+            for cell in row
+            if cell.value is not None
+        }
+
+        def opportunity_value(label: str) -> str:
+            return opportunity.cell(row=labels[label], column=2).value
+
+        valuation_text = opportunity_value('估值区间 / 日期 / 置信度')
+        assert '8.00/11.00/13.00' in valuation_text
+        assert '2026-06-30' in valuation_text
+        assert '置信度' in valuation_text
+        assert '暂不可评估' in opportunity_value('当前价格 / 日期')
+        assert opportunity_value('当前建议与原因').startswith('暂未通过')
+        assert not any(
+            'BLOCKED' in str(cell.value)
+            for row in opportunity.iter_rows()
+            for cell in row
+            if cell.value is not None
+        )
         assert len(with_workbook.sheetnames) == 7
         for sheet in with_workbook:
             assert sheet.sheet_properties.pageSetUpPr.fitToPage is True
@@ -410,7 +427,8 @@ def test_existing_command_service_reads_only_and_refuses_overwrite_or_wrong_symb
     try:
         assert len(workbook.sheetnames) == 7
         values = [str(cell.value) for row in workbook['决策过程'] for cell in row if cell.value is not None]
-        assert any('模型有效性 UNKNOWN' in value for value in values)
+        assert any('模型有效性 暂不确定' in value for value in values)
+        assert all('模型有效性 UNKNOWN' not in value for value in values)
     finally:
         workbook.close()
     with pytest.raises(FileExistsError):
@@ -432,3 +450,54 @@ def test_cli_existing_mode_requires_explicit_binding_and_excludes_rerun_inputs(e
                                cwd=root, capture_output=True, text=True, encoding='utf-8')
     assert completed.returncode == 2
     assert 'existing mode requires manifest and hash' in completed.stderr
+@pytest.mark.parametrize("symbol", ["000333", "600887", "601088"])
+def test_current_workbench_explains_stopped_cases_without_rerunning_research(tmp_path, monkeypatch, symbol):
+    from value_investment_agent.application.product.workbench import build_current_workbench_for_symbol
+    from value_investment_agent.application.product import company_research
+    from value_investment_agent.presentation.read_models.existing_research_report import render_current_research_readiness
+
+    repository = Path(__file__).resolve().parents[1]
+    config = tmp_path / "config"
+    config.mkdir()
+    source = repository / "config/research-evidence-stop-ledger-v1.json"
+    (config / source.name).write_bytes(source.read_bytes())
+    def forbidden(*args, **kwargs):
+        raise AssertionError("stopped research must not rebuild a descriptor")
+    monkeypatch.setattr(company_research, "build_descriptor", forbidden)
+    result = build_current_workbench_for_symbol(root=tmp_path, symbol=symbol,
+                                                output_path=tmp_path / "runtime/result.json")
+    payload = result["result"]
+    assert payload["research_status"] == "BLOCKED_BY_RESEARCH_SCHEDULER"
+    assert payload["valuation"] is None
+    assert payload["price_bridge"] is None
+    assert payload["current_status"] is None
+    assert payload["evidence_stops"]
+    assert all(stop["symbol"] == symbol for stop in payload["evidence_stops"])
+    report = render_current_research_readiness(payload)
+    assert symbol in report
+    assert "重新开展条件" in report
+    assert "停止台账 SHA-256" in report
+    assert "action=no_order" in report
+    from value_investment_agent.application.product.workbench import load_stopped_workbench_for_presentation
+    from value_investment_agent.presentation.read_models.research_readiness import project_research_readiness
+    from value_investment_agent.presentation.read_models.product_workbench import product_workbench_from_payload
+    from test_product_workbench_read_model import _payload
+    source_path = tmp_path / "runtime/result.json"
+    source_hash = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    packet = load_stopped_workbench_for_presentation(root=tmp_path, path=source_path, expected_sha256=source_hash)
+    model = product_workbench_from_payload(_payload())
+    card = replace(model.companies[0], symbol=symbol)
+    model = replace(model, as_of=datetime.now(timezone.utc).date(), companies=(card,))
+    projected = project_research_readiness(model, packet)
+    assert projected.companies[0].valuation == card.valuation
+    assert projected.companies[0].decision_process == card.decision_process
+    assert projected.portfolio == model.portfolio
+    assert projected.today_items == model.today_items
+    assert len(projected.companies[0].decision_review) > len(card.decision_review)
+    assert len(projected.audit_evidence) == len(model.audit_evidence) + 2
+    (config / source.name).write_bytes(source.read_bytes() + b"\n")
+    with pytest.raises(ValueError, match="ledger hash mismatch"):
+        load_stopped_workbench_for_presentation(root=tmp_path, path=source_path, expected_sha256=source_hash)
+    payload["valuation"] = {"status": "READY"}
+    with pytest.raises(ValueError, match="cannot expose newly admitted"):
+        render_current_research_readiness(payload)

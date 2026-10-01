@@ -133,6 +133,60 @@ def render_existing_research_report(payload: Mapping[str, Any]) -> str:
               "research/decision approval and private portfolio constraints before personalized guidance.",
               "A hash match does not prove historical availability or research approval.", ""]
     return "\n".join(lines)
+def render_current_research_readiness(payload: dict) -> str:
+    """Explain existing research stops without rerunning or admitting research."""
+    if (payload.get("schema_version") != "product-current-workbench-request-v1"
+            or payload.get("action") != "no_order"
+            or payload.get("suggested_state") != "NOT_READY"
+            or payload.get("position_guidance") is not None
+            or payload.get("canonical_workbook_written") is not False):
+        raise ValueError("unsupported current research readiness scope")
+    stopped = payload.get("research_status") == "BLOCKED_BY_RESEARCH_SCHEDULER"
+    if stopped and any(payload.get(key) is not None for key in ("valuation", "price_bridge", "current_status")):
+        raise ValueError("stopped research cannot expose newly admitted results")
+    labels = {
+        "ordinary_share_denominator_unbounded": "普通股股数口径尚未明确，不能可靠计算每股价值",
+        "financial_business_cash_debt_split_missing": "金融业务与工业业务的现金、债务口径尚未分清",
+        "internal_eliminations_missing": "内部抵销缺失，工业业务估值口径尚未闭合",
+        "project_level_maintenance_growth_capex_missing": "维持性与增长性资本开支缺少项目级区分",
+        "current_perimeter_parent_earnings_bridge_incomplete": "当前合并范围与归母利润的跨周期桥接尚未完成",
+        "ordinary_vs_special_dividend_basis_unresolved": "普通与特殊分红尚未明确，不能确认正常化股息",
+        "settlement_refinancing_and_post_maturity_cash_debt_unverified": "到期融资的偿付、续融资和后续现金债务尚未验证",
+    }
+    lines = [f"# {payload['symbol']} 当前研究缺项与重开条件", "",
+             "## 现在能做什么", "",
+             "当前不形成买入、加仓、持有、减仓或退出建议，也不给出建议仓位。",
+             "可以继续查看已封存研究与已披露事实；它们不等于当前模型、价格或研究准入。",
+             "局部证据等待不阻塞其他独立工程，不通过重复抓取同一材料伪造进展。", "",
+             "## 关键研究缺项", ""]
+    stops = payload.get("evidence_stops", [])
+    if not isinstance(stops, list):
+        raise ValueError("evidence stops must be a list")
+    for stop in stops:
+        if stop.get("symbol") != payload["symbol"]:
+            raise ValueError("readiness stop symbol mismatch")
+        lines.extend([f"### {labels.get(stop['blocker_id'], stop['blocker_id'])}", "",
+                      f"- 研究问题：{stop['research_question_id']}",
+                      f"- 涉及期间：{stop['period']}",
+                      f"- 指定官方来源：{stop['source_id']}",
+                      f"- 重新开展条件（原文）：{stop['reopen_condition']}",
+                      f"- 已查材料编号：{', '.join(stop['reviewed_evidence_ids']) or '未记录'}", ""])
+    if not stops:
+        lines.append("此工作台没有登记公司证据停止项；这不代表研究或交易已获批准。")
+    gate = payload.get("schedule_gate")
+    if gate is not None:
+        if not isinstance(gate, dict) or gate.get("allowed") is not False:
+            raise ValueError("stopped readiness requires a denied schedule gate")
+        lines.extend(["## 为什么没有重复研究", "", str(gate.get("reason", gate["status"])), ""])
+    source_hash = payload["research_receipt"]["input_sha256"].get("evidence_stop_ledger")
+    lines.extend(["## 证据边界", "",
+                  "材料编号来自停止台账，不是本报告新核验的财报数字、历史可用时间或研究批准。",
+                  f"停止台账 SHA-256：{source_hash or '本结果未绑定停止台账'}",
+                  "这份报告只展示现有缺项，没有消耗重开授权、重新计算估值或修改原 Excel。",
+                  "action=no_order", ""])
+    return "\n".join(lines)
+
+
 def render_cutoff_replay_report(payload: dict) -> str:
     if (payload.get('schema_version') != 'observed-workbench-cutoff-replay-v1'
             or payload.get('action') != 'no_order'

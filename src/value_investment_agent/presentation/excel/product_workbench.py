@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import unicodedata
 from pathlib import Path
 from typing import Any
@@ -198,17 +199,83 @@ def _external_hyperlink(cell: Cell, url: str) -> None:
     )
 
 
+_USER_TEXT_REPLACEMENTS = {
+    "RESEARCH_NOT_READY_FOR_PRICE_ASSESSMENT": "研究结果暂不支持价格评估",
+    "RESEARCH_尚未就绪_FOR_PRICE_ASSESSMENT": "研究结果暂不支持价格评估",
+    "估值批准为 false": "估值尚未获得正式批准",
+    "action=no_order": "仅作研究展示，不会生成交易指令",
+    "NOT_READY": "尚未就绪",
+    "UNKNOWN": "暂不确定",
+    "TEXT_EXTRACTED_NOT_SEMANTICALLY_VERIFIED": "文本已提取，尚未做语义核验",
+    "INTERIM_UNAUDITED_LIMITED_REVIEW": "中期报告未经审计，仅有限审阅",
+    "PIT": "严格历史时点",
+    "CNY": "人民币",
+    "unknown": "未核定",
+    "formal G3 human valuation approval not present": "尚未完成正式估值人工审批",
+    "issuer-specific beta evidence missing: generic beta=1 assumption used": "缺少公司特定贝塔证据；本模型暂用贝塔等于 1 的通用假设",
+    "issuer-specific beta evidence missing; generic beta=1 assumption used": "缺少公司特定贝塔证据；本模型暂用贝塔等于 1 的通用假设",
+    "ROIC and incremental ROIC remain unverified": "ROIC 与增量 ROIC 尚未验证",
+    "H1 2026 interim report is unaudited": "2026 年半年报未经审计",
+    "normalized dividend basis is not assessed": "正常化分红基础尚未评估",
+    "history is a partial point-in-time ledger, not a complete rolling record": "历史记录是不完整的时点账本，不是完整滚动记录",
+    "parent-company distributable cash was not independently reconciled": "母公司可分配现金尚未独立核对",
+    "short-term borrowing and working-capital movements need a legal-entity cash-flow bridge": "短期借款与营运资金变动需要法人主体现金流桥接",
+    "policy floor is a corporate plan, not a forecast of future distributable profit": "政策下限是公司规划，不是未来可分配利润预测",
+    "issuer filings do not establish ordinary-versus-special classification for the reviewed distributions": "发行人公告未明确所复核分配的普通或特别分类",
+    "legal-entity distributable cash and upstream cash flow remain unverified": "法人主体可分配现金与上游现金流仍未验证",
+    "2025-2027 shareholder-return plan is pending annual general meeting approval": "2025-2027 年股东回报方案仍待年度股东大会批准",
+    "issuer filings state the annual distribution period but do not classify it as ordinary or special": "发行人公告说明了年度分配期，但未标明普通或特别分红",
+    "issuer filings state the interim distribution period but do not classify it as ordinary or special": "发行人公告说明了中期分配期，但未标明普通或特别分红",
+    "issuer filing does not classify the distribution as ordinary or special": "发行人公告未标明该分配属于普通或特别分红",
+}
+
+_INTERNAL_PROVENANCE_PATTERNS = (
+    re.compile(r"\bSHA-?256\s*=\s*[0-9a-f]{64}\b", re.IGNORECASE),
+    re.compile(r"\bruntime[/\\][^\s;；]+", re.IGNORECASE),
+    re.compile(r"\b[0-9a-f]{64}\b", re.IGNORECASE),
+)
+
+
+def _user_text(value: object) -> str:
+    """Remove implementation vocabulary from user-facing product pages."""
+
+    text = "" if value is None else str(value)
+    for source, replacement in sorted(
+        _USER_TEXT_REPLACEMENTS.items(), key=lambda item: len(item[0]), reverse=True
+    ):
+        text = text.replace(source, replacement)
+    if "原件：" in text:
+        text = text.split("原件：", 1)[0].rstrip("；; ") + "；原件及哈希见系统与审计页。"
+    for pattern in _INTERNAL_PROVENANCE_PATTERNS:
+        text = pattern.sub("审计页原件", text)
+    return text
+
+
+def _decision_status_text(status: str) -> str:
+    return {
+        "PASS": "通过",
+        "CONDITIONAL": "有条件通过",
+        "BLOCKED": "暂未通过",
+    }.get(str(status), _user_text(status))
+
+
+def _compact_datetime(value: object) -> str:
+    if hasattr(value, "strftime"):
+        return value.strftime("%Y-%m-%d %H:%M")  # type: ignore[no-any-return]
+    return _user_text(value)
+
+
 def _status_text(status: StatusView) -> str:
     return status.user_label
 
 
 def _assessment_text(assessment: AssessmentView) -> str:
     if assessment.available:
-        return assessment.value_text or ""
+        return _user_text(assessment.value_text or "")
     return (
         "暂不可评估\n"
-        f"原因：{assessment.unavailable_reason}\n"
-        f"需要：{assessment.needed_evidence}"
+        f"原因：{_user_text(assessment.unavailable_reason)}\n"
+        f"需要：{_user_text(assessment.needed_evidence)}"
     )
 
 
@@ -264,7 +331,8 @@ def _render_today(
     row = 4
     status_row = row
     _style(ws.cell(row, 1, "数据更新时间"), fill=GREY, bold=True, border=True)
-    _style(ws.cell(row, 2, model.overview.data_updated_at.isoformat()), border=True)
+    updated_at = _compact_datetime(model.overview.data_updated_at)
+    _style(ws.cell(row, 2, updated_at), border=True)
     _style(ws.cell(row, 3, "系统健康"), fill=GREY, bold=True, border=True)
     _style(ws.cell(row, 4, _status_text(model.system_health.status)), border=True)
     _style(ws.cell(row, 5, "待处理事项"), fill=GREY, bold=True, border=True)
@@ -274,7 +342,7 @@ def _render_today(
         status_row,
         [
             (1, "数据更新时间", 1),
-            (2, model.overview.data_updated_at.isoformat(), 1),
+            (2, updated_at, 1),
             (3, "系统健康", 1),
             (4, _status_text(model.system_health.status), 1),
             (5, "待处理事项", 1),
@@ -291,8 +359,9 @@ def _render_today(
     _hyperlink(ws.cell(row + 1, 6), SHEET_SYSTEM_AUDIT)
     row += 3
     ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
-    _style(ws.cell(row, 1, model.system_health.message), fill=AMBER, border=True)
-    _fit_rows(ws, row, [(1, model.system_health.message, 6)], minimum=24)
+    system_message = _user_text(model.system_health.message)
+    _style(ws.cell(row, 1, system_message), fill=AMBER, border=True)
+    _fit_rows(ws, row, [(1, system_message, 6)], minimum=24)
     row += 2
 
     row = _section_title(ws, row, "我的组合", 6)
@@ -367,7 +436,7 @@ def _render_decision_process(
     evidence_group_rows: dict[tuple[str, ...], int],
 ) -> None:
     _widths(ws, [20, 28, 16, 44, 44, 18])
-    subtitle = f"{model.system_health.message}\n数据截止：{model.as_of.isoformat()} | action=no_order"
+    subtitle = f"{_user_text(model.system_health.message)}\n数据截止：{model.as_of.isoformat()}"
     _title(ws, subtitle, 6)
     _fit_rows(ws, 2, [(1, subtitle, 6)], minimum=36)
     row = 4
@@ -379,7 +448,13 @@ def _render_decision_process(
         _style(ws.cell(row - 1, 1), fill=NAVY, color=WHITE, bold=True, size=11)
         row = _header(ws, row, ["公司", "检查步骤", "评估状态", "原因 / 缺口", "下一步", "证据"])
         for step in company.decision_process:
-            values = (company.symbol, step.title, step.status, step.reason, step.next_action)
+            values = (
+                company.symbol,
+                step.title,
+                _decision_status_text(step.status),
+                _user_text(step.reason),
+                _user_text(step.next_action),
+            )
             for column, value in enumerate(values, 1):
                 _style(ws.cell(row, column, value), border=True)
             fill = {"PASS": GREY, "CONDITIONAL": AMBER, "BLOCKED": RED_FILL}[step.status]
@@ -397,26 +472,11 @@ def _render_opportunities(
     audit_rows: dict[str, int],
     evidence_group_rows: dict[tuple[str, ...], int],
 ) -> None:
-    _widths(ws, [24, 34, 20, 48, 20, 32, 30, 28, 16, 36])
-    _title(ws, "只显示已经进入关注范围或研究队列的公司，不展示内部阶段码。", 10)
-    row = _header(
-        ws,
-        4,
-        [
-            "公司",
-            "为什么现在关注",
-            "研究状态",
-            "估值区间 / 日期 / 置信度",
-            "股息状态",
-            "当前价格 / 日期",
-            "主要风险",
-            "下一触发",
-            "证据",
-            "当前建议与原因",
-        ],
-    )
+    _widths(ws, [20, 32, 32, 32, 32, 18])
+    _title(ws, "只显示已经进入关注范围或研究队列的公司，不展示内部阶段码。", 6)
+    row = 4
     if not model.opportunities:
-        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=10)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
         _style(
             ws.cell(row, 1, "当前没有公司进入关注范围，研究队列仍可保持等待。"),
             fill=GREY,
@@ -434,41 +494,47 @@ def _render_opportunities(
             valuation_text = _status_text(company.valuation.status) + "\n" + _assessment_text(company.valuation)
             price_text = _status_text(company.price.status) + "\n" + _assessment_text(company.price)
             decision = next(step for step in company.decision_process if step.key == "decision_gate")
-            decision_text = f"{decision.status}\n{decision.reason}"
-        _style(ws.cell(row, 1, f"{card.company_name} / {card.symbol}"), border=True)
-        _company_link(ws.cell(row, 1), card.symbol, company_rows)
-        values = (
-            card.why_now,
-            _status_text(card.research_status),
-            valuation_text,
-            _status_text(card.dividend_status),
-            price_text,
-            card.main_risk,
-            card.next_trigger,
+            decision_text = f"{_decision_status_text(decision.status)}\n{_user_text(decision.reason)}"
+
+        header_row = row
+        ws.merge_cells(start_row=header_row, start_column=1, end_row=header_row, end_column=6)
+        _company_link(ws.cell(header_row, 1), card.symbol, company_rows)
+        _style(
+            ws.cell(header_row, 1, f"{card.company_name} / {card.symbol}"),
+            fill=GREEN,
+            bold=True,
+            color=WHITE,
+            size=14,
+            border=True,
         )
-        for column, value in enumerate(values, 2):
-            _style(ws.cell(row, column, value), border=True)
-        evidence_text = _evidence_cell(
-            ws, row, 9, card.evidence_refs, audit_rows, evidence_group_rows
-        )
-        _style(ws.cell(row, 10, decision_text), border=True)
-        _fit_rows(
-            ws,
-            row,
-            [
-                (1, f"{card.company_name} / {card.symbol}", 1),
-                (2, values[0], 1),
-                (3, values[1], 1),
-                (4, values[2], 1),
-                (5, values[3], 1),
-                (6, values[4], 1),
-                (7, values[5], 1),
-                (8, values[6], 1),
-                (9, evidence_text, 1),
-                (10, decision_text, 1),
-            ],
-        )
+        ws.row_dimensions[header_row].height = 28
         row += 1
+
+        fields = (
+            ("为什么现在关注", card.why_now),
+            ("研究状态", _status_text(card.research_status)),
+            ("估值区间 / 日期 / 置信度", valuation_text),
+            ("股息状态", _status_text(card.dividend_status)),
+            ("当前价格 / 日期", price_text),
+            ("主要风险", card.main_risk),
+            ("下一触发", card.next_trigger),
+            ("当前建议与原因", decision_text),
+        )
+        for label, value in fields:
+            value_text = _user_text(value)
+            _style(ws.cell(row, 1, label), fill=GREY, bold=True, border=True)
+            ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
+            _style(ws.cell(row, 2, value_text), border=True)
+            _fit_rows(ws, row, [(1, label, 1), (2, value_text, 5)])
+            row += 1
+
+        _style(ws.cell(row, 1, "证据"), fill=GREY, bold=True, border=True)
+        ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
+        evidence_text = _evidence_cell(
+            ws, row, 2, card.evidence_refs, audit_rows, evidence_group_rows
+        )
+        _fit_rows(ws, row, [(1, "证据", 1), (2, evidence_text, 5)])
+        row += 2
 
 
 def _render_portfolio(
@@ -676,7 +742,8 @@ def _render_companies(
             _style(ws.cell(row, 1, section.title), fill=GREY, bold=True, border=True)
             _style(ws.cell(row, 2, _status_text(section.status)), border=True)
             ws.merge_cells(start_row=row, start_column=3, end_row=row, end_column=5)
-            _style(ws.cell(row, 3, section.summary), border=True)
+            section_summary = _user_text(section.summary)
+            _style(ws.cell(row, 3, section_summary), border=True)
             evidence_text = _evidence_cell(
                 ws,
                 row,
@@ -691,7 +758,7 @@ def _render_companies(
                 [
                     (1, section.title, 1),
                     (2, _status_text(section.status), 1),
-                    (3, section.summary, 3),
+                    (3, section_summary, 3),
                     (6, evidence_text, 1),
                 ],
             )
@@ -759,8 +826,13 @@ def _render_companies(
             for label, value in company.decision_review:
                 _style(ws.cell(row, 1, label), fill=GREY, bold=True, border=True)
                 ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
-                _style(ws.cell(row, 2, value), border=True)
-                _fit_rows(ws, row, [(1, label, 1), (2, value, 5)])
+                value_text = (
+                    "原件及哈希已登记，详见系统与审计页。"
+                    if label.startswith("财报原件入口")
+                    else _user_text(value)
+                )
+                _style(ws.cell(row, 2, value_text), border=True)
+                _fit_rows(ws, row, [(1, label, 1), (2, value_text, 5)])
                 row += 1
             row += 1
     return company_rows
@@ -822,6 +894,174 @@ def _audit_evidence_group_rows(
         result[refs] = row
         row += len(refs) + 3
     return result
+
+
+def _render_historical_audit(
+    ws: Worksheet,
+    model: ProductWorkbenchReadModel,
+    row: int,
+) -> int:
+    """Render historical engineering closures only in the secondary audit page."""
+
+    records = {record.evidence_id: record for record in model.audit_evidence}
+    row = _section_title(ws, row, "历史研究闭环审计（非当前建议）", 6)
+    row = _header(
+        ws,
+        row,
+        ["公司", "工程交付", "当前研究", "严格历史时点", "历史执行", "业绩结论"],
+    )
+    for review in model.historical_reviews:
+        values = (
+            f"{review.company_name}（{review.symbol}）",
+            review.engineering_delivery.user_label,
+            review.current_research_admission.user_label,
+            review.strict_pit.user_label,
+            review.historical_execution.user_label,
+            review.performance_claim.user_label,
+        )
+        for column, value in enumerate(values, 1):
+            _style(ws.cell(row, column, value), border=True)
+        _fit_rows(ws, row, [(column, value, 1) for column, value in enumerate(values, 1)])
+        row += 1
+
+        for label, value in (
+            (
+                "M3 回放",
+                f"{review.replay_date.isoformat()}；"
+                f"{review.replay_final_decision.user_label}；{review.rule_registration.user_label}",
+            ),
+            ("执行时钟", review.execution_clock_summary),
+            ("区间诊断", review.range_diagnostic_summary),
+        ):
+            _style(ws.cell(row, 1, label), fill=GREY, bold=True, border=True)
+            ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
+            _style(ws.cell(row, 2, value), border=True)
+            _fit_rows(ws, row, [(1, label, 1), (2, value, 5)])
+            row += 1
+
+        row = _section_title(ws, row + 1, "仍需保持的边界", 6)
+        for blocker in review.blockers:
+            ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+            _style(ws.cell(row, 1, blocker), border=True)
+            _fit_rows(ws, row, [(1, blocker, 6)])
+            row += 1
+
+        row = _section_title(ws, row + 1, "来源证据路径与哈希", 6)
+        row = _header(ws, row, ["证据ID", "名称", "类型", "路径", "SHA-256", "来源链接"])
+        for evidence_ref in review.evidence_refs:
+            record = records.get(evidence_ref)
+            if record is None:
+                raise ValueError(f"missing historical review evidence: {evidence_ref}")
+            values = (
+                record.evidence_id,
+                record.title,
+                record.artifact_type,
+                record.path,
+                record.sha256,
+                "打开来源" if record.source_url else "-",
+            )
+            for column, value in enumerate(values, 1):
+                _style(ws.cell(row, column, value), border=True)
+            if record.source_url:
+                _external_hyperlink(ws.cell(row, 6), record.source_url)
+            _fit_rows(ws, row, [(column, value, 1) for column, value in enumerate(values, 1)])
+            row += 1
+        row += 1
+    return row
+
+
+def _render_historical_execution_replay_audit(
+    ws: Worksheet,
+    model: ProductWorkbenchReadModel,
+    row: int,
+) -> int:
+    """Render execution replay diagnostics only in the secondary audit page."""
+
+    records = {record.evidence_id: record for record in model.audit_evidence}
+    row = _section_title(ws, row, "历史执行回放审计（非当前建议）", 6)
+    row = _header(
+        ws,
+        row,
+        ["公司", "场景", "工程交付", "当前研究", "历史执行有效性", "业绩结论"],
+    )
+    for replay in model.historical_execution_replays:
+        values = (
+            f"{replay.company_name}（{replay.symbol}）",
+            replay.scenario,
+            "已交付",
+            "当前研究未准入",
+            "历史执行有效性未验证",
+            "不形成业绩结论",
+        )
+        for column, value in enumerate(values, 1):
+            _style(ws.cell(row, column, value), border=True)
+        _fit_rows(
+            ws,
+            row,
+            [(column, value, 1) for column, value in enumerate(values, 1)],
+        )
+        row += 1
+
+        for label, value in (
+            ("验证边界", replay.validation_summary),
+            ("执行汇总", replay.execution_summary),
+            ("对照结果", replay.comparison_summary),
+        ):
+            _style(ws.cell(row, 1, label), fill=GREY, bold=True, border=True)
+            ws.merge_cells(
+                start_row=row,
+                start_column=2,
+                end_row=row,
+                end_column=6,
+            )
+            _style(ws.cell(row, 2, value), border=True)
+            _fit_rows(ws, row, [(1, label, 1), (2, value, 5)])
+            row += 1
+
+        row = _section_title(ws, row + 1, "仍需保留的边界", 6)
+        for limitation in replay.limitations:
+            ws.merge_cells(
+                start_row=row,
+                start_column=1,
+                end_row=row,
+                end_column=6,
+            )
+            _style(ws.cell(row, 1, limitation), border=True)
+            _fit_rows(ws, row, [(1, limitation, 6)])
+            row += 1
+
+        row = _section_title(ws, row + 1, "来源证据路径与哈希", 6)
+        row = _header(
+            ws,
+            row,
+            ["证据ID", "名称", "类型", "路径", "SHA-256", "来源链接"],
+        )
+        for evidence_ref in replay.evidence_refs:
+            record = records.get(evidence_ref)
+            if record is None:
+                raise ValueError(
+                    f"missing historical execution replay evidence: {evidence_ref}"
+                )
+            values = (
+                record.evidence_id,
+                record.title,
+                record.artifact_type,
+                record.path,
+                record.sha256,
+                "打开来源" if record.source_url else "-",
+            )
+            for column, value in enumerate(values, 1):
+                _style(ws.cell(row, column, value), border=True)
+            if record.source_url:
+                _external_hyperlink(ws.cell(row, 6), record.source_url)
+            _fit_rows(
+                ws,
+                row,
+                [(column, value, 1) for column, value in enumerate(values, 1)],
+            )
+            row += 1
+        row += 1
+    return row
 
 
 def _render_audit(ws: Worksheet, model: ProductWorkbenchReadModel) -> None:
@@ -988,6 +1228,11 @@ def _render_audit(ws: Worksheet, model: ProductWorkbenchReadModel) -> None:
             _fit_rows(ws, row, [(column, value, 1) for column, value in enumerate((*values, evidence_text), 1)])
             row += 1
 
+    if model.historical_reviews:
+        row = _render_historical_audit(ws, model, row + 1)
+    if model.historical_execution_replays:
+        _render_historical_execution_replay_audit(ws, model, row + 1)
+
 def build_product_workbench_workbook(
     model: ProductWorkbenchReadModel,
 ) -> Workbook:
@@ -1151,6 +1396,8 @@ def write_product_workbench_candidate(
             "portfolio_positions": len(model.portfolio.positions),
             "events": len(model.events),
             "evidence_records": len(model.audit_evidence),
+            "historical_reviews": len(model.historical_reviews),
+            "historical_execution_replays": len(model.historical_execution_replays),
         },
     }
     manifest_path.write_text(

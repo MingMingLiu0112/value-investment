@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
 from value_investment_agent.application.product import build_current_workbench_for_symbol  # noqa: E402
-from value_investment_agent.presentation.read_models.existing_research_report import render_existing_research_report  # noqa: E402
+from value_investment_agent.presentation.read_models.existing_research_report import render_existing_research_report, render_current_research_readiness  # noqa: E402
 
 
 def main() -> int:
@@ -33,8 +33,6 @@ def main() -> int:
     if report is not None:
         if not report.is_relative_to((ROOT / "runtime").resolve()) or report.exists():
             parser.error("report requires a new runtime path")
-        if args.existing_manifest is None:
-            parser.error("report requires existing-result mode")
     result = build_current_workbench_for_symbol(
         root=ROOT,
         symbol=args.symbol,
@@ -48,7 +46,8 @@ def main() -> int:
     if report is not None:
         report.parent.mkdir(parents=True, exist_ok=True)
         with report.open("x", encoding="utf-8", newline="\n") as stream:
-            stream.write(render_existing_research_report(result["result"]))
+            renderer = render_existing_research_report if args.existing_manifest is not None else render_current_research_readiness
+            stream.write(renderer(result["result"]))
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 

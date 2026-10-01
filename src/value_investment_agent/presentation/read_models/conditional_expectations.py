@@ -29,6 +29,27 @@ def project_conditional_expectations(model: ProductWorkbenchReadModel, expectati
         ('历史价格日期（非当前行情）', expectations['quote_date']),
         ('价格隐含终局ROE（条件性）', '; '.join(rows)),
         ('反向估值解释边界', '固定其他事后情景假设，仅反求终局ROE；不是预测，也不证明高估或低估。公告影响、模型准入和当前价格仍需验证。'))
+    drivers = expectations.get('valuation_drivers')
+    if drivers is not None:
+        if (drivers.get('symbol') != card.symbol or drivers.get('action') != 'no_order'
+                or drivers.get('schema_version') != 'source-bound-valuation-drivers-v1'
+                or any(drivers.get(key) is not False for key in ('assumptions_approved',
+                    'strict_pit_admitted', 'dividend_capacity_proven'))):
+            raise ValueError('valuation drivers cannot approve assumptions or dividend capacity')
+        for row in drivers['scenarios']:
+            inputs = row['assumptions']
+            review += ((f"估值假设 {row['scenario']}（非预测批准）",
+                f"ROE路径：{' → '.join(format(Decimal(value), '.1%') for value in inputs['forecast_roe'])}；"
+                f"权益资本成本{Decimal(inputs['cost_of_equity']):.1%}；终局ROE{Decimal(inputs['terminal_roe']):.1%}；"
+                f"终局增长{Decimal(inputs['terminal_growth']):.1%}；显式期利润留存{Decimal(inputs.get('retention', '0.30')):.1%}"),
+                (f"估值构成 {row['scenario']}（元/股）",
+                f"期初账面权益{Decimal(row['opening_book_per_share_cny']):.2f} + "
+                f"显式剩余收益现值{Decimal(row['explicit_residual_per_share_cny']):.2f} + "
+                f"终值剩余收益现值{Decimal(row['terminal_residual_per_share_cny']):.2f} = "
+                f"{Decimal(row['value_per_share_cny']):.2f}；终值剩余收益贡献{Decimal(row['terminal_residual_contribution_ratio']):.1%}"))
+        review += (('估值假设解释边界', '历史加权ROE不是开期账面权益预测ROE。留存率推导的模型股息路径仅作代数对账，'
+            '不是可分红现金证明。终值剩余收益可以为负；终局ROE等于资本成本时该项为零，不代表终局企业价值为零。'
+            '以上是冻结的事后研究情景，不因价格变化修改。'),)
     updated = replace(card, decision_review=review,
                       evidence_refs=tuple(dict.fromkeys((*card.evidence_refs, evidence.evidence_id))))
     records = {record.evidence_id: record for record in model.audit_evidence}
@@ -57,7 +78,13 @@ def render_company_review_cards(model: ProductWorkbenchReadModel) -> str:
         for label in ('核心研究论点（非买入批准）', '预期回报来源', '最强反证', '什么事实会削弱论点'):
             if label in review:
                 lines.extend([f'**{label}**', review[label], ''])
-        lines.extend(['### 为什么目前不能作为买入依据', ''])
+        lines.extend(['### 估值依赖什么假设', ''])
+        driver_rows = [(label, value) for label, value in card.decision_review if label.startswith(('估值假设 ', '估值构成 '))
+                       or label == '估值假设解释边界']
+        if not driver_rows:
+            lines.append('尚未接入来源绑定的假设分解，不能仅凭估值数字判断可靠性。')
+        lines.extend(f'- {label}：{value}' for label, value in driver_rows)
+        lines.extend(['', '### 为什么目前不能作为买入依据', ''])
         blocked = [step for step in card.decision_process if step.status == 'BLOCKED']
         if blocked:
             lines.extend(f'- {step.title}：{step.reason}' for step in blocked)

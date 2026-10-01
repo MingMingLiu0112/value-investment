@@ -1,5 +1,81 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
+## 2026-10-01 唯一用户入口纠偏
+
+继续继承其他会话的历史回放、来源保护和视觉审核成果，但默认用户入口必须
+保持 `WORKBOOK_PATH` / `CANONICAL_WORKBOOK`。runtime Product UX v3 是
+历史预览，不能作为 current pointer；仅显式历史预览参数允许打开。
+原表未发布新的候选内容，历史候选视觉通过不能冒充原表已更新或最终用户
+验收。此条覆盖下文及旧记录中将 runtime v3 称为当前用户入口的描述。
+研究、PIT、组合、运营准入和 action=no_order 不变。
+
+## 2026-10-01 正式发布链来源绑定与保留结构加固
+
+在不写 canonical 的前提下，正式 reviewed-research 发布入口已改为 fail-closed：候选必须携带同目录 `*.source-bindings.json`，发布前重新验证其中所有本地 `path/sha256`（含 dividend/evidence 的本地 `location/sha256`）、基础 payload、共享 workbench、expectations，以及历史公司闭环和历史执行回放各自的嵌套 `source_bindings`。视觉复核从可选改为必需；preservation proof 必须保持 `strict_pit=NOT_PROVEN`、`current_price_bridge=NOT_ADMITTED`，来源文件、WPS、readability、visual review 或已审阅候选在发布前发生漂移都会拒绝。
+
+保留页 OOXML 指纹新增 reachable `xl/tables/` 与 `xl/comments/`，并对外部 relationship 采用忽略、对内部缺失 target 采用失败关闭；drawings、charts、media、worksheet relationships 继续保留保护。当前 62-sheet 预览重新验证通过：
+
+```text
+status = VERIFIED_RESEARCH_PREVIEW_ONLY
+verified_source_count = 52
+source_set_sha256 = 1d626787c3feeb416f5f9573fa8d85e61a3e5e2f83c28f1a358556479cfe9aea
+preserved_sheet_count = 55
+canonical_written = false
+action = no_order
+```
+
+验证收据为 `runtime/publication-receipts/canonical-reviewed-research-verification-20261001-hardened.json`，SHA-256 `cb951cf402ba10039a2eb9f6777be66826cc625c7e91cdf0096095689759ad63`。该收据证明发布前置校验链，不代表已获生产发布授权，也不改变当前研究、PIT、价格桥接和最终用户验收状态。
+
+## 2026-10-01 真实输入历史执行回放接入产品数据包
+
+用真实冻结输入的历史执行回放（600519 upper-30pct）接入共享产品数据包：`--historical-execution-replay` 只把回放投影到次级 `06_系统与审计` 的历史执行回放审计区，五个产品页保持无回放内容。可复现产物为 `runtime/historical-replay-shared-product-20261001/`（workbook、manifest、source-bindings、read-model、company-card.md），WPS 只读打开与逐页导出的 hash 保持一致，canonical 未改动。
+
+同时把回放 CLI 登记进脚本清单与工程层入口，重建脚本清单时发现并恢复了被手工改动的 `current_entrypoint_count` 断言（应为生成值 43），并修正了仍指向旧十列机会卡的过期断言。工程交付为 `DELIVERED`，当前研究准入、严格 PIT、历史执行有效性与业绩结论分别保持 `NOT_READY`、未证明、未验证与不允许，永久 `action=no_order`。
+
+## 2026-10-01 Product UX 用户可见试用交付
+
+本轮只完成 `DELIVER-M7-PRODUCT-UX-V2-TO-USER` 收口：最终候选升级为 `runtime/m7-product-ux-candidate-v3-20261001.xlsx`，SHA-256 `7437a155c41d73882d9b5a1c751f690c9d9bd62e6ef484188d04a711793ca769`。WPS Office 已实际只读打开、逐页导出并生成 WPS/open receipt、readability receipt 与 visual-review receipt；五个主产品页不再显示内部工程状态码，`06_系统与审计` 保持次级。
+
+交付复验（2026-10-01）：WPS 重新只读打开并逐页导出全部七页，逐格比对确认工作簿单元格文本在原生 PDF 导出中完整出现、无截断，70 个证据超链接与 `B4` 冻结窗格有效；本轮 fresh receipts 为 `runtime/m7-product-ux-candidate-v3-20261001-delivery-wps.json` 与 `runtime/m7-product-ux-candidate-v3-20261001-delivery-visual.json`。早期 Canonical 集成预览保留为历史证据，但不再占用当前用户入口。
+
+`config/current-trial-workbook.json` 已收口到 `PRODUCT_UX` runtime v3 候选。当前唯一用户入口是 `runtime/m7-product-ux-candidate-v3-20261001.xlsx`；62-sheet Canonical 集成预览只作为历史研究审计产物保留。Canonical WPS 工作簿未替换，SHA-256 仍为 `74439baa82f9ff9f648cb32858af9d3fab03ade06d4f43b1cbdde15fcdef4582`。
+
+```text
+M7_PRODUCT_UX = USER_VISIBLE_TRIAL_READY
+CURRENT_TRIAL_POINTER = PRODUCT_UX
+M7_FINAL_USER_ACCEPTANCE = NOT_PASSED
+INITIAL_ASSISTED_USE = NOT_REACHED
+action = no_order
+```
+
+## 2026-10-01 Canonical 保留页与 600519 历史审计集成预览
+
+在不写 canonical 的前提下，已用当前正式工作簿生成 62-sheet 集成预览：
+`runtime/historical-replay-canonical-preview-20261001/canonical-integration-historical-preview.xlsx`，
+SHA-256 `87726feaa54021bf9f1de4b858f77dfb2e4fa8b1a96e0e5148f582ae8b99355b`。
+保留 55 个原 sheet 且全部隐藏，七个产品/审计页保持可见；600519 历史公司闭环和真实输入执行回放
+只出现在 `06_系统与审计`，六个用户页不暴露回放、PIT 或内部状态码。
+
+该预览已通过 WPS 只读原生打开与逐页 PDF 导出、readability、visual review 和
+`publish_product_workbench_to_canonical.py --verify-only`：
+preservation proof `20dfeaa216ecc953f471744e360375146d5a02e6a83831674379be72b1a48af6`，
+WPS receipt `eeed468ee1bf40615e9ff8e6400d5a43e83231f66e88a0857dfe96f5e5789c4e`，
+readability receipt `827f614ba17e59ecd59842c0ee3a527bc2b7c9af67bb800e423c1b249e7c0d96`，
+visual review `b04d5f3b2a7d71c1719336a972fa18cd8fd82a6255795a208de995df72811a8c`。
+发布验证 receipt 为
+`runtime/historical-replay-canonical-preview-20261001/publisher-verification.json`，
+SHA-256 `9ae0ceb004591b153bda06f85618d48ee248b53010ec9785ea915a62d72181f1`。
+发布器结果为 `VERIFIED_RESEARCH_PREVIEW_ONLY`、`canonical_written=false`；
+正式 canonical 哈希仍为 `74439baa82f9ff9f648cb32858af9d3fab03ade06d4f43b1cbdde15fcdef4582`。
+
+该 62-sheet 集成预览曾短暂接管 pointer，现仅保留为历史审计预览；当前 pointer 已按 `DELIVER-M7-PRODUCT-UX-V2-TO-USER` 收口回 v3 五页产品工作台。`python scripts/open_current_trial_workbook.py --open` 当前实际打开的是 v3，而不是该预览或 canonical 工作簿。
+
+## 2026-10-01 600519 单票历史闭环工程交付
+
+`scripts/current/build_historical_company_closure.py` 已把封存哈希绑定的 600519 M3 历史研究回放、2015-2025 真实无决策执行时钟和九组区间敏感性诊断整合为一个可重建的 JSON/Markdown 单票闭环。可读报告位于 `runtime/historical-company-closure-600519-20261001/company-historical-closure.md`，文件 SHA-256 `13f4ecd399bc6521a941417132fe94b04676f6101bf78de45a0d5b0080be2092`。
+
+同一 pinned recipe 的无覆盖重跑除生成时间外结果完全一致，Markdown 逐字节一致。工程交付为 `DELIVERED`，但当前研究准入仍为 `NOT_READY`：规则是事后研究扩展，严格 PIT 未证明，历史区间为 `NOT_PIT_SAFE / NOT_ADMITTED`，区间收益只是工程诊断，`historical_execution_validated=false`、`action=no_order`。
+
 ## 2026-10-01 执行纠偏
 
 遵循 `docs/current/value-investment-trading-assistant-goal-prompt.md` 的 Execution Correction。完整总目标与最终准入门禁不变；当前研究准入、可执行工程交付、最终运行验收分开管理。下一轮先从真实代码建立有界依赖图，选择共享单票闭环或真实输入历史执行回放中最大的可执行缺口并实施，不再用重复审计、状态提交或 CI 轮询替代产品进展。历史重建 PIT 与历史当时运行/预登记证明分开，不能回填登记时间或降低旧验证器。用户已于 2026-10-01 确认阅读正式 Excel 并授权继续；密钥独立备存与 WPS 远端可见亦已确认，不得重复索要。缺失原件仍只阻塞受影响结论，20 个真实交易日与最终用户验收保留为完整目标的最终条件。

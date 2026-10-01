@@ -2,6 +2,26 @@
 
 This is a research-presentation flow, not investment admission. Every command retains `action=no_order`. Unknown model validity, pending prices and unapproved research remain blocked.
 
+## Pinned Single-Company Historical Closure
+
+`scripts/current/build_historical_company_closure.py` turns an existing pinned historical research replay, a reviewed execution clock and a bounded range experiment into one readable source-audited output. It is an engineering integration path, not a new valuation model or strategy approval.
+
+The command requires an input recipe containing the M3 replay/manifest, execution input/summary/journal/manifest and range result/manifest/journal with their SHA-256 bindings. It verifies every file before reading it, rejects any source or manifest drift, and writes only new files under `runtime/`.
+
+The current real-input example is `runtime/historical-company-closure-600519-20261001/`. It binds 2,674 sessions from 2015-01-05 through 2025-12-31, 15 reviewed corporate-action events expanded into 45 execution-journal date rows, and nine range-diagnostic scenarios. The output deliberately remains:
+
+```text
+engineering_delivery = DELIVERED
+current_research_admission = NOT_READY
+strict_pit_admitted = false
+historical_execution_validated = false
+action = no_order
+```
+
+The rendered report is `runtime/historical-company-closure-600519-20261001/company-historical-closure.md`, file SHA-256 `13f4ecd399bc6521a941417132fe94b04676f6101bf78de45a0d5b0080be2092`. A fresh no-overwrite run against the same pinned recipe reproduced the same result JSON after excluding only the generation timestamp and produced byte-identical Markdown. The report now presents the no-decision execution clock separately from the retrospective range diagnostics and translates admission blockers into user-readable Chinese; raw blocker codes remain in the JSON for audit.
+
+The range scenarios are diagnostics only. Their returns do not establish strategy effectiveness, current fair value or a buy/sell signal.
+
 ## Reproducible Integrated Preview
 
 Use `scripts/current/build_product_workbench_candidate.py` with all of:
@@ -18,7 +38,9 @@ Use `scripts/current/build_product_workbench_candidate.py` with all of:
 
 For an explicitly public serialized read-model snapshot, add `--base-read-model-snapshot`. Private portfolio snapshots are refused by that adapter. The original workbook is resolved through the existing WORKBOOK_PATH configuration, never a new user path. Generation retains non-product sheets and protected OOXML state, rechecks the original hash and creates an exclusive `canonical-preservation.json` only after those checks pass. Existing output/proof paths are refused. Failed previews may remain for diagnosis but do not receive a PASS proof.
 
-Generation does not publish. The source-binding receipt pins research, base input and preservation proof. Actual WPS/readability review must precede the existing `publish_product_workbench_to_canonical.py --reviewed-research-folder ... --reviewed-research-proof-sha256 ... --publish` command. An explicitly failed or mismatched `visual-review.json` prevents publication. If the original workbook changes, regenerate against its new hash; never edit an old proof to fit.
+Generation does not publish. The source-binding receipt pins research, base input and preservation proof. Actual WPS/readability review must precede the existing `publish_product_workbench_to_canonical.py --reviewed-research-folder ... --reviewed-research-proof-sha256 ... --publish` command. Publication now fails closed unless the source-binding receipt, WPS receipt, readability receipt and `visual-review.json` all exist and match the candidate; the publisher also rehashes every declared local source and the nested closure/execution-replay source sets. The proof must retain `strict_pit=NOT_PROVEN` and `current_price_bridge=NOT_ADMITTED`. If the original workbook changes, regenerate against its new hash; never edit an old proof to fit.
+
+The hardened preview verification receipt is `runtime/publication-receipts/canonical-reviewed-research-verification-20261001-hardened.json` (SHA-256 `cb951cf402ba10039a2eb9f6777be66826cc625c7e91cdf0096095689759ad63`). It verifies 52 unique bound sources and records `canonical_written=false`; it is not an instruction to publish.
 
 ## Current Dependency Map
 
@@ -26,9 +48,10 @@ Generation does not publish. The source-binding receipt pins research, base inpu
 | --- | --- | --- | --- |
 | Source-bound single-stock presentation | Existing research loader, workbench application, typed valuation and pending PriceBridge projection | Shared integration now has supported CLI; native review remains per generated artifact | Source hashes, human-readable report, preview proof and publication receipt |
 | Current investment conclusion | Separate ModelValidity and PriceBridge contracts | Official event outcome, approved research and compatible verified quote for the affected case | Actual admission, not a preview or passing test |
-| Historical decision replay | `m3_historical_research_replay.py` explicitly separates retrospective and contemporaneous rules | Inspect real input interval and availability bindings before choosing an authorized case | Version-frozen inputs/rules and reproducible dated decisions, no claim of historical preregistration |
+| Historical decision replay | `m3_historical_research_replay.py` explicitly separates retrospective and contemporaneous rules; `build_historical_company_closure.py` now integrates one real 600519 replay with a reviewed execution clock and bounded range diagnostics | Contemporaneous rule evidence remains missing; the 600519 replay keeps the retrospective-rule blocker | Version-frozen inputs/rules, source hashes, reproducible dated decisions and explicit `historical_execution_validated=false` |
 | Three-company contract replay | `research_e2e_replay.py` and frozen manifest runner | Useful regression, not a substitute for real valuation/execution replay | Cross-company semantic equality only |
 | Daily production packet | `daily_product_packet.py` rehashes contained quote bundle before frozen packet builder | Current dual-source quote and applicable research needed for current advice | Actual quote binding and applicable decision gates |
+| Formal publication safety | Publisher requires source-binding receipt, rehashes 52 bound sources including nested closure/replay sets, requires WPS/readability/visual review, and preserves worksheet OOXML tables/comments | Canonical write authorization and final user acceptance remain separate gates | `runtime/publication-receipts/canonical-reviewed-research-verification-20261001-hardened.json`, 52 sources, `canonical_written=false` |
 | Final operational acceptance | Existing M6/restore/user gates | Twenty real sessions, full restore and final acceptance remain outstanding | Actual operational evidence; no replay substitution |
 
 Do not repeatedly reopen stopped research inputs or let them block independent historical/integration work. The canonical publication on 2026-10-01 demonstrates protected research presentation, not completion of current market or investment gates.
@@ -218,3 +241,30 @@ Markdown 公司卡先呈现情景估值、论点、回报来源、最强反证�
 仍保留在后续明细。原件路径/Hash 与长英文历史包缺项不占用股息快速摘要。
 实际输出 `runtime/shared-readable-company-final-20261001/` 与配方基线 snapshot
 逐项相同，仅可读报告的编排改变。此为非 Excel 可读输出，不代替 WPS 验收。
+
+### 估值假设与构成透明化（2026-10-01）
+
+已验证的 expectations 来源包含冻结 arithmetic 输入，应用通过现有模型
+和原件核验重新计算估值构成，不修改情景。公司卡显示五年 ROE 路径、
+资本成本、留存、终局 ROE/增长，以及账面权益、显式期和终值剩余收益
+现值的每股贡献。驱动解释本身不需要市场价格；当前产品入口从已有
+expectations 的 arithmetic 绑定取得它，不让行情反向更改内在价值。
+剩余收益终值可能为负或零，这不同于终局公司价值为负或零；模型股息
+代数对账不证明实际可分红现金。没有新增预测批准或严格 PIT 准入。
+## Shared stopped-case research report
+
+To attach an existing stopped-case result to the same company card, the historical
+read-model builder accepts repeatable `--research-readiness PATH SHA256` with
+`--read-model-only`. It rechecks both result bytes and the referenced current ledger,
+compares the registered company questions exactly, and adds source-bound questions
+to `decision_review`. A matching existing company card is required; no company,
+decision, valuation, price or position is created. Current Excel publication is not
+enabled by this argument. It cannot override a recipe's inputs.
+
+The generic current-workbench CLI also supports readable evidence-stop output:
+
+```powershell
+py -3 scripts/current/build_current_workbench.py --symbol 000333 --output runtime/research-readiness-example/result.json --report runtime/research-readiness-example/research-readiness.md
+```
+
+Use a new output directory per run. This path does not rerun stopped research, consume a reopening request, approve valuation, create position guidance, or write Excel. It preserves the ledger hash, original questions, periods, reviewed evidence IDs and exact reopen conditions. Missing valuation/price results remain null rather than becoming a crash or a fabricated valuation. Existing-result mode still supports its original pinned-manifest report. The readiness report is not an admitted investment recommendation or proof of historical evidence availability.

@@ -30,6 +30,38 @@ def test_recipe_is_pinned_and_does_not_grant_publication(tmp_path):
     with pytest.raises(ValueError, match='source hash'): load(tmp_path, value)
 
 
+def test_recipe_pins_historical_closure_and_rejects_wrong_company(tmp_path):
+    value = recipe(tmp_path)
+    closure = tmp_path / 'closure.json'
+    closure.write_text('{"symbol":"600887"}', encoding='utf-8')
+    value['historical_closure'] = {
+        'path': closure.name,
+        'sha256': hashlib.sha256(closure.read_bytes()).hexdigest(),
+    }
+    assert load(tmp_path, value) == value
+
+    closure.write_text('{"symbol":"600519"}', encoding='utf-8')
+    value['historical_closure']['sha256'] = hashlib.sha256(closure.read_bytes()).hexdigest()
+    with pytest.raises(ValueError, match='historical closure symbol mismatch'):
+        load(tmp_path, value)
+
+
+def test_recipe_pins_historical_execution_replay_and_rejects_wrong_company(tmp_path):
+    value = recipe(tmp_path)
+    replay = tmp_path / 'execution-replay.json'
+    replay.write_text('{"symbol":"600887"}', encoding='utf-8')
+    value['historical_execution_replay'] = {
+        'path': replay.name,
+        'sha256': hashlib.sha256(replay.read_bytes()).hexdigest(),
+    }
+    assert load(tmp_path, value) == value
+
+    replay.write_text('{"symbol":"600519"}', encoding='utf-8')
+    value['historical_execution_replay']['sha256'] = hashlib.sha256(replay.read_bytes()).hexdigest()
+    with pytest.raises(ValueError, match='historical execution replay symbol mismatch'):
+        load(tmp_path, value)
+
+
 @pytest.mark.parametrize('case', ['publication', 'symbol', 'duplicate', 'recovery', 'cash'])
 def test_recipe_rejects_scope_expansion_and_ambiguous_inputs(tmp_path, case):
     value = recipe(tmp_path)

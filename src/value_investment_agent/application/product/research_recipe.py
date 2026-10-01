@@ -12,14 +12,18 @@ def load_research_recipe(*, root: Path, path: Path, expected_sha256: str) -> dic
     value = load_json_object(path, 'research recipe')
     allowed = {'schema_version', 'action', 'scope', 'symbol', 'presentation_as_of', 'base',
                'workbench', 'expectations', 'metrics', 'cash_change_periods', 'event_scan',
-               'recovered_event_originals', 'dividend_package'}
+               'recovered_event_originals', 'dividend_package', 'historical_closure',
+               'historical_execution_replay'}
     if (set(value) - allowed or value.get('schema_version') != 'shared-research-recipe-v1'
             or value.get('action') != 'no_order' or value.get('scope') != 'READ_ONLY_RESEARCH_EXPLANATION'
             or not re.fullmatch(r'\d{6}', value.get('symbol', ''))):
         raise ValueError('unsupported research recipe scope or keys')
     date.fromisoformat(value['presentation_as_of'])
     bindings = [value['base'], value['workbench'], *value.get('metrics', [])]
-    bindings.extend(value[key] for key in ('expectations', 'event_scan', 'dividend_package') if value.get(key))
+    bindings.extend(value[key] for key in (
+        'expectations', 'event_scan', 'dividend_package', 'historical_closure',
+        'historical_execution_replay'
+    ) if value.get(key))
     for binding in bindings:
         if set(binding) != {'path', 'sha256'} or not re.fullmatch(r'[a-f0-9]{64}', binding['sha256']):
             raise ValueError('recipe bindings require exact path/hash contracts')
@@ -44,6 +48,19 @@ def load_research_recipe(*, root: Path, path: Path, expected_sha256: str) -> dic
     workbench = load_json_object(root / value['workbench']['path'], 'recipe workbench')
     if workbench.get('symbol') != value['symbol']:
         raise ValueError('recipe workbench symbol mismatch')
+    if value.get('historical_closure'):
+        closure = load_json_object(
+            root / value['historical_closure']['path'], 'recipe historical closure'
+        )
+        if closure.get('symbol') != value['symbol']:
+            raise ValueError('recipe historical closure symbol mismatch')
+    if value.get('historical_execution_replay'):
+        replay = load_json_object(
+            root / value['historical_execution_replay']['path'],
+            'recipe historical execution replay',
+        )
+        if replay.get('symbol') != value['symbol']:
+            raise ValueError('recipe historical execution replay symbol mismatch')
     if sha256_file(path) != expected_sha256:
         raise ValueError('research recipe changed during read')
     return value

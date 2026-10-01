@@ -284,6 +284,39 @@ _EXECUTION_KEYS = frozenset(
     }
 )
 
+HISTORICAL_REVIEW_KIND = "COMPANY_HISTORICAL_CLOSURE"
+HISTORICAL_EXECUTION_REPLAY_KIND = "SHARED_HISTORICAL_EXECUTION_REPLAY"
+HISTORICAL_REVIEW_STATUS_LABELS = {
+    "engineering_delivery": {
+        "DELIVERED": "工程闭环已交付",
+    },
+    "current_research_admission": {
+        "NOT_READY": "当前研究未准入",
+    },
+    "strict_pit": {
+        "NOT_PROVEN": "严格历史时点未证明",
+    },
+    "historical_execution": {
+        "NOT_VALIDATED": "历史执行未验证",
+    },
+    "performance_claim": {
+        "NOT_ALLOWED": "不形成业绩结论",
+    },
+    "replay_final_decision": {
+        "WAIT": "等待",
+        "NOT_READY": "尚未就绪",
+        "NO_DECISION": "无决策",
+        "PROPOSED_ENTRY": "研究性拟入场",
+        "PAPER_HOLD": "研究性持有",
+        "PROPOSED_EXIT": "研究性拟退出",
+        "WATCH": "观察",
+    },
+    "rule_registration": {
+        "RETROSPECTIVE_RESEARCH_EXTENSION": "事后研究扩展规则，不代表当时已知悉",
+        "CONTEMPORANEOUS_RULE": "当时已登记规则",
+    },
+}
+
 
 def _required_text(value: object, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
@@ -811,6 +844,166 @@ class EventAuditRecord:
 
 
 @dataclass(frozen=True)
+class HistoricalReviewCard:
+    """A verified historical engineering closure, kept separate from current decisions."""
+
+    review_id: str
+    symbol: str
+    company_name: str
+    review_kind: str
+    generated_at: datetime
+    closure_sha256: str
+    engineering_delivery: StatusView
+    current_research_admission: StatusView
+    strict_pit: StatusView
+    historical_execution: StatusView
+    performance_claim: StatusView
+    replay_date: date
+    replay_final_decision: StatusView
+    rule_registration: StatusView
+    execution_clock_summary: str
+    range_diagnostic_summary: str
+    blockers: tuple[str, ...]
+    evidence_refs: tuple[str, ...]
+    action: str = ACTION_NO_ORDER
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "review_id", _required_text(self.review_id, "historical review id"))
+        symbol = _required_text(self.symbol, "historical review symbol")
+        if not _SYMBOL.fullmatch(symbol):
+            raise ValueError("Historical review symbol must contain six digits")
+        object.__setattr__(self, "symbol", symbol)
+        object.__setattr__(
+            self, "company_name", _required_text(self.company_name, "historical review company name")
+        )
+        if self.review_kind != HISTORICAL_REVIEW_KIND:
+            raise ValueError("Unsupported historical review kind")
+        object.__setattr__(
+            self, "generated_at", _required_datetime(self.generated_at, "historical review generated_at")
+        )
+        digest = _required_text(self.closure_sha256, "historical review closure sha256").lower()
+        if not _SHA256.fullmatch(digest):
+            raise ValueError("Historical review closure sha256 must be SHA-256 hex")
+        object.__setattr__(self, "closure_sha256", digest)
+
+        status_fields = (
+            ("engineering_delivery", "engineering_delivery"),
+            ("current_research_admission", "current_research_admission"),
+            ("strict_pit", "strict_pit"),
+            ("historical_execution", "historical_execution"),
+            ("performance_claim", "performance_claim"),
+            ("replay_final_decision", "replay_final_decision"),
+            ("rule_registration", "rule_registration"),
+        )
+        for field, label_key in status_fields:
+            status = getattr(self, field)
+            if not isinstance(status, StatusView):
+                raise ValueError(f"Historical review {field} must be a StatusView")
+            allowed = HISTORICAL_REVIEW_STATUS_LABELS[label_key]
+            if status.code not in allowed or status.user_label != allowed[status.code]:
+                raise ValueError(f"Unsupported historical review {field}: {status.code}")
+
+        if self.engineering_delivery.code != "DELIVERED":
+            raise ValueError("Historical review engineering delivery must remain DELIVERED")
+        if self.current_research_admission.code != "NOT_READY":
+            raise ValueError("Historical review cannot promote current research admission")
+        if self.strict_pit.code != "NOT_PROVEN":
+            raise ValueError("Historical review cannot claim strict PIT")
+        if self.historical_execution.code != "NOT_VALIDATED":
+            raise ValueError("Historical review cannot claim execution validation")
+        if self.performance_claim.code != "NOT_ALLOWED":
+            raise ValueError("Historical review cannot make a performance claim")
+
+        object.__setattr__(self, "replay_date", _required_date(self.replay_date, "historical review replay_date"))
+        object.__setattr__(
+            self,
+            "execution_clock_summary",
+            _required_text(self.execution_clock_summary, "historical review execution clock summary"),
+        )
+        object.__setattr__(
+            self,
+            "range_diagnostic_summary",
+            _required_text(self.range_diagnostic_summary, "historical review range diagnostic summary"),
+        )
+        blockers = tuple(
+            _required_text(item, "historical review blocker") for item in self.blockers
+        )
+        if not blockers:
+            raise ValueError("Historical review requires explicit blockers")
+        object.__setattr__(self, "blockers", blockers)
+        object.__setattr__(self, "evidence_refs", _ref_ids(self.evidence_refs))
+        if self.action != ACTION_NO_ORDER:
+            raise ValueError("Historical review must remain no_order")
+
+
+@dataclass(frozen=True)
+class HistoricalExecutionReplayCard:
+    """A source-pinned execution reconstruction, audit-only and never current advice."""
+
+    replay_id: str
+    symbol: str
+    company_name: str
+    replay_kind: str
+    generated_at: datetime
+    replay_sha256: str
+    scenario: str
+    decision_source: str
+    execution_engine: str
+    execution_summary: str
+    comparison_summary: str
+    validation_summary: str
+    limitations: tuple[str, ...]
+    evidence_refs: tuple[str, ...]
+    action: str = ACTION_NO_ORDER
+    decision_explanations: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "replay_id", _required_text(self.replay_id, "historical execution replay id"))
+        symbol = _required_text(self.symbol, "historical execution replay symbol")
+        if not _SYMBOL.fullmatch(symbol):
+            raise ValueError("Historical execution replay symbol must contain six digits")
+        object.__setattr__(self, "symbol", symbol)
+        object.__setattr__(
+            self,
+            "company_name",
+            _required_text(self.company_name, "historical execution replay company name"),
+        )
+        if self.replay_kind != HISTORICAL_EXECUTION_REPLAY_KIND:
+            raise ValueError("Unsupported historical execution replay kind")
+        object.__setattr__(
+            self,
+            "generated_at",
+            _required_datetime(self.generated_at, "historical execution replay generated_at"),
+        )
+        digest = _required_text(self.replay_sha256, "historical execution replay sha256").lower()
+        if not _SHA256.fullmatch(digest):
+            raise ValueError("Historical execution replay sha256 must be SHA-256 hex")
+        object.__setattr__(self, "replay_sha256", digest)
+        for field in (
+            "scenario",
+            "decision_source",
+            "execution_engine",
+            "execution_summary",
+            "comparison_summary",
+            "validation_summary",
+        ):
+            object.__setattr__(self, field, _required_text(getattr(self, field), f"historical execution replay {field}"))
+        limitations = tuple(
+            _required_text(item, "historical execution replay limitation")
+            for item in self.limitations
+        )
+        if not limitations:
+            raise ValueError("Historical execution replay requires explicit limitations")
+        object.__setattr__(self, "limitations", limitations)
+        object.__setattr__(self, "decision_explanations", tuple(
+            _required_text(item, "historical decision explanation") for item in self.decision_explanations
+        ))
+        object.__setattr__(self, "evidence_refs", _ref_ids(self.evidence_refs))
+        if self.action != ACTION_NO_ORDER:
+            raise ValueError("Historical execution replay must remain no_order")
+
+
+@dataclass(frozen=True)
 class SystemHealthCard:
     status: StatusView
     message: str
@@ -871,6 +1064,8 @@ class ProductWorkbenchReadModel:
     audit_evidence: tuple[EvidenceRecord, ...]
     event_audit_decisions: tuple[EventAuditRecord, ...] = ()
     action: str = ACTION_NO_ORDER
+    historical_reviews: tuple[HistoricalReviewCard, ...] = ()
+    historical_execution_replays: tuple[HistoricalExecutionReplayCard, ...] = ()
 
     def __post_init__(self) -> None:
         if self.schema_version != PRODUCT_WORKBENCH_SCHEMA_VERSION:
@@ -906,6 +1101,16 @@ class ProductWorkbenchReadModel:
         audit_event_ids = [item.event_id for item in self.event_audit_decisions]
         if len(audit_event_ids) != len(set(audit_event_ids)):
             raise ValueError("Event audit ids must be unique")
+        historical_review_ids = [item.review_id for item in self.historical_reviews]
+        if len(historical_review_ids) != len(set(historical_review_ids)):
+            raise ValueError("Historical review ids must be unique")
+        historical_execution_replay_ids = [
+            item.replay_id for item in self.historical_execution_replays
+        ]
+        if len(historical_execution_replay_ids) != len(
+            set(historical_execution_replay_ids)
+        ):
+            raise ValueError("Historical execution replay ids must be unique")
         referenced: set[str] = set()
         for item in self.event_audit_decisions:
             referenced.update(item.evidence_refs)
@@ -919,6 +1124,10 @@ class ProductWorkbenchReadModel:
             referenced.update(position.evidence_refs)
         for event in self.events:
             referenced.update(event.evidence_refs)
+        for review in self.historical_reviews:
+            referenced.update(review.evidence_refs)
+        for replay in self.historical_execution_replays:
+            referenced.update(replay.evidence_refs)
         missing = referenced - known
         if missing:
             raise ValueError(
@@ -1286,6 +1495,178 @@ def _parse_event(value: object) -> EventCard:
     )
 
 
+def _parse_historical_status(
+    value: object,
+    field: str,
+    labels: Mapping[str, str],
+) -> StatusView:
+    if isinstance(value, Mapping):
+        code = _required_text(value.get("code"), f"{field}.code")
+        user_label = _required_text(value.get("user_label"), f"{field}.user_label")
+    else:
+        code = _required_text(value, field)
+        user_label = None
+    normalized = code.upper()
+    if normalized not in labels:
+        raise ValueError(f"Unsupported {field}: {normalized}")
+    expected = labels[normalized]
+    if user_label is not None and user_label != expected:
+        raise ValueError(f"{field} user label must be {expected}")
+    return StatusView(code=normalized, user_label=expected)
+
+
+def _parse_historical_review(value: object) -> HistoricalReviewCard:
+    item = _required_mapping(value, "historical review")
+    try:
+        generated_at = datetime.fromisoformat(
+            _required_text(item.get("generated_at"), "historical review generated_at")
+        )
+        replay_date = date.fromisoformat(
+            _required_text(item.get("replay_date"), "historical review replay_date")
+        )
+    except ValueError as error:
+        raise ValueError("historical review dates must be ISO values") from error
+    blockers = item.get("blockers")
+    if not isinstance(blockers, list):
+        raise ValueError("historical review blockers must be a list")
+    evidence_refs = item.get("evidence_refs") or []
+    if not isinstance(evidence_refs, list):
+        raise ValueError("historical review evidence_refs must be a list")
+    return HistoricalReviewCard(
+        review_id=_required_text(item.get("review_id"), "historical review id"),
+        symbol=_required_text(item.get("symbol"), "historical review symbol"),
+        company_name=_required_text(
+            item.get("company_name"), "historical review company name"
+        ),
+        review_kind=_required_text(item.get("review_kind"), "historical review kind"),
+        generated_at=generated_at,
+        closure_sha256=_required_text(
+            item.get("closure_sha256"), "historical review closure sha256"
+        ),
+        engineering_delivery=_parse_historical_status(
+            item.get("engineering_delivery"),
+            "historical_review.engineering_delivery",
+            HISTORICAL_REVIEW_STATUS_LABELS["engineering_delivery"],
+        ),
+        current_research_admission=_parse_historical_status(
+            item.get("current_research_admission"),
+            "historical_review.current_research_admission",
+            HISTORICAL_REVIEW_STATUS_LABELS["current_research_admission"],
+        ),
+        strict_pit=_parse_historical_status(
+            item.get("strict_pit"),
+            "historical_review.strict_pit",
+            HISTORICAL_REVIEW_STATUS_LABELS["strict_pit"],
+        ),
+        historical_execution=_parse_historical_status(
+            item.get("historical_execution"),
+            "historical_review.historical_execution",
+            HISTORICAL_REVIEW_STATUS_LABELS["historical_execution"],
+        ),
+        performance_claim=_parse_historical_status(
+            item.get("performance_claim"),
+            "historical_review.performance_claim",
+            HISTORICAL_REVIEW_STATUS_LABELS["performance_claim"],
+        ),
+        replay_date=replay_date,
+        replay_final_decision=_parse_historical_status(
+            item.get("replay_final_decision"),
+            "historical_review.replay_final_decision",
+            HISTORICAL_REVIEW_STATUS_LABELS["replay_final_decision"],
+        ),
+        rule_registration=_parse_historical_status(
+            item.get("rule_registration"),
+            "historical_review.rule_registration",
+            HISTORICAL_REVIEW_STATUS_LABELS["rule_registration"],
+        ),
+        execution_clock_summary=_required_text(
+            item.get("execution_clock_summary"),
+            "historical review execution clock summary",
+        ),
+        range_diagnostic_summary=_required_text(
+            item.get("range_diagnostic_summary"),
+            "historical review range diagnostic summary",
+        ),
+        blockers=tuple(blockers),
+        evidence_refs=tuple(evidence_refs),
+        action=str(item.get("action") or ACTION_NO_ORDER),
+    )
+
+
+def _parse_historical_execution_replay(
+    value: object,
+) -> HistoricalExecutionReplayCard:
+    item = _required_mapping(value, "historical execution replay")
+    try:
+        generated_at = datetime.fromisoformat(
+            _required_text(
+                item.get("generated_at"),
+                "historical execution replay generated_at",
+            )
+        )
+    except ValueError as error:
+        raise ValueError(
+            "historical execution replay generated_at must be an ISO value"
+        ) from error
+    limitations = item.get("limitations")
+    if not isinstance(limitations, list):
+        raise ValueError("historical execution replay limitations must be a list")
+    evidence_refs = item.get("evidence_refs") or []
+    if not isinstance(evidence_refs, list):
+        raise ValueError("historical execution replay evidence_refs must be a list")
+    explanations = item.get("decision_explanations", [])
+    if not isinstance(explanations, list):
+        raise ValueError("historical decision explanations must be a list")
+    return HistoricalExecutionReplayCard(
+        replay_id=_required_text(
+            item.get("replay_id"), "historical execution replay id"
+        ),
+        symbol=_required_text(
+            item.get("symbol"), "historical execution replay symbol"
+        ),
+        company_name=_required_text(
+            item.get("company_name"),
+            "historical execution replay company name",
+        ),
+        replay_kind=_required_text(
+            item.get("replay_kind"),
+            "historical execution replay kind",
+        ),
+        generated_at=generated_at,
+        replay_sha256=_required_text(
+            item.get("replay_sha256"),
+            "historical execution replay sha256",
+        ),
+        scenario=_required_text(
+            item.get("scenario"), "historical execution replay scenario"
+        ),
+        decision_source=_required_text(
+            item.get("decision_source"),
+            "historical execution replay decision_source",
+        ),
+        execution_engine=_required_text(
+            item.get("execution_engine"),
+            "historical execution replay execution_engine",
+        ),
+        execution_summary=_required_text(
+            item.get("execution_summary"),
+            "historical execution replay execution summary",
+        ),
+        decision_explanations=tuple(explanations),
+        comparison_summary=_required_text(
+            item.get("comparison_summary"),
+            "historical execution replay comparison summary",
+        ),
+        validation_summary=_required_text(
+            item.get("validation_summary"),
+            "historical execution replay validation summary",
+        ),
+        limitations=tuple(limitations),
+        evidence_refs=tuple(evidence_refs),
+        action=str(item.get("action") or ACTION_NO_ORDER),
+    )
+
+
 def product_workbench_from_payload(
     payload: Mapping[str, Any],
 ) -> ProductWorkbenchReadModel:
@@ -1383,11 +1764,28 @@ def product_workbench_from_payload(
             )
         ),
         action=str(data.get("action")),
+        historical_reviews=tuple(
+            _parse_historical_review(item)
+            for item in _required_list(
+                data.get("historical_reviews") or [],
+                "historical_reviews",
+            )
+        ),
+        historical_execution_replays=tuple(
+            _parse_historical_execution_replay(item)
+            for item in _required_list(
+                data.get("historical_execution_replays") or [],
+                "historical_execution_replays",
+            )
+        ),
     )
 
 
 __all__ = [
     "ACTION_NO_ORDER",
+    "HISTORICAL_REVIEW_KIND",
+    "HISTORICAL_EXECUTION_REPLAY_KIND",
+    "HISTORICAL_REVIEW_STATUS_LABELS",
     "PRODUCT_WORKBENCH_SCHEMA_VERSION",
     "AssessmentView",
     "CompanyCard",
@@ -1397,6 +1795,8 @@ __all__ = [
     "EventCard",
     "EventAuditRecord",
     "EvidenceRecord",
+    "HistoricalReviewCard",
+    "HistoricalExecutionReplayCard",
     "OpportunityCard",
     "PortfolioCard",
     "PortfolioMetric",

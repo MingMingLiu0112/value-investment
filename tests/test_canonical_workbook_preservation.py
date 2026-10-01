@@ -4,6 +4,7 @@ from contextlib import nullcontext
 import json
 import shutil
 import os
+import zipfile
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -11,6 +12,7 @@ from openpyxl import load_workbook
 from openpyxl.comments import Comment
 from openpyxl.formatting.rule import CellIsRule
 from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.worksheet.table import Table, TableStyleInfo
 import pytest
 
 from scripts.current.publish_product_workbench_to_canonical import (
@@ -36,6 +38,7 @@ def _workbook(path: Path) -> None:
         workbook.create_sheet(name)
     sheet = workbook.create_sheet("人工持仓")
     sheet["A1"] = "用户输入"
+    sheet["B1"] = "数值"
     sheet["B2"] = "=1+1"
     sheet["C3"].hyperlink = "https://example.test/evidence"
     sheet["D4"].comment = Comment("人工备注", "user")
@@ -48,6 +51,15 @@ def _workbook(path: Path) -> None:
     sheet.add_data_validation(validation)
     validation.add(sheet["G1"])
     sheet.conditional_formatting.add("H1", CellIsRule(operator="greaterThan", formula=["0"]))
+    table = Table(displayName="ManualTable", ref="A1:B2")
+    table.tableStyleInfo = TableStyleInfo(
+        name="TableStyleMedium2",
+        showFirstColumn=False,
+        showLastColumn=False,
+        showRowStripes=True,
+        showColumnStripes=False,
+    )
+    sheet.add_table(table)
     workbook.create_named_range("manual_input", sheet, "A1")
     workbook.save(path)
 
@@ -109,7 +121,8 @@ def test_protected_research_preview_denies_mutated_retained_content(tmp_path, mo
 @pytest.mark.parametrize('publish', [False, True])
 @pytest.mark.parametrize('fault', [None, 'proof_hash', 'preview_hash', 'wps', 'readability',
                                  'source_changed', 'preserved_content', 'simulation', 'count',
-                                 'visual_failure', 'visual_hash'])
+                                 'visual_failure', 'visual_hash', 'visual_missing',
+                                 'source_receipt_missing', 'source_drift', 'boundary_elevation'])
 def test_reviewed_research_publication_requires_all_proofs(tmp_path, monkeypatch, fault, publish):
     canonical = tmp_path / 'canonical.xlsx'
     _workbook(canonical)
@@ -124,10 +137,18 @@ def test_reviewed_research_publication_requires_all_proofs(tmp_path, monkeypatch
     book.save(candidate)
     book.close()
     candidate_sha = publisher._sha256(candidate)
-    proof = dict(preservation='PASS', action='no_order', simulation_only=fault == 'simulation',
-                 historical_preview=True, canonical_touched=False, source_sha256=before,
-                 candidate_sha256='a' * 64 if fault == 'preview_hash' else candidate_sha,
-                 preserved_sheet_count=2 if fault == 'count' else 1)
+    proof = dict(
+        preservation='PASS',
+        action='no_order',
+        simulation_only=fault == 'simulation',
+        historical_preview=True,
+        canonical_touched=False,
+        source_sha256=before,
+        candidate_sha256='a' * 64 if fault == 'preview_hash' else candidate_sha,
+        preserved_sheet_count=2 if fault == 'count' else 1,
+        strict_pit='PROVEN' if fault == 'boundary_elevation' else 'NOT_PROVEN',
+        current_price_bridge='ADMITTED' if fault == 'boundary_elevation' else 'NOT_ADMITTED',
+    )
     proof_path = folder / 'canonical-preservation.json'
     proof_path.write_text(json.dumps(proof), encoding='utf-8')
     (folder / 'integrated-wps-verification.json').write_text(json.dumps(dict(
@@ -138,6 +159,26 @@ def test_reviewed_research_publication_requires_all_proofs(tmp_path, monkeypatch
         status='FAILED_VISUAL_REVIEW' if fault == 'visual_failure' else 'PASS',
         publication_allowed=fault != 'visual_failure', action='no_order',
         workbook_sha256='a' * 64 if fault == 'visual_hash' else candidate_sha)), encoding='utf-8')
+    source_path = folder / 'source.json'
+    source_path.write_text(json.dumps({'fact': 'reviewed'}), encoding='utf-8')
+    source_receipt = candidate.with_name(candidate.stem + '.source-bindings.json')
+    source_receipt.write_text(json.dumps(dict(
+        schema_version='existing-workbench-preview-bindings-v1',
+        integrated_canonical=True,
+        historical_preview=True,
+        canonical_written=False,
+        action='no_order',
+        workbook_sha256=candidate_sha,
+        output_manifest_sha256=publisher._sha256(proof_path),
+        research_recipe_binding={'path': source_path.relative_to(tmp_path).as_posix(),
+                                 'sha256': publisher._sha256(source_path)},
+    )), encoding='utf-8')
+    if fault == 'source_drift':
+        source_path.write_text(json.dumps({'fact': 'changed'}), encoding='utf-8')
+    if fault == 'source_receipt_missing':
+        source_receipt.unlink()
+    if fault == 'visual_missing':
+        (folder / 'visual-review.json').unlink()
     if fault == 'source_changed':
         with canonical.open('ab') as handle: handle.write(b'concurrent change')
     source_at_call = publisher._sha256(canonical)
@@ -173,6 +214,50 @@ def test_reviewed_research_publication_requires_all_proofs(tmp_path, monkeypatch
         assert not (tmp_path / 'runtime/workbook-backups').exists()
 
 
+def test_reviewed_source_bindings_reject_nested_closure_drift(tmp_path: Path):
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    nested = runtime / "nested-source.json"
+    nested.write_text(json.dumps({"fact": "frozen"}), encoding="utf-8")
+    closure = runtime / "closure.json"
+    closure.write_text(json.dumps(dict(
+        schema_version="historical-company-closure-v1",
+        action="no_order",
+        strict_pit_admitted=False,
+        historical_execution_validated=False,
+        current_research_admission="NOT_READY",
+        performance_claim_allowed=False,
+        source_bindings=[{
+            "role": "nested",
+            "path": "runtime/nested-source.json",
+            "sha256": publisher._sha256(nested),
+        }],
+    )), encoding="utf-8")
+    candidate = runtime / "candidate.xlsx"
+    candidate.write_bytes(b"candidate")
+    proof = runtime / "proof.json"
+    proof.write_text("{}", encoding="utf-8")
+    receipt = runtime / "candidate.source-bindings.json"
+    receipt.write_text(json.dumps(dict(
+        schema_version="existing-workbench-preview-bindings-v1",
+        integrated_canonical=True,
+        historical_preview=True,
+        canonical_written=False,
+        action="no_order",
+        workbook_sha256=publisher._sha256(candidate),
+        output_manifest_sha256=publisher._sha256(proof),
+        historical_closure_binding={
+            "path": "runtime/closure.json",
+            "sha256": publisher._sha256(closure),
+        },
+    )), encoding="utf-8")
+    nested.write_text(json.dumps({"fact": "changed"}), encoding="utf-8")
+    with pytest.raises(ValueError, match="bound source hash mismatch"):
+        publisher._verify_reviewed_research_source_bindings(
+            tmp_path, candidate, proof, receipt
+        )
+
+
 def test_canonical_snapshot_covers_advanced_preservation_contract(tmp_path: Path):
     path = tmp_path / "canonical.xlsx"
     _workbook(path)
@@ -193,6 +278,8 @@ def test_canonical_snapshot_covers_advanced_preservation_contract(tmp_path: Path
     assert protected["comments"]
     assert protected["data_validations"]["count"] == 1
     assert protected["conditional_formatting"]["count"] == 1
+    assert any(name.startswith("xl/tables/") for name in before["protected_ooxml_parts"])
+    assert any(name.startswith("xl/comments/") for name in before["protected_ooxml_parts"])
 
 
 def test_canonical_snapshot_fails_when_protected_structure_changes(tmp_path: Path):
@@ -208,6 +295,29 @@ def test_canonical_snapshot_fails_when_protected_structure_changes(tmp_path: Pat
 
     with pytest.raises(ValueError, match="protected sheet content or non-navigation properties changed"):
         _assert_retained(before, after)
+
+
+def test_protected_ooxml_fails_closed_when_internal_target_is_missing(tmp_path: Path):
+    path = tmp_path / "canonical.xlsx"
+    _workbook(path)
+    with zipfile.ZipFile(path) as source:
+        entries = [(item.filename, source.read(item.filename)) for item in source.infolist()]
+    damaged = tmp_path / "damaged.xlsx"
+    with zipfile.ZipFile(damaged, "w", zipfile.ZIP_DEFLATED) as target:
+        for name, payload in entries:
+            if name.startswith("xl/comments/") and name.endswith(".xml"):
+                continue
+            target.writestr(name, payload)
+    with pytest.raises(ValueError, match="protected OOXML relationship target is missing"):
+        publisher._protected_ooxml_parts(damaged)
+
+
+def test_protected_ooxml_ignores_external_relationship_targets(tmp_path: Path):
+    path = tmp_path / "canonical.xlsx"
+    _workbook(path)
+    protected = publisher._protected_ooxml_parts(path)
+    assert protected
+    assert not any("https://" in name or "http://" in name for name in protected)
 
 
 def test_publish_refuses_when_canonical_changes_during_staging(tmp_path: Path):
