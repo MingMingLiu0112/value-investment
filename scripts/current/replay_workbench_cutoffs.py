@@ -18,6 +18,7 @@ from value_investment_agent.application.historical_validation.execution_scenario
 from value_investment_agent.application.historical_validation.reverse_equity_expectations import reverse_equity_expectations
 from value_investment_agent.application.historical_validation.disclosed_metric_review import review_disclosed_metrics
 from value_investment_agent.application.historical_validation.reported_cash_proxy import reported_cash_proxies
+from value_investment_agent.application.historical_validation.decision_input_review import review_historical_decision_inputs, render_decision_input_review
 
 
 def main() -> int:
@@ -43,6 +44,7 @@ def main() -> int:
     parser.add_argument('--metric-transcription', type=Path)
     parser.add_argument('--metric-transcription-sha256')
     parser.add_argument('--reported-cash-proxy', action='store_true')
+    parser.add_argument('--decision-input-review', action='store_true')
     args = parser.parse_args()
     recovered_originals = {}
     for binding in args.recovered_event_original:
@@ -113,13 +115,24 @@ def main() -> int:
         result['execution_engineering_scenario'] = replay_execution_scenario(root=ROOT,
             path=ROOT / args.execution_scenario, expected_sha256=args.execution_scenario_sha256,
             symbol=result['symbol'])
+    if args.decision_input_review:
+        if not all(key in result for key in ('reconstructed_financial_inputs', 'historical_price_bridge')):
+            raise ValueError('decision input review requires reconstruction and historical bridge')
+        result['historical_decision_input_review'] = review_historical_decision_inputs(
+            result['reconstructed_financial_inputs'], result['historical_price_bridge'])
     write_new_json(output, result)
     if report is not None:
         report.parent.mkdir(parents=True, exist_ok=True)
         with report.open('x', encoding='utf-8') as handle:
             handle.write(render_cutoff_replay_report(result))
+            if args.decision_input_review:
+                handle.write('\n\n' + render_decision_input_review(result['historical_decision_input_review']))
     console_result = result
-    if args.event_source_pages:
+    if args.decision_input_review:
+        console_result = dict(output=str(output), report=None if report is None else str(report),
+            symbol=result['symbol'], decision_input_rows=len(result['historical_decision_input_review']['rows']),
+            historical_execution_validated=False, action='no_order')
+    elif args.event_source_pages:
         review = result['event_source_review']
         console_result = dict(output=str(output), report=None if report is None else str(report),
             symbol=result['symbol'], event_source_status=review['status'],

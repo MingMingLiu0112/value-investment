@@ -49,6 +49,7 @@ def reconstruct_equity_inputs(*, root: Path, workbench_path: Path, workbench_sha
     return dict(schema_version='reconstructed-equity-input-v1', symbol=valuation.symbol,
         scope='RETROSPECTIVE_FINANCIAL_INPUT_RECONSTRUCTION_ONLY',
         reconstructed_at=datetime.now(timezone.utc).isoformat(),
+        workbench_sha256=workbench_sha256,
         arithmetic_input_sha256=arithmetic_sha256, index_sha256=index_sha256,
         assumptions_basis='PINNED_RECONSTRUCTED_SCENARIOS_NOT_CONTEMPORANEOUS_FORECAST',
         assumptions_historically_registered=False, arithmetic_match=arithmetic['status'],

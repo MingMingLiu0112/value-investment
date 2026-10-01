@@ -43,6 +43,7 @@ jobs:
           tests/test_reported_cash_proxy.py
           tests/test_reported_financials_presentation.py
           tests/test_company_events_presentation.py
+          tests/test_historical_decision_input_review.py
           tests/test_valuation_result.py
           tests/test_price_bridge.py
           tests/test_research_profile.py
