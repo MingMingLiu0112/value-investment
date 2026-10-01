@@ -7,7 +7,7 @@
     "CURRENT_OPERATIONAL_CLI": 12,
     "CURRENT_PRODUCT_CLI": 7,
     "CURRENT_RESEARCH_CLI": 199,
-    "HISTORICAL_VALIDATION_TOOL": 57,
+    "HISTORICAL_VALIDATION_TOOL": 58,
     "COMPANY_RESEARCH_CASE_TOOL": 216,
     "MIGRATION_TOOL": 13,
     "DIAGNOSTIC_TOOL": 134,
@@ -15,6 +15,17 @@
     "DELETE_CANDIDATE": 1
   },
   "entries": [
+    {
+      "path": "scripts/current/replay_workbench_cutoffs.py",
+      "category": "HISTORICAL_VALIDATION_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 36,
+      "sha256": "0461096631ece57b6a92155050e3d3064597af8b8c97084a37402d5c4625bed3"
+    },
     {
       "path": "scripts/current/update_canonical_quote_display.py",
       "category": "DELETE_CANDIDATE",

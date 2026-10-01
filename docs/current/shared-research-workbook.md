@@ -32,3 +32,11 @@ Generation does not publish. The source-binding receipt pins research, base inpu
 | Final operational acceptance | Existing M6/restore/user gates | Twenty real sessions, full restore and final acceptance remain outstanding | Actual operational evidence; no replay substitution |
 
 Do not repeatedly reopen stopped research inputs or let them block independent historical/integration work. The canonical publication on 2026-10-01 demonstrates protected research presentation, not completion of current market or investment gates.
+
+## Observed Result Cutoff Replay
+
+`scripts/current/replay_workbench_cutoffs.py` accepts a pinned `--workbench`, `--workbench-sha256`, increasing timezone-aware repeated `--cutoff` values, a new runtime `--output` and optional new runtime `--report`.
+
+It rehashes original evidence and uses the latest of workbench generation and source-observation timestamps. Before that boundary no valuation is shown. After it the existing blocked research is visible without orders, fills, current price or portfolio guidance. Cutoff timestamps are not asserted to be trading sessions.
+
+This contract deliberately does **not** reconstruct earlier public-information availability, run valuation-based decisions, validate execution mechanics, prove strict PIT or measure returns. The old Median-PE replay is a retained retrospective experiment; the old daily simulator still includes legacy 30% margin rules and must not become the default shared path. Full historical execution acceptance remains outstanding.

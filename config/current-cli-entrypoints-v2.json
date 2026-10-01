@@ -31,6 +31,7 @@
     "scripts/build_m5_disclosure_review_briefing.py"
   ],
   "SUPPORTED_ENGINEERING_CLI": [
+    "scripts/current/replay_workbench_cutoffs.py",
     "scripts/build_m5_disclosure_queue.py",
     "scripts/apply_m5_disclosure_review.py",
     "scripts/run_server_excel_sync.ps1",
@@ -72,7 +73,7 @@
   ],
   "counts": {
     "product": 19,
-    "engineering": 38,
-    "total": 57
+    "engineering": 39,
+    "total": 58
   }
 }

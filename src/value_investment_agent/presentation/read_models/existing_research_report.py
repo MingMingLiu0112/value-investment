@@ -133,3 +133,22 @@ def render_existing_research_report(payload: Mapping[str, Any]) -> str:
               "research/decision approval and private portfolio constraints before personalized guidance.",
               "A hash match does not prove historical availability or research approval.", ""]
     return "\n".join(lines)
+def render_cutoff_replay_report(payload: dict) -> str:
+    if (payload.get('schema_version') != 'observed-workbench-cutoff-replay-v1'
+            or payload.get('action') != 'no_order'
+            or payload.get('historical_execution_validated') is not False):
+        raise ValueError('unsupported observation replay report')
+    lines = ['# Observed Research Result Cutoff Replay', '',
+        f"Symbol: {payload['symbol']}", f"Result known at: {payload['result_known_at']}", '',
+        '| Cutoff (UTC) | Result availability | Decision | Orders / fills |',
+        '| --- | --- | --- | --- |']
+    for row in payload['rows']:
+        if row['action'] != 'no_order' or row['orders'] or row['fills']:
+            raise ValueError('observation replay cannot contain execution')
+        lines.append(f"| {row['cutoff']} | {row['status']} | {row['suggested_state']} | 0 / 0 |")
+    lines.extend(['', '## Interpretation', '', payload['limitation'], '',
+        'Earlier public filings may have existed, but this result is not backdated to their reporting periods.',
+        'No historical execution, strategy effectiveness, strict PIT admission or current investment advice is established.',
+        'Current model validity, price bridge, research approval and portfolio gates remain outstanding.',
+        '', f"Source workbench SHA-256: {payload['workbench_sha256']}", 'action=no_order', ''])
+    return '\n'.join(lines)
