@@ -33,6 +33,8 @@ from value_investment_agent.presentation.read_models.reported_financials import 
 from value_investment_agent.application.historical_validation.event_source_review import prepare_event_source_review
 from value_investment_agent.presentation.read_models.company_events import project_company_event_questions
 from value_investment_agent.application.historical_validation.reported_cash_change import reported_cash_change
+from value_investment_agent.application.product.dividend_history import read_dividend_history
+from value_investment_agent.presentation.read_models.dividend_history import project_dividend_history
 from value_investment_agent.presentation.read_models.existing_research_report import project_existing_research_workbench, public_workbench_payload_from_snapshot  # noqa: E402
 from value_investment_agent.application.product.product_workbench_candidate import (  # noqa: E402
     build_product_workbench_candidate_payload,
@@ -66,6 +68,7 @@ def parse_args() -> argparse.Namespace:
                         metavar=('PATH', 'SHA256'), help='Repeat for source-verified disclosed financial rows.')
     parser.add_argument('--event-scan', nargs=2, metavar=('PATH', 'SHA256'))
     parser.add_argument('--cash-change-periods', nargs=2, metavar=('CURRENT', 'PRIOR'))
+    parser.add_argument('--dividend-package', nargs=2, metavar=('PATH', 'SHA256'))
     parser.add_argument('--recovered-event-original', nargs=2, action='append', default=[],
                         metavar=('REFERENCE_ID', 'PATH'))
     parser.add_argument('--read-model-only', action='store_true')
@@ -189,6 +192,18 @@ def main() -> int:
         model = project_company_event_questions(model, packet, evidence)
         event_binding = dict(path=event_path.relative_to(ROOT).as_posix(), sha256=event_scan[1],
                              recovered_originals=recovered, source_review=packet)
+    dividend_binding = None
+    if getattr(args, 'dividend_package', None):
+        if not args.existing_workbench:
+            raise ValueError('dividend history requires pinned existing company workbench')
+        path, digest = args.dividend_package
+        path = require_inside(ROOT, ROOT / path, 'dividend package')
+        history = read_dividend_history(root=ROOT, path=path, expected_sha256=digest, symbol=research['symbol'])
+        evidence = EvidenceRecord(f"{research['symbol']}-dividend-history-{digest[:12]}",
+            '历史分红生命周期（非当前股息率或持续性准入）', 'dividend_history',
+            path.relative_to(ROOT).as_posix(), digest, datetime.fromisoformat(history['observed_at']).date())
+        model = project_dividend_history(model, history, evidence)
+        dividend_binding = dict(path=path.relative_to(ROOT).as_posix(), sha256=digest, history=history)
     if getattr(args, 'read_model_only', False):
         if output.suffix != '.json' or getattr(args, 'integrate_canonical', False):
             raise ValueError('read-model-only requires JSON output without workbook publication')
@@ -203,6 +218,7 @@ def main() -> int:
             expectations_replay_sha256=expectations_hash, base_payload_sha256=args.base_payload_sha256,
             disclosed_financial_bindings=metric_bindings,
             event_source_binding=event_binding,
+            dividend_history_binding=dividend_binding,
             canonical_written=False, historical_preview=True, action='no_order'))
         if report_path is not None:
             report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -242,6 +258,7 @@ def main() -> int:
         "expectations_replay_sha256": expectations_hash,
         "disclosed_financial_bindings": metric_bindings,
         "event_source_binding": event_binding,
+        "dividend_history_binding": dividend_binding,
         "output_manifest_sha256": receipt["manifest_sha256"],
         "workbook_sha256": receipt["workbook_sha256"],
         "historical_preview": True, "canonical_written": False, "action": "no_order",
