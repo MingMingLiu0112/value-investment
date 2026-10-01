@@ -149,6 +149,8 @@ def main() -> int:
             recipe['historical_closure']['path'], recipe['historical_closure']['sha256'])
         args.historical_execution_replay = None if not recipe.get('historical_execution_replay') else (
             recipe['historical_execution_replay']['path'], recipe['historical_execution_replay']['sha256'])
+        args.research_readiness = [] if not recipe.get('research_readiness') else [(
+            recipe['research_readiness']['path'], recipe['research_readiness']['sha256'])]
         recipe_binding = dict(path=str(path), sha256=digest, symbol=recipe['symbol'])
     if getattr(args, 'read_model_report', None) is not None and not getattr(args, 'read_model_only', False):
         raise ValueError('read-model report requires read-model-only mode')

@@ -13,7 +13,7 @@ def load_research_recipe(*, root: Path, path: Path, expected_sha256: str) -> dic
     allowed = {'schema_version', 'action', 'scope', 'symbol', 'presentation_as_of', 'base',
                'workbench', 'expectations', 'metrics', 'cash_change_periods', 'event_scan',
                'recovered_event_originals', 'dividend_package', 'historical_closure',
-               'historical_execution_replay'}
+               'historical_execution_replay', 'research_readiness'}
     if (set(value) - allowed or value.get('schema_version') != 'shared-research-recipe-v1'
             or value.get('action') != 'no_order' or value.get('scope') != 'READ_ONLY_RESEARCH_EXPLANATION'
             or not re.fullmatch(r'\d{6}', value.get('symbol', ''))):
@@ -22,7 +22,7 @@ def load_research_recipe(*, root: Path, path: Path, expected_sha256: str) -> dic
     bindings = [value['base'], value['workbench'], *value.get('metrics', [])]
     bindings.extend(value[key] for key in (
         'expectations', 'event_scan', 'dividend_package', 'historical_closure',
-        'historical_execution_replay'
+        'historical_execution_replay', 'research_readiness'
     ) if value.get(key))
     for binding in bindings:
         if set(binding) != {'path', 'sha256'} or not re.fullmatch(r'[a-f0-9]{64}', binding['sha256']):
@@ -61,6 +61,13 @@ def load_research_recipe(*, root: Path, path: Path, expected_sha256: str) -> dic
         )
         if replay.get('symbol') != value['symbol']:
             raise ValueError('recipe historical execution replay symbol mismatch')
+    if value.get('research_readiness'):
+        from .workbench import load_stopped_workbench_for_presentation
+        binding = value['research_readiness']
+        readiness = load_stopped_workbench_for_presentation(
+            root=root, path=root / binding['path'], expected_sha256=binding['sha256'])
+        if readiness['result']['symbol'] != value['symbol']:
+            raise ValueError('recipe research readiness symbol mismatch')
     if sha256_file(path) != expected_sha256:
         raise ValueError('research recipe changed during read')
     return value

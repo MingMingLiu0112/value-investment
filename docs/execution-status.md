@@ -7255,3 +7255,8 @@ action = no_order
 实际伊利产物 `runtime/research-readiness-product-20261001/company-card.md` 与 `read-model.json`，read-model SHA-256 `6c7d6f8b93df6a9c351d254270e8ef22b0faf102e2215c81bbb7f6b7cb20b29d`。输入为原公开卡、现有来源绑定 workbench、条件性估值解释、财务转录和 600887 停止结果；缺项记录引用当前 ledger 的 `14bed2d1609e5479e1f43a90e01bb314d332000fe988b903a3c8adec9f628330`。其中材料编号只是台账记载，不提升为本轮新财报数字或历史可用时间验证。
 
 同一路径在 000333 / 600887 / 601088 测试中验证，且测试台账漂移失败关闭、原估值与决策/组合保持不变。相关测试 46 项通过。`--research-readiness PATH SHA256` 目前仅允许 read-model-only，与 recipe 输入覆盖互斥；不宣称正式 Excel 已发布。当前工作树仍未提交，远端 CI 未验证，完整 Goal 未完成，action=no_order。
+# 2026-10-01 一条配方生成完整单票研究解释
+
+在既有冻结 recipe 上新增可选的同公司 `research_readiness` 绑定；加载时重验结果、当前停止台账及公司身份，不允许不同公司缺项或命令行覆盖。旧 recipe 原件不变。新本地输入 `runtime/integrated-company-recipe-20261001/recipe.json`，SHA-256 `34de72cf922c42749e23a375f41b316582dbf877e9105a0c18b6846bb33490ca`。
+
+实际单命令输出 `runtime/integrated-company-review-20261001/company-card.md`，将公司论点、反证、财务转录、经营现金流变动对账、分红生命周期、公告原件问题、估值假设与价值构成、条件性预期及当前研究缺项放在同一公司卡。read-model SHA-256 `de7c7faccdc3ac5819f16fe9858d402dc9c11c48d6000af4ae26fed47feb5994`。只代表已有来源可重现的解释链，不能替代财务质量、股息可持续性、当前价格与研究准入，action=no_order；原 Excel、服务器、数据库与定时任务未改。

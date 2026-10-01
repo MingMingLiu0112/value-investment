@@ -46,6 +46,29 @@ def test_recipe_pins_historical_closure_and_rejects_wrong_company(tmp_path):
         load(tmp_path, value)
 
 
+def test_recipe_includes_current_stops_without_research_or_publication(tmp_path):
+    from pathlib import Path
+    from value_investment_agent.application.product.workbench import build_current_workbench_for_symbol
+    value = recipe(tmp_path)
+    config = tmp_path / 'config'
+    config.mkdir()
+    ledger = Path(__file__).resolve().parents[1] / 'config/research-evidence-stop-ledger-v1.json'
+    (config / ledger.name).write_bytes(ledger.read_bytes())
+    target = tmp_path / 'runtime/readiness.json'
+    build_current_workbench_for_symbol(root=tmp_path, symbol=value['symbol'], output_path=target)
+    value['research_readiness'] = dict(path='runtime/readiness.json', sha256=hashlib.sha256(target.read_bytes()).hexdigest())
+    assert load(tmp_path, value) == value
+    other = tmp_path / 'runtime/other-readiness.json'
+    build_current_workbench_for_symbol(root=tmp_path, symbol='000333', output_path=other)
+    other_value = dict(value, research_readiness=dict(path='runtime/other-readiness.json',
+                       sha256=hashlib.sha256(other.read_bytes()).hexdigest()))
+    with pytest.raises(ValueError, match='readiness symbol mismatch'):
+        load(tmp_path, other_value)
+    (config / ledger.name).write_bytes(ledger.read_bytes() + b'\n')
+    with pytest.raises(ValueError, match='ledger hash mismatch'):
+        load(tmp_path, value)
+
+
 def test_recipe_pins_historical_execution_replay_and_rejects_wrong_company(tmp_path):
     value = recipe(tmp_path)
     replay = tmp_path / 'execution-replay.json'

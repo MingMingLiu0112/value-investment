@@ -261,6 +261,16 @@ to `decision_review`. A matching existing company card is required; no company,
 decision, valuation, price or position is created. Current Excel publication is not
 enabled by this argument. It cannot override a recipe's inputs.
 
+A frozen recipe can include one `research_readiness` path/hash binding for its own
+symbol. Loading it revalidates the current ledger and exact stop questions; the
+runner joins it with the financial, cash-change, dividend, event and valuation
+explanations already declared in that recipe. A different company's readiness
+result is rejected. Use `--research-recipe PATH SHA256 --read-model-only` with a new
+runtime output directory; do not alter sealed older recipes. The local complete
+recipe is `runtime/integrated-company-recipe-20261001/recipe.json`, SHA-256
+`34de72cf922c42749e23a375f41b316582dbf877e9105a0c18b6846bb33490ca`.
+It produces research explanation only, not investment admission or Excel publication.
+
 The generic current-workbench CLI also supports readable evidence-stop output:
 
 ```powershell
