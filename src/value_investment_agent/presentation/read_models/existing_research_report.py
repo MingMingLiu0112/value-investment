@@ -161,4 +161,17 @@ def render_cutoff_replay_report(payload: dict) -> str:
             names = ', '.join(fact['fact_name'] for fact in point['eligible_facts']) or 'none'
             lines.append(f"| {point['cutoff']} | {names} | {', '.join(point['missing_facts']) or 'none'} |")
         lines.extend(['', 'Numeric-source review does not establish a complete FinancialFacts gate, model validity, quote or investment approval.', ''])
+    history = payload.get('historical_price_bridge')
+    if history is not None:
+        lines.extend(['## Historical Quote and Event Integrity', '',
+            'Retained observations only; not current advice or strategy validation.',
+            f"Quote captured at: {history['quote_observed_at']}",
+            f"Event original integrity: {history['event_evidence_audit']['status']}", '',
+            f"Valuation result observed at: {history['valuation_observed_at']}",
+            '| Cutoff | Quote observed | Valuation observed | Historical price | Blockers |',
+            '| --- | --- | --- | --- | --- |'])
+        for row in history['rows']:
+            price = row['quote']['current_price'] if row['quote'] else 'unavailable'
+            lines.append(f"| {row['cutoff']} | {row['quote_observed']} | {row['valuation_observed']} | {price} | {'; '.join(row['blockers'])} |")
+        lines.extend(['', 'Decision remains NOT_READY; no orders, fills or position guidance.', ''])
     return '\n'.join(lines)

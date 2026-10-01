@@ -11,6 +11,8 @@ from value_investment_agent.application.historical_validation.workbench_cutoff_r
 from value_investment_agent.presentation.read_models.existing_research_report import render_cutoff_replay_report
 from value_investment_agent.application.historical_validation.reconstructed_equity_input import reconstruct_equity_inputs
 from value_investment_agent.application.product.common import write_new_json
+from value_investment_agent.application.historical_validation.event_evidence_audit import audit_event_evidence
+from value_investment_agent.application.historical_validation.historical_price_bridge import replay_historical_bridge
 
 
 def main() -> int:
@@ -24,6 +26,10 @@ def main() -> int:
     parser.add_argument('--arithmetic-input-sha256')
     parser.add_argument('--disclosure-index', type=Path)
     parser.add_argument('--disclosure-index-sha256')
+    parser.add_argument('--event-scan', type=Path)
+    parser.add_argument('--event-scan-sha256')
+    parser.add_argument('--quote-bundle', type=Path)
+    parser.add_argument('--quote-bundle-sha256')
     args = parser.parse_args()
     report = None if args.report is None else (ROOT / args.report).resolve()
     if report is not None and (not report.is_relative_to(ROOT / 'runtime') or report.exists()):
@@ -41,6 +47,20 @@ def main() -> int:
             index_path=ROOT / args.disclosure_index, index_sha256=args.disclosure_index_sha256,
             cutoffs=args.cutoff)
     output = (ROOT / args.output).resolve()
+    if args.event_scan is not None or args.event_scan_sha256 is not None:
+        if args.event_scan is None or args.event_scan_sha256 is None:
+            raise ValueError('event scan requires paired path and hash')
+        result['event_evidence_audit'] = audit_event_evidence(root=ROOT,
+            path=ROOT / args.event_scan, expected_sha256=args.event_scan_sha256,
+            symbol=result['symbol'])
+    if args.quote_bundle is not None or args.quote_bundle_sha256 is not None:
+        if not all((args.quote_bundle, args.quote_bundle_sha256, args.event_scan, args.event_scan_sha256)):
+            raise ValueError('historical bridge requires paired quote and event paths/hashes')
+        result['historical_price_bridge'] = replay_historical_bridge(root=ROOT,
+            workbench_path=ROOT / args.workbench, workbench_sha256=args.workbench_sha256,
+            quote_path=ROOT / args.quote_bundle, quote_sha256=args.quote_bundle_sha256,
+            scan_path=ROOT / args.event_scan, scan_sha256=args.event_scan_sha256,
+            cutoffs=args.cutoff)
     if not output.is_relative_to(ROOT / 'runtime'):
         raise ValueError('replay output must remain under runtime')
     write_new_json(output, result)
