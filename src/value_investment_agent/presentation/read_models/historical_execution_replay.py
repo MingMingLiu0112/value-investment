@@ -303,7 +303,11 @@ def _validate_historical_execution_replay_for_product(
                 ),
             }
         )
-    if set(roles) != set(SOURCE_ROLES) or len(roles) != len(SOURCE_ROLES):
+    required_roles = [role for role in roles if role in SOURCE_ROLES]
+    original_roles = [role for role in roles if role not in SOURCE_ROLES]
+    if (set(required_roles) != set(SOURCE_ROLES) or len(required_roles) != len(SOURCE_ROLES)
+            or len(set(roles)) != len(roles)
+            or any(not re.fullmatch(r"execution_original_[0-9]{3,}", role) for role in original_roles)):
         raise ValueError("historical execution replay source roles are incomplete or duplicated")
 
     limitations = _translated_limitations(replay.get("limitations"))

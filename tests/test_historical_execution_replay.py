@@ -474,7 +474,12 @@ def test_historical_execution_replay_projects_only_to_secondary_audit(tmp_path: 
     assert card.scenario == "upper-30pct"
     assert card.action == ACTION_NO_ORDER
     assert card.replay_sha256 == digest
-    assert len(card.evidence_refs) == 6
+    assert len(card.evidence_refs) == 1 + len(payload['source_bindings'])
+    originals = [binding for binding in payload['source_bindings']
+                 if binding['role'].startswith('execution_original_')]
+    assert originals
+    assert originals[0]['path'] == 'reference.json'
+    assert originals[0]['sha256'] == _digest(tmp_path / 'reference.json')
     assert "1000787.31" in card.execution_summary
     assert any("关联原买入" in text for text in card.decision_explanations)
     assert "历史执行有效性未验证" in card.validation_summary

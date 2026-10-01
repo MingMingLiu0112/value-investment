@@ -649,6 +649,12 @@ def build_historical_execution_replay(
             {"role": "range_result", "path": str(result_path.relative_to(root)), "sha256": result_hash},
             {"role": "range_manifest", "path": str(manifest_path.relative_to(root)), "sha256": manifest_hash},
             {"role": "range_journal", "path": str(journal_path.relative_to(root)), "sha256": journal_hash},
+            *[
+                {"role": f"execution_original_{index:03d}",
+                 "path": reference["path"].replace("\\", "/"),
+                 "sha256": reference["sha256"]}
+                for index, reference in enumerate(execution_input["references"])
+            ],
         ],
         "recipe_sha256": expected_input_sha,
     }

@@ -7271,3 +7271,9 @@ action = no_order
 
 实际 `runtime/price-source-execution-replay-20261001/report.md` 对应 600519 的 2674 个交易日与 11 个封存行情文件。result SHA-256 为 `d902e14210374d940f9bc9017a8070a2374ebc1a589449a4581afd1e2fffcc99`；journal SHA-256 保持 `4b84cd278b32b1a2d7d81f368524535442f2ed4e6b4e75c28775675cd838d4a9`，不改变投资规则与账本计算。未验证 high/low、当时可得性、停牌涨跌停、流动性或真实成交；严格 PIT 与执行准入仍未通过，action=no_order。相关历史回放测试 32 项通过；远端 CI 待本次提交验证。原 Excel、服务器、数据库和定时任务未修改。
 
+# 2026-10-01 历史原件接入共享产品来源链
+
+回放结果的 source_bindings 现在包含 execution_input.references 中全部原件，使用唯一 execution_original_NNN 角色；既有五个必需角色继续保留。共享产品入口逐项重验，现有正式发布前置核验会沿同一嵌套 source_bindings 重验，因此不再只保护顶层执行输入 JSON。旧冻结回放仍兼容，不改其历史 bytes 或准入状态。
+
+真实 600519 回放形成 33 个来源绑定（五个顶层文件及 28 个执行原件），result SHA-256 `3c5ec119423feb4086de7628352d7e3eb471d47d8770397c821d20affa8a2efc`。共享产品只读集成实际输出 `runtime/source-complete-product-review-20261001/company-card.md` 与 read-model.json，后者 SHA-256 `e0d232f28386926031b4a486d8dbb7ef5c55c846e38f17adcb819a7c2f007b57`。回放只位于次级历史审计区，不提升当前公司研究/决策。相关测试 32 项通过；canonical_written=false，action=no_order，原表及服务器未改。完整目标与最终运营验收仍未完成。
+
