@@ -47,6 +47,7 @@ from value_investment_agent.application.historical_validation.reported_cash_chan
 from value_investment_agent.application.product.dividend_history import read_dividend_history
 from value_investment_agent.presentation.read_models.dividend_history import project_dividend_history
 from value_investment_agent.application.product.research_recipe import load_research_recipe
+from value_investment_agent.application.product.research_publication_input import prepare_research_publication_input
 from value_investment_agent.application.product.valuation_drivers import describe_valuation_drivers
 from value_investment_agent.presentation.read_models.existing_research_report import project_existing_research_workbench, public_workbench_payload_from_snapshot  # noqa: E402
 from value_investment_agent.application.product.product_workbench_candidate import (  # noqa: E402
@@ -92,6 +93,8 @@ def parse_args() -> argparse.Namespace:
                         metavar=('REFERENCE_ID', 'PATH'))
     parser.add_argument('--read-model-only', action='store_true')
     parser.add_argument('--read-model-report', type=Path)
+    parser.add_argument('--publication-input', type=Path,
+                        help='Prepare a source-verified JSON handoff; never writes or approves Excel.')
     parser.add_argument('--presentation-as-of', type=date.fromisoformat,
                         help='Explicit read-model observation date; never changes quote or fact dates.')
     parser.add_argument("--integrate-canonical", action="store_true",
@@ -111,6 +114,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if getattr(args, 'publication_input', None) is not None and not args.read_model_only:
+        raise ValueError('publication-input requires read-model-only')
     args.research_readiness = getattr(args, 'research_readiness', [])
     recipe_binding = None
     historical_closure_binding = None
@@ -353,6 +358,9 @@ def main() -> int:
                 )
                 handle.write(report + ('\n\n' + historical_report if historical_report else '')
                              + ('\n\n' + replay_report if replay_report else '') + '\n')
+        if getattr(args, 'publication_input', None) is not None:
+            prepare_research_publication_input(root=ROOT, read_model_path=output,
+                expected_sha256=sha256_file(output), output_path=ROOT / args.publication_input)
         print(json.dumps(dict(output=str(output), sha256=sha256_file(output),
                               canonical_written=False, action='no_order'), indent=2))
         return 0

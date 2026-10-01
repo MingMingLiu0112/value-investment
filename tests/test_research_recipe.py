@@ -94,3 +94,39 @@ def test_recipe_rejects_scope_expansion_and_ambiguous_inputs(tmp_path, case):
     if case == 'recovery': value['recovered_event_originals'] = [dict(id='x', path='base.json')]
     if case == 'cash': value['cash_change_periods'] = ['2025', '2025']
     with pytest.raises(ValueError): load(tmp_path, value)
+
+
+@pytest.mark.parametrize('case', ['pass', 'drift', 'conflict', 'scope', 'escape'])
+def test_research_publication_handoff_checks_transitive_originals(tmp_path, case):
+    from value_investment_agent.application.product.research_publication_input import prepare_research_publication_input
+    runtime = tmp_path / 'runtime'
+    runtime.mkdir()
+    original = tmp_path / 'original.txt'
+    original.write_text('sealed source', encoding='utf-8')
+    digest = hashlib.sha256(original.read_bytes()).hexdigest()
+    inner = tmp_path / 'inner.json'
+    inner.write_text(json.dumps({'source_bindings': [dict(path=original.name, sha256=digest)]}), encoding='utf-8')
+    envelope = dict(schema_version='historical-company-read-model-preview-v1', action='no_order',
+                    canonical_written=False, historical_preview=True,
+                    snapshot=dict(action='no_order', companies=[], audit_evidence=[
+                        dict(path=inner.name, sha256=hashlib.sha256(inner.read_bytes()).hexdigest())]))
+    if case == 'scope': envelope['canonical_written'] = True
+    if case == 'conflict': envelope['snapshot']['audit_evidence'].append(dict(path=original.name, sha256='a'*64))
+    if case == 'escape': envelope['snapshot']['audit_evidence'].append(dict(path='../outside.txt', sha256='a'*64))
+    source = runtime / 'read-model.json'
+    source.write_text(json.dumps(envelope), encoding='utf-8')
+    if case == 'drift': original.write_text('changed source', encoding='utf-8')
+    output = runtime / 'handoff.json'
+    args = dict(root=tmp_path, read_model_path=source,
+                expected_sha256=hashlib.sha256(source.read_bytes()).hexdigest(), output_path=output)
+    if case != 'pass':
+        with pytest.raises(ValueError): prepare_research_publication_input(**args)
+        assert not output.exists()
+        return
+    result = prepare_research_publication_input(**args)
+    assert result['snapshot'] == envelope['snapshot']
+    assert len(result['source_bindings']) == 3
+    assert result['action'] == 'no_order'
+    assert not result['canonical_written'] and not result['publication_approved']
+    assert not result['strict_pit_admitted'] and not result['current_price_admitted']
+    with pytest.raises(FileExistsError): prepare_research_publication_input(**args)

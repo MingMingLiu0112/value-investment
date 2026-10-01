@@ -7289,3 +7289,11 @@ action = no_order
 
 伊利实际 18/18 通过，生成 `runtime/sensitivity-company-review-20261001/company-card.md` 与 read-model.json，后者 SHA-256 `22dd62a74ef9866bea5523498497061e6c0dc1c1232d280e1c48a5bf36ce6828`。产品对比确认 scenarios、decision_process、price、margin_of_safety 和 portfolio 均保持不变。相关测试 57 项通过。敏感性只是既有低置信度分析假设的机械重放，不是概率区间、目标价、预测批准或严格 PIT 证据；action=no_order，canonical_written=false，原 Excel 与服务器未改。
 
+# 2026-10-01 完整公司卡准备为来源核验发布输入
+
+当前配方仍只生成只读研究展示；新增可选 `--publication-input` 在同一共享命令中生成 JSON 交接包，不调用 Excel、WPS、服务器或数据库。Application 递归重验本地原件、嵌套绑定及最终读取后 Hash，复制已有 snapshot，不重算或提升门禁。既有公告恢复原件必须重新经过 event_evidence_audit，包内明确记录原路径、期望 Hash 与恢复路径，不能忽略损坏来源。
+
+实际命令输出 `runtime/source-verified-company-handoff-20261001/company-card.md`、read-model.json 与 publication-input.json；后者 SHA-256 `cc4f3d5c208d22657361d4c69894cd25e76d141224ccb4142a99d9721476f21c`。共 61 个来源绑定，一项经过相同 Hash 原件审计的路径恢复。read-model SHA-256 `cfa6424335abb364652c727742a8b43923ad0024a8e9415bd4907bbcc7201f0b`。定向测试 54 项通过；来源漂移、冲突、越界、非只读范围及覆盖旧交接包均拒绝。
+
+此包是研究数据交接，不是发布批准或最终产品验收。publication_approved=false、strict_pit_admitted=false、current_price_admitted=false、canonical_written=false、action=no_order。本轮再次确认获准 @oai/artifact-tool 包不存在；canonical SHA-256 仍 `74439baa82f9ff9f648cb32858af9d3fab03ade06d4f43b1cbdde15fcdef4582`，不绕用其他库写原表。下一依赖仍是获准表格工具及原表保护/视觉发布流程，而不是再次确认用户已阅读。
+
