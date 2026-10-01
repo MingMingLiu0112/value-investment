@@ -30,7 +30,16 @@ def main() -> int:
     parser.add_argument('--event-scan-sha256')
     parser.add_argument('--quote-bundle', type=Path)
     parser.add_argument('--quote-bundle-sha256')
+    parser.add_argument('--recovered-event-original', action='append', default=[], metavar='ID=PATH')
     args = parser.parse_args()
+    recovered_originals = {}
+    for binding in args.recovered_event_original:
+        evidence_id, separator, path = binding.partition('=')
+        if not separator or not evidence_id or not path or evidence_id in recovered_originals:
+            raise ValueError('recovered originals require unique ID=PATH bindings')
+        recovered_originals[evidence_id] = ROOT / path
+    if recovered_originals and args.event_scan is None:
+        raise ValueError('recovered originals require an event scan')
     report = None if args.report is None else (ROOT / args.report).resolve()
     if report is not None and (not report.is_relative_to(ROOT / 'runtime') or report.exists()):
         raise ValueError('report requires a new runtime path')
@@ -52,7 +61,7 @@ def main() -> int:
             raise ValueError('event scan requires paired path and hash')
         result['event_evidence_audit'] = audit_event_evidence(root=ROOT,
             path=ROOT / args.event_scan, expected_sha256=args.event_scan_sha256,
-            symbol=result['symbol'])
+            symbol=result['symbol'], recovered_originals=recovered_originals)
     if args.quote_bundle is not None or args.quote_bundle_sha256 is not None:
         if not all((args.quote_bundle, args.quote_bundle_sha256, args.event_scan, args.event_scan_sha256)):
             raise ValueError('historical bridge requires paired quote and event paths/hashes')
@@ -60,7 +69,7 @@ def main() -> int:
             workbench_path=ROOT / args.workbench, workbench_sha256=args.workbench_sha256,
             quote_path=ROOT / args.quote_bundle, quote_sha256=args.quote_bundle_sha256,
             scan_path=ROOT / args.event_scan, scan_sha256=args.event_scan_sha256,
-            cutoffs=args.cutoff)
+            cutoffs=args.cutoff, recovered_originals=recovered_originals)
     if not output.is_relative_to(ROOT / 'runtime'):
         raise ValueError('replay output must remain under runtime')
     write_new_json(output, result)

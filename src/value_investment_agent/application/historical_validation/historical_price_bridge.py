@@ -16,7 +16,8 @@ from ...valuation_models.base import ValuationResult
 
 def replay_historical_bridge(*, root: Path, workbench_path: Path, workbench_sha256: str,
                              quote_path: Path, quote_sha256: str, scan_path: Path,
-                             scan_sha256: str, cutoffs: list[datetime]) -> dict:
+                             scan_sha256: str, cutoffs: list[datetime],
+                             recovered_originals: dict[str, Path] | None = None) -> dict:
     payload = load_existing_workbench_for_presentation(root=root, path=workbench_path,
                                                        expected_sha256=workbench_sha256)
     raw = dict(payload['research']['valuation'])
@@ -40,7 +41,8 @@ def replay_historical_bridge(*, root: Path, workbench_path: Path, workbench_sha2
     quote = quote_snapshot_from_bundle_file(quote_path, root, symbol=valuation.symbol,
         ref_id='historical-close', expected_sha256=quote_sha256)
     audit = audit_event_evidence(root=root, path=scan_path,
-                                expected_sha256=scan_sha256, symbol=valuation.symbol)
+                                expected_sha256=scan_sha256, symbol=valuation.symbol,
+                                recovered_originals=recovered_originals)
     bridge = None
     validity = None
     if audit['evidence_integrity_verified']:

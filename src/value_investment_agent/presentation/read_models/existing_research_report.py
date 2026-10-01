@@ -168,10 +168,16 @@ def render_cutoff_replay_report(payload: dict) -> str:
             f"Quote captured at: {history['quote_observed_at']}",
             f"Event original integrity: {history['event_evidence_audit']['status']}", '',
             f"Valuation result observed at: {history['valuation_observed_at']}",
-            '| Cutoff | Quote observed | Valuation observed | Historical price | Blockers |',
-            '| --- | --- | --- | --- | --- |'])
+            '| Cutoff | Quote observed | Valuation observed | Historical price | Bridge arithmetic | Blockers |',
+            '| --- | --- | --- | --- | --- | --- |'])
         for row in history['rows']:
             price = row['quote']['current_price'] if row['quote'] else 'unavailable'
-            lines.append(f"| {row['cutoff']} | {row['quote_observed']} | {row['valuation_observed']} | {price} | {'; '.join(row['blockers'])} |")
+            bridge_status = row['bridge'].get('bridge_status', 'not admitted') if row['bridge'] else 'not admitted'
+            lines.append(f"| {row['cutoff']} | {row['quote_observed']} | {row['valuation_observed']} | {price} | {bridge_status} | {'; '.join(row['blockers'])} |")
+        lines.extend(['', '### Original Recovery Audit', ''])
+        for ref in history['event_evidence_audit']['references']:
+            if ref.get('recovered_path'):
+                lines.append(f"- {ref['id']}: original path remains {ref['original_path_status']}; exact sealed bytes verified at {ref['recovered_path']} (SHA-256 {ref['recovered_sha256']}).")
+        lines.append('Bridge arithmetic readiness is not research approval. Pre-model events, assumption timing, strict PIT and current quote freshness remain separate gates.')
         lines.extend(['', 'Decision remains NOT_READY; no orders, fills or position guidance.', ''])
     return '\n'.join(lines)
