@@ -1,5 +1,10 @@
 # CURRENT STATUS
 
+## 2026-10-01 User Confirmed Independent Key Custody And Remote WPS Visibility
+
+- Direct user confirmation: recovery key independently backed up and encrypted package visible remotely in WPS. KEY_INDEPENDENT_COPY=USER_CONFIRMED; WPS_REMOTE_VISIBILITY=USER_CONFIRMED. These two pending human confirmations are closed; do not ask for them again without a new material change.
+- Confirmation does not prove an independently downloaded remote package hash, restored secondary key usability, complete runtime/config reconstruction, full-system RTO/RPO, Excel comprehension or investment readiness. Original machine receipts remain unchanged and describe their observation-time scope. FULL_SYSTEM_REAL_RESTORE=NOT_PASSED; INITIAL_ASSISTED_USE=NOT_REACHED; action=no_order.
+
 ## 2026-10-01 Restored Research Application Command Verified
 
 - Ran the actual backed-up `scripts/current/run_company_research.py` from the decrypted `source/code` root, using its backed-up existing-original manifest and primary-bound arithmetic input. No current repository source import, new research request, server access or workbook publication. Existing evidence hashes and shared arithmetic checks passed; the command exited successfully.
