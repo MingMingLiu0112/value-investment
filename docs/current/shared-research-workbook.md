@@ -189,3 +189,23 @@ Hash，再生成来源包；presentation 只展示日期、标题、原件 URL/H
 措辞是历史研究记录，不自动成为当前政策批准或未来现金预测。
 正常化股息、当前股息率、法人可分配现金、严格 PIT 和决策仍未准入；
 原 Excel、调度器、数据库和服务器不变。
+
+### 来源冻结的单命令复现（2026-10-01）
+
+`--research-recipe PATH SHA256` 将基础快照、共享 workbench、反向估值、
+财务抄录、现金流桥接、事件扫描、精确原件恢复及股息包组织为一个明确配方。
+应用层先验证配方范围、公司、全部直接输入 Hash、重复项与恢复依赖；
+再通过现有源核验及领域计算链生成公司卡。不能混入单项覆盖参数，不能
+通过配方出版 Excel、修改账户或授权交易；仅限 read-model-only。
+
+实际配方 `runtime/shared-company-recipe-20261001/recipe.json` 与逐参数运行
+生成的完整 snapshot 逐项相等，所有领域数值与门禁不变。复现命令：
+
+```powershell
+$recipe = 'runtime/shared-company-recipe-20261001/recipe.json'
+$hash = (Get-FileHash $recipe).Hash.ToLower()
+py -3 scripts/current/build_product_workbench_candidate.py --historical-preview --read-model-only --research-recipe $recipe $hash --output runtime/new-recipe-run/read-model.json --read-model-report runtime/new-recipe-run/company-card.md
+```
+
+必须从项目根运行且输出目录未被使用。配方与原来源只读保留；输出是一次
+新的观察核验，不回填旧时点，也不因此证明历史策略有效或实盘就绪。

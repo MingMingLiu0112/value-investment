@@ -35,6 +35,7 @@ from value_investment_agent.presentation.read_models.company_events import proje
 from value_investment_agent.application.historical_validation.reported_cash_change import reported_cash_change
 from value_investment_agent.application.product.dividend_history import read_dividend_history
 from value_investment_agent.presentation.read_models.dividend_history import project_dividend_history
+from value_investment_agent.application.product.research_recipe import load_research_recipe
 from value_investment_agent.presentation.read_models.existing_research_report import project_existing_research_workbench, public_workbench_payload_from_snapshot  # noqa: E402
 from value_investment_agent.application.product.product_workbench_candidate import (  # noqa: E402
     build_product_workbench_candidate_payload,
@@ -57,6 +58,7 @@ def _generated_at(value: str) -> datetime:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument('--research-recipe', nargs=2, metavar=('PATH', 'SHA256'))
     parser.add_argument("--base-payload", type=Path)
     parser.add_argument("--base-payload-sha256")
     parser.add_argument("--base-read-model-snapshot", action="store_true")
@@ -92,6 +94,35 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    recipe_binding = None
+    if getattr(args, 'research_recipe', None):
+        if (not args.read_model_only or args.integrate_canonical or args.base_payload is not None
+                or args.existing_workbench is not None or args.expectations_replay is not None
+                or args.metric_transcription or args.event_scan or args.dividend_package
+                or args.recovered_event_original or args.cash_change_periods
+                or args.presentation_as_of is not None or args.base_payload_sha256
+                or args.existing_workbench_sha256 or args.expectations_replay_sha256
+                or args.base_read_model_snapshot):
+            raise ValueError('recipe requires read-model-only and excludes individual input overrides')
+        path, digest = args.research_recipe
+        recipe = load_research_recipe(root=ROOT, path=ROOT / path, expected_sha256=digest)
+        args.base_payload = Path(recipe['base']['path'])
+        args.base_payload_sha256 = recipe['base']['sha256']
+        args.base_read_model_snapshot = True
+        args.existing_workbench = Path(recipe['workbench']['path'])
+        args.existing_workbench_sha256 = recipe['workbench']['sha256']
+        args.presentation_as_of = date.fromisoformat(recipe['presentation_as_of'])
+        if recipe.get('expectations'):
+            args.expectations_replay = Path(recipe['expectations']['path'])
+            args.expectations_replay_sha256 = recipe['expectations']['sha256']
+        args.metric_transcription = [(item['path'], item['sha256']) for item in recipe.get('metrics', [])]
+        args.cash_change_periods = recipe.get('cash_change_periods')
+        args.event_scan = None if not recipe.get('event_scan') else (
+            recipe['event_scan']['path'], recipe['event_scan']['sha256'])
+        args.recovered_event_original = [(item['id'], item['path']) for item in recipe.get('recovered_event_originals', [])]
+        args.dividend_package = None if not recipe.get('dividend_package') else (
+            recipe['dividend_package']['path'], recipe['dividend_package']['sha256'])
+        recipe_binding = dict(path=str(path), sha256=digest, symbol=recipe['symbol'])
     if getattr(args, 'read_model_report', None) is not None and not getattr(args, 'read_model_only', False):
         raise ValueError('read-model report requires read-model-only mode')
     if not args.historical_preview:
@@ -183,15 +214,15 @@ def main() -> int:
         if len({key for key, _ in recovered}) != len(recovered):
             raise ValueError('duplicate recovered event reference')
         event_path = require_inside(ROOT, ROOT / event_scan[0], 'event scan')
-        packet = prepare_event_source_review(root=ROOT, path=event_path,
+        event_packet = prepare_event_source_review(root=ROOT, path=event_path,
             expected_sha256=event_scan[1], symbol=research['symbol'],
             recovered_originals={key: ROOT / value for key, value in recovered})
         evidence = EvidenceRecord(f"{research['symbol']}-event-originals-{event_scan[1][:12]}",
             '封存区间公告原件复核（影响未批准）', 'event_source_review',
             event_path.relative_to(ROOT).as_posix(), event_scan[1], args.generated_at.date())
-        model = project_company_event_questions(model, packet, evidence)
+        model = project_company_event_questions(model, event_packet, evidence)
         event_binding = dict(path=event_path.relative_to(ROOT).as_posix(), sha256=event_scan[1],
-                             recovered_originals=recovered, source_review=packet)
+                             recovered_originals=recovered, source_review=event_packet)
     dividend_binding = None
     if getattr(args, 'dividend_package', None):
         if not args.existing_workbench:
@@ -219,6 +250,7 @@ def main() -> int:
             disclosed_financial_bindings=metric_bindings,
             event_source_binding=event_binding,
             dividend_history_binding=dividend_binding,
+            research_recipe_binding=recipe_binding,
             canonical_written=False, historical_preview=True, action='no_order'))
         if report_path is not None:
             report_path.parent.mkdir(parents=True, exist_ok=True)
