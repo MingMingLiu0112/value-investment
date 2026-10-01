@@ -234,4 +234,17 @@ def render_cutoff_replay_report(payload: dict) -> str:
         for fact in metrics['facts']:
             lines.append(f"| {fact['metric_name']} | {fact['period']} | {fact['value']} | {fact['unit']} | {fact['physical_page']} |")
         lines.extend(['', metrics['limitation'], 'Financial gate and forecast assumptions remain unapproved; action=no_order.', ''])
+    cash_proxy = payload.get('reported_cash_proxy')
+    if cash_proxy is not None:
+        lines.extend(['## Descriptive CFO Less Cash Capex', '',
+            'This is NOT FCFF, FCFE, maintenance free cash flow or proven dividend capacity.', '',
+            '| Period | Consolidated CFO (CNY) | Cash capex (CNY) | Descriptive residual (CNY) |',
+            '| --- | --- | --- | --- |'])
+        for row in cash_proxy['rows']:
+            if row['status'] == 'NOT_ASSESSABLE':
+                lines.append(f"| {row['period']} | unavailable | unavailable | NOT_ASSESSABLE |")
+            else:
+                lines.append(f"| {row['period']} | {row['cfo_cny']} | {row['cash_capex_cny']} | {row['proxy_cny']} |")
+        lines.extend(['', 'Maintenance/growth split, acquisitions, debt/interest, minority cash claims and financial-subsidiary flows require further review.',
+                      'No dividend sustainability or valuation model admission; action=no_order.', ''])
     return '\n'.join(lines)

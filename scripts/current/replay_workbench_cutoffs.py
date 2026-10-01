@@ -17,6 +17,7 @@ from value_investment_agent.application.historical_validation.event_source_revie
 from value_investment_agent.application.historical_validation.execution_scenario import replay_execution_scenario
 from value_investment_agent.application.historical_validation.reverse_equity_expectations import reverse_equity_expectations
 from value_investment_agent.application.historical_validation.disclosed_metric_review import review_disclosed_metrics
+from value_investment_agent.application.historical_validation.reported_cash_proxy import reported_cash_proxies
 
 
 def main() -> int:
@@ -41,6 +42,7 @@ def main() -> int:
     parser.add_argument('--reverse-equity-expectations', action='store_true')
     parser.add_argument('--metric-transcription', type=Path)
     parser.add_argument('--metric-transcription-sha256')
+    parser.add_argument('--reported-cash-proxy', action='store_true')
     args = parser.parse_args()
     recovered_originals = {}
     for binding in args.recovered_event_original:
@@ -74,6 +76,10 @@ def main() -> int:
         result['disclosed_metric_review'] = review_disclosed_metrics(root=ROOT,
             path=ROOT / args.metric_transcription, expected_sha256=args.metric_transcription_sha256,
             workbench_path=ROOT / args.workbench, workbench_sha256=args.workbench_sha256)
+    if args.reported_cash_proxy:
+        if 'disclosed_metric_review' not in result:
+            raise ValueError('cash proxy requires pinned metric transcription')
+        result['reported_cash_proxy'] = reported_cash_proxies(result['disclosed_metric_review'])
     if args.reverse_equity_expectations:
         if not all((args.arithmetic_input, args.arithmetic_input_sha256, args.quote_bundle, args.quote_bundle_sha256)):
             raise ValueError('reverse expectations require pinned arithmetic and quote inputs')

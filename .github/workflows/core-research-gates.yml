@@ -40,6 +40,7 @@ jobs:
           tests/test_residual_income_reverse.py
           tests/test_conditional_expectations_presentation.py
           tests/test_disclosed_metric_review.py
+          tests/test_reported_cash_proxy.py
           tests/test_valuation_result.py
           tests/test_price_bridge.py
           tests/test_research_profile.py

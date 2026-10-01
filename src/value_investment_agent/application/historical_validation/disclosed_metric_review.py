@@ -41,10 +41,21 @@ def review_disclosed_metrics(*, root: Path, path: Path, expected_sha256: str,
         if type(page_number) is not int or not 1 <= page_number <= len(pages):
             raise ValueError('metric physical page invalid')
         page = ' '.join(pages[page_number - 1].split())
+        context_pages = row.get('context_physical_pages', [page_number])
+        if (not context_pages or any(type(number) is not int or number not in {page_number - 1, page_number}
+                or number < 1 for number in context_pages) or page_number not in context_pages):
+            raise ValueError('metric context must be its page and optional preceding page')
+        context_text = ' '.join(' '.join(pages[number - 1].split()) for number in context_pages)
+        statement_scope = row.get('statement_scope', 'UNSPECIFIED')
+        if statement_scope not in {'UNSPECIFIED', 'CONSOLIDATED', 'PARENT'}:
+            raise ValueError('unknown metric statement scope')
+        if statement_scope != 'UNSPECIFIED' and (
+                '合并现金流量表' if statement_scope == 'CONSOLIDATED' else '母公司现金流量表') not in context_text:
+            raise ValueError('cash statement scope missing from bound page context')
         excerpt = ' '.join(row['evidence_excerpt'].split())
         label = ' '.join(row['row_label'].split())
         if (not excerpt.startswith(label) or page.count(excerpt) != 1
-                or not all(' '.join(context.split()) in page for context in row['required_context'])):
+                or not all(' '.join(context.split()) in context_text for context in row['required_context'])):
             raise ValueError('metric row or period/unit context not found uniquely in source')
         numbers = re.findall(r'[-+]?\d[\d,]*(?:\.\d+)?', excerpt[len(label):])
         for period, column in row['period_columns'].items():
@@ -59,6 +70,7 @@ def review_disclosed_metrics(*, root: Path, path: Path, expected_sha256: str,
             seen.add(identity)
             facts.append(dict(symbol=request['symbol'], metric_name=row['metric_name'], period=period,
                 value=str(value), unit=row['unit'], physical_page=page_number, source_binding=binding,
+                context_physical_pages=context_pages, statement_scope=statement_scope,
                 evidence_excerpt=excerpt, verification_status='TRANSCRIBED_ROW_NUMERIC_MATCH_ONLY',
                 availability_basis='CURRENT_REVIEW_OF_LATER_REPORT_NOT_ORIGINAL_PERIOD_AVAILABILITY'))
     if not facts:
