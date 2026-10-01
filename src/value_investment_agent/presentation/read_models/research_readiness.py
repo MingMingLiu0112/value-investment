@@ -39,7 +39,17 @@ def project_research_readiness(model: ProductWorkbenchReadModel, packet: dict) -
             f"重开条件（原文）：{stop['reopen_condition']}；已查材料：{', '.join(stop['reviewed_evidence_ids'])}。"
         )
     review["研究缺项展示边界"] = "缺项来自已核验停止台账；不是新财报审查、历史时点证明或投资批准。已封存估值继续保留，当前门禁不变。"
-    updated = replace(card, decision_review=tuple(review.items()),
+    stops = result['evidence_stops']
+    steps = card.decision_process
+    if stops:
+        questions = '；'.join(f"{stop['research_question_id']}（{stop['period']}）" for stop in stops)
+        reopen = '；'.join(f"{stop['stop_id']}：{stop['reopen_condition']}" for stop in stops)
+        steps = tuple(replace(step,
+            reason=f"{step.reason} 已核验停止台账仍有以下研究问题：{questions}。",
+            next_action=f"仅在下列原始重开条件满足后重新复核：{reopen}。不重复搜索同一证据集。",
+            evidence_refs=tuple(dict.fromkeys((*step.evidence_refs, *refs))))
+            if step.key == 'research_gate' else step for step in steps)
+    updated = replace(card, decision_review=tuple(review.items()), decision_process=steps,
                       evidence_refs=tuple(dict.fromkeys((*card.evidence_refs, *refs))))
     return replace(model, companies=tuple(updated if item.symbol == card.symbol else item for item in model.companies),
                    audit_evidence=tuple(evidence.values()))

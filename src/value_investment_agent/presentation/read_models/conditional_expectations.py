@@ -105,7 +105,24 @@ def render_company_review_cards(model: ProductWorkbenchReadModel) -> str:
                 concise = concise.split('；记录缺项：', 1)[0].replace('普通/特别分类：unknown', '普通/特别分类：未核定')
             lines.extend([f'- {label}：{concise}'])
         lines.extend(['', '### 决策过程', ''])
-        lines.extend(f'- {step.title}：{step.status}。{step.reason}' for step in card.decision_process)
+        evidence_by_id = {record.evidence_id: record for record in model.audit_evidence}
+        labels = {'BLOCKED': '尚未通过', 'CONDITIONAL': '仅条件性结果', 'PASS': '该步骤已通过'}
+        for index, step in enumerate(card.decision_process, 1):
+            lines.extend([f'#### {index}. {step.title}：{labels[step.status]}', '',
+                          f'当前依据：{step.reason}', f'下一动作：{step.next_action}', ''])
+            for reference in step.evidence_refs:
+                record = evidence_by_id.get(reference)
+                if record is None:
+                    raise ValueError('decision process evidence is missing from audit')
+                lines.append(f'- 复核证据：{record.title}；路径：{record.path}；SHA-256：{record.sha256}。')
+            if not step.evidence_refs:
+                lines.append('该步骤未绑定正式评估证据；不能仅因报告有数字就认为已通过。')
+            lines.append('')
+        lines.extend(['### 买入、加仓与退出的一致性边界', '',
+            f'保留的研究论点：{card.original_thesis}',
+            '研究论点不等于用户已确认的买入快照。本报告没有批准首次买入，也不能把它补写成历史买入理由。',
+            '加仓不能只因为价格下跌；需另外复核原论点、价值变化、反证、模型有效性与组合容量。',
+            '减仓或退出需回看真实的 Entry Thesis 与新证据；缺少该记录时不能宣称买卖逻辑一致性已验证。', ''])
         groups = [('研究解释与财务明细', []), ('公告原件与待复核事项', []), ('股息原件与生命周期', []), ('来源审计入口', [])]
         for label, value in card.decision_review:
             if label.startswith('待复核公告 ') or label in {'公告覆盖边界', '公告原件核验'}:

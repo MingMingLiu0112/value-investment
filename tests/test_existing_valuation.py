@@ -490,7 +490,23 @@ def test_current_workbench_explains_stopped_cases_without_rerunning_research(tmp
     model = replace(model, as_of=datetime.now(timezone.utc).date(), companies=(card,))
     projected = project_research_readiness(model, packet)
     assert projected.companies[0].valuation == card.valuation
-    assert projected.companies[0].decision_process == card.decision_process
+    for before, after in zip(card.decision_process, projected.companies[0].decision_process):
+        assert after.status == before.status
+        assert after.assessment_id == before.assessment_id
+        if before.key != 'research_gate':
+            assert after == before
+        else:
+            assert '原始重开条件' in after.next_action
+            assert after.evidence_refs
+            for stop in payload['evidence_stops']:
+                assert stop['research_question_id'] in after.reason
+                assert stop['reopen_condition'] in after.next_action
+    from value_investment_agent.presentation.read_models.conditional_expectations import render_company_review_cards
+    guide = render_company_review_cards(projected)
+    assert '下一动作：' in guide
+    assert '买入、加仓与退出的一致性边界' in guide
+    assert source_hash in guide
+    assert 'action=no_order' in guide
     assert projected.portfolio == model.portfolio
     assert projected.today_items == model.today_items
     assert len(projected.companies[0].decision_review) > len(card.decision_review)

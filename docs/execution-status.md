@@ -7277,3 +7277,9 @@ action = no_order
 
 真实 600519 回放形成 33 个来源绑定（五个顶层文件及 28 个执行原件），result SHA-256 `3c5ec119423feb4086de7628352d7e3eb471d47d8770397c821d20affa8a2efc`。共享产品只读集成实际输出 `runtime/source-complete-product-review-20261001/company-card.md` 与 read-model.json，后者 SHA-256 `e0d232f28386926031b4a486d8dbb7ef5c55c846e38f17adcb819a7c2f007b57`。回放只位于次级历史审计区，不提升当前公司研究/决策。相关测试 32 项通过；canonical_written=false，action=no_order，原表及服务器未改。完整目标与最终运营验收仍未完成。
 
+# 2026-10-01 单公司决策复核过程可读闭环
+
+已核验研究停止台账现在进入现有 CompanyCard 的 research_gate 理由、下一动作和证据引用，状态与 assessment_id 保持不变；其他七步、情景估值、组合与今日提示不改。报告展示八步真实门禁、逐步下一动作及原件入口，并明确研究论点不等于 Entry Thesis，不能自动补写历史买入理由或宣称加减仓一致性已通过。
+
+共享冻结单票 recipe 实际生成 `runtime/integrated-decision-guide-20261001/company-card.md`，包含已有论点、反证、财务与现金变动、股息生命周期、条件估值及两项当前研究缺口。read-model SHA-256 `79d5cc30ad278f717e5e52f9fb7d7d0ec88e592f877cbfc72424b7f0e50c015b`。三公司台账投影与 recipe 相关测试 49 项通过，验证所有门禁状态不变；这不是正式研究评估通过。canonical_written=false，action=no_order；原 Excel、服务器、数据库及定时任务未改。
+
