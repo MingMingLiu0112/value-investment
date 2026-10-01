@@ -47,7 +47,7 @@ from value_investment_agent.application.historical_validation.reported_cash_chan
 from value_investment_agent.application.product.dividend_history import read_dividend_history
 from value_investment_agent.presentation.read_models.dividend_history import project_dividend_history
 from value_investment_agent.application.product.research_recipe import load_research_recipe
-from value_investment_agent.application.product.research_publication_input import prepare_research_publication_input
+from value_investment_agent.application.product.research_publication_input import prepare_research_publication_input, load_research_publication_input
 from value_investment_agent.application.product.valuation_drivers import describe_valuation_drivers
 from value_investment_agent.presentation.read_models.existing_research_report import project_existing_research_workbench, public_workbench_payload_from_snapshot  # noqa: E402
 from value_investment_agent.application.product.product_workbench_candidate import (  # noqa: E402
@@ -75,6 +75,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-payload", type=Path)
     parser.add_argument("--base-payload-sha256")
     parser.add_argument("--base-read-model-snapshot", action="store_true")
+    parser.add_argument('--base-publication-input', action='store_true',
+                        help='Read a source-reverified research handoff in read-model-only mode.')
     parser.add_argument("--existing-workbench", type=Path)
     parser.add_argument("--research-readiness", nargs=2, action="append", default=[], metavar=("PATH", "SHA256"))
     parser.add_argument("--existing-workbench-sha256")
@@ -114,6 +116,17 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    publication_input_binding = None
+    if getattr(args, 'base_publication_input', False):
+        if (not args.read_model_only or args.base_read_model_snapshot
+                or args.base_payload is None or args.base_payload_sha256 is None
+                or getattr(args, 'research_recipe', None)
+                or any(getattr(args, key, None) for key in (
+                    'existing_workbench', 'expectations_replay', 'metric_transcription',
+                    'event_scan', 'dividend_package', 'recovered_event_original',
+                    'cash_change_periods', 'historical_closure', 'historical_execution_replay',
+                    'research_readiness'))):
+            raise ValueError('publication input requires read-model-only without research overrides')
     if getattr(args, 'publication_input', None) is not None and not args.read_model_only:
         raise ValueError('publication-input requires read-model-only')
     args.research_readiness = getattr(args, 'research_readiness', [])
@@ -175,7 +188,13 @@ def main() -> int:
         base = require_inside(ROOT, ROOT / args.base_payload, "base payload")
         if sha256_file(base) != args.base_payload_sha256:
             raise ValueError("base payload hash mismatch")
-        payload = load_json_object(base, "base payload")
+        if getattr(args, 'base_publication_input', False):
+            handoff = load_research_publication_input(root=ROOT, path=base,
+                                                       expected_sha256=args.base_payload_sha256)
+            payload = public_workbench_payload_from_snapshot(handoff['snapshot'])
+            publication_input_binding = dict(path=base.relative_to(ROOT).as_posix(), sha256=args.base_payload_sha256)
+        else:
+            payload = load_json_object(base, "base payload")
         if args.base_read_model_snapshot:
             payload = public_workbench_payload_from_snapshot(payload)
     else:
@@ -345,6 +364,7 @@ def main() -> int:
             historical_closure_binding=historical_closure_binding,
             historical_execution_replay_binding=historical_execution_replay_binding,
             research_recipe_binding=recipe_binding,
+            publication_input_binding=publication_input_binding,
             readiness_bindings=readiness_bindings,
             canonical_written=False, historical_preview=True, action='no_order'))
         if report_path is not None:

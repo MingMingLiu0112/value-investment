@@ -7297,3 +7297,11 @@ action = no_order
 
 此包是研究数据交接，不是发布批准或最终产品验收。publication_approved=false、strict_pit_admitted=false、current_price_admitted=false、canonical_written=false、action=no_order。本轮再次确认获准 @oai/artifact-tool 包不存在；canonical SHA-256 仍 `74439baa82f9ff9f648cb32858af9d3fab03ade06d4f43b1cbdde15fcdef4582`，不绕用其他库写原表。下一依赖仍是获准表格工具及原表保护/视觉发布流程，而不是再次确认用户已阅读。
 
+# 2026-10-02 共享入口消费来源核验交接包
+
+新增 `--base-publication-input`，必须与 pinned base path/hash、historical-preview、read-model-only 配合，禁止混用研究配方或财务/事件/估值覆盖输入。Application 从原研究 envelope 重新构建完整来源链（含原件恢复审计），精确比较交接包；修改 snapshot、省略来源、伪造批准或后续原件漂移均拒绝。不是只信任交接包自述的已通过状态。
+
+实际旧包经共享入口重建为 `runtime/reverified-company-handoff-20261002/company-card.md` 与 read-model.json，后者 SHA-256 `29b66e5963636e675cb0cf4097c4a0d217d2a355d899adae15287417a0a42d59`。此前真实加载失败暴露 PENDING_EXTERNAL_DATA 的安全边际状态不被解析合同接受；现已支持该等待状态并禁止其 available=true。当前完整公司数值、状态码、门禁、来源引用、组合与今日事项往返保持一致；已有 validator 会规范展示标签及 scenario assessment key，不声称原 snapshot bytes 全同。
+
+相关测试 58 项通过。仅只读报告，不调用 Excel，不改变阈值、估值公式、研究批准、PIT、价格或组合准入；canonical_written=false、action=no_order。获准表格工具及保全/视觉发布仍是下一 Excel 依赖，完整目标与最终运营验收未完成。
+

@@ -134,6 +134,7 @@ DIVIDEND_STATUS_LABELS = {
 }
 
 PRICE_STATUS_LABELS = {
+    "PENDING_EXTERNAL_DATA": "等待已验证行情",
     "AVAILABLE": "行情已验证；吸引力待评估",
     "IN_WATCH_RANGE": "价格进入关注范围",
     "OUTSIDE_RANGE": "价格尚未进入关注范围",
@@ -144,6 +145,7 @@ PRICE_STATUS_LABELS = {
 }
 
 MARGIN_STATUS_LABELS = {
+    "PENDING_EXTERNAL_DATA": "等待已验证行情",
     "AVAILABLE": "已有安全边际结果",
     "NOT_READY": "安全边际尚未就绪",
     "UNAVAILABLE": "安全边际暂不可评估",
@@ -489,6 +491,8 @@ class AssessmentView:
         object.__setattr__(self, "key", _required_text(self.key, "assessment key"))
         if not isinstance(self.available, bool):
             raise ValueError("assessment available must be boolean")
+        if self.status.code == 'PENDING_EXTERNAL_DATA' and self.available:
+            raise ValueError('pending external data cannot be an available assessment')
         object.__setattr__(self, "evidence_refs", _ref_ids(self.evidence_refs))
         if self.available:
             object.__setattr__(

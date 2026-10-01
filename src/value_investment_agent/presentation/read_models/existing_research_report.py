@@ -43,7 +43,7 @@ def public_workbench_payload_from_snapshot(snapshot: Mapping[str, Any]) -> dict[
                      "event_decisions": data.pop("event_audit_decisions", [])}
     for company in data["companies"]:
         price = company.get("price", {})
-        if price.get("status") in {"NOT_READY", "PENDING_EXTERNAL_DATA"} and price.get("available") is False:
+        if price.get("status") == "NOT_READY" and price.get("available") is False:
             price["status"] = "UNAVAILABLE"
         company["decision_review"] = [{"label": label, "value": value}
                                       for label, value in company.get("decision_review", [])]

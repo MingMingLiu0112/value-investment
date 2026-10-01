@@ -5,10 +5,9 @@ from .common import require_inside, sha256_file, load_json_object, write_new_jso
 from ..historical_validation.event_evidence_audit import audit_event_evidence
 
 
-def prepare_research_publication_input(*, root: Path, read_model_path: Path,
-                                       expected_sha256: str, output_path: Path) -> dict:
+def _build_research_publication_input(*, root: Path, read_model_path: Path,
+                                      expected_sha256: str) -> dict:
     source = require_inside(root, read_model_path, 'research read model')
-    output = require_inside(root / 'runtime', output_path, 'research publication input')
     if sha256_file(source) != expected_sha256:
         raise ValueError('research read model hash mismatch')
     envelope = load_json_object(source, 'research read model')
@@ -73,5 +72,30 @@ def prepare_research_publication_input(*, root: Path, read_model_path: Path,
                   canonical_written=False, publication_approved=False,
                   strict_pit_admitted=False, current_price_admitted=False,
                   action='no_order')
+    return result
+
+
+def prepare_research_publication_input(*, root: Path, read_model_path: Path,
+                                       expected_sha256: str, output_path: Path) -> dict:
+    output = require_inside(root / 'runtime', output_path, 'research publication input')
+    result = _build_research_publication_input(root=root, read_model_path=read_model_path,
+                                              expected_sha256=expected_sha256)
     write_new_json(output, result)
     return result
+
+
+def load_research_publication_input(*, root: Path, path: Path, expected_sha256: str) -> dict:
+    path = require_inside(root, path, 'research publication input')
+    if sha256_file(path) != expected_sha256:
+        raise ValueError('publication input hash mismatch')
+    cached = load_json_object(path, 'research publication input')
+    binding = cached.get('read_model_binding')
+    if not isinstance(binding, dict) or set(binding) != {'path', 'sha256'}:
+        raise ValueError('publication input requires pinned research result')
+    fresh = _build_research_publication_input(root=root,
+        read_model_path=root / binding['path'], expected_sha256=binding['sha256'])
+    if fresh != cached:
+        raise ValueError('publication input differs from reverified research result')
+    if sha256_file(path) != expected_sha256:
+        raise ValueError('publication input changed during verification')
+    return fresh

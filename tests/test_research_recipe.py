@@ -129,4 +129,53 @@ def test_research_publication_handoff_checks_transitive_originals(tmp_path, case
     assert result['action'] == 'no_order'
     assert not result['canonical_written'] and not result['publication_approved']
     assert not result['strict_pit_admitted'] and not result['current_price_admitted']
+    from value_investment_agent.application.product.research_publication_input import load_research_publication_input
+    handoff_digest = hashlib.sha256(output.read_bytes()).hexdigest()
+    assert load_research_publication_input(root=tmp_path, path=output, expected_sha256=handoff_digest) == result
     with pytest.raises(FileExistsError): prepare_research_publication_input(**args)
+    original.write_text('later drift', encoding='utf-8')
+    with pytest.raises(ValueError, match='original hash mismatch'):
+        load_research_publication_input(root=tmp_path, path=output, expected_sha256=handoff_digest)
+
+
+@pytest.mark.parametrize('case', ['snapshot', 'sources', 'approval'])
+def test_publication_handoff_cannot_replace_original_research(tmp_path, case):
+    from value_investment_agent.application.product.research_publication_input import prepare_research_publication_input, load_research_publication_input
+    runtime = tmp_path / 'runtime'
+    runtime.mkdir()
+    original = tmp_path / 'source.txt'
+    original.write_text('sealed', encoding='utf-8')
+    envelope = dict(schema_version='historical-company-read-model-preview-v1', action='no_order',
+                    canonical_written=False, historical_preview=True, snapshot=dict(action='no_order',
+                        audit_evidence=[dict(path=original.name, sha256=hashlib.sha256(original.read_bytes()).hexdigest())]))
+    source = runtime / 'research.json'
+    source.write_text(json.dumps(envelope), encoding='utf-8')
+    output = runtime / 'handoff.json'
+    result = prepare_research_publication_input(root=tmp_path, read_model_path=source,
+        expected_sha256=hashlib.sha256(source.read_bytes()).hexdigest(), output_path=output)
+    if case == 'snapshot': result['snapshot']['invented_valuation'] = '999'
+    if case == 'sources': result['source_bindings'] = []
+    if case == 'approval': result['publication_approved'] = True
+    output.write_text(json.dumps(result), encoding='utf-8')
+    with pytest.raises(ValueError, match='differs from reverified'):
+        load_research_publication_input(root=tmp_path, path=output,
+            expected_sha256=hashlib.sha256(output.read_bytes()).hexdigest())
+
+
+def test_pending_quote_and_margin_survive_public_snapshot_roundtrip():
+    from dataclasses import asdict
+    from value_investment_agent.presentation.read_models.product_workbench import product_workbench_from_payload
+    from value_investment_agent.presentation.read_models.existing_research_report import public_workbench_payload_from_snapshot
+    from test_product_workbench_read_model import _payload
+    value = _payload()
+    for key in ('price', 'margin_of_safety'):
+        assessment = value['companies'][0][key]
+        assessment.update(status='PENDING_EXTERNAL_DATA', available=False, value_text=None,
+                          unavailable_reason='No verified quote', needed_evidence='Verified PriceBridge')
+    model = product_workbench_from_payload(value)
+    snapshot = json.loads(json.dumps(asdict(model), default=lambda item: item.isoformat()))
+    restored = product_workbench_from_payload(public_workbench_payload_from_snapshot(snapshot))
+    assert restored.companies == model.companies
+    value['companies'][0]['price'].update(available=True, value_text='99', unavailable_reason=None, needed_evidence=None)
+    with pytest.raises(ValueError, match='pending external data'):
+        product_workbench_from_payload(value)
