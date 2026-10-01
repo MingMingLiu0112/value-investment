@@ -4,6 +4,17 @@ import pytest
 from value_investment_agent.application.product.research_recipe import load_research_recipe
 
 
+def test_excel_research_gap_explanations_preserve_unverified_outcome():
+    from value_investment_agent.presentation.excel.product_workbench import _user_text
+    question = 'yili_scp010_011_maturity_outcome'
+    condition = 'A later eligible official settlement/refinancing or cash/debt disclosure establishes the CNY 20bn maturity outcome and liquidity bridge.'
+    displayed = _user_text(question + ': ' + condition)
+    assert question not in displayed
+    assert '200 亿元' in displayed and '尚未核实' in displayed
+    assert '后续合格' in displayed
+    assert condition.startswith('A later eligible')
+
+
 def recipe(tmp_path):
     base = tmp_path / 'base.json'
     workbench = tmp_path / 'workbench.json'
@@ -129,6 +140,26 @@ def test_research_publication_handoff_checks_transitive_originals(tmp_path, case
     assert result['action'] == 'no_order'
     assert not result['canonical_written'] and not result['publication_approved']
     assert not result['strict_pit_admitted'] and not result['current_price_admitted']
+    if case == 'pass':
+        from scripts.current.publish_product_workbench_to_canonical import _verify_reviewed_research_source_bindings
+        candidate = runtime / 'preview.xlsx'
+        candidate.write_bytes(b'contract fixture, not a real workbook')
+        proof = runtime / 'proof.json'
+        proof.write_text('{}', encoding='utf-8')
+        sidecar = runtime / 'bindings.json'
+        receipt = dict(schema_version='existing-workbench-preview-bindings-v1',
+                       integrated_canonical=True, historical_preview=True, canonical_written=False,
+                       action='no_order', workbook_sha256=hashlib.sha256(candidate.read_bytes()).hexdigest(),
+                       output_manifest_sha256=hashlib.sha256(proof.read_bytes()).hexdigest(),
+                       publication_input_binding=dict(path=output.relative_to(tmp_path).as_posix(),
+                           sha256=hashlib.sha256(output.read_bytes()).hexdigest()),
+                       source_bindings=result['source_bindings'])
+        sidecar.write_text(json.dumps(receipt), encoding='utf-8')
+        assert _verify_reviewed_research_source_bindings(tmp_path, candidate, proof, sidecar)['verified_source_count'] == 4
+        receipt['source_bindings'] = receipt['source_bindings'][:-1]
+        sidecar.write_text(json.dumps(receipt), encoding='utf-8')
+        with pytest.raises(ValueError, match='source bindings differ'):
+            _verify_reviewed_research_source_bindings(tmp_path, candidate, proof, sidecar)
     from value_investment_agent.application.product.research_publication_input import load_research_publication_input
     handoff_digest = hashlib.sha256(output.read_bytes()).hexdigest()
     assert load_research_publication_input(root=tmp_path, path=output, expected_sha256=handoff_digest) == result

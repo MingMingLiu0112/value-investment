@@ -200,6 +200,12 @@ def _external_hyperlink(cell: Cell, url: str) -> None:
 
 
 _USER_TEXT_REPLACEMENTS = {
+    "yili_ordinary_special_dividend_classification": "普通分红与特别分红的划分尚未核实",
+    "yili_scp010_011_maturity_outcome": "两期短期融资券到期后的偿付与资金衔接尚未核实",
+    "600887-dividend-type-classification": "分红性质复核",
+    "600887-scp010-011-quote-day-liquidity": "融资到期与流动性复核",
+    "A new official dividend proposal, payment notice or filing clarifies the ordinary versus special dividend basis and materially changes sustainable distribution capacity.": "新增正式分红方案、派息通知或披露文件，明确普通与特别分红的性质，并实质改变可持续分配能力的判断。",
+    "A later eligible official settlement/refinancing or cash/debt disclosure establishes the CNY 20bn maturity outcome and liquidity bridge.": "后续合格的正式偿付、再融资或现金及债务披露，能够核实 200 亿元到期融资的处理结果及流动性衔接。",
     "RESEARCH_NOT_READY_FOR_PRICE_ASSESSMENT": "研究结果暂不支持价格评估",
     "RESEARCH_尚未就绪_FOR_PRICE_ASSESSMENT": "研究结果暂不支持价格评估",
     "估值批准为 false": "估值尚未获得正式批准",

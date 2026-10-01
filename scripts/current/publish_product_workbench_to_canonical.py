@@ -198,6 +198,15 @@ def _verify_reviewed_research_source_bindings(
         raise ValueError("reviewed research source-binding manifest hash mismatch")
 
     declared: list[tuple[Any, Any]] = _collect_bound_source_pairs(receipt)
+    if receipt.get("publication_input_binding") is not None:
+        from value_investment_agent.application.product.research_publication_input import load_research_publication_input
+        binding = receipt["publication_input_binding"]
+        if not isinstance(binding, dict) or set(binding) != {"path", "sha256"}:
+            raise ValueError("invalid research publication input binding")
+        resolved, _ = _normalise_bound_source_path(root, binding["path"])
+        handoff = load_research_publication_input(root=root, path=resolved, expected_sha256=binding["sha256"])
+        if receipt.get("source_bindings") != handoff["source_bindings"]:
+            raise ValueError("research handoff source bindings differ")
     for path_key, digest_key in (
         ("base_payload_path", "base_payload_sha256"),
         ("existing_workbench_path", "existing_workbench_sha256"),

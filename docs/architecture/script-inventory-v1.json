@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 12,
     "CURRENT_PRODUCT_CLI": 7,
-    "CURRENT_RESEARCH_CLI": 200,
+    "CURRENT_RESEARCH_CLI": 201,
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 216,
     "MIGRATION_TOOL": 13,
@@ -7171,6 +7171,17 @@
       "risk": "LOW",
       "line_count": 154,
       "sha256": "54cccbd20af444958e96ef7984596a143c82bc33d6fe18bd71c8bbe6837a53af"
+    },
+    {
+      "path": "scripts/current/prepare_research_handoff_excel.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": true,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "MEDIUM",
+      "line_count": 54,
+      "sha256": "39e249f666d5acffbdeab5d979e7c50e851b6b2934b10b26250843c104a94498"
     },
     {
       "path": "scripts/workbook_path.ps1",
