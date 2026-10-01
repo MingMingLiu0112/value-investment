@@ -60,9 +60,56 @@ def test_legacy_direct_quote_rewrite_is_disabled_before_workbook_access(tmp_path
     assert not list(tmp_path.iterdir())
 
 
+def test_protected_research_preview_retains_manual_state_without_publication(tmp_path):
+    from test_product_workbench_read_model import _payload
+    from value_investment_agent.presentation.read_models.product_workbench import product_workbench_from_payload
+    canonical = tmp_path / 'canonical.xlsx'
+    _workbook(canonical)
+    before_hash = _sha256(canonical)
+    before = _snapshot(canonical)
+    output = tmp_path / 'runtime/integrated/canonical-integration-historical-preview.xlsx'
+    model = product_workbench_from_payload(_payload())
+    receipt = publisher.build_protected_research_preview(tmp_path, canonical, output, model)
+    assert receipt['status'] == 'PREVIEW_PENDING_NATIVE_REVIEW'
+    assert receipt['canonical_written'] is False
+    assert _sha256(canonical) == before_hash
+    _assert_retained(before, _snapshot(output))
+    proof = json.loads((output.parent / 'canonical-preservation.json').read_text())
+    assert proof['preserved_sheet_count'] == 1
+    assert proof['source_sha256'] == before_hash
+    assert proof['candidate_sha256'] == receipt['workbook_sha256']
+    assert proof['strict_pit'] == 'NOT_PROVEN'
+    with pytest.raises(FileExistsError):
+        publisher.build_protected_research_preview(tmp_path, canonical, output, model)
+    with pytest.raises(ValueError, match='runtime'):
+        publisher.build_protected_research_preview(tmp_path, canonical, canonical, model)
+    with pytest.raises(ValueError, match='filename'):
+        publisher.build_protected_research_preview(tmp_path, canonical, tmp_path / 'runtime/current.xlsx', model)
+
+
+def test_protected_research_preview_denies_mutated_retained_content(tmp_path, monkeypatch):
+    from test_product_workbench_read_model import _payload
+    from value_investment_agent.presentation.read_models.product_workbench import product_workbench_from_payload
+    canonical = tmp_path / 'canonical.xlsx'
+    _workbook(canonical)
+    before_hash = _sha256(canonical)
+    output = tmp_path / 'runtime/integrated/canonical-integration-historical-preview.xlsx'
+    render = publisher.apply_product_workbench_to_existing_workbook
+    def changed(workbook, model):
+        render(workbook, model)
+        workbook['人工持仓']['A1'] = 'unintended modification'
+    monkeypatch.setattr(publisher, 'apply_product_workbench_to_existing_workbook', changed)
+    with pytest.raises(ValueError):
+        publisher.build_protected_research_preview(tmp_path, canonical, output,
+            product_workbench_from_payload(_payload()))
+    assert _sha256(canonical) == before_hash
+    assert not (output.parent / 'canonical-preservation.json').exists()
+
+
 @pytest.mark.parametrize('publish', [False, True])
 @pytest.mark.parametrize('fault', [None, 'proof_hash', 'preview_hash', 'wps', 'readability',
-                                 'source_changed', 'preserved_content', 'simulation', 'count'])
+                                 'source_changed', 'preserved_content', 'simulation', 'count',
+                                 'visual_failure', 'visual_hash'])
 def test_reviewed_research_publication_requires_all_proofs(tmp_path, monkeypatch, fault, publish):
     canonical = tmp_path / 'canonical.xlsx'
     _workbook(canonical)
@@ -87,6 +134,10 @@ def test_reviewed_research_publication_requires_all_proofs(tmp_path, monkeypatch
         readonly_open='FAIL' if fault == 'wps' else 'PASS', workbook_sha256=candidate_sha)), encoding='utf-8')
     (folder / 'readability.json').write_text(json.dumps(dict(
         status='failed' if fault == 'readability' else 'passed', workbook_sha256=candidate_sha)), encoding='utf-8')
+    (folder / 'visual-review.json').write_text(json.dumps(dict(
+        status='FAILED_VISUAL_REVIEW' if fault == 'visual_failure' else 'PASS',
+        publication_allowed=fault != 'visual_failure', action='no_order',
+        workbook_sha256='a' * 64 if fault == 'visual_hash' else candidate_sha)), encoding='utf-8')
     if fault == 'source_changed':
         with canonical.open('ab') as handle: handle.write(b'concurrent change')
     source_at_call = publisher._sha256(canonical)

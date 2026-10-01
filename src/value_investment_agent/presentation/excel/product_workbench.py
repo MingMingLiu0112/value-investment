@@ -172,7 +172,8 @@ def _fit_rows(
             _column_width(ws, index) for index in range(column, column + span)
         )
         lines = max(lines, _wrapped_lines(text, width - 1))
-    ws.row_dimensions[row].height = max(minimum, 15 * lines + 6)
+    # WPS needs extra leading for mixed CJK text and long unbroken status codes.
+    ws.row_dimensions[row].height = max(minimum, 18 * lines + 10)
 
 
 def _hyperlink(cell: Cell, sheet: str, coordinate: str = "A1") -> None:
@@ -1001,6 +1002,11 @@ def build_product_workbench_workbook(
     for sheet in sheets.values():
         sheet.sheet_view.showGridLines = False
         sheet.freeze_panes = "B4"
+        sheet.sheet_properties.pageSetUpPr.fitToPage = True
+        sheet.page_setup.orientation = "landscape"
+        sheet.page_setup.paperSize = sheet.PAPERSIZE_A3
+        sheet.page_setup.fitToWidth = 1
+        sheet.page_setup.fitToHeight = 0
     sheets[SHEET_TODAY].sheet_properties.tabColor = GREEN
     sheets[SHEET_SYSTEM_AUDIT].sheet_properties.tabColor = MUTED
 
@@ -1067,6 +1073,11 @@ def apply_product_workbench_to_existing_workbook(
     for sheet in sheets.values():
         sheet.sheet_view.showGridLines = False
         sheet.freeze_panes = "B4"
+        sheet.sheet_properties.pageSetUpPr.fitToPage = True
+        sheet.page_setup.orientation = "landscape"
+        sheet.page_setup.paperSize = sheet.PAPERSIZE_A3
+        sheet.page_setup.fitToWidth = 1
+        sheet.page_setup.fitToHeight = 0
     sheets[SHEET_TODAY].sheet_properties.tabColor = GREEN
     sheets[SHEET_SYSTEM_AUDIT].sheet_properties.tabColor = MUTED
 

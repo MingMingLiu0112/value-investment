@@ -700,6 +700,40 @@ def _hide_legacy_sheets(workbook: Any) -> list[str]:
     return hidden
 
 
+def build_protected_research_preview(root: Path, canonical: Path, output: Path, model: Any) -> dict[str, Any]:
+    """Render only managed pages into a retained-workbook preview; never publish."""
+    root, canonical, output = root.resolve(), canonical.resolve(), output.resolve()
+    if not output.is_relative_to(root / "runtime") or output == canonical:
+        raise ValueError("integrated preview must remain under runtime")
+    if output.name != "canonical-integration-historical-preview.xlsx":
+        raise ValueError("integrated preview requires reviewed-publication filename")
+    proof_path = output.parent / "canonical-preservation.json"
+    if output.exists() or proof_path.exists():
+        raise FileExistsError("integrated preview or proof already exists")
+    before_sha = _sha256(canonical)
+    before = _snapshot(canonical)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    workbook = load_workbook(canonical, data_only=False, keep_links=True)
+    try:
+        apply_product_workbench_to_existing_workbook(workbook, model)
+        _hide_legacy_sheets(workbook)
+        workbook.save(output)
+    finally:
+        workbook.close()
+    _assert_retained(before, _snapshot(output))
+    _assert_canonical_source_unchanged(canonical, before_sha)
+    proof = dict(preservation="PASS", simulation_only=False, historical_preview=True,
+                 action="no_order", source_sha256=before_sha,
+                 candidate_sha256=_sha256(output), canonical_touched=False,
+                 preserved_sheet_count=sum(name not in WORKBOOK_SHEETS for name in before["sheet_order"]),
+                 strict_pit="NOT_PROVEN", current_price_bridge="NOT_ADMITTED")
+    with proof_path.open("x", encoding="utf-8") as handle:
+        json.dump(proof, handle, indent=2)
+    return dict(workbook_sha256=proof["candidate_sha256"], manifest_sha256=_sha256(proof_path),
+                preservation_proof=str(proof_path.relative_to(root)), canonical_written=False,
+                action="no_order", status="PREVIEW_PENDING_NATIVE_REVIEW")
+
+
 def _reviewed_research_publication(
     root: Path, canonical: Path, folder: Path, proof_sha256: str, *, publish: bool,
 ) -> dict[str, Any]:
@@ -736,6 +770,13 @@ def _reviewed_research_publication(
     readability = json.loads(readability_path.read_text(encoding="utf-8-sig"))
     if readability.get("status") != "passed" or readability.get("workbook_sha256") != candidate_sha:
         raise ValueError("reviewed research readability proof mismatch")
+    visual_path = folder / "visual-review.json"
+    if visual_path.exists():
+        visual = json.loads(visual_path.read_text(encoding="utf-8-sig"))
+        if (visual.get("status") != "PASS" or visual.get("publication_allowed") is not True
+                or visual.get("action") != "no_order"
+                or visual.get("workbook_sha256") != candidate_sha):
+            raise ValueError("reviewed research visual review not admitted")
     _assert_canonical_source_unchanged(canonical, proof["source_sha256"])
     before = _snapshot(canonical)
     after_preview = _snapshot(candidate)
@@ -750,6 +791,7 @@ def _reviewed_research_publication(
         before_sha256=proof["source_sha256"], candidate_sha256=candidate_sha,
         preservation_proof_sha256=proof_sha256, wps_proof_sha256=_sha256(wps_path),
         readability_proof_sha256=_sha256(readability_path), preserved_sheet_count=count,
+        visual_review_sha256=_sha256(visual_path) if visual_path.exists() else None,
         strict_pit="NOT_PROVEN", current_price_bridge="NOT_ADMITTED",
         M7_FINAL_USER_ACCEPTANCE="NOT_PASSED", INITIAL_ASSISTED_USE="NOT_REACHED",
         canonical_written=False,

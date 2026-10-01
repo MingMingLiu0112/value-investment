@@ -20,6 +20,34 @@ from value_investment_agent.quote_sessions import CALENDAR_PATH, SSE_2026_CLOSUR
 FINISHED = "2026-09-26T08:12:00+00:00"
 
 
+def test_product_packet_rechecks_bundle_before_build(tmp_path, monkeypatch):
+    from scripts.current import daily_product_packet as module
+
+    bundle = tmp_path / "runtime" / "bundle.json"
+    bundle.parent.mkdir()
+    bundle.write_bytes(b"original")
+    context = {"action": "no_order", "bundle_path": "runtime/bundle.json",
+               "bundle_sha256": hashlib.sha256(b"original").hexdigest(), "as_of": "2026-09-25"}
+    monkeypatch.setattr(module, "build_packet", lambda _: {"audit": {"artifacts": []}})
+    packet = module.build_daily_product_packet(root=tmp_path, generated_at=datetime.now(timezone.utc), daily_quote=context)
+    assert packet["audit"]["artifacts"][0]["sha256"] == context["bundle_sha256"]
+    bundle.write_bytes(b"changed")
+    with pytest.raises(ValueError, match="changed after binding"):
+        module.build_daily_product_packet(root=tmp_path, generated_at=datetime.now(timezone.utc), daily_quote=context)
+
+
+def test_product_packet_rejects_bundle_outside_runtime(tmp_path, monkeypatch):
+    from scripts.current import daily_product_packet as module
+
+    bundle = tmp_path / "outside.json"
+    bundle.write_bytes(b"original")
+    monkeypatch.setattr(module, "build_packet", lambda _: pytest.fail("must fail before building"))
+    context = {"action": "no_order", "bundle_path": str(bundle),
+               "bundle_sha256": hashlib.sha256(b"original").hexdigest(), "as_of": "2026-09-25"}
+    with pytest.raises(ValueError, match="under runtime"):
+        module.build_daily_product_packet(root=tmp_path, generated_at=datetime.now(timezone.utc), daily_quote=context)
+
+
 def _document(url: str, raw: bytes, fetched_at: str = FINISHED) -> tuple[str, dict[str, object]]:
     sha = hashlib.sha256(raw).hexdigest()
     identity = hashlib.sha256(f"{url}\n{fetched_at}\n{sha}".encode()).hexdigest()

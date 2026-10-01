@@ -1,5 +1,9 @@
 # 当前总目标：M2-M7 初步真实投资辅助系统
 
+## 2026-10-01 执行纠偏
+
+遵循 `docs/current/value-investment-trading-assistant-goal-prompt.md` 的 Execution Correction。完整总目标与最终准入门禁不变；当前研究准入、可执行工程交付、最终运行验收分开管理。下一轮先从真实代码建立有界依赖图，选择共享单票闭环或真实输入历史执行回放中最大的可执行缺口并实施，不再用重复审计、状态提交或 CI 轮询替代产品进展。历史重建 PIT 与历史当时运行/预登记证明分开，不能回填登记时间或降低旧验证器。用户已于 2026-10-01 确认阅读正式 Excel 并授权继续；密钥独立备存与 WPS 远端可见亦已确认，不得重复索要。缺失原件仍只阻塞受影响结论，20 个真实交易日与最终用户验收保留为完整目标的最终条件。
+
 ## CURRENT AUTHORIZATION：VALUE-INVESTMENT-TRADING-ASSISTANT-V1 / 阶段 1收尾与阶段 2单票工程（2026-09-30）
 
 最新发布（2026-09-30）：唯一正式 Excel 已更新为伊利现有真实条件性研究估值展示，`simulation_only=false`，非当前交易建议。七页导航、55 个保留页和实际 WPS 打开核验通过；估值步骤 CONDITIONAL，其余七步 BLOCKED，最终 NOT_READY/no_order。当前仅完成阶段 2 的研究结果展示部分，Strict PIT、ModelValidity、当前 PriceBridge、完整研究评估及用户验收仍未通过。下述模拟发布为历史基线。

@@ -186,6 +186,24 @@ def test_existing_application_result_renders_scenarios_without_passing_other_gat
     kwargs = fixture(tmp_path)
     valuation, records = load_existing_valuation(**kwargs)
     model = product_workbench_from_payload(_payload())
+    from dataclasses import asdict
+    from value_investment_agent.presentation.read_models.existing_research_report import public_workbench_payload_from_snapshot
+    snapshot = json.loads(json.dumps(asdict(model), default=lambda value: value.isoformat()))
+    restored = product_workbench_from_payload(public_workbench_payload_from_snapshot(snapshot))
+    assert restored.companies == model.companies
+    next(stage for stage in snapshot['stage_summaries'] if stage['stage_key'] == 'm6')['status']['code'] = 'PARTIAL'
+    snapshot['companies'][0]['price']['status']['code'] = 'NOT_READY'
+    snapshot['companies'][0]['price']['available'] = False
+    snapshot['companies'][0]['price']['value_text'] = None
+    snapshot['companies'][0]['price']['unavailable_reason'] = 'Missing quote'
+    snapshot['companies'][0]['price']['needed_evidence'] = 'Current quote'
+    migrated = product_workbench_from_payload(public_workbench_payload_from_snapshot(snapshot))
+    assert next(stage for stage in migrated.stage_summaries if stage.stage_key == 'm6').status.code == 'OPERATIONAL_NOT_STARTED'
+    assert not migrated.companies[0].price.available
+    assert snapshot['companies'][0]['price']['status']['code'] == 'NOT_READY'
+    snapshot['portfolio']['real_data_available'] = True
+    with pytest.raises(ValueError, match='nonpersonalized'):
+        public_workbench_payload_from_snapshot(snapshot)
     missing_price = replace(model.companies[0].price, available=False, value_text=None,
                             unavailable_reason='No admitted current quote or quote date',
                             needed_evidence='Verified current PriceBridge')
@@ -219,8 +237,111 @@ def test_existing_application_result_renders_scenarios_without_passing_other_gat
         assert '暂不可评估' in opportunity['F5'].value
         assert opportunity['J5'].value.startswith('BLOCKED')
         assert len(with_workbook.sheetnames) == 7
+        for sheet in with_workbook:
+            assert sheet.sheet_properties.pageSetUpPr.fitToPage is True
+            assert sheet.page_setup.fitToWidth == 1
+            assert sheet.page_setup.orientation == 'landscape'
     finally:
         with_workbook.close()
+
+
+def test_existing_workbench_keeps_pending_gates_and_renders_verified_sources(tmp_path, monkeypatch):
+    from value_investment_agent.application.product.workbench import build_current_workbench_for_symbol
+    from value_investment_agent.presentation.read_models.existing_research_report import render_existing_research_report
+
+    kwargs = fixture(tmp_path)
+    manifest = tmp_path / 'manifest.json'
+    manifest.write_text(json.dumps(dict(status='PASS', action='no_order',
+        artifact_path=kwargs['artifact_path'].name, artifact_sha256=kwargs['expected_sha256'],
+        verified_at=kwargs['observed_at'].isoformat(), evidence=[dict(evidence_id='fixture', path='original.txt')])), encoding='utf-8')
+    digest = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    call = dict(root=tmp_path, symbol='600887', existing_manifest_path=manifest,
+                existing_manifest_sha256=digest, output_path=tmp_path / 'workbench.json')
+    output = build_current_workbench_for_symbol(**call)
+    payload = output['result']
+    assert payload['research']['research_rerun'] is False
+    assert payload['research']['price_bridge']['current_price'] is None
+    assert payload['suggested_state'] == 'NOT_READY'
+    assert payload['canonical_workbook_written'] is False
+    text = render_existing_research_report(payload)
+    assert 'NOT current investment advice' in text
+    assert kwargs['expected_sha256'] == hashlib.sha256(kwargs['artifact_path'].read_bytes()).hexdigest()
+    assert payload['research']['source_records'][0]['sha256'] in text
+    assert payload['research']['valuation']['base_value'] in text
+    from test_product_workbench_read_model import _payload
+    from value_investment_agent.presentation.read_models.product_workbench import product_workbench_from_payload
+    from value_investment_agent.presentation.read_models.existing_research_report import project_existing_research_workbench
+    model = product_workbench_from_payload(_payload())
+    missing = replace(model.companies[0].price, available=False, value_text=None,
+                      unavailable_reason='No current quote', needed_evidence='Current admitted quote')
+    model = replace(model, as_of=kwargs['observed_at'].date(),
+                    companies=(replace(model.companies[0], symbol='600887', price=missing),),
+                    opportunities=(replace(model.opportunities[0], symbol='600887'),))
+    projected = project_existing_research_workbench(model, payload)
+    assert projected.companies[0].decision_process[3].status == 'CONDITIONAL'
+    assert not projected.companies[0].price.available
+    assert all(step.status == 'BLOCKED' for step in projected.companies[0].decision_process if step.key != 'valuation')
+    assert model.companies[0].scenarios != projected.companies[0].scenarios
+    from value_investment_agent.application.product.workbench import load_existing_workbench_for_presentation
+    loaded = load_existing_workbench_for_presentation(
+        root=tmp_path, path=call['output_path'], expected_sha256=output['receipt']['output_sha256'])
+    assert loaded == payload
+    import scripts.current.build_product_workbench_candidate as preview_cli
+    from argparse import Namespace
+    base = _payload()
+    base['as_of'] = kwargs['observed_at'].date().isoformat()
+    base['companies'][0]['symbol'] = '600887'
+    base['opportunities'][0]['symbol'] = '600887'
+    base['companies'][0]['price']['available'] = False
+    base['companies'][0]['price']['value_text'] = None
+    base['companies'][0]['price']['unavailable_reason'] = 'No admitted quote'
+    base['companies'][0]['price']['needed_evidence'] = 'Verified PriceBridge'
+    base_path = tmp_path / 'base.json'
+    base_path.write_text(json.dumps(base), encoding='utf-8')
+    preview = tmp_path / 'runtime' / 'historical-preview.xlsx'
+    monkeypatch.setattr(preview_cli, 'ROOT', tmp_path)
+    monkeypatch.setattr(preview_cli, 'build_packet', lambda _: pytest.fail('legacy packet must not be used'))
+    monkeypatch.setattr(preview_cli, 'parse_args', lambda: Namespace(
+        output=preview, historical_preview=True, generated_at=kwargs['observed_at'],
+        base_payload=base_path, base_payload_sha256=hashlib.sha256(base_path.read_bytes()).hexdigest(),
+        base_read_model_snapshot=False,
+        existing_workbench=call['output_path'], existing_workbench_sha256=output['receipt']['output_sha256']))
+    assert preview_cli.main() == 0
+    assert preview.is_file()
+    from test_canonical_workbook_preservation import _workbook
+    import scripts.current.publish_product_workbench_to_canonical as publisher
+    canonical = tmp_path / 'user-canonical.xlsx'
+    _workbook(canonical)
+    canonical_hash = publisher._sha256(canonical)
+    monkeypatch.setattr(publisher, '_workbook_path', lambda: canonical)
+    integrated = tmp_path / 'runtime/integrated/canonical-integration-historical-preview.xlsx'
+    monkeypatch.setattr(preview_cli, 'parse_args', lambda: Namespace(
+        historical_preview=True, integrate_canonical=True, output=integrated, generated_at=datetime.now(timezone.utc),
+        base_payload=base_path, base_payload_sha256=hashlib.sha256(base_path.read_bytes()).hexdigest(),
+        base_read_model_snapshot=False,
+        existing_workbench=call['output_path'], existing_workbench_sha256=output['receipt']['output_sha256']))
+    assert preview_cli.main() == 0
+    assert publisher._sha256(canonical) == canonical_hash
+    bindings = json.loads(integrated.with_name(integrated.stem + '.source-bindings.json').read_text())
+    assert bindings['integrated_canonical'] is True
+    assert bindings['canonical_written'] is False
+    proof = json.loads((integrated.parent / 'canonical-preservation.json').read_text())
+    assert proof['preserved_sheet_count'] == 1
+    bad = json.loads(json.dumps(payload))
+    bad['research']['valuation']['base_value'] = '12'
+    with pytest.raises(ValueError, match='valuation hash mismatch'):
+        project_existing_research_workbench(model, bad)
+    with pytest.raises((ValueError, FileExistsError)):
+        build_current_workbench_for_symbol(**call)
+    with pytest.raises(ValueError):
+        build_current_workbench_for_symbol(**(call | {'package_path': tmp_path / 'package.json'}))
+    payload['research']['suggested_state'] = 'ADD'
+    with pytest.raises(ValueError, match='cannot admit'):
+        render_existing_research_report(payload)
+    kwargs['evidence_paths']['fixture'].write_bytes(b'changed')
+    with pytest.raises(ValueError, match='original hash mismatch'):
+        load_existing_workbench_for_presentation(
+            root=tmp_path, path=call['output_path'], expected_sha256=output['receipt']['output_sha256'])
 
 
 def test_existing_command_service_reads_only_and_refuses_overwrite_or_wrong_symbol(tmp_path):
