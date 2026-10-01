@@ -47,6 +47,7 @@ jobs:
           tests/test_operating_cash_change.py
           tests/test_dividend_history_presentation.py
           tests/test_research_recipe.py
+          tests/test_company_review_readability.py
           tests/test_valuation_result.py
           tests/test_price_bridge.py
           tests/test_research_profile.py
