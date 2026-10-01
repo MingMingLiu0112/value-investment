@@ -7283,3 +7283,9 @@ action = no_order
 
 共享冻结单票 recipe 实际生成 `runtime/integrated-decision-guide-20261001/company-card.md`，包含已有论点、反证、财务与现金变动、股息生命周期、条件估值及两项当前研究缺口。read-model SHA-256 `79d5cc30ad278f717e5e52f9fb7d7d0ec88e592f877cbfc72424b7f0e50c015b`。三公司台账投影与 recipe 相关测试 49 项通过，验证所有门禁状态不变；这不是正式研究评估通过。canonical_written=false，action=no_order；原 Excel、服务器、数据库及定时任务未改。
 
+# 2026-10-01 已登记估值敏感性接入单公司闭环
+
+共享 valuation_drivers 现在从算术输入已绑定的 readiness-review-v2 原件读取原登记网格，核对公司、估值日期、模型版本、权益股数、ROE 路径、留存率与终局 ROE，按原资本成本/增长参数组合调用既有 scenario_value，逐格匹配登记精度。缺格、重复格、原件漂移、算术或身份不一致失败关闭；没有该原件则不制造新网格。
+
+伊利实际 18/18 通过，生成 `runtime/sensitivity-company-review-20261001/company-card.md` 与 read-model.json，后者 SHA-256 `22dd62a74ef9866bea5523498497061e6c0dc1c1232d280e1c48a5bf36ce6828`。产品对比确认 scenarios、decision_process、price、margin_of_safety 和 portfolio 均保持不变。相关测试 57 项通过。敏感性只是既有低置信度分析假设的机械重放，不是概率区间、目标价、预测批准或严格 PIT 证据；action=no_order，canonical_written=false，原 Excel 与服务器未改。
+

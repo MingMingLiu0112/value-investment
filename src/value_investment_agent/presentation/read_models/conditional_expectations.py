@@ -50,6 +50,14 @@ def project_conditional_expectations(model: ProductWorkbenchReadModel, expectati
         review += (('估值假设解释边界', '历史加权ROE不是开期账面权益预测ROE。留存率推导的模型股息路径仅作代数对账，'
             '不是可分红现金证明。终值剩余收益可以为负；终局ROE等于资本成本时该项为零，不代表终局企业价值为零。'
             '以上是冻结的事后研究情景，不因价格变化修改。'),)
+        for row in drivers.get('sensitivity_grid', []):
+            if row.get('arithmetic_match') is not True:
+                raise ValueError('sensitivity display requires verified arithmetic')
+            review += ((f"估值敏感性 {row['scenario']} / 资本成本{row['cost_of_equity_pct']}% / 终局增长{row['terminal_growth_pct']}%",
+                        f"条件性价值{Decimal(row['recomputed_per_share_cny']):.2f}元/股；终局ROE{row['terminal_roe_pct']}%。"
+                        f"原网格逐格重算一致；来源{row['source_path']}；SHA-256 {row['source_sha256']}。"),)
+        if drivers.get('sensitivity_grid'):
+            review += (('估值敏感性边界', '只重放原先登记的敏感性网格，不增加或优化参数；网格不是概率区间、价格目标或投资批准。'),)
     updated = replace(card, decision_review=review,
                       evidence_refs=tuple(dict.fromkeys((*card.evidence_refs, evidence.evidence_id))))
     records = {record.evidence_id: record for record in model.audit_evidence}
@@ -84,6 +92,10 @@ def render_company_review_cards(model: ProductWorkbenchReadModel) -> str:
         if not driver_rows:
             lines.append('尚未接入来源绑定的假设分解，不能仅凭估值数字判断可靠性。')
         lines.extend(f'- {label}：{value}' for label, value in driver_rows)
+        sensitivity = [(label, value) for label, value in card.decision_review if label.startswith('估值敏感性')]
+        if sensitivity:
+            lines.extend(['', '### 假设变化时估值如何变化', ''])
+            lines.extend(f'- {label}：{value}' for label, value in sensitivity)
         lines.extend(['', '### 为什么目前不能作为买入依据', ''])
         blocked = [step for step in card.decision_process if step.status == 'BLOCKED']
         if blocked:
