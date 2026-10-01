@@ -27,3 +27,25 @@ def test_cash_research_is_explanatory_and_keeps_all_decision_state():
     assert project_reported_financials(output, review, reported_cash_proxies(review), evidence) == output
     review['strict_pit_admitted'] = True
     with pytest.raises(ValueError): project_reported_financials(model, review, None, evidence)
+
+
+def test_cash_change_explanation_preserves_price_and_gates():
+    model = product_workbench_from_payload(_payload())
+    card = model.companies[0]
+    review = dict(schema_version='disclosed-metric-review-v1', symbol=card.symbol,
+        facts=[dict(symbol=card.symbol, metric_name='cash_bridge_cfo', period='2025', value='18',
+            unit='CNY', statement_scope='CONSOLIDATED', physical_page=89,
+            source_binding={'sha256': 'a'*64}, verification_status='TRANSCRIBED_ROW_NUMERIC_MATCH_ONLY')],
+        action='no_order', financial_gate_admitted=False, forecast_assumptions_approved=False, strict_pit_admitted=False)
+    change = dict(schema_version='reported-operating-cash-change-v1', symbol=card.symbol,
+        current_period='2025', prior_period='2024', cfo_change_cny='-1200000000',
+        contributions_cny={'sales_receipts': '-1000000000', 'employees_paid': '-200000000'},
+        sustainable_cash_proven=False, forecast_approved=False, action='no_order')
+    evidence = EvidenceRecord('cash-change', 'Cash', 'research', 'runtime/cash.json', 'a'*64, model.as_of)
+    output = project_reported_financials(model, review, None, evidence, cash_change=change)
+    updated = output.companies[0]
+    assert replace(updated, decision_review=card.decision_review, evidence_refs=card.evidence_refs) == card
+    assert '-12.00亿元' in dict(updated.decision_review)['经营现金流变化合计（描述性）']
+    assert '销售回款不等于收入' in dict(updated.decision_review)['现金流变化解释边界']
+    change['forecast_approved'] = True
+    with pytest.raises(ValueError): project_reported_financials(model, review, None, evidence, cash_change=change)

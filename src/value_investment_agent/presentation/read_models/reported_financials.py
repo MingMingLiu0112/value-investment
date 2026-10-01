@@ -6,7 +6,8 @@ from .product_workbench import EvidenceRecord, ProductWorkbenchReadModel
 
 
 def project_reported_financials(model: ProductWorkbenchReadModel, review: dict,
-                               cash_proxy: dict | None, evidence: EvidenceRecord) -> ProductWorkbenchReadModel:
+                               cash_proxy: dict | None, evidence: EvidenceRecord,
+                               cash_change: dict | None = None) -> ProductWorkbenchReadModel:
     if (review.get('schema_version') != 'disclosed-metric-review-v1'
             or review.get('action') != 'no_order'
             or any(review.get(key) is not False for key in
@@ -29,6 +30,8 @@ def project_reported_financials(model: ProductWorkbenchReadModel, review: dict,
     for fact in review['facts']:
         if fact['symbol'] != card.symbol or fact['verification_status'] != 'TRANSCRIBED_ROW_NUMERIC_MATCH_ONLY':
             raise ValueError('unverified or mismatched disclosed fact')
+        if fact['metric_name'].startswith('cash_bridge_'):
+            continue
         value = Decimal(fact['value'])
         if not value.is_finite() or fact['unit'] not in {'CNY', 'percent'}:
             raise ValueError('invalid disclosed metric value/unit')
@@ -52,6 +55,23 @@ def project_reported_financials(model: ProductWorkbenchReadModel, review: dict,
             amount = ('不可评估' if row['status'] == 'NOT_ASSESSABLE' else
                       f"{Decimal(row['proxy_cny']) / Decimal('100000000'):.2f}亿元")
             additions.append((f"已披露 {row['period']} CFO减现金资本开支（描述性）", amount))
+    if cash_change is not None:
+        if (cash_change.get('symbol') != card.symbol or cash_change.get('action') != 'no_order'
+                or cash_change.get('schema_version') != 'reported-operating-cash-change-v1'
+                or cash_change.get('sustainable_cash_proven') is not False
+                or cash_change.get('forecast_approved') is not False):
+            raise ValueError('cash change cannot admit forecasts or sustainable cash')
+        labels = dict(sales_receipts='销售收款', interest_receipts='利息等收款', tax_refunds='退税',
+            other_receipts='其他经营收款', purchases_paid='采购付款', employees_paid='职工付款',
+            taxes_paid='税费付款', other_payments='其他经营付款')
+        additions.append(('经营现金流变化合计（描述性）',
+            f"{cash_change['prior_period']}→{cash_change['current_period']}："
+            f"{Decimal(cash_change['cfo_change_cny']) / Decimal('100000000'):.2f}亿元；原始元金额精确对账"))
+        additions.extend((f'对现金流变化的贡献：{labels[key]}',
+                          f"{Decimal(value) / Decimal('100000000'):.2f}亿元")
+                         for key, value in cash_change['contributions_cny'].items())
+        additions.append(('现金流变化解释边界', '销售回款不等于收入；收付款变化不证明持续性。'
+                          '仍需核验营运资本、一次性因素和金融业务，不能直接推定利润质量或分红覆盖。'))
     additions.append(('财务解释边界', '后期报告比较数不能回填历史可得性；加权ROE不是预测ROE；'
                       'CFO减资本开支不是FCFF/FCFE或可分红现金。维持性投资、营运资本、金融业务、债务及少数股东影响仍需研究。'))
     merged = dict(card.decision_review)

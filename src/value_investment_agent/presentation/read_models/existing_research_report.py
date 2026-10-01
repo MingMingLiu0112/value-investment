@@ -247,4 +247,19 @@ def render_cutoff_replay_report(payload: dict) -> str:
                 lines.append(f"| {row['period']} | {row['cfo_cny']} | {row['cash_capex_cny']} | {row['proxy_cny']} |")
         lines.extend(['', 'Maintenance/growth split, acquisitions, debt/interest, minority cash claims and financial-subsidiary flows require further review.',
                       'No dividend sustainability or valuation model admission; action=no_order.', ''])
+    change = payload.get('reported_cash_change')
+    if change is not None:
+        labels = dict(sales_receipts='销售收款变化', interest_receipts='利息等收款变化',
+            tax_refunds='退税收款变化', other_receipts='其他经营收款变化',
+            purchases_paid='采购付款变化的影响', employees_paid='职工付款变化的影响',
+            taxes_paid='税费付款变化的影响', other_payments='其他经营付款变化的影响')
+        lines.extend(['## 经营现金流变化桥接', '',
+            f"{change['prior_period']} → {change['current_period']}；变动合计 {Decimal(change['cfo_change_cny']) / Decimal('100000000'):.2f}亿元。",
+            '| 项目 | 对CFO变化的贡献（亿元） |', '| --- | --- |'])
+        for key, value in change['contributions_cny'].items():
+            lines.append(f"| {labels[key]} | {Decimal(value) / Decimal('100000000'):.2f} |")
+        lines.extend(['', f"原件：{change['source_binding']['source_url']}；SHA256={change['source_binding']['sha256']}",
+            '现金流入、流出及变动贡献按原始元金额精确对账；表中亿元数仅用于阅读。',
+            '这是现金收付款的描述性桥接，不证明下降原因具有持续性；销售回款不等于收入，'
+            '营运资本与一次性因素仍需附注研究。不能据此批准分红能力、预测或买卖建议。action=no_order。', ''])
     return '\n'.join(lines)

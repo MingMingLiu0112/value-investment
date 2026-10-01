@@ -19,6 +19,7 @@ from value_investment_agent.application.historical_validation.reverse_equity_exp
 from value_investment_agent.application.historical_validation.disclosed_metric_review import review_disclosed_metrics
 from value_investment_agent.application.historical_validation.reported_cash_proxy import reported_cash_proxies
 from value_investment_agent.application.historical_validation.decision_input_review import review_historical_decision_inputs, render_decision_input_review
+from value_investment_agent.application.historical_validation.reported_cash_change import reported_cash_change
 
 
 def main() -> int:
@@ -45,6 +46,7 @@ def main() -> int:
     parser.add_argument('--metric-transcription-sha256')
     parser.add_argument('--reported-cash-proxy', action='store_true')
     parser.add_argument('--decision-input-review', action='store_true')
+    parser.add_argument('--cash-change-periods', nargs=2, metavar=('CURRENT', 'PRIOR'))
     args = parser.parse_args()
     recovered_originals = {}
     for binding in args.recovered_event_original:
@@ -82,6 +84,11 @@ def main() -> int:
         if 'disclosed_metric_review' not in result:
             raise ValueError('cash proxy requires pinned metric transcription')
         result['reported_cash_proxy'] = reported_cash_proxies(result['disclosed_metric_review'])
+    if args.cash_change_periods:
+        if 'disclosed_metric_review' not in result:
+            raise ValueError('cash change bridge requires source-verified metric transcription')
+        result['reported_cash_change'] = reported_cash_change(result['disclosed_metric_review'],
+            current_period=args.cash_change_periods[0], prior_period=args.cash_change_periods[1])
     if args.reverse_equity_expectations:
         if not all((args.arithmetic_input, args.arithmetic_input_sha256, args.quote_bundle, args.quote_bundle_sha256)):
             raise ValueError('reverse expectations require pinned arithmetic and quote inputs')

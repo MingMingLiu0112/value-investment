@@ -32,6 +32,7 @@ from value_investment_agent.application.historical_validation.reported_cash_prox
 from value_investment_agent.presentation.read_models.reported_financials import project_reported_financials
 from value_investment_agent.application.historical_validation.event_source_review import prepare_event_source_review
 from value_investment_agent.presentation.read_models.company_events import project_company_event_questions
+from value_investment_agent.application.historical_validation.reported_cash_change import reported_cash_change
 from value_investment_agent.presentation.read_models.existing_research_report import project_existing_research_workbench, public_workbench_payload_from_snapshot  # noqa: E402
 from value_investment_agent.application.product.product_workbench_candidate import (  # noqa: E402
     build_product_workbench_candidate_payload,
@@ -64,6 +65,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--metric-transcription', nargs=2, action='append', default=[],
                         metavar=('PATH', 'SHA256'), help='Repeat for source-verified disclosed financial rows.')
     parser.add_argument('--event-scan', nargs=2, metavar=('PATH', 'SHA256'))
+    parser.add_argument('--cash-change-periods', nargs=2, metavar=('CURRENT', 'PRIOR'))
     parser.add_argument('--recovered-event-original', nargs=2, action='append', default=[],
                         metavar=('REFERENCE_ID', 'PATH'))
     parser.add_argument('--read-model-only', action='store_true')
@@ -141,6 +143,7 @@ def main() -> int:
             datetime.fromisoformat(expectations['created_at']).date())
         model = project_conditional_expectations(model, expectations, evidence)
     metric_bindings = []
+    cash_change_built = False
     for metric_path, metric_hash in getattr(args, 'metric_transcription', []):
         if not args.existing_workbench or not args.existing_workbench_sha256:
             raise ValueError('disclosed financial presentation requires pinned workbench')
@@ -149,13 +152,23 @@ def main() -> int:
             workbench_path=ROOT / args.existing_workbench, workbench_sha256=args.existing_workbench_sha256)
         has_capex = any(fact['metric_name'] == 'reported_cash_capex' for fact in review['facts'])
         proxy = reported_cash_proxies(review) if has_capex else None
+        change = None
+        if getattr(args, 'cash_change_periods', None) and any(
+                fact['metric_name'].startswith('cash_bridge_') for fact in review['facts']):
+            if cash_change_built:
+                raise ValueError('multiple cash change transcriptions are ambiguous')
+            change = reported_cash_change(review, current_period=args.cash_change_periods[0],
+                                          prior_period=args.cash_change_periods[1])
+            cash_change_built = True
         evidence = EvidenceRecord(f"{review['symbol']}-disclosed-rows-{metric_hash[:12]}",
             '原报告披露数字复核（不是研究准入）', 'disclosed_financial_rows',
             metric_path.relative_to(ROOT).as_posix(), metric_hash,
             datetime.fromisoformat(review['observed_at']).date())
-        model = project_reported_financials(model, review, proxy, evidence)
+        model = project_reported_financials(model, review, proxy, evidence, cash_change=change)
         metric_bindings.append(dict(path=metric_path.relative_to(ROOT).as_posix(), sha256=metric_hash,
-                                    review=review, cash_proxy=proxy))
+                                    review=review, cash_proxy=proxy, cash_change=change))
+    if getattr(args, 'cash_change_periods', None) and not cash_change_built:
+        raise ValueError('cash change requires an explicit matched component transcription')
     event_binding = None
     event_scan = getattr(args, 'event_scan', None)
     recovered = getattr(args, 'recovered_event_original', [])
