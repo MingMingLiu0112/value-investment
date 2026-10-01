@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import json
 from pathlib import Path
 import sys
+from dataclasses import asdict, replace
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -23,6 +24,9 @@ from value_investment_agent.application.product.common import (  # noqa: E402
     write_new_json,
 )
 from value_investment_agent.application.product.workbench import load_existing_workbench_for_presentation  # noqa: E402
+from value_investment_agent.application.historical_validation.reverse_equity_expectations import load_reverse_expectations_for_presentation
+from value_investment_agent.presentation.read_models.conditional_expectations import project_conditional_expectations, render_company_review_cards
+from value_investment_agent.presentation.read_models.product_workbench import EvidenceRecord
 from value_investment_agent.presentation.read_models.existing_research_report import project_existing_research_workbench, public_workbench_payload_from_snapshot  # noqa: E402
 from value_investment_agent.application.product.product_workbench_candidate import (  # noqa: E402
     build_product_workbench_candidate_payload,
@@ -50,6 +54,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-read-model-snapshot", action="store_true")
     parser.add_argument("--existing-workbench", type=Path)
     parser.add_argument("--existing-workbench-sha256")
+    parser.add_argument('--expectations-replay', type=Path)
+    parser.add_argument('--expectations-replay-sha256')
+    parser.add_argument('--read-model-only', action='store_true')
+    parser.add_argument('--read-model-report', type=Path)
+    parser.add_argument('--presentation-as-of', type=date.fromisoformat,
+                        help='Explicit read-model observation date; never changes quote or fact dates.')
     parser.add_argument("--integrate-canonical", action="store_true",
                         help="Retain all canonical sheets in a runtime-only reviewed preview.")
     parser.add_argument(
@@ -67,6 +77,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if getattr(args, 'read_model_report', None) is not None and not getattr(args, 'read_model_only', False):
+        raise ValueError('read-model report requires read-model-only mode')
     if not args.historical_preview:
         raise ValueError("refusing candidate creation without --historical-preview")
     output = args.output if args.output.is_absolute() else ROOT / args.output
@@ -91,6 +103,11 @@ def main() -> int:
         packet = build_packet(args.generated_at)
         payload = build_product_workbench_candidate_payload(packet, root=ROOT)
     model = product_workbench_from_payload(payload)
+    presentation_date = getattr(args, 'presentation_as_of', None)
+    if presentation_date is not None:
+        if not model.as_of <= presentation_date <= args.generated_at.date():
+            raise ValueError('presentation date must not backdate or exceed generation date')
+        model = replace(model, as_of=presentation_date)
     if args.existing_workbench is not None or args.existing_workbench_sha256 is not None:
         if args.existing_workbench is None or args.existing_workbench_sha256 is None:
             raise ValueError("existing workbench requires path and hash")
@@ -99,6 +116,40 @@ def main() -> int:
             expected_sha256=args.existing_workbench_sha256,
         )
         model = project_existing_research_workbench(model, research)
+    expectations_path = getattr(args, 'expectations_replay', None)
+    expectations_hash = getattr(args, 'expectations_replay_sha256', None)
+    if expectations_path is not None or expectations_hash is not None:
+        if not all((expectations_path, expectations_hash, args.existing_workbench_sha256)):
+            raise ValueError('expectations require pinned replay and existing workbench')
+        expectations_path = require_inside(ROOT, ROOT / expectations_path, 'expectations replay')
+        expectations = load_reverse_expectations_for_presentation(root=ROOT,
+            path=expectations_path, expected_sha256=expectations_hash,
+            workbench_sha256=args.existing_workbench_sha256)
+        evidence = EvidenceRecord(f"{expectations['symbol']}-conditional-expectations-{expectations_hash[:12]}",
+            '条件性历史价格预期（非当前建议）', 'retrospective_expectations',
+            expectations_path.relative_to(ROOT).as_posix(), expectations_hash,
+            datetime.fromisoformat(expectations['created_at']).date())
+        model = project_conditional_expectations(model, expectations, evidence)
+    if getattr(args, 'read_model_only', False):
+        if output.suffix != '.json' or getattr(args, 'integrate_canonical', False):
+            raise ValueError('read-model-only requires JSON output without workbook publication')
+        snapshot = json.loads(json.dumps(asdict(model), default=lambda value: value.isoformat(), ensure_ascii=False))
+        report_path = getattr(args, 'read_model_report', None)
+        if report_path is not None:
+            report_path = require_inside(ROOT / 'runtime', ROOT / report_path, 'read-model report')
+            if report_path.exists():
+                raise FileExistsError('read-model report already exists')
+        write_new_json(output, dict(schema_version='historical-company-read-model-preview-v1',
+            snapshot=snapshot, existing_workbench_sha256=args.existing_workbench_sha256,
+            expectations_replay_sha256=expectations_hash, base_payload_sha256=args.base_payload_sha256,
+            canonical_written=False, historical_preview=True, action='no_order'))
+        if report_path is not None:
+            report_path.parent.mkdir(parents=True, exist_ok=True)
+            with report_path.open('x', encoding='utf-8') as handle:
+                handle.write(render_company_review_cards(model))
+        print(json.dumps(dict(output=str(output), sha256=sha256_file(output),
+                              canonical_written=False, action='no_order'), indent=2))
+        return 0
     if getattr(args, "integrate_canonical", False):
         if args.base_payload is None or args.existing_workbench is None:
             raise ValueError("canonical integration requires pinned base and existing research")
@@ -115,6 +166,7 @@ def main() -> int:
             "legacy_evidence_count": None if packet is None else len(packet["audit"]["artifacts"]),
             "existing_workbench_sha256": args.existing_workbench_sha256,
             "base_payload_sha256": args.base_payload_sha256,
+            "expectations_replay_sha256": expectations_hash,
         }
     )
     write_new_json(source_receipt, {
@@ -125,6 +177,8 @@ def main() -> int:
         "integrated_canonical": getattr(args, "integrate_canonical", False),
         "existing_workbench_path": None if args.existing_workbench is None else str(args.existing_workbench),
         "existing_workbench_sha256": args.existing_workbench_sha256,
+        "expectations_replay_path": None if expectations_path is None else str(expectations_path.relative_to(ROOT)),
+        "expectations_replay_sha256": expectations_hash,
         "output_manifest_sha256": receipt["manifest_sha256"],
         "workbook_sha256": receipt["workbook_sha256"],
         "historical_preview": True, "canonical_written": False, "action": "no_order",
