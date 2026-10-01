@@ -7305,3 +7305,20 @@ action = no_order
 
 相关测试 58 项通过。仅只读报告，不调用 Excel，不改变阈值、估值公式、研究批准、PIT、价格或组合准入；canonical_written=false、action=no_order。获准表格工具及保全/视觉发布仍是下一 Excel 依赖，完整目标与最终运营验收未完成。
 
+# 2026-10-02 Canonical research handoff publication
+
+用户已明确允许现有 openpyxl 发布工具。新增共享交接包到受保护原表预览入口；正式发布前再次核验原始研究与传递来源，拒绝遗漏来源或替换交接内容。中文研究缺项解释及哈希过滤仅影响展示，不改变研究或交易门禁。
+
+CANONICAL_WORKBOOK_SOURCE=WORKBOOK_PATH；CURRENT_TRIAL_POINTER=CANONICAL_WORKBOOK；M7_PRODUCT_UX=INTEGRATED；WORKBOOK_PATH_UNCHANGED=true。唯一原表已发布，不是 runtime 预览成为用户入口。
+
+- before_sha256 / backup_sha256: `74439baa82f9ff9f648cb32858af9d3fab03ade06d4f43b1cbdde15fcdef4582`
+- after_sha256: `7e2820a66584169adbe05c232ec232920e71d077e0530853d5189470e98ec10f`
+- Publication receipt: `runtime/publication-receipts/canonical-reviewed-research-20261001T234433Z-c29f45a8.json`
+- Backup: `runtime/workbook-backups/canonical-before-reviewed-research-20261001T234433Z-c29f45a8.xlsx`
+- PRESERVED_SHEETS_CONTENT_CHECK=PASS；55 个非产品工作表，包含高级对象/OOXML 保护检查；PRODUCT_SHEETS_PRESENT=true。
+- WPS 预览七页原生导出共 20 个 PDF 页面，可读性与原生文本检查通过；全页联系图及关键长文本图像已核看。证明在 `runtime/canonical-handoff-native-clean-20261002/`。
+- WPS_CANONICAL_OPEN=PASS；发布后正式原表以只读方式重开，七页导出与错误/内部术语检查通过，哈希未变。证明：`canonical-native-review/receipt.json`。其中 canonical_written=false 表示验证动作没有写文件，不否认上面的发布动作。
+- Latest offline Core: 1481 passed, 32 skipped；`.tmp/handoff-provenance-core.xml`。
+
+工程发布已交付，仍保留 strict_pit=NOT_PROVEN、current_price_bridge=NOT_ADMITTED、M7_FINAL_USER_ACCEPTANCE=NOT_PASSED、INITIAL_ASSISTED_USE=NOT_REACHED、action=no_order。缺项不能由 Excel 可打开或工程测试通过替代；完整长期目标未完成。此版敏感性文字仍含文档来源路径，后续渲染的路径过滤修正已加入代码，不影响数值或当前门禁。
+

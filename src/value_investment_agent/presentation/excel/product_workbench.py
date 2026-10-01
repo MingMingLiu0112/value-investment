@@ -236,7 +236,8 @@ _USER_TEXT_REPLACEMENTS = {
 }
 
 _INTERNAL_PROVENANCE_PATTERNS = (
-    re.compile(r"\bSHA-?256\s*=\s*[0-9a-f]{64}\b", re.IGNORECASE),
+    re.compile(r"\bSHA-?256\s*[=:：]?\s*[0-9a-f]{64}\b", re.IGNORECASE),
+    re.compile(r"(?<![A-Za-z0-9_])docs[/\\][^\s;；]+", re.IGNORECASE),
     re.compile(r"\bruntime[/\\][^\s;；]+", re.IGNORECASE),
     re.compile(r"\b[0-9a-f]{64}\b", re.IGNORECASE),
 )

@@ -13,6 +13,10 @@ def test_excel_research_gap_explanations_preserve_unverified_outcome():
     assert '200 亿元' in displayed and '尚未核实' in displayed
     assert '后续合格' in displayed
     assert condition.startswith('A later eligible')
+    sensitivity = '来源docs/current/review.json；SHA-256 ' + 'a' * 64
+    display = _user_text(sensitivity)
+    assert 'SHA-256' not in display and 'docs/' not in display
+    assert 'a' * 64 not in display
 
 
 def recipe(tmp_path):
