@@ -658,3 +658,42 @@ def test_historical_execution_replay_projection_rejects_future_generation(tmp_pa
 
     with pytest.raises(ValueError, match="generated after product as_of"):
         _reproject(model, payload, generated_at=f"{future}T00:00:00+08:00")
+def test_price_original_correspondence_and_fail_closed(tmp_path):
+    import hashlib
+    import json
+    import pytest
+    from value_investment_agent.infrastructure.evidence.historical_price_correspondence import verify_price_correspondence
+
+    original = tmp_path / 'prices.json'
+    rows = [['2025-01-02', '10', '11'], ['2025-01-03', '11', '12']]
+    original.write_text(json.dumps({'code': 0, 'data': {'sh600519': {'day': rows}}}), encoding='utf-8')
+    reference = {'kind': 'prices', 'path': 'prices.json', 'sha256': hashlib.sha256(original.read_bytes()).hexdigest()}
+    sessions = [{'date': row[0], 'open': row[1], 'close': row[2]} for row in rows]
+    def verify(items=sessions, refs=None):
+        return verify_price_correspondence(root=tmp_path, symbol='600519', sessions=items, references=refs or [reference])
+    proof = verify()
+    assert proof['status'] == 'MATCH'
+    assert proof['matched_sessions'] == 2
+    assert proof['rows'][1]['sources'][0]['row_index'] == 1
+    assert proof['action'] == 'no_order'
+    assert not proof['execution_admitted']
+    assert not proof['historical_availability_proven']
+    with pytest.raises(ValueError, match='differs'):
+        verify([dict(sessions[0], close='99')])
+    with pytest.raises(ValueError, match='cover'):
+        verify([dict(sessions[0], date='2025-01-04')])
+    conflicting = tmp_path / 'conflict.json'
+    conflicting.write_text(json.dumps({'code': 0, 'data': {'sh600519': {'day': [['2025-01-02', '9', '11']]}}}), encoding='utf-8')
+    conflict_ref = dict(reference, path='conflict.json', sha256=hashlib.sha256(conflicting.read_bytes()).hexdigest())
+    with pytest.raises(ValueError, match='conflicting'):
+        verify(refs=[reference, conflict_ref])
+    original.write_text(json.dumps({'code': 0, 'data': {'sh600519': {'qfqday': rows}}}), encoding='utf-8')
+    with pytest.raises(ValueError, match='hash mismatch'):
+        verify()
+    reference['sha256'] = hashlib.sha256(original.read_bytes()).hexdigest()
+    with pytest.raises(ValueError, match='unadjusted'):
+        verify()
+    original.write_text('{}', encoding='utf-8')
+    reference['sha256'] = hashlib.sha256(original.read_bytes()).hexdigest()
+    assert verify()['status'] == 'NOT_ASSESSABLE'
+

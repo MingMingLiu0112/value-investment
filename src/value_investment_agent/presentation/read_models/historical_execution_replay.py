@@ -94,6 +94,28 @@ def _translated_limitations(values: object) -> tuple[str, ...]:
     return tuple(translated)
 
 
+def _price_correspondence_summary(replay: Mapping[str, Any]) -> str:
+    proof = replay.get('price_source_correspondence')
+    if proof is None:
+        return '行情逐行原件对应未接入；文件 Hash 一致不等于价格逐行对应。'
+    if (proof.get('schema_version') != 'historical-price-correspondence-v1'
+            or proof.get('action') != ACTION_NO_ORDER
+            or proof.get('historical_availability_proven') is not False
+            or proof.get('execution_admitted') is not False
+            or proof.get('validated_fields') != ['open', 'close']):
+        raise ValueError('price correspondence cannot admit execution or historical availability')
+    if proof.get('status') != 'MATCH':
+        return '行情原件格式或覆盖尚未完成逐行对应；不能宣称价格源验证通过。'
+    count = _integer(proof.get('matched_sessions'), 'price matched sessions')
+    sources = _integer(proof.get('source_files'), 'price source files')
+    if (count == 0 or sources == 0 or count != len(proof.get('rows', []))
+            or proof.get('missing_dates') or proof.get('unsupported_sources')
+            or proof.get('price_basis') != 'UNADJUSTED_DAY_ROWS'):
+        raise ValueError('price correspondence match lacks complete rows')
+    return (f'开盘与收盘逐行原件对应：{count} 个交易日，{sources} 个封存未复权日线文件。'
+            '未验证最高/最低价、历史当时可得性、停牌涨跌停、流动性或真实成交。')
+
+
 def _decision_explanation_lines(replay: Mapping[str, Any]) -> tuple[str, ...]:
     bundle = replay.get("decision_explanations")
     if bundle is None:
@@ -409,6 +431,7 @@ def project_historical_execution_replay(
             f"冻结 journal 对照一致，覆盖 {comparison['rows_compared']} 个交易日和 "
             f"{comparison['proposals_compared']} 个历史提议；冻结 result 对照一致，"
             f"覆盖 {comparison['periods_compared']} 个预登记时段。"
+            + _price_correspondence_summary(replay)
         ),
         validation_summary=(
             "机械重建已验证；当前研究未准入；严格历史时点未证明；"
@@ -562,6 +585,7 @@ def render_historical_execution_replay(payload: Mapping[str, Any]) -> str:
         "",
         f"- 场景：`{payload.get('scenario')}`",
         f"- 决策来源：`{payload.get('decision_source')}`；投资规则未重新计算。",
+        f"- 行情原件核验：{_price_correspondence_summary(payload)}",
         f"- 执行引擎：`{payload.get('execution_engine')}`；费用引擎：`{payload.get('fee_engine')}`。",
         f"- 冻结 journal 对照：`{payload.get('comparison', {}).get('frozen_journal', {}).get('status')}`；"
         f"覆盖 {payload.get('comparison', {}).get('frozen_journal', {}).get('rows_compared')} 个交易日。",

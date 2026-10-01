@@ -17,6 +17,7 @@ from typing import Any, Mapping
 
 from ..product.common import load_json_value, require_inside, sha256_file
 from ...virtual_account import VirtualAccount, dated_research_fee, replay
+from ...infrastructure.evidence.historical_price_correspondence import verify_price_correspondence
 
 
 INPUT_SCHEMA = "historical-execution-replay-input-v1"
@@ -528,6 +529,8 @@ def build_historical_execution_replay(
     if journal_path.name != journal_filename:
         raise ValueError("range_journal.filename does not match bound path")
     _validate_execution_input(execution_input, root=root, symbol=symbol)
+    price_correspondence = verify_price_correspondence(root=root, symbol=symbol,
+        sessions=execution_input['sessions'], references=execution_input['references'])
     scenario_result = _validate_range_sources(
         symbol=symbol,
         scenario=scenario,
@@ -606,6 +609,7 @@ def build_historical_execution_replay(
         "decision_schedule": decision_schedule,
         "decision_outcomes": decision_outcomes,
         "decision_explanations": _decision_explanation_bundle(decision_outcomes, range_config),
+        "price_source_correspondence": price_correspondence,
         "execution_events": execution_events,
         "comparison": {
             "frozen_journal": {
