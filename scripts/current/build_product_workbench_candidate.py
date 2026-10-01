@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from scripts.build_m7_daily_workbench import build_packet  # noqa: E402
 from value_investment_agent.application.product.workbench import load_stopped_workbench_for_presentation
 from value_investment_agent.presentation.read_models.research_readiness import project_research_readiness
+from value_investment_agent.application.historical_validation.reported_earnings_cash_trends import reported_earnings_cash_trends
 from value_investment_agent.application.product.common import (  # noqa: E402
     encode_json_bytes,
     sha256_bytes,
@@ -231,9 +232,10 @@ def main() -> int:
             '原报告披露数字复核（不是研究准入）', 'disclosed_financial_rows',
             metric_path.relative_to(ROOT).as_posix(), metric_hash,
             datetime.fromisoformat(review['observed_at']).date())
-        model = project_reported_financials(model, review, proxy, evidence, cash_change=change)
+        trends = reported_earnings_cash_trends(review)
+        model = project_reported_financials(model, review, proxy, evidence, cash_change=change, earnings_cash_trends=trends)
         metric_bindings.append(dict(path=metric_path.relative_to(ROOT).as_posix(), sha256=metric_hash,
-                                    review=review, cash_proxy=proxy, cash_change=change))
+                                    review=review, cash_proxy=proxy, cash_change=change, earnings_cash_trends=trends))
     if getattr(args, 'cash_change_periods', None) and not cash_change_built:
         raise ValueError('cash change requires an explicit matched component transcription')
     event_binding = None

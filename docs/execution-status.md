@@ -7260,3 +7260,8 @@ action = no_order
 在既有冻结 recipe 上新增可选的同公司 `research_readiness` 绑定；加载时重验结果、当前停止台账及公司身份，不允许不同公司缺项或命令行覆盖。旧 recipe 原件不变。新本地输入 `runtime/integrated-company-recipe-20261001/recipe.json`，SHA-256 `34de72cf922c42749e23a375f41b316582dbf877e9105a0c18b6846bb33490ca`。
 
 实际单命令输出 `runtime/integrated-company-review-20261001/company-card.md`，将公司论点、反证、财务转录、经营现金流变动对账、分红生命周期、公告原件问题、估值假设与价值构成、条件性预期及当前研究缺项放在同一公司卡。read-model SHA-256 `de7c7faccdc3ac5819f16fe9858d402dc9c11c48d6000af4ae26fed47feb5994`。只代表已有来源可重现的解释链，不能替代财务质量、股息可持续性、当前价格与研究准入，action=no_order；原 Excel、服务器、数据库与定时任务未改。
+# 2026-10-01 利润与现金流方向研究解释
+
+已在共享单票配方中接入同原件年度利润/经营现金流各自的同比变动，区分正基数、零/负基数、相邻年度和事实口径。只生成研究问题，不计算归母利润与经营现金流的同口径现金转换率，不推定利润质量、自由现金、可持续分红或预测。原件、估值、门禁与仓位不改。
+
+实际伊利输出 `runtime/earnings-cash-company-review-20261001/company-card.md`，read-model SHA-256 `1159efdf7c837b284b090bfe370630149f0aa237026a4ed722e8f5f4c01b1f61`。年报同原件比较数显示：2023→2024 归母利润 -18.94%、经营现金流 +18.86%；2024→2025 归母利润 +36.82%、经营现金流 -34.02%。这些是 2025 年报中的描述性比较，不是 2024 年当时可得数据。仍需营运资本、非经常损益、资金归属及现金债务复核，不能据此宣称 FinancialGate 已完成，action=no_order。

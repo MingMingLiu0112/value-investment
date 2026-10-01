@@ -94,7 +94,8 @@ def render_company_review_cards(model: ProductWorkbenchReadModel) -> str:
         cash_labels = {'经营现金流变化合计（描述性）', '现金流变化解释边界', '财务解释边界',
                        '股息可持续性边界'}
         summary = [(label, value) for label, value in card.decision_review
-                   if label in cash_labels or 'CFO减现金资本开支' in label or label.startswith('股息记录 ')]
+                   if label in cash_labels or 'CFO减现金资本开支' in label or label.startswith('股息记录 ')
+                   or label.startswith('利润与现金流方向 ') or label == '利润现金比较边界']
         if not summary:
             lines.append('尚未接入已核验的现金与股息研究；不推定可持续分红或股息率。')
         for label, value in summary:

@@ -271,6 +271,17 @@ recipe is `runtime/integrated-company-recipe-20261001/recipe.json`, SHA-256
 `34de72cf922c42749e23a375f41b316582dbf877e9105a0c18b6846bb33490ca`.
 It produces research explanation only, not investment admission or Excel publication.
 
+### Reported Earnings And Cash Trends
+
+Reviewed annual rows containing parent-attributable net profit and operating cash
+flow now produce separate year-over-year changes in the same company card. Only
+adjacent annual periods and one bound original are compared. Nonpositive prior
+values do not produce percentage growth. Opposite directions are a research
+question, not a quality verdict or a forecast. The two attribution scopes are not
+treated as equivalent: no cash-conversion ratio, sustainable-dividend capacity,
+financial gate, valuation or decision approval is inferred. Later-report comparative
+figures retain their observed availability and are never backdated.
+
 The generic current-workbench CLI also supports readable evidence-stop output:
 
 ```powershell

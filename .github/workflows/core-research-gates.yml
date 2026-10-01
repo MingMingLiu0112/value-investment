@@ -49,6 +49,7 @@ jobs:
           tests/test_research_recipe.py
           tests/test_company_review_readability.py
           tests/test_valuation_driver_explanation.py
+          tests/test_reported_earnings_cash_trends.py
           tests/test_valuation_result.py
           tests/test_price_bridge.py
           tests/test_research_profile.py

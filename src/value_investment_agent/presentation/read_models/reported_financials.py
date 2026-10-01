@@ -7,7 +7,8 @@ from .product_workbench import EvidenceRecord, ProductWorkbenchReadModel
 
 def project_reported_financials(model: ProductWorkbenchReadModel, review: dict,
                                cash_proxy: dict | None, evidence: EvidenceRecord,
-                               cash_change: dict | None = None) -> ProductWorkbenchReadModel:
+                               cash_change: dict | None = None,
+                               earnings_cash_trends: dict | None = None) -> ProductWorkbenchReadModel:
     if (review.get('schema_version') != 'disclosed-metric-review-v1'
             or review.get('action') != 'no_order'
             or any(review.get(key) is not False for key in
@@ -74,6 +75,27 @@ def project_reported_financials(model: ProductWorkbenchReadModel, review: dict,
                           '仍需核验营运资本、一次性因素和金融业务，不能直接推定利润质量或分红覆盖。'))
     additions.append(('财务解释边界', '后期报告比较数不能回填历史可得性；加权ROE不是预测ROE；'
                       'CFO减资本开支不是FCFF/FCFE或可分红现金。维持性投资、营运资本、金融业务、债务及少数股东影响仍需研究。'))
+    if earnings_cash_trends is not None:
+        trends = earnings_cash_trends
+        if (trends.get('schema_version') != 'reported-earnings-cash-trends-v1'
+                or trends.get('symbol') != card.symbol or trends.get('action') != 'no_order'
+                or trends.get('cash_conversion_ratio') is not None
+                or any(trends.get(key) is not False for key in (
+                    'quality_assessment_admitted', 'financial_gate_admitted', 'forecast_approved'))):
+            raise ValueError('reported trends cannot approve quality or cash conversion')
+        if any(fact['source_binding'] != trends.get('source_binding') for fact in review['facts']
+               if fact['metric_name'] in {'reported_parent_net_profit', 'reported_operating_cash_flow'}):
+            raise ValueError('reported trends source binding mismatch')
+        for row in trends['rows']:
+            def growth(series):
+                return ('不可评估（上期非正数）' if series['growth_rate'] is None else
+                        f"{Decimal(series['growth_rate']) * Decimal('100'):.2f}%")
+            additions.append((f"利润与现金流方向 {row['prior_period']}→{row['current_period']}",
+                f"归母净利润同比 {growth(row['parent_profit'])}；经营现金流同比 {growth(row['operating_cash'])}。"
+                + ('两项变动方向相反；需进一步核查营运资本、一次性损益和现金流归属，不据此判定利润质量。'
+                   if row['opposite_directions'] else '未出现相反变动方向，但不能据此判定现金转化或利润质量。')))
+        additions.append(('利润现金比较边界', '归母利润与经营现金流归属不同，不计算同口径现金转换率；'
+                          '本报告比较数不是历史当时可得数据。尚未完成营运资本与非经常性损益复核。'))
     merged = dict(card.decision_review)
     merged.update(additions)
     records = {item.evidence_id: item for item in model.audit_evidence}
