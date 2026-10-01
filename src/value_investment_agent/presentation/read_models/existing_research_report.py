@@ -180,4 +180,20 @@ def render_cutoff_replay_report(payload: dict) -> str:
                 lines.append(f"- {ref['id']}: original path remains {ref['original_path_status']}; exact sealed bytes verified at {ref['recovered_path']} (SHA-256 {ref['recovered_sha256']}).")
         lines.append('Bridge arithmetic readiness is not research approval. Pre-model events, assumption timing, strict PIT and current quote freshness remain separate gates.')
         lines.extend(['', 'Decision remains NOT_READY; no orders, fills or position guidance.', ''])
+    review = payload.get('event_source_review')
+    if review is not None:
+        lines.extend(['## Original Announcement Review Packet', '',
+            f"Status: {review['status']}",
+            'Machine-extracted text is not an approved materiality conclusion. Physical page numbers are 1-based.', ''])
+        for event in review['events']:
+            lines.extend([f"### {event['announcement_id']} {event['title']}",
+                f"Published: {event['published_at']}; review: {event['materiality_review']}", ''])
+            for source in event['sources']:
+                lines.extend([f"Original: {source['source_url']}", f"SHA-256: {source['sha256']}",
+                    f"Text status: {source['text_status']}", ''])
+                for page in source['pages'][:3]:
+                    lines.extend([f"Physical page {page['physical_page']} (excerpt; full text retained in JSON):", '',
+                        *('> ' + line for line in page['text'][:1800].splitlines()), ''])
+            lines.extend('- ' + question for question in event['unresolved_questions'])
+            lines.append('')
     return '\n'.join(lines)

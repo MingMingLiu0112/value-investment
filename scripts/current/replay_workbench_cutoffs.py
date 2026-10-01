@@ -13,6 +13,7 @@ from value_investment_agent.application.historical_validation.reconstructed_equi
 from value_investment_agent.application.product.common import write_new_json
 from value_investment_agent.application.historical_validation.event_evidence_audit import audit_event_evidence
 from value_investment_agent.application.historical_validation.historical_price_bridge import replay_historical_bridge
+from value_investment_agent.application.historical_validation.event_source_review import prepare_event_source_review
 
 
 def main() -> int:
@@ -31,6 +32,7 @@ def main() -> int:
     parser.add_argument('--quote-bundle', type=Path)
     parser.add_argument('--quote-bundle-sha256')
     parser.add_argument('--recovered-event-original', action='append', default=[], metavar='ID=PATH')
+    parser.add_argument('--event-source-pages', action='store_true')
     args = parser.parse_args()
     recovered_originals = {}
     for binding in args.recovered_event_original:
@@ -40,6 +42,8 @@ def main() -> int:
         recovered_originals[evidence_id] = ROOT / path
     if recovered_originals and args.event_scan is None:
         raise ValueError('recovered originals require an event scan')
+    if args.event_source_pages and not all((args.event_scan, args.event_scan_sha256)):
+        raise ValueError('event source pages require paired scan path and hash')
     report = None if args.report is None else (ROOT / args.report).resolve()
     if report is not None and (not report.is_relative_to(ROOT / 'runtime') or report.exists()):
         raise ValueError('report requires a new runtime path')
@@ -72,12 +76,23 @@ def main() -> int:
             cutoffs=args.cutoff, recovered_originals=recovered_originals)
     if not output.is_relative_to(ROOT / 'runtime'):
         raise ValueError('replay output must remain under runtime')
+    if args.event_source_pages:
+        result['event_source_review'] = prepare_event_source_review(root=ROOT,
+            path=ROOT / args.event_scan, expected_sha256=args.event_scan_sha256,
+            symbol=result['symbol'], recovered_originals=recovered_originals)
     write_new_json(output, result)
     if report is not None:
         report.parent.mkdir(parents=True, exist_ok=True)
         with report.open('x', encoding='utf-8') as handle:
             handle.write(render_cutoff_replay_report(result))
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    console_result = result
+    if args.event_source_pages:
+        review = result['event_source_review']
+        console_result = dict(output=str(output), report=None if report is None else str(report),
+            symbol=result['symbol'], event_source_status=review['status'],
+            announcement_count=len(review['events']), materiality_approved=False,
+            action='no_order')
+    print(json.dumps(console_result, ensure_ascii=False, indent=2))
     return 0
 
 
