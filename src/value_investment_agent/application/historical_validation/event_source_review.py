@@ -16,6 +16,8 @@ def prepare_event_source_review(*, root: Path, path: Path, expected_sha256: str,
             status='NOT_READY', audit=audit, events=[], action='no_order',
             materiality_approved=False, model_basis_complete=False)
     payload = load_json_object(path, 'event scan')
+    if payload.get('symbol') != symbol or sha256_file(path) != expected_sha256:
+        raise ValueError('event scan identity or sealed bytes changed during read')
     audited = {ref['id']: ref for ref in audit['references']}
     events = []
     for announcement in payload['announcements']:
@@ -42,6 +44,8 @@ def prepare_event_source_review(*, root: Path, path: Path, expected_sha256: str,
             unresolved_questions=['Does the original change model inputs or assumptions?',
                 'Was its impact already incorporated, and where is that evidence?',
                 'Does it require recalculation, risk monitoring or thesis revalidation?']))
+    if sha256_file(path) != expected_sha256:
+        raise ValueError('event scan changed during source extraction')
     return dict(schema_version='event-source-review-packet-v1', symbol=symbol,
         observed_at=datetime.now(timezone.utc).isoformat(), status='SOURCE_PACKET_AVAILABLE_REVIEW_PENDING',
         audit=audit, events=events, parser_version='pdfium-page-text-v1', action='no_order',

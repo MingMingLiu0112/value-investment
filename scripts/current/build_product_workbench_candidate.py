@@ -30,6 +30,8 @@ from value_investment_agent.presentation.read_models.product_workbench import Ev
 from value_investment_agent.application.historical_validation.disclosed_metric_review import review_disclosed_metrics
 from value_investment_agent.application.historical_validation.reported_cash_proxy import reported_cash_proxies
 from value_investment_agent.presentation.read_models.reported_financials import project_reported_financials
+from value_investment_agent.application.historical_validation.event_source_review import prepare_event_source_review
+from value_investment_agent.presentation.read_models.company_events import project_company_event_questions
 from value_investment_agent.presentation.read_models.existing_research_report import project_existing_research_workbench, public_workbench_payload_from_snapshot  # noqa: E402
 from value_investment_agent.application.product.product_workbench_candidate import (  # noqa: E402
     build_product_workbench_candidate_payload,
@@ -61,6 +63,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--expectations-replay-sha256')
     parser.add_argument('--metric-transcription', nargs=2, action='append', default=[],
                         metavar=('PATH', 'SHA256'), help='Repeat for source-verified disclosed financial rows.')
+    parser.add_argument('--event-scan', nargs=2, metavar=('PATH', 'SHA256'))
+    parser.add_argument('--recovered-event-original', nargs=2, action='append', default=[],
+                        metavar=('REFERENCE_ID', 'PATH'))
     parser.add_argument('--read-model-only', action='store_true')
     parser.add_argument('--read-model-report', type=Path)
     parser.add_argument('--presentation-as-of', type=date.fromisoformat,
@@ -151,6 +156,26 @@ def main() -> int:
         model = project_reported_financials(model, review, proxy, evidence)
         metric_bindings.append(dict(path=metric_path.relative_to(ROOT).as_posix(), sha256=metric_hash,
                                     review=review, cash_proxy=proxy))
+    event_binding = None
+    event_scan = getattr(args, 'event_scan', None)
+    recovered = getattr(args, 'recovered_event_original', [])
+    if recovered and not event_scan:
+        raise ValueError('recovered original requires event scan')
+    if event_scan:
+        if not args.existing_workbench or not args.existing_workbench_sha256:
+            raise ValueError('event presentation requires pinned workbench')
+        if len({key for key, _ in recovered}) != len(recovered):
+            raise ValueError('duplicate recovered event reference')
+        event_path = require_inside(ROOT, ROOT / event_scan[0], 'event scan')
+        packet = prepare_event_source_review(root=ROOT, path=event_path,
+            expected_sha256=event_scan[1], symbol=research['symbol'],
+            recovered_originals={key: ROOT / value for key, value in recovered})
+        evidence = EvidenceRecord(f"{research['symbol']}-event-originals-{event_scan[1][:12]}",
+            '封存区间公告原件复核（影响未批准）', 'event_source_review',
+            event_path.relative_to(ROOT).as_posix(), event_scan[1], args.generated_at.date())
+        model = project_company_event_questions(model, packet, evidence)
+        event_binding = dict(path=event_path.relative_to(ROOT).as_posix(), sha256=event_scan[1],
+                             recovered_originals=recovered, source_review=packet)
     if getattr(args, 'read_model_only', False):
         if output.suffix != '.json' or getattr(args, 'integrate_canonical', False):
             raise ValueError('read-model-only requires JSON output without workbook publication')
@@ -164,6 +189,7 @@ def main() -> int:
             snapshot=snapshot, existing_workbench_sha256=args.existing_workbench_sha256,
             expectations_replay_sha256=expectations_hash, base_payload_sha256=args.base_payload_sha256,
             disclosed_financial_bindings=metric_bindings,
+            event_source_binding=event_binding,
             canonical_written=False, historical_preview=True, action='no_order'))
         if report_path is not None:
             report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -202,6 +228,7 @@ def main() -> int:
         "expectations_replay_path": None if expectations_path is None else str(expectations_path.relative_to(ROOT)),
         "expectations_replay_sha256": expectations_hash,
         "disclosed_financial_bindings": metric_bindings,
+        "event_source_binding": event_binding,
         "output_manifest_sha256": receipt["manifest_sha256"],
         "workbook_sha256": receipt["workbook_sha256"],
         "historical_preview": True, "canonical_written": False, "action": "no_order",
