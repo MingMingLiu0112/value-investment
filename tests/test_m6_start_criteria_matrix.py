@@ -264,6 +264,29 @@ def test_daily_event_projection_preserves_missing_watermark_and_verifies_origina
         project()
 
 
+def test_daily_risk_rehearsal_uses_existing_engine_and_rejects_actual_namespace(tmp_path):
+    import hashlib
+    from datetime import datetime
+    from value_investment_agent.application.portfolio.daily_risk_rehearsal import evaluate_daily_risk_rehearsal
+    payload = json.loads((ROOT / 'tests/fixtures/m4_portfolio_risk_demo.json').read_text(encoding='utf-8'))
+    path = tmp_path / 'simulation.json'
+    def run():
+        path.write_text(json.dumps(payload), encoding='utf-8')
+        return evaluate_daily_risk_rehearsal(root=tmp_path, path=path,
+            expected_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+            now=datetime.fromisoformat('2026-10-02T14:00:00+08:00'), assessment_id='test-simulated-risk')
+    result = run()
+    assert result['simulation_only'] is True
+    assert result['personal_capacity_confirmed'] is False
+    assert result['position_guidance'] is None
+    assert result['input_as_of'] == '2026-09-22'
+    assert result['risk_assessment']['findings']
+    assert result['risk_assessment']['assessment_namespace'] == 'SIMULATED'
+    payload['snapshot']['namespace'] = 'ACTUAL'
+    with pytest.raises(ValueError, match='SIMULATED risk demos only'):
+        run()
+
+
 def _criteria_by_id():
     matrix = load_m6_start_criteria_matrix(MATRIX_PATH, root=ROOT)
     return {item.criterion_id: item for item in matrix.criteria}

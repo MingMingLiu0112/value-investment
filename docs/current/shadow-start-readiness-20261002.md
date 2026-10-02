@@ -59,6 +59,30 @@ SHADOW_SESSION_VALIDITY and INVESTMENT_DECISION_VALIDITY remain separate; offlin
 
 ## Required final status
 
+### Existing portfolio risk engine connected (explicit rehearsal only)
+
+Optional `--simulated-portfolio` and paired SHA-256 connect the already existing
+M4 risk engine to the daily orchestration, independent of a stopped company case.
+Only the established `m4-portfolio-risk-demo-v1` SIMULATED contract is accepted;
+ACTUAL namespaces are rejected, not copied into repository artifacts. The demo
+snapshot retains its original date, policy and limits; there are no new position
+rules or inferred human confirmations. Its exact input snapshot/hash is retained
+under runtime after validation. Results appear in portfolio.json and the company
+card; personal capacity remains false and position guidance remains null.
+
+Actual joined run: `runtime/shadow-existing-risk-dag-20261002/company-card.md`;
+manifest SHA-256 `d1b5cbb9038d3201920f3b4c6c1525e017ff04eba42cd51def0bc46992602d07`.
+Existing September 22 demo produced VIOLATION: 600519/601088 single-security caps
+and emergency/liquidity cash reserve. These are simulated account findings, not
+current user exposures or company sell recommendations. Executed nodes: research,
+portfolio_gate (simulated), product. Receipt simulation_only=true; no real session
+credit. Missing model/decision/current quote/event coverage remain visible.
+
+Reproduce the existing command with a fresh runtime destination and add
+`--simulated-portfolio tests/fixtures/m4_portfolio_risk_demo.json` and the actual
+file SHA-256. This is a technical demonstration path, not an alternate formal M6
+start contract, production portfolio intake or permission to bypass private input.
+
 ### Raw scan to daily event contract integration
 
 The isolated producer now uses `project_daily_event_input` for M1 scans. Research

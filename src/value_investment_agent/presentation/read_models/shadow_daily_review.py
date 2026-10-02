@@ -33,6 +33,15 @@ def render_shadow_company_review(*, research: Mapping[str, Any], model: Mapping[
             f'Bear / Base / Bull：{valuation.get("bear_value", "未提供")} / {valuation.get("base_value", "未提供")} / {valuation.get("bull_value", "未提供")}'])
     else:
         lines.append('本次研究未形成估值结果，不用旧数值或模拟数填补。')
+    risk = product.get('simulated_portfolio_review')
+    if risk:
+        assessment = risk['risk_assessment']
+        lines.extend(['', '## 模拟组合风险演示（不是你的账户）',
+            f'样本日期：{risk["input_as_of"]}；风险状态：{assessment["status"]}。',
+            '只验证风险流程；未改成当日持仓，不能确认个人加仓容量。'])
+        lines.extend(f'- {finding["subject"]}：{finding["message"]}'
+                     for finding in assessment['findings'])
+        lines.append('个性化仓位建议：未生成；真实 Shadow 日计数仍为零。')
     lines.extend(['价格桥接与模型有效性以同目录 model.json 为准；有估值不代表当前价格可用。', '',
         '## 再次复核条件',
         '只在具体缺项取得可验证证据后重新复核；公告内容不自动证明材料性审批或原投资逻辑仍成立。',

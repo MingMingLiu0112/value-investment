@@ -12,6 +12,7 @@ from ..pre_decision_eligibility import pre_decision_eligibility_from_payload
 from ..investment_decision import DecisionEvidenceBundle, evaluate_investment_decision
 from ..application.product.event_followup import read_event_followup
 from ..application.product.daily_event_input import project_daily_event_input
+from ..application.portfolio.daily_risk_rehearsal import evaluate_daily_risk_rehearsal
 from ..presentation.read_models.shadow_daily_review import render_shadow_company_review
 
 
@@ -24,7 +25,9 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
                                schedule_request_path: Path | None = None,
                                schedule_request_sha256: str | None = None,
                                followup_path: Path | None = None,
-                               followup_sha256: str | None = None) -> dict:
+                               followup_sha256: str | None = None,
+                               simulated_portfolio_path: Path | None = None,
+                               simulated_portfolio_sha256: str | None = None) -> dict:
     root = root.resolve()
     output = require_inside(root, output, 'isolated daily output')
     if not output.is_relative_to(root / 'runtime') or output.exists():
@@ -37,6 +40,7 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         ('package', package_path, package_sha256),
         ('schedule request', schedule_request_path, schedule_request_sha256),
         ('event followup', followup_path, followup_sha256),
+        ('simulated portfolio', simulated_portfolio_path, simulated_portfolio_sha256),
     ):
         if bool(path) != bool(digest):
             raise ValueError(f'{label} requires paired path/hash')
@@ -171,6 +175,21 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         outputs['product'].update(suggested_state=outputs['decision']['suggested_state'],
             blockers=outputs['decision']['blockers'], execution_status='RESEARCH_RESULT_PROJECTION_ONLY')
     outputs['product']['source_anchored_explanation'] = followup
+    if simulated_portfolio_path is not None:
+        assessment = evaluate_daily_risk_rehearsal(root=root,
+            path=simulated_portfolio_path, expected_sha256=simulated_portfolio_sha256,
+            now=datetime.now(timezone.utc), assessment_id=run_id + '-simulated-risk')
+        source = require_inside(root, simulated_portfolio_path, 'simulated portfolio input')
+        snapshot = output / 'simulated-portfolio-input.json'
+        shutil.copyfile(source, snapshot)
+        if sha256_file(snapshot) != simulated_portfolio_sha256:
+            raise ValueError('simulated portfolio changed during snapshot')
+        assessment['input_path'] = snapshot.relative_to(root).as_posix()
+        outputs['portfolio'].update(assessment,
+            portfolio_gate='SIMULATED_RISK_ONLY_NOT_PERSONAL_CAPACITY',
+            execution_status='EXECUTED_EXISTING_RISK_ENGINE')
+        outputs['product']['simulated_portfolio_review'] = assessment
+        executed.append('portfolio_gate')
     executed.append('product')
     for role, value in outputs.items():
         path = output / (role + '.json')
@@ -178,7 +197,7 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         bindings[role] = dict(path=path.relative_to(root).as_posix(), sha256=sha256_file(path),
                               observed_at=common['generated_at'])
     completed = datetime.now(timezone.utc)
-    run_receipt = dict(**common, simulation_only=False, mode='ISOLATED_NOT_PRODUCTION',
+    run_receipt = dict(**common, simulation_only=simulated_portfolio_path is not None, mode='ISOLATED_NOT_PRODUCTION',
         started_at=started.isoformat(), completed_at=completed.isoformat(),
         node_sequence=executed, planned_nodes=list(DAG_NODES),
         skipped_nodes=[node for node in DAG_NODES if node not in executed], dag_execution_complete=False,

@@ -7431,6 +7431,18 @@ CURRENT_RESEARCH_ADMISSION=NOT_READY; current_price_bridge=NOT_ADMITTED; strict_
 
 ## 2026-10-02 Shared daily DAG successor (isolated, not production)
 
+Existing risk-engine integration: daily orchestration accepts explicitly hashed
+SIMULATED M4 demo inputs and calls the established portfolio risk assessment. The
+original demo date/limits are retained, ACTUAL input is rejected, and no personal
+capacity or position guidance is inferred. Joined output:
+`runtime/shadow-existing-risk-dag-20261002/company-card.md`; manifest SHA-256
+`d1b5cbb9038d3201920f3b4c6c1525e017ff04eba42cd51def0bc46992602d07`.
+Actual engine result on the retained demo: VIOLATION for 600519/601088 single-name
+exposure and reserved cash. Research remains refused. Executed nodes now include
+the independent simulated portfolio risk gate; receipt simulation_only=true and
+verified real session count remains zero. No new financial rules, actual holdings,
+personal position advice, canonical Excel, database, server/PTA or scheduler change.
+
 Raw-event input integration successor: existing M1 scans now project into the
 daily event contract with actual acquisition time, unchanged scan bounds/coverage,
 original scan/PDF/index hashes, and an explicit coverage-cutoff basis. No provider
