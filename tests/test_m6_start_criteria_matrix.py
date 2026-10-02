@@ -69,14 +69,14 @@ def test_isolated_attempt_runs_shared_scheduler_and_seals_refusal(tmp_path):
     shutil.copyfile(ROOT / 'config/research-evidence-stop-ledger-v1.json',
                     tmp_path / 'config/research-evidence-stop-ledger-v1.json')
     event = tmp_path / 'event.json'
-    event.write_text(json.dumps(dict(action='no_order', scope='SYNTHETIC_TEST_ONLY')), encoding='utf-8')
+    event.write_text(json.dumps(dict(symbol='600887', action='no_order', scope='SYNTHETIC_TEST_ONLY')), encoding='utf-8')
     digest = hashlib.sha256(event.read_bytes()).hexdigest()
     output = tmp_path / 'runtime/isolated'
     result = run_isolated_daily_attempt(root=tmp_path, output=output, symbol='600887',
                                         event_path=event, event_sha256=digest)
     assert result['dag_execution_complete'] is False
     receipt = json.loads((output / 'run_receipt.json').read_text(encoding='utf-8'))
-    assert receipt['node_sequence'] == ['research']
+    assert receipt['node_sequence'] == ['research', 'product']
     assert receipt['verified_real_session_count'] == 0
     assert 'MISSING_DAG_ARTIFACT:quote' in result['audit']['blockers']
     research = json.loads((output / 'research.json').read_text(encoding='utf-8'))
@@ -87,6 +87,41 @@ def test_isolated_attempt_runs_shared_scheduler_and_seals_refusal(tmp_path):
         run_isolated_daily_attempt(root=tmp_path, output=output, symbol='600887',
                                   event_path=event, event_sha256=digest)
     assert (output / 'input.json').read_bytes() == before
+
+
+def test_isolated_normal_result_preserves_models_without_promoting_missing_decision(tmp_path, monkeypatch):
+    import hashlib
+    from value_investment_agent.operations import shadow_daily_run as module
+    event = tmp_path / 'event.json'
+    event.write_text('{"symbol":"600887"}', encoding='utf-8')
+    monkeypatch.setattr(module, 'run_company_research_for_symbol', lambda **kwargs:
+        dict(result=dict(symbol='600887', action='no_order', status='COMPLETED_WITH_BLOCKERS',
+            run_id='shared-run', blockers=['not approved'],
+            model_validity=dict(status='UNKNOWN'), price_bridge=dict(bridge_status='PENDING_EXTERNAL_DATA'),
+            valuation=dict(base_value='11'), pre_decision_eligibility=None), receipt={}))
+    output = tmp_path / 'runtime/normal'
+    result = module.run_isolated_daily_attempt(root=tmp_path, output=output, symbol='600887',
+        event_path=event, event_sha256=hashlib.sha256(event.read_bytes()).hexdigest())
+    model = json.loads((output/'model.json').read_text(encoding='utf-8'))
+    assert model['valuation_result']['base_value'] == '11'
+    assert model['model_validity']['status'] == 'UNKNOWN'
+    decision = json.loads((output/'decision.json').read_text(encoding='utf-8'))
+    assert decision['blockers'] == ['PREDECISION_INPUT_NOT_ESTABLISHED']
+    assert decision['suggested_state'] == 'NOT_READY'
+    assert result['audit']['verified_real_session_count'] == 0
+
+
+@pytest.mark.parametrize('payload', [{}, {'symbol': '000333'}, []])
+def test_isolated_attempt_rejects_missing_or_foreign_event_issuer(tmp_path, payload):
+    import hashlib
+    from value_investment_agent.operations.shadow_daily_run import run_isolated_daily_attempt
+    event = tmp_path / 'event.json'
+    event.write_text(json.dumps(payload), encoding='utf-8')
+    output = tmp_path / 'runtime/rejected'
+    with pytest.raises(ValueError, match='issuer mismatch'):
+        run_isolated_daily_attempt(root=tmp_path, output=output, symbol='600887',
+            event_path=event, event_sha256=hashlib.sha256(event.read_bytes()).hexdigest())
+    assert not output.exists()
 
 
 def _criteria_by_id():

@@ -7429,6 +7429,21 @@ The original WORKBOOK_PATH workbook now includes one new Today pending-review it
 
 CURRENT_RESEARCH_ADMISSION=NOT_READY; current_price_bridge=NOT_ADMITTED; strict_pit=NOT_PROVEN; M7_FINAL_USER_ACCEPTANCE=NOT_PASSED; INITIAL_ASSISTED_USE=NOT_REACHED; action=no_order. Goal remains active. This is a real evidence explanation/product delivery, not completion of investment or operational admission.
 
+## 2026-10-02 Shared daily DAG successor (isolated, not production)
+
+The isolated runner now retains shared research model-validity, PriceBridge and
+valuation outputs and uses the existing decision evaluator for same-session typed
+pre-decision input, with no inferred buy/add intent. Missing pre-decision remains
+NOT_READY. Event issuer identity is checked before creating the output directory.
+Actual 600887 attempt: `runtime/shadow-isolated-shared-dag-20261002/report.md`,
+manifest SHA-256 `d6caf51b364b32ef339c9ad34e0e9f1b6f318f5091f9118bb60ab68d97130cb0`.
+Scheduler refusal persists; actual executed nodes are research and refusal product
+projection. Same-day post-close quote and complete DAG remain absent. Normal model
+branch coverage is synthetic engineering validation only. SHADOW_START_READINESS
+remains PARTIAL, ENGINEERING_READY=NO, verified_real_session_count=0, action=no_order.
+No canonical workbook, server/PTA, database, production scheduler or admission
+policy changes. This record does not supersede the unresolved evidence conditions.
+
 ## 2026-10-02 New official settlement and guarantee evidence
 
 Previous turn was substantive progress; distribution replay code `882cd2d` subsequently passed GitHub Core run `36951158275`. This turn inspected shared research scheduling, retained publication input, reconstruction/decision-input review and replay/publisher dependencies. Historical strategy admission still lacks complete dated facts/assumptions/rules/events and execution constraints; did not create retrospective approvals. Current case evidence stops are not reopened by rerunning the same sources.

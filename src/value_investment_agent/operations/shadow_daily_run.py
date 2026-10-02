@@ -1,12 +1,15 @@
 """Persist an isolated actual research attempt; never sign or count a session."""
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from pathlib import Path
 from uuid import uuid4
 import shutil
+import json
 
 from ..application.product.common import require_inside, sha256_file, write_new_json
 from ..application.product.company_research import run_company_research_for_symbol
 from .shadow_daily_input import audit_shadow_daily_input, DAG_NODES
+from ..pre_decision_eligibility import pre_decision_eligibility_from_payload
+from ..investment_decision import DecisionEvidenceBundle, evaluate_investment_decision
 
 
 def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
@@ -30,6 +33,9 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         if sha256_file(source) != digest:
             raise ValueError(f'{role} input hash mismatch')
         sources[role] = (source, digest)
+    event = json.loads(sources['event'][0].read_text(encoding='utf-8'))
+    if not isinstance(event, dict) or event.get('symbol') != symbol:
+        raise ValueError('event input issuer mismatch or missing symbol')
     # Exclusive directory creation prevents reruns from replacing an old attempt.
     output.mkdir(parents=True, exist_ok=False)
     started = datetime.now(timezone.utc)
@@ -46,8 +52,8 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
             observation_basis='SNAPSHOT_ACQUISITION_ONLY_NOT_ORIGINAL_PUBLICATION')
     result = run_company_research_for_symbol(root=root, symbol=symbol)
     research = result['result']
-    if research.get('status') != 'BLOCKED_BY_RESEARCH_SCHEDULER':
-        raise ValueError('isolated refusal runner does not yet support an admitted research DAG')
+    if research.get('action') != 'no_order' or research.get('symbol') != symbol:
+        raise ValueError('shared research returned an unsafe or mismatched result')
     common = dict(action='no_order', run_id=run_id, session_date=day,
                   generated_at=datetime.now(timezone.utc).isoformat(), orders=[], broker_called=False)
     outputs = {
@@ -61,6 +67,39 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         'product': dict(**common, symbol=symbol, suggested_state='NOT_READY', position_guidance=None,
                         execution_status='REFUSAL_PROJECTION_ONLY', blockers=research['blockers']),
     }
+    executed = ['research']
+    if research.get('status') != 'BLOCKED_BY_RESEARCH_SCHEDULER':
+        if research.get('status') not in {'COMPLETED', 'COMPLETED_WITH_BLOCKERS', 'UNSUPPORTED'}:
+            raise ValueError('unknown shared research outcome')
+        outputs['model'].update(
+            model_validity=research.get('model_validity'), price_bridge=research.get('price_bridge'),
+            valuation_result=research.get('valuation'),
+            execution_status='SHARED_RESEARCH_OUTPUT_NOT_INDEPENDENT_RECALCULATION',
+            source_research_run_id=research.get('run_id'))
+        for node, key in (('model_validity', 'model_validity'), ('price_bridge', 'price_bridge')):
+            if research.get(key) is not None:
+                executed.append(node)
+        predecision = research.get('pre_decision_eligibility')
+        if predecision is not None:
+            typed = pre_decision_eligibility_from_payload(predecision)
+            if typed.symbol != symbol or typed.decision_as_of != date.fromisoformat(day):
+                outputs['decision']['blockers'] = ['PREDECISION_NOT_SAME_SESSION']
+            else:
+                # No buy/add intent is inferred from a research result.
+                bundle = DecisionEvidenceBundle(bundle_id=run_id, symbol=symbol,
+                    decision_as_of=typed.decision_as_of, rule_version='m3-decision-v1',
+                    artifact_refs=(), evidence_refs=typed.evidence_refs)
+                review = evaluate_investment_decision(predecision=typed, bundle=bundle,
+                    decision_as_of=typed.decision_as_of, decision_intent=None)
+                outputs['decision'].update(review=review.as_policy(),
+                    suggested_state=review.status, blockers=list(review.blockers),
+                    execution_status='EXECUTED_SHARED_DECISION_REVIEW')
+                executed.append('decision_gate')
+        else:
+            outputs['decision']['blockers'] = ['PREDECISION_INPUT_NOT_ESTABLISHED']
+        outputs['product'].update(suggested_state=outputs['decision']['suggested_state'],
+            blockers=outputs['decision']['blockers'], execution_status='RESEARCH_RESULT_PROJECTION_ONLY')
+    executed.append('product')
     for role, value in outputs.items():
         path = output / (role + '.json')
         write_new_json(path, value)
@@ -69,8 +108,8 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
     completed = datetime.now(timezone.utc)
     run_receipt = dict(**common, simulation_only=False, mode='ISOLATED_NOT_PRODUCTION',
         started_at=started.isoformat(), completed_at=completed.isoformat(),
-        node_sequence=['research'], planned_nodes=list(DAG_NODES),
-        skipped_nodes=list(DAG_NODES[1:]), dag_execution_complete=False,
+        node_sequence=executed, planned_nodes=list(DAG_NODES),
+        skipped_nodes=[node for node in DAG_NODES if node not in executed], dag_execution_complete=False,
         input_hashes={role: binding['sha256'] for role, binding in bindings.items() if role in inputs},
         output_hashes={role: bindings[role]['sha256'] for role in outputs},
         verified_real_session_count=0)
@@ -87,8 +126,9 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
     write_new_json(output / 'audit.json', audit)
     report = '\n'.join(['# Isolated Daily Research Attempt', '', f'Symbol: {symbol}',
         f'Run: {run_id}', f'Observed: {completed.isoformat()}',
-        f'Research: {research["status"]}', 'Decision: NOT_READY',
-        'Executed: shared research scheduler; downstream nodes NOT_RUN_UPSTREAM_BLOCKED.',
+        f'Research: {research["status"]}', f'Decision: {outputs["decision"]["suggested_state"]}',
+        'Executed: ' + ', '.join(executed),
+        'Skipped: ' + ', '.join(node for node in DAG_NODES if node not in executed),
         'Portfolio guidance: null; no personal input or trade approval inferred.',
         f'Input audit: {audit["input_consistency_status"]}',
         *['- ' + item for item in audit['blockers']], '',

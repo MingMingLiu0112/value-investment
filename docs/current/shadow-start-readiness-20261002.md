@@ -39,9 +39,11 @@ directories are refused. Actual evidence is in
 `runtime/shadow-isolated-refusal-20261002/report.md`; manifest SHA-256
 `6a47994a9c7aafc551018b936e323df90f2534f8805bb9fa22b500879166d26f`.
 Only research scheduling executed; downstream nodes are NOT_RUN_UPSTREAM_BLOCKED.
-This runner supports the stopped/refusal path only and rejects an admitted
-research outcome rather than inventing its downstream evaluations. It does not
-close the full admitted-model DAG producer gap or formal production integration.
+The successor runner also preserves normal shared research model/bridge outputs
+without recalculating them, and calls the existing decision evaluator only for
+same-symbol, same-session typed pre-decision input. Missing or dated inputs remain
+NOT_READY; it never invents a buy/add intent. This does not close the full
+current-input DAG producer gap or formal production integration.
 Snapshot acquisition time is explicitly not original source publication time.
 The retained event package remains incomplete, not a full prospective scan.
 
@@ -56,6 +58,15 @@ Output must be new; immutable previous outputs are not overwritten. The retained
 SHADOW_SESSION_VALIDITY and INVESTMENT_DECISION_VALIDITY remain separate; offline consistency always has shadow_session_valid=false and verified_real_session_count=0. Signing, independent intake, admission, event credit and 20-session counting are unchanged. No TSA/PKI/backup/broker/model expansion, no server/PTA mutation, no Excel publication.
 
 ## Required final status
+
+Successor isolated attempt: `runtime/shadow-isolated-shared-dag-20261002/report.md`;
+manifest SHA-256 `d6caf51b364b32ef339c9ad34e0e9f1b6f318f5091f9118bb60ab68d97130cb0`.
+The real 600887 scheduler still refused research. Executed nodes are research and
+refusal product projection only; no full model/decision/portfolio execution is
+claimed. Input audit remains incomplete (no quote, no same-day post-close input).
+Event issuer mismatch or missing identity now fails before output creation.
+Normal-result branch validation uses isolated synthetic tests, not real admitted
+company evidence. Real session credit remains zero.
 
 - SHADOW_START_READINESS: PARTIAL.
 - ENGINEERING_READY: NO.
