@@ -7431,6 +7431,21 @@ CURRENT_RESEARCH_ADMISSION=NOT_READY; current_price_bridge=NOT_ADMITTED; strict_
 
 ## 2026-10-02 Shared daily DAG successor (isolated, not production)
 
+Normal-path gap found and implemented: generic company entry previously never
+attached typed human research approval or event materiality, so its reviewed
+pre-decision branch was unreachable through the supported daily runner. Explicit
+hash-pinned research-review packets now attach the existing typed contracts and
+exact canonical descriptor case/facts/assumptions, before one-shot reopen
+consumption. Review hashes change the input fingerprint; the current event scan
+hash must match materiality. Existing rejected approvals and recalculation events
+remain rejected/recalculation; no real approval was generated or inferred.
+Synthetic typed integration tests cover exact payload binding, preserved rejection,
+cross-issuer rejection and wrong-scan rejection. Supported command adds only the
+paired research-review path/hash flags; existing admission policy is unchanged.
+Current issuer admission, strict PIT, complete day execution and production
+adoption remain NOT_PROVEN/NOT_READY. Canonical/server/PTA/database/scheduler
+unchanged; action=no_order; full objective remains incomplete.
+
 Cross-role lineage increment: daily consumer now checks shared application quote/
 raw-event/package bindings, research-to-model projection equality, typed review/
 pre-decision identity/date/status, and product-to-decision consistency. It does

@@ -59,6 +59,38 @@ SHADOW_SESSION_VALIDITY and INVESTMENT_DECISION_VALIDITY remain separate; offlin
 
 ## Required final status
 
+### Normal-path research review wiring
+
+Inspection found that the supported company runner constructed its run spec with
+no human_research_approval, event_materiality_review or exact approval payloads.
+The domain service supported these contracts, but the entrypoint could not reach
+that reviewed pre-decision path. Optional `--research-reviews` plus SHA-256 now
+attaches an explicit shared-research-review-inputs-v1 packet, before one-shot
+reopen consumption. It requires an explicit research package and keeps the
+Evidence Stop scheduler in front of all calculations.
+
+Packet fields: schema_version, action=no_order, symbol, bindings. Binding keys are
+human_approval and/or event_materiality, each with repository-relative path and
+SHA-256. Existing typed parsers are used unchanged. Research case/facts/assumptions
+payloads come from the actual canonical descriptor, not caller replacement data;
+existing approval fingerprint/version checks decide acceptance. Rejected or stale
+approvals are never promoted. Materiality must bind the exact acquired scan hash;
+conflicting explicit material events are rejected, not discarded. The scan object
+is superseded by its typed materiality review, preserving its evidence bindings.
+Review packet hash enters the run fingerprint to prevent cached review reuse.
+
+Normal dependency path now wired:
+package + quote/event + explicit review packet -> descriptor validation -> typed
+review attachment -> shared scheduler consumption -> shared research application
+-> existing ResearchGate/ModelValidity/PriceBridge/pre-decision -> decision review
+-> independent optional simulated risk -> presentation-only company card.
+
+Real review receipts for current issuer admission have NOT been created or assumed.
+Tests use existing synthetic typed rejection/recalculation contracts and preserve
+their negative outcomes; they do not prove current G3, actual PIT or BUY readiness.
+No new investment rule, new model, account data, production service or workbook
+publication was introduced. This is entrypoint wiring, not review authorization.
+
 ### Calculation-to-product lineage is now checked
 
 Daily audit also checks that the shared application receipt consumed the exact

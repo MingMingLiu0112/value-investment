@@ -197,3 +197,46 @@ def test_symbol_identity_conflict_fails_closed():
 
     assert resolved.status == DECISION_SUPERSEDED
     assert "valuation_symbol_mismatch" in resolved.blockers
+
+
+def test_shared_review_attachment_preserves_rejection_and_exact_payloads(tmp_path):
+    from dataclasses import dataclass
+    from types import SimpleNamespace
+    import hashlib
+    import json
+    from value_investment_agent.application.product.research_reviews import attach_research_reviews
+    @dataclass(frozen=True)
+    class Spec:
+        symbol: str = '600887'
+        input_descriptor_sha256: str = 'a' * 64
+        human_research_approval: object = None
+        research_case_payload: object = None
+        facts_payload: object = None
+        assumptions_payload: object = None
+    approval = _receipt(decision=DECISION_REJECTED_NEEDS_REWORK,
+        price_assessment_eligible=False, remaining_blockers=('review blocker',))
+    review_file = tmp_path / 'approval.json'
+    review_file.write_text(json.dumps(approval.as_policy()), encoding='utf-8')
+    packet = dict(schema_version='shared-research-review-inputs-v1', action='no_order',
+        symbol='600887', bindings=dict(human_approval=dict(path='approval.json',
+            sha256=hashlib.sha256(review_file.read_bytes()).hexdigest())))
+    path = tmp_path / 'reviews.json'
+    path.write_text(json.dumps(packet), encoding='utf-8')
+    canonical = dict(research_case=_payload('case'), facts=_payload('facts'), assumptions=_payload('assumptions'))
+    descriptor = SimpleNamespace(as_policy=lambda: canonical)
+    updated = attach_research_reviews(root=tmp_path, spec=Spec(), descriptor=descriptor,
+        path=path, expected_sha256=hashlib.sha256(path.read_bytes()).hexdigest(), event_sha256=None)
+    assert updated.input_descriptor_sha256 != Spec().input_descriptor_sha256
+    assert updated.human_research_approval == approval
+    resolved = resolve_human_research_approval(updated.human_research_approval, _valuation(),
+        model_id='residual_income_or_equity_value',
+        research_case_payload=updated.research_case_payload,
+        facts_payload=updated.facts_payload, assumptions_payload=updated.assumptions_payload)
+    assert resolved.dependencies_bound is True
+    assert resolved.approved is False
+    assert resolved.status == DECISION_REJECTED_NEEDS_REWORK
+    packet['symbol'] = '000333'
+    path.write_text(json.dumps(packet), encoding='utf-8')
+    with pytest.raises(ValueError, match='scope mismatch'):
+        attach_research_reviews(root=tmp_path, spec=Spec(), descriptor=descriptor,
+            path=path, expected_sha256=hashlib.sha256(path.read_bytes()).hexdigest(), event_sha256=None)

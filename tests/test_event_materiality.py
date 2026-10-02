@@ -172,3 +172,38 @@ def test_review_round_trip_and_coverage_watermark():
     assert restored.has_unresolved_recalculation is True
     assert restored.covers(MODEL_DATE) is True
     assert restored.covers(date(2026, 9, 23)) is False
+
+
+def test_shared_materiality_attachment_requires_exact_scan_and_keeps_recalculation(tmp_path):
+    from dataclasses import dataclass
+    from types import SimpleNamespace
+    import hashlib
+    import json
+    from value_investment_agent.application.product.research_reviews import attach_research_reviews
+    from value_investment_agent.research_application import ModelValidityEvaluationInput
+    @dataclass(frozen=True)
+    class Spec:
+        symbol: str = '600887'
+        input_descriptor_sha256: str = 'a' * 64
+        model_validity_input: object = None
+        event_materiality_review: object = None
+        research_case_payload: object = None
+        facts_payload: object = None
+        assumptions_payload: object = None
+    review = _review((_decision(DECISION_REQUIRES_RECALCULATION, announcement_id='1225511493'),))
+    source = tmp_path / 'materiality.json'
+    source.write_text(json.dumps(review.as_policy()), encoding='utf-8')
+    path = tmp_path / 'packet.json'
+    path.write_text(json.dumps(dict(schema_version='shared-research-review-inputs-v1',
+        symbol='600887', action='no_order', bindings=dict(event_materiality=dict(
+            path=source.name, sha256=hashlib.sha256(source.read_bytes()).hexdigest())))), encoding='utf-8')
+    spec = Spec(model_validity_input=ModelValidityEvaluationInput(
+        model_id='test', valid_from=MODEL_DATE, events=(), event_scan_evidence_refs=()))
+    kwargs = dict(root=tmp_path, spec=spec, descriptor=SimpleNamespace(as_policy=lambda:
+        dict(research_case={}, facts={}, assumptions={})), path=path,
+        expected_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+    with pytest.raises(ValueError, match='exact acquired event scan'):
+        attach_research_reviews(**kwargs, event_sha256='c' * 64)
+    updated = attach_research_reviews(**kwargs, event_sha256='b' * 64)
+    assert updated.event_materiality_review.has_unresolved_recalculation is True
+    assert updated.model_validity_input.event_scan is None

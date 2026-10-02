@@ -45,6 +45,8 @@ def main() -> int:
     parser.add_argument('--simulated-portfolio-sha256')
     parser.add_argument('--operational-inputs', type=Path)
     parser.add_argument('--operational-inputs-sha256')
+    parser.add_argument('--research-reviews', type=Path)
+    parser.add_argument('--research-reviews-sha256')
     args = parser.parse_args()
     if args.isolated_run:
         if args.operational_inputs or args.operational_inputs_sha256:
@@ -63,12 +65,15 @@ def main() -> int:
             followup_path=None if args.event_followup is None else ROOT / args.event_followup,
             followup_sha256=args.event_followup_sha256,
             simulated_portfolio_path=None if args.simulated_portfolio is None else ROOT / args.simulated_portfolio,
-            simulated_portfolio_sha256=args.simulated_portfolio_sha256), ensure_ascii=False, indent=2))
+            simulated_portfolio_sha256=args.simulated_portfolio_sha256,
+            reviews_path=None if args.research_reviews is None else ROOT / args.research_reviews,
+            reviews_sha256=args.research_reviews_sha256), ensure_ascii=False, indent=2))
         return 0
     if any((args.research_package, args.research_package_sha256,
             args.schedule_request, args.schedule_request_sha256,
             args.event_followup, args.event_followup_sha256,
-            args.simulated_portfolio, args.simulated_portfolio_sha256)):
+            args.simulated_portfolio, args.simulated_portfolio_sha256,
+            args.research_reviews, args.research_reviews_sha256)):
         parser.error('research package/schedule request require isolated-run')
     if bool(args.daily_input) != bool(args.daily_input_sha256):
         raise ValueError('daily input requires paired path/hash')

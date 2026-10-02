@@ -27,7 +27,9 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
                                followup_path: Path | None = None,
                                followup_sha256: str | None = None,
                                simulated_portfolio_path: Path | None = None,
-                               simulated_portfolio_sha256: str | None = None) -> dict:
+                               simulated_portfolio_sha256: str | None = None,
+                               reviews_path: Path | None = None,
+                               reviews_sha256: str | None = None) -> dict:
     root = root.resolve()
     output = require_inside(root, output, 'isolated daily output')
     if not output.is_relative_to(root / 'runtime') or output.exists():
@@ -41,11 +43,14 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         ('schedule request', schedule_request_path, schedule_request_sha256),
         ('event followup', followup_path, followup_sha256),
         ('simulated portfolio', simulated_portfolio_path, simulated_portfolio_sha256),
+        ('research reviews', reviews_path, reviews_sha256),
     ):
         if bool(path) != bool(digest):
             raise ValueError(f'{label} requires paired path/hash')
     if schedule_request_path is not None and package_path is None:
         raise ValueError('schedule request requires an explicit source-bound package')
+    if reviews_path is not None and package_path is None:
+        raise ValueError('research reviews require an explicit source-bound package')
     inputs = {'event': (event_path, event_sha256)}
     if quote_path is not None:
         inputs['quote'] = (quote_path, quote_sha256)
@@ -53,6 +58,7 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
     for role, path, digest in (
         ('valuation_package', package_path, package_sha256),
         ('schedule_request', schedule_request_path, schedule_request_sha256),
+        ('research_reviews', reviews_path, reviews_sha256),
     ):
         if path is not None:
             research_inputs[role] = (path, digest)
@@ -104,6 +110,8 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         request = json.loads((output / 'schedule_request.json').read_text(encoding='utf-8'))
         shared_args.update(schedule_request=request,
                            schedule_request_sha256=schedule_request_sha256)
+    if reviews_path is not None:
+        shared_args.update(reviews_path=output / 'research_reviews.json', reviews_sha256=reviews_sha256)
     try:
         result = run_company_research_for_symbol(**shared_args)
     except ResearchInputValidationError as error:

@@ -29,6 +29,7 @@ from .common import (
     sha256_file,
     write_new_json,
 )
+from .research_reviews import attach_research_reviews
 
 
 class ResearchInputValidationError(ValueError):
@@ -149,11 +150,14 @@ def run_company_research_for_symbol(
     quote_sha256: str | None = None,
     event_path: Path | None = None,
     event_sha256: str | None = None,
+    reviews_path: Path | None = None,
+    reviews_sha256: str | None = None,
 ) -> dict[str, Any]:
     normalized = normalize_symbol(symbol)
     explicit_inputs = {}
     for role, path, digest in (
         ('quote', quote_path, quote_sha256), ('event', event_path, event_sha256),
+        ('research_reviews', reviews_path, reviews_sha256),
     ):
         if bool(path) != bool(digest):
             raise ValueError(f'{role} requires paired path/hash')
@@ -233,6 +237,11 @@ def run_company_research_for_symbol(
     try:
         descriptor = build_descriptor(effective_package, root=root)
         spec = build_research_run_spec(descriptor)
+        if reviews_path is not None:
+            scan_ref = (effective_package.get('model_validity_input') or {}).get('event_scan_ref') or {}
+            spec = attach_research_reviews(root=root, spec=spec, descriptor=descriptor,
+                path=explicit_inputs['research_reviews'][0], expected_sha256=reviews_sha256,
+                event_sha256=event_sha256 or scan_ref.get('sha256'))
     except (ValueError, FileNotFoundError) as error:
         raise ResearchInputValidationError(str(error)) from error
     for path, digest in explicit_inputs.values():
