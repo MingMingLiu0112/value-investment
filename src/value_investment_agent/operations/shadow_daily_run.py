@@ -6,7 +6,7 @@ import shutil
 import json
 
 from ..application.product.common import require_inside, sha256_file, write_new_json
-from ..application.product.company_research import run_company_research_for_symbol
+from ..application.product.company_research import run_company_research_for_symbol, ResearchInputValidationError
 from .shadow_daily_input import audit_shadow_daily_input, DAG_NODES
 from ..pre_decision_eligibility import pre_decision_eligibility_from_payload
 from ..investment_decision import DecisionEvidenceBundle, evaluate_investment_decision
@@ -104,7 +104,14 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         request = json.loads((output / 'schedule_request.json').read_text(encoding='utf-8'))
         shared_args.update(schedule_request=request,
                            schedule_request_sha256=schedule_request_sha256)
-    result = run_company_research_for_symbol(**shared_args)
+    try:
+        result = run_company_research_for_symbol(**shared_args)
+    except ResearchInputValidationError as error:
+        result = dict(result=dict(schema_version='generic-company-research-result-v1',
+            symbol=symbol, action='no_order', status='REJECTED_BY_INPUT_VALIDATION',
+            blockers=[str(error)], failure_phase='DESCRIPTOR_BEFORE_REOPEN_CONSUMPTION'),
+            receipt=dict(action='no_order', status='FAILED_INPUT_VALIDATION',
+                         input_sha256={}, reopen_consumed=False))
     if event.get('schema_version') == 'm1-event-scan-v1':
         raw_target = output / 'event-original.json'
         shutil.copyfile(output / 'event.json', raw_target)
@@ -143,7 +150,7 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
                         execution_status='REFUSAL_PROJECTION_ONLY', blockers=research['blockers']),
     }
     executed = ['research']
-    if research.get('status') != 'BLOCKED_BY_RESEARCH_SCHEDULER':
+    if research.get('status') not in {'BLOCKED_BY_RESEARCH_SCHEDULER', 'REJECTED_BY_INPUT_VALIDATION'}:
         if research.get('status') not in {'COMPLETED', 'COMPLETED_WITH_BLOCKERS', 'UNSUPPORTED'}:
             raise ValueError('unknown shared research outcome')
         outputs['model'].update(

@@ -31,6 +31,10 @@ from .common import (
 )
 
 
+class ResearchInputValidationError(ValueError):
+    """Known descriptor rejection before any one-shot request consumption."""
+
+
 def _json_value(value: Any) -> Any:
     if value is None:
         return None
@@ -226,8 +230,11 @@ def run_company_research_for_symbol(
             path=path.relative_to(root).as_posix(), sha256=digest)
         effective_package['model_validity_input'] = dict(validity,
             event_scan_ref=ref, event_scan_evidence_refs=[ref])
-    descriptor = build_descriptor(effective_package, root=root)
-    spec = build_research_run_spec(descriptor)
+    try:
+        descriptor = build_descriptor(effective_package, root=root)
+        spec = build_research_run_spec(descriptor)
+    except (ValueError, FileNotFoundError) as error:
+        raise ResearchInputValidationError(str(error)) from error
     for path, digest in explicit_inputs.values():
         if sha256_file(path) != digest:
             raise ValueError('explicit research input changed during validation')

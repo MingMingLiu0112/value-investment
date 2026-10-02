@@ -7431,6 +7431,19 @@ CURRENT_RESEARCH_ADMISSION=NOT_READY; current_price_bridge=NOT_ADMITTED; strict_
 
 ## 2026-10-02 Shared daily DAG successor (isolated, not production)
 
+Failed-path product completion: shared descriptor/run-spec rejection now carries
+an explicit known input-validation exception, before any one-shot request is
+consumed. The isolated daily runner preserves the failed result, diagnostic,
+no-order receipt, skipped downstream stages and readable company card. It does
+not swallow unexpected programming errors or alter scope/integrity checks.
+Synthetic cutoff-rejection evidence:
+`.tmp/shadow-rejection-target/test_daily_attempt_seals_known0/runtime/rejected-input/company-card.md`.
+Targeted shared scheduler/daily tests: 45 passed, 1 skipped. This is engineering
+failure-path coverage only, not a real input failure, positive research admission
+or Shadow session. Actual quotes, complete event windows, private portfolio,
+authorization and production adoption remain separate. No Excel/server/PTA/
+database/scheduler mutation; no_order; full objective not complete.
+
 Daily consumer handoff: the supported audit command now combines daily contents
 with the existing operational admission verifier when explicit pinned proof is
 supplied. Exact signed manifest hash/run/day/execution-window checks prevent a

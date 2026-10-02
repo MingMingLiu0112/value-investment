@@ -59,6 +59,24 @@ SHADOW_SESSION_VALIDITY and INVESTMENT_DECISION_VALIDITY remain separate; offlin
 
 ## Required final status
 
+### Known research-input rejection is now an auditable daily outcome
+
+Shared descriptor/run-spec ValueError and missing-file rejection before one-shot
+reopen consumption use an explicit ResearchInputValidationError (still ValueError
+compatible). The isolated runner seals this known rejection as
+REJECTED_BY_INPUT_VALIDATION with failed application receipt, untouched reopen
+consumption, NOT_READY decision, skipped downstream computations and readable
+company-card output. It does not turn a failed calculation into a completed model.
+Unknown RuntimeError and input-integrity/scope errors outside this narrow boundary
+still propagate; no fabricated receipt is written for an unexpected program bug.
+
+Synthetic integration output:
+`.tmp/shadow-rejection-target/test_daily_attempt_seals_known0/runtime/rejected-input/company-card.md`.
+The fixture exercises quote-after-research-cutoff rejection and confirms no-order,
+zero daily credit and retained refusal explanation. It is explicitly not a real
+company valuation, a real source failure observation or production evidence.
+Actual issuer evidence stops and all positive admission gates remain unchanged.
+
 ### Read-only daily consumer uses existing operational admission
 
 The supported daily-input command now calls `consume_shadow_daily_input`, not

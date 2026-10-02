@@ -324,6 +324,32 @@ def test_daily_consumer_intersects_existing_admission_with_exact_artifact(tmp_pa
     # All inputs and the signature verifier above are synthetic test fixtures only.
 
 
+def test_daily_attempt_seals_known_input_rejection_without_swallowing_programming_errors(tmp_path, monkeypatch):
+    import hashlib
+    from value_investment_agent.operations import shadow_daily_run as module
+    event = tmp_path / 'event.json'
+    event.write_text('{"symbol":"600887"}', encoding='utf-8')
+    kwargs = dict(root=tmp_path, symbol='600887', event_path=event,
+                  event_sha256=hashlib.sha256(event.read_bytes()).hexdigest())
+    def rejected(**kwargs):
+        raise module.ResearchInputValidationError('Quote date cannot follow research as-of')
+    monkeypatch.setattr(module, 'run_company_research_for_symbol', rejected)
+    output = tmp_path / 'runtime/rejected-input'
+    result = module.run_isolated_daily_attempt(output=output, **kwargs)
+    research = json.loads((output / 'research.json').read_text(encoding='utf-8'))
+    assert research['result']['status'] == 'REJECTED_BY_INPUT_VALIDATION'
+    assert research['application_receipt']['reopen_consumed'] is False
+    assert 'Quote date cannot follow research as-of' in (output / 'company-card.md').read_text(encoding='utf-8')
+    assert result['audit']['verified_real_session_count'] == 0
+    assert (output / 'run_receipt.json').exists()
+    def programming_error(**kwargs):
+        raise RuntimeError('unexpected bug')
+    monkeypatch.setattr(module, 'run_company_research_for_symbol', programming_error)
+    with pytest.raises(RuntimeError, match='unexpected bug'):
+        module.run_isolated_daily_attempt(output=tmp_path / 'runtime/bug', **kwargs)
+    assert not (tmp_path / 'runtime/bug/run_receipt.json').exists()
+
+
 def _criteria_by_id():
     matrix = load_m6_start_criteria_matrix(MATRIX_PATH, root=ROOT)
     return {item.criterion_id: item for item in matrix.criteria}
