@@ -200,6 +200,24 @@ def _external_hyperlink(cell: Cell, url: str) -> None:
 
 
 _USER_TEXT_REPLACEMENTS = {
+    "已准入财务事实": "已核对披露事实",
+    "重开条件（原文）": "重开条件",
+    "midea_ordinary_share_denominator": "普通股股数与库存股用途尚未核实",
+    "midea_industrial_fcff_scope": "工业业务自由现金流与金融业务口径尚未闭合",
+    "midea_industrial_fcff_capex": "维持性与增长性资本开支尚未区分",
+    "shenhua_acquisition_adjusted_through_cycle_parent_profit": "收购后合并范围与跨周期归母利润尚未闭合",
+    "000333-share-denominator-2026-06-30": "普通股股数复核",
+    "000333-fcff-finance-business-scope": "工业与金融业务现金流复核",
+    "000333-fcff-internal-eliminations": "分部内部抵销复核",
+    "000333-fcff-project-capex": "资本开支用途复核",
+    "601088-acquisition-adjusted-through-cycle-profit": "收购后跨周期盈利复核",
+    "A new official date-matched disclosure enumerates issued A/H shares and all treasury-share uses at 2026-06-30.": "新的正式披露须列明 2026-06-30 当日发行的 A/H 股数量及全部库存股用途，不能用后续股数替代。",
+    "A new official finance-business disclosure materially changes the cash, debt or operating-scope bridge.": "新增正式金融业务披露，实质改变现金、债务或经营范围的桥接依据。",
+    "A new official segment disclosure quantifies eliminations sufficiently to change the FCFF scope bridge.": "新增正式分部披露，充分量化内部抵销，实质改变工业自由现金流口径。",
+    "A new official project-level disclosure materially separates maintenance from growth CapEx.": "新增正式项目级披露，实质区分维持性与增长性资本开支。",
+    "New official evidence bridges the final consolidation perimeter, attribution, tax/NCI and financing, with enough comparable history to calibrate the cycle.": "新增正式证据，闭合最终合并范围、归母归属、税项、少数股东和融资影响，并提供足够可比历史校准周期。",
+    "FinancialFacts": "财务事实",
+    "CNINFO": "巨潮资讯法定披露",
     "yili_ordinary_special_dividend_classification": "普通分红与特别分红的划分尚未核实",
     "yili_scp010_011_maturity_outcome": "两期短期融资券到期后的偿付与资金衔接尚未核实",
     "600887-dividend-type-classification": "分红性质复核",
@@ -247,6 +265,8 @@ def _user_text(value: object) -> str:
     """Remove implementation vocabulary from user-facing product pages."""
 
     text = "" if value is None else str(value)
+    if "；已查材料：" in text:
+        text = text.split("；已查材料：", 1)[0] + "；已查材料编号见系统与审计页。"
     for source, replacement in sorted(
         _USER_TEXT_REPLACEMENTS.items(), key=lambda item: len(item[0]), reverse=True
     ):
@@ -831,7 +851,8 @@ def _render_companies(
         if company.decision_review:
             row = _section_title(ws, row, "决策复核", 6)
             for label, value in company.decision_review:
-                _style(ws.cell(row, 1, label), fill=GREY, bold=True, border=True)
+                label_text = _user_text(label)
+                _style(ws.cell(row, 1, label_text), fill=GREY, bold=True, border=True)
                 ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
                 value_text = (
                     "原件及哈希已登记，详见系统与审计页。"
@@ -839,7 +860,7 @@ def _render_companies(
                     else _user_text(value)
                 )
                 _style(ws.cell(row, 2, value_text), border=True)
-                _fit_rows(ws, row, [(1, label, 1), (2, value_text, 5)])
+                _fit_rows(ws, row, [(1, label_text, 1), (2, value_text, 5)])
                 row += 1
             row += 1
     return company_rows

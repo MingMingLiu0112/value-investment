@@ -53,6 +53,88 @@ def test_composed_handoff_reverifies_parent_and_array_originals(tmp_path):
         load_research_publication_input(root=tmp_path, path=child, expected_sha256=digest)
 
 
+def _retained_fixture(tmp_path):
+    from test_product_workbench_read_model import _payload
+    from value_investment_agent.application.product.common import sha256_file
+    payload = _payload()
+    payload.update(as_of='2026-10-02', generated_at='2026-10-02T01:00:00+00:00')
+    payload['companies'][0].update(symbol='600887', company_name='伊利股份')
+    payload['opportunities'][0].update(symbol='600887', company_name='伊利股份')
+    runtime = tmp_path / 'runtime'
+    runtime.mkdir()
+    original = runtime / 'fact.pdf'
+    original.write_bytes(b'synthetic report for contract tests only')
+    cards = []
+    for symbol, name, profile in [('000333', '美的集团', 'mature_manufacturing'),
+                                  ('600887', '伊利股份', 'quality_compounder'),
+                                  ('601088', '中国神华', 'cyclical_cash_return')]:
+        cards.append(dict(case_id=f'prospective-{symbol}-20260927-v2', symbol=symbol, company=name,
+            profile=profile, action='no_order', valuation_status='VALUATION_NOT_READY',
+            research_status='BASELINE_PARTIAL', unadmitted_fact_ids=[],
+            business_quality='封存业务解释', financial_quality='封存财务解释', capital_allocation='尚待核验',
+            dividend_sustainability='尚待核验', model_applicability='模型口径缺失', strongest_counterevidence='已登记反证',
+            return_drivers='已登记回报驱动', unknowns=['口径缺项'],
+            next_evidence_trigger='next official financial filing with cash-flow, capital-allocation and share disclosures',
+            known_facts=[dict(fact_id=f'{symbol}-revenue', fact_type='revenue', value='10', unit='CNY',
+                report_period='2025FY', source_path='runtime/fact.pdf', source_sha256=sha256_file(original),
+                source_url='https://static.cninfo.com.cn/synthetic.pdf',
+                available_at='2026-04-01T00:00:00+08:00')]))
+    snapshot = dict(schema_version='prospective-baseline-snapshot-v2', action='no_order',
+        built_at='2026-09-27T09:00:00+08:00', registration_time_assurance='PROCESS_CLOCK_ONLY_UNATTESTED',
+        strict_pit_admissible=False, registration_receipt_sha256='a' * 64,
+        baseline_input_sha256='b' * 64, cards=cards)
+    source = runtime / 'retained.json'
+    source.write_text(json.dumps(snapshot), encoding='utf-8')
+    digest = sha256_file(source)
+    pin = tmp_path / 'config/prospective-baseline-publication-v7.json'
+    pin.parent.mkdir()
+    pin.write_text(json.dumps(dict(schema_version='prospective-baseline-publication-v7', action='no_order',
+        snapshot_path='runtime/retained.json', snapshot_sha256=digest,
+        registration_receipt_sha256='a' * 64, baseline_input_sha256='b' * 64)), encoding='utf-8')
+    return payload, source, digest, original
+
+
+def test_retained_cases_append_without_overwriting_primary_research(tmp_path, monkeypatch):
+    from copy import deepcopy
+    from value_investment_agent.application.product import retained_research
+    from value_investment_agent.presentation.read_models.product_workbench import product_workbench_from_payload
+    payload, source, digest, _ = _retained_fixture(tmp_path)
+    frozen = deepcopy(payload)
+    calls = []
+    monkeypatch.setattr(retained_research, '_verify_fact_text', lambda raw, fact, binding: calls.append(fact['fact_id']))
+    result = retained_research.extend_retained_research_payload(root=tmp_path, payload=payload,
+        snapshot_path=source, snapshot_sha256=digest)
+    model = product_workbench_from_payload(result)
+    assert payload == frozen
+    assert result['companies'][0] == frozen['companies'][0]
+    assert result['opportunities'][0] == frozen['opportunities'][0]
+    assert result['portfolio'] == frozen['portfolio']
+    assert result['stages'] == frozen['stages']
+    assert {card.symbol for card in model.companies} == {'600887', '000333', '601088'}
+    assert set(calls) == {'000333-revenue', '601088-revenue'}
+    assert next(item for item in result['audit']['evidence'] if item['evidence_id'] == 'prospective-000333-fact-1')['source_url'] == 'https://static.cninfo.com.cn/synthetic.pdf'
+    assert all(not card.valuation.available and not card.price.available for card in model.companies[1:])
+    assert all(step.status == 'BLOCKED' for card in model.companies[1:] for step in card.decision_process)
+    assert '不年化' in dict(model.companies[1].decision_review)['事实解释边界']
+
+
+@pytest.mark.parametrize('case', ['drift', 'future', 'identity', 'pin', 'semantic'])
+def test_retained_cases_fail_closed_on_unverified_sources(tmp_path, monkeypatch, case):
+    from value_investment_agent.application.product import retained_research
+    payload, source, digest, original = _retained_fixture(tmp_path)
+    monkeypatch.setattr(retained_research, '_verify_fact_text', lambda *args: None)
+    if case == 'drift': original.write_bytes(b'changed')
+    elif case == 'future': payload['as_of'] = '2026-09-25'
+    elif case == 'identity': payload['companies'][0]['company_name'] = 'wrong issuer'
+    elif case == 'pin': (tmp_path / 'config/prospective-baseline-publication-v7.json').unlink()
+    elif case == 'semantic':
+        def reject(*args): raise ValueError('wrong report column')
+        monkeypatch.setattr(retained_research, '_verify_fact_text', reject)
+    with pytest.raises(ValueError):
+        retained_research.extend_retained_research_payload(root=tmp_path, payload=payload,
+            snapshot_path=source, snapshot_sha256=digest)
+
+
 def recipe(tmp_path):
     base = tmp_path / 'base.json'
     workbench = tmp_path / 'workbench.json'

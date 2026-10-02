@@ -224,6 +224,19 @@ def _all_text(workbook) -> str:
     return "\n".join(values)
 
 
+def test_retained_case_reopen_conditions_are_readable_without_changing_scope():
+    from value_investment_agent.presentation.excel.product_workbench import _user_text as display_text
+    original = ('000333-share-denominator-2026-06-30：'
+        'A new official date-matched disclosure enumerates issued A/H shares and all treasury-share uses at 2026-06-30.'
+        '；已查材料：midea_2026h1_equity_change_report')
+    rendered = display_text(original)
+    assert '2026-06-30' in rendered and 'A/H' in rendered
+    assert '全部库存股用途' in rendered and '后续股数替代' in rendered
+    assert 'midea_' not in rendered and '000333-share-' not in rendered
+    assert '系统与审计页' in rendered
+    assert '最终合并范围' in display_text('New official evidence bridges the final consolidation perimeter, attribution, tax/NCI and financing, with enough comparable history to calibrate the cycle.')
+
+
 def _user_text(workbook) -> str:
     values: list[str] = []
     for title in USER_SHEETS:

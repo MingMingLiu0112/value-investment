@@ -47,6 +47,7 @@ from value_investment_agent.application.historical_validation.reported_cash_chan
 from value_investment_agent.application.product.dividend_history import read_dividend_history
 from value_investment_agent.presentation.read_models.dividend_history import project_dividend_history
 from value_investment_agent.application.product.research_recipe import load_research_recipe
+from value_investment_agent.application.product.retained_research import extend_retained_research_payload
 from value_investment_agent.application.product.research_publication_input import prepare_research_publication_input, load_research_publication_input
 from value_investment_agent.application.product.valuation_drivers import describe_valuation_drivers
 from value_investment_agent.presentation.read_models.existing_research_report import project_existing_research_workbench, public_workbench_payload_from_snapshot  # noqa: E402
@@ -77,6 +78,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-read-model-snapshot", action="store_true")
     parser.add_argument('--base-publication-input', action='store_true',
                         help='Read a source-reverified research handoff in read-model-only mode.')
+    parser.add_argument('--retained-baseline', nargs=2, metavar=('PATH', 'SHA256'),
+                        help='Append missing registered cases without replacing delivered research.')
     parser.add_argument("--existing-workbench", type=Path)
     parser.add_argument("--research-readiness", nargs=2, action="append", default=[], metavar=("PATH", "SHA256"))
     parser.add_argument("--existing-workbench-sha256")
@@ -117,6 +120,11 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     publication_input_binding = None
+    retained_baseline = getattr(args, 'retained_baseline', None)
+    retained_baseline_binding = None
+    retained_additions = set()
+    if retained_baseline and not (args.read_model_only and args.base_publication_input):
+        raise ValueError('retained baseline requires a source-reverified base publication input')
     if getattr(args, 'base_publication_input', False):
         if (not args.read_model_only or args.base_read_model_snapshot
                 or args.base_payload is None or args.base_payload_sha256 is None
@@ -124,8 +132,8 @@ def main() -> int:
                 or any(getattr(args, key, None) for key in (
                     'existing_workbench', 'expectations_replay', 'metric_transcription',
                     'event_scan', 'dividend_package', 'recovered_event_original',
-                    'cash_change_periods', 'historical_closure',
-                    'research_readiness'))):
+                    'cash_change_periods', 'historical_closure'))
+                or (getattr(args, 'research_readiness', None) and not retained_baseline)):
             raise ValueError('publication input requires read-model-only without research overrides')
     if getattr(args, 'publication_input', None) is not None and not args.read_model_only:
         raise ValueError('publication-input requires read-model-only')
@@ -208,6 +216,16 @@ def main() -> int:
         if not model.as_of <= presentation_date <= args.generated_at.date():
             raise ValueError('presentation date must not backdate or exceed generation date')
         model = replace(model, as_of=presentation_date)
+    if retained_baseline:
+        baseline_path, baseline_hash = retained_baseline
+        original_symbols = {card.symbol for card in model.companies}
+        payload = public_workbench_payload_from_snapshot(json.loads(json.dumps(asdict(model), default=str)))
+        payload = extend_retained_research_payload(root=ROOT, payload=payload,
+            snapshot_path=Path(baseline_path), snapshot_sha256=baseline_hash)
+        model = product_workbench_from_payload(payload)
+        model = replace(model, generated_at=args.generated_at)
+        retained_additions = {card.symbol for card in model.companies} - original_symbols
+        retained_baseline_binding = dict(path=baseline_path, sha256=baseline_hash)
     if args.existing_workbench is not None or args.existing_workbench_sha256 is not None:
         if args.existing_workbench is None or args.existing_workbench_sha256 is None:
             raise ValueError("existing workbench requires path and hash")
@@ -344,6 +362,8 @@ def main() -> int:
         )
     for source, digest in args.research_readiness:
         readiness = load_stopped_workbench_for_presentation(root=ROOT, path=ROOT / source, expected_sha256=digest)
+        if retained_baseline and readiness['result']['symbol'] not in retained_additions:
+            raise ValueError('retained readiness cannot alter delivered research')
         model = project_research_readiness(model, readiness)
         readiness_bindings.extend(readiness["source_bindings"])
     if getattr(args, 'read_model_only', False):
@@ -365,6 +385,7 @@ def main() -> int:
             historical_execution_replay_binding=historical_execution_replay_binding,
             research_recipe_binding=recipe_binding,
             publication_input_binding=publication_input_binding,
+            retained_baseline_binding=retained_baseline_binding,
             readiness_bindings=readiness_bindings,
             canonical_written=False, historical_preview=True, action='no_order'))
         if report_path is not None:
