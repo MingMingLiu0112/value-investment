@@ -19,6 +19,40 @@ def test_excel_research_gap_explanations_preserve_unverified_outcome():
     assert 'a' * 64 not in display
 
 
+def test_composed_handoff_reverifies_parent_and_array_originals(tmp_path):
+    from value_investment_agent.application.product.research_publication_input import prepare_research_publication_input, load_research_publication_input
+    from value_investment_agent.application.product.common import sha256_file
+    runtime = tmp_path / 'runtime'
+    runtime.mkdir()
+    original = runtime / 'original.txt'
+    original.write_text('sealed evidence', encoding='utf-8')
+    array = runtime / 'quotes.json'
+    array.write_text(json.dumps([dict(path='runtime/original.txt', sha256=sha256_file(original))]), encoding='utf-8')
+    envelope = dict(schema_version='historical-company-read-model-preview-v1',
+                    action='no_order', canonical_written=False, historical_preview=True,
+                    snapshot=dict(action='no_order', audit_evidence=[dict(path='runtime/quotes.json', sha256=sha256_file(array))]))
+    source = runtime / 'parent-model.json'
+    source.write_text(json.dumps(envelope), encoding='utf-8')
+    parent = runtime / 'parent.json'
+    prepare_research_publication_input(root=tmp_path, read_model_path=source,
+                                      expected_sha256=sha256_file(source), output_path=parent)
+    envelope['publication_input_binding'] = dict(path='runtime/parent.json', sha256=sha256_file(parent))
+    child_source = runtime / 'child-model.json'
+    child_source.write_text(json.dumps(envelope), encoding='utf-8')
+    child = runtime / 'child.json'
+    result = prepare_research_publication_input(root=tmp_path, read_model_path=child_source,
+                                               expected_sha256=sha256_file(child_source), output_path=child)
+    assert result['strict_pit_admitted'] is False
+    assert {entry['path'] for entry in result['source_bindings']} == {
+        'runtime/original.txt', 'runtime/quotes.json', 'runtime/parent-model.json',
+        'runtime/parent.json', 'runtime/child-model.json'}
+    digest = sha256_file(child)
+    assert load_research_publication_input(root=tmp_path, path=child, expected_sha256=digest) == result
+    original.write_text('changed original', encoding='utf-8')
+    with pytest.raises(ValueError, match='hash mismatch'):
+        load_research_publication_input(root=tmp_path, path=child, expected_sha256=digest)
+
+
 def recipe(tmp_path):
     base = tmp_path / 'base.json'
     workbench = tmp_path / 'workbench.json'

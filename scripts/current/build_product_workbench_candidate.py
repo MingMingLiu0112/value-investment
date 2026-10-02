@@ -124,7 +124,7 @@ def main() -> int:
                 or any(getattr(args, key, None) for key in (
                     'existing_workbench', 'expectations_replay', 'metric_transcription',
                     'event_scan', 'dividend_package', 'recovered_event_original',
-                    'cash_change_periods', 'historical_closure', 'historical_execution_replay',
+                    'cash_change_periods', 'historical_closure',
                     'research_readiness'))):
             raise ValueError('publication input requires read-model-only without research overrides')
     if getattr(args, 'publication_input', None) is not None and not args.read_model_only:

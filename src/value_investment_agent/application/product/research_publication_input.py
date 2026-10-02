@@ -1,5 +1,6 @@
 """Prepare a source-verified research handoff without touching any workbook."""
 from pathlib import Path
+import json
 
 from .common import require_inside, sha256_file, load_json_object, write_new_json
 from ..historical_validation.event_evidence_audit import audit_event_evidence
@@ -21,6 +22,16 @@ def _build_research_publication_input(*, root: Path, read_model_path: Path,
         raise ValueError('research snapshot must remain no_order')
     bindings = {}
     recoveries = {}
+    parent = envelope.get('publication_input_binding')
+    if parent is not None:
+        if not isinstance(parent, dict) or set(parent) != {'path', 'sha256'}:
+            raise ValueError('invalid parent research publication binding')
+        inherited = load_research_publication_input(root=root, path=root / parent['path'],
+                                                   expected_sha256=parent['sha256'])
+        # Recovery is inherited only from a freshly reverified parent, never
+        # from unchecked paths in the newly composed presentation envelope.
+        for recovery in inherited['verified_source_recoveries']:
+            recoveries[(recovery['original_path'], recovery['expected_sha256'])] = recovery['recovered_path']
     event = envelope.get('event_source_binding')
     if event and event.get('recovered_originals'):
         audit = audit_event_evidence(root=root, path=root / event['path'], expected_sha256=event['sha256'],
@@ -55,7 +66,10 @@ def _build_research_publication_input(*, root: Path, read_model_path: Path,
             bindings[relative] = digest
             if bound.suffix.lower() == '.json' and relative not in scanned:
                 scanned.add(relative)
-                pending.append(load_json_object(bound, 'research bound document'))
+                document = json.loads(bound.read_text(encoding='utf-8-sig'))
+                if not isinstance(document, (dict, list)):
+                    raise ValueError('research bound document must be a JSON object or array')
+                pending.append(document)
     if not bindings:
         raise ValueError('publication input requires original source bindings')
     bindings[source.relative_to(root.resolve()).as_posix()] = expected_sha256

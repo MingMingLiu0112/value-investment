@@ -7322,3 +7322,17 @@ CANONICAL_WORKBOOK_SOURCE=WORKBOOK_PATH；CURRENT_TRIAL_POINTER=CANONICAL_WORKBO
 
 工程发布已交付，仍保留 strict_pit=NOT_PROVEN、current_price_bridge=NOT_ADMITTED、M7_FINAL_USER_ACCEPTANCE=NOT_PASSED、INITIAL_ASSISTED_USE=NOT_REACHED、action=no_order。缺项不能由 Excel 可打开或工程测试通过替代；完整长期目标未完成。此版敏感性文字仍含文档来源路径，后续渲染的路径过滤修正已加入代码，不影响数值或当前门禁。
 
+## 2026-10-02 Combined research and execution handoff publication
+
+- CANONICAL_WORKBOOK_SOURCE=WORKBOOK_PATH; WORKBOOK_PATH_UNCHANGED=true; M7_PRODUCT_UX=INTEGRATED; CURRENT_TRIAL_POINTER=CANONICAL_WORKBOOK.
+- Publication receipt: `runtime/publication-receipts/canonical-reviewed-research-20261002T000341Z-d283a07a.json`; canonical_written=true.
+- before_sha256 / backup_sha256: `7e2820a66584169adbe05c232ec232920e71d077e0530853d5189470e98ec10f`.
+- after_sha256: `e2df56be2d16e5a5183a22f979b062140b34a40f16c85498a979c6e131bcc147`.
+- Backup: `runtime/workbook-backups/canonical-before-reviewed-research-20261002T000341Z-d283a07a.xlsx`.
+- PRODUCT_SHEETS_PRESENT=true; PRESERVED_SHEETS_CONTENT_CHECK=PASS; protected sheets=55; verified publication source bindings=123.
+- Protected preview: `runtime/combined-handoff-canonical-preview-20261002/`; readability and native visual review PASS; seven sheets exported to 28 PDF pages and contact sheets inspected.
+- WPS_CANONICAL_OPEN=PASS; actual canonical readonly reopening, seven-sheet export and unchanged hash verified by `runtime/combined-handoff-canonical-preview-20261002/canonical-native-review/receipt.json`.
+- Combined handoff preserves the primary research snapshot exactly, excluding audit evidence and the added historical replay. Historical 600519 execution is secondary audit only, not current-company research, trading admission or a performance claim.
+- Parent recovery bindings are freshly reverified; JSON array originals are supported without weakening hash/scope checks. Targeted tests=20 passed; offline Core=1482 passed, 32 skipped, 38 warnings (`.tmp/combined-handoff-core.xml`).
+- strict_pit=NOT_PROVEN; current_price_bridge=NOT_ADMITTED; M7_FINAL_USER_ACCEPTANCE=NOT_PASSED; INITIAL_ASSISTED_USE=NOT_REACHED; action=no_order. Full goal remains incomplete. GitHub CI for this change is pending until independently observed.
+
