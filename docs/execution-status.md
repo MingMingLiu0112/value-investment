@@ -7431,6 +7431,17 @@ CURRENT_RESEARCH_ADMISSION=NOT_READY; current_price_bridge=NOT_ADMITTED; strict_
 
 ## 2026-10-02 Shared daily DAG successor (isolated, not production)
 
+Consumer integration correction: missing quote no longer bypasses content checks
+for the rest of the day. Present artifacts receive hash/time/run/session/no-order
+and DAG-receipt checks; absent event timestamps are explicit contract gaps. Real
+600887 output `runtime/shadow-consumer-checked-20261002/company-card.md`, manifest
+SHA-256 `e04f9bc3dc6ab1f929136630ee13d2d872a3d04e6511da133fb5c859b36f1773`.
+The existing M1 disclosure scan is not a complete daily prospective wrapper; it
+lacks that wrapper's time/coverage/source-binding fields. Original PDF verification
+and readable claims remain valid for their limited purpose, not current decision
+or Shadow admission. DAG remains incomplete, session count zero, no_order. No
+canonical workbook, server/PTA, database or scheduler mutation.
+
 Daily product increment: the isolated runner now produces a presentation-only
 company review card from the exact research/model/decision outputs. Optional
 source-followup input reuses the existing original-page verifier and must bind

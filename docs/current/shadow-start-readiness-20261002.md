@@ -59,6 +59,26 @@ SHADOW_SESSION_VALIDITY and INVESTMENT_DECISION_VALIDITY remain separate; offlin
 
 ## Required final status
 
+### Mandatory consumer now audits incomplete runs, not just their hashes
+
+Removed the missing-role early return. Every present daily artifact is now loaded,
+byte/time checked and tested for run/session identity and the no-order boundary,
+even if quote or another role is absent. Available quotes still use the existing
+verified converter. Missing event time fields become explicit contract blockers,
+not a KeyError or an assumed completed scan. Receipt/DAG checks and the final
+byte recheck always apply to present files. A malformed/order-bearing partial
+artifact is rejected rather than hidden behind a missing quote.
+
+Real successor: `runtime/shadow-consumer-checked-20261002/company-card.md`; manifest
+SHA-256 `e04f9bc3dc6ab1f929136630ee13d2d872a3d04e6511da133fb5c859b36f1773`.
+The retained official M1 event scan is valid as disclosure acquisition context,
+but does not provide the daily prospective wrapper fields (`observed_at`,
+`scan_as_of`, `coverage_complete`, `source_bindings`). The audit now exposes these
+specific missing contract fields and incomplete execution, in addition to quote
+and cutoff gaps. This does not mean the original PDFs are missing or unverified.
+The original-page followup verifier remains separate and its explanations remain
+visible. No full-run PASS, investment admission or real session credit is claimed.
+
 ### Readable company output integrated into the daily attempt
 
 `--event-followup` with `--event-followup-sha256` connects the existing source-page

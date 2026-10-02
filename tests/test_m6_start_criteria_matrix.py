@@ -204,6 +204,36 @@ def test_daily_company_card_keeps_source_explanation_separate_from_admission(tmp
     assert result['audit']['verified_real_session_count'] == 0
 
 
+@pytest.mark.parametrize('unsafe', [False, True])
+def test_partial_daily_audit_checks_present_outputs_even_without_quote(tmp_path, unsafe):
+    import hashlib
+    from datetime import datetime
+    from value_investment_agent.operations.shadow_daily_input import audit_shadow_daily_input
+    decision = dict(action='no_order', run_id='partial', session_date='2026-10-02',
+        generated_at='2026-10-02T10:00:00+08:00', suggested_state='NOT_READY',
+        orders=[{'symbol': '600887'}] if unsafe else [])
+    path = tmp_path / 'decision.json'
+    path.write_text(json.dumps(decision), encoding='utf-8')
+    binding = dict(path=path.name, sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                   observed_at='2026-10-02T10:00:00+08:00')
+    manifest = tmp_path / 'input.json'
+    manifest.write_text(json.dumps(dict(schema_version='shadow-daily-input-v1',
+        action='no_order', symbols=['600887'], session_date='2026-10-02',
+        generated_at='2026-10-02T10:01:00+08:00', bindings={'decision': binding})), encoding='utf-8')
+    kwargs = dict(root=tmp_path, path=manifest,
+        expected_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest(),
+        now=datetime.fromisoformat('2026-10-02T10:02:00+08:00'))
+    if unsafe:
+        with pytest.raises(ValueError, match='must not produce orders'):
+            audit_shadow_daily_input(**kwargs)
+        return
+    result = audit_shadow_daily_input(**kwargs)
+    assert 'MISSING_DAG_ARTIFACT:quote' in result['blockers']
+    assert 'DECISION_RUN_ID_MISMATCH' in result['blockers']
+    assert result['binding_hashes']['decision'] == binding['sha256']
+    assert result['verified_real_session_count'] == 0
+
+
 def _criteria_by_id():
     matrix = load_m6_start_criteria_matrix(MATRIX_PATH, root=ROOT)
     return {item.criterion_id: item for item in matrix.criteria}
