@@ -48,6 +48,8 @@ from value_investment_agent.application.product.dividend_history import read_div
 from value_investment_agent.presentation.read_models.dividend_history import project_dividend_history
 from value_investment_agent.application.product.research_recipe import load_research_recipe
 from value_investment_agent.application.product.retained_research import extend_retained_research_payload
+from value_investment_agent.application.product.event_followup import read_event_followup
+from value_investment_agent.presentation.read_models.event_followup import project_event_followup
 from value_investment_agent.application.product.research_publication_input import prepare_research_publication_input, load_research_publication_input
 from value_investment_agent.application.product.valuation_drivers import describe_valuation_drivers
 from value_investment_agent.presentation.read_models.existing_research_report import project_existing_research_workbench, public_workbench_payload_from_snapshot  # noqa: E402
@@ -80,6 +82,8 @@ def parse_args() -> argparse.Namespace:
                         help='Read a source-reverified research handoff in read-model-only mode.')
     parser.add_argument('--retained-baseline', nargs=2, metavar=('PATH', 'SHA256'),
                         help='Append missing registered cases without replacing delivered research.')
+    parser.add_argument('--event-followup', nargs=2, metavar=('PATH', 'SHA256'),
+                        help='Append source-anchored event explanations without investment admission.')
     parser.add_argument("--existing-workbench", type=Path)
     parser.add_argument("--research-readiness", nargs=2, action="append", default=[], metavar=("PATH", "SHA256"))
     parser.add_argument("--existing-workbench-sha256")
@@ -123,6 +127,9 @@ def main() -> int:
     retained_baseline = getattr(args, 'retained_baseline', None)
     retained_baseline_binding = None
     retained_additions = set()
+    followup_binding = None
+    if getattr(args, 'event_followup', None) and not (args.read_model_only and args.base_publication_input):
+        raise ValueError('event followup requires a source-reverified read-only publication input')
     if retained_baseline and not (args.read_model_only and args.base_publication_input):
         raise ValueError('retained baseline requires a source-reverified base publication input')
     if getattr(args, 'base_publication_input', False):
@@ -369,6 +376,12 @@ def main() -> int:
     if getattr(args, 'read_model_only', False):
         if output.suffix != '.json' or getattr(args, 'integrate_canonical', False):
             raise ValueError('read-model-only requires JSON output without workbook publication')
+        if getattr(args, 'event_followup', None):
+            followup_path, followup_hash = args.event_followup
+            followup_path = require_inside(ROOT, ROOT / followup_path, 'event followup')
+            followup = read_event_followup(root=ROOT, cutoff=model.as_of, path=followup_path, expected_sha256=followup_hash)
+            model = project_event_followup(model, followup)
+            followup_binding = dict(path=followup_path.relative_to(ROOT).as_posix(), sha256=followup_hash)
         snapshot = json.loads(json.dumps(asdict(model), default=lambda value: value.isoformat(), ensure_ascii=False))
         report_path = getattr(args, 'read_model_report', None)
         if report_path is not None:
@@ -386,6 +399,7 @@ def main() -> int:
             research_recipe_binding=recipe_binding,
             publication_input_binding=publication_input_binding,
             retained_baseline_binding=retained_baseline_binding,
+            event_followup_binding=followup_binding,
             readiness_bindings=readiness_bindings,
             canonical_written=False, historical_preview=True, action='no_order'))
         if report_path is not None:

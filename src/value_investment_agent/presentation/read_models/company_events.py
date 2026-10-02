@@ -24,7 +24,7 @@ def project_company_event_questions(model: ProductWorkbenchReadModel, packet: di
             if event['materiality_review'] != 'PENDING_HUMAN_REVIEW':
                 raise ValueError('event packet cannot substitute human approval')
             review[f"待复核公告 {event['announcement_id']} {event['title']}"] = (
-                f"披露时间：{event['published_at']}；原件可读不等于已评估其影响。"
+                f"披露/可用时点（按原输入口径）：{event['published_at']}；原件可读不等于已评估其影响。"
                 '需判断是否改变估值假设、分红能力或原投资逻辑，以及模型是否已纳入。'
                 + '; '.join(f" 原件：{source['source_url']}；SHA256={source['sha256']}；"
                             f"页数={len(source['pages'])}；文本状态={source['text_status']}"

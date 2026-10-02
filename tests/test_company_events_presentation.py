@@ -35,3 +35,68 @@ def test_failed_originals_do_not_surface_unverified_event_text():
     output = project_company_event_questions(model, packet, evidence)
     assert 'untrusted' not in str(output.companies[0].decision_review)
     assert output.companies[0].decision_process == card.decision_process
+
+
+def _followup(tmp_path, monkeypatch):
+    import json
+    from value_investment_agent.application.product import event_followup
+    from value_investment_agent.application.product.common import sha256_file
+    model = product_workbench_from_payload(_payload())
+    card = replace(model.companies[0], decision_review=(("Old gap", "No reviewed outcome"),))
+    model = replace(model, companies=(card, *model.companies[1:]))
+    packet = dict(audit=dict(evidence_integrity_verified=True), events=[dict(
+        announcement_id="new-event", sources=[dict(source_url="https://example.test/official.pdf",
+            pages=[dict(physical_page=1, text="Company reported payment of 100 on September 29")])])])
+    monkeypatch.setattr(event_followup, "prepare_event_source_review", lambda **kwargs: packet)
+    value = dict(schema_version="research-event-followup-v1", scope="SOURCE_ANCHORED_EXPLANATION_ONLY",
+        symbol=card.symbol, action="no_order", observed_at=model.as_of.isoformat()+"T10:00:00+08:00",
+        event_scan=dict(path="scan.json", sha256="a"*64),
+        claims=[dict(announcement_id="new-event", label="New outcome", summary="Payment disclosed, liquidity still unknown",
+                     anchors=[dict(physical_page=1, excerpt="payment of 100")])],
+        historical_labels=["Old gap"], unresolved_questions=["Post-payment cash/debt missing"])
+    path = tmp_path / "followup.json"
+    path.write_text(json.dumps(value), encoding="utf-8")
+    return model, packet, value, path, sha256_file(path)
+
+
+def _apply_followup(*, root, model, path, expected_sha256):
+    from value_investment_agent.application.product.event_followup import read_event_followup
+    from value_investment_agent.presentation.read_models.event_followup import project_event_followup
+    return project_event_followup(model, read_event_followup(root=root, cutoff=model.as_of,
+        path=path, expected_sha256=expected_sha256))
+
+
+def test_followup_preserves_investment_gates_and_keeps_history(tmp_path, monkeypatch):
+    model, _, _, path, digest = _followup(tmp_path, monkeypatch)
+    result = _apply_followup(root=tmp_path, model=model, path=path, expected_sha256=digest)
+    old, new = model.companies[0], result.companies[0]
+    assert new.decision_process == old.decision_process
+    assert new.price == old.price and new.valuation == old.valuation
+    assert new.margin_of_safety == old.margin_of_safety
+    assert result.portfolio == model.portfolio and result.events == model.events
+    assert result.opportunities == model.opportunities
+    assert len(result.today_items) == len(model.today_items) + 1
+    assert result.today_items[-1].symbol == old.symbol
+    assert "不构成买卖建议" in result.today_items[-1].current_status
+    assert "No reviewed outcome" in dict(new.decision_review).values()
+    assert any(label.startswith("历史缺项记录") for label, _ in new.decision_review)
+    assert "Post-payment cash/debt missing" in dict(new.decision_review)["新披露后的待复核事项"]
+    assert result.action == "no_order"
+
+
+@pytest.mark.parametrize("problem", ["anchor", "page", "issuer", "future", "scope", "missing_gap", "integrity", "unresolved"])
+def test_followup_fails_closed_on_unverified_explanations(tmp_path, monkeypatch, problem):
+    import json
+    from value_investment_agent.application.product.common import sha256_file
+    model, packet, value, path, _ = _followup(tmp_path, monkeypatch)
+    if problem == "anchor": value["claims"][0]["anchors"][0]["excerpt"] = "payment of 999"
+    elif problem == "page": value["claims"][0]["anchors"][0]["physical_page"] = 2
+    elif problem == "issuer": value["symbol"] = "999999"
+    elif problem == "future": value["observed_at"] = "2099-01-01T00:00:00+08:00"
+    elif problem == "scope": value["scope"] = "APPROVE_BUY"
+    elif problem == "missing_gap": value["historical_labels"] = ["Nonexistent"]
+    elif problem == "integrity": packet["audit"]["evidence_integrity_verified"] = False
+    else: value["unresolved_questions"] = []
+    path.write_text(json.dumps(value), encoding="utf-8")
+    with pytest.raises(ValueError):
+        _apply_followup(root=tmp_path, model=model, path=path, expected_sha256=sha256_file(path))
