@@ -20,9 +20,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from value_investment_agent.m6_operational_readiness import (  # noqa: E402
-    build_preflight_receipt,
     write_receipt,
 )
+from value_investment_agent.operations.daily_preflight import build_preflight_receipt  # noqa: E402
 from value_investment_agent.quote_session_collection import resolve_session_reference  # noqa: E402
 
 
@@ -127,7 +127,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--restore", type=Path)
     parser.add_argument("--verified-restore-receipt", type=Path)
     parser.add_argument("--json-only", action="store_true")
+    parser.add_argument('--daily-input', type=Path)
+    parser.add_argument('--daily-input-sha256')
+    parser.add_argument('--daily-operational-inputs', type=Path)
+    parser.add_argument('--daily-operational-inputs-sha256')
     args = parser.parse_args(argv)
+    if bool(args.daily_input) != bool(args.daily_input_sha256):
+        parser.error('--daily-input requires --daily-input-sha256')
+    if bool(args.daily_operational_inputs) != bool(args.daily_operational_inputs_sha256):
+        parser.error('--daily-operational-inputs requires its SHA-256')
+    if args.daily_operational_inputs and not args.daily_input:
+        parser.error('--daily-operational-inputs requires --daily-input')
     if args.calendar_bundle and (args.calendar_evidence or not args.calendar_symbol):
         parser.error('--calendar-bundle requires --calendar-symbol and excludes --calendar-evidence')
     if args.verify_live_calendar and not (args.calendar_bundle or args.calendar_evidence):
@@ -183,6 +193,10 @@ def main(argv: list[str] | None = None) -> int:
         source_database_url=source,
         restore_database_url=target,
         verify_ci=args.verify_ci,
+        daily_input=args.daily_input.resolve() if args.daily_input else None,
+        daily_input_sha256=args.daily_input_sha256,
+        daily_operational_inputs=args.daily_operational_inputs.resolve() if args.daily_operational_inputs else None,
+        daily_operational_inputs_sha256=args.daily_operational_inputs_sha256,
     )
     output = write_receipt(receipt, root=root)
     if args.json_only:
@@ -190,6 +204,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     print(f"engineering_status: {receipt['engineering_status']}")
     print(f"operational_acceptance_status: {receipt['operational_acceptance_status']}")
+    if 'daily_input_consumption' in receipt:
+        print(f"daily_consumer_status: {receipt['daily_input_consumption']['daily_consumer_status']}")
     print(f"done: {', '.join(receipt['summary']['done']) or '-'}")
     print(f"partial: {', '.join(receipt['summary']['partial']) or '-'}")
     print(

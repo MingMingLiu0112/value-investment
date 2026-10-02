@@ -1,5 +1,39 @@
 # CURRENT STATUS
 
+## 2026-10-02 Formal Preflight Consumes Explicit Daily Manifest
+
+The existing `scripts/audit_m6_preflight.py` now accepts paired `--daily-input`
+and `--daily-input-sha256`, with optional paired `--daily-operational-inputs`
+and `--daily-operational-inputs-sha256`. An Operations adapter consumes the
+existing daily manifest/operational proof contract and then calls the unchanged
+legacy M6 readiness builder. The receipt embeds daily consumption separately;
+incomplete daily input adds its blockers and never grants legacy readiness.
+No daily arguments preserves existing readiness behavior; it is not proof that
+current daily inputs were checked. Both gates retain their original requirements.
+
+Actual read-only CLI execution consumed the existing source-follow-up/simulated
+risk attempt with manifest SHA256
+`d1b5cbb9038d3201920f3b4c6c1525e017ff04eba42cd51def0bc46992602d07`:
+`engineering_status=PARTIAL`, `operational_acceptance_status=NOT_STARTED`,
+`daily_consumer_status=NOT_ADMITTED`, no_order, zero newly admitted sessions.
+Receipt: `runtime/m6-operational-preflight-20261002T074359Z/receipt.json`, SHA256
+`0f8e86910325749cad53ed35b86d88176f31cc8e1fa62ae9c07f468d32178610`.
+This run supplied no restore/authorization/calendar evidence, so its legacy
+missing-input messages do not revoke prior independently verified backup or
+restore evidence; no production scope was inferred from that historical work.
+
+Reproduce:
+`py -3 scripts/audit_m6_preflight.py --daily-input runtime/shadow-existing-risk-dag-20261002/input.json --daily-input-sha256 d1b5cbb9038d3201920f3b4c6c1525e017ff04eba42cd51def0bc46992602d07`.
+Tests exercise the real CLI adapter and real daily audit/consumer with only the
+legacy readiness builder stubbed, confirming absence of proof remains NOT_ADMITTED,
+original blockers survive and artifact drift prevents receipt publication.
+Related preflight/daily/readiness tests: 48 passed. Offline Core evidence:
+`.tmp/daily-preflight-core.xml`: 1550 passed, 32 skipped, 38 warnings in
+69.76 seconds; this selected offline suite is not investment-effectiveness proof.
+No scheduler/server/PTA/DB/Excel
+mutation; only isolated local readiness artifacts were written. Full Goal remains
+in progress; production adoption and actual sessions require their existing gates.
+
 ## 2026-10-02 Reviewed Package Through Actual Shared Entry
 
 The scoped scheduling gate, real M1 descriptor builder, typed review attachment,
