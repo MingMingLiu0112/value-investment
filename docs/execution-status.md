@@ -7377,6 +7377,22 @@ CURRENT_RESEARCH=NOT_READY; strict_pit=NOT_PROVEN; current_price_bridge=NOT_ADMI
 
 ENGINEERING_DELIVERY=DELIVERED; CURRENT_RESEARCH_ADMISSION=NOT_READY; FINAL_OPERATIONAL_ACCEPTANCE=NOT_REACHED; strict_pit_admitted=false; historical_execution_validated=false; performance_claim_allowed=false; tax_treatment_verified=false; action=no_order. No server/PTA/database/scheduler changes. Next unresolved real replay dependency remains a separately frozen complete facts/assumptions/rule/event chain and dated execution constraints, not tuning legacy thresholds or relabeling correspondence as investment validation. Complete goal remains active.
 
+## 2026-10-02 Source-anchored successor explanation published to canonical
+
+Code `69d1331` adds bounded original-page verification in Application and immutable explanatory projection in Presentation. An initial offline architecture failure was corrected by separating these layers, not weakening tests. Final offline Core: 1513 passed, 32 skipped, 38 warnings (`.tmp/event-followup-corrected-core.xml`); targeted architecture/event tests: 38 passed. GitHub Core run `36954311579` completed SUCCESS for exact code HEAD `69d133101a221592fd28c122d11d598fa6dc5f0a`.
+
+The original WORKBOOK_PATH workbook now includes one new Today pending-review item and Yili source-anchored settlement/guarantee explanations. The historical liquidity-gap text is retained and explicitly labeled as pre-disclosure history. Company-reported settlement is disclosed, not independently bank-verified; post-payment cash/debt/refinancing, guarantee materiality and complete event coverage remain unresolved. Investment values, eight decision gates, other company cards, portfolio and retained historical replay are unchanged. No stop-ledger promotion, orders or server/PTA/database/scheduler changes.
+
+- CANONICAL_WORKBOOK_SOURCE=WORKBOOK_PATH; CURRENT_TRIAL_POINTER=CANONICAL_WORKBOOK; M7_PRODUCT_UX=INTEGRATED; WORKBOOK_PATH_UNCHANGED=true.
+- Publication input: `runtime/event-followup-final-20261002/publication-input.json`, SHA-256 `cab20925d952e2a12151465ea159f550a9bb480b06d3de827c04657bf3a2dcf2`.
+- Publication receipt: `runtime/publication-receipts/canonical-reviewed-research-20261002T021603Z-083f9416.json`; 141 source bindings freshly verified; 55 preserved sheets PASS.
+- before_sha256=backup_sha256=`9925ab6a78e8ed10ae3e10d9ea4180d33d9ea9aefb99665b09e88cc38212566a`.
+- after_sha256=`5db7f3cd7651edc36505b7f7d87aa8d71550ca2150a999391778c1cbc2d23bf8`.
+- PRODUCT_SHEETS_PRESENT=true; PRESERVED_SHEETS_CONTENT_CHECK=PASS; readability and native visual verification PASS. Native PDF contact sheets and the full new explanation page inspected.
+- WPS_CANONICAL_OPEN=PASS: actual canonical readonly reopened with matching hash; `runtime/event-followup-final-canonical-preview-20261002/canonical-native-review/receipt.json`. The verifier's canonical_written=false means the readonly check itself did not write, not that publication was absent.
+
+CURRENT_RESEARCH_ADMISSION=NOT_READY; current_price_bridge=NOT_ADMITTED; strict_pit=NOT_PROVEN; M7_FINAL_USER_ACCEPTANCE=NOT_PASSED; INITIAL_ASSISTED_USE=NOT_REACHED; action=no_order. Goal remains active. This is a real evidence explanation/product delivery, not completion of investment or operational admission.
+
 ## 2026-10-02 New official settlement and guarantee evidence
 
 Previous turn was substantive progress; distribution replay code `882cd2d` subsequently passed GitHub Core run `36951158275`. This turn inspected shared research scheduling, retained publication input, reconstruction/decision-input review and replay/publisher dependencies. Historical strategy admission still lacks complete dated facts/assumptions/rules/events and execution constraints; did not create retrospective approvals. Current case evidence stops are not reopened by rerunning the same sources.

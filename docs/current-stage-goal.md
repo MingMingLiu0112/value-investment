@@ -6,7 +6,7 @@
 保持 `WORKBOOK_PATH` / `CANONICAL_WORKBOOK`。runtime Product UX v3 是
 历史预览，不能作为 current pointer；仅显式历史预览参数允许打开。
 2026-10-02 已通过受保护发布链更新原表，最新三公司版本 SHA-256 为
-`9925ab6a78e8ed10ae3e10d9ea4180d33d9ea9aefb99665b09e88cc38212566a`，
+`5db7f3cd7651edc36505b7f7d87aa8d71550ca2150a999391778c1cbc2d23bf8`，
 发布后 WPS 只读重开通过。历史候选视觉通过不能冒充原表已更新或最终用户
 验收；真实发布证据见 execution-status 最新记录。此条覆盖下文及旧记录中
 将 runtime v3 称为当前用户入口的描述。
