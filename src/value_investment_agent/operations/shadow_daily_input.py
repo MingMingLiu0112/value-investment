@@ -77,6 +77,55 @@ def _timestamp(value):
     return result
 
 
+def _research_projection_blockers(artifacts, hashes, symbols, day):
+    """Check computation-to-projection lineage; do not recalculate financial rules."""
+    blockers = []
+    research = artifacts.get('research', {})
+    result = research.get('result', {})
+    if not isinstance(result, dict) or result.get('action') != 'no_order' or result.get('symbol') not in symbols:
+        blockers.append('SHARED_RESEARCH_RESULT_BINDING_REQUIRED')
+        result = {}
+    receipt = research.get('application_receipt', {})
+    inputs = receipt.get('input_sha256', {})
+    event = artifacts.get('event', {})
+    event_hash = event.get('raw_scan', {}).get('sha256', hashes.get('event'))
+    if (receipt.get('action') != 'no_order' or not inputs.get('valuation_package')
+            or inputs.get('quote') != hashes.get('quote') or 'quote' not in hashes
+            or inputs.get('event') != event_hash or 'event' not in hashes):
+        blockers.append('SHARED_RESEARCH_DAILY_INPUT_CONSUMPTION_NOT_PROVEN')
+    model = artifacts.get('model', {})
+    for target, source in (('model_validity', 'model_validity'), ('price_bridge', 'price_bridge'),
+                           ('valuation_result', 'valuation')):
+        if source not in result or target not in model or model[target] != result[source]:
+            blockers.append('MODEL_RESEARCH_PROJECTION_MISMATCH:' + target)
+    decision = artifacts.get('decision', {})
+    review_payload = decision.get('review')
+    predecision_payload = result.get('pre_decision_eligibility')
+    if not isinstance(review_payload, dict) or not isinstance(predecision_payload, dict):
+        blockers.append('SHARED_DECISION_REVIEW_LINEAGE_REQUIRED')
+    else:
+        from ..investment_decision import investment_decision_review_from_payload
+        from ..pre_decision_eligibility import pre_decision_eligibility_from_payload
+        try:
+            review = investment_decision_review_from_payload(review_payload)
+            predecision = pre_decision_eligibility_from_payload(predecision_payload)
+            if (review.symbol != result.get('symbol') or predecision.symbol != review.symbol
+                    or review.decision_as_of.isoformat() != day
+                    or predecision.decision_as_of != review.decision_as_of
+                    or review.predecision_status != predecision.status
+                    or decision.get('suggested_state') != review.status
+                    or decision.get('blockers') != list(review.blockers)):
+                blockers.append('DECISION_RESEARCH_PROJECTION_MISMATCH')
+        except (ValueError, TypeError, KeyError):
+            blockers.append('TYPED_DECISION_REVIEW_INVALID')
+    product = artifacts.get('product', {})
+    if (product.get('symbol') != result.get('symbol')
+            or product.get('suggested_state') != decision.get('suggested_state')
+            or product.get('blockers') != decision.get('blockers')):
+        blockers.append('PRODUCT_DECISION_PROJECTION_MISMATCH')
+    return blockers
+
+
 def audit_shadow_daily_input(*, root: Path, path: Path, expected_sha256: str,
                              now: datetime) -> dict:
     """An offline audit is never authorization or a countable Shadow session."""
@@ -165,6 +214,7 @@ def audit_shadow_daily_input(*, root: Path, path: Path, expected_sha256: str,
             blockers.append(f'{role.upper()}_SESSION_MISMATCH')
         if artifact.get('generated_at') is None or _timestamp(artifact['generated_at']) > generated:
             blockers.append(f'{role.upper()}_OUTPUT_TIME_MISSING_OR_FUTURE')
+    blockers.extend(_research_projection_blockers(artifacts, hashes, symbols, day))
     if sha256_file(path) != expected_sha256:
         raise ValueError('daily input manifest changed during audit')
     for role in bindings:

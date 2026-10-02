@@ -7431,6 +7431,18 @@ CURRENT_RESEARCH_ADMISSION=NOT_READY; current_price_bridge=NOT_ADMITTED; strict_
 
 ## 2026-10-02 Shared daily DAG successor (isolated, not production)
 
+Cross-role lineage increment: daily consumer now checks shared application quote/
+raw-event/package bindings, research-to-model projection equality, typed review/
+pre-decision identity/date/status, and product-to-decision consistency. It does
+not recalculate or change financial policy. The historical hash-only placeholder
+test is no longer accepted as a complete day; mismatched model/product projections
+are rejected. Real retained-input output:
+`runtime/shadow-existing-risk-dag-20261002/lineage-consumer.json`, NOT_ADMITTED,
+zero credit. Missing calculation lineage is expected after actual scheduler refusal;
+it is not proof of a corrupted original disclosure or a failed valuation formula.
+No current quote, research admission, production scheduler adoption or user
+portfolio readiness is inferred. Canonical/server/PTA/database unchanged; no_order.
+
 Failed-path product completion: shared descriptor/run-spec rejection now carries
 an explicit known input-validation exception, before any one-shot request is
 consumed. The isolated daily runner preserves the failed result, diagnostic,

@@ -59,6 +59,25 @@ SHADOW_SESSION_VALIDITY and INVESTMENT_DECISION_VALIDITY remain separate; offlin
 
 ## Required final status
 
+### Calculation-to-product lineage is now checked
+
+Daily audit also checks that the shared application receipt consumed the exact
+quote and raw event-scan hashes (not merely their projected wrapper), with a
+valuation-package binding. Model validity, PriceBridge and valuation projections
+must match the actual research result. Existing typed decision/pre-decision
+parsers validate review identity, date, status and blockers; the product state
+must match that decision. These are provenance checks, not new valuation or
+portfolio rules. Missing/refused computation remains incomplete; NOT_READY is
+never itself substituted for evidence of a computed review.
+
+Actual re-consumption: `runtime/shadow-existing-risk-dag-20261002/lineage-consumer.json`.
+The stopped research has no admitted quote/event calculation or model/decision
+lineage. It remains NOT_ADMITTED, count zero. Earlier hash-only synthetic placeholder
+fixtures now correctly fail full consistency rather than PASS. Tests also reject
+a substituted valuation and a product BUY state inconsistent with the decision.
+Operational proof matching remains a separate unchanged gate; no production
+adoption, real model calculation or investment-effectiveness claim is added.
+
 ### Known research-input rejection is now an auditable daily outcome
 
 Shared descriptor/run-spec ValueError and missing-file rejection before one-shot

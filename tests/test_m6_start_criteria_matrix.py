@@ -49,7 +49,8 @@ def test_daily_input_consistency_never_grants_shadow_count(tmp_path, monkeypatch
         return module.audit_shadow_daily_input(root=tmp_path, path=tmp_path/request['path'],
             expected_sha256=request['sha256'], now=datetime.fromisoformat('2026-09-30T15:12:00+08:00'))
     result = audit()
-    assert result['input_consistency_status'] == 'PASS'
+    assert result['input_consistency_status'] == 'SHADOW_INPUT_INCOMPLETE'
+    assert 'SHARED_RESEARCH_DAILY_INPUT_CONSUMPTION_NOT_PROVEN' in result['blockers']
     assert result['shadow_session_valid'] is False
     assert result['verified_real_session_count'] == 0
     (tmp_path / 'decision.json').write_text('{}', encoding='utf-8')
@@ -348,6 +349,28 @@ def test_daily_attempt_seals_known_input_rejection_without_swallowing_programmin
     with pytest.raises(RuntimeError, match='unexpected bug'):
         module.run_isolated_daily_attempt(output=tmp_path / 'runtime/bug', **kwargs)
     assert not (tmp_path / 'runtime/bug/run_receipt.json').exists()
+
+
+def test_daily_projection_rejects_model_or_product_from_different_research():
+    from value_investment_agent.operations.shadow_daily_input import _research_projection_blockers
+    result = dict(symbol='600887', action='no_order', model_validity={'status': 'UNKNOWN'},
+                  price_bridge={'bridge_status': 'PENDING_EXTERNAL_DATA'}, valuation={'base_value': '10'})
+    artifacts = dict(research=dict(result=result, application_receipt=dict(action='no_order',
+        input_sha256=dict(valuation_package='package', quote='quote', event='raw-event'))),
+        event=dict(raw_scan=dict(sha256='raw-event')),
+        model=dict(model_validity=result['model_validity'], price_bridge=result['price_bridge'],
+                   valuation_result=result['valuation']),
+        decision=dict(suggested_state='NOT_READY', blockers=['not ready']),
+        product=dict(symbol='600887', suggested_state='NOT_READY', blockers=['not ready']))
+    def check():
+        return _research_projection_blockers(artifacts, {'quote': 'quote', 'event': 'projection'},
+                                              ['600887'], '2026-10-02')
+    assert 'SHARED_RESEARCH_DAILY_INPUT_CONSUMPTION_NOT_PROVEN' not in check()
+    assert not any(item.startswith('MODEL_RESEARCH_PROJECTION_MISMATCH') for item in check())
+    artifacts['model']['valuation_result'] = {'base_value': '20'}
+    artifacts['product']['suggested_state'] = 'MANUAL_BUY_REVIEW'
+    assert 'MODEL_RESEARCH_PROJECTION_MISMATCH:valuation_result' in check()
+    assert 'PRODUCT_DECISION_PROJECTION_MISMATCH' in check()
 
 
 def _criteria_by_id():
