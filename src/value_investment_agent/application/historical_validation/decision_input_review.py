@@ -1,5 +1,6 @@
 """Join real reconstruction and observations without admitting a strategy."""
 from datetime import datetime
+from copy import deepcopy
 
 
 def review_historical_decision_inputs(reconstruction: dict, history: dict) -> dict:
@@ -27,6 +28,21 @@ def review_historical_decision_inputs(reconstruction: dict, history: dict) -> di
     for point in sorted(facts):
         fact = facts[point]
         observation = observations[point]
+        timeline = []
+        for source in reconstruction.get('facts', []):
+            available = datetime.fromisoformat(source['reconstructed_availability']['available_from'])
+            reviewed = datetime.fromisoformat(source['original_review_available_at'])
+            if available.utcoffset() is None or reviewed.utcoffset() is None:
+                raise ValueError('fact availability and review times require timezones')
+            eligible = available <= point
+            matching = [item for item in fact['eligible_facts']
+                        if item['fact_name'] == source['fact_name']]
+            if len(matching) != int(eligible) or (matching and matching[0] != source):
+                raise ValueError('eligible facts must match source evidence and cutoff availability')
+            timeline.append(dict(**deepcopy(source), publicly_available_at_cutoff=eligible,
+                review_observed_at_cutoff=reviewed <= point,
+                semantic_status='VERIFIED' if source.get('source_excerpt_semantics_verified') is True
+                                else 'NOT_VERIFIED'))
         blockers = []
         if fact['missing_facts']:
             blockers.append('财务基础数据尚未公开：' + ', '.join(fact['missing_facts']))
@@ -41,6 +57,7 @@ def review_historical_decision_inputs(reconstruction: dict, history: dict) -> di
                          '没有对应真实决策的下一交易日成交输入与组合约束。'])
         rows.append(dict(cutoff=point.isoformat(),
             publicly_available_basis_facts=[item['fact_name'] for item in fact['eligible_facts']],
+            fact_evidence_timeline=timeline,
             missing_basis_facts=fact['missing_facts'],
             retained_quote_observed=observation['quote_observed'],
             retained_valuation_observed=observation['valuation_observed'],
@@ -66,6 +83,16 @@ def render_decision_input_review(review: dict) -> str:
             f"保留行情已观察：{row['retained_quote_observed']}；保留估值已观察：{row['retained_valuation_observed']}",
             f"价格桥接算术：{row['bridge_arithmetic_status']}；决策：NOT_READY", ''])
         lines.extend(f'- {blocker}' for blocker in row['blockers'])
+        if row.get('fact_evidence_timeline'):
+            lines.extend(['', '#### 财务输入证据时间线',
+                          '公开可用、实际复核与语义验证分别显示；公开可用不代表完整财务门已通过。'])
+        for fact in row.get('fact_evidence_timeline', []):
+            availability = fact['reconstructed_availability']
+            lines.extend([f"- {fact['fact_name']}：{fact['value']} {fact['unit']}；期间 {fact['period']}",
+                f"  来源 {fact['source_id']}；原件物理页 {fact['physical_page']}；Hash {fact['source_file_hash']}",
+                f"  保守可用时点 {availability['available_from']}；依据 {availability['basis']}；精度 {availability['timestamp_precision']}",
+                f"  截止时已公开：{fact['publicly_available_at_cutoff']}；实际复核时点 {fact['original_review_available_at']}；截止时已复核：{fact['review_observed_at_cutoff']}",
+                f"  原文语义核验：{fact['semantic_status']}"])
         lines.append('')
     lines.extend(['### 后续完整输入合同', *[f'- {item}' for item in review['next_input_contract']]])
     return '\n'.join(lines)
