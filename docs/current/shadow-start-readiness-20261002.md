@@ -29,6 +29,22 @@ CAN_A_NOT_READY_DAY_COUNT_AS_VALID_SHADOW = NO under current unmet formal start/
 
 ## Delivered and reproducible
 
+Successor engineering delivery: the existing audit command now accepts
+`--isolated-run runtime/<new-directory> --symbol 600887 --event-input <path> --event-input-sha256 <hash>`
+and optional paired quote path/hash. It invokes the shared research scheduler,
+snapshots original input bytes, persists research/model/decision/portfolio/product
+refusal artifacts, a run receipt and manifest, then mandatorily consumes that
+manifest through the daily input audit before returning. Existing output
+directories are refused. Actual evidence is in
+`runtime/shadow-isolated-refusal-20261002/report.md`; manifest SHA-256
+`6a47994a9c7aafc551018b936e323df90f2534f8805bb9fa22b500879166d26f`.
+Only research scheduling executed; downstream nodes are NOT_RUN_UPSTREAM_BLOCKED.
+This runner supports the stopped/refusal path only and rejects an admitted
+research outcome rather than inventing its downstream evaluations. It does not
+close the full admitted-model DAG producer gap or formal production integration.
+Snapshot acquisition time is explicitly not original source publication time.
+The retained event package remains incomplete, not a full prospective scan.
+
 Existing command extended, no alternate daily state counter:
 
 ```powershell

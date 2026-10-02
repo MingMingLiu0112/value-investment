@@ -61,6 +61,34 @@ def _payload() -> dict[str, object]:
     return json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
 
 
+def test_isolated_attempt_runs_shared_scheduler_and_seals_refusal(tmp_path):
+    import shutil
+    import hashlib
+    from value_investment_agent.operations.shadow_daily_run import run_isolated_daily_attempt
+    (tmp_path / 'config').mkdir()
+    shutil.copyfile(ROOT / 'config/research-evidence-stop-ledger-v1.json',
+                    tmp_path / 'config/research-evidence-stop-ledger-v1.json')
+    event = tmp_path / 'event.json'
+    event.write_text(json.dumps(dict(action='no_order', scope='SYNTHETIC_TEST_ONLY')), encoding='utf-8')
+    digest = hashlib.sha256(event.read_bytes()).hexdigest()
+    output = tmp_path / 'runtime/isolated'
+    result = run_isolated_daily_attempt(root=tmp_path, output=output, symbol='600887',
+                                        event_path=event, event_sha256=digest)
+    assert result['dag_execution_complete'] is False
+    receipt = json.loads((output / 'run_receipt.json').read_text(encoding='utf-8'))
+    assert receipt['node_sequence'] == ['research']
+    assert receipt['verified_real_session_count'] == 0
+    assert 'MISSING_DAG_ARTIFACT:quote' in result['audit']['blockers']
+    research = json.loads((output / 'research.json').read_text(encoding='utf-8'))
+    assert research['result']['status'] == 'BLOCKED_BY_RESEARCH_SCHEDULER'
+    assert (output / 'event.json').read_bytes() == event.read_bytes()
+    before = (output / 'input.json').read_bytes()
+    with pytest.raises(ValueError, match='new runtime'):
+        run_isolated_daily_attempt(root=tmp_path, output=output, symbol='600887',
+                                  event_path=event, event_sha256=digest)
+    assert (output / 'input.json').read_bytes() == before
+
+
 def _criteria_by_id():
     matrix = load_m6_start_criteria_matrix(MATRIX_PATH, root=ROOT)
     return {item.criterion_id: item for item in matrix.criteria}
