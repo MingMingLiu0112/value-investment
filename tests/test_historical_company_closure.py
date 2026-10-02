@@ -1,11 +1,25 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
 
 import pytest
+
+
+@pytest.fixture(autouse=True)
+def fixed_closure_clock(monkeypatch):
+    import value_investment_agent.application.historical_validation.historical_company_closure as module
+
+    class FixedDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            instant = cls(2026, 10, 1, 4, tzinfo=timezone.utc)
+            return instant.astimezone(tz) if tz else instant.replace(tzinfo=None)
+
+    monkeypatch.setattr(module, "datetime", FixedDatetime)
 
 from value_investment_agent.application.historical_validation.historical_company_closure import (
     build_historical_company_closure,
