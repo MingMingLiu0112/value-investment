@@ -7431,6 +7431,23 @@ CURRENT_RESEARCH_ADMISSION=NOT_READY; current_price_bridge=NOT_ADMITTED; strict_
 
 ## 2026-10-02 Shared daily DAG successor (isolated, not production)
 
+Daily-input calculation integration successor: explicit package runs now pass
+snapshotted quote/event references to existing shared descriptor parsers. Declared
+validity dates, material events, approvals and research cutoff remain unchanged.
+All descriptor/run-spec validation precedes one-shot reopen consumption. Corrected
+the receipt reader to the actual `input_sha256` contract; no compatibility field
+was added. Actual refused run: `runtime/shadow-daily-input-consumption-20261002/report.md`,
+manifest SHA-256 `865018c9840cc16ed955b04d348d1b8ddee03b468348bf503535551576ee9718`.
+Allowed forwarding and pre-consumption rejection are synthetic engineering tests.
+No real current-model admission or daily Shadow credit is claimed.
+
+Broader targeted exploration found four failing legacy valuation-package-builder
+expectations (Huayu/Gree scenario and material-event/probe cases expect conditional
+valuation but actual returns not_ready). The builder/calculation contracts were
+not changed in this package; these failures remain exposed, not weakened to pass.
+The current shared-entry/scheduler/research-service targeted selection passed
+45 tests with 1 skipped. Offline Core coverage and legacy assertions are separate.
+
 Successor input integration: the daily runner accepts explicitly hashed research
 package and optional schedule request, snapshots them, and forwards to the existing
 shared research scheduler. It records snapshot-only versus shared-receipt-bound

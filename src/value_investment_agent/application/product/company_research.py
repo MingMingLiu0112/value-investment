@@ -141,8 +141,25 @@ def run_company_research_for_symbol(
     output_path: Path | None = None,
     schedule_request: Mapping[str, Any] | None = None,
     schedule_request_sha256: str | None = None,
+    quote_path: Path | None = None,
+    quote_sha256: str | None = None,
+    event_path: Path | None = None,
+    event_sha256: str | None = None,
 ) -> dict[str, Any]:
     normalized = normalize_symbol(symbol)
+    explicit_inputs = {}
+    for role, path, digest in (
+        ('quote', quote_path, quote_sha256), ('event', event_path, event_sha256),
+    ):
+        if bool(path) != bool(digest):
+            raise ValueError(f'{role} requires paired path/hash')
+        if path is not None:
+            if package_path is None:
+                raise ValueError('explicit market inputs require an explicit research package')
+            source = require_inside(root, path, role)
+            if sha256_file(source) != digest:
+                raise ValueError(f'{role} input hash mismatch')
+            explicit_inputs[role] = (source, digest)
     ledger_path = root / "config" / "research-evidence-stop-ledger-v1.json"
     if not ledger_path.is_file():
         raise ValueError("EVIDENCE_STOP_LEDGER_UNAVAILABLE")
@@ -193,6 +210,27 @@ def run_company_research_for_symbol(
             schedule_request_sha256=schedule_request_sha256,
             output_path=output_path,
         )
+    # Validate all calculation inputs before consuming a one-shot reopen request.
+    effective_package = dict(package_payload)
+    if 'quote' in explicit_inputs:
+        path, digest = explicit_inputs['quote']
+        effective_package['quote'] = dict(kind='quote_session', symbol=normalized,
+            ref_id='daily-quote-' + digest, bundle_path=path.relative_to(root).as_posix(),
+            bundle_sha256=digest)
+    if 'event' in explicit_inputs:
+        path, digest = explicit_inputs['event']
+        validity = package_payload.get('model_validity_input')
+        if not isinstance(validity, Mapping):
+            raise ValueError('explicit event requires declared model validity input')
+        ref = dict(id='daily-event-' + digest, symbol=normalized,
+            path=path.relative_to(root).as_posix(), sha256=digest)
+        effective_package['model_validity_input'] = dict(validity,
+            event_scan_ref=ref, event_scan_evidence_refs=[ref])
+    descriptor = build_descriptor(effective_package, root=root)
+    spec = build_research_run_spec(descriptor)
+    for path, digest in explicit_inputs.values():
+        if sha256_file(path) != digest:
+            raise ValueError('explicit research input changed during validation')
     consumption = None
     if active_stops:
         consumption = claim_research_schedule_once(
@@ -215,9 +253,8 @@ def run_company_research_for_symbol(
                 schedule_request_sha256=schedule_request_sha256,
                 output_path=output_path,
             )
-    descriptor = build_descriptor(package_payload, root=root)
     outcome = ResearchApplicationService(InMemoryResearchArtifactRepository()).run_company_research(
-        build_research_run_spec(descriptor)
+        spec
     )
     payload = _serialize_outcome(outcome)
     payload["schedule_gate"] = decision
@@ -242,6 +279,7 @@ def run_company_research_for_symbol(
             input_hashes={
                 "valuation_package": sha256_file(package),
                 "evidence_stop_ledger": sha256_file(ledger_path),
+                **{role: digest for role, (_, digest) in explicit_inputs.items()},
                 **({"schedule_request": schedule_request_sha256}
                    if schedule_request_sha256 is not None else {}),
             },

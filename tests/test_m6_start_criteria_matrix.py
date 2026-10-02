@@ -147,6 +147,8 @@ def test_isolated_attempt_snapshots_and_forwards_explicit_research_inputs(tmp_pa
         package_sha256=package_hash, schedule_request_path=request,
         schedule_request_sha256=request_hash)
     assert captured['package_path'] == output / 'valuation_package.json'
+    assert captured['event_path'] == output / 'event.json'
+    assert captured['event_sha256'] == event_hash
     assert captured['schedule_request'] == json.loads(request.read_text(encoding='utf-8'))
     assert captured['schedule_request_sha256'] == request_hash
     research = json.loads((output / 'research.json').read_text(encoding='utf-8'))

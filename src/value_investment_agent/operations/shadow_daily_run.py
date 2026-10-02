@@ -72,6 +72,9 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
     shared_args = dict(root=root, symbol=symbol)
     if package_path is not None:
         shared_args['package_path'] = output / 'valuation_package.json'
+        shared_args.update(event_path=output / 'event.json', event_sha256=event_sha256)
+        if quote_path is not None:
+            shared_args.update(quote_path=output / 'quote.json', quote_sha256=quote_sha256)
     if schedule_request_path is not None:
         request = json.loads((output / 'schedule_request.json').read_text(encoding='utf-8'))
         shared_args.update(schedule_request=request,
@@ -84,7 +87,7 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
     for role, binding in research_bindings.items():
         binding['consumption_status'] = (
             'BOUND_IN_SHARED_APPLICATION_RECEIPT'
-            if result['receipt'].get('input_hashes', {}).get(role) == binding['sha256']
+            if result['receipt'].get('input_sha256', {}).get(role) == binding['sha256']
             else 'SNAPSHOTTED_NOT_CONSUMED_BY_SHARED_RESEARCH'
         )
     research = result['result']
@@ -168,7 +171,7 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         'Explicit research inputs: ' + (', '.join(research_bindings) or 'none; default package selection remains subject to shared scheduler'),
         *[f'- {role}: {binding["consumption_status"]}; SHA-256 {binding["sha256"]}'
           for role, binding in research_bindings.items()],
-        'Quote/event snapshots are acquisition evidence, not automatic model or materiality approval.',
+        'Explicit package runs pass quote/event snapshots to shared descriptor validation; scheduler refusal does not consume them. No automatic materiality approval.',
         'Skipped: ' + ', '.join(node for node in DAG_NODES if node not in executed),
         'Portfolio guidance: null; no personal input or trade approval inferred.',
         f'Input audit: {audit["input_consistency_status"]}',

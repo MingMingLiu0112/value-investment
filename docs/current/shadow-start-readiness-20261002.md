@@ -83,9 +83,22 @@ $hash = (Get-FileHash $package -Algorithm SHA256).Hash.ToLowerInvariant()
 py -3 scripts/current/audit_m6_start_criteria.py --isolated-run runtime/shadow-bound-research-recheck --symbol 600887 --event-input runtime/public-event-followup-20261002/event-scan.json --event-input-sha256 4318426b8ea4e54d2f40ec03b01c31f20f3c9a83560b7bea028641a0af8a3cbc --research-package $package --research-package-sha256 $hash
 ```
 
-Remaining integration gap: archived daily quote/event inputs are not automatic
-overrides of the research package's quote/materiality/model-validity inputs.
-Normal output preservation must not be described as current-input recalculation.
+Successor integration: with an explicit package, the isolated runner forwards
+the snapshotted quote and event into shared descriptor construction. Existing
+verified quote/event adapters now consume those references instead of the package's
+old quote/scan references, after the scheduler permits research. The declared
+model validity window and material events remain unchanged; no approval is inferred.
+Descriptor and run-spec validation precede one-shot reopen consumption. A later
+quote still cannot follow the research cutoff; no research date is rewritten.
+Application input hashes use the established `input_sha256` receipt key.
+
+Actual successor report: `runtime/shadow-daily-input-consumption-20261002/report.md`,
+manifest SHA-256 `865018c9840cc16ed955b04d348d1b8ddee03b468348bf503535551576ee9718`.
+The real scheduler still refuses; quote is absent and the package remains
+snapshot-only. Allowed-path forwarding/order validation is synthetic, not real
+investment acceptance. Remaining gap: a genuinely permitted, dated package plus
+verified quote and complete event window, and full downstream daily consumer
+integration. Normal output preservation alone is not current-input recalculation.
 The mandatory daily audit and unchanged M6 admission remain separate gates.
 
 Successor isolated attempt: `runtime/shadow-isolated-shared-dag-20261002/report.md`;

@@ -457,6 +457,68 @@ def test_symbol_without_research_case_scope_remains_blocked():
     }
 
 
+@pytest.mark.parametrize('descriptor_rejected', [False, True])
+def test_explicit_daily_inputs_reach_descriptor_before_one_shot_consumption(
+    tmp_path, monkeypatch, descriptor_rejected,
+):
+    config = tmp_path / 'config'
+    config.mkdir()
+    (config / 'research-evidence-stop-ledger-v1.json').write_bytes(LEDGER_PATH.read_bytes())
+    package = tmp_path / 'package.json'
+    original = dict(symbol='600887', model_validity_input=dict(model_id='test',
+        valid_from='2026-09-22', events=[{'existing': 'retained'}]))
+    package.write_text(json.dumps(original), encoding='utf-8')
+    quote = tmp_path / 'quote.json'
+    event = tmp_path / 'event.json'
+    quote.write_text('{}', encoding='utf-8')
+    event.write_text('{}', encoding='utf-8')
+    digest = hashlib.sha256(b'{}').hexdigest()
+    calls = []
+    monkeypatch.setattr(company_research, 'evaluate_research_schedule', lambda **kwargs:
+        dict(allowed=True, status='SYNTHETIC_ALLOWED_TEST_ONLY'))
+    def descriptor(payload, *, root):
+        calls.append('validate')
+        assert payload['quote']['bundle_sha256'] == digest
+        assert payload['quote']['bundle_path'] == 'quote.json'
+        assert payload['model_validity_input']['event_scan_ref']['sha256'] == digest
+        assert payload['model_validity_input']['event_scan_ref']['path'] == 'event.json'
+        assert payload['model_validity_input']['events'] == [{'existing': 'retained'}]
+        if descriptor_rejected:
+            raise ValueError('Quote date cannot follow research as-of')
+        return payload
+    monkeypatch.setattr(company_research, 'build_descriptor', descriptor)
+    monkeypatch.setattr(company_research, 'build_research_run_spec', lambda payload: payload)
+    def claim(**kwargs):
+        calls.append('consume')
+        return dict(created=True)
+    monkeypatch.setattr(company_research, 'claim_research_schedule_once', claim)
+    class Service:
+        def __init__(self, repository):
+            pass
+        def run_company_research(self, spec):
+            calls.append('calculate')
+            return dict(symbol='600887', action='no_order')
+    monkeypatch.setattr(company_research, 'ResearchApplicationService', Service)
+    monkeypatch.setattr(company_research, '_serialize_outcome', lambda payload: payload)
+    kwargs = dict(root=tmp_path, symbol='600887', package_path=package,
+        quote_path=quote, quote_sha256=digest, event_path=event, event_sha256=digest,
+        schedule_request=dict(schema_version='research-schedule-request-v1',
+            symbol='600887', source_id='CNINFO', period='2026-06-30',
+            research_question_id='synthetic', blocker_id='synthetic',
+            reopen_condition_met=True, new_evidence_ids=['synthetic']),
+        schedule_request_sha256='b' * 64)
+    if descriptor_rejected:
+        with pytest.raises(ValueError, match='research as-of'):
+            run_company_research_for_symbol(**kwargs)
+        assert calls == ['validate']
+    else:
+        result = run_company_research_for_symbol(**kwargs)
+        assert calls == ['validate', 'consume', 'calculate']
+        assert result['receipt']['input_sha256']['quote'] == digest
+        assert result['receipt']['input_sha256']['event'] == digest
+    assert json.loads(package.read_text(encoding='utf-8')) == original
+
+
 def test_unregistered_moutai_research_is_blocked_before_package_lookup():
     result = run_company_research_for_symbol(root=ROOT, symbol="600519")
     assert result["result"]["status"] == "BLOCKED_BY_RESEARCH_SCHEDULER"
