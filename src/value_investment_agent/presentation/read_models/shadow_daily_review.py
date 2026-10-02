@@ -33,6 +33,11 @@ def render_shadow_company_review(*, research: Mapping[str, Any], model: Mapping[
             f'Bear / Base / Bull：{valuation.get("bear_value", "未提供")} / {valuation.get("base_value", "未提供")} / {valuation.get("bull_value", "未提供")}'])
     else:
         lines.append('本次研究未形成估值结果，不用旧数值或模拟数填补。')
+    validity = model.get('model_validity')
+    bridge = model.get('price_bridge')
+    validity_status = validity.get('status', '未提供') if isinstance(validity, Mapping) else validity
+    bridge_status = bridge.get('bridge_status', '未提供') if isinstance(bridge, Mapping) else bridge
+    lines.append(f'模型有效性：{validity_status or "未提供"}；价格桥接：{bridge_status or "未提供"}。')
     risk = product.get('simulated_portfolio_review')
     if risk:
         assessment = risk['risk_assessment']

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from ...human_research_approval import human_research_approval_from_payload
 from ...event_materiality import event_materiality_review_from_payload
+from ...event_scan import COVERAGE_COMPLETE
 from .common import require_inside, load_json_object, sha256_file, sha256_bytes
 
 
@@ -41,8 +42,29 @@ def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
         validity = spec.model_validity_input
         if validity is None or validity.events:
             raise ValueError('materiality review requires a declared non-conflicting validity input')
+        scan = validity.event_scan
+        if scan is None or scan.symbol != spec.symbol or scan.coverage_status != COVERAGE_COMPLETE:
+            raise ValueError('materiality review requires the complete acquired scan')
+        if (review.scan_from != scan.scan_from or review.scan_to != scan.scan_to
+                or scan.validity_from != validity.valid_from
+                or review.reviewed_at < scan.retrieved_at):
+            raise ValueError('materiality review scan window or observation mismatch')
+        announcements = {item.announcement_id: item for item in scan.announcements}
+        if set(announcements) != {item.announcement_id for item in review.decisions}:
+            raise ValueError('materiality review must cover every acquired announcement exactly')
+        for decision in review.decisions:
+            announcement = announcements[decision.announcement_id]
+            if (decision.published_at != announcement.published_at
+                    or not any(ref.get('sha256') == decision.source_sha256
+                        and (ref.get('id') == decision.source_ref.get('id')
+                             or (ref.get('path') is not None
+                                 and ref.get('path') == decision.source_ref.get('path')))
+                        for ref in announcement.evidence_refs)):
+                raise ValueError('materiality review announcement source mismatch')
         changes['event_materiality_review'] = review
-        changes['model_validity_input'] = replace(validity, event_scan=None)
+        changes['model_validity_input'] = replace(validity, event_scan=None,
+            blockers=tuple(dict.fromkeys((*validity.blockers, *scan.blockers))),
+            event_scan_evidence_refs=tuple((*validity.event_scan_evidence_refs, *scan.evidence_refs)))
     changes['input_descriptor_sha256'] = sha256_bytes(json.dumps(dict(
         descriptor=spec.input_descriptor_sha256, review_packet=expected_sha256),
         sort_keys=True).encode('utf-8'))

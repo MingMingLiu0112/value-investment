@@ -1,5 +1,34 @@
 # CURRENT STATUS
 
+## 2026-10-02 Materiality Attachment Through Shared Research Service
+
+Code inspection found that the explicit review adapter removed the original
+EventScanResult after checking only its digest, allowing incomplete coverage
+or omitted announcements to disappear from ModelValidity inputs. Attachment now
+requires a complete typed acquired scan, exact scan window and issuer, review
+after acquisition, every acquired announcement, matching publication times and
+source identity/hash. Existing scan blockers and evidence survive the conversion
+to the mutually-exclusive materiality-review input. No review is inferred.
+
+An integration fixture executes the real ResearchApplicationService, registered
+residual-income model, ModelValidity, PriceBridge, serialization and renderer:
+requires-recalculation preserves conditional valuation but yields STALE /
+STALE_MODEL and NOT_READY. No human approval was provided; pre-decision remains
+absent, not admitted. The fixture descriptor/issuer/facts are synthetic; this is
+not an actual-company approval or evidence of strict PIT/Shadow admission.
+Reproduce with pytest tests/test_event_materiality.py; the readable test artifact
+is `.tmp/review-service-target5/test_attached_materiality_reac0/synthetic-review-card.md`.
+Targeted materiality/approval/daily suites: 45 passed. Full offline Core receipt:
+`.tmp/review-service-core.xml`: 1542 passed, 32 skipped, 38 warnings in
+58.87 seconds. This selected offline suite does not establish all legacy tests
+or investment effectiveness.
+
+Current real-company evidence stops and official settlement follow-up remain
+unchanged. No user workbook, production scheduler, database, PTA service or
+private input was modified. Total Goal remains in progress, Shadow readiness
+PARTIAL and action=no_order. Direct descriptor-to-review-to-shared-entry tests
+and production consumer wiring remain separate from this service-level evidence.
+
 ## 2026-10-02 Isolated DAG Completion and Output Observation Repair
 
 The isolated daily producer now derives `dag_execution_complete` from exact
