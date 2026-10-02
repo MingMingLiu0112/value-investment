@@ -2,6 +2,36 @@
 
 Scope: STAGE_5_SHADOW_START_READINESS within VALUE-INVESTMENT-TRADING-ASSISTANT-V1. This report does not grant R3, change M6 start gates, or count a session. action=no_order.
 
+## Latest Producer / Consumer Integration Evidence
+
+This section supersedes historical statements below that the isolated full DAG
+has only mocked shared-result coverage or that formal preflight has no daily
+consumer. Both existing paths are now integrated. A new unmocked E2E fixture
+runs fresh scoped scheduling, actual M1 descriptor conversion, exact typed review
+attachment, the registered research service/model, ModelValidity/PriceBridge,
+decision review, missing-portfolio preconditions, immutable run packet and daily
+consumer. All six node implementations execute; decision is INSUFFICIENT_RESEARCH.
+
+The case, current research date, issuer metadata, event and rejected review are
+explicit synthetic fixtures in pytest temporary storage, not actual company
+approval. The synthetic quote keeps its September 22 trade date and provider
+timestamps; it is not supplied as a current daily quote. Final consumption is
+NOT_ADMITTED with missing same-day quote/coverage/operational proof and zero real
+sessions. No function mocks, gate bypasses, real ledger edits or official research
+date changes are used in this integration case.
+
+Reproduce: `pytest tests/test_m6_start_criteria_matrix.py -k full_daily_dag`.
+Readable evidence:
+`.tmp/unmocked-dag-final/test_full_daily_dag_runs_actua0/runtime/full-chain/synthetic-e2e-review.md`.
+Current official scan tools remain retrieval-time snapshots, explicitly not full
+day or all-channel completeness. Do not promote their coverage or invent an
+end-of-day watermark. Actual current-case/daily input and production dispatch
+adoption remain unverified; this evidence closes assembly verification only.
+No new feature is justified merely to prolong the Goal. Next work must follow
+the actual remaining data/authorization/dispatch dependencies, not repeat this
+assembly test or add more status fields. Overall readiness remains PARTIAL;
+engineering delivery of this isolated assembly is distinct from real startup.
+
 ## Actual dependency map
 
 | DAG_NODE | CURRENT_IMPLEMENTATION | CURRENT_REAL_INPUT | MISSING_DEPENDENCY | GAP_TYPE | IS_EXECUTABLE_NOW | ACCEPTANCE_EVIDENCE |

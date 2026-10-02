@@ -19,6 +19,137 @@ ROOT = Path(__file__).resolve().parents[1]
 MATRIX_PATH = ROOT / "config" / "m6-start-criteria-matrix-v1.json"
 
 
+def test_full_daily_dag_runs_actual_shared_entry_with_explicit_synthetic_reviews(tmp_path):
+    import hashlib
+    from dataclasses import replace
+    from datetime import date, datetime, timezone, timedelta
+    from test_human_research_approval import _receipt, DECISION_REJECTED_NEEDS_REWORK
+    from test_event_materiality import _decision, _review, DECISION_NOT_MATERIAL
+    from test_research_application import _identity_source
+    from value_investment_agent.event_scan import EventScanResult, AnnouncementReview
+    from value_investment_agent.m1_valuation_package_builder import build_descriptor
+    from value_investment_agent.research_input import build_research_run_spec
+    from value_investment_agent.research_application import ResearchApplicationService
+    from value_investment_agent.research_artifact_repository import InMemoryResearchArtifactRepository
+    from value_investment_agent.human_research_approval import artifact_fingerprint
+    from value_investment_agent.research_run_contract import valuation_result_sha256
+    from value_investment_agent.operations.shadow_daily_run import run_isolated_daily_attempt
+    from value_investment_agent.operations.shadow_daily_input import consume_shadow_daily_input, DAG_NODES
+
+    def store(name, payload):
+        path = tmp_path / name
+        path.write_text(json.dumps(payload, ensure_ascii=False), encoding='utf-8')
+        return path, hashlib.sha256(path.read_bytes()).hexdigest()
+
+    # Fresh dates are synthetic fixtures, never edits to a real ResearchCase/PIT record.
+    now = datetime.now(timezone(timedelta(hours=8)))
+    day = now.astimezone(timezone(timedelta(hours=8))).date()
+    (tmp_path / 'config').mkdir()
+    store('config/research-evidence-stop-ledger-v1.json',
+        dict(schema_version='research-evidence-stop-ledger-v1', stops=[]))
+    package = json.loads((ROOT / 'config/m1-valuation-packages-v1/600887-quality-compounder.json').read_text(encoding='utf-8'))
+    model_day = package['point_in_time']['valuation_date']
+    package['point_in_time'].update(research_as_of=day.isoformat(), available_at=now.isoformat(), computed_at=now.isoformat())
+    package['research_case'].update(as_of=day.isoformat(), generated_at=now.isoformat(), quote_date=None)
+    package['research_case']['missing_date_reasons'] = {'quote_date': 'SYNTHETIC_TEST_MISSING_QUOTE'}
+    package['run_id'] = 'synthetic-unmocked-daily-chain'
+    package['quote'] = None
+    identity = _identity_source('600887').as_policy()['issuer_identity']
+    for source in package['sources']:
+        if source['kind'] == 'official_issuer_filing':
+            source.update(kind='annual_report', issuer_identity=identity,
+                location='https://www.cninfo.com.cn/synthetic-test-only.pdf#' + source['id'])
+    disclosure_path, disclosure_hash = store('synthetic-disclosure.json', dict(scope='SYNTHETIC_TEST_ONLY'))
+    index_path, index_hash = store('synthetic-index.json', dict(scope='SYNTHETIC_TEST_ONLY'))
+    decision = replace(_decision(DECISION_NOT_MATERIAL), published_at=now, reviewed_at=now,
+        source_ref=dict(id='synthetic-disclosure', path=disclosure_path.name), source_sha256=disclosure_hash)
+    scan = EventScanResult(schema_version='m1-event-scan-v1', symbol='600887', provider='TEST_ONLY',
+        scan_from=date.fromisoformat(model_day), scan_to=day,
+        validity_from=date.fromisoformat(model_day), validity_to=day,
+        status='PENDING_HUMAN_REVIEW', coverage_status='COMPLETE', pre_model_review_status='NONE',
+        announcements=(AnnouncementReview(announcement_id=decision.announcement_id,
+            published_at=now, title='SYNTHETIC TEST ONLY', source_url='https://example.test/fixture',
+            rule_kind='unknown', review_status='PENDING_HUMAN_REVIEW', materiality_candidate=True,
+            pre_model=False, evidence_refs=({**decision.source_ref, 'sha256': decision.source_sha256},)),),
+        blockers=(), evidence_refs=(dict(id='synthetic-index', path=index_path.name, sha256=index_hash),),
+        retrieved_at=now, parser_version='test-only')
+    event_path, event_hash = store('scan.json', scan.as_policy())
+    package['model_validity_input'] = dict(model_id='residual-income-equity-shared-v1', valid_from=model_day,
+        event_scan_ref=dict(id='synthetic-scan', symbol='600887', path=event_path.name, sha256=event_hash))
+    from test_quote_sessions import evidence, sse_evidence
+    old_quote = evidence(symbol='600887', day=model_day)
+    old_quote['calendar_exchange'] = 'SSE'
+    old_quote['calendar_documents'] = sse_evidence(day=model_day)['calendar_documents']
+    documents = {}
+    refs = {}
+    for role in ('tencent', 'sina', 'calendar_documents'):
+        values = old_quote[role] if role == 'calendar_documents' else [old_quote[role]]
+        identities = []
+        for item in values:
+            item = dict(item, fetched_at=model_day + 'T08:00:00+00:00', http_status=200)
+            identity_hash = hashlib.sha256((item['source_url'] + '\n' + item['fetched_at']
+                + '\n' + item['sha256']).encode()).hexdigest()
+            documents[identity_hash] = item
+            identities.append(identity_hash)
+        refs[role] = identities if role == 'calendar_documents' else identities[0]
+    quote_path, quote_hash = store('synthetic-historical-quote.json',
+        dict(version='quote-session-collection-v1', finished_at=model_day + 'T08:00:00+00:00',
+            status='collected_not_verified', documents=documents,
+            references={'600887': dict(symbol='600887', calendar_exchange='SSE', document_refs=refs)}))
+    package['quote'] = dict(kind='quote_session', symbol='600887', ref_id='synthetic-dated-quote',
+        bundle_path=quote_path.name, bundle_sha256=quote_hash)
+    package_path, package_hash = store('package.json', package)
+    descriptor = build_descriptor(package, root=tmp_path)
+    baseline = ResearchApplicationService(InMemoryResearchArtifactRepository()).run_company_research(build_research_run_spec(descriptor))
+    canonical = descriptor.as_policy()
+    approval = replace(_receipt(decision=DECISION_REJECTED_NEEDS_REWORK,
+        price_assessment_eligible=False, remaining_blockers=('SYNTHETIC_REVIEW_REJECTION',)),
+        reviewed_at=now, review_as_of=day,
+        valuation_artifact_sha256=valuation_result_sha256(baseline.valuation),
+        valuation_model_version=baseline.valuation.model_version,
+        research_case_sha256=artifact_fingerprint(canonical['research_case']),
+        facts_artifact_sha256=artifact_fingerprint(canonical['facts']),
+        assumption_set_sha256=artifact_fingerprint(canonical['assumptions']))
+    approval_path, approval_hash = store('approval.json', approval.as_policy())
+    materiality = replace(_review((_decision(DECISION_NOT_MATERIAL),)),
+        decisions=(decision,), scan_from=scan.scan_from, scan_to=day,
+        scan_sha256=event_hash, reviewed_at=now, review_as_of=day)
+    materiality_path, materiality_hash = store('materiality.json', materiality.as_policy())
+    reviews_path, reviews_hash = store('reviews.json', dict(schema_version='shared-research-review-inputs-v1',
+        symbol='600887', action='no_order', bindings=dict(
+            human_approval=dict(path=approval_path.name, sha256=approval_hash),
+            event_materiality=dict(path=materiality_path.name, sha256=materiality_hash))))
+    request_path, request_hash = store('request.json', dict(schema_version='research-schedule-request-v1',
+        symbol='600887', source_id='TEST_ONLY', period=day.isoformat(), research_question_id='synthetic-only',
+        blocker_id='initial_research', reopen_condition_met=False, new_evidence_ids=[]))
+    output = tmp_path / 'runtime/full-chain'
+    # All scheduling, descriptors, reviews, calculations, decision and portfolio gates are real calls.
+    result = run_isolated_daily_attempt(root=tmp_path, output=output, symbol='600887',
+        event_path=event_path, event_sha256=event_hash, package_path=package_path, package_sha256=package_hash,
+        schedule_request_path=request_path, schedule_request_sha256=request_hash,
+        reviews_path=reviews_path, reviews_sha256=reviews_hash)
+    receipt = json.loads((output / 'run_receipt.json').read_text(encoding='utf-8'))
+    assert receipt['node_sequence'] == list(DAG_NODES)
+    assert result['dag_execution_complete'] is True
+    research = json.loads((output / 'research.json').read_text(encoding='utf-8'))
+    assert research['result']['pre_decision_eligibility']['status'] == 'NOT_ELIGIBLE'
+    assert 'SYNTHETIC_REVIEW_REJECTION' in research['result']['blockers']
+    decision_output = json.loads((output / 'decision.json').read_text(encoding='utf-8'))
+    assert decision_output['execution_status'] == 'EXECUTED_SHARED_DECISION_REVIEW'
+    assert decision_output['suggested_state'] not in {'MANUAL_BUY_REVIEW', 'MANUAL_ADD_REVIEW'}
+    consumed = consume_shadow_daily_input(root=tmp_path, path=output / 'input.json',
+        expected_sha256=result['manifest_sha256'], now=datetime.now(timezone.utc))
+    assert consumed['daily_consumer_status'] == 'NOT_ADMITTED'
+    assert consumed['verified_real_session_count'] == 0
+    assert 'MISSING_DAG_ARTIFACT:quote' in consumed['blockers']
+    card = (output / 'company-card.md').read_text(encoding='utf-8')
+    assert 'SYNTHETIC_REVIEW_REJECTION' in card and 'action=no_order' in card
+    (output / 'synthetic-e2e-review.md').write_text(
+        '# SYNTHETIC E2E TEST ONLY - NOT CURRENT INVESTMENT RESEARCH\n\n'
+        'All six nodes execute real code. Inputs/reviews are test fixtures, the dated quote is not a current quote, '
+        'and no operational admission or real session is established.\n\n' + card, encoding='utf-8')
+
+
 def test_daily_input_consistency_never_grants_shadow_count(tmp_path, monkeypatch):
     from datetime import datetime, date
     from types import SimpleNamespace

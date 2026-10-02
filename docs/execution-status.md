@@ -1,5 +1,29 @@
 # CURRENT STATUS
 
+## 2026-10-02 Unmocked Six-Node Daily Assembly Evidence
+
+Completed an unmocked E2E test of the isolated producer, shared scheduled entry,
+descriptor/review adapters, research/model/decision and existing portfolio
+precondition gates, packet persistence and daily consumer. It uses pytest-local
+synthetic scope/issuer/event/review inputs and a correctly dated synthetic
+historical quote, not a current production quote. Real ledger/package bytes are
+unchanged. All six nodes execute, decision is INSUFFICIENT_RESEARCH, daily
+consumption is NOT_ADMITTED and zero real sessions are credited. This removes
+the earlier uncertainty caused by mocking the shared research result in full-DAG
+tests, without claiming actual company approval, strict PIT or real startup.
+
+Reproduce: pytest tests/test_m6_start_criteria_matrix.py -k full_daily_dag.
+Clearly labelled readable artifact:
+`.tmp/unmocked-dag-final/test_full_daily_dag_runs_actua0/runtime/full-chain/synthetic-e2e-review.md`.
+Related integration suites: 61 passed, 1 skipped. Offline Core evidence:
+`.tmp/unmocked-dag-core.xml`: 1551 passed, 32 skipped, 38 warnings in 60.36
+seconds; not all legacy tests or investment effectiveness. Inspection of the official bounded
+scanner confirms retrieval-time capture is explicitly not full-day completeness;
+no new scan or speculative completeness promotion was performed.
+No business feature, valuation threshold, Excel, server/PTA, scheduler, database
+or signed admission was changed. Actual session inputs and authorized dispatch
+remain external/unverified, total Goal remains in progress, action=no_order.
+
 ## 2026-10-02 Independent Missing-Portfolio Gate Execution
 
 The daily producer no longer labels absent private portfolio inputs as an
