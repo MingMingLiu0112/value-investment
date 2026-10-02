@@ -1,5 +1,34 @@
 # CURRENT STATUS
 
+## 2026-10-02 Independent Missing-Portfolio Gate Execution
+
+The daily producer no longer labels absent private portfolio inputs as an
+upstream research execution skip. It actually constructs the existing
+MinimalPortfolioPreconditions.missing(), evaluates allows_positive_review(),
+and seals the negative result: BLOCKED_PRIVATE_INPUT, provided=false,
+personal_capacity_confirmed=false, portfolio_input_missing, position_guidance=null.
+No portfolio quantity, account risk assessment or private confirmation is inferred.
+The existing simulated risk path is unchanged and remains simulation-only.
+
+This closes an independent node execution gap, not investment/Shadow admission.
+The daily audit parses this typed missing-input result and rejects claimed capacity,
+position or blocker contradictions. Synthetic full-DAG tests can now execute all
+nodes without inventing a personal portfolio; the operational consumer still
+requires its unchanged official inputs, actual execution and signed M6 admission.
+Self-authored or synthetic runs remain zero real-session credit.
+
+Actual source-bound run: `runtime/shadow-private-input-gate-20261002/input.json`,
+SHA256 `e1d51312b5fabbd25a79b910eea4f3753ceae33807d42def34bd7319aead9075`.
+Research remains stopped, quote absent, event coverage incomplete; only research,
+portfolio preconditions and product nodes ran. DAG incomplete, NOT_ADMITTED,
+zero verified real sessions, no_order. This is not a completed trading session.
+Related tests: 55 passed, including a rehashed packet attempting false capacity
+which still fails the semantic audit. Full Core evidence:
+`.tmp/portfolio-refusal-core.xml`: 1550 passed, 32 skipped, 38 warnings in
+61.80 seconds; not all legacy tests or investment-effectiveness proof.
+Canonical workbook/server/PTA/
+database/scheduler unchanged; full Goal remains in progress.
+
 ## 2026-10-02 Formal Preflight Consumes Explicit Daily Manifest
 
 The existing `scripts/audit_m6_preflight.py` now accepts paired `--daily-input`

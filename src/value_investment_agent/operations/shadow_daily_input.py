@@ -215,6 +215,21 @@ def audit_shadow_daily_input(*, root: Path, path: Path, expected_sha256: str,
         if artifact.get('generated_at') is None or _timestamp(artifact['generated_at']) > generated:
             blockers.append(f'{role.upper()}_OUTPUT_TIME_MISSING_OR_FUTURE')
     blockers.extend(_research_projection_blockers(artifacts, hashes, symbols, day))
+    portfolio = artifacts.get('portfolio', {})
+    if portfolio.get('execution_status') == 'EXECUTED_EXISTING_PORTFOLIO_PRECONDITIONS':
+        from ..investment_decision import minimal_portfolio_preconditions_from_payload
+        try:
+            preconditions = minimal_portfolio_preconditions_from_payload(portfolio['portfolio_preconditions'])
+            if (preconditions.provided or preconditions.allows_positive_review()
+                    or portfolio.get('personal_capacity_confirmed') is not False
+                    or portfolio.get('portfolio_gate') != 'BLOCKED_PRIVATE_INPUT'
+                    or portfolio.get('position_guidance') is not None
+                    or portfolio.get('blockers') != list(preconditions.blockers)):
+                blockers.append('PORTFOLIO_MISSING_INPUT_GATE_MISMATCH')
+        except (KeyError, TypeError, ValueError):
+            blockers.append('PORTFOLIO_PRECONDITIONS_INVALID')
+    elif portfolio.get('execution_status') != 'EXECUTED_EXISTING_RISK_ENGINE':
+        blockers.append('PORTFOLIO_GATE_LINEAGE_REQUIRED')
     if sha256_file(path) != expected_sha256:
         raise ValueError('daily input manifest changed during audit')
     for role in bindings:

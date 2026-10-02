@@ -78,8 +78,14 @@ def test_isolated_attempt_runs_shared_scheduler_and_seals_refusal(tmp_path):
                                         event_path=event, event_sha256=digest)
     assert result['dag_execution_complete'] is False
     receipt = json.loads((output / 'run_receipt.json').read_text(encoding='utf-8'))
-    assert receipt['node_sequence'] == ['research', 'product']
+    assert receipt['node_sequence'] == ['research', 'portfolio_gate', 'product']
     assert receipt['verified_real_session_count'] == 0
+    portfolio_output = json.loads((output / 'portfolio.json').read_text(encoding='utf-8'))
+    assert portfolio_output['execution_status'] == 'EXECUTED_EXISTING_PORTFOLIO_PRECONDITIONS'
+    assert portfolio_output['portfolio_gate'] == 'BLOCKED_PRIVATE_INPUT'
+    assert portfolio_output['personal_capacity_confirmed'] is False
+    assert portfolio_output['position_guidance'] is None
+    assert 'PORTFOLIO_MISSING_INPUT_GATE_MISMATCH' not in result['audit']['blockers']
     assert 'MISSING_DAG_ARTIFACT:quote' in result['audit']['blockers']
     research = json.loads((output / 'research.json').read_text(encoding='utf-8'))
     assert research['result']['status'] == 'BLOCKED_BY_RESEARCH_SCHEDULER'
@@ -149,13 +155,22 @@ def test_daily_execution_completeness_is_not_operational_admission(tmp_path, mon
     result = module.run_isolated_daily_attempt(root=tmp_path, output=output, symbol='600887',
         event_path=event, event_sha256=hashlib.sha256(event.read_bytes()).hexdigest(), **kwargs)
     receipt = json.loads((output / 'run_receipt.json').read_text(encoding='utf-8'))
-    assert result['dag_execution_complete'] is (missing_node is None)
-    assert receipt['dag_execution_complete'] is (missing_node is None)
-    if missing_node is None:
+    complete = missing_node in (None, 'portfolio_gate')
+    assert result['dag_execution_complete'] is complete
+    assert receipt['dag_execution_complete'] is complete
+    if complete:
         assert receipt['node_sequence'] == list(module.DAG_NODES)
         assert receipt['skipped_nodes'] == []
     else:
         assert missing_node in receipt['skipped_nodes']
+    if missing_node == 'portfolio_gate':
+        portfolio_output = json.loads((output / 'portfolio.json').read_text(encoding='utf-8'))
+        assert portfolio_output['portfolio_gate'] == 'BLOCKED_PRIVATE_INPUT'
+        assert portfolio_output['position_guidance'] is None
+        assert portfolio_output['personal_capacity_confirmed'] is False
+        assert portfolio_output['portfolio_preconditions']['provided'] is False
+        assert portfolio_output['blockers'] == ['portfolio_input_missing']
+        assert receipt['simulation_only'] is False
     for role in ('research', 'model', 'decision', 'portfolio', 'product'):
         payload = json.loads((output / (role + '.json')).read_text(encoding='utf-8'))
         assert payload['generated_at'] == receipt['generated_at']
@@ -166,6 +181,24 @@ def test_daily_execution_completeness_is_not_operational_admission(tmp_path, mon
     assert result['audit']['shadow_session_valid'] is False
     assert result['audit']['verified_real_session_count'] == 0
     assert receipt['action'] == 'no_order'
+    if missing_node == 'portfolio_gate':
+        from value_investment_agent.operations.shadow_daily_input import audit_shadow_daily_input
+        portfolio_output['personal_capacity_confirmed'] = True
+        portfolio_path = output / 'portfolio.json'
+        portfolio_path.write_text(json.dumps(portfolio_output), encoding='utf-8')
+        portfolio_hash = hashlib.sha256(portfolio_path.read_bytes()).hexdigest()
+        receipt['output_hashes']['portfolio'] = portfolio_hash
+        receipt_path = output / 'run_receipt.json'
+        receipt_path.write_text(json.dumps(receipt), encoding='utf-8')
+        manifest_path = output / 'input.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        manifest['bindings']['portfolio']['sha256'] = portfolio_hash
+        manifest['bindings']['run_receipt']['sha256'] = hashlib.sha256(receipt_path.read_bytes()).hexdigest()
+        manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
+        audited = audit_shadow_daily_input(root=tmp_path, path=manifest_path,
+            expected_sha256=hashlib.sha256(manifest_path.read_bytes()).hexdigest(), now=datetime.now(timezone.utc))
+        assert 'PORTFOLIO_MISSING_INPUT_GATE_MISMATCH' in audited['blockers']
+        assert audited['verified_real_session_count'] == 0
 
 
 @pytest.mark.parametrize('payload', [{}, {'symbol': '000333'}, []])

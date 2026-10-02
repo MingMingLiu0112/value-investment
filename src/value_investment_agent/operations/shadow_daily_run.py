@@ -9,7 +9,7 @@ from ..application.product.common import require_inside, sha256_file, write_new_
 from ..application.product.company_research import run_company_research_for_symbol, ResearchInputValidationError
 from .shadow_daily_input import audit_shadow_daily_input, DAG_NODES
 from ..pre_decision_eligibility import pre_decision_eligibility_from_payload
-from ..investment_decision import DecisionEvidenceBundle, evaluate_investment_decision
+from ..investment_decision import DecisionEvidenceBundle, evaluate_investment_decision, MinimalPortfolioPreconditions
 from ..application.product.event_followup import read_event_followup
 from ..application.product.daily_event_input import project_daily_event_input
 from ..application.portfolio.daily_risk_rehearsal import evaluate_daily_risk_rehearsal
@@ -204,6 +204,15 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
             portfolio_gate='SIMULATED_RISK_ONLY_NOT_PERSONAL_CAPACITY',
             execution_status='EXECUTED_EXISTING_RISK_ENGINE')
         outputs['product']['simulated_portfolio_review'] = assessment
+        executed.append('portfolio_gate')
+    else:
+        preconditions = MinimalPortfolioPreconditions.missing()
+        capacity_allowed = preconditions.allows_positive_review()
+        outputs['portfolio'].update(
+            portfolio_preconditions=preconditions.as_policy(),
+            personal_capacity_confirmed=capacity_allowed,
+            blockers=list(preconditions.blockers),
+            execution_status='EXECUTED_EXISTING_PORTFOLIO_PRECONDITIONS')
         executed.append('portfolio_gate')
     executed.append('product')
     dag_execution_complete = executed == list(DAG_NODES)
