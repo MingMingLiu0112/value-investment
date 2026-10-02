@@ -7336,3 +7336,25 @@ CANONICAL_WORKBOOK_SOURCE=WORKBOOK_PATH；CURRENT_TRIAL_POINTER=CANONICAL_WORKBO
 - Parent recovery bindings are freshly reverified; JSON array originals are supported without weakening hash/scope checks. Targeted tests=20 passed; offline Core=1482 passed, 32 skipped, 38 warnings (`.tmp/combined-handoff-core.xml`).
 - strict_pit=NOT_PROVEN; current_price_bridge=NOT_ADMITTED; M7_FINAL_USER_ACCEPTANCE=NOT_PASSED; INITIAL_ASSISTED_USE=NOT_REACHED; action=no_order. Full goal remains incomplete. GitHub CI for this change is pending until independently observed.
 
+## 2026-10-02 Three-company shared research delivery
+
+实际依赖核对：共享研究 runner 的证据停止项仍有效；单公司交接、条件估值、真实冻结输入历史执行回放及受保护发布链已存在。当前可执行缺口是已登记美的与神华披露事实尚未进入同一用户工作台，而不是再次重跑已停止研究。新增共享 retained_research 投影，仅追加缺失公司，不复制单公司流水线、不新增模型、不重开证据停止项。
+
+实际重新读取两公司官方年报/半年报 PDF，沿用原有列、期间、单位与数值校验，核对 12 项披露事实。保留伊利完整公司卡、原机会卡、历史执行回放、组合、事件和阶段准入不变；加入美的/神华原始 URL、模型适用性缺口、反证及明确重开条件。半年报不年化；归母净利润与合并现金流不混算现金转换；经营现金流不当作 FCFF 或可分红现金。没有新估值或买卖信号。
+
+- Code baseline: `82d0289` (Reuse retained company evidence in the shared research workbench).
+- GitHub Core Research Gates: PASS, run `36949012200`, https://github.com/MingMingLiu0112/value-investment/actions/runs/36949012200 . Earlier clock-fixture correction `e6d972b` also passed run `36944577289`; production time gates were not changed.
+- Offline Core: 1489 passed, 32 skipped, 38 warnings; `.tmp/retained-three-company-core.xml`. Subsequent display-label/new-packet timestamp corrections: 48 targeted tests passed; final code CI passed. These prove engineering contracts, not investment effectiveness.
+- Reproducible entry: `build_product_workbench_candidate.py --base-publication-input --retained-baseline <registered snapshot> <sha256> --research-readiness <000333 result> <sha256> --research-readiness <601088 result> <sha256> --historical-preview --read-model-only`; pinned actual inputs and transitive dependencies are preserved in the handoff.
+- Handoff: `runtime/three-company-delivery-handoff-20261002/publication-input.json`, SHA-256 `72729880761e05a1340ab0fb72835488e0d875c17a0a1e0b0efbaad366d3f6d9`; read-model SHA-256 `f9303d1f254097b8d418b7ff35387fdb1d8e4ba1357d5660b46d9d8405734376`.
+- Integration receipt: `runtime/three-company-delivery-handoff-20261002/integration-receipt.json`; primary research, historical execution, portfolio/events and stage admission unchanged; 12 report facts rechecked; 131 handoff bindings. Publication adds the handoff binding: 132 freshly verified sources.
+- CANONICAL_WORKBOOK_SOURCE=WORKBOOK_PATH; CURRENT_TRIAL_POINTER=CANONICAL_WORKBOOK; M7_PRODUCT_UX=INTEGRATED; WORKBOOK_PATH_UNCHANGED=true; PRODUCT_SHEETS_PRESENT=true.
+- before_sha256 / backup_sha256: `e2df56be2d16e5a5183a22f979b062140b34a40f16c85498a979c6e131bcc147`.
+- after_sha256: `9925ab6a78e8ed10ae3e10d9ea4180d33d9ea9aefb99665b09e88cc38212566a`.
+- Publication receipt: `runtime/publication-receipts/canonical-reviewed-research-20261002T011005Z-6c0e94ea.json`; canonical_written=true.
+- Backup: `runtime/workbook-backups/canonical-before-reviewed-research-20261002T011005Z-6c0e94ea.xlsx`.
+- PRESERVED_SHEETS_CONTENT_CHECK=PASS; 55 protected sheets including advanced OOXML objects. Preview seven-sheet WPS export: 38 PDF pages, readability/visual checks PASS; all contact sheets and the corrected long-text company page inspected.
+- WPS_CANONICAL_OPEN=PASS; actual original workbook readonly reopened, seven sheets exported and hash unchanged. Receipt: `runtime/three-company-delivery-canonical-preview-20261002/canonical-native-review/receipt.json`.
+
+CURRENT_RESEARCH=NOT_READY; strict_pit=NOT_PROVEN; current_price_bridge=NOT_ADMITTED; M7_FINAL_USER_ACCEPTANCE=NOT_PASSED; INITIAL_ASSISTED_USE=NOT_REACHED; action=no_order. 财报事实核对不是完整 FinancialFacts/研究准入。实际处理时间只更新新包元数据，未改变事实可用时间、行情时点或历史冻结日期。原停止台账及生产门禁均未改；服务器、PTA、数据库、定时任务未改，完整长期目标仍在执行。
+
