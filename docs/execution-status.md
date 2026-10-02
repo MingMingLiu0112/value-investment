@@ -7431,6 +7431,18 @@ CURRENT_RESEARCH_ADMISSION=NOT_READY; current_price_bridge=NOT_ADMITTED; strict_
 
 ## 2026-10-02 Shared daily DAG successor (isolated, not production)
 
+Daily consumer handoff: the supported audit command now combines daily contents
+with the existing operational admission verifier when explicit pinned proof is
+supplied. Exact signed manifest hash/run/day/execution-window checks prevent a
+valid signature for unrelated artifacts from granting daily credit. The daily
+content/hash checks run again after operational verification. No signature fields,
+trust infrastructure, authorization rules, persistent counters or scheduler were
+changed. Original 20-session/one-event admission scope remains required.
+Actual `runtime/shadow-existing-risk-dag-20261002/formal-consumer.json` is
+NOT_ADMITTED with zero credit: existing proof absent and day contents incomplete.
+Positive proof intersection is synthetic test coverage, not a real authorization
+or session. Production scheduler/intake adoption remains unverified. no_order.
+
 Existing risk-engine integration: daily orchestration accepts explicitly hashed
 SIMULATED M4 demo inputs and calls the established portfolio risk assessment. The
 original demo date/limits are retained, ACTUAL input is rejected, and no personal

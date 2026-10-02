@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from value_investment_agent.operations.start_criteria import (  # noqa: E402
     load_m6_start_criteria_matrix,
 )
-from value_investment_agent.operations.shadow_daily_input import audit_shadow_daily_input
+from value_investment_agent.operations.shadow_daily_input import audit_shadow_daily_input, consume_shadow_daily_input
 from value_investment_agent.operations.shadow_daily_run import run_isolated_daily_attempt
 from value_investment_agent.application.product.common import write_new_json
 
@@ -43,8 +43,12 @@ def main() -> int:
     parser.add_argument('--event-followup-sha256')
     parser.add_argument('--simulated-portfolio', type=Path)
     parser.add_argument('--simulated-portfolio-sha256')
+    parser.add_argument('--operational-inputs', type=Path)
+    parser.add_argument('--operational-inputs-sha256')
     args = parser.parse_args()
     if args.isolated_run:
+        if args.operational_inputs or args.operational_inputs_sha256:
+            parser.error('operational consumption requires daily-input, not isolated-run')
         if not all((args.symbol, args.event_input, args.event_input_sha256)) or args.daily_input or args.output:
             parser.error('isolated run requires symbol/event path/hash and excludes daily-input/output')
         print(json.dumps(run_isolated_daily_attempt(root=ROOT, output=ROOT / args.isolated_run,
@@ -68,15 +72,20 @@ def main() -> int:
         parser.error('research package/schedule request require isolated-run')
     if bool(args.daily_input) != bool(args.daily_input_sha256):
         raise ValueError('daily input requires paired path/hash')
+    if (args.operational_inputs or args.operational_inputs_sha256) and not args.daily_input:
+        parser.error('operational inputs require daily-input')
     matrix_path = args.matrix if args.matrix.is_absolute() else ROOT / args.matrix
     matrix = load_m6_start_criteria_matrix(matrix_path, root=ROOT)
     payload = matrix.as_policy()
     payload["state_semantics"] = "STATIC_BASELINE_NOT_CURRENT_READINESS"
     payload["current_status_source"] = "latest verified m6 operational preflight receipt"
     if args.daily_input:
-        payload['daily_input_audit'] = audit_shadow_daily_input(root=ROOT,
+        payload['daily_consumer'] = consume_shadow_daily_input(root=ROOT,
             path=ROOT / args.daily_input, expected_sha256=args.daily_input_sha256,
-            now=datetime.now(timezone.utc))
+            now=datetime.now(timezone.utc),
+            operational_inputs=None if args.operational_inputs is None else ROOT / args.operational_inputs,
+            operational_inputs_sha256=args.operational_inputs_sha256)
+        payload['daily_input_audit'] = payload['daily_consumer']['audit']
     if args.output:
         target = (ROOT / args.output).resolve()
         if not target.is_relative_to(ROOT / 'runtime'):

@@ -287,6 +287,43 @@ def test_daily_risk_rehearsal_uses_existing_engine_and_rejects_actual_namespace(
         run()
 
 
+@pytest.mark.parametrize('matched', [True, False])
+def test_daily_consumer_intersects_existing_admission_with_exact_artifact(tmp_path, monkeypatch, matched):
+    import hashlib
+    from datetime import datetime
+    from value_investment_agent.operations import shadow_daily_input as module
+    from value_investment_agent import m6_shadow_admission
+    def store(name, value):
+        path = tmp_path / (name + '.json')
+        path.write_text(json.dumps(value), encoding='utf-8')
+        return dict(path=path.name, sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+    receipt = store('receipt', {'run_id': 'run'})
+    daily = store('daily', dict(bindings={'run_receipt': receipt},
+        generated_at='2026-10-02T16:00:00+08:00'))
+    day = '2026-10-02'
+    monkeypatch.setattr(module, 'audit_shadow_daily_input', lambda **kwargs:
+        dict(session_date=day, blockers=[], input_consistency_status='PASS', action='no_order'))
+    verified_calls = []
+    def verify(*args, **kwargs):
+        verified_calls.append(kwargs)
+        return {day: 'synthetic-signature-verifier-result'}
+    monkeypatch.setattr(m6_shadow_admission, 'verify_operational_shadow_bundle', verify)
+    refs = {
+        'bundle': store('bundle', dict(candidate_bundle=dict(sessions=[dict(session=dict(payload=dict(
+            session_date=day, run_id='run', artifact_sha256=daily['sha256'] if matched else 'wrong',
+            started_at='2026-10-02T15:50:00+08:00', completed_at='2026-10-02T16:01:00+08:00')))]))),
+        'trust_root': store('trust', {}), 'schedule': store('schedule', {}),
+    }
+    request = store('request', dict(schema_version='shadow-daily-consumer-inputs-v1', action='no_order', bindings=refs))
+    result = module.consume_shadow_daily_input(root=tmp_path, path=tmp_path/daily['path'],
+        expected_sha256=daily['sha256'], now=datetime.fromisoformat('2026-10-02T16:02:00+08:00'),
+        operational_inputs=tmp_path/request['path'], operational_inputs_sha256=request['sha256'])
+    assert verified_calls == [{'required_sessions': 20, 'required_events': 1}]
+    assert result['verified_real_session_count'] == (1 if matched else 0)
+    assert result['daily_consumer_status'] == ('ADMITTED' if matched else 'NOT_ADMITTED')
+    # All inputs and the signature verifier above are synthetic test fixtures only.
+
+
 def _criteria_by_id():
     matrix = load_m6_start_criteria_matrix(MATRIX_PATH, root=ROOT)
     return {item.criterion_id: item for item in matrix.criteria}

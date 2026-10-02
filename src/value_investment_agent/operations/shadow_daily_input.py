@@ -10,6 +10,66 @@ DAG_NODES = ('research', 'model_validity', 'price_bridge', 'decision_gate', 'por
 CST = timezone(timedelta(hours=8))
 
 
+def consume_shadow_daily_input(*, root: Path, path: Path, expected_sha256: str,
+                               now: datetime, operational_inputs: Path | None = None,
+                               operational_inputs_sha256: str | None = None) -> dict:
+    """Intersect daily content checks with existing admission, never sign or deploy."""
+    audit = audit_shadow_daily_input(root=root, path=path,
+        expected_sha256=expected_sha256, now=now)
+    if bool(operational_inputs) != bool(operational_inputs_sha256):
+        raise ValueError('operational inputs require paired path/hash')
+    result = dict(audit=audit, daily_consumer_status='NOT_ADMITTED',
+                  verified_real_session_count=0, action='no_order')
+    if operational_inputs is None:
+        result['blockers'] = list(audit['blockers']) + ['EXISTING_OPERATIONAL_ADMISSION_REQUIRED']
+        return result
+    request_path = require_inside(root, operational_inputs, 'operational input bindings')
+    if sha256_file(request_path) != operational_inputs_sha256:
+        raise ValueError('operational input bindings hash mismatch')
+    request = load_json_object(request_path, 'operational input bindings')
+    if request.get('schema_version') != 'shadow-daily-consumer-inputs-v1' or request.get('action') != 'no_order':
+        raise ValueError('operational consumer input scope mismatch')
+    refs = request['bindings']
+    if set(refs) != {'bundle', 'trust_root', 'schedule'}:
+        raise ValueError('existing bundle/trust root/schedule bindings required')
+    loaded = {}
+    for role, binding in refs.items():
+        source = require_inside(root, root / binding['path'], role)
+        if sha256_file(source) != binding['sha256']:
+            raise ValueError('operational consumer artifact hash mismatch')
+        loaded[role] = load_json_object(source, role)
+    from ..m6_shadow_admission import verify_operational_shadow_bundle
+    verified = verify_operational_shadow_bundle(loaded['bundle'], loaded['trust_root'],
+        loaded['schedule'], now, required_sessions=20, required_events=1)
+    audit = audit_shadow_daily_input(root=root, path=path,
+        expected_sha256=expected_sha256, now=now)
+    result['audit'] = audit
+    manifest = load_json_object(path, 'daily input manifest')
+    receipt = load_json_object(root / manifest['bindings']['run_receipt']['path'], 'daily receipt')
+    day = audit['session_date']
+    sessions = loaded['bundle']['candidate_bundle']['sessions']
+    matches = [item['session']['payload'] for item in sessions
+               if item['session']['payload']['session_date'] == day]
+    blockers = list(audit['blockers'])
+    if day not in verified or len(matches) != 1:
+        blockers.append('MATCHING_ADMITTED_OPERATIONAL_SESSION_REQUIRED')
+    else:
+        session = matches[0]
+        generated = _timestamp(manifest['generated_at'])
+        if (session['artifact_sha256'] != expected_sha256
+                or session['run_id'] != receipt['run_id']
+                or not _timestamp(session['started_at']) <= generated <= _timestamp(session['completed_at'])):
+            blockers.append('SIGNED_SESSION_DAILY_ARTIFACT_BINDING_MISMATCH')
+    for role, binding in refs.items():
+        if sha256_file(root / binding['path']) != binding['sha256']:
+            raise ValueError('operational artifact changed during consumption')
+    if sha256_file(request_path) != operational_inputs_sha256 or sha256_file(path) != expected_sha256:
+        raise ValueError('consumer input changed during consumption')
+    result.update(blockers=blockers, daily_consumer_status='NOT_ADMITTED' if blockers else 'ADMITTED',
+                  verified_real_session_count=0 if blockers else 1)
+    return result
+
+
 def _timestamp(value):
     result = datetime.fromisoformat(value)
     if result.utcoffset() is None:

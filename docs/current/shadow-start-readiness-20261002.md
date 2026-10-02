@@ -59,6 +59,31 @@ SHADOW_SESSION_VALIDITY and INVESTMENT_DECISION_VALIDITY remain separate; offlin
 
 ## Required final status
 
+### Read-only daily consumer uses existing operational admission
+
+The supported daily-input command now calls `consume_shadow_daily_input`, not
+just the offline consistency audit. Without existing operational proof it returns
+NOT_ADMITTED and zero credit. Optional hash-pinned `--operational-inputs` describes
+exact bundle/trust_root/schedule bindings; existing M6 signature, pinned trust,
+authorization and independent witness validation is called unchanged with the
+original 20-session/one-event admission scope. Daily content is rechecked after
+that validation. The signed session must bind this exact manifest SHA-256, run ID,
+session day and generation time inside its signed execution window. Counts are
+the intersection with already verified operational sessions, never a new ledger.
+No signing, new trust setup, scheduler, admission envelope or production action
+was added. Existing historical verifier callers remain unchanged; production
+scheduler/intake adoption of this consumer is NOT_VERIFIED and still requires
+the original authorization and readiness gates.
+
+Real existing package consumption result:
+`runtime/shadow-existing-risk-dag-20261002/formal-consumer.json`.
+NOT_ADMITTED: existing operational admission absent, quote/event/DAG incomplete.
+It does not seek authorization or reinterpret the synthetic risk sample as a day.
+Reproduce with `--daily-input` pointing to the existing input.json, SHA-256
+`d1b5cbb9038d3201920f3b4c6c1525e017ff04eba42cd51def0bc46992602d07`,
+and a fresh runtime `--output`. Operational proof matching is covered with mocked
+signature-verifier test fixtures only; no real positive admission is claimed.
+
 ### Existing portfolio risk engine connected (explicit rehearsal only)
 
 Optional `--simulated-portfolio` and paired SHA-256 connect the already existing
