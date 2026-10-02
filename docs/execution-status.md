@@ -1,5 +1,28 @@
 # CURRENT STATUS
 
+## 2026-10-02 Isolated DAG Completion and Output Observation Repair
+
+The isolated daily producer now derives `dag_execution_complete` from exact
+execution of the existing six-node sequence, rather than a constant false flag.
+Missing research/model/decision/portfolio execution still records false; this
+does not permit a refused research run to count as a completed session. Consumer
+audit requires the flag to be explicitly true, not absent or false.
+Output `generated_at` is captured after decision and risk calculations, before
+hash-bound persistence. Original source observation and availability are unchanged.
+
+Four synthetic integration cases cover full execution and missing PriceBridge,
+decision or portfolio nodes. Shared research is mocked explicitly; the existing
+typed decision parser, decision engine, simulated risk engine, artifact writer,
+consumer audit and readable renderer run. These are not proof of real approved
+research or a production session. The target suite passed 29 tests.
+Full offline Core evidence is `.tmp/shadow-completion-core.xml`: 1541 passed,
+32 skipped and 38 warnings (57.51 seconds). This is the selected offline Core
+suite, not proof that all legacy tests pass or investment logic is validated.
+Server/PTA, canonical workbook, scheduler,
+signatures, private portfolio and the 20-session requirement are unchanged.
+Production readiness remains PARTIAL, verified real sessions remain zero and
+`action=no_order` remains permanent.
+
 ## 2026-10-01 Canonical Entry Reconciliation After Shared-Session Integration
 
 Default entry is again `WORKBOOK_PATH` / `CANONICAL_WORKBOOK`. Runtime v3 and

@@ -206,7 +206,12 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         outputs['product']['simulated_portfolio_review'] = assessment
         executed.append('portfolio_gate')
     executed.append('product')
+    dag_execution_complete = executed == list(DAG_NODES)
+    # Output observations must follow every calculation represented in the packet.
+    generated_at = datetime.now(timezone.utc).isoformat()
+    common['generated_at'] = generated_at
     for role, value in outputs.items():
+        value['generated_at'] = generated_at
         path = output / (role + '.json')
         write_new_json(path, value)
         bindings[role] = dict(path=path.relative_to(root).as_posix(), sha256=sha256_file(path),
@@ -215,7 +220,8 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
     run_receipt = dict(**common, simulation_only=simulated_portfolio_path is not None, mode='ISOLATED_NOT_PRODUCTION',
         started_at=started.isoformat(), completed_at=completed.isoformat(),
         node_sequence=executed, planned_nodes=list(DAG_NODES),
-        skipped_nodes=[node for node in DAG_NODES if node not in executed], dag_execution_complete=False,
+        skipped_nodes=[node for node in DAG_NODES if node not in executed],
+        dag_execution_complete=dag_execution_complete,
         input_hashes={role: binding['sha256'] for role, binding in bindings.items() if role in inputs},
         output_hashes={role: bindings[role]['sha256'] for role in outputs},
         verified_real_session_count=0)
@@ -251,4 +257,5 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
     with (output / 'report.md').open('x', encoding='utf-8') as handle:
         handle.write(report + '\n')
     return dict(output=str(output), manifest_sha256=sha256_file(manifest_path),
-        audit=audit, company_card=str(card_path), dag_execution_complete=False, action='no_order')
+        audit=audit, company_card=str(card_path),
+        dag_execution_complete=dag_execution_complete, action='no_order')

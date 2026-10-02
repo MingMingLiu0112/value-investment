@@ -193,7 +193,7 @@ def audit_shadow_daily_input(*, root: Path, path: Path, expected_sha256: str,
     if not event.get('source_bindings'):
         blockers.append('EVENT_SOURCE_OR_EMPTY_SCAN_EVIDENCE_REQUIRED')
     receipt = artifacts.get('run_receipt', {})
-    if receipt.get('dag_execution_complete') is False:
+    if receipt.get('dag_execution_complete') is not True:
         blockers.append('DAG_EXECUTION_INCOMPLETE')
     if (receipt.get('action') != 'no_order' or receipt.get('session_date') != day
             or receipt.get('simulation_only') is not False

@@ -51,6 +51,7 @@ def test_daily_input_consistency_never_grants_shadow_count(tmp_path, monkeypatch
     result = audit()
     assert result['input_consistency_status'] == 'SHADOW_INPUT_INCOMPLETE'
     assert 'SHARED_RESEARCH_DAILY_INPUT_CONSUMPTION_NOT_PROVEN' in result['blockers']
+    assert 'DAG_EXECUTION_INCOMPLETE' in result['blockers']
     assert result['shadow_session_valid'] is False
     assert result['verified_real_session_count'] == 0
     (tmp_path / 'decision.json').write_text('{}', encoding='utf-8')
@@ -113,6 +114,58 @@ def test_isolated_normal_result_preserves_models_without_promoting_missing_decis
     assert decision['blockers'] == ['PREDECISION_INPUT_NOT_ESTABLISHED']
     assert decision['suggested_state'] == 'NOT_READY'
     assert result['audit']['verified_real_session_count'] == 0
+
+
+@pytest.mark.parametrize('missing_node', [None, 'price_bridge', 'decision_gate', 'portfolio_gate'])
+def test_daily_execution_completeness_is_not_operational_admission(tmp_path, monkeypatch, missing_node):
+    import hashlib
+    from datetime import datetime, timezone, timedelta
+    from value_investment_agent.operations import shadow_daily_run as module
+    from value_investment_agent.pre_decision_eligibility import PreDecisionEligibility, STATUS_NOT_ELIGIBLE
+
+    # Only the shared research result is a synthetic seam; decision/risk engines run.
+    day = datetime.now(timezone(timedelta(hours=8))).date()
+    predecision = PreDecisionEligibility(symbol='600887', decision_as_of=day,
+        status=STATUS_NOT_ELIGIBLE, approval_status='REJECTED_NEEDS_REWORK',
+        model_validity_status='NOT_ESTABLISHED', price_bridge_status='PENDING_EXTERNAL_DATA',
+        event_review_watermark=day, blockers=('SYNTHETIC_RESEARCH_NOT_APPROVED',),
+        evidence_refs=({'id': 'synthetic-test-only'},))
+    monkeypatch.setattr(module, 'run_company_research_for_symbol', lambda **kwargs:
+        dict(result=dict(symbol='600887', action='no_order', status='COMPLETED_WITH_BLOCKERS',
+            run_id='synthetic-shared-run', blockers=['SYNTHETIC_RESEARCH_NOT_APPROVED'],
+            model_validity=dict(status='NOT_ESTABLISHED'),
+            price_bridge=None if missing_node == 'price_bridge' else dict(bridge_status='PENDING_EXTERNAL_DATA'),
+            valuation=None,
+            pre_decision_eligibility=None if missing_node == 'decision_gate' else predecision.as_policy()),
+            receipt={}))
+    event = tmp_path / 'event.json'
+    event.write_text('{"symbol":"600887","scope":"SYNTHETIC_TEST_ONLY"}', encoding='utf-8')
+    portfolio = tmp_path / 'simulation.json'
+    portfolio.write_bytes((ROOT / 'tests/fixtures/m4_portfolio_risk_demo.json').read_bytes())
+    output = tmp_path / 'runtime/completeness'
+    kwargs = {} if missing_node == 'portfolio_gate' else dict(
+        simulated_portfolio_path=portfolio,
+        simulated_portfolio_sha256=hashlib.sha256(portfolio.read_bytes()).hexdigest())
+    result = module.run_isolated_daily_attempt(root=tmp_path, output=output, symbol='600887',
+        event_path=event, event_sha256=hashlib.sha256(event.read_bytes()).hexdigest(), **kwargs)
+    receipt = json.loads((output / 'run_receipt.json').read_text(encoding='utf-8'))
+    assert result['dag_execution_complete'] is (missing_node is None)
+    assert receipt['dag_execution_complete'] is (missing_node is None)
+    if missing_node is None:
+        assert receipt['node_sequence'] == list(module.DAG_NODES)
+        assert receipt['skipped_nodes'] == []
+    else:
+        assert missing_node in receipt['skipped_nodes']
+    for role in ('research', 'model', 'decision', 'portfolio', 'product'):
+        payload = json.loads((output / (role + '.json')).read_text(encoding='utf-8'))
+        assert payload['generated_at'] == receipt['generated_at']
+        assert datetime.fromisoformat(payload['generated_at']) <= datetime.fromisoformat(receipt['completed_at'])
+        if role == 'decision' and 'review' in payload:
+            assert datetime.fromisoformat(payload['review']['created_at']) <= datetime.fromisoformat(payload['generated_at'])
+    assert receipt['verified_real_session_count'] == 0
+    assert result['audit']['shadow_session_valid'] is False
+    assert result['audit']['verified_real_session_count'] == 0
+    assert receipt['action'] == 'no_order'
 
 
 @pytest.mark.parametrize('payload', [{}, {'symbol': '000333'}, []])
