@@ -7358,3 +7358,22 @@ CANONICAL_WORKBOOK_SOURCE=WORKBOOK_PATH；CURRENT_TRIAL_POINTER=CANONICAL_WORKBO
 
 CURRENT_RESEARCH=NOT_READY; strict_pit=NOT_PROVEN; current_price_bridge=NOT_ADMITTED; M7_FINAL_USER_ACCEPTANCE=NOT_PASSED; INITIAL_ASSISTED_USE=NOT_REACHED; action=no_order. 财报事实核对不是完整 FinancialFacts/研究准入。实际处理时间只更新新包元数据，未改变事实可用时间、行情时点或历史冻结日期。原停止台账及生产门禁均未改；服务器、PTA、数据库、定时任务未改，完整长期目标仍在执行。
 
+## 2026-10-02 Retained distribution input correspondence in real execution replay
+
+本轮从真实共享入口、回放、交接和发布代码恢复依赖；上一轮三公司原表交付是实际进展，不重新验收用户阅读。依赖图当前选择：已冻结决策日志 -> 已绑定执行输入 -> 已审阅分红登记表/公告 -> 共享 VirtualAccount -> 回放报告 -> 共享三公司产品交接；独立于当前行情、研究停止项及私人组合。实际缺口是分红原件只验 Hash，执行字段未与已审阅登记表逐项对应。当前价格/完整事实/假设/事件及严格 PIT 仍各自阻塞正式投资结论，不阻塞此输入核验。
+
+新增 Infrastructure 对应核验登记日、除息日、现金到账日、每股毛现金及分母换算、送股比例与上市日，要求原件 path/hash/URL 与执行引用相同；重复、遗漏、日期/金额/送股漂移、原件变化及读取后变化拒绝。范围仅是既有审阅登记表与输入的对应，不是新 PDF 语义复核，不证明历史完整覆盖或当时可得性。Application 在共享执行回放前调用，Presentation 显示范围及逐项公告链接。没有修改冻结输入、模型、规则、成本或账本算法。
+
+真实命令沿用 `runtime/execution-replay-600519-20261001/input.json`，通过 `scripts/current/build_historical_execution_replay.py --input <path> --input-sha256 <actual hash> --output runtime/distribution-verified-execution-replay-20261002/result.json --journal runtime/distribution-verified-execution-replay-20261002/journal.json --report runtime/distribution-verified-execution-replay-20261002/report.md` 生成不可覆盖产物。
+
+- 15 项分红/送股安排对应 MATCH；2,674 个交易日、4 次冻结成交机械对照仍 MATCH。
+- Result SHA-256: `5ffc585e8451b1ad1c4c3195a620d93420a789e0c7f3967a795ef38461509c6a`.
+- Journal SHA-256: `4b84cd278b32b1a2d7d81f368524535442f2ed4e6b4e75c28775675cd838d4a9`; byte-identical to previous source-complete replay.
+- Readable report SHA-256: `56e8177c64a723b5406f04948fa1ff9a40a932173e1070731ab7288603b8cba8`; report distinguishes entitlement arrangements from actual received cash.
+- Shared product integration initially exposed exact retained-source ID reuse failure. Projection now reuses only one fully identical EvidenceRecord; path/hash/metadata differences still fail closed, and old replay remains preserved.
+- Shared handoff: `runtime/distribution-replay-product-handoff-20261002/publication-input.json`, SHA-256 `61abcadfe560eb418a5f3f40e5fc771b81060ec0ae801a3b7933100540d42548`; read-model SHA-256 `0d84b87c1d1f0a33027e2d29dca3a0b7b7e5f5bcfb23af646ae0e42ba6498b09`.
+- Actual comparison: companies/opportunities/portfolio/events/stage_statuses/today unchanged; only secondary replay/audit evidence appended. No canonical publication this turn; sole workbook remains the previously verified `9925ab6a...` version.
+- Offline Core before final identical-source reuse correction: 1503 passed, 32 skipped, 38 warnings; `.tmp/distribution-correspondence-core.xml`. Final targeted replay/product tests: 69 passed. Updated code CI must be observed separately.
+
+ENGINEERING_DELIVERY=DELIVERED; CURRENT_RESEARCH_ADMISSION=NOT_READY; FINAL_OPERATIONAL_ACCEPTANCE=NOT_REACHED; strict_pit_admitted=false; historical_execution_validated=false; performance_claim_allowed=false; tax_treatment_verified=false; action=no_order. No server/PTA/database/scheduler changes. Next unresolved real replay dependency remains a separately frozen complete facts/assumptions/rule/event chain and dated execution constraints, not tuning legacy thresholds or relabeling correspondence as investment validation. Complete goal remains active.
+

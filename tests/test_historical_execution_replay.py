@@ -32,6 +32,93 @@ def _digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _distribution_fixture(root: Path):
+    original = root / "distribution.pdf"
+    original.write_bytes(b"fixture original; no PDF semantic claim")
+    evidence = dict(path="distribution.pdf", sha256=_digest(original),
+                    url="https://example.test/official.pdf", pages=[1])
+    event = dict(symbol="600519", record_date="2020-06-01", ex_date="2020-06-02",
+                 cash_payment_date="2020-06-03", cash_per_share="1.5",
+                 cash_amount="15", per_shares="10", amount_basis="implemented_gross_entitlement",
+                 tax_treatment_verified=False, evidence=[evidence])
+    registry = root / "registry.json"
+    _write_json(registry, dict(backtest_ready=False, events=[event]))
+    references = [dict(kind="reviewed_event_registry", path="registry.json", sha256=_digest(registry)),
+                  dict(kind="distribution", **evidence)]
+    cash = dict(event_id="600519:2020-06-01", record_date="2020-06-01",
+                ex_date="2020-06-02", payment_date="2020-06-03", cash_per_share="1.500")
+    return registry, references, cash
+
+
+def test_distribution_terms_are_bound_without_admitting_execution(tmp_path):
+    from value_investment_agent.infrastructure.evidence.historical_distribution_correspondence import (
+        verify_distribution_correspondence,
+    )
+    _, references, cash = _distribution_fixture(tmp_path)
+    proof = verify_distribution_correspondence(root=tmp_path, symbol="600519",
+        sessions=[dict(date="2020-01-01"), dict(date="2020-12-31")],
+        cash_events=[cash], references=references)
+    assert proof["status"] == "MATCH"
+    assert proof["matched_events"] == 1
+    assert proof["rows"][0]["evidence"][0]["url"].startswith("https://")
+    for key in ("execution_admitted", "historical_availability_proven",
+                "pdf_semantics_reverified", "complete_historical_coverage_proven", "tax_treatment_verified"):
+        assert proof[key] is False
+    assert proof["action"] == "no_order"
+
+
+@pytest.mark.parametrize("field,value", [
+    ("cash_per_share", "1.6"), ("cash_per_share", "NaN"),
+    ("payment_date", "2020-06-04"), ("record_date", "2020-06-02"),
+    ("bonus_shares_per_share", "0.1"),
+])
+def test_distribution_execution_drift_is_rejected(tmp_path, field, value):
+    from value_investment_agent.infrastructure.evidence.historical_distribution_correspondence import (
+        verify_distribution_correspondence,
+    )
+    _, references, cash = _distribution_fixture(tmp_path)
+    cash[field] = value
+    with pytest.raises(ValueError):
+        verify_distribution_correspondence(root=tmp_path, symbol="600519",
+            sessions=[dict(date="2020-01-01"), dict(date="2020-12-31")],
+            cash_events=[cash], references=references)
+
+
+@pytest.mark.parametrize("problem", ["omitted", "duplicate", "source_drift", "unbound", "registry_arithmetic"])
+def test_distribution_source_and_coverage_gaps_fail_closed(tmp_path, problem):
+    from value_investment_agent.infrastructure.evidence.historical_distribution_correspondence import (
+        verify_distribution_correspondence,
+    )
+    registry, references, cash = _distribution_fixture(tmp_path)
+    events = [cash]
+    if problem == "omitted":
+        events = []
+    elif problem == "duplicate":
+        events.append(deepcopy(cash))
+    elif problem == "source_drift":
+        (tmp_path / "distribution.pdf").write_bytes(b"changed")
+    elif problem == "unbound":
+        references.pop()
+    else:
+        payload = json.loads(registry.read_text(encoding="utf-8"))
+        payload["events"][0]["cash_amount"] = "16"
+        references[0]["sha256"] = _write_json(registry, payload)
+    with pytest.raises(ValueError):
+        verify_distribution_correspondence(root=tmp_path, symbol="600519",
+            sessions=[dict(date="2020-01-01"), dict(date="2020-12-31")],
+            cash_events=events, references=references)
+
+
+def test_distribution_missing_registry_is_not_assessable(tmp_path):
+    from value_investment_agent.infrastructure.evidence.historical_distribution_correspondence import (
+        verify_distribution_correspondence,
+    )
+    proof = verify_distribution_correspondence(root=tmp_path, symbol="600519",
+        sessions=[], cash_events=[], references=[])
+    assert proof["status"] == "NOT_ASSESSABLE"
+    assert proof["execution_admitted"] is False
+
+
 def _write_json(path: Path, value: object) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -275,6 +362,58 @@ def _fixture(root: Path) -> Path:
         "range_journal": _pin(range_journal, filename="upper-30pct-journal.json"),
     })
     return recipe
+
+
+def test_distribution_correspondence_reaches_replay_and_readable_report(tmp_path):
+    recipe = _fixture(tmp_path)
+    registry = tmp_path / "registry.json"
+    _write_json(registry, dict(backtest_ready=False, events=[]))
+    execution = tmp_path / "execution-input.json"
+    value = json.loads(execution.read_text(encoding="utf-8"))
+    value["references"].append(dict(kind="reviewed_event_registry", path="registry.json",
+                                    sha256=_digest(registry)))
+    digest = _write_json(execution, value)
+    specification = json.loads(recipe.read_text(encoding="utf-8"))
+    specification["execution_input"]["sha256"] = digest
+    _write_json(recipe, specification)
+    payload, _ = build_historical_execution_replay(root=tmp_path, input_path=recipe,
+                                                  input_sha256=_digest(recipe))
+    assert payload["distribution_source_correspondence"]["status"] == "MATCH"
+    assert "0 项分红/送股安排" in render_historical_execution_replay(payload)
+    model = _product_model(payload["generated_at"][:10])
+    projected = project_historical_execution_replay(
+        model, replay=payload, replay_path="runtime/distribution-replay.json", replay_sha256="a" * 64,
+    )
+    assert "0 项分红/送股安排" in projected.historical_execution_replays[0].comparison_summary
+    workbook = build_product_workbench_workbook(projected)
+    assert "0 项分红/送股安排" in _sheet_text(workbook, (SHEET_SYSTEM_AUDIT,))
+    assert "分红/送股安排" not in _sheet_text(workbook, USER_SHEETS)
+    assert projected.companies == model.companies
+    assert payload["historical_execution_validated"] is False
+    promoted = deepcopy(payload)
+    promoted["distribution_source_correspondence"]["tax_treatment_verified"] = True
+    with pytest.raises(ValueError, match="cannot admit"):
+        render_historical_execution_replay(promoted)
+
+
+def test_distribution_bonus_listing_correspondence(tmp_path):
+    from value_investment_agent.infrastructure.evidence.historical_distribution_correspondence import (
+        verify_distribution_correspondence,
+    )
+    registry, references, cash = _distribution_fixture(tmp_path)
+    value = json.loads(registry.read_text(encoding="utf-8"))
+    value["events"][0].update(bonus_shares_per_share="0.1", bonus_listing_date="2020-06-05")
+    references[0]["sha256"] = _write_json(registry, value)
+    cash.update(bonus_shares_per_share="0.1000", bonus_listing_date="2020-06-05")
+    proof = verify_distribution_correspondence(root=tmp_path, symbol="600519",
+        sessions=[dict(date="2020-01-01"), dict(date="2020-12-31")],
+        cash_events=[cash], references=references)
+    assert proof["rows"][0]["bonus_listing_date"] == "2020-06-05"
+    cash["bonus_listing_date"] = "2020-06-06"
+    with pytest.raises(ValueError, match="differs"):
+        verify_distribution_correspondence(root=tmp_path, symbol="600519",
+            sessions=[dict(date="2020-01-01"), dict(date="2020-12-31")],
+            cash_events=[cash], references=references)
 
 
 def test_historical_execution_replay_reconstructs_frozen_scenario(tmp_path: Path):
@@ -654,6 +793,26 @@ def test_historical_execution_replay_projection_rejects_source_role_gaps(tmp_pat
     with pytest.raises(ValueError, match="must remain a relative project path"):
         project_historical_execution_replay(
             model, replay=rooted, replay_path="runtime/x.json", replay_sha256="a" * 64
+        )
+
+
+def test_successor_replay_reuses_identical_sources_and_rejects_conflicts(tmp_path):
+    from dataclasses import replace
+    _, payload, prior = _projected_replay(tmp_path)
+    successor = project_historical_execution_replay(
+        prior, replay=payload, replay_path="runtime/successor-replay.json", replay_sha256="b" * 64,
+    )
+    assert len(successor.historical_execution_replays) == 2
+    assert successor.historical_execution_replays[0] == prior.historical_execution_replays[0]
+    assert len(successor.audit_evidence) == len(prior.audit_evidence) + 1
+    assert successor.companies == prior.companies
+    source = next(item for item in prior.audit_evidence if "replay-source" in item.evidence_id)
+    bad = replace(prior, audit_evidence=tuple(
+        replace(item, path="runtime/different-original.json") if item == source else item
+        for item in prior.audit_evidence))
+    with pytest.raises(ValueError, match="evidence id conflict"):
+        project_historical_execution_replay(
+            bad, replay=payload, replay_path="runtime/successor-replay.json", replay_sha256="b" * 64,
         )
 
 

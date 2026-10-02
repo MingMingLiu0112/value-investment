@@ -116,6 +116,28 @@ def _price_correspondence_summary(replay: Mapping[str, Any]) -> str:
             '未验证最高/最低价、历史当时可得性、停牌涨跌停、流动性或真实成交。')
 
 
+def _distribution_correspondence_summary(replay: Mapping[str, Any]) -> str:
+    proof = replay.get("distribution_source_correspondence")
+    if proof is None:
+        return "分红执行输入与已审阅登记表逐项对应尚未接入。"
+    if (not isinstance(proof, Mapping)
+            or proof.get("schema_version") != "historical-distribution-correspondence-v1"
+            or proof.get("scope") != "RETAINED_REVIEWED_GROSS_ENTITLEMENT_CORRESPONDENCE_ONLY"
+            or proof.get("action") != ACTION_NO_ORDER
+            or any(proof.get(key) is not False for key in (
+                "complete_historical_coverage_proven", "pdf_semantics_reverified",
+                "tax_treatment_verified", "historical_availability_proven", "execution_admitted"))):
+        raise ValueError("distribution correspondence cannot admit historical execution")
+    if proof.get("status") == "NOT_ASSESSABLE":
+        return "没有已绑定审阅登记表，分红字段对应无法判断。"
+    count = _integer(proof.get("matched_events"), "matched distribution events")
+    if proof.get("status") != "MATCH" or count != len(proof.get("rows", [])):
+        raise ValueError("distribution correspondence lacks matching rows")
+    return (f"{count} 项分红/送股安排与已审阅登记表及公告绑定一致。"
+            "仅核对登记、除息、到账、每股毛现金与送股上市安排；"
+            "不代表重新审阅公告语义、历史完整覆盖、税后回报或当时可得性。")
+
+
 def _decision_explanation_lines(replay: Mapping[str, Any]) -> tuple[str, ...]:
     bundle = replay.get("decision_explanations")
     if bundle is None:
@@ -379,10 +401,7 @@ def project_historical_execution_replay(
         record_path: str,
         record_sha256: str,
     ) -> str:
-        if evidence_id in known_ids:
-            raise ValueError(f"historical execution replay evidence id conflict: {evidence_id}")
-        records.append(
-            EvidenceRecord(
+        record = EvidenceRecord(
                 evidence_id=evidence_id,
                 title=title,
                 artifact_type=artifact_type,
@@ -390,7 +409,12 @@ def project_historical_execution_replay(
                 sha256=record_sha256,
                 available_at=None,
             )
-        )
+        if evidence_id in known_ids:
+            existing = [item for item in records if item.evidence_id == evidence_id]
+            if len(existing) == 1 and existing[0] == record:
+                return evidence_id
+            raise ValueError(f"historical execution replay evidence id conflict: {evidence_id}")
+        records.append(record)
         known_ids.add(evidence_id)
         return evidence_id
 
@@ -436,6 +460,7 @@ def project_historical_execution_replay(
             f"{comparison['proposals_compared']} 个历史提议；冻结 result 对照一致，"
             f"覆盖 {comparison['periods_compared']} 个预登记时段。"
             + _price_correspondence_summary(replay)
+            + _distribution_correspondence_summary(replay)
         ),
         validation_summary=(
             "机械重建已验证；当前研究未准入；严格历史时点未证明；"
@@ -590,6 +615,7 @@ def render_historical_execution_replay(payload: Mapping[str, Any]) -> str:
         f"- 场景：`{payload.get('scenario')}`",
         f"- 决策来源：`{payload.get('decision_source')}`；投资规则未重新计算。",
         f"- 行情原件核验：{_price_correspondence_summary(payload)}",
+        f"- 分红输入核验：{_distribution_correspondence_summary(payload)}",
         f"- 执行引擎：`{payload.get('execution_engine')}`；费用引擎：`{payload.get('fee_engine')}`。",
         f"- 冻结 journal 对照：`{payload.get('comparison', {}).get('frozen_journal', {}).get('status')}`；"
         f"覆盖 {payload.get('comparison', {}).get('frozen_journal', {}).get('rows_compared')} 个交易日。",
@@ -665,4 +691,18 @@ def render_historical_execution_replay(payload: Mapping[str, Any]) -> str:
         "本报告保持 `historical_execution_validated=false`、`strict_pit_admitted=false`、`performance_claim_allowed=false` 与 `action=no_order`。",
         "",
     ])
+    proof = payload.get("distribution_source_correspondence")
+    if isinstance(proof, Mapping) and proof.get("status") == "MATCH":
+        lines.extend(["## 分红与送股输入逐项追溯", "",
+                      "以下为税前权益安排；不是已收到的现金，实际持股权益见执行事件。", ""])
+        for row in proof["rows"]:
+            lines.append(
+                f"- {row['event_id']}：登记 {row['record_date']}；除息 {row['ex_date']}；"
+                f"到账 {row['payment_date']}；每股毛现金 {row['cash_per_share']} 元；"
+                f"每股送股 {row['bonus_shares_per_share']}；上市日 {row['bonus_listing_date'] or '不适用'}。"
+            )
+            for original in row["evidence"]:
+                lines.append(f"  [公告原件]({original['url']})，页码 {original['pages']}；"
+                             f"本地 `{original['path']}`；SHA-256 `{original['sha256']}`。")
+        lines.append("")
     return "\n".join(lines)
