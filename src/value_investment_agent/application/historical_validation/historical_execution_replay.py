@@ -17,6 +17,7 @@ from typing import Any, Mapping
 
 from ..product.common import load_json_value, require_inside, sha256_file
 from ...virtual_account import VirtualAccount, dated_research_fee, replay
+from ...domain.portfolio.cash_reconciliation import reconcile_cash_journal
 from ...infrastructure.evidence.historical_price_correspondence import verify_price_correspondence
 from ...infrastructure.evidence.historical_distribution_correspondence import verify_distribution_correspondence
 
@@ -610,6 +611,7 @@ def build_historical_execution_replay(
         "validation_admission_status": "NOT_ADMITTED",
         "initial_cash_cny": str(initial_cash),
         "summary": summary,
+        "cash_reconciliation": reconcile_cash_journal(reconstructed_journal, initial_cash),
         "period_summary": periods,
         "decision_schedule": decision_schedule,
         "decision_outcomes": decision_outcomes,

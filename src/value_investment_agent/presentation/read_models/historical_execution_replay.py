@@ -527,6 +527,25 @@ def render_historical_execution_replays(
     return "\n".join(lines)
 
 
+def _cash_reconciliation_lines(payload):
+    lines = []
+    cash = payload.get('cash_reconciliation')
+    if cash is not None:
+        lines.extend(['## 资金与股息应收勾稽', '',
+            '逐日核验买卖本金、费用、股息计提与实际到账；税前研究账本，不是个人账户或收益证明。',
+            f"核验交易日：{cash['sessions_checked']}；结果：{cash['status']}",
+            f"期初现金：{cash['initial_cash_cny']}；期末现金：{cash['ending_cash_cny']}；期末应收股息：{cash['ending_receivable_cny']}", '',
+            '| 日期 | 买入本金 | 卖出本金 | 费用 | 股息计提 | 股息到账 | 期末现金 | 期末应收 |',
+            '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |'])
+        for row in cash['movements']:
+            lines.append('| ' + ' | '.join(str(row[key]) for key in
+                ('date', 'buy_principal_cny', 'sell_principal_cny', 'fees_cny',
+                 'dividend_accrued_cny', 'dividend_paid_cny', 'closing_cash_cny',
+                 'closing_receivable_cny')) + ' |')
+        lines.append('')
+    return lines
+
+
 def _decimal_text(value: object) -> str:
     try:
         number = Decimal(str(value))
@@ -705,4 +724,5 @@ def render_historical_execution_replay(payload: Mapping[str, Any]) -> str:
                 lines.append(f"  [公告原件]({original['url']})，页码 {original['pages']}；"
                              f"本地 `{original['path']}`；SHA-256 `{original['sha256']}`。")
         lines.append("")
+    lines.extend(_cash_reconciliation_lines(payload))
     return "\n".join(lines)

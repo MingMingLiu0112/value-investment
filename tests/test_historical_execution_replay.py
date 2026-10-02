@@ -861,3 +861,24 @@ def test_price_original_correspondence_and_fail_closed(tmp_path):
     reference['sha256'] = hashlib.sha256(original.read_bytes()).hexdigest()
     assert verify()['status'] == 'NOT_ASSESSABLE'
 
+def test_independent_cash_reconciliation_tracks_receivable_before_payment():
+    from value_investment_agent.domain.portfolio.cash_reconciliation import reconcile_cash_journal
+    from decimal import Decimal
+    journal = [dict(date='2020-01-01', cash_cny='89', receivable_cny='0',
+        fill=dict(side='buy', quantity=1, price='10', fee_cny='1')),
+        dict(date='2020-01-02', cash_cny='89', receivable_cny='2',
+             cash_events=[dict(event_id='div', kind='accrual', amount_cny='2')]),
+        dict(date='2020-01-03', cash_cny='91', receivable_cny='0',
+             cash_events=[dict(event_id='div', kind='payment', amount_cny='2')])]
+    proof = reconcile_cash_journal(journal, Decimal('100'))
+    assert proof['totals']['dividend_paid_cny'] == '2'
+    assert proof['totals']['fees_cny'] == '1'
+    assert proof['movements'][1]['closing_receivable_cny'] == '2'
+    journal[-1]['cash_cny'] = '93'
+    with pytest.raises(ValueError, match='mismatch'):
+        reconcile_cash_journal(journal, Decimal('100'))
+    journal[-1]['cash_cny'] = '91'
+    journal[-1]['cash_events'][0]['event_id'] = 'another-dividend'
+    with pytest.raises(ValueError, match='own accrued'):
+        reconcile_cash_journal(journal, Decimal('100'))
+
