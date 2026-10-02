@@ -659,6 +659,7 @@ class ResearchApplicationService:
             dict.fromkeys(
                 [
                     *gate.blockers,
+                    *(approval_decision.blockers if approval_decision is not None else ()),
                     *valuation.blockers,
                     *binding_blockers,
                     *identity.blockers,

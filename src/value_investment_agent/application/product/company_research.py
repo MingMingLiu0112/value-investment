@@ -171,6 +171,7 @@ def run_company_research_for_symbol(
     ledger_path = root / "config" / "research-evidence-stop-ledger-v1.json"
     if not ledger_path.is_file():
         raise ValueError("EVIDENCE_STOP_LEDGER_UNAVAILABLE")
+    ledger_sha256 = sha256_file(ledger_path)
     stops = evidence_stops_from_payload(
         load_json_object(ledger_path, "evidence-stop ledger")
     )
@@ -202,6 +203,7 @@ def run_company_research_for_symbol(
         )
 
     package = _package_for_symbol(root, normalized, package_path)
+    package_sha256 = sha256_file(package)
     package_payload = load_json_object(package, "valuation package")
     verified_ids = (
         _verified_source_ids(root, package_payload, request)
@@ -247,6 +249,14 @@ def run_company_research_for_symbol(
     for path, digest in explicit_inputs.values():
         if sha256_file(path) != digest:
             raise ValueError('explicit research input changed during validation')
+    def verify_consumed_inputs():
+        if sha256_file(package) != package_sha256 or sha256_file(ledger_path) != ledger_sha256:
+            raise ValueError('research package or evidence-stop ledger changed during execution')
+        for path, digest in explicit_inputs.values():
+            if sha256_file(path) != digest:
+                raise ValueError('explicit research input changed during execution')
+
+    verify_consumed_inputs()
     consumption = None
     if active_stops:
         consumption = claim_research_schedule_once(
@@ -272,7 +282,9 @@ def run_company_research_for_symbol(
     outcome = ResearchApplicationService(InMemoryResearchArtifactRepository()).run_company_research(
         spec
     )
+    verify_consumed_inputs()
     payload = _serialize_outcome(outcome)
+    payload['input_descriptor_sha256'] = spec.input_descriptor_sha256
     payload["schedule_gate"] = decision
     if consumption is not None:
         payload["schedule_consumption"] = consumption
@@ -293,8 +305,8 @@ def run_company_research_for_symbol(
             command="company_research",
             symbol=normalized,
             input_hashes={
-                "valuation_package": sha256_file(package),
-                "evidence_stop_ledger": sha256_file(ledger_path),
+                "valuation_package": package_sha256,
+                "evidence_stop_ledger": ledger_sha256,
                 **{role: digest for role, (_, digest) in explicit_inputs.items()},
                 **({"schedule_request": schedule_request_sha256}
                    if schedule_request_sha256 is not None else {}),

@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -413,7 +414,8 @@ def test_fresh_case_reaches_research_application_without_consuming_a_stop(
         company_research, "build_descriptor", lambda _payload, *, root: {}
     )
     monkeypatch.setattr(
-        company_research, "build_research_run_spec", lambda descriptor: descriptor
+        company_research, "build_research_run_spec", lambda descriptor:
+        SimpleNamespace(input_descriptor_sha256='a' * 64)
     )
     monkeypatch.setattr(
         company_research, "ResearchApplicationService", RecordingResearchService
@@ -440,7 +442,7 @@ def test_fresh_case_reaches_research_application_without_consuming_a_stop(
         schedule_request_sha256="b" * 64,
     )
 
-    assert called["spec"] == {}
+    assert called["spec"].input_descriptor_sha256 == 'a' * 64
     assert result["result"]["schedule_gate"]["status"] == "ALLOW_NORMAL_RESEARCH"
     assert "schedule_consumption" not in result["result"]
 
@@ -487,7 +489,8 @@ def test_explicit_daily_inputs_reach_descriptor_before_one_shot_consumption(
             raise ValueError('Quote date cannot follow research as-of')
         return payload
     monkeypatch.setattr(company_research, 'build_descriptor', descriptor)
-    monkeypatch.setattr(company_research, 'build_research_run_spec', lambda payload: payload)
+    monkeypatch.setattr(company_research, 'build_research_run_spec', lambda payload:
+        SimpleNamespace(input_descriptor_sha256='a' * 64))
     def claim(**kwargs):
         calls.append('consume')
         return dict(created=True)
@@ -523,3 +526,90 @@ def test_unregistered_moutai_research_is_blocked_before_package_lookup():
     result = run_company_research_for_symbol(root=ROOT, symbol="600519")
     assert result["result"]["status"] == "BLOCKED_BY_RESEARCH_SCHEDULER"
     assert result["result"]["schedule_gate"]["status"] == "BLOCKED_NO_REGISTERED_SCOPE"
+
+
+@pytest.mark.parametrize('drift', [None, 'package', 'ledger', 'reviews'])
+def test_reviewed_package_runs_actual_shared_entry_and_guards_consumed_bytes(tmp_path, monkeypatch, drift):
+    from dataclasses import replace
+    from test_human_research_approval import _receipt, DECISION_REJECTED_NEEDS_REWORK
+    from test_research_application import _identity_source
+    from value_investment_agent.m1_valuation_package_builder import build_descriptor
+    from value_investment_agent.research_input import build_research_run_spec
+    from value_investment_agent.research_application import ResearchApplicationService
+    from value_investment_agent.research_artifact_repository import InMemoryResearchArtifactRepository
+    from value_investment_agent.human_research_approval import artifact_fingerprint
+    from value_investment_agent.research_run_contract import valuation_result_sha256
+
+    # All fixtures are local copies; the real ledger and real company approvals remain untouched.
+    config = tmp_path / 'config'
+    config.mkdir()
+    ledger = config / 'research-evidence-stop-ledger-v1.json'
+    ledger.write_text(json.dumps(dict(schema_version='research-evidence-stop-ledger-v1', stops=[])), encoding='utf-8')
+    payload = json.loads((ROOT / 'config/m1-valuation-packages-v1/600887-quality-compounder.json').read_text(encoding='utf-8'))
+    payload['quote'] = None
+    payload['model_validity_input'] = None
+    payload['run_id'] = 'synthetic-entry-integration-only'
+    identity = _identity_source('600887').as_policy()['issuer_identity']
+    for source in payload['sources']:
+        if source['kind'] == 'official_issuer_filing':
+            source['issuer_identity'] = identity
+            source['kind'] = 'annual_report'
+            source['location'] = 'https://www.cninfo.com.cn/synthetic-test-only.pdf#' + source['id']
+    package = tmp_path / 'package.json'
+    package.write_text(json.dumps(payload, ensure_ascii=False), encoding='utf-8')
+    descriptor = build_descriptor(payload, root=tmp_path)
+    baseline = ResearchApplicationService(InMemoryResearchArtifactRepository()).run_company_research(build_research_run_spec(descriptor))
+    canonical = descriptor.as_policy()
+    approval = replace(_receipt(decision=DECISION_REJECTED_NEEDS_REWORK,
+        price_assessment_eligible=False, remaining_blockers=('SYNTHETIC_REVIEW_REJECTION',)),
+        valuation_artifact_sha256=valuation_result_sha256(baseline.valuation),
+        valuation_model_version=baseline.valuation.model_version,
+        research_case_sha256=artifact_fingerprint(canonical['research_case']),
+        facts_artifact_sha256=artifact_fingerprint(canonical['facts']),
+        assumption_set_sha256=artifact_fingerprint(canonical['assumptions']))
+    approval_path = tmp_path / 'approval.json'
+    approval_path.write_text(json.dumps(approval.as_policy()), encoding='utf-8')
+    reviews = tmp_path / 'reviews.json'
+    reviews.write_text(json.dumps(dict(schema_version='shared-research-review-inputs-v1',
+        symbol='600887', action='no_order', bindings=dict(human_approval=dict(path=approval_path.name,
+            sha256=hashlib.sha256(approval_path.read_bytes()).hexdigest())))), encoding='utf-8')
+    request = dict(schema_version='research-schedule-request-v1', symbol='600887', source_id='TEST_ONLY',
+        period='2026-06-30', research_question_id='synthetic-entry', blocker_id='initial_research',
+        reopen_condition_met=False, new_evidence_ids=[])
+    if drift:
+        class DriftingService(ResearchApplicationService):
+            def run_company_research(self, spec):
+                outcome = super().run_company_research(spec)
+                target = {'package': package, 'ledger': ledger, 'reviews': reviews}[drift]
+                target.write_bytes(target.read_bytes() + b' ')
+                return outcome
+        monkeypatch.setattr(company_research, 'ResearchApplicationService', DriftingService)
+    output = tmp_path / 'result.json'
+    kwargs = dict(root=tmp_path, symbol='600887', package_path=package,
+        schedule_request=request, output_path=output, reviews_path=reviews,
+        reviews_sha256=hashlib.sha256(reviews.read_bytes()).hexdigest())
+    if drift:
+        with pytest.raises(ValueError, match='changed during execution'):
+            run_company_research_for_symbol(**kwargs)
+        assert not output.exists()
+        return
+    result = run_company_research_for_symbol(**kwargs)
+    assert result['result']['human_research_approval']['decision'] == DECISION_REJECTED_NEEDS_REWORK
+    assert 'SYNTHETIC_REVIEW_REJECTION' in result['result']['blockers']
+    assert result['result']['input_descriptor_sha256'] != descriptor.input_sha256
+    assert result['receipt']['input_sha256']['valuation_package'] == hashlib.sha256(package.read_bytes()).hexdigest()
+    assert result['receipt']['input_sha256']['research_reviews'] == hashlib.sha256(reviews.read_bytes()).hexdigest()
+    assert result['result']['schedule_gate']['status'] == 'ALLOW_NORMAL_RESEARCH'
+    assert result['result']['action'] == 'no_order'
+    assert result['result']['pre_decision_eligibility'] is None
+    from value_investment_agent.presentation.read_models.shadow_daily_review import render_shadow_company_review
+    research = result['result']
+    projection = dict(symbol='600887', suggested_state='NOT_READY', blockers=research['blockers'])
+    card = render_shadow_company_review(research=dict(result=research,
+        session_date=research['as_of'], run_id=research['run_id']),
+        model=dict(valuation_result=research['valuation'], model_validity=research['model_validity'],
+            price_bridge=research['price_bridge']), decision=projection, product=projection,
+        audit=dict(input_consistency_status='SYNTHETIC_TEST_ONLY', blockers=[]))
+    assert 'SYNTHETIC_REVIEW_REJECTION' in card and 'action=no_order' in card
+    (tmp_path / 'synthetic-entry-card.md').write_text(
+        '# SYNTHETIC INTEGRATION TEST ONLY - NOT INVESTMENT RESEARCH\n\n' + card, encoding='utf-8')

@@ -1,5 +1,39 @@
 # CURRENT STATUS
 
+## 2026-10-02 Reviewed Package Through Actual Shared Entry
+
+The scoped scheduling gate, real M1 descriptor builder, typed review attachment,
+registered research service, calculation, serialization and readable projection
+now have an unmocked shared-entry integration case. It uses only a pytest-local
+copy with a synthetic empty stop ledger and explicit synthetic fresh scope;
+real Evidence Stops and research receipts are unchanged. It supplies a rejected
+review bound to the computed valuation and exact canonical case/facts/assumptions.
+The rejection reaches output and the test-readable card, not a buy/add signal.
+
+This exposed and repaired two actual gaps: detailed resolved review blockers
+were absent from aggregate research output, and receipt digests were recomputed
+after execution rather than pinned to consumed package/ledger bytes. The entry
+now verifies package, ledger and explicit inputs before consumption and after
+calculation, before publishing; emits the consumed descriptor digest; and records
+the original verified digests. Three integration branches mutate package,
+ledger or review packet during the real service call and verify publication is
+refused. Financial formulas, valuation assumptions and gate thresholds unchanged.
+
+Reproduction: pytest tests/test_evidence_stop_schedule.py. Related integration
+suites passed 72 tests with 1 skip. Readable synthetic output:
+`.tmp/shared-entry-final/test_reviewed_package_runs_act0/synthetic-entry-card.md`.
+The output prominently states SYNTHETIC TEST ONLY; copied historical numbers,
+synthetic issuer metadata and review are not actual-company research approval,
+strict PIT, strategy evidence or a current market snapshot.
+Full offline Core evidence: `.tmp/shared-entry-core.xml`: 1546 passed, 32 skipped,
+38 warnings in 58.23 seconds. Not all legacy tests or investment effectiveness.
+
+Remaining production dependencies are unchanged: acquired current quote/event
+coverage, actual research/event reviews or valid refusal evidence under existing
+M6 rules, production authorization/signed intake and the twenty real sessions.
+No production scheduler, Excel, PostgreSQL or PTA change. Goal in progress,
+Shadow start readiness PARTIAL, zero newly counted real sessions, action=no_order.
+
 ## 2026-10-02 Materiality Attachment Through Shared Research Service
 
 Code inspection found that the explicit review adapter removed the original
