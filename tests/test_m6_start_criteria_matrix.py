@@ -234,6 +234,36 @@ def test_partial_daily_audit_checks_present_outputs_even_without_quote(tmp_path,
     assert result['verified_real_session_count'] == 0
 
 
+def test_daily_event_projection_preserves_missing_watermark_and_verifies_originals(tmp_path):
+    import hashlib
+    from datetime import datetime
+    from value_investment_agent.application.product.daily_event_input import project_daily_event_input
+    original = tmp_path / 'index.json'
+    original.write_text('{}', encoding='utf-8')
+    original_hash = hashlib.sha256(original.read_bytes()).hexdigest()
+    raw = dict(schema_version='m1-event-scan-v1', symbol='600887', provider='CNINFO',
+        scan_from='2026-10-02', scan_to='2026-10-02', validity_from='2026-10-02',
+        validity_to='2026-10-02', status='COMPLETE_NO_MATERIAL_EVENT_IN_VALIDITY_WINDOW',
+        coverage_status='COMPLETE', pre_model_review_status='NONE', announcements=[],
+        blockers=[], evidence_refs=[dict(id='index', path='index.json', sha256=original_hash)],
+        retrieved_at='2026-10-02T16:00:00+08:00', parser_version='test-only')
+    path = tmp_path / 'scan.json'
+    path.write_text(json.dumps(raw), encoding='utf-8')
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    def project():
+        return project_daily_event_input(root=tmp_path, path=path, expected_sha256=digest,
+            symbol='600887', now=datetime.fromisoformat('2026-10-02T16:01:00+08:00'))
+    result = project()
+    assert result['coverage_status'] == 'COMPLETE'
+    assert result['coverage_complete'] is False
+    assert result['scan_cutoff_basis'] == 'ACQUISITION_ONLY_NOT_COVERAGE_CUTOFF'
+    assert result['materiality_approved'] is False
+    assert result['source_bindings'][1]['sha256'] == original_hash
+    original.write_text('{"changed":true}', encoding='utf-8')
+    with pytest.raises(ValueError, match='original hash mismatch'):
+        project()
+
+
 def _criteria_by_id():
     matrix = load_m6_start_criteria_matrix(MATRIX_PATH, root=ROOT)
     return {item.criterion_id: item for item in matrix.criteria}

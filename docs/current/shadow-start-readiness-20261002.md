@@ -59,6 +59,26 @@ SHADOW_SESSION_VALIDITY and INVESTMENT_DECISION_VALIDITY remain separate; offlin
 
 ## Required final status
 
+### Raw scan to daily event contract integration
+
+The isolated producer now uses `project_daily_event_input` for M1 scans. Research
+still reads the unchanged original M1 bytes; daily audit reads `daily-event.json`
+with a hash-bound raw scan, original evidence and index bindings. Acquisition
+time is the scan's actual retrieved_at, not a fresh rerun clock or publication
+time. Declared scan bounds and coverage remain unchanged. COMPLETE day coverage
+also requires an explicit timezone-aware post-close `covered_through` watermark
+no later than acquisition; date-only acquisition does not supply this watermark.
+This is input projection, not independent proof of provider completeness,
+materiality approval, research admission or operational authorization.
+
+Actual output: `runtime/shadow-projected-events-20261002/company-card.md`; manifest
+SHA-256 `b486dfdf0bf0dfc56ac121e405e35bec07f629b7903a916d1e159f743757e2f4`.
+Raw scan and both original PDFs plus index are checked by the existing loader and
+hash binding. Actual audit no longer reports missing wrapper timestamps/sources;
+it retains EVENT_COVERAGE_INCOMPLETE, missing quote, pre-close and incomplete DAG.
+Current research is still refused; zero real sessions; no_order. This closes the
+raw-scan adapter gap, not the full operational start-readiness gap.
+
 ### Mandatory consumer now audits incomplete runs, not just their hashes
 
 Removed the missing-role early return. Every present daily artifact is now loaded,

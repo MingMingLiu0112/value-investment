@@ -11,6 +11,7 @@ from .shadow_daily_input import audit_shadow_daily_input, DAG_NODES
 from ..pre_decision_eligibility import pre_decision_eligibility_from_payload
 from ..investment_decision import DecisionEvidenceBundle, evaluate_investment_decision
 from ..application.product.event_followup import read_event_followup
+from ..application.product.daily_event_input import project_daily_event_input
 from ..presentation.read_models.shadow_daily_review import render_shadow_company_review
 
 
@@ -100,6 +101,16 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         shared_args.update(schedule_request=request,
                            schedule_request_sha256=schedule_request_sha256)
     result = run_company_research_for_symbol(**shared_args)
+    if event.get('schema_version') == 'm1-event-scan-v1':
+        raw_target = output / 'event-original.json'
+        shutil.copyfile(output / 'event.json', raw_target)
+        daily_event = project_daily_event_input(root=root, path=raw_target,
+            expected_sha256=event_sha256, symbol=symbol, now=datetime.now(timezone.utc))
+        # Research uses the original M1 scan; the consumer uses its explicit projection.
+        projected = output / 'daily-event.json'
+        write_new_json(projected, daily_event)
+        bindings['event'].update(path=projected.relative_to(root).as_posix(),
+                                 sha256=sha256_file(projected))
     for role in research_inputs:
         if sha256_file(output / (role + '.json')) != bindings[role]['sha256']:
             raise ValueError('shared research input changed during execution')

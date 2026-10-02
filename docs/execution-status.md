@@ -7431,6 +7431,18 @@ CURRENT_RESEARCH_ADMISSION=NOT_READY; current_price_bridge=NOT_ADMITTED; strict_
 
 ## 2026-10-02 Shared daily DAG successor (isolated, not production)
 
+Raw-event input integration successor: existing M1 scans now project into the
+daily event contract with actual acquisition time, unchanged scan bounds/coverage,
+original scan/PDF/index hashes, and an explicit coverage-cutoff basis. No provider
+watermark is inferred from a date-only scan or rerun time. Shared research still
+uses original M1 bytes. Real output `runtime/shadow-projected-events-20261002/company-card.md`,
+manifest SHA-256 `b486dfdf0bf0dfc56ac121e405e35bec07f629b7903a916d1e159f743757e2f4`.
+Daily audit now consumes the event projection without missing-format errors, but
+retains incomplete event coverage, missing quote, pre-close and incomplete DAG.
+This is verified input interoperability, not materiality or research admission.
+Canonical Excel, server/PTA, database and scheduler remain untouched; count=0;
+action=no_order. The total objective remains uncompleted.
+
 Consumer integration correction: missing quote no longer bypasses content checks
 for the rest of the day. Present artifacts receive hash/time/run/session/no-order
 and DAG-receipt checks; absent event timestamps are explicit contract gaps. Real
