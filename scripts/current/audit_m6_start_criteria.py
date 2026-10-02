@@ -35,6 +35,10 @@ def main() -> int:
     parser.add_argument('--event-input-sha256')
     parser.add_argument('--quote-input', type=Path)
     parser.add_argument('--quote-input-sha256')
+    parser.add_argument('--research-package', type=Path)
+    parser.add_argument('--research-package-sha256')
+    parser.add_argument('--schedule-request', type=Path)
+    parser.add_argument('--schedule-request-sha256')
     args = parser.parse_args()
     if args.isolated_run:
         if not all((args.symbol, args.event_input, args.event_input_sha256)) or args.daily_input or args.output:
@@ -43,8 +47,15 @@ def main() -> int:
             symbol=args.symbol, event_path=ROOT / args.event_input,
             event_sha256=args.event_input_sha256,
             quote_path=None if args.quote_input is None else ROOT / args.quote_input,
-            quote_sha256=args.quote_input_sha256), ensure_ascii=False, indent=2))
+            quote_sha256=args.quote_input_sha256,
+            package_path=None if args.research_package is None else ROOT / args.research_package,
+            package_sha256=args.research_package_sha256,
+            schedule_request_path=None if args.schedule_request is None else ROOT / args.schedule_request,
+            schedule_request_sha256=args.schedule_request_sha256), ensure_ascii=False, indent=2))
         return 0
+    if any((args.research_package, args.research_package_sha256,
+            args.schedule_request, args.schedule_request_sha256)):
+        parser.error('research package/schedule request require isolated-run')
     if bool(args.daily_input) != bool(args.daily_input_sha256):
         raise ValueError('daily input requires paired path/hash')
     matrix_path = args.matrix if args.matrix.is_absolute() else ROOT / args.matrix

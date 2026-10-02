@@ -7431,6 +7431,16 @@ CURRENT_RESEARCH_ADMISSION=NOT_READY; current_price_bridge=NOT_ADMITTED; strict_
 
 ## 2026-10-02 Shared daily DAG successor (isolated, not production)
 
+Successor input integration: the daily runner accepts explicitly hashed research
+package and optional schedule request, snapshots them, and forwards to the existing
+shared research scheduler. It records snapshot-only versus shared-receipt-bound
+inputs rather than claiming every acquired file was used. Actual package-bound
+attempt: `runtime/shadow-bound-research-20261002/report.md`, manifest SHA-256
+`2d879d046a1d1f9f1f1fda1ea26ee1c2e747267b8225a107b279fd35c0135e6c`.
+The real 600887 package remains unconsumed after scheduler refusal; no new request
+or approval was fabricated. Missing quote/current-input integration and full DAG
+remain open; no production/Excel/server changes, no orders, zero real sessions.
+
 The isolated runner now retains shared research model-validity, PriceBridge and
 valuation outputs and uses the existing decision evaluator for same-session typed
 pre-decision input, with no inferred buy/add intent. Missing pre-decision remains

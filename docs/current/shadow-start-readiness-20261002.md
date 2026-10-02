@@ -59,6 +59,35 @@ SHADOW_SESSION_VALIDITY and INVESTMENT_DECISION_VALIDITY remain separate; offlin
 
 ## Required final status
 
+### Explicit shared research inputs
+
+The isolated entry now accepts paired `--research-package` / SHA-256 and paired
+`--schedule-request` / SHA-256. A request requires an explicit package. Inputs are
+copied into the immutable runtime attempt and passed to the existing shared
+research entry, whose official-source, Evidence Stop and once-only consumption
+checks are unchanged. The original package is not rewritten. Research bindings
+live inside the hashed research artifact, not as invented daily DAG roles.
+Each binding distinguishes shared-receipt binding from a snapshot never consumed.
+
+Actual output: `runtime/shadow-bound-research-20261002/report.md`, manifest
+SHA-256 `2d879d046a1d1f9f1f1fda1ea26ee1c2e747267b8225a107b279fd35c0135e6c`.
+The existing real 600887 package was snapshotted, not consumed, because the shared
+scheduler refused. No reopen request was manufactured. Request forwarding is
+covered by synthetic integration tests only, not production evidence acceptance.
+
+Reproduction (PowerShell 7, repository root; choose a fresh runtime output):
+
+```powershell
+$package = 'config/m1-valuation-packages-v1/600887-quality-compounder.json'
+$hash = (Get-FileHash $package -Algorithm SHA256).Hash.ToLowerInvariant()
+py -3 scripts/current/audit_m6_start_criteria.py --isolated-run runtime/shadow-bound-research-recheck --symbol 600887 --event-input runtime/public-event-followup-20261002/event-scan.json --event-input-sha256 4318426b8ea4e54d2f40ec03b01c31f20f3c9a83560b7bea028641a0af8a3cbc --research-package $package --research-package-sha256 $hash
+```
+
+Remaining integration gap: archived daily quote/event inputs are not automatic
+overrides of the research package's quote/materiality/model-validity inputs.
+Normal output preservation must not be described as current-input recalculation.
+The mandatory daily audit and unchanged M6 admission remain separate gates.
+
 Successor isolated attempt: `runtime/shadow-isolated-shared-dag-20261002/report.md`;
 manifest SHA-256 `d6caf51b364b32ef339c9ad34e0e9f1b6f318f5091f9118bb60ab68d97130cb0`.
 The real 600887 scheduler still refused research. Executed nodes are research and

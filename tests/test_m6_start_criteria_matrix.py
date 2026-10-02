@@ -124,6 +124,49 @@ def test_isolated_attempt_rejects_missing_or_foreign_event_issuer(tmp_path, payl
     assert not output.exists()
 
 
+def test_isolated_attempt_snapshots_and_forwards_explicit_research_inputs(tmp_path, monkeypatch):
+    import hashlib
+    from value_investment_agent.operations import shadow_daily_run as module
+    def source(name, payload):
+        path = tmp_path / (name + '.json')
+        path.write_text(json.dumps(payload), encoding='utf-8')
+        return path, hashlib.sha256(path.read_bytes()).hexdigest()
+    event, event_hash = source('event', {'symbol': '600887'})
+    package, package_hash = source('package', {'symbol': '600887', 'fixture': True})
+    request, request_hash = source('request', {'symbol': '600887', 'fixture': True})
+    captured = {}
+    def shared(**kwargs):
+        captured.update(kwargs)
+        assert kwargs['package_path'].read_bytes() == package.read_bytes()
+        return dict(result=dict(symbol='600887', action='no_order',
+            status='BLOCKED_BY_RESEARCH_SCHEDULER', blockers=['fixture refusal']), receipt={})
+    monkeypatch.setattr(module, 'run_company_research_for_symbol', shared)
+    output = tmp_path / 'runtime/explicit'
+    result = module.run_isolated_daily_attempt(root=tmp_path, output=output, symbol='600887',
+        event_path=event, event_sha256=event_hash, package_path=package,
+        package_sha256=package_hash, schedule_request_path=request,
+        schedule_request_sha256=request_hash)
+    assert captured['package_path'] == output / 'valuation_package.json'
+    assert captured['schedule_request'] == json.loads(request.read_text(encoding='utf-8'))
+    assert captured['schedule_request_sha256'] == request_hash
+    research = json.loads((output / 'research.json').read_text(encoding='utf-8'))
+    assert research['research_input_bindings']['valuation_package']['sha256'] == package_hash
+    assert research['research_input_bindings']['schedule_request']['sha256'] == request_hash
+    assert research['research_input_bindings']['valuation_package']['consumption_status'] == 'SNAPSHOTTED_NOT_CONSUMED_BY_SHARED_RESEARCH'
+    manifest = json.loads((output / 'input.json').read_text(encoding='utf-8'))
+    assert 'schedule_request' not in manifest['bindings']
+    assert result['audit']['verified_real_session_count'] == 0
+
+
+def test_isolated_request_without_explicit_package_is_rejected(tmp_path):
+    from value_investment_agent.operations.shadow_daily_run import run_isolated_daily_attempt
+    with pytest.raises(ValueError, match='explicit source-bound package'):
+        run_isolated_daily_attempt(root=tmp_path, output=tmp_path / 'runtime/rejected',
+            symbol='600887', event_path=tmp_path / 'unused', event_sha256='unused',
+            schedule_request_path=tmp_path / 'request', schedule_request_sha256='unused')
+    assert not (tmp_path / 'runtime/rejected').exists()
+
+
 def _criteria_by_id():
     matrix = load_m6_start_criteria_matrix(MATRIX_PATH, root=ROOT)
     return {item.criterion_id: item for item in matrix.criteria}

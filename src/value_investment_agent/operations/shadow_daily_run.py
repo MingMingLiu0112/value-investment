@@ -15,7 +15,11 @@ from ..investment_decision import DecisionEvidenceBundle, evaluate_investment_de
 def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
                                event_path: Path, event_sha256: str,
                                quote_path: Path | None = None,
-                               quote_sha256: str | None = None) -> dict:
+                               quote_sha256: str | None = None,
+                               package_path: Path | None = None,
+                               package_sha256: str | None = None,
+                               schedule_request_path: Path | None = None,
+                               schedule_request_sha256: str | None = None) -> dict:
     root = root.resolve()
     output = require_inside(root, output, 'isolated daily output')
     if not output.is_relative_to(root / 'runtime') or output.exists():
@@ -24,11 +28,26 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         raise ValueError('symbol outside authorized scope')
     if bool(quote_path) != bool(quote_sha256):
         raise ValueError('quote requires paired path/hash')
+    for label, path, digest in (
+        ('package', package_path, package_sha256),
+        ('schedule request', schedule_request_path, schedule_request_sha256),
+    ):
+        if bool(path) != bool(digest):
+            raise ValueError(f'{label} requires paired path/hash')
+    if schedule_request_path is not None and package_path is None:
+        raise ValueError('schedule request requires an explicit source-bound package')
     inputs = {'event': (event_path, event_sha256)}
     if quote_path is not None:
         inputs['quote'] = (quote_path, quote_sha256)
+    research_inputs = {}
+    for role, path, digest in (
+        ('valuation_package', package_path, package_sha256),
+        ('schedule_request', schedule_request_path, schedule_request_sha256),
+    ):
+        if path is not None:
+            research_inputs[role] = (path, digest)
     sources = {}
-    for role, (path, digest) in inputs.items():
+    for role, (path, digest) in (inputs | research_inputs).items():
         source = require_inside(root, path, role)
         if sha256_file(source) != digest:
             raise ValueError(f'{role} input hash mismatch')
@@ -50,14 +69,32 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         bindings[role] = dict(path=target.relative_to(root).as_posix(), sha256=digest,
             observed_at=started.isoformat(), original_path=source.relative_to(root).as_posix(),
             observation_basis='SNAPSHOT_ACQUISITION_ONLY_NOT_ORIGINAL_PUBLICATION')
-    result = run_company_research_for_symbol(root=root, symbol=symbol)
+    shared_args = dict(root=root, symbol=symbol)
+    if package_path is not None:
+        shared_args['package_path'] = output / 'valuation_package.json'
+    if schedule_request_path is not None:
+        request = json.loads((output / 'schedule_request.json').read_text(encoding='utf-8'))
+        shared_args.update(schedule_request=request,
+                           schedule_request_sha256=schedule_request_sha256)
+    result = run_company_research_for_symbol(**shared_args)
+    for role in research_inputs:
+        if sha256_file(output / (role + '.json')) != bindings[role]['sha256']:
+            raise ValueError('shared research input changed during execution')
+    research_bindings = {role: bindings.pop(role) for role in research_inputs}
+    for role, binding in research_bindings.items():
+        binding['consumption_status'] = (
+            'BOUND_IN_SHARED_APPLICATION_RECEIPT'
+            if result['receipt'].get('input_hashes', {}).get(role) == binding['sha256']
+            else 'SNAPSHOTTED_NOT_CONSUMED_BY_SHARED_RESEARCH'
+        )
     research = result['result']
     if research.get('action') != 'no_order' or research.get('symbol') != symbol:
         raise ValueError('shared research returned an unsafe or mismatched result')
     common = dict(action='no_order', run_id=run_id, session_date=day,
                   generated_at=datetime.now(timezone.utc).isoformat(), orders=[], broker_called=False)
     outputs = {
-        'research': dict(**common, result=research, application_receipt=result['receipt'], execution_status='EXECUTED'),
+        'research': dict(**common, result=research, application_receipt=result['receipt'],
+                        research_input_bindings=research_bindings, execution_status='EXECUTED'),
         'model': dict(**common, model_validity='NOT_ESTABLISHED', price_bridge='NOT_ADMITTED',
                       execution_status='NOT_RUN_UPSTREAM_BLOCKED', valuation_result_version=None),
         'decision': dict(**common, suggested_state='NOT_READY', execution_status='NOT_RUN_UPSTREAM_BLOCKED',
@@ -128,6 +165,10 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
         f'Run: {run_id}', f'Observed: {completed.isoformat()}',
         f'Research: {research["status"]}', f'Decision: {outputs["decision"]["suggested_state"]}',
         'Executed: ' + ', '.join(executed),
+        'Explicit research inputs: ' + (', '.join(research_bindings) or 'none; default package selection remains subject to shared scheduler'),
+        *[f'- {role}: {binding["consumption_status"]}; SHA-256 {binding["sha256"]}'
+          for role, binding in research_bindings.items()],
+        'Quote/event snapshots are acquisition evidence, not automatic model or materiality approval.',
         'Skipped: ' + ', '.join(node for node in DAG_NODES if node not in executed),
         'Portfolio guidance: null; no personal input or trade approval inferred.',
         f'Input audit: {audit["input_consistency_status"]}',
