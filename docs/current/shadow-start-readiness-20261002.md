@@ -59,6 +59,28 @@ SHADOW_SESSION_VALIDITY and INVESTMENT_DECISION_VALIDITY remain separate; offlin
 
 ## Required final status
 
+### Readable company output integrated into the daily attempt
+
+`--event-followup` with `--event-followup-sha256` connects the existing source-page
+verification use case to the daily product artifact and new presentation-only
+`company-card.md`. It rechecks originals, page anchors, cutoff, issuer and exact
+acquired event-scan hash before creating output. The explanation packet is copied
+unchanged into runtime. Claims remain SOURCE_ANCHORED_EXPLANATION_ONLY; unresolved
+questions, research refusal, missing estimate and no portfolio guidance remain
+visible. No materiality, valuation or order rule is introduced by the renderer.
+
+Actual 600887 report: `runtime/shadow-readable-company-20261002/company-card.md`.
+Daily manifest SHA-256 `9a5e940e3e1fb753b3b2e2d9a39f392619a574dd58ee9d0916a44a14dd0c2fc0`.
+This joins original disclosure explanations to the same daily research/decision
+refusal, instead of making the user interpret a machine receipt alone. Both
+official facts and unresolved liquidity/guarantee/dividend questions are retained.
+No positive investment admission, portfolio result or real session credit follows.
+
+Reproduce the preceding command with a fresh runtime destination, adding
+`--event-followup runtime/public-event-followup-20261002/followup.json` and its
+SHA-256 `0f775175dee1a8e12161b877c09ee8e50bcc90b10e00ff2cef186d9936e9420d`.
+The canonical workbook and production publisher are unchanged.
+
 ### Explicit shared research inputs
 
 The isolated entry now accepts paired `--research-package` / SHA-256 and paired

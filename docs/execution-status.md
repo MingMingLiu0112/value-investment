@@ -7431,6 +7431,18 @@ CURRENT_RESEARCH_ADMISSION=NOT_READY; current_price_bridge=NOT_ADMITTED; strict_
 
 ## 2026-10-02 Shared daily DAG successor (isolated, not production)
 
+Daily product increment: the isolated runner now produces a presentation-only
+company review card from the exact research/model/decision outputs. Optional
+source-followup input reuses the existing original-page verifier and must bind
+the acquired event scan, same issuer and observed cutoff. Real 600887 output:
+`runtime/shadow-readable-company-20261002/company-card.md`; daily manifest SHA-256
+`9a5e940e3e1fb753b3b2e2d9a39f392619a574dd58ee9d0916a44a14dd0c2fc0`.
+The two October 1 disclosure explanations and their unresolved questions appear
+alongside actual research refusal, missing quote, missing valuation and null
+position guidance. This is new joined user-readable output, not evidence approval
+or a real Shadow session. Canonical Excel, server/PTA and production scheduling
+remain unchanged. action=no_order; total objective not complete.
+
 Daily-input calculation integration successor: explicit package runs now pass
 snapshotted quote/event references to existing shared descriptor parsers. Declared
 validity dates, material events, approvals and research cutoff remain unchanged.

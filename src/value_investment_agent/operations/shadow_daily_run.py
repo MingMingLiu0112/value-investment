@@ -10,6 +10,8 @@ from ..application.product.company_research import run_company_research_for_symb
 from .shadow_daily_input import audit_shadow_daily_input, DAG_NODES
 from ..pre_decision_eligibility import pre_decision_eligibility_from_payload
 from ..investment_decision import DecisionEvidenceBundle, evaluate_investment_decision
+from ..application.product.event_followup import read_event_followup
+from ..presentation.read_models.shadow_daily_review import render_shadow_company_review
 
 
 def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
@@ -19,7 +21,9 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
                                package_path: Path | None = None,
                                package_sha256: str | None = None,
                                schedule_request_path: Path | None = None,
-                               schedule_request_sha256: str | None = None) -> dict:
+                               schedule_request_sha256: str | None = None,
+                               followup_path: Path | None = None,
+                               followup_sha256: str | None = None) -> dict:
     root = root.resolve()
     output = require_inside(root, output, 'isolated daily output')
     if not output.is_relative_to(root / 'runtime') or output.exists():
@@ -31,6 +35,7 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
     for label, path, digest in (
         ('package', package_path, package_sha256),
         ('schedule request', schedule_request_path, schedule_request_sha256),
+        ('event followup', followup_path, followup_sha256),
     ):
         if bool(path) != bool(digest):
             raise ValueError(f'{label} requires paired path/hash')
@@ -55,8 +60,23 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
     event = json.loads(sources['event'][0].read_text(encoding='utf-8'))
     if not isinstance(event, dict) or event.get('symbol') != symbol:
         raise ValueError('event input issuer mismatch or missing symbol')
+    followup = None
+    if followup_path is not None:
+        followup = read_event_followup(root=root,
+            cutoff=datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8))).date(),
+            path=followup_path, expected_sha256=followup_sha256)
+        if followup['symbol'] != symbol:
+            raise ValueError('event followup issuer mismatch')
+        raw_followup = json.loads(require_inside(root, followup_path, 'event followup').read_text(encoding='utf-8'))
+        if raw_followup['event_scan']['sha256'] != event_sha256:
+            raise ValueError('event followup must bind the acquired event scan')
     # Exclusive directory creation prevents reruns from replacing an old attempt.
     output.mkdir(parents=True, exist_ok=False)
+    if followup is not None:
+        target = output / 'event_followup.json'
+        shutil.copyfile(followup_path, target)
+        if sha256_file(target) != followup_sha256:
+            raise ValueError('event followup changed during snapshot')
     started = datetime.now(timezone.utc)
     run_id = 'isolated-daily-' + uuid4().hex
     day = started.astimezone(timezone(timedelta(hours=8))).date().isoformat()
@@ -139,6 +159,7 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
             outputs['decision']['blockers'] = ['PREDECISION_INPUT_NOT_ESTABLISHED']
         outputs['product'].update(suggested_state=outputs['decision']['suggested_state'],
             blockers=outputs['decision']['blockers'], execution_status='RESEARCH_RESULT_PROJECTION_ONLY')
+    outputs['product']['source_anchored_explanation'] = followup
     executed.append('product')
     for role, value in outputs.items():
         path = output / (role + '.json')
@@ -164,6 +185,11 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
     audit = audit_shadow_daily_input(root=root, path=manifest_path,
         expected_sha256=sha256_file(manifest_path), now=datetime.now(timezone.utc))
     write_new_json(output / 'audit.json', audit)
+    card_path = output / 'company-card.md'
+    with card_path.open('x', encoding='utf-8') as handle:
+        handle.write(render_shadow_company_review(research=outputs['research'],
+            model=outputs['model'], decision=outputs['decision'],
+            product=outputs['product'], audit=audit))
     report = '\n'.join(['# Isolated Daily Research Attempt', '', f'Symbol: {symbol}',
         f'Run: {run_id}', f'Observed: {completed.isoformat()}',
         f'Research: {research["status"]}', f'Decision: {outputs["decision"]["suggested_state"]}',
@@ -180,4 +206,4 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
     with (output / 'report.md').open('x', encoding='utf-8') as handle:
         handle.write(report + '\n')
     return dict(output=str(output), manifest_sha256=sha256_file(manifest_path),
-        audit=audit, dag_execution_complete=False, action='no_order')
+        audit=audit, company_card=str(card_path), dag_execution_complete=False, action='no_order')

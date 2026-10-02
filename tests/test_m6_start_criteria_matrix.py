@@ -82,6 +82,9 @@ def test_isolated_attempt_runs_shared_scheduler_and_seals_refusal(tmp_path):
     research = json.loads((output / 'research.json').read_text(encoding='utf-8'))
     assert research['result']['status'] == 'BLOCKED_BY_RESEARCH_SCHEDULER'
     assert (output / 'event.json').read_bytes() == event.read_bytes()
+    card = (output / 'company-card.md').read_text(encoding='utf-8')
+    assert '600887' in card and 'action=no_order' in card
+    assert '本次研究未形成估值结果' in card
     before = (output / 'input.json').read_bytes()
     with pytest.raises(ValueError, match='new runtime'):
         run_isolated_daily_attempt(root=tmp_path, output=output, symbol='600887',
@@ -167,6 +170,38 @@ def test_isolated_request_without_explicit_package_is_rejected(tmp_path):
             symbol='600887', event_path=tmp_path / 'unused', event_sha256='unused',
             schedule_request_path=tmp_path / 'request', schedule_request_sha256='unused')
     assert not (tmp_path / 'runtime/rejected').exists()
+
+
+@pytest.mark.parametrize('matched', [True, False])
+def test_daily_company_card_keeps_source_explanation_separate_from_admission(tmp_path, monkeypatch, matched):
+    import hashlib
+    from value_investment_agent.operations import shadow_daily_run as module
+    event = tmp_path / 'event.json'
+    event.write_text('{"symbol":"600887"}', encoding='utf-8')
+    event_hash = hashlib.sha256(event.read_bytes()).hexdigest()
+    followup = tmp_path / 'followup.json'
+    followup.write_text(json.dumps(dict(event_scan=dict(sha256=event_hash if matched else 'wrong'))), encoding='utf-8')
+    followup_hash = hashlib.sha256(followup.read_bytes()).hexdigest()
+    monkeypatch.setattr(module, 'read_event_followup', lambda **kwargs:
+        dict(symbol='600887', rows={'测试原文事实': '已披露；原件：https://example.test/filing'},
+             unresolved_questions=['仍缺支付后现金证据'], sha256=followup_hash))
+    monkeypatch.setattr(module, 'run_company_research_for_symbol', lambda **kwargs:
+        dict(result=dict(symbol='600887', action='no_order', status='BLOCKED_BY_RESEARCH_SCHEDULER',
+                         blockers=['evidence stop']), receipt={}))
+    output = tmp_path / 'runtime/explained'
+    kwargs = dict(root=tmp_path, output=output, symbol='600887', event_path=event,
+        event_sha256=event_hash, followup_path=followup, followup_sha256=followup_hash)
+    if not matched:
+        with pytest.raises(ValueError, match='acquired event scan'):
+            module.run_isolated_daily_attempt(**kwargs)
+        assert not output.exists()
+        return
+    result = module.run_isolated_daily_attempt(**kwargs)
+    card = (output / 'company-card.md').read_text(encoding='utf-8')
+    assert '测试原文事实' in card and '仍缺支付后现金证据' in card
+    assert 'evidence stop' in card and 'NOT_READY' in card
+    assert (output / 'event_followup.json').read_bytes() == followup.read_bytes()
+    assert result['audit']['verified_real_session_count'] == 0
 
 
 def _criteria_by_id():
