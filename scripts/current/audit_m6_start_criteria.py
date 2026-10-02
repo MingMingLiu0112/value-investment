@@ -5,6 +5,7 @@ import argparse
 import json
 from pathlib import Path
 import sys
+from datetime import datetime, timezone
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -13,6 +14,8 @@ sys.path.insert(0, str(ROOT / "src"))
 from value_investment_agent.operations.start_criteria import (  # noqa: E402
     load_m6_start_criteria_matrix,
 )
+from value_investment_agent.operations.shadow_daily_input import audit_shadow_daily_input
+from value_investment_agent.application.product.common import write_new_json
 
 
 def main() -> int:
@@ -22,12 +25,26 @@ def main() -> int:
         type=Path,
         default=ROOT / "config" / "m6-start-criteria-matrix-v1.json",
     )
+    parser.add_argument('--daily-input', type=Path)
+    parser.add_argument('--daily-input-sha256')
+    parser.add_argument('--output', type=Path)
     args = parser.parse_args()
+    if bool(args.daily_input) != bool(args.daily_input_sha256):
+        raise ValueError('daily input requires paired path/hash')
     matrix_path = args.matrix if args.matrix.is_absolute() else ROOT / args.matrix
     matrix = load_m6_start_criteria_matrix(matrix_path, root=ROOT)
     payload = matrix.as_policy()
     payload["state_semantics"] = "STATIC_BASELINE_NOT_CURRENT_READINESS"
     payload["current_status_source"] = "latest verified m6 operational preflight receipt"
+    if args.daily_input:
+        payload['daily_input_audit'] = audit_shadow_daily_input(root=ROOT,
+            path=ROOT / args.daily_input, expected_sha256=args.daily_input_sha256,
+            now=datetime.now(timezone.utc))
+    if args.output:
+        target = (ROOT / args.output).resolve()
+        if not target.is_relative_to(ROOT / 'runtime'):
+            raise ValueError('audit output must stay under runtime')
+        write_new_json(target, payload)
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
 

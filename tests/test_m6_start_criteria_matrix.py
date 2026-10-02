@@ -19,6 +19,44 @@ ROOT = Path(__file__).resolve().parents[1]
 MATRIX_PATH = ROOT / "config" / "m6-start-criteria-matrix-v1.json"
 
 
+def test_daily_input_consistency_never_grants_shadow_count(tmp_path, monkeypatch):
+    from datetime import datetime, date
+    from types import SimpleNamespace
+    import hashlib
+    from value_investment_agent.operations import shadow_daily_input as module
+    def bind(name, value):
+        path = tmp_path / (name + '.json')
+        path.write_text(json.dumps(value), encoding='utf-8')
+        return dict(path=path.name, sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                    observed_at='2026-09-30T15:10:00+08:00')
+    bindings = {role: bind(role, dict(action='no_order', run_id='test-run',
+        session_date='2026-09-30', generated_at='2026-09-30T15:10:00+08:00',
+        suggested_state='NOT_READY')) for role in module.ROLES}
+    original = bind('original', dict(observation='synthetic isolated fixture'))
+    bindings['event'] = bind('event', dict(action='no_order', simulation_only=False,
+        observed_at='2026-09-30T15:10:00+08:00', scan_as_of='2026-09-30T15:10:00+08:00',
+        coverage_complete=True, symbols=['600887'], source_bindings=[original]))
+    bindings['run_receipt'] = bind('run_receipt', dict(action='no_order', run_id='test-run',
+        simulation_only=False, session_date='2026-09-30', node_sequence=list(module.DAG_NODES),
+        input_hashes={key: bindings[key]['sha256'] for key in ('quote', 'event')},
+        output_hashes={key: bindings[key]['sha256'] for key in ('research', 'model', 'decision', 'portfolio', 'product')}))
+    manifest = dict(schema_version='shadow-daily-input-v1', session_date='2026-09-30',
+        generated_at='2026-09-30T15:11:00+08:00', symbols=['600887'], bindings=bindings, action='no_order')
+    request = bind('manifest', manifest)
+    monkeypatch.setattr(module, 'quote_snapshot_from_bundle_file', lambda *a, **k:
+        SimpleNamespace(status='verified_close', quote_date=date(2026, 9, 30)))
+    def audit():
+        return module.audit_shadow_daily_input(root=tmp_path, path=tmp_path/request['path'],
+            expected_sha256=request['sha256'], now=datetime.fromisoformat('2026-09-30T15:12:00+08:00'))
+    result = audit()
+    assert result['input_consistency_status'] == 'PASS'
+    assert result['shadow_session_valid'] is False
+    assert result['verified_real_session_count'] == 0
+    (tmp_path / 'decision.json').write_text('{}', encoding='utf-8')
+    with pytest.raises(ValueError, match='hash mismatch'):
+        audit()
+
+
 def _payload() -> dict[str, object]:
     return json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
 
