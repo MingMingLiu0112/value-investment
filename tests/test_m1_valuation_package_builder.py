@@ -88,7 +88,7 @@ def test_yili_bear_base_bull_ordering_is_registered_before_arithmetic():
     )
 
 
-def test_huayu_package_routes_to_the_shared_fcff_contract():
+def test_huayu_package_routes_to_shared_fcff_but_stops_at_issuer_identity_gate():
     payload = load_descriptor_payloads(ROOT)["600741"]
     descriptor = build_descriptor(payload, root=ROOT)
     spec = build_research_run_spec(descriptor)
@@ -102,11 +102,16 @@ def test_huayu_package_routes_to_the_shared_fcff_contract():
         InMemoryResearchArtifactRepository()
     ).run_company_research(spec)
 
-    assert outcome.valuation.status == "conditional_research_only"
-    assert outcome.valuation.bear_value < outcome.valuation.base_value
-    assert outcome.valuation.base_value < outcome.valuation.bull_value
+    assert outcome.valuation.status == "not_ready"
+    assert outcome.valuation.bear_value is None
+    assert outcome.valuation.base_value is None
+    assert outcome.valuation.bull_value is None
     assert outcome.price_bridge.quote_status == "verified_close"
-    assert outcome.price_bridge.bridge_status == "READY"
+    assert outcome.price_bridge.bridge_status == "INVALID"
+    assert any(
+        blocker.startswith("issuer_identity_unverified:financial_source_not_official:")
+        for blocker in outcome.valuation.blockers
+    )
     assert outcome.gate.results["G3_估值门"] is False
     assert outcome.current_status.research_conclusion == "估值未就绪"
     assert outcome.current_status.price_attractiveness.status == "NOT_ASSESSABLE"
@@ -129,7 +134,7 @@ def test_huayu_bridge_exposures_do_not_overlap_operations():
     assert len(bridge_ids) == len(set(bridge_ids))
 
 
-def test_gree_package_keeps_industrial_fcff_scope_and_uses_verified_quote():
+def test_gree_package_keeps_fcff_scope_but_stops_at_issuer_identity_gate():
     payload = load_descriptor_payloads(ROOT)["000651"]
     descriptor = build_descriptor(payload, root=ROOT)
     spec = build_research_run_spec(descriptor)
@@ -145,12 +150,17 @@ def test_gree_package_keeps_industrial_fcff_scope_and_uses_verified_quote():
         InMemoryResearchArtifactRepository()
     ).run_company_research(spec)
 
-    assert outcome.valuation.status == "conditional_research_only"
-    assert outcome.valuation.bear_value < outcome.valuation.base_value
-    assert outcome.valuation.base_value < outcome.valuation.bull_value
+    assert outcome.valuation.status == "not_ready"
+    assert outcome.valuation.bear_value is None
+    assert outcome.valuation.base_value is None
+    assert outcome.valuation.bull_value is None
     assert outcome.price_bridge.quote_status == "verified_close"
-    assert outcome.price_bridge.bridge_status == "READY"
-    assert outcome.current_status.current_data_status.status == "READY"
+    assert outcome.price_bridge.bridge_status == "INVALID"
+    assert outcome.current_status.current_data_status.status == "INVALID"
+    assert any(
+        blocker.startswith("issuer_identity_unverified:financial_source_not_official:")
+        for blocker in outcome.valuation.blockers
+    )
     assert any(
         "treasury/financial company scope" in blocker
         for blocker in outcome.blockers
@@ -207,7 +217,11 @@ def test_material_event_makes_an_otherwise_valid_model_stale():
 
     assert outcome.model_validity.status == "STALE"
     assert outcome.price_bridge.bridge_status == "STALE_MODEL"
-    assert outcome.valuation.status == "conditional_research_only"
+    assert outcome.valuation.status == "not_ready"
+    assert any(
+        blocker.startswith("issuer_identity_unverified:financial_source_not_official:")
+        for blocker in outcome.valuation.blockers
+    )
 
 
 def test_probe_script_executes_one_package_end_to_end():
@@ -234,5 +248,9 @@ def test_probe_script_executes_one_package_end_to_end():
     payload = json.loads(result.stdout)
     assert payload["action"] is None
     assert payload["run_status"] == "COMPLETED_WITH_BLOCKERS"
-    assert payload["valuation"]["status"] == "conditional_research_only"
-    assert payload["price_bridge"]["bridge_status"] == "READY"
+    assert payload["valuation"]["status"] == "not_ready"
+    assert payload["price_bridge"]["bridge_status"] == "INVALID"
+    assert any(
+        blocker.startswith("issuer_identity_unverified:financial_source_not_official:")
+        for blocker in payload["valuation"]["blockers"]
+    )

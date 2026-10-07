@@ -43,6 +43,7 @@ jobs:
           tests/test_reported_cash_proxy.py
           tests/test_reported_financials_presentation.py
           tests/test_company_events_presentation.py
+          tests/test_quote_observation_presentation.py
           tests/test_historical_decision_input_review.py
           tests/test_operating_cash_change.py
           tests/test_dividend_history_presentation.py
@@ -124,6 +125,10 @@ jobs:
           tests/test_backup_space.py
           tests/test_m6_operational_readiness.py
           tests/test_m6_start_criteria_matrix.py
+          tests/test_personal_shadow_governance.py
+          tests/test_personal_shadow_observation.py
+          tests/test_shadow_daily_review_publication.py
+          tests/test_historical_fill_bar_feasibility.py
           tests/test_m6_exchange_sessions.py
           tests/test_m6_calendar_readiness.py
           tests/test_m6_shadow_receipts.py
@@ -258,7 +263,7 @@ jobs:
       - name: Install PostgreSQL client for isolated restore drill
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Verify disposable PostgreSQL research repository
-        run: mkdir -p .tmp && python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest --junitxml=.tmp/postgres-integration-results.xml tests/test_postgres_research_artifacts.py tests/test_m6_restore_integration.py
+        run: python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest --junitxml=.tmp/postgres-integration-results.xml tests/test_postgres_research_artifacts.py tests/test_m6_restore_integration.py
       - name: Retain synthetic isolated restore evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -37,6 +37,15 @@ def _head(root: Path) -> str:
     return head
 
 
+def _is_pytest_command(parts: list[str]) -> bool:
+    if parts[:1] != ["python"]:
+        return False
+    pytest_index = 1
+    if parts[pytest_index:pytest_index + 1] == ["-B"]:
+        pytest_index += 1
+    return parts[pytest_index:pytest_index + 2] == ["-m", "pytest"]
+
+
 def verify_restore_ci(root: Path) -> dict:
     """Bind an exact clean commit to a successful GitHub restore test and artifact.
 
@@ -57,7 +66,7 @@ def verify_restore_ci(root: Path) -> dict:
                     if step.get("name") == "Retain synthetic isolated restore evidence"]
     test_command = shlex.split(test_steps[0].get("run", "")) if len(test_steps) == 1 else []
     if (len(test_steps) != 1 or len(upload_steps) != 1
-            or test_command[:3] != ["python", "-m", "pytest"]
+            or not _is_pytest_command(test_command)
             or "tests/test_m6_restore_integration.py" not in test_command
             or upload_steps[0].get("with", {}).get("name") != "m6-synthetic-restore-evidence"):
         raise ValueError("Current workflow does not run and retain restore evidence")

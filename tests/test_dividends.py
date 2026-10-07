@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -24,11 +24,14 @@ class Frame:
 
 
 def test_cninfo_dividends_sum_paid_cash_dividends_in_trailing_year(monkeypatch) -> None:
-    today = datetime.now(timezone.utc).year
+    now = datetime.now(timezone.utc)
+    recent = now.strftime("%Y-%m-%d")
+    inside_window = (now - timedelta(days=180)).strftime("%Y-%m-%d")
+    outside_window = (now - timedelta(days=800)).strftime("%Y-%m-%d")
     frame = Frame([
-        Row({"派息日": f"{today}-06-01", "派息比例": 5, "实施方案公告日期": f"{today}-05-20"}),
-        Row({"派息日": f"{today - 1}-10-01", "派息比例": 3, "实施方案公告日期": f"{today - 1}-09-15"}),
-        Row({"派息日": f"{today - 2}-01-01", "派息比例": 99, "实施方案公告日期": f"{today - 2}-01-01"}),
+        Row({"派息日": recent, "派息比例": 5, "实施方案公告日期": recent}),
+        Row({"派息日": inside_window, "派息比例": 3, "实施方案公告日期": inside_window}),
+        Row({"派息日": outside_window, "派息比例": 99, "实施方案公告日期": outside_window}),
     ])
     monkeypatch.setitem(sys.modules, "akshare", SimpleNamespace(stock_dividend_cninfo=lambda symbol: frame))
 

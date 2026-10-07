@@ -67,7 +67,11 @@ def test_v3_only_corrects_notice_pit_date_and_binds_v2_predecessor(tmp_path):
         "source_available_at": "2026-09-29T00:00:00+08:00",
     }
     assert result["projection"]["events"] == previous["projection"]["events"]
-    assert result["projection"]["audit_decisions"] == previous["projection"]["audit_decisions"]
+    previous_decision = previous["projection"]["audit_decisions"][-1]
+    current_decision = result["projection"]["audit_decisions"][-1]
+    assert {key: current_decision[key] for key in previous_decision} == previous_decision
+    assert current_decision["reopen_condition_met"] is False
+    assert current_decision["reopen_evidence_refs"] == []
     assert result["projection"]["audit_evidence"][:-1] == previous["projection"]["audit_evidence"][:-1]
     old_evidence = previous["projection"]["audit_evidence"][-1]
     new_evidence = result["projection"]["audit_evidence"][-1]

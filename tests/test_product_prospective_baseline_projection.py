@@ -150,6 +150,8 @@ def test_verified_quote_is_shown_without_implying_price_attractiveness(tmp_path:
         "bundle_path": bundle_path.as_posix(),
         "action": "no_order",
     }
+    packet["research_snapshot_as_of"] = "2026-09-27"
+    packet["as_of"] = "2026-09-28"
 
     model = product_workbench_from_payload(_build(packet, tmp_path))
     opportunities = {card.symbol: card for card in model.opportunities}

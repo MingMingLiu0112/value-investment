@@ -112,9 +112,10 @@ def build_projection_payload(
     previous_projection = previous["projection"]
     notice_projection = notice["projection"]
 
-    for key in ("events", "audit_decisions"):
-        if notice_projection[key] != [previous_projection[key][-1]]:
-            raise ValueError(f"v3 correction must preserve the existing final {key[:-1]}")
+    _require_preserved_final_event(previous_projection, notice_projection)
+    audit_decision_additions = _require_preserved_final_audit_decision(
+        previous_projection, notice_projection
+    )
 
     old_evidence = previous_projection["audit_evidence"][-1]
     new_evidence = notice_projection["audit_evidence"][0]
@@ -131,6 +132,9 @@ def build_projection_payload(
 
     successor = deepcopy(previous)
     successor["projection"]["audit_evidence"][-1] = deepcopy(new_evidence)
+    successor["projection"]["audit_decisions"][-1].update(
+        deepcopy(audit_decision_additions)
+    )
     report = successor["report"]
     report["schema_version"] = "registered-public-event-projection-v3"
     report["successor_of"] = "registered-public-event-projection-v2"
@@ -149,6 +153,35 @@ def build_projection_payload(
     if successor["projection"]["action"] != "no_order":
         raise ValueError("v3 projection must remain no_order")
     return successor
+
+
+_ALLOWED_AUDIT_ADDITIONS = {
+    "reopen_condition_met": False,
+    "reopen_evidence_refs": [],
+}
+
+
+def _require_preserved_final_event(previous_projection: dict[str, Any], notice_projection: dict[str, Any]) -> None:
+    if notice_projection["events"] != [previous_projection["events"][-1]]:
+        raise ValueError("v3 correction must preserve the existing final event")
+
+
+def _require_preserved_final_audit_decision(
+    previous_projection: dict[str, Any], notice_projection: dict[str, Any]
+) -> dict[str, Any]:
+    previous = previous_projection["audit_decisions"][-1]
+    current_records = notice_projection["audit_decisions"]
+    if len(current_records) != 1:
+        raise ValueError("v3 correction must preserve the existing final audit_decision")
+    current = current_records[0]
+    if any(current.get(key) != value for key, value in previous.items()):
+        raise ValueError("v3 correction must preserve the existing final audit_decision")
+    additions = set(current) - set(previous)
+    if not additions.issubset(_ALLOWED_AUDIT_ADDITIONS):
+        raise ValueError("v3 correction introduced an unregistered audit_decision field")
+    if any(current[key] != default for key, default in _ALLOWED_AUDIT_ADDITIONS.items() if key in additions):
+        raise ValueError("v3 correction may only add empty audit_decision defaults")
+    return {key: current[key] for key in additions}
 
 
 def write_new_json(path: Path, payload: dict[str, Any]) -> None:
