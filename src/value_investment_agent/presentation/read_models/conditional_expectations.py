@@ -82,6 +82,15 @@ def render_company_review_cards(model: ProductWorkbenchReadModel) -> str:
         for scenario in card.scenarios:
             assessment = scenario.assessment
             lines.append(f'| {scenario.title} | {assessment.value_text or "不可评估"} | {assessment.status.user_label} |')
+        fresh = [(label, value) for label, value in card.decision_review
+                 if label.startswith('新披露复核：') or label == '新披露后的待复核事项']
+        if fresh:
+            lines.extend(['', '### 本次新证据（影响未批准）', ''])
+            lines.extend(f'- {label}：{value}' for label, value in fresh)
+            lines.append('公告原件已核对不等于模型、重大性、价格或买卖准入。')
+        quote_detail = review.get('已核验收盘行情（未桥接估值）')
+        if quote_detail:
+            lines.extend(['', '### 行情观察（不是价格桥接）', '', quote_detail])
         lines.extend(['', '### 先看研究结论与反证', ''])
         for label in ('核心研究论点（非买入批准）', '预期回报来源', '最强反证', '什么事实会削弱论点'):
             if label in review:
@@ -137,6 +146,9 @@ def render_company_review_cards(model: ProductWorkbenchReadModel) -> str:
             '减仓或退出需回看真实的 Entry Thesis 与新证据；缺少该记录时不能宣称买卖逻辑一致性已验证。', ''])
         groups = [('研究解释与财务明细', []), ('公告原件与待复核事项', []), ('股息原件与生命周期', []), ('来源审计入口', [])]
         for label, value in card.decision_review:
+            if label.startswith('新披露复核：') or label in {
+                    '新披露后的待复核事项', '已核验收盘行情（未桥接估值）'}:
+                continue
             if label.startswith('待复核公告 ') or label in {'公告覆盖边界', '公告原件核验'}:
                 group = 1
             elif label.startswith('股息'):

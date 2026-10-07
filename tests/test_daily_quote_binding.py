@@ -28,9 +28,11 @@ def test_product_packet_rechecks_bundle_before_build(tmp_path, monkeypatch):
     bundle.write_bytes(b"original")
     context = {"action": "no_order", "bundle_path": "runtime/bundle.json",
                "bundle_sha256": hashlib.sha256(b"original").hexdigest(), "as_of": "2026-09-25"}
-    monkeypatch.setattr(module, "build_packet", lambda _: {"audit": {"artifacts": []}})
+    monkeypatch.setattr(module, "build_packet", lambda _: {"as_of": "2026-09-24", "audit": {"artifacts": []}})
     packet = module.build_daily_product_packet(root=tmp_path, generated_at=datetime.now(timezone.utc), daily_quote=context)
     assert packet["audit"]["artifacts"][0]["sha256"] == context["bundle_sha256"]
+    assert packet["research_snapshot_as_of"] == "2026-09-24"
+    assert packet["as_of"] == "2026-09-25"
     bundle.write_bytes(b"changed")
     with pytest.raises(ValueError, match="changed after binding"):
         module.build_daily_product_packet(root=tmp_path, generated_at=datetime.now(timezone.utc), daily_quote=context)
@@ -45,6 +47,22 @@ def test_product_packet_rejects_bundle_outside_runtime(tmp_path, monkeypatch):
     context = {"action": "no_order", "bundle_path": str(bundle),
                "bundle_sha256": hashlib.sha256(b"original").hexdigest(), "as_of": "2026-09-25"}
     with pytest.raises(ValueError, match="under runtime"):
+        module.build_daily_product_packet(root=tmp_path, generated_at=datetime.now(timezone.utc), daily_quote=context)
+
+
+def test_daily_packet_rejects_missing_or_newer_research_date(tmp_path, monkeypatch):
+    from scripts.current import daily_product_packet as module
+
+    bundle = tmp_path / "runtime" / "bundle.json"
+    bundle.parent.mkdir()
+    bundle.write_bytes(b"original")
+    context = {"action": "no_order", "bundle_path": "runtime/bundle.json",
+               "bundle_sha256": hashlib.sha256(b"original").hexdigest(), "as_of": "2026-09-25"}
+    monkeypatch.setattr(module, "build_packet", lambda _: {"audit": {"artifacts": []}})
+    with pytest.raises(ValueError, match="separate research and quote dates"):
+        module.build_daily_product_packet(root=tmp_path, generated_at=datetime.now(timezone.utc), daily_quote=context)
+    monkeypatch.setattr(module, "build_packet", lambda _: {"as_of": "2026-09-26", "audit": {"artifacts": []}})
+    with pytest.raises(ValueError, match="cannot precede"):
         module.build_daily_product_packet(root=tmp_path, generated_at=datetime.now(timezone.utc), daily_quote=context)
 
 

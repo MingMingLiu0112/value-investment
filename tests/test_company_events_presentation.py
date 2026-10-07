@@ -70,7 +70,15 @@ def test_followup_preserves_investment_gates_and_keeps_history(tmp_path, monkeyp
     model, _, _, path, digest = _followup(tmp_path, monkeypatch)
     result = _apply_followup(root=tmp_path, model=model, path=path, expected_sha256=digest)
     old, new = model.companies[0], result.companies[0]
-    assert new.decision_process == old.decision_process
+    assert tuple(step.status for step in new.decision_process) == tuple(step.status for step in old.decision_process)
+    for before, after in zip(old.decision_process, new.decision_process):
+        if before.key == 'research_gate':
+            assert before.reason in after.reason
+            assert '披露前阻断记录' in after.reason
+            assert 'Post-payment cash/debt missing' in after.next_action
+            assert result.audit_evidence[-1].evidence_id in after.evidence_refs
+        else:
+            assert after == before
     assert new.price == old.price and new.valuation == old.valuation
     assert new.margin_of_safety == old.margin_of_safety
     assert result.portfolio == model.portfolio and result.events == model.events
@@ -81,7 +89,20 @@ def test_followup_preserves_investment_gates_and_keeps_history(tmp_path, monkeyp
     assert "No reviewed outcome" in dict(new.decision_review).values()
     assert any(label.startswith("历史缺项记录") for label, _ in new.decision_review)
     assert "Post-payment cash/debt missing" in dict(new.decision_review)["新披露后的待复核事项"]
+    assert '新增正式披露已核对原件' in new.latest_change
+    assert 'Post-payment cash/debt missing' in new.next_trigger
+    assert new.research_status == old.research_status
     assert result.action == "no_order"
+
+
+def test_followup_company_card_surfaces_new_evidence_before_old_research(tmp_path, monkeypatch):
+    from value_investment_agent.presentation.read_models.conditional_expectations import render_company_review_cards
+    model, _, _, path, digest = _followup(tmp_path, monkeypatch)
+    current = _apply_followup(root=tmp_path, model=model, path=path, expected_sha256=digest)
+    report = render_company_review_cards(current)
+    assert report.index('### 本次新证据（影响未批准）') < report.index('### 先看研究结论与反证')
+    assert report.count('New outcome：Payment disclosed') == 1
+    assert '不等于模型、重大性、价格或买卖准入' in report
 
 
 @pytest.mark.parametrize("problem", ["anchor", "page", "issuer", "future", "scope", "missing_gap", "integrity", "unresolved"])

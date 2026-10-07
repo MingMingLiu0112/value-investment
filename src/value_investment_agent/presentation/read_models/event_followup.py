@@ -37,7 +37,20 @@ def project_event_followup(model, followup):
         followup["path"], followup["sha256"], point.date())
     if any(item.evidence_id == identity for item in model.audit_evidence):
         raise ValueError("event followup already exists")
-    updated = replace(card, decision_review=tuple(rows.items()), evidence_refs=(*card.evidence_refs, identity))
+    steps = tuple(replace(step,
+        reason=("本次新披露后研究门尚未重新评审；以下为披露前阻断记录，部分事实可能已更新："
+                + step.reason),
+        next_action=("先复核新披露的影响与未解问题：" + "；".join(unresolved)
+                     + "。再重新评审研究门；不得沿用旧缺项或自动通过。"),
+        evidence_refs=tuple(dict.fromkeys((*step.evidence_refs, identity))))
+        if step.key == "research_gate" else step for step in card.decision_process)
+    updated = replace(card, decision_review=tuple(rows.items()),
+        decision_process=steps,
+        evidence_refs=(*card.evidence_refs, identity),
+        latest_change=(f'{point.date().isoformat()} 新增正式披露已核对原件；'
+                       '影响、重大性及投资状态尚未批准。'),
+        next_trigger=('新披露后需复核：' + '；'.join(unresolved)
+                      + '。不因原件到手自动通过估值或买卖门。'))
     today = TodayItem(StatusView("EVENT", "重要事件"), card.company_name,
         "新增正式披露已取得原件；已核对内容见公司卡的研究更新。",
         "部分旧事实缺口有了新依据，但风险评估、估值和组合门禁不因此通过。",

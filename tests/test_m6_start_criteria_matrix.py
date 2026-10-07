@@ -142,6 +142,16 @@ def test_full_daily_dag_runs_actual_shared_entry_with_explicit_synthetic_reviews
     assert consumed['daily_consumer_status'] == 'NOT_ADMITTED'
     assert consumed['verified_real_session_count'] == 0
     assert 'MISSING_DAG_ARTIFACT:quote' in consumed['blockers']
+    from value_investment_agent.operations.personal_shadow_observation import (
+        GENESIS, append_offline_observation, verify_offline_observation_ledger,
+    )
+    observed = append_offline_observation(root=tmp_path, ledger=tmp_path / 'runtime/observation-ledger',
+        manifest=output / 'input.json', expected_manifest_sha256=result['manifest_sha256'],
+        expected_head_sha256=GENESIS, now=datetime.now(timezone.utc))
+    assert observed['record']['input_consistency_status'] == consumed['audit']['input_consistency_status']
+    assert 'MISSING_DAG_ARTIFACT:quote' in observed['record']['blockers']
+    assert verify_offline_observation_ledger(root=tmp_path, ledger=tmp_path / 'runtime/observation-ledger',
+        expected_head_sha256=observed['record_sha256'])['verified_real_session_count'] == 0
     card = (output / 'company-card.md').read_text(encoding='utf-8')
     assert 'SYNTHETIC_REVIEW_REJECTION' in card and 'action=no_order' in card
     (output / 'synthetic-e2e-review.md').write_text(

@@ -155,6 +155,42 @@ def test_synthetic_candidate_can_be_written_and_reopened(tmp_path: Path) -> None
     assert reopened[SHEET_PORTFOLIO]["A4"].value == "尚未接入真实组合"
 
 
+def test_daily_quote_keeps_frozen_research_date_visible_and_decisions_closed(tmp_path: Path) -> None:
+    packet = _materialized_packet(tmp_path)
+    source = tmp_path / "runtime" / "quote" / "bundle.json"
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b"synthetic quoted close fixture")
+    packet["audit"]["artifacts"].append({
+        "label": "Synthetic daily quote fixture", "path": "runtime/quote/bundle.json",
+        "sha256": candidate_module.hashlib.sha256(source.read_bytes()).hexdigest(),
+        "action": ACTION_NO_ORDER,
+    })
+    research_as_of = packet["as_of"]
+    packet["research_snapshot_as_of"] = research_as_of
+    packet["as_of"] = "2026-09-26"
+    packet["daily_quote"] = {
+        "schema_version": "daily-quote-binding-v1", "as_of": "2026-09-26",
+        "coverage_status": "PARTIAL", "quotes": [{"symbol": "600887", "price": "12.34"}],
+        "missing_symbols": ["000333"], "excluded_symbols": [],
+        "bundle_path": "runtime/quote/bundle.json", "action": ACTION_NO_ORDER,
+    }
+    payload = build_product_workbench_candidate_payload(packet, root=tmp_path)
+    model = product_workbench_from_payload(payload)
+    assert f"研究基线 {research_as_of}，行情 2026-09-26" in model.system_health.message
+    assert "报价不刷新研究" in model.today_items[0].why_it_matters
+    assert all(not card.price.available for card in model.companies)
+    assert all(not card.margin_of_safety.available for card in model.companies)
+    assert model.action == ACTION_NO_ORDER
+    workbook = build_product_workbench_workbook(model)
+    assert f"研究基线 {research_as_of}" in _user_text(workbook)
+
+    for missing in (None, "2026-09-27"):
+        altered = copy.deepcopy(packet)
+        altered["research_snapshot_as_of"] = missing
+        with pytest.raises(ValueError, match="research_snapshot_as_of|date boundary"):
+            build_product_workbench_candidate_payload(altered, root=tmp_path)
+
+
 def test_projection_fails_closed_on_missing_evidence() -> None:
     packet = _packet()
     packet["audit"]["artifacts"] = []

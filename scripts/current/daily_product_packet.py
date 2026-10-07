@@ -1,7 +1,7 @@
 """Layer current quote evidence over the frozen M7 research packet."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +22,15 @@ def build_daily_product_packet(*, root: Path, generated_at: datetime, daily_quot
     if sha256_file(bundle) != daily_quote["bundle_sha256"]:
         raise ValueError("daily quote bundle changed after binding")
     packet = build_packet(generated_at)
-    packet["as_of"] = daily_quote["as_of"]
+    try:
+        research_as_of = date.fromisoformat(packet["as_of"])
+        quote_as_of = date.fromisoformat(daily_quote["as_of"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError("daily packet requires separate research and quote dates") from error
+    if quote_as_of < research_as_of:
+        raise ValueError("daily quote cannot precede frozen research snapshot")
+    packet["research_snapshot_as_of"] = research_as_of.isoformat()
+    packet["as_of"] = quote_as_of.isoformat()
     packet["daily_quote"] = daily_quote
     packet["audit"]["artifacts"].append(
         {

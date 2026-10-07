@@ -16,7 +16,10 @@ from value_investment_agent.operations.start_criteria import (  # noqa: E402
 )
 from value_investment_agent.operations.shadow_daily_input import audit_shadow_daily_input, consume_shadow_daily_input
 from value_investment_agent.operations.shadow_daily_run import run_isolated_daily_attempt
-from value_investment_agent.application.product.common import write_new_json
+from value_investment_agent.application.product.common import sha256_file, write_new_json
+from value_investment_agent.operations.personal_shadow_governance import assess_personal_observation_dependencies
+from value_investment_agent.operations.personal_shadow_observation import append_offline_observation
+from value_investment_agent.operations.shadow_daily_review_publication import render_bound_daily_review
 
 
 def main() -> int:
@@ -47,8 +50,65 @@ def main() -> int:
     parser.add_argument('--operational-inputs-sha256')
     parser.add_argument('--research-reviews', type=Path)
     parser.add_argument('--research-reviews-sha256')
+    parser.add_argument('--governance-profile', choices=('legacy-v1', 'personal-observation-v1'), default='legacy-v1')
+    parser.add_argument('--offline-observation-ledger', type=Path,
+                        help='Append an offline-only audit attempt under runtime; never count a real session.')
+    parser.add_argument('--expected-ledger-head-sha256')
+    parser.add_argument('--daily-review-output', type=Path,
+                        help='Re-render a hash-bound no_order company card under runtime.')
     args = parser.parse_args()
+    if bool(args.offline_observation_ledger) != bool(args.expected_ledger_head_sha256):
+        parser.error('offline observation ledger requires its externally retained head hash')
+    if args.daily_review_output:
+        if (not args.daily_input or not args.daily_input_sha256 or args.isolated_run
+                or args.offline_observation_ledger or args.operational_inputs
+                or args.operational_inputs_sha256 or args.output or any((
+                    args.symbol, args.event_input, args.event_input_sha256,
+                    args.quote_input, args.quote_input_sha256,
+                    args.research_package, args.research_package_sha256,
+                    args.schedule_request, args.schedule_request_sha256,
+                    args.event_followup, args.event_followup_sha256,
+                    args.simulated_portfolio, args.simulated_portfolio_sha256,
+                    args.research_reviews, args.research_reviews_sha256,
+                ))):
+            parser.error('daily review requires daily-input path/hash and no execution inputs')
+        target = (ROOT / args.daily_review_output).resolve()
+        if not target.is_relative_to((ROOT / 'runtime').resolve()):
+            parser.error('daily review output must stay under runtime')
+        card = render_bound_daily_review(root=ROOT, manifest_path=ROOT / args.daily_input,
+            manifest_sha256=args.daily_input_sha256, now=datetime.now(timezone.utc))
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open('x', encoding='utf-8') as handle:
+            handle.write(card)
+        print(json.dumps(dict(output=str(target), output_sha256=sha256_file(target),
+            action='no_order', verified_real_session_count=0), ensure_ascii=False, indent=2))
+        return 0
+    if args.offline_observation_ledger:
+        if (args.governance_profile != 'personal-observation-v1' or not args.daily_input
+                or not args.daily_input_sha256 or args.isolated_run or args.operational_inputs
+                or args.operational_inputs_sha256 or args.output or any((
+                    args.symbol, args.event_input, args.event_input_sha256,
+                    args.quote_input, args.quote_input_sha256,
+                    args.research_package, args.research_package_sha256,
+                    args.schedule_request, args.schedule_request_sha256,
+                    args.event_followup, args.event_followup_sha256,
+                    args.simulated_portfolio, args.simulated_portfolio_sha256,
+                    args.research_reviews, args.research_reviews_sha256,
+                ))):
+            parser.error('offline observation requires personal profile and daily-input path/hash only')
+        ledger = (ROOT / args.offline_observation_ledger).resolve()
+        if not ledger.is_relative_to((ROOT / 'runtime').resolve()):
+            parser.error('offline observation ledger must stay under runtime')
+        result = append_offline_observation(root=ROOT, ledger=ledger,
+            manifest=ROOT / args.daily_input,
+            expected_manifest_sha256=args.daily_input_sha256,
+            expected_head_sha256=args.expected_ledger_head_sha256,
+            now=datetime.now(timezone.utc))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
     if args.isolated_run:
+        if args.governance_profile != 'legacy-v1':
+            parser.error('governance assessment is separate from isolated execution')
         if args.operational_inputs or args.operational_inputs_sha256:
             parser.error('operational consumption requires daily-input, not isolated-run')
         if not all((args.symbol, args.event_input, args.event_input_sha256)) or args.daily_input or args.output:
@@ -84,6 +144,8 @@ def main() -> int:
     payload = matrix.as_policy()
     payload["state_semantics"] = "STATIC_BASELINE_NOT_CURRENT_READINESS"
     payload["current_status_source"] = "latest verified m6 operational preflight receipt"
+    if args.governance_profile == 'personal-observation-v1':
+        payload['personal_observation_assessment'] = assess_personal_observation_dependencies(payload)
     if args.daily_input:
         payload['daily_consumer'] = consume_shadow_daily_input(root=ROOT,
             path=ROOT / args.daily_input, expected_sha256=args.daily_input_sha256,

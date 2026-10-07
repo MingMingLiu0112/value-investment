@@ -41,6 +41,42 @@ _LIMITATION_TEXT = {
 }
 
 
+def render_historical_fill_feasibility(audit: Mapping[str, Any]) -> str:
+    """Present an OHLC range check without turning it into execution admission."""
+    if (audit.get('schema_version') != 'historical-ohlc-fill-feasibility-v1'
+            or audit.get('action') != ACTION_NO_ORDER
+            or audit.get('execution_admitted') is not False
+            or audit.get('historical_execution_validated') is not False
+            or audit.get('performance_claim_allowed') is not False
+            or audit.get('feasibility_status') != 'DAY_BAR_RANGE_CONSISTENT_NOT_EXECUTION_PROVEN'):
+        raise ValueError('fill feasibility audit cannot admit execution')
+    checks = audit.get('checks')
+    if not isinstance(checks, list) or not checks or len(checks) != audit.get('checked_fills'):
+        raise ValueError('fill feasibility audit has no complete checks')
+    lines = [f'# {audit["symbol"]} 历史成交日线核对', '',
+             '结论：模拟成交价均落在封存日线的最高/最低价之间；这只是必要条件，不证明当时真实可成交。',
+             '冻结买卖逻辑、收益及交易日志均未重算。严格 PIT、盘口排队、涨跌停、停牌和真实流动性仍未验证。', '',
+             '| 日期 | 方向 | 模拟成交价 | 原件日内区间 | 来源 |',
+             '| --- | --- | ---: | ---: | --- |']
+    for item in checks:
+        if item.get('status') != 'BAR_RANGE_CONSISTENT_NOT_FILL_PROVEN':
+            raise ValueError('fill feasibility row not verified')
+        sources = item['originals']
+        lines.append(f'| {item["date"]} | {item["side"]} | {item["fill_price"]} | '
+                     f'{item["low"]}–{item["high"]} | {len(sources)} 份封存原件一致 |')
+    lines.extend(['', '## 原件定位'])
+    for item in checks:
+        lines.append(f'- {item["date"]}：')
+        for source in item['originals']:
+            lines.append(f'  - {source["path"]}；行 {source["row_index"]}；SHA-256 {source["sha256"]}')
+    lines.extend(['', f'回放结果 SHA-256：{audit["result_sha256"]}',
+                  f'冻结日志 SHA-256：{audit["journal_sha256"]}',
+                  '成交量原字段已检查为正，但来源单位未确认，未据此宣称流动性充足。',
+                  '历史执行验证：未通过；投资规则有效性：未通过；业绩结论：不允许。',
+                  'action=no_order', ''])
+    return '\n'.join(lines)
+
+
 def _required_text(value: object, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field} is required")

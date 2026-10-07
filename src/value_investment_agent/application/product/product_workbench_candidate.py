@@ -1307,6 +1307,21 @@ def build_product_workbench_candidate_payload(
         raise ValueError("Unsupported legacy M7 packet schema")
     if packet.get("action") != ACTION_NO_ORDER:
         raise ValueError("Legacy M7 packet must remain no_order")
+    daily_quote = packet.get("daily_quote")
+    research_snapshot_as_of = None
+    if daily_quote is not None:
+        daily_quote = _required_mapping(daily_quote, "daily_quote")
+        research_snapshot_as_of = _required_text(
+            packet.get("research_snapshot_as_of"), "research_snapshot_as_of")
+        quote_as_of = _required_text(daily_quote.get("as_of"), "daily_quote.as_of")
+        try:
+            research_date = date.fromisoformat(research_snapshot_as_of)
+            quote_date = date.fromisoformat(quote_as_of)
+            display_date = date.fromisoformat(_required_text(packet.get("as_of"), "as_of"))
+        except ValueError as error:
+            raise ValueError("daily research/quote dates are invalid") from error
+        if research_date > quote_date or display_date != quote_date:
+            raise ValueError("daily research/quote date boundary is inconsistent")
 
     m2, rows = _m2_rows(packet)
     m3, m3_cards = _m3_cards(packet)
@@ -1339,7 +1354,6 @@ def build_product_workbench_candidate_payload(
             "m6-operational-preflight-20260924T050357Z/receipt.json",
         )
     ]
-    daily_quote = packet.get("daily_quote")
     daily_quote_refs = (
         [_evidence_ref(evidence, _required_text(daily_quote.get("bundle_path"), "daily_quote.bundle_path"))]
         if isinstance(daily_quote, Mapping)
@@ -1360,6 +1374,13 @@ def build_product_workbench_candidate_payload(
         daily_quote=daily_quote if isinstance(daily_quote, Mapping) else None,
         daily_quote_refs=daily_quote_refs,
     )
+    if research_snapshot_as_of is not None:
+        if not today_items or today_items[0].get("category") != "MARKET_DATA":
+            raise ValueError("daily quote item is missing from product projection")
+        today_items[0]["why_it_matters"] = (
+            f"研究基线停留在 {research_snapshot_as_of}；行情日期为 {daily_quote['as_of']}。"
+            "报价不刷新研究、公告覆盖、模型有效性或决策门禁。"
+        )
     pending_count = len(m3_cards) + len(m5_items) + int(bool(m6["blockers"]))
     payload = {
         "schema_version": PRODUCT_PAYLOAD_SCHEMA_VERSION,
@@ -1369,7 +1390,12 @@ def build_product_workbench_candidate_payload(
         "overview": {"pending_count": pending_count},
         "system_health": {
             "status": "EVIDENCE_INSUFFICIENT",
-            "message": "研究、事件或运营门仍有证据缺口；未接入真实组合，系统不生成交易指令。",
+            "message": (
+                f"研究基线 {research_snapshot_as_of}，行情 {daily_quote['as_of']}；"
+                "尚未验证当前价格与估值能否比较，也未完成当日研究复核；不生成交易指令。"
+                if research_snapshot_as_of is not None else
+                "研究、事件或运营门仍有证据缺口；未接入真实组合，系统不生成交易指令。"
+            ),
         },
         "stages": _stages(packet, m2, m3, m4, m5, m6),
         "audit": {"evidence": evidence},
