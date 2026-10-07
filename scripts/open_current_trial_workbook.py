@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 
 
@@ -14,7 +15,7 @@ CANONICAL_NAME = "A股价值投资_Agent前端智能跟踪模板.xlsx"
 PRODUCT_UX_SOURCE = "PRODUCT_UX_RUNTIME"
 
 
-def _canonical_workbook() -> Path:
+def _canonical_workbook(contract: dict) -> Path:
     value = os.environ.get("WORKBOOK_PATH")
     env_file = ROOT / ".env"
     if not value and env_file.is_file():
@@ -27,6 +28,14 @@ def _canonical_workbook() -> Path:
     workbook = Path(value).expanduser().resolve()
     if not workbook.is_file() or workbook.suffix.lower() != ".xlsx" or workbook.name != CANONICAL_NAME:
         raise ValueError("CANONICAL_WORKBOOK_NOT_RESOLVED")
+    expected_sha = contract.get("canonical_workbook_sha256")
+    if not isinstance(expected_sha, str) or re.fullmatch(r"[0-9a-f]{64}", expected_sha) is None:
+        raise ValueError("CANONICAL_WORKBOOK_POINTER_HASH_INVALID")
+    actual_sha = hashlib.sha256(workbook.read_bytes()).hexdigest()
+    if actual_sha != expected_sha:
+        raise ValueError(
+            f"CANONICAL_WORKBOOK_HASH_MISMATCH expected={expected_sha} actual={actual_sha}"
+        )
     return workbook
 
 
@@ -63,7 +72,7 @@ def _product_ux_workbook(contract: dict) -> Path:
 def _resolve_trial_workbook(contract: dict) -> Path:
     source = contract.get("workbook_source")
     if source == "WORKBOOK_PATH":
-        return _canonical_workbook()
+        return _canonical_workbook(contract)
     raise ValueError("CURRENT_TRIAL_WORKBOOK_SOURCE_NOT_RESOLVED")
 
 
