@@ -321,4 +321,3 @@ It must also state the current usable capability, what the user still cannot do,
 and the single next engineering task. A node is not complete because files were
 created or a UI opened; it is complete only when the relevant acceptance evidence
 proves the requested behavior.
-
