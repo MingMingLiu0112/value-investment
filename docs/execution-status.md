@@ -1,27 +1,32 @@
 # CURRENT STATUS
 
-## 2026-10-07 D0 Goal Governance Integration (documentation only)
+## 2026-10-07 D0 Baseline Complete
 
 The current Goal envelope has been expanded to
 `VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE` with execution stage
-`D0_BASELINE_AND_GOAL_REFORM`. The goal-level D0-D6 dependency contract is
+`D2_CANONICAL_COMPANY_DECISION_SLICE`. The goal-level D0-D6 dependency contract is
 `docs/current/advisory-sentiment-satellite-goal-v1.md`; current stage selection
 remains `docs/current-stage-goal.md`.
 
-D0 is not complete. The documentation integration preserves the historical
-M2-M7 milestones, receipts, rejected/stale states and frozen research cases as
-inherited evidence. The previously identified D0 engineering blockers, including
-the current full-suite failures and canonical workbook pointer/hash drift, still
-require Root repair, full regression, commit and push before D0 can pass.
+D0 is complete on code/config baseline `13f5d5d`. The historical M2-M7
+milestones, receipts, rejected/stale states and frozen research cases remain
+inherited evidence. The eight full-suite failures were repaired without weakening
+gates; local full regression passed with `3709 passed, 41 skipped`; a clean
+worktree run of the Core CI subset passed with `1558 passed, 49 skipped`; and
+GitHub Core Research Gates run `37576547521` succeeded. The canonical workbook
+pointer verifies SHA-256
+`5db7f3cd7651edc36505b7f7d87aa8d71550ca2150a999391778c1cbc2d23bf8`.
 
-This entry records a documentation-only architecture handoff. No code, tests,
-config, runtime, Excel, database or receipt was changed. Permanent boundaries
-remain `Recommendation != Order`, `Research Attractive != Buy Signal`,
-`Margin of Safety != Position Size`, `INITIAL_ASSISTED_USE = NOT_REACHED` and
-`action = no_order`. D1 must not expand before the D2 vertical slice; D3
-personalized guidance remains blocked without real IPS/portfolio; D5 sentiment
-remains a separate sleeve requiring value gate, PIT, walk-forward/OOS, costs and
-Shadow evidence.
+Current execution moves to `D2-CANONICAL-COMPANY-DECISION-SLICE`: one
+evidence-bound company must complete the path from official evidence through
+valuation, model validity, price bridge and decision review to a formal
+`DecisionRecommendation`. D1 remains interface-only and must not expand before
+that vertical slice. Permanent boundaries remain `Recommendation != Order`,
+`Research Attractive != Buy Signal`, `Margin of Safety != Position Size`,
+`INITIAL_ASSISTED_USE = NOT_REACHED` and `action = no_order`. D3 personalized
+guidance remains blocked without real IPS/portfolio; D5 sentiment remains a
+separate sleeve requiring value gate, PIT, walk-forward/OOS, costs and Shadow
+evidence.
 
 ## 2026-10-02 Read-Only Live Dispatch Check and Offline Source Candidate
 

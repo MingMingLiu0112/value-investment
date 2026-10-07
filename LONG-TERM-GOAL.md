@@ -6,16 +6,23 @@ Current authorized Goal:
 
 ```text
 VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE
-CURRENT_STAGE = D0_BASELINE_AND_GOAL_REFORM
-D0_STATUS = IN_PROGRESS_NOT_COMPLETE
+CURRENT_STAGE = D2_CANONICAL_COMPANY_DECISION_SLICE
+D0_STATUS = COMPLETE
+D1_STATUS = INTERFACE_ONLY_NOT_EXPANDED
+D2_STATUS = READY_TO_START
 action = no_order
 ```
 
 The goal-level contract and D0-D6 dependency graph are defined in
 [advisory-sentiment-satellite-goal-v1.md](docs/current/advisory-sentiment-satellite-goal-v1.md).
-D0 is the current gate. D1 may establish only the minimum screening interfaces;
-D2 must complete one evidence-bound single-company vertical slice before D1 is
-allowed to expand into a market-wide program. D3 personalized portfolio guidance,
+D0 completed on code/config baseline `13f5d5d`. Evidence: full local regression
+`3709 passed, 41 skipped`; clean-worktree Core subset `1558 passed, 49 skipped`;
+GitHub Core Research Gates run `37576547521` succeeded; and the canonical workbook
+pointer verifies SHA-256
+`5db7f3cd7651edc36505b7f7d87aa8d71550ca2150a999391778c1cbc2d23bf8`.
+Current execution moves to D2, one evidence-bound single-company vertical slice.
+D1 remains interface-only and must not expand into a market-wide program before
+D2 is complete. D3 personalized portfolio guidance,
 D5 real swing recommendations, and D6 production/user acceptance all retain
 their stated dependencies and user gates.
 
@@ -604,8 +611,8 @@ M7全部条件成立后才完成总Goal并停止。外部/人工/自然时间未
 ### 2026-10-07 Superseding Goal Envelope
 
 Current authorization is now
-`VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE`, beginning at
-`D0_BASELINE_AND_GOAL_REFORM`. The full D0-D6 contract is in
+`VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE`, currently at
+`D2_CANONICAL_COMPANY_DECISION_SLICE` after D0 completion. The full D0-D6 contract is in
 [advisory-sentiment-satellite-goal-v1.md](docs/current/advisory-sentiment-satellite-goal-v1.md).
 The M2-M7 text above remains the inherited evidence and implementation baseline;
 it is not the current completion endpoint and it is not permission to bypass

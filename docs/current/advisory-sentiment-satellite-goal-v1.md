@@ -2,9 +2,13 @@
 
 Status: `ACTIVE`
 
-Current stage: `D0_BASELINE_AND_GOAL_REFORM`
+Current stage: `D2_CANONICAL_COMPANY_DECISION_SLICE`
 
-D0 status: `IN_PROGRESS_NOT_COMPLETE`
+D0 status: `COMPLETE`
+
+D1 status: `INTERFACE_ONLY_NOT_EXPANDED`
+
+D2 status: `READY_TO_START`
 
 Goal ID: `VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE`
 
@@ -285,7 +289,7 @@ parallel Goal states or divergent branches.
 
 ## 8. D0 Gate
 
-D0 is not complete merely because this document exists. D0 requires Root to:
+D0 completion is not demonstrated merely because this document exists. D0 required Root to:
 
 1. preserve the current worktree and classify unfinished changes;
 2. repair the current full-suite failures without weakening assertions;
@@ -296,12 +300,23 @@ D0 is not complete merely because this document exists. D0 requires Root to:
 6. commit and push the green baseline;
 7. record the exact commit, test result and remaining external blockers.
 
-Until those steps are complete:
+D0 completed on code/config baseline `13f5d5d`. The completion evidence is:
 
 ```text
-D0_STATUS = IN_PROGRESS_NOT_COMPLETE
-D1 = NOT_AUTHORIZED_TO_EXPAND
-D2 = NOT_AUTHORIZED_TO_CLAIM_VERTICAL_SLICE_COMPLETE
+FULL_LOCAL_REGRESSION = 3709 passed, 41 skipped
+CLEAN_WORKTREE_CORE_SUBSET = 1558 passed, 49 skipped
+GITHUB_CORE_RESEARCH_GATES_RUN = 37576547521 / SUCCESS
+CANONICAL_WORKBOOK_SHA256 = 5db7f3cd7651edc36505b7f7d87aa8d71550ca2150a999391778c1cbc2d23bf8
+```
+
+D0 completion does not mean the product is investment-ready. Real data admission,
+strict contemporaneous PIT, private portfolio input, production Shadow and user
+acceptance remain separately gated.
+
+```text
+D0_STATUS = COMPLETE
+D1 = INTERFACE_ONLY_NOT_EXPANDED
+D2 = READY_TO_START
 INITIAL_ASSISTED_USE = NOT_REACHED
 action = no_order
 ```

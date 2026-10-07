@@ -6,8 +6,10 @@
 
 ```text
 VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE
-CURRENT_STAGE = D0_BASELINE_AND_GOAL_REFORM
-D0_STATUS = IN_PROGRESS_NOT_COMPLETE
+CURRENT_STAGE = D2_CANONICAL_COMPANY_DECISION_SLICE
+D0_STATUS = COMPLETE
+D1_STATUS = INTERFACE_ONLY_NOT_EXPANDED
+D2_STATUS = READY_TO_START
 action = no_order
 ```
 
@@ -17,11 +19,18 @@ action = no_order
 rejected/stale 状态、冻结研究案例或不可变 receipts。M2-M7 作为继承基线和
 工程资产保留，不得重做、删除、放宽或重新分类来帮助 D0-D6 通过。
 
-当前执行起点为 D0。D0 必须完成基线稳定、当前全量失败修复、workbook
-pointer/canonical SHA 漂移修复、目标治理整合、全量测试和 commit；在这些
-证据形成前，D0 不得标记完成。D1 只允许先建立筛选接口，D2 的单公司完整
-vertical slice 优先，D1 不得抢跑成全市场排名或买入信号。D3 在没有真实
-IPS/portfolio 时必须返回 `portfolio_guidance=BLOCKED_PRIVATE_INPUT`、
+D0 已完成。代码/配置基线为 `13f5d5d`，本地全量回归
+`3709 passed, 41 skipped`，干净 worktree 的 Core 同集
+`1558 passed, 49 skipped`，GitHub Core Research Gates run `37576547521`
+成功；canonical workbook pointer 校验
+`5db7f3cd7651edc36505b7f7d87aa8d71550ca2150a999391778c1cbc2d23bf8`
+通过。D0 只证明工程基线可复现，不代表真实数据、私人组合、生产 Shadow 或
+投资策略已经验收。
+
+当前唯一工程任务是 `D2-CANONICAL-COMPANY-DECISION-SLICE`：先用一家公司形成
+从官方证据到 `DecisionRecommendation` 的完整纵向闭环。D1 保持接口优先且不得
+抢跑成全市场排名、评分榜或买入信号；只有 D2 完成后才允许扩展 D1。D3 在没有
+真实 IPS/portfolio 时必须返回 `portfolio_guidance=BLOCKED_PRIVATE_INPUT`、
 `position_guidance=null`。D5 的情绪卫星仓必须独立 sleeve，并通过 value gate、
 PIT、walk-forward、out-of-sample、成本和 Shadow 后才能生成真实波段建议。
 

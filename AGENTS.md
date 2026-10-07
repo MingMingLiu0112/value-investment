@@ -52,14 +52,18 @@ Use `docs/project-goal-consolidation-20260922.md` for the audit and complete doc
 
 ## Current Boundary
 
-Current execution starts at D0 of
-`VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE`. D0 remains
-`IN_PROGRESS_NOT_COMPLETE` until Root has a clean, tested, committed baseline and
-the workbook pointer/canonical-hash binding is repaired. D1 is interface-first;
-D2 single-company vertical slice has priority; D3 personalized guidance without
-real IPS/portfolio is `BLOCKED_PRIVATE_INPUT` with `position_guidance=null`; D5
-sentiment is a separate sleeve and cannot emit real swing recommendations before
-value gate, PIT, walk-forward/OOS, cost and Shadow gates pass.
+D0 of `VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE` is complete on
+code/config baseline `13f5d5d`: full local regression passed (`3709 passed, 41
+skipped`), clean-worktree Core subset passed (`1558 passed, 49 skipped`), GitHub
+Core Research Gates run `37576547521` succeeded, and the canonical workbook
+pointer verifies SHA-256
+`5db7f3cd7651edc36505b7f7d87aa8d71550ca2150a999391778c1cbc2d23bf8`.
+Current execution moves to one evidence-bound D2 single-company vertical slice.
+D1 remains interface-only and must not expand into a market-wide ranking or buy
+program before D2 completes. D3 personalized guidance without real IPS/portfolio
+is `BLOCKED_PRIVATE_INPUT` with `position_guidance=null`; D5 sentiment is a
+separate sleeve and cannot emit real swing recommendations before value gate, PIT,
+walk-forward/OOS, cost and Shadow gates pass.
 
 User-approved 2026-10-03 successor governance is scoped by
 `docs/current/personal-project-m6-shadow-governance-v1.md` and the current stage
