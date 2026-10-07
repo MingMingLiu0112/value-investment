@@ -9,6 +9,7 @@ files without duplicating their content. Historical stage notes live under
 | Need | Authoritative entry |
 | --- | --- |
 | Current goal | `docs/current-stage-goal.md` |
+| Current advisory and sentiment-satellite goal contract | `docs/current/advisory-sentiment-satellite-goal-v1.md` |
 | Current execution status | `docs/execution-status.md` |
 | Latest verified public close | 2026-09-29 dual-source close bundle for 000333 / 600887 / 601088 (runtime-only, SHA-256 `c7e14a9626db695c489a485fa7134bbba4568238b67a85cc3805c8cd4ba10395`); product verification passed in memory, Canonical Excel not updated |
 | Current execution-correction review and three-company blocker burn-down | `docs/current/track-b-execution-correction-20260929.md` (current A/B/C/D counts, remaining A blockers, evidence stops, Yili bounded candidate dispositions and R1 findings) |

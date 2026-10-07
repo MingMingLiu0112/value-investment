@@ -1,5 +1,20 @@
 # 数据与证据政策
 
+## 2026-10-03 Approved Observational Successor
+
+User-approved personal governance is described in
+[personal-project-m6-shadow-governance-v1.md](current/personal-project-m6-shadow-governance-v1.md).
+Its offline implementation may separate nonpersonalized observation from final
+strict PIT, private portfolio and complete recovery acceptance. This changes
+operational stage placement only: no historical backfill becomes contemporaneous,
+no snapshot becomes complete coverage, and no missing private capacity is inferred.
+Legacy five-party evidence remains governed by its original contract; successor
+evidence requires its own versioned verifier and truthful assurance labels.
+Provider-neutral offsite backup must prove independent retrieval and integrity;
+WPS visibility alone is insufficient. Production scopes remain explicitly approved.
+The current dependency assessment grants no start, session credit or investment
+admission. All source, identity, available_at, model/price and risk rules below stay.
+
 生效：2026-09-22。本文件集中强制数据底线；具体来源见 [覆盖矩阵](data-source-and-financial-coverage-matrix.md)，外部等待见 [等待政策](external-data-blocking-policy.md)，原件热冷存储见 [存储协议](evidence-storage-tiering.md)。
 阶段目标只能缩小工作范围，不能放宽本政策。
 

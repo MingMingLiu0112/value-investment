@@ -1,8 +1,49 @@
 # LONG-TERM VALUE INVESTMENT SYSTEM ROADMAP
 
-版本：2026-09-25 / roadmap-v3，治理语义修订。总Goal贯穿M2-M7；M2已完成并获Checkpoint A `HUMAN_PASS`，M3 Checkpoint B仍为PARTIAL，M4-M7未完成产品/运营验收。第1节保留2026-09-23基线`f4bb55cd686838b874b6a8b0c601492c8bd7aab5`的历史审计，不覆盖当前状态。当前事实以 [current-stage-goal.md](docs/current-stage-goal.md) 和 [execution-status.md](docs/execution-status.md) 的最新快照及原始收据为准。
+## 2026-10-07 Advisory and Sentiment Satellite Goal Supersession
 
-本文件仍是唯一跨阶段路线，不新建平行Roadmap。总Goal为 `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`：继承已通过的M2，聚焦M3并推进依赖已满足的M4-M7独立工作；不必每过一关重新建立Goal。内部阶段完成后须核验证据再继续，不能因总目标扩大跳过验收。真实私人资料、生产操作、最终投资决定和最终产品验收仍有独立用户边界；研究复核按下述R1规则处理，不自动等同用户签字。
+Current authorized Goal:
+
+```text
+VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE
+CURRENT_STAGE = D0_BASELINE_AND_GOAL_REFORM
+D0_STATUS = IN_PROGRESS_NOT_COMPLETE
+action = no_order
+```
+
+The goal-level contract and D0-D6 dependency graph are defined in
+[advisory-sentiment-satellite-goal-v1.md](docs/current/advisory-sentiment-satellite-goal-v1.md).
+D0 is the current gate. D1 may establish only the minimum screening interfaces;
+D2 must complete one evidence-bound single-company vertical slice before D1 is
+allowed to expand into a market-wide program. D3 personalized portfolio guidance,
+D5 real swing recommendations, and D6 production/user acceptance all retain
+their stated dependencies and user gates.
+
+This section supersedes only the current Goal envelope, stage ordering and
+completion endpoint. The historical `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`
+milestones and all M1-M7 receipts remain immutable evidence and inherited
+implementation contracts. They must not be rebuilt, deleted, weakened or
+reclassified to make D0-D6 pass.
+
+`Recommendation` is not an executable order. The permanent boundaries remain:
+`Research Attractive != Buy Signal`, `High Dividend Yield != Buy Signal`,
+`Margin of Safety != Position Size`, `Historical Return != Future Return`.
+
+## 2026-10-03 Approved Personal Observational Governance
+
+The user approved [personal-project-m6-shadow-governance-v1.md](docs/current/personal-project-m6-shadow-governance-v1.md)
+for offline implementation. This scoped addendum supersedes legacy stage-placement
+requirements for the future explicitly versioned personal observational successor,
+not the old five-party verifier/receipts. Final strict PIT, real-data admission,
+20 actual completed sessions, a real event, complete recovery and user acceptance
+remain required. Private portfolio/IPS is required for personalized guidance, not
+independent public engineering or nonpersonalized observation. The current static
+dependency assessment is not an operational readiness/admission verifier.
+No production deployment/scheduling, production signing or Shadow start is granted.
+
+历史基线：2026-09-25 / roadmap-v3，治理语义修订。以下 M2-M7 章节保留历史阶段事实；当前授权由上方 2026-10-07 section 取代。M2已完成并获Checkpoint A `HUMAN_PASS`，M3 Checkpoint B仍为PARTIAL，M4-M7未完成产品/运营验收。第1节保留2026-09-23基线`f4bb55cd686838b874b6a8b0c601492c8bd7aab5`的历史审计，不覆盖当前状态。当前事实以 [current-stage-goal.md](docs/current-stage-goal.md) 和 [execution-status.md](docs/execution-status.md) 的最新快照及原始收据为准。
+
+历史 M2-M7 阶段路线如下：总Goal为 `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`：继承已通过的M2，聚焦M3并推进依赖已满足的M4-M7独立工作；不必每过一关重新建立Goal。当前授权与完成端点以本文件顶部 2026-10-07 section 和 [advisory-sentiment-satellite-goal-v1.md](docs/current/advisory-sentiment-satellite-goal-v1.md) 为准。内部阶段完成后须核验证据再继续，不能因总目标扩大跳过验收。真实私人资料、生产操作、最终投资决定和最终产品验收仍有独立用户边界；研究复核按下述R1规则处理，不自动等同用户签字。
 
 ## Review, Interruption and SubAgent Governance (2026-09-25)
 
@@ -550,7 +591,7 @@ Engineering Ready、Research Reviewed、Current Data Valid、User Ready分别验
 - 用真实资金交易来证明产品能力；模拟盈利或fixture全绿替代生产验收。
 - 重新建设已冻结Stage A/C0-C3，或把新的有限研究允许解释成随意修改冻结历史。
 
-## 15. Authorized Long Goal
+## 15. Historical M2-M7 Authorized Long Goal (retained baseline)
 
 **总Goal：VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE。**
 
@@ -559,3 +600,13 @@ Engineering Ready、Research Reviewed、Current Data Valid、User Ready分别验
 每个阶段通过后记录证据并自动继续，不要求用户重新建Goal；独立研究复核按R1留痕继续，私人IPS/持仓、生产迁移/调度/通知、真实资金决定和最终产品签收分别遵守R2-R5边界。当前M2已完成、M3为PARTIAL，具体阶段门在 [current-stage-goal.md](docs/current-stage-goal.md)，兼容启动入口在 [value-investment-goal-prompt.md](docs/value-investment-goal-prompt.md)。
 
 M7全部条件成立后才完成总Goal并停止。外部/人工/自然时间未满足时分别记录具体等待及已完成工程，不能以阶段代码齐全宣称INITIAL_ASSISTED_USE。
+
+### 2026-10-07 Superseding Goal Envelope
+
+Current authorization is now
+`VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE`, beginning at
+`D0_BASELINE_AND_GOAL_REFORM`. The full D0-D6 contract is in
+[advisory-sentiment-satellite-goal-v1.md](docs/current/advisory-sentiment-satellite-goal-v1.md).
+The M2-M7 text above remains the inherited evidence and implementation baseline;
+it is not the current completion endpoint and it is not permission to bypass
+D0-D6 dependencies or `action=no_order`.

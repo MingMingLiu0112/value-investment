@@ -1,4 +1,50 @@
-# 当前总目标：M2-M7 初步真实投资辅助系统
+# 当前总目标：价值投资建议与情绪卫星仓系统
+
+## 2026-10-07 Current Goal Supersession
+
+当前授权 Goal 为：
+
+```text
+VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE
+CURRENT_STAGE = D0_BASELINE_AND_GOAL_REFORM
+D0_STATUS = IN_PROGRESS_NOT_COMPLETE
+action = no_order
+```
+
+完整目标、领域合同、D0-D6 依赖和 SubAgent 治理见
+[advisory-sentiment-satellite-goal-v1.md](current/advisory-sentiment-satellite-goal-v1.md)。
+本节只取代当前授权范围、阶段顺序和完成端点，不修改 M2-M7 的验收事实、
+rejected/stale 状态、冻结研究案例或不可变 receipts。M2-M7 作为继承基线和
+工程资产保留，不得重做、删除、放宽或重新分类来帮助 D0-D6 通过。
+
+当前执行起点为 D0。D0 必须完成基线稳定、当前全量失败修复、workbook
+pointer/canonical SHA 漂移修复、目标治理整合、全量测试和 commit；在这些
+证据形成前，D0 不得标记完成。D1 只允许先建立筛选接口，D2 的单公司完整
+vertical slice 优先，D1 不得抢跑成全市场排名或买入信号。D3 在没有真实
+IPS/portfolio 时必须返回 `portfolio_guidance=BLOCKED_PRIVATE_INPUT`、
+`position_guidance=null`。D5 的情绪卫星仓必须独立 sleeve，并通过 value gate、
+PIT、walk-forward、out-of-sample、成本和 Shadow 后才能生成真实波段建议。
+
+系统输出始终为 Recommendation，不是订单。永久保持
+`action=no_order`、`Research Attractive != Buy Signal`、
+`High Dividend Yield != Buy Signal`、`Margin of Safety != Position Size`。
+
+以下 2026-10-03 及更早章节保留为历史事实与继承证据。
+
+## 2026-10-03 Approved Personal Shadow Governance
+
+The user approved docs/current/personal-project-m6-shadow-governance-v1.md for
+offline successor-contract implementation. Continue that work within the full
+Goal; do not request the same approval again. Isolated engineering and bounded
+repair/retry are authorized. Production deployment, scheduler/Shadow start,
+production keys, database access/migrations, paid resources, real restore and
+canonical publication remain separately scoped actions.
+
+Legacy five-party receipts/matrices retain their exact semantics. The approved
+personal observational successor separates strict PIT/private portfolio final
+admission from nonpersonalized observation, without weakening evidence, temporal,
+model/price or risk gates. Until its evidence verifier and integration pass,
+the new dependency plan is not readiness or session credit. Protect PTA/no_order.
 
 ## 2026-10-02 Shadow 启动准备工作包
 
@@ -93,7 +139,7 @@ SHA-256 `9ae0ceb004591b153bda06f85618d48ee248b53010ec9785ea915a62d72181f1`。
 
 遵循 `docs/current/value-investment-trading-assistant-goal-prompt.md` 的 Execution Correction。完整总目标与最终准入门禁不变；当前研究准入、可执行工程交付、最终运行验收分开管理。下一轮先从真实代码建立有界依赖图，选择共享单票闭环或真实输入历史执行回放中最大的可执行缺口并实施，不再用重复审计、状态提交或 CI 轮询替代产品进展。历史重建 PIT 与历史当时运行/预登记证明分开，不能回填登记时间或降低旧验证器。用户已于 2026-10-01 确认阅读正式 Excel 并授权继续；密钥独立备存与 WPS 远端可见亦已确认，不得重复索要。缺失原件仍只阻塞受影响结论，20 个真实交易日与最终用户验收保留为完整目标的最终条件。
 
-## CURRENT AUTHORIZATION：VALUE-INVESTMENT-TRADING-ASSISTANT-V1 / 阶段 1收尾与阶段 2单票工程（2026-09-30）
+## HISTORICAL AUTHORIZATION：VALUE-INVESTMENT-TRADING-ASSISTANT-V1 / 阶段 1收尾与阶段 2单票工程（2026-09-30）
 
 最新发布（2026-09-30）：唯一正式 Excel 已更新为伊利现有真实条件性研究估值展示，`simulation_only=false`，非当前交易建议。七页导航、55 个保留页和实际 WPS 打开核验通过；估值步骤 CONDITIONAL，其余七步 BLOCKED，最终 NOT_READY/no_order。当前仅完成阶段 2 的研究结果展示部分，Strict PIT、ModelValidity、当前 PriceBridge、完整研究评估及用户验收仍未通过。下述模拟发布为历史基线。
 
@@ -626,7 +672,7 @@ M5 ACTUAL 离线专项已 fast-forward 整合至 `main` 的 `8db5994`；该 SHA 
 与 [事件绑定研究复核包](600519-event-bound-scenario-review-20260925.md)。
 
 以下为 2026-09-25 专项收口时的历史快照，仅供审计；其中 M4 旧状态不再是当前授权，
-必须以本文顶部 `CURRENT AUTHORIZATION` 为准。
+必须以本文顶部 `2026-10-07 Current Goal Supersession` 为准。
 
 ```text
 M5_ENGINEERING = ACTUAL_EVENT_OFFLINE_CHAIN_VALIDATED
@@ -638,8 +684,10 @@ action = no_order
 ```
 
 下文保留早期阶段计划和历史快照，不得将其旧的九条 `PENDING_HUMAN_REVIEW`
-描述用作当前状态。总 Goal 仍为 `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`；
-M5 的研究输入缺口不阻止 M4 私人输入准备、M6 授权前检查或 M7 其他展示验收。
+描述用作当前状态。历史阶段 Goal 为
+`VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`；当前授权 Goal 为
+`VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE`。历史 M5 研究输入缺口
+不阻止不依赖它的 D0 工程或后续独立 DAG 节点。
 
 更新：2026-09-24 / M2 Checkpoint A 已签收；M3 Checkpoint B 已完成人工语义复核，
 但 strict contemporaneous-rule PIT 未证明，整体保持 PARTIAL。

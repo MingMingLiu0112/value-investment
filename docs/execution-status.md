@@ -1,5 +1,54 @@
 # CURRENT STATUS
 
+## 2026-10-07 D0 Goal Governance Integration (documentation only)
+
+The current Goal envelope has been expanded to
+`VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE` with execution stage
+`D0_BASELINE_AND_GOAL_REFORM`. The goal-level D0-D6 dependency contract is
+`docs/current/advisory-sentiment-satellite-goal-v1.md`; current stage selection
+remains `docs/current-stage-goal.md`.
+
+D0 is not complete. The documentation integration preserves the historical
+M2-M7 milestones, receipts, rejected/stale states and frozen research cases as
+inherited evidence. The previously identified D0 engineering blockers, including
+the current full-suite failures and canonical workbook pointer/hash drift, still
+require Root repair, full regression, commit and push before D0 can pass.
+
+This entry records a documentation-only architecture handoff. No code, tests,
+config, runtime, Excel, database or receipt was changed. Permanent boundaries
+remain `Recommendation != Order`, `Research Attractive != Buy Signal`,
+`Margin of Safety != Position Size`, `INITIAL_ASSISTED_USE = NOT_REACHED` and
+`action = no_order`. D1 must not expand before the D2 vertical slice; D3
+personalized guidance remains blocked without real IPS/portfolio; D5 sentiment
+remains a separate sleeve requiring value gate, PIT, walk-forward/OOS, costs and
+Shadow evidence.
+
+## 2026-10-02 Read-Only Live Dispatch Check and Offline Source Candidate
+
+Known-host batch SSH succeeded. Live timers/ExecStart prove the server still
+runs legacy update/filing/candidate-tracking entrypoints. The new Shadow producer,
+daily preflight adapter and formal preflight script are absent at their expected
+live project paths. Previous source/data collection success is not new Shadow
+deployment or session execution evidence. No remote file or service was changed.
+
+PTA is active/running (PID 1524793), observed MemoryCurrent 396963840 bytes.
+Host available memory was about 714 MB, swap use 346 MB; a separate python process
+had RSS 1893092 KiB and a Hermes working directory. No inference of a memory leak
+or permission to kill it is made. This snapshot is not sustained resource acceptance.
+
+Prepared a local Git-bound source-only candidate from 9ad637b (Core CI success):
+`runtime/shadow-deployment-candidate-20261002/source-9ad637b.zip`, SHA256
+`c9177db07e5b6ac90c1989f43dc71be2d7e63206dd9be310124fdb0c853d3a08`.
+Inspected all 1003 entries: src/scripts/pyproject scope only, required new entrypoints
+present, no config/runtime/Excel/private-key/.env payload. It is NOT_DEPLOYED and
+not a complete runtime: input/config/dependency authorization remains required.
+Instructions/actual observations are retained beside it in README.md.
+No redundant Core rerun (no business code changed), no new service, no deployment,
+no DB access/migration and no canonical workbook write. Current next dependency
+is scoped staging/deployment validation, not more isolated DAG status fields.
+Production startup and actual daily inputs remain unverified; Goal in progress,
+zero new real sessions, action=no_order.
+
 ## 2026-10-02 Unmocked Six-Node Daily Assembly Evidence
 
 Completed an unmocked E2E test of the isolated producer, shared scheduled entry,
@@ -7754,4 +7803,3 @@ Research update: [600887-liquidity-event-followup-20261002.md](current/600887-li
 Existing `replay_workbench_cutoffs.py --event-source-pages` produced the real source-review packet; shared `prepare_event_source_review` / `project_company_event_questions` appended the two pending questions to the retained three-company product data. A new source-reverified handoff and readable company cards are in `runtime/public-event-followup-20261002/`. Handoff SHA-256 `2199bfa212d1345424206b2122aec5b7cee9c06e33da726085708ef00ae65627`; fresh verification receipt `integration-receipt.json` confirms investment values/gates, other companies, portfolio/events/stages and historical execution unchanged. Prior numerical receipt remains intact. The original JSON comparison was rechecked on actual `snapshot` fields with required-field assertions, not missing top-level keys.
 
 ENGINEERING_DELIVERY=REAL_SOURCE_PACKET_AND_SHARED_HANDOFF; CURRENT_RESEARCH_ADMISSION=NOT_READY; FINAL_OPERATIONAL_ACCEPTANCE=NOT_REACHED; materiality_approved=false; model_validity_admitted=false; strict_pit_admitted=false; canonical_written=false; action=no_order. Official publication DATE_ONLY is separate from conservative next-day availability and actual October 2 acquisition. Full model-window event coverage, quote, dividend, portfolio and final operational gates remain unchanged. No production code, canonical workbook, server/PTA, database or scheduler change; no unchanged Core/CI rerun. This is a real evidence advance, not a status-only claim or total completion. Next product work is a scoped successor research/decision explanation incorporating these new originals while preserving the unresolved post-payment liquidity and guarantee gates, followed by the protected canonical publishing chain when ready.
-
