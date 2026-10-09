@@ -7,6 +7,7 @@ from zipfile import ZipFile
 
 from openpyxl import Workbook
 from openpyxl import load_workbook
+from openpyxl.worksheet.hyperlink import Hyperlink
 import pytest
 
 
@@ -97,3 +98,61 @@ def test_replace_sheet_refuses_source_change_after_inspection(tmp_path: Path):
             expected,
             "00_决策复核",
         )
+
+
+@pytest.mark.parametrize("native_navigation", [False, True])
+def test_native_navigation_is_opt_in_and_preserves_formula_and_other_parts(tmp_path, native_navigation):
+    source, addon, output = (tmp_path / name for name in ("source.xlsx", "addon.xlsx", "candidate.xlsx"))
+    _source(source)
+    _addon(addon)
+    workbook = load_workbook(addon)
+    formula = '=HYPERLINK("#\'保留页\'!A1","证据导航")'
+    workbook["00_决策复核"]["A4"] = formula
+    workbook.save(addon)
+    workbook.close()
+    MODULE.replace_sheet(source, addon, output, _digest(source), "00_决策复核", native_navigation=native_navigation)
+    result = load_workbook(output)
+    try:
+        cell = result["00_决策复核"]["A4"]
+        assert cell.value == formula
+        if native_navigation:
+            assert cell.hyperlink.location == "'保留页'!A1"
+            assert cell.hyperlink.target is None
+            assert cell.hyperlink.display == "证据导航"
+        else:
+            assert cell.hyperlink is None
+    finally:
+        result.close()
+    with ZipFile(source) as original, ZipFile(output) as candidate:
+        assert candidate.read("xl/workbook.xml") == original.read("xl/workbook.xml")
+        assert candidate.read("xl/worksheets/sheet1.xml") == original.read("xl/worksheets/sheet1.xml")
+        assert set(candidate.namelist()) == set(original.namelist())
+    MODULE.validate_package_relationships(output)
+
+
+def test_native_navigation_rejects_a_missing_destination_before_writing(tmp_path):
+    source, addon, output = (tmp_path / name for name in ("source.xlsx", "addon.xlsx", "candidate.xlsx"))
+    _source(source)
+    _addon(addon)
+    workbook = load_workbook(addon)
+    workbook["00_决策复核"]["A4"] = '=HYPERLINK("#\'不存在\'!A1","无效链接")'
+    workbook.save(addon)
+    workbook.close()
+    with pytest.raises(ValueError, match="target does not exist"):
+        MODULE.replace_sheet(source, addon, output, _digest(source), "00_决策复核", native_navigation=True)
+    assert not output.exists()
+
+
+def test_native_navigation_cannot_override_a_verified_formula_target(tmp_path):
+    source, addon, output = (tmp_path / name for name in ("source.xlsx", "addon.xlsx", "candidate.xlsx"))
+    _source(source)
+    _addon(addon)
+    workbook = load_workbook(addon)
+    cell = workbook["00_决策复核"]["A4"]
+    cell.value = '=HYPERLINK("#\'保留页\'!A1","证据导航")'
+    cell.hyperlink = Hyperlink(ref="A4", location="'保留页'!B1", display="证据导航")
+    workbook.save(addon)
+    workbook.close()
+    with pytest.raises(ValueError, match="differs from its verified formula"):
+        MODULE.replace_sheet(source, addon, output, _digest(source), "00_决策复核", native_navigation=True)
+    assert not output.exists()

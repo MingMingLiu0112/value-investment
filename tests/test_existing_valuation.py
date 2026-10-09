@@ -158,6 +158,44 @@ def test_pinned_original_research_gate_is_historical_not_current_admission(tmp_p
         assert gate['research_as_of'] == '2026-09-22'
         assert output['suggested_state'] == 'NOT_READY'
         assert output['action'] == 'no_order'
+        negative = output['negative_decision_review']
+        assert negative['scope'] == 'CURRENT_FAIL_CLOSED_READ_OF_EXISTING_RESEARCH'
+        assert negative['pre_decision_eligibility']['status'] == 'NOT_ELIGIBLE'
+        assert 'human_research_approval_missing' in negative['pre_decision_eligibility']['blockers']
+        assert 'event_materiality_review_missing' in negative['pre_decision_eligibility']['blockers']
+        assert negative['investment_decision_review']['status'] == 'INSUFFICIENT_RESEARCH'
+        assert negative['portfolio_input_status'] == 'BLOCKED_PRIVATE_INPUT'
+        assert negative['position_guidance'] is None
+        assert negative['action'] == 'no_order'
+        from test_product_workbench_read_model import _payload as base_payload
+        from value_investment_agent.presentation.read_models.product_workbench import product_workbench_from_payload
+        from value_investment_agent.presentation.read_models.existing_research_report import project_existing_research_workbench
+        from value_investment_agent.presentation.excel.product_workbench import build_product_workbench_workbook
+        base = base_payload()
+        base['as_of'] = negative['investment_decision_review']['decision_as_of']
+        base['generated_at'] = negative['investment_decision_review']['created_at']
+        base['companies'][0]['symbol'] = '600887'
+        base['opportunities'][0]['symbol'] = '600887'
+        base['companies'][0]['price'].update(
+            available=False, value_text=None, status='UNAVAILABLE',
+            unavailable_reason='No admitted current quote',
+            needed_evidence='Current verified PriceBridge',
+        )
+        wrapped = dict(schema_version='product-existing-research-workbench-v1',
+                       action='no_order', scope='EXISTING_RESEARCH_ONLY_NOT_CURRENT_ADVICE',
+                       symbol='600887', suggested_state='NOT_READY', position_guidance=None,
+                       research=output)
+        projected = project_existing_research_workbench(product_workbench_from_payload(base), wrapped)
+        workbook = build_product_workbench_workbook(projected)
+        try:
+            opportunity_text = '\n'.join(str(cell.value) for row in workbook['02_机会'] for cell in row if cell.value)
+            company_text = '\n'.join(str(cell.value) for row in workbook['03_公司'] for cell in row if cell.value)
+            assert '研究不足' in opportunity_text
+            assert '暂不可评估' in opportunity_text
+            assert '人工买入复核条件' in company_text
+            assert '尚未接入真实组合' in company_text
+        finally:
+            workbook.close()
         dependencies = output['dependency_view']
         assert dependencies['original_research_as_of'] == gate['research_as_of']
         assert dependencies['source_package_sha256'] == gate['source_package_sha256']
@@ -439,8 +477,12 @@ def test_existing_command_service_reads_only_and_refuses_overwrite_or_wrong_symb
         read_existing_research_result(root=tmp_path, symbol='600887', manifest_path=manifest, manifest_sha256='a' * 64)
 
 
-@pytest.mark.parametrize('extra', [[], ['--existing-manifest-sha256', 'a' * 64, '--package', 'unused.json']])
-def test_cli_existing_mode_requires_explicit_binding_and_excludes_rerun_inputs(extra):
+@pytest.mark.parametrize('extra, expected_error', [
+    ([], 'existing mode requires manifest and hash'),
+    (['--existing-manifest-sha256', 'a' * 64, '--package', 'unused.json'],
+     'existing mode excludes package/schedule/market/review inputs'),
+])
+def test_cli_existing_mode_requires_explicit_binding_and_excludes_rerun_inputs(extra, expected_error):
     from pathlib import Path
     import subprocess
     import sys
@@ -449,7 +491,7 @@ def test_cli_existing_mode_requires_explicit_binding_and_excludes_rerun_inputs(e
                                 '--symbol', '600887', '--existing-manifest', 'unused.json', *extra],
                                cwd=root, capture_output=True, text=True, encoding='utf-8')
     assert completed.returncode == 2
-    assert 'existing mode requires manifest and hash' in completed.stderr
+    assert expected_error in completed.stderr
 @pytest.mark.parametrize("symbol", ["000333", "600887", "601088"])
 def test_current_workbench_explains_stopped_cases_without_rerunning_research(tmp_path, monkeypatch, symbol):
     from value_investment_agent.application.product.workbench import build_current_workbench_for_symbol

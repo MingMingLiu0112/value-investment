@@ -21,6 +21,9 @@ from value_investment_agent.research_input import (
     finalize_input_descriptor,
     ResearchInputDescriptor,
 )
+from value_investment_agent.domain.decision.decision_recommendation import (
+    DECISION_RECOMMENDATION_SCHEMA,
+)
 from value_investment_agent.research_run_contract import (
     AssumptionScenarioBinding,
     ResearchDependencyFingerprint,
@@ -228,6 +231,27 @@ def test_descriptor_round_trip_preserves_hash_and_typed_spec():
     assert isinstance(spec, ResearchRunSpec)
     assert spec.as_of == AS_OF
     assert spec.input_descriptor_sha256 == descriptor.input_sha256
+
+
+def test_default_v2_descriptor_payload_and_hash_are_frozen():
+    """D3 fields may not alter the default v2 descriptor or its fingerprint."""
+    descriptor = _descriptor()
+    payload = descriptor.as_policy()
+
+    assert descriptor.recommendation_schema_version == DECISION_RECOMMENDATION_SCHEMA
+    assert descriptor.input_sha256 == (
+        "466e6d1c3a2e967c928fbf97c0f41131c40cb29f2ff9ae9aaf6d2df4e106a6df"
+    )
+    assert descriptor_sha256(descriptor) == descriptor.input_sha256
+    for field in (
+        "recommendation_schema_version",
+        "entry_thesis",
+        "investment_consistency_review",
+    ):
+        assert field not in payload
+    restored = descriptor_from_payload(payload)
+    assert restored.as_policy() == payload
+    assert restored.input_sha256 == descriptor.input_sha256
 
 
 def test_descriptor_round_trip_preserves_valuation_approval():

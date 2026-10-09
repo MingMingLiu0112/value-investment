@@ -198,8 +198,8 @@ def _bridge() -> PriceBridgeResult:
 
 def _eligibility(
     *,
-    approval: HumanResearchApprovalReceipt,
-    review: EventMaterialityReview,
+    approval: HumanResearchApprovalReceipt | None,
+    review: EventMaterialityReview | None,
     price_assessment=None,
 ):
     return evaluate_pre_decision_eligibility(
@@ -216,6 +216,16 @@ def _eligibility(
         assumptions_payload=_payload("assumptions"),
         price_attractiveness=price_assessment,
     )
+
+
+def test_missing_human_and_event_reviews_form_an_explicit_negative_predecision():
+    assessment = _eligibility(approval=None, review=None)
+    assert assessment.status == STATUS_NOT_ELIGIBLE
+    assert assessment.approval_status == "MISSING"
+    assert assessment.event_review_watermark is None
+    assert "human_research_approval_missing" in assessment.blockers
+    assert "event_materiality_review_missing" in assessment.blockers
+    assert assessment.action == "no_order"
 
 
 def test_rejected_approval_with_ready_bridge_is_not_assessable_and_not_eligible():

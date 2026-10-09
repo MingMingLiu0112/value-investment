@@ -93,7 +93,8 @@ def bridge(status="READY", *, current_price="450"):
 
 def test_pending_bridge_cannot_enter_price_assessment():
     outcome = assess_price_attractiveness(
-        gate(), valuation(), bridge("PENDING_EXTERNAL_DATA")
+        gate(), valuation(), bridge("PENDING_EXTERNAL_DATA"),
+        human_approval_price_assessment_eligible=True,
     )
 
     assert outcome.status == STATUS_NOT_ASSESSABLE
@@ -106,14 +107,30 @@ def test_quality_compounder_does_not_require_universal_thirty_percent():
         gate(),
         valuation(),
         bridge(current_price="360"),
+        human_approval_price_assessment_eligible=True,
     )
 
     assert outcome.status == STATUS_RESEARCH_ATTRACTIVE
+    assert "不高于熊情景" in outcome.reasons[0]
+
+
+def test_quality_compounder_bear_boundary_and_bear_base_interval_are_distinct():
+    at_bear = assess_price_attractiveness(
+        gate(), valuation(), bridge(current_price="400"),
+        human_approval_price_assessment_eligible=True,
+    )
+    between_bear_and_base = assess_price_attractiveness(
+        gate(), valuation(), bridge(current_price="450"),
+        human_approval_price_assessment_eligible=True,
+    )
+    assert at_bear.status == STATUS_RESEARCH_ATTRACTIVE
+    assert between_bear_and_base.status == STATUS_PRICE_NOT_ATTRACTIVE
 
 
 def test_low_confidence_quality_compounder_waits_for_better_conditions():
     outcome = assess_price_attractiveness(
-        gate(), valuation(confidence="低"), bridge()
+        gate(), valuation(confidence="低"), bridge(),
+        human_approval_price_assessment_eligible=True,
     )
 
     assert outcome.status == STATUS_WAITING_FOR_BETTER_PRICE
@@ -125,6 +142,7 @@ def test_price_above_bear_reference_is_not_attractive():
         gate(),
         valuation(),
         bridge(current_price="550"),
+        human_approval_price_assessment_eligible=True,
     )
 
     assert outcome.status == STATUS_PRICE_NOT_ATTRACTIVE
@@ -133,7 +151,10 @@ def test_price_above_bear_reference_is_not_attractive():
 
 def test_tampered_bridge_identity_cannot_reach_price_assessment():
     tampered = replace(bridge(), model_version="other-v1")
-    outcome = assess_price_attractiveness(gate(), valuation(), tampered)
+    outcome = assess_price_attractiveness(
+        gate(), valuation(), tampered,
+        human_approval_price_assessment_eligible=True,
+    )
     assert outcome.status == STATUS_NOT_ASSESSABLE
     assert any("price_bridge_binding" in blocker for blocker in outcome.blockers)
 
@@ -143,6 +164,7 @@ def test_unregistered_profile_only_observes():
         gate(),
         valuation(model_type="fixture"),
         bridge(),
+        human_approval_price_assessment_eligible=True,
     )
 
     assert outcome.status == STATUS_KEY_OBSERVATION
@@ -161,7 +183,10 @@ def test_incomplete_gate_blocks_price_assessment_even_with_ready_bridge():
         blockers=["G0_证据门"],
         conclusion="数据不足",
     )
-    outcome = assess_price_attractiveness(incomplete, valuation(), bridge())
+    outcome = assess_price_attractiveness(
+        incomplete, valuation(), bridge(),
+        human_approval_price_assessment_eligible=True,
+    )
 
     assert outcome.status == STATUS_NOT_ASSESSABLE
     assert "research_gate_not_ready_for_price_assessment" in outcome.blockers
@@ -188,4 +213,17 @@ def test_absent_human_approval_flag_does_not_implicitly_authorize_price_assessme
         human_approval_price_assessment_eligible=None,
     )
 
-    assert outcome.status != STATUS_NOT_ASSESSABLE
+    assert outcome.status == STATUS_PRICE_NOT_ATTRACTIVE
+    assert "human_approval_price_assessment_not_eligible" in outcome.blockers
+
+
+def test_absent_human_approval_cannot_form_research_attractive_status():
+    outcome = assess_price_attractiveness(
+        gate(),
+        valuation(),
+        bridge(current_price="390"),
+        human_approval_price_assessment_eligible=None,
+    )
+
+    assert outcome.status == STATUS_NOT_ASSESSABLE
+    assert "human_approval_price_assessment_not_eligible" in outcome.blockers

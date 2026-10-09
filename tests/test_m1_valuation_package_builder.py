@@ -22,6 +22,10 @@ from value_investment_agent.research_application import ResearchApplicationServi
 from value_investment_agent.research_artifact_repository import (
     InMemoryResearchArtifactRepository,
 )
+from value_investment_agent.domain.decision.decision_recommendation import (
+    DECISION_RECOMMENDATION_SCHEMA,
+    DECISION_RECOMMENDATION_V3_SCHEMA,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,6 +44,27 @@ def test_yili_package_round_trip_preserves_descriptor_hash():
 
     assert restored.as_policy() == descriptor.as_policy()
     assert restored.input_sha256 == descriptor.input_sha256
+
+
+def test_package_recommendation_schema_is_explicit_and_defaults_to_v2():
+    default_descriptor = build_descriptor(_package(), root=ROOT)
+    assert (
+        default_descriptor.recommendation_schema_version
+        == DECISION_RECOMMENDATION_SCHEMA
+    )
+
+    payload = _package()
+    payload["recommendation_schema_version"] = DECISION_RECOMMENDATION_V3_SCHEMA
+    v3_descriptor = build_descriptor(payload, root=ROOT)
+    v3_spec = build_research_run_spec(v3_descriptor)
+    assert (
+        v3_descriptor.recommendation_schema_version
+        == DECISION_RECOMMENDATION_V3_SCHEMA
+    )
+    assert (
+        v3_spec.recommendation_schema_version
+        == DECISION_RECOMMENDATION_V3_SCHEMA
+    )
 
 
 def test_package_build_isolates_bad_company_input():

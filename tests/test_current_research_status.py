@@ -188,6 +188,7 @@ def test_complete_high_confidence_research_can_be_research_attractive():
         valuation(confidence="高"),
         bridge(),
         profile_id="quality_compounder",
+        human_approval_price_assessment_eligible=True,
     )
 
     assert outcome.research_conclusion == CONCLUSION_RESEARCH_READY
@@ -291,6 +292,7 @@ def test_serialized_domain_payloads_restore_before_aggregation():
         valuation_payload=json.loads(valuation().to_json()),
         price_bridge_payload=json.loads(bridge().to_json()),
         profile_id="quality_compounder",
+        human_approval_price_assessment_eligible=True,
     )
 
     assert outcome.research_conclusion == CONCLUSION_RESEARCH_READY

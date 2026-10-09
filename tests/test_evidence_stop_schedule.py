@@ -522,6 +522,65 @@ def test_explicit_daily_inputs_reach_descriptor_before_one_shot_consumption(
     assert json.loads(package.read_text(encoding='utf-8')) == original
 
 
+def test_recommendation_v3_opt_in_reaches_product_descriptor(tmp_path, monkeypatch):
+    from value_investment_agent.domain.decision.decision_recommendation import (
+        DECISION_RECOMMENDATION_V3_SCHEMA,
+    )
+
+    config = tmp_path / 'config'
+    config.mkdir()
+    (config / 'research-evidence-stop-ledger-v1.json').write_text(
+        json.dumps(dict(schema_version='research-evidence-stop-ledger-v1', stops=[])),
+        encoding='utf-8',
+    )
+    package = tmp_path / 'package.json'
+    package.write_text(json.dumps(dict(symbol='600887')), encoding='utf-8')
+    seen = {}
+
+    monkeypatch.setattr(
+        company_research,
+        'evaluate_research_schedule',
+        lambda **kwargs: dict(allowed=True, status='SYNTHETIC_ALLOWED_TEST_ONLY'),
+    )
+
+    def descriptor(payload, *, root):
+        seen['recommendation_schema_version'] = payload.get(
+            'recommendation_schema_version'
+        )
+        return SimpleNamespace(input_sha256='a' * 64)
+
+    monkeypatch.setattr(company_research, 'build_descriptor', descriptor)
+    monkeypatch.setattr(
+        company_research,
+        'build_research_run_spec',
+        lambda payload: SimpleNamespace(input_descriptor_sha256='a' * 64),
+    )
+
+    class Service:
+        def __init__(self, repository):
+            pass
+
+        def run_company_research(self, spec):
+            return SimpleNamespace()
+
+    monkeypatch.setattr(company_research, 'ResearchApplicationService', Service)
+    monkeypatch.setattr(company_research, '_serialize_outcome', lambda outcome: {})
+
+    result = run_company_research_for_symbol(
+        root=tmp_path,
+        symbol='600887',
+        package_path=package,
+        recommendation_schema_version=DECISION_RECOMMENDATION_V3_SCHEMA,
+    )
+
+    assert (
+        seen['recommendation_schema_version']
+        == DECISION_RECOMMENDATION_V3_SCHEMA
+    )
+    assert result['receipt']['command'] == 'company_research'
+    assert result['result']['schedule_gate']['status'] == 'SYNTHETIC_ALLOWED_TEST_ONLY'
+
+
 def test_unregistered_moutai_research_is_blocked_before_package_lookup():
     result = run_company_research_for_symbol(root=ROOT, symbol="600519")
     assert result["result"]["status"] == "BLOCKED_BY_RESEARCH_SCHEDULER"

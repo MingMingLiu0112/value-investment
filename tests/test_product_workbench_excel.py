@@ -336,6 +336,24 @@ def test_company_detail_is_reachable_within_three_clicks() -> None:
     assert _click_distance(workbook, SHEET_OPPORTUNITIES, SHEET_COMPANIES) == 1
 
 
+def test_opportunity_and_company_pages_show_decision_context_without_inventing_a_zone():
+    workbook = build_product_workbench_workbook(_model())
+    opportunities = "\n".join(
+        str(cell.value) for row in workbook[SHEET_OPPORTUNITIES] for cell in row
+        if cell.value is not None
+    )
+    companies = "\n".join(
+        str(cell.value) for row in workbook[SHEET_COMPANIES] for cell in row
+        if cell.value is not None
+    )
+    for label in ("价格区域", "主要阻断", "决策状态", "当前建议与原因", "最新事件或变化"):
+        assert label in opportunities
+    assert "暂无已验证的价格区域判断" in opportunities
+    for label in ("决策过程", "事实是否齐全", "当前价格是否有效桥接", "最终建议状态"):
+        assert label in companies
+    assert "下一步" in companies
+
+
 def test_user_pages_hide_internal_codes_hashes_and_execution_semantics() -> None:
     workbook = build_product_workbench_workbook(_model())
     text = _user_text(workbook)
@@ -748,6 +766,17 @@ def test_decision_process_is_navigable_and_keeps_unknown_steps_blocked():
     assert "尚未就绪" in text
     assert "NOT_READY" not in text
     assert "当前价格是否有效桥接" in text
+
+
+def test_opportunity_decision_status_uses_verified_review_label():
+    payload = _payload()
+    payload["companies"][0]["decision_review"] = [
+        {"label": "当前决策状态", "value": "暂不进入人工买入复核"},
+    ]
+    workbook = build_product_workbench_workbook(product_workbench_from_payload(payload))
+    sheet = workbook["02_机会"]
+    rows = list(sheet.iter_rows(values_only=True))
+    assert any(row[0] == "决策状态" and row[1] == "暂不进入人工买入复核" for row in rows)
 
 
 def test_decision_process_preserves_upstream_status_and_audit_links():

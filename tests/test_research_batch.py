@@ -537,7 +537,7 @@ def test_incremental_batch_only_reruns_changed_company():
     midea = second.results_by_symbol["000333"]
     assert moutai.status == BATCH_UNCHANGED
     assert moutai.unchanged_from_run_id == first.results_by_symbol["600519"].run_id
-    assert midea.status == BATCH_GAP
+    assert midea.status == BATCH_GAP, midea.error
     assert len(
         repository.list_versions(
             SCOPE_SECURITY, "600519", ARTIFACT_VALUATION_RESULT
