@@ -722,7 +722,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 48,
-      "sha256": "6cccd09b64637ae7f93f9df91725c4fec446c31c168bcf4961829ed931891bfd"
+      "sha256": "cae0eb7048794c6976e3559376514dfa55bc9c42443d2216b7f5cdbfacc5b877"
     },
     {
       "path": "scripts/audit_metric_history.py",
@@ -946,7 +946,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 29,
-      "sha256": "c617abda135bb07f65c73e0393667e95b5e8cd730645a240e2f0739d59db66d1"
+      "sha256": "ac4e7d5ce3bb2806d346ec1f1ec09a35752f1d2a7d39ffe5b5a3dc4fed0a47de"
     },
     {
       "path": "scripts/audit_reviewed_distributions.py",
@@ -4016,8 +4016,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 40,
-      "sha256": "033db24bc7d639f12832750904fcad6555e1c15b88d0ab8471e38bd989e170a8"
+      "line_count": 87,
+      "sha256": "268e1cde8eef25500d12f4d28dc4765b3fed3b4f8562ed9936e267864aa4188e"
     },
     {
       "path": "scripts/current/run_company_research.py",
@@ -5000,7 +5000,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 113,
-      "sha256": "963a8a3cd48ad886d95ad307f7fcc0677230e3692b2e8e41c7683a446f0c5369"
+      "sha256": "98ca8e3caca4c5f9329c86ac76a7e7921e35f9509c2bbcb9cb22bad0a6b44e54"
     },
     {
       "path": "scripts/migrate_provider_scope.py",
@@ -5011,7 +5011,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 66,
-      "sha256": "206cd414e01a6bddc16ac16d2bd05c02d0d125bf6a031850d10034a49b188899"
+      "sha256": "a35adc25addb135d8a5619881a49e1b0259414320f8edb021f02d5473ed2030d"
     },
     {
       "path": "scripts/migrate_reviewed_candidates.py",
@@ -5033,7 +5033,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 54,
-      "sha256": "44e3fe7b56fe6121eb0dccae311d0a6ae56986b8630f11c9088e05ef01cacb13"
+      "sha256": "76ad1b2d04e75350316a212bd2270b2df0d324cb37de03d652bf9535e50eeac1"
     },
     {
       "path": "scripts/migrate_tied_inputs.py",
@@ -5503,7 +5503,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 65,
-      "sha256": "da4d6a7da47f7b7be4372ae70173cd730ab7681760376bf98d6432f4d76d35a9"
+      "sha256": "29f7fae06ee6652624a80df3d4b5eaa9c76e44c1dc0467139aad8928a4772fbc"
     },
     {
       "path": "scripts/quarantine_summary_candidates.py",
@@ -5514,7 +5514,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 111,
-      "sha256": "d06adc6b5ca3b7dcc38b8cd835ff7df2f1ee7db64b0948f8687d9501fb592701"
+      "sha256": "9eaaa46b7cd03b2839a311af5a29d2e62f00f5a9b8dcbde9d38e6a17a379b7ca"
     },
     {
       "path": "scripts/reconcile_000411_financing_table.py",
