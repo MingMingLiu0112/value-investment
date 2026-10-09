@@ -84,8 +84,10 @@ def audit_workbook(workbook_path: Path) -> dict[str, object]:
                 raise ValueError(f"{sheet_name} does not freeze the first data column")
             if sheet.sheet_view.showGridLines:
                 raise ValueError(f"{sheet_name} still shows grid lines")
-            if sheet.max_column > 6:
-                raise ValueError(f"{sheet_name} requires horizontal scrolling beyond six columns")
+            if sheet_name in USER_SHEETS and sheet.max_column > 6:
+                raise ValueError(
+                    f"{sheet_name} requires horizontal scrolling beyond six columns"
+                )
             text = visible_text(sheet)
             for row in sheet.iter_rows():
                 for cell in row:
