@@ -142,10 +142,10 @@ def evaluate_pre_decision_eligibility(
     *,
     gate: ResearchGate,
     valuation: ValuationResult,
-    approval: HumanResearchApprovalReceipt,
+    approval: HumanResearchApprovalReceipt | None,
     model_validity: ModelValidity,
     price_bridge: PriceBridgeResult,
-    event_materiality: EventMaterialityReview,
+    event_materiality: EventMaterialityReview | None,
     decision_as_of: date,
     model_id: str,
     research_case_payload: Mapping[str, Any],
@@ -156,41 +156,51 @@ def evaluate_pre_decision_eligibility(
     """Apply the decision-layer prerequisites without producing any decision."""
     if not (gate.symbol == valuation.symbol == price_bridge.symbol == model_validity.symbol):
         raise ValueError("Predecision inputs must share one symbol")
-    if event_materiality.symbol != valuation.symbol:
+    if event_materiality is not None and event_materiality.symbol != valuation.symbol:
         raise ValueError("Event materiality review must match the valuation symbol")
 
-    approval_decision = resolve_human_research_approval(
-        approval,
-        valuation,
-        model_id=model_id,
-        research_case_payload=research_case_payload,
-        facts_payload=facts_payload,
-        assumptions_payload=assumptions_payload,
+    approval_decision = (
+        resolve_human_research_approval(
+            approval,
+            valuation,
+            model_id=model_id,
+            research_case_payload=research_case_payload,
+            facts_payload=facts_payload,
+            assumptions_payload=assumptions_payload,
+        ) if approval is not None else None
     )
     blockers: list[str] = []
     if not gate.valuation_ready:
         blockers.append("research_gate_not_ready")
-    if not approval_decision.approved:
+    if approval_decision is None:
+        blockers.append("human_research_approval_missing")
+    elif not approval_decision.approved:
         blockers.append("human_research_approval_not_valid")
-    if not approval_decision.price_assessment_eligible:
+    if approval_decision is None or not approval_decision.price_assessment_eligible:
         blockers.append("human_approval_price_assessment_not_eligible")
-    if event_materiality.has_unresolved_recalculation:
+    if event_materiality is None:
+        blockers.append("event_materiality_review_missing")
+    elif event_materiality.has_unresolved_recalculation:
         blockers.append("unresolved_event_recalculation")
-    if event_materiality.has_unresolved_decomposition:
+    if event_materiality is not None and event_materiality.has_unresolved_decomposition:
         blockers.append("unresolved_event_decomposition")
-    if not event_materiality.covers(decision_as_of):
+    if event_materiality is None or not event_materiality.covers(decision_as_of):
         blockers.append("event_review_watermark_not_current")
     if model_validity.status not in {"VALID"}:
         blockers.append(f"model_validity_{model_validity.status.lower()}")
     if price_bridge.bridge_status != "READY":
         blockers.append(f"price_bridge_{price_bridge.bridge_status.lower()}")
+    blockers.extend(model_validity.blockers)
+    blockers.extend(price_bridge.blockers)
     if (
         price_attractiveness is not None
         and price_attractiveness.status == STATUS_NOT_ASSESSABLE
     ):
         blockers.append("price_attractiveness_not_assessable")
-    blockers.extend(approval_decision.blockers)
-    blockers.extend(event_materiality.review_blockers)
+    if approval_decision is not None:
+        blockers.extend(approval_decision.blockers)
+    if event_materiality is not None:
+        blockers.extend(event_materiality.review_blockers)
 
     status = STATUS_ELIGIBLE if not blockers else STATUS_NOT_ELIGIBLE
     price_attractiveness_status = (
@@ -202,18 +212,18 @@ def evaluate_pre_decision_eligibility(
         price_attractiveness_status in POSITIVE_PRICE_REVIEW_STATUSES
     )
     evidence_refs = _merge_refs(
-        list(approval.evidence_refs),
-        list(event_materiality.evidence_refs),
+        list(approval.evidence_refs) if approval is not None else [],
+        list(event_materiality.evidence_refs) if event_materiality is not None else [],
         list(price_bridge.evidence_refs),
     )
     return PreDecisionEligibility(
         symbol=valuation.symbol,
         decision_as_of=decision_as_of,
         status=status,
-        approval_status=approval_decision.status,
+        approval_status=approval_decision.status if approval_decision is not None else "MISSING",
         model_validity_status=model_validity.status,
         price_bridge_status=price_bridge.bridge_status,
-        event_review_watermark=event_materiality.coverage_watermark,
+        event_review_watermark=(event_materiality.coverage_watermark if event_materiality is not None else None),
         blockers=tuple(dict.fromkeys(blockers)),
         evidence_refs=tuple(evidence_refs),
         price_attractiveness_status=price_attractiveness_status,

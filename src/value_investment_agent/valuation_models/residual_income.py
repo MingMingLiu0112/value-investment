@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal, localcontext
 from typing import Any, Protocol
+from zoneinfo import ZoneInfo
 
 from ..research_case import ResearchCase
 from ..valuation_confidence import ConfidenceEvidence, evaluate_confidence
@@ -12,6 +13,33 @@ from .base import ValuationResult, merge_evidence_refs
 
 
 MODEL_VERSION = "residual-income-equity-shared-v1"
+DATED_MODEL_VERSION = "residual-income-equity-shared-dated-v2"
+
+
+@dataclass(frozen=True)
+class ResidualIncomeValuationTiming:
+    """Explicit timing assumption; the book basis is not current net assets."""
+
+    basis_at: datetime
+    valuation_at: datetime
+    evidence_refs: tuple[dict, ...]
+
+    def __post_init__(self) -> None:
+        if self.basis_at.utcoffset() is None or self.valuation_at.utcoffset() is None:
+            raise ValueError("Residual-income timing requires timezone-aware dates")
+        first_payment = self.basis_at.replace(year=self.basis_at.year + 1)
+        if not self.basis_at <= self.valuation_at < first_payment:
+            raise ValueError("Valuation time must precede the first projected payment")
+        if not self.evidence_refs or any(not ref.get("id") for ref in self.evidence_refs):
+            raise ValueError("Residual-income timing requires named evidence")
+
+    def as_policy(self) -> dict[str, Any]:
+        return {
+            "basis_at": self.basis_at.isoformat(),
+            "valuation_at": self.valuation_at.isoformat(),
+            "evidence_refs": [dict(ref) for ref in self.evidence_refs],
+            "scope": "conditional_cash_flow_timing_not_observed_current_equity",
+        }
 
 
 @dataclass(frozen=True)
@@ -43,6 +71,7 @@ class QualityCompounderFacts:
     operating_inputs: dict[str, Decimal | None] = field(default_factory=dict)
     scenario_inputs: dict[str, ResidualIncomeScenarioInputs] | None = None
     confidence_evidence: ConfidenceEvidence | None = None
+    valuation_timing: ResidualIncomeValuationTiming | None = None
 
     REQUIRED_COMMON_INPUTS = ("start_book_equity", "ordinary_shares")
 
@@ -235,11 +264,7 @@ def current_value(
             "terminal_roe": cost,
             "terminal_growth": terminal_growth,
         })
-        elapsed = (
-            Decimal(str((as_of - basis_at).total_seconds()))
-            / Decimal(str((first_payment - basis_at).total_seconds()))
-        )
-        transport = (1 + cost) ** elapsed
+        elapsed, transport = valuation_time_factor(cost, basis_at, as_of)
         origin_value = Decimal(calculation["conditional_equity_value_cny"])
         equity_value = origin_value * transport
         dividend_value = sum(
@@ -291,6 +316,26 @@ def current_value(
         }
 
 
+def valuation_time_factor(
+    cost: Decimal, basis_at: datetime, valuation_at: datetime,
+) -> tuple[Decimal, Decimal]:
+    """Use the registered annual-payment convention within its first period."""
+    if basis_at.utcoffset() is None or valuation_at.utcoffset() is None:
+        raise ValueError("Valuation timing requires timezone-aware dates")
+    first_payment = basis_at.replace(year=basis_at.year + 1)
+    if not basis_at <= valuation_at < first_payment:
+        raise ValueError("Valuation time must precede the first projected payment")
+    if not cost.is_finite() or cost <= 0:
+        raise ValueError("Valuation timing requires a positive finite cost of equity")
+    with localcontext() as context:
+        context.prec = 48
+        elapsed = (
+            Decimal(str((valuation_at - basis_at).total_seconds()))
+            / Decimal(str((first_payment - basis_at).total_seconds()))
+        )
+        return elapsed, (1 + cost) ** elapsed
+
+
 def _shared_scenario_calculation(
     facts: QualityCompounderFacts,
     scenario: ResidualIncomeScenarioInputs,
@@ -308,6 +353,34 @@ def _shared_scenario_calculation(
     calculation["per_share_value"] = calculation.pop(
         "conditional_value_per_2025_issued_share_cny"
     )
+    timing = facts.valuation_timing
+    if timing is not None:
+        with localcontext() as context:
+            context.prec = 48
+            elapsed, factor = valuation_time_factor(
+                scenario.cost_of_equity, timing.basis_at, timing.valuation_at,
+            )
+            origin = Decimal(calculation["conditional_equity_value_cny"])
+            current = origin * factor
+            dividend = sum(
+                Decimal(row["dividend_assumption_cny"])
+                / (1 + scenario.cost_of_equity) ** (Decimal(row["year"]) - elapsed)
+                for row in calculation["forecast_years"]
+            ) + (
+                Decimal(calculation["terminal_first_dividend_cny"])
+                / (scenario.cost_of_equity - scenario.terminal_growth)
+                / (1 + scenario.cost_of_equity) ** (Decimal(len(scenario.forecast_roes)) - elapsed)
+            )
+            if abs(current - dividend) > Decimal("0.01"):
+                raise ValueError("Dated residual-income and dividend paths do not reconcile")
+            calculation.update({
+                "basis_origin_equity_value_cny": str(origin),
+                "basis_to_valuation_factor": str(factor),
+                "conditional_equity_value_cny": str(current),
+                "per_share_value": str(current / shares),
+                "dividend_crosscheck_equity_value_cny": str(dividend),
+                "dividend_crosscheck_difference_cny": str(current - dividend),
+            })
     return calculation
 
 
@@ -326,7 +399,13 @@ class ResidualIncomeEquityValuationModel:
             raise ValueError("Quality-compounder facts and research case symbols must match")
         if facts.confidence not in {"高", "中", "低"}:
             raise ValueError("Quality-compounder confidence must be 高, 中 or 低")
+        timing = facts.valuation_timing
+        model_version = DATED_MODEL_VERSION if timing is not None else MODEL_VERSION
+        if timing is not None and timing.valuation_at.astimezone(ZoneInfo("Asia/Shanghai")).date() != facts.as_of:
+            raise ValueError("Residual-income valuation time does not match facts as-of")
         refs = merge_evidence_refs(facts.evidence_refs, case.evidence_refs)
+        if timing is not None:
+            refs = merge_evidence_refs(refs, list(timing.evidence_refs))
         if not refs:
             raise ValueError("Quality-compounder research requires named evidence references")
         blockers = list(dict.fromkeys([
@@ -362,7 +441,7 @@ class ResidualIncomeEquityValuationModel:
                     "quality_compounder_scenario_inputs_not_registered"
                 ],
                 status="not_ready",
-                model_version=MODEL_VERSION,
+                model_version=model_version,
             )
 
         if set(scenarios) != {"bear", "base", "bull"}:
@@ -388,7 +467,7 @@ class ResidualIncomeEquityValuationModel:
                 evidence_refs=refs,
                 blockers=blockers,
                 status="not_ready",
-                model_version=MODEL_VERSION,
+                model_version=model_version,
             )
 
         calculations = {
@@ -430,6 +509,7 @@ class ResidualIncomeEquityValuationModel:
                     "No market price, margin of safety, position or order is "
                     "produced here."
                 ),
+                **({"valuation_timing": timing.as_policy()} if timing is not None else {}),
                 **(
                     {"confidence_assessment": confidence_policy}
                     if confidence_policy is not None else {}
@@ -448,11 +528,12 @@ class ResidualIncomeEquityValuationModel:
                         "dividend_crosscheck_difference_cny"
                     ],
                     "arithmetic_status": "research_arithmetic_only",
+                    **({"basis_to_valuation_factor": item["basis_to_valuation_factor"]} if timing is not None else {}),
                 }
                 for name, item in calculations.items()
             ],
             evidence_refs=refs,
             blockers=[],
             status="conditional_research_only",
-            model_version=MODEL_VERSION,
+            model_version=model_version,
         )

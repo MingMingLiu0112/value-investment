@@ -113,6 +113,35 @@ class PriceAttractivenessAssessment:
         }
 
 
+def price_attractiveness_binding_blockers(
+    valuation: ValuationResult,
+    price_bridge: PriceBridgeResult,
+    assessment: PriceAttractivenessAssessment,
+) -> list[str]:
+    """Verify that a price assessment is bound to the exact valuation/bridge."""
+    blockers: list[str] = []
+    if not (
+        valuation.symbol
+        == price_bridge.symbol
+        == assessment.symbol
+    ):
+        blockers.append("price assessment symbol does not match valuation")
+    inferred_profile = infer_profile_id(valuation)
+    if inferred_profile is not None and assessment.profile_id != inferred_profile:
+        blockers.append("price assessment profile does not match valuation")
+    if assessment.confidence != valuation.confidence:
+        blockers.append("price assessment confidence does not match valuation")
+    if assessment.margin_to_bear != price_bridge.margin_to_bear:
+        blockers.append("price assessment bear margin does not match price bridge")
+    if assessment.margin_to_base != price_bridge.margin_to_base:
+        blockers.append("price assessment base margin does not match price bridge")
+    if assessment.downside_reference not in (None, valuation.bear_value):
+        blockers.append("price assessment downside reference does not match valuation")
+    if assessment.upside_reference not in (None, valuation.base_value):
+        blockers.append("price assessment upside reference does not match valuation")
+    return blockers
+
+
 def _quality_compounder_assessment(
         valuation: ValuationResult,
         price_bridge: PriceBridgeResult,
@@ -130,15 +159,9 @@ def _quality_compounder_assessment(
             ["当前价格高于熊情景，无法满足质量复利路径的保守观察条件"],
             ["price_above_bear_reference"],
         )
-    if price_bridge.margin_to_base is not None and price_bridge.margin_to_base <= 0:
-        return (
-            STATUS_WAITING_FOR_BETTER_PRICE,
-            ["当前价格尚未低于基准情景，继续观察"],
-            ["price_not_below_base_reference"],
-        )
     return (
         STATUS_RESEARCH_ATTRACTIVE,
-        ["价格位于熊与基准情景之间或更低，研究路径登记的价格条件成立"],
+        ["当前价格不高于熊情景；仅满足研究价格条件，仍需完整决策复核"],
         [],
     )
 
@@ -160,6 +183,10 @@ def assess_price_attractiveness(
         raise ValueError("Price assessment requires a PriceBridgeResult")
     if not (gate.symbol == valuation.symbol == price_bridge.symbol):
         raise ValueError("Price assessment inputs must share one symbol")
+    if human_approval_price_assessment_eligible not in (None, True, False):
+        raise ValueError(
+            "human_approval_price_assessment_eligible must be boolean or null"
+        )
 
     binding_blockers = price_bridge_binding_blockers(valuation, price_bridge)
     if binding_blockers:
@@ -179,21 +206,6 @@ def assess_price_attractiveness(
 
     resolved_profile = profile_id or infer_profile_id(valuation) or "unspecified"
     base_evidence_refs = list(price_bridge.evidence_refs)
-
-    if human_approval_price_assessment_eligible is False:
-        return PriceAttractivenessAssessment(
-            symbol=valuation.symbol,
-            profile_id=resolved_profile,
-            status=STATUS_NOT_ASSESSABLE,
-            margin_to_bear=None,
-            margin_to_base=None,
-            downside_reference=None,
-            upside_reference=None,
-            confidence=valuation.confidence,
-            reasons=["人工 G3 批准未授权当前模型进入价格吸引力判断"],
-            blockers=["human_approval_price_assessment_not_eligible"],
-            evidence_refs=base_evidence_refs,
-        )
 
     if price_bridge.bridge_status != "READY":
         return PriceAttractivenessAssessment(
@@ -263,6 +275,38 @@ def assess_price_attractiveness(
             ["profile_not_identified"],
         )
 
+    approval_blockers: list[str] = []
+    if human_approval_price_assessment_eligible is False:
+        return PriceAttractivenessAssessment(
+            symbol=valuation.symbol,
+            profile_id=resolved_profile,
+            status=STATUS_NOT_ASSESSABLE,
+            margin_to_bear=None,
+            margin_to_base=None,
+            downside_reference=None,
+            upside_reference=None,
+            confidence=valuation.confidence,
+            reasons=["人工 G3 批准明确未授权当前模型进入价格吸引力判断"],
+            blockers=["human_approval_price_assessment_not_eligible"],
+            evidence_refs=base_evidence_refs,
+        )
+    if human_approval_price_assessment_eligible is not True:
+        approval_blockers.append("human_approval_price_assessment_not_eligible")
+        if status == STATUS_RESEARCH_ATTRACTIVE:
+            return PriceAttractivenessAssessment(
+                symbol=valuation.symbol,
+                profile_id=resolved_profile,
+                status=STATUS_NOT_ASSESSABLE,
+                margin_to_bear=None,
+                margin_to_base=None,
+                downside_reference=None,
+                upside_reference=None,
+                confidence=valuation.confidence,
+                reasons=["缺少已绑定的人工 G3 批准，不能形成研究吸引力结论"],
+                blockers=approval_blockers,
+                evidence_refs=base_evidence_refs,
+            )
+
     return PriceAttractivenessAssessment(
         symbol=valuation.symbol,
         profile_id=resolved_profile,
@@ -273,6 +317,21 @@ def assess_price_attractiveness(
         upside_reference=valuation.base_value,
         confidence=valuation.confidence,
         reasons=reasons,
-        blockers=blockers,
+        blockers=[*blockers, *approval_blockers],
         evidence_refs=base_evidence_refs,
     )
+
+
+__all__ = [
+    "PRICE_ATTRACTIVENESS_DISPLAY",
+    "PRICE_ATTRACTIVENESS_STATUSES",
+    "PriceAttractivenessAssessment",
+    "STATUS_KEY_OBSERVATION",
+    "STATUS_NOT_ASSESSABLE",
+    "STATUS_PRICE_NOT_ATTRACTIVE",
+    "STATUS_RESEARCH_ATTRACTIVE",
+    "STATUS_WAITING_FOR_BETTER_PRICE",
+    "assess_price_attractiveness",
+    "infer_profile_id",
+    "price_attractiveness_binding_blockers",
+]

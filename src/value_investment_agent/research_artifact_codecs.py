@@ -15,6 +15,13 @@ from .current_research_status import (
     CurrentDataStatus,
     CurrentResearchStatus,
 )
+from .domain.decision.decision_recommendation import (
+    DecisionRecommendation,
+)
+from .domain.research.human_research_approval import (
+    HumanResearchApprovalReceipt,
+    human_research_approval_from_payload,
+)
 from .distribution import (
     DistributionCapacity,
     DividendHistory,
@@ -26,6 +33,10 @@ from .distribution import (
 from .fixed_sample_admission import (
     FixedSampleAdmissionReview,
     FixedSampleCompanyAdmission,
+)
+from .event_materiality import (
+    EventMaterialityReview,
+    event_materiality_review_from_payload,
 )
 from .investment_decision import (
     ConsistencyComparison,
@@ -46,14 +57,23 @@ from .investment_decision import (
 from .model_validity import ModelValidity, model_validity_from_payload
 from .price_attractiveness import PriceAttractivenessAssessment
 from .price_bridge import PriceBridgeResult, price_bridge_from_payload
+from .pre_decision_eligibility import (
+    PreDecisionEligibility,
+    pre_decision_eligibility_from_payload,
+)
 from .quote_snapshot import QuoteSnapshot
 from .research_artifacts import (
     ARTIFACT_CURRENT_RESEARCH_STATUS,
+    ARTIFACT_DECISION_RECOMMENDATION,
     ARTIFACT_DECISION_EVIDENCE_BUNDLE,
     ARTIFACT_DECISION_JOURNAL_ENTRY,
     ARTIFACT_DIVIDEND_RESEARCH,
     ARTIFACT_ENTRY_THESIS_SNAPSHOT,
     ARTIFACT_FIXED_SAMPLE_ADMISSION,
+    ARTIFACT_FINANCIAL_FACTS,
+    ARTIFACT_HUMAN_RESEARCH_APPROVAL,
+    ARTIFACT_EVENT_MATERIALITY_REVIEW,
+    ARTIFACT_PRE_DECISION_ELIGIBILITY,
     ARTIFACT_INVESTMENT_CONSISTENCY_REVIEW,
     ARTIFACT_INVESTMENT_DECISION_REVIEW,
     ARTIFACT_MINIMAL_PORTFOLIO_PRECONDITIONS,
@@ -89,6 +109,7 @@ class ArtifactCodec(Protocol):
         payload: Mapping[str, Any],
         *,
         dependencies: Mapping[str, Any] | None = None,
+        repository: Any | None = None,
     ) -> Any: ...
 
 
@@ -818,6 +839,108 @@ class InvestmentConsistencyReviewCodec:
         return investment_consistency_review_from_payload(payload)
 
 
+class DecisionRecommendationCodec:
+    artifact_type = ARTIFACT_DECISION_RECOMMENDATION
+    schema_version = ARTIFACT_SCHEMA_VERSION
+
+    def to_payload(self, value: DecisionRecommendation) -> dict[str, Any]:
+        if not isinstance(value, DecisionRecommendation):
+            raise TypeError("decision_recommendation codec has the wrong input type")
+        return value.as_policy()
+
+    def from_payload(
+        self,
+        payload: Mapping[str, Any],
+        *,
+        dependencies: Mapping[str, Any] | None = None,
+        repository: Any | None = None,
+    ) -> DecisionRecommendation:
+        if repository is None:
+            raise ValueError(
+                "Protected recommendation restoration requires a repository"
+            )
+        from .application.decision.restore_decision_recommendation import (
+            verify_decision_recommendation_payload,
+        )
+
+        return verify_decision_recommendation_payload(
+            repository,
+            payload=payload,
+        ).recommendation
+
+
+class FinancialFactsCodec:
+    artifact_type = ARTIFACT_FINANCIAL_FACTS
+    schema_version = ARTIFACT_SCHEMA_VERSION
+
+    def to_payload(self, value: Any) -> dict[str, Any]:
+        # Lazy import avoids the input descriptor <-> codec import cycle.
+        from .research_input import facts_to_payload
+
+        try:
+            return facts_to_payload(value)
+        except TypeError as error:
+            raise TypeError("financial_facts codec has the wrong input type") from error
+
+    def from_payload(
+        self, payload: Mapping[str, Any], **_: Any
+    ) -> Any:
+        from .research_input import facts_from_payload
+
+        return facts_from_payload(payload)
+
+
+class HumanResearchApprovalCodec:
+    artifact_type = ARTIFACT_HUMAN_RESEARCH_APPROVAL
+    schema_version = ARTIFACT_SCHEMA_VERSION
+
+    def to_payload(self, value: HumanResearchApprovalReceipt) -> dict[str, Any]:
+        if not isinstance(value, HumanResearchApprovalReceipt):
+            raise TypeError(
+                "human_research_approval codec requires HumanResearchApprovalReceipt"
+            )
+        return _payload(value)
+
+    def from_payload(
+        self, payload: Mapping[str, Any], **_: Any
+    ) -> HumanResearchApprovalReceipt:
+        return human_research_approval_from_payload(payload)
+
+
+class EventMaterialityReviewCodec:
+    artifact_type = ARTIFACT_EVENT_MATERIALITY_REVIEW
+    schema_version = ARTIFACT_SCHEMA_VERSION
+
+    def to_payload(self, value: EventMaterialityReview) -> dict[str, Any]:
+        if not isinstance(value, EventMaterialityReview):
+            raise TypeError(
+                "event_materiality_review codec requires EventMaterialityReview"
+            )
+        return _payload(value)
+
+    def from_payload(
+        self, payload: Mapping[str, Any], **_: Any
+    ) -> EventMaterialityReview:
+        return event_materiality_review_from_payload(payload)
+
+
+class PreDecisionEligibilityCodec:
+    artifact_type = ARTIFACT_PRE_DECISION_ELIGIBILITY
+    schema_version = ARTIFACT_SCHEMA_VERSION
+
+    def to_payload(self, value: PreDecisionEligibility) -> dict[str, Any]:
+        if not isinstance(value, PreDecisionEligibility):
+            raise TypeError(
+                "pre_decision_eligibility codec requires PreDecisionEligibility"
+            )
+        return _payload(value)
+
+    def from_payload(
+        self, payload: Mapping[str, Any], **_: Any
+    ) -> PreDecisionEligibility:
+        return pre_decision_eligibility_from_payload(payload)
+
+
 CODECS: dict[str, ArtifactCodec] = {
     codec.artifact_type: codec
     for codec in (
@@ -830,6 +953,11 @@ CODECS: dict[str, ArtifactCodec] = {
         PriceBridgeCodec(),
         PriceAttractivenessCodec(),
         CurrentResearchStatusCodec(),
+        FinancialFactsCodec(),
+        DecisionRecommendationCodec(),
+        HumanResearchApprovalCodec(),
+        EventMaterialityReviewCodec(),
+        PreDecisionEligibilityCodec(),
         DividendResearchCodec(),
         FixedSampleAdmissionCodec(),
         DecisionEvidenceBundleCodec(),
@@ -864,10 +992,14 @@ def decode_artifact(
     payload: Mapping[str, Any],
     *,
     dependencies: Mapping[str, Any] | None = None,
+    repository: Any | None = None,
 ) -> Any:
-    return get_codec(artifact_type).from_payload(
-        dict(payload), dependencies=dependencies
-    )
+    codec = get_codec(artifact_type)
+    if artifact_type == ARTIFACT_DECISION_RECOMMENDATION:
+        return codec.from_payload(
+            dict(payload), dependencies=dependencies, repository=repository
+        )
+    return codec.from_payload(dict(payload), dependencies=dependencies)
 
 
 @dataclass(frozen=True)

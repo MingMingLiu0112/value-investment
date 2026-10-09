@@ -389,6 +389,7 @@ def current_research_status_from_payloads(
     engineering_status: str = ENGINEERING_READY,
     current_data_status: CurrentDataStatus | None = None,
     profile_id: str | None = None,
+    human_approval_price_assessment_eligible: bool | None = None,
 ) -> CurrentResearchStatus:
     """Restore serialized domain results before aggregating them."""
     valuation_symbol = str(valuation_payload["symbol"])
@@ -439,4 +440,7 @@ def current_research_status_from_payloads(
         engineering_status=engineering_status,
         current_data_status=current_data_status,
         profile_id=profile_id,
+        human_approval_price_assessment_eligible=(
+            human_approval_price_assessment_eligible
+        ),
     )

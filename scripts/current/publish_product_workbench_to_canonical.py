@@ -20,6 +20,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 import re
 from typing import Any
+from urllib.parse import urlsplit
 from uuid import uuid4
 from xml.etree import ElementTree
 
@@ -145,6 +146,38 @@ def _collect_bound_source_pairs(value: Any) -> list[tuple[Any, Any]]:
     return pairs
 
 
+def _verify_authored_product_inputs(
+    root: Path, authored_pages: Path, authored_pages_sha256: str | None,
+    publication_sha256: str, source_count: int,
+) -> list[dict[str, str]]:
+    """Bind the rendering inputs without granting publication or research approval."""
+    from value_investment_agent.application.product.common import require_inside, load_json_object
+
+    authored_pages = require_inside(root / "runtime", authored_pages, "authored product pages")
+    receipt_path = authored_pages.with_name(authored_pages.stem + "-receipt.json")
+    document = load_json_object(receipt_path, "authored product receipt")
+    if (document.get("schema_version") != "d2-product-engineering-preview-v1"
+            or document.get("input_sha256") != publication_sha256
+            or document.get("workbook_sha256") != authored_pages_sha256
+            or _sha256(authored_pages) != authored_pages_sha256
+            or document.get("source_count") != source_count
+            or document.get("canonical_written") is not False
+            or document.get("action") != "no_order"):
+        raise ValueError("authored product receipt does not bind this research input")
+    display_binding = document["display_binding"]
+    display_path, _ = _normalise_bound_source_path(root, display_binding["path"])
+    require_inside(root / "runtime", display_path, "display policy snapshot")
+    if _sha256(display_path) != display_binding["sha256"]:
+        raise ValueError("authored display snapshot changed")
+    display = load_json_object(display_path, "display policy snapshot")
+    policy_binding = display["policy_binding"]
+    policy_path, _ = _normalise_bound_source_path(root, policy_binding["path"])
+    if display.get("input_sha256") != publication_sha256 or _sha256(policy_path) != policy_binding["sha256"]:
+        raise ValueError("authored display policy does not bind this research input")
+    return [dict(path=path.relative_to(root.resolve()).as_posix(), sha256=_sha256(path))
+            for path in (authored_pages, receipt_path, display_path, policy_path)]
+
+
 def _verify_bound_source_pairs(
     root: Path,
     pairs: list[tuple[Any, Any]],
@@ -205,7 +238,21 @@ def _verify_reviewed_research_source_bindings(
             raise ValueError("invalid research publication input binding")
         resolved, _ = _normalise_bound_source_path(root, binding["path"])
         handoff = load_research_publication_input(root=root, path=resolved, expected_sha256=binding["sha256"])
-        if receipt.get("source_bindings") != handoff["source_bindings"]:
+        expected_sources = handoff["source_bindings"]
+        authored_binding = receipt.get("authored_pages_binding")
+        if authored_binding is not None:
+            if not isinstance(authored_binding, dict) or set(authored_binding) != {"path", "sha256"}:
+                raise ValueError("invalid authored pages binding")
+            authored_path, _ = _normalise_bound_source_path(root, authored_binding["path"])
+            proof = json.loads(proof_path.read_text(encoding="utf-8-sig"))
+            if proof.get("authored_pages_sha256") != authored_binding["sha256"]:
+                raise ValueError("authored workbook is not bound to preservation proof")
+            authored_sources = _verify_authored_product_inputs(
+                root, authored_path, authored_binding["sha256"], binding["sha256"],
+                len(handoff["source_bindings"]),
+            )
+            expected_sources = [*expected_sources, *authored_sources]
+        if receipt.get("source_bindings") != expected_sources:
             raise ValueError("research handoff source bindings differ")
     for path_key, digest_key in (
         ("base_payload_path", "base_payload_sha256"),
@@ -871,7 +918,10 @@ def _hide_legacy_sheets(workbook: Any) -> list[str]:
     return hidden
 
 
-def build_protected_research_preview(root: Path, canonical: Path, output: Path, model: Any) -> dict[str, Any]:
+def build_protected_research_preview(
+    root: Path, canonical: Path, output: Path, model: Any, *,
+    authored_pages: Path | None = None, authored_pages_sha256: str | None = None,
+) -> dict[str, Any]:
     """Render only managed pages into a retained-workbook preview; never publish."""
     root, canonical, output = root.resolve(), canonical.resolve(), output.resolve()
     if not output.is_relative_to(root / "runtime") or output == canonical:
@@ -884,13 +934,75 @@ def build_protected_research_preview(root: Path, canonical: Path, output: Path, 
     before_sha = _sha256(canonical)
     before = _snapshot(canonical)
     output.parent.mkdir(parents=True, exist_ok=True)
-    workbook = load_workbook(canonical, data_only=False, keep_links=True)
-    try:
-        apply_product_workbench_to_existing_workbook(workbook, model)
-        _hide_legacy_sheets(workbook)
-        workbook.save(output)
-    finally:
-        workbook.close()
+    if authored_pages is None:
+        if authored_pages_sha256 is not None:
+            raise ValueError("authored-page hash requires an authored workbook")
+        workbook = load_workbook(canonical, data_only=False, keep_links=True)
+        try:
+            apply_product_workbench_to_existing_workbook(workbook, model)
+            _hide_legacy_sheets(workbook)
+            workbook.save(output)
+        finally:
+            workbook.close()
+    else:
+        # Reuse the artifact-tool graft adapter; retained parts never get saved
+        # through a second spreadsheet engine.
+        from scripts.stage_frontend_package import replace_sheet
+
+        authored_pages = authored_pages.resolve()
+        if (not authored_pages.is_relative_to(root / "runtime")
+                or authored_pages_sha256 is None
+                or _sha256(authored_pages) != authored_pages_sha256):
+            raise ValueError("authored workbook path or hash is not bound")
+        authored = load_workbook(authored_pages, read_only=True, data_only=False)
+        try:
+            if tuple(authored.sheetnames) != WORKBOOK_SHEETS:
+                raise ValueError("authored workbook must contain exactly the managed pages")
+            if authored.defined_names or any(sheet.defined_names for sheet in authored):
+                raise ValueError("authored product pages must not introduce named dependencies")
+            evidence_urls = {item.evidence_id: item.source_url for item in model.audit_evidence
+                             if item.source_url is not None}
+            for sheet in authored:
+                for row in sheet:
+                    for cell in row:
+                        if cell.data_type == "f":
+                            navigation = re.fullmatch(
+                                r'=HYPERLINK\("#\'([^\']+)\'!([A-Z]{1,3}[1-9][0-9]*)","[^"\r\n]*"\)',
+                                cell.value,
+                            )
+                            if navigation is not None and navigation.group(1) in WORKBOOK_SHEETS:
+                                continue
+                            source_link = re.fullmatch(
+                                r'=HYPERLINK\("(https://[^"\r\n]+)","([^"\r\n]*)"\)', cell.value,
+                            )
+                            if source_link is not None and sheet.title == WORKBOOK_SHEETS[-1] and cell.column == 5 and cell.row >= 6:
+                                source_url, source_label = source_link.groups()
+                                evidence_id = row[0].value
+                                parsed = urlsplit(source_url)
+                                if (evidence_urls.get(evidence_id) == source_url == source_label
+                                        and parsed.hostname and parsed.username is None and parsed.password is None):
+                                    continue
+                            raise ValueError("authored product pages permit only internal navigation formulas or exact evidence-bound HTTPS audit links")
+            symbols = {match for row in authored["03_公司"].iter_rows(min_col=1, max_col=1)
+                       for cell in row for match in re.findall(r"\b\d{6}\b", str(cell.value or ""))}
+            if symbols != {company.symbol for company in model.companies}:
+                raise ValueError("authored company pages do not match the research model")
+        finally:
+            authored.close()
+        if tuple(before["sheet_order"][:len(WORKBOOK_SHEETS)]) != WORKBOOK_SHEETS:
+            raise ValueError("artifact integration requires the existing managed navigation")
+        scratch = output.parent / "authored-page-integration"
+        scratch.mkdir(exist_ok=False)
+        current = canonical
+        for index, name in enumerate(WORKBOOK_SHEETS):
+            if _sha256(authored_pages) != authored_pages_sha256:
+                raise ValueError("authored workbook changed during integration")
+            target = output if index == len(WORKBOOK_SHEETS) - 1 else scratch / f"step-{index + 1}.xlsx"
+            replace_sheet(current, authored_pages, target, _sha256(current), name,
+                          frozen_rows=3, frozen_columns=1, fit_to_page=True, native_navigation=True)
+            current = target
+        if _sha256(authored_pages) != authored_pages_sha256:
+            raise ValueError("authored workbook changed after integration")
     _assert_retained(before, _snapshot(output))
     _assert_canonical_source_unchanged(canonical, before_sha)
     proof = dict(preservation="PASS", simulation_only=False, historical_preview=True,
@@ -898,6 +1010,9 @@ def build_protected_research_preview(root: Path, canonical: Path, output: Path, 
                  candidate_sha256=_sha256(output), canonical_touched=False,
                  preserved_sheet_count=sum(name not in WORKBOOK_SHEETS for name in before["sheet_order"]),
                  strict_pit="NOT_PROVEN", current_price_bridge="NOT_ADMITTED")
+    if authored_pages is not None:
+        proof["authored_pages_sha256"] = authored_pages_sha256
+        proof["native_internal_navigation"] = True
     with proof_path.open("x", encoding="utf-8") as handle:
         json.dump(proof, handle, indent=2)
     return dict(workbook_sha256=proof["candidate_sha256"], manifest_sha256=_sha256(proof_path),
@@ -1040,6 +1155,8 @@ def main() -> int:
     parser.add_argument("--prospective-observation-ledger", type=Path, help="Hash-pinned prospective observation manifest under config.")
     parser.add_argument("--prospective-observation-ledger-sha256", help="Pinned SHA-256 of the prospective observation manifest.")
     parser.add_argument("--prospective-observation-evaluation-cutoff", help="Timezone-aware ISO-8601 evaluation cutoff for the observation manifest.")
+    parser.add_argument("--decision-workbench", type=Path, help="Pinned no-order decision workbench JSON under runtime.")
+    parser.add_argument("--decision-workbench-sha256", help="SHA-256 of the decision workbench JSON.")
     args = parser.parse_args()
     if args.publish == args.verify_only:
         raise ValueError("choose exactly one of --publish or --verify-only")
@@ -1051,6 +1168,7 @@ def main() -> int:
             args.m5_event_projection, args.m5_event_projection_sha256,
             args.prospective_observation_ledger, args.prospective_observation_ledger_sha256,
             args.prospective_observation_evaluation_cutoff,
+            args.decision_workbench, args.decision_workbench_sha256,
         )):
             raise ValueError("reviewed research mode excludes daily quote and observation inputs")
         folder = args.reviewed_research_folder
@@ -1065,6 +1183,8 @@ def main() -> int:
         raise ValueError("refusing publish without --quote-bundle")
     if (args.prospective_snapshot is None) != (args.prospective_sha256 is None):
         raise ValueError("prospective snapshot path and SHA-256 must be supplied together")
+    if (args.decision_workbench is None) != (args.decision_workbench_sha256 is None):
+        raise ValueError("decision workbench path and SHA-256 must be supplied together")
     m5_event_projection, m5_projection_sha256 = _load_m5_event_projection(
         ROOT, args.m5_event_projection, args.m5_event_projection_sha256,
     )
@@ -1090,6 +1210,8 @@ def main() -> int:
         model = product_workbench_from_payload(build_product_workbench_candidate_payload(
             packet, root=ROOT, prospective_snapshot_path=args.prospective_snapshot,
             prospective_snapshot_sha256=args.prospective_sha256,
+            decision_workbench_path=args.decision_workbench,
+            decision_workbench_sha256=args.decision_workbench_sha256,
             m5_event_projection=m5_event_projection,
             prospective_observation_ledger_path=args.prospective_observation_ledger,
             prospective_observation_ledger_sha256=observation_manifest_sha256,
@@ -1105,6 +1227,7 @@ def main() -> int:
                 "status": "VERIFIED_IN_MEMORY_ONLY", "action": "no_order",
                 "canonical_before_sha256": _sha256(canonical),
                 "prospective_snapshot_sha256": args.prospective_sha256,
+                "decision_workbench_sha256": args.decision_workbench_sha256,
                 "m5_event_projection_sha256": m5_projection_sha256,
                 "prospective_observation_ledger_binding_status": _observation_ledger_binding_status(
                     observation_manifest_sha256
@@ -1142,6 +1265,8 @@ def main() -> int:
         model = product_workbench_from_payload(build_product_workbench_candidate_payload(
             packet, root=ROOT, prospective_snapshot_path=args.prospective_snapshot,
             prospective_snapshot_sha256=args.prospective_sha256,
+            decision_workbench_path=args.decision_workbench,
+            decision_workbench_sha256=args.decision_workbench_sha256,
             m5_event_projection=m5_event_projection,
             prospective_observation_ledger_path=args.prospective_observation_ledger,
             prospective_observation_ledger_sha256=observation_manifest_sha256,

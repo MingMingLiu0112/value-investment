@@ -4,6 +4,7 @@ from decimal import Decimal
 import json
 from pathlib import Path
 from typing import Mapping
+from zoneinfo import ZoneInfo
 
 from ...domain.research.research_run_contract import valuation_result_sha256
 from ...domain.research.research_case import ResearchCase
@@ -11,6 +12,13 @@ from ...domain.research.research_gate import evaluate_with_valuation
 from ...valuation_models.base import ValuationResult
 from ...valuation_models.residual_income import MODEL_VERSION, scenario_value
 from ...model_validity import evaluate_model_validity
+from ...investment_decision import (
+    DecisionArtifactReference,
+    DecisionEvidenceBundle,
+    evaluate_investment_decision,
+)
+from ...pre_decision_eligibility import evaluate_pre_decision_eligibility
+from ...price_attractiveness import assess_price_attractiveness
 from ...price_bridge import bridge_with_quote
 from ...quote_snapshot import QuoteSnapshot, QUOTE_STATUS_PENDING_EXTERNAL_DATA
 from .common import require_inside, sha256_bytes, normalize_symbol, write_new_json
@@ -111,6 +119,54 @@ def read_existing_research_result(
             source_package_sha256=binding["sha256"],
             original_case_is_current_approval=False,
         )
+        reviewed_at = datetime.now(timezone.utc)
+        review_as_of = reviewed_at.astimezone(ZoneInfo("Asia/Shanghai")).date()
+        if review_as_of < observation.astimezone(ZoneInfo("Asia/Shanghai")).date():
+            raise ValueError("Existing research was observed after the decision date")
+        price_review = assess_price_attractiveness(gate, valuation, pending_bridge)
+        predecision = evaluate_pre_decision_eligibility(
+            gate=gate, valuation=valuation, approval=None,
+            model_validity=validity, price_bridge=pending_bridge,
+            event_materiality=None, decision_as_of=review_as_of,
+            model_id=valuation.model_type, research_case_payload=raw,
+            facts_payload={}, assumptions_payload={},
+            price_attractiveness=price_review,
+        )
+        bundle = DecisionEvidenceBundle(
+            bundle_id=f"{valuation.symbol}-{review_as_of.isoformat()}-existing-negative",
+            symbol=valuation.symbol, decision_as_of=review_as_of,
+            rule_version="m3-decision-v1",
+            artifact_refs=(
+                DecisionArtifactReference(
+                    artifact_type="existing_valuation_artifact",
+                    artifact_id=manifest["artifact_path"],
+                    sha256=manifest["artifact_sha256"],
+                    schema_version=artifact.get("schema_version") or "UNVERSIONED_LEGACY_ARTIFACT",
+                    available_at=observation.astimezone(ZoneInfo("Asia/Shanghai")).date(),
+                ),
+                DecisionArtifactReference(
+                    artifact_type="original_research_package",
+                    artifact_id=binding["path"], sha256=binding["sha256"],
+                    schema_version=json.loads(package_bytes).get("schema_version") or "UNVERSIONED_LEGACY_PACKAGE",
+                    available_at=observation.astimezone(ZoneInfo("Asia/Shanghai")).date(),
+                ),
+            ),
+            evidence_refs=tuple(valuation.evidence_refs),
+        )
+        negative_review = evaluate_investment_decision(
+            predecision=predecision, bundle=bundle,
+            decision_as_of=review_as_of, decision_intent=None,
+            confidence=valuation.confidence, created_at=reviewed_at,
+        )
+        result["negative_decision_review"] = {
+            "scope": "CURRENT_FAIL_CLOSED_READ_OF_EXISTING_RESEARCH",
+            "price_attractiveness": price_review.as_policy(),
+            "pre_decision_eligibility": predecision.as_policy(),
+            "investment_decision_review": negative_review.as_policy(),
+            "portfolio_input_status": "BLOCKED_PRIVATE_INPUT",
+            "position_guidance": None,
+            "action": "no_order",
+        }
     if (arithmetic_input_path is None) != (arithmetic_input_sha256 is None):
         raise ValueError("arithmetic replay requires input path and hash")
     if arithmetic_input_path is not None:

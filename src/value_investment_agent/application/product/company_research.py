@@ -30,6 +30,7 @@ from .common import (
     write_new_json,
 )
 from .research_reviews import attach_research_reviews
+from .source_bound_inputs import SOURCE_BOUND_PACKAGE_SCHEMA, verify_package_local_sources
 
 
 class ResearchInputValidationError(ValueError):
@@ -67,6 +68,8 @@ def _package_for_symbol(root: Path, symbol: str, package_path: Path | None) -> P
 
 
 def _serialize_outcome(outcome: Any) -> dict[str, Any]:
+    from ..decision.artifact_bundle import export_artifact_bundle
+
     return {
         "schema_version": "generic-company-research-result-v1",
         "run_id": outcome.run_id,
@@ -91,6 +94,8 @@ def _serialize_outcome(outcome: Any) -> dict[str, Any]:
         "human_research_approval": _json_value(outcome.human_research_approval),
         "event_materiality_review": _json_value(outcome.event_materiality_review),
         "pre_decision_eligibility": _json_value(outcome.pre_decision_eligibility),
+        "decision_recommendation": _json_value(outcome.decision_recommendation),
+        "artifact_bundle": export_artifact_bundle(outcome.stored_artifacts),
     }
 
 
@@ -152,6 +157,7 @@ def run_company_research_for_symbol(
     event_sha256: str | None = None,
     reviews_path: Path | None = None,
     reviews_sha256: str | None = None,
+    recommendation_schema_version: str | None = None,
 ) -> dict[str, Any]:
     normalized = normalize_symbol(symbol)
     explicit_inputs = {}
@@ -205,6 +211,7 @@ def run_company_research_for_symbol(
     package = _package_for_symbol(root, normalized, package_path)
     package_sha256 = sha256_file(package)
     package_payload = load_json_object(package, "valuation package")
+    local_source_bindings = verify_package_local_sources(root, package_payload)
     verified_ids = (
         _verified_source_ids(root, package_payload, request)
         if request is not None else frozenset()
@@ -222,6 +229,8 @@ def run_company_research_for_symbol(
         )
     # Validate all calculation inputs before consuming a one-shot reopen request.
     effective_package = dict(package_payload)
+    if recommendation_schema_version is not None:
+        effective_package['recommendation_schema_version'] = recommendation_schema_version
     if 'quote' in explicit_inputs:
         path, digest = explicit_inputs['quote']
         effective_package['quote'] = dict(kind='quote_session', symbol=normalized,
@@ -243,7 +252,8 @@ def run_company_research_for_symbol(
             scan_ref = (effective_package.get('model_validity_input') or {}).get('event_scan_ref') or {}
             spec = attach_research_reviews(root=root, spec=spec, descriptor=descriptor,
                 path=explicit_inputs['research_reviews'][0], expected_sha256=reviews_sha256,
-                event_sha256=event_sha256 or scan_ref.get('sha256'))
+                event_sha256=event_sha256 or scan_ref.get('sha256'),
+                require_model_binding=(effective_package.get('schema_version') == SOURCE_BOUND_PACKAGE_SCHEMA))
     except (ValueError, FileNotFoundError) as error:
         raise ResearchInputValidationError(str(error)) from error
     for path, digest in explicit_inputs.values():
@@ -255,6 +265,9 @@ def run_company_research_for_symbol(
         for path, digest in explicit_inputs.values():
             if sha256_file(path) != digest:
                 raise ValueError('explicit research input changed during execution')
+        for path, digest in local_source_bindings:
+            if sha256_file(path) != digest:
+                raise ValueError('source-bound package source changed during execution')
 
     verify_consumed_inputs()
     consumption = None
@@ -284,6 +297,17 @@ def run_company_research_for_symbol(
     )
     verify_consumed_inputs()
     payload = _serialize_outcome(outcome)
+    payload['source_verification'] = {
+        'status': 'LOCAL_BYTES_VERIFIED' if local_source_bindings else 'NO_LOCAL_BINDING_METADATA',
+        'scope': 'byte_integrity_not_fact_semantics_or_investment_approval',
+        'source_contract_status': (
+            'SOURCE_CUTOFF_AND_SCENARIO_BINDINGS_VALIDATED'
+            if package_payload.get('schema_version') == 'm1-valuation-package-v2'
+            else 'LEGACY_CONTRACT_NOT_REAL_INPUT_ADMISSION'
+        ),
+        'sources': [dict(path=path.relative_to(root.resolve()).as_posix(), sha256=digest)
+                    for path, digest in local_source_bindings],
+    }
     payload['input_descriptor_sha256'] = spec.input_descriptor_sha256
     payload["schedule_gate"] = decision
     if consumption is not None:

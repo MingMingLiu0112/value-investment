@@ -42,34 +42,40 @@ def _build_research_publication_input(*, root: Path, read_model_path: Path,
         for reference in audit['references']:
             if reference.get('status') == 'PASS_RECOVERED_ORIGINAL':
                 recoveries[(reference['path'].replace('\\', '/'), reference['expected_sha256'])] = reference['recovered_path']
-    pending = [envelope]
+    pending = [(envelope, source.parent, None)]
     scanned = set()
     while pending:
-        value = pending.pop()
+        value, document_dir, role = pending.pop()
         if isinstance(value, list):
-            pending.extend(value)
+            pending.extend((item, document_dir, role) for item in value)
         elif isinstance(value, dict):
-            pending.extend(value.values())
-            path = value.get('path', value.get('location'))
+            pending.extend((item, document_dir, key) for key, item in value.items())
             digest = value.get('sha256')
-            if not isinstance(path, str) or digest is None:
+            if digest is None:
                 continue
-            if path.startswith(('https://', 'http://')):
-                continue
-            path = recoveries.get((path.replace('\\', '/'), digest), path)
-            bound = require_inside(root, root / path.replace('\\', '/'), 'research original')
-            relative = bound.relative_to(root.resolve()).as_posix()
-            if relative in bindings and bindings[relative] != digest:
-                raise ValueError('conflicting research source hashes')
-            if sha256_file(bound) != digest:
-                raise ValueError('research original hash mismatch: ' + relative)
-            bindings[relative] = digest
-            if bound.suffix.lower() == '.json' and relative not in scanned:
-                scanned.add(relative)
-                document = json.loads(bound.read_text(encoding='utf-8-sig'))
-                if not isinstance(document, (dict, list)):
-                    raise ValueError('research bound document must be a JSON object or array')
-                pending.append(document)
+            # A remote URL must not conceal another declared local original.
+            paths = [value[key] for key in ('path', 'location', 'local_path')
+                     if isinstance(value.get(key), str)
+                     and not value[key].startswith(('https://', 'http://'))]
+            for path in paths:
+                path = recoveries.get((path.replace('\\', '/'), digest), path)
+                normalized = path.replace('\\', '/')
+                # Legacy supersedes links name a sibling package. Evidence
+                # originals and explicit project-relative paths stay rooted.
+                base = document_dir if role == 'supersedes' and '/' not in normalized else root
+                bound = require_inside(root, base / normalized, 'research original')
+                relative = bound.relative_to(root.resolve()).as_posix()
+                if relative in bindings and bindings[relative] != digest:
+                    raise ValueError('conflicting research source hashes')
+                if sha256_file(bound) != digest:
+                    raise ValueError('research original hash mismatch: ' + relative)
+                bindings[relative] = digest
+                if bound.suffix.lower() == '.json' and relative not in scanned:
+                    scanned.add(relative)
+                    document = json.loads(bound.read_text(encoding='utf-8-sig'))
+                    if not isinstance(document, (dict, list)):
+                        raise ValueError('research bound document must be a JSON object or array')
+                    pending.append((document, bound.parent, None))
     if not bindings:
         raise ValueError('publication input requires original source bindings')
     bindings[source.relative_to(root.resolve()).as_posix()] = expected_sha256

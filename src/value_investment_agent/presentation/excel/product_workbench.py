@@ -200,6 +200,12 @@ def _external_hyperlink(cell: Cell, url: str) -> None:
 
 
 _USER_TEXT_REPLACEMENTS = {
+    "conditional_research_only": "仅供条件压力情景研究（非中性合理价值）",
+    "PriceBridge": "价格与估值口径桥接",
+    "Bear/Base/Bull": "低/中/高情景",
+    "Bear": "低情景",
+    "Base": "中情景",
+    "Bull": "高情景",
     "已准入财务事实": "已核对披露事实",
     "重开条件（原文）": "重开条件",
     "midea_ordinary_share_denominator": "普通股股数与库存股用途尚未核实",
@@ -228,6 +234,9 @@ _USER_TEXT_REPLACEMENTS = {
     "RESEARCH_尚未就绪_FOR_PRICE_ASSESSMENT": "研究结果暂不支持价格评估",
     "估值批准为 false": "估值尚未获得正式批准",
     "action=no_order": "仅作研究展示，不会生成交易指令",
+    "BLOCKED_PRIVATE_INPUT": "缺少真实个人账户输入",
+    "position_guidance=null": "个人仓位建议未生成",
+    "BLOCKED": "暂未通过",
     "NOT_READY": "尚未就绪",
     "UNKNOWN": "暂不确定",
     "TEXT_EXTRACTED_NOT_SEMANTICALLY_VERIFIED": "文本已提取，尚未做语义核验",
@@ -271,6 +280,11 @@ def _user_text(value: object) -> str:
         _USER_TEXT_REPLACEMENTS.items(), key=lambda item: len(item[0]), reverse=True
     ):
         text = text.replace(source, replacement)
+    text = re.sub(
+        r"\b(bear|base|bull)\b",
+        lambda match: {"bear": "低情景", "base": "中情景", "bull": "高情景"}[match.group(1)],
+        text,
+    )
     if "原件：" in text:
         text = text.split("原件：", 1)[0].rstrip("；; ") + "；原件及哈希见系统与审计页。"
     for pattern in _INTERNAL_PROVENANCE_PATTERNS:
@@ -284,6 +298,21 @@ def _decision_status_text(status: str) -> str:
         "CONDITIONAL": "有条件通过",
         "BLOCKED": "暂未通过",
     }.get(str(status), _user_text(status))
+
+
+def _company_main_reason(company: CompanyCard) -> str | None:
+    """Select a recorded explanation, keeping future triggers separate."""
+    review = dict(company.decision_review)
+    for label in ("为什么未进入更高状态", "尚缺证据", "最强反证"):
+        if review.get(label):
+            return _user_text(review[label])
+    for step in company.decision_process:
+        if step.key == "decision_gate" and step.status == "BLOCKED":
+            return _user_text(step.reason)
+    return next(
+        (_user_text(step.reason) for step in company.decision_process if step.status == "BLOCKED"),
+        None,
+    )
 
 
 def _compact_datetime(value: object) -> str:
@@ -429,12 +458,17 @@ def _render_today(
     for item in model.today_items:
         _style(ws.cell(row, 1, item.company), border=True)
         _company_link(ws.cell(row, 1), item.symbol, company_rows)
-        values = (
+        company = next((card for card in model.companies if card.symbol == item.symbol), None)
+        reason = (
+            _company_main_reason(company)
+            if company is not None and item.category.code == "RESEARCH_CHANGE" else None
+        )
+        values = tuple(_user_text(value) for value in (
             item.what_happened,
-            item.why_it_matters,
+            reason or item.why_it_matters,
             item.current_status,
             item.next_step,
-        )
+        ))
         for column, value in enumerate(values, 2):
             _style(ws.cell(row, column, value), border=True)
         evidence_text = _evidence_cell(
@@ -517,11 +551,26 @@ def _render_opportunities(
         valuation_text = _status_text(card.valuation_status)
         price_text = _status_text(card.price_status)
         decision_text = "尚未就绪：缺少公司研究卡片。"
+        decision_status = "研究不足"
         if company is not None:
             valuation_text = _status_text(company.valuation.status) + "\n" + _assessment_text(company.valuation)
             price_text = _status_text(company.price.status) + "\n" + _assessment_text(company.price)
             decision = next(step for step in company.decision_process if step.key == "decision_gate")
             decision_text = f"{_decision_status_text(decision.status)}\n{_user_text(decision.reason)}"
+            decision_status = next(
+                (value for label, value in company.decision_review if label == "当前决策状态"),
+                "研究不足" if decision.status == "BLOCKED" else "继续人工复核",
+            )
+        price_zone = "暂无已验证的价格区域判断。"
+        main_blocker = card.main_risk
+        latest_event = "暂无已分类的最新事件。"
+        if company is not None:
+            price_zone = next(
+                (value for label, value in company.decision_review if label == "价格区域"),
+                price_zone,
+            )
+            main_blocker = decision.reason if decision.status == "BLOCKED" else card.main_risk
+            latest_event = company.latest_change
 
         header_row = row
         ws.merge_cells(start_row=header_row, start_column=1, end_row=header_row, end_column=6)
@@ -543,9 +592,13 @@ def _render_opportunities(
             ("估值区间 / 日期 / 置信度", valuation_text),
             ("股息状态", _status_text(card.dividend_status)),
             ("当前价格 / 日期", price_text),
+            ("价格区域", price_zone),
             ("主要风险", card.main_risk),
+            ("主要阻断", main_blocker),
             ("下一触发", card.next_trigger),
+            ("决策状态", decision_status),
             ("当前建议与原因", decision_text),
+            ("最新事件或变化", latest_event),
         )
         for label, value in fields:
             value_text = _user_text(value)
@@ -761,6 +814,24 @@ def _render_companies(
             ],
         )
         row += 2
+        row = _section_title(ws, row, "决策过程", 6)
+        row = _header(ws, row, ["环节", "状态", "原因", "", "下一步", "证据"])
+        ws.merge_cells(start_row=row - 1, start_column=3, end_row=row - 1, end_column=4)
+        for step in company.decision_process:
+            reason = _user_text(step.reason)
+            next_action = _user_text(step.next_action)
+            _style(ws.cell(row, 1, step.title), fill=GREY, bold=True, border=True)
+            _style(ws.cell(row, 2, _decision_status_text(step.status)), border=True)
+            ws.merge_cells(start_row=row, start_column=3, end_row=row, end_column=4)
+            _style(ws.cell(row, 3, reason), border=True)
+            _style(ws.cell(row, 5, next_action), border=True)
+            evidence_text = _evidence_cell(
+                ws, row, 6, step.evidence_refs, audit_rows, evidence_group_rows,
+            )
+            _fit_rows(ws, row, [(1, step.title, 1), (2, step.status, 1),
+                                (3, reason, 2), (5, next_action, 1), (6, evidence_text, 1)])
+            row += 1
+        row += 1
 
         row = _section_title(ws, row, "六块研究判断", 6)
         row = _header(ws, row, ["模块", "状态", "结论", "", "", "证据"])

@@ -15,7 +15,17 @@ import re
 from typing import Any, Mapping, Sequence
 
 from .distribution import DividendResearchResult
+from .domain.decision.advisory_dependency_admission import (
+    validate_advisory_dependencies,
+)
+from .domain.decision.decision_recommendation import (
+    DECISION_RECOMMENDATION_SCHEMA,
+)
 from .event_scan import event_scan_from_payload
+from .investment_decision import (
+    EntryThesisSnapshot,
+    InvestmentConsistencyReview,
+)
 from .model_validity import MaterialEvent, model_validity_from_payload
 from .quote_snapshot import QuoteSnapshot
 from .research_application import (
@@ -24,6 +34,8 @@ from .research_application import (
 )
 from .research_artifact_codecs import (
     ARTIFACT_DIVIDEND_RESEARCH,
+    ARTIFACT_ENTRY_THESIS_SNAPSHOT,
+    ARTIFACT_INVESTMENT_CONSISTENCY_REVIEW,
     ARTIFACT_QUOTE_SNAPSHOT,
     ARTIFACT_RESEARCH_CASE,
     ARTIFACT_VALUATION_ASSUMPTIONS,
@@ -51,6 +63,7 @@ from .valuation_models.fcff import FCFFScenarioInputs, FinancialFacts
 from .valuation_models.residual_income import (
     QualityCompounderFacts,
     ResidualIncomeScenarioInputs,
+    ResidualIncomeValuationTiming,
 )
 from .valuation_router import route_profile
 
@@ -310,6 +323,7 @@ def facts_to_payload(facts: Any) -> dict[str, Any]:
                 if facts.scenario_inputs is not None else None
             ),
             "confidence_evidence": _confidence_payload(facts.confidence_evidence),
+            **({"valuation_timing": facts.valuation_timing.as_policy()} if facts.valuation_timing is not None else {}),
         }
     if isinstance(facts, FinancialFacts):
         return {
@@ -360,6 +374,7 @@ def facts_from_payload(payload: Mapping[str, Any]) -> Any:
     confidence_evidence = _confidence_from_payload(data.get("confidence_evidence"))
     if facts_type == "quality_compounder":
         scenarios = data.get("scenario_inputs")
+        timing = data.get("valuation_timing")
         return QualityCompounderFacts(
             symbol=symbol,
             as_of=as_of,
@@ -376,6 +391,13 @@ def facts_from_payload(payload: Mapping[str, Any]) -> Any:
                 if scenarios is not None else None
             ),
             confidence_evidence=confidence_evidence,
+            valuation_timing=(
+                ResidualIncomeValuationTiming(
+                    basis_at=_datetime(timing["basis_at"], "timing.basis_at"),
+                    valuation_at=_datetime(timing["valuation_at"], "timing.valuation_at"),
+                    evidence_refs=tuple(_refs(timing.get("evidence_refs"))),
+                ) if timing is not None else None
+            ),
         )
     if facts_type == "fcff":
         scenarios = data.get("scenario_inputs")
@@ -641,6 +663,9 @@ class ResearchInputDescriptor:
     quote: QuoteSnapshot | None
     model_validity_input: ModelValidityEvaluationInput | None
     valuation_approval: ResearchValuationApproval | None
+    recommendation_schema_version: str = DECISION_RECOMMENDATION_SCHEMA
+    entry_thesis: EntryThesisSnapshot | None = None
+    investment_consistency_review: InvestmentConsistencyReview | None = None
     blockers: tuple[str, ...] = ()
     input_sha256: str | None = None
 
@@ -701,6 +726,13 @@ class ResearchInputDescriptor:
                 raise ValueError(
                     "Descriptor valuation approval follows computation"
                 )
+        validate_advisory_dependencies(
+            symbol=self.symbol,
+            decision_as_of=self.point_in_time.research_as_of,
+            recommendation_schema_version=self.recommendation_schema_version,
+            entry_thesis=self.entry_thesis,
+            investment_consistency_review=self.investment_consistency_review,
+        )
         binding_blockers = validate_assumption_bindings(
             self.facts,
             self.assumption_bindings,
@@ -719,7 +751,7 @@ class ResearchInputDescriptor:
                 raise ValueError("Descriptor hash does not match its payload")
 
     def as_policy(self) -> dict[str, Any]:
-        return {
+        payload = {
             "schema_version": self.schema_version,
             "descriptor_version": self.descriptor_version,
             "symbol": self.symbol,
@@ -747,6 +779,21 @@ class ResearchInputDescriptor:
             "blockers": list(self.blockers),
             "input_sha256": self.input_sha256,
         }
+        if (
+            self.recommendation_schema_version != DECISION_RECOMMENDATION_SCHEMA
+            or self.entry_thesis is not None
+            or self.investment_consistency_review is not None
+        ):
+            payload["recommendation_schema_version"] = (
+                self.recommendation_schema_version
+            )
+        if self.entry_thesis is not None:
+            payload["entry_thesis"] = _artifact_payload_value(self.entry_thesis)
+        if self.investment_consistency_review is not None:
+            payload["investment_consistency_review"] = _artifact_payload_value(
+                self.investment_consistency_review
+            )
+        return payload
 
 
 def _artifact_payload_value(value: Any) -> dict[str, Any] | None:
@@ -814,6 +861,16 @@ def descriptor_from_payload(payload: Mapping[str, Any]) -> ResearchInputDescript
         valuation_approval=_valuation_approval_from_payload(
             data.get("valuation_approval")
         ),
+        recommendation_schema_version=str(
+            data.get("recommendation_schema_version", DECISION_RECOMMENDATION_SCHEMA)
+        ),
+        entry_thesis=_decode_artifact_value(
+            ARTIFACT_ENTRY_THESIS_SNAPSHOT, data.get("entry_thesis")
+        ),
+        investment_consistency_review=_decode_artifact_value(
+            ARTIFACT_INVESTMENT_CONSISTENCY_REVIEW,
+            data.get("investment_consistency_review"),
+        ),
         blockers=tuple(str(item) for item in data.get("blockers") or []),
         input_sha256=(
             str(data["input_sha256"]) if data.get("input_sha256") else None
@@ -842,6 +899,9 @@ def build_research_run_spec(
         quote=descriptor.quote,
         model_validity_input=descriptor.model_validity_input,
         valuation_approval=descriptor.valuation_approval,
+        recommendation_schema_version=descriptor.recommendation_schema_version,
+        entry_thesis=descriptor.entry_thesis,
+        investment_consistency_review=descriptor.investment_consistency_review,
         distribution_result=descriptor.distribution_result,
         as_of=descriptor.point_in_time.research_as_of,
         available_at=descriptor.point_in_time.available_at,

@@ -410,6 +410,13 @@ def price_bridge_binding_blockers(
     if price_bridge.bridge_status == "READY":
         if price_bridge.valuation_bear_value is None or price_bridge.valuation_base_value is None:
             blockers.append("READY bridge has no bound valuation scenarios")
+        elif (
+            price_bridge.valuation_bear_value != valuation.bear_value
+            or price_bridge.valuation_base_value != valuation.base_value
+        ):
+            blockers.append(
+                "price bridge valuation scenarios do not match the valuation"
+            )
         elif price_bridge.current_price is None:
             blockers.append("READY bridge has no bound quote price")
         else:

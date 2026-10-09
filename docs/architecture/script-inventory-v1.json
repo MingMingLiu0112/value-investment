@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 12,
     "CURRENT_PRODUCT_CLI": 7,
-    "CURRENT_RESEARCH_CLI": 201,
+    "CURRENT_RESEARCH_CLI": 203,
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 216,
     "MIGRATION_TOOL": 13,
@@ -710,8 +710,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "MEDIUM",
-      "line_count": 209,
-      "sha256": "efe977f9ae10ac9e6a4f2ba377c4ace684d9deb9adc56d95d9e60fb6672aed6d"
+      "line_count": 225,
+      "sha256": "1abbf3951baf33cd82b65afab8891534a3aaf0b802f53832080ed07bed4f92f2"
     },
     {
       "path": "scripts/audit_maturity_dependencies.py",
@@ -2723,8 +2723,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 186,
-      "sha256": "e16b185a50dfc108774fafefa5a5af80b7c406a7a2671e6fdd5dab0c86fc0f13"
+      "line_count": 219,
+      "sha256": "93a7c453fe853619c6672d61f07556939737d24fd091492a0d5e8a419c8b02b2"
     },
     {
       "path": "scripts/cases/build_registered_public_event_projection_v4.py",
@@ -3763,8 +3763,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 36,
-      "sha256": "3ba86ce0513528484b30d72be520dd8576e9e17d0f86fc2012a65af524933c65"
+      "line_count": 166,
+      "sha256": "aad8c9e330c2e2627c878d01d7133130012534d36a484542295977280ed74fb1"
     },
     {
       "path": "scripts/current/audit_m7_product_ux_readability.py",
@@ -3807,8 +3807,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 57,
-      "sha256": "25b13489c86467f1cc91aa94ebb240143c2d2915308d6397d927740ad7d714c1"
+      "line_count": 79,
+      "sha256": "74e2a173fbcde916836f3d464a95f9fb16e9501b812ba13fc74ffc1176bf51f2"
     },
     {
       "path": "scripts/current/build_historical_company_closure.py",
@@ -3829,8 +3829,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 78,
-      "sha256": "c252bcae8821cf71a1e5cb8ac1d2908c3bba38ea4d9c787f11511222b4e7e71d"
+      "line_count": 110,
+      "sha256": "5c8c0e1f5ff5a93f63d8cb5b966666bbe1c7998b5157f23ddc6957b657c72530"
     },
     {
       "path": "scripts/current/build_product_workbench_candidate.py",
@@ -3840,8 +3840,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 389,
-      "sha256": "1e339ca46b93db43f326e4815f69fe70a5a00a39766a22c30a0232b54af4222f"
+      "line_count": 513,
+      "sha256": "a33f36097664febb2eded09ce0838f42759d2da9f5429d804e2ddb1faf8dbea1"
     },
     {
       "path": "scripts/current/build_prospective_baselines.py",
@@ -3884,8 +3884,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 35,
-      "sha256": "c277c727d3303a05109c9093836db4048522c459c71234850fd9e01854058af8"
+      "line_count": 43,
+      "sha256": "bf98eb89e7fd51e8cae89db67a489a119e8dcc4cfe5f14b04f597a8184b3338a"
     },
     {
       "path": "scripts/current/daily_quote_binding.py",
@@ -3899,6 +3899,28 @@
       "sha256": "6c04240946fb2827c865a41f0af2823cd983cfeb8156d3e63c3f746683353209"
     },
     {
+      "path": "scripts/current/prepare_product_display_text.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 44,
+      "sha256": "e2245c85aa0617dc469f57331eab40ab8a376bb0448c11a915df63a3ae43ffa8"
+    },
+    {
+      "path": "scripts/current/prepare_research_handoff_excel.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 76,
+      "sha256": "6b75a06655c2266c834e2051c55f4a6bb17a5737256cb889e380303e94f8e56e"
+    },
+    {
       "path": "scripts/current/publish_product_workbench_to_canonical.py",
       "category": "CURRENT_RESEARCH_CLI",
       "current_consumers": [],
@@ -3906,8 +3928,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 1034,
-      "sha256": "6a810a310718e7aee0cc645f9db4a925958a2ea8c95c480cb3a849e7c835a9c9"
+      "line_count": 1348,
+      "sha256": "78e020e5a31cc108b60a487114f83a49e762394dad3f1b658e82c57880336ab5"
     },
     {
       "path": "scripts/current/record_prospective_public_observation.py",
@@ -3943,6 +3965,17 @@
       "sha256": "a4b8d1547c995647d6d35352262139b0d811bac53b74059393c7d43e8e7917cb"
     },
     {
+      "path": "scripts/current/render_product_artifact_pages.mjs",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 186,
+      "sha256": "4a92dca9feea8c987b9f5adf353ef997b64d6ba6585ecb762ea7155587a88c48"
+    },
+    {
       "path": "scripts/current/replay_workbench_cutoffs.py",
       "category": "HISTORICAL_VALIDATION_TOOL",
       "current_consumers": [],
@@ -3972,8 +4005,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 80,
-      "sha256": "65998c28474679796640045f30c73f1cdef3416cf298091af7c1d64bb667f20f"
+      "line_count": 90,
+      "sha256": "fccf4a6cf7afd605a3088db01daae9f07114b8c42cd49b9aa670755676dead3e"
     },
     {
       "path": "scripts/current/stamp_prospective_checkpoint.py",
@@ -4016,8 +4049,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 229,
-      "sha256": "d0579efa5560e123a0997d001af8487b9b79e41ecf3293d10472af183c40bdc4"
+      "line_count": 235,
+      "sha256": "05cc0385438d845cca2974849a049d1af12b3701d1ee1379d403ce5988d272af"
     },
     {
       "path": "scripts/current/verify_m7_product_ux_trial_wps.ps1",
@@ -4027,8 +4060,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 128,
-      "sha256": "05644352b789bc8bfc3ef88b43569f2db9eecc5987039815fba412d22cdc01c9"
+      "line_count": 130,
+      "sha256": "e66b74bc55e46e8048bfc4c543d6d334f6320b30403fd80940b164ad9f3889e6"
     },
     {
       "path": "scripts/deploy_attributable_profit_adapter.py",
@@ -5012,8 +5045,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "MEDIUM",
-      "line_count": 104,
-      "sha256": "0f595ff7f4ce0f2572d8f43bc82e6722ea2efae39a209459e5a5bf386f7a279c"
+      "line_count": 117,
+      "sha256": "f061cfdcd6e97e0dd8e392c09fb77526c74b5ec2d5c9ed61552ef0ab6f8e6776"
     },
     {
       "path": "scripts/package_encrypted_backup.py",
@@ -5880,8 +5913,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 34,
-      "sha256": "04c95dab08bb80810d26276f5ba1d191ea1c8edb6fb56a4a24614717cc91bf93"
+      "line_count": 42,
+      "sha256": "e16e55aaa945e215a5bc9ac416ed504ebff01680f6e400b5716de8f3a370600e"
     },
     {
       "path": "scripts/research_cases/moutai/build_moutai_product_ttm.py",
@@ -6358,8 +6391,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "HIGH",
-      "line_count": 513,
-      "sha256": "8676f0ad6982d477de1a67ab658055b92507757a2a5e7c76787c968c1357666e"
+      "line_count": 573,
+      "sha256": "026f721b70c3dae5481d792b961ea69dcf4d832754c44107fd8b839db6be1f05"
     },
     {
       "path": "scripts/stage_moutai_p1_research_status.py",
@@ -7171,17 +7204,6 @@
       "risk": "LOW",
       "line_count": 154,
       "sha256": "54cccbd20af444958e96ef7984596a143c82bc33d6fe18bd71c8bbe6837a53af"
-    },
-    {
-      "path": "scripts/current/prepare_research_handoff_excel.py",
-      "category": "CURRENT_RESEARCH_CLI",
-      "current_consumers": [],
-      "imports_business_logic": true,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "MEDIUM",
-      "line_count": 54,
-      "sha256": "39e249f666d5acffbdeab5d979e7c50e851b6b2934b10b26250843c104a94498"
     },
     {
       "path": "scripts/workbook_path.ps1",

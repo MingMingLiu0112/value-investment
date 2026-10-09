@@ -16,6 +16,7 @@ from typing import Any, Mapping
 
 from .prospective_observation import load_verified_observation_ledger
 from .public_event_projection import project_public_event_projection_as_of
+from .decision_surface import project_verified_decision_workbench
 
 
 LEGACY_PACKET_SCHEMA_VERSION = "m7-daily-workbench-v1"
@@ -1295,11 +1296,16 @@ def build_product_workbench_candidate_payload(
     prospective_observation_ledger_path: Path | None = None,
     prospective_observation_ledger_sha256: str | None = None,
     prospective_observation_evaluation_cutoff: datetime | None = None,
+    decision_workbench_path: Path | None = None,
+    decision_workbench_sha256: str | None = None,
+    register_decision_company: bool = False,
 ) -> dict[str, Any]:
     """Build a fail-closed product payload from one verified legacy packet."""
 
     if not isinstance(root, Path):
         raise ValueError("root must be a pathlib.Path")
+    if register_decision_company and decision_workbench_path is None:
+        raise ValueError("Company registration requires a pinned decision workbench")
     packet = _required_mapping(packet, "legacy M7 packet")
     _reject_active_execution_keys(packet)
     _reject_simulated_portfolio_metrics(packet)
@@ -1465,6 +1471,14 @@ def build_product_workbench_candidate_payload(
             manifest_path=prospective_observation_ledger_path,
             manifest_sha256=prospective_observation_ledger_sha256,
             evaluation_cutoff=prospective_observation_evaluation_cutoff,
+        )
+    if decision_workbench_path is not None or decision_workbench_sha256 is not None:
+        if decision_workbench_path is None or decision_workbench_sha256 is None:
+            raise ValueError("Decision workbench path and SHA-256 are required together")
+        project_verified_decision_workbench(
+            payload, root=root, path=decision_workbench_path,
+            expected_sha256=decision_workbench_sha256,
+            register_company=register_decision_company,
         )
     validate_product_workbench_candidate_payload(payload)
     return payload

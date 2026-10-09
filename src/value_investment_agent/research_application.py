@@ -17,6 +17,20 @@ from .current_research_status import (
     CurrentResearchStatus,
     evaluate_current_research_status,
 )
+from .application.decision.build_decision_recommendation import (
+    build_decision_recommendation,
+)
+from .application.decision.build_advisory_decision_recommendation_v3 import (
+    build_advisory_decision_recommendation_v3,
+)
+from .domain.decision.advisory_dependency_admission import (
+    validate_advisory_dependencies,
+)
+from .domain.decision.decision_recommendation import (
+    DECISION_RECOMMENDATION_SCHEMA,
+    DECISION_RECOMMENDATION_V3_SCHEMA,
+    DecisionRecommendation,
+)
 from .distribution import DividendResearchResult
 from .event_scan import EventScanResult
 from .event_materiality import EventMaterialityReview
@@ -28,6 +42,10 @@ from .fixed_sample_admission import (
 from .human_research_approval import (
     HumanResearchApprovalReceipt,
     resolve_human_research_approval,
+)
+from .investment_decision import (
+    EntryThesisSnapshot,
+    InvestmentConsistencyReview,
 )
 from .interim_report_policy import InterimReportPolicyDecision
 from .model_validity import (
@@ -63,7 +81,14 @@ from .research_artifact_repository import (
 )
 from .research_artifacts import (
     ARTIFACT_CURRENT_RESEARCH_STATUS,
+    ARTIFACT_DECISION_RECOMMENDATION,
     ARTIFACT_DIVIDEND_RESEARCH,
+    ARTIFACT_ENTRY_THESIS_SNAPSHOT,
+    ARTIFACT_FINANCIAL_FACTS,
+    ARTIFACT_HUMAN_RESEARCH_APPROVAL,
+    ARTIFACT_INVESTMENT_CONSISTENCY_REVIEW,
+    ARTIFACT_EVENT_MATERIALITY_REVIEW,
+    ARTIFACT_PRE_DECISION_ELIGIBILITY,
     ARTIFACT_FIXED_SAMPLE_ADMISSION,
     ARTIFACT_MODEL_VALIDITY,
     ARTIFACT_PRICE_ATTRACTIVENESS,
@@ -208,6 +233,9 @@ class ResearchRunSpec:
     assumptions_payload: Mapping[str, Any] | None = None
     bridge_contribution_reviews: tuple[BridgeContributionAssessment, ...] = ()
     interim_report_policy: InterimReportPolicyDecision | None = None
+    recommendation_schema_version: str = DECISION_RECOMMENDATION_SCHEMA
+    entry_thesis: EntryThesisSnapshot | None = None
+    investment_consistency_review: InvestmentConsistencyReview | None = None
 
     def __post_init__(self) -> None:
         if not self.run_id.strip():
@@ -371,6 +399,13 @@ class ResearchRunSpec:
             raise ValueError(
                 "Human G3 receipt and legacy valuation approval cannot both be supplied"
             )
+        validate_advisory_dependencies(
+            symbol=self.symbol,
+            decision_as_of=self.as_of or self.research_case.as_of,
+            recommendation_schema_version=self.recommendation_schema_version,
+            entry_thesis=self.entry_thesis,
+            investment_consistency_review=self.investment_consistency_review,
+        )
         object.__setattr__(self, "input_sources", tuple(self.input_sources))
         object.__setattr__(
             self,
@@ -426,6 +461,7 @@ class CompanyResearchRunOutcome:
     human_research_approval: HumanResearchApprovalReceipt | None = None
     event_materiality_review: EventMaterialityReview | None = None
     pre_decision_eligibility: PreDecisionEligibility | None = None
+    decision_recommendation: DecisionRecommendation | None = None
     bridge_contribution_reviews: tuple[BridgeContributionAssessment, ...] = ()
     interim_report_policy: InterimReportPolicyDecision | None = None
     issuer_identity_status: str = ISSUER_IDENTITY_NOT_READY
@@ -449,6 +485,7 @@ class CompanyResearchRunOutcome:
                     self.human_research_approval,
                     self.event_materiality_review,
                     self.pre_decision_eligibility,
+                    self.decision_recommendation,
                     self.interim_report_policy,
                 )
             ) or self.bridge_contribution_reviews:
@@ -473,6 +510,11 @@ class CompanyResearchRunOutcome:
                 raise ValueError("Completed run predecision symbol does not match")
             if self.pre_decision_eligibility.action != "no_order":
                 raise ValueError("Completed run predecision must remain no_order")
+        if self.decision_recommendation is not None:
+            if self.decision_recommendation.symbol != self.symbol:
+                raise ValueError("Completed run recommendation symbol does not match")
+            if self.decision_recommendation.action != "no_order":
+                raise ValueError("Completed run recommendation must remain no_order")
 
 
 class ResearchApplicationService:
@@ -692,8 +734,84 @@ class ResearchApplicationService:
             quote=quote,
             price_bridge=price_bridge,
             price_attractiveness=price_attractiveness,
+            pre_decision=pre_decision,
             current_status=current_status,
             available_at=available_at,
+        )
+        dependency_roles = {
+            ARTIFACT_RESEARCH_CASE: "research_case",
+            ARTIFACT_FINANCIAL_FACTS: "financial_facts",
+            ARTIFACT_RESEARCH_GATE: "research_gate",
+            ARTIFACT_VALUATION_ASSUMPTIONS: "valuation_assumptions",
+            ARTIFACT_VALUATION_RESULT: "valuation",
+            ARTIFACT_MODEL_VALIDITY: "model_validity",
+            ARTIFACT_PRICE_BRIDGE: "price_bridge",
+            ARTIFACT_PRICE_ATTRACTIVENESS: "price_attractiveness",
+            ARTIFACT_PRE_DECISION_ELIGIBILITY: "pre_decision",
+            ARTIFACT_HUMAN_RESEARCH_APPROVAL: "human_approval",
+            ARTIFACT_EVENT_MATERIALITY_REVIEW: "event_materiality",
+            ARTIFACT_ENTRY_THESIS_SNAPSHOT: "entry_thesis",
+            ARTIFACT_INVESTMENT_CONSISTENCY_REVIEW: "investment_consistency_review",
+        }
+        dependency_artifacts = {
+            dependency_roles[item.envelope.identity.artifact_type]: item
+            for item in stored
+            if item.envelope.identity.artifact_type in dependency_roles
+        }
+        if spec.recommendation_schema_version == DECISION_RECOMMENDATION_V3_SCHEMA:
+            decision_recommendation = build_advisory_decision_recommendation_v3(
+                run_id=spec.run_id,
+                research_case=spec.research_case,
+                valuation=valuation,
+                model_validity=validity,
+                price_bridge=price_bridge,
+                price_attractiveness=price_attractiveness,
+                pre_decision=pre_decision,
+                human_approval=spec.human_research_approval,
+                entry_thesis=spec.entry_thesis,
+                investment_consistency_review=spec.investment_consistency_review,
+                model_id=route.selected_model,
+                research_case_payload=spec.research_case_payload,
+                facts_payload=spec.facts_payload,
+                assumptions_payload=spec.assumptions_payload,
+                event_materiality=spec.event_materiality_review,
+                decision_as_of=as_of,
+                additional_blockers=blockers,
+                dependency_artifacts=dependency_artifacts,
+            )
+        else:
+            decision_recommendation = build_decision_recommendation(
+                run_id=spec.run_id,
+                research_case=spec.research_case,
+                valuation=valuation,
+                model_validity=validity,
+                price_bridge=price_bridge,
+                price_attractiveness=price_attractiveness,
+                pre_decision=pre_decision,
+                human_approval=spec.human_research_approval,
+                model_id=route.selected_model,
+                research_case_payload=spec.research_case_payload,
+                facts_payload=spec.facts_payload,
+                assumptions_payload=spec.assumptions_payload,
+                event_materiality=spec.event_materiality_review,
+                decision_as_of=as_of,
+                additional_blockers=blockers,
+                dependency_artifacts=dependency_artifacts,
+            )
+        stored.append(
+            self.repository.save_object(
+                decision_recommendation,
+                identity=ResearchArtifactIdentity(
+                    scope_type=SCOPE_SECURITY,
+                    scope_key=spec.symbol,
+                    artifact_type=ARTIFACT_DECISION_RECOMMENDATION,
+                    schema_version=ARTIFACT_SCHEMA_VERSION,
+                    as_of=decision_recommendation.decision_as_of,
+                    available_at=available_at,
+                ),
+                evidence_refs=decision_recommendation.evidence_refs,
+                run_id=spec.run_id,
+            )
         )
         return CompanyResearchRunOutcome(
             run_id=spec.run_id,
@@ -717,6 +835,7 @@ class ResearchApplicationService:
             human_research_approval=spec.human_research_approval,
             event_materiality_review=spec.event_materiality_review,
             pre_decision_eligibility=pre_decision,
+            decision_recommendation=decision_recommendation,
             bridge_contribution_reviews=spec.bridge_contribution_reviews,
             interim_report_policy=spec.interim_report_policy,
             issuer_identity_status=identity.status,
@@ -940,6 +1059,7 @@ class ResearchApplicationService:
         quote: QuoteSnapshot | None,
         price_bridge: PriceBridgeResult,
         price_attractiveness: PriceAttractivenessAssessment,
+        pre_decision: PreDecisionEligibility | None,
         current_status: CurrentResearchStatus,
         available_at: datetime,
     ) -> list[StoredResearchArtifact]:
@@ -973,6 +1093,12 @@ class ResearchApplicationService:
             ARTIFACT_RESEARCH_CASE,
             spec.research_case.as_of,
             spec.research_case.evidence_refs,
+        )
+        save(
+            spec.facts,
+            ARTIFACT_FINANCIAL_FACTS,
+            getattr(spec.facts, "as_of", None),
+            getattr(spec.facts, "evidence_refs", ()),
         )
         gate_evidence_refs = _merge_evidence_refs(
             spec.research_case.evidence_refs,
@@ -1031,6 +1157,31 @@ class ResearchApplicationService:
                 ARTIFACT_DIVIDEND_RESEARCH,
                 spec.distribution_result.as_of,
                 spec.distribution_result.evidence_refs,
+            )
+        if pre_decision is not None:
+            save(pre_decision, ARTIFACT_PRE_DECISION_ELIGIBILITY,
+                 pre_decision.decision_as_of, pre_decision.evidence_refs)
+        if spec.human_research_approval is not None:
+            save(spec.human_research_approval, ARTIFACT_HUMAN_RESEARCH_APPROVAL,
+                 spec.human_research_approval.review_as_of,
+                 spec.human_research_approval.evidence_refs)
+        if spec.event_materiality_review is not None:
+            save(spec.event_materiality_review, ARTIFACT_EVENT_MATERIALITY_REVIEW,
+                 spec.event_materiality_review.review_as_of,
+                 spec.event_materiality_review.evidence_refs)
+        if spec.entry_thesis is not None:
+            save(
+                spec.entry_thesis,
+                ARTIFACT_ENTRY_THESIS_SNAPSHOT,
+                spec.entry_thesis.entry_date,
+                (),
+            )
+        if spec.investment_consistency_review is not None:
+            save(
+                spec.investment_consistency_review,
+                ARTIFACT_INVESTMENT_CONSISTENCY_REVIEW,
+                spec.investment_consistency_review.as_of,
+                spec.investment_consistency_review.evidence_refs,
             )
         save(
             current_status,

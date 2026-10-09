@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import sys
 from dataclasses import asdict, replace
+from zoneinfo import ZoneInfo
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -27,6 +28,7 @@ from value_investment_agent.application.product.common import (  # noqa: E402
     write_new_json,
 )
 from value_investment_agent.application.product.workbench import load_existing_workbench_for_presentation  # noqa: E402
+from value_investment_agent.application.product.decision_surface import project_verified_decision_workbench
 from value_investment_agent.application.historical_validation.reverse_equity_expectations import load_reverse_expectations_for_presentation
 from value_investment_agent.presentation.read_models.conditional_expectations import project_conditional_expectations, render_company_review_cards
 from value_investment_agent.presentation.read_models.historical_company_closure import (
@@ -91,6 +93,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--existing-workbench", type=Path)
     parser.add_argument("--research-readiness", nargs=2, action="append", default=[], metavar=("PATH", "SHA256"))
     parser.add_argument("--existing-workbench-sha256")
+    parser.add_argument('--decision-workbench', nargs=2, metavar=('PATH', 'SHA256'),
+                        help='Project a replay-verified shared research decision without recalculation.')
+    parser.add_argument('--register-decision-company', action='store_true',
+                        help='Explicitly append a missing company from its verified ResearchCase.')
     parser.add_argument("--historical-closure", nargs=2, metavar=("PATH", "SHA256"),
                         help="Pin an already verified historical company closure for audit-only projection.")
     parser.add_argument("--historical-execution-replay", nargs=2, metavar=("PATH", "SHA256"),
@@ -133,6 +139,9 @@ def main() -> int:
     retained_additions = set()
     followup_binding = None
     quote_observation_binding = None
+    decision_workbench_binding = None
+    if getattr(args, 'register_decision_company', False) and not getattr(args, 'decision_workbench', None):
+        raise ValueError('company registration requires a pinned decision workbench')
     if getattr(args, 'event_followup', None) and not (args.read_model_only and args.base_publication_input):
         raise ValueError('event followup requires a source-reverified read-only publication input')
     if getattr(args, 'quote_observation', None) and not (args.read_model_only and args.base_publication_input):
@@ -227,9 +236,9 @@ def main() -> int:
     model = product_workbench_from_payload(payload)
     presentation_date = getattr(args, 'presentation_as_of', None)
     if presentation_date is not None:
-        if not model.as_of <= presentation_date <= args.generated_at.date():
+        if not model.as_of <= presentation_date <= args.generated_at.astimezone(ZoneInfo('Asia/Shanghai')).date():
             raise ValueError('presentation date must not backdate or exceed generation date')
-        model = replace(model, as_of=presentation_date)
+        model = replace(model, as_of=presentation_date, generated_at=args.generated_at)
     if retained_baseline:
         baseline_path, baseline_hash = retained_baseline
         original_symbols = {card.symbol for card in model.companies}
@@ -380,6 +389,17 @@ def main() -> int:
             raise ValueError('retained readiness cannot alter delivered research')
         model = project_research_readiness(model, readiness)
         readiness_bindings.extend(readiness["source_bindings"])
+    if getattr(args, 'decision_workbench', None):
+        decision_path, decision_hash = args.decision_workbench
+        snapshot = public_workbench_payload_from_snapshot(json.loads(json.dumps(
+            asdict(model), default=lambda value: value.isoformat(), ensure_ascii=False,
+        )))
+        project_verified_decision_workbench(
+            snapshot, root=ROOT, path=ROOT / decision_path, expected_sha256=decision_hash,
+            register_company=getattr(args, 'register_decision_company', False),
+        )
+        model = product_workbench_from_payload(snapshot)
+        decision_workbench_binding = dict(path=str(decision_path), sha256=decision_hash)
     if getattr(args, 'read_model_only', False):
         if output.suffix != '.json' or getattr(args, 'integrate_canonical', False):
             raise ValueError('read-model-only requires JSON output without workbook publication')
@@ -423,6 +443,7 @@ def main() -> int:
             retained_baseline_binding=retained_baseline_binding,
             event_followup_binding=followup_binding,
             quote_observation_binding=quote_observation_binding,
+            decision_workbench_binding=decision_workbench_binding,
             readiness_bindings=readiness_bindings,
             canonical_written=False, historical_preview=True, action='no_order'))
         if report_path is not None:
@@ -476,6 +497,7 @@ def main() -> int:
         "disclosed_financial_bindings": metric_bindings,
         "event_source_binding": event_binding,
         "dividend_history_binding": dividend_binding,
+        "decision_workbench_binding": decision_workbench_binding,
         "historical_closure_binding": historical_closure_binding,
         "historical_execution_replay_binding": historical_execution_replay_binding,
         "output_manifest_sha256": receipt["manifest_sha256"],

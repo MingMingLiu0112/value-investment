@@ -15,6 +15,9 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from .event_scan import load_event_scan_payload
+from .domain.decision.decision_recommendation import (
+    DECISION_RECOMMENDATION_SCHEMA,
+)
 from .model_validity import MaterialEvent
 from .m1_distribution_package_builder import optional_dividend_result_for_symbol
 from .m1_historical_quote import quote_snapshot_from_historical_close_manifest
@@ -22,6 +25,11 @@ from .research_application import ModelValidityEvaluationInput
 from .quote_snapshot import QuoteSnapshot
 from .quote_session_conversion import quote_snapshot_from_bundle_file
 from .research_case import ResearchCase
+from .research_artifact_codecs import (
+    ARTIFACT_ENTRY_THESIS_SNAPSHOT,
+    ARTIFACT_INVESTMENT_CONSISTENCY_REVIEW,
+    decode_artifact,
+)
 from .research_input import (
     ResearchInputDescriptor,
     finalize_input_descriptor,
@@ -43,6 +51,7 @@ from .valuation_models.fcff import FCFFScenarioInputs, FinancialFacts
 from .valuation_models.residual_income import (
     QualityCompounderFacts,
     ResidualIncomeScenarioInputs,
+    ResidualIncomeValuationTiming,
 )
 
 
@@ -204,6 +213,7 @@ def build_research_case(payload: Mapping[str, Any]) -> ResearchCase:
 
 def build_quality_facts(payload: Mapping[str, Any]) -> QualityCompounderFacts:
     data = dict(payload)
+    timing = data.get("valuation_timing")
     scenarios = data.get("scenario_inputs") or {}
     operating = {
         str(key): _decimal(item, f"facts.operating_inputs.{key}")
@@ -231,6 +241,13 @@ def build_quality_facts(payload: Mapping[str, Any]) -> QualityCompounderFacts:
         blockers=[str(item) for item in data.get("blockers") or []],
         operating_inputs=operating,
         scenario_inputs=scenario_objects or None,
+        valuation_timing=(
+            ResidualIncomeValuationTiming(
+                basis_at=_datetime(timing["basis_at"], "timing.basis_at"),
+                valuation_at=_datetime(timing["valuation_at"], "timing.valuation_at"),
+                evidence_refs=tuple(_refs(timing.get("evidence_refs"))),
+            ) if timing is not None else None
+        ),
     )
 
 
@@ -455,7 +472,7 @@ def build_descriptor(
     root: Path,
 ) -> ResearchInputDescriptor:
     data = dict(payload)
-    if data.get("schema_version") != PACKAGE_SCHEMA:
+    if data.get("schema_version") not in {PACKAGE_SCHEMA, "m1-valuation-package-v2"}:
         raise ValueError(f"Unknown valuation package schema: {data.get('schema_version')}")
     pit = data["point_in_time"]
     symbol = _required_text(data["symbol"], "package.symbol")
@@ -476,8 +493,27 @@ def build_descriptor(
     else:
         raise ValueError(f"Unknown valuation facts kind: {facts_kind}")
     dependencies = data["dependencies"]
-    distribution_result = optional_dividend_result_for_symbol(root, symbol)
+    distribution_result = (
+        None if data.get("schema_version") == "m1-valuation-package-v2"
+        else optional_dividend_result_for_symbol(root, symbol)
+    )
     blockers = [str(item) for item in data.get("blockers") or []]
+    recommendation_schema_version = str(
+        data.get("recommendation_schema_version", DECISION_RECOMMENDATION_SCHEMA)
+    )
+    entry_thesis = (
+        decode_artifact(ARTIFACT_ENTRY_THESIS_SNAPSHOT, data["entry_thesis"])
+        if data.get("entry_thesis") is not None
+        else None
+    )
+    investment_consistency_review = (
+        decode_artifact(
+            ARTIFACT_INVESTMENT_CONSISTENCY_REVIEW,
+            data["investment_consistency_review"],
+        )
+        if data.get("investment_consistency_review") is not None
+        else None
+    )
     if distribution_result is not None and distribution_result.as_of > facts.as_of:
         blockers.append(
             "Distribution package as-of "
@@ -536,9 +572,18 @@ def build_descriptor(
             root=root,
         ),
         valuation_approval=None,
+        recommendation_schema_version=recommendation_schema_version,
+        entry_thesis=entry_thesis,
+        investment_consistency_review=investment_consistency_review,
         blockers=tuple(blockers),
         input_sha256=None,
     )
+    if data.get("schema_version") == "m1-valuation-package-v2":
+        from .application.product.source_bound_inputs import (
+            validate_source_bound_descriptor, verify_package_local_sources,
+        )
+        verify_package_local_sources(root, data)
+        validate_source_bound_descriptor(data, descriptor)
     return finalize_input_descriptor(descriptor)
 
 

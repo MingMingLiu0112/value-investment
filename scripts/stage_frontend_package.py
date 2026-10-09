@@ -1,14 +1,18 @@
 """Append artifact-authored frontend sheets without rewriting retained evidence sheets."""
 from __future__ import annotations
-
 import argparse
 from copy import deepcopy
 import hashlib
 import json
 import posixpath
+import re
+import sys
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 from xml.etree import ElementTree as ET
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+from value_investment_agent.presentation.excel.sheet_xml import post_process_replacement_sheet  # noqa: E402
 
 M = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
 R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
@@ -379,6 +383,9 @@ def replace_sheet(
     target_sheet,
     replacement_sheet=None,
     frozen_rows=4,
+    frozen_columns=0,
+    fit_to_page=False,
+    native_navigation=False,
 ):
     """Replace one derived frontend sheet while retaining every other XML part.
 
@@ -421,21 +428,14 @@ def replace_sheet(
                 for item in xml(new.read("xl/sharedStrings.xml"))
             ]
         root = xml(new.read(replacement_path))
-        view = root.find("m:sheetViews/m:sheetView", NS)
-        if view is not None:
-            for pane in view.findall("m:pane", NS):
-                view.remove(pane)
-            ET.SubElement(
-                view,
-                f"{{{M}}}pane",
-                {
-                    "ySplit": str(frozen_rows),
-                    "topLeftCell": f"A{frozen_rows + 1}",
-                    "activePane": "bottomLeft",
-                    "state": "frozen",
-                },
-            )
-            view.set("zoomScale", "90")
+        post_process_replacement_sheet(
+            root,
+            existing_paths=existing_paths,
+            frozen_rows=frozen_rows,
+            frozen_columns=frozen_columns,
+            fit_to_page=fit_to_page,
+            native_navigation=native_navigation,
+        )
         for cell in root.iter(f"{{{M}}}c"):
             if "s" in cell.attrib:
                 cell.set("s", str(int(cell.get("s")) + offsets["cellXfs"]))
@@ -451,7 +451,7 @@ def replace_sheet(
         for element in root.iter():
             if "dxfId" in element.attrib:
                 element.set("dxfId", str(int(element.get("dxfId")) + offsets["dxfs"]))
-            if element.tag == f"{{{M}}}col" and "style" in element.attrib:
+            if element.tag in (f"{{{M}}}col", f"{{{M}}}row") and "style" in element.attrib:
                 element.set("style", str(int(element.get("style")) + offsets["cellXfs"]))
 
         replacements = {

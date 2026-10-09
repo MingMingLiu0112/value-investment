@@ -146,7 +146,7 @@ def extend_retained_research_payload(*, root: Path, payload: dict,
     result['overview']['pending_count'] = payload['overview']['pending_count'] + len(new_opportunities)
     result['today_items'].extend(dict(item, what_happened=f'封存基线 {built.date()} 的财务事实已接入共享研究卡。')
                                  for item in scratch['today_items'] if item.get('symbol') in additions)
-    result['system_health']['message'] = '已登记三家公司使用同一研究展示路径；各自事实、估值与缺项分开。当前不生成买卖指令或个性化仓位。'
+    result['system_health']['message'] = f'已登记 {len(result["companies"])} 家公司使用同一研究展示路径；各自事实、估值与缺项分开。当前不生成买卖指令或个性化仓位。'
     if sha256_file(source) != snapshot_sha256:
         raise ValueError('retained research changed during composition')
     return result
