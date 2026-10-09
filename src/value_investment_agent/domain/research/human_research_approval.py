@@ -56,6 +56,11 @@ PRIORITY_HIGH = "HIGH"
 PRIORITIES = {PRIORITY_NORMAL, PRIORITY_HIGH}
 
 REVIEWER_HUMAN_RESEARCH_LEAD = "human_research_lead"
+REVIEWER_DELEGATED_RESEARCH = "delegated_research_reviewer"
+REVIEWER_TYPES = {
+    REVIEWER_HUMAN_RESEARCH_LEAD,
+    REVIEWER_DELEGATED_RESEARCH,
+}
 
 _SYMBOL = re.compile(r"^[0-9]{6}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -98,6 +103,45 @@ def _require_refs(refs: tuple[dict[str, Any], ...]) -> tuple[dict[str, Any], ...
     if any(not ref.get("id") for ref in normalized):
         raise ValueError("Approval evidence references require ids")
     return normalized
+
+
+def _require_reviewer_identity(
+    *,
+    reviewer_type: str,
+    reviewer_id: str,
+    reviewer_authorization_ref: Mapping[str, Any] | None,
+    evidence_refs: tuple[dict[str, Any], ...],
+    label: str,
+) -> None:
+    """Require explicit, hash-bound provenance for non-human research review."""
+    if reviewer_type not in REVIEWER_TYPES:
+        raise ValueError(f"Unknown {label} reviewer type")
+    if reviewer_type == REVIEWER_HUMAN_RESEARCH_LEAD:
+        if reviewer_authorization_ref is not None:
+            raise ValueError("Human research review cannot use delegated authorization")
+        return
+    if not isinstance(reviewer_id, str) or not reviewer_id.strip():
+        raise ValueError("Delegated research review requires reviewer_id")
+    authorization = reviewer_authorization_ref
+    if not isinstance(authorization, Mapping):
+        raise ValueError("Delegated research review requires authorization provenance")
+    authorization_id = authorization.get("id")
+    authorization_hash = authorization.get("sha256")
+    if not isinstance(authorization_id, str) or not authorization_id.strip():
+        raise ValueError("Delegated research review authorization requires an id")
+    if not isinstance(authorization_hash, str) or not _SHA256.fullmatch(
+        authorization_hash.lower()
+    ):
+        raise ValueError("Delegated research review authorization requires SHA-256")
+    matching = [
+        ref for ref in evidence_refs
+        if ref.get("id") == authorization_id
+        and str(ref.get("sha256", "")).lower() == authorization_hash.lower()
+    ]
+    if len(matching) != 1:
+        raise ValueError(
+            "Delegated research review authorization must be one exact evidence reference"
+        )
 
 
 def artifact_fingerprint(payload: Mapping[str, Any]) -> str:
@@ -147,6 +191,8 @@ class HumanResearchApprovalReceipt:
     decision_version: str = "20260923.1"
     created_at: datetime | None = None
     action: str = ACTION_NO_ORDER
+    reviewer_id: str = ""
+    reviewer_authorization_ref: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         for field in (
@@ -167,8 +213,6 @@ class HumanResearchApprovalReceipt:
                 raise ValueError(f"Human approval {field} is required")
         if not _SYMBOL.fullmatch(self.symbol):
             raise ValueError("Human approval symbol must contain six digits")
-        if self.reviewer_type != REVIEWER_HUMAN_RESEARCH_LEAD:
-            raise ValueError("Only a human research lead can issue this receipt")
         if self.decision not in HUMAN_APPROVAL_DECISIONS:
             raise ValueError("Unknown human approval decision")
         if self.review_priority not in PRIORITIES:
@@ -220,11 +264,21 @@ class HumanResearchApprovalReceipt:
             "reopen_triggers",
             tuple(str(item) for item in self.reopen_triggers),
         )
-        object.__setattr__(
-            self,
-            "evidence_refs",
-            _require_refs(tuple(self.evidence_refs)),
+        evidence_refs = _require_refs(tuple(self.evidence_refs))
+        if self.reviewer_authorization_ref is not None:
+            object.__setattr__(
+                self,
+                "reviewer_authorization_ref",
+                dict(self.reviewer_authorization_ref),
+            )
+        _require_reviewer_identity(
+            reviewer_type=self.reviewer_type,
+            reviewer_id=self.reviewer_id,
+            reviewer_authorization_ref=self.reviewer_authorization_ref,
+            evidence_refs=evidence_refs,
+            label="approval",
         )
+        object.__setattr__(self, "evidence_refs", evidence_refs)
         if self.decision in {
             DECISION_REJECTED_NEEDS_REWORK,
             DECISION_PENDING_HUMAN_REVIEW,
@@ -248,7 +302,7 @@ class HumanResearchApprovalReceipt:
             raise ValueError("Conditional approval requires explicit followups")
 
     def as_policy(self) -> dict[str, Any]:
-        return {
+        payload = {
             "schema_version": HUMAN_APPROVAL_SCHEMA,
             "approval_id": self.approval_id,
             "symbol": self.symbol,
@@ -279,6 +333,14 @@ class HumanResearchApprovalReceipt:
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "action": self.action,
         }
+        if self.reviewer_id or self.reviewer_authorization_ref is not None:
+            payload["reviewer_id"] = self.reviewer_id
+            payload["reviewer_authorization_ref"] = (
+                dict(self.reviewer_authorization_ref)
+                if self.reviewer_authorization_ref is not None
+                else None
+            )
+        return payload
 
     def to_json(self) -> str:
         return json.dumps(
@@ -464,6 +526,12 @@ def human_research_approval_from_payload(
         decision_version=str(data.get("decision_version", "20260923.1")),
         created_at=datetime_value("created_at"),
         action=str(data.get("action", ACTION_NO_ORDER)),
+        reviewer_id=str(data.get("reviewer_id", "")),
+        reviewer_authorization_ref=(
+            dict(data["reviewer_authorization_ref"])
+            if data.get("reviewer_authorization_ref") is not None
+            else None
+        ),
     )
 
 

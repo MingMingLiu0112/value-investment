@@ -16,6 +16,11 @@ from typing import Any, Mapping
 EVENT_MATERIALITY_SCHEMA = "post-m1-event-materiality-v1"
 ACTION_NO_ORDER = "no_order"
 REVIEWER_HUMAN_RESEARCH_LEAD = "human_research_lead"
+REVIEWER_DELEGATED_RESEARCH = "delegated_research_reviewer"
+REVIEWER_TYPES = {
+    REVIEWER_HUMAN_RESEARCH_LEAD,
+    REVIEWER_DELEGATED_RESEARCH,
+}
 
 DECISION_NOT_MATERIAL = "NOT_MATERIAL"
 DECISION_SUPPORTING = "MATERIAL_SUPPORTING_EVIDENCE"
@@ -47,6 +52,45 @@ def _require_refs(
     if any(not ref.get("id") for ref in normalized):
         raise ValueError("Materiality evidence references require ids")
     return normalized
+
+
+def _require_reviewer_identity(
+    *,
+    reviewer_type: str,
+    reviewer_id: str,
+    reviewer_authorization_ref: Mapping[str, Any] | None,
+    evidence_refs: tuple[dict[str, Any], ...],
+    label: str,
+) -> None:
+    """Require explicit, hash-bound provenance for delegated review."""
+    if reviewer_type not in REVIEWER_TYPES:
+        raise ValueError(f"Unknown {label} reviewer type")
+    if reviewer_type == REVIEWER_HUMAN_RESEARCH_LEAD:
+        if reviewer_authorization_ref is not None:
+            raise ValueError("Human review cannot use delegated authorization")
+        return
+    if not isinstance(reviewer_id, str) or not reviewer_id.strip():
+        raise ValueError("Delegated research review requires reviewer_id")
+    authorization = reviewer_authorization_ref
+    if not isinstance(authorization, Mapping):
+        raise ValueError("Delegated research review requires authorization provenance")
+    authorization_id = authorization.get("id")
+    authorization_hash = authorization.get("sha256")
+    if not isinstance(authorization_id, str) or not authorization_id.strip():
+        raise ValueError("Delegated research review authorization requires an id")
+    if not isinstance(authorization_hash, str) or not _SHA256.fullmatch(
+        authorization_hash.lower()
+    ):
+        raise ValueError("Delegated research review authorization requires SHA-256")
+    matching = [
+        ref for ref in evidence_refs
+        if ref.get("id") == authorization_id
+        and str(ref.get("sha256", "")).lower() == authorization_hash.lower()
+    ]
+    if len(matching) != 1:
+        raise ValueError(
+            "Delegated research review authorization must be one exact evidence reference"
+        )
 
 
 @dataclass(frozen=True)
@@ -82,6 +126,9 @@ class EventMaterialityDecision:
     review_notes: tuple[str, ...] = ()
     decision_version: str = "20260923.1"
     action: str = ACTION_NO_ORDER
+    reviewer_id: str = ""
+    reviewer_authorization_ref: dict[str, Any] | None = None
+    evidence_refs: tuple[dict[str, Any], ...] = ()
 
     def __post_init__(self) -> None:
         for field in (
@@ -107,8 +154,6 @@ class EventMaterialityDecision:
             raise ValueError("Event reviewed_at must include timezone")
         if self.human_decision not in MATERIALITY_DECISIONS:
             raise ValueError("Unknown event materiality decision")
-        if self.reviewer_type != REVIEWER_HUMAN_RESEARCH_LEAD:
-            raise ValueError("Only a human research lead can classify an event")
         if self.action != ACTION_NO_ORDER:
             raise ValueError("Event materiality decision must remain no_order")
         if not _SHA256.fullmatch(self.source_sha256):
@@ -146,6 +191,22 @@ class EventMaterialityDecision:
             tuple(str(item) for item in self.review_notes),
         )
 
+        evidence_refs = _require_refs(tuple(self.evidence_refs))
+        if self.reviewer_authorization_ref is not None:
+            object.__setattr__(
+                self,
+                "reviewer_authorization_ref",
+                dict(self.reviewer_authorization_ref),
+            )
+        _require_reviewer_identity(
+            reviewer_type=self.reviewer_type,
+            reviewer_id=self.reviewer_id,
+            reviewer_authorization_ref=self.reviewer_authorization_ref,
+            evidence_refs=evidence_refs,
+            label="event",
+        )
+        object.__setattr__(self, "evidence_refs", evidence_refs)
+
         expected_stale = self.human_decision == DECISION_REQUIRES_RECALCULATION
         expected_recalc = expected_stale
         expected_followup = self.human_decision in {
@@ -170,7 +231,7 @@ class EventMaterialityDecision:
             raise ValueError("Superseded event id must contain digits only")
 
     def as_policy(self) -> dict[str, Any]:
-        return {
+        payload = {
             "schema_version": EVENT_MATERIALITY_SCHEMA,
             "event_decision_id": self.event_decision_id,
             "symbol": self.symbol,
@@ -196,6 +257,16 @@ class EventMaterialityDecision:
             "decision_version": self.decision_version,
             "action": self.action,
         }
+        if self.reviewer_id or self.reviewer_authorization_ref is not None:
+            payload["reviewer_id"] = self.reviewer_id
+            payload["reviewer_authorization_ref"] = (
+                dict(self.reviewer_authorization_ref)
+                if self.reviewer_authorization_ref is not None
+                else None
+            )
+        if self.evidence_refs:
+            payload["evidence_refs"] = [dict(ref) for ref in self.evidence_refs]
+        return payload
 
 
 @dataclass(frozen=True)
@@ -215,6 +286,8 @@ class EventMaterialityReview:
     decisions: tuple[EventMaterialityDecision, ...]
     evidence_refs: tuple[dict[str, Any], ...]
     action: str = ACTION_NO_ORDER
+    reviewer_id: str = ""
+    reviewer_authorization_ref: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if self.schema_version != EVENT_MATERIALITY_SCHEMA:
@@ -238,8 +311,6 @@ class EventMaterialityReview:
             raise ValueError("Event review timestamp must include timezone")
         if self.review_as_of != self.reviewed_at.date():
             raise ValueError("Event review timestamp must match review_as_of")
-        if self.reviewer_type != REVIEWER_HUMAN_RESEARCH_LEAD:
-            raise ValueError("Only a human research lead can review events")
         if self.action != ACTION_NO_ORDER:
             raise ValueError("Event materiality review must remain no_order")
         if not self.decisions:
@@ -254,11 +325,32 @@ class EventMaterialityReview:
         ids = [item.announcement_id for item in self.decisions]
         if len(ids) != len(set(ids)):
             raise ValueError("Event review contains a duplicate announcement id")
-        object.__setattr__(
-            self,
-            "evidence_refs",
-            _require_refs(tuple(self.evidence_refs)),
+        evidence_refs = _require_refs(tuple(self.evidence_refs))
+        if self.reviewer_authorization_ref is not None:
+            object.__setattr__(
+                self,
+                "reviewer_authorization_ref",
+                dict(self.reviewer_authorization_ref),
+            )
+        _require_reviewer_identity(
+            reviewer_type=self.reviewer_type,
+            reviewer_id=self.reviewer_id,
+            reviewer_authorization_ref=self.reviewer_authorization_ref,
+            evidence_refs=evidence_refs,
+            label="event review",
         )
+        if self.reviewer_type == REVIEWER_DELEGATED_RESEARCH:
+            for decision in self.decisions:
+                if (
+                    decision.reviewer_type != self.reviewer_type
+                    or decision.reviewer_id != self.reviewer_id
+                    or decision.reviewer_authorization_ref
+                    != self.reviewer_authorization_ref
+                ):
+                    raise ValueError(
+                        "Delegated event decisions must match the review reviewer identity"
+                    )
+        object.__setattr__(self, "evidence_refs", evidence_refs)
 
     @property
     def coverage_watermark(self) -> date:
@@ -320,7 +412,7 @@ class EventMaterialityReview:
         return self.coverage_watermark >= decision_as_of
 
     def as_policy(self) -> dict[str, Any]:
-        return {
+        payload = {
             "schema_version": self.schema_version,
             "review_id": self.review_id,
             "symbol": self.symbol,
@@ -336,6 +428,14 @@ class EventMaterialityReview:
             "evidence_refs": [dict(ref) for ref in self.evidence_refs],
             "action": self.action,
         }
+        if self.reviewer_id or self.reviewer_authorization_ref is not None:
+            payload["reviewer_id"] = self.reviewer_id
+            payload["reviewer_authorization_ref"] = (
+                dict(self.reviewer_authorization_ref)
+                if self.reviewer_authorization_ref is not None
+                else None
+            )
+        return payload
 
     def to_json(self) -> str:
         return json.dumps(
@@ -414,6 +514,13 @@ def event_materiality_decision_from_payload(
         review_notes=tuple(str(item) for item in data.get("review_notes") or ()),
         decision_version=str(data.get("decision_version", "20260923.1")),
         action=str(data.get("action", ACTION_NO_ORDER)),
+        reviewer_id=str(data.get("reviewer_id", "")),
+        reviewer_authorization_ref=(
+            dict(data["reviewer_authorization_ref"])
+            if data.get("reviewer_authorization_ref") is not None
+            else None
+        ),
+        evidence_refs=tuple(dict(item) for item in data.get("evidence_refs") or ()),
     )
 
 
@@ -442,4 +549,10 @@ def event_materiality_review_from_payload(
         ),
         evidence_refs=tuple(dict(item) for item in data.get("evidence_refs") or ()),
         action=str(data.get("action", ACTION_NO_ORDER)),
+        reviewer_id=str(data.get("reviewer_id", "")),
+        reviewer_authorization_ref=(
+            dict(data["reviewer_authorization_ref"])
+            if data.get("reviewer_authorization_ref") is not None
+            else None
+        ),
     )

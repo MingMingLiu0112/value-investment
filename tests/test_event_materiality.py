@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date, datetime, timezone
 
 import pytest
@@ -12,6 +13,7 @@ from value_investment_agent.event_materiality import (
     EVENT_MATERIALITY_SCHEMA,
     EventMaterialityDecision,
     EventMaterialityReview,
+    REVIEWER_DELEGATED_RESEARCH,
     event_materiality_decision_from_payload,
     event_materiality_review_from_payload,
 )
@@ -172,6 +174,54 @@ def test_review_round_trip_and_coverage_watermark():
     assert restored.has_unresolved_recalculation is True
     assert restored.covers(MODEL_DATE) is True
     assert restored.covers(date(2026, 9, 23)) is False
+
+
+def test_delegated_materiality_identity_round_trips_with_exact_authorization():
+    authorization = {"id": "delegated-research-policy-v1", "sha256": "d" * 64}
+    decision = replace(
+        _decision(DECISION_NOT_MATERIAL),
+        reviewer_type=REVIEWER_DELEGATED_RESEARCH,
+        reviewer_id="independent-reviewer-01",
+        reviewer_authorization_ref=authorization,
+        evidence_refs=(authorization,),
+    )
+    review = replace(
+        _review((decision,)),
+        reviewer_type=REVIEWER_DELEGATED_RESEARCH,
+        reviewer_id="independent-reviewer-01",
+        reviewer_authorization_ref=authorization,
+        evidence_refs=(authorization,),
+    )
+
+    restored_decision = event_materiality_decision_from_payload(decision.as_policy())
+    restored_review = event_materiality_review_from_payload(review.as_policy())
+    assert restored_decision == decision
+    assert restored_review == review
+
+
+def test_delegated_materiality_requires_review_and_decision_identity_to_match():
+    authorization = {"id": "delegated-research-policy-v1", "sha256": "d" * 64}
+    decision = replace(
+        _decision(DECISION_NOT_MATERIAL),
+        reviewer_type=REVIEWER_DELEGATED_RESEARCH,
+        reviewer_id="reviewer-a",
+        reviewer_authorization_ref=authorization,
+        evidence_refs=(authorization,),
+    )
+    with pytest.raises(ValueError, match="reviewer_id"):
+        replace(
+            decision,
+            reviewer_type=REVIEWER_DELEGATED_RESEARCH,
+            reviewer_id="",
+        )
+    with pytest.raises(ValueError, match="match the review reviewer identity"):
+        replace(
+            _review((decision,)),
+            reviewer_type=REVIEWER_DELEGATED_RESEARCH,
+            reviewer_id="reviewer-b",
+            reviewer_authorization_ref=authorization,
+            evidence_refs=(authorization,),
+        )
 
 
 def test_shared_materiality_attachment_requires_exact_scan_and_keeps_recalculation(tmp_path):

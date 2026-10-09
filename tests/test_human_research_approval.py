@@ -6,10 +6,13 @@ import pytest
 
 from value_investment_agent.human_research_approval import (
     DECISION_APPROVED_CONDITIONAL_LOW_CONFIDENCE,
+    DECISION_APPROVED_RESEARCH_ONLY,
     DECISION_REJECTED_NEEDS_REWORK,
     DECISION_SUPERSEDED,
     HumanResearchApprovalReceipt,
+    REVIEWER_DELEGATED_RESEARCH,
     artifact_fingerprint,
+    human_research_approval_from_payload,
     resolve_human_research_approval,
 )
 from value_investment_agent.research_run_contract import valuation_result_sha256
@@ -197,6 +200,69 @@ def test_symbol_identity_conflict_fails_closed():
 
     assert resolved.status == DECISION_SUPERSEDED
     assert "valuation_symbol_mismatch" in resolved.blockers
+
+
+def test_delegated_review_requires_hash_bound_authorization_and_round_trips():
+    authorization = {"id": "delegated-research-policy-v1", "sha256": "d" * 64}
+    receipt = replace(
+        _receipt(
+            decision=DECISION_APPROVED_CONDITIONAL_LOW_CONFIDENCE,
+            price_assessment_eligible=True,
+        ),
+        reviewer_type=REVIEWER_DELEGATED_RESEARCH,
+        reviewer_id="independent-reviewer-01",
+        reviewer_authorization_ref=authorization,
+        evidence_refs=({"id": "approval-pdf"}, authorization),
+    )
+
+    restored = human_research_approval_from_payload(receipt.as_policy())
+    assert restored == receipt
+    resolved = resolve_human_research_approval(
+        restored,
+        _valuation(),
+        model_id="residual_income_or_equity_value",
+        research_case_payload=_payload("case"),
+        facts_payload=_payload("facts"),
+        assumptions_payload=_payload("assumptions"),
+    )
+    assert resolved.approved is True
+    assert resolved.price_assessment_eligible is True
+
+
+def test_delegated_review_without_exact_authorization_evidence_fails_closed():
+    authorization = {"id": "delegated-research-policy-v1", "sha256": "d" * 64}
+    with pytest.raises(ValueError, match="reviewer_id"):
+        replace(
+            _receipt(
+                decision=DECISION_APPROVED_RESEARCH_ONLY,
+                price_assessment_eligible=False,
+            ),
+            reviewer_type=REVIEWER_DELEGATED_RESEARCH,
+            reviewer_authorization_ref=authorization,
+            evidence_refs=({"id": "approval-pdf"}, authorization),
+        )
+    with pytest.raises(ValueError, match="exact evidence reference"):
+        replace(
+            _receipt(
+                decision=DECISION_APPROVED_RESEARCH_ONLY,
+                price_assessment_eligible=False,
+            ),
+            reviewer_type=REVIEWER_DELEGATED_RESEARCH,
+            reviewer_id="independent-reviewer-01",
+            reviewer_authorization_ref=authorization,
+            evidence_refs=({"id": "approval-pdf"},),
+        )
+
+
+def test_legacy_human_receipt_serialization_does_not_gain_delegated_fields():
+    payload = _receipt(
+        decision=DECISION_REJECTED_NEEDS_REWORK,
+        price_assessment_eligible=False,
+        remaining_blockers=("blocker",),
+    ).as_policy()
+
+    assert "reviewer_id" not in payload
+    assert "reviewer_authorization_ref" not in payload
 
 
 def test_shared_review_attachment_preserves_rejection_and_exact_payloads(tmp_path):
