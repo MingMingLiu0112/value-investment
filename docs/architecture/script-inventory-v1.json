@@ -4,7 +4,7 @@
   "scripts_root": "scripts",
   "current_entrypoint_count": 43,
   "counts": {
-    "CURRENT_OPERATIONAL_CLI": 12,
+    "CURRENT_OPERATIONAL_CLI": 13,
     "CURRENT_PRODUCT_CLI": 7,
     "CURRENT_RESEARCH_CLI": 203,
     "HISTORICAL_VALIDATION_TOOL": 60,
@@ -7217,6 +7217,17 @@
       "risk": "MEDIUM",
       "line_count": 25,
       "sha256": "f10cdc0f7315717c952f667e27a3e869213ba7606520350f3db3f8c56d890872"
+    },
+    {
+      "path": "scripts/current/build_stage3_product_preview.py",
+      "category": "CURRENT_OPERATIONAL_CLI",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 64,
+      "sha256": "0b97d478c19479fea73045a9cb30486c1d41b21059823701416df803f54d480a"
     }
   ]
 }
