@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 
 from ..research.agent_review.snapshot import load_research_snapshot
 from ..research.agent_review.supervisor import OfflineCaseReplayModel, expected_offline_findings
+from ..research.agent_review.llm_pilot import LIVE_SCOPE, MOCK_SCOPE, verify_llm_packet
 from ...domain.agent_research.contracts import AgentRole
 from .common import load_json_object, require_inside, sha256_file
 
@@ -19,16 +20,19 @@ def project_verified_agent_packet(payload: dict[str, Any], *, root: Path,
     if sha256_file(source) != expected_sha256:
         raise ValueError("Agent research packet hash mismatch")
     packet = load_json_object(source, "agent research packet")
-    if (packet.get("schema_version") != "agent-research-pilot-v1"
-            or packet.get("scope") != "OFFLINE_REPLAY_NOT_NEW_LLM_RESEARCH"
+    scope = packet.get("scope")
+    if (scope not in {"OFFLINE_REPLAY_NOT_NEW_LLM_RESEARCH", MOCK_SCOPE, LIVE_SCOPE}
             or packet.get("action") != "no_order"
             or packet.get("formal_fact_count") != 0
             or packet.get("approval_count") != 0
             or packet.get("decision_changed") is not False):
         raise ValueError("Agent research packet cannot upgrade investment state")
-    model = OfflineCaseReplayModel()
-    if packet.get("model_id") != model.model_id or packet.get("prompt_version") != model.prompt_version:
-        raise ValueError("Unknown offline research replay version")
+    if scope == "OFFLINE_REPLAY_NOT_NEW_LLM_RESEARCH":
+        model = OfflineCaseReplayModel()
+        if (packet.get("schema_version") != "agent-research-pilot-v1"
+                or packet.get("model_id") != model.model_id
+                or packet.get("prompt_version") != model.prompt_version):
+            raise ValueError("Unknown offline research replay version")
     snapshot = load_research_snapshot(
         root=root, workbench=root / packet["workbench_path"],
         expected_sha256=packet["workbench_sha256"], symbol=packet["symbol"],
@@ -43,18 +47,24 @@ def project_verified_agent_packet(payload: dict[str, Any], *, root: Path,
             or packet_generated > product_generated):
         raise ValueError("Agent research packet is newer than the product")
     findings = packet.get("findings")
-    if not isinstance(findings, list) or len(findings) != len(AgentRole):
-        raise ValueError("Offline agent pilot requires all three bounded roles")
-    if [item.get("agent_role") for item in findings] != [role.value for role in AgentRole]:
-        raise ValueError("Agent research roles are missing, repeated or reordered")
-    if findings != expected_offline_findings(snapshot, packet_generated):
-        raise ValueError("Offline findings differ from verified replay")
+    if not isinstance(findings, list) or not 3 <= len(findings) <= 6:
+        raise ValueError("Agent pilot requires three bounded roles")
+    if scope == "OFFLINE_REPLAY_NOT_NEW_LLM_RESEARCH":
+        if [item.get("agent_role") for item in findings] != [role.value for role in AgentRole]:
+            raise ValueError("Offline research roles are missing or reordered")
+        if findings != expected_offline_findings(snapshot, packet_generated):
+            raise ValueError("Offline findings differ from verified replay")
+    else:
+        verify_llm_packet(packet, snapshot)
     views = []
-    for role, item in zip(AgentRole, findings):
+    for item in findings:
         views.append({
-            "role": role.value, "claim": item["claim"],
+            "role": item["agent_role"], "claim": item["claim"],
             "evidence_refs": item["supporting_evidence_refs"],
+            "counter_evidence_refs": item["counter_evidence_refs"],
             "status": "PENDING_HUMAN_REVIEW",
+            "scope": scope, "finding_type": item["finding_type"],
+            "research_as_of": snapshot.as_of.isoformat(),
         })
     matches = [item for item in payload.get("companies", [])
                if item.get("symbol") == snapshot.symbol]
@@ -64,7 +74,8 @@ def project_verified_agent_packet(payload: dict[str, Any], *, root: Path,
     if not isinstance(audit, dict) or not isinstance(audit.get("evidence"), list):
         raise ValueError("Agent research requires a product evidence audit")
     existing = {record["evidence_id"]: record for record in audit["evidence"]}
-    for ref_id in sorted({ref for finding in findings for ref in finding["supporting_evidence_refs"]}):
+    for ref_id in sorted({ref for finding in findings for ref in (
+            finding["supporting_evidence_refs"] + finding["counter_evidence_refs"])}):
         ref = snapshot.evidence_by_id()[ref_id]
         audit_record = {
             "evidence_id": ref_id,

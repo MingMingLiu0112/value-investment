@@ -920,13 +920,27 @@ def _render_companies(
         )
         row += 2
         if company.agent_research:
-            row = _section_title(ws, row, "AI研究线索（待人工复核，不改变决策门）", 6)
+            row = _section_title(ws, row, "研究辅助线索（待人工复核，不改变决策门）", 6)
             role_labels = {
                 "FUNDAMENTAL": "基本面", "COUNTER_EVIDENCE": "反证", "EVENT": "事件",
             }
             for finding in company.agent_research:
                 label_text = role_labels[finding.role]
-                value_text = f"{finding.claim}（待复核；来源编号：{', '.join(finding.evidence_refs)}）"
+                scope_labels = {
+                    "OFFLINE_REPLAY_NOT_NEW_LLM_RESEARCH": "离线回放",
+                    "MOCK_LLM_RESEARCH_NOT_ADMITTED": "模拟模型",
+                    "LIVE_LLM_RESEARCH_NOT_ADMITTED": "外部模型未准入",
+                }
+                cutoff = finding.research_as_of.isoformat() if finding.research_as_of else "未标注"
+                type_labels = {"FACT_CANDIDATE": "候选事实（未核验）",
+                               "INTERPRETATION": "解释性观点",
+                               "RESEARCH_QUESTION": "研究问题"}
+                counter_text = (f"；反证来源：{', '.join(finding.counter_evidence_refs)}"
+                                if finding.counter_evidence_refs else "")
+                value_text = (
+                    f"{finding.claim}（{scope_labels[finding.scope]}；{type_labels[finding.finding_type]}；"
+                    f"研究截止{cutoff}；待复核；来源编号：{', '.join(finding.evidence_refs)}{counter_text}）"
+                )
                 _style(ws.cell(row, 1, label_text), fill=GREY, bold=True, border=True)
                 ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
                 _style(ws.cell(row, 2, value_text), border=True)

@@ -25,6 +25,12 @@ class ResearchSnapshot:
     counter_evidence: tuple[dict[str, Any], ...]
     next_events: tuple[dict[str, Any], ...]
     thesis_breakers: tuple[dict[str, Any], ...]
+    thesis: str = ""
+    return_driver: str = ""
+    mispricing_hypothesis: str = ""
+    financial_summary: dict[str, Any] | None = None
+    valuation_status: str = ""
+    blockers: tuple[str, ...] = ()
 
     def evidence_by_id(self) -> dict[str, dict[str, Any]]:
         return {str(ref["id"]): ref for ref in self.evidence}
@@ -77,6 +83,9 @@ def load_research_snapshot(*, root: Path, workbench: Path, expected_sha256: str,
             if available.utcoffset() is None or available.astimezone(
                     ZoneInfo("Asia/Shanghai")).date() > as_of:
                 raise ValueError("ResearchCase evidence is future-dated")
+        expires = ref.get("expires_at") or ref.get("valid_until")
+        if expires is not None and date.fromisoformat(str(expires)[:10]) < as_of:
+            raise ValueError("ResearchCase evidence expired before research cutoff")
         original = require_inside(root, root / ref["path"], "agent research original")
         if sha256_file(original) != ref["sha256"]:
             raise ValueError("ResearchCase original bytes changed")
@@ -97,4 +106,10 @@ def load_research_snapshot(*, root: Path, workbench: Path, expected_sha256: str,
         counter_evidence=tuple(dict(item) for item in case.get("counter_evidence") or ()),
         next_events=tuple(dict(item) for item in case.get("next_events") or ()),
         thesis_breakers=tuple(dict(item) for item in case.get("thesis_breakers") or ()),
+        thesis=str(case.get("thesis") or ""),
+        return_driver=str(case.get("return_driver") or ""),
+        mispricing_hypothesis=str(case.get("mispricing_hypothesis") or ""),
+        financial_summary=dict(case.get("financial_summary") or {}),
+        valuation_status=str(case.get("valuation_status") or ""),
+        blockers=tuple(str(item) for item in case.get("blockers") or ()),
     )

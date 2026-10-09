@@ -799,3 +799,27 @@ def test_decision_process_preserves_upstream_status_and_audit_links():
     assert all(SHEET_SYSTEM_AUDIT in cell.hyperlink.target for cell in links)
     audit_text = "\n".join(str(cell.value) for row in workbook[SHEET_SYSTEM_AUDIT] for cell in row if cell.value)
     assert "assessment-financial_facts" in audit_text
+
+
+def test_pending_mock_research_is_visibly_separate_from_formal_decision():
+    payload = _payload()
+    payload["companies"][0]["decision_review"] = [
+        {"label": "正式投资状态", "value": "暂不具备买入复核条件"},
+    ]
+    payload["companies"][0]["agent_research"] = [{
+        "role": "COUNTER_EVIDENCE", "claim": "Check cash conversion assumptions",
+        "evidence_refs": ["evidence-1"], "counter_evidence_refs": [],
+        "scope": "MOCK_LLM_RESEARCH_NOT_ADMITTED",
+        "finding_type": "RESEARCH_QUESTION", "research_as_of": "2026-09-25",
+        "status": "PENDING_HUMAN_REVIEW",
+    }]
+    model = product_workbench_from_payload(payload)
+    assert model.action == ACTION_NO_ORDER
+    assert model.companies[0].agent_research[0].scope == "MOCK_LLM_RESEARCH_NOT_ADMITTED"
+    workbook = build_product_workbench_workbook(model)
+    company_text = "\n".join(str(cell.value) for row in workbook[SHEET_COMPANIES]
+                             for cell in row if cell.value)
+    assert all(text in company_text for text in (
+        "研究辅助线索", "模拟模型", "待复核", "2026-09-25", "evidence-1",
+    ))
+    assert "决策复核" in company_text

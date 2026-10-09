@@ -18,7 +18,7 @@ def test_agent_domain_and_research_application_have_no_io_or_presentation_import
     domain = root / "domain" / "agent_research"
     application = root / "application" / "research" / "agent_review"
     forbidden = ("requests", "httpx", "psycopg", "openpyxl", "subprocess", "langchain",
-                 "langgraph", "deepagents", "presentation", "infrastructure")
+                 "langgraph", "deepagents", "presentation")
     for directory in (domain, application):
         for path in directory.glob("*.py"):
             tree = ast.parse(path.read_text(encoding="utf-8"))

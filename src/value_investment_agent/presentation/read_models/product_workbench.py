@@ -652,15 +652,25 @@ class AgentResearchView:
     role: str
     claim: str
     evidence_refs: tuple[str, ...]
+    counter_evidence_refs: tuple[str, ...] = ()
     status: str = "PENDING_HUMAN_REVIEW"
+    scope: str = "OFFLINE_REPLAY_NOT_NEW_LLM_RESEARCH"
+    finding_type: str = "INTERPRETATION"
+    research_as_of: date | None = None
 
     def __post_init__(self) -> None:
         if self.role not in {"FUNDAMENTAL", "COUNTER_EVIDENCE", "EVENT"}:
             raise ValueError("Unknown agent research role")
         if self.status != "PENDING_HUMAN_REVIEW":
             raise ValueError("Agent research cannot be presented as approved")
+        if self.scope not in {"OFFLINE_REPLAY_NOT_NEW_LLM_RESEARCH",
+                              "MOCK_LLM_RESEARCH_NOT_ADMITTED", "LIVE_LLM_RESEARCH_NOT_ADMITTED"}:
+            raise ValueError("Unknown agent research scope")
+        if self.finding_type not in {"FACT_CANDIDATE", "INTERPRETATION", "RESEARCH_QUESTION"}:
+            raise ValueError("Unknown agent research finding type")
         object.__setattr__(self, "claim", _required_text(self.claim, "agent research claim"))
         object.__setattr__(self, "evidence_refs", _ref_ids(self.evidence_refs))
+        object.__setattr__(self, "counter_evidence_refs", _ref_ids(self.counter_evidence_refs))
         if not self.evidence_refs:
             raise ValueError("Agent research requires source references")
 
@@ -709,7 +719,7 @@ class CompanyCard:
                 (_required_text(label, "decision review label"), _required_text(value, "decision review value"))
             )
         object.__setattr__(self, "decision_review", tuple(review_rows))
-        if len(self.agent_research) > 3 or any(
+        if len(self.agent_research) > 6 or any(
                 not isinstance(item, AgentResearchView) for item in self.agent_research):
             raise ValueError("Company agent research must be bounded typed views")
         if not self.decision_process:
@@ -1075,6 +1085,7 @@ def _company_evidence_refs(card: CompanyCard) -> tuple[str, ...]:
         refs.extend(step.evidence_refs)
     for finding in card.agent_research:
         refs.extend(finding.evidence_refs)
+        refs.extend(finding.counter_evidence_refs)
     return tuple(refs)
 
 
@@ -1384,7 +1395,12 @@ def _parse_company(value: object) -> CompanyCard:
                 role=_required_text(finding.get("role"), "agent role"),
                 claim=_required_text(finding.get("claim"), "agent claim"),
                 evidence_refs=tuple(finding.get("evidence_refs") or ()),
+                counter_evidence_refs=tuple(finding.get("counter_evidence_refs") or ()),
                 status=str(finding.get("status") or ""),
+                scope=str(finding.get("scope") or "OFFLINE_REPLAY_NOT_NEW_LLM_RESEARCH"),
+                finding_type=str(finding.get("finding_type") or "INTERPRETATION"),
+                research_as_of=(date.fromisoformat(finding["research_as_of"])
+                                if finding.get("research_as_of") else None),
             )
             for finding in _required_list(item.get("agent_research") or [], "company.agent_research")
             for finding in (_required_mapping(finding, "agent research finding"),)

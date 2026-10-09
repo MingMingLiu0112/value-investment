@@ -1,0 +1,9 @@
+{
+  "endpoint": "https://api.openai.com/v1/chat/completions",
+  "model_id": "REPLACE_WITH_SUPPORTED_MODEL",
+  "api_key_env": "VALUE_AGENT_API_KEY",
+  "timeout_seconds": 20,
+  "max_run_cost_usd": 0.10,
+  "input_usd_per_million": 1.0,
+  "output_usd_per_million": 2.0
+}

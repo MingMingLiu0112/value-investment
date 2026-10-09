@@ -1,0 +1,41 @@
+{
+  "FUNDAMENTAL": {
+    "findings": [
+      {
+        "claim": "The recorded business-quality thesis needs a separate check of cash conversion and shareholder distribution capacity; the cited materials do not by themselves close that question.",
+        "finding_type": "INTERPRETATION",
+        "supporting_evidence_refs": ["cninfo:1225114741", "cninfo:1225475868"],
+        "counter_evidence_refs": [],
+        "affected_research_dimensions": ["business_quality"],
+        "proposed_follow_up": "Reconcile the cash-flow and distribution bases in the cited original filings.",
+        "confidence": "LOW"
+      }
+    ]
+  },
+  "COUNTER_EVIDENCE": {
+    "findings": [
+      {
+        "claim": "A countercase is that the stated return driver may be more sensitive to margin or channel assumptions than the current thesis explains.",
+        "finding_type": "RESEARCH_QUESTION",
+        "supporting_evidence_refs": ["cninfo:1225114741"],
+        "counter_evidence_refs": [],
+        "affected_research_dimensions": ["counter_evidence"],
+        "proposed_follow_up": "Compare the documented assumptions with the strongest adverse case; do not infer a new valuation.",
+        "confidence": "LOW"
+      }
+    ]
+  },
+  "EVENT": {
+    "findings": [
+      {
+        "claim": "The next registered disclosure should be checked for changes to the recorded thesis breakers; no unseen filing is assumed to have occurred.",
+        "finding_type": "RESEARCH_QUESTION",
+        "supporting_evidence_refs": ["cninfo:1225475868"],
+        "counter_evidence_refs": [],
+        "affected_research_dimensions": ["event_monitoring"],
+        "proposed_follow_up": "Route any newly verified event through the existing materiality review.",
+        "confidence": "LOW"
+      }
+    ]
+  }
+}
