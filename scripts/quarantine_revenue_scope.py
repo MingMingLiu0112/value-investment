@@ -2,7 +2,7 @@
 import argparse
 import json
 
-from evidence_dependencies import affected_point_ids
+from value_investment_agent.domain.research.evidence_dependencies import affected_point_ids
 from evidence_quarantine import quarantine_metadata
 from value_investment_agent.db import connect, begin_run, end_run, latest_points, upsert_valuation
 from value_investment_agent.cli import _refresh_financial_quality

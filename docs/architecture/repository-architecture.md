@@ -91,14 +91,14 @@ Domain must not import:
 
 | 层 | 当前代表模块 | 迁移策略 |
 | --- | --- | --- |
-| Domain / Research | `domain/research/gap_classification.py`、`research_profile.py`、`research_case.py`、`research_run_contract.py`、`human_research_approval.py`、`research_gate.py`；旧根路径为 shim；`fixed_sample_*` 仍待迁移 | 从纯规则、低消费者模块开始，旧路径保留兼容 shim |
+| Domain / Research | `domain/research/gap_classification.py`、`research_profile.py`、`research_case.py`、`research_run_contract.py`、`human_research_approval.py`、`research_gate.py`、`evidence_dependencies.py`；旧根路径为 shim；`fixed_sample_*` 仍待迁移 | 从纯规则、低消费者模块开始，旧路径保留兼容 shim |
 | Domain / Valuation | `domain/valuation/confidence.py`，旧路径为 shim；`valuation_router.py`, `valuation_assumptions.py`, `price_bridge.py`, `model_validity.py` 仍待迁移 | 保留公式和行为，先迁纯规则，不修改模型 |
 | Domain / Decision | `investment_decision.py`, `decision_read_model.py`, `pre_decision_eligibility.py` | 大文件先不拆，确认职责后再拆 |
 | Domain / Portfolio | `portfolio_contracts.py`, `portfolio_risk.py`, `position_guidance.py`, `dividend_income_projection.py` | 私人数据边界保持不变 |
 | Domain / Events | `event_materiality.py`, `m5_event_*.py` | 事件合同与运营编排分开 |
 | Domain / Historical Validation | `historical_validation.py` 由冻结 receipt 按原路径和 SHA-256 绑定 | provenance-frozen，不移动、不改写；新的只读校验用例进入 `application/historical_validation/` |
 | Application | `research_application.py`, `research_batch.py`, `research_e2e_replay.py` | 作为应用编排，不导入 Excel/DB 业务实现 |
-| Infrastructure | `infrastructure/filings/pdf_text.py`、`infrastructure/evidence/evidence_tiering.py`、`infrastructure/backup/backup_snapshot.py`；`db.py`、`disclosures.py`、`market.py` 仍待迁移 | 保持 I/O、持久化、外部数据和密钥边界 |
+| Infrastructure | `infrastructure/filings/pdf_text.py`、`infrastructure/evidence/evidence_tiering.py`、`infrastructure/backup/backup_snapshot.py`、`infrastructure/market_data/{provider_scope,roe_scope}.py`、`infrastructure/agent_runtime/provider.py`；`db.py`、`disclosures.py`、`market.py` 仍待迁移 | 保持 I/O、持久化、外部数据和密钥边界 |
 | Presentation | `presentation/excel/product_workbench.py`、`presentation/read_models/product_workbench.py`、`presentation/read_models/research_read_model.py`；`excel_report.py`、`workbook_simple_overview.py` 仍为核心 legacy 实现 | 只消费 Product Read Model / typed result，不重算投资结论；M7 五页用户界面不得展示 M2-M6 导航或执行语义 |
 | Operations | `operations/authorization/m6_authorization_artifacts.py`；其余 `m6_*.py` 仍待迁移 | M6 运行控制、M7 展示发布分开 |
 | Compatibility / Legacy | 根层旧模块和 `scripts/*` wrapper | 只保留迁移期 shim，不再增长 |

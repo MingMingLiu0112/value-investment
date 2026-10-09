@@ -4,7 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from provider_scope import REPLACEMENTS, snapshot_proves_provider_field
+from value_investment_agent.infrastructure.market_data.provider_scope import REPLACEMENTS, snapshot_proves_provider_field
 from value_investment_agent.db import connect, begin_run, end_run
 from value_investment_agent.settings import get_settings
 

@@ -6,7 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from value_investment_agent.evidence_dependencies import affected_point_ids
+from value_investment_agent.domain.research.evidence_dependencies import affected_point_ids
 
 
 def main():

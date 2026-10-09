@@ -1,6 +1,6 @@
 """Read-only inventory of legacy total-revenue rows and direct verification dependents."""
 import json
-from evidence_dependencies import affected_point_ids
+from value_investment_agent.domain.research.evidence_dependencies import affected_point_ids
 from value_investment_agent.db import connect
 from value_investment_agent.settings import get_settings
 

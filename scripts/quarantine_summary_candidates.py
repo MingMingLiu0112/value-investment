@@ -9,7 +9,7 @@ from pathlib import Path
 from value_investment_agent.db import connect, begin_run, end_run, latest_points, upsert_valuation
 from value_investment_agent.cli import _refresh_financial_quality, as_valuation_row
 from value_investment_agent.quality import evaluate
-from evidence_dependencies import affected_point_ids
+from value_investment_agent.domain.research.evidence_dependencies import affected_point_ids
 from value_investment_agent.filing_extract import extract_candidates_from_pages
 from value_investment_agent.pdf_text import extract_pages
 from value_investment_agent.settings import get_settings

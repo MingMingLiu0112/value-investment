@@ -3,7 +3,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-from roe_scope import snapshot_proves_simple_roe
+from value_investment_agent.infrastructure.market_data.roe_scope import snapshot_proves_simple_roe
 from value_investment_agent.db import connect, begin_run, end_run
 from value_investment_agent.settings import get_settings
 
