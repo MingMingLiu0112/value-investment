@@ -8,6 +8,18 @@ Generic product commands in this directory accept `--symbol` as an argument and
 delegate orchestration to `value_investment_agent.application.product`. This
 directory holds thin CLI wrappers only.
 
+Run the manual trade-before-research assistant with
+`python -X utf8 scripts/current/run_daily_trade_assistant.py --symbol 600519`.
+It attempts the existing same-day dual-source close collector, then runs the
+registered source-bound research case, v3 advisory decision, offline three-role
+review and a runtime-only Excel preview. Read `report.md` and `receipt.json`
+under the printed run directory. Use `--no-collect-quote --agent-mode mock` for
+an explicit offline product check; the mock never becomes admitted research.
+An unregistered symbol, stale model, invalid quote or missing private portfolio
+cannot manufacture a buy price, position size or order. `000651` is a second
+registered research case with no source-verified product handoff yet, so it
+emits a workbench/report but no Excel preview.
+
 `register_prospective_research.py` creates an immutable, runtime-only receipt
 for the committed public observation plan. It records research scope and PIT
 rules before outcomes are observed; it does not fetch data, value a company,

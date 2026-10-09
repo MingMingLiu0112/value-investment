@@ -10,6 +10,7 @@
     "all_v1_paths_preserved": true
   },
   "SUPPORTED_PRODUCT_CLI": [
+    "scripts/current/run_daily_trade_assistant.py",
     "scripts/open_current_trial_workbook.py",
     "scripts/build_m7_workbench_v2_candidate.py",
     "scripts/verify_m7_workbench_v2_wps.ps1",
@@ -75,8 +76,8 @@
     "scripts/report_m1_research_dossiers.py"
   ],
   "counts": {
-    "product": 19,
+    "product": 20,
     "engineering": 42,
-    "total": 61
+    "total": 62
   }
 }

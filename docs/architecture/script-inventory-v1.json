@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 12,
     "CURRENT_PRODUCT_CLI": 7,
-    "CURRENT_RESEARCH_CLI": 205,
+    "CURRENT_RESEARCH_CLI": 206,
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 216,
     "MIGRATION_TOOL": 13,
@@ -1366,7 +1366,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 58,
-      "sha256": "2a259b3af5271d701b58ad54dce6a1f5819ab95c94c7d0bf9d922177c8938d50"
+      "sha256": "e61af042648062c39be198bbd665ed71c494ae23566dc5a3ceb41f108b3e077d"
     },
     {
       "path": "scripts/build_m5_bounded_recalculation_plan.py",
@@ -1377,7 +1377,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 63,
-      "sha256": "c2ca01013e60fd4f26851c0f4b6b76e87c397f242b703eb505165194f239f8e7"
+      "sha256": "8850b259a28b259fccb69b9edd110462458632cbcb87176277c770f9cdfe1356"
     },
     {
       "path": "scripts/build_m5_disclosure_queue.py",
@@ -1471,7 +1471,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 56,
-      "sha256": "3cde39055d3ad22aace6b36223c97b8c693c4549ac49905c67e142207e79c217"
+      "sha256": "cc13fbaca80ae452079aa9caea636a0f5c43a980ee913ca577f2aa56330781db"
     },
     {
       "path": "scripts/build_m5_research_artifact_graph.py",
@@ -1482,7 +1482,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 90,
-      "sha256": "0181023f48d1c147d792f4a8cb2516af6de143226d8faae9cece3b4f97af47cc"
+      "sha256": "d91b44d46ad2a128bd29d059491b5e2d10212c8c293e5b58539fa8100a9fc522"
     },
     {
       "path": "scripts/build_m7_actual_event_candidate.py",
@@ -1495,7 +1495,7 @@
       "recommended_action": "KEEP_CURRENT",
       "risk": "MEDIUM",
       "line_count": 210,
-      "sha256": "0f334a18d74dec19731f707fcd200f831bac9e5255ab7e525efd45b30c5c2770"
+      "sha256": "c6f4e97ef3a2e9d179132341584fed5e4214dc95fbbd366f554921bff4758c49"
     },
     {
       "path": "scripts/build_m7_daily_workbench.py",
@@ -2515,7 +2515,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 121,
-      "sha256": "34ee8e840053aabfb2733f89cdd21b0fc68b2261eab48bd1258765e420d1b1bb"
+      "sha256": "df210b89b2268f7af5d3a9fa8b4c6fd95e6c12c8ff4a3a0276beeb2681455b97"
     },
     {
       "path": "scripts/build_shenhua_cyclical_time_series.py",
@@ -2537,7 +2537,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 104,
-      "sha256": "edf9287801d73d8190d4f8f696ea21b48005f17228dbce6222e9800b7fb9f95a"
+      "sha256": "2ca344e66c09b6607acd0e528449ab6ce30c41caf4c6f33d39e9927f0d7aae93"
     },
     {
       "path": "scripts/build_shenhua_external_index_provenance.py",
@@ -3885,7 +3885,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 75,
-      "sha256": "a566117a79d612bd0450a41af44bfc959c8eb5816826fbc02e60c955aed406ef"
+      "sha256": "e209764c888055d3ef5efaf0f13ef8acd2ea932474761300e2f079afa32d75bd"
     },
     {
       "path": "scripts/current/daily_product_packet.py",
@@ -4029,6 +4029,17 @@
       "risk": "LOW",
       "line_count": 90,
       "sha256": "c0bd472df1296fa458a72ca0476871ea1d64207bfeda12ea219f631a8bf0cc68"
+    },
+    {
+      "path": "scripts/current/run_daily_trade_assistant.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 68,
+      "sha256": "85e457a1d17fef3ed0589858af7be3d25ea98cf826490d022e8126cddc9653c8"
     },
     {
       "path": "scripts/current/stamp_prospective_checkpoint.py",
@@ -4536,7 +4547,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 49,
-      "sha256": "e78a0ffd306dc461eef48b23fea49daa8323a5a64f376cef40cb05cb4d211dab"
+      "sha256": "3ee68d2657c6c05e9af21948dd132b855d8962ab99312dfdb9524bf692a1dc68"
     },
     {
       "path": "scripts/explain_extraction_queue.py",
@@ -4569,7 +4580,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 132,
-      "sha256": "862febf5a534c7913d029edd4d2367fb8c8bd1a0c74660115944b20194b3c4db"
+      "sha256": "dbf74fb6d80fd963fb9bf7dd9383127da387c1eb152456b9d5a3f4d65fa775e8"
     },
     {
       "path": "scripts/extract_m1_valuation_balance_facts.py",
@@ -4591,7 +4602,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 116,
-      "sha256": "9f7a2c24830d228b832d951f40bcdac772576a43d4096e29a0c37a96baf32dea"
+      "sha256": "5e209261b0c5248961ef356cfe2755376b5000db1404766af1a6dc4ba7e45ba5"
     },
     {
       "path": "scripts/extract_moutai_finance_transaction_note.py",
@@ -7001,7 +7012,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 199,
-      "sha256": "3e2b3611c44a9a0965c91cbfe32b1dcbebe5d72c02ae713c9224645711fe4303"
+      "sha256": "8fab97bd745940b13de9ed3f7d3329cd5a0bb836342d62a587f04933aa8d4efe"
     },
     {
       "path": "scripts/verify_m5_materiality_bridge_candidate_wps.ps1",
@@ -7034,7 +7045,7 @@
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
       "line_count": 230,
-      "sha256": "c71b2d0afca2f39958e9d371cff1b8dd100a109624085be7f178781c7afc8f3f"
+      "sha256": "5ae59d6171549dfe8196eea859c1108a096d24606ee024dd4a7d9665dfb9280e"
     },
     {
       "path": "scripts/verify_m7_workbench_v2_wps.ps1",

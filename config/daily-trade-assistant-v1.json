@@ -1,0 +1,24 @@
+{
+  "schema_version": "daily-trade-assistant-cases-v1",
+  "action": "no_order",
+  "cases": {
+    "000651": {
+      "package": "config/m1-valuation-packages-v1/000651-fcff.json",
+      "package_sha256": "38472b97dea937a665a7ddf0cbdc16676760ed98c98b44af192ee4d0aa8431ba",
+      "schedule_request": "config/daily-trade-assistant-000651-scope-v1.json",
+      "schedule_request_sha256": "45e0d3f43d6f51bf62cdc679031b5b79ffe1b90208605aa694e58fa2b0b64bb1"
+    },
+    "600519": {
+      "package": "runtime/d2-model-bound-followup-20261008/package-v8-financial-scope-bound.json",
+      "package_sha256": "c48e3dbfbe8b643cc71a609a2277f726246a1f32b1ac5dcb4b2da47055ec3d04",
+      "schedule_request": "runtime/d3-v3-production-optin-20261009/schedule-request.json",
+      "schedule_request_sha256": "f0990f0c8bde913447b2f929ef007995ae8cffd8937243f01d1861c1518e6f03",
+      "publication_input": "runtime/d2-model-bound-followup-20261008/product-publication-input-v11.json",
+      "publication_input_sha256": "b47c342d18ffbdb0d66383ad76e0737edc0551930214f64632d4b7378db03815",
+      "previous_workbench": "runtime/d3-v3-production-optin-20261009/600519-scoped-workbench-v3-final.json",
+      "previous_workbench_sha256": "70d969b77df752cb5c3f9e72b9ee0debf87ae360b10e6fc68eb59869d667dfe9",
+      "mock_responses": "tests/fixtures/agent_research_mock_600519.json",
+      "mock_responses_sha256": "5411ec4248133ebd4a1acea93b700d60b99084c4827a38dd16e67426bd202dca"
+    }
+  }
+}
