@@ -1,5 +1,32 @@
 # CURRENT STATUS
 
+
+## 2026-10-09 D3 v3 CI Closure Repair
+
+The first v3 opt-in push (`4be8891`) was green locally but red on GitHub Core
+Research Gates: the new decision modules imported artifact-type constants and
+source-bound package helpers that only existed in the working tree, so a clean
+checkout failed to collect 13 CI test modules in 17 seconds. That first commit
+is retained as honest failure evidence; it is not a completed delivery.
+
+Root reproduced the failure from a clean clone of the pushed commit, computed
+the missing dependency closure by normalized-content comparison, and shipped it
+in two follow-up commits: `6908d16` completes the source/script closure and
+`6f0a667` commits the accompanying 24 test modules (including four suites
+updated for the human-approval price-assessment flag). The second push still
+failed once in CI and was traced to those stale test files, not to the design.
+
+Verification from an independent clean checkout of `6908d16` with the final
+test suite synced: Core Research Gates offline list `1581 passed, 49 skipped`
+in 92.42s. GitHub run `37898312249` for `6f0a6671b755d8a7de690d0cf430992db93cbdb6`
+then completed SUCCESS, so the v3 opt-in and its dependency closure are now
+reproducibly green on the official runner. Local full-suite evidence for the
+same tree remains `4199 passed, 41 skipped`.
+
+This repair changed no investment logic, threshold, valuation or gate. D2 is
+still IN_PROGRESS; canonical workbook and current-trial pointer unchanged; no
+private input, server, database, scheduler or production change; action=no_order.
+
 ## 2026-10-09 D3 v3 Recommendation Production Opt-In and Real 600519 Replay
 
 Root turned the v3 advisory recommendation from a prototype into an explicit,

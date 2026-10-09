@@ -99,6 +99,23 @@ retained as failure evidence and are not the accepted result.
   `BLOCKED_PRIVATE_INPUT` with `position_guidance = null`.
 - D2 still IN_PROGRESS; `INITIAL_ASSISTED_USE` not reached.
 
+## CI Outcome (updated 2026-10-09)
+
+The first push of this slice (`4be8891`) failed GitHub Core Research Gates
+because the commit was published without the working-tree dependency closure:
+`research_artifacts.py`, `research_artifact_codecs.py`,
+`research_application.py`, `source_bound_inputs.py` and related modules were
+still uncommitted, so a clean checkout raised
+`ImportError: cannot import name 'ARTIFACT_DECISION_RECOMMENDATION'` and
+aborted 13 test modules during collection. The failure was reproduced from a
+clean clone rather than inferred.
+
+Repair commits: `6908d16` (source/script closure plus architecture inventory)
+and `6f0a667` (24 accompanying test modules, including four suites updated for
+the human-approval price-assessment flag). Independent clean-checkout
+verification of the CI offline list: `1581 passed, 49 skipped` in 92.42s.
+GitHub run `37898312249` for `6f0a6671b755d8a7de690d0cf430992db93cbdb6`
+completed SUCCESS. No investment logic, threshold, valuation or gate changed.
 ## Next
 
 Product-level D3 work is now the gap: emit a non-canonical product read model /
