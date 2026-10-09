@@ -1,5 +1,192 @@
 # CURRENT STATUS
 
+## 2026-10-09 D3 v3 Recommendation Production Opt-In and Real 600519 Replay
+
+Root turned the v3 advisory recommendation from a prototype into an explicit,
+opt-in production path without changing the default contract. The current
+workbench application and its CLI accept
+`--recommendation-schema-version advisory-decision-recommendation-v3`; when the
+argument is absent the v2 path is unchanged, and existing-manifest mode rejects
+schedule/market/review/schema overrides instead of silently ignoring them. The
+application now re-verifies a generated v3 payload by replay against its own
+artifact bundle before any workbench projection is written.
+
+Two contract defects were found by real execution rather than tests. First, v3
+`NO_ACTION` replay unconditionally demanded `model_validity` and
+`event_materiality` dependencies even when the builder had legitimately emitted
+none; replay now requires exactly the dependencies that were produced. Second,
+the workbench rejected any generation date newer than the research decision
+date, which incorrectly blocked a 10/8 research basis from being displayed on
+10/9; only `decision_as_of > generated_at` is rejected now, and staleness remains
+ModelValidity's responsibility. Action-specific report copy was also corrected so
+BUY/ADD/HOLD/TRIM/SELL/NO_ACTION no longer share one human-review sentence.
+
+Real 600519 run through the supported entry point:
+
+```text
+python -X utf8 scripts/current/build_current_workbench.py \
+  --symbol 600519 \
+  --package runtime/d2-model-bound-followup-20261008/package-v8-financial-scope-bound.json \
+  --recommendation-schema-version advisory-decision-recommendation-v3 \
+  --schedule-request runtime/d3-v3-production-optin-20261009/schedule-request.json \
+  --output runtime/d3-v3-production-optin-20261009/600519-scoped-workbench-v3-final.json \
+  --report runtime/d3-v3-production-optin-20261009/600519-scoped-workbench-v3-final.md
+```
+
+Result: schema `advisory-decision-recommendation-v3`, `recommendation_type =
+NO_ACTION`, `portfolio_input_status = BLOCKED_PRIVATE_INPUT`,
+`position_guidance = null`, `action = no_order`, `decision_as_of = 2026-10-08`,
+`research_status = COMPLETED_WITH_BLOCKERS`, valuation range bear 404.82 /
+base 479.88 / bull 572.74 CNY with no admitted current price. Output SHA-256:
+JSON `70d969b77df752cb5c3f9e72b9ee0debf87ae360b10e6fc68eb59869d667dfe9`,
+Markdown `c6d4cff0edd7a7031f734db842e46eef261fb00f751b3da6ac2bb8f6f5107f68`.
+An earlier run without the registered schedule request was correctly refused as
+`BLOCKED_NO_REGISTERED_SCOPE`; that stale file is retained but is not the final
+evidence.
+
+Verification: full offline regression `4199 passed, 41 skipped` (728.15s), plus a
+fresh targeted rerun of the v3 replay, decision-surface, workbench projection and
+CLI suites `62 passed`. UNKNOWN model validity, pending human event materiality,
+unapproved primary valuation and G3 therefore keep the recommendation at
+`NO_ACTION`; no threshold was relaxed to produce a signal.
+
+Canonical workbook remains `5db7f3cd7651edc36505b7f7d87aa8d71550ca2150a999391778c1cbc2d23bf8`
+and `config/current-trial-workbook.json` still points at canonical. D3 v3 is
+`CODE_IMPLEMENTED` + `AUTOMATED_TEST_PASSED` with a real data-bound replay, not
+`PRODUCT_ACCEPTED`; no private input, no position sizing, no server, database,
+scheduler or production change. D2 remains IN_PROGRESS and action stays
+`no_order`. See current/d3-v3-production-optin-handoff-20261009.md.
+
+# CURRENT STATUS
+
+## 2026-10-09 D2 Primary-Assumption Sensitivity and Scope-Explicit Display
+
+Financial-scope successor package-v8/workbench-v10 is independently reviewed:
+G0/G1/G2 pass only for the documented historical/conditional scope; G3 remains
+false. Fresh financial consumption checks reverify 193 bindings. Candidate v9
+passes engineering WPS/readability/navigation and Root delivery recheck of 198
+bindings plus 55 protected sheet XML byte identities; full visual/user acceptance
+and canonical publication are not claimed.
+
+Root used the existing shared model for 324 price-independent conditional
+scenarios, reproduced the old pressure results and checked clean surplus/date
+arithmetic. No scenario is admitted as neutral primary valuation. Financial and
+business PASS explanations now expose their limited meaning. Two disjoint
+targeted suites pass (66 and 63 tests); actual supported product consumption
+reverifies 193 bindings and four companies in a new scope-explicit read model.
+The research/quote basis remains 10/8, not a fabricated 10/9 refresh. Failed
+date-mismatch and zero-test invocations are retained and excluded from pass claims.
+
+Canonical remains the 10/2 workbook at 5db7f3cd. No server, production, formal
+publication, private portfolio or real Shadow. CODE_IMPLEMENTED and
+AUTOMATED_TEST_PASSED describe scoped engineering/research only;
+REAL_DATA_ADMITTED=false, USER_ACCEPTED=false, D2 and total Goal IN_PROGRESS,
+action=no_order. See current/d2-primary-assumption-handoff-20261009.md.
+
+## 2026-10-08 D2 Operating Mechanisms Consumed, Partial Research Preserved
+
+Root verified 47 official-page amounts and derived distinct product/channel,
+cost and comparative gross-margin mechanisms. Independent forward review makes
+the strong whole-capital fade and changed terminal distribution explicit.
+These are consumed by package-v7 / workbench-v9 / event-followup-v8 and the
+four-company product read-model/publication-input v10. G0/G2 pass; G1/G3 do not.
+G2 is argument completeness, not investment approval. All valuation parameters
+and values are unchanged; NO_ACTION and null entry/reduce/position remain.
+
+The event-display guard confused partial research completion with investment
+admission. The repair requires the exact displayed workbench binding while still
+rejecting admitted model/price/research/portfolio/decision steps. Scoped replay,
+guard, CLI, decision and display regression: 73 passed, zero failures. Source
+revalidation caught a report supplement after binding; rejected v6/v8 artifacts
+are retained and replaced by a frozen review snapshot/new versions. Actual
+consumption receipt rechecks 190 bindings.
+
+Updated operating-research candidate v8 now independently passes native WPS,
+readability, 16 actual internal links, 195 source bindings and 55-sheet preservation.
+Its final pressure table is complete on page 20 at 11pt. Root inspected home,
+decision/company last pages and all 35 native layouts in contact sheets; company
+details remain long and formal visual/user acceptance are not claimed. Receipts
+are fresh, not inherited from v7. Canonical is unchanged at 5db7f3cd; no publication,
+production or private portfolio. Independent equity-cost review is available;
+financial-scope review is ongoing. See current/d2-operating-mechanism-handoff-20261008.md.
+D2 and total Goal remain IN_PROGRESS, REAL_DATA_ADMITTED=false,
+USER_ACCEPTED=false, action=no_order.
+
+## 2026-10-08 D2 Accounting Bridges Consumed and Native Navigation Verified
+
+Official profit-adjustment research closes concrete double-deduction, impairment
+sign and tax-classification questions, preserving a one-cent printed tax
+discrepancy and unknown item-level parent allocations. Independent parent cash
+and capital research is bound into package-v5 / workbench-v7 / event-followup-v5
+through the existing shared application; parameters and NO_ACTION stay unchanged.
+The product consumer now refreshes actual business/counterevidence text instead
+of retaining the previous card's explanations. Four-company read-model and
+publication-input v7 were produced by the supported CLI.
+
+The artifact donor enters the same protected integration chain. Exact
+evidence-bound HTTPS audit formulas are verified; optional native internal
+navigation is reconstructed from already verified formulas in the existing
+OOXML adapter. Actual WPS Follow verifies 16 internal targets. Seventeen source
+formula displays were checked; external network clicks remain unverified.
+Scoped regressions pass: 153 product/research, 96 integration/navigation and a
+subsequent 6-test guard check (overlapping scopes, not a distinct-count sum).
+
+Latest candidate is runtime/d2-canonical-integration-20261008-v6. WPS and
+readability pass; 191 source bindings reverify and 55 retained sheet XML bytes
+plus workbook structure remain unchanged. Full-page contact layout inspection
+identified a final company scenario row printed alone; formal visual acceptance
+remains pending. Canonical is unchanged at 5db7f3cd; no publication, production,
+private portfolio or real Shadow was performed. Full investment admission and
+user acceptance are false; D2 and total Goal remain IN_PROGRESS, action=no_order.
+See current/d2-accounting-and-native-navigation-handoff-20261008.md for exact
+scope, artifacts, verification limitations and the next concrete work.
+
+## 2026-10-08 D2 Artifact Excel Integration, Still Not Published
+
+The bundled artifact-tool now exports managed pages with native exit 0 when
+rendering is separated from authoring. Its source-bound donor enters the existing
+prepare_research_handoff_excel / protected research-preview chain through optional
+authored-page arguments. The existing OOXML adapter preserves 55 history/manual
+sheet bytes and the original workbook structure; the existing verifier rechecks
+all 186 unique source bindings. Wrong/local named dependencies, formulas, models,
+source expansions and receipt drift fail closed.
+
+Latest candidate: runtime/d2-canonical-integration-20261008-v4. Native WPS and
+readability checks pass; 129 scoped tests pass, zero failures. A real visual check
+caught horizontal print splitting and led to A3 landscape / fit-width correction.
+First pages of seven sheets and the company last page were sampled; this is not
+full visual or user acceptance. Current display has recorded usability cleanup,
+and canonical remains unchanged. See current/d2-excel-artifact-integration-handoff-20261008.md.
+
+The independent economic-gap review identifies precise assumption/financial
+bridges and CNY 6,000,000,000 of undrawn fund commitments (60 yi yuan), with payment
+timing unknown. It does not approve forecasts or change model inputs.
+NO_ACTION, null buy/reduce/position fields, UNKNOWN model validity and INVALID
+price bridge remain. D2 and the total Goal remain IN_PROGRESS; production,
+personal portfolio, formal publication and real Shadow were not executed.
+
+## 2026-10-08 D2 Model-Bound Consumer and Historical Profit Evidence
+
+D2 is IN_PROGRESS. The actual event consumer field failure, unconsumed-parameter
+gap, retained-model mismatch and sibling supersedes lineage handling were repaired.
+Seven official announcements now produce seven audit records and two visible
+research evidence-gap events through the existing product CLI. Historical
+parent-profit TTM reconciliation was independently checked against official pages
+and bound into a new shared research input; forecast parameters are unchanged.
+
+Current coupled regression: 235 passed. Current full regression: 4018 passed,
+41 skipped, 56 warnings. Latest real chain is package-v4 / workbench-v6 /
+event-followup-v4 / product-read-model-v5 in
+runtime/d2-model-bound-followup-20261008, with 181 transitive source bindings.
+See current/d2-model-bound-consumer-handoff-20261008.md for exact scope and receipts.
+
+This is explanatory research and product-data engineering, not D2 product
+completion or investment admission. ModelValidity UNKNOWN, PriceBridge INVALID,
+NO_ACTION and null buy/reduce/position fields remain. Canonical was not written;
+no production, real Shadow, private portfolio or final user acceptance occurred.
+The artifact-tool engineering preview is not native WPS acceptance. Goal remains
+active and action=no_order.
+
 ## 2026-10-07 D0 Baseline Complete
 
 The current Goal envelope has been expanded to

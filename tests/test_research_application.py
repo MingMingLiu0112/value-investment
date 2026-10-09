@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import hashlib
+import json
 from datetime import date, datetime, timezone
 from decimal import Decimal as D
 
@@ -28,6 +30,7 @@ from value_investment_agent.research_artifact_repository import (
 )
 from value_investment_agent.research_artifacts import (
     ARTIFACT_CURRENT_RESEARCH_STATUS,
+    ARTIFACT_DECISION_RECOMMENDATION,
     ARTIFACT_MODEL_VALIDITY,
     ARTIFACT_PRICE_BRIDGE,
     ARTIFACT_QUOTE_SNAPSHOT,
@@ -51,10 +54,230 @@ from value_investment_agent.valuation_models.residual_income import (
     QualityCompounderFacts,
     ResidualIncomeScenarioInputs,
 )
+from value_investment_agent.application.decision.artifact_bundle import (
+    ReadOnlyArtifactBundleRepository,
+)
+from value_investment_agent.application.decision.restore_decision_recommendation import (
+    verify_decision_recommendation_payload,
+)
+from value_investment_agent.application.product.company_research import _serialize_outcome
+from value_investment_agent.application.product import workbench as product_workbench
+from value_investment_agent.application.product.decision_surface import (
+    project_verified_decision_workbench,
+)
+from value_investment_agent.domain.decision.decision_recommendation import (
+    DECISION_RECOMMENDATION_SCHEMA,
+    DECISION_RECOMMENDATION_V3_SCHEMA,
+)
 
 
 AS_OF = date(2025, 12, 31)
 AVAILABLE_AT = datetime(2026, 9, 21, 12, 0, tzinfo=timezone.utc)
+
+
+def test_serialized_research_keeps_replayable_decision_artifacts():
+    spec, app = quality_spec(run_id="bundle-replay")
+    outcome = app.run_company_research(spec)
+    payload = _serialize_outcome(outcome)
+    repository = ReadOnlyArtifactBundleRepository(payload["artifact_bundle"])
+    restored = verify_decision_recommendation_payload(
+        repository, payload=payload["decision_recommendation"]
+    )
+    assert restored.recommendation.as_policy() == payload["decision_recommendation"]
+    assert restored.recommendation.action == "no_order"
+
+    import copy
+
+    forged = copy.deepcopy(payload["artifact_bundle"])
+    forged["artifacts"][0]["canonical_payload"] += " "
+    with pytest.raises(ValueError, match="payload hash does not match"):
+        ReadOnlyArtifactBundleRepository(forged)
+
+    missing_decision = {
+        **payload["artifact_bundle"],
+        "artifacts": [
+            row for row in payload["artifact_bundle"]["artifacts"]
+            if row["identity"]["artifact_type"] != ARTIFACT_DECISION_RECOMMENDATION
+        ],
+    }
+    with pytest.raises(ValueError, match="matching bundled artifact"):
+        ReadOnlyArtifactBundleRepository(missing_decision).recommendation_artifact(
+            payload["decision_recommendation"]
+        )
+
+
+def test_recommendation_v3_is_explicit_opt_in_on_the_production_path():
+    default_spec, default_app = quality_spec(run_id="default-v2-production")
+    default_outcome = default_app.run_company_research(default_spec)
+    assert (
+        default_outcome.decision_recommendation.schema_version
+        == DECISION_RECOMMENDATION_SCHEMA
+    )
+
+    v3_spec = replace(
+        default_spec,
+        run_id="explicit-v3-production",
+        recommendation_schema_version=DECISION_RECOMMENDATION_V3_SCHEMA,
+    )
+    v3_outcome = ResearchApplicationService(
+        InMemoryResearchArtifactRepository()
+    ).run_company_research(v3_spec)
+    assert (
+        v3_outcome.decision_recommendation.schema_version
+        == DECISION_RECOMMENDATION_V3_SCHEMA
+    )
+    assert v3_outcome.decision_recommendation.action == "no_order"
+    assert v3_outcome.decision_recommendation.position_guidance is None
+    assert (
+        v3_outcome.decision_recommendation.portfolio_input_status
+        == "BLOCKED_PRIVATE_INPUT"
+    )
+
+
+def test_workbench_projects_verified_security_state_without_private_position(
+    tmp_path, monkeypatch,
+):
+    spec, app = quality_spec(run_id="workbench-replay")
+    outcome = _serialize_outcome(app.run_company_research(spec))
+    seen = {}
+
+    def fake_run_company_research(**kwargs):
+        seen.update(kwargs)
+        return {"result": outcome, "receipt": {"input_sha256": {}}}
+
+    monkeypatch.setattr(
+        product_workbench,
+        "run_company_research_for_symbol",
+        fake_run_company_research,
+    )
+    result = product_workbench.build_current_workbench_for_symbol(
+        root=tmp_path,
+        symbol="600519",
+        output_path=tmp_path / "workbench.json",
+        recommendation_schema_version=DECISION_RECOMMENDATION_V3_SCHEMA,
+    )["result"]
+    assert seen["recommendation_schema_version"] == DECISION_RECOMMENDATION_V3_SCHEMA
+    assert result["decision_recommendation"] == outcome["decision_recommendation"]
+    assert result["suggested_state"] == outcome["decision_recommendation"]["recommendation_type"]
+    assert result["portfolio_input_status"] == "BLOCKED_PRIVATE_INPUT"
+    assert result["position_guidance"] is None
+    assert result["action"] == "no_order"
+
+
+def test_existing_workbench_rejects_recommendation_schema_override(tmp_path):
+    with pytest.raises(ValueError, match="existing workbench excludes"):
+        product_workbench.build_current_workbench_for_symbol(
+            root=tmp_path,
+            symbol="600519",
+            output_path=tmp_path / "workbench.json",
+            existing_manifest_path=tmp_path / "manifest.json",
+            existing_manifest_sha256="a" * 64,
+            recommendation_schema_version=DECISION_RECOMMENDATION_V3_SCHEMA,
+        )
+
+
+@pytest.mark.parametrize(
+    "schema_version",
+    [DECISION_RECOMMENDATION_SCHEMA, DECISION_RECOMMENDATION_V3_SCHEMA],
+    ids=["v2", "v3"],
+)
+def test_verified_decision_reaches_product_read_model_and_excel(
+    tmp_path, schema_version,
+):
+    from test_product_workbench_excel import _payload
+    from value_investment_agent.presentation.read_models.product_workbench import (
+        product_workbench_from_payload,
+    )
+    from value_investment_agent.presentation.excel.product_workbench import (
+        build_product_workbench_workbook,
+    )
+
+    spec, app = quality_spec(run_id="synthetic-product-replay")
+    spec = replace(spec, recommendation_schema_version=schema_version)
+    spec = replace(
+        spec,
+        research_case=replace(
+            spec.research_case,
+            as_of=date(2026, 9, 21), generated_at=AVAILABLE_AT,
+        ),
+    )
+    outcome = _serialize_outcome(app.run_company_research(spec))
+    workbench_payload = {
+        "schema_version": "product-current-workbench-request-v1",
+        "generated_at": "2026-09-21T12:00:00+00:00",
+        "symbol": "600519",
+        "action": "no_order",
+        "research_status": "COMPLETED_WITH_BLOCKERS",
+        "position_guidance": None,
+        "portfolio_input_status": "BLOCKED_PRIVATE_INPUT",
+        "decision_recommendation": outcome["decision_recommendation"],
+        "artifact_bundle": outcome["artifact_bundle"],
+    }
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    source = runtime / "decision-workbench.json"
+    source.write_text(json.dumps(workbench_payload, ensure_ascii=False), encoding="utf-8")
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    payload = _payload()
+    payload["as_of"] = outcome["decision_recommendation"]["decision_as_of"]
+    payload["opportunities"][0]["symbol"] = "600519"
+    payload["companies"][0]["symbol"] = "600519"
+    from value_investment_agent.presentation.read_models.product_workbench import DECISION_STEP_TITLES
+    payload["companies"][0]["decision_process"] = [
+        {"key": key, "status": "PASS", "reason": "旧的通过状态。", "next_action": "继续。",
+         "assessment_id": f"old-{key}", "evidence_refs": ["evidence-1"]}
+        for key in DECISION_STEP_TITLES
+    ]
+    project_verified_decision_workbench(
+        payload, root=tmp_path, path=source, expected_sha256=digest,
+    )
+    assert payload["companies"][0]["price"]["available"] is False
+    assert payload["opportunities"][0]["price_status"] == "UNAVAILABLE"
+    assert payload["opportunities"][0]["valuation_status"] == "UNDER_REVIEW"
+    assert next(
+        step for step in payload["companies"][0]["decision_process"]
+        if step["key"] == "valuation"
+    )["status"] == "CONDITIONAL"
+    assert next(
+        step for step in payload["companies"][0]["decision_process"]
+        if step["key"] == "price_bridge"
+    )["status"] == "BLOCKED"
+    model = product_workbench_from_payload(payload)
+    workbook = build_product_workbench_workbook(model)
+    try:
+        opportunity_text = "\n".join(
+            str(cell.value) for row in workbook["02_机会"] for cell in row
+            if cell.value is not None
+        )
+        company_text = "\n".join(
+            str(cell.value) for row in workbook["03_公司"] for cell in row
+            if cell.value is not None
+        )
+        assert "暂不可评估" in opportunity_text
+        assert "暂不进入人工买入复核" in company_text
+        assert "尚未接入真实组合" in company_text
+        assert "人工买入复核条件" in company_text
+        assert "人工加仓复核条件" in company_text
+        assert "停止加仓条件" in company_text
+        assert "减仓/退出复核触发" in company_text
+        assert "仅有条件性研究情景" in company_text
+        assert model.portfolio.real_data_available is False
+        assert model.action == "no_order"
+    finally:
+        workbook.close()
+
+    with pytest.raises(ValueError, match="hash mismatch"):
+        project_verified_decision_workbench(
+            _payload(), root=tmp_path, path=source, expected_sha256="a" * 64,
+        )
+
+    future = dict(workbench_payload, generated_at="2026-09-21T11:59:59+00:00")
+    source.write_text(json.dumps(future, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(ValueError, match="future-available artifacts"):
+        project_verified_decision_workbench(
+            payload, root=tmp_path, path=source,
+            expected_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+        )
 
 
 def case(symbol: str, *, industry: str = "测试", path: str = "case.json") -> ResearchCase:
@@ -218,12 +441,19 @@ def test_three_profiles_execute_through_one_symbol_free_runner():
         assert outcome.price_bridge.bridge_status == "PENDING_EXTERNAL_DATA"
         assert outcome.current_status is not None
         assert outcome.current_status.symbol == symbol
+        assert outcome.decision_recommendation is not None
+        assert outcome.decision_recommendation.symbol == symbol
+        assert outcome.decision_recommendation.recommendation_action == "NO_ACTION"
+        assert outcome.decision_recommendation.action == "no_order"
+        assert outcome.decision_recommendation.position_guidance is None
+        assert outcome.decision_recommendation.portfolio_input_status == "BLOCKED_PRIVATE_INPUT"
 
         for artifact_type in (
             ARTIFACT_RESEARCH_CASE,
             ARTIFACT_VALUATION_RESULT,
             ARTIFACT_PRICE_BRIDGE,
             ARTIFACT_CURRENT_RESEARCH_STATUS,
+            ARTIFACT_DECISION_RECOMMENDATION,
         ):
             artifact = app.repository.load_latest(
                 SCOPE_SECURITY, symbol, artifact_type
@@ -314,9 +544,8 @@ def test_verified_quote_and_validity_produce_a_ready_bridge():
     assert outcome.price_bridge.margin_to_bear > 0
     assert outcome.price_attractiveness is not None
     assert outcome.price_attractiveness.status == STATUS_NOT_ASSESSABLE
-    assert (
-        "human_approval_price_assessment_not_eligible"
-        in outcome.price_attractiveness.blockers
+    assert "research_gate_not_ready_for_price_assessment" in (
+        outcome.price_attractiveness.blockers
     )
     assert app.repository.load_latest(
         SCOPE_SECURITY, "600519", ARTIFACT_MODEL_VALIDITY

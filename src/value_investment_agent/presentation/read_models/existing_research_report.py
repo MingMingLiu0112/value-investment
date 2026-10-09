@@ -6,11 +6,30 @@ from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
+from ...application.product.decision_surface import (
+    current_recommendation_type, verify_current_decision_workbench,
+)
 from ...domain.research.research_run_contract import valuation_result_sha256
 from ...valuation_models.base import ValuationResult
 from ...price_bridge import price_bridge_from_payload
+from ...investment_decision import (
+    STATUS_INSUFFICIENT_RESEARCH,
+    evaluate_investment_decision,
+    investment_decision_review_from_payload,
+)
+from ...pre_decision_eligibility import pre_decision_eligibility_from_payload
 from .product_workbench import EvidenceRecord, ProductWorkbenchReadModel
 from .valuation_step import company_with_pending_price_bridge, workbench_with_bound_valuation
+
+
+_RECOMMENDATION_REVIEW_TEXT = {
+    "BUY_CANDIDATE": "证券级研究和价格前置满足，可进入人工买入复核。",
+    "ADD_CANDIDATE": "证券级研究支持加仓复核；仍需真实持仓、原始买入逻辑与组合约束，不产生订单。",
+    "HOLD": "证券级研究与原始买入逻辑未发现需减仓的变化，可进入人工持有复核；不产生订单。",
+    "TRIM_CANDIDATE": "研究或原始论点出现削弱信号，可进入人工减仓复核；不产生订单。",
+    "SELL_CANDIDATE": "研究或原始论点出现破裂信号，可进入人工退出复核；不产生订单。",
+    "NO_ACTION": "当前证据或价格条件未形成可执行研究候选；不代表卖出，也不产生订单。",
+}
 
 
 def public_workbench_payload_from_snapshot(snapshot: Mapping[str, Any]) -> dict[str, Any]:
@@ -90,10 +109,73 @@ def project_existing_research_workbench(
         expected_sha256=digest, assessment_id=research["artifact_sha256"],
     )
     bridge = price_bridge_from_payload(valuation, research["price_bridge"])
-    return replace(projected, companies=tuple(
+    projected = replace(projected, companies=tuple(
         company_with_pending_price_bridge(card, valuation, bridge)
         if card.symbol == valuation.symbol else card for card in projected.companies
     ))
+    negative = research.get("negative_decision_review")
+    if negative is None:
+        return projected
+    if (negative.get("scope") != "CURRENT_FAIL_CLOSED_READ_OF_EXISTING_RESEARCH"
+            or negative.get("action") != "no_order"
+            or negative.get("portfolio_input_status") != "BLOCKED_PRIVATE_INPUT"
+            or negative.get("position_guidance") is not None
+            or negative.get("price_attractiveness", {}).get("status") != "NOT_ASSESSABLE"):
+        raise ValueError("Existing negative decision scope is invalid")
+    predecision = pre_decision_eligibility_from_payload(negative["pre_decision_eligibility"])
+    review = investment_decision_review_from_payload(negative["investment_decision_review"])
+    if (predecision.status != "NOT_ELIGIBLE"
+            or review.status != STATUS_INSUFFICIENT_RESEARCH
+            or review.predecision_status != predecision.status
+            or review.price_attractiveness_status != "NOT_ASSESSABLE"
+            or review.portfolio_preconditions.provided
+            or review.symbol != valuation.symbol
+            or predecision.symbol != valuation.symbol
+            or predecision.decision_as_of != review.decision_as_of):
+        raise ValueError("Existing negative decision differs from the research scope")
+    refs = {ref.artifact_type: ref for ref in review.bundle.artifact_refs}
+    if (refs.get("existing_valuation_artifact") is None
+            or refs["existing_valuation_artifact"].sha256 != research["artifact_sha256"]
+            or refs.get("original_research_package") is None
+            or refs["original_research_package"].sha256 != research["dependency_view"]["source_package_sha256"]):
+        raise ValueError("Existing negative decision evidence differs from pinned research")
+    reproduced = evaluate_investment_decision(
+        predecision=predecision, bundle=review.bundle,
+        decision_as_of=review.decision_as_of, decision_intent=None,
+        confidence=review.confidence, created_at=review.created_at,
+        rule_version=review.rule_version,
+    )
+    if reproduced.as_policy() != review.as_policy():
+        raise ValueError("Existing negative decision does not replay")
+    if review.decision_as_of != model.as_of:
+        return projected
+    if review.created_at > model.generated_at:
+        raise ValueError("Existing negative decision is not available at product generation")
+    cards = []
+    for card in projected.companies:
+        if card.symbol != valuation.symbol:
+            cards.append(card)
+            continue
+        steps = tuple(
+            replace(step, reason=review.summary, next_action="补齐研究、事件与当前价格证据后重新复核。")
+            if step.key == "decision_gate" else step
+            for step in card.decision_process
+        )
+        cards.append(replace(
+            card,
+            decision_process=steps,
+            decision_review=(*card.decision_review,
+                ("当前决策状态", "研究不足"),
+                ("价格区域", "暂不可评估"),
+                ("为什么不能买", review.summary),
+                ("人工买入复核条件", "需完成研究批准、事件覆盖、模型有效性和当前报价桥接，再由用户人工复核。"),
+                ("人工加仓复核条件", "需真实持仓、原始买入逻辑与组合容量；当前未评估。"),
+                ("停止加仓条件", "模型失效、重大反证或原始投资逻辑受损时暂停并复核。"),
+                ("减仓/退出复核触发", "需真实 Entry Thesis 与组合输入；当前不产生个人减仓或退出判断。"),
+                ("个人仓位", "尚未接入真实组合；不生成个人仓位建议。"),
+            ),
+        ))
+    return replace(projected, companies=tuple(cards))
 
 
 def render_existing_research_report(payload: Mapping[str, Any]) -> str:
@@ -137,13 +219,70 @@ def render_current_research_readiness(payload: dict) -> str:
     """Explain existing research stops without rerunning or admitting research."""
     if (payload.get("schema_version") != "product-current-workbench-request-v1"
             or payload.get("action") != "no_order"
-            or payload.get("suggested_state") != "NOT_READY"
             or payload.get("position_guidance") is not None
             or payload.get("canonical_workbook_written") is not False):
         raise ValueError("unsupported current research readiness scope")
     stopped = payload.get("research_status") == "BLOCKED_BY_RESEARCH_SCHEDULER"
-    if stopped and any(payload.get(key) is not None for key in ("valuation", "price_bridge", "current_status")):
-        raise ValueError("stopped research cannot expose newly admitted results")
+    if stopped:
+        if payload.get("suggested_state") != "NOT_READY" or any(
+            payload.get(key) is not None for key in (
+                "valuation", "price_bridge", "current_status", "price_attractiveness",
+                "pre_decision_eligibility", "decision_recommendation", "artifact_bundle",
+            )
+        ):
+            raise ValueError("stopped research cannot expose newly admitted results")
+    else:
+        restored = verify_current_decision_workbench(payload)
+        recommendation = restored.recommendation
+        kind = current_recommendation_type(recommendation)
+        if payload.get("suggested_state") != kind:
+            raise ValueError("current readiness state differs from verified recommendation")
+        zone = restored.dependency_objects.get("price_attractiveness")
+        valuation = restored.dependency_objects["valuation"]
+        price_status = (
+            zone.status
+            if zone is not None
+            else recommendation.price_attractiveness_status
+        )
+        price_status_text = price_status
+        if zone is None or price_status == "NOT_ASSESSABLE":
+            price_status_text = (
+                "暂不可评估；原因：当前报价或价格评估未形成；"
+                "所需证据：可验证报价、报价日及适用价格桥接"
+            )
+        lines = [f"# {recommendation.symbol} 当前证券级研究与决策复核", "",
+                 f"当前建议类型：{kind}",
+                 _RECOMMENDATION_REVIEW_TEXT.get(
+                     kind,
+                     "当前建议类型无法映射到人工复核文案；只展示已验证结果，不产生订单。",
+                 ),
+                 "这是非个性化的证券级研究结果，需人工复核；不产生订单。",
+                 "组合输入：BLOCKED_PRIVATE_INPUT；个人仓位：position_guidance=null。",
+                 "加仓、持有、减仓和退出的个人判断仍需真实持仓、IPS 与原始 Entry Thesis。", "",
+                 "## 已绑定研究结果", "",
+                 f"研究日期：{recommendation.decision_as_of}",
+                 f"研究论点：{recommendation.thesis}",
+                 f"原始模型状态：{valuation.status}；置信度：{recommendation.confidence}",
+                 f"Bear / Base / Bull：{recommendation.valuation_range.bear} / "
+                 f"{recommendation.valuation_range.base} / {recommendation.valuation_range.bull}",
+                 f"价格桥接：{recommendation.price_bridge_status}",
+                 f"价格状态：{price_status_text}", "",
+                 "## 原因与阻断", ""]
+        lines.extend(f"- {reason}" for reason in dict.fromkeys(
+            [*recommendation.recommendation_reasons, *recommendation.blockers]
+        ))
+        lines.extend(["", "## 下一触发", ""])
+        lines.extend(f"- {item['text']}" for item in recommendation.next_events if item.get("text"))
+        lines.extend(["", "## 证据边界", "",
+                      "推荐及依赖已通过制品哈希、身份、可用时间与现有决策验证链回放。",
+                      "原始模型状态与精确绑定批准分别保留；候选状态不代表个人组合通过。"])
+        lines.extend(
+            f"- {role}：{artifact.artifact_id}；SHA-256：{artifact.envelope.payload_sha256}"
+            for role, artifact in sorted(restored.dependencies.items())
+        )
+        lines.extend(["", "本报告展示已有结果，不重新研究、计算估值或修改原 Excel。",
+                      "action=no_order", ""])
+        return "\n".join(lines)
     labels = {
         "ordinary_share_denominator_unbounded": "普通股股数口径尚未明确，不能可靠计算每股价值",
         "financial_business_cash_debt_split_missing": "金融业务与工业业务的现金、债务口径尚未分清",

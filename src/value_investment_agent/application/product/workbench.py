@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from .common import (
     ACTION_NO_ORDER,
@@ -14,6 +14,8 @@ from .common import (
     write_new_json,
 )
 from .company_research import run_company_research_for_symbol
+from ..decision.artifact_bundle import ReadOnlyArtifactBundleRepository
+from ..decision.restore_decision_recommendation import verify_decision_recommendation_payload
 from .existing_valuation import read_existing_research_result
 from .common import load_json_object
 
@@ -51,12 +53,29 @@ def build_current_workbench_for_symbol(
     existing_manifest_sha256: str | None = None,
     arithmetic_input_path: Path | None = None,
     arithmetic_input_sha256: str | None = None,
+    schedule_request: Mapping[str, Any] | None = None,
+    schedule_request_sha256: str | None = None,
+    quote_path: Path | None = None,
+    quote_sha256: str | None = None,
+    event_path: Path | None = None,
+    event_sha256: str | None = None,
+    reviews_path: Path | None = None,
+    reviews_sha256: str | None = None,
+    recommendation_schema_version: str | None = None,
 ) -> dict[str, Any]:
     normalized = normalize_symbol(symbol)
     target = require_inside(root, output_path, "current workbench output")
     if existing_manifest_path is not None or existing_manifest_sha256 is not None:
         if existing_manifest_path is None or existing_manifest_sha256 is None or package_path is not None:
             raise ValueError("existing workbench requires manifest and hash and excludes package")
+        if any(value is not None for value in (
+            schedule_request, schedule_request_sha256, quote_path, quote_sha256,
+            event_path, event_sha256, reviews_path, reviews_sha256,
+            recommendation_schema_version,
+        )):
+            raise ValueError(
+                "existing workbench excludes schedule/market/review/schema inputs"
+            )
         existing = read_existing_research_result(
             root=root, symbol=normalized, manifest_path=existing_manifest_path,
             manifest_sha256=existing_manifest_sha256,
@@ -87,9 +106,28 @@ def build_current_workbench_for_symbol(
         symbol=normalized,
         package_path=package_path,
         output_path=None,
+        schedule_request=schedule_request,
+        schedule_request_sha256=schedule_request_sha256,
+        quote_path=quote_path,
+        quote_sha256=quote_sha256,
+        event_path=event_path,
+        event_sha256=event_sha256,
+        reviews_path=reviews_path,
+        reviews_sha256=reviews_sha256,
+        recommendation_schema_version=recommendation_schema_version,
     )
     outcome = research["result"]
     stopped = outcome["status"] == "BLOCKED_BY_RESEARCH_SCHEDULER"
+    if not stopped:
+        bundle = outcome.get("artifact_bundle")
+        recommendation = outcome.get("decision_recommendation")
+        if not isinstance(bundle, dict) or not isinstance(recommendation, dict):
+            raise ValueError("Current workbench requires replayable decision artifacts")
+        repository = ReadOnlyArtifactBundleRepository(bundle)
+        verify_decision_recommendation_payload(
+            repository, payload=recommendation,
+            recommendation_artifact=repository.recommendation_artifact(recommendation),
+        )
     evidence_stops = []
     if stopped:
         ledger = root / "config" / "research-evidence-stop-ledger-v1.json"
@@ -111,13 +149,23 @@ def build_current_workbench_for_symbol(
         "current_status": None if stopped else outcome["current_status"],
         "valuation": None if stopped else outcome["valuation"],
         "price_bridge": None if stopped else outcome["price_bridge"],
+        "price_attractiveness": None if stopped else outcome.get("price_attractiveness"),
+        "pre_decision_eligibility": None if stopped else outcome.get("pre_decision_eligibility"),
+        "decision_recommendation": None if stopped else outcome.get("decision_recommendation"),
+        "artifact_bundle": None if stopped else outcome["artifact_bundle"],
+        "portfolio_input_status": "BLOCKED_PRIVATE_INPUT",
         "schedule_gate": outcome.get("schedule_gate"),
         "evidence_stops": evidence_stops,
-        "suggested_state": "NOT_READY",
+        "suggested_state": (
+            "NOT_READY" if stopped else
+            (outcome.get("decision_recommendation") or {}).get("recommendation_type", "NOT_READY")
+        ),
         "position_guidance": None,
         "canonical_workbook_written": False,
         "requires_product_renderer": True,
         "research_receipt": research["receipt"],
+        "source_verification": None if stopped else outcome.get("source_verification"),
+        "input_descriptor_sha256": None if stopped else outcome.get("input_descriptor_sha256"),
     }
     write_new_json(target, payload)
     return {

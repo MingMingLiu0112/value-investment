@@ -127,6 +127,32 @@ def test_prospective_registration_cli_is_thin_and_requires_explicit_output():
     assert "--output" in completed.stdout
 
 
+def test_existing_manifest_cli_rejects_new_explicit_inputs():
+    path = ROOT / "scripts/current/run_company_research.py"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(path),
+            "--symbol",
+            "600519",
+            "--existing-manifest",
+            "manifest.json",
+            "--existing-manifest-sha256",
+            "a" * 64,
+            "--quote",
+            "quote.json",
+            "--quote-sha256",
+            "b" * 64,
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 2
+    assert "existing mode excludes" in completed.stderr
+
+
 def test_product_application_layer_has_no_issuer_specific_branch():
     product_root = ROOT / "src" / "value_investment_agent" / "application" / "product"
     for path in product_root.glob("*.py"):
