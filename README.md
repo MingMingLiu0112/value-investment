@@ -6,7 +6,7 @@
 
 从 [AGENTS.md](AGENTS.md) 进入文档体系：[长期目标](docs/north-star.md)、[架构合同](docs/architecture.md)、[研究方法](docs/research-methodology.md)、[当前唯一任务](docs/current-stage-goal.md)、[数据证据政策](docs/data-and-evidence-policy.md)、[执行状态](docs/execution-status.md)、[版本记录](CHANGELOG.md)。
 可直接放入目标模式的文本见 [启动入口](docs/value-investment-goal-prompt.md)。文档审查与逐文件处置清单见 [2026-09-22 治理报告](docs/project-goal-consolidation-20260922.md)。
-未来多个长期 Goal 的路线、真实审查和毕业标准见 [LONG-TERM-GOAL.md](LONG-TERM-GOAL.md)。当前活动 Goal 为 `VALUE-INVESTMENT-M2-M7-INITIAL-ASSISTED-USE`，状态 `PARTIAL`：M2 Checkpoint A 已由用户签收，当前人工聚焦为 M3 Checkpoint B；Checkpoint B-D、私有 IPS/组合输入和 M6 生产授权仍未签收。C0-C3 与 M1 已冻结，不等于投资决策就绪。
+未来多个长期 Goal 的路线、真实审查和毕业标准见 [LONG-TERM-GOAL.md](LONG-TERM-GOAL.md)。当前活动 Goal 与 D0-D6 阶段以[当前唯一任务](docs/current-stage-goal.md)和[执行状态](docs/execution-status.md)为准；历史 M2-M7 签收、私有 IPS/组合输入与 M6 生产授权不能由新模块自动继承。C0-C3 与 M1 已冻结，不等于投资决策就绪。
 
 三公司工程与 Excel MVP 已冻结，研究级估值、股息可持续性和生产数据分别验收。最新人工待办与签收边界见 [M2-M7 人工复核交接清单](docs/m2-m7-human-review-handoff-20260924.md)，当前 M3 复核对象见 [Checkpoint B 复核包](docs/m3-checkpoint-b-review-packet-20260924.md)。M7 从 `.env` 的 `WORKBOOK_PATH` 打开同一份 canonical workbook；候选文件仅保留为历史审计，不是产品入口。以下运维命令仅供既有部署维护参考，不自动授权初始化、改任务、发布原表或恢复模拟/交易开发。
 
@@ -17,11 +17,12 @@
 | 目的 | 入口 |
 | --- | --- |
 | 当前文档 | [docs/current/README.md](docs/current/README.md) |
-| 当前支持 CLI | [config/current-cli-entrypoints-v1.json](config/current-cli-entrypoints-v1.json) |
+| 当前产品/工程 CLI 分类 | [config/current-cli-entrypoints-v2.json](config/current-cli-entrypoints-v2.json)（[v1](config/current-cli-entrypoints-v1.json)保留兼容入口） |
 | 当前 artifact 逻辑注册表 | [artifacts/current/artifact-registry-v2.json](artifacts/current/artifact-registry-v2.json) |
 | 脚本分类与历史工具说明 | [scripts/README.md](scripts/README.md) |
 | 机器可读脚本清单 | [docs/architecture/script-inventory-v1.json](docs/architecture/script-inventory-v1.json) |
 | 架构与迁移地图 | [docs/architecture/repository-architecture.md](docs/architecture/repository-architecture.md) |
+| 多 Agent 离线研究试点 | [docs/architecture/agent-research-pilot-20261009.md](docs/architecture/agent-research-pilot-20261009.md) |
 
 根目录候选 Excel、manifest 和旧研究文档仍可能因路径或 Hash 证据而原地保留；它们不再等同于当前入口。
 

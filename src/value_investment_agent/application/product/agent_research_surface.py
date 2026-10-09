@@ -1,0 +1,89 @@
+"""Project only replay-verified, unadmitted research lines into product data."""
+from __future__ import annotations
+
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+from zoneinfo import ZoneInfo
+
+from ..research.agent_review.snapshot import load_research_snapshot
+from ..research.agent_review.supervisor import OfflineCaseReplayModel, expected_offline_findings
+from ...domain.agent_research.contracts import AgentRole
+from .common import load_json_object, require_inside, sha256_file
+
+
+def project_verified_agent_packet(payload: dict[str, Any], *, root: Path,
+                                  path: Path, expected_sha256: str) -> None:
+    root = root.resolve()
+    source = require_inside(root / "runtime", path, "agent research packet")
+    if sha256_file(source) != expected_sha256:
+        raise ValueError("Agent research packet hash mismatch")
+    packet = load_json_object(source, "agent research packet")
+    if (packet.get("schema_version") != "agent-research-pilot-v1"
+            or packet.get("scope") != "OFFLINE_REPLAY_NOT_NEW_LLM_RESEARCH"
+            or packet.get("action") != "no_order"
+            or packet.get("formal_fact_count") != 0
+            or packet.get("approval_count") != 0
+            or packet.get("decision_changed") is not False):
+        raise ValueError("Agent research packet cannot upgrade investment state")
+    model = OfflineCaseReplayModel()
+    if packet.get("model_id") != model.model_id or packet.get("prompt_version") != model.prompt_version:
+        raise ValueError("Unknown offline research replay version")
+    snapshot = load_research_snapshot(
+        root=root, workbench=root / packet["workbench_path"],
+        expected_sha256=packet["workbench_sha256"], symbol=packet["symbol"],
+    )
+    if (packet.get("research_input_fingerprint") != snapshot.input_fingerprint
+            or packet.get("research_as_of") != snapshot.as_of.isoformat()
+            or payload.get("as_of") != snapshot.as_of.isoformat()):
+        raise ValueError("Agent research and product dates/dependencies differ")
+    product_generated = datetime.fromisoformat(payload["generated_at"])
+    packet_generated = datetime.fromisoformat(packet["generated_at"])
+    if (product_generated.utcoffset() is None or packet_generated.utcoffset() is None
+            or packet_generated > product_generated):
+        raise ValueError("Agent research packet is newer than the product")
+    findings = packet.get("findings")
+    if not isinstance(findings, list) or len(findings) != len(AgentRole):
+        raise ValueError("Offline agent pilot requires all three bounded roles")
+    if [item.get("agent_role") for item in findings] != [role.value for role in AgentRole]:
+        raise ValueError("Agent research roles are missing, repeated or reordered")
+    if findings != expected_offline_findings(snapshot, packet_generated):
+        raise ValueError("Offline findings differ from verified replay")
+    views = []
+    for role, item in zip(AgentRole, findings):
+        views.append({
+            "role": role.value, "claim": item["claim"],
+            "evidence_refs": item["supporting_evidence_refs"],
+            "status": "PENDING_HUMAN_REVIEW",
+        })
+    matches = [item for item in payload.get("companies", [])
+               if item.get("symbol") == snapshot.symbol]
+    if len(matches) != 1 or matches[0].get("agent_research"):
+        raise ValueError("Agent research requires one unmodified product company")
+    audit = payload.get("audit")
+    if not isinstance(audit, dict) or not isinstance(audit.get("evidence"), list):
+        raise ValueError("Agent research requires a product evidence audit")
+    existing = {record["evidence_id"]: record for record in audit["evidence"]}
+    for ref_id in sorted({ref for finding in findings for ref in finding["supporting_evidence_refs"]}):
+        ref = snapshot.evidence_by_id()[ref_id]
+        audit_record = {
+            "evidence_id": ref_id,
+            "title": str(ref.get("title") or ref_id),
+            "artifact_type": "AGENT_RESEARCH_SOURCE",
+            "path": ref["path"], "sha256": ref["sha256"],
+            "available_at": datetime.fromisoformat(ref["available_at"]).astimezone(
+                ZoneInfo("Asia/Shanghai")).date().isoformat(),
+            "action": "no_order",
+        }
+        url = ref.get("url") or ref.get("source_url")
+        if url is not None:
+            audit_record["source_url"] = url
+        prior = existing.get(ref_id)
+        if prior is not None:
+            if any(prior.get(key) != audit_record[key] for key in ("path", "sha256", "available_at", "action")):
+                raise ValueError("Agent source conflicts with product evidence audit")
+        else:
+            audit["evidence"].append(audit_record)
+    matches[0]["agent_research"] = views
+    if sha256_file(source) != expected_sha256:
+        raise ValueError("Agent packet changed during projection")

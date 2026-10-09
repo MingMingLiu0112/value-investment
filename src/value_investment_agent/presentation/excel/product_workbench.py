@@ -919,6 +919,20 @@ def _render_companies(
             ],
         )
         row += 2
+        if company.agent_research:
+            row = _section_title(ws, row, "AI研究线索（待人工复核，不改变决策门）", 6)
+            role_labels = {
+                "FUNDAMENTAL": "基本面", "COUNTER_EVIDENCE": "反证", "EVENT": "事件",
+            }
+            for finding in company.agent_research:
+                label_text = role_labels[finding.role]
+                value_text = f"{finding.claim}（待复核；来源编号：{', '.join(finding.evidence_refs)}）"
+                _style(ws.cell(row, 1, label_text), fill=GREY, bold=True, border=True)
+                ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
+                _style(ws.cell(row, 2, value_text), border=True)
+                _fit_rows(ws, row, [(1, label_text, 1), (2, value_text, 5)])
+                row += 1
+            row += 1
         if company.decision_review:
             row = _section_title(ws, row, "决策复核", 6)
             for label, value in company.decision_review:

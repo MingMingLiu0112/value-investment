@@ -646,6 +646,26 @@ DECISION_STEP_TITLES = {
 
 
 @dataclass(frozen=True)
+class AgentResearchView:
+    """Unadmitted research question, never part of the decision gate."""
+
+    role: str
+    claim: str
+    evidence_refs: tuple[str, ...]
+    status: str = "PENDING_HUMAN_REVIEW"
+
+    def __post_init__(self) -> None:
+        if self.role not in {"FUNDAMENTAL", "COUNTER_EVIDENCE", "EVENT"}:
+            raise ValueError("Unknown agent research role")
+        if self.status != "PENDING_HUMAN_REVIEW":
+            raise ValueError("Agent research cannot be presented as approved")
+        object.__setattr__(self, "claim", _required_text(self.claim, "agent research claim"))
+        object.__setattr__(self, "evidence_refs", _ref_ids(self.evidence_refs))
+        if not self.evidence_refs:
+            raise ValueError("Agent research requires source references")
+
+
+@dataclass(frozen=True)
 class CompanyCard:
     symbol: str
     company_name: str
@@ -664,6 +684,7 @@ class CompanyCard:
     action: str = ACTION_NO_ORDER
     decision_review: tuple[tuple[str, str], ...] = ()
     decision_process: tuple[DecisionStepView, ...] = ()
+    agent_research: tuple[AgentResearchView, ...] = ()
 
     def __post_init__(self) -> None:
         if not _SYMBOL.fullmatch(self.symbol):
@@ -688,6 +709,9 @@ class CompanyCard:
                 (_required_text(label, "decision review label"), _required_text(value, "decision review value"))
             )
         object.__setattr__(self, "decision_review", tuple(review_rows))
+        if len(self.agent_research) > 3 or any(
+                not isinstance(item, AgentResearchView) for item in self.agent_research):
+            raise ValueError("Company agent research must be bounded typed views")
         if not self.decision_process:
             object.__setattr__(self, "decision_process", tuple(
                 DecisionStepView(
@@ -1049,6 +1073,8 @@ def _company_evidence_refs(card: CompanyCard) -> tuple[str, ...]:
         refs.extend(scenario.assessment.evidence_refs)
     for step in card.decision_process:
         refs.extend(step.evidence_refs)
+    for finding in card.agent_research:
+        refs.extend(finding.evidence_refs)
     return tuple(refs)
 
 
@@ -1352,6 +1378,16 @@ def _parse_company(value: object) -> CompanyCard:
             )
             for entry in _required_list(item.get("decision_review") or [], "company.decision_review")
             for entry in (_required_mapping(entry, "company.decision_review entry"),)
+        ),
+        agent_research=tuple(
+            AgentResearchView(
+                role=_required_text(finding.get("role"), "agent role"),
+                claim=_required_text(finding.get("claim"), "agent claim"),
+                evidence_refs=tuple(finding.get("evidence_refs") or ()),
+                status=str(finding.get("status") or ""),
+            )
+            for finding in _required_list(item.get("agent_research") or [], "company.agent_research")
+            for finding in (_required_mapping(finding, "agent research finding"),)
         ),
         decision_process=tuple(
             DecisionStepView(

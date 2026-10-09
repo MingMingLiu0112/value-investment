@@ -31,6 +31,7 @@
     "scripts/build_m5_disclosure_review_briefing.py"
   ],
   "SUPPORTED_ENGINEERING_CLI": [
+    "scripts/current/run_agent_research_pilot.py",
     "scripts/current/build_historical_company_closure.py",
     "scripts/current/build_historical_execution_replay.py",
     "scripts/current/replay_workbench_cutoffs.py",
@@ -75,7 +76,7 @@
   ],
   "counts": {
     "product": 19,
-    "engineering": 41,
-    "total": 60
+    "engineering": 42,
+    "total": 61
   }
 }

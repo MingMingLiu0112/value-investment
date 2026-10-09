@@ -4,6 +4,12 @@ This directory is the current documentation entry. It points to authoritative
 files without duplicating their content. Historical stage notes live under
 `docs/archive/` and are read-only context, never a task queue.
 
+For the active development state, read `docs/current-stage-goal.md` and
+`docs/execution-status.md` first. The dated entries below are evidence and
+navigation aids, not independent authorization or proof of present readiness.
+The 2026-10-09 architecture/agent pilot boundary and runbook are in
+`docs/architecture/agent-research-pilot-20261009.md`.
+
 ## Current Entries
 
 | Need | Authoritative entry |
