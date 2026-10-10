@@ -26,6 +26,32 @@ def _line_count(path: Path) -> int:
     return sum(1 for _ in path.open("r", encoding="utf-8"))
 
 
+def _git_blob_sha256(paths: list[str]) -> dict[str, str]:
+    ordered = list(dict.fromkeys(paths))
+    if not ordered:
+        return {}
+    completed = subprocess.run(
+        ["git", "-C", str(ROOT), "cat-file", "--batch"],
+        input="".join(f":{relative}\n" for relative in ordered).encode(),
+        check=True,
+        stdout=subprocess.PIPE,
+    )
+    payload = completed.stdout
+    offset = 0
+    result: dict[str, str] = {}
+    for relative in ordered:
+        header_end = payload.index(b"\n", offset)
+        _oid, object_type, size_text = payload[offset:header_end].decode().split()
+        assert object_type == "blob"
+        start = header_end + 1
+        end = start + int(size_text)
+        result[relative] = hashlib.sha256(payload[start:end]).hexdigest()
+        assert payload[end : end + 1] == b"\n"
+        offset = end + 1
+    assert offset == len(payload)
+    return result
+
+
 def _imported_modules(path: Path) -> set[str]:
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     imported: set[str] = set()
@@ -392,6 +418,13 @@ def test_script_relocations_preserve_bytes_and_remove_old_paths():
     )
 
     assert manifest["action"] == "no_order"
+    blob_hashes = _git_blob_sha256(
+        [
+            item["new_path"]
+            for item in manifest["records"]
+            if item["action"] != "DELETE"
+        ]
+    )
     for item in manifest["records"]:
         old_path = ROOT / item["old_path"]
         assert not old_path.exists(), old_path
@@ -400,7 +433,7 @@ def test_script_relocations_preserve_bytes_and_remove_old_paths():
             continue
         new_path = ROOT / item["new_path"]
         assert new_path.is_file(), new_path
-        assert hashlib.sha256(new_path.read_bytes()).hexdigest() == item["sha256"]
+        assert blob_hashes[item["new_path"]] == item["sha256"]
 
 
 def test_tracked_files_do_not_add_secrets_or_large_runtime_payloads():
