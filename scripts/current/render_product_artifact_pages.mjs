@@ -112,10 +112,17 @@ const reviewRows = snapshot.companies.map(c=>{
   const r=reviews(c);
   return [`${c.company_name}\n${c.symbol}`,label(c.research_status),r['当前决策状态']??'待研究复核',mainReason(c),r['下一触发']??c.next_trigger];
 });
+// Keep independently verified dated observations visible without admitting a decision price.
+const marketObservations = (snapshot.today_items ?? []).filter(item=>item.category?.code === 'MARKET_DATA');
+reviewRows.push(...marketObservations.map(item=>[
+  `${item.company}\n${item.symbol}`, '独立行情观察', item.current_status,
+  `${item.what_happened}\n${item.why_it_matters}`, item.next_step,
+]));
 table(names[0],'今日研究与待处理事项',['公司','研究状态','当前结论','主要原因','下一触发'],reviewRows,[19,22,30,65,58]);
 table(names[1],'研究机会',['公司','研究状态','行情观察','估值状态','价格评估','当前结论'],snapshot.companies.map(c=>{
-  const r=reviews(c); const observation=r['已核验收盘行情（未桥接估值）'];
-  return [`${c.company_name}\n${c.symbol}`,label(c.research_status),observation?.split('；')[0]??assessment(c.price),assessment(c.valuation),r['价格区域']??'尚未完成当前价格评估',r['当前决策状态']??'待研究复核'];
+  const r=reviews(c); const observation=marketObservations.findLast(item=>item.symbol === c.symbol);
+  const legacyObservation=r['已核验收盘行情（未桥接估值）'];
+  return [`${c.company_name}\n${c.symbol}`,label(c.research_status),observation?.what_happened??legacyObservation?.split('；')[0]??assessment(c.price),assessment(c.valuation),r['价格区域']??'尚未完成当前价格评估',r['当前决策状态']??'待研究复核'];
 }),[19,22,33,65,30,32]);
 table(names[2],'决策过程',['公司','检查步骤','状态','原因','下一步'],snapshot.companies.flatMap(c=>c.decision_process.map(s=>[`${c.company_name}\n${c.symbol}`,steps[s.key],states[s.status],s.reason,s.next_action])),[19,20,16,74,55]);
 const companyRows=snapshot.companies.flatMap(c=>[

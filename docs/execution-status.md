@@ -21,7 +21,14 @@ deleting tests or skipping failures. Current scoped verification is 112 passed,
 2 skipped; command/JUnit are in .tmp/mvp-final-targeted-20261011-v2.xml.
 The preceding CI-list local run passed 1630 tests, skipped 32, with 18/18 Python
 product help commands working. That run precedes the final batch/report edits;
-final clean-checkout/CI results will be recorded separately, not inferred.
+The pushed implementation is 1bd86f7ff6da5697716aec708a6c2fd86cf00726.
+GitHub Core Research Gates run 38071212222 completed successfully. An actual
+clean clone of that commit passed the workflow's full offline-core list:
+1620 passed, 49 skipped, 38 warnings in 88.51s. Its JUnit is
+.tmp/mvp-clean-checkout-1bd86f7/.tmp/clean-core.xml. The different skip count
+reflects absent local research assets; it is not real-data acceptance.
+The clean-clone asset check honestly returns BLOCKED_RESEARCH_ASSETS/nonzero
+with exact missing paths and same-hash recovery instructions.
 
 Real 600519 daily execution consumes the registered source-bound package at
 research cutoff 2026-10-08. Its original asset inventory verifies 196 paths.
@@ -37,7 +44,19 @@ Seven managed pages were authored through the supported artifact renderer at
 runtime/daily-trade-assistant/20261011-600519-preview-v2. The protected integrated
 candidate is runtime/daily-trade-assistant/20261011-canonical-preview-v1,
 SHA-256 530d5b2538c5dc5c4a59043a0543f2a3abf2fc34abf575aeed321e828d8f71bf.
-Native WPS/readability/visual checks are pending at this record. The failed v1
+Native WPS and readability passed for v1; 16 actual internal hyperlink follows
+and 19 source formulas passed, with no external network clicks. Cold recheck
+verified 203 source bindings, 55 original nonmanaged worksheet XML parts and
+the original workbook structure byte-for-byte. Visual review then found that
+the artifact renderer omitted the newly projected dated quote notice from
+Today. This was a real product defect despite the preceding automated checks.
+The renderer now consumes typed MARKET_DATA Today items and uses the latest
+independent observation on Opportunities, without changing company price or
+any decision gate. Actual authored v4 cells contain 2026-10-09/1263.00 and
+the explicit nonadmission wording on both pages. Follow-up daily/asset/batch
+tests passed 29/29. The successor integrated candidate/native checks are
+recorded below when completed; v1 is retained, not the final deliverable.
+The failed v1
 date-only audit projection is retained; v2 correctly separates quote trade date
 from Shanghai retrieval date.
 
