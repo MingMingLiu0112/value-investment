@@ -68,6 +68,54 @@ IN_PROGRESS. Main-valuation/G3/event/model review and final publication/user
 acceptance remain genuine gates. Continue the concrete preview and clean-core
 verification, then the independent remaining research/Agent/portfolio checks.
 
+### Final verified preview and remaining product gates
+
+The successor deliverable is
+runtime/daily-trade-assistant/20261011-canonical-preview-v2/canonical-integration-historical-preview.xlsx,
+SHA-256 5fe028fb4c832897c57975decad42c3048eb2a2729c080eab9aa96c77b17d56c.
+Native WPS, readability, 18 actual internal link follows, 19 source formulas,
+both dated-quote cell assertions, 203 source bindings and all 55 protected
+worksheet parts passed. Its delivery-recheck.json remains immutable; the
+subsequent visual-review.json records reviewed images and limitations separately.
+Today/Opportunities show the 2026-10-09 1263.00 independent close. Company detail
+and audit remain dense; no final usability acceptance is asserted. This preview
+refreshes 600519 while preserving the other previously registered cards.
+
+The final three-case batch is runtime/daily-trade-assistant/20261011-three-company-final:
+600519, 000651 and 600741 completed technical research runs using the same CLI.
+600519 research date is 2026-10-08; the other two are explicit 2026-09-22 legacy
+historical replays. All consume the verified 2026-10-09 quote bundle as a dated
+observation, retain NO_ACTION, and keep positions null. Their reports bind
+decision evidence and compare the prior run. This is software reuse, not three
+new approved research conclusions. All-registered mode still honestly rejects
+600887's frozen event-index hash mismatch; its original is not resealed.
+
+Implementation follow-up 552152b9ec2bc73cb91fdf6bb1a79120a308876d passed GitHub
+Core Research Gates run 38071907410. The clean-checkout full-core proof above
+binds 1bd86f7; the only subsequent executable change is the authored display
+projection, additionally checked against real exported candidate cells/native PDFs.
+
+Remaining gates are concrete, not extra framework work:
+
+- D2: neutral main valuation/normalized earnings, forward capital and distribution
+  assumptions, financial-tail scope, current model validity and evidence-bound
+  event/G3 review remain unapproved. Existing report contains thesis, counterevidence,
+  conditions, source paths/hashes and next triggers for review; no engineer approval
+  is substituted. No formal buying price is produced.
+- Current price: research/event coverage must actually be updated and admitted;
+  merely advancing a date or relabelling stale research is prohibited.
+- Agent: offline replay and mock tests work; no new paid LLM research or independent
+  semantic approval is claimed. Findings remain advisory, never gate approval.
+- Portfolio: isolated synthetic risk tests do not supply real IPS/holdings.
+  Actual private input is required only for personalized positions, not research.
+- Publication: the user task section 8 requires separate final publication sign-off.
+  The concrete candidate above can be reviewed now; Canonical remains unchanged.
+- User acceptance and operational/natural-session gates remain unsatisfied.
+
+No Web, satellite, new roadmap, automatic schedule, production Shadow, server
+changes or order execution were added. INITIAL_ASSISTED_USE/D2/total Goal remain
+IN_PROGRESS; research-preview delivery does not replace their acceptance criteria.
+
 
 ## 2026-10-09 D3 v3 CI Closure Repair
 
