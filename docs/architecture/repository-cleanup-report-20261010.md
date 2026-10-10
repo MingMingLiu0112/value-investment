@@ -76,6 +76,19 @@ ignored local dividend source `gree_fy2025_annual` is absent. That test module
 is not part of the offline CI workflow and this cleanup did not change its
 production inputs.
 
+### GitHub Delivery
+
+```text
+LOCAL_COMMIT_1 = b4ecd5a refactor: remove root domain leaks and retire obsolete tools
+LOCAL_COMMIT_2 = 49bb8f8 test: restore canonical statement adapter test filename
+LOCAL_COMMIT_3 = f7207d9 docs: record second safe repository cleanup batch
+REMOTE_MAIN = f7207d9
+CI_RUN = success: https://github.com/MingMingLiu0112/value-investment/actions/runs/38031689967
+```
+
+The clean-checkout run used the pushed commit content and completed with
+`1598 passed, 49 skipped`.
+
 ## First Batch Outcome
 
 The first batch performed real repository cleanup rather than only adding another
