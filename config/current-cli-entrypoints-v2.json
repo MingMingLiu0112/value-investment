@@ -75,9 +75,24 @@
     "scripts/render_m1_human_review_packet.py",
     "scripts/report_m1_research_dossiers.py"
   ],
+  "INTERNAL_PRODUCT_HELPERS": [
+    "scripts/current/audit_tracked_xlsx_privacy.py",
+    "scripts/current/build_stage3_product_preview.py",
+    "scripts/current/daily_product_packet.py",
+    "scripts/current/daily_quote_binding.py",
+    "scripts/current/prepare_product_display_text.py",
+    "scripts/current/prepare_research_handoff_excel.py",
+    "scripts/current/publish_product_workbench_to_canonical.py",
+    "scripts/current/record_prospective_public_observation.py",
+    "scripts/current/render_product_artifact_pages.mjs",
+    "scripts/current/update_canonical_quote_display.py",
+    "scripts/current/verify_m7_product_ux_trial_visuals.py",
+    "scripts/current/verify_m7_product_ux_trial_wps.ps1"
+  ],
   "counts": {
     "product": 20,
     "engineering": 42,
-    "total": 62
+    "internal_helpers": 12,
+    "total": 74
   }
 }

@@ -29,7 +29,7 @@ was modified in this change.
 
 Follow-up 2026-09-09: retrieved live adapters.py and inspected its diff against
 local. Only the cash duplicate guard and parser version differed. Installed
-with scripts/install_single_cash_adapter.py under the shared project lock.
+with `scripts/migrations/install_single_cash_adapter.py` under the shared project lock.
 Old SHA-256: 9555cfc316d8128680cae3bf9becbce6532f7289a9eadd7697ef6f11b94bc956.
 New SHA-256: d66b69693ed1091b6b8a9a6f5cc2e59e6138d202da33a73fcdbb2bff99f28503.
 

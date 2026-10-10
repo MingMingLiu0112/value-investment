@@ -51,6 +51,83 @@
       "introduced_at": "2026-09-26",
       "consumers_remaining": ["src/value_investment_agent/m1_application_workbook.py", "research dossier scripts"],
       "removal_condition": "Research presentation consumers import the read_models path and external callers are retired."
+    },
+    {
+      "old_path": "src/value_investment_agent/gap_classification.py",
+      "new_path": "src/value_investment_agent/domain/research/gap_classification.py",
+      "introduced_at": "2026-10-10",
+      "consumers_remaining": ["src/value_investment_agent/research_batch.py", "tests/test_gap_classification.py"],
+      "removal_condition": "All research batch and external callers import the domain path."
+    },
+    {
+      "old_path": "src/value_investment_agent/human_research_approval.py",
+      "new_path": "src/value_investment_agent/domain/research/human_research_approval.py",
+      "introduced_at": "2026-10-10",
+      "consumers_remaining": ["src/value_investment_agent/pre_decision_eligibility.py", "research receipt scripts and tests"],
+      "removal_condition": "All approval consumers import the domain path and external callers are retired."
+    },
+    {
+      "old_path": "src/value_investment_agent/research_case.py",
+      "new_path": "src/value_investment_agent/domain/research/research_case.py",
+      "introduced_at": "2026-10-10",
+      "consumers_remaining": ["src/value_investment_agent/research_input.py", "valuation and research scripts"],
+      "removal_condition": "All research case consumers import the domain path."
+    },
+    {
+      "old_path": "src/value_investment_agent/research_gate.py",
+      "new_path": "src/value_investment_agent/domain/research/research_gate.py",
+      "introduced_at": "2026-10-10",
+      "consumers_remaining": ["src/value_investment_agent/current_research_status.py", "research and presentation consumers"],
+      "removal_condition": "All gate consumers import the domain path."
+    },
+    {
+      "old_path": "src/value_investment_agent/research_profile.py",
+      "new_path": "src/value_investment_agent/domain/research/research_profile.py",
+      "introduced_at": "2026-10-10",
+      "consumers_remaining": ["scripts/build_company_valuation_result.py", "research case tooling"],
+      "removal_condition": "All profile consumers import the domain path."
+    },
+    {
+      "old_path": "src/value_investment_agent/research_run_contract.py",
+      "new_path": "src/value_investment_agent/domain/research/research_run_contract.py",
+      "introduced_at": "2026-10-10",
+      "consumers_remaining": ["src/value_investment_agent/research_e2e_replay.py", "research and test consumers"],
+      "removal_condition": "All run-contract consumers import the domain path."
+    },
+    {
+      "old_path": "src/value_investment_agent/valuation_confidence.py",
+      "new_path": "src/value_investment_agent/domain/valuation/confidence.py",
+      "introduced_at": "2026-10-10",
+      "consumers_remaining": ["src/value_investment_agent/valuation_models/fcff.py", "valuation case scripts"],
+      "removal_condition": "All valuation confidence consumers import the domain path."
+    },
+    {
+      "old_path": "src/value_investment_agent/evidence_dependencies.py",
+      "new_path": "src/value_investment_agent/domain/research/evidence_dependencies.py",
+      "introduced_at": "2026-10-10",
+      "consumers_remaining": ["src/value_investment_agent/m5_event_run.py", "src/value_investment_agent/m5_run_request.py"],
+      "removal_condition": "All evidence dependency consumers import the domain path."
+    },
+    {
+      "old_path": "src/value_investment_agent/m5_actual_offline_authorization.py",
+      "new_path": "src/value_investment_agent/operations/authorization/m5_actual_approval_receipt.py",
+      "introduced_at": "2026-10-10",
+      "consumers_remaining": ["src/value_investment_agent/m5_event_run.py", "scripts/apply_m5_actual_offline_request.py"],
+      "removal_condition": "All authorization consumers import the operations path."
+    },
+    {
+      "old_path": "src/value_investment_agent/provider_scope.py",
+      "new_path": "src/value_investment_agent/infrastructure/market_data/provider_scope.py",
+      "introduced_at": "2026-10-10",
+      "consumers_remaining": ["tests/test_provider_snapshot.py", "market data adapters"],
+      "removal_condition": "All provider scope consumers import the infrastructure path."
+    },
+    {
+      "old_path": "src/value_investment_agent/roe_scope.py",
+      "new_path": "src/value_investment_agent/infrastructure/market_data/roe_scope.py",
+      "introduced_at": "2026-10-10",
+      "consumers_remaining": ["scripts/migrations/migrate_roe_scope.py", "tests/test_roe_snapshot.py"],
+      "removal_condition": "All ROE scope consumers import the infrastructure path."
     }
   ]
 }

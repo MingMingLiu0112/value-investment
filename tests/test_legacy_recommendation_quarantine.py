@@ -4,7 +4,12 @@ import subprocess
 import sys
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "report_recommendations.py"
+SCRIPT = (
+    Path(__file__).resolve().parents[1]
+    / "scripts"
+    / "diagnostics"
+    / "report_recommendations.py"
+)
 
 
 def test_legacy_report_requires_explicit_diagnostic_flag():

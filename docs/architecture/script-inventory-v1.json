@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 12,
     "CURRENT_PRODUCT_CLI": 7,
-    "CURRENT_RESEARCH_CLI": 206,
+    "CURRENT_RESEARCH_CLI": 205,
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 216,
     "MIGRATION_TOOL": 13,
@@ -4174,28 +4174,6 @@
       "sha256": "97703c0a5f78c1acb9eb4f922afa279de20a16df32124003b4d89fb8bbc974a8"
     },
     {
-      "path": "scripts/deploy_institution_v10.py",
-      "category": "CURRENT_RESEARCH_CLI",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 20,
-      "sha256": "3a8b7a6533ed059c0c4dfe1abeca19a28d7318495c098969a2f59594be3ed51e"
-    },
-    {
-      "path": "scripts/deploy_institution_v9.py",
-      "category": "CURRENT_RESEARCH_CLI",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 20,
-      "sha256": "dcbda23f2d82728c062de0055a0f6ae6e780fece0bd095419ba97c1f612c2754"
-    },
-    {
       "path": "scripts/deploy_memory_refresh.py",
       "category": "CURRENT_RESEARCH_CLI",
       "current_consumers": [],
@@ -4524,6 +4502,17 @@
       "risk": "LOW",
       "line_count": 22,
       "sha256": "952518701a754f7aa31901e74af11d9203ea0edbb7e7851922579815f1330b44"
+    },
+    {
+      "path": "scripts/diagnostics/report_recommendations.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 42,
+      "sha256": "e16e55aaa945e215a5bc9ac416ed504ebff01680f6e400b5716de8f3a370600e"
     },
     {
       "path": "scripts/encrypt_private_portfolio_input.py",
@@ -4869,83 +4858,6 @@
       "sha256": "9c005cc1329783c553129762c79be6bc52f0d0075c8aee00de5e4ffff1cfb383"
     },
     {
-      "path": "scripts/install_backup_space_release.py",
-      "category": "MIGRATION_TOOL",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 64,
-      "sha256": "90b608cca72f370f1afc882b24a02d2e6339c443f8adb9e5c41eef92a9451c92"
-    },
-    {
-      "path": "scripts/install_debt_scope_gate.py",
-      "category": "MIGRATION_TOOL",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 83,
-      "sha256": "b5da7c2f4b4ff995460aa1ca975ab85f7e2871e9108482b203412ae808beb6ec"
-    },
-    {
-      "path": "scripts/install_parser_release.py",
-      "category": "MIGRATION_TOOL",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 107,
-      "sha256": "b0856ac5d28dd83dc0ea68f36211f4b2a52e49435930e8c46dcd744b62d604d5"
-    },
-    {
-      "path": "scripts/install_quote_session_release.py",
-      "category": "MIGRATION_TOOL",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 110,
-      "sha256": "e32150b49a746b5219d0e2a8d001d671b2b68a27a0c86663f0a6180026999b39"
-    },
-    {
-      "path": "scripts/install_single_cash_adapter.py",
-      "category": "MIGRATION_TOOL",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 43,
-      "sha256": "f985547134fea48f829631411bcb7fdf6c2fa8ce8954ec0bd2fa53aa273f1c51"
-    },
-    {
-      "path": "scripts/install_tracking_lock_release.py",
-      "category": "MIGRATION_TOOL",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 52,
-      "sha256": "bf5300c3a16caad3bace51c526048ea4700f75e51dcbd2c13781e04fe19a53ca"
-    },
-    {
-      "path": "scripts/install_tracking_schema.py",
-      "category": "MIGRATION_TOOL",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 17,
-      "sha256": "96919f7ea8440b93748a25e3e98e1cce5b273cf9e02d4655561579384b6575af"
-    },
-    {
       "path": "scripts/integrate_moutai_conditional_equity.py",
       "category": "COMPANY_RESEARCH_CASE_TOOL",
       "current_consumers": [],
@@ -4966,6 +4878,17 @@
       "risk": "LOW",
       "line_count": 128,
       "sha256": "da439c2f5140ebd6441e4fa4a4cbdd0bfe4bb99e05065cb77163e4ebd5521aaf"
+    },
+    {
+      "path": "scripts/legacy/sync_workbook_low_memory.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 159,
+      "sha256": "89dde766f22022b9dab4fb24e2482ead898266e81ddd2c33a37bfad0aedbd99f"
     },
     {
       "path": "scripts/m6_operational_control.py",
@@ -5003,7 +4926,95 @@
       "sha256": "525a6b7eef19b2a9ae5f85bad8458f4a13e28570a760c3d26631a77bb7262a09"
     },
     {
-      "path": "scripts/migrate_maturity_sources.py",
+      "path": "scripts/migrations/deploy_institution_v10.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 20,
+      "sha256": "3a8b7a6533ed059c0c4dfe1abeca19a28d7318495c098969a2f59594be3ed51e"
+    },
+    {
+      "path": "scripts/migrations/install_backup_space_release.py",
+      "category": "MIGRATION_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 64,
+      "sha256": "90b608cca72f370f1afc882b24a02d2e6339c443f8adb9e5c41eef92a9451c92"
+    },
+    {
+      "path": "scripts/migrations/install_debt_scope_gate.py",
+      "category": "MIGRATION_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 83,
+      "sha256": "b5da7c2f4b4ff995460aa1ca975ab85f7e2871e9108482b203412ae808beb6ec"
+    },
+    {
+      "path": "scripts/migrations/install_parser_release.py",
+      "category": "MIGRATION_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 107,
+      "sha256": "b0856ac5d28dd83dc0ea68f36211f4b2a52e49435930e8c46dcd744b62d604d5"
+    },
+    {
+      "path": "scripts/migrations/install_quote_session_release.py",
+      "category": "MIGRATION_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 110,
+      "sha256": "e32150b49a746b5219d0e2a8d001d671b2b68a27a0c86663f0a6180026999b39"
+    },
+    {
+      "path": "scripts/migrations/install_single_cash_adapter.py",
+      "category": "MIGRATION_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 43,
+      "sha256": "f985547134fea48f829631411bcb7fdf6c2fa8ce8954ec0bd2fa53aa273f1c51"
+    },
+    {
+      "path": "scripts/migrations/install_tracking_lock_release.py",
+      "category": "MIGRATION_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 52,
+      "sha256": "bf5300c3a16caad3bace51c526048ea4700f75e51dcbd2c13781e04fe19a53ca"
+    },
+    {
+      "path": "scripts/migrations/install_tracking_schema.py",
+      "category": "MIGRATION_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 17,
+      "sha256": "96919f7ea8440b93748a25e3e98e1cce5b273cf9e02d4655561579384b6575af"
+    },
+    {
+      "path": "scripts/migrations/migrate_maturity_sources.py",
       "category": "MIGRATION_TOOL",
       "current_consumers": [],
       "imports_business_logic": false,
@@ -5014,7 +5025,7 @@
       "sha256": "98ca8e3caca4c5f9329c86ac76a7e7921e35f9509c2bbcb9cb22bad0a6b44e54"
     },
     {
-      "path": "scripts/migrate_provider_scope.py",
+      "path": "scripts/migrations/migrate_provider_scope.py",
       "category": "MIGRATION_TOOL",
       "current_consumers": [],
       "imports_business_logic": false,
@@ -5025,7 +5036,7 @@
       "sha256": "a35adc25addb135d8a5619881a49e1b0259414320f8edb021f02d5473ed2030d"
     },
     {
-      "path": "scripts/migrate_reviewed_candidates.py",
+      "path": "scripts/migrations/migrate_reviewed_candidates.py",
       "category": "MIGRATION_TOOL",
       "current_consumers": [],
       "imports_business_logic": false,
@@ -5036,7 +5047,7 @@
       "sha256": "a8af510656e42ec3ecccfb40728c21516cae2831d4f01396a4e98dccc4344a8a"
     },
     {
-      "path": "scripts/migrate_roe_scope.py",
+      "path": "scripts/migrations/migrate_roe_scope.py",
       "category": "MIGRATION_TOOL",
       "current_consumers": [],
       "imports_business_logic": false,
@@ -5047,7 +5058,7 @@
       "sha256": "76ad1b2d04e75350316a212bd2270b2df0d324cb37de03d652bf9535e50eeac1"
     },
     {
-      "path": "scripts/migrate_tied_inputs.py",
+      "path": "scripts/migrations/migrate_tied_inputs.py",
       "category": "MIGRATION_TOOL",
       "current_consumers": [],
       "imports_business_logic": false,
@@ -5058,7 +5069,7 @@
       "sha256": "d469ab3a07ef73c8ec66b569385f72b1be6ee343d0fc2f1241184936e2eaeb81"
     },
     {
-      "path": "scripts/migrate_workspace.ps1",
+      "path": "scripts/migrations/migrate_workspace.ps1",
       "category": "MIGRATION_TOOL",
       "current_consumers": [],
       "imports_business_logic": false,
@@ -5067,6 +5078,17 @@
       "risk": "LOW",
       "line_count": 58,
       "sha256": "514ee7616728ff0d419a1ad0601e477c1c81b9d4961a2b1b58e95c505013d3f8"
+    },
+    {
+      "path": "scripts/migrations/tied_input_resolution.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 51,
+      "sha256": "830a23a4ed309b2d8f80eb1c5f0082813c612edb7cd59e8212f4b43e7728936d"
     },
     {
       "path": "scripts/open_current_trial_workbook.py",
@@ -5080,6 +5102,17 @@
       "risk": "MEDIUM",
       "line_count": 117,
       "sha256": "f061cfdcd6e97e0dd8e392c09fb77526c74b5ec2d5c9ed61552ef0ab6f8e6776"
+    },
+    {
+      "path": "scripts/operations/server_reclaim_build_cache.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 31,
+      "sha256": "02f22e58578e57a6f160a48848dd7151bc03784866fb38d8fcdb2f4a02be7c53"
     },
     {
       "path": "scripts/package_encrypted_backup.py",
@@ -5939,17 +5972,6 @@
       "sha256": "e48f5b2b9e229a9044c66dd448cb5cb4b4f1288384a0be04f25857eef7d0c47c"
     },
     {
-      "path": "scripts/report_recommendations.py",
-      "category": "CURRENT_RESEARCH_CLI",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 42,
-      "sha256": "e16e55aaa945e215a5bc9ac416ed504ebff01680f6e400b5716de8f3a370600e"
-    },
-    {
       "path": "scripts/research_cases/moutai/build_moutai_product_ttm.py",
       "category": "COMPANY_RESEARCH_CASE_TOOL",
       "current_consumers": [],
@@ -6358,17 +6380,6 @@
       "sha256": "751b11db47fd52c54fe4085234d48c3df07d1ed3c40f0d43a05709717ed6c5e7"
     },
     {
-      "path": "scripts/server_reclaim_build_cache.py",
-      "category": "CURRENT_RESEARCH_CLI",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 31,
-      "sha256": "02f22e58578e57a6f160a48848dd7151bc03784866fb38d8fcdb2f4a02be7c53"
-    },
-    {
       "path": "scripts/settle_moutai_pending_paper_order.py",
       "category": "COMPANY_RESEARCH_CASE_TOOL",
       "current_consumers": [],
@@ -6562,17 +6573,6 @@
       "sha256": "4e05281ca2da50114920246c87879541fbf9c4a85339376933b70e744b386ee8"
     },
     {
-      "path": "scripts/sync_workbook_low_memory.py",
-      "category": "CURRENT_RESEARCH_CLI",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 159,
-      "sha256": "89dde766f22022b9dab4fb24e2482ead898266e81ddd2c33a37bfad0aedbd99f"
-    },
-    {
       "path": "scripts/test_daily_update_control_flow.py",
       "category": "CURRENT_RESEARCH_CLI",
       "current_consumers": [],
@@ -6670,17 +6670,6 @@
       "risk": "LOW",
       "line_count": 43,
       "sha256": "5f5e61fc086566bd4b50e32b998dc9d9cb9cb1470f401ea65257cda49299bed5"
-    },
-    {
-      "path": "scripts/tied_input_resolution.py",
-      "category": "CURRENT_RESEARCH_CLI",
-      "current_consumers": [],
-      "imports_business_logic": false,
-      "replacement": null,
-      "recommended_action": "KEEP_CLASSIFIED",
-      "risk": "LOW",
-      "line_count": 51,
-      "sha256": "830a23a4ed309b2d8f80eb1c5f0082813c612edb7cd59e8212f4b43e7728936d"
     },
     {
       "path": "scripts/tracking_schema.sql",

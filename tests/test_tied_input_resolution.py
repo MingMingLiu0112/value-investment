@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import pytest
 
-from scripts.tied_input_resolution import CASES, plan_resolution
+from scripts.migrations.tied_input_resolution import CASES, plan_resolution
 
 
 def rows():

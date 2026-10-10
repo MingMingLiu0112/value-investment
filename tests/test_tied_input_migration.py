@@ -8,7 +8,7 @@ import pytest
 
 
 def load_script(monkeypatch):
-    path = Path(__file__).parents[1] / 'scripts'
+    path = Path(__file__).parents[1] / 'scripts' / 'migrations'
     monkeypatch.syspath_prepend(str(path))
     spec = importlib.util.spec_from_file_location('migration_under_test', path / 'migrate_tied_inputs.py')
     module = importlib.util.module_from_spec(spec)

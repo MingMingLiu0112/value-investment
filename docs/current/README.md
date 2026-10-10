@@ -51,6 +51,7 @@ The 2026-10-09 architecture/agent pilot boundary and runbook are in
 | M4 synthetic onboarding rehearsal | `scripts/current/rehearse_m4_onboarding.py` |
 | Historical validation status | `docs/historical-validation-current-status.md` |
 | Architecture status | `docs/architecture/repository-architecture.md` |
+| Repository cleanup 2026-10-10 | `docs/architecture/repository-cleanup-report-20261010.md` |
 | Permanent boundaries | `AGENTS.md` |
 | Long-term envelope | `LONG-TERM-GOAL.md` |
 | Product purpose | `docs/north-star.md` |

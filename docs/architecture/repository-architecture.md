@@ -1,6 +1,6 @@
 # Repository Architecture Inventory
 
-更新：2026-09-26。本文是架构治理的事实清单和迁移方向，不是新的业务 Roadmap，也不改变
+更新：2026-10-10。本文是架构治理的事实清单和迁移方向，不是新的业务 Roadmap，也不改变
 任何估值、研究门槛、数据库语义或 `action=no_order`。
 
 ## 当前基线
@@ -11,17 +11,22 @@
 src/value_investment_agent/
 ```
 
-盘点时约有：
+2026-10-10 清理批次后的 Git 跟踪基线为：
 
 ```text
+tracked files                  = 1985
 src/value_investment_agent/*.py = 199
-scripts/*                      = 546
-tests/*.py                     = 455
-docs/*                         = 191
-root *.xlsx                    = 29
+scripts tracked files          = 653
+scripts root files             = 563
+tests tracked files            = 573
+docs tracked files             = 272
+root *.xlsx                    = 0
 ```
 
-这不是“文件数量必须下降”的目标，而是说明根层职责已经过度集中。当前冻结的正式入口仍是：
+这不是“文件数量必须下降”的目标，而是说明根层职责已经过度集中。该批次把 18 个一次性脚本
+迁移到明确的 `migrations/`、`operations/`、`diagnostics/`、`legacy/` 边界，并删除了一个已
+被取代且无当前消费者的部署脚本；完整路径和 SHA-256 证明见
+`docs/architecture/script-relocations-20261010.json`。当前冻结的正式入口仍是：
 
 ```text
 README.md
@@ -212,29 +217,31 @@ CURRENT_ARTIFACT_ENTRY = config/current-trial-workbook.json
 DOCS_CURRENT_ENTRY = FUNCTIONAL
 DOCS_CURRENT_VS_ARCHIVE = OPERATIONALLY_CLEAR
 SCRIPT_INVENTORY = COMPLETE
-CURRENT_SUPPORTED_CLIS = 51 (15 product + 36 engineering; all 43 v1 paths preserved)
+CURRENT_SUPPORTED_CLIS = 62 (20 product + 42 engineering) + 12 internal helpers; all 43 v1 paths preserved
 M7_PRODUCT_READ_MODEL = READY
 M7_PRODUCT_UX_CANDIDATE = READY (runtime candidate; canonical pointer unchanged)
 ADV_P1_003_004 = CLOSED_WITH_TRUST_ROOT_RESIDUAL
 M4_SYNTHETIC_ONBOARDING_REHEARSAL = COMPLETED
-SCRIPT_ROOT_PYTHON_BASELINE = 528
+SCRIPT_ROOT_PYTHON_BASELINE = 510
+SCRIPT_ROOT_POWERSHELL_BASELINE = 50
 PRESENTATION_DIRECTORY = ACTIVE
 OPERATIONS_DIRECTORY = ACTIVE
 INFRASTRUCTURE_DIRECTORY = ACTIVE
-COMPATIBILITY_SHIMS = REGISTERED
+COMPATIBILITY_SHIMS = 18 REGISTERED
 COMPANY_SPECIFIC_TOOLING = CLASSIFIED
 NEW_CODE_ROOT_GROWTH = BLOCKED
 CORE_BEHAVIOR_CHANGED = false
 action = no_order
 ```
 
-Phase 2 的根 artifact 审计结论是：当前 58 个根 artifact 均被 canonical、pointer、
-manifest、receipt、静态消费者或未跟踪本地证据绑定，因此没有可证明安全的物理移动批次。
-当前通过 `artifacts/current/artifact-registry-v2.json` 提供逻辑导航，而不是为了降低目录数量
-破坏 Hash 证据。物理根工作簿仍为 29 个。
+Phase 2 的根 artifact 审计结论保留了逻辑注册表；在 2026-10-10 清理后的当前工作树中，
+Git 跟踪和本地可见的根 `.xlsx` / `.manifest.json` 均为 0。历史工件已经位于
+`artifacts/archive/` 或仍由 `artifacts/current/artifact-registry-v2.json` 导航；不得为了
+目录数量再次移动带 Hash/receipt 绑定的对象。
 
-当前脚本分类入口为 `config/current-cli-entrypoints-v2.json`（15 个产品入口、36 个工程入口，
-51 个唯一路径；v1 的 43 个路径保留兼容）和 `docs/architecture/script-inventory-v1.json`
+当前脚本分类入口为 `config/current-cli-entrypoints-v2.json`（20 个产品入口、42 个工程入口、
+12 个内部 helper，共 74 个登记路径；v1 的 43 个路径全部保留兼容）和
+`docs/architecture/script-inventory-v1.json`
 （完整机器可读清单）。`config/current-cli-entrypoints-v1.json` 继续作为兼容哈希基线，不新增
 v1 条目。`scripts/` 根层默认不再
 增长，诊断、历史验证和公司 case 开始进入明确子目录；旧实现通过已登记 shim 保留路径兼容。

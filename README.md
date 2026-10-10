@@ -22,6 +22,7 @@
 | 脚本分类与历史工具说明 | [scripts/README.md](scripts/README.md) |
 | 机器可读脚本清单 | [docs/architecture/script-inventory-v1.json](docs/architecture/script-inventory-v1.json) |
 | 架构与迁移地图 | [docs/architecture/repository-architecture.md](docs/architecture/repository-architecture.md) |
+| 2026-10-10 仓库清理与真实回归 | [docs/architecture/repository-cleanup-report-20261010.md](docs/architecture/repository-cleanup-report-20261010.md) |
 | 多 Agent 离线研究试点 | [docs/architecture/agent-research-pilot-20261009.md](docs/architecture/agent-research-pilot-20261009.md) |
 
 根目录候选 Excel、manifest 和旧研究文档仍可能因路径或 Hash 证据而原地保留；它们不再等同于当前入口。

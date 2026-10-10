@@ -55,6 +55,19 @@ def _tracked_root_names() -> set[str]:
     }
 
 
+def _tracked_paths() -> set[str]:
+    result = subprocess.run(
+        ["git", "-C", str(ROOT), "ls-files", "-z"],
+        check=True,
+        capture_output=True,
+    )
+    return {
+        item.decode("utf-8")
+        for item in result.stdout.split(b"\0")
+        if item
+    }
+
+
 def test_all_receipt_bound_paths_are_byte_for_byte_frozen():
     manifest = json.loads(
         (ROOT / "config" / "architecture-frozen-paths-v1.json").read_text(
@@ -317,12 +330,90 @@ def test_compatibility_shims_are_registered_and_forwarding():
     )
 
     assert registry["action"] == "no_order"
+    declared = {item["old_path"] for item in registry["shims"]}
+    discovered = {
+        path.relative_to(ROOT).as_posix()
+        for path in (ROOT / "src" / "value_investment_agent").glob("*.py")
+        if "DEPRECATED_COMPATIBILITY_SHIM"
+        in path.read_text(encoding="utf-8")
+    }
+    assert discovered == declared
     for item in registry["shims"]:
         old_path = ROOT / item["old_path"]
         new_path = ROOT / item["new_path"]
         assert old_path.is_file(), old_path
         assert new_path.is_file(), new_path
         assert "DEPRECATED_COMPATIBILITY_SHIM" in old_path.read_text(encoding="utf-8")
+
+
+def test_current_cli_registry_v2_covers_current_scripts():
+    registry = json.loads(
+        (ROOT / "config" / "current-cli-entrypoints-v2.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    product = list(registry["SUPPORTED_PRODUCT_CLI"])
+    engineering = list(registry["SUPPORTED_ENGINEERING_CLI"])
+    helpers = list(registry["INTERNAL_PRODUCT_HELPERS"])
+    declared = product + engineering + helpers
+
+    assert registry["action"] == "no_order"
+    assert len(declared) == len(set(declared))
+    assert registry["counts"] == {
+        "product": len(product),
+        "engineering": len(engineering),
+        "internal_helpers": len(helpers),
+        "total": len(declared),
+    }
+    for relative in declared:
+        assert (ROOT / relative).is_file(), relative
+
+    declared_current = {
+        relative
+        for relative in declared
+        if relative.startswith("scripts/current/")
+    }
+    actual_current = {
+        path.relative_to(ROOT).as_posix()
+        for path in (ROOT / "scripts" / "current").iterdir()
+        if path.is_file() and path.suffix in {".py", ".ps1", ".mjs"}
+    }
+    assert declared_current == actual_current
+
+
+def test_script_relocations_preserve_bytes_and_remove_old_paths():
+    manifest = json.loads(
+        (
+            ROOT
+            / "docs"
+            / "architecture"
+            / "script-relocations-20261010.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert manifest["action"] == "no_order"
+    for item in manifest["records"]:
+        old_path = ROOT / item["old_path"]
+        assert not old_path.exists(), old_path
+        if item["action"] == "DELETE":
+            assert item["new_path"] is None
+            continue
+        new_path = ROOT / item["new_path"]
+        assert new_path.is_file(), new_path
+        assert hashlib.sha256(new_path.read_bytes()).hexdigest() == item["sha256"]
+
+
+def test_tracked_files_do_not_add_secrets_or_large_runtime_payloads():
+    tracked = _tracked_paths()
+    forbidden_names = {"id_rsa", "id_ed25519"}
+    forbidden_suffixes = {".pem", ".key", ".dump", ".sqlite", ".sqlite3", ".viportfolio"}
+    for relative in tracked:
+        name = Path(relative).name.lower()
+        assert not (name == ".env" or name in forbidden_names), relative
+        assert Path(name).suffix not in forbidden_suffixes, relative
+        assert not relative.startswith(("runtime/", "backups/", "evidence-archive/")), relative
+        path = ROOT / relative
+        assert path.stat().st_size <= 32 * 1024 * 1024, relative
 
 
 def test_new_code_placement_rules_are_recorded():

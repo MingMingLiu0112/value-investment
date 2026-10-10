@@ -1,6 +1,6 @@
 # Repository Map
 
-更新：2026-09-26。此表用于快速定位，不是权限边界。完整合同见
+更新：2026-10-10。此表用于快速定位，不是权限边界。完整合同见
 [repository-architecture.md](repository-architecture.md) 和 [architecture.md](../architecture.md)。
 
 | Module / Area | Layer | Status | Public Entry | Replacement / Note |
@@ -20,7 +20,8 @@
 | `src/value_investment_agent/db.py` | Infrastructure / Database | Active | CLI / application | PostgreSQL 结构化事实底座 |
 | `src/value_investment_agent/backup*.py`、`m6_*recovery*` | Infrastructure / Operations | Active offline | ops scripts | 真实恢复演练仍需隔离环境 |
 | `src/value_investment_agent/excel_report.py`、`workbook_simple_overview.py` | Presentation / Excel | Legacy active | publication scripts | 新代码使用 Product Read Model |
-| `scripts/*.py` | Tooling | Mixed | CLI | 新脚本只做 parse/load/invoke/print/exit |
+| `scripts/current/` | Tooling / Current CLI | Active | v2 registry | 只做 parse/load/invoke/print/exit；不承载业务规则 |
+| `scripts/{cases,research_cases,historical_validation,diagnostics,migrations,operations,legacy}/` | Tooling / Classified Tools | Active or historical | scripts README / inventory | 按职责分类；历史路径和 Hash 证据优先保留 |
 | `config/` | Configuration / Pointers | Active | scripts / tests | 一个职责一个 current pointer |
 | `runtime/` | Local evidence / candidates | Ignored | config pointers | 不把运行时目录当源码层 |
 | `docs/` | Governance / Methodology / History | Mixed | docs index / current files | 逐步分为 current/architecture/operations/archive |
@@ -36,8 +37,10 @@
 | `src/value_investment_agent/operations/authorization/` | Operations / Authorization | Active offline | M6 shadow receipts | Phase 2 首个 M6 authorization artifact 已迁入；无生产授权 |
 | `src/value_investment_agent/infrastructure/` | Infrastructure | Active | filing/evidence/backup consumers | Phase 2 首批 PDF、evidence tiering、backup snapshot 已迁入 |
 | `scripts/build_company_valuation_result.py` | Tooling / CLI | Thinned | explicit FCFF invocation | Argument and path-boundary wrapper only; business logic lives in application/valuation |
-| `config/current-cli-entrypoints-v1.json` | Governance / CLI | Active | user / developer / CI discovery | 43 个当前支持入口；历史工具不隐式加入 |
+| `config/current-cli-entrypoints-v2.json` | Governance / CLI | Active | user / developer / CI discovery | 20 product + 42 engineering CLIs + 12 internal helpers；v1 43 路径保留兼容 |
+| `config/current-cli-entrypoints-v1.json` | Governance / CLI | Compatibility | v2 registry | 冻结的 43 路径兼容基线；不再新增 |
 | `docs/architecture/script-inventory-v1.json` | Governance / Script Audit | Active | migration / architecture review | 全部工具文件分类；不授权删除或移动 |
+| `docs/architecture/script-relocations-20261010.json` | Governance / Script Audit | Active | architecture tests | 18 个安全迁移和 1 个删除的路径/Hash/消费者证据 |
 | `artifacts/current/artifact-registry-v2.json` | Governance / Artifact Navigation | Active | current/historical navigation | 从本机 WORKBOOK_PATH 解析 canonical Excel；不改变根 artifact provenance |
 | `config/architecture-frozen-paths-v1.json` | Governance / Provenance | Active | tests/test_architecture_boundaries.py | Exact hashes for every receipt-bound historical-validation path |
 | `config/architecture-root-artifact-allowlist-v1.json` | Governance / Artifacts | Active | tests/test_architecture_boundaries.py | Exact root workbook and manifest allowlist; additions require an explicit relocation decision |
@@ -53,8 +56,10 @@ Current goal: docs/current-stage-goal.md
 Current execution status: docs/execution-status.md
 Permanent boundaries: AGENTS.md
 Architecture inventory: docs/architecture/repository-architecture.md
-Current CLI registry: config/current-cli-entrypoints-v1.json
+Current CLI registry: config/current-cli-entrypoints-v2.json
+CLI v1 compatibility: config/current-cli-entrypoints-v1.json
 Script inventory: docs/architecture/script-inventory-v1.json
+Script relocation proof: docs/architecture/script-relocations-20261010.json
 Current artifact registry: artifacts/current/artifact-registry-v2.json
 Current docs index: docs/current/README.md
 ```

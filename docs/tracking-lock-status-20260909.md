@@ -25,7 +25,7 @@ The real temporary-lock fixture exercised the full 30-second timeout for
 each script and then successful acquisition after release; no collection ran.
 Full local suite: 1054 passed, 18 existing Backtrader warnings.
 
-scripts/install_tracking_lock_release.py confirmed that the ONLY difference
+`scripts/migrations/install_tracking_lock_release.py` confirmed that the ONLY difference
 from live scripts was replacement of the old zero-exit lock block. It backed
 up both originals, checked Bash syntax, installed under the shared lock and
 verified exact content. Production installation succeeded without restarting

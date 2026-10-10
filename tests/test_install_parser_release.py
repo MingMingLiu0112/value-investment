@@ -5,7 +5,10 @@ from pathlib import Path
 
 import pytest
 
-spec = importlib.util.spec_from_file_location('installer', Path(__file__).parents[1] / 'scripts/install_parser_release.py')
+spec = importlib.util.spec_from_file_location(
+    'installer',
+    Path(__file__).parents[1] / 'scripts/migrations/install_parser_release.py',
+)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 

@@ -4,7 +4,7 @@
 
 六条已读原件的到期现金流来源及十二条显式依赖结果，共18条记录；涉及000027、000550、000729、000786。证据清单为runtime/reviewed-maturity-facts-20260908T201341916878Z.json，依赖清单为runtime/maturity-dependency-audit-20260908T201741212762Z.json。
 
-脚本scripts/migrate_maturity_sources.py与独立evidence_dependencies.py上传deploy-staging，不替换服务器运行模块。执行使用项目共享文件锁、0.5CPU、384MiB内存/512MiB含交换上限、只读代码和原件挂载、3秒锁超时与30秒语句超时。
+脚本`scripts/migrations/migrate_maturity_sources.py`与独立`evidence_dependencies.py`上传deploy-staging，不替换服务器运行模块。执行使用项目共享文件锁、0.5CPU、384MiB内存/512MiB含交换上限、只读代码和原件挂载、3秒锁超时与30秒语句超时。
 
 ## 真实回滚演练
 

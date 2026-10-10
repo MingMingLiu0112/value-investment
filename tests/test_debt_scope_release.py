@@ -7,8 +7,9 @@ import pytest
 
 
 SCRIPTS = Path(__file__).resolve().parents[1] / 'scripts'
-sys.path.insert(0, str(SCRIPTS))
-spec = importlib.util.spec_from_file_location('debt_scope_release', SCRIPTS / 'install_debt_scope_gate.py')
+MIGRATIONS = SCRIPTS / 'migrations'
+sys.path.insert(0, str(MIGRATIONS))
+spec = importlib.util.spec_from_file_location('debt_scope_release', MIGRATIONS / 'install_debt_scope_gate.py')
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
@@ -34,7 +35,7 @@ def test_unrecognized_hash_never_patches():
 
 
 def test_installer_uses_existing_image_bounded_resources_and_no_network():
-    source = (SCRIPTS / 'install_debt_scope_gate.py').read_text(encoding='utf-8')
+    source = (MIGRATIONS / 'install_debt_scope_gate.py').read_text(encoding='utf-8')
     for constraint in ("'--pull=never'", "'--network', 'none'", "'--memory=384m'",
                        "'--memory-swap=512m'", 'fcntl.LOCK_EX | fcntl.LOCK_NB',
                        'replace_bytes(target, original, mode)', 'pta_pid() != before_pid'):

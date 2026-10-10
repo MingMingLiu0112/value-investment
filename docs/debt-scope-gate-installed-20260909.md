@@ -20,7 +20,7 @@ Receipt: `receipt.json`; local copy:
 `runtime/debt-scope-installed-receipt-20260909.json`.
 Read-only baseline copy: `runtime/production-financial-quality-before-scope-20260909.py`.
 
-Installer: `scripts/install_debt_scope_gate.py`.
+Installer: `scripts/migrations/install_debt_scope_gate.py`.
 Probe: `scripts/probe_debt_scope_gate.py`.
 
 ## Verification actually performed

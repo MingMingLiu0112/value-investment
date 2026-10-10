@@ -69,7 +69,8 @@ def test_v2_cli_split_preserves_every_v1_path_and_bounds_product_surface():
     v1_paths = {entry["path"] for entry in v1["entrypoints"]}
     product = v2["SUPPORTED_PRODUCT_CLI"]
     engineering = v2["SUPPORTED_ENGINEERING_CLI"]
-    all_paths = product + engineering
+    helpers = v2["INTERNAL_PRODUCT_HELPERS"]
+    all_paths = product + engineering + helpers
 
     assert v1["action"] == v2["action"] == "no_order"
     assert 10 <= len(product) <= 25
@@ -82,6 +83,7 @@ def test_v2_cli_split_preserves_every_v1_path_and_bounds_product_surface():
     assert v2["counts"] == {
         "product": len(product),
         "engineering": len(engineering),
+        "internal_helpers": len(helpers),
         "total": len(all_paths),
     }
     assert v2["v1_compatibility"]["registry"] == str(V1.relative_to(ROOT)).replace(

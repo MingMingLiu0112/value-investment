@@ -49,7 +49,7 @@ a checked production baseline to avoid shipping unrelated local backup edits.
 
 2026-09-09 follow-up: downloaded live backup.py and run_update.sh and reviewed
 the diff. Only the space admission and data/backup control-flow edits differed.
-Installed using scripts/install_backup_space_release.py under the shared lock.
+Installed using `scripts/migrations/install_backup_space_release.py` under the shared lock.
 Old files are retained at
 /opt/value-investment-agent/deploy-staging/backup-space-20260909/originals.
 Server receipt is in the same staging directory as receipt.json.
