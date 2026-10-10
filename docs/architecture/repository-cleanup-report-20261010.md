@@ -6,9 +6,79 @@ Scope: repository structure consolidation, safe deletion, relocation and referen
 
 Action: `no_order`
 
-## Outcome
+## Second Safe Batch (baseline `6a5b088`)
 
-This batch performed real repository cleanup rather than only adding another
+The second batch performed verified deletions and a package-root migration
+instead of only rebuilding inventories. The baseline was
+`6a5b0884d252dda79e8dbc77210e73457bc73c77`.
+
+| Metric | Baseline | Current | Change |
+| --- | ---: | ---: | ---: |
+| Git-tracked files | 1987 | 1985 | -2 |
+| Files tracked under `scripts/` | 653 | 651 | -2 |
+| Files at `scripts/` root | 563 | 563 | 0 |
+| Python modules at package root | 199 | 197 | -2 |
+| Files tracked under `docs/` | 274 | 274 | 0 |
+| Files tracked under `tests/` | 573 | 573 | 0 |
+| Registered v2 CLI/helper paths | 74 | 73 | -1 |
+
+### Deleted
+
+`scripts/legacy/sync_workbook_low_memory.py`
+
+- superseded by `scripts/sync_workbook.py` and the server sync entrypoint;
+- no current CLI, test, CI, subprocess or runtime consumer;
+- retained in Git history and recorded as `DELETE` in the relocation manifest.
+
+`scripts/current/update_canonical_quote_display.py`
+
+- hard-disabled unsafe direct canonical quote rewrite;
+- successor is `scripts/current/publish_product_workbench_to_canonical.py`;
+- no current consumer after removing its disabled-entry test;
+- its v2 internal-helper registration was removed; v1 compatibility remains byte-identical.
+
+### Migrated
+
+`src/value_investment_agent/reverse_valuation.py` ->
+`src/value_investment_agent/domain/valuation/reverse_valuation.py`
+
+`src/value_investment_agent/evidence_quarantine.py` ->
+`src/value_investment_agent/domain/research/evidence_quarantine.py`
+
+Known consumers were migrated to the Domain paths. No compatibility shims were
+retained because the audit found no remaining repository consumer, so the root
+module allow-list was tightened rather than preserving a permanent duplicate
+path.
+
+### Duplicate / Misnamed Test Cleanup
+
+`tests/test_statement_adapter-副本20260905175948.py` was restored to the unique
+canonical name `tests/test_statement_adapter.py`. Git history shows the original
+file was renamed accidentally in `7d058ef`; the canonical test is now included
+in the GitHub offline workflow.
+
+### Verification
+
+```text
+targeted architecture/CLI/workbook/migration suite: 114 passed
+affected Domain and historical-selector suite:       42 passed
+GitHub workflow-selected offline modules:            1598 passed, 49 skipped
+M4 synthetic onboarding rehearsal:                   3 passed, 2 skipped
+compileall for src/ and affected scripts/tests:       passed
+frozen paths:                                        9/9 unchanged
+canonical workbook SHA-256:                          unchanged
+action:                                              no_order
+```
+
+`tests/test_m1_reverse_valuation.py` was also attempted in the isolated
+checkout, but three tests fail before exercising the moved module because the
+ignored local dividend source `gree_fy2025_annual` is absent. That test module
+is not part of the offline CI workflow and this cleanup did not change its
+production inputs.
+
+## First Batch Outcome
+
+The first batch performed real repository cleanup rather than only adding another
 architecture plan. It removed one proven redundant tracked script, relocated 18
 one-off tools into explicit ownership directories, registered 12 previously
 unregistered current product helpers, rebuilt the script inventory, and added
@@ -144,7 +214,9 @@ scripts/
 
 `config/current-cli-entrypoints-v2.json` is the authoritative current CLI
 registry. It contains 20 product CLIs, 42 engineering CLIs and 12 internal
-product helpers; all 43 v1 paths remain compatible.
+product helpers; all 43 v1 paths remain compatible. The second batch later
+removed the unsafe quote-display helper, reducing the registered total to
+11 helpers and 73 paths.
 
 ## Regression Evidence
 
