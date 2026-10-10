@@ -148,9 +148,9 @@ Receipt: `.tmp/trading-assistant-offline-core-fixed-20260930.xml`.
 The synthetic CLI and pinned-artifact tests are included in this run.
 The earlier three architecture failures are resolved without raising growth
 thresholds: new documents moved into `docs/current/`, pinned artifact loading
-extracted into infrastructure, and the existing hardcoded quote writer registered
-as a HIGH-risk DELETE_CANDIDATE with no current consumer. Registration does not
-authorize running it or make its publication behavior acceptable.
+extracted into infrastructure, and the existing hardcoded quote writer was
+registered as a HIGH-risk DELETE_CANDIDATE and then removed in the second safe
+cleanup batch. No execution of that unsafe writer was authorized.
 This is uncommitted local-worktree validation, not remote GitHub CI, live PostgreSQL
 integration, canonical publication, real PIT acceptance or investment effectiveness.
 The current canonical workbook was observed with modification time 2026-09-30
@@ -178,3 +178,8 @@ baselines or run the unregistered quote writer merely to pass checks.
 The synthetic CLI tests were subsequently added to the workflow list; the
 142-module receipt predates that addition. Their focused run passed, but the
 new combined workflow and remote CI have not yet been validated.
+
+Resolution update, 2026-10-10: the hard-disabled quote writer was removed from
+the repository and from the v2 helper registry. The docs-root and M7 script
+growth guards remain enforced; the historical failure record above is retained
+unchanged.

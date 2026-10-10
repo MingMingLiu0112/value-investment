@@ -7,7 +7,8 @@
 | --- | --- | --- | --- | --- |
 | `src/value_investment_agent/domain/research/gap_classification.py` | Research Domain | Active | legacy shim / application imports | 首个纯规则迁移；旧路径只转发 |
 | `src/value_investment_agent/research_*` | Research Domain / Application | Active | CLI / replay scripts | 剩余模块逐步拆到 `domain/research`、`application/research` |
-| `src/value_investment_agent/valuation*`、`price_bridge.py`、`model_validity.py` | Valuation Domain | Active | Application | 公式冻结；confidence 已迁入 `domain/valuation`，其余逐步迁移 |
+| `src/value_investment_agent/valuation*`、`price_bridge.py`、`model_validity.py` | Valuation Domain | Active | Application | 公式冻结；confidence 与 reverse valuation 已迁入 `domain/valuation`，其余逐步迁移 |
+| `src/value_investment_agent/domain/research/evidence_quarantine.py` | Research Domain | Active | quarantine CLI / tests | 证据隔离规则迁出包根；旧根路径已移除 |
 | `src/value_investment_agent/investment_decision.py` | Decision Domain | Active | Decision application / workbook | 暂缓拆分，先确认职责 |
 | `src/value_investment_agent/m3_*` | Decision Application / Presentation | Active | M3 scripts | Presentation adapter 与 domain 分开 |
 | `src/value_investment_agent/portfolio_*`、`position_guidance.py` | Portfolio Domain | Active | private/synthetic application | 私人数据不得入库或公开 |
@@ -37,10 +38,10 @@
 | `src/value_investment_agent/operations/authorization/` | Operations / Authorization | Active offline | M6 shadow receipts | Phase 2 首个 M6 authorization artifact 已迁入；无生产授权 |
 | `src/value_investment_agent/infrastructure/` | Infrastructure | Active | filing/evidence/backup consumers | Phase 2 首批 PDF、evidence tiering、backup snapshot 已迁入 |
 | `scripts/build_company_valuation_result.py` | Tooling / CLI | Thinned | explicit FCFF invocation | Argument and path-boundary wrapper only; business logic lives in application/valuation |
-| `config/current-cli-entrypoints-v2.json` | Governance / CLI | Active | user / developer / CI discovery | 20 product + 42 engineering CLIs + 12 internal helpers；v1 43 路径保留兼容 |
+| `config/current-cli-entrypoints-v2.json` | Governance / CLI | Active | user / developer / CI discovery | 20 product + 42 engineering CLIs + 11 internal helpers；v1 43 路径保留兼容 |
 | `config/current-cli-entrypoints-v1.json` | Governance / CLI | Compatibility | v2 registry | 冻结的 43 路径兼容基线；不再新增 |
 | `docs/architecture/script-inventory-v1.json` | Governance / Script Audit | Active | migration / architecture review | 全部工具文件分类；不授权删除或移动 |
-| `docs/architecture/script-relocations-20261010.json` | Governance / Script Audit | Active | architecture tests | 18 个安全迁移和 1 个删除的路径/Hash/消费者证据 |
+| `docs/architecture/script-relocations-20261010.json` | Governance / Script Audit | Active | architecture tests | 17 个安全迁移和 3 个删除的路径/Hash/消费者证据 |
 | `artifacts/current/artifact-registry-v2.json` | Governance / Artifact Navigation | Active | current/historical navigation | 从本机 WORKBOOK_PATH 解析 canonical Excel；不改变根 artifact provenance |
 | `config/architecture-frozen-paths-v1.json` | Governance / Provenance | Active | tests/test_architecture_boundaries.py | Exact hashes for every receipt-bound historical-validation path |
 | `config/architecture-root-artifact-allowlist-v1.json` | Governance / Artifacts | Active | tests/test_architecture_boundaries.py | Exact root workbook and manifest allowlist; additions require an explicit relocation decision |

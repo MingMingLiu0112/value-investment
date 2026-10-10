@@ -64,14 +64,6 @@ def _workbook(path: Path) -> None:
     workbook.save(path)
 
 
-def test_legacy_direct_quote_rewrite_is_disabled_before_workbook_access(tmp_path, monkeypatch):
-    import scripts.current.update_canonical_quote_display as legacy
-    monkeypatch.setattr(legacy, 'CANONICAL', tmp_path / 'must-not-be-created.xlsx')
-    with pytest.raises(RuntimeError, match='DEPRECATED_UNSAFE_QUOTE_REWRITE_DISABLED'):
-        legacy.main()
-    assert not list(tmp_path.iterdir())
-
-
 def test_protected_research_preview_retains_manual_state_without_publication(tmp_path):
     from test_product_workbench_read_model import _payload
     from value_investment_agent.presentation.read_models.product_workbench import product_workbench_from_payload

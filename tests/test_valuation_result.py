@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from value_investment_agent.reverse_valuation import solve_bounded_monotonic
+from value_investment_agent.domain.valuation.reverse_valuation import solve_bounded_monotonic
 from value_investment_agent.valuation_models.base import ValuationResult
 
 

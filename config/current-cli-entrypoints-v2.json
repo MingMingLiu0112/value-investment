@@ -85,14 +85,13 @@
     "scripts/current/publish_product_workbench_to_canonical.py",
     "scripts/current/record_prospective_public_observation.py",
     "scripts/current/render_product_artifact_pages.mjs",
-    "scripts/current/update_canonical_quote_display.py",
     "scripts/current/verify_m7_product_ux_trial_visuals.py",
     "scripts/current/verify_m7_product_ux_trial_wps.ps1"
   ],
   "counts": {
     "product": 20,
     "engineering": 42,
-    "internal_helpers": 12,
-    "total": 74
+    "internal_helpers": 11,
+    "total": 73
   }
 }

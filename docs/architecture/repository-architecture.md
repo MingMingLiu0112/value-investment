@@ -11,22 +11,23 @@
 src/value_investment_agent/
 ```
 
-2026-10-10 清理批次后的 Git 跟踪基线为：
+2026-10-10 第二轮安全清理后的 Git 跟踪基线为：
 
 ```text
 tracked files                  = 1985
-src/value_investment_agent/*.py = 199
-scripts tracked files          = 653
+src/value_investment_agent/*.py = 197
+scripts tracked files          = 651
 scripts root files             = 563
 tests tracked files            = 573
-docs tracked files             = 272
+docs tracked files             = 274
 root *.xlsx                    = 0
 ```
 
-这不是“文件数量必须下降”的目标，而是说明根层职责已经过度集中。该批次把 18 个一次性脚本
-迁移到明确的 `migrations/`、`operations/`、`diagnostics/`、`legacy/` 边界，并删除了一个已
-被取代且无当前消费者的部署脚本；完整路径和 SHA-256 证明见
-`docs/architecture/script-relocations-20261010.json`。当前冻结的正式入口仍是：
+这不是“文件数量必须下降”的目标。第二轮在上一批基础上真实删除了两个已证明无当前用途的
+脚本，将 `reverse_valuation` 和 `evidence_quarantine` 两个纯逻辑模块迁入 Domain，并把误带
+“副本”后缀的测试恢复为唯一规范文件名。完整删除、迁移、消费者和 SHA-256 证明见
+`docs/architecture/script-relocations-20261010.json` 与
+`docs/architecture/compatibility-shims-v1.json`。当前冻结的正式入口仍是：
 
 ```text
 README.md
@@ -211,13 +212,14 @@ RECEIPT_AUDIT_APPLICATION_MIGRATION = historical_validation
 HISTORICAL_VALIDATION_DOMAIN_MIGRATION = BLOCKED_BY_FROZEN_RECEIPT_HASH
 FIRST_SAFE_DOMAIN_MIGRATION = gap_classification + research_profile
 SECOND_SAFE_DOMAIN_MIGRATION = valuation_confidence
+THIRD_SAFE_DOMAIN_MIGRATION = reverse_valuation + evidence_quarantine
 ROOT_ARTIFACT_CLUTTER = LOGICALLY_REDUCED
 ROOT_ARTIFACT_PHYSICAL_BATCH_2 = NO_SAFE_MOVE
 CURRENT_ARTIFACT_ENTRY = config/current-trial-workbook.json
 DOCS_CURRENT_ENTRY = FUNCTIONAL
 DOCS_CURRENT_VS_ARCHIVE = OPERATIONALLY_CLEAR
 SCRIPT_INVENTORY = COMPLETE
-CURRENT_SUPPORTED_CLIS = 62 (20 product + 42 engineering) + 12 internal helpers; all 43 v1 paths preserved
+CURRENT_SUPPORTED_CLIS = 62 (20 product + 42 engineering) + 11 internal helpers; all 43 v1 paths preserved
 M7_PRODUCT_READ_MODEL = READY
 M7_PRODUCT_UX_CANDIDATE = READY (runtime candidate; canonical pointer unchanged)
 ADV_P1_003_004 = CLOSED_WITH_TRUST_ROOT_RESIDUAL
@@ -240,7 +242,7 @@ Git 跟踪和本地可见的根 `.xlsx` / `.manifest.json` 均为 0。历史工�
 目录数量再次移动带 Hash/receipt 绑定的对象。
 
 当前脚本分类入口为 `config/current-cli-entrypoints-v2.json`（20 个产品入口、42 个工程入口、
-12 个内部 helper，共 74 个登记路径；v1 的 43 个路径全部保留兼容）和
+11 个内部 helper，共 73 个登记路径；v1 的 43 个路径全部保留兼容）和
 `docs/architecture/script-inventory-v1.json`
 （完整机器可读清单）。`config/current-cli-entrypoints-v1.json` 继续作为兼容哈希基线，不新增
 v1 条目。`scripts/` 根层默认不再

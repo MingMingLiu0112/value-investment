@@ -2,7 +2,7 @@
   "schema_version": "architecture-script-relocations-v1",
   "action": "no_order",
   "reviewed_at": "2026-10-10",
-  "policy": "Archived byte-identical script moves with no current CLI registry membership; historical absolute paths remain documented in docs/archive.",
+  "policy": "Archived byte-identical script moves with no current CLI registry membership, plus tools deleted after successor and consumer verification; historical absolute paths remain documented in docs/archive.",
   "records": [
     {
       "old_path": "scripts/install_backup_space_release.py",
@@ -96,9 +96,10 @@
     },
     {
       "old_path": "scripts/sync_workbook_low_memory.py",
-      "new_path": "scripts/legacy/sync_workbook_low_memory.py",
-      "action": "MOVE",
-      "sha256": "89dde766f22022b9dab4fb24e2482ead898266e81ddd2c33a37bfad0aedbd99f"
+      "new_path": null,
+      "action": "DELETE",
+      "sha256": "89dde766f22022b9dab4fb24e2482ead898266e81ddd2c33a37bfad0aedbd99f",
+      "reason": "Superseded by scripts/sync_workbook.py and scripts/run_server_excel_sync.ps1; no current CLI, test, CI, or runtime consumer; retained in Git history."
     },
     {
       "old_path": "scripts/report_recommendations.py",
@@ -118,6 +119,13 @@
       "action": "DELETE",
       "sha256": "dcbda23f2d82728c062de0055a0f6ae6e780fece0bd095419ba97c1f612c2754",
       "reason": "Superseded by deploy_institution_v10.py, no current CLI, test, receipt or documentation consumer; recoverable from Git history."
+    },
+    {
+      "old_path": "scripts/current/update_canonical_quote_display.py",
+      "new_path": null,
+      "action": "DELETE",
+      "sha256": "509ac8f1c5e3cf078a9d12060de208cde1ea397b9f94a272d3c3fd153087d1a9",
+      "reason": "Hard-disabled unsafe direct canonical quote rewrite; successor is scripts/current/publish_product_workbench_to_canonical.py with verified bindings; no current consumer after removing the disabled-entry test."
     }
   ]
 }

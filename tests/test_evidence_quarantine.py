@@ -1,6 +1,6 @@
 from copy import deepcopy
 import pytest
-from value_investment_agent.evidence_quarantine import quarantine_metadata
+from value_investment_agent.domain.research.evidence_quarantine import quarantine_metadata
 
 
 def test_quarantine_preserves_original_and_withdraws_verification():

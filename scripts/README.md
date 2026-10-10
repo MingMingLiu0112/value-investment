@@ -9,7 +9,7 @@ config/current-cli-entrypoints-v2.json
 
 `config/current-cli-entrypoints-v1.json` remains the 43-path compatibility
 baseline. The v2 registry preserves every v1 path, separates 20 product and 42
-engineering CLIs, and declares 12 internal product helpers. Only the two
+engineering CLIs, and declares 11 internal product helpers. Only the two
 supported layers are user-facing commands.
 
 The remaining files are retained tools, not an implicit backlog:
@@ -31,6 +31,8 @@ New scripts must be thin CLI wrappers. Business rules belong under
 
 The 2026-10-10 relocation/delete proof is
 `docs/architecture/script-relocations-20261010.json`; it records old/new paths
-and SHA-256 values for every moved file and the consumer proof for the one
-deleted duplicate. The architecture guard checks that old paths stay absent and
-that moved files remain byte-identical.
+and SHA-256 values for every moved file and the consumer proof for every
+deleted tool. The second safe batch removed the superseded low-memory workbook
+writer and the hard-disabled unsafe canonical quote writer. The architecture
+guard checks that old paths stay absent and that retained moved files remain
+byte-identical.
