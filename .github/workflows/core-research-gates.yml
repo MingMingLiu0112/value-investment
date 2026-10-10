@@ -203,6 +203,7 @@ jobs:
           tests/test_evidence_stop_schedule.py
           tests/test_m5_product_event_state_projection.py
           tests/test_midea_unified_valuation_provenance.py
+          tests/test_statement_adapter.py
 
       - name: Verify isolated synthetic private-workspace rehearsal
         run: python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest-m4-synthetic --junitxml=.tmp/m4-synthetic-results.xml tests/test_m4_synthetic_onboarding_rehearsal.py
