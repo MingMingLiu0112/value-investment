@@ -7,7 +7,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from value_investment_agent.presentation import daily_trade_assistant as daily
+from value_investment_agent.application.product import daily_trade_assistant as daily
+from value_investment_agent.presentation import daily_trade_assistant as view
 from value_investment_agent.application.product.common import sha256_file
 from value_investment_agent.quote_snapshot import QUOTE_STATUS_VERIFIED_CLOSE
 
@@ -66,12 +67,65 @@ def test_quote_notice_is_read_only_and_source_linked():
                "audit": {"evidence": []}, "today_items": [], "overview": {"pending_count": 0}}
     check = {"status": "QUOTE_VERIFIED_BUT_RESEARCH_STALE", "quote_date": "2026-10-09",
              "bundle_path": "runtime/quotes/bundle.json", "bundle_sha256": "a" * 64,
+             "collected_at": "2026-10-10T17:01:34+00:00",
              "reason": "ResearchCase 截止日较早"}
-    daily._project_quote_gate(payload, symbol="600519", quote_check=check)
+    view._project_quote_gate(payload, symbol="600519", quote_check=check)
     assert payload["companies"][0]["price"] == {"status": "UNAVAILABLE"}
     assert payload["today_items"][0]["evidence_refs"] == [payload["audit"]["evidence"][0]["evidence_id"]]
     assert payload["today_items"][0]["current_status"] == "尚未构成买卖依据"
     assert payload["overview"]["pending_count"] == 1
+    assert payload["audit"]["evidence"][0]["available_at"] == "2026-10-11"
+
+
+@pytest.mark.parametrize("research_day,expected_status", [
+    ("2026-10-08", "QUOTE_VERIFIED_BUT_RESEARCH_STALE"),
+    ("2026-10-09", "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"),
+])
+def test_weekend_latest_close_display_never_becomes_new_price(tmp_path, monkeypatch, research_day, expected_status):
+    now = datetime(2026, 10, 11, 4, tzinfo=timezone.utc)
+    bundle = _bundle(tmp_path, datetime(2026, 10, 9, 8, tzinfo=timezone.utc))
+    monkeypatch.setattr(daily, "quote_snapshot_from_bundle_file", lambda *args, **kwargs:
+        SimpleNamespace(status=QUOTE_STATUS_VERIFIED_CLOSE, current_price="1400.00",
+            quote_date=datetime(2026, 10, 9).date(), blockers=[], evidence_refs=[]))
+    raw = json.loads(bundle.read_text(encoding="utf-8"))
+    raw.update(references={"600519": {}}, documents={})
+    bundle.write_text(json.dumps(raw), encoding="utf-8")
+    monkeypatch.setattr(daily, "resolve_session_reference", lambda *a: {"calendar_exchange": "SSE", "calendar_documents": []})
+    monkeypatch.setattr(daily, "latest_sse_2026_session", lambda *a: ("2026-10-09", ["a" * 64]))
+    path, digest, check = daily._quote_for_case(tmp_path, bundle, "600519", research_day, today=now)
+    assert path is digest is None
+    assert check["status"] == expected_status
+    assert check["display_price"] == "1400.00"
+    assert check["is_historical_close"] is True
+    assert check["price_admitted"] is False
+    assert check["latest_completed_session"] == "2026-10-09"
+
+
+def test_missing_bundle_keeps_research_available(tmp_path):
+    path, digest, check = daily._quote_for_case(tmp_path, tmp_path / "runtime/missing.json",
+        "600519", "2026-10-08", today=datetime(2026, 10, 11, tzinfo=timezone.utc))
+    assert path is digest is None
+    assert check["status"] == "NOT_ADMITTED"
+
+
+def test_szse_calendar_receives_shanghai_clock_even_before_monday_open(tmp_path, monkeypatch):
+    now = datetime(2026, 10, 12, 0, 30, tzinfo=timezone.utc)
+    bundle = _bundle(tmp_path, datetime(2026, 10, 9, 8, tzinfo=timezone.utc))
+    raw = json.loads(bundle.read_text(encoding="utf-8"))
+    raw.update(references={"000651": {}}, documents={})
+    bundle.write_text(json.dumps(raw), encoding="utf-8")
+    monkeypatch.setattr(daily, "quote_snapshot_from_bundle_file", lambda *a, **kw:
+        SimpleNamespace(status=QUOTE_STATUS_VERIFIED_CLOSE, current_price="38.83",
+            quote_date=datetime(2026, 10, 9).date(), blockers=[], evidence_refs=[]))
+    monkeypatch.setattr(daily, "resolve_session_reference", lambda *a: {"calendar_exchange": "SZSE", "calendar_documents": []})
+    def calendar(documents, stamp):
+        assert stamp.hour == 8
+        assert stamp.utcoffset().total_seconds() == 28800
+        return "2026-10-09", ["a" * 64]
+    monkeypatch.setattr(daily, "latest_szse_session", calendar)
+    path, digest, check = daily._quote_for_case(tmp_path, bundle, "000651", "2026-10-09", today=now)
+    assert path is digest is None
+    assert check["status"] == "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"
 
 
 def test_security_research_survives_absent_private_portfolio(tmp_path, monkeypatch):
@@ -94,7 +148,7 @@ def test_security_research_survives_absent_private_portfolio(tmp_path, monkeypat
 
     monkeypatch.setattr(daily, "build_current_workbench_for_symbol", build)
     receipt = daily.run_daily_trade_assistant(root=tmp_path, symbol="000651", case=case,
-        output_dir=tmp_path / "runtime/run", agent_mode="none")
+        output_dir=tmp_path / "runtime/run", agent_mode="none", report_renderer=view._render_report)
     assert receipt["recommendation_type"] == "NO_ACTION"
     assert receipt["position_guidance"] is None
     assert receipt["portfolio_input_status"] == "BLOCKED_PRIVATE_INPUT"
@@ -106,10 +160,13 @@ def test_security_research_survives_absent_private_portfolio(tmp_path, monkeypat
 def test_source_hash_change_rejected_before_new_output(tmp_path):
     package = tmp_path / "package.json"
     package.write_text("{}", encoding="utf-8")
+    request = tmp_path / "request.json"
+    request.write_text("{}", encoding="utf-8")
     with pytest.raises(ValueError, match="package hash mismatch"):
         daily.run_daily_trade_assistant(root=tmp_path, symbol="600519",
-            case={"package": "package.json", "package_sha256": "0" * 64},
-            output_dir=tmp_path / "runtime/run", agent_mode="none")
+            case={"package": "package.json", "package_sha256": "0" * 64,
+                  "schedule_request": "request.json", "schedule_request_sha256": sha256_file(request)},
+            output_dir=tmp_path / "runtime/run", agent_mode="none", report_renderer=view._render_report)
     assert not (tmp_path / "runtime/run").exists()
 
 
@@ -121,10 +178,23 @@ def test_report_names_existing_recommendation_without_creating_orders(kind):
                      "decision_as_of": "2026-10-08", "valuation_range": {"bear": "400",
                          "base": "500", "bull": "600", "currency": "CNY"},
                      "blockers": ["待审阅"], "thesis": "经营逻辑", "next_events": [{"text": "年报"}]}}
-    text = daily._render_report(workbench, None, {"status": "PENDING_EXTERNAL_DATA"},
+    text = view._render_report(workbench, None, {"status": "PENDING_EXTERNAL_DATA"},
                                 None, None, None)
     assert kind in text
-    assert daily.DECISION_NAMES[kind] in text
+    assert view.DECISION_NAMES[kind] in text
     assert "action=no_order" in text
     assert "Bear / Base / Bull：400.00 / 500.00 / 600.00 CNY" in text
     assert "BLOCKED_PRIVATE_INPUT" in text
+
+
+def test_report_compares_model_and_price_changes_without_inventing_candidate():
+    previous = {"suggested_state": "NO_ACTION", "decision_recommendation": {
+        "model_validity": {"status": "UNKNOWN"}, "price_bridge_status": "INVALID"}}
+    workbench = {"symbol": "600519", "decision_recommendation": {
+        "recommendation_type": "NO_ACTION", "model_validity": {"status": "STALE"},
+        "price_bridge_status": "INVALID"}}
+    text = view._render_report(workbench, None, {"status": "PENDING_EXTERNAL_DATA"},
+                               None, previous, None)
+    assert "模型有效性变化" in text
+    assert "变化不等于批准" in text
+    assert "买入人工复核候选" not in text

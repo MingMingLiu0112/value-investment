@@ -1,5 +1,54 @@
 # CURRENT STATUS
 
+## 2026-10-11 Daily Research MVP Implementation
+
+User-authorized A-J work now focuses the existing daily CLI on manual research,
+reports and isolated Excel previews, without Web or sentiment expansion.
+Root fast-forwarded main to the requested 9cd688c baseline after confirming
+the remote diff; baseline GitHub run 38031786429 succeeded. Inherited local
+governance changes and untracked evidence reports are preserved.
+
+Implemented asset inventories and identical-byte local recovery, required vs
+optional dependency isolation, Application-owned orchestration, dated quote
+display, registered batch runs, pinned previous-run comparison and deterministic
+reports. The existing artifact-tool renderer consumes the same freshly verified
+read model; no calculation or investment gate moved into Excel.
+
+The reverse-valuation test defect reproduced as 3 failed / 2 passed in an
+independent clean snapshot. Dedicated synthetic quote inputs and isolated
+unrelated dividend/event loading restore all five existing assertions, without
+deleting tests or skipping failures. Current scoped verification is 112 passed,
+2 skipped; command/JUnit are in .tmp/mvp-final-targeted-20261011-v2.xml.
+The preceding CI-list local run passed 1630 tests, skipped 32, with 18/18 Python
+product help commands working. That run precedes the final batch/report edits;
+final clean-checkout/CI results will be recorded separately, not inferred.
+
+Real 600519 daily execution consumes the registered source-bound package at
+research cutoff 2026-10-08. Its original asset inventory verifies 196 paths.
+Official calendars plus Tencent/Sina raw responses verify 2026-10-09 closes:
+600519 1263.00 CNY, 000651 38.83 CNY and 600741 15.55 CNY. Sunday display is
+historical close only; current research is stale, and no quote/approval date is
+backfilled. Existing valuations remain conditional; NO_ACTION and null positions
+are preserved. 000651/600741 use explicitly historical legacy research contracts,
+not current real-input admission. The initial Yili batch rejects a genuine
+old event-index hash mismatch; no frozen original was overwritten to hide it.
+
+Seven managed pages were authored through the supported artifact renderer at
+runtime/daily-trade-assistant/20261011-600519-preview-v2. The protected integrated
+candidate is runtime/daily-trade-assistant/20261011-canonical-preview-v1,
+SHA-256 530d5b2538c5dc5c4a59043a0543f2a3abf2fc34abf575aeed321e828d8f71bf.
+Native WPS/readability/visual checks are pending at this record. The failed v1
+date-only audit projection is retained; v2 correctly separates quote trade date
+from Shanghai retrieval date.
+
+Canonical remains 5db7f3cd7651edc36505b7f7d87aa8d71550ca2150a999391778c1cbc2d23bf8.
+No server, production, schedule, private data, paid LLM, real Shadow or order.
+CODE_IMPLEMENTED and scoped AUTOMATED_TEST_PASSED do not imply REAL_DATA_VERIFIED,
+PRICE_ADMITTED, HUMAN_APPROVED, PRODUCT_ACCEPTED or D2 COMPLETE. D2/Goal remain
+IN_PROGRESS. Main-valuation/G3/event/model review and final publication/user
+acceptance remain genuine gates. Continue the concrete preview and clean-core
+verification, then the independent remaining research/Agent/portfolio checks.
+
 
 ## 2026-10-09 D3 v3 CI Closure Repair
 

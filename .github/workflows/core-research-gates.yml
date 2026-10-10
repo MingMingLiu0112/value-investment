@@ -183,6 +183,9 @@ jobs:
           tests/test_pit_conformance_verifier_v2.py
           tests/test_architecture_boundaries.py
           tests/test_daily_trade_assistant.py
+          tests/test_daily_research_assets.py
+          tests/test_daily_batch.py
+          tests/test_m1_reverse_valuation.py
           tests/test_artifact_relocation.py
           tests/test_m5_human_review_reconciliation.py
           tests/test_m5_financial_fact_verification.py

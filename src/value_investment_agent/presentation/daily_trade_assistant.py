@@ -2,81 +2,28 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from dataclasses import asdict
 from decimal import Decimal, InvalidOperation
 import json
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
-
-from ..application.product.common import load_json_object, require_inside, sha256_file, write_new_json
-from ..application.product.workbench import build_current_workbench_for_symbol
-from ..application.product.decision_surface import project_verified_decision_workbench, verify_current_decision_workbench
+import os
+import subprocess
+from ..application.product.common import sha256_file, write_new_json
+from ..application.product.research_publication_input import prepare_research_publication_input
+from ..application.product.daily_trade_assistant import _quote_for_case
+from ..application.product.daily_trade_assistant import run_daily_trade_assistant as run_daily_application
+from ..application.product.decision_surface import project_verified_decision_workbench
 from ..application.product.agent_research_surface import project_verified_agent_packet
-from ..application.product.research_publication_input import load_research_publication_input
-from ..application.research.agent_review.supervisor import run_agent_research_pilot
-from ..application.research.agent_review.llm_pilot import run_llm_research_pilot
-from ..infrastructure.agent_runtime.provider import MockLLMProvider
 from .read_models.existing_research_report import public_workbench_payload_from_snapshot
 from .read_models.product_workbench import product_workbench_from_payload
-from .excel.product_workbench import write_product_workbench_candidate
-from ..quote_session_conversion import quote_snapshot_from_bundle_file
-from ..quote_snapshot import QUOTE_STATUS_VERIFIED_CLOSE
-
-
-CHINA = ZoneInfo("Asia/Shanghai")
+from .excel.product_workbench import _user_text
 DECISION_NAMES = {
     "BUY_CANDIDATE": "买入人工复核候选", "ADD_CANDIDATE": "加仓人工复核候选",
     "HOLD": "继续持有并跟踪", "TRIM_CANDIDATE": "减仓人工复核候选",
     "SELL_CANDIDATE": "退出人工复核候选", "NO_ACTION": "暂不行动",
 }
-
-
-def _pinned(root: Path, case: dict[str, Any], name: str) -> tuple[Path, str]:
-    path = require_inside(root, root / case[name], name)
-    digest = case[name + "_sha256"]
-    if sha256_file(path) != digest:
-        raise ValueError(f"{name} hash mismatch")
-    return path, digest
-
-
-def _quote_for_case(root: Path, bundle: Path | None, symbol: str, research_day: str,
-                    *, today: datetime) -> tuple[Path | None, str | None, dict[str, Any]]:
-    if bundle is None:
-        return None, None, {"status": "PENDING_EXTERNAL_DATA", "reason": "未提供本次双源收盘行情。"}
-    path = require_inside(root / "runtime", bundle, "quote bundle")
-    digest = sha256_file(path)
-    try:
-        raw = load_json_object(path, "quote bundle")
-        snapshot = quote_snapshot_from_bundle_file(
-            path, root, symbol=symbol,
-            ref_id="daily-assistant-quote-" + digest, expected_sha256=digest,
-        )
-        cutoff = datetime.fromisoformat(raw["finished_at"])
-        if cutoff.utcoffset() is None or cutoff > today:
-            raise ValueError("行情抓取时间无效或在未来")
-        observed_day = cutoff.astimezone(CHINA).date()
-        if observed_day != today.astimezone(CHINA).date():
-            raise ValueError("历史行情仅可回放，不能作为本次最新价格")
-        if snapshot.status != QUOTE_STATUS_VERIFIED_CLOSE or snapshot.quote_date is None:
-            raise ValueError("双源收盘行情未通过准入：" + "; ".join(snapshot.blockers))
-        if snapshot.quote_date.isoformat() > research_day:
-            return None, None, {
-                "status": "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
-                "reason": "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性",
-                "quote_date": snapshot.quote_date.isoformat(),
-                "bundle_path": path.relative_to(root).as_posix(),
-                "bundle_sha256": digest,
-                "source_evidence": snapshot.evidence_refs,
-            }
-        return path, digest, {"status": "QUOTE_VERIFIED_FOR_RESEARCH_INPUT",
-                              "quote_date": snapshot.quote_date.isoformat(),
-                              "bundle_path": path.relative_to(root).as_posix(),
-                              "bundle_sha256": digest,
-                              "source_evidence": snapshot.evidence_refs}
-    except (ValueError, KeyError, TypeError, FileNotFoundError) as error:
-        return None, None, {"status": "NOT_ADMITTED", "reason": str(error),
-                            "bundle_path": path.relative_to(root).as_posix(),
-                            "bundle_sha256": digest}
 
 
 def _render_report(workbench: dict[str, Any], payload: dict[str, Any] | None,
@@ -105,17 +52,31 @@ def _render_report(workbench: dict[str, Any], payload: dict[str, Any] | None,
              f"- 上次状态：{prior_kind or '无已绑定上次结果'}；变化：{'未变化' if prior_kind == kind else '需核对新旧证据'}。",
              f"- 行情准入：{quote_check['status']}；{quote_check.get('reason', quote_check.get('quote_date', ''))}",
              f"- 已核验行情日期：{quote_check.get('quote_date', '未准入')}；决策中价格：{decision.get('current_price') or '无'}。",
+             f"- 独立行情观察：{quote_check.get('display_price') or '无'}；行情抓取：{quote_check.get('collected_at') or '未取得'}；展示范围：{quote_check.get('display_scope') or '本次行情核验'}。",
              f"- 价格桥：{decision.get('price_bridge_status', '未形成')}；价格吸引力：{decision.get('price_attractiveness_status', '未形成')}",
              f"- 估值状态：{valuation.get('status', '未形成')}；情景只按原模型适用范围阅读，未批准不得当作买点。",
              f"- Bear / Base / Bull：{display_value('bear')} / {display_value('base')} / {display_value('bull')} {scenario.get('currency', '')}。",
              "- 私人组合：BLOCKED_PRIVATE_INPUT；position_guidance=null。", "",
              "## 主要阻塞与下一次复核", ""]
+    contract_status = (workbench.get("source_verification") or {}).get("source_contract_status")
+    if contract_status == "LEGACY_CONTRACT_NOT_REAL_INPUT_ADMISSION":
+        lines.insert(11, "- 输入范围：历史研究包回放，未取得当前真实输入准入；原件 Hash 完整不等于金融事实已批准。")
     lines.extend(f"- {item}" for item in decision.get("blockers", [])[:12])
     lines.extend(["", "## 本次与上次的差异", ""])
     lines.extend(f"- 新增阻塞：{item}" for item in sorted(new_blockers - prior_blockers)[:8])
     lines.extend(f"- 已消除阻塞：{item}" for item in sorted(prior_blockers - new_blockers)[:8])
     if not new_blockers ^ prior_blockers:
         lines.append("- 已绑定阻塞清单无变化；不代表新的官方证据已形成。")
+    if previous is not None:
+        prior_decision = previous.get("decision_recommendation") or {}
+        for key, title in (("valuation_range", "估值情景"), ("model_validity", "模型有效性"),
+                           ("price_bridge_status", "价格桥"), ("price_attractiveness_status", "价格吸引力"),
+                           ("entry_zone", "买入复核区域"), ("reduce_zone", "减仓复核区域"),
+                           ("next_events", "下一触发"), ("counter_evidence", "反面证据")):
+            if prior_decision.get(key) != decision.get(key):
+                before = json.dumps(prior_decision.get(key), ensure_ascii=False, sort_keys=True)
+                after = json.dumps(decision.get(key), ensure_ascii=False, sort_keys=True)
+                lines.append(f"- {title}变化：{before} -> {after}；请核对来源，变化不等于批准。")
     lines.extend(["", "## 候选状态依据", ""])
     lines.extend(f"- {'关键前置条件仍有阻塞' if item == 'blockers_present' else item}"
                  for item in conditions[:8])
@@ -145,6 +106,12 @@ def _render_report(workbench: dict[str, Any], payload: dict[str, Any] | None,
     if payload is None:
         lines.extend([f"Agent 状态：{agent_scope or '未准入'}；{agent_error or '未请求'}。",
                       "产品 Excel：缺少与当前研究日期匹配的来源核验发布输入，本次仅交付证券级工作台。", ""])
+    lines.extend(["", "## 决策实际引用", ""])
+    for ref in decision.get("evidence_refs", []):
+        if isinstance(ref, dict):
+            lines.append(f"- {ref.get('id', '来源')}：{ref.get('path') or ref.get('location') or ref.get('url') or ''}；SHA-256={ref.get('sha256', '')}")
+    if quote_check.get("bundle_path"):
+        lines.append(f"- 行情原始响应：{quote_check['bundle_path']}；SHA-256={quote_check.get('bundle_sha256', '未验证')}")
     return "\n".join(lines)
 
 
@@ -152,6 +119,7 @@ def _project_quote_gate(payload: dict[str, Any], *, symbol: str,
                         quote_check: dict[str, Any]) -> None:
     if quote_check["status"] not in {
         "QUOTE_VERIFIED_BUT_RESEARCH_STALE", "QUOTE_VERIFIED_FOR_RESEARCH_INPUT",
+        "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY",
     }:
         return
     digest = quote_check["bundle_sha256"]
@@ -161,119 +129,91 @@ def _project_quote_gate(payload: dict[str, Any], *, symbol: str,
         "evidence_id": evidence_id, "title": f"{symbol} 双源收盘行情原始包（不代表估值准入）",
         "artifact_type": "QUOTE_SESSION_REVALIDATED",
         "path": quote_check["bundle_path"], "sha256": digest,
-        "available_at": quote_check["quote_date"], "action": "no_order",
+        "available_at": (datetime.fromisoformat(quote_check["collected_at"]).astimezone(
+            ZoneInfo("Asia/Shanghai")).date().isoformat() if quote_check.get("collected_at")
+            else quote_check["quote_date"]), "action": "no_order",
     })
     payload["today_items"].append({
         "category": "MARKET_DATA", "company": company["company_name"], "symbol": symbol,
-        "what_happened": f"{quote_check['quote_date']} 双源收盘行情已核验。",
+        "what_happened": f"{quote_check['quote_date']} 双源收盘行情已核验。" + (
+            "最近完成交易日的历史收盘，非今天的新行情。" if quote_check.get("is_historical_close") else "") + (
+            f"独立观察 {quote_check['display_price']} 元，尚未进入决策价格。" if quote_check.get("display_price") else ""),
         "why_it_matters": quote_check.get("reason", "报价仍须随模型与事件门复核。"),
-        "current_status": "尚未构成买卖依据" if quote_check["status"] == "QUOTE_VERIFIED_BUT_RESEARCH_STALE" else "行情已提交价格桥复核",
+        "current_status": "行情已提交价格桥复核" if quote_check["status"] == "QUOTE_VERIFIED_FOR_RESEARCH_INPUT" else "尚未构成买卖依据",
         "next_step": "更新官方事件、研究截止日及模型有效性后重新运行。",
         "evidence_refs": [evidence_id],
     })
     payload["overview"]["pending_count"] = len(payload["today_items"])
 
 
-def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
-                              output_dir: Path, quote_bundle: Path | None = None,
-                              agent_mode: str = "offline", quote_error: str | None = None) -> dict[str, Any]:
-    root = root.resolve()
-    output_dir = require_inside(root / "runtime", output_dir, "daily assistant output")
-    if output_dir.exists():
-        raise FileExistsError("daily assistant run directory already exists")
-    if agent_mode not in {"offline", "mock", "none"}:
-        raise ValueError("paid model calls are excluded from this entry")
-    package_path, package_sha = _pinned(root, case, "package")
-    request_path, request_sha = _pinned(root, case, "schedule_request")
-    package = load_json_object(package_path, "research package")
-    request = load_json_object(request_path, "research scope")
-    if package.get("symbol") != symbol or request.get("symbol") != symbol:
-        raise ValueError("case symbol mismatch")
-    publication = None
-    if "publication_input" in case:
-        publication_path, publication_sha = _pinned(root, case, "publication_input")
-        publication = load_research_publication_input(
-            root=root, path=publication_path, expected_sha256=publication_sha,
-        )
-    previous = None
-    if "previous_workbench" in case:
-        prior_path, _ = _pinned(root, case, "previous_workbench")
-        previous = load_json_object(prior_path, "previous workbench")
-        verify_current_decision_workbench(previous)
-        if previous.get("symbol") != symbol:
-            raise ValueError("previous workbench symbol mismatch")
-    if agent_mode == "mock":
-        fixture_path, _ = _pinned(root, case, "mock_responses")
-        responses = load_json_object(fixture_path, "mock responses")
-    else:
-        responses = None
-    now = datetime.now(timezone.utc)
-    research_day = package["point_in_time"]["research_as_of"]
-    quote_path, quote_sha, quote_check = _quote_for_case(
-        root, quote_bundle, symbol, research_day, today=now,
-    )
-    if quote_bundle is None and quote_error is not None:
-        quote_check = {"status": "COLLECTION_FAILED", "reason": quote_error}
-    output_dir.mkdir(parents=True)
-    workbench_path = output_dir / "workbench.json"
-    outcome = build_current_workbench_for_symbol(
-        root=root, symbol=symbol, package_path=package_path, output_path=workbench_path,
-        schedule_request=request, schedule_request_sha256=request_sha,
-        quote_path=quote_path, quote_sha256=quote_sha,
-        recommendation_schema_version="advisory-decision-recommendation-v3",
-    )
-    workbench = outcome["result"]
-    packet_path = None
-    agent_scope = None
-    agent_error = None
-    if workbench.get("decision_recommendation") is not None and agent_mode != "none":
-        packet_path = output_dir / "agent-packet.json"
-        try:
-            if agent_mode == "offline":
-                packet = run_agent_research_pilot(root=root, symbol=symbol,
-                    workbench=workbench_path, workbench_sha256=sha256_file(workbench_path), output=packet_path)
-            else:
-                packet = run_llm_research_pilot(root=root, symbol=symbol,
-                    workbench=workbench_path, workbench_sha256=sha256_file(workbench_path),
-                    output=packet_path, provider=MockLLMProvider({key: json.dumps(value, ensure_ascii=False)
-                                                                  for key, value in responses.items()}), mode="mock")
-            agent_scope = packet["scope"]
-        except ValueError as error:
-            if packet_path.exists():
-                raise
-            packet_path = None
-            agent_error = str(error)
-    payload = None
-    workbook_path = None
-    if publication is not None and workbench.get("decision_recommendation") is not None:
-        payload = public_workbench_payload_from_snapshot(publication["snapshot"])
-        payload["generated_at"] = datetime.now(timezone.utc).isoformat()
-        if payload["as_of"] != workbench["decision_recommendation"]["decision_as_of"]:
-            raise ValueError("publication and current decision research dates differ")
-        project_verified_decision_workbench(payload, root=root, path=workbench_path,
-                                            expected_sha256=sha256_file(workbench_path))
-        _project_quote_gate(payload, symbol=symbol, quote_check=quote_check)
-        if packet_path is not None:
-            project_verified_agent_packet(payload, root=root, path=packet_path,
-                                          expected_sha256=sha256_file(packet_path))
-        model = product_workbench_from_payload(payload)
-        workbook_path = output_dir / "trade-assistant-preview.xlsx"
-        write_product_workbench_candidate(model, output=workbook_path, root=root)
-    report_path = output_dir / "report.md"
-    report_path.write_text(_render_report(workbench, payload, quote_check, agent_scope,
-                                          previous, agent_error), encoding="utf-8")
-    receipt = {"schema_version": "daily-trade-assistant-receipt-v1", "symbol": symbol,
-        "generated_at": datetime.now(timezone.utc).isoformat(), "action": "no_order",
-        "research_as_of": research_day, "recommendation_type": workbench.get("suggested_state"),
-        "quote_check": quote_check, "agent_scope": agent_scope, "agent_error": agent_error,
-        "portfolio_input_status": "BLOCKED_PRIVATE_INPUT", "position_guidance": None,
-        "canonical_workbook_written": False,
-        "inputs": {"package": package_sha, "schedule_request": request_sha,
-                   "publication_input": case.get("publication_input_sha256"),
-                   "previous_workbench": case.get("previous_workbench_sha256"),
-                   "mock_responses": case.get("mock_responses_sha256") if agent_mode == "mock" else None},
-        "outputs": {name: {"path": path.relative_to(root).as_posix(), "sha256": sha256_file(path)}
-                    for name, path in (("workbench", workbench_path), ("agent_packet", packet_path),
-                                       ("preview", workbook_path), ("report", report_path)) if path is not None}}
-    write_new_json(output_dir / "receipt.json", receipt)
-    return receipt
+def _build_preview(*, root, publication, workbench, workbench_path, output_dir,
+                   quote_check, packet_path, symbol, publication_path,
+                   publication_sha256, report_only=False):
+    payload = public_workbench_payload_from_snapshot(publication["snapshot"])
+    payload["generated_at"] = datetime.now(timezone.utc).isoformat()
+    if payload["as_of"] != workbench["decision_recommendation"]["decision_as_of"]:
+        raise ValueError("publication and current decision research dates differ")
+    project_verified_decision_workbench(payload, root=root, path=workbench_path,
+                                        expected_sha256=sha256_file(workbench_path))
+    _project_quote_gate(payload, symbol=symbol, quote_check=quote_check)
+    if packet_path is not None:
+        project_verified_agent_packet(payload, root=root, path=packet_path,
+                                      expected_sha256=sha256_file(packet_path))
+    model = product_workbench_from_payload(payload)
+    read_model = output_dir / "product-read-model.json"
+    write_new_json(read_model, {
+        "schema_version": "historical-company-read-model-preview-v1",
+        "snapshot": json.loads(json.dumps(asdict(model), default=str)),
+        "publication_input_binding": {"path": publication_path.relative_to(root).as_posix(),
+                                      "sha256": publication_sha256},
+        "decision_workbench_binding": {"path": workbench_path.relative_to(root).as_posix(),
+                                       "sha256": sha256_file(workbench_path)},
+        "agent_packet_binding": {"path": packet_path.relative_to(root).as_posix(),
+                                 "sha256": sha256_file(packet_path)} if packet_path else None,
+        "historical_preview": True, "canonical_written": False, "action": "no_order"})
+    handoff_path = output_dir / "product-publication-input.json"
+    handoff = prepare_research_publication_input(root=root, read_model_path=read_model,
+        expected_sha256=sha256_file(read_model), output_path=handoff_path)
+    if report_only:
+        return payload, None
+    strings = set()
+    pending = [handoff["snapshot"]]
+    while pending:
+        item = pending.pop()
+        if isinstance(item, str):
+            strings.add(item)
+        elif isinstance(item, dict):
+            pending.extend(item.values())
+        elif isinstance(item, list):
+            pending.extend(item)
+    display_path = output_dir / "display-input.json"
+    policy = root / "src/value_investment_agent/presentation/excel/product_workbench.py"
+    write_new_json(display_path, {"input_sha256": sha256_file(handoff_path),
+        "policy_binding": {"path": policy.relative_to(root).as_posix(), "sha256": sha256_file(policy)},
+        "strings": {text: _user_text(text) for text in sorted(strings)},
+        "action": "no_order", "canonical_written": False})
+    node = Path(os.environ.get("ARTIFACT_NODE", str(Path.home() /
+        ".cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe")))
+    if not node.is_file():
+        raise ValueError("Artifact Node runtime unavailable; use --report-only for verified research output")
+    workbook_path = output_dir / "trade-assistant-preview.xlsx"
+    args = [str(node), str(root / "scripts/current/render_product_artifact_pages.mjs"),
+        "--publication-input", str(handoff_path), "--sha256", sha256_file(handoff_path),
+        "--display-input", str(display_path), "--output", str(workbook_path)]
+    try:
+        result = subprocess.run(args, cwd=root, capture_output=True, text=True,
+                                encoding="utf-8", timeout=180)
+    except subprocess.SubprocessError as error:
+        raise ValueError("Artifact preview subprocess failed: " + str(error)) from error
+    write_new_json(output_dir / "excel-command.json", {"arguments": args,
+        "exit_code": result.returncode, "stdout": result.stdout, "stderr": result.stderr,
+        "action": "no_order", "canonical_written": False})
+    if result.returncode:
+        raise ValueError("Artifact Excel preview failed: " + result.stderr[-2000:])
+    return payload, workbook_path
+
+
+def run_daily_trade_assistant(*, report_only=False, **kwargs) -> dict[str, Any]:
+    from functools import partial
+    return run_daily_application(**kwargs, report_renderer=_render_report,
+                                 preview_builder=partial(_build_preview, report_only=report_only))

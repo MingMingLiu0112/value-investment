@@ -2,6 +2,18 @@
   "schema_version": "daily-trade-assistant-cases-v1",
   "action": "no_order",
   "cases": {
+    "600741": {
+      "package": "config/m1-valuation-packages-v1/600741-fcff.json",
+      "package_sha256": "58f006de38c8f827b974e9801920809a844d74bac3e0948fbc697c3312a02e24",
+      "schedule_request": "config/daily-trade-assistant-600741-scope-v1.json",
+      "schedule_request_sha256": "ed2a9e1c817f837e3afdcc37c74b7ea4cba2c4b740ed7d92a3a4b6cf66ab2c40"
+    },
+    "600887": {
+      "package": "config/m1-valuation-packages-v1/600887-quality-compounder.json",
+      "package_sha256": "e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803",
+      "schedule_request": "config/daily-trade-assistant-600887-scope-v1.json",
+      "schedule_request_sha256": "0e7fe8415541d1809fc5b483008c8f48c5aad8bba2ff6ce5b895207cf6f49f5f"
+    },
     "000651": {
       "package": "config/m1-valuation-packages-v1/000651-fcff.json",
       "package_sha256": "38472b97dea937a665a7ddf0cbdc16676760ed98c98b44af192ee4d0aa8431ba",

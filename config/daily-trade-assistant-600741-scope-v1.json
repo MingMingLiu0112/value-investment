@@ -1,0 +1,10 @@
+{
+  "schema_version": "research-schedule-request-v1",
+  "symbol": "600741",
+  "source_id": "CNINFO",
+  "period": "2026-06-30",
+  "research_question_id": "daily-assistant-existing-research-case",
+  "blocker_id": "no-active-evidence-stop",
+  "reopen_condition_met": false,
+  "new_evidence_ids": []
+}

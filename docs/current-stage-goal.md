@@ -1,5 +1,32 @@
 # 当前总目标：价值投资建议与情绪卫星仓系统
 
+## 2026-10-11 User-Directed Daily Research MVP
+
+The latest user instruction authorizes a continuous A-J implementation package
+for the existing daily trade assistant, beginning with baseline repair, asset
+preflight and research-to-decision orchestration. Reuse
+`scripts/current/run_daily_trade_assistant.py`; do not build Web, sentiment or a
+new market-wide buy program. This package supersedes the older D5 execution
+scope for this run, without changing inherited evidence or admission contracts.
+
+Current work: Stage A/B asset integrity and the daily application boundary,
+followed by Stage C dated quote display, Stage D existing 600519 real inputs,
+and independent multi-company/report/preview checks where prerequisites allow.
+Missing approvals block only their conclusions, not independent engineering.
+Keep software/data/model/price/human/product acceptance separate. All outputs
+remain `action=no_order`; private positions remain null without verified inputs.
+
+Local code, isolated runs/tests/previews, staged commits and GitHub pushes are
+authorized. Canonical Excel publication, production, schedules, real Shadow,
+paid model calls and private/investment approvals are NOT authorized by this
+package. Build and verify a concrete preview before any publication question.
+
+The acceptance target is a genuine company report through the registered CLI,
+showing verified research sources, valuation scope, quote admission, candidate
+or exact blockers, risks and reopen triggers, then the same path for three
+companies. Do not call D2 or INITIAL_ASSISTED_USE complete on code alone.
+
+
 ## 2026-10-07 Current Goal Supersession
 
 当前授权 Goal 为：
