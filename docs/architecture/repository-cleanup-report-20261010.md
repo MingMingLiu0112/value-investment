@@ -154,6 +154,8 @@ CLI registry + architecture guard: 37 passed
 targeted workbook/architecture regression: 109 passed
 offline CI regression: 1614 passed, 32 skipped
 synthetic M4 rehearsal: 3 passed, 2 skipped
+clean-checkout offline regression: 1597 passed, 49 skipped
+clean-checkout synthetic M4 rehearsal: 3 passed, 2 skipped
 frozen paths: 9/9 exact SHA-256 matches
 canonical workbook: hash unchanged
 ```
@@ -168,7 +170,8 @@ Status is recorded after the commit and push:
 
 ```text
 HEAD_BEFORE_BATCH = 2fb5a73a83e75f9c33ac714dd42f2700c3534a08
-COMMIT_SHA = pending
+IMPLEMENTATION_COMMIT_1 = 245163d
+IMPLEMENTATION_COMMIT_2 = 878ff3e
 LOCAL_REMOTE_SYNC = pending
 CI_RUN = pending
 ```
