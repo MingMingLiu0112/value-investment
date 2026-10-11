@@ -10,6 +10,8 @@
     "all_v1_paths_preserved": true
   },
   "SUPPORTED_PRODUCT_CLI": [
+    "scripts/current/use_trade_assistant.py",
+    "scripts/current/review_research.py",
     "scripts/current/run_daily_trade_assistant.py",
     "scripts/open_current_trial_workbook.py",
     "scripts/build_m7_workbench_v2_candidate.py",
@@ -89,9 +91,9 @@
     "scripts/current/verify_m7_product_ux_trial_wps.ps1"
   ],
   "counts": {
-    "product": 20,
+    "product": 22,
     "engineering": 42,
     "internal_helpers": 11,
-    "total": 73
+    "total": 75
   }
 }

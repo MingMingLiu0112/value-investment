@@ -1,0 +1,14 @@
+{
+  "schema_version": "user-research-workflow-v1",
+  "action": "no_order",
+  "review_candidates": {
+    "600519": {
+      "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/candidate.json",
+      "sha256": "56554578776ab8eb7c1269ef2424df58a9cb90673f05c9370f2f792d929c1db2"
+    },
+    "600887": {
+      "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/candidate.json",
+      "sha256": "410dd4c4fa935bc4ea0b7c596fbdc2a006ab0da4498a11694a7c9868e3520299"
+    }
+  }
+}

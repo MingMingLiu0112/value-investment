@@ -5,7 +5,7 @@
   "current_entrypoint_count": 43,
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 12,
-    "CURRENT_PRODUCT_CLI": 7,
+    "CURRENT_PRODUCT_CLI": 9,
     "CURRENT_RESEARCH_CLI": 203,
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 217,
@@ -15,6 +15,20 @@
     "DELETE_CANDIDATE": 0
   },
   "entries": [
+    {
+      "path": "scripts/current/use_trade_assistant.py",
+      "category": "CURRENT_PRODUCT_CLI",
+      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "imports_business_logic": false,
+      "replacement": null
+    },
+    {
+      "path": "scripts/current/review_research.py",
+      "category": "CURRENT_PRODUCT_CLI",
+      "current_consumers": ["scripts/current/use_trade_assistant.py"],
+      "imports_business_logic": false,
+      "replacement": null
+    },
     {
       "path": "scripts/analyze_moutai_cash_anchor_equity_coverage.py",
       "category": "COMPANY_RESEARCH_CASE_TOOL",

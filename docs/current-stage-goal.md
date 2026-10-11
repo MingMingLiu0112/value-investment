@@ -1,5 +1,24 @@
 # 当前总目标：价值投资建议与情绪卫星仓系统
 
+## 2026-10-11 D2 User Workflow, Research Admission and Reliability
+
+Latest explicit package: D2-USER-WORKFLOW-RESEARCH-ADMISSION-AND-RELIABILITY,
+inheriting actual 6fd7ed9cb3b0a4034dbc5084095bebffab31b4f4. Ordinary continuous
+development, not a new Goal Run. Reuse the Daily Trade Assistant, current
+publication, exact v5 pending candidates, existing G3/materiality signatures and
+815-item recovery proof. Focus A-I on one user view/update/review entry, a local
+review wizard, version-clear research/price explanations, protected Excel,
+current-versus-historical recovery and actual use-path verification. Do not
+regenerate models/candidates/PDFs to hide pending human decisions.
+
+Verified Canonical frontend updates retain standing publication authorization.
+No real reviewer enrollment, private-key control, G3/materiality approval,
+private IPS/holdings, paid provider, production/Shadow or orders are authorized.
+READ_ONLY_TRIAL_READY is a usability dimension only, not INITIAL_ASSISTED_USE.
+Preserve action=no_order, position_guidance=null and inherited final-use gates.
+Earlier dated packages below are inherited evidence, superseded in scope by
+this task. Unrelated existing working-tree edits remain preserved.
+
 ## 2026-10-11 D2 Decision Admission and Assisted Use Closure
 
 Latest explicit user package: D2-DECISION-ADMISSION-AND-ASSISTED-USE-CLOSURE,

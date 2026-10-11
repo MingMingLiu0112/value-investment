@@ -11,7 +11,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
-from value_investment_agent.application.product.common import load_json_object  # noqa: E402
+from value_investment_agent.application.product.common import load_json_object, require_inside, sha256_file  # noqa: E402
 from value_investment_agent.application.product.daily_assets import inspect_daily_case_assets, recover_daily_case_assets  # noqa: E402
 from value_investment_agent.application.product.daily_batch import run_daily_batch, previous_case_from_run  # noqa: E402
 from value_investment_agent.presentation.daily_trade_assistant import run_daily_trade_assistant  # noqa: E402
@@ -29,7 +29,9 @@ def _collect_quote(symbol: str) -> tuple[Path | None, str | None]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    parser.add_argument('--case-registry', type=Path, help='Explicit source-pinned daily configuration.')
+    parser.add_argument('--case-registry-sha256')
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument("--symbol", default=None)
     selection.add_argument("--symbols", help="Comma-separated registered companies; failures stay isolated.")
@@ -66,7 +68,14 @@ def main() -> int:
     args = parser.parse_args()
     if args.quote_bundle is not None and not args.no_collect_quote:
         parser.error("--quote-bundle requires --no-collect-quote")
-    registry = load_json_object(ROOT / "config/daily-trade-assistant-v1.json", "daily cases")
+    if (args.case_registry is None) != (args.case_registry_sha256 is None):
+        parser.error('case registry requires path and SHA-256')
+    registry_path = ROOT / 'config/daily-trade-assistant-v1.json'
+    if args.case_registry is not None:
+        registry_path = require_inside(ROOT, ROOT/args.case_registry, 'daily registry')
+        if sha256_file(registry_path) != args.case_registry_sha256:
+            raise ValueError('daily registry hash mismatch')
+    registry = load_json_object(registry_path, "daily cases")
     if registry.get("schema_version") != "daily-trade-assistant-cases-v1" or registry.get("action") != "no_order":
         raise ValueError("daily case registry is not a no-order contract")
     registry["cases"] = {symbol: {**case, "review_packet": args.review_packet,

@@ -78,6 +78,164 @@ def whole_approval(f):
         reviewed_at=reviewed, review_as_of=reviewed.date(), reviewer_id='SYNTHETIC_HUMAN').as_policy()
 
 
+def _resume_args(f):
+    root = f['root']
+    output = root/'runtime/response-consumed'
+    return dict(root=root, candidate_path=f['path'], candidate_sha256=sha256_file(f['path']),
+        response_path=root/'response.json', response_sha256=sha256_file(root/'response.json'),
+        trust_root_path=root/'trust.json', trust_root_sha256=sha256_file(root/'trust.json'),
+        output_dir=output, resume_incomplete=True,
+        incomplete_consumption_sha256=sha256_file(output/'incomplete-consumption.json'))
+
+
+@pytest.mark.parametrize('failure', ['journal', 'receipt'])
+def test_incomplete_consumption_requires_exact_resume_and_blocks_attach(signed, monkeypatch, failure):
+    from value_investment_agent.application.product import research_reviews as reviews
+    signed['response']['whole_model_approval'] = whole_approval(signed)
+    append = reviews._append_review_json
+    def fail(path, payload):
+        if ((failure == 'journal' and path.parent.parent.name == 'research-review-responses')
+                or (failure == 'receipt' and path.name == 'receipt.json')):
+            raise OSError('synthetic IO interruption')
+        return append(path, payload)
+    monkeypatch.setattr(reviews, '_append_review_json', fail)
+    with pytest.raises(OSError, match='interruption'):
+        consume(signed)
+    root = signed['root']
+    output = root/'runtime/response-consumed'
+    assert not (output/'receipt.json').exists()
+    preserved = {p: p.read_bytes() for p in output.glob('*.json')}
+    packet = output/'research-reviews.json'
+    package = json.loads((signed['path'].parent/'package.json').read_text(encoding='utf-8'))
+    descriptor = build_descriptor(package, root=root)
+    monkeypatch.setattr(reviews, '_append_review_json', append)
+    with _use_test_trust_registry(signed['registry']):
+        with pytest.raises(ValueError):
+            attach_research_reviews(root=root, descriptor=descriptor,
+                spec=build_research_run_spec(descriptor), path=packet,
+                expected_sha256=sha256_file(packet), event_sha256=None, require_model_binding=True)
+        args = _resume_args(signed)
+        with pytest.raises(ValueError, match='exact pinned'):
+            consume_pending_review_response(**dict(args, incomplete_consumption_sha256='0'*64))
+        result = consume_pending_review_response(**args)
+        assert result['authenticated_reviewer'] == 'SYNTHETIC_HUMAN'
+        assert all(p.read_bytes() == raw for p, raw in preserved.items())
+        attach_research_reviews(root=root, descriptor=descriptor,
+            spec=build_research_run_spec(descriptor), path=packet,
+            expected_sha256=sha256_file(packet), event_sha256=None, require_model_binding=True)
+        with pytest.raises(ValueError, match='completed review replay'):
+            consume_pending_review_response(**args)
+        with pytest.raises(ValueError, match='replay|predecessor'):
+            consume_pending_review_response(**dict(args, resume_incomplete=False,
+                incomplete_consumption_sha256=None, output_dir=root/'runtime/replayed'))
+    assert not (root/'runtime/replayed').exists()
+
+
+def test_incomplete_resume_rejects_new_head_conflict(signed, monkeypatch):
+    from value_investment_agent.application.product import research_reviews as reviews
+    append = reviews._append_review_json
+    def fail(path, payload):
+        if path.parent.parent.name == 'research-review-responses':
+            raise OSError('synthetic journal interruption')
+        return append(path, payload)
+    monkeypatch.setattr(reviews, '_append_review_json', fail)
+    with pytest.raises(OSError):
+        consume(signed)
+    args = _resume_args(signed)
+    monkeypatch.setattr(reviews, '_append_review_json', append)
+    signed['response']['reviewed_at'] = datetime.now(timezone.utc).isoformat()
+    signed['response']['groups'][0]['response'] = 'REJECTED'
+    consume(signed, suffix='-conflict')
+    with _use_test_trust_registry(signed['registry']):
+        with pytest.raises(ValueError, match='predecessor|replay'):
+            consume_pending_review_response(**args)
+    assert not (args['output_dir']/'receipt.json').exists()
+
+
+@pytest.mark.parametrize('remove_receipt', [False, True])
+def test_stripped_completion_cannot_downgrade_to_legacy(signed, remove_receipt):
+    from value_investment_agent.application.product.research_reviews import _authenticated_review_history
+    consume(signed)
+    root = signed['root']
+    record = next((root/'runtime/research-review-responses').glob('*/*.json'))
+    value = json.loads(record.read_text(encoding='utf-8'))
+    del value['completion_receipt_binding']
+    record.write_text(json.dumps(value), encoding='utf-8')
+    if remove_receipt:
+        (root/'runtime/response-consumed/receipt.json').unlink()
+    with _use_test_trust_registry(signed['registry']):
+        with pytest.raises(ValueError, match='not pinned legacy'):
+            _authenticated_review_history(root, sha256_file(signed['path']))
+
+
+def test_legacy_requires_exact_explicit_fixture_pin(signed, monkeypatch):
+    from value_investment_agent.application.product import research_reviews as reviews
+    consume(signed)
+    root = signed['root']
+    record = next((root/'runtime/research-review-responses').glob('*/*.json'))
+    value = json.loads(record.read_text(encoding='utf-8'))
+    del value['completion_receipt_binding']
+    record.write_text(json.dumps(value), encoding='utf-8')
+    monkeypatch.setattr(reviews, '_PINNED_LEGACY_REVIEW_RECORD_SHA256', frozenset({sha256_file(record)}))
+    with _use_test_trust_registry(signed['registry']):
+        assert reviews._authenticated_review_history(root, sha256_file(signed['path']))[1] is not None
+        record.write_text(json.dumps(value) + '\n', encoding='utf-8')
+        with pytest.raises(ValueError, match='not pinned legacy'):
+            reviews._authenticated_review_history(root, sha256_file(signed['path']))
+
+
+@pytest.mark.parametrize('other_company', [False, True])
+def test_unrelated_model_incomplete_journal_does_not_block_attachment(signed, other_company):
+    from value_investment_agent.application.product.pending_research_candidate import prepare_pending_research_candidate
+    root = signed['root']
+    signed['response']['whole_model_approval'] = whole_approval(signed)
+    result = consume(signed)
+    policy_path = root/'runtime/policy.json'
+    policy = json.loads(policy_path.read_text(encoding='utf-8'))
+    package_path = next(p for p in (root/'runtime').glob('*.json')
+        if sha256_file(p) == policy['source_package_sha256'])
+    if other_company:
+        old_symbol = policy['symbol']
+        new_symbol = '600000' if old_symbol != '600000' else '600001'
+        def issuer(value):
+            if isinstance(value, dict):
+                return {key: issuer(item) for key, item in value.items()}
+            if isinstance(value, list):
+                return [issuer(item) for item in value]
+            return new_symbol if value == old_symbol else value
+        package = issuer(json.loads(package_path.read_text(encoding='utf-8')))
+        package_path = root/'runtime/other-company-package.json'
+        write_new_json(package_path, package)
+        policy.update(symbol=new_symbol, source_package_sha256=sha256_file(package_path))
+    policy['choices'][0]['growth_years'] = 9
+    other_policy = root/'runtime/other-policy.json'
+    write_new_json(other_policy, policy)
+    request = dict(schema_version='research-schedule-request-v1', symbol=policy['symbol'],
+        source_id='CNINFO', period=signed['candidate']['prior_research_as_of'],
+        research_question_id='unrelated-test', blocker_id='no-active-evidence-stop',
+        reopen_condition_met=False, new_evidence_ids=[])
+    prepare_pending_research_candidate(root=root, package_path=package_path,
+        package_sha256=sha256_file(package_path), policy_path=other_policy,
+        policy_sha256=sha256_file(other_policy), choice_id='continuity',
+        output_dir=root/'runtime/unrelated', schedule_request=request, schedule_request_sha256='b'*64)
+    other = root/'runtime/unrelated/candidate.json'
+    other_value = json.loads(other.read_text(encoding='utf-8'))
+    assert other_value['model_context'] != signed['candidate']['model_context']
+    if other_company:
+        assert other_value['symbol'] != signed['candidate']['symbol']
+    digest = sha256_file(other)
+    write_new_json(root/'runtime/research-review-responses'/digest[:24]/('c'*24+'.json'),
+        dict(candidate_binding=dict(path=other.relative_to(root).as_posix(), sha256=digest),
+            completion_receipt_binding=dict(path='runtime/missing-receipt.json', sha256='d'*64)))
+    package = json.loads((signed['path'].parent/'package.json').read_text(encoding='utf-8'))
+    descriptor = build_descriptor(package, root=root)
+    packet = root/result['review_packet_binding']['path']
+    with _use_test_trust_registry(signed['registry']):
+        assert attach_research_reviews(root=root, descriptor=descriptor,
+            spec=build_research_run_spec(descriptor), path=packet,
+            expected_sha256=sha256_file(packet), event_sha256=None).human_research_approval is not None
+
+
 def test_authenticated_group_is_not_whole_model_or_price_approval(signed):
     result = consume(signed)
     assert result['authenticated_reviewer'] == 'SYNTHETIC_HUMAN'

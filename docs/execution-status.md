@@ -1,5 +1,31 @@
 # CURRENT STATUS
 
+## 2026-10-11 D2 user workflow and reliable review consumption
+
+Current task is D2-USER-WORKFLOW-RESEARCH-ADMISSION-AND-RELIABILITY, ordinary
+development rather than total Goal completion. One verified user entry now
+provides view/update/review, selecting publication-bound v5 candidates. Actual
+two-company update completed with no failed or blocked assets; both remain
+NO_ACTION, archived 10/9 quotes display-only. Two-company preview and cancellation
+were exercised without approval changes. Local drafts do not enroll or sign users.
+
+Review completion now binds receipt-last journal records and exact-input explicit
+resume. Missing completion cannot be downgraded to legacy, whose precise production
+hash allowlist is empty. Unrelated incomplete candidates do not block other contexts;
+same-context incomplete or conflicting chains reject. Synthetic focused tests and
+independent static review passed; no real reviewer/private keys were created.
+
+Canonical actually published at SHAb630e0198e10d6a8e6bac7a1b4ea91480fd96d51506c22019216aba1b3af7621.
+Pointer verified, 55 original sheets preserved, 24 numeric cells unchanged,
+published WPS seven-page checks and 23 internal jumps passed. User guide and
+seven-question acceptance: current/user-trade-assistant-usage-20261011.md and
+current/d2-user-workflow-acceptance-20261011.md. Runtime proof remains local.
+815-item recovery and current candidates are verified within the documented scope;
+four historical snapshots retain their ineligible status. No production DB/Shadow,
+real signed-history restoration, system RTO/RPO or final user acceptance is claimed.
+D2/TOTAL=IN_PROGRESS, INITIAL_ASSISTED_USE=NOT_REACHED, action=no_order,
+position_guidance=null. Exact final clean/CI results follow in a separate dated record.
+
 ## 2026-10-11 D2 integration and isolated recovery recheck
 
 The resumed audit found two remaining engineering gaps, so the prior scoped

@@ -2,7 +2,9 @@
 from dataclasses import replace
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
+from uuid import uuid4
 
 from ...human_research_approval import human_research_approval_from_payload
 from ...event_materiality import event_materiality_review_from_payload
@@ -13,6 +15,9 @@ from ...research_run_contract import canonical_contract_payload
 from .common import require_inside, load_json_object, sha256_file, sha256_bytes
 
 REVIEW_RESPONSE_PURPOSE = b'value-investment/pending-research-response/v1\x00'
+# No production legacy records exist. Compatibility requires reviewed exact bytes,
+# never a version or missing field supplied by the journal itself.
+_PINNED_LEGACY_REVIEW_RECORD_SHA256 = frozenset()
 
 
 def run_pending_review_command(*, root, args):
@@ -53,7 +58,9 @@ def run_pending_review_command(*, root, args):
         response_path=resolve(args.signed_review_response), response_sha256=args.signed_review_response_sha256,
         trust_root_path=resolve(args.review_trust_root), trust_root_sha256=args.review_trust_root_sha256,
         output_dir=resolve(args.output), previous_response_path=resolve(args.previous_review_response),
-        previous_response_sha256=args.previous_review_response_sha256)
+        previous_response_sha256=args.previous_review_response_sha256,
+        resume_incomplete=getattr(args, 'resume_incomplete', False),
+        incomplete_consumption_sha256=getattr(args, 'incomplete_consumption_sha256', None))
 
 
 def prepare_pending_review_response(*, root: Path, candidate_path: Path,
@@ -98,7 +105,57 @@ def _strict_review_json(path):
     return value
 
 
-def _authenticated_review_history(root, candidate_sha256):
+def _review_json_bytes(payload):
+    return (json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + '\n').encode('utf-8')
+
+
+def _append_review_json(path, payload):
+    """Publish complete bytes without overwriting; retain failed staging for audit."""
+    raw = _review_json_bytes(payload)
+    if path.exists():
+        if path.read_bytes() != raw:
+            raise ValueError('incomplete review artifact drift: ' + str(path))
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    staging = path.with_name(path.name + '.' + uuid4().hex[:12] + '.part')
+    with staging.open('xb') as stream:
+        stream.write(raw)
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.link(staging, path)
+    staging.unlink()
+
+
+def _verify_review_completion(root, record, payload):
+    binding = record['completion_receipt_binding']
+    receipt_path = require_inside(root, root / binding['path'], 'review completion')
+    if not receipt_path.is_file() or sha256_file(receipt_path) != binding['sha256']:
+        raise ValueError('review consumption incomplete or completion receipt drift')
+    receipt = _strict_review_json(receipt_path)
+    if (receipt.get('schema_version') != 'pending-research-review-consumption-v1'
+            or receipt.get('action') != 'no_order'
+            or receipt.get('candidate_binding') != record['candidate_binding']
+            or receipt.get('response_binding') != record['response_binding']
+            or receipt.get('trust_root_binding') != record['trust_root_binding']
+            or receipt.get('authenticated_reviewer') != payload['reviewer_id']):
+        raise ValueError('review completion identity mismatch')
+    packet_binding = receipt.get('review_packet_binding')
+    if payload['whole_model_approval'] is not None:
+        if not isinstance(packet_binding, dict):
+            raise ValueError('review completion packet missing')
+        packet_path = require_inside(root, root / packet_binding['path'], 'completed review packet')
+        if sha256_file(packet_path) != packet_binding['sha256']:
+            raise ValueError('review completion packet drift')
+        packet = _strict_review_json(packet_path)
+        approval_binding = packet['bindings']['human_approval']
+        approval_path = require_inside(root, root / approval_binding['path'], 'completed human approval')
+        if (sha256_file(approval_path) != approval_binding['sha256']
+                or _strict_review_json(approval_path) != human_research_approval_from_payload(
+                    payload['whole_model_approval']).as_policy()):
+            raise ValueError('review completion approval drift')
+
+
+def _authenticated_review_history(root, candidate_sha256, *, incomplete_record=None):
     """Resolve an append-only response head from signed originals, not claims."""
     history = require_inside(root / 'runtime', root / 'runtime/research-review-responses' /
                              candidate_sha256[:24], 'review history')
@@ -123,6 +180,14 @@ def _authenticated_review_history(root, candidate_sha256):
         if (record_path.stem != record['response_binding']['sha256'][:24]
                 or record.get('candidate_binding') != payload['candidate_binding']):
             raise ValueError('authenticated review history identity mismatch')
+        if 'completion_receipt_binding' in record:
+            binding = record['completion_receipt_binding']
+            completion = require_inside(root, root / binding['path'], 'review completion')
+            if record == incomplete_record and not completion.exists():
+                continue
+            _verify_review_completion(root, record, payload)
+        elif sha256_file(record_path) not in _PINNED_LEGACY_REVIEW_RECORD_SHA256:
+            raise ValueError('review history missing completion binding and not pinned legacy')
         entries.append((reviewed, record, payload))
     entries.sort(key=lambda entry: entry[0])
     previous = None
@@ -238,14 +303,26 @@ def consume_pending_review_response(*, root: Path, candidate_path: Path,
         candidate_sha256: str, response_path: Path, response_sha256: str,
         trust_root_path: Path, trust_root_sha256: str, output_dir: Path,
         previous_response_path: Path | None = None,
-        previous_response_sha256: str | None = None) -> dict:
+        previous_response_sha256: str | None = None, resume_incomplete: bool = False,
+        incomplete_consumption_sha256: str | None = None) -> dict:
     """Authenticate transport and reuse typed G3; never admit price or events."""
     root = root.resolve()
     candidate_path = require_inside(root, candidate_path, 'review candidate')
     response_path = require_inside(root, response_path, 'review response')
     trust_root_path = require_inside(root, trust_root_path, 'review trust root')
     output_dir = require_inside(root / 'runtime', output_dir, 'review output')
-    if output_dir.exists():
+    checkpoint_path = output_dir / 'incomplete-consumption.json'
+    checkpoint = None
+    if resume_incomplete:
+        if (not incomplete_consumption_sha256 or not checkpoint_path.is_file()
+                or sha256_file(checkpoint_path) != incomplete_consumption_sha256):
+            raise ValueError('resume requires exact pinned incomplete consumption manifest')
+        checkpoint = _strict_review_json(checkpoint_path)
+        if (output_dir / 'receipt.json').exists():
+            raise ValueError('completed review replay rejected; receipt already exists')
+    elif incomplete_consumption_sha256 is not None:
+        raise ValueError('incomplete manifest hash requires explicit resume')
+    elif output_dir.exists():
         raise ValueError('review output must be new and append-only')
     def pinned_file(path, digest):
         if sha256_file(path) != digest:
@@ -257,7 +334,8 @@ def consume_pending_review_response(*, root: Path, candidate_path: Path,
         candidate_path=candidate_path, candidate_sha256=candidate_sha256, envelope=envelope, trust=trust)
     if (previous_response_path is None) != (previous_response_sha256 is None):
         raise ValueError('previous review requires both path and hash')
-    history, head = _authenticated_review_history(root, candidate_sha256)
+    history, head = _authenticated_review_history(root, candidate_sha256,
+        incomplete_record=None if checkpoint is None else checkpoint.get('journal_record'))
     if head is not None and (previous_response_sha256 != head[1]['response_binding']['sha256']
             or response_sha256 == head[1]['response_binding']['sha256']):
         raise ValueError('review requires authenticated latest predecessor; replay rejected')
@@ -288,22 +366,48 @@ def consume_pending_review_response(*, root: Path, candidate_path: Path,
         whole_model_review_present=approval is not None, blockers=list(dict.fromkeys(blockers)),
         research_admitted=False, event_materiality_approved=False, price_admitted=False,
         position_guidance=None, registered_current_case_changed=False)
+    files = {}
     if approval is not None:
         approval_path = output_dir / 'human-approval.json'
-        from .common import write_new_json
-        write_new_json(approval_path, approval.as_policy())
+        files['human-approval.json'] = approval.as_policy()
         packet = dict(schema_version='shared-research-review-inputs-v1', symbol=payload['symbol'],
             authenticated_response_binding=result['response_binding'],
             reviewed_candidate_binding=payload['candidate_binding'],
             action='no_order', bindings={'human_approval': dict(
-                path=approval_path.relative_to(root).as_posix(), sha256=sha256_file(approval_path))})
-        write_new_json(output_dir / 'research-reviews.json', packet)
+                path=approval_path.relative_to(root).as_posix(),
+                sha256=sha256_bytes(_review_json_bytes(files['human-approval.json'])))})
+        files['research-reviews.json'] = packet
         result['review_packet_binding'] = dict(path=(output_dir / 'research-reviews.json').relative_to(root).as_posix(),
-                                               sha256=sha256_file(output_dir / 'research-reviews.json'))
-    from .common import write_new_json
-    write_new_json(output_dir / 'receipt.json', result)
-    write_new_json(history / (response_sha256[:24] + '.json'), dict(candidate_binding=payload['candidate_binding'],
-        response_binding=result['response_binding'], trust_root_binding=result['trust_root_binding']))
+                                               sha256=sha256_bytes(_review_json_bytes(packet)))
+    journal_record = dict(candidate_binding=payload['candidate_binding'],
+        response_binding=result['response_binding'], trust_root_binding=result['trust_root_binding'],
+        completion_receipt_binding=dict(path=(output_dir/'receipt.json').relative_to(root).as_posix(),
+            sha256=sha256_bytes(_review_json_bytes(result))))
+    plan = dict(action='no_order', candidate_binding=payload['candidate_binding'],
+        response_binding=result['response_binding'], trust_root_binding=result['trust_root_binding'],
+        previous_response_sha256=previous_response_sha256,
+        output_dir=output_dir.relative_to(root).as_posix(), files=files,
+        journal_record=journal_record, completion_receipt=result)
+    if checkpoint is not None and checkpoint != plan:
+        raise ValueError('incomplete review manifest differs from authenticated inputs')
+    _append_review_json(checkpoint_path, plan)
+    for name, value in files.items():
+        _append_review_json(output_dir / name, value)
+    journal_path = history / (response_sha256[:24] + '.json')
+    _append_review_json(journal_path, journal_record)
+    # Recheck the predecessor and staged bytes before exposing the success receipt.
+    _, current_head = _authenticated_review_history(root, candidate_sha256, incomplete_record=journal_record)
+    if current_head != head:
+        raise ValueError('review head changed during consumption')
+    for name, value in files.items():
+        if (output_dir / name).read_bytes() != _review_json_bytes(value):
+            raise ValueError('incomplete review artifact changed before completion')
+    for path, digest in ((response_path, response_sha256), (trust_root_path, trust_root_sha256)):
+        if sha256_file(path) != digest:
+            raise ValueError('review input changed before completion')
+    prepare_pending_review_intake(root=root, candidate_path=candidate_path, candidate_sha256=candidate_sha256)
+    _append_review_json(output_dir / 'receipt.json', result)
+    _verify_review_completion(root, journal_record, payload)
     return result
 
 
@@ -447,7 +551,22 @@ def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
                 records = list(directory.glob('*.json'))
                 if not records:
                     continue
-                digest = _strict_review_json(records[0])['candidate_binding']['sha256']
+                from .pending_research_candidate import verify_pending_research_candidate
+                relevant = set()
+                for record_path in records:
+                    binding = _strict_review_json(record_path)['candidate_binding']
+                    candidate = verify_pending_research_candidate(root=root,
+                        path=require_inside(root, root / binding['path'], 'history candidate'),
+                        expected_sha256=binding['sha256'])
+                    if directory.name != binding['sha256'][:24]:
+                        raise ValueError('review history candidate directory mismatch')
+                    if candidate['model_context'] == live_context:
+                        relevant.add(binding['sha256'])
+                if not relevant:
+                    continue
+                if len(relevant) != 1:
+                    raise ValueError('review history candidate collision')
+                digest = next(iter(relevant))
                 _, existing_head = _authenticated_review_history(root, digest)
                 if existing_head is not None and existing_head[2]['model_context'] == live_context:
                     context_heads.append(existing_head)

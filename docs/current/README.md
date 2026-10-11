@@ -17,7 +17,9 @@ The 2026-10-09 architecture/agent pilot boundary and runbook are in
 | Current goal | `docs/current-stage-goal.md` |
 | Current advisory and sentiment-satellite goal contract | `docs/current/advisory-sentiment-satellite-goal-v1.md` |
 | Current execution status | `docs/execution-status.md` |
-| Latest verified public close | 2026-09-29 dual-source close bundle for 000333 / 600887 / 601088 (runtime-only, SHA-256 `c7e14a9626db695c489a485fa7134bbba4568238b67a85cc3805c8cd4ba10395`); product verification passed in memory, Canonical Excel not updated |
+| Daily user entry and review | `docs/current/user-trade-assistant-usage-20261011.md`; `scripts/current/use_trade_assistant.py` verifies the current publication before view/update/review |
+| Latest published quote observation | See `config/current-trial-workbook.json` and its source-bound publication. The 2026-10-09 archived close is display-only, not price admission for the 2026-10-11 pending candidates. The 2026-09-29 bundle remains historical evidence. |
+| Current research and recovery audit | `docs/current/d2-user-workflow-research-audit-20261011.md`; `docs/current/d2-user-workflow-reliability-20261011.md` |
 | Current execution-correction review and three-company blocker burn-down | `docs/current/track-b-execution-correction-20260929.md` (current A/B/C/D counts, remaining A blockers, evidence stops, Yili bounded candidate dispositions and R1 findings) |
 | Yili shared-model result binding | `docs/current/600887-shared-valuation-result-20260929.json` (input/result/source-package and artifact hashes; replay uses only 600887 CNINFO source refs) |
 | Yili prospective case follow-up | `docs/current/600887-prospective-case-followup-20260930.json` (new shared-application run bound to the registered case and frozen v13 receipt/snapshot; baseline unchanged, strict PIT not proven, no admitted price bridge) |
