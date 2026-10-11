@@ -91,6 +91,7 @@ jobs:
           tests/test_workbook_publication.py
           tests/test_neutral_valuation_proposal.py
           tests/test_cninfo_raw_response.py
+          tests/test_financial_review_attachment.py
           tests/test_agent_semantic_review.py
           tests/test_bound_valuation_step.py
           tests/test_research_case_card.py

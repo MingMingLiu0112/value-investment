@@ -15,6 +15,7 @@ from .research_review_packet import build_research_review_packet
 from .neutral_valuation_proposal import build_neutral_valuation_proposal
 from .monthly_research_review import build_monthly_research_review
 from .daily_event_observation import collect_daily_event_observation
+from .financial_review_attachment import load_financial_review_attachment
 from ..research.agent_review.supervisor import run_agent_research_pilot
 from ..research.agent_review.llm_pilot import run_llm_research_pilot
 from ..research.agent_review.source_context import ExcerptRequest
@@ -165,6 +166,17 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
     workbench = outcome["result"]
     supplements = {}
     supplement_paths = []
+    if case.get("financial_review_manifest"):
+        attachment_path = output_dir / "financial-review.json"
+        try:
+            manifest_path, manifest_sha = _pinned(root, case, "financial_review_manifest")
+            supplements["financial_review"] = load_financial_review_attachment(root=root,
+                symbol=symbol, manifest_path=manifest_path, manifest_sha256=manifest_sha)
+        except (ValueError, OSError) as error:
+            supplements["financial_review"] = {"status": "RESEARCH_SUPPLEMENT_UNAVAILABLE",
+                "error": str(error), "action": "no_order", "decision_changed": False}
+        write_new_json(attachment_path, supplements["financial_review"])
+        supplement_paths.append(("financial_review", attachment_path))
     if case.get("valuation_proposal_policy"):
         policy_path, policy_sha = _pinned(root, case, "valuation_proposal_policy")
         proposal_path = output_dir / "valuation-proposal.json"
@@ -276,9 +288,11 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
             for name in ("scripts/current/run_daily_trade_assistant.py",
                          "src/value_investment_agent/application/product/daily_trade_assistant.py",
                          "src/value_investment_agent/application/product/daily_assets.py",
+                         "src/value_investment_agent/application/product/financial_review_attachment.py",
                          "src/value_investment_agent/presentation/daily_trade_assistant.py",
                          "scripts/current/render_product_artifact_pages.mjs") if (root / name).is_file()],
         "inputs": {"package": package_sha, "schedule_request": request_sha,
+                   "financial_review_manifest": case.get("financial_review_manifest_sha256"),
                    "publication_input": case.get("publication_input_sha256"),
                    "previous_workbench": case.get("previous_workbench_sha256"),
                    "mock_responses": case.get("mock_responses_sha256") if agent_mode == "mock" else None},

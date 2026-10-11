@@ -1,5 +1,31 @@
 # CURRENT STATUS
 
+## 2026-10-11 Second Company Research Consumption and Capability Audit
+
+The existing daily CLI now consumes 600887's pinned financial-review manifest,
+rehashes its official originals/script/facts/report and appends a read-only
+unadmitted supplement. No second valuation calculator, investment threshold,
+research-date advancement, approval, personal position or canonical rewrite.
+Supplement failure is explicit and isolated; the registered baseline research
+and other companies continue. Source-byte verification is not financial admission.
+
+Actual batch: runtime/daily-trade-assistant/20261011-current-financial-attachment-batch-v1.
+Four cases ran, zero failed/blocked assets/product errors; all remain NO_ACTION.
+600887 report consumed 64 facts/31 calculations: ex-nonrecurring parent TTM
+96.48 hundred-million CNY (9.6477bn), consolidated CFO
+211.39 hundred-million and parent CFO455.93 hundred-million, separately scoped.
+The original 9/22 research cutoff/valuation was not replaced by the review date.
+97 targeted attachment/integration/batch/architecture tests passed.
+
+Independent D5 code/asset audit found synthetic contracts only: no feature-to-
+signal calculator, operational entry/exit rules, D5 PIT/OOS/cost/Shadow evidence.
+No production or real swing recommendations are implied by its state labels.
+Broader all-market screening remains gated on D2; the existing four-company
+research flow can run now, formal current buy/sell admission is still pending.
+The actual canonical opening verifier still passes hash8f360870...; no publication.
+Current next dependency is evidence-bound financial/model/materiality admission,
+not another loop over symbols or a promise that a buy signal must appear.
+
 ## 2026-10-11 D2 Real Valuation and Product Closure — In Progress
 
 P0 current v5 registration is evidence-bound to the existing canonical bytes,

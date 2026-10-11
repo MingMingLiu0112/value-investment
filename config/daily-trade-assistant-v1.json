@@ -9,6 +9,8 @@
       "schedule_request_sha256": "ed2a9e1c817f837e3afdcc37c74b7ea4cba2c4b740ed7d92a3a4b6cf66ab2c40"
     },
     "600887": {
+      "financial_review_manifest": "runtime/d2-real-admission-20261011/600887-current-facts-v1/manifest.json",
+      "financial_review_manifest_sha256": "1f1207e343cbc08dead636f2ba61ce76012b290a19776f4c0d9ef20a0acca384",
       "recovery_manifest": "config/daily-600887-original-recovery-v1.json",
       "recovery_manifest_sha256": "442f4427aeb61db75c910c779b1656c504d6c8ba17b46b87bf2e01a84bfb44ae",
       "package": "config/m1-valuation-packages-v1/600887-quality-compounder.json",

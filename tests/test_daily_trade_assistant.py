@@ -128,6 +128,45 @@ def test_szse_calendar_receives_shanghai_clock_even_before_monday_open(tmp_path,
     assert check["status"] == "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"
 
 
+@pytest.mark.parametrize("attachment_failure", [None, "source hash mismatch"])
+def test_financial_review_never_replaces_decision_or_blocks_old_research(tmp_path, monkeypatch, attachment_failure):
+    config = tmp_path / "config"
+    config.mkdir()
+    package = config / "package.json"
+    package.write_text(json.dumps({"symbol": "600887", "point_in_time": {
+        "research_as_of": "2026-09-22"}}), encoding="utf-8")
+    request = config / "request.json"
+    request.write_text(json.dumps({"symbol": "600887"}), encoding="utf-8")
+    manifest = config / "manifest.json"
+    manifest.write_text("{}", encoding="utf-8")
+    case = {"package": "config/package.json", "package_sha256": sha256_file(package),
+            "schedule_request": "config/request.json", "schedule_request_sha256": sha256_file(request),
+            "financial_review_manifest": "config/manifest.json", "financial_review_manifest_sha256": sha256_file(manifest)}
+    unchanged = {"symbol": "600887", "action": "no_order", "suggested_state": "NO_ACTION",
+                 "decision_recommendation": None, "valuation": None, "position_guidance": None}
+    def build(**kwargs):
+        kwargs["output_path"].write_text(json.dumps(unchanged), encoding="utf-8")
+        return {"result": unchanged}
+    def load(**kwargs):
+        if attachment_failure:
+            raise ValueError(attachment_failure)
+        return {"status": "SOURCE_VERIFIED_RESEARCH_SUPPLEMENT_NOT_ADMITTED", "action": "no_order",
+                "financial_period_end": "2026-06-30", "generated_at": "2026-10-11T03:00:00+00:00",
+                "calculations": {}, "limitations": ["正常化盈利未知"], "decision_changed": False}
+    monkeypatch.setattr(daily, "build_current_workbench_for_symbol", build)
+    monkeypatch.setattr(daily, "load_financial_review_attachment", load)
+    result = daily.run_daily_trade_assistant(root=tmp_path, symbol="600887", case=case,
+        output_dir=tmp_path / "runtime/run", agent_mode="none", report_renderer=lambda *a: "original report",
+        supplement_renderer=view._render_supplements)
+    assert json.loads((tmp_path / "runtime/run/workbench.json").read_text()) == unchanged
+    assert result["recommendation_type"] == "NO_ACTION"
+    assert result["position_guidance"] is None
+    attached = json.loads((tmp_path / "runtime/run/financial-review.json").read_text(encoding="utf-8"))
+    assert attached["decision_changed"] is False
+    report = (tmp_path / "runtime/run/report.md").read_text(encoding="utf-8")
+    assert ("财务研究补充未通过核验" if attachment_failure else "没有推进研究截止") in report
+
+
 def test_security_research_survives_absent_private_portfolio(tmp_path, monkeypatch):
     package = tmp_path / "config/package.json"
     package.parent.mkdir()

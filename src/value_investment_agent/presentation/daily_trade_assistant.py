@@ -248,7 +248,31 @@ def _render_supplements(supplements: dict[str, Any]) -> str:
         else:
             lines.extend([f"- 巨潮查询窗口：{events['scan_from']} 至 {events['scan_to']}；公告 {events['announcement_count']} 条。",
                 "- 新窗口查询不替代此前公告材料性、模型及估值审核；研究日期未自动推进。",
-                "- 公告原件和索引 Hash 保存在 event-observation；索引为官方查询的解析归档，不冒充原始 HTTP 字节。"])
+                "- 公告原件和索引 Hash 保存在 event-observation；" + (
+                    "同时保留实际收到的响应内容及请求元数据。"
+                    if events.get("index_representation") == "PARSED_OFFICIAL_QUERY_WITH_RECEIVED_RESPONSE_CONTENT"
+                    else "索引为官方查询的解析归档，没有保留原始响应内容。")])
+    financial = supplements.get("financial_review")
+    if financial:
+        lines.extend(["", "## 最新核读财务：尚未替换批准模型", ""])
+        if financial["status"] == "RESEARCH_SUPPLEMENT_UNAVAILABLE":
+            lines.append(f"- 财务研究补充未通过核验：{financial['error']}；原研究仍按原状态运行。")
+        else:
+            lines.extend([f"- 财务报告期：{financial['financial_period_end']}；本机核读生成：{financial['generated_at']}。",
+                "- 这些是已绑定原件的研究补充；没有推进研究截止、替换旧估值或批准买卖。",
+                "| 已核读历史指标 | 金额（亿元） | 范围 |", "| --- | ---: | --- |"])
+            titles = {"ttm_ex_nonrecurring_parent_profit": "扣非归母TTM",
+                      "ttm_consolidated_cfo": "合并经营现金流TTM",
+                      "ttm_parent_cfo": "母公司经营现金流TTM"}
+            scope_names = {"consolidated_parent_attributable": "合并归属于普通股股东",
+                           "consolidated": "合并报表", "parent": "母公司单体"}
+            for key, title in titles.items():
+                item = financial.get("calculations", {}).get(key)
+                if item and item.get("unit") == "CNY":
+                    scope = scope_names.get(item['scope'], item['scope'])
+                    lines.append(f"| {title} | {Decimal(item['value']) / Decimal('100000000'):.2f} | {scope} |")
+            lines.extend(["", *[f"- 限制：{item}" for item in financial.get("limitations", [])],
+                "", "详细原件页码、金额列、公式及Hash见本次 financial-review.json。"])
     review = supplements.get("research_review")
     if review:
         lines.extend(["", "## 主估值与人工审核清单", "",

@@ -67,7 +67,7 @@ def _load_scoped_recoveries(root, case, recovered, recoveries, recovery_records)
 def _inventory(root, case, agent_mode, recoveries, recovery_records):
     pending = []
     for role in ("package", "schedule_request", "publication_input", "previous_workbench",
-                 "mock_responses", "recovery_manifest", "agent_excerpts"):
+                 "mock_responses", "recovery_manifest", "agent_excerpts", "financial_review_manifest"):
         if role == "mock_responses" and agent_mode != "mock":
             continue
         if role not in case:
