@@ -1,5 +1,28 @@
 # 当前总目标：价值投资建议与情绪卫星仓系统
 
+## 2026-10-11 D2 Decision Admission and Assisted Use Closure
+
+Latest explicit user package: D2-DECISION-ADMISSION-AND-ASSISTED-USE-CLOSURE,
+baseline 30f4288bef61fa08196495c815c4326ba4845077. Execute A-H continuously:
+authenticate exact human economic responses through existing typed G3 contracts;
+group the 600519 seven-event/57-field review and 600887 33-event review; verify
+existing PriceBridge refusals and legal isolated cases; update the existing
+Canonical and daily/monthly explanations; deepen six source-bound countercases;
+verify bounded recovery and assisted-use readiness. Reuse current published v5
+candidates; do not regenerate candidates, PDFs, models, approval services or Roadmap.
+
+Verified frontend Excel publication has standing user authorization. Preserve
+source/numeric/55-sheet/backup/WPS/link/readability/pointer checks without another
+per-version permission request. Human model/G3/materiality decisions, private IPS,
+paid providers, production/real Shadow and final user acceptance remain separate.
+SubAgent research is not human approval. Missing private or human inputs do not
+block independent engineering. No Web, D1 expansion, D5, M8 or orders.
+action=no_order; position_guidance=null; D2/TOTAL=IN_PROGRESS;
+INITIAL_ASSISTED_USE=NOT_REACHED until actual evidence passes inherited gates.
+
+This is ordinary continuous development, not a new Goal Mode run. The following
+dated sections are inherited evidence and prior scopes, superseded by this package.
+
 ## 2026-10-11 Real Valuation Admission and Product Closure
 
 Latest user package: `D2-REAL-VALUATION-PRICE-ADMISSION-AND-PRODUCT-CLOSURE`,

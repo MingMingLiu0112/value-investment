@@ -1,5 +1,46 @@
 # CURRENT STATUS
 
+## 2026-10-11 D2 Decision Admission Closure and Canonical Successor
+
+Current task is D2-DECISION-ADMISSION-AND-ASSISTED-USE-CLOSURE, not Goal completion.
+Existing v5 candidates retained. Signed human responses now have an append-only,
+exact-context intake connected to the existing G3 receipt; nine group responses
+are still blank, reviewer registry still empty. Synthetic approval tests are not
+real human decisions. Independent final static audit found no remaining P1.
+
+600519 seven announcements/57 fields/399 associations grouped into seven economic
+review items. 600887 thirty-three announcements grouped into eight mechanisms,
+with explicit company-specific Ke insufficiency. Six operating countercases are
+source-bound, without new PDFs or fabricated disclosures. Existing v5/v7 changes
+are generation-time translation, not new company facts. Two real typed candidate
+and archived-close replays reject the 10/9 quote before 10/11 model validity;
+formal decisions remain NO_ACTION, position_guidance=null.
+
+Canonical Excel actually published, backed up, native-WPS rechecked and pointer
+verified: SHA83908b2513e1d9cf7dbdc17f0ad6f56b7a213e94f52a3bb0398af60339ab5b29.
+Six existing companies, nine grouped review questions, prioritized facts/estimates,
+event effects and refusal reasons; Gree/Huayu historical cards explicitly unbound.
+21 conditional numeric values, 55 protected nonmanaged sheets, all seven WPS pages,
+23 native internal jumps and 17 source-formula displays verified. Candidate and
+postpublication evidence is runtime/daily-trade-assistant/20261011-d2-admission-review-v6/.
+Artifact image-render process ended abnormally after export; no success claimed
+for that run. Exported bytes separately passed native/source/numeric/protection checks.
+
+Current local registered Core: 2125 passed, 32 skipped, 102.86 seconds; focused
+response/related tests 129 passed. Clean-checkout and new-commit GitHub results
+are recorded below when completed, not inherited from the previous baseline.
+Bounded H restore: 25 files, 14,608,229 bytes, exact bytes/hashes verified;
+actual decrypt/restore 1.733700 seconds. It captures the prepublication workbook,
+not the newly published successor or complete research/production database.
+System RTO/RPO null; no production, scheduler or real Shadow started.
+
+See current/d2-decision-admission-closure-20261011.md and
+current/d2-human-review-usage-20261011.md. D2/TOTAL=IN_PROGRESS;
+INITIAL_ASSISTED_USE=NOT_REACHED; ECONOMIC_REVIEW_APPROVED=false,
+EVENT_MATERIALITY_APPROVED=false, MODEL_VALIDITY_VALID=false, PRICE_ADMITTED=false,
+PRODUCT_PUBLISHED=true, USER_ACCEPTED=false, action=no_order.
+Prior dated status sections below are historical, not current completion claims.
+
 ## 2026-10-11 D2 Actual Review Intake and Version Comparison
 
 Actual daily runs 20261011-s1-review-intake-v7 and

@@ -240,3 +240,30 @@ def test_previous_receipt_is_rehashed_at_final_check(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match="changed during comparison"):
         compare_research_supplements(root=tmp_path, symbol="600887", current_bindings=[],
             previous_receipt_path=receipt["path"], previous_receipt_sha256=receipt["sha256"])
+def test_time_translation_explanation_requires_unchanged_inputs_and_actual_arithmetic():
+    from copy import deepcopy
+    from value_investment_agent.application.product.research_supplement_comparison import _pending_change_drivers
+    before = {key: {} for key in ('consumed_operating_inputs', 'consumed_scenario_inputs',
+        'model_identity', 'selected_choice', 'review_groups', 'choice_rationale', 'countercase', 'model_limits')}
+    before['candidate_valuation'] = dict(bear_value='10', base_value='20', bull_value='30',
+        assumptions=dict(valuation_timing=dict(valuation_at='2026-10-11T01:00:00+00:00', basis_at='2026-06-30')),
+        sensitivities=[dict(scenario=s, ordinary_equity_value=str(v*100), per_share_value=str(v),
+            basis_to_valuation_factor='1', dividend_crosscheck_difference='0',
+            terminal_residual_contribution_ratio='0', cost_of_equity='0.08')
+            for s, v in zip(('bear', 'base', 'bull'), (10, 20, 30))])
+    after = deepcopy(before)
+    after['candidate_valuation']['assumptions']['valuation_timing']['valuation_at'] = '2026-10-11T02:00:00+00:00'
+    for s, v in zip(('bear', 'base', 'bull'), (11, 22, 33)):
+        after['candidate_valuation'][s+'_value'] = str(v)
+    for row, v in zip(after['candidate_valuation']['sensitivities'], (11, 22, 33)):
+        row.update(basis_to_valuation_factor='1.1', ordinary_equity_value=str(v*100), per_share_value=str(v))
+    assert _pending_change_drivers(before, after)['interpretation'] == 'GENERATION_TIME_TRANSLATION_NOT_NEW_COMPANY_FACTS'
+    changed = deepcopy(after)
+    changed['consumed_scenario_inputs']['growth'] = '0.5'
+    assert not _pending_change_drivers(before, changed)['valuation_translation_consistent']
+    changed = deepcopy(after)
+    changed['candidate_valuation']['base_value'] = '25'
+    assert not _pending_change_drivers(before, changed)['valuation_translation_consistent']
+    changed = deepcopy(after)
+    changed['candidate_valuation']['sensitivities'][0]['terminal_residual_contribution_ratio'] = '0.5'
+    assert not _pending_change_drivers(before, changed)['valuation_translation_consistent']

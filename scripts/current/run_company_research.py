@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 import sys
 
-
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
@@ -21,27 +20,28 @@ from value_investment_agent.application.product.common import load_json_object, 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--symbol", required=True)
-    parser.add_argument("--package", type=Path)
-    parser.add_argument("--output", type=Path)
+    for flag in ('--package', '--output', '--arithmetic-input', '--quote', '--event', '--research-reviews',
+                 '--pending-review-candidate', '--signed-review-response', '--review-trust-root', '--previous-review-response'):
+        parser.add_argument(flag, type=Path)
     parser.add_argument("--existing-manifest", type=Path, help="Read a pinned existing result only; do not rerun research.")
-    parser.add_argument("--existing-manifest-sha256")
-    parser.add_argument("--arithmetic-input", type=Path)
-    parser.add_argument("--arithmetic-input-sha256")
-    parser.add_argument("--quote", type=Path)
-    parser.add_argument("--quote-sha256")
-    parser.add_argument("--event", type=Path)
-    parser.add_argument("--event-sha256")
-    parser.add_argument("--research-reviews", type=Path)
-    parser.add_argument("--research-reviews-sha256")
+    for flag in ('existing-manifest', 'arithmetic-input', 'quote', 'event', 'research-reviews',
+                 'pending-review-candidate', 'signed-review-response', 'review-trust-root', 'previous-review-response'):
+        parser.add_argument('--' + flag + '-sha256')
     parser.add_argument(
         "--recommendation-schema-version",
         choices=(DECISION_RECOMMENDATION_SCHEMA, DECISION_RECOMMENDATION_V3_SCHEMA),
     )
     parser.add_argument("--schedule-request", type=Path, help="Hash-bound JSON scope request required to reopen an Evidence Stop.")
+    parser.add_argument('--prepare-review-response', action='store_true')
     args = parser.parse_args()
     resolve = lambda value: None if value is None else (value if value.is_absolute() else ROOT / value)
     package = resolve(args.package)
     output = resolve(args.output)
+    from value_investment_agent.application.product.research_reviews import run_pending_review_command
+    review_result = run_pending_review_command(root=ROOT, args=args)
+    if review_result is not None:
+        print(json.dumps(review_result, ensure_ascii=False, indent=2))
+        return 0
     if args.existing_manifest is not None or args.existing_manifest_sha256 is not None:
         market_args = (args.quote, args.quote_sha256, args.event, args.event_sha256,
                        args.research_reviews, args.research_reviews_sha256)

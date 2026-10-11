@@ -396,6 +396,9 @@ def _render_supplements(supplements: dict[str, Any]) -> str:
         lines.extend(['', '## 本次研究补充与上次比较', ''])
         for role, row in comparison['roles'].items():
             lines.append(f"- {role}：{states[row['status']]}；没有改变模型、事件或价格批准。")
+            drivers = row.get('change_drivers') or {}
+            if drivers.get('interpretation') == 'GENERATION_TIME_TRANSLATION_NOT_NEW_COMPANY_FACTS':
+                lines.append('- 经济输入未变；估值差异与实际生成时刻的折算一致，没有证明新增公司事实或改善。')
     return "\n".join(lines) + "\n"
 
 
@@ -418,6 +421,9 @@ def _render_pending_candidate_review(candidate: dict, candidate_sha256: str) -> 
         lines.extend([f"## {index}. {group['question']}（编号：{group['id']}）", '',
             f"支持依据：{group['support']}", '', f"反面证据：{group['countercase']}", '',
             f"对价值与风险的影响：{group['impact']}", '',
+            '接受用途：仅确认上述字段的低置信条件研究用途，不确认未来收益必然实现。', '',
+            '拒绝后果：保留或增加受影响模型的阻塞；不通过调整价格或其他参数绕过。', '',
+            '证据不足：保留所列反证与未知，等待可比官方披露或有来源的经济解释。', '',
             '可选处理：接受此具体用途 / 拒绝 / 证据不足。当前均为待审。', '',
             '底层逐项范围：' + '；'.join(group['field_paths']), ''])
     if not candidate.get('review_groups'):

@@ -1,5 +1,6 @@
 """Attach existing typed research reviews to the exact shared descriptor inputs."""
 from dataclasses import replace
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 
@@ -10,6 +11,300 @@ from ...research_artifact_codecs import artifact_payload
 from ...research_input import build_research_run_spec, descriptor_sha256, facts_to_payload
 from ...research_run_contract import canonical_contract_payload
 from .common import require_inside, load_json_object, sha256_file, sha256_bytes
+
+REVIEW_RESPONSE_PURPOSE = b'value-investment/pending-research-response/v1\x00'
+
+
+def run_pending_review_command(*, root, args):
+    """Optional review mode on the existing company CLI; not a research rerun."""
+    resolve = lambda value: None if value is None else root / value
+    review_args = (args.pending_review_candidate, args.pending_review_candidate_sha256,
+        args.signed_review_response, args.signed_review_response_sha256,
+        args.review_trust_root, args.review_trust_root_sha256,
+        args.previous_review_response, args.previous_review_response_sha256)
+    if not args.prepare_review_response and all(value is None for value in review_args):
+        return None
+    if (args.pending_review_candidate is None or args.pending_review_candidate_sha256 is None
+            or args.output is None or args.prepare_review_response == (args.signed_review_response is not None)):
+        raise ValueError('review mode needs candidate/hash/output and exactly prepare or signed response')
+    ordinary = (args.package, args.existing_manifest, args.existing_manifest_sha256,
+        args.arithmetic_input, args.arithmetic_input_sha256, args.quote, args.quote_sha256,
+        args.event, args.event_sha256, args.research_reviews, args.research_reviews_sha256,
+        args.schedule_request, args.recommendation_schema_version)
+    if any(value is not None for value in ordinary):
+        raise ValueError('review response mode excludes ordinary research/market inputs')
+    candidate = resolve(args.pending_review_candidate)
+    template = prepare_pending_review_response(root=root, candidate_path=candidate,
+        candidate_sha256=args.pending_review_candidate_sha256)
+    if template['symbol'] != args.symbol:
+        raise ValueError('review candidate issuer mismatch')
+    if args.prepare_review_response:
+        if any(value is not None for value in review_args[2:]):
+            raise ValueError('prepare mode excludes signed response and trust inputs')
+        from .common import write_new_json
+        output = require_inside(root / 'runtime', resolve(args.output), 'review response form')
+        write_new_json(output, template)
+        return dict(status='EDITABLE_RESPONSE_PREPARED_NOT_APPROVED', action='no_order',
+            path=str(output), sha256=sha256_file(output), group_count=len(template['groups']))
+    if any(value is None for value in review_args[2:6]):
+        raise ValueError('signed response requires complete response and trust-root hashes')
+    return consume_pending_review_response(root=root, candidate_path=candidate,
+        candidate_sha256=args.pending_review_candidate_sha256,
+        response_path=resolve(args.signed_review_response), response_sha256=args.signed_review_response_sha256,
+        trust_root_path=resolve(args.review_trust_root), trust_root_sha256=args.review_trust_root_sha256,
+        output_dir=resolve(args.output), previous_response_path=resolve(args.previous_review_response),
+        previous_response_sha256=args.previous_review_response_sha256)
+
+
+def prepare_pending_review_response(*, root: Path, candidate_path: Path,
+                                    candidate_sha256: str) -> dict:
+    """Create editable input, separate from immutable generated intake/receipts."""
+    intake = prepare_pending_review_intake(root=root, candidate_path=candidate_path,
+        candidate_sha256=candidate_sha256)
+    return dict(schema_version='pending-research-review-response-v1', action='no_order',
+        symbol=intake['symbol'], candidate_binding=intake['candidate_binding'],
+        model_context=intake['model_context'],
+        valuation_artifact_sha256=intake['valuation_artifact_sha256'],
+        reviewer_id=None, reviewed_at=None, whole_model_approval=None,
+        supersedes_response_sha256=None,
+        groups=[dict(id=g['id'], field_paths=g['field_paths'], response=None,
+                     response_reason=None, confirmed_scope=None) for g in intake['groups']])
+
+
+def _review_time(value, label):
+    try:
+        parsed = datetime.fromisoformat(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f'{label} requires a timezone timestamp') from error
+    if parsed.utcoffset() is None:
+        raise ValueError(f'{label} requires a timezone timestamp')
+    return parsed
+
+
+def _strict_review_json(path):
+    def pairs(items):
+        result = {}
+        for key, value in items:
+            if key in result:
+                raise ValueError('duplicate review JSON key')
+            result[key] = value
+        return result
+    def constant(value):
+        raise ValueError('nonfinite review JSON constant: ' + value)
+    value = json.loads(path.read_text(encoding='utf-8'), object_pairs_hook=pairs,
+                       parse_constant=constant)
+    if not isinstance(value, dict):
+        raise ValueError('review input must be an object')
+    return value
+
+
+def _authenticated_review_history(root, candidate_sha256):
+    """Resolve an append-only response head from signed originals, not claims."""
+    history = require_inside(root / 'runtime', root / 'runtime/research-review-responses' /
+                             candidate_sha256[:24], 'review history')
+    entries = []
+    for record_path in history.glob('*.json'):
+        record = _strict_review_json(record_path)
+        loaded = {}
+        for role in ('response', 'trust_root'):
+            binding = record[role + '_binding']
+            original = require_inside(root, root / binding['path'], 'review history original')
+            if sha256_file(original) != binding['sha256']:
+                raise ValueError('authenticated review history original drift')
+            loaded[role] = _strict_review_json(original)
+        envelope, trust = loaded['response'], loaded['trust_root']
+        candidate_binding = record['candidate_binding']
+        if candidate_binding['sha256'] != candidate_sha256:
+            raise ValueError('authenticated review history candidate mismatch')
+        payload, _, _, _ = _validate_pending_review_response(root=root,
+            candidate_path=require_inside(root, root / candidate_binding['path'], 'history candidate'),
+            candidate_sha256=candidate_sha256, envelope=envelope, trust=trust, historical=True)
+        reviewed = _review_time(payload['reviewed_at'], 'history reviewed_at')
+        if (record_path.stem != record['response_binding']['sha256'][:24]
+                or record.get('candidate_binding') != payload['candidate_binding']):
+            raise ValueError('authenticated review history identity mismatch')
+        entries.append((reviewed, record, payload))
+    entries.sort(key=lambda entry: entry[0])
+    previous = None
+    for _, record, payload in entries:
+        expected = None if previous is None else previous[1]['response_binding']['sha256']
+        if payload['supersedes_response_sha256'] != expected:
+            raise ValueError('authenticated review history conflict or missing predecessor')
+        if previous is not None and (payload['reviewer_id'] != previous[2]['reviewer_id']
+                or payload['candidate_binding'] != previous[2]['candidate_binding']
+                or _review_time(payload['reviewed_at'], 'history time') <= previous[0]):
+            raise ValueError('authenticated review history reviewer or time conflict')
+        previous = (_, record, payload)
+    return history, previous
+
+
+def _validate_pending_review_response(*, root, candidate_path, candidate_sha256, envelope, trust, historical=False):
+    """One complete no-write validator shared by intake and historical loading."""
+    from cryptography.exceptions import InvalidSignature
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    from ...infrastructure.evidence.trust_root_registry import require_pinned_trust_root
+    from ...human_research_approval import resolve_human_research_approval
+    from .decision_surface import verify_current_decision_workbench
+
+    root = root.resolve()
+    candidate_path = require_inside(root, candidate_path, 'review candidate')
+    intake = prepare_pending_review_intake(root=root, candidate_path=candidate_path,
+        candidate_sha256=candidate_sha256)
+    if intake['valuation_artifact_sha256'] is None:
+        raise ValueError('review requires an actually consumed valuation')
+    require_pinned_trust_root(trust)
+    if (set(envelope) != {'payload', 'signature'}
+            or set(trust) != {'schema_version', 'reviewer_id', 'public_key',
+                             'scopes', 'symbols', 'valid_from', 'valid_until'}
+            or trust['schema_version'] != 'research-review-transport-trust-root-v1'):
+        raise ValueError('review signature envelope or trust scope mismatch')
+    if (not isinstance(trust['scopes'], list) or not trust['scopes']
+            or set(trust['scopes']) - {'human_group_research', 'human_whole_model'}
+            or not isinstance(trust['symbols'], list) or not trust['symbols']
+            or any(not isinstance(s, str) or len(s) != 6 or not s.isdigit() for s in trust['symbols'])):
+        raise ValueError('review trust privileges must be explicit')
+    payload = envelope['payload']
+    template = prepare_pending_review_response(root=root, candidate_path=candidate_path,
+        candidate_sha256=candidate_sha256)
+    if not isinstance(payload, dict) or set(payload) != set(template):
+        raise ValueError('review response fields incomplete or unknown')
+    for key in ('schema_version', 'action', 'symbol', 'candidate_binding',
+                'model_context', 'valuation_artifact_sha256'):
+        if payload[key] != template[key]:
+            raise ValueError('review exact candidate context mismatch: ' + key)
+    if (not isinstance(payload['reviewer_id'], str) or not payload['reviewer_id'].strip()
+            or payload['reviewer_id'] != trust['reviewer_id']
+            or payload['symbol'] not in trust['symbols']
+            or 'human_group_research' not in trust['scopes']):
+        raise ValueError('reviewer identity or authorization scope mismatch')
+    reviewed = _review_time(payload['reviewed_at'], 'reviewed_at')
+    now = datetime.now(timezone.utc)
+    start, end = (_review_time(trust[k], k) for k in ('valid_from', 'valid_until'))
+    workbench = load_json_object(candidate_path.parent / 'workbench.json', 'candidate workbench')
+    if (not (start <= reviewed <= end and reviewed <= now) or (not historical and now > end)
+            or reviewed < _review_time(workbench['generated_at'], 'candidate time')):
+        raise ValueError('review timestamp or authorization validity mismatch')
+    try:
+        public = Ed25519PublicKey.from_public_bytes(bytes.fromhex(trust['public_key']))
+        public.verify(bytes.fromhex(envelope['signature']), REVIEW_RESPONSE_PURPOSE +
+                      canonical_contract_payload(payload).encode('utf-8'))
+    except (InvalidSignature, TypeError, ValueError) as error:
+        raise ValueError('review response signature invalid') from error
+    groups = payload['groups']
+    if not isinstance(groups, list) or len(groups) != len(template['groups']):
+        raise ValueError('review group coverage mismatch')
+    blockers = []
+    for actual, expected in zip(groups, template['groups']):
+        if (not isinstance(actual, dict) or set(actual) != set(expected)
+                or actual['id'] != expected['id'] or actual['field_paths'] != expected['field_paths']):
+            raise ValueError('review group identity or field scope mismatch')
+        state = actual['response']
+        if state not in (None, 'VERIFIED', 'REJECTED', 'INSUFFICIENT'):
+            raise ValueError('unknown review group response')
+        if state is not None and any(not isinstance(actual[key], str) or not actual[key].strip()
+                for key in ('response_reason', 'confirmed_scope')):
+            raise ValueError('review response requires reason and confirmed scope')
+        if state != 'VERIFIED':
+            blockers.append(f"{actual['id']}:{state or 'PENDING'}")
+    approval_payload = payload['whole_model_approval']
+    approval = None
+    if approval_payload is not None:
+        if 'human_whole_model' not in trust['scopes']:
+            raise ValueError('reviewer has no whole-model authorization')
+        approval = human_research_approval_from_payload(approval_payload)
+        if (approval.reviewer_type != 'human_research_lead'
+                or approval.reviewer_id != payload['reviewer_id'] or approval.reviewed_at != reviewed
+                or approval.symbol != payload['symbol'] or approval.security_id != payload['symbol']
+                or approval.profile_id != intake['model_context']['profile_id']
+                or type(approval_payload.get('price_assessment_eligible')) is not bool):
+            raise ValueError('whole-model reviewer provenance mismatch')
+        restored = verify_current_decision_workbench(workbench)
+        decision = resolve_human_research_approval(approval, restored.dependency_objects['valuation'],
+            model_id=intake['model_context']['model_id'],
+            research_case_payload=restored.dependencies['research_case'].envelope.payload_object(),
+            facts_payload=restored.dependencies['financial_facts'].envelope.payload_object(),
+            assumptions_payload=restored.dependencies['valuation_assumptions'].envelope.payload_object())
+        if not decision.valuation_bound or not decision.dependencies_bound:
+            raise ValueError('whole-model approval superseded by exact inputs')
+        if decision.approved and blockers:
+            raise ValueError('partial or negative group review cannot approve the whole model')
+        blockers.extend(decision.blockers)
+    else:
+        blockers.append('whole_model_review_missing')
+    return payload, intake, approval, blockers
+
+
+def consume_pending_review_response(*, root: Path, candidate_path: Path,
+        candidate_sha256: str, response_path: Path, response_sha256: str,
+        trust_root_path: Path, trust_root_sha256: str, output_dir: Path,
+        previous_response_path: Path | None = None,
+        previous_response_sha256: str | None = None) -> dict:
+    """Authenticate transport and reuse typed G3; never admit price or events."""
+    root = root.resolve()
+    candidate_path = require_inside(root, candidate_path, 'review candidate')
+    response_path = require_inside(root, response_path, 'review response')
+    trust_root_path = require_inside(root, trust_root_path, 'review trust root')
+    output_dir = require_inside(root / 'runtime', output_dir, 'review output')
+    if output_dir.exists():
+        raise ValueError('review output must be new and append-only')
+    def pinned_file(path, digest):
+        if sha256_file(path) != digest:
+            raise ValueError('review input hash mismatch')
+        return _strict_review_json(path)
+    envelope = pinned_file(response_path, response_sha256)
+    trust = pinned_file(trust_root_path, trust_root_sha256)
+    payload, intake, approval, blockers = _validate_pending_review_response(root=root,
+        candidate_path=candidate_path, candidate_sha256=candidate_sha256, envelope=envelope, trust=trust)
+    if (previous_response_path is None) != (previous_response_sha256 is None):
+        raise ValueError('previous review requires both path and hash')
+    history, head = _authenticated_review_history(root, candidate_sha256)
+    if head is not None and (previous_response_sha256 != head[1]['response_binding']['sha256']
+            or response_sha256 == head[1]['response_binding']['sha256']):
+        raise ValueError('review requires authenticated latest predecessor; replay rejected')
+    if head is None and previous_response_path is not None:
+        raise ValueError('previous review has not been authenticated and consumed')
+    if previous_response_path is None:
+        if payload['supersedes_response_sha256'] is not None:
+            raise ValueError('review cannot supersede an unavailable response')
+    else:
+        previous_response_path = require_inside(root, previous_response_path, 'previous review')
+        previous = pinned_file(previous_response_path, previous_response_sha256)['payload']
+        if (payload['supersedes_response_sha256'] != previous_response_sha256
+                or previous['candidate_binding'] != payload['candidate_binding']
+                or previous['reviewer_id'] != payload['reviewer_id']
+                or _review_time(previous['reviewed_at'], 'previous reviewed_at') >=
+                    _review_time(payload['reviewed_at'], 'reviewed_at')):
+            raise ValueError('review conflict or supersession mismatch')
+    groups = payload['groups']
+    for path, digest in ((response_path, response_sha256), (trust_root_path, trust_root_sha256)):
+        if sha256_file(path) != digest:
+            raise ValueError('review input changed during verification')
+    prepare_pending_review_intake(root=root, candidate_path=candidate_path, candidate_sha256=candidate_sha256)
+    result = dict(schema_version='pending-research-review-consumption-v1', symbol=payload['symbol'],
+        action='no_order', candidate_binding=payload['candidate_binding'],
+        response_binding=dict(path=response_path.relative_to(root).as_posix(), sha256=response_sha256),
+        trust_root_binding=dict(path=trust_root_path.relative_to(root).as_posix(), sha256=trust_root_sha256),
+        authenticated_reviewer=payload['reviewer_id'], groups=groups,
+        whole_model_review_present=approval is not None, blockers=list(dict.fromkeys(blockers)),
+        research_admitted=False, event_materiality_approved=False, price_admitted=False,
+        position_guidance=None, registered_current_case_changed=False)
+    if approval is not None:
+        approval_path = output_dir / 'human-approval.json'
+        from .common import write_new_json
+        write_new_json(approval_path, approval.as_policy())
+        packet = dict(schema_version='shared-research-review-inputs-v1', symbol=payload['symbol'],
+            authenticated_response_binding=result['response_binding'],
+            reviewed_candidate_binding=payload['candidate_binding'],
+            action='no_order', bindings={'human_approval': dict(
+                path=approval_path.relative_to(root).as_posix(), sha256=sha256_file(approval_path))})
+        write_new_json(output_dir / 'research-reviews.json', packet)
+        result['review_packet_binding'] = dict(path=(output_dir / 'research-reviews.json').relative_to(root).as_posix(),
+                                               sha256=sha256_file(output_dir / 'research-reviews.json'))
+    from .common import write_new_json
+    write_new_json(output_dir / 'receipt.json', result)
+    write_new_json(history / (response_sha256[:24] + '.json'), dict(candidate_binding=payload['candidate_binding'],
+        response_binding=result['response_binding'], trust_root_binding=result['trust_root_binding']))
+    return result
 
 
 def prepare_pending_review_intake(*, root: Path, candidate_path: Path,
@@ -136,6 +431,36 @@ def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
     changes = dict(research_case_payload=canonical['research_case'],
         facts_payload=canonical['facts'], assumptions_payload=canonical['assumptions'])
     if 'human_approval' in loaded:
+        journal = require_inside(root / 'runtime', root / 'runtime/research-review-responses', 'review journal')
+        has_journal = any(journal.glob('*/*.json'))
+        live_context = (build_research_review_model_context(descriptor=descriptor, spec=spec)
+                        if has_journal else None)
+        context_heads = []
+        for directory in journal.glob('*'):
+            if directory.is_dir():
+                records = list(directory.glob('*.json'))
+                if not records:
+                    continue
+                digest = _strict_review_json(records[0])['candidate_binding']['sha256']
+                _, existing_head = _authenticated_review_history(root, digest)
+                if existing_head is not None and existing_head[2]['model_context'] == live_context:
+                    context_heads.append(existing_head)
+        if len(context_heads) > 1:
+            raise ValueError('authenticated review has conflicting candidate heads for the same model context')
+        if context_heads and packet.get('authenticated_response_binding') is None:
+            raise ValueError('authenticated review provenance cannot be stripped from a current packet')
+        if packet.get('authenticated_response_binding') is not None:
+            candidate_binding = packet['reviewed_candidate_binding']
+            from .pending_research_candidate import verify_pending_research_candidate
+            candidate = verify_pending_research_candidate(root=root, path=root / candidate_binding['path'],
+                expected_sha256=candidate_binding['sha256'])
+            if candidate['model_context'] != build_research_review_model_context(descriptor=descriptor, spec=spec):
+                raise ValueError('authenticated review packet candidate differs from live inputs')
+            _, head = _authenticated_review_history(root, candidate_binding['sha256'])
+            if (head is None or packet['authenticated_response_binding'] != head[1]['response_binding']
+                    or head[2]['whole_model_approval'] is None
+                    or human_research_approval_from_payload(head[2]['whole_model_approval']).as_policy() != loaded['human_approval']):
+                raise ValueError('authenticated review packet superseded or conflicting')
         approval = human_research_approval_from_payload(loaded['human_approval'])
         if approval.symbol != spec.symbol:
             raise ValueError('human review issuer mismatch')

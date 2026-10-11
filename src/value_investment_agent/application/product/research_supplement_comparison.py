@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from decimal import Decimal, InvalidOperation, localcontext
 from pathlib import Path
 import re
 from typing import Any
@@ -42,6 +43,59 @@ def _semantic(value: Any) -> Any:
     if isinstance(value, list):
         return [_semantic(item) for item in value]
     return value
+
+
+def _pending_change_drivers(before: dict, after: dict) -> dict:
+    """Explain generation-time translation without treating it as new facts."""
+    inputs = ('consumed_operating_inputs', 'consumed_scenario_inputs', 'model_identity',
+              'selected_choice', 'review_groups', 'choice_rationale', 'countercase', 'model_limits')
+    inputs_unchanged = all(key in before and key in after and _equal(before[key], after[key]) for key in inputs)
+    previous, current = before.get('candidate_valuation'), after.get('candidate_valuation')
+    consistent = False
+    changed_time = False
+    if inputs_unchanged and isinstance(previous, dict) and isinstance(current, dict):
+        left, right = json.loads(json.dumps(previous)), json.loads(json.dumps(current))
+        lt = left.get('assumptions', {}).get('valuation_timing', {})
+        rt = right.get('assumptions', {}).get('valuation_timing', {})
+        changed_time = lt.get('valuation_at') != rt.get('valuation_at')
+        for value in (lt, rt):
+            value.pop('valuation_at', None)
+            value.pop('evidence_refs', None)
+        for value in (left, right):
+            value.pop('evidence_refs', None)
+            for name in ('bear_value', 'base_value', 'bull_value'):
+                value.pop(name, None)
+        checks = []
+        try:
+            with localcontext() as context:
+                context.prec = 60
+                ls, rs = left.get('sensitivities', []), right.get('sensitivities', [])
+                if len(ls) == len(rs) == 3:
+                    for old, new in zip(ls, rs):
+                        scenario = old['scenario']
+                        factor = Decimal(new['basis_to_valuation_factor']) / Decimal(old['basis_to_valuation_factor'])
+                        checks.append(scenario == new['scenario'] and
+                            abs(Decimal(previous[scenario+'_value']) * factor -
+                                Decimal(current[scenario+'_value'])) < Decimal('1e-20'))
+                        checks.append(abs(Decimal(old['ordinary_equity_value']) * factor -
+                                          Decimal(new['ordinary_equity_value'])) < Decimal('1e-12'))
+                        checks.append(Decimal(old['terminal_residual_contribution_ratio']) ==
+                                      Decimal(new['terminal_residual_contribution_ratio']))
+                        checks.append(all(abs(Decimal(row['dividend_crosscheck_difference'])) < Decimal('1e-20')
+                                          for row in (old, new)))
+                        for row in (old, new):
+                            for key in ('ordinary_equity_value', 'per_share_value', 'basis_to_valuation_factor',
+                                        'dividend_crosscheck_difference', 'terminal_residual_contribution_ratio'):
+                                row.pop(key, None)
+                    consistent = all(checks) and _equal(left, right)
+        except (KeyError, TypeError, InvalidOperation, ZeroDivisionError):
+            consistent = False
+    return dict(economic_inputs_unchanged=inputs_unchanged,
+        valuation_generation_time_changed=changed_time,
+        valuation_translation_consistent=consistent,
+        interpretation=('GENERATION_TIME_TRANSLATION_NOT_NEW_COMPANY_FACTS'
+            if changed_time and consistent else 'RESEARCH_CHANGE_REQUIRES_FIELD_REVIEW'),
+        official_disclosure_novelty='NOT_ESTABLISHED', approval_changed=False)
 
 
 def compare_research_supplements(
@@ -142,7 +196,9 @@ def compare_research_supplements(
                     'candidate_valuation', 'choice_rationale', 'countercase', 'model_limits',
                     'review_questions', 'review_groups')}) | {
                     'consumed_operating_inputs': package['facts']['operating_inputs'],
-                    'consumed_scenario_inputs': package['facts']['scenario_inputs']}}
+                    'consumed_scenario_inputs': package['facts']['scenario_inputs'],
+                    'model_identity': {key: payload['model_context'][key] for key in
+                                       ('model_id', 'model_version', 'profile_id')}}}
         if role == "valuation_proposal":
             if payload.get("schema_version") != "finite-neutral-valuation-proposal-v1":
                 raise ValueError("unsupported valuation proposal schema")
@@ -202,6 +258,8 @@ def compare_research_supplements(
             "previous_reason": before.get("reason"), "current_reason": after.get("reason"),
             "fields": fields,
         }
+        if role == 'pending_research_candidate' and available:
+            roles[role]['change_drivers'] = _pending_change_drivers(left, right)
     for path, digest in verified.items():
         if sha256_file(path) != digest:
             raise ValueError("comparison input changed during comparison")

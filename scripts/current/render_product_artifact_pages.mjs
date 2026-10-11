@@ -103,7 +103,7 @@ function table(name, title, headers, rows, widths) {
   ws.getRange('A2').format.font = {name:'Microsoft YaHei', size:17, bold:true, color:'#202828'};
   ws.getRange(`A2:${last}2`).format.rowHeight = 35;
   ws.getRange(`A3:${last}3`).merge();
-  ws.getRange('A3').values = [[`展示日期 ${snapshot.as_of}；工程预览，正式工作簿未替换。各公司的证据和估值日期分别保留。`]];
+  ws.getRange('A3').values = [[`展示日期 ${snapshot.as_of}；研究展示，批准状态分别核验。各公司的证据和估值日期保留。`]];
   ws.getRange(`A3:${last}3`).format.rowHeight = 32;
   ws.getRange('A1').formulas = [[`=HYPERLINK("#'01_今日'!A1","返回今日")`]];
   ws.getRange(`A1:${last}1`).format = {wrapText:false, rowHeight:24};
@@ -119,7 +119,7 @@ function table(name, title, headers, rows, widths) {
 }
 const reviewRows = snapshot.companies.map(c=>{
   const r=reviews(c);
-  return [`${c.company_name}\n${c.symbol}`,label(c.research_status),r['当前决策状态']??'待研究复核',mainReason(c),r['下一触发']??c.next_trigger];
+  return [`${c.company_name}\n${c.symbol}`,label(c.research_status),r['当前决策状态']??'待研究复核',r['本次重点']??mainReason(c),r['审核入口']??r['下一触发']??c.next_trigger];
 });
 // Keep independently verified dated observations visible without admitting a decision price.
 const allMarketObservations = (snapshot.today_items ?? []).filter(item=>item.category?.code === 'MARKET_DATA');
@@ -148,6 +148,8 @@ const companyRows=snapshot.companies.flatMap(c=>{
     [c.symbol,'现在能否买入',mainReason(c)],
     [c.symbol,'最新价格观察',observation?.what_happened??assessment(c.price)],
     [c.symbol,'估值用途与不确定性',assessment(c.valuation)],
+    ...['事实与估计','当前正式准入','审核入口','事件复核重点','研究变化归因'].filter(key=>r[key]).map(key=>[c.symbol,key,r[key]]),
+    ...Object.keys(r).filter(key=>key.startsWith('经济审核：')).map(key=>[c.symbol,key,r[key]]),
     ...c.sections.map(s=>[c.symbol,sections[s.key],s.summary]),
     ...reviewKeys.filter(key=>r[key]).map(key=>[c.symbol,key,publicText(r[key])]),
     ...Object.keys(r).filter(key=>key.startsWith('模型待审：') || ['完整主估值候选待审','主估值候选最强反证'].includes(key)).map(key=>[c.symbol,key,r[key]]),

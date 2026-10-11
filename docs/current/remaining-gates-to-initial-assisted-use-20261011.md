@@ -2,7 +2,7 @@
 
 TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
 INITIAL_ASSISTED_USE = NOT_REACHED
-CURRENT_PACKAGE = D2_REAL_RESEARCH_DECISION_CLOSURE
+CURRENT_PACKAGE = D2-DECISION-ADMISSION-AND-ASSISTED-USE-CLOSURE
 action = no_order
 Human makes final investment decision.
 
@@ -10,6 +10,27 @@ This is an acceptance checklist, not a new roadmap or M8. Software delivery,
 independent conditional research, publication and investment approval differ.
 The new B preference is low-confidence research, not G3 or current valuation.
 Actual archived 10/9 close does not advance 10/8 or 9/22 research cutoffs.
+
+## 2026-10-11 Verified Successor
+
+Canonical SHA83908b2513e1d9cf7dbdc17f0ad6f56b7a213e94f52a3bb0398af60339ab5b29
+is published, backed up and WPS/pointer verified under standing authorization.
+Earlier SHA6c90... publication statements below are historical. Nine concrete
+economic review groups now have authenticated append-only response consumption
+through the existing G3 contract and a Chinese usage guide. Actual responses and
+reviewers remain empty; pinned trust registry is empty. Real identity enrollment,
+economic/G3 decisions and same-version announcement materiality remain necessary.
+
+Seven Moutai and thirty-three Yili announcements are grouped into seven/eight
+economic review items with original candidate/field mapping. Both actual PriceBridge
+replays refuse the earlier archived close; no current admission fabricated.
+Six operating countercases prepared; company-specific Ke remains insufficient.
+New 25-file encrypted component restore verifies bytes, not full-system/database
+restore; prepublication Excel only. No additional real sessions or production
+authorization. All six inherited R2/R3/R6/R5 final-use gate rows below remain open.
+
+See d2-decision-admission-closure-20261011.md for A-H evidence, and
+d2-human-review-usage-20261011.md for actual questions and compatible response steps.
 
 ## D2 Research and Product Admission
 
