@@ -2,6 +2,15 @@
 
 ## 2026-10-11 D2 Two-Company Display Review
 
+Commit 3ea9862b4f2b466d2af704b0623d255871404c69 is on main; GitHub run
+38125874483 passed both offline-core and postgres-integration. Separately,
+600887 cost research verified retained China Food Processing originals and
+ran the existing shared model at 7.74173173%, 9%, and 11% with rebuilt fade and
+terminal ROE. Conditional values are 10.26457644/10.07513735/9.78713782;
+9% exactly reproduces v5. Eleven input bindings, output consistency and finite
+cost ordering passed. This is an unapproved diagnostic, not a successor
+research candidate, company beta estimate, updated policy or trading price.
+
 Final isolated candidate SHA6c90ae7a...16900 passed exact source checks (284
 bindings), 21 conditional numerical cells, preserved 55 other sheets, WPS
 read-only inspection of seven managed pages, 17 internal navigation links,

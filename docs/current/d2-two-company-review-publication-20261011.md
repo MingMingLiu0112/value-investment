@@ -46,3 +46,9 @@ SHA-256：`6c90ae7a24d07f5dc3cf3e05a997db1984c85fd87820248c80528979d7166900`
 新增伊利完整窗口影响矩阵见 `docs/current/600887-full-window-event-impact-20261011.md`。澳优渠道调整、募投效益不足、半年不分配、回购获批但未实施等事实已形成有页码的复核问题。`runtime/d2-event-candidate-review-binding-20261011-v1/review-input.json` 精确绑定实际候选包、workbench、政策、扫描与矩阵，SHA-256 为 `6c1d3e7386af22e23357b0290ca3ab0fadff7501f050b657c4157e1d927ad5cf`；状态仅为 PREPARED_NOT_CONSUMED，没有代替材料性审核或回写候选参数。
 
 `D2=IN_PROGRESS`；`TOTAL_GOAL_STATUS=IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES`；`INITIAL_ASSISTED_USE=NOT_REACHED`。不将工作包工程完成表述为总目标完成。
+
+## 独立成本补证
+
+伊利成本研究实际核读既有 China Food Processing 原始行业表及人民币利率/ERP，得到约7.74%的宽行业代理参照，不是发行人测得成本。随后在原 v5 基础上用共享模型执行7.74173173% / 9% / 11%有限对照，条件值为10.26457644 / 10.07513735 / 9.78713782元/股；9%基准与原候选精确一致。重建衰减和终端ROE后仍保留零永久超额回报，不是纯折现实验。
+
+详见 `600887-equity-cost-evidence-gap-20261011.md` 与 `600887-equity-cost-sensitivity-20261011.md`。结果、11项输入绑定、执行脚本副本及manifest在 `runtime/600887-equity-cost-sensitivity-20261011-v1/`。未改候选、政策或上述Excel字节，不新增正式估值/买点。

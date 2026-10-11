@@ -52,6 +52,15 @@ published research/decision/risk pages; investment and production gates unchange
 
 ## Inherited Final-Use Gates
 
+Latest scoped review evidence: actual 600519/600887 pending candidates v5 were
+consumed by the shared model, not merely prepared. The two-company display
+candidate SHA6c90ae7a...16900 has source/numeric/preservation, native WPS,
+navigation and readability proofs; publication authorization for these new
+bytes is still pending. See d2-two-company-review-publication-20261011.md.
+The independent 600887 full-window event matrix and exact-candidate review
+binding are prepared, not materiality approval or operational event consumption.
+These successors do not close economic/G3, current price or final-use gates.
+
 | DAG_NODE | CURRENT_STATUS | WHY_REQUIRED | WHAT_IS_ALREADY_DONE | EXACT_EXTERNAL_INPUT | REOPEN_CONDITION | WHAT_CAN_CONTINUE_IN_PARALLEL |
 | --- | --- | --- | --- | --- | --- | --- |
 | R2 / M4-D3 | BLOCKED_PRIVATE_INPUT; position_guidance=null | Personalized sizing needs real financial constraints | Synthetic portfolio/risk contracts and readiness validation | Private IPS, holdings/quantities/costs, cash, investment horizon, concentration and loss limits; do not publish private inputs | Real inputs validated through existing private contracts | Nonpersonalized stock research |
