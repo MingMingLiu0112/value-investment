@@ -147,3 +147,14 @@ traceback；清单Hash仍为原始442f4427...，不绕过缺失来源。
 范围REAL_DATA_VERIFIED。RESEARCH_ADMITTED=false；MODEL_VALIDITY_VALID未达；
 当前PRICE_ADMITTED=false；HUMAN_APPROVED未达；USER_ACCEPTED=false。
 D2与总Goal仍IN_PROGRESS。`action=no_order`，最终投资决定始终由人作出。
+
+## 后续发布记录（2026-10-11）
+
+用户随后明确“批准，请发布”。已用现有保护性发布器将七个产品页发布到
+C盘WPS原表，保留其余55个工作表，原表路径未变。发布文件SHA-256为
+`8f3608702af711e909cd66ee6f3226e6d875d8efe390361361d494d784c6b481`。
+发布回执：`runtime/publication-receipts/canonical-reviewed-research-20261011T013116Z-8aa6555d.json`。
+发布前备份：`runtime/workbook-backups/canonical-before-reviewed-research-20261011T013116Z-8aa6555d.xlsx`。
+发布后的七页WPS只读打开与导出检查全部通过，回执位于候选目录的
+`published-native-review.json`。以上取代前文“发布未完成”的时间点状态，
+不改变历史验收记录，不代表研究准入、正式买入建议、最终用户验收或总目标完成。
