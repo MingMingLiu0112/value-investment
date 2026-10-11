@@ -1,5 +1,95 @@
 # CURRENT STATUS
 
+## 2026-10-11 P1-P8 D2 Research Closure (In Progress)
+
+Final implementation pushed as 5b301437e7c9753f6eca5c70f9be0bb339791e47;
+Core Research Gates run 38099846242 passed both offline-core and PostgreSQL.
+The independently reviewed evidence repairs passed 145 targeted tests. Final
+Core-plus-advisory local regression passed 1789, skipped 32 (38 warnings),
+.tmp/d2-p1-p8-core-final-v2-20261011.xml. An earlier duplicate CI module caused
+a fixture-directory collision and was corrected without changing assertions.
+
+The actual final batch is runtime/daily-trade-assistant/20261011-d2-four-company-final-v2.
+All four cases succeed technically with NO_ACTION, distinct historical/current
+source scopes, and no private guidance. 600519 source-enriched Mock, official
+incremental query, complete consumed-version review and monthly output succeeded
+through the actual CLI in 20261011-d2-final-preview-v1. Mock remains unadmitted.
+
+The final artifact-tool protected candidate is
+runtime/daily-trade-assistant/20261011-d2-final-integrated-v2/canonical-integration-historical-preview.xlsx,
+SHA-256 8f3608702af711e909cd66ee6f3226e6d875d8efe390361361d494d784c6b481.
+WPS actual read-only open and readability passed. Native link proof has 17
+internal clicks, 19 source formulas, zero external network clicks. Cold delivery
+verification binds 203 sources, preserves 55 original nonmanaged sheet XML
+parts and original workbook structure. Actual PDF/raster review corrected empty
+conclusions, Entry placeholder text and duplicate quote notices. Company PDF
+is 7 pages, Today/Opportunity one each; no clipping found. Canonical and its
+same-directory project backup remain the original 5db7f3c... hash. P6 engineering
+preview is verified, not published or user accepted.
+
+Actual clean Git checkout 5b30143 passed 1768, skipped 53, with 38 warnings.
+Its subsequent all-company asset CLI exposed a real Windows CRLF conversion
+of the new hash-pinned recovery config. Commit 4f49d66 adds the exact file to
+.gitattributes -text without modifying original bytes or its expected SHA.
+Fresh remote clean checkout 4f49d66 passed 1768 tests, skipped 53 (38 warnings),
+and all 18 registered Python help commands. The all-registered asset CLI now
+correctly exits 2 with per-company missing asset inventories, without traceback;
+missing local originals are not silently substituted. Its complete receipt is
+.tmp/d2-clean-final-4f49d66/.tmp/clean-receipt.json. Core Research Gates run
+38100211582 passed both jobs. The final preview acceptance receipt is
+runtime/daily-trade-assistant/20261011-d2-final-integrated-v2/final-acceptance.json.
+No required exec session remains running for these validations. Review the scoped usability
+report at docs/current/d2-mvp-usability-acceptance-20261011.md for remaining P1
+economic choices, P2 current-price approval and historical frontend/batch scope.
+
+The latest user task inherits e652d4d and focuses P1-P8, not new frameworks,
+Web, sentiment, all-market signals, production or automatic trading.
+
+The registered CLI now optionally emits a consumed-version research review,
+an incremental official CNINFO event observation, original-source Agent context
+and a monthly comparison. Original-source matches prove bytes/locators, not
+Finding semantics or economic approval. The independently found context downgrade,
+review-package version substitution, PDF challenge-body and Shanghai midnight
+risks were repaired and explicitly regression-tested before final preview.
+
+Actual four-company batch is retained under
+runtime/daily-trade-assistant/20261011-d2-four-company-final-v1. It has zero
+failed cases, zero required-asset blockers and zero preview errors. All four
+outputs remain NO_ACTION. Current 600519 uses the real source-bound 10/8 package;
+000651, 600741 and 600887 remain legacy historical research, not current admission.
+Yili binds retained exact original index bytes through
+config/daily-600887-original-recovery-v1.json. The conflicting original is unchanged.
+
+Quote bundle runtime/quote-sessions/20261011T003633681771Z/bundle.json has SHA-256
+16c2e4522f34865897fd026961e7b9181ef20cdb10ecb03e3811c40bd07b827e.
+Tencent/Sina and official exchange calendars verify 10/9 closes: 600519 1263.00,
+000651 38.83, 600741 15.55, 600887 27.66. These are the last completed closes,
+not live prices and not admitted current valuation prices.
+
+The actual official 600519 query from 10/8 through 10/9 archived zero new
+announcements without advancing research dates or granting materiality/model/G3
+approval. The legal retained Yili replay was rerun into
+runtime/d2-mvp-acceptance-20261011/historical-price-bridge-reverified.json:
+early cutoffs cannot see the later valuation, while the 10/1 cutoff has a READY
+PriceBridge and still requires pre-model review. No current investment or strict
+PIT/strategy readiness is inferred from this historical software replay.
+
+The first related Core-plus-advisory regression passed 1730, skipped 32,
+with 38 warnings (.tmp/d2-p1-p8-core-20261011.xml). This precedes the final
+independent-review repairs and is not the final verification claim.
+
+P1 remains partial: actual assumptions and limited financial approval are exposed,
+but the first-five-year earnings proposal is not yet a consumed neutral primary
+model. Existing franchise earnings versus retained-capital tail economics still
+requires an exact-version research decision. Do not relabel deep-fade stress
+values as neutral fair prices. P2 current-price admission remains false. P5 Mock
+original-source consumption is a provider/coverage test, not new real LLM research.
+Private input remains BLOCKED_PRIVATE_INPUT, position_guidance=null, action=no_order.
+Canonical remains unchanged at
+5db7f3cd7651edc36505b7f7d87aa8d71550ca2150a999391778c1cbc2d23bf8.
+Final compact preview, clean checkout, push/CI and usability evidence are recorded
+above after actual verification; D2/Goal remain IN_PROGRESS and USER_ACCEPTED=false.
+
 ## 2026-10-11 Daily Research MVP Implementation
 
 User-authorized A-J work now focuses the existing daily CLI on manual research,
