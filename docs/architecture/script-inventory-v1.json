@@ -8,7 +8,7 @@
     "CURRENT_PRODUCT_CLI": 7,
     "CURRENT_RESEARCH_CLI": 203,
     "HISTORICAL_VALIDATION_TOOL": 60,
-    "COMPANY_RESEARCH_CASE_TOOL": 216,
+    "COMPANY_RESEARCH_CASE_TOOL": 217,
     "MIGRATION_TOOL": 13,
     "DIAGNOSTIC_TOOL": 136,
     "SUPERSEDED": 0,
@@ -5992,6 +5992,17 @@
       "risk": "LOW",
       "line_count": 85,
       "sha256": "4583b649d515d524a8011de358102f5f40ffb8f8c1abe638021ee9a4e4b684f1"
+    },
+    {
+      "path": "scripts/research_cases/yili/build_yili_current_fact_review.py",
+      "category": "COMPANY_RESEARCH_CASE_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 277,
+      "sha256": "5c89272af435024ef17e742906f559a801c621f9b3f38dfb87323af9289e7529"
     },
     {
       "path": "scripts/research_moutai_market_beta.py",

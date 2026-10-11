@@ -25,6 +25,9 @@ SEARCH_URL = "https://www.cninfo.com.cn/new/hisAnnouncement/query"
 PDF_BASE_URL = "https://static.cninfo.com.cn/"
 SOURCE_NAME = "CNINFO statutory disclosure"
 USER_AGENT = "Mozilla/5.0 ValueInvestmentAgent/1.0"
+MAX_CNINFO_RAW_RESPONSE_BYTES = 4 * 1024**2
+MAX_CNINFO_RAW_TOTAL_BYTES = 64 * 1024**2
+MAX_CNINFO_RAW_REQUESTS = 512
 SYMBOL_NAMES = {symbol: name for symbol, name, *_ in UNIVERSE}
 
 
@@ -67,11 +70,13 @@ def _cninfo_security_id(symbol: str) -> tuple[str, str]:
     return "", f"gssz0{symbol}"
 
 
-def _discover_security_id(symbol: str, column: str, fallback: str, issuer_name: str | None = None) -> str:
+def _discover_security_id(symbol: str, column: str, fallback: str, issuer_name: str | None = None,
+                          *, request_json=None) -> str:
     """Resolve CNINFO's issuer-specific internal ID without guessing prefixes."""
     if not issuer_name:
         return fallback
-    payload = _request_json({
+    query = request_json or _request_json
+    payload = query({
         "pageNum": "1", "pageSize": "30", "tabName": "fulltext", "column": column,
         "stock": "", "searchkey": issuer_name, "secid": "", "plate": "",
         "category": "", "trade": "", "seDate": "", "sortName": "", "sortType": "",
@@ -82,7 +87,7 @@ def _discover_security_id(symbol: str, column: str, fallback: str, issuer_name: 
             return str(item["orgId"])
     # Broker names frequently match sponsorship notices from other issuers.
     # Annual filings provide a bounded second lookup, still requiring exact code.
-    payload = _request_json({
+    payload = query({
         'pageNum': '1', 'pageSize': '30', 'tabName': 'fulltext', 'column': '',
         'stock': '', 'searchkey': issuer_name, 'secid': '', 'plate': '',
         'category': 'category_ndbg_szsh', 'trade': '', 'seDate': '',
@@ -93,7 +98,7 @@ def _discover_security_id(symbol: str, column: str, fallback: str, issuer_name: 
             return str(item['orgId'])
     # Market display names may contain XD/XR prefixes or CDR suffixes absent
     # from the official issuer name. Resolve by exact code before guessing IDs.
-    payload = _request_json({
+    payload = query({
         'pageNum': '1', 'pageSize': '30', 'tabName': 'fulltext', 'column': '',
         'stock': '', 'searchkey': symbol, 'secid': '', 'plate': '',
         'category': '', 'trade': '', 'seDate': '', 'sortName': '',
@@ -106,24 +111,53 @@ def _discover_security_id(symbol: str, column: str, fallback: str, issuer_name: 
     return fallback
 
 
-def _request_json(data: dict[str, str]) -> dict:
+def _request_json(data: dict[str, str], *, raw_response_sink=None) -> dict:
     # CNINFO index lookups must bypass a machine-wide proxy setting. The raw
     # PDF downloader keeps its existing independently audited implementation.
     session = requests.Session()
     session.trust_env = False
+    response = None
     try:
+        options = {} if raw_response_sink is None else {"stream": True, "allow_redirects": False}
         response = session.post(
             SEARCH_URL,
             data=data,
             headers={"User-Agent": USER_AGENT, "Content-Type": "application/x-www-form-urlencoded"},
             timeout=(10, 30),
+            **options,
         )
         response.raise_for_status()
+        if raw_response_sink is not None:
+            if response.status_code != 200 or response.url != SEARCH_URL:
+                raise ValueError("CNINFO raw response requires the exact official URL and HTTP 200")
+            chunks = []
+            size = 0
+            for chunk in response.iter_content(chunk_size=64 * 1024):
+                size += len(chunk)
+                if size > MAX_CNINFO_RAW_RESPONSE_BYTES:
+                    raise ValueError("CNINFO raw response exceeds byte limit")
+                chunks.append(chunk)
+            # Cache the received (requests-decoded) body, not reserialized JSON.
+            response._content = b"".join(chunks)
+            response._content_consumed = True
         payload = response.json()
         if not isinstance(payload, dict):
             raise ValueError("CNINFO announcement response must be an object")
+        if raw_response_sink is not None:
+            body = response.content
+            if not body or json.loads(body) != payload:
+                raise ValueError("CNINFO raw body differs from parsed response")
+            raw_response_sink(body, {
+                "url": response.url, "method": "POST", "request": dict(data),
+                "page": int(data["pageNum"]),
+                "acquired_at": datetime.now(timezone.utc).isoformat(),
+                "sha256": hashlib.sha256(body).hexdigest(), "size_bytes": len(body),
+                "body_representation": "RECEIVED_RESPONSE_CONTENT_NOT_RESERIALIZED_JSON",
+            })
         return payload
     finally:
+        if raw_response_sink is not None and response is not None:
+            response.close()
         session.close()
 
 
@@ -134,6 +168,7 @@ def search_announcement_window(
     issuer_name: str | None = None,
     *,
     page_size: int = 30,
+    raw_response_sink=None,
 ) -> dict:
     """Return one issuer's complete CNINFO announcement index for a date window.
 
@@ -144,12 +179,46 @@ def search_announcement_window(
         raise ValueError("CNINFO announcement search requires a six-digit symbol")
     if not 1 <= page_size <= 30:
         raise ValueError("CNINFO announcement page size must be 1..30")
+    request_count = 0
+    raw_size = 0
+
+    def query(parameters):
+        nonlocal request_count, raw_size
+        if raw_response_sink is None:
+            return _request_json(parameters)
+        if request_count >= MAX_CNINFO_RAW_REQUESTS:
+            raise ValueError("CNINFO raw query exceeds request limit")
+        captured = []
+
+        def capture(body, metadata):
+            nonlocal raw_size
+            if (not isinstance(body, bytes) or not body
+                    or len(body) > MAX_CNINFO_RAW_RESPONSE_BYTES
+                    or metadata.get("sha256") != hashlib.sha256(body).hexdigest()
+                    or metadata.get("size_bytes") != len(body)
+                    or metadata.get("request") != parameters
+                    or metadata.get("url") != SEARCH_URL):
+                raise ValueError("CNINFO raw response binding mismatch")
+            raw_size += len(body)
+            if raw_size > MAX_CNINFO_RAW_TOTAL_BYTES:
+                raise ValueError("CNINFO raw query exceeds total byte limit")
+            captured.append((body, metadata))
+
+        payload = _request_json(parameters, raw_response_sink=capture)
+        if len(captured) != 1 or json.loads(captured[0][0]) != payload:
+            raise ValueError("CNINFO raw response missing or inconsistent with parsed page")
+        raw_response_sink(*captured[0])
+        request_count += 1
+        return payload
+
     column, fallback = _cninfo_security_id(symbol)
+    discovery_options = {} if raw_response_sink is None else {"request_json": query}
     security_id = _discover_security_id(
         symbol,
         column,
         fallback,
         issuer_name or SYMBOL_NAMES.get(symbol),
+        **discovery_options,
     )
     base = {
         "pageNum": "1",
@@ -167,7 +236,7 @@ def search_announcement_window(
         "sortType": "",
         "isHLtitle": "true",
     }
-    first = _request_json(base)
+    first = query(base)
     total = int(first.get("totalAnnouncement") or 0)
     announcements = list(first.get("announcements") or [])
     page_number = 1
@@ -178,7 +247,7 @@ def search_announcement_window(
     }
     while len(announcements) < total:
         page_number += 1
-        page = _request_json({
+        page = query({
             **base,
             "pageNum": str(page_number),
         })

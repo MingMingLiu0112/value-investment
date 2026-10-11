@@ -667,9 +667,11 @@ def _require_monotonic_quote_session(
         reviewed_registration = current.get("schema_version") == "m7-current-trial-workbook-v5"
         if reviewed_registration:
             from value_investment_agent.infrastructure.evidence.workbook_publication import verify_workbook_publication
-            verify_workbook_publication(root, current)
+            verified_floor = verify_workbook_publication(root, current)
             # The observed close is a non-regression floor, not price admission.
-            current_as_of = date.fromisoformat(current["current_publication"]["quote_observation_as_of"])
+            if verified_floor is None:
+                raise ValueError("CANONICAL_PUBLICATION_QUOTE_FLOOR_UNBOUND")
+            current_as_of = verified_floor
             receipt_reference = Path(current["current_publication"]["receipt"])
         else:
             current_as_of = date.fromisoformat(current["quote_as_of"])
@@ -1065,11 +1067,8 @@ def _reviewed_research_publication(
     if candidate_sha != proof.get("candidate_sha256"):
         raise ValueError("reviewed research preview changed")
     wps = json.loads(wps_path.read_text(encoding="utf-8-sig"))
-    native_ok = (wps.get("readonly_open") == "PASS" or
-                 (wps.get("status") == "SEVEN_NATIVE_EXPORTS_COMPLETE"
-                  and wps.get("readonly") is True and len(wps.get("sheets", [])) == 7))
-    if not native_ok or wps.get("workbook_sha256") != candidate_sha:
-        raise ValueError("reviewed research WPS proof mismatch")
+    from value_investment_agent.infrastructure.evidence.workbook_publication import verify_native_workbook_receipt
+    verify_native_workbook_receipt(root, wps, candidate_sha)
     readability = json.loads(readability_path.read_text(encoding="utf-8-sig"))
     if readability.get("status") != "passed" or readability.get("workbook_sha256") != candidate_sha:
         raise ValueError("reviewed research readability proof mismatch")

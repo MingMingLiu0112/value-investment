@@ -1,5 +1,25 @@
 # 当前总目标：价值投资建议与情绪卫星仓系统
 
+## 2026-10-11 Real Valuation Admission and Product Closure
+
+Latest user package: `D2-REAL-VALUATION-PRICE-ADMISSION-AND-PRODUCT-CLOSURE`,
+inheriting `daeea249411968a8562d195e2fbb0b2a61dba97a`. Execute P0-P8:
+repair the approved Canonical registration without changing workbook bytes;
+prioritize the actual 600519 earnings/franchise/capital/terminal economic review;
+reuse official event/materiality, PriceBridge and DecisionRecommendation v3;
+then deepen one second company, Agent semantic review and existing daily/monthly
+product consumption. No new valuation system, all-market expansion or cleanup.
+
+Code, isolated evidence/calculations/replays/reports, tests and scoped commits/
+pushes are authorized. The 10/11 publication approval applies only to the already
+published workbook. New Canonical content publication, G3, materiality approval,
+private portfolio/IPS, paid APIs, production and real Shadow remain separately
+scoped. Missing approval blocks its conclusion, not independent work. Preserve
+historical artifacts and source dates; action=no_order. D2 and total Goal remain
+IN_PROGRESS; product publication alone is not investment or user acceptance.
+
+This package supersedes the older execution package below, not its evidence.
+
 ## 2026-10-11 D2 Real Research Closure and Advisory MVP (P1-P8)
 
 The latest user instruction authorizes a continuous P1-P8 implementation package

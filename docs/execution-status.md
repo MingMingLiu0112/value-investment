@@ -1,5 +1,49 @@
 # CURRENT STATUS
 
+## 2026-10-11 D2 Real Valuation and Product Closure — In Progress
+
+P0 current v5 registration is evidence-bound to the existing canonical bytes,
+seven actual WPS PDF exports, source-binding receipt and retained dual-source
+quote-session floor. Independent review found five defects in the new proposal
+and publication verifier; all were repaired without changing frozen valuation
+formulae, historical receipts, approvals or the canonical workbook.
+
+P1 actual 600519 run is under
+runtime/daily-trade-assistant/20261011-real-admission-neutral-v3.
+Finite A/B/C alternatives use the original shared residual-income model. Their
+base conditions remain 479.88/587.57/636.08 CNY/share, not admitted fair values.
+Annual replay explicitly reconciles basis-date and retained valuation-date values.
+Profit anchors require source-declared CNY consolidated parent attribution and
+TTM arithmetic; shares/equity cannot masquerade as profit. Normalized earnings,
+G3, materiality, model validity and current price admission remain unresolved.
+
+P2 real raw official acquisition archived uncovered windows only: 600519
+10/10–10/11 returned zero at 03:03:58Z; 600887 9/23–10/11 returned six PDFs at
+03:04:00Z. Response content, request pages, metadata and hashes are retained in
+runtime/d2-real-admission-20261011/*-raw-events-v1. Intraday acquisition does not
+prove the full future day, grant materiality approval or advance research dates.
+
+P3 retained 10/1 replay has bridge.bridge_status=READY with recommendation still
+NOT_READY; this is engineering/historical evidence, never current admission.
+P4 600887 new retained-original research has 64 fact rows/31 calculations and
+six-announcement impact review. This does not convert its old ROE/cost inputs into
+a current approved model. P5 original matching, factual checks, inference,
+counterevidence, independent review and human approval are separately displayed;
+the three actual Mock findings remain one pending interpretation and two questions.
+
+P6 canonical hash remains 8f3608702af711e909cd66ee6f3226e6d875d8efe390361361d494d784c6b481.
+The unique opening entry and actual WPS read-only evidence verify. No second
+publication; final user acceptance remains pending. P7 manual actual report and
+monthly comparison run without fabricating operating changes or private returns.
+Latest product report: docs/current/d2-mvp-usability-acceptance-20261011.md.
+action=no_order; position_guidance=null; D2 and total Goal not complete.
+
+Verification: 1876 passed/32 skipped in the full core run; one inventory check
+found the new Yili case tool unregistered. Added its exact case-tool classification
+(no extra product entrypoint); all 30 architecture checks now pass. Subsequent
+94 targeted publication/proposal/daily-event checks pass. CI verification follows
+the implementation commit; these local results do not declare CI passed.
+
 ## 2026-10-11 D2 Real Admission P0 Registration Repair
 
 Latest authorized package is D2-REAL-VALUATION-PRICE-ADMISSION-AND-PRODUCT-CLOSURE,

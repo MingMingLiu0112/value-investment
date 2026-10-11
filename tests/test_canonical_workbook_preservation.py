@@ -143,7 +143,15 @@ def test_reviewed_research_publication_requires_all_proofs(tmp_path, monkeypatch
     )
     proof_path = folder / 'canonical-preservation.json'
     proof_path.write_text(json.dumps(proof), encoding='utf-8')
+    from value_investment_agent.infrastructure.evidence.workbook_publication import MANAGED_NATIVE_SHEETS
+    native_sheets = {}
+    for index, name in enumerate(MANAGED_NATIVE_SHEETS):
+        pdf = folder / f'page-{index}.pdf'
+        pdf.write_bytes(b'%PDF synthetic native page ' + str(index).encode())
+        native_sheets[name] = dict(pdf=str(pdf), pdf_sha256=publisher._sha256(pdf), used_range='A1:E11')
     (folder / 'integrated-wps-verification.json').write_text(json.dumps(dict(
+        schema_version='m7-product-ux-trial-wps-receipt-v1', status='passed',
+        action='no_order', read_only=True, sheets=native_sheets,
         readonly_open='FAIL' if fault == 'wps' else 'PASS', workbook_sha256=candidate_sha)), encoding='utf-8')
     (folder / 'readability.json').write_text(json.dumps(dict(
         status='failed' if fault == 'readability' else 'passed', workbook_sha256=candidate_sha)), encoding='utf-8')

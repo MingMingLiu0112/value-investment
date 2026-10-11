@@ -99,6 +99,11 @@ def _render_report(workbench: dict[str, Any], payload: dict[str, Any] | None,
                       f"模式：{agent_scope or '未准入'}；{agent_error or '不得成为正式财务事实或独立卖出触发。'}", ""])
         for item in company.get("agent_research", []):
             lines.append(f"- [{item['role']}/{item['finding_type']}] {item['claim']}；来源：{', '.join(item['evidence_refs'])}")
+            semantic = item.get("semantic_review")
+            if semantic:
+                lines.append("  复核分层：原文定位仅验证片段；事实、推理、反证、独立审阅及人工确认均需各自证据，当前尚未获语义批准。")
+                lines.append("  已记录反证：" + '；'.join(str(row.get('text', '')) for row in
+                    semantic['counterevidence']['recorded_countercase']) + '；下一步：' + semantic['proposed_follow_up'])
             context = item.get("source_context")
             if context:
                 lines.append(f"  原文覆盖：{context['coverage_assurance']}；未覆盖引用：{', '.join(context['uncovered_evidence_refs']) or '无'}；原文匹配不代表观点语义通过。")
@@ -254,6 +259,17 @@ def _render_supplements(supplements: dict[str, Any]) -> str:
         for item in review["assumptions"]:
             rationale = str(item.get("rationale_and_countercase") or "尚缺解释").replace("|", "；").replace("\n", " ")
             lines.append(f"| {item['name']} | {rationale} | {item.get('valuation_impact') or '未登记'} | 条件研究，未批准为主估值 |")
+    proposal = supplements.get("valuation_proposal")
+    if proposal:
+        lines.extend(["", "## 有限主估值候选：尚待经济审阅", "",
+            "仍使用原共享模型和财务日期。较长优势期仅是待审替代，不是中性公允价值；原证券级决策未改变。",
+            "| 选择 | 盈利段/衰减年数 | 条件低档/中档/高档（元/股） |",
+            "| --- | --- | --- |"])
+        for row in proposal['choices']:
+            amounts = ' / '.join(f"{Decimal(row['valuation'][key]):.2f}" for key in ('bear_value', 'base_value', 'bull_value'))
+            lines.append(f"| {row['id']} | {row['growth_years']} / {row['fade_years']} | {amounts} |")
+        lines.extend(["", *[f"- 待审：{item}" for item in proposal['economic_review_items']],
+            "", "经济机制、反证与精确来源见同目录 valuation-proposal.md；逐年复算见 valuation-proposal.json。"])
     monthly = supplements.get("monthly_review")
     if monthly:
         titles = {"financial_operating_facts": "财务与经营事实", "main_valuation_assumptions": "估值假设",

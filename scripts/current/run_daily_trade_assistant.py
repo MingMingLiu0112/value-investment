@@ -46,6 +46,9 @@ def main() -> int:
     parser.add_argument("--collect-events", action="store_true", help="Archive an incremental official window; never auto-approve materiality or advance research dates.")
     parser.add_argument("--agent-excerpts", type=Path, help="Pinned original excerpt requests for a single registered company.")
     parser.add_argument("--agent-excerpts-sha256")
+    parser.add_argument("--valuation-proposal-policy", type=Path,
+                        help="Finite, unapproved economic alternatives through the existing model; single company only.")
+    parser.add_argument("--valuation-proposal-policy-sha256")
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--report-only", action="store_true",
                         help="Generate the same verified report/read model without requiring the Excel runtime.")
@@ -67,6 +70,13 @@ def main() -> int:
         parser.error("each symbol must be distinct and have a registered daily case")
     if (args.agent_excerpts is None) != (args.agent_excerpts_sha256 is None):
         parser.error("agent excerpts require both path and SHA-256")
+    if (args.valuation_proposal_policy is None) != (args.valuation_proposal_policy_sha256 is None):
+        parser.error("valuation proposal policy requires both path and SHA-256")
+    if args.valuation_proposal_policy is not None:
+        if len(symbols) != 1:
+            parser.error("valuation proposal requires one company")
+        registry["cases"][symbols[0]].update(valuation_proposal_policy=args.valuation_proposal_policy.as_posix(),
+            valuation_proposal_policy_sha256=args.valuation_proposal_policy_sha256)
     if args.agent_excerpts is not None:
         if len(symbols) != 1 or args.agent_mode == "none":
             parser.error("agent excerpts require one company and an enabled Agent mode")

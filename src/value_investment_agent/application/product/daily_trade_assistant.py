@@ -12,6 +12,7 @@ from .workbench import build_current_workbench_for_symbol
 from .decision_surface import verify_current_decision_workbench
 from .research_publication_input import load_research_publication_input
 from .research_review_packet import build_research_review_packet
+from .neutral_valuation_proposal import build_neutral_valuation_proposal
 from .monthly_research_review import build_monthly_research_review
 from .daily_event_observation import collect_daily_event_observation
 from ..research.agent_review.supervisor import run_agent_research_pilot
@@ -164,6 +165,14 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
     workbench = outcome["result"]
     supplements = {}
     supplement_paths = []
+    if case.get("valuation_proposal_policy"):
+        policy_path, policy_sha = _pinned(root, case, "valuation_proposal_policy")
+        proposal_path = output_dir / "valuation-proposal.json"
+        supplements["valuation_proposal"] = build_neutral_valuation_proposal(root=root,
+            package_path=package_path, package_sha256=package_sha,
+            policy_path=policy_path, policy_sha256=policy_sha, output_path=proposal_path)
+        supplement_paths.extend((("valuation_proposal", proposal_path),
+                                 ("valuation_proposal_report", proposal_path.with_suffix(".md"))))
     if case.get("collect_events"):
         from datetime import date
         try:
@@ -171,7 +180,7 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
                 symbol=symbol, issuer_name=package["name"], start=date.fromisoformat(research_day),
                 end=date.fromisoformat(quote_check.get("latest_completed_session") or quote_check.get("quote_date")
                     or datetime.now(timezone.utc).astimezone(CHINA).date().isoformat()),
-                output_dir=output_dir / "event-observation")
+                output_dir=output_dir / "event-observation", retain_raw_index=True)
             supplement_paths.append(("event_observation", output_dir / "event-observation/observation.json"))
         except (ValueError, OSError) as error:
             supplements["event_observation"] = {"collection_status": "COLLECTION_FAILED",

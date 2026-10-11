@@ -1,0 +1,41 @@
+{
+  "schema_version": "finite-earnings-path-proposal-v1",
+  "symbol": "600519",
+  "action": "no_order",
+  "source_package_sha256": "c48e3dbfbe8b643cc71a609a2277f726246a1f32b1ac5dcb4b2da47055ec3d04",
+  "profit_anchor_field": "ttm_ex_nonrecurring_parent_profit_cny",
+  "profit_basis": "disclosed_ex_nonrecurring_parent_TTM_proxy_not_verified_normalized_earnings",
+  "income_growth": {"bear": "-0.05", "base": "0", "bull": "0.05"},
+  "rationale_bindings": [
+    {"path": "docs/current/600519-primary-earnings-assumption-research-20261009.md", "sha256": "70028ada50bc3c50d897087451b5b18f6387fc4e8af4fa16d09679ef7da6ce1a"},
+    {"path": "docs/current/600519-neutral-model-review-20261011.md", "sha256": "fe862b41296adf239c006f0fa2b7c44902c5b83c623e3c7c99fe83cb306fa14d"},
+    {"path": "src/value_investment_agent/valuation_models/residual_income.py", "sha256": "090bb42f00300662ed4f626ee0df19c58c0e6049edd612021d8ccd4b7925a0f7"}
+  ],
+  "choices": [
+    {"id": "A_PRESSURE_REFERENCE", "growth_years": 5, "fade_years": 5,
+      "rationale": "复现现有强衰减压力，明确它假设存量经营总盈利受侵蚀，而不只是新资本低回报。",
+      "countercase": "中档后五年整体利润降约65.84%，当前财报不能证明该速度可作为中性中心。"},
+    {"id": "B_CONTINUITY_ALTERNATIVE", "growth_years": 10, "fade_years": 5,
+      "rationale": "现有核心产品、品牌和渠道支持继续研究存量盈利持续性；十年条件是待审优势期选择，不是已识别寿命。",
+      "countercase": "成本、毛利和扣非盈利已有走弱；十年名义盈利稳定不能由历史高毛利自动推出，延长期限本身不构成批准。"},
+    {"id": "C_SLOW_EROSION_ALTERNATIVE", "growth_years": 10, "fade_years": 10,
+      "rationale": "将存量盈利维持与较慢整体优势衰减明确拆成两个时期，量化尾部制度选择的影响。",
+      "countercase": "仍使用全资本衰减而不是经营资产与新资本分账；二十年路径具有更高判断不确定性，不按最高价值选择。"}
+  ],
+  "economic_review_items": [
+    "是否接受已披露扣非TTM作为低置信盈利代理；追加正常化调整和金融尾部损失仍未知。",
+    "-5/0/+5增长适用前五年；延伸至十年仅是待审替代，须单独判断优势持续期。",
+    "选择整体盈利受侵蚀的强压力、较长持续期或较慢衰减；不能以新留存资金回报低代替存量盈利侵蚀依据。",
+    "25%显式留存用于必要投入、库存、认缴和缓冲，不自动赚历史ROE；终端留存改为g/ROE。",
+    "权益成本和2%终端增长是研究判断；终端ROE等于成本仍假设资本能持续赚钱及分配。",
+    "母公司现金上划、金融资产流动性和损失重大性须独立审阅；G3及事件材料性未获批准。"
+  ],
+  "assurance_limits": [
+    "本次候选保留原财务基准、研究日期和估值日期，只记录真实新计算时间，不声称严格历史PIT或最新研究准入。",
+    "增长、成本和优势期限都是假设，不是官方未来事实；没有选择已批准中性模型。",
+    "原三档同时变化增长、权益成本和衰减终点，不是单一因素置信区间；年度终段利润可能倒序。",
+    "集团归母权益与母公司可分配现金不同；现金和未来股息不重复加到权益价值。",
+    "未建立金融损失、流动性和维持资本开支的完整归属上界；不能将未知填零。",
+    "当前决策仍NO_ACTION，价格观察未准入，私人仓位为空；候选计算不更改任何审批或正式Excel。"
+  ]
+}

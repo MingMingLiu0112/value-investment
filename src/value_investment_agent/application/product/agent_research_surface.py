@@ -7,6 +7,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from ..research.agent_review.snapshot import load_research_snapshot
+from ..research.agent_review.semantic_review import semantic_review_checklist
 from ..research.agent_review.source_context import (
     verify_packet_source_context, offline_context_input_sha256,
     verify_finding_source_context,
@@ -72,6 +73,7 @@ def project_verified_agent_packet(payload: dict[str, Any], *, root: Path,
             "status": "PENDING_HUMAN_REVIEW",
             "scope": scope, "finding_type": item["finding_type"],
             "research_as_of": snapshot.as_of.isoformat(),
+            "semantic_review": semantic_review_checklist(item, snapshot, context),
         })
         if context is not None:
             views[-1]["source_context"] = {
