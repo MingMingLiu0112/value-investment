@@ -132,6 +132,14 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
         return result
     package_path, package_sha = _pinned(root, case, "package")
     request_path, request_sha = _pinned(root, case, "schedule_request")
+    registered_inputs = {}
+    for role, parameter in (("research_reviews", "reviews"), ("event_scan", "event")):
+        if role + "_sha256" in case and role not in case:
+            raise ValueError(f"daily case requires {role} for its registered hash")
+        if role in case:
+            path, digest = _pinned(root, case, role)
+            registered_inputs[parameter + "_path"] = path
+            registered_inputs[parameter + "_sha256"] = digest
     package = load_json_object(package_path, "research package")
     request = load_json_object(request_path, "research scope")
     if package.get("symbol") != symbol or request.get("symbol") != symbol:
@@ -165,6 +173,7 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
     outcome = build_current_workbench_for_symbol(root=root, symbol=symbol,
         package_path=package_path, output_path=workbench_path, schedule_request=request,
         schedule_request_sha256=request_sha, quote_path=quote_path, quote_sha256=quote_sha,
+        **registered_inputs,
         recommendation_schema_version="advisory-decision-recommendation-v3")
     workbench = outcome["result"]
     supplements = {}
@@ -401,6 +410,8 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
                          "src/value_investment_agent/application/product/agent_research_surface.py",
                          "scripts/current/render_product_artifact_pages.mjs") if (root / name).is_file()],
         "inputs": {"package": package_sha, "schedule_request": request_sha,
+                   "research_reviews": case.get("research_reviews_sha256"),
+                   "event_scan": case.get("event_scan_sha256"),
                    "valuation_proposal_policy": case.get("valuation_proposal_policy_sha256"),
                    "financial_review_manifest": case.get("financial_review_manifest_sha256"),
                    "independent_agent_review": case.get('independent_agent_review_sha256'),

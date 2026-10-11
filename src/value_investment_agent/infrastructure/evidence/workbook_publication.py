@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from datetime import date
 from pathlib import Path
 import re
@@ -15,11 +16,26 @@ MANAGED_NATIVE_SHEETS = (
 )
 
 
-def _bound_bytes(root: Path, value: Any, digest: Any) -> bytes:
+def _evidence_path(root: Path, value: str, *, original_root: Path | None = None) -> Path:
+    path = Path(value)
+    if original_root is not None and path.is_absolute():
+        # Map lexically; never resolve symlinks or read files at the old location.
+        original = Path(os.path.abspath(original_root))
+        try:
+            path = Path(os.path.abspath(path)).relative_to(original)
+        except ValueError as error:
+            raise ValueError("CANONICAL_PUBLICATION_EVIDENCE_MISMATCH") from error
+    path = (root / path).resolve()
+    if not path.is_relative_to(root / "runtime"):
+        raise ValueError("CANONICAL_PUBLICATION_EVIDENCE_MISMATCH")
+    return path
+
+
+def _bound_bytes(root: Path, value: Any, digest: Any, *, original_root: Path | None = None) -> bytes:
     if (not isinstance(value, str) or not value.strip() or not isinstance(digest, str)
             or re.fullmatch(r"[0-9a-f]{64}", digest) is None):
         raise ValueError("CANONICAL_PUBLICATION_BINDING_INVALID")
-    path = (root / value).resolve()
+    path = _evidence_path(root, value, original_root=original_root)
     if not path.is_relative_to(root / "runtime") or not path.is_file():
         raise ValueError("CANONICAL_PUBLICATION_EVIDENCE_MISMATCH")
     raw = path.read_bytes()
@@ -28,9 +44,9 @@ def _bound_bytes(root: Path, value: Any, digest: Any) -> bytes:
     return raw
 
 
-def _bound_json(root: Path, value: Any, digest: Any) -> dict[str, Any]:
+def _bound_json(root: Path, value: Any, digest: Any, *, original_root: Path | None = None) -> dict[str, Any]:
     try:
-        document = json.loads(_bound_bytes(root, value, digest).decode("utf-8-sig"))
+        document = json.loads(_bound_bytes(root, value, digest, original_root=original_root).decode("utf-8-sig"))
     except (UnicodeError, json.JSONDecodeError) as error:
         raise ValueError("CANONICAL_PUBLICATION_EVIDENCE_INVALID") from error
     if not isinstance(document, dict) or document.get("action") != "no_order":
@@ -38,7 +54,7 @@ def _bound_json(root: Path, value: Any, digest: Any) -> dict[str, Any]:
     return document
 
 
-def verify_native_workbook_receipt(root: Path, native: dict[str, Any], expected: str) -> None:
+def verify_native_workbook_receipt(root: Path, native: dict[str, Any], expected: str, *, original_root: Path | None = None) -> None:
     """Require named managed pages and the actual pinned native PDF exports."""
     sheets = native.get("sheets")
     if (native.get("schema_version") != "m7-product-ux-trial-wps-receipt-v1"
@@ -54,14 +70,14 @@ def verify_native_workbook_receipt(root: Path, native: dict[str, Any], expected:
                 or not isinstance(sheet.get("used_range"), str)
                 or re.fullmatch(r"[A-Z]+[1-9][0-9]*:[A-Z]+[1-9][0-9]*", sheet["used_range"]) is None):
             raise ValueError("CANONICAL_PUBLICATION_WPS_RECEIPT_MISMATCH")
-        export = (root / sheet["pdf"]).resolve()
+        export = _evidence_path(root, sheet["pdf"], original_root=original_root)
         if export in exports:
             raise ValueError("CANONICAL_PUBLICATION_WPS_RECEIPT_MISMATCH")
         exports.add(export)
-        _bound_bytes(root, sheet["pdf"], sheet.get("pdf_sha256"))
+        _bound_bytes(root, sheet["pdf"], sheet.get("pdf_sha256"), original_root=original_root)
 
 
-def _publication_quote_floor(root: Path, sources: dict[str, Any]) -> date:
+def _publication_quote_floor(root: Path, sources: dict[str, Any], *, original_root: Path | None = None) -> date:
     """Replay only quote evidence actually declared by the pinned published snapshot."""
     from ...quote_session_conversion import quote_snapshot_from_bundle_file
     from ...quote_snapshot import QUOTE_STATUS_VERIFIED_CLOSE
@@ -69,7 +85,7 @@ def _publication_quote_floor(root: Path, sources: dict[str, Any]) -> date:
     binding = sources.get("publication_input_binding")
     if not isinstance(binding, dict):
         raise ValueError("CANONICAL_PUBLICATION_QUOTE_FLOOR_UNBOUND")
-    handoff = _bound_json(root, binding.get("path"), binding.get("sha256"))
+    handoff = _bound_json(root, binding.get("path"), binding.get("sha256"), original_root=original_root)
     if handoff.get("schema_version") != "research-publication-input-v1":
         raise ValueError("CANONICAL_PUBLICATION_QUOTE_FLOOR_UNBOUND")
     snapshot = handoff.get("snapshot")
@@ -93,7 +109,7 @@ def _publication_quote_floor(root: Path, sources: dict[str, Any]) -> date:
             continue
         if record.get("action") != "no_order" or (record.get("path"), record.get("sha256")) not in pairs:
             raise ValueError("CANONICAL_PUBLICATION_QUOTE_FLOOR_UNBOUND")
-        raw = _bound_bytes(root, record.get("path"), record.get("sha256"))
+        raw = _bound_bytes(root, record.get("path"), record.get("sha256"), original_root=original_root)
         try:
             bundle = json.loads(raw)
         except (UnicodeError, json.JSONDecodeError) as error:
@@ -101,7 +117,7 @@ def _publication_quote_floor(root: Path, sources: dict[str, Any]) -> date:
         if not isinstance(bundle, dict) or not isinstance(bundle.get("references"), dict):
             raise ValueError("CANONICAL_PUBLICATION_QUOTE_FLOOR_UNBOUND")
         for symbol in bundle["references"]:
-            quote = quote_snapshot_from_bundle_file(root / record["path"], root,
+            quote = quote_snapshot_from_bundle_file(_evidence_path(root, record["path"], original_root=original_root), root,
                 symbol=symbol, ref_id=record["evidence_id"], expected_sha256=record["sha256"])
             if quote.status == QUOTE_STATUS_VERIFIED_CLOSE and quote.quote_date is not None:
                 dates.append(quote.quote_date)
@@ -110,7 +126,7 @@ def _publication_quote_floor(root: Path, sources: dict[str, Any]) -> date:
     return max(dates)
 
 
-def verify_workbook_publication(root: Path, contract: dict[str, Any]) -> date | None:
+def verify_workbook_publication(root: Path, contract: dict[str, Any], *, original_root: Path | None = None) -> date | None:
     """V5 registrations must bind both the publication and subsequent native check."""
     if contract.get("schema_version") != "m7-current-trial-workbook-v5":
         return
@@ -122,7 +138,7 @@ def verify_workbook_publication(root: Path, contract: dict[str, Any]) -> date | 
     root = root.resolve()
 
     def read(role: str) -> dict[str, Any]:
-        return _bound_json(root, binding.get(role), binding.get(role + "_sha256"))
+        return _bound_json(root, binding.get(role), binding.get(role + "_sha256"), original_root=original_root)
 
     published, native = read("receipt"), read("wps_receipt")
     expected = contract.get("canonical_workbook_sha256")
@@ -136,8 +152,8 @@ def verify_workbook_publication(root: Path, contract: dict[str, Any]) -> date | 
             or published.get("workbook_source") != "WORKBOOK_PATH"
             or published.get("workbook_path_unchanged") is not True):
         raise ValueError("CANONICAL_PUBLICATION_RECEIPT_MISMATCH")
-    verify_native_workbook_receipt(root, native, expected)
-    sources = _bound_json(root, published.get("source_bindings_path"), published.get("source_bindings_sha256"))
+    verify_native_workbook_receipt(root, native, expected, original_root=original_root)
+    sources = _bound_json(root, published.get("source_bindings_path"), published.get("source_bindings_sha256"), original_root=original_root)
     if (sources.get("schema_version") != "existing-workbench-preview-bindings-v1"
             or sources.get("integrated_canonical") is not True
             or sources.get("historical_preview") is not True
@@ -145,13 +161,19 @@ def verify_workbook_publication(root: Path, contract: dict[str, Any]) -> date | 
             or sources.get("workbook_sha256") != expected
             or sources.get("output_manifest_sha256") != published.get("preservation_proof_sha256")):
         raise ValueError("CANONICAL_PUBLICATION_SOURCE_BINDINGS_MISMATCH")
-    floor = _publication_quote_floor(root, sources)
+    floor = _publication_quote_floor(root, sources, original_root=original_root)
     if binding.get("quote_observation_as_of") != floor.isoformat():
         raise ValueError("CANONICAL_PUBLICATION_QUOTE_FLOOR_MISMATCH")
     backup_value = published.get("backup")
     if not isinstance(backup_value, str):
         raise ValueError("CANONICAL_PUBLICATION_BACKUP_MISMATCH")
-    backup = (root / backup_value).resolve()
+    if original_root is None:
+        backup = (root / backup_value).resolve()
+    else:
+        try:
+            backup = _evidence_path(root, backup_value, original_root=original_root)
+        except ValueError as error:
+            raise ValueError("CANONICAL_PUBLICATION_BACKUP_MISMATCH") from error
     if (not backup.is_relative_to(root / "runtime/workbook-backups") or not backup.is_file()
             or hashlib.sha256(backup.read_bytes()).hexdigest() != published["backup_sha256"]):
         raise ValueError("CANONICAL_PUBLICATION_BACKUP_MISMATCH")

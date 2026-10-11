@@ -7,6 +7,10 @@ from types import SimpleNamespace
 
 import pytest
 
+from test_pending_review_response import signed, consume, whole_approval
+from value_investment_agent.operations.authorization.trust_root_registry import _use_test_trust_registry
+from value_investment_agent.application.product.decision_surface import verify_current_decision_workbench
+
 from value_investment_agent.application.product import daily_trade_assistant as daily
 from value_investment_agent.presentation import daily_trade_assistant as view
 from value_investment_agent.application.product.common import sha256_file
@@ -258,3 +262,94 @@ def test_report_compares_model_and_price_changes_without_inventing_candidate():
     assert "模型有效性变化" in text
     assert "变化不等于批准" in text
     assert "买入人工复核候选" not in text
+
+
+def _signed_daily_case(fixture):
+    root = fixture['root']
+    package_path = fixture['path'].parent / 'package.json'
+    package = json.loads(package_path.read_text(encoding='utf-8'))
+    request_path = root / 'config/review-daily-request.json'
+    request_path.write_text(json.dumps(dict(schema_version='research-schedule-request-v1',
+        symbol=package['symbol'], source_id='CNINFO', period=package['point_in_time']['report_period'],
+        research_question_id='pending-finite-research', blocker_id='no-active-evidence-stop',
+        reopen_condition_met=False, new_evidence_ids=[])), encoding='utf-8')
+    return dict(package=package_path.relative_to(root).as_posix(), package_sha256=sha256_file(package_path),
+        schedule_request=request_path.relative_to(root).as_posix(), schedule_request_sha256=sha256_file(request_path))
+
+
+def test_authenticated_response_reaches_actual_daily_g3_without_price_or_orders(signed):
+    signed['response']['whole_model_approval'] = whole_approval(signed)
+    consumed = consume(signed)
+    case = _signed_daily_case(signed)
+    binding = consumed['review_packet_binding']
+    case.update(research_reviews=binding['path'], research_reviews_sha256=binding['sha256'])
+    with _use_test_trust_registry(signed['registry']):
+        result = daily.run_daily_trade_assistant(root=signed['root'], symbol=signed['candidate']['symbol'],
+            case=case, output_dir=signed['root']/'runtime/authenticated-daily', agent_mode='none',
+            report_renderer=view._render_report)
+    workbench = json.loads((signed['root']/result['outputs']['workbench']['path']).read_text(encoding='utf-8'))
+    restored = verify_current_decision_workbench(workbench)
+    assert restored.dependency_objects['human_approval'].reviewer_id == 'SYNTHETIC_HUMAN'
+    package = json.loads((signed['path'].parent/'package.json').read_text(encoding='utf-8'))
+    assert set(package['research_case']['blockers']).issubset(workbench['research_blockers'])
+    assert set(package['model_validity_input']['blockers']).issubset(workbench['research_blockers'])
+    decision = workbench['decision_recommendation']
+    assert 'event_materiality_review_unavailable' in decision['blockers']
+    assert 'model_validity_unavailable' in decision['blockers']
+    assert decision['model_validity']['status'] == 'UNKNOWN'
+    assert 'event_materiality' not in restored.dependency_objects
+    assert result['inputs']['research_reviews'] == binding['sha256']
+    assert result['action'] == 'no_order' and result['position_guidance'] is None
+    assert result['recommendation_type'] == 'NO_ACTION'
+    assert result['canonical_workbook_written'] is False
+
+
+def test_tampered_registered_review_stops_that_daily_case_before_application(signed, monkeypatch):
+    signed['response']['whole_model_approval'] = whole_approval(signed)
+    consumed = consume(signed)
+    case = _signed_daily_case(signed)
+    binding = consumed['review_packet_binding']
+    case.update(research_reviews=binding['path'], research_reviews_sha256=binding['sha256'])
+    (signed['root']/binding['path']).write_text('{}', encoding='utf-8')
+    monkeypatch.setattr(daily, 'build_current_workbench_for_symbol',
+        lambda **kw: pytest.fail('Never drop tampered approval and run approved research'))
+    with pytest.raises(ValueError, match='research_reviews hash mismatch'):
+        daily.run_daily_trade_assistant(root=signed['root'], symbol=signed['candidate']['symbol'],
+            case=case, output_dir=signed['root']/'runtime/refused-daily', agent_mode='none',
+            report_renderer=view._render_report)
+    assert not (signed['root']/'runtime/refused-daily').exists()
+
+
+@pytest.mark.parametrize('failure', ['tampered', 'missing_hash', 'orphan_hash'])
+def test_registered_event_binding_rejected_before_daily_application(signed, monkeypatch, failure):
+    root = signed['root']
+    case = _signed_daily_case(signed)
+    event = root / 'event-scan.json'
+    event.write_text('{}', encoding='utf-8')
+    case.update(event_scan=event.name, event_scan_sha256=sha256_file(event))
+    if failure == 'tampered':
+        event.write_text('{"changed": true}', encoding='utf-8')
+    elif failure == 'missing_hash':
+        case.pop('event_scan_sha256')
+    else:
+        case.pop('event_scan')
+    monkeypatch.setattr(daily, 'build_current_workbench_for_symbol',
+        lambda **kw: pytest.fail('Invalid event binding must not reach application'))
+    output = root / 'runtime/refused-event'
+    with pytest.raises(ValueError):
+        daily.run_daily_trade_assistant(root=root, symbol=signed['candidate']['symbol'],
+            case=case, output_dir=output, agent_mode='none', report_renderer=view._render_report)
+    assert not output.exists()
+
+
+def test_hash_bound_invalid_event_scan_rejected_by_existing_application(signed):
+    root = signed['root']
+    case = _signed_daily_case(signed)
+    event = root / 'invalid-event-scan.json'
+    event.write_text('{"schema_version": null}', encoding='utf-8')
+    case.update(event_scan=event.name, event_scan_sha256=sha256_file(event))
+    with pytest.raises(ValueError):
+        daily.run_daily_trade_assistant(root=root, symbol=signed['candidate']['symbol'],
+            case=case, output_dir=root/'runtime/invalid-event', agent_mode='none',
+            report_renderer=view._render_report)
+    assert not (root/'runtime/invalid-event/workbench.json').exists()

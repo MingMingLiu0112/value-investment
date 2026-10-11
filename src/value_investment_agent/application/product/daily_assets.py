@@ -67,7 +67,8 @@ def _load_scoped_recoveries(root, case, recovered, recoveries, recovery_records)
 def _inventory(root, case, agent_mode, recoveries, recovery_records):
     pending = []
     for role in ("package", "schedule_request", "publication_input", "previous_workbench",
-                 "mock_responses", "recovery_manifest", "agent_excerpts", "financial_review_manifest"):
+                 "mock_responses", "recovery_manifest", "agent_excerpts", "financial_review_manifest",
+                 "research_reviews", "event_scan"):
         if role == "mock_responses" and agent_mode != "mock":
             continue
         if role not in case:
@@ -75,7 +76,8 @@ def _inventory(root, case, agent_mode, recoveries, recovery_records):
                 raise ValueError(f"daily case requires {role}")
             continue
         pending.append((case[role], case.get(role + "_sha256"), root, role,
-                        role in {"package", "schedule_request", "recovery_manifest"}, False))
+                        role in {"package", "schedule_request", "recovery_manifest",
+                                 "research_reviews", "event_scan"}, False))
     assets = {}
     scanned = set()
     while pending:

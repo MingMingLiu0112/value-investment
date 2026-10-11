@@ -406,11 +406,17 @@ def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
     if (schema not in {'shared-research-review-inputs-v1', 'shared-research-review-inputs-v2'}
             or packet.get('action') != 'no_order' or packet.get('symbol') != spec.symbol):
         raise ValueError('research review packet scope mismatch')
-    if require_model_binding and schema != 'shared-research-review-inputs-v2':
-        raise ValueError('materiality model binding requires a v2 research review packet')
     refs = packet['bindings']
     if not refs or set(refs) - {'human_approval', 'event_materiality'}:
         raise ValueError('research reviews require registered typed bindings')
+    authenticated_g3_only = (
+        set(refs) == {'human_approval'}
+        and packet.get('authenticated_response_binding') is not None
+        and packet.get('reviewed_candidate_binding') is not None
+    )
+    if (require_model_binding and schema != 'shared-research-review-inputs-v2'
+            and not authenticated_g3_only):
+        raise ValueError('materiality model binding requires a v2 research review packet')
     loaded = {}
     for role, binding in refs.items():
         source = require_inside(root, root / binding['path'], role)

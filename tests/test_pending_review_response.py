@@ -93,12 +93,36 @@ def test_explicit_whole_model_reuses_typed_attachment_without_event_or_price(sig
     package = json.loads((signed['path'].parent/'package.json').read_text(encoding='utf-8'))
     descriptor = build_descriptor(package, root=root)
     packet = root / result['review_packet_binding']['path']
+    original_spec = build_research_run_spec(descriptor)
     with _use_test_trust_registry(signed['registry']):
-        spec = attach_research_reviews(root=root, descriptor=descriptor, spec=build_research_run_spec(descriptor),
-            path=packet, expected_sha256=sha256_file(packet), event_sha256=None)
+        spec = attach_research_reviews(root=root, descriptor=descriptor, spec=original_spec,
+            path=packet, expected_sha256=sha256_file(packet), event_sha256=None,
+            require_model_binding=True)
     assert spec.human_research_approval.reviewer_id == 'SYNTHETIC_HUMAN'
+    assert spec.model_validity_input is original_spec.model_validity_input
+    assert spec.model_validity_input.blockers
+    assert spec.event_materiality_review is None
     assert not result['event_materiality_approved'] and not result['price_admitted']
     assert package['research_case']['blockers']
+
+
+def test_authenticated_g3_v1_cannot_carry_unbound_event_materiality(signed):
+    signed['response']['whole_model_approval'] = whole_approval(signed)
+    result = consume(signed)
+    root = signed['root']
+    package = json.loads((signed['path'].parent/'package.json').read_text(encoding='utf-8'))
+    descriptor = build_descriptor(package, root=root)
+    packet = json.loads((root/result['review_packet_binding']['path']).read_text(encoding='utf-8'))
+    event = root/'unbound-event-review.json'
+    write_new_json(event, {})
+    packet['bindings']['event_materiality'] = dict(path=event.name, sha256=sha256_file(event))
+    path = root/'g3-with-unbound-event.json'
+    write_new_json(path, packet)
+    with _use_test_trust_registry(signed['registry']):
+        with pytest.raises(ValueError, match='requires a v2'):
+            attach_research_reviews(root=root, descriptor=descriptor,
+                spec=build_research_run_spec(descriptor), path=path,
+                expected_sha256=sha256_file(path), event_sha256=None, require_model_binding=True)
 
 
 @pytest.mark.parametrize('state', ['REJECTED', 'INSUFFICIENT', None])
