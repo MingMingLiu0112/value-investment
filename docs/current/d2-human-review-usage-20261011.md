@@ -89,7 +89,9 @@ python -B scripts/current/run_company_research.py --symbol 600887 --pending-revi
 
 合法消费产生 `receipt.json` 和追加式认证历史；只有提供真实typed整模型对象时才另出 `human-approval.json` 与 `research-reviews.json`。检查收据中的身份、精确candidate binding、各组scope、blockers及whole_model_review_present，不能只看命令退出成功。重复键、未知字段、改组顺序/范围、Hash漂移、过期权限、未来审核时间、旧回应冲突和签名不符均会拒绝。
 
-消费收据仍明确 `research_admitted=false/event_materiality_approved=false/price_admitted=false/position_guidance=null`，不改已登记当前case。它认证和记录审核输入，不自动将公司升级为有效研究、行情准入或交易建议。单组拒绝会进入收据阻塞；后续研究接线与重算由Root按既有合同完成，不将新收据当已改变当前产品状态。
+消费收据仍明确 `research_admitted=false/event_materiality_approved=false/price_admitted=false/position_guidance=null`，不改已登记当前case。它认证和记录审核输入，不自动将公司升级为有效研究、行情准入或交易建议。单组拒绝会进入收据阻塞，不将新收据当已改变当前产品状态。
+
+日报现在支持显式登记 `research_reviews` 与 `research_reviews_sha256`，对应合法消费输出的 `review_packet_binding.path/sha256`；独立事件输入使用 `event_scan` 与 `event_scan_sha256`。必须成对提供真实文件及精确Hash。缺失、篡改、孤立Hash或不兼容对象会拒绝，不会悄悄丢弃审核后继续运行。已认证且绑定精确候选的仅整模型G3回应可独立进入源绑定研究；它不包含也不批准公告材料性。附带事件材料性的审核仍严格要求原v2模型、扫描和公告原件合同。此接线已用隔离合成身份测试，当前真实case和空白回应尚未登记批准。
 
 公告材料性另需 `shared-research-review-inputs-v2` 的模型上下文绑定、精确完整EventScan和每ID原件决定。茅台仍保留候选valid_from=2026-10-11与scan validity_from=2026-07-01的差异；不能改日期、清空events或删阻塞绕过检查。两家公司新候选或重要假设变更后，旧回应不因同股票代码而继承，须重新核验并按新版本审阅。
 

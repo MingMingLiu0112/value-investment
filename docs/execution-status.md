@@ -1,5 +1,46 @@
 # CURRENT STATUS
 
+## 2026-10-11 D2 integration and isolated recovery recheck
+
+The resumed audit found two remaining engineering gaps, so the prior scoped
+static review is not evidence that all independent engineering is complete.
+Explicit pinned human-review/event inputs now reach the existing daily application.
+Source-bound whole-model-only authenticated G3 packets now attach with exact
+candidate/live-context/history validation, without event approval. Event-bearing
+packets still require the original v2 contract. Tampered or incomplete bindings
+fail closed. Final review/daily focused tests: 118 passed; mapping focused tests:
+46 passed, 1 Windows directory-symlink privilege skip. Earlier two failing
+integration tests led to this fix; no failing gate was removed.
+
+First recovery retains its 760-item / 19-pass / 3-failure evidence. Successor-v3
+adds missing current publication dependencies: 812 source files, 815 archive
+entries, all restored hashes verified independently by Root. Current publication
+contract missing/drift count is zero; original publication verifier passes with
+explicit original-root mapping, immutable receipt bytes and quote floor 10/9.
+Four application-layer external-file/network/subprocess denial probes passed.
+Its 22-pass / 5-failure validator record includes one expected no-mapping failure
+and four historical workbenches still ineligible for Agent snapshot consumption.
+Historical source/producer identity is not fully closed; no metadata was forged.
+See current/d2-research-closure-restore-20261011.md. System RTO/RPO remain null;
+this is not production/database/offsite or complete historical recovery.
+
+Code fc098113aaa72e6194ae4d30b47606fa819dddce is pushed. Local registered Core:
+2141 passed, 32 skipped, 167.87s; final added assertions independently passed in
+focused tests. Clean fc09811 Core: 2118 passed, 56 skipped, 136.63s, including the
+final mapping/symlink test. Skips cover unavailable retained runtime/acceptance
+assets and host symlink privileges; skipped acceptance is not claimed passed.
+GitHub Core Research Gates 38144390473 passed offline-core and isolated
+postgres-integration. This proves test contracts, not production recovery.
+Retained JUnit and check receipt: runtime/d2-integrated-final-checks-20261011-v1/;
+receipt SHA79729a8deffe073297c795f40743fa8f12154a071d7e810df8e10db35ede5cd7.
+Independent recovery recheck reproduced 22 PASS / 5 FAIL and verified all 355
+publication sources plus all 815 restored items. Inventory's historical exclusion
+summary mentions only S5; the authoritative validator/document record also lists
+000651/600741. No immutable inventory was rewritten to hide this summary omission.
+Canonical Excel remains unchanged at SHA83908b2513e1d9cf7dbdc17f0ad6f56b7a213e94f52a3bb0398af60339ab5b29.
+D2/TOTAL remain IN_PROGRESS, INITIAL_ASSISTED_USE=NOT_REACHED, action=no_order,
+position_guidance=null. No real review or production authorization was supplied.
+
 ## 2026-10-11 D2 Decision Admission Closure and Canonical Successor
 
 Current task is D2-DECISION-ADMISSION-AND-ASSISTED-USE-CLOSURE, not Goal completion.

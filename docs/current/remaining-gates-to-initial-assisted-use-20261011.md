@@ -25,9 +25,16 @@ Seven Moutai and thirty-three Yili announcements are grouped into seven/eight
 economic review items with original candidate/field mapping. Both actual PriceBridge
 replays refuse the earlier archived close; no current admission fabricated.
 Six operating countercases prepared; company-specific Ke remains insufficient.
-New 25-file encrypted component restore verifies bytes, not full-system/database
-restore; prepublication Excel only. No additional real sessions or production
-authorization. All six inherited R2/R3/R6/R5 final-use gate rows below remain open.
+The resumed integration audit closed two engineering gaps: daily cases now forward
+explicit hashed authenticated-review and event inputs; G3-only attachment preserves
+independent event blockers. The H successor recovers 815 inventory entries, including
+the current Excel/publication dependencies, and passes the original publication
+verifier under explicit restored-root mapping. Four historical Agent snapshots and
+historical producer/source identities remain unclosed, with initial failures retained.
+This is neither full-system/database/offsite restore nor system RTO/RPO acceptance.
+Code fc09811 passed clean Core and GitHub run38144390473. No real sessions or
+production authorization were added. All six inherited R2/R3/R6/R5 final-use gate
+rows below remain open. See d2-research-closure-restore-20261011.md.
 
 See d2-decision-admission-closure-20261011.md for A-H evidence, and
 d2-human-review-usage-20261011.md for actual questions and compatible response steps.
