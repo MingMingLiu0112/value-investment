@@ -7,6 +7,7 @@ import re
 
 from .common import load_json_object, require_inside, sha256_file
 from .financial_review_attachment import load_financial_review_attachment
+from .statement_equity_bridge import reconcile_statement_equity
 from ...infrastructure.filings.pdf_text import extract_pages
 from ...valuation_models.residual_income import ResidualIncomeValuationTiming
 
@@ -122,6 +123,11 @@ def rebase_proposal_facts(*, root: Path, symbol: str, facts, policy: dict):
     anchor = terms[0] + terms[1] - terms[2]
     if not anchor.is_finite() or anchor <= 0 or anchor != Decimal(calculation['value']):
         raise ValueError('financial rebase TTM components do not reconcile')
+    if spec.get('equity_bridge') is not None:
+        bridge = reconcile_statement_equity(spec=spec['equity_bridge'], period_end=period,
+            expected_equity=amounts['start_book_equity'], current_source_id=equity['source_id'],
+            pages=pages, verify_excerpt=excerpt)
+        spec = {**spec, 'equity_bridge_result': bridge}
     timing = ResidualIncomeValuationTiming(
         basis_at=datetime.fromisoformat(period + 'T23:59:59+08:00'),
         valuation_at=cutoff,

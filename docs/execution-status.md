@@ -1,5 +1,29 @@
 # CURRENT STATUS
 
+## 2026-10-11 Yili Historical Equity Reconciliation
+
+The existing daily proposal path now accepts a versioned optional statement
+bridge through config/600887-financial-valuation-proposal-v2.json, preserving v1.
+Official H1 physical p58-59 show opening parent equity54,655,690,475.89 CNY,
+reported parent profit5,758,628,097.79, distribution-5,692,824,600.30,
+parent OCI-988,864,492.28, other capital-21,626,981.75 and reserve362,482.64.
+Closing53,711,364,981.99 reconciles exactly, along with minority/total columns.
+The prior naive profit/distribution bridge overstated equity1,010,128,991.39;
+this is explained, not added back to earnings/value. H1 p159 treasury disclosure
+is explicitly not applicable, without implying current dilution approval.
+
+Actual run: runtime/daily-trade-assistant/20261011-yili-equity-bridge-v3.
+Both conditional valuation result objects equal their prior version exactly;
+NO_ACTION and all approval/date/portfolio boundaries remain unchanged. 172
+focused source/proposal/daily/assets/batch/architecture tests passed. The daily
+receipt now hashes the proposal/rebase/bridge/domain/model implementations.
+Independent source/code review reran the actual PDF rebase, rejection examples
+and all six scenario calculations; no concrete defects found. The supported
+statement layout is explicitly bounded, not an arbitrary-company table parser.
+Historical accounting reconciliation is complete; future OCI/capital behavior,
+normalization, financing/distribution and issuer cost/duration are still research
+judgments. D2 and total Goal remain IN_PROGRESS. Canonical/model bytes unchanged.
+
 ## 2026-10-11 Yili Financial Inputs Actually Consumed by Shared Valuation
 
 Existing daily CLI with config/600887-financial-valuation-proposal-v1.json now

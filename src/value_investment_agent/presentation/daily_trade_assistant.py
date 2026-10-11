@@ -301,6 +301,21 @@ def _render_supplements(supplements: dict[str, Any]) -> str:
                 f"- 分母：{inputs['ordinary_shares']}股，披露总股数；库存股及稀释口径尚未认可。",
                 "- 首个完整预测年度从财务基准日起算一年；不是FY2026全年预测，也没有推进研究截止。",
                 *[f"- 模型边界：{item}" for item in spec['limitations']]])
+            bridge = spec.get('equity_bridge_result')
+            if bridge:
+                names = {'opening': '期初归母权益', 'comprehensive': '归母综合收益（含OCI）',
+                         'contribution': '归母资本投入', 'distribution': '归母利润分配',
+                         'reserve': '专项储备', 'other': '其他资本变动', 'closing': '期末归母权益'}
+                lines.extend(['', '### 历史权益为何减少', '',
+                    '| 已对账项目 | 归母金额（亿元） |', '| --- | ---: |'])
+                for key, title in names.items():
+                    lines.append(f"| {title} | {Decimal(bridge['ownership_amounts'][key]['parent']) / Decimal('100000000'):.4f} |")
+                lines.extend([f"- 未解释差额：{bridge['unexplained_difference_cny']}元。",
+                    f"- 利润/分红以外的权益调整：{Decimal(bridge['outside_profit_adjustment_cny']) / Decimal('100000000'):.4f}亿元。",
+                    '- 包含其他综合收益及资本动作；没有将这些损失加回利润或估值。',
+                    '- 历史权益已勾稽；未来正常化利润、模型假设和分红可持续性仍未认可。'])
+                if bridge.get('treasury_disclosure'):
+                    lines.append('- 半年报库存股项目明确披露“不适用”；这不证明报告期后没有回购或稀释。')
         lines.extend(["", *[f"- 待审：{item}" for item in proposal['economic_review_items']],
             "", "经济机制、反证与精确来源见同目录 valuation-proposal.md；逐年复算见 valuation-proposal.json。"])
     monthly = supplements.get("monthly_review")

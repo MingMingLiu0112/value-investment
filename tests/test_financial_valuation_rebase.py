@@ -152,3 +152,21 @@ def test_valid_historical_row_cannot_be_relabeled_current(package, monkeypatch, 
         texts[0] = texts[0].replace('2026年6月30日 2025年12月31日', '2025年12月31日 2024年12月31日')
     with pytest.raises(ValueError):
         call(root, spec)
+
+
+def test_equity_bridge_is_consumed_without_changing_inputs_or_admission(package, monkeypatch):
+    from test_statement_equity_bridge import synthetic_bridge
+
+    root, spec, texts = fixture_rebase(package, monkeypatch)
+    bridge, bridge_pages = synthetic_bridge()
+    texts.append(bridge_pages['synthetic'][0])
+    bridge['source_id'] = package[1]['source_bindings'][0]['id']
+    bridge['header_page'] = 7
+    for row in bridge['rows'].values():
+        row['physical_page'] = 7
+    spec['equity_bridge'] = bridge
+    facts, anchor, _, result = call(root, spec)
+    assert facts.operating_inputs['start_book_equity'] == Decimal('1000')
+    assert anchor == 220
+    assert result['equity_bridge_result']['unexplained_difference_cny'] == '0'
+    assert result['equity_bridge_result']['future_clean_surplus_assumption_approved'] is False

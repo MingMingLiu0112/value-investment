@@ -263,6 +263,14 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
         for name, condition in rows[0]['actual_calculation_inputs']['scenarios'].items():
             lines.append(f'| {name} | {condition["cost_of_equity"]} | {condition["retention"]} | '
                 f'{condition["terminal_roe"]} | {condition["terminal_growth"]} |')
+        bridge = rebase.get('equity_bridge_result')
+        if bridge:
+            lines.extend(['', '## 历史归母权益对账：已勾稽，未来模型仍待审', '',
+                f'期末归母权益：{bridge["reconciled_closing_parent_equity_cny"]}元；未解释差额：{bridge["unexplained_difference_cny"]}元。',
+                f'只计利润和分红的权益：{bridge["naive_profit_distribution_equity_cny"]}元；'
+                f'OCI及资本等调整：{bridge["outside_profit_adjustment_cny"]}元。',
+                '对账使用报告归母利润而非扣非TTM；不把OCI损失加回盈利或股权价值。',
+                '历史会计对账不证明未来无OCI/资本变动，也不证明现金可持续分配。'])
     lines.extend(['## 真正需要审阅的经济选择', '', *[f'- {item}' for item in result['economic_review_items']],
         '', '## 尚未证明', '', *[f'- {item}' for item in result['assurance_limits']], '',
         '逐年权益、盈利、留存、分配、终端和Hash见同名JSON，使用已有共享模型精确复算。',
