@@ -16,5 +16,6 @@ scripts/build_moutai_historical_validation_admission.py -text
 
 # Hash-bound registry and archived relocation originals must retain their bytes.
 config/current-cli-entrypoints-v1.json -text
+config/daily-600887-original-recovery-v1.json -text
 docs/archive/legacy-research-20260925/** -text
 docs/archive/legacy-financing-debt-20260926/** -text
