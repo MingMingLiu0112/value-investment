@@ -1,5 +1,62 @@
 # CURRENT STATUS
 
+## 2026-10-11 D2 Actual Pending Research Input Closure
+
+Current authorized stage: D2_REAL_RESEARCH_DECISION_CLOSURE. D2/TOTAL remain
+IN_PROGRESS; INITIAL_ASSISTED_USE=NOT_REACHED; action=no_order and private
+position_guidance=null. The Canonical remains SHA879e9c44...fd922b; a new
+review preview is not publication permission or economic approval.
+
+The new generic pending-candidate compiler consumes existing finite proposals
+through the shared scheduler, source-bound v2 descriptor and ResearchApplication.
+It does not create a company-specific model or replace registered cases. Actual
+generation dates are used; injected past/future computation dates are rejected.
+Old quote, event approval, Entry/consistency and G3 are not inherited. Scheduler
+refusals retain exact reasons and distinguish prepared from consumed context.
+Optional candidate failure preserves the ordinary daily report and receipt.
+
+600519 B actually runs with 15 annual inputs and 57 exact assumption bindings.
+Five grouped economic questions bind the complete candidate and model context.
+Actual run: runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5.
+600887 consumes its verified H1 equity/share/TTM inputs in the same model,
+using exact FY/H1 original announcement identities from retained official raw
+responses. Legacy event aliases are reverified only with identical PDF hashes;
+unconsumed dividend/event originals stay lineage, not operative valuation Facts.
+Actual run: runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5.
+Both candidate generation dates are 10/11 with financial basis 6/30. Conditions
+are low-confidence and unapproved, not normal earnings bounds or buy points.
+
+Actual complete calendar query window 7/1 through 10/10 is archived under
+runtime/d2-full-event-window-20261011: 600519 seven announcements (seven PDFs
+reused), 600887 33 announcements (six reused). Received-response content and
+pagination are retained. This does not establish 10/11 whole-day completeness
+or approve materiality. New model/event binding and human dispositions remain
+required before ModelValidity or current PriceBridge admission.
+
+Both final daily runs reverify the 10/9 archived close using official calendar
+and matching sources: 1263.00/27.66 CNY. Those prices are display-only; registered
+research dates remain 10/8 and 9/22 and decisions remain NO_ACTION. Existing legal
+historical bridge and all six decision paths remain engineering proofs, not
+today's securities approval. S6 counterevidence questions explicitly preserve
+old Mock verdict limitations and have zero paid/live Provider calls.
+
+Latest local registered offline-core regression: 2088 passed, 32 skipped.
+Independent new issuer/alias and one-shot daily tests: 47 passed in their bounded
+candidate/daily/rebase scope. Local real evidence-component encrypted restore:
+69 files verified, measured decrypt/hash duration about 1.87 seconds; receipt
+runtime/d2-evidence-component-restore-20261011-v1/receipt.json. This includes
+actual research files, current pointer and Canonical bytes; no production
+database, offsite synchronization or full-system RTO/RPO acceptance is claimed.
+
+New two-company Excel is isolated under
+runtime/daily-trade-assistant/20261011-d2-two-company-review-v1. It separates old
+proposal-date values from new pending-generation values and grouped risks.
+Numeric export inspection found and fixed multi-proposal header overwrite;
+normal no-render Artifact export succeeds. Render-enabled export produced a
+Windows process exit failure after writing its artifacts; those bytes are not
+the final candidate. Native/preservation/publication acceptance are separately
+recorded, never inferred from rendering or CI alone.
+
 ## 2026-10-11 Approved Canonical Research Closure Publication
 
 The user's continuation reply to the concrete final publication request

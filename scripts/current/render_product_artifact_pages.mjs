@@ -141,7 +141,7 @@ const companyRows=snapshot.companies.flatMap(c=>{
   const observation=marketObservations.findLast(item=>item.symbol === c.symbol);
   const reviewKeys=['最强反证','为什么未进入更高状态','人工买入复核条件','人工加仓复核条件',
     '人工减仓复核条件','人工退出复核条件','已满足的研究前置','尚缺证据',
-    '条件研究备选','研究假设重开条件','本次财务研究补充','Agent问题独立复核','本次研究版本比较'];
+    '条件研究备选','研究假设重开条件','本次财务研究补充','Agent问题独立复核','本次研究版本比较','本次官方事件窗口'];
   return [
     [`${c.company_name}\n${c.symbol}`,'当前结论',r['当前决策状态']||label(c.decision_status)||'待研究复核'],
     [c.symbol,'为什么关注',c.sections.find(s=>s.key === 'business_quality')?.summary||'经营论点尚未形成；先核对公司研究证据。'],
@@ -150,6 +150,7 @@ const companyRows=snapshot.companies.flatMap(c=>{
     [c.symbol,'估值用途与不确定性',assessment(c.valuation)],
     ...c.sections.map(s=>[c.symbol,sections[s.key],s.summary]),
     ...reviewKeys.filter(key=>r[key]).map(key=>[c.symbol,key,publicText(r[key])]),
+    ...Object.keys(r).filter(key=>key.startsWith('模型待审：') || ['完整主估值候选待审','主估值候选最强反证'].includes(key)).map(key=>[c.symbol,key,r[key]]),
     [c.symbol,'下一次关注',r['下一触发']??c.next_trigger],
   ];
 });
@@ -164,17 +165,32 @@ if (decision) {
   companySheet.getRange(`A${valueRow}:C${valueRow+3}`).format.rowHeight=22;
 }
 let proposalRow=valueRow+6;
+const choiceNames = {A_PRESSURE_REFERENCE:'A 强侵蚀参照',B_CONTINUITY_ALTERNATIVE:'B 盈利持续假设',C_SLOW_EROSION_ALTERNATIVE:'C 慢侵蚀反例','short-advantage':'短优势期条件','medium-advantage':'中优势期条件'};
 for (const {role,data} of supplements) if (role === 'valuation_proposal') {
-  companySheet.getRange(`A${proposalRow}:C${proposalRow}`).values=[['公司代码','研究备选（未批准）','条件研究值（元/股，非买点）']];
+  proposalRow += 2;
+  companySheet.getRange(`A${proposalRow}:C${proposalRow}`).values=[['公司代码',`原估值日期 ${data.original_valuation_date}（待审）`,'条件研究值（元/股，非买点）']];
   companySheet.getRange(`A${proposalRow}:C${proposalRow}`).format={rowHeight:34,wrapText:true,font:{name:'Microsoft YaHei',size:11,bold:true}};
   for (const choice of data.choices) {
     for (const key of ['bear','base','bull']) {
       proposalRow++;
-      const choiceTitle = {A_PRESSURE_REFERENCE:'A 强侵蚀参照',B_CONTINUITY_ALTERNATIVE:'B 盈利持续优先假设',C_SLOW_EROSION_ALTERNATIVE:'C 慢侵蚀反例'}[choice.id] ?? choice.id;
+      const choiceTitle = choiceNames[choice.id] ?? choice.id;
       companySheet.getRange(`A${proposalRow}:C${proposalRow}`).values=[[data.symbol,`${choiceTitle} ${ {bear:'低档',base:'中档',bull:'高档'}[key]}`,Number(choice.valuation[`${key}_value`])]];
       companySheet.getRange(`A${proposalRow}:C${proposalRow}`).format={rowHeight:38,wrapText:true,font:{name:'Microsoft YaHei',size:11}};
       companySheet.getRange(`C${proposalRow}`).setNumberFormat('0.00');
     }
+  }
+}
+for (const {role,data} of supplements) if (role === 'pending_research_candidate' && data.model_context_scope === 'ACTUALLY_CONSUMED') {
+  const values = data.candidate_valuation;
+  if (values?.status !== 'conditional_research_only') continue;
+  proposalRow += 3;
+  companySheet.getRange(`A${proposalRow}:C${proposalRow}`).values=[['公司代码',`待审候选生成 ${data.candidate_research_as_of}`, '实际条件值（元/股，非买点）']];
+  companySheet.getRange(`A${proposalRow}:C${proposalRow}`).format={rowHeight:34,wrapText:true,font:{name:'Microsoft YaHei',size:11,bold:true}};
+  for (const key of ['bear','base','bull']) {
+    proposalRow++;
+    companySheet.getRange(`A${proposalRow}:C${proposalRow}`).values=[[data.symbol,`${choiceNames[data.selected_choice] ?? data.selected_choice} ${{bear:'低档',base:'中档',bull:'高档'}[key]}`,Number(values[`${key}_value`])]];
+    companySheet.getRange(`A${proposalRow}:C${proposalRow}`).format={rowHeight:38,wrapText:true,font:{name:'Microsoft YaHei',size:11}};
+    companySheet.getRange(`C${proposalRow}`).setNumberFormat('0.00');
   }
 }
 table(names[4],'我的组合',['状态','内容'],[[label(snapshot.portfolio.status),snapshot.portfolio.connection_hint],['个人仓位','尚未接入真实组合；仓位与金额为空。']],[30,100]);

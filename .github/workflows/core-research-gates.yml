@@ -90,6 +90,9 @@ jobs:
           tests/test_pinned_artifact.py
           tests/test_workbook_publication.py
           tests/test_neutral_valuation_proposal.py
+          tests/test_pending_research_candidate.py
+          tests/test_pending_candidate_daily_isolation.py
+          tests/test_pending_candidate_issuer_index.py
           tests/test_research_supplement_surface.py
           tests/test_research_supplement_comparison.py
           tests/test_agent_independent_semantic_review.py

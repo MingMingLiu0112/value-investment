@@ -17,13 +17,25 @@ from ...event_scan import (AnnouncementReview, EventScanResult, EVENT_SCAN_SCHEM
 
 def collect_daily_event_observation(*, root: Path, symbol: str, issuer_name: str,
                                     start: date, end: date, output_dir: Path,
-                                    retain_raw_index: bool = False) -> dict:
+                                    retain_raw_index: bool = False,
+                                    retained_originals: list[dict] | None = None) -> dict:
     root = root.resolve()
     runtime_root = require_inside(root, root / "runtime", "daily runtime root")
     output_dir = require_inside(runtime_root, output_dir, "daily event archive")
     if output_dir.exists():
         raise FileExistsError("daily event archive already exists")
     now = datetime.now(timezone.utc)
+    retained = {}
+    for binding in retained_originals or []:
+        url = binding.get('source_url')
+        path = require_inside(runtime_root, root / binding['path'], 'retained official original')
+        if (not isinstance(url, str) or urlparse(url).scheme != 'https'
+                or urlparse(url).hostname != 'static.cninfo.com.cn'
+                or not path.is_file() or sha256_file(path) != binding.get('sha256')):
+            raise ValueError('retained official original URL/hash mismatch')
+        if url in retained and retained[url] != binding:
+            raise ValueError('conflicting retained official originals')
+        retained[url] = binding
     if not start <= end <= now.astimezone(ZoneInfo("Asia/Shanghai")).date():
         raise ValueError("daily event query has invalid/future boundaries")
     output_dir.mkdir(parents=True)
@@ -128,8 +140,9 @@ def collect_daily_event_observation(*, root: Path, symbol: str, issuer_name: str
         identity = str(item["announcementId"])
         if not identity.isdigit():
             raise ValueError("daily event announcement ID must be numeric")
-        original = output_dir / f"{symbol}-{identity}.pdf"
-        digest = download_disclosure_pdf(url, original)
+        cached = retained.get(url)
+        original = (root / cached['path'] if cached else output_dir / f"{symbol}-{identity}.pdf")
+        digest = cached['sha256'] if cached else download_disclosure_pdf(url, original)
         validate_pdf_original(original)
         if sha256_file(original) != digest:
             raise ValueError("Official PDF changed after download")
@@ -169,6 +182,9 @@ def collect_daily_event_observation(*, root: Path, symbol: str, issuer_name: str
         index_representation=("PARSED_OFFICIAL_QUERY_WITH_RECEIVED_RESPONSE_CONTENT"
                               if retain_raw_index else "PARSED_OFFICIAL_QUERY_NOT_RAW_HTTP_BYTES"),
         timestamp_assurance="PROVIDER_DATE_METADATA_NOT_INTRADAY_AVAILABILITY",
+        full_calendar_window_elapsed=end < now.astimezone(ZoneInfo('Asia/Shanghai')).date(),
+        reused_original_count=sum(ref.get('source_url') in retained for ref in refs
+                                  if ref['id'].startswith('cninfo:')),
         pagination_complete=True, materiality_approved=False, model_revalidated=False,
         research_date_advanced=False, earlier_reviews_preserved=True,
         scan_binding=dict(path=scan_path.relative_to(root).as_posix(), sha256=sha256_file(scan_path)),

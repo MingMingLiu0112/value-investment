@@ -354,6 +354,19 @@ def _render_supplements(supplements: dict[str, Any]) -> str:
                     lines.append('- 半年报库存股项目明确披露“不适用”；这不证明报告期后没有回购或稀释。')
         lines.extend(["", *[f"- 待审：{item}" for item in proposal['economic_review_items']],
             "", "经济机制、反证与精确来源见同目录 valuation-proposal.md；逐年复算见 valuation-proposal.json。"])
+    candidate = supplements.get('pending_research_candidate')
+    if candidate and candidate.get('status') == 'RESEARCH_SUPPLEMENT_UNAVAILABLE':
+        lines.extend(['', '## 待审候选未生成', '',
+            '- ' + candidate['error'], '- 原日常研究继续保留；本次失败没有改变批准或建议。'])
+    elif candidate:
+        lines.extend(['', '## 完整待审模型已接入共享研究流程', '',
+            f"- 候选研究生成日：{candidate['candidate_research_as_of']}；原研究日：{candidate['prior_research_as_of']}；财报期末：{candidate['financial_period']}。",
+            '- 新生成日期不是完整事件覆盖或当前价格准入；未替换已发布正式研究。',
+            f"- 选择理由：{candidate['choice_rationale']}",
+            f"- 最强反证：{candidate['countercase']}",
+            '- 候选上下文范围：' + candidate.get('model_context_scope', '待核验') + '；实际批准仍为空。'])
+        lines.extend('- 运行阻塞：' + str(item) for item in candidate.get('research_blockers', []))
+        lines.extend(f'- 待判断：{item}' for item in candidate['review_questions'])
     monthly = supplements.get("monthly_review")
     if monthly:
         titles = {"financial_operating_facts": "财务与经营事实", "main_valuation_assumptions": "估值假设",
@@ -376,8 +389,44 @@ def _render_supplements(supplements: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _render_pending_candidate_review(candidate: dict, candidate_sha256: str) -> str:
+    lines = [f"# {candidate['symbol']}：主估值候选最小审核包", '',
+        '用途：审阅经济假设和精确模型版本；本文件不授予批准，不给买点或仓位。', '',
+        f"- 状态：待审；候选研究生成日 {candidate['candidate_research_as_of']}；财报基准 {candidate['financial_period']}。",
+        f"- 既有有限选择：{candidate['selected_choice']}；{candidate['choice_rationale']}",
+        f"- 最强反证：{candidate['countercase']}",
+        '- 新生成日不证明事件窗口完整。旧财务基准只做条件日期换算，不冒充新净资产。', '']
+    values = candidate.get('candidate_valuation') or {}
+    if values.get('status') == 'conditional_research_only':
+        lines.extend(['| 用途 | 低档 | 中档 | 高档 |', '| --- | ---: | ---: | ---: |',
+            '| 实际待审候选（元/股，不是买点） | ' + ' | '.join(
+                f"{Decimal(values[key]):.2f}" for key in ('bear_value', 'base_value', 'bull_value')) + ' |', ''])
+    else:
+        lines.extend(['候选算术输出未就绪：' + '; '.join(candidate.get('decision_blockers', [])
+            or values.get('blockers', [])), ''])
+    for index, group in enumerate(candidate.get('review_groups') or [], 1):
+        lines.extend([f"## {index}. {group['question']}", '',
+            f"支持依据：{group['support']}", '', f"反面证据：{group['countercase']}", '',
+            f"对价值与风险的影响：{group['impact']}", '',
+            '可选处理：接受此具体用途 / 拒绝 / 证据不足。当前均为待审。', '',
+            '底层逐项范围：' + '；'.join(group['field_paths']), ''])
+    if not candidate.get('review_groups'):
+        lines.extend(['## 待判断事项', '', *[f'- {item}' for item in candidate['review_questions']], ''])
+    lines.extend(['## 精确绑定及下一步', '', f"候选收据SHA-256：{candidate_sha256}",
+        *[f"- {item['path']}；SHA-256 {item['sha256']}" for item in candidate['source_bindings']
+          if Path(item['path']).name in {'package.json', 'workbench.json', 'valuation-proposal.json'}], '',
+        '模型上下文：', '```json', json.dumps(candidate['model_context'], ensure_ascii=False, indent=2), '```', '',
+        '回答不是自动批准记录。投资批准人须按既有合同精确绑定ResearchCase、Facts、Assumptions和公告扫描；',
+        '公告材料性需逐项处理，VERIFIED/REJECTED/INSUFFICIENT不能由系统代填。',
+        '批准后才重新计算ModelValidity与PriceBridge。无批准时继续只读研究，正式建议暂不行动。', '',
+        '完整公式、逐年盈利/权益/分配、终端、A/B/C与原件Hash见同目录valuation-proposal.json。',
+        '正常化盈利未知；私人仓位为空；action=no_order。', ''])
+    return '\n'.join(lines)
+
+
 def run_daily_trade_assistant(*, report_only=False, **kwargs) -> dict[str, Any]:
     from functools import partial
     return run_daily_application(**kwargs, report_renderer=_render_report,
                                  preview_builder=partial(_build_preview, report_only=report_only),
-                                 supplement_renderer=_render_supplements)
+                                 supplement_renderer=_render_supplements,
+                                 candidate_review_renderer=_render_pending_candidate_review)

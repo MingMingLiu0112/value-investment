@@ -96,7 +96,8 @@ def _quote_for_case(root: Path, bundle: Path | None, symbol: str, research_day: 
 def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
         output_dir: Path, report_renderer: Callable, preview_builder: Callable | None = None,
         quote_bundle: Path | None = None, agent_mode: str = "offline",
-        quote_error: str | None = None, supplement_renderer: Callable | None = None) -> dict[str, Any]:
+        quote_error: str | None = None, supplement_renderer: Callable | None = None,
+        candidate_review_renderer: Callable | None = None) -> dict[str, Any]:
     root = root.resolve()
     output_dir = require_inside(root / "runtime", output_dir, "daily assistant output")
     if output_dir.exists():
@@ -181,12 +182,41 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
         supplement_paths.append(("financial_review", attachment_path))
     if case.get("valuation_proposal_policy"):
         policy_path, policy_sha = _pinned(root, case, "valuation_proposal_policy")
-        proposal_path = output_dir / "valuation-proposal.json"
-        supplements["valuation_proposal"] = build_neutral_valuation_proposal(root=root,
-            package_path=package_path, package_sha256=package_sha,
-            policy_path=policy_path, policy_sha256=policy_sha, output_path=proposal_path)
-        supplement_paths.extend((("valuation_proposal", proposal_path),
-                                 ("valuation_proposal_report", proposal_path.with_suffix(".md"))))
+        if case.get('pending_candidate_choice'):
+            from .pending_research_candidate import prepare_pending_research_candidate
+            candidate_dir = output_dir / 'pending-candidate'
+            try:
+                supplements['pending_research_candidate'] = prepare_pending_research_candidate(
+                    root=root, package_path=package_path, package_sha256=package_sha,
+                    policy_path=policy_path, policy_sha256=policy_sha,
+                    choice_id=case['pending_candidate_choice'], output_dir=candidate_dir,
+                    schedule_request=request, schedule_request_sha256=request_sha)
+            except (ValueError, OSError) as error:
+                supplements['pending_research_candidate'] = dict(
+                    status='RESEARCH_SUPPLEMENT_UNAVAILABLE', error=str(error),
+                    action='no_order', decision_changed=False)
+                failure_path = output_dir / 'pending-candidate-error.json'
+                write_new_json(failure_path, supplements['pending_research_candidate'])
+                supplement_paths.append(('pending_candidate_error', failure_path))
+            proposal_path = candidate_dir / 'valuation-proposal.json'
+            if supplements['pending_research_candidate']['status'] == 'PENDING_REVIEW':
+                supplements['valuation_proposal'] = load_json_object(proposal_path, 'candidate proposal')
+                supplement_paths.append(('pending_research_candidate', candidate_dir / 'candidate.json'))
+            if (candidate_review_renderer is not None
+                    and supplements['pending_research_candidate']['status'] == 'PENDING_REVIEW'):
+                candidate_review_path = candidate_dir / 'candidate-review.md'
+                candidate_review_path.write_text(candidate_review_renderer(
+                    supplements['pending_research_candidate'], sha256_file(candidate_dir / 'candidate.json')),
+                    encoding='utf-8')
+                supplement_paths.append(('pending_candidate_review_report', candidate_review_path))
+        else:
+            proposal_path = output_dir / "valuation-proposal.json"
+            supplements["valuation_proposal"] = build_neutral_valuation_proposal(root=root,
+                package_path=package_path, package_sha256=package_sha,
+                policy_path=policy_path, policy_sha256=policy_sha, output_path=proposal_path)
+        if 'valuation_proposal' in supplements:
+            supplement_paths.extend((("valuation_proposal", proposal_path),
+                                     ("valuation_proposal_report", proposal_path.with_suffix(".md"))))
     if case.get("collect_events"):
         from datetime import date
         try:
@@ -334,6 +364,7 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
                          "src/value_investment_agent/application/product/daily_assets.py",
                          "src/value_investment_agent/application/product/financial_review_attachment.py",
                          "src/value_investment_agent/application/product/neutral_valuation_proposal.py",
+                         "src/value_investment_agent/application/product/pending_research_candidate.py",
                          "src/value_investment_agent/application/product/financial_valuation_rebase.py",
                          "src/value_investment_agent/application/product/statement_equity_bridge.py",
                          "src/value_investment_agent/domain/valuation/equity_reconciliation.py",

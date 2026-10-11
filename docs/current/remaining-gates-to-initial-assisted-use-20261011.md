@@ -2,7 +2,7 @@
 
 TOTAL_GOAL_STATUS = IN_PROGRESS_WITH_EXTERNAL_AND_NATURAL_GATES
 INITIAL_ASSISTED_USE = NOT_REACHED
-CURRENT_PACKAGE = D2-REAL-VALUATION-PRICE-ADMISSION-AND-PRODUCT-CLOSURE
+CURRENT_PACKAGE = D2_REAL_RESEARCH_DECISION_CLOSURE
 action = no_order
 Human makes final investment decision.
 
@@ -21,6 +21,12 @@ applicable event coverage, not merely public filings or arithmetic consistency.
 WHAT_IS_ALREADY_DONE: Official-source financial calculations, finite shared-model
 alternatives, independent B preference/countercase, existing review packets,
 historical legal price tests and exact quote evidence; Yili equity reconciliation.
+10/11 successor pending packages now actually consume the shared model: 600519 B
+with 57 bindings; 600887 rebased FY/H1 identity and financial inputs. Grouped
+Chinese review packets are emitted for both. A complete elapsed 7/1-10/10 query
+exists (7/33 announcements), still without materiality approval or 10/11 whole-day
+coverage. The actual local 69-file encrypted evidence/config/Excel restore is a
+component proof, not production-database or full-system restore acceptance.
 EXACT_EXTERNAL_INPUT: Separately scoped exact-version model/G3/materiality review;
 accept, reject or retain NEED_MORE_EVIDENCE for each affected economic judgment.
 No approval is inferred from this checklist or from a publication instruction.

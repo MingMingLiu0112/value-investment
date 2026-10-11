@@ -14,7 +14,7 @@ def project_research_supplements(payload: dict[str, Any], *, root: Path,
     accepted = []
     for binding in bindings:
         role = binding["role"]
-        if role not in {"valuation_proposal", "financial_review", "research_supplement_comparison"}:
+        if role not in {"valuation_proposal", "financial_review", "research_supplement_comparison", 'pending_research_candidate'}:
             continue
         path = require_inside(root / "runtime", root / binding["path"], "research supplement")
         if sha256_file(path) != binding["sha256"]:
@@ -31,7 +31,21 @@ def project_research_supplements(payload: dict[str, Any], *, root: Path,
             source_path = require_inside(root, root / source["path"], "supplement source")
             if sha256_file(source_path) != source["sha256"]:
                 raise ValueError("research supplement source drift")
-        if role == 'research_supplement_comparison':
+        if role == 'pending_research_candidate':
+            from ..application.product.pending_research_candidate import verify_pending_research_candidate
+            data = verify_pending_research_candidate(root=root, path=path, expected_sha256=binding['sha256'])
+            consumption = ('完整待审输入已由共享研究流程消费' if data['model_context_scope'] == 'ACTUALLY_CONSUMED'
+                else '待审输入已准备但调度未允许消费；原因：' + '；'.join(data['research_blockers']))
+            summary = (f"{consumption}；候选生成日期 {data['candidate_research_as_of']}，"
+                f"财报基准 {data['financial_period']}。已发布研究与正式建议不改变。"
+                '优势期、盈利代理、资金分配、权益成本及事件重要性仍需审阅。')
+            company.setdefault('decision_review', []).append({'label':'完整主估值候选待审','value':summary})
+            company['decision_review'].append({'label':'主估值候选最强反证','value':data['countercase']})
+            for group in data.get('review_groups', []):
+                company['decision_review'].append({'label':'模型待审：' + group['question'],
+                    'value': '\n'.join(['依据：' + group['support'], '反证：' + group['countercase'],
+                        '影响：' + group['impact'], '可选结论：接受此用途、拒绝或证据不足；当前待审。'])})
+        elif role == 'research_supplement_comparison':
             if (data.get('schema_version') != 'research-supplement-comparison-v1'
                     or data.get('current_admission') is not False
                     or data.get('approval_changed') is not False
@@ -83,7 +97,7 @@ def project_research_supplements(payload: dict[str, Any], *, root: Path,
         evidence_id = f"daily-{role}-{symbol}-{binding['sha256'][:16]}"
         payload["audit"]["evidence"].append({"evidence_id": evidence_id,
             "title": {'valuation_proposal':'条件估值研究补充', 'financial_review':'财务原件核验补充',
-                'research_supplement_comparison':'研究版本比较'}[role],
+                'research_supplement_comparison':'研究版本比较', 'pending_research_candidate':'完整主估值候选待审'}[role],
             "artifact_type": "UNADMITTED_RESEARCH_SUPPLEMENT", "path": binding["path"],
             "sha256": binding["sha256"], "available_at": data["generated_at"][:10], "action": "no_order"})
         company["evidence_refs"].append(evidence_id)

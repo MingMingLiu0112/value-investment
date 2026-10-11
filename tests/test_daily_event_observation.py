@@ -7,6 +7,36 @@ from value_investment_agent.event_scan import event_scan_from_payload
 import json
 
 
+def test_retained_original_is_rehashed_and_reused_without_network(tmp_path, monkeypatch):
+    data = index()
+    data['total_announcements'] = 1
+    data['announcements'] = [dict(secCode='600519', secName='Synthetic', orgId='test',
+        announcementId='123', announcementTitle='Synthetic filing',
+        adjunctUrl='finalpage/2020-01-01/123.PDF', announcementTime=1577808000000)]
+    original = tmp_path / 'runtime/retained.pdf'
+    original.parent.mkdir()
+    original.write_bytes(b'%PDF-1.4 synthetic fixture')
+    binding = dict(path='runtime/retained.pdf', sha256=service.sha256_file(original),
+        source_url='https://static.cninfo.com.cn/finalpage/2020-01-01/123.PDF')
+    monkeypatch.setattr(service, 'search_announcement_window', lambda *a, **k: data)
+    monkeypatch.setattr(service, 'validate_pdf_original', lambda path: None)
+    monkeypatch.setattr(service, 'download_disclosure_pdf',
+        lambda *a: pytest.fail('retained identical official URL must not download again'))
+    result = service.collect_daily_event_observation(root=tmp_path, symbol='600519',
+        issuer_name='Synthetic', start=date(2020, 1, 1), end=date(2020, 1, 2),
+        output_dir=tmp_path/'runtime/events', retained_originals=[binding])
+    assert result['reused_original_count'] == 1
+    assert result['full_calendar_window_elapsed'] is True
+    assert result['materiality_approved'] is False
+    assert any(ref['path'] == 'runtime/retained.pdf' for ref in result['source_bindings'])
+    original.write_bytes(b'drift')
+    with pytest.raises(ValueError, match='URL/hash mismatch'):
+        service.collect_daily_event_observation(root=tmp_path, symbol='600519',
+            issuer_name='Synthetic', start=date(2020, 1, 1), end=date(2020, 1, 2),
+            output_dir=tmp_path/'runtime/second', retained_originals=[binding])
+    assert not (tmp_path/'runtime/second').exists()
+
+
 def index():
     return {'url':'https://www.cninfo.com.cn/new/hisAnnouncement/query',
         'parameters':{'stock':'600519,gssh0600519','seDate':'2020-01-01~2020-01-02'},

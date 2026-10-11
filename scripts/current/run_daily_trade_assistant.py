@@ -54,6 +54,8 @@ def main() -> int:
     parser.add_argument("--valuation-proposal-policy", type=Path,
                         help="Finite, unapproved economic alternatives through the existing model; single company only.")
     parser.add_argument("--valuation-proposal-policy-sha256")
+    parser.add_argument('--pending-candidate-choice',
+                        help='Compile one existing finite proposal into an unapproved shared research package; no current registration or publication.')
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--report-only", action="store_true",
                         help="Generate the same verified report/read model without requiring the Excel runtime.")
@@ -82,6 +84,10 @@ def main() -> int:
             parser.error("valuation proposal requires one company")
         registry["cases"][symbols[0]].update(valuation_proposal_policy=args.valuation_proposal_policy.as_posix(),
             valuation_proposal_policy_sha256=args.valuation_proposal_policy_sha256)
+    if args.pending_candidate_choice is not None:
+        if args.valuation_proposal_policy is None or len(symbols) != 1:
+            parser.error('pending candidate requires a pinned finite policy and one company')
+        registry['cases'][symbols[0]]['pending_candidate_choice'] = args.pending_candidate_choice
     if args.agent_excerpts is not None:
         if len(symbols) != 1 or args.agent_mode == "none":
             parser.error("agent excerpts require one company and an enabled Agent mode")
