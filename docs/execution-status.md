@@ -1,6 +1,31 @@
 # CURRENT STATUS
 
+## 2026-10-11 D2 Two-Company Display Review
+
+Final isolated candidate SHA6c90ae7a...16900 passed exact source checks (284
+bindings), 21 conditional numerical cells, preserved 55 other sheets, WPS
+read-only inspection of seven managed pages, 17 internal navigation links,
+and readability checks. Four actual WPS PDF contact sheets were inspected;
+two date-header clipping defects were fixed. Dense secondary audit printing
+and long company reports remain usability limitations, not final user acceptance.
+The review entry is docs/current/d2-two-company-review-publication-20261011.md.
+New exact-byte Canonical publication authorization is pending; Canonical is
+unchanged at SHA879e9c44...fd922b.
+
+Independent 600887 full-window review covers all 33 IDs and verifies retained
+original hashes. A prepared, not-consumed event-review sidecar binds that matrix
+to the actual candidate/model/policy/scan. It does not approve materiality or
+advance ModelValidity/PriceBridge. Independent D2 remaining-gates audit confirms
+the engineering/product/operations boundaries; D2 and TOTAL remain in progress.
+
 ## 2026-10-11 D2 Actual Pending Research Input Closure
+
+Code commit 2788d789364c3a61e8426a6c58873c5727dd3489 was pushed to main.
+GitHub Core Research Gates 38125073486 passed offline-core and disposable
+PostgreSQL integration/restore. This is isolated synthetic PostgreSQL evidence,
+not production database acceptance. A genuine detached clean checkout of that
+commit passed the registered core subset: 2065 passed, 55 skipped; additional
+skips reflect unavailable local historical/runtime evidence, not invented data.
 
 Current authorized stage: D2_REAL_RESEARCH_DECISION_CLOSURE. D2/TOTAL remain
 IN_PROGRESS; INITIAL_ASSISTED_USE=NOT_REACHED; action=no_order and private

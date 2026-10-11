@@ -169,7 +169,7 @@ const choiceNames = {A_PRESSURE_REFERENCE:'A 强侵蚀参照',B_CONTINUITY_ALTER
 for (const {role,data} of supplements) if (role === 'valuation_proposal') {
   proposalRow += 2;
   companySheet.getRange(`A${proposalRow}:C${proposalRow}`).values=[['公司代码',`原估值日期 ${data.original_valuation_date}（待审）`,'条件研究值（元/股，非买点）']];
-  companySheet.getRange(`A${proposalRow}:C${proposalRow}`).format={rowHeight:34,wrapText:true,font:{name:'Microsoft YaHei',size:11,bold:true}};
+  companySheet.getRange(`A${proposalRow}:C${proposalRow}`).format={rowHeight:42,wrapText:true,font:{name:'Microsoft YaHei',size:11,bold:true}};
   for (const choice of data.choices) {
     for (const key of ['bear','base','bull']) {
       proposalRow++;
@@ -185,7 +185,7 @@ for (const {role,data} of supplements) if (role === 'pending_research_candidate'
   if (values?.status !== 'conditional_research_only') continue;
   proposalRow += 3;
   companySheet.getRange(`A${proposalRow}:C${proposalRow}`).values=[['公司代码',`待审候选生成 ${data.candidate_research_as_of}`, '实际条件值（元/股，非买点）']];
-  companySheet.getRange(`A${proposalRow}:C${proposalRow}`).format={rowHeight:34,wrapText:true,font:{name:'Microsoft YaHei',size:11,bold:true}};
+  companySheet.getRange(`A${proposalRow}:C${proposalRow}`).format={rowHeight:42,wrapText:true,font:{name:'Microsoft YaHei',size:11,bold:true}};
   for (const key of ['bear','base','bull']) {
     proposalRow++;
     companySheet.getRange(`A${proposalRow}:C${proposalRow}`).values=[[data.symbol,`${choiceNames[data.selected_choice] ?? data.selected_choice} ${{bear:'低档',base:'中档',bull:'高档'}[key]}`,Number(values[`${key}_value`])]];
