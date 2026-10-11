@@ -15,7 +15,12 @@ Four cases ran, zero failed/blocked assets/product errors; all remain NO_ACTION.
 96.48 hundred-million CNY (9.6477bn), consolidated CFO
 211.39 hundred-million and parent CFO455.93 hundred-million, separately scoped.
 The original 9/22 research cutoff/valuation was not replaced by the review date.
-97 targeted attachment/integration/batch/architecture tests passed.
+97 initial targeted attachment/integration/batch/architecture tests passed.
+Independent review reproduced three optional-dependency isolation defects;
+financial subtrees now retain their dependency roles, malformed bindings are
+explicit optional blockers, and facts/report output hashes are inventoried.
+111 targeted tests pass after repair, including preserving valid prior comparison
+when the new financial attachment is missing or malformed.
 
 Independent D5 code/asset audit found synthetic contracts only: no feature-to-
 signal calculator, operational entry/exit rules, D5 PIT/OOS/cost/Shadow evidence.

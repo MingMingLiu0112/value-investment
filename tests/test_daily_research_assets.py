@@ -19,6 +19,34 @@ def _case(root: Path):
             "schedule_request": "request.json", "schedule_request_sha256": sha256_file(request)}
 
 
+def test_financial_review_output_files_are_in_the_asset_inventory(tmp_path):
+    case = _case(tmp_path)
+    package = tmp_path / "package.json"
+    package.write_text("{}", encoding="utf-8")
+    case["package_sha256"] = sha256_file(package)
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"outputs": {"facts.json": "a" * 64, "report.md": "b" * 64}}), encoding="utf-8")
+    case.update(financial_review_manifest="manifest.json", financial_review_manifest_sha256=sha256_file(manifest))
+    index = inspect_daily_case_assets(root=tmp_path, case=case)
+    assert index["dependency_inventory_complete"] is False
+    missing = {row["path"] for row in index["blockers"]}
+    assert missing == {"facts.json", "report.md"}
+    assert all(not row["required_for_research"] for row in index["blockers"])
+
+
+@pytest.mark.parametrize("digest", [None, "bad-hash"])
+def test_bad_financial_review_binding_is_a_scoped_optional_blocker(tmp_path, digest):
+    case = _case(tmp_path)
+    package = tmp_path / "package.json"
+    package.write_text("{}", encoding="utf-8")
+    case["package_sha256"] = sha256_file(package)
+    case.update(financial_review_manifest="missing.json", financial_review_manifest_sha256=digest)
+    index = inspect_daily_case_assets(root=tmp_path, case=case)
+    assert len(index["blockers"]) == 1
+    assert index["blockers"][0]["status"] == "INVALID_BINDING"
+    assert index["blockers"][0]["required_for_research"] is False
+
+
 def test_scoped_retained_original_does_not_overwrite_conflicting_file(tmp_path):
     case = _case(tmp_path)
     original, retained = tmp_path / "conflict.txt", tmp_path / "retained.txt"

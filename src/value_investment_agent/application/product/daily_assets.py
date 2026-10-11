@@ -81,10 +81,21 @@ def _inventory(root, case, agent_mode, recoveries, recovery_records):
     while pending:
         location, expected, base, role, required, allow_recovery = pending.pop()
         if not isinstance(location, str) or not re.fullmatch(r"[0-9a-f]{64}", str(expected)):
+            if role.startswith("financial_review_manifest"):
+                assets[role] = {"path": str(location), "role": role, "expected_sha256": expected,
+                    "actual_sha256": None, "status": "INVALID_BINDING", "required_for_research": False}
+                continue
             raise ValueError(f"invalid pinned asset: {role}")
         if allow_recovery:
             location = recoveries.get((location.replace("\\", "/"), expected), location)
-        path = require_inside(root, base / location.replace("\\", "/"), "daily research asset")
+        try:
+            path = require_inside(root, base / location.replace("\\", "/"), "daily research asset")
+        except ValueError:
+            if not role.startswith("financial_review_manifest"):
+                raise
+            assets[role] = {"path": location, "role": role, "expected_sha256": expected,
+                "actual_sha256": None, "status": "INVALID_BINDING", "required_for_research": False}
+            continue
         relative = path.relative_to(root).as_posix()
         if relative in assets:
             if assets[relative]["expected_sha256"] != expected:
@@ -101,7 +112,20 @@ def _inventory(root, case, agent_mode, recoveries, recovery_records):
         if status != "VERIFIED_BYTES" or path.suffix.lower() != ".json" or (relative, required) in scanned:
             continue
         scanned.add((relative, required))
-        document = json.loads(path.read_text(encoding="utf-8-sig"))
+        try:
+            document = json.loads(path.read_text(encoding="utf-8-sig"))
+        except (ValueError, UnicodeError):
+            if not role.startswith("financial_review_manifest"):
+                raise
+            assets[relative]["status"] = "INVALID_DOCUMENT"
+            continue
+        if role == "financial_review_manifest":
+            if not isinstance(document, dict) or not isinstance(document.get("outputs"), dict):
+                assets[relative]["status"] = "INVALID_DOCUMENT"
+                continue
+            for name in ("facts.json", "report.md"):
+                pending.append((name, (document.get("outputs") or {}).get(name), path.parent,
+                                role + ":" + name, False, False))
         values = [(document, None)]
         while values:
             value, key = values.pop()
@@ -118,7 +142,9 @@ def _inventory(root, case, agent_mode, recoveries, recovery_records):
                         continue
                     normalized = target.replace("\\", "/")
                     parent = path.parent if key == "supersedes" and "/" not in normalized else root
-                    pending.append((normalized, digest, parent, str(key or "source"), required, True))
+                    child_role = (role + ":" + str(key or "source")
+                                  if role.startswith("financial_review_manifest") else str(key or "source"))
+                    pending.append((normalized, digest, parent, child_role, required, True))
     rows = [assets[key] for key in sorted(assets)]
     blockers = [row for row in rows if row["status"] != "VERIFIED_BYTES"]
     return {"schema_version": "daily-research-asset-index-v1", "action": "no_order",

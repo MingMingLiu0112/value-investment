@@ -32,7 +32,7 @@ CHINA = ZoneInfo("Asia/Shanghai")
 
 def _pinned(root: Path, case: dict[str, Any], name: str) -> tuple[Path, str]:
     path = require_inside(root, root / case[name], name)
-    digest = case[name + "_sha256"]
+    digest = case.get(name + "_sha256")
     if sha256_file(path) != digest:
         raise ValueError(f"{name} hash mismatch")
     return path, digest
@@ -136,19 +136,21 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
     if package.get("symbol") != symbol or request.get("symbol") != symbol:
         raise ValueError("case symbol mismatch")
     publication = None
-    if "publication_input" in case and not optional_blockers:
+    baseline_optional_blockers = [row for row in optional_blockers
+                                  if not row["role"].startswith("financial_review_manifest")]
+    if "publication_input" in case and not baseline_optional_blockers:
         publication_path, publication_sha = _pinned(root, case, "publication_input")
         publication = load_research_publication_input(root=root, path=publication_path,
                                                       expected_sha256=publication_sha)
     previous = None
-    if "previous_workbench" in case and not optional_blockers:
+    if "previous_workbench" in case and not baseline_optional_blockers:
         prior_path, _ = _pinned(root, case, "previous_workbench")
         previous = load_json_object(prior_path, "previous workbench")
         verify_current_decision_workbench(previous)
         if previous.get("symbol") != symbol:
             raise ValueError("previous workbench symbol mismatch")
     responses = None
-    if agent_mode == "mock" and not optional_blockers:
+    if agent_mode == "mock" and not baseline_optional_blockers:
         fixture_path, _ = _pinned(root, case, "mock_responses")
         responses = load_json_object(fixture_path, "mock responses")
     research_day = package["point_in_time"]["research_as_of"]

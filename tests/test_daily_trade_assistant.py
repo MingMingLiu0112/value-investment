@@ -128,7 +128,7 @@ def test_szse_calendar_receives_shanghai_clock_even_before_monday_open(tmp_path,
     assert check["status"] == "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"
 
 
-@pytest.mark.parametrize("attachment_failure", [None, "source hash mismatch"])
+@pytest.mark.parametrize("attachment_failure", [None, "source hash mismatch", "missing hash"])
 def test_financial_review_never_replaces_decision_or_blocks_old_research(tmp_path, monkeypatch, attachment_failure):
     config = tmp_path / "config"
     config.mkdir()
@@ -144,6 +144,12 @@ def test_financial_review_never_replaces_decision_or_blocks_old_research(tmp_pat
             "financial_review_manifest": "config/manifest.json", "financial_review_manifest_sha256": sha256_file(manifest)}
     unchanged = {"symbol": "600887", "action": "no_order", "suggested_state": "NO_ACTION",
                  "decision_recommendation": None, "valuation": None, "position_guidance": None}
+    prior = config / "prior.json"
+    prior.write_text(json.dumps(unchanged), encoding="utf-8")
+    case.update(previous_workbench="config/prior.json", previous_workbench_sha256=sha256_file(prior))
+    monkeypatch.setattr(daily, "verify_current_decision_workbench", lambda value: None)
+    if attachment_failure == "missing hash":
+        case.pop("financial_review_manifest_sha256")
     def build(**kwargs):
         kwargs["output_path"].write_text(json.dumps(unchanged), encoding="utf-8")
         return {"result": unchanged}
@@ -161,6 +167,7 @@ def test_financial_review_never_replaces_decision_or_blocks_old_research(tmp_pat
     assert json.loads((tmp_path / "runtime/run/workbench.json").read_text()) == unchanged
     assert result["recommendation_type"] == "NO_ACTION"
     assert result["position_guidance"] is None
+    assert result["comparison"]["previous_result_bound"] is True
     attached = json.loads((tmp_path / "runtime/run/financial-review.json").read_text(encoding="utf-8"))
     assert attached["decision_changed"] is False
     report = (tmp_path / "runtime/run/report.md").read_text(encoding="utf-8")
