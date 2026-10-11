@@ -1,0 +1,54 @@
+{
+  "schema_version": "agent-independent-semantic-review-v1",
+  "scope": "INDEPENDENT_SEMANTIC_REVIEW_NOT_ADMITTED",
+  "reviewer": "Codex bounded independent source-excerpt review; no provider call or human approval",
+  "reviewed_at": "2026-10-11T05:03:29+00:00",
+  "symbol": "600519",
+  "research_as_of": "2026-10-08",
+  "packet_path": "runtime/daily-trade-assistant/20261011-real-admission-neutral-v3/agent-packet.json",
+  "packet_sha256": "27c1171061f9d994d379120bffb18f85511503785860a2b6a5a82809363e5dd1",
+  "context_sha256": "c933cc71ced2543c93175a169471b8c1996ae64fe328a72fe58919e47dc77c21",
+  "findings": [
+    {
+      "finding_id": "llm-d3274515aa2f1d66be532c2c",
+      "agent_role": "FUNDAMENTAL",
+      "finding_sha256": "b2d382cfa29bc139b895e42a42d9aef0b5ff5f17ea2347c2d3a58df36e5351df",
+      "finding_context_sha256": "b6fd2a6e0a86cf1f6f3768cf6ddccd34c7d3da8b68e0f4db409b037373d9b31d",
+      "excerpt_bindings": [
+        {"source_id": "cninfo:1225114741", "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf", "source_sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288", "excerpt_sha256": "0e9427d00334062691ba4d40f3bd6275957030a0b0878c4d498615562b3c29e3"},
+        {"source_id": "cninfo:1225475868", "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf", "source_sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6", "excerpt_sha256": "bf7dcb229467664b311b7f23b0797e1faf0c313dff08fb8f6f987a539026b083"}
+      ],
+      "facts": {"verdict": "NO_NEW_FACT_CLAIM", "rationale": "The finding requests a separate cash/distribution check and asserts no new amount. FY2025 p6 reports consolidated CFO 61,522,204,989.35 CNY and parent-attributable profit 82,320,067,101.68 CNY; H12026 p5 reports CFO 70,690,750,119.06 CNY and parent-attributable profit 44,516,880,421.86 CNY. These are different cash/profit scopes, not parent distributable cash or normalized earnings."},
+      "inference": {"verdict": "REASONABLE_WITH_LIMITS", "rationale": "The request is justified: the FY CFO decline and H1 CFO increase are expressly attributed to finance-subsidiary member deposits and changes in non-withdrawable interbank deposits. Aggregate CFO therefore cannot establish operating cash conversion or sustainable ordinary-share distributions. The two excerpts omit parent cash, subsidiary remittances, capex and distribution schedules; the review closes only the reasonableness of asking, not distribution capacity."},
+      "counterevidence": {"verdict": "LIMITED_COUNTEREVIDENCE", "rationale": "No counter-evidence references are cited. H1 CFO growth of 438.84% counters a simplistic persistent cash deterioration claim, while the issuer's finance-company explanation counters a simplistic cash-strength claim. Both observations must remain visible; neither proves sustainable payouts or insolvency."}
+    },
+    {
+      "finding_id": "llm-696cfd36b5d350c9eae26759",
+      "agent_role": "COUNTER_EVIDENCE",
+      "finding_sha256": "638fff11f2563b1d8e7f602a74c25ce9156bd3d284c60ebb9630651dab340677",
+      "finding_context_sha256": "2c733a4e929b4a6fde5c9a25a78b574cc19333d891494f79f3d8df4802f41927",
+      "excerpt_bindings": [
+        {"source_id": "cninfo:1225114741", "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf", "source_sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288", "excerpt_sha256": "0e9427d00334062691ba4d40f3bd6275957030a0b0878c4d498615562b3c29e3"}
+      ],
+      "facts": {"verdict": "NO_NEW_FACT_CLAIM", "rationale": "This is explicitly a possible countercase, not a numerical margin/channel finding. FY2025 p6 shows revenue down 1.21%, parent-attributable profit down 4.53% and adjusted parent profit down 4.58%. No channel breakdown, operating costs or model sensitivity appears in this excerpt."},
+      "inference": {"verdict": "INSUFFICIENT_EXCERPT_SUPPORT", "rationale": "Profit falling faster than revenue warrants examining profitability, but does not identify margin versus channel causation, quantify sensitivity or establish that the recorded thesis understates it. The margin/channel countercase is a useful research question only. Direct operating tables and the actual assumption rationale would be needed before presenting this claim as an evidenced explanation; no new valuation follows."},
+      "counterevidence": {"verdict": "LIMITED_COUNTEREVIDENCE", "rationale": "No counter-evidence is cited and this excerpt cannot distinguish operating pressure, product mix, finance income or expenses. Historical profitability and positive earnings do not refute the question; a single aggregate decline does not prove its proposed mechanism. This review does not import uncited operating-page evidence."}
+    },
+    {
+      "finding_id": "llm-2e5b9a28565084a462c8e61d",
+      "agent_role": "EVENT",
+      "finding_sha256": "b4758ad2239f0d7c6c726351fa2331af7554fd0fda408dddb8d92d08370c4668",
+      "finding_context_sha256": "7d6e221fd0b65d1c0bf3b95344fdfa418590ed771799bf6e8a76008047ae2be2",
+      "excerpt_bindings": [
+        {"source_id": "cninfo:1225475868", "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf", "source_sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6", "excerpt_sha256": "bf7dcb229467664b311b7f23b0797e1faf0c313dff08fb8f6f987a539026b083"}
+      ],
+      "facts": {"verdict": "NO_NEW_FACT_CLAIM", "rationale": "The finding names no new filing, date, event outcome or materiality result. The source is H12026 p5, available before the packet's 2026-10-08 research cutoff; review time does not advance that cutoff."},
+      "inference": {"verdict": "REASONABLE_RESEARCH_QUESTION", "rationale": "Checking the next verified disclosure against existing thesis breakers and routing it through existing materiality review is a bounded follow-up. The excerpt documents the current earnings/CFO baseline only; it does not prove event-window completeness, list every thesis breaker or identify a future outcome."},
+      "counterevidence": {"verdict": "LIMITED_COUNTEREVIDENCE", "rationale": "No adverse-event references are supplied. The absence of such citations cannot establish that no material event exists. This review supports the monitoring request only and leaves event coverage, materiality, model validity and human confirmation unresolved."}
+    }
+  ],
+  "action": "no_order",
+  "formal_fact_count": 0,
+  "approval_count": 0,
+  "decision_changed": false
+}

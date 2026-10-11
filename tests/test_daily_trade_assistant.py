@@ -77,6 +77,20 @@ def test_quote_notice_is_read_only_and_source_linked():
     assert payload["audit"]["evidence"][0]["available_at"] == "2026-10-11"
 
 
+def test_pending_independent_review_does_not_require_completed_verdict_fields():
+    workbench = {'symbol':'600519', 'decision_recommendation':{}, 'valuation':{}}
+    payload = {'companies':[{'symbol':'600519', 'decision_process':[],
+        'agent_research':[{'role':'EVENT', 'finding_type':'RESEARCH_QUESTION',
+            'claim':'Review the next event.', 'evidence_refs':['source'],
+            'semantic_review':{'independent_review':{'status':'PENDING'},
+                'counterevidence':{'recorded_countercase':[]}, 'proposed_follow_up':'Check original.'}}]}],
+        'audit':{'evidence':[]}}
+    text = view._render_report(workbench, payload, {'status':'NOT_ADMITTED'},
+        'OFFLINE_REPLAY_NOT_NEW_LLM_RESEARCH', None, None)
+    assert 'Review the next event.' in text
+    assert '已绑定独立研究审阅' not in text
+
+
 @pytest.mark.parametrize("research_day,expected_status", [
     ("2026-10-08", "QUOTE_VERIFIED_BUT_RESEARCH_STALE"),
     ("2026-10-09", "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"),

@@ -218,11 +218,50 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
             previous_workbench_sha256=sha256_file(prior_path) if previous is not None else None,
             output_path=monthly_path)["result"]
         supplement_paths.append(("monthly_review", monthly_path))
+        from .research_supplement_comparison import compare_research_supplements
+        comparison_path = output_dir / 'research-supplement-comparison.json'
+        prior_receipt = case.get('previous_daily_receipt')
+        comparison = compare_research_supplements(root=root, symbol=symbol,
+            current_bindings=[{'role': role, 'path': path.relative_to(root).as_posix(),
+                'sha256': sha256_file(path)} for role, path in supplement_paths],
+            previous_receipt_path=None if prior_receipt is None else root / prior_receipt,
+            previous_receipt_sha256=case.get('previous_daily_receipt_sha256'))
+        comparison['generated_at'] = datetime.now(timezone.utc).isoformat()
+        supplements['research_supplement_comparison'] = comparison
+        write_new_json(comparison_path, comparison)
+        supplement_paths.append(('research_supplement_comparison', comparison_path))
     packet_path = None
     agent_scope = agent_error = None
     if agent_mode == "mock" and responses is None:
         agent_error = "Mock fixture unavailable; research still runs without simulated Agent findings."
-    if workbench.get("decision_recommendation") is not None and agent_mode != "none" and not (agent_mode == "mock" and responses is None):
+    independent_review_binding = None
+    if workbench.get('decision_recommendation') is not None and agent_mode != 'none' and case.get('reviewed_agent_packet'):
+        from ..research.agent_review.snapshot import load_research_snapshot
+        from dataclasses import asdict
+        try:
+            packet_path, packet_sha = _pinned(root, case, 'reviewed_agent_packet')
+            review_path, review_sha = _pinned(root, case, 'independent_agent_review')
+            packet = load_json_object(packet_path, 'reviewed Agent packet')
+            snapshot = load_research_snapshot(root=root, workbench=workbench_path,
+                expected_sha256=sha256_file(workbench_path), symbol=symbol)
+            reviewed_snapshot = load_research_snapshot(root=root, workbench=root / packet['workbench_path'],
+                expected_sha256=packet['workbench_sha256'], symbol=symbol)
+            def research_semantics(value):
+                # Keep the exact historical packet pin; exclude only per-run hashes
+                # when comparing all consumed research fields against today's replay.
+                return {key: item for key, item in asdict(value).items()
+                        if key not in {'input_fingerprint', 'workbench_sha256'}}
+            if (packet.get('symbol') != symbol
+                    or packet.get('research_input_fingerprint') != reviewed_snapshot.input_fingerprint
+                    or research_semantics(snapshot) != research_semantics(reviewed_snapshot)):
+                raise ValueError('reviewed Agent packet does not match current research inputs')
+            agent_scope = packet['scope']
+            independent_review_binding = {'path': review_path.relative_to(root).as_posix(), 'sha256': review_sha}
+        except (ValueError, OSError, KeyError, TypeError) as error:
+            packet_path = None
+            agent_scope = None
+            agent_error = 'Independent Agent review reuse rejected; research continues: ' + str(error)
+    elif workbench.get("decision_recommendation") is not None and agent_mode != "none" and not (agent_mode == "mock" and responses is None):
         packet_path = output_dir / "agent-packet.json"
         try:
             kwargs = dict(root=root, symbol=symbol, workbench=workbench_path,
@@ -252,7 +291,10 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
             payload, workbook_path = preview_builder(root=root, publication=publication,
                 workbench=workbench, workbench_path=workbench_path, output_dir=output_dir,
                 quote_check=quote_check, packet_path=packet_path, symbol=symbol,
-                publication_path=publication_path, publication_sha256=publication_sha)
+                publication_path=publication_path, publication_sha256=publication_sha,
+                independent_review_binding=independent_review_binding,
+                supplement_bindings=[{"role": role, "path": path.relative_to(root).as_posix(),
+                    "sha256": sha256_file(path)} for role, path in supplement_paths])
         except (ValueError, OSError) as error:
             preview_error = str(error)
     report_path = output_dir / "report.md"
@@ -297,10 +339,17 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
                          "src/value_investment_agent/domain/valuation/equity_reconciliation.py",
                          "src/value_investment_agent/valuation_models/residual_income.py",
                          "src/value_investment_agent/presentation/daily_trade_assistant.py",
+                         "src/value_investment_agent/presentation/research_supplement_surface.py",
+                         "src/value_investment_agent/application/product/research_supplement_comparison.py",
+                         "src/value_investment_agent/application/research/agent_review/semantic_review.py",
+                         "src/value_investment_agent/application/product/agent_research_surface.py",
                          "scripts/current/render_product_artifact_pages.mjs") if (root / name).is_file()],
         "inputs": {"package": package_sha, "schedule_request": request_sha,
                    "valuation_proposal_policy": case.get("valuation_proposal_policy_sha256"),
                    "financial_review_manifest": case.get("financial_review_manifest_sha256"),
+                   "independent_agent_review": case.get('independent_agent_review_sha256'),
+                   "reviewed_agent_packet": case.get('reviewed_agent_packet_sha256'),
+                   "previous_daily_receipt": case.get('previous_daily_receipt_sha256'),
                    "publication_input": case.get("publication_input_sha256"),
                    "previous_workbench": case.get("previous_workbench_sha256"),
                    "mock_responses": case.get("mock_responses_sha256") if agent_mode == "mock" else None},

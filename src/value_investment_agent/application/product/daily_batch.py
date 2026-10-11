@@ -33,7 +33,9 @@ def previous_case_from_run(*, root: Path, case: dict, previous_run: Path | None,
     if sha256_file(path) != bound["sha256"]:
         raise ValueError("previous daily workbench hash mismatch")
     return {**case, "previous_workbench": path.relative_to(root).as_posix(),
-            "previous_workbench_sha256": bound["sha256"]}
+            "previous_workbench_sha256": bound["sha256"],
+            "previous_daily_receipt": (folder / 'receipt.json').relative_to(root).as_posix(),
+            "previous_daily_receipt_sha256": sha256_file(folder / 'receipt.json')}
 
 
 def run_daily_batch(*, root: Path, cases: dict, symbols: list[str], output_dir: Path,

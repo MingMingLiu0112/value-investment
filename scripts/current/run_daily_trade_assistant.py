@@ -46,6 +46,11 @@ def main() -> int:
     parser.add_argument("--collect-events", action="store_true", help="Archive an incremental official window; never auto-approve materiality or advance research dates.")
     parser.add_argument("--agent-excerpts", type=Path, help="Pinned original excerpt requests for a single registered company.")
     parser.add_argument("--agent-excerpts-sha256")
+    parser.add_argument("--independent-agent-review", type=Path,
+                        help="Pinned scoped semantic review; requires its exact reviewed packet.")
+    parser.add_argument("--independent-agent-review-sha256")
+    parser.add_argument("--reviewed-agent-packet", type=Path)
+    parser.add_argument("--reviewed-agent-packet-sha256")
     parser.add_argument("--valuation-proposal-policy", type=Path,
                         help="Finite, unapproved economic alternatives through the existing model; single company only.")
     parser.add_argument("--valuation-proposal-policy-sha256")
@@ -82,6 +87,16 @@ def main() -> int:
             parser.error("agent excerpts require one company and an enabled Agent mode")
         registry["cases"][symbols[0]].update(agent_excerpts=args.agent_excerpts.as_posix(),
             agent_excerpts_sha256=args.agent_excerpts_sha256)
+    reviews = (args.independent_agent_review, args.independent_agent_review_sha256,
+               args.reviewed_agent_packet, args.reviewed_agent_packet_sha256)
+    if any(value is not None for value in reviews):
+        if any(value is None for value in reviews) or len(symbols) != 1 or args.agent_mode == 'none':
+            parser.error('independent Agent review requires one company, enabled Agent, and both complete pins')
+        registry['cases'][symbols[0]].update(
+            independent_agent_review=args.independent_agent_review.as_posix(),
+            independent_agent_review_sha256=args.independent_agent_review_sha256,
+            reviewed_agent_packet=args.reviewed_agent_packet.as_posix(),
+            reviewed_agent_packet_sha256=args.reviewed_agent_packet_sha256)
     previous_run = None if args.previous_run is None else ROOT / args.previous_run
     if len(symbols) > 1:
         if args.check_assets or args.recover_assets_from:

@@ -1,5 +1,46 @@
 # CURRENT STATUS
 
+## 2026-10-11 Research Supplements Reach the Product Consumer
+
+The existing daily assistant now projects pinned financial/proposal supplements
+into the existing company page without replacing decision values, source dates,
+ResearchCase, G3, materiality or price admission. Conditional values are numeric
+Excel cells labeled not approved fair values/buy points. No new model or service.
+600519 successor proposal v2 consumes the independent low-confidence B preference,
+strongest countercase and observable reopen triggers; v1/model bytes are retained.
+
+The exact historical mock Agent packet has three independent per-finding verdicts:
+cash/distribution research is reasonable with limits; channel/margin inference
+has insufficient excerpt support; the event question is reasonable. Review is
+COMPLETED_NON_ADMITTING, with human confirmation/fact confidence/gates unchanged.
+Reuse requires reverified original packet/workbench and identical complete
+ResearchSnapshot content except the two per-run hashes. Missing/drifted optional
+review is rejected explicitly while public report/receipt delivery continues.
+
+Monthly supplements are compared separately from the formal workbench, keeping
+artifact changes distinct from new official disclosure. Historical receipt
+provenance remains hash-verified but its old implementation pins are not claimed
+as current numerical dependencies. Actual supplement outputs/originals remain
+revalidated. Independent Root review reproduced two pending/optional isolation
+bugs; both repaired and reviewed again. Existing core CI includes all new tests.
+
+Stable actual run: runtime/daily-trade-assistant/20261011-research-product-closure-v7.
+preview_generated=true, preview_error=null, renderer exit0, formula-error scan0.
+Preview SHA65f4e00e224b8e56c3974aefecf4ea62936cb1cac51ce05eba461a380e8827ad.
+Report SHA84aed9ca0fe659a88cddcbc5ec100b05c788185f48ffd6002fb43ad2250c4239.
+The native renderer crashes on process exit after image rendering on this host;
+the default export path succeeds. Render failures are preserved, never treated
+as success; precise candidate native verification remains a separate check.
+
+Four registered companies reran through the same CLI in
+runtime/daily-trade-assistant/20261011-four-company-closure-v2: zero failed cases,
+blocked assets or product errors; all remain NO_ACTION. Latest Yili finite
+proposal/accounting report also reran in 20261011-yili-product-closure-v1.
+Neither batch replay nor research comparison proves current valuation approval.
+Canonical hash8f360870...b481 remains unchanged. D2/TOTAL remain IN_PROGRESS and
+INITIAL_ASSISTED_USE remains NOT_REACHED. Exact remaining gates are listed in
+docs/current/remaining-gates-to-initial-assisted-use-20261011.md; no M8/roadmap added.
+
 ## 2026-10-11 Yili Historical Equity Reconciliation
 
 The existing daily proposal path now accepts a versioned optional statement

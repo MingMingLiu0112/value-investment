@@ -36,6 +36,15 @@ const publicText = value => typeof value === 'string' ? display.strings[value] ?
 const readModel = JSON.parse(await fs.readFile(path.join(root, publication.read_model_binding.path)));
 const decisionBinding = readModel.decision_workbench_binding;
 const decision = decisionBinding ? JSON.parse(await fs.readFile(path.join(root, decisionBinding.path))) : null;
+const supplements = [];
+for (const binding of readModel.research_supplement_bindings ?? []) {
+  const source = runtimePath(binding.path);
+  const bytes = await fs.readFile(source);
+  if (crypto.createHash('sha256').update(bytes).digest('hex') !== binding.sha256) throw new Error('Supplement drift');
+  const data = JSON.parse(bytes);
+  if (data.action !== 'no_order') throw new Error('Supplement action mismatch');
+  supplements.push({role:binding.role, data});
+}
 const wb = Workbook.create();
 const layouts = new Map();
 const label = value => typeof value === 'object' ? value?.user_label ?? '' : value ?? '';
@@ -131,7 +140,8 @@ const companyRows=snapshot.companies.flatMap(c=>{
   const r=reviews(c);
   const observation=marketObservations.findLast(item=>item.symbol === c.symbol);
   const reviewKeys=['最强反证','为什么未进入更高状态','人工买入复核条件','人工加仓复核条件',
-    '人工减仓复核条件','人工退出复核条件','已满足的研究前置','尚缺证据'];
+    '人工减仓复核条件','人工退出复核条件','已满足的研究前置','尚缺证据',
+    '条件研究备选','研究假设重开条件','本次财务研究补充','Agent问题独立复核','本次研究版本比较'];
   return [
     [`${c.company_name}\n${c.symbol}`,'当前结论',r['当前决策状态']||label(c.decision_status)||'待研究复核'],
     [c.symbol,'为什么关注',c.sections.find(s=>s.key === 'business_quality')?.summary||'经营论点尚未形成；先核对公司研究证据。'],
@@ -152,6 +162,20 @@ if (decision) {
   companySheet.getRange(`C${valueRow+1}:C${valueRow+3}`).setNumberFormat('0.00');
   // Four rows fit within the space previously taken by three 30pt rows.
   companySheet.getRange(`A${valueRow}:C${valueRow+3}`).format.rowHeight=22;
+}
+let proposalRow=valueRow+6;
+for (const {role,data} of supplements) if (role === 'valuation_proposal') {
+  companySheet.getRange(`A${proposalRow}:C${proposalRow}`).values=[['公司代码','研究备选（未批准）','条件研究值（元/股，非买点）']];
+  companySheet.getRange(`A${proposalRow}:C${proposalRow}`).format={rowHeight:34,wrapText:true,font:{name:'Microsoft YaHei',size:11,bold:true}};
+  for (const choice of data.choices) {
+    for (const key of ['bear','base','bull']) {
+      proposalRow++;
+      const choiceTitle = {A_PRESSURE_REFERENCE:'A 强侵蚀参照',B_CONTINUITY_ALTERNATIVE:'B 盈利持续优先假设',C_SLOW_EROSION_ALTERNATIVE:'C 慢侵蚀反例'}[choice.id] ?? choice.id;
+      companySheet.getRange(`A${proposalRow}:C${proposalRow}`).values=[[data.symbol,`${choiceTitle} ${ {bear:'低档',base:'中档',bull:'高档'}[key]}`,Number(choice.valuation[`${key}_value`])]];
+      companySheet.getRange(`A${proposalRow}:C${proposalRow}`).format={rowHeight:38,wrapText:true,font:{name:'Microsoft YaHei',size:11}};
+      companySheet.getRange(`C${proposalRow}`).setNumberFormat('0.00');
+    }
+  }
 }
 table(names[4],'我的组合',['状态','内容'],[[label(snapshot.portfolio.status),snapshot.portfolio.connection_hint],['个人仓位','尚未接入真实组合；仓位与金额为空。']],[30,100]);
 table(names[5],'事件',['公司','事件','当前结论','下一步'],snapshot.events.length?snapshot.events.map(e=>[e.company_name,e.what_happened,e.current_conclusion,e.next_step]):[['','当前没有已分类的用户事件。','公告原件取得不代表事件影响已批准。','完成证据绑定的事件审查。']],[20,55,65,55]);
@@ -193,6 +217,17 @@ for (let i=0; i<shownCompanyRows.length; i++) if (String(shownCompanyRows[i][0])
 wb.recalculate();
 if (await fs.stat(output).catch(()=>null)) throw new Error('Preview already exists');
 await fs.mkdir(path.dirname(output), {recursive:true});
+if (process.argv.includes('--render-review')) {
+  const views = [{sheetName:names[0],range:'A1:E12',file:'today.png'}];
+  for (let i=0; i<shownCompanyRows.length; i++) if (['条件研究备选','研究假设重开条件','本次财务研究补充','Agent问题独立复核','本次研究版本比较'].includes(shownCompanyRows[i][1])) {
+    views.push({sheetName:names[3],range:`A${Math.max(1,i+5)}:C${i+7}`,file:`research-${i}.png`});
+  }
+  if (supplements.some(item=>item.role==='valuation_proposal')) views.push({sheetName:names[3],range:`A${valueRow+6}:C${proposalRow}`,file:'proposal-values.png'});
+  for (const view of views) {
+    const preview=await wb.render({sheetName:view.sheetName,range:view.range,scale:1,format:'png'});
+    await fs.writeFile(path.join(path.dirname(output),view.file),new Uint8Array(await preview.arrayBuffer()));
+  }
+}
 const exportFile=await SpreadsheetFile.exportXlsx(wb);
 await exportFile.save(output);
 console.log((await wb.inspect({kind:'match',searchTerm:'#REF!|#DIV/0!|#VALUE!|#NAME\\?|#NUM!|#NULL!',options:{useRegex:true,maxResults:20}})).ndjson);

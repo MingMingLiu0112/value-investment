@@ -69,6 +69,29 @@ def test_new_path_is_consumed_by_same_model_without_upgrading_research(tmp_path)
         run(tmp_path, package, policy)
 
 
+@pytest.mark.parametrize('choice_id,scope', [
+    ('continuity', 'INDEPENDENT_RESEARCH_HYPOTHESIS_NOT_APPROVAL'),
+    ('invented', 'INDEPENDENT_RESEARCH_HYPOTHESIS_NOT_APPROVAL'),
+    ('continuity', 'APPROVED'),
+])
+def test_independent_preference_cannot_admit_or_invent_model(tmp_path, choice_id, scope):
+    package, path = proposal_inputs(tmp_path)
+    policy = json.loads(path.read_text(encoding='utf-8'))
+    policy['research_preference'] = dict(choice_id=choice_id, scope=scope, confidence='低',
+        reason='Source-reviewed conditional hypothesis.', countercase='Profits may fall.',
+        reopen_triggers=['New comparable disclosure.'])
+    path.write_text(json.dumps(policy), encoding='utf-8')
+    if choice_id != 'continuity' or scope == 'APPROVED':
+        with pytest.raises(ValueError, match='bounded unapproved'):
+            run(tmp_path, package, path)
+        assert not (tmp_path / 'runtime/proposal.json').exists()
+    else:
+        result = run(tmp_path, package, path)
+        assert result['research_preference'] == policy['research_preference']
+        assert result['g3_approved'] is result['decision_changed'] is False
+        assert '独立研究优先假设' in (tmp_path / 'runtime/proposal.md').read_text(encoding='utf-8')
+
+
 @pytest.mark.parametrize('change', ['other-package', 'other-symbol', 'unbounded', 'rationale', 'missing-anchor'])
 def test_invalid_proposal_cannot_write_or_change_the_package(tmp_path, change):
     package, policy_path = proposal_inputs(tmp_path)

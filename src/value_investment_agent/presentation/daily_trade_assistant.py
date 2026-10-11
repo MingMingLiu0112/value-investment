@@ -21,6 +21,7 @@ from ..application.product.agent_research_surface import project_verified_agent_
 from .read_models.existing_research_report import public_workbench_payload_from_snapshot
 from .read_models.product_workbench import product_workbench_from_payload
 from .excel.product_workbench import _user_text
+from .research_supplement_surface import project_research_supplements
 DECISION_NAMES = {
     "BUY_CANDIDATE": "买入人工复核候选", "ADD_CANDIDATE": "加仓人工复核候选",
     "HOLD": "继续持有并跟踪", "TRIM_CANDIDATE": "减仓人工复核候选",
@@ -101,7 +102,12 @@ def _render_report(workbench: dict[str, Any], payload: dict[str, Any] | None,
             lines.append(f"- [{item['role']}/{item['finding_type']}] {item['claim']}；来源：{', '.join(item['evidence_refs'])}")
             semantic = item.get("semantic_review")
             if semantic:
-                lines.append("  复核分层：原文定位仅验证片段；事实、推理、反证、独立审阅及人工确认均需各自证据，当前尚未获语义批准。")
+                lines.append("  复核分层：原文定位仅验证片段；事实、推理、反证与人工确认分别保留证据。当前尚未获人工语义批准。")
+                independent = semantic.get('independent_review')
+                if independent and independent.get('status') == 'COMPLETED_NON_ADMITTING':
+                    lines.append('  已绑定独立研究审阅（未准入）：' + '\n'.join(
+                        f"{axis}：{independent[axis]['verdict']}；{independent[axis]['rationale']}"
+                        for axis in ('facts', 'inference', 'counterevidence')))
                 lines.append("  已记录反证：" + '；'.join(str(row.get('text', '')) for row in
                     semantic['counterevidence']['recorded_countercase']) + '；下一步：' + semantic['proposed_follow_up'])
             context = item.get("source_context")
@@ -161,7 +167,8 @@ def _project_quote_gate(payload: dict[str, Any], *, symbol: str,
 
 def _build_preview(*, root, publication, workbench, workbench_path, output_dir,
                    quote_check, packet_path, symbol, publication_path,
-                   publication_sha256, report_only=False):
+                   publication_sha256, supplement_bindings=(), independent_review_binding=None,
+                   report_only=False):
     payload = public_workbench_payload_from_snapshot(publication["snapshot"])
     payload["generated_at"] = datetime.now(timezone.utc).isoformat()
     if payload["as_of"] != workbench["decision_recommendation"]["decision_as_of"]:
@@ -183,7 +190,29 @@ def _build_preview(*, root, publication, workbench, workbench_path, output_dir,
                     for key, value in dimensions.items())
     if packet_path is not None:
         project_verified_agent_packet(payload, root=root, path=packet_path,
-                                      expected_sha256=sha256_file(packet_path))
+                                      expected_sha256=sha256_file(packet_path),
+                                      independent_review_binding=independent_review_binding)
+        company = next(card for card in payload['companies'] if card['symbol'] == symbol)
+        verdicts = {'NO_NEW_FACT_CLAIM':'未提出新事实', 'MATCHES_EXCERPTS':'与引用片段一致',
+            'CONTRADICTED':'原文反驳', 'INSUFFICIENT_SUPPORT':'事实支持不足',
+            'REASONABLE_WITH_LIMITS':'有依据但有范围限制', 'REASONABLE_RESEARCH_QUESTION':'合理研究问题',
+            'INSUFFICIENT_EXCERPT_SUPPORT':'引用片段不足以支持推理', 'UNREASONABLE':'推理不成立',
+            'LIMITED_COUNTEREVIDENCE':'反证覆盖有限', 'COUNTEREVIDENCE_ADDRESSED':'已处理反证',
+            'MATERIAL_COUNTEREVIDENCE_OMITTED':'遗漏重大反证'}
+        reviewed_findings = []
+        for finding in company.get('agent_research', []):
+            independent = (finding.get('semantic_review') or {}).get('independent_review')
+            if independent and independent.get('status') == 'COMPLETED_NON_ADMITTING':
+                roles = {'FUNDAMENTAL':'基本面', 'COUNTER_EVIDENCE':'反证', 'EVENT':'事件'}
+                reviewed_findings.append(f"{roles[finding['role']]}：事实层{verdicts[independent['facts']['verdict']]}；"
+                    f"推理层{verdicts[independent['inference']['verdict']]}；"
+                    f"反证层{verdicts[independent['counterevidence']['verdict']]}。"
+                    '这是原模拟问题的独立审阅，未调用真实付费Agent，不构成财务事实、模型批准或交易触发。')
+        if reviewed_findings:
+            company.setdefault('decision_review', []).append({'label':'Agent问题独立复核',
+                'value':'\n'.join(reviewed_findings)})
+    research_bindings = project_research_supplements(payload, root=root, symbol=symbol,
+        bindings=list(supplement_bindings))
     model = product_workbench_from_payload(payload)
     read_model = output_dir / "product-read-model.json"
     write_new_json(read_model, {
@@ -195,6 +224,8 @@ def _build_preview(*, root, publication, workbench, workbench_path, output_dir,
                                        "sha256": sha256_file(workbench_path)},
         "agent_packet_binding": {"path": packet_path.relative_to(root).as_posix(),
                                  "sha256": sha256_file(packet_path)} if packet_path else None,
+        "research_supplement_bindings": research_bindings,
+        "independent_agent_review_binding": independent_review_binding,
         "historical_preview": True, "canonical_written": False, "action": "no_order"})
     handoff_path = output_dir / "product-publication-input.json"
     handoff = prepare_research_publication_input(root=root, read_model_path=read_model,
@@ -292,6 +323,11 @@ def _render_supplements(supplements: dict[str, Any]) -> str:
         for row in proposal['choices']:
             amounts = ' / '.join(f"{Decimal(row['valuation'][key]):.2f}" for key in ('bear_value', 'base_value', 'bull_value'))
             lines.append(f"| {row['id']} | {row['growth_years']} / {row['fade_years']} | {amounts} |")
+        preference = proposal.get('research_preference')
+        if preference:
+            lines.extend(['', f"- 独立研究优先假设：{preference['choice_id']}；低置信，未批准。{preference['reason']}",
+                f"- 最强反证：{preference['countercase']}",
+                *[f'- 重开条件：{item}' for item in preference['reopen_triggers']]])
         if proposal.get('financial_rebase'):
             spec = proposal['financial_rebase']
             inputs = proposal['choices'][0]['actual_calculation_inputs']
@@ -330,6 +366,13 @@ def _render_supplements(supplements: dict[str, Any]) -> str:
             "- 本次比较没有证明新增官方披露；重复运行不等于财务事实更新。", ""])
         lines.extend(f"- {titles[key]}：{states[row['status']]}。" for key, row in monthly["fields"].items())
         lines.append("- 详细前后内容及下一月触发见 monthly-review.json；未生成个人仓位。")
+    comparison = supplements.get('research_supplement_comparison')
+    if comparison:
+        states = {'UNCHANGED':'研究字段未变化', 'CHANGED_RESEARCH_ARTIFACT':'研究内容变化，非新增官方披露',
+            'UNAVAILABLE':'缺少前后可比研究补充'}
+        lines.extend(['', '## 本次研究补充与上次比较', ''])
+        for role, row in comparison['roles'].items():
+            lines.append(f"- {role}：{states[row['status']]}；没有改变模型、事件或价格批准。")
     return "\n".join(lines) + "\n"
 
 

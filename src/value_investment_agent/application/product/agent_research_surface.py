@@ -1,13 +1,16 @@
 """Project only replay-verified, unadmitted research lines into product data."""
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
 from ..research.agent_review.snapshot import load_research_snapshot
-from ..research.agent_review.semantic_review import semantic_review_checklist
+from ..research.agent_review.semantic_review import (
+    semantic_review_checklist, load_independent_semantic_review,
+)
 from ..research.agent_review.source_context import (
     verify_packet_source_context, offline_context_input_sha256,
     verify_finding_source_context,
@@ -19,7 +22,24 @@ from .common import load_json_object, require_inside, sha256_file
 
 
 def project_verified_agent_packet(payload: dict[str, Any], *, root: Path,
-                                  path: Path, expected_sha256: str) -> None:
+                                  path: Path, expected_sha256: str,
+                                  independent_review_binding: dict | None = None) -> None:
+    """Atomically add research views, optionally with a pinned independent review.
+
+    The binding is exactly {path, sha256}; omission preserves the existing pending
+    review. Rejection raises ValueError without changing the caller's research or
+    product state. Callers may omit a rejected review in a separate preview.
+    """
+    candidate = deepcopy(payload)
+    _project_verified_agent_packet(candidate, root=root, path=path,
+        expected_sha256=expected_sha256, independent_review_binding=independent_review_binding)
+    payload.clear()
+    payload.update(candidate)
+
+
+def _project_verified_agent_packet(payload: dict[str, Any], *, root: Path,
+                                   path: Path, expected_sha256: str,
+                                   independent_review_binding: dict | None) -> None:
     root = root.resolve()
     source = require_inside(root / "runtime", path, "agent research packet")
     if sha256_file(source) != expected_sha256:
@@ -64,6 +84,20 @@ def project_verified_agent_packet(payload: dict[str, Any], *, root: Path,
             verify_finding_source_context(packet, context, offline_context_input_sha256(snapshot, context))
     else:
         verify_llm_packet(packet, snapshot, root=root)
+    independent = {}
+    if independent_review_binding is not None:
+        if (not isinstance(independent_review_binding, dict)
+                or set(independent_review_binding) != {"path", "sha256"}
+                or any(not isinstance(value, str) or not value
+                       for value in independent_review_binding.values())):
+            raise ValueError("Independent review requires exact path/hash binding")
+        independent = load_independent_semantic_review(
+            root=root, path=root / independent_review_binding["path"],
+            expected_sha256=independent_review_binding["sha256"],
+            packet_path=source, packet_sha256=expected_sha256, packet=packet, context=context)
+        if any(datetime.fromisoformat(item["reviewed_at"]) > product_generated
+               for item in independent.values()):
+            raise ValueError("Independent review is newer than the product")
     views = []
     for item in findings:
         views.append({
@@ -75,6 +109,8 @@ def project_verified_agent_packet(payload: dict[str, Any], *, root: Path,
             "research_as_of": snapshot.as_of.isoformat(),
             "semantic_review": semantic_review_checklist(item, snapshot, context),
         })
+        if independent:
+            views[-1]["semantic_review"]["independent_review"] = independent[item["finding_id"]]
         if context is not None:
             views[-1]["source_context"] = {
                 **packet["finding_source_context"][len(views) - 1],

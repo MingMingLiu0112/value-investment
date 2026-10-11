@@ -212,6 +212,18 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
             calculation_inputs_sha256=hashlib.sha256(encode_json_bytes(inputs)).hexdigest(),
             annual_arithmetic=annuals,
             base_difference_from_old_pressure=str(valuation.base_value - baseline.base_value)))
+    preference = policy.get('research_preference')
+    if preference is not None:
+        if (not isinstance(preference, dict)
+                or preference.get('choice_id') not in {choice['id'] for choice in rows}
+                or preference.get('scope') != 'INDEPENDENT_RESEARCH_HYPOTHESIS_NOT_APPROVAL'
+                or preference.get('confidence') != '低'
+                or not all(isinstance(preference.get(key), str) and preference[key].strip()
+                           for key in ('reason', 'countercase'))
+                or not isinstance(preference.get('reopen_triggers'), list)
+                or not preference['reopen_triggers']
+                or not all(isinstance(item, str) and item.strip() for item in preference['reopen_triggers'])):
+            raise ValueError('research preference must be a bounded unapproved existing hypothesis')
     result = dict(schema_version='finite-neutral-valuation-proposal-v1', symbol=case.symbol,
         status='NEUTRAL_VALUATION_PROPOSAL_PENDING_REVIEW', action='no_order',
         generated_at=datetime.now(timezone.utc).isoformat(),
@@ -220,6 +232,7 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
         date_semantics='New proposal computed now on retained financial/date basis; not a contemporaneous historical or current admitted valuation.',
         source_descriptor_sha256=descriptor.input_sha256,
         baseline_valuation=json.loads(baseline.to_json()), choices=rows,
+        research_preference=preference,
         financial_rebase=rebase,
         profit_basis=policy['profit_basis'], normalized_profit=None,
         economic_review_items=policy['economic_review_items'],
@@ -271,6 +284,11 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
                 f'OCI及资本等调整：{bridge["outside_profit_adjustment_cny"]}元。',
                 '对账使用报告归母利润而非扣非TTM；不把OCI损失加回盈利或股权价值。',
                 '历史会计对账不证明未来无OCI/资本变动，也不证明现金可持续分配。'])
+    if preference:
+        lines.extend(['## 独立研究优先假设', '',
+            f"- {preference['choice_id']}；低置信，未批准。{preference['reason']}",
+            f"- 最强反证：{preference['countercase']}",
+            *[f'- 重开条件：{item}' for item in preference['reopen_triggers']], ''])
     lines.extend(['## 真正需要审阅的经济选择', '', *[f'- {item}' for item in result['economic_review_items']],
         '', '## 尚未证明', '', *[f'- {item}' for item in result['assurance_limits']], '',
         '逐年权益、盈利、留存、分配、终端和Hash见同名JSON，使用已有共享模型精确复算。',
