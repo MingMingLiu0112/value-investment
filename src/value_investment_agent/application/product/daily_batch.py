@@ -13,6 +13,14 @@ def previous_case_from_run(*, root: Path, case: dict, previous_run: Path | None,
         return case
     folder = require_inside(root / "runtime", previous_run, "previous daily run")
     if not (folder / "receipt.json").is_file():
+        batch_path = folder / "batch-receipt.json"
+        if batch_path.is_file():
+            batch = load_json_object(batch_path, "previous batch receipt")
+            if batch.get("action") != "no_order" or batch.get("canonical_workbook_written") is not False:
+                raise ValueError("previous batch receipt scope mismatch")
+            matching = [row for row in batch.get("cases", []) if row.get("symbol") == symbol]
+            if not matching or (len(matching) == 1 and not matching[0].get("receipt")):
+                return case
         folder = require_inside(root / "runtime", folder / symbol, "previous company run")
     prior = load_json_object(folder / "receipt.json", "previous daily receipt")
     if (prior.get("symbol") != symbol or prior.get("action") != "no_order"

@@ -185,6 +185,13 @@ jobs:
           tests/test_daily_trade_assistant.py
           tests/test_daily_research_assets.py
           tests/test_daily_batch.py
+          tests/test_daily_event_observation.py
+          tests/test_research_review_packet.py
+          tests/test_agent_source_context.py
+          tests/test_monthly_research_review.py
+          tests/test_llm_agent_research.py
+          tests/test_agent_research_pilot.py
+          tests/test_advisory_decision_recommendation_v3.py
           tests/test_m1_reverse_valuation.py
           tests/test_artifact_relocation.py
           tests/test_m5_human_review_reconciliation.py

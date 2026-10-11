@@ -19,6 +19,37 @@ def _case(root: Path):
             "schedule_request": "request.json", "schedule_request_sha256": sha256_file(request)}
 
 
+def test_scoped_retained_original_does_not_overwrite_conflicting_file(tmp_path):
+    case = _case(tmp_path)
+    original, retained = tmp_path / "conflict.txt", tmp_path / "retained.txt"
+    original.write_text("conflicting serialized bytes", encoding="utf-8")
+    retained.write_text("synthetic original bytes", encoding="utf-8")
+    digest = sha256_file(retained)
+    package = tmp_path / "package.json"
+    package.write_text(json.dumps({"symbol": "600887", "source": {
+        "path": "conflict.txt", "sha256": digest}}), encoding="utf-8")
+    case["package_sha256"] = sha256_file(package)
+    manifest = tmp_path / "recovery.json"
+    manifest.write_text(json.dumps({"schema_version": "daily-original-recovery-v1",
+        "symbol": "600887", "action": "no_order", "research_approval": False,
+        "package_sha256": case["package_sha256"], "recovered_originals": [{
+            "original_path": "conflict.txt", "recovered_path": "retained.txt", "expected_sha256": digest}]}), encoding="utf-8")
+    case.update(recovery_manifest="recovery.json", recovery_manifest_sha256=sha256_file(manifest))
+    index = inspect_daily_case_assets(root=tmp_path, case=case)
+    assert not index["blockers"]
+    assert index["verified_original_recoveries"][0]["original_actual_sha256"] == sha256_file(original)
+    assert original.read_text(encoding="utf-8") == "conflicting serialized bytes"
+    retained.write_text("drift", encoding="utf-8")
+    with pytest.raises(ValueError, match="retained original hash mismatch"):
+        inspect_daily_case_assets(root=tmp_path, case=case)
+    retained.unlink()
+    missing = inspect_daily_case_assets(root=tmp_path, case=case)
+    assert any(row['path']=='retained.txt' and row['status']=='MISSING' for row in missing['blockers'])
+    assert missing['verified_original_recoveries'][0]['status']=='RETAINED_ORIGINAL_MISSING'
+    manifest.unlink()
+    assert any(row['path']=='recovery.json' for row in inspect_daily_case_assets(root=tmp_path,case=case)['blockers'])
+
+
 def test_missing_case_produces_truthful_report_without_research_or_private_input(tmp_path):
     result = run_daily_trade_assistant(root=tmp_path, symbol="600519", case=_case(tmp_path),
         output_dir=tmp_path / "runtime/run", agent_mode="none", report_renderer=_render_report)

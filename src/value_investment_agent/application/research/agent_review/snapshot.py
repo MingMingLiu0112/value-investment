@@ -31,6 +31,7 @@ class ResearchSnapshot:
     financial_summary: dict[str, Any] | None = None
     valuation_status: str = ""
     blockers: tuple[str, ...] = ()
+    source_context: dict[str, Any] | None = None
 
     def evidence_by_id(self) -> dict[str, dict[str, Any]]:
         return {str(ref["id"]): ref for ref in self.evidence}

@@ -41,6 +41,11 @@ def main() -> int:
     parser.add_argument("--no-collect-quote", action="store_true",
                         help="Run without network collection and show the missing quote gate.")
     parser.add_argument("--agent-mode", choices=("offline", "mock", "none"), default="offline")
+    parser.add_argument("--review-packet", action="store_true", help="Expose consumed assumptions and exact human-review gaps.")
+    parser.add_argument("--monthly-review", action="store_true", help="Compare pinned research semantics without inventing new disclosures.")
+    parser.add_argument("--collect-events", action="store_true", help="Archive an incremental official window; never auto-approve materiality or advance research dates.")
+    parser.add_argument("--agent-excerpts", type=Path, help="Pinned original excerpt requests for a single registered company.")
+    parser.add_argument("--agent-excerpts-sha256")
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--report-only", action="store_true",
                         help="Generate the same verified report/read model without requiring the Excel runtime.")
@@ -54,10 +59,19 @@ def main() -> int:
     registry = load_json_object(ROOT / "config/daily-trade-assistant-v1.json", "daily cases")
     if registry.get("schema_version") != "daily-trade-assistant-cases-v1" or registry.get("action") != "no_order":
         raise ValueError("daily case registry is not a no-order contract")
+    registry["cases"] = {symbol: {**case, "review_packet": args.review_packet,
+        "monthly_review": args.monthly_review, "collect_events": args.collect_events} for symbol, case in registry["cases"].items()}
     symbols = list(registry["cases"]) if args.all_registered else (
         [value.strip() for value in args.symbols.split(",")] if args.symbols else [args.symbol or "600519"])
     if len(set(symbols)) != len(symbols) or any(symbol not in registry["cases"] for symbol in symbols):
         parser.error("each symbol must be distinct and have a registered daily case")
+    if (args.agent_excerpts is None) != (args.agent_excerpts_sha256 is None):
+        parser.error("agent excerpts require both path and SHA-256")
+    if args.agent_excerpts is not None:
+        if len(symbols) != 1 or args.agent_mode == "none":
+            parser.error("agent excerpts require one company and an enabled Agent mode")
+        registry["cases"][symbols[0]].update(agent_excerpts=args.agent_excerpts.as_posix(),
+            agent_excerpts_sha256=args.agent_excerpts_sha256)
     previous_run = None if args.previous_run is None else ROOT / args.previous_run
     if len(symbols) > 1:
         if args.check_assets or args.recover_assets_from:

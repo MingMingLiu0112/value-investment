@@ -1,17 +1,22 @@
 # 当前总目标：价值投资建议与情绪卫星仓系统
 
-## 2026-10-11 User-Directed Daily Research MVP
+## 2026-10-11 D2 Real Research Closure and Advisory MVP (P1-P8)
 
-The latest user instruction authorizes a continuous A-J implementation package
+The latest user instruction authorizes a continuous P1-P8 implementation package
 for the existing daily trade assistant, beginning with baseline repair, asset
 preflight and research-to-decision orchestration. Reuse
 `scripts/current/run_daily_trade_assistant.py`; do not build Web, sentiment or a
 new market-wide buy program. This package supersedes the older D5 execution
 scope for this run, without changing inherited evidence or admission contracts.
 
-Current work: Stage A/B asset integrity and the daily application boundary,
-followed by Stage C dated quote display, Stage D existing 600519 real inputs,
-and independent multi-company/report/preview checks where prerequisites allow.
+Current work: consumed 600519 financial/assumption review (P1), official incremental
+event observation and legal historical PriceBridge proof (P2), existing six-state
+decision explanations/tests (P3), exact-byte Yili recovery and four-company reuse
+(P4), original-source Agent context with pending semantic review (P5), compact
+protected Excel preview (P6), synthetic portfolio readiness (P7), and manual daily
+execution/monthly research comparison (P8). Inherit baseline e652d4d and all valid
+prior A-J results. Do not generate new scenarios instead of resolving the neutral
+primary-model assumptions; actual economic approval is independent of arithmetic.
 Missing approvals block only their conclusions, not independent engineering.
 Keep software/data/model/price/human/product acceptance separate. All outputs
 remain `action=no_order`; private positions remain null without verified inputs.

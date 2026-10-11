@@ -11,8 +11,12 @@ from .daily_assets import inspect_daily_case_assets
 from .workbench import build_current_workbench_for_symbol
 from .decision_surface import verify_current_decision_workbench
 from .research_publication_input import load_research_publication_input
+from .research_review_packet import build_research_review_packet
+from .monthly_research_review import build_monthly_research_review
+from .daily_event_observation import collect_daily_event_observation
 from ..research.agent_review.supervisor import run_agent_research_pilot
 from ..research.agent_review.llm_pilot import run_llm_research_pilot
+from ..research.agent_review.source_context import ExcerptRequest
 from ...infrastructure.agent_runtime.provider import MockLLMProvider
 from ...quote_session_conversion import quote_snapshot_from_bundle_file
 from ...quote_snapshot import QUOTE_STATUS_VERIFIED_CLOSE
@@ -90,7 +94,7 @@ def _quote_for_case(root: Path, bundle: Path | None, symbol: str, research_day: 
 def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
         output_dir: Path, report_renderer: Callable, preview_builder: Callable | None = None,
         quote_bundle: Path | None = None, agent_mode: str = "offline",
-        quote_error: str | None = None) -> dict[str, Any]:
+        quote_error: str | None = None, supplement_renderer: Callable | None = None) -> dict[str, Any]:
     root = root.resolve()
     output_dir = require_inside(root / "runtime", output_dir, "daily assistant output")
     if output_dir.exists():
@@ -158,6 +162,39 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
         schedule_request_sha256=request_sha, quote_path=quote_path, quote_sha256=quote_sha,
         recommendation_schema_version="advisory-decision-recommendation-v3")
     workbench = outcome["result"]
+    supplements = {}
+    supplement_paths = []
+    if case.get("collect_events"):
+        from datetime import date
+        try:
+            supplements["event_observation"] = collect_daily_event_observation(root=root,
+                symbol=symbol, issuer_name=package["name"], start=date.fromisoformat(research_day),
+                end=date.fromisoformat(quote_check.get("latest_completed_session") or quote_check.get("quote_date")
+                    or datetime.now(timezone.utc).astimezone(CHINA).date().isoformat()),
+                output_dir=output_dir / "event-observation")
+            supplement_paths.append(("event_observation", output_dir / "event-observation/observation.json"))
+        except (ValueError, OSError) as error:
+            supplements["event_observation"] = {"collection_status": "COLLECTION_FAILED",
+                "error": f"{type(error).__name__}: {error}", "materiality_approved": False,
+                "research_date_advanced": False, "action": "no_order"}
+            failed_path = output_dir / "event-observation-failure.json"
+            write_new_json(failed_path, supplements["event_observation"])
+            supplement_paths.append(("event_observation", failed_path))
+    if workbench.get("decision_recommendation") is not None and case.get("review_packet"):
+        review_path = output_dir / "research-review.json"
+        supplements["research_review"] = build_research_review_packet(root=root,
+            package_path=package_path, package_sha256=package_sha,
+            workbench_path=workbench_path, workbench_sha256=sha256_file(workbench_path),
+            output_path=review_path)
+        supplement_paths.append(("research_review", review_path))
+    if workbench.get("decision_recommendation") is not None and case.get("monthly_review"):
+        monthly_path = output_dir / "monthly-review.json"
+        supplements["monthly_review"] = build_monthly_research_review(root=root, symbol=symbol,
+            current_workbench_path=workbench_path, current_workbench_sha256=sha256_file(workbench_path),
+            previous_workbench_path=prior_path if previous is not None else None,
+            previous_workbench_sha256=sha256_file(prior_path) if previous is not None else None,
+            output_path=monthly_path)["result"]
+        supplement_paths.append(("monthly_review", monthly_path))
     packet_path = None
     agent_scope = agent_error = None
     if agent_mode == "mock" and responses is None:
@@ -167,6 +204,13 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
         try:
             kwargs = dict(root=root, symbol=symbol, workbench=workbench_path,
                           workbench_sha256=sha256_file(workbench_path), output=packet_path)
+            if case.get("agent_excerpts"):
+                excerpt_path, _ = _pinned(root, case, "agent_excerpts")
+                excerpt_input = load_json_object(excerpt_path, "agent excerpt requests")
+                if (excerpt_input.get("schema_version") != "agent-excerpt-requests-v1"
+                        or excerpt_input.get("symbol") != symbol or excerpt_input.get("action") != "no_order"):
+                    raise ValueError("agent excerpt input identity/scope mismatch")
+                kwargs["source_requests"] = tuple(ExcerptRequest(**item) for item in excerpt_input["requests"])
             if agent_mode == "offline":
                 packet = run_agent_research_pilot(**kwargs)
             else:
@@ -191,6 +235,9 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
     report_path = output_dir / "report.md"
     report_path.write_text(report_renderer(workbench, payload, quote_check, agent_scope,
                                            previous, agent_error), encoding="utf-8")
+    if supplements and supplement_renderer is not None:
+        with report_path.open("a", encoding="utf-8") as report:
+            report.write(supplement_renderer(supplements))
     if optional_blockers:
         with report_path.open("a", encoding="utf-8") as report:
             report.write("\n## 可选展示或历史对比资产缺口\n\n公共研究继续运行，未伪造 Excel 或上次结果。\n")
@@ -207,6 +254,7 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
         "portfolio_input_status": "BLOCKED_PRIVATE_INPUT", "position_guidance": None,
         "canonical_workbook_written": False,
         "optional_asset_blockers": optional_blockers,
+        "verified_original_recoveries": assets.get("verified_original_recoveries", []),
         "preview_error": preview_error,
         "preview_generated": workbook_path is not None,
         "comparison": {"previous_result_bound": previous is not None,
@@ -227,7 +275,8 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
                    "mock_responses": case.get("mock_responses_sha256") if agent_mode == "mock" else None},
         "outputs": {name: {"path": path.relative_to(root).as_posix(), "sha256": sha256_file(path)}
                     for name, path in (("workbench", workbench_path), ("agent_packet", packet_path),
-                       ("preview", workbook_path), ("report", report_path), ("asset_index", output_dir / "asset-index.json"))
+                       ("preview", workbook_path), ("report", report_path), ("asset_index", output_dir / "asset-index.json"),
+                       *supplement_paths)
                     if path is not None}}
     for name in ("product-read-model", "product-publication-input", "display-input"):
         path = output_dir / (name + ".json")

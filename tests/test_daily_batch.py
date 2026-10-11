@@ -51,3 +51,11 @@ def test_daily_batch_refuses_overwrite_and_duplicate_selection(tmp_path):
     with pytest.raises(ValueError, match="distinct registered"):
         run_daily_batch(root=tmp_path, cases={"600519": {}}, symbols=["600519", "600519"],
                         output_dir=tmp_path / "runtime/new", run_case=None)
+def test_new_registered_company_without_prior_batch_row_remains_runnable(tmp_path):
+    import json
+    from value_investment_agent.application.product.daily_batch import previous_case_from_run
+    prior=tmp_path/'runtime/previous'; prior.mkdir(parents=True)
+    (prior/'batch-receipt.json').write_text(json.dumps({'action':'no_order',
+        'canonical_workbook_written':False,'cases':[{'symbol':'600519'}]}),encoding='utf-8')
+    case={'package':'registered.json'}
+    assert previous_case_from_run(root=tmp_path,case=case,previous_run=prior,symbol='600887')==case

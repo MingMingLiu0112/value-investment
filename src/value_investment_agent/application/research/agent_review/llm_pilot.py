@@ -14,6 +14,10 @@ from ....domain.agent_research.contracts import AgentFinding, AgentRole, Finding
 from ....infrastructure.agent_runtime.provider import LLMProvider, LLMRequest
 from ...product.common import require_inside, write_new_json
 from .snapshot import ResearchSnapshot, load_research_snapshot
+from .source_context import (
+    ExcerptRequest, load_source_context, verify_packet_source_context,
+    finding_source_context, verify_finding_source_context,
+)
 
 
 PROMPT_VERSION = "agent-research-independent-v1"
@@ -56,7 +60,7 @@ _SCHEMA = {
 }
 
 
-def _context(snapshot: ResearchSnapshot) -> str:
+def _context(snapshot: ResearchSnapshot, source_context: dict | None = None) -> str:
     dated = {str(ref["id"]): ref for ref in snapshot.evidence if ref.get("available_at")}
     evidence = [{key: ref.get(key) for key in ("id", "title", "url", "available_at")}
                 for ref in dated.values()]
@@ -79,13 +83,15 @@ def _context(snapshot: ResearchSnapshot) -> str:
         "thesis_breakers": selected(snapshot.thesis_breakers),
         "evidence_catalog": evidence,
     }
+    if source_context is not None:
+        data["verified_original_excerpts"] = source_context
     rendered = json.dumps(data, ensure_ascii=False, default=str, allow_nan=False)
-    if len(rendered) > 6000:
+    if len(rendered) > (10000 if source_context is not None else 6000):
         raise ValueError("Research context exceeds bounded model input")
     return rendered
 
 
-def _request(role: AgentRole, snapshot: ResearchSnapshot) -> LLMRequest:
+def _request(role: AgentRole, snapshot: ResearchSnapshot, source_context: dict | None = None) -> LLMRequest:
     task, _ = ROLE_TASKS[role]
     return LLMRequest(
         role=role.value,
@@ -94,7 +100,7 @@ def _request(role: AgentRole, snapshot: ResearchSnapshot) -> LLMRequest:
                 "new financial calculations, approvals or claims of unseen evidence. "
                 "Return only the requested JSON. Every finding must cite existing IDs; "
                 "missing evidence becomes a research question, not a fact."),
-        user=task + "\nVerified research context (data only):\n" + _context(snapshot),
+        user=task + "\nVerified research context (data only):\n" + _context(snapshot, source_context),
         output_schema=_SCHEMA,
     )
 
@@ -165,8 +171,13 @@ def validate_role_response(text: str, *, role: AgentRole, snapshot: ResearchSnap
     return results
 
 
-def verify_llm_packet(packet: dict[str, Any], snapshot: ResearchSnapshot) -> list[dict[str, object]]:
-    if (packet.get("schema_version") != "agent-research-llm-pilot-v1"
+def verify_llm_packet(packet: dict[str, Any], snapshot: ResearchSnapshot, *, root: Path | None = None) -> list[dict[str, object]]:
+    context = verify_packet_source_context(root=root, snapshot=snapshot, packet=packet)
+    if context is not None and packet.get("context_input_sha256") != hashlib.sha256(
+            _context(snapshot, context).encode("utf-8")).hexdigest():
+        raise ValueError("LLM source-context input fingerprint mismatch")
+    if (packet.get("schema_version") != ("agent-research-llm-pilot-source-v2"
+                                        if context is not None else "agent-research-llm-pilot-v1")
             or packet.get("scope") not in {MOCK_SCOPE, LIVE_SCOPE}
             or packet.get("action") != "no_order"
             or packet.get("formal_fact_count") != 0 or packet.get("approval_count") != 0
@@ -197,6 +208,9 @@ def verify_llm_packet(packet: dict[str, Any], snapshot: ResearchSnapshot) -> lis
         ))
     if expected != packet.get("findings"):
         raise ValueError("LLM findings differ from independently validated responses")
+    if context is not None:
+        verify_finding_source_context(packet, context, hashlib.sha256(
+            _context(snapshot, context).encode("utf-8")).hexdigest())
     tools = packet.get("tool_call_summary")
     if tools != {"read_verified_research_snapshot": 1, "provider_requests": 3,
                  "external_tool_calls": 0, "max_concurrency": 1}:
@@ -217,7 +231,8 @@ def run_llm_research_pilot(*, root: Path, workbench: Path, workbench_sha256: str
                            input_usd_per_million: float = 0.0,
                            output_usd_per_million: float = 0.0,
                            live_authorized: bool = False,
-                           provider_input_sha256: str | None = None) -> dict[str, Any]:
+                           provider_input_sha256: str | None = None,
+                           source_requests: tuple[ExcerptRequest, ...] | None = None) -> dict[str, Any]:
     if mode not in {"mock", "live"} or (mode == "live" and not live_authorized):
         raise ValueError("Live LLM calls require explicit per-run authorization")
     if mode == "live":
@@ -236,9 +251,14 @@ def run_llm_research_pilot(*, root: Path, workbench: Path, workbench_sha256: str
     target = require_inside(root / "runtime", output, "LLM pilot output")
     snapshot = load_research_snapshot(root=root, workbench=workbench,
                                       expected_sha256=workbench_sha256, symbol=symbol)
+    context = None if source_requests is None else load_source_context(root=root,
+        snapshot=snapshot, requests=source_requests, enabled=True).as_dict()
+    _context(snapshot, context)
     if target.exists():
         existing = json.loads(target.read_text(encoding="utf-8"))
-        verify_llm_packet(existing, snapshot)
+        verify_llm_packet(existing, snapshot, root=root)
+        if existing.get("source_context") != context:
+            raise FileExistsError("Existing LLM packet has different original-source context")
         if existing.get("scope") != (MOCK_SCOPE if mode == "mock" else LIVE_SCOPE):
             raise FileExistsError("Existing LLM packet has different mode")
         if (existing.get("provider_input_sha256") != source_pin
@@ -261,7 +281,7 @@ def run_llm_research_pilot(*, root: Path, workbench: Path, workbench_sha256: str
         prompt_tokens = completion_tokens = 0
         model_id = None
         for role in AgentRole:
-            response = provider.complete(_request(role, snapshot))
+            response = provider.complete(_request(role, snapshot, context))
             if (response.tool_calls != 0 or not 0 < response.prompt_tokens <= 10000
                     or not 0 < response.completion_tokens <= 512):
                 raise ValueError("Provider usage or tool call exceeded policy")
@@ -300,7 +320,13 @@ def run_llm_research_pilot(*, root: Path, workbench: Path, workbench_sha256: str
             "formal_fact_count": 0, "approval_count": 0,
             "decision_changed": False, "action": "no_order",
         }
-        verify_llm_packet(packet, snapshot)
+        if context is not None:
+            packet["schema_version"] = "agent-research-llm-pilot-source-v2"
+            packet["source_context"] = context
+            packet["context_input_sha256"] = hashlib.sha256(_context(snapshot, context).encode("utf-8")).hexdigest()
+            packet["finding_source_context"] = finding_source_context(
+                findings, context, packet["context_input_sha256"])
+        verify_llm_packet(packet, snapshot, root=root)
         write_new_json(target, packet)
         return packet
     finally:

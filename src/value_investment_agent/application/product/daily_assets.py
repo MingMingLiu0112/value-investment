@@ -14,16 +14,60 @@ def inspect_daily_case_assets(*, root: Path, case: dict[str, Any],
                              agent_mode: str = "offline") -> dict[str, Any]:
     root = root.resolve()
     recoveries = {}
+    recovery_records = []
+    if "recovery_manifest" in case:
+        manifest = require_inside(root, root / case["recovery_manifest"], "recovery manifest")
+        if manifest.is_file() and sha256_file(manifest) != case.get("recovery_manifest_sha256"):
+            raise ValueError("recovery manifest hash mismatch")
+        recovered = json.loads(manifest.read_text(encoding="utf-8-sig")) if manifest.is_file() else None
+        if recovered is not None:
+            _load_scoped_recoveries(root, case, recovered, recoveries, recovery_records)
     if "publication_input" in case:
         publication = require_inside(root, root / case["publication_input"], "publication asset")
         if publication.is_file() and sha256_file(publication) == case.get("publication_input_sha256"):
             cached = json.loads(publication.read_text(encoding="utf-8-sig"))
             for item in cached.get("verified_source_recoveries", []):
                 original = str(item["original_path"]).replace("\\", "/")
-                recoveries[(original, item["expected_sha256"])] = item["recovered_path"]
+                key = (original, item["expected_sha256"])
+                if key in recoveries and recoveries[key] != item["recovered_path"]:
+                    raise ValueError("conflicting original recovery mappings")
+                recoveries[key] = item["recovered_path"]
+    return _inventory(root, case, agent_mode, recoveries, recovery_records)
+
+
+def _load_scoped_recoveries(root, case, recovered, recoveries, recovery_records):
+    if (recovered.get("schema_version") != "daily-original-recovery-v1"
+            or recovered.get("action") != "no_order"
+            or recovered.get("package_sha256") != case.get("package_sha256")
+            or recovered.get("research_approval") is not False):
+        raise ValueError("unsupported recovery manifest scope")
+    package = require_inside(root, root / case["package"], "recovery package")
+    if not package.is_file():
+        return
+    if sha256_file(package) != case["package_sha256"]:
+        raise ValueError("recovery package hash mismatch")
+    if json.loads(package.read_text(encoding="utf-8-sig")).get("symbol") != recovered.get("symbol"):
+        raise ValueError("recovery manifest symbol mismatch")
+    for item in recovered.get("recovered_originals", []):
+        original = require_inside(root, root / item["original_path"], "recovery original")
+        retained = require_inside(root, root / item["recovered_path"], "retained original")
+        digest = item["expected_sha256"]
+        key = (original.relative_to(root).as_posix(), digest)
+        if key in recoveries or not re.fullmatch(r"[0-9a-f]{64}", str(digest)):
+            raise ValueError("invalid or duplicate recovered original")
+        if retained.is_file() and sha256_file(retained) != digest:
+            raise ValueError("retained original hash mismatch")
+        recoveries[key] = retained.relative_to(root).as_posix()
+        recovery_records.append({**item,
+            "original_actual_sha256": sha256_file(original) if original.is_file() else None,
+            "status": "IDENTICAL_ORIGINAL_BOUND_WITHOUT_OVERWRITE" if retained.is_file() else "RETAINED_ORIGINAL_MISSING",
+            "research_approval": False})
+
+
+def _inventory(root, case, agent_mode, recoveries, recovery_records):
     pending = []
     for role in ("package", "schedule_request", "publication_input", "previous_workbench",
-                 "mock_responses"):
+                 "mock_responses", "recovery_manifest", "agent_excerpts"):
         if role == "mock_responses" and agent_mode != "mock":
             continue
         if role not in case:
@@ -31,7 +75,7 @@ def inspect_daily_case_assets(*, root: Path, case: dict[str, Any],
                 raise ValueError(f"daily case requires {role}")
             continue
         pending.append((case[role], case.get(role + "_sha256"), root, role,
-                        role in {"package", "schedule_request"}, False))
+                        role in {"package", "schedule_request", "recovery_manifest"}, False))
     assets = {}
     scanned = set()
     while pending:
@@ -80,7 +124,7 @@ def inspect_daily_case_assets(*, root: Path, case: dict[str, Any],
     return {"schema_version": "daily-research-asset-index-v1", "action": "no_order",
             "status": "BLOCKED_RESEARCH_ASSETS" if blockers else "FILE_INTEGRITY_VERIFIED_NOT_RESEARCH_APPROVAL",
             "dependency_inventory_complete": not blockers, "assets": rows,
-            "blockers": blockers, "recovery": {
+            "blockers": blockers, "verified_original_recoveries": recovery_records, "recovery": {
                 "command_option": "--recover-assets-from PROJECT_RELATIVE_DIRECTORY",
                 "method": "Restore identical SHA-256 bytes from the same relative paths; never overwrite existing files.",
                 "missing_json": "Reproduce the original registered recipe or restore its exact original bytes; do not fabricate replacement input.",

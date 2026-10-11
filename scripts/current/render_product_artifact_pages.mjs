@@ -113,7 +113,9 @@ const reviewRows = snapshot.companies.map(c=>{
   return [`${c.company_name}\n${c.symbol}`,label(c.research_status),r['当前决策状态']??'待研究复核',mainReason(c),r['下一触发']??c.next_trigger];
 });
 // Keep independently verified dated observations visible without admitting a decision price.
-const marketObservations = (snapshot.today_items ?? []).filter(item=>item.category?.code === 'MARKET_DATA');
+const allMarketObservations = (snapshot.today_items ?? []).filter(item=>item.category?.code === 'MARKET_DATA');
+const marketObservations = allMarketObservations.filter((item,index)=>
+  !allMarketObservations.slice(index+1).some(later=>later.symbol === item.symbol));
 reviewRows.push(...marketObservations.map(item=>[
   `${item.company}\n${item.symbol}`, '独立行情观察', item.current_status,
   `${item.what_happened}\n${item.why_it_matters}`, item.next_step,
@@ -125,13 +127,22 @@ table(names[1],'研究机会',['公司','研究状态','行情观察','估值状
   return [`${c.company_name}\n${c.symbol}`,label(c.research_status),observation?.what_happened??legacyObservation?.split('；')[0]??assessment(c.price),assessment(c.valuation),r['价格区域']??'尚未完成当前价格评估',r['当前决策状态']??'待研究复核'];
 }),[19,22,33,65,30,32]);
 table(names[2],'决策过程',['公司','检查步骤','状态','原因','下一步'],snapshot.companies.flatMap(c=>c.decision_process.map(s=>[`${c.company_name}\n${c.symbol}`,steps[s.key],states[s.status],s.reason,s.next_action])),[19,20,16,74,55]);
-const companyRows=snapshot.companies.flatMap(c=>[
-  [`${c.company_name}\n${c.symbol}`,'原始投资逻辑',c.original_thesis],
-  ...c.sections.map(s=>[c.symbol,sections[s.key],s.summary]),
-  ...c.decision_review.filter(([key])=>!key.startsWith('估值敏感性 ')).map(([key,value])=>[c.symbol,publicText(key),publicText(value)]),
-  [c.symbol,'估值情景（非买入价）',assessment(c.valuation)],
-  [c.symbol,'下一触发',c.next_trigger],
-]);
+const companyRows=snapshot.companies.flatMap(c=>{
+  const r=reviews(c);
+  const observation=marketObservations.findLast(item=>item.symbol === c.symbol);
+  const reviewKeys=['最强反证','为什么未进入更高状态','人工买入复核条件','人工加仓复核条件',
+    '人工减仓复核条件','人工退出复核条件','已满足的研究前置','尚缺证据'];
+  return [
+    [`${c.company_name}\n${c.symbol}`,'当前结论',r['当前决策状态']||label(c.decision_status)||'待研究复核'],
+    [c.symbol,'为什么关注',c.sections.find(s=>s.key === 'business_quality')?.summary||'经营论点尚未形成；先核对公司研究证据。'],
+    [c.symbol,'现在能否买入',mainReason(c)],
+    [c.symbol,'最新价格观察',observation?.what_happened??assessment(c.price)],
+    [c.symbol,'估值用途与不确定性',assessment(c.valuation)],
+    ...c.sections.map(s=>[c.symbol,sections[s.key],s.summary]),
+    ...reviewKeys.filter(key=>r[key]).map(key=>[c.symbol,key,publicText(r[key])]),
+    [c.symbol,'下一次关注',r['下一触发']??c.next_trigger],
+  ];
+});
 const companySheet=table(names[3],'公司研究',['公司','内容','研究结果'],companyRows,[19,28,125]);
 const shownCompanyRows = layouts.get(names[3]);
 const valueRow=shownCompanyRows.length+9;

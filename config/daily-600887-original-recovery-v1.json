@@ -1,0 +1,15 @@
+{
+  "schema_version": "daily-original-recovery-v1",
+  "symbol": "600887",
+  "action": "no_order",
+  "package_sha256": "e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803",
+  "research_approval": false,
+  "recovered_originals": [
+    {
+      "original_path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/cninfo-index.json",
+      "expected_sha256": "f68b7e83d77c4c1d09c8d033a6e0054c97c0ce93c9f383349388bbc2d815ceea",
+      "recovered_path": "runtime/company-research/m1-event-scans/20260923T050735Z/600887/cninfo-index.json",
+      "basis": "Retained original has exact expected bytes; conflicting file is preserved. Parsed indexes agree, but semantic equality alone is not recovery authority."
+    }
+  ]
+}

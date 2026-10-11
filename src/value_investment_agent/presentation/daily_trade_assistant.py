@@ -15,6 +15,8 @@ from ..application.product.research_publication_input import prepare_research_pu
 from ..application.product.daily_trade_assistant import _quote_for_case
 from ..application.product.daily_trade_assistant import run_daily_trade_assistant as run_daily_application
 from ..application.product.decision_surface import project_verified_decision_workbench
+from ..application.product.decision_surface import verify_current_decision_workbench
+from ..research_artifact_codecs import artifact_payload
 from ..application.product.agent_research_surface import project_verified_agent_packet
 from .read_models.existing_research_report import public_workbench_payload_from_snapshot
 from .read_models.product_workbench import product_workbench_from_payload
@@ -97,6 +99,12 @@ def _render_report(workbench: dict[str, Any], payload: dict[str, Any] | None,
                       f"模式：{agent_scope or '未准入'}；{agent_error or '不得成为正式财务事实或独立卖出触发。'}", ""])
         for item in company.get("agent_research", []):
             lines.append(f"- [{item['role']}/{item['finding_type']}] {item['claim']}；来源：{', '.join(item['evidence_refs'])}")
+            context = item.get("source_context")
+            if context:
+                lines.append(f"  原文覆盖：{context['coverage_assurance']}；未覆盖引用：{', '.join(context['uncovered_evidence_refs']) or '无'}；原文匹配不代表观点语义通过。")
+                for locator in context["excerpt_locators"]:
+                    location = f"物理页 {locator['page']}" if locator.get('page') else f"字符 {locator['text_start']}-{locator['text_end']}"
+                    lines.append(f"  对应原件：{locator['source_id']}，{location}；可用时间 {locator['available_at']}；项目内路径 {locator['path']}；SHA-256={locator['sha256']}")
         lines.extend(["", "## 来源审计", ""])
         for item in payload["audit"]["evidence"]:
             if item.get("artifact_type") in {"verified_decision_workbench", "AGENT_RESEARCH_SOURCE",
@@ -156,6 +164,18 @@ def _build_preview(*, root, publication, workbench, workbench_path, output_dir,
     project_verified_decision_workbench(payload, root=root, path=workbench_path,
                                         expected_sha256=sha256_file(workbench_path))
     _project_quote_gate(payload, symbol=symbol, quote_check=quote_check)
+    restored = verify_current_decision_workbench(workbench)
+    case = artifact_payload(restored.dependency_objects["research_case"])[1]
+    scope = (case.get("financial_summary") or {}).get("financial_scope_review") or {}
+    dimensions = scope.get("five_dimensions") or {}
+    if dimensions:
+        titles = {"profitability": "盈利", "cash": "现金", "balance_sheet": "资产负债",
+                  "growth": "成长", "capital_allocation": "资本配置"}
+        company = next(card for card in payload["companies"] if card["symbol"] == symbol)
+        for section in company["sections"]:
+            if section["key"] == "financial_quality":
+                section["summary"] = "\n".join(f"{titles.get(key, key)}：{value['assessment']}；{value['reason']}"
+                    for key, value in dimensions.items())
     if packet_path is not None:
         project_verified_agent_packet(payload, root=root, path=packet_path,
                                       expected_sha256=sha256_file(packet_path))
@@ -213,7 +233,44 @@ def _build_preview(*, root, publication, workbench, workbench_path, output_dir,
     return payload, workbook_path
 
 
+def _render_supplements(supplements: dict[str, Any]) -> str:
+    lines = []
+    events = supplements.get("event_observation")
+    if events:
+        lines.extend(["", "## 本次官方公告观察", ""])
+        if events["collection_status"] == "COLLECTION_FAILED":
+            lines.append(f"- 查询未完成：{events['error']}；没有推进研究日期或批准事件。")
+        else:
+            lines.extend([f"- 巨潮查询窗口：{events['scan_from']} 至 {events['scan_to']}；公告 {events['announcement_count']} 条。",
+                "- 新窗口查询不替代此前公告材料性、模型及估值审核；研究日期未自动推进。",
+                "- 公告原件和索引 Hash 保存在 event-observation；索引为官方查询的解析归档，不冒充原始 HTTP 字节。"])
+    review = supplements.get("research_review")
+    if review:
+        lines.extend(["", "## 主估值与人工审核清单", "",
+            "以下来自本次实际消费的研究合同，不是新估值批准。完整来源、时点与假设数值见 research-review.json。", ""])
+        lines.extend(f"- 尚未认可：{item}" for item in review["human_review_items"])
+        lines.extend(["", "| 模型假设 | 依据与反证 | 影响 | 审核状态 |",
+            "| --- | --- | --- | --- |"])
+        for item in review["assumptions"]:
+            rationale = str(item.get("rationale_and_countercase") or "尚缺解释").replace("|", "；").replace("\n", " ")
+            lines.append(f"| {item['name']} | {rationale} | {item.get('valuation_impact') or '未登记'} | 条件研究，未批准为主估值 |")
+    monthly = supplements.get("monthly_review")
+    if monthly:
+        titles = {"financial_operating_facts": "财务与经营事实", "main_valuation_assumptions": "估值假设",
+            "dividend_policy": "股息政策", "price_attractiveness": "价格吸引力",
+            "thesis_consistency": "原始买入逻辑一致性", "next_month_triggers": "下一月观察事项"}
+        states = {"UNAVAILABLE": "缺少可比的明确字段", "UNCHANGED": "研究字段未变化",
+            "CHANGED_RESEARCH_ARTIFACT": "研究合同发生变化，需核对原因"}
+        lines.extend(["", "## 月度研究复盘", "",
+            f"- 研究截止：{monthly['previous_research_as_of'] or '无上期'} → {monthly['current_research_as_of']}。",
+            "- 本次比较没有证明新增官方披露；重复运行不等于财务事实更新。", ""])
+        lines.extend(f"- {titles[key]}：{states[row['status']]}。" for key, row in monthly["fields"].items())
+        lines.append("- 详细前后内容及下一月触发见 monthly-review.json；未生成个人仓位。")
+    return "\n".join(lines) + "\n"
+
+
 def run_daily_trade_assistant(*, report_only=False, **kwargs) -> dict[str, Any]:
     from functools import partial
     return run_daily_application(**kwargs, report_renderer=_render_report,
-                                 preview_builder=partial(_build_preview, report_only=report_only))
+                                 preview_builder=partial(_build_preview, report_only=report_only),
+                                 supplement_renderer=_render_supplements)

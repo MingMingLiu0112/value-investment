@@ -7,6 +7,10 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from ..research.agent_review.snapshot import load_research_snapshot
+from ..research.agent_review.source_context import (
+    verify_packet_source_context, offline_context_input_sha256,
+    verify_finding_source_context,
+)
 from ..research.agent_review.supervisor import OfflineCaseReplayModel, expected_offline_findings
 from ..research.agent_review.llm_pilot import LIVE_SCOPE, MOCK_SCOPE, verify_llm_packet
 from ...domain.agent_research.contracts import AgentRole
@@ -29,7 +33,7 @@ def project_verified_agent_packet(payload: dict[str, Any], *, root: Path,
         raise ValueError("Agent research packet cannot upgrade investment state")
     if scope == "OFFLINE_REPLAY_NOT_NEW_LLM_RESEARCH":
         model = OfflineCaseReplayModel()
-        if (packet.get("schema_version") != "agent-research-pilot-v1"
+        if (packet.get("schema_version") not in {"agent-research-pilot-v1", "agent-research-pilot-source-v2"}
                 or packet.get("model_id") != model.model_id
                 or packet.get("prompt_version") != model.prompt_version):
             raise ValueError("Unknown offline research replay version")
@@ -37,6 +41,7 @@ def project_verified_agent_packet(payload: dict[str, Any], *, root: Path,
         root=root, workbench=root / packet["workbench_path"],
         expected_sha256=packet["workbench_sha256"], symbol=packet["symbol"],
     )
+    context = verify_packet_source_context(root=root, snapshot=snapshot, packet=packet)
     if (packet.get("research_input_fingerprint") != snapshot.input_fingerprint
             or packet.get("research_as_of") != snapshot.as_of.isoformat()
             or payload.get("as_of") != snapshot.as_of.isoformat()):
@@ -54,8 +59,10 @@ def project_verified_agent_packet(payload: dict[str, Any], *, root: Path,
             raise ValueError("Offline research roles are missing or reordered")
         if findings != expected_offline_findings(snapshot, packet_generated):
             raise ValueError("Offline findings differ from verified replay")
+        if context is not None:
+            verify_finding_source_context(packet, context, offline_context_input_sha256(snapshot, context))
     else:
-        verify_llm_packet(packet, snapshot)
+        verify_llm_packet(packet, snapshot, root=root)
     views = []
     for item in findings:
         views.append({
@@ -66,6 +73,19 @@ def project_verified_agent_packet(payload: dict[str, Any], *, root: Path,
             "scope": scope, "finding_type": item["finding_type"],
             "research_as_of": snapshot.as_of.isoformat(),
         })
+        if context is not None:
+            views[-1]["source_context"] = {
+                **packet["finding_source_context"][len(views) - 1],
+                "context_assurance": context["context_assurance"],
+                "uncovered_evidence": context["uncovered_evidence"],
+                "source_text_policy": context["source_text_policy"],
+                "excerpt_locators": [
+                    {key: excerpt[key] for key in ("source_id", "path", "sha256", "available_at",
+                                                   "page", "text_start", "text_end")}
+                    for excerpt in context["excerpts"]
+                    if excerpt["source_id"] in set(item["supporting_evidence_refs"]
+                                                  + item["counter_evidence_refs"])],
+            }
     matches = [item for item in payload.get("companies", [])
                if item.get("symbol") == snapshot.symbol]
     if len(matches) != 1 or matches[0].get("agent_research"):

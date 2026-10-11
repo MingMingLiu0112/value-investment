@@ -9,6 +9,8 @@
       "schedule_request_sha256": "ed2a9e1c817f837e3afdcc37c74b7ea4cba2c4b740ed7d92a3a4b6cf66ab2c40"
     },
     "600887": {
+      "recovery_manifest": "config/daily-600887-original-recovery-v1.json",
+      "recovery_manifest_sha256": "442f4427aeb61db75c910c779b1656c504d6c8ba17b46b87bf2e01a84bfb44ae",
       "package": "config/m1-valuation-packages-v1/600887-quality-compounder.json",
       "package_sha256": "e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803",
       "schedule_request": "config/daily-trade-assistant-600887-scope-v1.json",

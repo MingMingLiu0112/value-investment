@@ -84,6 +84,29 @@ def _replies(claim: str = "Independent source-cited research question") -> dict[
     return rows
 
 
+def test_mock_consumes_exact_original_context_and_reverifies_before_projection(tmp_path):
+    from copy import deepcopy
+    from value_investment_agent.application.research.agent_review.source_context import ExcerptRequest
+    workbench, digest, original = _inputs(tmp_path)
+    request = ExcerptRequest('filing-1', 'runtime/official.txt', sha256_file(original),
+        '2026-10-07T12:00:00+08:00', original.read_text(encoding='utf-8'), text_start=0, text_end=len(original.read_text(encoding='utf-8')))
+    class RecordingMock(MockLLMProvider):
+        def complete(self, request):
+            assert 'Synthetic official-source bytes' in request.user
+            assert 'CLAIM_SEMANTICS_NOT_VERIFIED' in request.user
+            return super().complete(request)
+    packet=run_llm_research_pilot(root=tmp_path,workbench=workbench,workbench_sha256=digest,
+        symbol='600519',output=tmp_path/'runtime/context.json',provider=RecordingMock(_replies()),
+        mode='mock',source_requests=(request,))
+    snapshot=load_research_snapshot(root=tmp_path,workbench=workbench,expected_sha256=digest,symbol='600519')
+    assert verify_llm_packet(packet,snapshot,root=tmp_path)==packet['findings']
+    changed=deepcopy(packet)
+    changed['source_context']['excerpts'][0]['excerpt']='Unsupported conclusion'
+    with pytest.raises(ValueError,match='exactly match'):
+        verify_llm_packet(changed,snapshot,root=tmp_path)
+    assert packet['approval_count']==0 and packet['decision_changed'] is False
+
+
 def _run(root: Path, provider=None, *, injected=False):
     workbench, digest, original = _inputs(root, injected=injected)
     output = root / "runtime" / "llm.json"
@@ -280,3 +303,152 @@ def test_provider_tool_call_and_usage_over_budget_fail_before_publication(tmp_pa
                 symbol="600519", output=output, provider=provider, mode="mock",
             )
         assert not output.exists()
+
+
+def _enriched_inputs(root, *, offline=False, empty=False):
+    from value_investment_agent.application.research.agent_review.source_context import ExcerptRequest
+    from value_investment_agent.application.research.agent_review.supervisor import run_agent_research_pilot
+    workbench, digest, original = _inputs(root)
+    text = original.read_text(encoding='utf-8')
+    request = ExcerptRequest('filing-1', 'runtime/official.txt', sha256_file(original),
+                            '2026-10-07T12:00:00+08:00', text, text_start=0, text_end=len(text))
+    kwargs = dict(root=root, workbench=workbench, workbench_sha256=digest,
+                  symbol='600519', output=root / 'runtime/enriched.json',
+                  source_requests=() if empty else (request,))
+    if offline:
+        run = run_agent_research_pilot
+    else:
+        run = run_llm_research_pilot
+        kwargs.update(provider=MockLLMProvider(_replies()), mode='mock')
+    packet = run(**kwargs)
+    snapshot = load_research_snapshot(root=root, workbench=workbench,
+                                      expected_sha256=digest, symbol='600519')
+    return packet, snapshot, run, kwargs
+
+
+def _project(root, packet, output):
+    output.write_text(json.dumps(packet), encoding='utf-8')
+    payload = {'as_of': '2026-10-08', 'generated_at': datetime.now(timezone.utc).isoformat(),
+               'audit': {'evidence': []},
+               'companies': [{'symbol': '600519', 'decision_status': 'WAIT'}]}
+    project_verified_agent_packet(payload, root=root, path=output,
+                                  expected_sha256=sha256_file(output))
+    return payload
+
+
+@pytest.mark.parametrize('offline', [False, True])
+@pytest.mark.parametrize('removed', [
+    ('source_context',), ('context_input_sha256',), ('finding_source_context',),
+    ('source_context', 'context_input_sha256', 'finding_source_context'),
+])
+def test_enriched_cannot_strip_context_or_digest(tmp_path, offline, removed):
+    packet, snapshot, _, kwargs = _enriched_inputs(tmp_path, offline=offline)
+    for key in removed:
+        packet.pop(key)
+    with pytest.raises(ValueError, match='paired'):
+        _project(tmp_path, packet, kwargs['output'])
+    if not offline:
+        with pytest.raises(ValueError, match='paired'):
+            verify_llm_packet(packet, snapshot, root=tmp_path)
+
+
+@pytest.mark.parametrize('offline', [False, True])
+@pytest.mark.parametrize('field', ['source_context', 'context_input_sha256'])
+def test_enriched_null_fields_rejected(tmp_path, offline, field):
+    packet, _, _, kwargs = _enriched_inputs(tmp_path, offline=offline)
+    packet[field] = None
+    with pytest.raises(ValueError):
+        _project(tmp_path, packet, kwargs['output'])
+
+
+@pytest.mark.parametrize('offline', [False, True])
+def test_enriched_sidecar_identity_projection_and_idempotency(tmp_path, offline):
+    packet, _, run, kwargs = _enriched_inputs(tmp_path, offline=offline)
+    assert run(**kwargs) == packet
+    payload = _project(tmp_path, packet, kwargs['output'])
+    assert payload['companies'][0]['decision_status'] == 'WAIT'
+    for view, sidecar in zip(payload['companies'][0]['agent_research'], packet['finding_source_context']):
+        context = view['source_context']
+        assert context['finding_context_sha256'] == sidecar['finding_context_sha256']
+        assert context['covered_evidence_refs'] == ['filing-1']
+        assert context['uncovered_evidence_refs'] == []
+        assert context['semantic_assurance'] == 'CLAIM_SEMANTICS_NOT_VERIFIED'
+        assert context['excerpt_locators'][0]['sha256'] == sha256_file(tmp_path / 'runtime/official.txt')
+    # Same finding contract, different exact excerpt => different associated identity.
+    from dataclasses import replace
+    changed_kwargs = dict(kwargs, output=tmp_path / 'runtime/other-context.json',
+                          source_requests=(replace(kwargs['source_requests'][0], excerpt='Synthetic'),))
+    changed = run(**changed_kwargs)
+    assert changed['findings'][0]['finding_id'] == packet['findings'][0]['finding_id']
+    assert changed['finding_source_context'][0]['finding_context_sha256'] != packet['finding_source_context'][0]['finding_context_sha256']
+    with pytest.raises(FileExistsError):
+        run(**dict(changed_kwargs, output=kwargs['output']))
+
+
+@pytest.mark.parametrize('offline', [False, True])
+@pytest.mark.parametrize('tamper', ['coverage', 'identity', 'digest', 'version'])
+def test_forged_sidecar_and_downgrade_rejected(tmp_path, offline, tamper):
+    packet, _, _, kwargs = _enriched_inputs(tmp_path, offline=offline)
+    if tamper == 'coverage':
+        packet['finding_source_context'][0]['covered_evidence_refs'] = []
+    elif tamper == 'identity':
+        packet['finding_source_context'][0]['finding_context_sha256'] = 'f' * 64
+    elif tamper == 'digest':
+        packet['context_input_sha256'] = 'f' * 64
+    else:
+        packet['schema_version'] = 'agent-research-pilot-v1' if offline else 'agent-research-llm-pilot-v1'
+    with pytest.raises(ValueError):
+        _project(tmp_path, packet, kwargs['output'])
+
+
+@pytest.mark.parametrize('offline', [False, True])
+def test_empty_context_never_claims_original_or_semantic_coverage(tmp_path, offline):
+    packet, _, _, kwargs = _enriched_inputs(tmp_path, offline=offline, empty=True)
+    payload = _project(tmp_path, packet, kwargs['output'])
+    context = payload['companies'][0]['agent_research'][0]['source_context']
+    assert context['context_assurance'] == 'NO_ORIGINAL_EXCERPTS_LOADED'
+    assert context['coverage_assurance'] == 'NO_CITED_SOURCE_EXCERPTS'
+    assert context['uncovered_evidence_refs'] == context['uncovered_evidence'] == ['filing-1']
+    assert context['semantic_assurance'] == 'CLAIM_SEMANTICS_NOT_VERIFIED'
+    assert context['excerpt_locators'] == []
+
+
+def test_legacy_packet_rejects_orphan_context_digest(tmp_path):
+    packet, _, _, workbench, digest = _run(tmp_path)
+    snapshot = load_research_snapshot(root=tmp_path, workbench=workbench,
+                                      expected_sha256=digest, symbol='600519')
+    packet['context_input_sha256'] = 'f' * 64
+    with pytest.raises(ValueError, match='enriched packet version'):
+        verify_llm_packet(packet, snapshot)
+
+
+def test_uncovered_fact_candidate_remains_unverified_and_read_model_compatible(tmp_path):
+    from value_investment_agent.application.research.agent_review.source_context import finding_source_context
+    from value_investment_agent.presentation.read_models.product_workbench import product_workbench_from_payload
+    from test_product_workbench_excel import _payload
+    packet, snapshot, _, kwargs = _enriched_inputs(tmp_path, empty=True)
+    instant = datetime.fromisoformat(packet['generated_at'])
+    packet['findings'] = []
+    for role in AgentRole:
+        raw = json.loads(packet['raw_responses'][role.value])
+        raw['findings'][0]['finding_type'] = 'FACT_CANDIDATE'
+        raw['findings'][0]['claim'] = 'A claim whose semantics have not been reviewed'
+        packet['raw_responses'][role.value] = json.dumps(raw)
+        packet['findings'].extend(validate_role_response(
+            json.dumps(raw), role=role, snapshot=snapshot,
+            model_id=packet['model_id'], created_at=instant))
+    packet['finding_source_context'] = finding_source_context(
+        packet['findings'], packet['source_context'], packet['context_input_sha256'])
+    assert verify_llm_packet(packet, snapshot, root=tmp_path) == packet['findings']
+    projected = _project(tmp_path, packet, kwargs['output'])
+    views = projected['companies'][0]['agent_research']
+    assert all(view['source_context']['coverage_assurance'] == 'NO_CITED_SOURCE_EXCERPTS'
+               and view['source_context']['semantic_assurance'] == 'CLAIM_SEMANTICS_NOT_VERIFIED'
+               and view['status'] == 'PENDING_HUMAN_REVIEW' for view in views)
+    # Existing typed reader consumes its established fields and tolerates sidecar data.
+    payload = _payload()
+    payload['companies'][0]['agent_research'] = views
+    payload['audit']['evidence'].extend(projected['audit']['evidence'])
+    model = product_workbench_from_payload(payload)
+    assert len(model.companies[0].agent_research) == 3
+    assert model.action == 'no_order'

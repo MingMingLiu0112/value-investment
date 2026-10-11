@@ -1,7 +1,7 @@
 """Bounded, read-only three-role research orchestration."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -12,6 +12,10 @@ from zoneinfo import ZoneInfo
 from ....domain.agent_research.contracts import AgentFinding, AgentRole, FindingStatus
 from ...product.common import require_inside, sha256_file, write_new_json
 from .snapshot import ResearchSnapshot, load_research_snapshot
+from .source_context import (
+    ExcerptRequest, load_source_context, offline_context_input_sha256,
+    finding_source_context,
+)
 
 
 @dataclass(frozen=True)
@@ -97,7 +101,8 @@ def expected_offline_findings(snapshot: ResearchSnapshot, generated_at: datetime
 
 def run_agent_research_pilot(*, root: Path, workbench: Path, workbench_sha256: str,
                              symbol: str, output: Path,
-                             model: ResearchModel | None = None) -> dict[str, object]:
+                             model: ResearchModel | None = None,
+                             source_requests: tuple[ExcerptRequest, ...] | None = None) -> dict[str, object]:
     """Reverify official bytes, run bounded roles, and save a non-admitted packet."""
     root = root.resolve()
     target = require_inside(root / "runtime", output, "agent pilot output")
@@ -105,6 +110,10 @@ def run_agent_research_pilot(*, root: Path, workbench: Path, workbench_sha256: s
         root=root, workbench=workbench, expected_sha256=workbench_sha256, symbol=symbol,
     )
     runner = model or OfflineCaseReplayModel()
+    context = None if source_requests is None else load_source_context(root=root,
+        snapshot=snapshot, requests=source_requests, enabled=True).as_dict()
+    if context is not None:
+        snapshot = replace(snapshot, source_context=context)
     now = datetime.now(timezone.utc)
     findings = []
     for role in AgentRole:
@@ -123,6 +132,12 @@ def run_agent_research_pilot(*, root: Path, workbench: Path, workbench_sha256: s
         "findings": findings, "formal_fact_count": 0, "approval_count": 0,
         "decision_changed": False, "action": "no_order",
     }
+    if context is not None:
+        packet["schema_version"] = "agent-research-pilot-source-v2"
+        packet["source_context"] = context
+        packet["context_input_sha256"] = offline_context_input_sha256(snapshot, context)
+        packet["finding_source_context"] = finding_source_context(
+            findings, context, packet["context_input_sha256"])
     if target.exists():
         current = json.loads(target.read_text(encoding="utf-8"))
         try:
@@ -132,6 +147,9 @@ def run_agent_research_pilot(*, root: Path, workbench: Path, workbench_sha256: s
             expected = dict(packet, generated_at=prior_time.isoformat())
             if isinstance(runner, OfflineCaseReplayModel):
                 expected["findings"] = expected_offline_findings(snapshot, prior_time)
+                if context is not None:
+                    expected["finding_source_context"] = finding_source_context(
+                        expected["findings"], context, packet["context_input_sha256"])
             else:
                 raise ValueError("Custom model output cannot be revalidated")
             if current != expected:
