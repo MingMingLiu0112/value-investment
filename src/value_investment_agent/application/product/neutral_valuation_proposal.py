@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .common import load_json_object, require_inside, sha256_file, write_new_json, encode_json_bytes
 from .source_bound_inputs import verify_package_local_sources
+from .financial_valuation_rebase import rebase_proposal_facts
 from ...m1_valuation_package_builder import build_descriptor
 from ...valuation_models.residual_income import (
     QualityCompounderFacts, ResidualIncomeEquityValuationModel,
@@ -123,7 +124,15 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
     anchor_field = policy.get('profit_anchor_field')
     if not isinstance(anchor_field, str):
         raise ValueError('proposal earnings anchor requires a declared parent-profit financial field')
-    anchor = _profit_anchor(root, package, case, anchor_field)
+    model = ResidualIncomeEquityValuationModel()
+    baseline = model.value(facts, case)
+    rebase = None
+    if policy.get('financial_rebase') is not None:
+        facts, anchor, bindings, rebase = rebase_proposal_facts(
+            root=root, symbol=case.symbol, facts=facts, policy=policy)
+        sources.extend(bindings)
+    else:
+        anchor = _profit_anchor(root, package, case, anchor_field)
     choices = policy.get('choices')
     if (not isinstance(choices, list) or not 1 <= len(choices) <= 3
             or len({row['id'] for row in choices}) != len(choices)):
@@ -131,8 +140,6 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
     growths = policy.get('income_growth')
     if not isinstance(growths, dict) or set(growths) != {'bear', 'base', 'bull'}:
         raise ValueError('proposal requires explicit three-scenario earnings conditions')
-    model = ResidualIncomeEquityValuationModel()
-    baseline = model.value(facts, case)
     if baseline.status != 'conditional_research_only':
         raise ValueError('proposal baseline is not a usable conditional calculation')
     book, shares = facts.operating_inputs['start_book_equity'], facts.operating_inputs['ordinary_shares']
@@ -147,6 +154,15 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
             growth = Decimal(str(growths[name]))
             if not growth.is_finite() or not Decimal('-0.10') <= growth <= Decimal('0.10'):
                 raise ValueError('proposal growth exceeds the registered research bounds')
+            if rebase is not None:
+                condition = policy['scenario_conditions'][name]
+                cost = _profit_amount(condition['cost_of_equity'])
+                retention = _profit_amount(condition['retention'])
+                terminal_growth = _profit_amount(condition['terminal_growth'])
+                if not Decimal('0.08') <= cost <= Decimal('0.12') or not Decimal('0.10') <= retention <= Decimal('0.25'):
+                    raise ValueError('proposal explicit cost/retention exceeds finite research bounds')
+                original = ResidualIncomeScenarioInputs(cost, original.forecast_roes,
+                    cost, terminal_growth, retention)
             scenarios[name] = ResidualIncomeScenarioInputs(
                 cost_of_equity=original.cost_of_equity,
                 forecast_roes=tuple(current_projection(book, anchor, original.cost_of_equity,
@@ -204,6 +220,7 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
         date_semantics='New proposal computed now on retained financial/date basis; not a contemporaneous historical or current admitted valuation.',
         source_descriptor_sha256=descriptor.input_sha256,
         baseline_valuation=json.loads(baseline.to_json()), choices=rows,
+        financial_rebase=rebase,
         profit_basis=policy['profit_basis'], normalized_profit=None,
         economic_review_items=policy['economic_review_items'],
         assurance_limits=policy['assurance_limits'],
@@ -236,6 +253,16 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
             f'{Decimal(bridge["valuation_date_per_share_cny"]):.4f} | {bridge["model_per_share_difference_cny"]} |')
     for row in rows:
         lines.extend(['', f'{row["id"]}经济依据：{row["rationale"]}', f'反面风险：{row["countercase"]}', ''])
+    if rebase is not None:
+        lines.extend(['## 本次真正消费的财报输入', '',
+            f'归母权益：{book}元；披露总股数：{shares}股；财务基准日：{rebase["start_book_equity"]["period_end"]}。',
+            '首个预测付款期为财务基准日之后一个完整年度，不是财年全年预测。',
+            *[f'- {item}' for item in rebase['limitations']], '',
+            '| 条件 | 权益成本 | 留存率 | 终值ROE | 终值增长 |',
+            '| --- | --- | --- | --- | --- |'])
+        for name, condition in rows[0]['actual_calculation_inputs']['scenarios'].items():
+            lines.append(f'| {name} | {condition["cost_of_equity"]} | {condition["retention"]} | '
+                f'{condition["terminal_roe"]} | {condition["terminal_growth"]} |')
     lines.extend(['## 真正需要审阅的经济选择', '', *[f'- {item}' for item in result['economic_review_items']],
         '', '## 尚未证明', '', *[f'- {item}' for item in result['assurance_limits']], '',
         '逐年权益、盈利、留存、分配、终端和Hash见同名JSON，使用已有共享模型精确复算。',

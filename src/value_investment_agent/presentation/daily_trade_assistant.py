@@ -292,6 +292,15 @@ def _render_supplements(supplements: dict[str, Any]) -> str:
         for row in proposal['choices']:
             amounts = ' / '.join(f"{Decimal(row['valuation'][key]):.2f}" for key in ('bear_value', 'base_value', 'bull_value'))
             lines.append(f"| {row['id']} | {row['growth_years']} / {row['fade_years']} | {amounts} |")
+        if proposal.get('financial_rebase'):
+            spec = proposal['financial_rebase']
+            inputs = proposal['choices'][0]['actual_calculation_inputs']
+            lines.extend(["", f"- 本次模型已消费归母权益：{Decimal(inputs['start_book_equity']) / Decimal('100000000'):.2f}亿元；"
+                f"财务基准日：{spec['start_book_equity']['period_end']}。",
+                f"- 盈利输入为历史扣非归母TTM {Decimal(inputs['profit_anchor']) / Decimal('100000000'):.2f}亿元，正常化盈利未认可。",
+                f"- 分母：{inputs['ordinary_shares']}股，披露总股数；库存股及稀释口径尚未认可。",
+                "- 首个完整预测年度从财务基准日起算一年；不是FY2026全年预测，也没有推进研究截止。",
+                *[f"- 模型边界：{item}" for item in spec['limitations']]])
         lines.extend(["", *[f"- 待审：{item}" for item in proposal['economic_review_items']],
             "", "经济机制、反证与精确来源见同目录 valuation-proposal.md；逐年复算见 valuation-proposal.json。"])
     monthly = supplements.get("monthly_review")

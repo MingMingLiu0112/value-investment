@@ -1,5 +1,35 @@
 # CURRENT STATUS
 
+## 2026-10-11 Yili Financial Inputs Actually Consumed by Shared Valuation
+
+Existing daily CLI with config/600887-financial-valuation-proposal-v1.json now
+rehashes the original financial-review chain, checks capital/profit excerpts
+against physical PDF pages, reconciles three TTM components and consumes H1
+parent-attributable equity53,711,364,981.99 CNY, disclosed total6,325,360,667 shares
+and historical ex-nonrecurring parent-profit9,647,734,710.01 CNY. This reusable
+application adapter is not an issuer-specific valuation engine. Frozen model
+hash090bb42f... and canonical hash8f360870... remain unchanged.
+
+Actual report: runtime/daily-trade-assistant/20261011-yili-financial-rebase-v3/report.md.
+Two finite conditional alternatives through the same model give bear/base/bull
+9.75/10.03/10.26 and10.51/11.58/12.45 CNY per disclosed share; these are NOT
+approved fair values or buy prices. Old baseline is retained separately. Explicit
+8%-10% cost,10%-20% retention and fade-to-cost conditions replace inherited ROE
+paths only inside this proposal. They are unapproved research choices, not facts.
+Basis6/30, valuation/research9/22; first full annual payment6/30/2027.
+Independent review reproduced stale share-count, annual-equity period relabeling
+and same-day post-cutoff availability defects. All are repaired: current same-
+statement capital-note reconciliation, adjacent ordered balance-sheet dates,
+and full timestamp cutoff are required. 152 focused financial/proposal/daily/
+batch/assets/architecture tests passed, including the three regression cases.
+Independent read-only recheck rejected all original reproductions and accepted
+the exact cutoff/current official financial inputs; no remaining concrete blocker.
+Last completed 10/9 close27.66 is displayed from the retained dual-source archive;
+it does not enter this historical valuation or approve the stale research bridge.
+Treasury/dilution, normalized profit, clean-surplus/distribution bridge and issuer
+cost/advantage duration remain open. No G3/materiality/price/private-portfolio
+admission, current valuation, decision change, Excel publication or D2 completion.
+
 ## 2026-10-11 Second Company Research Consumption and Capability Audit
 
 The existing daily CLI now consumes 600887's pinned financial-review manifest,

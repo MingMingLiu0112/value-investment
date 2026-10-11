@@ -1,0 +1,65 @@
+{
+  "schema_version": "finite-earnings-path-proposal-v1",
+  "action": "no_order",
+  "symbol": "600887",
+  "source_package_sha256": "e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803",
+  "profit_anchor_field": "ttm_ex_nonrecurring_parent_profit_cny",
+  "profit_basis": "Historical ex-nonrecurring parent-profit TTM proxy, not normalized earnings.",
+  "income_growth": {"bear": "-0.05", "base": "0", "bull": "0.03"},
+  "scenario_conditions": {
+    "bear": {"cost_of_equity": "0.10", "retention": "0.20", "terminal_growth": "0"},
+    "base": {"cost_of_equity": "0.09", "retention": "0.15", "terminal_growth": "0"},
+    "bull": {"cost_of_equity": "0.08", "retention": "0.10", "terminal_growth": "0"}
+  },
+  "rationale_bindings": [{
+    "path": "docs/current/600887-current-financial-review-20261011.md",
+    "sha256": "5241cd6420eb497bf5450d43bced4c35703d562db0e8762460b2af93bd0a7427"
+  }],
+  "choices": [
+    {"id": "short-advantage", "growth_years": 1, "fade_years": 3,
+     "rationale": "Limited persistence followed by full-capital ROE fade to equity cost; no perpetual excess return.",
+     "countercase": "Profit decline, impairment and financing constraints can invalidate even this short persistence."},
+    {"id": "medium-advantage", "growth_years": 3, "fade_years": 5,
+     "rationale": "Unapproved bounded recovery alternative, using the same disclosed TTM proxy and full-capital fade.",
+     "countercase": "No proven earnings mechanism identifies a three-year advantage; longer persistence needs economic review."}
+  ],
+  "economic_review_items": [
+    "Validate earnings normalization and forward operating mechanism without impairment addbacks.",
+    "Validate issuer-specific equity cost, share denominator and finite advantage duration.",
+    "Reconcile consolidated parent equity changes and separately prove sustainable distribution."
+  ],
+  "assurance_limits": [
+    "Conditional mathematical alternatives only; not approved fair value or entry prices.",
+    "Self-funded model does not enforce the issuer DPS floor or financing-funded distributions.",
+    "No G3, materiality, strict PIT, current price or private portfolio approval."
+  ],
+  "financial_rebase": {
+    "schema_version": "financial-proposal-rebase-v1",
+    "manifest_path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/manifest.json",
+    "manifest_sha256": "1f1207e343cbc08dead636f2ba61ce76012b290a19776f4c0d9ef20a0acca384",
+    "share_basis": "DISCLOSED_TOTAL_NOT_TREASURY_OR_DILUTION_ADJUSTED",
+    "start_book_equity": {
+      "value": "53711364981.99", "unit": "CNY", "scope": "consolidated_parent_attributable",
+      "period_end": "2026-06-30", "source_id": "cninfo:1225511409", "physical_page": 49, "statement_header_page": 48,
+      "evidence_excerpt": "归属于母公司所有者权益（或股东权益）合计 53,711,364,981.99 54,655,690,475.89"
+    },
+    "ordinary_shares": {
+      "value": "6325360667", "unit": "shares", "scope": "disclosed_total_ordinary_shares",
+      "period_end": "2026-06-30", "source_id": "cninfo:1225511409", "physical_page": 66,
+      "evidence_excerpt": "6,325,360,667 股。"
+    },
+    "share_continuity": {
+      "period_end": "2026-06-30", "source_id": "cninfo:1225511409", "physical_page": 42,
+      "evidence_excerpt": "报告期内，公司股份总数及股本结构未发生变化。"
+    },
+    "share_capital_confirmation": {
+      "source_id": "cninfo:1225511409", "physical_page": 159,
+      "evidence_excerpt": "股份总数 6,325,360,667.00 6,325,360,667.00"
+    },
+    "limitations": [
+      "Disclosed historical total shares, not a treasury-adjusted or diluted current denominator.",
+      "H1 unaudited parent-equity basis; clean-surplus bridge not approved.",
+      "Retained 2026-09-22 valuation date; first modeled annual payment 2027-06-30, not FY2026."
+    ]
+  }
+}
