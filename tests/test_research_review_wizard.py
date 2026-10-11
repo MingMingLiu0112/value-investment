@@ -6,6 +6,8 @@ import sys
 
 import pytest
 
+pytestmark = pytest.mark.usefixtures('synthetic_pending_candidate_clock')
+
 from test_pending_review_intake import _candidate
 from test_pending_review_response import signed, consume
 from value_investment_agent.application.product.common import sha256_file

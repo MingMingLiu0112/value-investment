@@ -1,5 +1,23 @@
 # 当前总目标：价值投资建议与情绪卫星仓系统
 
+## 2026-10-11 P0-P3 dual-strategy productization
+
+Latest explicit task: P0-P3-DUAL-STRATEGY-PRODUCTIZATION, inheriting f226656.
+Ordinary continuous development across all independently executable packages:
+P0 unified update/verified Canonical publication and semantic idempotence;
+P1 clear seven-page value/hotspot/risk workbench and Windows entry;
+P2 existing lawful review workflow and exact-version decisions;
+P3 real source-bound hotspot observation, existing value decisions, independent
+CORE_VALUE/HOTSPOT_SATELLITE budgets, risk sizing and manual plans.
+No new valuation/Agent/authentication engine, Web, production scheduler or orders.
+Preserve 55 nonmanaged sheets, manual data, immutable source bytes and backups.
+Retain D5 value/risk/PIT/OOS/cost/Shadow gates: hotspot observation is permitted,
+formal trading eligibility remains false unless separately evidenced. No private
+portfolio, reviewer or investment approval may be fabricated. Paid APIs,
+production/Shadow and final actual user acceptance retain existing boundaries.
+Standing authorization covers verified Canonical publication and scoped Git push.
+action=no_order. Product trial readiness does not graduate INITIAL_ASSISTED_USE.
+
 ## 2026-10-11 D2 User Workflow, Research Admission and Reliability
 
 Latest explicit package: D2-USER-WORKFLOW-RESEARCH-ADMISSION-AND-RELIABILITY,

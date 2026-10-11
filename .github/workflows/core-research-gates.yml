@@ -224,6 +224,16 @@ jobs:
           tests/test_workbook_publication_restore_mapping.py
           tests/test_user_research_workflow.py
           tests/test_research_review_wizard.py
+          tests/test_daily_product_update.py
+          tests/test_hotspot_manual_scan.py
+          tests/test_dual_sleeve_risk.py
+          tests/test_dual_sleeve_records.py
+          tests/test_dual_sleeve_input_sheet.py
+          tests/test_dual_strategy_surface.py
+          tests/test_dual_product_values.py
+          tests/test_p0_independent_update_safety.py
+          tests/test_value_decision_explanation.py
+          tests/test_value_review_admission.py
           tests/test_canonical_workbook_preservation.py
           tests/test_m7_actual_followup_scan.py
           tests/test_wps_verifier_text_scans.py

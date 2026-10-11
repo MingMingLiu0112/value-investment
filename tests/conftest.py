@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime, timezone
 
 import pytest
 
@@ -9,6 +10,22 @@ from authorization_trust_registry_fixture import (
     clear_test_trust_registry,
     reset_test_trust_registry,
 )
+
+
+@pytest.fixture
+def synthetic_pending_candidate_clock(monkeypatch):
+    """Opt-in candidate clock; signing, expiry and production clocks stay live."""
+    from value_investment_agent.application.product import pending_research_candidate
+
+    fixed = datetime(2026, 10, 11, 4, tzinfo=timezone.utc)
+
+    class SyntheticCandidateClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return fixed.replace(tzinfo=None) if tz is None else fixed.astimezone(tz)
+
+    monkeypatch.setattr(pending_research_candidate, 'datetime', SyntheticCandidateClock)
+    return fixed
 
 
 @pytest.fixture(autouse=True)

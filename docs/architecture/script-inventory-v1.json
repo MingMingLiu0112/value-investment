@@ -5,16 +5,44 @@
   "current_entrypoint_count": 43,
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 12,
-    "CURRENT_PRODUCT_CLI": 9,
-    "CURRENT_RESEARCH_CLI": 203,
+    "CURRENT_PRODUCT_CLI": 13,
+    "CURRENT_RESEARCH_CLI": 205,
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 217,
     "MIGRATION_TOOL": 13,
-    "DIAGNOSTIC_TOOL": 136,
+    "DIAGNOSTIC_TOOL": 138,
     "SUPERSEDED": 0,
     "DELETE_CANDIDATE": 0
   },
   "entries": [
+    {
+      "path": "scripts/current/verify_product_navigation.ps1",
+      "category": "DIAGNOSTIC_TOOL",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json",
+        "scripts/current/product_update_publication.py"
+      ],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "MEDIUM",
+      "line_count": 40,
+      "sha256": "01c990b57311a54e4289528da4a526734120c4c821226771b9c95054a824aa05"
+    },
+    {
+      "path": "scripts/current/verify_dual_product_values.py",
+      "category": "DIAGNOSTIC_TOOL",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json",
+        "scripts/current/product_update_publication.py"
+      ],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "MEDIUM",
+      "line_count": 55,
+      "sha256": "a68f4eacaa92bd9b74da69ce7bddb7216b6d0c2da1a1ed7edd1935e6de8f251a"
+    },
     {
       "path": "scripts/current/use_trade_assistant.py",
       "category": "CURRENT_PRODUCT_CLI",
@@ -28,6 +56,89 @@
       "current_consumers": ["scripts/current/use_trade_assistant.py"],
       "imports_business_logic": false,
       "replacement": null
+    },
+    {
+      "path": "scripts/current/product_update_publication.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json",
+        "scripts/current/run_update_and_publish.py"
+      ],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "MEDIUM",
+      "line_count": 204,
+      "sha256": "cffb6a2a2577fd2a32f8abee1669a0e118dade185204e8071b8e56935c1641ca"
+    },
+    {
+      "path": "scripts/current/render_dual_strategy_artifact_pages.mjs",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json",
+        "scripts/current/product_update_publication.py"
+      ],
+      "imports_business_logic": true,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "MEDIUM",
+      "line_count": 417,
+      "sha256": "89daf66679b20cdd29f9104568a905ec50e3f3a8cb84b8d1453c58ed3b586b5f"
+    },
+    {
+      "path": "scripts/current/start_trade_workbench.ps1",
+      "category": "CURRENT_PRODUCT_CLI",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json"
+      ],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "MEDIUM",
+      "line_count": 37,
+      "sha256": "93eb6c9c69e544c42b1329f0283e835e20f4f6b3d969d41430573d50c10c447b"
+    },
+    {
+      "path": "scripts/current/run_update_and_publish.py",
+      "category": "CURRENT_PRODUCT_CLI",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json",
+        "scripts/current/use_trade_assistant.py"
+      ],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "MEDIUM",
+      "line_count": 133,
+      "sha256": "88b25770961eab5827edcc8a0869baece4b93cfcd6a7a839c02ecf09cfa1e063"
+    },
+    {
+      "path": "scripts/current/review_dual_sleeve_risk.py",
+      "category": "CURRENT_PRODUCT_CLI",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json",
+        "scripts/current/start_trade_workbench.ps1"
+      ],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "MEDIUM",
+      "line_count": 71,
+      "sha256": "d54b4191f89201708a71551227a6c01e6f7b33a0c536c9ee577a08874387ad3e"
+    },
+    {
+      "path": "scripts/current/scan_market_hotspots.py",
+      "category": "CURRENT_PRODUCT_CLI",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json",
+        "scripts/current/start_trade_workbench.ps1"
+      ],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "MEDIUM",
+      "line_count": 26,
+      "sha256": "b77b5e2ab2a2fb95f3346176a2cc121c5c8534a482a4afb93b4d6849ada7e372"
     },
     {
       "path": "scripts/analyze_moutai_cash_anchor_equity_coverage.py",

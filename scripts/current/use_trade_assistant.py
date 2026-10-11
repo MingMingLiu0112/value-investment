@@ -35,6 +35,8 @@ def main() -> int:
         parser.error('--open is only available in view mode')
     if args.mode == 'update':
         workbook = get_settings().workbook_path.resolve()
+        from scripts.current.product_update_publication import recover_interrupted_product_publications
+        recover_interrupted_product_publications(root=ROOT, workbook=workbook)
         published = read_published_research(root=ROOT, workbook=workbook)
         symbols = [args.symbol] if args.symbol else list(published['pending_candidates'])
         if not symbols:
@@ -42,7 +44,7 @@ def main() -> int:
         for symbol in symbols:
             selected_review_candidate(root=ROOT, published=published, symbol=symbol)
         registry_path = verify_user_update_registry(root=ROOT, published=published, symbols=symbols)
-        command = [sys.executable, str(ROOT/'scripts/current/run_daily_trade_assistant.py')]
+        command = [sys.executable, str(ROOT/'scripts/current/run_update_and_publish.py')]
         command += ['--symbols', ','.join(symbols), '--case-registry', str(registry_path),
                     '--case-registry-sha256', sha256_file(registry_path)]
         return subprocess.call([*command, *advanced], cwd=ROOT)

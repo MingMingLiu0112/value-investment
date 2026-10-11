@@ -5,6 +5,8 @@ import json
 
 import pytest
 
+pytestmark = pytest.mark.usefixtures('synthetic_pending_candidate_clock')
+
 from test_neutral_valuation_proposal import proposal_inputs
 from value_investment_agent.application.product.common import sha256_file
 from value_investment_agent.application.product.pending_research_candidate import (
@@ -16,7 +18,7 @@ from value_investment_agent.research_artifact_codecs import artifact_payload
 
 def candidate_inputs(root):
     package_path, policy_path = proposal_inputs(root)
-    package = json.loads(package_path.read_text())
+    package = json.loads(package_path.read_text(encoding='utf-8'))
     package['sources'][0]['issuer_identity'] = dict(venue='CNINFO',
         security_code=package['symbol'], issuer_name=package['name'], organization_id='gssh0600887')
     ref = package['facts']['evidence_refs'][0]
@@ -25,7 +27,7 @@ def candidate_inputs(root):
         for item in package['research_case'].get(field, []):
             item['evidence_refs'] = ['facts']
     package_path.write_text(json.dumps(package), encoding='utf-8')
-    policy = json.loads(policy_path.read_text())
+    policy = json.loads(policy_path.read_text(encoding='utf-8'))
     policy['source_package_sha256'] = sha256_file(package_path)
     policy_path.write_text(json.dumps(policy), encoding='utf-8')
     (root / 'config').mkdir()
@@ -46,21 +48,23 @@ def run(root, package, policy, request, **kwargs):
         **kwargs)
 
 
-def test_selected_inputs_are_consumed_by_actual_application_without_admission(tmp_path):
+def test_selected_inputs_are_consumed_by_actual_application_without_admission(
+        tmp_path, synthetic_pending_candidate_clock):
     package, policy, request = candidate_inputs(tmp_path)
     before = package.read_bytes()
     result = run(tmp_path, package, policy, request)
     assert package.read_bytes() == before
     assert result['status'] == 'PENDING_REVIEW'
     from zoneinfo import ZoneInfo
-    assert result['candidate_research_as_of'] == datetime.now(ZoneInfo('Asia/Shanghai')).date().isoformat()
+    assert result['candidate_research_as_of'] == synthetic_pending_candidate_clock.astimezone(
+        ZoneInfo('Asia/Shanghai')).date().isoformat()
     assert result['prior_research_as_of'] == '2026-09-22'
     assert result['price_admitted'] is result['registered_current_case_changed'] is False
     assert result['position_guidance'] is None
-    work = json.loads((tmp_path / 'runtime/pending/workbench.json').read_text())
+    work = json.loads((tmp_path / 'runtime/pending/workbench.json').read_text(encoding='utf-8'))
     objects = verify_current_decision_workbench(work).dependency_objects
     facts = artifact_payload(objects['financial_facts'])[1]
-    candidate = json.loads((tmp_path / 'runtime/pending/package.json').read_text())
+    candidate = json.loads((tmp_path / 'runtime/pending/package.json').read_text(encoding='utf-8'))
     assert len(candidate['facts']['scenario_inputs']['base']['forecast_roes']) == 15
     assert len(candidate['assumption_bindings']) == 19 * 3
     assert facts['operating_inputs'] == candidate['facts']['operating_inputs']
@@ -78,15 +82,15 @@ def test_selected_inputs_are_consumed_by_actual_application_without_admission(tm
 def test_invalid_candidates_do_not_publish_or_write_a_candidate(tmp_path, change):
     package, policy, request = candidate_inputs(tmp_path)
     if change == 'choice':
-        data = json.loads(policy.read_text())
+        data = json.loads(policy.read_text(encoding='utf-8'))
         data['choices'][0]['id'] = 'not-continuity'
         policy.write_text(json.dumps(data), encoding='utf-8')
     elif change == 'future-source':
-        data = json.loads(package.read_text())
+        data = json.loads(package.read_text(encoding='utf-8'))
         data['sources'][0]['source_available_at'] = '2099-09-24T00:00:00+08:00'
         data['sources'][0]['availability_basis'] = 'synthetic'
         package.write_text(json.dumps(data), encoding='utf-8')
-        data = json.loads(policy.read_text())
+        data = json.loads(policy.read_text(encoding='utf-8'))
         data['source_package_sha256'] = sha256_file(package)
         policy.write_text(json.dumps(data), encoding='utf-8')
     elif change == 'wrong-schedule':
@@ -128,7 +132,7 @@ def test_actual_candidate_rejects_backdated_or_future_injected_clock(tmp_path, y
 def test_grouped_economic_review_is_pinned_visible_and_not_approval(tmp_path):
     from value_investment_agent.presentation.daily_trade_assistant import _render_pending_candidate_review
     package, policy, request = candidate_inputs(tmp_path)
-    data = json.loads(policy.read_text())
+    data = json.loads(policy.read_text(encoding='utf-8'))
     data['human_review_groups'] = [dict(id='earnings', question='Can historical earnings persist?',
         support='Synthetic disclosed historical profit.', countercase='Synthetic impairment risk.',
         impact='Pending forecast changes, not an admitted buy price.',
@@ -155,7 +159,7 @@ def test_candidate_surface_requires_the_exact_consumed_inputs_and_boundary(tmp_p
     package, policy, request = candidate_inputs(tmp_path)
     run(tmp_path, package, policy, request)
     path = tmp_path / 'runtime/pending/candidate.json'
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding='utf-8'))
     if change == 'source':
         (tmp_path / 'runtime/original.md').write_text('drift', encoding='utf-8')
     elif change == 'context':

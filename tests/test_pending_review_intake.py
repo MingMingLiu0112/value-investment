@@ -3,6 +3,8 @@ import json
 
 import pytest
 
+pytestmark = pytest.mark.usefixtures('synthetic_pending_candidate_clock')
+
 from test_pending_research_candidate import candidate_inputs, run
 from test_pending_candidate_daily_isolation import _daily_inputs, _run_daily
 from value_investment_agent.application.product.common import sha256_file

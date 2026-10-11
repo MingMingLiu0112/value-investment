@@ -26,7 +26,7 @@ from value_investment_agent.operations.authorization.trust_root_registry import 
 
 
 @pytest.fixture
-def signed(tmp_path):
+def signed(tmp_path, monkeypatch, synthetic_pending_candidate_clock):
     path, candidate = _candidate(tmp_path)
     response = prepare_pending_review_response(root=tmp_path, candidate_path=path,
         candidate_sha256=sha256_file(path))

@@ -4,6 +4,8 @@ import json
 
 import pytest
 
+pytestmark = pytest.mark.usefixtures('synthetic_pending_candidate_clock')
+
 from test_pending_research_candidate import candidate_inputs
 from value_investment_agent.application.product import daily_trade_assistant as daily
 from value_investment_agent.application.product import pending_research_candidate as candidate

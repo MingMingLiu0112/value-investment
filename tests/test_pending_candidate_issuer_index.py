@@ -4,6 +4,8 @@ import json
 
 import pytest
 
+pytestmark = pytest.mark.usefixtures('synthetic_pending_candidate_clock')
+
 from test_financial_review_attachment import package, _pin
 from test_financial_valuation_rebase import fixture_rebase
 from test_pending_research_candidate import candidate_inputs, run

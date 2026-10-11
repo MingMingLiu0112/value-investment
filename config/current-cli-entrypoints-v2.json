@@ -12,6 +12,10 @@
   "SUPPORTED_PRODUCT_CLI": [
     "scripts/current/use_trade_assistant.py",
     "scripts/current/review_research.py",
+    "scripts/current/scan_market_hotspots.py",
+    "scripts/current/review_dual_sleeve_risk.py",
+    "scripts/current/run_update_and_publish.py",
+    "scripts/current/start_trade_workbench.ps1",
     "scripts/current/run_daily_trade_assistant.py",
     "scripts/open_current_trial_workbook.py",
     "scripts/build_m7_workbench_v2_candidate.py",
@@ -87,13 +91,17 @@
     "scripts/current/publish_product_workbench_to_canonical.py",
     "scripts/current/record_prospective_public_observation.py",
     "scripts/current/render_product_artifact_pages.mjs",
+    "scripts/current/render_dual_strategy_artifact_pages.mjs",
+    "scripts/current/product_update_publication.py",
+    "scripts/current/verify_dual_product_values.py",
+    "scripts/current/verify_product_navigation.ps1",
     "scripts/current/verify_m7_product_ux_trial_visuals.py",
     "scripts/current/verify_m7_product_ux_trial_wps.ps1"
   ],
   "counts": {
-    "product": 22,
+    "product": 26,
     "engineering": 42,
-    "internal_helpers": 11,
-    "total": 75
+    "internal_helpers": 15,
+    "total": 83
   }
 }

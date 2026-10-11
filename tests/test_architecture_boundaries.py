@@ -342,6 +342,26 @@ def test_script_inventory_covers_all_tooling_files():
     assert len(paths) == len(entries)
     assert paths == actual_paths
     assert sum(inventory["counts"].values()) == len(entries)
+    assert inventory["counts"] == {
+        category: sum(entry["category"] == category for entry in entries)
+        for category in inventory["counts"]
+    }
+    by_path = {entry["path"]: entry for entry in entries}
+    for name in ("scan_market_hotspots.py", "review_dual_sleeve_risk.py",
+                 "run_update_and_publish.py", "start_trade_workbench.ps1"):
+        entry = by_path["scripts/current/" + name]
+        assert entry["category"] == "CURRENT_PRODUCT_CLI"
+        assert "config/current-cli-entrypoints-v2.json" in entry["current_consumers"]
+    for name in ("render_dual_strategy_artifact_pages.mjs", "product_update_publication.py"):
+        entry = by_path["scripts/current/" + name]
+        assert entry["category"] == "CURRENT_RESEARCH_CLI"
+        assert entry["current_consumers"]
+    verifier = by_path["scripts/current/verify_dual_product_values.py"]
+    assert verifier["category"] == "DIAGNOSTIC_TOOL"
+    assert "scripts/current/product_update_publication.py" in verifier["current_consumers"]
+    navigation = by_path["scripts/current/verify_product_navigation.ps1"]
+    assert navigation["category"] == "DIAGNOSTIC_TOOL"
+    assert "scripts/current/product_update_publication.py" in navigation["current_consumers"]
     assert "scripts/diagnostics/audit_script_inventory.py" in paths
     assert "scripts/research_cases/moutai/build_moutai_product_ttm.py" in paths
     assert "scripts/research_cases/shenhua/build_shenhua_2025_business_evidence.py" in paths

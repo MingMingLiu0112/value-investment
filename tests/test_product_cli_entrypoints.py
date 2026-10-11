@@ -40,6 +40,18 @@ GENERIC_PRODUCT_PATHS = {
 NON_SYMBOL_PRODUCT_PATHS = {
     "scripts/current/register_prospective_research.py",
 }
+DUAL_STRATEGY_PRODUCT_PATHS = {
+    "scripts/current/scan_market_hotspots.py",
+    "scripts/current/review_dual_sleeve_risk.py",
+    "scripts/current/run_update_and_publish.py",
+    "scripts/current/start_trade_workbench.ps1",
+}
+DUAL_STRATEGY_HELPER_PATHS = {
+    "scripts/current/verify_product_navigation.ps1",
+    "scripts/current/verify_dual_product_values.py",
+    "scripts/current/render_dual_strategy_artifact_pages.mjs",
+    "scripts/current/product_update_publication.py",
+}
 ISSUER_SPECIFIC_PATHS = {
     "scripts/prepare_moutai_current_execution_contract.py",
     "scripts/publish_moutai_case_workbook.py",
@@ -73,11 +85,13 @@ def test_v2_cli_split_preserves_every_v1_path_and_bounds_product_surface():
     all_paths = product + engineering + helpers
 
     assert v1["action"] == v2["action"] == "no_order"
-    assert 10 <= len(product) <= 25
+    assert 10 <= len(product) <= 26
     assert len(all_paths) == len(set(all_paths))
     assert set(v1_paths) <= set(all_paths)
     assert GENERIC_PRODUCT_PATHS <= set(product)
     assert NON_SYMBOL_PRODUCT_PATHS <= set(product)
+    assert DUAL_STRATEGY_PRODUCT_PATHS <= set(product)
+    assert DUAL_STRATEGY_HELPER_PATHS <= set(helpers)
     assert ISSUER_SPECIFIC_PATHS.isdisjoint(product)
     assert ISSUER_SPECIFIC_PATHS <= set(engineering)
     assert v2["counts"] == {
