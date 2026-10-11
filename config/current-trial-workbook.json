@@ -1,5 +1,5 @@
 {
-  "schema_version": "m7-current-trial-workbook-v4",
+  "schema_version": "m7-current-trial-workbook-v5",
   "status": "CANONICAL_READONLY_TRIAL_READY",
   "m7_product_ux": "INTEGRATED",
   "current_trial_pointer": "CANONICAL_WORKBOOK",
@@ -16,7 +16,19 @@
   "historical_wps_readonly_receipt_sha256": "b6fe4a7b9949b76cdb3ff3f3c4392fa62ccd4a7a6745e76df0a30800e941ed60",
   "visual_review_receipt": "runtime/m7-product-ux-candidate-v3-20261001-delivery-visual.json",
   "historical_visual_review_receipt_sha256": "0c7cd7c4ea62bbd8e1232f19e669c5a6962bc45b32468ad6d143fe4a93b5918d",
-  "canonical_workbook_sha256": "5db7f3cd7651edc36505b7f7d87aa8d71550ca2150a999391778c1cbc2d23bf8",
+  "previous_canonical_workbook_sha256": "5db7f3cd7651edc36505b7f7d87aa8d71550ca2150a999391778c1cbc2d23bf8",
+  "canonical_workbook_sha256": "8f3608702af711e909cd66ee6f3226e6d875d8efe390361361d494d784c6b481",
+  "current_publication": {
+    "receipt": "runtime/publication-receipts/canonical-reviewed-research-20261011T013116Z-8aa6555d.json",
+    "receipt_sha256": "c3fcf63520ea6074089e53004c3f1574bf8c9179bce17a76b591414364b9a3da",
+    "wps_receipt": "runtime/daily-trade-assistant/20261011-d2-final-integrated-v2/published-native-review.json",
+    "wps_receipt_sha256": "f5afb143f5486850fe447e1c68f01b7d607ae165930ca4241921fe33e5976d6a",
+    "status": "PUBLISHED_WPS_READONLY_VERIFIED",
+    "registered_at": "2026-10-11",
+    "research_as_of": "2026-10-08",
+    "quote_observation_as_of": "2026-10-09",
+    "price_admitted": false
+  },
   "canonical_written": false,
   "as_of": "2026-10-01",
   "as_of_semantics": "WORKBOOK_PATH is the sole current user entry. Runtime candidate metadata is historical preview evidence only, not a new canonical publication or investment admission.",

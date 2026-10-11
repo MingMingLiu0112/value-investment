@@ -17,11 +17,17 @@ def fixture(tmp_path):
     (root / 'config').mkdir()
     for relative in ('scripts/open_current_trial_workbook.py', 'config/current-trial-workbook.json'):
         (root / relative).write_bytes((ROOT / relative).read_bytes())
+    pointer_path = root / 'config/current-trial-workbook.json'
+    pointer = json.loads(pointer_path.read_text(encoding='utf-8'))
+    pointer['schema_version'] = 'm7-current-trial-workbook-v4'
+    pointer.pop('current_publication', None)
+    pointer_path.write_text(json.dumps(pointer), encoding='utf-8')
     return root
 
 
 def run(root, workbook=None, *args):
     env = dict(os.environ)
+    env['PYTHONPATH'] = str(ROOT / 'src')
     env.pop('WORKBOOK_PATH', None)
     if workbook is not None: env['WORKBOOK_PATH'] = str(workbook)
     return subprocess.run([sys.executable, '-X', 'utf8', str(root/'scripts/open_current_trial_workbook.py'), *args],

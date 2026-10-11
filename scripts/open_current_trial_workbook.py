@@ -6,10 +6,13 @@ import hashlib
 import json
 import os
 import re
+import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+from value_investment_agent.infrastructure.evidence.workbook_publication import verify_workbook_publication
 POINTER = ROOT / "config" / "current-trial-workbook.json"
 CANONICAL_NAME = "A股价值投资_Agent前端智能跟踪模板.xlsx"
 PRODUCT_UX_SOURCE = "PRODUCT_UX_RUNTIME"
@@ -72,6 +75,7 @@ def _product_ux_workbook(contract: dict) -> Path:
 def _resolve_trial_workbook(contract: dict) -> Path:
     source = contract.get("workbook_source")
     if source == "WORKBOOK_PATH":
+        verify_workbook_publication(ROOT, contract)
         return _canonical_workbook(contract)
     raise ValueError("CURRENT_TRIAL_WORKBOOK_SOURCE_NOT_RESOLVED")
 
@@ -91,6 +95,7 @@ def main() -> int:
     workbook = (_product_ux_workbook(dict(workbook_path=args.historical_preview,
         workbook_sha256=args.preview_sha256)) if historical else _resolve_trial_workbook(contract))
     actual_sha = hashlib.sha256(workbook.read_bytes()).hexdigest()
+    publication = {} if historical else contract.get("current_publication", {})
     result = {
         "status": 'HISTORICAL_PREVIEW_ONLY' if historical else contract["status"],
         "workbook": str(workbook),
@@ -98,7 +103,10 @@ def main() -> int:
         "workbook_source": 'EXPLICIT_HISTORICAL_PREVIEW' if historical else contract.get("workbook_source"),
         "current_trial_pointer": 'NOT_CURRENT' if historical else contract.get("current_trial_pointer"),
         "simulation_only": contract.get("simulation_only", False),
-        "data_as_of": contract.get("as_of"),
+        "data_as_of": publication.get("research_as_of", contract.get("as_of")),
+        "quote_observation_as_of": publication.get("quote_observation_as_of"),
+        "publication_status": publication.get("status"),
+        "historical_pointer_as_of": contract.get("as_of"),
         "quote_coverage_status": contract.get("quote_coverage_status"),
         "m6_operational_status": contract.get("m6_operational_status"),
         "m7_final_user_acceptance": contract.get("m7_final_user_acceptance"),

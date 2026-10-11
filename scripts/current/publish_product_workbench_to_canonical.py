@@ -664,10 +664,18 @@ def _require_monotonic_quote_session(
     pointer_path = root / "config" / "current-trial-workbook.json"
     try:
         current = json.loads(pointer_path.read_text(encoding="utf-8"))
-        current_as_of = date.fromisoformat(current["quote_as_of"])
+        reviewed_registration = current.get("schema_version") == "m7-current-trial-workbook-v5"
+        if reviewed_registration:
+            from value_investment_agent.infrastructure.evidence.workbook_publication import verify_workbook_publication
+            verify_workbook_publication(root, current)
+            # The observed close is a non-regression floor, not price admission.
+            current_as_of = date.fromisoformat(current["current_publication"]["quote_observation_as_of"])
+            receipt_reference = Path(current["current_publication"]["receipt"])
+        else:
+            current_as_of = date.fromisoformat(current["quote_as_of"])
+            receipt_reference = Path(current["publication_receipt"])
         candidate_as_of = date.fromisoformat(quote_as_of)
         pointer_sha256 = current["canonical_workbook_sha256"]
-        receipt_reference = Path(current["publication_receipt"])
     except (OSError, KeyError, TypeError, ValueError) as error:
         raise ValueError("CURRENT_QUOTE_SESSION_POINTER_INVALID") from error
 
@@ -720,6 +728,11 @@ def _require_monotonic_quote_session(
                 published_as_of = date.fromisoformat(receipt["quote_as_of"])
             except (KeyError, TypeError, ValueError) as error:
                 raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID") from error
+        elif schema == "canonical-reviewed-research-publication-v1":
+            if not reviewed_registration or receipt.get("canonical_written") is not True:
+                raise ValueError("CANONICAL_QUOTE_PUBLICATION_RECEIPT_INVALID")
+            after_sha256 = receipt.get("after_sha256")
+            published_as_of = None
         else:
             return None
         if not isinstance(after_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", after_sha256):

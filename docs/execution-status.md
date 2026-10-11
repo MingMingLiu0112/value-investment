@@ -1,5 +1,22 @@
 # CURRENT STATUS
 
+## 2026-10-11 D2 Real Admission P0 Registration Repair
+
+Latest authorized package is D2-REAL-VALUATION-PRICE-ADMISSION-AND-PRODUCT-CLOSURE,
+inheriting daeea249411968a8562d195e2fbb0b2a61dba97a. P0 reproduced the sole
+opening entry's stale-hash rejection and repaired the mutable registration only.
+V5 binds the unchanged publication receipt, subsequent WPS receipt and original
+backup; the prior historical preview metadata and prior canonical hash remain.
+69 targeted tests passed, including evidence drift and quote-session regression.
+Actual post-publication recheck verified 203 sources, 55 byte-identical protected
+sheet parts and original workbook structure; p0-preservation.json and seven-page
+WPS read-only PASS are under runtime/d2-real-admission-20261011/.
+scripts/open_current_trial_workbook.py --open succeeded against the original
+C-drive file, SHA-256 8f3608702af711e909cd66ee6f3226e6d875d8efe390361361d494d784c6b481.
+No second publication or workbook content change. Research 10/8, close observation
+10/9, no admitted current price, no new approval, no private guidance, no_order.
+P1/P2/P4 independent evidence audit and P5 semantic-checklist work continue.
+
 ## 2026-10-11 Approved Canonical Publication
 
 User approved publication with "批准，请发布". The seven reviewed managed pages
