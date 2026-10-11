@@ -87,17 +87,19 @@ def compose_daily_product(*, root: Path, folder: Path, published: dict,
         if not any(item['evidence_id'] == quote_id for item in payload['audit']['evidence']):
             _project_quote_gate(payload, symbol=row['symbol'], quote_check=quote)
         card = next(c for c in payload['companies'] if c['symbol'] == row['symbol'])
+        card['decision_review'] = [entry for entry in card['decision_review'] if entry['label'] not in {
+            '当前操作依据', '加仓复核边界', '减仓与退出依据', '本次行情更新'}]
         explanation = project_value_decision_explanation(verify_current_decision_workbench(workbench),
             evidence_scope='RETAINED_RESEARCH')
         explanation_path = folder/(row['symbol']+'-value-decision-explanation.json')
         write_new_json(explanation_path, explanation)
         envelope.setdefault('additional_evidence_bindings', []).append(dict(
             path=explanation_path.relative_to(root).as_posix(), sha256=sha256_file(explanation_path)))
-        card['decision_review'].append(['当前操作依据', explanation['candidate_explanation']])
-        card['decision_review'].append(['加仓复核边界', '原论点和新证据仍成立、模型与价格符合规则，并核对实际组合容量；不因下跌自动加仓。'])
-        card['decision_review'].append(['减仓与退出依据', '论点削弱或失效、重大反证、财务或集中度风险触发人工复核；普通价格波动不自动触发卖出。'])
+        card['decision_review'].append(dict(label='当前操作依据', value=explanation['candidate_explanation']))
+        card['decision_review'].append(dict(label='加仓复核边界', value='原论点和新证据仍成立、模型与价格符合规则，并核对实际组合容量；不因下跌自动加仓。'))
+        card['decision_review'].append(dict(label='减仓与退出依据', value='论点削弱或失效、重大反证、财务或集中度风险触发人工复核；普通价格波动不自动触发卖出。'))
         if receipt['quote_check']['status'] in {'NOT_ADMITTED', 'PENDING_EXTERNAL_DATA'}:
-            card['decision_review'].append(['本次行情更新', receipt['quote_check'].get('reason', '未完成')])
+            card['decision_review'].append(dict(label='本次行情更新', value=receipt['quote_check'].get('reason', '未完成')))
         receipts.append(row['receipt'])
         decision = workbench.get('decision_recommendation') or {}
         semantic_decision = {key: decision.get(key) for key in (
