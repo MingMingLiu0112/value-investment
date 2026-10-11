@@ -1,5 +1,20 @@
 # CURRENT STATUS
 
+## 2026-10-11 Canonical Publication Authorization Successor
+
+User approved the exact two-company preview and granted standing automatic
+publication of verified frontend Excel changes. AGENTS.md records this scope;
+no per-version frontend permission is required in subsequent work. Economic/G3,
+production, actual trading and final user acceptance are separate boundaries.
+Protected publisher replaced the C-drive canonical bytes with SHA6c90ae7a...16900,
+backed up SHA879e9c44...fd922b and preserved the 55 other sheets. Receipt:
+runtime/publication-receipts/canonical-reviewed-research-20261011T090531Z-99fecd48.json.
+Post-publication WPS read-only verification of seven managed pages and 17
+internal navigation links passed. Current v5 pointer was registered and verified
+against actual canonical/backup/source/native evidence. Published-native receipts
+are under runtime/daily-trade-assistant/20261011-d2-two-company-review-v2/.
+Earlier pending-publication statements below describe pre-authorization history.
+
 ## 2026-10-11 D2 Two-Company Display Review
 
 Commit 3ea9862b4f2b466d2af704b0623d255871404c69 is on main; GitHub run

@@ -52,6 +52,13 @@ published research/decision/risk pages; investment and production gates unchange
 
 ## Inherited Final-Use Gates
 
+Publication authorization successor (2026-10-11): the user approved candidate
+SHA6c90ae7a...16900 and standing automatic publication of verified frontend
+Excel updates. Per-version frontend publication permission is no longer an
+external gate. Preserve source/numeric/native/backup/pointer verification;
+economic/G3, production and final-use gates below remain unchanged. Earlier
+pending publication statements in this dated checklist are historical.
+
 Latest scoped review evidence: actual 600519/600887 pending candidates v5 were
 consumed by the shared model, not merely prepared. The two-company display
 candidate SHA6c90ae7a...16900 has source/numeric/preservation, native WPS,

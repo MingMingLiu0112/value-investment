@@ -2,6 +2,14 @@
 
 本材料用于审核实际研究候选及新的 Excel 显示版本，不授予投资、生产运行或最终用户验收批准。`action=no_order`，`position_guidance=null`。
 
+## 后续授权与发布
+
+2026-10-11 用户明确回复“批准，以后不需要我审核，你自动更改”。此指令批准以下精确候选，并持续授权后续经验证的前端Excel自动更新，取代旧的逐版本发布确认要求。备份、原件/数值校验、非托管表保护、WPS检查及指针核验仍执行；此授权不代替经济/G3、生产或最终用户验收。
+
+原表已经通过保护发布器替换为下述候选字节，55张其他表保留。实际发布回执：`runtime/publication-receipts/canonical-reviewed-research-20261011T090531Z-99fecd48.json`；备份：`runtime/workbook-backups/canonical-before-reviewed-research-20261011T090531Z-99fecd48.xlsx`。下文“待发布”“仍为旧Hash”描述的是本次授权前审核状态，以本节和当前指针为准。
+
+发布后原表已通过WPS只读七页验证、17个内部导航检查；`published-native-review/receipt.json`与`published-native-links.json`保存在以下候选目录。`config/current-trial-workbook.json`已更新并通过真实发布/备份/来源/WPS证据校验，仍区分正式研究日期和10/11待审候选生成日。
+
 ## 实际研究结果
 
 | 公司 | 实际候选生成日 / 财务基期 | 低 / 中 / 高条件值（元/股） | 当前用途 |

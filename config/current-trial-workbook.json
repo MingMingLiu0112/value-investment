@@ -16,16 +16,21 @@
   "historical_wps_readonly_receipt_sha256": "b6fe4a7b9949b76cdb3ff3f3c4392fa62ccd4a7a6745e76df0a30800e941ed60",
   "visual_review_receipt": "runtime/m7-product-ux-candidate-v3-20261001-delivery-visual.json",
   "historical_visual_review_receipt_sha256": "0c7cd7c4ea62bbd8e1232f19e669c5a6962bc45b32468ad6d143fe4a93b5918d",
-  "previous_canonical_workbook_sha256": "8f3608702af711e909cd66ee6f3226e6d875d8efe390361361d494d784c6b481",
-  "canonical_workbook_sha256": "879e9c44a5d7c429ca9fd4702f084972af9a3d4ec91b0d59ac6756df04fd922b",
+  "previous_canonical_workbook_sha256": "879e9c44a5d7c429ca9fd4702f084972af9a3d4ec91b0d59ac6756df04fd922b",
+  "canonical_workbook_sha256": "6c90ae7a24d07f5dc3cf3e05a997db1984c85fd87820248c80528979d7166900",
   "current_publication": {
-    "receipt": "runtime/publication-receipts/canonical-reviewed-research-20261011T064550Z-ecf3b3ec.json",
-    "receipt_sha256": "16c49f6f601f5c8ce8a9488155301cfdf9688c7a86e2a7b8d61c844bf09fc7f2",
-    "wps_receipt": "runtime/daily-trade-assistant/20261011-protected-research-closure-v1/published-native-review/receipt.json",
-    "wps_receipt_sha256": "609df0bcd5566c7456526faf7e68228a06862c1cce38586a7b16a7101da67b9c",
+    "receipt": "runtime/publication-receipts/canonical-reviewed-research-20261011T090531Z-99fecd48.json",
+    "receipt_sha256": "a2df5d3b09d1922fe3d8845ffe574600a5f33ac2df69558b019e5a4a6191957b",
+    "wps_receipt": "runtime/daily-trade-assistant/20261011-d2-two-company-review-v2/published-native-review/receipt.json",
+    "wps_receipt_sha256": "ca9badab87e46f826bba295d23fc5c2746df7b41b2292f91414364dc33d0ad16",
     "status": "PUBLISHED_WPS_READONLY_VERIFIED",
     "registered_at": "2026-10-11",
     "research_as_of": "2026-10-08",
+    "registered_research_dates": {
+      "600519": "2026-10-08",
+      "600887": "2026-09-22"
+    },
+    "pending_candidate_generated_on": "2026-10-11",
     "quote_observation_as_of": "2026-10-09",
     "price_admitted": false
   },
