@@ -1,5 +1,31 @@
 # CURRENT STATUS
 
+## 2026-10-11 Approved Canonical Research Closure Publication
+
+The user's continuation reply to the concrete final publication request
+authorized the exact SHA879e9c44...fd922b candidate. Protected publication
+completed without changing the WORKBOOK_PATH filename, retaining 55 other sheets.
+Immutable publication receipt:
+runtime/publication-receipts/canonical-reviewed-research-20261011T064550Z-ecf3b3ec.json.
+Old workbook backup:
+runtime/workbook-backups/canonical-before-reviewed-research-20261011T064550Z-ecf3b3ec.xlsx.
+
+Actual C-drive Canonical passed subsequent WPS read-only reopening and seven
+native PDF exports; workbook hash stayed
+879e9c44a5d7c429ca9fd4702f084972af9a3d4ec91b0d59ac6756df04fd922b.
+Native receipt is under the protected candidate's published-native-review folder.
+The v5 current pointer now binds that actual publication, backup and native
+receipt; scripts/open_current_trial_workbook.py verified the registered C-drive
+entry successfully. The old registration remains preserved in the same runtime
+folder. Earlier unchanged-Canonical statements below are historical observations.
+Publication registration/current-entry regression: 45 passed in 10.90s.
+
+Research date remains 10/8; 10/9 quote remains display-only. NO_ACTION,
+position_guidance=null, no_order and all research/model/materiality/price gates
+are unchanged. This is product publication, not investment approval, user
+acceptance, production authorization or total Goal completion. D2/TOTAL remain
+IN_PROGRESS; INITIAL_ASSISTED_USE remains NOT_REACHED.
+
 ## 2026-10-11 Final Protected Candidate and Verification
 
 Code/research commit 92af1e2ed3ebe2e7e1f08b63b1e108069cb6c75f passed GitHub

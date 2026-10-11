@@ -29,15 +29,20 @@ gaps yields a successor package through existing admission contracts.
 WHAT_CAN_CONTINUE_IN_PARALLEL: Public no-order research, tests and review previews.
 
 DAG_NODE: D2/P6 Canonical publication.
-CURRENT_STATUS: Existing approved Canonical retained; new protected candidate
-requires its own final publication authorization and exact-byte/native evidence.
-WHY_REQUIRED: 10/11 approval covers previously published bytes only.
-WHAT_IS_ALREADY_DONE: Generic research-supplement product consumer; reviewed
-conditional context remains separate from decision values, source dates and gates.
-EXACT_EXTERNAL_INPUT: Approval to publish the specifically verified candidate,
-preserving 55 other sheets; no investment or production approval bundled with it.
-REOPEN_CONDITION: Candidate/receipt hashes and source guard still match at publish.
-WHAT_CAN_CONTINUE_IN_PARALLEL: Reports and public research, without Canonical writes.
+CURRENT_STATUS: Exact reviewed candidate SHA879e9c44...fd922b was separately
+authorized by the user's continuation reply to the final publication request,
+and published through the protected publisher on 10/11; 55 other sheets retained.
+WHY_REQUIRED: Each new content version needs scoped publication and native evidence;
+publication is separate from investment approval and final user acceptance.
+WHAT_IS_ALREADY_DONE: Generic research-supplement consumer, source/preservation,
+numeric and visual checks, old-version backup and actual Canonical replacement.
+Conditional context remains separate from decision values, source dates and gates.
+EXACT_EXTERNAL_INPUT: No further publication permission for these exact bytes.
+Future changed candidates require their own applicable authorization.
+REOPEN_CONDITION: A new candidate or changed actual file requires exact-version
+verification; any file/receipt drift fails closed.
+WHAT_CAN_CONTINUE_IN_PARALLEL: Public research and final user review of the
+published research/decision/risk pages; investment and production gates unchanged.
 
 ## Inherited Final-Use Gates
 
