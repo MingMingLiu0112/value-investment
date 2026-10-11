@@ -26,9 +26,16 @@ postpublication evidence is runtime/daily-trade-assistant/20261011-d2-admission-
 Artifact image-render process ended abnormally after export; no success claimed
 for that run. Exported bytes separately passed native/source/numeric/protection checks.
 
-Current local registered Core: 2125 passed, 32 skipped, 102.86 seconds; focused
+Postpublication local registered Core: 2125 passed, 32 skipped, 135.30 seconds; focused
 response/related tests 129 passed. Clean-checkout and new-commit GitHub results
-are recorded below when completed, not inherited from the previous baseline.
+are actual current-turn results: clean c27e57f, 2102 passed/55 skipped/124.04 seconds;
+code/workflow successor 00188f53ce5e1cb1915ad1a500239787d8b0914d CI run38136655909
+passed both offline-core and isolated postgres-integration. Initial c27e57f CI
+failed because two test-list lines had extra YAML folded-command indentation;
+the workflow-only successor fixes that, without changing assertions or gates.
+Skips cover absent retained research/acceptance assets and two Windows symlink
+privilege cases; additional clean skips reflect ignored local runtime evidence.
+JUnit and pointer proof: runtime/d2-admission-final-checks-20261011-v1/.
 Bounded H restore: 25 files, 14,608,229 bytes, exact bytes/hashes verified;
 actual decrypt/restore 1.733700 seconds. It captures the prepublication workbook,
 not the newly published successor or complete research/production database.

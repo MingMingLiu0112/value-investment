@@ -24,9 +24,24 @@
 
 ## 已运行证据
 
-本地当前注册 Core：2125 passed、32 skipped，102.86秒；38条已有弃用警告。
+发布后的本地当前注册 Core：2125 passed、32 skipped，135.30秒；38条已有弃用警告。
 其中审核回应及相关聚焦集129 passed。独立代理完成静态对抗复审，未发现剩余P1，
 但代理审查不代替主代理实际测试，也不作为人类经济审批。
+
+干净检出c27e57f实际2102 passed、55 skipped，124.04秒。
+32项本地跳过包括保留研究/验收资产缺失及2项Windows符号链接权限不足；
+干净检出的额外跳过是未随Git提交的本地runtime资产，不代表这些实际验收已通过。
+源代码与工作流修正版本00188f53ce5e1cb1915ad1a500239787d8b0914d，
+[GitHub CI 38136655909](https://github.com/MingMingLiu0112/value-investment/actions/runs/38136655909)
+的offline-core和隔离postgres-integration均success。
+初次c27e57f CI因新增清单两行过度缩进而执行中断；00188f5仅修正YAML折叠命令，
+未删除测试或放宽断言。实际JUnit与指针回执保存在runtime/d2-admission-final-checks-20261011-v1/。
+隔离CI PostgreSQL证明工程合同，不作为生产数据恢复或实际二十会话验收。
+
+CODE_IMPLEMENTED=true；REAL_DATA_VERIFIED=上述既有财报/公告/行情的实际核验范围；
+ECONOMIC_REVIEW_PREPARED=true；ECONOMIC_REVIEW_APPROVED=false；
+EVENT_MATERIALITY_APPROVED=false；MODEL_VALIDITY_VALID=false；PRICE_ADMITTED=false；
+PRODUCT_PUBLISHED=true；USER_ACCEPTED=false；INITIAL_ASSISTED_USE=NOT_REACHED。
 
 真实价格拒绝回执：runtime/d2-actual-price-contract-audit-20261011-v3/receipt.json，
 SHA256 8aff9e1e80363558ebfb9ec51add34bc04d70c0a5d265cb3b6b1a319f1873149。
