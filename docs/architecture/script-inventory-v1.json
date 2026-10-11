@@ -109,8 +109,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "MEDIUM",
-      "line_count": 133,
-      "sha256": "88b25770961eab5827edcc8a0869baece4b93cfcd6a7a839c02ecf09cfa1e063"
+      "line_count": 153,
+      "sha256": "9b9ebe86790feecc0d47fe3827461970b5ac5306beb4911d8a0bd2b3894f5895"
     },
     {
       "path": "scripts/current/review_dual_sleeve_risk.py",
@@ -123,8 +123,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "MEDIUM",
-      "line_count": 71,
-      "sha256": "d54b4191f89201708a71551227a6c01e6f7b33a0c536c9ee577a08874387ad3e"
+      "line_count": 89,
+      "sha256": "541ed763fa6fb7523eb99bb5621144117176e82bf378b6587b8b5ac639f9fe09"
     },
     {
       "path": "scripts/current/scan_market_hotspots.py",

@@ -29,7 +29,25 @@ def main():
     parser.add_argument('--manual-record-sha256')
     parser.add_argument('--record-directory', type=Path)
     parser.add_argument('--expected-head-sha256')
+    parser.add_argument('--private-risk-config', type=Path)
+    parser.add_argument('--private-risk-config-sha256')
+    parser.add_argument('--summary-preview', action='store_true')
     args = parser.parse_args()
+    if args.private_risk_config is not None or args.summary_preview or args.private_risk_config_sha256:
+        if not args.summary_preview or args.private_risk_config is None or not args.private_risk_config_sha256:
+            parser.error('summary preview requires private config path and hash')
+        if args.synthetic or any(value is not None for value in (args.input, args.input_sha256,
+                args.output, args.private_root, args.input_sheet, args.input_sheet_sha256,
+                args.manual_record, args.manual_record_sha256, args.record_directory, args.expected_head_sha256)):
+            parser.error('summary preview excludes other operations')
+        from value_investment_agent.application.product.dual_sleeve_public_summary import (
+            prepare_private_risk_summary, public_summary_sha256,
+        )
+        summary, _ = prepare_private_risk_summary(root=ROOT, config_path=args.private_risk_config,
+            config_sha256=args.private_risk_config_sha256)
+        print(json.dumps(dict(summary=summary, approved_summary_sha256=public_summary_sha256(summary)),
+            ensure_ascii=False, indent=2))
+        return 0
     if args.manual_record is not None:
         if any(value is not None for value in (args.input, args.output, args.input_sha256,
                 args.input_sheet, args.input_sheet_sha256)):

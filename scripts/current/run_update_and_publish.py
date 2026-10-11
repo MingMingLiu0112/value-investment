@@ -31,7 +31,11 @@ def main():
     parser.add_argument('--agent-mode', choices=('offline', 'mock', 'none'), default='offline')
     parser.add_argument('--extensions', type=Path)
     parser.add_argument('--extensions-sha256')
+    parser.add_argument('--private-risk-config', type=Path)
+    parser.add_argument('--private-risk-config-sha256')
     args = parser.parse_args()
+    if (args.private_risk_config is None) != (args.private_risk_config_sha256 is None):
+        parser.error('private risk config requires path and hash')
     workbook = get_settings().workbook_path.resolve()
     recover_interrupted_product_publications(root=ROOT, workbook=workbook)
     published = read_published_research(root=ROOT, workbook=workbook)
@@ -53,6 +57,8 @@ def main():
         if config.get('action') != 'no_order':
             raise ValueError('extension configuration scope mismatch')
         extensions = config['bindings']
+    if args.private_risk_config and 'dual_sleeve_report' in extensions:
+        parser.error('private risk config excludes a supplied risk report')
     folder = ROOT/(args.output_dir or Path('runtime/daily-trade-assistant')/
                   (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'-product'))
     def research(target):
@@ -126,7 +132,12 @@ def main():
         if 'dual_sleeve_report' not in bindings:
             from value_investment_agent.application.product.dual_sleeve_risk import run_dual_sleeve_review
             path = target/'dual-sleeve-risk.json'
-            run_dual_sleeve_review(root=ROOT, output_path=path)
+            if args.private_risk_config:
+                from value_investment_agent.application.product.dual_sleeve_public_summary import export_private_risk_summary
+                export_private_risk_summary(root=ROOT, config_path=args.private_risk_config,
+                    config_sha256=args.private_risk_config_sha256, output_path=path)
+            else:
+                run_dual_sleeve_review(root=ROOT, output_path=path)
             bindings['dual_sleeve_report'] = dict(path=path.relative_to(ROOT).as_posix(), sha256=sha256_file(path))
         return compose_daily_product(root=ROOT, folder=target, published=prior, batch=batch, extensions=bindings)
     result = run_product_update(root=ROOT, output_dir=folder, published=published, research_runner=research,

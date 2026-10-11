@@ -115,11 +115,6 @@ def scan_market_hotspots(*, root: Path, config_path: Path, output: Path, cutoff:
         observation.pop('source_refs',None)
     result['semantic_content_sha256']=hashlib.sha256(json.dumps(result['semantic_content'],sort_keys=True,ensure_ascii=False,separators=(',',':')).encode()).hexdigest()
     write_new_json(output/'report.json',result)
-    lines=['# Manual hotspot observation', '', 'Research only. No entry approval or orders.',
-        f"Market cache acquired: {result['market_snapshot_acquired_at']}. Dated quote subset: {confirmed_date or 'UNKNOWN'}; industry snapshot trading date UNKNOWN.",
-        f"Historical {history_symbol} daily bars: {bars[0]['date']} to {bars[-1]['date']}. 60m/15m: UNKNOWN.",
-        '', 'Industry performance below is an undated-trading-session retained snapshot, not today\'s hotspots.']
-    lines += [f"- {s['theme']}: covered equal-weight change {s['equal_weight_change_percent']}%; persistence/catalyst UNKNOWN." for s in sectors[:10]]
-    lines += ['',json.dumps(price_behavior,ensure_ascii=False,indent=2)]
-    (output/'report.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
+    from .report_text import render_hotspot_markdown
+    (output/'report.md').write_text(render_hotspot_markdown(result),encoding='utf-8')
     return result

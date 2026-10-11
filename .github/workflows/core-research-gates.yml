@@ -225,10 +225,15 @@ jobs:
           tests/test_user_research_workflow.py
           tests/test_research_review_wizard.py
           tests/test_daily_product_update.py
+          tests/test_daily_composer_integration_independent.py
           tests/test_hotspot_manual_scan.py
           tests/test_dual_sleeve_risk.py
           tests/test_dual_sleeve_records.py
           tests/test_dual_sleeve_input_sheet.py
+          tests/test_dual_sleeve_public_summary.py
+          tests/test_hotspot_report_readability.py
+          tests/test_dual_strategy_authored_company_contract.py
+          tests/test_pending_candidate_midnight_pit.py
           tests/test_dual_strategy_surface.py
           tests/test_dual_product_values.py
           tests/test_p0_independent_update_safety.py

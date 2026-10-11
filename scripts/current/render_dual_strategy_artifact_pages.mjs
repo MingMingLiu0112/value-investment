@@ -292,18 +292,18 @@ const behaviorRows=[];
 function appendPeriods(symbol, periods, scope) {
   for (const period of ['daily','60m','15m']) {
     const data=periods?.[period];
-    behaviorRows.push([symbol,`热点 ${periodNames[period]}`,!data || data.status==='UNKNOWN'
+    behaviorRows.push(['热点证券观察',`${symbol} 热点 ${periodNames[period]}`,!data || data.status==='UNKNOWN'
       ? `${scope}。本周期缺少已绑定行情，趋势、价位与量价均未核验。`
       : `${scope}。观察日期 ${data.first_date??'未核验'} 至 ${data.last_date??'未核验'}。${publicText(data.direction??'UNKNOWN')}。支撑 ${data.prior_five_bar_support??'未核验'} 元，压力 ${data.prior_five_bar_resistance??'未核验'} 元。量比 ${data.volume_ratio??'未核验'}，成交量确认 ${publicText(data.volume_confirmation??'UNKNOWN')}。未复权，除权事件待核验。后续收盘跌破支撑时重新观察。`]);
   }
 }
 for (const item of hotspotRows) {
-  behaviorRows.push([`${item.company_name??item.symbol}\n${item.symbol}`,'热点研究观察',`${publicText(item.state??'UNKNOWN')}。${item.basis??'依据未核验'}。${item.risk??'风险未核验'}。下一观察：${item.next_trigger??'未核验'}`]);
+  behaviorRows.push(['热点证券观察',`${item.company_name??''} ${item.symbol} 热点研究观察`,`${publicText(item.state??'UNKNOWN')}。${item.basis??'依据未核验'}。${item.risk??'风险未核验'}。下一观察：${item.next_trigger??'未核验'}`]);
   appendPeriods(item.symbol,item.periods,'证券观察周期');
 }
 if (hotspotReport?.price_behavior) {
   const behavior=hotspotReport.price_behavior;
-  behaviorRows.push([behavior.symbol,'独立历史价格行为','该历史行情与市场快照并非同一观察时点，不能拼接成当前入场信号。']);
+  behaviorRows.push(['热点证券观察',`${behavior.symbol} 独立历史价格行为`,'该历史行情与市场快照并非同一观察时点，不能拼接成当前入场信号。']);
   appendPeriods(behavior.symbol,behavior.periods,'独立历史价格行为');
 }
 companyRows.push(...behaviorRows);
@@ -460,7 +460,12 @@ await fs.mkdir(path.dirname(output), {recursive:true});
 if (process.argv.includes('--render-review')) {
   const views = names.map((sheetName,index)=>({sheetName,range:`A1:${['F','F','E','C','B','D','G'][index]}${Math.min(18,(layouts.get(sheetName)?.length??0)+5)}`,file:`sheet-${index+1}.png`}));
   if (!preservedInputs.size) views.push({sheetName:names[4],range:`A${privateHeaderRow-1}:D${privateHeaderRow+12}`,file:'private-input-area.png'});
-  if(behaviorRows.length) views.push({sheetName:names[3],range:`A${shownCompanyRows.findIndex(row=>row[1]==='独立历史价格行为')+6}:C${shownCompanyRows.length+5}`,file:'hotspot-periods.png'});
+  if(behaviorRows.length) {
+    const behaviorIndex=shownCompanyRows.findIndex(row=>String(row[1]).endsWith('独立历史价格行为'));
+    if(behaviorIndex<0) throw new Error('Historical price behavior preview anchor missing');
+    const firstRow=behaviorIndex+6;
+    views.push({sheetName:names[3],range:`A${firstRow}:C${Math.min(firstRow+5,shownCompanyRows.length+5)}`,file:'hotspot-periods.png'});
+  }
   for (let i=0; i<shownCompanyRows.length; i++) if (['条件研究备选','研究假设重开条件','本次财务研究补充','Agent问题独立复核','本次研究版本比较'].includes(shownCompanyRows[i][1])) {
     views.push({sheetName:names[3],range:`A${Math.max(1,i+5)}:C${i+7}`,file:`research-${i}.png`});
   }
