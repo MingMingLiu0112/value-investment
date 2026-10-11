@@ -52,7 +52,8 @@ def project_research_supplements(payload: dict[str, Any], *, root: Path,
                     or data.get('decision_changed') is not False
                     or data.get('research_date_advanced') is not False):
                 raise ValueError('research comparison admission boundary mismatch')
-            labels = {'valuation_proposal':'条件估值研究', 'financial_review':'财务原件研究'}
+            labels = {'valuation_proposal':'条件估值研究', 'financial_review':'财务原件研究',
+                'pending_research_candidate':'实际待审候选研究'}
             states = {'UNCHANGED':'研究字段未变化', 'CHANGED_RESEARCH_ARTIFACT':'研究内容变化，非新增官方披露',
                 'UNAVAILABLE':'缺少前后可比研究补充'}
             summary = '\n'.join(f"{labels[key]}：{states[value['status']]}"

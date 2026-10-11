@@ -1,5 +1,38 @@
 # CURRENT STATUS
 
+## 2026-10-11 D2 Actual Review Intake and Version Comparison
+
+Actual daily runs 20261011-s1-review-intake-v7 and
+20261011-s5-review-intake-v7 completed with stable five/four review-group IDs
+and exact candidate/model fingerprints. Blank review-intake.json files are
+preparation, not typed approval or authenticated economic judgments. Optional
+intake failures retain ordinary daily reports and explicit error evidence.
+Pending-candidate monthly comparison now uses actual consumed workbenches;
+it compares versions, not an elapsed month or newly observed financial facts.
+Same-choice replay retains assumptions but actual generation-time discounting
+changes per-share values by less than 0.01 CNY; timestamps/source bindings also
+change. CHANGED_RESEARCH_ARTIFACT is retained, not a new financial disclosure.
+Official dates remain 10/8 and 9/22.
+
+Evidence: runtime/d2-review-intake-and-version-comparison-20261011-v1/.
+600519 current candidate event-field draft:
+runtime/d2-600519-model-event-review-draft-20261011-v1/draft.json,
+SHA c0e0cb84f3ccd974a420dd7aa1d321eef1a8ea1e9b9bd90b97b6a6dbed0ba517.
+It binds seven originals and all 57 fields across the 15-year path; 399
+associations remain NOT_ASSESSED. Earlier ten-year judgments are not inherited,
+and the event-window/model-validity start-date mismatch remains explicit.
+
+No new Excel authored or published in this work package. Canonical remains
+SHA6c90ae7a...16900. D2/TOTAL remain IN_PROGRESS; INITIAL_ASSISTED_USE is
+NOT_REACHED; current price admission is not granted; action=no_order and
+position_guidance=null. Independent review found no new P1/P2 issues.
+
+Final registered local Core subset: 2096 passed, 32 skipped (134.05 seconds).
+Clean detached d32c1a0 baseline: 2065 passed, 55 skipped; unavailable retained
+runtime evidence explains additional clean-checkout skips. Actual daily verifier
+passed all 14/13 receipt outputs and the existing Canonical publication pointer.
+This evidence is not production restore, real Shadow or investment acceptance.
+
 ## 2026-10-11 Canonical Publication Authorization Successor
 
 User approved the exact two-company preview and granted standing automatic

@@ -40,6 +40,22 @@ def test_supplement_is_visible_without_changing_admission(tmp_path):
     assert payload['audit']['evidence'][0]['sha256'] == binding['sha256']
 
 
+def test_pending_candidate_comparison_has_a_product_label(tmp_path):
+    _, path, data, payload, binding = fixture(tmp_path)
+    comparison = dict(schema_version='research-supplement-comparison-v1', symbol='600519',
+        generated_at=data['generated_at'],
+        action='no_order', source_bindings=data['source_bindings'], current_admission=False,
+        approval_changed=False, decision_changed=False, research_date_advanced=False,
+        roles={'pending_research_candidate': {'status': 'UNCHANGED'}})
+    path.write_text(json.dumps(comparison), encoding='utf-8')
+    binding.update(role='research_supplement_comparison', sha256=sha256_file(path))
+    before = copy.deepcopy(payload['companies'][0])
+    project_research_supplements(payload, root=tmp_path, symbol='600519', bindings=[binding])
+    assert '实际待审候选研究' in payload['companies'][0]['decision_review'][0]['value']
+    assert payload['companies'][0]['decision_status'] == before['decision_status']
+    assert payload['companies'][0]['valuation'] == before['valuation']
+
+
 @pytest.mark.parametrize('change', ['source', 'output', 'symbol', 'approval', 'nonfinite', 'escape'])
 def test_supplement_rejects_drift_and_scope_escalation(tmp_path, change):
     source, path, data, payload, binding = fixture(tmp_path)

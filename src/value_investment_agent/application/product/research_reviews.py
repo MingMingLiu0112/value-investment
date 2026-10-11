@@ -12,6 +12,45 @@ from ...research_run_contract import canonical_contract_payload
 from .common import require_inside, load_json_object, sha256_file, sha256_bytes
 
 
+def prepare_pending_review_intake(*, root: Path, candidate_path: Path,
+                                  candidate_sha256: str) -> dict:
+    """Expose stable response scopes without creating a human approval receipt."""
+    from .pending_research_candidate import verify_pending_research_candidate
+    from .decision_surface import verify_current_decision_workbench
+    from ...research_run_contract import valuation_result_sha256
+
+    candidate_path = require_inside(root, candidate_path, 'pending review candidate')
+    candidate = verify_pending_research_candidate(root=root, path=candidate_path,
+        expected_sha256=candidate_sha256)
+    groups = candidate.get('review_groups') or []
+    ids = [group['id'] for group in groups]
+    if len(ids) != len(set(ids)):
+        raise ValueError('pending review group ids must be unique')
+    valuation_hash = None
+    if candidate['model_context_scope'] == 'ACTUALLY_CONSUMED':
+        workbench = load_json_object(candidate_path.parent / 'workbench.json', 'candidate workbench')
+        objects = verify_current_decision_workbench(workbench).dependency_objects
+        if objects.get('valuation') is not None:
+            valuation_hash = valuation_result_sha256(objects['valuation'])
+    return {
+        'schema_version': 'pending-research-review-intake-v1',
+        'symbol': candidate['symbol'], 'action': 'no_order',
+        'status': 'AWAITING_HUMAN_RESPONSES' if groups else 'GROUPED_REVIEW_UNAVAILABLE',
+        'candidate_binding': {'path': candidate_path.relative_to(root.resolve()).as_posix(),
+                              'sha256': candidate_sha256},
+        'model_context': candidate['model_context'],
+        'valuation_artifact_sha256': valuation_hash,
+        'groups': [{**group, 'response': None, 'response_reason': None} for group in groups],
+        'permitted_group_responses': ['VERIFIED', 'REJECTED', 'INSUFFICIENT'],
+        'whole_model_decision': None, 'reviewer': None,
+        'scope': 'GROUP_RESPONSES_ARE_NOT_WHOLE_MODEL_OR_EVENT_APPROVAL',
+        'required_before_approval': ['Authentic reviewer provenance and exact whole-model decision.',
+                                     'Separate complete model-bound announcement materiality review.'],
+        'approval_changed': False, 'research_admitted': False, 'price_admitted': False,
+        'position_guidance': None, 'canonical_written': False,
+    }
+
+
 def _payload_sha256(payload):
     return sha256_bytes(canonical_contract_payload(payload).encode('utf-8'))
 

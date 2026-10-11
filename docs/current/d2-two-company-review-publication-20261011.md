@@ -12,6 +12,8 @@
 
 ## 实际研究结果
 
+后续实际命令入口：`runtime/daily-trade-assistant/20261011-s1-review-intake-v7/`（茅台）及 `runtime/daily-trade-assistant/20261011-s5-review-intake-v7/`（伊利）。各目录的 `pending-candidate/candidate-review.md` 提供稳定问题编号，`review-intake.json` 绑定精确模型与候选；回复和审核人仍为空，不能视作经济批准。`pending-candidate-monthly-review.json` 比较正式研究与实际待审候选，属于版本比较，不声称已观察一个月。本轮没有重新发布Excel。
+
 | 公司 | 实际候选生成日 / 财务基期 | 低 / 中 / 高条件值（元/股） | 当前用途 |
 | --- | --- | ---: | --- |
 | 600519 贵州茅台 | 2026-10-11 / 2026-06-30 | 437.66 / 587.88 / 812.27 | B：十年盈利持续条件及五年全资本衰减，待审，非买点 |

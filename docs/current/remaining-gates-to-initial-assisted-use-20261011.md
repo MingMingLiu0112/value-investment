@@ -35,16 +35,16 @@ gaps yields a successor package through existing admission contracts.
 WHAT_CAN_CONTINUE_IN_PARALLEL: Public no-order research, tests and review previews.
 
 DAG_NODE: D2/P6 Canonical publication.
-CURRENT_STATUS: Exact reviewed candidate SHA879e9c44...fd922b was separately
-authorized by the user's continuation reply to the final publication request,
+CURRENT_STATUS: Exact reviewed candidate SHA6c90ae7a...16900 was
+authorized by the user's approval with standing verified frontend authorization,
 and published through the protected publisher on 10/11; 55 other sheets retained.
-WHY_REQUIRED: Each new content version needs scoped publication and native evidence;
+WHY_REQUIRED: Each new content version needs verified publication and native evidence;
 publication is separate from investment approval and final user acceptance.
 WHAT_IS_ALREADY_DONE: Generic research-supplement consumer, source/preservation,
 numeric and visual checks, old-version backup and actual Canonical replacement.
 Conditional context remains separate from decision values, source dates and gates.
-EXACT_EXTERNAL_INPUT: No further publication permission for these exact bytes.
-Future changed candidates require their own applicable authorization.
+EXACT_EXTERNAL_INPUT: No further frontend publication permission is required
+within the standing authorization; investment and production approvals differ.
 REOPEN_CONDITION: A new candidate or changed actual file requires exact-version
 verification; any file/receipt drift fails closed.
 WHAT_CAN_CONTINUE_IN_PARALLEL: Public research and final user review of the
@@ -62,8 +62,8 @@ pending publication statements in this dated checklist are historical.
 Latest scoped review evidence: actual 600519/600887 pending candidates v5 were
 consumed by the shared model, not merely prepared. The two-company display
 candidate SHA6c90ae7a...16900 has source/numeric/preservation, native WPS,
-navigation and readability proofs; publication authorization for these new
-bytes is still pending. See d2-two-company-review-publication-20261011.md.
+navigation and readability proofs and has been published and pointer-verified.
+See d2-two-company-review-publication-20261011.md.
 The independent 600887 full-window event matrix and exact-candidate review
 binding are prepared, not materiality approval or operational event consumption.
 These successors do not close economic/G3, current price or final-use gates.

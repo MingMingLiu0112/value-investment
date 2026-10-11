@@ -9,7 +9,7 @@ from typing import Any
 from .common import normalize_symbol, require_inside, sha256_bytes, sha256_file
 
 
-_ROLES = ("valuation_proposal", "financial_review")
+_ROLES = ("valuation_proposal", "financial_review", "pending_research_candidate")
 _PROVENANCE = {"generated_at", "source_bindings", "source_binding", "manifest_binding"}
 _FLAGS = (
     "decision_changed", "research_date_advanced", "assumptions_approved",
@@ -125,6 +125,24 @@ def compare_research_supplements(
             return {"available": False, "reason": payload.get("error", "Supplement unavailable.")}
         if payload.get("symbol") != symbol:
             raise ValueError("supplement requires the requested symbol")
+        if role == 'pending_research_candidate':
+            from .pending_research_candidate import verify_pending_research_candidate
+            candidate_path = verify(binding, role)
+            payload = verify_pending_research_candidate(root=root, path=candidate_path,
+                expected_sha256=binding['sha256'])
+            sources(payload)
+            package_path = verify({'path': (candidate_path.parent / 'package.json').relative_to(root).as_posix(),
+                'sha256': next(item['sha256'] for item in payload['source_bindings']
+                               if item['path'] == (candidate_path.parent / 'package.json').relative_to(root).as_posix())},
+                'pending candidate package')
+            package = json.loads(package_path.read_text(encoding='utf-8'))
+            return {'available': payload['model_context_scope'] == 'ACTUALLY_CONSUMED',
+                'fields': _semantic({key: payload.get(key) for key in (
+                    'candidate_research_as_of', 'financial_period', 'selected_choice',
+                    'candidate_valuation', 'choice_rationale', 'countercase', 'model_limits',
+                    'review_questions', 'review_groups')}) | {
+                    'consumed_operating_inputs': package['facts']['operating_inputs'],
+                    'consumed_scenario_inputs': package['facts']['scenario_inputs']}}
         if role == "valuation_proposal":
             if payload.get("schema_version") != "finite-neutral-valuation-proposal-v1":
                 raise ValueError("unsupported valuation proposal schema")

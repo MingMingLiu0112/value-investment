@@ -202,6 +202,20 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
             if supplements['pending_research_candidate']['status'] == 'PENDING_REVIEW':
                 supplements['valuation_proposal'] = load_json_object(proposal_path, 'candidate proposal')
                 supplement_paths.append(('pending_research_candidate', candidate_dir / 'candidate.json'))
+                from .research_reviews import prepare_pending_review_intake
+                intake_path = candidate_dir / 'review-intake.json'
+                try:
+                    intake = prepare_pending_review_intake(root=root,
+                        candidate_path=candidate_dir / 'candidate.json',
+                        candidate_sha256=sha256_file(candidate_dir / 'candidate.json'))
+                    write_new_json(intake_path, intake)
+                except (ValueError, OSError) as error:
+                    intake = dict(status='RESEARCH_SUPPLEMENT_UNAVAILABLE', error=str(error),
+                        action='no_order', approval_changed=False)
+                    intake_path = output_dir / 'pending-review-intake-error.json'
+                    write_new_json(intake_path, intake)
+                supplements['pending_review_intake'] = intake
+                supplement_paths.append(('pending_review_intake', intake_path))
             if (candidate_review_renderer is not None
                     and supplements['pending_research_candidate']['status'] == 'PENDING_REVIEW'):
                 candidate_review_path = candidate_dir / 'candidate-review.md'
@@ -248,6 +262,17 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
             previous_workbench_sha256=sha256_file(prior_path) if previous is not None else None,
             output_path=monthly_path)["result"]
         supplement_paths.append(("monthly_review", monthly_path))
+        pending = supplements.get('pending_research_candidate') or {}
+        if pending.get('model_context_scope') == 'ACTUALLY_CONSUMED':
+            pending_workbench = output_dir / 'pending-candidate/workbench.json'
+            pending_monthly_path = output_dir / 'pending-candidate-monthly-review.json'
+            supplements['pending_candidate_monthly_review'] = build_monthly_research_review(
+                root=root, symbol=symbol, current_workbench_path=pending_workbench,
+                current_workbench_sha256=sha256_file(pending_workbench),
+                previous_workbench_path=workbench_path,
+                previous_workbench_sha256=sha256_file(workbench_path),
+                output_path=pending_monthly_path)['result']
+            supplement_paths.append(('pending_candidate_monthly_review', pending_monthly_path))
         from .research_supplement_comparison import compare_research_supplements
         comparison_path = output_dir / 'research-supplement-comparison.json'
         prior_receipt = case.get('previous_daily_receipt')

@@ -379,6 +379,16 @@ def _render_supplements(supplements: dict[str, Any]) -> str:
             "- 本次比较没有证明新增官方披露；重复运行不等于财务事实更新。", ""])
         lines.extend(f"- {titles[key]}：{states[row['status']]}。" for key, row in monthly["fields"].items())
         lines.append("- 详细前后内容及下一月触发见 monthly-review.json；未生成个人仓位。")
+    intake = supplements.get('pending_review_intake') or {}
+    if intake.get('status') == 'RESEARCH_SUPPLEMENT_UNAVAILABLE':
+        lines.extend(['', '## 审核回答入口尚不可用', '',
+            '- 原研究和报告已保留；修复编号或输出问题后才能使用回答模板：' + intake['error']])
+    pending_monthly = supplements.get('pending_candidate_monthly_review')
+    if pending_monthly:
+        lines.extend(['', '## 已注册研究与待审候选的版本比较', '',
+            f"- 研究日期：{pending_monthly['previous_research_as_of']} → {pending_monthly['current_research_as_of']}。",
+            '- 这是两个实际研究版本的比较，不是已经经历一个月，也不证明新增披露或正式批准。',
+            '- 财务口径、预测假设和复核触发的前后值见 pending-candidate-monthly-review.json；正式建议保持原状态。'])
     comparison = supplements.get('research_supplement_comparison')
     if comparison:
         states = {'UNCHANGED':'研究字段未变化', 'CHANGED_RESEARCH_ARTIFACT':'研究内容变化，非新增官方披露',
@@ -405,7 +415,7 @@ def _render_pending_candidate_review(candidate: dict, candidate_sha256: str) -> 
         lines.extend(['候选算术输出未就绪：' + '; '.join(candidate.get('decision_blockers', [])
             or values.get('blockers', [])), ''])
     for index, group in enumerate(candidate.get('review_groups') or [], 1):
-        lines.extend([f"## {index}. {group['question']}", '',
+        lines.extend([f"## {index}. {group['question']}（编号：{group['id']}）", '',
             f"支持依据：{group['support']}", '', f"反面证据：{group['countercase']}", '',
             f"对价值与风险的影响：{group['impact']}", '',
             '可选处理：接受此具体用途 / 拒绝 / 证据不足。当前均为待审。', '',
