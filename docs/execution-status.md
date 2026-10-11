@@ -1,5 +1,31 @@
 # CURRENT STATUS
 
+## 2026-10-11 Final Protected Candidate and Verification
+
+Code/research commit 92af1e2ed3ebe2e7e1f08b63b1e108069cb6c75f passed GitHub
+Core Research Gates run 38115029913 (offline-core and postgres-integration).
+Local core regression: 2064 passed, 34 skipped; late focused verification:
+80 passed. These results apply to that code commit, not future revisions.
+
+Final protected candidate is under
+runtime/daily-trade-assistant/20261011-protected-research-closure-v1.
+Workbook SHA879e9c44a5d7c429ca9fd4702f084972af9a3d4ec91b0d59ac6756df04fd922b.
+Preservation proof retains 55 other sheets; seven managed pages passed WPS
+read-only opening/export and readability with zero clipped rows. Native internal
+navigation: 17 clicks passed; 19 source-link formula displays checked without
+external network clicks. All three native PDF contact sheets were visually
+inspected. Nine numeric condition-value cells match the actual v7 proposal
+within 1e-9 CNY/share. Formal visual receipt records the company-table print
+page boundary limitation; live Excel is continuous.
+
+Canonical remains unchanged at SHA8f3608702af711e909cd66ee6f3226e6d875d8efe390361361d494d784c6b481.
+Visual publication eligibility is not user authorization. New exact-version
+Canonical publication remains separately scoped by the current user package.
+Research cutoffs, NO_ACTION, unapproved G3/materiality/model/price and null
+private position guidance remain unchanged. D2/TOTAL remain IN_PROGRESS;
+INITIAL_ASSISTED_USE remains NOT_REACHED. The existing remaining-gates checklist
+is the acceptance boundary; no new milestone or feature is added for activity.
+
 ## 2026-10-11 Research Supplements Reach the Product Consumer
 
 The existing daily assistant now projects pinned financial/proposal supplements
