@@ -1,0 +1,23 @@
+{
+  "schema_version": "hotspot-manual-scan-config-v1",
+  "action": "no_order",
+  "limit": 12,
+  "market": {
+    "path": "runtime/m2-live-20260923-v3/tencent-market.json",
+    "sha256": "6cb785e16affcc21f8fc716b3e414dafece81d44f3cb8603973905c15e7eebf0",
+    "available_at": "2026-09-23T13:18:41.355951+00:00",
+    "source_url": "https://proxy.finance.qq.com/cgi/cgi-bin/rank/hs/getBoardRankList"
+  },
+  "industry": {
+    "path": "runtime/m2-live-20260923-v3/sina-industry-quotes.json",
+    "sha256": "90bfef4e30b3696fb12e99192ce34f21be1411564a2b1e8bdbed069bec130167",
+    "available_at": "2026-09-23T13:20:38.483361+00:00",
+    "source_url": "https://vip.stock.finance.sina.com.cn/mkt/#hs_a"
+  },
+  "history": {
+    "path": "runtime/m1-historical-quote-crosscheck/20260923T041647491012Z/manifest.json",
+    "sha256": "390886a093daf039e3588864ede6dfa5dbe1bd7db2665c0fbd8a2699b8c9abc3",
+    "available_at": "2026-09-23T04:16:47.491498+00:00",
+    "source_url": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get"
+  }
+}

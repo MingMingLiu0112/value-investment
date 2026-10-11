@@ -1,0 +1,12 @@
+{
+  "schema_version": "dual-sleeve-risk-input-v1",
+  "action": "no_order",
+  "namespace": "ACTUAL",
+  "portfolio": null,
+  "shared_budget": null,
+  "sleeves": null,
+  "cash_reserve_cny": null,
+  "allocations": null,
+  "security_attributes": [],
+  "hotspot_request": null
+}
