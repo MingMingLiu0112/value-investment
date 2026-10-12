@@ -4,7 +4,7 @@
   "scripts_root": "scripts",
   "current_entrypoint_count": 43,
   "counts": {
-    "CURRENT_OPERATIONAL_CLI": 12,
+    "CURRENT_OPERATIONAL_CLI": 13,
     "CURRENT_PRODUCT_CLI": 13,
     "CURRENT_RESEARCH_CLI": 209,
     "HISTORICAL_VALIDATION_TOOL": 60,
@@ -125,6 +125,19 @@
       "risk": "MEDIUM",
       "line_count": 37,
       "sha256": "93eb6c9c69e544c42b1329f0283e835e20f4f6b3d969d41430573d50c10c447b"
+    },
+    {
+      "path": "scripts/current/start_web_workbench.ps1",
+      "category": "CURRENT_OPERATIONAL_CLI",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json"
+      ],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "MEDIUM",
+      "line_count": 25,
+      "sha256": "786241c8e1c0b1368e73423c1cdd4d7e55249e3a2e5d0f4f3128867707082c9c"
     },
     {
       "path": "scripts/current/run_update_and_publish.py",

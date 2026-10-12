@@ -81,7 +81,8 @@
     "scripts/collect_m1_event_scan.py",
     "scripts/collect_m1_dividend_lifecycle.py",
     "scripts/render_m1_human_review_packet.py",
-    "scripts/report_m1_research_dossiers.py"
+    "scripts/report_m1_research_dossiers.py",
+    "scripts/current/start_web_workbench.ps1"
   ],
   "INTERNAL_PRODUCT_HELPERS": [
     "scripts/current/audit_tracked_xlsx_privacy.py",
@@ -104,8 +105,8 @@
   ],
   "counts": {
     "product": 26,
-    "engineering": 44,
+    "engineering": 45,
     "internal_helpers": 17,
-    "total": 87
+    "total": 88
   }
 }
