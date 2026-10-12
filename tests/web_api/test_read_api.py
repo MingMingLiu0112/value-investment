@@ -103,8 +103,20 @@ def test_runtime_path_escape_fails_closed(tmp_path):
 
 
 def test_actual_local_publication():
-    if not (ROOT / "config/current-trial-workbook.json").is_file():
+    """Check the real published pointer on this machine.
+
+    The pointer file is tracked but the runtime artifacts it binds are not, so a
+    fresh checkout has to skip rather than assert against the developer machine's
+    private runtime directory.
+    """
+    pointer_path = ROOT / "config/current-trial-workbook.json"
+    if not pointer_path.is_file():
         pytest.skip("local publication absent")
+    binding = json.loads(pointer_path.read_text(encoding="utf-8")).get(
+        "daily_product_state_binding") or {}
+    relative = str(binding.get("path") or "")
+    if not relative or not (ROOT / relative).is_file():
+        pytest.skip("local runtime artifacts absent")
     response = TestClient(create_app(ROOT)).get("/api/v1/daily-decisions").json()
     assert response["status"] == "RESEARCH_OBSERVATION"
     assert response["summary"] == {"universe_count": 5573, "formal_count": 0, "watch_count": 114}
