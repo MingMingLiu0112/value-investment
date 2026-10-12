@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 12,
     "CURRENT_PRODUCT_CLI": 13,
-    "CURRENT_RESEARCH_CLI": 208,
+    "CURRENT_RESEARCH_CLI": 209,
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 217,
     "MIGRATION_TOOL": 13,
@@ -98,6 +98,20 @@
       "risk": "MEDIUM",
       "line_count": 555,
       "sha256": "a25e6c796fd07e670455f81604944025ee4dd9dde62fe92a63dad67c4eea2bc6"
+    },
+    {
+      "path": "scripts/current/render_dual_strategy_artifact_pages_v3.mjs",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json",
+        "scripts/current/product_update_publication.py"
+      ],
+      "imports_business_logic": true,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "MEDIUM",
+      "line_count": 578,
+      "sha256": "b067cad7d512f1db5d3d014968a5072a45738b80573d70b990e50b124b5d00e3"
     },
     {
       "path": "scripts/current/start_trade_workbench.ps1",

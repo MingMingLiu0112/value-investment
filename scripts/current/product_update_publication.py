@@ -162,10 +162,12 @@ def publish_product_update(*, root: Path, folder: Path, product: dict,
                                            '--expected-output-count', '1', '--output-format', 'xlsx'])
     authored = folder/'trade-assistant-preview.xlsx'
     renderer_version = product.get('renderer_version')
-    if renderer_version not in (None, 'dual-strategy-discovery-v2'):
+    renderers = {None: 'render_dual_strategy_artifact_pages.mjs',
+                 'dual-strategy-discovery-v2': 'render_dual_strategy_artifact_pages_v2.mjs',
+                 'dual-strategy-discovery-v3': 'render_dual_strategy_artifact_pages_v3.mjs'}
+    if renderer_version not in renderers:
         raise ValueError('unsupported product renderer version')
-    renderer = root/'scripts/current'/('render_dual_strategy_artifact_pages_v2.mjs'
-        if renderer_version else 'render_dual_strategy_artifact_pages.mjs')
+    renderer = root/'scripts/current'/renderers[renderer_version]
     _command(root, folder, 'artifact', [NODE, renderer,
         '--publication-input', handoff_path, '--sha256', sha256_file(handoff_path),
         '--display-input', display_path, '--output', authored, '--render-review',

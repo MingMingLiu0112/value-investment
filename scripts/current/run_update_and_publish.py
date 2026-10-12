@@ -13,6 +13,7 @@ from value_investment_agent.application.product.user_research_workflow import re
 from value_investment_agent.application.product.daily_product_update import run_product_update
 from value_investment_agent.presentation.daily_product_composition import compose_daily_product
 from value_investment_agent.presentation.daily_product_discovery_v2 import compose_daily_product_v2, verify_discovery_bindings
+from value_investment_agent.presentation.daily_product_discovery_v3 import compose_daily_product_v3
 from scripts.current.product_update_publication import publish_product_update, recover_interrupted_product_publications
 from value_investment_agent.settings import get_settings
 
@@ -38,9 +39,18 @@ def main():
     parser.add_argument('--m2-queue-sha256')
     parser.add_argument('--m2-pending', type=Path)
     parser.add_argument('--m2-pending-sha256')
+    parser.add_argument('--auto-marketwide', action='store_true')
+    parser.add_argument('--marketwide-replay-manifest', type=Path)
+    parser.add_argument('--marketwide-replay-manifest-sha256')
     parser.add_argument('--private-risk-config', type=Path)
     parser.add_argument('--private-risk-config-sha256')
     args = parser.parse_args()
+    if args.auto_marketwide and any((args.m2_discovery_report, args.m2_queue, args.m2_pending)):
+        parser.error('automatic M2 scan excludes manual M2 bindings')
+    if (args.marketwide_replay_manifest is None) != (args.marketwide_replay_manifest_sha256 is None):
+        parser.error('M2 replay manifest requires path and SHA-256')
+    if args.marketwide_replay_manifest and not args.auto_marketwide:
+        parser.error('M2 replay manifest requires automatic marketwide mode')
     if (args.private_risk_config is None) != (args.private_risk_config_sha256 is None):
         parser.error('private risk config requires path and hash')
     workbook = get_settings().workbook_path.resolve()
@@ -64,6 +74,29 @@ def main():
         if config.get('action') != 'no_order':
             raise ValueError('extension configuration scope mismatch')
         extensions = config['bindings']
+    folder = ROOT/(args.output_dir or Path('runtime/daily-trade-assistant')/
+                  (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'-product'))
+    if args.auto_marketwide:
+        from scripts.run_m2_opportunity_discovery import run_once
+        from value_investment_agent.application.product.marketwide_daily import prepare_marketwide_daily
+        if args.marketwide_replay_manifest:
+            manifest = require_inside(ROOT/'runtime', ROOT/args.marketwide_replay_manifest,
+                                      'M2 replay manifest')
+            if sha256_file(manifest) != args.marketwide_replay_manifest_sha256:
+                raise ValueError('M2 replay manifest hash mismatch')
+            scan_dir = manifest.parent
+        else:
+            scan_dir = folder.parent/(folder.name+'-m2-discovery')
+            run_once(root=ROOT, output_dir=scan_dir, wps_dir=None,
+                     max_per_channel=50, skip_dividend=False, reuse_inputs=False,
+                     project_leads=True)
+        prepared = prepare_marketwide_daily(root=ROOT, scan_dir=scan_dir,
+                                            queue_path=folder.parent/(folder.name+'-value-research-queue.json'))
+        from value_investment_agent.application.product.common import write_new_json
+        write_new_json(folder.parent/(folder.name+'-marketwide-binding.json'), prepared)
+        for role in ('value_discovery_report', 'value_research_queue',
+                     'm2_quality_diagnostic', 'market_regime_observation'):
+            extensions[role] = prepared[role]
     for role, path, digest in (
         ('value_discovery_report', args.m2_discovery_report, args.m2_discovery_sha256),
         ('value_research_queue', args.m2_queue, args.m2_queue_sha256),
@@ -81,8 +114,6 @@ def main():
     verify_discovery_bindings(ROOT, extensions)
     if args.private_risk_config and 'dual_sleeve_report' in extensions:
         parser.error('private risk config excludes a supplied risk report')
-    folder = ROOT/(args.output_dir or Path('runtime/daily-trade-assistant')/
-                  (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'-product'))
     def research(target):
         command = [sys.executable, '-X', 'utf8', str(ROOT/'scripts/current/run_daily_trade_assistant.py'),
                    '--symbols', ','.join(symbols), '--case-registry', str(registry),
@@ -151,6 +182,36 @@ def main():
                     missing_features=['verified_market_sources'])
                 write_new_json(path, dict(state, semantic_content=state))
                 bindings['hotspot_report'] = dict(path=path.relative_to(ROOT).as_posix(), sha256=sha256_file(path))
+        if args.auto_marketwide:
+            from value_investment_agent.application.hotspot.watch_queue import build_hotspot_watch_queue
+            from value_investment_agent.application.product.common import write_new_json
+            hotspot = bindings.get('hotspot_report')
+            if hotspot is None:
+                watch = dict(schema_version='hotspot-watch-queue-v1', action='no_order',
+                    status='UNKNOWN', scope='RESEARCH_ONLY', date=None, items=[],
+                    reason='HOTSPOT_SCAN_NOT_AVAILABLE')
+            else:
+                source = require_inside(ROOT/'runtime', ROOT/hotspot['path'], 'hotspot report')
+                if sha256_file(source) != hotspot['sha256']:
+                    raise ValueError('hotspot report hash mismatch')
+                observation = load_json_object(source, 'hotspot report')
+                from datetime import date
+                industry_day = observation.get('classification_as_of')
+                try:
+                    dated_industry = (isinstance(industry_day, str)
+                                      and date.fromisoformat(industry_day).isoformat() == industry_day)
+                except ValueError:
+                    dated_industry = False
+                if not dated_industry:
+                    watch = dict(schema_version='hotspot-watch-queue-v1', action='no_order',
+                        status='UNKNOWN', scope='RESEARCH_ONLY', date=None, items=[],
+                        reason='INDUSTRY_SESSION_DATE_UNVERIFIED', source_binding=hotspot)
+                else:
+                    watch = build_hotspot_watch_queue([dict(path=str(source), sha256=hotspot['sha256'])])
+            watch_path = target/'hotspot-watch-queue.json'
+            write_new_json(watch_path, watch)
+            bindings['hotspot_watch_queue'] = dict(path=watch_path.relative_to(ROOT).as_posix(),
+                                                   sha256=sha256_file(watch_path))
         if 'dual_sleeve_report' not in bindings:
             from value_investment_agent.application.product.dual_sleeve_risk import run_dual_sleeve_review
             path = target/'dual-sleeve-risk.json'
@@ -161,6 +222,9 @@ def main():
             else:
                 run_dual_sleeve_review(root=ROOT, output_path=path)
             bindings['dual_sleeve_report'] = dict(path=path.relative_to(ROOT).as_posix(), sha256=sha256_file(path))
+        if args.auto_marketwide:
+            return compose_daily_product_v3(root=ROOT, folder=target, published=prior,
+                                            batch=batch, extensions=bindings)
         if 'value_discovery_report' in bindings:
             return compose_daily_product_v2(root=ROOT, folder=target, published=prior,
                                             batch=batch, extensions=bindings)

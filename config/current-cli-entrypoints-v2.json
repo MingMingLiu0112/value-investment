@@ -95,6 +95,7 @@
     "scripts/current/render_product_artifact_pages.mjs",
     "scripts/current/render_dual_strategy_artifact_pages.mjs",
     "scripts/current/render_dual_strategy_artifact_pages_v2.mjs",
+    "scripts/current/render_dual_strategy_artifact_pages_v3.mjs",
     "scripts/current/product_update_publication.py",
     "scripts/current/verify_dual_product_values.py",
     "scripts/current/verify_product_navigation.ps1",
@@ -104,7 +105,7 @@
   "counts": {
     "product": 26,
     "engineering": 44,
-    "internal_helpers": 16,
-    "total": 86
+    "internal_helpers": 17,
+    "total": 87
   }
 }

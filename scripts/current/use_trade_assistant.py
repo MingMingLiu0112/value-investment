@@ -46,7 +46,7 @@ def main() -> int:
         registry_path = verify_user_update_registry(root=ROOT, published=published, symbols=symbols)
         command = [sys.executable, str(ROOT/'scripts/current/run_update_and_publish.py')]
         command += ['--symbols', ','.join(symbols), '--case-registry', str(registry_path),
-                    '--case-registry-sha256', sha256_file(registry_path)]
+                    '--case-registry-sha256', sha256_file(registry_path), '--auto-marketwide']
         return subprocess.call([*command, *advanced], cwd=ROOT)
     workbook = get_settings().workbook_path.resolve()
     published = read_published_research(root=ROOT, workbook=workbook)
