@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 12,
     "CURRENT_PRODUCT_CLI": 13,
-    "CURRENT_RESEARCH_CLI": 205,
+    "CURRENT_RESEARCH_CLI": 207,
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 217,
     "MIGRATION_TOOL": 13,
@@ -7340,6 +7340,20 @@
       "risk": "LOW",
       "line_count": 154,
       "sha256": "3bf087975f52019111b6857a0ae8a83fe2bbf2332e70e04bf42f3e09c7c10306"
+    },
+    {
+      "path": "scripts/current/build_value_research_queue.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "imports_business_logic": false,
+      "replacement": null
+    },
+    {
+      "path": "scripts/current/open_m2_pending_research.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "imports_business_logic": false,
+      "replacement": null
     },
     {
       "path": "scripts/workbook_path.ps1",
