@@ -146,6 +146,14 @@ def test_authorized_runtime_output_directory_is_not_silently_skipped(interrupted
     assert workbook.read_bytes() == backup.read_bytes() and len(calls) == 1
 
 
+@pytest.mark.parametrize("interrupted", ["runtime/test-temp/pytest-work/synthetic-interruption"], indirect=True)
+def test_synthetic_pytest_intent_does_not_block_real_publication_preflight(interrupted):
+    root, folder, workbook, backup, intent, prior, calls = interrupted
+    retained = workbook.read_bytes()
+    assert adapter.recover_interrupted_product_publications(root=root, workbook=workbook) == []
+    assert workbook.read_bytes() == retained and not calls
+
+
 def test_signed_candidate_fixture_uses_one_fixed_utc_calendar_day(signed):
     package = json.loads((signed["path"].parent / "package.json").read_text(encoding="utf-8"))
     from datetime import datetime, timezone

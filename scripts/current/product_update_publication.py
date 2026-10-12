@@ -12,11 +12,20 @@ import sys
 from uuid import uuid4
 
 from value_investment_agent.application.product.common import load_json_object, sha256_file, write_new_json, require_inside
-from value_investment_agent.infrastructure.evidence.workbook_publication import verify_workbook_publication, verify_native_workbook_receipt
+from value_investment_agent.infrastructure.evidence.workbook_publication import (verify_workbook_publication,
+    verify_native_workbook_receipt, publication_quote_floor_from_receipt)
 
 
 PWSH = Path('C:/Users/we/AppData/Local/Programs/PowerShell/7/pwsh.exe')
 NODE = Path.home()/'.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe'
+
+
+def _artifact_operation_marker() -> Path:
+    skill_root = Path.home()/'.codex/plugins/cache/openai-primary-runtime/spreadsheets'
+    versions = sorted(skill_root.glob('*/skills/spreadsheets/container_tools/mark_artifact_operation_started.mjs'))
+    if not versions:
+        raise ValueError('托管表格运行环境不可用；研究已保留，未发布')
+    return versions[-1]
 
 
 class ProductPublicationError(ValueError):
@@ -62,8 +71,8 @@ def _register(root, folder, before_pointer, publication, native_path, product):
         wps_receipt=native_path.relative_to(root).as_posix(), wps_receipt_sha256=sha256_file(native_path),
         registered_at=datetime.now(timezone.utc).date().isoformat(),
         status='PUBLISHED_WPS_READONLY_VERIFIED', research_as_of=product['handoff']['snapshot']['as_of'])
-    floor = verify_workbook_publication(root, successor)
-    successor['current_publication']['quote_observation_as_of'] = str(floor)
+    receipt = load_json_object(root/publication['receipt'], 'publication receipt')
+    successor['current_publication']['quote_observation_as_of'] = publication_quote_floor_from_receipt(root, receipt).isoformat()
     verify_workbook_publication(root, successor)
     staging = root/'.tmp'/('workbook-pointer-'+uuid4().hex+'.json')
     write_new_json(staging, successor)
@@ -79,7 +88,10 @@ def recover_interrupted_product_publications(*, root, workbook):
     from scripts.current.publish_product_workbench_to_canonical import (
         _project_staging_directory, _replace_canonical_staging)
     results = []
-    for intent_path in sorted((root/'runtime').rglob('publication-intent.json')):
+    publication_root = root/'runtime'
+    for intent_path in sorted(publication_root.rglob('publication-intent.json')):
+        if intent_path.relative_to(publication_root).parts[0] == 'test-temp':
+            continue
         folder = intent_path.parent
         if (folder/'publication-complete.json').exists() or (folder/'publication-rollback.json').exists():
             continue
@@ -143,19 +155,34 @@ def publish_product_update(*, root: Path, folder: Path, product: dict,
         input_sha256=sha256_file(handoff_path),
         policy_binding=dict(path=policy.relative_to(root).as_posix(), sha256=sha256_file(policy)),
         strings={value: _user_text(value) for value in strings}))
-    marker = Path('C:/Users/we/.codex/plugins/cache/openai-primary-runtime/spreadsheets/26.1007.11041/skills/spreadsheets/container_tools/mark_artifact_operation_started.mjs')
-    if not NODE.is_file() or not marker.is_file():
+    if not NODE.is_file():
         raise ValueError('托管表格运行环境不可用；研究已保留，未发布')
+    marker = _artifact_operation_marker()
     _command(root, folder, 'artifact-start', [NODE, marker, '--operation-kind', 'edit',
                                            '--expected-output-count', '1', '--output-format', 'xlsx'])
     authored = folder/'trade-assistant-preview.xlsx'
-    _command(root, folder, 'artifact', [NODE, root/'scripts/current/render_dual_strategy_artifact_pages.mjs',
+    renderer_version = product.get('renderer_version')
+    if renderer_version not in (None, 'dual-strategy-discovery-v2'):
+        raise ValueError('unsupported product renderer version')
+    renderer = root/'scripts/current'/('render_dual_strategy_artifact_pages_v2.mjs'
+        if renderer_version else 'render_dual_strategy_artifact_pages.mjs')
+    _command(root, folder, 'artifact', [NODE, renderer,
         '--publication-input', handoff_path, '--sha256', sha256_file(handoff_path),
         '--display-input', display_path, '--output', authored, '--render-review',
         '--manual-input-source', workbook, '--manual-input-source-sha256', expected_before])
     candidate = folder/'canonical-integration-historical-preview.xlsx'
+    lead_symbols = frozenset()
+    if renderer_version:
+        from value_investment_agent.presentation.daily_product_discovery_v2 import verify_discovery_bindings
+        extensions = product['extension_bindings']
+        verify_discovery_bindings(root, extensions)
+        queue_binding = extensions['value_research_queue']
+        queue = load_json_object(root/queue_binding['path'], 'M2 research queue')
+        lead_symbols = frozenset(item['symbol'] for item in queue['entries']
+                                 if item['queue_status'] == 'SELECTED_FOR_DATA_CHECK')
     protected = build_protected_research_preview(root, workbook, candidate, product['model'],
-                         authored_pages=authored, authored_pages_sha256=sha256_file(authored))
+                         authored_pages=authored, authored_pages_sha256=sha256_file(authored),
+                         research_lead_symbols=lead_symbols)
     authored_sources = _verify_authored_product_inputs(root, authored, sha256_file(authored),
                                                       sha256_file(handoff_path), len(handoff['source_bindings']))
     sources_path = candidate.with_name(candidate.stem+'.source-bindings.json')

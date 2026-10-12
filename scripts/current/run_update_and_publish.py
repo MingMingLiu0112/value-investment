@@ -12,6 +12,7 @@ from value_investment_agent.application.product.common import load_json_object, 
 from value_investment_agent.application.product.user_research_workflow import read_published_research, verify_user_update_registry
 from value_investment_agent.application.product.daily_product_update import run_product_update
 from value_investment_agent.presentation.daily_product_composition import compose_daily_product
+from value_investment_agent.presentation.daily_product_discovery_v2 import compose_daily_product_v2, verify_discovery_bindings
 from scripts.current.product_update_publication import publish_product_update, recover_interrupted_product_publications
 from value_investment_agent.settings import get_settings
 
@@ -31,6 +32,12 @@ def main():
     parser.add_argument('--agent-mode', choices=('offline', 'mock', 'none'), default='offline')
     parser.add_argument('--extensions', type=Path)
     parser.add_argument('--extensions-sha256')
+    parser.add_argument('--m2-discovery-report', type=Path)
+    parser.add_argument('--m2-discovery-sha256')
+    parser.add_argument('--m2-queue', type=Path)
+    parser.add_argument('--m2-queue-sha256')
+    parser.add_argument('--m2-pending', type=Path)
+    parser.add_argument('--m2-pending-sha256')
     parser.add_argument('--private-risk-config', type=Path)
     parser.add_argument('--private-risk-config-sha256')
     args = parser.parse_args()
@@ -57,6 +64,21 @@ def main():
         if config.get('action') != 'no_order':
             raise ValueError('extension configuration scope mismatch')
         extensions = config['bindings']
+    for role, path, digest in (
+        ('value_discovery_report', args.m2_discovery_report, args.m2_discovery_sha256),
+        ('value_research_queue', args.m2_queue, args.m2_queue_sha256),
+        ('m2_pending_research', args.m2_pending, args.m2_pending_sha256),
+    ):
+        if (path is None) != (digest is None):
+            parser.error(role + ' requires both path and SHA-256')
+        if path is not None:
+            bound = require_inside(ROOT/'runtime', ROOT/path, role)
+            if sha256_file(bound) != digest:
+                raise ValueError(role + ' hash mismatch')
+            if role in extensions:
+                parser.error(role + ' was supplied twice')
+            extensions[role] = dict(path=bound.relative_to(ROOT).as_posix(), sha256=digest)
+    verify_discovery_bindings(ROOT, extensions)
     if args.private_risk_config and 'dual_sleeve_report' in extensions:
         parser.error('private risk config excludes a supplied risk report')
     folder = ROOT/(args.output_dir or Path('runtime/daily-trade-assistant')/
@@ -139,6 +161,9 @@ def main():
             else:
                 run_dual_sleeve_review(root=ROOT, output_path=path)
             bindings['dual_sleeve_report'] = dict(path=path.relative_to(ROOT).as_posix(), sha256=sha256_file(path))
+        if 'value_discovery_report' in bindings:
+            return compose_daily_product_v2(root=ROOT, folder=target, published=prior,
+                                            batch=batch, extensions=bindings)
         return compose_daily_product(root=ROOT, folder=target, published=prior, batch=batch, extensions=bindings)
     result = run_product_update(root=ROOT, output_dir=folder, published=published, research_runner=research,
         composer=compose,

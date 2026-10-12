@@ -936,6 +936,7 @@ def _hide_legacy_sheets(workbook: Any) -> list[str]:
 def build_protected_research_preview(
     root: Path, canonical: Path, output: Path, model: Any, *,
     authored_pages: Path | None = None, authored_pages_sha256: str | None = None,
+    research_lead_symbols: frozenset[str] = frozenset(),
 ) -> dict[str, Any]:
     """Render only managed pages into a retained-workbook preview; never publish."""
     root, canonical, output = root.resolve(), canonical.resolve(), output.resolve()
@@ -1000,7 +1001,7 @@ def build_protected_research_preview(
                             raise ValueError("authored product pages permit only internal navigation formulas or exact evidence-bound HTTPS audit links")
             symbols = {match for row in authored["03_公司"].iter_rows(min_col=1, max_col=1)
                        for cell in row for match in re.findall(r"\b\d{6}\b", str(cell.value or ""))}
-            if symbols != {company.symbol for company in model.companies}:
+            if symbols != {company.symbol for company in model.companies} | research_lead_symbols:
                 raise ValueError("authored company pages do not match the research model")
         finally:
             authored.close()

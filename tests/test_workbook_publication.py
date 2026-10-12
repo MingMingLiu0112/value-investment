@@ -4,7 +4,7 @@ import json
 import pytest
 
 from value_investment_agent.infrastructure.evidence.workbook_publication import (
-    MANAGED_NATIVE_SHEETS, verify_workbook_publication,
+    MANAGED_NATIVE_SHEETS, publication_quote_floor_from_receipt, verify_workbook_publication,
 )
 from test_quote_session_collection import Session
 from test_quote_sessions import NOW
@@ -79,6 +79,18 @@ def test_current_registration_binds_publish_and_native_successor_without_rewriti
     before = {path: path.read_bytes() for path in tmp_path.rglob('*') if path.is_file()}
     verify_workbook_publication(tmp_path, contract)
     assert before == {path: path.read_bytes() for path in before}
+
+
+def test_new_publication_floor_is_derived_from_its_receipt_before_pointer_validation(tmp_path):
+    contract = registration(tmp_path)
+    receipt = json.loads((tmp_path / contract['current_publication']['receipt']).read_text())
+    floor = publication_quote_floor_from_receipt(tmp_path, receipt)
+    assert floor.isoformat() == '2026-09-07'
+    contract['current_publication']['quote_observation_as_of'] = '2026-09-04'
+    with pytest.raises(ValueError, match='QUOTE_FLOOR_MISMATCH'):
+        verify_workbook_publication(tmp_path, contract)
+    contract['current_publication']['quote_observation_as_of'] = floor.isoformat()
+    verify_workbook_publication(tmp_path, contract)
 
 
 @pytest.mark.parametrize('role,field,value', [

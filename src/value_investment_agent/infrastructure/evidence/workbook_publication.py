@@ -126,6 +126,13 @@ def _publication_quote_floor(root: Path, sources: dict[str, Any], *, original_ro
     return max(dates)
 
 
+def publication_quote_floor_from_receipt(root: Path, receipt: dict[str, Any]) -> date:
+    """Derive the new pointer date from the receipt's pinned source evidence."""
+    sources = _bound_json(root.resolve(), receipt.get("source_bindings_path"),
+                          receipt.get("source_bindings_sha256"))
+    return _publication_quote_floor(root.resolve(), sources)
+
+
 def verify_workbook_publication(root: Path, contract: dict[str, Any], *, original_root: Path | None = None) -> date | None:
     """V5 registrations must bind both the publication and subsequent native check."""
     if contract.get("schema_version") != "m7-current-trial-workbook-v5":
