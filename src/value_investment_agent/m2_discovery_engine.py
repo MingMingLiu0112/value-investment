@@ -934,6 +934,8 @@ def build_data_health(
     *,
     price_conflict_count: int,
     policy: M2ScreeningPolicy,
+    quote_date_verified: bool = True,
+    official_current_verified: bool = True,
 ) -> DataHealth:
     expected = {record.symbol for record in universe.records}
     received = set(quotes)
@@ -948,6 +950,9 @@ def build_data_health(
     if not universe.complete:
         status = "PARTIAL"
         blockers.append("official universe is marked incomplete")
+    if not official_current_verified:
+        status = "PARTIAL"
+        blockers.append("live official universe collection failed; retained source is stale")
     if len(received) < policy.minimum_quote_count:
         status = "PARTIAL"
         blockers.append(f"quote coverage below {policy.minimum_quote_count}")
@@ -961,6 +966,9 @@ def build_data_health(
         blockers.append(f"{len(extra)} quote symbols are not in the official universe")
     if price_conflict_count:
         blockers.append(f"{price_conflict_count} symbols have conflicting provider prices")
+    if not quote_date_verified:
+        status = "PARTIAL"
+        blockers.append("provider trade date is unverified; fetch date is not a verified quote date")
     return DataHealth(
         universe_count=len(expected),
         quote_count=len(received),
@@ -1033,6 +1041,7 @@ def build_discovery_receipt(
     quote_date: str,
     run_refs: Mapping[str, EvidenceReference],
     policy: M2ScreeningPolicy | None = None,
+    quote_date_verified: bool = True,
 ) -> DiscoveryRunReceipt:
     policy = policy or M2ScreeningPolicy()
     run_date = generated_at.astimezone(CHINA).date()
@@ -1097,6 +1106,8 @@ def build_discovery_receipt(
         dividends,
         price_conflict_count=len(conflicts),
         policy=policy,
+        quote_date_verified=quote_date_verified,
+        official_current_verified=not bool(official_payload.get("m2_live_collection_error")),
     )
     legacy = build_legacy_comparison(
         official_quotes,

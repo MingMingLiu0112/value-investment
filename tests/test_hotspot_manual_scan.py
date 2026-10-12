@@ -5,7 +5,7 @@ import json
 import pytest
 from value_investment_agent.application.hotspot.manual import run_manual_scan
 from value_investment_agent.application.hotspot.scan import scan_market_hotspots
-from value_investment_agent.infrastructure.hotspot.sources import read_bound
+from value_investment_agent.infrastructure.hotspot.sources import read_bound,load_quote_history
 from value_investment_agent.application.product.common import sha256_file
 from value_investment_agent.domain.hotspot.price_behavior import describe_bars,observation_gates
 from value_investment_agent.virtual_account import VirtualAccount,replay,dated_research_fee,ORDER_TERMS_VERSION
@@ -133,6 +133,22 @@ def test_hash_and_future_evidence_rejected(tmp_path):
     p.write_text('{"changed":true}')
     with pytest.raises(ValueError,match='hash mismatch'):
         read_bound(tmp_path,b,datetime(2026,10,12,tzinfo=timezone.utc))
+
+
+def test_same_day_history_requires_completed_china_session(tmp_path):
+    config=json.loads(_bundle(tmp_path).read_text())
+    history_path=tmp_path/config['history']['path']
+    manifest=json.loads(history_path.read_text())
+    available='2026-09-22T05:00:00+00:00'
+    manifest['created_at']=available
+    manifest['provider_documents']['tencent']['fetched_at']=available
+    history_path.write_text(json.dumps(manifest),encoding='utf-8')
+    config['history']['available_at']=available
+    config['history']['sha256']=sha256_file(history_path)
+    with pytest.raises(ValueError,match='Future history manifest'):
+        load_quote_history(tmp_path,config['history'],datetime(2026,9,22,6,tzinfo=timezone.utc))
+    bars,_=load_quote_history(tmp_path,config['history'],datetime(2026,9,22,7,5,tzinfo=timezone.utc))
+    assert bars[-1]['date']=='2026-09-22'
 
 
 def test_source_escape_rejected(tmp_path):

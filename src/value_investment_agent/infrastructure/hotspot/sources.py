@@ -1,9 +1,10 @@
 """Hash/time-bound cache consumption using existing market and bar parsers."""
-from datetime import datetime, date
+from datetime import datetime, date, time
 import json
 from pathlib import Path
 from value_investment_agent.application.product.common import require_inside, sha256_file
 from value_investment_agent.m1_historical_quote import tencent_daily_bar
+from value_investment_agent.quote_sessions import CHINA
 
 
 def aware(value: str) -> datetime:
@@ -31,7 +32,9 @@ def load_quote_history(root: Path, binding: dict, cutoff: datetime) -> tuple[lis
     manifest = json.loads(raw)
     symbol = manifest['symbol']
     target = date.fromisoformat(manifest['quote_date'])
-    if aware(manifest['created_at']) > cutoff or target > cutoff.date():
+    market_cutoff = cutoff.astimezone(CHINA)
+    if (aware(manifest['created_at']) > cutoff or target > market_cutoff.date()
+            or (target == market_cutoff.date() and market_cutoff.time() < time(15, 5))):
         raise ValueError('Future history manifest')
     provider = manifest['provider_documents']['tencent']
     provider_binding = dict(path=provider['path'].replace('\\', '/'), sha256=provider['sha256'],

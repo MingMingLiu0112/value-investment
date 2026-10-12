@@ -129,6 +129,26 @@ def test_new_cash_use_preserves_existing_ips_cash_reserve():
     assert review(payload)['hotspot_quantity_review']['review_quantity'] == 0
 
 
+def test_cross_sleeve_overlap_cap_and_cash_floor_fail_closed():
+    payload = synthetic_input()
+    payload['shared_budget']['cross_sleeve_single_stock_cap'] = '0.09'
+    result = review(payload)
+    assert 'shared:single_security_cap:600519' in result['blockers']
+    assert result['hotspot_quantity_review']['status'] == 'BLOCKED'
+    assert result['hotspot_quantity_review']['review_quantity'] is None
+    assert result['aggregate']['duplicated_security_exposure']['600519'][0]['quantity'] == '60'
+    assert result['aggregate']['duplicated_security_exposure']['600519'][1]['quantity'] == '40'
+    assert result['action'] == 'no_order' and result['trade_eligible'] is False
+
+    payload = synthetic_input()
+    payload['cash_reserve_cny'] = '1000'
+    payload['sleeves'][CORE]['cash_cny'] = '5400'
+    result = review(payload)
+    assert 'shared:cash_floor_violation' in result['blockers']
+    assert result['hotspot_quantity_review']['review_quantity'] is None
+    assert result['sleeves'][HOTSPOT]['cash_cny'] == '2600'
+
+
 def test_semantic_content_ignores_run_dates_paths_but_not_economic_input(tmp_path):
     source = tmp_path/'.tmp/input.json'
     write_new_json(source, synthetic_input())

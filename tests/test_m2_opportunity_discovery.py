@@ -16,6 +16,7 @@ from value_investment_agent.m2_market_data import (
     parse_sina_industry,
     parse_tencent_board,
 )
+from value_investment_agent.application.product.value_discovery_surface import publish_value_discovery_report
 from value_investment_agent.m2_opportunity_discovery import (
     ACTION_NO_ORDER,
     CANDIDATE_CLASS_LEAD,
@@ -175,6 +176,55 @@ def test_receipt_round_trip_preserves_no_order_and_candidate_signature():
     assert restored.action == ACTION_NO_ORDER
     assert restored.coverage_signature == receipt.coverage_signature
     assert restored.candidate_signature == receipt.candidate_signature
+
+
+def test_live_fetch_date_and_retained_universe_cannot_claim_complete_coverage():
+    official = _official_payload()
+    official["m2_live_collection_error"] = "exchange unavailable"
+    run_refs = {key: _reference(key) for key in ("official", "tencent", "sina", "dividend", "financial")}
+    receipt = build_discovery_receipt(
+        run_id="m2-unverified-live-fixture",
+        generated_at=datetime(2026, 9, 23, 8, 5, tzinfo=timezone.utc),
+        official_payload=official,
+        tencent_payload=_tencent_payload(),
+        sina_payload=_sina_payload(),
+        dividend_payload=_dividend_payload(),
+        financial_points=_financial_points(),
+        quote_date="2026-09-23",
+        run_refs=run_refs,
+        policy=M2ScreeningPolicy(max_per_channel=10),
+        quote_date_verified=False,
+    )
+    assert receipt.data_health.status == DATA_PARTIAL
+    assert any("provider trade date is unverified" in blocker for blocker in receipt.data_health.blockers)
+    assert any("retained source is stale" in blocker for blocker in receipt.data_health.blockers)
+    assert receipt.action == ACTION_NO_ORDER
+
+
+def test_m2_product_projection_keeps_leads_non_admitted_and_hash_bound(tmp_path):
+    receipt = _receipt()
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    for reference in receipt.evidence_refs:
+        (runtime / f"{reference.id}.json").write_text(reference.id, encoding="utf-8")
+    receipt_path = runtime / "receipt.json"
+    receipt_path.write_text(json.dumps(receipt.as_policy(), ensure_ascii=False), encoding="utf-8")
+    output_path = runtime / "value-discovery-report.json"
+    report = publish_value_discovery_report(
+        root=tmp_path, receipt_path=receipt_path,
+        receipt_sha256=hashlib.sha256(receipt_path.read_bytes()).hexdigest(), output_path=output_path,
+    )
+    assert report["action"] == "no_order"
+    assert report["deduplicated_lead_count"] == len(receipt.candidate_pool())
+    assert all(item["candidate_class"] == "LEAD" and item["research_state"] == "DISCOVERED"
+               for item in report["leads"])
+    assert all(item["quote_date_verification"] == "UNVERIFIED_PROVIDER_TRADE_DATE"
+               for item in report["leads"])
+    (runtime / "tencent.json").write_text("tampered", encoding="utf-8")
+    with pytest.raises(ValueError, match="evidence hash mismatch"):
+        publish_value_discovery_report(root=tmp_path, receipt_path=receipt_path,
+            receipt_sha256=hashlib.sha256(receipt_path.read_bytes()).hexdigest(),
+            output_path=runtime / "second-report.json")
 
 
 def test_legacy_coverage_receipt_without_extended_fields_still_decodes():

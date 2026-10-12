@@ -1,8 +1,8 @@
 """Run one real M2 opportunity-discovery snapshot and publish an Excel board.
 
 This script is read-only with respect to the existing WPS workbook, production
-PostgreSQL, scheduler and server projects.  It writes only a new timestamped
-runtime directory and, when requested, a new workbook in the WPS cloud folder.
+PostgreSQL, scheduler and server projects. It writes only a runtime preview;
+the existing Canonical WPS workbook remains the sole formal user workbook.
 """
 from __future__ import annotations
 
@@ -11,7 +11,6 @@ import hashlib
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-import shutil
 import sys
 from typing import Mapping
 
@@ -35,13 +34,10 @@ from value_investment_agent.m2_opportunity_discovery import (
     discovery_receipt_from_payload,
 )
 from value_investment_agent.official_universe import collect_security_lists
+from value_investment_agent.application.product.value_discovery_surface import publish_value_discovery_report
 
 
 CHINA = timezone(timedelta(hours=8))
-WPS_WORKBOOK_NAME = "A股价值投资_M2机会发现_{date}.xlsx"
-DEFAULT_WPS_DIR = Path(
-    r"C:\Users\we\WPSDrive\197617831\WPS云盘\价投跟踪"
-)
 
 
 def _sha(data: bytes) -> str:
@@ -124,6 +120,7 @@ def _collect_official(output_dir: Path, root: Path) -> tuple[dict, EvidenceRefer
     if live_error:
         payload = dict(payload)
         payload["m2_live_collection_error"] = live_error
+        path = _write(output_dir, "official-universe.json", _json_bytes(payload))
     fetched_at = payload.get("fetched_at")
     if not fetched_at:
         raise RuntimeError("Official universe payload has no fetched_at")
@@ -160,7 +157,12 @@ def run_once(
     max_per_channel: int,
     skip_dividend: bool,
     reuse_inputs: bool,
+    project_leads: bool = False,
 ) -> dict:
+    if wps_dir is not None:
+        raise ValueError("M2 may not create a second WPS workbook; use the runtime preview")
+    if reuse_inputs and (output_dir / "m2-opportunity-discovery.xlsx").exists():
+        raise ValueError("reuse requires an input-only directory; existing workbook must remain immutable")
     wall_now = datetime.now(timezone.utc)
     output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -301,6 +303,9 @@ def run_once(
             fetched_at=financial_fetched,
         )
 
+    if not reuse_inputs:
+        generated_at = datetime.now(timezone.utc)
+        quote_date = generated_at.astimezone(CHINA).date().isoformat()
     run_refs = {
         "official": official_ref,
         "tencent": tencent_ref,
@@ -319,9 +324,15 @@ def run_once(
         quote_date=quote_date,
         run_refs=run_refs,
         policy=policy,
+        quote_date_verified=False,
     )
     receipt_bytes = _json_bytes(receipt.as_policy())
     receipt_path = _write(output_dir, "receipt.json", receipt_bytes)
+    lead_report_path = None
+    if project_leads:
+        lead_report_path = output_dir / "value-discovery-report.json"
+        publish_value_discovery_report(root=root, receipt_path=receipt_path,
+            receipt_sha256=_sha(receipt_bytes), output_path=lead_report_path)
     policy_path = _write(output_dir, "policy.json", _json_bytes(policy.as_policy()))
 
     workbook_path = output_dir / "m2-opportunity-discovery.xlsx"
@@ -350,29 +361,13 @@ def run_once(
         quote_date=quote_date,
         run_refs=run_refs,
         policy=policy,
+        quote_date_verified=False,
     )
     replay_matches_inputs = (
         replay_build == receipt
         and replay_build.candidate_signature == receipt.candidate_signature
         and replay_build.coverage_signature == receipt.coverage_signature
     )
-
-    wps_result = None
-    if wps_dir is not None:
-        wps_dir.mkdir(parents=True, exist_ok=True)
-        wps_name = WPS_WORKBOOK_NAME.format(
-            date=generated_at.astimezone(CHINA).strftime("%Y%m%d")
-        )
-        wps_target = wps_dir / wps_name
-        counter = 2
-        while wps_target.exists():
-            wps_target = wps_dir / f"{wps_name[:-5]}_{counter}.xlsx"
-            counter += 1
-        shutil.copy2(workbook_path, wps_target)
-        wps_result = {
-            "path": str(wps_target),
-            "sha256": _sha(wps_target.read_bytes()),
-        }
 
     counts = {
         channel: len(result.candidates)
@@ -384,6 +379,7 @@ def run_once(
         "generated_at": receipt.generated_at.isoformat(),
         "as_of": receipt.as_of.isoformat(),
         "quote_date": receipt.quote_date,
+        "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
         "replay_of_run_id": replay_of_run_id,
         "rule_version": receipt.rule_version,
         "data_health": receipt.data_health.as_policy(),
@@ -396,8 +392,9 @@ def run_once(
             for channel, result in receipt.channel_results.items()
         },
         "receipt_path": str(receipt_path.relative_to(root)),
+        "lead_report_path": str(lead_report_path.relative_to(root)) if lead_report_path else None,
         "workbook": workbook_info,
-        "wps_workbook": wps_result,
+        "wps_workbook": None,
         "replay": {
             "receipt_bytes_match": replay_matches_receipt,
             "raw_inputs_match": replay_matches_inputs,
@@ -418,6 +415,7 @@ def run_once(
                 ("dividend", output_dir / "eastmoney-dividends.json"),
                 ("financial", output_dir / "retained-financial-points.json"),
                 ("receipt", receipt_path),
+                *(((("lead_report", lead_report_path),) if lead_report_path else ())),
                 ("policy", policy_path),
                 ("workbook", workbook_path),
             )
@@ -430,7 +428,7 @@ def run_once(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path)
-    parser.add_argument("--wps-dir", type=Path, default=DEFAULT_WPS_DIR)
+    parser.add_argument("--wps-dir", type=Path)
     parser.add_argument("--no-wps", action="store_true")
     parser.add_argument("--max-per-channel", type=int, default=50)
     parser.add_argument("--skip-dividend", action="store_true")
@@ -452,6 +450,7 @@ def main() -> int:
         max_per_channel=args.max_per_channel,
         skip_dividend=args.skip_dividend,
         reuse_inputs=args.reuse_inputs,
+        project_leads=True,
     )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0

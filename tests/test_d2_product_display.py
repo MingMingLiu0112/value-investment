@@ -197,7 +197,7 @@ def test_artifact_export_uses_shared_display_and_preserves_blocked_states(artifa
         assert {404.82, 479.88, 572.74} <= values
         formulas = [cell.value for sheet in workbook for row in sheet for cell in row if cell.data_type == 'f']
         assert formulas and all(formula.startswith('=HYPERLINK("#\'') for formula in formulas)
-        assert any('原始投资逻辑（证据）' in formula for formula in formulas)
+        assert any("#'06_系统与审计'!" in formula and '（证据）' in formula for formula in formulas)
         assert '个人仓位' in text and '尚未接入真实组合' in text
     finally:
         workbook.close()
