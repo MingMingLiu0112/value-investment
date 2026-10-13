@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from conftest import TEST_BOOTSTRAP, open_session
 from value_investment_agent.presentation.web_api.app import ROOT, create_app
 
 
@@ -63,12 +64,10 @@ def _fixture(root):
         "current_publication": {"status": "PUBLISHED_WPS_READONLY_VERIFIED",
                                 "receipt": receipt["path"], "receipt_sha256": receipt["sha256"]},
         "daily_product_state_binding": state})
-    client = TestClient(create_app(root, port=8791), base_url="http://127.0.0.1:8791",
-                        client=("127.0.0.1", 51000))
+    client = TestClient(create_app(root, port=8791, bootstrap_secret=TEST_BOOTSTRAP),
+                        base_url="http://127.0.0.1:8791", client=("127.0.0.1", 51000))
     client.headers.update({"host": "127.0.0.1:8791", "origin": "http://127.0.0.1:8791"})
-    session = client.get("/api/v1/private/session")
-    assert session.status_code == 200
-    client.headers["x-local-session"] = session.json()["token"]
+    client.headers["x-local-session"] = open_session(client)
     return client
 
 

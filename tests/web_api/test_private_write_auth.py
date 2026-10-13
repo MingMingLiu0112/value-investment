@@ -1,8 +1,9 @@
-"""WEB-D2 P0.1: private reads and writes only accept the local operator."""
+"""WEB-D3 P0.2: private reads and writes only accept the unlocked local operator."""
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
+from conftest import TEST_BOOTSTRAP, UNLOCK_PATH, open_session, operator_headers
 from value_investment_agent.presentation.web_api.app import create_app
 
 BASELINE = {
@@ -125,23 +126,27 @@ def test_tokenless_non_browser_client_is_rejected(make_client):
 
 def test_token_bearing_non_browser_client_is_allowed(make_client):
     client = make_client(authorize=False)
-    token = client.get(SESSION_PATH).json()["token"]
+    token = open_session(client)
     response = client.post(INITIALIZE_PATH, json=BASELINE,
                            headers={"x-local-session": token})
     assert response.status_code == 200
     assert response.json()["status"] == "BASELINE_CONFIRMED"
 
 
-def test_logout_invalidates_the_token_and_a_new_handshake_works(make_client):
+def test_logout_is_durable_until_the_launcher_secret_is_presented_again(make_client):
     client = make_client(authorize=False)
-    old = client.get(SESSION_PATH).json()["token"]
+    old = open_session(client)
     signed_out = client.post("/api/v1/private/session/logout",
                              headers={"x-local-session": old})
     assert signed_out.status_code == 200
     assert signed_out.json()["status"] == "SIGNED_OUT"
     rejected = client.post(INITIALIZE_PATH, json=BASELINE, headers={"x-local-session": old})
     assert rejected.status_code == 401
-    fresh = client.get(SESSION_PATH).json()["token"]
+    # A plain re-fetch must not mint a replacement: the workbench stays locked.
+    status = client.get(SESSION_PATH).json()
+    assert status["status"] == "LOCKED"
+    assert "token" not in status
+    fresh = open_session(client)
     accepted = client.post(INITIALIZE_PATH, json=BASELINE, headers={"x-local-session": fresh})
     assert accepted.status_code == 200
 
@@ -156,13 +161,81 @@ def test_every_private_mutation_route_is_guarded(make_client):
             guarded.append(path)
             response = client.post(path, json={})
             assert response.status_code == 401, f"{path} answered {response.status_code}"
-            assert response.json()["status"] == "LOCAL_AUTHORIZATION_REQUIRED"
+            assert response.json()["status"] in {
+                "LOCAL_AUTHORIZATION_REQUIRED", "LOCAL_UNLOCK_REJECTED"}
     assert INITIALIZE_PATH in guarded
     assert "/api/v1/private/fills/prepare" in guarded
     assert "/api/v1/private/fills/confirm" in guarded
     assert "/api/v1/private/fills/cancel" in guarded
     assert "/api/v1/private/portfolio/reconcile" in guarded
     assert "/api/v1/private/session/logout" in guarded
+    assert UNLOCK_PATH in guarded
+
+
+def test_session_status_never_returns_a_token(make_client):
+    client = make_client(authorize=False)
+    locked = client.get(SESSION_PATH)
+    assert locked.status_code == 200
+    assert locked.json()["status"] == "LOCKED"
+    assert "token" not in locked.json()
+    assert locked.headers.get("cache-control") == "no-store"
+
+    token = open_session(client)
+    authorized = client.get(SESSION_PATH, headers={"x-local-session": token})
+    assert authorized.status_code == 200
+    assert authorized.json()["status"] == "AUTHORIZED"
+    assert "token" not in authorized.json()
+
+
+def test_unlock_rejects_a_wrong_launcher_secret_and_leaves_no_ledger(make_client, workspace):
+    _, private = workspace
+    client = make_client(authorize=False)
+    response = client.post(UNLOCK_PATH, json={"bootstrap_token": "f" * 64})
+    assert response.status_code == 401
+    assert response.json()["status"] == "LOCAL_UNLOCK_REJECTED"
+    assert not _journal(private).exists()
+
+
+def test_unlock_is_impossible_without_a_launcher_secret(workspace, monkeypatch):
+    from value_investment_agent.presentation.web_api.local_auth import BOOTSTRAP_ENV
+
+    project, _ = workspace
+    monkeypatch.delenv(BOOTSTRAP_ENV, raising=False)
+    app = create_app(project, port=8791)
+    client = TestClient(app, base_url="http://127.0.0.1:8791", client=("127.0.0.1", 51000))
+    client.headers.update(operator_headers())
+    response = client.post(UNLOCK_PATH, json={"bootstrap_token": TEST_BOOTSTRAP})
+    assert response.status_code == 401
+    assert response.json()["status"] == "LOCAL_AUTHORIZATION_REQUIRED"
+    assert client.get(SESSION_PATH).json()["status"] == "LOCKED"
+
+
+def test_restarting_the_service_invalidates_old_tokens_and_secrets(workspace):
+    project, _ = workspace
+    first = TestClient(create_app(project, port=8791, bootstrap_secret="first-secret"),
+                       base_url="http://127.0.0.1:8791", client=("127.0.0.1", 51000))
+    first.headers.update(operator_headers())
+    token = open_session(first, bootstrap="first-secret")
+    first.headers["x-local-session"] = token
+    assert first.get("/api/v1/portfolio").status_code == 200
+
+    second = TestClient(create_app(project, port=8791, bootstrap_secret="second-secret"),
+                        base_url="http://127.0.0.1:8791", client=("127.0.0.1", 51000))
+    second.headers.update(operator_headers())
+    stale = second.get("/api/v1/portfolio", headers={"x-local-session": token})
+    assert stale.status_code == 401
+    rejected = second.post(UNLOCK_PATH, json={"bootstrap_token": "first-secret"})
+    assert rejected.status_code == 401
+    fresh = open_session(second, bootstrap="second-secret")
+    assert second.get("/api/v1/portfolio", headers={"x-local-session": fresh}).status_code == 200
+
+
+def test_system_status_hides_the_portfolio_connection_when_locked(make_client):
+    client = make_client(authorize=False)
+    assert client.get("/api/v1/system/status").json()["portfolio"] == "LOCKED"
+    token = open_session(client)
+    unlocked = client.get("/api/v1/system/status", headers={"x-local-session": token})
+    assert unlocked.json()["portfolio"] == "NOT_CONNECTED"
 
 
 def test_replayed_authorized_write_is_idempotent(client, workspace):

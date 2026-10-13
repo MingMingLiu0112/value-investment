@@ -5,11 +5,13 @@ delegates to `PrivatePortfolioService`, and maps domain exceptions onto the
 frozen contract in `docs/current/web-private-api-contract.md`. No cash, cost,
 sellable-share or PnL arithmetic is allowed to live here.
 
-Authorization lives in `local_auth.py` (WEB-D2 P0.1): loopback peer, exact Host
+Authorization lives in `local_auth.py` (WEB-D3 P0.2): loopback peer, exact Host
 allowlist, exact same-origin Origin/Referer, and a process-scoped session token
-that every private read and write must present. Non-browser clients (for
-example curl) omit Origin on purpose; they must still present the token they
-obtained from ``GET /api/v1/private/session``.
+that every private read and write must present. The session starts locked; the
+per-run secret minted by the launcher is exchanged once at
+``POST /api/v1/private/session/unlock`` and is never returned by any anonymous
+endpoint. Non-browser clients (for example curl) may omit Origin on purpose,
+but they must unlock with the same launcher secret and then present the token.
 """
 from __future__ import annotations
 
@@ -32,6 +34,7 @@ from ...application.portfolio.private_risk_projection import review_private_risk
 from .local_auth import (
     AUTHORIZATION_REQUIRED,
     SESSION_HEADER,
+    UNLOCK_REJECTED,
     LocalAuthorizationError,
     LocalOperatorSession,
     authorize,
@@ -43,7 +46,7 @@ _FORBIDDEN = 403
 
 
 def _refusal(error: LocalAuthorizationError) -> JSONResponse:
-    status = _UNAUTHORIZED if error.code == AUTHORIZATION_REQUIRED else _FORBIDDEN
+    status = _UNAUTHORIZED if error.code in {AUTHORIZATION_REQUIRED, UNLOCK_REJECTED} else _FORBIDDEN
     return JSONResponse(status_code=status, content={
         "action": "no_order", "status": error.code, "detail": error.detail})
 
@@ -61,6 +64,7 @@ def disconnected_view(*, reason: str, blockers: tuple[str, ...]) -> dict:
         "policy": None,
         "pending_draft": None,
         "latest_snapshot": None,
+        "reconciliation": None,
         "valuation": {"status": "NOT_CONNECTED", "reason": reason},
         "blockers": list(blockers),
     }
@@ -114,13 +118,40 @@ def register_private_routes(
         return body
 
     @api.get("/api/v1/private/session")
-    def open_session(request: Request):
+    def session_status(request: Request):
+        """Report the session state without ever handing out a token.
+
+        The workbench is locked until the launcher secret is exchanged at
+        ``/api/v1/private/session/unlock``; this endpoint used to mint a token
+        for any local caller, which made local-process access indistinguishable
+        from the actual operator.
+        """
         refusal = refuse(request, require_token=False)
         if refusal is not None:
             return refusal
+        if session_state.accepts(request.headers.get(SESSION_HEADER)):
+            return JSONResponse(status_code=200, content={
+                "action": "no_order", "status": "AUTHORIZED",
+                "header": SESSION_HEADER, "ttl_seconds": session_state.ttl_seconds},
+                headers={"Cache-Control": "no-store"})
+        return JSONResponse(status_code=200, content={
+            "action": "no_order", "status": "LOCKED",
+            "detail": "工作台已锁定：请通过本机启动脚本打开页面完成一次性解锁",
+            "unlock_path": "/api/v1/private/session/unlock"},
+            headers={"Cache-Control": "no-store"})
+
+    @api.post("/api/v1/private/session/unlock")
+    def unlock_session(request: Request, payload: dict = Body(...)):
+        refusal = refuse(request, require_token=False)
+        if refusal is not None:
+            return refusal
+        try:
+            token = session_state.unlock(payload.get("bootstrap_token"))
+        except LocalAuthorizationError as error:
+            return _refusal(error)
         return JSONResponse(status_code=200, content={
             "action": "no_order", "status": "AUTHORIZED",
-            "header": SESSION_HEADER, "token": session_state.ensure_active(),
+            "header": SESSION_HEADER, "token": token,
             "ttl_seconds": session_state.ttl_seconds},
             headers={"Cache-Control": "no-store"})
 

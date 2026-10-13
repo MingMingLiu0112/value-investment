@@ -55,18 +55,84 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
 }
 
 const SESSION_HEADER = "X-Local-Session";
+const TOKEN_STORAGE_KEY = "vi-local-session";
+const UNLOCK_PATH = "/api/v1/private/session/unlock";
 let sessionToken: string | null = null;
 let handshake: Promise<string> | null = null;
+
+type WorkbenchWindow = {
+  location?: { hash?: string; pathname?: string; search?: string };
+  history?: {
+    replaceState(data: unknown, unused: string, url?: string): void;
+  };
+  sessionStorage?: Storage;
+};
+
+function workbenchWindow(): WorkbenchWindow | null {
+  return typeof window === "undefined" ? null : (window as WorkbenchWindow);
+}
+
+function fragmentSecret(): string | null {
+  const hash = workbenchWindow()?.location?.hash ?? "";
+  const match = /[#&]unlock=([A-Za-z0-9_-]{16,})/.exec(hash);
+  return match ? match[1] : null;
+}
+
+function stripUnlockFragment(): void {
+  const holder = workbenchWindow();
+  if (!holder?.location || !holder.history || fragmentSecret() === null) return;
+  holder.history.replaceState(
+    null,
+    "",
+    holder.location.pathname + (holder.location.search ?? ""),
+  );
+}
+
+function readStoredToken(): string | null {
+  try {
+    return (
+      workbenchWindow()?.sessionStorage?.getItem(TOKEN_STORAGE_KEY) ?? null
+    );
+  } catch {
+    return null;
+  }
+}
+
+function storeToken(token: string): void {
+  try {
+    workbenchWindow()?.sessionStorage?.setItem(TOKEN_STORAGE_KEY, token);
+  } catch {
+    // Storage can be unavailable; the in-memory token still covers this tab.
+  }
+}
 
 function forgetSession(): void {
   sessionToken = null;
   handshake = null;
+  try {
+    workbenchWindow()?.sessionStorage?.removeItem(TOKEN_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures; nothing else is persisted.
+  }
 }
 
-async function openSession(): Promise<string> {
-  const response = await fetch("/api/v1/private/session", {
+// The workbench starts locked. The launcher mints a per-run secret and opens
+// the page with `#unlock=<secret>`; the fragment never reaches the server, and
+// this exchange is the only way to obtain a session token.
+async function unlockSession(): Promise<string> {
+  const secret = fragmentSecret();
+  if (!secret) {
+    throw new ApiError(
+      401,
+      "LOCAL_SESSION_LOCKED",
+      "工作台已锁定：请通过本机启动脚本（start_web_workbench.ps1）重新打开一次性解锁链接",
+    );
+  }
+  const response = await fetch(UNLOCK_PATH, {
+    method: "POST",
     credentials: "same-origin",
-    headers: { Accept: "application/json" },
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify({ bootstrap_token: secret }),
   });
   let body: Record<string, unknown> | null = null;
   try {
@@ -74,25 +140,28 @@ async function openSession(): Promise<string> {
   } catch {
     body = null;
   }
-  if (
-    !response.ok ||
-    !body ||
-    typeof body.token !== "string" ||
-    body.token.length === 0
-  ) {
+  const token = body && typeof body.token === "string" ? body.token : "";
+  if (!response.ok || token.length === 0) {
     throw new ApiError(
       response.status,
-      String(body?.status ?? "LOCAL_AUTHORIZATION_REQUIRED"),
+      String(body?.status ?? "LOCAL_SESSION_LOCKED"),
       body?.detail ?? null,
     );
   }
-  return body.token;
+  storeToken(token);
+  stripUnlockFragment();
+  return token;
 }
 
 async function operatorToken(): Promise<string> {
   if (sessionToken) return sessionToken;
+  const stored = readStoredToken();
+  if (stored) {
+    sessionToken = stored;
+    return stored;
+  }
   if (!handshake) {
-    handshake = openSession()
+    handshake = unlockSession()
       .then((token) => {
         sessionToken = token;
         return token;

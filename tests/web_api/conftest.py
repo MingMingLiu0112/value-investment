@@ -1,8 +1,9 @@
-"""Shared fixtures for the local workbench API tests (WEB-D2 P0.1).
+"""Shared fixtures for the local workbench API tests (WEB-D3 P0.2).
 
-The private API is authorized, so every helper here performs the same
-handshake the browser workbench performs: mint a session token from
-`GET /api/v1/private/session` and present it on private reads and writes.
+The private API starts locked, so every helper here performs the same flow the
+browser workbench performs: exchange the launcher-minted secret at
+`POST /api/v1/private/session/unlock` and present the returned session token on
+private reads and writes.
 """
 from __future__ import annotations
 
@@ -19,6 +20,8 @@ from value_investment_agent.presentation.web_api.app import create_app
 TEST_PORT = 8791
 TEST_HOST = "127.0.0.1:{port}"
 SESSION_PATH = "/api/v1/private/session"
+UNLOCK_PATH = "/api/v1/private/session/unlock"
+TEST_BOOTSTRAP = "test-bootstrap-secret-" + "0" * 40
 
 
 def operator_headers(
@@ -34,11 +37,12 @@ def operator_headers(
     return headers
 
 
-def open_session(client: TestClient) -> str:
-    response = client.get(SESSION_PATH, headers=operator_headers())
+def open_session(client: TestClient, bootstrap: str = TEST_BOOTSTRAP) -> str:
+    response = client.post(UNLOCK_PATH, json={"bootstrap_token": bootstrap})
     assert response.status_code == 200, response.text
     payload = response.json()
     assert payload["action"] == "no_order"
+    assert payload["status"] == "AUTHORIZED"
     return payload["token"]
 
 
@@ -73,15 +77,17 @@ def make_client(workspace):
         authorize: bool = True,
         port: int = TEST_PORT,
         session_ttl_seconds: float = 12 * 60 * 60.0,
+        bootstrap: str | None = TEST_BOOTSTRAP,
         base_url: str | None = None,
         client_address: tuple[str, int] = ("127.0.0.1", 51000),
     ) -> TestClient:
-        app = create_app(project, port=port, session_ttl_seconds=session_ttl_seconds)
+        app = create_app(project, port=port, session_ttl_seconds=session_ttl_seconds,
+                         bootstrap_secret=bootstrap)
         client = TestClient(app, base_url=base_url or f"http://127.0.0.1:{port}",
                             client=client_address)
         if authorize:
             client.headers.update(operator_headers(port))
-            client.headers["x-local-session"] = open_session(client)
+            client.headers["x-local-session"] = open_session(client, bootstrap or TEST_BOOTSTRAP)
         return client
 
     return build

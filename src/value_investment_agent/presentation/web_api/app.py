@@ -11,7 +11,14 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from ..read_models.research_history import build_research_history
-from .local_auth import SESSION_TTL_SECONDS, LocalOperatorSession
+from .local_auth import (
+    BOOTSTRAP_ENV,
+    SESSION_HEADER,
+    SESSION_TTL_SECONDS,
+    LocalAuthorizationError,
+    LocalOperatorSession,
+    authorize,
+)
 from .private_routes import portfolio_connection, register_private_routes
 
 
@@ -165,10 +172,15 @@ def create_app(
     *,
     port: int | None = None,
     session_ttl_seconds: float = SESSION_TTL_SECONDS,
+    bootstrap_secret: str | None = None,
 ) -> FastAPI:
     # Root injection is for in-process tests; no HTTP parameter or environment override exists.
     project = (root or ROOT).resolve()
     bound_port = port if port is not None else _default_port()
+    # The launcher exports a per-run secret; without one the workbench stays
+    # locked, so an accidentally exposed process never serves the private API.
+    secret = bootstrap_secret if bootstrap_secret is not None else os.environ.get(BOOTSTRAP_ENV)
+    sessions = LocalOperatorSession(bootstrap_secret=secret, ttl_seconds=session_ttl_seconds)
     api = FastAPI(title="Value Investment Read API")
 
     @api.get("/api/v1/daily-decisions")
@@ -316,14 +328,20 @@ def create_app(
         return build_research_history(project, published_versions=published_research_versions())
 
     @api.get("/api/v1/system/status")
-    def system_status():
+    def system_status(request: Request):
+        try:
+            authorize(request, session=sessions, port=bound_port)
+            portfolio = portfolio_connection(project)
+        except LocalAuthorizationError:
+            # Whether a private ledger exists is itself private information.
+            portfolio = "LOCKED"
         current = _public(project)
         if current is None:
             return {"action": "no_order", "status": "UNAVAILABLE", "publication": "UNAVAILABLE",
-                    "portfolio": portfolio_connection(project)}
+                    "portfolio": portfolio}
         return {"action": "no_order", "status": "READ_ONLY",
                 "publication": current[0]["current_publication"]["status"],
-                "portfolio": portfolio_connection(project)}
+                "portfolio": portfolio}
 
     @api.exception_handler(RequestValidationError)
     def invalid_request(request: Request, error: RequestValidationError):
@@ -333,9 +351,7 @@ def create_app(
                         "message": item.get("msg", "invalid")} for item in error.errors()]})
 
     register_private_routes(
-        api, project,
-        sessions=LocalOperatorSession(ttl_seconds=session_ttl_seconds),
-        port=bound_port)
+        api, project, sessions=sessions, port=bound_port)
 
     dist = project / "web" / "dist"
     if dist.is_dir() and (dist / "index.html").is_file():

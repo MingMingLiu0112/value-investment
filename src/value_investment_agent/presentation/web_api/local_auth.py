@@ -1,4 +1,4 @@
-"""Local operator authorization for the private portfolio API (WEB-D2 P0.1).
+"""Local operator authorization for the private portfolio API (WEB-D3 P0.2).
 
 The private write surface is single-user and loopback-only. Checking that an
 ``Origin``/``Referer`` hostname is "localhost" is not authorization: every page
@@ -8,11 +8,17 @@ API directly. This module adds the missing layers:
 * the TCP peer address must be loopback;
 * the ``Host`` header must be exactly the bound loopback host and port;
 * ``Origin``/``Referer``, when present, must match that origin exactly;
-* private reads and writes must carry the process-scoped session token handed
-  out by ``GET /api/v1/private/session``.
+* the workbench starts locked: the launcher mints a per-run bootstrap secret
+  and hands it to the browser through the URL fragment, and the server only
+  ever *verifies* it - no anonymous endpoint returns or mints a token;
+* ``POST /api/v1/private/session/unlock`` exchanges that secret for the
+  process-scoped session token;
+* private reads and writes must carry the session token on every request.
 
-The token only lives in server memory. Restarting the service, or calling
-logout, invalidates it; it is never written to disk, logs or Git.
+The bootstrap secret and the session token only live in server memory. Logout
+leaves the workbench locked, restarting the service generates a new secret that
+invalidates every old session, and neither value is written to disk, logs or
+Git.
 """
 from __future__ import annotations
 
@@ -27,11 +33,13 @@ from fastapi import Request
 SESSION_HEADER = "x-local-session"
 SESSION_TTL_SECONDS = 12 * 60 * 60.0
 TOKEN_BYTES = 32
+BOOTSTRAP_ENV = "VALUE_INVESTMENT_WEB_BOOTSTRAP"
 
 HOST_REJECTED = "HOST_REJECTED"
 CLIENT_NOT_LOOPBACK = "CLIENT_NOT_LOOPBACK"
 ORIGIN_REJECTED = "ORIGIN_REJECTED"
 AUTHORIZATION_REQUIRED = "LOCAL_AUTHORIZATION_REQUIRED"
+UNLOCK_REJECTED = "LOCAL_UNLOCK_REJECTED"
 
 
 class LocalAuthorizationError(Exception):
@@ -91,33 +99,58 @@ def origin_allowed(value: str | None, *, port: int) -> bool:
 
 
 class LocalOperatorSession:
-    """A single process-scoped bearer token for the local operator."""
+    """A locked-by-default session unlocked only by the launcher secret.
+
+    ``unlock`` is the only path that mints a bearer token, and it requires the
+    per-run secret that the launcher passes to both the server process and the
+    browser URL fragment. Nothing mints implicitly, so logout and restart are
+    real revocations rather than a re-fetch away from the previous token.
+    """
 
     def __init__(
         self,
         *,
+        bootstrap_secret: str | None = None,
         ttl_seconds: float = SESSION_TTL_SECONDS,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.ttl_seconds = ttl_seconds
         self._clock = clock
+        self._bootstrap_secret = bootstrap_secret or ""
         self._token = ""
         self._expires_at = 0.0
-        self.rotate()
 
     @property
     def token(self) -> str:
-        return self._token
+        return self._token if self._is_active() else ""
+
+    @property
+    def unlocked(self) -> bool:
+        return self._is_active()
+
+    @property
+    def has_bootstrap_secret(self) -> bool:
+        return bool(self._bootstrap_secret)
+
+    def _is_active(self) -> bool:
+        return bool(self._token) and self._clock() < self._expires_at
+
+    def unlock(self, presented: str | None) -> str:
+        """Exchange the launcher's per-run secret for a session token."""
+        if not self._bootstrap_secret:
+            raise LocalAuthorizationError(
+                AUTHORIZATION_REQUIRED,
+                "工作台未配置启动凭证，请通过 scripts/current/start_web_workbench.ps1 启动",
+            )
+        if not presented or not secrets.compare_digest(presented, self._bootstrap_secret):
+            raise LocalAuthorizationError(
+                UNLOCK_REJECTED, "启动凭证无效或已失效，请重新运行启动脚本"
+            )
+        return self.rotate()
 
     def rotate(self) -> str:
         self._token = secrets.token_hex(TOKEN_BYTES)
         self._expires_at = self._clock() + self.ttl_seconds
-        return self._token
-
-    def ensure_active(self) -> str:
-        """Return a usable token, minting a fresh one after logout or expiry."""
-        if not self._token or self._clock() >= self._expires_at:
-            return self.rotate()
         return self._token
 
     def invalidate(self) -> None:
@@ -125,9 +158,7 @@ class LocalOperatorSession:
         self._expires_at = 0.0
 
     def accepts(self, presented: str | None) -> bool:
-        if not presented or not self._token:
-            return False
-        if self._clock() >= self._expires_at:
+        if not presented or not self._is_active():
             return False
         return secrets.compare_digest(presented, self._token)
 

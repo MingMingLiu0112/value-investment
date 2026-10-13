@@ -1,7 +1,10 @@
-"""Unit tests for the local operator authorization primitives (WEB-D2 P0.1)."""
+"""Unit tests for the local operator authorization primitives (WEB-D3 P0.2)."""
 from __future__ import annotations
 
+import pytest
+
 from value_investment_agent.presentation.web_api.local_auth import (
+    LocalAuthorizationError,
     LocalOperatorSession,
     host_header_allowed,
     origin_allowed,
@@ -34,19 +37,40 @@ def test_origin_must_be_exactly_the_workbench_origin():
     assert not origin_allowed(None, port=8001)
 
 
-def test_session_tokens_rotate_invalidate_and_expire():
+def test_session_starts_locked_and_unlocks_only_with_the_launcher_secret():
     now = [1000.0]
-    session = LocalOperatorSession(ttl_seconds=60.0, clock=lambda: now[0])
-    first = session.token
+    secret = "launcher-secret"
+    session = LocalOperatorSession(bootstrap_secret=secret, ttl_seconds=60.0, clock=lambda: now[0])
+    assert session.token == ""
+    assert not session.unlocked
+    assert not session.accepts("0" * 64)
+    with pytest.raises(LocalAuthorizationError) as rejected:
+        session.unlock("not-the-secret")
+    assert rejected.value.code == "LOCAL_UNLOCK_REJECTED"
+    assert session.token == ""
+
+    first = session.unlock(secret)
     assert session.accepts(first)
+    assert session.unlocked
     assert not session.accepts("0" * 64)
     assert not session.accepts(None)
-    second = session.rotate()
-    assert second != first
-    assert not session.accepts(first)
-    assert session.accepts(second)
+
     session.invalidate()
-    assert not session.accepts(second)
-    third = session.rotate()
+    assert not session.accepts(first)
+    assert session.token == ""
+    assert not session.unlocked
+    second = session.unlock(secret)
+    assert second != first
+    assert session.accepts(second)
     now[0] += 61.0
-    assert not session.accepts(third)
+    assert not session.accepts(second)
+    assert session.token == ""
+
+
+def test_session_without_a_launcher_secret_can_never_unlock():
+    session = LocalOperatorSession(ttl_seconds=60.0)
+    assert not session.has_bootstrap_secret
+    with pytest.raises(LocalAuthorizationError) as rejected:
+        session.unlock("anything")
+    assert rejected.value.code == "LOCAL_AUTHORIZATION_REQUIRED"
+    assert session.token == ""

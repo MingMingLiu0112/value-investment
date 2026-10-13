@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-type Call = { url: string; header?: string };
+type Call = { url: string; header?: string; body?: string };
+
+const SECRET = "unlock-secret-0123456789abcdef";
+const UNLOCK_URL = "/api/v1/private/session/unlock";
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -9,31 +12,57 @@ function json(status: number, body: unknown): Response {
   });
 }
 
-describe("private GET session handling", () => {
+function stubWindow(hash: string) {
+  const store = new Map<string, string>();
+  const replaceState = vi.fn();
+  vi.stubGlobal("window", {
+    location: { hash, pathname: "/daily", search: "" },
+    history: { replaceState },
+    sessionStorage: {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, value);
+      },
+      removeItem: (key: string) => {
+        store.delete(key);
+      },
+    } as unknown as Storage,
+  });
+  return { store, replaceState };
+}
+
+describe("private session unlock handling", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.unstubAllGlobals();
   });
 
-  it("sends X-Local-Session on GET /portfolio and retries once after 401", async () => {
+  it("exchanges the unlock fragment once and retries a refused read once", async () => {
+    const { replaceState } = stubWindow(`#unlock=${SECRET}`);
     const calls: Call[] = [];
-    let handshakes = 0;
+    let unlocks = 0;
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         const headers = (init?.headers ?? {}) as Record<string, string>;
-        const header = headers["X-Local-Session"];
-        calls.push({ url, header });
-        if (url === "/api/v1/private/session") {
-          handshakes += 1;
+        calls.push({
+          url,
+          header: headers["X-Local-Session"],
+          body: typeof init?.body === "string" ? init.body : undefined,
+        });
+        if (url === UNLOCK_URL) {
+          unlocks += 1;
+          expect(JSON.parse(String(init?.body))).toEqual({
+            bootstrap_token: SECRET,
+          });
           return json(200, {
             action: "no_order",
             status: "AUTHORIZED",
-            token: "token-" + handshakes,
+            token: "token-" + unlocks,
           });
         }
-        if (header === "token-2") {
+        if (headers["X-Local-Session"] === "token-2") {
           return json(200, { action: "no_order", status: "NOT_CONNECTED" });
         }
         return json(401, {
@@ -48,18 +77,22 @@ describe("private GET session handling", () => {
     expect(body.status).toBe("NOT_CONNECTED");
     const reads = calls.filter((call) => call.url === "/api/v1/portfolio");
     expect(reads.map((call) => call.header)).toEqual(["token-1", "token-2"]);
-    expect(handshakes).toBe(2);
+    expect(unlocks).toBe(2);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/daily");
   });
 
-  it("uses the token for GET /private/portfolio/risk", async () => {
+  it("reuses the stored session token for the private risk read", async () => {
+    const { store } = stubWindow(`#unlock=${SECRET}`);
     const calls: Call[] = [];
+    let unlocks = 0;
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         const headers = (init?.headers ?? {}) as Record<string, string>;
         calls.push({ url, header: headers["X-Local-Session"] });
-        if (url === "/api/v1/private/session") {
+        if (url === UNLOCK_URL) {
+          unlocks += 1;
           return json(200, {
             action: "no_order",
             status: "AUTHORIZED",
@@ -81,8 +114,19 @@ describe("private GET session handling", () => {
     expect(
       calls.filter((call) => call.url === "/api/v1/private/portfolio/risk"),
     ).toEqual([{ url: "/api/v1/private/portfolio/risk", header: "token-1" }]);
-    expect(
-      calls.filter((call) => call.url === "/api/v1/private/session"),
-    ).toHaveLength(1);
+    expect(unlocks).toBe(1);
+    expect(store.get("vi-local-session")).toBe("token-1");
+  });
+
+  it("fails closed when the page was opened without an unlock link", async () => {
+    stubWindow("");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => json(401, { action: "no_order", status: "LOCKED" })),
+    );
+    const { api } = await import("../src/services/api");
+    await expect(api.portfolio()).rejects.toMatchObject({
+      code: "LOCAL_SESSION_LOCKED",
+    });
   });
 });
