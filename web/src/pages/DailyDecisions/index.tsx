@@ -1,14 +1,21 @@
-import { Alert, Col, Row, Statistic, Typography } from "antd";
+import { Alert, Col, List, Row, Statistic, Typography } from "antd";
 import type { PropsWithChildren } from "react";
 import { Workbench } from "../../components/Workbench";
 import { RemoteState } from "../../components/RemoteState";
 import { DecisionCard } from "../../components/DecisionCard";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
+import { formatMoney } from "../../utils/format";
 import { dailyStatus } from "../../utils/status";
 import { codeText, describeCode } from "../../utils/codes";
 
 const HOLDINGS_BLOCKER = "PRIVATE_PORTFOLIO_NOT_CONNECTED";
+const PRICE_UNKNOWN = "未知（未接入经核验行情）";
+
+const SLEEVE_TEXT: Record<string, string> = {
+  CORE_VALUE: "价值池",
+  HOTSPOT_SATELLITE: "情绪卫星仓",
+};
 
 function Section({ title, children }: PropsWithChildren<{ title: string }>) {
   return (
@@ -32,6 +39,107 @@ function ReasonList({ blockers }: { blockers: string[] }) {
 
 function opportunityReasons(blockers: string[]): string[] {
   return blockers.filter((code) => code !== HOLDINGS_BLOCKER);
+}
+
+/**
+ * ① 持仓需要关注的事项。私人台账只在已授权的本机会话内读取；
+ * 未接入经核验收盘价时只复核台账事实，不给出任何加减仓建议。
+ */
+function HoldingsSection() {
+  const portfolio = useApi(api.portfolio);
+  const risk = useApi(api.risk);
+  if (portfolio.error) {
+    return (
+      <Alert
+        type="warning"
+        showIcon
+        message="私人台账读取失败"
+        description={portfolio.error}
+      />
+    );
+  }
+  const data = portfolio.data;
+  if (!data) {
+    return <Typography.Text type="secondary">正在读取私人台账…</Typography.Text>;
+  }
+  if (data.status !== "CONNECTED") {
+    const blocker = data.blockers.find((code) => code !== "PRICE_NOT_ADMITTED");
+    return (
+      <Alert
+        type="info"
+        showIcon
+        message={blocker ? (codeText(blocker) ?? "私人组合尚未接入") : "私人组合尚未接入"}
+        description="持仓关注事项来自你本人确认的私人台账；在接入并确认持仓之前，这里没有内容可展示，也不代表你的组合为空。"
+      />
+    );
+  }
+  const blockers = [
+    ...(risk.data?.blockers ?? []),
+    ...(risk.data?.engine?.blockers ?? []),
+  ].filter((code, index, all) => all.indexOf(code) === index);
+  return (
+    <>
+      <Alert
+        type="warning"
+        showIcon
+        message="持仓已接入，但行情未准入"
+        description={
+          (data.valuation?.reason || "尚未接入经核验的当前行情。") +
+          " 在经核验的收盘价接入前，这里只复核台账事实，不给出加减仓建议。"
+        }
+      />
+      <List
+        size="small"
+        style={{ marginTop: 12 }}
+        dataSource={data.positions}
+        locale={{ emptyText: "已确认台账中暂无持仓。" }}
+        renderItem={(position) => (
+          <List.Item key={position.symbol + position.exchange}>
+            <List.Item.Meta
+              title={
+                position.symbol +
+                " · " +
+                position.exchange +
+                " · 总股数 " +
+                position.quantity
+              }
+              description={
+                "成本合计 " +
+                formatMoney(position.cost_cny) +
+                " 元 · 市值/浮动盈亏：" +
+                PRICE_UNKNOWN +
+                (position.sleeves.length
+                  ? " · " +
+                    position.sleeves
+                      .map(
+                        (row) =>
+                          (SLEEVE_TEXT[row.sleeve] ?? row.sleeve) +
+                          " " +
+                          row.quantity +
+                          " 股",
+                      )
+                      .join("；")
+                  : "")
+              }
+            />
+          </List.Item>
+        )}
+      />
+      <Typography.Text type="secondary" style={{ display: "block", marginTop: 8 }}>
+        台账版本 {data.revision} · 持仓基准日 {data.as_of || "未提供"}
+      </Typography.Text>
+      <div style={{ marginTop: 12 }}>
+        <Typography.Text>双策略风险复核暂缓，还缺以下输入：</Typography.Text>
+        {blockers.length ? (
+          <ReasonList blockers={blockers} />
+        ) : (
+          <Typography.Text type="secondary" style={{ display: "block" }}>
+            {risk.loading ? "正在读取风险复核…" : "风险引擎未返回缺失项。"}
+          </Typography.Text>
+        )}
+      </div>
+    </>
+  );
 }
 
 export default function DailyDecisions() {
@@ -77,20 +185,8 @@ export default function DailyDecisions() {
                 data.sections.holdings.map((item) => (
                   <DecisionCard key={item.id} item={item} />
                 ))
-              ) : data.blockers.includes(HOLDINGS_BLOCKER) ? (
-                <Alert
-                  type="info"
-                  showIcon
-                  message="私人组合尚未接入"
-                  description="持仓关注事项来自你本人确认的私人台账；在接入并确认持仓之前，这里没有内容可展示，也不代表你的组合为空。"
-                />
               ) : (
-                <Alert
-                  type="info"
-                  showIcon
-                  message="暂无经核验的持仓关注事项"
-                  description="当前台账中没有触发关注条件的持仓。"
-                />
+                <HoldingsSection />
               )}
             </Section>
 
