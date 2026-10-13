@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from value_investment_agent.presentation.read_models.research_history import build_research_history
@@ -207,6 +208,24 @@ def test_corrupt_proposal_is_reported_not_silently_dropped(tmp_path):
          "reason": "UNKNOWN_SCHEMA"}]
 
 
+def _published_runtime_artifacts_present() -> bool:
+    """The verified publication lives under the git-ignored runtime/ tree.
+
+    A bare source checkout keeps the pointer but not the receipt, so the live
+    test skips instead of inventing a publication or treating its absence as a
+    pass.
+    """
+    try:
+        pointer = json.loads(
+            (ROOT / "config" / "current-trial-workbook.json").read_text(encoding="utf-8"))
+        receipt = pointer["current_publication"]["receipt"]
+    except (OSError, KeyError, TypeError, ValueError):
+        return False
+    return isinstance(receipt, str) and (ROOT / receipt).is_file()
+
+
+@pytest.mark.skipif(not _published_runtime_artifacts_present(),
+                    reason="runtime publication artifacts are absent from this checkout")
 def test_live_history_binds_real_published_decisions():
     body = TestClient(create_app(ROOT)).get("/api/v1/decision-history").json()
     assert body["status"] == "CONNECTED"
