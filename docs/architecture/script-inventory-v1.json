@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 14,
     "CURRENT_PRODUCT_CLI": 13,
-    "CURRENT_RESEARCH_CLI": 209,
+    "CURRENT_RESEARCH_CLI": 210,
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 217,
     "MIGRATION_TOOL": 13,
@@ -15,6 +15,19 @@
     "DELETE_CANDIDATE": 0
   },
   "entries": [
+    {
+      "path": "scripts/current/pin_current_quote_bridge.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json"
+      ],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "LOW",
+      "line_count": 40,
+      "sha256": "a5e5082239ee1e91d3afa4a47702d28ffd7f551e114484e227f1340f5c104309"
+    },
     {
       "path": "scripts/current/verify_product_navigation.ps1",
       "category": "DIAGNOSTIC_TOOL",
