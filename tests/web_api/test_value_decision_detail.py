@@ -239,10 +239,36 @@ def test_price_comparison_needs_both_the_admission_and_the_published_bridge(
     research = ready.get("/api/v1/decisions/600519").json()["decision"]["research"]
     assert research["price_bridge_execution"]["price_admitted"] is True
     assert research["price_bridge_execution"]["comparison_eligible"] is True
+    assert research["price_bridge_execution"]["compatibility"] is None
 
     pending = _fixture(tmp_path / "second",
                        explanation_extra=_bridge_context(monkeypatch, "PENDING_EXTERNAL_DATA"))
     research = pending.get("/api/v1/decisions/600519").json()["decision"]["research"]
     assert research["price_bridge_execution"]["price_admitted"] is True
     assert research["price_bridge_execution"]["comparison_eligible"] is False
+
+
+def test_price_compatibility_ladder_reaches_the_page_verbatim(tmp_path, monkeypatch):
+    from value_investment_agent.presentation.web_api import app as web_app
+
+    def _with_ladder(root, symbol, *, today):
+        payload = _admitted(root, symbol, today=today)
+        payload["compatibility"] = {
+            "verified_quote": {"eligible": True, "reason": "双源核验通过"},
+            "research_compatible": {"eligible": False, "reason": "报价晚于研究截止日"},
+            "historical_reconstruction_eligible": {"eligible": False, "reason": "未覆盖"},
+            "comparison_eligible": {"eligible": False, "reason": "尚未准入"},
+            "formal_decision_eligible": {"eligible": False, "reason": "需人工门"},
+        }
+        return payload
+
+    monkeypatch.setattr(web_app, "execute_quote_bridge_for_symbol", _with_ladder)
+    research = _fixture(tmp_path).get("/api/v1/decisions/600519").json()["decision"]["research"]
+    ladder = research["price_bridge_execution"]["compatibility"]
+    assert ladder["verified_quote"]["eligible"] is True
+    assert ladder["research_compatible"] == {"eligible": False, "reason": "报价晚于研究截止日"}
+    assert ladder["formal_decision_eligible"]["eligible"] is False
+    # A ladder entry never upgrades a price, margin or position by itself.
+    assert research["price"]["current_price"] is None
+    assert research["margin_to_base"] is None
 

@@ -53,6 +53,8 @@ jobs:
           tests/test_reported_earnings_cash_trends.py
           tests/test_valuation_result.py
           tests/test_price_bridge.py
+          tests/test_quote_bridge_execution.py
+          tests/test_research_validity_review.py
           tests/test_research_profile.py
           tests/test_distribution.py
           tests/test_valuation_confidence.py

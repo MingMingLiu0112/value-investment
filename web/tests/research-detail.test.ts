@@ -3,6 +3,7 @@ import {
   blockerText,
   bridgeExecutionView,
   bridgeStatusLabel,
+  compatibilityLadder,
   formatScenarioValue,
   gateRowViews,
   gateStatusLabel,
@@ -246,5 +247,24 @@ describe("price bridge execution view", () => {
     });
     expect(view?.comparable).toBe(true);
     expect(view?.comparableLabel).toBe("已具备比较资格");
+  });
+
+  it("keeps the compatibility ladder steps separate and hides absent ones", () => {
+    const ladder = compatibilityLadder({
+      verified_quote: { eligible: true, reason: "双源核验通过" },
+      research_compatible: { eligible: false, reason: "报价晚于研究截止日" },
+      comparison_eligible: { eligible: false, reason: "尚未准入" },
+      formal_decision_eligible: { eligible: false, reason: "需人工门" },
+    });
+    expect(ladder.map((row) => row.key)).toEqual([
+      "verified_quote",
+      "research_compatible",
+      "comparison_eligible",
+      "formal_decision_eligible",
+    ]);
+    expect(ladder[0].eligible).toBe(true);
+    expect(ladder[1].reason).toBe("报价晚于研究截止日");
+    expect(compatibilityLadder(null)).toEqual([]);
+    expect(compatibilityLadder(undefined)).toEqual([]);
   });
 });

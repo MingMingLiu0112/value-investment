@@ -122,6 +122,62 @@ def _research_case_binding(root: Path, entry: dict[str, Any]) -> dict[str, Any]:
             "package_version": package.get("package_version"), "research_as_of": research_day}
 
 
+def quote_compatibility_ladder(verdict: dict[str, Any],
+                               research_day: str | None) -> dict[str, dict[str, Any]]:
+    """Split the four compatibility questions that must never be conflated.
+
+    VERIFIED_QUOTE: the archived close itself passed dual-source verification.
+    RESEARCH_COMPATIBLE: the registered research cutoff covers the quote date.
+    COMPARISON_ELIGIBLE: an admitted same-session close may feed a price
+    comparison (the published bridge still has the final say).
+    FORMAL_DECISION_ELIGIBLE: needs the human G3 approval and the decision
+    gates; this execution layer never grants it.
+    """
+    status = verdict.get("status")
+    quote_date = verdict.get("quote_date")
+    verified = status in {"QUOTE_VERIFIED_FOR_RESEARCH_INPUT",
+                          "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
+                          "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"}
+    compatible = bool(verified and isinstance(quote_date, str) and isinstance(research_day, str)
+                      and quote_date <= research_day)
+    admitted = verdict.get("price_admitted") is True
+    if verified:
+        verified_reason = "双源收盘行情已通过核验并归档。"
+    else:
+        verified_reason = str(verdict.get("reason") or "行情未通过双源核验。")
+    if compatible:
+        compatible_reason = f"登记研究截止日 {research_day} 覆盖报价日 {quote_date}。"
+    elif verified:
+        compatible_reason = (f"报价日 {quote_date} 晚于登记研究截止日 {research_day}；"
+                             "须先完成研究重登记与事件复核。")
+    else:
+        compatible_reason = "报价未通过核验，无法判断研究覆盖。"
+    if compatible and admitted:
+        comparison_reason = "行情已准入且研究覆盖报价日；价格比较仍以已发布桥接为准。"
+    elif compatible:
+        comparison_reason = "研究覆盖报价日，但该收盘不是当前可比价（仅展示）；不构成价格比较资格。"
+    else:
+        comparison_reason = compatible_reason
+    if compatible:
+        historical_reason = (f"归档收盘 {quote_date} 在登记研究截止日 {research_day} 之内；"
+                             "可用于历史重建对比（HISTORICAL_RECONSTRUCTION），不是当前决策依据。")
+    elif verified:
+        historical_reason = compatible_reason
+    else:
+        historical_reason = "报价未通过核验，无法用于历史重建对比。"
+    return {
+        "verified_quote": {"eligible": verified, "reason": verified_reason},
+        "research_compatible": {"eligible": compatible, "reason": compatible_reason},
+        "historical_reconstruction_eligible": {"eligible": compatible, "reason": historical_reason},
+        "comparison_eligible": {"eligible": bool(compatible and admitted),
+                                "reason": comparison_reason},
+        "formal_decision_eligible": {
+            "eligible": False,
+            "reason": "正式投资决策资格需 G3 人工批准与决策门通过；执行层不评估、不预支。",
+        },
+    }
+
+
 def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime) -> dict[str, Any]:
     """Run the shared admission for one symbol against the pinned registration.
 
@@ -135,6 +191,7 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
         "status": "POINTER_UNAVAILABLE", "reason": "未登记当前行情绑定。",
         "price_admitted": False, "research_case": None, "research_day": None,
         "quote": None, "pointer": None, "sources": [],
+        "compatibility": None,
         "next_step": _NEXT_STEPS["POINTER_UNAVAILABLE"]}
     pointer_path = root / POINTER_PATH
     try:
@@ -178,6 +235,7 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
                 "quote_date", "display_price", "collected_at", "display_scope",
                 "is_historical_close", "latest_completed_session", "bundle_path", "bundle_sha256")},
             "sources": verdict.get("source_evidence") or [],
+            "compatibility": quote_compatibility_ladder(verdict, case["research_as_of"]),
             "next_step": _NEXT_STEPS.get(status, "按以上原因复核后重跑价格桥接。")}
 
 

@@ -1,4 +1,5 @@
 import type {
+  PriceBridgeCompatibility,
   PriceBridgeExecution,
   ResearchGateRow,
   ResearchReadingRow,
@@ -24,6 +25,12 @@ export interface BridgeExecutionView {
   comparableLabel: string;
   comparable: boolean;
   rows: Array<{ key: string; label: string; value: string }>;
+  ladder: Array<{
+    key: string;
+    label: string;
+    eligible: boolean;
+    reason: string | null;
+  }>;
   reason: string | null;
   nextStep: string | null;
   sources: Array<{ label: string; url: string; sha256: string | null }>;
@@ -124,10 +131,51 @@ export function bridgeExecutionView(
     comparable,
     comparableLabel: comparable ? "已具备比较资格" : "尚不具备比较资格",
     rows,
+    ladder: compatibilityLadder(execution.compatibility),
     reason: text(execution.reason),
     nextStep: text(execution.next_step),
     sources,
   };
+}
+
+const LADDER_LABELS: Array<{
+  key: keyof PriceBridgeCompatibility;
+  label: string;
+}> = [
+  { key: "verified_quote", label: "报价双源核验" },
+  { key: "research_compatible", label: "研究覆盖报价日" },
+  { key: "historical_reconstruction_eligible", label: "历史重建对比资格" },
+  { key: "comparison_eligible", label: "价格比较准入" },
+  { key: "formal_decision_eligible", label: "正式决策资格" },
+];
+
+/** 兼容性阶梯：只复制执行层的布尔结论，未提供的步骤不展示。 */
+export function compatibilityLadder(
+  compatibility?: PriceBridgeCompatibility | null,
+): Array<{
+  key: string;
+  label: string;
+  eligible: boolean;
+  reason: string | null;
+}> {
+  if (!compatibility || typeof compatibility !== "object") return [];
+  const rows: Array<{
+    key: string;
+    label: string;
+    eligible: boolean;
+    reason: string | null;
+  }> = [];
+  for (const step of LADDER_LABELS) {
+    const item = compatibility[step.key];
+    if (!item || typeof item.eligible !== "boolean") continue;
+    rows.push({
+      key: step.key,
+      label: step.label,
+      eligible: item.eligible,
+      reason: text(item.reason),
+    });
+  }
+  return rows;
 }
 
 /** The published decision process order is frozen by the read model. */

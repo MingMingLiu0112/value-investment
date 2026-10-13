@@ -110,6 +110,7 @@ export interface PriceBridgeExecution {
   next_step: string | null;
   price_admitted: boolean | null;
   comparison_eligible: boolean;
+  compatibility?: PriceBridgeCompatibility | null;
   quote_date: string | null;
   display_price: string | null;
   collected_at: string | null;
@@ -123,6 +124,19 @@ export interface PriceBridgeExecution {
   pointer_path: string | null;
   pointer_sha256: string | null;
   sources: PriceBridgeSource[];
+}
+
+export interface PriceBridgeCompatibilityStep {
+  eligible: boolean | null;
+  reason: string | null;
+}
+
+export interface PriceBridgeCompatibility {
+  verified_quote?: PriceBridgeCompatibilityStep | null;
+  research_compatible?: PriceBridgeCompatibilityStep | null;
+  historical_reconstruction_eligible?: PriceBridgeCompatibilityStep | null;
+  comparison_eligible?: PriceBridgeCompatibilityStep | null;
+  formal_decision_eligible?: PriceBridgeCompatibilityStep | null;
 }
 
 export interface ResearchReadingRow {

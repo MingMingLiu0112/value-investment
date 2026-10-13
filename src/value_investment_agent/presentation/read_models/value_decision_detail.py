@@ -118,6 +118,7 @@ def _price_bridge_execution(value: Any, published_bridge_status: Any) -> dict | 
         "next_step": _text(row.get("next_step")),
         "price_admitted": admitted,
         "comparison_eligible": bool(admitted and _text(published_bridge_status) == "READY"),
+        "compatibility": _compatibility(row.get("compatibility")),
         "quote_date": _text(quote.get("quote_date")),
         "display_price": _text(quote.get("display_price")),
         "collected_at": _text(quote.get("collected_at")),
@@ -133,6 +134,25 @@ def _price_bridge_execution(value: Any, published_bridge_status: Any) -> dict | 
         "pointer_sha256": _text(pointer.get("sha256")),
         "sources": _quote_sources(row.get("sources")),
     }
+
+
+LADDER_KEYS = ("verified_quote", "research_compatible", "historical_reconstruction_eligible",
+               "comparison_eligible", "formal_decision_eligible")
+
+
+def _compatibility(value: Any) -> dict | None:
+    """Carry the executed compatibility ladder verbatim; never invent a step."""
+    row = _object(value)
+    if not row:
+        return None
+    result = {}
+    for key in LADDER_KEYS:
+        item = _object(row.get(key))
+        eligible = item.get("eligible") if isinstance(item.get("eligible"), bool) else None
+        result[key] = {"eligible": eligible, "reason": _text(item.get("reason"))}
+    if all(value["eligible"] is None for value in result.values()):
+        return None
+    return result
 
 
 def project_value_decision_detail(*, symbol: str, company: dict | None,

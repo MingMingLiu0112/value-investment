@@ -523,6 +523,26 @@ function ResearchDecision({
                 }
               />
             ) : null}
+            {bridge.ladder.length > 0 && (
+              <>
+                <SubTitle>比较资格阶梯（逐级判定，互不替代）</SubTitle>
+                <Descriptions
+                  bordered
+                  column={1}
+                  size="small"
+                  items={bridge.ladder.map((row) => ({
+                    key: `ladder_${row.key}`,
+                    label: row.label,
+                    children: (
+                      <span>
+                        {row.eligible ? "通过" : "未通过"}
+                        {row.reason ? `：${row.reason}` : ""}
+                      </span>
+                    ),
+                  }))}
+                />
+              </>
+            )}
             {bridge.sources.length > 0 && (
               <>
                 <SubTitle>行情来源（双源已归档）</SubTitle>

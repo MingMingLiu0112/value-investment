@@ -59,6 +59,7 @@ def test_missing_registration_is_fail_closed(tmp_path):
     assert execution["status"] == "POINTER_UNAVAILABLE"
     assert execution["price_admitted"] is False
     assert execution["quote"] is None
+    assert execution["compatibility"] is None
     assert execution["action"] == "no_order"
 
 
@@ -101,6 +102,13 @@ def test_registered_quote_after_the_cutoff_is_displayed_but_not_admitted(tmp_pat
     assert execution["pointer"]["sha256"] == pinned["pointer_sha256"]
     assert execution["pointer"]["sha256"] == hashlib.sha256(
         (tmp_path / "config/current-quote-bridge.json").read_bytes()).hexdigest()
+    ladder = execution["compatibility"]
+    assert ladder["verified_quote"]["eligible"] is True
+    assert ladder["research_compatible"]["eligible"] is False
+    assert ladder["historical_reconstruction_eligible"]["eligible"] is False
+    assert ladder["comparison_eligible"]["eligible"] is False
+    assert ladder["formal_decision_eligible"]["eligible"] is False
+    assert "2026-10-11" in ladder["research_compatible"]["reason"]
 
 
 def test_close_inside_the_registered_cutoff_is_admitted(tmp_path, monkeypatch):
@@ -112,6 +120,12 @@ def test_close_inside_the_registered_cutoff_is_admitted(tmp_path, monkeypatch):
         tmp_path, "600887", today=datetime(2026, 10, 12, 9, 30, tzinfo=timezone.utc))
     assert execution["status"] == "QUOTE_VERIFIED_FOR_RESEARCH_INPUT"
     assert execution["price_admitted"] is True
+    ladder = execution["compatibility"]
+    assert ladder["verified_quote"]["eligible"] is True
+    assert ladder["research_compatible"]["eligible"] is True
+    assert ladder["historical_reconstruction_eligible"]["eligible"] is True
+    assert ladder["comparison_eligible"]["eligible"] is True
+    assert ladder["formal_decision_eligible"]["eligible"] is False
 
 
 @pytest.mark.skipif(
@@ -134,4 +148,8 @@ def test_real_600887_registration_stays_unadmitted_until_the_cutoff_covers_it():
     providers = {row.get("provider") for row in execution["sources"]
                  if row.get("kind") == "quote_provider_document"}
     assert providers == {"tencent", "sina"}
+    ladder = execution["compatibility"]
+    assert ladder["verified_quote"]["eligible"] is True
+    assert ladder["research_compatible"]["eligible"] is False
+    assert ladder["formal_decision_eligible"]["eligible"] is False
 
