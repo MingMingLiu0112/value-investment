@@ -12,6 +12,7 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
+import { DualSleeveRisk } from "../../components/DualSleeveRisk";
 import { FillPanel } from "../../components/FillPanel";
 import { PortfolioSetupForm } from "../../components/PortfolioSetupForm";
 import { PositionTable, sleeveLabel } from "../../components/PositionTable";
@@ -30,8 +31,14 @@ function failureMessage(cause: unknown, fallback: string): string {
 
 export default function Portfolio() {
   const { data, loading, error, retry } = useApi(api.portfolio);
+  const risk = useApi(api.risk);
   const [failure, setFailure] = useState<string>();
   const [reconciling, setReconciling] = useState(false);
+
+  const refreshAll = () => {
+    retry();
+    risk.retry();
+  };
 
   const reconcile = async () => {
     if (!data) return;
@@ -44,7 +51,7 @@ export default function Portfolio() {
         reconciled_at: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
         confirmation_note: "工作台人工对账",
       });
-      retry();
+      refreshAll();
     } catch (cause) {
       setFailure(failureMessage(cause, "对账失败"));
     } finally {
@@ -82,7 +89,7 @@ export default function Portfolio() {
                   message="私人组合尚未接入（NOT_CONNECTED）"
                   description="持仓、现金与成本均未经核对，因此不显示任何仓位建议。请在下方逐笔人工确认初始持仓。"
                 />
-                <PortfolioSetupForm onDone={retry} />
+                <PortfolioSetupForm onDone={refreshAll} />
               </>
             ) : (
               <>
@@ -188,7 +195,7 @@ export default function Portfolio() {
                 <FillPanel
                   revision={data.revision}
                   draft={data.pending_draft}
-                  onDone={retry}
+                  onDone={refreshAll}
                 />
                 <Space style={{ marginTop: 24 }}>
                   <Button
@@ -198,10 +205,16 @@ export default function Portfolio() {
                   >
                     生成对账快照
                   </Button>
-                  <Button onClick={retry}>刷新</Button>
+                  <Button onClick={refreshAll}>刷新</Button>
                 </Space>
               </>
             )}
+            <DualSleeveRisk
+              data={risk.data}
+              loading={risk.loading}
+              error={risk.error}
+              retry={risk.retry}
+            />
           </>
         )}
       </RemoteState>
