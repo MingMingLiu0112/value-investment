@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dualSleeveView } from "../src/utils/dualSleeve";
+import { dualSleeveMismatch, dualSleeveView } from "../src/utils/dualSleeve";
 import type { DailyDualSleeveSurface } from "../src/types/api";
 
 const NOT_CONNECTED: DailyDualSleeveSurface = {
@@ -80,5 +80,39 @@ describe("dual-sleeve daily surface view", () => {
   it("returns null when the publication carries no dual-sleeve section", () => {
     expect(dualSleeveView(undefined)).toBeNull();
     expect(dualSleeveView(null)).toBeNull();
+  });
+});
+
+describe("dual-sleeve publication vs live private ledger", () => {
+  it("flags a published-connected surface when the live ledger is missing", () => {
+    const mismatch = dualSleeveMismatch(
+      { ...NOT_CONNECTED, portfolio_connected: true },
+      "NOT_CONNECTED",
+    );
+    expect(mismatch).toContain("当前读不到真实台账");
+  });
+
+  it("flags a published-disconnected surface when the live ledger is readable", () => {
+    const mismatch = dualSleeveMismatch(NOT_CONNECTED, "CONNECTED");
+    expect(mismatch).toContain("尚未包含最新私人组合");
+    expect(
+      dualSleeveMismatch(NOT_CONNECTED, "BLOCKED_PRIVATE_INPUT"),
+    ).not.toBeNull();
+  });
+
+  it("stays silent while the ledger is locked, loading or unreadable", () => {
+    expect(dualSleeveMismatch(NOT_CONNECTED, "LOCKED")).toBeNull();
+    expect(dualSleeveMismatch(NOT_CONNECTED, "LOADING")).toBeNull();
+    expect(dualSleeveMismatch(NOT_CONNECTED, "UNAVAILABLE")).toBeNull();
+  });
+
+  it("stays silent when published and live states agree", () => {
+    expect(dualSleeveMismatch(NOT_CONNECTED, "NOT_CONNECTED")).toBeNull();
+    expect(
+      dualSleeveMismatch(
+        { ...NOT_CONNECTED, portfolio_connected: true },
+        "CONNECTED",
+      ),
+    ).toBeNull();
   });
 });

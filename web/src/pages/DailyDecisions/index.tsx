@@ -2,6 +2,7 @@ import { Link } from "@umijs/max";
 import {
   Alert,
   Col,
+  Collapse,
   Descriptions,
   List,
   Row,
@@ -14,15 +15,23 @@ import { Workbench } from "../../components/Workbench";
 import { RemoteState } from "../../components/RemoteState";
 import { DecisionCard } from "../../components/DecisionCard";
 import { useApi } from "../../hooks/useApi";
+import { usePrivateState } from "../../hooks/usePrivateState";
+import type { PrivateStateHandle } from "../../hooks/usePrivateState";
 import { api } from "../../services/api";
 import type {
   DailyDualSleeveSurface,
+  DailyPublicPacket,
   DailyResearchStatus,
 } from "../../types/api";
 import { formatMoney } from "../../utils/format";
 import { dailyStatus } from "../../utils/status";
 import { codeText, describeCode } from "../../utils/codes";
-import { dualSleeveView } from "../../utils/dualSleeve";
+import { dualSleeveMismatch, dualSleeveView } from "../../utils/dualSleeve";
+import {
+  blockerText,
+  freshnessLevel,
+  packetDateRows,
+} from "../../utils/packet";
 
 const HOLDINGS_BLOCKER = "PRIVATE_PORTFOLIO_NOT_CONNECTED";
 const PRICE_UNKNOWN = "未知（未接入经核验行情）";
@@ -46,7 +55,7 @@ function ReasonList({ blockers }: { blockers: string[] }) {
   return (
     <ul style={{ margin: 0, paddingLeft: 18 }}>
       {blockers.map((code) => (
-        <li key={code}>{codeText(code) ?? code}</li>
+        <li key={code}>{blockerText(code)}</li>
       ))}
     </ul>
   );
@@ -54,6 +63,240 @@ function ReasonList({ blockers }: { blockers: string[] }) {
 
 function opportunityReasons(blockers: string[]): string[] {
   return blockers.filter((code) => code !== HOLDINGS_BLOCKER);
+}
+
+const ACTOR_LABEL: Record<string, string> = {
+  HUMAN: "人工",
+  ENGINEERING: "工程",
+  EXTERNAL_DATA: "外部数据",
+};
+
+function nextStepRows(packet: DailyPublicPacket) {
+  const human: { key: string; text: string }[] = [];
+  const engineering: { key: string; text: string }[] = [];
+  let externalCount = 0;
+  for (const entry of Object.values(packet.company_statuses)) {
+    for (const action of entry.pending_actions) {
+      const key = `${entry.symbol}:${action.code}`;
+      const text = `${entry.name}（${entry.symbol}）：${action.label}`;
+      const actor = ACTOR_LABEL[action.actor] ?? action.actor;
+      if (action.actor === "HUMAN") human.push({ key, text });
+      else if (action.actor === "ENGINEERING")
+        engineering.push({ key, text: `【${actor}】${text}` });
+      else externalCount += 1;
+    }
+  }
+  return { rows: [...human, ...engineering].slice(0, 6), externalCount };
+}
+
+/**
+ * TL9 MVP-1 首屏：先回答“这批数据是什么版本、截止到哪天、下一步做什么”。
+ * 数据包不可用时 fail-closed，不显示任何推算内容。
+ */
+function PacketSection({
+  packet,
+  error,
+  retry,
+}: {
+  packet?: DailyPublicPacket;
+  error?: string;
+  retry: () => void;
+}) {
+  if (!packet) {
+    return (
+      <Alert
+        style={{ marginTop: 16 }}
+        type={error ? "error" : "info"}
+        showIcon
+        message={error ? "每日公开数据包读取失败" : "正在读取每日公开数据包…"}
+        description={
+          error ? (
+            <>
+              {error}
+              <a style={{ marginLeft: 12 }} onClick={retry}>
+                重试
+              </a>
+            </>
+          ) : undefined
+        }
+      />
+    );
+  }
+  if (packet.packet_status !== "CURRENT" || !packet.publication_id) {
+    return (
+      <Alert
+        style={{ marginTop: 16 }}
+        type="error"
+        showIcon
+        message="每日公开数据包不可用（fail-closed）"
+        description={
+          <>
+            <div>
+              发布链校验未通过：{packet.chain_error || "原因未提供"}
+              ；不会沿用旧版本数据。
+            </div>
+            {packet.blockers.length > 0 && (
+              <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
+                {packet.blockers.map((code) => (
+                  <li key={code}>{blockerText(code)}</li>
+                ))}
+              </ul>
+            )}
+          </>
+        }
+      />
+    );
+  }
+  const { rows, externalCount } = nextStepRows(packet);
+  const freshnessItems = [
+    { key: "quote", label: "行情", value: packet.data_freshness.quote },
+    { key: "research", label: "研究", value: packet.data_freshness.research },
+  ];
+  return (
+    <div style={{ marginTop: 16 }}>
+      <Descriptions size="small" bordered column={3}>
+        <Descriptions.Item label="数据版本">
+          {packet.publication_id}
+        </Descriptions.Item>
+        <Descriptions.Item label="研究版本">
+          {packet.research_version ?? "未提供"}
+        </Descriptions.Item>
+        <Descriptions.Item label="来源绑定">
+          {packet.source_bindings_verified
+            ? "全部哈希校验通过"
+            : "存在未通过校验的来源"}
+        </Descriptions.Item>
+        {packetDateRows(packet).map((row) => (
+          <Descriptions.Item key={row.label} label={row.label}>
+            {row.value}
+          </Descriptions.Item>
+        ))}
+      </Descriptions>
+      {freshnessItems.map((item) => {
+        const level = freshnessLevel(item.value.status);
+        if (level === "ok") return null;
+        return (
+          <Alert
+            key={item.key}
+            style={{ marginTop: 12 }}
+            type={level === "warning" ? "warning" : "info"}
+            showIcon
+            message={`${item.label}新鲜度：${item.value.status}`}
+            description={item.value.reason ?? "未提供补充说明"}
+          />
+        );
+      })}
+      <Row gutter={24} style={{ marginTop: 16 }}>
+        <Col span={6}>
+          <Statistic
+            title="正式准入公司"
+            value={packet.formal_admission_count}
+          />
+        </Col>
+        <Col span={6}>
+          <Statistic title="待人工复核" value={packet.pending_review_count} />
+        </Col>
+        <Col span={6}>
+          <Statistic
+            title="需要重新研究"
+            value={packet.research_counts.needs_re_research_count}
+          />
+        </Col>
+        <Col span={6}>
+          <Statistic
+            title="研究观察线索"
+            value={packet.research_counts.lead_count ?? "不可用"}
+          />
+        </Col>
+      </Row>
+      {rows.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <Typography.Text strong>下一步怎么做（真实待办）</Typography.Text>
+          <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
+            {rows.map((row) => (
+              <li key={row.key}>{row.text}</li>
+            ))}
+          </ul>
+          {externalCount > 0 && (
+            <Typography.Text type="secondary">
+              另有 {externalCount} 项等待外部数据（已验证收盘行情或官方披露）。
+            </Typography.Text>
+          )}
+        </div>
+      )}
+      {packet.blockers.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <Typography.Text type="secondary">
+            当前阻止正式买卖信号的事项：
+          </Typography.Text>
+          <ReasonList blockers={packet.blockers} />
+        </div>
+      )}
+      <Collapse
+        ghost
+        style={{ marginTop: 8 }}
+        items={[
+          {
+            key: "technical",
+            label: (
+              <Typography.Text strong>证据与技术详情（可展开）</Typography.Text>
+            ),
+            children: (
+              <Descriptions
+                bordered
+                column={1}
+                size="small"
+                items={[
+                  {
+                    key: "schema",
+                    label: "数据包结构",
+                    children: packet.schema_version,
+                  },
+                  {
+                    key: "engine",
+                    label: "引擎版本",
+                    children: packet.engine_version ?? "未提供",
+                  },
+                  {
+                    key: "generated",
+                    label: "生成时间",
+                    children: packet.generated_at,
+                  },
+                  {
+                    key: "quote_bridge",
+                    label: "行情桥登记",
+                    children: packet.quote_bridge
+                      ? `${packet.quote_bridge.path}（${packet.quote_bridge.quotes_registered} 条，登记于 ${
+                          packet.quote_bridge.registered_at ?? "未提供"
+                        }，SHA-256 ${packet.quote_bridge.sha256 ?? "未提供"}）`
+                      : "未提供",
+                  },
+                  {
+                    key: "bindings",
+                    label: "来源绑定（角色 / 路径 / SHA-256）",
+                    children: (
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {(packet.source_bindings ?? []).map((binding) => (
+                          <li key={binding.role + binding.path}>
+                            {binding.role}：{binding.path}
+                            {binding.sha256_verified === false
+                              ? "（哈希校验未通过）"
+                              : binding.present === false
+                                ? "（文件缺失）"
+                                : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    ),
+                  },
+                ]}
+              />
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
 }
 
 /**
@@ -68,6 +311,19 @@ function ResearchStatusSection({ status }: { status?: DailyResearchStatus }) {
         showIcon
         message="暂无可用的研究状态"
         description="研究状态来自已登记的研究-行情绑定；读取不到时不推测任何公司的覆盖情况。"
+      />
+    );
+  }
+  if (status.status === "REGISTRY_UNAVAILABLE") {
+    return (
+      <Alert
+        type="warning"
+        showIcon
+        message="行情登记文件不可读（登记状态未知）"
+        description={
+          (status.reason || "行情登记文件无法读取。") +
+          " 这不代表没有登记，也不代表登记为空；修复登记文件后重新运行每日工作台。"
+        }
       />
     );
   }
@@ -132,55 +388,81 @@ function ResearchStatusSection({ status }: { status?: DailyResearchStatus }) {
  * ① 持仓需要关注的事项。私人台账只在已授权的本机会话内读取；
  * 未接入经核验收盘价时只复核台账事实，不给出任何加减仓建议。
  */
-function HoldingsSection() {
-  const portfolio = useApi(api.portfolio);
-  const risk = useApi(api.risk);
-  if (portfolio.error) {
+function HoldingsSection({ state }: { state: PrivateStateHandle }) {
+  const retryLink = (
+    <a style={{ marginLeft: 12 }} onClick={state.retry}>
+      重试
+    </a>
+  );
+  if (state.kind !== "CONNECTED" && state.kind !== "BLOCKED_PRIVATE_INPUT") {
+    const type =
+      state.kind === "UNAVAILABLE"
+        ? "warning"
+        : state.kind === "LOCKED"
+          ? "info"
+          : "info";
+    const message =
+      state.kind === "LOCKED"
+        ? "私人工作台已锁定（尚未解锁）"
+        : state.kind === "NOT_CONNECTED"
+          ? "尚未接入真实私人组合"
+          : state.kind === "UNAVAILABLE"
+            ? "私人状态读取失败"
+            : "正在读取私人状态…";
     return (
       <Alert
-        type="warning"
+        type={type}
         showIcon
-        message="私人台账读取失败"
-        description={portfolio.error}
+        message={message}
+        description={
+          <>
+            {state.detail}
+            {state.nextStep ? (
+              <div style={{ marginTop: 4 }}>{state.nextStep}</div>
+            ) : null}
+            {state.blockers.length > 0 && (
+              <ReasonList blockers={state.blockers} />
+            )}
+            {retryLink}
+          </>
+        }
       />
     );
   }
-  const data = portfolio.data;
+  const data = state.portfolio;
   if (!data) {
     return (
       <Typography.Text type="secondary">正在读取私人台账…</Typography.Text>
     );
   }
-  if (data.status !== "CONNECTED") {
-    const blocker = data.blockers.find((code) => code !== "PRICE_NOT_ADMITTED");
-    return (
-      <Alert
-        type="info"
-        showIcon
-        message={
-          blocker
-            ? (codeText(blocker) ?? "私人组合尚未接入")
-            : "私人组合尚未接入"
-        }
-        description="持仓关注事项来自你本人确认的私人台账；在接入并确认持仓之前，这里没有内容可展示，也不代表你的组合为空。"
-      />
-    );
-  }
+  const risk = state.risk;
   const blockers = [
-    ...(risk.data?.blockers ?? []),
-    ...(risk.data?.engine?.blockers ?? []),
+    ...(risk?.blockers ?? []),
+    ...(risk?.engine?.blockers ?? []),
   ].filter((code, index, all) => all.indexOf(code) === index);
+  const priceNotAdmitted =
+    data.valuation?.status === "PRICE_NOT_ADMITTED" ||
+    data.blockers.includes("PRICE_NOT_ADMITTED");
   return (
     <>
-      <Alert
-        type="warning"
-        showIcon
-        message="持仓已接入，但行情未准入"
-        description={
-          (data.valuation?.reason || "尚未接入经核验的当前行情。") +
-          " 在经核验的收盘价接入前，这里只复核台账事实，不给出加减仓建议。"
-        }
-      />
+      {state.kind === "BLOCKED_PRIVATE_INPUT" ? (
+        <Alert
+          type="warning"
+          showIcon
+          message={state.label}
+          description={state.detail}
+        />
+      ) : priceNotAdmitted ? (
+        <Alert
+          type="warning"
+          showIcon
+          message="持仓已接入，但行情未准入"
+          description={
+            (data.valuation?.reason || "尚未接入经核验的当前行情。") +
+            " 在经核验的收盘价接入前，这里只复核台账事实，不给出加减仓建议。"
+          }
+        />
+      ) : null}
       <List
         size="small"
         style={{ marginTop: 12 }}
@@ -224,16 +506,26 @@ function HoldingsSection() {
       >
         台账版本 {data.revision} · 持仓基准日 {data.as_of || "未提供"}
       </Typography.Text>
-      <div style={{ marginTop: 12 }}>
-        <Typography.Text>双策略风险复核暂缓，还缺以下输入：</Typography.Text>
-        {blockers.length ? (
+      {blockers.length ? (
+        <div style={{ marginTop: 12 }}>
+          <Typography.Text>双策略风险复核暂缓，还缺以下输入：</Typography.Text>
           <ReasonList blockers={blockers} />
-        ) : (
-          <Typography.Text type="secondary" style={{ display: "block" }}>
-            {risk.loading ? "正在读取风险复核…" : "风险引擎未返回缺失项。"}
-          </Typography.Text>
-        )}
-      </div>
+        </div>
+      ) : risk ? (
+        <Typography.Text
+          type="secondary"
+          style={{ display: "block", marginTop: 12 }}
+        >
+          双策略风险复核未返回缺失输入。
+        </Typography.Text>
+      ) : (
+        <Typography.Text
+          type="warning"
+          style={{ display: "block", marginTop: 12 }}
+        >
+          双策略风险复核读取失败；读取成功前不展示任何仓位结论，请重试。
+        </Typography.Text>
+      )}
     </>
   );
 }
@@ -241,8 +533,15 @@ function HoldingsSection() {
 /**
  * 双策略资金池只复述发布物正式绑定的风险复核结果；私人组合未接入时
  * 明确说明不会给出任何仓位数字，并列出下一步需要用户提供的输入。
+ * 发布物状态与当前私人台账明显不一致时，单独提示需要重新运行复核。
  */
-function DualSleeveSection({ surface }: { surface?: DailyDualSleeveSurface }) {
+function DualSleeveSection({
+  surface,
+  privateKind,
+}: {
+  surface?: DailyDualSleeveSurface;
+  privateKind: PrivateStateHandle["kind"];
+}) {
   const view = dualSleeveView(surface);
   if (!surface || !view) {
     return (
@@ -254,6 +553,7 @@ function DualSleeveSection({ surface }: { surface?: DailyDualSleeveSurface }) {
       />
     );
   }
+  const mismatch = dualSleeveMismatch(surface, privateKind);
   return (
     <>
       <Descriptions
@@ -277,6 +577,15 @@ function DualSleeveSection({ surface }: { surface?: DailyDualSleeveSurface }) {
           },
         ]}
       />
+      {mismatch && (
+        <Alert
+          style={{ marginTop: 12 }}
+          type="warning"
+          showIcon
+          message="发布物与当前私人台账不一致"
+          description={mismatch}
+        />
+      )}
       {view.guidanceMissingReason && (
         <Alert
           style={{ marginTop: 12 }}
@@ -303,16 +612,20 @@ function DualSleeveSection({ surface }: { surface?: DailyDualSleeveSurface }) {
 
 export default function DailyDecisions() {
   const { data, loading, error, retry } = useApi(api.daily);
+  const packetState = useApi(api.packet);
+  const privateState = usePrivateState();
   const status = data ? dailyStatus(data) : undefined;
   return (
     <Workbench>
       <Typography.Title level={2}>每日建议</Typography.Title>
+      <PacketSection
+        packet={packetState.data}
+        error={packetState.error}
+        retry={packetState.retry}
+      />
       <RemoteState loading={loading} error={error} retry={retry}>
         {data && (
           <>
-            <Typography.Text type="secondary">
-              数据截至：{data.as_of || "未提供"}
-            </Typography.Text>
             <Alert
               style={{ marginTop: 16 }}
               type="info"
@@ -352,12 +665,15 @@ export default function DailyDecisions() {
                   <DecisionCard key={item.id} item={item} />
                 ))
               ) : (
-                <HoldingsSection />
+                <HoldingsSection state={privateState} />
               )}
             </Section>
 
             <Section title="双策略资金池与仓位护栏">
-              <DualSleeveSection surface={data.dual_sleeve} />
+              <DualSleeveSection
+                surface={data.dual_sleeve}
+                privateKind={privateState.kind}
+              />
             </Section>
 
             <Section title="② 价值投资机会">
@@ -419,6 +735,7 @@ export default function DailyDecisions() {
                 }}
               >
                 <li>status: {data.status}</li>
+                <li>研究队列快照日期: {data.as_of || "未提供"}</li>
                 <li>market.status: {data.market.status}</li>
                 <li>market.reason: {data.market.reason ?? "未提供"}</li>
                 <li>

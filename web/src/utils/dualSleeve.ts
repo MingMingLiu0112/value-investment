@@ -1,6 +1,7 @@
 import type { DailyDualSleeveSurface } from "../types/api";
 import { codeText } from "./codes";
 import { statusLabel } from "./presentation";
+import type { PrivateStateKind } from "./privateState";
 
 /**
  * 双策略状态只做“翻译 + 解释”，不计算任何资金池、持仓或仓位；
@@ -25,6 +26,26 @@ const NEXT_INPUT_TEXT: Record<string, string> = {
 
 function blockerTexts(blockers: string[]): string[] {
   return blockers.map((code) => codeText(code) ?? code);
+}
+
+/**
+ * 发布物里的组合接入状态与当前私人台账明显不一致时，返回需要展示的原因；
+ * 台账读不到（LOCKED / LOADING / UNAVAILABLE）时不下结论，避免误报。
+ */
+export function dualSleeveMismatch(
+  surface: DailyDualSleeveSurface,
+  privateKind: PrivateStateKind,
+): string | null {
+  const liveConnected =
+    privateKind === "CONNECTED" || privateKind === "BLOCKED_PRIVATE_INPUT";
+  const publishedConnected = surface.portfolio_connected === true;
+  if (publishedConnected && privateKind === "NOT_CONNECTED") {
+    return "发布物显示私人组合已接入，但当前读不到真实台账；请检查私人数据目录后重新运行双策略复核。";
+  }
+  if (!publishedConnected && liveConnected) {
+    return "双策略复核发布物尚未包含最新私人组合；请重新运行双策略复核后再参考这里的结论。";
+  }
+  return null;
 }
 
 export function dualSleeveView(

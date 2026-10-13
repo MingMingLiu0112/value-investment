@@ -8,7 +8,9 @@ import {
   gateRowViews,
   gateStatusLabel,
   marginText,
+  nextActionLines,
   normalizeEvidenceLines,
+  researchHeadline,
   splitReadingOrder,
   suggestedStateText,
   uniqueBlockerTexts,
@@ -142,6 +144,126 @@ describe("research detail helpers", () => {
 });
 
 describe("price bridge execution view", () => {
+  const staleExecution = {
+    schema_version: "quote-bridge-execution-v1",
+    status: "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
+    reason: "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性",
+    next_step:
+      "行情晚于研究截止日：先完成研究重登记与事件复核，再重跑价格桥接。",
+    price_admitted: false,
+    comparison_eligible: false,
+    quote_date: "2026-10-13",
+    display_price: "27.77",
+    collected_at: "2026-10-13T09:50:38+00:00",
+    display_scope: null,
+    is_historical_close: null,
+    latest_completed_session: "2026-10-13",
+    bundle_path: null,
+    bundle_sha256: null,
+    research_day: "2026-10-11",
+    research_version: null,
+    pointer_path: null,
+    pointer_sha256: null,
+    sources: [],
+  };
+
+  it("exposes the quote date and price next to the ladder", () => {
+    const view = bridgeExecutionView(staleExecution);
+    expect(view?.quoteDate).toBe("2026-10-13");
+    expect(view?.displayPrice).toBe("27.77");
+  });
+
+  it("generates the one-line conclusion from the real bridge state", () => {
+    const headline = researchHeadline({
+      valuation: {
+        bear: "9.79764118439777680597278298395676515182872214703",
+        base: "10.0751373530680129477021471870066470782479712991",
+        bull: "10.3006925009950307944059171660835859543186976072",
+        valuation_date: "2026-10-11",
+      },
+      bridge: bridgeExecutionView(staleExecution),
+    });
+    expect(headline).toContain("已有条件性估值研究");
+    expect(headline).toContain("基准 10.08 元");
+    expect(headline).toContain("2026-10-13");
+    expect(headline).toContain("27.77 元");
+    expect(headline).toContain("晚于研究截止日");
+    expect(headline).not.toContain("安全边际：");
+  });
+
+  it("does not invent a safety margin when the price is not comparable", () => {
+    const headline = researchHeadline({
+      valuation: { base: "10.08", valuation_date: "2026-10-11" },
+      bridge: bridgeExecutionView(staleExecution),
+      marginToBase: "18%",
+    });
+    expect(headline).not.toContain("18%");
+  });
+
+  it("states the comparable case without upgrading it to a buy signal", () => {
+    const headline = researchHeadline({
+      valuation: { base: "10.08", valuation_date: "2026-10-12" },
+      bridge: bridgeExecutionView({
+        ...staleExecution,
+        status: "QUOTE_VERIFIED_FOR_RESEARCH_INPUT",
+        price_admitted: true,
+        comparison_eligible: true,
+        next_step: null,
+      }),
+      marginToBase: "-0.1205",
+    });
+    expect(headline).toContain("可以合法比较");
+    expect(headline).toContain("安全边际：-0.1205");
+    expect(headline).toContain("正式买卖仍需通过人工与决策门禁");
+  });
+
+  it("reports the honest gaps when valuation or quotes are missing", () => {
+    expect(researchHeadline({ valuation: {} })).toContain("尚无可用估值研究");
+    const noBridge = researchHeadline({
+      valuation: { base: "10.08", valuation_date: "2026-10-11" },
+    });
+    expect(noBridge).toContain("尚未登记经核验的收盘行情");
+  });
+
+  it("builds the next-step list from published next_step and next_action only", () => {
+    const gates = [
+      {
+        label: "财务事实",
+        status: "PASS",
+        statusLabel: "已通过",
+        nextAction: "复核对应依赖证据与批准结果。",
+      },
+      {
+        label: "估值",
+        status: "CONDITIONAL",
+        statusLabel: "有条件",
+        nextAction: "继续核验假设、反证和模型有效性。",
+      },
+      {
+        label: "研究门",
+        status: "BLOCKED",
+        statusLabel: "未通过",
+        nextAction: "复核对应依赖证据与批准结果。",
+      },
+      {
+        label: "组合门",
+        status: "BLOCKED",
+        statusLabel: "未通过",
+        nextAction: "补齐真实 IPS 与组合输入。",
+      },
+    ];
+    const lines = nextActionLines(
+      gates,
+      "行情晚于研究截止日：先完成研究重登记与事件复核，再重跑价格桥接。",
+    );
+    expect(lines[0]).toContain("先完成研究重登记与事件复核");
+    expect(lines).toContain("继续核验假设、反证和模型有效性。（估值）");
+    expect(lines).toContain("复核对应依赖证据与批准结果。（研究门）");
+    expect(lines).toContain("补齐真实 IPS 与组合输入。（组合门）");
+    expect(lines.every((line) => !line.includes("财务事实"))).toBe(true);
+    expect(nextActionLines([], null)).toEqual([]);
+  });
+
   it("translates the shared admission status without hiding the code", () => {
     const view = bridgeExecutionView({
       schema_version: "quote-bridge-execution-v1",

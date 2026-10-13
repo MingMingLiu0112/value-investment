@@ -3,6 +3,7 @@ import type {
   PriceBridgeExecution,
   ResearchGateRow,
   ResearchReadingRow,
+  ResearchValuation,
 } from "../types/api";
 
 export interface EvidenceLine {
@@ -24,6 +25,8 @@ export interface BridgeExecutionView {
   statusLabel: string;
   comparableLabel: string;
   comparable: boolean;
+  quoteDate: string | null;
+  displayPrice: string | null;
   rows: Array<{ key: string; label: string; value: string }>;
   ladder: Array<{
     key: string;
@@ -130,6 +133,8 @@ export function bridgeExecutionView(
     statusLabel: bridgeStatusLabel(status),
     comparable,
     comparableLabel: comparable ? "已具备比较资格" : "尚不具备比较资格",
+    quoteDate,
+    displayPrice: price,
     rows,
     ladder: compatibilityLadder(execution.compatibility),
     reason: text(execution.reason),
@@ -287,6 +292,96 @@ export function suggestedStateText(value?: string | null): string {
   if (value === "NO_ACTION" || value === "no_order")
     return "当前无合法动作候选";
   return value;
+}
+
+function headlineValue(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const text = typeof value === "string" ? value.trim() : String(value);
+  if (!text) return null;
+  const parsed = typeof value === "number" ? value : Number(text);
+  if (!Number.isFinite(parsed)) return text;
+  return parsed.toFixed(2);
+}
+
+export interface HeadlineInput {
+  valuation?: Partial<ResearchValuation> | null;
+  bridge?: BridgeExecutionView | null;
+  researchDay?: string | null;
+  marginToBase?: string | null;
+}
+
+/**
+ * 一句话研究结论：只根据真实估值字段、价格桥接执行结果和登记日期拼装，
+ * 不按公司写死文案；价格不具备比较资格时不暗示任何安全边际。
+ */
+export function researchHeadline(input: HeadlineInput): string {
+  const valuation = input.valuation ?? {};
+  const hasScenarios = [valuation.bear, valuation.base, valuation.bull].some(
+    (value) => headlineValue(value) !== null,
+  );
+  const day = text(valuation.valuation_date) ?? text(input.researchDay);
+  const dayText = day ? `研究截止 ${day}` : "研究截止日期未提供";
+  if (!hasScenarios) {
+    return "尚无可用估值研究：没有可复核的 Bear/Base/Bull 结果，暂不能评估价格与估值的关系。";
+  }
+  const base = headlineValue(valuation.base);
+  const baseText = base !== null ? `基准 ${base} 元，` : "";
+  const bridge = input.bridge;
+  if (bridge?.comparable) {
+    const margin = text(input.marginToBase);
+    const marginText = margin ? `安全边际：${margin}；` : "";
+    return (
+      `已有条件性估值（${baseText}${dayText}），已核验收盘行情在研究覆盖范围内，` +
+      `可以合法比较；${marginText}正式买卖仍需通过人工与决策门禁。`
+    );
+  }
+  if (bridge?.status === "QUOTE_VERIFIED_BUT_RESEARCH_STALE") {
+    const quoteBits = [
+      text(bridge.quoteDate),
+      text(bridge.displayPrice) ? `${text(bridge.displayPrice)} 元` : null,
+    ].filter((bit): bit is string => bit !== null);
+    const quoteText = quoteBits.length ? `（${quoteBits.join("，")}）` : "";
+    return (
+      `已有条件性估值研究（${baseText}${dayText}），但已核验收盘价${quoteText}晚于研究截止日，` +
+      "暂不能形成正式价格判断；需先完成研究重登记与事件复核。"
+    );
+  }
+  if (bridge) {
+    return `已有条件性估值研究（${baseText}${dayText}），但${bridge.statusLabel}，暂不能进行正式价格比较。`;
+  }
+  return `已有条件性估值研究（${baseText}${dayText}），但尚未登记经核验的收盘行情，暂不能进行价格比较。`;
+}
+
+export interface NextActionGate {
+  label: string;
+  status: string | null;
+  statusLabel: string;
+  nextAction: string | null;
+}
+
+/**
+ * 下一步怎么做：只汇总发布物里已有的下一步字段——价格桥接的 next_step
+ * 和各门禁的 next_action；相同动作合并展示，不新增任何前端建议。
+ */
+export function nextActionLines(
+  gates: NextActionGate[],
+  bridgeNextStep?: string | null,
+): string[] {
+  const lines: string[] = [];
+  const bridgeStep = (bridgeNextStep ?? "").trim();
+  if (bridgeStep) lines.push(bridgeStep);
+  const grouped = new Map<string, string[]>();
+  for (const gate of gates) {
+    const action = (gate.nextAction ?? "").trim();
+    if (!action || gate.status === "PASS" || action === bridgeStep) continue;
+    const labels = grouped.get(action) ?? [];
+    labels.push(gate.label);
+    grouped.set(action, labels);
+  }
+  for (const [action, labels] of grouped) {
+    lines.push(`${action}（${labels.join("、")}）`);
+  }
+  return lines;
 }
 
 /** 去掉 research_case: 作用域前缀并翻译已收录阻塞；未知文本保持原样。 */

@@ -208,6 +208,8 @@ export interface DailyResearchStatus {
   schema_version: string;
   action: "no_order";
   status?: string;
+  registry_status?: string;
+  reason?: string;
   registered_count: number;
   verified_close_count?: number;
   needs_re_research_count?: number;
@@ -249,6 +251,7 @@ export interface DailyResponse {
   };
   research?: DailyResearchStatus;
   dual_sleeve?: DailyDualSleeveSurface;
+  publication?: PublicPacketBlock;
   blockers: string[];
   gate_code?: string;
   reason?: string;
@@ -499,4 +502,125 @@ export interface RiskResponse {
   blockers: string[];
   engine: RiskEngineReport | null;
   facts: RiskFacts | null;
+}
+
+/** TL9 MVP-1: the compact identity block every public endpoint carries. */
+export interface PublicPacketBlock {
+  schema_version: string;
+  action: "no_order";
+  packet_status: string;
+  publication_id: string | null;
+  research_version: string | null;
+  research_as_of: string | null;
+  decision_published_on: string | null;
+  excel_published_as_of: string | null;
+  quote_bridge: {
+    registered_at: string | null;
+    sha256: string | null;
+    quotes_registered: number;
+  } | null;
+  source_binding_count: number;
+  generated_at: string;
+}
+
+export interface PacketFreshness {
+  status: string;
+  reason?: string | null;
+  note?: string | null;
+  quote_date?: string | null;
+  latest_completed_trade_session?: string | null;
+  research_as_of?: string | null;
+  as_of?: string | null;
+}
+
+export interface PacketPendingAction {
+  code: string;
+  actor: string;
+  label: string;
+}
+
+export interface PacketCompanyStatus {
+  symbol: string;
+  name: string;
+  coverage: string;
+  research_status: { code?: string; user_label?: string } | null;
+  valuation_status: { code?: string; user_label?: string } | null;
+  research_version: string | null;
+  decision_as_of: string | null;
+  price_bridge: Record<string, unknown> | null;
+  next_trigger: string | null;
+  pending_actions: PacketPendingAction[];
+  blockers: string[];
+  valuation_review?: {
+    model_validity?: { status?: string } | null;
+    price_attractiveness_status?: string | null;
+    conditional_range_present?: boolean;
+    blockers?: string[];
+  } | null;
+  registered_research?: {
+    status?: string | null;
+    valuation_route?: string | null;
+    summary?: string | null;
+    missing_inputs?: string[];
+    evidence?: {
+      path: string;
+      sha256: string | null;
+      sha256_verified: boolean;
+      present: boolean;
+    }[];
+  } | null;
+}
+
+/** The one public daily decision packet (TL9 MVP-1). */
+export interface DailyPublicPacket {
+  schema_version: string;
+  engine_version?: string | null;
+  action: "no_order";
+  packet_status: string;
+  publication_id: string | null;
+  research_version: string | null;
+  generated_at: string;
+  chain_error?: string | null;
+  dates: {
+    current_natural_date: string | null;
+    latest_completed_trade_session: string | null;
+    quote_trade_date: string | null;
+    quote_observed_at: string | null;
+    research_as_of: string | null;
+    model_validity: { status: string; valid_through: string | null };
+    decision_published_on: string | null;
+    excel_published_as_of: string | null;
+    excel_quote_observation_as_of: string | null;
+  };
+  formal_admission_count: number;
+  pending_review_count: number;
+  research_counts: {
+    universe_count: number | null;
+    lead_count: number | null;
+    queue_count: number | null;
+    needs_re_research_count: number;
+    incomplete_research_count: number;
+    awaiting_verified_close_count: number;
+  };
+  blockers: string[];
+  data_freshness: {
+    quote: PacketFreshness;
+    research: PacketFreshness;
+    excel: PacketFreshness;
+  };
+  quote_bridge?: {
+    path: string;
+    sha256: string | null;
+    registered_at: string | null;
+    quotes_registered: number;
+  } | null;
+  source_bindings?: Array<{
+    role: string;
+    path: string;
+    sha256: string | null;
+    present?: boolean;
+    sha256_verified?: boolean;
+  }> | null;
+  source_bindings_verified: boolean;
+  company_statuses: Record<string, PacketCompanyStatus>;
 }

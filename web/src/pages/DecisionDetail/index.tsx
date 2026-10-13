@@ -24,7 +24,9 @@ import {
   formatScenarioValue,
   gateRowViews,
   marginText,
+  nextActionLines,
   normalizeEvidenceLines,
+  researchHeadline,
   splitReadingOrder,
   suggestedStateText,
   uniqueBlockerTexts,
@@ -251,8 +253,29 @@ function ResearchDecision({
         ? "系统未标记人工复核要求，仍以人工复核为准"
         : "人工复核标记未提供";
 
+  const headline = researchHeadline({
+    valuation,
+    bridge,
+    researchDay: research.decision_cutoff,
+    marginToBase: marginBase,
+  });
+  const nextSteps = nextActionLines(gates, bridge?.nextStep);
+
   return (
     <>
+      <Section title="一句话研究结论">
+        <Alert
+          type="info"
+          showIcon
+          message={headline}
+          description={
+            (state.value ? suggestedStateText(state.value) + "。" : "") +
+            (state.boundary ||
+              "研究状态不等于买卖信号；系统只输出待人工复核的候选，不下单。")
+          }
+        />
+      </Section>
+
       <Section title="研究结论与数据日期">
         <Descriptions
           bordered
@@ -297,7 +320,7 @@ function ResearchDecision({
         />
       </Section>
 
-      <Section title="支撑逻辑与关键反证">
+      <Section title="公司投资逻辑">
         {research.thesis ||
         research.return_driver ||
         research.mispricing_hypothesis ? (
@@ -305,6 +328,7 @@ function ResearchDecision({
             bordered
             column={1}
             size="small"
+            labelStyle={{ whiteSpace: "nowrap" }}
             items={[
               ...(research.thesis
                 ? [
@@ -616,7 +640,7 @@ function ResearchDecision({
         />
       </Section>
 
-      <Section title="为什么状态允许或不允许变化">
+      <Section title="行动状态与变化条件">
         <Alert
           type="info"
           showIcon
@@ -654,7 +678,7 @@ function ResearchDecision({
         )}
       </Section>
 
-      <Section title="影响结论失效的事件">
+      <Section title="风险与失效条件">
         <SubTitle>论点失效条件</SubTitle>
         <EvidenceList items={breakerLines} empty="后端尚未提供失效条件" />
         <SubTitle>退出条件</SubTitle>
@@ -663,6 +687,13 @@ function ResearchDecision({
         <BulletList items={reopenTriggers} empty="后端尚未提供重开触发" />
         <SubTitle>下一批事件</SubTitle>
         <EvidenceList items={nextEventLines} empty="后端尚未提供下一批事件" />
+      </Section>
+
+      <Section title="下一步怎么做">
+        <BulletList
+          items={nextSteps}
+          empty="当前没有需要你处理的步骤；继续按重开与复核触发条件观察。"
+        />
       </Section>
 
       <Section title="官方证据与历史版本入口">

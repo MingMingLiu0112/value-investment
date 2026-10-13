@@ -1,5 +1,6 @@
 import type {
   DailyResponse,
+  DailyPublicPacket,
   DetailResponse,
   HistoryResponse,
   PortfolioResponse,
@@ -217,6 +218,8 @@ async function getPrivate<T>(path: string, signal?: AbortSignal): Promise<T> {
 export const api = {
   daily: (signal?: AbortSignal) =>
     get<DailyResponse>("daily-decisions", signal),
+  packet: (signal?: AbortSignal) =>
+    get<DailyPublicPacket>("daily-public-packet", signal),
   detail: (id: string, signal?: AbortSignal) =>
     get<DetailResponse>(`decisions/${encodeURIComponent(id)}`, signal),
   portfolio: (signal?: AbortSignal) =>
