@@ -60,7 +60,9 @@ function HoldingsSection() {
   }
   const data = portfolio.data;
   if (!data) {
-    return <Typography.Text type="secondary">正在读取私人台账…</Typography.Text>;
+    return (
+      <Typography.Text type="secondary">正在读取私人台账…</Typography.Text>
+    );
   }
   if (data.status !== "CONNECTED") {
     const blocker = data.blockers.find((code) => code !== "PRICE_NOT_ADMITTED");
@@ -68,7 +70,11 @@ function HoldingsSection() {
       <Alert
         type="info"
         showIcon
-        message={blocker ? (codeText(blocker) ?? "私人组合尚未接入") : "私人组合尚未接入"}
+        message={
+          blocker
+            ? (codeText(blocker) ?? "私人组合尚未接入")
+            : "私人组合尚未接入"
+        }
         description="持仓关注事项来自你本人确认的私人台账；在接入并确认持仓之前，这里没有内容可展示，也不代表你的组合为空。"
       />
     );
@@ -125,7 +131,10 @@ function HoldingsSection() {
           </List.Item>
         )}
       />
-      <Typography.Text type="secondary" style={{ display: "block", marginTop: 8 }}>
+      <Typography.Text
+        type="secondary"
+        style={{ display: "block", marginTop: 8 }}
+      >
         台账版本 {data.revision} · 持仓基准日 {data.as_of || "未提供"}
       </Typography.Text>
       <div style={{ marginTop: 12 }}>
