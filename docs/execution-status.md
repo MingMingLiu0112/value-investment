@@ -39,6 +39,9 @@ and the exact not-comparable reason (quote later than the research cutoff);
 note: docs/current/tl10-rc-daily-usage-20261013.md; identity/snapshot note:
 docs/current/tl10-rc-identity-and-snapshot-20261013.md. action=no_order
 unchanged; the canonical workbook and all private data were untouched.
+Full local Core Gates: 5095 passed / 42 skipped (10m05s). Remote CI on
+c6ac4b3: Core Research Gates run 38395725401 and Web Workbench run 38395725273
+both success. PR #1 description updated to the TL10-RC scope and kept Draft.
 FINAL user acceptance: run
 `pwsh -NoProfile -File scripts/current/run_daily_workbench.ps1 -Mode READ_ONLY -Open`.
 
