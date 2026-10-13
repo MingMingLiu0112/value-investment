@@ -1,4 +1,8 @@
-import type { ResearchGateRow, ResearchReadingRow } from "../types/api";
+import type {
+  PriceBridgeExecution,
+  ResearchGateRow,
+  ResearchReadingRow,
+} from "../types/api";
 
 export interface EvidenceLine {
   text: string;
@@ -12,6 +16,118 @@ export interface GateView {
   statusLabel: string;
   reason: string | null;
   nextAction: string | null;
+}
+
+export interface BridgeExecutionView {
+  status: string;
+  statusLabel: string;
+  comparableLabel: string;
+  comparable: boolean;
+  rows: Array<{ key: string; label: string; value: string }>;
+  reason: string | null;
+  nextStep: string | null;
+  sources: Array<{ label: string; url: string; sha256: string | null }>;
+}
+
+/**
+ * 共享价格桥接的准入状态；未收录的代码原样返回，不推测含义。
+ */
+const BRIDGE_STATUS_TEXT: Record<string, string> = {
+  QUOTE_VERIFIED_FOR_RESEARCH_INPUT: "行情已核验，可作为研究输入",
+  QUOTE_VERIFIED_BUT_RESEARCH_STALE: "行情已核验，但晚于研究截止日",
+  HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY: "仅展示的历史核验收盘",
+  NOT_ADMITTED: "未准入",
+  PENDING_EXTERNAL_DATA: "尚无已核验收盘",
+  POINTER_UNAVAILABLE: "未登记当前行情绑定",
+};
+
+export function bridgeStatusLabel(status?: string | null): string {
+  if (!status) return "未提供";
+  return BRIDGE_STATUS_TEXT[status] ?? status;
+}
+
+function text(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const asText = typeof value === "string" ? value.trim() : String(value);
+  return asText ? asText : null;
+}
+
+/**
+ * 只整理共享程序真正执行过的准入结果：状态码转中文，字段缺失显示未提供，
+ * 不新增价格、边际或仓位推断。
+ */
+export function bridgeExecutionView(
+  execution?: PriceBridgeExecution | null,
+): BridgeExecutionView | null {
+  if (!execution || typeof execution !== "object") return null;
+  const status = text(execution.status);
+  if (!status) return null;
+  const comparable = execution.comparison_eligible === true;
+  const price = text(execution.display_price);
+  const quoteDate = text(execution.quote_date);
+  const rows = [
+    {
+      key: "quote_date",
+      label: "已核验行情日期",
+      value: quoteDate ?? "未提供",
+    },
+    {
+      key: "display_price",
+      label: "已核验收盘价",
+      value: price ? `${price} 元` : "未提供",
+    },
+    {
+      key: "research_day",
+      label: "研究截止日",
+      value: text(execution.research_day) ?? "未提供",
+    },
+    {
+      key: "research_version",
+      label: "登记研究版本",
+      value: text(execution.research_version) ?? "未提供",
+    },
+    {
+      key: "collected_at",
+      label: "行情采集时间",
+      value: text(execution.collected_at) ?? "未提供",
+    },
+    {
+      key: "latest_completed_session",
+      label: "最近已完成交易日",
+      value: text(execution.latest_completed_session) ?? "未提供",
+    },
+    {
+      key: "bundle",
+      label: "行情包（SHA-256）",
+      value: execution.bundle_path
+        ? `${execution.bundle_path} / ${execution.bundle_sha256 ?? "未提供"}`
+        : "未提供",
+    },
+    {
+      key: "pointer",
+      label: "登记文件（SHA-256）",
+      value: execution.pointer_path
+        ? `${execution.pointer_path} / ${execution.pointer_sha256 ?? "未提供"}`
+        : "未提供",
+    },
+  ];
+  const sources = (Array.isArray(execution.sources) ? execution.sources : [])
+    .filter((row) => row && text(row.source_url))
+    .map((row) => ({
+      label: text(row.provider) ?? "来源",
+      url: text(row.source_url) as string,
+      sha256: text(row.sha256),
+    }));
+  return {
+    status,
+    statusLabel: bridgeStatusLabel(status),
+    comparable,
+    comparableLabel: comparable ? "已具备比较资格" : "尚不具备比较资格",
+    rows,
+    reason: text(execution.reason),
+    nextStep: text(execution.next_step),
+    sources,
+  };
 }
 
 /** The published decision process order is frozen by the read model. */

@@ -5,11 +5,13 @@ import hashlib
 import json
 import os
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
+from ...application.product.quote_bridge import execute_quote_bridge_for_symbol
 from ..read_models.research_history import build_research_history
 from ..read_models.value_decision_detail import project_value_decision_detail
 from .local_auth import (
@@ -126,6 +128,14 @@ def _unavailable(code: str, reason: str, *, source: str | None = None) -> dict:
 
 def _pick(value: dict, *keys: str) -> dict:
     return {key: value[key] for key in keys if key in value}
+
+
+def _quote_bridge_execution(root: Path, symbol: str) -> dict | None:
+    """Execute the registered price bridge; a broken registration degrades, never raises."""
+    try:
+        return execute_quote_bridge_for_symbol(root, symbol, today=datetime.now(timezone.utc))
+    except _STRUCTURE_ERRORS:
+        return None
 
 
 def _item(row: dict, as_of: str, status: str = "RESEARCH_ONLY") -> dict:
@@ -349,6 +359,7 @@ def create_app(
                 item["research"] = project_value_decision_detail(
                     symbol=decision_id, company=company, explanation=explanation,
                     binding_status=binding_status, binding=binding,
+                    price_bridge_execution=_quote_bridge_execution(project, decision_id),
                     binding_blockers=(["VALUE_EXPLANATION_BINDING_UNAVAILABLE"]
                                       if binding_status == "UNAVAILABLE" else []))
                 return {"action": "no_order", "status": status,

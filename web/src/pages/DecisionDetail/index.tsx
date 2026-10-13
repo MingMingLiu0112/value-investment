@@ -20,6 +20,7 @@ import { DetailSection } from "../../components/DetailSection";
 import { statusLabel } from "../../utils/presentation";
 import { shortDigest } from "../../utils/history";
 import {
+  bridgeExecutionView,
   formatScenarioValue,
   gateRowViews,
   marginText,
@@ -186,6 +187,7 @@ function ResearchDecision({
   const validity = (research.model_validity ??
     {}) as Partial<ResearchModelValidity>;
   const price = (research.price ?? {}) as Partial<ResearchPrice>;
+  const bridge = bridgeExecutionView(research.price_bridge_execution);
   const state = (research.suggested_state ??
     {}) as Partial<ResearchSuggestedState>;
   const provenance = (research.valuation_provenance ??
@@ -481,6 +483,86 @@ function ResearchDecision({
         )}
         <SubTitle>价格阻塞</SubTitle>
         <BulletList items={priceBlockers} empty="未提供价格阻塞说明" />
+      </Section>
+
+      <Section title="价格桥接执行（已登记收盘行情）">
+        {bridge ? (
+          <>
+            <Descriptions
+              bordered
+              column={1}
+              size="small"
+              items={[
+                {
+                  key: "bridge_status",
+                  label: "价格桥接状态",
+                  children: bridge.statusLabel,
+                },
+                {
+                  key: "comparable",
+                  label: "当前价格是否具备比较资格",
+                  children: bridge.comparableLabel,
+                },
+                ...bridge.rows.map((row) => ({
+                  key: row.key,
+                  label: row.label,
+                  children: row.value,
+                })),
+              ]}
+            />
+            {bridge.reason ? (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginTop: 12 }}
+                message={bridge.reason}
+                description={
+                  bridge.nextStep ? (
+                    <div>重开条件：{bridge.nextStep}</div>
+                  ) : null
+                }
+              />
+            ) : null}
+            {bridge.sources.length > 0 && (
+              <>
+                <SubTitle>行情来源（双源已归档）</SubTitle>
+                <List
+                  size="small"
+                  bordered
+                  dataSource={bridge.sources}
+                  renderItem={(row) => (
+                    <List.Item style={{ overflowWrap: "anywhere" }}>
+                      <div>
+                        <div>
+                          <Typography.Link
+                            href={row.url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {row.label}
+                          </Typography.Link>
+                        </div>
+                        <Typography.Text
+                          type="secondary"
+                          style={{ fontSize: 12 }}
+                        >
+                          SHA-256 {shortDigest(row.sha256) ?? "未提供"}
+                        </Typography.Text>
+                      </div>
+                    </List.Item>
+                  )}
+                />
+              </>
+            )}
+          </>
+        ) : (
+          <Alert
+            type="info"
+            showIcon
+            message="尚未登记当前收盘行情绑定"
+            description="没有已登记的收盘行情，因此本次没有可执行的价格桥接结果；价格与估值的关系保持暂停。"
+          />
+        )}
       </Section>
 
       <Section title="当前缺失的证据与门禁">

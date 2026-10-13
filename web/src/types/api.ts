@@ -95,6 +95,36 @@ export interface ResearchSuggestedState {
   boundary: string | null;
 }
 
+export interface PriceBridgeSource {
+  provider: string | null;
+  source_url: string | null;
+  fetched_at: string | null;
+  sha256: string | null;
+}
+
+/** One executed admission of the registered close against the registered research cutoff. */
+export interface PriceBridgeExecution {
+  schema_version: string | null;
+  status: string | null;
+  reason: string | null;
+  next_step: string | null;
+  price_admitted: boolean | null;
+  comparison_eligible: boolean;
+  quote_date: string | null;
+  display_price: string | null;
+  collected_at: string | null;
+  display_scope: string | null;
+  is_historical_close: boolean | null;
+  latest_completed_session: string | null;
+  bundle_path: string | null;
+  bundle_sha256: string | null;
+  research_day: string | null;
+  research_version: string | null;
+  pointer_path: string | null;
+  pointer_sha256: string | null;
+  sources: PriceBridgeSource[];
+}
+
 export interface ResearchReadingRow {
   label: string;
   value: string;
@@ -122,6 +152,7 @@ export interface ResearchDetail {
   valuation_confidence: string | null;
   model_validity: ResearchModelValidity;
   price: ResearchPrice;
+  price_bridge_execution?: PriceBridgeExecution | null;
   price_as_of: string | null;
   quote_admission_status: string | null;
   margin_to_base: string | number | null;

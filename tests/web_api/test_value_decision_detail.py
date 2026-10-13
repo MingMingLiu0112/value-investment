@@ -1,7 +1,14 @@
 """WEB-D3 P4: one real company must reach the Web detail through the shared chain."""
 from __future__ import annotations
 
+from datetime import datetime
+import json
+from types import SimpleNamespace
+
 from test_read_api import _fixture
+
+from value_investment_agent.application.product import quote_bridge
+from value_investment_agent.quote_snapshot import QUOTE_STATUS_VERIFIED_CLOSE
 
 GATE = {"key": "financial_facts", "status": "PASS", "reason": "已绑定财务事实", "next_action": "复核",
         "evidence_refs": ["decision-workbench-600519-x"]}
@@ -147,3 +154,95 @@ def test_company_without_bound_explanation_reports_not_bound(tmp_path):
     detail = client.get("/api/v1/decisions/600741").json()
     assert detail["status"] == "PENDING_RESEARCH"
     assert "research" not in detail["decision"]
+
+def _pin_web_quote(tmp_path, monkeypatch, *, research_as_of: str = "2026-10-11"):
+    """Register one archived close in the temp project the API reads."""
+    bundle = tmp_path / "runtime/quotes/600519-bundle.json"
+    bundle.parent.mkdir(parents=True, exist_ok=True)
+    bundle.write_text(json.dumps({"finished_at": "2026-10-12T09:23:13+00:00",
+                                  "references": {"600519": {}}, "documents": {}}), encoding="utf-8")
+    package = tmp_path / "runtime/cases/600519-package.json"
+    package.parent.mkdir(parents=True, exist_ok=True)
+    package.write_text(json.dumps({"symbol": "600519",
+                                   "package_version": "pending-600519-2026-10-11-web",
+                                   "point_in_time": {"research_as_of": research_as_of}},
+                                  ensure_ascii=False), encoding="utf-8")
+    quote_bridge.pin_quote_bridge_for_symbol(tmp_path, "600519", bundle, package,
+                                             registered_at="2026-10-13T00:00:00+00:00")
+    providers = [{"kind": "quote_provider_document", "provider": name, "sha256": "a" * 64,
+                  "source_url": "https://example.invalid/" + name, "fetched_at": "2026-10-12T09:23:12+00:00"}
+                 for name in ("tencent", "sina")]
+    monkeypatch.setattr(quote_bridge, "quote_snapshot_from_bundle_file", lambda *a, **k:
+        SimpleNamespace(status=QUOTE_STATUS_VERIFIED_CLOSE,
+                        quote_date=datetime(2026, 10, 12).date(), current_price="27.96",
+                        blockers=[], evidence_refs=providers))
+    monkeypatch.setattr(quote_bridge, "resolve_session_reference",
+                        lambda *a: {"calendar_exchange": "SSE", "calendar_documents": []})
+    monkeypatch.setattr(quote_bridge, "latest_sse_2026_session",
+                        lambda *a: ("2026-10-12", ["b" * 64]))
+
+
+def test_executed_price_bridge_reaches_the_page_without_inventing_a_position(tmp_path, monkeypatch):
+    _pin_web_quote(tmp_path, monkeypatch)
+    body = _fixture(tmp_path, explanation_extra={"decision_as_of": "2026-10-11"}).get(
+        "/api/v1/decisions/600519").json()
+    research = body["decision"]["research"]
+    execution = research["price_bridge_execution"]
+    assert body["action"] == "no_order"
+    assert execution["status"] == "QUOTE_VERIFIED_BUT_RESEARCH_STALE"
+    assert execution["quote_date"] == "2026-10-12"
+    assert execution["display_price"] == "27.96"
+    assert execution["price_admitted"] is False
+    assert execution["comparison_eligible"] is False
+    assert execution["research_day"] == "2026-10-11"
+    assert execution["research_version"] == "pending-600519-2026-10-11-web"
+    assert execution["next_step"]
+    assert {row["provider"] for row in execution["sources"]} == {"tencent", "sina"}
+    # The research-bound price view stays untouched: no price, margin or position is invented.
+    assert research["price"]["current_price"] is None
+    assert research["margin_to_base"] is None and research["margin_to_bear"] is None
+    assert research["position_guidance"] is None
+    assert research["action"] == "no_order"
+
+
+def test_price_bridge_block_is_absent_without_a_registration(tmp_path):
+    research = _fixture(tmp_path).get("/api/v1/decisions/600519").json()["decision"]["research"]
+    execution = research["price_bridge_execution"]
+    assert execution["status"] == "POINTER_UNAVAILABLE"
+    assert execution["price_admitted"] is False
+    assert execution["comparison_eligible"] is False
+
+
+def _admitted(root, symbol, *, today):
+    return {"schema_version": "quote-bridge-execution-v1", "action": "no_order", "symbol": symbol,
+            "status": "QUOTE_VERIFIED_FOR_RESEARCH_INPUT", "reason": None, "next_step": "复核模型有效性",
+            "price_admitted": True, "research_day": "2026-10-12",
+            "research_case": {"package_version": "pending-600519-2026-10-12-web"},
+            "quote": {"quote_date": "2026-10-12", "display_price": "9.99"},
+            "pointer": {"path": "config/current-quote-bridge.json", "sha256": "a" * 64},
+            "sources": []}
+
+
+def _bridge_context(monkeypatch, bridge_status: str):
+    from value_investment_agent.presentation.web_api import app as web_app
+
+    monkeypatch.setattr(web_app, "execute_quote_bridge_for_symbol", _admitted)
+    return {"price_context": {"price_bridge": {"quote_date": None, "current_price": None,
+                                               "quote_status": "PENDING_EXTERNAL_DATA",
+                                               "bridge_status": bridge_status,
+                                               "blockers": []}}}
+
+
+def test_price_comparison_needs_both_the_admission_and_the_published_bridge(
+        tmp_path, monkeypatch):
+    ready = _fixture(tmp_path, explanation_extra=_bridge_context(monkeypatch, "READY"))
+    research = ready.get("/api/v1/decisions/600519").json()["decision"]["research"]
+    assert research["price_bridge_execution"]["price_admitted"] is True
+    assert research["price_bridge_execution"]["comparison_eligible"] is True
+
+    pending = _fixture(tmp_path / "second",
+                       explanation_extra=_bridge_context(monkeypatch, "PENDING_EXTERNAL_DATA"))
+    research = pending.get("/api/v1/decisions/600519").json()["decision"]["research"]
+    assert research["price_bridge_execution"]["price_admitted"] is True
+    assert research["price_bridge_execution"]["comparison_eligible"] is False
+

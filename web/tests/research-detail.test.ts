@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   blockerText,
+  bridgeExecutionView,
+  bridgeStatusLabel,
   formatScenarioValue,
   gateRowViews,
   gateStatusLabel,
@@ -135,5 +137,114 @@ describe("research detail helpers", () => {
       "G3 估值门尚未通过",
     ]);
     expect(uniqueBlockerTexts([])).toEqual([]);
+  });
+});
+
+describe("price bridge execution view", () => {
+  it("translates the shared admission status without hiding the code", () => {
+    const view = bridgeExecutionView({
+      schema_version: "quote-bridge-execution-v1",
+      status: "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
+      reason: "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性",
+      next_step:
+        "行情晚于研究截止日：先完成研究重登记与事件复核，再重跑价格桥接。",
+      price_admitted: false,
+      comparison_eligible: false,
+      quote_date: "2026-10-12",
+      display_price: "27.96",
+      collected_at: "2026-10-12T09:23:13+00:00",
+      display_scope: "LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
+      is_historical_close: true,
+      latest_completed_session: "2026-10-12",
+      bundle_path: "runtime/quote-sessions/x/bundle.json",
+      bundle_sha256: "a".repeat(64),
+      research_day: "2026-10-11",
+      research_version: "pending-600887-2026-10-11-x",
+      pointer_path: "config/current-quote-bridge.json",
+      pointer_sha256: "b".repeat(64),
+      sources: [
+        {
+          provider: "tencent",
+          source_url: "https://qt.gtimg.cn/q=sh600887",
+          fetched_at: "2026-10-12T09:23:12+00:00",
+          sha256: "c".repeat(64),
+        },
+      ],
+    });
+    expect(view?.statusLabel).toBe("行情已核验，但晚于研究截止日");
+    expect(view?.comparableLabel).toBe("尚不具备比较资格");
+    expect(view?.rows).toContainEqual({
+      key: "display_price",
+      label: "已核验收盘价",
+      value: "27.96 元",
+    });
+    expect(view?.rows).toContainEqual({
+      key: "research_day",
+      label: "研究截止日",
+      value: "2026-10-11",
+    });
+    expect(view?.sources).toEqual([
+      {
+        label: "tencent",
+        url: "https://qt.gtimg.cn/q=sh600887",
+        sha256: "c".repeat(64),
+      },
+    ]);
+  });
+
+  it("keeps unknown statuses verbatim and reports missing fields explicitly", () => {
+    expect(bridgeStatusLabel("SOMETHING_NEW")).toBe("SOMETHING_NEW");
+    expect(bridgeStatusLabel(null)).toBe("未提供");
+    const view = bridgeExecutionView({
+      schema_version: "quote-bridge-execution-v1",
+      status: "POINTER_UNAVAILABLE",
+      reason: null,
+      next_step: null,
+      price_admitted: false,
+      comparison_eligible: false,
+      quote_date: null,
+      display_price: null,
+      collected_at: null,
+      display_scope: null,
+      is_historical_close: null,
+      latest_completed_session: null,
+      bundle_path: null,
+      bundle_sha256: null,
+      research_day: null,
+      research_version: null,
+      pointer_path: null,
+      pointer_sha256: null,
+      sources: [],
+    });
+    expect(view?.statusLabel).toBe("未登记当前行情绑定");
+    expect(view?.rows.every((row) => row.value === "未提供")).toBe(true);
+    expect(view?.sources).toEqual([]);
+    expect(bridgeExecutionView(null)).toBeNull();
+  });
+
+  it("marks a comparison eligible only when the shared bridge says so", () => {
+    const view = bridgeExecutionView({
+      schema_version: "quote-bridge-execution-v1",
+      status: "QUOTE_VERIFIED_FOR_RESEARCH_INPUT",
+      reason: null,
+      next_step: null,
+      price_admitted: true,
+      comparison_eligible: true,
+      quote_date: "2026-10-12",
+      display_price: "27.96",
+      collected_at: null,
+      display_scope: null,
+      is_historical_close: false,
+      latest_completed_session: null,
+      bundle_path: null,
+      bundle_sha256: null,
+      research_day: "2026-10-12",
+      research_version: null,
+      pointer_path: null,
+      pointer_sha256: null,
+      sources: [],
+    });
+    expect(view?.comparable).toBe(true);
+    expect(view?.comparableLabel).toBe("已具备比较资格");
   });
 });

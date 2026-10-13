@@ -84,10 +84,62 @@ def _evidence(value: Any) -> list[dict]:
     return rows
 
 
+def _quote_sources(value: Any) -> list[dict]:
+    """Keep only the two provider documents behind the verified close."""
+    rows = []
+    for ref in _items(value):
+        row = _object(ref)
+        if row.get("kind") != "quote_provider_document":
+            continue
+        rows.append({"provider": _text(row.get("provider")), "source_url": _text(row.get("source_url")),
+                     "fetched_at": _text(row.get("fetched_at")),
+                     "sha256": row.get("sha256") if isinstance(row.get("sha256"), str) else None})
+    return rows
+
+
+def _price_bridge_execution(value: Any, published_bridge_status: Any) -> dict | None:
+    """Copy the executed admission verdict; never recompute a price or a margin.
+
+    The publication owns the research-bound bridge. This block only reports what
+    the shared admission said about the registered close, and the two must agree
+    (``READY``) before any price comparison can be called eligible.
+    """
+    row = _object(value)
+    if not _text(row.get("schema_version")):
+        return None
+    quote = _object(row.get("quote"))
+    case = _object(row.get("research_case"))
+    pointer = _object(row.get("pointer"))
+    admitted = row.get("price_admitted") if isinstance(row.get("price_admitted"), bool) else None
+    return {
+        "schema_version": _text(row.get("schema_version")),
+        "status": _text(row.get("status")),
+        "reason": _text(row.get("reason")),
+        "next_step": _text(row.get("next_step")),
+        "price_admitted": admitted,
+        "comparison_eligible": bool(admitted and _text(published_bridge_status) == "READY"),
+        "quote_date": _text(quote.get("quote_date")),
+        "display_price": _text(quote.get("display_price")),
+        "collected_at": _text(quote.get("collected_at")),
+        "display_scope": _text(quote.get("display_scope")),
+        "is_historical_close": (quote.get("is_historical_close")
+                                if isinstance(quote.get("is_historical_close"), bool) else None),
+        "latest_completed_session": _text(quote.get("latest_completed_session")),
+        "bundle_path": _text(quote.get("bundle_path")),
+        "bundle_sha256": _text(quote.get("bundle_sha256")),
+        "research_day": _text(row.get("research_day")),
+        "research_version": _text(case.get("package_version")),
+        "pointer_path": _text(pointer.get("path")),
+        "pointer_sha256": _text(pointer.get("sha256")),
+        "sources": _quote_sources(row.get("sources")),
+    }
+
+
 def project_value_decision_detail(*, symbol: str, company: dict | None,
                                   explanation: dict | None, binding_status: str = "NOT_BOUND",
                                   binding: dict | None = None,
-                                  binding_blockers: list[str] | None = None) -> dict:
+                                  binding_blockers: list[str] | None = None,
+                                  price_bridge_execution: dict | None = None) -> dict:
     """Return the spec fields for one company, all of them traceable to an artifact."""
     company = _object(company)
     explanation = _object(explanation)
@@ -164,6 +216,8 @@ def project_value_decision_detail(*, symbol: str, company: dict | None,
         },
         "price_as_of": _text(bridge.get("quote_date")),
         "quote_admission_status": _text(bridge.get("quote_status")),
+        "price_bridge_execution": _price_bridge_execution(price_bridge_execution,
+                                                          bridge.get("bridge_status")),
         "margin_to_base": bridge.get("margin_to_base"),
         "margin_to_bear": bridge.get("margin_to_bear"),
         "gates": [_gate(company, key) for key in GATE_KEYS],
