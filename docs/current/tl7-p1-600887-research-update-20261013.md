@@ -201,6 +201,10 @@ print(body['status'], body['decision']['research']['price_bridge_execution']['st
 - `tests/test_daily_trade_assistant.py` → 27 passed（共享规则抽取后行为不变）
 - Core Research Gates（220 个测试文件，CI 同一清单）→ 2325 passed, 40 skipped
 - 前端 `npm run typecheck` / `npm run format` / `npm test`（34 passed）/ `npm run build` 全部通过
+- GitHub CI（head `29572a9`，Windows 本机之外的第二证据）：
+  - `Core Research Gates` run 38343140741（event=pull_request）→ completed / success
+  - `Web Workbench` run 38343140843（event=pull_request）→ completed / success
+  - `Web Workbench` run 38343025599（event=push）→ completed / success
 
 测试能证明：准入规则在 CLI 与 Web 之间一致、fail-closed、页面不会凭空出现价格/边际/仓位。
 测试不能证明：价值投资策略有效、估值正确、或本公司已可交易。
@@ -221,7 +225,11 @@ print(body['status'], body['decision']['research']['price_bridge_execution']['st
    `price_bridge_execution`，页面显示已核验收盘价 27.96（2026-10-12）、桥接状态、比较资格与否、
    原因、重开条件与双源链接；命令见 §3。
 5. **本轮产生了哪些实际代码和产物变化？** 见 §4 的代码清单与哈希表；分支
-   `codex/web-d1-investment-workbench`，提交见本轮 commit。
+   `codex/web-d1-investment-workbench`，本轮提交（已推送 `c844446..29572a9`）：
+   - `0da8150`：共享价格桥接准入 `quote_bridge.py`、登记 CLI、CLI 清单登记
+   - `b485a51`：Web 读模型投影 `price_bridge_execution`、前端展示与跨模块测试
+   - `29572a9`：登记 `config/current-quote-bridge.json` 并封存本轮证据（本文件与 JSON 产物）
+   - 本文件之后的文档提交只补充上述 commit/CI 记录，不改动业务代码。
 
 ## 6. 未解决与下一步
 
