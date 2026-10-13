@@ -1,10 +1,6 @@
 """HTTP contract for the local-only private portfolio routes."""
 import json
-import shutil
-import tempfile
-from pathlib import Path
 
-import pytest
 from fastapi.testclient import TestClient
 
 from value_investment_agent.presentation.web_api.app import create_app
@@ -33,26 +29,6 @@ FILL = {
 }
 
 
-@pytest.fixture()
-def workspace(tmp_path, monkeypatch):
-    project = tmp_path / "project"
-    project.mkdir()
-    # The guard requires the private root outside every Git worktree, so it cannot
-    # live under pytest's temporary directory when that sits inside the repository.
-    private = Path(tempfile.mkdtemp(prefix="vi-api-private-", dir=Path.home()))
-    monkeypatch.setenv("VALUE_INVESTMENT_PRIVATE_ROOT", str(private))
-    try:
-        yield project, private
-    finally:
-        shutil.rmtree(private, ignore_errors=True)
-
-
-@pytest.fixture()
-def client(workspace):
-    project, _ = workspace
-    return TestClient(create_app(project))
-
-
 def test_disconnected_portfolio_is_a_200_business_state(client):
     response = client.get("/api/v1/portfolio")
     assert response.status_code == 200
@@ -67,7 +43,12 @@ def test_missing_private_root_is_200_on_read_and_503_on_write(tmp_path, monkeypa
     project = tmp_path / "project"
     project.mkdir()
     monkeypatch.setenv("VALUE_INVESTMENT_PRIVATE_ROOT", str(tmp_path / "absent"))
-    client = TestClient(create_app(project))
+    client = TestClient(create_app(project, port=8791), base_url="http://127.0.0.1:8791",
+                        client=("127.0.0.1", 51000))
+    client.headers.update({"host": "127.0.0.1:8791", "origin": "http://127.0.0.1:8791"})
+    session = client.get("/api/v1/private/session")
+    assert session.status_code == 200
+    client.headers["x-local-session"] = session.json()["token"]
     read = client.get("/api/v1/portfolio")
     assert read.status_code == 200
     assert read.json()["status"] == "NOT_CONNECTED"
@@ -181,7 +162,7 @@ def test_validation_failures_are_422(client):
     assert client.get("/api/v1/portfolio").json()["status"] == "NOT_CONNECTED"
 
 
-def test_cross_site_origin_is_rejected(client):
+def test_cross_site_origin_is_rejected(client, workbench_origin):
     remote = client.post("/api/v1/private/portfolio/initialize", json=BASELINE,
                          headers={"Origin": "https://example.com"})
     assert remote.status_code == 403
@@ -190,10 +171,10 @@ def test_cross_site_origin_is_rejected(client):
                            headers={"Sec-Fetch-Site": "cross-site"})
     assert prefetch.status_code == 403
     local = client.post("/api/v1/private/portfolio/initialize", json=BASELINE,
-                        headers={"Origin": "http://localhost:8001"})
+                        headers={"Origin": workbench_origin.replace("127.0.0.1", "localhost")})
     assert local.status_code == 200
     aliased = client.post("/api/v1/private/fills/prepare", json=FILL,
-                          headers={"Referer": "http://127.0.0.1:8001/portfolio"})
+                          headers={"Referer": f"{workbench_origin}/portfolio"})
     assert aliased.status_code == 200
 
 
@@ -225,6 +206,7 @@ def test_openapi_lists_private_routes(client):
     assert "/api/v1/private/fills/prepare" in paths
     assert "/api/v1/private/fills/confirm" in paths
     assert "/api/v1/private/portfolio/reconcile" in paths
+    assert "/api/v1/private/session" in paths
 def test_cancel_voids_the_draft_and_unblocks_the_next_fill(client):
     client.post("/api/v1/private/portfolio/initialize", json=BASELINE)
     draft = client.post("/api/v1/private/fills/prepare", json=FILL).json()

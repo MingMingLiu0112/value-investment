@@ -63,7 +63,13 @@ def _fixture(root):
         "current_publication": {"status": "PUBLISHED_WPS_READONLY_VERIFIED",
                                 "receipt": receipt["path"], "receipt_sha256": receipt["sha256"]},
         "daily_product_state_binding": state})
-    return TestClient(create_app(root))
+    client = TestClient(create_app(root, port=8791), base_url="http://127.0.0.1:8791",
+                        client=("127.0.0.1", 51000))
+    client.headers.update({"host": "127.0.0.1:8791", "origin": "http://127.0.0.1:8791"})
+    session = client.get("/api/v1/private/session")
+    assert session.status_code == 200
+    client.headers["x-local-session"] = session.json()["token"]
+    return client
 
 
 def test_fixture_projection_and_detail(tmp_path):

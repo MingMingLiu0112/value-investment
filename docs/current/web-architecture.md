@@ -47,10 +47,13 @@ inside a Git worktree, so a journal can never be committed by accident, and ever
 The journal is append-only JSONL. Each record carries `schema_version`,
 `sequence`, `previous_record_sha256`, `record_sha256`, `idempotency_key`,
 `request_sha256`, `action=no_order`, `changes_holdings`, `body` and `response`.
-Writes use canonical JSON, `O_EXCL` lock files, `flush` and `fsync`. Reads
-re-verify both the per-record digest and the chain link, so a mutated byte or a
-removed record raises `JournalValidationError` instead of silently projecting a
-wrong portfolio.
+Writes use canonical JSON, `flush` and `fsync`. The whole read-check-commit
+transaction runs inside an OS-owned cross-process lock (`msvcrt.locking` on
+Windows, `fcntl.flock` elsewhere), so a competing process cannot pass the same
+revision check and the lock is released automatically if a writer crashes.
+Reads re-verify both the per-record digest and the chain link, so a mutated byte
+or a removed record raises `JournalValidationError` instead of silently
+projecting a wrong portfolio.
 
 Record kinds: `BASELINE_CONFIRMED`, `FILL_PREPARED`, `FILL_CONFIRMED`,
 `FILL_CANCELLED`, `RECONCILED_CONFIRMED`.
@@ -66,21 +69,50 @@ cannot be silently swapped for a different trade; `expected_revision` and
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/api/v1/daily` | Published product read model: universe, formal candidates, research observations, hotspot observations |
+| GET | `/api/v1/daily-decisions` | Published product read model: universe, formal candidates, research observations, hotspot observations |
 | GET | `/api/v1/decisions/{symbol}` | Research explanation, evidence, blockers for one security |
-| GET | `/api/v1/history` | Historical decisions; currently `NOT_CONNECTED`, returns no items |
+| GET | `/api/v1/decision-history` | Real, hash-verifiable research versions per security plus a mechanical field diff; `PREVIOUS_UNAVAILABLE` when only one version exists |
 | GET | `/api/v1/portfolio` | Private portfolio view, or a fail-closed disconnected projection |
+| GET | `/api/v1/private/portfolio/risk` | Confirmed private facts plus the dual-sleeve risk engine report, or its exact missing-input gaps |
+| GET | `/api/v1/private/session` | Mint the process-scoped local operator token |
+| POST | `/api/v1/private/session/logout` | Invalidate the local operator token |
 | POST | `/api/v1/private/portfolio/initialize` | Record the user-confirmed opening baseline |
 | POST | `/api/v1/private/fills/prepare` | Append a `FILL_PREPARED` draft |
 | POST | `/api/v1/private/fills/confirm` | Promote a draft with its `prepared_record_sha256` |
 | POST | `/api/v1/private/fills/cancel` | Void a draft without touching holdings |
 | POST | `/api/v1/private/portfolio/reconcile` | Append a confirmed reconciliation snapshot |
 
-Every private write route calls `origin_allowed` first and answers `403
-ORIGIN_REJECTED` for a cross-site `Sec-Fetch-Site` or a non-local `Origin` /
-`Referer`. Domain failures map onto `503 PRIVATE_ROOT_UNAVAILABLE`, `409
-<JournalConflict.code>` and `422 VALIDATION_FAILED`. All private routes run on
-the same `127.0.0.1`-bound server as the read API.
+Every private read and write is authorized by `presentation/web_api/local_auth.py`
+before it touches anything: the TCP peer must be loopback, the `Host` header must
+name the bound loopback host and port, `Origin`/`Referer` when present must match
+that origin exactly (scheme included), and the request must carry the
+process-scoped `X-Local-Session` token minted by `GET /api/v1/private/session`.
+Non-browser clients may omit `Origin` only when they present the token. Domain
+failures map onto `503 PRIVATE_ROOT_UNAVAILABLE`, `409 <JournalConflict.code>` and
+`422 VALIDATION_FAILED`; authorization failures answer `401
+LOCAL_AUTHORIZATION_REQUIRED`, `403 HOST_REJECTED`, `403 CLIENT_NOT_LOOPBACK` or
+`403 ORIGIN_REJECTED` and never reach the ledger. All private routes run on the
+same `127.0.0.1`-bound server as the read API.
+
+## Presentation rules
+
+## Private ledger backup and restore (WEB-D2 P0.3)
+
+`scripts/current/backup_private_portfolio.py` is the only supported maintenance
+entry point (`create | list | verify | restore`). Bundles live at
+`<private_root>/portfolio/backups/<backup_id>/` and may not be created anywhere
+outside the private root, so they can never enter Git or a synced folder. Each
+bundle carries a byte-verbatim `journal.jsonl` plus a `manifest.json` with
+`source_sha256`, `copied_sha256`, `record_count`, `head_record_sha256`,
+`source_status` and its own `manifest_sha256`.
+
+`restore` refuses to run without an explicit `--confirm`, refuses any bundle
+whose verification is not `VERIFIED`, never truncates or repairs a damaged
+record, and takes a `pre-restore-*` safety bundle of the current bytes before it
+replaces anything. Snapshot and restore run under the same cross-process journal
+lock as an append. A hash chain detects tampering; it cannot stop an attacker who
+can rewrite the whole file, which is why the backup must stay on a path the
+project itself never publishes.
 
 ## Presentation rules
 

@@ -3,16 +3,20 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
+from ..read_models.research_history import build_research_history
+from .local_auth import SESSION_TTL_SECONDS, LocalOperatorSession
 from .private_routes import portfolio_connection, register_private_routes
 
 
 ROOT = Path(__file__).resolve().parents[4]
+DEFAULT_PORT = 8001
 _HASH = re.compile(r"[0-9a-f]{64}\Z")
 _ID = re.compile(r"[0-9]{6}\Z")
 _POINTER_SCHEMA = "m7-current-trial-workbook-v5"
@@ -111,9 +115,24 @@ def _queue_item(row: dict, as_of: str) -> dict:
     return item
 
 
-def create_app(root: Path | None = None) -> FastAPI:
+def _default_port() -> int:
+    raw = os.environ.get("VALUE_INVESTMENT_WEB_PORT", "")
+    try:
+        port = int(raw)
+    except ValueError:
+        return DEFAULT_PORT
+    return port if 1024 <= port <= 65535 else DEFAULT_PORT
+
+
+def create_app(
+    root: Path | None = None,
+    *,
+    port: int | None = None,
+    session_ttl_seconds: float = SESSION_TTL_SECONDS,
+) -> FastAPI:
     # Root injection is for in-process tests; no HTTP parameter or environment override exists.
     project = (root or ROOT).resolve()
+    bound_port = port if port is not None else _default_port()
     api = FastAPI(title="Value Investment Read API")
 
     @api.get("/api/v1/daily-decisions")
@@ -232,9 +251,32 @@ def create_app(root: Path | None = None) -> FastAPI:
                             "decision": _queue_item(entry, queue.get("as_of"))}
         return {"action": "no_order", "status": "NOT_FOUND", "decision": None, "reason": "UNKNOWN_DECISION"}
 
+    def published_research_versions() -> dict[str, str]:
+        """Every research version string the current publication really binds."""
+        current = _public(project)
+        versions: dict[str, str] = {}
+        if current is None:
+            return versions
+        model = current[2]
+        for binding in model.get("additional_evidence_bindings", []):
+            if not isinstance(binding, dict) or not isinstance(binding.get("path"), str):
+                continue
+            if not binding["path"].endswith("-value-decision-explanation.json"):
+                continue
+            try:
+                explanation = _bound(project, binding)
+            except (OSError, ValueError, KeyError, TypeError):
+                continue
+            if (explanation.get("schema_version") == "public-value-decision-explanation-v1"
+                    and explanation.get("action") == "no_order"
+                    and isinstance(explanation.get("symbol"), str)
+                    and isinstance(explanation.get("research_version"), str)):
+                versions[explanation["symbol"]] = explanation["research_version"]
+        return versions
+
     @api.get("/api/v1/decision-history")
     def decision_history():
-        return {"action": "no_order", "status": "NOT_CONNECTED", "items": []}
+        return build_research_history(project, published_versions=published_research_versions())
 
     @api.get("/api/v1/system/status")
     def system_status():
@@ -253,7 +295,10 @@ def create_app(root: Path | None = None) -> FastAPI:
             "detail": [{"field": ".".join(str(part) for part in item.get("loc", ())),
                         "message": item.get("msg", "invalid")} for item in error.errors()]})
 
-    register_private_routes(api, project)
+    register_private_routes(
+        api, project,
+        sessions=LocalOperatorSession(ttl_seconds=session_ttl_seconds),
+        port=bound_port)
 
     dist = project / "web" / "dist"
     if dist.is_dir() and (dist / "index.html").is_file():

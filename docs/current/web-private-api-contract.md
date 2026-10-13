@@ -37,7 +37,31 @@ Replaying the same `idempotency_key` with the same `request_sha256` returns the
 stored `response` without appending. Reusing the key with different content is
 HTTP 409 `IDEMPOTENCY_CONFLICT`.
 
+## Authorization (added 2026-10-13, WEB-D2 P0.1)
+
+Every private read and write requires the local operator session:
+
+1. The workbench page calls `GET /api/v1/private/session` once and receives a
+   process-scoped token. The response is `Cache-Control: no-store`.
+2. The token is sent back in the `X-Local-Session` header on every private
+   request, including `GET /api/v1/portfolio`.
+3. The server also requires: a loopback TCP peer, a `Host` header naming the
+   bound loopback interface and port, and - when `Origin`/`Referer` are present
+   - an exact same-origin match including scheme and port. Non-browser clients
+   (curl) may omit `Origin`, but must still present the token.
+4. `POST /api/v1/private/session/logout` invalidates the token immediately;
+   restarting the service invalidates it too. A rejected request never reaches
+   the ledger.
+
+The token lives in server memory only. It is never logged, written to disk,
+published with research data, or committed to Git.
+
 ## Endpoints (all under /api/v1)
+
+`GET /private/session` -> 200 `{"action":"no_order","status":"AUTHORIZED",
+ "header":"x-local-session","token":"...","ttl_seconds":43200}`
+
+`POST /private/session/logout` -> 200 `{"action":"no_order","status":"SIGNED_OUT"}`
 
 `GET /portfolio` -> 200
 ```json
@@ -102,6 +126,9 @@ deleted and no holding changes. A cancelled draft stops blocking the next fill.
 | 409 | NO_CONFIRMABLE_DRAFT | confirm without a matching prepared fill |
 | 422 | VALIDATION_FAILED | malformed or unsafe user input (detail list included) |
 | 403 | ORIGIN_REJECTED | request Origin/Referer is not the local workbench |
+| 403 | HOST_REJECTED | Host header is not the bound loopback host and port |
+| 403 | CLIENT_NOT_LOOPBACK | the TCP peer is not a loopback address |
+| 401 | LOCAL_AUTHORIZATION_REQUIRED | missing, invalid or expired local session token |
 | 503 | PRIVATE_ROOT_UNAVAILABLE | private root missing or invalid on this machine |
 
 Business states such as NOT_CONNECTED, PENDING_QUOTE_ADMISSION, and an empty

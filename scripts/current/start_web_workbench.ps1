@@ -14,6 +14,7 @@ $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 Set-Location -LiteralPath $root
 $env:PYTHONPATH = Join-Path $root 'src'
 $env:PYTHONIOENCODING = 'utf-8'
+$env:VALUE_INVESTMENT_WEB_PORT = "$Port"
 $env:TEMP = Join-Path $root '.tmp'
 $env:TMP = $env:TEMP
 New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
