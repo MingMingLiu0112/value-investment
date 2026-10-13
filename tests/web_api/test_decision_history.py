@@ -71,7 +71,13 @@ def test_two_real_versions_are_compared_field_by_field(tmp_path):
     assert item["versions"][0]["sha256"] == digest
     assert item["versions"][1]["research_date"] == "20260101"
     assert item["attention"]["choice_id"] == "B_CONTINUITY_ALTERNATIVE"
-    assert item["evidence"] == [{"path": "docs/current/example.md", "sha256": "d" * 64}]
+    # A declared source is reported with the status of its recomputed digest, and
+    # a missing file is never presented as if the source had been verified.
+    assert item["evidence"] == [{"path": "docs/current/example.md", "sha256": "d" * 64,
+                                 "status": "MISSING"}]
+    assert item["verification"]["rationale_bindings"] == {
+        "status": "INCOMPLETE", "verified_count": 0, "total": 1}
+    assert item["admission_effect"] == "NONE"
     assert item["review_items"][0]["question"] == "历史盈利能力是否可持续？"
     comparison = item["comparison"]
     assert comparison["status"] == "COMPARED"
@@ -111,6 +117,110 @@ def test_published_version_binding_is_explicit(tmp_path):
     item = body["items"][0]
     assert item["published_research_version"] == published
     assert item["versions"][0]["bound_to_current_publication"] is True
+
+
+def test_rationale_bindings_are_recomputed_against_real_files(tmp_path):
+    source = tmp_path / "docs/current/evidence.md"
+    source.parent.mkdir(parents=True, exist_ok=True)
+    source.write_text("真实来源", encoding="utf-8")
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    payload = proposal("600887", choice="A_PRESSURE_REFERENCE", growth="0", groups=[], limits=[])
+    payload["rationale_bindings"] = [{"path": "docs/current/evidence.md", "sha256": digest},
+                                     {"path": "docs/current/absent.md", "sha256": "e" * 64}]
+    write(tmp_path, "600887-20260101.json", payload)
+    item = TestClient(create_app(tmp_path)).get("/api/v1/decision-history").json()["items"][0]
+    verified, missing = item["evidence"]
+    assert verified == {"path": "docs/current/evidence.md", "sha256": digest,
+                        "status": "VERIFIED", "actual_sha256": digest}
+    assert missing["status"] == "MISSING"
+    assert item["verification"]["rationale_bindings"] == {
+        "status": "INCOMPLETE", "verified_count": 1, "total": 2}
+
+    source.write_text("被改动的来源", encoding="utf-8")
+    item = TestClient(create_app(tmp_path)).get("/api/v1/decision-history").json()["items"][0]
+    assert item["evidence"][0]["status"] == "HASH_MISMATCH"
+    assert item["evidence"][0]["actual_sha256"] != digest
+
+
+def test_source_package_digest_must_match_a_real_package(tmp_path):
+    package = tmp_path / "config/m1-valuation-packages-v1/600887-quality-compounder.json"
+    package.parent.mkdir(parents=True, exist_ok=True)
+    package.write_text('{"schema_version":"m1-valuation-package-v1"}', encoding="utf-8")
+    digest = hashlib.sha256(package.read_bytes()).hexdigest()
+    payload = proposal("600887", choice="A_PRESSURE_REFERENCE", growth="0", groups=[], limits=[])
+    payload["source_package_sha256"] = digest
+    write(tmp_path, "600887-20260101.json", payload)
+    package_row = TestClient(create_app(tmp_path)).get(
+        "/api/v1/decision-history").json()["items"][0]["verification"]["source_package"]
+    assert package_row == {"status": "VERIFIED", "declared_sha256": digest,
+                           "artifact": "config/m1-valuation-packages-v1/600887-quality-compounder.json",
+                           "sha256": digest}
+
+    payload["source_package_sha256"] = "f" * 64
+    write(tmp_path, "600887-20260102-v2.json", payload)
+    package_row = TestClient(create_app(tmp_path)).get(
+        "/api/v1/decision-history").json()["items"][0]["verification"]["source_package"]
+    assert package_row == {"status": "NOT_FOUND", "declared_sha256": "f" * 64}
+
+
+def test_published_decisions_stay_separate_from_proposals(tmp_path):
+    digest = write(tmp_path, "600887-20260102-v2.json",
+                   proposal("600887", choice="A_PRESSURE_REFERENCE", growth="0", groups=[], limits=[]))
+    published = f"pending-600887-2026-01-02-A_PRESSURE_REFERENCE-{digest[:12]}"
+    body = build_research_history(tmp_path, published_versions={"600887": published},
+                                  published_decisions={"600887": {
+                                      "research_version": published,
+                                      "candidate_action": "NO_ACTION",
+                                      "decision_cutoff": "2026-01-03",
+                                      "artifact": "runtime/example-explanation.json",
+                                      "sha256": "a" * 64}})
+    history = body["published_decision_history"]
+    assert history["status"] == "CURRENT_ONLY"
+    assert history["history"] == []
+    assert history["current_published_decisions"] == [{
+        "symbol": "600887", "research_version": published, "candidate_action": "NO_ACTION",
+        "decision_cutoff": "2026-01-03", "artifact": "runtime/example-explanation.json",
+        "sha256": "a" * 64}]
+    item = body["items"][0]
+    assert item["published_decision"]["status"] == "CURRENT_PUBLICATION_ONLY"
+    assert item["published_decision"]["decision_cutoff"] == "2026-01-03"
+    assert item["timeline"]["proposal_available_at"] is None
+    assert item["timeline"]["proposal_available_at_status"] == "NOT_RECORDED_IN_PROPOSAL"
+    assert item["timeline"]["published_decision_cutoff"] == "2026-01-03"
+    assert body["historical_reconstruction"]["status"] == "NOT_AVAILABLE"
+
+
+def test_corrupt_proposal_is_reported_not_silently_dropped(tmp_path):
+    write(tmp_path, "600519-20260101.json",
+          proposal("600519", choice="A", growth="0", groups=[], limits=[]))
+    bad = tmp_path / "config/research-proposals/600519-20260102-v2.json"
+    bad.write_text("{not json", encoding="utf-8")
+    wrong = tmp_path / "config/research-proposals/600519-20260103-v3.json"
+    wrong.write_text(json.dumps({"schema_version": "other", "action": "no_order",
+                                 "symbol": "600519"}), encoding="utf-8")
+    body = TestClient(create_app(tmp_path)).get("/api/v1/decision-history").json()
+    assert body["counts"] == {"symbols": 1, "versions": 1}
+    assert body["skipped_proposals"] == [
+        {"artifact": "config/research-proposals/600519-20260102-v2.json",
+         "reason": "UNREADABLE_JSON"},
+        {"artifact": "config/research-proposals/600519-20260103-v3.json",
+         "reason": "UNKNOWN_SCHEMA"}]
+
+
+def test_live_history_binds_real_published_decisions():
+    body = TestClient(create_app(ROOT)).get("/api/v1/decision-history").json()
+    assert body["status"] == "CONNECTED"
+    assert body["published_decision_history"]["status"] == "CURRENT_ONLY"
+    assert body["published_decision_history"]["history"] == []
+    current = {row["symbol"]: row for row in
+               body["published_decision_history"]["current_published_decisions"]}
+    assert current["600887"]["candidate_action"] == "NO_ACTION"
+    assert current["600887"]["decision_cutoff"] == "2026-10-11"
+    item = next(row for row in body["items"] if row["symbol"] == "600887")
+    assert item["published_decision"]["status"] == "CURRENT_PUBLICATION_ONLY"
+    assert item["verification"]["source_package"]["status"] == "VERIFIED"
+    assert item["verification"]["rationale_bindings"]["verified_count"] >= 1
+    assert item["timeline"]["proposal_available_at_status"] == "NOT_RECORDED_IN_PROPOSAL"
 
 
 def test_live_600519_series_hashes_are_recomputable():

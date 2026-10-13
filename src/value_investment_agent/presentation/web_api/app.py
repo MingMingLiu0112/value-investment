@@ -371,12 +371,12 @@ def create_app(
                             "decision": _queue_item(entry, queue.get("as_of"))}
         return {"action": "no_order", "status": "NOT_FOUND", "decision": None, "reason": "UNKNOWN_DECISION"}
 
-    def published_research_versions() -> dict[str, str]:
-        """Every research version string the current publication really binds."""
+    def bound_decisions() -> dict[str, dict]:
+        """Every research decision the current publication really binds."""
         current = _public(project)
-        versions: dict[str, str] = {}
+        decisions: dict[str, dict] = {}
         if current is None:
-            return versions
+            return decisions
         model = current[2]
         for binding in model.get("additional_evidence_bindings", []):
             if not isinstance(binding, dict) or not isinstance(binding.get("path"), str):
@@ -391,12 +391,21 @@ def create_app(
                     and explanation.get("action") == "no_order"
                     and isinstance(explanation.get("symbol"), str)
                     and isinstance(explanation.get("research_version"), str)):
-                versions[explanation["symbol"]] = explanation["research_version"]
-        return versions
+                decisions[explanation["symbol"]] = {
+                    "research_version": explanation["research_version"],
+                    "candidate_action": explanation.get("candidate_action"),
+                    "decision_cutoff": explanation.get("decision_as_of"),
+                    "artifact": binding["path"], "sha256": binding["sha256"]}
+        return decisions
 
     @api.get("/api/v1/decision-history")
     def decision_history():
-        return build_research_history(project, published_versions=published_research_versions())
+        decisions = bound_decisions()
+        return build_research_history(
+            project,
+            published_versions={symbol: row["research_version"]
+                                for symbol, row in decisions.items()},
+            published_decisions=decisions)
 
     @api.get("/api/v1/system/status")
     def system_status(request: Request):
