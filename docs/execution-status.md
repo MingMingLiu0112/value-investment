@@ -1,5 +1,47 @@
 # CURRENT STATUS
 
+## 2026-10-13 TL10-RC: one verified daily snapshot, one entry, fail-closed reads
+
+TL10-RC engineering delivery is complete on `codex/web-d1-investment-workbench`.
+The daily public packet now has a sound version identity (engine
+`daily-public-packet-engine-v2`, identity schema v4): `publication_id` covers
+the verified publication chain, the quote pointer and archived bundles, the
+research registry and its evidence, the bound decision-explanation files, the
+engine revision and the business clock; `generated_at`/`excel_sync` stay
+volatile and out of both the identity and `content_sha256`. Identity v4 was
+added because a bound explanation file change could otherwise mint the same
+identity with different content and be refused by the exit 4 guard for the
+rest of the day; now every content input mints a new version and exit 4 stands
+only against a stored record disagreeing with recomputation (tamper/engine
+regression, pinned by test). `scripts/current/build_daily_public_packet.py`
+publishes one versioned artifact plus an immutable receipt and atomically
+repoints `config/current-daily-public-snapshot.json` (WRITTEN/UNCHANGED exit 0,
+chain unavailable exit 2, unreadable record exit 3, identity conflict exit 4).
+Real run: `pub-d4b9f0f5f78a1e2ef00d`, `content_sha256` 848277...,
+artifact sha256 0a288c..., re-run `UNCHANGED` byte-identical, exit 0.
+`/api/v1/daily-public-packet` serves the verified stored bytes (only falling
+back to a live composition, marked `NO_VERIFIED_SNAPSHOT`, when no snapshot
+exists); `/api/v1/daily-public-snapshot` reports pointer state plus the
+read-only Excel comparison (MATCHED against canonical workbook `aeaa3c7f...`).
+`/daily` shows the snapshot identity, date boundaries, freshness, symbol-
+deduplicated count semantics and the Excel comparison; the dual-sleeve table
+is annotated as a publication snapshot whenever the live private state is
+locked/unavailable. `run_daily_workbench.ps1` keeps update result, Web result
+and overall exit code separate (0/2/3/4) and states the SAFE_REFRESH boundary
+(quotes only; research reruns, event review and G3 stay human/engineering).
+Tests: TL10 target suites 163 passed (identity 8, snapshot CLI 7, workbench
+entry 4, web_api + research status 144); web typecheck 72 tests, build,
+prettier all passed. The 8001 workbench was restarted on the new code and
+verified through the real API and the in-app browser: 600887 shows the
+conditional range (9.80/10.08/10.30), the verified close (2026-10-13, 27.77)
+and the exact not-comparable reason (quote later than the research cutoff);
+000333/601088 keep honest not-ready states with 0 formal admissions. Usage
+note: docs/current/tl10-rc-daily-usage-20261013.md; identity/snapshot note:
+docs/current/tl10-rc-identity-and-snapshot-20261013.md. action=no_order
+unchanged; the canonical workbook and all private data were untouched.
+FINAL user acceptance: run
+`pwsh -NoProfile -File scripts/current/run_daily_workbench.ps1 -Mode READ_ONLY -Open`.
+
 ## 2026-10-13 TL9-MVP: one trustworthy daily packet, one command, consistent private state
 
 TL9 MVP-1..MVP-5 engineering delivery is complete on

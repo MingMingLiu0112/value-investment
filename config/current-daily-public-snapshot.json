@@ -1,0 +1,14 @@
+{
+  "schema_version": "current-daily-public-snapshot-v1",
+  "action": "no_order",
+  "status": "VERIFIED",
+  "publication_id": "pub-d4b9f0f5f78a1e2ef00d",
+  "packet_path": "runtime/daily-public-packet/daily-public-packet-pub-d4b9f0f5f78a1e2ef00d.json",
+  "packet_sha256": "0a288ce57e659b1968cfbf4855ed394a97f24aa189a91d7e001d51f502fd3919",
+  "content_sha256": "848277242ace44999038b6b2909ca66f4fd40bb26a278eaf0693aa77ae934c61",
+  "engine_version": "daily-public-packet-engine-v2",
+  "research_version": "canonical-reviewed-research-20261012T113935Z-362d7928",
+  "generated_at": "2026-10-13T12:06:24.576293+00:00",
+  "published_at": "2026-10-13T12:08:16.040240+00:00",
+  "receipt_path": "runtime/daily-public-packet/receipts/daily-public-packet-pub-d4b9f0f5f78a1e2ef00d.receipt.json"
+}
