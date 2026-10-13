@@ -25,14 +25,18 @@ from ...portfolio_contracts import (
     NAMESPACE_ACTUAL,
     QUANTITY_HUMAN_CONFIRMED,
     RECONCILIATION_PENDING,
-    RECONCILIATION_RECONCILED,
     RISK_UNKNOWN,
     SCHEMA_VERSION,
     PortfolioHolding,
     PortfolioSnapshot,
     portfolio_snapshot_from_payload,
 )
-from .private_portfolio_service import PrivateJournal, PrivatePortfolioService, ReplayedPortfolio
+from .private_portfolio_service import (
+    PrivateJournal,
+    PrivatePortfolioService,
+    ReplayedPortfolio,
+    reconciliation_state,
+)
 
 RISK_INPUT_SCHEMA = "dual-sleeve-risk-input-v1"
 PRICE_ADMISSION_REASON = "尚未接入经核验的当前行情，无法计算市值、浮动盈亏与仓位权重"
@@ -96,10 +100,28 @@ def _holdings(replayed: ReplayedPortfolio, evidence: dict[str, str]) -> tuple[Po
     )
 
 
+def _snapshot_matches_state(snapshot: PortfolioSnapshot, replayed: ReplayedPortfolio) -> bool:
+    """The stored snapshot may only be reused while it equals the confirmed state."""
+    expected: dict[str, Decimal] = {}
+    for lot in replayed.state.lots:
+        expected[lot.symbol] = expected.get(lot.symbol, Decimal(0)) + lot.quantity
+    actual = {holding.symbol: holding.quantity for holding in snapshot.holdings}
+    return snapshot.cash_cny == replayed.state.cash_cny and actual == expected
+
+
 def _snapshot_payload(replayed: ReplayedPortfolio) -> dict[str, Any]:
-    """Prefer the user-confirmed reconciliation record; otherwise project pending."""
-    if replayed.snapshot is not None:
-        return portfolio_snapshot_from_payload(replayed.snapshot).as_policy()
+    """Use the stored reconciliation only while it still matches the ledger.
+
+    WEB-D3 P0.1: after a newer ``FILL_CONFIRMED`` the stored snapshot is
+    superseded. Feeding it to the risk engine would describe a portfolio that no
+    longer exists, so a superseded or mismatched snapshot is projected afresh
+    from the confirmed state and reported as pending reconciliation.
+    """
+    stored = replayed.snapshot
+    if stored is not None and replayed.snapshot_version == replayed.state.version:
+        candidate = portfolio_snapshot_from_payload(stored)
+        if _snapshot_matches_state(candidate, replayed):
+            return candidate.as_policy()
     state = replayed.state
     evidence = _evidence(replayed)
     snapshot = PortfolioSnapshot(
@@ -159,6 +181,7 @@ def build_risk_input(
 
 def _facts(replayed: ReplayedPortfolio) -> dict[str, Any]:
     state = replayed.state
+    reconciliation = reconciliation_state(replayed)
     grouped: dict[tuple[str, str], dict[str, Any]] = {}
     for lot in state.lots:
         entry = grouped.setdefault((lot.symbol, lot.exchange), {
@@ -191,8 +214,8 @@ def _facts(replayed: ReplayedPortfolio) -> dict[str, Any]:
         "cost_basis_total_cny": str(sum((lot.cost_cny for lot in state.lots), Decimal(0))),
         "positions": positions,
         "confirmed_fill_count": state.version,
-        "reconciliation_status": (RECONCILIATION_RECONCILED if replayed.snapshot is not None
-                                  else RECONCILIATION_PENDING),
+        "reconciliation_status": reconciliation["status"],
+        "reconciliation": reconciliation,
         "price_status": "PRICE_NOT_ADMITTED",
         "price_reason": PRICE_ADMISSION_REASON,
     }

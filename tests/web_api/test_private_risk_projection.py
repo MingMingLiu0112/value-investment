@@ -1,9 +1,17 @@
 """WEB-D2 P1: the confirmed journal really drives the dual-sleeve risk engine."""
 from __future__ import annotations
 
+from datetime import date
+
+from value_investment_agent.application.portfolio.private_portfolio_service import (
+    PrivateJournal,
+    PrivatePortfolioService,
+)
+from value_investment_agent.application.portfolio.private_risk_projection import build_risk_input
 from value_investment_agent.domain.portfolio.dual_sleeve_risk import REPORT_SCHEMA
 
 RISK_PATH = "/api/v1/private/portfolio/risk"
+PORTFOLIO_PATH = "/api/v1/portfolio"
 INITIALIZE_PATH = "/api/v1/private/portfolio/initialize"
 PREPARE_PATH = "/api/v1/private/fills/prepare"
 CONFIRM_PATH = "/api/v1/private/fills/confirm"
@@ -121,3 +129,114 @@ def test_corrupt_journal_fails_closed_without_running_the_engine(client, workspa
     assert body["status"] == "PRIVATE_JOURNAL_INVALID"
     assert body["engine"] is None
     assert body["facts"] is None
+
+
+SECOND_FILL = {
+    "idempotency_key": "fill-2",
+    "expected_revision": 4,
+    "fill": {"transaction_id": "T2", "side": "BUY", "sleeve": "CORE_VALUE",
+             "symbol": "600519", "exchange": "SSE", "quantity": "100",
+             "price_cny": "1520.00", "fees_cny": "5.00", "trade_date": "2026-10-13",
+             "next_sell_session": "2026-10-14", "trading_unit": "100"},
+}
+
+
+def confirm_fill(client, *, key: str, expected_revision: int, prepared_sha: str, confirmed_at: str):
+    response = client.post(CONFIRM_PATH, json={
+        "idempotency_key": key, "expected_revision": expected_revision,
+        "prepared_record_sha256": prepared_sha,
+        "confirmed_at": confirmed_at, "confirmation_note": "confirmed"})
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def reconcile(client, *, key: str, expected_revision: int, reconciled_at: str, **extra):
+    response = client.post(RECONCILE_PATH, json={
+        "idempotency_key": key, "expected_revision": expected_revision,
+        "reconciled_at": reconciled_at, "confirmation_note": "reconciled", **extra})
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def initialize_fill_and_reconcile(client):
+    """INITIALIZE -> FILL -> CONFIRM -> RECONCILE; returns the reconcile response."""
+    client.post(INITIALIZE_PATH, json=BASELINE)
+    prepared = client.post(PREPARE_PATH, json=FILL).json()
+    confirm_fill(client, key="fill-1-confirm", expected_revision=2,
+                 prepared_sha=prepared["record_sha256"], confirmed_at="2026-10-12T21:00:00+08:00")
+    return reconcile(client, key="reconcile-1", expected_revision=3,
+                     reconciled_at="2026-10-12T21:05:00+08:00")
+
+
+def confirm_second_fill(client):
+    prepared = client.post(PREPARE_PATH, json=SECOND_FILL).json()
+    confirm_fill(client, key="fill-2-confirm", expected_revision=5,
+                 prepared_sha=prepared["record_sha256"], confirmed_at="2026-10-13T21:00:00+08:00")
+
+
+def test_new_fill_after_reconciliation_supersedes_the_snapshot(client, workspace):
+    initialize_fill_and_reconcile(client)
+    assert risk(client)["facts"]["reconciliation_status"] == "RECONCILED"
+
+    confirm_second_fill(client)
+
+    body = risk(client)
+    facts = body["facts"]
+    assert facts["confirmed_fill_count"] == 2
+    assert facts["cash_cny"] == "47990.00"
+    assert facts["cost_basis_total_cny"] == "1952010.00"
+    # The old reconciliation snapshot must no longer be presented as current.
+    assert facts["reconciliation_status"] == "PENDING_RECONCILIATION"
+    assert "reconciliation" in body["blockers"]
+    superseded = facts["reconciliation"]
+    assert superseded["status"] == "PENDING_RECONCILIATION"
+    assert superseded["superseded"] is True
+    assert superseded["snapshot_version"] == 1
+    assert superseded["state_version"] == 2
+    assert superseded["scope"] == "INTERNAL_JOURNAL_REPLAY"
+
+    # Whatever the risk engine receives must equal the latest confirmed state.
+    _, private = workspace
+    service = PrivatePortfolioService(PrivateJournal(private / "portfolio" / "journal.jsonl"))
+    replayed = service._replay(service.records())
+    risk_input = build_risk_input(replayed, sellable_as_of=date(2026, 10, 14))
+    snapshot = risk_input["portfolio"]["snapshot"]
+    # A freshly projected snapshot of the current confirmed state, not the stored one.
+    assert snapshot["snapshot_id"] == f"private-journal-projection-{replayed.state.version}"
+    assert snapshot["reconciliation_status"] == "PENDING_RECONCILIATION"
+    assert snapshot["cash_cny"] == "47990.00"
+    assert [(row["symbol"], row["quantity"]) for row in snapshot["holdings"]] == [("600519", "1300")]
+
+
+def test_reconciliation_after_the_new_fill_restores_consistency(client):
+    initialize_fill_and_reconcile(client)
+    confirm_second_fill(client)
+    reconcile(client, key="reconcile-2", expected_revision=6,
+              reconciled_at="2026-10-13T21:05:00+08:00")
+
+    body = risk(client)
+    facts = body["facts"]
+    assert facts["reconciliation_status"] == "RECONCILED"
+    assert facts["reconciliation"]["superseded"] is False
+    assert facts["reconciliation"]["snapshot_version"] == 2
+    assert facts["reconciliation"]["state_version"] == 2
+    assert "reconciliation" not in body["blockers"]
+
+
+def test_reconciliation_distinguishes_internal_replay_from_external_account_evidence(client):
+    # Default: the snapshot is an internal replay of the user-confirmed journal.
+    body = initialize_fill_and_reconcile(client)
+    assert body["reconciliation_scope"] == "INTERNAL_JOURNAL_REPLAY"
+    view = client.get(PORTFOLIO_PATH).json()
+    assert view["reconciliation"]["scope"] == "INTERNAL_JOURNAL_REPLAY"
+    assert view["reconciliation"]["status"] == "RECONCILED"
+
+    confirm_second_fill(client)
+    body = reconcile(client, key="reconcile-2", expected_revision=6,
+                     reconciled_at="2026-10-13T21:05:00+08:00",
+                     account_evidence={"id": "broker-statement-2026-10-13",
+                                       "kind": "broker_statement"})
+    assert body["reconciliation_scope"] == "EXTERNAL_ACCOUNT_STATEMENT"
+    view = client.get(PORTFOLIO_PATH).json()
+    assert view["reconciliation"]["scope"] == "EXTERNAL_ACCOUNT_STATEMENT"
+    assert view["reconciliation"]["superseded"] is False

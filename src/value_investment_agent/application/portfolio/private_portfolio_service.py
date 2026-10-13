@@ -25,6 +25,7 @@ from ...portfolio_contracts import (
     PortfolioHolding,
     PortfolioSnapshot,
     QUANTITY_HUMAN_CONFIRMED,
+    RECONCILIATION_PENDING,
     RECONCILIATION_RECONCILED,
 )
 from ...private_portfolio_intake import require_private_data_path
@@ -49,6 +50,12 @@ RECORD_KINDS = frozenset({
 })
 EXCHANGES = frozenset({"SSE", "SZSE", "BSE"})
 SIDES = frozenset({"BUY", "SELL"})
+RECONCILIATION_SCOPE_INTERNAL = "INTERNAL_JOURNAL_REPLAY"
+RECONCILIATION_SCOPE_EXTERNAL = "EXTERNAL_ACCOUNT_STATEMENT"
+_RECONCILIATION_SCOPES = frozenset({RECONCILIATION_SCOPE_INTERNAL, RECONCILIATION_SCOPE_EXTERNAL})
+_EXTERNAL_EVIDENCE_KINDS = frozenset({
+    "broker_statement", "account_statement", "custodian_statement",
+})
 POLICY_DECIMAL_FIELDS = (
     "investable_assets_cny",
     "minimum_cash_cny",
@@ -233,6 +240,37 @@ class ReplayedPortfolio:
     snapshot: dict[str, Any] | None
     pending: dict[str, Any] | None
     draft: Reconciliation | None
+    snapshot_version: int | None = None
+    snapshot_scope: str | None = None
+
+
+def reconciliation_state(replayed: ReplayedPortfolio) -> dict[str, Any]:
+    """Report the stored reconciliation against the latest confirmed version.
+
+    WEB-D3 P0.1. A ``RECONCILED_CONFIRMED`` snapshot keeps its historical value
+    after a newer ``FILL_CONFIRMED``, but it can no longer stand for the current
+    holdings. Callers must not present it as current, and the risk engine must
+    never receive it as if it were.
+    """
+    state = replayed.state
+    stored = replayed.snapshot
+    current = stored is not None and replayed.snapshot_version == state.version
+    superseded = stored is not None and not current
+    if current:
+        reason = None
+    elif superseded:
+        reason = "SUPERSEDED_BY_NEWER_FILL"
+    else:
+        reason = "NO_RECONCILIATION_CONFIRMED"
+    return {
+        "status": RECONCILIATION_RECONCILED if current else RECONCILIATION_PENDING,
+        "superseded": superseded,
+        "reason": reason,
+        "state_version": state.version,
+        "snapshot_version": replayed.snapshot_version,
+        "scope": replayed.snapshot_scope,
+        "reconciled_at": (stored or {}).get("reconciled_at"),
+    }
 
 
 class PrivateJournal:
@@ -459,6 +497,8 @@ class PrivatePortfolioService:
         policy: dict[str, Any] = {}
         trades: list[dict[str, Any]] = []
         snapshot: dict[str, Any] | None = None
+        snapshot_version: int | None = None
+        snapshot_scope: str | None = None
         pending: dict[str, Any] | None = None
         draft: Reconciliation | None = None
         for record in records:
@@ -516,10 +556,16 @@ class PrivatePortfolioService:
                 pending = None
                 draft = None
             elif kind == "RECONCILED_CONFIRMED":
+                if state is None:
+                    raise JournalValidationError("私人流水缺少初始组合")
                 snapshot = json.loads(canonical_bytes(dict(body["snapshot"])))
+                snapshot_version = state.version
+                scope = body.get("reconciliation_scope")
+                snapshot_scope = scope if scope in _RECONCILIATION_SCOPES else RECONCILIATION_SCOPE_INTERNAL
         if state is None:
             return None
-        return ReplayedPortfolio(len(records), state, policy, tuple(trades), snapshot, pending, draft)
+        return ReplayedPortfolio(len(records), state, policy, tuple(trades), snapshot, pending, draft,
+                                 snapshot_version, snapshot_scope)
 
     @staticmethod
     def _sellable_as_of(state: Reconciliation, requested: date | None) -> date:
@@ -597,6 +643,7 @@ class PrivatePortfolioService:
             "policy": dict(replayed.policy),
             "pending_draft": replayed.pending,
             "latest_snapshot": replayed.snapshot,
+            "reconciliation": reconciliation_state(replayed),
             "sellable_as_of": sellable_as_of.isoformat(),
             "valuation": {"status": "PRICE_NOT_ADMITTED", "reason": PRICE_ADMISSION_REASON},
             "blockers": ["PRICE_NOT_ADMITTED"],
@@ -617,6 +664,7 @@ class PrivatePortfolioService:
                 "policy": None,
                 "pending_draft": None,
                 "latest_snapshot": None,
+                "reconciliation": None,
                 "valuation": {"status": "NOT_CONNECTED", "reason": "尚未确认真实私人持仓"},
                 "blockers": ["PRIVATE_PORTFOLIO_NOT_CONNECTED", "PRICE_NOT_ADMITTED"],
             }
@@ -856,7 +904,8 @@ class PrivatePortfolioService:
             "trade": trade,
         }
         replayed_after = ReplayedPortfolio(
-            revision + 1, state, replayed.policy, replayed.trades + (trade,), replayed.snapshot, None, None
+            revision + 1, state, replayed.policy, replayed.trades + (trade,), replayed.snapshot, None, None,
+            replayed.snapshot_version, replayed.snapshot_scope,
         )
         payload = self._portfolio_payload(replayed_after)
         payload["status"] = "FILL_CONFIRMED"
@@ -893,6 +942,21 @@ class PrivatePortfolioService:
             raise JournalConflict("NO_CONFIRMABLE_DRAFT", "至少需要一笔已确认成交才能生成对账快照")
         confirmed_records = [record for record in records if record["kind"] == "FILL_CONFIRMED"]
         evidence = dict(confirmed_records[-1]["body"]["evidence_ref"])
+        account_evidence = request.get("account_evidence")
+        if account_evidence is None:
+            reconciliation_scope = RECONCILIATION_SCOPE_INTERNAL
+        else:
+            account_evidence = dict(_mapping(account_evidence, "account_evidence"))
+            kind = _text(account_evidence.get("kind"), "account_evidence.kind")
+            if kind not in _EXTERNAL_EVIDENCE_KINDS:
+                raise JournalValidationError(
+                    "account_evidence.kind 必须是 broker_statement、account_statement 或 "
+                    "custodian_statement；没有外部账户证据时请省略该字段")
+            account_evidence = {
+                "id": _text(account_evidence.get("id"), "account_evidence.id"),
+                "kind": kind,
+            }
+            reconciliation_scope = RECONCILIATION_SCOPE_EXTERNAL
         reconciled_at = _aware_datetime(request.get("reconciled_at"), "reconciled_at")
         try:
             snapshot = portfolio_snapshot(
@@ -906,6 +970,8 @@ class PrivatePortfolioService:
         snapshot_payload = snapshot.as_policy()
         body = {
             "snapshot": snapshot_payload,
+            "reconciliation_scope": reconciliation_scope,
+            "account_evidence": account_evidence,
             "confirmation": {
                 "note": _text(request.get("confirmation_note"), "confirmation_note"),
                 "reconciled_at": reconciled_at.isoformat(),
@@ -917,6 +983,7 @@ class PrivatePortfolioService:
             "action": "no_order",
             "status": "RECONCILED",
             "revision": revision + 1,
+            "reconciliation_scope": reconciliation_scope,
             "snapshot": snapshot_payload,
             "portfolio": {
                 "status": "CONNECTED",
