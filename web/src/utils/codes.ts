@@ -1,3 +1,5 @@
+import type { PortfolioReconciliation } from "../types/api";
+
 /**
  * 机器代码到中文短句的统一翻译。
  * 未收录的代码一律返回 null，由调用方决定如何原样展示，绝不猜测含义。
@@ -61,6 +63,45 @@ export function reconciliationText(value?: string | null): string {
   if (value === "RECONCILED") return "已完成对账";
   if (value === "PENDING_RECONCILIATION") return "尚未执行对账";
   return value;
+}
+
+const RECONCILIATION_REASON: Record<string, string> = {
+  SUPERSEDED_BY_NEWER_FILL:
+    "新的已确认成交晚于上次对账，旧快照不再代表当前持仓",
+  NO_RECONCILIATION_CONFIRMED: "尚未确认过对账快照",
+};
+
+const RECONCILIATION_SCOPE: Record<string, string> = {
+  INTERNAL_JOURNAL_REPLAY: "系统内部流水重算（不等于券商对账）",
+  EXTERNAL_ACCOUNT_STATEMENT: "外部账户对账凭证",
+};
+
+export interface ReconciliationView {
+  statusText: string;
+  scopeText: string;
+  reasonText: string | null;
+  reconciledAt: string | null;
+}
+
+/**
+ * 对账块是可选字段：没有时返回 null，由调用方决定是否展示。
+ * 未收录的范围或原因代码原样返回，不猜测含义。
+ */
+export function reconciliationView(
+  value?: PortfolioReconciliation | null,
+): ReconciliationView | null {
+  if (!value) return null;
+  const scope = value.scope;
+  return {
+    statusText: reconciliationText(value.status),
+    scopeText: scope
+      ? (RECONCILIATION_SCOPE[scope] ?? scope)
+      : "未提供对账范围",
+    reasonText: value.reason
+      ? (RECONCILIATION_REASON[value.reason] ?? value.reason)
+      : null,
+    reconciledAt: value.reconciled_at ?? null,
+  };
 }
 
 const ENGINE_ALERT_TAIL: Record<string, string> = {

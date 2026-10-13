@@ -21,6 +21,7 @@ import { Workbench } from "../../components/Workbench";
 import { useApi } from "../../hooks/useApi";
 import { ApiError, api } from "../../services/api";
 import type { PortfolioTrade } from "../../types/api";
+import { reconciliationView } from "../../utils/codes";
 import { formatMoney } from "../../utils/format";
 
 function failureMessage(cause: unknown, fallback: string): string {
@@ -34,6 +35,7 @@ export default function Portfolio() {
   const risk = useApi(api.risk);
   const [failure, setFailure] = useState<string>();
   const [reconciling, setReconciling] = useState(false);
+  const reconciliation = reconciliationView(data?.reconciliation);
 
   const refreshAll = () => {
     retry();
@@ -118,6 +120,30 @@ export default function Portfolio() {
                   column={2}
                   style={{ marginTop: 16 }}
                   items={[
+                    {
+                      key: "reconciliation",
+                      label: "对账状态",
+                      children: reconciliation ? (
+                        <Space direction="vertical" size={0}>
+                          <span>{reconciliation.statusText}</span>
+                          <Typography.Text type="secondary">
+                            范围：{reconciliation.scopeText}
+                          </Typography.Text>
+                          {reconciliation.reasonText && (
+                            <Typography.Text type="warning">
+                              {reconciliation.reasonText}
+                            </Typography.Text>
+                          )}
+                          {reconciliation.reconciledAt && (
+                            <Typography.Text type="secondary">
+                              对账时间：{reconciliation.reconciledAt}
+                            </Typography.Text>
+                          )}
+                        </Space>
+                      ) : (
+                        "尚未执行对账"
+                      ),
+                    },
                     {
                       key: "as_of",
                       label: "持仓基准日",

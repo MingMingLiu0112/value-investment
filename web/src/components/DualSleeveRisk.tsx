@@ -11,6 +11,7 @@ import {
   describeCode,
   engineAlertText,
   reconciliationText,
+  reconciliationView,
 } from "../utils/codes";
 import { formatMoney } from "../utils/format";
 import { RemoteState } from "./RemoteState";
@@ -32,6 +33,7 @@ function money(value?: string | number | null): string {
 }
 
 function FactsBlock({ facts }: { facts: RiskFacts }) {
+  const reconciliation = reconciliationView(facts.reconciliation);
   return (
     <>
       <Descriptions
@@ -66,6 +68,24 @@ function FactsBlock({ facts }: { facts: RiskFacts }) {
             label: "对账状态",
             children: reconciliationText(facts.reconciliation_status),
           },
+          ...(reconciliation === null
+            ? []
+            : [
+                {
+                  key: "reconcile_scope",
+                  label: "对账范围",
+                  children: reconciliation.scopeText,
+                },
+                ...(reconciliation.reasonText
+                  ? [
+                      {
+                        key: "reconcile_reason",
+                        label: "对账说明",
+                        children: reconciliation.reasonText,
+                      },
+                    ]
+                  : []),
+              ]),
           {
             key: "price",
             label: "行情状态",
