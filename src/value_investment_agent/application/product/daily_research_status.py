@@ -21,6 +21,31 @@ POINTER_PATH = "config/current-quote-bridge.json"
 _EXECUTION_ERRORS = (OSError, ValueError, KeyError, TypeError, IndexError,
                      AttributeError, UnicodeError, json.JSONDecodeError)
 
+REGISTRY_ABSENT = "ABSENT"
+REGISTRY_UNAVAILABLE = "UNAVAILABLE"
+REGISTRY_OK = "OK"
+
+
+def registry_state(root: Path) -> str:
+    """Distinguish a missing registry from a registered-but-unreadable one.
+
+    A corrupt or unreadable pointer file must never be reported as "nothing
+    is registered"; callers fail closed and say the registry is unavailable.
+    """
+    path = root / POINTER_PATH
+    if not path.exists():
+        return REGISTRY_ABSENT
+    try:
+        payload = load_json_object(path, "quote bridge pointer")
+    except _EXECUTION_ERRORS:
+        return REGISTRY_UNAVAILABLE
+    quotes = payload.get("quotes")
+    if quotes is None:
+        return REGISTRY_ABSENT
+    if not isinstance(quotes, dict):
+        return REGISTRY_UNAVAILABLE
+    return REGISTRY_OK
+
 
 def registered_quote_symbols(root: Path) -> list[str]:
     """Symbols with a registered quote binding; an unreadable pointer registers nothing."""
@@ -61,6 +86,21 @@ def build_daily_research_status(root: Path, *, today: datetime,
                                 names: Mapping[str, str] | None = None) -> dict[str, Any]:
     """One row per registered symbol; a per-symbol failure stays isolated."""
     names = names or {}
+    state = registry_state(root)
+    if state == REGISTRY_UNAVAILABLE:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "action": "no_order",
+            "status": "REGISTRY_UNAVAILABLE",
+            "registry_status": state,
+            "registered_count": 0,
+            "verified_close_count": 0,
+            "needs_re_research_count": 0,
+            "admitted_count": 0,
+            "reason": (f"行情登记文件 {POINTER_PATH} 无法读取（损坏或不可访问）；"
+                       "登记状态未知，不代表没有登记。"),
+            "rows": [],
+        }
     rows: list[dict[str, Any]] = []
     for symbol in registered_quote_symbols(root):
         try:
@@ -76,6 +116,7 @@ def build_daily_research_status(root: Path, *, today: datetime,
     return {
         "schema_version": SCHEMA_VERSION,
         "action": "no_order",
+        "registry_status": state,
         "status": ("NO_REGISTERED_QUOTES" if not rows
                    else "RE_RESEARCH_REQUIRED" if any(row["needs_re_research"] for row in rows)
                    else "REGISTERED"),

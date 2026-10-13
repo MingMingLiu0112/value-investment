@@ -1,7 +1,6 @@
 """Hash-bound, read-only projections of the current published product."""
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -11,8 +10,21 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
+from ...application.product.daily_public_packet import (
+    SCHEMA_VERSION as PACKET_SCHEMA,
+    build_daily_public_packet,
+    count_formal_admissions,
+    publication_block,
+    publication_block_unavailable,
+    unavailable_packet,
+)
 from ...application.product.daily_research_status import build_daily_research_status
 from ...application.product.dual_sleeve_risk import run_dual_sleeve_review
+from ...application.product.publication_chain import (
+    STRUCTURE_ERRORS as _STRUCTURE_ERRORS,
+    bound_object as _bound,
+    load_current_chain as _current,
+)
 from ...application.product.quote_bridge import execute_quote_bridge_for_symbol
 from ..read_models.dual_sleeve_surface import (
     BLOCKER_SURFACE_INVALID,
@@ -34,86 +46,27 @@ from .private_routes import portfolio_connection, register_private_routes
 
 ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_PORT = 8001
-_HASH = re.compile(r"[0-9a-f]{64}\Z")
 _ID = re.compile(r"[0-9]{6}\Z")
-_POINTER_SCHEMA = "m7-current-trial-workbook-v5"
-_MODEL_SCHEMA = "historical-company-read-model-preview-v1"
-# Everything a broken or half-published artifact can raise while it is projected.
-_STRUCTURE_ERRORS = (OSError, ValueError, KeyError, TypeError, IndexError,
-                     AttributeError, UnicodeError, json.JSONDecodeError)
 _UNAVAILABLE_RESEARCH = {"schema_version": "daily-research-status-v1", "action": "no_order",
                          "status": "UNAVAILABLE", "registered_count": 0, "rows": [],
                          "blockers": ["RESEARCH_STATUS_UNAVAILABLE"]}
 
 
-def _object(path: Path) -> dict:
-    value = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(value, dict):
-        raise ValueError("invalid object")
-    return value
-
-
-def _bound(root: Path, binding: dict) -> dict:
-    if not isinstance(binding, dict) or set(binding) != {"path", "sha256"}:
-        raise ValueError("invalid binding")
-    name, digest = binding["path"], binding["sha256"]
-    if not isinstance(name, str) or not isinstance(digest, str) or not _HASH.fullmatch(digest):
-        raise ValueError("invalid binding fields")
-    relative = Path(name)
-    if relative.is_absolute() or ".." in relative.parts or not relative.parts or relative.parts[0] != "runtime":
-        raise ValueError("invalid runtime binding")
-    runtime = (root / "runtime").resolve()
-    path = (root / relative).resolve()
-    if not path.is_relative_to(runtime) or not path.is_file():
-        raise ValueError("binding outside runtime")
-    raw = path.read_bytes()
-    if hashlib.sha256(raw).hexdigest() != digest:
-        raise ValueError("binding hash mismatch")
-    value = json.loads(raw.decode("utf-8"))
-    if not isinstance(value, dict):
-        raise ValueError("invalid bound object")
-    return value
-
-
-def _current(root: Path) -> tuple[dict, dict, dict]:
-    pointer = _object(root / "config/current-trial-workbook.json")
-    if pointer.get("schema_version") != _POINTER_SCHEMA or pointer.get("action") != "no_order":
-        raise ValueError("unknown pointer")
-    publication = pointer["current_publication"]
-    if publication.get("status") != "PUBLISHED_WPS_READONLY_VERIFIED":
-        raise ValueError("publication not verified")
-    receipt = _bound(root, {"path": publication["receipt"], "sha256": publication["receipt_sha256"]})
-    if (receipt.get("schema_version") != "canonical-reviewed-research-publication-v1"
-            or receipt.get("canonical_written") is not True):
-        raise ValueError("publication receipt invalid")
-    sources = _bound(root, {"path": receipt["source_bindings_path"],
-                            "sha256": receipt["source_bindings_sha256"]})
-    if sources.get("schema_version") != "existing-workbench-preview-bindings-v1":
-        raise ValueError("unknown source ledger")
-    handoff = _bound(root, sources["publication_input_binding"])
-    if handoff.get("schema_version") != "research-publication-input-v1" or handoff.get("action") != "no_order":
-        raise ValueError("unknown publication input")
-    model = _bound(root, handoff["read_model_binding"])
-    if model.get("schema_version") != _MODEL_SCHEMA or model.get("action") != "no_order":
-        raise ValueError("unknown read model")
-    state = _bound(root, pointer["daily_product_state_binding"])
-    if state.get("action") != "no_order" or not isinstance(state.get("content"), dict):
-        raise ValueError("unknown daily state")
-    if model.get("snapshot") != handoff.get("snapshot"):
-        raise ValueError("publication snapshot mismatch")
-    for role, binding in model.get("product_extensions", {}).items():
-        if role in state["content"].get("extensions", {}):
-            extension = _bound(root, binding)
-            if state["content"]["extensions"][role] != extension.get("semantic_content", extension):
-                raise ValueError("daily state and published model disagree")
-    return pointer, state, model
-
-
-def _public(root: Path) -> tuple[dict, dict, dict] | None:
+def _public(root: Path) -> dict | None:
     try:
         return _current(root)
     except _STRUCTURE_ERRORS:
         return None
+
+
+def _publication_block(root: Path, current: dict | None) -> dict:
+    """The compact identity block every public endpoint must share (TL9 MVP-1)."""
+    if current is None:
+        return publication_block_unavailable()
+    try:
+        return publication_block(root, current)
+    except _STRUCTURE_ERRORS:
+        return publication_block_unavailable()
 
 
 def _binding_path(model: dict, role: str) -> str | None:
@@ -132,6 +85,7 @@ def _unavailable(code: str, reason: str, *, source: str | None = None) -> dict:
             "sections": {"holdings": [], "value": [], "hotspot": []},
             "research": dict(_UNAVAILABLE_RESEARCH),
             "dual_sleeve": dual_sleeve_unavailable(),
+            "publication": publication_block_unavailable(),
             "blockers": [code], "gate_code": code, "reason": reason}
     if source is not None:
         body["publication_source"] = source
@@ -245,12 +199,13 @@ def create_app(
                  "sections": {"holdings": [], "value": [], "hotspot": []},
                  "research": dict(_UNAVAILABLE_RESEARCH),
                  "dual_sleeve": dual_sleeve_unavailable(),
+                 "publication": publication_block_unavailable(),
                  "blockers": ["PUBLICATION_UNAVAILABLE"],
                  "gate_code": "PUBLICATION_UNAVAILABLE", "reason": "PUBLICATION_UNAVAILABLE"}
         current = _public(project)
         if current is None:
             return empty
-        pointer, state, model = current
+        state, model = current["state"], current["model"]
         extensions = state["content"].get("extensions", {})
         snapshot = model.get("snapshot", {})
         if not isinstance(extensions, dict) or not isinstance(snapshot, dict) or snapshot.get("action") != "no_order":
@@ -344,9 +299,7 @@ def create_app(
                  and isinstance(row.get("company_name"), str)}
         # Formal admissions are counted from the published rows themselves; no row
         # carries an admitted valuation status yet, so the count stays derived, not fixed.
-        formal_count = sum(1 for row in named if isinstance(row, dict)
-                           and isinstance(row.get("valuation_status"), dict)
-                           and row["valuation_status"].get("code") == "ADMITTED")
+        formal_count = count_formal_admissions(named)
         return {"action": "no_order", "status": "RESEARCH_OBSERVATION",
                 "as_of": as_of,
                 "market": _pick(market, "status", "reason"),
@@ -355,12 +308,15 @@ def create_app(
                             "watch_count": len(leads)},
                 "research": _daily_research(project, names),
                 "dual_sleeve": dual_sleeve,
+                "publication": _publication_block(project, current),
                 "sections": {"holdings": [], "value": value,
                              "hotspot": [dict(_item(c, as_of, "UNKNOWN"), strategy="hotspot")
                                          for c in hotspot.get("items", []) if isinstance(c, dict)
                                          and c.get("action") == "no_order"
                                          and _ID.fullmatch(str(c.get("symbol", "")))]},
-                "blockers": ["NO_FORMAL_ADMISSION", "PRIVATE_PORTFOLIO_NOT_CONNECTED"]}
+                # The public packet never claims anything about the private ledger;
+                # private connection state is owned by the authorized private routes.
+                "blockers": ["NO_FORMAL_ADMISSION"]}
 
     @api.get("/api/v1/decisions/{decision_id}")
     def decision(decision_id: str):
@@ -369,8 +325,9 @@ def create_app(
         current = _public(project)
         if current is None:
             return {"action": "no_order", "status": "UNAVAILABLE", "decision": None,
+                    "publication": _publication_block(project, current),
                     "reason": "PUBLICATION_UNAVAILABLE"}
-        model = current[2]
+        model = current["model"]
         published = model.get("snapshot") if isinstance(model.get("snapshot"), dict) else {}
         for company in published.get("companies", []):
             if isinstance(company, dict) and company.get("symbol") == decision_id and company.get("action") == "no_order":
@@ -413,10 +370,12 @@ def create_app(
                     binding_blockers=(["VALUE_EXPLANATION_BINDING_UNAVAILABLE"]
                                       if binding_status == "UNAVAILABLE" else []))
                 return {"action": "no_order", "status": status,
+                        "publication": _publication_block(project, current),
                         "decision": item}
         for opportunity in published.get("opportunities", []):
             if isinstance(opportunity, dict) and opportunity.get("symbol") == decision_id and opportunity.get("action") == "no_order":
                 return {"action": "no_order", "status": "PENDING_RESEARCH",
+                        "publication": _publication_block(project, current),
                         "decision": _item(opportunity, published.get("as_of"), "PENDING_RESEARCH")}
         queue_binding = model.get("product_extensions", {}).get("value_research_queue")
         if queue_binding:
@@ -429,8 +388,11 @@ def create_app(
                 if (isinstance(entry, dict) and entry.get("symbol") == decision_id
                         and entry.get("queue_status") == "SELECTED_FOR_DATA_CHECK"):
                     return {"action": "no_order", "status": "RESEARCH_ONLY",
+                            "publication": _publication_block(project, current),
                             "decision": _queue_item(entry, queue.get("as_of"))}
-        return {"action": "no_order", "status": "NOT_FOUND", "decision": None, "reason": "UNKNOWN_DECISION"}
+        return {"action": "no_order", "status": "NOT_FOUND", "decision": None,
+                "publication": _publication_block(project, current),
+                "reason": "UNKNOWN_DECISION"}
 
     def bound_decisions() -> dict[str, dict]:
         """Every research decision the current publication really binds."""
@@ -438,7 +400,7 @@ def create_app(
         decisions: dict[str, dict] = {}
         if current is None:
             return decisions
-        model = current[2]
+        model = current["model"]
         for binding in model.get("additional_evidence_bindings", []):
             if not isinstance(binding, dict) or not isinstance(binding.get("path"), str):
                 continue
@@ -462,11 +424,22 @@ def create_app(
     @api.get("/api/v1/decision-history")
     def decision_history():
         decisions = bound_decisions()
-        return build_research_history(
+        history = build_research_history(
             project,
             published_versions={symbol: row["research_version"]
                                 for symbol, row in decisions.items()},
             published_decisions=decisions)
+        current = _public(project)
+        history["publication"] = _publication_block(project, current)
+        return history
+
+    @api.get("/api/v1/daily-public-packet")
+    def daily_public_packet():
+        """The one public daily decision packet (TL9 MVP-1)."""
+        try:
+            return build_daily_public_packet(project)
+        except _STRUCTURE_ERRORS:
+            return unavailable_packet(chain_error="PACKET_BUILD_FAILED")
 
     @api.get("/api/v1/system/status")
     def system_status(request: Request):
@@ -481,7 +454,7 @@ def create_app(
             return {"action": "no_order", "status": "UNAVAILABLE", "publication": "UNAVAILABLE",
                     "portfolio": portfolio}
         return {"action": "no_order", "status": "READ_ONLY",
-                "publication": current[0]["current_publication"]["status"],
+                "publication": current["pointer"]["current_publication"]["status"],
                 "portfolio": portfolio}
 
     @api.exception_handler(RequestValidationError)

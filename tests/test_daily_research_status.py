@@ -36,16 +36,36 @@ def _execution(symbol: str, *, research_day: str, quote_date: str | None,
 def test_missing_pointer_registers_no_symbols(tmp_path):
     assert registered_quote_symbols(tmp_path) == []
     summary = build_daily_research_status(tmp_path, today=TODAY)
+    assert summary["status"] == "NO_REGISTERED_QUOTES"
+    assert summary["registry_status"] == "ABSENT"
     assert summary["registered_count"] == 0
     assert summary["needs_re_research_count"] == 0
     assert summary["rows"] == []
     assert summary["action"] == "no_order"
 
 
-def test_unreadable_pointer_registers_no_symbols(tmp_path):
+def test_unreadable_pointer_is_unknown_not_empty(tmp_path):
     (tmp_path / "config").mkdir()
     (tmp_path / "config" / "current-quote-bridge.json").write_text("{not json", encoding="utf-8")
     assert registered_quote_symbols(tmp_path) == []
+    summary = build_daily_research_status(tmp_path, today=TODAY)
+    # A damaged registry file must never read as "nothing is registered".
+    assert summary["status"] == "REGISTRY_UNAVAILABLE"
+    assert summary["registry_status"] == "UNAVAILABLE"
+    assert "不代表没有登记" in summary["reason"]
+    assert summary["rows"] == []
+    assert summary["action"] == "no_order"
+
+
+def test_packet_flags_an_unreadable_registry_instead_of_silence(tmp_path):
+    from value_investment_agent.application.product import daily_public_packet
+
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "current-quote-bridge.json").write_text("{not json", encoding="utf-8")
+    rows, blockers = daily_public_packet._bridge_rows(
+        tmp_path, datetime(2026, 10, 13, 4, tzinfo=timezone.utc))
+    assert rows == []
+    assert blockers == ["QUOTE_REGISTRY_UNAVAILABLE"]
 
 
 def test_close_after_the_research_cutoff_requires_re_research(tmp_path):

@@ -63,6 +63,18 @@ def test_missing_registration_is_fail_closed(tmp_path):
     assert execution["action"] == "no_order"
 
 
+def test_pin_without_explicit_timestamp_stamps_utc_now(tmp_path):
+    """SAFE_REFRESH relies on the default registration stamp path."""
+    bundle, package = _case(tmp_path)
+    pinned = pin_quote_bridge_for_symbol(tmp_path, "600887", bundle, package)
+    assert pinned["registered_at"]
+    stamp = datetime.fromisoformat(pinned["registered_at"])
+    assert stamp.tzinfo is not None
+    pointer = json.loads((tmp_path / "config/current-quote-bridge.json").read_text(encoding="utf-8"))
+    assert pointer["quotes"]["600887"]["registered_at"] == pinned["registered_at"]
+    assert pointer["quotes"]["600887"]["quote_bundle_sha256"] == pinned["quote_bundle_sha256"]
+
+
 def test_unregistered_symbol_reports_pending_instead_of_borrowing_a_quote(tmp_path):
     bundle, package = _case(tmp_path)
     pin_quote_bridge_for_symbol(tmp_path, "600887", bundle, package,
@@ -129,27 +141,35 @@ def test_close_inside_the_registered_cutoff_is_admitted(tmp_path, monkeypatch):
 
 
 @pytest.mark.skipif(
-    not (REAL_POINTER.is_file() and REAL_PACKAGE.is_file() and REAL_BUNDLE.is_file()),
+    not (REAL_POINTER.is_file() and REAL_PACKAGE.is_file()),
     reason="the real 600887 quote registration is not present in this checkout")
 def test_real_600887_registration_stays_unadmitted_until_the_cutoff_covers_it():
-    execution = execute_quote_bridge_for_symbol(ROOT, "600887", today=TODAY)
+    entry = json.loads(REAL_POINTER.read_text(encoding="utf-8"))["quotes"]["600887"]
+    if not (ROOT / entry["quote_bundle"]).is_file():
+        pytest.skip("the registered quote bundle is not present in this checkout")
+    # Replay at the registration instant: the daily entry (SAFE_REFRESH) moves
+    # this pointer whenever a newer dual-source close is registered.
+    execution = execute_quote_bridge_for_symbol(
+        ROOT, "600887", today=datetime.fromisoformat(entry["registered_at"]))
     assert execution["action"] == "no_order"
     assert execution["status"] == "QUOTE_VERIFIED_BUT_RESEARCH_STALE"
     assert execution["price_admitted"] is False
     assert execution["research_day"] == "2026-10-11"
     assert execution["research_case"]["package_version"].startswith("pending-600887-2026-10-11")
-    assert execution["quote"] == {
-        "quote_date": "2026-10-12", "display_price": "27.96",
-        "collected_at": "2026-10-12T09:23:13.080145+00:00",
-        "display_scope": "LAST_COMPLETED_CLOSE_DISPLAY_ONLY", "is_historical_close": True,
-        "latest_completed_session": "2026-10-12",
-        "bundle_path": "runtime/quote-sessions/20261012T092313080159Z/bundle.json",
-        "bundle_sha256": "628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f"}
+    quote = execution["quote"]
+    assert quote["bundle_path"] == entry["quote_bundle"]
+    assert quote["bundle_sha256"] == entry["quote_bundle_sha256"]
+    assert quote["quote_date"] > execution["research_day"]
+    # The newest registered close is also the latest completed session, so the
+    # freshness projection cannot fall back to UNKNOWN (TL9 MVP-1 dates).
+    assert quote["latest_completed_session"] == quote["quote_date"]
+    assert quote["display_price"]
     providers = {row.get("provider") for row in execution["sources"]
                  if row.get("kind") == "quote_provider_document"}
     assert providers == {"tencent", "sina"}
     ladder = execution["compatibility"]
     assert ladder["verified_quote"]["eligible"] is True
     assert ladder["research_compatible"]["eligible"] is False
+    assert ladder["comparison_eligible"]["eligible"] is False
     assert ladder["formal_decision_eligible"]["eligible"] is False
 

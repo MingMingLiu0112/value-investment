@@ -331,3 +331,89 @@ def test_actual_local_publication():
     assert surface["position_guidance"] is None
     assert surface["trade_eligible"] is False
     assert surface["acceptance_authority"] == "NONE"
+    packet = TestClient(create_app(ROOT)).get("/api/v1/daily-public-packet").json()
+    assert packet["packet_status"] == "CURRENT"
+    assert packet["publication_id"].startswith("pub-")
+    assert packet["source_bindings_verified"] is True
+    assert response["publication"]["publication_id"] == packet["publication_id"]
+    assert response["publication"]["research_version"] == packet["research_version"]
+
+
+def test_daily_public_packet_is_the_one_shared_identity(tmp_path):
+    client = _fixture(tmp_path)
+    packet = client.get("/api/v1/daily-public-packet").json()
+    assert packet["schema_version"] == "daily-public-packet-v1"
+    assert packet["action"] == "no_order"
+    assert packet["packet_status"] == "CURRENT"
+    assert packet["chain_error"] is None
+    assert packet["publication_id"].startswith("pub-")
+    assert packet["dates"]["research_as_of"] == "2026-10-12"
+    assert set(packet["company_statuses"]) == {"600519", "600741"}
+    assert packet["formal_admission_count"] == 0
+    assert packet["pending_review_count"] == 1
+    assert packet["research_counts"] == {"universe_count": 3, "lead_count": 2, "queue_count": 1,
+                                         "needs_re_research_count": 0,
+                                         "incomplete_research_count": 1,
+                                         "awaiting_verified_close_count": 2}
+    assert "NO_FORMAL_ADMISSION" in packet["blockers"]
+    assert packet["source_bindings"] and packet["source_bindings_verified"] is True
+    assert packet["data_freshness"]["quote"]["status"] == "UNAVAILABLE"
+    assert packet["data_freshness"]["research"]["status"] == "UNKNOWN"
+    # The public packet never speaks for the private ledger.
+    assert "PRIVATE" not in json.dumps(packet, ensure_ascii=False)
+
+    daily = client.get("/api/v1/daily-decisions").json()
+    detail = client.get("/api/v1/decisions/600519").json()
+    history = client.get("/api/v1/decision-history").json()
+    assert daily["blockers"] == ["NO_FORMAL_ADMISSION"]
+    assert {daily["publication"]["publication_id"], detail["publication"]["publication_id"],
+            history["publication"]["publication_id"]} == {packet["publication_id"]}
+    # Rebuilding from the same verified inputs is deterministic.
+    assert client.get("/api/v1/daily-public-packet").json()["publication_id"] == packet["publication_id"]
+
+
+def test_daily_public_packet_fails_closed_and_never_invents_identity(tmp_path):
+    client = _fixture(tmp_path)
+    assert client.get("/api/v1/daily-public-packet").json()["packet_status"] == "CURRENT"
+    (tmp_path / "runtime/publication.json").write_text(
+        '{"schema_version":"canonical-reviewed-research-publication-v1","canonical_written":true}',
+        encoding="utf-8")
+    packet = client.get("/api/v1/daily-public-packet").json()
+    assert packet["packet_status"] == "UNAVAILABLE"
+    assert packet["publication_id"] is None
+    assert packet["company_statuses"] == {}
+    assert "PUBLICATION_CHAIN_UNAVAILABLE" in packet["blockers"]
+    assert packet["chain_error"]
+    daily = client.get("/api/v1/daily-decisions").json()
+    assert daily["status"] == "UNAVAILABLE"
+    assert daily["publication"]["publication_id"] is None
+    assert client.get("/api/v1/decisions/600519").json()["publication"]["publication_id"] is None
+
+
+def test_daily_public_packet_binds_the_registered_quote_bridge(tmp_path):
+    client = _fixture(tmp_path)
+    base = client.get("/api/v1/daily-public-packet").json()
+    pointer = tmp_path / "config/current-quote-bridge.json"
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(json.dumps({
+        "schema_version": "current-quote-bridge-v1", "action": "no_order",
+        "registered_at": "2026-10-13T00:00:00+00:00",
+        "quotes": {"600519": {"quote_bundle": "runtime/missing-bundle.json",
+                              "quote_bundle_sha256": "0" * 64,
+                              "research_package": "runtime/missing-package.json",
+                              "research_package_sha256": "0" * 64,
+                              "registered_at": "2026-10-13T00:00:00+00:00"}}}), encoding="utf-8")
+    packet = client.get("/api/v1/daily-public-packet").json()
+    # Registering a quote changes the packet identity even before any price is admitted.
+    assert packet["publication_id"] != base["publication_id"]
+    assert packet["quote_bridge"]["quotes_registered"] == 1
+    bridge = packet["price_bridge_statuses"]["600519"]
+    assert bridge["status"] == "NOT_ADMITTED"
+    assert bridge["price_admitted"] is False
+    roles = {item["role"]: item for item in packet["source_bindings"]}
+    assert roles["quote_bridge_pointer"]["sha256_verified"] is True
+    assert roles["quote_bundle:600519"]["present"] is False
+    assert "SOURCE_BINDING_HASH_MISMATCH:quote_bundle:600519" in packet["blockers"]
+    daily = client.get("/api/v1/daily-decisions").json()
+    assert daily["publication"]["publication_id"] == packet["publication_id"]
+

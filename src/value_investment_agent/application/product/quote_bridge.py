@@ -8,7 +8,7 @@ unadmitted, and the verdict names the reason instead of a display price.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 from typing import Any
@@ -64,6 +64,8 @@ def admit_quote_for_research(root: Path, bundle: Path | None, symbol: str, resea
         local_day = today.astimezone(CHINA).date()
         historical = cutoff.astimezone(CHINA).date() != local_day or snapshot.quote_date != local_day
         if historical:
+            latest = None
+            calendar_hashes = None
             try:
                 resolved = resolve_session_reference(raw["references"][symbol], raw["documents"])
                 venue = resolved["calendar_exchange"]
@@ -73,15 +75,32 @@ def admit_quote_for_research(root: Path, bundle: Path | None, symbol: str, resea
                     latest, calendar_hashes = latest_szse_session(resolved["calendar_documents"], today.astimezone(CHINA))
                 else:
                     raise ValueError("unsupported calendar")
-                if latest != snapshot.quote_date.isoformat():
-                    raise ValueError("归档报价不是最近一个已完成交易日")
             except (ValueError, KeyError, TypeError) as error:
                 return None, None, {**check, "status": "NOT_ADMITTED",
                     "display_scope": "VERIFIED_ARCHIVE_NOT_CURRENT_PRICE",
                     "reason": "历史行情仅可回放；当前官方日历未证明最近收盘：" + str(error)}
+            if latest != snapshot.quote_date.isoformat():
+                # Keep the computed latest completed session in the verdict: the
+                # user must see which session superseded this archived close.
+                reason = ("历史行情仅可回放；当前官方日历给出的最近已完成交易日为 "
+                          + latest + "；该归档报价不是最近一个已完成交易日。") if isinstance(latest, str) else (
+                    "历史行情仅可回放；当前官方日历未证明最近收盘：归档报价不是最近一个已完成交易日。")
+                verdict = {**check, "status": "NOT_ADMITTED",
+                           "display_scope": "VERIFIED_ARCHIVE_NOT_CURRENT_PRICE",
+                           "reason": reason}
+                if isinstance(latest, str):
+                    verdict["latest_completed_session"] = latest
+                return None, None, verdict
             check.update(display_scope="LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
                          latest_completed_session=latest, calendar_hashes=calendar_hashes,
                          is_historical_close=True)
+        else:
+            # A verified close collected on the current local day already passed
+            # the dual-source close proof (provider timestamps after 15:00 for a
+            # matching session), so it is itself the latest completed session.
+            # Leaving it unset made the packet freshness for the newest close
+            # UNKNOWN instead of FRESH.
+            check["latest_completed_session"] = snapshot.quote_date.isoformat()
         if snapshot.quote_date.isoformat() > research_day:
             return None, None, {**check, "status": "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
                 "reason": "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性"}

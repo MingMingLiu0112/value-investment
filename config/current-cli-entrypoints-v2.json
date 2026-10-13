@@ -10,6 +10,7 @@
     "all_v1_paths_preserved": true
   },
   "SUPPORTED_PRODUCT_CLI": [
+    "scripts/current/run_daily_workbench.ps1",
     "scripts/current/use_trade_assistant.py",
     "scripts/current/review_research.py",
     "scripts/current/scan_market_hotspots.py",
@@ -34,7 +35,6 @@
     "scripts/current/register_prospective_research.py",
     "scripts/current/build_prospective_baselines.py",
     "scripts/build_company_valuation_result.py",
-    "scripts/run_m2_opportunity_discovery.py",
     "scripts/build_m5_disclosure_review_briefing.py"
   ],
   "SUPPORTED_ENGINEERING_CLI": [
@@ -86,10 +86,12 @@
     "scripts/current/backup_private_portfolio.py",
     "scripts/current/pin_current_quote_bridge.py",
     "scripts/current/review_research_validity.py",
-    "scripts/current/build_daily_research_summary.py"
+    "scripts/current/build_daily_research_summary.py",
+    "scripts/run_m2_opportunity_discovery.py"
   ],
   "INTERNAL_PRODUCT_HELPERS": [
     "scripts/current/audit_tracked_xlsx_privacy.py",
+    "scripts/current/build_daily_public_packet.py",
     "scripts/current/build_stage3_product_preview.py",
     "scripts/current/daily_product_packet.py",
     "scripts/current/daily_quote_binding.py",
@@ -109,8 +111,8 @@
   ],
   "counts": {
     "product": 26,
-    "engineering": 49,
-    "internal_helpers": 17,
-    "total": 92
+    "engineering": 50,
+    "internal_helpers": 18,
+    "total": 94
   }
 }

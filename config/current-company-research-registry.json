@@ -1,0 +1,46 @@
+{
+  "schema_version": "current-company-research-registry-v1",
+  "action": "no_order",
+  "reviewed_at": "2026-10-13",
+  "note": "注册当前公共发布物之外的公司研究状态与未准入输入；只登记阻塞与证据，不产生估值、仓位或订单。证据按 path+sha256 绑定，变更时对应条目降级显示。",
+  "companies": {
+    "000333": {
+      "name": "美的集团",
+      "status": "PENDING_RESEARCH",
+      "valuation_route": "fcff",
+      "summary": "2026-06-30 普通股股本分母已按官方来源核验（7,464,347,335 股）；FCFF 情景输入未注册，仍无准入估值。",
+      "missing_inputs": [
+        "FCFF 情景输入（收入、利润率、资本开支、营运资本假设）未注册",
+        "下一份官方财报中的现金流与资本配置事实"
+      ],
+      "required_actor": "ENGINEERING",
+      "next_step": "注册经核验的 FCFF 情景输入并形成草案估值，等待人工门。",
+      "evidence": [
+        {
+          "path": "docs/current/tl8-c-000333-share-denominator-recheck-receipt-20261013.json",
+          "sha256": "f2b968c000ae9f6ec39541b2bc8413fb97654d32fed530cc5badd66c547c752b",
+          "note": "2026-06-30 分母核验回执（TL8-C）"
+        }
+      ]
+    },
+    "601088": {
+      "name": "中国神华",
+      "status": "PENDING_RESEARCH",
+      "valuation_route": "cyclical_normalized",
+      "summary": "周期模型路由已注册并验证；13 项必需周期输入 0 项准入，估值 fail-closed 为 not_ready。",
+      "missing_inputs": [
+        "13 项周期必需输入（当前 0 项准入）",
+        "证据停止点 current_perimeter_parent_earnings_bridge_incomplete 未解除"
+      ],
+      "required_actor": "ENGINEERING",
+      "next_step": "补齐周期输入（含母公司盈利桥）后，再形成正常化盈利与情景估值。",
+      "evidence": [
+        {
+          "path": "docs/current/tl8-c-601088-cycle-model-boundary-receipt-20261013.json",
+          "sha256": "9f3a6a22b8a534ff6fce288d7ebe130376e2404fd1936b6ab37525f811171fe8",
+          "note": "周期模型路由边界回执（TL8-C）"
+        }
+      ]
+    }
+  }
+}
