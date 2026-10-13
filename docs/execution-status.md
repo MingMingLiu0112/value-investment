@@ -1,5 +1,23 @@
 # CURRENT STATUS
 
+## 2026-10-13 WEB-D4 work package F: dual-sleeve guardrails on /daily
+
+The daily workbench now restates the formally bound dual-sleeve risk review
+instead of leaving the section implicit. `/api/v1/daily-decisions` carries a
+`dual_sleeve` surface projected by
+`presentation/read_models/dual_sleeve_surface.py` from the published binding
+(`dual-sleeve-risk.json`, sha256 7d8f49bc...4fb2e9): status NOT_CONNECTED,
+blockers [portfolio.private_input_missing], position_guidance null,
+trade_eligible false, acceptance_authority NONE, plus next_user_input naming
+the private portfolio input the user still has to provide. A publication
+without the binding falls back to the shared run_dual_sleeve_review
+not-connected result; a tampered report fails closed alone and never takes the
+research page down. The /daily page shows the state, whether the private
+portfolio is connected, why guidance is absent and what input comes next.
+Tests: tests/web_api/test_read_api.py 17 passed, tests/web_api 134 passed, web
+typecheck/format/41 tests/build passed. action=no_order and
+position_guidance=null are unchanged; no private data was read or fabricated.
+
 ## 2026-10-11 D2 user workflow and reliable review consumption
 
 Current task is D2-USER-WORKFLOW-RESEARCH-ADMISSION-AND-RELIABILITY, ordinary

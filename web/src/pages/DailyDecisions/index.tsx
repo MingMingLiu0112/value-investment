@@ -1,15 +1,28 @@
 import { Link } from "@umijs/max";
-import { Alert, Col, List, Row, Statistic, Tag, Typography } from "antd";
+import {
+  Alert,
+  Col,
+  Descriptions,
+  List,
+  Row,
+  Statistic,
+  Tag,
+  Typography,
+} from "antd";
 import type { PropsWithChildren } from "react";
 import { Workbench } from "../../components/Workbench";
 import { RemoteState } from "../../components/RemoteState";
 import { DecisionCard } from "../../components/DecisionCard";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
-import type { DailyResearchStatus } from "../../types/api";
+import type {
+  DailyDualSleeveSurface,
+  DailyResearchStatus,
+} from "../../types/api";
 import { formatMoney } from "../../utils/format";
 import { dailyStatus } from "../../utils/status";
 import { codeText, describeCode } from "../../utils/codes";
+import { dualSleeveView } from "../../utils/dualSleeve";
 
 const HOLDINGS_BLOCKER = "PRIVATE_PORTFOLIO_NOT_CONNECTED";
 const PRICE_UNKNOWN = "未知（未接入经核验行情）";
@@ -225,6 +238,69 @@ function HoldingsSection() {
   );
 }
 
+/**
+ * 双策略资金池只复述发布物正式绑定的风险复核结果；私人组合未接入时
+ * 明确说明不会给出任何仓位数字，并列出下一步需要用户提供的输入。
+ */
+function DualSleeveSection({ surface }: { surface?: DailyDualSleeveSurface }) {
+  const view = dualSleeveView(surface);
+  if (!surface || !view) {
+    return (
+      <Alert
+        type="info"
+        showIcon
+        message="暂无双策略状态"
+        description="双策略状态来自当前发布物绑定；读取不到时不推测任何资金池、持仓或仓位。"
+      />
+    );
+  }
+  return (
+    <>
+      <Descriptions
+        bordered
+        size="small"
+        column={3}
+        items={[
+          { key: "status", label: "双策略状态", children: view.statusText },
+          { key: "portfolio", label: "私人组合", children: view.connectedText },
+          { key: "guidance", label: "仓位建议", children: view.guidanceText },
+          {
+            key: "eligibility",
+            label: "交易资格",
+            children: view.eligibilityText,
+          },
+          { key: "authority", label: "决策权限", children: view.authorityText },
+          {
+            key: "reviewed",
+            label: "风险复核时间",
+            children: surface.review_generated_at || "未提供",
+          },
+        ]}
+      />
+      {view.guidanceMissingReason && (
+        <Alert
+          style={{ marginTop: 12 }}
+          type="warning"
+          showIcon
+          message={view.guidanceMissingReason}
+          description={
+            view.nextInputText ??
+            "该状态没有可自动补齐的输入；完成下一步人工确认后再复核。"
+          }
+        />
+      )}
+      {surface.source && (
+        <Typography.Text
+          type="secondary"
+          style={{ display: "block", marginTop: 8 }}
+        >
+          来源：{surface.source}
+        </Typography.Text>
+      )}
+    </>
+  );
+}
+
 export default function DailyDecisions() {
   const { data, loading, error, retry } = useApi(api.daily);
   const status = data ? dailyStatus(data) : undefined;
@@ -278,6 +354,10 @@ export default function DailyDecisions() {
               ) : (
                 <HoldingsSection />
               )}
+            </Section>
+
+            <Section title="双策略资金池与仓位护栏">
+              <DualSleeveSection surface={data.dual_sleeve} />
             </Section>
 
             <Section title="② 价值投资机会">
@@ -341,6 +421,16 @@ export default function DailyDecisions() {
                 <li>status: {data.status}</li>
                 <li>market.status: {data.market.status}</li>
                 <li>market.reason: {data.market.reason ?? "未提供"}</li>
+                <li>
+                  dual_sleeve.status: {data.dual_sleeve?.status ?? "未提供"}
+                </li>
+                <li>
+                  dual_sleeve.source: {data.dual_sleeve?.source ?? "未绑定"}
+                </li>
+                <li>
+                  dual_sleeve.next_user_input:{" "}
+                  {data.dual_sleeve?.next_user_input ?? "无"}
+                </li>
                 <li>
                   blockers:{" "}
                   {data.blockers.length ? data.blockers.join(", ") : "无"}

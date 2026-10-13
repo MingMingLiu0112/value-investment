@@ -218,3 +218,38 @@ run 38357165840 / Web Workbench 38357166097）均为 `success`。
 固定件）与 `tests/test_architecture_boundaries.py`（30 项）共 34 项通过；
 脚本已按仓库根增长守卫放置于 `scripts/research_cases/shenhua/`，
 清单 `docs/architecture/script-inventory-v1.json` 同步登记。
+
+## 10. 追加：WEB-D4 工作包 F，`/daily` 双策略资金池与仓位护栏（2026-10-13）
+
+把已发布的双策略风险复核接进每日工作台，只复述正式绑定，不新建第二套风险系统：
+
+- 新增只读投影
+  `src/value_investment_agent/presentation/read_models/dual_sleeve_surface.py`：
+  校验 `dual-sleeve-risk-review-v1` 与 `action=no_order`，逐字复述
+  `position_guidance` / `trade_eligible` / `acceptance_authority`，并给出
+  `portfolio_connected`、`position_guidance_available` 与 `next_user_input`
+  （`PRIVATE_PORTFOLIO_INPUT_REQUIRED` / `PRIVATE_INPUT_INCOMPLETE`）；
+- `/api/v1/daily-decisions` 新增 `dual_sleeve` 段：
+  - 当前发布物已绑定真实报告
+    `runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/dual-sleeve-risk.json`
+    （SHA-256 `7d8f49bc…4fb2e9`），实测返回 `NOT_CONNECTED`、
+    `blockers=["portfolio.private_input_missing"]`、`position_guidance=null`、
+    `trade_eligible=false`、`acceptance_authority=NONE`；
+  - 旧发布物没有该绑定时，改走共享 `run_dual_sleeve_review`
+    生成真实的未接入结果（`portfolio=None`），不伪造任何私人组合或仓位；
+  - 报告被篡改（`action != no_order` 等）时该段单独 fail-closed 为
+    `UNAVAILABLE / DUAL_SLEEVE_SURFACE_INVALID`，不拖垮研究页其余部分；
+  - 发布链整体损坏时该段为 `UNAVAILABLE / DUAL_SLEEVE_STATUS_UNAVAILABLE`；
+- `/daily` 新增“双策略资金池与仓位护栏”：双策略状态、私人组合是否接入、
+  仓位建议是否生成、交易资格、决策权限、复核时间与来源路径；未生成仓位建议时
+  直接说明原因（“尚未接入真实私人组合，系统不会给出任何买多少/卖多少的
+  仓位数字”）和下一步需要本人提供的输入（IPS、持仓、现金与风险约束）；
+- 保持不变：`action=no_order`、`trade_eligible=false`、
+  `acceptance_authority=NONE`，不生成个性化仓位建议、不读取私人存储、
+  不修改私有 API 合同与既有代理逻辑。
+
+验证：`tests/web_api/test_read_api.py` 17 项通过（含 4 项新跨模块用例：
+正式绑定逐字复述 / 无绑定回落到共享未接入路径 / 篡改报告单段关闭 /
+发布链损坏时该段仍存在且不编造数字）；`tests/web_api` 全量 134 项通过；
+Web `typecheck`、`format`、`test`（41 项，含 6 项新用例）、`build` 通过，
+`web/dist` 已重建并由本机 `127.0.0.1:8001` 工作台加载。

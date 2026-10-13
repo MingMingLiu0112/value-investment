@@ -17,6 +17,10 @@ const CODE_TEXT: Record<string, string> = {
   PRIVATE_PORTFOLIO_NOT_CONNECTED: "私人组合尚未接入，无法核对持仓",
   PUBLICATION_UNAVAILABLE: "当前发布物不可用",
   PRICE_NOT_ADMITTED: "尚未接入经核验的当前行情",
+  "portfolio.private_input_missing":
+    "尚未提供私人组合输入（IPS、持仓、现金与风险约束）",
+  DUAL_SLEEVE_STATUS_UNAVAILABLE: "双策略状态不可用",
+  DUAL_SLEEVE_SURFACE_INVALID: "双策略报告未通过校验，已停止展示",
   PRIVATE_ROOT_UNAVAILABLE: "私人数据目录不可用",
   PRIVATE_JOURNAL_INVALID: "私人流水校验失败，已停止投影持仓",
   investable_assets_cny: "可投资资产",

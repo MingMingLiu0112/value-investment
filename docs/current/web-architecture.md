@@ -69,7 +69,7 @@ cannot be silently swapped for a different trade; `expected_revision` and
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/api/v1/daily-decisions` | Published product read model: universe, formal candidates, research observations, hotspot observations |
+| GET | `/api/v1/daily-decisions` | Published product read model: universe, formal candidates, research observations, hotspot observations, dual-sleeve status and the private inputs it still misses |
 | GET | `/api/v1/decisions/{symbol}` | Research explanation, evidence, blockers for one security |
 | GET | `/api/v1/decision-history` | Real, hash-verifiable research versions per security plus a mechanical field diff; `PREVIOUS_UNAVAILABLE` when only one version exists |
 | GET | `/api/v1/portfolio` | Private portfolio view, or a fail-closed disconnected projection |

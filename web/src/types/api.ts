@@ -216,6 +216,22 @@ export interface DailyResearchStatus {
   blockers?: string[];
 }
 
+export interface DailyDualSleeveSurface {
+  schema_version: string;
+  action: "no_order";
+  status: string;
+  namespace: string | null;
+  portfolio_connected: boolean;
+  position_guidance: unknown | null;
+  position_guidance_available: boolean;
+  trade_eligible: boolean;
+  acceptance_authority: string | null;
+  review_generated_at: string | null;
+  blockers: string[];
+  next_user_input: string | null;
+  source: string | null;
+}
+
 export interface DailyResponse {
   action: "no_order";
   status: ApiStatus;
@@ -232,6 +248,7 @@ export interface DailyResponse {
     hotspot: DecisionItem[];
   };
   research?: DailyResearchStatus;
+  dual_sleeve?: DailyDualSleeveSurface;
   blockers: string[];
   gate_code?: string;
   reason?: string;

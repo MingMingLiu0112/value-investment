@@ -16,6 +16,10 @@ const labels: Record<string, string> = {
   RESEARCH_REFERENCE: "研究参考",
   FORMALLY_ADMITTED_REVIEW: "正式准入复核",
   NOT_CONNECTED: "私人组合未接入",
+  RISK_REVIEW_CALCULATED: "风险复核已计算",
+  REVIEW_REQUIRED: "风险复核待人工处理",
+  BLOCKED_PRIVATE_INPUT: "私人输入不完整",
+  UNAVAILABLE: "暂不可用",
 };
 export function statusLabel(value?: string): string {
   if (!value) return "未提供";
