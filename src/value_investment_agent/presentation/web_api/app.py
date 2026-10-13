@@ -115,6 +115,42 @@ def _queue_item(row: dict, as_of: str) -> dict:
     return item
 
 
+_EXPLANATION_FIELDS = ("support", "counter_evidence", "thesis_breakers", "blockers",
+                       "price_context", "next_events")
+
+
+def _attach_value_explanations(root: Path, model: dict, items: list[dict]) -> list[dict]:
+    """Copy bound value explanations onto list rows without hiding a broken binding."""
+    explanations: dict[str, dict] = {}
+    unreadable: set[str] = set()
+    for binding in model.get("additional_evidence_bindings", []):
+        if not isinstance(binding, dict) or not isinstance(binding.get("path"), str):
+            continue
+        if not binding["path"].endswith("-value-decision-explanation.json"):
+            continue
+        symbol = Path(binding["path"]).name.partition("-")[0]
+        if not _ID.fullmatch(symbol):
+            continue
+        try:
+            explanation = _bound(root, binding)
+        except (OSError, ValueError, KeyError, TypeError, UnicodeError, json.JSONDecodeError):
+            unreadable.add(symbol)
+            continue
+        if (explanation.get("schema_version") == "public-value-decision-explanation-v1"
+                and explanation.get("symbol") == symbol and explanation.get("action") == "no_order"):
+            explanations[symbol] = explanation
+        else:
+            unreadable.add(symbol)
+    for item in items:
+        symbol = str(item.get("id", ""))
+        explanation = explanations.get(symbol)
+        if explanation is not None:
+            item.update(_pick(explanation, *_EXPLANATION_FIELDS))
+        if symbol in unreadable:
+            item["blockers"] = [*(item.get("blockers") or []), "VALUE_EXPLANATION_BINDING_UNAVAILABLE"]
+    return items
+
+
 def _default_port() -> int:
     raw = os.environ.get("VALUE_INVESTMENT_WEB_PORT", "")
     try:
@@ -183,6 +219,7 @@ def create_app(
         value.extend(_item(c, as_of, "PENDING_RESEARCH") for c in snapshot.get("opportunities", [])
                      if isinstance(c, dict) and c.get("action") == "no_order"
                      and _ID.fullmatch(str(c.get("symbol", ""))) and c["symbol"] not in known)
+        value = _attach_value_explanations(project, model, value)
         known = {c["symbol"] for c in value}
         value.extend(_queue_item(c, as_of) for c in queue.get("entries", [])
                      if isinstance(c, dict) and c.get("queue_status") == "SELECTED_FOR_DATA_CHECK"

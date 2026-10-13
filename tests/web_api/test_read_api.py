@@ -79,6 +79,8 @@ def test_fixture_projection_and_detail(tmp_path):
     assert daily["market"] == {"status": "UNKNOWN", "reason": "DATE_UNVERIFIED"}
     assert {row["id"] for row in daily["sections"]["value"]} == {"600519", "600741", "002612"}
     assert all(row["candidate_action"] == "no_order" for row in daily["sections"]["value"])
+    bound = next(item for item in daily["sections"]["value"] if item["id"] == "600519")
+    assert bound["blockers"] == ["G3"]
     detail = client.get("/api/v1/decisions/600519").json()
     assert detail["decision"]["blockers"] == ["G3"]
     assert detail["decision"]["reason"] == "Pending evidence"
@@ -96,6 +98,21 @@ def test_tampered_binding_fails_closed(tmp_path):
     (tmp_path / "runtime/state.json").write_text("{}", encoding="utf-8")
     assert client.get("/api/v1/daily-decisions").json()["status"] == "UNAVAILABLE"
     assert client.get("/api/v1/decisions/600519").json()["decision"] is None
+
+
+def test_unreadable_explanation_is_marked_not_hidden(tmp_path):
+    client = _fixture(tmp_path)
+    (tmp_path / "runtime/600519-value-decision-explanation.json").write_text("{", encoding="utf-8")
+    daily = client.get("/api/v1/daily-decisions").json()
+    row = next(item for item in daily["sections"]["value"] if item["id"] == "600519")
+    assert row["blockers"] == ["VALUE_EXPLANATION_BINDING_UNAVAILABLE"]
+
+
+def test_missing_bound_file_fails_closed(tmp_path):
+    client = _fixture(tmp_path)
+    (tmp_path / "runtime/state.json").unlink()
+    assert client.get("/api/v1/daily-decisions").json()["status"] == "UNAVAILABLE"
+    assert client.get("/api/v1/decisions/600519").json()["status"] == "UNAVAILABLE"
 
 
 def test_runtime_path_escape_fails_closed(tmp_path):
