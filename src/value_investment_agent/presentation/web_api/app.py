@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from ..read_models.research_history import build_research_history
+from ..read_models.value_decision_detail import project_value_decision_detail
 from .local_auth import (
     BOOTSTRAP_ENV,
     SESSION_HEADER,
@@ -321,18 +322,35 @@ def create_app(
                 binding = next((b for b in model.get("additional_evidence_bindings", [])
                                 if isinstance(b, dict) and isinstance(b.get("path"), str)
                                 and b["path"].endswith(f"/{decision_id}-value-decision-explanation.json")), None)
+                explanation = None
+                binding_status = "NOT_BOUND"
                 if binding:
                     try:
-                        explanation = _bound(project, binding)
-                        if (explanation.get("schema_version") == "public-value-decision-explanation-v1"
-                                and explanation.get("symbol") == decision_id and explanation.get("action") == "no_order"):
-                            item.update(_pick(explanation, "candidate_explanation", "support",
-                                              "counter_evidence", "thesis_breakers", "blockers",
-                                              "price_context", "next_events"))
-                            item["reason"] = explanation.get("candidate_explanation") or item["reason"]
-                    except (OSError, ValueError, KeyError, TypeError):
-                        return {"action": "no_order", "status": "UNAVAILABLE", "decision": None,
-                                "reason": "PUBLICATION_UNAVAILABLE"}
+                        candidate = _bound(project, binding)
+                    except _STRUCTURE_ERRORS:
+                        binding_status = "UNAVAILABLE"
+                    else:
+                        if (candidate.get("schema_version") == "public-value-decision-explanation-v1"
+                                and candidate.get("symbol") == decision_id
+                                and candidate.get("action") == "no_order"):
+                            explanation, binding_status = candidate, "VERIFIED"
+                        else:
+                            binding_status = "UNAVAILABLE"
+                if explanation is not None:
+                    item.update(_pick(explanation, "candidate_explanation", "support",
+                                      "counter_evidence", "thesis_breakers", "blockers",
+                                      "price_context", "next_events"))
+                    item["reason"] = explanation.get("candidate_explanation") or item["reason"]
+                elif binding_status == "UNAVAILABLE":
+                    # Keep the verified company card readable, but never present it
+                    # as if the bound decision explanation had been read.
+                    item["blockers"] = [*(item.get("blockers") or []),
+                                        "VALUE_EXPLANATION_BINDING_UNAVAILABLE"]
+                item["research"] = project_value_decision_detail(
+                    symbol=decision_id, company=company, explanation=explanation,
+                    binding_status=binding_status, binding=binding,
+                    binding_blockers=(["VALUE_EXPLANATION_BINDING_UNAVAILABLE"]
+                                      if binding_status == "UNAVAILABLE" else []))
                 return {"action": "no_order", "status": status,
                         "decision": item}
         for opportunity in published.get("opportunities", []):

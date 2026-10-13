@@ -25,7 +25,8 @@ def _write_raw(root, path, text):
     return {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
 
 
-def _fixture(root, *, receipt_records=None, receipt_text=None, report_overrides=None):
+def _fixture(root, *, receipt_records=None, receipt_text=None, report_overrides=None,
+             explanation_extra=None, company_extra=None):
     if receipt_text is not None:
         report_receipt = _write_raw(root, "runtime/report-receipt.json", receipt_text)
     else:
@@ -57,9 +58,11 @@ def _fixture(root, *, receipt_records=None, receipt_text=None, report_overrides=
                 for key, value in extensions.items()}
     explanation = _write(root, "runtime/600519-value-decision-explanation.json", {
         "schema_version": "public-value-decision-explanation-v1", "symbol": "600519",
-        "action": "no_order", "candidate_explanation": "Pending evidence", "blockers": ["G3"]})
+        "action": "no_order", "candidate_explanation": "Pending evidence", "blockers": ["G3"],
+        **(explanation_extra or {})})
     snapshot = {"action": "no_order", "as_of": "2026-10-12",
-                "companies": [{"symbol": "600519", "company_name": "Moutai", "action": "no_order"}],
+                "companies": [{"symbol": "600519", "company_name": "Moutai", "action": "no_order",
+                               **(company_extra or {})}],
                 "opportunities": [{"symbol": "600741", "company_name": "Huayu", "action": "no_order",
                                    "valuation_status": {"code": "NOT_READY"}, "why_now": "Research intake"}]}
     model = {"schema_version": "historical-company-read-model-preview-v1", "action": "no_order",
