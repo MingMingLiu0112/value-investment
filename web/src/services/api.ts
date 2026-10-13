@@ -1,6 +1,7 @@
 import type {
   DailyResponse,
   DailyPublicPacket,
+  DailyPublicSnapshot,
   DetailResponse,
   HistoryResponse,
   PortfolioResponse,
@@ -117,6 +118,15 @@ function forgetSession(): void {
   }
 }
 
+/**
+ * Whether this tab already holds an unlock session. The private-state mapping
+ * uses it to tell a session that expired (service restarted) apart from a
+ * page that was never unlocked; the current read itself changes nothing here.
+ */
+export function hadSessionToken(): boolean {
+  return sessionToken !== null || readStoredToken() !== null;
+}
+
 // The workbench starts locked. The launcher mints a per-run secret and opens
 // the page with `#unlock=<secret>`; the fragment never reaches the server, and
 // this exchange is the only way to obtain a session token.
@@ -220,6 +230,8 @@ export const api = {
     get<DailyResponse>("daily-decisions", signal),
   packet: (signal?: AbortSignal) =>
     get<DailyPublicPacket>("daily-public-packet", signal),
+  snapshot: (signal?: AbortSignal) =>
+    get<DailyPublicSnapshot>("daily-public-snapshot", signal),
   detail: (id: string, signal?: AbortSignal) =>
     get<DetailResponse>(`decisions/${encodeURIComponent(id)}`, signal),
   portfolio: (signal?: AbortSignal) =>

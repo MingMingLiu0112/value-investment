@@ -26,11 +26,19 @@ import type {
 import { formatMoney } from "../../utils/format";
 import { dailyStatus } from "../../utils/status";
 import { codeText, describeCode } from "../../utils/codes";
-import { dualSleeveMismatch, dualSleeveView } from "../../utils/dualSleeve";
+import {
+  dualSleeveLiveUnreadable,
+  dualSleeveMismatch,
+  dualSleeveView,
+} from "../../utils/dualSleeve";
 import {
   blockerText,
+  excelComparisonText,
+  excelNewerSideText,
   freshnessLevel,
   packetDateRows,
+  snapshotCutoffLine,
+  snapshotIntegrityText,
 } from "../../utils/packet";
 
 const HOLDINGS_BLOCKER = "PRIVATE_PORTFOLIO_NOT_CONNECTED";
@@ -163,8 +171,8 @@ function PacketSection({
         </Descriptions.Item>
         <Descriptions.Item label="来源绑定">
           {packet.source_bindings_verified
-            ? "全部哈希校验通过"
-            : "存在未通过校验的来源"}
+            ? "全部哈希校验通过（不等于投资准入）"
+            : "存在未通过校验的来源（详见下方阻断事项）"}
         </Descriptions.Item>
         {packetDateRows(packet).map((row) => (
           <Descriptions.Item key={row.label} label={row.label}>
@@ -172,6 +180,7 @@ function PacketSection({
           </Descriptions.Item>
         ))}
       </Descriptions>
+      <SnapshotSection />
       {freshnessItems.map((item) => {
         const level = freshnessLevel(item.value.status);
         if (level === "ok") return null;
@@ -300,6 +309,112 @@ function PacketSection({
 }
 
 /**
+ * TL10-RC：冻结快照与正式 Excel 的只读对照。接口不可用时 fail-closed，
+ * 不断言“一致”，也不推导任何投资结论。
+ */
+function SnapshotSection() {
+  const { data, loading, error, retry } = useApi(api.snapshot);
+  const retryLink = (
+    <a style={{ marginLeft: 12 }} onClick={retry}>
+      重试
+    </a>
+  );
+  if (loading) {
+    return (
+      <Typography.Text
+        type="secondary"
+        style={{ display: "block", marginTop: 12 }}
+      >
+        正在读取快照与 Excel 对照…
+      </Typography.Text>
+    );
+  }
+  if (!data) {
+    return (
+      <Alert
+        style={{ marginTop: 12 }}
+        type="warning"
+        showIcon
+        message="快照与 Excel 对照读取失败（fail-closed）"
+        description={
+          <>
+            {error ?? "接口未返回数据"}；无法确认快照版本与 Excel
+            对照状态，不会断言“一致”。{retryLink}
+          </>
+        }
+      />
+    );
+  }
+  const verified = data.status === "VERIFIED";
+  const newer = excelNewerSideText(data.excel_live, data.dates);
+  return (
+    <div style={{ marginTop: 12 }}>
+      <Descriptions
+        size="small"
+        bordered
+        column={3}
+        title="快照与 Excel 对照"
+        items={[
+          {
+            key: "version",
+            label: "快照版本",
+            children: data.publication_id ?? "尚无已验证快照",
+          },
+          {
+            key: "integrity",
+            label: "校验状态",
+            children: (
+              <Tag
+                color={
+                  verified
+                    ? "green"
+                    : data.status === "INVALID"
+                      ? "red"
+                      : "default"
+                }
+              >
+                {snapshotIntegrityText(data)}
+              </Tag>
+            ),
+          },
+          {
+            key: "published",
+            label: "生成 / 发布时间",
+            children: `${data.generated_at ?? "未提供"} / ${
+              data.published_at ?? "未提供"
+            }`,
+          },
+          {
+            key: "cutoff",
+            label: "数据截止",
+            children: snapshotCutoffLine(data.dates),
+          },
+          {
+            key: "excel",
+            label: "Excel 对照",
+            children:
+              excelComparisonText(data.excel_live) +
+              (newer ? `；${newer}` : ""),
+          },
+          {
+            key: "boundary",
+            label: "刷新边界",
+            children:
+              "SAFE_REFRESH 只刷新行情并重建公开快照；重跑研究、事件复核与 G3 估值门仍是人工/工程步骤。",
+          },
+        ]}
+      />
+      <Typography.Text
+        type="secondary"
+        style={{ display: "block", marginTop: 8 }}
+      >
+        {data.excel_live?.note ?? "只读校验：不覆盖、不重建正式工作簿。"}
+      </Typography.Text>
+    </div>
+  );
+}
+
+/**
  * 研究状态只复述已登记行情与研究截止日的真实比较结果：行情晚于研究截止日
  * 即为“需要重新研究”，登记层不预支任何研究批准或价格比较资格。
  */
@@ -401,14 +516,7 @@ function HoldingsSection({ state }: { state: PrivateStateHandle }) {
         : state.kind === "LOCKED"
           ? "info"
           : "info";
-    const message =
-      state.kind === "LOCKED"
-        ? "私人工作台已锁定（尚未解锁）"
-        : state.kind === "NOT_CONNECTED"
-          ? "尚未接入真实私人组合"
-          : state.kind === "UNAVAILABLE"
-            ? "私人状态读取失败"
-            : "正在读取私人状态…";
+    const message = state.label;
     return (
       <Alert
         type={type}
@@ -554,6 +662,7 @@ function DualSleeveSection({
     );
   }
   const mismatch = dualSleeveMismatch(surface, privateKind);
+  const liveUnreadable = dualSleeveLiveUnreadable(privateKind);
   return (
     <>
       <Descriptions
@@ -584,6 +693,15 @@ function DualSleeveSection({
           showIcon
           message="发布物与当前私人台账不一致"
           description={mismatch}
+        />
+      )}
+      {liveUnreadable && (
+        <Alert
+          style={{ marginTop: 12 }}
+          type="info"
+          showIcon
+          message="上表来自公开发布物（快照），不是当前私人台账读取结果"
+          description="私人数据尚未解锁或当前不可用；上表只代表发布物记录，不能当作当前持仓或仓位结论。解锁本机工作台并复核后，以①区实时状态为准。"
         />
       )}
       {view.guidanceMissingReason && (

@@ -48,6 +48,20 @@ export function dualSleeveMismatch(
   return null;
 }
 
+/**
+ * 私人状态当前读不到时，双策略表只是发布物里的记录（快照），
+ * 不能当作当前私人持仓结论展示；调用方据此加注说明。
+ */
+export function dualSleeveLiveUnreadable(
+  privateKind: PrivateStateKind,
+): boolean {
+  return (
+    privateKind === "LOCKED" ||
+    privateKind === "UNAVAILABLE" ||
+    privateKind === "LOADING"
+  );
+}
+
 export function dualSleeveView(
   surface?: DailyDualSleeveSurface | null,
 ): DualSleeveView | null {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, ApiError } from "../services/api";
+import { api, ApiError, hadSessionToken } from "../services/api";
 import type { PortfolioResponse, RiskResponse } from "../types/api";
 import { privateStateFrom } from "../utils/privateState";
 import type { PrivateStateView } from "../utils/privateState";
@@ -20,10 +20,13 @@ export function usePrivateState(): PrivateStateHandle {
   const [risk, setRisk] = useState<RiskResponse>();
   const [error, setError] = useState<unknown>();
   const [loading, setLoading] = useState(true);
+  const [hadSession, setHadSession] = useState(false);
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
+    // Capture before the read: forgetSession() may run during a 401 retry.
+    setHadSession(hadSessionToken());
     setLoading(true);
     setError(undefined);
     (async () => {
@@ -65,7 +68,13 @@ export function usePrivateState(): PrivateStateHandle {
     return () => controller.abort();
   }, [revision]);
 
-  const view = privateStateFrom({ portfolio, risk, error, loading });
+  const view = privateStateFrom({
+    portfolio,
+    risk,
+    error,
+    loading,
+    hadSession,
+  });
   return {
     ...view,
     retry: () => setRevision((value) => value + 1),

@@ -571,6 +571,61 @@ export interface PacketCompanyStatus {
   } | null;
 }
 
+/** The shared date block carried by the packet and the snapshot metadata. */
+export interface PacketDates {
+  current_natural_date: string | null;
+  latest_completed_trade_session: string | null;
+  quote_trade_date: string | null;
+  quote_observed_at: string | null;
+  research_as_of: string | null;
+  model_validity: { status: string; valid_through: string | null };
+  decision_published_on: string | null;
+  excel_published_as_of: string | null;
+  excel_quote_observation_as_of: string | null;
+}
+
+/** TL10-RC: the workbook comparison recorded inside the published packet. */
+export interface ExcelSyncRecord {
+  path: string | null;
+  status: string;
+  expected_sha256: string | null;
+  observed_sha256: string | null;
+  matches: boolean | null;
+  checked_at: string | null;
+  note: string | null;
+}
+
+/** TL10-RC: read-time, read-only comparison against the formal workbook. */
+export interface ExcelLiveCheck {
+  status: string;
+  path: string | null;
+  expected_sha256: string | null;
+  observed_sha256: string | null;
+  pointer_published_as_of: string | null;
+  checked_at: string | null;
+  note: string | null;
+}
+
+/** TL10-RC: version metadata for the one frozen daily public snapshot. */
+export interface DailyPublicSnapshot {
+  schema_version: string;
+  action: "no_order";
+  status: string;
+  reason: string | null;
+  publication_id: string | null;
+  packet_path: string | null;
+  packet_sha256: string | null;
+  content_sha256: string | null;
+  engine_version: string | null;
+  research_version: string | null;
+  generated_at: string | null;
+  published_at: string | null;
+  receipt_path: string | null;
+  dates: PacketDates | null;
+  excel_sync: ExcelSyncRecord | null;
+  excel_live: ExcelLiveCheck | null;
+}
+
 /** The one public daily decision packet (TL9 MVP-1). */
 export interface DailyPublicPacket {
   schema_version: string;
@@ -581,17 +636,11 @@ export interface DailyPublicPacket {
   research_version: string | null;
   generated_at: string;
   chain_error?: string | null;
-  dates: {
-    current_natural_date: string | null;
-    latest_completed_trade_session: string | null;
-    quote_trade_date: string | null;
-    quote_observed_at: string | null;
-    research_as_of: string | null;
-    model_validity: { status: string; valid_through: string | null };
-    decision_published_on: string | null;
-    excel_published_as_of: string | null;
-    excel_quote_observation_as_of: string | null;
-  };
+  snapshot_status?: string | null;
+  snapshot_reason?: string | null;
+  content_sha256?: string | null;
+  identity_inputs?: Record<string, unknown> | null;
+  dates: PacketDates;
   formal_admission_count: number;
   pending_review_count: number;
   research_counts: {
@@ -623,4 +672,5 @@ export interface DailyPublicPacket {
   }> | null;
   source_bindings_verified: boolean;
   company_statuses: Record<string, PacketCompanyStatus>;
+  excel_sync?: ExcelSyncRecord | null;
 }

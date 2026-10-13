@@ -9,7 +9,9 @@ import type { PortfolioResponse, RiskResponse } from "../types/api";
  * - NOT_CONNECTED：已解锁但没有真实私人台账（不代表组合为空）；
  * - BLOCKED_PRIVATE_INPUT：有真实持仓，但 IPS/风险输入不完整；
  * - CONNECTED：真实台账可用；是否给出仓位建议仍由风险引擎决定；
- * - UNAVAILABLE：读取失败（目录损坏、校验失败等），fail-closed。
+ * - UNAVAILABLE：读取失败（目录不可用、流水校验失败、其他读错误），fail-closed。
+ *   台账损坏与目录不可用即使落在 NOT_CONNECTED 响应里，也按 UNAVAILABLE 如实报出，
+ *   不再显示成“尚未接入”。
  */
 export type PrivateStateKind =
   | "LOADING"
@@ -34,9 +36,22 @@ export function privateStateFrom(input: {
   risk?: RiskResponse;
   error?: unknown;
   loading?: boolean;
+  /** 本次读取前该页面是否已持有解锁会话（用于区分从未解锁与会话失效）。 */
+  hadSession?: boolean;
 }): PrivateStateView {
-  const { portfolio, risk, error, loading } = input;
+  const { portfolio, risk, error, loading, hadSession } = input;
   if (error instanceof ApiError && error.status === 401) {
+    if (hadSession) {
+      return {
+        kind: "LOCKED",
+        label: "解锁会话已过期",
+        detail:
+          "本次读取被拒绝：本机工作台的解锁会话已失效（例如服务重启），系统没有读取任何私人数据。",
+        nextStep:
+          "请重新运行本机启动脚本（run_daily_workbench.ps1 或 start_web_workbench.ps1）打开一次性解锁链接，然后重试。",
+        blockers: [],
+      };
+    }
     return {
       kind: "LOCKED",
       label: "已锁定（尚未解锁）",
@@ -66,6 +81,31 @@ export function privateStateFrom(input: {
     };
   }
   if (portfolio.status === "NOT_CONNECTED") {
+    const blockers = portfolio.blockers.filter(
+      (code) => !PRICE_CODES.has(code),
+    );
+    if (blockers.includes("PRIVATE_JOURNAL_INVALID")) {
+      return {
+        kind: "UNAVAILABLE",
+        label: "私人台账校验失败（已停止投影）",
+        detail:
+          "私人流水校验未通过，系统已停止投影持仓与现金；当前不会显示任何台账或仓位数字。这不代表你的组合为空。",
+        nextStep:
+          "检查私人数据目录中的流水文件，修复后重新运行每日工作台并重试。",
+        blockers,
+      };
+    }
+    if (blockers.includes("PRIVATE_ROOT_UNAVAILABLE")) {
+      return {
+        kind: "UNAVAILABLE",
+        label: "私人数据目录不可用",
+        detail:
+          "私人数据目录当前不可读（未配置或不可访问），系统没有读取到任何台账内容；这不代表你的组合为空。",
+        nextStep:
+          "确认私人数据目录已配置且可访问，然后重新运行每日工作台并重试。",
+        blockers,
+      };
+    }
     return {
       kind: "NOT_CONNECTED",
       label: "尚未接入",
@@ -73,7 +113,7 @@ export function privateStateFrom(input: {
         "没有已确认的真实私人台账；这不代表你的组合为空，也不会生成任何买卖或仓位数字。",
       nextStep:
         "按 M4 流程初始化私人组合并确认真实成交后，再运行双策略风险复核。",
-      blockers: portfolio.blockers.filter((code) => !PRICE_CODES.has(code)),
+      blockers,
     };
   }
   if (portfolio.status === "CONNECTED") {

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { dualSleeveMismatch, dualSleeveView } from "../src/utils/dualSleeve";
+import {
+  dualSleeveLiveUnreadable,
+  dualSleeveMismatch,
+  dualSleeveView,
+} from "../src/utils/dualSleeve";
 import type { DailyDualSleeveSurface } from "../src/types/api";
 
 const NOT_CONNECTED: DailyDualSleeveSurface = {
@@ -20,6 +24,15 @@ const NOT_CONNECTED: DailyDualSleeveSurface = {
 };
 
 describe("dual-sleeve daily surface view", () => {
+  it("marks the published table as a snapshot when the live ledger is unreadable", () => {
+    expect(dualSleeveLiveUnreadable("LOCKED")).toBe(true);
+    expect(dualSleeveLiveUnreadable("UNAVAILABLE")).toBe(true);
+    expect(dualSleeveLiveUnreadable("LOADING")).toBe(true);
+    expect(dualSleeveLiveUnreadable("NOT_CONNECTED")).toBe(false);
+    expect(dualSleeveLiveUnreadable("CONNECTED")).toBe(false);
+    expect(dualSleeveLiveUnreadable("BLOCKED_PRIVATE_INPUT")).toBe(false);
+  });
+
   it("reports the not-connected state without inventing a position", () => {
     const view = dualSleeveView(NOT_CONNECTED)!;
     expect(view.statusText).toContain("私人组合未接入");

@@ -108,4 +108,47 @@ describe("privateStateFrom", () => {
     expect(privateStateFrom({ loading: true }).kind).toBe("LOADING");
     expect(privateStateFrom({}).kind).toBe("LOADING");
   });
+
+  it("tells an expired unlock session apart from a never-unlocked page", () => {
+    const neverUnlocked = privateStateFrom({
+      error: new ApiError(401, "LOCAL_SESSION_LOCKED", "locked"),
+    });
+    expect(neverUnlocked.kind).toBe("LOCKED");
+    expect(neverUnlocked.label).toBe("已锁定（尚未解锁）");
+
+    const expired = privateStateFrom({
+      error: new ApiError(401, "LOCAL_SESSION_LOCKED", "locked"),
+      hadSession: true,
+    });
+    expect(expired.kind).toBe("LOCKED");
+    expect(expired.label).toContain("过期");
+    expect(expired.detail).toContain("失效");
+    expect(expired.nextStep).toContain("启动脚本");
+  });
+
+  it("reports a corrupt journal as UNAVAILABLE instead of NOT_CONNECTED", () => {
+    const view = privateStateFrom({
+      portfolio: {
+        ...notConnectedPortfolio(),
+        blockers: ["PRIVATE_JOURNAL_INVALID", "PRICE_NOT_ADMITTED"],
+      },
+    });
+    expect(view.kind).toBe("UNAVAILABLE");
+    expect(view.label).toContain("校验失败");
+    expect(view.detail).toContain("停止投影");
+    expect(view.blockers).toEqual(["PRIVATE_JOURNAL_INVALID"]);
+  });
+
+  it("reports an unreadable private root as UNAVAILABLE with its own detail", () => {
+    const view = privateStateFrom({
+      portfolio: {
+        ...notConnectedPortfolio(),
+        blockers: ["PRIVATE_ROOT_UNAVAILABLE", "PRICE_NOT_ADMITTED"],
+      },
+    });
+    expect(view.kind).toBe("UNAVAILABLE");
+    expect(view.label).toBe("私人数据目录不可用");
+    expect(view.detail).toContain("不代表你的组合为空");
+    expect(view.blockers).toEqual(["PRIVATE_ROOT_UNAVAILABLE"]);
+  });
 });

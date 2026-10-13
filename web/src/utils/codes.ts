@@ -18,7 +18,8 @@ const CODE_TEXT: Record<string, string> = {
   NEEDS_RE_RESEARCH: "需要重新研究以覆盖最新已核验收盘",
   MODEL_VALIDITY_UNKNOWN: "模型有效性未确立",
   VALUE_EXPLANATION_BINDING_UNAVAILABLE: "研究解释绑定不可用",
-  REGISTERED_EVIDENCE_CHANGED: "注册研究证据已变更，条目已降级展示",
+  REGISTERED_EVIDENCE_CHANGED:
+    "登记证据哈希变化：该公司研究结果降级为不可核验，需重新登记证据",
   REGISTERED_RESEARCH_GAP: "注册研究缺项",
   EVENT_MATERIALITY_REVIEW: "事件材料性复核未完成",
   AWAITING_VERIFIED_CLOSE: "等待双源核验收盘行情登记",
