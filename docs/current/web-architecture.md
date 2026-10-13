@@ -1,5 +1,27 @@
 # WEB-D1 boundary and current baseline
 
+## TL9 additions (2026-10-13)
+
+- `application/product/publication_chain.py` loads the bound publications and
+  verifies the hash chain once; `application/product/daily_public_packet.py`
+  composes the single daily public packet (identity schema
+  `daily-public-packet-identity-v2`, engine `daily-public-packet-engine-v1`)
+  that every public endpoint carries, including `GET /api/v1/daily-public-packet`.
+- `scripts/current/build_daily_public_packet.py` (thin CLI) and
+  `scripts/current/run_daily_workbench.ps1` (READ_ONLY / SAFE_REFRESH single
+  daily entry) are the only product entrypoints; the workbench script prints a
+  plain-language summary and starts the locked local server.
+- The Web reads one private state per page: `utils/privateState.ts` maps
+  LOCKED / NOT_CONNECTED / BLOCKED_PRIVATE_INPUT / CONNECTED / UNAVAILABLE so
+  the holdings section and the published dual-sleeve surface cannot disagree
+  silently; a mismatch between the publication and the live ledger is shown as
+  such. `usePrivateState.ts` is the only caller of the private portfolio APIs
+  on `/daily`.
+- `/decisions/{symbol}` opens with `researchHeadline()` (generated from real
+  valuation/bridge fields) and closes with `nextActionLines()` (published
+  `next_step` / `next_action` only). Technical fields stay folded in a
+  “证据与技术详情” collapse.
+
 The Web workbench is a local presentation and manual-input surface. It does not
 replace the canonical WPS workbook, valuation engine, research gates, decision
 restoration, or private portfolio authority. Every output has `action=no_order`.

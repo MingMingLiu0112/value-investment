@@ -1,5 +1,30 @@
 # CURRENT STATUS
 
+## 2026-10-13 TL9-MVP: one trustworthy daily packet, one command, consistent private state
+
+TL9 MVP-1..MVP-5 engineering delivery is complete on
+`codex/web-d1-investment-workbench` (details pending CI for this commit).
+`application/product/daily_public_packet.py` now builds one hash-chained public
+packet (engine `daily-public-packet-engine-v1`, identity schema v2) shared by
+`GET /api/v1/daily-public-packet`, `/daily-decisions`, `/decisions/{id}` and
+`/decision-history`; `/daily` renders version, date boundaries, freshness,
+counts, real todo and blockers. `scripts/current/run_daily_workbench.ps1`
+(READ_ONLY default, SAFE_REFRESH idempotent) is the single daily entry and was
+run for real: SAFE_REFRESH collected 600887 dual-source close 27.77 on
+2026-10-13, re-ran idempotently, exit 0. The daily page now derives one private
+state (LOCKED / NOT_CONNECTED / BLOCKED_PRIVATE_INPUT / CONNECTED /
+UNAVAILABLE) once and shares it across sections; an isolated private ledger
+verified NOT_CONNECTED -> CONNECTED -> BLOCKED_PRIVATE_INPUT end to end,
+including a publication-vs-ledger mismatch warning. The company page now opens
+with a generated one-line conclusion and closes with concrete next steps from
+published `next_step`/`next_action` fields only; 000333/601088 render the same
+component with honest "no usable valuation" states. A corrupt quote registry is
+now reported as REGISTRY_UNAVAILABLE instead of "nothing registered"
+(`daily_research_status.py`, packet blocker `QUOTE_REGISTRY_UNAVAILABLE`).
+Web: typecheck/format/60 tests/build passed. Full local Core Gates to be
+recorded with the push. action=no_order unchanged; no canonical workbook was
+touched.
+
 ## 2026-10-13 WEB-D4 work package F: dual-sleeve guardrails on /daily
 
 The daily workbench now restates the formally bound dual-sleeve risk review
