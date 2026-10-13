@@ -3,7 +3,7 @@
 ## 2026-10-13 TL9-MVP: one trustworthy daily packet, one command, consistent private state
 
 TL9 MVP-1..MVP-5 engineering delivery is complete on
-`codex/web-d1-investment-workbench` (details pending CI for this commit).
+`codex/web-d1-investment-workbench` at `e027c5e` (bdcb968 + 6e5cad0 + e027c5e).
 `application/product/daily_public_packet.py` now builds one hash-chained public
 packet (engine `daily-public-packet-engine-v1`, identity schema v2) shared by
 `GET /api/v1/daily-public-packet`, `/daily-decisions`, `/decisions/{id}` and
@@ -21,9 +21,11 @@ published `next_step`/`next_action` fields only; 000333/601088 render the same
 component with honest "no usable valuation" states. A corrupt quote registry is
 now reported as REGISTRY_UNAVAILABLE instead of "nothing registered"
 (`daily_research_status.py`, packet blocker `QUOTE_REGISTRY_UNAVAILABLE`).
-Web: typecheck/format/60 tests/build passed. Full local Core Gates to be
-recorded with the push. action=no_order unchanged; no canonical workbook was
-touched.
+Web: typecheck/format/60 tests/build passed. Full local Core Gates:
+5079 passed / 42 skipped. Remote CI on e027c5e: Core Research Gates run
+38383628464/38383628465 and the push run 38383621088, all Success. Usage and
+acceptance note: current/tl9-mvp-usage-acceptance-20261013.md. action=no_order
+unchanged; no canonical workbook was touched.
 
 ## 2026-10-13 WEB-D4 work package F: dual-sleeve guardrails on /daily
 

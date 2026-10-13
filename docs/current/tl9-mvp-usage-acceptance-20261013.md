@@ -106,8 +106,9 @@ pwsh -NoProfile -File D:\GPTProject\value-investment\scripts\current\run_daily_w
 
 ## 11. 本轮工程验收记录（2026-10-13）
 
-- 干净环境：GitHub Actions Core Research Gates 与 Web Workbench 在推送后
-  重跑（依赖安装 + 构建 + 测试）；
+- 干净环境：GitHub Actions 在 `e027c5e` 推送后重跑（依赖安装 + 构建 + 测试），
+  Core Research Gates 与 Web Workbench（run 38383628464 / 38383628465 /
+  38383621088）全部 Success；本地全量 Core Gates 5079 passed / 42 skipped；
 - 本机端到端：`run_daily_workbench.ps1 -Mode READ_ONLY` 退出码 0；
   `-Mode SAFE_REFRESH` 采集 600887 当日双源收盘 27.77 并登记，重跑幂等；
 - 私人状态：隔离测试组合（`VALUE_INVESTMENT_PRIVATE_ROOT` 指向系统临时目录，
