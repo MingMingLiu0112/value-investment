@@ -1,0 +1,219 @@
+{
+  "schema_version": "tl7-p1-research-update-v1",
+  "action": "no_order",
+  "symbol": "600887",
+  "company_name": "伊利股份",
+  "generated_at": "2026-10-13T03:39:06.660213+00:00",
+  "branch": "codex/web-d1-investment-workbench",
+  "git_head": "c844446e393dfedeae050d5f1aa7228d2c64c1ae",
+  "research_chain": {
+    "entrypoint": "scripts/current/run_daily_trade_assistant.py",
+    "case_registry": {
+      "path": "config/user-daily-trade-assistant-v1.json",
+      "sha256": "bcd27349fb18aa17dd4f17820e642d7d07c8865a1652abe0b1a78e9f4aed2996"
+    },
+    "package": {
+      "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
+      "sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5",
+      "package_version": "pending-600887-2026-10-11-short-advantage-fc7dba372686",
+      "research_as_of": "2026-10-11",
+      "report_period": "2026-06-30",
+      "model_id": "residual_income_or_equity_value",
+      "model_version": "residual-income-equity-shared-dated-v2",
+      "rule_version": "m1-valuation-rules-v1",
+      "profile_id": "quality_compounder"
+    },
+    "runs": [
+      {
+        "run_dir": "runtime/daily-trade-assistant/20261013T031205828663Z-600887",
+        "purpose": "bounded re-run with the registered quote bundle",
+        "status": "RESEARCH_RUN_COMPLETED_WITH_ADMISSION_STATUS",
+        "recommendation_type": "NO_ACTION",
+        "quote_check": {
+          "quote_date": "2026-10-12",
+          "bundle_path": "runtime/quote-sessions/20261012T092313080159Z/bundle.json",
+          "bundle_sha256": "628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f",
+          "collected_at": "2026-10-12T09:23:13.080145+00:00",
+          "display_price": "27.96",
+          "price_admitted": false,
+          "display_scope": "LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
+          "latest_completed_session": "2026-10-12",
+          "calendar_hashes": [
+            "4e260b815ce1309175ed994e6490a4ccd51b998a5f92bcdc41cec00fc6823dc7"
+          ],
+          "is_historical_close": true,
+          "status": "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
+          "reason": "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性"
+        },
+        "research_status": "COMPLETED_WITH_BLOCKERS",
+        "suggested_state": "NO_ACTION",
+        "outputs": {
+          "workbench": {
+            "path": "runtime/daily-trade-assistant/20261013T031205828663Z-600887/workbench.json",
+            "sha256": "c0ae444d87485dd78d75e6eb18f73509b663615704ee24411d39cc2522269d6f"
+          },
+          "agent_packet": {
+            "path": "runtime/daily-trade-assistant/20261013T031205828663Z-600887/agent-packet.json",
+            "sha256": "2b2a0fcaa95104d1f55cc9581fbc87e8af69e86ae154b477e081c6bea380eb87"
+          },
+          "report": {
+            "path": "runtime/daily-trade-assistant/20261013T031205828663Z-600887/report.md",
+            "sha256": "ee2d7ec0b5a920ccfcee45959186eb9429d88cd3a6c679a43ff9beaab11e9eb5"
+          },
+          "asset_index": {
+            "path": "runtime/daily-trade-assistant/20261013T031205828663Z-600887/asset-index.json",
+            "sha256": "7557ab31e498079ecd18f9fde2ea35f2094138c7951c105c0460a2c5dd32ccf0"
+          }
+        }
+      },
+      {
+        "run_dir": "runtime/daily-trade-assistant/20261013T031330686666Z-600887",
+        "purpose": "bounded re-run plus official event window collection",
+        "status": "RESEARCH_RUN_COMPLETED_WITH_ADMISSION_STATUS",
+        "recommendation_type": "NO_ACTION",
+        "quote_check": {
+          "quote_date": "2026-10-12",
+          "bundle_path": "runtime/quote-sessions/20261012T092313080159Z/bundle.json",
+          "bundle_sha256": "628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f",
+          "collected_at": "2026-10-12T09:23:13.080145+00:00",
+          "display_price": "27.96",
+          "price_admitted": false,
+          "display_scope": "LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
+          "latest_completed_session": "2026-10-12",
+          "calendar_hashes": [
+            "4e260b815ce1309175ed994e6490a4ccd51b998a5f92bcdc41cec00fc6823dc7"
+          ],
+          "is_historical_close": true,
+          "status": "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
+          "reason": "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性"
+        },
+        "research_status": "COMPLETED_WITH_BLOCKERS",
+        "suggested_state": "NO_ACTION",
+        "outputs": {
+          "workbench": {
+            "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/workbench.json",
+            "sha256": "f96a884975d0536a280d5c85f738494adc6c338ea21691aa338bd1c0ee8957fb"
+          },
+          "agent_packet": {
+            "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/agent-packet.json",
+            "sha256": "41221fa200a00207790484652b0687368012fd7d17ddc7c5ae13f5bfd476ec75"
+          },
+          "report": {
+            "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/report.md",
+            "sha256": "eceb735627e44ae6a4dd888486ec2140435874cc82b5e425825f876735bc6f89"
+          },
+          "asset_index": {
+            "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/asset-index.json",
+            "sha256": "7557ab31e498079ecd18f9fde2ea35f2094138c7951c105c0460a2c5dd32ccf0"
+          },
+          "event_observation": {
+            "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/observation.json",
+            "sha256": "e8ba7064859fc0d659536c4983e1bac2250c3eca744e339da840d46903575995"
+          }
+        }
+      }
+    ],
+    "official_event_window": {
+      "source": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/observation.json",
+      "sha256": "e8ba7064859fc0d659536c4983e1bac2250c3eca744e339da840d46903575995",
+      "scan_from": "2026-10-11",
+      "scan_to": "2026-10-12",
+      "acquired_at": "2026-10-13T03:13:31.815290+00:00",
+      "timestamp_assurance": "PROVIDER_DATE_METADATA_NOT_INTRADAY_AVAILABILITY",
+      "full_calendar_window_elapsed": true,
+      "announcement_count": 0,
+      "pagination_complete": true,
+      "collection_status": "OFFICIAL_QUERY_ARCHIVED",
+      "materiality_approved": false,
+      "model_revalidated": false,
+      "research_date_advanced": false
+    },
+    "new_official_evidence": 0,
+    "research_date_advanced": false
+  },
+  "version_diff": {
+    "publication_pointer_registered_research_date": "2026-09-22",
+    "publication_pointer_source": "config/current-trial-workbook.json#current_publication.registered_research_dates.600887",
+    "publication_pointer_current_receipt": "runtime/publication-receipts/canonical-reviewed-research-20261012T113935Z-362d7928.json",
+    "daily_case_research_as_of": "2026-10-11",
+    "published_decision_cutoff": "2026-10-11",
+    "valuation_reproduced": {
+      "bear": "9.79764118439777680597278298395676515182872214703",
+      "base": "10.0751373530680129477021471870066470782479712991",
+      "bull": "10.3006925009950307944059171660835859543186976072",
+      "confidence": "低",
+      "status": "conditional_research_only",
+      "note": "本轮重算复现同一条件性估值；窗口内没有新增官方披露，因此没有重新拟合假设。"
+    },
+    "bound_explanation": {
+      "path": "runtime/daily-trade-assistant/20261012-productization-canonical-publish-v5/600887-value-decision-explanation.json",
+      "sha256": "54ecf79bd1e1f752d32dd9d7032224f8aa2ee3d557265b84600475ad99454049"
+    }
+  },
+  "price_bridge": {
+    "schema_version": "quote-bridge-execution-v1",
+    "action": "no_order",
+    "symbol": "600887",
+    "status": "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
+    "reason": "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性",
+    "price_admitted": false,
+    "research_case": {
+      "package_path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
+      "package_sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5",
+      "package_version": "pending-600887-2026-10-11-short-advantage-fc7dba372686",
+      "research_as_of": "2026-10-11"
+    },
+    "research_day": "2026-10-11",
+    "quote": {
+      "quote_date": "2026-10-12",
+      "display_price": "27.96",
+      "collected_at": "2026-10-12T09:23:13.080145+00:00",
+      "display_scope": "LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
+      "is_historical_close": true,
+      "latest_completed_session": "2026-10-12",
+      "bundle_path": "runtime/quote-sessions/20261012T092313080159Z/bundle.json",
+      "bundle_sha256": "628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f"
+    },
+    "pointer": {
+      "path": "config/current-quote-bridge.json",
+      "sha256": "414551e2579f3826fdf6fb18ad34afab7b10c50a17d2676d24f8b6942ffb751e"
+    },
+    "sources": [
+      {
+        "id": "daily-assistant-quote-628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f",
+        "kind": "quote_session",
+        "path": "runtime/quote-sessions/20261012T092313080159Z/bundle.json",
+        "sha256": "628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f",
+        "status": "collected_not_verified",
+        "expected_session": "2026-10-12",
+        "session_result": "matched_close",
+        "reason": "带日期双源报价与最近已完成交易日一致"
+      },
+      {
+        "id": "daily-assistant-quote-628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f-tencent",
+        "kind": "quote_provider_document",
+        "provider": "tencent",
+        "source_url": "https://qt.gtimg.cn/q=sh600887",
+        "fetched_at": "2026-10-12T09:23:12.983524+00:00",
+        "sha256": "4787985d63fa7cce86868d3e3bbeed8b48fcf95ccbf7fb601d1b000e88e900db",
+        "observed_trade_at": "2026-10-12T16:15:00+08:00"
+      },
+      {
+        "id": "daily-assistant-quote-628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f-sina",
+        "kind": "quote_provider_document",
+        "provider": "sina",
+        "source_url": "https://hq.sinajs.cn/list=sh600887",
+        "fetched_at": "2026-10-12T09:23:13.079577+00:00",
+        "sha256": "702da032ffb390f44df8dc2139a36c320eaa29f0e88fe21fc9556beea035268b",
+        "observed_trade_at": "2026-10-12T15:34:58+08:00"
+      }
+    ],
+    "next_step": "行情晚于研究截止日：先完成研究重登记与事件复核，再重跑价格桥接。"
+  },
+  "status": {
+    "engineering_delivery": "DONE",
+    "current_research_admission": "NOT_ADMITTED (QUOTE_VERIFIED_BUT_RESEARCH_STALE)",
+    "final_operational_acceptance": "NOT_PASSED",
+    "action": "no_order"
+  }
+}
