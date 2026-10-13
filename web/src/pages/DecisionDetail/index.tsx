@@ -20,13 +20,13 @@ import { DetailSection } from "../../components/DetailSection";
 import { statusLabel } from "../../utils/presentation";
 import { shortDigest } from "../../utils/history";
 import {
-  blockerText,
   formatScenarioValue,
   gateRowViews,
   marginText,
   normalizeEvidenceLines,
   splitReadingOrder,
   suggestedStateText,
+  uniqueBlockerTexts,
   unknownText,
   type EvidenceLine,
   type GateView,
@@ -217,7 +217,7 @@ function ResearchDecision({
     research.margin_to_bear ?? price.margin_to_bear,
   );
 
-  const blockers = asStringList(research.blockers).map(blockerText);
+  const blockers = uniqueBlockerTexts(asStringList(research.blockers));
   const exitConditions = asStringList(research.exit_conditions);
   const reopenTriggers = asStringList(research.reopen_triggers);
   const evidenceRefs = Array.isArray(research.evidence_refs)

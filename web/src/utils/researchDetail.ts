@@ -136,6 +136,19 @@ export function blockerText(value: string): string {
 }
 
 /**
+ * 同一阻塞常同时以裸码和 research_case: 前缀副本出现；按展示文本去重，
+ * 保留首次出现的顺序，不合并不同含义的条目。
+ */
+export function uniqueBlockerTexts(values: readonly string[]): string[] {
+  const seen: string[] = [];
+  for (const value of values) {
+    const text = blockerText(value);
+    if (!seen.includes(text)) seen.push(text);
+  }
+  return seen;
+}
+
+/**
  * support/counter_evidence/next_events 既可能是 {kind,text,evidence_refs}
  * 也可能是旧载荷里的字符串；只提取确实存在的文本，不拼装内容。
  */

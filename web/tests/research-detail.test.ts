@@ -8,6 +8,7 @@ import {
   normalizeEvidenceLines,
   splitReadingOrder,
   suggestedStateText,
+  uniqueBlockerTexts,
   unknownText,
 } from "../src/utils/researchDetail";
 
@@ -117,5 +118,22 @@ describe("research detail helpers", () => {
     expect(unknownText("text")).toBe("text");
     expect(unknownText("   ")).toBe("未提供");
     expect(unknownText({ a: 1 })).toBe('{"a":1}');
+  });
+
+  it("drops the research_case duplicate of a blocker but keeps the order", () => {
+    expect(
+      uniqueBlockerTexts([
+        "formal G3 human valuation approval not present",
+        "ROIC and incremental ROIC remain unverified",
+        "research_case:formal G3 human valuation approval not present",
+        "G3_估值门",
+        "ROIC and incremental ROIC remain unverified",
+      ]),
+    ).toEqual([
+      "缺少正式 G3 人工估值批准",
+      "ROIC 与增量 ROIC 尚未核验",
+      "G3 估值门尚未通过",
+    ]);
+    expect(uniqueBlockerTexts([])).toEqual([]);
   });
 });
