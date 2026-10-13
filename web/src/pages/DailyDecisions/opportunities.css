@@ -1,0 +1,226 @@
+.opportunity-page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+.opportunity-title.ant-typography {
+  margin: 0 0 4px;
+  font-size: 26px;
+  font-weight: 650;
+}
+.opportunity-subtitle {
+  margin: 0;
+  color: #52626a;
+  line-height: 1.5;
+}
+.opportunity-freshness {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+  color: #617078;
+  font-size: 13px;
+}
+.opportunity-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  padding: 12px 0;
+  border-top: 1px solid #dce3e5;
+  border-bottom: 1px solid #dce3e5;
+  color: #52626a;
+  font-size: 13px;
+}
+.opportunity-strip strong {
+  color: #162d31;
+  font-size: 16px;
+  padding-left: 5px;
+}
+.opportunity-holdings {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 17px 0;
+  border-bottom: 1px solid #dce3e5;
+}
+.opportunity-holdings h2,
+.opportunity-held-list h2 {
+  margin: 0 0 3px;
+  font-size: 16px;
+}
+.opportunity-holdings p {
+  margin: 0;
+  color: #66747b;
+  font-size: 13px;
+}
+.opportunity-holdings > a {
+  white-space: nowrap;
+}
+.opportunity-no-action {
+  margin: 16px 0 4px;
+  color: #675629;
+  font-size: 13px;
+}
+.opportunity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 26px;
+  margin-top: 18px;
+}
+.opportunity-strategy {
+  min-width: 0;
+}
+.opportunity-strategy-head {
+  min-height: 68px;
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 14px;
+  border-bottom: 2px solid #294f4b;
+  padding-bottom: 10px;
+}
+.opportunity-strategy:nth-child(2) .opportunity-strategy-head {
+  border-color: #a96545;
+}
+.opportunity-horizon {
+  color: #66747b;
+  font-size: 12px;
+}
+.opportunity-strategy h2 {
+  margin: 2px 0 0;
+  font-size: 18px;
+}
+.opportunity-counts {
+  display: flex;
+  gap: 10px;
+  color: #6c797f;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.opportunity-counts strong {
+  color: #26383b;
+  font-size: 15px;
+}
+.opportunity-list {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+}
+.opportunity-empty {
+  padding: 22px 0;
+}
+.opportunity-held-list {
+  margin-top: 28px;
+}
+.opportunity-stop {
+  padding: 22px 0;
+  border-top: 2px solid #b25d51;
+  color: #633d35;
+}
+.decision-compact {
+  border: 1px solid #dce3e5;
+  border-radius: 6px;
+  background: #fff;
+  padding: 12px 14px;
+  min-width: 0;
+}
+.decision-compact-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.decision-company {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.decision-company strong {
+  font-size: 15px;
+  color: #172e33;
+}
+.decision-company span,
+.decision-meta {
+  font-size: 12px;
+  color: #748188;
+}
+.decision-state {
+  color: #665b40;
+  background: #f4f1e9;
+  padding: 3px 6px;
+  font-size: 11px;
+  flex: none;
+}
+.decision-state-formal {
+  color: #215846;
+  background: #e6f2eb;
+}
+.decision-meta {
+  margin-top: 5px;
+}
+.decision-reason {
+  margin: 9px 0;
+  color: #293c40;
+  font-size: 13px;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.decision-compact-foot {
+  display: grid;
+  gap: 3px;
+  color: #5c696e;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.decision-compact-foot span {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.decision-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+@media (max-width: 1050px) {
+  .opportunity-grid {
+    gap: 16px;
+  }
+  .opportunity-strategy-head {
+    display: block;
+  }
+  .opportunity-counts {
+    margin-top: 8px;
+  }
+}
+@media (max-width: 700px) {
+  .opportunity-page-head {
+    display: block;
+  }
+  .opportunity-freshness {
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .opportunity-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .opportunity-holdings {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .opportunity-title.ant-typography {
+    font-size: 23px;
+  }
+}

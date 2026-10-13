@@ -9,6 +9,7 @@ export default defineConfig({
     { path: "/decisions/:id", component: "./DecisionDetail" },
     { path: "/portfolio", component: "./Portfolio" },
     { path: "/history", component: "./DecisionHistory" },
+    { path: "/system", component: "./SystemStatus" },
   ],
   proxy: { "/api": { target: "http://localhost:8001", changeOrigin: true } },
   title: "双策略投资助手",

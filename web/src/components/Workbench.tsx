@@ -1,28 +1,30 @@
 import { Layout, Menu, Typography } from "antd";
 import { Link, useLocation } from "@umijs/max";
 import type { PropsWithChildren } from "react";
+import "./workbench.css";
 
 const items = [
-  { key: "/daily", label: <Link to="/daily">每日建议</Link> },
+  { key: "/daily", label: <Link to="/daily">今日机会</Link> },
   { key: "/portfolio", label: <Link to="/portfolio">我的持仓</Link> },
-  { key: "/history", label: <Link to="/history">历史判断</Link> },
+  { key: "/history", label: <Link to="/history">交易复盘</Link> },
 ];
 export function Workbench({ children }: PropsWithChildren) {
   const location = useLocation();
   return (
-    <Layout style={{ minHeight: "100vh", background: "#f5f7f8" }}>
+    <Layout style={{ minHeight: "100vh", background: "#f8faf9" }}>
       <Layout.Header
+        className="workbench-header"
         style={{
           background: "#fff",
           borderBottom: "1px solid #e7eaeb",
           display: "flex",
           alignItems: "center",
-          gap: 28,
-          padding: "0 24px",
+          gap: 20,
+          padding: "0 20px",
         }}
       >
         <Typography.Text strong style={{ fontSize: 17, whiteSpace: "nowrap" }}>
-          双策略投资助手
+          投资决策工作台
         </Typography.Text>
         <Menu
           mode="horizontal"
@@ -34,12 +36,15 @@ export function Workbench({ children }: PropsWithChildren) {
           items={items}
           style={{ flex: 1, minWidth: 0 }}
         />
+        <Link className="workbench-system" to="/system">
+          数据状态
+        </Link>
       </Layout.Header>
       <Layout.Content
         style={{
-          width: "min(1200px, 100%)",
+          width: "min(1380px, 100%)",
           margin: "0 auto",
-          padding: "24px 16px",
+          padding: "22px 18px",
         }}
       >
         {children}
