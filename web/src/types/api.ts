@@ -191,6 +191,31 @@ export interface ResearchDetail {
   valuation_provenance: ResearchValuationProvenance;
 }
 
+export interface DailyResearchRow {
+  symbol: string;
+  name: string;
+  research_day: string | null;
+  quote_date: string | null;
+  bridge_status: string | null;
+  price_admitted: boolean;
+  needs_re_research: boolean;
+  research_covers_close: boolean;
+  reason: string | null;
+  next_step: string | null;
+}
+
+export interface DailyResearchStatus {
+  schema_version: string;
+  action: "no_order";
+  status?: string;
+  registered_count: number;
+  verified_close_count?: number;
+  needs_re_research_count?: number;
+  admitted_count?: number;
+  rows: DailyResearchRow[];
+  blockers?: string[];
+}
+
 export interface DailyResponse {
   action: "no_order";
   status: ApiStatus;
@@ -206,6 +231,7 @@ export interface DailyResponse {
     value: DecisionItem[];
     hotspot: DecisionItem[];
   };
+  research?: DailyResearchStatus;
   blockers: string[];
   gate_code?: string;
   reason?: string;

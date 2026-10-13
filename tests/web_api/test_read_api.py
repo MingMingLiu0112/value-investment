@@ -112,6 +112,27 @@ def test_fixture_projection_and_detail(tmp_path):
     assert client.get("/api/v1/decision-history").json()["items"] == []
 
 
+def test_daily_research_section_is_honest_about_unregistered_inputs(tmp_path):
+    client = _fixture(tmp_path)
+    daily = client.get("/api/v1/daily-decisions").json()
+    research = daily["research"]
+    assert research["schema_version"] == "daily-research-status-v1"
+    assert research["action"] == "no_order"
+    # The fixture registers no quote binding, so the section must not invent rows.
+    assert research["status"] == "NO_REGISTERED_QUOTES"
+    assert research["rows"] == []
+    assert daily["summary"]["formal_count"] == 0
+
+
+def test_daily_research_section_is_present_when_the_publication_is_broken(tmp_path):
+    client = _fixture(tmp_path)
+    (tmp_path / "runtime/state.json").write_text("{}", encoding="utf-8")
+    daily = client.get("/api/v1/daily-decisions").json()
+    assert daily["status"] == "UNAVAILABLE"
+    assert daily["research"]["status"] == "UNAVAILABLE"
+    assert daily["research"]["rows"] == []
+
+
 def test_tampered_binding_fails_closed(tmp_path):
     client = _fixture(tmp_path)
     (tmp_path / "runtime/state.json").write_text("{}", encoding="utf-8")

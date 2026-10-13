@@ -85,7 +85,8 @@
     "scripts/current/start_web_workbench.ps1",
     "scripts/current/backup_private_portfolio.py",
     "scripts/current/pin_current_quote_bridge.py",
-    "scripts/current/review_research_validity.py"
+    "scripts/current/review_research_validity.py",
+    "scripts/current/build_daily_research_summary.py"
   ],
   "INTERNAL_PRODUCT_HELPERS": [
     "scripts/current/audit_tracked_xlsx_privacy.py",
@@ -108,8 +109,8 @@
   ],
   "counts": {
     "product": 26,
-    "engineering": 48,
+    "engineering": 49,
     "internal_helpers": 17,
-    "total": 91
+    "total": 92
   }
 }

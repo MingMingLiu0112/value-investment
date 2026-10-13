@@ -1,10 +1,12 @@
-import { Alert, Col, List, Row, Statistic, Typography } from "antd";
+import { Link } from "@umijs/max";
+import { Alert, Col, List, Row, Statistic, Tag, Typography } from "antd";
 import type { PropsWithChildren } from "react";
 import { Workbench } from "../../components/Workbench";
 import { RemoteState } from "../../components/RemoteState";
 import { DecisionCard } from "../../components/DecisionCard";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
+import type { DailyResearchStatus } from "../../types/api";
 import { formatMoney } from "../../utils/format";
 import { dailyStatus } from "../../utils/status";
 import { codeText, describeCode } from "../../utils/codes";
@@ -39,6 +41,78 @@ function ReasonList({ blockers }: { blockers: string[] }) {
 
 function opportunityReasons(blockers: string[]): string[] {
   return blockers.filter((code) => code !== HOLDINGS_BLOCKER);
+}
+
+/**
+ * 研究状态只复述已登记行情与研究截止日的真实比较结果：行情晚于研究截止日
+ * 即为“需要重新研究”，登记层不预支任何研究批准或价格比较资格。
+ */
+function ResearchStatusSection({ status }: { status?: DailyResearchStatus }) {
+  if (!status || status.status === "UNAVAILABLE") {
+    return (
+      <Alert
+        type="info"
+        showIcon
+        message="暂无可用的研究状态"
+        description="研究状态来自已登记的研究-行情绑定；读取不到时不推测任何公司的覆盖情况。"
+      />
+    );
+  }
+  if (!status.rows.length) {
+    return (
+      <Alert
+        type="info"
+        showIcon
+        message="尚未登记任何公司行情"
+        description="登记经核验收盘行情后，这里会逐家显示研究截止日是否仍然覆盖行情日期。"
+      />
+    );
+  }
+  return (
+    <>
+      <Typography.Text type="secondary">
+        已登记 {status.registered_count} 家 · 需要重新研究{" "}
+        {status.needs_re_research_count ?? 0} 家 · 已具备价格比较准入{" "}
+        {status.admitted_count ?? 0} 家
+      </Typography.Text>
+      <List
+        size="small"
+        style={{ marginTop: 12 }}
+        dataSource={status.rows}
+        renderItem={(row) => (
+          <List.Item key={row.symbol}>
+            <List.Item.Meta
+              title={
+                <>
+                  <Link to={"/decisions/" + encodeURIComponent(row.symbol)}>
+                    {row.name}（{row.symbol}）
+                  </Link>{" "}
+                  {row.needs_re_research ? (
+                    <Tag color="orange">需要重新研究</Tag>
+                  ) : row.research_covers_close ? (
+                    <Tag color="green">研究覆盖核验收盘</Tag>
+                  ) : (
+                    <Tag>状态待确认</Tag>
+                  )}
+                </>
+              }
+              description={
+                "研究截止日 " +
+                (row.research_day || "未提供") +
+                " · 核验收盘日 " +
+                (row.quote_date || "未提供") +
+                " · " +
+                (row.reason ||
+                  codeText(row.bridge_status ?? "") ||
+                  "状态待确认") +
+                (row.next_step ? " 下一步：" + row.next_step : "")
+              }
+            />
+          </List.Item>
+        )}
+      />
+    </>
+  );
 }
 
 /**
@@ -191,6 +265,10 @@ export default function DailyDecisions() {
                 />
               </Col>
             </Row>
+
+            <Section title="研究状态与重新研究清单">
+              <ResearchStatusSection status={data.research} />
+            </Section>
 
             <Section title="① 持仓需要关注的事项">
               {data.sections.holdings.length > 0 ? (

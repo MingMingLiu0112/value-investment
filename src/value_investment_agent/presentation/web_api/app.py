@@ -11,6 +11,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
+from ...application.product.daily_research_status import build_daily_research_status
 from ...application.product.quote_bridge import execute_quote_bridge_for_symbol
 from ..read_models.research_history import build_research_history
 from ..read_models.value_decision_detail import project_value_decision_detail
@@ -34,6 +35,9 @@ _MODEL_SCHEMA = "historical-company-read-model-preview-v1"
 # Everything a broken or half-published artifact can raise while it is projected.
 _STRUCTURE_ERRORS = (OSError, ValueError, KeyError, TypeError, IndexError,
                      AttributeError, UnicodeError, json.JSONDecodeError)
+_UNAVAILABLE_RESEARCH = {"schema_version": "daily-research-status-v1", "action": "no_order",
+                         "status": "UNAVAILABLE", "registered_count": 0, "rows": [],
+                         "blockers": ["RESEARCH_STATUS_UNAVAILABLE"]}
 
 
 def _object(path: Path) -> dict:
@@ -120,6 +124,7 @@ def _unavailable(code: str, reason: str, *, source: str | None = None) -> dict:
             "market": {"status": "UNKNOWN", "reason": reason},
             "summary": {"universe_count": None, "formal_count": 0, "watch_count": None},
             "sections": {"holdings": [], "value": [], "hotspot": []},
+            "research": dict(_UNAVAILABLE_RESEARCH),
             "blockers": [code], "gate_code": code, "reason": reason}
     if source is not None:
         body["publication_source"] = source
@@ -136,6 +141,14 @@ def _quote_bridge_execution(root: Path, symbol: str) -> dict | None:
         return execute_quote_bridge_for_symbol(root, symbol, today=datetime.now(timezone.utc))
     except _STRUCTURE_ERRORS:
         return None
+
+
+def _daily_research(root: Path, names: dict[str, str]) -> dict:
+    """Compose the registered research/close status; a broken chain degrades, never raises."""
+    try:
+        return build_daily_research_status(root, today=datetime.now(timezone.utc), names=names)
+    except _STRUCTURE_ERRORS:
+        return dict(_UNAVAILABLE_RESEARCH)
 
 
 def _item(row: dict, as_of: str, status: str = "RESEARCH_ONLY") -> dict:
@@ -223,6 +236,7 @@ def create_app(
                  "market": {"status": "UNKNOWN", "reason": "PUBLICATION_UNAVAILABLE"},
                  "summary": {"universe_count": None, "formal_count": 0, "watch_count": None},
                  "sections": {"holdings": [], "value": [], "hotspot": []},
+                 "research": dict(_UNAVAILABLE_RESEARCH),
                  "blockers": ["PUBLICATION_UNAVAILABLE"],
                  "gate_code": "PUBLICATION_UNAVAILABLE", "reason": "PUBLICATION_UNAVAILABLE"}
         current = _public(project)
@@ -299,12 +313,24 @@ def create_app(
         value.extend(_queue_item(c, as_of) for c in queue.get("entries", [])
                      if isinstance(c, dict) and c.get("queue_status") == "SELECTED_FOR_DATA_CHECK"
                      and _ID.fullmatch(str(c.get("symbol", ""))) and c["symbol"] not in known)
+        named = [*(companies if isinstance(companies, list) else []),
+                 *snapshot.get("opportunities", []),
+                 *queue.get("entries", [])]
+        names = {row["symbol"]: str(row.get("company_name")) for row in named
+                 if isinstance(row, dict) and isinstance(row.get("symbol"), str)
+                 and isinstance(row.get("company_name"), str)}
+        # Formal admissions are counted from the published rows themselves; no row
+        # carries an admitted valuation status yet, so the count stays derived, not fixed.
+        formal_count = sum(1 for row in named if isinstance(row, dict)
+                           and isinstance(row.get("valuation_status"), dict)
+                           and row["valuation_status"].get("code") == "ADMITTED")
         return {"action": "no_order", "status": "RESEARCH_OBSERVATION",
                 "as_of": as_of,
                 "market": _pick(market, "status", "reason"),
                 "summary": {"universe_count": len(records),
-                            "formal_count": 0,
+                            "formal_count": formal_count,
                             "watch_count": len(leads)},
+                "research": _daily_research(project, names),
                 "sections": {"holdings": [], "value": value,
                              "hotspot": [dict(_item(c, as_of, "UNKNOWN"), strategy="hotspot")
                                          for c in hotspot.get("items", []) if isinstance(c, dict)
