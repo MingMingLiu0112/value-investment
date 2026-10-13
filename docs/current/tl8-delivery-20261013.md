@@ -178,3 +178,11 @@ action = no_order
   `track-b-midea-share-denominator-review-20260928.md` 追加同日闭环章节；
 - 未做：未注册任何情景输入、未运行估值模型、未修改正式 Excel、
   未回填 2026-09-29 计数到 6-30、未升级任何门禁。
+
+提交与验证：`f9344d9`（已推送 `origin/codex/web-d1-investment-workbench`）；
+定向测试 `tests/test_midea_valuation_applicability.py`、
+`tests/test_midea_unified_valuation_provenance.py`、
+`tests/test_hkex_issuer_window_capture.py`、`tests/test_architecture_boundaries.py`、
+`tests/test_product_cli_entrypoints.py` 全部通过；Core Gates（与 CI 同一文件清单）
+2344 passed / 33 skipped；远端 CI 已核对：`f9344d9`（Core Research Gates
+run 38357165840 / Web Workbench 38357166097）均为 `success`。
