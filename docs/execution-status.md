@@ -17,6 +17,10 @@ portfolio is connected, why guidance is absent and what input comes next.
 Tests: tests/web_api/test_read_api.py 17 passed, tests/web_api 134 passed, web
 typecheck/format/41 tests/build passed. action=no_order and
 position_guidance=null are unchanged; no private data was read or fabricated.
+Commits 2026f9e (API projection) and ae0ecf0 (workbench section plus records)
+are pushed to origin/codex/web-d1-investment-workbench. Full local Core Gates:
+5071 passed / 42 skipped. Remote CI on ae0ecf0: Core Research Gates run
+38361373957 and Web Workbench run 38361373941, both success.
 
 ## 2026-10-11 D2 user workflow and reliable review consumption
 

@@ -54,9 +54,7 @@ export function dualSleeveView(
   }
   return {
     statusText: statusLabel(surface.status),
-    connectedText: surface.portfolio_connected
-      ? "私人组合已接入"
-      : "私人组合未接入",
+    connectedText: surface.portfolio_connected ? "已接入" : "未接入",
     guidanceText: guidanceAvailable ? "已生成（详见双策略复核）" : "尚未生成",
     guidanceMissingReason,
     nextInputText: surface.next_user_input

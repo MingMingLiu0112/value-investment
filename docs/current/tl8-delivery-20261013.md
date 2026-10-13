@@ -253,3 +253,8 @@ run 38357165840 / Web Workbench 38357166097）均为 `success`。
 发布链损坏时该段仍存在且不编造数字）；`tests/web_api` 全量 134 项通过；
 Web `typecheck`、`format`、`test`（41 项，含 6 项新用例）、`build` 通过，
 `web/dist` 已重建并由本机 `127.0.0.1:8001` 工作台加载。
+
+提交 `2026f9e`（API 投影）与 `ae0ecf0`（Web 页面与记录）已推送
+`origin/codex/web-d1-investment-workbench`；全量 Core Gates（与 CI 同一清单）
+5071 passed / 42 skipped；远端 CI 已核对：`ae0ecf0`（Core Research Gates
+run 38361373957 / Web Workbench run 38361373941）均为 `success`。

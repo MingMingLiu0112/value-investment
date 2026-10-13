@@ -23,7 +23,7 @@ describe("dual-sleeve daily surface view", () => {
   it("reports the not-connected state without inventing a position", () => {
     const view = dualSleeveView(NOT_CONNECTED)!;
     expect(view.statusText).toContain("私人组合未接入");
-    expect(view.connectedText).toBe("私人组合未接入");
+    expect(view.connectedText).toBe("未接入");
     expect(view.guidanceText).toBe("尚未生成");
     expect(view.guidanceMissingReason).toContain("不会给出");
     expect(view.eligibilityText).toBe("未开启交易资格");
@@ -62,7 +62,7 @@ describe("dual-sleeve daily surface view", () => {
     })!;
     expect(view.guidanceMissingReason).toContain("仍需人工决策");
     expect(view.nextInputText).toBeNull();
-    expect(view.connectedText).toBe("私人组合已接入");
+    expect(view.connectedText).toBe("已接入");
   });
 
   it("stops claiming a missing reason once guidance exists", () => {
