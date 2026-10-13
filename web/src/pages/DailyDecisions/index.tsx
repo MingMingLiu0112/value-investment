@@ -178,14 +178,17 @@ export default function DailyDecisions() {
               <Col span={8}>
                 <Statistic
                   title="全市场扫描"
-                  value={data.summary.universe_count}
+                  value={data.summary.universe_count ?? "不可用"}
                 />
               </Col>
               <Col span={8}>
                 <Statistic title="正式复核候选" value={status?.formalCount} />
               </Col>
               <Col span={8}>
-                <Statistic title="研究观察" value={status?.watchCount} />
+                <Statistic
+                  title="研究观察"
+                  value={status?.watchCount ?? "不可用"}
+                />
               </Col>
             </Row>
 

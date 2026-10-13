@@ -17,9 +17,22 @@ def _write(root, path, value):
     return {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
 
 
-def _fixture(root):
-    report_receipt = _write(root, "runtime/report-receipt.json", {
-        "schema_version": "m2-opportunity-discovery-v2", "universe": {"records": [{}, {}, {}]}})
+def _write_raw(root, path, text):
+    target = root / path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    raw = text.encode("utf-8")
+    target.write_bytes(raw)
+    return {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
+
+
+def _fixture(root, *, receipt_records=None, receipt_text=None, report_overrides=None):
+    if receipt_text is not None:
+        report_receipt = _write_raw(root, "runtime/report-receipt.json", receipt_text)
+    else:
+        records = [{"symbol": "600519"}, {"symbol": "600741"}, {"symbol": "000333"}] \
+            if receipt_records is None else receipt_records
+        report_receipt = _write(root, "runtime/report-receipt.json", {
+            "schema_version": "m2-opportunity-discovery-v2", "universe": {"records": records}})
     extensions = {
         "value_discovery_report": {"status": "RESEARCH_LEADS_ONLY", "lead_symbols": ["600741", "600519"]},
         "m2_quality_diagnostic": {"schema_version": "m2-quality-diagnostic-v1", "quality_coverage_count": 99,
@@ -35,7 +48,11 @@ def _fixture(root):
                                               "gaps": ["QUOTE_DATE_UNVERIFIED"]}]},
     }
     report = dict(extensions["value_discovery_report"], schema_version="m2-opportunity-report-v1",
-                  receipt_binding=report_receipt, semantic_content=extensions["value_discovery_report"])
+                  receipt_binding=report_receipt, semantic_content=extensions["value_discovery_report"],
+                  deduplicated_lead_count=2)
+    if receipt_text is None:
+        report["data_health"] = {"universe_count": len(records)}
+    report.update(report_overrides or {})
     bindings = {key: _write(root, f"runtime/{key}.json", report if key == "value_discovery_report" else value)
                 for key, value in extensions.items()}
     explanation = _write(root, "runtime/600519-value-decision-explanation.json", {
@@ -122,6 +139,67 @@ def test_runtime_path_escape_fails_closed(tmp_path):
     pointer_path.write_text(json.dumps(pointer), encoding="utf-8")
     assert client.get("/api/v1/daily-decisions").json()["status"] == "UNAVAILABLE"
     assert client.get("/api/v1/decisions/../../private.json").status_code != 200
+
+
+def test_missing_bound_extension_fails_closed_without_counts(tmp_path):
+    """Losing a bound product extension must not read as a real zero-candidate day."""
+    client = _fixture(tmp_path)
+    (tmp_path / "runtime/value_discovery_report.json").unlink()
+    body = client.get("/api/v1/daily-decisions").json()
+    assert body["status"] == "UNAVAILABLE"
+    assert body["gate_code"] == "PUBLICATION_UNAVAILABLE"
+    assert body["summary"] == {"universe_count": None, "formal_count": 0, "watch_count": None}
+    assert body["sections"] == {"holdings": [], "value": [], "hotspot": []}
+
+
+def test_missing_discovery_receipt_fails_closed(tmp_path):
+    client = _fixture(tmp_path)
+    (tmp_path / "runtime/report-receipt.json").unlink()
+    body = client.get("/api/v1/daily-decisions").json()
+    assert body["status"] == "UNAVAILABLE"
+    assert body["gate_code"] == "VALUE_DISCOVERY_RECEIPT_BINDING_UNAVAILABLE"
+    assert body["publication_source"] == "runtime/report-receipt.json"
+    assert body["sections"]["value"] == []
+
+
+def test_corrupt_discovery_receipt_fails_closed(tmp_path):
+    client = _fixture(tmp_path, receipt_text="{not json")
+    body = client.get("/api/v1/daily-decisions").json()
+    assert body["status"] == "UNAVAILABLE"
+    assert body["gate_code"] == "VALUE_DISCOVERY_RECEIPT_BINDING_UNAVAILABLE"
+
+
+def test_receipt_hash_mismatch_fails_closed(tmp_path):
+    client = _fixture(tmp_path)
+    (tmp_path / "runtime/report-receipt.json").write_text(
+        '{"schema_version":"m2-opportunity-discovery-v2","universe":{"records":[]}}', encoding="utf-8")
+    body = client.get("/api/v1/daily-decisions").json()
+    assert body["status"] == "UNAVAILABLE"
+    assert body["gate_code"] == "VALUE_DISCOVERY_RECEIPT_BINDING_UNAVAILABLE"
+
+
+def test_universe_shape_and_counts_must_agree(tmp_path):
+    shape = _fixture(tmp_path / "shape", receipt_text='{"schema_version":"m2-opportunity-discovery-v2",'
+                                                     '"universe":{"records":"nope"}}')
+    body = shape.get("/api/v1/daily-decisions").json()
+    assert body["gate_code"] == "VALUE_DISCOVERY_UNIVERSE_UNAVAILABLE"
+
+    schema = _fixture(tmp_path / "schema", receipt_text='{"schema_version":"other","universe":{"records":[]}}')
+    body = schema.get("/api/v1/daily-decisions").json()
+    assert body["gate_code"] == "VALUE_DISCOVERY_UNIVERSE_UNAVAILABLE"
+
+    mismatch = _fixture(tmp_path / "count", report_overrides={"data_health": {"universe_count": 99}})
+    body = mismatch.get("/api/v1/daily-decisions").json()
+    assert body["gate_code"] == "VALUE_DISCOVERY_UNIVERSE_INCONSISTENT"
+
+    leads = _fixture(tmp_path / "leads", report_overrides={"deduplicated_lead_count": 5})
+    body = leads.get("/api/v1/daily-decisions").json()
+    assert body["gate_code"] == "VALUE_DISCOVERY_LEAD_COUNT_INCONSISTENT"
+
+    missing = _fixture(tmp_path / "missing", receipt_records=[{"symbol": "000001"}, {"symbol": "000002"},
+                                                             {"symbol": "000003"}])
+    body = missing.get("/api/v1/daily-decisions").json()
+    assert body["gate_code"] == "VALUE_DISCOVERY_LEAD_NOT_IN_UNIVERSE"
 
 
 def test_actual_local_publication():

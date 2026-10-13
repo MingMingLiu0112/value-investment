@@ -28,6 +28,9 @@ _HASH = re.compile(r"[0-9a-f]{64}\Z")
 _ID = re.compile(r"[0-9]{6}\Z")
 _POINTER_SCHEMA = "m7-current-trial-workbook-v5"
 _MODEL_SCHEMA = "historical-company-read-model-preview-v1"
+# Everything a broken or half-published artifact can raise while it is projected.
+_STRUCTURE_ERRORS = (OSError, ValueError, KeyError, TypeError, IndexError,
+                     AttributeError, UnicodeError, json.JSONDecodeError)
 
 
 def _object(path: Path) -> dict:
@@ -96,8 +99,28 @@ def _current(root: Path) -> tuple[dict, dict, dict]:
 def _public(root: Path) -> tuple[dict, dict, dict] | None:
     try:
         return _current(root)
-    except (OSError, ValueError, KeyError, TypeError, UnicodeError, json.JSONDecodeError):
+    except _STRUCTURE_ERRORS:
         return None
+
+
+def _binding_path(model: dict, role: str) -> str | None:
+    """Name the artifact a failure came from, without reading it again."""
+    binding = (model.get("product_extensions") or {}).get(role)
+    if isinstance(binding, dict) and isinstance(binding.get("path"), str):
+        return binding["path"]
+    return None
+
+
+def _unavailable(code: str, reason: str, *, source: str | None = None) -> dict:
+    """Fail closed on a broken publication chain without inventing any count."""
+    body = {"action": "no_order", "status": "UNAVAILABLE", "as_of": None,
+            "market": {"status": "UNKNOWN", "reason": reason},
+            "summary": {"universe_count": None, "formal_count": 0, "watch_count": None},
+            "sections": {"holdings": [], "value": [], "hotspot": []},
+            "blockers": [code], "gate_code": code, "reason": reason}
+    if source is not None:
+        body["publication_source"] = source
+    return body
 
 
 def _pick(value: dict, *keys: str) -> dict:
@@ -187,9 +210,10 @@ def create_app(
     def daily_decisions():
         empty = {"action": "no_order", "status": "UNAVAILABLE", "as_of": None,
                  "market": {"status": "UNKNOWN", "reason": "PUBLICATION_UNAVAILABLE"},
-                 "summary": {"universe_count": 0, "formal_count": 0, "watch_count": 0},
+                 "summary": {"universe_count": None, "formal_count": 0, "watch_count": None},
                  "sections": {"holdings": [], "value": [], "hotspot": []},
-                 "blockers": ["PUBLICATION_UNAVAILABLE"]}
+                 "blockers": ["PUBLICATION_UNAVAILABLE"],
+                 "gate_code": "PUBLICATION_UNAVAILABLE", "reason": "PUBLICATION_UNAVAILABLE"}
         current = _public(project)
         if current is None:
             return empty
@@ -213,13 +237,41 @@ def create_app(
         leads = discovery.get("lead_symbols", [])
         if not isinstance(leads, list):
             return empty
-        report = _bound(project, model["product_extensions"]["value_discovery_report"])
-        receipt = _bound(project, report["receipt_binding"])
-        if receipt.get("schema_version") != "m2-opportunity-discovery-v2":
-            return empty
-        records = receipt.get("universe", {}).get("records")
-        if not isinstance(records, list):
-            return empty
+        report_source = _binding_path(model, "value_discovery_report")
+        try:
+            report = _bound(project, model["product_extensions"]["value_discovery_report"])
+        except _STRUCTURE_ERRORS:
+            return _unavailable("VALUE_DISCOVERY_REPORT_BINDING_UNAVAILABLE",
+                                "VALUE_DISCOVERY_REPORT_UNAVAILABLE", source=report_source)
+        try:
+            receipt = _bound(project, report["receipt_binding"])
+        except _STRUCTURE_ERRORS:
+            binding = report.get("receipt_binding")
+            source = binding.get("path") if isinstance(binding, dict) else None
+            return _unavailable("VALUE_DISCOVERY_RECEIPT_BINDING_UNAVAILABLE",
+                                "VALUE_DISCOVERY_RECEIPT_UNAVAILABLE",
+                                source=source if isinstance(source, str) else report_source)
+        universe = receipt.get("universe")
+        records = universe.get("records") if isinstance(universe, dict) else None
+        if (receipt.get("schema_version") != "m2-opportunity-discovery-v2"
+                or not isinstance(records, list)):
+            return _unavailable("VALUE_DISCOVERY_UNIVERSE_UNAVAILABLE",
+                                "VALUE_DISCOVERY_UNIVERSE_UNREADABLE", source=report_source)
+        # Counts are published beside the rows they describe; a mismatch means the
+        # chain is only half-wired and no number here would be fully true.
+        health = report.get("data_health")
+        if isinstance(health, dict) and health.get("universe_count") != len(records):
+            return _unavailable("VALUE_DISCOVERY_UNIVERSE_INCONSISTENT",
+                                "VALUE_DISCOVERY_UNIVERSE_COUNT_MISMATCH", source=report_source)
+        if ("deduplicated_lead_count" in report
+                and report["deduplicated_lead_count"] != len(leads)):
+            return _unavailable("VALUE_DISCOVERY_LEAD_COUNT_INCONSISTENT",
+                                "VALUE_DISCOVERY_LEAD_COUNT_MISMATCH", source=report_source)
+        symbols = {row["symbol"] for row in records
+                   if isinstance(row, dict) and isinstance(row.get("symbol"), str)}
+        if symbols and any(lead not in symbols for lead in leads if isinstance(lead, str)):
+            return _unavailable("VALUE_DISCOVERY_LEAD_NOT_IN_UNIVERSE",
+                                "VALUE_DISCOVERY_LEAD_UNIVERSE_MISMATCH", source=report_source)
         companies = snapshot.get("companies", [])
         as_of = queue.get("as_of") or snapshot.get("as_of")
         pending_symbols = {c.get("symbol") for c in snapshot.get("opportunities", [])
@@ -258,13 +310,14 @@ def create_app(
             return {"action": "no_order", "status": "UNAVAILABLE", "decision": None,
                     "reason": "PUBLICATION_UNAVAILABLE"}
         model = current[2]
-        for company in model.get("snapshot", {}).get("companies", []):
+        published = model.get("snapshot") if isinstance(model.get("snapshot"), dict) else {}
+        for company in published.get("companies", []):
             if isinstance(company, dict) and company.get("symbol") == decision_id and company.get("action") == "no_order":
                 pending = any(isinstance(c, dict) and c.get("symbol") == decision_id
                               and c.get("valuation_status", {}).get("code") == "NOT_READY"
-                              for c in model["snapshot"].get("opportunities", []))
+                              for c in published.get("opportunities", []))
                 status = "PENDING_RESEARCH" if pending else "RESEARCH_ONLY"
-                item = _item(company, model["snapshot"].get("as_of"), status)
+                item = _item(company, published.get("as_of"), status)
                 binding = next((b for b in model.get("additional_evidence_bindings", [])
                                 if isinstance(b, dict) and isinstance(b.get("path"), str)
                                 and b["path"].endswith(f"/{decision_id}-value-decision-explanation.json")), None)
@@ -282,10 +335,10 @@ def create_app(
                                 "reason": "PUBLICATION_UNAVAILABLE"}
                 return {"action": "no_order", "status": status,
                         "decision": item}
-        for opportunity in model.get("snapshot", {}).get("opportunities", []):
+        for opportunity in published.get("opportunities", []):
             if isinstance(opportunity, dict) and opportunity.get("symbol") == decision_id and opportunity.get("action") == "no_order":
                 return {"action": "no_order", "status": "PENDING_RESEARCH",
-                        "decision": _item(opportunity, model["snapshot"].get("as_of"), "PENDING_RESEARCH")}
+                        "decision": _item(opportunity, published.get("as_of"), "PENDING_RESEARCH")}
         queue_binding = model.get("product_extensions", {}).get("value_research_queue")
         if queue_binding:
             try:

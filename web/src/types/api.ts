@@ -27,9 +27,9 @@ export interface DailyResponse {
   as_of?: string;
   market: { status: string; reason?: string };
   summary: {
-    universe_count: number;
+    universe_count: number | null;
     formal_count: number;
-    watch_count: number;
+    watch_count: number | null;
   };
   sections: {
     holdings: DecisionItem[];
@@ -37,6 +37,9 @@ export interface DailyResponse {
     hotspot: DecisionItem[];
   };
   blockers: string[];
+  gate_code?: string;
+  reason?: string;
+  publication_source?: string;
 }
 
 export interface DetailResponse {
