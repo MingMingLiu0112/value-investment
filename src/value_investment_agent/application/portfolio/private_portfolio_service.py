@@ -12,12 +12,12 @@ import hashlib
 import json
 import os
 import threading
-import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Iterator, Mapping, Sequence
 
 from ...domain.portfolio.dual_sleeve_records import canonical_bytes
 from ...portfolio_contracts import (
@@ -28,6 +28,7 @@ from ...portfolio_contracts import (
     RECONCILIATION_RECONCILED,
 )
 from ...private_portfolio_intake import require_private_data_path
+from .private_journal_lock import InterProcessLock, LockTimeout
 from .web_reconciliation import (
     SLEEVES,
     Fill,
@@ -240,7 +241,29 @@ class PrivateJournal:
     def __init__(self, path: Path, *, lock_timeout_seconds: float = 10.0) -> None:
         self.path = path
         self.lock_timeout_seconds = lock_timeout_seconds
-        self._thread_lock = threading.Lock()
+        self._thread_lock = threading.RLock()
+        self._lock = InterProcessLock(
+            path.with_name(path.name + ".lock"), timeout_seconds=lock_timeout_seconds
+        )
+
+    @contextmanager
+    def transaction(self) -> Iterator[list[dict[str, Any]]]:
+        """Hold the cross-process lock across read, validation and append.
+
+        Business methods must do their whole read-check-commit inside this
+        block. Appending outside it lets two processes pass the same revision
+        check and then both write, which corrupts the hash chain and can
+        double-count a confirmed fill.
+        """
+        with self._thread_lock:
+            try:
+                self._lock.acquire()
+            except LockTimeout as error:
+                raise PrivateStoreUnavailable(str(error)) from error
+            try:
+                yield self.read()
+            finally:
+                self._lock.release()
 
     def read(self) -> list[dict[str, Any]]:
         if not self.path.exists():
@@ -291,49 +314,56 @@ class PrivateJournal:
     ) -> dict[str, Any]:
         if kind not in RECORD_KINDS:
             raise JournalValidationError("未知的私人流水类型")
-        with self._thread_lock:
-            records = self.read()
-            previous = records[-1]["record_sha256"] if records else None
-            record: dict[str, Any] = {
-                "schema_version": SCHEMA_VERSION,
-                "sequence": len(records) + 1,
-                "recorded_at": recorded_at.isoformat(),
-                "kind": kind,
-                "previous_record_sha256": previous,
-                "idempotency_key": idempotency_key,
-                "request_sha256": request_sha256,
-                "action": "no_order",
-                "changes_holdings": changes_holdings,
-                "body": json.loads(canonical_bytes(dict(body))),
-                "response": json.loads(canonical_bytes(dict(response))),
-            }
-            record["record_sha256"] = hashlib.sha256(canonical_bytes(record)).hexdigest()
-            self._append_line(record)
-            return record
+        if self._lock.held_by_current_thread():
+            return self._append_locked(
+                kind=kind, body=body, response=response, idempotency_key=idempotency_key,
+                request_sha256=request_sha256, recorded_at=recorded_at,
+                changes_holdings=changes_holdings,
+            )
+        with self.transaction():
+            return self._append_locked(
+                kind=kind, body=body, response=response, idempotency_key=idempotency_key,
+                request_sha256=request_sha256, recorded_at=recorded_at,
+                changes_holdings=changes_holdings,
+            )
 
-    def _append_line(self, record: Mapping[str, Any]) -> None:
+    def _append_locked(
+        self,
+        *,
+        kind: str,
+        body: Mapping[str, Any],
+        response: Mapping[str, Any],
+        idempotency_key: str,
+        request_sha256: str,
+        recorded_at: datetime,
+        changes_holdings: bool,
+    ) -> dict[str, Any]:
+        records = self.read()
+        previous = records[-1]["record_sha256"] if records else None
+        record: dict[str, Any] = {
+            "schema_version": SCHEMA_VERSION,
+            "sequence": len(records) + 1,
+            "recorded_at": recorded_at.isoformat(),
+            "kind": kind,
+            "previous_record_sha256": previous,
+            "idempotency_key": idempotency_key,
+            "request_sha256": request_sha256,
+            "action": "no_order",
+            "changes_holdings": changes_holdings,
+            "body": json.loads(canonical_bytes(dict(body))),
+            "response": json.loads(canonical_bytes(dict(response))),
+        }
+        record["record_sha256"] = hashlib.sha256(canonical_bytes(record)).hexdigest()
+        self._write_line(record)
+        return record
+
+    def _write_line(self, record: Mapping[str, Any]) -> None:
+        """Append one record and fsync it. Callers must hold the journal lock."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        lock_path = self.path.with_name(self.path.name + ".lock")
-        deadline = time.monotonic() + self.lock_timeout_seconds
-        while True:
-            try:
-                handle = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-                break
-            except FileExistsError:
-                if time.monotonic() > deadline:
-                    raise PrivateStoreUnavailable("私人流水被其他进程锁定，请稍后重试") from None
-                time.sleep(0.05)
-        try:
-            with self.path.open("ab") as stream:
-                stream.write(canonical_bytes(record) + b"\n")
-                stream.flush()
-                os.fsync(stream.fileno())
-        finally:
-            os.close(handle)
-            try:
-                os.unlink(lock_path)
-            except FileNotFoundError:
-                pass
+        with self.path.open("ab") as stream:
+            stream.write(canonical_bytes(record) + b"\n")
+            stream.flush()
+            os.fsync(stream.fileno())
 
 
 def _evidence_ref(identifier: str, kind: str) -> dict[str, str]:
@@ -685,7 +715,12 @@ class PrivatePortfolioService:
         return revision
 
     def initialize(self, request: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
-        records = self.records()
+        with self.journal.transaction() as records:
+            return self._initialize(records, request)
+
+    def _initialize(
+        self, records: Sequence[Mapping[str, Any]], request: Mapping[str, Any]
+    ) -> tuple[dict[str, Any], str]:
         existing = self._existing(records, request)
         if existing is not None:
             return existing
@@ -709,7 +744,12 @@ class PrivatePortfolioService:
         return dict(record["response"]), str(record["record_sha256"])
 
     def prepare_fill(self, request: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
-        records = self.records()
+        with self.journal.transaction() as records:
+            return self._prepare_fill(records, request)
+
+    def _prepare_fill(
+        self, records: Sequence[Mapping[str, Any]], request: Mapping[str, Any]
+    ) -> tuple[dict[str, Any], str]:
         existing = self._existing(records, request)
         if existing is not None:
             return existing
@@ -757,7 +797,12 @@ class PrivatePortfolioService:
         return dict(record["response"]), str(record["record_sha256"])
 
     def confirm_fill(self, request: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
-        records = self.records()
+        with self.journal.transaction() as records:
+            return self._confirm_fill(records, request)
+
+    def _confirm_fill(
+        self, records: Sequence[Mapping[str, Any]], request: Mapping[str, Any]
+    ) -> tuple[dict[str, Any], str]:
         existing = self._existing(records, request)
         if existing is not None:
             return existing
@@ -828,7 +873,12 @@ class PrivatePortfolioService:
         return dict(record["response"]), str(record["record_sha256"])
 
     def reconcile(self, request: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
-        records = self.records()
+        with self.journal.transaction() as records:
+            return self._reconcile(records, request)
+
+    def _reconcile(
+        self, records: Sequence[Mapping[str, Any]], request: Mapping[str, Any]
+    ) -> tuple[dict[str, Any], str]:
         existing = self._existing(records, request)
         if existing is not None:
             return existing
@@ -886,7 +936,12 @@ class PrivatePortfolioService:
         return dict(record["response"]), str(record["record_sha256"])
     def cancel_fill(self, request: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
         """Append an audit record that voids the pending draft; nothing is deleted."""
-        records = self.records()
+        with self.journal.transaction() as records:
+            return self._cancel_fill(records, request)
+
+    def _cancel_fill(
+        self, records: Sequence[Mapping[str, Any]], request: Mapping[str, Any]
+    ) -> tuple[dict[str, Any], str]:
         existing = self._existing(records, request)
         if existing is not None:
             return existing
