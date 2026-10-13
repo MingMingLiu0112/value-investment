@@ -121,7 +121,9 @@ python -X utf8 -B scripts/current/build_daily_research_summary.py --output runti
   批次 3 后 2340 passed / 33 skipped；
 - Web：`npm run typecheck`、`format`、`test`（35 项）、`build` 全部通过；
 - 新增测试已登记进 `.github/workflows/core-research-gates.yml`，远端 CI 结果
-  以 GitHub Actions 为准。
+  已核对：`eb0e9df`（Core Research Gates run 38347596983 / Web Workbench
+  38347596986）、`07cf0d0`（38348005271 / 38348005305）、`d84bc10`
+  （38348996375 / 38348996427）均为 `success`。
 
 ## 7. 下一轮应做什么
 
