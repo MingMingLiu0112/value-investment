@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 14,
     "CURRENT_PRODUCT_CLI": 13,
-    "CURRENT_RESEARCH_CLI": 212,
+    "CURRENT_RESEARCH_CLI": 213,
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 217,
     "MIGRATION_TOOL": 13,
@@ -1899,12 +1899,12 @@
       "path": "scripts/build_midea_valuation_applicability.py",
       "category": "COMPANY_RESEARCH_CASE_TOOL",
       "current_consumers": [],
-      "imports_business_logic": false,
+      "imports_business_logic": true,
       "replacement": null,
       "recommended_action": "KEEP_CLASSIFIED",
       "risk": "LOW",
-      "line_count": 296,
-      "sha256": "934c94dbac904b11e1c101a04c29c1fc1536e53415856a919e0dfc0905206e10"
+      "line_count": 418,
+      "sha256": "d0854e12e4e29d17e12e5c6d540658cb3cd7911c5006f290337f5c998bb9bc82"
     },
     {
       "path": "scripts/build_moutai_2014_q3_parent_equity.py",
@@ -2987,6 +2987,17 @@
       "risk": "LOW",
       "line_count": 225,
       "sha256": "a3a286168396e8beb1a696aba7a9cded1091ee57d65e4b4fb2ea52a47b793568"
+    },
+    {
+      "path": "scripts/cases/capture_hkex_issuer_disclosure_window.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [],
+      "imports_business_logic": true,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 328,
+      "sha256": "854e0df7eda863c9fa4d178ff111a6417f5e3582c571b17c1cecca833a2d8a77"
     },
     {
       "path": "scripts/cases/collect_m1_dividend_lifecycle.py",

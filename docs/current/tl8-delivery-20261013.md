@@ -57,8 +57,8 @@ D/E 的一个真实产品切片，并核查了工作包 C 的当前真实状态�
 - 601088 = `PENDING_RESEARCH`；估值路由已注册 `cyclical_normalized` +
   `CyclicalFacts`，但 601088 尚无准入的周期输入，因此不套用消费制造业模型，
   周期估值为 `NOT_ESTABLISHED`；
-- 000333 的 2026-06-30 普通股股数分母缺口仍未闭环，按“有界官方核验”留待
-  下一轮（见第 7 节），本轮不以测试夹具填充真实财务事实。
+- 000333 的 2026-06-30 普通股股数分母已按第 7 节 NEXT TASK 的有界官方核验
+  闭环（2026-10-13 追加，见第 8 节）；仍未以任何测试夹具填充真实财务事实。
 
 ## 2. 600887 当前处于什么状态
 
@@ -93,7 +93,7 @@ PIT 限制：2026-08-27 与 2026-09-22 两个时点的保留行情与估值均�
 | 公司 | 工程支持 | 真实研究 | 当前状态 |
 | --- | --- | --- | --- |
 | 600887 伊利股份 | 同一合同与页面 | 条件性估值 + 10-12 核验收盘 | RESEARCH_ONLY；价格未准入；需重新研究 |
-| 000333 美的集团 | 同一合同与页面 | 等待官方财报事实（含股本分母） | PENDING_RESEARCH；无准入估值 |
+| 000333 美的集团 | 同一合同与页面 | 2026-06-30 官方股本分母已核验（7,464,347,335 股）；情景输入未注册 | PENDING_RESEARCH；A 级阻塞清零，仍无准入估值 |
 | 601088 中国神华 | 同一合同与页面；周期模型已注册 | 周期输入未准入 | PENDING_RESEARCH；周期估值 NOT_ESTABLISHED |
 
 ## 5. 用户现在打开 Web 能新增看到什么
@@ -150,3 +150,31 @@ CURRENT_RESEARCH_ADMISSION = NOT_ADMITTED
 FINAL_OPERATIONAL_ACCEPTANCE = NOT_PASSED
 action = no_order
 ```
+
+## 8. 追加：工作包 C 首项闭环（2026-10-13）
+
+按第 7 节 NEXT TASK 执行了 000333 2026-06-30 普通股分母的有界官方核验，
+结果为正：发行人港交所月报表直接枚举该日股本，A 级阻塞清零。
+
+- 新增有界 HKEX 采集工具
+  `scripts/cases/capture_hkex_issuer_disclosure_window.py`（身份固定、
+  行数上限、窗口校验、原件哈希、目录不可覆盖），含
+  `tests/test_hkex_issuer_window_capture.py`（4 例，已入 CI 清单）；
+- 两个真实窗口：2026-07-01~08-07（35 条，含 6 月与 7 月月报表）、
+  2026-09-30~10-13（6 条，含 9 月月报表与三份回购/过户公告）；
+  CNINFO 同步窗口 2026-09-30~10-13（5 条）；
+- **2026-06-30 分母 = 7,464,347,335 股**（已发行不含库存：A 6,813,498,835 +
+  H 650,848,500；库存 A 149,091,572 = 注销用途 68,679,031 + 激励用途
+  80,412,541），与 H1 报告已发行总数 7,613,438,907 完全对账；
+- 9 月滚动闭环：23,212,340 回购 − 15,772,385 持股计划过户 =
+  +7,439,955 = 月报表库存变动，验证“库存股 = 回购专用账户”口径；
+- 共享链接入：`midea-valuation-applicability-v5`
+  （`runtime/company-research/midea-valuation-applicability-20261013-v5/evidence.json`
+  SHA-256 `b69e2fc9…f5ee5f541`）`A_BLOCKING_UNKNOWN = 0`，
+  决定 `AUTHORIZED_DENOMINATOR_VERIFIED_PENDING_B_SCENARIO_INPUTS`；
+  6 项 B 类情景输入与 FCFF 三项证据停止不变，无 `ValuationResult` 输出；
+- 记录与回执：`docs/current/tl8-c-000333-share-denominator-recheck-20261013.md`、
+  `docs/current/tl8-c-000333-share-denominator-recheck-receipt-20261013.json`；
+  `track-b-midea-share-denominator-review-20260928.md` 追加同日闭环章节；
+- 未做：未注册任何情景输入、未运行估值模型、未修改正式 Excel、
+  未回填 2026-09-29 计数到 6-30、未升级任何门禁。

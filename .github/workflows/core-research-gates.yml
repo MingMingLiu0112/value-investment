@@ -249,6 +249,7 @@ jobs:
           tests/test_evidence_stop_schedule.py
           tests/test_m5_product_event_state_projection.py
           tests/test_midea_unified_valuation_provenance.py
+          tests/test_hkex_issuer_window_capture.py
           tests/test_statement_adapter.py
 
       - name: Verify isolated synthetic private-workspace rehearsal
