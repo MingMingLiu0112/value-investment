@@ -25,6 +25,15 @@ from ...application.product.publication_chain import (
     bound_object as _bound,
     load_current_chain as _current,
 )
+from ...application.product.public_snapshot import (
+    load_current_packet as _load_snapshot,
+)
+from ...application.product.public_snapshot import (
+    snapshot_metadata as _snapshot_metadata,
+)
+from ...application.product.public_snapshot import (
+    workbook_version_report as _workbook_report,
+)
 from ...application.product.quote_bridge import execute_quote_bridge_for_symbol
 from ..read_models.dual_sleeve_surface import (
     BLOCKER_SURFACE_INVALID,
@@ -435,11 +444,35 @@ def create_app(
 
     @api.get("/api/v1/daily-public-packet")
     def daily_public_packet():
-        """The one public daily decision packet (TL9 MVP-1)."""
+        """The one frozen public daily decision packet (TL10-RC).
+
+        Every surface serves the same verified snapshot: the bytes the daily
+        entry wrote, re-checked against the recorded SHA-256. Only when no
+        snapshot has ever been published (a fresh checkout or a test fixture)
+        does this fall back to a live composition, and then the response says
+        so instead of presenting itself as a frozen version.
+        """
+        packet, error = _load_snapshot(project)
+        if packet is not None:
+            return packet
         try:
-            return build_daily_public_packet(project)
+            live = build_daily_public_packet(project)
         except _STRUCTURE_ERRORS:
             return unavailable_packet(chain_error="PACKET_BUILD_FAILED")
+        if live.get("packet_status") == "CURRENT":
+            live = dict(live)
+            live["snapshot_status"] = "NO_VERIFIED_SNAPSHOT"
+            live["snapshot_reason"] = error
+            live["blockers"] = list(dict.fromkeys(
+                ["PUBLIC_SNAPSHOT_UNAVAILABLE", *(live.get("blockers") or [])]))
+        return live
+
+    @api.get("/api/v1/daily-public-snapshot")
+    def daily_public_snapshot():
+        """Version metadata for the frozen snapshot plus the read-only Excel check."""
+        metadata = _snapshot_metadata(project)
+        metadata["excel_live"] = _workbook_report(project)
+        return metadata
 
     @api.get("/api/v1/system/status")
     def system_status(request: Request):

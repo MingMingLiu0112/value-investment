@@ -31,13 +31,23 @@ SCHEMA_VERSION = "daily-public-packet-v1"
 # chain (bug fixes included). It is part of the identity below so a new engine
 # revision yields a new publication_id instead of silently reusing a stored
 # record that an older revision computed.
-ENGINE_VERSION = "daily-public-packet-engine-v1"
-IDENTITY_SCHEMA = "daily-public-packet-identity-v2"
+ENGINE_VERSION = "daily-public-packet-engine-v2"
+# v4 folds every content-deciding input into the identity: the company
+# research registry and its evidence files, the archived quote bundles, the
+# bound decision-explanation files and the business clock (natural date +
+# latest completed session) that decides the trading day, freshness and
+# admission. A change in any of them mints a new publication_id instead of
+# reusing a stored record with different facts.
+IDENTITY_SCHEMA = "daily-public-packet-identity-v4"
 ACTION = "no_order"
 CHINA = ZoneInfo("Asia/Shanghai")
 QUOTE_POINTER_PATH = "config/current-quote-bridge.json"
 REGISTRY_PATH = "config/current-company-research-registry.json"
 REGISTRY_SCHEMA = "current-company-research-registry-v1"
+# Stamped when the packet is composed or rechecked at read time; never part of
+# the identity and never part of ``content_sha256``.
+VOLATILE_PACKET_FIELDS = ("generated_at", "generated_at_china", "content_sha256",
+                          "excel_sync")
 _SYMBOL = re.compile(r"[0-9]{6}\Z")
 
 
@@ -66,18 +76,77 @@ def _stem(path_name: object) -> str | None:
     return Path(path_name).stem if isinstance(path_name, str) and path_name else None
 
 
-def publication_identity(bindings: list[Mapping[str, Any]],
-                         quote_bridge_sha256: str | None) -> str:
-    """Content-addressed identity that still carries upstream identity."""
-    identity = {
+def packet_content_sha256(packet: Mapping[str, Any]) -> str:
+    """Digest the decision content, ignoring read-time stamps and view checks.
+
+    ``generated_at`` is a clock reading, not a research fact; ``excel_sync``
+    is a read-only comparison stamped when the packet is built. Everything
+    else (dates, statuses, blockers, counts) is decision content and is
+    covered, so the same identity can never carry two different answers.
+    """
+    content = {key: value for key, value in packet.items()
+               if key not in VOLATILE_PACKET_FIELDS}
+    return hashlib.sha256(_canonical(content).encode("utf-8")).hexdigest()
+
+
+def publication_identity(inputs: Mapping[str, Any]) -> str:
+    """Content-addressed identity over every input that decides a packet."""
+    return "pub-" + hashlib.sha256(_canonical(inputs).encode("utf-8")).hexdigest()[:20]
+
+
+def identity_inputs(root: Path, chain: Mapping[str, Any], *,
+                    natural_day: str,
+                    latest_completed_session: str | None) -> dict:
+    """The explicit version inputs behind one daily public packet.
+
+    Everything the packet content derives from appears here exactly once:
+    the verified publication chain, the quote registry and its archived
+    bundles (observed hashes, so an edited file is a new version), the
+    company research registry and its evidence, the decision explanations the
+    read model binds, the calculation engine revision, and the business clock
+    that decides trading day, freshness and admission.
+    """
+    summary = _quote_pointer_summary(root)
+    registry_entries, registry_binding, _ = _research_registry(root)
+    evidence: list[dict] = []
+    for symbol in sorted(registry_entries):
+        for item in _registry_evidence(root, registry_entries[symbol]):
+            evidence.append({"symbol": symbol, "path": item["path"],
+                             "observed_sha256": item["observed_sha256"]})
+    bundles: list[dict] = []
+    for binding in summary["bundle_bindings"]:
+        target = _repo_path(root, binding["path"])
+        bundles.append({"role": binding["role"], "path": binding["path"],
+                        "observed_sha256": _sha_of(target) if target is not None else None})
+    # The read model binds each decision explanation by path+sha256, and the
+    # packet content degrades the bound company when a file no longer
+    # verifies. The files are runtime artifacts outside the chain, so their
+    # observed bytes have to enter the identity explicitly.
+    model = chain.get("model") if isinstance(chain.get("model"), Mapping) else {}
+    bindings = model.get("additional_evidence_bindings")
+    explanations: list[dict] = []
+    for binding in bindings if isinstance(bindings, list) else []:
+        if not isinstance(binding, dict) or not isinstance(binding.get("path"), str):
+            continue
+        target = _repo_path(root, binding["path"])
+        explanations.append({"path": binding["path"],
+                             "observed_sha256": _sha_of(target) if target is not None else None})
+    return {
         "schema": IDENTITY_SCHEMA,
         "engine": ENGINE_VERSION,
-        "bindings": [{"role": item["role"], "path": item["path"],
-                      "sha256": item["sha256"]} for item in
-                     sorted(bindings, key=lambda item: str(item.get("role")))],
-        "quote_bridge_sha256": quote_bridge_sha256,
+        "natural_date": natural_day,
+        "latest_completed_session": latest_completed_session,
+        "chain": [{"role": item["role"], "path": item["path"], "sha256": item["sha256"]}
+                  for item in sorted(chain["bindings"], key=lambda item: str(item["role"]))],
+        "quote_bridge_pointer": {"path": QUOTE_POINTER_PATH,
+                                 "observed_sha256": summary["sha256"]},
+        "quote_bundles": sorted(bundles, key=lambda item: item["path"]),
+        "research_registry": ({"path": registry_binding["path"],
+                               "observed_sha256": registry_binding["sha256"]}
+                              if registry_binding is not None else None),
+        "registered_evidence": sorted(evidence, key=lambda item: item["path"]),
+        "bound_explanations": sorted(explanations, key=lambda item: item["path"]),
     }
-    return "pub-" + hashlib.sha256(_canonical(identity).encode("utf-8")).hexdigest()[:20]
 
 
 def _now(generated_at: datetime | None) -> datetime:
@@ -190,6 +259,7 @@ def _registry_evidence(root: Path, entry: Mapping[str, Any]) -> list[dict]:
         target = _repo_path(root, name)
         observed = _sha_of(target) if target is not None else None
         checked.append({"path": name, "sha256": digest,
+                        "observed_sha256": observed,
                         "sha256_verified": bool(digest) and observed == digest,
                         "present": observed is not None})
     return checked
@@ -320,9 +390,20 @@ def _row_symbols(rows: object) -> list[dict]:
 
 
 def count_formal_admissions(rows: list[dict]) -> int:
-    """Formal admissions are counted from the published rows themselves."""
-    return sum(1 for row in rows if isinstance(row.get("valuation_status"), dict)
-               and row["valuation_status"].get("code") == "ADMITTED")
+    """Formal admissions from the published rows, counted once per security.
+
+    A symbol can legitimately appear in the company snapshot, the opportunity
+    list and the research queue at the same time; that is one formal admission,
+    not three.
+    """
+    admitted: set[str] = set()
+    for row in rows:
+        symbol = str(row.get("symbol") or "")
+        status = row.get("valuation_status")
+        if _SYMBOL.fullmatch(symbol) and isinstance(status, dict) \
+                and status.get("code") == "ADMITTED":
+            admitted.add(symbol)
+    return len(admitted)
 
 
 def _universe_count(root: Path, model: Mapping[str, Any], discovery: Mapping[str, Any]) -> int | None:
@@ -371,6 +452,8 @@ def _unavailable_packet(now: datetime, natural_day: str, chain_error: str | None
         "research_version": None,
         "generated_at": now.isoformat(),
         "generated_at_china": now.astimezone(CHINA).isoformat(),
+        "content_sha256": None,
+        "identity_inputs": None,
         "chain_error": chain_error,
         "quote_bridge": None,
         "dates": {"current_natural_date": natural_day,
@@ -542,9 +625,10 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
     human_pending = sum(1 for entry in company_statuses.values()
                         if any(action["actor"] == "HUMAN" for action in entry["pending_actions"]))
     needs_re_research = sum(1 for row in price_bridge_statuses.values() if row["needs_re_research"])
-    incomplete = sum(1 for row in opportunities
-                     if isinstance(row.get("valuation_status"), dict)
-                     and row["valuation_status"].get("code") in {"NOT_READY", "UNDER_REVIEW"})
+    incomplete = len({str(row.get("symbol"))
+                      for row in opportunities
+                      if isinstance(row.get("valuation_status"), dict)
+                      and row["valuation_status"].get("code") in {"NOT_READY", "UNDER_REVIEW"}})
     awaiting_close = sum(1 for entry in company_statuses.values()
                          if any(action["actor"] == "EXTERNAL_DATA" for action in entry["pending_actions"]))
     discovery = extensions.get("value_discovery_report")
@@ -604,13 +688,23 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
     if excel_path is not None:
         expected = pointer.get("canonical_workbook_sha256")
         observed_workbook = _sha_of(Path(excel_path))
-        matches = bool(isinstance(expected, str) and observed_workbook == expected)
-        excel_sync = {"path": str(excel_path),
+        if observed_workbook is None or not isinstance(expected, str):
+            # The file is unreadable or the pointer carries no published hash:
+            # the comparison is impossible, which is never "in sync".
+            excel_status, matches = "NOT_VERIFIED", None
+        elif observed_workbook == expected:
+            excel_status, matches = "MATCHED", True
+        else:
+            excel_status, matches = "DIFFERENT", False
+        excel_sync = {"path": str(excel_path), "status": excel_status,
                       "expected_sha256": expected if isinstance(expected, str) else None,
                       "observed_sha256": observed_workbook, "matches": matches,
-                      "checked_at": now.isoformat()}
-        if not matches:
+                      "checked_at": now.isoformat(),
+                      "note": "只读校验：不覆盖、不重建正式工作簿。"}
+        if excel_status == "DIFFERENT":
             blockers.append("EXCEL_AND_WEB_VERSION_DIFFER")
+        elif excel_status == "NOT_VERIFIED":
+            blockers.append("EXCEL_VERSION_NOT_VERIFIED")
 
     quote_summary = _quote_pointer_summary(root)
     binding_inputs = list(chain["bindings"])
@@ -620,12 +714,10 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
     binding_inputs.extend(quote_summary["bundle_bindings"])
     if registry_binding is not None:
         binding_inputs.append(registry_binding)
-    outside_roles = frozenset()
-    if excel_sync is not None and isinstance(excel_sync["expected_sha256"], str):
-        binding_inputs.append({"role": "excel_workbook", "path": str(excel_path),
-                               "sha256": excel_sync["expected_sha256"]})
-        outside_roles = frozenset({"excel_workbook"})
-    source_bindings, binding_blockers = _verified_bindings(root, binding_inputs, outside_roles)
+    # The formal-workbook comparison is a read-time view check (``excel_sync``,
+    # excluded from ``content_sha256``): whether the caller asked for it must
+    # never change the decision content or the version identity.
+    source_bindings, binding_blockers = _verified_bindings(root, binding_inputs)
     blockers.extend(binding_blockers)
 
     if registry_error is not None:
@@ -644,15 +736,20 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
 
     receipt_binding = next((item for item in chain["bindings"]
                             if item["role"] == "publication_receipt"), None)
-    return {
+    identity = identity_inputs(
+        root, chain, natural_day=natural_day,
+        latest_completed_session=dates["latest_completed_trade_session"])
+    packet = {
         "schema_version": SCHEMA_VERSION,
         "engine_version": ENGINE_VERSION,
         "action": ACTION,
         "packet_status": "CURRENT",
-        "publication_id": publication_identity(chain["bindings"], quote_summary["sha256"]),
+        "publication_id": publication_identity(identity),
+        "identity_inputs": identity,
         "research_version": _stem(receipt_binding["path"]) if receipt_binding else None,
         "generated_at": now.isoformat(),
         "generated_at_china": now.astimezone(CHINA).isoformat(),
+        "content_sha256": None,
         "chain_error": None,
         "quote_bridge": {"path": QUOTE_POINTER_PATH, "sha256": quote_summary["sha256"],
                          "registered_at": quote_summary["registered_at"],
@@ -671,24 +768,61 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
         "data_freshness": data_freshness,
         "excel_sync": excel_sync,
     }
+    packet["content_sha256"] = packet_content_sha256(packet)
+    return packet
 
 
 def publication_block(root: Path, chain: Mapping[str, Any], *,
                       generated_at: datetime | None = None) -> dict:
-    """Compact identity block shared by every public endpoint."""
+    """Compact identity block shared by every public endpoint.
+
+    When a verified daily public snapshot exists, every endpoint reports the
+    identity of that one frozen version instead of recomposing a private one.
+    Without a published snapshot yet (fresh checkout, tests) the block falls
+    back to composing the same identity inputs live, marked as such.
+    """
     now = _now(generated_at)
-    summary = _quote_pointer_summary(Path(root))
+    root = Path(root)
+    from .public_snapshot import load_current_packet
+
+    stored, _ = load_current_packet(root)
+    if isinstance(stored, dict):
+        dates = stored.get("dates") if isinstance(stored.get("dates"), dict) else {}
+        quote_bridge = stored.get("quote_bridge") if isinstance(stored.get("quote_bridge"), dict) else None
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "engine_version": stored.get("engine_version") or ENGINE_VERSION,
+            "action": ACTION,
+            "packet_status": "CURRENT",
+            "snapshot_status": "VERIFIED",
+            "publication_id": stored.get("publication_id"),
+            "research_version": stored.get("research_version"),
+            "research_as_of": dates.get("research_as_of"),
+            "decision_published_on": dates.get("decision_published_on"),
+            "excel_published_as_of": dates.get("excel_published_as_of"),
+            "quote_bridge": quote_bridge,
+            "source_binding_count": len(stored.get("source_bindings") or []),
+            "generated_at": stored.get("generated_at"),
+        }
+    summary = _quote_pointer_summary(root)
     pointer = chain["pointer"]
     publication = pointer.get("current_publication") if isinstance(pointer.get("current_publication"), dict) else {}
     receipt_binding = next((item for item in chain["bindings"]
                             if item["role"] == "publication_receipt"), None)
     snapshot = chain["handoff"].get("snapshot") if isinstance(chain["handoff"].get("snapshot"), dict) else {}
+    bridge_rows, _ = _bridge_rows(root, now)
+    sessions = sorted({str((_bridge_status(row) or {}).get("latest_completed_session"))
+                       for row in bridge_rows
+                       if isinstance((_bridge_status(row) or {}).get("latest_completed_session"), str)})
+    identity = identity_inputs(root, chain, natural_day=now.astimezone(CHINA).date().isoformat(),
+                               latest_completed_session=sessions[-1] if sessions else None)
     return {
         "schema_version": SCHEMA_VERSION,
         "engine_version": ENGINE_VERSION,
         "action": ACTION,
         "packet_status": "CURRENT",
-        "publication_id": publication_identity(chain["bindings"], summary["sha256"]),
+        "snapshot_status": "NO_VERIFIED_SNAPSHOT",
+        "publication_id": publication_identity(identity),
         "research_version": _stem(receipt_binding["path"]) if receipt_binding else None,
         "research_as_of": snapshot.get("as_of") if isinstance(snapshot.get("as_of"), str) else None,
         "decision_published_on": publication.get("registered_at") if isinstance(publication.get("registered_at"), str) else None,
@@ -706,7 +840,8 @@ def publication_block_unavailable(*, generated_at: datetime | None = None) -> di
     now = _now(generated_at)
     return {"schema_version": SCHEMA_VERSION, "action": ACTION,
             "engine_version": ENGINE_VERSION,
-            "packet_status": "UNAVAILABLE", "publication_id": None,
+            "packet_status": "UNAVAILABLE", "snapshot_status": "UNAVAILABLE",
+            "publication_id": None,
             "research_version": None, "research_as_of": None,
             "decision_published_on": None, "excel_published_as_of": None,
             "quote_bridge": None, "source_binding_count": 0,

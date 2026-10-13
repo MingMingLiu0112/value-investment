@@ -69,3 +69,20 @@ def test_daily_entry_runs_read_only_and_reports_plain_language():
     if completed.returncode == 0:
         assert "数据版本 : pub-" in output
         assert "来源绑定 : 全部哈希校验通过" in output
+
+
+def test_daily_entry_keeps_update_and_web_results_separate():
+    """TL10-RC: a Web failure must never mask a failed update."""
+    text = SCRIPT.read_text(encoding="utf-8")
+    for marker in ("运行结果", "公开快照", "Web 服务", "整体结果"):
+        assert marker in text
+    # The header documents the four update-first outcomes, including exit 4.
+    assert "4  Web failed to start while the update itself succeeded" in text
+    # Both Web-failure paths fall back to 4 only when the update reported 0.
+    assert "} else { 4 }" in text
+    assert "} elseif ($webExit -ne 0) { 4 } else { 0 }" in text
+    assert "数据更新优先" in text
+    # Still no shell-based repo mutation and no canonical workbook publish.
+    assert "git " not in text
+    assert "publish_product_workbench_to_canonical" not in text
+    assert len(text.splitlines()) <= 240
