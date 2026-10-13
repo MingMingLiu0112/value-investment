@@ -18,7 +18,132 @@ export interface DecisionItem {
   thesis_breakers?: unknown;
   price_context?: unknown;
   next_events?: unknown;
+  research?: ResearchDetail | null;
   [key: string]: unknown;
+}
+
+export interface ResearchEvidenceRef {
+  id: string;
+  path: string;
+  sha256: string | null;
+}
+
+export interface ResearchGateRow {
+  key: string;
+  status: string | null;
+  reason: string | null;
+  next_action: string | null;
+  evidence_refs: string[];
+}
+
+export interface ResearchBinding {
+  status: string;
+  path: string | null;
+  sha256: string | null;
+}
+
+export interface ResearchStatusSummary {
+  code: string | null;
+  label: string | null;
+  case_status: string | null;
+  financial_period: string | null;
+  evidence_scope: string | null;
+}
+
+export interface ResearchValuation {
+  model_type: string | null;
+  model_version: string | null;
+  valuation_date: string | null;
+  status: string | null;
+  confidence: string | null;
+  bear: string | number | null;
+  base: string | number | null;
+  bull: string | number | null;
+  currency: string | null;
+  basis: string | null;
+  disclaimer: string | null;
+  scope: string | null;
+}
+
+export interface ResearchModelValidity {
+  status: string | null;
+  model_id: string | null;
+  model_as_of: string | null;
+  valid_from: string | null;
+  last_material_event_check: string | null;
+  blockers: string[];
+}
+
+export interface ResearchPrice {
+  current_price: string | number | null;
+  price_as_of: string | null;
+  quote_admission_status: string | null;
+  bridge_status: string | null;
+  model_validity_status: string | null;
+  margin_to_base: string | number | null;
+  margin_to_bear: string | number | null;
+  attractiveness_status: string | null;
+  attractiveness_label: string | null;
+  unavailable_reason: string | null;
+  needed_evidence: string | null;
+  blockers: string[];
+}
+
+export interface ResearchSuggestedState {
+  value: string | null;
+  human_review_required: boolean | null;
+  boundary: string | null;
+}
+
+export interface ResearchReadingRow {
+  label: string;
+  value: string;
+}
+
+export interface ResearchValuationProvenance {
+  bound_decision: string | null;
+  bound_research_version: string | null;
+  registered_research_note: string | null;
+}
+
+export interface ResearchDetail {
+  symbol?: string;
+  company_name?: string | null;
+  action?: string | null;
+  research_binding: ResearchBinding;
+  research_status: ResearchStatusSummary;
+  decision_cutoff: string | null;
+  research_version: string | null;
+  source_version: string | null;
+  financial_facts_status: ResearchGateRow | null;
+  business_quality_status: ResearchGateRow | null;
+  valuation_model: string | null;
+  valuation: ResearchValuation;
+  valuation_confidence: string | null;
+  model_validity: ResearchModelValidity;
+  price: ResearchPrice;
+  price_as_of: string | null;
+  quote_admission_status: string | null;
+  margin_to_base: string | number | null;
+  margin_to_bear: string | number | null;
+  gates: Array<ResearchGateRow | null>;
+  research_gate: ResearchGateRow | null;
+  decision_gate: ResearchGateRow | null;
+  portfolio_gate: ResearchGateRow | null;
+  suggested_state: ResearchSuggestedState;
+  candidate_explanation: string | null;
+  position_guidance: unknown;
+  portfolio_input_status: string | null;
+  thesis: string | null;
+  return_driver: string | null;
+  mispricing_hypothesis: string | null;
+  blockers: string[];
+  next_events: unknown[];
+  reopen_triggers: string[];
+  exit_conditions: string[];
+  evidence_refs: ResearchEvidenceRef[];
+  reading_order: ResearchReadingRow[];
+  valuation_provenance: ResearchValuationProvenance;
 }
 
 export interface DailyResponse {
@@ -175,6 +300,16 @@ export interface PortfolioDraft {
   positions: PortfolioPosition[];
 }
 
+export interface PortfolioReconciliation {
+  status: string;
+  superseded: boolean;
+  reason: string | null;
+  state_version: number | null;
+  snapshot_version: number | null;
+  scope: string | null;
+  reconciled_at: string | null;
+}
+
 export interface PortfolioResponse {
   action: "no_order";
   status: ApiStatus;
@@ -187,6 +322,7 @@ export interface PortfolioResponse {
   policy: Record<string, unknown> | null;
   pending_draft: PortfolioDraft | null;
   latest_snapshot: Record<string, unknown> | null;
+  reconciliation: PortfolioReconciliation | null;
   valuation: { status: string; reason: string };
   blockers: string[];
 }
@@ -225,6 +361,7 @@ export interface RiskFacts {
   positions: RiskFactsPosition[];
   confirmed_fill_count: number;
   reconciliation_status: string;
+  reconciliation?: PortfolioReconciliation | null;
   price_status: string;
   price_reason?: string | null;
 }
