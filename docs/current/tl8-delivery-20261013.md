@@ -186,3 +186,35 @@ action = no_order
 `tests/test_product_cli_entrypoints.py` 全部通过；Core Gates（与 CI 同一文件清单）
 2344 passed / 33 skipped；远端 CI 已核对：`f9344d9`（Core Research Gates
 run 38357165840 / Web Workbench 38357166097）均为 `success`。
+
+## 9. 追加：工作包 C 第二项，601088 周期模型路由边界（2026-10-13）
+
+按工作包 C3 核验了中国神华的周期估值模型边界，只读复用生产路由器与
+共享合同，不新增模型家族、不运行估值算术：
+
+- 路由验证：`cyclical_cash_return` 画像 → `cyclical_normalized`
+  （`SUPPORTED`，合同 `CyclicalFacts`）；同一画像请求
+  `residual_income_or_equity_value` 与 `fcff` 均被拒绝
+  （`model_not_authorized_for_profile:*`），成熟消费制造业模型
+  在代码层不可能被无条件套用到周期画像；
+- 输入缺口：合同 13 项必需输入 **0 项准入**；候选包 9 组推导全部
+  `model_input = null`；两个周期审计包 `registered inputs = []`；
+  既有 stage-b 失效关闭结果以 13 条 `cyclical_input_missing:*`
+  阻塞并保持 `PENDING_EXTERNAL_DATA`；
+- 决定：`CYCLE_MODEL_ROUTE_VERIFIED_INPUTS_NOT_ADMITTED`，
+  `valuation_status = NOT_ESTABLISHED`；封存证据停止项
+  `601088-acquisition-adjusted-through-cycle-profit` 不变，
+  并给出 6 条重开条件（跨周期利润情景、资本开支拆分、折现率/增长、
+  归母净现金、复核分母、资源寿命与成本曲线）；
+- 产物：`runtime/company-research/shenhua-valuation-applicability-20261013-v1/evidence.json`
+  （SHA-256 `148e56a3…3c6ac59`）+ latest 指针；入口
+  `scripts/research_cases/shenhua/build_shenhua_valuation_applicability.py`；
+- 记录与回执：`docs/current/tl8-c-601088-cycle-model-boundary-20261013.md`、
+  `docs/current/tl8-c-601088-cycle-model-boundary-receipt-20261013.json`；
+- 未做：未登记研究版本、未修改 Web/Excel、未产出情景值或仓位、
+  未升级任何门禁；产品状态维持 `PENDING_RESEARCH`，`action=no_order`。
+
+验证：`tests/test_shenhua_valuation_applicability.py`（4 项，本机 runtime
+固定件）与 `tests/test_architecture_boundaries.py`（30 项）共 34 项通过；
+脚本已按仓库根增长守卫放置于 `scripts/research_cases/shenhua/`，
+清单 `docs/architecture/script-inventory-v1.json` 同步登记。

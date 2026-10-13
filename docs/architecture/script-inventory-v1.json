@@ -8,7 +8,7 @@
     "CURRENT_PRODUCT_CLI": 13,
     "CURRENT_RESEARCH_CLI": 213,
     "HISTORICAL_VALIDATION_TOOL": 60,
-    "COMPANY_RESEARCH_CASE_TOOL": 217,
+    "COMPANY_RESEARCH_CASE_TOOL": 218,
     "MIGRATION_TOOL": 13,
     "DIAGNOSTIC_TOOL": 138,
     "SUPERSEDED": 0,
@@ -6221,6 +6221,17 @@
       "risk": "LOW",
       "line_count": 85,
       "sha256": "4583b649d515d524a8011de358102f5f40ffb8f8c1abe638021ee9a4e4b684f1"
+    },
+    {
+      "path": "scripts/research_cases/shenhua/build_shenhua_valuation_applicability.py",
+      "category": "COMPANY_RESEARCH_CASE_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": true,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 407,
+      "sha256": "17edfe38d96b047654e9ab4334189510a0df697c8a4e6b4a3b8a878a1bf6ae51"
     },
     {
       "path": "scripts/research_cases/yili/build_yili_current_fact_review.py",
