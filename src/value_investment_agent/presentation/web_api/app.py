@@ -12,7 +12,13 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from ...application.product.daily_research_status import build_daily_research_status
+from ...application.product.dual_sleeve_risk import run_dual_sleeve_review
 from ...application.product.quote_bridge import execute_quote_bridge_for_symbol
+from ..read_models.dual_sleeve_surface import (
+    BLOCKER_SURFACE_INVALID,
+    build_dual_sleeve_surface,
+    unavailable as dual_sleeve_unavailable,
+)
 from ..read_models.research_history import build_research_history
 from ..read_models.value_decision_detail import project_value_decision_detail
 from .local_auth import (
@@ -125,6 +131,7 @@ def _unavailable(code: str, reason: str, *, source: str | None = None) -> dict:
             "summary": {"universe_count": None, "formal_count": 0, "watch_count": None},
             "sections": {"holdings": [], "value": [], "hotspot": []},
             "research": dict(_UNAVAILABLE_RESEARCH),
+            "dual_sleeve": dual_sleeve_unavailable(),
             "blockers": [code], "gate_code": code, "reason": reason}
     if source is not None:
         body["publication_source"] = source
@@ -237,6 +244,7 @@ def create_app(
                  "summary": {"universe_count": None, "formal_count": 0, "watch_count": None},
                  "sections": {"holdings": [], "value": [], "hotspot": []},
                  "research": dict(_UNAVAILABLE_RESEARCH),
+                 "dual_sleeve": dual_sleeve_unavailable(),
                  "blockers": ["PUBLICATION_UNAVAILABLE"],
                  "gate_code": "PUBLICATION_UNAVAILABLE", "reason": "PUBLICATION_UNAVAILABLE"}
         current = _public(project)
@@ -259,6 +267,21 @@ def create_app(
                 queue.get("schema_version") != "value-research-queue-v1" or
                 queue.get("admission") != "RESEARCH_QUEUE_ONLY"):
             return empty
+        # The dual-sleeve section restates only a formally bound review. An
+        # older publication without the binding gets the shared not-connected
+        # result instead of an invented portfolio, and a malformed report
+        # fails closed alone so the research page keeps answering.
+        dual_report = extensions.get("dual_sleeve_report")
+        try:
+            if dual_report is None:
+                dual_report = run_dual_sleeve_review(
+                    root=project, generated_at=datetime.now(timezone.utc))
+                dual_sleeve = build_dual_sleeve_surface(dual_report)
+            else:
+                dual_sleeve = build_dual_sleeve_surface(
+                    dual_report, source=_binding_path(model, "dual_sleeve_report"))
+        except _STRUCTURE_ERRORS:
+            dual_sleeve = dual_sleeve_unavailable(BLOCKER_SURFACE_INVALID)
         leads = discovery.get("lead_symbols", [])
         if not isinstance(leads, list):
             return empty
@@ -331,6 +354,7 @@ def create_app(
                             "formal_count": formal_count,
                             "watch_count": len(leads)},
                 "research": _daily_research(project, names),
+                "dual_sleeve": dual_sleeve,
                 "sections": {"holdings": [], "value": value,
                              "hotspot": [dict(_item(c, as_of, "UNKNOWN"), strategy="hotspot")
                                          for c in hotspot.get("items", []) if isinstance(c, dict)

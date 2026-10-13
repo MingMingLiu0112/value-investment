@@ -26,7 +26,7 @@ def _write_raw(root, path, text):
 
 
 def _fixture(root, *, receipt_records=None, receipt_text=None, report_overrides=None,
-             explanation_extra=None, company_extra=None):
+             explanation_extra=None, company_extra=None, extra_extensions=None):
     if receipt_text is not None:
         report_receipt = _write_raw(root, "runtime/report-receipt.json", receipt_text)
     else:
@@ -48,14 +48,24 @@ def _fixture(root, *, receipt_records=None, receipt_text=None, report_overrides=
                                               "channels": ["value"], "screening_reasons": ["Price screen"],
                                               "gaps": ["QUOTE_DATE_UNVERIFIED"]}]},
     }
+    extra = dict(extra_extensions or {})
+    extensions.update(extra)
     report = dict(extensions["value_discovery_report"], schema_version="m2-opportunity-report-v1",
                   receipt_binding=report_receipt, semantic_content=extensions["value_discovery_report"],
                   deduplicated_lead_count=2)
     if receipt_text is None:
         report["data_health"] = {"universe_count": len(records)}
     report.update(report_overrides or {})
-    bindings = {key: _write(root, f"runtime/{key}.json", report if key == "value_discovery_report" else value)
-                for key, value in extensions.items()}
+    bindings = {}
+    for key, value in extensions.items():
+        if key in extra:
+            # A published extension stores its semantic content beside the
+            # record, exactly like the real publication does.
+            bindings[key] = _write(root, f"runtime/{key}.json",
+                                   dict(value, semantic_content=value))
+        else:
+            bindings[key] = _write(root, f"runtime/{key}.json",
+                                   report if key == "value_discovery_report" else value)
     explanation = _write(root, "runtime/600519-value-decision-explanation.json", {
         "schema_version": "public-value-decision-explanation-v1", "symbol": "600519",
         "action": "no_order", "candidate_explanation": "Pending evidence", "blockers": ["G3"],
@@ -131,6 +141,74 @@ def test_daily_research_section_is_present_when_the_publication_is_broken(tmp_pa
     assert daily["status"] == "UNAVAILABLE"
     assert daily["research"]["status"] == "UNAVAILABLE"
     assert daily["research"]["rows"] == []
+
+
+def _not_connected_report(**overrides):
+    report = {"schema_version": "dual-sleeve-risk-review-v1", "action": "no_order",
+              "status": "NOT_CONNECTED", "namespace": "ACTUAL",
+              "blockers": ["portfolio.private_input_missing"], "sleeves": None,
+              "aggregate": None, "hotspot_quantity_review": None,
+              "position_guidance": None, "expected_return": None,
+              "trade_eligible": False, "acceptance_authority": "NONE",
+              "generated_at": "2026-10-12T19:24:27.760495+08:00"}
+    report.update(overrides)
+    return report
+
+
+def test_daily_dual_sleeve_section_restates_the_bound_report(tmp_path):
+    """The section restates the published review and never fills guidance in."""
+    client = _fixture(tmp_path, extra_extensions={
+        "dual_sleeve_report": _not_connected_report()})
+    surface = client.get("/api/v1/daily-decisions").json()["dual_sleeve"]
+    assert surface["schema_version"] == "daily-dual-sleeve-surface-v1"
+    assert surface["action"] == "no_order"
+    assert surface["status"] == "NOT_CONNECTED"
+    assert surface["namespace"] == "ACTUAL"
+    assert surface["portfolio_connected"] is False
+    assert surface["position_guidance"] is None
+    assert surface["position_guidance_available"] is False
+    assert surface["trade_eligible"] is False
+    assert surface["acceptance_authority"] == "NONE"
+    assert surface["blockers"] == ["portfolio.private_input_missing"]
+    assert surface["next_user_input"] == "PRIVATE_PORTFOLIO_INPUT_REQUIRED"
+    assert surface["source"] == "runtime/dual_sleeve_report.json"
+
+
+def test_daily_dual_sleeve_section_without_binding_reports_real_not_connected(tmp_path):
+    """An older publication gets the shared not-connected review, not a story."""
+    client = _fixture(tmp_path)
+    daily = client.get("/api/v1/daily-decisions").json()
+    assert daily["status"] == "RESEARCH_OBSERVATION"
+    surface = daily["dual_sleeve"]
+    assert surface["action"] == "no_order"
+    assert surface["status"] == "NOT_CONNECTED"
+    assert surface["blockers"] == ["portfolio.private_input_missing"]
+    assert surface["source"] is None
+    assert surface["position_guidance"] is None
+    assert surface["trade_eligible"] is False
+
+
+def test_daily_dual_sleeve_section_fails_closed_alone_on_a_bad_report(tmp_path):
+    """A malformed secondary report must not take the research page down."""
+    client = _fixture(tmp_path, extra_extensions={
+        "dual_sleeve_report": _not_connected_report(action="order")})
+    daily = client.get("/api/v1/daily-decisions").json()
+    assert daily["status"] == "RESEARCH_OBSERVATION"
+    assert daily["sections"]["value"]
+    surface = daily["dual_sleeve"]
+    assert surface["status"] == "UNAVAILABLE"
+    assert surface["blockers"] == ["DUAL_SLEEVE_SURFACE_INVALID"]
+    assert surface["position_guidance"] is None
+
+
+def test_dual_sleeve_section_is_present_when_the_publication_is_broken(tmp_path):
+    client = _fixture(tmp_path)
+    (tmp_path / "runtime/state.json").write_text("{}", encoding="utf-8")
+    daily = client.get("/api/v1/daily-decisions").json()
+    assert daily["status"] == "UNAVAILABLE"
+    assert daily["dual_sleeve"]["status"] == "UNAVAILABLE"
+    assert daily["dual_sleeve"]["blockers"] == ["DUAL_SLEEVE_STATUS_UNAVAILABLE"]
+    assert daily["dual_sleeve"]["position_guidance"] is None
 
 
 def test_tampered_binding_fails_closed(tmp_path):
@@ -247,3 +325,9 @@ def test_actual_local_publication():
     assert response["market"]["status"] == "UNKNOWN"
     assert any(row["id"] == "600741" and row["status"] == "PENDING_RESEARCH"
                for row in response["sections"]["value"])
+    surface = response["dual_sleeve"]
+    assert surface["action"] == "no_order"
+    assert surface["status"] == "NOT_CONNECTED"
+    assert surface["position_guidance"] is None
+    assert surface["trade_eligible"] is False
+    assert surface["acceptance_authority"] == "NONE"
