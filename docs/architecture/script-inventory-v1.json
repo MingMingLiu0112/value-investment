@@ -4,7 +4,7 @@
   "scripts_root": "scripts",
   "current_entrypoint_count": 43,
   "counts": {
-    "CURRENT_OPERATIONAL_CLI": 13,
+    "CURRENT_OPERATIONAL_CLI": 14,
     "CURRENT_PRODUCT_CLI": 13,
     "CURRENT_RESEARCH_CLI": 209,
     "HISTORICAL_VALIDATION_TOOL": 60,
@@ -138,6 +138,19 @@
       "risk": "MEDIUM",
       "line_count": 25,
       "sha256": "786241c8e1c0b1368e73423c1cdd4d7e55249e3a2e5d0f4f3128867707082c9c"
+    },
+    {
+      "path": "scripts/current/backup_private_portfolio.py",
+      "category": "CURRENT_OPERATIONAL_CLI",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json"
+      ],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "MEDIUM",
+      "line_count": 135,
+      "sha256": "8a1aaa8af129091ba30b0cf6ab31c979d6417ac6c9fe27519d1c814bdfbd517b"
     },
     {
       "path": "scripts/current/run_update_and_publish.py",
