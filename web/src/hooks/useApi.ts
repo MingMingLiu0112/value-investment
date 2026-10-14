@@ -10,7 +10,9 @@ export function useApi<T>(load: (signal: AbortSignal) => Promise<T>) {
     setLoading(true);
     setError(undefined);
     load(controller.signal)
-      .then(setData)
+      .then((next) => {
+        if (!controller.signal.aborted) setData(next);
+      })
       .catch((cause: unknown) => {
         if (!controller.signal.aborted)
           setError(cause instanceof Error ? cause.message : "请求失败");

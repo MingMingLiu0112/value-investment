@@ -3,7 +3,6 @@ import {
   CandlestickSeries,
   createChart,
   HistogramSeries,
-  type UTCTimestamp,
 } from "lightweight-charts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Segmented, Typography } from "antd";
@@ -12,15 +11,14 @@ import { Workbench } from "../../components/Workbench";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
 import type { HistoricalBar, HistoricalPriceCase } from "../../types/api";
+import {
+  chartTime,
+  formatShanghaiChartTime,
+  formatShanghaiTick,
+} from "../../utils/chartTime";
 import "./price-chart.css";
 
 type Period = "daily" | "60m" | "15m";
-
-function chartTime(value: string, period: Period): string | UTCTimestamp {
-  if (period === "daily") return value;
-  return (Date.parse(value.replace(" ", "T") + "+08:00") /
-    1000) as UTCTimestamp;
-}
 
 export function PriceChart({
   bars,
@@ -49,7 +47,12 @@ export function PriceChart({
         vertLines: { color: "#edf0ef" },
         horzLines: { color: "#edf0ef" },
       },
-      timeScale: { timeVisible: period !== "daily", secondsVisible: false },
+      localization: { locale: "zh-CN", timeFormatter: formatShanghaiChartTime },
+      timeScale: {
+        timeVisible: period !== "daily",
+        secondsVisible: false,
+        tickMarkFormatter: formatShanghaiTick,
+      },
       rightPriceScale: { borderColor: "#d6dcda" },
     });
     const candle = chart.addSeries(CandlestickSeries, {

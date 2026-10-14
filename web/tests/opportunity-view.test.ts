@@ -1,11 +1,59 @@
 import { describe, expect, it } from "vitest";
 import {
   firstResearchText,
+  hasValuationResult,
   publicBlockerText,
   strategyCounts,
 } from "../src/utils/opportunityView";
 
 describe("strategyCounts", () => {
+  it("groups retained valuation results by data rather than symbol or research status", () => {
+    const plan = {
+      action: "no_order" as const,
+      signal_state: "WATCH",
+      entry_trigger_price: null,
+      invalidation_price: null,
+      conditional_valuation_range: { bear: "9.8", base: "10.08", bull: "10.3" },
+    };
+    expect(
+      hasValuationResult({
+        id: "new-company",
+        symbol: "123456",
+        price_action_plan: plan,
+      }),
+    ).toBe(true);
+    expect(
+      hasValuationResult({
+        id: "600887",
+        price_action_plan: { ...plan, conditional_valuation_range: null },
+      }),
+    ).toBe(false);
+    expect(
+      hasValuationResult({
+        id: "bad",
+        price_action_plan: {
+          ...plan,
+          conditional_valuation_range: {
+            bear: "9.8",
+            base: "NaN",
+            bull: "10.3",
+          },
+        },
+      }),
+    ).toBe(false);
+    expect(
+      hasValuationResult({
+        id: "new-contract",
+        price_action_plan: {
+          ...plan,
+          conditional_valuation_range: null,
+          bear: "9.8",
+          base: "10.08",
+          bull: "10.3",
+        },
+      }),
+    ).toBe(true);
+  });
   it("never promotes research or a price observation to formal action", () => {
     expect(
       strategyCounts([

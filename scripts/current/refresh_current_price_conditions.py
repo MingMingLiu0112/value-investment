@@ -1,4 +1,4 @@
-"""Refresh at most five current price observations; never authorize orders."""
+"""Screen dated daily market candidates and refresh bounded price observations."""
 
 import argparse
 import json
@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
 from value_investment_agent.application.hotspot.current_refresh import current_watch_binding, refresh_current_price_conditions
+from value_investment_agent.application.hotspot.daily_selection import collect_daily_candidates
 
 
 def main(argv=None):
@@ -21,7 +22,7 @@ def main(argv=None):
     try:
         if (args.watch_source is None) != (args.watch_source_sha256 is None):
             raise ValueError("watch-source and watch-source-sha256 must be supplied together")
-        binding = (current_watch_binding(args.root) if args.watch_source is None else
+        binding = (collect_daily_candidates(root=args.root, limit=args.limit) if args.watch_source is None else
                    dict(path=args.watch_source, sha256=args.watch_source_sha256))
         result = refresh_current_price_conditions(root=args.root, watch_source_path=Path(binding["path"]),
             watch_source_sha256=binding["sha256"], limit=args.limit)

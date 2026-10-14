@@ -1,6 +1,7 @@
 """Research-only tactical price plan from a verified historical case."""
 
 from copy import deepcopy
+from decimal import Decimal
 
 from value_investment_agent.domain.hotspot.current_price import CURRENT_BLOCKERS, current_signal
 
@@ -71,4 +72,23 @@ def project_current_price_action_plan(case: dict) -> dict:
     plan["evidence_refs"] = list(dict.fromkeys([
         *plan["evidence_refs"], case["current_reference_close"]["bundle_sha256"],
         *case["current_reference_close"]["evidence_refs"]]))
+    structures = {period: ("BREAKOUT" if item["breakout_observed"] else
+                  "INVALIDATED" if Decimal(item["reference_close"]) < Decimal(item["invalidation_price"]) else
+                  "PRICE_ABOVE_VOLUME_PENDING" if Decimal(item["reference_close"]) > Decimal(item["entry_trigger_price"]) else "RANGE")
+                  for period, item in case["levels"].items()}
+    plan.update(period_structure=structures,
+                trend_state="MULTIPERIOD_BREAKOUT_OBSERVED" if all(s == "BREAKOUT" for s in structures.values()) else "NOT_CONFIRMED",
+                action_intent="OPEN" if state == "TRIGGER_OBSERVED" else "EXIT" if state == "TRIGGER_REJECTED" else "WATCH",
+                formal_eligibility=False, portfolio_eligibility=None, sleeve="HOTSPOT_SATELLITE",
+                entry_condition=dict(price=plan["entry_trigger_price"], rule=plan["entry_confirmation_rule"], status=state),
+                add_condition=None, reduce_condition=None,
+                exit_condition=dict(price=plan["invalidation_price"], rule=plan["invalidation_rule"]),
+                invalidation_condition=dict(price=plan["invalidation_price"], rule=plan["invalidation_rule"]),
+                security_risk_trigger=dict(kind="STRUCTURE_INVALIDATION", observed=state == "TRIGGER_REJECTED",
+                                           rule_version=plan["model_or_rule_version"],
+                                           review_intent="EXIT", personal_sell_permission=False),
+                valid_from_session=case["market_trade_date"],
+                expires_after_session=case["current_reference_close"]["next_session"],
+                expiry_rule="Refresh after next completed exchange session; old conditions must not remain current",
+                next_observation="下一完整60分钟收盘重新检查价格与量能；次一交易日收盘后重新筛选。")
     return plan

@@ -79,6 +79,12 @@ it("requires actual execution inputs and submits the unchanged research referenc
       field.rules.some((rule: Record<string, unknown>) => rule.required),
     ).toBe(true);
   }
+  expect(
+    captured.fields.find((item) => item.name === "side")?.initialValue,
+  ).toBeUndefined();
+  expect(
+    captured.fields.find((item) => item.name === "trading_unit")?.initialValue,
+  ).toBeUndefined();
   await captured.submit!({
     transaction_id: "TEST",
     side: "BUY",

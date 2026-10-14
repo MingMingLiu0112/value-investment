@@ -6,24 +6,23 @@ import {
   Row,
   Space,
   Statistic,
-  Table,
   Tag,
   Typography,
 } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { DualSleeveRisk } from "../../components/DualSleeveRisk";
-import { FillPanel } from "../../components/FillPanel";
+import { FillPanel, fillContextFromSearch } from "../../components/FillPanel";
 import { PortfolioSetupForm } from "../../components/PortfolioSetupForm";
-import { PositionTable, sleeveLabel } from "../../components/PositionTable";
+import { PositionTable } from "../../components/PositionTable";
+import { PortfolioPolicyPanel } from "../../components/PortfolioPolicyPanel";
+import { ConfirmedTrades } from "../../components/ConfirmedTrades";
 import { RemoteState } from "../../components/RemoteState";
 import { Workbench } from "../../components/Workbench";
 import { usePrivateState } from "../../hooks/usePrivateState";
 import type { PrivateStateHandle } from "../../hooks/usePrivateState";
 import { ApiError, api } from "../../services/api";
-import type { PortfolioTrade } from "../../types/api";
 import { reconciliationView } from "../../utils/codes";
-import { formatMoney } from "../../utils/format";
 import { blockerText } from "../../utils/packet";
 
 function failureMessage(cause: unknown, fallback: string): string {
@@ -78,8 +77,9 @@ export default function Portfolio() {
       : new URLSearchParams(window.location.search);
   const hintedSymbol = params?.get("symbol") ?? "";
   const initialSymbol = /^\d{6}$/.test(hintedSymbol) ? hintedSymbol : undefined;
-  const initialSleeve =
-    params?.get("strategy") === "hotspot" ? "HOTSPOT_SATELLITE" : "CORE_VALUE";
+  const initialSleeve = fillContextFromSearch(
+    params?.toString() ?? "",
+  ).strategy;
   const initialDecisionId = params?.get("decision_id") || undefined;
   const initialResearchVersion = params?.get("research_version") || undefined;
   const state = usePrivateState();
@@ -174,22 +174,25 @@ export default function Portfolio() {
             />
           )}
           <Row gutter={24} style={{ marginTop: 24 }}>
-            <Col span={6}>
+            <Col xs={12} md={6}>
+              <Statistic
+                title="总权益（元，核验口径）"
+                value={data.total_equity_cny ?? "未核验"}
+              />
+            </Col>
+            <Col xs={12} md={6}>
               <Statistic
                 title="可用现金（元）"
                 value={data.cash_cny ?? "未提供"}
               />
             </Col>
-            <Col span={6}>
+            <Col xs={12} md={6}>
               <Statistic
                 title="已实现盈亏（元）"
                 value={data.realized_pnl_cny ?? "未提供"}
               />
             </Col>
-            <Col span={6}>
-              <Statistic title="台账版本" value={data.revision} />
-            </Col>
-            <Col span={6}>
+            <Col xs={12} md={6}>
               <Statistic title="已确认成交" value={data.trades.length} />
             </Col>
           </Row>
@@ -243,54 +246,41 @@ export default function Portfolio() {
             ]}
           />
           {data.policy && (
-            <Descriptions
-              title="已记录的风险约束（原始输入）"
-              bordered
-              column={2}
-              style={{ marginTop: 16 }}
-              items={Object.entries(data.policy).map(([key, value]) => ({
-                key,
-                label: key,
-                children: String(value ?? "未提供"),
-              }))}
-            />
+            <details style={{ marginTop: 16 }}>
+              <summary>历史初始约束与台账修订 {data.revision}</summary>
+              <Descriptions
+                title="已记录的风险约束（原始输入）"
+                bordered
+                column={2}
+                style={{ marginTop: 16 }}
+                items={Object.entries(data.policy).map(([key, value]) => ({
+                  key,
+                  label: key,
+                  children: String(value ?? "未提供"),
+                }))}
+              />
+            </details>
           )}
           <PositionTable title="已确认持仓" positions={data.positions} />
+          <DualSleeveRisk
+            data={risk}
+            loading={false}
+            error={
+              risk
+                ? undefined
+                : "双策略风险复核读取失败；读取成功前不展示任何仓位结论，请重试。"
+            }
+            retry={state.retry}
+          />
+          <PortfolioPolicyPanel
+            revision={data.revision}
+            fillPending={!!data.pending_draft}
+            onDone={refreshAll}
+          />
           <Typography.Title level={4} style={{ fontSize: 16, marginTop: 24 }}>
             已确认成交记录
           </Typography.Title>
-          <Table<PortfolioTrade>
-            rowKey="transaction_id"
-            dataSource={data.trades}
-            pagination={{ pageSize: 10 }}
-            scroll={{ x: 900 }}
-            locale={{ emptyText: "暂无已确认成交" }}
-            columns={[
-              { title: "成交编号", dataIndex: "transaction_id" },
-              { title: "方向", dataIndex: "side", width: 90 },
-              {
-                title: "资金池",
-                dataIndex: "sleeve",
-                width: 210,
-                render: (value: string) => <Tag>{sleeveLabel(value)}</Tag>,
-              },
-              { title: "代码", dataIndex: "symbol", width: 100 },
-              { title: "股数", dataIndex: "quantity", width: 100 },
-              {
-                title: "价格",
-                dataIndex: "price_cny",
-                width: 120,
-                render: (value: string | null) => formatMoney(value),
-              },
-              {
-                title: "费用",
-                dataIndex: "fees_cny",
-                width: 100,
-                render: (value: string | null) => formatMoney(value),
-              },
-              { title: "成交日", dataIndex: "trade_date", width: 120 },
-            ]}
-          />
+          <ConfirmedTrades trades={data.trades} />
           <FillPanel
             revision={data.revision}
             draft={data.pending_draft}
@@ -310,16 +300,6 @@ export default function Portfolio() {
             </Button>
             <Button onClick={refreshAll}>刷新</Button>
           </Space>
-          <DualSleeveRisk
-            data={risk}
-            loading={false}
-            error={
-              risk
-                ? undefined
-                : "双策略风险复核读取失败；读取成功前不展示任何仓位结论，请重试。"
-            }
-            retry={state.retry}
-          />
         </>
       )}
     </Workbench>

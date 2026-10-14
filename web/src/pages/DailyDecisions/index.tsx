@@ -7,6 +7,7 @@ import { usePrivateState } from "../../hooks/usePrivateState";
 import { api } from "../../services/api";
 import type { DecisionItem } from "../../types/api";
 import { describeCode } from "../../utils/codes";
+import { hasValuationResult } from "../../utils/opportunityView";
 import {
   judgmentGroup,
   judgmentGroups,
@@ -19,12 +20,20 @@ function StrategySection({
   horizon,
   items,
   empty,
+  id,
+  foldUnvalued = false,
 }: {
   title: string;
   horizon: string;
   items: DecisionItem[];
   empty: string;
+  id: string;
+  foldUnvalued?: boolean;
 }) {
+  const main = foldUnvalued ? items.filter(hasValuationResult) : items;
+  const other = foldUnvalued
+    ? items.filter((item) => !hasValuationResult(item))
+    : [];
   const counts = {
     formal: items.filter((item) => judgmentGroup(item) === 0).length,
     pending: items.filter((item) => [1, 2].includes(judgmentGroup(item)))
@@ -32,7 +41,7 @@ function StrategySection({
     watch: items.filter((item) => judgmentGroup(item) >= 3).length,
   };
   return (
-    <section className="opportunity-strategy" aria-label={title}>
+    <section id={id} className="opportunity-strategy" aria-label={title}>
       <div className="opportunity-strategy-head">
         <div>
           <span className="opportunity-horizon">{horizon}</span>
@@ -50,10 +59,21 @@ function StrategySection({
           </span>
         </div>
       </div>
-      {items.length ? (
+      {main.length ? (
         <div className="opportunity-list">
           {judgmentGroups.map((label, group) => {
-            const rows = items.filter((item) => judgmentGroup(item) === group);
+            const rows = main.filter((item) => judgmentGroup(item) === group);
+            if (group === 4 && rows.length)
+              return (
+                <details key={label} aria-label="已失效或等待补齐数据">
+                  <summary>
+                    已失效 / 等待重新形成结构或补齐数据（{rows.length}）
+                  </summary>
+                  {rows.map((item) => (
+                    <DecisionCard key={item.id} item={item} />
+                  ))}
+                </details>
+              );
             return rows.length ? (
               <section key={label} aria-label={label}>
                 <h3>{label}</h3>
@@ -68,6 +88,14 @@ function StrategySection({
         <div className="opportunity-empty">
           <Empty description={empty} image={Empty.PRESENTED_IMAGE_SIMPLE} />
         </div>
+      )}
+      {!!other.length && (
+        <details aria-label="其他待研究公司">
+          <summary>其他待研究公司（{other.length}）</summary>
+          {other.map((item) => (
+            <DecisionCard key={item.id} item={item} />
+          ))}
+        </details>
       )}
     </section>
   );
@@ -199,17 +227,27 @@ export default function DailyDecisions() {
             (item) => judgmentGroup(item) === 0,
           ) && (
             <p className="opportunity-no-action">
-              当前没有满足全部准入条件的候选。以下为研究观察，不是买卖指令。
+              当前正式操作候选为 0。以下为研究观察，不是买卖指令。
             </p>
           )}
           <div className="opportunity-grid">
+            <div
+              style={{ gridColumn: "1 / -1", display: "flex", gap: 24 }}
+              aria-label="策略快捷跳转"
+            >
+              <a href="#daily-value">价值投资</a>
+              <a href="#daily-hotspot">热点波段</a>
+            </div>
             <StrategySection
+              id="daily-value"
+              foldUnvalued
               title="价值投资"
               horizon="中长期"
               items={data.sections.value}
               empty="当前没有可展示的价值投资线索"
             />
             <StrategySection
+              id="daily-hotspot"
               title="热点波段"
               horizon="短中期"
               items={data.sections.hotspot}

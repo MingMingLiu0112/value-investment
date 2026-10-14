@@ -1,4 +1,8 @@
-import type { CurrentPriceCase, DecisionItem } from "../types/api";
+import type {
+  CurrentPriceCase,
+  DecisionItem,
+  PlanCondition,
+} from "../types/api";
 import { firstResearchText } from "./opportunityView";
 import { uniqueBlockerTexts } from "./researchDetail";
 
@@ -19,14 +23,29 @@ export function publicationVersionsMatch(
 
 export function judgmentGroup(item: DecisionItem): number {
   const plan = item.price_action_plan;
-  if (!plan) return 3;
+  if (!plan)
+    return [
+      "INVALIDATED",
+      "STALE",
+      "BLOCKED",
+      "EXPIRED",
+      "TRIGGER_REJECTED",
+    ].includes(item.status ?? "")
+      ? 4
+      : 3;
   if (plan.action !== "no_order") return 4;
   if (
     plan.signal_state === "ACTION_ELIGIBLE" &&
-    plan.action_eligibility === true
+    plan.action_eligibility === true &&
+    (item.formal_eligibility ?? plan.formal_eligibility) !== false
   )
     return 0;
-  if (plan.signal_state === "TRIGGER_OBSERVED") return 1;
+  if (
+    ["TRIGGER_OBSERVED", "OBSERVED", "VALIDATION_PENDING"].includes(
+      plan.signal_state,
+    )
+  )
+    return 1;
   if (plan.signal_state === "TRIGGER_PENDING") return 2;
   if (plan.signal_state === "WATCH")
     return plan.entry_trigger_price != null ? 2 : 3;
@@ -57,6 +76,23 @@ export function confirmationText(blockers: string[] | undefined): string {
     PIT_OOS_COST_SHADOW_NOT_PROVEN:
       "信息时点、样本外、成本与 Shadow 检验尚未完成",
     CORPORATE_ACTION_REVIEW_NOT_PROVEN: "复权与公司行动复核尚未完成",
+    classification_effective_date: "行业分类生效日期未核验",
+    persistence: "行业热度持续性未知",
+    fund_flows: "资金流未知",
+    catalyst: "催化事件未知",
+    market_regime_admission: "市场环境准入未知",
+    VALUE_ENTRY_PRICE_POLICY_MISSING_OR_INAPPLICABLE:
+      "建仓价格政策未登记或不适用",
+    VALUE_ADD_PRICE_POLICY_MISSING_OR_INAPPLICABLE:
+      "加仓价格政策未登记或不适用",
+    VALUE_REDUCE_PRICE_POLICY_MISSING_OR_INAPPLICABLE:
+      "减仓价格政策未登记或不适用",
+    VALUE_EXIT_PRICE_POLICY_MISSING_OR_INAPPLICABLE:
+      "退出价格政策未登记或不适用",
+    VALUE_PRICE_COMPARISON_NOT_ELIGIBLE: "现价与估值尚不具备合法可比性",
+    VALUE_MODEL_EVENT_SCAN_DOES_NOT_COVER_QUOTE:
+      "模型事件扫描尚未覆盖该行情日期",
+    VALUE_DECISION_REQUIRES_HUMAN_CONFIRMATION: "价值操作判断仍需本人确认",
   };
   const items = uniqueBlockerTexts(
     (blockers ?? []).map((item) => labels[item] ?? item),
@@ -72,6 +108,48 @@ export function judgmentState(item: DecisionItem): string {
   if (state === "HISTORICAL_OBSERVATION_NOT_ADMITTED")
     return "历史观察，不是当前判断";
   return judgmentGroups[judgmentGroup(item)];
+}
+
+export function planConditionText(
+  value: PlanCondition | null | undefined,
+): string | undefined {
+  const direct = firstResearchText(value);
+  if (direct) return direct;
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const comparison =
+      value.comparison === "LTE"
+        ? "不高于"
+        : value.comparison === "GTE"
+          ? "不低于"
+          : "条件价";
+    const pieces = [
+      value.price != null ? `${comparison} ${value.price}` : null,
+      priceRuleText(value.rule),
+      firstResearchText(value.reasons),
+      firstResearchText(value.rationale),
+    ];
+    if (value.scenario_value != null && value.value_fraction != null)
+      pieces.push(
+        `已登记公式：${String(value.scenario ?? "情景")} ${String(value.scenario_value)} × ${String(value.value_fraction)}；规则 ${String(value.rule_version ?? "未提供")}`,
+      );
+    return pieces.filter(Boolean).join("；") || undefined;
+  }
+  return undefined;
+}
+
+export function missingPricePolicies(item: DecisionItem): string | undefined {
+  const missing = (
+    item.price_action_plan?.blockers ??
+    item.blockers ??
+    []
+  ).filter((code) =>
+    /^VALUE_(ENTRY|ADD|REDUCE|EXIT)_PRICE_POLICY_MISSING_OR_INAPPLICABLE$/.test(
+      code,
+    ),
+  );
+  return missing.length
+    ? confirmationText(missing) + "；暂无相应获准价位，估值情景不替代操作政策。"
+    : undefined;
 }
 
 export function judgmentReason(item: DecisionItem): string {
@@ -103,7 +181,12 @@ export function currentCaseMatches(
     candidate.decision_id === plan.decision_id &&
     !!plan.research_version &&
     candidate.research_version === plan.research_version &&
-    candidate.signal_state !== "HISTORICAL_OBSERVATION_NOT_ADMITTED" &&
+    ![
+      "HISTORICAL_OBSERVATION_NOT_ADMITTED",
+      "STALE",
+      "BLOCKED",
+      "EXPIRED",
+    ].includes(candidate.signal_state) &&
     candidate.entry_trigger_price === plan.entry_trigger_price &&
     candidate.invalidation_price === plan.invalidation_price &&
     candidate.current_reference_price === plan.current_reference_price

@@ -55,7 +55,7 @@ def test_refresh_archives_bundle_and_does_not_replace_registry_on_failure(tmp_pa
 def test_cli_default_binding_and_pair_failure(tmp_path, monkeypatch, capsys):
     from scripts.current import refresh_current_price_conditions as cli
     binding = dict(path="runtime/published/report.json", sha256="b" * 64)
-    monkeypatch.setattr(cli, "current_watch_binding", lambda root: binding)
+    monkeypatch.setattr(cli, "collect_daily_candidates", lambda **kwargs: binding)
     captured = {}
 
     def refresh(**kwargs):

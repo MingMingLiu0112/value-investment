@@ -6,16 +6,21 @@ import {
   judgmentGroup,
   judgmentReason,
   judgmentState,
+  missingPricePolicies,
 } from "../utils/currentJudgment";
 import { firstResearchText } from "../utils/opportunityView";
+import { decisionEligibility } from "../utils/decisionEligibility";
+import { formatDecimal } from "../utils/format";
 
 /** Compact public research card. The API, not this component, decides eligibility. */
 export function DecisionCard({ item }: { item: DecisionItem }) {
   const formal = judgmentGroup(item) === 0;
+  const eligibility = decisionEligibility(item);
   const reason =
+    item.why_selected ||
+    item.price_action_plan?.watch_reason ||
     judgmentReason(item) ||
     item.reason ||
-    item.why_selected ||
     item.candidate_explanation ||
     "尚无可核验的关注理由";
   return (
@@ -43,11 +48,47 @@ export function DecisionCard({ item }: { item: DecisionItem }) {
           "日期待核验"}
       </div>
       <p className="decision-reason">{reason}</p>
+      {missingPricePolicies(item) && (
+        <div className="decision-meta">{missingPricePolicies(item)}</div>
+      )}
+      {item.price_action_plan?.daily_selection && (
+        <div className="decision-meta">
+          当日观察序位 {item.price_action_plan.daily_selection.rank ?? "未提供"}{" "}
+          · {item.price_action_plan.daily_selection.industry ?? "行业未核验"} ·
+          行业相对涨跌{" "}
+          {formatDecimal(
+            item.price_action_plan.daily_selection
+              .industry_relative_strength_percent,
+          )}{" "}
+          个百分点（覆盖样本）
+        </div>
+      )}
+      <p className="decision-reason">
+        支持：
+        {firstResearchText(
+          item.price_action_plan?.support ??
+            item.price_action_plan?.supporting_facts ??
+            item.support,
+        ) ?? "尚未提供"}
+        <br />
+        反证：
+        {firstResearchText(
+          item.price_action_plan?.counter ??
+            item.price_action_plan?.counter_evidence ??
+            item.counter_evidence,
+        ) ?? "尚未提供，不能视为无风险"}
+      </p>
+      <div className="decision-meta">
+        研究意图：{eligibility.intent} · 证券资格：{eligibility.formal} ·
+        个人资格：{eligibility.portfolio}
+      </div>
       <div className="decision-compact-foot">
         <span>
           参考价：
-          {item.price_action_plan?.current_reference_price ?? "未获核验"} /
-          触发价：
+          {item.price_action_plan?.current_reference_price ??
+            item.price_action_plan?.reference_close ??
+            "未获核验"}{" "}
+          / 触发价：
           {item.price_action_plan?.entry_trigger_price ?? "尚无有效价位"}
         </span>
         <span>

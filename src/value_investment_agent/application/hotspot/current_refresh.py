@@ -11,6 +11,7 @@ from value_investment_agent.infrastructure.hotspot.current_price_case import col
 from value_investment_agent.quote_session_collection import collect_session_bundle
 from value_investment_agent.quote_sessions import evaluate_quote_session, parse_quote
 from value_investment_agent.application.product.publication_chain import bound_object, load_current_chain
+from .daily_selection import verify_daily_selection
 
 
 def current_watch_binding(root: Path) -> dict:
@@ -28,10 +29,12 @@ def _write(path, value):
 
 
 def select_watch_candidates(report: dict, *, limit: int = 5) -> tuple[list[dict], str]:
-    if isinstance(limit, bool) or not 1 <= limit <= 5:
+    maximum = 10 if report.get("schema_version") == "hotspot-daily-selection-v1" else 5
+    if isinstance(limit, bool) or not 1 <= limit <= maximum:
         raise ValueError("At most five candidates allowed")
     queue = report.get("hotspot_watch_queue") or report.get("watch_queue") or []
-    scope = "HOTSPOT_WATCH_QUEUE"
+    scope = ("DATED_DAILY_SECTOR_RANKING_OBSERVATION" if report.get("schema_version") == "hotspot-daily-selection-v1"
+             else "HOTSPOT_WATCH_QUEUE")
     if not queue:
         queue = [row for row in report.get("dated_quote_observations", [])
                  if row.get("status") == "DATED_DUAL_PROVIDER_OBSERVATION_NOT_PRICE_ADMISSION"]
@@ -72,7 +75,10 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
     raw = source.read_bytes()
     if hashlib.sha256(raw).hexdigest() != watch_source_sha256:
         raise ValueError("Watch source hash mismatch")
-    selected, scope = select_watch_candidates(json.loads(raw), limit=limit)
+    report = json.loads(raw)
+    if report.get("schema_version") == "hotspot-daily-selection-v1":
+        verify_daily_selection(root, report)
+    selected, scope = select_watch_candidates(report, limit=limit)
     if not selected:
         return dict(status="BLOCKED", items=[], failures=[dict(reason="NO_BOUND_WATCH_CANDIDATES")], action="no_order")
     bundle = (bundle_collector or collect_session_bundle)([row["symbol"] for row in selected])
@@ -92,6 +98,8 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
             observations.append(dict(symbol=symbol, observed_price=str(quote["price"]), result=checked))
             if not checked["passed"]:
                 raise ValueError("B1 rejected: " + checked["status"] + ":" + checked.get("detail", ""))
+            if report.get("schema_version") == "hotspot-daily-selection-v1" and checked["expected_session"] != report["trade_date"]:
+                raise ValueError("Selection session and price session differ")
             case = (case_collector or collect_current_price_case)(
                 root=root, symbol=symbol, as_of=date.fromisoformat(checked["expected_session"]),
                 quote_bundle_path=bundle_path, quote_bundle_sha256=bundle_sha)
@@ -107,6 +115,24 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
     registry = dict(schema_version="current-price-conditions-v1", action="no_order",
                     watch_source_binding=dict(path=source.relative_to(root).as_posix(), sha256=watch_source_sha256),
                     watch_source_scope=scope, items=items)
+    target = root / "config" / "current-price-conditions.json"
+    if target.is_file():
+        try:
+            previous_raw = target.read_bytes()
+            previous = json.loads(previous_raw)
+            _write(archive / "previous-registry.json", previous)
+            candidates = [{**item, "watch_source_binding": previous["watch_source_binding"],
+                           "watch_source_scope": previous["watch_source_scope"]}
+                          for item in previous["items"]] + previous.get("previous_items", [])
+            selected_symbols = {item["symbol"] for item in items}
+            retained = {}
+            for item in candidates:
+                if item["symbol"] not in selected_symbols:
+                    retained.setdefault(item["symbol"], item)
+            registry["previous_items"] = list(retained.values())[:10]
+        except (ValueError, OSError, KeyError, TypeError):
+            # An invalid previous pointer is not evidence and is never imported.
+            pass
     result = dict(status="WRITTEN" if items else "BLOCKED", items=items, failures=failures,
                   bundle_path=bundle_path.relative_to(root).as_posix(), bundle_sha256=bundle_sha,
                   watch_source_scope=scope, action="no_order")
@@ -114,7 +140,6 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
     if items:
         if hashlib.sha256(source.read_bytes()).hexdigest() != watch_source_sha256:
             raise ValueError("Watch source changed during refresh")
-        target = root / "config" / "current-price-conditions.json"
         target.parent.mkdir(parents=True, exist_ok=True)
         temporary = target.with_name(".current-price-conditions-" + uuid4().hex + ".json")
         try:

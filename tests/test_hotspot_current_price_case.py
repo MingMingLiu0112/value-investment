@@ -55,7 +55,11 @@ def test_current_roundtrip_projection_and_sha_tampering(tmp_path):
     assert plan["next_completed_eligible_session"] == "2026-09-28"
     assert plan["levels"]["60m"]["prior_max_high"] == "13"
     assert plan["action"] == "no_order" and plan["action_eligibility"] is False
-    assert plan["trend_state"] == "NOT_ASSESSED"
+    assert plan["trend_state"] == "NOT_CONFIRMED"
+    assert plan["period_structure"] == {period: "RANGE" for period in ("daily", "60m", "15m")}
+    assert plan["action_intent"] == "WATCH" and plan["formal_eligibility"] is False
+    assert plan["portfolio_eligibility"] is None
+    assert plan["expires_after_session"] == "2026-09-28"
     original = tmp_path / case["source_bindings"]["15m"]["path"]
     original.write_bytes(original.read_bytes() + b" ")
     with pytest.raises(ValueError, match="hash"):

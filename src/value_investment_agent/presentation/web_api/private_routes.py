@@ -169,7 +169,7 @@ def register_private_routes(
         if refusal is not None:
             return refusal
         try:
-            return service().portfolio_view()
+            return service().portfolio_view(repository_root=project)
         except PrivateStoreUnavailable:
             return disconnected_view(
                 reason="尚未配置可用的私人目录，无法读取成交台账",
@@ -187,7 +187,7 @@ def register_private_routes(
         try:
             return review_private_risk_rehearsal(
                 PrivateJournal(resolve_private_root(repository_root=project)),
-                generated_at=datetime.now(timezone.utc))
+                generated_at=datetime.now(timezone.utc), repository_root=project)
         except PrivateStoreUnavailable as error:
             return {
                 "action": "no_order", "status": "PRIVATE_ROOT_UNAVAILABLE",
@@ -207,6 +207,34 @@ def register_private_routes(
         if refusal is not None:
             return refusal
         return emit(lambda: service().initialize(payload))
+
+    @api.get("/api/v1/private/portfolio/policy")
+    def policy_view(request: Request):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        try:
+            return service().policy_view()
+        except PrivateStoreUnavailable as error:
+            return JSONResponse(status_code=503, content={"action": "no_order",
+                "status": "PRIVATE_ROOT_UNAVAILABLE", "detail": str(error)})
+        except JournalValidationError as error:
+            return JSONResponse(status_code=422, content={"action": "no_order",
+                "status": "PRIVATE_JOURNAL_INVALID", "detail": str(error)})
+
+    @api.post("/api/v1/private/portfolio/policy/prepare")
+    def prepare_policy(request: Request, payload: dict = Body(...)):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        return emit(lambda: service().prepare_policy(payload))
+
+    @api.post("/api/v1/private/portfolio/policy/confirm")
+    def confirm_policy(request: Request, payload: dict = Body(...)):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        return emit(lambda: service().confirm_policy(payload))
 
     @api.post("/api/v1/private/fills/prepare")
     def prepare_fill(request: Request, payload: dict = Body(...)):

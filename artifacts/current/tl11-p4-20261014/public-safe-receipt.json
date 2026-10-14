@@ -1,0 +1,49 @@
+{
+  "schema_version": "tl11-p4-actual-public-isolated-private-acceptance-v1",
+  "status": "PASSED_ENGINEERING_E2E",
+  "action": "no_order",
+  "generated_at": "2026-10-14T10:51:31.202380+00:00",
+  "publication_id": "pub-5c7d42d7243fc011cb0a",
+  "selection_binding": {
+    "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/report.json",
+    "sha256": "989aa97241824b61cd3bf3283b4705e846a4d9de78ad4651c5d12bcb00235b8b"
+  },
+  "coverage": {
+    "classified_securities": 5225,
+    "dated_quotes": 5214,
+    "ranked_securities": 5019,
+    "universe_scope": "SINA_CLASSIFIED_A_SHARES_NOT_OFFICIAL_COMPLETE_UNIVERSE",
+    "missing_quotes": 11
+  },
+  "candidate_symbols": [
+    "300364",
+    "300413",
+    "300418",
+    "300058",
+    "002354"
+  ],
+  "real_market_evidence": true,
+  "synthetic_portfolio": true,
+  "real_private_root_resolved": false,
+  "real_private_data_modified": false,
+  "valuation": {
+    "symbol": "600887",
+    "reference_close": "28.13",
+    "formal_eligibility": false,
+    "registered_action_policy": null
+  },
+  "isolated_account": {
+    "confirmed_ips": true,
+    "draft_fill_changes_cash": false,
+    "confirmed_fill_count": 1,
+    "cash_cny": "7337.000",
+    "total_equity_cny": "9995.000",
+    "history_judgment_version_preserved": true,
+    "risk_status": "BLOCKED_PRIVATE_INPUT",
+    "risk_blockers": [
+      "security_attributes.missing"
+    ],
+    "missing_security_attributes_not_fabricated": true
+  },
+  "FINAL_OPERATIONAL_ACCEPTANCE": "NOT_PASSED"
+}

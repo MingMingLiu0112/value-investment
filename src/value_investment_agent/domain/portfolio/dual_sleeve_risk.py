@@ -127,8 +127,9 @@ def review_dual_sleeve_risk(payload, *, generated_at, allow_synthetic=False):
     rows = {sleeve: [] for sleeve in SLEEVES}
     seen = set()
     for allocation in payload['allocations']:
-        fields(allocation, ('sleeve', 'symbol', 'quantity', 'sellable_quantity',
-            'committed_risk_cny', 'evidence_ref'), 'allocation')
+        fields({key: value for key, value in allocation.items() if key != 'cost_basis_cny'},
+            ('sleeve', 'symbol', 'quantity', 'sellable_quantity',
+             'committed_risk_cny', 'evidence_ref'), 'allocation')
         sleeve, symbol = allocation['sleeve'], allocation['symbol']
         if sleeve not in SLEEVES or symbol not in holdings or (sleeve, symbol) in seen:
             raise ValueError('unknown or duplicate sleeve allocation')
@@ -143,7 +144,8 @@ def review_dual_sleeve_risk(payload, *, generated_at, allow_synthetic=False):
         if h.cost_basis_cny is None:
             return _blocked(namespace, ['holding.cost_basis_missing'], generated_at)
         value = h.market_value_cny * quantity / h.quantity
-        cost = h.cost_basis_cny * quantity / h.quantity
+        cost = (decimal(allocation['cost_basis_cny'], 'allocation cost')
+                if 'cost_basis_cny' in allocation else h.cost_basis_cny * quantity / h.quantity)
         risk = (None if allocation['committed_risk_cny'] is None else
             decimal(allocation['committed_risk_cny'], 'committed risk'))
         rows[sleeve].append(dict(symbol=symbol, quantity=str(quantity), sellable_quantity=str(sellable),
@@ -152,6 +154,11 @@ def review_dual_sleeve_risk(payload, *, generated_at, allow_synthetic=False):
             common_factors=list(attrs[symbol].common_factors)))
     if any(allocated[symbol] != h.quantity for symbol, h in holdings.items()):
         raise ValueError('sleeve quantities must exactly partition aggregate holdings')
+    for symbol, holding in holdings.items():
+        costs = sum((Decimal(row['cost_basis_cny']) for sleeve in SLEEVES
+                     for row in rows[sleeve] if row['symbol'] == symbol), Decimal(0))
+        if abs(costs - holding.cost_basis_cny) > Decimal('1E-20'):
+            raise ValueError('sleeve costs must exactly partition aggregate cost')
     total = bundle.snapshot.cash_cny + sum((h.market_value_cny for h in holdings.values()), Decimal(0))
     if total <= 0:
         return _blocked(namespace, ['portfolio.nonpositive_equity'], generated_at)
@@ -160,7 +167,8 @@ def review_dual_sleeve_risk(payload, *, generated_at, allow_synthetic=False):
     fractions = {CORE: budget.core_value_budget, HOTSPOT: budget.tactical_hotspot_budget}
     for sleeve in SLEEVES:
         policy = payload['sleeves'][sleeve]
-        fields(policy, ('cash_cny', 'risk_budget_cny', 'max_single_security_fraction',
+        fields({key: value for key, value in policy.items() if key != 'capital_budget_cny'},
+            ('cash_cny', 'risk_budget_cny', 'max_single_security_fraction',
             'max_industry_fraction', 'max_factor_fraction', 'single_trade_risk_fraction',
             'single_security_risk_cny', 'realized_pnl_cny', 'financing_allowed',
             'risk_tools_allowed', 'confirmed_at', 'evidence_ref'), 'sleeve policy')
@@ -195,6 +203,8 @@ def review_dual_sleeve_risk(payload, *, generated_at, allow_synthetic=False):
         used = sum((Decimal(r['market_value_cny']) for r in rows[sleeve]), Decimal(0))
         equity = used + p['cash_cny']
         limit = total * fractions[sleeve]
+        if policy.get('capital_budget_cny') is not None:
+            limit = min(limit, decimal(policy['capital_budget_cny'], 'capital budget'))
         known = all(r['committed_risk_cny'] is not None for r in rows[sleeve])
         committed = sum((Decimal(r['committed_risk_cny']) for r in rows[sleeve]), Decimal(0)) if known else None
         if equity > limit:

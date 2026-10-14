@@ -13,6 +13,8 @@ import type { PropsWithChildren } from "react";
 import { useState } from "react";
 import { Workbench } from "../../components/Workbench";
 import { RemoteState } from "../../components/RemoteState";
+import { ConfirmedTrades } from "../../components/ConfirmedTrades";
+import { usePrivateState } from "../../hooks/usePrivateState";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
 import type {
@@ -436,11 +438,30 @@ function HistoryDetail({ item }: { item: ResearchHistoryItem }) {
 export default function DecisionHistory() {
   const { data, loading, error, retry } = useApi(api.history);
   const [selectedId, setSelectedId] = useState<string>();
+  const privateState = usePrivateState();
   const items = data?.items ?? [];
   const current = items.find((item) => item.id === selectedId) ?? items[0];
   return (
     <Workbench>
       <Typography.Title level={2}>历史判断</Typography.Title>
+      <Section title="我的实际成交与原判断版本">
+        {privateState.portfolio &&
+        !["LOADING", "LOCKED", "UNAVAILABLE"].includes(privateState.kind) ? (
+          <>
+            <Typography.Paragraph type="secondary">
+              同一私人台账的已确认记录；当前研究更新不会覆盖原关联版本。未记录成交不等于未执行，尚无核验结果时不补算收益或原判断失效。
+            </Typography.Paragraph>
+            <ConfirmedTrades trades={privateState.portfolio.trades} />
+          </>
+        ) : (
+          <Alert
+            type="info"
+            showIcon
+            message={privateState.label}
+            description={privateState.detail}
+          />
+        )}
+      </Section>
       <RemoteState loading={loading} error={error} retry={retry}>
         {data &&
           (items.length === 0 ? (

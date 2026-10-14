@@ -15,6 +15,28 @@ export function firstResearchText(value: unknown): string | null {
   return null;
 }
 
+/** Presentation grouping uses retained scenario data, never a security allowlist. */
+export function hasValuationResult(item: DecisionItem): boolean {
+  const candidates = [
+    item.research?.valuation,
+    item.price_action_plan?.conditional_valuation_range,
+    item.price_action_plan,
+  ];
+  return candidates.some(
+    (value) =>
+      value &&
+      ["bear", "base", "bull"].every((key) => {
+        const raw = (value as Record<string, unknown>)[key];
+        return (
+          ((typeof raw === "string" && raw.trim() !== "") ||
+            typeof raw === "number") &&
+          Number.isFinite(Number(raw)) &&
+          Number(raw) > 0
+        );
+      }),
+  );
+}
+
 export function publicBlockerText(value?: string): string | null {
   if (!value) return null;
   return codeText(value) ?? (/\p{Script=Han}/u.test(value) ? value : null);

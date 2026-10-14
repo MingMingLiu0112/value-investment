@@ -23,8 +23,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "LOW",
-      "line_count": 36,
-      "sha256": "69bf312b191be78ee97b274e764ea903ad80c2384c444cbc50ee99b99d5bd68a"
+      "line_count": 37,
+      "sha256": "6486291e0d3f8f14682a3de021b0da15b3e7da45815c1579c37990eea095d237"
     },
     {
       "path": "scripts/current/build_daily_public_packet.py",

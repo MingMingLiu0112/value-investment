@@ -1,7 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { formatMoney, formatUnitPrice } from "../src/utils/format";
+import {
+  formatDecimal,
+  formatMoney,
+  formatUnitPrice,
+} from "../src/utils/format";
 
 describe("money presentation", () => {
+  it("rounds relative strength, market changes and ratios only for presentation", () => {
+    const source = "3.505814812256627960463050843";
+    expect(formatDecimal(source)).toBe("3.51");
+    expect(formatDecimal("-1.810183760989091417929155417")).toBe("-1.81");
+    expect(formatDecimal("0.6320420394038465979969764911")).toBe("0.63");
+    expect(formatDecimal(null)).toBe("—");
+    expect(source).toBe("3.505814812256627960463050843");
+  });
   it("trims backend decimal strings to two places with separators", () => {
     expect(formatMoney("500000.00")).toBe("500,000.00");
     expect(formatMoney("199995.00")).toBe("199,995.00");

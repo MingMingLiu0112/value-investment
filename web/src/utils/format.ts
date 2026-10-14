@@ -8,6 +8,11 @@ const UNIT_PRICE = new Intl.NumberFormat("zh-CN", {
   maximumFractionDigits: 4,
 });
 
+/** Display only; never changes the retained backend decimals. */
+export function formatDecimal(value?: string | number | null): string {
+  return formatMoney(value);
+}
+
 function numeric(value: string | number | null | undefined): number | null {
   if (value === null || value === undefined || value === "") return null;
   const parsed = typeof value === "number" ? value : Number(value);

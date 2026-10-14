@@ -25,6 +25,7 @@ from .daily_research_status import (
 from .publication_chain import STRUCTURE_ERRORS, try_load_current_chain
 from .quote_bridge import execute_quote_bridge_for_symbol
 from ..hotspot.current_registry import registry_identity, load_price_conditions
+from ..decision.value_action_plan import load_registered_value_action_plans
 
 
 SCHEMA_VERSION = "daily-public-packet-v1"
@@ -32,14 +33,14 @@ SCHEMA_VERSION = "daily-public-packet-v1"
 # chain (bug fixes included). It is part of the identity below so a new engine
 # revision yields a new publication_id instead of silently reusing a stored
 # record that an older revision computed.
-ENGINE_VERSION = "daily-public-packet-engine-v5"
+ENGINE_VERSION = "daily-public-packet-engine-v8"
 # v4 folds every content-deciding input into the identity: the company
 # research registry and its evidence files, the archived quote bundles, the
 # bound decision-explanation files and the business clock (natural date +
 # latest completed session) that decides the trading day, freshness and
 # admission. A change in any of them mints a new publication_id instead of
 # reusing a stored record with different facts.
-IDENTITY_SCHEMA = "daily-public-packet-identity-v5"
+IDENTITY_SCHEMA = "daily-public-packet-identity-v8"
 ACTION = "no_order"
 CHINA = ZoneInfo("Asia/Shanghai")
 QUOTE_POINTER_PATH = "config/current-quote-bridge.json"
@@ -126,12 +127,29 @@ def identity_inputs(root: Path, chain: Mapping[str, Any], *,
     model = chain.get("model") if isinstance(chain.get("model"), Mapping) else {}
     bindings = model.get("additional_evidence_bindings")
     explanations: list[dict] = []
+    value_sources: dict[str, dict] = {}
+    extensions = model.get("product_extensions") or {}
+    policy_binding = extensions.get("value_action_policy_registry")
+    if isinstance(policy_binding, dict) and isinstance(policy_binding.get("path"), str):
+        target = _repo_path(root, policy_binding["path"])
+        value_sources[policy_binding["path"]] = {"path": policy_binding["path"],
+            "observed_sha256": _sha_of(target) if target is not None else None}
     for binding in bindings if isinstance(bindings, list) else []:
         if not isinstance(binding, dict) or not isinstance(binding.get("path"), str):
             continue
         target = _repo_path(root, binding["path"])
         explanations.append({"path": binding["path"],
                              "observed_sha256": _sha_of(target) if target is not None else None})
+        if target is not None and binding["path"].endswith("-value-decision-explanation.json"):
+            try:
+                explanation = json.loads(target.read_bytes())
+                for reference in (explanation.get("valuation") or {}).get("evidence_refs", []):
+                    name = reference.get("path")
+                    if isinstance(name, str):
+                        source = _repo_path(root, name)
+                        value_sources[name] = {"path": name, "observed_sha256": _sha_of(source) if source else None}
+            except (ValueError, OSError, TypeError, AttributeError):
+                pass
     return {
         "schema": IDENTITY_SCHEMA,
         "engine": ENGINE_VERSION,
@@ -148,6 +166,7 @@ def identity_inputs(root: Path, chain: Mapping[str, Any], *,
         "registered_evidence": sorted(evidence, key=lambda item: item["path"]),
         "bound_explanations": sorted(explanations, key=lambda item: item["path"]),
         "current_price_conditions": registry_identity(root),
+        "value_action_sources": sorted(value_sources.values(), key=lambda item: item["path"]),
     }
 
 
@@ -745,6 +764,9 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
         research_version=_stem(receipt_binding["path"]) if receipt_binding else None)
     deduped = list(dict.fromkeys([*deduped, *current_conditions["blockers"]]))
     value_conditions = {}
+    value_plans = load_registered_value_action_plans(root, now=now, symbols=list(company_statuses))
+    registered_plans = {plan["symbol"]: plan for plan in value_plans["items"]}
+    deduped = list(dict.fromkeys([*deduped, *value_plans["blockers"]]))
     for symbol, entry in company_statuses.items():
         valuation = valuation_statuses.get(symbol, {})
         bridge = price_bridge_statuses.get(symbol, {})
@@ -769,6 +791,15 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
             "explanation": "估值情景仅供研究观察；尚无经完整准入的建仓、加减仓阈值。",
             "model_or_rule_version": entry.get("research_version"),
         }
+        if symbol in registered_plans:
+            plan = registered_plans[symbol]
+            value_conditions[symbol].update(plan)
+            value_conditions[symbol].update(decision_id=symbol,
+                current_reference_price=plan["reference_close"],
+                conditional_valuation_range=valuation.get("conditional_range"),
+                action_eligibility=plan["formal_eligibility"],
+                support=plan["supporting_facts"], counter=plan["counter_evidence"],
+                blockers=list(dict.fromkeys([*value_blockers, *plan["blockers"]])))
     packet = {
         "schema_version": SCHEMA_VERSION,
         "engine_version": ENGINE_VERSION,
@@ -791,6 +822,7 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
         "company_statuses": company_statuses,
         "price_conditions": current_conditions,
         "value_price_conditions": value_conditions,
+        "value_action_policy_inventory": value_plans["policy_inventory"],
         "valuation_statuses": valuation_statuses,
         "price_bridge_statuses": price_bridge_statuses,
         "event_review_statuses": event_review_statuses,

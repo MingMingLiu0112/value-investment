@@ -18,6 +18,8 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+from pathlib import Path
+from zoneinfo import ZoneInfo
 from typing import Any
 
 from ...domain.portfolio.dual_sleeve_risk import review_dual_sleeve_risk
@@ -68,20 +70,20 @@ def _policy_payload(replayed: ReplayedPortfolio) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "policy_id": f"private-journal:{state.baseline.account_scope}",
-        "policy_version": f"v{state.version}",
-        "as_of": state.baseline.as_of.isoformat(),
+        "policy_version": stored.get("_record_sha256") or f"v{state.version}",
+        "as_of": stored.get("effective_date") or state.baseline.as_of.isoformat(),
         "confirmation_status": "HUMAN_CONFIRMED",
-        "confirmed_at": (state.confirmed_at or state.baseline.available_at).isoformat(),
+        "confirmed_at": stored.get("_confirmed_at") or state.baseline.available_at.isoformat(),
         "account_scope": state.baseline.account_scope,
     }
     for field in _POLICY_AMOUNT_FIELDS:
         payload[field] = stored.get(field)
-    payload["time_horizon_years"] = None
+    payload["time_horizon_years"] = stored.get("time_horizon_years")
     payload["risk_tolerance"] = stored.get("risk_tolerance") or RISK_UNKNOWN
-    payload["concentration_allowed"] = None
-    payload["tax_regime"] = None
+    payload["concentration_allowed"] = stored.get("concentration_allowed")
+    payload["tax_regime"] = stored.get("tax_regime")
     payload["restrictions"] = list(stored.get("restrictions") or ["no_order"])
-    payload["evidence_refs"] = [_evidence(replayed)]
+    payload["evidence_refs"] = [{"id": stored["_record_sha256"], "kind": "user_confirmation"}] if stored.get("_record_sha256") else [_evidence(replayed)]
     payload["sensitivity"] = "PRIVATE_USER_CONFIRMED"
     payload["action"] = "no_order"
     return payload
@@ -109,7 +111,7 @@ def _snapshot_matches_state(snapshot: PortfolioSnapshot, replayed: ReplayedPortf
     return snapshot.cash_cny == replayed.state.cash_cny and actual == expected
 
 
-def _snapshot_payload(replayed: ReplayedPortfolio) -> dict[str, Any]:
+def _snapshot_payload(replayed: ReplayedPortfolio, prices=None) -> dict[str, Any]:
     """Use the stored reconciliation only while it still matches the ledger.
 
     WEB-D3 P0.1: after a newer ``FILL_CONFIRMED`` the stored snapshot is
@@ -121,7 +123,8 @@ def _snapshot_payload(replayed: ReplayedPortfolio) -> dict[str, Any]:
     if stored is not None and replayed.snapshot_version == replayed.state.version:
         candidate = portfolio_snapshot_from_payload(stored)
         if _snapshot_matches_state(candidate, replayed):
-            return candidate.as_policy()
+            payload = candidate.as_policy()
+            return _mark_snapshot(payload, prices or {}, replayed.policy)
     state = replayed.state
     evidence = _evidence(replayed)
     snapshot = PortfolioSnapshot(
@@ -137,22 +140,123 @@ def _snapshot_payload(replayed: ReplayedPortfolio) -> dict[str, Any]:
         reconciled_at=None,
         evidence_refs=(evidence,),
     )
-    return snapshot.as_policy()
+    return _mark_snapshot(snapshot.as_policy(), prices or {}, replayed.policy)
+
+
+def _mark_snapshot(payload, prices, policy):
+    # This is a current projection of unchanged confirmed quantities, not a
+    # backdated rewrite of the stored reconciliation artifact.
+    dates = [payload["as_of"], *[row["trade_date"] for row in prices.values()]]
+    if policy.get("effective_date"):
+        dates.append(policy["effective_date"])
+    payload["as_of"] = max(dates)
+    if policy.get("_confirmed_at"):
+        payload["available_at"] = max(datetime.fromisoformat(payload["available_at"]),
+            datetime.fromisoformat(policy["_confirmed_at"])).isoformat()
+    for holding in payload["holdings"]:
+        price = prices.get(holding["symbol"])
+        holding["market_value_cny"] = str(Decimal(holding["quantity"]) * Decimal(price["price_cny"])) if price else None
+    return payload
+
+
+def _verified_prices(root, replayed, now):
+    """Use existing read-time source verification, never trust an HTTP price flag."""
+    try:
+        return _load_verified_prices(root, replayed, now)
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, ArithmeticError):
+        # Public evidence failure must not hide confirmed private ledger facts.
+        return {}
+
+
+def _load_verified_prices(root, replayed, now):
+    if root is None:
+        return {}
+    from ..product.quote_bridge import execute_quote_bridge_for_symbol
+    from ..hotspot.current_registry import load_price_conditions
+    needed = {lot.symbol for lot in replayed.state.lots}
+    prices = {}
+    for symbol in needed:
+        execution = execute_quote_bridge_for_symbol(Path(root), symbol, today=now)
+        quote = execution.get("quote") or {}
+        if ((execution.get("compatibility") or {}).get("verified_quote", {}).get("eligible") is True
+                and quote.get("quote_date") == quote.get("latest_completed_session")
+                and quote.get("quote_date") and quote.get("display_price")):
+            value = Decimal(quote["display_price"])
+            if value.is_finite() and value > 0:
+                prices[symbol] = {"price_cny": str(value), "trade_date": quote["quote_date"],
+                    "bundle_sha256": quote["bundle_sha256"], "scope": "VERIFIED_LATEST_COMPLETED_CLOSE_NOT_TRADE_PERMISSION"}
+    if needed - prices.keys():
+        observations = load_price_conditions(Path(root), now=now, research_version=None)
+        for row in observations["items"]:
+            if row["symbol"] in needed and row["symbol"] not in prices:
+                plan = row["price_action_plan"]
+                value = Decimal(plan["current_reference_price"])
+                if value.is_finite() and value > 0:
+                    prices[row["symbol"]] = {"price_cny": str(value), "trade_date": plan["market_trade_date"],
+                        "case_sha256": plan["case_sha256"], "scope": "VERIFIED_LATEST_COMPLETED_CLOSE_NOT_TRADE_PERMISSION"}
+    # Quotes predating a confirmed trade cannot mark the resulting position.
+    return {symbol: row for symbol, row in prices.items()
+            if date.fromisoformat(row["trade_date"]) >= replayed.state.last_trade_date}
+
+
+def _verified_attributes(root, replayed, now):
+    if not replayed.state.lots:
+        return []
+    # No registered research contract currently certifies these risk attributes.
+    # User-supplied bindings and matching hashes alone cannot establish their
+    # economic meaning, including for a synthetic fixture labelled PUBLIC_RESEARCH.
+    return None
 
 
 def _allocations_payload(replayed: ReplayedPortfolio, sellable_as_of: date) -> list[dict[str, Any]]:
     """Real per-sleeve share counts straight from the replayed lots."""
-    rows: list[dict[str, Any]] = []
+    grouped = {}
     for lot in replayed.state.lots:
-        rows.append({
+        row = grouped.setdefault((lot.sleeve, lot.symbol), {
             "sleeve": lot.sleeve,
             "symbol": lot.symbol,
-            "quantity": str(lot.quantity),
-            "sellable_quantity": str(lot.quantity if lot.sellable_on <= sellable_as_of else 0),
+            "quantity": Decimal(0), "sellable_quantity": Decimal(0), "cost_basis_cny": Decimal(0),
             "committed_risk_cny": None,
-            "evidence_ref": {"id": f"private-lot-{lot.symbol}-{lot.sleeve}", "kind": "user_confirmation"},
+            "evidence_ref": f"private-lot-{lot.symbol}-{lot.sleeve}",
         })
-    return rows
+        row["quantity"] += lot.quantity
+        row["cost_basis_cny"] += lot.cost_cny
+        if lot.sellable_on <= sellable_as_of:
+            row["sellable_quantity"] += lot.quantity
+    return [{key: str(value) if isinstance(value, Decimal) else value for key, value in row.items()}
+            for row in grouped.values()]
+
+
+def _sleeve_policy(replayed):
+    policy = replayed.policy
+    if not policy.get("_confirmed_at"):
+        return None, None, None
+    total = Decimal(policy["investable_assets_cny"])
+    shared = dict(core_value_budget=str(Decimal(policy["core_value_budget_cny"]) / total),
+        tactical_hotspot_budget=str(Decimal(policy["hotspot_budget_cny"]) / total),
+        cash_floor=str(Decimal(policy["cash_reserve_cny"]) / total),
+        cross_sleeve_single_stock_cap=str(Decimal(policy["max_single_security_pct"]) / 100),
+        cross_sleeve_sector_cap=str(Decimal(policy["max_single_industry_pct"]) / 100),
+        policy_scope="USER_CONFIRMED", action="no_order")
+    sleeves = {}
+    for sleeve in ("CORE_VALUE", "HOTSPOT_SATELLITE"):
+        stored = policy["sleeves"][sleeve]
+        cash = Decimal(stored["cash_cny"])
+        for trade in replayed.trades[policy["_state_version"]:]:
+            if trade["sleeve"] == sleeve:
+                gross = Decimal(trade["quantity"]) * Decimal(trade["price_cny"])
+                fee = Decimal(trade["fees_cny"])
+                cash += gross - fee if trade["side"] == "SELL" else -gross - fee
+        sleeves[sleeve] = dict(cash_cny=str(cash), risk_budget_cny=stored["risk_budget_cny"],
+            max_single_security_fraction=shared["cross_sleeve_single_stock_cap"],
+            max_industry_fraction=shared["cross_sleeve_sector_cap"],
+            max_factor_fraction=str(Decimal(policy["max_factor_pct"]) / 100),
+            single_trade_risk_fraction=str(Decimal(policy["hotspot_single_trade_risk_pct"]) / 100) if sleeve == "HOTSPOT_SATELLITE" else None,
+            single_security_risk_cny=stored.get("single_security_risk_cny"), realized_pnl_cny=None,
+            financing_allowed=policy["financing_allowed"], risk_tools_allowed=policy["risk_tools_allowed"],
+            capital_budget_cny=policy["core_value_budget_cny"] if sleeve == "CORE_VALUE" else policy["hotspot_budget_cny"],
+            confirmed_at=policy["_confirmed_at"], evidence_ref=policy["_record_sha256"])
+    return shared, sleeves, policy["cash_reserve_cny"]
 
 
 def build_risk_input(
@@ -160,26 +264,33 @@ def build_risk_input(
     *,
     sellable_as_of: date,
     namespace: str = NAMESPACE_ACTUAL,
+    repository_root: Path | None = None,
+    generated_at: datetime | None = None,
+    _prices=None,
 ) -> dict[str, Any]:
+    now = generated_at or datetime.now().astimezone()
+    prices = _verified_prices(repository_root, replayed, now) if _prices is None else _prices
+    shared, sleeves, reserve = _sleeve_policy(replayed)
     return {
         "schema_version": RISK_INPUT_SCHEMA,
         "action": "no_order",
         "namespace": namespace,
         "portfolio": {
             "policy": _policy_payload(replayed),
-            "snapshot": _snapshot_payload(replayed),
+            "snapshot": _snapshot_payload(replayed, prices),
             "action": "no_order",
         },
-        "shared_budget": None,
-        "sleeves": None,
-        "cash_reserve_cny": None,
+        "shared_budget": shared,
+        "sleeves": sleeves,
+        "cash_reserve_cny": reserve,
         "allocations": _allocations_payload(replayed, sellable_as_of),
-        "security_attributes": None,
+        "security_attributes": _verified_attributes(repository_root, replayed, now),
         "hotspot_request": None,
     }
 
 
-def _facts(replayed: ReplayedPortfolio) -> dict[str, Any]:
+def _facts(replayed: ReplayedPortfolio, prices=None) -> dict[str, Any]:
+    prices = prices or {}
     state = replayed.state
     reconciliation = reconciliation_state(replayed)
     grouped: dict[tuple[str, str], dict[str, Any]] = {}
@@ -195,16 +306,21 @@ def _facts(replayed: ReplayedPortfolio) -> dict[str, Any]:
     positions = []
     for key in sorted(grouped):
         entry = grouped[key]
+        quote = prices.get(entry["symbol"])
+        market = entry["quantity"] * Decimal(quote["price_cny"]) if quote else None
         positions.append({
             "symbol": entry["symbol"],
             "exchange": entry["exchange"],
             "quantity": str(entry["quantity"]),
             "cost_basis_cny": str(entry["cost_basis_cny"]),
-            "market_value_cny": None,
-            "unrealized_pnl_cny": None,
+            "market_value_cny": str(market) if market is not None else None,
+            "unrealized_pnl_cny": str(market - entry["cost_basis_cny"]) if market is not None else None,
+            "quote_binding": quote,
             "sleeves": [{"sleeve": row["sleeve"], "quantity": str(row["quantity"])}
                         for row in sorted(entry["sleeves"].values(), key=lambda item: item["sleeve"])],
         })
+    marked = all(position["market_value_cny"] is not None for position in positions)
+    total_market = sum((Decimal(position["market_value_cny"]) for position in positions), Decimal(0)) if marked else None
     return {
         "revision": replayed.revision,
         "account_scope": state.baseline.account_scope,
@@ -213,11 +329,15 @@ def _facts(replayed: ReplayedPortfolio) -> dict[str, Any]:
         "realized_pnl_cny": str(state.realized_pnl_cny),
         "cost_basis_total_cny": str(sum((lot.cost_cny for lot in state.lots), Decimal(0))),
         "positions": positions,
+        "market_value_total_cny": str(total_market) if marked else None,
+        "total_equity_cny": str(state.cash_cny + total_market) if marked else None,
+        "unrealized_pnl_total_cny": str(total_market - sum((lot.cost_cny for lot in state.lots), Decimal(0))) if marked else None,
+        "current_drawdown_pct": None,
         "confirmed_fill_count": state.version,
         "reconciliation_status": reconciliation["status"],
         "reconciliation": reconciliation,
-        "price_status": "PRICE_NOT_ADMITTED",
-        "price_reason": PRICE_ADMISSION_REASON,
+        "price_status": ("CASH_ONLY_NO_QUOTE_REQUIRED" if not positions else "VERIFIED_LATEST_COMPLETED_CLOSE") if marked else "PRICE_NOT_ADMITTED",
+        "price_reason": None if marked else PRICE_ADMISSION_REASON,
     }
 
 
@@ -226,6 +346,7 @@ def review_private_risk_rehearsal(
     *,
     generated_at: datetime,
     today: date | None = None,
+    repository_root: Path | None = None,
 ) -> dict[str, Any]:
     """Run the real engine on real confirmed facts; report the exact gaps."""
     service = PrivatePortfolioService(journal)
@@ -241,12 +362,29 @@ def review_private_risk_rehearsal(
     replayed = service._replay(records)
     assert replayed is not None
     sellable_as_of = max(replayed.state.last_trade_date, today or datetime.now().astimezone().date())
-    report = review_dual_sleeve_risk(
-        build_risk_input(replayed, sellable_as_of=sellable_as_of), generated_at=generated_at)
+    prices = _verified_prices(repository_root, replayed, generated_at)
+    payload = build_risk_input(replayed, sellable_as_of=sellable_as_of,
+        repository_root=repository_root, generated_at=generated_at, _prices=prices)
+    extra = []
+    if replayed.policy.get("effective_date") and date.fromisoformat(replayed.policy["effective_date"]) > generated_at.astimezone(ZoneInfo("Asia/Shanghai")).date():
+        extra.append("POLICY_NOT_EFFECTIVE")
+    if payload["sleeves"] and any(Decimal(row["cash_cny"]) < 0 for row in payload["sleeves"].values()):
+        extra.append("SLEEVE_CASH_OVERDRAWN")
+    if extra:
+        from ...domain.portfolio.dual_sleeve_risk import _blocked
+        report = _blocked(NAMESPACE_ACTUAL, extra, generated_at)
+    else:
+        report = review_dual_sleeve_risk(payload, generated_at=generated_at)
+    if payload["security_attributes"] is None:
+        report["blockers"] = list(dict.fromkeys([*report["blockers"], "security_attributes.missing"]))
     return {
         "action": "no_order",
         "status": report["status"],
         "blockers": list(report.get("blockers") or ()),
         "engine": report,
-        "facts": _facts(replayed),
+        "facts": _facts(replayed, prices),
+        "policy": {"confirmation_status": "HUMAN_CONFIRMED" if replayed.policy.get("_confirmed_at") else "INCOMPLETE_LEGACY_POLICY",
+            "effective_date": replayed.policy.get("effective_date"), "max_drawdown_pct": replayed.policy.get("max_drawdown_pct"),
+            "dividend_income_goal_cny": replayed.policy.get("dividend_income_goal_cny"),
+            "financing_allowed": replayed.policy.get("financing_allowed")},
     }

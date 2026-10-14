@@ -8,6 +8,7 @@ import type {
   HistoricalPriceCase,
   CurrentPriceCase,
   PortfolioResponse,
+  PolicyResponse,
   RiskResponse,
   WriteResponse,
 } from "../types/api";
@@ -241,6 +242,12 @@ export const api = {
     getPrivate<PortfolioResponse>("portfolio", signal),
   risk: (signal?: AbortSignal) =>
     getPrivate<RiskResponse>("private/portfolio/risk", signal),
+  policy: (signal?: AbortSignal) =>
+    getPrivate<PolicyResponse>("private/portfolio/policy", signal),
+  preparePolicy: (body: Record<string, unknown>) =>
+    post<WriteResponse>("private/portfolio/policy/prepare", body),
+  confirmPolicy: (body: Record<string, unknown>) =>
+    post<WriteResponse>("private/portfolio/policy/confirm", body),
   history: (signal?: AbortSignal) =>
     get<HistoryResponse>("decision-history", signal),
   historicalCases: (signal?: AbortSignal) =>

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import re
 from datetime import date, datetime, timezone
@@ -36,6 +37,7 @@ from ...application.product.public_snapshot import (
 )
 from ...application.product.quote_bridge import execute_quote_bridge_for_symbol
 from ...application.hotspot.price_action_case import project_price_action_plan
+from ...application.decision.current_value_plan import revalidate_current_value_plan
 from ...infrastructure.hotspot.sina_price_case import load_historical_case
 from ...infrastructure.hotspot.current_price_case import load_current_price_case
 from ..read_models.dual_sleeve_surface import (
@@ -205,26 +207,50 @@ def create_app(
 
     def current_items(packet):
         rows = (packet or {}).get("price_conditions", {}).get("items", [])
+        registry = (packet or {}).get("identity_inputs", {}).get("current_price_conditions")
+        registry_matches = True
+        if registry is not None:
+            try:
+                observed = hashlib.sha256((project / "config/current-price-conditions.json").read_bytes()).hexdigest()
+                registry_matches = observed == registry["observed_sha256"]
+            except (OSError, KeyError, TypeError):
+                registry_matches = False
         checked = []
         for row in rows:
             plan = row["price_action_plan"]
             try:
+                if not registry_matches:
+                    raise ValueError("Current price registry differs from frozen publication")
                 load_current_price_case(root=project, symbol=row["symbol"],
                     case_path=Path(plan["case_path"]), expected_sha256=plan["case_sha256"])
+                if plan.get("daily_selection_binding"):
+                    from ...application.hotspot.daily_selection import verify_daily_selection
+                    binding = plan["daily_selection_binding"]
+                    target = (project / binding["path"]).resolve()
+                    if not target.is_relative_to(project / "runtime") or hashlib.sha256(target.read_bytes()).hexdigest() != binding["sha256"]:
+                        raise ValueError("Daily selection changed")
+                    selection = json.loads(target.read_bytes())
+                    verify_daily_selection(project, selection)
+                    selected = next(r for r in selection["observation_list"] if r["symbol"] == row["symbol"])
+                    if selected != plan["daily_selection"]:
+                        raise ValueError("Frozen selection differs from original")
                 checked.append(row)
-            except (ValueError, OSError, KeyError, TypeError) as error:
+            except (ValueError, OSError, KeyError, TypeError, StopIteration, ArithmeticError) as error:
                 stale = "B1 current close rejected" in str(error)
                 checked.append({**row, "price_action_plan": {**plan,
                     "signal_state": "STALE" if stale else "BLOCKED",
-                    "action_eligibility": False, "entry_trigger_price": None,
+                    "action_eligibility": False, "formal_eligibility": False,
+                    "portfolio_eligibility": None, "action_intent": "WATCH", "entry_trigger_price": None,
                     "invalidation_price": None, "current_reference_price": None,
+                    "entry_condition": None, "exit_condition": None, "invalidation_condition": None,
                     "levels": {}, "current_reference_close": None,
                     "blockers": [*plan["blockers"], "CURRENT_CASE_CHANGED_OR_STALE"],
                     "explanation": "本次读取无法验证价格条件的新鲜度或原始证据；旧价位不作为当前条件。"}})
         return checked
 
     def value_plan(symbol, packet):
-        return (packet or {}).get("value_price_conditions", {}).get(symbol)
+        frozen = (packet or {}).get("value_price_conditions", {}).get(symbol)
+        return revalidate_current_value_plan(project, frozen, now=datetime.now(timezone.utc)) if frozen else None
 
     def pinned_publication(packet, current):
         if packet is None:
@@ -263,6 +289,8 @@ def create_app(
         if row is None:
             return {"action": "no_order", "status": "UNAVAILABLE", "reason": "CURRENT_CASE_NOT_PUBLISHED"}
         plan = row["price_action_plan"]
+        if plan["signal_state"] in ("BLOCKED", "STALE"):
+            return {"action": "no_order", "status": "UNAVAILABLE", "reason": "CURRENT_CASE_CHANGED_OR_STALE"}
         try:
             case = load_current_price_case(root=project, symbol=symbol,
                 case_path=Path(plan["case_path"]), expected_sha256=plan["case_sha256"])

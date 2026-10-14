@@ -106,7 +106,7 @@ $packet = $build.Json
 $buildExit = $build.ExitCode
 
 if ($Mode -eq 'SAFE_REFRESH') {
-    Write-Host '[SAFE_REFRESH] 更新最多五只已绑定证券的当前价格条件...'
+    Write-Host '[SAFE_REFRESH] 按当日行业相对强度与成交额筛选五只真实观察候选，再核验价格结构...'
     $priceRefresh = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py')
     if ($priceRefresh.Json) {
         Write-Host "  价格结构状态 : $($priceRefresh.Json.status)"

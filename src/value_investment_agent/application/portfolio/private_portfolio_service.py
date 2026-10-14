@@ -20,6 +20,9 @@ from pathlib import Path
 from typing import Any, Iterator, Mapping, Sequence
 
 from ...domain.portfolio.dual_sleeve_records import canonical_bytes
+from ...domain.portfolio.private_policy import (
+    normalize_policy, missing_policy_fields, validate_policy_confirmation,
+)
 from ...portfolio_contracts import (
     NAMESPACE_ACTUAL,
     PortfolioHolding,
@@ -47,6 +50,7 @@ JOURNAL_RELATIVE_PATH = Path("portfolio") / "journal.jsonl"
 RECORD_KINDS = frozenset({
     "BASELINE_CONFIRMED", "FILL_PREPARED", "FILL_CONFIRMED", "FILL_CANCELLED",
     "RECONCILED_CONFIRMED",
+    "POLICY_PREPARED", "POLICY_CONFIRMED",
 })
 EXCHANGES = frozenset({"SSE", "SZSE", "BSE"})
 SIDES = frozenset({"BUY", "SELL"})
@@ -242,6 +246,7 @@ class ReplayedPortfolio:
     draft: Reconciliation | None
     snapshot_version: int | None = None
     snapshot_scope: str | None = None
+    pending_policy: dict[str, Any] | None = None
 
 
 def reconciliation_state(replayed: ReplayedPortfolio) -> dict[str, Any]:
@@ -501,6 +506,7 @@ class PrivatePortfolioService:
         snapshot_scope: str | None = None
         pending: dict[str, Any] | None = None
         draft: Reconciliation | None = None
+        pending_policy: dict[str, Any] | None = None
         for record in records:
             kind = record["kind"]
             body = record["body"]
@@ -563,10 +569,24 @@ class PrivatePortfolioService:
                 snapshot_version = state.version
                 scope = body.get("reconciliation_scope")
                 snapshot_scope = scope if scope in _RECONCILIATION_SCOPES else RECONCILIATION_SCOPE_INTERNAL
+            elif kind == "POLICY_PREPARED":
+                pending_policy = {**body, "prepared_record_sha256": record["record_sha256"]}
+            elif kind == "POLICY_CONFIRMED":
+                if state is None or pending_policy is None or body["prepared_record_sha256"] != pending_policy["prepared_record_sha256"]:
+                    raise JournalValidationError("Policy confirmation does not bind current draft")
+                if body["policy"] != pending_policy["policy"] or body["state_version"] != state.version:
+                    raise JournalValidationError("Policy confirmation changed draft or state version")
+                try:
+                    validate_policy_confirmation(body["policy"], confirmed_at=body["confirmed_at"], cash_cny=state.cash_cny)
+                except ValueError as error:
+                    raise JournalValidationError(str(error)) from error
+                policy = {**body["policy"], "_confirmed_at": body["confirmed_at"],
+                    "_state_version": state.version, "_record_sha256": record["record_sha256"]}
+                pending_policy = None
         if state is None:
             return None
         return ReplayedPortfolio(len(records), state, policy, tuple(trades), snapshot, pending, draft,
-                                 snapshot_version, snapshot_scope)
+                                 snapshot_version, snapshot_scope, pending_policy)
 
     @staticmethod
     def _sellable_as_of(state: Reconciliation, requested: date | None) -> date:
@@ -642,6 +662,7 @@ class PrivatePortfolioService:
             "positions": self._positions(state, sellable_as_of),
             "trades": [dict(trade) for trade in replayed.trades],
             "policy": dict(replayed.policy),
+            "pending_policy": replayed.pending_policy,
             "pending_draft": replayed.pending,
             "latest_snapshot": replayed.snapshot,
             "reconciliation": reconciliation_state(replayed),
@@ -650,7 +671,8 @@ class PrivatePortfolioService:
             "blockers": ["PRICE_NOT_ADMITTED"],
         }
 
-    def portfolio_view(self, *, today: date | None = None) -> dict[str, Any]:
+    def portfolio_view(self, *, today: date | None = None, repository_root: Path | None = None,
+                       generated_at: datetime | None = None) -> dict[str, Any]:
         records = self.records()
         if not records:
             return {
@@ -673,6 +695,24 @@ class PrivatePortfolioService:
         assert replayed is not None
         payload = self._portfolio_payload(replayed, today=today)
         payload["status"] = "CONNECTED"
+        if repository_root is not None:
+            from .private_risk_projection import _verified_prices, _facts
+            now = generated_at or datetime.now().astimezone()
+            prices = _verified_prices(repository_root, replayed, now)
+            facts = _facts(replayed, prices)
+            by_symbol = {row["symbol"]: row for row in facts["positions"]}
+            for row in payload["positions"]:
+                marked = by_symbol[row["symbol"]]
+                row["market_value_cny"] = marked["market_value_cny"]
+                row["floating_pnl_cny"] = marked["unrealized_pnl_cny"]
+                equity = facts["total_equity_cny"]
+                row["weight_pct"] = str(Decimal(marked["market_value_cny"]) / Decimal(equity) * 100) if equity and marked["market_value_cny"] is not None and Decimal(equity) > 0 else None
+            payload["valuation"] = {"status": facts["price_status"], "reason": facts["price_reason"]}
+            payload["total_equity_cny"] = facts["total_equity_cny"]
+            payload["market_value_total_cny"] = facts["market_value_total_cny"]
+            payload["unrealized_pnl_total_cny"] = facts["unrealized_pnl_total_cny"]
+            if facts["price_status"] != "PRICE_NOT_ADMITTED":
+                payload["blockers"] = []
         return payload
 
     @staticmethod
@@ -703,8 +743,6 @@ class PrivatePortfolioService:
                 "quantity": str(_whole_shares(entry.get("quantity"), "quantity")),
                 "cost_basis_cny": str(_decimal(entry.get("cost_basis_cny"), "cost_basis_cny")),
             })
-        if not holdings:
-            raise JournalValidationError("初始化至少需要一只已确认持仓")
         if len({row["symbol"] for row in holdings}) != len(holdings):
             raise JournalValidationError("初始化持仓不能重复同一证券")
         allocations: dict[str, dict[str, str]] = {}
@@ -777,6 +815,67 @@ class PrivatePortfolioService:
     def initialize(self, request: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
         with self.journal.transaction() as records:
             return self._initialize(records, request)
+
+    def policy_view(self) -> dict[str, Any]:
+        replayed = self._replay(self.records())
+        policy = replayed.policy if replayed else None
+        return {"action": "no_order", "revision": replayed.revision if replayed else 0,
+            "status": "CONFIRMED" if policy and policy.get("_confirmed_at") else "NOT_CONFIRMED",
+            "policy": policy, "pending_policy": replayed.pending_policy if replayed else None,
+            "missing_fields": missing_policy_fields(policy or {})}
+
+    def prepare_policy(self, request: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
+        with self.journal.transaction() as records:
+            existing = self._existing(records, request)
+            if existing is not None:
+                return existing
+            revision = self._require_revision(records, request)
+            replayed = self._replay(records)
+            if replayed is None:
+                raise JournalConflict("NOT_CONNECTED", "Initialize the existing ledger before editing IPS")
+            if replayed.pending is not None:
+                raise JournalConflict("PENDING_DRAFT_EXISTS", "Confirm or cancel the fill draft before editing IPS")
+            try:
+                policy = normalize_policy(dict(_mapping(request.get("policy"), "policy")))
+            except ValueError as error:
+                raise JournalValidationError(str(error)) from error
+            body = {"policy": policy, "state_version": replayed.state.version}
+            response = {"action": "no_order", "status": "POLICY_PREPARED", "revision": revision + 1,
+                "policy": policy, "missing_fields": missing_policy_fields(policy), "changes_holdings": False}
+            record = self.journal.append(kind="POLICY_PREPARED", body=body, response=response,
+                idempotency_key=_idempotency_key(request), request_sha256=request_digest(request),
+                recorded_at=datetime.now().astimezone(), changes_holdings=False)
+            return dict(record["response"]), str(record["record_sha256"])
+
+    def confirm_policy(self, request: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
+        with self.journal.transaction() as records:
+            existing = self._existing(records, request)
+            if existing is not None:
+                return existing
+            revision = self._require_revision(records, request)
+            replayed = self._replay(records)
+            pending = replayed.pending_policy if replayed else None
+            if pending is None or request.get("prepared_record_sha256") != pending["prepared_record_sha256"]:
+                raise JournalConflict("NO_CONFIRMABLE_POLICY", "Policy draft missing or digest changed")
+            if replayed.pending is not None or pending["state_version"] != replayed.state.version:
+                raise JournalConflict("VERSION_CONFLICT", "Ledger changed; prepare IPS again")
+            confirmed_at = _aware_datetime(request.get("confirmed_at"), "confirmed_at")
+            if confirmed_at > datetime.now().astimezone() or confirmed_at < (replayed.state.confirmed_at or replayed.state.baseline.available_at):
+                raise JournalValidationError("Policy confirmation is future or predates account baseline")
+            try:
+                validate_policy_confirmation(pending["policy"], confirmed_at=confirmed_at.isoformat(), cash_cny=replayed.state.cash_cny)
+            except ValueError as error:
+                raise JournalValidationError(str(error)) from error
+            body = {"policy": pending["policy"], "state_version": replayed.state.version,
+                "prepared_record_sha256": pending["prepared_record_sha256"],
+                "confirmed_at": confirmed_at.isoformat(),
+                "confirmation_note": _text(request.get("confirmation_note"), "confirmation_note")}
+            response = {"action": "no_order", "status": "POLICY_CONFIRMED", "revision": revision + 1,
+                "policy": pending["policy"], "changes_holdings": False}
+            record = self.journal.append(kind="POLICY_CONFIRMED", body=body, response=response,
+                idempotency_key=_idempotency_key(request), request_sha256=request_digest(request),
+                recorded_at=datetime.now().astimezone(), changes_holdings=False)
+            return dict(record["response"]), str(record["record_sha256"])
 
     def _initialize(
         self, records: Sequence[Mapping[str, Any]], request: Mapping[str, Any]
@@ -921,6 +1020,7 @@ class PrivatePortfolioService:
         replayed_after = ReplayedPortfolio(
             revision + 1, state, replayed.policy, replayed.trades + (trade,), replayed.snapshot, None, None,
             replayed.snapshot_version, replayed.snapshot_scope,
+            replayed.pending_policy,
         )
         payload = self._portfolio_payload(replayed_after)
         payload["status"] = "FILL_CONFIRMED"

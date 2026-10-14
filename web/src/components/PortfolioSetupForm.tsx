@@ -36,8 +36,8 @@ export function PortfolioSetupForm({ onDone }: { onDone: () => void }) {
     const sleeveAllocations: Record<string, Record<string, string>> = {};
     rows.forEach((row, index) => {
       sleeveAllocations[holdings[index].symbol] = {
-        CORE_VALUE: text(row.core_quantity) || "0",
-        HOTSPOT_SATELLITE: text(row.satellite_quantity) || "0",
+        CORE_VALUE: text(row.core_quantity),
+        HOTSPOT_SATELLITE: text(row.satellite_quantity),
       };
     });
     const policy: Record<string, string> = {};
@@ -117,7 +117,8 @@ export function PortfolioSetupForm({ onDone }: { onDone: () => void }) {
       <ProFormList
         name="holdings"
         label="初始持仓（逐笔人工核对）"
-        min={1}
+        min={0}
+        initialValue={[]}
         creatorButtonProps={{ creatorButtonText: "添加一只持仓" }}
         copyIconProps={false}
       >
@@ -178,7 +179,7 @@ export function PortfolioSetupForm({ onDone }: { onDone: () => void }) {
       <ProFormText
         name="investable_assets_cny"
         label="可投资总资产（元）"
-        placeholder="用于风险预算的公开数字，可留空"
+        placeholder="私人风险预算输入，可留空"
         rules={[{ pattern: AMOUNT, message: "只能是非负数字" }]}
       />
       <ProFormText

@@ -83,7 +83,7 @@ function DraftReview({
         expected_revision: revision,
         prepared_record_sha256: draft.prepared_record_sha256,
         confirmed_at: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-        confirmation_note: note || "已在工作台确认该笔成交",
+        confirmation_note: note.trim(),
       });
       onDone();
     } catch (cause) {
@@ -186,7 +186,12 @@ function DraftReview({
             placeholder="例如：已核对券商成交单"
           />
         </div>
-        <Button type="primary" loading={busy} onClick={confirmDraft}>
+        <Button
+          type="primary"
+          loading={busy}
+          disabled={!note.trim()}
+          onClick={confirmDraft}
+        >
           确认成交
         </Button>
         <Popconfirm
@@ -291,7 +296,6 @@ export function FillPanel({
         <ProFormSelect
           name="side"
           label="方向"
-          initialValue="BUY"
           options={[
             { value: "BUY", label: "买入 BUY" },
             { value: "SELL", label: "卖出 SELL" },
@@ -367,7 +371,6 @@ export function FillPanel({
         <ProFormText
           name="trading_unit"
           label="交易单位（买入必填）"
-          initialValue="100"
           rules={[{ pattern: SHARES, message: "交易单位为整数" }]}
         />
         <ProFormTextArea name="note" label="备注" />

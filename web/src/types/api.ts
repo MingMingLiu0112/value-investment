@@ -1,5 +1,16 @@
 export type ApiStatus = string;
 
+export type Eligibility = boolean | string | null;
+export type PlanCondition =
+  | string
+  | string[]
+  | {
+      price?: string | null;
+      rule?: string | null;
+      status?: string | null;
+      [key: string]: unknown;
+    };
+
 export interface DecisionItem {
   id: string;
   symbol?: string;
@@ -7,6 +18,9 @@ export interface DecisionItem {
   strategy?: string;
   status?: string;
   candidate_action?: string;
+  action_intent?: string | null;
+  formal_eligibility?: Eligibility;
+  portfolio_eligibility?: Eligibility;
   reason?: string;
   as_of?: string;
   why_selected?: string;
@@ -25,8 +39,46 @@ export interface DecisionItem {
 
 export interface CurrentPricePlan {
   action: "no_order";
+  action_intent?: string | null;
+  formal_eligibility?: Eligibility;
+  portfolio_eligibility?: Eligibility;
+  daily_selection?: {
+    rank?: number;
+    industry?: string;
+    trade_date?: string;
+    industry_relative_strength_percent?: string;
+    persistence?: string;
+    fund_flows?: string;
+    catalyst?: string;
+  } | null;
+  selection_rule_version?: string | null;
+  market_environment?: {
+    trade_date?: string;
+    covered_securities?: number;
+    equal_weight_change_percent?: string;
+    advancing?: number;
+    declining?: number;
+    regime_admission?: string;
+  } | null;
+  required_confirmations?: string[];
+  entry_condition?: PlanCondition | null;
+  invalidation_condition?: PlanCondition | null;
+  period_structure?: Partial<Record<"daily" | "60m" | "15m", string>>;
+  expires_after_session?: string | null;
+  next_observation?: unknown;
+  supporting_facts?: unknown;
+  counter_evidence?: unknown;
+  reference_close?: string | null;
+  price_comparison_eligible?: boolean;
+  thesis?: string | null;
+  conditional_valuation_range?: Partial<
+    Record<"bear" | "base" | "bull", string | number | null>
+  > | null;
+  bear?: string | number | null;
+  base?: string | number | null;
+  bull?: string | number | null;
   signal_state: string;
-  action_eligibility: boolean;
+  action_eligibility?: boolean;
   entry_trigger_price: string | null;
   invalidation_price: string | null;
   current_reference_price?: string | null;
@@ -55,9 +107,9 @@ export interface CurrentPricePlan {
       }
     >
   >;
-  add_condition?: string | null;
-  reduce_condition?: string | null;
-  exit_condition?: string | string[] | null;
+  add_condition?: PlanCondition | null;
+  reduce_condition?: PlanCondition | null;
+  exit_condition?: PlanCondition | null;
 }
 
 export interface CurrentPriceCase {
@@ -510,6 +562,9 @@ export interface PortfolioTrade {
   next_sell_session: string | null;
   confirmed_at: string;
   record_sha256?: string;
+  decision_id?: string | null;
+  research_version?: string | null;
+  publication_id?: string | null;
 }
 
 export interface PortfolioDraft {
@@ -538,14 +593,34 @@ export interface PortfolioResponse {
   as_of: string | null;
   cash_cny: string | null;
   realized_pnl_cny: string | null;
+  total_equity_cny?: string | null;
+  market_value_total_cny?: string | null;
+  unrealized_pnl_total_cny?: string | null;
   positions: PortfolioPosition[];
   trades: PortfolioTrade[];
   policy: Record<string, unknown> | null;
+  pending_policy?: PolicyDraft | null;
   pending_draft: PortfolioDraft | null;
   latest_snapshot: Record<string, unknown> | null;
   reconciliation: PortfolioReconciliation | null;
   valuation: { status: string; reason: string };
   blockers: string[];
+}
+
+export interface PolicyDraft {
+  prepared_record_sha256: string;
+  state_version: number;
+  policy: Record<string, unknown>;
+  missing_fields?: string[];
+}
+
+export interface PolicyResponse {
+  action: "no_order";
+  status: string;
+  revision: number;
+  policy: Record<string, unknown> | null;
+  pending_policy: PolicyDraft | null;
+  missing_fields: string[];
 }
 
 export interface WriteResponse {
