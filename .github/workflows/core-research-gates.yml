@@ -45,6 +45,14 @@ jobs:
           tests/test_value_price_policy.py
           tests/test_value_review_replay.py
           tests/web_api/test_p5_reviews.py
+          tests/test_private_first_use_workflow.py
+          tests/test_private_risk_preview.py
+          tests/test_daily_refresh_readiness.py
+          tests/test_workbench_startup_readiness.py
+          tests/test_daily_workbench_failure_e2e.py
+          tests/web_api/test_daily_update_status.py
+          tests/web_api/test_first_use_legacy_risk.py
+          tests/web_api/test_private_risk_preview_api.py
           tests/test_workbench_cutoff_replay.py
           tests/test_disclosure_availability.py
           tests/test_event_evidence_audit.py

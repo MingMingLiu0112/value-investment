@@ -25,6 +25,135 @@ import { ValuePolicyReview } from "./ValuePolicyReview";
 
 export function JudgmentSummary({ decision }: { decision: DecisionItem }) {
   const plan = decision.price_action_plan;
+  const eligibility = decisionEligibility(decision);
+  const reviewConditions = new Map<string, string[]>();
+  for (const [label, condition] of [
+    ["退出复核", planConditionText(plan?.exit_condition)],
+    ["减仓复核", planConditionText(plan?.reduce_condition)],
+    [
+      "结构失效",
+      planConditionText(plan?.invalidation_condition) ||
+        (plan?.invalidation_price != null
+          ? `参考 ${plan.invalidation_price}；${priceRuleText(plan.invalidation_rule)}`
+          : undefined),
+    ],
+  ]) {
+    if (!condition) continue;
+    const text = condition.trim();
+    reviewConditions.set(text, [...(reviewConditions.get(text) ?? []), label!]);
+  }
+  const exitSummary = Array.from(
+    reviewConditions,
+    ([text, labels]) => `${labels.join(" / ")}：${text}`,
+  ).join("；");
+  const concise = (value: string) => (
+    <p
+      style={{
+        margin: 0,
+        display: "-webkit-box",
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: "vertical",
+        overflow: "hidden",
+        overflowWrap: "anywhere",
+      }}
+    >
+      {value}
+    </p>
+  );
+  const rows = [
+    [
+      "当前判断",
+      `${judgmentState(decision)}；证券资格：${eligibility.formal}；个人组合：${eligibility.portfolio}。不自动下单。`,
+    ],
+    [
+      "观察入场条件",
+      planConditionText(plan?.entry_condition) ||
+        (plan?.entry_trigger_price != null
+          ? `观察价 ${plan.entry_trigger_price}；${priceRuleText(plan.entry_confirmation_rule)}`
+          : missingPricePolicies(decision) ||
+            "尚无获准入场价，等待价格政策与条件核验"),
+    ],
+    [
+      "退出或失效条件",
+      exitSummary ||
+        firstResearchText(decision.thesis_breakers) ||
+        "退出与失效条件待核验，不代表个人卖出许可",
+    ],
+    [
+      "为什么关注",
+      decision.research?.thesis ||
+        plan?.thesis ||
+        decision.why_selected ||
+        plan?.watch_reason ||
+        judgmentReason(decision),
+    ],
+    [
+      "主要风险",
+      firstResearchText(
+        plan?.counter ?? plan?.counter_evidence ?? decision.counter_evidence,
+      ) ||
+        firstResearchText(decision.thesis_breakers) ||
+        confirmationText(plan?.blockers ?? decision.blockers ?? []) ||
+        "主要风险待核验",
+    ],
+    [
+      "下一步",
+      firstResearchText(plan?.next_observation) ||
+        firstResearchText(decision.next_events) ||
+        `等待下一完成时段 ${plan?.next_session_date ?? plan?.next_completed_eligible_session ?? plan?.next_session ?? "待核验"}，复核独立门禁；成交由本人决定并记录`,
+    ],
+  ];
+  return (
+    <section aria-label="六项操作计划">
+      <Descriptions
+        layout="vertical"
+        column={{ xs: 1, sm: 2, md: 3 }}
+        size="small"
+        items={rows.map(([label, text], index) => ({
+          key: label,
+          label: `${index + 1}. ${label}`,
+          children: concise(text),
+        }))}
+      />
+      {plan && (
+        <p style={{ margin: "0 0 8px", overflowWrap: "anywhere" }}>
+          参考收盘{" "}
+          {plan.reference_close ?? plan.current_reference_price ?? "待核验"}（
+          {plan.market_trade_date ?? "日期待核验"}）
+          {["CORE_VALUE", "value"].includes(decision.strategy ?? "") && (
+            <>
+              ；保留研究估值：
+              {formatScenarioValue(
+                plan.conditional_valuation_range?.bear ?? plan.bear,
+              )}{" "}
+              /{" "}
+              {formatScenarioValue(
+                plan.conditional_valuation_range?.base ?? plan.base,
+              )}{" "}
+              /{" "}
+              {formatScenarioValue(
+                plan.conditional_valuation_range?.bull ?? plan.bull,
+              )}
+              （悲观 / 中性 / 乐观）；股价比较资格：
+              {plan.price_comparison_eligible === true
+                ? "已通过"
+                : "未通过或未核验，不能据此判断买价"}
+            </>
+          )}
+        </p>
+      )}
+      {["CORE_VALUE", "value"].includes(decision.strategy ?? "") &&
+        decision.symbol && <ValuePolicyReview symbol={decision.symbol} />}
+      <details>
+        <summary>展开完整条件、风险与资格依据</summary>
+        <JudgmentEvidence decision={decision} />
+      </details>
+    </section>
+  );
+}
+
+function JudgmentEvidence({ decision }: { decision: DecisionItem }) {
+  const plan = decision.price_action_plan;
   const research = decision.research;
   const eligibility = decisionEligibility(decision);
   const selection = plan?.daily_selection;
@@ -294,8 +423,6 @@ export function JudgmentSummary({ decision }: { decision: DecisionItem }) {
           },
         ]}
       />
-      {["CORE_VALUE", "value"].includes(decision.strategy ?? "") &&
-        decision.symbol && <ValuePolicyReview symbol={decision.symbol} />}
     </>
   );
 }
@@ -392,51 +519,63 @@ export function CurrentJudgmentChart({ decision }: { decision: DecisionItem }) {
             周期规则 {level.rule_version}；窗口 {level.window} 根；最后已完成 K
             线 {level.last_bar}。单周期成立不代表多周期或正式准入。
           </p>
-          {prior.length === level.window && last ? (
-            <>
-              <p>
-                以下为最后已完成 K 线之前的 {level.window}{" "}
-                根输入。按登记规则取最高价最大值为突破参考、最低价最小值为失效参考；成交量比较当根{" "}
-                {last.volume} 与以下成交量算术平均值，后台量比为{" "}
-                {formatDecimal(level.volume_ratio)}。本周期结果：
-                {level.breakout_observed
-                  ? "已观察到规则触发"
-                  : "价格与量能未同时满足"}
-                。
-              </p>
-              <Table
-                size="small"
-                pagination={false}
-                rowKey="time"
-                scroll={{ x: 600 }}
-                dataSource={prior}
-                columns={[
-                  { title: "已完成时间", dataIndex: "time" },
-                  { title: "最高价", dataIndex: "high" },
-                  { title: "最低价", dataIndex: "low" },
-                  { title: "收盘", dataIndex: "close" },
-                  { title: "成交量", dataIndex: "volume" },
-                ]}
+          <details>
+            <summary>查看本周期规则窗口与计算输入</summary>
+            {prior.length === level.window && last ? (
+              <>
+                <p>
+                  以下为最后已完成 K 线之前的 {level.window}{" "}
+                  根输入。按登记规则取最高价最大值为突破参考、最低价最小值为失效参考；成交量比较当根{" "}
+                  {last.volume} 与以下成交量算术平均值，后台量比为{" "}
+                  {formatDecimal(level.volume_ratio)}。本周期结果：
+                  {level.breakout_observed
+                    ? "已观察到规则触发"
+                    : "价格与量能未同时满足"}
+                  。
+                </p>
+                <Table
+                  size="small"
+                  pagination={false}
+                  rowKey="time"
+                  scroll={{ x: 600 }}
+                  dataSource={prior}
+                  columns={[
+                    { title: "已完成时间", dataIndex: "time" },
+                    { title: "最高价", dataIndex: "high" },
+                    { title: "最低价", dataIndex: "low" },
+                    { title: "收盘", dataIndex: "close" },
+                    { title: "成交量", dataIndex: "volume" },
+                  ]}
+                />
+              </>
+            ) : (
+              <Alert
+                type="warning"
+                message="规则窗口输入不完整，当前不能复算"
               />
-            </>
-          ) : (
-            <Alert type="warning" message="规则窗口输入不完整，当前不能复算" />
-          )}
+            )}
+          </details>
         </>
       ) : (
         <Alert type="info" message="此周期尚无完整行情与计算结果" />
       )}
-      <DetailSection
-        title="可复算解释与规则输入输出"
-        value={value.price_action_plan.explanation}
-      />
-      <DetailSection title="支持依据" value={value.price_action_plan.support} />
-      <DetailSection
-        title="反证与未满足确认"
-        value={
-          value.price_action_plan.counter ?? value.price_action_plan.blockers
-        }
-      />
+      <details>
+        <summary>查看解释、支持与反证</summary>
+        <DetailSection
+          title="可复算解释与规则输入输出"
+          value={value.price_action_plan.explanation}
+        />
+        <DetailSection
+          title="支持依据"
+          value={value.price_action_plan.support}
+        />
+        <DetailSection
+          title="反证与未满足确认"
+          value={
+            value.price_action_plan.counter ?? value.price_action_plan.blockers
+          }
+        />
+      </details>
       <details>
         <summary>查看版本、来源与计算绑定</summary>
         <DetailSection title="判断版本" value={value.price_action_plan} />

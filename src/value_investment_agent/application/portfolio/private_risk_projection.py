@@ -28,6 +28,7 @@ from ...portfolio_contracts import (
     QUANTITY_HUMAN_CONFIRMED,
     RECONCILIATION_PENDING,
     RISK_UNKNOWN,
+    RISK_TOLERANCES,
     SCHEMA_VERSION,
     PortfolioHolding,
     PortfolioSnapshot,
@@ -79,7 +80,8 @@ def _policy_payload(replayed: ReplayedPortfolio) -> dict[str, Any]:
     for field in _POLICY_AMOUNT_FIELDS:
         payload[field] = stored.get(field)
     payload["time_horizon_years"] = stored.get("time_horizon_years")
-    payload["risk_tolerance"] = stored.get("risk_tolerance") or RISK_UNKNOWN
+    tolerance = stored.get("risk_tolerance")
+    payload["risk_tolerance"] = tolerance if isinstance(tolerance, str) and tolerance in RISK_TOLERANCES else RISK_UNKNOWN
     payload["concentration_allowed"] = stored.get("concentration_allowed")
     payload["tax_regime"] = stored.get("tax_regime")
     payload["restrictions"] = list(stored.get("restrictions") or ["no_order"])

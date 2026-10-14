@@ -1,20 +1,11 @@
 import {
   ProForm,
   ProFormDatePicker,
-  ProFormList,
   ProFormSelect,
   ProFormText,
   ProFormTextArea,
 } from "@ant-design/pro-components";
-import {
-  Alert,
-  Button,
-  Checkbox,
-  Descriptions,
-  Input,
-  Space,
-  Typography,
-} from "antd";
+import { Alert, Button, Checkbox, Descriptions, Input, Typography } from "antd";
 import dayjs from "dayjs";
 import { useApi } from "../hooks/useApi";
 import { useEffect, useState } from "react";
@@ -196,13 +187,6 @@ export function PortfolioPolicyPanel({
                     description={missing.map(policyFieldLabel).join("；")}
                   />
                 )}
-                <Typography.Text
-                  type="secondary"
-                  style={{ overflowWrap: "anywhere" }}
-                >
-                  草稿绑定：{draft.prepared_record_sha256}；台账修订{" "}
-                  {data.revision}
-                </Typography.Text>
                 <div style={{ marginTop: 12 }}>
                   <Checkbox
                     checked={acknowledged}
@@ -354,31 +338,12 @@ export function PortfolioPolicyPanel({
                   name="restrictions"
                   label="其他约束（可选，每项一行）"
                 />
-                <ProFormList
-                  name="security_bindings"
-                  label="证券风险属性来源（未核验可留空）"
-                  copyIconProps={false}
-                  creatorButtonProps={{ creatorButtonText: "添加已核验来源" }}
-                >
-                  <Space direction="vertical" style={{ width: "100%" }}>
-                    <ProFormText
-                      name="symbol"
-                      label="证券代码"
-                      rules={[{ pattern: /^\d{6}$/, message: "六位证券代码" }]}
-                    />
-                    <ProFormText name="path" label="风险属性证据路径" />
-                    <ProFormText
-                      name="sha256"
-                      label="证据 SHA256"
-                      rules={[
-                        {
-                          pattern: /^[a-f0-9]{64}$/,
-                          message: "64 位小写 SHA256",
-                        },
-                      ]}
-                    />
-                  </Space>
-                </ProFormList>
+                <Alert
+                  type="info"
+                  showIcon
+                  message="证券风险属性由已核验的公开研究提供"
+                  description="尚无可信属性时，风险结果会说明缺失项；无需填写证据文件或哈希值。"
+                />
               </ProForm>
             </details>
           </>

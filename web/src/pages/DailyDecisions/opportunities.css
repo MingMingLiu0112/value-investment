@@ -194,6 +194,58 @@
   margin-top: 8px;
   font-size: 12px;
 }
+.decision-price-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 12px 0;
+}
+.decision-price-grid dt {
+  font-size: 12px;
+  color: #637078;
+}
+.decision-price-grid dd {
+  margin: 3px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.decision-risk {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #8b403c;
+  margin: 10px 0;
+}
+.decision-compact details {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.daily-update-help {
+  border-bottom: 1px solid #dce3e5;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+.daily-command {
+  display: block;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  background: #eef3f4;
+  padding: 10px;
+}
+.daily-tasks {
+  padding: 12px 0;
+  border-bottom: 1px solid #dce3e5;
+}
+.daily-tasks h2 {
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+.daily-tasks p {
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.6;
+}
 @media (max-width: 1050px) {
   .opportunity-grid {
     gap: 16px;

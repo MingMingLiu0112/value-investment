@@ -444,8 +444,7 @@ export default function DecisionHistory() {
   const current = items.find((item) => item.id === selectedId) ?? items[0];
   return (
     <Workbench>
-      <HotspotReplayReview />
-      <Typography.Title level={2}>历史判断</Typography.Title>
+      <Typography.Title level={2}>复盘</Typography.Title>
       <Section title="我的实际成交与原判断版本">
         {privateState.portfolio &&
         !["LOADING", "LOCKED", "UNAVAILABLE"].includes(privateState.kind) ? (
@@ -464,6 +463,7 @@ export default function DecisionHistory() {
           />
         )}
       </Section>
+      <Typography.Title level={3}>研究快照与判断变化</Typography.Title>
       <RemoteState loading={loading} error={error} retry={retry}>
         {data &&
           (items.length === 0 ? (
@@ -489,6 +489,15 @@ export default function DecisionHistory() {
                     dataSource={items}
                     renderItem={(item) => (
                       <List.Item
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={current?.id === item.id}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelectedId(item.id);
+                          }
+                        }}
                         onClick={() => setSelectedId(item.id)}
                         style={{
                           cursor: "pointer",
@@ -510,7 +519,21 @@ export default function DecisionHistory() {
                   />
                 </Col>
                 <Col xs={24} md={16}>
-                  {current && <HistoryDetail item={current} />}
+                  {current && (
+                    <>
+                      <p>
+                        {current.symbol} · {describeCode(current.status)} ·{" "}
+                        {current.latest_version_label}
+                      </p>
+                      <p>
+                        研究快照不等于实际执行；个人成交与结果以上方已确认台账为准。
+                      </p>
+                      <details key={current.id}>
+                        <summary>展开所选研究的依据、版本与变化</summary>
+                        <HistoryDetail item={current} />
+                      </details>
+                    </>
+                  )}
                 </Col>
               </Row>
             </>
@@ -521,6 +544,7 @@ export default function DecisionHistory() {
           {data.note}
         </Typography.Paragraph>
       )}
+      <HotspotReplayReview />
     </Workbench>
   );
 }

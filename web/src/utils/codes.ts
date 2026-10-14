@@ -5,6 +5,8 @@ import type { PortfolioReconciliation } from "../types/api";
  * 未收录的代码一律返回 null，由调用方决定如何原样展示，绝不猜测含义。
  */
 const CODE_TEXT: Record<string, string> = {
+  CASH_ONLY_NO_QUOTE_REQUIRED: "仅现金账户，无需证券行情估值",
+  VERIFIED_LATEST_COMPLETED_CLOSE: "按最近已核验收盘价估值",
   no_order: "仅供研究复核，不构成下单",
   RESEARCH_ONLY: "仅研究观察，尚未通过正式准入",
   PENDING_RESEARCH: "研究待办，尚未进入正式准入",
@@ -154,6 +156,8 @@ const ALERT_SCOPE: Record<string, string> = {
 
 /** 引擎提示代码（形如 CORE_VALUE:risk_unknown）转中文；未收录原样返回。 */
 export function engineAlertText(value: string): string {
+  if (value === "SLEEVE_CASH_OVERDRAWN")
+    return "资金池可用现金不足：实际成交及费用超过该池现金，请核对资金分配";
   const parts = value.split(":");
   const scope = ALERT_SCOPE[parts[0]] ?? null;
   const prefix = scope ? scope + "：" : "";

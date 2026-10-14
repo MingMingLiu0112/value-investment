@@ -34,6 +34,19 @@ export function PortfolioSetupForm({ onDone }: { onDone: () => void }) {
       cost_basis_cny: text(row.cost_basis_cny),
     }));
     const sleeveAllocations: Record<string, Record<string, string>> = {};
+    if (
+      rows.some(
+        (row) =>
+          !/^\d{6}$/.test(text(row.symbol)) ||
+          Number(row.core_quantity) + Number(row.satellite_quantity) !==
+            Number(row.quantity),
+      )
+    ) {
+      setFailure(
+        "请核对每只持仓的六位证券代码；两个资金池股数之和必须等于总股数。",
+      );
+      return false;
+    }
     rows.forEach((row, index) => {
       sleeveAllocations[holdings[index].symbol] = {
         CORE_VALUE: text(row.core_quantity),
@@ -67,8 +80,9 @@ export function PortfolioSetupForm({ onDone }: { onDone: () => void }) {
           "YYYY-MM-DDTHH:mm:ssZ",
         ),
       });
-      setNotice("初始持仓已记录为人工确认结果。");
+      setNotice("账户现金与初始持仓已记录为本人确认结果。");
       onDone();
+      return true;
     } catch (cause) {
       if (cause instanceof ApiError)
         setFailure(`${cause.code}：${String(cause.detail ?? "")}`);
@@ -76,6 +90,7 @@ export function PortfolioSetupForm({ onDone }: { onDone: () => void }) {
         setFailure(
           cause instanceof Error ? cause.message : "提交失败，请稍后重试",
         );
+      return false;
     }
   };
 
@@ -83,7 +98,7 @@ export function PortfolioSetupForm({ onDone }: { onDone: () => void }) {
     <ProForm
       layout="vertical"
       onFinish={submit}
-      submitter={{ searchConfig: { submitText: "确认并记录初始持仓" } }}
+      submitter={{ searchConfig: { submitText: "本人确认并初始化账户" } }}
     >
       {failure && (
         <Alert
@@ -116,7 +131,7 @@ export function PortfolioSetupForm({ onDone }: { onDone: () => void }) {
       />
       <ProFormList
         name="holdings"
-        label="初始持仓（逐笔人工核对）"
+        label="初始持仓（空仓账户可不添加）"
         min={0}
         initialValue={[]}
         creatorButtonProps={{ creatorButtonText: "添加一只持仓" }}
@@ -197,10 +212,14 @@ export function PortfolioSetupForm({ onDone }: { onDone: () => void }) {
         label="单行业上限（%）"
         rules={[{ pattern: AMOUNT, message: "只能是非负数字" }]}
       />
-      <ProFormText
+      <ProFormSelect
         name="risk_tolerance"
-        label="风险偏好说明"
-        placeholder="例如：可承受单只 20% 回撤"
+        label="风险偏好（可在投资政策中补充确认）"
+        options={[
+          { value: "CONSERVATIVE", label: "保守" },
+          { value: "BALANCED", label: "均衡" },
+          { value: "GROWTH", label: "成长" },
+        ]}
       />
       <ProFormDateTimePicker
         name="confirmed_at"

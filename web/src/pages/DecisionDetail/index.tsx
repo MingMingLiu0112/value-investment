@@ -865,7 +865,7 @@ export default function DecisionDetail() {
   const research = decision?.research ?? null;
   return (
     <Workbench>
-      <Typography.Title level={2}>操作逻辑详情</Typography.Title>
+      <Typography.Title level={2}>股票操作计划</Typography.Title>
       <RemoteState loading={loading} error={error} retry={retry}>
         {!decision ? (
           <Alert
@@ -877,85 +877,89 @@ export default function DecisionDetail() {
         ) : (
           <>
             <Typography.Title level={3}>
-              {String(decision.name || decision.symbol || decision.id)}
+              {String(decision.name || decision.symbol || decision.id)}{" "}
+              {decision.name && decision.symbol}
             </Typography.Title>
             <JudgmentSummary decision={decision} />
+            <Space wrap style={{ margin: "12px 0" }}>
+              {decision.symbol && /^\d{6}$/.test(decision.symbol) && (
+                <Link to={fillLink(decision)}>
+                  <Button type="primary">记录我的实际成交</Button>
+                </Link>
+              )}
+              <Link to="/daily">
+                <Button>返回每日建议</Button>
+              </Link>
+              <Link to="/history">
+                <Button>查看历史判断</Button>
+              </Link>
+            </Space>
             {(decision.strategy === "hotspot" ||
               decision.strategy === "HOTSPOT_SATELLITE") &&
               decision.price_action_plan && (
                 <CurrentJudgmentChart decision={decision} />
               )}
-            {!decision.price_action_plan && (
-              <section aria-label="操作摘要" style={{ maxWidth: 960 }}>
-                <Typography.Text type="secondary">
-                  {strategyText(decision.strategy)} ·{" "}
-                  {decision.as_of || "研究日期待核验"}
-                </Typography.Text>
-                <Descriptions
-                  column={1}
-                  size="small"
-                  style={{ marginTop: 12 }}
-                  items={[
-                    {
-                      key: "action",
-                      label: "当前能做什么",
-                      children:
-                        "以本页正式操作资格与未满足条件为准；不自动下单",
-                    },
-                    {
-                      key: "reason",
-                      label: "为什么关注",
-                      children:
-                        decision.reason ||
-                        decision.why_selected ||
-                        "关注理由尚待核验",
-                    },
-                    {
-                      key: "trigger",
-                      label: "何时再复核",
-                      children:
-                        firstResearchText(decision.next_events) ||
-                        "触发条件仍待研究",
-                    },
-                    {
-                      key: "risk",
-                      label: "关键风险",
-                      children:
-                        firstResearchText(decision.counter_evidence) ||
-                        firstResearchText(decision.thesis_breakers) ||
-                        publicBlockerText(decision.blockers?.[0]) ||
-                        "主要风险仍待核验",
-                    },
-                  ]}
-                />
-                {decision.status !== "FORMALLY_ADMITTED_REVIEW" && (
+            <details>
+              <summary>展开研究底稿、估值与历史资格核验</summary>
+              {!decision.price_action_plan && (
+                <section aria-label="操作摘要" style={{ maxWidth: 960 }}>
                   <Typography.Text type="secondary">
-                    {codeText(decision.blockers?.[0]) ||
-                      "研究、价格或组合条件尚未全部通过。"}
+                    {strategyText(decision.strategy)} ·{" "}
+                    {decision.as_of || "研究日期待核验"}
                   </Typography.Text>
-                )}
-              </section>
-            )}
-            {research ? (
-              <ResearchDecision decision={decision} research={research} />
-            ) : decision.price_action_plan ? null : (
-              <LegacyDecision decision={decision} />
-            )}
+                  <Descriptions
+                    column={1}
+                    size="small"
+                    style={{ marginTop: 12 }}
+                    items={[
+                      {
+                        key: "action",
+                        label: "当前能做什么",
+                        children:
+                          "以本页正式操作资格与未满足条件为准；不自动下单",
+                      },
+                      {
+                        key: "reason",
+                        label: "为什么关注",
+                        children:
+                          decision.reason ||
+                          decision.why_selected ||
+                          "关注理由尚待核验",
+                      },
+                      {
+                        key: "trigger",
+                        label: "何时再复核",
+                        children:
+                          firstResearchText(decision.next_events) ||
+                          "触发条件仍待研究",
+                      },
+                      {
+                        key: "risk",
+                        label: "关键风险",
+                        children:
+                          firstResearchText(decision.counter_evidence) ||
+                          firstResearchText(decision.thesis_breakers) ||
+                          publicBlockerText(decision.blockers?.[0]) ||
+                          "主要风险仍待核验",
+                      },
+                    ]}
+                  />
+                  {decision.status !== "FORMALLY_ADMITTED_REVIEW" && (
+                    <Typography.Text type="secondary">
+                      {codeText(decision.blockers?.[0]) ||
+                        "研究、价格或组合条件尚未全部通过。"}
+                    </Typography.Text>
+                  )}
+                </section>
+              )}
+              {research ? (
+                <ResearchDecision decision={decision} research={research} />
+              ) : decision.price_action_plan ? null : (
+                <LegacyDecision decision={decision} />
+              )}
+            </details>
           </>
         )}
-        <Space style={{ marginTop: 24 }}>
-          {decision?.symbol && /^\d{6}$/.test(decision.symbol) && (
-            <Link to={fillLink(decision)}>
-              <Button type="primary">记录我的实际成交</Button>
-            </Link>
-          )}
-          <Link to="/daily">
-            <Button>返回每日建议</Button>
-          </Link>
-          <Link to="/history">
-            <Button>查看历史判断</Button>
-          </Link>
-        </Space>
       </RemoteState>
     </Workbench>
   );

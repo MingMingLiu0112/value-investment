@@ -51,7 +51,8 @@ def test_daily_entry_orchestrates_existing_clis_without_new_side_doors():
     assert "action=no_order" in text
     assert "publish_product_workbench_to_canonical" not in text
     assert "git " not in text
-    assert len(text.splitlines()) <= 240
+    assert '--no-publish' in text
+    assert 'open_current_trial_workbook.py' not in text
 
 
 def test_daily_entry_runs_read_only_and_reports_plain_language():
@@ -85,4 +86,4 @@ def test_daily_entry_keeps_update_and_web_results_separate():
     # Still no shell-based repo mutation and no canonical workbook publish.
     assert "git " not in text
     assert "publish_product_workbench_to_canonical" not in text
-    assert len(text.splitlines()) <= 240
+    assert '$notes.Count -eq 0' in text

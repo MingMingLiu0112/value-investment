@@ -4,25 +4,32 @@ import type { DecisionItem } from "../types/api";
 import { strategyText } from "../utils/codes";
 import {
   judgmentGroup,
-  judgmentReason,
   judgmentState,
-  missingPricePolicies,
+  judgmentReason,
 } from "../utils/currentJudgment";
 import { firstResearchText } from "../utils/opportunityView";
-import { decisionEligibility } from "../utils/decisionEligibility";
 import { formatDecimal } from "../utils/format";
 
-/** Compact public research card. The API, not this component, decides eligibility. */
 export function DecisionCard({ item }: { item: DecisionItem }) {
-  const formal = judgmentGroup(item) === 0;
-  const eligibility = decisionEligibility(item);
-  const reason =
-    item.why_selected ||
-    item.price_action_plan?.watch_reason ||
-    judgmentReason(item) ||
-    item.reason ||
-    item.candidate_explanation ||
-    "尚无可核验的关注理由";
+  const plan = item.price_action_plan;
+  const hotspot = ["hotspot", "HOTSPOT_SATELLITE"].includes(
+    item.strategy ?? "",
+  );
+  const valuation =
+    plan?.conditional_valuation_range ?? item.research?.valuation ?? plan;
+  const trend =
+    (
+      {
+        UPTREND: "上升",
+        DOWNTREND: "下降，谨慎观察",
+        RANGE: "震荡",
+        UNKNOWN: "未确认",
+      } as Record<string, string>
+    )[plan?.price_behavior?.daily_trend ?? ""] ?? "未确认";
+  const risk =
+    firstResearchText(
+      plan?.counter ?? plan?.counter_evidence ?? item.counter_evidence,
+    ) ?? "风险证据尚不完整";
   return (
     <article
       className="decision-compact"
@@ -30,93 +37,83 @@ export function DecisionCard({ item }: { item: DecisionItem }) {
     >
       <div className="decision-compact-top">
         <div className="decision-company">
-          <strong>{item.name || item.symbol || "名称待核验"}</strong>
-          <span>{item.symbol || "代码待核验"}</span>
+          <strong>{item.name || item.symbol}</strong>
+          <span>{item.symbol}</span>
         </div>
         <span
           className={
-            formal ? "decision-state decision-state-formal" : "decision-state"
+            judgmentGroup(item) === 0
+              ? "decision-state decision-state-formal"
+              : "decision-state"
           }
         >
           {judgmentState(item)}
         </span>
       </div>
       <div className="decision-meta">
-        {strategyText(item.strategy)} · 数据{" "}
-        {item.price_action_plan?.market_trade_date ||
-          item.as_of ||
-          "日期待核验"}
+        {hotspot
+          ? `${plan?.daily_selection?.industry ?? "行业未核验"} · 行情 ${plan?.market_trade_date ?? "未核验"}`
+          : `价值研究 ${plan?.valuation_date ?? item.as_of ?? "日期未核验"}`}
       </div>
-      <p className="decision-reason">{reason}</p>
-      {item.price_action_plan?.price_behavior && (
-        <div className="decision-meta">
-          结构质量：
-          {(
-            {
-              UNFAVORABLE_DAILY_TREND: "日线下降，谨慎观察",
-              INSUFFICIENT_UPPER_SPACE: "上方空间不足以覆盖价格风险",
-              UNKNOWN: "证据不足",
-              RESEARCH_ONLY: "仅研究观察，尚未获准",
-            } as Record<string, string>
-          )[item.price_action_plan.price_behavior.observation_quality] ??
-            "待核验"}
+      <dl className="decision-price-grid">
+        <div>
+          <dt>核验参考价</dt>
+          <dd>
+            {plan?.current_reference_price ?? plan?.reference_close ?? "未核验"}
+          </dd>
         </div>
-      )}
-      {missingPricePolicies(item) && (
-        <div className="decision-meta">{missingPricePolicies(item)}</div>
-      )}
-      {item.price_action_plan?.daily_selection && (
-        <div className="decision-meta">
-          当日观察序位 {item.price_action_plan.daily_selection.rank ?? "未提供"}{" "}
-          · {item.price_action_plan.daily_selection.industry ?? "行业未核验"} ·
-          行业相对涨跌{" "}
-          {formatDecimal(
-            item.price_action_plan.daily_selection
-              .industry_relative_strength_percent,
-          )}{" "}
-          个百分点（覆盖样本）
+        <div>
+          <dt>{hotspot ? "入场观察价" : "条件性建仓价"}</dt>
+          <dd>{plan?.entry_trigger_price ?? "尚无获准价位"}</dd>
         </div>
+        {hotspot ? (
+          <>
+            <div>
+              <dt>结构失效价</dt>
+              <dd>{plan?.invalidation_price ?? "未形成"}</dd>
+            </div>
+            <div>
+              <dt>日线趋势</dt>
+              <dd>{trend}</dd>
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <dt>研究估值 Bear / Base / Bull</dt>
+              <dd>
+                {[valuation?.bear, valuation?.base, valuation?.bull]
+                  .map((v) => (v == null ? "未形成" : formatDecimal(v)))
+                  .join(" / ")}
+              </dd>
+            </div>
+            <div>
+              <dt>现价与估值比较</dt>
+              <dd>
+                {plan?.price_comparison_eligible === true
+                  ? "具备比较资格"
+                  : "尚未获准，情景不是买价"}
+              </dd>
+            </div>
+          </>
+        )}
+      </dl>
+      {!hotspot && <p className="decision-reason">{judgmentReason(item)}</p>}
+      <p className="decision-risk">主要风险：{risk}</p>
+      {!hotspot && (
+        <details>
+          <summary>下次复核事项</summary>
+          <p>
+            {firstResearchText(item.next_events ?? plan?.next_observation) ??
+              "复核研究有效性、重大事件及价格政策；尚未通过时继续观察。"}
+          </p>
+        </details>
       )}
-      <p className="decision-reason">
-        支持：
-        {firstResearchText(
-          item.price_action_plan?.support ??
-            item.price_action_plan?.supporting_facts ??
-            item.support,
-        ) ?? "尚未提供"}
-        <br />
-        反证：
-        {firstResearchText(
-          item.price_action_plan?.counter ??
-            item.price_action_plan?.counter_evidence ??
-            item.counter_evidence,
-        ) ?? "尚未提供，不能视为无风险"}
-      </p>
-      <div className="decision-meta">
-        研究意图：{eligibility.intent} · 证券资格：{eligibility.formal} ·
-        个人资格：{eligibility.portfolio}
-      </div>
-      <div className="decision-compact-foot">
-        <span>
-          参考价：
-          {item.price_action_plan?.current_reference_price ??
-            item.price_action_plan?.reference_close ??
-            "未获核验"}{" "}
-          / 触发价：
-          {item.price_action_plan?.entry_trigger_price ?? "尚无有效价位"}
-        </span>
-        <span>
-          失效：
-          {item.price_action_plan?.invalidation_price ??
-            firstResearchText(item.thesis_breakers) ??
-            "条件尚待核验"}
-        </span>
-      </div>
       <Link
         className="decision-link"
         to={`/decisions/${encodeURIComponent(item.id)}`}
       >
-        查看详细依据 <ArrowRightOutlined aria-hidden />
+        查看操作条件 <ArrowRightOutlined aria-hidden />
       </Link>
     </article>
   );

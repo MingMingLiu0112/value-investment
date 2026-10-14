@@ -31,6 +31,7 @@ from ...application.portfolio.private_portfolio_service import (
     resolve_private_root,
 )
 from ...application.portfolio.private_risk_projection import review_private_risk_rehearsal
+from ...application.portfolio.private_risk_preview import preview_private_hotspot_risk
 from .local_auth import (
     AUTHORIZATION_REQUIRED,
     SESSION_HEADER,
@@ -200,6 +201,22 @@ def register_private_routes(
                 "blockers": ["PRIVATE_JOURNAL_INVALID", "PRICE_NOT_ADMITTED"],
                 "engine": None, "facts": None,
             }
+
+    @api.post("/api/v1/private/portfolio/risk-preview")
+    def risk_preview(request: Request, payload: dict = Body(...)):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        try:
+            return preview_private_hotspot_risk(
+                PrivateJournal(resolve_private_root(repository_root=project)), repository_root=project,
+                generated_at=datetime.now(timezone.utc), payload=payload)
+        except PrivateStoreUnavailable as error:
+            return JSONResponse(status_code=503, content={"action": "no_order",
+                "status": "PRIVATE_ROOT_UNAVAILABLE", "detail": str(error)})
+        except (JournalValidationError, ValueError) as error:
+            return JSONResponse(status_code=422, content={"action": "no_order",
+                "status": "VALIDATION_FAILED", "detail": str(error)})
 
     @api.post("/api/v1/private/portfolio/initialize")
     def initialize(request: Request, payload: dict = Body(...)):

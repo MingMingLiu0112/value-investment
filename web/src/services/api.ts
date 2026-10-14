@@ -12,6 +12,10 @@ import type {
   RiskResponse,
   WriteResponse,
 } from "../types/api";
+import type {
+  HotspotSizingRequest,
+  HotspotSizingResponse,
+} from "../components/HotspotSizingPanel";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -230,6 +234,18 @@ async function getPrivate<T>(path: string, signal?: AbortSignal): Promise<T> {
 }
 
 export const api = {
+  updateStatus: (signal?: AbortSignal) =>
+    get<{
+      action: "no_order";
+      status: string;
+      last_run: {
+        status: string;
+        finished_at: string;
+        published: boolean;
+        publication_id: string | null;
+        retained_publication_id: string | null;
+      } | null;
+    }>("daily-update-status", signal),
   daily: (signal?: AbortSignal) =>
     get<DailyResponse>("daily-decisions", signal),
   packet: (signal?: AbortSignal) =>
@@ -242,6 +258,8 @@ export const api = {
     getPrivate<PortfolioResponse>("portfolio", signal),
   risk: (signal?: AbortSignal) =>
     getPrivate<RiskResponse>("private/portfolio/risk", signal),
+  riskPreview: (body: HotspotSizingRequest) =>
+    post<HotspotSizingResponse>("private/portfolio/risk-preview", body),
   policy: (signal?: AbortSignal) =>
     getPrivate<PolicyResponse>("private/portfolio/policy", signal),
   preparePolicy: (body: Record<string, unknown>) =>

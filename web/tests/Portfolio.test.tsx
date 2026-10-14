@@ -8,6 +8,10 @@ const captured = vi.hoisted(() => ({
   status: "VERIFIED_LATEST_COMPLETED_CLOSE",
   riskProps: {} as Record<string, any>,
 }));
+vi.mock("@umijs/max", () => ({
+  Link: ({ children }: { children: React.ReactNode }) => children,
+  useSearchParams: () => [new URLSearchParams()],
+}));
 vi.mock("../src/hooks/usePrivateState", () => ({
   usePrivateState: () => ({
     kind: "BLOCKED_PRIVATE_INPUT",
@@ -57,6 +61,9 @@ vi.mock("../src/components/PositionTable", () => ({
 vi.mock("../src/components/PortfolioPolicyPanel", () => ({
   PortfolioPolicyPanel: () => null,
 }));
+vi.mock("../src/components/HotspotSizingPanel", () => ({
+  HotspotSizingPanel: () => null,
+}));
 vi.mock("../src/components/ConfirmedTrades", () => ({
   ConfirmedTrades: () => null,
 }));
@@ -73,7 +80,7 @@ vi.mock("antd", () => {
     Row: wrapper,
     Space: wrapper,
     Tag: wrapper,
-    Typography: { Title: wrapper, Text: wrapper },
+    Typography: { Title: wrapper, Text: wrapper, Paragraph: wrapper },
   };
 });
 import Portfolio from "../src/pages/Portfolio";

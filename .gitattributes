@@ -38,6 +38,7 @@ runtime/daily-public-packet/** -text
 runtime/quote-sessions/20261014T090240643969Z/bundle.json -text
 artifacts/current/tl11-p4-20261014/** -text
 artifacts/current/tl11-p5-20261014/** -text
+artifacts/current/tl11-p6-20261014/** -text
 config/hotspot-confirmed-structure-v1.json -text
 config/hotspot-replay-review-v1.json -text
 config/public-market-evidence-retention-v1.json -text

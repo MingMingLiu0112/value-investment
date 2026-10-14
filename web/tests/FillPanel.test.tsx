@@ -29,11 +29,92 @@ vi.mock("@ant-design/pro-components", async () => {
     ProFormDateTimePicker: field,
   };
 });
+
+it("detaches candidate judgment when the actual security or sleeve changes", async () => {
+  for (const changed of [{ symbol: "000001" }, { sleeve: "CORE_VALUE" }]) {
+    renderToStaticMarkup(
+      React.createElement(FillPanel, {
+        revision: 4,
+        draft: null,
+        onDone: vi.fn(),
+        initialSymbol: "600887",
+        initialSleeve: "HOTSPOT_SATELLITE",
+        initialDecisionId: "hotspot-600887",
+        initialResearchVersion: "company-version",
+      }),
+    );
+    await captured.submit!({
+      transaction_id: "TEST",
+      side: "SELL",
+      symbol: "600887",
+      sleeve: "HOTSPOT_SATELLITE",
+      exchange: "SSE",
+      quantity: "100",
+      price_cny: "20",
+      fees_cny: "5",
+      trade_date: "2026-10-14",
+      ...changed,
+    });
+    expect(captured.prepare.mock.lastCall![0].fill).toMatchObject({
+      decision_id: null,
+      research_version: null,
+    });
+  }
+});
+
+it("does not submit a buy without explicit settlement inputs", async () => {
+  renderToStaticMarkup(
+    React.createElement(FillPanel, {
+      revision: 4,
+      draft: null,
+      onDone: vi.fn(),
+    }),
+  );
+  expect(await captured.submit!({ side: "BUY" })).toBe(false);
+  expect(captured.prepare).not.toHaveBeenCalled();
+});
 vi.mock("../src/services/api", () => ({
   ApiError: class extends Error {},
   api: { prepareFill: captured.prepare },
 }));
-import { FillPanel, fillContextFromSearch } from "../src/components/FillPanel";
+import {
+  FillPanel,
+  fillContextFromSearch,
+  failureMessage,
+} from "../src/components/FillPanel";
+import { ApiError } from "../src/services/api";
+
+it.each([
+  [
+    "confirmation requires a timezone-aware time after trade",
+    "确认时间不能早于实际成交日期",
+  ],
+  ["trade date precedes confirmed state", "成交日期早于账户核对日期"],
+  ["insufficient sellable shares", "T+1"],
+  ["BUY requires an explicit later sell session", "最早可卖交易日"],
+  ["BUY requires an explicit trading unit dividing quantity", "交易单位"],
+  ["SELL cannot specify next sell session", "卖出无需填写"],
+])(
+  "translates settlement refusal %s without changing submission eligibility",
+  (detail, expected) => {
+    const error = Object.assign(
+      new ApiError(422, "VALIDATION_FAILED", detail),
+      {
+        code: "VALIDATION_FAILED",
+        detail,
+      },
+    );
+    expect(failureMessage(error, "失败")).toContain(expected);
+  },
+);
+
+it("keeps unknown API failures visible", () => {
+  const error = Object.assign(new ApiError(409, "UNKNOWN", "new failure"), {
+    code: "UNKNOWN",
+    detail: "new failure",
+  });
+  expect(failureMessage(error, "失败")).toBe("UNKNOWN：new failure");
+});
 
 beforeEach(() => {
   captured.fields.length = 0;

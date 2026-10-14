@@ -126,6 +126,11 @@ it("renders blank budget/risk controls and saves incomplete input without confir
   expect(
     captured.fields.every((field) => field.initialValue === undefined),
   ).toBe(true);
+  expect(
+    captured.fields.some((field) =>
+      ["path", "sha256", "security_bindings"].includes(field.name),
+    ),
+  ).toBe(false);
   await captured.submit!({
     investable_assets_cny: "10000",
     financing_allowed: false,

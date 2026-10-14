@@ -249,18 +249,21 @@ function EngineBlock({ data }: { data: RiskResponse }) {
           style={{ marginTop: 12 }}
           type="warning"
           showIcon
-          message="双策略风险复核暂缓：还缺以下私人输入"
+          message="个人仓位上限暂不可计算：必要输入或证券风险核验尚未完整"
           description={
             <div>
               <p style={{ margin: "0 0 8px" }}>
-                以下清单来自风险引擎的缺口列表；在补齐之前，引擎不会给出任何风险数字、仓位或交易建议。
+                已确认现金、成本和持仓仍正常展示。以下缺口影响个人仓位上限；不表示应卖出，也不代表你的持仓为空。
               </p>
               <List
                 size="small"
                 dataSource={data.blockers}
                 renderItem={(code) => (
                   <List.Item style={{ padding: "2px 0" }}>
-                    □ {codeText(code) ?? code}
+                    □{" "}
+                    {engineAlertText(code) !== code
+                      ? engineAlertText(code)
+                      : (codeText(code) ?? code)}
                   </List.Item>
                 )}
               />

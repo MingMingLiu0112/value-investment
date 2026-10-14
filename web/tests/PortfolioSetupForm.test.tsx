@@ -38,6 +38,23 @@ import { PortfolioSetupForm } from "../src/components/PortfolioSetupForm";
 
 beforeEach(() => vi.clearAllMocks());
 
+it("rejects inconsistent sleeve allocations before any account write", async () => {
+  renderToStaticMarkup(<PortfolioSetupForm onDone={vi.fn()} />);
+  expect(
+    await captured.submit!({
+      holdings: [
+        {
+          symbol: "600887",
+          quantity: "100",
+          core_quantity: "100",
+          satellite_quantity: "100",
+        },
+      ],
+    }),
+  ).toBe(false);
+  expect(captured.initialize).not.toHaveBeenCalled();
+});
+
 it.each([undefined, []])(
   "submits a cash-only account with explicit empty holdings (%s)",
   async (holdings) => {

@@ -28,11 +28,14 @@ describe("shared private state between daily and portfolio", () => {
   it("keeps the portfolio page from reading the private endpoints on its own", () => {
     expect(portfolio).not.toContain("api.portfolio(");
     expect(portfolio).not.toContain("api.risk(");
-    expect(portfolio).not.toContain("useApi(");
+    expect(portfolio).not.toContain("useApi(api.portfolio");
   });
 
   it("renders the shared label instead of a locally invented one", () => {
-    expect(daily).toContain("state.label");
+    expect(daily).toContain("<HoldingsAttention");
+    expect(read("src/components/HoldingsAttention.tsx")).toContain(
+      "state.label",
+    );
     expect(portfolio).toContain("state.label");
   });
 });

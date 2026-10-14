@@ -585,6 +585,12 @@ def create_app(
                     "artifact": binding["path"], "sha256": binding["sha256"]}
         return decisions
 
+    @api.get("/api/v1/daily-update-status")
+    def daily_update_status():
+        from ...application.product.daily_refresh import read_latest_run
+        result = read_latest_run(project)
+        return {"action": "no_order", "status": "RECORDED" if result else "NOT_RECORDED", "last_run": result}
+
     @api.get("/api/v1/hotspot-replay-review")
     def hotspot_replay_review():
         from ...application.hotspot.replay_read_model import load_replay_summary

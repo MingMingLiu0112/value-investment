@@ -3,12 +3,12 @@
   "action": "no_order",
   "status": "VERIFIED",
   "publication_id": "pub-fe046ccec02162d3cb04",
-  "packet_path": "artifacts/current/tl11-p5-20261014/daily-public-packet-v9-r2.json",
-  "packet_sha256": "4dbd6781c7138f67b22f302ca54af13231f90b3eea57598456ba2b19267767b2",
+  "packet_path": "artifacts/current/tl11-p6-20261014/daily-public-packet.json",
+  "packet_sha256": "1c020b6aa88fbf09fc18b25d14314182e1adce9167cc42e0bce7d2f5a43bd0be",
   "content_sha256": "e622f29fee9a421da78e29d82a48a0ac657fa290fefbf258af11eb324600be57",
   "engine_version": "daily-public-packet-engine-v9",
   "research_version": "canonical-reviewed-research-20261012T113935Z-362d7928",
-  "generated_at": "2026-10-14T13:22:26.099482+00:00",
-  "published_at": "2026-10-14T13:22:28.623337+00:00",
+  "generated_at": "2026-10-14T14:15:47.680502+00:00",
+  "published_at": "2026-10-14T15:17:00.988977+00:00",
   "receipt_path": "runtime/daily-public-packet/receipts/daily-public-packet-pub-fe046ccec02162d3cb04.receipt.json"
 }

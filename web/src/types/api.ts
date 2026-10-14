@@ -38,6 +38,7 @@ export interface DecisionItem {
 }
 
 export interface CurrentPricePlan {
+  valuation_date?: string | null;
   price_behavior?: {
     rule_version: string;
     daily_trend: string;
@@ -613,6 +614,15 @@ export interface PortfolioReconciliation {
 }
 
 export interface PortfolioResponse {
+  total_position_weight_pct?: string | null;
+  confirmed_cash_reserve_cny?: string | null;
+  cost_basis_total_cny?: string | null;
+  sleeve_summaries?: {
+    sleeve: string;
+    cost_basis_cny: string;
+    market_value_cny: string | null;
+    weight_pct: string | null;
+  }[];
   action: "no_order";
   status: ApiStatus;
   revision: number;

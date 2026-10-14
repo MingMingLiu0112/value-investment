@@ -1,7 +1,6 @@
 import {
   ProForm,
   ProFormDatePicker,
-  ProFormDateTimePicker,
   ProFormSelect,
   ProFormText,
   ProFormTextArea,
@@ -54,9 +53,26 @@ function text(value: unknown): string {
   return String(value ?? "").trim();
 }
 
-function failureMessage(cause: unknown, fallback: string): string {
-  if (cause instanceof ApiError)
+export function failureMessage(cause: unknown, fallback: string): string {
+  if (cause instanceof ApiError) {
+    const messages: Record<string, string> = {
+      "confirmation requires a timezone-aware time after trade":
+        "确认时间不能早于实际成交日期。未来日期的成交尚不能确认，请核对成交日期并在实际成交后确认；不要修改日期来绕过校验。",
+      "trade date precedes confirmed state":
+        "成交日期早于账户核对日期或上一笔已确认成交日期，无法按当前台账录入。请核对实际成交日期；需要补录历史成交时，应先核对账户基线，不要为了通过校验修改实际日期。",
+      "insufficient sellable shares":
+        "所选资金池中的可卖股数不足。请核对资金池、卖出数量及最早可卖日；买入股票受 T+1 限制时，当日不可卖出。",
+      "BUY requires an explicit later sell session":
+        "买入需要填写晚于成交日期的最早可卖交易日。请按券商记录核对 T+1 可卖日，周末或休市日不能当作下一交易日。",
+      "BUY requires an explicit trading unit dividing quantity":
+        "买入股数必须符合所填交易单位。请核对实际股数和该证券的交易单位。",
+      "SELL cannot specify next sell session":
+        "卖出无需填写最早可卖日，请清除该字段后重试。",
+    };
+    const translated = messages[String(cause.detail ?? "")];
+    if (translated) return translated;
     return `${cause.code}：${String(cause.detail ?? "")}`;
+  }
   return cause instanceof Error ? cause.message : fallback;
 }
 
@@ -231,6 +247,8 @@ export function FillPanel({
   );
   const decisionId = initialDecisionId ?? context.decision_id;
   const researchVersion = initialResearchVersion ?? context.research_version;
+  const linkedSymbol = initialSymbol ?? context.symbol;
+  const linkedSleeve = initialSleeve ?? context.strategy;
 
   if (draft)
     return <DraftReview draft={draft} revision={revision} onDone={onDone} />;
@@ -242,6 +260,11 @@ export function FillPanel({
       ? dayjs(form.next_sell_session as string).format("YYYY-MM-DD")
       : null;
     try {
+      if (side === "BUY" && (!nextSell || !text(form.trading_unit)))
+        throw new Error("买入请填写券商确认的最早可卖日和交易单位。");
+      const contextMatches =
+        text(form.symbol) === linkedSymbol &&
+        text(form.sleeve).toUpperCase() === linkedSleeve;
       await api.prepareFill({
         idempotency_key: crypto.randomUUID(),
         expected_revision: revision,
@@ -255,8 +278,8 @@ export function FillPanel({
           quantity: text(form.quantity),
           price_cny: text(form.price_cny),
           fees_cny: text(form.fees_cny),
-          decision_id: decisionId ?? null,
-          research_version: researchVersion ?? null,
+          decision_id: contextMatches ? (decisionId ?? null) : null,
+          research_version: contextMatches ? (researchVersion ?? null) : null,
           trade_date: dayjs(form.trade_date as string).format("YYYY-MM-DD"),
           next_sell_session: side === "BUY" ? nextSell : null,
           trading_unit: side === "BUY" ? text(form.trading_unit) : null,
@@ -264,8 +287,10 @@ export function FillPanel({
         },
       });
       onDone();
+      return true;
     } catch (cause) {
       setFailure(failureMessage(cause, "生成草稿失败"));
+      return false;
     }
   };
 
@@ -305,7 +330,7 @@ export function FillPanel({
         <ProFormSelect
           name="sleeve"
           label="资金池"
-          initialValue={context.strategy ?? initialSleeve}
+          initialValue={linkedSleeve}
           options={[
             { value: "CORE_VALUE", label: "价值池 CORE_VALUE" },
             {

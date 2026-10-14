@@ -1,6 +1,7 @@
 import { Link } from "@umijs/max";
 import { Button, Empty, Skeleton, Typography } from "antd";
 import { DecisionCard } from "../../components/DecisionCard";
+import { HoldingsAttention } from "../../components/HoldingsAttention";
 import { Workbench } from "../../components/Workbench";
 import { useApi } from "../../hooks/useApi";
 import { usePrivateState } from "../../hooks/usePrivateState";
@@ -14,6 +15,13 @@ import {
   publicationVersionsMatch,
 } from "../../utils/currentJudgment";
 import "./opportunities.css";
+
+function updateTime(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "时间未核验"
+    : `${date.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false })}（北京时间）`;
+}
 
 function StrategySection({
   title,
@@ -104,12 +112,18 @@ function StrategySection({
 export default function DailyDecisions() {
   const { data, loading, error, retry } = useApi(api.daily);
   const packet = useApi(api.packet);
+  const update = useApi(api.updateStatus);
   const historical = useApi(api.historicalCases);
   const state = usePrivateState();
   const packetCurrent =
     packet.data?.packet_status === "CURRENT" && !!packet.data.publication_id;
   const usable =
     !!data &&
+    !loading &&
+    !packet.loading &&
+    !error &&
+    !packet.error &&
+    data.publication?.packet_status === "CURRENT" &&
     packetCurrent &&
     data.action === "no_order" &&
     publicationVersionsMatch(
@@ -138,7 +152,7 @@ export default function DailyDecisions() {
       <header className="opportunity-page-head">
         <div>
           <Typography.Title level={2} className="opportunity-title">
-            今日投资机会
+            今日投资决策
           </Typography.Title>
           <p className="opportunity-subtitle">{subtitle}</p>
           {usable && (
@@ -155,16 +169,40 @@ export default function DailyDecisions() {
             onClick={() => {
               retry();
               packet.retry();
+              update.retry();
               historical.retry();
               state.retry();
             }}
             aria-label="刷新页面数据"
           >
-            刷新
+            刷新页面
           </Button>
           <Link to="/system">数据状态</Link>
         </div>
       </header>
+      <p className="opportunity-subtitle" role="status">
+        最近更新：
+        {update.data?.last_run
+          ? `${({ SUCCESS: "完成", PARTIAL: "部分完成", BLOCKED: "失败，保留旧快照" } as Record<string, string>)[update.data.last_run.status] ?? "状态未核验"} · ${updateTime(update.data.last_run.finished_at)}`
+          : "尚无可核验运行记录"}
+        。
+        {update.data?.last_run?.status === "BLOCKED" &&
+          "以下只能作为旧快照参考，不能当作本次成功更新。"}
+      </p>
+      <details className="daily-update-help">
+        <summary>更新今日数据与首次连接持仓</summary>
+        <p>刷新页面只读取已发布数据；更新行情和计算请在本机终端运行：</p>
+        <code className="daily-command">
+          &amp; 'C:\Users\we\AppData\Local\Programs\PowerShell\7\pwsh.exe'
+          -NoProfile -File
+          'D:\GPTProject\value-investment\scripts\current\run_daily_workbench.ps1'
+          -Mode SAFE_REFRESH -Open
+        </code>
+        <p>
+          上次发布：{packet.data?.generated_at ?? "尚未读取"}
+          。研究批准和本人确认不会由刷新代签。
+        </p>
+      </details>
       {(loading || packet.loading) && (
         <Skeleton active paragraph={{ rows: 8 }} />
       )}
@@ -194,8 +232,8 @@ export default function DailyDecisions() {
         <>
           <div className="opportunity-strip">
             <span>
-              全市场扫描{" "}
-              <strong>{data.summary.universe_count ?? "待核验"}</strong>
+              行情状态{" "}
+              <strong>{quoteFresh ? "发布时已核验" : "发布时未获核验"}</strong>
             </span>
             <span>
               正式复核{" "}
@@ -208,20 +246,41 @@ export default function DailyDecisions() {
               </strong>
             </span>
             <span>
-              研究线索 <strong>{data.summary.watch_count ?? "待核验"}</strong>
+              待触发条件{" "}
+              <strong>
+                {
+                  [...data.sections.value, ...data.sections.hotspot].filter(
+                    (item) => judgmentGroup(item) === 2,
+                  ).length
+                }
+              </strong>
             </span>
             <span>
-              市场环境 <strong>{describeCode(data.market.status)}</strong>
+              持仓风险复核{" "}
+              <strong>
+                {state.risk ? state.risk.blockers.length : "待连接核验"}
+              </strong>
             </span>
           </div>
-          <section className="opportunity-holdings">
-            <div>
-              <h2>我的持仓今天需要关注</h2>
-              <p>
-                {state.label}。{state.detail}
-              </p>
-            </div>
-            <Link to="/portfolio">查看持仓与风险</Link>
+          <HoldingsAttention
+            state={state}
+            decisionsVerified={true}
+            decisions={[
+              ...data.sections.value,
+              ...data.sections.hotspot,
+              ...data.sections.holdings,
+            ]}
+          />
+          <section className="daily-tasks" aria-label="今日人工待办">
+            <h2>今天需要做什么</h2>
+            <p>
+              {quoteFresh
+                ? "查看候选的确认与失效条件；未满足就继续观察。"
+                : "先更新或核验行情；旧快照不能当作今天的新判断。"}{" "}
+              {state.portfolio?.status === "CONNECTED"
+                ? "复核持仓风险，并录入你已经实际完成的成交。"
+                : "连接持仓后，确认真实资金和投资政策，才可计算个人风险。"}
+            </p>
           </section>
           {![...data.sections.value, ...data.sections.hotspot].some(
             (item) => judgmentGroup(item) === 0,

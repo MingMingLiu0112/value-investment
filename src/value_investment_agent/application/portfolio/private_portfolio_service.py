@@ -695,24 +695,37 @@ class PrivatePortfolioService:
         assert replayed is not None
         payload = self._portfolio_payload(replayed, today=today)
         payload["status"] = "CONNECTED"
+        from .private_risk_projection import _verified_prices, _facts
+        prices = {}
         if repository_root is not None:
-            from .private_risk_projection import _verified_prices, _facts
             now = generated_at or datetime.now().astimezone()
             prices = _verified_prices(repository_root, replayed, now)
-            facts = _facts(replayed, prices)
-            by_symbol = {row["symbol"]: row for row in facts["positions"]}
-            for row in payload["positions"]:
-                marked = by_symbol[row["symbol"]]
-                row["market_value_cny"] = marked["market_value_cny"]
-                row["floating_pnl_cny"] = marked["unrealized_pnl_cny"]
-                equity = facts["total_equity_cny"]
-                row["weight_pct"] = str(Decimal(marked["market_value_cny"]) / Decimal(equity) * 100) if equity and marked["market_value_cny"] is not None and Decimal(equity) > 0 else None
-            payload["valuation"] = {"status": facts["price_status"], "reason": facts["price_reason"]}
-            payload["total_equity_cny"] = facts["total_equity_cny"]
-            payload["market_value_total_cny"] = facts["market_value_total_cny"]
-            payload["unrealized_pnl_total_cny"] = facts["unrealized_pnl_total_cny"]
-            if facts["price_status"] != "PRICE_NOT_ADMITTED":
-                payload["blockers"] = []
+        facts = _facts(replayed, prices)
+        by_symbol = {row["symbol"]: row for row in facts["positions"]}
+        equity = Decimal(facts["total_equity_cny"]) if facts["total_equity_cny"] is not None else None
+        def weight(market):
+            return str(Decimal(market) / equity * 100) if market is not None and equity is not None and equity > 0 else None
+        for row in payload["positions"]:
+            marked = by_symbol[row["symbol"]]
+            row["market_value_cny"] = marked["market_value_cny"]
+            row["floating_pnl_cny"] = marked["unrealized_pnl_cny"]
+            row["weight_pct"] = weight(marked["market_value_cny"])
+        payload["valuation"] = {"status": facts["price_status"], "reason": facts["price_reason"]}
+        for field in ("total_equity_cny", "market_value_total_cny", "unrealized_pnl_total_cny", "cost_basis_total_cny"):
+            payload[field] = facts[field]
+        payload["total_position_weight_pct"] = weight(facts["market_value_total_cny"])
+        payload["confirmed_cash_reserve_cny"] = replayed.policy.get("cash_reserve_cny") if replayed.policy.get("_record_sha256") else None
+        summaries = []
+        for sleeve in ("CORE_VALUE", "HOTSPOT_SATELLITE"):
+            lots = [lot for lot in replayed.state.lots if lot.sleeve == sleeve]
+            cost = sum((lot.cost_cny for lot in lots), Decimal(0))
+            market = sum((lot.quantity * Decimal(prices[lot.symbol]["price_cny"]) for lot in lots), Decimal(0)) if all(lot.symbol in prices for lot in lots) else None
+            summaries.append({"sleeve": sleeve, "cost_basis_cny": str(cost),
+                "market_value_cny": str(market) if market is not None else None,
+                "weight_pct": weight(market)})
+        payload["sleeve_summaries"] = summaries
+        if facts["price_status"] != "PRICE_NOT_ADMITTED":
+            payload["blockers"] = []
         return payload
 
     @staticmethod

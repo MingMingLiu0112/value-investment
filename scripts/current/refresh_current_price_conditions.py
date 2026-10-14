@@ -4,12 +4,14 @@ import argparse
 import json
 from pathlib import Path
 import sys
+from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
 from value_investment_agent.application.hotspot.current_refresh import current_watch_binding, refresh_current_price_conditions
 from value_investment_agent.application.hotspot.daily_selection import collect_daily_candidates
+from value_investment_agent.application.product.daily_refresh import refresh_readiness
 
 
 def main(argv=None):
@@ -18,7 +20,13 @@ def main(argv=None):
     parser.add_argument("--watch-source", type=Path)
     parser.add_argument("--watch-source-sha256")
     parser.add_argument("--limit", type=int, default=5)
+    parser.add_argument("--check-reuse", action="store_true")
+    parser.add_argument("--symbols", default="600887")
     args = parser.parse_args(argv)
+    if args.check_reuse:
+        print(json.dumps(refresh_readiness(args.root, now=datetime.now(timezone.utc),
+            symbols=args.symbols.split(",")), ensure_ascii=False))
+        return 0
     try:
         if (args.watch_source is None) != (args.watch_source_sha256 is None):
             raise ValueError("watch-source and watch-source-sha256 must be supplied together")

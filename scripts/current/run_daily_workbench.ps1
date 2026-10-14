@@ -29,12 +29,13 @@ param(
     [ValidateRange(1024, 65535)][int]$Port = 8001,
     [switch]$Open,
     [switch]$NoServer,
-    [string]$Symbols = '600887,000333,601088,600519'
+    [switch]$Reauthorize,
+    [string]$Symbols = ''
 )
 $ErrorActionPreference = 'Stop'
 if ($PSVersionTable.PSVersion.Major -lt 7) {
     & 'C:\Users\we\AppData\Local\Programs\PowerShell\7\pwsh.exe' -NoProfile -File $PSCommandPath `
-        -Mode $Mode -Port $Port -Open:$Open -NoServer:$NoServer -Symbols $Symbols
+        -Mode $Mode -Port $Port -Open:$Open -NoServer:$NoServer -Reauthorize:$Reauthorize -Symbols $Symbols
     exit $LASTEXITCODE
 }
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new()
@@ -49,6 +50,24 @@ $env:TMP = $env:TEMP
 New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
 
 $notes = [System.Collections.Generic.List[string]]::new()
+$startedAt = [DateTimeOffset]::UtcNow.ToString('o')
+$receiptPath = Join-Path $env:TEMP 'daily-workbench-latest-run.json'
+# An interrupted/failed invocation must not leave yesterday's SUCCESS as its result.
+$initialReceipt = @{
+    schema_version = 'daily-workbench-run-v1'; action = 'no_order'; mode = $Mode
+    started_at = $startedAt; finished_at = $null; status = 'BLOCKED'; exit_code = 2
+    published = $false; notes = @('本次更新尚未完成；继续显示历史已验证快照。')
+}
+$priorPointer = Join-Path $root 'config/current-daily-public-snapshot.json'
+if (Test-Path -LiteralPath $priorPointer) {
+    try { $initialReceipt.retained_publication_id = (Get-Content -LiteralPath $priorPointer -Raw -Encoding utf8 | ConvertFrom-Json).publication_id } catch { }
+}
+$initialReceipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
+Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
+if (-not $Symbols) {
+    $quoteRegistry = Get-Content -LiteralPath (Join-Path $root 'config/current-quote-bridge.json') -Raw -Encoding utf8 | ConvertFrom-Json
+    $Symbols = @($quoteRegistry.quotes.PSObject.Properties.Name) -join ','
+}
 
 function Resolve-Python {
     $command = Get-Command python -ErrorAction SilentlyContinue
@@ -89,14 +108,7 @@ Write-Host "Python   : $python"
 # uses it so that re-running the same close stays idempotent. The formal
 # workbook is only ever compared read-only (never written, never rebuilt).
 $excelArgs = @()
-$workbookCheck = Invoke-PythonJson @('scripts/open_current_trial_workbook.py')
-if ($workbookCheck.ExitCode -eq 0 -and $workbookCheck.Json -and $workbookCheck.Json.workbook) {
-    $excelArgs = @('--excel', [string]$workbookCheck.Json.workbook)
-}
-else {
-    $notes.Add('正式 Excel 路径未解析或未通过只读校验；本次不做 Excel 版本对照（NOT_VERIFIED）。')
-}
-$build = Invoke-PythonJson (@('scripts/current/build_daily_public_packet.py') + $excelArgs)
+$build = Invoke-PythonJson @('scripts/current/build_daily_public_packet.py', '--no-publish')
 if (-not $build.Json) {
     Write-Host '运行结果 : BLOCKED - 每日公开数据包生成失败（无法解析输出）。'
     if ($build.Text) { Write-Host $build.Text }
@@ -106,8 +118,14 @@ $packet = $build.Json
 $buildExit = $build.ExitCode
 
 if ($Mode -eq 'SAFE_REFRESH') {
+    $reuse = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py', '--check-reuse', '--symbols', $Symbols)
+    if ($reuse.Json.prices_ready) {
+        Write-Host "  价格结构 : 复用已核验最近完成交易日 $($reuse.Json.market_trade_dates -join ',') 的完整五只候选；未重新采集。"
+        $priceRefresh = [pscustomobject]@{ ExitCode = 0; Json = [pscustomobject]@{ status = 'UNCHANGED'; items = @(); failures = @() } }
+    } else {
     Write-Host '[SAFE_REFRESH] 按当日行业相对强度与成交额筛选五只真实观察候选，再核验价格结构...'
     $priceRefresh = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py')
+    }
     if ($priceRefresh.Json) {
         Write-Host "  价格结构状态 : $($priceRefresh.Json.status)"
         foreach ($item in @($priceRefresh.Json.items)) { Write-Host "  已计算 : $($item.symbol) $($item.company_name)" }
@@ -117,13 +135,18 @@ if ($Mode -eq 'SAFE_REFRESH') {
         $notes.Add('当前价格条件采集存在缺项；未通过验证的证券不会升级为当前触发。')
     }
     Write-Host '[SAFE_REFRESH] 采集已授权的公开行情来源（腾讯/新浪，只读页面）...'
-    $collect = Invoke-PythonJson @('scripts/collect_quote_sessions.py', '--symbols', $Symbols)
+    if ($reuse.Json.quotes_ready) {
+        Write-Host '  行情 : 复用已核验最近完成交易日的登记；未重新采集。'
+        $collect = [pscustomobject]@{ ExitCode = 0; Json = [pscustomobject]@{ observations = @(); status = 'UNCHANGED' } }
+    } else {
+        $collect = Invoke-PythonJson @('scripts/collect_quote_sessions.py', '--symbols', $Symbols)
+    }
     if ($collect.ExitCode -ne 0 -or -not $collect.Json) {
         $notes.Add('行情采集未完成（网络或来源不可用）；本次继续使用已登记行情。')
         Write-Host '  行情采集未完成，采集器最后输出：'
         ($collect.Text -split "`n" | Select-Object -Last 12) | ForEach-Object { Write-Host "    $_" }
     }
-    else {
+    elseif ($collect.Json.status -ne 'UNCHANGED') {
         $bundleDir = [string]$collect.Json.path
         $bundlePath = Join-Path $bundleDir 'bundle.json'
         $bundleSha = [string]$collect.Json.bundle_sha256
@@ -137,6 +160,7 @@ if ($Mode -eq 'SAFE_REFRESH') {
         foreach ($observation in @($collect.Json.observations)) {
             $symbol = [string]$observation.symbol
             if ($observation.result.status -ne 'matched_close' -or -not $observation.result.passed) {
+                $notes.Add("$symbol 的最新收盘未通过验证；不发布本次刷新。")
                 Write-Host "  ${symbol}: 未形成可登记的双源收盘（$($observation.result.status)：$($observation.result.reason)）"
                 continue
             }
@@ -146,7 +170,7 @@ if ($Mode -eq 'SAFE_REFRESH') {
                 ($packet.bridge_quote_dates.PSObject.Properties.Name -contains $symbol)) {
                 $registeredDate = [string]$packet.bridge_quote_dates.$symbol
             }
-            if ($registeredDate -eq $session) {
+            if ($registeredDate -eq $session -and $reuse.Json.quotes_ready) {
                 Write-Host "  ${symbol}: $session 的双源收盘已登记，跳过重复登记（幂等）。"
                 continue
             }
@@ -176,20 +200,39 @@ if ($Mode -eq 'SAFE_REFRESH') {
             }
         }
         # Rebuild so the printed summary reflects the new registration.
-        $rebuild = Invoke-PythonJson (@('scripts/current/build_daily_public_packet.py') + $excelArgs)
-        if ($rebuild.Json) { $packet = $rebuild.Json; $buildExit = $rebuild.ExitCode }
     }
 }
 
-if ($Mode -eq 'SAFE_REFRESH') {
+if ($Mode -eq 'SAFE_REFRESH' -and $notes.Count -eq 0) {
+    $verified = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py', '--check-reuse', '--symbols', $Symbols)
+    if ($verified.ExitCode -ne 0 -or -not $verified.Json.prices_ready -or -not $verified.Json.quotes_ready) {
+        $notes.Add('刷新后完整输入未通过最近完成交易日及来源校验；不发布新快照。')
+    }
+}
+if ($notes.Count -eq 0) {
     $rebuild = Invoke-PythonJson (@('scripts/current/build_daily_public_packet.py') + $excelArgs)
     if ($rebuild.Json) { $packet = $rebuild.Json; $buildExit = $rebuild.ExitCode }
     else { $buildExit = 2; $notes.Add('刷新后快照生成失败，Web 保留上一验证版本。') }
 }
+else { $buildExit = 2; $notes.Add('采集或登记不完整：未发布新快照，Web 保留上一验证版本，不能称为本次新数据。') }
 
 $status = if ($buildExit -eq 0) { 'SUCCESS' } else { 'BLOCKED' }
 if ($status -eq 'SUCCESS' -and $notes.Count -gt 0) { $status = 'PARTIAL' }
 $updateExit = if ($status -eq 'SUCCESS') { 0 } elseif ($status -eq 'PARTIAL') { 3 } else { 2 }
+$receipt = @{
+    schema_version = 'daily-workbench-run-v1'; action = 'no_order'; mode = $Mode
+    started_at = $startedAt; finished_at = [DateTimeOffset]::UtcNow.ToString('o')
+    status = $status; exit_code = $updateExit; published = [bool]($packet.snapshot -and $buildExit -eq 0)
+    publication_id = $packet.snapshot.publication_id; notes = @($notes.ToArray())
+}
+$snapshotPointer = Join-Path $root 'config/current-daily-public-snapshot.json'
+if (Test-Path -LiteralPath $snapshotPointer) {
+    $retained = Get-Content -LiteralPath $snapshotPointer -Raw -Encoding utf8 | ConvertFrom-Json
+    $receipt.retained_publication_id = $retained.publication_id
+}
+$receiptPath = Join-Path $env:TEMP 'daily-workbench-latest-run.json'
+$receipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
+Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
 
 Write-Host '---------------- 本次运行 ----------------'
 Write-Host "运行结果 : $status$(if ($buildExit -eq 4) { '（同一版本出现不同内容，已失败关闭并写入冲突回执）' } elseif ($buildExit -eq 3) { '（既有记录不可读，已失败关闭，未覆盖）' } elseif ($buildExit -eq 2) { '（发布链不可用，未发布新快照）' })"
@@ -244,12 +287,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $root 'web/dist/index.html'))) {
     exit $exitCode
 }
 $listening = if (Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue) { Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue } else { $null }
-if ($listening) {
-    Write-Host "Web 服务 : 端口 $Port 已有工作台在监听，本次不重复启动；直接打开 http://127.0.0.1:$Port 。"
-    Write-Host "整体结果 : 退出码 $updateExit（已运行的工作台会读取本次发布的最新快照）"; exit $updateExit
-}
+# The starter owns listener identity and free loopback port selection.
 Write-Host '正在启动本地工作台（Ctrl+C 停止）...'
-& (Join-Path $PSScriptRoot 'start_web_workbench.ps1') -Port $Port -Open:$Open
+& (Join-Path $PSScriptRoot 'start_web_workbench.ps1') -Port $Port -Open:$Open -Reauthorize:$Reauthorize
 $webExit = $LASTEXITCODE
 $webStatus = if ($webExit -eq 0) { "已退出（退出码 0）" } else { "已退出（退出码 $webExit）" }
 Write-Host "Web 服务 : $webStatus"

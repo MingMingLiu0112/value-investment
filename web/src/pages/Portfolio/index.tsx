@@ -12,6 +12,7 @@ import {
 import dayjs from "dayjs";
 import { useState } from "react";
 import { DualSleeveRisk } from "../../components/DualSleeveRisk";
+import { HotspotSizingPanel } from "../../components/HotspotSizingPanel";
 import { FillPanel, fillContextFromSearch } from "../../components/FillPanel";
 import { PortfolioSetupForm } from "../../components/PortfolioSetupForm";
 import { PositionTable } from "../../components/PositionTable";
@@ -23,7 +24,10 @@ import { usePrivateState } from "../../hooks/usePrivateState";
 import type { PrivateStateHandle } from "../../hooks/usePrivateState";
 import { ApiError, api } from "../../services/api";
 import { reconciliationView } from "../../utils/codes";
+import { describeCode } from "../../utils/codes";
 import { blockerText } from "../../utils/packet";
+import { HoldingsAttention } from "../../components/HoldingsAttention";
+import { useApi } from "../../hooks/useApi";
 
 function failureMessage(cause: unknown, fallback: string): string {
   if (cause instanceof ApiError)
@@ -83,6 +87,7 @@ export default function Portfolio() {
   const initialDecisionId = params?.get("decision_id") || undefined;
   const initialResearchVersion = params?.get("research_version") || undefined;
   const state = usePrivateState();
+  const judgments = useApi(api.daily);
   const data = state.portfolio;
   const risk = state.risk;
   const [failure, setFailure] = useState<string>();
@@ -141,7 +146,7 @@ export default function Portfolio() {
       <Alert
         type="info"
         showIcon
-        message={`行情准入：${data.valuation.status}`}
+        message={`行情状态：${describeCode(data.valuation.status)}`}
         description={data.valuation.reason}
       />
       {data.status === "NOT_CONNECTED" ? (
@@ -178,24 +183,86 @@ export default function Portfolio() {
               <Statistic
                 title="总权益（元，核验口径）"
                 value={data.total_equity_cny ?? "未核验"}
+                precision={2}
               />
             </Col>
             <Col xs={12} md={6}>
               <Statistic
                 title="可用现金（元）"
                 value={data.cash_cny ?? "未提供"}
+                precision={2}
               />
             </Col>
             <Col xs={12} md={6}>
               <Statistic
                 title="已实现盈亏（元）"
                 value={data.realized_pnl_cny ?? "未提供"}
+                precision={2}
               />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="已确认成交" value={data.trades.length} />
+              <Statistic
+                title="浮动盈亏（元，核验行情）"
+                value={data.unrealized_pnl_total_cny ?? "未核验"}
+                precision={2}
+              />
+            </Col>
+            {data.sleeve_summaries?.map((sleeve) => (
+              <Col xs={12} md={6} key={sleeve.sleeve}>
+                <Statistic
+                  title={
+                    sleeve.sleeve === "CORE_VALUE" ? "价值池仓位" : "热点池仓位"
+                  }
+                  value={
+                    sleeve.weight_pct == null
+                      ? "未核验"
+                      : Number(sleeve.weight_pct)
+                  }
+                  precision={2}
+                  suffix={sleeve.weight_pct != null ? "%" : undefined}
+                />
+                <small>持仓成本 {sleeve.cost_basis_cny} 元</small>
+              </Col>
+            ))}
+            <Col xs={12} md={6}>
+              <Statistic
+                title="总仓位"
+                value={
+                  data.total_position_weight_pct == null
+                    ? "未核验"
+                    : Number(data.total_position_weight_pct)
+                }
+                precision={2}
+                suffix={
+                  data.total_position_weight_pct != null ? "%" : undefined
+                }
+              />
+            </Col>
+            <Col xs={12} md={6}>
+              <Statistic
+                title="已确认现金预留（元）"
+                value={data.confirmed_cash_reserve_cny ?? "尚未确认"}
+              />
             </Col>
           </Row>
+          <HoldingsAttention
+            state={state}
+            decisionsVerified={
+              !!judgments.data &&
+              !judgments.loading &&
+              !judgments.error &&
+              judgments.data.publication?.packet_status === "CURRENT"
+            }
+            decisions={
+              judgments.data
+                ? [
+                    ...judgments.data.sections.value,
+                    ...judgments.data.sections.hotspot,
+                    ...judgments.data.sections.holdings,
+                  ]
+                : []
+            }
+          />
           <Descriptions
             bordered
             column={2}
@@ -227,7 +294,7 @@ export default function Portfolio() {
               },
               {
                 key: "as_of",
-                label: "持仓基准日",
+                label: "初始持仓核对日",
                 children: data.as_of || "未提供",
               },
               {
@@ -277,6 +344,13 @@ export default function Portfolio() {
             fillPending={!!data.pending_draft}
             onDone={refreshAll}
           />
+          <details style={{ marginTop: 16 }}>
+            <summary>查看热点条件性仓位上限</summary>
+            <HotspotSizingPanel
+              initialSymbol={initialSymbol}
+              onPreview={api.riskPreview}
+            />
+          </details>
           <Typography.Title level={4} style={{ fontSize: 16, marginTop: 24 }}>
             已确认成交记录
           </Typography.Title>
