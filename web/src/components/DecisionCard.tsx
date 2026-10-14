@@ -1,24 +1,23 @@
 import { ArrowRightOutlined } from "@ant-design/icons";
 import { Link } from "@umijs/max";
 import type { DecisionItem } from "../types/api";
-import { describeCode, strategyText } from "../utils/codes";
-import { firstResearchText, publicBlockerText } from "../utils/opportunityView";
+import { strategyText } from "../utils/codes";
+import {
+  judgmentGroup,
+  judgmentReason,
+  judgmentState,
+} from "../utils/currentJudgment";
+import { firstResearchText } from "../utils/opportunityView";
 
 /** Compact public research card. The API, not this component, decides eligibility. */
 export function DecisionCard({ item }: { item: DecisionItem }) {
-  const formal = item.status === "FORMALLY_ADMITTED_REVIEW";
+  const formal = judgmentGroup(item) === 0;
   const reason =
+    judgmentReason(item) ||
     item.reason ||
     item.why_selected ||
     item.candidate_explanation ||
     "尚无可核验的关注理由";
-  const trigger = firstResearchText(item.next_events) || "触发条件仍待研究";
-  const risk =
-    firstResearchText(item.counter_evidence) ||
-    firstResearchText(item.thesis_breakers) ||
-    (item.blockers?.length
-      ? publicBlockerText(item.blockers[0]) || "研究准入条件尚待核验"
-      : "主要风险仍待核验");
   return (
     <article
       className="decision-compact"
@@ -34,25 +33,35 @@ export function DecisionCard({ item }: { item: DecisionItem }) {
             formal ? "decision-state decision-state-formal" : "decision-state"
           }
         >
-          {formal
-            ? describeCode(item.candidate_action || item.status)
-            : describeCode(item.status)}
+          {judgmentState(item)}
         </span>
       </div>
       <div className="decision-meta">
-        {strategyText(item.strategy)} · 数据 {item.as_of || "日期待核验"} ·
-        价格尚未获本判断准入
+        {strategyText(item.strategy)} · 数据{" "}
+        {item.price_action_plan?.market_trade_date ||
+          item.as_of ||
+          "日期待核验"}
       </div>
       <p className="decision-reason">{reason}</p>
       <div className="decision-compact-foot">
-        <span>触发：{trigger}</span>
-        <span>风险：{risk}</span>
+        <span>
+          参考价：
+          {item.price_action_plan?.current_reference_price ?? "未获核验"} /
+          触发价：
+          {item.price_action_plan?.entry_trigger_price ?? "尚无有效价位"}
+        </span>
+        <span>
+          失效：
+          {item.price_action_plan?.invalidation_price ??
+            firstResearchText(item.thesis_breakers) ??
+            "条件尚待核验"}
+        </span>
       </div>
       <Link
         className="decision-link"
         to={`/decisions/${encodeURIComponent(item.id)}`}
       >
-        查看操作逻辑 <ArrowRightOutlined aria-hidden />
+        查看详细依据 <ArrowRightOutlined aria-hidden />
       </Link>
     </article>
   );

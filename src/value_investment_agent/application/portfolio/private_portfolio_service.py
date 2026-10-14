@@ -547,6 +547,7 @@ class PrivatePortfolioService:
                     "next_sell_session": fill.next_sell_session.isoformat() if fill.next_sell_session else None,
                     "confirmed_at": str(confirmation.get("confirmed_at")),
                     "record_sha256": record["record_sha256"],
+                    **self._fill_context(body["fill"]),
                 })
                 pending = None
                 draft = None
@@ -730,6 +731,16 @@ class PrivatePortfolioService:
         }
 
     @staticmethod
+    def _fill_context(fill: Mapping[str, Any]) -> dict[str, Any]:
+        context = {
+            key: _optional_text(fill.get(key), key)
+            for key in ("decision_id", "research_version")
+        }
+        if any(context.values()) and not all(context.values()):
+            raise JournalValidationError("decision_id and research_version must be supplied together")
+        return context
+
+    @staticmethod
     def _fill_body(request: Mapping[str, Any]) -> dict[str, Any]:
         fill = _fill_from_body(request)
         return {
@@ -745,6 +756,7 @@ class PrivatePortfolioService:
             "next_sell_session": fill.next_sell_session.isoformat() if fill.next_sell_session else None,
             "trading_unit": str(fill.trading_unit) if fill.trading_unit is not None else None,
             "corporate_action": fill.corporate_action,
+            **PrivatePortfolioService._fill_context(_mapping(request.get("fill"), "fill")),
         }
 
     def _existing(self, records, request) -> tuple[dict[str, Any], str] | None:
@@ -809,6 +821,8 @@ class PrivatePortfolioService:
         if replayed.pending is not None:
             raise JournalConflict("PENDING_DRAFT_EXISTS", "存在未确认的成交草稿，请先确认")
         fill = _fill_from_body(request)
+        # New writes require an explicit fee; legacy replay retains its old contract.
+        _decimal(_mapping(request.get("fill"), "fill").get("fees_cny"), "fees_cny")
         try:
             draft = prepare(replayed.state, fill, expected_version=replayed.state.version)
         except ValueError as error:
@@ -895,6 +909,7 @@ class PrivatePortfolioService:
             "trade_date": fill.trade_date.isoformat(),
             "next_sell_session": fill.next_sell_session.isoformat() if fill.next_sell_session else None,
             "confirmed_at": confirmed_at.isoformat(),
+            **self._fill_context(prepared["body"]["fill"]),
         }
         body = {
             "fill": dict(prepared["body"]["fill"]),

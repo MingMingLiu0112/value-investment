@@ -10,13 +10,13 @@ READ_ONLY (default)
 
 SAFE_REFRESH
   READ_ONLY plus the authorized dual-source quote collection, archiving and
-  close registration, then a packet rebuild. It refreshes quotes only:
+  close registration, bounded current price observation, then a packet rebuild:
   re-running research, the human event review and the G3 valuation gate stay
   explicit human/engineering steps and are listed as pending actions, never
   signed here.
 
 The entry stays action=no_order: it reports what the existing gates decided,
-and it cannot create a buy/sell signal, a position size or an order.
+and price triggers never waive formal gates or create a position size or order.
 
 Exit codes (update result first, Web result second):
   0  update SUCCESS, Web ran or was skipped
@@ -106,6 +106,16 @@ $packet = $build.Json
 $buildExit = $build.ExitCode
 
 if ($Mode -eq 'SAFE_REFRESH') {
+    Write-Host '[SAFE_REFRESH] 更新最多五只已绑定证券的当前价格条件...'
+    $priceRefresh = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py')
+    if ($priceRefresh.Json) {
+        Write-Host "  价格结构状态 : $($priceRefresh.Json.status)"
+        foreach ($item in @($priceRefresh.Json.items)) { Write-Host "  已计算 : $($item.symbol) $($item.company_name)" }
+        foreach ($failure in @($priceRefresh.Json.failures)) { Write-Host "  未升级 : $($failure.symbol) $($failure.reason)" }
+    }
+    if ($priceRefresh.ExitCode -ne 0 -or -not $priceRefresh.Json -or @($priceRefresh.Json.failures).Count -gt 0) {
+        $notes.Add('当前价格条件采集存在缺项；未通过验证的证券不会升级为当前触发。')
+    }
     Write-Host '[SAFE_REFRESH] 采集已授权的公开行情来源（腾讯/新浪，只读页面）...'
     $collect = Invoke-PythonJson @('scripts/collect_quote_sessions.py', '--symbols', $Symbols)
     if ($collect.ExitCode -ne 0 -or -not $collect.Json) {
@@ -171,6 +181,12 @@ if ($Mode -eq 'SAFE_REFRESH') {
     }
 }
 
+if ($Mode -eq 'SAFE_REFRESH') {
+    $rebuild = Invoke-PythonJson (@('scripts/current/build_daily_public_packet.py') + $excelArgs)
+    if ($rebuild.Json) { $packet = $rebuild.Json; $buildExit = $rebuild.ExitCode }
+    else { $buildExit = 2; $notes.Add('刷新后快照生成失败，Web 保留上一验证版本。') }
+}
+
 $status = if ($buildExit -eq 0) { 'SUCCESS' } else { 'BLOCKED' }
 if ($status -eq 'SUCCESS' -and $notes.Count -gt 0) { $status = 'PARTIAL' }
 $updateExit = if ($status -eq 'SUCCESS') { 0 } elseif ($status -eq 'PARTIAL') { 3 } else { 2 }
@@ -199,13 +215,17 @@ if ($packet.research_counts) {
             $packet.formal_admission_count, $packet.pending_review_count,
         $packet.research_counts.needs_re_research_count, $packet.research_counts.lead_count)
 }
+Write-Host "价格结构 : $($packet.price_condition_status)"
+foreach ($row in @($packet.price_condition_rows)) {
+    Write-Host "  $($row.symbol) $($row.company_name): 收盘 $($row.current_reference_price) | 突破观察 $($row.entry_trigger_price) | 失效 $($row.invalidation_price) | $($row.signal_state) | 正式资格 $($row.action_eligibility)"
+}
 if ($packet.next_steps) { Write-Host '下一步   :'; foreach ($step in @($packet.next_steps)) { if ($step) { Write-Host "  - $step" } } }
 if ($packet.blockers) { Write-Host "阻止事项 : $(@($packet.blockers) -join '; ')" }
 Write-Host "来源绑定 : $(if ($packet.source_bindings_verified) { '全部哈希校验通过' } else { '存在未通过校验的来源（见数据包）' })"
 if ($packet.excel_sync) { Write-Host "Excel对照 : $($packet.excel_sync.status)（只读校验，不覆盖正式工作簿）" }
 if ($packet.path) { Write-Host "产物     : $($packet.path)" }
 if ($packet.sha256) { Write-Host "产物哈希 : $($packet.sha256)" }
-if ($Mode -eq 'SAFE_REFRESH') { Write-Host '能力边界 : SAFE_REFRESH 只刷新行情并重建公开快照；重跑研究、事件复核与 G3 估值门仍是人工/工程步骤。' }
+if ($Mode -eq 'SAFE_REFRESH') { Write-Host '能力边界 : 已完成行情和价格结构计算不代表触发、研究批准或正式操作准入；事件、风险、G3 等门禁独立。' }
 Write-Host '说明     : 本次运行不修改正式发布指针；正式 Excel 与私人数据均未被触碰（action=no_order）。'
 foreach ($note in $notes) { Write-Host "提醒     : $note" }
 

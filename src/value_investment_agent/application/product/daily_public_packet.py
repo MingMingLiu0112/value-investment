@@ -24,6 +24,7 @@ from .daily_research_status import (
 )
 from .publication_chain import STRUCTURE_ERRORS, try_load_current_chain
 from .quote_bridge import execute_quote_bridge_for_symbol
+from ..hotspot.current_registry import registry_identity, load_price_conditions
 
 
 SCHEMA_VERSION = "daily-public-packet-v1"
@@ -31,14 +32,14 @@ SCHEMA_VERSION = "daily-public-packet-v1"
 # chain (bug fixes included). It is part of the identity below so a new engine
 # revision yields a new publication_id instead of silently reusing a stored
 # record that an older revision computed.
-ENGINE_VERSION = "daily-public-packet-engine-v2"
+ENGINE_VERSION = "daily-public-packet-engine-v5"
 # v4 folds every content-deciding input into the identity: the company
 # research registry and its evidence files, the archived quote bundles, the
 # bound decision-explanation files and the business clock (natural date +
 # latest completed session) that decides the trading day, freshness and
 # admission. A change in any of them mints a new publication_id instead of
 # reusing a stored record with different facts.
-IDENTITY_SCHEMA = "daily-public-packet-identity-v4"
+IDENTITY_SCHEMA = "daily-public-packet-identity-v5"
 ACTION = "no_order"
 CHINA = ZoneInfo("Asia/Shanghai")
 QUOTE_POINTER_PATH = "config/current-quote-bridge.json"
@@ -146,6 +147,7 @@ def identity_inputs(root: Path, chain: Mapping[str, Any], *,
                               if registry_binding is not None else None),
         "registered_evidence": sorted(evidence, key=lambda item: item["path"]),
         "bound_explanations": sorted(explanations, key=lambda item: item["path"]),
+        "current_price_conditions": registry_identity(root),
     }
 
 
@@ -739,6 +741,34 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
     identity = identity_inputs(
         root, chain, natural_day=natural_day,
         latest_completed_session=dates["latest_completed_trade_session"])
+    current_conditions = load_price_conditions(root, now=now,
+        research_version=_stem(receipt_binding["path"]) if receipt_binding else None)
+    deduped = list(dict.fromkeys([*deduped, *current_conditions["blockers"]]))
+    value_conditions = {}
+    for symbol, entry in company_statuses.items():
+        valuation = valuation_statuses.get(symbol, {})
+        bridge = price_bridge_statuses.get(symbol, {})
+        source_decision = (state_companies.get(symbol) or {}).get("decision") or {}
+        explanation = explanations.get(symbol) or {}
+        value_blockers = list(dict.fromkeys([*entry["blockers"],
+            *source_decision.get("blockers", []), *explanation.get("blockers", []),
+            *(["PRICE_NOT_ADMITTED"] if not bridge.get("price_admitted") else [])]))
+        value_conditions[symbol] = {
+            "schema_version": "value-price-observation-v1", "action": ACTION,
+            "strategy": "CORE_VALUE", "symbol": symbol, "decision_id": symbol,
+            "research_version": entry.get("research_version"),
+            "market_trade_date": bridge.get("quote_date"),
+            "current_reference_price": bridge.get("current_price"),
+            "conditional_valuation_range": valuation.get("conditional_range"),
+            "entry_trigger_price": None, "add_trigger_price": None,
+            "reduce_trigger_price": None, "exit_trigger_price": None,
+            "invalidation_price": None, "signal_state": "WATCH",
+            "action_eligibility": False, "blockers": value_blockers,
+            "support": explanation.get("support"), "counter": explanation.get("counter_evidence"),
+            "exit_condition": explanation.get("exit_conditions"),
+            "explanation": "估值情景仅供研究观察；尚无经完整准入的建仓、加减仓阈值。",
+            "model_or_rule_version": entry.get("research_version"),
+        }
     packet = {
         "schema_version": SCHEMA_VERSION,
         "engine_version": ENGINE_VERSION,
@@ -756,8 +786,11 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
                          "quotes_registered": quote_summary["quotes_registered"]},
         "dates": dates,
         "source_bindings": source_bindings,
-        "source_bindings_verified": all(item["sha256_verified"] for item in source_bindings),
+        "source_bindings_verified": (all(item["sha256_verified"] for item in source_bindings)
+                                     and not current_conditions["blockers"]),
         "company_statuses": company_statuses,
+        "price_conditions": current_conditions,
+        "value_price_conditions": value_conditions,
         "valuation_statuses": valuation_statuses,
         "price_bridge_statuses": price_bridge_statuses,
         "event_review_statuses": event_review_statuses,

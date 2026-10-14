@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 14,
     "CURRENT_PRODUCT_CLI": 14,
-    "CURRENT_RESEARCH_CLI": 214,
+    "CURRENT_RESEARCH_CLI": 215,
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 218,
     "MIGRATION_TOOL": 13,
@@ -15,6 +15,17 @@
     "DELETE_CANDIDATE": 0
   },
   "entries": [
+    {
+      "path": "scripts/current/refresh_current_price_conditions.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": ["config/current-cli-entrypoints-v2.json", "scripts/current/run_daily_workbench.ps1"],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "LOW",
+      "line_count": 36,
+      "sha256": "69bf312b191be78ee97b274e764ea903ad80c2384c444cbc50ee99b99d5bd68a"
+    },
     {
       "path": "scripts/current/build_daily_public_packet.py",
       "category": "CURRENT_RESEARCH_CLI",

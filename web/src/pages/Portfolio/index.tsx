@@ -80,6 +80,8 @@ export default function Portfolio() {
   const initialSymbol = /^\d{6}$/.test(hintedSymbol) ? hintedSymbol : undefined;
   const initialSleeve =
     params?.get("strategy") === "hotspot" ? "HOTSPOT_SATELLITE" : "CORE_VALUE";
+  const initialDecisionId = params?.get("decision_id") || undefined;
+  const initialResearchVersion = params?.get("research_version") || undefined;
   const state = usePrivateState();
   const data = state.portfolio;
   const risk = state.risk;
@@ -295,6 +297,8 @@ export default function Portfolio() {
             onDone={refreshAll}
             initialSymbol={initialSymbol}
             initialSleeve={initialSleeve}
+            initialDecisionId={initialDecisionId}
+            initialResearchVersion={initialResearchVersion}
           />
           <Space style={{ marginTop: 24 }}>
             <Button

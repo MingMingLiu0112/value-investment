@@ -6,6 +6,7 @@ import type {
   HistoryResponse,
   HistoricalCaseListing,
   HistoricalPriceCase,
+  CurrentPriceCase,
   PortfolioResponse,
   RiskResponse,
   WriteResponse,
@@ -244,6 +245,11 @@ export const api = {
     get<HistoryResponse>("decision-history", signal),
   historicalCases: (signal?: AbortSignal) =>
     get<HistoricalCaseListing>("historical-price-cases", signal),
+  currentPriceCase: (symbol: string, signal?: AbortSignal) =>
+    get<CurrentPriceCase>(
+      `current-price-case/${encodeURIComponent(symbol)}`,
+      signal,
+    ),
   historicalCase: (symbol: string, day: string, signal?: AbortSignal) =>
     get<HistoricalPriceCase>(
       `historical-price-case/${encodeURIComponent(symbol)}/${encodeURIComponent(day)}`,

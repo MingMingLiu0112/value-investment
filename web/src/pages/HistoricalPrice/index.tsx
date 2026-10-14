@@ -22,16 +22,20 @@ function chartTime(value: string, period: Period): string | UTCTimestamp {
     1000) as UTCTimestamp;
 }
 
-function PriceChart({
+export function PriceChart({
   bars,
   period,
   trigger,
   invalidation,
+  reference,
+  scope = "历史观察",
 }: {
   bars: HistoricalBar[];
   period: Period;
-  trigger: number;
-  invalidation: number;
+  trigger: number | null;
+  invalidation: number | null;
+  reference?: number | null;
+  scope?: string;
 }) {
   const holder = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -66,22 +70,33 @@ function PriceChart({
         close: Number(bar.close),
       })),
     );
-    candle.createPriceLine({
-      price: trigger,
-      color: "#ac6640",
-      lineWidth: 1,
-      lineStyle: 2,
-      axisLabelVisible: true,
-      title: "突破观察",
-    });
-    candle.createPriceLine({
-      price: invalidation,
-      color: "#407067",
-      lineWidth: 1,
-      lineStyle: 2,
-      axisLabelVisible: true,
-      title: "结构失效",
-    });
+    if (trigger !== null && Number.isFinite(trigger))
+      candle.createPriceLine({
+        price: trigger,
+        color: "#ac6640",
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: "突破观察",
+      });
+    if (invalidation !== null && Number.isFinite(invalidation))
+      candle.createPriceLine({
+        price: invalidation,
+        color: "#407067",
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: "结构失效",
+      });
+    if (reference != null && Number.isFinite(reference))
+      candle.createPriceLine({
+        price: reference,
+        color: "#526168",
+        lineWidth: 1,
+        lineStyle: 1,
+        axisLabelVisible: true,
+        title: "已核验收盘参考",
+      });
     const volume = chart.addSeries(HistogramSeries, {
       priceScaleId: "",
       priceFormat: { type: "volume" },
@@ -108,13 +123,13 @@ function PriceChart({
       observer.disconnect();
       chart.remove();
     };
-  }, [bars, period, trigger, invalidation]);
+  }, [bars, period, trigger, invalidation, reference]);
   return (
     <div
       className="price-chart"
       ref={holder}
       role="img"
-      aria-label={`${period}历史K线、成交量、突破观察与结构失效参考线`}
+      aria-label={`${period}${scope}K线、成交量、突破观察与结构失效参考线`}
     />
   );
 }

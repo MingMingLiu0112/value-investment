@@ -90,6 +90,7 @@
     "scripts/run_m2_opportunity_discovery.py"
   ],
   "INTERNAL_PRODUCT_HELPERS": [
+    "scripts/current/refresh_current_price_conditions.py",
     "scripts/current/audit_tracked_xlsx_privacy.py",
     "scripts/current/build_daily_public_packet.py",
     "scripts/current/build_stage3_product_preview.py",
@@ -112,7 +113,7 @@
   "counts": {
     "product": 26,
     "engineering": 50,
-    "internal_helpers": 18,
-    "total": 94
+    "internal_helpers": 19,
+    "total": 95
   }
 }

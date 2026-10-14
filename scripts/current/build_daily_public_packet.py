@@ -64,6 +64,12 @@ def _report(packet: dict, status: str, path: Path | None, *,
         "research_counts": packet["research_counts"],
         "data_freshness": packet.get("data_freshness"),
         "source_bindings_verified": packet.get("source_bindings_verified", False),
+        "price_condition_status": packet.get("price_conditions", {}).get("status", "NOT_CONNECTED"),
+        "price_condition_rows": [{"symbol": row["symbol"], "company_name": row["company_name"],
+            **{key: row["price_action_plan"].get(key) for key in
+               ("market_trade_date", "current_reference_price", "entry_trigger_price",
+                "invalidation_price", "signal_state", "action_eligibility")}}
+            for row in packet.get("price_conditions", {}).get("items", [])],
         # Compact digest of the registered closes, so the daily entry can skip
         # a redundant re-registration of the same trade session (idempotency).
         "bridge_quote_dates": {

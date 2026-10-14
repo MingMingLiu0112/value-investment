@@ -25,6 +25,31 @@ import { PositionTable, sleeveLabel } from "./PositionTable";
 const AMOUNT = /^\d+(\.\d{1,4})?$/;
 const SHARES = /^\d+$/;
 
+export type FillContext = {
+  symbol?: string;
+  strategy?: "CORE_VALUE" | "HOTSPOT_SATELLITE";
+  decision_id?: string;
+  research_version?: string;
+};
+
+export function fillContextFromSearch(search: string): FillContext {
+  const params = new URLSearchParams(search);
+  const strategy = params.get("strategy");
+  return {
+    symbol: /^\d{6}$/.test(params.get("symbol") ?? "")
+      ? params.get("symbol")!
+      : undefined,
+    strategy:
+      strategy === "hotspot" || strategy === "HOTSPOT_SATELLITE"
+        ? "HOTSPOT_SATELLITE"
+        : strategy === "value" || strategy === "CORE_VALUE"
+          ? "CORE_VALUE"
+          : undefined,
+    decision_id: params.get("decision_id") || undefined,
+    research_version: params.get("research_version") || undefined,
+  };
+}
+
 function text(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -126,6 +151,16 @@ function DraftReview({
           { key: "fees", label: "费用（元）", children: text(fill.fees_cny) },
           { key: "date", label: "成交日期", children: text(fill.trade_date) },
           {
+            key: "decision",
+            label: "关联判断",
+            children: text(fill.decision_id) || "未关联",
+          },
+          {
+            key: "research",
+            label: "研究版本",
+            children: text(fill.research_version) || "未关联",
+          },
+          {
             key: "cash",
             label: "确认后现金（元）",
             children: formatMoney(draft.cash_cny),
@@ -174,14 +209,23 @@ export function FillPanel({
   onDone,
   initialSymbol,
   initialSleeve,
+  initialDecisionId,
+  initialResearchVersion,
 }: {
   revision: number;
   draft: PortfolioDraft | null;
   onDone: () => void;
   initialSymbol?: string;
   initialSleeve?: "CORE_VALUE" | "HOTSPOT_SATELLITE";
+  initialDecisionId?: string;
+  initialResearchVersion?: string;
 }) {
   const [failure, setFailure] = useState<string>();
+  const context = fillContextFromSearch(
+    typeof window === "undefined" ? "" : window.location.search,
+  );
+  const decisionId = initialDecisionId ?? context.decision_id;
+  const researchVersion = initialResearchVersion ?? context.research_version;
 
   if (draft)
     return <DraftReview draft={draft} revision={revision} onDone={onDone} />;
@@ -205,7 +249,9 @@ export function FillPanel({
           exchange: text(form.exchange).toUpperCase(),
           quantity: text(form.quantity),
           price_cny: text(form.price_cny),
-          fees_cny: text(form.fees_cny) || "0",
+          fees_cny: text(form.fees_cny),
+          decision_id: decisionId ?? null,
+          research_version: researchVersion ?? null,
           trade_date: dayjs(form.trade_date as string).format("YYYY-MM-DD"),
           next_sell_session: side === "BUY" ? nextSell : null,
           trading_unit: side === "BUY" ? text(form.trading_unit) : null,
@@ -255,7 +301,7 @@ export function FillPanel({
         <ProFormSelect
           name="sleeve"
           label="资金池"
-          initialValue={initialSleeve ?? "CORE_VALUE"}
+          initialValue={context.strategy ?? initialSleeve}
           options={[
             { value: "CORE_VALUE", label: "价值池 CORE_VALUE" },
             {
@@ -268,8 +314,11 @@ export function FillPanel({
         <ProFormText
           name="symbol"
           label="证券代码"
-          initialValue={initialSymbol}
-          rules={[{ pattern: /^\d{6}$/, message: "证券代码为 6 位数字" }]}
+          initialValue={initialSymbol ?? context.symbol}
+          rules={[
+            { required: true, message: "请填写证券代码" },
+            { pattern: /^\d{6}$/, message: "证券代码为 6 位数字" },
+          ]}
         />
         <ProFormSelect
           name="exchange"
@@ -300,13 +349,14 @@ export function FillPanel({
         <ProFormText
           name="fees_cny"
           label="费用合计（元）"
-          initialValue="0"
-          rules={[{ pattern: AMOUNT, message: "费用只能是非负数字" }]}
+          rules={[
+            { required: true, message: "请填写实际费用，无费用请填 0" },
+            { pattern: AMOUNT, message: "费用只能是非负数字" },
+          ]}
         />
         <ProFormDatePicker
           name="trade_date"
           label="成交日期"
-          initialValue={dayjs()}
           rules={[{ required: true, message: "请选择成交日期" }]}
         />
         <ProFormDatePicker

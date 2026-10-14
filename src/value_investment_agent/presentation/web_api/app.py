@@ -37,6 +37,7 @@ from ...application.product.public_snapshot import (
 from ...application.product.quote_bridge import execute_quote_bridge_for_symbol
 from ...application.hotspot.price_action_case import project_price_action_plan
 from ...infrastructure.hotspot.sina_price_case import load_historical_case
+from ...infrastructure.hotspot.current_price_case import load_current_price_case
 from ..read_models.dual_sleeve_surface import (
     BLOCKER_SURFACE_INVALID,
     build_dual_sleeve_surface,
@@ -202,6 +203,73 @@ def create_app(
     sessions = LocalOperatorSession(bootstrap_secret=secret, ttl_seconds=session_ttl_seconds)
     api = FastAPI(title="Value Investment Read API")
 
+    def current_items(packet):
+        rows = (packet or {}).get("price_conditions", {}).get("items", [])
+        checked = []
+        for row in rows:
+            plan = row["price_action_plan"]
+            try:
+                load_current_price_case(root=project, symbol=row["symbol"],
+                    case_path=Path(plan["case_path"]), expected_sha256=plan["case_sha256"])
+                checked.append(row)
+            except (ValueError, OSError, KeyError, TypeError) as error:
+                stale = "B1 current close rejected" in str(error)
+                checked.append({**row, "price_action_plan": {**plan,
+                    "signal_state": "STALE" if stale else "BLOCKED",
+                    "action_eligibility": False, "entry_trigger_price": None,
+                    "invalidation_price": None, "current_reference_price": None,
+                    "levels": {}, "current_reference_close": None,
+                    "blockers": [*plan["blockers"], "CURRENT_CASE_CHANGED_OR_STALE"],
+                    "explanation": "本次读取无法验证价格条件的新鲜度或原始证据；旧价位不作为当前条件。"}})
+        return checked
+
+    def value_plan(symbol, packet):
+        return (packet or {}).get("value_price_conditions", {}).get(symbol)
+
+    def pinned_publication(packet, current):
+        if packet is None:
+            return _publication_block(project, current)
+        return {"action": "no_order", "packet_status": "CURRENT", "snapshot_status": "VERIFIED",
+                "publication_id": packet["publication_id"],
+                "research_version": packet.get("research_version"),
+                "generated_at": packet.get("generated_at"),
+                "engine_version": packet.get("engine_version")}
+
+    def chain_matches_packet(packet, current):
+        bindings = (packet or {}).get("identity_inputs", {}).get("chain")
+        if bindings is None:
+            return True
+        observed = [{"role": row["role"], "path": row["path"], "sha256": row["sha256"]}
+                    for row in sorted(current["bindings"], key=lambda row: str(row["role"]))]
+        return bindings == observed
+
+    def current_item(row):
+        plan = row["price_action_plan"]
+        return {"id": plan["decision_id"], "symbol": row["symbol"],
+                "name": row["company_name"], "company_name": row["company_name"],
+                "strategy": "hotspot", "status": plan["signal_state"],
+                "action": "no_order", "as_of": plan["market_trade_date"],
+                "reason": plan["explanation"], "blockers": plan["blockers"],
+                "why_selected": plan.get("watch_reason"),
+                "price_action_plan": plan}
+
+    @api.get("/api/v1/current-price-case/{symbol}")
+    def current_price_case(symbol: str):
+        packet, _ = _load_snapshot(project)
+        current = _public(project)
+        if current is None or not chain_matches_packet(packet, current):
+            return {"action": "no_order", "status": "UNAVAILABLE", "reason": "PUBLICATION_VERSION_MISMATCH"}
+        row = next((row for row in current_items(packet) if row["symbol"] == symbol), None)
+        if row is None:
+            return {"action": "no_order", "status": "UNAVAILABLE", "reason": "CURRENT_CASE_NOT_PUBLISHED"}
+        plan = row["price_action_plan"]
+        try:
+            case = load_current_price_case(root=project, symbol=symbol,
+                case_path=Path(plan["case_path"]), expected_sha256=plan["case_sha256"])
+            return {**case, "price_action_plan": plan}
+        except (ValueError, OSError, KeyError, TypeError):
+            return {"action": "no_order", "status": "UNAVAILABLE", "reason": "CURRENT_CASE_CHANGED_OR_STALE"}
+
     @api.get("/api/v1/historical-price-case/{symbol}/{trade_date}")
     def historical_price_case(symbol: str, trade_date: str):
         if not _ID.fullmatch(symbol):
@@ -240,6 +308,7 @@ def create_app(
 
     @api.get("/api/v1/daily-decisions")
     def daily_decisions():
+        packet, _ = _load_snapshot(project)
         empty = {"action": "no_order", "status": "UNAVAILABLE", "as_of": None,
                  "market": {"status": "UNKNOWN", "reason": "PUBLICATION_UNAVAILABLE"},
                  "summary": {"universe_count": None, "formal_count": 0, "watch_count": None},
@@ -250,7 +319,7 @@ def create_app(
                  "blockers": ["PUBLICATION_UNAVAILABLE"],
                  "gate_code": "PUBLICATION_UNAVAILABLE", "reason": "PUBLICATION_UNAVAILABLE"}
         current = _public(project)
-        if current is None:
+        if current is None or not chain_matches_packet(packet, current):
             return empty
         state, model = current["state"], current["model"]
         extensions = state["content"].get("extensions", {})
@@ -334,6 +403,10 @@ def create_app(
                      if isinstance(c, dict) and c.get("action") == "no_order"
                      and _ID.fullmatch(str(c.get("symbol", ""))) and c["symbol"] not in known)
         value = _attach_value_explanations(project, model, value)
+        for item in value:
+            plan = value_plan(item["symbol"], packet)
+            if plan is not None:
+                item["price_action_plan"] = plan
         known = {c["symbol"] for c in value}
         value.extend(_queue_item(c, as_of) for c in queue.get("entries", [])
                      if isinstance(c, dict) and c.get("queue_status") == "SELECTED_FOR_DATA_CHECK"
@@ -355,9 +428,9 @@ def create_app(
                             "watch_count": len(leads)},
                 "research": _daily_research(project, names),
                 "dual_sleeve": dual_sleeve,
-                "publication": _publication_block(project, current),
+                "publication": pinned_publication(packet, current),
                 "sections": {"holdings": [], "value": value,
-                             "hotspot": [dict(_item(c, as_of, "UNKNOWN"), strategy="hotspot")
+                             "hotspot": [current_item(row) for row in current_items(packet)] or [dict(_item(c, as_of, "UNKNOWN"), strategy="hotspot")
                                          for c in hotspot.get("items", []) if isinstance(c, dict)
                                          and c.get("action") == "no_order"
                                          and _ID.fullmatch(str(c.get("symbol", "")))]},
@@ -367,10 +440,22 @@ def create_app(
 
     @api.get("/api/v1/decisions/{decision_id}")
     def decision(decision_id: str):
+        packet, _ = _load_snapshot(project)
+        current = _public(project)
+        if current is None or not chain_matches_packet(packet, current):
+            return {"action": "no_order", "status": "UNAVAILABLE", "decision": None,
+                    "publication": publication_block_unavailable(),
+                    "reason": "PUBLICATION_VERSION_MISMATCH"}
+        if decision_id.startswith("hotspot-"):
+            row = next((row for row in current_items(packet)
+                        if row["price_action_plan"]["decision_id"] == decision_id), None)
+            return {"action": "no_order", "status": "CURRENT_OBSERVATION" if row else "NOT_FOUND",
+                    "publication": pinned_publication(packet, current),
+                    "decision": current_item(row) if row else None}
         if not _ID.fullmatch(decision_id):
             return {"action": "no_order", "status": "NOT_FOUND", "decision": None, "reason": "UNKNOWN_DECISION"}
         current = _public(project)
-        if current is None:
+        if current is None or not chain_matches_packet(packet, current):
             return {"action": "no_order", "status": "UNAVAILABLE", "decision": None,
                     "publication": _publication_block(project, current),
                     "reason": "PUBLICATION_UNAVAILABLE"}
@@ -416,8 +501,11 @@ def create_app(
                     price_bridge_execution=_quote_bridge_execution(project, decision_id),
                     binding_blockers=(["VALUE_EXPLANATION_BINDING_UNAVAILABLE"]
                                       if binding_status == "UNAVAILABLE" else []))
+                plan = value_plan(decision_id, packet)
+                if plan is not None:
+                    item["price_action_plan"] = plan
                 return {"action": "no_order", "status": status,
-                        "publication": _publication_block(project, current),
+                        "publication": pinned_publication(packet, current),
                         "decision": item}
         for opportunity in published.get("opportunities", []):
             if isinstance(opportunity, dict) and opportunity.get("symbol") == decision_id and opportunity.get("action") == "no_order":

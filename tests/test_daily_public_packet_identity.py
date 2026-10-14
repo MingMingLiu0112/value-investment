@@ -127,7 +127,7 @@ def test_identity_inputs_cover_the_chain_and_the_business_clock(tmp_path):
     root = build_verified_tree(tmp_path)
     packet = _build(root)
     inputs = packet["identity_inputs"]
-    assert inputs["schema"] == "daily-public-packet-identity-v4"
+    assert inputs["schema"] == "daily-public-packet-identity-v5"
     assert inputs["engine"] == packet["engine_version"]
     assert inputs["natural_date"] == "2026-10-13"
     assert {item["role"] for item in inputs["chain"]} == {

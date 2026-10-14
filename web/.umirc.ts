@@ -12,6 +12,6 @@ export default defineConfig({
     { path: "/history", component: "./DecisionHistory" },
     { path: "/system", component: "./SystemStatus" },
   ],
-  proxy: { "/api": { target: "http://localhost:8001", changeOrigin: true } },
+  proxy: { "/api": { target: "http://127.0.0.1:8001", changeOrigin: true } },
   title: "双策略投资助手",
 });

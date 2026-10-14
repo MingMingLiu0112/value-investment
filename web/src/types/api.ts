@@ -19,7 +19,58 @@ export interface DecisionItem {
   price_context?: unknown;
   next_events?: unknown;
   research?: ResearchDetail | null;
+  price_action_plan?: CurrentPricePlan | null;
   [key: string]: unknown;
+}
+
+export interface CurrentPricePlan {
+  action: "no_order";
+  signal_state: string;
+  action_eligibility: boolean;
+  entry_trigger_price: string | null;
+  invalidation_price: string | null;
+  current_reference_price?: string | null;
+  market_trade_date?: string | null;
+  next_session?: string | null;
+  next_session_date?: string | null;
+  next_completed_eligible_session?: string | null;
+  decision_id?: string | null;
+  research_version?: string | null;
+  model_or_rule_version?: string | null;
+  entry_confirmation_rule?: string | null;
+  invalidation_rule?: string | null;
+  explanation?: unknown;
+  watch_reason?: string | null;
+  support?: unknown;
+  counter?: unknown;
+  blockers?: string[];
+  levels?: Partial<
+    Record<
+      "daily" | "60m" | "15m",
+      {
+        prior_max_high: string;
+        prior_min_low: string;
+        volume_ratio: string;
+        last_close: string;
+      }
+    >
+  >;
+  add_condition?: string | null;
+  reduce_condition?: string | null;
+  exit_condition?: string | string[] | null;
+}
+
+export interface CurrentPriceCase {
+  action: "no_order";
+  symbol: string;
+  status?: string;
+  market_trade_date: string;
+  current_reference_price: string | null;
+  bars: Partial<Record<"daily" | "60m" | "15m", HistoricalBar[]>>;
+  levels: Partial<Record<"daily" | "60m" | "15m", HistoricalLevels>>;
+  price_action_plan: CurrentPricePlan;
+  source_bindings?: HistoricalPriceCase["source_bindings"];
+  blockers?: string[];
 }
 
 export interface HistoricalBar {
