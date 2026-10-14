@@ -72,8 +72,10 @@ def test_capture_keeps_original_hash_and_rejects_duplicate_case(tmp_path):
     from hashlib import sha256
     for source in result["source_bindings"].values():
         assert sha256((tmp_path / source["path"]).read_bytes()).hexdigest() == source["sha256"]
-    assert load_historical_case(root=tmp_path, symbol="000651",
-                                as_of=date(2026, 10, 13)) == result
+    loaded = load_historical_case(root=tmp_path, symbol="000651",
+                                  as_of=date(2026, 10, 13))
+    assert loaded["bar_timezone"] == "Asia/Shanghai"
+    assert {k: v for k, v in loaded.items() if k != "bar_timezone"} == result
     from fastapi.testclient import TestClient
     from value_investment_agent.presentation.web_api.app import create_app
     client = TestClient(create_app(tmp_path))

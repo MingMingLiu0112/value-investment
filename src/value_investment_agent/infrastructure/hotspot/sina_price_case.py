@@ -43,7 +43,7 @@ def parse_klines(raw: bytes, *, period: str, as_of: date) -> list[dict]:
     if opening < 0 or closing < opening:
         raise ValueError("Provider JSONP wrapper invalid")
     rows = json.loads(text[opening + 2:closing + 1])
-    if not isinstance(rows, list):
+    if not isinstance(rows, list) or len(rows) > 2500:
         raise ValueError("Provider did not return kline rows")
     result = []
     for row in rows:
@@ -89,8 +89,9 @@ def daily_from_intraday(bars: list[dict]) -> list[dict]:
 
 def collect_historical_case(*, root: Path, symbol: str, as_of: date, fetch=None) -> dict:
     """Publish a complete immutable historical observation or nothing."""
-    if not (len(symbol) == 6 and symbol.isdigit()):
-        raise ValueError("Six-digit symbol required")
+    if not (len(symbol) == 6 and symbol.isdigit()
+            and symbol.startswith(("0", "3", "6"))):
+        raise ValueError("Supported SSE/SZSE six-digit symbol required")
     if as_of >= datetime.now(ZoneInfo("Asia/Shanghai")).date():
         raise ValueError("Only completed historical dates are accepted")
     destination = root / "runtime" / "hotspot-price-cases" / f"{symbol}-{as_of.isoformat()}"
@@ -112,6 +113,8 @@ def collect_historical_case(*, root: Path, symbol: str, as_of: date, fetch=None)
             if not _source_url_valid(response.url, symbol=symbol, scale=scale):
                 raise ValueError("Provider URL does not bind requested symbol")
             raw = response.content
+            if not raw or len(raw) > 5 * 1024 * 1024:
+                raise ValueError("Provider response empty or oversized")
             bars = parse_klines(raw, period=period, as_of=as_of)
             if len(bars) < 6:
                 raise ValueError(f"Insufficient {period} bars")
@@ -157,7 +160,8 @@ def collect_historical_case(*, root: Path, symbol: str, as_of: date, fetch=None)
 
 def load_historical_case(*, root: Path, symbol: str, as_of: date) -> dict:
     """Re-verify every original and every level before Web presentation."""
-    if not (len(symbol) == 6 and symbol.isdigit()):
+    if not (len(symbol) == 6 and symbol.isdigit()
+            and symbol.startswith(("0", "3", "6"))):
         raise ValueError("Invalid symbol")
     directory = root / "runtime" / "hotspot-price-cases" / f"{symbol}-{as_of.isoformat()}"
     case = json.loads((directory / "case.json").read_text(encoding="utf-8"))
@@ -218,6 +222,7 @@ def load_historical_case(*, root: Path, symbol: str, as_of: date) -> dict:
             "evidence_refs": snapshot.evidence_refs,
         }
         case["blockers"] = CROSSCHECK_BLOCKERS
+    case["bar_timezone"] = "Asia/Shanghai"
     return case
 
 
