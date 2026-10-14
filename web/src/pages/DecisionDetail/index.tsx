@@ -19,7 +19,10 @@ import { api } from "../../services/api";
 import { DetailSection } from "../../components/DetailSection";
 import { statusLabel } from "../../utils/presentation";
 import { codeText, strategyText } from "../../utils/codes";
-import { firstResearchText, publicBlockerText } from "../../utils/opportunityView";
+import {
+  firstResearchText,
+  publicBlockerText,
+} from "../../utils/opportunityView";
 import { shortDigest } from "../../utils/history";
 import {
   bridgeExecutionView,
@@ -873,7 +876,8 @@ export default function DecisionDetail() {
             </Typography.Title>
             <section aria-label="操作摘要" style={{ maxWidth: 960 }}>
               <Typography.Text type="secondary">
-                {strategyText(decision.strategy)} · {decision.as_of || "研究日期待核验"}
+                {strategyText(decision.strategy)} ·{" "}
+                {decision.as_of || "研究日期待核验"}
               </Typography.Text>
               <Descriptions
                 column={1}

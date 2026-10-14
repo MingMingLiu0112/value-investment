@@ -87,7 +87,7 @@ export default function DailyDecisions() {
             onClick={() => {
               retry();
               packet.retry();
-                state.retry();
+              state.retry();
             }}
             aria-label="刷新页面数据"
           >
