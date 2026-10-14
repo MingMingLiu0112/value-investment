@@ -42,6 +42,35 @@ export function ConfirmedTrades({ trades }: { trades: PortfolioTrade[] }) {
                 children: row.confirmed_at,
               },
               {
+                key: "snapshot",
+                label: "录入时保存的原判断",
+                children: row.judgment_snapshot ? (
+                  <div>
+                    <div>
+                      发布版本 {row.judgment_snapshot.publication_id}；保存时间{" "}
+                      {row.judgment_snapshot.recorded_at}
+                    </div>
+                    <div>
+                      原观察价{" "}
+                      {row.judgment_snapshot.plan.entry_trigger_price ??
+                        "未提供"}
+                      ；原失效参考{" "}
+                      {row.judgment_snapshot.plan.invalidation_price ??
+                        "未提供"}
+                      ；原证券资格{" "}
+                      {row.judgment_snapshot.plan.formal_eligibility === true
+                        ? "通过"
+                        : "未通过"}
+                    </div>
+                    <div>
+                      该快照保留录入时的判断，不能证明实际成交前已知这些条件。成交时个人风险未追溯核验。
+                    </div>
+                  </div>
+                ) : (
+                  "历史记录没有判断快照，不能用当前价格条件补写"
+                ),
+              },
+              {
                 key: "digest",
                 label: "成交记录 SHA256",
                 children: (

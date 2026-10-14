@@ -42,7 +42,7 @@ def pointer_path(root: Path) -> Path:
 
 
 def _resolve_runtime(root: Path, name: object) -> Path | None:
-    """Resolve a declared artifact path, which must stay under ``runtime/``."""
+    """Resolve local runtime or a retained public JSON artifact, never private paths."""
     if not isinstance(name, str) or not name:
         return None
     relative = Path(name)
@@ -50,7 +50,11 @@ def _resolve_runtime(root: Path, name: object) -> Path | None:
         return None
     target = (Path(root) / relative).resolve()
     runtime = (Path(root) / "runtime").resolve()
-    if not target.is_relative_to(runtime):
+    public = (Path(root) / "artifacts" / "current").resolve()
+    public_json = (target.is_relative_to(public) and target.suffix == ".json"
+                   and not any(term in str(relative).lower()
+                               for term in ("private", "journal", "secret", "credential")))
+    if not target.is_relative_to(runtime) and not public_json:
         return None
     return target
 

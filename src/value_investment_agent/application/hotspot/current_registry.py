@@ -115,7 +115,7 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
                                 daily_selection_binding=source,
                                 market_environment=watch_report["ranking"]["market"],
                                 observation_evidence=dict(source=watch_report["source_bindings"],
-                                    available_at=watch_report["available_at"], trade_date=watch_report["trade_date"],
+                                    available_at=max(datetime.fromisoformat(binding["available_at"]) for binding in watch_report["source_bindings"]).isoformat(), trade_date=watch_report["trade_date"],
                                     sha256=source["sha256"], status="DATED_DAILY_OBSERVATION_NOT_ADMISSION"),
                                 selection_source_bindings=watch_report["source_bindings"],
                                 classification_effective_date=None,

@@ -18,6 +18,7 @@ from ..product.publication_chain import bound_object, load_current_chain, STRUCT
 from ..product.quote_bridge import execute_quote_bridge_for_symbol
 from ..product.value_decision_explanation import project_value_decision_explanation
 from .restore_decision_recommendation import RestoredDecisionRecommendation
+from .value_model_identity import project_catalog_identity
 
 CHINA = ZoneInfo("Asia/Shanghai")
 
@@ -69,6 +70,7 @@ def project_value_action_plan(verified_decision: RestoredDecisionRecommendation,
     explanation = project_value_decision_explanation(verified_decision, evidence_scope=evidence_scope)
     explanation["research_as_of"] = verified_decision.dependency_objects["research_case"].as_of.isoformat()
     explanation["model_id"] = verified_decision.recommendation.input_model_id
+    explanation = project_catalog_identity(explanation)
     return build_value_action_plan(explanation=explanation, policy=policy,
         repository_replayed=True,
         verified_predecision=verified_decision.dependency_objects.get("pre_decision")).as_policy()
@@ -146,6 +148,7 @@ def load_registered_value_action_plans(root: Path, *, now: datetime,
                     or explanation.get("verification", {}).get("semantic_revalidation") is not True):
                 raise ValueError("Published value explanation contract invalid")
             sources = [binding, *_check_retained_evidence(root, explanation)]
+            explanation = project_catalog_identity(explanation)
             policy = None
             if registered_binding is not None:
                 sources.append(registered_binding)

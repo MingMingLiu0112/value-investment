@@ -68,7 +68,7 @@ def collect_daily_candidates(*, root: Path, limit=5, classification_collector=No
     for source in sources:
         bindings.append({**source, "path": Path(source["path"]).relative_to(root).as_posix(), "trade_date": trade_date})
     report = dict(schema_version="hotspot-daily-selection-v1", action="no_order", trade_date=trade_date,
-        available_at=max(binding["available_at"] for binding in bindings), limit=limit, rows=rows, ranking=ranking,
+        available_at=max(datetime.fromisoformat(binding["available_at"]) for binding in bindings).isoformat(), limit=limit, rows=rows, ranking=ranking,
         observation_list=ranking["candidates"], hotspot_watch_queue=ranking["candidates"],
         source_bindings=bindings, failures=failures,
         coverage=dict(classified_securities=len(index), dated_quotes=len(quotes), ranked_securities=ranking["market"]["covered_securities"] if ranking["market"] else 0,

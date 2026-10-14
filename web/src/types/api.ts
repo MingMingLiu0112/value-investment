@@ -38,6 +38,25 @@ export interface DecisionItem {
 }
 
 export interface CurrentPricePlan {
+  price_behavior?: {
+    rule_version: string;
+    daily_trend: string;
+    observation_quality: string;
+    confirmed_support: { price: string; known_at: string } | null;
+    confirmed_resistance: { price: string; known_at: string } | null;
+    breakout: {
+      observed: boolean;
+      confirmed_on_next_completed_bar: boolean;
+      confirmation_level?: string | null;
+      breakout_at?: string | null;
+      confirmed_at?: string | null;
+    };
+    pullback_recovery: { observed: boolean };
+    auxiliary_15m: { observed: boolean };
+    volume_ratio: string;
+    risk_reward_ratio: string | null;
+    risk_reward_scope: string;
+  } | null;
   action: "no_order";
   action_intent?: string | null;
   formal_eligibility?: Eligibility;
@@ -550,6 +569,13 @@ export interface PortfolioPosition {
 }
 
 export interface PortfolioTrade {
+  judgment_snapshot?: {
+    publication_id: string;
+    recorded_at: string;
+    trade_time_availability_proven: boolean;
+    snapshot_sha256: string;
+    plan: CurrentPricePlan;
+  } | null;
   transaction_id: string;
   side: string;
   sleeve: string;
@@ -702,6 +728,7 @@ export interface RiskEngineReport {
 }
 
 export interface RiskResponse {
+  security_attributes?: Record<string, unknown> | null;
   action: "no_order";
   status: ApiStatus;
   blockers: string[];

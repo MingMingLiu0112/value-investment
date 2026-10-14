@@ -241,7 +241,7 @@ def register_private_routes(
         refusal = refuse(request)
         if refusal is not None:
             return refusal
-        return emit(lambda: service().prepare_fill(payload))
+        return emit(lambda: service().prepare_fill(payload, repository_root=project))
 
     @api.post("/api/v1/private/fills/confirm")
     def confirm_fill(request: Request, payload: dict = Body(...)):

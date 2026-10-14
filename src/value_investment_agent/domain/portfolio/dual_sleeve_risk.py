@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 from ...portfolio_contracts import portfolio_input_bundle_from_payload
 from ...portfolio_risk import build_portfolio_risk_assessment, security_risk_attributes_from_payload
 from .sleeves import PortfolioSleeve, SharedSleeveBudget
+from .security_attributes import SCHEMA as ATTRIBUTE_SCHEMA, parse_observed_attributes
 
 CORE = 'CORE_VALUE'
 HOTSPOT = 'HOTSPOT_SATELLITE'
@@ -97,11 +98,15 @@ def review_dual_sleeve_risk(payload, *, generated_at, allow_synthetic=False):
         raise ValueError('reconciliation is in the future')
     if bundle.snapshot.as_of > generated_at.astimezone(ZoneInfo('Asia/Shanghai')).date():
         raise ValueError('snapshot date is in the future')
-    attrs = {}
+    attrs, attribute_gaps = {}, []
     if payload['security_attributes'] is None:
         return _blocked(namespace, ['security_attributes.missing'], generated_at)
     for item in payload['security_attributes']:
-        attr = security_risk_attributes_from_payload(item)
+        if item.get('schema_version') == ATTRIBUTE_SCHEMA:
+            attr = parse_observed_attributes(item, now=generated_at)
+            attribute_gaps.extend('security_attributes.' + attr.symbol + '.' + gap + '.unknown' for gap in attr.gaps)
+        else:
+            attr = security_risk_attributes_from_payload(item)
         if attr.symbol in attrs:
             raise ValueError('duplicate security attributes')
         if not attr.evidence_refs:
@@ -112,7 +117,16 @@ def review_dual_sleeve_risk(payload, *, generated_at, allow_synthetic=False):
     if request is not None:
         needed.add(request['symbol'])
     if needed - attrs.keys():
-        return _blocked(namespace, ['security_attributes.missing'], generated_at)
+        return _blocked(namespace, ['security_attributes.missing',
+            *['security_attributes.' + symbol + '.missing' for symbol in sorted(needed - attrs.keys())]], generated_at)
+    for symbol in needed:
+        item = next(row for row in payload['security_attributes'] if row['symbol'] == symbol)
+        if item.get('schema_version') == ATTRIBUTE_SCHEMA:
+            if timestamp(item['known_at'], 'attribute known_at').astimezone(ZoneInfo('Asia/Shanghai')).date() > bundle.snapshot.as_of:
+                attribute_gaps.append('security_attributes.' + symbol + '.not_known_at_snapshot')
+            holding = next((row for row in bundle.snapshot.holdings if row.symbol == symbol), None)
+            if holding is not None and holding.exchange != item['exchange']:
+                raise ValueError('Holding and official security exchange differ')
     shared = payload['shared_budget']
     fields(shared, ('core_value_budget', 'tactical_hotspot_budget', 'cash_floor',
         'cross_sleeve_single_stock_cap', 'cross_sleeve_sector_cap', 'policy_scope', 'action'), 'shared budget')
@@ -151,7 +165,7 @@ def review_dual_sleeve_risk(payload, *, generated_at, allow_synthetic=False):
         rows[sleeve].append(dict(symbol=symbol, quantity=str(quantity), sellable_quantity=str(sellable),
             market_value_cny=str(value), cost_basis_cny=str(cost), unrealized_pnl_cny=str(value-cost),
             committed_risk_cny=None if risk is None else str(risk), industry=attrs[symbol].industry,
-            common_factors=list(attrs[symbol].common_factors)))
+            common_factors='UNKNOWN' if getattr(attrs[symbol], 'gaps', ()) else list(attrs[symbol].common_factors)))
     if any(allocated[symbol] != h.quantity for symbol, h in holdings.items()):
         raise ValueError('sleeve quantities must exactly partition aggregate holdings')
     for symbol, holding in holdings.items():
@@ -163,7 +177,7 @@ def review_dual_sleeve_risk(payload, *, generated_at, allow_synthetic=False):
     if total <= 0:
         return _blocked(namespace, ['portfolio.nonpositive_equity'], generated_at)
     reserve = decimal(payload['cash_reserve_cny'], 'cash reserve')
-    reviews, policies, alerts = {}, {}, []
+    reviews, policies, alerts = {}, {}, list(attribute_gaps)
     fractions = {CORE: budget.core_value_budget, HOTSPOT: budget.tactical_hotspot_budget}
     for sleeve in SLEEVES:
         policy = payload['sleeves'][sleeve]
@@ -221,7 +235,7 @@ def review_dual_sleeve_risk(payload, *, generated_at, allow_synthetic=False):
             if value > equity * p['max_single_security_fraction']:
                 alerts.append(sleeve + ':single_security_concentration:' + row['symbol'])
             industry[row['industry']] = industry.get(row['industry'], Decimal(0)) + value
-            for factor in row['common_factors']:
+            for factor in attrs[row['symbol']].common_factors:
                 factors[factor] = factors.get(factor, Decimal(0)) + value
             if attrs[row['symbol']].liquidity_profile != 'LIQUID':
                 alerts.append(sleeve + ':liquidity_review:' + row['symbol'])
@@ -240,7 +254,8 @@ def review_dual_sleeve_risk(payload, *, generated_at, allow_synthetic=False):
             full_capital_at_risk_cny=str(used), holdings=rows[sleeve],
             limits={key: str(p[key]) for key in ('max_single_security_fraction', 'max_industry_fraction', 'max_factor_fraction')},
             industry_exposure_cny={key: str(value) for key, value in industry.items()},
-            factor_exposure_cny={key: str(value) for key, value in factors.items()},
+            factor_exposure_cny=(None if any('common_factors' in getattr(attrs[row['symbol']], 'gaps', ()) for row in rows[sleeve])
+                else {key: str(value) for key, value in factors.items()}),
             exit_basis='FUNDAMENTAL_THESIS_AND_LIQUIDITY_REVIEW' if sleeve == CORE else 'PRICE_STRUCTURE_REVIEW',
             mechanical_stop_required=False if sleeve == CORE else None)
         policies[sleeve] = p
@@ -250,7 +265,7 @@ def review_dual_sleeve_risk(payload, *, generated_at, allow_synthetic=False):
         alerts.append('shared:cash_floor_violation')
     assessment = (build_portfolio_risk_assessment(bundle=bundle, security_attributes=attrs,
         as_of=bundle.snapshot.as_of, generated_at=generated_at, assessment_id='dual-sleeve',
-        assessment_namespace=namespace).as_policy() if attrs else None)
+        assessment_namespace=namespace).as_policy() if attrs and not attribute_gaps else None)
     if assessment is not None:
         alerts.extend('aggregate:' + x for x in assessment['blockers'])
     elif bundle.snapshot.cash_cny < max(bundle.policy.minimum_cash_cny,
@@ -274,11 +289,14 @@ def review_dual_sleeve_risk(payload, *, generated_at, allow_synthetic=False):
             reviews=reviews, policies=policies, attrs=attrs, security_values=security_values,
             industry_values=industry_values, generated_at=generated_at, alerts=alerts)
     return dict(schema_version=REPORT_SCHEMA, action='no_order', namespace=namespace,
-        status='REVIEW_REQUIRED' if alerts else 'RISK_REVIEW_CALCULATED', generated_at=generated_at.isoformat(),
+        status='BLOCKED_PRIVATE_INPUT' if attribute_gaps else ('REVIEW_REQUIRED' if alerts else 'RISK_REVIEW_CALCULATED'), generated_at=generated_at.isoformat(),
         sensitivity='SIMULATED_DEMONSTRATION' if namespace == 'SIMULATED' else 'PRIVATE_USER_CONFIRMED',
         blockers=list(dict.fromkeys(alerts)), sleeves=reviews,
         aggregate=dict(total_assets_cny=str(total), cash_cny=str(bundle.snapshot.cash_cny),
-            reserve_cny=str(reserve), duplicated_security_exposure=overlap, existing_risk_assessment=assessment),
+            reserve_cny=str(reserve), duplicated_security_exposure=overlap, existing_risk_assessment=assessment,
+            security_attribute_gaps=attribute_gaps,
+            committed_risk_total_cny=(str(sum((Decimal(r['committed_risk_cny']) for s in SLEEVES for r in rows[s]), Decimal(0)))
+                if all(r['committed_risk_cny'] is not None for s in SLEEVES for r in rows[s]) else None)),
         hotspot_quantity_review=sizing, position_guidance=None, expected_return=None,
         trade_eligible=False, acceptance_authority='NONE')
 
@@ -319,7 +337,7 @@ def _hotspot_review(request, *, bundle, total, budget, reviews, policies, attrs,
     if request['limit_up'] or request['limit_down']:
         reasons.append('hotspot:price_limit_execution_risk')
     review, policy = reviews[HOTSPOT], policies[HOTSPOT]
-    same_risk = [r['committed_risk_cny'] for r in review['holdings'] if r['symbol'] == symbol]
+    same_risk = [r['committed_risk_cny'] for sleeve in SLEEVES for r in reviews[sleeve]['holdings'] if r['symbol'] == symbol]
     if review['available_risk_cny'] is None or any(r is None for r in same_risk):
         reasons.append('hotspot:committed_risk_unknown')
     # Conservative vetoes are explicit; core cash/risk never funds this calculation.
@@ -345,7 +363,9 @@ def _hotspot_review(request, *, bundle, total, budget, reviews, policies, attrs,
         max(Decimal(0), total*bundle.policy.max_single_industry_pct/100-industry_values.get(industry, Decimal(0))))
     for factor in attrs[symbol].common_factors:
         capital_limit = min(capital_limit, max(Decimal(0), equity*policy['max_factor_fraction']
-            -Decimal(review['factor_exposure_cny'].get(factor, '0'))))
+            -Decimal(review['factor_exposure_cny'].get(factor, '0'))),
+            max(Decimal(0), total*min(policies[s]['max_factor_fraction'] for s in SLEEVES)
+                -sum((Decimal(reviews[s]['factor_exposure_cny'].get(factor, '0')) for s in SLEEVES), Decimal(0))))
     def amounts(quantity):
         buy = buy_price * quantity
         sell = stress_exit * quantity
@@ -365,6 +385,7 @@ def _hotspot_review(request, *, bundle, total, budget, reviews, policies, attrs,
     return dict(status='QUANTITY_REVIEW_ONLY' if quantity else 'BLOCKED_BELOW_ONE_LOT',
         blockers=[] if quantity else ['hotspot:budget_below_one_lot'], review_quantity=quantity,
         symbol=symbol, sleeve=HOTSPOT, planned_risk_limit_cny=str(risk_limit),
+        same_security_existing_risk_cny=str(sum((Decimal(x) for x in same_risk), Decimal(0))),
         stressed_loss_cny=str(risk), cash_required_cny=str(cost), stressed_exit_price_cny=str(stress_exit),
         full_capital_at_risk_cny=str(cost), stop_execution_guaranteed=False, t_plus_one=True,
         same_day_exit_available=False, trade_eligible=False,

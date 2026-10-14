@@ -243,6 +243,7 @@ def create_app(
                     "portfolio_eligibility": None, "action_intent": "WATCH", "entry_trigger_price": None,
                     "invalidation_price": None, "current_reference_price": None,
                     "entry_condition": None, "exit_condition": None, "invalidation_condition": None,
+                    "price_behavior": None, "risk_reward_ratio": None,
                     "levels": {}, "current_reference_close": None,
                     "blockers": [*plan["blockers"], "CURRENT_CASE_CHANGED_OR_STALE"],
                     "explanation": "本次读取无法验证价格条件的新鲜度或原始证据；旧价位不作为当前条件。"}})
@@ -583,6 +584,30 @@ def create_app(
                     "decision_cutoff": explanation.get("decision_as_of"),
                     "artifact": binding["path"], "sha256": binding["sha256"]}
         return decisions
+
+    @api.get("/api/v1/hotspot-replay-review")
+    def hotspot_replay_review():
+        from ...application.hotspot.replay_read_model import load_replay_summary
+        try:
+            pins = json.loads((project / "config/hotspot-replay-review-v1.json").read_bytes())
+            if pins.get("action") != "no_order":
+                raise ValueError("Invalid review pins")
+            return load_replay_summary(root=project, manifest_sha256=pins["manifest_sha256"],
+                                      structure_manifest_sha256=pins["structure_manifest_sha256"])
+        except (ValueError, OSError, KeyError, TypeError):
+            return JSONResponse(status_code=409, content={
+                "action": "no_order", "status": "REPLAY_UNAVAILABLE"})
+
+    @api.get("/api/v1/value-policy-review/{symbol}")
+    def value_policy_review(symbol: str):
+        from ...application.decision.value_price_policy import load_value_policy_review
+        try:
+            review = load_value_policy_review(project, symbol, datetime.now(timezone.utc))
+            return {"action": "no_order", "status": "RESEARCH_ONLY", **review}
+        except (ValueError, OSError):
+            return JSONResponse(status_code=409, content={
+                "action": "no_order", "status": "REVIEW_UNAVAILABLE",
+                "detail": "Review sources or current research basis are unavailable or changed."})
 
     @api.get("/api/v1/decision-history")
     def decision_history():

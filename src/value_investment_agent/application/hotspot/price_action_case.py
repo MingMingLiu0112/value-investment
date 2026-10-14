@@ -2,8 +2,10 @@
 
 from copy import deepcopy
 from decimal import Decimal
+from datetime import datetime
 
 from value_investment_agent.domain.hotspot.current_price import CURRENT_BLOCKERS, current_signal
+from value_investment_agent.domain.hotspot.confirmed_price_structure import analyze_price_behavior
 
 
 def project_price_action_plan(case: dict) -> dict:
@@ -91,4 +93,9 @@ def project_current_price_action_plan(case: dict) -> dict:
                 expires_after_session=case["current_reference_close"]["next_session"],
                 expiry_rule="Refresh after next completed exchange session; old conditions must not remain current",
                 next_observation="下一完整60分钟收盘重新检查价格与量能；次一交易日收盘后重新筛选。")
+    plan["price_behavior"] = analyze_price_behavior(case["bars"])
+    plan["risk_reward_ratio"] = plan["price_behavior"]["risk_reward_ratio"]
+    plan["data_available_at"] = max(datetime.fromisoformat(value) for value in [
+        *(source["fetched_at"] for source in case["source_bindings"].values()),
+        case["verified_available_at"]]).isoformat()
     return plan

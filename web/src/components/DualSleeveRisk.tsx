@@ -381,6 +381,24 @@ export function DualSleeveRisk({
           <>
             {data.facts && <FactsBlock facts={data.facts} />}
             <EngineBlock data={data} />
+            {data.security_attributes && (
+              <details style={{ marginTop: 8 }}>
+                <summary>证券身份、行业与尚未核验的经济风险属性</summary>
+                <p>
+                  官方清单可验证证券身份、类型及观察时点行业。行业历史生效日、周期性、因子和流动性未核验时仍为未知；不能用用户填写的哈希替代认证，也不能据此声称个人风险检查已通过。
+                </p>
+                <pre
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    overflowWrap: "anywhere",
+                    maxHeight: 300,
+                    overflow: "auto",
+                  }}
+                >
+                  {JSON.stringify(data.security_attributes, null, 2)}
+                </pre>
+              </details>
+            )}
             <details style={{ marginTop: 8 }}>
               <summary style={{ cursor: "pointer", color: "#5c6b73" }}>
                 技术详情（原始代码）

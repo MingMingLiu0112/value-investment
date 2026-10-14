@@ -776,6 +776,8 @@ class PrivatePortfolioService:
         }
         if any(context.values()) and not all(context.values()):
             raise JournalValidationError("decision_id and research_version must be supplied together")
+        if "judgment_snapshot" in fill:
+            context["judgment_snapshot"] = fill["judgment_snapshot"]
         return context
 
     @staticmethod
@@ -902,12 +904,12 @@ class PrivatePortfolioService:
         )
         return dict(record["response"]), str(record["record_sha256"])
 
-    def prepare_fill(self, request: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
+    def prepare_fill(self, request: Mapping[str, Any], *, repository_root: Path | None = None) -> tuple[dict[str, Any], str]:
         with self.journal.transaction() as records:
-            return self._prepare_fill(records, request)
+            return self._prepare_fill(records, request, repository_root=repository_root)
 
     def _prepare_fill(
-        self, records: Sequence[Mapping[str, Any]], request: Mapping[str, Any]
+        self, records: Sequence[Mapping[str, Any]], request: Mapping[str, Any], *, repository_root: Path | None = None
     ) -> tuple[dict[str, Any], str]:
         existing = self._existing(records, request)
         if existing is not None:
@@ -934,6 +936,10 @@ class PrivatePortfolioService:
             "prepared_at": datetime.now().astimezone().isoformat(),
             "note": _optional_text(request.get("note"), "note"),
         }
+        # Client-supplied snapshots can never certify the original judgment.
+        from .judgment_snapshot import capture_judgment_snapshot
+        body["fill"]["judgment_snapshot"] = (capture_judgment_snapshot(repository_root, body["fill"])
+            if repository_root is not None else None)
         payload = {
             "action": "no_order",
             "status": "FILL_PREPARED",

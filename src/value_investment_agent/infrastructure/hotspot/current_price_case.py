@@ -190,4 +190,8 @@ def load_current_price_case(*, root: Path, symbol: str, as_of: date | None = Non
     if case != rebuilt or case["source_bindings"]["daily"] != {
             **case["source_bindings"]["60m"], "scope": "DERIVED_FROM_SINA_60M_NOT_INDEPENDENT_DAILY_SOURCE"}:
         raise ValueError("Current case calculation/contract mismatch")
-    return {**case, "case_path": path.relative_to(root).as_posix(), "case_sha256": sha}
+    bundle = json.loads(_inside(root, binding["bundle_path"]).read_bytes())
+    available = max(datetime.fromisoformat(value) for value in [
+        bundle["finished_at"], *(source["fetched_at"] for source in case["source_bindings"].values())])
+    return {**case, "case_path": path.relative_to(root).as_posix(), "case_sha256": sha,
+            "verified_available_at": available.isoformat()}

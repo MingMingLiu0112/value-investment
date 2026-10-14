@@ -33,14 +33,14 @@ SCHEMA_VERSION = "daily-public-packet-v1"
 # chain (bug fixes included). It is part of the identity below so a new engine
 # revision yields a new publication_id instead of silently reusing a stored
 # record that an older revision computed.
-ENGINE_VERSION = "daily-public-packet-engine-v8"
+ENGINE_VERSION = "daily-public-packet-engine-v9"
 # v4 folds every content-deciding input into the identity: the company
 # research registry and its evidence files, the archived quote bundles, the
 # bound decision-explanation files and the business clock (natural date +
 # latest completed session) that decides the trading day, freshness and
 # admission. A change in any of them mints a new publication_id instead of
 # reusing a stored record with different facts.
-IDENTITY_SCHEMA = "daily-public-packet-identity-v8"
+IDENTITY_SCHEMA = "daily-public-packet-identity-v9"
 ACTION = "no_order"
 CHINA = ZoneInfo("Asia/Shanghai")
 QUOTE_POINTER_PATH = "config/current-quote-bridge.json"
@@ -166,6 +166,8 @@ def identity_inputs(root: Path, chain: Mapping[str, Any], *,
         "registered_evidence": sorted(evidence, key=lambda item: item["path"]),
         "bound_explanations": sorted(explanations, key=lambda item: item["path"]),
         "current_price_conditions": registry_identity(root),
+        "hotspot_structure_rule": {"path": "config/hotspot-confirmed-structure-v1.json",
+            "observed_sha256": _sha_of(root / "config/hotspot-confirmed-structure-v1.json")},
         "value_action_sources": sorted(value_sources.values(), key=lambda item: item["path"]),
     }
 

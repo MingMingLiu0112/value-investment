@@ -199,13 +199,16 @@ def _load_verified_prices(root, replayed, now):
             if date.fromisoformat(row["trade_date"]) >= replayed.state.last_trade_date}
 
 
-def _verified_attributes(root, replayed, now):
-    if not replayed.state.lots:
+def _verified_attributes(root, replayed, now, *, candidate_symbol=None):
+    symbols = {lot.symbol for lot in replayed.state.lots}
+    if candidate_symbol is not None:
+        symbols.add(candidate_symbol)
+    if not symbols:
         return []
-    # No registered research contract currently certifies these risk attributes.
-    # User-supplied bindings and matching hashes alone cannot establish their
-    # economic meaning, including for a synthetic fixture labelled PUBLIC_RESEARCH.
-    return None
+    if root is None:
+        return None
+    from .security_attributes import load_verified_security_attributes
+    return load_verified_security_attributes(Path(root), symbols, now=now)
 
 
 def _allocations_payload(replayed: ReplayedPortfolio, sellable_as_of: date) -> list[dict[str, Any]]:
@@ -266,6 +269,7 @@ def build_risk_input(
     namespace: str = NAMESPACE_ACTUAL,
     repository_root: Path | None = None,
     generated_at: datetime | None = None,
+    hotspot_request: dict[str, Any] | None = None,
     _prices=None,
 ) -> dict[str, Any]:
     now = generated_at or datetime.now().astimezone()
@@ -284,8 +288,9 @@ def build_risk_input(
         "sleeves": sleeves,
         "cash_reserve_cny": reserve,
         "allocations": _allocations_payload(replayed, sellable_as_of),
-        "security_attributes": _verified_attributes(repository_root, replayed, now),
-        "hotspot_request": None,
+        "security_attributes": _verified_attributes(repository_root, replayed, now,
+            candidate_symbol=hotspot_request["symbol"] if hotspot_request is not None else None),
+        "hotspot_request": hotspot_request,
     }
 
 
@@ -347,6 +352,7 @@ def review_private_risk_rehearsal(
     generated_at: datetime,
     today: date | None = None,
     repository_root: Path | None = None,
+    hotspot_request: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Run the real engine on real confirmed facts; report the exact gaps."""
     service = PrivatePortfolioService(journal)
@@ -364,7 +370,7 @@ def review_private_risk_rehearsal(
     sellable_as_of = max(replayed.state.last_trade_date, today or datetime.now().astimezone().date())
     prices = _verified_prices(repository_root, replayed, generated_at)
     payload = build_risk_input(replayed, sellable_as_of=sellable_as_of,
-        repository_root=repository_root, generated_at=generated_at, _prices=prices)
+        repository_root=repository_root, generated_at=generated_at, hotspot_request=hotspot_request, _prices=prices)
     extra = []
     if replayed.policy.get("effective_date") and date.fromisoformat(replayed.policy["effective_date"]) > generated_at.astimezone(ZoneInfo("Asia/Shanghai")).date():
         extra.append("POLICY_NOT_EFFECTIVE")
@@ -383,6 +389,7 @@ def review_private_risk_rehearsal(
         "blockers": list(report.get("blockers") or ()),
         "engine": report,
         "facts": _facts(replayed, prices),
+        "security_attributes": payload["security_attributes"],
         "policy": {"confirmation_status": "HUMAN_CONFIRMED" if replayed.policy.get("_confirmed_at") else "INCOMPLETE_LEGACY_POLICY",
             "effective_date": replayed.policy.get("effective_date"), "max_drawdown_pct": replayed.policy.get("max_drawdown_pct"),
             "dividend_income_goal_cny": replayed.policy.get("dividend_income_goal_cny"),

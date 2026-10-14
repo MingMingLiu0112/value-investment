@@ -48,6 +48,20 @@ export function DecisionCard({ item }: { item: DecisionItem }) {
           "日期待核验"}
       </div>
       <p className="decision-reason">{reason}</p>
+      {item.price_action_plan?.price_behavior && (
+        <div className="decision-meta">
+          结构质量：
+          {(
+            {
+              UNFAVORABLE_DAILY_TREND: "日线下降，谨慎观察",
+              INSUFFICIENT_UPPER_SPACE: "上方空间不足以覆盖价格风险",
+              UNKNOWN: "证据不足",
+              RESEARCH_ONLY: "仅研究观察，尚未获准",
+            } as Record<string, string>
+          )[item.price_action_plan.price_behavior.observation_quality] ??
+            "待核验"}
+        </div>
+      )}
       {missingPricePolicies(item) && (
         <div className="decision-meta">{missingPricePolicies(item)}</div>
       )}

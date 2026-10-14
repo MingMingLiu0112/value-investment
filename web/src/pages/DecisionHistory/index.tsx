@@ -14,6 +14,7 @@ import { useState } from "react";
 import { Workbench } from "../../components/Workbench";
 import { RemoteState } from "../../components/RemoteState";
 import { ConfirmedTrades } from "../../components/ConfirmedTrades";
+import { HotspotReplayReview } from "../../components/HotspotReplayReview";
 import { usePrivateState } from "../../hooks/usePrivateState";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
@@ -443,6 +444,7 @@ export default function DecisionHistory() {
   const current = items.find((item) => item.id === selectedId) ?? items[0];
   return (
     <Workbench>
+      <HotspotReplayReview />
       <Typography.Title level={2}>历史判断</Typography.Title>
       <Section title="我的实际成交与原判断版本">
         {privateState.portfolio &&
