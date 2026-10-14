@@ -4,6 +4,8 @@ import type {
   DailyPublicSnapshot,
   DetailResponse,
   HistoryResponse,
+  HistoricalCaseListing,
+  HistoricalPriceCase,
   PortfolioResponse,
   RiskResponse,
   WriteResponse,
@@ -240,6 +242,13 @@ export const api = {
     getPrivate<RiskResponse>("private/portfolio/risk", signal),
   history: (signal?: AbortSignal) =>
     get<HistoryResponse>("decision-history", signal),
+  historicalCases: (signal?: AbortSignal) =>
+    get<HistoricalCaseListing>("historical-price-cases", signal),
+  historicalCase: (symbol: string, day: string, signal?: AbortSignal) =>
+    get<HistoricalPriceCase>(
+      `historical-price-case/${encodeURIComponent(symbol)}/${encodeURIComponent(day)}`,
+      signal,
+    ),
   initializePortfolio: (body: Record<string, unknown>) =>
     post<WriteResponse>("private/portfolio/initialize", body),
   prepareFill: (body: Record<string, unknown>) =>

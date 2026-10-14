@@ -72,6 +72,14 @@ function PrivateStateAlert({ state }: { state: PrivateStateHandle }) {
 }
 
 export default function Portfolio() {
+  const params =
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search);
+  const hintedSymbol = params?.get("symbol") ?? "";
+  const initialSymbol = /^\d{6}$/.test(hintedSymbol) ? hintedSymbol : undefined;
+  const initialSleeve =
+    params?.get("strategy") === "hotspot" ? "HOTSPOT_SATELLITE" : "CORE_VALUE";
   const state = usePrivateState();
   const data = state.portfolio;
   const risk = state.risk;
@@ -285,6 +293,8 @@ export default function Portfolio() {
             revision={data.revision}
             draft={data.pending_draft}
             onDone={refreshAll}
+            initialSymbol={initialSymbol}
+            initialSleeve={initialSleeve}
           />
           <Space style={{ marginTop: 24 }}>
             <Button

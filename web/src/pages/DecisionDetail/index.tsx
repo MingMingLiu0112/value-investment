@@ -933,6 +933,13 @@ export default function DecisionDetail() {
           </>
         )}
         <Space style={{ marginTop: 24 }}>
+          {decision?.symbol && /^\d{6}$/.test(decision.symbol) && (
+            <Link
+              to={`/portfolio?symbol=${decision.symbol}&strategy=${decision.strategy === "hotspot" ? "hotspot" : "value"}`}
+            >
+              <Button type="primary">记录我的实际成交</Button>
+            </Link>
+          )}
           <Link to="/daily">
             <Button>返回每日建议</Button>
           </Link>

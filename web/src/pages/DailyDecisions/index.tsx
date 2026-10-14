@@ -59,6 +59,7 @@ function StrategySection({
 export default function DailyDecisions() {
   const { data, loading, error, retry } = useApi(api.daily);
   const packet = useApi(api.packet);
+  const historical = useApi(api.historicalCases);
   const state = usePrivateState();
   const packetCurrent =
     packet.data?.packet_status === "CURRENT" && !!packet.data.publication_id;
@@ -87,6 +88,7 @@ export default function DailyDecisions() {
             onClick={() => {
               retry();
               packet.retry();
+              historical.retry();
               state.retry();
             }}
             aria-label="刷新页面数据"
@@ -168,6 +170,25 @@ export default function DailyDecisions() {
               <h2>持仓复核事项</h2>
               {data.sections.holdings.map((item) => (
                 <DecisionCard key={item.id} item={item} />
+              ))}
+            </section>
+          )}
+          {!!historical.data?.items.length && (
+            <section
+              className="opportunity-historical"
+              aria-label="历史价格结构验证"
+            >
+              <h2>历史价格结构验证</h2>
+              <p>以下是已归档行情的计算案例，不计入今天的候选或正式复核。</p>
+              {historical.data.items.map((item) => (
+                <Link
+                  key={`${item.symbol}-${item.market_trade_date}`}
+                  to={`/historical-price/${item.symbol}/${item.market_trade_date}`}
+                >
+                  {item.symbol} · {item.market_trade_date} · 60 分钟突破观察{" "}
+                  {item.levels["60m"].entry_trigger_price} / 失效参考{" "}
+                  {item.levels["60m"].invalidation_price}
+                </Link>
               ))}
             </section>
           )}

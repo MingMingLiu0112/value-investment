@@ -7,6 +7,7 @@ export default defineConfig({
     { path: "/", redirect: "/daily" },
     { path: "/daily", component: "./DailyDecisions" },
     { path: "/decisions/:id", component: "./DecisionDetail" },
+    { path: "/historical-price/:symbol/:day", component: "./HistoricalPrice" },
     { path: "/portfolio", component: "./Portfolio" },
     { path: "/history", component: "./DecisionHistory" },
     { path: "/system", component: "./SystemStatus" },

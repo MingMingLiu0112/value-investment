@@ -172,10 +172,14 @@ export function FillPanel({
   revision,
   draft,
   onDone,
+  initialSymbol,
+  initialSleeve,
 }: {
   revision: number;
   draft: PortfolioDraft | null;
   onDone: () => void;
+  initialSymbol?: string;
+  initialSleeve?: "CORE_VALUE" | "HOTSPOT_SATELLITE";
 }) {
   const [failure, setFailure] = useState<string>();
 
@@ -251,7 +255,7 @@ export function FillPanel({
         <ProFormSelect
           name="sleeve"
           label="资金池"
-          initialValue="CORE_VALUE"
+          initialValue={initialSleeve ?? "CORE_VALUE"}
           options={[
             { value: "CORE_VALUE", label: "价值池 CORE_VALUE" },
             {
@@ -264,6 +268,7 @@ export function FillPanel({
         <ProFormText
           name="symbol"
           label="证券代码"
+          initialValue={initialSymbol}
           rules={[{ pattern: /^\d{6}$/, message: "证券代码为 6 位数字" }]}
         />
         <ProFormSelect

@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -35,6 +35,8 @@ from ...application.product.public_snapshot import (
     workbook_version_report as _workbook_report,
 )
 from ...application.product.quote_bridge import execute_quote_bridge_for_symbol
+from ...application.hotspot.price_action_case import project_price_action_plan
+from ...infrastructure.hotspot.sina_price_case import load_historical_case
 from ..read_models.dual_sleeve_surface import (
     BLOCKER_SURFACE_INVALID,
     build_dual_sleeve_surface,
@@ -199,6 +201,42 @@ def create_app(
     secret = bootstrap_secret if bootstrap_secret is not None else os.environ.get(BOOTSTRAP_ENV)
     sessions = LocalOperatorSession(bootstrap_secret=secret, ttl_seconds=session_ttl_seconds)
     api = FastAPI(title="Value Investment Read API")
+
+    @api.get("/api/v1/historical-price-case/{symbol}/{trade_date}")
+    def historical_price_case(symbol: str, trade_date: str):
+        if not _ID.fullmatch(symbol):
+            return {"action": "no_order", "status": "UNAVAILABLE",
+                    "reason": "INVALID_SYMBOL"}
+        try:
+            requested_date = date.fromisoformat(trade_date)
+            case = load_historical_case(root=project, symbol=symbol,
+                                        as_of=requested_date)
+            return {**case, "price_action_plan": project_price_action_plan(case)}
+        except (ValueError, OSError, KeyError, TypeError, json.JSONDecodeError):
+            return {"action": "no_order", "status": "UNAVAILABLE",
+                    "reason": "HISTORICAL_SOURCE_OR_CALCULATION_UNAVAILABLE"}
+
+    @api.get("/api/v1/historical-price-cases")
+    def historical_price_cases():
+        base = project / "runtime" / "hotspot-price-cases"
+        items = []
+        if base.is_dir():
+            for folder in sorted(base.iterdir(), reverse=True):
+                if len(items) >= 10:
+                    break
+                match = re.fullmatch(r"([0-9]{6})-([0-9]{4}-[0-9]{2}-[0-9]{2})", folder.name)
+                if not match or not folder.is_dir():
+                    continue
+                try:
+                    case = load_historical_case(root=project, symbol=match[1],
+                                                as_of=date.fromisoformat(match[2]))
+                except (ValueError, OSError, KeyError, TypeError, json.JSONDecodeError):
+                    continue
+                items.append({"symbol": case["symbol"], "market_trade_date": case["market_trade_date"],
+                              "reference_price": case["current_reference_price"],
+                              "levels": case["levels"], "signal_state": case["signal_state"],
+                              "blockers": case["blockers"]})
+        return {"action": "no_order", "status": "HISTORICAL_NOT_CURRENT", "items": items}
 
     @api.get("/api/v1/daily-decisions")
     def daily_decisions():

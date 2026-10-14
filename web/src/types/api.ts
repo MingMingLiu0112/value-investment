@@ -22,6 +22,85 @@ export interface DecisionItem {
   [key: string]: unknown;
 }
 
+export interface HistoricalBar {
+  time: string;
+  open: string;
+  high: string;
+  low: string;
+  close: string;
+  volume: string;
+  amount: string;
+}
+
+export interface HistoricalLevels {
+  period: string;
+  rule_version: string;
+  window: number;
+  last_bar: string;
+  reference_close: string;
+  entry_trigger_price: string;
+  entry_confirmation_rule: string;
+  invalidation_price: string;
+  invalidation_rule: string;
+  volume_ratio: string;
+  breakout_observed: boolean;
+  risk_reward_ratio: string | null;
+  target_price: string | null;
+  action: "no_order";
+}
+
+export interface HistoricalPriceCase {
+  action: "no_order";
+  status?: string;
+  symbol: string;
+  market_trade_date: string;
+  current_reference_price: string;
+  levels: Record<"daily" | "60m" | "15m", HistoricalLevels>;
+  bars: Record<"daily" | "60m" | "15m", HistoricalBar[]>;
+  source_bindings: Record<
+    string,
+    {
+      path: string;
+      sha256: string;
+      source_url: string;
+      fetched_at: string;
+      adjustment: string;
+      scope: string;
+    }
+  >;
+  signal_state: "HISTORICAL_OBSERVATION_NOT_ADMITTED";
+  blockers: string[];
+  price_action_plan: {
+    entry_trigger_price: string;
+    entry_confirmation_rule: string;
+    invalidation_price: string;
+    risk_reward_ratio: null;
+    action_eligibility: false;
+    signal_state: "HISTORICAL_OBSERVATION_NOT_ADMITTED";
+    model_or_rule_version: string;
+    action: "no_order";
+  };
+  close_crosscheck?: {
+    status: "VERIFIED_HISTORICAL_CLOSE";
+    price: string;
+    manifest_path: string;
+    manifest_sha256: string;
+  };
+}
+
+export interface HistoricalCaseListing {
+  action: "no_order";
+  status: "HISTORICAL_NOT_CURRENT" | "UNAVAILABLE";
+  items: Array<
+    Pick<
+      HistoricalPriceCase,
+      "symbol" | "market_trade_date" | "levels" | "signal_state" | "blockers"
+    > & {
+      reference_price: string;
+    }
+  >;
+}
+
 export interface ResearchEvidenceRef {
   id: string;
   path: string;

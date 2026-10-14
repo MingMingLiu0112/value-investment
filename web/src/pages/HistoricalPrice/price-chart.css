@@ -1,0 +1,82 @@
+.historical-price-page {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.historical-price-page .ant-alert-warning {
+  background: #f6f8f7;
+  border-color: #dce3e0;
+  border-left: 3px solid #a87149;
+}
+.historical-price-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.historical-price-heading h2 {
+  margin-bottom: 2px !important;
+}
+.historical-price-heading p {
+  color: #64716f;
+}
+.historical-price-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  border-block: 1px solid #dce3e0;
+  margin: 22px 0;
+}
+.historical-price-metrics > div {
+  padding: 12px 10px 12px 0;
+  display: grid;
+  gap: 3px;
+}
+.historical-price-metrics small {
+  color: #64716f;
+}
+.historical-price-metrics strong {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.historical-period {
+  margin-bottom: 16px;
+}
+.price-chart {
+  width: 100%;
+  min-height: 390px;
+}
+.historical-price-logic {
+  max-width: 840px;
+  margin-top: 20px;
+}
+.historical-chart-credit {
+  margin: 4px 0 0;
+  color: #7b8582;
+  font-size: 11px;
+}
+.historical-price-logic h3 {
+  font-size: 17px;
+}
+.historical-price-logic p {
+  line-height: 1.65;
+}
+.historical-price-source {
+  border-top: 1px solid #dce3e0;
+  margin-top: 24px;
+  padding-top: 12px;
+  overflow-wrap: anywhere;
+}
+.historical-price-source summary {
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .historical-price-heading {
+    display: block;
+  }
+  .historical-price-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .historical-price-metrics strong {
+    font-size: 18px;
+  }
+}

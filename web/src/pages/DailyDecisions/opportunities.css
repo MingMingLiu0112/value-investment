@@ -224,3 +224,20 @@
     font-size: 23px;
   }
 }
+.opportunity-historical {
+  border-top: 1px solid #dce3e0;
+  margin-top: 36px;
+  padding-top: 16px;
+}
+.opportunity-historical h2 {
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+.opportunity-historical p {
+  color: #64716f;
+  margin: 0 0 8px;
+}
+.opportunity-historical a {
+  display: block;
+  padding: 6px 0;
+}
