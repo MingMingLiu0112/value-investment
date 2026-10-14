@@ -1,0 +1,338 @@
+{
+  "schema_version": "tl11-p4-public-evidence-archive-v1",
+  "action": "no_order",
+  "originals_retained": true,
+  "private_data": false,
+  "items": [
+    {
+      "original_path": "runtime/daily-public-packet/daily-public-packet-pub-5c7d42d7243fc011cb0a.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/daily-public-packet/daily-public-packet-pub-5c7d42d7243fc011cb0a.json",
+      "sha256": "b427203761c97b6e118c0e924255e6fcd47a0984f7658db2a184f86d5e45b488"
+    },
+    {
+      "original_path": "runtime/daily-public-packet/receipts/daily-public-packet-pub-5c7d42d7243fc011cb0a.receipt.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/daily-public-packet/receipts/daily-public-packet-pub-5c7d42d7243fc011cb0a.receipt.json",
+      "sha256": "03ef01bcd63dae0084be285678f9bc1c14a8f0c4d44290ebb48d1a9ed4e5705f"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/case.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/case.json",
+      "sha256": "7794a725e534860630d8bbf49957a2fa6436e325f2184da6aab351f2808d3bfb"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/sina-15m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/sina-15m.jsonp",
+      "sha256": "ae40f323d1412979b2362f5cf4e01a66452b1fda18fbfbce1335bc838d7310a7"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/sina-60m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/sina-60m.jsonp",
+      "sha256": "7e7c6f08d4ef487f15c5548c6dba27f77e1ad149ff470a8ef65b7969078e7aaa"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/002384-2026-10-14-fa2a79d261ae4e97bc2ee79956d392e8/case.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/002384-2026-10-14-fa2a79d261ae4e97bc2ee79956d392e8/case.json",
+      "sha256": "a92a09259d495cb7d7f599c46749177507742ab25918f4cc703d8f29e66de6f8"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/002384-2026-10-14-fa2a79d261ae4e97bc2ee79956d392e8/sina-15m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/002384-2026-10-14-fa2a79d261ae4e97bc2ee79956d392e8/sina-15m.jsonp",
+      "sha256": "196162491f436cd958947a69d65e6ae0b8d7cdfc60285d0c3afdad227ba73311"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/002384-2026-10-14-fa2a79d261ae4e97bc2ee79956d392e8/sina-60m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/002384-2026-10-14-fa2a79d261ae4e97bc2ee79956d392e8/sina-60m.jsonp",
+      "sha256": "217712431ecb3f3683374d12a7adb9017d6f8c13a24302e5fa41dbff9433ebf0"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/case.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/case.json",
+      "sha256": "584ad23ef03881fec209f3860f2b6955100af30b2d84c499b6249635c7f5fa63"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/sina-15m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/sina-15m.jsonp",
+      "sha256": "3f1203f76210414af27dbe536fc3345257c6bb5bb60a6c770acf113327c61f58"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/sina-60m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/sina-60m.jsonp",
+      "sha256": "f481bcdd77e3f576c9d9131f37affd1895a14b2732dc3dd8544beeed8cbb2433"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300308-2026-10-14-850a7a03a1174be7874dd76acfcb2893/case.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300308-2026-10-14-850a7a03a1174be7874dd76acfcb2893/case.json",
+      "sha256": "449f256697fe37818a26e525c1cb959f0aa47cf2b2087b92cff4c21b7c95330c"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300308-2026-10-14-850a7a03a1174be7874dd76acfcb2893/sina-15m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300308-2026-10-14-850a7a03a1174be7874dd76acfcb2893/sina-15m.jsonp",
+      "sha256": "7e05f3443911c840da2713fc8c0cbb72118c8e8ee95880072505f3dc082255ff"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300308-2026-10-14-850a7a03a1174be7874dd76acfcb2893/sina-60m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300308-2026-10-14-850a7a03a1174be7874dd76acfcb2893/sina-60m.jsonp",
+      "sha256": "20476af04e67458c6886550fcccf7df3bdb13f53376a66e52d9c4016f98f39c7"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/case.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/case.json",
+      "sha256": "a385019f1b9097fdd3bc19d6ea08596ecb07df2939efed4cb8ab023b5d4dec49"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/sina-15m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/sina-15m.jsonp",
+      "sha256": "42bb042ad71e82cb5b0f8149053ab12af4718fc9bfca40656f75f427f408b54a"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/sina-60m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/sina-60m.jsonp",
+      "sha256": "5e624a34d01d22660a61dbe2b88d19d28cedb6726e692401db9bfd784c88a25c"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/case.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/case.json",
+      "sha256": "38954bd8c9a43d30bc14a7f915d43def5ddb6c31d88a763823f2d5f9788dfcec"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/sina-15m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/sina-15m.jsonp",
+      "sha256": "caf60a7eb3094412cf38195fe4ba08d59c0faf6afa4f04163df35b97eb465a1b"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/sina-60m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/sina-60m.jsonp",
+      "sha256": "88e3a74f42ae471872aa6853c8908f070057864e882b8355859cc3e0d16e4ce1"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/case.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/case.json",
+      "sha256": "055bbfd15f2c6963e2ac07a8b71602a67a6fe6f36211fc871690887a4f133099"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/sina-15m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/sina-15m.jsonp",
+      "sha256": "806cfbc37c61aca93e76f7cdbc81c9ca15a68ff7004ac723b6df64ec6e38d28d"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/sina-60m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/sina-60m.jsonp",
+      "sha256": "58cd71355f53fb5e31ad23caf927a75df133df7c45fcb20c8239897e174c23e7"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300502-2026-10-14-33a95b96f7d845e5b4e3e9f5531839fe/case.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300502-2026-10-14-33a95b96f7d845e5b4e3e9f5531839fe/case.json",
+      "sha256": "b385980656ef00181011eef81f49c2a9aa70e36a484a9d127c1e25fbb7388725"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300502-2026-10-14-33a95b96f7d845e5b4e3e9f5531839fe/sina-15m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300502-2026-10-14-33a95b96f7d845e5b4e3e9f5531839fe/sina-15m.jsonp",
+      "sha256": "666c3cb61c6f4e559b8bbde06da5c4664b432e29c2aa641c058b3c07abe0a91b"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300502-2026-10-14-33a95b96f7d845e5b4e3e9f5531839fe/sina-60m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300502-2026-10-14-33a95b96f7d845e5b4e3e9f5531839fe/sina-60m.jsonp",
+      "sha256": "3a5343a1e956ea48533298f4b0b8d8cf9a4f635a89cacde9cbd2f25c635e8c35"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300750-2026-10-14-da507b1ea615452981492c5e956c0e3b/case.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300750-2026-10-14-da507b1ea615452981492c5e956c0e3b/case.json",
+      "sha256": "9753f1425f5c0bedec391ed3d2a820cdd3a06b0a6811a83f7cb2aa3d72c1896d"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300750-2026-10-14-da507b1ea615452981492c5e956c0e3b/sina-15m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300750-2026-10-14-da507b1ea615452981492c5e956c0e3b/sina-15m.jsonp",
+      "sha256": "c66b7dead9362bdb1eb520b06b66cb6e827ede1844646eeb50a6711bb1f9e3bd"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/300750-2026-10-14-da507b1ea615452981492c5e956c0e3b/sina-60m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/300750-2026-10-14-da507b1ea615452981492c5e956c0e3b/sina-60m.jsonp",
+      "sha256": "6cf0b7089867f47cfa4f8648192da75e073a815b6a219ea050969fa4504fad14"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/688825-2026-10-14-09eee3c2e5b841e9bd9b49c9b7879029/case.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/688825-2026-10-14-09eee3c2e5b841e9bd9b49c9b7879029/case.json",
+      "sha256": "75f67fdb6245230bc4cbdf5ab5ce0b15fa88349fc0bbc394f6843034864e2fe8"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/688825-2026-10-14-09eee3c2e5b841e9bd9b49c9b7879029/sina-15m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/688825-2026-10-14-09eee3c2e5b841e9bd9b49c9b7879029/sina-15m.jsonp",
+      "sha256": "0ddb95d7a73bb3e6722ae129b42d1b2d5765fd81c4895ae5d85ef62275c29543"
+    },
+    {
+      "original_path": "runtime/hotspot-current-price-cases/688825-2026-10-14-09eee3c2e5b841e9bd9b49c9b7879029/sina-60m.jsonp",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-price-cases/688825-2026-10-14-09eee3c2e5b841e9bd9b49c9b7879029/sina-60m.jsonp",
+      "sha256": "7fc9fce78ba34dd7182322eaddaf2b03b0c36f5b5c78c6fccbbfab8e04dd2345"
+    },
+    {
+      "original_path": "runtime/hotspot-current-refresh/0d407ebaa91c417fbbde9229b4b9cc10/bundle.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-refresh/0d407ebaa91c417fbbde9229b4b9cc10/bundle.json",
+      "sha256": "9a9d6bc0cde86692ea9854c7a2b1d75d7f8dcc66db6cb62f84fe15de8430aa7e"
+    },
+    {
+      "original_path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+      "sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530"
+    },
+    {
+      "original_path": "runtime/hotspot-current-refresh/p4-prior-registry-3464314/previous-registry.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-current-refresh/p4-prior-registry-3464314/previous-registry.json",
+      "sha256": "d50b7f7070a1c01df5c417223dc8aa57fbd7fca62dc89a49002506a27d6b50ba"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/calendar-anchors.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/calendar-anchors.json",
+      "sha256": "42b6deb47ea41a0d501441799a43e3493b7409f10c1fe5b6aa1ebcc17fa02e11"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/classification.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/classification.json",
+      "sha256": "cc63a655476cd14368301ceaf85eb983086b57920da594ef6a1e67cb76a33e8d"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00000.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00000.txt",
+      "sha256": "6f6063235212b5ab91a86cdda08bf0ee86fdbf8684ba2eaf3319d4a781848b5f"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00200.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00200.txt",
+      "sha256": "a076f1ed783ac0816e52026a52f773fc593b9ab060c323dcb1ea5306494757fa"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00400.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00400.txt",
+      "sha256": "58776a9c2b8e63aabfc9da4ce3d048ffc69947caf65798fa3828ef32130b98f4"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00600.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00600.txt",
+      "sha256": "6747a92fb440dd4961bcd09887186ee56c1745b3141e4650dc935a55a3ba0db6"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00800.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00800.txt",
+      "sha256": "dffd4a7094adeac25d3ce996074397e9e69da1b24ce930d80e0e76ef91aa5a7d"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01000.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01000.txt",
+      "sha256": "feb86a0f920faf8232b530c84040fe68da2875a2ac51c204cc65a70abcb8f21c"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01200.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01200.txt",
+      "sha256": "017fad6b38d48d456aa7486c92491996fddafad595117c5a2c7f742ff310361d"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01400.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01400.txt",
+      "sha256": "2e2471720025ae900ead2696789904bacbf68d3af09481d4b7e7197784dc5bc2"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01600.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01600.txt",
+      "sha256": "3e8797731f9d551afee19f5f365be4a69d8a0cb526e47fa858c2e89fdaec1e1c"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01800.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01800.txt",
+      "sha256": "1281ccb85cb4bba1f8c13a051c98a9a69f4de69563fd00d0a952f27e176fbc47"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02000.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02000.txt",
+      "sha256": "3d44e4e054c9c605a1a6ec10ff9916127ca44ac877693c5f70bf2fda14a1ab98"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02200.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02200.txt",
+      "sha256": "b810a46d0851a027a569f817909ce26e02e5ac2c72084b33deb3258ca09c0b0d"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02400.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02400.txt",
+      "sha256": "7fa7471fb13954cf8e1fb7d632a97395929d03795594cf0da00a5c5b5b83367d"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02600.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02600.txt",
+      "sha256": "904f479a5f44691ed8b38e24a7287c9072aca6d107f2fa521e1bd1225f38904a"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02800.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02800.txt",
+      "sha256": "58e3d27d465b5124652502043e98fab36d99a96aac87bb546ea1e09b20a0d410"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03000.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03000.txt",
+      "sha256": "c73e51e393f3aaa28452ed127c47162265d7680d146f1512195c8b8cd8f03536"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03200.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03200.txt",
+      "sha256": "765c33e551bd6effdf36f8b7ed9408fe53923cd82585a3423a44e8515f0ce1cb"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03400.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03400.txt",
+      "sha256": "fe19693f8ae4ba30a36c0d637d3a97150f8a4e409445f69199c111b0205aea4b"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03600.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03600.txt",
+      "sha256": "e84e12f625538b2167a18e50fcae04c89f5cde42c490fa216346cbcfcc8cd68d"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03800.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03800.txt",
+      "sha256": "ab42286620aee074fd7ee463beaa3d6a003221f950cd61f47df00b6d78a4c78e"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04000.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04000.txt",
+      "sha256": "ba3c99d335a9fc69e49dca80ebb8df659148428447c2af113e51c218976c9876"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04200.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04200.txt",
+      "sha256": "48265318d1f46cd806ad71f9dd92f6a32467a84dbf36bbaa790c0ad3b2dc4237"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04400.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04400.txt",
+      "sha256": "8c00634a5e4c6d262696d5b887c7f721bf33c0145339b6892ce1ebe6603e004d"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04600.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04600.txt",
+      "sha256": "c2f2c71507ff0e7672de204ee8f0d33d7cf6e5e6f762cbae3b58fa320fb7dcbe"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04800.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04800.txt",
+      "sha256": "1e64cfca3819cde47a5a9b0f10eaa48a853534ec349c242a07fa82da94c7edcd"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-05000.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-05000.txt",
+      "sha256": "6ba5a4e2631cf49f88249dd824c6a6ff456a5c15e9ef351d181a17ad7fa40b81"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-05200.txt",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-05200.txt",
+      "sha256": "bb6f7b927bf0e0af23ca45c515ab8d8a6daea2a83d448b0bd307e1a3938f884a"
+    },
+    {
+      "original_path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/report.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/report.json",
+      "sha256": "989aa97241824b61cd3bf3283b4705e846a4d9de78ad4651c5d12bcb00235b8b"
+    },
+    {
+      "original_path": "runtime/quote-sessions/20261014T090240643969Z/bundle.json",
+      "archive_path": "artifacts/current/tl11-p4-20261014/public-evidence/runtime/quote-sessions/20261014T090240643969Z/bundle.json",
+      "sha256": "66fd5d957d7441ae1dca81242551b2f860007d754868453181a2aa3ea886365f"
+    }
+  ]
+}
