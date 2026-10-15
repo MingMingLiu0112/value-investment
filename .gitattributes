@@ -41,6 +41,7 @@ artifacts/current/tl11-p5-20261014/** -text
 artifacts/current/tl11-p6-20261014/** -text
 artifacts/current/tl11-p61-20261015/** -text whitespace=cr-at-eol
 artifacts/current/tl11-p62-20261015/** -text whitespace=cr-at-eol
+artifacts/current/tl11-p8-20261016/** -text whitespace=cr-at-eol
 config/hotspot-confirmed-structure-v1.json -text
 config/hotspot-replay-review-v1.json -text
 config/public-market-evidence-retention-v1.json -text
