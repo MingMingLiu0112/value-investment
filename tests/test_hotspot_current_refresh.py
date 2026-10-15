@@ -9,6 +9,45 @@ from value_investment_agent.quote_sessions import CHINA
 from test_daily_quote_binding import _write_bundle
 
 
+def test_verified_empty_daily_selection_retires_old_candidates_without_acquisition(tmp_path, monkeypatch):
+    from value_investment_agent.application.hotspot import current_refresh as module
+    from value_investment_agent.application.hotspot import current_registry
+    runtime = tmp_path / 'runtime'
+    runtime.mkdir()
+    report = dict(schema_version='hotspot-daily-selection-v1', action='no_order',
+        trade_date='2026-10-14', available_at='2026-10-14T08:00:00+00:00',
+        ranking={'candidates': []}, rows=[{'symbol': '600519'}], failures=[],
+        observation_list=[], hotspot_watch_queue=[])
+    source = runtime / 'empty.json'
+    source.write_text(json.dumps(report), encoding='utf-8')
+    # The daily-selection verifier owns original/ranking validation; exercise
+    # the empty-result publication and retired-candidate boundary here.
+    monkeypatch.setattr(module, 'verify_daily_selection', lambda *args: None)
+    monkeypatch.setattr(current_registry, 'verify_daily_selection', lambda *args: None)
+    config = tmp_path / 'config'
+    config.mkdir()
+    pointer = config / 'current-price-conditions.json'
+    pointer.write_text(json.dumps(dict(items=[dict(symbol='600519', company_name='TEST_ONLY',
+        case_path='runtime/old.json', case_sha256='a' * 64)],
+        watch_source_binding=dict(path='runtime/old-watch.json', sha256='b' * 64),
+        watch_source_scope='HISTORICAL_ONLY')), encoding='utf-8')
+    def forbidden(*args, **kwargs):
+        raise AssertionError('Zero candidates must not request bars or quotes')
+    result = refresh_current_price_conditions(root=tmp_path, watch_source_path=source,
+        watch_source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+        bundle_collector=forbidden, case_collector=forbidden)
+    assert result['status'] == 'WRITTEN' and not result['items'] and not result['failures']
+    registered = json.loads(pointer.read_bytes())
+    assert registered['items'] == [] and registered['selected_symbols'] == []
+    assert registered['previous_items'][0]['symbol'] == '600519'
+    loaded = current_registry.load_price_conditions(tmp_path,
+        now=datetime(2026, 10, 14, 17, tzinfo=CHINA), research_version=None)
+    assert loaded['status'] == 'CURRENT_EMPTY_SELECTION'
+    assert loaded['selection_trade_date'] == '2026-10-14'
+    assert loaded['blockers'] == []
+    assert loaded['retired_warnings']
+
+
 def test_bounded_fallback_does_not_claim_industry_admission():
     report = dict(hotspot_watch_queue=[], dated_quote_observations=[
         dict(symbol=symbol, status="DATED_DUAL_PROVIDER_OBSERVATION_NOT_PRICE_ADMISSION")

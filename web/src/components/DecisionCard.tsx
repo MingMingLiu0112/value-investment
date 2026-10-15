@@ -6,12 +6,14 @@ import {
   judgmentGroup,
   judgmentState,
   judgmentReason,
+  hotspotOpportunityQuality,
 } from "../utils/currentJudgment";
 import { firstResearchText } from "../utils/opportunityView";
 import { formatDecimal } from "../utils/format";
 
 export function DecisionCard({ item }: { item: DecisionItem }) {
   const plan = item.price_action_plan;
+  const quality = hotspotOpportunityQuality(item);
   const hotspot = ["hotspot", "HOTSPOT_SATELLITE"].includes(
     item.strategy ?? "",
   );
@@ -55,6 +57,12 @@ export function DecisionCard({ item }: { item: DecisionItem }) {
           ? `${plan?.daily_selection?.industry ?? "行业未核验"} · 行情 ${plan?.market_trade_date ?? "未核验"}`
           : `价值研究 ${plan?.valuation_date ?? item.as_of ?? "日期未核验"}`}
       </div>
+      {quality && (
+        <p aria-label="机会质量分类">
+          {quality.code ? `${quality.code} · ` : ""}
+          {quality.label}：{quality.reason}
+        </p>
+      )}
       <dl className="decision-price-grid">
         <div>
           <dt>核验参考价</dt>

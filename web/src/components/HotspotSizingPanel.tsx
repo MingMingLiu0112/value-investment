@@ -40,6 +40,14 @@ export type HotspotSizingResponse = {
     status: string;
     review_quantity: number | null;
     blockers: string[];
+    engine?: {
+      hotspot_quantity_review?: {
+        cash_required_cny?: string;
+        stressed_loss_cny?: string;
+        planned_risk_limit_cny?: string;
+        stressed_exit_price_cny?: string;
+      } | null;
+    } | null;
     required_holding_risks?: { sleeve: string; symbol: string }[];
     security_risk_gaps?: { symbol: string; fields: string[] }[];
   };
@@ -257,6 +265,7 @@ export function HotspotSizingPanel({
         />
       )}
       <ProForm
+        name="hotspot-sizing"
         formRef={formRef}
         layout="vertical"
         onFinish={submit}
@@ -451,6 +460,46 @@ export function HotspotSizingPanel({
                     ? "暂不能计算"
                     : `${result.scenario_preview.review_quantity} 股`}
                 </p>
+                {result.scenario_preview.review_quantity != null && (
+                  <Descriptions
+                    column={1}
+                    size="small"
+                    items={[
+                      {
+                        key: "cash",
+                        label: "情景资金占用（元）",
+                        children:
+                          result.scenario_preview.engine
+                            ?.hotspot_quantity_review?.cash_required_cny ??
+                          "暂不能计算",
+                      },
+                      {
+                        key: "loss",
+                        label: "情景压力损失（元）",
+                        children:
+                          result.scenario_preview.engine
+                            ?.hotspot_quantity_review?.stressed_loss_cny ??
+                          "暂不能计算",
+                      },
+                      {
+                        key: "budget",
+                        label: "情景风险预算（元）",
+                        children:
+                          result.scenario_preview.engine
+                            ?.hotspot_quantity_review?.planned_risk_limit_cny ??
+                          "暂不能计算",
+                      },
+                      {
+                        key: "exit",
+                        label: "情景压力退出价（元，不保证成交）",
+                        children:
+                          result.scenario_preview.engine
+                            ?.hotspot_quantity_review
+                            ?.stressed_exit_price_cny ?? "暂不能计算",
+                      },
+                    ]}
+                  />
+                )}
                 {result.scenario_preview.blockers.map((code) => (
                   <p key={code}>{gapLabel(code)}</p>
                 ))}

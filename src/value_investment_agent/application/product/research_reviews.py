@@ -224,7 +224,7 @@ def _validate_pending_review_response(*, root, candidate_path, candidate_sha256,
             or trust['schema_version'] != 'research-review-transport-trust-root-v1'):
         raise ValueError('review signature envelope or trust scope mismatch')
     if (not isinstance(trust['scopes'], list) or not trust['scopes']
-            or set(trust['scopes']) - {'human_group_research', 'human_whole_model'}
+            or set(trust['scopes']) - {'human_group_research', 'human_whole_model', 'human_event_materiality'}
             or not isinstance(trust['symbols'], list) or not trust['symbols']
             or any(not isinstance(s, str) or len(s) != 6 or not s.isdigit() for s in trust['symbols'])):
         raise ValueError('review trust privileges must be explicit')
@@ -591,6 +591,9 @@ def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
             raise ValueError('human review issuer mismatch')
         changes['human_research_approval'] = approval
     if 'event_materiality' in loaded:
+        from .research_materiality_reviews import verify_authenticated_materiality
+        if not getattr(descriptor, 'input_sha256', None):
+            raise ValueError('authenticated materiality requires a real hash-bound descriptor')
         review = event_materiality_review_from_payload(loaded['event_materiality'])
         if review.symbol != spec.symbol or not event_sha256 or review.scan_sha256 != event_sha256:
             raise ValueError('materiality review must bind the exact acquired event scan')
@@ -616,6 +619,9 @@ def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
                                  and ref.get('path') == decision.source_ref.get('path')))
                         for ref in announcement.evidence_refs)):
                 raise ValueError('materiality review announcement source mismatch')
+        verify_authenticated_materiality(root=root, packet=packet,
+            model_context=build_research_review_model_context(descriptor=descriptor, spec=spec),
+            materiality=loaded['event_materiality'], packet_sha256=expected_sha256)
         changes['event_materiality_review'] = review
         changes['model_validity_input'] = replace(validity, event_scan=None,
             blockers=tuple(dict.fromkeys((*validity.blockers, *scan.blockers))),

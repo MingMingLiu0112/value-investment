@@ -5,16 +5,23 @@ from datetime import date, datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+import runpy
+import sys
 
 import pytest
 
 from value_investment_agent.application.product import quote_bridge
 from value_investment_agent.application.product.research_validity_review import (
     STATUS_BLOCKED_ON_HUMAN_EVENT_REVIEW, STATUS_REQUIRES_MATERIALITY_REVIEW,
+    STATUS_BLOCKED_ON_EVENT_COVERAGE, STATUS_BLOCKED_ON_MODEL_VALIDITY,
+    STATUS_INCREMENTAL_REVIEW_COMPLETE_PRICE_BRIDGE_PENDING,
+    review_registered_research_validity,
     render_research_validity_review_markdown, review_research_validity,
 )
 from value_investment_agent.event_scan import (
     COVERAGE_COMPLETE, EVENT_SCAN_SCHEMA, PRE_MODEL_NONE, SCAN_PENDING_HUMAN_REVIEW,
+    SCAN_COMPLETE_NO_MATERIAL_EVENT,
+    REVIEW_REVIEWED_NO_MATERIAL_CANDIDATE,
     AnnouncementReview, EventScanResult,
 )
 
@@ -69,7 +76,12 @@ def _fixture(tmp_path: Path, *, announcement: bool = False) -> dict:
                                  "valid_from": "2026-10-11", "events": [],
                                  "blockers": ["pending_complete_event_materiality_review"]}})
     scan = tmp_path / "runtime/events/event-scan.json"
-    scan_sha = _write(scan, _scan_payload(announcement=announcement))
+    payload = _scan_payload(announcement=announcement)
+    source_sha = _write(tmp_path / "runtime/events/index.json", {"TEST_ONLY": "retained official query response"})
+    payload["evidence_refs"][0]["sha256"] = source_sha
+    for item in payload["announcements"]:
+        item["evidence_refs"][0]["sha256"] = source_sha
+    scan_sha = _write(scan, payload)
     return {"package": package, "package_sha256": package_sha,
             "scan": scan, "scan_sha256": scan_sha,
             "output": tmp_path / "runtime/reviews/review.json"}
@@ -161,6 +173,219 @@ def test_quote_ladder_keeps_research_coverage_and_comparison_separate(tmp_path, 
     assert ladder["formal_decision_eligible"]["eligible"] is False
     assert review["price_compatibility"]["comparison_eligible_within_review"]["eligible"] is False
     assert review["quote_sources"][0]["provider"] == "tencent"
+
+
+def _completed_fixture(tmp_path):
+    fixture = _fixture(tmp_path)
+    package = json.loads(fixture["package"].read_text(encoding="utf-8"))
+    package["model_validity_input"]["blockers"] = []
+    fixture["package_sha256"] = _write(fixture["package"], package)
+    scan = json.loads(fixture["scan"].read_text(encoding="utf-8"))
+    scan.update(status=SCAN_COMPLETE_NO_MATERIAL_EVENT, blockers=[])
+    fixture["scan_sha256"] = _write(fixture["scan"], scan)
+    return fixture
+
+
+def test_completed_incremental_window_reuses_model_without_changing_research_or_approval(tmp_path):
+    fixture = _completed_fixture(tmp_path)
+    before = {path: path.read_bytes() for path in tmp_path.rglob("*.json")}
+    review = _run(tmp_path, fixture, output_path=None)
+    incremental = review["incremental_review"]
+    assert incremental["status"] == "MODEL_VALID_AT_REVIEW_CUTOFF"
+    assert incremental["model_recalculation_required"] is False
+    assert incremental["model_valid_through"] == CUTOFF.isoformat()
+    assert incremental["original_model_as_of"] == "2026-10-11"
+    assert incremental["research_cutoff_changed"] is incremental["g3_approval_granted"] is False
+    assert incremental["formal_eligibility"] is incremental["price_bridge_changed"] is False
+    assert review["model_validity_review"]["current"]["status"] == "VALID"
+    assert all(row["status"] == "VERIFIED" for row in review["event_source_audit"])
+    assert review["previous_research_version"]["package_sha256"] == fixture["package_sha256"]
+    assert review["price_compatibility"]["comparison_eligible_within_review"]["eligible"] is False
+    assert {path: path.read_bytes() for path in tmp_path.rglob("*.json")} == before
+
+
+@pytest.mark.parametrize("failure", ["missing", "tampered", "unbound", "escape", "incomplete"])
+def test_empty_scan_cannot_claim_unchanged_facts_without_retained_coverage(tmp_path, failure):
+    fixture = _completed_fixture(tmp_path)
+    source = tmp_path / "runtime/events/index.json"
+    scan = json.loads(fixture["scan"].read_text(encoding="utf-8"))
+    if failure == "missing":
+        source.unlink()
+    elif failure == "tampered":
+        source.write_text("changed", encoding="utf-8")
+    elif failure == "unbound":
+        scan["evidence_refs"][0].pop("sha256")
+    elif failure == "escape":
+        scan["evidence_refs"][0]["path"] = "../outside.json"
+    else:
+        scan["coverage_status"] = "INCOMPLETE"
+    fixture["scan_sha256"] = _write(fixture["scan"], scan)
+    review = _run(tmp_path, fixture)
+    assert review["status"] == STATUS_BLOCKED_ON_EVENT_COVERAGE
+    assert review["model_validity_review"]["current"]["status"] == "UNKNOWN"
+    assert review["facts_change"]["status"] == review["assumptions_change"]["status"] == "UNKNOWN"
+    assert review["material_events"]["status"] == "UNKNOWN"
+    assert review["model_validity_review"]["if_event_window_reviewed"] is None
+    assert review["incremental_review"]["model_recalculation_required"] is None
+
+
+@pytest.mark.parametrize("field,value", [
+    ("clock", "2026-10-13T04:00:00"),
+    ("clock", "2026-10-11T04:00:00+00:00"),
+    ("package_available", "2099-10-13T04:00:00+00:00"),
+    ("scan_available", "2099-10-13T04:00:00+00:00"),
+    ("validity_to", "2026-10-11"),
+    ("scan_to", "2026-10-13"),
+])
+def test_incremental_review_rejects_future_or_mismatched_evidence_before_writing(tmp_path, field, value):
+    fixture = _completed_fixture(tmp_path)
+    overrides = {}
+    if field == "clock":
+        overrides["today"] = datetime.fromisoformat(value)
+    elif field == "package_available":
+        package = json.loads(fixture["package"].read_text(encoding="utf-8"))
+        package["point_in_time"]["available_at"] = value
+        fixture["package_sha256"] = _write(fixture["package"], package)
+    else:
+        scan = json.loads(fixture["scan"].read_text(encoding="utf-8"))
+        scan["retrieved_at" if field == "scan_available" else field] = value
+        fixture["scan_sha256"] = _write(fixture["scan"], scan)
+    with pytest.raises(ValueError):
+        _run(tmp_path, fixture, **overrides)
+    assert not fixture["output"].exists()
+
+
+@pytest.mark.parametrize("context", ["blockers", "events"])
+def test_empty_new_window_preserves_registered_model_context(tmp_path, context):
+    fixture = _completed_fixture(tmp_path)
+    package = json.loads(fixture["package"].read_text(encoding="utf-8"))
+    package["model_validity_input"][context] = (["MODEL_APPLICABILITY_NOT_PROVEN"] if context == "blockers" else [
+        {"event_date": "2026-10-11", "kind": "financial_report", "description": "TEST_ONLY unresolved report",
+         "material": True, "evidence_refs": [{"id": "TEST_ONLY-original-event"}]}])
+    fixture["package_sha256"] = _write(fixture["package"], package)
+    review = _run(tmp_path, fixture)
+    assert review["status"] == STATUS_BLOCKED_ON_MODEL_VALIDITY
+    assert review["incremental_review"]["model_recalculation_required"] is None
+    assert review["price_compatibility"]["comparison_eligible_within_review"]["eligible"] is False
+    assert review["model_validity_review"]["current"]["blockers"]
+
+
+def test_source_availability_uses_instants_instead_of_iso_string_order(tmp_path):
+    fixture = _completed_fixture(tmp_path)
+    package = json.loads(fixture["package"].read_text(encoding="utf-8"))
+    package["point_in_time"]["available_at"] = "2026-10-13T10:00:00+08:00"
+    fixture["package_sha256"] = _write(fixture["package"], package)
+    review = _run(tmp_path, fixture)
+    assert datetime.fromisoformat(review["source_availability_cutoff"]) == datetime(2026, 10, 13, 3, tzinfo=timezone.utc)
+
+
+def test_reviewed_nonmaterial_disclosure_reuses_existing_review(tmp_path):
+    fixture = _completed_fixture(tmp_path)
+    scan = json.loads(fixture["scan"].read_text(encoding="utf-8"))
+    announcement = _scan_payload(announcement=True)["announcements"][0]
+    announcement.update(materiality_candidate=False, review_status=REVIEW_REVIEWED_NO_MATERIAL_CANDIDATE,
+                        evidence_refs=scan["evidence_refs"])
+    scan["announcements"] = [announcement]
+    fixture["scan_sha256"] = _write(fixture["scan"], scan)
+    review = _run(tmp_path, fixture)
+    assert review["incremental_review"]["status"] == "MODEL_VALID_AT_REVIEW_CUTOFF"
+    assert review["facts_change"]["status"] == "REVIEWED_NO_MODEL_INVALIDATION"
+    assert review["approval_required"][0]["required"] is False
+    markdown = render_research_validity_review_markdown(review)
+    assert "`EVENT_WINDOW_HUMAN_REVIEW`" not in markdown
+    assert "`G3_VALUATION_APPROVAL`" in markdown
+
+
+def test_incremental_model_validity_does_not_admit_later_quote(tmp_path, monkeypatch):
+    fixture = _completed_fixture(tmp_path)
+    bundle = tmp_path / "runtime/quotes/bundle.json"
+    bundle_sha = _write(bundle, {"TEST_ONLY": True})
+
+    def admit(root, path, symbol, research_day, *, today):
+        assert research_day == "2026-10-11"
+        return None, None, {"status": "QUOTE_VERIFIED_BUT_RESEARCH_STALE", "quote_date": "2026-10-12"}
+
+    monkeypatch.setattr(quote_bridge, "admit_quote_for_research", admit)
+    review = _run(tmp_path, fixture, quote_bundle=bundle, quote_bundle_sha256=bundle_sha)
+    assert review["status"] == STATUS_INCREMENTAL_REVIEW_COMPLETE_PRICE_BRIDGE_PENDING
+    assert review["incremental_review"]["model_recalculation_required"] is False
+    assert review["incremental_review"]["g3_approval_granted"] is False
+    assert review["price_compatibility"]["comparison_eligible_within_review"]["eligible"] is False
+
+
+def _registered_fixture(tmp_path, *, fallback=False):
+    fixture = _completed_fixture(tmp_path)
+    package = json.loads(fixture["package"].read_text(encoding="utf-8"))
+    ref = {"id": "TEST_ONLY-scan", "path": fixture["scan"].relative_to(tmp_path).as_posix(),
+           "sha256": fixture["scan_sha256"]}
+    package["model_validity_input"]["event_scan_evidence_refs" if fallback else "event_scan_ref"] = (
+        [ref] if fallback else ref)
+    fixture["package_sha256"] = _write(fixture["package"], package)
+    _write(tmp_path / "config/current-quote-bridge.json", {
+        "schema_version": "current-quote-bridge-v1", "action": "no_order", "quotes": {
+            "600887": {"research_package": fixture["package"].relative_to(tmp_path).as_posix(),
+                       "research_package_sha256": fixture["package_sha256"]},
+            "000651": {"research_package": "missing.json", "research_package_sha256": "0" * 64}}})
+    return fixture
+
+
+@pytest.mark.parametrize("fallback", [False, True])
+def test_registered_reviews_isolate_symbols_and_reuse_immutable_artifact(tmp_path, fallback):
+    _registered_fixture(tmp_path, fallback=fallback)
+    output = tmp_path / "runtime/reviews/registered.json"
+    arguments = dict(root=tmp_path, review_cutoff=CUTOFF, today=TODAY, output_path=output)
+    review = review_registered_research_validity(**arguments)
+    rows = {row["symbol"]: row for row in review["reviews"]}
+    assert rows["000651"]["status"] == "PENDING"
+    assert rows["000651"]["model_validity_status"] == "UNKNOWN"
+    assert rows["600887"]["review"]["incremental_review"]["model_recalculation_required"] is False
+    before = output.read_bytes()
+    arguments["today"] = TODAY.replace(hour=5)
+    assert review_registered_research_validity(**arguments) == review
+    assert output.read_bytes() == before
+    with pytest.raises(FileExistsError):
+        review_registered_research_validity(**{**arguments, "symbols": ["000651"]})
+
+
+@pytest.mark.parametrize("failure", ["missing", "short", "tampered", "unbound"])
+def test_registered_review_missing_or_insufficient_scan_is_unknown(tmp_path, failure):
+    fixture = _registered_fixture(tmp_path)
+    if failure == "missing":
+        fixture["scan"].unlink()
+    elif failure == "tampered":
+        fixture["scan"].write_text("{}", encoding="utf-8")
+    elif failure == "unbound":
+        package = json.loads(fixture["package"].read_text(encoding="utf-8"))
+        package["model_validity_input"].pop("event_scan_ref")
+        digest = _write(fixture["package"], package)
+        pointer = tmp_path / "config/current-quote-bridge.json"
+        payload = json.loads(pointer.read_text(encoding="utf-8"))
+        payload["quotes"]["600887"]["research_package_sha256"] = digest
+        _write(pointer, payload)
+    result = review_registered_research_validity(root=tmp_path,
+        review_cutoff=date(2026, 10, 13) if failure == "short" else CUTOFF, today=TODAY,
+        output_path=tmp_path / "runtime/reviews/registered.json", symbols=["600887"])
+    row = result["reviews"][0]
+    assert row["status"] == "PENDING"
+    assert row["model_validity_status"] == "UNKNOWN"
+    assert row["review"] is None
+    assert row["reason"]
+    assert row["g3_approval_granted"] is False
+
+
+def test_registered_review_cli_calls_application_and_reports_audit_hash(tmp_path, monkeypatch, capsys):
+    _registered_fixture(tmp_path)
+    namespace = runpy.run_path(str(ROOT / "scripts/current/review_registered_research_validity.py"))
+    main = namespace["main"]
+    main.__globals__["ROOT"] = tmp_path
+    monkeypatch.setattr(sys, "argv", ["review_registered_research_validity.py",
+        "--review-cutoff", CUTOFF.isoformat(), "--symbol", "600887",
+        "--output", "runtime/reviews/cli.json"])
+    assert main() == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["artifact_sha256"] == _sha(tmp_path / "runtime/reviews/cli.json")
+    assert result["action"] == "no_order"
+    assert result["reviews"][0]["model_validity_status"] == "VALID"
 
 
 @pytest.mark.skipif(not REAL_REVIEW.is_file(),

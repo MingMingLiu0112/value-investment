@@ -49,6 +49,9 @@ jobs:
           tests/test_private_risk_preview.py
           tests/test_private_risk_partial_facts.py
           tests/test_p62_positive_workflow.py
+          tests/test_p7_signed_review_workflow.py
+          tests/test_p7_materiality_review_transport.py
+          tests/test_incremental_quote_bridge.py
           tests/test_private_risk_experience.py
           tests/test_private_risk_cash_floor.py
           tests/test_value_policy_interaction.py
@@ -86,6 +89,7 @@ jobs:
           tests/test_price_bridge.py
           tests/test_quote_bridge_execution.py
           tests/test_research_validity_review.py
+          tests/test_incremental_validity.py
           tests/test_daily_research_status.py
           tests/test_hotspot_current_price_case.py
           tests/test_hotspot_current_refresh.py

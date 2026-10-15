@@ -13,6 +13,7 @@ import hashlib
 import json
 
 import pytest
+from materiality_transport_helpers import authenticated_materiality_packet
 
 from test_decision_recommendation import _case
 from test_event_materiality import _decision, _review, DECISION_NOT_MATERIAL
@@ -218,7 +219,7 @@ def _packet(chain, approval):
     ("assumption_set_sha256", "assumption_set_sha256_changed"),
 ])
 def test_synthetic_conditional_approval_chain_and_bundle_replay(
-    synthetic_chain, entry, drift, expected_blocker,
+    synthetic_chain, authenticated_materiality_packet, entry, drift, expected_blocker,
 ):
     root, package_path, descriptor, app, baseline, approval, _, event_hash = synthetic_chain
     if drift == "missing":
@@ -227,6 +228,8 @@ def test_synthetic_conditional_approval_chain_and_bundle_replay(
         approval = replace(approval, **{drift: "synthetic-stale-model" if drift.endswith("version")
                                       else "0" * 64})
     packet_path, packet_hash = _packet(synthetic_chain, approval)
+    packet_path, packet_hash, _, _, _ = authenticated_materiality_packet(
+        package_path, synthetic_chain[6], extra_packet=packet_path)
     output_path = root / "synthetic-export.json"
     if entry == "shared_service":
         spec = attach_research_reviews(

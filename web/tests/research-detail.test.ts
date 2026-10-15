@@ -173,6 +173,32 @@ describe("price bridge execution view", () => {
     expect(view?.displayPrice).toBe("27.77");
   });
 
+  it("shows incremental coverage without upgrading pending materiality or rewriting original cutoff", () => {
+    const view = bridgeExecutionView({
+      ...staleExecution,
+      status: "INCREMENTAL_VALIDITY_BLOCKED",
+      incremental_validity: {
+        status: "UNKNOWN",
+        review_cutoff: "2026-10-15",
+        announcement_count: 2,
+        blockers: ["pending_complete_event_materiality_review"],
+      },
+    });
+    expect(view?.comparable).toBe(false);
+    expect(view?.rows.find((row) => row.key === "research_day")?.value).toBe(
+      "2026-10-11",
+    );
+    expect(
+      view?.rows.find((row) => row.key === "incremental_cutoff")?.value,
+    ).toBe("2026-10-15");
+    expect(
+      view?.rows.find((row) => row.key === "incremental_announcements")?.value,
+    ).toBe("2");
+    expect(
+      view?.rows.find((row) => row.key === "incremental_blockers")?.value,
+    ).toContain("materiality");
+  });
+
   it("generates the one-line conclusion from the real bridge state", () => {
     const headline = researchHeadline({
       valuation: {

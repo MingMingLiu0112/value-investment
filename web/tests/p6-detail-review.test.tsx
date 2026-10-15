@@ -42,7 +42,7 @@ import { ValuePolicyReview } from "../src/components/ValuePolicyReview";
 import { HotspotReplayReview } from "../src/components/HotspotReplayReview";
 
 describe("detail operation plan boundaries", () => {
-  it("puts authenticated personal policy before the collapsed public plan and draft", () => {
+  it("keeps current judgment, prices and core risk visible before personal context and policy", () => {
     state.data = null;
     const html = renderToStaticMarkup(
       <JudgmentSummary
@@ -50,14 +50,33 @@ describe("detail operation plan boundaries", () => {
           id: "value-600887",
           symbol: "600887",
           strategy: "CORE_VALUE",
+          price_action_plan: {
+            action: "no_order",
+            signal_state: "WATCH",
+            entry_trigger_price: null,
+            invalidation_price: null,
+            reference_close: "27.96",
+            market_trade_date: "2026-10-15",
+            counter: ["模型有效性尚未通过"],
+          },
         }}
+        personalContext={<section>当前个人持仓摘要</section>}
       />,
     );
     expect(html.indexOf("本人当前价格政策")).toBeLessThan(
       html.indexOf("查看待确认价格政策"),
     );
-    expect(html.indexOf("本人当前价格政策")).toBeLessThan(
-      html.indexOf("公共研究计划与资格"),
+    const visible = html.split("<details>")[0];
+    expect(visible).toContain("当前判断：");
+    expect(visible).toContain("关键价格：");
+    expect(visible).toContain("27.96");
+    expect(visible).toContain("核心风险：");
+    expect(visible).toContain("模型有效性尚未通过");
+    expect(html.indexOf("核心风险：")).toBeLessThan(
+      html.indexOf("当前个人持仓摘要"),
+    );
+    expect(html.indexOf("当前个人持仓摘要")).toBeLessThan(
+      html.indexOf("本人当前价格政策"),
     );
     expect(html).toContain("外部估值审核交接");
     expect(html).not.toContain("本人政策已登记");

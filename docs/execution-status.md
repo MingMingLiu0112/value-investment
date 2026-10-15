@@ -1,5 +1,16 @@
 # CURRENT STATUS
 
+## 2026-10-15 TL11-P7: workflow integration in progress
+
+The latest explicit user task is TL11-P7, not completion of the historical
+TL10/P6 work below. Current evidence and remaining checks are recorded in
+`docs/current/tl11-p7-workflow-acceptance-20261015.md` and
+`artifacts/current/tl11-p7-20261015/`. Signed-review engineering tests,
+TEST_ONLY portfolio interactions and real negative gates are distinct from
+formal investment eligibility, strategy validation and final user acceptance.
+`REAL_DECISION_ENGINEERING_CLOSURE` remains `IN_PROGRESS` until the final
+incremental integration, refresh and CI results are bound. `action=no_order`.
+
 ## 2026-10-13 TL10-RC: one verified daily snapshot, one entry, fail-closed reads
 
 TL10-RC engineering delivery is complete on `codex/web-d1-investment-workbench`.

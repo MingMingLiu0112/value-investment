@@ -33,7 +33,7 @@ SCHEMA_VERSION = "daily-public-packet-v1"
 # chain (bug fixes included). It is part of the identity below so a new engine
 # revision yields a new publication_id instead of silently reusing a stored
 # record that an older revision computed.
-ENGINE_VERSION = "daily-public-packet-engine-v12"
+ENGINE_VERSION = "daily-public-packet-engine-v16"
 # v4 folds every content-deciding input into the identity: the company
 # research registry and its evidence files, the archived quote bundles, the
 # bound decision-explanation files and the business clock (natural date +
@@ -116,6 +116,10 @@ def identity_inputs(root: Path, chain: Mapping[str, Any], *,
             evidence.append({"symbol": symbol, "path": item["path"],
                              "observed_sha256": item["observed_sha256"]})
     bundles: list[dict] = []
+    from .incremental_validity import incremental_validity_identity
+    supplemental = [{"symbol": binding["symbol"],
+        "sources": incremental_validity_identity(root, binding["ref"])}
+        for binding in summary["incremental_bindings"]]
     for binding in summary["bundle_bindings"]:
         target = _repo_path(root, binding["path"])
         bundles.append({"role": binding["role"], "path": binding["path"],
@@ -160,6 +164,8 @@ def identity_inputs(root: Path, chain: Mapping[str, Any], *,
         "quote_bridge_pointer": {"path": QUOTE_POINTER_PATH,
                                  "observed_sha256": summary["sha256"]},
         "quote_bundles": sorted(bundles, key=lambda item: item["path"]),
+        "incremental_validity_sources": supplemental,
+        "incremental_materiality_handoff_version": 1,
         "research_registry": ({"path": registry_binding["path"],
                                "observed_sha256": registry_binding["sha256"]}
                               if registry_binding is not None else None),
@@ -204,14 +210,27 @@ def _bridge_status(execution: Mapping[str, Any]) -> dict:
     comparison = ladder.get("comparison_eligible") if isinstance(ladder.get("comparison_eligible"), dict) else {}
     research_day = execution.get("research_day")
     quote_date = quote.get("quote_date")
+    incremental = execution.get("incremental_validity") or {}
     return {
         "status": execution.get("status"),
+        "quote_verification_status": execution.get("quote_verification_status", execution.get("status")),
         "price_admitted": execution.get("price_admitted") is True,
         "quote_date": quote_date if isinstance(quote_date, str) else None,
         "quote_observed_at": quote.get("collected_at") if isinstance(quote.get("collected_at"), str) else None,
         "research_day": research_day if isinstance(research_day, str) else None,
         "needs_re_research": bool(isinstance(quote_date, str) and isinstance(research_day, str)
-                                  and quote_date > research_day),
+                                  and quote_date > research_day and not incremental),
+        "incremental_status": incremental.get("status"),
+        "review_cutoff": incremental.get("review_cutoff"),
+        "announcement_count": incremental.get("announcement_count"),
+        "model_validity": incremental.get("model_validity"),
+        "incremental_validity_binding": incremental.get("binding_ref"),
+        "incremental_validity": incremental or None,
+        "price_comparison": execution.get("price_comparison"),
+        "conditional_valuation": execution.get("conditional_valuation"),
+        "blockers": list(dict.fromkeys([*incremental.get("blockers", []),
+            *(execution.get("price_comparison") or {}).get("blockers", [])])),
+        "current_price": quote.get("display_price"),
         "comparison_eligible": comparison.get("eligible") is True,
         "display_scope": quote.get("display_scope"),
         "latest_completed_session": quote.get("latest_completed_session"),
@@ -224,7 +243,7 @@ def _quote_pointer_summary(root: Path) -> dict:
     path = root / QUOTE_POINTER_PATH
     digest = _sha_of(path)
     summary = {"path": QUOTE_POINTER_PATH, "sha256": digest,
-               "registered_at": None, "quotes_registered": 0, "bundle_bindings": []}
+               "registered_at": None, "quotes_registered": 0, "bundle_bindings": [], "incremental_bindings": []}
     if digest is None:
         return summary
     try:
@@ -242,6 +261,8 @@ def _quote_pointer_summary(root: Path) -> dict:
             if not isinstance(entry, dict):
                 continue
             summary["quotes_registered"] += 1
+            if "incremental_validity_binding" in entry:
+                summary["incremental_bindings"].append({"symbol": symbol, "ref": entry["incremental_validity_binding"]})
             if isinstance(entry.get("quote_bundle"), str) and isinstance(entry.get("quote_bundle_sha256"), str):
                 summary["bundle_bindings"].append(
                     {"role": f"quote_bundle:{symbol}", "path": entry["quote_bundle"],
@@ -327,6 +348,22 @@ def _pending_actions(symbol: str, bridge: Mapping[str, Any] | None,
     blockers.extend(str(item) for item in (explanation or {}).get("blockers", []) if isinstance(item, str))
     joined = " ".join(blockers)
     model_validity = (decision or {}).get("model_validity")
+    if bridge and bridge.get("incremental_status"):
+        incremental = bridge.get("incremental_validity") or {}
+        if bridge["incremental_status"] != "VALID" or bridge.get("blockers"):
+            route = incremental.get("materiality_review_route") or {}
+            if route.get("status") == "MATERIALITY_HANDOFF_BLOCKED":
+                actions.append({"code": "INCREMENTAL_MATERIALITY_HANDOFF_BLOCKED", "actor": "ENGINEERING",
+                    "label": "当前公告审核交接绑定未通过；修复证据交接后再办理，不以 G3 替代材料性签署。",
+                    "binding_ref": bridge.get("incremental_validity_binding"),
+                    "scan_ref": incremental.get("scan_ref")})
+            actions.append({"code": "INCREMENTAL_EVENT_MATERIALITY_REVIEW", "actor": "HUMAN",
+                "label": f"复核截至 {bridge.get('review_cutoff')} 的 {bridge.get('announcement_count')} 份公告及原模型适用性；不预支 G3。",
+                "binding_ref": bridge.get("incremental_validity_binding"),
+                "handoff_status": route.get("status"),
+                "next_url": f"/decisions/{symbol}#value-review-handoff",
+                "announcements": incremental.get("announcements", []),
+                "evidence_refs": incremental.get("source_bindings", [])})
     if isinstance(model_validity, dict) and model_validity.get("status") == "UNKNOWN":
         actions.append({"code": "MODEL_VALIDITY_REVIEW", "actor": "ENGINEERING",
                         "label": "模型有效性未确立；需完成重大事件与假设有效性复核"})
@@ -381,6 +418,11 @@ def _company_entry(root: Path, symbol: str, name: str,
         "pending_actions": pending,
         "blockers": [],
     }
+    if bridge and bridge.get("incremental_status"):
+        for key in ("incremental_status", "review_cutoff", "announcement_count", "model_validity",
+                    "incremental_validity_binding", "incremental_validity", "price_comparison"):
+            entry[key] = bridge.get(key)
+        entry["blockers"].extend(bridge.get("blockers", []))
     if explanation_broken:
         entry["blockers"].append("VALUE_EXPLANATION_BINDING_UNAVAILABLE")
     if not explanation and not decision:
@@ -616,6 +658,19 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
             event_review_statuses[symbol] = {"status": "REGISTERED", "source": "EXPLANATION"}
         else:
             event_review_statuses[symbol] = {"status": "NOT_REGISTERED", "source": None}
+        if bridge and bridge.get("incremental_status"):
+            model_validity_states.append(str(bridge["incremental_status"]))
+            valuation_statuses.setdefault(symbol, {"symbol": symbol, "conditional_range": None})
+            valuation_statuses[symbol].update(model_validity=bridge.get("model_validity"),
+                price_comparison=bridge.get("price_comparison"),
+                incremental_validity_binding=bridge.get("incremental_validity_binding"))
+            event_review_statuses[symbol] = {"status": bridge["incremental_status"],
+                "source": "EXPLICIT_INCREMENTAL_BINDING", "review_cutoff": bridge.get("review_cutoff"),
+                "announcement_count": bridge.get("announcement_count"),
+                "binding_ref": bridge.get("incremental_validity_binding"),
+                "announcements": (bridge.get("incremental_validity") or {}).get("announcements", []),
+                "blockers": bridge.get("blockers", [])}
+            blockers.extend(f"INCREMENTAL_VALIDITY:{symbol}:{item}" for item in bridge.get("blockers", []))
         if bridge and bridge.get("needs_re_research"):
             blockers.append(f"NEEDS_RE_RESEARCH:{symbol}")
         if bridge and bridge.get("quote_date") and not bridge.get("price_admitted"):
@@ -699,7 +754,13 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
                               "reason": "尚未登记行情，无法判定研究是否覆盖报价。"}
     else:
         stale_pairs = [row for row in re_research_pairs if row["quote_date"] > row["research_day"]]
-        if stale_pairs:
+        if stale_pairs and all(row.get("incremental_status") for row in stale_pairs):
+            covered = all(row.get("comparison_eligible") is True for row in stale_pairs)
+            research_freshness = {"status": "INCREMENTALLY_COVERS" if covered else "INCREMENTAL_REVIEW_PENDING",
+                                  "research_as_of": research_as_of,
+                                  "reason": ("原研究截止日保持不变；增量有效性支持条件性价格比较，正式投资资格另行核验。" if covered else
+                                             "已接入增量公告复核；按具体材料性、模型及证据缺口处理，日期推进本身不要求重做整份研究。")}
+        elif stale_pairs:
             research_freshness = {"status": "STALE", "research_as_of": research_as_of,
                                   "reason": (f"报价日 {max(row['quote_date'] for row in stale_pairs)} 晚于研究截止日；"
                                              "需重跑研究并完成事件复核后才能形成正式价格比较。")}

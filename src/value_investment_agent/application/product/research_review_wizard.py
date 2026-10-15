@@ -33,7 +33,14 @@ def build_external_review_handoff(*, root: Path, symbol: str, now) -> dict:
     count = len(pinned_trust_root_fingerprints())
     candidate_args = (f'--symbol {symbol} --candidate "{binding["path"]}" '
                       f'--candidate-sha256 {binding["sha256"]}')
+    from .research_materiality_reviews import registered_materiality_handoff
+    try:
+        materiality_handoff = registered_materiality_handoff(root=root, symbol=symbol, today=now)
+    except (ValueError, OSError, KeyError, TypeError) as error:
+        materiality_handoff = dict(status='MATERIALITY_HANDOFF_BLOCKED', action='no_order',
+            approval_granted=False, g3_approval_granted=False, reason=str(error), steps=[])
     return dict(action='no_order', status='EXTERNAL_SIGNATURE_REQUIRED',
+        materiality_handoff=materiality_handoff,
         symbol=symbol, candidate_binding=binding,
         model_context=preview['draft']['model_context'],
         valuation_artifact_sha256=valuation_hash,

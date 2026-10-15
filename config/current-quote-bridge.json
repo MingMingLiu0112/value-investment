@@ -9,7 +9,11 @@
       "quote_bundle_sha256": "e12e824465f4681ff57643dae4859d719c4a85011e669904e30b76ab5b5bc612",
       "research_package": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
       "research_package_sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5",
-      "registered_at": "2026-10-15T07:11:21.354797+00:00"
+      "registered_at": "2026-10-15T07:11:21.354797+00:00",
+      "incremental_validity_binding": {
+        "path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/incremental-binding.json",
+        "sha256": "f362ec07952203c167aa6d83abf03f4bba86ae076b379e3d07edb419661f13fb"
+      }
     }
   }
 }

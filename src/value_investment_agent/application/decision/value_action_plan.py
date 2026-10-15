@@ -17,10 +17,41 @@ from ...research_artifacts import ARTIFACT_VALUATION_RESULT
 from ..product.publication_chain import bound_object, load_current_chain, STRUCTURE_ERRORS
 from ..product.quote_bridge import execute_quote_bridge_for_symbol
 from ..product.value_decision_explanation import project_value_decision_explanation
+from ..product.decision_surface import verify_current_decision_workbench
 from .restore_decision_recommendation import RestoredDecisionRecommendation
 from .value_model_identity import project_catalog_identity
 
 CHINA = ZoneInfo("Asia/Shanghai")
+
+
+def replay_published_value_decision(root: Path, explanation: dict, *, now: datetime,
+                                  chain: dict | None = None
+                                  ) -> tuple[RestoredDecisionRecommendation | None, dict | None]:
+    """Restore the explicit publication proof; display flags are never admission."""
+    if chain is None:
+        try:
+            chain = load_current_chain(root)
+        except STRUCTURE_ERRORS:
+            return None, None
+    binding = chain.get("sources", {}).get("decision_workbench_binding")
+    if binding is None:
+        return None, None
+    workbench = bound_object(root, binding)
+    stamp = datetime.fromisoformat(workbench["generated_at"])
+    if stamp.utcoffset() is None or stamp > now:
+        raise ValueError("Published decision workbench is unavailable at cutoff")
+    restored = verify_current_decision_workbench(workbench)
+    if restored.recommendation.symbol != explanation.get("symbol"):
+        return None, None
+    expected = project_value_decision_explanation(restored, evidence_scope="RETAINED_RESEARCH")
+    if any(explanation.get(key) != value for key, value in expected.items()):
+        raise ValueError("Published explanation differs from replayed decision")
+    if explanation.get("model_id", restored.recommendation.input_model_id) != restored.recommendation.input_model_id:
+        raise ValueError("Published explanation model differs from replayed decision")
+    research_as_of = restored.dependency_objects["research_case"].as_of.isoformat()
+    if explanation.get("research_as_of", research_as_of) != research_as_of:
+        raise ValueError("Published research date differs from replayed decision")
+    return restored, binding
 
 
 def load_value_action_policy(*, root: Path, binding: dict, symbol: str,
@@ -101,11 +132,8 @@ def load_registered_value_action_plans(root: Path, *, now: datetime,
                                        symbols: list[str] | tuple[str, ...] | None = None) -> dict:
     """Read-only current publication projection, never a new financial approval.
 
-    Hash-bound explanations retain their existing replay receipt, but this
-    published read does not itself restore a live artifact repository. Therefore
-    it cannot mint security or portfolio action qualification. Call the typed
-    project_value_action_plan with a freshly restored decision for review
-    qualification. Root owns packet/API and publication identity integration.
+    Only an explicit hash-bound workbench replay can supply typed admission.
+    Legacy display-only explanations remain ineligible for formal review.
     """
     root = Path(root).resolve()
     if now.utcoffset() is None:
@@ -148,6 +176,11 @@ def load_registered_value_action_plans(root: Path, *, now: datetime,
                     or explanation.get("verification", {}).get("semantic_revalidation") is not True):
                 raise ValueError("Published value explanation contract invalid")
             sources = [binding, *_check_retained_evidence(root, explanation)]
+            restored, replay_binding = replay_published_value_decision(
+                root, explanation, now=now, chain=chain)
+            if restored is not None:
+                sources.append(replay_binding)
+                explanation = {**explanation, "model_id": restored.recommendation.input_model_id}
             explanation = project_catalog_identity(explanation)
             policy = None
             if registered_binding is not None:
@@ -183,7 +216,10 @@ def load_registered_value_action_plans(root: Path, *, now: datetime,
             if execution.get("pointer"):
                 sources.append(execution["pointer"])
             plan = build_value_action_plan(explanation=explanation, policy=policy,
-                reference_quote=quote, source_bindings=tuple(sources), decision_as_of=day).as_policy()
+                reference_quote=quote, source_bindings=tuple(sources), decision_as_of=day,
+                repository_replayed=restored is not None,
+                verified_predecision=(None if restored is None else
+                    restored.dependency_objects.get("pre_decision"))).as_policy()
             plan["quote_bridge_status"] = execution["status"]
             plan["historical_research_blockers"] = historical_blockers
             plan["resolved_historical_quote_blockers"] = resolved_quote_blockers
@@ -195,7 +231,8 @@ def load_registered_value_action_plans(root: Path, *, now: datetime,
             next_step = execution.get("next_step") or execution.get("reason")
             if next_step:
                 plan["required_confirmations"].append(next_step)
-            plan["verification_scope"] = "HASH_BOUND_PUBLISHED_RESEARCH_NOT_NEW_APPROVAL"
+            plan["verification_scope"] = ("REPOSITORY_REPLAYED_PUBLISHED_RESEARCH_NOT_NEW_APPROVAL"
+                if restored is not None else "HASH_BOUND_PUBLISHED_RESEARCH_NOT_NEW_APPROVAL")
             items.append(plan)
             for source in sources:
                 if source not in bindings:

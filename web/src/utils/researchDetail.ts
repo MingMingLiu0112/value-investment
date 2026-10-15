@@ -43,6 +43,10 @@ export interface BridgeExecutionView {
  * 共享价格桥接的准入状态；未收录的代码原样返回，不推测含义。
  */
 const BRIDGE_STATUS_TEXT: Record<string, string> = {
+  INCREMENTAL_VALIDITY_BLOCKED:
+    "增量有效性未通过，行情核验状态与具体缺口分别列示",
+  QUOTE_VERIFIED_WITH_INCREMENTAL_VALIDITY:
+    "增量复核支持条件性价格比较，正式决策仍须独立批准",
   QUOTE_VERIFIED_FOR_RESEARCH_INPUT: "行情已核验，可作为研究输入",
   QUOTE_VERIFIED_BUT_RESEARCH_STALE: "行情已核验，但晚于研究截止日",
   HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY: "仅展示的历史核验收盘",
@@ -121,6 +125,33 @@ export function bridgeExecutionView(
         : "未提供",
     },
   ];
+  if (execution.incremental_validity) {
+    const incremental = execution.incremental_validity;
+    rows.push(
+      {
+        key: "incremental_cutoff",
+        label: "增量公告复核截止日（不改原研究截止）",
+        value: text(incremental.review_cutoff) ?? "未提供",
+      },
+      {
+        key: "incremental_announcements",
+        label: "已绑定新增公告数",
+        value: text(incremental.announcement_count) ?? "未提供",
+      },
+      {
+        key: "incremental_status",
+        label: "增量模型有效性",
+        value: text(incremental.status) ?? "未提供",
+      },
+      {
+        key: "incremental_blockers",
+        label: "增量复核未通过条件",
+        value:
+          incremental.blockers.join("；") ||
+          "无已返回阻塞；仍需核对独立正式资格",
+      },
+    );
+  }
   const sources = (Array.isArray(execution.sources) ? execution.sources : [])
     .filter((row) => row && text(row.source_url))
     .map((row) => ({

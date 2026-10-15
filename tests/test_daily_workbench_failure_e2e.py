@@ -78,6 +78,7 @@ def test_safe_refresh_failure_keeps_previous_snapshot_bytes(tmp_path):
 @pytest.mark.parametrize('scenario,expected_exit,expected_status,published', [
     ('complete', 0, 'SUCCESS', True),
     ('partial', 3, 'PARTIAL', True),
+    ('incremental_unavailable', 3, 'PARTIAL', True),
     ('unavailable', 2, 'BLOCKED', False),
     ('core_conflict', 2, 'BLOCKED', False),
     ('core_unavailable', 2, 'BLOCKED', False),
@@ -119,15 +120,24 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         '    packet["snapshot"]={"publication_id":"verified","status":"VERIFIED"}\n'
         '    Path("config/current-daily-public-snapshot.json").write_text(json.dumps(packet))\n'
         f'print(json.dumps(packet))\nraise SystemExit(2 if scenario == "core_recovered" and count == 1 else {build_exit})\n', encoding='utf-8')
-    readiness = dict(prices_ready=scenario in {'complete', 'core_recovered'}, quotes_ready=True,
+    readiness = dict(prices_ready=scenario in {'complete', 'core_recovered', 'incremental_unavailable'}, quotes_ready=True,
         publication_ready=scenario != 'unavailable', core_integrity_ok=True,
         market_trade_dates=['2026-10-14'], price_securities=[], quote_securities=[])
-    refresh = dict(status='WRITTEN', items=[], failures=[] if scenario == 'complete' else [
+    refresh = dict(status='WRITTEN', items=[], failures=[] if scenario in {'complete', 'incremental_unavailable'} else [
         dict(symbol='300001', reason='missing 15m')])
     (current / 'refresh_current_price_conditions.py').write_text(
         'import json,sys\n'
         f'value=json.loads({json.dumps(readiness)!r}) if "--check-reuse" in sys.argv else json.loads({json.dumps(refresh)!r})\n'
         'print(json.dumps(value))\n', encoding='utf-8')
+    (current / 'collect_registered_validity_scan.py').write_text(
+        'import json,sys\n'
+        f'failed={scenario == "incremental_unavailable"!r}\n'
+        'print(json.dumps({"binding_ref":{"path":"runtime/TEST_ONLY-scan.json","sha256":"a"*64}}))\n'
+        'raise SystemExit(2 if failed else 0)\n', encoding='utf-8')
+    (current / 'review_registered_research_validity.py').write_text(
+        'import json\nprint(json.dumps({"reviews":[{"symbol":"600887",'
+        '"model_validity_status":"UNKNOWN","status":"REQUIRES_MATERIALITY_REVIEW"}]}))\n',
+        encoding='utf-8')
     before = pointer.read_bytes()
     completed = subprocess.run([str(PWSH), '-NoProfile', '-File',
         str(current / 'run_daily_workbench.ps1'), '-Mode', 'SAFE_REFRESH', '-NoServer'],

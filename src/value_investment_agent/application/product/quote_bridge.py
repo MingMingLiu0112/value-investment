@@ -8,7 +8,7 @@ unadmitted, and the verdict names the reason instead of a display price.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import json
 from pathlib import Path
 from typing import Any
@@ -248,7 +248,7 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
         return {**execution, "status": "NOT_ADMITTED", "reason": "行情包无法准入：" + str(error),
                 "next_step": _NEXT_STEPS["NOT_ADMITTED"]}
     status = str(verdict.get("status"))
-    return {**execution, "status": status, "reason": verdict.get("reason"),
+    result = {**execution, "status": status, "quote_verification_status": status, "reason": verdict.get("reason"),
             "price_admitted": bool(verdict.get("price_admitted")),
             "quote": {key: verdict.get(key) for key in (
                 "quote_date", "display_price", "collected_at", "display_scope",
@@ -256,6 +256,82 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
             "sources": verdict.get("source_evidence") or [],
             "compatibility": quote_compatibility_ladder(verdict, case["research_as_of"]),
             "next_step": _NEXT_STEPS.get(status, "按以上原因复核后重跑价格桥接。")}
+    if "incremental_validity_binding" in entry:
+        ref = entry["incremental_validity_binding"]
+        result["incremental_validity"] = {"status": "UNKNOWN", "binding_ref": ref,
+            "review_cutoff": None, "announcement_count": None, "model_validity": None,
+            "blockers": [], "action": "no_order", "formal_eligibility": False}
+        try:
+            from .incremental_validity import (read_bound_json, resolve_incremental_model_validity,
+                                               rebuild_registered_valuation)
+            from ...price_bridge import bridge_with_quote
+
+            _, binding = read_bound_json(root, ref, "incremental validity binding")
+            review_cutoff = date.fromisoformat(binding["review_cutoff"])
+            validity = resolve_incremental_model_validity(root=root, symbol=symbol, binding_ref=ref,
+                review_cutoff=review_cutoff, today=today)
+            from .research_materiality_reviews import apply_registered_materiality_review
+            validity, materiality_route = apply_registered_materiality_review(
+                root=root, symbol=symbol, today=today, fallback=validity)
+            _, observation = read_bound_json(root, binding["observation_ref"], "incremental observation")
+            _, scan = read_bound_json(root, binding["scan_ref"], "incremental scan")
+            announcement_sources = {source.get("path"): {
+                "title": item["title"], "source_url": item["source_url"],
+                "announcement_id": item["announcement_id"], "published_at": item["published_at"]}
+                for item in scan["announcements"] for source in item["evidence_refs"]}
+            sources = [{**source, **announcement_sources.get(source.get("path"), {})}
+                       for source in observation["source_bindings"]]
+            result["incremental_validity"].update(status=validity.status,
+                review_cutoff=review_cutoff.isoformat(), announcement_count=len(scan["announcements"]),
+                model_validity=json.loads(validity.to_json()), blockers=list(validity.blockers),
+                source_bindings=sources, scan_ref=binding["scan_ref"],
+                observation_ref=binding["observation_ref"], announcements=scan["announcements"],
+                full_calendar_window_elapsed=observation["full_calendar_window_elapsed"],
+                materiality_review_route=materiality_route)
+            if status not in {"QUOTE_VERIFIED_FOR_RESEARCH_INPUT", "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
+                              "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"}:
+                raise ValueError("Incremental comparison requires a current verified quote: " + str(verdict.get("reason")))
+            if verdict.get("latest_completed_session") != verdict.get("quote_date"):
+                raise ValueError("Incremental comparison requires the latest officially completed session")
+            quote = quote_snapshot_from_bundle_file(bundle, root, symbol=symbol,
+                ref_id="incremental-price-quote-" + entry["quote_bundle_sha256"],
+                expected_sha256=entry["quote_bundle_sha256"], require_current_b1=True)
+            valuation = rebuild_registered_valuation(root, symbol)
+            result["conditional_valuation"] = json.loads(valuation.to_json())
+            comparison = bridge_with_quote(valuation, validity, quote, blockers=valuation.blockers)
+            result["price_comparison"] = json.loads(comparison.to_json())
+            # Recheck all supplemental bytes and the registration after computation.
+            replayed = resolve_incremental_model_validity(root=root, symbol=symbol, binding_ref=ref,
+                review_cutoff=review_cutoff, today=today)
+            replayed, replayed_route = apply_registered_materiality_review(
+                root=root, symbol=symbol, today=today, fallback=replayed)
+            if replayed_route != materiality_route:
+                raise ValueError("Materiality review changed during price comparison")
+            if replayed.to_json() != validity.to_json() or sha256_file(pointer_path) != pointer_digest:
+                raise ValueError("Incremental inputs changed during price comparison")
+            eligible = comparison.bridge_status == "READY" and not comparison.blockers and not validity.blockers
+            result["compatibility"]["original_cutoff_compatible"] = dict(result["compatibility"]["research_compatible"])
+            result["compatibility"]["incremental_model_compatible"] = {"eligible": validity.status == "VALID" and not validity.blockers,
+                "reason": "原模型有效性经显式增量证据重验；原研究截止日未改变。"}
+            if eligible:
+                result["compatibility"]["research_compatible"] = {"eligible": True,
+                    "coverage_basis": "EXPLICIT_INCREMENTAL_VALIDITY",
+                    "reason": f"原截止日 {case['research_as_of']} 未变；显式增量复核覆盖至 {review_cutoff}，共享价格桥通过。"}
+            result["compatibility"]["comparison_eligible"] = {"eligible": eligible,
+                "reason": "共享 PriceBridge 实际重建结果：" + comparison.bridge_status}
+            result.update(status="QUOTE_VERIFIED_WITH_INCREMENTAL_VALIDITY" if eligible else "INCREMENTAL_VALIDITY_BLOCKED",
+                price_admitted=eligible, reason="；".join(comparison.blockers) or comparison.bridge_status,
+                next_step="增量证据仅支持条件研究比较；G3 与正式决策门仍须独立通过。" if eligible else
+                          "完成所绑定公告的材料性及模型适用性复核；不得修改研究截止日或预支 G3。")
+        except (ValueError, KeyError, TypeError, OSError, AttributeError) as error:
+            result["incremental_validity"]["blockers"] = list(dict.fromkeys([
+                *result["incremental_validity"]["blockers"], str(error)]))
+            result.update(status="INCREMENTAL_VALIDITY_BLOCKED", price_admitted=False,
+                reason=str(error), next_step="修复显式增量绑定或原模型重建输入，并完成公告材料性复核。")
+            result["price_comparison"] = {"bridge_status": "INVALID", "blockers": [str(error)]}
+            result["compatibility"]["comparison_eligible"] = {"eligible": False, "reason": str(error)}
+            result.pop("conditional_valuation", None)
+    return result
 
 
 def pin_quote_bridge_for_symbol(root: Path, symbol: str, bundle: str | Path,
@@ -287,10 +363,15 @@ def pin_quote_bridge_for_symbol(root: Path, symbol: str, bundle: str | Path,
             raise ValueError("现有登记文件缺少 quotes")
         quotes = dict(current["quotes"])
     stamp = registered_at or datetime.now(timezone.utc).isoformat()
+    previous = quotes.get(symbol) or {}
     quotes[symbol] = {"quote_bundle": bundle_path.relative_to(root).as_posix(),
                       "quote_bundle_sha256": bundle_digest,
                       "research_package": case["package_path"],
                       "research_package_sha256": package_digest, "registered_at": stamp}
+    if (isinstance(previous, dict) and previous.get("research_package") == case["package_path"]
+            and previous.get("research_package_sha256") == package_digest
+            and "incremental_validity_binding" in previous):
+        quotes[symbol]["incremental_validity_binding"] = previous["incremental_validity_binding"]
     pointer_file.parent.mkdir(parents=True, exist_ok=True)
     pointer_file.write_text(json.dumps({
         "schema_version": POINTER_SCHEMA, "action": "no_order",

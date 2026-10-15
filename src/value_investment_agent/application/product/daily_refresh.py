@@ -7,6 +7,7 @@ from ..hotspot.current_registry import load_price_conditions
 from .quote_bridge import execute_quote_bridge_for_symbol
 
 PUBLIC_NOTES = frozenset({
+    '公告增量采集或复核未完成；保留研究门禁，其他已核验证券继续。',
     '本次更新尚未完成；继续显示历史已验证快照。',
     '当前价格条件采集存在缺项；未通过验证的证券不会升级为当前触发。',
     '行情采集未完成（网络或来源不可用）；本次继续使用已登记行情。',
@@ -47,15 +48,26 @@ def refresh_readiness(root: Path, *, now: datetime, symbols: list[str]) -> dict:
         rows = {row["symbol"]: row["price_action_plan"] for row in prices["items"]
                 if not row["price_action_plan"].get("candidate_lifecycle")}
         dates = {rows[symbol]["market_trade_date"] for symbol in active if symbol in rows}
-        prices_ready = (len(active) == 5 and active == selected and active <= rows.keys() and len(dates) == 1
+        prices_ready = (bool(active) and active == selected and active <= rows.keys() and len(dates) == 1
                         and all(rows[symbol].get("daily_selection") for symbol in active))
+        if not active and not selected and prices.get("status") == "CURRENT_EMPTY_SELECTION":
+            dates = {prices["selection_trade_date"]}
+            from zoneinfo import ZoneInfo
+            # Only reuse on the collection session; later days must rescreen.
+            prices_ready = prices["selection_trade_date"] == now.astimezone(ZoneInfo("Asia/Shanghai")).date().isoformat()
     except (OSError, ValueError, KeyError, TypeError):
         prices_ready, dates = False, set()
-    quotes = {symbol: execute_quote_bridge_for_symbol(root, symbol, today=now) for symbol in symbols}
+    quotes = {}
+    for symbol in symbols:
+        try:
+            quotes[symbol] = execute_quote_bridge_for_symbol(root, symbol, today=now)
+        except (OSError, ValueError, KeyError, TypeError):
+            quotes[symbol] = {"status": "QUOTE_READ_FAILED", "quote": None,
+                              "reason": "该证券行情读取失败；不升级资格，其他证券继续核验。"}
     valid = {"QUOTE_VERIFIED_FOR_RESEARCH_INPUT", "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
              "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"}
     quote_valid = {symbol: (
-        row["status"] in valid and (row.get("quote") or {}).get("quote_date")
+        row.get("quote_verification_status", row["status"]) in valid and (row.get("quote") or {}).get("quote_date")
         == (row.get("quote") or {}).get("latest_completed_session")
         and bool((row.get("quote") or {}).get("quote_date")))
         for symbol, row in quotes.items()}
@@ -75,6 +87,7 @@ def refresh_readiness(root: Path, *, now: datetime, symbols: list[str]) -> dict:
     return dict(action="no_order", prices_ready=bool(prices_ready), quotes_ready=quote_ready,
                 market_trade_dates=sorted(dates), quotes=quotes,
                 price_securities=price_rows, quote_securities=quote_rows,
-                publication_ready=integrity_ok and (bool(rows) or any(quote_valid.values())),
+                publication_ready=integrity_ok and (bool(rows) or any(quote_valid.values())
+                    or (prices.get("status") == "CURRENT_EMPTY_SELECTION" and bool(prices_ready))),
                 core_integrity_ok=integrity_ok,
                 blockers=prices.get("blockers", []))

@@ -38,6 +38,17 @@ export interface DecisionItem {
 }
 
 export interface CurrentPricePlan {
+  conditional_action_rules?: Partial<
+    Record<
+      "OPEN" | "ADD" | "REDUCE" | "EXIT",
+      {
+        rule: string;
+        price: string | null;
+        observed: boolean | null;
+        requires_existing_holding: boolean;
+      }
+    >
+  >;
   valuation_date?: string | null;
   price_behavior?: {
     rule_version: string;
@@ -306,6 +317,12 @@ export interface PriceBridgeSource {
 
 /** One executed admission of the registered close against the registered research cutoff. */
 export interface PriceBridgeExecution {
+  incremental_validity?: {
+    status: string | null;
+    review_cutoff: string | null;
+    announcement_count: number | null;
+    blockers: string[];
+  } | null;
   schema_version: string | null;
   status: string | null;
   reason: string | null;

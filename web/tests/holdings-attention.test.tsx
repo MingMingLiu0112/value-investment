@@ -7,6 +7,53 @@ vi.mock("@umijs/max", () => ({
     React.createElement("a", { href: to }, children),
 }));
 import { HoldingsAttention } from "../src/components/HoldingsAttention";
+import type { DecisionItem } from "../src/types/api";
+
+it("surfaces observed conditional reduction only for verified current held securities", () => {
+  const state = {
+    portfolio: {
+      status: "CONNECTED",
+      cash_cny: "100",
+      positions: [{ symbol: "300059" }],
+    },
+    risk: { blockers: [] },
+  } as unknown as PrivateStateHandle;
+  const item = {
+    id: "hotspot-300059",
+    symbol: "300059",
+    strategy: "HOTSPOT_SATELLITE",
+    price_action_plan: {
+      action: "no_order",
+      signal_state: "WATCH",
+      conditional_action_rules: { REDUCE: { observed: true } },
+    },
+  } as DecisionItem;
+  const view = (decisions: DecisionItem[], verified = true) =>
+    renderToStaticMarkup(
+      <HoldingsAttention
+        state={state}
+        decisions={decisions}
+        decisionsVerified={verified}
+      />,
+    );
+  expect(view([item])).toContain("已出现策略退出或减仓复核事项");
+  expect(view([item])).toContain("/decisions/hotspot-300059");
+  expect(view([item], false)).not.toContain("已出现策略退出或减仓复核事项");
+  expect(view([{ ...item, symbol: "600887" }])).not.toContain(
+    "已出现策略退出或减仓复核事项",
+  );
+  expect(
+    view([
+      {
+        ...item,
+        price_action_plan: {
+          ...item.price_action_plan!,
+          signal_state: "STALE",
+        },
+      },
+    ]),
+  ).not.toContain("已出现策略退出或减仓复核事项");
+});
 
 it("locked state does not imply empty or healthy portfolio", () => {
   const state = {

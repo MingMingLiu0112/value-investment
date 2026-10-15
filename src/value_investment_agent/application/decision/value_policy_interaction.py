@@ -11,6 +11,7 @@ import re
 from uuid import uuid4
 
 from . import value_price_policy as policy_contract
+from .value_action_plan import replay_published_value_decision
 from ..portfolio.private_journal_lock import InterProcessLock
 from ..product.publication_chain import bound_object
 from ...domain.decision.value_price_policy import draft_value_price_policy, payload_hash, policy_basis
@@ -281,6 +282,7 @@ class ValuePolicyInteractionService:
         if len(matches) != 1:
             raise PolicyConflict("缺少唯一的绑定研究说明，不能生成条件性计划")
         explanation = bound_object(self.root, matches[0])
+        restored, _ = replay_published_value_decision(self.root, explanation, now=now)
         # Use the already verified current plan's model identity and quote.
         explanation = {**explanation, "model_id": current["model_id"]}
         row = registry["policies"][0]
@@ -298,6 +300,8 @@ class ValuePolicyInteractionService:
                 status="verified_close" if current.get("current_quote_verified") is True else "not_current_verified",
                 comparison_eligible=current.get("price_comparison_eligible") is True)
         plan = build_value_action_plan(explanation=explanation, policy=policy, reference_quote=quote,
+            repository_replayed=restored is not None,
+            verified_predecision=(None if restored is None else restored.dependency_objects.get("pre_decision")),
             source_bindings=tuple([*current["source_bindings"], binding]),
             decision_as_of=now.astimezone(policy_contract.CHINA).date()).as_policy()
         plan.update(scope=self.scope, research_approval_changed=False, production_published=False)

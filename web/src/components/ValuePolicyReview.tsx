@@ -30,6 +30,56 @@ type Review = {
   };
 };
 
+export function MaterialityHandoff({
+  material,
+}: {
+  material: PolicyHandoff["materiality_handoff"];
+}) {
+  if (
+    !material ||
+    material.status === "NO_REGISTERED_INCREMENTAL_SCAN" ||
+    material.status === "NO_MATERIALITY_ANNOUNCEMENTS"
+  )
+    return null;
+  const imported = material.status === "AUTHENTICATED_RESPONSE_IMPORTED";
+  return (
+    <section aria-label="新增公告材料性审核">
+      <h4>新增公告材料性审核</h4>
+      <p>
+        {imported
+          ? "已核验签署回执；仍须重新计算并发布，其他独立门禁不因此通过。"
+          : "需有权审核人逐项判断公告影响；本机登录、私人价格政策和 G3 均不能代替这项签署。"}
+      </p>
+      {material.scan_window && (
+        <p>
+          扫描期间：{material.scan_window.scan_from} 至{" "}
+          {material.scan_window.scan_to}；公告{" "}
+          {material.announcements?.length ?? "未核验"} 份。
+        </p>
+      )}
+      {material.reason && <p role="alert">材料暂不可交接：{material.reason}</p>}
+      {material.commands && (
+        <details>
+          <summary>公告原件、签署回应与办理后验证</summary>
+          <DetailSection title="公告证据" value={material.announcements} />
+          <DetailSection
+            title="待本人签署回应"
+            value={material.unsigned_response}
+          />
+          <p>
+            由已登记且有相应权限的审核人签署；不向网页上传私钥。导入后重算，核对新发布版本及剩余限制，再刷新页面。
+          </p>
+          <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+            {material.commands.consume_signed_response}
+            {"\n"}
+            {material.commands.recompute}
+          </pre>
+        </details>
+      )}
+    </section>
+  );
+}
+
 function ExternalReviewHandoff({ symbol }: { symbol: string }) {
   const [material, setMaterial] = useState<PolicyHandoff>();
   const [failure, setFailure] = useState("");
@@ -95,6 +145,7 @@ function ExternalReviewHandoff({ symbol }: { symbol: string }) {
           <button type="button" onClick={download}>
             下载审核材料 JSON
           </button>
+          <MaterialityHandoff material={material.materiality_handoff} />
           <DetailSection title="候选绑定" value={material.candidate_binding} />
           <DetailSection
             title="模型与审核问题"

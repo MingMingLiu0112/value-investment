@@ -1,4 +1,5 @@
 import { useParams, Link } from "@umijs/max";
+import { CurrentHolding } from "./CurrentHolding";
 import { useCallback } from "react";
 import type { PropsWithChildren } from "react";
 import {
@@ -880,7 +881,14 @@ export default function DecisionDetail() {
               {String(decision.name || decision.symbol || decision.id)}{" "}
               {decision.name && decision.symbol}
             </Typography.Title>
-            <JudgmentSummary decision={decision} />
+            <JudgmentSummary
+              decision={decision}
+              personalContext={
+                decision.symbol && /^\d{6}$/.test(decision.symbol) ? (
+                  <CurrentHolding key={decision.symbol} decision={decision} />
+                ) : undefined
+              }
+            />
             <Space wrap style={{ margin: "12px 0" }}>
               {decision.symbol && /^\d{6}$/.test(decision.symbol) && (
                 <Link to={fillLink(decision)}>

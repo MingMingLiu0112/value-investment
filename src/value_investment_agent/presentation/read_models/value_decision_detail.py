@@ -116,6 +116,12 @@ def _price_bridge_execution(value: Any, published_bridge_status: Any) -> dict | 
         "status": _text(row.get("status")),
         "reason": _text(row.get("reason")),
         "next_step": _text(row.get("next_step")),
+        "incremental_validity": ({
+            "status": _text(row["incremental_validity"].get("status")),
+            "review_cutoff": _text(row["incremental_validity"].get("review_cutoff")),
+            "announcement_count": row["incremental_validity"].get("announcement_count"),
+            "blockers": _strings(row["incremental_validity"].get("blockers")),
+        } if isinstance(row.get("incremental_validity"), dict) else None),
         "price_admitted": admitted,
         "comparison_eligible": bool(admitted and _text(published_bridge_status) == "READY"),
         "compatibility": _compatibility(row.get("compatibility")),

@@ -26,30 +26,53 @@ def registry_identity(root: Path) -> dict:
     path = root / REGISTRY
     if not path.is_file():
         return result
+    evidence = {}
+
+    def observe(name: str, *, parse: bool = False):
+        row = evidence.setdefault(name, {"path": name, "observed_sha256": None})
+        try:
+            target = _path(root, name)
+            raw = target.read_bytes()
+            row["observed_sha256"] = hashlib.sha256(raw).hexdigest()
+            if parse:
+                value = json.loads(raw)
+                if not isinstance(value, dict):
+                    raise ValueError("Registry evidence requires an object")
+                return value
+            return None
+        except (ValueError, OSError, TypeError, AttributeError) as error:
+            row["error"] = type(error).__name__
+            result["error"] = "CURRENT_PRICE_REGISTRY_UNAVAILABLE"
+            return None
+
+    def discover(name: str, *, case: bool = False):
+        value = observe(name, parse=True)
+        if value is None:
+            return
+        try:
+            bindings = value["source_bindings"].values() if case else value.get("source_bindings", [])
+            for binding in bindings:
+                observe(binding["path"])
+            if case:
+                observe(value["current_reference_close"]["bundle_path"])
+        except (ValueError, KeyError, TypeError, AttributeError) as error:
+            evidence[name]["error"] = type(error).__name__
+            result["error"] = "CURRENT_PRICE_REGISTRY_UNAVAILABLE"
+
     try:
         raw = path.read_bytes()
         result["observed_sha256"] = hashlib.sha256(raw).hexdigest()
         registry = json.loads(raw)
         all_items = registry["items"] + registry.get("previous_items", [])
-        names = {item["case_path"] for item in all_items}
         for item in registry.get("previous_items", []):
-            names.add(item["watch_source_binding"]["path"])
-            old_watch = json.loads(_path(root, item["watch_source_binding"]["path"]).read_bytes())
-            names.update(binding["path"] for binding in old_watch.get("source_bindings", []))
+            discover(item["watch_source_binding"]["path"])
         if registry.get("watch_source_binding"):
-            names.add(registry["watch_source_binding"]["path"])
-            watch = json.loads(_path(root, registry["watch_source_binding"]["path"]).read_bytes())
-            names.update(binding["path"] for binding in watch.get("source_bindings", []))
+            discover(registry["watch_source_binding"]["path"])
         for item in all_items:
-            case = json.loads(_path(root, item["case_path"]).read_bytes())
-            names.update(source["path"] for source in case["source_bindings"].values())
-            names.add(case["current_reference_close"]["bundle_path"])
-        for name in sorted(names):
-            target = _path(root, name)
-            result["evidence"].append({"path": name, "observed_sha256":
-                hashlib.sha256(target.read_bytes()).hexdigest() if target.is_file() else None})
+            discover(item["case_path"], case=True)
     except (ValueError, OSError, KeyError, TypeError, AttributeError):
         result["error"] = "CURRENT_PRICE_REGISTRY_UNAVAILABLE"
+    result["evidence"] = [evidence[name] for name in sorted(evidence)]
     return result
 
 
@@ -60,7 +83,7 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
     try:
         registry = json.loads(path.read_bytes())
         if (registry.get("schema_version") != "current-price-conditions-v1"
-                or registry.get("action") != "no_order" or not 1 <= len(registry["items"]) <= 10):
+                or registry.get("action") != "no_order" or not 0 <= len(registry["items"]) <= 10):
             raise ValueError("Invalid registry contract")
         source = registry["watch_source_binding"]
         source_raw = _path(root, source["path"]).read_bytes()
@@ -68,8 +91,13 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
             raise ValueError("Watch source changed")
         watch_report = json.loads(source_raw)
         daily = watch_report.get("schema_version") == "hotspot-daily-selection-v1"
+        selection_trade_date = watch_report.get("trade_date") if daily else None
         if daily:
             verify_daily_selection(root, watch_report)
+        if not registry["items"] and (not daily or not watch_report.get("rows")
+                                     or watch_report.get("failures") or watch_report["ranking"]["candidates"]
+                                     or registry.get("selected_symbols")):
+            raise ValueError("Empty registry requires a verified zero-candidate daily selection")
         watch_symbols = {row["symbol"] for row in watch_report.get("dated_quote_observations", [])}
         watch_symbols.update(row["symbol"] for row in watch_report.get("observation_list", []))
         items, blockers, retired_warnings, seen = [], [], [], set()
@@ -133,7 +161,9 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
                     retired_warnings.append(f"RETIRED_PRICE_CASE_UNAVAILABLE:{symbol}")
                 else:
                     blockers.append(f"CURRENT_PRICE_CASE_UNAVAILABLE:{symbol}")
-        return {"status": "CURRENT_OBSERVATION" if items else "BLOCKED", "items": items,
+        return {"status": ("CURRENT_EMPTY_SELECTION" if not registry["items"] else
+                           "CURRENT_OBSERVATION" if items else "BLOCKED"), "items": items,
+                "selection_trade_date": selection_trade_date,
                 "watch_source_scope": registry["watch_source_scope"], "blockers": blockers,
                 "retired_warnings": retired_warnings}
     except (ValueError, OSError, KeyError, TypeError, AttributeError, ArithmeticError):

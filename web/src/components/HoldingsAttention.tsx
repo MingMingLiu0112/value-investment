@@ -23,6 +23,18 @@ export function HoldingsAttention({
       (["REDUCE", "EXIT", "EXIT_REVIEW"].includes(
         row.action_intent ?? row.price_action_plan?.action_intent ?? "",
       ) ||
+        (row.price_action_plan?.action === "no_order" &&
+          ![
+            "STALE",
+            "EXPIRED",
+            "BLOCKED",
+            "HISTORICAL_OBSERVATION_NOT_ADMITTED",
+          ].includes(row.price_action_plan.signal_state) &&
+          ["hotspot", "HOTSPOT_SATELLITE"].includes(row.strategy ?? "") &&
+          (row.price_action_plan.conditional_action_rules?.REDUCE?.observed ===
+            true ||
+            row.price_action_plan.conditional_action_rules?.EXIT?.observed ===
+              true)) ||
         row.price_action_plan?.signal_state === "TRIGGER_REJECTED"),
   );
   return (

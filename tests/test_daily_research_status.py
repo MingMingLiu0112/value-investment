@@ -44,6 +44,19 @@ def test_missing_pointer_registers_no_symbols(tmp_path):
     assert summary["action"] == "no_order"
 
 
+def test_incremental_pending_is_not_an_unconditional_financial_rebuild(tmp_path, monkeypatch):
+    _write(tmp_path / 'config/current-quote-bridge.json', {'quotes': {'600887': {}}})
+    execution = _execution('600887', research_day='2026-10-11', quote_date='2026-10-15',
+                           status='INCREMENTAL_VALIDITY_BLOCKED')
+    execution['incremental_validity'] = {'status': 'UNKNOWN'}
+    monkeypatch.setattr(daily_research_status, 'execute_quote_bridge_for_symbol', lambda *a, **k: execution)
+    summary = build_daily_research_status(tmp_path, today=TODAY)
+    row = summary['rows'][0]
+    assert not row['needs_re_research'] and not row['research_covers_close']
+    assert not row['price_admitted']
+    assert row['incremental_review_status'] == 'UNKNOWN'
+
+
 def test_unreadable_pointer_is_unknown_not_empty(tmp_path):
     (tmp_path / "config").mkdir()
     (tmp_path / "config" / "current-quote-bridge.json").write_text("{not json", encoding="utf-8")

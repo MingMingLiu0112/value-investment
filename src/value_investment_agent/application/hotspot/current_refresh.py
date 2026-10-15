@@ -79,9 +79,13 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
     if report.get("schema_version") == "hotspot-daily-selection-v1":
         verify_daily_selection(root, report)
     selected, scope = select_watch_candidates(report, limit=limit)
-    if not selected:
+    empty_daily = (not selected and report.get("schema_version") == "hotspot-daily-selection-v1"
+                   and bool(report.get("rows")) and not report.get("failures"))
+    if not selected and not empty_daily:
         return dict(status="BLOCKED", items=[], failures=[dict(reason="NO_BOUND_WATCH_CANDIDATES")], action="no_order")
-    bundle = (bundle_collector or collect_session_bundle)([row["symbol"] for row in selected])
+    bundle = (dict(status="NO_CANDIDATES", finished_at=report["available_at"])
+              if empty_daily else
+              (bundle_collector or collect_session_bundle)([row["symbol"] for row in selected]))
     archive = root / "runtime" / "hotspot-current-refresh" / uuid4().hex
     archive.mkdir(parents=True)
     bundle_path = archive / "bundle.json"
@@ -135,11 +139,11 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
         except (ValueError, OSError, KeyError, TypeError):
             # An invalid previous pointer is not evidence and is never imported.
             pass
-    result = dict(status="WRITTEN" if items else "BLOCKED", items=items, failures=failures,
+    result = dict(status="WRITTEN" if items or empty_daily else "BLOCKED", items=items, failures=failures,
                   bundle_path=bundle_path.relative_to(root).as_posix(), bundle_sha256=bundle_sha,
                   watch_source_scope=scope, action="no_order")
     _write(archive / "refresh.json", result)
-    if items:
+    if items or empty_daily:
         if hashlib.sha256(source.read_bytes()).hexdigest() != watch_source_sha256:
             raise ValueError("Watch source changed during refresh")
         target.parent.mkdir(parents=True, exist_ok=True)

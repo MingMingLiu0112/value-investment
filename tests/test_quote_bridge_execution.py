@@ -152,7 +152,9 @@ def test_real_600887_registration_stays_unadmitted_until_the_cutoff_covers_it():
     execution = execute_quote_bridge_for_symbol(
         ROOT, "600887", today=datetime.fromisoformat(entry["registered_at"]))
     assert execution["action"] == "no_order"
-    assert execution["status"] == "QUOTE_VERIFIED_BUT_RESEARCH_STALE"
+    assert execution["quote_verification_status"] == "QUOTE_VERIFIED_BUT_RESEARCH_STALE"
+    assert execution["status"] == ("INCREMENTAL_VALIDITY_BLOCKED" if "incremental_validity_binding" in entry
+                                    else "QUOTE_VERIFIED_BUT_RESEARCH_STALE")
     assert execution["price_admitted"] is False
     assert execution["research_day"] == "2026-10-11"
     assert execution["research_case"]["package_version"].startswith("pending-600887-2026-10-11")

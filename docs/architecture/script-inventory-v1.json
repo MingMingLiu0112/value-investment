@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 14,
     "CURRENT_PRODUCT_CLI": 14,
-    "CURRENT_RESEARCH_CLI": 215,
+    "CURRENT_RESEARCH_CLI": 218,
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 218,
     "MIGRATION_TOOL": 13,
@@ -15,6 +15,39 @@
     "DELETE_CANDIDATE": 0
   },
   "entries": [
+    {
+      "path": "scripts/current/review_materiality.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "LOW",
+      "line_count": 60,
+      "sha256": "4c4d40eae72e5cb674dbd3ba17774ac0f1a726c4f9dbb7770a1c8394caf88ea0"
+    },
+    {
+      "path": "scripts/current/review_registered_research_validity.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "LOW",
+      "line_count": 41,
+      "sha256": "6d1f3608b65132019577819abbc86a9318b3a6acd2af8ae3445d00f15a1ea26d"
+    },
+    {
+      "path": "scripts/current/collect_registered_validity_scan.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "LOW",
+      "line_count": 34,
+      "sha256": "cd9a20be31074270056a69bf415493d4804f60d5236127cc0269fced62c40512"
+    },
     {
       "path": "scripts/current/refresh_current_price_conditions.py",
       "category": "CURRENT_RESEARCH_CLI",

@@ -51,6 +51,74 @@ def test_changed_watch_source_and_escape_refused(tmp_path):
     assert load_price_conditions(tmp_path, now=NOW, research_version="v")["status"] == "BLOCKED"
 
 
+@pytest.mark.parametrize("fault", ["missing_watch", "invalid_watch", "missing_case", "unreadable_source"])
+def test_retired_failure_keeps_current_evidence_identity(tmp_path, monkeypatch, fault):
+    case = register(tmp_path)
+    before = registry_identity(tmp_path)
+    pointer = tmp_path / REGISTRY
+    registry = json.loads(pointer.read_bytes())
+    old_watch = tmp_path / "runtime/retired-watch.json"
+    old_leaf = tmp_path / "runtime/retired-source.txt"
+    old_leaf.write_bytes(b"retired original")
+    old_watch.write_text(json.dumps({"source_bindings": [{"path": "runtime/retired-source.txt"}]}), encoding="utf-8")
+    registry["previous_items"] = [dict(case_path="runtime/retired-case.json",
+        watch_source_binding={"path": "runtime/retired-watch.json"})]
+    (tmp_path / "runtime/retired-case.json").write_text(json.dumps({
+        "source_bindings": {}, "current_reference_close": {"bundle_path": "runtime/retired-source.txt"}}), encoding="utf-8")
+    pointer.write_text(json.dumps(registry), encoding="utf-8")
+    if fault == "missing_watch":
+        old_watch.unlink()
+    elif fault == "invalid_watch":
+        old_watch.write_bytes(b"invalid json")
+    elif fault == "missing_case":
+        (tmp_path / "runtime/retired-case.json").unlink()
+    else:
+        read_bytes = type(old_leaf).read_bytes
+
+        def denied(path):
+            if path == old_leaf:
+                raise PermissionError("TEST_ONLY")
+            return read_bytes(path)
+
+        monkeypatch.setattr(type(old_leaf), "read_bytes", denied)
+    first = registry_identity(tmp_path)
+    indexed = {row["path"]: row for row in first["evidence"]}
+    for row in before["evidence"]:
+        assert indexed[row["path"]] == row
+    assert first["error"] == "CURRENT_PRICE_REGISTRY_UNAVAILABLE"
+    failed = next(row for row in first["evidence"] if "error" in row)
+    if fault == "invalid_watch":
+        assert indexed["runtime/retired-watch.json"]["observed_sha256"] == hashlib.sha256(b"invalid json").hexdigest()
+    else:
+        assert failed["observed_sha256"] is None
+    source = tmp_path / case["source_bindings"]["15m"]["path"]
+    source.write_bytes(source.read_bytes() + b" ")
+    second = registry_identity(tmp_path)
+    assert second != first
+    assert second["observed_sha256"] == first["observed_sha256"]
+
+
+def test_identity_refuses_escape_without_losing_other_evidence(tmp_path, monkeypatch):
+    case = register(tmp_path)
+    pointer = tmp_path / REGISTRY
+    registry = json.loads(pointer.read_bytes())
+    registry["previous_items"] = [dict(case_path="../outside.json",
+        watch_source_binding={"path": "../outside-watch.json"})]
+    pointer.write_text(json.dumps(registry), encoding="utf-8")
+    read_bytes = type(pointer).read_bytes
+
+    def confined(path):
+        assert path.resolve().is_relative_to(tmp_path.resolve())
+        return read_bytes(path)
+
+    monkeypatch.setattr(type(pointer), "read_bytes", confined)
+    identity = registry_identity(tmp_path)
+    indexed = {row["path"]: row for row in identity["evidence"]}
+    assert indexed["../outside.json"] == {"path": "../outside.json", "observed_sha256": None, "error": "ValueError"}
+    assert indexed["../outside-watch.json"]["error"] == "ValueError"
+    assert indexed[case["source_bindings"]["15m"]["path"]]["observed_sha256"]
+
+
 @pytest.mark.parametrize("malformed", [[], None, 3, "bad", {"items": None}])
 def test_malformed_registry_returns_blocked(tmp_path, malformed):
     (tmp_path / "config").mkdir()

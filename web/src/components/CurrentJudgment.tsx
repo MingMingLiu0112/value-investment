@@ -1,5 +1,6 @@
 import { Alert, Descriptions, Segmented, Table } from "antd";
 import { useCallback, useState } from "react";
+import type { ReactNode } from "react";
 import { useApi } from "../hooks/useApi";
 import { api } from "../services/api";
 import type { DecisionItem } from "../types/api";
@@ -11,6 +12,7 @@ import {
   confirmationText,
   planConditionText,
   missingPricePolicies,
+  hotspotOpportunityQuality,
 } from "../utils/currentJudgment";
 import { firstResearchText } from "../utils/opportunityView";
 import { DetailSection } from "./DetailSection";
@@ -29,10 +31,17 @@ const valuePolicyTransport = {
   confirm: api.confirmValuePolicy,
 };
 
-export function JudgmentSummary({ decision }: { decision: DecisionItem }) {
+export function JudgmentSummary({
+  decision,
+  personalContext,
+}: {
+  decision: DecisionItem;
+  personalContext?: ReactNode;
+}) {
   const isValue = ["CORE_VALUE", "value"].includes(decision.strategy ?? "");
   const PublicPlan = isValue ? "details" : "section";
   const plan = decision.price_action_plan;
+  const quality = hotspotOpportunityQuality(decision);
   const eligibility = decisionEligibility(decision);
   const actionRules = (
     plan as typeof plan & {
@@ -128,25 +137,60 @@ export function JudgmentSummary({ decision }: { decision: DecisionItem }) {
   ];
   return (
     <section aria-label="六项操作计划">
-      {["CORE_VALUE", "value"].includes(decision.strategy ?? "") &&
-        decision.symbol && (
-          <ValuePolicyReview
-            symbol={decision.symbol}
-            transport={valuePolicyTransport}
-          />
-        )}
+      {quality && (
+        <p aria-label="机会质量分类">
+          {quality.code ? `${quality.code} · ` : ""}
+          {quality.label}：{quality.reason}
+        </p>
+      )}
+      {isValue && (
+        <section
+          aria-label="当前判断与关键价格"
+          style={{ overflowWrap: "anywhere" }}
+        >
+          <p style={{ margin: "0 0 8px" }}>
+            <strong>当前判断：</strong>
+            {judgmentState(decision)}；证券资格：{eligibility.formal}
+            ；个人组合：{eligibility.portfolio}。不自动下单。
+          </p>
+          <p style={{ margin: "0 0 8px" }}>
+            <strong>关键价格：</strong>参考收盘{" "}
+            {plan?.reference_close ?? plan?.current_reference_price ?? "待核验"}
+            （{plan?.market_trade_date ?? "日期待核验"}）；公开建仓条件价{" "}
+            {plan?.entry_trigger_price ?? "未获准"}；加仓{" "}
+            {typeof plan?.add_condition === "object" &&
+            plan.add_condition &&
+            !Array.isArray(plan.add_condition)
+              ? (plan.add_condition.price ?? "未获准")
+              : "未获准"}
+            。研究情景与私人算术价另列，不构成获准操作价。
+          </p>
+          <div style={{ margin: "0 0 8px" }}>
+            <strong>核心风险：</strong>
+            {concise(rows[4][1])}
+          </div>
+        </section>
+      )}
       <PublicPlan>
         {isValue && <summary>公共研究计划与资格（不含本人政策）</summary>}
-        <Descriptions
-          layout="vertical"
-          column={{ xs: 1, sm: 2, md: 3 }}
-          size="small"
-          items={rows.map(([label, text], index) => ({
-            key: label,
-            label: `${index + 1}. ${label}`,
-            children: concise(text),
-          }))}
-        />
+        <dl
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
+            gap: "8px 16px",
+            margin: "8px 0",
+          }}
+        >
+          {rows.map(([label, text], index) => (
+            <div key={label} style={{ minWidth: 0 }}>
+              <dt style={{ fontWeight: 600 }}>
+                {index + 1}. {label}
+              </dt>
+              <dd style={{ margin: "4px 0 0" }}>{concise(text)}</dd>
+            </div>
+          ))}
+        </dl>
         {plan && (
           <p style={{ margin: "0 0 8px", overflowWrap: "anywhere" }}>
             参考收盘{" "}
@@ -166,7 +210,8 @@ export function JudgmentSummary({ decision }: { decision: DecisionItem }) {
                 {formatScenarioValue(
                   plan.conditional_valuation_range?.bull ?? plan.bull,
                 )}
-                （悲观 / 中性 / 乐观）；股价比较资格：
+                （Bear / Base / Bull 条件情景，Base
+                不等于已验证的中性合理价值）；股价比较资格：
                 {plan.price_comparison_eligible === true
                   ? "已通过"
                   : "未通过或未核验，不能据此判断买价"}
@@ -175,6 +220,13 @@ export function JudgmentSummary({ decision }: { decision: DecisionItem }) {
           </p>
         )}
       </PublicPlan>
+      {personalContext}
+      {isValue && decision.symbol && (
+        <ValuePolicyReview
+          symbol={decision.symbol}
+          transport={valuePolicyTransport}
+        />
+      )}
       {["HOTSPOT_SATELLITE", "hotspot"].includes(decision.strategy ?? "") &&
         plan && (
           <section aria-label="热点计划适用范围">
@@ -250,8 +302,9 @@ export function JudgmentSummary({ decision }: { decision: DecisionItem }) {
             </p>
             <p>
               结构空间／价格风险：
-              {plan.price_behavior?.risk_reward_ratio ??
-                "无可靠上方目标，无法计算"}
+              {plan.price_behavior?.risk_reward_ratio != null
+                ? formatDecimal(plan.price_behavior.risk_reward_ratio)
+                : "无可靠上方目标，无法计算"}
               ；不含费用、滑点与跳空，不代表预期收益。
               {plan.price_behavior?.daily_trend === "DOWNTREND"
                 ? "日线下降，观察方向尚未得到日线趋势支持。"

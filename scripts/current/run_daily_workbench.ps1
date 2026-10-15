@@ -135,7 +135,7 @@ $verified = $null
 if ($Mode -eq 'SAFE_REFRESH') {
     $reuse = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py', '--check-reuse', '--symbols', $Symbols)
     if ($reuse.ExitCode -eq 0 -and $reuse.Json.prices_ready) {
-        Write-Host "  价格结构 : 复用已核验最近完成交易日 $($reuse.Json.market_trade_dates -join ',') 的完整五只候选；未重新采集。"
+        Write-Host "  价格结构 : 复用已核验最近完成交易日 $($reuse.Json.market_trade_dates -join ',') 的完整已选候选；未重新采集。"
         $priceRefresh = [pscustomobject]@{ ExitCode = 0; Json = [pscustomobject]@{ status = 'UNCHANGED'; items = @(); failures = @() } }
     } else {
     Write-Host '[SAFE_REFRESH] 按当日行业相对强度与成交额筛选五只真实观察候选，再核验价格结构...'
@@ -224,13 +224,65 @@ if ($Mode -eq 'SAFE_REFRESH') {
 }
 
 if ($Mode -eq 'SAFE_REFRESH') {
-    # Acquisition can repair missing inputs. Recompute the real core chain and
-    # stored packet identity before permitting publication, even after failure.
+    $verified = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py', '--check-reuse', '--symbols', $Symbols)
+    $reviewDates = @($verified.Json.market_trade_dates) + @($verified.Json.quote_securities | ForEach-Object { $_.latest_completed_session })
+    $reviewCutoff = $reviewDates | Where-Object { $_ -match '^\d{4}-\d{2}-\d{2}$' } | Sort-Object -Unique | Select-Object -Last 1
+    if ($reviewCutoff) {
+        $reviewArgs = @('scripts/current/review_registered_research_validity.py', '--review-cutoff', $reviewCutoff)
+        $quoteRegistry = $null
+        try { $quoteRegistry = Get-Content -LiteralPath (Join-Path $root 'config/current-quote-bridge.json') -Raw -Encoding utf8 | ConvertFrom-Json }
+        catch { Write-Host '  公告增量登记不可读；保留原研究门禁。'; $notes.Add('公告增量采集或复核未完成；保留研究门禁，其他已核验证券继续。') }
+        foreach ($registeredQuote in $quoteRegistry.quotes.PSObject.Properties) {
+            $scanSymbol = $registeredQuote.Name
+            $scanStamp = [DateTimeOffset]::UtcNow.ToString('yyyyMMddTHHmmssfffffffZ')
+            $scanDirectory = "runtime/incremental-validity/$scanSymbol/$reviewCutoff-$scanStamp"
+            $newScanDirectory = $scanDirectory
+            $existingBinding = $registeredQuote.Value.incremental_validity_binding
+            try { if ($existingBinding -and $existingBinding.path) {
+                $boundPath = [System.IO.Path]::GetFullPath((Join-Path $root ([string]$existingBinding.path)))
+                if ($boundPath.StartsWith((Join-Path $root 'runtime') + [System.IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -and (Test-Path -LiteralPath $boundPath)) {
+                    $boundScan = Get-Content -LiteralPath $boundPath -Raw -Encoding utf8 | ConvertFrom-Json
+                    if ($boundScan.review_cutoff -eq $reviewCutoff -and
+                        (Get-FileHash -LiteralPath $boundPath -Algorithm SHA256).Hash.ToLowerInvariant() -eq $existingBinding.sha256) {
+                        $scanDirectory = Split-Path ([string]$existingBinding.path) -Parent
+                    }
+                }
+            } } catch { Write-Host "  ${scanSymbol}: 原增量绑定无法复用，尝试独立新采集。" }
+            $scan = Invoke-PythonJson @('scripts/current/collect_registered_validity_scan.py', '--symbol', $scanSymbol, '--review-cutoff', $reviewCutoff, '--output-dir', $scanDirectory, '--register')
+            if ($scan.ExitCode -ne 0 -and $scanDirectory -ne $newScanDirectory) {
+                Write-Host "  ${scanSymbol}: 旧扫描原件无法核验，保留旧证据并独立重采一次。"
+                $scan = Invoke-PythonJson @('scripts/current/collect_registered_validity_scan.py', '--symbol', $scanSymbol, '--review-cutoff', $reviewCutoff, '--output-dir', $newScanDirectory, '--register')
+            }
+            if ($scan.ExitCode -eq 0 -and $scan.Json.binding_ref) {
+                $reviewArgs += @('--incremental-binding', [string]$scan.Json.binding_ref.path, [string]$scan.Json.binding_ref.sha256)
+                Write-Host "  ${scanSymbol}: 正式公告增量证据已绑定；未授予材料性或估值批准。"
+            } else {
+                $notes.Add('公告增量采集或复核未完成；保留研究门禁，其他已核验证券继续。')
+                Write-Host "  ${scanSymbol}: 公告增量采集未完成，保留原研究限制；其他证券继续。"
+            }
+        }
+        $reviewOutput = 'runtime/research-validity-reviews/registered-' + [DateTimeOffset]::UtcNow.ToString('yyyyMMddTHHmmssfffffffZ') + '.json'
+        $validityReview = Invoke-PythonJson ($reviewArgs + @('--output', $reviewOutput))
+        if ($validityReview.ExitCode -eq 0 -and $validityReview.Json) {
+            Write-Host '  增量有效性 : 已写入逐证券审计；未改研究截止日或授予任何批准。'
+            foreach ($item in @($validityReview.Json.reviews)) {
+                Write-Host "  $($item.symbol) : $($item.model_validity_status) / $($item.status) $($item.reason)"
+                if ($item.reason) {
+                    $notes.Add('公告增量采集或复核未完成；保留研究门禁，其他已核验证券继续。')
+                }
+            }
+        } else {
+            $notes.Add('公告增量采集或复核未完成；保留研究门禁，其他已核验证券继续。')
+            Write-Host '  增量有效性 : 本次复核未完成，保留原研究门禁；其他已核验行情继续。'
+        }
+    }
+    # Recompute after incremental registration so the published packet consumes
+    # the same revalidated inputs as the current price bridge.
+    $verified = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py', '--check-reuse', '--symbols', $Symbols)
     $postBuild = Invoke-PythonJson @('scripts/current/build_daily_public_packet.py', '--no-publish')
     $coreBlocked = ($postBuild.ExitCode -ne 0 -or -not $postBuild.Json -or -not $postBuild.Json.source_bindings_verified)
     if ($postBuild.Json) { $packet = $postBuild.Json; $buildExit = $postBuild.ExitCode }
     else { $buildExit = 2; $notes.Add('刷新后快照生成失败，Web 保留上一验证版本。') }
-    $verified = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py', '--check-reuse', '--symbols', $Symbols)
     if ($verified.ExitCode -ne 0 -or -not $verified.Json.publication_ready) {
         $coreBlocked = $true
         $notes.Add('刷新后完整输入未通过最近完成交易日及来源校验；不发布新快照。')

@@ -272,3 +272,17 @@ def test_price_compatibility_ladder_reaches_the_page_verbatim(tmp_path, monkeypa
     assert research["price"]["current_price"] is None
     assert research["margin_to_base"] is None
 
+def test_incremental_review_projection_preserves_original_cutoff_and_pending_eligibility():
+    from value_investment_agent.presentation.read_models.value_decision_detail import _price_bridge_execution
+    result = _price_bridge_execution({
+        'schema_version': 'quote-bridge-execution-v1', 'status': 'INCREMENTAL_VALIDITY_BLOCKED',
+        'price_admitted': False, 'research_day': '2026-10-11',
+        'quote': {'quote_date': '2026-10-15', 'display_price': '28.10'},
+        'incremental_validity': {'status': 'UNKNOWN', 'review_cutoff': '2026-10-15',
+            'announcement_count': 2, 'blockers': ['pending_complete_event_materiality_review']},
+    }, 'READY')
+    assert result['research_day'] == '2026-10-11'
+    assert result['incremental_validity']['review_cutoff'] == '2026-10-15'
+    assert result['incremental_validity']['announcement_count'] == 2
+    assert result['comparison_eligible'] is False
+

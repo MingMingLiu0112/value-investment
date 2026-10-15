@@ -2,13 +2,13 @@
   "schema_version": "current-daily-public-snapshot-v1",
   "action": "no_order",
   "status": "VERIFIED",
-  "publication_id": "pub-61aceb64acecbe0c4c91",
-  "packet_path": "runtime/daily-public-packet/daily-public-packet-pub-61aceb64acecbe0c4c91.json",
-  "packet_sha256": "d1fd8439120e3e59c12e010924890fe4c2803263facf8d6bc75c85c805035f66",
-  "content_sha256": "c55055a0c27809ee1fdb85b0e5dff4c25701901918638b76b1b0d4161f978027",
-  "engine_version": "daily-public-packet-engine-v12",
+  "publication_id": "pub-a1f4249523ba0cfb7537",
+  "packet_path": "runtime/daily-public-packet/daily-public-packet-pub-a1f4249523ba0cfb7537.json",
+  "packet_sha256": "7ad18ff3d2cc4c66c3ca98156eab6a0ef4e5ec82836a558b31b83b10315af25e",
+  "content_sha256": "0fe56dd481b3290a9ea3d54ac0692d6b930a42004a189a54ed4a28a9238df7cb",
+  "engine_version": "daily-public-packet-engine-v16",
   "research_version": "canonical-reviewed-research-20261012T113935Z-362d7928",
-  "generated_at": "2026-10-15T08:03:29.506545+00:00",
-  "published_at": "2026-10-15T08:03:38.424099+00:00",
-  "receipt_path": "runtime/daily-public-packet/receipts/daily-public-packet-pub-61aceb64acecbe0c4c91.receipt.json"
+  "generated_at": "2026-10-15T11:30:32.056772+00:00",
+  "published_at": "2026-10-15T11:31:04.321029+00:00",
+  "receipt_path": "runtime/daily-public-packet/receipts/daily-public-packet-pub-a1f4249523ba0cfb7537.receipt.json"
 }

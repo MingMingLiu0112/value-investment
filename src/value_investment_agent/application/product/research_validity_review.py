@@ -14,15 +14,18 @@ re-registers, re-prices or orders anything. ``action`` stays ``no_order``.
 """
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from .common import (load_json_object, normalize_symbol, require_inside, sha256_file,
                      write_new_json)
 from .quote_bridge import quote_compatibility_ladder
-from ...event_scan import (COVERAGE_COMPLETE, SCAN_COMPLETE_MATERIAL_EVENTS,
+from ...event_scan import (COVERAGE_COMPLETE, COVERAGE_INCOMPLETE, SCAN_COMPLETE_MATERIAL_EVENTS,
                            SCAN_COMPLETE_NO_MATERIAL_EVENT, SCAN_PENDING_HUMAN_REVIEW,
+                           REVIEW_REVIEWED_NO_MATERIAL_CANDIDATE,
                            EventScanResult, event_scan_from_payload)
 from ...model_validity import ModelValidity, evaluate_model_validity
 
@@ -34,6 +37,8 @@ STATUS_BLOCKED_ON_HUMAN_EVENT_REVIEW = "BLOCKED_ON_HUMAN_EVENT_REVIEW"
 STATUS_REQUIRES_MATERIALITY_REVIEW = "REQUIRES_MATERIALITY_REVIEW"
 STATUS_BLOCKED_ON_RESEARCH_RE_REGISTRATION = "BLOCKED_ON_RESEARCH_RE_REGISTRATION"
 STATUS_SUPPORTS_QUOTE_UNDER_PENDING_GATES = "RESEARCH_SUPPORTS_QUOTE_UNDER_PENDING_GATES"
+STATUS_BLOCKED_ON_MODEL_VALIDITY = "BLOCKED_ON_MODEL_VALIDITY"
+STATUS_INCREMENTAL_REVIEW_COMPLETE_PRICE_BRIDGE_PENDING = "INCREMENTAL_REVIEW_COMPLETE_PRICE_BRIDGE_PENDING"
 
 _FINANCIAL_KINDS = {"financial_statement", "financial_report"}
 
@@ -79,13 +84,42 @@ def _reviewed_scan(scan_payload: dict[str, Any]) -> EventScanResult | None:
     Any announcement keeps the window in human materiality review instead of a
     simulation, so the review never pretends a disclosure was assessed.
     """
-    if scan_payload.get("status") != SCAN_PENDING_HUMAN_REVIEW:
+    if (scan_payload.get("status") != SCAN_PENDING_HUMAN_REVIEW
+            or scan_payload.get("coverage_status") != COVERAGE_COMPLETE):
         return None
     if scan_payload.get("announcements"):
         return None
     reviewed = dict(scan_payload)
     reviewed["status"] = SCAN_COMPLETE_NO_MATERIAL_EVENT
     return event_scan_from_payload(reviewed)
+
+
+def _available_at(value: object, field: str, today: datetime) -> datetime:
+    if not isinstance(value, str):
+        raise ValueError(f"{field} requires a timezone timestamp")
+    stamp = datetime.fromisoformat(value)
+    if stamp.utcoffset() is None or stamp > today:
+        raise ValueError(f"{field} is naive or in the future")
+    return stamp
+
+
+def _audit_scan_sources(root: Path, scan: EventScanResult) -> list[dict[str, Any]]:
+    """A pinned scan alone cannot establish retained-original integrity."""
+    refs = [*scan.evidence_refs, *(ref for item in scan.announcements for ref in item.evidence_refs)]
+    audit = []
+    for ref in refs:
+        row = {key: ref.get(key) for key in ("id", "path", "sha256")}
+        try:
+            if not row["path"] or not row["sha256"]:
+                raise ValueError("missing source binding")
+            source = _resolve(root, row["path"], "event scan source")
+            row["observed_sha256"] = sha256_file(source)
+            row["status"] = "VERIFIED" if row["observed_sha256"] == row["sha256"] else "HASH_MISMATCH"
+        except (ValueError, OSError, TypeError):
+            row["status"] = "UNAVAILABLE_OR_UNBOUND"
+        if row not in audit:
+            audit.append(row)
+    return audit
 
 
 def _news_rows(scan: EventScanResult) -> list[dict[str, Any]]:
@@ -111,9 +145,13 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
                              event_scan_path: Path, event_scan_sha256: str,
                              quote_bundle: Path | None = None,
                              quote_bundle_sha256: str | None = None,
-                             output_path: Path, today: datetime) -> dict[str, Any]:
+                             output_path: Path | None = None, today: datetime) -> dict[str, Any]:
     """Run one hash-bound validity review; never returns an approval."""
     root = root.resolve()
+    if today.utcoffset() is None:
+        raise ValueError("Review clock requires a timezone")
+    if review_cutoff > today.astimezone(ZoneInfo("Asia/Shanghai")).date():
+        raise ValueError("Review cutoff is in the future")
     symbol = normalize_symbol(symbol)
     package_file = _resolve(root, package_path, "research package")
     if sha256_file(package_file) != package_sha256:
@@ -126,6 +164,7 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
         raise ValueError("研究包缺少 point_in_time")
     research_day = _required_date(point_in_time.get("research_as_of"),
                                   "point_in_time.research_as_of")
+    package_available = _available_at(point_in_time.get("available_at"), "research available_at", today)
     if date.fromisoformat(research_day) > review_cutoff:
         raise ValueError("研究截止日不能晚于复核截止日")
     validity_input = package.get("model_validity_input")
@@ -144,13 +183,32 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
         raise ValueError("事件扫描的有效期起点必须等于研究截止日")
     if scan.scan_to < review_cutoff:
         raise ValueError("事件扫描未覆盖复核截止日")
+    if scan.validity_to < review_cutoff:
+        raise ValueError("事件有效期未覆盖复核截止日")
+    if scan.scan_to > review_cutoff:
+        raise ValueError("事件扫描超出复核截止日；请提供对应时点的扫描")
+    scan_available = _available_at(scan.retrieved_at.isoformat(), "event scan retrieved_at", today)
+    if any(item.published_at > scan.retrieved_at for item in scan.announcements):
+        raise ValueError("Announcement is not available at scan retrieval time")
+    source_audit = _audit_scan_sources(root, scan)
+    source_blockers = ["EVENT_SCAN_SOURCE_NOT_VERIFIED:" + str(row["id"])
+                       for row in source_audit if row["status"] != "VERIFIED"]
+    if source_blockers:
+        scan = replace(scan, coverage_status=COVERAGE_INCOMPLETE,
+                       blockers=(*scan.blockers, *source_blockers))
     coverage_complete = scan.coverage_status == COVERAGE_COMPLETE
     blockers = list(validity_input.get("blockers") or [])
     current = evaluate_model_validity(model_id=str(validity_input["model_id"]), symbol=symbol,
         model_as_of=date.fromisoformat(research_day), valid_from=valid_from,
         quote_date=review_cutoff, events=[], event_scan_evidence_refs=[],
         blockers=blockers, event_scan=scan)
-    reviewed = _reviewed_scan(scan_payload)
+    # Do not let an empty later scan erase unresolved registered material events.
+    if validity_input.get("events") or validity_input.get("event_materiality"):
+        current = replace(current, status="UNKNOWN", material_event_found=None,
+                          blockers=[*current.blockers, "REGISTERED_EVENT_CONTEXT_REQUIRES_REVIEW"])
+    reviewed = _reviewed_scan(scan.as_policy())
+    if validity_input.get("events") or validity_input.get("event_materiality"):
+        reviewed = None
     if reviewed is not None:
         reviewed_validity = evaluate_model_validity(model_id=str(validity_input["model_id"]),
             symbol=symbol, model_as_of=date.fromisoformat(research_day), valid_from=valid_from,
@@ -160,16 +218,29 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
     else:
         reviewed_payload = None
     news = _news_rows(scan)
+    pending_news = [row for row in news if row["materiality_candidate"]
+                    or row["review_status"] != REVIEW_REVIEWED_NO_MATERIAL_CANDIDATE]
+    if pending_news and current.status == "VALID":
+        current = replace(current, status="UNKNOWN", material_event_found=None,
+                          blockers=[*current.blockers, "ANNOUNCEMENT_REVIEW_INCOMPLETE"])
     financial_news = [row for row in news if row["rule_kind"] in _FINANCIAL_KINDS]
-    if not news:
+    reusable = coverage_complete and current.status == "VALID" and not current.blockers and not pending_news
+    if not coverage_complete:
+        facts_change = {"status": "UNKNOWN", "reason": "公告覆盖或引用原件未核验，不能从空列表推断事实未变化。",
+                        "report_period": point_in_time.get("report_period")}
+    elif not news:
         facts_change = {"status": "NONE",
                         "reason": "复核窗口内官方公告为零，财务事实仍适用最近已披露报告期。",
                         "report_period": point_in_time.get("report_period")}
-    else:
+    elif pending_news:
         facts_change = {"status": "REVIEW_REQUIRED",
                         "reason": "复核窗口内存在官方公告，需人工材料性复核后才可判断事实是否变化。",
                         "report_period": point_in_time.get("report_period"),
                         "financial_announcements": [row["announcement_id"] for row in financial_news]}
+    else:
+        facts_change = {"status": "REVIEWED_NO_MODEL_INVALIDATION",
+                        "reason": "沿用输入扫描中已有的逐条复核结论；不将非重大披露解释为财务事实完全未变化。",
+                        "report_period": point_in_time.get("report_period")}
     price_compatibility: dict[str, Any] = {"status": "QUOTE_NOT_PROVIDED",
         "reason": "未提供已登记收盘行情，无法判断价格兼容性。",
         "ladder": quote_compatibility_ladder({}, research_day),
@@ -188,7 +259,8 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
         verdict = dict(verdict)
         ladder = quote_compatibility_ladder(verdict, research_day)
         comparison_with_validity = bool(ladder["comparison_eligible"]["eligible"]
-                                        and current.status == "VALID")
+                                        and current.status == "VALID" and not current.blockers
+                                        and not pending_news)
         price_compatibility = {
             "status": verdict.get("status"),
             "reason": verdict.get("reason"),
@@ -211,7 +283,7 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
     single_missing_approval = None
     if not coverage_complete:
         status = STATUS_BLOCKED_ON_EVENT_COVERAGE
-    elif news:
+    elif pending_news:
         status = STATUS_REQUIRES_MATERIALITY_REVIEW
         single_missing_approval = "MATERIALITY_REVIEW_PER_ANNOUNCEMENT"
     elif scan.status == SCAN_COMPLETE_MATERIAL_EVENTS:
@@ -220,21 +292,26 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
     elif scan.status == SCAN_PENDING_HUMAN_REVIEW:
         status = STATUS_BLOCKED_ON_HUMAN_EVENT_REVIEW
         single_missing_approval = "EVENT_WINDOW_HUMAN_REVIEW"
+    elif current.status != "VALID" or current.blockers:
+        status = STATUS_BLOCKED_ON_MODEL_VALIDITY
     elif price_compatibility.get("quote_date") and \
             str(price_compatibility["quote_date"]) > research_day:
-        status = STATUS_BLOCKED_ON_RESEARCH_RE_REGISTRATION
-        single_missing_approval = "RESEARCH_VERSION_RE_REGISTRATION"
+        status = STATUS_INCREMENTAL_REVIEW_COMPLETE_PRICE_BRIDGE_PENDING
+        single_missing_approval = "PRICE_BRIDGE_REVIEW_BINDING_REQUIRED"
     else:
         status = STATUS_SUPPORTS_QUOTE_UNDER_PENDING_GATES
     approval_required = [
         {"gate": "EVENT_WINDOW_HUMAN_REVIEW", "owner": "human",
-         "why": (f"事件扫描有效期 {scan.validity_from}→{scan.validity_to} 仍为人工待复核；"
-                 "复核完成前，模型有效性不能由 UNKNOWN 变为 VALID。"),
+         "required": not coverage_complete or bool(pending_news) or scan.status == SCAN_PENDING_HUMAN_REVIEW,
+         "why": (f"事件扫描有效期 {scan.validity_from}→{scan.validity_to}；"
+                 "沿用已有复核状态，不自动批准未完成的材料性复核。"),
          "unlocks": f"模型有效性覆盖 {review_cutoff.isoformat()}（当前 "
                     f"{current.status}）"},
         {"gate": "RESEARCH_VERSION_RE_REGISTRATION", "owner": "engine+operator",
+         "required": not reusable,
          "why": (f"登记研究截止日为 {research_day}，未覆盖更晚的已核验行情；"
-                 "重登记只能生成待复核版本，不能代签审批。"),
+                 "增量复核可单独证明模型有效性，但不修改该截止日或既有行情准入；"
+                 "需按原价格桥合同绑定复核结果，不能仅复制新截止日。"),
          "unlocks": "价格桥接从 QUOTE_VERIFIED_BUT_RESEARCH_STALE 进入可判断状态"},
         {"gate": "G3_VALUATION_APPROVAL", "owner": "human",
          "why": "正式估值批准是正式投资决策的前置人工门。",
@@ -244,11 +321,11 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
          "unlocks": "position guidance（在此之前保持 null）"},
     ]
     reopen_conditions = [
-        (f"人工完成事件窗口材料性复核（扫描 {event_scan_sha256[:12]}…，"
-         f"{scan.validity_from}→{scan.validity_to}，公告数 {len(news)}）。"),
-        (f"以覆盖 {review_cutoff.isoformat()} 的研究版本完成有界重登记"
-         "（既有引擎 prepare_pending_research_candidate，输出 PENDING_REVIEW，不得代签）。"),
-        "重登记后重跑价格桥接登记与执行（pin_current_quote_bridge.py / execute_quote_bridge_for_symbol）。",
+        ("已完成的事件窗口无需重复审核；保留原始研究，绑定本次增量有效性结果。" if reusable else
+         f"完成事件窗口与模型适用性复核（扫描 {event_scan_sha256[:12]}…，"
+         f"{scan.validity_from}→{scan.validity_to}，公告数 {len(news)}）；不得自动材料性/G3批准。"),
+        "仅在失效条件要求时重算模型；日期推进本身不要求重做整份财务研究。",
+        "价格桥接仍按原合同核验，复核结果不是 quote_bridge 准入替代品。",
         "在产生当日已核验收盘后重跑 run_daily_trade_assistant.py，使报价日为当前交易会话。",
         "G3 人工批准与决策门通过前保持 action=no_order，不产生买入/加仓建议。",
     ]
@@ -260,9 +337,12 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
     ]
     for ref in scan.evidence_refs:
         evidence_refs.append({key: ref.get(key) for key in ("id", "path", "sha256", "source_url")})
-    availability = [value for value in (scan.retrieved_at.isoformat(),
-                                        price_compatibility.get("collected_at"),
-                                        point_in_time.get("available_at")) if isinstance(value, str)]
+    if quote_bundle is not None:
+        evidence_refs.append({"id": "review-quote-bundle", "path": bundle_file.relative_to(root).as_posix(),
+                              "sha256": quote_bundle_sha256})
+    availability = [scan_available, package_available]
+    if price_compatibility.get("collected_at"):
+        availability.append(_available_at(price_compatibility["collected_at"], "quote collected_at", today))
     review = {
         "schema_version": SCHEMA_VERSION,
         "action": "no_order",
@@ -280,20 +360,35 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
             "profile_id": package.get("profile_id"),
         },
         "review_cutoff": review_cutoff.isoformat(),
-        "source_availability_cutoff": max(availability) if availability else None,
+        "source_availability_cutoff": max(availability).isoformat(),
+        "incremental_review": {
+            "status": "MODEL_VALID_AT_REVIEW_CUTOFF" if reusable else "REVIEW_REQUIRED",
+            "research_cutoff_changed": False,
+            "model_recalculation_required": False if reusable else True if current.status == "STALE" else None,
+            "model_valid_through": review_cutoff.isoformat() if reusable else None,
+            "original_model_as_of": research_day,
+            "formal_eligibility": False, "g3_approval_granted": False,
+            "price_bridge_changed": False, "action": "no_order",
+            "note": "仅复核原模型在新时点的有效性；不得改研究截止日冒充覆盖，价格比较与G3仍走原门禁。",
+        },
+        "event_source_audit": source_audit,
         "window": {"scan_from": scan.scan_from.isoformat(), "scan_to": scan.scan_to.isoformat(),
                    "validity_from": scan.validity_from.isoformat(),
                    "validity_to": scan.validity_to.isoformat(),
                    "coverage_status": scan.coverage_status,
+                   "declared_coverage_status": scan_payload["coverage_status"],
                    "scan_status": scan.status,
                    "parser_version": scan.parser_version},
         "facts_change": facts_change,
-        "material_events": {"status": "NONE_FOUND" if not news else "REVIEW_REQUIRED",
+        "material_events": {"status": ("UNKNOWN" if not coverage_complete else "REVIEW_REQUIRED" if pending_news
+                                       else "REVIEWED_NO_MATERIAL_CANDIDATE" if news else "NONE_FOUND"),
                             "announcements": news},
         "assumptions_change": {
-            "status": "NONE" if not news else "REVIEW_REQUIRED",
-            "reason": ("本轮未重拟合假设；窗口内无新披露时既有假设维持原样。"
-                       if not news else "窗口内存在公告，假设是否变化须人工复核。")},
+            "status": ("UNKNOWN" if not coverage_complete else "REVIEW_REQUIRED" if pending_news
+                       else "REVIEWED_NO_MODEL_INVALIDATION" if news else "NONE"),
+            "reason": ("覆盖未核验，不能判断假设是否变化。" if not coverage_complete else
+                       "公告材料性尚待复核，不自动改写假设。" if pending_news else
+                       "本轮未重拟合或改写假设；是否沿用模型见独立增量有效性结果。")},
         "model_validity_review": {
             "current": _model_validity_payload(current),
             "if_event_window_reviewed": reviewed_payload,
@@ -312,8 +407,105 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
         "reopen_conditions": reopen_conditions,
         "evidence_refs": evidence_refs,
     }
-    write_new_json(_resolve(root, output_path, "review output"), review)
+    if output_path is not None:
+        write_new_json(_resolve(root, output_path, "review output"), review)
     return review
+
+
+def review_registered_research_validity(*, root: Path, review_cutoff: date,
+        today: datetime, output_path: Path, symbols: list[str] | None = None,
+        incremental_bindings: list[dict] | None = None) -> dict[str, Any]:
+    """Review only pointer-bound packages and their declared scans, independently.
+
+    Re-running unchanged results reuses the immutable artifact; a changed result
+    requires a new output path. No runtime search can silently rebind evidence.
+    """
+    from .quote_bridge import POINTER_PATH, POINTER_SCHEMA
+
+    root = root.resolve()
+    if today.utcoffset() is None or review_cutoff > today.astimezone(ZoneInfo("Asia/Shanghai")).date():
+        raise ValueError("Review requires an aware clock and a non-future cutoff")
+    target = _resolve(root, output_path, "registered review output")
+    pointer_file = root / POINTER_PATH
+    pointer = load_json_object(pointer_file, "quote bridge pointer")
+    if pointer.get("schema_version") != POINTER_SCHEMA or not isinstance(pointer.get("quotes"), dict):
+        raise ValueError("Invalid current quote bridge pointer")
+    entries = pointer["quotes"]
+    selected = sorted(set(normalize_symbol(s) for s in (symbols if symbols is not None else entries)))
+    rows = []
+    for symbol in selected:
+        row: dict[str, Any] = {"symbol": symbol, "status": "PENDING", "action": "no_order",
+            "model_validity_status": "UNKNOWN", "formal_eligibility": False,
+            "g3_approval_granted": False, "review": None, "evidence_refs": []}
+        try:
+            entry = entries.get(symbol)
+            if not isinstance(entry, dict):
+                raise ValueError("REGISTERED_QUOTE_BINDING_MISSING")
+            package_path = _resolve(root, entry["research_package"], "research package")
+            package_sha = entry["research_package_sha256"]
+            if sha256_file(package_path) != package_sha:
+                raise ValueError("REGISTERED_PACKAGE_HASH_MISMATCH")
+            row["evidence_refs"].append({"path": package_path.relative_to(root).as_posix(), "sha256": package_sha})
+            package = load_json_object(package_path, "research package")
+            if package.get("symbol") != symbol:
+                raise ValueError("REGISTERED_PACKAGE_SYMBOL_MISMATCH")
+            validity = package.get("model_validity_input") or {}
+            from .incremental_validity import read_bound_json, load_incremental_scan_binding
+
+            supplemental = []
+            for binding_ref in incremental_bindings or []:
+                _, binding = read_bound_json(root, binding_ref, "incremental validity binding")
+                if binding.get("symbol") == symbol:
+                    supplemental.append(binding_ref)
+            if len(supplemental) > 1:
+                raise ValueError("Ambiguous explicit incremental bindings")
+            # Use the primary reference when present; never substitute a newer,
+            # unregistered scan found by filename or filesystem timestamp.
+            ref = validity.get("event_scan_ref")
+            if supplemental:
+                ref = load_incremental_scan_binding(root=root, binding_ref=supplemental[0],
+                    symbol=symbol, package_path=package_path, package_sha256=package_sha,
+                    review_cutoff=review_cutoff, today=today)
+                row["incremental_binding_ref"] = supplemental[0]
+                row["evidence_refs"].append(supplemental[0])
+            elif ref is None:
+                refs = validity.get("event_scan_evidence_refs") or []
+                if len(refs) != 1:
+                    raise ValueError("EVENT_SCAN_BINDING_MISSING_OR_AMBIGUOUS")
+                ref = refs[0]
+            if not isinstance(ref, dict) or not ref.get("path") or not ref.get("sha256"):
+                raise ValueError("EVENT_SCAN_BINDING_INCOMPLETE")
+            row["evidence_refs"].append(dict(ref))
+            scan_path = _resolve(root, ref["path"], "event scan")
+            review = review_research_validity(root=root, symbol=symbol,
+                package_path=package_path, package_sha256=package_sha,
+                review_cutoff=review_cutoff, event_scan_path=scan_path,
+                event_scan_sha256=ref["sha256"], quote_bundle=entry.get("quote_bundle"),
+                quote_bundle_sha256=entry.get("quote_bundle_sha256"), today=today)
+            row.update(status=review["status"], review=review,
+                       model_validity_status=review["model_validity_review"]["current"]["status"])
+        except (ValueError, OSError, KeyError, TypeError, AttributeError) as error:
+            row["reason"] = str(error)
+        rows.append(row)
+    result = {"schema_version": "registered-research-validity-reviews-v1",
+        "generated_at": today.isoformat(), "review_cutoff": review_cutoff.isoformat(),
+        "action": "no_order", "research_cutoff_changed": False, "g3_approval_granted": False,
+        "pointer_ref": {"path": POINTER_PATH, "sha256": sha256_file(pointer_file)}, "reviews": rows}
+    if target.exists():
+        existing = load_json_object(target, "registered validity reviews")
+
+        def comparable(value: Any) -> Any:
+            if isinstance(value, dict):
+                return {k: comparable(v) for k, v in value.items() if k != "generated_at"}
+            if isinstance(value, list):
+                return [comparable(v) for v in value]
+            return value
+
+        if comparable(existing) != comparable(result):
+            raise FileExistsError("Registered validity result changed; use a new audit artifact path")
+        return existing
+    write_new_json(target, result)
+    return result
 
 
 def render_research_validity_review_markdown(review: dict[str, Any]) -> str:
@@ -352,6 +544,8 @@ def render_research_validity_review_markdown(review: dict[str, Any]) -> str:
         lines.append(f"- {label}：{mark}。{row.get('reason') or ''}")
     lines.extend(["", "## 待人工审批"])
     for item in review["approval_required"]:
+        if item.get("required") is False:
+            continue
         lines.append(f"- `{item['gate']}`（{item['owner']}）：{item['why']} → 解锁 {item['unlocks']}")
     lines.extend(["", "## 重开条件"])
     lines.extend(f"{index}. {step}" for index, step in enumerate(review["reopen_conditions"], 1))

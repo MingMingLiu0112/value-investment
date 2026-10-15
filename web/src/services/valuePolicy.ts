@@ -18,6 +18,16 @@ export type PolicyHandoff = {
   steps: { id: string; action: string }[];
   verification: { approval_changed: false; research_admitted: false };
   commands: { draft_preview: string; consume_signed_response: string };
+  materiality_handoff?: {
+    status: string;
+    approval_granted: false;
+    reason?: string;
+    scan_window?: { scan_from: string; scan_to: string };
+    announcements?: unknown[];
+    unsigned_response?: unknown;
+    commands?: { consume_signed_response: string; recompute: string };
+    publication_required?: boolean;
+  };
 };
 
 export type PolicySelection = {

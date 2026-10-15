@@ -8,6 +8,7 @@ import {
   currentCaseMatches,
   fillLink,
   judgmentGroup,
+  hotspotOpportunityQuality,
   publicationVersionsMatch,
 } from "../src/utils/currentJudgment";
 
@@ -39,6 +40,74 @@ const value: CurrentPriceCase = {
 };
 
 describe("backend current judgment boundaries", () => {
+  it.each([
+    ["下降趋势", { daily_trend: "DOWNTREND" }, {}, "A"],
+    ["空间不足", { observation_quality: "INSUFFICIENT_UPPER_SPACE" }, {}, "A"],
+    [
+      "量能不满足",
+      {},
+      { period_structure: { "60m": "PRICE_ABOVE_VOLUME_PENDING" } },
+      "C",
+    ],
+    ["等待确认", {}, {}, "B"],
+    [
+      "有效条件计划",
+      { breakout: { confirmed_on_next_completed_bar: true } },
+      {},
+      "D",
+    ],
+    ["回踩恢复", { pullback_recovery: { observed: true } }, {}, "D"],
+    ["已失效", {}, { signal_state: "TRIGGER_REJECTED" }, "E"],
+    ["保护结构失效", { structural_invalidation: true }, {}, "E"],
+    [
+      "过期",
+      { breakout: { confirmed_on_next_completed_bar: true } },
+      { signal_state: "STALE" },
+      null,
+    ],
+    ["空间未知", { observation_quality: "UNKNOWN" }, {}, null],
+    ["日线未知", { daily_trend: "UNKNOWN" }, {}, null],
+    ["计划阻塞", {}, { signal_state: "BLOCKED" }, null],
+  ])(
+    "classifies %s using existing observations without granting BUY",
+    (_label, behavior, patch, expected) => {
+      const candidate = {
+        ...item,
+        price_action_plan: {
+          ...plan,
+          ...patch,
+          price_behavior: {
+            daily_trend: "UPTREND",
+            observation_quality: "RESEARCH_ONLY",
+            ...behavior,
+          },
+        },
+      } as DecisionItem;
+      const before = JSON.stringify(candidate);
+      expect(hotspotOpportunityQuality(candidate)?.code).toBe(expected);
+      expect(JSON.stringify(candidate)).toBe(before);
+      expect(candidate.price_action_plan?.action_eligibility).toBe(false);
+    },
+  );
+  it("requires both price boundaries for D and does not classify value research", () => {
+    expect(
+      hotspotOpportunityQuality({ ...item, strategy: "CORE_VALUE" }),
+    ).toBeNull();
+    expect(
+      hotspotOpportunityQuality({
+        ...item,
+        price_action_plan: {
+          ...plan,
+          invalidation_price: null,
+          price_behavior: {
+            daily_trend: "UPTREND",
+            observation_quality: "RESEARCH_ONLY",
+            breakout: { confirmed_on_next_completed_bar: true },
+          } as any,
+        },
+      })?.code,
+    ).not.toBe("D");
+  });
   it("does not present a local breakout against a declining daily trend as an entry candidate", () => {
     expect(
       judgmentGroup({
@@ -120,6 +189,7 @@ describe("backend current judgment boundaries", () => {
       "STALE",
       "BLOCKED",
       "TRIGGER_REJECTED",
+      "INVALIDATED",
     ]) {
       expect(
         judgmentGroup({

@@ -38,6 +38,7 @@
     "scripts/build_m5_disclosure_review_briefing.py"
   ],
   "SUPPORTED_ENGINEERING_CLI": [
+    "scripts/current/review_materiality.py",
     "scripts/current/build_value_research_queue.py",
     "scripts/current/open_m2_pending_research.py",
     "scripts/current/run_agent_research_pilot.py",
@@ -86,6 +87,8 @@
     "scripts/current/backup_private_portfolio.py",
     "scripts/current/pin_current_quote_bridge.py",
     "scripts/current/review_research_validity.py",
+    "scripts/current/review_registered_research_validity.py",
+    "scripts/current/collect_registered_validity_scan.py",
     "scripts/current/build_daily_research_summary.py",
     "scripts/run_m2_opportunity_discovery.py"
   ],
@@ -112,8 +115,8 @@
   ],
   "counts": {
     "product": 26,
-    "engineering": 50,
+    "engineering": 53,
     "internal_helpers": 19,
-    "total": 95
+    "total": 98
   }
 }

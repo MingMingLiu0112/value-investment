@@ -15,6 +15,100 @@ export const judgmentGroups = [
   "不符合当前入场条件 / 等待结构改善",
 ] as const;
 
+export function hotspotOpportunityQuality(item: DecisionItem): {
+  code: "A" | "B" | "C" | "D" | "E" | null;
+  label: string;
+  reason: string;
+} | null {
+  if (!["HOTSPOT_SATELLITE", "hotspot"].includes(item.strategy ?? ""))
+    return null;
+  const plan = item.price_action_plan;
+  const behavior = plan?.price_behavior;
+  const unknown = (reason: string) => ({
+    code: null,
+    label: "机会质量待核验",
+    reason,
+  });
+  if (!plan || plan.action !== "no_order")
+    return unknown("当前价格计划不可核验，不归入有效机会。");
+  if (
+    ["STALE", "EXPIRED", "HISTORICAL_OBSERVATION_NOT_ADMITTED"].includes(
+      plan.signal_state,
+    )
+  )
+    return unknown("计划已过期或仅供历史观察，须刷新后重新分类。");
+  if (
+    ["TRIGGER_REJECTED", "INVALIDATED"].includes(plan.signal_state) ||
+    plan.period_structure?.["60m"] === "INVALIDATED" ||
+    (behavior &&
+      "structural_invalidation" in behavior &&
+      behavior.structural_invalidation === true)
+  )
+    return {
+      code: "E",
+      label: "结构失效 / 退出复核",
+      reason:
+        "已记录主结构失效；仅已有持仓进入退出复核，可卖数量与个人许可另行核验。",
+    };
+  if (plan.signal_state === "BLOCKED" || !behavior)
+    return unknown("价格行为资料不足或计划被阻塞，不视为结构改善。");
+  if (
+    behavior.daily_trend === "DOWNTREND" ||
+    behavior.observation_quality === "UNFAVORABLE_DAILY_TREND"
+  )
+    return {
+      code: "A",
+      label: "活跃观察，结构不满足",
+      reason: "日线下降，局部触发不构成入场条件；等待大周期结构改善。",
+    };
+  if (behavior.observation_quality === "INSUFFICIENT_UPPER_SPACE")
+    return {
+      code: "A",
+      label: "活跃观察，结构不满足",
+      reason: "后端已标记上方结构空间不足，不据此追入。",
+    };
+  if (plan.period_structure?.["60m"] === "PRICE_ABOVE_VOLUME_PENDING")
+    return {
+      code: "C",
+      label: "价格出现，量能条件未满足",
+      reason: "主周期价格已越过观察位，量能尚未确认；等待完整周期核验。",
+    };
+  if (
+    behavior.observation_quality === "UNKNOWN" ||
+    !["UPTREND", "RANGE"].includes(behavior.daily_trend)
+  )
+    return unknown("日线或上方空间尚未核验，不能判定为有效条件性计划。");
+  if (
+    behavior.observation_quality === "RESEARCH_ONLY" &&
+    plan.entry_trigger_price != null &&
+    plan.invalidation_price != null &&
+    (behavior.breakout?.confirmed_on_next_completed_bar === true ||
+      behavior.pullback_recovery?.observed === true)
+  )
+    return {
+      code: "D",
+      label: "条件性结构计划，等待独立门禁",
+      reason:
+        "已记录后续完整周期确认或回踩恢复，并有入场及失效参考；研究、事件、策略验证和个人风险仍须独立通过，不代表正式买入。",
+    };
+  if (
+    behavior.daily_trend === "UPTREND" &&
+    plan.entry_trigger_price != null &&
+    plan.invalidation_price != null
+  )
+    return {
+      code: "B",
+      label: "趋势改善，等待价格确认",
+      reason:
+        "日线上升；仍等待主周期完整价格与后续确认，不以15分钟辅助触发替代。",
+    };
+  return {
+    code: "A",
+    label: "活跃观察，结构不满足",
+    reason: "尚未记录完整结构确认，继续观察；不推断已具备入场条件。",
+  };
+}
+
 export function publicationVersionsMatch(
   daily: string | null | undefined,
   packet: string | null | undefined,
@@ -36,9 +130,14 @@ export function judgmentGroup(item: DecisionItem): number {
       : 3;
   if (plan.action !== "no_order") return 4;
   if (
-    !["STALE", "BLOCKED", "EXPIRED", "TRIGGER_REJECTED"].includes(
-      plan.signal_state,
-    ) &&
+    ![
+      "STALE",
+      "BLOCKED",
+      "EXPIRED",
+      "TRIGGER_REJECTED",
+      "INVALIDATED",
+      "HISTORICAL_OBSERVATION_NOT_ADMITTED",
+    ].includes(plan.signal_state) &&
     ["HOTSPOT_SATELLITE", "hotspot"].includes(item.strategy ?? "") &&
     (plan.price_behavior?.daily_trend === "DOWNTREND" ||
       plan.price_behavior?.observation_quality === "INSUFFICIENT_UPPER_SPACE")

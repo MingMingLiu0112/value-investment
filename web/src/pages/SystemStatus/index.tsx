@@ -7,6 +7,7 @@ import { describeCode } from "../../utils/codes";
 
 export default function SystemStatus() {
   const { data, loading, error, retry } = useApi(api.packet);
+  const snapshot = useApi(api.snapshot);
   return (
     <Workbench>
       <Typography.Title level={2}>数据与系统状态</Typography.Title>
@@ -65,11 +66,37 @@ export default function SystemStatus() {
               },
               {
                 key: "excel",
-                label: "Excel 日期",
+                label: "Excel 原快照基准日",
                 children: data.dates.excel_published_as_of || "未验证",
+              },
+              {
+                key: "excelQuote",
+                label: "Excel 登记行情观察日",
+                children: data.dates.excel_quote_observation_as_of || "未验证",
+              },
+              {
+                key: "excelPublished",
+                label: "Excel 研究更新登记日",
+                children: data.dates.decision_published_on || "未验证",
+              },
+              {
+                key: "excelIntegrity",
+                label: "唯一 Excel 当前文件核验",
+                children: snapshot.loading
+                  ? "正在只读核验"
+                  : snapshot.error
+                    ? "读取失败，不能确认一致"
+                    : snapshot.data?.excel_live?.status === "MATCHED"
+                      ? "与已登记文件一致；不代表与今日 Web 同日更新"
+                      : snapshot.data?.excel_live?.status || "尚未核验",
               },
             ]}
           />
+          <Typography.Paragraph type="secondary" style={{ marginTop: 16 }}>
+            Excel
+            是独立发布快照。以上日期分别代表原快照、研究更新和行情观察，不能当作今日实时数据。日常决策以当前已验证
+            Web 版本及逐证券日期为准。
+          </Typography.Paragraph>
           {data.blockers.length > 0 && (
             <section style={{ marginTop: 22 }}>
               <h2 style={{ fontSize: 16 }}>尚需核验</h2>

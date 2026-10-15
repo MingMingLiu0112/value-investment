@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 import pytest
+from materiality_transport_helpers import authenticated_materiality_packet
 
 from value_investment_agent.operations.start_criteria import (
     CLASSIFICATIONS,
@@ -19,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MATRIX_PATH = ROOT / "config" / "m6-start-criteria-matrix-v1.json"
 
 
-def test_full_daily_dag_runs_actual_shared_entry_with_explicit_synthetic_reviews(tmp_path):
+def test_full_daily_dag_runs_actual_shared_entry_with_explicit_synthetic_reviews(tmp_path, authenticated_materiality_packet):
     import hashlib
     from dataclasses import replace
     from datetime import date, datetime, timezone, timedelta
@@ -62,6 +63,7 @@ def test_full_daily_dag_runs_actual_shared_entry_with_explicit_synthetic_reviews
     disclosure_path, disclosure_hash = store('synthetic-disclosure.json', dict(scope='SYNTHETIC_TEST_ONLY'))
     index_path, index_hash = store('synthetic-index.json', dict(scope='SYNTHETIC_TEST_ONLY'))
     decision = replace(_decision(DECISION_NOT_MATERIAL), published_at=now, reviewed_at=now,
+        title='SYNTHETIC TEST ONLY',
         source_ref=dict(id='synthetic-disclosure', path=disclosure_path.name), source_sha256=disclosure_hash)
     scan = EventScanResult(schema_version='m1-event-scan-v1', symbol='600887', provider='TEST_ONLY',
         scan_from=date.fromisoformat(model_day), scan_to=day,
@@ -74,8 +76,14 @@ def test_full_daily_dag_runs_actual_shared_entry_with_explicit_synthetic_reviews
         blockers=(), evidence_refs=(dict(id='synthetic-index', path=index_path.name, sha256=index_hash),),
         retrieved_at=now, parser_version='test-only')
     event_path, event_hash = store('scan.json', scan.as_policy())
+    # Sign the exact descriptor path consumed after the real DAG snapshots inputs.
+    output = tmp_path / 'runtime/full-chain'
+    output.mkdir(parents=True)
+    staged_event = output / 'event.json'
+    staged_event.write_bytes(event_path.read_bytes())
     package['model_validity_input'] = dict(model_id='residual-income-equity-shared-v1', valid_from=model_day,
-        event_scan_ref=dict(id='synthetic-scan', symbol='600887', path=event_path.name, sha256=event_hash))
+        event_scan_ref=dict(id='daily-event-' + event_hash, symbol='600887',
+            path=staged_event.relative_to(tmp_path).as_posix(), sha256=event_hash))
     from test_quote_sessions import evidence, sse_evidence
     old_quote = evidence(symbol='600887', day=model_day)
     old_quote['calendar_exchange'] = 'SSE'
@@ -119,10 +127,14 @@ def test_full_daily_dag_runs_actual_shared_entry_with_explicit_synthetic_reviews
         symbol='600887', action='no_order', bindings=dict(
             human_approval=dict(path=approval_path.name, sha256=approval_hash),
             event_materiality=dict(path=materiality_path.name, sha256=materiality_hash))))
+    reviews_path, reviews_hash, _, _, _ = authenticated_materiality_packet(
+        package_path, materiality, extra_packet=reviews_path)
     request_path, request_hash = store('request.json', dict(schema_version='research-schedule-request-v1',
         symbol='600887', source_id='TEST_ONLY', period=day.isoformat(), research_question_id='synthetic-only',
         blocker_id='initial_research', reopen_condition_met=False, new_evidence_ids=[]))
-    output = tmp_path / 'runtime/full-chain'
+    # Remove only fixture staging; the DAG must exclusively recreate its output.
+    staged_event.unlink()
+    output.rmdir()
     # All scheduling, descriptors, reviews, calculations, decision and portfolio gates are real calls.
     result = run_isolated_daily_attempt(root=tmp_path, output=output, symbol='600887',
         event_path=event_path, event_sha256=event_hash, package_path=package_path, package_sha256=package_hash,

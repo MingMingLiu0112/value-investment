@@ -200,7 +200,7 @@ def test_partial_registry_without_bound_assessment_exposes_research_gaps_and_eng
     registry["companies"] = {symbol: dict(partial) for symbol in ("000333", "000651", "600741")}
     _write_json(root, path.relative_to(root).as_posix(), registry)
     packet = _build(root)
-    assert packet["engine_version"] == "daily-public-packet-engine-v12"
+    assert packet["engine_version"] == daily_public_packet.ENGINE_VERSION
     for symbol in registry["companies"]:
         entry = packet["company_statuses"][symbol]
         assert {"RESEARCH_ASSESSMENT_NOT_BOUND", "VALUATION_NOT_ADMITTED"} <= set(entry["blockers"])
