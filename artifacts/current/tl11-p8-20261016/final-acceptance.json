@@ -1,0 +1,295 @@
+{
+  "schema_version": "p8-scoped-final-acceptance-v1",
+  "action": "no_order",
+  "tested_code_commit": "7757a00923e2b12235358296bc47ec4edb19d7c8",
+  "publication_id": "pub-6167d094c68f6d8105c1",
+  "packet_sha256": "5d51b564d4212634d720d54c9315520763055a2de14abdae39e8b42b5b5acda3",
+  "status": {
+    "ENGINEERING_COMPLETE": "PASS_SCOPED_P8_WORKFLOW",
+    "REAL_VALUE_RESEARCH_READY": "REVIEWABLE_JUDGMENT_DELIVERED_NOT_APPROVED_FAIR_VALUE",
+    "REAL_HOTSPOT_RESEARCH_READY": "VERIFIED_CONDITIONAL_OBSERVATION_NO_QUALIFYING_ENTRY",
+    "PRIVATE_ACCOUNT_READY": "NOT_PROVEN_REQUIRES_REAL_USER_INPUT",
+    "HUMAN_REVIEW_PENDING": "REAL_AUTHORIZED_G3_AND_MATERIALITY_SIGNATURES_REQUIRED",
+    "FORMAL_INVESTMENT_ELIGIBILITY": "NOT_REACHED",
+    "STRATEGY_VALIDATION": "NOT_PROVEN",
+    "USER_ACCEPTANCE": "NOT_PASSED"
+  },
+  "local_validation": {
+    "core_passed": 2921,
+    "core_skipped": 35,
+    "web_passed": 196,
+    "integrated_passed": 347,
+    "typecheck_format_build": "PASS",
+    "actual_browser": "browser-acceptance.json"
+  },
+  "remote_ci": {
+    "schema_version": "p8-github-ci-v1",
+    "action": "no_order",
+    "head_sha": "7757a00923e2b12235358296bc47ec4edb19d7c8",
+    "runs": [
+      {
+        "id": 38789058416,
+        "name": "Core Research Gates",
+        "head_sha": "7757a00923e2b12235358296bc47ec4edb19d7c8",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789058416",
+        "jobs": [
+          {
+            "id": 116608551979,
+            "name": "offline-core",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789058416/job/116608551979"
+          },
+          {
+            "id": 116608552672,
+            "name": "postgres-integration",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789058416/job/116608552672"
+          }
+        ]
+      },
+      {
+        "id": 38789058461,
+        "name": "Web Workbench",
+        "head_sha": "7757a00923e2b12235358296bc47ec4edb19d7c8",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789058461",
+        "jobs": [
+          {
+            "id": 116608552595,
+            "name": "web",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789058461/job/116608552595"
+          }
+        ]
+      },
+      {
+        "id": 38789049731,
+        "name": "Web Workbench",
+        "head_sha": "7757a00923e2b12235358296bc47ec4edb19d7c8",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789049731",
+        "jobs": [
+          {
+            "id": 116608521065,
+            "name": "web",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789049731/job/116608521065"
+          }
+        ]
+      }
+    ]
+  },
+  "independent_review": "No unresolved concrete P0/P1 in reviewed P8 diff; not proof of strategy edge",
+  "real_account_modified": false,
+  "canonical_excel_modified": false,
+  "remaining": [
+    "Issuer normalized economics and model assumptions",
+    "Authorized real research/event signatures",
+    "Personal policy, IPS, holdings and external reconciliation",
+    "Contemporaneous execution attributes and admitted prices",
+    "Strict PIT/OOS, costs/fills and natural operational observation",
+    "Actual final user acceptance"
+  ],
+  "source_bindings": [
+    {
+      "path": ".github/workflows/core-research-gates.yml",
+      "sha256": "0c4f67b5c728b4db825693ad0fa185a10d33825c2102622bbb543e1ffe070116"
+    },
+    {
+      "path": "config/current-company-research-registry.json",
+      "sha256": "8751796b5a5c32c3e4235cd063adb331d2f0daca77b68d342ef9e110fde9e9e3"
+    },
+    {
+      "path": "config/current-daily-public-snapshot.json",
+      "sha256": "5894a5d84111cdd33aa793e6c179eac8e1963913074907191c28569f99680c8b"
+    },
+    {
+      "path": "config/current-quote-bridge.json",
+      "sha256": "5f919a8fe035c1dacdf56c695225302348c7d554af8a814afc777da9caf1498a"
+    },
+    {
+      "path": "scripts/current/pin_current_quote_bridge.py",
+      "sha256": "0c1a29f54c61fe054e4411a6c0ee8ff33799b9de21ae2df723f4649df4822092"
+    },
+    {
+      "path": "scripts/current/run_daily_workbench.ps1",
+      "sha256": "49d89530faa485d4d9d993cae19cfd4599f17bb3f173adc82e036ac07673477e"
+    },
+    {
+      "path": "scripts/research_cases/yili/audit_p8_retained_research.py",
+      "sha256": "cfcf0d668128bd68c6b743058b25990af5d61d9a177ba212be0e6047a1f9f0c4"
+    },
+    {
+      "path": "src/value_investment_agent/application/hotspot/price_action_case.py",
+      "sha256": "80cdfef1f9c9bc179d6239df27d229ad609afdd46ce9f4b2005a63fae9be05f0"
+    },
+    {
+      "path": "src/value_investment_agent/application/portfolio/held_continuity.py",
+      "sha256": "8fd3e993e828a57408f5f201da8e34492f44187cca76c073a88a0530d4f51f5c"
+    },
+    {
+      "path": "src/value_investment_agent/application/portfolio/private_risk_experience.py",
+      "sha256": "5c4f519f6350b3b44946e8265f011f278d4c5dde971532e984db84cbdcdcd02e"
+    },
+    {
+      "path": "src/value_investment_agent/application/portfolio/private_risk_preview.py",
+      "sha256": "e39551e052a2b5555a140eb0cbadf623951c9f68317b335b06d036407576d3fc"
+    },
+    {
+      "path": "src/value_investment_agent/application/portfolio/private_risk_projection.py",
+      "sha256": "c360b52b86c9ba3fdd455407c2437fee46f45ceed1d6b0adca614110e50376d5"
+    },
+    {
+      "path": "src/value_investment_agent/application/portfolio/security_attributes.py",
+      "sha256": "37bef4fe11c7a00222a1df2c06f15034809e02b9447b940ab6c4997875ead340"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/daily_public_packet.py",
+      "sha256": "c381b076eef1b4c5b68d052c3a36ad95603e569b955b28b59318930fccea3cad"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/daily_refresh.py",
+      "sha256": "28a58d7d3e3b09e2f6589ae3ebac4a157887f016c67fcfe0bac69826db011132"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/quote_bridge.py",
+      "sha256": "7bb06674c8b0fabef9c0b330ee237a77af2e88857613f7de3a13ccff8366acf3"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/research_validity_review.py",
+      "sha256": "cc721478684d85936e6d606095c0a333f2e7e67d94e2f3dc61c3da21dcb108cb"
+    },
+    {
+      "path": "src/value_investment_agent/domain/portfolio/security_attributes.py",
+      "sha256": "c38090ca320f63cd802fed067233ab865a7217c015f556f6d66ea757c5613f53"
+    },
+    {
+      "path": "src/value_investment_agent/infrastructure/hotspot/current_price_case.py",
+      "sha256": "40c78b71a490b4f499486a0c97a793581d4499bed42bbec5d73d59132945c5cc"
+    },
+    {
+      "path": "src/value_investment_agent/infrastructure/portfolio/security_attributes.py",
+      "sha256": "ebf154450b6910c7290c91a295516db80baf2ffbf69efd96d7691b340a1e92f5"
+    },
+    {
+      "path": "src/value_investment_agent/presentation/web_api/private_routes.py",
+      "sha256": "e91570e91f43a741a96503c9787252695aa89de9f2e29eede0db40b6a5276558"
+    },
+    {
+      "path": "tests/test_daily_refresh_readiness.py",
+      "sha256": "649e573c71e7bae060089055439b74b268b1000a43612c2359d3138fced170d4"
+    },
+    {
+      "path": "tests/test_held_continuity.py",
+      "sha256": "430e016aaf9edc52fdcdf5130f647f0d5ed36bf4f123eba9a4c04bd403d13e58"
+    },
+    {
+      "path": "tests/test_hotspot_current_price_case.py",
+      "sha256": "68f0f10f4071496ec78038122cf14cd64e768f0e77e76a82e30499460dd237a4"
+    },
+    {
+      "path": "tests/test_incremental_quote_bridge.py",
+      "sha256": "19a843f8a6db42b714d9086b25dd7bf86150f565f79980df38f19f52695b257b"
+    },
+    {
+      "path": "tests/test_p7_signed_review_workflow.py",
+      "sha256": "299d939edde49526848576973e9a93fd6bc977788a0301b5b91a615ec0d5907a"
+    },
+    {
+      "path": "tests/test_p8_decision_chain.py",
+      "sha256": "a728adc2b19eb7bd708d48c174d5dca0e8aa92a111bcc7459de585d0be3b8534"
+    },
+    {
+      "path": "tests/test_private_ips_policy.py",
+      "sha256": "83c057827059c2fc3d8008419a60bfaa0c979a798625aebf9b34577e583a3009"
+    },
+    {
+      "path": "tests/test_private_risk_cash_floor.py",
+      "sha256": "fe0ad95907e5a9ea730f207150a9c884ac1b59871a7729dddf3dce0538d7b3c9"
+    },
+    {
+      "path": "tests/test_private_risk_experience.py",
+      "sha256": "aa51501c65cad9b70aca739e615f86d70c27ed5123da9638e9fc0b6a9319b1d5"
+    },
+    {
+      "path": "tests/test_private_risk_held_marks.py",
+      "sha256": "bcc987661a249d7f100fab02c18f1f217f2a90e18b1e49356238fa6a23fa682b"
+    },
+    {
+      "path": "tests/test_private_risk_preview.py",
+      "sha256": "d3f77b654604654013daa0fd44257ad10b4bc7ed9cb8d0d2fb0abac7b1931c81"
+    },
+    {
+      "path": "tests/test_quote_bridge_execution.py",
+      "sha256": "3e2c0d37c6f300d182a1adcb22c2d225934629f27e832d4db17e442876356e65"
+    },
+    {
+      "path": "tests/test_quote_session_conversion.py",
+      "sha256": "958e922bfbe9d7b428877a3b116dc5bdeba4d3468cbe8ba422c8081f4418fb06"
+    },
+    {
+      "path": "tests/test_security_attributes.py",
+      "sha256": "1d42eec69df08cf1c4311311e38247992e85d9c00c7b73e30e222d4858eaa0a0"
+    },
+    {
+      "path": "tests/web_api/test_held_continuity_api.py",
+      "sha256": "977e66a5b9dceafd34bfb7d931e9faa1df37f27b68e1c0b5186a54539eb07f6f"
+    },
+    {
+      "path": "web/src/components/HoldingsAttention.tsx",
+      "sha256": "5181134c6821aa6e663bdb688f6aefe5770d2884beca12ddfc3f238224e2339e"
+    },
+    {
+      "path": "web/src/components/HotspotSizingPanel.tsx",
+      "sha256": "c0b8ec17cd835c22d9d23ddc277b7cf1197ec107f5bee0b18fc5936c064cc516"
+    },
+    {
+      "path": "web/src/components/PrivateRiskContext.ts",
+      "sha256": "2cc665504c7a608035d273cbcc78f318f995cf4302a9b3ddb4f97d7c9122b7ac"
+    },
+    {
+      "path": "web/src/hooks/usePrivateState.ts",
+      "sha256": "73e2013f859673976ce026262b1c288195d371a9f933da84559b649bbd8080fb"
+    },
+    {
+      "path": "web/src/pages/DailyDecisions/index.tsx",
+      "sha256": "a2de2a44d8eba340b11945e2da93608a9b62ce11e9f6c6894ccf57de5f996943"
+    },
+    {
+      "path": "web/src/pages/DecisionDetail/index.tsx",
+      "sha256": "eb51f87605ebab3800c4e3ebf2ac6cd7f702499c21e2a57fcd7a733eb0092fcc"
+    },
+    {
+      "path": "web/src/services/api.ts",
+      "sha256": "0d5cf3890d1499191167d1560b8dce119710bc47420454fe4be21b09027f053d"
+    },
+    {
+      "path": "web/src/types/api.ts",
+      "sha256": "d92ba0a1c2248988578c1ffd8a3d797316c7c258a5441044199c277419f986fb"
+    },
+    {
+      "path": "web/src/utils/codes.ts",
+      "sha256": "8119d47bc66837ecf4c89867d43f7fb9f72932a4f6c2d91a8538a5cbb17518ae"
+    },
+    {
+      "path": "web/tests/codes.test.ts",
+      "sha256": "855ec9a4d10292af9fec625cf3b832a1ab02602549f6682669101ba0eb52bd74"
+    },
+    {
+      "path": "web/tests/holdings-attention.test.tsx",
+      "sha256": "1a1ded6fbb3f9ee23324d702e585be3324f198ea0ad16ff3febae49404999685"
+    },
+    {
+      "path": "web/tests/p6-detail-history-navigation.test.tsx",
+      "sha256": "6a6cd98c8133c660886e3f8f6fb9b2e46c601b1ab6bee2dac86b0a06266918b9"
+    }
+  ]
+}

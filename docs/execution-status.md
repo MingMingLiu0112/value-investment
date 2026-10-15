@@ -1,6 +1,6 @@
 # CURRENT STATUS
 
-## 2026-10-16 TL11-P8: local workflow acceptance, remote CI pending
+## 2026-10-16 TL11-P8: scoped engineering workflow accepted
 
 Latest explicit user scope is TL11-P8-FINAL-DECISION-PRODUCT, inheriting
 437b8dc7395763f643f3e4efb021694b14f15c8b. Current evidence and remaining acceptance
@@ -8,7 +8,8 @@ are tracked in `docs/current/tl11-p8-delivery-20261016.md` and
 `artifacts/current/tl11-p8-20261016/`. Research interpretations, latest-close
 observations, signed research permission, private facts and formal eligibility
 remain separate. Local Core 2921 passed / 35 skipped, Web 196 passed and actual
-Windows four-viewport interactions are recorded; remote exact-HEAD CI is pending.
+Windows four-viewport interactions are recorded. Code 7757a00 passed remote Core
+38789058416 (offline and isolated Postgres) and Web 38789058461/38789049731.
 No total-Goal, formal investment or final user acceptance is asserted.
 The canonical workbook is read-only under this task. action=no_order.
 

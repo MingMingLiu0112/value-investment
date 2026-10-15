@@ -27,7 +27,8 @@
     "all_five_full_plan_pairs_equal": true,
     "states": {"300364": "WATCH", "300413": "WATCH", "300418": "WATCH", "300058": "WATCH", "002354": "WATCH"},
     "daily_trends": {"300364": "DOWNTREND", "300413": "RANGE", "300418": "DOWNTREND", "300058": "DOWNTREND", "002354": "DOWNTREND"},
-    "current_clock": "2026-10-16T20:00:00+08:00",
+    "expiry_test_clock": "2026-10-16T20:00:00+08:00",
+    "expiry_clock_scope": "HYPOTHETICAL_TEST_CLOCK_ONLY; not an observed future exchange session or real operational record",
     "all_five_current_loads_rejected": "B1 current close rejected: stale_quote"
   },
   "inherited_longer_replay": {
