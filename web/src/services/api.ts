@@ -22,6 +22,7 @@ import type {
   PolicyRegistration,
   PolicySelection,
   PolicyStatus,
+  PolicyHandoff,
 } from "./valuePolicy";
 
 export class ApiError extends Error {
@@ -284,6 +285,11 @@ export const api = {
   valuePolicyStatus: (symbol: string) =>
     getPrivate<PolicyStatus>(
       `value-policy-review/${encodeURIComponent(symbol)}/status`,
+    ),
+  valuePolicyHandoff: (symbol: string, signal?: AbortSignal) =>
+    getPrivate<PolicyHandoff>(
+      `value-policy-review/${encodeURIComponent(symbol)}/handoff`,
+      signal,
     ),
   confirmValuePolicy: (
     symbol: string,

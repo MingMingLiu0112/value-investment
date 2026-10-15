@@ -8,6 +8,33 @@ SWING_SIDE_BARS = 2
 RETEST_LOOKBACK = 10
 
 
+def conditional_action_rules(behavior: dict, primary: dict) -> dict:
+    """Describe existing observations as conditional reviews, never permissions."""
+    def condition(intent, price, observed, rule, holding):
+        return dict(intent=intent, price=price, observed=observed, rule=rule,
+                    requires_existing_holding=holding, status="CONDITIONAL_REVIEW_ONLY",
+                    formal_eligibility=False, personal_permission=False, action="no_order")
+
+    recovery = behavior["pullback_recovery"]
+    return {
+        "OPEN": condition("OPEN", primary["entry_trigger_price"], primary["breakout_observed"],
+            "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；"
+            "仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。", False),
+        "ADD": condition("ADD", recovery["evidence"]["level"] if recovery["observed"] else None,
+            recovery["observed"],
+            "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、"
+            "触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、"
+            "量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。", True),
+        "REDUCE": condition("REDUCE", None,
+            behavior["observation_quality"] in {"UNFAVORABLE_DAILY_TREND", "INSUFFICIENT_UPPER_SPACE"},
+            "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，"
+            "进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。", True),
+        "EXIT": condition("EXIT", primary["invalidation_price"], behavior["structural_invalidation"],
+            "已有持仓时，完整60分钟收盘价严格低于前五根最低价，进入结构失效与人工退出复核；"
+            "仍须核查T+1、停牌、涨跌停、成本及个人持仓，不是自动止损订单。", True),
+    }
+
+
 def confirmed_swings(bars: list[dict], *, period: str) -> list[dict]:
     calculate_price_levels(bars, period=period)
     swings = []

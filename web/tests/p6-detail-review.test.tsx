@@ -42,6 +42,67 @@ import { ValuePolicyReview } from "../src/components/ValuePolicyReview";
 import { HotspotReplayReview } from "../src/components/HotspotReplayReview";
 
 describe("detail operation plan boundaries", () => {
+  it("puts authenticated personal policy before the collapsed public plan and draft", () => {
+    state.data = null;
+    const html = renderToStaticMarkup(
+      <JudgmentSummary
+        decision={{
+          id: "value-600887",
+          symbol: "600887",
+          strategy: "CORE_VALUE",
+        }}
+      />,
+    );
+    expect(html.indexOf("本人当前价格政策")).toBeLessThan(
+      html.indexOf("查看待确认价格政策"),
+    );
+    expect(html.indexOf("本人当前价格政策")).toBeLessThan(
+      html.indexOf("公共研究计划与资格"),
+    );
+    expect(html).toContain("外部估值审核交接");
+    expect(html).not.toContain("本人政策已登记");
+    expect(html).toContain("<details><summary>公共研究计划与资格");
+  });
+  it("renders four hotspot actions with observation and holding restrictions", () => {
+    const rules = Object.fromEntries(
+      ["OPEN", "ADD", "REDUCE", "EXIT"].map((action) => [
+        action,
+        {
+          rule: `${action}后端规则`,
+          price: action === "REDUCE" ? null : "12.30",
+          observed: action === "EXIT",
+          requires_existing_holding: action !== "OPEN",
+        },
+      ]),
+    );
+    const html = renderToStaticMarkup(
+      <JudgmentSummary
+        decision={{
+          id: "hotspot",
+          strategy: "HOTSPOT_SATELLITE",
+          price_action_plan: {
+            action: "no_order",
+            signal_state: "WATCH",
+            entry_trigger_price: null,
+            invalidation_price: null,
+            conditional_action_rules: rules,
+            price_behavior: {
+              observation_quality: "INSUFFICIENT_UPPER_SPACE",
+              breakout: {},
+              pullback_recovery: {},
+              auxiliary_15m: {},
+            },
+          } as any,
+        }}
+      />,
+    );
+    for (const action of ["OPEN", "ADD", "REDUCE", "EXIT"])
+      expect(html).toContain(`${action}后端规则`);
+    expect(html).toContain("无适用价格");
+    expect(html).toContain("已观察，仍非操作许可");
+    expect(html).toContain("仅适用于已有持仓");
+    expect(html).toContain("当前上方结构空间不足");
+  });
   it.each([true, false])(
     "merges identical exit and invalidation text but retains distinct review conditions (same=%s)",
     (same) => {
@@ -163,7 +224,8 @@ describe("read-only policy and replay review", () => {
     expect(html).toContain("2026-11-14");
     expect(html.match(/未形成（待明确动作规则与比例）/g)).toHaveLength(4);
     expect(html).not.toMatch(/<details[^>]*\bopen/);
-    expect(html).not.toContain("<button");
+    expect(html).toContain("读取本人授权的审核交接材料");
+    expect(html).not.toContain("本人确认并不可变登记");
   });
 
   it("does not expose stale draft data after a binding error", () => {

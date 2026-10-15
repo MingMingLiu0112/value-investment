@@ -184,6 +184,7 @@ def test_routes_reuse_sessions_permissions_and_factory_without_private_resolutio
     assert client.post(path, json=selection).status_code == 401
     status_path = "/api/v1/value-policy-review/600887/status"
     assert client.get(status_path).status_code == 401
+    assert client.get('/api/v1/value-policy-review/600887/handoff').status_code == 401
     assert calls == []
     headers = {"X-Local-Session": token}
     assert client.post(path, json=selection, headers={**headers, "origin": "https://evil.invalid"}).status_code == 403

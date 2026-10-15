@@ -656,7 +656,7 @@ class PrivatePortfolioService:
         return {
             "action": "no_order",
             "revision": replayed.revision,
-            "as_of": state.baseline.as_of.isoformat(),
+            "as_of": state.last_trade_date.isoformat(),
             "cash_cny": str(state.cash_cny),
             "realized_pnl_cny": str(state.realized_pnl_cny),
             "positions": self._positions(state, sellable_as_of),
@@ -697,10 +697,13 @@ class PrivatePortfolioService:
         payload["status"] = "CONNECTED"
         from .private_risk_projection import _verified_prices, _facts
         prices = {}
+        now = generated_at or datetime.now().astimezone()
         if repository_root is not None:
-            now = generated_at or datetime.now().astimezone()
             prices = _verified_prices(repository_root, replayed, now)
-        facts = _facts(replayed, prices)
+        facts = _facts(replayed, prices, generated_at=now)
+        if facts["valuation_blockers"]:
+            prices = {}
+            payload["blockers"].extend(facts["valuation_blockers"])
         by_symbol = {row["symbol"]: row for row in facts["positions"]}
         equity = Decimal(facts["total_equity_cny"]) if facts["total_equity_cny"] is not None else None
         def weight(market):
@@ -719,7 +722,7 @@ class PrivatePortfolioService:
         for sleeve in ("CORE_VALUE", "HOTSPOT_SATELLITE"):
             lots = [lot for lot in replayed.state.lots if lot.sleeve == sleeve]
             cost = sum((lot.cost_cny for lot in lots), Decimal(0))
-            market = sum((lot.quantity * Decimal(prices[lot.symbol]["price_cny"]) for lot in lots), Decimal(0)) if all(lot.symbol in prices for lot in lots) else None
+            market = sum((lot.quantity * Decimal(prices[lot.symbol]["price_cny"]) for lot in lots), Decimal(0)) if not facts["valuation_blockers"] and all(lot.symbol in prices for lot in lots) else None
             summaries.append({"sleeve": sleeve, "cost_basis_cny": str(cost),
                 "market_value_cny": str(market) if market is not None else None,
                 "weight_pct": weight(market)})

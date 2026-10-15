@@ -57,3 +57,25 @@ def test_malformed_registry_returns_blocked(tmp_path, malformed):
     (tmp_path / REGISTRY).write_text(json.dumps(malformed), encoding="utf-8")
     assert load_price_conditions(tmp_path, now=NOW, research_version="v")["status"] == "BLOCKED"
     assert registry_identity(tmp_path)["error"] == "CURRENT_PRICE_REGISTRY_UNAVAILABLE"
+
+
+@pytest.mark.parametrize("fault", ["case", "source"])
+def test_retired_unavailable_candidate_does_not_block_verified_current_rows(tmp_path, fault):
+    register(tmp_path)
+    pointer = tmp_path / REGISTRY
+    registry = json.loads(pointer.read_bytes())
+    old_watch = tmp_path / "runtime/retired-watch.json"
+    old_watch.write_text(json.dumps({"dated_quote_observations": [{"symbol": "000333"}]}), encoding="utf-8")
+    old_source = dict(path="runtime/retired-watch.json", sha256=hashlib.sha256(old_watch.read_bytes()).hexdigest())
+    registry["previous_items"] = [dict(symbol="000333", company_name="TEST_ONLY",
+        case_path="runtime/retired-unavailable.json", case_sha256="0" * 64,
+        watch_source_binding=old_source, watch_source_scope="HISTORICAL_ONLY")]
+    pointer.write_text(json.dumps(registry), encoding="utf-8")
+    if fault == "source":
+        old_watch.write_bytes(b"changed")
+    result = load_price_conditions(tmp_path, now=NOW, research_version="research-1")
+    assert result["blockers"] == []
+    assert [row["symbol"] for row in result["items"]] == ["600519"]
+    assert len(result["retired_warnings"]) == 1
+    assert "000333" in result["retired_warnings"][0]
+    assert result["items"][0]["price_action_plan"]["formal_eligibility"] is False

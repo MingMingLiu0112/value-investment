@@ -12,6 +12,7 @@ export const judgmentGroups = [
   "价格触发待发生",
   "研究观察，尚无有效价位",
   "失效或数据不足",
+  "不符合当前入场条件 / 等待结构改善",
 ] as const;
 
 export function publicationVersionsMatch(
@@ -34,6 +35,15 @@ export function judgmentGroup(item: DecisionItem): number {
       ? 4
       : 3;
   if (plan.action !== "no_order") return 4;
+  if (
+    !["STALE", "BLOCKED", "EXPIRED", "TRIGGER_REJECTED"].includes(
+      plan.signal_state,
+    ) &&
+    ["HOTSPOT_SATELLITE", "hotspot"].includes(item.strategy ?? "") &&
+    (plan.price_behavior?.daily_trend === "DOWNTREND" ||
+      plan.price_behavior?.observation_quality === "INSUFFICIENT_UPPER_SPACE")
+  )
+    return 5;
   if (
     plan.signal_state === "ACTION_ELIGIBLE" &&
     plan.action_eligibility === true &&

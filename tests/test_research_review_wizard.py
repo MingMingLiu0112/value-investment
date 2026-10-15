@@ -14,6 +14,38 @@ from value_investment_agent.application.product.common import sha256_file
 from value_investment_agent.application.product.research_review_wizard import draft_pending_review_response
 
 
+def test_external_handoff_delivers_exact_candidate_and_no_identity_or_approval(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    from value_investment_agent.application.product import publication_chain, user_research_workflow
+    from value_investment_agent.application.product.research_review_wizard import build_external_review_handoff
+    from value_investment_agent.application.decision.value_price_policy import REVIEW_MANIFEST_PATH
+    path, candidate = _candidate(tmp_path)
+    binding = dict(path=path.relative_to(tmp_path).as_posix(), sha256=sha256_file(path))
+    config = tmp_path / 'config/user-research-workflow-v1.json'
+    config.parent.mkdir(exist_ok=True)
+    config.write_text(json.dumps(dict(schema_version='user-research-workflow-v1', action='no_order',
+        review_candidates={candidate['symbol']: binding})), encoding='utf-8')
+    manifest = tmp_path / REVIEW_MANIFEST_PATH
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(json.dumps(dict(items={})), encoding='utf-8')
+    monkeypatch.setattr(publication_chain, 'load_current_chain',
+        lambda root: dict(sources=dict(source_bindings=[binding])))
+    before = {p: p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()}
+    result = build_external_review_handoff(root=tmp_path, symbol=candidate['symbol'], now=datetime.now(timezone.utc))
+    assert result['candidate_binding'] == binding
+    assert result['status'] == 'EXTERNAL_SIGNATURE_REQUIRED'
+    assert result['review_questions'][0]['countercase'] == 'Normalization unknown.'
+    assert result['unsigned_response']['reviewer_id'] is None
+    assert result['verification']['approval_changed'] is False
+    assert result['verification']['research_admitted'] is False
+    assert result['valuation_artifact_sha256']
+    assert all(p.read_bytes() == raw for p, raw in before.items())
+    monkeypatch.setattr(publication_chain, 'load_current_chain',
+        lambda root: dict(sources=dict(source_bindings=[])))
+    with pytest.raises(ValueError, match='not bound'):
+        build_external_review_handoff(root=tmp_path, symbol=candidate['symbol'], now=datetime.now(timezone.utc))
+
+
 def run(root, path, answers, show=None):
     values = iter(answers)
     return draft_pending_review_response(root=root, candidate_path=path,

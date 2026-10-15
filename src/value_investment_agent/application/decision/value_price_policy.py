@@ -16,6 +16,27 @@ from .value_action_plan import load_registered_value_action_plans
 
 CHINA = ZoneInfo("Asia/Shanghai")
 REVIEW_MANIFEST_PATH = "artifacts/current/tl11-p5-20261014/value-policy-review-manifest.json"
+REVIEW_POINTER_PATH = "config/current-value-policy-review.json"
+
+
+def review_manifest_binding(root):
+    """Support a verified successor without rewriting frozen review artifacts."""
+    root = Path(root).resolve()
+    pointer = root / REVIEW_POINTER_PATH
+    if not pointer.exists():
+        path = root / REVIEW_MANIFEST_PATH
+        return dict(path=REVIEW_MANIFEST_PATH, sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+    payload = json.loads(pointer.read_bytes())
+    if payload.get('schema_version') != 'current-value-policy-review-v1' or payload.get('action') != 'no_order':
+        raise ValueError('Invalid value review pointer')
+    binding = payload['manifest']
+    path = (root / binding['path']).resolve()
+    if (set(binding) != {'path', 'sha256'} or Path(binding['path']).is_absolute()
+            or not path.is_relative_to(root / 'artifacts/current')
+            or path.name != 'value-policy-review-manifest.json'):
+        raise ValueError('Review manifest outside public artifact scope')
+    _verify_sources(root, {'source_bindings': [binding]})
+    return dict(binding)
 
 
 def _current_plan(root, symbol, now):
@@ -140,8 +161,9 @@ def load_value_policy_review(root, symbol, now):
         raise ValueError("Review requires a six-digit security")
     if now.utcoffset() is None:
         raise ValueError("Review clock requires timezone")
-    manifest_path = root / REVIEW_MANIFEST_PATH
     try:
+        manifest_binding = review_manifest_binding(root)
+        manifest_path = root / manifest_binding['path']
         raw = manifest_path.read_bytes()
         manifest = json.loads(raw)
         if (manifest.get("schema_version") != "value-policy-review-manifest-v1"
@@ -214,8 +236,11 @@ def load_value_policy_review(root, symbol, now):
             raise ValueError("Current research changed since review")
         if review.get("model_identity_evidence") != plan.get("model_identity_evidence"):
             raise ValueError("Model catalog identity changed since review")
-        artifacts["source_bindings"] = [dict(path=REVIEW_MANIFEST_PATH, sha256=hashlib.sha256(raw).hexdigest()),
+        artifacts["source_bindings"] = [manifest_binding,
                                          *bindings.values()]
+        if (root / REVIEW_POINTER_PATH).exists():
+            artifacts['source_bindings'].append(dict(path=REVIEW_POINTER_PATH,
+                sha256=hashlib.sha256((root / REVIEW_POINTER_PATH).read_bytes()).hexdigest()))
         replay_info = review.get("isolated_replay")
         if replay_info:
             binding = replay_info["receipt_binding"]

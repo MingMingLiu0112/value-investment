@@ -28,6 +28,15 @@ const CODE_TEXT: Record<string, string> = {
   PRIVATE_PORTFOLIO_NOT_CONNECTED: "私人组合尚未接入，无法核对持仓",
   PUBLICATION_UNAVAILABLE: "当前发布物不可用",
   PRICE_NOT_ADMITTED: "尚未接入经核验的当前行情",
+  ACCOUNT_AS_OF_IN_FUTURE: "账户事实日期晚于当前日期，不能作为当前权益",
+  ACCOUNT_FACTS_NOT_YET_AVAILABLE:
+    "账户事实确认时间尚未到达，当前权益暂不可核验",
+  RESEARCH_ASSESSMENT_NOT_BOUND:
+    "当前发布尚未绑定完整研究评估，补行情不足以完成准入",
+  VALUATION_NOT_ADMITTED: "估值尚未通过准入",
+  SCENARIO_CONFIRMED_IPS_REQUIRED: "情景试算需要先确认本人投资政策",
+  SCENARIO_HOLDING_RISK_MISSING: "请明确填写该持仓在资金池内的假设已占用风险",
+  SCENARIO_SECURITY_RISK_MISSING: "请明确选择该证券缺少的经济风险假设",
   "portfolio.private_input_missing":
     "尚未提供私人组合输入（IPS、持仓、现金与风险约束）",
   DUAL_SLEEVE_STATUS_UNAVAILABLE: "双策略状态不可用",

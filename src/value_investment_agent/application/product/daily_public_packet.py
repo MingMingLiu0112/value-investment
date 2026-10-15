@@ -33,7 +33,7 @@ SCHEMA_VERSION = "daily-public-packet-v1"
 # chain (bug fixes included). It is part of the identity below so a new engine
 # revision yields a new publication_id instead of silently reusing a stored
 # record that an older revision computed.
-ENGINE_VERSION = "daily-public-packet-engine-v9"
+ENGINE_VERSION = "daily-public-packet-engine-v12"
 # v4 folds every content-deciding input into the identity: the company
 # research registry and its evidence files, the archived quote bundles, the
 # bound decision-explanation files and the business clock (natural date +
@@ -383,6 +383,12 @@ def _company_entry(root: Path, symbol: str, name: str,
     }
     if explanation_broken:
         entry["blockers"].append("VALUE_EXPLANATION_BINDING_UNAVAILABLE")
+    if not explanation and not decision:
+        entry["blockers"].append("RESEARCH_ASSESSMENT_NOT_BOUND")
+        if not isinstance(valuation_status, dict) or valuation_status.get("code") != "ADMITTED":
+            entry["blockers"].append("VALUATION_NOT_ADMITTED")
+        pending.append({"code": "BIND_CURRENT_RESEARCH_ASSESSMENT", "actor": "ENGINEERING",
+                        "label": "核对已有研究及来源，将适用的研究评估、估值准入与决策说明绑定到当前发布，再重新验证；当前缺少绑定不代表不存在历史研究。"})
     if decision:
         entry["valuation_review"] = {
             "model_validity": decision.get("model_validity"),
@@ -788,9 +794,13 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
             "reduce_trigger_price": None, "exit_trigger_price": None,
             "invalidation_price": None, "signal_state": "WATCH",
             "action_eligibility": False, "blockers": value_blockers,
+            "required_confirmations": value_blockers,
+            "next_observation": [action["label"] for action in entry["pending_actions"]],
             "support": explanation.get("support"), "counter": explanation.get("counter_evidence"),
             "exit_condition": explanation.get("exit_conditions"),
-            "explanation": "估值情景仅供研究观察；尚无经完整准入的建仓、加减仓阈值。",
+            "explanation": ("当前发布尚未绑定适用的研究评估与决策说明，估值准入须独立核验；不是仅缺行情，也不代表不存在历史研究。"
+                            if "RESEARCH_ASSESSMENT_NOT_BOUND" in value_blockers
+                            else "估值情景仅供研究观察；尚无经完整准入的建仓、加减仓阈值。"),
             "model_or_rule_version": entry.get("research_version"),
         }
         if symbol in registered_plans:
@@ -802,6 +812,16 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
                 action_eligibility=plan["formal_eligibility"],
                 support=plan["supporting_facts"], counter=plan["counter_evidence"],
                 blockers=list(dict.fromkeys([*value_blockers, *plan["blockers"]])))
+        if "RESEARCH_ASSESSMENT_NOT_BOUND" in entry["blockers"]:
+            value_conditions[symbol].update(
+                action_eligibility=False,
+                formal_eligibility=False,
+                formal_eligibility_blockers=list(dict.fromkeys([
+                    *value_conditions[symbol].get("formal_eligibility_blockers", []),
+                    *entry["blockers"]])),
+                required_confirmations=value_conditions[symbol]["blockers"],
+                next_observation=[action["label"] for action in entry["pending_actions"]],
+                explanation="当前发布尚未绑定适用的研究评估与决策说明，估值准入须独立核验；不是仅缺行情，也不代表不存在历史研究。")
     packet = {
         "schema_version": SCHEMA_VERSION,
         "engine_version": ENGINE_VERSION,

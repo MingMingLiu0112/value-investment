@@ -72,7 +72,7 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
             verify_daily_selection(root, watch_report)
         watch_symbols = {row["symbol"] for row in watch_report.get("dated_quote_observations", [])}
         watch_symbols.update(row["symbol"] for row in watch_report.get("observation_list", []))
-        items, blockers, seen = [], [], set()
+        items, blockers, retired_warnings, seen = [], [], [], set()
         if len(registry.get("previous_items", [])) > 10:
             raise ValueError("Too many retired observations")
         for item in registry["items"] + registry.get("previous_items", []):
@@ -89,7 +89,7 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
             except (ValueError, OSError, KeyError, TypeError, ArithmeticError):
                 if not retired:
                     raise
-                blockers.append("RETIRED_CANDIDATE_SOURCE_UNAVAILABLE:" + item["symbol"])
+                retired_warnings.append("RETIRED_CANDIDATE_SOURCE_UNAVAILABLE:" + item["symbol"])
                 continue
             watch_symbols = {row["symbol"] for row in watch_report.get("dated_quote_observations", [])}
             watch_symbols.update(row["symbol"] for row in watch_report.get("observation_list", []))
@@ -129,8 +129,12 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
                 items.append({"symbol": symbol, "company_name": item["company_name"],
                               "price_action_plan": plan})
             except (ValueError, OSError, KeyError, TypeError, ArithmeticError):
-                blockers.append(f"CURRENT_PRICE_CASE_UNAVAILABLE:{symbol}")
+                if retired:
+                    retired_warnings.append(f"RETIRED_PRICE_CASE_UNAVAILABLE:{symbol}")
+                else:
+                    blockers.append(f"CURRENT_PRICE_CASE_UNAVAILABLE:{symbol}")
         return {"status": "CURRENT_OBSERVATION" if items else "BLOCKED", "items": items,
-                "watch_source_scope": registry["watch_source_scope"], "blockers": blockers}
+                "watch_source_scope": registry["watch_source_scope"], "blockers": blockers,
+                "retired_warnings": retired_warnings}
     except (ValueError, OSError, KeyError, TypeError, AttributeError, ArithmeticError):
         return {"status": "BLOCKED", "items": [], "blockers": ["CURRENT_PRICE_REGISTRY_UNAVAILABLE"]}

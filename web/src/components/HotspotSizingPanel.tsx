@@ -1,6 +1,10 @@
-import { ProForm, ProFormText } from "@ant-design/pro-components";
+import {
+  ProForm,
+  ProFormText,
+  ProFormSelect,
+} from "@ant-design/pro-components";
 import type { ProFormInstance } from "@ant-design/pro-components";
-import { Alert, Descriptions, Typography } from "antd";
+import { Alert, Checkbox, Descriptions, Typography } from "antd";
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../services/api";
 import { blockerText } from "../utils/packet";
@@ -12,10 +16,33 @@ import { reusableCostFields } from "./PrivateRiskContext";
 export type HotspotSizingRequest = {
   symbol: string;
   assumptions: Record<string, string>;
+  scenario?: {
+    acknowledged: true;
+    execution: { liquid: boolean; limit_up: boolean; limit_down: boolean };
+    holding_risks: {
+      sleeve: string;
+      symbol: string;
+      committed_risk_cny: string;
+    }[];
+    security_risks: {
+      symbol: string;
+      cyclical: boolean;
+      common_factors: string[];
+      liquid?: boolean;
+    }[];
+  };
 };
 export type HotspotSizingResponse = {
   action: "no_order";
   facts?: RiskFacts | null;
+  scenario_preview?: {
+    namespace: string;
+    status: string;
+    review_quantity: number | null;
+    blockers: string[];
+    required_holding_risks?: { sleeve: string; symbol: string }[];
+    security_risk_gaps?: { symbol: string; fields: string[] }[];
+  };
   sizing_preview: {
     symbol: string;
     review_quantity: number | null;
@@ -88,12 +115,20 @@ export function HotspotSizingPanel({
 }) {
   const [result, setResult] = useState<HotspotSizingResponse>();
   const [failure, setFailure] = useState<string>();
+  const [scenarioEnabled, setScenarioEnabled] = useState(false);
+  const [holdingGaps, setHoldingGaps] = useState<
+    { sleeve: string; symbol: string }[]
+  >([]);
+  const [securityGaps, setSecurityGaps] = useState<string[]>([]);
   const generation = useRef(0);
   const formRef = useRef<ProFormInstance>();
   useEffect(() => {
     generation.current++;
     setResult(undefined);
     setFailure(undefined);
+    setHoldingGaps([]);
+    setSecurityGaps([]);
+    setScenarioEnabled(false);
   }, [initialSymbol, context]);
   const currentContext =
     context?.action === "no_order" && context.symbol === initialSymbol
@@ -122,9 +157,46 @@ export function HotspotSizingPanel({
           return value ? [[key, value]] : [];
         }),
       );
+      const securityCodes = [
+        ...new Set([String(form.symbol ?? "").trim(), ...securityGaps]),
+      ];
+      const boolChoice = (key: string) => {
+        if (form[key] !== "yes" && form[key] !== "no")
+          throw new Error("请明确选择全部情景假设。");
+        return form[key] === "yes";
+      };
       const response = await onPreview({
         symbol: String(form.symbol ?? "").trim(),
         assumptions,
+        ...(scenarioEnabled
+          ? {
+              scenario: {
+                acknowledged: true as const,
+                execution: {
+                  liquid: boolChoice("scenario_liquid"),
+                  limit_up: boolChoice("scenario_limit_up"),
+                  limit_down: boolChoice("scenario_limit_down"),
+                },
+                holding_risks: holdingGaps.map((row) => ({
+                  ...row,
+                  committed_risk_cny: String(
+                    form[`risk_${row.sleeve}_${row.symbol}`] ?? "",
+                  ),
+                })),
+                security_risks: securityCodes.map((symbol) => ({
+                  symbol,
+                  cyclical: boolChoice(`cyclical_${symbol}`),
+                  common_factors: String(form[`factors_${symbol}`] ?? "")
+                    .split(/[,，]/)
+                    .map((x) => x.trim())
+                    .filter(Boolean),
+                  ...(symbol !== String(form.symbol ?? "").trim()
+                    ? { liquid: boolChoice(`liquid_${symbol}`) }
+                    : {}),
+                })),
+              },
+            }
+          : {}),
       });
       if (
         response.action !== "no_order" ||
@@ -133,7 +205,25 @@ export function HotspotSizingPanel({
         !Array.isArray(response.sizing_preview.blockers)
       )
         throw new Error("仓位试算响应无法核验，请刷新后重试。");
-      if (current === generation.current) setResult(response);
+      if (current === generation.current) {
+        setResult(response);
+        setHoldingGaps((previous) => [
+          ...new Map(
+            [
+              ...previous,
+              ...(response.scenario_preview?.required_holding_risks ?? []),
+            ].map((row) => [`${row.sleeve}:${row.symbol}`, row]),
+          ).values(),
+        ]);
+        setSecurityGaps((previous) => [
+          ...new Set([
+            ...previous,
+            ...(response.scenario_preview?.security_risk_gaps ?? []).map(
+              (row) => row.symbol,
+            ),
+          ]),
+        ]);
+      }
       return true;
     } catch (cause) {
       if (current === generation.current)
@@ -265,7 +355,109 @@ export function HotspotSizingPanel({
               ))}
           </ProForm.Group>
         </details>
+        <Checkbox
+          checked={scenarioEnabled}
+          onChange={(event) => {
+            generation.current++;
+            setResult(undefined);
+            setScenarioEnabled(event.target.checked);
+          }}
+        >
+          明确使用本人假设进行情景试算，不作为正式交易资格
+        </Checkbox>
+        {scenarioEnabled && (
+          <>
+            <Alert
+              type="warning"
+              message="假设仅用于本次 SIMULATED 试算，不登记为已核验的市场事实或批准。"
+            />
+            <ProForm.Group>
+              {[
+                ["scenario_liquid", "假设候选可流动成交"],
+                ["scenario_limit_up", "假设候选涨停"],
+                ["scenario_limit_down", "假设候选跌停"],
+              ].map(([name, label]) => (
+                <ProFormSelect
+                  key={name}
+                  name={name}
+                  label={label}
+                  options={[
+                    { label: "是", value: "yes" },
+                    { label: "否", value: "no" },
+                  ]}
+                  rules={[{ required: true, message: "请明确选择" }]}
+                />
+              ))}
+            </ProForm.Group>
+            {[...new Set([initialSymbol, ...securityGaps])]
+              .filter((symbol): symbol is string => !!symbol)
+              .map((symbol) => (
+                <div key={symbol}>
+                  <ProFormSelect
+                    name={`cyclical_${symbol}`}
+                    label={`${symbol} 假设属于周期性公司`}
+                    options={[
+                      { label: "是", value: "yes" },
+                      { label: "否", value: "no" },
+                    ]}
+                    rules={[{ required: true }]}
+                  />
+                  <ProFormText
+                    name={`factors_${symbol}`}
+                    label={`${symbol} 假设共同风险因子（逗号分隔；无则留空）`}
+                  />
+                  {symbol !== initialSymbol && (
+                    <ProFormSelect
+                      name={`liquid_${symbol}`}
+                      label={`${symbol} 假设持仓可流动成交`}
+                      options={[
+                        { label: "是", value: "yes" },
+                        { label: "否", value: "no" },
+                      ]}
+                      rules={[{ required: true }]}
+                    />
+                  )}
+                </div>
+              ))}
+            {holdingGaps.map((row) => (
+              <ProFormText
+                key={`${row.sleeve}:${row.symbol}`}
+                name={`risk_${row.sleeve}_${row.symbol}`}
+                label={`${row.symbol} ${row.sleeve} 假设已占用风险（元）`}
+                rules={[
+                  { required: true },
+                  { pattern: /^\d+(\.\d+)?$/, message: "填写非负数字" },
+                ]}
+              />
+            ))}
+          </>
+        )}
       </ProForm>
+      {result?.scenario_preview &&
+        result.scenario_preview.status !== "NOT_REQUESTED" && (
+          <Alert
+            type={
+              result.scenario_preview.review_quantity == null
+                ? "warning"
+                : "info"
+            }
+            showIcon
+            message="假设情景数量，不是正式可操作股数"
+            description={
+              <>
+                <p>
+                  SIMULATED：
+                  {result.scenario_preview.review_quantity == null
+                    ? "暂不能计算"
+                    : `${result.scenario_preview.review_quantity} 股`}
+                </p>
+                {result.scenario_preview.blockers.map((code) => (
+                  <p key={code}>{gapLabel(code)}</p>
+                ))}
+              </>
+            }
+          />
+        )}
       {onConfirmCosts && currentContext && (
         <CostAssumptionsPanel
           revision={currentContext.revision}

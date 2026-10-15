@@ -272,7 +272,7 @@ export default function Portfolio() {
               },
               {
                 key: "as_of",
-                label: "初始持仓核对日",
+                label: "最新账本事实日期",
                 children: data.as_of || "未提供",
               },
               {

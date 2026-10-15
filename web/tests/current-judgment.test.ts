@@ -39,6 +39,42 @@ const value: CurrentPriceCase = {
 };
 
 describe("backend current judgment boundaries", () => {
+  it("does not present a local breakout against a declining daily trend as an entry candidate", () => {
+    expect(
+      judgmentGroup({
+        ...item,
+        price_action_plan: {
+          ...plan,
+          price_behavior: {
+            daily_trend: "DOWNTREND",
+          } as CurrentPricePlan["price_behavior"],
+        },
+      }),
+    ).toBe(5);
+    expect(
+      judgmentGroup({
+        ...item,
+        price_action_plan: {
+          ...plan,
+          price_behavior: {
+            observation_quality: "INSUFFICIENT_UPPER_SPACE",
+          } as CurrentPricePlan["price_behavior"],
+        },
+      }),
+    ).toBe(5);
+    expect(
+      judgmentGroup({
+        ...item,
+        price_action_plan: {
+          ...plan,
+          signal_state: "STALE",
+          price_behavior: {
+            daily_trend: "DOWNTREND",
+          } as CurrentPricePlan["price_behavior"],
+        },
+      }),
+    ).toBe(4);
+  });
   it("blocks interleaved daily and packet responses until publication identities match", () => {
     expect(publicationVersionsMatch("pub-new", "pub-old")).toBe(false);
     expect(publicationVersionsMatch(null, null)).toBe(false);

@@ -47,6 +47,8 @@ jobs:
           tests/web_api/test_p5_reviews.py
           tests/test_private_first_use_workflow.py
           tests/test_private_risk_preview.py
+          tests/test_private_risk_partial_facts.py
+          tests/test_p62_positive_workflow.py
           tests/test_private_risk_experience.py
           tests/test_private_risk_cash_floor.py
           tests/test_value_policy_interaction.py

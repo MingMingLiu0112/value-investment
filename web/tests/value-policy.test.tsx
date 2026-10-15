@@ -44,6 +44,9 @@ describe("private value policy", () => {
         draft_prices: { entry: "8.060109882454410357" },
       },
       conditional_plan: {
+        reference_close: "27.96",
+        market_trade_date: "2026-10-12",
+        price_comparison_eligible: false,
         entry_trigger_price: null,
         blockers: ["formal G3 human valuation approval not present"],
       },
@@ -58,6 +61,9 @@ describe("private value policy", () => {
     expect(html).toContain("G3 人工估值审核尚未通过");
     expect(html).toContain("研究或价格条件不足，尚无适用价");
     expect(html).toContain("草稿算术价，未获正式动作资格");
+    expect(html).toContain("27.96");
+    expect(html).toContain("2026-10-12");
+    expect(html).toContain("现价与估值可比性：未通过或未核验");
   });
   it("converts explicit percentages exactly without default thresholds", () => {
     expect(fractionFromPercent("93")).toBe("0.93");

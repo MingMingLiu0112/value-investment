@@ -103,7 +103,7 @@ New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
 if (-not (Test-Path -LiteralPath (Join-Path $root 'web/dist/index.html'))) {
     throw 'Web build missing. Run npm ci --prefix web, then npm run build --prefix web.'
 }
-$unlockUrl = "http://127.0.0.1:$Port/#unlock=$($env:VALUE_INVESTMENT_WEB_BOOTSTRAP)"
+$unlockUrl = "http://127.0.0.1:$Port/daily#unlock=$($env:VALUE_INVESTMENT_WEB_BOOTSTRAP)"
 $server = Start-Process -FilePath $python -ArgumentList @('-m', 'uvicorn', 'value_investment_agent.presentation.web_api.app:app', '--host', '127.0.0.1', '--port', "$Port") -WorkingDirectory $root -WindowStyle Hidden -PassThru
 $process = Get-CimInstance Win32_Process -Filter "ProcessId = $($server.Id)"
 if (-not $process) {

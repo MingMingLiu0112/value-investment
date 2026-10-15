@@ -50,6 +50,17 @@ export function RegisteredPolicySummary({
           <p>分红覆盖风险：{draft.dividend_coverage_risk}</p>
         </>
       )}
+      <p>
+        当前参考收盘：
+        {String(registered.conditional_plan.reference_close ?? "待核验")}
+        ；行情日：
+        {String(registered.conditional_plan.market_trade_date ?? "待核验")}
+        。现价与估值可比性：
+        {registered.conditional_plan.price_comparison_eligible === true
+          ? "已通过，仍须独立核验正式资格"
+          : "未通过或未核验"}
+        。
+      </p>
       {actions.map((action) => {
         const rule = draft?.rules.find((r) => r.action === action);
         const admittedPrice =
@@ -109,11 +120,13 @@ export function ValuePolicyEditor({
   transport,
   initial,
   onRegistered,
+  showRegisteredSummary = true,
 }: {
   symbol: string;
   transport: ValuePolicyTransport;
   initial: Partial<PolicySelection>;
   onRegistered?: (result: PolicyRegistration) => void;
+  showRegisteredSummary?: boolean;
 }) {
   const [fields, setFields] = useState({
     effective_from: initial.effective_from ?? "",
@@ -151,15 +164,18 @@ export function ValuePolicyEditor({
       .status(symbol)
       .then((result) => {
         if (!active) return;
+        setRegistered(undefined);
         if (result.status === "REGISTERED") setRegistered(result);
         else if (result.status === "REVIEW_REQUIRED")
           setFailure(result.detail ?? "已登记政策需重新复核");
       })
       .catch((error) => {
-        if (active)
+        if (active) {
+          setRegistered(undefined);
           setFailure(
             error instanceof Error ? error.message : "读取私人政策失败",
           );
+        }
       })
       .finally(() => {
         if (active) setLoadingStatus(false);
@@ -231,6 +247,7 @@ export function ValuePolicyEditor({
   }
   async function confirm() {
     if (!preview || expired || !acknowledged || !note.trim()) return;
+    const requestGeneration = generation.current;
     setBusy(true);
     setFailure("");
     try {
@@ -239,6 +256,7 @@ export function ValuePolicyEditor({
         acknowledged: true,
         note,
       });
+      if (requestGeneration !== generation.current) return;
       if (
         result.status !== "REGISTERED" ||
         result.research_approval_changed !== false ||
@@ -445,7 +463,9 @@ export function ValuePolicyEditor({
           {expired && <p role="alert">预览已过期，请重新预览。</p>}
         </section>
       )}
-      {registered && <RegisteredPolicySummary registered={registered} />}
+      {registered && showRegisteredSummary && (
+        <RegisteredPolicySummary registered={registered} />
+      )}
     </section>
   );
 }

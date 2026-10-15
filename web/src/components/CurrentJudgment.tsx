@@ -30,8 +30,25 @@ const valuePolicyTransport = {
 };
 
 export function JudgmentSummary({ decision }: { decision: DecisionItem }) {
+  const isValue = ["CORE_VALUE", "value"].includes(decision.strategy ?? "");
+  const PublicPlan = isValue ? "details" : "section";
   const plan = decision.price_action_plan;
   const eligibility = decisionEligibility(decision);
+  const actionRules = (
+    plan as typeof plan & {
+      conditional_action_rules?: Partial<
+        Record<
+          "OPEN" | "ADD" | "REDUCE" | "EXIT",
+          {
+            rule: string;
+            price: string | null;
+            observed: boolean | null;
+            requires_existing_holding: boolean;
+          }
+        >
+      >;
+    }
+  )?.conditional_action_rules;
   const reviewConditions = new Map<string, string[]>();
   for (const [label, condition] of [
     ["退出复核", planConditionText(plan?.exit_condition)],
@@ -111,43 +128,6 @@ export function JudgmentSummary({ decision }: { decision: DecisionItem }) {
   ];
   return (
     <section aria-label="六项操作计划">
-      <Descriptions
-        layout="vertical"
-        column={{ xs: 1, sm: 2, md: 3 }}
-        size="small"
-        items={rows.map(([label, text], index) => ({
-          key: label,
-          label: `${index + 1}. ${label}`,
-          children: concise(text),
-        }))}
-      />
-      {plan && (
-        <p style={{ margin: "0 0 8px", overflowWrap: "anywhere" }}>
-          参考收盘{" "}
-          {plan.reference_close ?? plan.current_reference_price ?? "待核验"}（
-          {plan.market_trade_date ?? "日期待核验"}）
-          {["CORE_VALUE", "value"].includes(decision.strategy ?? "") && (
-            <>
-              ；保留研究估值：
-              {formatScenarioValue(
-                plan.conditional_valuation_range?.bear ?? plan.bear,
-              )}{" "}
-              /{" "}
-              {formatScenarioValue(
-                plan.conditional_valuation_range?.base ?? plan.base,
-              )}{" "}
-              /{" "}
-              {formatScenarioValue(
-                plan.conditional_valuation_range?.bull ?? plan.bull,
-              )}
-              （悲观 / 中性 / 乐观）；股价比较资格：
-              {plan.price_comparison_eligible === true
-                ? "已通过"
-                : "未通过或未核验，不能据此判断买价"}
-            </>
-          )}
-        </p>
-      )}
       {["CORE_VALUE", "value"].includes(decision.strategy ?? "") &&
         decision.symbol && (
           <ValuePolicyReview
@@ -155,9 +135,97 @@ export function JudgmentSummary({ decision }: { decision: DecisionItem }) {
             transport={valuePolicyTransport}
           />
         )}
+      <PublicPlan>
+        {isValue && <summary>公共研究计划与资格（不含本人政策）</summary>}
+        <Descriptions
+          layout="vertical"
+          column={{ xs: 1, sm: 2, md: 3 }}
+          size="small"
+          items={rows.map(([label, text], index) => ({
+            key: label,
+            label: `${index + 1}. ${label}`,
+            children: concise(text),
+          }))}
+        />
+        {plan && (
+          <p style={{ margin: "0 0 8px", overflowWrap: "anywhere" }}>
+            参考收盘{" "}
+            {plan.reference_close ?? plan.current_reference_price ?? "待核验"}（
+            {plan.market_trade_date ?? "日期待核验"}）
+            {["CORE_VALUE", "value"].includes(decision.strategy ?? "") && (
+              <>
+                ；保留研究估值：
+                {formatScenarioValue(
+                  plan.conditional_valuation_range?.bear ?? plan.bear,
+                )}{" "}
+                /{" "}
+                {formatScenarioValue(
+                  plan.conditional_valuation_range?.base ?? plan.base,
+                )}{" "}
+                /{" "}
+                {formatScenarioValue(
+                  plan.conditional_valuation_range?.bull ?? plan.bull,
+                )}
+                （悲观 / 中性 / 乐观）；股价比较资格：
+                {plan.price_comparison_eligible === true
+                  ? "已通过"
+                  : "未通过或未核验，不能据此判断买价"}
+              </>
+            )}
+          </p>
+        )}
+      </PublicPlan>
       {["HOTSPOT_SATELLITE", "hotspot"].includes(decision.strategy ?? "") &&
         plan && (
           <section aria-label="热点计划适用范围">
+            {actionRules && (
+              <section aria-label="热点四类条件性动作">
+                <h4>条件性动作复核</h4>
+                {(["OPEN", "ADD", "REDUCE", "EXIT"] as const).map((action) => {
+                  const rule = actionRules[action];
+                  return (
+                    <div key={action}>
+                      <strong>
+                        {
+                          {
+                            OPEN: "开仓",
+                            ADD: "加仓",
+                            REDUCE: "减仓",
+                            EXIT: "退出",
+                          }[action]
+                        }
+                      </strong>
+                      <p>{rule?.rule ?? "尚无已核验规则"}</p>
+                      {rule && (
+                        <p>
+                          条件参考价：{rule.price ?? "无适用价格"}；当前观察：
+                          {rule.observed === true
+                            ? "已观察，仍非操作许可"
+                            : rule.observed === false
+                              ? "未观察"
+                              : "未核验"}
+                          ；
+                          {rule.requires_existing_holding
+                            ? "仅适用于已有持仓，持仓与可卖数量另行核验"
+                            : "仅用于无持仓时的开仓复核"}
+                          。
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </section>
+            )}
+            {plan.price_behavior?.observation_quality ===
+              "UNFAVORABLE_DAILY_TREND" && (
+              <p>当前日线趋势不利，不适宜据此追入；已有持仓进入风险复核。</p>
+            )}
+            {plan.price_behavior?.observation_quality ===
+              "INSUFFICIENT_UPPER_SPACE" && (
+              <p>
+                当前上方结构空间不足，不适宜据此追入；结构距离风险收益比不代表预期收益。
+              </p>
+            )}
             <p>
               计划层级：
               {eligibility.formal === "已通过"

@@ -59,6 +59,14 @@ def test_current_roundtrip_projection_and_sha_tampering(tmp_path):
     assert plan["period_structure"] == {period: "RANGE" for period in ("daily", "60m", "15m")}
     assert plan["action_intent"] == "WATCH" and plan["formal_eligibility"] is False
     assert plan["portfolio_eligibility"] is None
+    assert set(plan["conditional_action_rules"]) == {"OPEN", "ADD", "REDUCE", "EXIT"}
+    for field, intent in (("entry_condition", "OPEN"), ("add_condition", "ADD"),
+                          ("reduce_condition", "REDUCE"), ("exit_condition", "EXIT")):
+        assert plan[field]["intent"] == intent
+        assert plan[field]["observed"] is False
+        assert plan[field]["personal_permission"] is False
+    assert plan["add_trigger_price"] is plan["reduce_trigger_price"] is None
+    assert plan["blockers"] == case["blockers"]
     assert plan["expires_after_session"] == "2026-09-28"
     original = tmp_path / case["source_bindings"]["15m"]["path"]
     original.write_bytes(original.read_bytes() + b" ")

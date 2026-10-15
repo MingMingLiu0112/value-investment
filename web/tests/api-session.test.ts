@@ -37,6 +37,32 @@ describe("private session unlock handling", () => {
     vi.unstubAllGlobals();
   });
 
+  it("reads external review handoff with the current private session", async () => {
+    stubWindow("").store.set("vi-local-session", "handoff-session");
+    const fetcher = vi.fn(async () =>
+      json(200, { action: "no_order", status: "EXTERNAL_SIGNATURE_REQUIRED" }),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    const { api } = await import("../src/services/api");
+    await api.valuePolicyHandoff("600887");
+    expect(fetcher).toHaveBeenCalledWith(
+      "/api/v1/value-policy-review/600887/handoff",
+      expect.objectContaining({
+        credentials: "same-origin",
+        headers: { "X-Local-Session": "handoff-session" },
+      }),
+    );
+  });
+
+  it("never requests private handoff anonymously", async () => {
+    stubWindow("");
+    const fetcher = vi.fn();
+    vi.stubGlobal("fetch", fetcher);
+    const { api } = await import("../src/services/api");
+    await expect(api.valuePolicyHandoff("600887")).rejects.toThrow();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it("exchanges the unlock fragment once and retries a refused read once", async () => {
     const { replaceState } = stubWindow(`#unlock=${SECRET}`);
     const calls: Call[] = [];

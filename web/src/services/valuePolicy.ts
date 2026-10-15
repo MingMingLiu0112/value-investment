@@ -6,6 +6,20 @@ export type PolicyRule = {
   rationale: string;
 };
 
+export type PolicyHandoff = {
+  action: "no_order";
+  status: "EXTERNAL_SIGNATURE_REQUIRED";
+  candidate_binding: unknown;
+  model_context: unknown;
+  valuation_artifact_sha256: string;
+  review_questions: unknown;
+  unsigned_response: unknown;
+  authorization: { pinned_root_count: number; status: string };
+  steps: { id: string; action: string }[];
+  verification: { approval_changed: false; research_admitted: false };
+  commands: { draft_preview: string; consume_signed_response: string };
+};
+
 export type PolicySelection = {
   effective_from: string;
   effective_through: string;

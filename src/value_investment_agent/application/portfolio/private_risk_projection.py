@@ -178,24 +178,35 @@ def _load_verified_prices(root, replayed, now):
     needed = {lot.symbol for lot in replayed.state.lots}
     prices = {}
     for symbol in needed:
-        execution = execute_quote_bridge_for_symbol(Path(root), symbol, today=now)
-        quote = execution.get("quote") or {}
-        if ((execution.get("compatibility") or {}).get("verified_quote", {}).get("eligible") is True
-                and quote.get("quote_date") == quote.get("latest_completed_session")
-                and quote.get("quote_date") and quote.get("display_price")):
-            value = Decimal(quote["display_price"])
-            if value.is_finite() and value > 0:
-                prices[symbol] = {"price_cny": str(value), "trade_date": quote["quote_date"],
-                    "bundle_sha256": quote["bundle_sha256"], "scope": "VERIFIED_LATEST_COMPLETED_CLOSE_NOT_TRADE_PERMISSION"}
-    if needed - prices.keys():
-        observations = load_price_conditions(Path(root), now=now, research_version=None)
-        for row in observations["items"]:
-            if row["symbol"] in needed and row["symbol"] not in prices:
-                plan = row["price_action_plan"]
-                value = Decimal(plan["current_reference_price"])
+        try:
+            execution = execute_quote_bridge_for_symbol(Path(root), symbol, today=now)
+            quote = execution.get("quote") or {}
+            if ((execution.get("compatibility") or {}).get("verified_quote", {}).get("eligible") is True
+                    and quote.get("quote_date") == quote.get("latest_completed_session")
+                    and quote.get("quote_date") and quote.get("display_price")):
+                value = Decimal(quote["display_price"])
                 if value.is_finite() and value > 0:
-                    prices[row["symbol"]] = {"price_cny": str(value), "trade_date": plan["market_trade_date"],
-                        "case_sha256": plan["case_sha256"], "scope": "VERIFIED_LATEST_COMPLETED_CLOSE_NOT_TRADE_PERMISSION"}
+                    date.fromisoformat(quote["quote_date"])
+                    prices[symbol] = {"price_cny": str(value), "trade_date": quote["quote_date"],
+                        "bundle_sha256": quote["bundle_sha256"], "scope": "VERIFIED_LATEST_COMPLETED_CLOSE_NOT_TRADE_PERMISSION"}
+        except (OSError, ValueError, TypeError, KeyError, AttributeError, ArithmeticError):
+            continue
+    if needed - prices.keys():
+        try:
+            observations = load_price_conditions(Path(root), now=now, research_version=None)
+        except (OSError, ValueError, TypeError, KeyError, AttributeError, ArithmeticError):
+            observations = {"items": []}
+        for row in observations["items"]:
+            try:
+                if row["symbol"] in needed and row["symbol"] not in prices:
+                    plan = row["price_action_plan"]
+                    value = Decimal(plan["current_reference_price"])
+                    if value.is_finite() and value > 0:
+                        date.fromisoformat(plan["market_trade_date"])
+                        prices[row["symbol"]] = {"price_cny": str(value), "trade_date": plan["market_trade_date"],
+                            "case_sha256": plan["case_sha256"], "scope": "VERIFIED_LATEST_COMPLETED_CLOSE_NOT_TRADE_PERMISSION"}
+            except (ValueError, TypeError, KeyError, AttributeError, ArithmeticError):
+                continue
     # Quotes predating a confirmed trade cannot mark the resulting position.
     return {symbol: row for symbol, row in prices.items()
             if date.fromisoformat(row["trade_date"]) >= replayed.state.last_trade_date}
@@ -317,8 +328,23 @@ def build_risk_input(
     }
 
 
-def _facts(replayed: ReplayedPortfolio, prices=None) -> dict[str, Any]:
+def _account_time_blockers(replayed: ReplayedPortfolio, generated_at: datetime) -> list[str]:
+    state = replayed.state
+    day = generated_at.astimezone(ZoneInfo("Asia/Shanghai")).date()
+    blockers = []
+    if max(state.baseline.as_of, state.last_trade_date) > day:
+        blockers.append("ACCOUNT_AS_OF_IN_FUTURE")
+    if (state.baseline.available_at > generated_at
+            or (state.confirmed_at is not None and state.confirmed_at > generated_at)):
+        blockers.append("ACCOUNT_FACTS_NOT_YET_AVAILABLE")
+    return blockers
+
+
+def _facts(replayed: ReplayedPortfolio, prices=None, *, generated_at: datetime | None = None) -> dict[str, Any]:
     prices = prices or {}
+    time_blockers = _account_time_blockers(replayed, generated_at or datetime.now().astimezone())
+    if time_blockers:
+        prices = {}
     state = replayed.state
     reconciliation = reconciliation_state(replayed)
     grouped: dict[tuple[str, str], dict[str, Any]] = {}
@@ -347,7 +373,7 @@ def _facts(replayed: ReplayedPortfolio, prices=None) -> dict[str, Any]:
             "sleeves": [{"sleeve": row["sleeve"], "quantity": str(row["quantity"])}
                         for row in sorted(entry["sleeves"].values(), key=lambda item: item["sleeve"])],
         })
-    marked = all(position["market_value_cny"] is not None for position in positions)
+    marked = not time_blockers and all(position["market_value_cny"] is not None for position in positions)
     total_market = sum((Decimal(position["market_value_cny"]) for position in positions), Decimal(0)) if marked else None
     return {
         "revision": replayed.revision,
@@ -365,7 +391,8 @@ def _facts(replayed: ReplayedPortfolio, prices=None) -> dict[str, Any]:
         "reconciliation_status": reconciliation["status"],
         "reconciliation": reconciliation,
         "price_status": ("CASH_ONLY_NO_QUOTE_REQUIRED" if not positions else "VERIFIED_LATEST_COMPLETED_CLOSE") if marked else "PRICE_NOT_ADMITTED",
-        "price_reason": None if marked else PRICE_ADMISSION_REASON,
+        "price_reason": "账户日期或事实可用时间晚于本次读取时点；保留账本事实，不提供当前估值" if time_blockers else (None if marked else PRICE_ADMISSION_REASON),
+        "valuation_blockers": time_blockers,
     }
 
 
@@ -394,7 +421,7 @@ def review_private_risk_rehearsal(
     prices = _verified_prices(repository_root, replayed, generated_at)
     payload = build_risk_input(replayed, sellable_as_of=sellable_as_of,
         repository_root=repository_root, generated_at=generated_at, hotspot_request=hotspot_request, _prices=prices)
-    extra = []
+    extra = _account_time_blockers(replayed, generated_at)
     if replayed.policy.get("effective_date") and date.fromisoformat(replayed.policy["effective_date"]) > generated_at.astimezone(ZoneInfo("Asia/Shanghai")).date():
         extra.append("POLICY_NOT_EFFECTIVE")
     if payload["sleeves"] and any(Decimal(row["cash_cny"]) < 0 for row in payload["sleeves"].values()):
@@ -423,7 +450,7 @@ def review_private_risk_rehearsal(
         "status": report["status"],
         "blockers": list(report.get("blockers") or ()),
         "engine": report,
-        "facts": _facts(replayed, prices),
+        "facts": _facts(replayed, prices, generated_at=generated_at),
         "security_attributes": payload["security_attributes"],
         "policy": {"confirmation_status": "HUMAN_CONFIRMED" if replayed.policy.get("_confirmed_at") else "INCOMPLETE_LEGACY_POLICY",
             "effective_date": replayed.policy.get("effective_date"), "max_drawdown_pct": replayed.policy.get("max_drawdown_pct"),

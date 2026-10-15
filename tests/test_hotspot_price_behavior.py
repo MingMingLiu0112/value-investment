@@ -7,7 +7,9 @@ import pytest
 
 from value_investment_agent.domain.hotspot.confirmed_price_structure import (
     RULE_VERSION, SWING_SIDE_BARS, RETEST_LOOKBACK, confirmed_swings, analyze_price_behavior,
+    conditional_action_rules,
 )
+from value_investment_agent.domain.hotspot.price_action_plan import calculate_price_levels
 
 
 def rows(values):
@@ -148,3 +150,44 @@ def test_registration_constants_match_and_do_not_grant_admission():
     assert registration["parameter_optimization"] is False
     assert registration["formal_eligibility"] is False
     assert registration["action"] == "no_order"
+
+
+def rules_for(minutes, daily=None):
+    return conditional_action_rules(analyze_minutes(minutes, daily),
+                                    calculate_price_levels(minutes, period="60m"))
+
+
+def test_conditional_add_requires_completed_recovery_and_uses_frozen_level():
+    data = retest_rows()
+    before, after = rules_for(data[:-1]), rules_for(data)
+    assert before["ADD"]["observed"] is False and before["ADD"]["price"] is None
+    assert after["ADD"]["observed"] is True and after["ADD"]["price"] == "11"
+    for intent, rule in after.items():
+        assert rule["requires_existing_holding"] is (intent != "OPEN")
+        assert rule["rule"] and rule["status"] == "CONDITIONAL_REVIEW_ONLY"
+        assert rule["formal_eligibility"] is rule["personal_permission"] is False
+        assert rule["action"] == "no_order"
+
+
+@pytest.mark.parametrize("close,volume,opened,exited", [
+    ("11", "120", False, False), ("11.01", "120", True, False),
+    ("11.01", "119.99", False, False), ("9", "100", False, False),
+    ("8.99", "100", False, True),
+])
+def test_conditional_open_exit_preserve_strict_price_and_volume_boundaries(close, volume, opened, exited):
+    data = minute_rows(6)
+    data[-1].update(open=close, close=close, high="12", low="8", volume=volume)
+    rules = rules_for(data)
+    assert rules["OPEN"]["observed"] is opened
+    assert rules["EXIT"]["observed"] is exited
+
+
+def test_conditional_reduce_reuses_existing_downtrend_without_invented_price():
+    daily = rows([15, 16, 18, 16, 15, 13, 15, 17, 15, 14, 12, 14, 15])
+    behavior = analyze_minutes(minute_rows(8), daily)
+    assert behavior["daily_trend"] == "DOWNTREND"
+    rule = rules_for(minute_rows(8), daily)["REDUCE"]
+    assert rule["observed"] is True and rule["price"] is None
+    assert analyze_minutes(minute_rows(8))["observation_quality"] == "INSUFFICIENT_UPPER_SPACE"
+    assert rules_for(minute_rows(8))["REDUCE"]["observed"] is True
+    assert rules_for(minute_rows(8), rows([10, 11, 12, 13, 14, 15]))["REDUCE"]["observed"] is False

@@ -44,6 +44,34 @@ def test_public_review_read_is_bound_readonly_and_never_selects_fraction(tmp_pat
     assert all(p.read_bytes() == raw for p, raw in before.items())
 
 
+def test_successor_manifest_pointer_preserves_frozen_original_and_rejects_tamper(tmp_path, monkeypatch):
+    _, _, _, manifest, original = review_fixture(tmp_path, monkeypatch)
+    original_bytes = original.read_bytes()
+    successor = tmp_path / 'artifacts/current/successor/value-policy-review-manifest.json'
+    successor.parent.mkdir(parents=True)
+    # Referenced public files must share the successor directory by contract.
+    for roles in manifest['items'].values():
+        for binding in roles.values():
+            source = tmp_path / binding['path']
+            target = successor.parent / source.name
+            target.write_bytes(source.read_bytes())
+            binding['path'] = target.relative_to(tmp_path).as_posix()
+    successor.write_text(json.dumps(manifest), encoding='utf-8')
+    pointer = tmp_path / app.REVIEW_POINTER_PATH
+    pointer.parent.mkdir(exist_ok=True)
+    payload = dict(schema_version='current-value-policy-review-v1', action='no_order',
+        manifest=dict(path=successor.relative_to(tmp_path).as_posix(),
+            sha256=hashlib.sha256(successor.read_bytes()).hexdigest()))
+    pointer.write_text(json.dumps(payload), encoding='utf-8')
+    result = app.load_value_policy_review(tmp_path, '600887', NOW)
+    assert result['source_bindings'][0] == payload['manifest']
+    assert any(row['path'] == app.REVIEW_POINTER_PATH for row in result['source_bindings'])
+    assert original.read_bytes() == original_bytes
+    successor.write_bytes(successor.read_bytes() + b' ')
+    with pytest.raises(ValueError, match='hash'):
+        app.load_value_policy_review(tmp_path, '600887', NOW)
+
+
 @pytest.mark.parametrize("fault", ["file", "source", "basis", "future", "schema", "private", "escape", "unknown"])
 def test_public_review_invalid_or_stale_bindings_raise_failclosed(tmp_path, monkeypatch, fault):
     plan, source, docs, manifest, manifest_path = review_fixture(tmp_path, monkeypatch)

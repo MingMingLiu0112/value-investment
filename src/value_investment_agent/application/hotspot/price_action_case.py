@@ -5,7 +5,7 @@ from decimal import Decimal
 from datetime import datetime
 
 from value_investment_agent.domain.hotspot.current_price import CURRENT_BLOCKERS, current_signal
-from value_investment_agent.domain.hotspot.confirmed_price_structure import analyze_price_behavior
+from value_investment_agent.domain.hotspot.confirmed_price_structure import analyze_price_behavior, conditional_action_rules
 
 
 def project_price_action_plan(case: dict) -> dict:
@@ -94,6 +94,11 @@ def project_current_price_action_plan(case: dict) -> dict:
                 expiry_rule="Refresh after next completed exchange session; old conditions must not remain current",
                 next_observation="下一完整60分钟收盘重新检查价格与量能；次一交易日收盘后重新筛选。")
     plan["price_behavior"] = analyze_price_behavior(case["bars"])
+    rules = conditional_action_rules(plan["price_behavior"], case["levels"]["60m"])
+    plan.update(conditional_action_rules=rules,
+                entry_condition={**plan["entry_condition"], **rules["OPEN"], "status": state},
+                add_condition=rules["ADD"], reduce_condition=rules["REDUCE"],
+                exit_condition=rules["EXIT"])
     plan["risk_reward_ratio"] = plan["price_behavior"]["risk_reward_ratio"]
     plan["data_available_at"] = max(datetime.fromisoformat(value) for value in [
         *(source["fetched_at"] for source in case["source_bindings"].values()),

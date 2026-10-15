@@ -184,9 +184,43 @@ def test_registered_evidence_change_mints_a_new_identity(tmp_path):
     observed = {item["path"]: item["observed_sha256"]
                 for item in after["identity_inputs"]["registered_evidence"]}
     assert observed["docs/current/tl10-registry-evidence.json"] == changed["sha256"]
-    assert after["company_statuses"]["600741"]["blockers"] == ["REGISTERED_EVIDENCE_CHANGED"]
+    assert set(after["company_statuses"]["600741"]["blockers"]) == {
+        "RESEARCH_ASSESSMENT_NOT_BOUND", "VALUATION_NOT_ADMITTED", "REGISTERED_EVIDENCE_CHANGED"}
     assert "REGISTERED_EVIDENCE_CHANGED:600741" in after["blockers"]
     assert "REGISTERED_EVIDENCE_CHANGED:600741" not in before["blockers"]
+
+
+def test_partial_registry_without_bound_assessment_exposes_research_gaps_and_engineering_work(tmp_path):
+    root = build_verified_tree(tmp_path)
+    _write_registry(root, None)
+    path = root / "config/current-company-research-registry.json"
+    registry = json.loads(path.read_bytes())
+    partial = registry["companies"]["600741"]
+    partial["status"] = "PARTIAL"
+    registry["companies"] = {symbol: dict(partial) for symbol in ("000333", "000651", "600741")}
+    _write_json(root, path.relative_to(root).as_posix(), registry)
+    packet = _build(root)
+    assert packet["engine_version"] == "daily-public-packet-engine-v12"
+    for symbol in registry["companies"]:
+        entry = packet["company_statuses"][symbol]
+        assert {"RESEARCH_ASSESSMENT_NOT_BOUND", "VALUATION_NOT_ADMITTED"} <= set(entry["blockers"])
+        work = next(item for item in entry["pending_actions"] if item["code"] == "BIND_CURRENT_RESEARCH_ASSESSMENT")
+        assert work["actor"] == "ENGINEERING"
+        assert "不代表不存在历史研究" in work["label"]
+        fallback = packet["value_price_conditions"][symbol]
+        assert set(entry["blockers"]) <= set(fallback["blockers"])
+        assert fallback["required_confirmations"] == fallback["blockers"]
+        assert work["label"] in fallback["next_observation"]
+        assert "不是仅缺行情" in fallback["explanation"]
+        assert fallback["action_eligibility"] is False
+
+
+def test_f3_engine_revision_mints_new_identity(tmp_path, monkeypatch):
+    root = build_verified_tree(tmp_path)
+    current = _build(root)
+    monkeypatch.setattr(daily_public_packet, "ENGINE_VERSION", "daily-public-packet-engine-v10")
+    previous = _build(root)
+    assert current["publication_id"] != previous["publication_id"]
 
 
 def test_quote_bundle_content_mints_a_new_identity(tmp_path):
