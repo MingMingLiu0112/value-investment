@@ -64,6 +64,19 @@ if (Test-Path -LiteralPath $priorPointer) {
 }
 $initialReceipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
 Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
+trap {
+    $failedReceipt = @{
+        schema_version = 'daily-workbench-run-v1'; action = 'no_order'; mode = $Mode
+        started_at = $startedAt; finished_at = [DateTimeOffset]::UtcNow.ToString('o')
+        status = 'BLOCKED'; exit_code = 2; published = $false
+        retained_publication_id = $initialReceipt.retained_publication_id
+        notes = @('刷新后快照生成失败，Web 保留上一验证版本。')
+    }
+    $failedReceipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
+    Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
+    Write-Host "运行结果 : BLOCKED - $($_.Exception.Message)"
+    exit 2
+}
 if (-not $Symbols) {
     $quoteRegistry = Get-Content -LiteralPath (Join-Path $root 'config/current-quote-bridge.json') -Raw -Encoding utf8 | ConvertFrom-Json
     $Symbols = @($quoteRegistry.quotes.PSObject.Properties.Name) -join ','
@@ -96,11 +109,11 @@ Write-Host "运行模式 : $Mode"
 $python = Resolve-Python
 if (-not $python) {
     Write-Host '运行结果 : BLOCKED - 未找到 Python 解释器（python 或 D:\APP\Python313\python.exe）。'
-    exit 2
+    throw 'Python interpreter unavailable'
 }
 $importCheck = & $python -X utf8 -B -c 'import value_investment_agent' 2>&1 | Out-String
 if ($LASTEXITCODE -ne 0) {
-    Write-Host '运行结果 : BLOCKED - Python 环境无法导入 value_investment_agent。'; Write-Host $importCheck.Trim(); exit 2
+    Write-Host '运行结果 : BLOCKED - Python 环境无法导入 value_investment_agent。'; Write-Host $importCheck.Trim(); throw 'Python import failed'
 }
 Write-Host "Python   : $python"
 
@@ -112,14 +125,16 @@ $build = Invoke-PythonJson @('scripts/current/build_daily_public_packet.py', '--
 if (-not $build.Json) {
     Write-Host '运行结果 : BLOCKED - 每日公开数据包生成失败（无法解析输出）。'
     if ($build.Text) { Write-Host $build.Text }
-    exit 2
+    throw 'Daily packet output unavailable'
 }
 $packet = $build.Json
 $buildExit = $build.ExitCode
+$coreBlocked = ($buildExit -ne 0 -or -not $packet.source_bindings_verified)
+$verified = $null
 
 if ($Mode -eq 'SAFE_REFRESH') {
     $reuse = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py', '--check-reuse', '--symbols', $Symbols)
-    if ($reuse.Json.prices_ready) {
+    if ($reuse.ExitCode -eq 0 -and $reuse.Json.prices_ready) {
         Write-Host "  价格结构 : 复用已核验最近完成交易日 $($reuse.Json.market_trade_dates -join ',') 的完整五只候选；未重新采集。"
         $priceRefresh = [pscustomobject]@{ ExitCode = 0; Json = [pscustomobject]@{ status = 'UNCHANGED'; items = @(); failures = @() } }
     } else {
@@ -135,7 +150,7 @@ if ($Mode -eq 'SAFE_REFRESH') {
         $notes.Add('当前价格条件采集存在缺项；未通过验证的证券不会升级为当前触发。')
     }
     Write-Host '[SAFE_REFRESH] 采集已授权的公开行情来源（腾讯/新浪，只读页面）...'
-    if ($reuse.Json.quotes_ready) {
+    if ($reuse.ExitCode -eq 0 -and $reuse.Json.quotes_ready) {
         Write-Host '  行情 : 复用已核验最近完成交易日的登记；未重新采集。'
         $collect = [pscustomobject]@{ ExitCode = 0; Json = [pscustomobject]@{ observations = @(); status = 'UNCHANGED' } }
     } else {
@@ -160,7 +175,7 @@ if ($Mode -eq 'SAFE_REFRESH') {
         foreach ($observation in @($collect.Json.observations)) {
             $symbol = [string]$observation.symbol
             if ($observation.result.status -ne 'matched_close' -or -not $observation.result.passed) {
-                $notes.Add("$symbol 的最新收盘未通过验证；不发布本次刷新。")
+                $notes.Add("$symbol 的最新收盘未通过验证；不升级该证券。")
                 Write-Host "  ${symbol}: 未形成可登记的双源收盘（$($observation.result.status)：$($observation.result.reason)）"
                 continue
             }
@@ -199,22 +214,37 @@ if ($Mode -eq 'SAFE_REFRESH') {
                 Write-Host "  ${symbol}: 已登记 $session 双源收盘（登记不构成估值或交易批准）。"
             }
         }
+        foreach ($expectedSymbol in ($Symbols -split ',')) {
+            if ($expectedSymbol -notin @($collect.Json.observations | ForEach-Object { $_.symbol })) {
+                $notes.Add("$expectedSymbol 未返回逐证券采集结果；保留原登记。")
+            }
+        }
         # Rebuild so the printed summary reflects the new registration.
     }
 }
 
-if ($Mode -eq 'SAFE_REFRESH' -and $notes.Count -eq 0) {
+if ($Mode -eq 'SAFE_REFRESH') {
+    # Acquisition can repair missing inputs. Recompute the real core chain and
+    # stored packet identity before permitting publication, even after failure.
+    $postBuild = Invoke-PythonJson @('scripts/current/build_daily_public_packet.py', '--no-publish')
+    $coreBlocked = ($postBuild.ExitCode -ne 0 -or -not $postBuild.Json -or -not $postBuild.Json.source_bindings_verified)
+    if ($postBuild.Json) { $packet = $postBuild.Json; $buildExit = $postBuild.ExitCode }
+    else { $buildExit = 2; $notes.Add('刷新后快照生成失败，Web 保留上一验证版本。') }
     $verified = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py', '--check-reuse', '--symbols', $Symbols)
-    if ($verified.ExitCode -ne 0 -or -not $verified.Json.prices_ready -or -not $verified.Json.quotes_ready) {
+    if ($verified.ExitCode -ne 0 -or -not $verified.Json.publication_ready) {
+        $coreBlocked = $true
         $notes.Add('刷新后完整输入未通过最近完成交易日及来源校验；不发布新快照。')
     }
+    elseif (-not $verified.Json.prices_ready -or -not $verified.Json.quotes_ready) {
+        $notes.Add('部分证券数据未能更新；已核验证券可用，缺项不代表今日已刷新。')
+    }
 }
-if ($notes.Count -eq 0) {
+if (-not $coreBlocked) {
     $rebuild = Invoke-PythonJson (@('scripts/current/build_daily_public_packet.py') + $excelArgs)
     if ($rebuild.Json) { $packet = $rebuild.Json; $buildExit = $rebuild.ExitCode }
     else { $buildExit = 2; $notes.Add('刷新后快照生成失败，Web 保留上一验证版本。') }
 }
-else { $buildExit = 2; $notes.Add('采集或登记不完整：未发布新快照，Web 保留上一验证版本，不能称为本次新数据。') }
+else { if ($buildExit -eq 0) { $buildExit = 2 }; $notes.Add('采集或登记不完整：未发布新快照，Web 保留上一验证版本，不能称为本次新数据。') }
 
 $status = if ($buildExit -eq 0) { 'SUCCESS' } else { 'BLOCKED' }
 if ($status -eq 'SUCCESS' -and $notes.Count -gt 0) { $status = 'PARTIAL' }
@@ -224,6 +254,11 @@ $receipt = @{
     started_at = $startedAt; finished_at = [DateTimeOffset]::UtcNow.ToString('o')
     status = $status; exit_code = $updateExit; published = [bool]($packet.snapshot -and $buildExit -eq 0)
     publication_id = $packet.snapshot.publication_id; notes = @($notes.ToArray())
+}
+if ($verified.Json) {
+    $receipt.price_securities = @($verified.Json.price_securities)
+    $receipt.quote_securities = @($verified.Json.quote_securities)
+    $receipt.core_integrity_ok = [bool]$verified.Json.core_integrity_ok
 }
 $snapshotPointer = Join-Path $root 'config/current-daily-public-snapshot.json'
 if (Test-Path -LiteralPath $snapshotPointer) {
@@ -269,7 +304,7 @@ if ($packet.excel_sync) { Write-Host "Excel对照 : $($packet.excel_sync.status)
 if ($packet.path) { Write-Host "产物     : $($packet.path)" }
 if ($packet.sha256) { Write-Host "产物哈希 : $($packet.sha256)" }
 if ($Mode -eq 'SAFE_REFRESH') { Write-Host '能力边界 : 已完成行情和价格结构计算不代表触发、研究批准或正式操作准入；事件、风险、G3 等门禁独立。' }
-Write-Host '说明     : 本次运行不修改正式发布指针；正式 Excel 与私人数据均未被触碰（action=no_order）。'
+Write-Host '说明     : 仅按验证结果更新本地公开快照引用；正式 Excel 与私人数据均未被触碰（action=no_order）。'
 foreach ($note in $notes) { Write-Host "提醒     : $note" }
 
 $webStatus = '未启动'

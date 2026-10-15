@@ -1,8 +1,13 @@
 import { ProForm, ProFormText } from "@ant-design/pro-components";
+import type { ProFormInstance } from "@ant-design/pro-components";
 import { Alert, Descriptions, Typography } from "antd";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../services/api";
 import { blockerText } from "../utils/packet";
+import type { RiskFacts } from "../types/api";
+import type { PrivateRiskContext } from "./PrivateRiskContext";
+import { CostAssumptionsPanel } from "./CostAssumptionsPanel";
+import { reusableCostFields } from "./PrivateRiskContext";
 
 export type HotspotSizingRequest = {
   symbol: string;
@@ -10,6 +15,7 @@ export type HotspotSizingRequest = {
 };
 export type HotspotSizingResponse = {
   action: "no_order";
+  facts?: RiskFacts | null;
   sizing_preview: {
     symbol: string;
     review_quantity: number | null;
@@ -22,6 +28,9 @@ export type HotspotSizingResponse = {
     sizing_details?: {
       cash_required_cny?: string;
       stressed_loss_cny?: string;
+      planned_risk_limit_cny?: string;
+      stressed_exit_price_cny?: string;
+      full_capital_at_risk_cny?: string;
     } | null;
   };
 };
@@ -54,6 +63,8 @@ function gapLabel(code: string) {
     PLAN_PROTECTION_INVALID: "当前保护价不低于入场价，无法以损定量",
     CANDIDATE_LIQUIDITY_UNKNOWN: "证券流动性属性尚未核验",
     PRICE_LIMIT_STATE_UNKNOWN: "涨跌停执行状态尚未核验",
+    EXTERNAL_ACCOUNT_RECONCILIATION_MISSING:
+      "尚未提供本人逐项核对的外部账户对账引用",
   };
   return labels[code] ?? blockerText(code);
 }
@@ -61,13 +72,45 @@ function gapLabel(code: string) {
 export function HotspotSizingPanel({
   initialSymbol,
   onPreview,
+  context,
+  onConfirmCosts,
+  onContextRefresh,
+  onSymbolChange,
 }: {
   initialSymbol?: string;
   onPreview: (request: HotspotSizingRequest) => Promise<HotspotSizingResponse>;
+  context?: PrivateRiskContext;
+  onConfirmCosts?: (
+    body: Record<string, unknown>,
+  ) => Promise<{ action: "no_order"; status: string }>;
+  onContextRefresh?: () => void;
+  onSymbolChange?: (symbol: string) => void;
 }) {
   const [result, setResult] = useState<HotspotSizingResponse>();
   const [failure, setFailure] = useState<string>();
   const generation = useRef(0);
+  const formRef = useRef<ProFormInstance>();
+  useEffect(() => {
+    generation.current++;
+    setResult(undefined);
+    setFailure(undefined);
+  }, [initialSymbol, context]);
+  const currentContext =
+    context?.action === "no_order" && context.symbol === initialSymbol
+      ? context
+      : undefined;
+  const confirmedCosts =
+    currentContext?.cost_profile &&
+    Date.parse(currentContext.cost_profile.valid_until) > Date.now()
+      ? currentContext.cost_profile.costs
+      : {};
+  useEffect(() => {
+    formRef.current?.setFieldsValue(
+      Object.fromEntries(
+        reusableCostFields.map((key) => [key, confirmedCosts?.[key]]),
+      ),
+    );
+  }, [currentContext?.symbol, currentContext?.revision]);
   const submit = async (form: Record<string, unknown>) => {
     const current = ++generation.current;
     setFailure(undefined);
@@ -83,7 +126,12 @@ export function HotspotSizingPanel({
         symbol: String(form.symbol ?? "").trim(),
         assumptions,
       });
-      if (response.action !== "no_order" || !response.sizing_preview)
+      if (
+        response.action !== "no_order" ||
+        !response.sizing_preview ||
+        response.sizing_preview.symbol !== String(form.symbol ?? "").trim() ||
+        !Array.isArray(response.sizing_preview.blockers)
+      )
         throw new Error("仓位试算响应无法核验，请刷新后重试。");
       if (current === generation.current) setResult(response);
       return true;
@@ -119,12 +167,19 @@ export function HotspotSizingPanel({
         />
       )}
       <ProForm
+        formRef={formRef}
         layout="vertical"
         onFinish={submit}
-        onValuesChange={() => {
+        onValuesChange={(changed: Record<string, unknown>) => {
           generation.current++;
           setResult(undefined);
           setFailure(undefined);
+          if ("symbol" in changed) {
+            formRef.current?.setFieldsValue(
+              Object.fromEntries(sizingFields.map(([key]) => [key, undefined])),
+            );
+            onSymbolChange?.(String(changed.symbol ?? "").trim());
+          }
         }}
         submitter={{
           resetButtonProps: false,
@@ -140,26 +195,113 @@ export function HotspotSizingPanel({
             { pattern: /^\d{6}$/, message: "六位证券代码" },
           ]}
         />
-        <ProForm.Group>
-          {sizingFields.map(([key, label]) => (
-            <ProFormText
-              key={key}
-              name={key}
-              label={label}
-              width="md"
-              rules={[
+        {currentContext?.policy && (
+          <Descriptions
+            column={1}
+            size="small"
+            items={[
+              {
+                key: "budget",
+                label: "已确认热点资金池（元）",
+                children: String(
+                  currentContext.policy.hotspot_budget_cny ?? "未知",
+                ),
+              },
+              {
+                key: "risk",
+                label: "已确认热点单笔风险（%）",
+                children: String(
+                  currentContext.policy.hotspot_single_trade_risk_pct ?? "未知",
+                ),
+              },
+              {
+                key: "reserve",
+                label: "已确认现金预留（元）",
+                children: String(
+                  currentContext.policy.cash_reserve_cny ?? "未知",
+                ),
+              },
+            ]}
+          />
+        )}
+        {currentContext?.rule_gaps.map((gap) => (
+          <Alert key={gap} type="warning" message={gap} />
+        ))}
+        {currentContext?.cost_profile && (
+          <Alert
+            type="info"
+            message="已读取本人确认的成本设定"
+            description={`有效期至 ${currentContext.cost_profile.valid_until}`}
+          />
+        )}
+        <ProFormText
+          name="max_trade_notional_cny"
+          label="本人本笔资金上限（元）"
+          rules={[{ pattern: /^\d+(\.\d+)?$/, message: "填写非负数字" }]}
+        />
+        <details>
+          <summary>高级参数：费用、滑点、压力及交易单位</summary>
+          <ProForm.Group>
+            {sizingFields
+              .filter(([key]) => key !== "max_trade_notional_cny")
+              .map(([key, label]) => (
+                <ProFormText
+                  key={key}
+                  name={key}
+                  label={label}
+                  width="md"
+                  initialValue={confirmedCosts?.[key]}
+                  rules={[
+                    {
+                      pattern:
+                        key === "lot_size" ? /^[1-9]\d*$/ : /^\d+(\.\d+)?$/,
+                      message:
+                        key === "lot_size"
+                          ? "填写正整数交易单位"
+                          : "填写非负数字",
+                    },
+                  ]}
+                />
+              ))}
+          </ProForm.Group>
+        </details>
+      </ProForm>
+      {onConfirmCosts && currentContext && (
+        <CostAssumptionsPanel
+          revision={currentContext.revision}
+          onConfirm={onConfirmCosts}
+          onDone={() => {
+            generation.current++;
+            setResult(undefined);
+            onContextRefresh?.();
+          }}
+        />
+      )}
+      {preview && (
+        <>
+          {result?.facts && (
+            <Descriptions
+              column={1}
+              size="small"
+              items={[
                 {
-                  pattern: key === "lot_size" ? /^[1-9]\d*$/ : /^\d+(\.\d+)?$/,
-                  message:
-                    key === "lot_size" ? "填写正整数交易单位" : "填写非负数字",
+                  key: "cashFact",
+                  label: "账本现金（元）",
+                  children: result.facts.cash_cny,
+                },
+                {
+                  key: "costFact",
+                  label: "持仓总成本（元）",
+                  children: result.facts.cost_basis_total_cny,
+                },
+                {
+                  key: "pnlFact",
+                  label: "已实现盈亏（元）",
+                  children: result.facts.realized_pnl_cny,
                 },
               ]}
             />
-          ))}
-        </ProForm.Group>
-      </ProForm>
-      {preview && (
-        <>
+          )}
           <Descriptions
             column={1}
             size="small"
@@ -192,10 +334,31 @@ export function HotspotSizingPanel({
                   preview.sizing_details?.cash_required_cny ?? "暂不能计算",
               },
               {
+                key: "riskLimit",
+                label: "本笔可用风险预算（元）",
+                children:
+                  preview.sizing_details?.planned_risk_limit_cny ??
+                  "尚不能核验",
+              },
+              {
                 key: "loss",
                 label: "假设压力损失（元）",
                 children:
                   preview.sizing_details?.stressed_loss_cny ?? "暂不能计算",
+              },
+              {
+                key: "stressExit",
+                label: "假设压力退出价（元，不保证成交）",
+                children:
+                  preview.sizing_details?.stressed_exit_price_cny ??
+                  "暂不能计算",
+              },
+              {
+                key: "fullCapital",
+                label: "全部投入本金风险（元）",
+                children:
+                  preview.sizing_details?.full_capital_at_risk_cny ??
+                  "暂不能计算",
               },
             ]}
           />
@@ -204,7 +367,13 @@ export function HotspotSizingPanel({
               type="warning"
               showIcon
               message="个人仓位条件尚不完整"
-              description={preview.blockers.map(gapLabel).join("；")}
+              description={
+                <ul>
+                  {preview.blockers.map((code) => (
+                    <li key={code}>{gapLabel(code)}</li>
+                  ))}
+                </ul>
+              }
             />
           )}
         </>

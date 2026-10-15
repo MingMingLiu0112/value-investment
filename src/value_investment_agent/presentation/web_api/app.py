@@ -56,6 +56,10 @@ from .local_auth import (
     authorize,
 )
 from .private_routes import portfolio_connection, register_private_routes
+from .value_policy_routes import register_value_policy_routes
+from ...application.decision.value_policy_interaction import (
+    ValuePolicyInteractionService, PolicyPrincipal, PERMISSION,
+)
 
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -195,6 +199,7 @@ def create_app(
     port: int | None = None,
     session_ttl_seconds: float = SESSION_TTL_SECONDS,
     bootstrap_secret: str | None = None,
+    value_policy_service: ValuePolicyInteractionService | None = None,
 ) -> FastAPI:
     # Root injection is for in-process tests; no HTTP parameter or environment override exists.
     project = (root or ROOT).resolve()
@@ -684,6 +689,10 @@ def create_app(
 
     register_private_routes(
         api, project, sessions=sessions, port=bound_port)
+    register_value_policy_routes(api, sessions=sessions, port=bound_port,
+        principal_resolver=lambda request: PolicyPrincipal("local-account-owner", frozenset({PERMISSION})),
+        get_service=lambda: value_policy_service or ValuePolicyInteractionService(
+            project, storage_relative="runtime/value-policy-review/local-account-owner"))
 
     dist = project / "web" / "dist"
     if dist.is_dir() and (dist / "index.html").is_file():
@@ -698,8 +707,8 @@ def create_app(
             if path and not path.endswith("/"):
                 candidate = (bundle / path).resolve()
                 if candidate.is_relative_to(bundle) and candidate.is_file():
-                    return FileResponse(candidate)
-            return FileResponse(bundle / "index.html")
+                    return FileResponse(candidate, headers={"Cache-Control": "no-store"})
+            return FileResponse(bundle / "index.html", headers={"Cache-Control": "no-store"})
 
     return api
 

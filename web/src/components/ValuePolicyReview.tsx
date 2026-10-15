@@ -2,6 +2,12 @@ import { Alert } from "antd";
 import { useCallback } from "react";
 import { useApi } from "../hooks/useApi";
 import { DetailSection } from "./DetailSection";
+import { ValuePolicyEditor } from "./ValuePolicyEditor";
+import type {
+  PolicyRegistration,
+  PolicySelection,
+  ValuePolicyTransport,
+} from "../services/valuePolicy";
 
 type Review = {
   action: "no_order";
@@ -21,7 +27,15 @@ type Review = {
   };
 };
 
-export function ValuePolicyReview({ symbol }: { symbol: string }) {
+export function ValuePolicyReview({
+  symbol,
+  transport,
+  onRegistered,
+}: {
+  symbol: string;
+  transport?: ValuePolicyTransport;
+  onRegistered?: (result: PolicyRegistration) => void;
+}) {
   const load = useCallback(
     async (signal: AbortSignal): Promise<Review> => {
       const response = await fetch(
@@ -78,7 +92,7 @@ export function ValuePolicyReview({ symbol }: { symbol: string }) {
               </dd>
               <dt>分红覆盖风险</dt>
               <dd>{draftText(draft?.dividend_coverage_risk)}</dd>
-              {(["open", "add", "reduce", "exit"] as const).map(
+              {(["entry", "add", "reduce", "exit"] as const).map(
                 (action, index) => (
                   <div key={action}>
                     <dt>{["建仓", "加仓", "减仓", "退出"][index]}草案价</dt>
@@ -91,6 +105,15 @@ export function ValuePolicyReview({ symbol }: { symbol: string }) {
                 ),
               )}
             </dl>
+            {transport && (
+              <ValuePolicyEditor
+                key={symbol}
+                symbol={symbol}
+                transport={transport}
+                initial={draft as Partial<PolicySelection>}
+                onRegistered={onRegistered}
+              />
+            )}
             <details>
               <summary>查看估值理由与分红覆盖风险</summary>
               {result.data.model_review.findings?.map((finding, index) => (

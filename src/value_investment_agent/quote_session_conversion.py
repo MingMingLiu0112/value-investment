@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from .quote_session_collection import resolve_session_reference
-from .quote_sessions import evaluate_quote_session, parse_quote
+from .quote_sessions import CHINA, evaluate_quote_session, parse_quote
 from .quote_snapshot import (
     QUOTE_STATUS_PENDING_EXTERNAL_DATA,
     QUOTE_STATUS_UNVERIFIED,
@@ -31,8 +31,13 @@ def quote_snapshot_from_bundle_file(
     ref_id: str,
     expected_sha256: str | None = None,
     now: datetime | str | None = None,
+    require_current_b1: bool = False,
 ) -> QuoteSnapshot:
-    """Replay one symbol from an immutable quote-session bundle file."""
+    """Replay historical semantics; current admission explicitly requires B1.
+
+    Frozen research descriptors bind the historical replay output, so current
+    acquisition rules must not retroactively change those descriptors.
+    """
     if not bundle_path.is_file():
         raise FileNotFoundError(f"Quote session bundle missing: {bundle_path}")
     raw = bundle_path.read_bytes()
@@ -74,6 +79,13 @@ def quote_snapshot_from_bundle_file(
         now_value,
         documents=documents,
     )
+    if require_current_b1 and result.get("passed"):
+        for document in provider_documents.values():
+            fetched = datetime.fromisoformat(document["fetched_at"]).astimezone(CHINA)
+            if fetched.date().isoformat() != result["expected_session"] or fetched.hour < 15:
+                result = {**result, "passed": False, "status": "invalid_evidence",
+                          "reason": "B1 requires same-session post-close acquisition"}
+                break
 
     relative_path = bundle_path.resolve().relative_to(root.resolve()).as_posix()
     evidence_refs: list[dict[str, Any]] = [

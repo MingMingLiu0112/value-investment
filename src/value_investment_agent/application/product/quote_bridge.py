@@ -49,7 +49,7 @@ def admit_quote_for_research(root: Path, bundle: Path | None, symbol: str, resea
         raw = load_json_object(path, "quote bundle")
         snapshot = quote_snapshot_from_bundle_file(
             path, root, symbol=symbol, ref_id="daily-assistant-quote-" + digest,
-            expected_sha256=digest)
+            expected_sha256=digest, require_current_b1=True)
         cutoff = datetime.fromisoformat(raw["finished_at"])
         if cutoff.utcoffset() is None or cutoff > today:
             raise ValueError("行情抓取时间无效或在未来")

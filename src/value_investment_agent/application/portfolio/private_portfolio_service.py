@@ -13,7 +13,7 @@ import json
 import os
 import threading
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -50,7 +50,7 @@ JOURNAL_RELATIVE_PATH = Path("portfolio") / "journal.jsonl"
 RECORD_KINDS = frozenset({
     "BASELINE_CONFIRMED", "FILL_PREPARED", "FILL_CONFIRMED", "FILL_CANCELLED",
     "RECONCILED_CONFIRMED",
-    "POLICY_PREPARED", "POLICY_CONFIRMED",
+    "POLICY_PREPARED", "POLICY_CONFIRMED", "COST_ASSUMPTIONS_CONFIRMED",
 })
 EXCHANGES = frozenset({"SSE", "SZSE", "BSE"})
 SIDES = frozenset({"BUY", "SELL"})
@@ -1072,10 +1072,9 @@ class PrivatePortfolioService:
         assert replayed is not None
         if replayed.pending is not None:
             raise JournalConflict("PENDING_DRAFT_EXISTS", "存在未确认的成交草稿，请先确认")
-        if replayed.state.version == 0:
-            raise JournalConflict("NO_CONFIRMABLE_DRAFT", "至少需要一笔已确认成交才能生成对账快照")
         confirmed_records = [record for record in records if record["kind"] == "FILL_CONFIRMED"]
-        evidence = dict(confirmed_records[-1]["body"]["evidence_ref"])
+        evidence = (dict(confirmed_records[-1]["body"]["evidence_ref"]) if confirmed_records
+            else dict(replayed.state.baseline.evidence_refs[0]))
         account_evidence = request.get("account_evidence")
         if account_evidence is None:
             reconciliation_scope = RECONCILIATION_SCOPE_INTERNAL
@@ -1092,13 +1091,23 @@ class PrivatePortfolioService:
             }
             reconciliation_scope = RECONCILIATION_SCOPE_EXTERNAL
         reconciled_at = _aware_datetime(request.get("reconciled_at"), "reconciled_at")
+        if reconciled_at > datetime.now().astimezone():
+            raise JournalValidationError("对账时间不得晚于当前时间")
         try:
-            snapshot = portfolio_snapshot(
-                replayed.state,
-                snapshot_id=f"private-snapshot-{revision + 1}",
-                available_at=reconciled_at,
-                evidence_ref=evidence,
-            )
+            if replayed.state.version == 0:
+                if reconciled_at < replayed.state.baseline.available_at:
+                    raise ValueError("对账时间不得早于初始持仓确认时间")
+                snapshot = replace(replayed.state.baseline,
+                    snapshot_id=f"private-snapshot-{revision + 1}",
+                    snapshot_version=f"v{revision + 1}", available_at=reconciled_at,
+                    reconciled_at=reconciled_at)
+            else:
+                snapshot = portfolio_snapshot(
+                    replayed.state,
+                    snapshot_id=f"private-snapshot-{revision + 1}",
+                    available_at=reconciled_at,
+                    evidence_ref=evidence,
+                )
         except ValueError as error:
             raise JournalValidationError(str(error)) from error
         snapshot_payload = snapshot.as_policy()

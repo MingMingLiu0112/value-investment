@@ -114,7 +114,9 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
            production_database_changed=False, financial_or_strategy_approval=False))
     registry = dict(schema_version="current-price-conditions-v1", action="no_order",
                     watch_source_binding=dict(path=source.relative_to(root).as_posix(), sha256=watch_source_sha256),
-                    watch_source_scope=scope, items=items)
+                    watch_source_scope=scope, items=items, failures=failures,
+                    selected_symbols=[row["symbol"] for row in selected],
+                    completed_at=bundle["finished_at"])
     target = root / "config" / "current-price-conditions.json"
     if target.is_file():
         try:

@@ -28,6 +28,7 @@ vi.mock("@ant-design/pro-components", async () => {
   };
 });
 import { HotspotSizingPanel } from "../src/components/HotspotSizingPanel";
+import type { PrivateRiskContext } from "../src/components/PrivateRiskContext";
 
 beforeEach(() => {
   captured.fields.length = 0;
@@ -92,4 +93,55 @@ it("rejects an unverified or failed response", async () => {
     );
     expect(await captured.submit!({ symbol: "300364" })).toBe(false);
   }
+});
+
+it("folds advanced inputs and only prefills confirmed unexpired costs", () => {
+  const context: PrivateRiskContext = {
+    action: "no_order",
+    symbol: "300364",
+    revision: 4,
+    policy: { hotspot_budget_cny: "2000", hotspot_single_trade_risk_pct: "1" },
+    cost_profile: {
+      costs: { buy_fee_fraction: "0.0003" },
+      confirmed_at: "2026-10-10T00:00:00Z",
+      valid_until: "2099-01-01T00:00:00Z",
+      record_sha256: "a".repeat(64),
+    },
+    verified_rules: {},
+    rule_gaps: ["交易单位未知"],
+  };
+  const html = renderToStaticMarkup(
+    <HotspotSizingPanel
+      initialSymbol="300364"
+      context={context}
+      onPreview={vi.fn()}
+    />,
+  );
+  expect(html).toContain("高级参数");
+  expect(html).not.toContain("<details open");
+  expect(html).toContain("已确认热点资金池");
+  expect(
+    captured.fields.find((field) => field.name === "buy_fee_fraction")
+      ?.initialValue,
+  ).toBe("0.0003");
+  expect(
+    captured.fields.find((field) => field.name === "lot_size")?.initialValue,
+  ).toBeUndefined();
+  expect(
+    captured.fields.find((field) => field.name === "max_trade_notional_cny")
+      ?.initialValue,
+  ).toBeUndefined();
+  captured.fields.length = 0;
+  context.cost_profile!.valid_until = "2000-01-01T00:00:00Z";
+  renderToStaticMarkup(
+    <HotspotSizingPanel
+      initialSymbol="300364"
+      context={context}
+      onPreview={vi.fn()}
+    />,
+  );
+  expect(
+    captured.fields.find((field) => field.name === "buy_fee_fraction")
+      ?.initialValue,
+  ).toBeUndefined();
 });

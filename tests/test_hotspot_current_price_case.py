@@ -165,3 +165,36 @@ def test_repeated_capture_has_identical_computed_levels_and_next_session_plan(tm
     assert first_plan["next_completed_eligible_session"] > first_plan["market_trade_date"]
     assert "next session completes" in first_plan["next_session_rule"]
     assert first_plan["action_eligibility"] is False and first_plan["action"] == "no_order"
+
+
+def test_unrelated_bundle_failure_does_not_block_valid_security(tmp_path):
+    bundle_path = _write_bundle(tmp_path)
+    bundle = json.loads(bundle_path.read_bytes())
+    bundle.update(status='partial_failure', request_failures=[{'symbol': '300001', 'error': 'timeout'}])
+    bundle_path.write_text(json.dumps(bundle), encoding='utf-8')
+    case = collect_current_price_case(root=tmp_path, symbol='600519', as_of=date(2026, 9, 24),
+        quote_bundle_path=bundle_path, quote_bundle_sha256=hashlib.sha256(bundle_path.read_bytes()).hexdigest(),
+        fetch=lambda _url, params, timeout: Response(params['scale']), now=NOW)
+    assert case['current_reference_close']['status'] == 'VERIFIED_DUAL_SOURCE_CLOSE'
+
+
+def test_next_day_download_cannot_retroactively_supply_same_day_b1(tmp_path):
+    from value_investment_agent.quote_session_conversion import quote_snapshot_from_bundle_file
+    bundle_path = _write_bundle(tmp_path)
+    bundle = json.loads(bundle_path.read_bytes())
+    refs = bundle['references']['600519']['document_refs']
+    for provider in ('tencent', 'sina'):
+        document = dict(bundle['documents'][refs[provider]], fetched_at='2026-09-26T08:12:00+00:00')
+        identity = hashlib.sha256((document['source_url'] + '\n' + document['fetched_at'] + '\n' + document['sha256']).encode()).hexdigest()
+        bundle['documents'][identity] = document
+        refs[provider] = identity
+    bundle_path.write_text(json.dumps(bundle), encoding='utf-8')
+    historical = quote_snapshot_from_bundle_file(bundle_path, tmp_path, symbol='600519', ref_id='synthetic')
+    assert historical.status == 'verified_close'
+    snapshot = quote_snapshot_from_bundle_file(bundle_path, tmp_path, symbol='600519', ref_id='synthetic',
+                                               require_current_b1=True)
+    assert snapshot.status == 'unverified'
+    with pytest.raises(ValueError, match='same-session post-close'):
+        collect_current_price_case(root=tmp_path, symbol='600519', as_of=date(2026, 9, 24),
+            quote_bundle_path=bundle_path, quote_bundle_sha256=hashlib.sha256(bundle_path.read_bytes()).hexdigest(),
+            fetch=lambda *a, **k: pytest.fail('invalid B1 must be rejected before network'), now=NOW)

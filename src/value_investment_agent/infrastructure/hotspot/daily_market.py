@@ -1,12 +1,36 @@
 """Bounded dated Tencent quotes joined to an explicit Sina classification."""
 import hashlib
 import re
+import time as retry_time
 from datetime import datetime, time, timezone
 from decimal import Decimal
 
 import requests
 
 from ...quote_sessions import CHINA
+
+
+def bounded_get(fetch, url, *, sleep=None, **kwargs):
+    """Retry transient transport/HTTP failures at most three times (1s, 2s)."""
+    sleep = sleep or retry_time.sleep
+    for attempt in range(3):
+        try:
+            response = fetch(url, **kwargs)
+            response.raise_for_status()
+            response.request_attempts = attempt + 1
+            return response
+        except requests.RequestException as error:
+            status = getattr(getattr(error, "response", None), "status_code", None)
+            transient = (isinstance(error, (requests.Timeout, requests.ConnectionError))
+                         or status in {408, 429, 500, 502, 503, 504})
+            if isinstance(error, requests.exceptions.SSLError):
+                transient = False
+            if not transient or attempt == 2:
+                error.request_attempts = attempt + 1
+                raise
+            if getattr(error, "response", None) is not None:
+                error.response.close()
+            sleep(2 ** attempt)
 
 
 def collect_dated_market(symbols: list[str], *, directory, clock=None, session=None) -> tuple[list[dict], list[dict], list[dict]]:
@@ -26,8 +50,7 @@ def collect_dated_market(symbols: list[str], *, directory, clock=None, session=N
             ids = [("sh" if s.startswith("6") else "sz") + s for s in batch]
             url = "https://qt.gtimg.cn/q=" + ",".join(ids)
             try:
-                response = session.get(url, timeout=(10, 20))
-                response.raise_for_status()
+                response = bounded_get(session.get, url, timeout=(10, 20))
                 raw = response.content
                 if len(raw) > 1_000_000:
                     raise ValueError("Oversized quote response")
@@ -68,7 +91,7 @@ def collect_dated_market(symbols: list[str], *, directory, clock=None, session=N
                     except (ValueError, KeyError, ArithmeticError) as error:
                         failures.append(dict(symbol=symbol, reason=str(error)))
             except (requests.RequestException, ValueError, OSError) as error:
-                failures.append(dict(symbols=batch, reason=str(error)))
+                failures.extend(dict(symbol=symbol, reason=str(error)) for symbol in batch)
     finally:
         if owned:
             session.close()

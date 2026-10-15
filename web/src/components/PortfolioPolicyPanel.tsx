@@ -8,7 +8,7 @@ import {
 import { Alert, Button, Checkbox, Descriptions, Input, Typography } from "antd";
 import dayjs from "dayjs";
 import { useApi } from "../hooks/useApi";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError, api } from "../services/api";
 import {
   missingPolicyInputs,
@@ -24,6 +24,7 @@ import {
 } from "../utils/portfolioPolicy";
 import { RemoteState } from "./RemoteState";
 import { sleeveLabel } from "./PositionTable";
+import { retryableWrite } from "./PrivateRiskContext";
 
 function failureText(cause: unknown) {
   if (cause instanceof ApiError)
@@ -46,6 +47,9 @@ export function PortfolioPolicyPanel({
   const [note, setNote] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
   const [busy, setBusy] = useState(false);
+  const lock = useRef(false);
+  const saveAttempt = useRef(retryableWrite());
+  const confirmAttempt = useRef(retryableWrite());
   const data = result.data;
   const draft = data?.pending_policy;
   const sameRevision = data?.revision === revision;
@@ -64,15 +68,26 @@ export function PortfolioPolicyPanel({
   const save = async (form: Record<string, unknown>) => {
     setFailure(undefined);
     setNotice(undefined);
-    if (!sameRevision || fillPending) return false;
+    if (!sameRevision || fillPending || lock.current) return false;
+    lock.current = true;
+    setBusy(true);
     try {
-      const response = await api.preparePolicy({
-        idempotency_key: crypto.randomUUID(),
-        expected_revision: revision,
-        policy: policyFromForm(form),
-      });
-      if (response.status !== "POLICY_PREPARED")
+      const policy = policyFromForm(form);
+      const body = saveAttempt.current.body(
+        JSON.stringify([revision, policy]),
+        () => ({
+          idempotency_key: crypto.randomUUID(),
+          expected_revision: revision,
+          policy,
+        }),
+      );
+      const response = await api.preparePolicy(body);
+      if (
+        response.action !== "no_order" ||
+        response.status !== "POLICY_PREPARED"
+      )
         throw new Error("草稿保存状态未核验，请刷新台账。");
+      saveAttempt.current.clear();
       setNotice("IPS 草稿已保存，尚未确认，不改变持仓或个人操作资格。");
       setAcknowledged(false);
       setNote("");
@@ -81,26 +96,47 @@ export function PortfolioPolicyPanel({
     } catch (cause) {
       setFailure(failureText(cause));
       return false;
+    } finally {
+      lock.current = false;
+      setBusy(false);
     }
   };
 
   const confirm = async () => {
-    if (!draft || !sameRevision || fillPending || missing.length) return;
+    if (
+      !draft ||
+      !sameRevision ||
+      fillPending ||
+      missing.length ||
+      !acknowledged ||
+      !note.trim() ||
+      lock.current
+    )
+      return;
+    lock.current = true;
     setBusy(true);
     setFailure(undefined);
     try {
-      const response = await api.confirmPolicy({
-        idempotency_key: crypto.randomUUID(),
-        ...policyConfirmationBody(
-          revision,
-          draft.prepared_record_sha256,
-          note,
-          acknowledged,
-          dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-        ),
-      });
-      if (response.status !== "POLICY_CONFIRMED")
+      const body = confirmAttempt.current.body(
+        JSON.stringify([revision, draft.prepared_record_sha256, note]),
+        () => ({
+          idempotency_key: crypto.randomUUID(),
+          ...policyConfirmationBody(
+            revision,
+            draft.prepared_record_sha256,
+            note,
+            acknowledged,
+            dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+          ),
+        }),
+      );
+      const response = await api.confirmPolicy(body);
+      if (
+        response.action !== "no_order" ||
+        response.status !== "POLICY_CONFIRMED"
+      )
         throw new Error("确认状态未核验，请刷新台账。");
+      confirmAttempt.current.clear();
       setNotice("IPS 已由本人确认；个人资格仍以证券门禁与风险复核结果为准。");
       setAcknowledged(false);
       setNote("");
@@ -108,6 +144,7 @@ export function PortfolioPolicyPanel({
     } catch (cause) {
       setFailure(failureText(cause));
     } finally {
+      lock.current = false;
       setBusy(false);
     }
   };
@@ -206,6 +243,7 @@ export function PortfolioPolicyPanel({
                   type="primary"
                   loading={busy}
                   disabled={
+                    busy ||
                     !sameRevision ||
                     fillPending ||
                     !!missing.length ||

@@ -16,6 +16,13 @@ import type {
   HotspotSizingRequest,
   HotspotSizingResponse,
 } from "../components/HotspotSizingPanel";
+import type { PrivateRiskContext } from "../components/PrivateRiskContext";
+import type {
+  PolicyPreview,
+  PolicyRegistration,
+  PolicySelection,
+  PolicyStatus,
+} from "./valuePolicy";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -260,6 +267,32 @@ export const api = {
     getPrivate<RiskResponse>("private/portfolio/risk", signal),
   riskPreview: (body: HotspotSizingRequest) =>
     post<HotspotSizingResponse>("private/portfolio/risk-preview", body),
+  riskContext: (symbol: string, signal?: AbortSignal) =>
+    getPrivate<PrivateRiskContext>(
+      `private/portfolio/risk-context/${encodeURIComponent(symbol)}`,
+      signal,
+    ),
+  confirmCosts: (body: Record<string, unknown>) =>
+    post<WriteResponse>("private/portfolio/costs/confirm", body),
+  confirmReconciliation: (body: Record<string, unknown>) =>
+    post<WriteResponse>("private/portfolio/reconciliation/confirm", body),
+  previewValuePolicy: (symbol: string, body: PolicySelection) =>
+    post<PolicyPreview>(
+      `value-policy-review/${encodeURIComponent(symbol)}/preview`,
+      body,
+    ),
+  valuePolicyStatus: (symbol: string) =>
+    getPrivate<PolicyStatus>(
+      `value-policy-review/${encodeURIComponent(symbol)}/status`,
+    ),
+  confirmValuePolicy: (
+    symbol: string,
+    body: { preview_id: string; acknowledged: true; note: string },
+  ) =>
+    post<PolicyRegistration>(
+      `value-policy-review/${encodeURIComponent(symbol)}/confirm`,
+      body,
+    ),
   policy: (signal?: AbortSignal) =>
     getPrivate<PolicyResponse>("private/portfolio/policy", signal),
   preparePolicy: (body: Record<string, unknown>) =>

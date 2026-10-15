@@ -32,6 +32,7 @@ from ...application.portfolio.private_portfolio_service import (
 )
 from ...application.portfolio.private_risk_projection import review_private_risk_rehearsal
 from ...application.portfolio.private_risk_preview import preview_private_hotspot_risk
+from ...application.portfolio.private_risk_experience import PrivateRiskExperienceService
 from .local_auth import (
     AUTHORIZATION_REQUIRED,
     SESSION_HEADER,
@@ -94,6 +95,9 @@ def register_private_routes(
 
     def service() -> PrivatePortfolioService:
         return PrivatePortfolioService(PrivateJournal(resolve_private_root(repository_root=project)))
+
+    def risk_experience() -> PrivateRiskExperienceService:
+        return PrivateRiskExperienceService(service().journal)
 
     def refuse(request: Request, *, require_token: bool = True) -> JSONResponse | None:
         try:
@@ -273,6 +277,32 @@ def register_private_routes(
         if refusal is not None:
             return refusal
         return emit(lambda: service().reconcile(payload))
+
+    @api.get("/api/v1/private/portfolio/risk-context/{symbol}")
+    def risk_context(symbol: str, request: Request):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        try:
+            return risk_experience().context(symbol=symbol, repository_root=project,
+                now=datetime.now(timezone.utc))
+        except (PrivateStoreUnavailable, JournalValidationError, ValueError) as error:
+            return JSONResponse(status_code=422, content={"action": "no_order",
+                "status": VALIDATION_FAILED, "detail": str(error)})
+
+    @api.post("/api/v1/private/portfolio/costs/confirm")
+    def confirm_costs(request: Request, payload: dict = Body(...)):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        return emit(lambda: risk_experience().confirm_costs(payload, now=datetime.now(timezone.utc)))
+
+    @api.post("/api/v1/private/portfolio/reconciliation/confirm")
+    def confirm_reconciliation(request: Request, payload: dict = Body(...)):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        return emit(lambda: risk_experience().confirm_reconciliation(payload))
 
     @api.post("/api/v1/private/fills/cancel")
     def cancel_fill(request: Request, payload: dict = Body(...)):

@@ -162,6 +162,23 @@ it("blocks writes when the policy read and current ledger revisions differ or a 
   expect(captured.prepare).not.toHaveBeenCalled();
 });
 
+it("retries the exact IPS save request after a lost response", async () => {
+  captured.prepare.mockRejectedValueOnce(new Error("response lost"));
+  renderToStaticMarkup(
+    React.createElement(PortfolioPolicyPanel, {
+      revision: 4,
+      fillPending: false,
+      onDone: vi.fn(),
+    }),
+  );
+  const form = { investable_assets_cny: "10000" };
+  expect(await captured.submit!(form)).toBe(false);
+  expect(await captured.submit!(form)).toBe(true);
+  expect(captured.prepare.mock.calls[1][0]).toEqual(
+    captured.prepare.mock.calls[0][0],
+  );
+});
+
 it("never confirms an incomplete draft or a complete draft without human acknowledgement", () => {
   captured.response!.pending_policy = {
     policy: { action: "no_order" },

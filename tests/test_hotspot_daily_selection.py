@@ -9,6 +9,41 @@ from value_investment_agent.infrastructure.hotspot.daily_market import collect_d
 from value_investment_agent.application.hotspot.daily_selection import verify_daily_selection
 
 
+def test_classification_uses_bounded_transport_and_retains_provider_originals(monkeypatch):
+    from value_investment_agent import m2_market_data as module
+    import base64
+    calls = []
+    class Response:
+        def __init__(self, value, url):
+            self.content = json.dumps(value, ensure_ascii=False).encode()
+            self.url = url
+        def raise_for_status(self):
+            pass
+        def json(self):
+            return json.loads(self.content)
+    class Session:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def get(self, url, params, timeout):
+            calls.append((url, params, timeout))
+            if url.endswith('getHQNodes'):
+                value = [None, [[None, [['<font>申万行业</font>', [['Media', '', 'sw_media']]]]]]]
+            elif url.endswith('getHQNodeStockCount'):
+                value = '1'
+            else:
+                value = [{'code': '300001', 'name': 'Company', 'trade': '10'}]
+            return Response(value, url)
+    monkeypatch.setattr(module.requests, 'Session', Session)
+    raw, report = module.fetch_sina_industry_quotes()
+    assert json.loads(raw) == report
+    assert len(calls) == 3 and all(call[2] == (10, 20) for call in calls)
+    assert report['rows'][0]['class'] == 'Media'
+    for original in report['original_responses']:
+        assert hashlib.sha256(base64.b64decode(original['raw_base64'])).hexdigest() == original['sha256']
+
+
 def row(symbol, industry, change, amount, **extra):
     return dict(symbol=symbol, company_name=symbol, industry=industry, close="10",
                 change_percent=str(change), amount_cny=str(amount), trade_date="2026-10-14",

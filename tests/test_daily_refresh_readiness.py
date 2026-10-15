@@ -52,3 +52,18 @@ def test_startup_preserves_unknown_listener_and_checks_identity():
     assert 'Stop-Process' not in text
     for field in ('CreationDate', 'ExecutablePath', 'OwningProcess', '127.0.0.1', 'TcpListener'):
         assert field in text
+
+
+def test_quote_reuse_independent_of_missing_price_structure(tmp_path, monkeypatch):
+    monkeypatch.setattr(module, 'load_price_conditions', lambda *a, **k:
+        {'items': [], 'blockers': []})
+    monkeypatch.setattr(module, 'execute_quote_bridge_for_symbol', lambda *a, **k:
+        {'status': 'QUOTE_VERIFIED_BUT_RESEARCH_STALE', 'quote': {
+            'quote_date': '2026-10-14', 'latest_completed_session': '2026-10-14'}})
+    result = module.refresh_readiness(tmp_path, now=datetime.now(timezone.utc), symbols=['600887'])
+    assert result['quotes_ready'] and not result['prices_ready']
+    assert result['publication_ready'] and result['quote_securities'][0]['missing'] == []
+    monkeypatch.setattr(module, 'load_price_conditions', lambda *a, **k:
+        {'items': [], 'blockers': ['CURRENT_PRICE_REGISTRY_UNAVAILABLE']})
+    result = module.refresh_readiness(tmp_path, now=datetime.now(timezone.utc), symbols=['600887'])
+    assert not result['publication_ready'] and not result['core_integrity_ok']

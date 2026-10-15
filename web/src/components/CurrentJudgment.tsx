@@ -23,6 +23,12 @@ import {
 import { formatDecimal } from "../utils/format";
 import { ValuePolicyReview } from "./ValuePolicyReview";
 
+const valuePolicyTransport = {
+  status: api.valuePolicyStatus,
+  preview: api.previewValuePolicy,
+  confirm: api.confirmValuePolicy,
+};
+
 export function JudgmentSummary({ decision }: { decision: DecisionItem }) {
   const plan = decision.price_action_plan;
   const eligibility = decisionEligibility(decision);
@@ -143,7 +149,48 @@ export function JudgmentSummary({ decision }: { decision: DecisionItem }) {
         </p>
       )}
       {["CORE_VALUE", "value"].includes(decision.strategy ?? "") &&
-        decision.symbol && <ValuePolicyReview symbol={decision.symbol} />}
+        decision.symbol && (
+          <ValuePolicyReview
+            symbol={decision.symbol}
+            transport={valuePolicyTransport}
+          />
+        )}
+      {["HOTSPOT_SATELLITE", "hotspot"].includes(decision.strategy ?? "") &&
+        plan && (
+          <section aria-label="热点计划适用范围">
+            <p>
+              计划层级：
+              {eligibility.formal === "已通过"
+                ? "以独立准入状态为准"
+                : "研究观察与条件性操作计划，尚非正式辅助判断"}
+              。
+            </p>
+            <p>
+              行情日 {plan.market_trade_date ?? "未核验"}；下一适用交易时段{" "}
+              {plan.next_session_date ??
+                plan.next_completed_eligible_session ??
+                plan.next_session ??
+                "未核验"}
+              ；到期{" "}
+              {plan.expires_after_session ??
+                "按下一已完成交易时段重新核验，不可无限沿用"}
+              。
+            </p>
+            <p>
+              保护性退出参考 {plan.invalidation_price ?? "尚无有效参考"}
+              。结构失效不保证在该价成交；跳空、涨跌停、流动性与可卖数量仍需核验。
+            </p>
+            <p>
+              结构空间／价格风险：
+              {plan.price_behavior?.risk_reward_ratio ??
+                "无可靠上方目标，无法计算"}
+              ；不含费用、滑点与跳空，不代表预期收益。
+              {plan.price_behavior?.daily_trend === "DOWNTREND"
+                ? "日线下降，观察方向尚未得到日线趋势支持。"
+                : "多周期确认与策略有效性仍须独立判断。"}
+            </p>
+          </section>
+        )}
       <details>
         <summary>展开完整条件、风险与资格依据</summary>
         <JudgmentEvidence decision={decision} />

@@ -77,13 +77,15 @@ def prepare_value_price_policy(root, draft, *, now):
 
 
 def confirm_value_price_policy(root, prepared, *, confirmation_binding,
-                               authorize_confirmation, now):
+                               authorize_confirmation, now, confirmation_loader=bound_object):
     """Return a registry candidate only after Root verifies real user authority.
 
     authorize_confirmation is a trusted application dependency, never a request
     field or boolean supplied by the researcher. It receives the hash-bound
     receipt and must verify authenticated user authority. Root owns immutable
     publication and registry pointer writing. This function does not sign receipts.
+    confirmation_loader is a trusted storage adapter; the default remains the
+    public runtime binding reader. Never accept a reader from request fields.
     """
     if prepared.get("schema_version") != PREPARED_SCHEMA or prepared.get("status") != "PREPARED_PENDING_USER_CONFIRMATION":
         raise ValueError("Policy not prepared for confirmation")
@@ -96,7 +98,7 @@ def confirm_value_price_policy(root, prepared, *, confirmation_binding,
     fresh = prepare_value_price_policy(root, draft, now=now)
     if fresh["blockers"]:
         raise ValueError("Policy basis no longer confirmable")
-    receipt = bound_object(Path(root).resolve(), confirmation_binding)
+    receipt = confirmation_loader(Path(root).resolve(), confirmation_binding)
     if (receipt.get("schema_version") != "value-price-policy-user-confirmation-v1"
             or receipt.get("action") != "no_order"
             or receipt.get("decision") != "CONFIRM"

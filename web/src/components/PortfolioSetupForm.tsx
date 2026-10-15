@@ -49,8 +49,12 @@ export function PortfolioSetupForm({ onDone }: { onDone: () => void }) {
     }
     rows.forEach((row, index) => {
       sleeveAllocations[holdings[index].symbol] = {
-        CORE_VALUE: text(row.core_quantity),
-        HOTSPOT_SATELLITE: text(row.satellite_quantity),
+        ...(Number(row.core_quantity) > 0
+          ? { CORE_VALUE: text(row.core_quantity) }
+          : {}),
+        ...(Number(row.satellite_quantity) > 0
+          ? { HOTSPOT_SATELLITE: text(row.satellite_quantity) }
+          : {}),
       };
     });
     const policy: Record<string, string> = {};

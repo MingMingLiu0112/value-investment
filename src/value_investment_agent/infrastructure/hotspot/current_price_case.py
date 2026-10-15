@@ -17,6 +17,7 @@ from value_investment_agent.quote_sessions import (
     CHINA, evaluate_quote_session, latest_szse_session, next_sse_2026_session,
 )
 from .sina_price_case import ENDPOINT, PERIODS, _source_url_valid, daily_from_intraday, parse_klines
+from .daily_market import bounded_get
 
 
 def _inside(root, path):
@@ -42,8 +43,8 @@ def _b1(root, path, sha, symbol, as_of, price, now):
     bundle = json.loads(raw)
     finished = datetime.fromisoformat(bundle["finished_at"])
     if (bundle.get("version") != "quote-session-collection-v1"
-            or bundle.get("status") != "collected_not_verified"
-            or bundle.get("request_failures") or finished.utcoffset() is None
+            or bundle.get("status") not in {"collected_not_verified", "partial_failure"}
+            or finished.utcoffset() is None
             or finished > now):
         raise ValueError("B1 bundle contract mismatch")
     reference = bundle["references"][symbol]
@@ -58,6 +59,10 @@ def _b1(root, path, sha, symbol, as_of, price, now):
         fetched = datetime.fromisoformat(document["fetched_at"])
         if fetched.utcoffset() is None or fetched > finished or document.get("http_status") != 200:
             raise ValueError("B1 evidence cutoff mismatch")
+    for document in documents[:2]:
+        fetched = datetime.fromisoformat(document["fetched_at"]).astimezone(CHINA)
+        if fetched.date() != as_of or fetched.hour < 15:
+            raise ValueError("B1 requires same-session post-close acquisition")
     calendars = documents[2:]
     if symbol.startswith("6"):
         next_session, _ = next_sse_2026_session(calendars, as_of, now)
@@ -142,7 +147,7 @@ def collect_current_price_case(*, root: Path, symbol: str, as_of: date,
         session.trust_env = False
         fetch = fetch or session.get
         for period, scale in PERIODS.items():
-            response = fetch(ENDPOINT, params=dict(symbol=("sh" if symbol.startswith("6") else "sz") + symbol,
+            response = bounded_get(fetch, ENDPOINT, params=dict(symbol=("sh" if symbol.startswith("6") else "sz") + symbol,
                                                    scale=scale, ma="no", datalen="1970"), timeout=15)
             response.raise_for_status()
             raw = response.content

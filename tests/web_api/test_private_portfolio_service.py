@@ -264,13 +264,19 @@ def test_cancelled_draft_cannot_be_confirmed(service):
     assert error.value.code == "NO_CONFIRMABLE_DRAFT"
 
 
-def test_reconcile_before_any_fill_is_conflict(service):
+def test_initial_holdings_can_be_reconciled_without_manufacturing_trades(service):
     service.initialize(_initialize_request())
-    with pytest.raises(JournalConflict) as error:
-        service.reconcile({"idempotency_key": "reconcile-1", "expected_revision": 1,
-                           "reconciled_at": "2026-10-12T21:05:00+08:00",
-                           "confirmation_note": "reconciled"})
-    assert error.value.code == "NO_CONFIRMABLE_DRAFT"
+    before = service.portfolio_view()
+    request = {"idempotency_key": "reconcile-1", "expected_revision": 1,
+               "reconciled_at": "2026-10-12T21:05:00+08:00", "confirmation_note": "reconciled"}
+    result = service.reconcile(request)
+    assert service.reconcile(request) == result
+    after = service.portfolio_view()
+    assert after["cash_cny"] == before["cash_cny"]
+    assert after["positions"] == before["positions"]
+    assert after["trades"] == []
+    assert result[0]["reconciliation_scope"] == "INTERNAL_JOURNAL_REPLAY"
+    assert len(service.records()) == 2
 
 
 def test_rejections_are_validated_before_any_write(service):

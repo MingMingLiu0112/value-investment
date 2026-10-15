@@ -277,13 +277,34 @@ def build_risk_input(
     now = generated_at or datetime.now().astimezone()
     prices = _verified_prices(repository_root, replayed, now) if _prices is None else _prices
     shared, sleeves, reserve = _sleeve_policy(replayed)
+    snapshot = _snapshot_payload(replayed, prices)
+    if shared is not None and all(h["market_value_cny"] is not None for h in snapshot["holdings"]):
+        equity = Decimal(snapshot["cash_cny"]) + sum(
+            (Decimal(h["market_value_cny"]) for h in snapshot["holdings"]), Decimal(0))
+        fixed_reserve = Decimal(reserve)
+        if equity > 0 and fixed_reserve <= equity:
+            # IPS reserves an amount, whereas the frozen engine accepts a fraction
+            # of marked equity. Avoid a rounding-only violation at the exact floor.
+            floor = fixed_reserve / equity
+            if equity * floor > fixed_reserve:
+                floor = floor.next_minus()
+            shared["cash_floor"] = str(floor)
+            core = Decimal(shared["core_value_budget"])
+            hotspot = Decimal(shared["tactical_hotspot_budget"])
+            remaining = Decimal(1) - floor
+            if core + hotspot > remaining:
+                # Losses cannot fund all reservations: shrink sleeve caps, never
+                # the fixed reserve. Keep their original relative allocation.
+                core = remaining * core / (core + hotspot)
+                shared["core_value_budget"] = str(core)
+                shared["tactical_hotspot_budget"] = str(remaining - core)
     return {
         "schema_version": RISK_INPUT_SCHEMA,
         "action": "no_order",
         "namespace": namespace,
         "portfolio": {
             "policy": _policy_payload(replayed),
-            "snapshot": _snapshot_payload(replayed, prices),
+            "snapshot": snapshot,
             "action": "no_order",
         },
         "shared_budget": shared,
@@ -385,6 +406,18 @@ def review_private_risk_rehearsal(
         report = review_dual_sleeve_risk(payload, generated_at=generated_at)
     if payload["security_attributes"] is None:
         report["blockers"] = list(dict.fromkeys([*report["blockers"], "security_attributes.missing"]))
+    if reconciliation_state(replayed)["scope"] != "EXTERNAL_ACCOUNT_STATEMENT":
+        # Internal arithmetic is useful accounting evidence, but cannot assert
+        # that the user's external account has been reconciled.
+        report["blockers"] = list(dict.fromkeys([*report["blockers"], "EXTERNAL_ACCOUNT_RECONCILIATION_MISSING"]))
+        report["status"] = "BLOCKED_PRIVATE_INPUT"
+        report["position_guidance"] = None
+        report["trade_eligible"] = False
+        if report.get("hotspot_quantity_review"):
+            report["hotspot_quantity_review"] = {**report["hotspot_quantity_review"],
+                "review_quantity": None, "status": "BLOCKED",
+                "blockers": list(dict.fromkeys([*report["hotspot_quantity_review"].get("blockers", []),
+                    "EXTERNAL_ACCOUNT_RECONCILIATION_MISSING"]))}
     return {
         "action": "no_order",
         "status": report["status"],

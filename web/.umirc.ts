@@ -2,6 +2,7 @@ import { defineConfig } from "@umijs/max";
 
 export default defineConfig({
   npmClient: "npm",
+  hash: true,
   locale: { default: "zh-CN", antd: true, baseSeparator: "-" },
   routes: [
     { path: "/", redirect: "/daily" },

@@ -2,6 +2,7 @@ import { Link } from "@umijs/max";
 import { Button, Empty, Skeleton, Typography } from "antd";
 import { DecisionCard } from "../../components/DecisionCard";
 import { HoldingsAttention } from "../../components/HoldingsAttention";
+import { ConfirmationTasks } from "../../components/ConfirmationTasks";
 import { Workbench } from "../../components/Workbench";
 import { useApi } from "../../hooks/useApi";
 import { usePrivateState } from "../../hooks/usePrivateState";
@@ -38,7 +39,22 @@ function StrategySection({
   id: string;
   foldUnvalued?: boolean;
 }) {
-  const main = foldUnvalued ? items.filter(hasValuationResult) : items;
+  const main = foldUnvalued
+    ? items.filter(hasValuationResult)
+    : [...items].sort((a, b) => {
+        const score = (item: DecisionItem) => {
+          const plan = item.price_action_plan;
+          const trend = plan?.price_behavior?.daily_trend;
+          return (
+            (trend === "UPTREND" ? 4 : trend === "RANGE" ? 2 : 0) +
+            (plan?.entry_trigger_price != null &&
+            plan.invalidation_price != null
+              ? 1
+              : 0)
+          );
+        };
+        return score(b) - score(a);
+      });
   const other = foldUnvalued
     ? items.filter((item) => !hasValuationResult(item))
     : [];
@@ -192,12 +208,16 @@ export default function DailyDecisions() {
       <details className="daily-update-help">
         <summary>更新今日数据与首次连接持仓</summary>
         <p>刷新页面只读取已发布数据；更新行情和计算请在本机终端运行：</p>
-        <code className="daily-command">
-          &amp; 'C:\Users\we\AppData\Local\Programs\PowerShell\7\pwsh.exe'
-          -NoProfile -File
-          'D:\GPTProject\value-investment\scripts\current\run_daily_workbench.ps1'
-          -Mode SAFE_REFRESH -Open
-        </code>
+        <Typography.Paragraph
+          className="daily-command"
+          copyable={{
+            text: "& 'C:\\Users\\we\\AppData\\Local\\Programs\\PowerShell\\7\\pwsh.exe' -NoProfile -File 'D:\\GPTProject\\value-investment\\scripts\\current\\run_daily_workbench.ps1' -Mode SAFE_REFRESH -Open",
+          }}
+        >
+          {
+            "& 'C:\\Users\\we\\AppData\\Local\\Programs\\PowerShell\\7\\pwsh.exe' -NoProfile -File 'D:\\GPTProject\\value-investment\\scripts\\current\\run_daily_workbench.ps1' -Mode SAFE_REFRESH -Open"
+          }
+        </Typography.Paragraph>
         <p>
           上次发布：{packet.data?.generated_at ?? "尚未读取"}
           。研究批准和本人确认不会由刷新代签。
@@ -281,6 +301,7 @@ export default function DailyDecisions() {
                 ? "复核持仓风险，并录入你已经实际完成的成交。"
                 : "连接持仓后，确认真实资金和投资政策，才可计算个人风险。"}
             </p>
+            <a href="#confirmations">查看需要我确认的事项</a>
           </section>
           {![...data.sections.value, ...data.sections.hotspot].some(
             (item) => judgmentGroup(item) === 0,
@@ -340,6 +361,10 @@ export default function DailyDecisions() {
               ))}
             </details>
           )}
+          <ConfirmationTasks
+            decisions={data.sections.value}
+            connected={state.portfolio?.status === "CONNECTED"}
+          />
         </>
       )}
     </Workbench>

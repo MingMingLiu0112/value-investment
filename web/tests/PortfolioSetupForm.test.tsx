@@ -38,6 +38,31 @@ import { PortfolioSetupForm } from "../src/components/PortfolioSetupForm";
 
 beforeEach(() => vi.clearAllMocks());
 
+it("submits a holding assigned to just one sleeve without an invalid zero allocation", async () => {
+  renderToStaticMarkup(<PortfolioSetupForm onDone={vi.fn()} />);
+  await captured.submit!({
+    account_scope: "TEST_ONLY",
+    cash_cny: "10000",
+    as_of: "2026-10-12",
+    confirmed_at: "2026-10-15T10:00:00+08:00",
+    confirmation_note: "TEST ONLY",
+    holdings: [
+      {
+        symbol: "300364",
+        exchange: "SZSE",
+        quantity: "100",
+        cost_basis_cny: "2000",
+        core_quantity: "0",
+        satellite_quantity: "100",
+      },
+    ],
+  });
+  expect(captured.initialize).toHaveBeenCalledOnce();
+  expect(captured.initialize.mock.calls[0][0].sleeve_allocations).toEqual({
+    "300364": { HOTSPOT_SATELLITE: "100" },
+  });
+});
+
 it("rejects inconsistent sleeve allocations before any account write", async () => {
   renderToStaticMarkup(<PortfolioSetupForm onDone={vi.fn()} />);
   expect(

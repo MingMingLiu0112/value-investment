@@ -10,7 +10,7 @@ import {
   Typography,
 } from "antd";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { DualSleeveRisk } from "../../components/DualSleeveRisk";
 import { HotspotSizingPanel } from "../../components/HotspotSizingPanel";
 import { FillPanel, fillContextFromSearch } from "../../components/FillPanel";
@@ -22,18 +22,13 @@ import { RemoteState } from "../../components/RemoteState";
 import { Workbench } from "../../components/Workbench";
 import { usePrivateState } from "../../hooks/usePrivateState";
 import type { PrivateStateHandle } from "../../hooks/usePrivateState";
-import { ApiError, api } from "../../services/api";
+import { api } from "../../services/api";
 import { reconciliationView } from "../../utils/codes";
 import { describeCode } from "../../utils/codes";
 import { blockerText } from "../../utils/packet";
 import { HoldingsAttention } from "../../components/HoldingsAttention";
 import { useApi } from "../../hooks/useApi";
-
-function failureMessage(cause: unknown, fallback: string): string {
-  if (cause instanceof ApiError)
-    return `${cause.code}：${String(cause.detail ?? "")}`;
-  return cause instanceof Error ? cause.message : fallback;
-}
+import { PortfolioReconciliationPanel } from "../../components/PortfolioReconciliationPanel";
 
 /**
  * TL10-RC：私人状态来自与每日页共用的 usePrivateState；台账损坏或目录
@@ -86,33 +81,25 @@ export default function Portfolio() {
   ).strategy;
   const initialDecisionId = params?.get("decision_id") || undefined;
   const initialResearchVersion = params?.get("research_version") || undefined;
+  const [sizingSymbol, setSizingSymbol] = useState(initialSymbol ?? "");
+  const loadRiskContext = useCallback(
+    (signal: AbortSignal) => {
+      if (!/^\d{6}$/.test(sizingSymbol))
+        return Promise.reject(new Error("请选择六位证券代码"));
+      return api.riskContext(sizingSymbol, signal);
+    },
+    [sizingSymbol],
+  );
+  const riskContext = useApi(loadRiskContext);
   const state = usePrivateState();
   const judgments = useApi(api.daily);
   const data = state.portfolio;
   const risk = state.risk;
-  const [failure, setFailure] = useState<string>();
-  const [reconciling, setReconciling] = useState(false);
   const reconciliation = reconciliationView(data?.reconciliation);
 
-  const refreshAll = () => state.retry();
-
-  const reconcile = async () => {
-    if (!data) return;
-    setReconciling(true);
-    setFailure(undefined);
-    try {
-      await api.reconcile({
-        idempotency_key: crypto.randomUUID(),
-        expected_revision: data.revision,
-        reconciled_at: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-        confirmation_note: "工作台人工对账",
-      });
-      refreshAll();
-    } catch (cause) {
-      setFailure(failureMessage(cause, "对账失败"));
-    } finally {
-      setReconciling(false);
-    }
+  const refreshAll = () => {
+    state.retry();
+    riskContext.retry();
   };
 
   if (state.kind === "LOADING") {
@@ -134,15 +121,6 @@ export default function Portfolio() {
   return (
     <Workbench>
       <Typography.Title level={2}>我的持仓</Typography.Title>
-      {failure && (
-        <Alert
-          type="error"
-          showIcon
-          message="操作未完成"
-          description={failure}
-          style={{ marginBottom: 16 }}
-        />
-      )}
       <Alert
         type="info"
         showIcon
@@ -347,8 +325,16 @@ export default function Portfolio() {
           <details style={{ marginTop: 16 }}>
             <summary>查看热点条件性仓位上限</summary>
             <HotspotSizingPanel
-              initialSymbol={initialSymbol}
+              initialSymbol={sizingSymbol || undefined}
               onPreview={api.riskPreview}
+              context={
+                !riskContext.loading && !riskContext.error
+                  ? riskContext.data
+                  : undefined
+              }
+              onConfirmCosts={api.confirmCosts}
+              onContextRefresh={refreshAll}
+              onSymbolChange={setSizingSymbol}
             />
           </details>
           <Typography.Title level={4} style={{ fontSize: 16, marginTop: 24 }}>
@@ -364,14 +350,12 @@ export default function Portfolio() {
             initialDecisionId={initialDecisionId}
             initialResearchVersion={initialResearchVersion}
           />
+          <PortfolioReconciliationPanel
+            portfolio={data}
+            onConfirm={api.confirmReconciliation}
+            onDone={refreshAll}
+          />
           <Space style={{ marginTop: 24 }}>
-            <Button
-              onClick={reconcile}
-              loading={reconciling}
-              disabled={data.trades.length === 0}
-            >
-              生成对账快照
-            </Button>
             <Button onClick={refreshAll}>刷新</Button>
           </Space>
         </>

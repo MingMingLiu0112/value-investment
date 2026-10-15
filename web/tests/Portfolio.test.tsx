@@ -64,6 +64,9 @@ vi.mock("../src/components/PortfolioPolicyPanel", () => ({
 vi.mock("../src/components/HotspotSizingPanel", () => ({
   HotspotSizingPanel: () => null,
 }));
+vi.mock("../src/components/PortfolioReconciliationPanel", () => ({
+  PortfolioReconciliationPanel: () => null,
+}));
 vi.mock("../src/components/ConfirmedTrades", () => ({
   ConfirmedTrades: () => null,
 }));

@@ -7,6 +7,10 @@ const items = [
   { key: "/daily", label: <Link to="/daily">今日决策</Link> },
   { key: "/portfolio", label: <Link to="/portfolio">我的持仓</Link> },
   { key: "/history", label: <Link to="/history">交易复盘</Link> },
+  {
+    key: "/confirmations",
+    label: <Link to="/daily#confirmations">需要我确认</Link>,
+  },
 ];
 export function Workbench({ children }: PropsWithChildren) {
   const location = useLocation();

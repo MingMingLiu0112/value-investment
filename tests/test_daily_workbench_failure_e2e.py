@@ -73,3 +73,72 @@ def test_safe_refresh_failure_keeps_previous_snapshot_bytes(tmp_path):
     assert result['packet_sha_before'] == result['packet_sha_after']
     assert result['original_pointer_unchanged']
     assert result['network_failure_observed'] and result['no_server_observed'], output
+
+
+@pytest.mark.parametrize('scenario,expected_exit,expected_status,published', [
+    ('complete', 0, 'SUCCESS', True),
+    ('partial', 3, 'PARTIAL', True),
+    ('unavailable', 2, 'BLOCKED', False),
+    ('core_conflict', 2, 'BLOCKED', False),
+    ('core_unavailable', 2, 'BLOCKED', False),
+    ('core_recovered', 0, 'SUCCESS', True),
+    ('post_integrity_loss', 2, 'BLOCKED', False),
+    ('post_unreadable', 2, 'BLOCKED', False),
+])
+def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenario,
+                                                             expected_exit, expected_status, published):
+    if not PWSH.is_file():
+        pytest.skip('Windows PowerShell 7 required')
+    project = tmp_path / scenario
+    current = project / 'scripts/current'
+    current.mkdir(parents=True)
+    (project / 'src/value_investment_agent').mkdir(parents=True)
+    (project / 'src/value_investment_agent/__init__.py').write_text('', encoding='utf-8')
+    (project / 'config').mkdir()
+    pointer = project / 'config/current-daily-public-snapshot.json'
+    pointer.write_text(json.dumps({'publication_id': 'retained'}), encoding='utf-8')
+    (project / 'config/current-quote-bridge.json').write_text(
+        json.dumps({'quotes': {'600887': {}}}), encoding='utf-8')
+    shutil.copy2(ROOT / 'scripts/current/run_daily_workbench.ps1', current)
+    packet = dict(action='no_order', publication_id='verified', source_bindings_verified=True)
+    # Stub only child adapters in the isolated project; execute the real PS entry.
+    build_exit = 4 if scenario == 'core_conflict' else 2 if scenario == 'core_unavailable' else 0
+    (current / 'build_daily_public_packet.py').write_text(
+        'import json,sys\nfrom pathlib import Path\n'
+        f'packet=json.loads({json.dumps(packet)!r})\n'
+        'counter=Path(".tmp/build-calls")\n'
+        'count=int(counter.read_text())+1 if counter.exists() else 1\n'
+        'counter.write_text(str(count))\n'
+        f'scenario={scenario!r}\n'
+        'if scenario == "post_integrity_loss" and count > 1:\n'
+        '    packet["source_bindings_verified"]=False\n'
+        'if scenario == "post_unreadable" and count > 1:\n'
+        '    print("invalid packet output")\n'
+        '    raise SystemExit(0)\n'
+        'if "--no-publish" not in sys.argv:\n'
+        '    packet["snapshot"]={"publication_id":"verified","status":"VERIFIED"}\n'
+        '    Path("config/current-daily-public-snapshot.json").write_text(json.dumps(packet))\n'
+        f'print(json.dumps(packet))\nraise SystemExit(2 if scenario == "core_recovered" and count == 1 else {build_exit})\n', encoding='utf-8')
+    readiness = dict(prices_ready=scenario in {'complete', 'core_recovered'}, quotes_ready=True,
+        publication_ready=scenario != 'unavailable', core_integrity_ok=True,
+        market_trade_dates=['2026-10-14'], price_securities=[], quote_securities=[])
+    refresh = dict(status='WRITTEN', items=[], failures=[] if scenario == 'complete' else [
+        dict(symbol='300001', reason='missing 15m')])
+    (current / 'refresh_current_price_conditions.py').write_text(
+        'import json,sys\n'
+        f'value=json.loads({json.dumps(readiness)!r}) if "--check-reuse" in sys.argv else json.loads({json.dumps(refresh)!r})\n'
+        'print(json.dumps(value))\n', encoding='utf-8')
+    before = pointer.read_bytes()
+    completed = subprocess.run([str(PWSH), '-NoProfile', '-File',
+        str(current / 'run_daily_workbench.ps1'), '-Mode', 'SAFE_REFRESH', '-NoServer'],
+        cwd=project, capture_output=True, text=True, encoding='utf-8', timeout=60)
+    receipt = json.loads((project / '.tmp/daily-workbench-latest-run.json').read_text(encoding='utf-8-sig'))
+    assert completed.returncode == expected_exit, completed.stdout + completed.stderr
+    assert receipt['status'] == expected_status and receipt['published'] is published
+    assert receipt['finished_at']
+    assert int((project / '.tmp/build-calls').read_text()) == (3 if published else 2)
+    if not published:
+        assert pointer.read_bytes() == before
+        assert receipt['retained_publication_id'] == 'retained'
+    else:
+        assert json.loads(pointer.read_bytes())['publication_id'] == 'verified'

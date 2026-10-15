@@ -47,6 +47,13 @@ jobs:
           tests/web_api/test_p5_reviews.py
           tests/test_private_first_use_workflow.py
           tests/test_private_risk_preview.py
+          tests/test_private_risk_experience.py
+          tests/test_private_risk_cash_floor.py
+          tests/test_value_policy_interaction.py
+          tests/web_api/test_p61_route_boundaries.py
+          tests/test_daily_quote_binding.py
+          tests/test_quote_session_collection.py
+          tests/test_quote_session_conversion.py
           tests/test_daily_refresh_readiness.py
           tests/test_workbench_startup_readiness.py
           tests/test_daily_workbench_failure_e2e.py

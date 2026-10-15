@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
-from value_investment_agent.application.hotspot.current_refresh import current_watch_binding, refresh_current_price_conditions
+from value_investment_agent.application.hotspot.current_refresh import refresh_current_price_conditions
 from value_investment_agent.application.hotspot.daily_selection import collect_daily_candidates
 from value_investment_agent.application.product.daily_refresh import refresh_readiness
 
@@ -38,7 +38,7 @@ def main(argv=None):
         result = dict(status="BLOCKED", items=[], failures=[dict(reason=type(error).__name__ + ":" + str(error))],
                       action="no_order")
     print(json.dumps(result, ensure_ascii=False, indent=2))
-    return 0 if result["status"] == "WRITTEN" else 2
+    return (3 if result.get("failures") else 0) if result["status"] == "WRITTEN" else 2
 
 
 if __name__ == "__main__":
