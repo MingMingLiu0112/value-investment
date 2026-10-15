@@ -481,6 +481,7 @@ export interface DetailResponse {
   action: "no_order";
   status: ApiStatus;
   decision: DecisionItem | null;
+  publication?: PublicPacketBlock;
   reason?: string;
 }
 
@@ -690,6 +691,22 @@ export interface RiskFactsSleeveRow {
   quantity: string;
 }
 
+export interface HeldContinuityResponse {
+  action: "no_order";
+  status: string;
+  revision?: number;
+  items: {
+    symbol: string;
+    quantity: string;
+    sellable_quantity: string | null;
+    selected_today: boolean;
+    review_priority: number;
+    review_reasons: string[];
+    data_gaps: string[];
+    strategy_plan: CurrentPricePlan | null;
+  }[];
+}
+
 export interface RiskFactsPosition {
   symbol: string;
   exchange: string;
@@ -799,6 +816,23 @@ export interface PacketPendingAction {
 }
 
 export interface PacketCompanyStatus {
+  decision_chain?: {
+    action: "no_order";
+    formal_eligibility: boolean;
+    research_conclusion?: {
+      status: string | null;
+      summary: string | null;
+      evidence_verified: boolean;
+      scope: string;
+    };
+    gaps: {
+      code: string;
+      classification:
+        "ENGINEERING" | "DATA" | "EVIDENCE" | "HUMAN" | "STRATEGY" | "PRIVATE";
+      reason: string;
+      next_url: string;
+    }[];
+  };
   symbol: string;
   name: string;
   coverage: string;

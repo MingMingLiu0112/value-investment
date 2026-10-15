@@ -8,7 +8,7 @@
     "CURRENT_PRODUCT_CLI": 14,
     "CURRENT_RESEARCH_CLI": 218,
     "HISTORICAL_VALIDATION_TOOL": 60,
-    "COMPANY_RESEARCH_CASE_TOOL": 218,
+    "COMPANY_RESEARCH_CASE_TOOL": 219,
     "MIGRATION_TOOL": 13,
     "DIAGNOSTIC_TOOL": 138,
     "SUPERSEDED": 0,
@@ -83,8 +83,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "MEDIUM",
-      "line_count": 210,
-      "sha256": "f0bd28aef1198b1c98d09a8bc4ee84affb142aeb7501942c079b76c8b6cc0154"
+      "line_count": 388,
+      "sha256": "49d89530faa485d4d9d993cae19cfd4599f17bb3f173adc82e036ac07673477e"
     },
     {
       "path": "scripts/current/build_daily_research_summary.py",
@@ -122,8 +122,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "LOW",
-      "line_count": 40,
-      "sha256": "a5e5082239ee1e91d3afa4a47702d28ffd7f551e114484e227f1340f5c104309"
+      "line_count": 43,
+      "sha256": "0c1a29f54c61fe054e4411a6c0ee8ff33799b9de21ae2df723f4649df4822092"
     },
     {
       "path": "scripts/current/verify_product_navigation.ps1",
@@ -6303,6 +6303,17 @@
       "risk": "LOW",
       "line_count": 407,
       "sha256": "17edfe38d96b047654e9ab4334189510a0df697c8a4e6b4a3b8a878a1bf6ae51"
+    },
+    {
+      "path": "scripts/research_cases/yili/audit_p8_retained_research.py",
+      "category": "COMPANY_RESEARCH_CASE_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": true,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 334,
+      "sha256": "cfcf0d668128bd68c6b743058b25990af5d61d9a177ba212be0e6047a1f9f0c4"
     },
     {
       "path": "scripts/research_cases/yili/build_yili_current_fact_review.py",

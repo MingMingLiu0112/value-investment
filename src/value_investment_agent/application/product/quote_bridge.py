@@ -29,6 +29,7 @@ EXECUTION_SCHEMA = "quote-bridge-execution-v1"
 
 # 每个准入结果给用户一句下一步；未收录的状态不推测含义。
 _NEXT_STEPS = {
+    "QUOTE_VERIFIED_WITHOUT_RESEARCH_DISPLAY_ONLY": "收盘已核验，可供展示；完成正式研究登记后才能评估价格比较资格。",
     "QUOTE_VERIFIED_FOR_RESEARCH_INPUT": "行情已可作为研究输入；价格比较仍需模型有效性与正式人工门通过。",
     "QUOTE_VERIFIED_BUT_RESEARCH_STALE": "行情晚于研究截止日：先完成研究重登记与事件复核，再重跑价格桥接。",
     "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY": "该收盘仅作展示；需以覆盖该行情的截止日重新研究后，才能作为估值比较输入。",
@@ -38,7 +39,7 @@ _NEXT_STEPS = {
 }
 
 
-def admit_quote_for_research(root: Path, bundle: Path | None, symbol: str, research_day: str,
+def admit_quote_for_research(root: Path, bundle: Path | None, symbol: str, research_day: str | None,
                              *, today: datetime) -> tuple[Path | None, str | None, dict[str, Any]]:
     """Return (admitted bundle path, digest, verdict) for one archived quote."""
     if bundle is None:
@@ -53,6 +54,15 @@ def admit_quote_for_research(root: Path, bundle: Path | None, symbol: str, resea
         cutoff = datetime.fromisoformat(raw["finished_at"])
         if cutoff.utcoffset() is None or cutoff > today:
             raise ValueError("行情抓取时间无效或在未来")
+        if snapshot.blockers == ["B1 requires same-session post-close acquisition"]:
+            # A next-morning download can still prove the last completed close.
+            # It must never acquire same-session/PIT or formal price permission.
+            archived = quote_snapshot_from_bundle_file(
+                path, root, symbol=symbol, ref_id="daily-assistant-quote-" + digest,
+                expected_sha256=digest, require_current_b1=False)
+            if (archived.status == QUOTE_STATUS_VERIFIED_CLOSE and archived.quote_date
+                    and archived.quote_date < cutoff.astimezone(CHINA).date()):
+                snapshot = archived
         if snapshot.status != QUOTE_STATUS_VERIFIED_CLOSE or snapshot.quote_date is None:
             raise ValueError("双源收盘行情未通过准入：" + "; ".join(snapshot.blockers))
         check = {"quote_date": snapshot.quote_date.isoformat(),
@@ -101,6 +111,9 @@ def admit_quote_for_research(root: Path, bundle: Path | None, symbol: str, resea
             # Leaving it unset made the packet freshness for the newest close
             # UNKNOWN instead of FRESH.
             check["latest_completed_session"] = snapshot.quote_date.isoformat()
+        if research_day is None:
+            return None, None, {**check, "status": "QUOTE_VERIFIED_WITHOUT_RESEARCH_DISPLAY_ONLY",
+                "reason": "双源收盘已核验；尚无绑定的完整研究包，仅作事实展示，不授予价格比较或交易资格。"}
         if snapshot.quote_date.isoformat() > research_day:
             return None, None, {**check, "status": "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
                 "reason": "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性"}
@@ -155,6 +168,7 @@ def quote_compatibility_ladder(verdict: dict[str, Any],
     status = verdict.get("status")
     quote_date = verdict.get("quote_date")
     verified = status in {"QUOTE_VERIFIED_FOR_RESEARCH_INPUT",
+                          "QUOTE_VERIFIED_WITHOUT_RESEARCH_DISPLAY_ONLY",
                           "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
                           "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"}
     compatible = bool(verified and isinstance(quote_date, str) and isinstance(research_day, str)
@@ -166,6 +180,8 @@ def quote_compatibility_ladder(verdict: dict[str, Any],
         verified_reason = str(verdict.get("reason") or "行情未通过双源核验。")
     if compatible:
         compatible_reason = f"登记研究截止日 {research_day} 覆盖报价日 {quote_date}。"
+    elif verified and research_day is None:
+        compatible_reason = "尚无绑定的完整研究包；核验收盘仅供事实展示。"
     elif verified:
         compatible_reason = (f"报价日 {quote_date} 晚于登记研究截止日 {research_day}；"
                              "须先完成研究重登记与事件复核。")
@@ -229,9 +245,13 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
                     "status": "PENDING_EXTERNAL_DATA", "reason": "该标的尚未登记双源收盘行情。",
                     "next_step": _NEXT_STEPS["PENDING_EXTERNAL_DATA"]}
         execution["pointer"] = {"path": POINTER_PATH, "sha256": pointer_digest}
-        case = _research_case_binding(root, entry)
+        observation_only = entry.get("registration_scope") == "QUOTE_OBSERVATION_ONLY"
+        if observation_only and any(entry.get(key) is not None for key in (
+                "research_package", "research_package_sha256", "incremental_validity_binding")):
+            raise ValueError("仅展示行情登记不得包含研究或增量准入绑定")
+        case = None if observation_only else _research_case_binding(root, entry)
         execution["research_case"] = case
-        execution["research_day"] = case["research_as_of"]
+        execution["research_day"] = case["research_as_of"] if case else None
         declared_bundle = entry.get("quote_bundle")
         if not isinstance(declared_bundle, str):
             raise ValueError("登记缺少行情包路径")
@@ -242,7 +262,7 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
         return {**execution, "status": "NOT_ADMITTED", "reason": "行情登记不可用：" + str(error),
                 "next_step": _NEXT_STEPS["NOT_ADMITTED"]}
     try:
-        _, _, verdict = admit_quote_for_research(root, bundle, symbol, case["research_as_of"],
+        _, _, verdict = admit_quote_for_research(root, bundle, symbol, execution["research_day"],
                                                  today=today)
     except (ValueError, KeyError, TypeError, OSError) as error:
         return {**execution, "status": "NOT_ADMITTED", "reason": "行情包无法准入：" + str(error),
@@ -254,10 +274,11 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
                 "quote_date", "display_price", "collected_at", "display_scope",
                 "is_historical_close", "latest_completed_session", "bundle_path", "bundle_sha256")},
             "sources": verdict.get("source_evidence") or [],
-            "compatibility": quote_compatibility_ladder(verdict, case["research_as_of"]),
+            "compatibility": quote_compatibility_ladder(verdict, execution["research_day"]),
             "next_step": _NEXT_STEPS.get(status, "按以上原因复核后重跑价格桥接。")}
     if "incremental_validity_binding" in entry:
         ref = entry["incremental_validity_binding"]
+        display_b1_rejected = False
         result["incremental_validity"] = {"status": "UNKNOWN", "binding_ref": ref,
             "review_cutoff": None, "announcement_count": None, "model_validity": None,
             "blockers": [], "action": "no_order", "formal_eligibility": False}
@@ -296,6 +317,11 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
             quote = quote_snapshot_from_bundle_file(bundle, root, symbol=symbol,
                 ref_id="incremental-price-quote-" + entry["quote_bundle_sha256"],
                 expected_sha256=entry["quote_bundle_sha256"], require_current_b1=True)
+            if quote.blockers == ["B1 requires same-session post-close acquisition"]:
+                # Display verification above remains valid; strict comparison
+                # admission independently rejects the acquisition timing.
+                display_b1_rejected = True
+                raise ValueError("展示收盘已通过双源及最近完成交易日核验，但未满足 B1 同交易日收盘后采集要求；仅供事实展示，不准入正式价格比较。")
             valuation = rebuild_registered_valuation(root, symbol)
             result["conditional_valuation"] = json.loads(valuation.to_json())
             comparison = bridge_with_quote(valuation, validity, quote, blockers=valuation.blockers)
@@ -327,7 +353,9 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
             result["incremental_validity"]["blockers"] = list(dict.fromkeys([
                 *result["incremental_validity"]["blockers"], str(error)]))
             result.update(status="INCREMENTAL_VALIDITY_BLOCKED", price_admitted=False,
-                reason=str(error), next_step="修复显式增量绑定或原模型重建输入，并完成公告材料性复核。")
+                reason=str(error), next_step=(
+                    "展示收盘无需重复核验；等待满足 B1 的同交易日收盘后采集，再独立复核研究、模型、事件及价格比较门禁；不得以展示价替代正式比较输入。"
+                    if display_b1_rejected else "修复显式增量绑定或原模型重建输入，并完成公告材料性复核。"))
             result["price_comparison"] = {"bridge_status": "INVALID", "blockers": [str(error)]}
             result["compatibility"]["comparison_eligible"] = {"eligible": False, "reason": str(error)}
             result.pop("conditional_valuation", None)
@@ -335,7 +363,7 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
 
 
 def pin_quote_bridge_for_symbol(root: Path, symbol: str, bundle: str | Path,
-                                package: str | Path, *,
+                                package: str | Path | None, *,
                                 registered_at: str | None = None) -> dict[str, Any]:
     """Register one archived close against one research package (explicit action).
 
@@ -344,15 +372,19 @@ def pin_quote_bridge_for_symbol(root: Path, symbol: str, bundle: str | Path,
     ``execute_quote_bridge_for_symbol`` and is recomputed on every read.
     """
     root = root.resolve()
+    if len(symbol) != 6 or not symbol.isascii() or not symbol.isdigit():
+        raise ValueError("Invalid quote symbol")
     bundle_path = _resolve_under_runtime(root, str(bundle), "quote bundle")
     bundle_digest = sha256_file(bundle_path)
-    package_path = _resolve_under_runtime(root, str(package), "research package")
-    package_digest = sha256_file(package_path)
-    if load_json_object(package_path, "research package").get("symbol") != symbol:
-        raise ValueError("研究包与标的不一致")
-    case = _research_case_binding(root, {
-        "research_package": package_path.relative_to(root).as_posix(),
-        "research_package_sha256": package_digest})
+    case, package_digest = None, None
+    if package is not None:
+        package_path = _resolve_under_runtime(root, str(package), "research package")
+        package_digest = sha256_file(package_path)
+        if load_json_object(package_path, "research package").get("symbol") != symbol:
+            raise ValueError("研究包与标的不一致")
+        case = _research_case_binding(root, {
+            "research_package": package_path.relative_to(root).as_posix(),
+            "research_package_sha256": package_digest})
     quotes: dict[str, Any] = {}
     pointer_file = root / POINTER_PATH
     if pointer_file.is_file():
@@ -364,11 +396,15 @@ def pin_quote_bridge_for_symbol(root: Path, symbol: str, bundle: str | Path,
         quotes = dict(current["quotes"])
     stamp = registered_at or datetime.now(timezone.utc).isoformat()
     previous = quotes.get(symbol) or {}
+    if case is None and isinstance(previous, dict) and previous.get("research_package"):
+        raise ValueError("不得以仅展示登记覆盖已有研究绑定")
     quotes[symbol] = {"quote_bundle": bundle_path.relative_to(root).as_posix(),
                       "quote_bundle_sha256": bundle_digest,
-                      "research_package": case["package_path"],
+                      "research_package": case["package_path"] if case else None,
                       "research_package_sha256": package_digest, "registered_at": stamp}
-    if (isinstance(previous, dict) and previous.get("research_package") == case["package_path"]
+    if case is None:
+        quotes[symbol]["registration_scope"] = "QUOTE_OBSERVATION_ONLY"
+    if (case is not None and isinstance(previous, dict) and previous.get("research_package") == case["package_path"]
             and previous.get("research_package_sha256") == package_digest
             and "incremental_validity_binding" in previous):
         quotes[symbol]["incremental_validity_binding"] = previous["incremental_validity_binding"]

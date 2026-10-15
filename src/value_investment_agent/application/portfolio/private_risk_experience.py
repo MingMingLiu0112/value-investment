@@ -8,7 +8,7 @@ from .private_portfolio_service import (
     _aware_datetime, _text, _idempotency_key, request_digest,
 )
 from .private_risk_projection import review_private_risk_rehearsal
-from .security_attributes import load_verified_security_attributes
+from .security_attributes import load_verified_security_attributes, trading_rules_for
 
 COST_FIELDS = (
     "buy_fee_fraction", "sell_fee_fraction", "minimum_buy_fee_cny", "minimum_sell_fee_cny",
@@ -92,10 +92,11 @@ class PrivateRiskExperienceService(PrivatePortfolioService):
                         and _aware_datetime(stored["_confirmed_at"], "confirmed_at") <= now):
                     policy = stored
             attributes = load_verified_security_attributes(repository_root, {symbol}, now=now)
+            rules = trading_rules_for(attributes, symbol)
             return {"action": "no_order", "symbol": symbol, "revision": len(records),
                 "policy": policy, "cost_profile": profile, "security_attributes": attributes,
-                # No admitted lot-size rule exists in the current attribute chain.
-                "verified_rules": {}, "rule_gaps": ["交易单位尚无已核验规则，请明确填写试算假设"]}
+                "verified_rules": rules,
+                "rule_gaps": [] if rules else ["PUBLIC_AUCTION_BUY_QUANTITY_RULE_UNAVAILABLE"]}
 
     def confirm_reconciliation(self, request):
         """Require granular human acknowledgement, then delegate atomic replay/append."""

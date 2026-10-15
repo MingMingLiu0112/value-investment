@@ -1,26 +1,101 @@
 {
   "schema_version": "current-company-research-registry-v1",
   "action": "no_order",
-  "reviewed_at": "2026-10-13",
+  "reviewed_at": "2026-10-16",
   "note": "注册当前公共发布物之外的公司研究状态与未准入输入；只登记阻塞与证据，不产生估值、仓位或订单。证据按 path+sha256 绑定，变更时对应条目降级显示。",
   "companies": {
     "000333": {
       "name": "美的集团",
       "status": "PENDING_RESEARCH",
-      "valuation_route": "fcff",
-      "summary": "2026-06-30 普通股股本分母已按官方来源核验（7,464,347,335 股）；FCFF 情景输入未注册，仍无准入估值。",
+      "valuation_route": "residual_income_or_equity_value",
+      "summary": "v5已明确授权共享剩余收益/股权价值路由；美的工业FCFF拆分不适用，不能靠登记FCFF情景解除范围缺口。6月末普通股分母7,464,347,335股已核验；路由授权不代表估值输入或估值已准入。",
       "missing_inputs": [
-        "FCFF 情景输入（收入、利润率、资本开支、营运资本假设）未注册",
-        "下一份官方财报中的现金流与资本配置事实"
+        "剩余收益路由的匹配归母权益、盈利及情景输入尚未注册",
+        "超额收益持续期、分配与权益成本须有经济证据及既有审核链支持"
       ],
-      "required_actor": "ENGINEERING",
-      "next_step": "注册经核验的 FCFF 情景输入并形成草案估值，等待人工门。",
+      "required_actor": "EVIDENCE",
+      "next_step": "按已授权股权路由补齐并核验经济输入，再走既有审核与注册链；不以工业FCFF绕过金融范围缺口。",
       "evidence": [
+        {
+          "path": "runtime/company-research/midea-valuation-applicability-20261013-v5/evidence.json",
+          "sha256": "b69e2fc931a016393ae5d274ad8d7aec8c5aaad52787e92ae377c5ff5ee5f541",
+          "note": "model_change明确股权路由授权；scope_assessment明确工业FCFF拆分不适用；并非全局停用FCFF或估值批准"
+        },
         {
           "path": "docs/current/tl8-c-000333-share-denominator-recheck-receipt-20261013.json",
           "sha256": "f2b968c000ae9f6ec39541b2bc8413fb97654d32fed530cc5badd66c547c752b",
           "note": "2026-06-30 分母核验回执（TL8-C）"
         }
+      ]
+    },
+    "000651": {
+      "name": "格力电器",
+      "status": "PENDING_RESEARCH",
+      "valuation_route": "fcff",
+      "summary": "2026-09-23既有研究档案可读、财务范围部分完成，估值未就绪。半年报收入下降8.15%、扣非利润下降8.89%、经营现金流下降33.60%；品牌与制造优势可观察，但不能据此证明长期超额回报或低估。",
+      "missing_inputs": [
+        "财务公司、受限现金、金融资产与有息负债的范围拆分及法人可分配现金映射",
+        "匹配工业范围的EBIT、现金税、折旧摊销、净营运资本、WACC与净债务输入包",
+        "ROIC、增量ROIC与竞争优势持续期的长期经营证据；半年报未经审计"
+      ],
+      "required_actor": "EVIDENCE",
+      "next_step": "先补足金融与工业范围、现金归属及资本回报证据，再核验FCFF适用边界和输入；不把账面大额现金或既有档案可读状态当作估值准入。",
+      "evidence": [
+        {"path": "runtime/company-research/000651-m1-dossier-20260923T004117Z/evidence.json", "sha256": "be20b1686aea0219b52602ece96b7e240147e679890d7f28966ae82a60702c56", "note": "latest指针精确绑定的2026-09-23档案；financial_scope_partial、READABLE、NOT_READY；非当前完整研究或审批"},
+        {"path": "runtime/company-research/000651-official-interim-20260917/1225515004.pdf", "sha256": "50da2e03fddbe9dd424d8fe7881f47fb34efa5d38c96aa9449c12e445c3b2dec", "note": "档案所引2026半年报原件；档案标注p.7财务、p.25-27及53资金与负债、p.61现金流"}
+      ]
+    },
+    "600741": {
+      "name": "华域汽车",
+      "status": "PENDING_RESEARCH",
+      "valuation_route": "fcff",
+      "summary": "2026-09-23既有研究档案可读、财务范围部分完成，估值未就绪。半年报收入下降1.43%、扣非利润下降14.29%，经营现金流增长16.69%；平台化配套可观察，但现金流增长不能抵消客户周期与利润率压力。",
+      "missing_inputs": [
+        "分客户及产品收入、毛利率、客户周期敏感性与供应商价格传导证据",
+        "经营现金流增长的营运资本、应收存货及客户回款原因核验",
+        "EBIT、现金税、折旧摊销、营运资本、资本开支、WACC与净债务及周期调整输入",
+        "资本回报、再投资与可持续分配证据；半年报未经审计，完整情景及价格桥尚未形成"
+      ],
+      "required_actor": "EVIDENCE",
+      "next_step": "先闭合客户价格、营运资本和再投资证据，再核验FCFF及周期调整输入；不将合并经营现金流直接充作自由现金流，也不宣称已证明低估。",
+      "evidence": [
+        {"path": "runtime/company-research/600741-m1-dossier-20260923T004123Z/evidence.json", "sha256": "d162721de48b530720917c8c154159b9ed0e260a84c4592a084b7d2069fb6864", "note": "latest指针精确绑定的2026-09-23档案；financial_scope_partial、READABLE、NOT_READY；非审批"},
+        {"path": "runtime/company-research/m1-official-filings-20260923/600741/2026-06-30-interim-2b5ced0dc37827ad9d35036fb0d49b3b34e6ff47f2559222db0225f7519162c6.pdf", "sha256": "77db47cdf18cc46123c4924cb869a75dc3d4404f718e132292e6c9132e65f2f9", "note": "档案所引2026半年报原件；档案标注p.6财务、p.8-9行业及产品客户、p.20不分配"}
+      ]
+    },
+    "600887": {
+      "name": "伊利股份",
+      "status": "PENDING_RESEARCH",
+      "valuation_route": "residual_income_or_equity_value",
+      "summary": "经营基础仍在，但H1扣非利润下降20.25%；96.48亿元历史扣非TTM不是正常化盈利。415亿元（41.5bn人民币）短融发行不等于净可用现金；担保责任余额20.58亿元不等于损失。旧条件计算不构成可靠当前估值。",
+      "missing_inputs": [
+        "正常化归母盈利、维护投入与法人可分配现金桥",
+        "12月融资到期偿付来源、担保代偿及回收风险证据",
+        "超额收益期限、全资本ROE衰减和权益成本的证据化审核",
+        "6月末6,325,360,667股历史分母可核验；新日期重估仍需资本变动、价格及事件窗口核验"
+      ],
+      "required_actor": "EVIDENCE",
+      "next_step": "先闭合盈利、资本分配和再融资证据，再沿既有审核链审情景；不将历史条件计算转为正式吸引区间。",
+      "evidence": [
+        {"path": "artifacts/current/tl11-p8-20261016/research/judgments.json", "sha256": "1bf1f0c5b88ae37835a7f0b22b168cb0d7b3dcb2cb69901ac32d20422a609866", "note": "600887经济判断与明确缺口；非审批"},
+        {"path": "artifacts/current/tl11-p8-20261016/research/audit.json", "sha256": "35f95e1edddd747285a731755b0d6a29edbc9f07739faea9971b4c6a0523946a", "note": "原件路径、hash、物理页及共享计算复核"}
+      ]
+    },
+    "600519": {
+      "name": "贵州茅台",
+      "status": "PENDING_RESEARCH",
+      "valuation_route": "residual_income_or_equity_value",
+      "summary": "产品毛利率与渠道支持经营质量，但H1扣非利润下降2.04%。集团现金流含财务公司存款影响，不能直接视为白酒自由现金流。既有条件研究尚未形成可靠当前估值或正式吸引区间。",
+      "missing_inputs": [
+        "正常化盈利、维护投入、法人可分配现金与金融尾部风险桥",
+        "十年盈利持续、五年全资本衰减、75%分配与权益成本的证据化审核",
+        "新日期价格、资本变动及事件窗口核验"
+      ],
+      "required_actor": "EVIDENCE",
+      "next_step": "核实经营与金融现金边界，补足持续期和分配证据，再走既有正式审核；不将旧日期时间桥差额解释为经营改善。",
+      "evidence": [
+        {"path": "artifacts/current/tl11-p8-20261016/research/judgments.json", "sha256": "1bf1f0c5b88ae37835a7f0b22b168cb0d7b3dcb2cb69901ac32d20422a609866", "note": "600519第二家公司研究判断；条件研究非准入估值"},
+        {"path": "artifacts/current/tl11-p8-20261016/research/audit.json", "sha256": "35f95e1edddd747285a731755b0d6a29edbc9f07739faea9971b4c6a0523946a", "note": "六行直接财务核验、原件页码及共享计算复核"}
       ]
     },
     "601088": {
@@ -32,8 +107,8 @@
         "13 项周期必需输入（当前 0 项准入）",
         "证据停止点 current_perimeter_parent_earnings_bridge_incomplete 未解除"
       ],
-      "required_actor": "ENGINEERING",
-      "next_step": "补齐周期输入（含母公司盈利桥）后，再形成正常化盈利与情景估值。",
+      "required_actor": "EVIDENCE",
+      "next_step": "先补齐并核验当前合并范围的归母盈利桥及13项周期经济输入证据，再沿既有链注册和审核；路由已支持，不以工程接线代替经济证据。",
       "evidence": [
         {
           "path": "docs/current/tl8-c-601088-cycle-model-boundary-receipt-20261013.json",

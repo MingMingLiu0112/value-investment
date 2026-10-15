@@ -36,7 +36,7 @@ def payload(service, monkeypatch, price):
     replayed = account(service)
     monkeypatch.setattr(projection, "_verified_attributes", lambda *args, **kwargs:
         [_attributes(symbol="300364", common_factors=("SYNTHETIC",)).as_policy()])
-    prices = {} if price is None else {"300364": {"price_cny": price, "trade_date": "2026-10-14"}}
+    prices = {} if price is None else {"300364": {"price_cny": price, "trade_date": "2026-10-14", "price_admitted": True}}
     return projection.build_risk_input(replayed, sellable_as_of=NOW.date(), generated_at=NOW, _prices=prices)
 
 

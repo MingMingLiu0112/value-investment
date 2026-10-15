@@ -1,0 +1,42 @@
+
+> value-investment-web@0.1.0 build
+> max build
+
+info  - [你知道吗？] @umijs/max 是蚂蚁内网框架 Bigfish 的对外版本。
+info  - Umi v4.7.23
+info  - Preparing...
+[webpackbar] i Compiling Webpack
+[webpackbar] √ Webpack: Compiled successfully in 27.42s
+info  - Memory Usage: 614.31 MB (RSS: 857.13 MB)
+info  - [esbuildHelperChecker] Checking esbuild helpers from your dist files...
+info  - [esbuildHelperChecker] No conflicts found.
+
+info  - File sizes after gzip:
+
+  243.74 kB  dist\471.536dc7fc.async.js
+  202.66 kB  dist\umi.36af9d93.js
+  114.79 kB  dist\286.fe9b94ad.async.js
+  108.18 kB  dist\586.3eb6aa71.async.js
+  64.11 kB   dist\162.d921051e.async.js
+  26.53 kB   dist\p__DecisionDetail__index.fa9e52d8.async.js
+  25.53 kB   dist\p__Portfolio__index.c5f61def.async.js
+  12.01 kB   dist\p__DailyDecisions__index.e65ae886.async.js
+  9.59 kB    dist\974.095026bb.async.js
+  7.48 kB    dist\p__DecisionHistory__index.b566339e.async.js
+  6.78 kB    dist\488.feb80d82.async.js
+  5.79 kB    dist\258.6b2445d7.async.js
+  4.72 kB    dist\p__SystemStatus__index.e6857ef5.async.js
+  4.15 kB    dist\654.70cd0fcf.async.js
+  4.01 kB    dist\662.a03ec945.async.js
+  3.77 kB    dist\p__HistoricalPrice__index.43150e1d.async.js
+  3.56 kB    dist\136.2ee08d28.async.js
+  3.17 kB    dist\656.6b539a7c.async.js
+  1.35 kB    dist\p__DailyDecisions__index.7f0943c4.chunk.css
+  711 B      dist\p__DecisionDetail__index.8bbe21df.chunk.css
+  711 B      dist\p__HistoricalPrice__index.8bbe21df.chunk.css
+  246 B      dist\p__DecisionHistory__index.6f5106f9.chunk.css
+  246 B      dist\p__Portfolio__index.6f5106f9.chunk.css
+  246 B      dist\p__SystemStatus__index.6f5106f9.chunk.css
+  220 B      dist\209.eb302669.async.js
+
+event - Build index.html

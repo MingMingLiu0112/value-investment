@@ -206,3 +206,69 @@ def test_next_day_download_cannot_retroactively_supply_same_day_b1(tmp_path):
         collect_current_price_case(root=tmp_path, symbol='600519', as_of=date(2026, 9, 24),
             quote_bundle_path=bundle_path, quote_bundle_sha256=hashlib.sha256(bundle_path.read_bytes()).hexdigest(),
             fetch=lambda *a, **k: pytest.fail('invalid B1 must be rejected before network'), now=NOW)
+
+
+def display_capture(root, now=NOW):
+    path = _write_bundle(root)
+    bundle = json.loads(path.read_bytes())
+    bundle["finished_at"] = now.isoformat()
+    refs = bundle["references"]["600519"]["document_refs"]
+    for provider in ("tencent", "sina"):
+        document = dict(bundle["documents"][refs[provider]], fetched_at=bundle["finished_at"])
+        identity = hashlib.sha256((document["source_url"] + "\n" + document["fetched_at"] + "\n" + document["sha256"]).encode()).hexdigest()
+        bundle["documents"][identity] = document
+        refs[provider] = identity
+    calendar_ids = []
+    for old_id in refs["calendar_documents"]:
+        document = dict(bundle["documents"][old_id], fetched_at=bundle["finished_at"])
+        identity = hashlib.sha256((document["source_url"] + "\n" + document["fetched_at"] + "\n" + document["sha256"]).encode()).hexdigest()
+        bundle["documents"][identity] = document
+        calendar_ids.append(identity)
+    refs["calendar_documents"] = calendar_ids
+    path.write_text(json.dumps(bundle), encoding="utf-8")
+    return collect_current_price_case(root=root, symbol="600519", as_of=date(2026, 9, 24),
+        quote_bundle_path=path, quote_bundle_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+        fetch=lambda _url, params, timeout: Response(params["scale"]), now=now,
+        observation_scope="LAST_COMPLETED_CLOSE_DISPLAY_ONLY")
+
+
+@pytest.mark.parametrize("clock", [NOW, datetime(2026, 9, 28, 8, 30, tzinfo=CHINA)])
+def test_later_acquisition_display_scope_roundtrip_uses_same_engine_not_b1(tmp_path, clock):
+    case = display_capture(tmp_path, now=clock)
+    assert case["current_reference_close"]["status"] == "VERIFIED_LAST_COMPLETED_CLOSE_DISPLAY_ONLY"
+    assert case["current_pit"] is case["formal_eligibility"] is case["price_admitted"] is False
+    loaded = load_current_price_case(root=tmp_path, symbol="600519", case_path=case["case_path"],
+        expected_sha256=case["case_sha256"], now=clock)
+    assert loaded == case
+    plan = project_current_price_action_plan(case)
+    assert plan["reference_price_scope"] == "LAST_COMPLETED_CLOSE_DISPLAY_ONLY"
+    assert plan["current_pit"] is plan["formal_eligibility"] is plan["price_admitted"] is False
+    assert plan["data_available_at"] == case["verified_available_at"]
+    assert plan["next_completed_eligible_session"] is None
+    assert plan["price_behavior"]["rule_version"]
+    assert plan["levels"]["60m"]["last_close"] == "12.34"
+    with pytest.raises(ValueError, match="latest completed session"):
+        load_current_price_case(root=tmp_path, symbol="600519", case_path=case["case_path"],
+            now=datetime(2026, 9, 28, 16, tzinfo=CHINA))
+
+
+@pytest.mark.parametrize("tamper", ["pit", "scope", "calendar", "bars"])
+def test_display_case_cannot_promote_flags_bypass_b1_or_skip_source_verification(tmp_path, tamper):
+    case = display_capture(tmp_path)
+    path = tmp_path / case["case_path"]
+    stored = json.loads(path.read_bytes())
+    if tamper == "pit":
+        stored["current_pit"] = True
+    elif tamper == "scope":
+        del stored["observation_scope"]
+    elif tamper == "bars":
+        original = tmp_path / stored["source_bindings"]["60m"]["path"]
+        original.write_bytes(original.read_bytes() + b" ")
+    else:
+        bundle_path = tmp_path / stored["current_reference_close"]["bundle_path"]
+        bundle = json.loads(bundle_path.read_bytes())
+        bundle["references"]["600519"]["document_refs"]["calendar_documents"] = []
+        bundle_path.write_text(json.dumps(bundle), encoding="utf-8")
+    path.write_text(json.dumps(stored), encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_current_price_case(root=tmp_path, symbol="600519", case_path=path, now=NOW)

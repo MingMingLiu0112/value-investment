@@ -51,6 +51,9 @@ jobs:
           tests/test_p62_positive_workflow.py
           tests/test_p7_signed_review_workflow.py
           tests/test_p7_materiality_review_transport.py
+          tests/test_p8_decision_chain.py
+          tests/test_held_continuity.py
+          tests/test_private_risk_held_marks.py
           tests/test_incremental_quote_bridge.py
           tests/test_private_risk_experience.py
           tests/test_private_risk_cash_floor.py

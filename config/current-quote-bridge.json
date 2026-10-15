@@ -2,18 +2,61 @@
   "schema_version": "current-quote-bridge-v1",
   "action": "no_order",
   "note": "登记一份已归档的双源收盘行情；登记本身不构成估值或交易批准。",
-  "registered_at": "2026-10-15T07:11:21.354797+00:00",
+  "registered_at": "2026-10-15T18:32:37.789800+00:00",
   "quotes": {
     "600887": {
-      "quote_bundle": "runtime/quote-sessions/20261015T071120641477Z/bundle.json",
-      "quote_bundle_sha256": "e12e824465f4681ff57643dae4859d719c4a85011e669904e30b76ab5b5bc612",
+      "quote_bundle": "runtime/quote-sessions/20261015T183233238666Z/bundle.json",
+      "quote_bundle_sha256": "0917d98ea25d9584783da9b5004a2e77134951a39dfd0378292b6715332b75a2",
       "research_package": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
       "research_package_sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5",
-      "registered_at": "2026-10-15T07:11:21.354797+00:00",
+      "registered_at": "2026-10-15T18:32:33.968119+00:00",
       "incremental_validity_binding": {
         "path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/incremental-binding.json",
         "sha256": "f362ec07952203c167aa6d83abf03f4bba86ae076b379e3d07edb419661f13fb"
       }
+    },
+    "600519": {
+      "quote_bundle": "runtime/quote-sessions/20261015T183233238666Z/bundle.json",
+      "quote_bundle_sha256": "0917d98ea25d9584783da9b5004a2e77134951a39dfd0378292b6715332b75a2",
+      "research_package": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/package.json",
+      "research_package_sha256": "f100c2a26b0d61a3f9d90a1b60976b00d8217b55592360f6940b0696a46829bf",
+      "registered_at": "2026-10-15T18:32:35.054726+00:00",
+      "incremental_validity_binding": {
+        "path": "runtime/incremental-validity/p8-600519-20261015/incremental-binding.json",
+        "sha256": "368b315cf22c1d0b2d80d7901128e8688f0c96d783f4bceb60c65cee2cdaf259"
+      }
+    },
+    "000333": {
+      "quote_bundle": "runtime/quote-sessions/20261015T183233238666Z/bundle.json",
+      "quote_bundle_sha256": "0917d98ea25d9584783da9b5004a2e77134951a39dfd0378292b6715332b75a2",
+      "research_package": null,
+      "research_package_sha256": null,
+      "registered_at": "2026-10-15T18:32:35.815959+00:00",
+      "registration_scope": "QUOTE_OBSERVATION_ONLY"
+    },
+    "000651": {
+      "quote_bundle": "runtime/quote-sessions/20261015T183233238666Z/bundle.json",
+      "quote_bundle_sha256": "0917d98ea25d9584783da9b5004a2e77134951a39dfd0378292b6715332b75a2",
+      "research_package": null,
+      "research_package_sha256": null,
+      "registered_at": "2026-10-15T18:32:36.488877+00:00",
+      "registration_scope": "QUOTE_OBSERVATION_ONLY"
+    },
+    "600741": {
+      "quote_bundle": "runtime/quote-sessions/20261015T183233238666Z/bundle.json",
+      "quote_bundle_sha256": "0917d98ea25d9584783da9b5004a2e77134951a39dfd0378292b6715332b75a2",
+      "research_package": null,
+      "research_package_sha256": null,
+      "registered_at": "2026-10-15T18:32:37.134480+00:00",
+      "registration_scope": "QUOTE_OBSERVATION_ONLY"
+    },
+    "601088": {
+      "quote_bundle": "runtime/quote-sessions/20261015T183233238666Z/bundle.json",
+      "quote_bundle_sha256": "0917d98ea25d9584783da9b5004a2e77134951a39dfd0378292b6715332b75a2",
+      "research_package": null,
+      "research_package_sha256": null,
+      "registered_at": "2026-10-15T18:32:37.789800+00:00",
+      "registration_scope": "QUOTE_OBSERVATION_ONLY"
     }
   }
 }

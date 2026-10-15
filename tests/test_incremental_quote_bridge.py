@@ -102,6 +102,41 @@ def test_production_pointer_rebuilds_model_and_computes_shared_price_bridge(prod
     assert any(item.get("path") == ref["path"] for item in comparison["evidence_refs"])
 
 
+def test_next_morning_verified_display_names_b1_comparison_refusal(production_chain):
+    root, ref, _, package, _ = production_chain
+    service.register_incremental_validity_binding(root, SYMBOL, ref, CUTOFF, NOW)
+    before = package.read_bytes()
+    bundle_path = root / "runtime/quotes/bundle.json"
+    bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
+    refs = bundle["references"][SYMBOL]["document_refs"]
+    for role in ("tencent", "sina"):
+        document = bundle["documents"].pop(refs[role])
+        document["fetched_at"] = "2026-09-23T00:59:00+00:00"
+        identity = hashlib.sha256((document["source_url"] + "\n" + document["fetched_at"]
+            + "\n" + document["sha256"]).encode()).hexdigest()
+        bundle["documents"][identity] = document
+        refs[role] = identity
+    bundle["finished_at"] = "2026-09-23T00:59:30+00:00"
+    _write(bundle_path, bundle)
+    pin_quote_bridge_for_symbol(root, SYMBOL, bundle_path, package)
+    result = execute_quote_bridge_for_symbol(root, SYMBOL, today=NOW)
+    assert result["status"] == "INCREMENTAL_VALIDITY_BLOCKED"
+    assert result["quote_verification_status"] == "QUOTE_VERIFIED_BUT_RESEARCH_STALE"
+    assert result["quote"]["display_price"] == "5"
+    assert result["quote"]["display_scope"] == "LAST_COMPLETED_CLOSE_DISPLAY_ONLY"
+    assert result["compatibility"]["verified_quote"]["eligible"] is True
+    assert result["price_comparison"]["bridge_status"] == "INVALID"
+    assert result["price_admitted"] is False
+    assert result["compatibility"]["comparison_eligible"]["eligible"] is False
+    assert result["compatibility"]["formal_decision_eligible"]["eligible"] is False
+    assert "未满足 B1" in result["reason"]
+    assert "报价未通过核验" not in result["reason"]
+    assert "展示收盘无需重复核验" in result["next_step"]
+    assert result["incremental_validity"]["status"] == "VALID"
+    assert "conditional_valuation" not in result
+    assert package.read_bytes() == before
+
+
 @pytest.mark.parametrize("failure", ["source", "binding", "model_rebuild", "expired_quote"])
 def test_production_incremental_failures_never_reuse_ready(production_chain, monkeypatch, failure):
     root, ref, _, _, source = production_chain

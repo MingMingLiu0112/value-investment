@@ -33,7 +33,7 @@ SCHEMA_VERSION = "daily-public-packet-v1"
 # chain (bug fixes included). It is part of the identity below so a new engine
 # revision yields a new publication_id instead of silently reusing a stored
 # record that an older revision computed.
-ENGINE_VERSION = "daily-public-packet-engine-v16"
+ENGINE_VERSION = "daily-public-packet-engine-v18"
 # v4 folds every content-deciding input into the identity: the company
 # research registry and its evidence files, the archived quote bundles, the
 # bound decision-explanation files and the business clock (natural date +
@@ -365,7 +365,7 @@ def _pending_actions(symbol: str, bridge: Mapping[str, Any] | None,
                 "announcements": incremental.get("announcements", []),
                 "evidence_refs": incremental.get("source_bindings", [])})
     if isinstance(model_validity, dict) and model_validity.get("status") == "UNKNOWN":
-        actions.append({"code": "MODEL_VALIDITY_REVIEW", "actor": "ENGINEERING",
+        actions.append({"code": "MODEL_VALIDITY_REVIEW", "actor": "EVIDENCE",
                         "label": "模型有效性未确立；需完成重大事件与假设有效性复核"})
     if "human_research_approval" in joined or "G3" in joined:
         actions.append({"code": "HUMAN_VALUATION_APPROVAL", "actor": "HUMAN",
@@ -429,8 +429,13 @@ def _company_entry(root: Path, symbol: str, name: str,
         entry["blockers"].append("RESEARCH_ASSESSMENT_NOT_BOUND")
         if not isinstance(valuation_status, dict) or valuation_status.get("code") != "ADMITTED":
             entry["blockers"].append("VALUATION_NOT_ADMITTED")
-        pending.append({"code": "BIND_CURRENT_RESEARCH_ASSESSMENT", "actor": "ENGINEERING",
-                        "label": "核对已有研究及来源，将适用的研究评估、估值准入与决策说明绑定到当前发布，再重新验证；当前缺少绑定不代表不存在历史研究。"})
+        registered_evidence = _registry_evidence(root, registry_entry) if registry_entry else []
+        if registered_evidence and all(item["sha256_verified"] for item in registered_evidence):
+            pending.append({"code": "REGISTERED_RESEARCH_NOT_FORMALLY_ADMITTED", "actor": "EVIDENCE",
+                            "label": "已接通并校验既有研究登记；当前未形成可准入的完整研究决策，按下方具体经济输入缺口处理，不能将历史底稿当作正式估值。"})
+        else:
+            pending.append({"code": "BIND_CURRENT_RESEARCH_ASSESSMENT", "actor": "ENGINEERING",
+                            "label": "核对已有研究及来源，将适用的研究评估、估值准入与决策说明绑定到当前发布，再重新验证；当前缺少绑定不代表不存在历史研究。"})
     if decision:
         entry["valuation_review"] = {
             "model_validity": decision.get("model_validity"),
@@ -458,6 +463,57 @@ def _row_symbols(rows: object) -> list[dict]:
         return []
     return [row for row in rows
             if isinstance(row, dict) and _SYMBOL.fullmatch(str(row.get("symbol", "")))]
+
+
+def decision_chain_view(entry: Mapping[str, Any], plan: Mapping[str, Any]) -> dict:
+    """Project recorded qualification separately from workflow ownership.
+
+    This is a public read model, not an additional eligibility engine. Private
+    policies and account readiness are deliberately evaluated only after login.
+    """
+    actor_classes = {"EXTERNAL_DATA": "DATA", "ENGINEERING": "ENGINEERING",
+                     "HUMAN": "HUMAN", "EVIDENCE": "EVIDENCE",
+                     "STRATEGY": "STRATEGY", "PRIVATE": "PRIVATE"}
+    gaps = []
+    for task in entry.get("pending_actions", []):
+        gaps.append({"code": task["code"],
+                     "classification": actor_classes.get(task.get("actor"), "EVIDENCE"),
+                     "reason": task["label"],
+                     "next_url": task.get("next_url") or f"/decisions/{entry['symbol']}",
+                     "evidence_refs": task.get("evidence_refs", [])})
+    registered = entry.get("registered_research") or {}
+    for field in registered.get("missing_inputs", []):
+        gaps.append({"code": "RESEARCH_INPUT_MISSING", "classification": "EVIDENCE",
+                     "reason": field, "next_url": f"/decisions/{entry['symbol']}",
+                     "evidence_refs": registered.get("evidence", [])})
+    bridge = entry.get("price_bridge") or {}
+    review = entry.get("valuation_review") or {}
+    return {"action": ACTION, "symbol": entry["symbol"],
+            "research_version": entry.get("research_version"),
+            "identity": {"symbol": entry["symbol"], "name": entry["name"],
+                         "scope": "PUBLISHED_RESEARCH_IDENTITY"},
+            "market_integrity": {"quote_date": bridge.get("quote_date"),
+                                 "price_admitted": bridge.get("price_admitted") is True,
+                                 "current_price": bridge.get("current_price")},
+            "financial_evidence": registered.get("evidence", []),
+            "research_status": entry.get("research_status"),
+            "model_applicability": review.get("model_validity") or entry.get("model_validity"),
+            "judgment": plan.get("explanation"),
+            "research_conclusion": {
+                "status": registered.get("status"),
+                "summary": registered.get("summary") if registered.get("evidence")
+                    and all(item.get("sha256_verified") is True
+                            for item in registered["evidence"]) else None,
+                "evidence_verified": bool(registered.get("evidence")) and
+                    all(item.get("sha256_verified") is True for item in registered["evidence"]),
+                "scope": "RESEARCH_INTERPRETATION_NOT_INVESTMENT_APPROVAL",
+            },
+            "price_conditions": {key: plan.get(key) for key in (
+                "entry_trigger_price", "add_trigger_price", "reduce_trigger_price", "exit_trigger_price")},
+            "formal_eligibility": plan.get("formal_eligibility") is True,
+            "private_qualification": {"status": "AUTHENTICATED_VIEW_REQUIRED", "next_url": "/portfolio"},
+            "gaps": gaps,
+            "next_actions": entry.get("pending_actions", [])}
 
 
 def count_formal_admissions(rows: list[dict]) -> int:
@@ -883,6 +939,8 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
                 required_confirmations=value_conditions[symbol]["blockers"],
                 next_observation=[action["label"] for action in entry["pending_actions"]],
                 explanation="当前发布尚未绑定适用的研究评估与决策说明，估值准入须独立核验；不是仅缺行情，也不代表不存在历史研究。")
+    for symbol, entry in company_statuses.items():
+        entry["decision_chain"] = decision_chain_view(entry, value_conditions.get(symbol, {}))
     packet = {
         "schema_version": SCHEMA_VERSION,
         "engine_version": ENGINE_VERSION,

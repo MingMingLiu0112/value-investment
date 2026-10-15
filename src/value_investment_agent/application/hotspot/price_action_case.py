@@ -46,10 +46,14 @@ def project_price_action_plan(case: dict) -> dict:
 
 def project_current_price_action_plan(case: dict) -> dict:
     """Project a loader-verified current case with the historical plan fields."""
+    display = case.get("observation_scope") == "LAST_COMPLETED_CLOSE_DISPLAY_ONLY"
+    expected_close = "VERIFIED_LAST_COMPLETED_CLOSE_DISPLAY_ONLY" if display else "VERIFIED_DUAL_SOURCE_CLOSE"
     if (case.get("schema_version") != "hotspot-current-price-case-v1"
             or case.get("action") != "no_order" or case.get("action_eligibility") is not False
             or case.get("blockers") != CURRENT_BLOCKERS
-            or case.get("current_reference_close", {}).get("status") != "VERIFIED_DUAL_SOURCE_CLOSE"):
+            or case.get("current_reference_close", {}).get("status") != expected_close
+            or (display and any(case.get(key) is not False for key in
+                                ("current_pit", "formal_eligibility", "price_admitted")))):
         raise ValueError("Current case is not verified research-only evidence")
     state, explanation = current_signal(case["levels"])
     if case.get("signal_state") != state or case.get("explanation") != explanation:
@@ -103,4 +107,11 @@ def project_current_price_action_plan(case: dict) -> dict:
     plan["data_available_at"] = max(datetime.fromisoformat(value) for value in [
         *(source["fetched_at"] for source in case["source_bindings"].values()),
         case["verified_available_at"]]).isoformat()
+    if display:
+        plan.update(reference_price_scope="LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
+            observation_scope="LAST_COMPLETED_CLOSE_DISPLAY_ONLY", current_pit=False,
+            formal_eligibility=False, price_admitted=False, action_eligibility=False,
+            next_completed_eligible_session=None, next_session_date=None,
+            support=["双源最近已完成交易日收盘与完整分钟线观察；原件取得时间晚于报价时点，不证明历史PIT或正式准入。"],
+            next_session_rule="Display-only completed-close observation; refresh after each completed session")
     return plan

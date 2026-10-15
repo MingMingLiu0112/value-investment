@@ -31,6 +31,7 @@ from ...application.portfolio.private_portfolio_service import (
     resolve_private_root,
 )
 from ...application.portfolio.private_risk_projection import review_private_risk_rehearsal
+from ...application.portfolio.held_continuity import review_held_continuity, refresh_held_continuity
 from ...application.portfolio.private_risk_preview import preview_private_hotspot_risk
 from ...application.portfolio.private_risk_experience import PrivateRiskExperienceService
 from .local_auth import (
@@ -205,6 +206,44 @@ def register_private_routes(
                 "blockers": ["PRIVATE_JOURNAL_INVALID", "PRICE_NOT_ADMITTED"],
                 "engine": None, "facts": None,
             }
+
+    @api.get("/api/v1/private/portfolio/held-continuity")
+    def holdings_continuity(request: Request):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        try:
+            result = review_held_continuity(service().journal, repository_root=project,
+                generated_at=datetime.now(timezone.utc))
+            return JSONResponse(content=result, headers={"Cache-Control": "no-store"})
+        except PrivateStoreUnavailable:
+            status, code = 503, "PRIVATE_ROOT_UNAVAILABLE"
+        except JournalValidationError:
+            status, code = 422, "PRIVATE_JOURNAL_INVALID"
+        except ValueError:
+            status, code = 409, "HELD_REVIEW_RETRY_REQUIRED"
+        return JSONResponse(status_code=status, headers={"Cache-Control": "no-store"},
+            content={"schema_version": "private-held-continuity-v1", "action": "no_order",
+                     "sensitivity": "PRIVATE", "status": code, "blockers": [code],
+                     "revision": None, "items": [], "risk": None, "position_guidance": None})
+
+    @api.post("/api/v1/private/portfolio/held-continuity/refresh")
+    def refresh_held(request: Request, payload: dict = Body(...)):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        try:
+            result = refresh_held_continuity(service().journal, repository_root=project,
+                payload=payload, generated_at=datetime.now(timezone.utc))
+            return JSONResponse(content=result, headers={"Cache-Control": "no-store"})
+        except JournalConflict as error:
+            status, code = 409, error.code
+        except JournalValidationError:
+            status, code = 422, VALIDATION_FAILED
+        except PrivateStoreUnavailable:
+            status, code = 503, "PRIVATE_ROOT_UNAVAILABLE"
+        return JSONResponse(status_code=status, headers={"Cache-Control": "no-store"},
+            content={"action": "no_order", "status": code, "revision": None})
 
     @api.post("/api/v1/private/portfolio/risk-preview")
     def risk_preview(request: Request, payload: dict = Body(...)):

@@ -9,7 +9,17 @@ export type PrivateRiskContext = {
     valid_until: string;
     record_sha256: string;
   } | null;
-  verified_rules: Record<string, string>;
+  verified_rules: {
+    lot_size?: number;
+    minimum_buy_quantity?: number;
+    buy_quantity_increment?: number;
+    maximum_buy_quantity?: number;
+    symbol?: string;
+    scope?: string;
+    rule_version?: string;
+    source_id?: string;
+    evidence_refs?: Record<string, unknown>[];
+  };
   rule_gaps: string[];
 };
 

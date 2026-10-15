@@ -98,3 +98,38 @@ it("unverified public decisions do not imply no exit review", () => {
   expect(html).toContain("策略复核未知");
   expect(html).not.toContain("未发现新增退出复核");
 });
+
+it("retains a held security outside all daily candidates with sellability and data gaps", () => {
+  const state = {
+    portfolio: {
+      status: "CONNECTED",
+      cash_cny: "100",
+      positions: [{ symbol: "300364" }],
+    },
+    risk: { blockers: [] },
+    heldContinuity: {
+      action: "no_order",
+      items: [
+        {
+          symbol: "300364",
+          quantity: "200",
+          sellable_quantity: "100",
+          selected_today: false,
+          review_priority: 0,
+          review_reasons: ["INVALIDATION_OR_EXIT_REVIEW"],
+          data_gaps: ["CURRENT_STRATEGY_PLAN_UNAVAILABLE"],
+          strategy_plan: null,
+        },
+      ],
+    },
+  } as unknown as PrivateStateHandle;
+  const html = renderToStaticMarkup(
+    <HoldingsAttention state={state} decisions={[]} decisionsVerified />,
+  );
+  expect(html).toContain("不在今日榜单，继续按实际持仓跟踪");
+  expect(html).toContain("优先复核减仓/退出");
+  expect(html).toContain("当前结构数据未覆盖");
+  expect(html).toContain("/portfolio?symbol=300364");
+  expect(html).toContain("不能认定持仓正常。");
+  expect(html).not.toContain("未发现新增退出复核");
+});

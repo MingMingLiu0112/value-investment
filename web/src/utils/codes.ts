@@ -49,7 +49,9 @@ const CODE_TEXT: Record<string, string> = {
   concentration_allowed: "是否允许集中",
   risk_tolerance: "风险承受度",
   reconciliation: "尚未执行对账",
-  holding_market_value: "未接入已核验行情",
+  holding_market_value: "正式风险计算缺少已准入的持仓市值",
+  DISPLAY_ONLY_HELD_MARK_NOT_FORMAL_PRICE_INPUT:
+    "核验收盘可展示市值，尚不能作为正式仓位准入价格",
   max_single_security_pct: "单票上限",
   max_single_industry_pct: "行业上限",
   human_confirmation: "人工确认",

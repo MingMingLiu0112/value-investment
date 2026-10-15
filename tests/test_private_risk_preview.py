@@ -32,6 +32,64 @@ def test_missing_assumptions_and_public_plan_keep_facts_and_null_quantity(servic
     assert service.journal.path.read_bytes() == before
 
 
+def test_public_quantity_rule_removes_only_lot_assumption_gap(service, tmp_path, monkeypatch):
+    rule = {"minimum_buy_quantity": 200, "buy_quantity_increment": 1,
+        "maximum_buy_quantity": 100000, "lot_size": 1}
+    monkeypatch.setattr(preview, "_current_plan", lambda *args: (binding(), None))
+    monkeypatch.setattr(preview, "load_verified_security_attributes", lambda *args, **kwargs: [
+        {"symbol": "300364", "liquidity_profile": "UNKNOWN", "trading_rules": rule}])
+    assumptions = {key: value for key, value in ASSUMPTIONS.items() if key != "lot_size"}
+    before = service.journal.path.read_bytes()
+    result = preview.preview_private_hotspot_risk(service.journal, repository_root=tmp_path,
+        generated_at=NOW, payload={"symbol": "300364", "assumptions": assumptions})["sizing_preview"]
+    assert "ASSUMPTION_MISSING:lot_size" not in result["blockers"]
+    assert "CANDIDATE_LIQUIDITY_UNKNOWN" in result["blockers"]
+    assert result["effective_sizing_inputs"]["lot_size"] == 1
+    assert "lot_size" not in result["assumptions"] and "lot_size" not in assumptions
+    assert result["verified_rules"] == rule and result["formal_review_quantity"] is None
+    assert service.journal.path.read_bytes() == before
+    with pytest.raises(ValueError, match="冲突"):
+        preview.preview_private_hotspot_risk(service.journal, repository_root=tmp_path,
+            generated_at=NOW, payload={"symbol": "300364", "assumptions": ASSUMPTIONS})
+
+
+@pytest.mark.parametrize("quantity,blocked", [(0, False), (199, True), (200, False), (201, False), (100001, True)])
+def test_star_minimum_and_increment_gate_existing_engine_without_rounding_up(quantity, blocked):
+    output = {"review_quantity": quantity, "status": "QUANTITY_REVIEW_ONLY", "blockers": [],
+        "engine": {"hotspot_quantity_review": {"review_quantity": quantity, "blockers": []}}}
+    preview._enforce_quantity_rule(output, {"minimum_buy_quantity": 200,
+        "buy_quantity_increment": 1, "maximum_buy_quantity": 100000})
+    assert output["review_quantity"] == (None if blocked else quantity)
+    assert output["engine"]["hotspot_quantity_review"]["review_quantity"] == (None if blocked else quantity)
+
+
+@pytest.mark.parametrize("quantity,expected", [(199, None), (201, 201), (100001, None)])
+def test_preview_delegates_star_increment_then_enforces_distinct_minimum(service, tmp_path, monkeypatch, quantity, expected):
+    calls = []
+    def engine(*args, **kwargs):
+        calls.append(kwargs)
+        return {"action": "no_order", "blockers": [], "engine": {"hotspot_quantity_review": {
+            "review_quantity": quantity, "status": "QUANTITY_REVIEW_ONLY", "blockers": []}}}
+    plan = binding()
+    plan["plan"]["symbol"] = "688001"
+    rule = {"lot_size": 1, "minimum_buy_quantity": 200,
+        "buy_quantity_increment": 1, "maximum_buy_quantity": 100000}
+    monkeypatch.setattr(preview, "review_private_risk_rehearsal", engine)
+    monkeypatch.setattr(preview, "_current_plan", lambda *args: (plan, None))
+    # Explicit TEST_ONLY execution substitute; official observations never certify LIQUID.
+    monkeypatch.setattr(preview, "load_verified_security_attributes", lambda *args, **kwargs: [
+        {"symbol": "688001", "liquidity_profile": "LIQUID", "trading_rules": rule}])
+    assumptions = {key: value for key, value in ASSUMPTIONS.items() if key != "lot_size"}
+    before = service.journal.path.read_bytes()
+    result = preview.preview_private_hotspot_risk(service.journal, repository_root=tmp_path,
+        generated_at=NOW, payload={"symbol": "688001", "assumptions": assumptions})
+    assert calls[-1]["hotspot_request"]["lot_size"] == 1
+    assert result["sizing_preview"]["review_quantity"] == expected
+    assert result["sizing_preview"]["sizing_details"]["review_quantity"] == expected
+    assert result["sizing_preview"]["formal_review_quantity"] is None
+    assert service.journal.path.read_bytes() == before
+
+
 @pytest.mark.parametrize("forged", ["entry_price_cny", "stop_price_cny", "formal_eligibility", "security_attributes"])
 def test_client_cannot_supply_prices_or_verified_eligibility(service, tmp_path, forged):
     with pytest.raises(ValueError, match="只接受"):

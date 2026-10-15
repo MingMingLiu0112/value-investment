@@ -202,9 +202,11 @@ if ($Mode -eq 'SAFE_REFRESH') {
                 Write-Host "  ${symbol}: 已登记同一份行情，跳过重复登记（幂等）。"
                 continue
             }
-            $pin = Invoke-PythonJson @('scripts/current/pin_current_quote_bridge.py',
-                '--symbol', $symbol, '--quote-bundle', $bundlePath,
-                '--research-package', [string]$entry.research_package)
+            $pinArgs = @('scripts/current/pin_current_quote_bridge.py',
+                '--symbol', $symbol, '--quote-bundle', $bundlePath)
+            if ($entry.registration_scope -eq 'QUOTE_OBSERVATION_ONLY') { $pinArgs += '--observation-only' }
+            else { $pinArgs += @('--research-package', [string]$entry.research_package) }
+            $pin = Invoke-PythonJson $pinArgs
             if ($pin.ExitCode -ne 0) {
                 $notes.Add("$symbol 的新收盘登记失败；保留原登记，未写入部分结果。")
                 Write-Host "  ${symbol}: 登记失败，保留原登记。"
@@ -233,6 +235,7 @@ if ($Mode -eq 'SAFE_REFRESH') {
         try { $quoteRegistry = Get-Content -LiteralPath (Join-Path $root 'config/current-quote-bridge.json') -Raw -Encoding utf8 | ConvertFrom-Json }
         catch { Write-Host '  公告增量登记不可读；保留原研究门禁。'; $notes.Add('公告增量采集或复核未完成；保留研究门禁，其他已核验证券继续。') }
         foreach ($registeredQuote in $quoteRegistry.quotes.PSObject.Properties) {
+            if ($registeredQuote.Value.registration_scope -eq 'QUOTE_OBSERVATION_ONLY') { continue }
             $scanSymbol = $registeredQuote.Name
             $scanStamp = [DateTimeOffset]::UtcNow.ToString('yyyyMMddTHHmmssfffffffZ')
             $scanDirectory = "runtime/incremental-validity/$scanSymbol/$reviewCutoff-$scanStamp"
@@ -267,7 +270,7 @@ if ($Mode -eq 'SAFE_REFRESH') {
             Write-Host '  增量有效性 : 已写入逐证券审计；未改研究截止日或授予任何批准。'
             foreach ($item in @($validityReview.Json.reviews)) {
                 Write-Host "  $($item.symbol) : $($item.model_validity_status) / $($item.status) $($item.reason)"
-                if ($item.reason) {
+                if ($item.reason -and $item.status -ne 'NO_REGISTERED_RESEARCH') {
                     $notes.Add('公告增量采集或复核未完成；保留研究门禁，其他已核验证券继续。')
                 }
             }

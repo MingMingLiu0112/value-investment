@@ -441,6 +441,10 @@ def review_registered_research_validity(*, root: Path, review_cutoff: date,
             entry = entries.get(symbol)
             if not isinstance(entry, dict):
                 raise ValueError("REGISTERED_QUOTE_BINDING_MISSING")
+            if entry.get("registration_scope") == "QUOTE_OBSERVATION_ONLY":
+                row.update(status="NO_REGISTERED_RESEARCH", reason="仅登记展示行情，尚无完整研究包；不进行模型有效性批准。")
+                rows.append(row)
+                continue
             package_path = _resolve(root, entry["research_package"], "research package")
             package_sha = entry["research_package_sha256"]
             if sha256_file(package_path) != package_sha:

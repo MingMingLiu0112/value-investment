@@ -69,6 +69,19 @@ def test_expired_latest_cost_never_resurrects_old_profile(service, tmp_path):
     assert context["cost_profile"] is None
 
 
+def test_context_projects_public_rules_without_cost_or_ledger_changes(service, tmp_path, monkeypatch):
+    rule = {"lot_size": 100, "minimum_buy_quantity": 100, "buy_quantity_increment": 100,
+        "maximum_buy_quantity": 300000, "evidence_refs": [{"id": "TEST_ONLY"}]}
+    monkeypatch.setattr(experience, "load_verified_security_attributes", lambda *args, **kwargs: [
+        {"symbol": "300364", "trading_rules": rule}])
+    before = service.journal.path.read_bytes()
+    context = experience.PrivateRiskExperienceService(service.journal).context(
+        symbol="300364", repository_root=tmp_path, now=NOW)
+    assert context["verified_rules"] == rule and context["rule_gaps"] == []
+    assert context["cost_profile"] is None
+    assert service.journal.path.read_bytes() == before
+
+
 def test_only_effective_confirmed_ips_is_read_without_default_notional(service, tmp_path):
     adapter = experience.PrivateRiskExperienceService(service.journal)
     confirm_policy(service)

@@ -170,6 +170,27 @@ def _verified_prices(root, replayed, now):
         return {}
 
 
+def _price_permissions(*sources):
+    """Carry independent admission evidence; verified observation is not admission."""
+    scopes = [source[key] for source in sources for key in
+              ("scope", "display_scope", "observation_scope", "reference_price_scope")
+              if source.get(key) is not None]
+    admissions = [source["price_admitted"] for source in sources if "price_admitted" in source]
+    pit = [source["current_pit"] for source in sources if "current_pit" in source]
+    display = any("DISPLAY_ONLY" in str(scope) or "HISTORICAL" in str(scope) for scope in scopes)
+    admitted = (False if display or False in admissions or False in pit else
+                True if any(value is True for value in admissions) else None)
+    return {"scope": scopes[0] if scopes else "VERIFIED_CLOSE_ADMISSION_UNKNOWN",
+        "observation_scope": next((s["observation_scope"] for s in sources if s.get("observation_scope")), None),
+        "current_pit": False if False in pit or display else True if True in pit else None,
+        "price_admitted": admitted, "formal_eligibility": False}
+
+
+def _formal_price_input(row):
+    permissions = _price_permissions(row)
+    return permissions["price_admitted"] is True
+
+
 def _load_verified_prices(root, replayed, now):
     if root is None:
         return {}
@@ -188,7 +209,7 @@ def _load_verified_prices(root, replayed, now):
                 if value.is_finite() and value > 0:
                     date.fromisoformat(quote["quote_date"])
                     prices[symbol] = {"price_cny": str(value), "trade_date": quote["quote_date"],
-                        "bundle_sha256": quote["bundle_sha256"], "scope": "VERIFIED_LATEST_COMPLETED_CLOSE_NOT_TRADE_PERMISSION"}
+                        "bundle_sha256": quote["bundle_sha256"], **_price_permissions(quote, execution)}
         except (OSError, ValueError, TypeError, KeyError, AttributeError, ArithmeticError):
             continue
     if needed - prices.keys():
@@ -204,9 +225,38 @@ def _load_verified_prices(root, replayed, now):
                     if value.is_finite() and value > 0:
                         date.fromisoformat(plan["market_trade_date"])
                         prices[row["symbol"]] = {"price_cny": str(value), "trade_date": plan["market_trade_date"],
-                            "case_sha256": plan["case_sha256"], "scope": "VERIFIED_LATEST_COMPLETED_CLOSE_NOT_TRADE_PERMISSION"}
+                            "case_sha256": plan["case_sha256"],
+                            **_price_permissions(plan, plan.get("current_reference_close") or {})}
             except (ValueError, TypeError, KeyError, AttributeError, ArithmeticError):
                 continue
+    # Explicit private held refresh stores ordinary immutable cases, without a
+    # public membership registry. Reverify them for factual display only.
+    if needed - prices.keys():
+        from .held_continuity import _case_history
+        from ...infrastructure.hotspot.current_price_case import load_current_price_case
+        for symbol in sorted(needed - prices.keys()):
+            try:
+                paths = _case_history(Path(root), symbol)
+            except OSError:
+                continue
+            for path in paths:
+                try:
+                    case = load_current_price_case(root=Path(root), symbol=symbol,
+                        case_path=path, now=now)
+                    value = Decimal(case["current_reference_price"])
+                    if not value.is_finite() or value <= 0:
+                        continue
+                    date.fromisoformat(case["market_trade_date"])
+                    prices[symbol] = {"price_cny": str(value), "trade_date": case["market_trade_date"],
+                        "case_path": case["case_path"], "case_sha256": case["case_sha256"],
+                        "bundle_sha256": case["current_reference_close"]["bundle_sha256"],
+                        "available_at": case["verified_available_at"],
+                        "scope": "VERIFIED_LATEST_COMPLETED_CLOSE_DISPLAY_ONLY",
+                        "observation_scope": case.get("observation_scope", "SAME_SESSION_B1"),
+                        "current_pit": False, "price_admitted": False, "formal_eligibility": False}
+                    break
+                except (OSError, ValueError, TypeError, KeyError, AttributeError, ArithmeticError):
+                    continue
     # Quotes predating a confirmed trade cannot mark the resulting position.
     return {symbol: row for symbol, row in prices.items()
             if date.fromisoformat(row["trade_date"]) >= replayed.state.last_trade_date}
@@ -287,6 +337,12 @@ def build_risk_input(
 ) -> dict[str, Any]:
     now = generated_at or datetime.now().astimezone()
     prices = _verified_prices(repository_root, replayed, now) if _prices is None else _prices
+    # Explicit hypothetical prices belong only to the existing SIMULATED
+    # contract; the domain engine still requires allow_synthetic=True. Prices
+    # discovered from production providers never inherit that exception.
+    synthetic_assumptions = namespace == "SIMULATED" and _prices is not None
+    if not synthetic_assumptions:
+        prices = {symbol: row for symbol, row in prices.items() if _formal_price_input(row)}
     shared, sleeves, reserve = _sleeve_policy(replayed)
     snapshot = _snapshot_payload(replayed, prices)
     if shared is not None and all(h["market_value_cny"] is not None for h in snapshot["holdings"]):
@@ -431,6 +487,9 @@ def review_private_risk_rehearsal(
         report = _blocked(NAMESPACE_ACTUAL, extra, generated_at)
     else:
         report = review_dual_sleeve_risk(payload, generated_at=generated_at)
+    if any(not _formal_price_input(row) for row in prices.values()):
+        report["blockers"] = list(dict.fromkeys([*report["blockers"],
+            "DISPLAY_ONLY_HELD_MARK_NOT_FORMAL_PRICE_INPUT"]))
     if payload["security_attributes"] is None:
         report["blockers"] = list(dict.fromkeys([*report["blockers"], "security_attributes.missing"]))
     if reconciliation_state(replayed)["scope"] != "EXTERNAL_ACCOUNT_STATEMENT":

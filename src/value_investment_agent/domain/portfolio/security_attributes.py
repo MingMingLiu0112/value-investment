@@ -7,6 +7,37 @@ SCHEMA = "field-verified-security-risk-attributes-v1"
 UNKNOWN = "UNKNOWN"
 
 
+def auction_buy_rule(attribute):
+    """Supported cash-equity limit-order quantities, never inferred from code prefixes."""
+    if attribute.get("security_type") != "A_SHARE":
+        return None
+    scope = (attribute.get("exchange"), attribute.get("board"))
+    rules = {
+        ("SSE", "主板"): ("SSE_QUANTITY", 100, 100, 1000000),
+        ("SSE", "科创板"): ("SSE_QUANTITY", 200, 1, 100000),
+        ("SZSE", "主板"): ("SZSE_QUANTITY_2026", 100, 100, 1000000),
+        ("SZSE", "创业板"): ("SZSE_QUANTITY_2026", 100, 100, 300000),
+    }
+    values = rules.get(scope)
+    if values is None:
+        return None
+    source, minimum, increment, maximum = values
+    return {"source_id": source, "minimum_buy_quantity": minimum,
+        "buy_quantity_increment": increment, "maximum_buy_quantity": maximum,
+        "lot_size": increment, "scope": "A_SHARE_AUCTION_LIMIT_BUY_ONLY",
+        "rule_version": "exchange-auction-quantity-v1"}
+
+
+def quantity_rule_blockers(quantity, rule):
+    if quantity is None or not rule:
+        return []
+    if quantity and (quantity < rule["minimum_buy_quantity"]
+            or (quantity - rule["minimum_buy_quantity"]) % rule["buy_quantity_increment"]
+            or quantity > rule["maximum_buy_quantity"]):
+        return ["QUANTITY_OUTSIDE_VERIFIED_AUCTION_BUY_RULE"]
+    return []
+
+
 def moment(value):
     result = datetime.fromisoformat(value)
     if result.utcoffset() is None:

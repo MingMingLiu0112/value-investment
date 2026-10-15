@@ -15,6 +15,12 @@ from ...infrastructure.portfolio.security_attributes import replay_official_attr
 from ..product.publication_chain import load_current_chain, bound_object, STRUCTURE_ERRORS
 
 
+def trading_rules_for(attributes, symbol):
+    """Project rules only from observations replayed by this public adapter."""
+    return next((row.get("trading_rules") for row in attributes or []
+        if row["symbol"] == symbol), None) or {}
+
+
 def load_verified_security_attributes(root, symbols, *, now):
     """Return partial verified facts; never use private policy paths as authority."""
     if not symbols:

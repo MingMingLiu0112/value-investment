@@ -65,7 +65,8 @@ def refresh_readiness(root: Path, *, now: datetime, symbols: list[str]) -> dict:
             quotes[symbol] = {"status": "QUOTE_READ_FAILED", "quote": None,
                               "reason": "该证券行情读取失败；不升级资格，其他证券继续核验。"}
     valid = {"QUOTE_VERIFIED_FOR_RESEARCH_INPUT", "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
-             "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"}
+             "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY",
+             "QUOTE_VERIFIED_WITHOUT_RESEARCH_DISPLAY_ONLY"}
     quote_valid = {symbol: (
         row.get("quote_verification_status", row["status"]) in valid and (row.get("quote") or {}).get("quote_date")
         == (row.get("quote") or {}).get("latest_completed_session")

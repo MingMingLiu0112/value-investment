@@ -862,8 +862,14 @@ export default function DecisionDetail() {
     [id],
   );
   const { data, loading, error, retry } = useApi(load);
+  const packet = useApi(api.packet);
   const decision = data?.decision;
   const research = decision?.research ?? null;
+  const chain =
+    packet.data?.publication_id &&
+    packet.data.publication_id === data?.publication?.publication_id
+      ? packet.data.company_statuses?.[decision?.symbol ?? ""]?.decision_chain
+      : undefined;
   return (
     <Workbench>
       <Typography.Title level={2}>股票操作计划</Typography.Title>
@@ -881,6 +887,16 @@ export default function DecisionDetail() {
               {String(decision.name || decision.symbol || decision.id)}{" "}
               {decision.name && decision.symbol}
             </Typography.Title>
+            {chain?.research_conclusion?.evidence_verified &&
+              chain.research_conclusion.summary && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message="当前研究判断（不构成投资批准）"
+                  description={chain.research_conclusion.summary}
+                  style={{ marginTop: 12 }}
+                />
+              )}
             <JudgmentSummary
               decision={decision}
               personalContext={
@@ -902,6 +918,30 @@ export default function DecisionDetail() {
                 <Button>查看历史判断</Button>
               </Link>
             </Space>
+            {!!chain?.gaps.length && (
+              <details>
+                <summary>
+                  下一步办理路径与未满足条件（{chain.gaps.length}）
+                </summary>
+                <ul>
+                  {chain.gaps.map((gap, index) => (
+                    <li key={`${gap.code}-${index}`}>
+                      {
+                        {
+                          ENGINEERING: "工程接线",
+                          DATA: "数据待补齐",
+                          EVIDENCE: "研究证据不足",
+                          HUMAN: "有权审核人办理",
+                          STRATEGY: "策略尚未验证",
+                          PRIVATE: "本人资料待确认",
+                        }[gap.classification]
+                      }
+                      ：{gap.reason} <Link to={gap.next_url}>查看办理材料</Link>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
             {(decision.strategy === "hotspot" ||
               decision.strategy === "HOTSPOT_SATELLITE") &&
               decision.price_action_plan && (

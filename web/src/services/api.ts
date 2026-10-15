@@ -10,6 +10,7 @@ import type {
   PortfolioResponse,
   PolicyResponse,
   RiskResponse,
+  HeldContinuityResponse,
   WriteResponse,
 } from "../types/api";
 import type {
@@ -266,8 +267,21 @@ export const api = {
     getPrivate<PortfolioResponse>("portfolio", signal),
   risk: (signal?: AbortSignal) =>
     getPrivate<RiskResponse>("private/portfolio/risk", signal),
+  heldContinuity: (signal?: AbortSignal) =>
+    getPrivate<HeldContinuityResponse>(
+      "private/portfolio/held-continuity",
+      signal,
+    ),
   riskPreview: (body: HotspotSizingRequest) =>
     post<HotspotSizingResponse>("private/portfolio/risk-preview", body),
+  refreshHeldContinuity: (body: {
+    expected_revision: number;
+    symbols: string[];
+  }) =>
+    post<{ status: string; failures: { symbol: string; gap_code?: string }[] }>(
+      "private/portfolio/held-continuity/refresh",
+      body,
+    ),
   riskContext: (symbol: string, signal?: AbortSignal) =>
     getPrivate<PrivateRiskContext>(
       `private/portfolio/risk-context/${encodeURIComponent(symbol)}`,

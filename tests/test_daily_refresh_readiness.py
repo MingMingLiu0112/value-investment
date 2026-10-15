@@ -86,6 +86,21 @@ def test_pending_incremental_model_does_not_hide_independently_verified_quote(tm
     assert result['quotes']['600887']['price_admitted'] is False
 
 
+def test_quote_only_observation_ready_without_promoting_research_or_old_close(tmp_path, monkeypatch):
+    monkeypatch.setattr(module, 'load_price_conditions', lambda *a, **k: {'items': [], 'blockers': []})
+    quote = {'status': 'QUOTE_VERIFIED_WITHOUT_RESEARCH_DISPLAY_ONLY',
+             'quote': {'quote_date': '2026-10-15', 'latest_completed_session': '2026-10-15'},
+             'price_admitted': False, 'research_case': None}
+    monkeypatch.setattr(module, 'execute_quote_bridge_for_symbol', lambda *a, **k: quote)
+    result = module.refresh_readiness(tmp_path, now=datetime.now(timezone.utc), symbols=['000333'])
+    assert result['quotes_ready'] and result['publication_ready']
+    assert result['quotes']['000333']['price_admitted'] is False
+    assert result['quotes']['000333']['research_case'] is None
+    quote['quote']['latest_completed_session'] = '2026-10-16'
+    result = module.refresh_readiness(tmp_path, now=datetime.now(timezone.utc), symbols=['000333'])
+    assert not result['quotes_ready'] and not result['publication_ready']
+
+
 def test_latest_run_only_exposes_status_not_secret(tmp_path):
     (tmp_path / '.tmp').mkdir()
     path = tmp_path / '.tmp/daily-workbench-latest-run.json'

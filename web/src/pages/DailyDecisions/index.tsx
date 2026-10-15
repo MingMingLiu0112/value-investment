@@ -14,6 +14,7 @@ import {
   judgmentGroup,
   judgmentGroups,
   publicationVersionsMatch,
+  hotspotOpportunityQuality,
 } from "../../utils/currentJudgment";
 import "./opportunities.css";
 
@@ -43,15 +44,8 @@ function StrategySection({
     ? items.filter(hasValuationResult)
     : [...items].sort((a, b) => {
         const score = (item: DecisionItem) => {
-          const plan = item.price_action_plan;
-          const trend = plan?.price_behavior?.daily_trend;
-          return (
-            (trend === "UPTREND" ? 4 : trend === "RANGE" ? 2 : 0) +
-            (plan?.entry_trigger_price != null &&
-            plan.invalidation_price != null
-              ? 1
-              : 0)
-          );
+          const code = hotspotOpportunityQuality(item)?.code;
+          return code ? { D: 4, C: 3, B: 2, A: 1, E: 0 }[code] : -1;
         };
         return score(b) - score(a);
       });
@@ -83,6 +77,10 @@ function StrategySection({
           </span>
         </div>
       </div>
+      {!foldUnvalued &&
+        !items.some((item) =>
+          ["B", "C", "D"].includes(hotspotOpportunityQuality(item)?.code ?? ""),
+        ) && <p role="status">今日没有符合当前策略条件的入场机会。</p>}
       {main.length ? (
         <div className="opportunity-list">
           {judgmentGroups.map((label, group) => {

@@ -21,7 +21,9 @@ describe("machine code translation", () => {
     expect(codeText("concentration_allowed")).toBe("是否允许集中");
     expect(codeText("risk_tolerance")).toBe("风险承受度");
     expect(codeText("reconciliation")).toBe("尚未执行对账");
-    expect(codeText("holding_market_value")).toBe("未接入已核验行情");
+    expect(codeText("holding_market_value")).toBe(
+      "正式风险计算缺少已准入的持仓市值",
+    );
     expect(codeText("investable_assets_cny")).toBe("可投资资产");
     expect(codeText("max_single_security_pct")).toBe("单票上限");
     expect(codeText("max_single_industry_pct")).toBe("行业上限");

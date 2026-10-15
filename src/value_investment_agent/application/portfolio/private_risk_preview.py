@@ -6,13 +6,15 @@ from zoneinfo import ZoneInfo
 import hashlib
 
 from ...domain.portfolio.dual_sleeve_risk import review_dual_sleeve_risk
-from ...domain.portfolio.security_attributes import SCHEMA as ATTRIBUTE_SCHEMA, parse_observed_attributes
+from ...domain.portfolio.security_attributes import (
+    SCHEMA as ATTRIBUTE_SCHEMA, parse_observed_attributes, quantity_rule_blockers,
+)
 from ..hotspot.current_registry import load_price_conditions, registry_identity
 from ..product.public_snapshot import load_current_packet
 from ..product.publication_chain import load_current_chain
 from .private_risk_projection import build_risk_input, review_private_risk_rehearsal
 from .private_portfolio_service import PrivatePortfolioService, reconciliation_state
-from .security_attributes import load_verified_security_attributes
+from .security_attributes import load_verified_security_attributes, trading_rules_for
 
 ASSUMPTION_FIELDS = (
     "gap_stress_cny", "entry_slippage_cny", "exit_slippage_cny", "buy_fee_fraction",
@@ -65,7 +67,7 @@ def _scenario_preview(scenario, *, symbol, generated_at):
 
 
 def _projected_scenario(scenario, *, journal, symbol, assumptions, binding,
-        plan_blockers, actual_revision, repository_root, generated_at):
+        plan_blockers, actual_revision, repository_root, generated_at, verified_rules=None):
     """Web choices: acknowledged, execution, holding_risks, optional security_risks.
 
     holding_risks partitions by (sleeve, symbol), with committed_risk_cny.
@@ -225,7 +227,19 @@ def _projected_scenario(scenario, *, journal, symbol, assumptions, binding,
         symbol=symbol, generated_at=generated_at)
     output.update(status=calculated["status"], review_quantity=calculated["review_quantity"],
         blockers=calculated["blockers"], engine=calculated["engine"])
+    _enforce_quantity_rule(output, verified_rules)
     return output
+
+
+def _enforce_quantity_rule(output, rule):
+    blockers = quantity_rule_blockers(output.get("review_quantity"), rule)
+    if blockers:
+        output.update(review_quantity=None, status="BLOCKED",
+            blockers=list(dict.fromkeys([*output.get("blockers", []), *blockers])))
+        review = (output.get("engine") or {}).get("hotspot_quantity_review")
+        if review:
+            review.update(review_quantity=None, status="BLOCKED",
+                blockers=list(dict.fromkeys([*review.get("blockers", []), *blockers])))
 
 
 def _current_plan(root, symbol, now):
@@ -265,6 +279,10 @@ def preview_private_hotspot_risk(journal, *, repository_root, generated_at: date
     assumptions = payload.get("assumptions", {})
     if not isinstance(assumptions, dict) or set(assumptions) - set(ASSUMPTION_FIELDS):
         raise ValueError("仓位试算包含不支持的假设字段。")
+    assumptions = deepcopy(assumptions)
+    attributes = load_verified_security_attributes(repository_root, {symbol}, now=generated_at)
+    verified_rules = trading_rules_for(attributes, symbol)
+    supplied_lot = assumptions.get("lot_size")
     missing = [field for field in ASSUMPTION_FIELDS if assumptions.get(field) in (None, "")]
     blockers.extend("ASSUMPTION_MISSING:" + field for field in missing)
     for field, value in assumptions.items():
@@ -280,6 +298,11 @@ def preview_private_hotspot_risk(journal, *, repository_root, generated_at: date
             raise ValueError("费用比率应在 0 到 1 之间。")
         if field == "lot_size" and (amount <= 0 or amount != amount.to_integral_value()):
             raise ValueError("交易单位必须是正整数。")
+    if verified_rules:
+        if supplied_lot not in (None, "") and Decimal(str(supplied_lot)) != verified_rules["lot_size"]:
+            raise ValueError("交易单位假设与已核验公开规则冲突。")
+        assumptions["lot_size"] = verified_rules["lot_size"]
+        blockers = [item for item in blockers if item != "ASSUMPTION_MISSING:lot_size"]
     try:
         binding, error = _current_plan(repository_root, symbol, generated_at)
         if error:
@@ -298,7 +321,6 @@ def preview_private_hotspot_risk(journal, *, repository_root, generated_at: date
         # The existing engine requires actual verified execution-state booleans.
         # A dual-source close alone does not prove liquidity or price-limit state.
         close = plan.get("current_reference_close", {})
-        attributes = load_verified_security_attributes(repository_root, {symbol}, now=generated_at)
         attribute = next((row for row in attributes or [] if row["symbol"] == symbol), {})
         if attribute.get("liquidity_profile") != "LIQUID":
             blockers.append("CANDIDATE_LIQUIDITY_UNKNOWN")
@@ -317,10 +339,17 @@ def preview_private_hotspot_risk(journal, *, repository_root, generated_at: date
                 repository_root=repository_root, hotspot_request=request)
     engine_review = (result.get("engine") or {}).get("hotspot_quantity_review") or {}
     blockers = list(dict.fromkeys([*blockers, *result.get("blockers", []), *engine_review.get("blockers", [])]))
+    blockers.extend(quantity_rule_blockers(engine_review.get("review_quantity"), verified_rules))
+    _enforce_quantity_rule({"review_quantity": engine_review.get("review_quantity"),
+        "engine": result.get("engine")}, verified_rules)
     result["sizing_preview"] = {"symbol": symbol, "review_quantity": None if blockers else engine_review.get("review_quantity"),
         "scope": "CONDITIONAL_SCENARIO_ONLY", "formal_review_quantity": None,
         "blockers": blockers, "status": "BLOCKED" if blockers else engine_review.get("status", "BLOCKED"),
-        "plan_binding": binding, "assumptions": assumptions, "trade_eligible": False,
+        "plan_binding": binding, "assumptions": deepcopy(payload.get("assumptions", {})),
+        "effective_sizing_inputs": assumptions, "verified_rules": verified_rules,
+        "trading_unit_basis": ("VERIFIED_PUBLIC_RULE" if verified_rules else
+            "EXPLICIT_SCENARIO_ASSUMPTION" if supplied_lot not in (None, "") else "UNKNOWN"),
+        "trade_eligible": False,
         "formal_eligibility": binding["plan"].get("formal_eligibility") if binding else None,
         "stop_execution_guaranteed": False, "sizing_details": engine_review or None}
     scenario = payload.get("scenario")
@@ -329,7 +358,7 @@ def preview_private_hotspot_risk(journal, *, repository_root, generated_at: date
             symbol=symbol, assumptions=assumptions, binding=binding,
             plan_blockers=scenario_plan_blockers,
             actual_revision=(result.get("facts") or {}).get("revision"),
-            repository_root=repository_root, generated_at=generated_at)
+            repository_root=repository_root, generated_at=generated_at, verified_rules=verified_rules)
     else:
         result["scenario_preview"] = _scenario_preview(scenario,
             symbol=symbol, generated_at=generated_at)

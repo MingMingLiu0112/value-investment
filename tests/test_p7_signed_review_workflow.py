@@ -519,6 +519,19 @@ def test_full_signed_research_public_publish_ips_risk_buy_sell_history(synthetic
             assert Decimal(service.portfolio_view(today=date(2026, 9, 22))['positions'][0]['sleeves'][0]['sellable_quantity']) == quantity
             held_risk = _simulated_review(service, day=day, mark=buy_price + Decimal('0.05'))
             assert held_risk['aggregate']['existing_risk_assessment']['status'] == 'PASS'
+            # P8: an actual-shaped isolated fill must remain reviewed after it
+            # leaves every discovery ranking; this does not certify a real hold.
+            from value_investment_agent.application.portfolio.held_continuity import project_held_continuity
+            held_plan = dict(hotspot_plan, action='no_order', symbol=symbol,
+                data_available_at=now.isoformat(), signal_state='WATCH')
+            continued = project_held_continuity(view['positions'],
+                {'engine': held_risk, 'blockers': []}, selected_symbols=(),
+                plan_provider=lambda code: held_plan if code == symbol else None,
+                generated_at=datetime.fromisoformat(day+'T20:00:00+08:00'))
+            assert len(continued['items']) == 1
+            assert continued['items'][0]['selected_today'] is False
+            assert continued['items'][0]['sellable_quantity'] == '0'
+            assert continued['items'][0]['strategy_plan']['research_version'] == plan['research_version']
             # Use the real publication writer for the version switch too.
             current_packet = dict(deepcopy(packet), publication_id='TEST_ONLY-P7-F2-next',
                 generated_at='2026-09-22T18:00:00+08:00')
@@ -539,6 +552,9 @@ def test_full_signed_research_public_publish_ips_risk_buy_sell_history(synthetic
     closed = _simulated_review(service, day='2026-09-22')
     assert Decimal(closed['aggregate']['total_assets_cny']) == expected_equity
     assert held_risk['aggregate'] != closed['aggregate']
+    assert project_held_continuity(final['positions'], {'engine': closed, 'blockers': []},
+        selected_symbols=(), plan_provider=lambda code: None,
+        generated_at=datetime.fromisoformat('2026-09-22T21:00:00+08:00'))['items'] == []
     journal_bytes = service.journal.path.read_bytes()
     now = datetime.fromisoformat('2026-09-22T21:00:00+08:00')
     body = dict(record_id='TEST_ONLY-P7-plan', kind='PLAN', namespace='SIMULATED', sleeve='HOTSPOT_SATELLITE',

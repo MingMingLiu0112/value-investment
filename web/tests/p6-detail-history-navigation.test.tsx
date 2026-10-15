@@ -94,3 +94,29 @@ it("offers keyboard-accessible snapshot choices and keeps the selected audit col
   expect(html).toContain("展开所选研究的依据、版本与变化");
   expect(html).not.toMatch(/<details[^>]*\bopen/);
 });
+
+it("shows source-verified research judgment before account workflow only for the same publication", () => {
+  state.data = {
+    publication_id: "pub-current",
+    publication: { publication_id: "pub-current" },
+    company_statuses: {
+      "600887": {
+        decision_chain: {
+          gaps: [],
+          research_conclusion: {
+            evidence_verified: true,
+            summary: "压力情景不能作为可靠合理价",
+          },
+        },
+      },
+    },
+    decision: { id: "600887", symbol: "600887", strategy: "value" },
+  };
+  let html = renderToStaticMarkup(<DecisionDetail />);
+  expect(html.indexOf("压力情景不能作为可靠合理价")).toBeLessThan(
+    html.indexOf("六项操作计划"),
+  );
+  state.data.publication.publication_id = "pub-old";
+  html = renderToStaticMarkup(<DecisionDetail />);
+  expect(html).not.toContain("压力情景不能作为可靠合理价");
+});

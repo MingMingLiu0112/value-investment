@@ -168,3 +168,65 @@ def test_common_factor_concentration_uses_both_pools():
     result = review(payload)
     assert not result["blockers"]
     assert result["hotspot_quantity_review"]["review_quantity"] == 0
+
+
+@pytest.fixture
+def quantity_original(published, monkeypatch):
+    from value_investment_agent.infrastructure.portfolio import security_attributes as infra
+    root = published[0]
+    directory = root / infra.QUANTITY_DIRECTORY
+    directory.mkdir(parents=True)
+    # Synthetic parser fixture, explicitly pinned only inside this test process.
+    raw = ("<html>For the Main Board each order shall be in multiples of 100 shares "
+        "shall not exceed 1 million shares For STAR Market "
+        "no less than 200 shares and no more than 100,000 shares</html>").encode()
+    path = directory / "synthetic.html"
+    path.write_bytes(raw)
+    digest = hashlib.sha256(raw).hexdigest()
+    monkeypatch.setitem(infra.QUANTITY_DIGESTS, "SSE_QUANTITY", digest)
+    receipt = {"id": "SSE_QUANTITY", "path": path.relative_to(root).as_posix(),
+        "sha256": digest, "source_url": infra.QUANTITY_SOURCES["SSE_QUANTITY"],
+        "known_at": GENERATED_AT.isoformat()}
+    receipt_path = directory / "SSE_QUANTITY.json"
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+    return root, path, receipt_path, receipt
+
+
+def test_original_bound_rule_joins_verified_board_without_economic_claims(quantity_original):
+    root, _, _, _ = quantity_original
+    row = application.load_verified_security_attributes(root, ["600519"], now=GENERATED_AT)[0]
+    rule = row["trading_rules"]
+    assert (rule["minimum_buy_quantity"], rule["buy_quantity_increment"], rule["lot_size"]) == (100, 100, 100)
+    assert rule["maximum_buy_quantity"] == 1000000
+    assert len(rule["evidence_refs"]) == 3
+    assert row["liquidity_profile"] == row["cyclical"] == row["common_factors"] == "UNKNOWN"
+
+
+@pytest.mark.parametrize("change", ["tamper", "url", "future", "stale", "digest"])
+def test_quantity_failure_preserves_independently_verified_identity(quantity_original, change):
+    root, path, receipt_path, receipt = quantity_original
+    if change == "tamper": path.write_bytes(b"changed")
+    if change == "url": receipt["source_url"] += "?unverified"
+    if change == "future": receipt["known_at"] = (GENERATED_AT + timedelta(seconds=1)).isoformat()
+    if change == "stale": receipt["known_at"] = (GENERATED_AT - timedelta(days=8)).isoformat()
+    if change == "digest": receipt["sha256"] = "a" * 64
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+    row = application.load_verified_security_attributes(root, ["600519"], now=GENERATED_AT)[0]
+    assert row["trading_rules"] is None
+    assert row["industry"] == "CSRC_SECTION:C"
+
+
+@pytest.mark.parametrize("exchange,board,minimum,increment,maximum", [
+    ("SSE", "主板", 100, 100, 1000000), ("SSE", "科创板", 200, 1, 100000),
+    ("SZSE", "主板", 100, 100, 1000000), ("SZSE", "创业板", 100, 100, 300000),
+])
+def test_board_specific_rule_contract(exchange, board, minimum, increment, maximum):
+    from value_investment_agent.domain.portfolio.security_attributes import auction_buy_rule, quantity_rule_blockers
+    rule = auction_buy_rule({"exchange": exchange, "board": board, "security_type": "A_SHARE"})
+    assert (rule["minimum_buy_quantity"], rule["buy_quantity_increment"], rule["maximum_buy_quantity"]) == (minimum, increment, maximum)
+    assert not quantity_rule_blockers(minimum, rule)
+    assert quantity_rule_blockers(minimum - 1, rule)
+    assert quantity_rule_blockers(maximum + increment, rule)
+    assert bool(quantity_rule_blockers(201, rule)) == (increment != 1)
+    assert auction_buy_rule({"exchange": exchange, "board": board, "security_type": "DEPOSITARY_RECEIPT"}) is None
+    assert auction_buy_rule({"exchange": "BSE", "board": board, "security_type": "A_SHARE"}) is None

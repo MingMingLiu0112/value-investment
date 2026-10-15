@@ -54,6 +54,7 @@ def confirm_policy(service, policy=None):
 def quotes(monkeypatch, *, price="30", stale=False):
     from value_investment_agent.application.product import quote_bridge
     monkeypatch.setattr(quote_bridge, "execute_quote_bridge_for_symbol", lambda *args, **kwargs: {
+        "price_admitted": True,
         "compatibility": {"verified_quote": {"eligible": True}}, "quote": {
             "display_price": price, "quote_date": "2026-10-13" if stale else "2026-10-14",
             "latest_completed_session": "2026-10-14", "bundle_sha256": "a" * 64}})

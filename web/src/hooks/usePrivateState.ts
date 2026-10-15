@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { api, ApiError, hadSessionToken } from "../services/api";
-import type { PortfolioResponse, RiskResponse } from "../types/api";
+import type {
+  PortfolioResponse,
+  RiskResponse,
+  HeldContinuityResponse,
+} from "../types/api";
 import { privateStateFrom } from "../utils/privateState";
 import type { PrivateStateView } from "../utils/privateState";
 
@@ -9,6 +13,7 @@ export interface PrivateStateHandle extends PrivateStateView {
   /** 仅在已解锁且台账可读时存在；供页面渲染持仓事实，不做任何推算。 */
   portfolio?: PortfolioResponse;
   risk?: RiskResponse;
+  heldContinuity?: HeldContinuityResponse;
 }
 
 /**
@@ -18,6 +23,8 @@ export interface PrivateStateHandle extends PrivateStateView {
 export function usePrivateState(): PrivateStateHandle {
   const [portfolio, setPortfolio] = useState<PortfolioResponse>();
   const [risk, setRisk] = useState<RiskResponse>();
+  const [heldContinuity, setHeldContinuity] =
+    useState<HeldContinuityResponse>();
   const [error, setError] = useState<unknown>();
   const [loading, setLoading] = useState(true);
   const [hadSession, setHadSession] = useState(false);
@@ -28,6 +35,7 @@ export function usePrivateState(): PrivateStateHandle {
     // Capture before the read: forgetSession() may run during a 401 retry.
     setHadSession(hadSessionToken());
     setLoading(true);
+    setHeldContinuity(undefined);
     setError(undefined);
     (async () => {
       let nextPortfolio: PortfolioResponse | undefined;
@@ -60,6 +68,24 @@ export function usePrivateState(): PrivateStateHandle {
         }
       }
       if (controller.signal.aborted) return;
+      if (nextPortfolio.status === "CONNECTED") {
+        try {
+          const continuity = await api.heldContinuity(controller.signal);
+          if (continuity.revision === nextPortfolio.revision)
+            setHeldContinuity(continuity);
+        } catch (cause) {
+          if (controller.signal.aborted) return;
+          if (cause instanceof ApiError && cause.status === 401) {
+            setPortfolio(undefined);
+            setRisk(undefined);
+            setHeldContinuity(undefined);
+            setError(cause);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+      if (controller.signal.aborted) return;
       setPortfolio(nextPortfolio);
       setRisk(nextRisk);
       setError(undefined);
@@ -80,5 +106,6 @@ export function usePrivateState(): PrivateStateHandle {
     retry: () => setRevision((value) => value + 1),
     portfolio,
     risk,
+    heldContinuity,
   };
 }

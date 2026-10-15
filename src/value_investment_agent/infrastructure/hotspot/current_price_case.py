@@ -19,6 +19,42 @@ from value_investment_agent.quote_sessions import (
 from .sina_price_case import ENDPOINT, PERIODS, _source_url_valid, daily_from_intraday, parse_klines
 from .daily_market import bounded_get
 
+DISPLAY_CLOSE_SCOPE = "LAST_COMPLETED_CLOSE_DISPLAY_ONLY"
+STRICT_CLOSE_SCOPE = "SAME_SESSION_B1"
+
+
+def _display_close(root, path, sha, symbol, as_of, price, now):
+    """Newly acquired last-completed close, never same-session B1/PIT admission."""
+    from value_investment_agent.quote_session_conversion import quote_snapshot_from_bundle_file
+    path = _inside(root, path)
+    raw = path.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != sha:
+        raise ValueError("Display bundle hash mismatch")
+    bundle = json.loads(raw)
+    finished = datetime.fromisoformat(bundle["finished_at"])
+    if finished.utcoffset() is None or finished > now:
+        raise ValueError("Display bundle cutoff mismatch")
+    snapshot = quote_snapshot_from_bundle_file(path, root, symbol=symbol,
+        ref_id="completed-close-observation-" + sha, expected_sha256=sha, require_current_b1=False)
+    if (snapshot.status != "verified_close" or snapshot.quote_date != as_of
+            or Decimal(snapshot.current_price) != Decimal(price)):
+        raise ValueError("Display dual-source close rejected")
+    reference = bundle["references"][symbol]
+    checked = evaluate_quote_session(symbol, price, reference, now, documents=bundle["documents"])
+    if not checked["passed"] or checked["expected_session"] != as_of.isoformat():
+        raise ValueError("Display close is not calendar-bound latest completed session: " + checked["status"])
+    refs = reference["document_refs"]
+    for key in [refs["tencent"], refs["sina"], *refs["calendar_documents"]]:
+        fetched = datetime.fromisoformat(bundle["documents"][key]["fetched_at"])
+        if fetched.utcoffset() is None or fetched > finished:
+            raise ValueError("Display evidence cutoff mismatch")
+    return dict(status="VERIFIED_LAST_COMPLETED_CLOSE_DISPLAY_ONLY", price=str(Decimal(price)),
+        bundle_path=path.relative_to(root).as_posix(), bundle_sha256=sha,
+        evidence_refs=checked["source_hashes"], provider_times=checked["provider_times"],
+        next_session=None, observation_scope=DISPLAY_CLOSE_SCOPE,
+        acquired_at=finished.isoformat(), latest_completed_session=as_of.isoformat(),
+        current_pit=False, formal_eligibility=False, price_admitted=False)
+
 
 def _inside(root, path):
     path = Path(path)
@@ -85,7 +121,9 @@ def _b1(root, path, sha, symbol, as_of, price, now):
                 provider_times=checked["provider_times"], next_session=next_session)
 
 
-def _build(root, symbol, as_of, sources, bundle_path, bundle_sha, now):
+def _build(root, symbol, as_of, sources, bundle_path, bundle_sha, now, *, observation_scope=STRICT_CLOSE_SCOPE):
+    if observation_scope not in {STRICT_CLOSE_SCOPE, DISPLAY_CLOSE_SCOPE}:
+        raise ValueError("Unsupported current-case observation scope")
     bars = {}
     for period, scale in PERIODS.items():
         source = sources[period]
@@ -115,31 +153,39 @@ def _build(root, symbol, as_of, sources, bundle_path, bundle_sha, now):
         raise ValueError("Missing latest 15m daily aggregate")
     levels = {period: calculate_price_levels(rows, period=period) for period, rows in bars.items()}
     close = bars["daily"][-1]["close"]
-    binding = _b1(root, bundle_path, bundle_sha, symbol, as_of, close, now)
+    binding = (_display_close if observation_scope == DISPLAY_CLOSE_SCOPE else _b1)(
+        root, bundle_path, bundle_sha, symbol, as_of, close, now)
     state, explanation = current_signal(levels)
-    return dict(schema_version="hotspot-current-price-case-v1", symbol=symbol,
+    result = dict(schema_version="hotspot-current-price-case-v1", symbol=symbol,
                 strategy="HOTSPOT_SATELLITE", market_trade_date=as_of.isoformat(),
                 current_reference_price=close, current_reference_close=binding,
                 levels=levels, bars=bars, source_bindings=sources,
                 signal_state=state, explanation=explanation,
                 blockers=list(CURRENT_BLOCKERS), action_eligibility=False, action="no_order",
                 bar_timezone="Asia/Shanghai")
+    if observation_scope == DISPLAY_CLOSE_SCOPE:
+        result.update(observation_scope=DISPLAY_CLOSE_SCOPE, current_pit=False,
+                      formal_eligibility=False, price_admitted=False)
+    return result
 
 
 def collect_current_price_case(*, root: Path, symbol: str, as_of: date,
                                quote_bundle_path: Path, quote_bundle_sha256: str,
-                               fetch=None, now=None) -> dict:
+                               fetch=None, now=None, observation_scope=STRICT_CLOSE_SCOPE) -> dict:
     root = Path(root).resolve()
     live_clock = now is None
     now = _clock(now)
     if len(symbol) != 6 or not symbol.isdigit() or not symbol.startswith(("0", "3", "6")):
         raise ValueError("Invalid symbol")
+    if observation_scope not in {STRICT_CLOSE_SCOPE, DISPLAY_CLOSE_SCOPE}:
+        raise ValueError("Unsupported current-case observation scope")
     # Reject incomplete, stale and unsupported sessions before network requests.
     bundle = json.loads(_inside(root, quote_bundle_path).read_bytes())
     from value_investment_agent.quote_sessions import parse_quote
     ref = bundle["references"][symbol]
     quote = parse_quote(bundle["documents"][ref["document_refs"]["tencent"]], "tencent", symbol, now)
-    _b1(root, quote_bundle_path, quote_bundle_sha256, symbol, as_of, quote["price"], now)
+    (_display_close if observation_scope == DISPLAY_CLOSE_SCOPE else _b1)(
+        root, quote_bundle_path, quote_bundle_sha256, symbol, as_of, quote["price"], now)
     directory = root / "runtime" / "hotspot-current-price-cases" / f"{symbol}-{as_of}-{uuid4().hex}"
     directory.mkdir(parents=True)
     sources = {}
@@ -161,7 +207,8 @@ def collect_current_price_case(*, root: Path, symbol: str, as_of: date,
                                    scope="SINGLE_PROVIDER_CURRENT_OBSERVATION")
     sources["daily"] = {**sources["60m"], "scope": "DERIVED_FROM_SINA_60M_NOT_INDEPENDENT_DAILY_SOURCE"}
     now = _clock(None) if live_clock else now
-    case = _build(root, symbol, as_of, sources, quote_bundle_path, quote_bundle_sha256, now)
+    case = _build(root, symbol, as_of, sources, quote_bundle_path, quote_bundle_sha256, now,
+                  observation_scope=observation_scope)
     path = directory / "case.json"
     with path.open("x", encoding="utf-8") as stream:
         json.dump(case, stream, ensure_ascii=False, indent=2)
@@ -191,7 +238,8 @@ def load_current_price_case(*, root: Path, symbol: str, as_of: date | None = Non
             raise ValueError("Current original path mismatch")
     binding = case["current_reference_close"]
     rebuilt = _build(root, symbol, day, case["source_bindings"], binding["bundle_path"],
-                     binding["bundle_sha256"], now)
+                     binding["bundle_sha256"], now,
+                     observation_scope=case.get("observation_scope", STRICT_CLOSE_SCOPE))
     if case != rebuilt or case["source_bindings"]["daily"] != {
             **case["source_bindings"]["60m"], "scope": "DERIVED_FROM_SINA_60M_NOT_INDEPENDENT_DAILY_SOURCE"}:
         raise ValueError("Current case calculation/contract mismatch")

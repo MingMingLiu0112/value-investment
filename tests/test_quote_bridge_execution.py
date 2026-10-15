@@ -54,6 +54,31 @@ def _verified(monkeypatch, *, quote_date: datetime, price: str) -> None:
                         lambda *a: (quote_date.isoformat(), ["b" * 64]))
 
 
+def test_next_morning_collection_is_last_close_display_not_same_session_permission(tmp_path, monkeypatch):
+    from datetime import date
+    bundle, _ = _case(tmp_path)
+    raw = json.loads(bundle.read_bytes())
+    raw['finished_at'] = '2026-10-12T17:00:00+00:00'
+    _write(bundle, raw)
+    _verified(monkeypatch, quote_date=date(2026, 10, 12), price='28.10')
+    def convert(*args, **kwargs):
+        strict = kwargs.get('require_current_b1')
+        return SimpleNamespace(status='unverified' if strict else QUOTE_STATUS_VERIFIED_CLOSE,
+            quote_date=date(2026, 10, 12), current_price='28.10', evidence_refs=[],
+            blockers=['B1 requires same-session post-close acquisition'] if strict else [])
+    monkeypatch.setattr(quote_bridge, 'quote_snapshot_from_bundle_file', convert)
+    path, digest, verdict = quote_bridge.admit_quote_for_research(
+        tmp_path, bundle, '600887', '2026-10-12', today=TODAY)
+    assert path is None and digest is None
+    assert verdict['status'] == 'HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY'
+    assert verdict['latest_completed_session'] == '2026-10-12'
+    assert verdict['display_price'] == '28.10'
+    assert verdict['price_admitted'] is False
+    monkeypatch.setattr(quote_bridge, 'latest_sse_2026_session', lambda *a: ('2026-10-13', ['b'*64]))
+    _, _, stale = quote_bridge.admit_quote_for_research(tmp_path, bundle, '600887', '2026-10-12', today=TODAY)
+    assert stale['status'] == 'NOT_ADMITTED'
+
+
 def test_missing_registration_is_fail_closed(tmp_path):
     execution = execute_quote_bridge_for_symbol(tmp_path, "600887", today=TODAY)
     assert execution["status"] == "POINTER_UNAVAILABLE"
@@ -61,6 +86,29 @@ def test_missing_registration_is_fail_closed(tmp_path):
     assert execution["quote"] is None
     assert execution["compatibility"] is None
     assert execution["action"] == "no_order"
+
+
+def test_quote_only_registration_never_invents_a_research_cutoff_or_permission(tmp_path, monkeypatch):
+    from datetime import date
+    bundle, package = _case(tmp_path)
+    _verified(monkeypatch, quote_date=date(2026, 10, 12), price="28.10")
+    pin_quote_bridge_for_symbol(tmp_path, "600887", bundle, None)
+    execution = execute_quote_bridge_for_symbol(tmp_path, "600887", today=TODAY)
+    assert execution["status"] == "QUOTE_VERIFIED_WITHOUT_RESEARCH_DISPLAY_ONLY"
+    assert execution["research_case"] is execution["research_day"] is None
+    assert execution["quote"]["display_price"] == "28.10"
+    assert execution["compatibility"]["verified_quote"]["eligible"] is True
+    assert execution["price_admitted"] is False
+    assert all(not row["eligible"] for key, row in execution["compatibility"].items()
+               if key != "verified_quote")
+    from value_investment_agent.application.product.research_validity_review import review_registered_research_validity
+    review = review_registered_research_validity(root=tmp_path, review_cutoff=date(2026, 10, 12),
+        today=TODAY, output_path=Path("runtime/review.json"))
+    assert review["reviews"][0]["status"] == "NO_REGISTERED_RESEARCH"
+    assert review["reviews"][0]["formal_eligibility"] is False
+    pin_quote_bridge_for_symbol(tmp_path, "600887", bundle, package)
+    with pytest.raises(ValueError, match="已有研究绑定"):
+        pin_quote_bridge_for_symbol(tmp_path, "600887", bundle, None)
 
 
 def test_pin_without_explicit_timestamp_stamps_utc_now(tmp_path):

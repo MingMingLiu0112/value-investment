@@ -1,0 +1,31 @@
+{
+  "action": "no_order",
+  "as_of": "2026-10-16",
+  "registration_authorized": false,
+  "000333": {
+    "path": "runtime/company-research/midea-valuation-applicability-20261013-v5/evidence.json",
+    "sha256": "b69e2fc931a016393ae5d274ad8d7aec8c5aaad52787e92ae377c5ff5ee5f541",
+    "pointers": {
+      "/equity_route_profile_routing/status": "SUPPORTED",
+      "/model_change/new_route_status": "SUPPORTED_BY_EXPLICIT_PROFILE_AUTHORIZATION",
+      "/model_change/selected_model": "residual_income_or_equity_value",
+      "/scope_assessment/industrial_fcff_carve_out": "MODEL_NOT_APPLICABLE",
+      "/scope_assessment/consolidated_enterprise_value_bridge": "VALUATION_NOT_READY"
+    },
+    "interpretation": "Issuer scope prevents defensible industrial FCFF separation; general mature_manufacturing FCFF router is not globally disabled. Authorized RI route does not imply registered inputs, valuation readiness or approval. Root owns registry correction."
+  },
+  "issuance": {"hundred_million_cny": 415, "billion_cny": 41.5, "principal_cny": 41500000000, "net_cash_proven": false},
+  "600887_share_basis": {
+    "historical_basis_date": "2026-06-30",
+    "ordinary_shares_excluding_treasury": 6325360667,
+    "historical_data_status": "SOLVABLE_FROM_RETAINED_ORIGINAL",
+    "current_2026_10_16_share_count": null,
+    "current_status": "DATED_CAPITAL_ACTION_ROLLFORWARD_REQUIRED_FOR_NEW_DATE_NOT_HISTORICAL_REPLAY_BLOCKER",
+    "sources": [
+      {"path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf", "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2", "physical_pages": [42, 66, 159], "facts": "p159 note53 unchanged 6,325,360,667 shares; note56 treasury stock not applicable. p42 no reporting-period share change. p66 May2025 cancellation40,540,038 already reflected; never subtract twice."},
+      {"path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225578520.pdf", "sha256": "7c669db8bb3b5a362ecad92c6a96745a3b5039a3288f5e13b498e9e72971111c", "physical_pages": [1, 2], "facts": "Employee plan acquired8,476,357 existing exchange shares bySep22; not new issuance or issuer treasury cancellation."},
+      {"path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225598746.pdf", "sha256": "bf56246ba820acaa7e523c884da7f5a09f4da62e3d8235c4ee109e4fc208c2f1", "physical_pages": [1, 2], "facts": "Cancellation repurchase not implemented asofSep30. Does not establish absence of Oct1-16 purchases or all other capital changes."}
+    ],
+    "limitation": "Weighted basic/diluted EPS is not current date-end diluted share count. Subsidiary repurchases do not alter listed-parent ordinary shares. No new collection or inferred zero current treasury."
+  }
+}

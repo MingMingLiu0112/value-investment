@@ -22,8 +22,11 @@ def main() -> int:
     parser.add_argument("--symbol", required=True)
     parser.add_argument("--quote-bundle", required=True,
                         help="Archived dual-source quote bundle under runtime/.")
-    parser.add_argument("--research-package", required=True,
+    scope = parser.add_mutually_exclusive_group(required=True)
+    scope.add_argument("--research-package",
                         help="Registered research package the quote is pinned against.")
+    scope.add_argument("--observation-only", action="store_true",
+                       help="Only display a verified close; no research or price admission.")
     parser.add_argument("--registered-at", help="Explicit registration timestamp for replay.")
     args = parser.parse_args()
     pinned = pin_quote_bridge_for_symbol(

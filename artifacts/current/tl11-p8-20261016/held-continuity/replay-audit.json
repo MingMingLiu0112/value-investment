@@ -1,0 +1,42 @@
+{
+  "schema_version": "p8-held-continuity-bounded-audit-v1",
+  "baseline_head": "437b8dc7395763f643f3e4efb021694b14f15c8b",
+  "action": "no_order",
+  "private_ledger_read_or_written": false,
+  "scope": "Real public candidate retirement and retained-case deterministic replay; held continuity tested separately with TEST_ONLY journals.",
+  "selection_snapshots": [
+    {
+      "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/report.json",
+      "sha256": "989aa97241824b61cd3bf3283b4705e846a4d9de78ad4651c5d12bcb00235b8b",
+      "trade_date": "2026-10-14",
+      "existing_verify_daily_selection_passed": true,
+      "symbols": ["300364", "300413", "300418", "300058", "002354"]
+    },
+    {
+      "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
+      "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e",
+      "trade_date": "2026-10-15",
+      "existing_verify_daily_selection_passed": true,
+      "symbols": ["300059", "601318", "600030", "601211", "000712"]
+    }
+  ],
+  "retired_symbols": ["300364", "300413", "300418", "300058", "002354"],
+  "retained_case_replay": {
+    "historical_clock": "2026-10-14T23:00:00+08:00",
+    "method": "load_held_price_plan twice per case; existing source/calendar/quote/price-engine validation; compare complete returned plans",
+    "all_five_full_plan_pairs_equal": true,
+    "states": {"300364": "WATCH", "300413": "WATCH", "300418": "WATCH", "300058": "WATCH", "002354": "WATCH"},
+    "daily_trends": {"300364": "DOWNTREND", "300413": "RANGE", "300418": "DOWNTREND", "300058": "DOWNTREND", "002354": "DOWNTREND"},
+    "current_clock": "2026-10-16T20:00:00+08:00",
+    "all_five_current_loads_rejected": "B1 current close rejected: stale_quote"
+  },
+  "inherited_longer_replay": {
+    "path": "artifacts/current/tl11-p5-20261014/replay-results-v1.json",
+    "range": ["2026-04-13", "2026-10-14"],
+    "strict_pit_admitted": false,
+    "strict_oos_admitted": false,
+    "performance_claim_allowed": false,
+    "limitation": "Retrospectively selected five securities and now-acquired single-provider historical bars; no historical universe/classification or dated fill/cost/liquidity evidence. Not re-certified by this bounded audit."
+  },
+  "conclusion": "Real candidate retirement is reproducible. Historical price plans are deterministic at the archived clock and fail closed when stale. Real held outcomes cannot be established without confirmed private inputs; no actual holdings are asserted."
+}

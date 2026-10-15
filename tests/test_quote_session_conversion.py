@@ -73,10 +73,12 @@ def test_missing_symbol_reference_fails_closed():
 
 
 @pytest.mark.skipif(not BUNDLE.exists(), reason="archived quote runtime missing")
-def test_current_quote_bridge_does_not_admit_historical_only_b1_evidence():
+def test_current_quote_bridge_displays_latest_historical_close_without_admitting_it():
     from value_investment_agent.application.product.quote_bridge import admit_quote_for_research
     path, digest, verdict = admit_quote_for_research(ROOT, BUNDLE, '600887', '2026-09-22',
         today=datetime(2026, 9, 23, 2, tzinfo=timezone.utc))
     assert path is None and digest is None
-    assert verdict['status'] == 'NOT_ADMITTED'
-    assert 'B1 requires same-session post-close acquisition' in verdict['reason']
+    assert verdict['status'] == 'HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY'
+    assert verdict['is_historical_close'] is True
+    assert verdict['price_admitted'] is False
+    assert verdict['latest_completed_session'] == '2026-09-22'

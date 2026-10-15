@@ -161,6 +161,11 @@ export function HotspotSizingPanel({
     try {
       const assumptions = Object.fromEntries(
         sizingFields.flatMap(([key]) => {
+          if (
+            key === "lot_size" &&
+            currentContext?.verified_rules.lot_size != null
+          )
+            return [];
           const value = String(form[key] ?? "").trim();
           return value ? [[key, value]] : [];
         }),
@@ -324,8 +329,25 @@ export function HotspotSizingPanel({
           />
         )}
         {currentContext?.rule_gaps.map((gap) => (
-          <Alert key={gap} type="warning" message={gap} />
+          <Alert
+            key={gap}
+            type="warning"
+            message={
+              gap === "PUBLIC_AUCTION_BUY_QUANTITY_RULE_UNAVAILABLE"
+                ? "当前证券的交易所申报数量规则尚不可核验"
+                : gap
+            }
+          />
         ))}
+        {currentContext?.verified_rules.lot_size != null && (
+          <p>
+            交易所竞价限价买入规则：最低{" "}
+            {currentContext.verified_rules.minimum_buy_quantity} 股，递增{" "}
+            {currentContext.verified_rules.buy_quantity_increment} 股，单笔最多{" "}
+            {currentContext.verified_rules.maximum_buy_quantity}{" "}
+            股。数量规则不证明能够成交。
+          </p>
+        )}
         {currentContext?.cost_profile && (
           <Alert
             type="info"
@@ -342,6 +364,11 @@ export function HotspotSizingPanel({
           <summary>高级参数：费用、滑点、压力及交易单位</summary>
           <ProForm.Group>
             {sizingFields
+              .filter(
+                ([key]) =>
+                  key !== "lot_size" ||
+                  currentContext?.verified_rules.lot_size == null,
+              )
               .filter(([key]) => key !== "max_trade_notional_cny")
               .map(([key, label]) => (
                 <ProFormText
