@@ -1,6 +1,6 @@
 # CURRENT STATUS
 
-## 2026-10-15 TL11-P7: workflow integration in progress
+## 2026-10-15 TL11-P7: scoped engineering workflow accepted
 
 The latest explicit user task is TL11-P7, not completion of the historical
 TL10/P6 work below. Current evidence and remaining checks are recorded in
@@ -8,8 +8,12 @@ TL10/P6 work below. Current evidence and remaining checks are recorded in
 `artifacts/current/tl11-p7-20261015/`. Signed-review engineering tests,
 TEST_ONLY portfolio interactions and real negative gates are distinct from
 formal investment eligibility, strategy validation and final user acceptance.
-`REAL_DECISION_ENGINEERING_CLOSURE` remains `IN_PROGRESS` until the final
-incremental integration, refresh and CI results are bound. `action=no_order`.
+`REAL_DECISION_ENGINEERING_CLOSURE=PASS` for this P7 engineering package:
+code 19fcde7, remote Core run 38728644080 and Web runs 38728644031/38728637018
+passed; local Core 2848 passed/35 skipped, Web 194, API 158, final signed-chain
+15 passed. Final v16 snapshot is pub-a1f4249523ba0cfb7537. Formal investment
+eligibility remains NOT_REACHED, strategy advantage NOT_PROVEN, final user
+acceptance PENDING_USER. No total Goal completion is asserted. `action=no_order`.
 
 ## 2026-10-13 TL10-RC: one verified daily snapshot, one entry, fail-closed reads
 

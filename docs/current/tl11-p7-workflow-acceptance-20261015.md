@@ -1,6 +1,6 @@
 # TL11-P7 workflow acceptance
 
-Status: IN_PROGRESS. This record is evidence, not investment authorization.
+Status: ENGINEERING_CLOSURE_PASS (TL11-P7 only). This record is evidence, not investment authorization or total-goal completion.
 Permanent boundary: `action=no_order`; final investment decisions remain human.
 
 ## User entry
@@ -73,7 +73,7 @@ research update Oct 12; Web quote Oct 15. Native preservation/publication was
 not performed in P7 and is not claimed. The system page displays these dates
 separately. Private ledgers are not proposed for anonymous/public publication.
 
-## Remaining acceptance
+## Final verification and remaining non-engineering gates
 
 Incremental scan production consumption is connected. Two actual SAFE_REFRESH
 runs returned success and the same publication `pub-8f7bdd444b7b115c80c6`, content
@@ -111,8 +111,30 @@ Final v16 publication is `pub-a1f4249523ba0cfb7537`, content SHA
 Exact packet and receipt copies are archived beside the browser evidence.
 Final local Core passed 2848 tests, 35 skipped (38 existing deprecation
 warnings); API passed 158; Web typecheck and 194 tests passed, and format/build
-passed. Full logs are in the evidence directory. The final independent
-cross-security regression and remote Core/Web CI must finish before engineering
-closure is assessed.
+passed. Full logs are in the evidence directory. The cross-security regression
+passed; root reran the signed full-chain suite with 15 passed. Remote checks
+passed on code commit `19fcde7197aaa971dab04d10e7ee4cb3a4fff6bc`: Core Research
+Gates run 38728644080 (including PostgreSQL integration), Web Workbench runs
+38728644031 and 38728637018. Machine-readable results: `github-ci.json`.
 Real reviewer identity/signature, actual IPS/holdings, strategy evidence and
 final human user acceptance cannot be replaced by TEST_ONLY results.
+
+## Scoped acceptance statuses
+
+| Dimension | Status | Scope |
+| --- | --- | --- |
+| REAL_DECISION_ENGINEERING_CLOSURE | PASS | P7 engineering only; no total Goal graduation |
+| VALUE_INVESTMENT_WORKFLOW | PASS | Real restricted research plus isolated signed positive workflow |
+| HOTSPOT_WORKFLOW | PASS | Real conditional observations and isolated quantity/fill lifecycle |
+| PERSONAL_PORTFOLIO_WORKFLOW | PASS | Tested IPS, policy, risk, fills, replay; no real personal account invented |
+| BROWSER_E2E_ACCEPTANCE | PASS | Windows interactions and four actual responsive viewports |
+| FORMAL_INVESTMENT_ELIGIBILITY | NOT_REACHED | No real issuer approved; existing evidence/model/G3/market/strategy/private gates stand |
+| STRATEGY_VALIDATION | NOT_PROVEN | No investment performance advantage or future shadow sessions fabricated |
+| FINAL_USER_ACCEPTANCE | PENDING_USER | Only the actual user can accept use |
+
+Next actual use: open `/daily`, inspect the conditions, use the local launch
+authorization for `/portfolio`, provide real IPS/holdings, then check risk.
+Read/download the exact review materials on the issuer detail; a real authorized
+reviewer must sign externally. Policy confirmation is separate from G3. Record
+only actual externally executed fills through preview/confirm, then inspect
+positions and `/history`. No broker order is generated.
