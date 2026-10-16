@@ -20,6 +20,7 @@ def test_runtime_identity_reports_matching_build_and_backend(tmp_path, monkeypat
         "built_at": "2026-10-16T09:05:49Z", "source_dirty": False,
     }), encoding="utf-8")
     monkeypatch.setattr(identity, "git_head", lambda root: HEAD)
+    monkeypatch.setattr(identity, "source_worktree_dirty", lambda root: False)
     digest = identity.sha256(module)
     result = identity.runtime_identity(tmp_path, backend_head=HEAD,
                                        backend_module=module, backend_module_sha=digest)
@@ -42,11 +43,23 @@ def test_runtime_identity_rejects_stale_or_dirty_web_build(tmp_path, monkeypatch
         "built_at": "2026-10-16T09:05:49Z", "source_dirty": True,
     }), encoding="utf-8")
     monkeypatch.setattr(identity, "git_head", lambda root: HEAD)
+    monkeypatch.setattr(identity, "source_worktree_dirty", lambda root: False)
     result = identity.runtime_identity(tmp_path, backend_head=HEAD,
                                        backend_module=module,
                                        backend_module_sha=identity.sha256(module))
     assert result["status"] == "MISMATCH"
     assert "WEB_REBUILD_REQUIRED" in result["reasons"]
+
+
+def test_runtime_identity_rejects_uncommitted_source(tmp_path, monkeypatch):
+    module = tmp_path / "backend.py"
+    module.write_text("loaded", encoding="utf-8")
+    monkeypatch.setattr(identity, "git_head", lambda root: HEAD)
+    monkeypatch.setattr(identity, "source_worktree_dirty", lambda root: True)
+    result = identity.runtime_identity(tmp_path, backend_head=HEAD,
+                                       backend_module=module,
+                                       backend_module_sha=identity.sha256(module))
+    assert "SOURCE_WORKTREE_DIRTY_OR_UNVERIFIED" in result["reasons"]
 
 
 def test_runtime_identity_endpoint_is_public_but_never_a_trade_gate(tmp_path):

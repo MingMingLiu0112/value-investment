@@ -936,6 +936,7 @@ export interface RuntimeIdentity {
   status: "MATCHED" | "MISMATCH";
   reasons: string[];
   current_source_head: string | null;
+  source_worktree_dirty: boolean | null;
   backend_loaded_head: string | null;
   backend_module_sha256_loaded: string | null;
   backend_module_sha256_on_disk: string | null;
