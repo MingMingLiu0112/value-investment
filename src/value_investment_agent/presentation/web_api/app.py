@@ -56,6 +56,7 @@ from .local_auth import (
     authorize,
 )
 from .private_routes import portfolio_connection, register_private_routes
+from .runtime_identity import git_head, runtime_identity, sha256
 from .value_policy_routes import register_value_policy_routes
 from ...application.decision.value_policy_interaction import (
     ValuePolicyInteractionService, PolicyPrincipal, PERMISSION,
@@ -203,6 +204,9 @@ def create_app(
 ) -> FastAPI:
     # Root injection is for in-process tests; no HTTP parameter or environment override exists.
     project = (root or ROOT).resolve()
+    backend_module = Path(__file__).resolve()
+    backend_head = git_head(project)
+    backend_module_sha = sha256(backend_module)
     bound_port = port if port is not None else _default_port()
     # The launcher exports a per-run secret; without one the workbench stays
     # locked, so an accidentally exposed process never serves the private API.
@@ -663,6 +667,21 @@ def create_app(
         metadata = _snapshot_metadata(project)
         metadata["excel_live"] = _workbook_report(project)
         return metadata
+
+    @api.get("/api/v1/runtime-identity")
+    def runtime_version():
+        identity = runtime_identity(project, backend_head=backend_head,
+                                    backend_module=backend_module,
+                                    backend_module_sha=backend_module_sha)
+        snapshot = _snapshot_metadata(project)
+        identity["publication"] = {
+            "status": snapshot["status"],
+            "publication_id": snapshot["publication_id"],
+            "packet_sha256": snapshot["packet_sha256"],
+            "published_at": snapshot["published_at"],
+            "dates": snapshot["dates"],
+        }
+        return identity
 
     @api.get("/api/v1/system/status")
     def system_status(request: Request):

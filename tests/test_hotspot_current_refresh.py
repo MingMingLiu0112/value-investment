@@ -59,6 +59,53 @@ def test_bounded_fallback_does_not_claim_industry_admission():
         select_watch_candidates(report, limit=6)
 
 
+@pytest.mark.parametrize('tier,state,expected', [
+    ('STRUCTURE_QUALIFIED_OBSERVATION', 'TRIGGER_OBSERVED', 'ACTIVE_ONLY'),
+    ('CONFLICT_OR_REJECTED', 'TRIGGER_REJECTED', 'CONFLICT_OR_REJECTED'),
+])
+def test_retired_candidate_does_not_retain_current_quality(tmp_path, monkeypatch, tier, state, expected):
+    from value_investment_agent.application.hotspot import current_registry
+    runtime = tmp_path / 'runtime'
+    runtime.mkdir()
+    def binding(name, symbol):
+        path = runtime / name
+        path.write_text(json.dumps(dict(observation_list=[dict(symbol=symbol)])), encoding='utf-8')
+        return dict(path=path.relative_to(tmp_path).as_posix(), sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+    current = binding('current.json', '300059')
+    previous = binding('previous.json', '601318')
+    config = tmp_path / 'config'
+    config.mkdir()
+    def item(symbol, source=None):
+        result = dict(symbol=symbol, company_name=symbol, case_path='runtime/case.json',
+                      case_sha256='a' * 64)
+        if source:
+            result.update(watch_source_binding=source, watch_source_scope='HOTSPOT_WATCH_QUEUE')
+        return result
+    (config / 'current-price-conditions.json').write_text(json.dumps(dict(
+        schema_version='current-price-conditions-v1', action='no_order',
+        watch_source_binding=current, watch_source_scope='HOTSPOT_WATCH_QUEUE',
+        items=[item('300059')], previous_items=[item('601318', previous)])), encoding='utf-8')
+    monkeypatch.setattr(current_registry, 'load_current_price_case',
+                        lambda **kwargs: dict(symbol=kwargs['symbol'], case_path='runtime/case.json',
+                                              case_sha256='a' * 64))
+    monkeypatch.setattr(current_registry, 'project_current_price_action_plan',
+                        lambda case: dict(signal_state=state, action_intent='OPEN',
+                                          opportunity_quality=dict(structure_tier=tier,
+                                                                   structure_reasons=['ORIGINAL_REASON'])))
+    loaded = current_registry.load_price_conditions(tmp_path,
+        now=datetime(2026, 10, 14, 17, tzinfo=CHINA), research_version=None)
+    assert loaded['status'] == 'CURRENT_OBSERVATION', loaded
+    retired = next(row['price_action_plan'] for row in loaded['items'] if row['symbol'] == '601318')
+    assert retired['candidate_lifecycle'] == 'PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY'
+    assert retired['opportunity_quality']['structure_tier'] == expected
+    if expected == 'ACTIVE_ONLY':
+        assert retired['signal_state'] == 'STALE'
+        assert retired['opportunity_quality']['structure_reasons'] == ['PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY']
+    else:
+        assert retired['signal_state'] == 'TRIGGER_REJECTED'
+        assert retired['opportunity_quality']['structure_reasons'] == ['ORIGINAL_REASON']
+
+
 def test_refresh_archives_bundle_and_does_not_replace_registry_on_failure(tmp_path):
     bundle_path = _write_bundle(tmp_path)
     bundle = json.loads(bundle_path.read_bytes())

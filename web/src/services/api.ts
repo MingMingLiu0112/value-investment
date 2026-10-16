@@ -2,6 +2,7 @@ import type {
   DailyResponse,
   DailyPublicPacket,
   DailyPublicSnapshot,
+  RuntimeIdentity,
   DetailResponse,
   HistoryResponse,
   HistoricalCaseListing,
@@ -261,6 +262,8 @@ export const api = {
     get<DailyPublicPacket>("daily-public-packet", signal),
   snapshot: (signal?: AbortSignal) =>
     get<DailyPublicSnapshot>("daily-public-snapshot", signal),
+  runtimeIdentity: (signal?: AbortSignal) =>
+    get<RuntimeIdentity>("runtime-identity", signal),
   detail: (id: string, signal?: AbortSignal) =>
     get<DetailResponse>(`decisions/${encodeURIComponent(id)}`, signal),
   portfolio: (signal?: AbortSignal) =>

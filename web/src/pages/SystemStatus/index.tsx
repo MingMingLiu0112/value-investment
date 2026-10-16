@@ -16,6 +16,14 @@ const actorLabel: Record<string, string> = {
 export default function SystemStatus() {
   const { data, loading, error, retry } = useApi(api.packet);
   const snapshot = useApi(api.snapshot);
+  const runtime = useApi(api.runtimeIdentity);
+  const clientBuild = __WEB_BUILD_IDENTITY__;
+  const servedBuild = runtime.data?.web_build;
+  const clientMatchesServed = Boolean(
+    servedBuild &&
+    clientBuild.commit === servedBuild.commit &&
+    clientBuild.built_at === servedBuild.built_at,
+  );
   return (
     <Workbench>
       <Typography.Title level={2}>数据与系统状态</Typography.Title>
@@ -30,6 +38,66 @@ export default function SystemStatus() {
       )}
       {data && (
         <>
+          <Descriptions
+            bordered
+            size="small"
+            column={{ xs: 1, sm: 2 }}
+            items={[
+              {
+                key: "consistency",
+                label: "运行版本一致性",
+                children: runtime.loading
+                  ? "正在核对"
+                  : runtime.error
+                    ? "无法核对"
+                    : runtime.data?.status === "MATCHED" && clientMatchesServed
+                      ? "前端、后端与当前源码一致"
+                      : "版本不一致；请查看下方各层版本",
+              },
+              {
+                key: "client",
+                label: "当前页面前端构建",
+                children: `${clientBuild.commit?.slice(0, 12) || "未知"} · ${clientBuild.built_at || "未知时间"}`,
+              },
+              {
+                key: "served",
+                label: "服务器 Web 构建",
+                children: `${servedBuild?.commit.slice(0, 12) || "未登记"} · ${servedBuild?.built_at || "未知时间"}`,
+              },
+              {
+                key: "backend",
+                label: "后端启动时源码",
+                children:
+                  runtime.data?.backend_loaded_head?.slice(0, 12) || "未核对",
+              },
+              {
+                key: "head",
+                label: "当前 Git 源码",
+                children:
+                  runtime.data?.current_source_head?.slice(0, 12) || "未核对",
+              },
+              {
+                key: "publication",
+                label: "当前验证数据包",
+                children: runtime.data?.publication.publication_id || "未验证",
+              },
+              {
+                key: "session",
+                label: "最新完成交易日",
+                children:
+                  runtime.data?.publication.dates
+                    ?.latest_completed_trade_session || "未验证",
+              },
+              {
+                key: "mismatch",
+                label: "版本问题",
+                children: runtime.error
+                  ? runtime.error
+                  : runtime.data?.reasons.join("、") ||
+                    (clientMatchesServed ? "无" : "浏览器页面与服务器构建不同"),
+              },
+            ]}
+          />
           <Descriptions
             bordered
             size="small"

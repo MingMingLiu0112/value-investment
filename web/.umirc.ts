@@ -1,6 +1,18 @@
 import { defineConfig } from "@umijs/max";
+import { readFileSync } from "node:fs";
+
+const buildIdentity = (() => {
+  try {
+    return JSON.parse(
+      readFileSync(new URL("./.build-info.json", import.meta.url), "utf8"),
+    );
+  } catch {
+    return { commit: null, built_at: null, source_dirty: true };
+  }
+})();
 
 export default defineConfig({
+  define: { __WEB_BUILD_IDENTITY__: buildIdentity },
   npmClient: "npm",
   hash: true,
   locale: { default: "zh-CN", antd: true, baseSeparator: "-" },

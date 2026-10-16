@@ -929,6 +929,31 @@ export interface DailyPublicSnapshot {
   excel_live: ExcelLiveCheck | null;
 }
 
+export interface RuntimeIdentity {
+  schema_version: "runtime-identity-v1";
+  action: "no_order";
+  checked_at: string;
+  status: "MATCHED" | "MISMATCH";
+  reasons: string[];
+  current_source_head: string | null;
+  backend_loaded_head: string | null;
+  backend_module_sha256_loaded: string | null;
+  backend_module_sha256_on_disk: string | null;
+  web_build: {
+    commit: string;
+    built_at: string;
+    source_dirty: boolean;
+  } | null;
+  web_index_sha256: string | null;
+  publication: {
+    status: string;
+    publication_id: string | null;
+    packet_sha256: string | null;
+    published_at: string | null;
+    dates: PacketDates | null;
+  };
+}
+
 /** The one public daily decision packet (TL9 MVP-1). */
 export interface DailyPublicPacket {
   schema_version: string;

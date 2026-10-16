@@ -154,6 +154,10 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
                     if plan["signal_state"] != "TRIGGER_REJECTED":
                         plan.update(signal_state="STALE", action_intent="WATCH",
                                     explanation="未进入本次当日候选名单；旧价格结构仅供复盘，不作为今日机会。")
+                    if plan["opportunity_quality"]["structure_tier"] == "STRUCTURE_QUALIFIED_OBSERVATION":
+                        plan["opportunity_quality"].update(
+                            structure_tier="ACTIVE_ONLY",
+                            structure_reasons=["PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"])
                 items.append({"symbol": symbol, "company_name": item["company_name"],
                               "price_action_plan": plan})
             except (ValueError, OSError, KeyError, TypeError, ArithmeticError):
