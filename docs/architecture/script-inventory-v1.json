@@ -10,11 +10,22 @@
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 219,
     "MIGRATION_TOOL": 13,
-    "DIAGNOSTIC_TOOL": 138,
+    "DIAGNOSTIC_TOOL": 139,
     "SUPERSEDED": 0,
     "DELETE_CANDIDATE": 0
   },
   "entries": [
+    {
+      "path": "scripts/current/audit_p9_readonly.ps1",
+      "category": "DIAGNOSTIC_TOOL",
+      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 119,
+      "sha256": "e9936fe57d62e82eaa729a5d6d22e50cf96b98cfc26b6e559a0d544ce25ffee7"
+    },
     {
       "path": "scripts/current/review_materiality.py",
       "category": "CURRENT_RESEARCH_CLI",
