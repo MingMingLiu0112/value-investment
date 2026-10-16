@@ -37,6 +37,31 @@ export function hotspotOpportunityQuality(item: DecisionItem): {
     )
   )
     return unknown("计划已过期或仅供历史观察，须刷新后重新分类。");
+  const quality = plan.opportunity_quality;
+  if (quality) {
+    if (quality.action !== "no_order" || quality.formal_eligibility !== false)
+      return unknown("结构质量证据合同不一致，不能据此升级机会。");
+    if (quality.structure_tier === "CONFLICT_OR_REJECTED") {
+      if (quality.structure_reasons.includes("PRIMARY_STRUCTURE_INVALIDATED"))
+        return {
+          code: "E",
+          label: "结构失效 / 退出复核",
+          reason:
+            "主结构已失效；仅已有持仓进入退出复核，个人可卖数量另行核验。",
+        };
+      return {
+        code: "A",
+        label: "活跃观察，结构不满足",
+        reason: "多周期结构存在冲突或空间不足；局部触发不构成入场条件。",
+      };
+    }
+    if (
+      !["ACTIVE_ONLY", "STRUCTURE_QUALIFIED_OBSERVATION"].includes(
+        quality.structure_tier,
+      )
+    )
+      return unknown("未知结构质量分类，不能据此升级机会。");
+  }
   if (
     ["TRIGGER_REJECTED", "INVALIDATED"].includes(plan.signal_state) ||
     plan.period_structure?.["60m"] === "INVALIDATED" ||
@@ -80,6 +105,7 @@ export function hotspotOpportunityQuality(item: DecisionItem): {
     return unknown("日线或上方空间尚未核验，不能判定为有效条件性计划。");
   if (
     behavior.observation_quality === "RESEARCH_ONLY" &&
+    quality?.structure_tier !== "ACTIVE_ONLY" &&
     plan.entry_trigger_price != null &&
     plan.invalidation_price != null &&
     (behavior.breakout?.confirmed_on_next_completed_bar === true ||

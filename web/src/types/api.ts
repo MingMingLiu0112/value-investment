@@ -95,6 +95,16 @@ export interface CurrentPricePlan {
   entry_condition?: PlanCondition | null;
   invalidation_condition?: PlanCondition | null;
   period_structure?: Partial<Record<"daily" | "60m" | "15m", string>>;
+  opportunity_quality?: {
+    rule_version: string;
+    activity_tier: string;
+    structure_tier: string;
+    structure_reasons: string[];
+    assessed_trade_date: string;
+    expires_after_session: string;
+    formal_eligibility: false;
+    action: "no_order";
+  } | null;
   expires_after_session?: string | null;
   next_observation?: unknown;
   supporting_facts?: unknown;

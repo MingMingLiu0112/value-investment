@@ -38,6 +38,7 @@
     "scripts/build_m5_disclosure_review_briefing.py"
   ],
   "SUPPORTED_ENGINEERING_CLI": [
+    "scripts/current/accept_p10_assisted_use.ps1",
     "scripts/current/audit_p9_readonly.ps1",
     "scripts/current/review_materiality.py",
     "scripts/current/build_value_research_queue.py",
@@ -116,8 +117,8 @@
   ],
   "counts": {
     "product": 26,
-    "engineering": 54,
+    "engineering": 55,
     "internal_helpers": 19,
-    "total": 99
+    "total": 100
   }
 }

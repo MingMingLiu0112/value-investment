@@ -10,11 +10,22 @@
     "HISTORICAL_VALIDATION_TOOL": 60,
     "COMPANY_RESEARCH_CASE_TOOL": 219,
     "MIGRATION_TOOL": 13,
-    "DIAGNOSTIC_TOOL": 139,
+    "DIAGNOSTIC_TOOL": 140,
     "SUPERSEDED": 0,
     "DELETE_CANDIDATE": 0
   },
   "entries": [
+    {
+      "path": "scripts/current/accept_p10_assisted_use.ps1",
+      "category": "DIAGNOSTIC_TOOL",
+      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 110,
+      "sha256": "c40d7e14ff7e52d10ca2f5363a0759d97bbfcc42854d5b65e9976068753a27c1"
+    },
     {
       "path": "scripts/current/audit_p9_readonly.ps1",
       "category": "DIAGNOSTIC_TOOL",

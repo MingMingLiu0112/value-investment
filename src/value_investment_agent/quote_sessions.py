@@ -49,6 +49,26 @@ LABELS = {
 }
 
 
+def b1_acquisition_verdict(result, provider_documents):
+    """Classify acquisition timing; a verified archive is not necessarily B1-ready."""
+    session = result.get('expected_session')
+    if not session or result.get('status') != 'matched_close' or not result.get('passed'):
+        return {'status': 'CLOSE_NOT_VERIFIED', 'eligible': False, 'available_at': None}
+    try:
+        fetched = [_stamp(provider_documents[name]['fetched_at']) for name in ('tencent', 'sina')]
+    except (KeyError, TypeError, ValueError):
+        return {'status': 'SOURCE_TIME_INVALID', 'eligible': False, 'available_at': None}
+    available_at = max(fetched).isoformat()
+    if any(stamp.date().isoformat() != session for stamp in fetched):
+        status = 'OUTSIDE_SESSION_DAY'
+    elif any(stamp.time() < time(15, 5) for stamp in fetched):
+        status = 'BEFORE_CLOSE_BUFFER'
+    else:
+        status = 'SAME_SESSION_POST_CLOSE'
+    return {'status': status, 'eligible': status == 'SAME_SESSION_POST_CLOSE',
+            'available_at': available_at}
+
+
 def _stamp(value):
     stamp = datetime.fromisoformat(str(value).replace('Z', '+00:00'))
     if stamp.utcoffset() is None:

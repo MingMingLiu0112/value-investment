@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from .quote_session_collection import resolve_session_reference
-from .quote_sessions import CHINA, evaluate_quote_session, parse_quote
+from .quote_sessions import b1_acquisition_verdict, evaluate_quote_session, parse_quote
 from .quote_snapshot import (
     QUOTE_STATUS_PENDING_EXTERNAL_DATA,
     QUOTE_STATUS_UNVERIFIED,
@@ -80,12 +80,9 @@ def quote_snapshot_from_bundle_file(
         documents=documents,
     )
     if require_current_b1 and result.get("passed"):
-        for document in provider_documents.values():
-            fetched = datetime.fromisoformat(document["fetched_at"]).astimezone(CHINA)
-            if fetched.date().isoformat() != result["expected_session"] or fetched.hour < 15:
-                result = {**result, "passed": False, "status": "invalid_evidence",
-                          "reason": "B1 requires same-session post-close acquisition"}
-                break
+        if not b1_acquisition_verdict(result, provider_documents)['eligible']:
+            result = {**result, "passed": False, "status": "invalid_evidence",
+                      "reason": "B1 requires same-session post-close acquisition"}
 
     relative_path = bundle_path.resolve().relative_to(root.resolve()).as_posix()
     evidence_refs: list[dict[str, Any]] = [

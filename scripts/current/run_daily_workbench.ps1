@@ -179,6 +179,9 @@ if ($Mode -eq 'SAFE_REFRESH') {
                 Write-Host "  ${symbol}: 未形成可登记的双源收盘（$($observation.result.status)：$($observation.result.reason)）"
                 continue
             }
+            if (-not $observation.b1_acquisition.eligible) {
+                Write-Host "  ${symbol}: 双源收盘仅供展示；B1 时点不合格（$($observation.b1_acquisition.status)），不形成正式价格资格。"
+            }
             $session = [string]$observation.result.expected_session
             $registeredDate = $null
             if ($packet.bridge_quote_dates -and

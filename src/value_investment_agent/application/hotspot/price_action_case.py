@@ -6,6 +6,7 @@ from datetime import datetime
 
 from value_investment_agent.domain.hotspot.current_price import CURRENT_BLOCKERS, current_signal
 from value_investment_agent.domain.hotspot.confirmed_price_structure import analyze_price_behavior, conditional_action_rules
+from value_investment_agent.domain.hotspot.opportunity_quality import classify_structure
 
 
 def project_price_action_plan(case: dict) -> dict:
@@ -98,6 +99,10 @@ def project_current_price_action_plan(case: dict) -> dict:
                 expiry_rule="Refresh after next completed exchange session; old conditions must not remain current",
                 next_observation="下一完整60分钟收盘重新检查价格与量能；次一交易日收盘后重新筛选。")
     plan["price_behavior"] = analyze_price_behavior(case["bars"])
+    plan["opportunity_quality"] = classify_structure(
+        plan["price_behavior"], structures, signal_state=state,
+        trade_date=case["market_trade_date"],
+        expires_after_session=plan["expires_after_session"])
     rules = conditional_action_rules(plan["price_behavior"], case["levels"]["60m"])
     plan.update(conditional_action_rules=rules,
                 entry_condition={**plan["entry_condition"], **rules["OPEN"], "status": state},

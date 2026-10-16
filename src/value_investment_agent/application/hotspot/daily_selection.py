@@ -83,7 +83,13 @@ def collect_daily_candidates(*, root: Path, limit=5, classification_collector=No
 def verify_daily_selection(root: Path, report: dict) -> None:
     if report.get("action") != "no_order" or report.get("schema_version") != "hotspot-daily-selection-v1":
         raise ValueError("Invalid daily selection contract")
-    if rank_daily_candidates(report["rows"], trade_date=report["trade_date"], limit=report["limit"]) != report["ranking"]:
+    replay = rank_daily_candidates(report["rows"], trade_date=report["trade_date"], limit=report["limit"])
+    if report["ranking"].get("rule_version") == "hotspot-dated-sector-liquidity-ranking-v1":
+        replay["rule_version"] = "hotspot-dated-sector-liquidity-ranking-v1"
+        for candidate in replay["candidates"]:
+            for field in ("activity_tier", "activity_reason", "structure_tier", "structure_reason"):
+                candidate.pop(field)
+    if replay != report["ranking"]:
         raise ValueError("Daily ranking replay mismatch")
     if report["hotspot_watch_queue"] != report["ranking"]["candidates"] or report["observation_list"] != report["ranking"]["candidates"]:
         raise ValueError("Daily watch membership mismatch")

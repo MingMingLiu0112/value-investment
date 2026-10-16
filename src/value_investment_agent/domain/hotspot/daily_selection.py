@@ -1,7 +1,7 @@
 """Pre-versioned, descriptive daily ranking; never trade admission."""
 from decimal import Decimal
 
-RULE_VERSION = "hotspot-dated-sector-liquidity-ranking-v1"
+RULE_VERSION = "hotspot-dated-sector-liquidity-ranking-v2"
 RANKING = ["industry_relative_strength_desc", "turnover_cny_desc", "symbol_asc"]
 
 
@@ -48,6 +48,8 @@ def rank_daily_candidates(rows: list[dict], *, trade_date: str, limit: int = 5) 
     # This ordering selects observations, not entries. No weights or thresholds
     # depend on the day's result; minute structure is assessed only afterward.
     candidates = [{**row, "rank": index + 1, "industry_relative_strength_percent": str(strength[row["industry"]]),
+                   "activity_tier": "ACTIVE_OBSERVATION", "activity_reason": "SECTOR_STRENGTH_AND_TURNOVER",
+                   "structure_tier": "UNASSESSED", "structure_reason": "COMPLETED_PRICE_STRUCTURE_REQUIRED",
                    "persistence": "UNKNOWN", "fund_flows": "UNKNOWN", "catalyst": "UNKNOWN",
                    "formal_eligibility": False, "action": "no_order"}
                   for index, row in enumerate(ordered[:limit])]

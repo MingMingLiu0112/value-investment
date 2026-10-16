@@ -181,6 +181,13 @@ def test_root_routes_share_isolated_journal_auth_and_external_confirmation(servi
     from value_investment_agent.presentation.web_api import private_routes
     from value_investment_agent.presentation.web_api.local_auth import LocalOperatorSession
 
+    class FrozenRouteClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW.astimezone(tz) if tz else NOW
+
+    monkeypatch.setattr(private_routes, "datetime", FrozenRouteClock)
+
     monkeypatch.setattr(private_routes, "resolve_private_root", lambda **kwargs: service.journal.path)
     app = FastAPI()
     secret = "SYNTHETIC-risk-experience-" + "0" * 40
