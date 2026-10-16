@@ -3,9 +3,7 @@ import { readFileSync } from "node:fs";
 
 const buildIdentity = (() => {
   try {
-    return JSON.parse(
-      readFileSync(new URL("./.build-info.json", import.meta.url), "utf8"),
-    );
+    return JSON.parse(readFileSync(".build-info.json", "utf8"));
   } catch {
     return { commit: null, built_at: null, source_dirty: true };
   }
