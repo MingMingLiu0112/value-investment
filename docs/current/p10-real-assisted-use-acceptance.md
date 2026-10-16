@@ -61,8 +61,12 @@ passed. P8 original check: `VERIFIED_EXISTING_ORIGINALS_AND_ARITHMETIC_NOT_APPRO
 Signed-review/policy tests: 69 passed. P10 acceptance `-RunTests` passed 234
 focused tests and a Web build; the full Web suite passed 198 tests. The first
 full local Core run had 5677 pass, 44 skip and one date-sensitive TEST_ONLY
-HTTP fixture failure. That test now freezes its clock; the local file's 25
-tests pass. A complete rerun and exact-commit CI are still separate checks.
+HTTP fixture failure. That test now freezes its clock. The complete local
+rerun passed 5678 tests with 44 skipped. Exact-commit GitHub Web Workbench and
+Core Research Gates (including disposable PostgreSQL) passed for
+`d68fb3d497d7e1b53f0455a1547b25e79b30e588`. The P10 receipt at
+`.tmp/p10/acceptance.json` reports `ENGINEERING_PASS` for tests and
+`BLOCKED_EXTERNAL` overall, with no failures and `action=no_order`.
 Chrome checked seven routes at four viewports (1280x900,
 1440x900, 390x844, 430x844), the public packet API, and a daily-to-600887
 click: 30 checks, no HTTP failure or document overflow. Private routes were
