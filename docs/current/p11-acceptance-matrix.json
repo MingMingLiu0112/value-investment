@@ -1,0 +1,39 @@
+{
+  "schema_version": "p11-real-assisted-use-acceptance-v1",
+  "action": "no_order",
+  "audited_at_china": "2026-10-16",
+  "code_baseline": "83582c22edd276f868922d5c325ff1d9d9212f0b",
+  "publication_id": "pub-5f803ec65b6e52fd7de4",
+  "publication_sha256": "1ed978a5b2fe8baf9f7db801b46c97ca97fa3b03575ac4115c3eef57aa8a93b4",
+  "quote_bundle_path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+  "quote_bundle_sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+  "quote_session": "2026-10-16",
+  "b1_matched_symbols": ["600887", "600519", "000333", "000651", "600741", "601088"],
+  "tests": {
+    "p9_source_checks": 38,
+    "p10_focused_python_passed": 237,
+    "p11_runtime_hotspot_passed": 16,
+    "test_only_private_passed": 43,
+    "web_passed": 198,
+    "browser_checks": 22,
+    "browser_failures": 0
+  },
+  "external_states": {
+    "REAL_B1_OBSERVED": "PASS",
+    "ECONOMIC_VALUATION_READY": "NOT_PROVEN",
+    "AUTHORIZED_G3_APPROVAL": "BLOCKED_HUMAN_REVIEW",
+    "EVENT_MATERIALITY_APPROVAL": "BLOCKED_HUMAN_REVIEW",
+    "PERSONAL_IPS_CONFIRMED": "BLOCKED_PRIVATE_INPUT",
+    "ACTUAL_PORTFOLIO_VERIFIED": "BLOCKED_PRIVATE_INPUT",
+    "HOTSPOT_STRATEGY_VALIDATED": "NOT_PROVEN",
+    "NATURAL_SHADOW_COMPLETED": "NOT_PROVEN",
+    "FORMAL_INVESTMENT_ELIGIBILITY": "NOT_READY",
+    "FINAL_USER_ACCEPTANCE": "NOT_PROVEN"
+  },
+  "product_state": "PUBLIC_OBSERVATION_READY",
+  "limited_real_assisted_use_ready": false,
+  "formal_admission_count": 0,
+  "canonical_excel_changed": false,
+  "private_account_used": false,
+  "order_placed": false
+}
