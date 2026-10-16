@@ -2,7 +2,7 @@
   "schema_version": "p11-real-assisted-use-acceptance-v1",
   "action": "no_order",
   "audited_at_china": "2026-10-16",
-  "code_baseline": "83582c22edd276f868922d5c325ff1d9d9212f0b",
+  "code_baseline": "a48d4f713dda5f760b37d774c72b7555d85581e3",
   "publication_id": "pub-5f803ec65b6e52fd7de4",
   "publication_sha256": "1ed978a5b2fe8baf9f7db801b46c97ca97fa3b03575ac4115c3eef57aa8a93b4",
   "quote_bundle_path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
@@ -12,7 +12,7 @@
   "tests": {
     "p9_source_checks": 38,
     "p10_focused_python_passed": 237,
-    "p11_runtime_hotspot_passed": 16,
+    "p11_runtime_hotspot_passed": 17,
     "test_only_private_passed": 43,
     "web_passed": 198,
     "browser_checks": 22,

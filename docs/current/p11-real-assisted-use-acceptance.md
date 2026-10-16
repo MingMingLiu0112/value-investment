@@ -8,7 +8,7 @@ The public daily research/market workflow can be used to observe and prioritize
 further work. No current value entry/add/reduce/exit price, approved G3,
 confirmed personal risk capacity, or validated hotspot strategy is available.
 No artificial BUY was produced. The code verification baseline is
-`83582c22edd276f868922d5c325ff1d9d9212f0b`; a later documentation-only
+`a48d4f713dda5f760b37d774c72b7555d85581e3`; a later documentation-only
 commit does not change this code. Actual live version must always be checked
 again at `/system`.
 
@@ -22,7 +22,8 @@ code was old. This is a real server lifecycle mismatch, not merely browser
 cache. The owned-process identity check in `start_web_workbench.ps1` was used
 for a controlled restart; no unrelated process was stopped. The new public
 `/api/v1/runtime-identity` reports backend loaded Git HEAD, on-disk source
-hash, server Web build, current HEAD, verified publication and distinct dates.
+hash, relevant source worktree cleanliness, server Web build, current HEAD,
+verified publication and distinct dates.
 The Web build embeds its own identity; postbuild fails if that identity is not
 actually in the served JavaScript. Chrome confirmed `/system` says the page,
 backend and source match at the code baseline, including after refresh.
@@ -73,7 +74,7 @@ today's source-acquisition timing. These are deliberately separate.
 P9 source/publication preflight: 38 checks passed after the refresh. P10
 acceptance `-RunTests`: 237 focused Python tests and Web build passed; its
 overall result remains `NOT_PROVEN`, not investment approval. P11 version and
-hotspot targeted tests: 16 passed. Independent TEST_ONLY portfolio path: 43
+hotspot targeted tests: 17 passed. Independent TEST_ONLY portfolio path: 43
 passed. Full Web suite: 198 passed; formatting, typecheck and build passed.
 The earlier P10 full local Core result (5678 passed, 44 skipped) applies to
 the previous code baseline; exact P11 CI must be reported separately. Browser
