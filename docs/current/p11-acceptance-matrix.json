@@ -9,6 +9,15 @@
   "quote_bundle_sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
   "quote_session": "2026-10-16",
   "b1_matched_symbols": ["600887", "600519", "000333", "000651", "600741", "601088"],
+  "hotspot_daily_coverage": {
+    "classified_securities": 5226,
+    "dated_quotes": 5216,
+    "ranked_securities": 5021,
+    "quote_failures": 10,
+    "industries": 31,
+    "selected": 5,
+    "selected_single_industry": true
+  },
   "tests": {
     "p9_source_checks": 38,
     "p10_focused_python_passed": 237,

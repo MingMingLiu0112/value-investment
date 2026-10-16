@@ -41,6 +41,18 @@ space; 600030 is a negative structure case. A candidate exiting Top5 can no
 longer retain a current qualified-structure label. We have not inferred an
 OOS edge, costs-adjusted return or current entry from these cases.
 
+The retained daily report records 5,226 Sina-classified securities, 5,216
+dated quotes, 5,021 valid ranked securities, 10 quote failures and 31
+industries. All five selected symbols came from the strongest industry
+(defense), so Top5 activity ranking can miss qualified structures in other
+industries; it is not a quality-ranked whole-market opportunity set. The
+current daily quote adapter batches up to 200 symbols per HTTP request,
+whereas intraday structure requires additional per-candidate evidence.
+Expanding from five to ten is technically bounded by the existing ranking
+contract, but cross-industry structural hit rate, minute-data source cost and
+PIT quality have not been validated. No candidate limit or threshold was
+changed on this one-day sample.
+
 ## Portfolio and historical evaluation
 
 TEST_ONLY account continuity covers confirmed cash and IPS, buy, T+1, partial
