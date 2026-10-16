@@ -4,6 +4,14 @@ import { Workbench } from "../../components/Workbench";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
 import { describeCode } from "../../utils/codes";
+import { systemActionRows } from "../../utils/system-actions";
+
+const actorLabel: Record<string, string> = {
+  HUMAN: "需有权人复核",
+  EVIDENCE: "需补研究证据",
+  EXTERNAL_DATA: "等待外部数据",
+  ENGINEERING: "需工程处理",
+};
 
 export default function SystemStatus() {
   const { data, loading, error, retry } = useApi(api.packet);
@@ -97,15 +105,47 @@ export default function SystemStatus() {
             是独立发布快照。以上日期分别代表原快照、研究更新和行情观察，不能当作今日实时数据。日常决策以当前已验证
             Web 版本及逐证券日期为准。
           </Typography.Paragraph>
-          {data.blockers.length > 0 && (
+          {systemActionRows(data).length > 0 && (
             <section style={{ marginTop: 22 }}>
-              <h2 style={{ fontSize: 16 }}>尚需核验</h2>
+              <h2 style={{ fontSize: 16 }}>逐证券待办</h2>
               <ul>
-                {data.blockers.map((code) => (
-                  <li key={code}>{describeCode(code)}</li>
+                {systemActionRows(data).map((row) => (
+                  <li key={row.symbol} style={{ marginBottom: 12 }}>
+                    <Link to={`/decisions/${row.symbol}`}>
+                      {row.name} {row.symbol}
+                    </Link>{" "}
+                    · {row.valuation}
+                    <div>
+                      {actorLabel[row.actions[0].actor] || row.actions[0].actor}
+                      ：{row.actions[0].label}
+                    </div>
+                    {row.actions.length > 1 && (
+                      <details>
+                        <summary>其余待办（{row.actions.length - 1}）</summary>
+                        <ul>
+                          {row.actions.slice(1).map((action) => (
+                            <li key={`${action.actor}-${action.code}`}>
+                              {actorLabel[action.actor] || action.actor}：
+                              {action.label}
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                  </li>
                 ))}
               </ul>
             </section>
+          )}
+          {data.blockers.length > 0 && (
+            <details style={{ marginTop: 16 }}>
+              <summary>原始诊断代码（{data.blockers.length}）</summary>
+              <ul>
+                {data.blockers.map((code, index) => (
+                  <li key={`${index}-${code}`}>{describeCode(code)}</li>
+                ))}
+              </ul>
+            </details>
           )}
           <Link to="/daily">返回今日机会</Link>
         </>
