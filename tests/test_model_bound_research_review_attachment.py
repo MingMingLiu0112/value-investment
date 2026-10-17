@@ -9,7 +9,12 @@ import json
 import pytest
 from materiality_transport_helpers import authenticated_materiality_packet
 
-from test_d2_conditional_shared_service import SYNTHETIC, _store, synthetic_chain
+from test_d2_conditional_shared_service import (
+    SYNTHETIC,
+    _packet as _approval_packet,
+    _store,
+    synthetic_chain,
+)
 from test_d2_source_bound_package_contract import source_package
 from test_event_materiality import DECISION_NOT_MATERIAL, _decision, _review
 from value_investment_agent.application.product.company_research import (
@@ -20,6 +25,7 @@ from value_investment_agent.application.product.research_reviews import (
     attach_research_reviews,
     build_research_review_model_context,
 )
+from value_investment_agent.application.product.source_bound_inputs import source_catalog_sha256
 from value_investment_agent.event_scan import AnnouncementReview, EventScanResult
 from value_investment_agent.human_research_approval import artifact_fingerprint
 from value_investment_agent.m1_valuation_package_builder import build_descriptor
@@ -235,7 +241,7 @@ def test_v2_requires_event_original_and_cannot_bypass_with_only_human_binding(sy
         'schema_version': V2, 'symbol': descriptor.symbol, 'action': 'no_order',
         'bindings': {'human_approval': {'path': source.name, 'sha256': digest}},
     })
-    with pytest.raises(ValueError, match='model-bound event materiality'):
+    with pytest.raises(ValueError, match='unsigned legacy G3|model-bound event materiality'):
         attach_research_reviews(
             root=root, spec=build_research_run_spec(descriptor), descriptor=descriptor,
             path=path, expected_sha256=packet_hash, event_sha256=scan_hash,
@@ -310,6 +316,26 @@ def test_v2_attachment_preserves_financial_and_scan_blockers(synthetic_chain, au
     assert outcome.decision_recommendation.position_guidance is None
 
 
+def test_signed_materiality_cannot_launder_unsigned_g3(
+    synthetic_chain, authenticated_materiality_packet
+):
+    root, package_path, descriptor, _, _, approval, review, scan_hash = synthetic_chain
+    unsigned_packet, _ = _approval_packet(synthetic_chain, approval)
+    path, digest, _, _, _ = authenticated_materiality_packet(
+        package_path, review, extra_packet=unsigned_packet
+    )
+    with pytest.raises(ValueError, match='unsigned legacy G3 approval rejected'):
+        attach_research_reviews(
+            root=root,
+            spec=build_research_run_spec(descriptor),
+            descriptor=descriptor,
+            path=path,
+            expected_sha256=digest,
+            event_sha256=scan_hash,
+            require_model_binding=True,
+        )
+
+
 @pytest.fixture
 def source_v2_review(source_package):
     root, package = source_package
@@ -340,7 +366,10 @@ def source_v2_review(source_package):
         'location': 'https://example.test/synthetic-v2-scan', 'local_path': scan_path.name,
         'sha256': scan_hash, 'published_at': observed.isoformat(),
         'source_available_at': observed.isoformat(), 'availability_basis': SYNTHETIC,
+        'retrieved_at': observed.isoformat(),
     })
+    package['source_contract']['event_coverage_status'] = scan.coverage_status
+    package['source_contract']['source_catalog_sha256'] = source_catalog_sha256(package['sources'])
     package['model_validity_input'] = {
         'model_id': package['dependencies']['model_version'], 'valid_from': day.isoformat(),
         'event_scan_ref': {'id': 'synthetic-v2-scan', 'symbol': package['symbol'],

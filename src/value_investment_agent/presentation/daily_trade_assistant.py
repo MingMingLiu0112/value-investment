@@ -176,7 +176,15 @@ def _build_preview(*, root, publication, workbench, workbench_path, output_dir,
     project_verified_decision_workbench(payload, root=root, path=workbench_path,
                                         expected_sha256=sha256_file(workbench_path))
     _project_quote_gate(payload, symbol=symbol, quote_check=quote_check)
-    restored = verify_current_decision_workbench(workbench)
+    from value_investment_agent.application.product.research_reviews import (
+        verify_human_approval_transport_provenance,
+    )
+    restored = verify_current_decision_workbench(
+        workbench,
+        human_approval_provenance_verifier=lambda approval: (
+            verify_human_approval_transport_provenance(root, approval)
+        ),
+    )
     case = artifact_payload(restored.dependency_objects["research_case"])[1]
     scope = (case.get("financial_summary") or {}).get("financial_scope_review") or {}
     dimensions = scope.get("five_dimensions") or {}

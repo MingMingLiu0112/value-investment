@@ -159,6 +159,10 @@ def test_production_incremental_failures_never_reuse_ready(production_chain, mon
     if failure != "expired_quote":
         assert result["quote_verification_status"] == "QUOTE_VERIFIED_BUT_RESEARCH_STALE"
         assert Decimal(result["quote"]["display_price"]) == Decimal("5")
+    if failure in {"source", "model_rebuild", "expired_quote"}:
+        assert result["incremental_validity"]["review_cutoff"] == CUTOFF.isoformat()
+        assert result["incremental_validity"]["announcement_count"] == 0
+        assert result["incremental_validity"]["scan_ref"]["path"]
 
 
 def test_packet_consumes_production_comparison_and_tracks_source_bytes(production_chain):
@@ -183,6 +187,18 @@ def test_packet_consumes_production_comparison_and_tracks_source_bytes(productio
     assert changed["company_statuses"][SYMBOL]["incremental_status"] == "UNKNOWN"
     assert any(item["code"] == "INCREMENTAL_EVENT_MATERIALITY_REVIEW"
                for item in changed["company_statuses"][SYMBOL]["pending_actions"])
+
+
+def test_pending_action_never_renders_missing_scan_window_as_none(production_chain):
+    root, ref, _, _, source = production_chain
+    service.register_incremental_validity_binding(root, SYMBOL, ref, CUTOFF, NOW)
+    build_verified_tree(root)
+    source.write_text("changed", encoding="utf-8")
+    packet = build_daily_public_packet(root, generated_at=NOW)
+    task = next(row for row in packet["company_statuses"][SYMBOL]["pending_actions"]
+                if row["code"] == "INCREMENTAL_EVENT_MATERIALITY_REVIEW")
+    assert task["label"] == f"复核截至 {CUTOFF.isoformat()} 的 0 份公告及原模型适用性；不预支 G3。"
+    assert "None" not in task["label"]
 
 
 def test_registration_rejects_tampered_sources_without_changing_pointer(production_chain):

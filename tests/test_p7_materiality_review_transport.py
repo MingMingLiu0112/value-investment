@@ -16,7 +16,10 @@ from value_investment_agent.application.product.research_materiality_reviews imp
 )
 from value_investment_agent.application.product import research_materiality_reviews as transport_service
 from value_investment_agent.application.product.research_reviews import attach_research_reviews
-from value_investment_agent.application.product.company_research import run_company_research_for_symbol
+from value_investment_agent.application.product.company_research import (
+    ResearchInputValidationError,
+    run_company_research_for_symbol,
+)
 from value_investment_agent.m1_valuation_package_builder import build_descriptor
 from value_investment_agent.research_input import build_research_run_spec
 from value_investment_agent.research_run_contract import canonical_contract_payload
@@ -99,7 +102,7 @@ def _attach(f, packet):
         expected_sha256=sha256_file(packet), event_sha256=f['scan_hash'], require_model_binding=True)
 
 
-def test_signed_two_announcement_import_reaches_real_application_positive(transport):
+def test_signed_materiality_cannot_use_unsigned_g3_for_a_positive_candidate(transport):
     f = transport
     registry, args = _inputs(f)
     with _use_test_trust_registry(registry):
@@ -113,22 +116,18 @@ def test_signed_two_announcement_import_reaches_real_application_positive(transp
         assert result.decision_recommendation.recommendation_action == 'NO_ACTION'
         assert receipt['whole_model_approved'] is False
         assert receipt['research_admitted'] is receipt['price_admitted'] is False
-        # A separately provided TEST_ONLY G3 is still required for a positive candidate.
+        # An unsigned G3 attached beside signed materiality must never become a positive candidate.
         approval_path, approval_hash = _store(f['root'], 'test-only-g3.json', f['approval'].as_policy())
         combined = json.loads(packet.read_text(encoding='utf-8'))
         combined['bindings']['human_approval'] = dict(path=approval_path.name, sha256=approval_hash)
         merged, _ = _store(f['root'], 'combined.json', combined)
-        product = run_company_research_for_symbol(root=f['root'], symbol=SYMBOL,
-            package_path=f['package'], event_path=f['scan_path'], event_sha256=f['scan_hash'],
-            reviews_path=merged, reviews_sha256=sha256_file(merged), schedule_request=dict(
-                schema_version='research-schedule-request-v1', symbol=SYMBOL, source_id=SYNTHETIC,
-                period=DAY.isoformat(), research_question_id='test-only-materiality-transport',
-                blocker_id='initial_research', reopen_condition_met=False, new_evidence_ids=[]))['result']
-        assert product['model_validity']['status'] == 'VALID'
-        assert product['price_bridge']['bridge_status'] == 'READY'
-        assert product['decision_recommendation']['recommendation_type'] == 'BUY_CANDIDATE'
-        assert product['action'] == 'no_order'
-        assert product['decision_recommendation']['position_guidance'] is None
+        with pytest.raises(ResearchInputValidationError, match='unsigned legacy G3'):
+            run_company_research_for_symbol(root=f['root'], symbol=SYMBOL,
+                package_path=f['package'], event_path=f['scan_path'], event_sha256=f['scan_hash'],
+                reviews_path=merged, reviews_sha256=sha256_file(merged), schedule_request=dict(
+                    schema_version='research-schedule-request-v1', symbol=SYMBOL, source_id=SYNTHETIC,
+                    period=DAY.isoformat(), research_question_id='test-only-materiality-transport',
+                    blocker_id='initial_research', reopen_condition_met=False, new_evidence_ids=[]))
 
 
 @pytest.mark.parametrize('drift', [

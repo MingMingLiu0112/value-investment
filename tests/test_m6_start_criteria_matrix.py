@@ -139,7 +139,8 @@ def test_full_daily_dag_runs_actual_shared_entry_with_explicit_synthetic_reviews
     result = run_isolated_daily_attempt(root=tmp_path, output=output, symbol='600887',
         event_path=event_path, event_sha256=event_hash, package_path=package_path, package_sha256=package_hash,
         schedule_request_path=request_path, schedule_request_sha256=request_hash,
-        reviews_path=reviews_path, reviews_sha256=reviews_hash)
+        reviews_path=reviews_path, reviews_sha256=reviews_hash,
+        allow_unsigned_legacy_frozen_replay=True)
     receipt = json.loads((output / 'run_receipt.json').read_text(encoding='utf-8'))
     assert receipt['node_sequence'] == list(DAG_NODES)
     assert result['dag_execution_complete'] is True

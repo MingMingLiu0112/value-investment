@@ -2,52 +2,107 @@
   "schema_version": "current-price-conditions-v1",
   "action": "no_order",
   "watch_source_binding": {
-    "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
-    "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
+    "path": "runtime/hotspot-daily-selection/561a1e66bf424d4e87426fbf1f080106/report.json",
+    "sha256": "c2ef47a982ea85f04ed4d5e6324f9beda00e0f80f55cd4b19590d1c96d53f4f1"
   },
   "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION",
   "items": [
     {
+      "symbol": "600150",
+      "company_name": "中国船舶",
+      "case_path": "runtime/hotspot-current-price-cases/600150-2026-10-16-e5c5ad49533d4fc9a28abd698f863d48/case.json",
+      "case_sha256": "c6fb58071b35ef1c710da2bba71f6a46eefd6bb10f2f5b9e0a5ada9752fac140"
+    },
+    {
+      "symbol": "600391",
+      "company_name": "航发科技",
+      "case_path": "runtime/hotspot-current-price-cases/600391-2026-10-16-2ad547c8995149a88d11218322c15a8b/case.json",
+      "case_sha256": "4062df741444b4e7f39c97f94f12a4b9527e3e586607fb704da76204880edba5"
+    },
+    {
+      "symbol": "600967",
+      "company_name": "内蒙一机",
+      "case_path": "runtime/hotspot-current-price-cases/600967-2026-10-16-1c9b9b258534454c9b50e99bcb472250/case.json",
+      "case_sha256": "d10f8665c0cc61fd7c6f27a6da6afd50092ad827591d03b6a78ce4c0fc17a72f"
+    },
+    {
+      "symbol": "600316",
+      "company_name": "洪都航空",
+      "case_path": "runtime/hotspot-current-price-cases/600316-2026-10-16-d585221144934f1fa83ebe25000377f5/case.json",
+      "case_sha256": "51e7cb2e0f5caf54a27c73638764c1fa007d9dfcbd7f2d48b8422a6793d61e92"
+    },
+    {
+      "symbol": "600893",
+      "company_name": "航发动力",
+      "case_path": "runtime/hotspot-current-price-cases/600893-2026-10-16-d9c3d07d9988448db1bfd084b175cd6b/case.json",
+      "case_sha256": "cf879270b1d6cdb1e94758cf1bf4ae3d68a1341cbd00e96e2dd076bdcfe0050e"
+    }
+  ],
+  "failures": [],
+  "selected_symbols": [
+    "600150",
+    "600391",
+    "600967",
+    "600316",
+    "600893"
+  ],
+  "completed_at": "2026-10-16T09:00:27.428228+00:00",
+  "previous_items": [
+    {
       "symbol": "300059",
       "company_name": "东方财富",
       "case_path": "runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/case.json",
-      "case_sha256": "f5a1c3a6021896c073c014b064114713e5dbd397df185c4a86b874fc6b00437e"
+      "case_sha256": "f5a1c3a6021896c073c014b064114713e5dbd397df185c4a86b874fc6b00437e",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
+        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
     },
     {
       "symbol": "601318",
       "company_name": "中国平安",
       "case_path": "runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/case.json",
-      "case_sha256": "92ad443d0f6b0d4187b202035e0aba9df7953115c406f0ab72cedca0f6f4d580"
+      "case_sha256": "92ad443d0f6b0d4187b202035e0aba9df7953115c406f0ab72cedca0f6f4d580",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
+        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
     },
     {
       "symbol": "600030",
       "company_name": "中信证券",
       "case_path": "runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/case.json",
-      "case_sha256": "6b98c3c625776610acc02fbc1e83a07ccc3861e61ad9498b839caebc5b1c49d3"
+      "case_sha256": "6b98c3c625776610acc02fbc1e83a07ccc3861e61ad9498b839caebc5b1c49d3",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
+        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
     },
     {
       "symbol": "601211",
       "company_name": "国泰海通",
       "case_path": "runtime/hotspot-current-price-cases/601211-2026-10-15-435f26924a344d679662dd4322215867/case.json",
-      "case_sha256": "c3f589d1f70a77da633e52bf63bf74e65ac262561b19f0d8d206b681fadad2c3"
+      "case_sha256": "c3f589d1f70a77da633e52bf63bf74e65ac262561b19f0d8d206b681fadad2c3",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
+        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
     },
     {
       "symbol": "000712",
       "company_name": "锦龙股份",
       "case_path": "runtime/hotspot-current-price-cases/000712-2026-10-15-825dd26405284611b970cf22169fab36/case.json",
-      "case_sha256": "846ba8d1ddab43b0e3d22985917161ce3a7236f903ee88262f2ea6410d6d1f9b"
-    }
-  ],
-  "failures": [],
-  "selected_symbols": [
-    "300059",
-    "601318",
-    "600030",
-    "601211",
-    "000712"
-  ],
-  "completed_at": "2026-10-15T07:11:17.344239+00:00",
-  "previous_items": [
+      "case_sha256": "846ba8d1ddab43b0e3d22985917161ce3a7236f903ee88262f2ea6410d6d1f9b",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
+        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
+    },
     {
       "symbol": "300364",
       "company_name": "中文在线",
@@ -102,61 +157,6 @@
         "sha256": "989aa97241824b61cd3bf3283b4705e846a4d9de78ad4651c5d12bcb00235b8b"
       },
       "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
-    },
-    {
-      "symbol": "300308",
-      "company_name": "中际旭创",
-      "case_path": "runtime/hotspot-current-price-cases/300308-2026-10-14-850a7a03a1174be7874dd76acfcb2893/case.json",
-      "case_sha256": "449f256697fe37818a26e525c1cb959f0aa47cf2b2087b92cff4c21b7c95330c",
-      "watch_source_binding": {
-        "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/hotspot-observation/report.json",
-        "sha256": "66f3f90d71ae341d9f00c492effed308a3e14293548dc53fccc9d596c43f7c4a"
-      },
-      "watch_source_scope": "DATED_SECURITIES_WATCH_FALLBACK_NOT_INDUSTRY_CERTIFIED"
-    },
-    {
-      "symbol": "300750",
-      "company_name": "宁德时代",
-      "case_path": "runtime/hotspot-current-price-cases/300750-2026-10-14-da507b1ea615452981492c5e956c0e3b/case.json",
-      "case_sha256": "9753f1425f5c0bedec391ed3d2a820cdd3a06b0a6811a83f7cb2aa3d72c1896d",
-      "watch_source_binding": {
-        "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/hotspot-observation/report.json",
-        "sha256": "66f3f90d71ae341d9f00c492effed308a3e14293548dc53fccc9d596c43f7c4a"
-      },
-      "watch_source_scope": "DATED_SECURITIES_WATCH_FALLBACK_NOT_INDUSTRY_CERTIFIED"
-    },
-    {
-      "symbol": "300502",
-      "company_name": "新易盛",
-      "case_path": "runtime/hotspot-current-price-cases/300502-2026-10-14-33a95b96f7d845e5b4e3e9f5531839fe/case.json",
-      "case_sha256": "b385980656ef00181011eef81f49c2a9aa70e36a484a9d127c1e25fbb7388725",
-      "watch_source_binding": {
-        "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/hotspot-observation/report.json",
-        "sha256": "66f3f90d71ae341d9f00c492effed308a3e14293548dc53fccc9d596c43f7c4a"
-      },
-      "watch_source_scope": "DATED_SECURITIES_WATCH_FALLBACK_NOT_INDUSTRY_CERTIFIED"
-    },
-    {
-      "symbol": "688825",
-      "company_name": "长鑫科技",
-      "case_path": "runtime/hotspot-current-price-cases/688825-2026-10-14-09eee3c2e5b841e9bd9b49c9b7879029/case.json",
-      "case_sha256": "75f67fdb6245230bc4cbdf5ab5ce0b15fa88349fc0bbc394f6843034864e2fe8",
-      "watch_source_binding": {
-        "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/hotspot-observation/report.json",
-        "sha256": "66f3f90d71ae341d9f00c492effed308a3e14293548dc53fccc9d596c43f7c4a"
-      },
-      "watch_source_scope": "DATED_SECURITIES_WATCH_FALLBACK_NOT_INDUSTRY_CERTIFIED"
-    },
-    {
-      "symbol": "002384",
-      "company_name": "东山精密",
-      "case_path": "runtime/hotspot-current-price-cases/002384-2026-10-14-fa2a79d261ae4e97bc2ee79956d392e8/case.json",
-      "case_sha256": "a92a09259d495cb7d7f599c46749177507742ab25918f4cc703d8f29e66de6f8",
-      "watch_source_binding": {
-        "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/hotspot-observation/report.json",
-        "sha256": "66f3f90d71ae341d9f00c492effed308a3e14293548dc53fccc9d596c43f7c4a"
-      },
-      "watch_source_scope": "DATED_SECURITIES_WATCH_FALLBACK_NOT_INDUSTRY_CERTIFIED"
     }
   ]
 }

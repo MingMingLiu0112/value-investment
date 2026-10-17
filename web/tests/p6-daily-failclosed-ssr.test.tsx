@@ -17,6 +17,12 @@ const state = vi.hoisted(() => ({
     error: undefined as string | undefined,
     retry: () => {},
   },
+  update: {
+    data: undefined as any,
+    loading: false,
+    error: undefined as string | undefined,
+    retry: () => {},
+  },
 }));
 vi.mock("@umijs/max", () => ({
   Link: ({ to, children, ...props }: any) => (
@@ -31,12 +37,14 @@ vi.mock("../src/hooks/useApi", () => ({
       ? state.daily
       : load === api.packet
         ? state.packet
-        : {
-            data: undefined,
-            loading: false,
-            error: undefined,
-            retry: () => {},
-          },
+        : load === api.updateStatus
+          ? state.update
+          : {
+              data: undefined,
+              loading: false,
+              error: undefined,
+              retry: () => {},
+            },
 }));
 vi.mock("../src/hooks/usePrivateState", () => ({
   usePrivateState: () => ({
@@ -96,6 +104,29 @@ beforeEach(() => {
       },
     },
   };
+  state.update = {
+    loading: false,
+    error: undefined,
+    retry: () => {},
+    data: undefined,
+  };
+});
+
+it("shows an explicit unfinished-update message when finished_at is null", () => {
+  state.update.data = {
+    action: "no_order",
+    status: "RECORDED",
+    last_run: {
+      status: "BLOCKED",
+      finished_at: null,
+      published: false,
+      publication_id: null,
+      retained_publication_id: "pub-verified",
+    },
+  };
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain("更新尚未完成，暂无完成时间");
+  expect(html).not.toContain("1970");
 });
 
 it.each(["daily", "packet", "both"] as const)(

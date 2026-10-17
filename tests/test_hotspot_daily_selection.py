@@ -61,6 +61,29 @@ def test_current_sector_ranking_replays_without_input_order_bias():
     assert result["market"]["regime_admission"] == "UNKNOWN"
 
 
+def test_daily_candidate_pool_is_bounded_and_cross_industry():
+    rows = [
+        row("600001", "bank", 5, 100),
+        row("600002", "bank", 4, 90),
+        row("600003", "bank", 3, 80),
+        row("300001", "media", 2, 70),
+        row("300002", "media", 1, 60),
+        row("000001", "auto", 0, 50),
+    ]
+    result = rank_daily_candidates(
+        rows, trade_date="2026-10-14", limit=2, candidate_pool_limit=5
+    )
+    pool = result["candidate_pool"]
+    counts = {}
+    for candidate in pool:
+        counts[candidate["industry"]] = counts.get(candidate["industry"], 0) + 1
+    assert len(pool) == 5
+    assert counts == {"bank": 2, "media": 2, "auto": 1}
+    assert len({candidate["industry"] for candidate in pool}) == 3
+    assert [candidate["candidate_pool_rank"] for candidate in pool] == [1, 2, 3, 4, 5]
+    assert all(candidate["structure_tier"] == "UNASSESSED" for candidate in pool)
+
+
 def test_stale_suspended_or_name_risk_never_becomes_candidate():
     rows = [row("300001", "media", 99, 100), row("300002", "media", 99, 0),
             row("600001", "bank", 99, 200), row("000001", "bank", 1, 100)]

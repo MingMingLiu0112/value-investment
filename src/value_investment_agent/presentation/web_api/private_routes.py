@@ -15,6 +15,7 @@ but they must unlock with the same launcher secret and then present the token.
 """
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
@@ -46,6 +47,24 @@ from .local_auth import (
 VALIDATION_FAILED = "VALIDATION_FAILED"
 _UNAUTHORIZED = 401
 _FORBIDDEN = 403
+_PRIVATE_RESPONSE_HEADERS = (
+    ("Cache-Control", "no-store"),
+    ("Pragma", "no-cache"),
+    ("Expires", "0"),
+    ("Vary", "Origin, X-Local-Session"),
+)
+_LOGGER = logging.getLogger(__name__)
+
+
+def _is_private_response_path(path: str) -> bool:
+    return path == "/api/v1/portfolio" or path.startswith(
+        ("/api/v1/portfolio/", "/api/v1/private/")
+    )
+
+
+def _set_private_privacy_headers(response) -> None:
+    for name, value in _PRIVATE_RESPONSE_HEADERS:
+        response.headers[name] = value
 
 
 def _refusal(error: LocalAuthorizationError) -> JSONResponse:
@@ -93,6 +112,25 @@ def register_private_routes(
     port: int = 8001,
 ) -> None:
     session_state = sessions if sessions is not None else LocalOperatorSession()
+
+    @api.middleware("http")
+    async def private_response_privacy(request: Request, call_next):
+        if not _is_private_response_path(request.url.path):
+            return await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception:
+            _LOGGER.exception("Unhandled private route error")
+            response = JSONResponse(
+                status_code=500,
+                content={
+                    "action": "no_order",
+                    "status": "INTERNAL_ERROR",
+                    "detail": "私人接口执行失败，未提供任何交易动作",
+                },
+            )
+        _set_private_privacy_headers(response)
+        return response
 
     def service() -> PrivatePortfolioService:
         return PrivatePortfolioService(PrivateJournal(resolve_private_root(repository_root=project)))

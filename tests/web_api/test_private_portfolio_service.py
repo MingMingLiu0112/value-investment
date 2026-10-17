@@ -91,6 +91,25 @@ def test_empty_journal_is_not_connected(service):
     assert service.records() == []
 
 
+@pytest.mark.parametrize(
+    "trade_date, next_sell_session, message",
+    [
+        ("2026-10-10", "2026-10-12", "trade date is not a covered exchange session"),
+        ("2026-09-30", "2026-10-01", "next covered exchange session: 2026-10-08"),
+    ],
+)
+def test_prepare_fill_rejects_non_session_dates(
+    service, trade_date, next_sell_session, message
+):
+    service.initialize(_initialize_request())
+    request = _fill_request()
+    request["fill"]["trade_date"] = trade_date
+    request["fill"]["next_sell_session"] = next_sell_session
+    with pytest.raises(JournalValidationError, match=message):
+        service.prepare_fill(request)
+    assert len(service.records()) == 1
+
+
 def test_full_lifecycle_keeps_arithmetic_in_python(service):
     baseline, baseline_digest = service.initialize(_initialize_request())
     assert baseline["status"] == "BASELINE_CONFIRMED"

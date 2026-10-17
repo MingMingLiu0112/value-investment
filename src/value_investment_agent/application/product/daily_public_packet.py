@@ -33,7 +33,7 @@ SCHEMA_VERSION = "daily-public-packet-v1"
 # chain (bug fixes included). It is part of the identity below so a new engine
 # revision yields a new publication_id instead of silently reusing a stored
 # record that an older revision computed.
-ENGINE_VERSION = "daily-public-packet-engine-v18"
+ENGINE_VERSION = "daily-public-packet-engine-v19"
 # v4 folds every content-deciding input into the identity: the company
 # research registry and its evidence files, the archived quote bundles, the
 # bound decision-explanation files and the business clock (natural date +
@@ -357,8 +357,17 @@ def _pending_actions(symbol: str, bridge: Mapping[str, Any] | None,
                     "label": "当前公告审核交接绑定未通过；修复证据交接后再办理，不以 G3 替代材料性签署。",
                     "binding_ref": bridge.get("incremental_validity_binding"),
                     "scan_ref": incremental.get("scan_ref")})
+            review_cutoff = bridge.get("review_cutoff")
+            announcement_count = bridge.get("announcement_count")
+            label = (
+                f"复核截至 {review_cutoff} 的 {announcement_count} 份公告及原模型适用性；不预支 G3。"
+                if isinstance(review_cutoff, str)
+                and isinstance(announcement_count, int)
+                and announcement_count >= 0
+                else "复核增量公告及原模型适用性；公告扫描窗口尚不可读取，不能据此视为已审核或不影响模型；不预支 G3。"
+            )
             actions.append({"code": "INCREMENTAL_EVENT_MATERIALITY_REVIEW", "actor": "HUMAN",
-                "label": f"复核截至 {bridge.get('review_cutoff')} 的 {bridge.get('announcement_count')} 份公告及原模型适用性；不预支 G3。",
+                "label": label,
                 "binding_ref": bridge.get("incremental_validity_binding"),
                 "handoff_status": route.get("status"),
                 "next_url": f"/decisions/{symbol}#value-review-handoff",

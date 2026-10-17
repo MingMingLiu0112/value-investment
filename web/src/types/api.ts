@@ -487,10 +487,138 @@ export interface DailyResponse {
   publication_source?: string;
 }
 
+export interface ResearchDraftScenario {
+  scenario: "bear" | "base" | "bull";
+  per_share_value: string;
+  terminal_residual_contribution_ratio?: string | null;
+  basis_to_valuation_factor?: string | null;
+  dividend_crosscheck_difference?: string | null;
+}
+
+export interface ResearchDraftAssumption {
+  name: string;
+  unit?: string | null;
+  bear?: string | number | null;
+  base?: string | number | null;
+  bull?: string | number | null;
+  basis?: string | null;
+  rationale?: string | null;
+  confidence?: string | null;
+}
+
+export interface ResearchDraftEvidence {
+  id: string;
+  title?: string | null;
+  url?: string | null;
+  published_at?: string | null;
+  available_at?: string | null;
+  sha256: string;
+}
+
+export interface ResearchDraftEvent {
+  announcement_id?: string | null;
+  title?: string | null;
+  published_at?: string | null;
+  review_status?: string | null;
+  source_url?: string | null;
+}
+
+export interface ResearchDraftVersionComparison {
+  from: {
+    status: string;
+    research_version: string;
+    valuation?: unknown;
+  };
+  to: {
+    status: string;
+    research_version: string;
+    research_as_of?: string | null;
+    valuation?: unknown;
+    model_validity?: string | null;
+    price_bridge?: string | null;
+  };
+  changed: string[];
+  unchanged: string[];
+  next_gate?: string | null;
+}
+
+export interface ResearchDraft {
+  schema_version: "public-research-draft-v1";
+  action: "no_order";
+  symbol: string;
+  company_name: string;
+  run_id: string;
+  research_version: string;
+  status: "RESEARCH_DRAFT_NOT_APPROVED";
+  research_as_of: string;
+  available_at: string;
+  financial_period: string;
+  summary: string;
+  thesis?: string | null;
+  return_driver?: string | null;
+  mispricing_hypothesis?: string | null;
+  financial_facts?: Record<string, string | null>;
+  valuation: {
+    model_type: string;
+    model_version: string;
+    valuation_date: string;
+    status: "conditional_research_only";
+    confidence?: string | null;
+    currency: string;
+    scope?: string | null;
+    disclaimer?: string | null;
+    scenarios: ResearchDraftScenario[];
+    assumptions: ResearchDraftAssumption[];
+  };
+  model_validity: {
+    model_id?: string | null;
+    model_as_of?: string | null;
+    last_material_event_check?: string | null;
+    status: string;
+    blockers: string[];
+  };
+  quote_fact: {
+    quote_date: string;
+    current_price: string | number;
+    currency: string;
+    status: "VERIFIED_CLOSE_NOT_ADMITTED";
+    providers?: unknown[];
+  };
+  price_bridge: {
+    status: string;
+    price_admitted: false;
+    margin_to_bear: null;
+    margin_to_base: null;
+    blockers: string[];
+    reason?: string | null;
+    needed_evidence?: string | null;
+  };
+  gates?: {
+    results?: Record<string, boolean>;
+    blockers?: string[];
+    conclusion?: string | null;
+  } | null;
+  events?: {
+    status?: string | null;
+    coverage_status?: string | null;
+    pending_count?: number;
+    items?: ResearchDraftEvent[];
+  } | null;
+  counter_evidence: string[];
+  thesis_breakers: string[];
+  next_events: string[];
+  reopen_triggers: string[];
+  limitations: string[];
+  boundary: string;
+  evidence: ResearchDraftEvidence[];
+  version_comparison: ResearchDraftVersionComparison;
+}
+
 export interface DetailResponse {
   action: "no_order";
   status: ApiStatus;
   decision: DecisionItem | null;
+  research_draft?: ResearchDraft | null;
   publication?: PublicPacketBlock;
   reason?: string;
 }
@@ -953,6 +1081,76 @@ export interface RuntimeIdentity {
     published_at: string | null;
     dates: PacketDates | null;
   };
+}
+
+export interface ResearchFunnelStatus {
+  schema_version: "public-research-funnel-status-v1";
+  action: "no_order";
+  status: "VERIFIED" | "UNAVAILABLE" | "INVALID";
+  reason: string | null;
+  task_id: string | null;
+  as_of: string | null;
+  audit_sha256: string | null;
+  review: {
+    status: string | null;
+    approved: boolean;
+  } | null;
+  universe: {
+    securities: number;
+    industries_mapped: number;
+    market_snapshots: number;
+    leads: number;
+  } | null;
+  evidence: {
+    financial_symbols: number;
+    financial_points: number;
+    dividend_evidence_count: number;
+    same_period_complete_symbols: number;
+    quality_pass: number;
+    quality_data_gap: number;
+    quality_insufficient_evidence: number;
+    capital_return_status: string | null;
+    capital_return_reason: string | null;
+  } | null;
+  quote: {
+    date: string | null;
+    trade_date_verified: boolean;
+    verified_count: number;
+    unverified_count: number;
+  } | null;
+  queue: {
+    entry_count: number;
+    selected_count: number;
+    deferred_count: number;
+    selected_symbols: string[];
+  } | null;
+  channels: Array<{
+    key: string;
+    pass_count: number;
+    data_gap_count: number;
+    insufficient_evidence_count: number;
+    rejected_count: number;
+    not_evaluated_count: number;
+    budget_excluded_count: number;
+    unsupported_count: number;
+    top_reason: string | null;
+  }>;
+  sample: Array<{
+    symbol: string;
+    name: string;
+    industry: string;
+    channels: string[];
+    research_state: string;
+    gaps: string[];
+  }>;
+  blockers: string[];
+  source_files: Record<string, { path: string; sha256: string }>;
+  artifacts: {
+    manifest: { path: string; sha256: string };
+    result_sha256: string;
+    report_sha256: string;
+    review_packet_sha256: string;
+  } | null;
 }
 
 /** The one public daily decision packet (TL9 MVP-1). */

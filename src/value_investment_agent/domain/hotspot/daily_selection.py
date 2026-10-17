@@ -1,13 +1,41 @@
 """Pre-versioned, descriptive daily ranking; never trade admission."""
 from decimal import Decimal
 
-RULE_VERSION = "hotspot-dated-sector-liquidity-ranking-v2"
+RULE_VERSION = "hotspot-dated-sector-liquidity-ranking-v3"
 RANKING = ["industry_relative_strength_desc", "turnover_cny_desc", "symbol_asc"]
+POOL_RULE = "bounded_round_robin_cross_industry_max_two_per_industry_v1"
 
 
-def rank_daily_candidates(rows: list[dict], *, trade_date: str, limit: int = 5) -> dict:
+def _bounded_candidate_pool(
+    ordered: list[dict], *, limit: int,
+) -> list[dict]:
+    """Retain a bounded, cross-industry pool before minute-structure checks."""
+
+    industries: dict[str, list[dict]] = {}
+    for row in ordered:
+        industries.setdefault(row["industry"], []).append(row)
+    selected: list[dict] = []
+    for pass_index in range(2):
+        for industry in industries:
+            members = industries[industry]
+            if pass_index < len(members) and len(selected) < limit:
+                row = members[pass_index]
+                selected.append({**row, "candidate_pool_rank": len(selected) + 1,
+                                 "candidate_pool_rule": POOL_RULE})
+            if len(selected) == limit:
+                return selected
+    return selected
+
+
+def rank_daily_candidates(rows: list[dict], *, trade_date: str, limit: int = 5,
+                          candidate_pool_limit: int | None = None) -> dict:
     if type(limit) is not int or not 1 <= limit <= 10:
         raise ValueError("Daily candidate limit must be 1..10")
+    if candidate_pool_limit is None:
+        candidate_pool_limit = min(30, max(10, limit * 2))
+    if (type(candidate_pool_limit) is not int
+            or not limit <= candidate_pool_limit <= 30):
+        raise ValueError("Daily candidate-pool limit must be between limit and 30")
     valid, excluded, seen = [], [], set()
     for row in rows:
         symbol = row["symbol"]
@@ -36,7 +64,9 @@ def rank_daily_candidates(rows: list[dict], *, trade_date: str, limit: int = 5) 
             valid.append(row)
     if not valid:
         return dict(rule_version=RULE_VERSION, ranking=RANKING, candidates=[], sectors=[],
-                    excluded=excluded, market=None, action="no_order")
+                    excluded=excluded, market=None, candidate_pool=[],
+                    candidate_pool_rule=POOL_RULE, candidate_pool_limit=candidate_pool_limit,
+                    action="no_order")
     valid.sort(key=lambda row: row["symbol"])
     excluded.sort(key=lambda row: row["symbol"])
     mean = sum(Decimal(r["change_percent"]) for r in valid) / len(valid)
@@ -53,6 +83,16 @@ def rank_daily_candidates(rows: list[dict], *, trade_date: str, limit: int = 5) 
                    "persistence": "UNKNOWN", "fund_flows": "UNKNOWN", "catalyst": "UNKNOWN",
                    "formal_eligibility": False, "action": "no_order"}
                   for index, row in enumerate(ordered[:limit])]
+    pool = [{**row, "rank": index + 1,
+             "industry_relative_strength_percent": str(strength[row["industry"]]),
+             "activity_tier": "ACTIVE_OBSERVATION",
+             "activity_reason": "SECTOR_STRENGTH_AND_TURNOVER",
+             "structure_tier": "UNASSESSED",
+             "structure_reason": "COMPLETED_PRICE_STRUCTURE_REQUIRED",
+             "persistence": "UNKNOWN", "fund_flows": "UNKNOWN", "catalyst": "UNKNOWN",
+             "formal_eligibility": False, "action": "no_order"}
+            for index, row in enumerate(ordered)]
+    candidate_pool = _bounded_candidate_pool(pool, limit=candidate_pool_limit)
     return dict(rule_version=RULE_VERSION, ranking=RANKING, candidates=candidates,
                 sectors=[dict(industry=name, securities=len(sectors[name]), relative_strength_percent=str(value),
                               trade_date=trade_date, persistence="UNKNOWN", status="DATED_COVERED_UNIVERSE_OBSERVATION")
@@ -60,4 +100,6 @@ def rank_daily_candidates(rows: list[dict], *, trade_date: str, limit: int = 5) 
                 excluded=excluded, market=dict(trade_date=trade_date, covered_securities=len(valid),
                      equal_weight_change_percent=str(mean), advancing=sum(Decimal(r["change_percent"]) > 0 for r in valid),
                      declining=sum(Decimal(r["change_percent"]) < 0 for r in valid), regime_admission="UNKNOWN"),
+                candidate_pool=candidate_pool, candidate_pool_rule=POOL_RULE,
+                candidate_pool_limit=candidate_pool_limit,
                 action="no_order")

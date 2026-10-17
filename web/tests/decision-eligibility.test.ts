@@ -74,6 +74,20 @@ it("explains registered condition objects and missing value policies without man
   ).toBe(
     "现价与估值尚不具备合法可比性；模型事件扫描尚未覆盖该行情日期；价值操作判断仍需本人确认",
   );
+  const translated = confirmationText([
+    "RESEARCH_ASSESSMENT_NOT_BOUND",
+    "VALUATION_NOT_ADMITTED",
+    "PRICE_NOT_ADMITTED",
+  ]);
+  expect(translated).toBe(
+    "当前发布尚未绑定完整研究评估，补行情不足以完成准入；估值尚未通过准入；尚未接入经核验的当前行情",
+  );
+  expect(translated).not.toMatch(
+    /RESEARCH_ASSESSMENT_NOT_BOUND|VALUATION_NOT_ADMITTED|PRICE_NOT_ADMITTED/,
+  );
+  expect(confirmationText(["UNREGISTERED_INTERNAL_GATE"])).toBe(
+    "其他系统校验待复核",
+  );
   expect(
     missingPricePolicies({
       id: "value",

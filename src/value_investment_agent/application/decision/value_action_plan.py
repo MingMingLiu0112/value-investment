@@ -18,6 +18,7 @@ from ..product.publication_chain import bound_object, load_current_chain, STRUCT
 from ..product.quote_bridge import execute_quote_bridge_for_symbol
 from ..product.value_decision_explanation import project_value_decision_explanation
 from ..product.decision_surface import verify_current_decision_workbench
+from ..product.research_reviews import verify_human_approval_transport_provenance
 from .restore_decision_recommendation import RestoredDecisionRecommendation
 from .value_model_identity import project_catalog_identity
 
@@ -40,7 +41,12 @@ def replay_published_value_decision(root: Path, explanation: dict, *, now: datet
     stamp = datetime.fromisoformat(workbench["generated_at"])
     if stamp.utcoffset() is None or stamp > now:
         raise ValueError("Published decision workbench is unavailable at cutoff")
-    restored = verify_current_decision_workbench(workbench)
+    restored = verify_current_decision_workbench(
+        workbench,
+        human_approval_provenance_verifier=lambda approval: (
+            verify_human_approval_transport_provenance(root, approval)
+        ),
+    )
     if restored.recommendation.symbol != explanation.get("symbol"):
         return None, None
     expected = project_value_decision_explanation(restored, evidence_scope="RETAINED_RESEARCH")

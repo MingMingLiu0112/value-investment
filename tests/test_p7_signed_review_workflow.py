@@ -21,6 +21,7 @@ from value_investment_agent.application.product.research_publication_input impor
 from value_investment_agent.operations.authorization.trust_root_registry import _use_test_trust_registry
 from value_investment_agent.application.product.research_reviews import (
     prepare_pending_review_response, build_research_review_model_context,
+    verify_human_approval_transport_provenance,
 )
 from value_investment_agent.application.product.workbench import build_current_workbench_for_symbol
 from value_investment_agent.application.product.decision_surface import verify_current_decision_workbench
@@ -51,6 +52,12 @@ from value_investment_agent.application.product.daily_public_packet import build
 
 
 def _registered_policy_fixture(root, restored):
+    registry = root / 'TEST_ONLY-combined-trust-registry.json'
+    with _use_test_trust_registry(registry):
+        return _registered_policy_fixture_trusted(root, restored)
+
+
+def _registered_policy_fixture_trusted(root, restored):
     """Real publication readers and isolated policy registration over signed output."""
     now = datetime.fromisoformat('2026-09-21T19:00:00+08:00')
     symbol = restored.recommendation.symbol
@@ -389,8 +396,17 @@ def _complete_signed_case(chain, monkeypatch, *, price_eligible=True):
         after = build_current_workbench_for_symbol(root=root, symbol=descriptor.symbol,
             package_path=package_path, output_path=after_path, schedule_request=schedule,
             reviews_path=reviews_path, reviews_sha256=sha256_file(reviews_path))['result']
-    restored = verify_current_decision_workbench(after)
-    assert restored.dependency_objects['human_approval'] == approval
+    with _use_test_trust_registry(registry):
+        restored = verify_current_decision_workbench(
+            after,
+            human_approval_provenance_verifier=lambda approval: (
+                verify_human_approval_transport_provenance(root, approval)
+            ),
+        )
+    attached_approval = restored.dependency_objects['human_approval']
+    assert attached_approval.authenticated_transport_binding is not None
+    assert attached_approval.verified_transport is not None
+    assert replace(attached_approval, authenticated_transport_binding=None) == approval
     assert restored.dependency_objects['event_materiality'].scan_sha256 == event_hash
     assert after['pre_decision_eligibility']['positive_price_review_eligible'] is price_eligible
     assert after['suggested_state'] == ('BUY_CANDIDATE' if price_eligible else 'NO_ACTION')
@@ -421,8 +437,9 @@ def test_full_signed_research_public_publish_ips_risk_buy_sell_history(synthetic
         research_version=plan['research_version'], signed_research_binding=import_binding,
         source_bindings=[bars_binding])
     assert hotspot_plan['breakout_observed'] is True
-    packet = build_daily_public_packet(root,
-        generated_at=datetime.fromisoformat('2026-09-21T19:00:00+08:00'))
+    with _use_test_trust_registry(root / 'TEST_ONLY-combined-trust-registry.json'):
+        packet = build_daily_public_packet(root,
+            generated_at=datetime.fromisoformat('2026-09-21T19:00:00+08:00'))
     assert packet['packet_status'] == 'CURRENT' and packet['chain_error'] is None
     assert packet['value_price_conditions'][symbol]['safety_margin_policy']['policy_id'] == policy.policy_id
     assert packet['value_price_conditions'][symbol]['formal_eligibility'] is True
@@ -590,11 +607,39 @@ def test_signed_research_without_explicit_price_permission_cannot_qualify_plan(s
     assert plan['formal_eligibility'] is False
     assert plan['formal_eligibility_blockers']
     assert plan['candidate_action'] == 'NO_ACTION'
-    packet = build_daily_public_packet(synthetic_chain[0],
-        generated_at=datetime.fromisoformat('2026-09-21T19:00:00+08:00'))
+    registry = synthetic_chain[0] / 'TEST_ONLY-combined-trust-registry.json'
+    with _use_test_trust_registry(registry):
+        packet = build_daily_public_packet(synthetic_chain[0],
+            generated_at=datetime.fromisoformat('2026-09-21T19:00:00+08:00'))
     assert packet['value_price_conditions'][plan['symbol']]['formal_eligibility'] is False
     assert not (synthetic_chain[0] / 'config/current-daily-public-snapshot.json').exists()
     assert not list(synthetic_chain[0].glob('*.jsonl'))
+
+
+def test_v3_bundle_replay_requires_authenticated_transport_not_serialized_binding(
+    synthetic_chain, monkeypatch,
+):
+    restored, after_path, _ = _complete_signed_case(synthetic_chain, monkeypatch)
+    workbench = json.loads(after_path.read_text(encoding='utf-8'))
+    approval_artifact = next(
+        row for row in workbench['artifact_bundle']['artifacts']
+        if row['identity'].get('artifact_type') == 'human_research_approval'
+    )
+    assert 'authenticated_transport_binding' in approval_artifact['canonical_payload']
+
+    with pytest.raises(ValueError, match='PreDecision|repository replay|provenance'):
+        verify_current_decision_workbench(workbench)
+
+    root = synthetic_chain[0]
+    with _use_test_trust_registry(root / 'TEST_ONLY-combined-trust-registry.json'):
+        replayed = verify_current_decision_workbench(
+            workbench,
+            human_approval_provenance_verifier=lambda approval: (
+                verify_human_approval_transport_provenance(root, approval)
+            ),
+        )
+    assert replayed.recommendation.recommendation_type == 'BUY_CANDIDATE'
+    assert replayed.dependency_objects['human_approval'].verified_transport is not None
 
 
 @pytest.mark.parametrize('defect', ['missing', 'hash', 'dependency', 'future', 'explanation'])
@@ -622,9 +667,10 @@ def test_formal_packet_requires_exact_current_replay(synthetic_chain, monkeypatc
             from value_investment_agent.application.decision.value_action_plan import replay_published_value_decision
             explanation = project_value_decision_explanation(restored, evidence_scope='RETAINED_RESEARCH')
             explanation['candidate_action'] = 'SELL_CANDIDATE'
-            with pytest.raises(ValueError, match='differs from replayed'):
-                replay_published_value_decision(root, explanation,
-                    now=datetime.fromisoformat('2026-09-21T19:00:00+08:00'))
+            with _use_test_trust_registry(root / 'TEST_ONLY-combined-trust-registry.json'):
+                with pytest.raises(ValueError, match='differs from replayed'):
+                    replay_published_value_decision(root, explanation,
+                        now=datetime.fromisoformat('2026-09-21T19:00:00+08:00'))
             return
         else:
             work['symbol'] = '000001'
@@ -642,17 +688,18 @@ def test_formal_packet_requires_exact_current_replay(synthetic_chain, monkeypatc
     pointer = chain['pointer']
     pointer['current_publication']['receipt_sha256'] = sha256_file(receipt_path)
     _atomic_write_json(root / 'config/current-trial-workbook.json', pointer)
-    packet = build_daily_public_packet(root,
-        generated_at=datetime.fromisoformat('2026-09-21T19:00:00+08:00'))
-    plan = packet['value_price_conditions'].get(restored.recommendation.symbol)
-    assert plan is None or plan.get('formal_eligibility') is not True
-    if defect == 'missing':
-        assert 'VALUE_VERIFIED_PREDECISION_REQUIRED' in plan['formal_eligibility_blockers']
-    else:
-        result = load_registered_value_action_plans(root,
-            now=datetime.fromisoformat('2026-09-21T19:00:00+08:00'))
-        assert result['items'] == []
-        assert any('VALUE_PLAN_UNAVAILABLE:' in reason for reason in result['blockers'])
+    with _use_test_trust_registry(root / 'TEST_ONLY-combined-trust-registry.json'):
+        packet = build_daily_public_packet(root,
+            generated_at=datetime.fromisoformat('2026-09-21T19:00:00+08:00'))
+        plan = packet['value_price_conditions'].get(restored.recommendation.symbol)
+        assert plan is None or plan.get('formal_eligibility') is not True
+        if defect == 'missing':
+            assert 'VALUE_VERIFIED_PREDECISION_REQUIRED' in plan['formal_eligibility_blockers']
+        else:
+            result = load_registered_value_action_plans(root,
+                now=datetime.fromisoformat('2026-09-21T19:00:00+08:00'))
+            assert result['items'] == []
+            assert any('VALUE_PLAN_UNAVAILABLE:' in reason for reason in result['blockers'])
 
 
 def test_other_security_in_same_chain_keeps_display_without_typed_policy_admission(synthetic_chain, monkeypatch):
@@ -704,8 +751,10 @@ def test_other_security_in_same_chain_keeps_display_without_typed_policy_admissi
     _atomic_write_json(receipt_path, chain['receipt'])
     chain['pointer']['current_publication']['receipt_sha256'] = sha256_file(receipt_path)
     _atomic_write_json(root / 'config/current-trial-workbook.json', chain['pointer'])
-    assert replay_published_value_decision(root, explanation, now=now) == (None, None)
-    plans = load_registered_value_action_plans(root, now=now)
+    registry = root / 'TEST_ONLY-combined-trust-registry.json'
+    with _use_test_trust_registry(registry):
+        assert replay_published_value_decision(root, explanation, now=now) == (None, None)
+        plans = load_registered_value_action_plans(root, now=now)
     assert plans['blockers'] == []
     by_symbol = {item['symbol']: item for item in plans['items']}
     assert by_symbol[restored.recommendation.symbol]['formal_eligibility'] is True
@@ -719,7 +768,8 @@ def test_other_security_in_same_chain_keeps_display_without_typed_policy_admissi
         policy_id='TEST_ONLY-other', rule_version='TEST_ONLY-v1', profile_id=current['profile_id'],
         effective_from=date(2026, 9, 21), effective_through=date(2026, 10, 21),
         rationale='TEST_ONLY display policy', dividend_coverage_risk='TEST_ONLY unknown', rules=[])
-    prepared = policy_contract.prepare_value_price_policy(root, draft, now=now)
+    with _use_test_trust_registry(registry):
+        prepared = policy_contract.prepare_value_price_policy(root, draft, now=now)
     review = dict(schema_version='tl11-p5-value-model-review-v1', symbol=symbol, action='no_order',
         reviewed_at=now.isoformat(), formal_eligibility=False, portfolio_eligibility=None,
         direct_hash_checks=current['source_bindings'],
@@ -743,10 +793,12 @@ def test_other_security_in_same_chain_keeps_display_without_typed_policy_admissi
         rationale='TEST_ONLY owner choice, not research approval', dividend_coverage_risk='Unknown',
         rules=[dict(action='entry', scenario='bear', value_fraction='0.93', comparison='LTE',
             rationale='TEST_ONLY explicit rule')])
-    preview = service.preview(symbol, selection, principal=principal, now=now)
-    confirmed = service.confirm(preview['preview_id'], dict(acknowledged=True, note='TEST_ONLY'),
-        principal=principal, now=now)
-    status = ValuePolicyInteractionService(root, **kwargs).status(symbol, principal=principal, now=now)
+    with _use_test_trust_registry(registry):
+        preview = service.preview(symbol, selection, principal=principal, now=now)
+        confirmed = service.confirm(preview['preview_id'], dict(acknowledged=True, note='TEST_ONLY'),
+            principal=principal, now=now)
+        status = ValuePolicyInteractionService(root, **kwargs).status(
+            symbol, principal=principal, now=now)
     for result in (confirmed, status):
         assert result['status'] == 'REGISTERED'
         plan = result['conditional_plan']
@@ -758,8 +810,9 @@ def test_other_security_in_same_chain_keeps_display_without_typed_policy_admissi
     # unrelated issuer that can merely fall back to display-only mode.
     mismatched = project_value_decision_explanation(restored, evidence_scope='RETAINED_RESEARCH')
     mismatched['candidate_action'] = 'SELL_CANDIDATE'
-    with pytest.raises(ValueError, match='differs from replayed'):
-        replay_published_value_decision(root, mismatched, now=now)
+    with _use_test_trust_registry(registry):
+        with pytest.raises(ValueError, match='differs from replayed'):
+            replay_published_value_decision(root, mismatched, now=now)
 
 
 def test_registered_policy_restart_rejects_tampered_signed_sample_review(synthetic_chain, monkeypatch):
@@ -771,10 +824,13 @@ def test_registered_policy_restart_rejects_tampered_signed_sample_review(synthet
         storage_relative='.tmp/value-policy-review/TEST_ONLY-P7', isolated=True)
     principal = PolicyPrincipal('TEST_ONLY-P7-owner', frozenset({PERMISSION}))
     now = datetime.fromisoformat('2026-09-21T19:00:00+08:00')
-    assert service.status(restored.recommendation.symbol, principal=principal, now=now)['status'] == 'REGISTERED'
+    registry = root / 'TEST_ONLY-combined-trust-registry.json'
+    with _use_test_trust_registry(registry):
+        assert service.status(restored.recommendation.symbol, principal=principal, now=now)['status'] == 'REGISTERED'
     manifest = json.loads((root / policy_contract.REVIEW_MANIFEST_PATH).read_text(encoding='utf-8'))
     review_path = root / manifest['items'][restored.recommendation.symbol]['model_review']['path']
     review_path.write_bytes(review_path.read_bytes()+b' ')
-    status = service.status(restored.recommendation.symbol, principal=principal, now=now)
+    with _use_test_trust_registry(registry):
+        status = service.status(restored.recommendation.symbol, principal=principal, now=now)
     assert status['status'] == 'REVIEW_REQUIRED' and status['conditional_plan'] is None
     assert len(list(service.store.glob('confirmed-*.json'))) == 1

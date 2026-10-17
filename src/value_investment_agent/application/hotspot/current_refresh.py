@@ -12,6 +12,7 @@ from value_investment_agent.quote_session_collection import collect_session_bund
 from value_investment_agent.quote_sessions import evaluate_quote_session, parse_quote
 from value_investment_agent.application.product.publication_chain import bound_object, load_current_chain
 from .daily_selection import verify_daily_selection
+from .price_action_case import project_current_price_action_plan
 
 
 def current_watch_binding(root: Path) -> dict:
@@ -29,11 +30,14 @@ def _write(path, value):
 
 
 def select_watch_candidates(report: dict, *, limit: int = 5) -> tuple[list[dict], str]:
-    maximum = 10 if report.get("schema_version") == "hotspot-daily-selection-v1" else 5
+    has_pool = isinstance(report.get("candidate_pool"), list) and bool(report["candidate_pool"])
+    maximum = 30 if has_pool else 10 if report.get("schema_version") == "hotspot-daily-selection-v1" else 5
     if isinstance(limit, bool) or not 1 <= limit <= maximum:
-        raise ValueError("At most five candidates allowed")
-    queue = report.get("hotspot_watch_queue") or report.get("watch_queue") or []
-    scope = ("DATED_DAILY_SECTOR_RANKING_OBSERVATION" if report.get("schema_version") == "hotspot-daily-selection-v1"
+        raise ValueError("Candidate count exceeds the bounded pool")
+    queue = (report.get("candidate_pool") if has_pool else
+             report.get("hotspot_watch_queue") or report.get("watch_queue") or [])
+    scope = ("DATED_DAILY_CROSS_INDUSTRY_CANDIDATE_POOL" if has_pool else
+             "DATED_DAILY_SECTOR_RANKING_OBSERVATION" if report.get("schema_version") == "hotspot-daily-selection-v1"
              else "HOTSPOT_WATCH_QUEUE")
     if not queue:
         queue = [row for row in report.get("dated_quote_observations", [])
@@ -66,6 +70,7 @@ def select_watch_candidates(report: dict, *, limit: int = 5) -> tuple[list[dict]
 
 def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
                                      watch_source_sha256: str, limit: int = 5,
+                                     candidate_pool_limit: int | None = None,
                                      bundle_collector=None, case_collector=None, now=None) -> dict:
     root = Path(root).resolve()
     source = Path(watch_source_path)
@@ -78,7 +83,11 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
     report = json.loads(raw)
     if report.get("schema_version") == "hotspot-daily-selection-v1":
         verify_daily_selection(root, report)
-    selected, scope = select_watch_candidates(report, limit=limit)
+    pool_limit = (candidate_pool_limit if candidate_pool_limit is not None
+                  else min(30, max(10, limit * 2)))
+    selection_limit = (pool_limit if isinstance(report.get("candidate_pool"), list)
+                       else limit)
+    selected, scope = select_watch_candidates(report, limit=selection_limit)
     empty_daily = (not selected and report.get("schema_version") == "hotspot-daily-selection-v1"
                    and bool(report.get("rows")) and not report.get("failures"))
     if not selected and not empty_daily:
@@ -92,7 +101,7 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
     _write(bundle_path, bundle)
     bundle_sha = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
     now = now or datetime.now(timezone.utc)
-    observations, items, failures = [], [], []
+    observations, assessed, failures = [], [], []
     for row in selected:
         symbol = row["symbol"]
         try:
@@ -107,7 +116,19 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
             case = (case_collector or collect_current_price_case)(
                 root=root, symbol=symbol, as_of=date.fromisoformat(checked["expected_session"]),
                 quote_bundle_path=bundle_path, quote_bundle_sha256=bundle_sha)
-            items.append({**row, "case_path": case["case_path"], "case_sha256": case["case_sha256"]})
+            plan = project_current_price_action_plan(case)
+            quality = plan["opportunity_quality"]
+            signal_state = plan["signal_state"]
+            tier = quality.get("structure_tier")
+            if tier not in {"STRUCTURE_QUALIFIED_OBSERVATION", "ACTIVE_ONLY", "CONFLICT_OR_REJECTED"}:
+                raise ValueError("Candidate structure remained unassessed")
+            assessed.append({
+                **row, "case_path": case["case_path"], "case_sha256": case["case_sha256"],
+                "structure_tier": tier,
+                "structure_reasons": list(quality.get("structure_reasons") or []),
+                "signal_state": signal_state,
+                "activity_rank": row.get("rank"),
+            })
         except (ValueError, OSError, KeyError, TypeError, ArithmeticError) as error:
             failures.append({**row, "reason": str(error)})
         except Exception as error:
@@ -116,10 +137,42 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
     _write(archive / "report.json", dict(bundle_sha256=bundle_sha,
            bundle_bytes=bundle_path.stat().st_size, status=bundle["status"], observations=observations,
            production_database_changed=False, financial_or_strategy_approval=False))
+    tier_order = {"STRUCTURE_QUALIFIED_OBSERVATION": 0, "ACTIVE_ONLY": 1,
+                  "CONFLICT_OR_REJECTED": 2}
+    assessed.sort(key=lambda item: (
+        tier_order[item["structure_tier"]],
+        1 if item["signal_state"] == "TRIGGER_REJECTED" else 0,
+        item["activity_rank"] if isinstance(item["activity_rank"], int) else 10**6,
+        item["symbol"],
+    ))
+    items = assessed[:limit]
+    pipeline = dict(
+        activity_observation_count=len(report.get("observation_list") or []),
+        candidate_pool_count=len(selected),
+        candidate_pool_industry_count=len({
+            row.get("industry") for row in selected if row.get("industry")
+        }),
+        assessed_count=len(assessed), failed_count=len(failures),
+        final_count=len(items),
+        quality_counts={
+            tier: sum(item["structure_tier"] == tier for item in assessed)
+            for tier in tier_order
+        },
+        stage_order=["activity_observation", "cross_industry_candidate_pool",
+                     "completed_price_structure", "quality_then_activity_ranking"],
+        final_rule_version="hotspot-quality-then-activity-ranking-v1",
+        action="no_order",
+    )
     registry = dict(schema_version="current-price-conditions-v1", action="no_order",
                     watch_source_binding=dict(path=source.relative_to(root).as_posix(), sha256=watch_source_sha256),
                     watch_source_scope=scope, items=items, failures=failures,
-                    selected_symbols=[row["symbol"] for row in selected],
+                    candidate_pool_symbols=[row["symbol"] for row in selected],
+                    assessed_candidates=[{key: item[key] for key in (
+                        "symbol", "company_name", "activity_rank", "structure_tier",
+                        "structure_reasons", "signal_state", "case_path", "case_sha256",
+                    )} for item in assessed],
+                    selection_pipeline=pipeline,
+                    selected_symbols=[item["symbol"] for item in items],
                     completed_at=bundle["finished_at"])
     target = root / "config" / "current-price-conditions.json"
     if target.is_file():
@@ -141,7 +194,7 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
             pass
     result = dict(status="WRITTEN" if items or empty_daily else "BLOCKED", items=items, failures=failures,
                   bundle_path=bundle_path.relative_to(root).as_posix(), bundle_sha256=bundle_sha,
-                  watch_source_scope=scope, action="no_order")
+                  watch_source_scope=scope, selection_pipeline=pipeline, action="no_order")
     _write(archive / "refresh.json", result)
     if items or empty_daily:
         if hashlib.sha256(source.read_bytes()).hexdigest() != watch_source_sha256:

@@ -17,8 +17,10 @@ from dataclasses import dataclass, replace
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any, Iterator, Mapping, Sequence
+from typing import Any, Callable, Iterator, Mapping, Sequence
+from zoneinfo import ZoneInfo
 
+from ...domain.execution.exchange_calendar import is_exchange_session, validate_buy_settlement
 from ...domain.portfolio.dual_sleeve_records import canonical_bytes
 from ...domain.portfolio.private_policy import (
     normalize_policy, missing_policy_fields, validate_policy_confirmation,
@@ -71,6 +73,7 @@ POLICY_DECIMAL_FIELDS = (
 )
 POLICY_TEXT_FIELDS = ("risk_tolerance",)
 PRICE_ADMISSION_REASON = "尚未接入经核验的当前行情，无法计算市值、浮动盈亏与仓位权重"
+_SHANGHAI = ZoneInfo("Asia/Shanghai")
 
 
 class PrivateStoreUnavailable(RuntimeError):
@@ -464,7 +467,7 @@ def _fill_from_body(body: Mapping[str, Any]) -> Fill:
     corporate_action = fill.get("corporate_action", False)
     if not isinstance(corporate_action, bool):
         raise JournalValidationError("corporate_action 必须是布尔值")
-    return Fill(
+    fill = Fill(
         transaction_id=_text(fill.get("transaction_id"), "transaction_id"),
         side=side,
         sleeve=_sleeve(fill.get("sleeve")),
@@ -478,13 +481,40 @@ def _fill_from_body(body: Mapping[str, Any]) -> Fill:
         trading_unit=_whole_shares(trading_unit, "trading_unit") if trading_unit is not None else None,
         corporate_action=corporate_action,
     )
+    try:
+        is_exchange_session(fill.exchange, fill.trade_date)
+        if fill.side == "BUY":
+            validate_buy_settlement(
+                fill.exchange, fill.trade_date, fill.next_sell_session
+            )
+    except ValueError as error:
+        raise JournalValidationError(str(error)) from error
+    return fill
 
 
 class PrivatePortfolioService:
     """Durable manual portfolio authority reused by the Web workbench."""
 
-    def __init__(self, journal: PrivateJournal) -> None:
+    def __init__(
+        self,
+        journal: PrivateJournal,
+        *,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
         self.journal = journal
+        self._clock = clock or (lambda: datetime.now(_SHANGHAI))
+
+    def _now(self) -> datetime:
+        value = self._clock()
+        if not isinstance(value, datetime) or value.utcoffset() is None:
+            raise RuntimeError("private ledger clock must return an aware datetime")
+        return value.astimezone(_SHANGHAI)
+
+    @staticmethod
+    def _reject_future(value: datetime | date, now: datetime, field: str) -> None:
+        future = value > now if isinstance(value, datetime) else value > now.date()
+        if future:
+            raise JournalValidationError(f"{field} must not be in the future")
 
     def records(self) -> list[dict[str, Any]]:
         return self.journal.read()
@@ -588,11 +618,10 @@ class PrivatePortfolioService:
         return ReplayedPortfolio(len(records), state, policy, tuple(trades), snapshot, pending, draft,
                                  snapshot_version, snapshot_scope, pending_policy)
 
-    @staticmethod
-    def _sellable_as_of(state: Reconciliation, requested: date | None) -> date:
+    def _sellable_as_of(self, state: Reconciliation, requested: date | None) -> date:
         if requested is not None:
             return requested
-        return max(state.last_trade_date, datetime.now().astimezone().date())
+        return max(state.last_trade_date, self._now().date())
 
     def _positions(self, state: Reconciliation, sellable_as_of: date) -> list[dict[str, Any]]:
         grouped: dict[tuple[str, str], dict[str, Any]] = {}
@@ -749,6 +778,9 @@ class PrivatePortfolioService:
     def _initialize_body(self, request: Mapping[str, Any]) -> dict[str, Any]:
         confirmed_at = _aware_datetime(request.get("confirmed_at"), "confirmed_at")
         as_of = _date_value(request.get("as_of"), "as_of")
+        now = self._now()
+        self._reject_future(confirmed_at, now, "confirmed_at")
+        self._reject_future(as_of, now, "as_of")
         account_scope = _text(request.get("account_scope"), "account_scope")
         holdings = []
         for row in _sequence(request.get("holdings"), "holdings"):
@@ -878,7 +910,7 @@ class PrivatePortfolioService:
             if replayed.pending is not None or pending["state_version"] != replayed.state.version:
                 raise JournalConflict("VERSION_CONFLICT", "Ledger changed; prepare IPS again")
             confirmed_at = _aware_datetime(request.get("confirmed_at"), "confirmed_at")
-            if confirmed_at > datetime.now().astimezone() or confirmed_at < (replayed.state.confirmed_at or replayed.state.baseline.available_at):
+            if confirmed_at > self._now() or confirmed_at < (replayed.state.confirmed_at or replayed.state.baseline.available_at):
                 raise JournalValidationError("Policy confirmation is future or predates account baseline")
             try:
                 validate_policy_confirmation(pending["policy"], confirmed_at=confirmed_at.isoformat(), cash_cny=replayed.state.cash_cny)
@@ -1004,6 +1036,7 @@ class PrivatePortfolioService:
             raise JournalConflict("NO_CONFIRMABLE_DRAFT", "最后一条记录不是成交草稿")
         fill = _fill_from_body(prepared["body"])
         confirmed_at = _aware_datetime(request.get("confirmed_at"), "confirmed_at")
+        self._reject_future(confirmed_at, self._now(), "confirmed_at")
         evidence = _evidence_ref(f"fill-{str(prepared['record_sha256'])[:16]}", "user_confirmation")
         confirmation = {
             "note": _text(request.get("confirmation_note"), "confirmation_note"),
@@ -1094,7 +1127,7 @@ class PrivatePortfolioService:
             }
             reconciliation_scope = RECONCILIATION_SCOPE_EXTERNAL
         reconciled_at = _aware_datetime(request.get("reconciled_at"), "reconciled_at")
-        if reconciled_at > datetime.now().astimezone():
+        if reconciled_at > self._now():
             raise JournalValidationError("对账时间不得晚于当前时间")
         try:
             if replayed.state.version == 0:
@@ -1169,6 +1202,7 @@ class PrivatePortfolioService:
         if prepared_digest != replayed.pending["prepared_record_sha256"]:
             raise JournalConflict("NO_CONFIRMABLE_DRAFT", "草稿摘要与当前待确认成交不一致")
         cancelled_at = _aware_datetime(request.get("cancelled_at"), "cancelled_at")
+        self._reject_future(cancelled_at, self._now(), "cancelled_at")
         body = {
             "prepared_record_sha256": prepared_digest,
             "cancellation": {

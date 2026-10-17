@@ -167,7 +167,7 @@ export function JudgmentSummary({
           </p>
           <div style={{ margin: "0 0 8px" }}>
             <strong>核心风险：</strong>
-            {concise(rows[4][1])}
+            <span style={{ overflowWrap: "anywhere" }}>{rows[4][1]}</span>
           </div>
         </section>
       )}

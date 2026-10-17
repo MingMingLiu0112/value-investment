@@ -59,6 +59,121 @@ def test_bounded_fallback_does_not_claim_industry_admission():
         select_watch_candidates(report, limit=6)
 
 
+def test_quality_ranking_promotes_a_lower_ranked_candidate_and_excludes_unassessed(
+    tmp_path, monkeypatch,
+):
+    from value_investment_agent.application.hotspot import current_refresh as module
+
+    symbols = [f"60000{index}" for index in range(1, 8)]
+    rows = [
+        dict(symbol=symbol, company_name=symbol, industry=f"industry-{index % 3}", rank=index)
+        for index, symbol in enumerate(symbols, start=1)
+    ]
+    source = tmp_path / "runtime" / "candidate-pool.json"
+    source.parent.mkdir(parents=True)
+    source.write_text(json.dumps(dict(
+        observation_list=rows[:5], candidate_pool=rows, action="no_order",
+    )), encoding="utf-8")
+    bundle = dict(
+        status="collected_not_verified",
+        finished_at="2026-10-14T08:00:00+00:00",
+        documents={"quote": {}},
+        references={symbol: {"document_refs": {"tencent": "quote"}} for symbol in symbols},
+    )
+    tiers = {symbol: "ACTIVE_ONLY" for symbol in symbols[:5]}
+    tiers[symbols[5]] = "STRUCTURE_QUALIFIED_OBSERVATION"
+    monkeypatch.setattr(module, "parse_quote", lambda *args: dict(price="10"))
+    monkeypatch.setattr(module, "evaluate_quote_session", lambda *args, **kwargs: dict(
+        passed=True, status="VERIFIED", expected_session="2026-10-14",
+    ))
+
+    def collect_case(**kwargs):
+        symbol = kwargs["symbol"]
+        return dict(
+            symbol=symbol,
+            case_path=f"runtime/cases/{symbol}.json", case_sha256="a" * 64,
+            signal_state="WATCH",
+            opportunity_quality=dict(
+                structure_tier=tiers[symbol], structure_reasons=["TEST_ONLY"],
+            ),
+        )
+
+    def project_case(case):
+        return dict(
+            signal_state="WATCH",
+            opportunity_quality=dict(
+                structure_tier=tiers[case["symbol"]],
+                structure_reasons=["TEST_ONLY"],
+            ),
+        )
+
+    monkeypatch.setattr(module, "project_current_price_action_plan", project_case)
+
+    result = refresh_current_price_conditions(
+        root=tmp_path, watch_source_path=source,
+        watch_source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+        bundle_collector=lambda selected: bundle, case_collector=collect_case,
+        now=datetime(2026, 10, 14, 17, tzinfo=CHINA),
+    )
+    assert result["status"] == "WRITTEN"
+    assert result["selection_pipeline"]["candidate_pool_count"] == 7
+    assert result["selection_pipeline"]["assessed_count"] == 6
+    assert result["selection_pipeline"]["failed_count"] == 1
+    assert result["items"][0]["symbol"] == symbols[5]
+    assert symbols[6] not in {item["symbol"] for item in result["items"]}
+    assert all(item["structure_tier"] != "UNASSESSED" for item in result["items"])
+    registry = json.loads((tmp_path / "config/current-price-conditions.json").read_text())
+    assert registry["selected_symbols"][0] == symbols[5]
+    assert registry["candidate_pool_symbols"] == symbols
+    assert registry["selection_pipeline"]["quality_counts"] == {
+        "STRUCTURE_QUALIFIED_OBSERVATION": 1,
+        "ACTIVE_ONLY": 5,
+        "CONFLICT_OR_REJECTED": 0,
+    }
+
+
+def test_injected_quality_cannot_short_circuit_case_recalculation(tmp_path, monkeypatch):
+    from value_investment_agent.application.hotspot import current_refresh as module
+
+    source = tmp_path / "runtime" / "candidate-pool.json"
+    source.parent.mkdir(parents=True)
+    source.write_text(json.dumps(dict(
+        observation_list=[dict(symbol="600001", company_name="TEST", industry="TEST", rank=1)],
+        candidate_pool=[dict(symbol="600001", company_name="TEST", industry="TEST", rank=1)],
+        action="no_order",
+    )), encoding="utf-8")
+    bundle = dict(
+        status="collected_not_verified",
+        finished_at="2026-10-14T08:00:00+00:00",
+        documents={"quote": {}},
+        references={"600001": {"document_refs": {"tencent": "quote"}}},
+    )
+    monkeypatch.setattr(module, "parse_quote", lambda *args: dict(price="10"))
+    monkeypatch.setattr(module, "evaluate_quote_session", lambda *args, **kwargs: dict(
+        passed=True, status="VERIFIED", expected_session="2026-10-14",
+    ))
+
+    result = refresh_current_price_conditions(
+        root=tmp_path,
+        watch_source_path=source,
+        watch_source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+        bundle_collector=lambda selected: bundle,
+        case_collector=lambda **kwargs: dict(
+            case_path="runtime/cases/600001.json",
+            case_sha256="a" * 64,
+            signal_state="WATCH",
+            opportunity_quality=dict(
+                structure_tier="STRUCTURE_QUALIFIED_OBSERVATION",
+                structure_reasons=["INJECTED_WITHOUT_BARS"],
+            ),
+        ),
+        now=datetime(2026, 10, 14, 17, tzinfo=CHINA),
+    )
+    assert result["items"] == []
+    assert result["selection_pipeline"]["failed_count"] == 1
+    assert "case" not in result or result.get("status") != "WRITTEN"
+
+
 @pytest.mark.parametrize('tier,state,expected', [
     ('STRUCTURE_QUALIFIED_OBSERVATION', 'TRIGGER_OBSERVED', 'ACTIVE_ONLY'),
     ('CONFLICT_OR_REJECTED', 'TRIGGER_REJECTED', 'CONFLICT_OR_REJECTED'),
@@ -106,7 +221,8 @@ def test_retired_candidate_does_not_retain_current_quality(tmp_path, monkeypatch
         assert retired['opportunity_quality']['structure_reasons'] == ['ORIGINAL_REASON']
 
 
-def test_refresh_archives_bundle_and_does_not_replace_registry_on_failure(tmp_path):
+def test_refresh_archives_bundle_and_does_not_replace_registry_on_failure(tmp_path, monkeypatch):
+    from value_investment_agent.application.hotspot import current_refresh as module
     bundle_path = _write_bundle(tmp_path)
     bundle = json.loads(bundle_path.read_bytes())
     source = tmp_path / "runtime/watch.json"
@@ -121,6 +237,18 @@ def test_refresh_archives_bundle_and_does_not_replace_registry_on_failure(tmp_pa
         calls.append(kwargs)
         raise ValueError("source incomplete")
 
+    monkeypatch.setattr(
+        module,
+        "project_current_price_action_plan",
+        lambda case: dict(
+            signal_state="WATCH",
+            opportunity_quality=dict(
+                structure_tier="ACTIVE_ONLY",
+                structure_reasons=["STRUCTURE_CONFIRMATION_PENDING"],
+            ),
+        ),
+    )
+
     result = refresh_current_price_conditions(root=tmp_path, watch_source_path=source,
         watch_source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
         bundle_collector=lambda symbols: bundle, case_collector=capture,
@@ -132,7 +260,14 @@ def test_refresh_archives_bundle_and_does_not_replace_registry_on_failure(tmp_pa
     result = refresh_current_price_conditions(root=tmp_path, watch_source_path=source,
         watch_source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
         bundle_collector=lambda symbols: bundle,
-        case_collector=lambda **kwargs: dict(case_path="runtime/verified/case.json", case_sha256="a" * 64),
+        case_collector=lambda **kwargs: dict(
+            case_path="runtime/verified/case.json", case_sha256="a" * 64,
+            signal_state="WATCH",
+            opportunity_quality=dict(
+                structure_tier="ACTIVE_ONLY",
+                structure_reasons=["STRUCTURE_CONFIRMATION_PENDING"],
+            ),
+        ),
         now=datetime(2026, 9, 26, 16, 15, tzinfo=CHINA))
     assert result["status"] == "WRITTEN"
     assert json.loads(pointer.read_bytes())["items"][0]["case_sha256"] == "a" * 64
@@ -185,7 +320,26 @@ def test_partial_failure_retains_evidence_and_cleans_temporary_pointer(tmp_path,
         (folder / "original.jsonp").write_bytes(b"retained-original")
         if kwargs["symbol"] == "600887":
             raise ValueError("Incomplete 15m session")
-        return dict(case_path="runtime/capture-600519/case.json", case_sha256="a" * 64)
+        return dict(
+            case_path="runtime/capture-600519/case.json", case_sha256="a" * 64,
+            signal_state="WATCH",
+            opportunity_quality=dict(
+                structure_tier="ACTIVE_ONLY",
+                structure_reasons=["STRUCTURE_CONFIRMATION_PENDING"],
+            ),
+        )
+
+    monkeypatch.setattr(
+        module,
+        "project_current_price_action_plan",
+        lambda case: dict(
+            signal_state="WATCH",
+            opportunity_quality=dict(
+                structure_tier="ACTIVE_ONLY",
+                structure_reasons=["STRUCTURE_CONFIRMATION_PENDING"],
+            ),
+        ),
+    )
 
     if replace_fails:
         def reject_replace(*args):

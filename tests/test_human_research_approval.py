@@ -5,6 +5,7 @@ from decimal import Decimal
 import pytest
 
 from value_investment_agent.human_research_approval import (
+    AUTHENTICATED_TRANSPORT_BINDING_SCHEMA,
     DECISION_APPROVED_CONDITIONAL_LOW_CONFIDENCE,
     DECISION_APPROVED_RESEARCH_ONLY,
     DECISION_REJECTED_NEEDS_REWORK,
@@ -73,6 +74,7 @@ def _receipt(
         reviewed_at=REVIEWED_AT,
         review_as_of=REVIEW_AS_OF,
         reviewer_type="human_research_lead",
+        reviewer_id="TEST_ONLY-HUMAN-RESEARCH-LEAD",
         decision=decision,
         price_assessment_eligible=price_assessment_eligible,
         review_priority="NORMAL",
@@ -238,6 +240,7 @@ def test_delegated_review_without_exact_authorization_evidence_fails_closed():
                 price_assessment_eligible=False,
             ),
             reviewer_type=REVIEWER_DELEGATED_RESEARCH,
+            reviewer_id="",
             reviewer_authorization_ref=authorization,
             evidence_refs=({"id": "approval-pdf"}, authorization),
         )
@@ -255,11 +258,11 @@ def test_delegated_review_without_exact_authorization_evidence_fails_closed():
 
 
 def test_legacy_human_receipt_serialization_does_not_gain_delegated_fields():
-    payload = _receipt(
+    payload = replace(_receipt(
         decision=DECISION_REJECTED_NEEDS_REWORK,
         price_assessment_eligible=False,
         remaining_blockers=("blocker",),
-    ).as_policy()
+    ), reviewer_id="").as_policy()
 
     assert "reviewer_id" not in payload
     assert "reviewer_authorization_ref" not in payload
@@ -290,10 +293,19 @@ def test_shared_review_attachment_preserves_rejection_and_exact_payloads(tmp_pat
     path.write_text(json.dumps(packet), encoding='utf-8')
     canonical = dict(research_case=_payload('case'), facts=_payload('facts'), assumptions=_payload('assumptions'))
     descriptor = SimpleNamespace(as_policy=lambda: canonical)
+    packet_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+    with pytest.raises(ValueError, match='unsigned legacy G3 approval rejected'):
+        attach_research_reviews(root=tmp_path, spec=Spec(), descriptor=descriptor,
+            path=path, expected_sha256=packet_hash, event_sha256=None)
     updated = attach_research_reviews(root=tmp_path, spec=Spec(), descriptor=descriptor,
-        path=path, expected_sha256=hashlib.sha256(path.read_bytes()).hexdigest(), event_sha256=None)
+        path=path, expected_sha256=packet_hash, event_sha256=None,
+        allow_unsigned_legacy_frozen_replay=True)
     assert updated.input_descriptor_sha256 != Spec().input_descriptor_sha256
-    assert updated.human_research_approval == approval
+    assert updated.human_research_approval.decision == DECISION_REJECTED_NEEDS_REWORK
+    assert updated.human_research_approval.price_assessment_eligible is False
+    assert 'FROZEN_REPLAY_REQUIRES_AUTHENTICATED_G3' in (
+        updated.human_research_approval.remaining_blockers
+    )
     resolved = resolve_human_research_approval(updated.human_research_approval, _valuation(),
         model_id='residual_income_or_equity_value',
         research_case_payload=updated.research_case_payload,
@@ -306,3 +318,110 @@ def test_shared_review_attachment_preserves_rejection_and_exact_payloads(tmp_pat
     with pytest.raises(ValueError, match='scope mismatch'):
         attach_research_reviews(root=tmp_path, spec=Spec(), descriptor=descriptor,
             path=path, expected_sha256=hashlib.sha256(path.read_bytes()).hexdigest(), event_sha256=None)
+
+
+@pytest.mark.parametrize(
+    'schema',
+    ['shared-research-review-inputs-v1', 'shared-research-review-inputs-v2'],
+)
+def test_unsigned_g3_is_rejected_by_default_and_needs_explicit_frozen_mode(tmp_path, schema):
+    from dataclasses import dataclass
+    from types import SimpleNamespace
+    import hashlib
+    import json
+    from value_investment_agent.application.product.research_reviews import attach_research_reviews
+
+    @dataclass(frozen=True)
+    class Spec:
+        symbol: str = '600887'
+        input_descriptor_sha256: str = 'a' * 64
+        human_research_approval: object = None
+        research_case_payload: object = None
+        facts_payload: object = None
+        assumptions_payload: object = None
+
+    approval = _receipt(
+        decision=DECISION_APPROVED_CONDITIONAL_LOW_CONFIDENCE,
+        price_assessment_eligible=True,
+    )
+    review_file = tmp_path / 'approval.json'
+    review_file.write_text(json.dumps(approval.as_policy()), encoding='utf-8')
+    packet = dict(
+        schema_version=schema, action='no_order', symbol='600887',
+        bindings=dict(human_approval=dict(
+            path=review_file.name,
+            sha256=hashlib.sha256(review_file.read_bytes()).hexdigest(),
+        )),
+    )
+    path = tmp_path / 'reviews.json'
+    path.write_text(json.dumps(packet), encoding='utf-8')
+    packet_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+    descriptor = SimpleNamespace(as_policy=lambda: dict(
+        research_case=_payload('case'),
+        facts=_payload('facts'),
+        assumptions=_payload('assumptions'),
+    ))
+    with pytest.raises(ValueError, match='unsigned legacy G3 approval rejected'):
+        attach_research_reviews(
+            root=tmp_path, spec=Spec(), descriptor=descriptor, path=path,
+            expected_sha256=packet_hash, event_sha256=None,
+        )
+    if schema == 'shared-research-review-inputs-v2':
+        with pytest.raises(ValueError, match='v2 research reviews require'):
+            attach_research_reviews(
+                root=tmp_path, spec=Spec(), descriptor=descriptor, path=path,
+                expected_sha256=packet_hash, event_sha256=None,
+                allow_unsigned_legacy_frozen_replay=True,
+            )
+    else:
+        frozen = attach_research_reviews(
+            root=tmp_path, spec=Spec(), descriptor=descriptor, path=path,
+            expected_sha256=packet_hash, event_sha256=None,
+            allow_unsigned_legacy_frozen_replay=True,
+        )
+        assert frozen.human_research_approval.decision == DECISION_SUPERSEDED
+        assert frozen.human_research_approval.price_assessment_eligible is False
+        assert 'FROZEN_REPLAY_REQUIRES_AUTHENTICATED_G3' in (
+            frozen.human_research_approval.remaining_blockers
+        )
+
+
+def test_fake_transport_binding_cannot_approve():
+    receipt = replace(_receipt(
+        decision=DECISION_APPROVED_CONDITIONAL_LOW_CONFIDENCE,
+        price_assessment_eligible=True,
+    ), authenticated_transport_binding={
+        'schema_version': AUTHENTICATED_TRANSPORT_BINDING_SCHEMA,
+        'transport': 'SIGNED_PENDING_REVIEW_RESPONSE',
+        'response_binding': {'path': 'runtime/missing-response.json', 'sha256': '1' * 64},
+        'candidate_binding': {'path': 'runtime/missing-candidate.json', 'sha256': '2' * 64},
+        'trust_root_binding': {'path': 'runtime/missing-trust.json', 'sha256': '3' * 64},
+    })
+    resolved = resolve_human_research_approval(
+        receipt,
+        _valuation(),
+        model_id="residual_income_or_equity_value",
+        research_case_payload=_payload("case"),
+        facts_payload=_payload("facts"),
+        assumptions_payload=_payload("assumptions"),
+        require_authenticated_provenance=True,
+    )
+    assert resolved.status == DECISION_SUPERSEDED
+    assert resolved.price_assessment_eligible is False
+    assert "human_approval_transport_provenance_invalid" in resolved.blockers
+
+
+def test_serialized_transport_binding_is_archive_evidence_not_authority():
+    receipt = replace(_receipt(
+        decision=DECISION_APPROVED_CONDITIONAL_LOW_CONFIDENCE,
+        price_assessment_eligible=True,
+    ), authenticated_transport_binding={
+        'schema_version': AUTHENTICATED_TRANSPORT_BINDING_SCHEMA,
+        'transport': 'SIGNED_PENDING_REVIEW_RESPONSE',
+        'response_binding': {'path': 'runtime/response.json', 'sha256': '1' * 64},
+        'candidate_binding': {'path': 'runtime/candidate.json', 'sha256': '2' * 64},
+        'trust_root_binding': {'path': 'runtime/trust.json', 'sha256': '3' * 64},
+    })
+    restored = human_research_approval_from_payload(receipt.as_policy())
+    assert restored.authenticated_transport_binding == receipt.authenticated_transport_binding
+    assert restored.verified_transport is None

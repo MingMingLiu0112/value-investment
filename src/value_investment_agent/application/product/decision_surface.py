@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from zoneinfo import ZoneInfo
 import hashlib
 import json
@@ -77,6 +77,8 @@ def current_recommendation_type(recommendation: Any) -> str:
 
 def verify_current_decision_workbench(
     workbench: dict[str, Any],
+    *,
+    human_approval_provenance_verifier: Callable[[Any], Any] | None = None,
 ) -> RestoredDecisionRecommendation:
     """Reuse repository replay before presenting a current security assessment."""
     if (workbench.get("schema_version") != "product-current-workbench-request-v1"
@@ -100,6 +102,7 @@ def verify_current_decision_workbench(
     restored = verify_decision_recommendation_payload(
         repository, payload=recommendation_payload,
         recommendation_artifact=repository.recommendation_artifact(recommendation_payload),
+        human_approval_provenance_verifier=human_approval_provenance_verifier,
     )
     recommendation = restored.recommendation
     kind = current_recommendation_type(recommendation)
@@ -170,6 +173,7 @@ def _register_replayed_company(payload: dict[str, Any], restored: RestoredDecisi
 def project_verified_decision_workbench(
     payload: dict[str, Any], *, root: Path, path: Path, expected_sha256: str,
     register_company: bool = False,
+    human_approval_provenance_verifier: Callable[[Any], Any] | None = None,
 ) -> None:
     """Mutate a candidate payload only after exact artifact and date replay."""
     if not _SHA256.fullmatch(expected_sha256):
@@ -197,7 +201,15 @@ def project_verified_decision_workbench(
     if (workbench_at.tzinfo is None or product_at.tzinfo is None
             or workbench_at > product_at):
         raise ValueError("Decision workbench is later than the product snapshot")
-    restored = verify_current_decision_workbench(workbench)
+    if human_approval_provenance_verifier is None:
+        from .research_reviews import verify_human_approval_transport_provenance
+        human_approval_provenance_verifier = lambda approval: (
+            verify_human_approval_transport_provenance(root, approval)
+        )
+    restored = verify_current_decision_workbench(
+        workbench,
+        human_approval_provenance_verifier=human_approval_provenance_verifier,
+    )
     recommendation = restored.recommendation
     kind = current_recommendation_type(recommendation)
     symbol = recommendation.symbol
@@ -253,6 +265,7 @@ def project_verified_decision_workbench(
                 restored.dependencies["valuation_assumptions"].envelope.payload_object()
                 if "valuation_assumptions" in restored.dependencies else {}
             ),
+            require_authenticated_provenance=True,
         )
     approval_ready = bool(
         approval_decision is not None and approval_decision.approved

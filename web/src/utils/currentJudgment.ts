@@ -5,6 +5,7 @@ import type {
 } from "../types/api";
 import { firstResearchText } from "./opportunityView";
 import { uniqueBlockerTexts } from "./researchDetail";
+import { codeText } from "./codes";
 
 export const judgmentGroups = [
   "已通过全部准入的辅助判断",
@@ -230,7 +231,13 @@ export function confirmationText(blockers: string[] | undefined): string {
     VALUE_DECISION_REQUIRES_HUMAN_CONFIRMATION: "价值操作判断仍需本人确认",
   };
   const items = uniqueBlockerTexts(
-    (blockers ?? []).map((item) => labels[item] ?? item),
+    (blockers ?? []).map((item) => {
+      const translated = labels[item] ?? codeText(item);
+      if (translated) return translated;
+      return /^[A-Z0-9_.:-]+$/.test(item)
+        ? "\u5176\u4ed6\u7cfb\u7edf\u6821\u9a8c\u5f85\u590d\u6838"
+        : item;
+    }),
   );
   return items.length
     ? items.slice(0, 4).join("；") +

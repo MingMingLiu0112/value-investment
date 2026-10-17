@@ -3,6 +3,7 @@ import type {
   DailyPublicPacket,
   DailyPublicSnapshot,
   RuntimeIdentity,
+  ResearchFunnelStatus,
   DetailResponse,
   HistoryResponse,
   HistoricalCaseListing,
@@ -250,7 +251,7 @@ export const api = {
       status: string;
       last_run: {
         status: string;
-        finished_at: string;
+        finished_at: string | null;
         published: boolean;
         publication_id: string | null;
         retained_publication_id: string | null;
@@ -264,6 +265,8 @@ export const api = {
     get<DailyPublicSnapshot>("daily-public-snapshot", signal),
   runtimeIdentity: (signal?: AbortSignal) =>
     get<RuntimeIdentity>("runtime-identity", signal),
+  researchFunnel: (signal?: AbortSignal) =>
+    get<ResearchFunnelStatus>("research-funnel-status", signal),
   detail: (id: string, signal?: AbortSignal) =>
     get<DetailResponse>(`decisions/${encodeURIComponent(id)}`, signal),
   portfolio: (signal?: AbortSignal) =>

@@ -250,7 +250,12 @@ def project_held_continuity(positions: list[dict], risk: dict, *,
             plan = None
         if plan is None:
             gaps.append("CURRENT_STRATEGY_PLAN_UNAVAILABLE")
-        gaps.extend(["ENTRY_THESIS_REVIEW_REQUIRED", "ANNOUNCEMENT_REVIEW_REQUIRED"])
+        announcement_coverage = (plan or {}).get("announcement_coverage_status", "UNKNOWN")
+        gaps.append("ENTRY_THESIS_REVIEW_REQUIRED")
+        if announcement_coverage != "COMPLETE":
+            announcement_coverage = "UNKNOWN"
+            gaps.append("ANNOUNCEMENT_COVERAGE_UNKNOWN")
+        gaps.append("ANNOUNCEMENT_REVIEW_REQUIRED")
         if not risk.get("engine"):
             gaps.append("PORTFOLIO_RISK_REVIEW_UNAVAILABLE")
         valuation_blockers = (risk.get("facts") or {}).get("valuation_blockers") or []
@@ -266,6 +271,7 @@ def project_held_continuity(positions: list[dict], risk: dict, *,
         rows.append({"symbol": symbol, "exchange": position["exchange"],
             "quantity": position["quantity"], "sleeves": sleeves,
             "sellable_quantity": sellable, "selected_today": symbol in selected,
+            "announcement_coverage_status": announcement_coverage,
             "tracking_basis": "ACTUAL_HELD_SECURITY_NOT_RANKING",
             "review_priority": 0 if "INVALIDATION_OR_EXIT_REVIEW" in reasons else 1,
             "review_reasons": reasons, "data_gaps": list(dict.fromkeys(gaps)),

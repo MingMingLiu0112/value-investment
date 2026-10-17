@@ -26,7 +26,8 @@ def _write_raw(root, path, text):
 
 
 def _fixture(root, *, receipt_records=None, receipt_text=None, report_overrides=None,
-             explanation_extra=None, company_extra=None, extra_extensions=None):
+             explanation_extra=None, company_extra=None, extra_extensions=None,
+             snapshot_overrides=None):
     if receipt_text is not None:
         report_receipt = _write_raw(root, "runtime/report-receipt.json", receipt_text)
     else:
@@ -75,6 +76,7 @@ def _fixture(root, *, receipt_records=None, receipt_text=None, report_overrides=
                                **(company_extra or {})}],
                 "opportunities": [{"symbol": "600741", "company_name": "Huayu", "action": "no_order",
                                    "valuation_status": {"code": "NOT_READY"}, "why_now": "Research intake"}]}
+    snapshot.update(snapshot_overrides or {})
     model = {"schema_version": "historical-company-read-model-preview-v1", "action": "no_order",
              "snapshot": snapshot, "product_extensions": bindings,
              "additional_evidence_bindings": [explanation],

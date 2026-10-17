@@ -10,6 +10,7 @@ from .common import load_json_object, require_inside, sha256_file, write_new_jso
 from .daily_assets import inspect_daily_case_assets
 from .workbench import build_current_workbench_for_symbol
 from .decision_surface import verify_current_decision_workbench
+from .research_reviews import verify_human_approval_transport_provenance
 from .research_publication_input import load_research_publication_input
 from .research_review_packet import build_research_review_packet
 from .neutral_valuation_proposal import build_neutral_valuation_proposal
@@ -103,7 +104,12 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
     if "previous_workbench" in case and not baseline_optional_blockers:
         prior_path, _ = _pinned(root, case, "previous_workbench")
         previous = load_json_object(prior_path, "previous workbench")
-        verify_current_decision_workbench(previous)
+        verify_current_decision_workbench(
+            previous,
+            human_approval_provenance_verifier=lambda approval: (
+                verify_human_approval_transport_provenance(root, approval)
+            ),
+        )
         if previous.get("symbol") != symbol:
             raise ValueError("previous workbench symbol mismatch")
     responses = None

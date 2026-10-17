@@ -92,7 +92,12 @@
     "scripts/current/review_registered_research_validity.py",
     "scripts/current/collect_registered_validity_scan.py",
     "scripts/current/build_daily_research_summary.py",
-    "scripts/run_m2_opportunity_discovery.py"
+    "scripts/run_m2_opportunity_discovery.py",
+    "scripts/current/run_closure_restore_drill.py",
+    "scripts/current/resolve_evidence_stop.py",
+    "scripts/current/audit_decision_writers.py",
+    "scripts/current/audit_research_funnel.py",
+    "scripts/current/build_hotspot_structure_validation.py"
   ],
   "INTERNAL_PRODUCT_HELPERS": [
     "scripts/current/refresh_current_price_conditions.py",
@@ -117,8 +122,8 @@
   ],
   "counts": {
     "product": 26,
-    "engineering": 55,
+    "engineering": 60,
     "internal_helpers": 19,
-    "total": 100
+    "total": 105
   }
 }

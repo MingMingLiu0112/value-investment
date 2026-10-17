@@ -3,11 +3,15 @@ from pathlib import Path
 from dataclasses import fields, is_dataclass
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal, InvalidOperation
+import hashlib
+import json
 from typing import Any, Mapping
 
 from .common import require_inside, sha256_file
 
 SOURCE_BOUND_PACKAGE_SCHEMA = 'm1-valuation-package-v2'
+SOURCE_CONTRACT_SCHEMA = 'source-bound-research-inputs-v2'
+LEGACY_SOURCE_CONTRACT_SCHEMA = 'source-bound-research-inputs-v1'
 
 
 def _timestamp(value: Any, label: str) -> datetime:
@@ -48,6 +52,70 @@ def _scenario_leaves(value: Any, prefix: str = '') -> dict[str, Any]:
     return leaves
 
 
+def source_catalog_sha256(sources: Any) -> str:
+    """Hash every source field so extended availability metadata is not free text."""
+    if not isinstance(sources, (list, tuple)) or not sources:
+        raise ValueError('source-bound package requires a nonempty source catalog')
+    def normalize(value: Any) -> Any:
+        if isinstance(value, str):
+            return value.replace('\\', '/')
+        if isinstance(value, Mapping):
+            return {str(key): normalize(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [normalize(item) for item in value]
+        return value
+    payload = {'schema_version': 'source-catalog-v1', 'sources': normalize(list(sources))}
+    encoded = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, allow_nan=False,
+        separators=(',', ':'),
+    ).encode('utf-8')
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _validate_fact_anchors(
+    payload: Mapping[str, Any], descriptor, contract: Mapping[str, Any], *, strict: bool,
+) -> None:
+    if not strict:
+        return
+    anchors = contract.get('fact_anchors')
+    if anchors is None:
+        return
+    if not isinstance(anchors, list):
+        raise ValueError('source contract fact_anchors must be a list')
+    catalog = {source['id']: source for source in payload['sources']}
+    fact_source_ids = {
+        ref.get('id') for ref in getattr(descriptor.facts, 'evidence_refs', ())
+        if isinstance(ref, Mapping)
+    }
+    summary = getattr(descriptor.research_case, 'financial_summary', {})
+    seen = set()
+    for anchor in anchors:
+        if not isinstance(anchor, Mapping):
+            raise ValueError('source contract fact anchor must be an object')
+        source_id = anchor.get('source_id')
+        source = catalog.get(source_id)
+        field = anchor.get('field')
+        if source is None or source.get('kind') != 'official_issuer_filing':
+            raise ValueError('fact anchor requires a bound official issuer filing')
+        if source_id not in fact_source_ids:
+            raise ValueError('fact anchor source is not consumed by financial facts')
+        if not isinstance(field, str) or not field or field in seen:
+            raise ValueError('fact anchors require unique financial fields')
+        seen.add(field)
+        if field not in summary:
+            raise ValueError('fact anchor field is absent from the research case')
+        page = anchor.get('physical_page')
+        if isinstance(page, bool) or not isinstance(page, int) or page < 1:
+            raise ValueError('fact anchor requires a positive physical page')
+        for key in ('unit', 'scope', 'period_end'):
+            if not isinstance(anchor.get(key), str) or not anchor[key].strip():
+                raise ValueError(f'fact anchor requires {key}')
+        if _decimal(anchor.get('source_value')) != _decimal(summary[field]):
+            raise ValueError('fact anchor value differs from the research case')
+        if 'sha256' in anchor and anchor['sha256'] != source.get('sha256'):
+            raise ValueError('fact anchor hash differs from the source catalog')
+
+
 def verify_package_local_sources(
     root: Path, payload: Mapping[str, Any],
 ) -> tuple[tuple[Path, str], ...]:
@@ -79,8 +147,18 @@ def validate_source_bound_descriptor(payload: Mapping[str, Any], descriptor) -> 
     if payload.get('schema_version') != SOURCE_BOUND_PACKAGE_SCHEMA:
         return
     contract = payload.get('source_contract') or {}
-    if contract.get('schema_version') != 'source-bound-research-inputs-v1':
+    contract_schema = contract.get('schema_version')
+    if contract_schema not in {SOURCE_CONTRACT_SCHEMA, LEGACY_SOURCE_CONTRACT_SCHEMA}:
         raise ValueError('source-bound package requires a versioned source contract')
+    descriptor_contract = getattr(descriptor, 'source_contract', None)
+    if descriptor_contract is None or descriptor_contract.as_policy() != dict(contract):
+        raise ValueError('source contract is not bound into the input descriptor')
+    expected_catalog = contract.get('source_catalog_sha256')
+    if contract_schema == SOURCE_CONTRACT_SCHEMA:
+        if expected_catalog != source_catalog_sha256(payload['sources']):
+            raise ValueError('source catalog hash differs from the declared contract')
+    elif expected_catalog is not None and expected_catalog != source_catalog_sha256(payload['sources']):
+        raise ValueError('source catalog hash differs from the declared contract')
     cutoff = _timestamp(contract.get('cutoff_at'), 'research cutoff')
     if cutoff.astimezone(timezone(timedelta(hours=8))).date() != descriptor.point_in_time.research_as_of:
         raise ValueError('research cutoff date differs from the declared research date')
@@ -100,6 +178,11 @@ def validate_source_bound_descriptor(payload: Mapping[str, Any], descriptor) -> 
                     raise ValueError('research evidence path differs from source catalog')
     for source in payload['sources']:
         available = _timestamp(source.get('source_available_at'), 'source available_at')
+        retrieved = (
+            _timestamp(source.get('retrieved_at'), 'source retrieved_at')
+            if source.get('retrieved_at') is not None
+            else None
+        )
         if not source.get('availability_basis'):
             raise ValueError('source availability requires an explicit basis')
         published = source.get('published_at')
@@ -107,6 +190,12 @@ def validate_source_bound_descriptor(payload: Mapping[str, Any], descriptor) -> 
             raise ValueError('source availability precedes publication')
         if available > cutoff:
             raise ValueError('source input follows research cutoff')
+        if retrieved is not None and retrieved > cutoff:
+            raise ValueError('source retrieval follows research cutoff')
+        if retrieved is not None and retrieved < available:
+            raise ValueError('source retrieval precedes observed availability')
+        if contract_schema == SOURCE_CONTRACT_SCHEMA and retrieved is None:
+            raise ValueError('source-bound v2 requires every source retrieval time')
     if cutoff > descriptor.point_in_time.available_at:
         raise ValueError('research output availability precedes its input cutoff')
     source_pairs = {(str(source['local_path']).replace('\\', '/'), source['sha256'])
@@ -130,6 +219,29 @@ def validate_source_bound_descriptor(payload: Mapping[str, Any], descriptor) -> 
         raise ValueError('source-bound v2 requires explicit unadmitted distribution scope')
     if descriptor.distribution_result is not None:
         raise ValueError('unadmitted distribution scope must not consume an implicit package')
+
+    validity_input = getattr(descriptor, 'model_validity_input', None)
+    event_scan = getattr(validity_input, 'event_scan', None)
+    declared_coverage = contract.get('event_coverage_status')
+    if event_scan is not None:
+        if contract_schema == SOURCE_CONTRACT_SCHEMA:
+            if declared_coverage != event_scan.coverage_status:
+                raise ValueError('event coverage status differs from the bound event scan')
+        if event_scan.retrieved_at > cutoff:
+            raise ValueError('event scan retrieval follows research cutoff')
+        if (
+            event_scan.coverage_status != 'COMPLETE'
+            and 'EVENT_COVERAGE_INCOMPLETE'
+            not in getattr(validity_input, 'blockers', ())
+        ):
+            raise ValueError('incomplete event coverage requires an explicit blocker')
+
+    _validate_fact_anchors(
+        payload,
+        descriptor,
+        contract,
+        strict=contract_schema == SOURCE_CONTRACT_SCHEMA,
+    )
 
     scenarios = getattr(descriptor.facts, 'scenario_inputs', None)
     assumptions = descriptor.assumptions

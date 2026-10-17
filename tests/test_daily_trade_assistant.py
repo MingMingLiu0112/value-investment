@@ -166,7 +166,8 @@ def test_financial_review_never_replaces_decision_or_blocks_old_research(tmp_pat
     prior = config / "prior.json"
     prior.write_text(json.dumps(unchanged), encoding="utf-8")
     case.update(previous_workbench="config/prior.json", previous_workbench_sha256=sha256_file(prior))
-    monkeypatch.setattr(daily, "verify_current_decision_workbench", lambda value: None)
+    monkeypatch.setattr(daily, "verify_current_decision_workbench",
+        lambda value, **kwargs: None)
     if attachment_failure == "missing hash":
         case.pop("financial_review_manifest_sha256")
     def build(**kwargs):
@@ -289,7 +290,16 @@ def test_authenticated_response_reaches_actual_daily_g3_without_price_or_orders(
             case=case, output_dir=signed['root']/'runtime/authenticated-daily', agent_mode='none',
             report_renderer=view._render_report)
     workbench = json.loads((signed['root']/result['outputs']['workbench']['path']).read_text(encoding='utf-8'))
-    restored = verify_current_decision_workbench(workbench)
+    from value_investment_agent.application.product.research_reviews import (
+        verify_human_approval_transport_provenance,
+    )
+    with _use_test_trust_registry(signed['registry']):
+        restored = verify_current_decision_workbench(
+            workbench,
+            human_approval_provenance_verifier=lambda approval: (
+                verify_human_approval_transport_provenance(signed['root'], approval)
+            ),
+        )
     assert restored.dependency_objects['human_approval'].reviewer_id == 'SYNTHETIC_HUMAN'
     package = json.loads((signed['path'].parent/'package.json').read_text(encoding='utf-8'))
     assert set(package['research_case']['blockers']).issubset(workbench['research_blockers'])

@@ -6,6 +6,7 @@ from typing import Any
 
 from .common import load_json_object, require_inside, sha256_file, write_new_json
 from .decision_surface import verify_current_decision_workbench
+from .research_reviews import verify_human_approval_transport_provenance
 from .source_bound_inputs import verify_package_local_sources
 from ...research_artifact_codecs import artifact_payload
 from ...m1_valuation_package_builder import build_descriptor
@@ -22,7 +23,12 @@ def build_research_review_packet(*, root: Path, package_path: Path,
         raise ValueError("research review input hash mismatch")
     package = load_json_object(package_path, "review package")
     workbench = load_json_object(workbench_path, "review workbench")
-    verified = verify_current_decision_workbench(workbench)
+    verified = verify_current_decision_workbench(
+        workbench,
+        human_approval_provenance_verifier=lambda approval: (
+            verify_human_approval_transport_provenance(root, approval)
+        ),
+    )
     objects = {key: artifact_payload(value)[1] for key, value in verified.dependency_objects.items()}
     case, facts = objects["research_case"], objects["financial_facts"]
     if package["symbol"] != workbench["symbol"] or package["research_case"]["as_of"] != case["as_of"]:

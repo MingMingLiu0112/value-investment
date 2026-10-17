@@ -1,5 +1,6 @@
 import { useParams, Link } from "@umijs/max";
 import { CurrentHolding } from "./CurrentHolding";
+import { ResearchDraftPanel } from "./ResearchDraftPanel";
 import { useCallback } from "react";
 import type { PropsWithChildren } from "react";
 import {
@@ -905,6 +906,7 @@ export default function DecisionDetail() {
                 ) : undefined
               }
             />
+            {data?.research_draft && <ResearchDraftPanel draft={data.research_draft} />}
             <Space wrap style={{ margin: "12px 0" }}>
               {decision.symbol && /^\d{6}$/.test(decision.symbol) && (
                 <Link to={fillLink(decision)}>

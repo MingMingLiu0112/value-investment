@@ -36,6 +36,8 @@ from ...application.product.public_snapshot import (
     workbook_version_report as _workbook_report,
 )
 from ...application.product.quote_bridge import execute_quote_bridge_for_symbol
+from ...application.product.research_draft import load_current_research_draft
+from ...application.product.research_funnel_status import research_funnel_status
 from ...application.hotspot.price_action_case import project_price_action_plan
 from ...application.decision.current_value_plan import revalidate_current_value_plan
 from ...infrastructure.hotspot.sina_price_case import load_historical_case
@@ -56,7 +58,7 @@ from .local_auth import (
     authorize,
 )
 from .private_routes import portfolio_connection, register_private_routes
-from .runtime_identity import git_head, runtime_identity, sha256
+from .runtime_identity import data_freshness, git_head, runtime_identity, sha256
 from .value_policy_routes import register_value_policy_routes
 from ...application.decision.value_policy_interaction import (
     ValuePolicyInteractionService, PolicyPrincipal, PERMISSION,
@@ -499,6 +501,13 @@ def create_app(
                     "reason": "PUBLICATION_UNAVAILABLE"}
         model = current["model"]
         published = model.get("snapshot") if isinstance(model.get("snapshot"), dict) else {}
+
+        def with_research_draft(payload: dict) -> dict:
+            draft = load_current_research_draft(project, decision_id)
+            if draft is not None:
+                payload["research_draft"] = draft
+            return payload
+
         for company in published.get("companies", []):
             if isinstance(company, dict) and company.get("symbol") == decision_id and company.get("action") == "no_order":
                 pending = any(isinstance(c, dict) and c.get("symbol") == decision_id
@@ -542,14 +551,15 @@ def create_app(
                 plan = value_plan(decision_id, packet)
                 if plan is not None:
                     item["price_action_plan"] = plan
-                return {"action": "no_order", "status": status,
-                        "publication": pinned_publication(packet, current),
-                        "decision": item}
+                return with_research_draft({"action": "no_order", "status": status,
+                                            "publication": pinned_publication(packet, current),
+                                            "decision": item})
         for opportunity in published.get("opportunities", []):
             if isinstance(opportunity, dict) and opportunity.get("symbol") == decision_id and opportunity.get("action") == "no_order":
-                return {"action": "no_order", "status": "PENDING_RESEARCH",
-                        "publication": _publication_block(project, current),
-                        "decision": _item(opportunity, published.get("as_of"), "PENDING_RESEARCH")}
+                return with_research_draft({
+                    "action": "no_order", "status": "PENDING_RESEARCH",
+                    "publication": _publication_block(project, current),
+                    "decision": _item(opportunity, published.get("as_of"), "PENDING_RESEARCH")})
         queue_binding = model.get("product_extensions", {}).get("value_research_queue")
         if queue_binding:
             try:
@@ -560,9 +570,10 @@ def create_app(
             for entry in queue.get("entries", []):
                 if (isinstance(entry, dict) and entry.get("symbol") == decision_id
                         and entry.get("queue_status") == "SELECTED_FOR_DATA_CHECK"):
-                    return {"action": "no_order", "status": "RESEARCH_ONLY",
-                            "publication": _publication_block(project, current),
-                            "decision": _queue_item(entry, queue.get("as_of"))}
+                    return with_research_draft({
+                        "action": "no_order", "status": "RESEARCH_ONLY",
+                        "publication": _publication_block(project, current),
+                        "decision": _queue_item(entry, queue.get("as_of"))})
         return {"action": "no_order", "status": "NOT_FOUND", "decision": None,
                 "publication": _publication_block(project, current),
                 "reason": "UNKNOWN_DECISION"}
@@ -681,7 +692,13 @@ def create_app(
             "published_at": snapshot["published_at"],
             "dates": snapshot["dates"],
         }
+        identity["data_freshness"] = data_freshness(snapshot.get("dates"))
         return identity
+
+    @api.get("/api/v1/research-funnel-status")
+    def research_funnel_audit_status():
+        """Serve only the hash-verified, read-only W6 audit projection."""
+        return research_funnel_status(project)
 
     @api.get("/api/v1/system/status")
     def system_status(request: Request):

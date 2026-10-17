@@ -19,7 +19,8 @@ def _write(path, value):
         json.dump(value, stream, ensure_ascii=False, indent=2)
 
 
-def collect_daily_candidates(*, root: Path, limit=5, classification_collector=None,
+def collect_daily_candidates(*, root: Path, limit=5, candidate_pool_limit=None,
+                             classification_collector=None,
                              market_collector=None, bundle_collector=None, now=None) -> dict:
     root = root.resolve()
     directory = root / "runtime" / "hotspot-daily-selection" / uuid4().hex
@@ -57,7 +58,10 @@ def collect_daily_candidates(*, root: Path, limit=5, classification_collector=No
     rows = [{**q, "industry": index[q["symbol"]]["industry"],
              "classification_available_at": classification["fetched_at"],
              "classification_effective_date": None} for q in quotes]
-    ranking = rank_daily_candidates(rows, trade_date=trade_date, limit=limit)
+    ranking = rank_daily_candidates(
+        rows, trade_date=trade_date, limit=limit,
+        candidate_pool_limit=candidate_pool_limit,
+    )
     bindings = [dict(path=original.relative_to(root).as_posix(), sha256=hashlib.sha256(raw).hexdigest(),
                      available_at=classification["fetched_at"], source_url=classification["source_url"],
                      trade_date=None, status="ACQUIRED_CLASSIFICATION_EFFECTIVE_DATE_UNKNOWN"),
@@ -69,9 +73,15 @@ def collect_daily_candidates(*, root: Path, limit=5, classification_collector=No
         bindings.append({**source, "path": Path(source["path"]).relative_to(root).as_posix(), "trade_date": trade_date})
     report = dict(schema_version="hotspot-daily-selection-v1", action="no_order", trade_date=trade_date,
         available_at=max(datetime.fromisoformat(binding["available_at"]) for binding in bindings).isoformat(), limit=limit, rows=rows, ranking=ranking,
-        observation_list=ranking["candidates"], hotspot_watch_queue=ranking["candidates"],
+        observation_list=ranking["candidates"], candidate_pool=ranking["candidate_pool"],
+        candidate_pool_rule=ranking["candidate_pool_rule"],
+        hotspot_watch_queue=ranking["candidate_pool"],
         source_bindings=bindings, failures=failures,
-        coverage=dict(classified_securities=len(index), dated_quotes=len(quotes), ranked_securities=ranking["market"]["covered_securities"] if ranking["market"] else 0,
+        coverage=dict(classified_securities=len(index), dated_quotes=len(quotes),
+                      ranked_securities=ranking["market"]["covered_securities"] if ranking["market"] else 0,
+                      activity_observation_count=len(ranking["candidates"]),
+                      candidate_pool_count=len(ranking["candidate_pool"]),
+                      candidate_pool_industry_count=len({row["industry"] for row in ranking["candidate_pool"]}),
                       universe_scope="SINA_CLASSIFIED_A_SHARES_NOT_OFFICIAL_COMPLETE_UNIVERSE", missing_quotes=len(index)-len(quotes)),
         status="DATED_DAILY_OBSERVATIONS" if ranking["candidates"] else "BLOCKED",
         formal_eligibility=False, unknowns=["classification_effective_date", "persistence", "fund_flows", "catalyst", "market_regime_admission"])
@@ -83,16 +93,39 @@ def collect_daily_candidates(*, root: Path, limit=5, classification_collector=No
 def verify_daily_selection(root: Path, report: dict) -> None:
     if report.get("action") != "no_order" or report.get("schema_version") != "hotspot-daily-selection-v1":
         raise ValueError("Invalid daily selection contract")
-    replay = rank_daily_candidates(report["rows"], trade_date=report["trade_date"], limit=report["limit"])
-    if report["ranking"].get("rule_version") == "hotspot-dated-sector-liquidity-ranking-v1":
-        replay["rule_version"] = "hotspot-dated-sector-liquidity-ranking-v1"
+    candidate_pool = report.get("candidate_pool")
+    replay = rank_daily_candidates(
+        report["rows"], trade_date=report["trade_date"], limit=report["limit"],
+        candidate_pool_limit=(
+            report.get("candidate_pool_limit")
+            if isinstance(candidate_pool, list)
+            else None
+        ),
+    )
+    reported_version = report["ranking"].get("rule_version")
+    if reported_version in {
+        "hotspot-dated-sector-liquidity-ranking-v1",
+        "hotspot-dated-sector-liquidity-ranking-v2",
+    }:
+        replay["rule_version"] = reported_version
+        # Candidate-pool fields were introduced in v3. Legacy reports remain
+        # replayable without rewriting their historical ranking object.
+        for field in ("candidate_pool", "candidate_pool_rule", "candidate_pool_limit"):
+            replay.pop(field, None)
+    if reported_version == "hotspot-dated-sector-liquidity-ranking-v1":
         for candidate in replay["candidates"]:
             for field in ("activity_tier", "activity_reason", "structure_tier", "structure_reason"):
                 candidate.pop(field)
     if replay != report["ranking"]:
         raise ValueError("Daily ranking replay mismatch")
-    if report["hotspot_watch_queue"] != report["ranking"]["candidates"] or report["observation_list"] != report["ranking"]["candidates"]:
+    if report["observation_list"] != report["ranking"]["candidates"]:
         raise ValueError("Daily watch membership mismatch")
+    if "candidate_pool" in report:
+        if (report["candidate_pool"] != replay["candidate_pool"]
+                or report["hotspot_watch_queue"] != replay["candidate_pool"]):
+            raise ValueError("Daily pre-structure candidate pool mismatch")
+    elif report["hotspot_watch_queue"] != report["ranking"]["candidates"]:
+        raise ValueError("Legacy daily watch membership mismatch")
     for binding in report["source_bindings"]:
         path = (root / binding["path"]).resolve()
         if not path.is_relative_to((root / "runtime").resolve()) or hashlib.sha256(path.read_bytes()).hexdigest() != binding["sha256"]:

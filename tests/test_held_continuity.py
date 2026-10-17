@@ -51,7 +51,19 @@ def test_exit_priority_survives_t_plus_one_and_risk_gaps():
     assert row["review_priority"] == 0
     assert "T_PLUS_ONE_OR_SELLABLE_LIMIT" in row["review_reasons"]
     assert "TEST_ONLY_RISK_GAP" in row["data_gaps"]
+    assert row["announcement_coverage_status"] == "UNKNOWN"
+    assert "ANNOUNCEMENT_COVERAGE_UNKNOWN" in row["data_gaps"]
     assert row["position_guidance"] is None
+
+
+def test_announcement_coverage_is_complete_only_with_explicit_plan_evidence():
+    unknown = project([position("000001")], lambda symbol: plan(symbol))["items"][0]
+    complete = project([position("000001")], lambda symbol: plan(
+        symbol, announcement_coverage_status="COMPLETE"))["items"][0]
+    assert unknown["announcement_coverage_status"] == "UNKNOWN"
+    assert "ANNOUNCEMENT_COVERAGE_UNKNOWN" in unknown["data_gaps"]
+    assert complete["announcement_coverage_status"] == "COMPLETE"
+    assert "ANNOUNCEMENT_COVERAGE_UNKNOWN" not in complete["data_gaps"]
 
 
 @pytest.mark.parametrize("failure", ["missing", "corrupt", "future", "foreign", "stale"])

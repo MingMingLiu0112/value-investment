@@ -18,7 +18,8 @@ import {
 } from "../../utils/currentJudgment";
 import "./opportunities.css";
 
-function updateTime(value: string): string {
+function updateTime(value: string | null | undefined): string {
+  if (value == null || value.trim() === "") return "更新尚未完成，暂无完成时间";
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? "时间未核验"

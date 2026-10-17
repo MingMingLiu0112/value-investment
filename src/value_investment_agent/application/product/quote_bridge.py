@@ -289,11 +289,6 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
 
             _, binding = read_bound_json(root, ref, "incremental validity binding")
             review_cutoff = date.fromisoformat(binding["review_cutoff"])
-            validity = resolve_incremental_model_validity(root=root, symbol=symbol, binding_ref=ref,
-                review_cutoff=review_cutoff, today=today)
-            from .research_materiality_reviews import apply_registered_materiality_review
-            validity, materiality_route = apply_registered_materiality_review(
-                root=root, symbol=symbol, today=today, fallback=validity)
             _, observation = read_bound_json(root, binding["observation_ref"], "incremental observation")
             _, scan = read_bound_json(root, binding["scan_ref"], "incremental scan")
             announcement_sources = {source.get("path"): {
@@ -302,12 +297,22 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
                 for item in scan["announcements"] for source in item["evidence_refs"]}
             sources = [{**source, **announcement_sources.get(source.get("path"), {})}
                        for source in observation["source_bindings"]]
-            result["incremental_validity"].update(status=validity.status,
-                review_cutoff=review_cutoff.isoformat(), announcement_count=len(scan["announcements"]),
-                model_validity=json.loads(validity.to_json()), blockers=list(validity.blockers),
+            # Preserve verified scan metadata even when a later model-validity
+            # replay fails, so users never see a fabricated or placeholder window.
+            result["incremental_validity"].update(
+                review_cutoff=review_cutoff.isoformat(),
+                announcement_count=len(scan["announcements"]),
                 source_bindings=sources, scan_ref=binding["scan_ref"],
-                observation_ref=binding["observation_ref"], announcements=scan["announcements"],
-                full_calendar_window_elapsed=observation["full_calendar_window_elapsed"],
+                observation_ref=binding["observation_ref"],
+                announcements=scan["announcements"],
+                full_calendar_window_elapsed=observation["full_calendar_window_elapsed"])
+            validity = resolve_incremental_model_validity(root=root, symbol=symbol, binding_ref=ref,
+                review_cutoff=review_cutoff, today=today)
+            from .research_materiality_reviews import apply_registered_materiality_review
+            validity, materiality_route = apply_registered_materiality_review(
+                root=root, symbol=symbol, today=today, fallback=validity)
+            result["incremental_validity"].update(status=validity.status,
+                model_validity=json.loads(validity.to_json()), blockers=list(validity.blockers),
                 materiality_review_route=materiality_route)
             if status not in {"QUOTE_VERIFIED_FOR_RESEARCH_INPUT", "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
                               "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"}:

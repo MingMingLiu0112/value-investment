@@ -20,6 +20,7 @@ def main(argv=None):
     parser.add_argument("--watch-source", type=Path)
     parser.add_argument("--watch-source-sha256")
     parser.add_argument("--limit", type=int, default=5)
+    parser.add_argument("--candidate-pool-limit", type=int)
     parser.add_argument("--check-reuse", action="store_true")
     parser.add_argument("--symbols", default="600887")
     args = parser.parse_args(argv)
@@ -30,10 +31,14 @@ def main(argv=None):
     try:
         if (args.watch_source is None) != (args.watch_source_sha256 is None):
             raise ValueError("watch-source and watch-source-sha256 must be supplied together")
-        binding = (collect_daily_candidates(root=args.root, limit=args.limit) if args.watch_source is None else
+        binding = (collect_daily_candidates(
+            root=args.root, limit=args.limit,
+            candidate_pool_limit=args.candidate_pool_limit,
+        ) if args.watch_source is None else
                    dict(path=args.watch_source, sha256=args.watch_source_sha256))
         result = refresh_current_price_conditions(root=args.root, watch_source_path=Path(binding["path"]),
-            watch_source_sha256=binding["sha256"], limit=args.limit)
+            watch_source_sha256=binding["sha256"], limit=args.limit,
+            candidate_pool_limit=args.candidate_pool_limit)
     except Exception as error:
         result = dict(status="BLOCKED", items=[], failures=[dict(reason=type(error).__name__ + ":" + str(error))],
                       action="no_order")

@@ -1,5 +1,6 @@
 import { Link } from "@umijs/max";
 import { Button, Descriptions, Skeleton, Typography } from "antd";
+import { ResearchFunnelAuditPanel } from "../../components/ResearchFunnelAuditPanel";
 import { Workbench } from "../../components/Workbench";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
@@ -17,6 +18,7 @@ export default function SystemStatus() {
   const { data, loading, error, retry } = useApi(api.packet);
   const snapshot = useApi(api.snapshot);
   const runtime = useApi(api.runtimeIdentity);
+  const funnel = useApi(api.researchFunnel);
   const clientBuild = __WEB_BUILD_IDENTITY__;
   const servedBuild = runtime.data?.web_build;
   const clientMatchesServed = Boolean(
@@ -218,6 +220,12 @@ export default function SystemStatus() {
           <Link to="/daily">返回今日机会</Link>
         </>
       )}
+      <ResearchFunnelAuditPanel
+        funnel={funnel.data}
+        loading={funnel.loading}
+        error={funnel.error}
+        retry={funnel.retry}
+      />
     </Workbench>
   );
 }

@@ -1,49 +1,67 @@
 import { Link } from "@umijs/max";
+import { Button } from "antd";
 import { useCallback } from "react";
 import { useApi } from "../hooks/useApi";
 import { api } from "../services/api";
 import type { DecisionItem } from "../types/api";
 
+const readableStatuses = new Set([
+  "REGISTERED",
+  "NOT_REGISTERED",
+  "REVIEW_REQUIRED",
+]);
+
+function ConfirmationFailure({ retry }: { retry: () => void }) {
+  return (
+    <li role="alert">
+      <span>确认状态读取失败，待确认事项暂未核验。</span>
+      <Button type="link" size="small" onClick={retry}>
+        重试
+      </Button>
+    </li>
+  );
+}
+
 function PersonalPolicyTask({ item }: { item: DecisionItem }) {
   const load = useCallback(
     async (signal: AbortSignal) => {
-      const status = await api.valuePolicyStatus(item.symbol!);
+      const symbol = item.symbol!;
+      const status = await api.valuePolicyStatus(symbol);
       if (status.status === "REGISTERED")
         return { ...status, hasPolicyDraft: false };
-      try {
-        const response = await fetch(
-          `/api/v1/value-policy-review/${encodeURIComponent(item.symbol!)}`,
-          { signal, cache: "no-store" },
-        );
-        const review = await response.json();
-        const draft = review?.draft;
-        return {
-          ...status,
-          hasPolicyDraft:
-            response.ok &&
-            review?.action === "no_order" &&
-            draft != null &&
-            typeof draft === "object" &&
-            !Array.isArray(draft) &&
-            draft.basis?.symbol === item.symbol &&
-            Array.isArray(draft.rules),
-        };
-      } catch {
+      const response = await fetch(
+        `/api/v1/value-policy-review/${encodeURIComponent(symbol)}`,
+        { signal, cache: "no-store" },
+      );
+      const review = await response.json().catch(() => null);
+      if (
+        response.status === 409 &&
+        review?.action === "no_order" &&
+        review?.status === "REVIEW_UNAVAILABLE"
+      ) {
+        // No current review basis means there is no policy draft to offer;
+        // the authenticated policy status itself was read successfully.
         return { ...status, hasPolicyDraft: false };
       }
+      if (!response.ok) throw new Error("确认状态读取失败");
+      if (review?.action !== "no_order") throw new Error("确认状态读取失败");
+      const draft = review.draft;
+      return {
+        ...status,
+        hasPolicyDraft:
+          draft != null &&
+          typeof draft === "object" &&
+          !Array.isArray(draft) &&
+          draft.basis?.symbol === symbol &&
+          Array.isArray(draft.rules),
+      };
     },
     [item.symbol],
   );
   const result = useApi(load);
-  if (
-    result.loading ||
-    result.error ||
-    !result.data ||
-    !["REGISTERED", "NOT_REGISTERED", "REVIEW_REQUIRED"].includes(
-      result.data.status,
-    )
-  )
-    return null;
+  if (result.loading) return null;
+  if (result.error || !result.data || !readableStatuses.has(result.data.status))
+    return <ConfirmationFailure retry={result.retry} />;
   const policyPending =
     result.data.status !== "REGISTERED" && result.data.hasPolicyDraft === true;
   const privatePlan =

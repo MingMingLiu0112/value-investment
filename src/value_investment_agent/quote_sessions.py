@@ -10,6 +10,8 @@ from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from urllib.parse import parse_qs, urlparse
 
+from .domain.execution.exchange_calendar import EXCHANGE_CLOSURES_2026
+
 
 CHINA = timezone(timedelta(hours=8))
 VERSION = 'quote-session-v2-szse-sse-raw-evidence'
@@ -26,15 +28,7 @@ SSE_2026_NOTICE_MARKERS = (
     '9月25日（星期五）至9月27日（星期日）休市',
     '10月1日（星期四）至10月7日（星期三）休市',
 )
-SSE_2026_CLOSURE_RANGES = (
-    (date(2026, 1, 1), date(2026, 1, 3)),
-    (date(2026, 2, 15), date(2026, 2, 23)),
-    (date(2026, 4, 4), date(2026, 4, 6)),
-    (date(2026, 5, 1), date(2026, 5, 5)),
-    (date(2026, 6, 19), date(2026, 6, 21)),
-    (date(2026, 9, 25), date(2026, 9, 27)),
-    (date(2026, 10, 1), date(2026, 10, 7)),
-)
+SSE_2026_CLOSURE_RANGES = EXCHANGE_CLOSURES_2026
 QUOTE_URLS = {'tencent': ('qt.gtimg.cn', '/q='),
               'sina': ('hq.sinajs.cn', '/list=')}
 LABELS = {
