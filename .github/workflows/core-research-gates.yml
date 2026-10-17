@@ -26,11 +26,48 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install core test dependencies
-        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev,web]"
       - name: Verify fail-closed offline research gates
         run: >-
           mkdir -p .tmp && python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest --junitxml=.tmp/offline-core-results.xml
           tests/test_research_gate.py
+          tests/test_hotspot_price_behavior.py
+          tests/test_hotspot_event_replay.py
+          tests/test_hotspot_structure_replay.py
+          tests/test_hotspot_replay_read_model.py
+          tests/test_judgment_snapshot.py
+          tests/test_public_evidence_archive.py
+          tests/test_public_snapshot_retained_path.py
+          tests/test_private_judgment_snapshot_service.py
+          tests/test_security_attributes.py
+          tests/test_value_model_identity.py
+          tests/test_value_policy_review.py
+          tests/test_value_price_policy.py
+          tests/test_value_review_replay.py
+          tests/web_api/test_p5_reviews.py
+          tests/test_private_first_use_workflow.py
+          tests/test_private_risk_preview.py
+          tests/test_private_risk_partial_facts.py
+          tests/test_p62_positive_workflow.py
+          tests/test_p7_signed_review_workflow.py
+          tests/test_p7_materiality_review_transport.py
+          tests/test_p8_decision_chain.py
+          tests/test_held_continuity.py
+          tests/test_private_risk_held_marks.py
+          tests/test_incremental_quote_bridge.py
+          tests/test_private_risk_experience.py
+          tests/test_private_risk_cash_floor.py
+          tests/test_value_policy_interaction.py
+          tests/web_api/test_p61_route_boundaries.py
+          tests/test_daily_quote_binding.py
+          tests/test_quote_session_collection.py
+          tests/test_quote_session_conversion.py
+          tests/test_daily_refresh_readiness.py
+          tests/test_workbench_startup_readiness.py
+          tests/test_daily_workbench_failure_e2e.py
+          tests/web_api/test_daily_update_status.py
+          tests/web_api/test_first_use_legacy_risk.py
+          tests/web_api/test_private_risk_preview_api.py
           tests/test_workbench_cutoff_replay.py
           tests/test_disclosure_availability.py
           tests/test_event_evidence_audit.py
@@ -53,6 +90,18 @@ jobs:
           tests/test_reported_earnings_cash_trends.py
           tests/test_valuation_result.py
           tests/test_price_bridge.py
+          tests/test_quote_bridge_execution.py
+          tests/test_research_validity_review.py
+          tests/test_incremental_validity.py
+          tests/test_daily_research_status.py
+          tests/test_hotspot_current_price_case.py
+          tests/test_hotspot_current_refresh.py
+          tests/test_hotspot_daily_selection.py
+          tests/test_current_price_registry.py
+          tests/test_private_ledger_candidate_fill.py
+          tests/test_private_ips_policy.py
+          tests/test_value_action_plan.py
+          tests/test_current_value_plan.py
           tests/test_research_profile.py
           tests/test_distribution.py
           tests/test_valuation_confidence.py
@@ -246,6 +295,7 @@ jobs:
           tests/test_evidence_stop_schedule.py
           tests/test_m5_product_event_state_projection.py
           tests/test_midea_unified_valuation_provenance.py
+          tests/test_hkex_issuer_window_capture.py
           tests/test_statement_adapter.py
 
       - name: Verify isolated synthetic private-workspace rehearsal

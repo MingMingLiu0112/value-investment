@@ -1,0 +1,213 @@
+{
+  "schema_version": "independent-capability-matrix-v1",
+  "action": "no_order",
+  "audited_at_china": "2026-10-16",
+  "head": "34019fd52d07b68cff831e8ca6441e7527d65db3",
+  "branch": "codex/web-d1-investment-workbench",
+  "publication_id": "pub-5f803ec65b6e52fd7de4",
+  "audit_evidence": {
+    "full_local_tests": "5684 passed, 44 skipped (independent run, .tmp/a9/pytest-full.log)",
+    "web_tests": "198 passed / 34 files (independent run)",
+    "live_browser": "21 checks, 0 failures at 1280x900/1440x900/390x844/430x844 (.tmp/a9/browser-check-a9.json)",
+    "p9_preflight": "38 checks PASS",
+    "ci_at_head": "Core Research Gates 38881849174 success; Web Workbench 38881849179 success",
+    "quote_raw_rehash": "bundle 08a8cb10...; 5/5 embedded documents re-hash to their declared SHA-256",
+    "database_probe": "PostgreSQL 16.15 via Tailscale; 14 tables; read-only SELECTs only"
+  },
+  "capabilities": [
+    {
+      "id": "MARKET_DATA",
+      "status": "PARTIAL",
+      "evidence": "Dual-source Tencent/Sina post-close close captured and archived with raw bytes re-hashed (bundle 08a8cb10..., sina 37b88049..., tencent 1241d6d6...); exchange calendars archived; per-symbol matched closes for six symbols; quote freshness FRESH on 2026-10-16.",
+      "limits": "Intraday 60m/15m structure is single-provider (Sina) and acquired retroactively; provider trade date partly unverified (data_health PARTIAL); no licensed/SLA source.",
+      "gap_type": "ENGINEERING+DATA",
+      "next_step": "Add a second independent intraday source or a licensed minute feed; keep the dual-source close contract for candles as well.",
+      "priority": "P1"
+    },
+    {
+      "id": "PUBLICATION_INTEGRITY",
+      "status": "PASS",
+      "evidence": "Content-addressed publication pub-5f803ec65b6e52fd7de4; pointer/receipt/packet SHA verification; runtime identity MATCHED (backend=source=web build 34019fd); idempotent re-publish verified during this audit; P9 preflight 38 checks PASS.",
+      "limits": "Source-dirty check excludes config/, so identity says MATCHED while pointer changes are uncommitted; runtime/ is gitignored so a fresh clone cannot verify the chain.",
+      "gap_type": "ENGINEERING",
+      "next_step": "Extend the identity dirty check to config pointers; commit the live pointers or generate a reproducible snapshot export.",
+      "priority": "P0"
+    },
+    {
+      "id": "VALUE_DISCOVERY",
+      "status": "PARTIAL",
+      "evidence": "Full-market scan 5,573 instruments with quotes; 4 screening channels; 114 distinct leads in config/current-company-research-registry.json / value-research-queue; 10 selected for data check.",
+      "limits": "Financial evidence exists for only 873/5,573 (15.7%); quality channel passes 0; 104/114 leads budget-deferred; the funnel is a lead generator, not a quality-ranked opportunity set.",
+      "gap_type": "DATA+ENGINEERING",
+      "next_step": "Raise admitted official-financial coverage and add a cross-industry quality score before any expansion of deep research.",
+      "priority": "P1"
+    },
+    {
+      "id": "VALUE_RESEARCH",
+      "status": "PARTIAL",
+      "evidence": "Six companies with real primary documents bound by hash; 600519/600887 executed on real evidence with ResearchGate layers; dossiers include thesis, counter-evidence, thesis breakers, next events.",
+      "limits": "All six PENDING_RESEARCH; research_as_of 2026-10-11 vs quotes 2026-10-16; incremental validity PENDING_HUMAN_REVIEW; the economic inputs (normalized earnings, ROIC, parent distributable cash, cost of equity, advantage period) are unapproved for every company.",
+      "gap_type": "ECONOMIC_RESEARCH",
+      "next_step": "Close one company's economic evidence package end-to-end (Midea 000333 recommended: FCFF ruled not applicable, RI route authorized, share count verified, six class-B inputs enumerated).",
+      "priority": "P0"
+    },
+    {
+      "id": "VALUATION_RELIABILITY",
+      "status": "NOT_READY",
+      "evidence": "Three model routes implemented and fail-closed (RI/FCFF/cyclical); scenario outputs carry evidence_authenticated=false / assumptions_validated=false; cyclical requires 13 inputs (0 admitted); FCFF ruled MODEL_NOT_APPLICABLE for 000333 and scope-unclosed for 000651/600741.",
+      "limits": "No authorized valuation exists; parameter quality is low (WACC 8.5% fixed, beta=1, COE candidates unapproved); no parent distributable cash bridge; no issuer-specific cost of equity.",
+      "gap_type": "ECONOMIC_RESEARCH",
+      "next_step": "Produce one human-approved valuation package with issuer-specific cost of equity, normalized earnings and parent cash bridge.",
+      "priority": "P0"
+    },
+    {
+      "id": "VALUE_ACTION_POLICY",
+      "status": "NOT_READY",
+      "evidence": "ValueActionPlan + price_attractiveness enforce comparable price + VALID model + READY bridge + registered policy + G3 binding; all six entry/add/reduce/exit are null; value_action_policy_inventory shows registered_investment_policy_binding=null.",
+      "limits": "No registered price policy for any profile; quantity/position sizing requires real IPS and holdings that do not exist yet.",
+      "gap_type": "ENGINEERING+HUMAN_APPROVAL+PRIVATE_INPUT",
+      "next_step": "Ship the Web human-review flow (G3 + materiality + price policy) and register the first real policy after the first approved valuation.",
+      "priority": "P0"
+    },
+    {
+      "id": "HOTSPOT_DISCOVERY",
+      "status": "PARTIAL",
+      "evidence": "Daily selection over 5,226 classified / 5,216 dated / 5,021 ranked securities with industry relative strength and turnover; 5 dated observations produced and published on 2026-10-16.",
+      "limits": "Top-5 cut is applied before structure assessment; 5/5 candidates from one industry on the audit day; regime admission UNKNOWN and inert; structure-qualified names can be missed.",
+      "gap_type": "ENGINEERING",
+      "next_step": "Rank by structure quality within the assessed universe (or assess a much wider set), add cross-industry selection constraints, and persist the candidate pool before slicing.",
+      "priority": "P1"
+    },
+    {
+      "id": "PRICE_ACTION",
+      "status": "PARTIAL",
+      "evidence": "Completed-bar contract enforced (leading partial window discarded, incomplete sessions rejected, daily built from complete 4x60m days); post-close case timestamps; dual-source verified close; structural risk/reward with explicit non-return semantics.",
+      "limits": "Single intraday provider; no candlestick-pattern engine (only breakout/retest/volume rules); human-readable invalidation/expiry exist but no independent confirmation source.",
+      "gap_type": "DATA+ENGINEERING",
+      "next_step": "Add a second intraday source and keep the completed-bar contract; document rule freeze before prospective shadow.",
+      "priority": "P1"
+    },
+    {
+      "id": "HOTSPOT_STRATEGY_VALIDATION",
+      "status": "NOT_PROVEN",
+      "evidence": "Descriptive replay exists (dev 212 cutoffs / 15 triggers / failure-proxy 0.267; validation 280 / 25 / 0.286) and is explicitly labelled HISTORICAL_DESCRIPTIVE_REPLAY_NOT_ADMITTED with performance_claim_allowed=false.",
+      "limits": "No costs, slippage, fill realism, limit-up/down, suspension flags, corporate-action-adjusted minute history, OOS freeze or prospective shadow sessions (elapsed_real_shadow_sessions=0).",
+      "gap_type": "STRATEGY_VALIDATION+REAL_TIME_OBSERVATION",
+      "next_step": "Freeze the current rule version, start prospective shadow recording on live sessions, and build the costed execution model on PIT-reconstructed data.",
+      "priority": "P1"
+    },
+    {
+      "id": "PORTFOLIO_FACTS",
+      "status": "BLOCKED_EXTERNAL",
+      "evidence": "Private portfolio service with initialize/policy/fill/reconcile routes; journal root C:\\Users\\we\\value-investment-private\\portfolio contains only journal.jsonl.lock; GET /api/v1/portfolio returns 401 while locked; no fabricated cash or positions anywhere.",
+      "limits": "No real account facts exist; nothing can be verified end-to-end until the user completes first-use onboarding.",
+      "gap_type": "PRIVATE_INPUT",
+      "next_step": "Run the real first-use flow with the user's confirmed cash, holdings and IPS, then verify the projected equity against the broker statement.",
+      "priority": "P0"
+    },
+    {
+      "id": "PORTFOLIO_RISK",
+      "status": "BLOCKED_EXTERNAL",
+      "evidence": "Dual-sleeve risk engine implemented: budgets, per-trade risk, cash floor, lot size, costs, slippage, gap stress, liquidity, limit up/down, cross-pool same-symbol and industry caps; 43 TEST_ONLY continuity/risk tests pass.",
+      "limits": "All risk output requires confirmed private facts; current projection is BLOCKED_PRIVATE_INPUT with position_guidance=null and trade_eligible=false.",
+      "gap_type": "PRIVATE_INPUT",
+      "next_step": "After the first real onboarding, reconcile risk preview against manual calculation for one candidate trade.",
+      "priority": "P1"
+    },
+    {
+      "id": "HELD_CONTINUITY",
+      "status": "PARTIAL",
+      "evidence": "Held positions tracked independently of Top-5 (ACTUAL_HELD_SECURITY_NOT_RANKING); invalidation re-checked from the plan provider; sellable<T_PLUS_ONE_OR_SELLABLE_LIMIT handling.",
+      "limits": "next_sell_session is user-supplied without exchange-calendar validation; held-risk announcement review is a static placeholder with no wired feed; display-only marks can still surface an exit-review sentence.",
+      "gap_type": "ENGINEERING",
+      "next_step": "Validate sell sessions against the exchange calendar; wire the announcement/disclosure feed into held review.",
+      "priority": "P2"
+    },
+    {
+      "id": "HUMAN_REVIEW",
+      "status": "PARTIAL",
+      "evidence": "Typed review receipts, materiality decisions, policy interaction service (preview/confirm) and append-only review records exist; the local operator is the policy principal; all current review gates are open (0 G3).",
+      "limits": "No Web flow to sign a G3 valuation/materiality review; the 2026-09-23 *-g3-human-approval-* records are machine-generated by a one-off script with hard-coded specs; the untracked M1 approval file is the only evidence.",
+      "gap_type": "HUMAN_APPROVAL+ENGINEERING",
+      "next_step": "Build the real human-review workflow (identity, scope, receipt) and retire/rename the synthetic approval records.",
+      "priority": "P0"
+    },
+    {
+      "id": "AGENT_WORKFLOW",
+      "status": "NOT_PROVEN",
+      "evidence": "Bounded three-role orchestration (fundamental / counter-evidence / event) with snapshots, source-context verification and no admission authority; provider-neutral adapter + mock provider.",
+      "limits": "Only mock runs exist (MOCK_LLM_RESEARCH_NOT_ADMITTED); no live LLM credentials configured; no live artifact; agents never produce numbers by design.",
+      "gap_type": "ENGINEERING",
+      "next_step": "Run one opt-in live LLM pilot on a single company, bound to source excerpts, producing non-admitted counter-evidence only.",
+      "priority": "P2"
+    },
+    {
+      "id": "WEB_USER_EXPERIENCE",
+      "status": "PARTIAL",
+      "evidence": "7 pages live; 21 independent checks at 4 viewports with 0 failures; explicit dates, readable blocker mapping, locked private page, collapsible raw codes; no stale-as-current display.",
+      "limits": "No G3/review or onboarding-completion flow exposed for the value arm; Excel and Web surfaces disagree (Excel frozen at 2026-10-01); private usability never accepted by a real user.",
+      "gap_type": "PRODUCT_UX",
+      "next_step": "Add the human-review surfaces to the existing pages and align the Excel snapshot with the Web publication.",
+      "priority": "P1"
+    },
+    {
+      "id": "HISTORY_REPLAY",
+      "status": "PARTIAL",
+      "evidence": "Decision history and historical price pages exist; content-addressed packets retain dated decisions; replay of the daily chain is deterministic (same publication id on re-run).",
+      "limits": "No real fill/realized-P&L history exists; historical PIT for hotspot minute data is explicitly not proven; replay proves chronology, not profitability.",
+      "gap_type": "DATA+REAL_TIME_OBSERVATION",
+      "next_step": "Keep dated packets accumulating; add executed-trade history only after real onboarding.",
+      "priority": "P2"
+    },
+    {
+      "id": "DAILY_OPERATION",
+      "status": "PARTIAL",
+      "evidence": "One-command daily entry (run_daily_workbench.ps1) with READ_ONLY/SAFE_REFRESH modes, receipt, and a Web start; executed successfully today post-close; SAFE_REFRESH path documented and previously exercised.",
+      "limits": "Not scheduled by the new chain; three legacy Windows tasks still fire (one failing today, exit 1); no automated end-of-day evidence email/digest; server-side DB pipeline runs separately.",
+      "gap_type": "ENGINEERING",
+      "next_step": "Consolidate scheduling to one chain and retire the legacy Moutai tasks; add a morning-after digest of the previous run.",
+      "priority": "P1"
+    },
+    {
+      "id": "DATA_RECOVERY",
+      "status": "NOT_READY",
+      "evidence": "Encrypted backup artifact from 2026-10-01 plus AES-GCM config and a server-side restore drill script exist; the DB itself is a live PostgreSQL instance with a read-only user.",
+      "limits": "runtime/ is gitignored with zero tracked files; canonical Excel lives only in a cloud folder; no restore rehearsal of runtime/ + Excel is evidenced; backups/ is itself gitignored.",
+      "gap_type": "ENGINEERING",
+      "next_step": "Define the recovery set (runtime snapshot + DB dump + canonical Excel), store encrypted copies off-machine, and run one acknowledged restore drill.",
+      "priority": "P0"
+    },
+    {
+      "id": "REAL_ASSISTED_USE",
+      "status": "NOT_READY",
+      "evidence": "Observation workflow is genuinely usable today (dates, conditional ranges, blockers, hotspot WATCH list, unlock-based private shell).",
+      "limits": "No authorized price, no position size, no connected account, no completed review; P11's own verdict is LIMITED_REAL_ASSISTED_USE_READY=NOT_READY.",
+      "gap_type": "ENGINEERING+HUMAN_APPROVAL+PRIVATE_INPUT",
+      "next_step": "Reach the first end-to-end assisted decision: one approved valuation -> one registered price policy -> one real IPS -> one reviewable BUY/NO-ACTION explanation.",
+      "priority": "P0"
+    },
+    {
+      "id": "FORMAL_INVESTMENT_ELIGIBILITY",
+      "status": "NOT_READY",
+      "evidence": "0 formal admissions published; eligibility is fail-closed across research, event, model, price-policy, human and private gates.",
+      "limits": "Every gate is currently unfulfilled for every company; eligibility requires all of research + event + model + policy + human + private risk.",
+      "gap_type": "HUMAN_APPROVAL+PRIVATE_INPUT+ECONOMIC_RESEARCH",
+      "next_step": "Only after the first approved valuation and real private facts: run the full eligibility chain for one candidate and record the receipt.",
+      "priority": "P1"
+    }
+  ],
+  "overall": {
+    "engineering_foundation": {
+      "status": "PASS",
+      "note": "Fail-closed, hash-bound, version-identified, strongly tested. Largest engineering risk = single-machine data custody + unconsolidated legacy pipelines."
+    },
+    "real_assisted_use": {
+      "status": "NOT_READY",
+      "note": "Observation works; decisions do not exist. Private input is required before any personalized output."
+    },
+    "investment_decision_quality": {
+      "status": "NOT_PROVEN",
+      "note": "No authorized valuation and no validated strategy edge. Largest single shortfall: the value arm's economic evidence base."
+    }
+  }
+}

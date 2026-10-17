@@ -20,6 +20,7 @@ from value_investment_agent.research_artifact_codecs import artifact_payload
 from value_investment_agent.human_research_approval import artifact_fingerprint
 from value_investment_agent.pre_decision_eligibility import evaluate_pre_decision_eligibility
 from value_investment_agent.valuation_assumptions import ValuationAssumptionSet
+from approval_transport_fixture import mint_fixture_approval
 
 
 def synthetic_restored(kind):
@@ -41,6 +42,7 @@ def synthetic_restored(kind):
         values["human_approval"] = replace(values["human_approval"],
             facts_artifact_sha256=artifact_fingerprint(facts_payload),
             assumption_set_sha256=artifact_fingerprint(assumptions_payload))
+        values["human_approval"] = mint_fixture_approval(values["human_approval"])
         values["pre_decision"] = evaluate_pre_decision_eligibility(
             gate=values["research_gate"], valuation=values["valuation"],
             approval=values["human_approval"], model_validity=values["model_validity"],
@@ -65,7 +67,10 @@ def synthetic_restored(kind):
         dependency_artifacts=stored, event_materiality=values["event_materiality"],
     )
     assert decision.recommendation_type == kind
-    return verify_decision_recommendation_payload(repository, payload=decision.as_policy())
+    return verify_decision_recommendation_payload(
+        repository, payload=decision.as_policy(),
+        human_approval_provenance_verifier=mint_fixture_approval,
+    )
 
 
 @pytest.mark.parametrize("kind", ["BUY_CANDIDATE", "ADD_CANDIDATE", "HOLD",

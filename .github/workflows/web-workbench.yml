@@ -1,0 +1,53 @@
+name: Web Workbench
+
+on:
+  push:
+    branches: [main, codex/web-d1-investment-workbench]
+    paths:
+      - 'web/**'
+      - 'src/value_investment_agent/presentation/web_api/**'
+      - 'src/value_investment_agent/application/portfolio/web_reconciliation.py'
+      - 'tests/web_api/**'
+      - 'pyproject.toml'
+      - '.github/workflows/web-workbench.yml'
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TMPDIR: ${{ github.workspace }}/.tmp
+      TMP: ${{ github.workspace }}/.tmp
+      TEMP: ${{ github.workspace }}/.tmp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install Web dependencies
+        run: npm ci --prefix web
+      - name: Umi Max setup
+        run: npm run setup --prefix web
+      - name: Typecheck
+        run: npm run typecheck --prefix web
+      - name: Format check
+        run: npm run format --prefix web
+      - name: Frontend tests
+        run: npm test --prefix web -- --run
+      - name: Build
+        run: npm run build --prefix web
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare project-local temporary directory
+        run: mkdir -p .tmp
+      - name: Install API test dependencies
+        run: python -m pip install -e '.[dev,web]'
+      - name: API and reconciliation tests
+        run: python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/web-pytest tests/web_api

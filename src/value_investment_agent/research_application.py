@@ -582,6 +582,13 @@ class ResearchApplicationService:
             valuation = model.value(spec.facts, spec.research_case)
             if not isinstance(valuation, ValuationResult):
                 raise TypeError("Registered model returned a non-valuation result")
+            if (
+                spec.model_version is not None
+                and valuation.model_version != spec.model_version
+            ):
+                raise ValueError(
+                    "Registered valuation model version differs from the declared input"
+                )
         else:
             evidence_refs = list(
                 getattr(spec.facts, "evidence_refs", ())
@@ -621,6 +628,7 @@ class ResearchApplicationService:
                 research_case_payload=case_payload,
                 facts_payload=facts_payload,
                 assumptions_payload=assumptions_payload,
+                require_authenticated_provenance=True,
             )
             approval_decision = resolve_human_research_approval(
                 spec.human_research_approval,
@@ -629,6 +637,7 @@ class ResearchApplicationService:
                 research_case_payload=case_payload,
                 facts_payload=facts_payload,
                 assumptions_payload=assumptions_payload,
+                require_authenticated_provenance=True,
             )
         else:
             gate = evaluate_with_valuation(
@@ -695,6 +704,7 @@ class ResearchApplicationService:
                 facts_payload=facts_payload,
                 assumptions_payload=assumptions_payload,
                 price_attractiveness=price_attractiveness,
+                require_authenticated_approval_provenance=True,
             )
 
         blockers = tuple(

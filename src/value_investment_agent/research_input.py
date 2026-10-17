@@ -11,6 +11,7 @@ from dataclasses import dataclass, is_dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 import hashlib
+import json
 import re
 from typing import Any, Mapping, Sequence
 
@@ -642,6 +643,34 @@ def _decode_artifact_value(
 
 
 @dataclass(frozen=True)
+class ResearchSourceContract:
+    """Canonical, immutable source-bound package metadata."""
+
+    canonical_json: str
+
+    @classmethod
+    def from_payload(
+        cls, value: object, field: str = "source_contract",
+    ) -> "ResearchSourceContract":
+        if not isinstance(value, Mapping):
+            raise ValueError(f"{field} must be an object")
+        return cls(canonical_contract_payload(dict(value)))
+
+    def as_policy(self) -> dict[str, Any]:
+        return json.loads(self.canonical_json)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.canonical_json, str) or not self.canonical_json:
+            raise ValueError("Research source contract requires canonical JSON")
+        parsed = json.loads(self.canonical_json)
+        if (
+            not isinstance(parsed, dict)
+            or canonical_contract_payload(parsed) != self.canonical_json
+        ):
+            raise ValueError("Research source contract must use canonical JSON")
+
+
+@dataclass(frozen=True)
 class ResearchInputDescriptor:
     """One hash-verifiable point-in-time input set for a fixed-sample company."""
 
@@ -667,6 +696,7 @@ class ResearchInputDescriptor:
     entry_thesis: EntryThesisSnapshot | None = None
     investment_consistency_review: InvestmentConsistencyReview | None = None
     blockers: tuple[str, ...] = ()
+    source_contract: ResearchSourceContract | None = None
     input_sha256: str | None = None
 
     def __post_init__(self) -> None:
@@ -686,6 +716,14 @@ class ResearchInputDescriptor:
             raise ValueError("Descriptor model route must be supported")
         if self.dependencies.model_id != route.selected_model:
             raise ValueError("Descriptor model id does not match the profile route")
+        if (
+            self.dependencies.model_version
+            == "residual-income-equity-shared-dated-v2"
+            and getattr(self.facts, "valuation_timing", None) is None
+        ):
+            raise ValueError(
+                "Dated-v2 residual-income input requires explicit valuation timing"
+            )
         source_ids = [source.id for source in self.sources]
         if len(set(source_ids)) != len(source_ids):
             raise ValueError("Descriptor source ids must be unique")
@@ -779,6 +817,8 @@ class ResearchInputDescriptor:
             "blockers": list(self.blockers),
             "input_sha256": self.input_sha256,
         }
+        if self.source_contract is not None:
+            payload["source_contract"] = self.source_contract.as_policy()
         if (
             self.recommendation_schema_version != DECISION_RECOMMENDATION_SCHEMA
             or self.entry_thesis is not None
@@ -806,6 +846,14 @@ def _artifact_payload_value(value: Any) -> dict[str, Any] | None:
 def descriptor_sha256(descriptor: ResearchInputDescriptor) -> str:
     payload = descriptor.as_policy()
     payload.pop("input_sha256", None)
+    legacy_contract = payload.get("source_contract")
+    if (
+        isinstance(legacy_contract, Mapping)
+        and legacy_contract.get("schema_version") == "source-bound-research-inputs-v1"
+    ):
+        # Legacy receipts were finalized before source_contract entered the
+        # descriptor contract. Keep their exact input identity replayable.
+        payload.pop("source_contract", None)
     return hashlib.sha256(
         canonical_contract_payload(payload).encode("utf-8")
     ).hexdigest()
@@ -872,6 +920,11 @@ def descriptor_from_payload(payload: Mapping[str, Any]) -> ResearchInputDescript
             data.get("investment_consistency_review"),
         ),
         blockers=tuple(str(item) for item in data.get("blockers") or []),
+        source_contract=(
+            ResearchSourceContract.from_payload(data["source_contract"])
+            if data.get("source_contract") is not None
+            else None
+        ),
         input_sha256=(
             str(data["input_sha256"]) if data.get("input_sha256") else None
         ),

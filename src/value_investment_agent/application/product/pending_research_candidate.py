@@ -362,7 +362,13 @@ def verify_pending_research_candidate(*, root: Path, path: Path, expected_sha256
             or data.get('schedule_gate') != workbench.get('schedule_gate')):
         raise ValueError('pending candidate differs from exact research inputs or outputs')
     if workbench.get('decision_recommendation'):
-        verify_current_decision_workbench(workbench)
+        from .research_reviews import verify_human_approval_transport_provenance
+        verify_current_decision_workbench(
+            workbench,
+            human_approval_provenance_verifier=lambda approval: (
+                verify_human_approval_transport_provenance(root, approval)
+            ),
+        )
         if workbench.get('input_descriptor_sha256') != descriptor.input_sha256:
             raise ValueError('pending candidate descriptor differs from actual consumption')
     if sha256_file(path) != expected_sha256:

@@ -1,0 +1,28 @@
+{
+  "schema_version": "current-company-research-registry-v1",
+  "action": "no_order",
+  "reviewed_at": "2026-10-16",
+  "note": "PROJECTION_CANDIDATES_ONLY: root binds judgments.json into registry; no registration or approval performed. Frozen historical artifacts remain unchanged.",
+  "companies": {
+    "600887": {
+      "name": "伊利股份",
+      "status": "PENDING_RESEARCH",
+      "valuation_route": "residual_income_or_equity_value",
+      "summary": "经营基础仍在，但H1扣非利润下降20.25%；96.48亿元历史扣非TTM不是正常化盈利。旧条件估值可重放，不是可靠当前公允价值。415亿元短融发行不等于新增可用净现金；担保责任余额20.58亿元不等于损失。6月末普通股分母已能从原件核验。",
+      "missing_inputs": ["EVIDENCE：正常化归母盈利、维护投入与可分配现金桥", "EVIDENCE：12月融资到期偿付来源、担保代偿及回收风险", "HUMAN：超额收益期限、全资本ROE衰减与权益成本的证据化审核", "DATA：如重估至新日期，须完成对应日期资本变动及价格事件窗口核验"],
+      "required_actor": "HUMAN",
+      "next_step": "先闭合盈利、资本分配和再融资证据，再沿既有审核链审情景；不得以旧情景值给出正式吸引区间。",
+      "evidence": [{"path": "artifacts/current/tl11-p8-20261016/research/judgments.json", "sha256": "1bf1f0c5b88ae37835a7f0b22b168cb0d7b3dcb2cb69901ac32d20422a609866", "note": "600887研究判断；未获投资审批"}]
+    },
+    "600519": {
+      "name": "贵州茅台",
+      "status": "PENDING_RESEARCH",
+      "valuation_route": "residual_income_or_equity_value",
+      "summary": "产品毛利率与渠道支持经营质量，但H1扣非利润下降2.04%。集团现金流含财务公司存款影响，不能作为白酒自由现金流。既有条件中值587.88元可重放，尚无可靠当前公允价值或正式吸引区间。",
+      "missing_inputs": ["EVIDENCE：正常化盈利、维护投入、法人可分配现金与金融尾部风险桥", "HUMAN：十年盈利持续、五年全资本衰减、75%分配与权益成本审核", "DATA：新日期价格、资本变动及事件窗口核验"],
+      "required_actor": "HUMAN",
+      "next_step": "核实经营与金融现金边界并审核持续期和分配假设，再申请现有正式审核；不将旧日期时间桥差额解释为经营改善。",
+      "evidence": [{"path": "artifacts/current/tl11-p8-20261016/research/judgments.json", "sha256": "1bf1f0c5b88ae37835a7f0b22b168cb0d7b3dcb2cb69901ac32d20422a609866", "note": "600519第二家公司真实研究判断；条件研究非准入估值"}]
+    }
+  }
+}

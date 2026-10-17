@@ -1,0 +1,49 @@
+{
+  "schema_version": "research-execution-receipt-v2",
+  "status": "NORMAL_RESEARCH_EXECUTED_AFTER_EVIDENCE_STOP_RESOLUTION",
+  "symbol": "000333",
+  "run_id": "midea-draft-20261017-v2",
+  "action": "no_order",
+  "command": "python -B scripts/current/run_company_research.py --symbol 000333 --package runtime/company-research/midea-draft-20261017-v2/package.json --output runtime/company-research/midea-draft-20261017-v2/research-result.json --schedule-request runtime/research-schedule-requests/midea-denominator-reopen-20261017-v1.json",
+  "inputs": {
+    "package": {
+      "path": "runtime/company-research/midea-draft-20261017-v2/package.json",
+      "sha256": "cd7a14b3e09c2d87e6ed3ea8cb852728456ac6ea50a34f3314a2e47bba89316c"
+    },
+    "package_build_receipt_sha256": "9a5e06f46308386a8146cea9d62c10c2b6a0cee73d0b7179eaa680df83227dbe",
+    "event_scan_sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f",
+    "assumption_memo_sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+  },
+  "output": {
+    "path": "runtime/company-research/midea-draft-20261017-v2/research-result.json",
+    "sha256": "81f232242412f4b15b93f67e8d8c43132e26d19715484aa408b9eecb32140539",
+    "input_descriptor_sha256": "be460eb1b66a268a7f2a7294b258b3a0bc3f9bbefd4c35f615eaa08d83be30b0"
+  },
+  "schedule_gate": {
+    "allowed": true,
+    "status": "ALLOW_NORMAL_RESEARCH",
+    "matched_stop_ids": [],
+    "scope_key": {
+      "source_id": "CNINFO",
+      "period": "2026-06-30",
+      "research_question_id": "midea_ordinary_share_denominator",
+      "blocker_id": "ordinary_share_denominator_unbounded"
+    },
+    "active_stop_ids": [
+      "000333-fcff-finance-business-scope",
+      "000333-fcff-internal-eliminations",
+      "000333-fcff-project-capex"
+    ],
+    "reason": "No Evidence Stop matches this research case scope."
+  },
+  "schedule_consumption": {
+    "created": true,
+    "consumed": false,
+    "status": "NORMAL_RESEARCH_NOT_CONSUMED",
+    "schedule_id": null,
+    "receipt_path": null
+  },
+  "research_admission": "DRAFT_NOT_APPROVED",
+  "price_admission": false,
+  "human_approval": false
+}

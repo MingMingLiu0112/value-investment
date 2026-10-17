@@ -32,6 +32,7 @@ from .research_artifact_codecs import (
 )
 from .research_input import (
     ResearchInputDescriptor,
+    ResearchSourceContract,
     finalize_input_descriptor,
 )
 from .research_run_contract import (
@@ -514,6 +515,11 @@ def build_descriptor(
         if data.get("investment_consistency_review") is not None
         else None
     )
+    source_contract = (
+        ResearchSourceContract.from_payload(data.get("source_contract"))
+        if data.get("schema_version") == "m1-valuation-package-v2"
+        else None
+    )
     if distribution_result is not None and distribution_result.as_of > facts.as_of:
         blockers.append(
             "Distribution package as-of "
@@ -576,6 +582,7 @@ def build_descriptor(
         entry_thesis=entry_thesis,
         investment_consistency_review=investment_consistency_review,
         blockers=tuple(blockers),
+        source_contract=source_contract,
         input_sha256=None,
     )
     if data.get("schema_version") == "m1-valuation-package-v2":

@@ -1,0 +1,24 @@
+..................F...............................                       [100%]
+================================== FAILURES ===================================
+___________ test_archived_yili_quote_becomes_a_bound_verified_close ___________
+
+    @pytest.mark.skipif(not BUNDLE.exists(), reason="archived quote runtime missing")
+    def test_archived_yili_quote_becomes_a_bound_verified_close():
+        snapshot = quote_snapshot_from_bundle_file(
+            BUNDLE,
+            ROOT,
+            symbol="600887",
+            ref_id="yili_quote_20260922",
+            expected_sha256=BUNDLE_SHA256,
+        )
+    
+>       assert snapshot.status == "verified_close"
+E       AssertionError: assert 'unverified' == 'verified_close'
+E         
+E         - verified_close
+E         + unverified
+
+tests\test_quote_session_conversion.py:37: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_quote_session_conversion.py::test_archived_yili_quote_becomes_a_bound_verified_close
+1 failed, 49 passed in 10.49s

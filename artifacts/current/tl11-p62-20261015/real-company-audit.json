@@ -1,0 +1,172 @@
+{
+  "schema_version": "tl11-p62-real-company-readonly-audit-v1",
+  "action": "no_order",
+  "audit_date": "2026-10-15",
+  "observed_window_china": "2026-10-15T15:09:00+08:00/2026-10-15T15:15:00+08:00",
+  "repository": "D:/GPTProject/value-investment",
+  "head": "a1bc035e5fea4787703e0c62edabf208fab01329",
+  "scope": {
+    "symbols": ["600887", "000333", "000651", "600741"],
+    "method": "GET existing public APIs, inspect explicit pointers and their bound artifacts, inspect existing code; no filename-recency selection",
+    "research_or_valuation_run": false,
+    "refresh_requested": false,
+    "private_endpoints_called": false,
+    "private_stores_inspected": false,
+    "real_store_writes": false,
+    "only_authorized_output": "artifacts/current/tl11-p62-20261015/real-company-audit.json",
+    "absence_interpretation": "Not bound or not registered on inspected authoritative surfaces is not proof that no historical research exists elsewhere."
+  },
+  "authority": {
+    "api_base": "http://127.0.0.1:8001",
+    "endpoint_discovery": "GET /openapi.json",
+    "snapshot_pointer": "config/current-daily-public-snapshot.json",
+    "publication_id": "pub-53fd34a5ae8aefdcaa5e",
+    "packet_path": "artifacts/current/tl11-p61-20261015/daily-public-packet.json",
+    "packet_sha256": "8891179146e63f80ef5b210486c29231834a392ee40367233aa0af4ebf8c6f8a",
+    "packet_hash_matches_pointer": true,
+    "packet_generated_at": "2026-10-15T02:09:10.663058+00:00",
+    "research_version": "canonical-reviewed-research-20261012T113935Z-362d7928",
+    "workbook_publication_pointer": "config/current-trial-workbook.json",
+    "publication_chain_roles_hash_checked": ["daily_product_state", "publication_handoff", "publication_receipt", "publication_sources", "publication_wps_receipt", "read_model"],
+    "publication_chain_six_direct_hashes_match": true,
+    "research_registry": {
+      "path": "config/current-company-research-registry.json",
+      "sha256": "ee4ab215e014d572fede9c9c5ebe11cf0d6b9ed8f766b2103426029f6ccb4282",
+      "hash_matches_packet_binding": true
+    },
+    "quote_registry": "config/current-quote-bridge.json",
+    "policy_review_manifest": "artifacts/current/tl11-p5-20261014/value-policy-review-manifest.json",
+    "policy_manifest_sha256": "6e68044c8d4d4df5ac340e79d7685f13b618812add665144f6539b95c7eadebd",
+    "policy_manifest_symbols": ["600887"],
+    "api_observations": {
+      "GET /api/v1/daily-decisions": {"http_status": 200, "status": "RESEARCH_OBSERVATION", "formal_count": 0, "as_of": "2026-10-12", "publication_id": "pub-53fd34a5ae8aefdcaa5e"},
+      "GET /api/v1/decisions/{symbol}": {"all_four_http_status": 200, "statuses": {"600887": "RESEARCH_ONLY", "000333": "PENDING_RESEARCH", "000651": "PENDING_RESEARCH", "600741": "PENDING_RESEARCH"}},
+      "GET /api/v1/current-price-case/{symbol}": {"all_four_http_status": 200, "all_four_status": "UNAVAILABLE", "all_four_reason": "CURRENT_CASE_NOT_PUBLISHED", "interpretation": "No published current-price case in this separate endpoint; does not erase the retained value research or quote archive."},
+      "GET /api/v1/value-policy-review/{symbol}": {"600887": {"http_status": 200, "status": "RESEARCH_ONLY"}, "000333": {"http_status": 409, "status": "REVIEW_UNAVAILABLE"}, "000651": {"http_status": 409, "status": "REVIEW_UNAVAILABLE"}, "600741": {"http_status": 409, "status": "REVIEW_UNAVAILABLE"}}
+    }
+  },
+  "freshness": {
+    "live_api_latest_completed_session": "2026-10-15",
+    "retained_packet_latest_completed_session_for_600887": "2026-10-14",
+    "live_600887_bridge_status": "NOT_ADMITTED",
+    "live_600887_quote_scope": "VERIFIED_ARCHIVE_NOT_CURRENT_PRICE",
+    "retained_packet_600887_bridge_status": "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
+    "interpretation": "Expected read-time session rollover: the archived Oct14 close is not the latest completed Oct15 close. Root refresh is pending outside this audit. Both surfaces deny price admission; refreshing price alone cannot clear research, G3, event or policy gates.",
+    "category": "data"
+  },
+  "companies": [
+    {
+      "symbol": "600887",
+      "name": "Yili",
+      "completeness": {
+        "status": "PARTIAL_RESEARCH_ONLY",
+        "research_binding": "VERIFIED",
+        "research_cutoff": "2026-10-11",
+        "financial_facts_gate": "PASS",
+        "business_quality_gate": "PASS",
+        "pass_scope": "Bound facts/thesis assessment, not current completeness or investment approval",
+        "model_applicability_gate": "BLOCKED",
+        "valuation_gate": "CONDITIONAL",
+        "research_gate": "BLOCKED"
+      },
+      "model": {
+        "id": "residual_income_or_equity_value",
+        "version": "residual-income-equity-shared-dated-v2",
+        "profile": "quality_compounder",
+        "published_validity": "UNKNOWN",
+        "review_status": "RESEARCH_REVIEW_NOT_G3_APPROVAL",
+        "retained_scenarios_cny_per_share": {"bear": "9.79764118439777680597278298395676515182872214703", "base": "10.0751373530680129477021471870066470782479712991", "bull": "10.3006925009950307944059171660835859543186976072"},
+        "scenario_use": "Existing conditional research only; copied, not recomputed",
+        "profit_basis": "Historical ex-nonrecurring parent-profit TTM proxy; normalized profit not approved",
+        "mechanism": "One-year profit condition followed by three-year ROE fade to cost of equity; terminal excess return zero, not total equity value zero",
+        "dividend_sustainability": "UNKNOWN_NOT_APPROVED"
+      },
+      "price": {"archived_close_cny": "28.13", "quote_date": "2026-10-14", "current_admitted": false, "comparison_eligible": false, "live_status": "NOT_ADMITTED", "research_also_predates_quote": true},
+      "policy": {"registered_binding": null, "draft_present": true, "draft_registered": false, "draft_rule_count": 0, "preparation_status": "BLOCKED", "preparation_blocker": "VALUE_POLICY_EXPLICIT_ACTION_RULES_REQUIRED"},
+      "g3": {"status": "NOT_APPROVED", "evidence": "formal G3 human valuation approval not present"},
+      "event": {"status": "PENDING_REVIEW", "materiality_approved": false, "full_current_event_coverage_proven": false},
+      "conditional_plan": {"schema": "value-action-plan-v1", "qualification": "RESEARCH_SCENARIO", "candidate_action": "NO_ACTION", "signal_state": "WATCH", "entry_price": null, "add_price": null, "reduce_price": null, "exit_price": null, "formal_eligibility": false},
+      "risk_eligibility": {"security_review_eligible": false, "portfolio_eligibility": null, "portfolio_status": "UNKNOWN_PRIVATE_INPUT_NOT_PROJECTED", "position_guidance": null, "private_account_not_audited": true},
+      "blockers_by_category": {
+        "code": [],
+        "data": ["Oct14 quote no longer latest completed session"],
+        "evidence": ["Research cutoff does not cover quote/current events", "Issuer beta and ROIC/incremental ROIC unverified", "Normalized profit, clean-surplus, required reinvestment and distributable-cash coverage unresolved", "Current model validity and decision dependency admission unavailable"],
+        "human": ["G3 valuation approval absent", "Economic assumptions and event materiality review pending", "Private IPS/portfolio eligibility cannot be inferred from this public audit"],
+        "rule": ["Applicable entry/add/reduce/exit price policy absent", "Explicit action rules absent in draft", "Fresh repository replay and action candidate required for formal auxiliary review"]
+      },
+      "next_step": "Root may refresh the latest completed-session quote separately. Before any current price conclusion, cover post-cutoff official events and resolve model/economic inputs, G3 and event reviews. Only then consider explicit applicable policy and fresh decision replay; private risk remains separately gated.",
+      "evidence": [
+        {"path": "artifacts/current/tl11-p5-20261014/value-600887-model-review.json", "sha256": "5bb7c0e959c77f73a28516427eb3410a34ef6eb1d0f02fd73813bc6feb269f9a", "direct_hash_match": true},
+        {"path": "artifacts/current/tl11-p5-20261014/value-600887-policy-draft.json", "sha256": "c0376fb875d6f4e52d509da6d11a5b13c707023a695084122a78bccbadcade57", "direct_hash_match": true},
+        {"path": "artifacts/current/tl11-p5-20261014/value-600887-policy-preparation.json", "sha256": "bbd55d42c13e1e7ae8f77fe87695863b6a4a1ed828edd720ce312cd1472dd03e", "direct_hash_match": true},
+        {"path": "artifacts/current/tl11-p5-20261014/value-600887-isolated-replay-receipt.json", "sha256": "f4b12fc6df066fe9eff5008f6f4d5f4d1087bc7f3bfa40210f4d963740cc5c7c", "direct_hash_match": true, "scope": "Existing exact arithmetic replay receipt, not rerun here and not full admission restore"}
+      ]
+    },
+    {
+      "symbol": "000333",
+      "name": "Midea",
+      "completeness": {"status": "PARTIAL_PENDING_RESEARCH", "research_binding": "NOT_BOUND", "verified_partial_facts": "Six report facts rechecked in detailed API; not complete FinancialFacts/PIT admission", "verified_denominator": {"period_end": "2026-06-30", "ordinary_shares_excluding_treasury": 7464347335}, "financial_facts_gate": "BLOCKED", "business_quality_gate": "BLOCKED", "valuation_status": "NOT_READY"},
+      "model": {"registered_route": "fcff", "admitted_model_id": null, "current_validity": "NOT_ESTABLISHED", "scenario_range": null, "missing_inputs": ["Revenue", "Margin", "Capital expenditure", "Working capital assumptions", "Cash-flow and capital-allocation fact admission"]},
+      "price": {"status": "PENDING_EXTERNAL_DATA", "reason": "No symbol registration in current dual-source quote registry", "admitted": false},
+      "policy": {"registered_binding": null, "public_policy_review": "NOT_IN_REVIEW_MANIFEST", "review_api_http": 409},
+      "g3": {"status": "NOT_ESTABLISHED_NO_ADMITTED_VALUATION"},
+      "event": {"status": "NOT_REGISTERED", "interpretation": "Not a completed no-material-event assessment"},
+      "conditional_plan": {"schema": "value-action-plan-v1", "verification_scope": "REGISTERED_RESEARCH_GAPS_ONLY", "signal_state": "BLOCKED", "scenario_range": null, "all_action_trigger_prices": null, "formal_eligibility": false},
+      "risk_eligibility": {"security_review_eligible": false, "portfolio_eligibility": null, "position_guidance": null, "private_account_not_audited": true},
+      "blockers_by_category": {"code": [], "data": ["No registered current dual-source close"], "evidence": ["FCFF scenario inputs not registered", "Partial report facts and verified denominator do not constitute a complete admitted facts/model/thesis chain", "Event assessment not registered"], "human": ["Economic/model and eventual G3/event approval not established", "Private input and risk review not assessed"], "rule": ["Applicable action price policy missing", "Fresh replay and actionable candidate absent"]},
+      "next_step": "Reuse the verified denominator and six reviewed facts; assess and register the remaining FCFF facts/assumptions and model applicability before any valuation admission. Register a current quote and event assessment separately. No research or valuation was started by this audit.",
+      "evidence": [{"path": "docs/current/tl8-c-000333-share-denominator-recheck-receipt-20261013.json", "sha256": "f2b968c000ae9f6ec39541b2bc8413fb97654d32fed530cc5badd66c547c752b", "direct_hash_match": true}]
+    },
+    {
+      "symbol": "000651",
+      "name": "Gree",
+      "completeness": {"status": "PARTIAL_PENDING_RESEARCH", "research_binding": "NOT_BOUND", "financial_facts_gate": "BLOCKED_NO_FORMAL_ASSESSMENT", "business_quality_gate": "BLOCKED_NO_FORMAL_ASSESSMENT", "research_version": null, "valuation_status": "NOT_READY"},
+      "model": {"admitted_model_id": null, "version": null, "applicability_gate": "BLOCKED", "scenario_range": null},
+      "price": {"status": "PENDING_EXTERNAL_DATA", "reason": "No registered dual-source close", "admitted": false},
+      "policy": {"registered_binding": null, "public_policy_review": "NOT_IN_REVIEW_MANIFEST", "review_api_http": 409},
+      "g3": {"status": "NOT_ESTABLISHED_NO_BOUND_VALUATION"},
+      "event": {"status": "NOT_REGISTERED"},
+      "conditional_plan": {"schema": "value-price-observation-v1", "signal_state": "WATCH", "scenario_range": null, "all_action_trigger_prices": null, "action_eligibility": false, "formal_eligibility_field_present": false, "interpretation": "Observation placeholder, not a conditional entry plan"},
+      "risk_eligibility": {"portfolio_gate": "BLOCKED_NO_FORMAL_ASSESSMENT", "portfolio_eligibility": null, "position_guidance": null, "private_account_not_audited": true},
+      "blockers_by_category": {"code": ["SUMMARY_OMITS_NON_PRICE_GAPS"], "data": ["No registered current dual-source close"], "evidence": ["Current research explanation not bound", "Facts, business-quality, model, valuation and event assessments not admitted"], "human": ["G3 and event approval not established", "Private risk assessment absent from inspected public surface"], "rule": ["No admitted action threshold policy or formal decision chain"]},
+      "next_step": "Locate and bind the authoritative existing company research, if available; otherwise mark the concrete facts/thesis/model gaps for a separately authorized research task. Surface those gaps alongside price in the summary. Do not infer a model or scenario from sector/name."
+    },
+    {
+      "symbol": "600741",
+      "name": "Huayu Automotive",
+      "completeness": {"status": "PARTIAL_PENDING_RESEARCH", "research_binding": "NOT_BOUND", "financial_facts_gate": "BLOCKED_NO_FORMAL_ASSESSMENT", "business_quality_gate": "BLOCKED_NO_FORMAL_ASSESSMENT", "research_version": null, "valuation_status": "NOT_READY"},
+      "model": {"admitted_model_id": null, "version": null, "applicability_gate": "BLOCKED", "scenario_range": null},
+      "price": {"status": "PENDING_EXTERNAL_DATA", "reason": "No registered dual-source close", "admitted": false},
+      "policy": {"registered_binding": null, "public_policy_review": "NOT_IN_REVIEW_MANIFEST", "review_api_http": 409},
+      "g3": {"status": "NOT_ESTABLISHED_NO_BOUND_VALUATION"},
+      "event": {"status": "NOT_REGISTERED"},
+      "conditional_plan": {"schema": "value-price-observation-v1", "signal_state": "WATCH", "scenario_range": null, "all_action_trigger_prices": null, "action_eligibility": false, "formal_eligibility_field_present": false, "interpretation": "Observation placeholder, not a conditional entry plan"},
+      "risk_eligibility": {"portfolio_gate": "BLOCKED_NO_FORMAL_ASSESSMENT", "portfolio_eligibility": null, "position_guidance": null, "private_account_not_audited": true},
+      "blockers_by_category": {"code": ["SUMMARY_OMITS_NON_PRICE_GAPS"], "data": ["No registered current dual-source close"], "evidence": ["Current research explanation not bound", "Facts, business-quality, model, valuation and event assessments not admitted"], "human": ["G3 and event approval not established", "Private risk assessment absent from inspected public surface"], "rule": ["No admitted action threshold policy or formal decision chain"]},
+      "next_step": "Locate and bind authoritative existing facts/thesis/model assessments, if available, and expose unresolved research gates before requesting price-only work. Event review, applicable policy and private risk remain separate later gates."
+    }
+  ],
+  "findings": [
+    {"id": "F1", "category": "evidence", "symbols": ["600887"], "text": "Bound conditional valuation and exact-replay evidence exist; they do not establish normalized earnings, model validity, distributable cash, G3 or current price admission."},
+    {"id": "F2", "category": "evidence", "symbols": ["000333"], "text": "The 7,464,347,335 denominator and six reviewed report facts are real partial progress; FCFF inputs and complete admission remain absent."},
+    {"id": "F3", "category": "code", "symbols": ["000651", "600741"], "text": "The brief packet has company blockers=[] and observation-plan blockers=[PRICE_NOT_ADMITTED], whereas detailed decisions show multiple blocked research gates. A price refresh cannot make these companies research-ready.", "code": {"path": "src/value_investment_agent/application/product/daily_public_packet.py", "line": 776, "mechanism": "Fallback observation merges existing blocker lists and price status but does not enumerate absent research assessments; defaults to WATCH."}, "fix_applied": false},
+    {"id": "F4", "category": "data", "symbols": ["600887"], "text": "Live API correctly rejects Oct14 as current after Oct15 session completion. Retained packet and model review retain Oct14 historical context; this is not a new valuation or approval and is not treated as an unexpected regression."},
+    {"id": "F5", "category": "rule", "symbols": ["600887", "000333", "000651", "600741"], "text": "No inspected company has an eligible current action plan or approved price policy. WATCH and conditional values are not action thresholds; portfolio eligibility remains unknown without private assessment."},
+    {"id": "F6", "category": "code", "symbols": ["000333", "000651", "600741"], "text": "The review API uses generic 409 REVIEW_UNAVAILABLE for both absent manifest entries and changed sources. In this audit these symbols are absent from the explicit manifest; do not report the 409 alone as evidence corruption.", "code": {"path": "src/value_investment_agent/presentation/web_api/app.py", "line": 612}, "fix_applied": false}
+  ],
+  "inspected_code": [
+    "src/value_investment_agent/application/product/public_snapshot.py",
+    "src/value_investment_agent/application/product/publication_chain.py",
+    "src/value_investment_agent/application/product/daily_public_packet.py",
+    "src/value_investment_agent/application/decision/value_price_policy.py",
+    "src/value_investment_agent/domain/decision/value_action_plan.py",
+    "src/value_investment_agent/presentation/web_api/app.py"
+  ],
+  "limits": [
+    "A bounded audit of explicit current bindings and public read surfaces, not a repository-wide proof of historical artifact absence.",
+    "Existing receipts and arithmetic were inspected, not regenerated; no new financial conclusions or valuations.",
+    "Direct top-level hashes were checked as listed; no claim of independently reauditing every underlying filing or every transitive PIT fact.",
+    "No private store or authenticated private endpoint was accessed; public NOT_CONNECTED/unknown projections do not establish the actual private account state.",
+    "Shared workspace and live server may advance after this observation; root refresh was not initiated."
+  ]
+}

@@ -60,6 +60,30 @@ INITIAL_ASSISTED_USE=NOT_REACHED until actual evidence passes inherited gates.
 This is ordinary continuous development, not a new Goal Mode run. The following
 dated sections are inherited evidence and prior scopes, superseded by this package.
 
+## 2026-10-11 D2 Real Research Decision Closure (S1-S8)
+
+Latest explicit user task: D2_REAL_RESEARCH_DECISION_CLOSURE, inheriting actual
+0c68e06551b721cecfd70e57bae2065b92faf285. Execute S1-S8: close 600519 finite
+economic research into an exact pending candidate, minimal Chinese review
+materials, event/ModelValidity and lawful price proof, 600887 economic successor,
+Agent counterevidence, protected product preview and assisted-use readiness.
+Reuse the existing model and application; do not add scenarios, Web, D5, M8 or
+parallel roadmap. Current Canonical SHA879e9c44...fd922b is already published and
+v5 verified, not a new pointer-repair task. Existing research/publication receipts
+and original bytes remain historical evidence.
+
+Code, isolated public research, candidate versions/replays/previews, tests and
+scoped commits/pushes are authorized. New Canonical content publication requires
+its corresponding approval. Human economic/model/G3/materiality approvals,
+private IPS/portfolio, paid Provider, production/real Shadow, natural-session
+requirements and final actual user acceptance cannot be supplied by Codex.
+Missing approval blocks its dependent conclusion, not independent S1-S8 work.
+Root owns shared integration and commits; disjoint SubAgents review economics,
+events/PIT and counterevidence. action=no_order, null private positions and
+IN_PROGRESS/INITIAL_ASSISTED_USE=NOT_REACHED remain until actual gates pass.
+
+This supersedes the P0-P8 execution package below, not its validated assets.
+
 ## 2026-10-11 Real Valuation Admission and Product Closure
 
 Latest user package: `D2-REAL-VALUATION-PRICE-ADMISSION-AND-PRODUCT-CLOSURE`,
@@ -111,7 +135,6 @@ showing verified research sources, valuation scope, quote admission, candidate
 or exact blockers, risks and reopen triggers, then the same path for three
 companies. Do not call D2 or INITIAL_ASSISTED_USE complete on code alone.
 
-
 ## 2026-10-07 Current Goal Supersession
 
 当前授权 Goal 为：
@@ -121,7 +144,7 @@ VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE
 CURRENT_STAGE = D2_CANONICAL_COMPANY_DECISION_SLICE
 D0_STATUS = COMPLETE
 D1_STATUS = INTERFACE_ONLY_NOT_EXPANDED
-D2_STATUS = READY_TO_START
+D2_STATUS = IN_PROGRESS
 action = no_order
 ```
 

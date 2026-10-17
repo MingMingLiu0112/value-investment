@@ -9,6 +9,64 @@ from .common import require_inside, sha256_file, write_new_json
 from .research_reviews import prepare_pending_review_intake, prepare_pending_review_response
 
 
+def build_external_review_handoff(*, root: Path, symbol: str, now) -> dict:
+    """Deliver the existing exact-version signing contract, never a local G3 button."""
+    from .publication_chain import load_current_chain
+    from .user_research_workflow import selected_review_candidate
+    from ..decision.value_price_policy import load_value_policy_review, review_manifest_binding
+    from ...infrastructure.evidence.trust_root_registry import pinned_trust_root_fingerprints
+
+    root = root.resolve()
+    chain = load_current_chain(root)
+    binding = selected_review_candidate(root=root, symbol=symbol,
+        published={'source_bindings': chain['sources']['source_bindings']})
+    preview = preview_pending_review_response(root=root,
+        candidate_path=root / binding['path'], candidate_sha256=binding['sha256'])
+    valuation_hash = preview['draft']['valuation_artifact_sha256']
+    review = None
+    manifest = json.loads((root / review_manifest_binding(root)['path']).read_bytes())
+    if symbol in manifest['items']:
+        review = load_value_policy_review(root, symbol, now)
+    if (not valuation_hash or (review is not None
+            and review['draft']['basis']['valuation_input_version'] != valuation_hash)):
+        raise ValueError('Review handoff does not bind the current valuation')
+    count = len(pinned_trust_root_fingerprints())
+    candidate_args = (f'--symbol {symbol} --candidate "{binding["path"]}" '
+                      f'--candidate-sha256 {binding["sha256"]}')
+    from .research_materiality_reviews import registered_materiality_handoff
+    try:
+        materiality_handoff = registered_materiality_handoff(root=root, symbol=symbol, today=now)
+    except (ValueError, OSError, KeyError, TypeError) as error:
+        materiality_handoff = dict(status='MATERIALITY_HANDOFF_BLOCKED', action='no_order',
+            approval_granted=False, g3_approval_granted=False, reason=str(error), steps=[])
+    return dict(action='no_order', status='EXTERNAL_SIGNATURE_REQUIRED',
+        materiality_handoff=materiality_handoff,
+        symbol=symbol, candidate_binding=binding,
+        model_context=preview['draft']['model_context'],
+        valuation_artifact_sha256=valuation_hash,
+        review_questions=preview['review_questions'], unsigned_response=preview['draft'],
+        public_research_materials=review['model_review'] if review else preview['draft']['model_context'],
+        source_bindings=review['source_bindings'] if review else [binding],
+        authorization=dict(pinned_root_count=count,
+            status='AUTHORIZED_IDENTITY_REQUIRED' if count == 0 else 'EXACT_REVIEWER_SCOPE_MUST_BE_VERIFIED'),
+        steps=[
+            dict(id='MATERIALS', action='核对候选、模型版本、支持、反证和字段范围；下载材料不构成批准。'),
+            dict(id='IDENTITY', action='真实审核人使用本人控制的密钥；公钥信任根须经独立审核登记并限定证券、profile、有效期及权限。本机登录不授予G3身份。'),
+            dict(id='RESPONSE', action='本人逐组填写VERIFIED / REJECTED / INSUFFICIENT、理由及范围；整模型G3为独立对象，重大事件另按模型绑定的完整扫描逐项审查。'),
+            dict(id='SIGN', action='由有权本人按既有pending-research-response签名合同签署；不向Web上传私钥，不由系统代签。'),
+            dict(id='CONSUME', action='通过现有签名消费命令核验身份、精确候选和回应链；保留不可变回执，再按当前发布流程重新验证资格和刷新页面。未发布的回执不会自动升级公共研究。')],
+        commands=dict(draft_preview=f'python scripts/current/review_research.py {candidate_args} --preview',
+            consume_signed_response=f'python scripts/current/review_research.py {candidate_args} '
+                '--signed-review-response <本人签名回应文件> --review-trust-root <已登记信任根文件> '
+                '--output <runtime下新的消费目录>'),
+        event_review_entry='scripts/current/review_event.py',
+        instructions='docs/current/d2-human-review-usage-20261011.md',
+        verification=dict(approval_changed=False, research_admitted=False,
+            policy_confirmation_is_not_g3=True,
+            required_results=['authenticated-review-response.json', '共享研究重新核验结果', '当前发布版本及页面资格']),
+        position_guidance=None)
+
+
 def preview_pending_review_response(*, root: Path, candidate_path: Path,
         candidate_sha256: str) -> dict:
     """Read exact questions and response slots without saving or approving anything."""

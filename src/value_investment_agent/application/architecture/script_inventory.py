@@ -134,9 +134,26 @@ def build_script_inventory(
     root: Path,
     *,
     current_entrypoints: Mapping[str, Mapping[str, object]],
+    channel_categories: Mapping[str, str] | None = None,
+    declared_entrypoint_count: int | None = None,
+    consumer_overrides: Mapping[str, Iterable[str]] | None = None,
 ) -> ScriptInventory:
-    """Build a complete, stable inventory without interpreting business results."""
+    """Build a complete inventory with explicit v2 channel classification."""
     scripts_root = root / "scripts"
+    channel_categories = dict(channel_categories or {})
+    consumer_overrides = dict(consumer_overrides or {})
+    direct_consumers: dict[str, set[str]] = {}
+    tooling_text: dict[str, str] = {}
+    for candidate in sorted(scripts_root.rglob("*")):
+        if (not candidate.is_file() or candidate.suffix not in SCRIPT_EXTENSIONS
+                or "__pycache__" in candidate.parts or "node_modules" in candidate.parts):
+            continue
+        relative = candidate.relative_to(root).as_posix()
+        text = candidate.read_text(encoding="utf-8", errors="replace")
+        tooling_text[relative] = text
+        for target in tooling_text:
+            if target in text:
+                direct_consumers.setdefault(target, set()).add(relative)
     entries: list[ScriptInventoryEntry] = []
     for path in sorted(scripts_root.rglob("*")):
         if not path.is_file() or path.suffix not in SCRIPT_EXTENSIONS:
@@ -145,21 +162,25 @@ def build_script_inventory(
             continue
         relative = path.relative_to(root).as_posix()
         registry_entry = current_entrypoints.get(relative)
-        current_category = (
+        channel_category = channel_categories.get(relative)
+        current_category = channel_category or (
             str(registry_entry["category"]) if registry_entry else None
         )
         category = _category_for(relative, current_category)
         lines = _line_count(path)
-        is_current = registry_entry is not None
+        is_current = registry_entry is not None or channel_category is not None
         frozen = bool(registry_entry and registry_entry.get("status") == "FROZEN_INPUT")
-        consumers = (str(registry_entry["status"]),) if registry_entry else ()
+        consumers = set(direct_consumers.get(relative, ()))
+        consumers.update(consumer_overrides.get(relative, ()))
+        if channel_category is not None:
+            consumers.add("config/current-cli-entrypoints-v2.json")
         action = "KEEP_FROZEN" if frozen else "KEEP_CURRENT" if is_current else "KEEP_CLASSIFIED"
         risk = "HIGH" if frozen or (is_current and lines >= 300) else "MEDIUM" if is_current else "LOW"
         entries.append(
             ScriptInventoryEntry(
                 path=relative,
                 category=category,
-                current_consumers=consumers,
+                current_consumers=tuple(sorted(consumers)),
                 imports_business_logic=_business_logic_risk(path, category, lines),
                 replacement=None,
                 recommended_action=action,
@@ -175,7 +196,9 @@ def build_script_inventory(
         schema_version=SCRIPT_INVENTORY_SCHEMA,
         action="no_order",
         scripts_root="scripts",
-        current_entrypoint_count=len(current_entrypoints),
+        current_entrypoint_count=(declared_entrypoint_count
+                                  if declared_entrypoint_count is not None
+                                  else len(current_entrypoints)),
         counts=counts,
         entries=tuple(entries),
     )
