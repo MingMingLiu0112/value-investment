@@ -1,0 +1,325 @@
+{
+  "action": "no_order",
+  "approval": null,
+  "approved": false,
+  "packet_sha256": "8a2ce125596ab713c21c765f98f66e4c4edf2fd5c57c8cd330da088258faded5",
+  "queue_sha256": "13336a269cbaf19d83da525d05179320f6bf8bfe11315ef51e4bf4be735aa000",
+  "review_status": "HUMAN_REVIEW_PENDING",
+  "sample": [
+    {
+      "approval": null,
+      "channels": [
+        "cyclical",
+        "value"
+      ],
+      "company_name": "中成股份",
+      "evidence_ids": [
+        "sina",
+        "tencent"
+      ],
+      "gaps": [
+        "RUN_DATA_HEALTH_INCOMPLETE",
+        "CANDIDATE_DATA_INCOMPLETE",
+        "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+        "VALUATION_MODEL_NOT_VALIDATED",
+        "QUOTE_DATE_UNVERIFIED"
+      ],
+      "industry": "商贸零售",
+      "materiality_status": "UNREVIEWED",
+      "model_validity": "NOT_PROVEN",
+      "price_assessment": "NOT_ASSESSED",
+      "queue_status": "SELECTED_FOR_DATA_CHECK",
+      "quote_date": "2026-10-12",
+      "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+      "research_state": "DATA_CHECK",
+      "review_status": "HUMAN_REVIEW_PENDING",
+      "signature": null,
+      "symbol": "000151"
+    },
+    {
+      "approval": null,
+      "channels": [
+        "cyclical",
+        "value"
+      ],
+      "company_name": "中原环保",
+      "evidence_ids": [
+        "sina",
+        "tencent"
+      ],
+      "gaps": [
+        "RUN_DATA_HEALTH_INCOMPLETE",
+        "CANDIDATE_DATA_INCOMPLETE",
+        "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+        "VALUATION_MODEL_NOT_VALIDATED",
+        "QUOTE_DATE_UNVERIFIED"
+      ],
+      "industry": "环保",
+      "materiality_status": "UNREVIEWED",
+      "model_validity": "NOT_PROVEN",
+      "price_assessment": "NOT_ASSESSED",
+      "queue_status": "SELECTED_FOR_DATA_CHECK",
+      "quote_date": "2026-10-12",
+      "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+      "research_state": "DATA_CHECK",
+      "review_status": "HUMAN_REVIEW_PENDING",
+      "signature": null,
+      "symbol": "000544"
+    },
+    {
+      "approval": null,
+      "channels": [
+        "cyclical",
+        "value"
+      ],
+      "company_name": "焦作万方",
+      "evidence_ids": [
+        "sina",
+        "tencent"
+      ],
+      "gaps": [
+        "RUN_DATA_HEALTH_INCOMPLETE",
+        "CANDIDATE_DATA_INCOMPLETE",
+        "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+        "VALUATION_MODEL_NOT_VALIDATED",
+        "QUOTE_DATE_UNVERIFIED"
+      ],
+      "industry": "有色金属",
+      "materiality_status": "UNREVIEWED",
+      "model_validity": "NOT_PROVEN",
+      "price_assessment": "NOT_ASSESSED",
+      "queue_status": "SELECTED_FOR_DATA_CHECK",
+      "quote_date": "2026-10-12",
+      "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+      "research_state": "DATA_CHECK",
+      "review_status": "HUMAN_REVIEW_PENDING",
+      "signature": null,
+      "symbol": "000612"
+    },
+    {
+      "approval": null,
+      "channels": [
+        "cyclical",
+        "value"
+      ],
+      "company_name": "金科股份",
+      "evidence_ids": [
+        "sina",
+        "tencent"
+      ],
+      "gaps": [
+        "RUN_DATA_HEALTH_INCOMPLETE",
+        "CANDIDATE_DATA_INCOMPLETE",
+        "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+        "VALUATION_MODEL_NOT_VALIDATED",
+        "QUOTE_DATE_UNVERIFIED"
+      ],
+      "industry": "房地产",
+      "materiality_status": "UNREVIEWED",
+      "model_validity": "NOT_PROVEN",
+      "price_assessment": "NOT_ASSESSED",
+      "queue_status": "SELECTED_FOR_DATA_CHECK",
+      "quote_date": "2026-10-12",
+      "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+      "research_state": "DATA_CHECK",
+      "review_status": "HUMAN_REVIEW_PENDING",
+      "signature": null,
+      "symbol": "000656"
+    },
+    {
+      "approval": null,
+      "channels": [
+        "cyclical",
+        "value"
+      ],
+      "company_name": "上峰材料",
+      "evidence_ids": [
+        "sina",
+        "tencent"
+      ],
+      "gaps": [
+        "RUN_DATA_HEALTH_INCOMPLETE",
+        "CANDIDATE_DATA_INCOMPLETE",
+        "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+        "VALUATION_MODEL_NOT_VALIDATED",
+        "QUOTE_DATE_UNVERIFIED"
+      ],
+      "industry": "建筑材料",
+      "materiality_status": "UNREVIEWED",
+      "model_validity": "NOT_PROVEN",
+      "price_assessment": "NOT_ASSESSED",
+      "queue_status": "SELECTED_FOR_DATA_CHECK",
+      "quote_date": "2026-10-12",
+      "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+      "research_state": "DATA_CHECK",
+      "review_status": "HUMAN_REVIEW_PENDING",
+      "signature": null,
+      "symbol": "000672"
+    },
+    {
+      "approval": null,
+      "channels": [
+        "cyclical",
+        "value"
+      ],
+      "company_name": "中山公用",
+      "evidence_ids": [
+        "sina",
+        "tencent"
+      ],
+      "gaps": [
+        "RUN_DATA_HEALTH_INCOMPLETE",
+        "CANDIDATE_DATA_INCOMPLETE",
+        "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+        "VALUATION_MODEL_NOT_VALIDATED",
+        "QUOTE_DATE_UNVERIFIED"
+      ],
+      "industry": "环保",
+      "materiality_status": "UNREVIEWED",
+      "model_validity": "NOT_PROVEN",
+      "price_assessment": "NOT_ASSESSED",
+      "queue_status": "SELECTED_FOR_DATA_CHECK",
+      "quote_date": "2026-10-12",
+      "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+      "research_state": "DATA_CHECK",
+      "review_status": "HUMAN_REVIEW_PENDING",
+      "signature": null,
+      "symbol": "000685"
+    },
+    {
+      "approval": null,
+      "channels": [
+        "cyclical",
+        "value"
+      ],
+      "company_name": "云铝股份",
+      "evidence_ids": [
+        "sina",
+        "tencent"
+      ],
+      "gaps": [
+        "RUN_DATA_HEALTH_INCOMPLETE",
+        "CANDIDATE_DATA_INCOMPLETE",
+        "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+        "VALUATION_MODEL_NOT_VALIDATED",
+        "QUOTE_DATE_UNVERIFIED"
+      ],
+      "industry": "有色金属",
+      "materiality_status": "UNREVIEWED",
+      "model_validity": "NOT_PROVEN",
+      "price_assessment": "NOT_ASSESSED",
+      "queue_status": "SELECTED_FOR_DATA_CHECK",
+      "quote_date": "2026-10-12",
+      "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+      "research_state": "DATA_CHECK",
+      "review_status": "HUMAN_REVIEW_PENDING",
+      "signature": null,
+      "symbol": "000807"
+    },
+    {
+      "approval": null,
+      "channels": [
+        "cyclical",
+        "value"
+      ],
+      "company_name": "城发环境",
+      "evidence_ids": [
+        "sina",
+        "tencent"
+      ],
+      "gaps": [
+        "RUN_DATA_HEALTH_INCOMPLETE",
+        "CANDIDATE_DATA_INCOMPLETE",
+        "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+        "VALUATION_MODEL_NOT_VALIDATED",
+        "QUOTE_DATE_UNVERIFIED"
+      ],
+      "industry": "环保",
+      "materiality_status": "UNREVIEWED",
+      "model_validity": "NOT_PROVEN",
+      "price_assessment": "NOT_ASSESSED",
+      "queue_status": "SELECTED_FOR_DATA_CHECK",
+      "quote_date": "2026-10-12",
+      "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+      "research_state": "DATA_CHECK",
+      "review_status": "HUMAN_REVIEW_PENDING",
+      "signature": null,
+      "symbol": "000885"
+    },
+    {
+      "approval": null,
+      "channels": [
+        "cyclical",
+        "dividend_cash_return",
+        "value"
+      ],
+      "company_name": "紫江企业",
+      "evidence_ids": [
+        "dividend",
+        "sina",
+        "tencent"
+      ],
+      "gaps": [
+        "RUN_DATA_HEALTH_INCOMPLETE",
+        "CANDIDATE_DATA_INCOMPLETE",
+        "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+        "VALUATION_MODEL_NOT_VALIDATED",
+        "QUOTE_DATE_UNVERIFIED"
+      ],
+      "industry": "轻工制造",
+      "materiality_status": "UNREVIEWED",
+      "model_validity": "NOT_PROVEN",
+      "price_assessment": "NOT_ASSESSED",
+      "queue_status": "SELECTED_FOR_DATA_CHECK",
+      "quote_date": "2026-10-12",
+      "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+      "research_state": "DATA_CHECK",
+      "review_status": "HUMAN_REVIEW_PENDING",
+      "signature": null,
+      "symbol": "600210"
+    },
+    {
+      "approval": null,
+      "channels": [
+        "cyclical",
+        "dividend_cash_return",
+        "value"
+      ],
+      "company_name": "华域汽车",
+      "evidence_ids": [
+        "dividend",
+        "sina",
+        "tencent"
+      ],
+      "gaps": [
+        "RUN_DATA_HEALTH_INCOMPLETE",
+        "CANDIDATE_DATA_INCOMPLETE",
+        "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+        "VALUATION_MODEL_NOT_VALIDATED",
+        "QUOTE_DATE_UNVERIFIED"
+      ],
+      "industry": "汽车",
+      "materiality_status": "UNREVIEWED",
+      "model_validity": "NOT_PROVEN",
+      "price_assessment": "NOT_ASSESSED",
+      "queue_status": "SELECTED_FOR_DATA_CHECK",
+      "quote_date": "2026-10-12",
+      "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+      "research_state": "DATA_CHECK",
+      "review_status": "HUMAN_REVIEW_PENDING",
+      "signature": null,
+      "symbol": "600741"
+    }
+  ],
+  "schema_version": "research-funnel-human-review-packet-v1",
+  "selection": {
+    "method": "selected queue entries sorted by symbol, then company name",
+    "population_count": 10,
+    "requested_sample_size": 10,
+    "sample_size": 10
+  },
+  "signature": null,
+  "signed": false,
+  "source_audit_sha256": "2553ca0cba30aaa0a41caf7b53e39ca77ab1bca06a5702dd8188f183c5865f1e",
+  "task_id": "W6-FUNNEL-AUDIT-V1"
+}
