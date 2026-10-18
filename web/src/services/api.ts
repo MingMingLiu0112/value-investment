@@ -252,11 +252,20 @@ export type ConditionAlertsResponse = {
   monitor_running: boolean;
   detail?: string;
   snapshot_sha256?: string;
+  condition?: {
+    symbol: string;
+    strategy: string;
+    operator: "GT" | "LT";
+    threshold: string;
+    input_kind: "QUOTE" | "COMPLETED_BAR";
+    period: string;
+  } | null;
   alerts: {
     alert_id: string;
     event_id: string | null;
     status: string;
     available_operations: string[];
+    expiry_at?: string | null;
   }[];
   history: {
     event_id: string;
@@ -265,6 +274,8 @@ export type ConditionAlertsResponse = {
     detected_at: string;
     reason: string;
     source_event_id: string;
+    effective_at?: string | null;
+    evidence_refs?: { source_url?: string; sha256?: string }[];
   }[];
 };
 
@@ -277,6 +288,19 @@ export const api = {
   acknowledgeConditionAlert: (alertId: string, expectedSnapshot: string) =>
     post<ConditionAlertsResponse>(
       `condition-alerts/test-only/${encodeURIComponent(alertId)}/acknowledge`,
+      {
+        test_only: true,
+        acknowledged: true,
+        expected_snapshot_sha256: expectedSnapshot,
+      },
+    ),
+  transitionConditionAlert: (
+    alertId: string,
+    operation: "cancel" | "expire",
+    expectedSnapshot: string,
+  ) =>
+    post<ConditionAlertsResponse>(
+      `condition-alerts/test-only/${encodeURIComponent(alertId)}/${operation}`,
       {
         test_only: true,
         acknowledged: true,

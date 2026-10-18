@@ -12,5 +12,17 @@
   "screenshots": ["alerts-normal-desktop.jpg", "alerts-test-only-desktop.jpg", "alerts-test-only-mobile.jpg", "alerts-normal-mobile.jpg"],
   "acceptance_scope": "READ_ONLY_HISTORY_AND_MODE_ISOLATION_ONLY",
   "stage_status": "IN_PROGRESS",
-  "formal_investment_eligibility": "NOT_GRANTED"
+  "formal_investment_eligibility": "NOT_GRANTED",
+  "acknowledgment_successor": {
+    "source_commit": "b061bfd2",
+    "explicit_confirmation": true,
+    "acknowledged_count": 1,
+    "history_count": 4,
+    "reloaded_page_preserves_acknowledgment": true,
+    "normal_view_still_empty": true,
+    "mobile_horizontal_overflow": false,
+    "screenshots": ["alerts-acknowledged-desktop.jpg", "alerts-acknowledged-mobile.jpg"],
+    "approval_authority": "NONE",
+    "scope": "TEST_ONLY_LOCAL_PAGE_READING"
+  }
 }

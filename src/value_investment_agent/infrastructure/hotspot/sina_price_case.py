@@ -12,6 +12,8 @@ from zoneinfo import ZoneInfo
 import requests
 
 from value_investment_agent.domain.hotspot.price_action_plan import calculate_price_levels
+from value_investment_agent.domain.hotspot.current_price import SESSION_TIMES
+from value_investment_agent.domain.execution.exchange_calendar import is_exchange_session
 from value_investment_agent.m1_historical_quote import quote_snapshot_from_historical_close_manifest
 
 ENDPOINT = "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData"
@@ -34,9 +36,22 @@ def _source_url_valid(url: str, *, symbol: str, scale: str) -> bool:
             and query.get("ma") == ["no"])
 
 
-def parse_klines(raw: bytes, *, period: str, as_of: date) -> list[dict]:
+def parse_klines(raw: bytes, *, period: str, as_of: date,
+                 completed_through: datetime | None = None) -> list[dict]:
+    """Historical full-close parsing by default; explicit cutoff opts into bars.
+
+    The intraday mode rejects uncompleted/off-grid rows rather than silently
+    falling back to a prior bar. It does not establish source provenance.
+    """
     if period not in PERIODS:
         raise ValueError("Unsupported period")
+    if completed_through is not None:
+        if (not isinstance(completed_through, datetime) or completed_through.utcoffset() is None
+                or type(as_of) is not date):
+            raise ValueError("Aware completed-through clock and date-only as_of required")
+        completed_through = completed_through.astimezone(ZoneInfo("Asia/Shanghai"))
+        if completed_through.date() != as_of or not is_exchange_session("SSE", as_of):
+            raise ValueError("Completed-through date must be a covered exchange session")
     text = raw.decode("utf-8")
     opening = text.find("=([")
     closing = text.rfind("]);")
@@ -48,6 +63,12 @@ def parse_klines(raw: bytes, *, period: str, as_of: date) -> list[dict]:
     result = []
     for row in rows:
         stamp = datetime.fromisoformat(row["day"])
+        if completed_through is not None:
+            if (stamp.utcoffset() is not None or stamp.microsecond
+                    or stamp.strftime("%H:%M:%S") not in SESSION_TIMES[period]
+                    or not is_exchange_session("SSE", stamp.date())
+                    or stamp.replace(tzinfo=ZoneInfo("Asia/Shanghai")) > completed_through):
+                raise ValueError("Uncompleted, future or off-grid provider bar")
         if stamp.date() > as_of or (stamp.date() == as_of and stamp.time() > time(15)):
             continue
         if stamp.time() < time(9, 30) or stamp.time() > time(15):
@@ -61,7 +82,7 @@ def parse_klines(raw: bytes, *, period: str, as_of: date) -> list[dict]:
         result.append(bar)
     if not result or result[-1]["time"][:10] != as_of.isoformat():
         raise ValueError("No bars at requested date")
-    if result[-1]["time"][11:16] != "15:00":
+    if completed_through is None and result[-1]["time"][11:16] != "15:00":
         raise ValueError("Requested session has no completed final bar")
     if [bar["time"] for bar in result] != sorted({bar["time"] for bar in result}):
         raise ValueError("Duplicate or unordered provider bars")

@@ -19,7 +19,7 @@ def acknowledge(path, view, *, now=NOW + timedelta(seconds=1), **changes):
 def test_acknowledgement_real_m5_local_delivery_and_restart(tmp_path):
     path = tmp_path / "monitor.json"
     first = tick(path)
-    assert first["alerts"][0]["available_operations"] == ["ACKNOWLEDGE"]
+    assert {"ACKNOWLEDGE", "CANCEL"} <= set(first["alerts"][0]["available_operations"])
     acknowledged = acknowledge(path, first)
     alert = acknowledged["alerts"][0]
     assert alert["status"] == alert["user_status"] == "ACKNOWLEDGED"
@@ -73,12 +73,12 @@ def test_stale_version_and_cross_file_alert_ids_do_not_write(tmp_path):
     assert path.read_bytes() == before
 
 
-@pytest.mark.parametrize("operation", ["CANCEL", "EXPIRE", "RESET", "REARM", "SENT", "APPROVE"])
+@pytest.mark.parametrize("operation", ["RESET", "REARM", "SENT", "APPROVE"])
 def test_unsupported_operations_are_explicit_not_terminal_failure_aliases(tmp_path, operation):
     path = tmp_path / "monitor.json"
     first = tick(path)
     before = path.read_bytes()
-    assert first["unsupported_operations"] == ["CANCEL", "EXPIRE", "RESET"]
+    assert first["unsupported_operations"] == ["RESET"]
     with pytest.raises(ValueError, match="Unsupported operation"):
         acknowledge(path, first, operation=operation)
     assert path.read_bytes() == before

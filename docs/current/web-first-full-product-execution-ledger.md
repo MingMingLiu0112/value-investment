@@ -509,3 +509,37 @@ Both registries are now updated; architecture regression: 30 passed. Root's
 combined S5 and complete Web API regression: 300 passed; isolated acknowledgment
 regression: 16 passed; Web: 228 passed, typecheck/build passed. Exact successor
 CI and actual acknowledgment browser checks remain pending at this writing.
+
+b061bfd2f1dceead534f115081d37588cc1fbbcd subsequently passed exact-SHA
+Core/offline, Postgres and Web CI. Actual browser confirms explicit reading,
+one persisted ACKNOWLEDGED alert across page reload, four unchanged records,
+normal-mode isolation and no mobile horizontal overflow. The bounded evidence
+does not establish real monitoring or research/investment approval.
+
+### S5 notification lifecycle and completed-bar source bridge
+
+The existing M5 outbox now has a nested v2 for CANCELLED/EXPIRED with immutable
+reason, deadline and evidence identity; old v1 payload/IDs remain unchanged.
+Termination does not increment delivery attempts, reopen an alert, remove a
+human-review requirement or turn degraded source coverage into healthy status.
+Monitor actions remain TEST_ONLY, authenticated, snapshot-checked and atomic.
+Cancellation stops the notification only. Explicit expiry uses server-owned
+intraday-alert-session-expiry-v1: price-observation notification deadline is
+15:00 Shanghai on its detected exchange session. Source-health notifications
+cannot use this expiry policy. Historical notifications were not previously
+declared to have this deadline; an explicit successor action binds the policy.
+New condition cycles can create a new alert without reopening the old one.
+
+The retained Sina 15m/60m bridge reuses parse_klines with an explicit optional
+completed-through cutoff; historical default parsing retains full-close
+requirements. Raw hash, URL/security/period, receipt clock, exchange calendar,
+completed grid and freshness reject invalid or unfinished bars. Single-provider
+limitations and no B1/formal eligibility remain explicit. No live collection
+or ACTUAL monitor is implied. Web displays original condition price/direction,
+Beijing times and source links separately from investment permission.
+
+Root integration: 405 passed; existing M5 regression: 280 passed / 23 skipped.
+New lifecycle tests are included in Core CI. Actual successor browser actions,
+commit CI and runtime checks follow integration. S5 remains IN_PROGRESS;
+manual actual monitoring/source orchestration and other S5 rules are still
+engineering work. S6/S7 remain open; total Goal IN_PROGRESS, Excel FROZEN.

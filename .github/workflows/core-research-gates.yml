@@ -34,6 +34,13 @@ jobs:
           tests/test_hotspot_price_behavior.py
           tests/test_hotspot_event_replay.py
           tests/test_hotspot_structure_replay.py
+          tests/test_intraday_conditions.py
+          tests/test_intraday_observation.py
+          tests/test_intraday_bar_observation.py
+          tests/test_intraday_monitor.py
+          tests/test_intraday_monitor_alerts.py
+          tests/test_intraday_monitor_lifecycle.py
+          tests/web_api/test_condition_alert_api.py
           tests/test_hotspot_replay_read_model.py
           tests/test_judgment_snapshot.py
           tests/test_public_evidence_archive.py
@@ -173,6 +180,7 @@ jobs:
           tests/test_authorization_trust_root_pinning.py
           tests/test_m5_run_request.py
           tests/test_m5_outbox_transition.py
+          tests/test_m5_outbox_lifecycle.py
           tests/test_m5_event_run_state_boundaries.py
           tests/test_m5_event_state_store.py
           tests/test_m5_event_workbook.py

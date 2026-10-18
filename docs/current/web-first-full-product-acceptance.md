@@ -233,3 +233,11 @@ Normal mode accurately reports monitoring NOT_STARTED. This does not establish
 live monitoring or approval/acknowledgment lifecycle acceptance. Web/Postgres CI
 passed for this SHA, but offline-core failed and is under active repair.
 S5 and the total Goal remain IN_PROGRESS; Excel stays FROZEN; action=no_order.
+
+Successor b061bfd2f1dceead534f115081d37588cc1fbbcd passed exact-SHA
+Core/offline, Postgres and Web CI. The omitted replay CLI is registered.
+Actual browser confirmation records one isolated alert ACKNOWLEDGED; a full
+page reload preserves it and history remains four records. Normal view remains
+empty, with monitoring truthfully stopped. Desktop/mobile screenshots and the
+bounded receipt are in s5/browser-check.json. This is local-page reading, not
+research approval, actual-market monitoring or full S5 acceptance.

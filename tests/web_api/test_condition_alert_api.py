@@ -1,4 +1,6 @@
 """Local authorization and strict TEST_ONLY reminder-view separation."""
+import pytest
+
 from test_held_continuity_api import client_for, unlock
 
 
@@ -41,6 +43,39 @@ def test_test_only_corruption_is_not_a_current_alert(tmp_path, monkeypatch):
     assert invalid.json()["status"] == "UNAVAILABLE"
     assert invalid.json()["history"] == []
     assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("operation,status", [("cancel", "CANCELLED"), ("expire", "EXPIRED")])
+def test_notification_termination_is_isolated_and_not_a_risk_approval(tmp_path, monkeypatch, operation, status):
+    from datetime import datetime, timedelta
+    from test_intraday_conditions import NOW
+    from test_intraday_monitor import tick
+    from value_investment_agent.presentation.web_api import condition_alert_routes
+    class TestClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return (NOW + timedelta(days=1)).astimezone(tz)
+    monkeypatch.setattr(condition_alert_routes, "datetime", TestClock)
+    path = tmp_path / "runtime/intraday-monitor/test-only.json"
+    initial = tick(path)
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY.jsonl", monkeypatch)
+    unlock(client, secret)
+    route = f"/api/v1/condition-alerts/test-only/{initial['alerts'][0]['alert_id']}/{operation}"
+    payload = dict(test_only=True, acknowledged=True,
+        expected_snapshot_sha256=initial["snapshot_sha256"])
+    before = path.read_bytes()
+    assert client.post(route, json={**payload, "expires_at": "2000-01-01"}).status_code == 422
+    assert path.read_bytes() == before
+    response = client.post(route, json=payload)
+    assert response.status_code == 200
+    result = response.json()
+    assert result["alerts"][0]["status"] == status
+    assert result["alerts"][0]["requires_human_review"] is True
+    assert result["history"] == initial["history"]
+    assert result["cursor"] == initial["cursor"]
+    assert result["eligibility"] is result["admitted"] is False
+    assert client.get("/api/v1/condition-alerts").json()["history"] == []
+    assert not (tmp_path / "TEST_ONLY.jsonl").exists()
 
 
 def test_retained_positive_alerts_remain_isolated_from_normal_view(tmp_path, monkeypatch):

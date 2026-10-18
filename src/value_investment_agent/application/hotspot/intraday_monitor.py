@@ -5,7 +5,7 @@ Neither function is a Web input boundary. Snapshot hashes detect corruption,
 not malicious replacement or rollback by a filesystem owner.
 """
 from copy import deepcopy
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta, timezone
 import hashlib
 import json
 import os
@@ -18,7 +18,10 @@ from ...m5_event_dependencies import (
     DependencyGraph, DependencyNode, KIND_PRICE_ATTRACTIVENESS, KIND_SOURCE_HEALTH,
 )
 from ...m5_event_run import run_event_batch
-from ...m5_event_outbox import ALERT_PENDING, ALERT_SENT, ALERT_DELIVERED, ALERT_ACKNOWLEDGED
+from ...m5_event_outbox import (
+    ALERT_PENDING, ALERT_SENT, ALERT_DELIVERED, ALERT_ACKNOWLEDGED,
+    ALERT_FAILED_RETRYABLE, ALERT_CANCELLED, ALERT_EXPIRED,
+)
 from ...m5_event_outbox_state import apply_outbox_transition
 from ...m5_event_run_state import M5EventRunState, m5_event_run_state_from_payload
 from ...m5_event_watermark import ScanWatermark, SOURCE_DEGRADED, WATERMARK_COVERAGE_INCOMPLETE
@@ -26,6 +29,8 @@ from ...m5_event_watermark import ScanWatermark, SOURCE_DEGRADED, WATERMARK_COVE
 
 SCHEMA = "intraday-monitor-v1"
 SCOPE = "EXPLICIT_OBSERVED_CONDITION_ONLY"
+EXPIRY_POLICY = "intraday-alert-session-expiry-v1"
+OPERATIONS = {"ACKNOWLEDGE": ALERT_ACKNOWLEDGED, "CANCEL": ALERT_CANCELLED, "EXPIRE": ALERT_EXPIRED}
 
 
 def _digest(payload):
@@ -83,14 +88,14 @@ def _load(path):
     for receipt in receipts:
         if (not isinstance(receipt, dict) or set(receipt) != {
                 "alert_id", "operation", "expected_snapshot_sha256", "occurred_at", "outbox_revision"}
-                or receipt["operation"] != "ACKNOWLEDGE" or receipt["alert_id"] in seen
+                or receipt["operation"] not in OPERATIONS or receipt["alert_id"] in seen
                 or not _sha256(receipt["expected_snapshot_sha256"])
                 or type(receipt["outbox_revision"]) is not int):
             raise ValueError("Invalid alert action receipt")
         seen.add(receipt["alert_id"])
         matching = [record for record in state.outbox_transitions
             if record.outbox_revision == receipt["outbox_revision"]
-            and record.alert_id == receipt["alert_id"] and record.to_status == ALERT_ACKNOWLEDGED
+            and record.alert_id == receipt["alert_id"] and record.to_status == OPERATIONS[receipt["operation"]]
             and record.occurred_at.isoformat() == receipt["occurred_at"]]
         if len(matching) != 1:
             raise ValueError("Alert action receipt disagrees with M5 transition")
@@ -105,18 +110,39 @@ def _scoped_alert_id(path, alert_id):
     return "intraday-alert-" + _digest([os.path.normcase(str(Path(path).resolve())), alert_id])
 
 
+def _expiry_deadline(state, alert):
+    event = next(event for event in state.event_ledger.events() if event.event_id == alert.event_id)
+    # Source-health alerts retain their review requirement; only a day's price
+    # observation notification can expire under this versioned display policy.
+    if event.event_type != "PRICE_ATTRACTIVENESS_CHANGED":
+        return None
+    day = event.detected_at.astimezone(CHINA).date()
+    from ...domain.execution.exchange_calendar import is_exchange_session
+    venue = "SSE" if event.symbol.startswith("6") else "SZSE"
+    return datetime.combine(day, time(15), CHINA) if is_exchange_session(venue, day) else None
+
+
 def _projection(raw, state, *, path):
     alerts = []
     for alert in (() if state is None else state.outbox.alerts()):
+        mutable = alert.status in {ALERT_PENDING, ALERT_SENT, ALERT_DELIVERED, ALERT_FAILED_RETRYABLE}
+        deadline = _expiry_deadline(state, alert)
+        operations = (["ACKNOWLEDGE"] if alert.status in {ALERT_PENDING, ALERT_SENT, ALERT_DELIVERED} else [])
+        if mutable:
+            operations.append("CANCEL")
+            if deadline is not None and datetime.now(timezone.utc) >= deadline:
+                operations.append("EXPIRE")
         alerts.append({**alert.as_policy(), "alert_id": _scoped_alert_id(path, alert.alert_id),
             "user_status": alert.status, "delivery_channel": "LOCAL_TEST_ONLY",
-            "available_operations": ["ACKNOWLEDGE"] if alert.status in {
-                ALERT_PENDING, ALERT_SENT, ALERT_DELIVERED} else []})
+            "expiry_at": None if deadline is None else deadline.isoformat(),
+            "expiry_policy": None if deadline is None else EXPIRY_POLICY,
+            "available_operations": operations})
     return {"schema_version": SCHEMA, "namespace": "SIMULATED", "test_only": True,
         "scope": SCOPE, "action": "no_order", "eligibility": False, "admitted": False,
         "snapshot_sha256": None if raw is None else raw["snapshot_sha256"],
-        "supported_operations": ["ACKNOWLEDGE"],
-        "unsupported_operations": ["CANCEL", "EXPIRE", "RESET"],
+        "condition": None if raw is None else deepcopy(raw["condition"]),
+        "supported_operations": list(OPERATIONS),
+        "unsupported_operations": ["RESET"],
         "status": "NOT_INITIALIZED" if raw is None else raw["cursor"]["status"],
         "cursor": None if raw is None else deepcopy(raw["cursor"]),
         "engine": {"namespace": "SIMULATED", "status": "NOT_INITIALIZED" if state is None
@@ -147,11 +173,12 @@ def transition_intraday_alert(path, *, alert_id: str, operation: str,
 
     The authenticated caller must invoke ACKNOWLEDGE only after the user has
     actually seen the alert. SENT/DELIVERED then record that local presentation,
-    never external transport. CANCEL/EXPIRE/RESET have no existing M5 semantics
-    and are rejected. No signing, eligibility or execution permission is granted.
+    never external transport. CANCEL stops this notification; EXPIRE uses the
+    explicit session-end notification policy. Neither resolves a risk review,
+    changes the original condition, nor grants investment permission.
     """
-    if operation != "ACKNOWLEDGE":
-        raise ValueError("Unsupported operation: existing M5 has no CANCEL/EXPIRE/RESET semantics")
+    if operation not in OPERATIONS:
+        raise ValueError("Unsupported operation")
     if not isinstance(alert_id, str) or not _sha256(expected_snapshot_sha256):
         raise ValueError("Scoped alert id and snapshot SHA-256 required")
     if not isinstance(now, datetime) or now.utcoffset() is None:
@@ -174,16 +201,28 @@ def transition_intraday_alert(path, *, alert_id: str, operation: str,
             return _projection(raw, state, path=path)
         if raw["snapshot_sha256"] != expected_snapshot_sha256:
             raise ValueError("Stale monitor snapshot")
-        if alert.status == ALERT_ACKNOWLEDGED:
+        if alert.status == OPERATIONS[operation]:
             return _projection(raw, state, path=path)
-        if alert.status not in {ALERT_PENDING, ALERT_SENT, ALERT_DELIVERED}:
-            raise ValueError("Alert status does not permit acknowledgement")
+        mutable = {ALERT_PENDING, ALERT_SENT, ALERT_DELIVERED}
+        if operation != "ACKNOWLEDGE":
+            mutable.add(ALERT_FAILED_RETRYABLE)
+        if alert.status not in mutable:
+            raise ValueError("Alert status does not permit this operation")
         status = alert.status
         targets = ([ALERT_SENT, ALERT_DELIVERED, ALERT_ACKNOWLEDGED] if status == ALERT_PENDING else
-            [ALERT_DELIVERED, ALERT_ACKNOWLEDGED] if status == ALERT_SENT else [ALERT_ACKNOWLEDGED])
+            [ALERT_DELIVERED, ALERT_ACKNOWLEDGED] if status == ALERT_SENT else [ALERT_ACKNOWLEDGED]) if operation == "ACKNOWLEDGE" else [OPERATIONS[operation]]
+        extra = {}
+        if operation != "ACKNOWLEDGE":
+            deadline = _expiry_deadline(state, alert) if operation == "EXPIRE" else None
+            if operation == "EXPIRE" and (deadline is None or now < deadline):
+                raise ValueError("Price observation notification has not expired")
+            extra = dict(reason="USER_CANCELLED_LOCAL_REMINDER" if operation == "CANCEL" else EXPIRY_POLICY,
+                expires_at=deadline, evidence_refs=("snapshot:" + expected_snapshot_sha256,
+                    "condition:" + raw["cursor"]["binding"],
+                    "policy:" + (EXPIRY_POLICY if operation == "EXPIRE" else "user-local-cancel-v1")))
         for target in targets:
             state = apply_outbox_transition(state=state, alert_id=alert.alert_id,
-                from_status=status, to_status=target, occurred_at=now)
+                from_status=status, to_status=target, occurred_at=now, **extra)
             status = target
         payload = deepcopy(raw)
         payload["m5_state"] = json.loads(state.to_json())

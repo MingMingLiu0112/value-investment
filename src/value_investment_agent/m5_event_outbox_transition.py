@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import json
 from typing import Any, Mapping, Sequence
 
 from .investment_decision import ACTION_NO_ORDER
@@ -27,6 +28,8 @@ from .m5_event_outbox import (
     ALERT_PENDING,
     ALERT_SENT,
     ALERT_STATUSES,
+    ALERT_EXPIRED,
+    ALERT_LIFECYCLE_TERMINALS,
     EventAlert,
     OutboxLedger,
     alert_type_for_event_type,
@@ -34,6 +37,7 @@ from .m5_event_outbox import (
 
 
 OUTBOX_TRANSITION_SCHEMA = "m5-outbox-transition-ledger-v1"
+OUTBOX_TRANSITION_SCHEMA_V2 = "m5-outbox-transition-ledger-v2"
 
 _ALLOWED_TRANSITIONS = {
     ALERT_PENDING: frozenset(
@@ -83,6 +87,9 @@ class OutboxTransitionRecord:
     error: str | None = None
     transition_id: str = ""
     action: str = ACTION_NO_ORDER
+    reason: str | None = None
+    expires_at: datetime | None = None
+    evidence_refs: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -101,7 +108,13 @@ class OutboxTransitionRecord:
         to_status = _required_text(self.to_status, "to_status")
         if from_status not in ALERT_STATUSES or to_status not in ALERT_STATUSES:
             raise ValueError("Outbox transition uses an unknown alert status")
-        if to_status not in _ALLOWED_TRANSITIONS[from_status]:
+        lifecycle = to_status in ALERT_LIFECYCLE_TERMINALS
+        allowed = _ALLOWED_TRANSITIONS.get(from_status, frozenset())
+        if lifecycle and from_status in {
+            ALERT_PENDING, ALERT_SENT, ALERT_DELIVERED, ALERT_FAILED_RETRYABLE,
+        }:
+            allowed = allowed | ALERT_LIFECYCLE_TERMINALS
+        if to_status not in allowed:
             raise ValueError("Outbox transition is not allowed from its current status")
         object.__setattr__(self, "from_status", from_status)
         object.__setattr__(self, "to_status", to_status)
@@ -129,6 +142,39 @@ class OutboxTransitionRecord:
             occurred_at=self.occurred_at,
             error=error,
         )
+        if lifecycle:
+            reason = _required_text(self.reason, "reason")
+            if not isinstance(self.evidence_refs, (tuple, list)) or not self.evidence_refs:
+                raise ValueError("Lifecycle transition requires evidence references")
+            refs = tuple(_required_text(ref, "evidence_ref") for ref in self.evidence_refs)
+            if len(set(refs)) != len(refs):
+                raise ValueError("Lifecycle evidence references must be unique")
+            object.__setattr__(self, "reason", reason)
+            object.__setattr__(self, "evidence_refs", refs)
+            if self.expires_at is not None:
+                object.__setattr__(
+                    self, "expires_at", _required_datetime(self.expires_at, "expires_at")
+                )
+            if to_status == ALERT_EXPIRED:
+                if self.expires_at is None or self.occurred_at < self.expires_at:
+                    raise ValueError("Expiry requires an elapsed explicit deadline")
+            elif self.expires_at is not None:
+                raise ValueError("Cancellation cannot declare an expiry deadline")
+            expected_id = "m5-outbox-" + _digest(
+                "outbox-transition-v2",
+                json.dumps(
+                    {
+                        "legacy_identity": expected_id,
+                        "reason": reason,
+                        "expires_at": self.expires_at.astimezone(timezone.utc).isoformat()
+                        if self.expires_at else None,
+                        "evidence_refs": refs,
+                    },
+                    sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+                ),
+            )[:32]
+        elif self.reason is not None or self.expires_at is not None or self.evidence_refs:
+            raise ValueError("Legacy transitions cannot carry lifecycle metadata")
         transition_id = (
             expected_id
             if not self.transition_id
@@ -139,7 +185,7 @@ class OutboxTransitionRecord:
         object.__setattr__(self, "transition_id", transition_id)
 
     def as_policy(self) -> dict[str, Any]:
-        return {
+        payload = {
             "outbox_revision": self.outbox_revision,
             "transition_id": self.transition_id,
             "alert_id": self.alert_id,
@@ -149,13 +195,22 @@ class OutboxTransitionRecord:
             "error": self.error,
             "action": self.action,
         }
+        if self.to_status in ALERT_LIFECYCLE_TERMINALS:
+            payload.update(
+                reason=self.reason,
+                expires_at=self.expires_at.isoformat() if self.expires_at else None,
+                evidence_refs=list(self.evidence_refs),
+            )
+        return payload
 
 
 def outbox_transitions_as_policy(
     transitions: Sequence[OutboxTransitionRecord],
 ) -> dict[str, Any]:
     return {
-        "schema_version": OUTBOX_TRANSITION_SCHEMA,
+        "schema_version": OUTBOX_TRANSITION_SCHEMA_V2
+        if any(item.to_status in ALERT_LIFECYCLE_TERMINALS for item in transitions)
+        else OUTBOX_TRANSITION_SCHEMA,
         "transitions": [item.as_policy() for item in transitions],
     }
 
@@ -166,7 +221,7 @@ def outbox_transitions_from_payload(
     if not isinstance(payload, Mapping):
         raise ValueError("Outbox transition ledger must be an object")
     data = dict(payload)
-    if data.get("schema_version") != OUTBOX_TRANSITION_SCHEMA:
+    if data.get("schema_version") not in {OUTBOX_TRANSITION_SCHEMA, OUTBOX_TRANSITION_SCHEMA_V2}:
         raise ValueError("Unknown outbox transition ledger schema")
     records: list[OutboxTransitionRecord] = []
     seen_ids: set[str] = set()
@@ -193,11 +248,25 @@ def outbox_transitions_from_payload(
             ),
             transition_id=_required_text(item["transition_id"], "transition_id"),
             action=str(item.get("action", ACTION_NO_ORDER)),
+            reason=item.get("reason"),
+            expires_at=datetime.fromisoformat(str(item["expires_at"]))
+            if item.get("expires_at") is not None else None,
+            evidence_refs=item.get("evidence_refs", ()),
         )
+        if record.to_status in ALERT_LIFECYCLE_TERMINALS and data["schema_version"] != OUTBOX_TRANSITION_SCHEMA_V2:
+            raise ValueError("Lifecycle transitions require transition ledger v2")
+        if record.to_status in ALERT_LIFECYCLE_TERMINALS and set(item) != set(record.as_policy()):
+            raise ValueError("Outbox transition payload keys do not match schema")
+        if record.to_status not in ALERT_LIFECYCLE_TERMINALS and any(
+            key in item for key in ("reason", "expires_at", "evidence_refs")
+        ):
+            raise ValueError("Legacy transitions cannot carry lifecycle fields")
         if record.transition_id in seen_ids:
             raise ValueError("Outbox transition ledger contains a duplicate id")
         seen_ids.add(record.transition_id)
         records.append(record)
+    if data["schema_version"] != outbox_transitions_as_policy(records)["schema_version"]:
+        raise ValueError("Outbox transition ledger schema does not match history")
     return tuple(records)
 
 
@@ -246,6 +315,18 @@ def replay_outbox_transitions(
                 now=record.occurred_at,
                 error=record.error,
                 terminal=record.to_status == ALERT_FAILED_TERMINAL,
+            )
+        elif record.to_status in ALERT_LIFECYCLE_TERMINALS:
+            if record.expires_at is not None and record.expires_at < current.created_at:
+                raise ValueError("Expiry deadline cannot precede alert creation")
+            prior = next(
+                (item for item in reversed(transitions[:index - 1])
+                 if item.alert_id == record.alert_id), None,
+            )
+            if prior is not None and record.occurred_at < prior.occurred_at:
+                raise ValueError("Termination cannot precede prior transition")
+            updated = ledger.mark_terminated(
+                alert_id=record.alert_id, now=record.occurred_at, status=record.to_status,
             )
         else:
             raise ValueError("Unsupported outbox transition during replay")
