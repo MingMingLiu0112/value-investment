@@ -269,4 +269,3 @@ in-session behavior and failure/lifecycle coverage use injected TEST_ONLY inputs
 not fabricated live trading-session evidence. S5 remains IN_PROGRESS; no full
 stage/product/user acceptance is inferred. Detailed scoped receipt:
 `artifacts/current/web-first-acceptance/s5/public-observation-validation.json`.
-
