@@ -280,6 +280,7 @@ jobs:
           tests/test_independent_hotspot_projection.py
           tests/test_independent_hotspot_signed_pipeline.py
           tests/test_consumed_financial_input_bindings.py
+          tests/test_bound_research_draft.py
           tests/test_strategy_decision_read_model.py
           tests/test_dual_sleeve_risk.py
           tests/test_dual_sleeve_records.py

@@ -7,6 +7,7 @@ admission, eligibility, position sizing or execution fields.
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from decimal import Decimal
 import json
 from pathlib import Path
 import re
@@ -19,6 +20,7 @@ POINTER_PATH = Path("config/current-research-drafts.json")
 ARTIFACT_ROOT = Path("artifacts/current")
 POINTER_SCHEMA = "current-research-drafts-v1"
 DRAFT_SCHEMA = "public-research-draft-v1"
+BOUND_DRAFT_SCHEMA = "public-research-draft-v2"
 DRAFT_STATUS = "RESEARCH_DRAFT_NOT_APPROVED"
 _HASH_RE = re.compile(r"[0-9a-f]{64}\Z")
 _FORBIDDEN_KEYS = {
@@ -74,7 +76,7 @@ def _reject_execution_fields(value: object) -> None:
 
 
 def _validate_draft(payload: dict[str, Any], symbol: str, now: datetime) -> None:
-    if payload.get("schema_version") != DRAFT_SCHEMA:
+    if payload.get("schema_version") not in {DRAFT_SCHEMA, BOUND_DRAFT_SCHEMA}:
         raise ValueError("unknown research draft schema")
     if payload.get("action") != "no_order":
         raise ValueError("research draft must remain no_order")
@@ -118,6 +120,104 @@ def _validate_draft(payload: dict[str, Any], symbol: str, now: datetime) -> None
         raise ValueError("research draft cannot bypass G3")
 
 
+def _verify_bound_draft(root: Path, payload: dict[str, Any], now: datetime) -> dict:
+    from ...m1_valuation_package_builder import build_descriptor
+    from ...model_validity import evaluate_model_validity
+    from ...valuation_models.residual_income import ResidualIncomeEquityValuationModel
+    from .source_bound_inputs import CONSUMED_FACT_CONTRACT_SCHEMA
+
+    binding = payload.get("model_input_binding")
+    if not isinstance(binding, dict) or set(binding) != {"package", "input_sha256"}:
+        raise ValueError("bound draft requires an exact model input binding")
+    package_binding = binding["package"]
+    if not isinstance(package_binding, dict) or set(package_binding) != {"path", "sha256"}:
+        raise ValueError("bound draft requires an exact package binding")
+    if (not isinstance(package_binding["path"], str)
+            or not isinstance(package_binding["sha256"], str)
+            or not _HASH_RE.fullmatch(package_binding["sha256"])):
+        raise ValueError("invalid bound draft package reference")
+    relative = Path(package_binding["path"])
+    target = (root / relative).resolve()
+    if (relative.is_absolute() or ".." in relative.parts
+            or not target.is_relative_to((root / ARTIFACT_ROOT).resolve())
+            or sha256_file(target) != package_binding["sha256"]):
+        raise ValueError("bound draft package path/hash mismatch")
+    package = _json_object(target)
+    contract = package.get("source_contract")
+    if (not isinstance(contract, dict)
+            or contract.get("schema_version") != CONSUMED_FACT_CONTRACT_SCHEMA
+            or package.get("requested_model") != "residual_income_or_equity_value"
+            or package.get("symbol") != payload["symbol"]):
+        raise ValueError("bound draft requires matching consumed-fact contract")
+    descriptor = build_descriptor(package, root=root)
+    if descriptor.input_sha256 != binding["input_sha256"]:
+        raise ValueError("bound draft input fingerprint mismatch")
+    timing = descriptor.point_in_time
+    if (timing.computed_at > now or timing.available_at > now
+            or _aware_timestamp(payload["available_at"]) < timing.available_at
+            or payload["research_as_of"] != timing.research_as_of.isoformat()
+            or payload["financial_facts"] != package["research_case"]["financial_summary"]):
+        raise ValueError("bound draft dates or financial display differ from inputs")
+    result = ResidualIncomeEquityValuationModel().value(descriptor.facts, descriptor.research_case)
+    valuation = payload["valuation"]
+    assumption_fields = ("name", "unit", "bear", "base", "bull", "basis", "rationale", "confidence")
+    expected_assumptions = [
+        {key: row.as_policy()[key] for key in assumption_fields}
+        for row in descriptor.assumptions.assumptions
+    ]
+    if valuation.get("assumptions") != expected_assumptions:
+        raise ValueError("bound draft assumptions differ from model inputs")
+    if any(valuation.get(field) != getattr(result, field) for field in ("model_type", "model_version", "confidence")):
+        raise ValueError("bound draft model identity/confidence mismatch")
+    if valuation.get("valuation_date") != result.valuation_date.isoformat():
+        raise ValueError("bound draft valuation date mismatch")
+    rows = valuation["scenarios"]
+    if len(rows) != 3:
+        raise ValueError("bound draft requires three unique scenarios")
+    for row in rows:
+        value = Decimal(row["per_share_value"])
+        if not value.is_finite() or value != getattr(result, row["scenario"] + "_value"):
+            raise ValueError("bound draft scenario differs from shared model")
+    quote = descriptor.quote
+    displayed_quote = payload["quote_fact"]
+    if (quote is None or quote.status != "verified_close"
+            or displayed_quote.get("quote_date") != quote.quote_date.isoformat()
+            or Decimal(displayed_quote["current_price"]) != quote.current_price):
+        raise ValueError("bound draft quote differs from source-bound input")
+    validity_input = descriptor.model_validity_input
+    if validity_input is None:
+        raise ValueError("bound draft requires model validity evidence")
+    validity = evaluate_model_validity(
+        model_id=validity_input.model_id, symbol=descriptor.symbol,
+        model_as_of=result.valuation_date, valid_from=validity_input.valid_from,
+        quote_date=quote.quote_date, events=list(validity_input.events),
+        event_scan_evidence_refs=list(validity_input.event_scan_evidence_refs),
+        blockers=list(validity_input.blockers), event_scan=validity_input.event_scan,
+    )
+    validity_policy = json.loads(validity.to_json())
+    validity_fields = ("model_id", "model_as_of", "last_material_event_check", "status", "blockers")
+    if payload.get("model_validity") != {key: validity_policy[key] for key in validity_fields}:
+        raise ValueError("bound draft model validity differs from evidence")
+    bridge = payload["price_bridge"]
+    if (bridge.get("status") != "INVALID"
+            or any(value is not None for key, value in bridge.items() if key.startswith("margin_to_"))):
+        raise ValueError("bound research draft must not admit price assessment")
+    anchors = {row["field"]: row for row in contract["fact_anchors"]}
+    capital = []
+    for mapping in contract["consumed_fact_bindings"]:
+        row = anchors[mapping["anchor_field"]]
+        derivation = row.get("derivation", {})
+        capital.append(dict(field=mapping["field_path"].split(".")[-1], value=row["source_value"],
+            unit=row["unit"], scope=row["scope"], period_end=row["period_end"],
+            source_id=row["source_id"], physical_page=row["physical_page"],
+            normalization_rule=derivation.get("rule", "DIRECT"),
+            component_values=[anchors[field]["source_value"] for field in derivation.get("component_fields", [])]))
+    return dict(status="SOURCE_AND_MODEL_INPUTS_MATCH", input_sha256=descriptor.input_sha256,
+        computed_at=timing.computed_at.isoformat(), cutoff_at=contract["cutoff_at"],
+        basis_date=capital[0]["period_end"], share_basis=contract["share_basis"],
+        capital_inputs=capital, economic_approval=False)
+
+
 def load_current_research_draft(
     root: Path,
     symbol: str,
@@ -159,6 +259,10 @@ def load_current_research_draft(
         if current.tzinfo is None or current.utcoffset() is None:
             raise ValueError("now must include a timezone")
         _validate_draft(payload, normalized, current)
+        # Verification is derived locally, never accepted from a draft author.
+        payload.pop("input_verification", None)
+        if payload["schema_version"] == BOUND_DRAFT_SCHEMA:
+            payload["input_verification"] = _verify_bound_draft(root, payload, current)
         return payload
-    except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError, UnicodeError):
+    except (OSError, ValueError, TypeError, KeyError, ArithmeticError, json.JSONDecodeError, UnicodeError):
         return None

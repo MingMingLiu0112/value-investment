@@ -60,6 +60,12 @@ export function ResearchDraftPanel({ draft }: { draft: ResearchDraft }) {
   );
   const pendingCount = draft.events?.pending_count ?? 0;
   const comparison = draft.version_comparison;
+  const verification =
+    draft.schema_version === "public-research-draft-v2" &&
+    draft.input_verification?.status === "SOURCE_AND_MODEL_INPUTS_MATCH" &&
+    draft.input_verification.economic_approval === false
+      ? draft.input_verification
+      : null;
 
   return (
     <section
@@ -117,6 +123,103 @@ export function ResearchDraftPanel({ draft }: { draft: ResearchDraft }) {
           },
         ]}
       />
+
+      {verification && (
+        <section aria-label="财务输入溯源" style={{ marginTop: 16 }}>
+          <Typography.Title level={5} style={{ fontSize: 14 }}>
+            财务输入溯源
+          </Typography.Title>
+          <Typography.Paragraph>
+            来源与模型输入一致；经济假设及估值尚未经批准。
+          </Typography.Paragraph>
+          <Descriptions
+            bordered
+            column={1}
+            size="small"
+            labelStyle={LABEL_STYLE}
+            items={[
+              {
+                key: "basis",
+                label: "资本基准日",
+                children: verification.basis_date,
+              },
+              {
+                key: "shares",
+                label: "普通股口径",
+                children:
+                  verification.share_basis ===
+                  "ordinary_shares_excluding_treasury"
+                    ? "普通股合计（剔除库存股）"
+                    : verification.share_basis === "issued_ordinary_shares"
+                      ? "已发行普通股合计"
+                      : "未提供有效股数口径",
+              },
+              {
+                key: "cutoff",
+                label: "证据截止时间",
+                children: verification.cutoff_at,
+              },
+              {
+                key: "computed",
+                label: "计算输出时间",
+                children: verification.computed_at,
+              },
+              {
+                key: "valuation",
+                label: "估值日期",
+                children: draft.valuation.valuation_date,
+              },
+              {
+                key: "inputs",
+                label: "输入版本",
+                children: (
+                  <span title={verification.input_sha256}>
+                    {shortDigest(verification.input_sha256)}
+                  </span>
+                ),
+              },
+            ]}
+          />
+          <List
+            size="small"
+            dataSource={verification.capital_inputs}
+            renderItem={(input) => (
+              <List.Item style={{ overflowWrap: "anywhere" }}>
+                <div>
+                  <Typography.Text strong>
+                    {input.field === "start_book_equity" ||
+                    input.field === "operating_inputs.start_book_equity"
+                      ? "归母权益"
+                      : input.field === "ordinary_shares" ||
+                          input.field === "operating_inputs.ordinary_shares"
+                        ? "普通股分母"
+                        : input.field}
+                    ：{input.value}{" "}
+                    {input.unit === "CNY"
+                      ? "元"
+                      : input.unit === "shares"
+                        ? "股"
+                        : input.unit}
+                  </Typography.Text>
+                  <div>
+                    期间截止 {input.period_end}；来源 {input.source_id}，第{" "}
+                    {input.physical_page} 页
+                  </div>
+                  <div>
+                    {input.normalization_rule === "SUM_COMPONENTS"
+                      ? `股数组件合计：${input.component_values.join(" + ")}`
+                      : input.normalization_rule === "CNY_THOUSANDS_TO_CNY"
+                        ? `千元转元：${input.component_values.join("，")} 千元 × 1000`
+                        : input.normalization_rule === "DIRECT"
+                          ? "直接采用原始披露值"
+                          : "未提供有效归一化依据"}
+                  </div>
+                </div>
+              </List.Item>
+            )}
+          />
+        </section>
+      )}
 
       <Typography.Title level={5} style={{ fontSize: 14, marginTop: 20 }}>
         条件性估值

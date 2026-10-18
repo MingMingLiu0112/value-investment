@@ -122,3 +122,31 @@ This is offline PARTIAL work permitted during the independent UI wait, not S1
 graduation or S2 acceptance. No current research pointer or investment approval
 changed. Original economic/event/PIT/G1/G3 limitations remain. S1 browser
 acceptance, full S2 research/decision and later product stages are incomplete.
+
+Source 44996c8e is pushed and passes exact-SHA Core 39114974369 (both jobs)
+and Web 39114974270. Local broader Core selection: 3109 passed, 35 skipped;
+scope is the workflow's standalone-line tests, not all Python/private tests.
+Rebuilt local runtime is MATCHED and current read APIs retain their five
+observation-only hotspots and eleven unified objects.
+
+The initial v3 offline candidate's copied generation timestamps were found
+invalid by supplemental review. Preserve it, but use only the corrected local
+s2/midea-consumed-v3-dated candidate for continuation. Its actual generation
+time is Oct18; the historical input cutoff remains Oct17. Independent review
+revalidated the ten source hashes, descriptor and unchanged valuation. This
+correction and latest observations are local pending a scoped commit, not
+already uploaded evidence. No formal research/price/portfolio gate is passed.
+
+S2 local successor integrates a v2 source-bound research draft into the existing
+Web panel and read-only draft pointer. The API loader independently checks
+consumed inputs, shared-model outputs, displayed assumptions/facts/quote and
+freshly evaluated model validity. A forged draft verification badge cannot be
+accepted. Missing local originals fail closed. Historical v1 remains preserved.
+The displayed financial interpretation now distinguishes comparable H1 ROE,
+FX/derivative classification and consolidated operating cash from distributable
+cash, without changing economic parameters or granting approval.
+
+Local Web format/typecheck/build and 219 tests pass; focused Python 257 pass.
+Broader regression, committed runtime and API evidence are pending. Browser
+interaction is NOT_VERIFIED, so neither S1/S2 acceptance nor full engineering
+completion is asserted. Excel remains FROZEN; action=no_order.

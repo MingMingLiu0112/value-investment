@@ -3,8 +3,8 @@
   "action": "no_order",
   "drafts": {
     "000333": {
-      "path": "artifacts/current/midea-draft-20261017/public-draft-v2.json",
-      "sha256": "6ddde5fd690fd862126de50bebd314f091335bb722ed9fe4f580a0412d6ea907"
+      "path": "artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/public-draft-v3.json",
+      "sha256": "e08e794d3bf90c7eb4a2250b8216b190c22754f1ab29a15924c92ba33084fc88"
     }
   }
 }

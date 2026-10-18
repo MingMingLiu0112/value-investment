@@ -551,7 +551,7 @@ export interface ResearchDraftVersionComparison {
 }
 
 export interface ResearchDraft {
-  schema_version: "public-research-draft-v1";
+  schema_version: "public-research-draft-v1" | "public-research-draft-v2";
   action: "no_order";
   symbol: string;
   company_name: string;
@@ -566,6 +566,27 @@ export interface ResearchDraft {
   return_driver?: string | null;
   mispricing_hypothesis?: string | null;
   financial_facts?: Record<string, string | null>;
+  input_verification?: {
+    status: "SOURCE_AND_MODEL_INPUTS_MATCH";
+    input_sha256: string;
+    computed_at: string;
+    cutoff_at: string;
+    basis_date: string;
+    share_basis:
+      "issued_ordinary_shares" | "ordinary_shares_excluding_treasury";
+    capital_inputs: {
+      field: string;
+      value: string;
+      unit: string;
+      scope: string;
+      period_end: string;
+      source_id: string;
+      physical_page: number;
+      normalization_rule: string;
+      component_values: string[];
+    }[];
+    economic_approval: false;
+  };
   valuation: {
     model_type: string;
     model_version: string;

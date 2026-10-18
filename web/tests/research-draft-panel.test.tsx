@@ -48,7 +48,11 @@ vi.mock("antd", () => {
       </table>
     ),
     Tag: ({ children }: any) => <span>{children}</span>,
-    Typography: { Title, Text },
+    Typography: {
+      Title,
+      Text,
+      Paragraph: ({ children }: any) => <p>{children}</p>,
+    },
   };
 });
 
@@ -179,6 +183,156 @@ const draft = {
 } satisfies ResearchDraft;
 
 describe("research draft panel", () => {
+  const verifiedDraft: ResearchDraft = {
+    ...draft,
+    schema_version: "public-research-draft-v2",
+    input_verification: {
+      status: "SOURCE_AND_MODEL_INPUTS_MATCH",
+      input_sha256: "c".repeat(64),
+      computed_at: "2026-10-18T10:00:00+08:00",
+      cutoff_at: "2026-10-17T18:00:00+08:00",
+      basis_date: "2026-06-30",
+      share_basis: "ordinary_shares_excluding_treasury",
+      economic_approval: false,
+      capital_inputs: [
+        {
+          field: "start_book_equity",
+          value: "212861055000",
+          unit: "CNY",
+          scope: "consolidated_parent_equity",
+          period_end: "2026-06-30",
+          source_id: "half-year-report",
+          physical_page: 7,
+          normalization_rule: "CNY_THOUSANDS_TO_CNY",
+          component_values: ["212861055"],
+        },
+        {
+          field: "ordinary_shares",
+          value: "7464347335",
+          unit: "shares",
+          scope: "ordinary_shares_excluding_treasury",
+          period_end: "2026-06-30",
+          source_id: "hkex-monthly-return",
+          physical_page: 2,
+          normalization_rule: "SUM_COMPONENTS",
+          component_values: ["6700000000", "764347335"],
+        },
+      ],
+    },
+  };
+
+  it("shows server-verified capital inputs and dated normalization without economic approval", () => {
+    const html = renderToStaticMarkup(
+      <ResearchDraftPanel draft={verifiedDraft} />,
+    );
+    for (const text of [
+      "财务输入溯源",
+      "归母权益",
+      "212861055000",
+      "普通股分母",
+      "7464347335",
+      "普通股合计（剔除库存股）",
+      "half-year-report",
+      "hkex-monthly-return",
+      "212861055 千元 × 1000",
+      "6700000000 + 764347335",
+      "2026-10-17T18:00:00+08:00",
+      "2026-10-18T10:00:00+08:00",
+      "来源与模型输入一致；经济假设及估值尚未经批准。",
+      "研究草稿（未批准）",
+      "不允许正式价格比较",
+    ])
+      expect(html).toContain(text);
+    expect(html).toContain("第 7 页");
+    expect(html).toContain("第 2 页");
+    expect(html).not.toContain("研究已批准");
+    expect(html).not.toContain("position_guidance");
+  });
+
+  it("keeps legacy presentation unchanged even with injected verification metadata", () => {
+    const legacyWithMetadata = {
+      ...verifiedDraft,
+      schema_version: "public-research-draft-v1" as const,
+    };
+    const legacy = renderToStaticMarkup(<ResearchDraftPanel draft={draft} />);
+    expect(
+      renderToStaticMarkup(<ResearchDraftPanel draft={legacyWithMetadata} />),
+    ).toBe(legacy);
+    expect(legacy).not.toContain("财务输入溯源");
+  });
+
+  it("supports an explicit issued-share basis and direct source values without modifying input", () => {
+    const direct: ResearchDraft = {
+      ...verifiedDraft,
+      input_verification: {
+        ...verifiedDraft.input_verification!,
+        share_basis: "issued_ordinary_shares",
+        capital_inputs: verifiedDraft.input_verification!.capital_inputs.map(
+          (row) => ({
+            ...row,
+            normalization_rule: "DIRECT",
+            component_values: [],
+          }),
+        ),
+      },
+    };
+    const before = JSON.stringify(direct);
+    const html = renderToStaticMarkup(<ResearchDraftPanel draft={direct} />);
+    expect(html).toContain("已发行普通股合计");
+    expect(html).toContain("直接采用原始披露值");
+    expect(html).not.toContain("千元转元：");
+    expect(JSON.stringify(direct)).toBe(before);
+  });
+
+  it("does not turn an unknown normalization rule into a direct-value assertion", () => {
+    const unknown: ResearchDraft = {
+      ...verifiedDraft,
+      input_verification: {
+        ...verifiedDraft.input_verification!,
+        capital_inputs: verifiedDraft.input_verification!.capital_inputs.map(
+          (row) => ({
+            ...row,
+            normalization_rule: "UNKNOWN",
+          }),
+        ),
+      },
+    };
+    const html = renderToStaticMarkup(<ResearchDraftPanel draft={unknown} />);
+    expect(html).toContain("未提供有效归一化依据");
+    expect(html).not.toContain("直接采用原始披露值");
+  });
+
+  it("does not present economic approval as an input verification result", () => {
+    const invalid = {
+      ...verifiedDraft,
+      input_verification: {
+        ...verifiedDraft.input_verification!,
+        economic_approval: true,
+      },
+    } as unknown as ResearchDraft;
+    const html = renderToStaticMarkup(<ResearchDraftPanel draft={invalid} />);
+    expect(html).not.toContain("财务输入溯源");
+    expect(html).toContain("研究草稿（未批准）");
+    expect(html).toContain("正式研究仍待完成");
+  });
+
+  it("does not display verification when the server match status is absent", () => {
+    const missing = { ...verifiedDraft, input_verification: undefined };
+    expect(
+      renderToStaticMarkup(<ResearchDraftPanel draft={missing} />),
+    ).not.toContain("财务输入溯源");
+    const unknown = {
+      ...verifiedDraft,
+      input_verification: {
+        ...verifiedDraft.input_verification!,
+        status: "UNKNOWN",
+      },
+    } as unknown as ResearchDraft;
+    expect(
+      renderToStaticMarkup(<ResearchDraftPanel draft={unknown} />),
+    ).not.toContain("财务输入溯源");
+  });
+
   it("renders the unapproved draft, price rejection and evidence without execution fields", () => {
     const html = renderToStaticMarkup(<ResearchDraftPanel draft={draft} />);
     expect(html).toContain("研究草稿（未批准）");

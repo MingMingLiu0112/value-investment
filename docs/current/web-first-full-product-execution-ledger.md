@@ -164,3 +164,51 @@ and the unchanged residual-income model. Broader Core regression is running.
 No current pointer, real approval, price admission, personal position or Excel
 was changed. Binding consistency is not financial/economic approval. Remaining
 S2 work includes economic research, lawful review handoff and Web acceptance.
+
+S2 source 44996c8e7e30c73889aa626f20a87851d055d8b5 is pushed. Core
+39114974369 (offline/PostgreSQL) and Web 39114974270 SUCCESS. Local workflow
+standalone-line regression: 3109 passed, 35 skipped; this is not the entire
+Python collection or the inline M4/private rehearsal. Local rebuilt runtime is
+MATCHED; five independent hotspot details still match current observations.
+
+Timestamp correction: the first offline v3 candidate copied the predecessor's
+output timestamps and must not be admitted. It is preserved for audit. The
+current offline candidate is s2/midea-consumed-v3-dated/package.json, with a
+supersession receipt: actual computed_at/available_at are 2026-10-18T09:24:36.822583Z,
+while historical cutoff remains 2026-10-17T10:58:56.051146Z. Source catalog,
+model timing and values remain unchanged. Independent replay verifies all ten
+local hashes and descriptor 574a7a1b...657cb5c6. Corrected candidate and latest
+post-commit receipts are local work pending the next scoped commit; code through
+44996c8e is remote. No current-publication or formal-qualification change.
+
+Continuation: do not re-run passed integrity work without a new defect. S1
+browser recovery is still pending (one existing user request; do not duplicate
+it or bypass the refused data-URL page). S2 economic research/review handoff
+and eventual current API/Web integration remain incomplete. All Goal stages
+retain their evidence requirements; overall Goal remains IN_PROGRESS.
+
+### S2 source-bound Web draft integration (local, in progress)
+
+The opt-in public-research-draft-v2 loader now verifies the package hash and
+complete v3 consumed-input contract, replays the shared residual-income model,
+and compares displayed financial facts, assumptions, scenario values, quote and
+model validity with those bound inputs. Verification badges are server-derived;
+authored badges are removed, including from legacy v1 drafts. Independent
+review found a model-validity display-spoof gap; the loader now recomputes the
+existing validity evaluator and rejects mismatched status/dates/blockers.
+
+The local read-only draft pointer selects the separately versioned
+s2/midea-consumed-v3-dated/public-draft-v3.json. Its predecessor remains intact.
+The source bundle retains local official originals; a checkout without these
+originals must fail closed rather than display an unverified v2 draft. New
+synthetic integration tests use the real descriptor, quote verifier, valuation
+and validity evaluator, with no fake research approval. Frontend changes show
+capital inputs, share basis, source page, normalization and replay/cutoff time.
+Narrative corrections separate H1/FY ROE, FX classification, consolidated cash
+flow and model-step years from issuer-distributable cash or economic approval.
+
+Local Web format/typecheck/build and 219 tests passed. Focused Python regression
+passed 257 tests including final validity-negative cases; broader regression and
+exact commit/runtime/API checks remain pending. No actual browser acceptance, G3,
+event approval, formal price admission, private position, Excel or production
+schedule has changed. S1 and S2 remain PARTIAL, and the full Goal is IN_PROGRESS.

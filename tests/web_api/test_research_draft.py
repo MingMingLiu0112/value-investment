@@ -131,8 +131,10 @@ def test_valid_draft_loads_only_from_approved_artifacts(tmp_path):
     assert loaded["price_bridge"]["price_admitted"] is False
 
 
-def test_published_midea_draft_is_tracked_and_readable():
-    loaded = load_current_research_draft(ROOT, "000333", now=datetime.now(timezone.utc))
+def test_historical_midea_draft_is_preserved_and_readable(tmp_path):
+    historical = json.loads((ROOT / "artifacts/current/midea-draft-20261017/public-draft-v2.json").read_text(encoding="utf-8"))
+    _publish(tmp_path, historical)
+    loaded = load_current_research_draft(tmp_path, "000333", now=datetime.now(timezone.utc))
     assert loaded is not None
     assert loaded["run_id"] == "midea-draft-20261017-v2"
     assert loaded["status"] == "RESEARCH_DRAFT_NOT_APPROVED"
