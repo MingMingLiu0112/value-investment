@@ -4,13 +4,28 @@ from datetime import timedelta
 import pytest
 
 from test_held_continuity_api import client_for, unlock
-from test_web_agent_research import build, sha, state, write
+from test_web_agent_research import build, sha, state, write, daily_registry
 from value_investment_agent.application.research.agent_review.web_research import REGISTRY_PATH
 from value_investment_agent.infrastructure.agent_runtime.provider import MockLLMProvider, OpenAICompatibleChatProvider
 from value_investment_agent.presentation.web_api import app as web_app
 
 
 ROUTE = "/api/v1/agent-research/600519"
+
+
+def test_daily_workflow_query_cannot_substitute_missing_financial_or_bypass_auth(tmp_path, monkeypatch):
+    _, _, now = daily_registry(tmp_path)
+    client, secret = registered_client(tmp_path, tmp_path / "TEST_ONLY.jsonl", monkeypatch, now)
+    assert client.get(ROUTE + "?workflow=event").status_code == 401
+    unlock(client, secret)
+    before = state(tmp_path)
+    event = client.get(ROUTE + "?workflow=event").json()
+    assert event["status"] == "VERIFIED" and event["workflow"] == "event"
+    assert_no_admission(event)
+    missing = client.get(ROUTE + "?workflow=financial").json()
+    assert missing["reason"] == "WORKFLOW_NOT_REGISTERED" and not missing["findings"]
+    assert client.get(ROUTE + "?workflow=private").status_code == 422
+    assert state(tmp_path) == before
 
 
 def registered_client(root, journal, monkeypatch, now):

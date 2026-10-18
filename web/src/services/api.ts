@@ -260,6 +260,8 @@ export type QuotePlanObservation = {
 };
 
 export type AgentResearchResponse = {
+  workflow?: string;
+  available_workflows?: string[];
   status: string;
   reason: string;
   mode: "MOCK" | "OFFLINE_REPLAY" | "LIVE" | null;
@@ -284,6 +286,29 @@ export type AgentResearchResponse = {
   decision_changed: false;
   approval_count: 0;
   formal_fact_count: 0;
+};
+
+export type PrivateRetrospective = {
+  status: string;
+  mode: "MOCK";
+  ledger_source: string;
+  review_date: string;
+  unprocessed_trade_count?: number;
+  items: {
+    manual_fill: {
+      transaction_id: string;
+      symbol: string;
+      side: string;
+      price_cny: string;
+      quantity: string;
+    };
+    differences: {
+      field: string;
+      saved_reference_cny: string;
+      fill_minus_reference_cny: string;
+    }[];
+    evidence_gaps: string[];
+  }[];
 };
 
 export type QuotePlanTransition = {
@@ -359,9 +384,14 @@ export type ConditionAlertsResponse = {
 };
 
 export const api = {
-  agentResearch: (symbol: string, signal?: AbortSignal) =>
+  privateRetrospective: (reviewDate: string, signal?: AbortSignal) =>
+    getPrivate<PrivateRetrospective>(
+      `private/portfolio/retrospective?review_date=${encodeURIComponent(reviewDate)}`,
+      signal,
+    ),
+  agentResearch: (symbol: string, signal?: AbortSignal, workflow?: string) =>
     getPrivate<AgentResearchResponse>(
-      `agent-research/${encodeURIComponent(symbol)}`,
+      `agent-research/${encodeURIComponent(symbol)}${workflow ? `?workflow=${encodeURIComponent(workflow)}` : ""}`,
       signal,
     ),
   controlPublicObservation: (

@@ -14,7 +14,7 @@ Permanent action=no_order. This is the single acceptance record, not a new plan.
 | S3 hotspot integration | PARTIAL | 10 real cross-industry completed-close cases; strict PIT/strategy validation/browser not accepted |
 | S4 private integration | IN_PROGRESS | TEST_ONLY browser cross-sleeve bookkeeping and isolated positive sizing/manual-fill/replay regression passed; complete approved-research positive browser chain pending |
 | S5 intraday acceptance | IN_PROGRESS | Bounded real-source observation START/STOP/restart and plan-reference Web binding available; full completed-bar/condition reminder acceptance pending |
-| S6 research workflows | IN_PROGRESS | Bounded event/financial Mock workflows and retained packet read model available; live provider and complete four-workflow daily integration pending |
+| S6 research workflows | IN_PROGRESS | Event/financial/legacy Web selection and private dated retrospective connected; complete daily orchestration, hotspot research, live provider and new-control browser acceptance pending |
 | S7 final product acceptance | NOT_STARTED | Inherited capabilities and scoped S4/S5 checks do not substitute for complete new-Goal acceptance |
 | Real personal use | NOT_REACHED | No real private account facts/IPS/reconciliation or final signoff created |
 | Formal investment eligibility | NOT_GRANTED | No real research/strategy signatures, no evidence advantage inferred from test fixtures |

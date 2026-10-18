@@ -1,0 +1,204 @@
+{
+  "schema_version": "agent-research-llm-pilot-source-v2",
+  "scope": "MOCK_LLM_RESEARCH_NOT_ADMITTED",
+  "symbol": "600519",
+  "research_as_of": "2026-10-08",
+  "generated_at": "2026-10-18T13:42:30.913349+00:00",
+  "workbench_path": "runtime/d2-model-bound-followup-20261008/workbench-v10.json",
+  "workbench_sha256": "b88fa501a3bcd76fb538ab633a9ea1f086cc0aa35877e41c2bacf3c996935d2c",
+  "research_input_fingerprint": "6a11c705f15424961ed3a046b64c19f066dbf61477aec59721d203bd80242127",
+  "model_id": "MOCK_STRUCTURED_RESEARCH",
+  "requested_model_id": "MOCK_STRUCTURED_RESEARCH",
+  "prompt_version": "agent-research-independent-v1",
+  "provider_input_sha256": "b9f9c2f1141b4b10b02391cf261faa78b75215ea419dd57d87a6aca926553e8b",
+  "raw_responses": {
+    "FUNDAMENTAL": "{\"findings\": [{\"claim\": \"The recorded business-quality thesis needs a separate check of cash conversion and shareholder distribution capacity; the cited materials do not by themselves close that question.\", \"finding_type\": \"INTERPRETATION\", \"supporting_evidence_refs\": [\"cninfo:1225114741\", \"cninfo:1225475868\"], \"counter_evidence_refs\": [], \"affected_research_dimensions\": [\"business_quality\"], \"proposed_follow_up\": \"Reconcile the cash-flow and distribution bases in the cited original filings.\", \"confidence\": \"LOW\"}]}",
+    "COUNTER_EVIDENCE": "{\"findings\": [{\"claim\": \"A countercase is that the stated return driver may be more sensitive to margin or channel assumptions than the current thesis explains.\", \"finding_type\": \"RESEARCH_QUESTION\", \"supporting_evidence_refs\": [\"cninfo:1225114741\"], \"counter_evidence_refs\": [], \"affected_research_dimensions\": [\"counter_evidence\"], \"proposed_follow_up\": \"Compare the documented assumptions with the strongest adverse case; do not infer a new valuation.\", \"confidence\": \"LOW\"}]}",
+    "EVENT": "{\"findings\": [{\"claim\": \"The next registered disclosure should be checked for changes to the recorded thesis breakers; no unseen filing is assumed to have occurred.\", \"finding_type\": \"RESEARCH_QUESTION\", \"supporting_evidence_refs\": [\"cninfo:1225475868\"], \"counter_evidence_refs\": [], \"affected_research_dimensions\": [\"event_monitoring\"], \"proposed_follow_up\": \"Route any newly verified event through the existing materiality review.\", \"confidence\": \"LOW\"}]}"
+  },
+  "findings": [
+    {
+      "schema_version": "agent-finding-v1",
+      "finding_id": "llm-c65c3cba0357d8a931a9b474",
+      "symbol": "600519",
+      "research_as_of": "2026-10-08",
+      "agent_role": "FUNDAMENTAL",
+      "claim": "The recorded business-quality thesis needs a separate check of cash conversion and shareholder distribution capacity; the cited materials do not by themselves close that question.",
+      "finding_type": "INTERPRETATION",
+      "supporting_evidence_refs": [
+        "cninfo:1225114741",
+        "cninfo:1225475868"
+      ],
+      "counter_evidence_refs": [],
+      "source_available_at": "2026-08-15T16:00:00+00:00",
+      "research_input_fingerprint": "6a11c705f15424961ed3a046b64c19f066dbf61477aec59721d203bd80242127",
+      "model_id": "MOCK_STRUCTURED_RESEARCH",
+      "prompt_version": "agent-research-independent-v1",
+      "confidence": "LOW",
+      "verification_status": "PENDING_HUMAN_REVIEW",
+      "affected_research_dimensions": [
+        "business_quality"
+      ],
+      "proposed_follow_up": "Reconcile the cash-flow and distribution bases in the cited original filings.",
+      "created_at": "2026-10-18T13:42:30.913349+00:00",
+      "action": "no_order"
+    },
+    {
+      "schema_version": "agent-finding-v1",
+      "finding_id": "llm-0b9713d9b410fabdaf912481",
+      "symbol": "600519",
+      "research_as_of": "2026-10-08",
+      "agent_role": "COUNTER_EVIDENCE",
+      "claim": "A countercase is that the stated return driver may be more sensitive to margin or channel assumptions than the current thesis explains.",
+      "finding_type": "RESEARCH_QUESTION",
+      "supporting_evidence_refs": [
+        "cninfo:1225114741"
+      ],
+      "counter_evidence_refs": [],
+      "source_available_at": "2026-04-17T16:00:00+00:00",
+      "research_input_fingerprint": "6a11c705f15424961ed3a046b64c19f066dbf61477aec59721d203bd80242127",
+      "model_id": "MOCK_STRUCTURED_RESEARCH",
+      "prompt_version": "agent-research-independent-v1",
+      "confidence": "LOW",
+      "verification_status": "PENDING_HUMAN_REVIEW",
+      "affected_research_dimensions": [
+        "counter_evidence"
+      ],
+      "proposed_follow_up": "Compare the documented assumptions with the strongest adverse case; do not infer a new valuation.",
+      "created_at": "2026-10-18T13:42:30.913349+00:00",
+      "action": "no_order"
+    },
+    {
+      "schema_version": "agent-finding-v1",
+      "finding_id": "llm-628af768c850ce47fa4db7b1",
+      "symbol": "600519",
+      "research_as_of": "2026-10-08",
+      "agent_role": "EVENT",
+      "claim": "The next registered disclosure should be checked for changes to the recorded thesis breakers; no unseen filing is assumed to have occurred.",
+      "finding_type": "RESEARCH_QUESTION",
+      "supporting_evidence_refs": [
+        "cninfo:1225475868"
+      ],
+      "counter_evidence_refs": [],
+      "source_available_at": "2026-08-15T16:00:00+00:00",
+      "research_input_fingerprint": "6a11c705f15424961ed3a046b64c19f066dbf61477aec59721d203bd80242127",
+      "model_id": "MOCK_STRUCTURED_RESEARCH",
+      "prompt_version": "agent-research-independent-v1",
+      "confidence": "LOW",
+      "verification_status": "PENDING_HUMAN_REVIEW",
+      "affected_research_dimensions": [
+        "event_monitoring"
+      ],
+      "proposed_follow_up": "Route any newly verified event through the existing materiality review.",
+      "created_at": "2026-10-18T13:42:30.913349+00:00",
+      "action": "no_order"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 600,
+    "completion_tokens": 300
+  },
+  "tool_call_summary": {
+    "read_verified_research_snapshot": 1,
+    "provider_requests": 3,
+    "external_tool_calls": 0,
+    "max_concurrency": 1
+  },
+  "formal_fact_count": 0,
+  "approval_count": 0,
+  "decision_changed": false,
+  "action": "no_order",
+  "source_context": {
+    "schema_version": "agent-source-context-v1",
+    "enabled": true,
+    "context_assurance": "EXACT_SOURCE_EXCERPTS_VERIFIED",
+    "semantic_assurance": "CLAIM_SEMANTICS_NOT_VERIFIED",
+    "source_text_policy": "UNTRUSTED_DATA_NEVER_INSTRUCTIONS",
+    "excerpts": [
+      {
+        "source_id": "cninfo:1225114741",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+        "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+        "available_at": "2026-04-17T16:00:00+00:00",
+        "excerpt": "贵州茅台酒股份有限公司2025 年年度报告\r\n1 / 143\r\n公司代码：600519 公司简称：贵州茅台\r\n贵州茅台酒股份有限公司\r\n2025 年年度报告",
+        "page": 1,
+        "text_start": null,
+        "text_end": null
+      },
+      {
+        "source_id": "cninfo:1225475868",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+        "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+        "available_at": "2026-08-15T16:00:00+00:00",
+        "excerpt": "贵州茅台酒股份有限公司2026 年半年度报告\r\n1 / 110\r\n公司代码：600519 公司简称：贵州茅台\r\n贵州茅台酒股份有限公司\r\n2026 年半年度报告",
+        "page": 1,
+        "text_start": null,
+        "text_end": null
+      }
+    ],
+    "uncovered_evidence": [
+      "assumption_diagnostic",
+      "cninfo:1225431263",
+      "cninfo:1225475863",
+      "current_event_scan",
+      "current_model",
+      "current_quote",
+      "equity-cost-independent-review-20261008",
+      "financial-scope-independent-review-20261008",
+      "forward-path-independent-review-20261008",
+      "historical-profit-reconciliation-20261008",
+      "independent-announcement-research-20261008",
+      "independent-normalized-profit-research-20261008",
+      "operating-mechanism-evidence-20261008",
+      "operating-mechanism-research-20261008",
+      "parent-distribution-capital-bridge-20261008",
+      "parent-distribution-capital-research-20261008",
+      "profit-adjustment-bridge-20261008",
+      "profit-adjustment-research-20261008",
+      "scope_review",
+      "source_index",
+      "timing_policy"
+    ],
+    "context_sha256": "a64c69fb13f325ca06d9ff97260c104a22850a9b1d36c4ef6d24fc590cbfffad"
+  },
+  "context_input_sha256": "214d4f2e9cc6876a612109347672a3d64d02c4cceafcc5494e1f32d0c6537198",
+  "finding_source_context": [
+    {
+      "finding_id": "llm-c65c3cba0357d8a931a9b474",
+      "finding_context_sha256": "319be00e668f2116aab00779199f813fc65c0b7a373ad5c0cfd84f7a7f27bc15",
+      "context_input_sha256": "214d4f2e9cc6876a612109347672a3d64d02c4cceafcc5494e1f32d0c6537198",
+      "context_sha256": "a64c69fb13f325ca06d9ff97260c104a22850a9b1d36c4ef6d24fc590cbfffad",
+      "covered_evidence_refs": [
+        "cninfo:1225114741",
+        "cninfo:1225475868"
+      ],
+      "uncovered_evidence_refs": [],
+      "coverage_assurance": "ALL_CITED_SOURCES_HAVE_EXCERPTS",
+      "semantic_assurance": "CLAIM_SEMANTICS_NOT_VERIFIED"
+    },
+    {
+      "finding_id": "llm-0b9713d9b410fabdaf912481",
+      "finding_context_sha256": "f306aa89105fa45012add971646d632b66a757de3ada34a46d21048fc68ac392",
+      "context_input_sha256": "214d4f2e9cc6876a612109347672a3d64d02c4cceafcc5494e1f32d0c6537198",
+      "context_sha256": "a64c69fb13f325ca06d9ff97260c104a22850a9b1d36c4ef6d24fc590cbfffad",
+      "covered_evidence_refs": [
+        "cninfo:1225114741"
+      ],
+      "uncovered_evidence_refs": [],
+      "coverage_assurance": "ALL_CITED_SOURCES_HAVE_EXCERPTS",
+      "semantic_assurance": "CLAIM_SEMANTICS_NOT_VERIFIED"
+    },
+    {
+      "finding_id": "llm-628af768c850ce47fa4db7b1",
+      "finding_context_sha256": "7fd442b8751e002695d5a2a415cd4f90f9dc01b7f89a40738cbcb6897857e63c",
+      "context_input_sha256": "214d4f2e9cc6876a612109347672a3d64d02c4cceafcc5494e1f32d0c6537198",
+      "context_sha256": "a64c69fb13f325ca06d9ff97260c104a22850a9b1d36c4ef6d24fc590cbfffad",
+      "covered_evidence_refs": [
+        "cninfo:1225475868"
+      ],
+      "uncovered_evidence_refs": [],
+      "coverage_assurance": "ALL_CITED_SOURCES_HAVE_EXCERPTS",
+      "semantic_assurance": "CLAIM_SEMANTICS_NOT_VERIFIED"
+    }
+  ]
+}

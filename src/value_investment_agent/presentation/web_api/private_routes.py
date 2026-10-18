@@ -16,7 +16,7 @@ but they must unlock with the same launcher secret and then present the token.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Callable
 
@@ -35,6 +35,7 @@ from ...application.portfolio.private_risk_projection import review_private_risk
 from ...application.portfolio.held_continuity import review_held_continuity, refresh_held_continuity
 from ...application.portfolio.private_risk_preview import preview_private_hotspot_risk
 from ...application.portfolio.private_risk_experience import PrivateRiskExperienceService
+from ...application.research.agent_review.daily_retrospective import run_daily_retrospective_mock
 from .local_auth import (
     AUTHORIZATION_REQUIRED,
     SESSION_HEADER,
@@ -206,6 +207,24 @@ def register_private_routes(
             return refusal
         session_state.invalidate()
         return {"action": "no_order", "status": "SIGNED_OUT"}
+
+    @api.get("/api/v1/private/portfolio/retrospective")
+    def retrospective(request: Request, review_date: date):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        try:
+            return run_daily_retrospective_mock(journal=service().journal,
+                review_date=review_date, generated_at=datetime.now(timezone.utc))
+        except PrivateStoreUnavailable:
+            return JSONResponse(status_code=503, content={"action": "no_order",
+                "status": "PRIVATE_ROOT_UNAVAILABLE", "detail": "私人台账目录尚不可用"})
+        except JournalValidationError:
+            return JSONResponse(status_code=409, content={"action": "no_order",
+                "status": "JOURNAL_INVALID", "detail": "台账校验失败，未生成复盘草稿"})
+        except ValueError:
+            return JSONResponse(status_code=422, content={"action": "no_order",
+                "status": VALIDATION_FAILED, "detail": "复盘日期或证据不符合读取条件"})
 
     @api.get("/api/v1/portfolio")
     def portfolio_view(request: Request):

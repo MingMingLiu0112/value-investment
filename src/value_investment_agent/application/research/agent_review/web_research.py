@@ -11,11 +11,14 @@ from zoneinfo import ZoneInfo
 
 from .snapshot import load_research_snapshot
 from .llm_pilot import MOCK_SCOPE, LIVE_SCOPE
+from .daily_research import daily_workflow_input_sha256
 from ...product.agent_research_surface import project_verified_agent_packet
 
 
 REGISTRY_PATH = "config/current-agent-research.json"
 REGISTRY_SCHEMA = "web-agent-research-registry-v1"
+REGISTRY_WORKFLOWS_SCHEMA = "web-agent-research-registry-v2"
+WORKFLOWS = ("legacy", "event", "financial")
 SCHEMA = "web-agent-research-v1"
 OFFLINE_SCOPE = "OFFLINE_REPLAY_NOT_NEW_LLM_RESEARCH"
 MODES = {OFFLINE_SCOPE: "OFFLINE_REPLAY", MOCK_SCOPE: "MOCK", LIVE_SCOPE: "LIVE"}
@@ -86,7 +89,7 @@ def _empty(symbol, status, reason):
             "formal_fact_count": 0, "approval_count": 0, "decision_changed": False}
 
 
-def read_web_agent_research(root: Path, *, symbol: str, now: datetime) -> dict:
+def read_web_agent_research(root: Path, *, symbol: str, now: datetime, workflow: str | None = None) -> dict:
     """Replay only exact server-owned registry bindings, with no file writes.
 
     Registry keys: schema_version, action, cases. Each six-digit case has exactly
@@ -98,6 +101,8 @@ def read_web_agent_research(root: Path, *, symbol: str, now: datetime) -> dict:
         raise ValueError("Exact symbol required")
     if not isinstance(now, datetime) or now.utcoffset() is None:
         raise ValueError("Aware server clock required")
+    if workflow is not None and workflow not in WORKFLOWS:
+        raise ValueError("Unsupported public research workflow")
     root = Path(root).resolve()
     try:
         registry_path = _public_path(root, REGISTRY_PATH)
@@ -106,18 +111,35 @@ def read_web_agent_research(root: Path, *, symbol: str, now: datetime) -> dict:
         registry_raw = _raw(registry_path, 64 * 1024)
         registry = _json(registry_raw)
         if (set(registry) != {"schema_version", "action", "cases"}
-                or registry["schema_version"] != REGISTRY_SCHEMA or registry["action"] != "no_order"
+                or registry["schema_version"] not in {REGISTRY_SCHEMA, REGISTRY_WORKFLOWS_SCHEMA}
+                or registry["action"] != "no_order"
                 or not isinstance(registry["cases"], dict) or len(registry["cases"]) > 100):
             raise ValueError("Invalid public Agent registry")
-        for key, entry in registry["cases"].items():
-            if (not re.fullmatch(r"[0-9]{6}", key) or not isinstance(entry, dict)
-                    or set(entry) != {"packet", "workbench", "scope"} or entry["scope"] not in MODES):
+        multi = registry["schema_version"] == REGISTRY_WORKFLOWS_SCHEMA
+        for key, case_entry in registry["cases"].items():
+            if not re.fullmatch(r"[0-9]{6}", key) or not isinstance(case_entry, dict):
                 raise ValueError("Invalid public Agent registry case")
-            _binding(root, entry["packet"])
-            _binding(root, entry["workbench"])
-        entry = registry["cases"].get(symbol)
-        if entry is None:
+            if multi and (set(case_entry) != {"workflows"} or not isinstance(case_entry["workflows"], dict)
+                    or not case_entry["workflows"] or set(case_entry["workflows"]) - set(WORKFLOWS)):
+                raise ValueError("Invalid public workflow registration")
+            entries = case_entry["workflows"].items() if multi else (("legacy", case_entry),)
+            for name, entry in entries:
+                keys = {"packet", "workbench", "scope"} | ({"workflow_binding"} if name != "legacy" else set())
+                if (not isinstance(entry, dict) or set(entry) != keys
+                        or entry["scope"] not in MODES):
+                    raise ValueError("Invalid public Agent registry case")
+                _binding(root, entry["packet"])
+                _binding(root, entry["workbench"])
+        case_entry = registry["cases"].get(symbol)
+        if case_entry is None:
             return _empty(symbol, "NOT_CONNECTED", "SYMBOL_NOT_REGISTERED")
+        workflows = case_entry["workflows"] if multi else {"legacy": case_entry}
+        selected = workflow or next((name for name in ("event", "financial", "legacy") if name in workflows))
+        entry = workflows.get(selected)
+        if entry is None:
+            result = _empty(symbol, "NOT_CONNECTED", "WORKFLOW_NOT_REGISTERED")
+            result.update(workflow=selected, available_workflows=list(workflows))
+            return result
         packet_path = _binding(root, entry["packet"])
         workbench_path = _binding(root, entry["workbench"])
         tracked = {registry_path: (hashlib.sha256(registry_raw).hexdigest(), 64 * 1024)}
@@ -129,6 +151,32 @@ def read_web_agent_research(root: Path, *, symbol: str, now: datetime) -> dict:
             tracked[path] = (ref["sha256"], MAX_JSON)
             objects.append(_json(raw))
         packet, workbench = objects
+        if selected in {"event", "financial"}:
+            # Daily packets must carry the workflow-specific provider input pin;
+            # a generic three-role packet cannot masquerade as a daily workflow.
+            workflow_binding = entry["workflow_binding"]
+            if (not isinstance(workflow_binding, dict) or workflow_binding.get("workflow") != {
+                    "event": "announcement_event", "financial": "financial_report"}[selected]
+                    or workflow_binding.get("version") != 2
+                    or workflow_binding.get("workbench") != entry["workbench"]
+                    or workflow_binding.get("research_input_fingerprint") != packet.get("research_input_fingerprint")
+                    or packet.get("scope") != MOCK_SCOPE
+                    or daily_workflow_input_sha256(packet["raw_responses"], workflow_binding)
+                        != packet.get("provider_input_sha256")):
+                raise ValueError("Daily workflow packet identity mismatch")
+            keys = {"workflow", "version", "workbench", "research_input_fingerprint"}
+            if selected == "financial":
+                keys |= {"transcription", "metric_workbench", "period_checks", "economic_comparability_approved"}
+                if workflow_binding.get("economic_comparability_approved") is not False:
+                    raise ValueError("Daily financial draft cannot approve comparability")
+                for name in ("transcription", "metric_workbench"):
+                    ref = workflow_binding[name]
+                    path = _binding(root, ref)
+                    if hashlib.sha256(_raw(path, MAX_JSON)).hexdigest() != ref["sha256"]:
+                        raise ValueError("Daily financial input changed")
+                    tracked[path] = (ref["sha256"], MAX_JSON)
+            if set(workflow_binding) != keys:
+                raise ValueError("Unexpected daily workflow binding fields")
         if (packet["symbol"] != symbol or packet["scope"] != entry["scope"]
                 or packet["workbench_path"] != entry["workbench"]["path"]
                 or packet["workbench_sha256"] != entry["workbench"]["sha256"]
@@ -200,7 +248,8 @@ def read_web_agent_research(root: Path, *, symbol: str, now: datetime) -> dict:
             if hashlib.sha256(_raw(path, limit)).hexdigest() != digest:
                 raise ValueError("Research binding changed during read")
         result = _empty(symbol, "VERIFIED", "LOCAL_BYTES_AND_CONTRACTS_VERIFIED_NOT_CLAIM_APPROVAL")
-        result.update(scope=packet["scope"], mode=MODES[packet["scope"]],
+        result.update(workflow=selected, available_workflows=list(workflows),
+            scope=packet["scope"], mode=MODES[packet["scope"]],
             research_as_of=snapshot.as_of.isoformat(), generated_at=packet["generated_at"],
             checked_at=now.isoformat(), model_id=packet["model_id"], prompt_version=packet["prompt_version"],
             research_input_fingerprint=snapshot.input_fingerprint,

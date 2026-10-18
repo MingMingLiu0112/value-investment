@@ -18,6 +18,7 @@ import { PortfolioSetupForm } from "../../components/PortfolioSetupForm";
 import { PositionTable } from "../../components/PositionTable";
 import { PortfolioPolicyPanel } from "../../components/PortfolioPolicyPanel";
 import { ConfirmedTrades } from "../../components/ConfirmedTrades";
+import { PrivateRetrospectivePanel } from "../../components/PrivateRetrospectivePanel";
 import { RemoteState } from "../../components/RemoteState";
 import { Workbench } from "../../components/Workbench";
 import { usePrivateState } from "../../hooks/usePrivateState";
@@ -341,6 +342,7 @@ export default function Portfolio() {
             已确认成交记录
           </Typography.Title>
           <ConfirmedTrades trades={data.trades} />
+          <PrivateRetrospectivePanel trades={data.trades} />
           <FillPanel
             revision={data.revision}
             draft={data.pending_draft}

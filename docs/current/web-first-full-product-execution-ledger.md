@@ -2,6 +2,40 @@
 
 ## 2026-10-18 S4 browser bookkeeping loop and S6 bounded Mock workflows
 
+### Successor: workflow-specific Web research and private retrospective
+
+The existing Agent read route now selects event/financial/legacy workflows from
+an explicit version-2 server registry while retaining version-1 compatibility.
+Daily packets must reproduce their exact workflow/provider-input fingerprint;
+a generic three-role packet cannot be relabelled as a daily event or financial
+draft. Financial transcription/metric-workbench bytes are rechecked. Missing
+financial work returns WORKFLOW_NOT_REGISTERED with no substitute findings.
+The actual retained 600519 event draft is registered separately from the older
+generic Mock packet; both remain historical cutoff 2026-10-08, not current
+financial conclusions. The stock detail selects these three material types.
+
+Private retrospective reads use only the existing journal validator/replay and
+saved recording-time judgment. The authenticated route never writes a journal
+or public packet; the portfolio shows a dated Mock draft after confirmed trades.
+It reports reference differences and missing trade-time/risk/reason/subsequent
+evidence, not inferred approval, plan compliance or strategy performance.
+TEST_ONLY namespace variants remain labelled synthetic; user-confirmed ledgers
+remain explicitly unverified by a broker. No model provider is called.
+
+Verification before independent review: 373 backend/API/architecture tests,
+238 Web tests, typecheck and format passed. Browser interaction for these new
+controls remains NOT_VERIFIED because the normal tab's URL policy still blocks
+observation. Actual loopback API and committed runtime evidence must be recorded
+separately after build/restart. S6 remains IN_PROGRESS: hotspot research, complete
+daily orchestration, actual provider and full product acceptance are not done.
+
+Independent review found a P2 missing-journal display ambiguity: the reader
+correctly refused unavailable private input, but the panel could label an empty
+result as no fills. The panel now renders a distinct unavailable-input state.
+Its regression passes, along with the strengthened real-fingerprint relabelling
+counterexample: 73 backend focused tests and 6 Web focused tests passed. The
+review found no concrete P0/P1; that does not replace pending browser acceptance.
+
 Successor inspection on baseline 7a1e09ae traced the actual 000333 null expiry to
 `infrastructure/hotspot/current_price_case.py::_display_close`: its explicit
 LAST_COMPLETED_CLOSE_DISPLAY_ONLY contract returns next_session=null. The

@@ -103,6 +103,58 @@ def test_missing_symbol_has_safe_default(tmp_path):
     assert read(tmp_path, datetime.now(timezone.utc))["reason"] == "SYMBOL_NOT_REGISTERED"
 
 
+def daily_registry(root, workflow="event"):
+    from test_daily_agent_research import setup, financial_setup
+    from value_investment_agent.application.research.agent_review.daily_research import (
+        run_daily_event_mock, run_daily_financial_mock,
+    )
+    from value_investment_agent.application.research.agent_review.web_research import REGISTRY_WORKFLOWS_SCHEMA
+    args = (setup if workflow == "event" else financial_setup)(root)
+    result = (run_daily_event_mock if workflow == "event" else run_daily_financial_mock)(**args)
+    value = {"schema_version": REGISTRY_WORKFLOWS_SCHEMA, "action": "no_order", "cases": {
+        "600519": {"workflows": {workflow: {"packet": result["packet"],
+            "workbench": result["workflow_binding"]["workbench"],
+            "scope": MOCK_SCOPE, "workflow_binding": result["workflow_binding"]}}}}}
+    write(root / REGISTRY_PATH, value)
+    packet = json.loads(args["output"].read_text(encoding="utf-8"))
+    return args, value, datetime.fromisoformat(packet["generated_at"]) + timedelta(minutes=1)
+
+
+@pytest.mark.parametrize("workflow", ["event", "financial"])
+def test_daily_workflow_selection_reverifies_pins_and_preserves_missing_workflows(tmp_path, workflow):
+    _, registry, now = daily_registry(tmp_path, workflow)
+    before = state(tmp_path)
+    result = read_web_agent_research(tmp_path, symbol="600519", now=now, workflow=workflow)
+    assert result["status"] == "VERIFIED", result
+    assert result["workflow"] == workflow and result["available_workflows"] == [workflow]
+    assert len(result["findings"]) == 3 and result["approval_count"] == 0
+    missing = read_web_agent_research(tmp_path, symbol="600519", now=now, workflow="legacy")
+    assert missing["reason"] == "WORKFLOW_NOT_REGISTERED" and not missing["findings"]
+    assert read(tmp_path, now) == result
+    assert state(tmp_path) == before
+    registry["cases"]["600519"]["workflows"][workflow]["workflow_binding"]["version"] = 99
+    write(tmp_path / REGISTRY_PATH, registry)
+    assert read(tmp_path, now)["status"] == "UNAVAILABLE"
+
+
+def test_generic_packet_cannot_be_relabelled_daily_event(tmp_path):
+    packet, _, _, _, registry, now = build(tmp_path)
+    from value_investment_agent.application.research.agent_review.web_research import REGISTRY_WORKFLOWS_SCHEMA
+    entry = registry["cases"]["600519"]
+    entry["workflow_binding"] = {"workflow": "announcement_event", "version": 2,
+        "workbench": entry["workbench"], "research_input_fingerprint": packet["research_input_fingerprint"]}
+    registry["schema_version"] = REGISTRY_WORKFLOWS_SCHEMA
+    registry["cases"]["600519"] = {"workflows": {"event": entry}}
+    write(tmp_path / REGISTRY_PATH, registry)
+    assert read(tmp_path, now)["status"] == "UNAVAILABLE"
+
+
+def test_daily_financial_transcription_replacement_is_not_a_verified_draft(tmp_path):
+    args, _, now = daily_registry(tmp_path, "financial")
+    args["transcription"].write_bytes(b"changed")
+    assert read(tmp_path, now)["status"] == "UNAVAILABLE"
+
+
 @pytest.mark.parametrize("target", ["packet", "workbench", "original"])
 def test_changed_or_absent_registered_bytes_fail_closed(tmp_path, target):
     _, path, wb, original, _, now = build(tmp_path)

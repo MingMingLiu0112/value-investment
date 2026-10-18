@@ -18,6 +18,15 @@ from .snapshot import load_research_snapshot
 from .source_context import ExcerptRequest, load_source_context
 
 
+def daily_workflow_input_sha256(responses: dict[str, str], binding: dict) -> str:
+    """Reproduce a daily invocation pin without calling or constructing a live provider."""
+    provider = MockLLMProvider(responses)
+    return hashlib.sha256(json.dumps({
+        "schema_version": "daily-workflow-mock-input-v2",
+        "responses_sha256": provider.responses_sha256, "binding": binding,
+    }, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")).hexdigest()
+
+
 def _bound_mock(responses: dict[str, str], binding: dict) -> MockLLMProvider:
     """Pin the complete daily invocation using the pilot's existing input pin.
 
@@ -27,10 +36,7 @@ def _bound_mock(responses: dict[str, str], binding: dict) -> MockLLMProvider:
     this binding must use a new output path, never be rewritten in place.
     """
     provider = MockLLMProvider(responses)
-    provider.responses_sha256 = hashlib.sha256(json.dumps({
-        "schema_version": "daily-workflow-mock-input-v2",
-        "responses_sha256": provider.responses_sha256, "binding": binding,
-    }, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")).hexdigest()
+    provider.responses_sha256 = daily_workflow_input_sha256(responses, binding)
     return provider
 
 

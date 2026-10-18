@@ -1,24 +1,40 @@
-import { useCallback } from "react";
-import { Alert, Descriptions, Typography } from "antd";
+import { useCallback, useState } from "react";
+import { Alert, Descriptions, Segmented, Typography } from "antd";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
 import { RemoteState } from "../../components/RemoteState";
 
 export function AgentResearchPanel({ symbol }: { symbol: string }) {
+  const [workflow, setWorkflow] = useState<string | undefined>();
   const load = useCallback(
-    (signal: AbortSignal) => api.agentResearch(symbol, signal),
-    [symbol],
+    (signal: AbortSignal) => api.agentResearch(symbol, signal, workflow),
+    [symbol, workflow],
   );
   const { data, loading, error, retry } = useApi(load);
   return (
     <details style={{ marginTop: 12, minWidth: 0, overflowWrap: "anywhere" }}>
       <summary>AI 研究材料、反证与来源</summary>
+      <Segmented
+        aria-label="研究材料类型"
+        value={workflow || data?.workflow || "legacy"}
+        options={[
+          { label: "公告事件", value: "event" },
+          { label: "财报", value: "financial" },
+          { label: "历史综合", value: "legacy" },
+        ]}
+        onChange={(value) => setWorkflow(String(value))}
+        style={{ marginBlock: 12, maxWidth: "100%" }}
+      />
       <RemoteState loading={loading} error={error} retry={retry}>
         {data?.status !== "VERIFIED" ? (
           <Alert
             type="info"
             message="暂无已绑定的 AI 研究材料"
-            description={data?.reason}
+            description={
+              data?.reason === "WORKFLOW_NOT_REGISTERED"
+                ? "该类研究草稿尚未生成并登记，其他研究材料不会代替此项。"
+                : data?.reason
+            }
           />
         ) : (
           <>

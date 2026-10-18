@@ -5,21 +5,21 @@ import re
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from ...application.research.agent_review.web_research import read_web_agent_research
+from ...application.research.agent_review.web_research import read_web_agent_research, WORKFLOWS
 from .local_auth import AUTHORIZATION_REQUIRED, LocalAuthorizationError, authorize
 
 
 def register_agent_research_routes(api: FastAPI, *, project, sessions, port,
                                    clock=lambda: datetime.now(timezone.utc)):
     @api.get("/api/v1/agent-research/{symbol}")
-    def agent_research(symbol: str, request: Request):
+    def agent_research(symbol: str, request: Request, workflow: str | None = None):
         headers = {"Cache-Control": "no-store"}
         try:
             authorize(request, session=sessions, port=port)
         except LocalAuthorizationError as error:
             return JSONResponse(dict(action="no_order", status=error.code, detail=error.detail),
                 status_code=401 if error.code == AUTHORIZATION_REQUIRED else 403, headers=headers)
-        if not re.fullmatch(r"[0-9]{6}", symbol):
+        if not re.fullmatch(r"[0-9]{6}", symbol) or (workflow is not None and workflow not in WORKFLOWS):
             return JSONResponse(dict(action="no_order", status="INVALID_SYMBOL"),
                 status_code=422, headers=headers)
-        return JSONResponse(read_web_agent_research(project, symbol=symbol, now=clock()), headers=headers)
+        return JSONResponse(read_web_agent_research(project, symbol=symbol, now=clock(), workflow=workflow), headers=headers)
