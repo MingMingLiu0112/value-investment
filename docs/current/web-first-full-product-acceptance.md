@@ -315,3 +315,13 @@ Real retained event registration is UNCHANGED and financial is SKIPPED for missi
 inputs. Registration is opt-in, historical MOCK only in this exercise. No new
 browser pass or complete S6/S7 claim. Exact committed-build CI/runtime checks
 remain separate evidence.
+
+The retained 600519 financial-input gap is now closed for the selected annual
+cash-flow rows: official pages64-65 visually checked, four original numeric
+observations reverified, three MOCK financial questions produced and display
+registered. Actual authenticated financial/event/legacy API reads all VERIFIED.
+Coverage is selected 2025/2024 consolidated CNY cash rows only; full report,
+normalized earnings, accounting comparability and financial admission remain
+unproven. Engineering faf0486e exact-HEAD Core/offline, PostgreSQL and Web CI all
+PASS; local rebuilt code/config/Web identity matched. No new browser acceptance.
+Evidence: s6/retained-financial-validation.json. Total Goal remains incomplete.

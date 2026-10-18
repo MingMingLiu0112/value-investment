@@ -803,6 +803,36 @@ view, including when the attacker recomputes a packet hash. Final entry regressi
 exact-commit CI and rebuilt runtime evidence are recorded after integration.
 This closes the optional event/financial display handoff, not all S6 workflows.
 
+### S6 retained official financial inputs now connected
+
+Successor investigation closed the actual financial-draft input gap for the
+retained 600519 snapshot. Official 2025 annual report cninfo:1225114741, SHA-256
+474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288, physical pages
+64-65 were text-extracted and visually checked. The 2025/2024 consolidated CNY
+operating cash-flow and cash-capex rows pass the existing transcription verifier
+(four numeric row observations). A separate source-record view provides only the
+already verified original catalog, explicitly not a financial research result.
+
+CLI batch plan `runtime/agent-research-s6-financial-20261018/batch-plan.json`,
+SHA-256 e21b71d1e3aa09363988eabbf6f93d61c5b98c5ebb7a07a6c06032310a329884,
+returns SUCCESS with explicit display registration UPDATED. Authenticated real
+loopback API now verifies financial/event/legacy separately, three questions each.
+The financial packet binds transcription, source view, exact excerpts and the
+unchanged 2026-10-08 research fingerprint. These are historical MOCK research
+questions, not current financial admission, normalized parent earnings, approved
+accounting comparability, G3 or new valuation. No original or runtime file is
+tracked in Git. Evidence: s6/retained-financial-validation.json and local
+s6/workflow-api-validation.json. The old missing-input plan remains a valid
+negative example; its missing transcription is not silently filled.
+
+Engineering commit faf0486e passed exact-HEAD Core/offline, PostgreSQL and Web CI.
+Its local rebuilt backend/Web identity MATCHED; real authenticated API passed.
+First verification immediately after restart hit a local harness log-read race;
+the live launcher was confirmed, fresh bootstrap readiness checked, then the same
+API check passed. The local helper now waits for fresh bootstrap output. This is
+not a browser acceptance claim. S6 remains IN_PROGRESS (hotspot Agent and complete
+daily operational integration pending); S7 and the full Goal remain incomplete.
+
 Scoped service/API final tests: 45 passed; source plus complete Web API regression:
 371 passed; Web full regression: 229 passed, final targeted test: 4 passed,
 typecheck/build pass. Browser confirms explicit real collection for 600150 and
