@@ -218,7 +218,7 @@ export default function ConditionAlerts() {
       )}
       <RemoteState
         loading={
-          result.loading ||
+          (result.loading && !result.data) ||
           (!!result.data && result.data.test_only !== testOnly)
         }
         error={result.error}

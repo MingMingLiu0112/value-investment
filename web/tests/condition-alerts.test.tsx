@@ -22,6 +22,24 @@ vi.mock("@umijs/max", () => ({
 vi.mock("../src/hooks/useApi", () => ({ useApi: () => response }));
 import ConditionAlerts from "../src/pages/ConditionAlerts";
 
+it("keeps the verified session and stop control visible during polling", () => {
+  response.loading = true;
+  response.data.monitor_running = true;
+  response.data.public_observation = {
+    status: "RUNNING",
+    monitor_running: true,
+    session_id: "bound-session",
+    samples: [],
+    choices: [],
+  };
+  const html = renderToStaticMarkup(<ConditionAlerts />);
+  expect(html).toContain("本地公开报价观测中");
+  expect(html).toContain("停止观测");
+  response.loading = false;
+  response.data.monitor_running = false;
+  response.data.public_observation = undefined;
+});
+
 it("shows honest stopped monitoring and no fabricated reminders", () => {
   const html = renderToStaticMarkup(<ConditionAlerts />);
   expect(html).toContain("监控未运行");
