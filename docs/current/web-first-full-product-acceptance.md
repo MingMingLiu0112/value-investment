@@ -13,7 +13,8 @@ Permanent action=no_order. This is the single acceptance record, not a new plan.
 | S2 independent financial-input integrity work | PARTIAL | Opt-in v3 consumed-fact binding and offline real-source candidate; no S1 waiver or S2 acceptance |
 | S3 hotspot integration | PARTIAL | 10 real cross-industry completed-close cases; strict PIT/strategy validation/browser not accepted |
 | S4 private integration | IN_PROGRESS | TEST_ONLY single-account risk/fill/restart loop passed; retained public announcement coverage wired; full cross-sleeve lifecycle and actual browser acceptance pending |
-| S5-S7 new-goal acceptance | NOT_STARTED | Inherited capabilities do not substitute for the new Goal's acceptance |
+| S5 intraday acceptance | IN_PROGRESS | Clock/calendar/completed-bar adapter and isolated M5 persistence tested; live producer/monitor/Web lifecycle not connected |
+| S6-S7 new-goal acceptance | NOT_STARTED | Inherited capabilities do not substitute for the new Goal's acceptance |
 | Real personal use | NOT_REACHED | No real private account facts/IPS/reconciliation or final signoff created |
 | Formal investment eligibility | NOT_GRANTED | No real research/strategy signatures, no evidence advantage inferred from test fixtures |
 | Continuous production operations | NOT_ACCEPTED | No production scheduling/deployment authorized or performed |
@@ -212,3 +213,13 @@ materiality approval, model revalidation, G3 or formal investment eligibility.
 Other companies' missing package/date inputs remain explicit UNKNOWN gaps.
 Real private inputs and browser acceptance are not supplied by these tests.
 Commit-specific CI/runtime verification follows integration; S4 IN_PROGRESS.
+
+Later actual browser verification recovered in the same in-app browser:
+daily real data, hotspot detail and locked portfolio states are visible.
+The discovered locked-session per-company confirmation fanout is repaired;
+browser recheck confirms zero duplicate failure alerts and a single account
+connection path. See s4/browser-check.json and screenshots. This is bounded
+public/locked acceptance, not real private-account acceptance or all-viewports
+product PASS. Full cross-sleeve TEST_ONLY partial-sale/restart composition now
+passes root integration (16 tests). S5's pure adapter plus inherited M5
+regressions pass (77 tests); its runtime/Web integration remains incomplete.

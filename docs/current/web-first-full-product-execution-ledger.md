@@ -17,7 +17,7 @@ or real investment approval inferred. action=no_order.
 | S2 value research | PARTIAL | Verified consumed inputs and exact-version external review handoff; economic/materiality/G3 and browser gates remain |
 | S3 hotspot | PARTIAL | Fresh display-only 10-industry/10-case coverage and matched list/detail APIs; no qualified structures, actual browser not verified |
 | S4 private workflow | IN_PROGRESS | Single-account isolated risk/fill/restart and retained announcement coverage implemented; 196 Web API tests pass; cross-sleeve partial-SELL composition underway |
-| S5 intraday alerts | NOT_STARTED | Distinct intraday data and persisted review-only lifecycle |
+| S5 intraday alerts | IN_PROGRESS | Pure clock/calendar/completed-bar condition adapter and existing M5 simulated persistence verified; source acquisition, monitor caller and Web lifecycle still unconnected |
 | S6 Agent/research operations | NOT_STARTED | Existing provider reused; paid live trial separately gated |
 | S7 integration/recovery/acceptance | NOT_STARTED | Four viewports, five E2E chains, isolated recovery, latest CI |
 
@@ -420,3 +420,23 @@ one connection path while locked. Receipt: s4/browser-check.json; screenshot:
 s4/locked-confirmations-fixed-desktop.jpg. Runtime correctly reports dirty
 source during concurrent uncommitted S5 adapter work; exact runtime MATCHED is
 not claimed for that moment. Full S4 browser/private acceptance remains open.
+
+### S5 first bounded integration
+
+New pure intraday_conditions adapter consumes an explicit versioned condition
+and caller-verified observation; it does not calculate a new strategy, admit a
+B1 close, authorize ACTUAL M5 ingestion or grant investment eligibility.
+Exchange-calendar/session, lunch, future/stale clocks, completed-bar grid,
+observation regression and rewritten-bar checks fail closed. Stable condition/
+strategy/rule/cycle event identity suppresses repeated polling and permits
+explicit rearming after recovery or a new session. Caller-owned prior state
+must be exact and atomically persisted with events; no untrusted HTTP state
+input is exposed.
+
+Independent bounded review found no concrete P0/P1 within that trust contract.
+Adapter tests: 42 passed. Root adapter + existing M5 persistence/state-boundary
+regressions: 77 passed in 2.47 seconds, including SIMULATED disk restart/dedupe
+and rejection of ACTUAL execution without the existing authorization.
+No source monitor, live data collection, scheduler, alert Web API or user
+acknowledgment lifecycle is claimed. Those remain S5 engineering work, not
+external blockers. S4 and S5 remain IN_PROGRESS; total Goal remains IN_PROGRESS.
