@@ -11,7 +11,7 @@ export function AgentResearchPanel({ symbol }: { symbol: string }) {
   );
   const { data, loading, error, retry } = useApi(load);
   return (
-    <details style={{ marginTop: 12 }}>
+    <details style={{ marginTop: 12, minWidth: 0, overflowWrap: "anywhere" }}>
       <summary>AI 研究材料、反证与来源</summary>
       <RemoteState loading={loading} error={error} retry={retry}>
         {data?.status !== "VERIFIED" ? (
