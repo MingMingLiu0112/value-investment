@@ -13,10 +13,10 @@ or real investment approval inferred. action=no_order.
 | Stage | State | Evidence / next action |
 | --- | --- | --- |
 | S0 baseline and requirements | ENGINEERING_PASS | 0e794af Core/Web CI success, runtime MATCHED; browser generic acceptance still NOT_VERIFIED |
-| S1 independent strategy/shared risk | IN_PROGRESS | Root owns versioned admission; SubAgent owns presentation-only unified adapter and its tests |
-| S2 value research | NOT_STARTED | Inherit actual input-anchor counterexample, not previous arithmetic PASS |
-| S3 hotspot | NOT_STARTED | Inherit three consumer wiring defects and 1/10 real coverage |
-| S4 private workflow | NOT_STARTED | Reuse journal/risk, no fabricated real account |
+| S1 independent strategy/shared risk | PARTIAL | Independent contract/API implemented; actual browser acceptance NOT_VERIFIED |
+| S2 value research | PARTIAL | Verified consumed inputs and exact-version external review handoff; economic/materiality/G3 and browser gates remain |
+| S3 hotspot | PARTIAL | Fresh display-only 10-industry/10-case coverage, no qualified structures; Web publication integration under verification |
+| S4 private workflow | IN_PROGRESS | Inherited isolated HTTP/risk/continuity suite 71 passed; announcement coverage producer gap being addressed, no real account acceptance |
 | S5 intraday alerts | NOT_STARTED | Distinct intraday data and persisted review-only lifecycle |
 | S6 Agent/research operations | NOT_STARTED | Existing provider reused; paid live trial separately gated |
 | S7 integration/recovery/acceptance | NOT_STARTED | Four viewports, five E2E chains, isolated recovery, latest CI |
@@ -332,3 +332,13 @@ an exact-byte copy of the retained previous pointer (SHA-256 e65444f2b42130161d0
 instead of treating the mutable current registry as frozen history. Historical
 manifests and their original outputs are unchanged; no retrospective acceptance
 or replacement of source evidence is claimed.
+
+3b518b0a3572c3fc829cc2938b5c9cda3e156c0f passes exact-SHA Core/Web CI.
+Actual API revealed two further consumer gaps after the collection succeeded:
+Web frozen-selection revalidation also needed full candidate-pool membership,
+and retired STALE observations poisoned the whole independent opportunity list.
+Both are repaired with five API regressions; active STALE/BLOCKED and forged
+metadata still fail closed. Retired rows remain in historical/detail views.
+The existing daily packet builder published local Web snapshot
+pub-8b9016624014e824aa3b; no Excel, server deployment or scheduling was changed.
+Final successor runtime/API/CI checks remain pending until that code is committed.

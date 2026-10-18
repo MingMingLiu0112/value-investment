@@ -11,7 +11,9 @@ Permanent action=no_order. This is the single acceptance record, not a new plan.
 | S1 independent strategy implementation | PARTIAL | 87339513 Core/Web CI success; 120 focused Python/API and 212 Web tests; local committed source/backend/Web MATCHED |
 | S1 generic browser/persistence interaction | NOT_VERIFIED | Browser URL policy refused acquiring the current tab; no workaround attempted |
 | S2 independent financial-input integrity work | PARTIAL | Opt-in v3 consumed-fact binding and offline real-source candidate; no S1 waiver or S2 acceptance |
-| S3-S7 new-goal acceptance | NOT_STARTED | Inherited capabilities do not substitute for the new Goal's acceptance |
+| S3 hotspot integration | PARTIAL | 10 real cross-industry completed-close cases; strict PIT/strategy validation/browser not accepted |
+| S4 private integration | IN_PROGRESS | 71 inherited isolated HTTP/risk/continuity tests passed; not one full account E2E or real-user acceptance |
+| S5-S7 new-goal acceptance | NOT_STARTED | Inherited capabilities do not substitute for the new Goal's acceptance |
 | Real personal use | NOT_REACHED | No real private account facts/IPS/reconciliation or final signoff created |
 | Formal investment eligibility | NOT_GRANTED | No real research/strategy signatures, no evidence advantage inferred from test fixtures |
 | Continuous production operations | NOT_ACCEPTED | No production scheduling/deployment authorized or performed |

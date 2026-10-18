@@ -247,7 +247,8 @@ def create_app(
                         raise ValueError("Daily selection changed")
                     selection = json.loads(target.read_bytes())
                     verify_daily_selection(project, selection)
-                    selected = next(r for r in selection["observation_list"] if r["symbol"] == row["symbol"])
+                    members = selection.get("candidate_pool", []) + selection["observation_list"]
+                    selected = next(r for r in members if r["symbol"] == row["symbol"])
                     if selected != plan["daily_selection"]:
                         raise ValueError("Frozen selection differs from original")
                 checked.append(row)
@@ -361,6 +362,11 @@ def create_app(
         try:
             output = load_independent_price_conditions(project, now=datetime.now(timezone.utc),
                 research_version=packet.get("research_version"))
+            # Retired observations remain in historical/detail views, never in
+            # today's independent opportunity list.
+            output["items"] = [row for row in output.get("items", [])
+                if row["price_action_plan"].get("candidate_lifecycle")
+                != "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"]
             published = {row["symbol"]: row["price_action_plan"] for row in current_items(packet)}
             for row in output.get("items", []):
                 old = published.get(row["symbol"], {})
