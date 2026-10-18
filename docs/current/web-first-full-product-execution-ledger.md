@@ -408,3 +408,15 @@ sessions show one connection path without loading private per-company tasks.
 Unlocked-but-uninitialized accounts remain distinct from locked sessions.
 Targeted regression passes; full Web suite 225 passed and typecheck passed.
 Rebuild and actual browser recheck of this UI fix follow its commit.
+
+The composed TEST_ONLY account loop now covers both sleeves holding one symbol,
+same-day rejected SELL, next-session partial SELL, shared cash, sleeve-specific
+cost and sellable shares, fees/realized P&L, loss of Top5 membership and restart.
+Root focused integration: 16 passed in 2.53 seconds. No account result or risk
+engine output was mocked; public market inputs remain labelled synthetic.
+
+3a2ebd34 browser recheck confirms zero repeated confirmation-failure alerts and
+one connection path while locked. Receipt: s4/browser-check.json; screenshot:
+s4/locked-confirmations-fixed-desktop.jpg. Runtime correctly reports dirty
+source during concurrent uncommitted S5 adapter work; exact runtime MATCHED is
+not claimed for that moment. Full S4 browser/private acceptance remains open.
