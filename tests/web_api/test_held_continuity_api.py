@@ -72,7 +72,13 @@ def test_real_route_revision_matches_portfolio_and_keeps_value_without_hotspot_t
     assert result["schema_version"] == "private-held-continuity-v1"
     assert result["revision"] == client.get("/api/v1/portfolio").json()["revision"] == 1
     row = result["items"][0]
-    assert row["strategy_plan"] == value
+    assert row["strategy_plan"] == {**value,
+        "announcement_coverage_status": "UNKNOWN",
+        "announcement_coverage_gap": {
+            "code": "RETAINED_COVERAGE_NOT_VERIFIED",
+            "reason": "Plan has no verified completed-session date for announcement coverage"}}
+    assert row["announcement_coverage_status"] == "UNKNOWN"
+    assert "ANNOUNCEMENT_COVERAGE_UNKNOWN" in row["data_gaps"]
     assert "TEST_ONLY_RESEARCH_GAP" in row["data_gaps"]
     assert row["formal_eligibility"] is False
     assert ("INVALIDATION_OR_EXIT_REVIEW" in row["review_reasons"]) == (intent == "EXIT")
@@ -113,7 +119,12 @@ def test_provider_uses_verified_current_then_private_confirmed_history_beyond_ca
     _, provider = continuity.build_held_plan_provider(tmp_path, SimpleNamespace(trades=trades), now=NOW)
     result = provider(symbol)
     if mode == "current":
-        assert result == current and calls == []
+        assert result == {**current,
+            "announcement_coverage_status": "UNKNOWN",
+            "announcement_coverage_gap": {
+                "code": "RETAINED_COVERAGE_NOT_VERIFIED",
+                "reason": "Plan has no verified completed-session date for announcement coverage"}}
+        assert calls == []
     elif mode == "retained":
         assert result["source"] == "REVERIFIED_CASE" and calls == [symbol]
     else:

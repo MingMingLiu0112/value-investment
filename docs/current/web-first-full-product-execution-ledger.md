@@ -377,3 +377,15 @@ Actual browser inventory still reports a connection-refused page after the
 user's opened-page reply; browser interaction remains NOT_VERIFIED. S4 remains
 IN_PROGRESS and the full product Goal remains IN_PROGRESS. No Excel changes,
 production scheduling, real signatures or orders were performed.
+
+b501ef5d exact-SHA Core/Postgres passed; Web CI exposed three historical API
+assertions requiring an unaugmented plan. The new UNKNOWN coverage and explicit
+missing-session reason are now asserted alongside exact preservation of all
+original strategy fields. This is a response-contract test update, not a
+relaxation of eligibility. Local rebuilt runtime MATCHED; all ten hotspot
+detail/list projections and sixteen unified objects remain available without
+formal eligibility. Full cross-sleeve BUY/partial-SELL composition is still an
+S4 acceptance gap and is being added using the existing isolated HTTP helpers.
+
+After the explicit response-contract update, the complete Web API suite passes:
+196 passed in 49.37 seconds. Exact-SHA successor CI remains to be checked.

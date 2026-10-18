@@ -12,7 +12,7 @@ Permanent action=no_order. This is the single acceptance record, not a new plan.
 | S1 generic browser/persistence interaction | NOT_VERIFIED | Browser URL policy refused acquiring the current tab; no workaround attempted |
 | S2 independent financial-input integrity work | PARTIAL | Opt-in v3 consumed-fact binding and offline real-source candidate; no S1 waiver or S2 acceptance |
 | S3 hotspot integration | PARTIAL | 10 real cross-industry completed-close cases; strict PIT/strategy validation/browser not accepted |
-| S4 private integration | IN_PROGRESS | 71 inherited isolated HTTP/risk/continuity tests passed; not one full account E2E or real-user acceptance |
+| S4 private integration | IN_PROGRESS | TEST_ONLY single-account risk/fill/restart loop passed; retained public announcement coverage wired; full cross-sleeve lifecycle and actual browser acceptance pending |
 | S5-S7 new-goal acceptance | NOT_STARTED | Inherited capabilities do not substitute for the new Goal's acceptance |
 | Real personal use | NOT_REACHED | No real private account facts/IPS/reconciliation or final signoff created |
 | Formal investment eligibility | NOT_GRANTED | No real research/strategy signatures, no evidence advantage inferred from test fixtures |
@@ -198,3 +198,17 @@ zero qualified structures, no source failures. All ten load through the existing
 registry; four retired cases remain historical only. No PIT/admission upgrade.
 Source-bound coverage receipt is in s3/completed-close-coverage.json. Actual
 browser acceptance and full S3 validation remain incomplete.
+
+S3 committed successor 3994e748 passes exact-SHA Core/Postgres/Web CI and
+actual runtime identity MATCHED. Ten hotspot detail projections match their
+list projections; all remain formally ineligible. See s3 API/runtime receipts.
+
+S4 successor b501ef5d integrates retained official-response coverage into held
+review and adds the isolated single-account risk/manual-fill/restart loop.
+Combined related regression: 140 passed. Actual public-only probe verifies
+600519 and 600887 for the bounded 2026-10-11 through 2026-10-16 window, acquired
+2026-10-18; the latter retains two original PDFs. Coverage grants no event
+materiality approval, model revalidation, G3 or formal investment eligibility.
+Other companies' missing package/date inputs remain explicit UNKNOWN gaps.
+Real private inputs and browser acceptance are not supplied by these tests.
+Commit-specific CI/runtime verification follows integration; S4 IN_PROGRESS.
