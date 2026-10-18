@@ -15,8 +15,8 @@ or real investment approval inferred. action=no_order.
 | S0 baseline and requirements | ENGINEERING_PASS | 0e794af Core/Web CI success, runtime MATCHED; browser generic acceptance still NOT_VERIFIED |
 | S1 independent strategy/shared risk | PARTIAL | Independent contract/API implemented; actual browser acceptance NOT_VERIFIED |
 | S2 value research | PARTIAL | Verified consumed inputs and exact-version external review handoff; economic/materiality/G3 and browser gates remain |
-| S3 hotspot | PARTIAL | Fresh display-only 10-industry/10-case coverage, no qualified structures; Web publication integration under verification |
-| S4 private workflow | IN_PROGRESS | Inherited isolated HTTP/risk/continuity suite 71 passed; announcement coverage producer gap being addressed, no real account acceptance |
+| S3 hotspot | PARTIAL | Fresh display-only 10-industry/10-case coverage and matched list/detail APIs; no qualified structures, actual browser not verified |
+| S4 private workflow | IN_PROGRESS | Single-account isolated risk/fill/restart and retained announcement coverage implemented; 196 Web API tests pass; cross-sleeve partial-SELL composition underway |
 | S5 intraday alerts | NOT_STARTED | Distinct intraday data and persisted review-only lifecycle |
 | S6 Agent/research operations | NOT_STARTED | Existing provider reused; paid live trial separately gated |
 | S7 integration/recovery/acceptance | NOT_STARTED | Four viewports, five E2E chains, isolated recovery, latest CI |
@@ -389,3 +389,22 @@ S4 acceptance gap and is being added using the existing isolated HTTP helpers.
 
 After the explicit response-contract update, the complete Web API suite passes:
 196 passed in 49.37 seconds. Exact-SHA successor CI remains to be checked.
+
+1851b3b2 passes exact-SHA Core/Postgres/Web CI. Browser connection recovered
+by opening a fresh tab in the SAME selected in-app browser after restart; no
+security interstitial or different browser was used. Actual daily page loads
+the dated value/hotspot rows; Chinese Shipbuilding detail shows 36.450 entry
+observation / 34.410 invalidation with unmet admission restrictions. Actual
+portfolio page preserves LOCKED/unknown facts on desktop and a 390x844 viewport
+(DOM innerWidth 390, document scrollWidth/clientWidth 375; no horizontal spill).
+These bounded observations do not pass all stages or real private acceptance.
+Screenshots: s4/hotspot-detail-desktop.jpg, portfolio-locked-desktop.jpg,
+portfolio-locked-mobile.jpg.
+
+Actual daily UI exposed per-company private-policy requests while locked,
+rendering fifteen misleading read-failure tasks. The daily page now passes its
+verified private-read state to the existing confirmations component; locked
+sessions show one connection path without loading private per-company tasks.
+Unlocked-but-uninitialized accounts remain distinct from locked sessions.
+Targeted regression passes; full Web suite 225 passed and typecheck passed.
+Rebuild and actual browser recheck of this UI fix follow its commit.

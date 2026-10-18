@@ -116,9 +116,11 @@ function PersonalPolicyTask({ item }: { item: DecisionItem }) {
 export function ConfirmationTasks({
   decisions,
   connected,
+  privateReadable = true,
 }: {
   decisions: DecisionItem[];
   connected: boolean;
+  privateReadable?: boolean;
 }) {
   const companies = decisions.filter(
     (item) =>
@@ -138,9 +140,10 @@ export function ConfirmationTasks({
         </p>
       )}
       <ul>
-        {companies.map((item) => (
-          <PersonalPolicyTask key={item.id} item={item} />
-        ))}
+        {privateReadable &&
+          companies.map((item) => (
+            <PersonalPolicyTask key={item.id} item={item} />
+          ))}
       </ul>
     </section>
   );

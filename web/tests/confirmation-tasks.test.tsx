@@ -23,6 +23,22 @@ vi.mock("@umijs/max", () => ({
 }));
 import { ConfirmationTasks } from "../src/components/ConfirmationTasks";
 describe("consolidated confirmations", () => {
+  it("does not load per-company private tasks while the account session is locked", () => {
+    const html = renderToStaticMarkup(
+      <ConfirmationTasks
+        connected={false}
+        privateReadable={false}
+        decisions={[
+          { id: "600887", symbol: "600887", strategy: "CORE_VALUE" },
+          { id: "000333", symbol: "000333", strategy: "CORE_VALUE" },
+        ]}
+      />,
+    );
+    expect(loaders.current).toBeUndefined();
+    expect(html).toContain('href="/portfolio"');
+    expect(html).not.toContain("确认状态读取失败");
+    expect(html).not.toContain("personal-value-policy");
+  });
   beforeEach(() => {
     state.data.status = "NOT_REGISTERED";
     state.data.hasPolicyDraft = true;
