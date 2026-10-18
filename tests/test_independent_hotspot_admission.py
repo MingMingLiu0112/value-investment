@@ -88,9 +88,9 @@ def release(tmp_path):
         "reviewer_id": "TEST_ONLY", "reviewed_at": NOW.isoformat(),
         "expires_at": (NOW + timedelta(hours=1)).isoformat(), "gates": bindings}
 
-    def publish():
+    def publish(purpose=PURPOSE):
         envelope = {"payload": payload,
-                    "signature": key.sign(PURPOSE + canonical_payload(payload)).hex()}
+                    "signature": key.sign(purpose + canonical_payload(payload)).hex()}
         row = {"symbol": "000333", "release": write("release.json", envelope),
                "trust": write("trust.json", trust)}
         write(POINTER, {"schema_version": "current-hotspot-independent-admission-v1",
@@ -115,6 +115,27 @@ def test_unpinned_self_authorization_is_rejected(release):
     root, _, _, _ = release
     with pytest.raises(ValueError, match="not pinned"):
         load_independent_admission(root, symbol="000333", now=NOW, allow_test_only=True)
+
+
+def test_value_review_scope_cannot_authorize_independent_hotspot(release):
+    root, _, trust, publish = release
+    trust["scopes"] = ["human_whole_model"]
+    publish()
+    pin_test_trust_root(trust)
+    with pytest.raises(ValueError, match="purpose or scope"):
+        load_independent_admission(root, symbol="000333", now=NOW, allow_test_only=True)
+
+
+def test_cross_purpose_signature_and_release_retirement(release):
+    root, _, trust, publish = release
+    pin_test_trust_root(trust)
+    publish(b"value-review-transport-purpose")
+    with pytest.raises(ValueError, match="signature invalid"):
+        load_independent_admission(root, symbol="000333", now=NOW, allow_test_only=True)
+    publish()
+    assert load_independent_admission(root, symbol="000333", now=NOW, allow_test_only=True)["risk_review_eligible"]
+    (root / POINTER).unlink()
+    assert not load_independent_admission(root, symbol="000333", now=NOW, allow_test_only=True)["risk_review_eligible"]
 
 
 def test_sources_reverified_after_signed_release(release):

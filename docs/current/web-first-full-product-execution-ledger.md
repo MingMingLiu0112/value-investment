@@ -70,6 +70,11 @@ All five real hotspots remain OBSERVATION_ONLY / MISSING authorization, with
 formal and trade eligibility false. No real reviewer enrollment or signature
 was created. No strategy validation advantage is claimed.
 
-S1 remains PARTIAL until corresponding committed CI/runtime and actual browser
-acceptance are recorded. Browser safety rejection is not bypassed. S2-S7 have
+S1 remains PARTIAL pending actual browser acceptance. Source 87339513 now has
+Core run 39112633707 and Web runs 39112633714 / 39112629808 SUCCESS, including
+PostgreSQL integration; rebuilt/restarted runtime is MATCHED. Receipts bind that
+commit and unchanged publication, not the upcoming evidence-only revision.
+The final local suite passed 120 Python/API and 212 Web cases; a separate
+35-case regression covers additional signature-purpose/scope/retirement negatives.
+Browser safety rejection is not bypassed. S2-S7 have
 not been declared started or passed. Frozen Excel and production remain untouched.
