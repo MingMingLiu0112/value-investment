@@ -7,6 +7,38 @@ vi.mock("@umijs/max", () => ({
 vi.mock("@ant-design/icons", () => ({ ArrowRightOutlined: () => null }));
 import { DecisionCard } from "../src/components/DecisionCard";
 
+it.each([false, true])(
+  "keeps independent risk review separate from trading permission (%s)",
+  (ready) => {
+    const html = renderToStaticMarkup(
+      <DecisionCard
+        item={{
+          id: "independent",
+          symbol: "000333",
+          strategy: "HOTSPOT_SATELLITE",
+          price_action_plan: {
+            action: "no_order",
+            signal_state: "WATCH",
+            entry_trigger_price: null,
+            invalidation_price: null,
+            formal_eligibility: false,
+            risk_review_eligible: ready,
+            independent_admission: {
+              status: ready ? "RISK_REVIEW_ELIGIBLE" : "OBSERVATION_ONLY",
+              review_status: ready ? "VERIFIED" : "MISSING",
+              risk_review_eligible: ready,
+              blockers: [],
+              action: "no_order",
+            },
+          },
+        }}
+      />,
+    );
+    expect(html).toContain(ready ? "尚无交易许可" : "当前仅观察");
+    expect(html).not.toContain("decision-state-formal");
+  },
+);
+
 it("shows second-layer quality even when a local trigger was observed against a downtrend", () => {
   const html = renderToStaticMarkup(
     <DecisionCard

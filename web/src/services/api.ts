@@ -9,6 +9,7 @@ import type {
   HistoricalCaseListing,
   HistoricalPriceCase,
   CurrentPriceCase,
+  CurrentPricePlan,
   PortfolioResponse,
   PolicyResponse,
   RiskResponse,
@@ -259,6 +260,13 @@ export const api = {
     }>("daily-update-status", signal),
   daily: (signal?: AbortSignal) =>
     get<DailyResponse>("daily-decisions", signal),
+  independentHotspot: (signal?: AbortSignal) =>
+    get<{
+      action: "no_order";
+      status: string;
+      publication?: { publication_id: string };
+      items: Array<{ symbol: string; price_action_plan: CurrentPricePlan }>;
+    }>("independent-hotspot-conditions", signal),
   packet: (signal?: AbortSignal) =>
     get<DailyPublicPacket>("daily-public-packet", signal),
   snapshot: (signal?: AbortSignal) =>

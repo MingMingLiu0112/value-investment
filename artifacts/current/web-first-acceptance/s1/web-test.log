@@ -1,0 +1,50 @@
+
+> value-investment-web@0.1.0 test
+> vitest run
+
+
+ RUN  v2.1.9 D:/GPTProject/value-investment/web
+
+ ✓ tests/research-detail.test.ts (21 tests) 14ms
+ ✓ tests/packet.test.ts (8 tests) 10ms
+ ✓ tests/current-judgment.test.ts (20 tests) 9ms
+ ✓ tests/api-session.test.ts (5 tests) 177ms
+ ✓ tests/research-draft-panel.test.tsx (1 test) 20ms
+ ✓ tests/value-policy.test.tsx (6 tests) 26ms
+ ✓ tests/PortfolioPolicyPanel.test.tsx (4 tests) 35ms
+ ✓ tests/private-state.test.ts (9 tests) 9ms
+ ✓ tests/dual-sleeve.test.ts (11 tests) 7ms
+ ✓ tests/portfolio-policy.test.ts (4 tests) 13ms
+ ✓ tests/p6-detail-review.test.tsx (9 tests) 45ms
+ ✓ tests/decision-eligibility.test.ts (4 tests) 9ms
+ ✓ tests/hotspot-quality-card.test.tsx (4 tests) 20ms
+ ✓ tests/PortfolioSetupForm.test.tsx (4 tests) 30ms
+ ✓ tests/research-funnel.test.ts (4 tests) 6ms
+ ✓ tests/codes.test.ts (3 tests) 5ms
+ ✓ tests/reconciliation.test.ts (5 tests) 7ms
+ ✓ tests/FillPanel.test.tsx (11 tests) 85ms
+ ✓ tests/confirmation-tasks.test.tsx (12 tests) 123ms
+ ✓ tests/Portfolio.test.tsx (4 tests) 29ms
+ ✓ tests/ConfirmedTrades.test.tsx (1 test) 15ms
+ ✓ tests/detail-current-holding.test.tsx (8 tests) 47ms
+ ✓ tests/private-state-consistency.test.ts (3 tests) 9ms
+ ✓ tests/opportunity-view.test.ts (4 tests) 6ms
+ ✓ tests/history.test.ts (4 tests) 5ms
+ ✓ tests/HotspotSizingPanel.test.tsx (4 tests) 132ms
+ ✓ tests/format.test.ts (4 tests) 6ms
+ ✓ tests/p6-detail-history-navigation.test.tsx (4 tests) 357ms
+ ✓ tests/chart-time.test.ts (2 tests) 6ms
+ ✓ tests/private-risk-experience.test.tsx (4 tests) 282ms
+ ✓ tests/system-actions.test.ts (1 test) 6ms
+ ✓ tests/status.test.ts (1 test) 5ms
+ ✓ tests/research-funnel-panel-ssr.test.tsx (3 tests) 123ms
+ ✓ tests/p6-daily-failclosed-ssr.test.tsx (11 tests) 152ms
+ ✓ tests/holdings-attention.test.tsx (5 tests) 75ms
+ ✓ tests/materiality-handoff.test.tsx (2 tests) 47ms
+ ✓ tests/detail-section.test.ts (2 tests) 6ms
+
+ Test Files  37 passed (37)
+      Tests  212 passed (212)
+   Start at  16:43:57
+   Duration  10.65s (transform 3.01s, setup 0ms, collect 68.08s, tests 1.96s, environment 15ms, prepare 8.27s)
+

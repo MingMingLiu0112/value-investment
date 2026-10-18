@@ -38,6 +38,14 @@ export interface DecisionItem {
 }
 
 export interface CurrentPricePlan {
+  independent_admission?: {
+    status: string;
+    review_status: string;
+    risk_review_eligible: boolean;
+    blockers: string[];
+    action: "no_order";
+  };
+  risk_review_eligible?: boolean;
   conditional_action_rules?: Partial<
     Record<
       "OPEN" | "ADD" | "REDUCE" | "EXIT",

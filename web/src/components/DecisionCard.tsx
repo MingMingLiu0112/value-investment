@@ -63,6 +63,15 @@ export function DecisionCard({ item }: { item: DecisionItem }) {
           {quality.label}：{quality.reason}
         </p>
       )}
+      {hotspot && plan?.independent_admission && (
+        <p aria-label="独立热点准入">
+          {plan.risk_review_eligible
+            ? "独立策略条件已通过，可继续个人风险复核；尚无交易许可。"
+            : plan.independent_admission.review_status === "MISSING"
+              ? "独立热点策略尚未完成授权与证据核验；当前仅观察。"
+              : "独立热点条件尚未全部通过；当前仅观察。"}
+        </p>
+      )}
       <dl className="decision-price-grid">
         <div>
           <dt>核验参考价</dt>

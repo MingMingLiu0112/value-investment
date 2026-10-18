@@ -39,6 +39,7 @@ from ...application.product.quote_bridge import execute_quote_bridge_for_symbol
 from ...application.product.research_draft import load_current_research_draft
 from ...application.product.research_funnel_status import research_funnel_status
 from ...application.hotspot.price_action_case import project_price_action_plan
+from ...application.hotspot.independent_price_conditions import load_independent_price_conditions
 from ...application.decision.current_value_plan import revalidate_current_value_plan
 from ...infrastructure.hotspot.sina_price_case import load_historical_case
 from ...infrastructure.hotspot.current_price_case import load_current_price_case
@@ -49,6 +50,7 @@ from ..read_models.dual_sleeve_surface import (
 )
 from ..read_models.research_history import build_research_history
 from ..read_models.value_decision_detail import project_value_decision_detail
+from ..read_models.strategy_decision import project_strategy_decision
 from .local_auth import (
     BOOTSTRAP_ENV,
     SESSION_HEADER,
@@ -345,6 +347,50 @@ def create_app(
                               "levels": case["levels"], "signal_state": case["signal_state"],
                               "blockers": case["blockers"]})
         return {"action": "no_order", "status": "HISTORICAL_NOT_CURRENT", "items": items}
+
+    @api.get("/api/v1/independent-hotspot-conditions")
+    def independent_hotspot_conditions():
+        packet, _ = _load_snapshot(project)
+        current = _public(project)
+        if current is None or not chain_matches_packet(packet, current):
+            return {"action": "no_order", "status": "UNAVAILABLE", "items": [],
+                    "reason": "PUBLICATION_VERSION_MISMATCH"}
+        try:
+            output = load_independent_price_conditions(project, now=datetime.now(timezone.utc),
+                research_version=packet.get("research_version"))
+            published = {row["symbol"]: row["price_action_plan"] for row in current_items(packet)}
+            for row in output.get("items", []):
+                old = published.get(row["symbol"], {})
+                plan = row["price_action_plan"]
+                if (old.get("signal_state") in {"STALE", "BLOCKED"} or not old
+                        or any(old.get(key) != plan.get(key) for key in ("case_path", "case_sha256"))):
+                    raise ValueError("Independent view differs from current published evidence")
+            output["publication"] = pinned_publication(packet, current)
+            output["decision_views"] = [project_strategy_decision(row["price_action_plan"],
+                symbol=row["symbol"]) for row in output.get("items", [])]
+            return output
+        except (ValueError, OSError, KeyError, TypeError):
+            return {"action": "no_order", "status": "UNAVAILABLE", "items": [],
+                    "reason": "INDEPENDENT_HOTSPOT_EVIDENCE_UNAVAILABLE"}
+
+    @api.get("/api/v1/strategy-decisions")
+    def strategy_decisions():
+        hotspot = independent_hotspot_conditions()
+        if hotspot.get("status") == "UNAVAILABLE":
+            return {"action": "no_order", "status": "UNAVAILABLE", "items": []}
+        packet, _ = _load_snapshot(project)
+        if (packet or {}).get("publication_id") != hotspot.get("publication", {}).get("publication_id"):
+            return {"action": "no_order", "status": "UNAVAILABLE", "items": []}
+        values, gaps = [], []
+        for symbol in (packet or {}).get("value_price_conditions", {}):
+            try:
+                plan = value_plan(symbol, packet)
+                values.append(project_strategy_decision(plan, symbol=symbol))
+            except (ValueError, KeyError, TypeError):
+                gaps.append("VALUE_PLAN_UNAVAILABLE:" + symbol)
+        return {"action": "no_order", "status": "CONDITIONAL_REVIEW_ONLY",
+            "publication": hotspot["publication"],
+            "items": [*values, *hotspot.get("decision_views", [])], "blockers": gaps}
 
     @api.get("/api/v1/daily-decisions")
     def daily_decisions():

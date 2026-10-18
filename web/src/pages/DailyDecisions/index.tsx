@@ -127,6 +127,7 @@ function StrategySection({
 export default function DailyDecisions() {
   const { data, loading, error, retry } = useApi(api.daily);
   const packet = useApi(api.packet);
+  const independentHotspot = useApi(api.independentHotspot);
   const update = useApi(api.updateStatus);
   const historical = useApi(api.historicalCases);
   const state = usePrivateState();
@@ -329,7 +330,21 @@ export default function DailyDecisions() {
               id="daily-hotspot"
               title="热点波段"
               horizon="短中期"
-              items={data.sections.hotspot}
+              items={data.sections.hotspot.map((item) => {
+                const replacement =
+                  independentHotspot.data?.publication?.publication_id ===
+                  packet.data?.publication_id
+                    ? independentHotspot.data?.items.find(
+                        (row) => row.symbol === item.symbol,
+                      )
+                    : undefined;
+                return replacement
+                  ? {
+                      ...item,
+                      price_action_plan: replacement.price_action_plan,
+                    }
+                  : item;
+              })}
               empty="当前没有通过观察条件的热点候选；不会凑出买点"
             />
           </div>

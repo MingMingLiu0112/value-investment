@@ -276,6 +276,9 @@ jobs:
           tests/test_daily_product_update.py
           tests/test_daily_composer_integration_independent.py
           tests/test_hotspot_manual_scan.py
+          tests/test_independent_hotspot_admission.py
+          tests/test_independent_hotspot_projection.py
+          tests/test_strategy_decision_read_model.py
           tests/test_dual_sleeve_risk.py
           tests/test_dual_sleeve_records.py
           tests/test_dual_sleeve_input_sheet.py

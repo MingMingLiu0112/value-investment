@@ -1,13 +1,17 @@
 {
-  "http_status": 200,
+  "observed_research_version": "canonical-reviewed-research-20261012T113935Z-362d7928",
+  "observed_at": "2026-10-18T16:30:17.6359881+08:00",
+  "baseline_publication_id": "pub-cb73f09b88c4150ecf0d",
+  "runtime_identity_status": "MATCHED",
   "stage": "S0",
   "response_sha256": "8cc430697164ffe953e2ad707e6044d57fad631f4de76986ca56367824d468f5",
-  "baseline_publication_id": "pub-cb73f09b88c4150ecf0d",
-  "response_bytes": 930150,
+  "runtime_scope": "LOCAL_LOOPBACK_ONLY",
+  "action": "no_order",
   "actual_browser_evidence": "NOT_VERIFIED_BROWSER_URL_POLICY_REJECTED",
+  "http_status": 200,
+  "observed_publication_id": "pub-cb73f09b88c4150ecf0d",
+  "source_head": "0e794af5da982febd688b0bfc78a9d720ece639f",
   "formal_investment_eligibility": "NOT_ASSERTED",
   "url": "http://127.0.0.1:8001/api/v1/daily-public-packet",
-  "observed_at": "2026-10-18T16:24:01.1140534+08:00",
-  "action": "no_order",
-  "runtime_scope": "LOCAL_LOOPBACK_ONLY"
+  "response_bytes": 930150
 }

@@ -12,8 +12,8 @@ or real investment approval inferred. action=no_order.
 
 | Stage | State | Evidence / next action |
 | --- | --- | --- |
-| S0 baseline and requirements | IN_PROGRESS | Exact three-file formatting fix; requirements/conflict contract added; execute current tests/build/CI |
-| S1 independent strategy/shared risk | NOT_STARTED | Bounded read-only SubAgent locator; Root owns admission changes after S0 |
+| S0 baseline and requirements | ENGINEERING_PASS | 0e794af Core/Web CI success, runtime MATCHED; browser generic acceptance still NOT_VERIFIED |
+| S1 independent strategy/shared risk | IN_PROGRESS | Root owns versioned admission; SubAgent owns presentation-only unified adapter and its tests |
 | S2 value research | NOT_STARTED | Inherit actual input-anchor counterexample, not previous arithmetic PASS |
 | S3 hotspot | NOT_STARTED | Inherit three consumer wiring defects and 1/10 real coverage |
 | S4 private workflow | NOT_STARTED | Reuse journal/risk, no fabricated real account |
@@ -40,4 +40,36 @@ cases are not passed evidence. Public local API /api/v1/daily-public-packet retu
 8001. Browser observation was rejected by the browser URL security policy when
 acquiring the existing tab; no alternate browser or indirect workaround was
 attempted. Actual browser acceptance remains NOT_VERIFIED, distinct from API
-health. New-commit CI is still pending a scoped commit and push.
+health. Commit 0e794af5da982febd688b0bfc78a9d720ece639f was pushed.
+Exact-SHA Core run 39111512322 (offline-core and PostgreSQL) and Web runs
+39111512457 / 39111508407 all concluded success. Runtime was rebuilt/restarted
+and reports source/backend/Web MATCHED with clean source, unchanged publication.
+S0_BASELINE_AND_REQUIREMENTS=PASS is scoped to its baseline/requirements exit;
+it does not certify generic browser acceptance or S1-S7 product readiness.
+
+## S1 implementation and outstanding acceptance
+
+Versioned independent hotspot gate evaluation and signed release loading now
+exist without value valuation/G3 inputs. Authorization uses a distinct purpose,
+explicit scope, pinned trust root, current server-owned release, exact evidence
+hashes, rule/case binding and availability/expiry. TEST_ONLY cannot be loaded by
+the actual API. A bounded independent review found a source-namespace gap;
+explicit source namespace/availability and recursive structured-source rejection
+were added and re-reviewed with no remaining concrete P1 in that review scope.
+Signed claims are not proof of economics or strategy profitability.
+
+The successor projection preserves legacy cases, blockers and snapshots, adds
+an independent risk-review status and never grants formal/trade eligibility.
+Existing shared risk engine is reused unchanged. Unified public read-model
+adapters are connected through /api/v1/strategy-decisions; independent hotspot
+conditions use /api/v1/independent-hotspot-conditions. Today-page cards consume
+the successor only for the matching publication. No private approval is exposed.
+
+Local API observed six CORE_VALUE objects and five HOTSPOT_SATELLITE objects.
+All five real hotspots remain OBSERVATION_ONLY / MISSING authorization, with
+formal and trade eligibility false. No real reviewer enrollment or signature
+was created. No strategy validation advantage is claimed.
+
+S1 remains PARTIAL until corresponding committed CI/runtime and actual browser
+acceptance are recorded. Browser safety rejection is not bypassed. S2-S7 have
+not been declared started or passed. Frozen Excel and production remain untouched.
