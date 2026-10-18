@@ -1,36 +1,15 @@
 {
-  "actual_browser_evidence": "SEPARATE_BOUNDED_BROWSER_CHECK",
-  "hotspot_count": 10,
-  "action": "no_order",
-  "unified_count": 16,
   "stage": "S5",
+  "captured_at": "2026-10-18T19:49:21.4146816+08:00",
+  "real_investment_eligibility": "NOT_GRANTED",
+  "publication_id": "pub-8b9016624014e824aa3b",
+  "runtime": "MATCHED",
   "hotspots": [
     {
-      "blockers": [
-        "security_identity:MISSING",
-        "security_risk:MISSING",
-        "event_risk:MISSING",
-        "data_quality:MISSING",
-        "completed_bars:MISSING",
-        "trend:MISSING",
-        "price_structure:MISSING",
-        "risk_reward:MISSING",
-        "strategy_validation:MISSING",
-        "execution_constraints:MISSING",
-        "independent_strategy_authorization:MISSING",
-        "STRATEGY_RULE_VERSION_MISMATCH",
-        "CURRENT_CASE_NOT_BOUND_TO_STRATEGY_RELEASE",
-        "CURRENT_STRUCTURE_NOT_QUALIFIED",
-        "CURRENT_ENTRY_CONDITION_NOT_OBSERVED",
-        "DISPLAY_ONLY_EVIDENCE_NOT_CURRENT_ADMISSION"
-      ],
+      "formal_eligibility": false,
       "risk_review_eligible": false,
-      "status": "OBSERVATION_ONLY",
       "symbol": "600150",
       "review_status": "MISSING",
-      "formal_eligibility": false
-    },
-    {
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -49,13 +28,13 @@
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED",
         "DISPLAY_ONLY_EVIDENCE_NOT_CURRENT_ADMISSION"
       ],
+      "status": "OBSERVATION_ONLY"
+    },
+    {
+      "formal_eligibility": false,
       "risk_review_eligible": false,
-      "status": "OBSERVATION_ONLY",
       "symbol": "600667",
       "review_status": "MISSING",
-      "formal_eligibility": false
-    },
-    {
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -74,13 +53,13 @@
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED",
         "DISPLAY_ONLY_EVIDENCE_NOT_CURRENT_ADMISSION"
       ],
+      "status": "OBSERVATION_ONLY"
+    },
+    {
+      "formal_eligibility": false,
       "risk_review_eligible": false,
-      "status": "OBSERVATION_ONLY",
       "symbol": "002008",
       "review_status": "MISSING",
-      "formal_eligibility": false
-    },
-    {
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -99,13 +78,13 @@
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED",
         "DISPLAY_ONLY_EVIDENCE_NOT_CURRENT_ADMISSION"
       ],
+      "status": "OBSERVATION_ONLY"
+    },
+    {
+      "formal_eligibility": false,
       "risk_review_eligible": false,
-      "status": "OBSERVATION_ONLY",
       "symbol": "600019",
       "review_status": "MISSING",
-      "formal_eligibility": false
-    },
-    {
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -124,13 +103,13 @@
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED",
         "DISPLAY_ONLY_EVIDENCE_NOT_CURRENT_ADMISSION"
       ],
+      "status": "OBSERVATION_ONLY"
+    },
+    {
+      "formal_eligibility": false,
       "risk_review_eligible": false,
-      "status": "OBSERVATION_ONLY",
       "symbol": "000338",
       "review_status": "MISSING",
-      "formal_eligibility": false
-    },
-    {
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -149,13 +128,13 @@
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED",
         "DISPLAY_ONLY_EVIDENCE_NOT_CURRENT_ADMISSION"
       ],
+      "status": "OBSERVATION_ONLY"
+    },
+    {
+      "formal_eligibility": false,
       "risk_review_eligible": false,
-      "status": "OBSERVATION_ONLY",
       "symbol": "600176",
       "review_status": "MISSING",
-      "formal_eligibility": false
-    },
-    {
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -174,13 +153,13 @@
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED",
         "DISPLAY_ONLY_EVIDENCE_NOT_CURRENT_ADMISSION"
       ],
+      "status": "OBSERVATION_ONLY"
+    },
+    {
+      "formal_eligibility": false,
       "risk_review_eligible": false,
-      "status": "OBSERVATION_ONLY",
       "symbol": "000560",
       "review_status": "MISSING",
-      "formal_eligibility": false
-    },
-    {
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -199,13 +178,13 @@
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED",
         "DISPLAY_ONLY_EVIDENCE_NOT_CURRENT_ADMISSION"
       ],
+      "status": "OBSERVATION_ONLY"
+    },
+    {
+      "formal_eligibility": false,
       "risk_review_eligible": false,
-      "status": "OBSERVATION_ONLY",
       "symbol": "601857",
       "review_status": "MISSING",
-      "formal_eligibility": false
-    },
-    {
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -224,13 +203,13 @@
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED",
         "DISPLAY_ONLY_EVIDENCE_NOT_CURRENT_ADMISSION"
       ],
+      "status": "OBSERVATION_ONLY"
+    },
+    {
+      "formal_eligibility": false,
       "risk_review_eligible": false,
-      "status": "OBSERVATION_ONLY",
       "symbol": "600127",
       "review_status": "MISSING",
-      "formal_eligibility": false
-    },
-    {
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -249,16 +228,37 @@
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED",
         "DISPLAY_ONLY_EVIDENCE_NOT_CURRENT_ADMISSION"
       ],
+      "status": "OBSERVATION_ONLY"
+    },
+    {
+      "formal_eligibility": false,
       "risk_review_eligible": false,
-      "status": "OBSERVATION_ONLY",
       "symbol": "000333",
       "review_status": "MISSING",
-      "formal_eligibility": false
+      "blockers": [
+        "security_identity:MISSING",
+        "security_risk:MISSING",
+        "event_risk:MISSING",
+        "data_quality:MISSING",
+        "completed_bars:MISSING",
+        "trend:MISSING",
+        "price_structure:MISSING",
+        "risk_reward:MISSING",
+        "strategy_validation:MISSING",
+        "execution_constraints:MISSING",
+        "independent_strategy_authorization:MISSING",
+        "STRATEGY_RULE_VERSION_MISMATCH",
+        "CURRENT_CASE_NOT_BOUND_TO_STRATEGY_RELEASE",
+        "CURRENT_STRUCTURE_NOT_QUALIFIED",
+        "CURRENT_ENTRY_CONDITION_NOT_OBSERVED",
+        "DISPLAY_ONLY_EVIDENCE_NOT_CURRENT_ADMISSION"
+      ],
+      "status": "OBSERVATION_ONLY"
     }
   ],
-  "runtime": "MATCHED",
-  "captured_at": "2026-10-18T19:31:26.8692660+08:00",
-  "publication_id": "pub-8b9016624014e824aa3b",
-  "commit": "b061bfd2f1dceead534f115081d37588cc1fbbcd",
-  "real_investment_eligibility": "NOT_GRANTED"
+  "unified_count": 16,
+  "actual_browser_evidence": "SEPARATE_BOUNDED_BROWSER_CHECK",
+  "hotspot_count": 10,
+  "commit": "44a7e8cdd4469527133e1375f72d4ff11a2b2a9e",
+  "action": "no_order"
 }

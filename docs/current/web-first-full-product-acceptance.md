@@ -241,3 +241,15 @@ page reload preserves it and history remains four records. Normal view remains
 empty, with monitoring truthfully stopped. Desktop/mobile screenshots and the
 bounded receipt are in s5/browser-check.json. This is local-page reading, not
 research approval, actual-market monitoring or full S5 acceptance.
+
+44a7e8cdd4469527133e1375f72d4ff11a2b2a9e passes exact-SHA Core (including
+the new S5 modules), isolated Postgres and Web CI. Actual browser subsequently
+executes CANCEL and EXPIRE, with explicit confirmation and retained risk-review
+warnings. Full page reload preserves ACKNOWLEDGED/CANCELLED/PENDING/EXPIRED
+and four historical records. Expanded source/hash details fit 390x844 without
+horizontal overflow. Normal mode remains empty and monitor_running=false.
+Independent review found no concrete P0/P1/P2 in this bounded lifecycle patch.
+See s5/browser-check.json and alerts-lifecycle-{desktop,mobile}.jpg.
+Root source/lifecycle/Web API regression: 405 passed; existing M5: 280 passed /
+23 skipped; Web: 228 passed, typecheck/build passed. Full S5, S6/S7 and real
+personal assisted-use acceptance remain incomplete.

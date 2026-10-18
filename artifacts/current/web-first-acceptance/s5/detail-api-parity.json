@@ -1,68 +1,68 @@
 {
-  "action": "no_order",
-  "source_commit": "b061bfd2f1dceead534f115081d37588cc1fbbcd",
   "actual_browser_evidence": "NOT_VERIFIED",
   "checks": [
     {
-      "action": "no_order",
+      "schema_version": "price-action-plan-independent-v2",
       "matched": true,
-      "symbol": "600150",
-      "schema_version": "price-action-plan-independent-v2"
+      "action": "no_order",
+      "symbol": "600150"
     },
     {
-      "action": "no_order",
+      "schema_version": "price-action-plan-independent-v2",
       "matched": true,
-      "symbol": "600667",
-      "schema_version": "price-action-plan-independent-v2"
+      "action": "no_order",
+      "symbol": "600667"
     },
     {
-      "action": "no_order",
+      "schema_version": "price-action-plan-independent-v2",
       "matched": true,
-      "symbol": "002008",
-      "schema_version": "price-action-plan-independent-v2"
+      "action": "no_order",
+      "symbol": "002008"
     },
     {
-      "action": "no_order",
+      "schema_version": "price-action-plan-independent-v2",
       "matched": true,
-      "symbol": "600019",
-      "schema_version": "price-action-plan-independent-v2"
+      "action": "no_order",
+      "symbol": "600019"
     },
     {
-      "action": "no_order",
+      "schema_version": "price-action-plan-independent-v2",
       "matched": true,
-      "symbol": "000338",
-      "schema_version": "price-action-plan-independent-v2"
+      "action": "no_order",
+      "symbol": "000338"
     },
     {
-      "action": "no_order",
+      "schema_version": "price-action-plan-independent-v2",
       "matched": true,
-      "symbol": "600176",
-      "schema_version": "price-action-plan-independent-v2"
+      "action": "no_order",
+      "symbol": "600176"
     },
     {
-      "action": "no_order",
+      "schema_version": "price-action-plan-independent-v2",
       "matched": true,
-      "symbol": "000560",
-      "schema_version": "price-action-plan-independent-v2"
+      "action": "no_order",
+      "symbol": "000560"
     },
     {
-      "action": "no_order",
+      "schema_version": "price-action-plan-independent-v2",
       "matched": true,
-      "symbol": "601857",
-      "schema_version": "price-action-plan-independent-v2"
+      "action": "no_order",
+      "symbol": "601857"
     },
     {
-      "action": "no_order",
+      "schema_version": "price-action-plan-independent-v2",
       "matched": true,
-      "symbol": "600127",
-      "schema_version": "price-action-plan-independent-v2"
+      "action": "no_order",
+      "symbol": "600127"
     },
     {
-      "action": "no_order",
+      "schema_version": "price-action-plan-independent-v2",
       "matched": true,
-      "symbol": "000333",
-      "schema_version": "price-action-plan-independent-v2"
+      "action": "no_order",
+      "symbol": "000333"
     }
   ],
-  "stage": "S5"
+  "stage": "S5",
+  "source_commit": "44a7e8cdd4469527133e1375f72d4ff11a2b2a9e",
+  "action": "no_order"
 }

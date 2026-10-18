@@ -24,5 +24,22 @@
     "screenshots": ["alerts-acknowledged-desktop.jpg", "alerts-acknowledged-mobile.jpg"],
     "approval_authority": "NONE",
     "scope": "TEST_ONLY_LOCAL_PAGE_READING"
+  },
+  "lifecycle_successor": {
+    "source_commit": "44a7e8cdd4469527133e1375f72d4ff11a2b2a9e",
+    "cancel_confirmation": "PASS",
+    "explicit_session_expiry_confirmation": "PASS",
+    "statuses_after_reload": ["ACKNOWLEDGED", "CANCELLED", "PENDING", "EXPIRED"],
+    "history_count": 4,
+    "original_risk_and_review_warning_retained": true,
+    "original_price_condition_visible": true,
+    "shanghai_time_display": true,
+    "mobile_expanded_source_no_horizontal_overflow": true,
+    "mobile_document_scroll_width": 375,
+    "mobile_document_client_width": 375,
+    "screenshots": ["alerts-lifecycle-desktop.jpg", "alerts-lifecycle-mobile.jpg"],
+    "normal_view_history_count": 0,
+    "monitor_running": false,
+    "approval_authority": "NONE"
   }
 }

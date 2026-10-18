@@ -13,11 +13,11 @@ or real investment approval inferred. action=no_order.
 | Stage | State | Evidence / next action |
 | --- | --- | --- |
 | S0 baseline and requirements | ENGINEERING_PASS | 0e794af Core/Web CI success, runtime MATCHED; browser generic acceptance still NOT_VERIFIED |
-| S1 independent strategy/shared risk | PARTIAL | Independent contract/API implemented; actual browser acceptance NOT_VERIFIED |
-| S2 value research | PARTIAL | Verified consumed inputs and exact-version external review handoff; economic/materiality/G3 and browser gates remain |
-| S3 hotspot | PARTIAL | Fresh display-only 10-industry/10-case coverage and matched list/detail APIs; no qualified structures, actual browser not verified |
-| S4 private workflow | IN_PROGRESS | Single-account isolated risk/fill/restart and retained announcement coverage implemented; 196 Web API tests pass; cross-sleeve partial-SELL composition underway |
-| S5 intraday alerts | IN_PROGRESS | Pure clock/calendar/completed-bar condition adapter and existing M5 simulated persistence verified; source acquisition, monitor caller and Web lifecycle still unconnected |
+| S1 independent strategy/shared risk | PARTIAL | Independent contract/API and bounded daily browser checks; full shared-risk/private acceptance remains |
+| S2 value research | PARTIAL | Verified consumed inputs and exact-version external review handoff; economic/materiality/G3 and full browser flow remain |
+| S3 hotspot | PARTIAL | Display-only 10-industry/10-case API parity, bounded daily/detail browser checks; zero qualified structures and incomplete full-stage validation |
+| S4 private workflow | IN_PROGRESS | Composed TEST_ONLY cross-sleeve BUY/partial-SELL/T+1/restart loop and bounded public/locked desktop/mobile checks pass; real/private browser acceptance remains |
+| S5 intraday alerts | IN_PROGRESS | Retained QUOTE/completed-bar bridges; atomic TEST_ONLY history/read/cancel/expiry Web loop, exact 44a7e8cd Core/Postgres/Web CI pass; actual manual monitor/source orchestration and other reminder rules remain |
 | S6 Agent/research operations | NOT_STARTED | Existing provider reused; paid live trial separately gated |
 | S7 integration/recovery/acceptance | NOT_STARTED | Four viewports, five E2E chains, isolated recovery, latest CI |
 
@@ -543,3 +543,22 @@ New lifecycle tests are included in Core CI. Actual successor browser actions,
 commit CI and runtime checks follow integration. S5 remains IN_PROGRESS;
 manual actual monitoring/source orchestration and other S5 rules are still
 engineering work. S6/S7 remain open; total Goal IN_PROGRESS, Excel FROZEN.
+
+44a7e8cd exact-SHA Core 39124449266 (offline/Postgres) and Web
+39124449183/39124446256 succeed. Rebuilt/restarted code/config runtime MATCHED;
+ten hotspot detail/list projections and sixteen unified objects remain available
+without eligibility. Actual browser performs CANCEL and EXPIRE, reloads all four
+records with ACKNOWLEDGED/CANCELLED/PENDING/EXPIRED, then returns to normal mode
+with zero simulated records. Source-expanded mobile viewport remains 375/375
+scroll/client width. Independent bounded review finds no concrete P0/P1/P2.
+Evidence: s5/lifecycle-validation.json, browser-check.json and screenshots.
+
+Precise continuation: retain this branch and existing launcher at port 8001;
+do not repeat source/model redesign or frozen Excel work. Next S5 task is
+manual real-source monitor orchestration and its Web running/stopped lifecycle.
+Reuse retained quote/bar bridges and M5 infrastructure, but do not bypass the
+existing signed ACTUAL ingestion boundary or relabel SIMULATED records as real.
+Exercise positive behavior with isolated clocks/data and real negative behavior
+with actual source clocks; no waiting for a future session to continue coding.
+Then connect remaining reminder inputs and continue S6/S7. Missing real user
+inputs/signatures and production permissions stay separate from engineering.
