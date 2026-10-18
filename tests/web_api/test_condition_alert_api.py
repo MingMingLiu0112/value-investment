@@ -142,3 +142,52 @@ def test_actual_read_confirmation_persists_but_never_approves_investment(tmp_pat
     invalid = {**payload, "expected_snapshot_sha256": "f" * 64}
     assert client.post(route, json=invalid).status_code == 409
     assert path.read_bytes() == before
+
+
+def test_public_observation_controls_are_authenticated_and_server_scoped(tmp_path, monkeypatch):
+    from value_investment_agent.presentation.web_api import condition_alert_routes as routes
+    calls = []
+    class Observation:
+        def __init__(self, *args, **kwargs):
+            pass
+        def read(self):
+            return dict(status="NOT_STARTED", monitor_running=False, samples=[],
+                action="no_order", eligibility=False, m5_admitted=False)
+        def start(self, symbol):
+            calls.append(("start", symbol))
+            return {**self.read(), "monitor_running": True}
+        def stop(self, *, expected_session_id):
+            if expected_session_id != "current-session":
+                raise ValueError("Session changed")
+            calls.append(("stop",))
+            return self.read()
+        def close(self):
+            pass
+    monkeypatch.setattr(routes, "PublicObservationSession", Observation)
+    monkeypatch.setattr(routes, "load_price_conditions", lambda *args, **kwargs: {"items": [
+        dict(symbol="600150", company_name="公开候选", price_action_plan={}),
+        dict(symbol="000333", company_name="历史候选", price_action_plan={
+            "candidate_lifecycle": "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"})]})
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY.jsonl", monkeypatch)
+    endpoint = "/api/v1/condition-alerts/public-observation/"
+    payload = dict(acknowledged=True, symbol="600150")
+    assert client.post(endpoint + "start", json=payload).status_code == 401
+    unlock(client, secret)
+    client.headers["origin"] = "https://untrusted.invalid"
+    assert client.post(endpoint + "start", json=payload).status_code == 403
+    client.headers["origin"] = "http://127.0.0.1:8791"
+    for invalid in ({**payload, "namespace": "ACTUAL"}, {**payload, "path": "foreign"},
+                    {**payload, "acknowledged": False}, {**payload, "symbol": "000333"},
+                    {**payload, "symbol": "600519"}, {**payload, "symbol": []}):
+        assert client.post(endpoint + "start", json=invalid).status_code in {409, 422}
+    assert not calls
+    view = client.get("/api/v1/condition-alerts").json()
+    assert view["public_observation"]["choices"] == [dict(symbol="600150", company_name="公开候选")]
+    started = client.post(endpoint + "start", json=payload)
+    assert started.status_code == 200
+    assert started.json()["m5_admitted"] is False
+    assert client.post(endpoint + "stop", json={"acknowledged": True}).status_code == 422
+    assert client.post(endpoint + "stop", json={"acknowledged": True, "expected_session_id": "stale"}).status_code == 409
+    assert client.post(endpoint + "stop", json={"acknowledged": True, "expected_session_id": "current-session"}).status_code == 200
+    assert calls == [("start", "600150"), ("stop",)]
+    assert not (tmp_path / "runtime").exists()

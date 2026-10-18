@@ -562,3 +562,24 @@ Exercise positive behavior with isolated clocks/data and real negative behavior
 with actual source clocks; no waiting for a future session to continue coding.
 Then connect remaining reminder inputs and continue S6/S7. Missing real user
 inputs/signatures and production permissions stay separate from engineering.
+
+### S5 bounded local real-source observation session
+
+The normal authenticated reminder page now offers manual START/STOP for one
+currently verified public candidate. This is a source-observation session, NOT
+an ACTUAL M5 ingestion run or a formal condition alert. It reuses the retained
+dual-provider collector and quote verifier, records immutable raw bundles and
+hash-bound replayable reports, and never changes publication/private ledgers.
+The process-local worker is cross-process locked, limited to ten samples with
+60-second intervals, and never restarts automatically. STOP binds the displayed
+session identity; an old page cannot stop its successor. In-flight requests may
+finish archiving after STOP; the UI reports STOPPING until they finish. Service
+shutdown admits no further requests. GET never starts collection or creates files.
+
+Actual Sunday browser collection for 600150 retained Tencent/Sina sources and
+correctly returned OUTSIDE_EXCHANGE_SESSION, then stopped. No backdated quote,
+formal alert, M5 authorization or investment admission was manufactured. The
+existing TEST_ONLY M5 lifecycle remains isolated and unchanged. This is a bounded
+S5 source/lifecycle increment; actual price-condition orchestration, remaining
+reminder types, S6 and S7 are still open. S5 remains IN_PROGRESS, total Goal active.
+Final tests/browser/restart/CI evidence accompanies the scoped commit.

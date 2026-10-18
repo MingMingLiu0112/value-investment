@@ -245,12 +245,33 @@ async function getPrivate<T>(path: string, signal?: AbortSignal): Promise<T> {
   return (await read(response)) as T;
 }
 
+export type PublicObservationResponse = {
+  status: string;
+  monitor_running: boolean;
+  symbol?: string;
+  session_id?: string;
+  detail?: string;
+  choices?: { symbol: string; company_name: string }[];
+  samples: {
+    sample_id: string;
+    symbol: string;
+    checked_at: string;
+    status: string;
+    reason: string;
+    source_refs: { source_url: string; sha256: string }[];
+    observation?: { price?: string } | null;
+  }[];
+  eligibility: false;
+  m5_admitted: false;
+};
+
 export type ConditionAlertsResponse = {
   action: "no_order";
   status: string;
   test_only: boolean;
   monitor_running: boolean;
   detail?: string;
+  public_observation?: PublicObservationResponse;
   snapshot_sha256?: string;
   condition?: {
     symbol: string;
@@ -280,6 +301,17 @@ export type ConditionAlertsResponse = {
 };
 
 export const api = {
+  controlPublicObservation: (
+    operation: "start" | "stop",
+    symbol?: string,
+    sessionId?: string,
+  ) =>
+    post<PublicObservationResponse>(
+      `condition-alerts/public-observation/${operation}`,
+      operation === "start"
+        ? { acknowledged: true, symbol }
+        : { acknowledged: true, expected_session_id: sessionId },
+    ),
   conditionAlerts: (testOnly: boolean, signal?: AbortSignal) =>
     getPrivate<ConditionAlertsResponse>(
       `condition-alerts?test_only=${testOnly}`,

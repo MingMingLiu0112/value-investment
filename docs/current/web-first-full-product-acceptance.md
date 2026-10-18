@@ -253,3 +253,20 @@ See s5/browser-check.json and alerts-lifecycle-{desktop,mobile}.jpg.
 Root source/lifecycle/Web API regression: 405 passed; existing M5: 280 passed /
 23 skipped; Web: 228 passed, typecheck/build passed. Full S5, S6/S7 and real
 personal assisted-use acceptance remain incomplete.
+# S5 local public observation successor (2026-10-18)
+
+Manual real-source observation is connected to the normal authenticated reminder
+page. It is distinct from the isolated M5 alert history and from admitted ACTUAL
+M5 events. Tencent/Sina raw bundles, clocks and hashes are retained and replayed;
+freshness remains 120 seconds. A bounded worker supports explicit START/STOP,
+cross-process exclusion, stale-session rejection, in-flight STOPPING, persistence,
+failure status and no automatic restart. It does not alter research, portfolio,
+publication, B1 or investment eligibility.
+
+Actual Sunday 600150 collection is negative evidence only: sources were retained,
+OUTSIDE_EXCHANGE_SESSION prevents price judgment, and the worker stops. Positive
+in-session behavior and failure/lifecycle coverage use injected TEST_ONLY inputs,
+not fabricated live trading-session evidence. S5 remains IN_PROGRESS; no full
+stage/product/user acceptance is inferred. Detailed scoped receipt:
+`artifacts/current/web-first-acceptance/s5/public-observation-validation.json`.
+

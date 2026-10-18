@@ -4,6 +4,7 @@ import {
   Empty,
   List,
   Popconfirm,
+  Select,
   Space,
   Switch,
   Tag,
@@ -14,8 +15,10 @@ import {
   CloseOutlined,
   ClockCircleOutlined,
   ReloadOutlined,
+  PlayCircleOutlined,
+  PauseCircleOutlined,
 } from "@ant-design/icons";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Workbench } from "../../components/Workbench";
 import { RemoteState } from "../../components/RemoteState";
 import { useApi } from "../../hooks/useApi";
@@ -40,9 +43,27 @@ const eventLabels: Record<string, string> = {
   SOURCE_SCAN_RECOVERED: "数据恢复，重新复核条件",
 };
 
+const observationLabels: Record<string, string> = {
+  LOCAL_PUBLIC_OBSERVATION_ONLY: "仅观测公开报价；不会产生正式提醒或投资许可。",
+  LOCAL_PUBLIC_OBSERVATION_STOPPED: "本次观测已停止，原始来源与记录继续保留。",
+  WAITING_FOR_IN_FLIGHT_COLLECTION:
+    "正在停止；等待已发出的请求结束，不再发起后续采集。",
+  RETAINED_OBSERVATIONS_NO_LOCAL_WORKER:
+    "仅显示历史记录；当前服务没有运行观测任务。",
+  WORKER_FAILED: "观测任务失败，暂停价格判断。",
+  WORKER_OR_STORAGE_FAILED: "观测或存储失败，请检查本地运行状态。",
+  RETAINED_EVIDENCE_VERIFICATION_FAILED: "留存原件校验失败，不能使用观测结果。",
+  OUTSIDE_EXCHANGE_SESSION: "当前不在交易时段，不能据此判断盘中条件。",
+  COLLECTION_OR_EVIDENCE_FAILED: "采集或原始证据核验失败。",
+  CROSS_SOURCE_PRICE_CONFLICT: "两个来源的价格不一致。",
+  STALE_QUOTE: "报价已过期。",
+  DUAL_PROVIDER_EXACT_PRICE_MATCH: "双源价格一致，仍需结合原策略条件复核。",
+};
+
 export default function ConditionAlerts() {
   const [testOnly, setTestOnly] = useState(false);
   const [pending, setPending] = useState<string>();
+  const [symbol, setSymbol] = useState<string>();
   const [interaction, setInteraction] = useState<{
     error: boolean;
     text: string;
@@ -52,6 +73,42 @@ export default function ConditionAlerts() {
     [testOnly],
   );
   const result = useApi(load);
+  useEffect(() => {
+    if (
+      testOnly ||
+      result.loading ||
+      !result.data?.monitor_running ||
+      result.error
+    )
+      return;
+    const timer = window.setTimeout(result.retry, 5000);
+    return () => window.clearTimeout(timer);
+  }, [testOnly, result.loading, result.data, result.error, result.retry]);
+  const controlObservation = async (operation: "start" | "stop") => {
+    if (pending || testOnly) return;
+    setPending("public-observation");
+    setInteraction(undefined);
+    try {
+      const state = await api.controlPublicObservation(
+        operation,
+        symbol,
+        result.data?.public_observation?.session_id,
+      );
+      setInteraction({
+        error: false,
+        text:
+          observationLabels[state.detail ?? ""] ?? "已更新公开行情观测状态。",
+      });
+    } catch (error) {
+      setInteraction({
+        error: true,
+        text: error instanceof Error ? error.message : "操作失败，请刷新。",
+      });
+    } finally {
+      setPending(undefined);
+      result.retry();
+    }
+  };
   const operate = async (
     alertId: string,
     operation: "acknowledge" | "cancel" | "expire",
@@ -143,13 +200,108 @@ export default function ConditionAlerts() {
               type="info"
               showIcon
               message={
-                result.data.monitor_running ? "监控进程运行中" : "监控未运行"
+                result.data.monitor_running
+                  ? "本地公开报价观测中"
+                  : "监控未运行"
               }
               description={
                 result.data.detail ??
                 "仅展示已经留存的历史记录；关闭本地进程后不会持续监控。"
               }
             />
+            {!testOnly && result.data.public_observation && (
+              <section style={{ marginTop: 16 }}>
+                <Typography.Title level={4}>公开行情观测</Typography.Title>
+                <Typography.Paragraph>
+                  {observationLabels[
+                    result.data.public_observation.detail ?? ""
+                  ] ?? result.data.public_observation.detail}
+                </Typography.Paragraph>
+                <Space wrap>
+                  <Select
+                    aria-label="观测证券"
+                    placeholder="选择当前候选"
+                    style={{ width: 220, maxWidth: "100%" }}
+                    value={symbol}
+                    disabled={!!pending || result.data.monitor_running}
+                    onChange={setSymbol}
+                    options={(result.data.public_observation.choices ?? []).map(
+                      (item) => ({
+                        value: item.symbol,
+                        label: `${item.symbol} ${item.company_name}`,
+                      }),
+                    )}
+                  />
+                  <Popconfirm
+                    title="启动本机有界公开行情观测？"
+                    description="每分钟检查，最多十次；不产生正式 M5 提醒或投资许可，服务重启后不自动恢复。"
+                    okText="启动观测"
+                    cancelText="返回"
+                    onConfirm={() => controlObservation("start")}
+                  >
+                    <Button
+                      icon={<PlayCircleOutlined />}
+                      disabled={
+                        !symbol || !!pending || result.data.monitor_running
+                      }
+                    >
+                      启动观测
+                    </Button>
+                  </Popconfirm>
+                  <Button
+                    icon={<PauseCircleOutlined />}
+                    disabled={!!pending || !result.data.monitor_running}
+                    onClick={() => controlObservation("stop")}
+                  >
+                    停止观测
+                  </Button>
+                  <Tag>{result.data.public_observation.status}</Tag>
+                </Space>
+                <List
+                  dataSource={result.data.public_observation.samples}
+                  locale={{ emptyText: "尚无真实公开行情观测记录" }}
+                  renderItem={(sample) => (
+                    <List.Item>
+                      <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+                        <Typography.Text strong>
+                          {sample.symbol}
+                        </Typography.Text>
+                        {" · "}
+                        {shanghaiTime(sample.checked_at)}（北京时间）
+                        <p>
+                          {sample.status === "QUOTE_VERIFIED"
+                            ? "双源报价核验通过"
+                            : "暂停价格判断"}
+                          ：{observationLabels[sample.reason] ?? sample.reason}
+                        </p>
+                        {sample.observation?.price && (
+                          <p>
+                            观测价格：
+                            {formatUnitPrice(sample.observation.price)} 元
+                          </p>
+                        )}
+                        <details>
+                          <summary>原始来源与校验</summary>
+                          {sample.source_refs.map((source, index) => (
+                            <p key={`${source.sha256}-${index}`}>
+                              <a
+                                href={source.source_url}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                公开来源 {index + 1}
+                              </a>
+                              {" · SHA-256: "}
+                              {source.sha256}
+                            </p>
+                          ))}
+                        </details>
+                      </div>
+                    </List.Item>
+                  )}
+                />
+              </section>
+            )}
             {result.data.condition && (
               <Typography.Paragraph style={{ marginTop: 16 }}>
                 {result.data.condition.symbol} ·{" "}
