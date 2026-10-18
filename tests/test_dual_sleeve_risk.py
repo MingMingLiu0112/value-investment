@@ -129,6 +129,26 @@ def test_new_cash_use_preserves_existing_ips_cash_reserve():
     assert review(payload)['hotspot_quantity_review']['review_quantity'] == 0
 
 
+@pytest.mark.parametrize('cap,quantity', [('15', 0), ('25', 100), ('40', 200)])
+def test_new_cyclical_exposure_respects_aggregate_ips_cap_across_sleeves(cap, quantity):
+    payload = synthetic_input()
+    payload['security_attributes'][0]['cyclical'] = True
+    payload['portfolio']['policy']['max_cyclical_exposure_pct'] = cap
+    result = review(payload)
+    sizing = result['hotspot_quantity_review']
+    assert sizing['review_quantity'] == quantity
+    existing = sum((Decimal(row['market_value_cny']) for sleeve in (CORE, HOTSPOT)
+        for row in result['sleeves'][sleeve]['holdings']), Decimal(0))
+    assert existing + Decimal(sizing['cash_required_cny']) <= Decimal('10000')*Decimal(cap)/100
+    assert result['action'] == 'no_order' and sizing['trade_eligible'] is False
+
+
+def test_noncyclical_purchase_does_not_consume_cyclical_headroom():
+    payload = synthetic_input()
+    payload['portfolio']['policy']['max_cyclical_exposure_pct'] = '1'
+    assert review(payload)['hotspot_quantity_review']['review_quantity'] == 200
+
+
 def test_cross_sleeve_overlap_cap_and_cash_floor_fail_closed():
     payload = synthetic_input()
     payload['shared_budget']['cross_sleeve_single_stock_cap'] = '0.09'

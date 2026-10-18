@@ -39,7 +39,10 @@ from ...application.product.quote_bridge import execute_quote_bridge_for_symbol
 from ...application.product.research_draft import load_current_research_draft
 from ...application.product.research_funnel_status import research_funnel_status
 from ...application.hotspot.price_action_case import project_price_action_plan
-from ...application.hotspot.independent_price_conditions import load_independent_price_conditions
+from ...application.hotspot.independent_price_conditions import (
+    load_independent_price_conditions,
+    project_independent_price_condition,
+)
 from ...application.decision.current_value_plan import revalidate_current_value_plan
 from ...infrastructure.hotspot.sina_price_case import load_historical_case
 from ...infrastructure.hotspot.current_price_case import load_current_price_case
@@ -535,6 +538,10 @@ def create_app(
         if decision_id.startswith("hotspot-"):
             row = next((row for row in current_items(packet)
                         if row["price_action_plan"]["decision_id"] == decision_id), None)
+            if row is not None:
+                row = {**row, "price_action_plan": project_independent_price_condition(
+                    project, symbol=row["symbol"], plan=row["price_action_plan"],
+                    now=datetime.now(timezone.utc))}
             return {"action": "no_order", "status": "CURRENT_OBSERVATION" if row else "NOT_FOUND",
                     "publication": pinned_publication(packet, current),
                     "decision": current_item(row) if row else None}

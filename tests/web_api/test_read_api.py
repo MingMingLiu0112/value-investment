@@ -117,6 +117,47 @@ def test_fixture_projection_and_detail(tmp_path):
     assert detail["decision"]["reason"] == "Pending evidence"
     assert client.get("/api/v1/decisions/600741").json()["status"] == "PENDING_RESEARCH"
     assert client.get("/api/v1/decisions/002612").json()["decision"]["blockers"] == ["QUOTE_DATE_UNVERIFIED"]
+
+
+@pytest.mark.parametrize('stale', [False, True])
+def test_hotspot_detail_uses_independent_projection_after_current_case_verification(tmp_path, monkeypatch, stale):
+    from copy import deepcopy
+    from value_investment_agent.presentation.web_api import app as api_module
+    from value_investment_agent.application.hotspot import independent_price_conditions as projection
+
+    client = _fixture(tmp_path)
+    plan = dict(schema_version='price-action-plan-current-v1', symbol='600519',
+        action='no_order', decision_id='hotspot-600519-test', market_trade_date='2026-10-12',
+        signal_state='TRIGGER_OBSERVED', explanation='TEST_ONLY route wiring',
+        model_or_rule_version='TEST_ONLY-v1', case_path='runtime/case.json', case_sha256='a'*64,
+        opportunity_quality={'structure_tier': 'STRUCTURE_QUALIFIED_OBSERVATION'},
+        blockers=['VALUE_GATE_NOT_PROVEN'], entry_trigger_price='10', invalidation_price='9')
+    packet = dict(publication_id='TEST_ONLY', research_version='TEST_ONLY',
+        price_conditions={'items': [dict(symbol='600519', company_name='TEST_ONLY', price_action_plan=plan)]})
+    before = deepcopy(packet)
+    monkeypatch.setattr(api_module, '_load_snapshot', lambda root: (packet, {}))
+
+    def verify(**kwargs):
+        if stale:
+            raise ValueError('B1 current close rejected')
+        return {}
+
+    monkeypatch.setattr(api_module, 'load_current_price_case', verify)
+    monkeypatch.setattr(projection, 'load_independent_admission', lambda *args, **kwargs: dict(
+        blockers=[], risk_review_eligible=True, rule_version='TEST_ONLY-v1',
+        gate_source_bindings={'price_structure': [dict(path='runtime/case.json', sha256='a'*64)]}))
+    response = client.get('/api/v1/decisions/hotspot-600519-test').json()
+    result = response['decision']['price_action_plan']
+    assert result['schema_version'] == 'price-action-plan-independent-v2'
+    assert result['risk_review_eligible'] is (not stale)
+    assert 'VALUE_GATE_NOT_PROVEN' not in result['blockers']
+    assert 'VALUE_GATE_NOT_PROVEN' in result['legacy_observation_blockers']
+    assert result['formal_eligibility'] is result['trade_eligible'] is False
+    assert result['action'] == 'no_order'
+    if stale:
+        assert result['signal_state'] == 'STALE'
+        assert result['entry_trigger_price'] is result['invalidation_price'] is None
+    assert packet == before
     portfolio = client.get("/api/v1/portfolio").json()
     assert portfolio["action"] == "no_order"
     assert portfolio["status"] == "NOT_CONNECTED"

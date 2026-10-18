@@ -1,23 +1,23 @@
 {
   "schema_version": "runtime-identity-v2",
   "action": "no_order",
-  "checked_at": "2026-10-18T16:46:24.063173+08:00",
+  "checked_at": "2026-10-18T16:51:04.130385+08:00",
   "status": "MATCHED",
   "code_status": "MATCHED",
   "config_status": "MATCHED",
   "reasons": [],
-  "current_source_head": "873395137a0b779f9c40ff7d9f9b077265c245c6",
+  "current_source_head": "334cc10b709eb936f155e8489d3ff3494dbba38e",
   "source_worktree_dirty": false,
-  "backend_loaded_head": "873395137a0b779f9c40ff7d9f9b077265c245c6",
+  "backend_loaded_head": "334cc10b709eb936f155e8489d3ff3494dbba38e",
   "backend_module_sha256_loaded": "4e0f26d292a7e35f9f88739bfa56b3b1fcfcfd1c902068b935e07b047f08cbda",
   "backend_module_sha256_on_disk": "4e0f26d292a7e35f9f88739bfa56b3b1fcfcfd1c902068b935e07b047f08cbda",
   "web_build": {
     "schema_version": "web-build-identity-v1",
-    "commit": "873395137a0b779f9c40ff7d9f9b077265c245c6",
-    "built_at": "2026-10-18T08:44:57.07Z",
+    "commit": "334cc10b709eb936f155e8489d3ff3494dbba38e",
+    "built_at": "2026-10-18T08:48:57.579Z",
     "source_dirty": false
   },
-  "web_index_sha256": "b2f0058d0ce2c1d24f9aee519e4bc93c1c55008d4ae0f5bb424a1ab75bb92f89",
+  "web_index_sha256": "a747277d18dd3e456fdc3c626d227d737182a3b44aec2806b6a687a21cb6d462",
   "config_changes": {
     "behavior": [],
     "data": []

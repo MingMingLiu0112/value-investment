@@ -78,3 +78,36 @@ The final local suite passed 120 Python/API and 212 Web cases; a separate
 35-case regression covers additional signature-purpose/scope/retirement negatives.
 Browser safety rejection is not bypassed. S2-S7 have
 not been declared started or passed. Frozen Excel and production remain untouched.
+
+Final test/evidence revision 334cc10b709eb936f155e8489d3ff3494dbba38e is
+pushed. Exact-SHA Core 39112896776 (both jobs) and Web 39112896790 SUCCESS.
+Rebuilt/restarted local runtime is MATCHED at this SHA; API still yields five
+observation-only hotspots and eleven unified objects. Post-commit observations
+are saved locally in the same S1 namespace. The only outstanding S1 stage
+acceptance is actual authorized browser interaction; do not infer a waiver or
+TOTAL_GOAL completion. Goal remains active and incomplete.
+
+## S1 closure fixes after 334cc10b
+
+The detail endpoint now uses the same versioned independent projection as the
+today-page successor, after current-case verification. Invalid/stale evidence
+retains nulled prices and cannot gain risk-review eligibility. Historical
+packets and original blockers remain unchanged.
+
+A real isolated TEST_ONLY signed pipeline now constructs completed raw bars,
+runs the existing collector, case/registry validators and independent signed
+release loader. Qualified structure can reach risk review without value/G3;
+the actual API never enables TEST_ONLY, and formal/trade eligibility stays false.
+
+Independent shared-risk review found a prospective cyclical IPS-cap omission.
+The sizing engine now subtracts aggregate existing cyclical exposure, counting
+each symbol once across sleeves. Fee-inclusive proposed capital is constrained
+by the remaining cap. The 15/25/40 percent isolated cases yield 0/100/200 shares;
+noncyclical behavior is unchanged. Independent rereview found no defect in this
+bounded fix. Focused risk regression: 39 passed.
+
+Combined Python/API regression: 154 passed. Web checks and exact new-commit CI
+are being refreshed. Actual browser acceptance remains NOT_VERIFIED: the
+selected tab is still a data-URL connection-error page. User recovery was
+requested once; no alternative browser/surface bypass is attempted. S1 remains
+PARTIAL, S2-S7 are not accepted, and no total-goal completion is claimed.

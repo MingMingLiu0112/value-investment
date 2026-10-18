@@ -17,6 +17,10 @@ Permanent action=no_order. This is the single acceptance record, not a new plan.
 
 S1 runtime source commit: 873395137a0b779f9c40ff7d9f9b077265c245c6.
 Core run 39112633707, Web runs 39112633714 and 39112629808 concluded success.
+Final test/evidence revision 334cc10b709eb936f155e8489d3ff3494dbba38e also
+passed Core run 39112896776 (offline-core and PostgreSQL) and Web run
+39112896790. Local runtime was rebuilt/restarted at this final revision and
+reports MATCHED; latest local runtime/API/CI receipts record that final SHA.
 Evidence: artifacts/current/web-first-acceptance/s1/ (checks, raw logs,
 runtime-identity, api-smoke, github-current). A later focused regression adds
 cross-purpose signature, value-review scope and release-retirement negatives;
@@ -49,6 +53,9 @@ When an authorized browser observation is available, verify the running /daily
 hotspot cards, matching-publication behavior, errors and reload at the required
 viewports. Recheck current source/runtime and corresponding CI if code changed.
 Only then graduate S1 and start S2/S3/S4 according to the dependency contract.
+Source through 334cc10b is pushed. Post-commit observations are retained
+locally without another evidence-only commit/rebuild loop. Existing independent
+audit files remain untouched and unrelated untracked work is preserved.
 
 For S2, the inherited concrete P0 remains model-consumed fact binding in
 application/product/source_bound_inputs.py: current fact anchors compare the
@@ -58,3 +65,21 @@ negative tests before any fix; do not change the residual-income formula.
 
 Do not republish or modify the frozen Excel, production tasks, server services,
 real trust roots, actual private inputs or immutable historical research.
+
+## Subsequent S1 closure verification
+
+The hotspot detail now projects independent admission after existing current
+case verification, preserving stale/blocked price nulling and historical
+blockers. Isolated signed positive coverage exercises raw bars, existing
+structure calculations, case registry, pinned trust and Ed25519 release checks
+without replacing validators. Only TEST_ONLY opt-in can use that isolated
+release; the real API has no such opt-in. No formal trade permission is granted.
+
+Prospective shared-risk sizing now enforces confirmed IPS cyclical headroom
+against combined holdings across both sleeves, including fee-inclusive cash.
+Independent review reproduced the previous cap violation and verified the fix.
+Focused risk tests: 39 passed. Combined Python/API scope: 154 passed.
+
+These changes do not pass actual-browser acceptance. New-commit CI and runtime
+must be bound after commit; older CI evidence applies only to its own SHA.
+Overall Goal IN_PROGRESS; S1 PARTIAL; formal eligibility NOT_GRANTED.

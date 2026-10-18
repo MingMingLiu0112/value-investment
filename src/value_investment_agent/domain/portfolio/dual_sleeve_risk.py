@@ -361,6 +361,11 @@ def _hotspot_review(request, *, bundle, total, budget, reviews, policies, attrs,
         max(Decimal(0), total*budget.cross_sleeve_sector_cap-industry_values.get(industry, Decimal(0))),
         max(Decimal(0), total*bundle.policy.max_single_security_pct/100-security_values.get(symbol, Decimal(0))),
         max(Decimal(0), total*bundle.policy.max_single_industry_pct/100-industry_values.get(industry, Decimal(0))))
+    if attrs[symbol].cyclical and bundle.policy.max_cyclical_exposure_pct is not None:
+        existing_cyclical = sum((value for held_symbol, value in security_values.items()
+            if attrs[held_symbol].cyclical), Decimal(0))
+        capital_limit = min(capital_limit, max(Decimal(0),
+            total*bundle.policy.max_cyclical_exposure_pct/100-existing_cyclical))
     for factor in attrs[symbol].common_factors:
         capital_limit = min(capital_limit, max(Decimal(0), equity*policy['max_factor_fraction']
             -Decimal(review['factor_exposure_cny'].get(factor, '0'))),

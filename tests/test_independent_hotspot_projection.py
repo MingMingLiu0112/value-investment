@@ -76,3 +76,54 @@ def test_new_api_requires_verified_publication(tmp_path):
     assert response.json()["status"] == "UNAVAILABLE"
     assert response.json()["items"] == []
     assert response.json()["action"] == "no_order"
+
+
+def test_per_plan_helper_preserves_source_and_matches_list_projection(isolated, tmp_path):
+    old, _ = isolated
+    source = old["items"][0]["price_action_plan"]
+    before = deepcopy(source)
+    result = projection.project_independent_price_condition(tmp_path, symbol="000333",
+        plan=source, now=datetime.now(timezone.utc))
+    assert result == project(tmp_path)
+    result["opportunity_quality"]["structure_tier"] = "CHANGED_OUTPUT_ONLY"
+    result["legacy_observation_blockers"].append("CHANGED_OUTPUT_ONLY")
+    assert source == before
+
+
+@pytest.mark.parametrize("change", [
+    {"symbol": "600519"}, {"action": "order"}, {"schema_version": "unknown"},
+])
+def test_per_plan_helper_rejects_wrong_source_contract(isolated, tmp_path, change):
+    source = deepcopy(isolated[0]["items"][0]["price_action_plan"])
+    source.update(change)
+    with pytest.raises(ValueError, match="matching current no-order plan"):
+        projection.project_independent_price_condition(tmp_path, symbol="000333", plan=source,
+            now=datetime.now(timezone.utc))
+
+
+def test_test_namespace_opt_in_is_explicit_not_a_truthy_value(isolated, tmp_path):
+    source = isolated[0]["items"][0]["price_action_plan"]
+    with pytest.raises(ValueError, match="explicit boolean"):
+        projection.project_independent_price_condition(tmp_path, symbol="000333", plan=source,
+            now=datetime.now(timezone.utc), allow_test_only="true")
+
+
+@pytest.mark.parametrize("state", ["STALE", "BLOCKED"])
+def test_stale_or_blocked_plan_preserves_nulled_levels_and_cannot_gain_risk_review(
+    isolated, tmp_path, state,
+):
+    source = isolated[0]["items"][0]["price_action_plan"]
+    source.update(signal_state=state, levels=None, entry_trigger_price=None,
+        invalidation_price=None, entry_condition=None, exit_condition=None,
+        invalidation_condition=None, opportunity_quality=None)
+    before = deepcopy(source)
+    result = projection.project_independent_price_condition(tmp_path, symbol="000333",
+        plan=source, now=datetime.now(timezone.utc))
+    assert source == before
+    assert result["signal_state"] == state
+    for name in ("levels", "entry_trigger_price", "invalidation_price", "entry_condition",
+                 "exit_condition", "invalidation_condition", "opportunity_quality"):
+        assert result[name] is None
+    assert result["risk_review_eligible"] is False
+    assert result["formal_eligibility"] is result["action_eligibility"] is result["trade_eligible"] is False
+    assert "CURRENT_ENTRY_CONDITION_NOT_OBSERVED" in result["blockers"]

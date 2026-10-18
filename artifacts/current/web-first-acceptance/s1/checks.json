@@ -1,29 +1,29 @@
 {
-  "stage": "S1",
-  "starting_commit": "0e794af5da982febd688b0bfc78a9d720ece639f",
-  "status": "PARTIAL",
-  "independent_review": "P1_SOURCE_ISOLATION_FIXED_NO_REMAINING_P1_IN_BOUNDED_STATIC_REVIEW",
-  "formal_investment_eligibility": "NOT_GRANTED",
-  "actual_browser_evidence": "NOT_VERIFIED_BROWSER_URL_POLICY_REJECTED",
-  "python_exit": 0,
   "action": "no_order",
+  "formal_investment_eligibility": "NOT_GRANTED",
   "remaining": [
     "current-commit CI",
     "actual browser interaction",
     "current committed runtime identity"
   ],
+  "stage": "S1",
   "web": [
     {
-      "command": "npm run format --prefix web",
-      "exit_code": 0
+      "exit_code": 0,
+      "command": "npm run format --prefix web"
     },
     {
-      "command": "npm run typecheck --prefix web",
-      "exit_code": 0
+      "exit_code": 0,
+      "command": "npm run typecheck --prefix web"
     },
     {
-      "command": "npm run test --prefix web",
-      "exit_code": 0
+      "exit_code": 0,
+      "command": "npm run test --prefix web"
     }
-  ]
+  ],
+  "python_exit": 0,
+  "status": "PARTIAL",
+  "independent_review": "P1_SOURCE_ISOLATION_FIXED_NO_REMAINING_P1_IN_BOUNDED_STATIC_REVIEW",
+  "actual_browser_evidence": "NOT_VERIFIED_BROWSER_URL_POLICY_REJECTED",
+  "starting_commit": "334cc10b709eb936f155e8489d3ff3494dbba38e"
 }
