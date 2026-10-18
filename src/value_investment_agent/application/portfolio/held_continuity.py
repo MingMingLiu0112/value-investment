@@ -25,6 +25,18 @@ from ..hotspot.current_registry import load_price_conditions
 from ..decision.value_action_plan import load_registered_value_action_plans
 
 
+def _plan_sleeve(plan: dict) -> str | None:
+    sleeve = {
+        "value-action-plan-v1": "CORE_VALUE",
+        "price-action-plan-current-v1": "HOTSPOT_SATELLITE",
+        "price-action-plan-independent-v2": "HOTSPOT_SATELLITE",
+    }.get(plan.get("schema_version"))
+    if (sleeve is None or plan.get("strategy", sleeve) != sleeve
+            or plan.get("sleeve", sleeve) != sleeve):
+        return None
+    return sleeve
+
+
 def _case_history(root: Path, symbol: str):
     """Existing immutable case history, not a second membership/quote registry."""
     history = root / "runtime/hotspot-current-price-cases"
@@ -133,6 +145,14 @@ def build_held_plan_provider(root: Path, replayed, *, now: datetime):
     plans = {row["symbol"]: row["price_action_plan"] for row in current["items"]}
     selected = {symbol for symbol, plan in plans.items()
                 if plan.get("candidate_lifecycle") != "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"}
+    # Actual ledger lots, not candidate membership or historical trades, decide
+    # which strategy can still supply a held-security review after a full sale.
+    state = getattr(replayed, "state", None)
+    held_sleeves = None if state is None else {}
+    if state is not None:
+        for lot in state.lots:
+            if lot.quantity > 0:
+                held_sleeves.setdefault(lot.symbol, set()).add(lot.sleeve)
     retained = {}
     for trade in reversed(replayed.trades if replayed else []):
         snapshot = trade.get("judgment_snapshot")
@@ -157,11 +177,15 @@ def build_held_plan_provider(root: Path, replayed, *, now: datetime):
             continue
 
     def strategy_plan(symbol):
-        current_plan = plans.get(symbol)
+        # Standalone source inspection may have no ledger; the final projection
+        # below always enforces actual position sleeves before emitting reasons.
+        allowed = held_sleeves.get(symbol, set()) if held_sleeves is not None else {"CORE_VALUE", "HOTSPOT_SATELLITE"}
+        hotspot_held = "HOTSPOT_SATELLITE" in allowed
+        current_plan = plans.get(symbol) if hotspot_held else None
         # The explicit private refresh writes ordinary immutable current cases.
         # Rediscover/reverify them after restart without publishing a held list.
         try:
-            for path in _case_history(root, symbol):
+            for path in _case_history(root, symbol) if hotspot_held else ():
                 try:
                     return load_held_price_plan(root, symbol,
                         {"case_path": str(path), "case_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}, now=now)
@@ -176,13 +200,14 @@ def build_held_plan_provider(root: Path, replayed, *, now: datetime):
         # loader rather than requiring the hotspot data_available_at field.
         value = None
         try:
-            result = load_registered_value_action_plans(root, now=now, symbols=[symbol])
+            result = (load_registered_value_action_plans(root, now=now, symbols=[symbol])
+                      if "CORE_VALUE" in allowed else {"items": []})
             value = next((row for row in result["items"] if row["symbol"] == symbol), None)
         except (OSError, ValueError, KeyError, TypeError, ArithmeticError):
             pass
         if value is not None and value.get("signal_state") not in {"BLOCKED", "STALE", "EXPIRED"}:
             return value
-        for binding in retained.get(symbol, []):
+        for binding in retained.get(symbol, []) if hotspot_held else ():
             try:
                 return load_held_price_plan(root, symbol, binding, now=now)
             except (OSError, ValueError, KeyError, TypeError, ArithmeticError):
@@ -261,11 +286,15 @@ def project_held_continuity(positions: list[dict], risk: dict, *,
         gaps = list(risk.get("blockers") or [])
         reasons = []
         plan = None
+        held_sleeves = {row["sleeve"] for row in position.get("sleeves", ())
+                        if Decimal(row["quantity"]) > 0}
         try:
             plan = plan_provider(symbol)
             if plan is not None:
                 if plan.get("symbol") != symbol or plan.get("action") != "no_order":
                     raise ValueError("Unbound or future held-security plan")
+                if _plan_sleeve(plan) not in held_sleeves:
+                    raise ValueError("Strategy plan does not match a positive held sleeve")
                 stamp = plan.get("data_available_at")
                 if stamp is not None:
                     available = datetime.fromisoformat(stamp)

@@ -77,6 +77,15 @@ export function failureMessage(cause: unknown, fallback: string): string {
   return cause instanceof Error ? cause.message : fallback;
 }
 
+export function clearRejectedAttempt(
+  attempt: ReturnType<typeof retryableWrite>,
+  cause: unknown,
+) {
+  // A server rejection did not commit this attempt. A lost response may have.
+  if (cause instanceof ApiError && cause.status >= 400 && cause.status < 500)
+    attempt.clear();
+}
+
 function DraftReview({
   draft,
   revision,
@@ -115,6 +124,7 @@ function DraftReview({
       confirmAttempt.current.clear();
       onDone();
     } catch (cause) {
+      clearRejectedAttempt(confirmAttempt.current, cause);
       setFailure(failureMessage(cause, "确认失败"));
     } finally {
       lock.current = false;
@@ -143,6 +153,7 @@ function DraftReview({
       cancelAttempt.current.clear();
       onDone();
     } catch (cause) {
+      clearRejectedAttempt(cancelAttempt.current, cause);
       setFailure(failureMessage(cause, "作废失败"));
     } finally {
       lock.current = false;
@@ -322,6 +333,7 @@ export function FillPanel({
       onDone();
       return true;
     } catch (cause) {
+      clearRejectedAttempt(prepareAttempt.current, cause);
       setFailure(failureMessage(cause, "生成草稿失败"));
       return false;
     } finally {

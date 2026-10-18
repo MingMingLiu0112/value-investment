@@ -30,12 +30,12 @@ def unlock(client, secret):
     client.headers["x-local-session"] = token
 
 
-def initialize(path):
+def initialize(path, sleeve="CORE_VALUE"):
     service = PrivatePortfolioService(PrivateJournal(path))
     service.initialize({"idempotency_key": "init", "expected_revision": 0,
         "account_scope": "TEST_ONLY", "as_of": "2026-10-10", "cash_cny": "8000",
         "holdings": [{"symbol": "600887", "exchange": "SSE", "quantity": "100", "cost_basis_cny": "2000"}],
-        "sleeve_allocations": {"600887": {"CORE_VALUE": "100"}}, "policy": {},
+        "sleeve_allocations": {"600887": {sleeve: "100"}}, "policy": {},
         "confirmed_at": "2026-10-10T20:00:00+08:00", "confirmation_note": "TEST_ONLY"})
     return service
 
@@ -153,6 +153,7 @@ def test_route_replays_confirmed_snapshot_binding_without_public_registry_member
     def verified(root, symbol, source, *, now):
         calls.append(source["case_path"])
         return {"symbol": symbol, "action": "no_order", "signal_state": "TRIGGER_REJECTED",
+            "schema_version": "price-action-plan-current-v1", "strategy": "HOTSPOT_SATELLITE",
             "action_intent": "EXIT", "data_available_at": "2026-10-14T20:00:00+08:00"}
     monkeypatch.setattr(continuity, "load_held_price_plan", verified)
     client, secret = client_for(tmp_path, path, monkeypatch)
@@ -171,7 +172,7 @@ def test_route_replays_confirmed_snapshot_binding_without_public_registry_member
 
 def test_explicit_refresh_auth_revision_and_persisted_case_discovery_without_ledger_write(tmp_path, monkeypatch):
     path = tmp_path / "TEST_ONLY-refresh.jsonl"
-    initialize(path)
+    initialize(path, sleeve="HOTSPOT_SATELLITE")
     client, secret = client_for(tmp_path, path, monkeypatch)
     route = ROUTE + "/refresh"
     assert client.post(route, json={"expected_revision": 1}).status_code == 401
@@ -200,6 +201,7 @@ def test_explicit_refresh_auth_revision_and_persisted_case_discovery_without_led
         target = root / binding["case_path"]
         assert hashlib.sha256(target.read_bytes()).hexdigest() == binding["case_sha256"]
         return {"symbol": symbol, "action": "no_order", "case_path": binding["case_path"],
+            "schema_version": "price-action-plan-current-v1", "strategy": "HOTSPOT_SATELLITE",
             "case_sha256": binding["case_sha256"], "market_trade_date": "2026-10-16",
             "data_available_at": "2026-10-10T20:00:00+08:00", "signal_state": "TRIGGER_REJECTED",
             "action_intent": "EXIT"}

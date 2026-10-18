@@ -300,6 +300,21 @@ def projected_account(service, tmp_path, monkeypatch):
     return service
 
 
+@pytest.mark.parametrize("expiry", [None, "", "not-a-date"])
+def test_web_choices_missing_plan_expiry_returns_gap_not_server_error(projected_account, tmp_path, monkeypatch, expiry):
+    plan = binding()
+    plan["plan"]["expires_after_session"] = expiry
+    monkeypatch.setattr(preview, "_current_plan", lambda *args: (deepcopy(plan), None))
+    before = projected_account.journal.path.read_bytes()
+    result = preview.preview_private_hotspot_risk(projected_account.journal,
+        repository_root=tmp_path, generated_at=NOW,
+        payload={"symbol": "300364", "assumptions": ASSUMPTIONS,
+                 "scenario": scenario_choices()})
+    assert "SCENARIO_PLAN_EXPIRY_MISSING_OR_INVALID" in result["scenario_preview"]["blockers"]
+    assert result["scenario_preview"]["review_quantity"] is None
+    assert projected_account.journal.path.read_bytes() == before
+
+
 def test_web_choices_project_real_adapter_without_changing_actual_result(projected_account, tmp_path, monkeypatch):
     service = projected_account
     payload = {"symbol": "300364", "assumptions": {**ASSUMPTIONS, "lot_size": "1"}}

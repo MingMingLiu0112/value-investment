@@ -127,6 +127,13 @@ def _projected_scenario(scenario, *, journal, symbol, assumptions, binding,
             "reconciliation_inferred": False, "private_inputs_inferred": False},
         required_holding_risks=[], security_risk_gaps=[])
     gaps = list(plan_blockers)
+    expiry = (binding or {}).get("plan", {}).get("expires_after_session")
+    try:
+        if not isinstance(expiry, str):
+            raise ValueError("Missing plan expiry")
+        date.fromisoformat(expiry)
+    except ValueError:
+        gaps.append("SCENARIO_PLAN_EXPIRY_MISSING_OR_INVALID")
     service = PrivatePortfolioService(journal)
     replayed = service._replay(service.records())
     if replayed is None:
@@ -151,7 +158,7 @@ def _projected_scenario(scenario, *, journal, symbol, assumptions, binding,
         "symbol": symbol, "sleeve": "HOTSPOT_SATELLITE",
         "entry_price_cny": plan["entry_trigger_price"], "stop_price_cny": plan["invalidation_price"],
         "quote_as_of": plan["market_trade_date"], "available_at": plan["data_available_at"],
-        "valid_until": plan["expires_after_session"] + "T15:00:00+08:00",
+        "valid_until": expiry + "T15:00:00+08:00",
         "liquidity_verified": execution["liquid"], "limit_up": execution["limit_up"],
         "limit_down": execution["limit_down"],
         "research_version_sha256": hashlib.sha256(plan["research_version"].encode()).hexdigest(),
@@ -311,6 +318,12 @@ def preview_private_hotspot_risk(journal, *, repository_root, generated_at: date
         blockers.append("CURRENT_PLAN_UNAVAILABLE_OR_CHANGED")
     if binding:
         plan = binding["plan"]
+        try:
+            if not isinstance(plan.get("expires_after_session"), str):
+                raise ValueError("Missing plan expiry")
+            date.fromisoformat(plan["expires_after_session"])
+        except ValueError:
+            blockers.append("PLAN_EXPIRY_MISSING_OR_INVALID")
         entry, stop = plan.get("entry_trigger_price"), plan.get("invalidation_price")
         if entry is None or stop is None:
             blockers.append("PLAN_PRICE_MISSING")

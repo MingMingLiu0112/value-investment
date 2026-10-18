@@ -30,6 +30,24 @@ Port 8001 HTTP responds 200, but the user-restored normal browser tab still fail
 the browser URL policy gate. No alternate browser or policy workaround used.
 This affects normal-browser acceptance only, not isolated engineering checks.
 
+Follow-up adversarial review found two P2 edges: definitive 4xx fill rejection
+must clear the retry body (network/5xx ambiguity still preserves it), and the
+backend held-continuity resolver must also match real positive sleeve holdings.
+Both are repaired with counterexample regressions. Actual browser scenario
+submission after a clearly TEST_ONLY synthetic statement reference exposed an
+HTTP 500: the current 000333 plan has null expires_after_session. Missing expiry
+now returns explicit PLAN_EXPIRY_MISSING_OR_INVALID instead of guessing an expiry.
+The actual retained plan plus isolated journal replay returns BLOCKED, null
+quantity and unchanged ledger. This is a repaired error path, not positive
+quantity acceptance; rebuilt browser verification and complete scenario success
+remain on the continuation list. No synthetic reference entered a real account.
+
+Continuation: verify repaired scenario in the rebuilt TEST_ONLY browser, inspect
+why the current plan has no admissible expiry without inventing one, then complete
+positive isolated risk/plan/research binding, S5 remaining completed-bar/event
+orchestration, S6 launcher/workflows and S7 acceptance. Do not repeat the passed
+three-fill bookkeeping exercise or claim full S4/S6/Goal completion.
+
 ## 2026-10-18 interruption audit and S0 start
 
 Previous goal turn: PROGRESS (independent source/runtime audit, counterexamples,

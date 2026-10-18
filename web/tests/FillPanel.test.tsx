@@ -81,7 +81,9 @@ import {
   FillPanel,
   fillContextFromSearch,
   failureMessage,
+  clearRejectedAttempt,
 } from "../src/components/FillPanel";
+import { retryableWrite } from "../src/components/PrivateRiskContext";
 import { ApiError } from "../src/services/api";
 
 it.each([
@@ -119,6 +121,27 @@ it("keeps unknown API failures visible", () => {
 beforeEach(() => {
   captured.fields.length = 0;
   captured.prepare.mockClear();
+});
+
+it("renews rejected requests but preserves uncertain outcomes", () => {
+  const attempt = retryableWrite();
+  const old = attempt.body("confirm", () => ({ confirmed_at: "yesterday" }));
+  for (const cause of [
+    new Error("response lost"),
+    Object.assign(new ApiError(503, "FAIL", ""), { status: 503 }),
+  ]) {
+    clearRejectedAttempt(attempt, cause);
+    expect(attempt.body("confirm", () => ({ confirmed_at: "today" }))).toBe(
+      old,
+    );
+  }
+  const rejection = Object.assign(new ApiError(422, "INVALID", "future"), {
+    status: 422,
+  });
+  clearRejectedAttempt(attempt, rejection);
+  expect(attempt.body("confirm", () => ({ confirmed_at: "today" }))).toEqual({
+    confirmed_at: "today",
+  });
 });
 
 it("reuses a lost-response request and suppresses concurrent preparation", async () => {
