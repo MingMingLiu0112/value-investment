@@ -246,6 +246,22 @@ async function getPrivate<T>(path: string, signal?: AbortSignal): Promise<T> {
 }
 
 export const api = {
+  conditionAlerts: (testOnly: boolean, signal?: AbortSignal) =>
+    getPrivate<{
+      action: "no_order";
+      status: string;
+      test_only: boolean;
+      monitor_running: boolean;
+      detail?: string;
+      alerts: Record<string, unknown>[];
+      history: {
+        symbol: string;
+        event_type: string;
+        detected_at: string;
+        reason: string;
+        source_event_id: string;
+      }[];
+    }>(`condition-alerts?test_only=${testOnly}`, signal),
   updateStatus: (signal?: AbortSignal) =>
     get<{
       action: "no_order";

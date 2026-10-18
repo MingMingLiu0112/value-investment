@@ -1,0 +1,26 @@
+{
+  "stage": "S5",
+  "status": "PARTIAL",
+  "captured_at": "2026-10-18T11:08:32.103387+00:00",
+  "input": {
+    "path": "runtime/web-first-intraday/20261018-600150/quotes.json",
+    "sha256": "4929cd48621c48c9ed4552c6a032429cbc938e1a873f439534235c7217d61a34"
+  },
+  "actual_acquisition": true,
+  "collection_failures": 0,
+  "source_documents": 3,
+  "projection": {
+    "schema_version": "retained-intraday-quote-observation-v1",
+    "symbol": "600150",
+    "status": "STALE_OR_UNAVAILABLE",
+    "reason": "OUTSIDE_EXCHANGE_SESSION",
+    "observation": null,
+    "action": "no_order",
+    "eligibility": false,
+    "admitted": false,
+    "b1_eligible": false
+  },
+  "action": "no_order",
+  "market_clock_backdated": false,
+  "interpretation": "Real non-session observation rejected; no intraday trigger claimed"
+}

@@ -21,6 +21,7 @@ export default defineConfig({
     { path: "/historical-price/:symbol/:day", component: "./HistoricalPrice" },
     { path: "/portfolio", component: "./Portfolio" },
     { path: "/history", component: "./DecisionHistory" },
+    { path: "/alerts", component: "./ConditionAlerts" },
     { path: "/system", component: "./SystemStatus" },
   ],
   proxy: { "/api": { target: "http://127.0.0.1:8001", changeOrigin: true } },

@@ -440,3 +440,46 @@ and rejection of ACTUAL execution without the existing authorization.
 No source monitor, live data collection, scheduler, alert Web API or user
 acknowledgment lifecycle is claimed. Those remain S5 engineering work, not
 external blockers. S4 and S5 remain IN_PROGRESS; total Goal remains IN_PROGRESS.
+
+6afa0c22f456681c655cd0925ca8e5cd494c54a7 passes exact-SHA Core/Postgres/Web
+CI. Rebuilt/restarted local runtime MATCHED and all ten hotspot detail/list
+projections pass again (sixteen unified objects, no formal eligibility).
+Post-commit receipts are under s5; the inherited browser-failure metadata was
+corrected to reflect recovered S4 public/locked-page checks and the still absent
+S5 alert UI. Next concrete work: reuse retained dual-provider quote parsing for
+a strict intraday observation bridge, then persist the condition cursor and
+events together, expose authenticated alert history/acknowledgment, and test the
+manual local monitor. No production activation is authorized or claimed.
+
+### S5 retained source bridge, atomic replay and Web history
+
+Retained dual-source quotes now reuse resolve_session_reference/parse_quote
+with strict identity, raw hashes, exact cross-source price agreement, clock,
+session/lunch and freshness checks. Actual bounded collection for 600150 stored
+three documents with zero request failures; the real Sunday observation is
+OUTSIDE_EXCHANGE_SESSION and yields no usable intraday quote or trigger.
+Receipt: s5/real-source-negative.json. Provider clocks were not backdated.
+
+The TEST_ONLY monitor commits adapter cursor and existing M5 aggregate in one
+fsynced atomic snapshot under the existing interprocess lock. No independent
+risk/event engine was rebuilt. Initial untriggered, transition, failure,
+recovery, restart, deduplication and failed-write behavior are covered.
+Independent review found a P2 recombination gap; latest M5 status/cycle/identity
+and session are now cross-checked against the cursor. Fourteen focused monitor/
+API regressions pass after that repair. Earlier combined API/source/adapter/
+monitor regression: 297 passed. Source bridge and original parsers: 129 passed.
+
+Authenticated read-only /api/v1/condition-alerts and /alerts are connected.
+Normal mode truthfully returns NOT_STARTED and never reads TEST_ONLY data.
+Explicit isolated mode reads only runtime/intraday-monitor/test-only.json.
+The finite scripts/current/replay_intraday_test_only.py replay generated four
+labelled isolated events/alerts, no eligibility, no network or monitor process.
+Web hides responses from a previous mode while changing mode, preventing a
+TEST_ONLY response from briefly appearing as a normal reminder. Web suite:
+228 passed; format and typecheck passed. Commit-specific build/runtime/browser
+and CI verification follow integration.
+
+S5 remains IN_PROGRESS: actual local monitoring, legitimate ACTUAL persistence,
+completed-bar acquisition, alert acknowledgment/cancellation/expiry and full
+interactive acceptance are not implemented by this read-only history step.
+S6/S7 remain open; the total Goal is not complete.

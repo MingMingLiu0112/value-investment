@@ -1,0 +1,52 @@
+{
+  "action": "no_order",
+  "head": "6afa0c22f456681c655cd0925ca8e5cd494c54a7",
+  "pulls": [
+    {
+      "number": 1,
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/pull/1",
+      "state": "open",
+      "draft": true
+    }
+  ],
+  "runs": [
+    {
+      "id": 39121540098,
+      "name": "Core Research Gates",
+      "head_sha": "6afa0c22f456681c655cd0925ca8e5cd494c54a7",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39121540098",
+      "jobs": [
+        {
+          "id": 117657969686,
+          "name": "offline-core",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 117657969820,
+          "name": "postgres-integration",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 39121540093,
+      "name": "Web Workbench",
+      "head_sha": "6afa0c22f456681c655cd0925ca8e5cd494c54a7",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39121540093",
+      "jobs": [
+        {
+          "id": 117657969512,
+          "name": "web",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}
