@@ -90,6 +90,13 @@ def _empty(symbol, status, reason):
 
 
 def read_web_agent_research(root: Path, *, symbol: str, now: datetime, workflow: str | None = None) -> dict:
+    """Read the fixed server-owned registry; no caller-selected registry or writes."""
+    return _read_registered_research(root, symbol=symbol, now=now,
+                                     workflow=workflow, registry_name=REGISTRY_PATH)
+
+
+def _read_registered_research(root: Path, *, symbol: str, now: datetime,
+                              workflow: str | None, registry_name: str) -> dict:
     """Replay only exact server-owned registry bindings, with no file writes.
 
     Registry keys: schema_version, action, cases. Each six-digit case has exactly
@@ -105,7 +112,7 @@ def read_web_agent_research(root: Path, *, symbol: str, now: datetime, workflow:
         raise ValueError("Unsupported public research workflow")
     root = Path(root).resolve()
     try:
-        registry_path = _public_path(root, REGISTRY_PATH)
+        registry_path = _public_path(root, registry_name)
         if not registry_path.exists():
             return _empty(symbol, "NOT_CONNECTED", "REGISTRY_NOT_REGISTERED")
         registry_raw = _raw(registry_path, 64 * 1024)
@@ -253,7 +260,7 @@ def read_web_agent_research(root: Path, *, symbol: str, now: datetime, workflow:
             research_as_of=snapshot.as_of.isoformat(), generated_at=packet["generated_at"],
             checked_at=now.isoformat(), model_id=packet["model_id"], prompt_version=packet["prompt_version"],
             research_input_fingerprint=snapshot.input_fingerprint,
-            bindings={"registry": {"path": REGISTRY_PATH, "sha256": hashlib.sha256(registry_raw).hexdigest()},
+            bindings={"registry": {"path": registry_name, "sha256": hashlib.sha256(registry_raw).hexdigest()},
                       "packet": entry["packet"], "workbench": entry["workbench"]},
             findings=views, sources=sources)
         return deepcopy(result)

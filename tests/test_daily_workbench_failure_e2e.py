@@ -16,6 +16,35 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def test_daily_entry_busy_preserves_active_receipt(tmp_path):
+    if not PWSH.is_file():
+        pytest.skip('Windows PowerShell 7 required')
+    project = tmp_path / 'busy-project'
+    current = project / 'scripts/current'
+    current.mkdir(parents=True)
+    scratch = project / '.tmp'
+    scratch.mkdir()
+    shutil.copy2(ROOT / 'scripts/current/run_daily_workbench.ps1', current)
+    receipt = scratch / 'daily-workbench-latest-run.json'
+    receipt.write_bytes(b'{"status":"ACTIVE_SENTINEL"}')
+    lock = (scratch / 'daily-workbench.lock').as_posix().replace("'", "''")
+    holder = subprocess.Popen([str(PWSH), '-NoProfile', '-Command',
+        f"$h=[IO.File]::Open('{lock}',[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None);"
+        "[Console]::WriteLine('LOCKED');[Console]::ReadLine()|Out-Null;$h.Dispose()"],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        encoding='utf-8')
+    try:
+        assert holder.stdout.readline().strip() == 'LOCKED'
+        completed = subprocess.run([str(PWSH), '-NoProfile', '-File',
+            str(current / 'run_daily_workbench.ps1'), '-NoServer'], cwd=project,
+            capture_output=True, text=True, encoding='utf-8', timeout=20)
+        assert completed.returncode == 2
+        assert 'BUSY' in completed.stdout
+        assert receipt.read_bytes() == b'{"status":"ACTIVE_SENTINEL"}'
+    finally:
+        holder.communicate('\n', timeout=10)
+
+
 def test_safe_refresh_failure_keeps_previous_snapshot_bytes(tmp_path):
     if not PWSH.is_file():
         pytest.skip('Windows PowerShell 7 required')
@@ -79,6 +108,7 @@ def test_safe_refresh_failure_keeps_previous_snapshot_bytes(tmp_path):
     ('complete', 0, 'SUCCESS', True),
     ('partial', 3, 'PARTIAL', True),
     ('incremental_unavailable', 3, 'PARTIAL', True),
+    ('research_unavailable', 3, 'PARTIAL', True),
     ('unavailable', 2, 'BLOCKED', False),
     ('core_conflict', 2, 'BLOCKED', False),
     ('core_unavailable', 2, 'BLOCKED', False),
@@ -139,8 +169,14 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         '"model_validity_status":"UNKNOWN","status":"REQUIRES_MATERIALITY_REVIEW"}]}))\n',
         encoding='utf-8')
     before = pointer.read_bytes()
+    research_args = []
+    if scenario == 'research_unavailable':
+        (current / 'run_agent_research_pilot.py').write_text(
+            'raise RuntimeError("TEST_ONLY unavailable research")\n', encoding='utf-8')
+        research_args = ['-ResearchMockPlan', 'runtime/TEST_ONLY-plan.json',
+                         '-ResearchMockPlanSha256', 'a' * 64]
     completed = subprocess.run([str(PWSH), '-NoProfile', '-File',
-        str(current / 'run_daily_workbench.ps1'), '-Mode', 'SAFE_REFRESH', '-NoServer'],
+        str(current / 'run_daily_workbench.ps1'), '-Mode', 'SAFE_REFRESH', '-NoServer', *research_args],
         cwd=project, capture_output=True, text=True, encoding='utf-8', timeout=60)
     receipt = json.loads((project / '.tmp/daily-workbench-latest-run.json').read_text(encoding='utf-8-sig'))
     assert completed.returncode == expected_exit, completed.stdout + completed.stderr

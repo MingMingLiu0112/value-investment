@@ -292,3 +292,26 @@ s5/retained-agent-mobile390.png and s5/retained-agent-mobile430.png.
 172437f8 and successor e62cc025 exact-SHA Core/Postgres/Web CI passed separately.
 Actual browser START -> STOP -> refresh succeeds on e62cc025, retaining the
 600150 plan and negative non-session observation at 20:47:55 Beijing time.
+
+### S6 daily batch slice: PARTIAL, not stage acceptance
+
+The existing daily entry now optionally runs pinned event/financial MOCK jobs.
+Real retained 600519 sources exercised both branches: event draft reused with
+original source verification; missing comparable financial transcription refused.
+The actual READ_ONLY/NoServer entry continued to verified display publication
+with PARTIAL status and zero formal admissions. Research was not registered,
+approved or automatically published. No paid provider, private data or Excel
+write. Regression: 98 passed plus five final targeted tests. Details and local
+receipt paths are in the single execution ledger. Browser remains unaccepted;
+IAB still reports connection refused while direct local HTTP returns 200.
+S6/S7 and the overall engineering objective are not complete. This uncommitted
+slice has no exact-commit remote CI evidence yet.
+
+S6 successor: explicit daily draft display registration now passes the shared
+Web verifier before atomic pointer replacement, preserves legacy/failed entries,
+and never changes formal eligibility. Source-contract registration acceptance:
+19 passed; related Web API/research/architecture: 356 passed; reader/CLI: 72 passed.
+Real retained event registration is UNCHANGED and financial is SKIPPED for missing
+inputs. Registration is opt-in, historical MOCK only in this exercise. No new
+browser pass or complete S6/S7 claim. Exact committed-build CI/runtime checks
+remain separate evidence.

@@ -58,6 +58,84 @@ def invoke(cli, argv, monkeypatch, capsys):
     return code, json.loads(capsys.readouterr().out)
 
 
+def batch_inputs(args):
+    argv = inputs(args, "event")
+    flags = dict(zip(argv[1::2], argv[2::2]))
+    event = {"symbol": args["symbol"], "workflow": "event",
+             "output": str(args["output"].relative_to(args["root"]))}
+    for key in ("workbench", "source_requests", "mock_responses"):
+        flag = "--" + key.replace("_", "-")
+        event[key] = {"path": flags[flag], "sha256": flags[flag + "-sha256"]}
+    financial = {key: value for key, value in event.items() if key != "mock_responses"}
+    financial.update(workflow="financial", output="runtime/daily-agent/financial.json")
+    return event, financial
+
+
+def test_batch_real_verifiers_isolate_missing_financial_and_reuse_event(cli, tmp_path, monkeypatch, capsys):
+    args = setup(tmp_path)
+    event, financial = batch_inputs(args)
+    plan = tmp_path / "runtime/batch.json"
+    plan.write_text(json.dumps(dict(schema_version="daily-agent-mock-batch-v1",
+        action="no_order", mode="MOCK", jobs=[financial, event])), encoding="utf-8")
+    argv = ["pilot", "--mode", "mock", "--batch-plan", str(plan),
+            "--batch-plan-sha256", sha256_file(plan)]
+    code, result = invoke(cli, argv, monkeypatch, capsys)
+    assert code == 3 and result["status"] == "PARTIAL"
+    assert [item["status"] for item in result["items"]] == ["BLOCKED_INPUT", "DRAFT_READY"]
+    assert result["registered_or_published"] is False and result["approval_count"] == 0
+    before = args["output"].read_bytes(), args["output"].stat().st_mtime_ns
+    assert invoke(cli, argv, monkeypatch, capsys) == (code, result)
+    assert before == (args["output"].read_bytes(), args["output"].stat().st_mtime_ns)
+
+
+@pytest.mark.parametrize("bad_output", ["config/current-agent-research.json", "../outside.json"])
+def test_batch_prevalidates_all_outputs_before_any_write(cli, tmp_path, monkeypatch, capsys, bad_output):
+    args = setup(tmp_path)
+    event, financial = batch_inputs(args)
+    financial["output"] = bad_output
+    plan = tmp_path / "runtime/batch.json"
+    plan.write_text(json.dumps(dict(schema_version="daily-agent-mock-batch-v1",
+        action="no_order", mode="MOCK", jobs=[event, financial])), encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", ["pilot", "--mode", "mock", "--batch-plan", str(plan),
+                                    "--batch-plan-sha256", sha256_file(plan)])
+    with pytest.raises(ValueError):
+        cli.main()
+    assert not args["output"].exists()
+
+
+def test_batch_bad_job_pin_does_not_block_other_workflow(cli, tmp_path, monkeypatch, capsys):
+    args = setup(tmp_path)
+    event, financial = batch_inputs(args)
+    financial["workbench"] = dict(event["workbench"], sha256="0" * 64)
+    plan = tmp_path / "runtime/batch.json"
+    plan.write_text(json.dumps(dict(schema_version="daily-agent-mock-batch-v1",
+        action="no_order", mode="MOCK", jobs=[financial, event])), encoding="utf-8")
+    code, result = invoke(cli, ["pilot", "--mode", "mock", "--batch-plan", str(plan),
+        "--batch-plan-sha256", sha256_file(plan)], monkeypatch, capsys)
+    assert code == 3
+    assert [row["status"] for row in result["items"]] == ["FAILED", "DRAFT_READY"]
+    assert result["items"][0]["error_type"] == "ValueError"
+
+
+def test_cli_explicit_batch_display_registration_uses_web_verifier(cli, tmp_path, monkeypatch, capsys):
+    from datetime import datetime, timezone
+    from value_investment_agent.application.research.agent_review.web_research import read_web_agent_research
+
+    args = setup(tmp_path)
+    event, _ = batch_inputs(args)
+    plan = tmp_path / "runtime/batch.json"
+    plan.write_text(json.dumps(dict(schema_version="daily-agent-mock-batch-v1",
+        action="no_order", mode="MOCK", jobs=[event])), encoding="utf-8")
+    code, result = invoke(cli, ["pilot", "--mode", "mock", "--batch-plan", str(plan),
+        "--batch-plan-sha256", sha256_file(plan), "--register-drafts"], monkeypatch, capsys)
+    assert code == 0 and result["display_registration"]["status"] == "UPDATED"
+    assert result["registration_scope"] == "DISPLAY_ONLY_NOT_RESEARCH_APPROVAL"
+    view = read_web_agent_research(tmp_path, symbol=args["symbol"], workflow="event",
+                                   now=datetime.now(timezone.utc))
+    assert view["status"] == "VERIFIED"
+    assert view["approval_count"] == 0 and view["admitted"] is False
+
+
 @pytest.mark.parametrize("workflow", ["event", "financial"])
 def test_daily_cli_verified_drafts_reuse_without_public_or_private_writes(
         cli, tmp_path, monkeypatch, capsys, workflow):

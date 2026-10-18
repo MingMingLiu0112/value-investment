@@ -735,6 +735,74 @@ failed fixture isolation; the corrected environment passed without changing gate
 Committed-build browser/restart and exact-SHA CI must be recorded separately.
 S5 and S6 remain IN_PROGRESS; full Goal is active and Excel remains FROZEN.
 
+### S6 explicit daily Mock batch integration (2026-10-18)
+
+The existing research CLI now accepts a SHA-256-pinned bounded batch plan
+(`daily-agent-mock-batch-v1`, MOCK/no_order only). It calls existing event and
+financial use cases independently, prevalidates distinct runtime-only outputs,
+and distinguishes missing inputs from failed jobs. Existing immutable pilot
+reuse/source verification is preserved. No automatic registration or approval.
+The existing daily PowerShell entry accepts `-ResearchMockPlan` and
+`-ResearchMockPlanSha256`; research failures add notes without stopping public
+data updates. No second launcher, scheduler, provider or Excel operation.
+
+Local real retained-original run: 600519 event DRAFT_READY, financial
+BLOCKED_INPUT (missing comparable-period transcription), overall PARTIAL.
+Research cutoff remains 2026-10-08; this is historical MOCK, not new current
+investment research. Actual READ_ONLY/NoServer daily entry completed PARTIAL,
+published verified display snapshot pub-9b49ff2e54323150a06d, and kept formal
+admissions at zero. Local plans and receipts are untracked:
+`.tmp/s6-research-batch.json`, `.tmp/daily-workbench-research-latest.json`,
+`.tmp/daily-workbench-latest-run.json`. Generated runtime files stay untracked.
+
+Verification: 98 relevant Python/Windows entry/architecture tests passed; after
+the final batch-pin and child-failure tests, five targeted tests passed.
+The real CLI returned exit 3 as designed for PARTIAL; its containing shell
+reported exit 1 for the nonzero child code, not a pytest failure.
+
+Browser remains NOT_ACCEPTED: current IAB tab inventory still reports an
+ERR_CONNECTION_REFUSED data error page despite user reopening. Direct local
+HTTP /daily was 200, and runtime identity matched 6b47fe9b before this patch;
+neither proves current UI interaction acceptance. No browser-policy workaround.
+
+Remaining: daily draft registration/display handoff, hotspot research workflow,
+complete daily/after-close orchestration, full positive browser closure and S7
+restore/responsive acceptance. Independent static review also identified an
+existing single-instance/receipt concurrency gap in the daily launcher. It is
+now repaired with an exclusive file handle before receipt writes and release
+before the long-lived Web service. A concurrent real pwsh process returns BUSY
+without changing the active receipt. Unexpected Web startup failure preserves
+the completed update receipt. Final entry/CLI regression: 37 passed (one
+previously passed slower offline-failure test deselected); final lock/research
+failure/core-unavailable checks: three passed. Independent implementation review
+found no confirmed new P0/P1. New patch is not yet committed or
+covered by exact-commit remote CI. S6 remains IN_PROGRESS; total Goal incomplete.
+
+### S6 verified draft-to-Web handoff
+
+The same research CLI now supports explicit `--register-drafts` with a pinned
+batch plan. The existing daily entry forwards `-RegisterResearchDrafts`; it is
+not enabled by default. The application registrar reuses the exact Web verifier
+against a temporary candidate registry, preserves failed jobs' previous entries,
+retains the previous registry by content hash, serializes cooperating writers,
+and atomically changes only the display pointer. All registered packets remain
+MOCK drafts with zero approvals and no formal eligibility change. Public GET
+still reads only the fixed server registry; no arbitrary-path API was added.
+
+Example against the retained local plan (historical sources, no live model):
+`pwsh -NoProfile -File scripts/current/run_daily_workbench.ps1 -Mode READ_ONLY -NoServer -ResearchMockPlan .tmp/s6-research-batch.json -ResearchMockPlanSha256 7b7d13f719a644d20d86c7b5d85bf3dde7a25e70c788937728e8242ea47ad466 -RegisterResearchDrafts`.
+Use the actual plan hash if its bytes differ. This command is display-only and
+does not approve G3, event materiality, facts, risk capacity or orders.
+
+Independent subagent added 19 source-contract registration tests, all passed;
+related full Web API/research/architecture regression: 356 passed. Existing
+reader/CLI tests: 72 passed. Real retained600519 batch with explicit registration
+returns PARTIAL: event UNCHANGED, financial SKIPPED, zero new registrations and
+zero approvals. Failed/tampered candidate tests preserve the previous good Web
+view, including when the attacker recomputes a packet hash. Final entry regression,
+exact-commit CI and rebuilt runtime evidence are recorded after integration.
+This closes the optional event/financial display handoff, not all S6 workflows.
+
 Scoped service/API final tests: 45 passed; source plus complete Web API regression:
 371 passed; Web full regression: 229 passed, final targeted test: 4 passed,
 typecheck/build pass. Browser confirms explicit real collection for 600150 and

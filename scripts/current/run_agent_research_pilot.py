@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import sys
@@ -18,6 +19,8 @@ from value_investment_agent.application.research.agent_review.llm_pilot import r
 from value_investment_agent.application.research.agent_review.daily_research import (
     run_daily_event_mock, run_daily_financial_mock,
 )
+from value_investment_agent.application.research.agent_review.daily_batch import run_daily_mock_batch
+from value_investment_agent.application.research.agent_review.daily_registration import register_daily_draft_results
 from value_investment_agent.application.research.agent_review.source_context import ExcerptRequest
 from value_investment_agent.infrastructure.agent_runtime.provider import (
     MockLLMProvider, OpenAICompatibleChatProvider,
@@ -71,10 +74,14 @@ def _daily_mock(args, parser) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--symbol", required=True)
-    parser.add_argument("--workbench", type=Path, required=True)
-    parser.add_argument("--workbench-sha256", required=True)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--symbol")
+    parser.add_argument("--workbench", type=Path)
+    parser.add_argument("--workbench-sha256")
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--batch-plan", type=Path)
+    parser.add_argument("--batch-plan-sha256")
+    parser.add_argument("--register-drafts", action="store_true",
+                        help="Explicit source-reverified display registration, never research approval")
     parser.add_argument("--mode", choices=("offline", "mock", "live"), default="offline")
     parser.add_argument("--mock-responses", type=Path)
     parser.add_argument("--mock-responses-sha256")
@@ -87,6 +94,33 @@ def main() -> int:
         parser.add_argument("--" + name, type=Path)
         parser.add_argument("--" + name + "-sha256")
     args = parser.parse_args()
+    if args.batch_plan is not None or args.batch_plan_sha256 is not None:
+        if not args.batch_plan or not args.batch_plan_sha256 or args.mode != "mock":
+            parser.error("batch requires pinned --batch-plan and explicit --mode mock")
+        if args.workflow != "legacy" or args.authorize_paid_api or any(
+                getattr(args, key) is not None for key in (
+                    "symbol", "workbench", "workbench_sha256", "output", "provider_config",
+                    "provider_config_sha256", "mock_responses", "mock_responses_sha256",
+                    "source_requests", "source_requests_sha256", "transcription", "transcription_sha256",
+                    "metric_workbench", "metric_workbench_sha256")):
+            parser.error("batch plan cannot be mixed with single-job/provider arguments")
+        result = run_daily_mock_batch(root=ROOT, plan=args.batch_plan,
+                                      plan_sha256=args.batch_plan_sha256)
+        if args.register_drafts:
+            registration = register_daily_draft_results(root=ROOT, batch_result=result,
+                                                       now=datetime.now(timezone.utc))
+            result["display_registration"] = registration
+            result["registered_or_published"] = any(item["status"] in {"REGISTERED", "UNCHANGED"}
+                                                    for item in registration["items"])
+            result["registration_scope"] = "DISPLAY_ONLY_NOT_RESEARCH_APPROVAL"
+            if registration["status"] not in {"UPDATED", "UNCHANGED"} and result["status"] == "SUCCESS":
+                result["status"] = "PARTIAL" if result["registered_or_published"] else "BLOCKED"
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0 if result["status"] == "SUCCESS" else 3 if result["status"] == "PARTIAL" else 2
+    if args.register_drafts:
+        parser.error("display registration requires a pinned batch plan")
+    if not all((args.symbol, args.workbench, args.workbench_sha256, args.output)):
+        parser.error("single job requires symbol, workbench, workbench-sha256 and output")
     if args.workflow != "legacy":
         return _daily_mock(args, parser)
     if any(getattr(args, key) is not None for key in (

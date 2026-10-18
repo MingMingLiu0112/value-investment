@@ -45,6 +45,7 @@ jobs:
           tests/test_web_agent_research.py
           tests/test_daily_agent_research.py
           tests/test_daily_agent_research_cli.py
+          tests/test_daily_research_registration.py
           tests/test_daily_retrospective_research.py
           tests/web_api/test_private_retrospective_api.py
           tests/web_api/test_agent_research_api.py

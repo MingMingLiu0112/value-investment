@@ -30,12 +30,17 @@ param(
     [switch]$Open,
     [switch]$NoServer,
     [switch]$Reauthorize,
-    [string]$Symbols = ''
+    [string]$Symbols = '',
+    [string]$ResearchMockPlan = '',
+    [string]$ResearchMockPlanSha256 = '',
+    [switch]$RegisterResearchDrafts
 )
 $ErrorActionPreference = 'Stop'
 if ($PSVersionTable.PSVersion.Major -lt 7) {
     & 'C:\Users\we\AppData\Local\Programs\PowerShell\7\pwsh.exe' -NoProfile -File $PSCommandPath `
-        -Mode $Mode -Port $Port -Open:$Open -NoServer:$NoServer -Reauthorize:$Reauthorize -Symbols $Symbols
+        -Mode $Mode -Port $Port -Open:$Open -NoServer:$NoServer -Reauthorize:$Reauthorize -Symbols $Symbols `
+        -ResearchMockPlan $ResearchMockPlan -ResearchMockPlanSha256 $ResearchMockPlanSha256 `
+        -RegisterResearchDrafts:$RegisterResearchDrafts
     exit $LASTEXITCODE
 }
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new()
@@ -48,6 +53,17 @@ $env:PYTHONIOENCODING = 'utf-8'
 $env:TEMP = Join-Path $root '.tmp'
 $env:TMP = $env:TEMP
 New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
+
+# Serialize data updates and receipts, independently of the Web service lifetime.
+try {
+    $dailyRunLock = [System.IO.File]::Open((Join-Path $env:TEMP 'daily-workbench.lock'),
+        [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite,
+        [System.IO.FileShare]::None)
+} catch [System.IO.IOException] {
+    Write-Host '运行结果 : BUSY - 已有每日工作台任务正在运行；未修改其回执。'
+    exit 2
+}
+try {
 
 $notes = [System.Collections.Generic.List[string]]::new()
 $startedAt = [DateTimeOffset]::UtcNow.ToString('o')
@@ -65,6 +81,10 @@ if (Test-Path -LiteralPath $priorPointer) {
 $initialReceipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
 Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
 trap {
+    if ($null -eq $dailyRunLock) {
+        Write-Host 'Web 服务 : 启动失败；保留已完成的数据更新回执。'
+        exit 4
+    }
     $failedReceipt = @{
         schema_version = 'daily-workbench-run-v1'; action = 'no_order'; mode = $Mode
         started_at = $startedAt; finished_at = [DateTimeOffset]::UtcNow.ToString('o')
@@ -116,6 +136,39 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host '运行结果 : BLOCKED - Python 环境无法导入 value_investment_agent。'; Write-Host $importCheck.Trim(); throw 'Python import failed'
 }
 Write-Host "Python   : $python"
+
+# Explicit offline drafts are independent of quote refresh and public publication.
+# No model credentials, automatic registration or private account input is used.
+if ($ResearchMockPlan -or $ResearchMockPlanSha256 -or $RegisterResearchDrafts) {
+    try {
+    if (-not $ResearchMockPlan -or -not $ResearchMockPlanSha256) {
+        throw 'Research Mock plan requires both path and SHA-256.'
+    }
+    $researchArgs = @('scripts/current/run_agent_research_pilot.py',
+        '--mode', 'mock', '--batch-plan', $ResearchMockPlan,
+        '--batch-plan-sha256', $ResearchMockPlanSha256)
+    if ($RegisterResearchDrafts) { $researchArgs += '--register-drafts' }
+    $research = Invoke-PythonJson $researchArgs
+    $researchReceipt = Join-Path $env:TEMP 'daily-workbench-research-latest.json'
+    $researchResult = @{
+        action = 'no_order'; mode = 'MOCK'; exit_code = $research.ExitCode
+        status = 'FAILED'; result = $research.Json
+    }
+    if ($research.Json) { $researchResult.status = $research.Json.status }
+    $researchResult | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath "$researchReceipt.pending" -Encoding utf8
+    Move-Item -LiteralPath "$researchReceipt.pending" -Destination $researchReceipt -Force
+    Write-Host "研究草案 : $($researchResult.status)（MOCK；不批准研究或交易）"
+    if ($research.Json.display_registration) {
+        Write-Host "草案展示登记 : $($research.Json.display_registration.status)（仅供已认证 Web 阅读）"
+    }
+    if ($research.ExitCode -ne 0) {
+        $notes.Add('部分离线研究草案未完成；详见 .tmp/daily-workbench-research-latest.json；继续其他更新。')
+    }
+    } catch {
+        $notes.Add('离线研究批次运行失败；其他行情及公开快照更新继续，未自动登记研究。')
+        Write-Host '研究草案 : FAILED（独立失败；未授予研究或交易资格）'
+    }
+}
 
 # The pre-run packet records what is registered right now; SAFE_REFRESH also
 # uses it so that re-running the same close stays idempotent. The formal
@@ -365,6 +418,8 @@ if ($Mode -eq 'SAFE_REFRESH') { Write-Host '能力边界 : 已完成行情和价
 Write-Host '说明     : 仅按验证结果更新本地公开快照引用；正式 Excel 与私人数据均未被触碰（action=no_order）。'
 foreach ($note in $notes) { Write-Host "提醒     : $note" }
 
+$dailyRunLock.Dispose()
+$dailyRunLock = $null
 $webStatus = '未启动'
 if ($NoServer) {
     Write-Host '已按 -NoServer 跳过 Web 启动。'
@@ -389,3 +444,6 @@ Write-Host "Web 服务 : $webStatus"
 $overallExit = if ($updateExit -ne 0) { $updateExit } elseif ($webExit -ne 0) { 4 } else { 0 }
 Write-Host "整体结果 : 退出码 $overallExit（数据更新 $status；Web 退出码 $webExit）"
 exit $overallExit
+} finally {
+    if ($null -ne $dailyRunLock) { $dailyRunLock.Dispose() }
+}
