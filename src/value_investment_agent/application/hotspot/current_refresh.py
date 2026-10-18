@@ -12,6 +12,9 @@ from value_investment_agent.quote_session_collection import collect_session_bund
 from value_investment_agent.quote_sessions import evaluate_quote_session, parse_quote
 from value_investment_agent.application.product.publication_chain import bound_object, load_current_chain
 from .daily_selection import verify_daily_selection
+from value_investment_agent.infrastructure.hotspot.current_price_case import (
+    DISPLAY_CLOSE_SCOPE, STRICT_CLOSE_SCOPE,
+)
 from .price_action_case import project_current_price_action_plan
 
 
@@ -82,7 +85,10 @@ def select_watch_candidates(report: dict, *, limit: int = 5) -> tuple[list[dict]
 def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
                                      watch_source_sha256: str, limit: int = 5,
                                      candidate_pool_limit: int | None = None,
-                                     bundle_collector=None, case_collector=None, now=None) -> dict:
+                                     bundle_collector=None, case_collector=None, now=None,
+                                     observation_scope=STRICT_CLOSE_SCOPE) -> dict:
+    if observation_scope not in {STRICT_CLOSE_SCOPE, DISPLAY_CLOSE_SCOPE}:
+        raise ValueError("Unsupported current-case observation scope")
     root = Path(root).resolve()
     source = Path(watch_source_path)
     source = (source if source.is_absolute() else root / source).resolve()
@@ -124,9 +130,12 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
                 raise ValueError("B1 rejected: " + checked["status"] + ":" + checked.get("detail", ""))
             if report.get("schema_version") == "hotspot-daily-selection-v1" and checked["expected_session"] != report["trade_date"]:
                 raise ValueError("Selection session and price session differ")
+            scope_options = ({"observation_scope": observation_scope}
+                             if observation_scope == DISPLAY_CLOSE_SCOPE else {})
             case = (case_collector or collect_current_price_case)(
                 root=root, symbol=symbol, as_of=date.fromisoformat(checked["expected_session"]),
-                quote_bundle_path=bundle_path, quote_bundle_sha256=bundle_sha)
+                quote_bundle_path=bundle_path, quote_bundle_sha256=bundle_sha,
+                **scope_options)
             plan = project_current_price_action_plan(case)
             quality = plan["opportunity_quality"]
             signal_state = plan["signal_state"]
@@ -175,6 +184,7 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
         action="no_order",
     )
     registry = dict(schema_version="current-price-conditions-v1", action="no_order",
+                    observation_scope=observation_scope,
                     watch_source_binding=dict(path=source.relative_to(root).as_posix(), sha256=watch_source_sha256),
                     watch_source_scope=scope, items=items, failures=failures,
                     candidate_pool_symbols=[row["symbol"] for row in selected],
@@ -204,6 +214,7 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
             # An invalid previous pointer is not evidence and is never imported.
             pass
     result = dict(status="WRITTEN" if items or empty_daily else "BLOCKED", items=items, failures=failures,
+                  observation_scope=observation_scope,
                   bundle_path=bundle_path.relative_to(root).as_posix(), bundle_sha256=bundle_sha,
                   watch_source_scope=scope, selection_pipeline=pipeline, action="no_order")
     _write(archive / "refresh.json", result)

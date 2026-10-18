@@ -121,6 +121,8 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
                 continue
             watch_symbols = {row["symbol"] for row in watch_report.get("dated_quote_observations", [])}
             watch_symbols.update(row["symbol"] for row in watch_report.get("observation_list", []))
+            if daily:
+                watch_symbols.update(row["symbol"] for row in watch_report.get("candidate_pool", []))
             symbol = item["symbol"]
             if symbol in seen or symbol not in watch_symbols:
                 raise ValueError("Duplicate or unbound current candidate")
@@ -137,7 +139,8 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
                             watch_source_scope=item["watch_source_scope"] if retired else registry["watch_source_scope"])
                 plan["watch_reason"] = "来自已归档、双源核对日期的证券观察记录；本轮更新其价格结构。行业热度日期尚未认证，不代表已通过热点筛选。"
                 if daily:
-                    candidate = next(row for row in watch_report["observation_list"] if row["symbol"] == symbol)
+                    candidates = watch_report.get("candidate_pool", []) + watch_report["observation_list"]
+                    candidate = next(row for row in candidates if row["symbol"] == symbol)
                     plan.update(watch_reason="当日带日期行情按行业相对强度、成交额、代码确定性排序；这是研究观察，不是正式热点准入。",
                                 daily_selection=candidate, selection_rule_version=watch_report["ranking"]["rule_version"],
                                 daily_selection_binding=source,

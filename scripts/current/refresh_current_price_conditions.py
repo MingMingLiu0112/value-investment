@@ -12,6 +12,9 @@ sys.path.insert(0, str(ROOT / "src"))
 from value_investment_agent.application.hotspot.current_refresh import refresh_current_price_conditions
 from value_investment_agent.application.hotspot.daily_selection import collect_daily_candidates
 from value_investment_agent.application.product.daily_refresh import refresh_readiness
+from value_investment_agent.infrastructure.hotspot.current_price_case import (
+    DISPLAY_CLOSE_SCOPE, STRICT_CLOSE_SCOPE,
+)
 
 
 def main(argv=None):
@@ -21,6 +24,9 @@ def main(argv=None):
     parser.add_argument("--watch-source-sha256")
     parser.add_argument("--limit", type=int, default=5)
     parser.add_argument("--candidate-pool-limit", type=int)
+    parser.add_argument("--observation-scope", choices=[STRICT_CLOSE_SCOPE, DISPLAY_CLOSE_SCOPE],
+                        default=STRICT_CLOSE_SCOPE,
+                        help="Explicit last-completed-close mode is display-only, never price admission")
     parser.add_argument("--check-reuse", action="store_true")
     parser.add_argument("--symbols", default="600887")
     args = parser.parse_args(argv)
@@ -38,7 +44,8 @@ def main(argv=None):
                    dict(path=args.watch_source, sha256=args.watch_source_sha256))
         result = refresh_current_price_conditions(root=args.root, watch_source_path=Path(binding["path"]),
             watch_source_sha256=binding["sha256"], limit=args.limit,
-            candidate_pool_limit=args.candidate_pool_limit)
+            candidate_pool_limit=args.candidate_pool_limit,
+            observation_scope=args.observation_scope)
     except Exception as error:
         result = dict(status="BLOCKED", items=[], failures=[dict(reason=type(error).__name__ + ":" + str(error))],
                       action="no_order")

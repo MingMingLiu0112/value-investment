@@ -21,7 +21,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SELECTION = ROOT / "runtime/hotspot-daily-selection/561a1e66bf424d4e87426fbf1f080106/report.json"
 SELECTION_SHA256 = "c2ef47a982ea85f04ed4d5e6324f9beda00e0f80f55cd4b19590d1c96d53f4f1"
 OTHER_SELECTION = ROOT / "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json"
-POINTER = ROOT / "config/current-price-conditions.json"
+# Frozen replay must not depend on the mutable daily publication pointer.
+POINTER = ROOT / "config/archive/price-conditions-20261017-e65444f2.json"
 NEGATIVE_CASES = (
     ROOT / "runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/case.json",
     ROOT / "runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/case.json",
@@ -44,6 +45,7 @@ EXPECTED_POOL = (
 
 @pytest.fixture(scope="module")
 def real_report() -> dict:
+    assert sha256(POINTER.read_bytes()).hexdigest() == "e65444f2b42130161d02fb5397c15f09061cc0250f77888966f0b48026eb8a8d"
     return build_hotspot_structure_validation(
         root=ROOT,
         selection_report_path=SELECTION,

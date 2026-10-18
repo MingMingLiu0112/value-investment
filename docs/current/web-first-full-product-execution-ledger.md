@@ -292,5 +292,43 @@ Actual local candidate: runtime/bound-draft-reviews/midea-consumed-v3-dated-2026
 Existing CLI --preview successfully reads three concrete review groups. Direct
 wizard returns EXTERNAL_SIGNATURE_REQUIRED, whereas materiality remains
 MATERIALITY_HANDOFF_BLOCKED because complete acquired scan coverage is missing.
-Committed-runtime API and exact-SHA CI checks are pending. Browser interaction
-remains NOT_VERIFIED; S1/S2 and total product completion are not passed.
+Committed-runtime API passed on f602e7d52d91ecf86102345a87207f42db720288:
+anonymous access returns 401, authenticated handoff returns 200/no-store with
+exact consumed materials, no signed reviewer/whole-model approval, and blocked
+materiality. Detail retains G3 false and price_admitted false. Exact-SHA Core
+and Web CI passed; local broad Core regression: 3172 passed, 35 skipped.
+Evidence: artifacts/current/web-first-acceptance/s2/bound-review-api.json,
+github-current.json and core-check.json. Browser interaction remains
+NOT_VERIFIED; S1/S2 and total product completion are not passed.
+
+### S3 completed-close coverage integration (2026-10-18)
+
+The ordinary refresh CLI now explicitly accepts LAST_COMPLETED_CLOSE_DISPLAY_ONLY;
+default SAME_SESSION_B1 is unchanged. It reuses the existing verified collector,
+calendar, dual-source quote and completed-bar engines. No backdated acquisition,
+PIT, strategy release, price admission or personal permission is invented.
+
+Actual fresh public collection exposed and repaired two additional integration
+gaps: the collector omitted the nondefault candidate_pool_limit needed for exact
+ranking replay, and the registry reader only recognized the activity top list,
+not verified cross-industry pool members. Historical reports remain unchanged.
+The independent successor view also removes inherited value-gate wording from
+its OPEN explanation without changing legacy case bytes or price calculations.
+
+Fresh dated selection: 10 candidates across 10 industries, all 10 structures
+assessed, zero collection failures. Four ACTIVE_ONLY (600150, 600667, 002008,
+600019); six CONFLICT_OR_REJECTED; zero STRUCTURE_QUALIFIED_OBSERVATION.
+Registry loading verifies all ten active cases and retains four older cases
+only as retired observations. Source acquisition is 2026-10-18; market date is
+2026-10-16. This is completed-close display coverage, not contemporaneous PIT.
+Evidence: artifacts/current/web-first-acceptance/s3/completed-close-coverage.json.
+Committed runtime/API/CI verification follows integration. Browser remains
+NOT_VERIFIED; S3 is PARTIAL and the complete S0-S7 Goal remains IN_PROGRESS.
+
+Integrated hotspot/current-price/selection/strategy regression: 301 passed,
+1 skipped. Independent review found no concrete P0/P1 in this bounded change.
+Historical structure tests now bind config/archive/price-conditions-20261017-e65444f2.json,
+an exact-byte copy of the retained previous pointer (SHA-256 e65444f2b42130161d02fb5397c15f09061cc0250f77888966f0b48026eb8a8d),
+instead of treating the mutable current registry as frozen history. Historical
+manifests and their original outputs are unchanged; no retrospective acceptance
+or replacement of source evidence is claimed.

@@ -181,5 +181,18 @@ materials have no signable response. TEST_ONLY actual signature consumption
 passes with no whole-model approval; 184 related Python tests and 224 Web tests
 pass, as do Web format/typecheck/build. Actual Midea CLI preview and direct
 wizard work; materiality correctly remains blocked by incomplete acquired scan.
-Latest committed runtime/API/CI and actual browser checks are still pending.
+Committed f602e7d52d91ecf86102345a87207f42db720288 runtime/API checks and
+exact-SHA Core/Web CI passed. Local broad Core: 3172 passed, 35 skipped.
+Authenticated handoff exposes exact materials without signatures, materiality
+remains blocked, and G3/price admission remain false. Actual browser checks
+are still NOT_VERIFIED.
 Overall Goal IN_PROGRESS; no formal investment or stage-completion claim.
+
+S3 successor integrates explicit completed-close display collection, exact
+candidate-pool parameter replay and verified cross-industry registry membership.
+Real 2026-10-18 acquisition of 2026-10-16 market observations assessed all ten
+candidates across ten industries: four ACTIVE_ONLY, six CONFLICT_OR_REJECTED,
+zero qualified structures, no source failures. All ten load through the existing
+registry; four retired cases remain historical only. No PIT/admission upgrade.
+Source-bound coverage receipt is in s3/completed-close-coverage.json. Actual
+browser acceptance and full S3 validation remain incomplete.

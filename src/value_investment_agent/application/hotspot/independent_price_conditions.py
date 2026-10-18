@@ -22,6 +22,17 @@ def project_independent_price_condition(root: Path, *, symbol: str, plan: dict,
     if type(allow_test_only) is not bool:
         raise ValueError("Test-only permission requires an explicit boolean")
     output = deepcopy(plan)
+    # The successor has independent admission; retain legacy wording only in
+    # immutable source cases, not in the user's current conditional plan.
+    open_rule = (
+        "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；"
+        "仅在无持仓且热点独立策略、证券与事件、时点、验证及个人风险门禁全部通过后，"
+        "进入人工开仓复核。"
+    )
+    if isinstance(output.get("entry_condition"), dict):
+        output["entry_condition"]["rule"] = open_rule
+    if isinstance(output.get("conditional_action_rules", {}).get("OPEN"), dict):
+        output["conditional_action_rules"]["OPEN"]["rule"] = open_rule
     try:
         admission = load_independent_admission(root, symbol=symbol, now=now,
             allow_test_only=allow_test_only)
