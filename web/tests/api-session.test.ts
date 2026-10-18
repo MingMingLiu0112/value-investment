@@ -37,6 +37,25 @@ describe("private session unlock handling", () => {
     vi.unstubAllGlobals();
   });
 
+  it("requests the independent hotspot detail without changing value or private contracts", async () => {
+    stubWindow("").store.set("vi-local-session", "private-session");
+    const fetcher = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        json(200, { action: "no_order" }),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    const { api } = await import("../src/services/api");
+    await api.detail("hotspot-600519");
+    await api.detail("000333");
+    expect(fetcher.mock.calls.map((call) => String(call[0]))).toEqual([
+      "/api/v1/decisions/hotspot-600519?independent_hotspot=true",
+      "/api/v1/decisions/000333",
+    ]);
+    for (const call of fetcher.mock.calls) {
+      expect(new Headers(call[1]?.headers).has("X-Local-Session")).toBe(false);
+    }
+  });
+
   it("reads external review handoff with the current private session", async () => {
     stubWindow("").store.set("vi-local-session", "handoff-session");
     const fetcher = vi.fn(async () =>

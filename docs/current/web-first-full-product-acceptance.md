@@ -78,7 +78,13 @@ release; the real API has no such opt-in. No formal trade permission is granted.
 Prospective shared-risk sizing now enforces confirmed IPS cyclical headroom
 against combined holdings across both sleeves, including fee-inclusive cash.
 Independent review reproduced the previous cap violation and verified the fix.
-Focused risk tests: 39 passed. Combined Python/API scope: 154 passed.
+Focused risk tests: 39 passed. Expanded Python/API scope: 327 passed.
+
+501c5972 passed Core CI but failed three Web API legacy-parity assertions.
+Correction preserves the default legacy detail contract and uses an explicit
+independent_hotspot=true read projection for the current Web client. It does
+not enable TEST_ONLY release authorization. Expanded regression covers both
+default and successor detail reads, stale/retired cases and the full Web API suite.
 
 These changes do not pass actual-browser acceptance. New-commit CI and runtime
 must be bound after commit; older CI evidence applies only to its own SHA.

@@ -146,7 +146,7 @@ def test_hotspot_detail_uses_independent_projection_after_current_case_verificat
     monkeypatch.setattr(projection, 'load_independent_admission', lambda *args, **kwargs: dict(
         blockers=[], risk_review_eligible=True, rule_version='TEST_ONLY-v1',
         gate_source_bindings={'price_structure': [dict(path='runtime/case.json', sha256='a'*64)]}))
-    response = client.get('/api/v1/decisions/hotspot-600519-test').json()
+    response = client.get('/api/v1/decisions/hotspot-600519-test?independent_hotspot=true').json()
     result = response['decision']['price_action_plan']
     assert result['schema_version'] == 'price-action-plan-independent-v2'
     assert result['risk_review_eligible'] is (not stale)
@@ -158,6 +158,9 @@ def test_hotspot_detail_uses_independent_projection_after_current_case_verificat
         assert result['signal_state'] == 'STALE'
         assert result['entry_trigger_price'] is result['invalidation_price'] is None
     assert packet == before
+    legacy = client.get('/api/v1/decisions/hotspot-600519-test').json()['decision']['price_action_plan']
+    assert legacy['schema_version'] == 'price-action-plan-current-v1'
+    assert 'VALUE_GATE_NOT_PROVEN' in legacy['blockers']
     portfolio = client.get("/api/v1/portfolio").json()
     assert portfolio["action"] == "no_order"
     assert portfolio["status"] == "NOT_CONNECTED"

@@ -106,8 +106,13 @@ by the remaining cap. The 15/25/40 percent isolated cases yield 0/100/200 shares
 noncyclical behavior is unchanged. Independent rereview found no defect in this
 bounded fix. Focused risk regression: 39 passed.
 
-Combined Python/API regression: 154 passed. Web checks and exact new-commit CI
-are being refreshed. Actual browser acceptance remains NOT_VERIFIED: the
+Combined Python/API regression initially passed 154 cases. Commit 501c5972
+passed Core 39113592936 but Web 39113593056/39113590291 exposed three legacy
+daily/detail contract regressions. The successor is now explicit opt-in via
+independent_hotspot=true; the Web client selects it for hotspot detail only.
+Default API behavior and frozen packets retain the legacy contract. Expanded
+regression includes the entire Web API suite (327 passed). Web checks and
+exact corrected-commit CI are being refreshed. Actual browser acceptance remains NOT_VERIFIED: the
 selected tab is still a data-URL connection-error page. User recovery was
 requested once; no alternative browser/surface bypass is attempted. S1 remains
 PARTIAL, S2-S7 are not accepted, and no total-goal completion is claimed.

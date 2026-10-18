@@ -528,7 +528,7 @@ def create_app(
                 "blockers": ["NO_FORMAL_ADMISSION"]}
 
     @api.get("/api/v1/decisions/{decision_id}")
-    def decision(decision_id: str):
+    def decision(decision_id: str, independent_hotspot: bool = False):
         packet, _ = _load_snapshot(project)
         current = _public(project)
         if current is None or not chain_matches_packet(packet, current):
@@ -538,7 +538,7 @@ def create_app(
         if decision_id.startswith("hotspot-"):
             row = next((row for row in current_items(packet)
                         if row["price_action_plan"]["decision_id"] == decision_id), None)
-            if row is not None:
+            if row is not None and independent_hotspot:
                 row = {**row, "price_action_plan": project_independent_price_condition(
                     project, symbol=row["symbol"], plan=row["price_action_plan"],
                     now=datetime.now(timezone.utc))}

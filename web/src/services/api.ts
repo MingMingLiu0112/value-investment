@@ -276,7 +276,10 @@ export const api = {
   researchFunnel: (signal?: AbortSignal) =>
     get<ResearchFunnelStatus>("research-funnel-status", signal),
   detail: (id: string, signal?: AbortSignal) =>
-    get<DetailResponse>(`decisions/${encodeURIComponent(id)}`, signal),
+    get<DetailResponse>(
+      `decisions/${encodeURIComponent(id)}${id.startsWith("hotspot-") ? "?independent_hotspot=true" : ""}`,
+      signal,
+    ),
   portfolio: (signal?: AbortSignal) =>
     getPrivate<PortfolioResponse>("portfolio", signal),
   risk: (signal?: AbortSignal) =>
