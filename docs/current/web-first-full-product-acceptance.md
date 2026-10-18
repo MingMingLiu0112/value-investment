@@ -223,3 +223,13 @@ public/locked acceptance, not real private-account acceptance or all-viewports
 product PASS. Full cross-sleeve TEST_ONLY partial-sale/restart composition now
 passes root integration (16 tests). S5's pure adapter plus inherited M5
 regressions pass (77 tests); its runtime/Web integration remains incomplete.
+
+S5 ced4e602 connects retained quote validation, atomic TEST_ONLY reminder
+history and authenticated Web reads. Actual desktop/mobile browser checks
+confirm four labelled isolated events, refresh without duplicates, and zero
+records after returning to normal mode. At 390x844, document scroll/client
+widths both measure 375. See s5/browser-check.json and its four screenshots.
+Normal mode accurately reports monitoring NOT_STARTED. This does not establish
+live monitoring or approval/acknowledgment lifecycle acceptance. Web/Postgres CI
+passed for this SHA, but offline-core failed and is under active repair.
+S5 and the total Goal remain IN_PROGRESS; Excel stays FROZEN; action=no_order.

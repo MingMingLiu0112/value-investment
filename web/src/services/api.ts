@@ -245,23 +245,44 @@ async function getPrivate<T>(path: string, signal?: AbortSignal): Promise<T> {
   return (await read(response)) as T;
 }
 
+export type ConditionAlertsResponse = {
+  action: "no_order";
+  status: string;
+  test_only: boolean;
+  monitor_running: boolean;
+  detail?: string;
+  snapshot_sha256?: string;
+  alerts: {
+    alert_id: string;
+    event_id: string | null;
+    status: string;
+    available_operations: string[];
+  }[];
+  history: {
+    event_id: string;
+    symbol: string;
+    event_type: string;
+    detected_at: string;
+    reason: string;
+    source_event_id: string;
+  }[];
+};
+
 export const api = {
   conditionAlerts: (testOnly: boolean, signal?: AbortSignal) =>
-    getPrivate<{
-      action: "no_order";
-      status: string;
-      test_only: boolean;
-      monitor_running: boolean;
-      detail?: string;
-      alerts: Record<string, unknown>[];
-      history: {
-        symbol: string;
-        event_type: string;
-        detected_at: string;
-        reason: string;
-        source_event_id: string;
-      }[];
-    }>(`condition-alerts?test_only=${testOnly}`, signal),
+    getPrivate<ConditionAlertsResponse>(
+      `condition-alerts?test_only=${testOnly}`,
+      signal,
+    ),
+  acknowledgeConditionAlert: (alertId: string, expectedSnapshot: string) =>
+    post<ConditionAlertsResponse>(
+      `condition-alerts/test-only/${encodeURIComponent(alertId)}/acknowledge`,
+      {
+        test_only: true,
+        acknowledged: true,
+        expected_snapshot_sha256: expectedSnapshot,
+      },
+    ),
   updateStatus: (signal?: AbortSignal) =>
     get<{
       action: "no_order";

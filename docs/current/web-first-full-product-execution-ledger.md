@@ -483,3 +483,29 @@ S5 remains IN_PROGRESS: actual local monitoring, legitimate ACTUAL persistence,
 completed-bar acquisition, alert acknowledgment/cancellation/expiry and full
 interactive acceptance are not implemented by this read-only history step.
 S6/S7 remain open; the total Goal is not complete.
+
+### S5 local-page reading acknowledgment
+
+Actual ced4e602 browser checks verify desktop/mobile history, unchanged count
+after refresh, and strict mode separation: four isolated records become zero
+in normal mode. Mobile 390x844 has equal document scroll/client width 375.
+See s5/browser-check.json and screenshots. Normal monitoring remains NOT_STARTED.
+Exact-SHA Web/Postgres CI passed; offline-core failed and is being repaired.
+
+The successor reuses M5 SENT/DELIVERED/ACKNOWLEDGED transitions to record a
+user's explicit local-page reading confirmation, never external notification
+delivery or investment approval. Scoped alert identifiers, snapshot comparison,
+atomic persistence and idempotent receipts protect concurrent/stale actions.
+Authenticated Web POST cannot select a path, namespace or clock; the UI requires
+confirmation and refreshes persisted results. Initial API integration: five pass.
+Actual successor browser verification and CI follow the scoped commit.
+Existing M5 has no CANCEL/EXPIRE/RESET transition; those are explicit engineering
+gaps, not disguised FAILED_TERMINAL states or external authorization blockers.
+S5 remains IN_PROGRESS, including actual monitoring/completed-bar acquisition.
+
+Offline-core failure reproduced as the omitted replay command's architecture
+inventory/CLI registration, not a strategy or source-validation failure.
+Both registries are now updated; architecture regression: 30 passed. Root's
+combined S5 and complete Web API regression: 300 passed; isolated acknowledgment
+regression: 16 passed; Web: 228 passed, typecheck/build passed. Exact successor
+CI and actual acknowledgment browser checks remain pending at this writing.

@@ -1,0 +1,16 @@
+{
+  "stage": "S5",
+  "source_commit": "ced4e6027afe683c9aecae71596a758e7b6122f6",
+  "action": "no_order",
+  "browser": "same selected in-app browser",
+  "route": "/alerts",
+  "normal_view": {"test_only": false, "history_count": 0, "monitor_running": false},
+  "isolated_view": {"test_only": true, "history_count": 4, "alert_count": 4, "monitor_running": false},
+  "refresh_preserves_count": true,
+  "switch_back_hides_simulated_records": true,
+  "mobile": {"width": 390, "height": 844, "document_scroll_width": 375, "document_client_width": 375, "horizontal_overflow": false},
+  "screenshots": ["alerts-normal-desktop.jpg", "alerts-test-only-desktop.jpg", "alerts-test-only-mobile.jpg", "alerts-normal-mobile.jpg"],
+  "acceptance_scope": "READ_ONLY_HISTORY_AND_MODE_ISOLATION_ONLY",
+  "stage_status": "IN_PROGRESS",
+  "formal_investment_eligibility": "NOT_GRANTED"
+}

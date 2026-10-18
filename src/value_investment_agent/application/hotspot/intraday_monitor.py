@@ -18,6 +18,8 @@ from ...m5_event_dependencies import (
     DependencyGraph, DependencyNode, KIND_PRICE_ATTRACTIVENESS, KIND_SOURCE_HEALTH,
 )
 from ...m5_event_run import run_event_batch
+from ...m5_event_outbox import ALERT_PENDING, ALERT_SENT, ALERT_DELIVERED, ALERT_ACKNOWLEDGED
+from ...m5_event_outbox_state import apply_outbox_transition
 from ...m5_event_run_state import M5EventRunState, m5_event_run_state_from_payload
 from ...m5_event_watermark import ScanWatermark, SOURCE_DEGRADED, WATERMARK_COVERAGE_INCOMPLETE
 
@@ -37,7 +39,7 @@ def _load(path):
     raw = json.loads(path.read_text(encoding="utf-8"))
     fields = {"schema_version", "namespace", "scope", "condition", "max_age_seconds",
               "cursor", "m5_state", "snapshot_sha256"}
-    if not isinstance(raw, dict) or set(raw) != fields:
+    if (not isinstance(raw, dict) or set(raw) not in (fields, fields | {"alert_action_receipts"})):
         raise ValueError("Malformed intraday monitor snapshot")
     unsigned = {key: value for key, value in raw.items() if key != "snapshot_sha256"}
     if (raw["schema_version"] != SCHEMA or raw["namespace"] != "SIMULATED"
@@ -74,24 +76,125 @@ def _load(path):
                 or watermark.source != "intraday-condition-adapter-v1"
                 or watermark.coverage_status != WATERMARK_COVERAGE_INCOMPLETE):
             raise ValueError("Unexpected source coverage claim")
+    receipts = raw.get("alert_action_receipts", [])
+    if not isinstance(receipts, list):
+        raise ValueError("Invalid alert action receipts")
+    seen = set()
+    for receipt in receipts:
+        if (not isinstance(receipt, dict) or set(receipt) != {
+                "alert_id", "operation", "expected_snapshot_sha256", "occurred_at", "outbox_revision"}
+                or receipt["operation"] != "ACKNOWLEDGE" or receipt["alert_id"] in seen
+                or not _sha256(receipt["expected_snapshot_sha256"])
+                or type(receipt["outbox_revision"]) is not int):
+            raise ValueError("Invalid alert action receipt")
+        seen.add(receipt["alert_id"])
+        matching = [record for record in state.outbox_transitions
+            if record.outbox_revision == receipt["outbox_revision"]
+            and record.alert_id == receipt["alert_id"] and record.to_status == ALERT_ACKNOWLEDGED
+            and record.occurred_at.isoformat() == receipt["occurred_at"]]
+        if len(matching) != 1:
+            raise ValueError("Alert action receipt disagrees with M5 transition")
     return raw, state
 
 
-def _projection(raw, state):
+def _sha256(value):
+    return isinstance(value, str) and len(value) == 64 and all(c in "0123456789abcdef" for c in value)
+
+
+def _scoped_alert_id(path, alert_id):
+    return "intraday-alert-" + _digest([os.path.normcase(str(Path(path).resolve())), alert_id])
+
+
+def _projection(raw, state, *, path):
+    alerts = []
+    for alert in (() if state is None else state.outbox.alerts()):
+        alerts.append({**alert.as_policy(), "alert_id": _scoped_alert_id(path, alert.alert_id),
+            "user_status": alert.status, "delivery_channel": "LOCAL_TEST_ONLY",
+            "available_operations": ["ACKNOWLEDGE"] if alert.status in {
+                ALERT_PENDING, ALERT_SENT, ALERT_DELIVERED} else []})
     return {"schema_version": SCHEMA, "namespace": "SIMULATED", "test_only": True,
         "scope": SCOPE, "action": "no_order", "eligibility": False, "admitted": False,
+        "snapshot_sha256": None if raw is None else raw["snapshot_sha256"],
+        "supported_operations": ["ACKNOWLEDGE"],
+        "unsupported_operations": ["CANCEL", "EXPIRE", "RESET"],
         "status": "NOT_INITIALIZED" if raw is None else raw["cursor"]["status"],
         "cursor": None if raw is None else deepcopy(raw["cursor"]),
         "engine": {"namespace": "SIMULATED", "status": "NOT_INITIALIZED" if state is None
             else "CONDITION_ONLY_INCOMPLETE_COVERAGE", "revision": 0 if state is None else state.revision,
+            "outbox_revision": 0 if state is None else state.outbox_revision,
             "whole_source_coverage": False, "acceptance_authority": "NONE", "action": "no_order"},
-        "alerts": [] if state is None else [alert.as_policy() for alert in state.outbox.alerts()],
+        "alerts": alerts,
+        "alert_transitions": [] if state is None else [record.as_policy() for record in state.outbox_transitions],
         "history": [] if state is None else [event.as_policy() for event in state.event_ledger.events()]}
 
 
 def read_intraday_monitor(path) -> dict:
     """Read a committed snapshot without creating files, locks or directories."""
-    return _projection(*_load(Path(path)))
+    return _projection(*_load(Path(path)), path=path)
+
+
+def _require_clock(now, raw, state):
+    if not isinstance(now, datetime) or now.utcoffset() is None:
+        raise ValueError("Aware server clock required")
+    if now < datetime.fromisoformat(raw["cursor"]["checked_at"]) or any(
+            now < record.occurred_at for record in state.outbox_transitions):
+        raise ValueError("Prior state: server clock precedes committed monitor state")
+
+
+def transition_intraday_alert(path, *, alert_id: str, operation: str,
+        expected_snapshot_sha256: str, now: datetime) -> dict:
+    """Record an actual local-page acknowledgement using the server's clock.
+
+    The authenticated caller must invoke ACKNOWLEDGE only after the user has
+    actually seen the alert. SENT/DELIVERED then record that local presentation,
+    never external transport. CANCEL/EXPIRE/RESET have no existing M5 semantics
+    and are rejected. No signing, eligibility or execution permission is granted.
+    """
+    if operation != "ACKNOWLEDGE":
+        raise ValueError("Unsupported operation: existing M5 has no CANCEL/EXPIRE/RESET semantics")
+    if not isinstance(alert_id, str) or not _sha256(expected_snapshot_sha256):
+        raise ValueError("Scoped alert id and snapshot SHA-256 required")
+    if not isinstance(now, datetime) or now.utcoffset() is None:
+        raise ValueError("Aware server clock required")
+    path = Path(path)
+    if not path.exists():
+        raise ValueError("Monitor does not exist")
+    with InterProcessLock(path.with_name(path.name + ".lock")):
+        raw, state = _load(path)
+        if raw is None:
+            raise ValueError("Monitor does not exist")
+        _require_clock(now, raw, state)
+        alert = next((item for item in state.outbox.alerts()
+            if _scoped_alert_id(path, item.alert_id) == alert_id), None)
+        if alert is None:
+            raise ValueError("Alert does not belong to this monitor file")
+        receipts = raw.get("alert_action_receipts", [])
+        if any(receipt["alert_id"] == alert.alert_id and receipt["operation"] == operation
+                and receipt["expected_snapshot_sha256"] == expected_snapshot_sha256 for receipt in receipts):
+            return _projection(raw, state, path=path)
+        if raw["snapshot_sha256"] != expected_snapshot_sha256:
+            raise ValueError("Stale monitor snapshot")
+        if alert.status == ALERT_ACKNOWLEDGED:
+            return _projection(raw, state, path=path)
+        if alert.status not in {ALERT_PENDING, ALERT_SENT, ALERT_DELIVERED}:
+            raise ValueError("Alert status does not permit acknowledgement")
+        status = alert.status
+        targets = ([ALERT_SENT, ALERT_DELIVERED, ALERT_ACKNOWLEDGED] if status == ALERT_PENDING else
+            [ALERT_DELIVERED, ALERT_ACKNOWLEDGED] if status == ALERT_SENT else [ALERT_ACKNOWLEDGED])
+        for target in targets:
+            state = apply_outbox_transition(state=state, alert_id=alert.alert_id,
+                from_status=status, to_status=target, occurred_at=now)
+            status = target
+        payload = deepcopy(raw)
+        payload["m5_state"] = json.loads(state.to_json())
+        m5_event_run_state_from_payload(payload["m5_state"])
+        payload["alert_action_receipts"] = [*receipts, {"alert_id": alert.alert_id,
+            "operation": operation, "expected_snapshot_sha256": expected_snapshot_sha256,
+            "occurred_at": now.isoformat(), "outbox_revision": state.outbox_revision}]
+        payload.pop("snapshot_sha256")
+        payload["snapshot_sha256"] = _digest(payload)
+        _atomic_write(path, payload)
+        return _projection(payload, state, path=path)
 
 
 def _atomic_write(path, payload):
@@ -124,6 +227,8 @@ def tick_intraday_monitor(path, *, condition: dict, observation: dict | None,
     path = Path(path)
     with InterProcessLock(path.with_name(path.name + ".lock")):
         old, state = _load(path)
+        if old is not None:
+            _require_clock(now, old, state)
         if old is not None and old["cursor"]["binding"] != initial.state["binding"]:
             raise ValueError("Monitor is bound to a different condition or freshness policy")
         result = evaluate_intraday_condition(condition, observation,
@@ -154,7 +259,9 @@ def tick_intraday_monitor(path, *, condition: dict, observation: dict | None,
         payload = {"schema_version": SCHEMA, "namespace": namespace, "scope": SCOPE,
             "condition": condition, "max_age_seconds": max_age.total_seconds(),
             "cursor": result.state, "m5_state": m5_payload}
+        if old is not None and "alert_action_receipts" in old:
+            payload["alert_action_receipts"] = deepcopy(old["alert_action_receipts"])
         payload["snapshot_sha256"] = _digest(payload)
         if old != payload:
             _atomic_write(path, payload)
-        return _projection(payload, state)
+        return _projection(payload, state, path=path)

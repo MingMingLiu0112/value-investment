@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 0,
     "CURRENT_PRODUCT_CLI": 26,
-    "CURRENT_RESEARCH_CLI": 221,
+    "CURRENT_RESEARCH_CLI": 222,
     "HISTORICAL_VALIDATION_TOOL": 57,
     "COMPANY_RESEARCH_CASE_TOOL": 218,
     "MIGRATION_TOOL": 13,
@@ -15,6 +15,17 @@
     "DELETE_CANDIDATE": 0
   },
   "entries": [
+    {
+      "path": "scripts/current/replay_intraday_test_only.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "LOW",
+      "line_count": 41,
+      "sha256": "19473658b8a2d69f8db32ea5ecc168f7a469a71e601e66b5933be93301a8f90c"
+    },
     {
       "path": "scripts/analyze_moutai_cash_anchor_equity_coverage.py",
       "category": "COMPANY_RESEARCH_CASE_TOOL",

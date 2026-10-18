@@ -58,3 +58,52 @@ def test_retained_positive_alerts_remain_isolated_from_normal_view(tmp_path, mon
     assert result.json()["monitor_running"] is False
     assert client.get("/api/v1/condition-alerts").json()["history"] == []
     assert path.read_bytes() == before
+
+
+def test_read_confirmation_cannot_bypass_session_or_select_real_data(tmp_path, monkeypatch):
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY.jsonl", monkeypatch)
+    route = "/api/v1/condition-alerts/test-only/foreign/acknowledge"
+    payload = dict(test_only=True, acknowledged=True, expected_snapshot_sha256="a" * 64)
+    assert client.post(route, json=payload).status_code == 401
+    unlock(client, secret)
+    client.headers["origin"] = "https://untrusted.invalid"
+    assert client.post(route, json=payload).status_code == 403
+    client.headers["origin"] = "http://127.0.0.1:8791"
+    for invalid in (
+        {**payload, "test_only": False},
+        {**payload, "acknowledged": False},
+        {**payload, "namespace": "ACTUAL"},
+        {**payload, "path": "real.json"},
+        {**payload, "expected_snapshot_sha256": 1},
+    ):
+        assert client.post(route, json=invalid).status_code == 422
+    assert not (tmp_path / "runtime").exists()
+
+
+def test_actual_read_confirmation_persists_but_never_approves_investment(tmp_path, monkeypatch):
+    from test_intraday_monitor import tick
+    from value_investment_agent.application.hotspot.intraday_monitor import read_intraday_monitor
+    path = tmp_path / "runtime/intraday-monitor/test-only.json"
+    initial = tick(path)
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY.jsonl", monkeypatch)
+    unlock(client, secret)
+    current = client.get("/api/v1/condition-alerts?test_only=true").json()
+    alert = current["alerts"][0]
+    route = f"/api/v1/condition-alerts/test-only/{alert['alert_id']}/acknowledge"
+    payload = dict(test_only=True, acknowledged=True,
+        expected_snapshot_sha256=current["snapshot_sha256"])
+    response = client.post(route, json=payload)
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    result = response.json()
+    assert result["alerts"][0]["status"] == "ACKNOWLEDGED"
+    assert result["history"] == initial["history"]
+    assert result["eligibility"] is result["admitted"] is False
+    assert result["action"] == "no_order" and result["monitor_running"] is False
+    assert read_intraday_monitor(path)["alerts"][0]["status"] == "ACKNOWLEDGED"
+    assert client.get("/api/v1/condition-alerts").json()["history"] == []
+    assert not (tmp_path / "TEST_ONLY.jsonl").exists()
+    before = path.read_bytes()
+    invalid = {**payload, "expected_snapshot_sha256": "f" * 64}
+    assert client.post(route, json=invalid).status_code == 409
+    assert path.read_bytes() == before
