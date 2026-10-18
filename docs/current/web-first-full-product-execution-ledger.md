@@ -36,6 +36,14 @@ Its regression passes, along with the strengthened real-fingerprint relabelling
 counterexample: 73 backend focused tests and 6 Web focused tests passed. The
 review found no concrete P0/P1; that does not replace pending browser acceptance.
 
+Exact d4d356ae Core CI found a repository-boundary regression: the new local
+runtime event packet had been force-added to Git. Web and PostgreSQL passed;
+Core correctly rejected tracked runtime data. Removed that file from the Git
+index only, preserving its local bytes and registered SHA-256. No runtime-data
+allowlist or architecture test was weakened. Current public research inputs
+remain external/local assets, as in the existing legacy registration. Successor
+Core/runtime verification must bind to the corrective commit separately.
+
 Successor inspection on baseline 7a1e09ae traced the actual 000333 null expiry to
 `infrastructure/hotspot/current_price_case.py::_display_close`: its explicit
 LAST_COMPLETED_CLOSE_DISPLAY_ONLY contract returns next_session=null. The
