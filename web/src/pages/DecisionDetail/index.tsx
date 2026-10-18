@@ -900,6 +900,10 @@ export default function DecisionDetail() {
               )}
             <JudgmentSummary
               decision={decision}
+              boundDraft={
+                data?.research_draft?.schema_version ===
+                "public-research-draft-v2"
+              }
               personalContext={
                 decision.symbol && /^\d{6}$/.test(decision.symbol) ? (
                   <CurrentHolding key={decision.symbol} decision={decision} />

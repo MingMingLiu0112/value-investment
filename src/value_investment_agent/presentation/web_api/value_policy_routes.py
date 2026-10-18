@@ -54,8 +54,9 @@ def register_value_policy_routes(api: FastAPI, *, sessions, principal_resolver,
         return dispatch(request, lambda p, svc: svc.status(symbol, principal=p, now=clock()))
 
     @api.get("/api/v1/value-policy-review/{symbol}/handoff")
-    def handoff(symbol: str, request: Request):
-        return dispatch(request, lambda p, svc: svc.review_handoff(symbol, principal=p, now=clock()))
+    def handoff(symbol: str, request: Request, bound_draft: bool = False):
+        return dispatch(request, lambda p, svc: svc.review_handoff(symbol, principal=p,
+            now=clock(), **({'bound_draft': True} if bound_draft else {})))
 
     @api.post("/api/v1/value-policy-review/{symbol}/confirm")
     def confirm(symbol: str, request: Request, payload: dict = Body(...)):

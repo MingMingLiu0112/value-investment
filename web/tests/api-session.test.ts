@@ -71,6 +71,14 @@ describe("private session unlock handling", () => {
         headers: { "X-Local-Session": "handoff-session" },
       }),
     );
+    await api.valuePolicyHandoff("000333", undefined, true);
+    expect(fetcher).toHaveBeenLastCalledWith(
+      "/api/v1/value-policy-review/000333/handoff?bound_draft=true",
+      expect.objectContaining({
+        credentials: "same-origin",
+        headers: { "X-Local-Session": "handoff-session" },
+      }),
+    );
   });
 
   it("never requests private handoff anonymously", async () => {

@@ -35,16 +35,18 @@ export function MaterialityHandoff({
 }: {
   material: PolicyHandoff["materiality_handoff"];
 }) {
-  if (
-    !material ||
-    material.status === "NO_REGISTERED_INCREMENTAL_SCAN" ||
-    material.status === "NO_MATERIALITY_ANNOUNCEMENTS"
-  )
+  if (!material || material.status === "NO_MATERIALITY_ANNOUNCEMENTS")
     return null;
   const imported = material.status === "AUTHENTICATED_RESPONSE_IMPORTED";
   return (
     <section aria-label="新增公告材料性审核">
       <h4>新增公告材料性审核</h4>
+      <p>状态：{material.status}</p>
+      {material.status === "NO_REGISTERED_INCREMENTAL_SCAN" && (
+        <p role="alert">
+          尚无绑定当前模型版本的完整公告扫描，暂不可签署材料性审核回应。
+        </p>
+      )}
       <p>
         {imported
           ? "已核验签署回执；仍须重新计算并发布，其他独立门禁不因此通过。"
@@ -58,29 +60,69 @@ export function MaterialityHandoff({
         </p>
       )}
       {material.reason && <p role="alert">材料暂不可交接：{material.reason}</p>}
-      {material.commands && (
-        <details>
-          <summary>公告原件、签署回应与办理后验证</summary>
-          <DetailSection title="公告证据" value={material.announcements} />
-          <DetailSection
-            title="待本人签署回应"
-            value={material.unsigned_response}
-          />
-          <p>
-            由已登记且有相应权限的审核人签署；不向网页上传私钥。导入后重算，核对新发布版本及剩余限制，再刷新页面。
-          </p>
-          <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-            {material.commands.consume_signed_response}
-            {"\n"}
-            {material.commands.recompute}
-          </pre>
-        </details>
-      )}
+      {material.commands &&
+        (material.status === "EXTERNAL_SIGNATURE_REQUIRED" || imported) && (
+          <details>
+            <summary>公告原件、签署回应与办理后验证</summary>
+            <DetailSection title="公告证据" value={material.announcements} />
+            <DetailSection
+              title="待本人签署回应"
+              value={material.unsigned_response}
+            />
+            <p>
+              由已登记且有相应权限的审核人签署；不向网页上传私钥。导入后重算，核对新发布版本及剩余限制，再刷新页面。
+            </p>
+            <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+              {material.commands.consume_signed_response}
+              {"\n"}
+              {material.commands.recompute}
+            </pre>
+          </details>
+        )}
     </section>
   );
 }
 
-function ExternalReviewHandoff({ symbol }: { symbol: string }) {
+export function HandoffNotReady({
+  material,
+}: {
+  material: Extract<PolicyHandoff, { status: "NOT_READY" }>;
+}) {
+  return (
+    <section aria-label="审核交接尚未就绪">
+      <p>审核交接尚未就绪；当前没有可签署的候选回应，研究批准未改变。</p>
+      <ul>
+        {material.blockers.map((blocker, index) => (
+          <li key={index}>{blocker}</li>
+        ))}
+      </ul>
+      {material.bindings && (
+        <DetailSection title="当前草案精确版本绑定" value={material.bindings} />
+      )}
+      <MaterialityHandoff
+        material={
+          material.materiality_handoff
+            ? {
+                ...material.materiality_handoff,
+                commands: undefined,
+                unsigned_response: undefined,
+              }
+            : undefined
+        }
+      />
+    </section>
+  );
+}
+
+function ExternalReviewHandoff({
+  symbol,
+  boundDraft = false,
+  transport,
+}: {
+  symbol: string;
+  boundDraft?: boolean;
+  transport?: ValuePolicyTransport;
+}) {
   const [material, setMaterial] = useState<PolicyHandoff>();
   const [failure, setFailure] = useState("");
   const [busy, setBusy] = useState(false);
@@ -89,10 +131,16 @@ function ExternalReviewHandoff({ symbol }: { symbol: string }) {
     setFailure("");
     setBusy(true);
     try {
-      const result = await api.valuePolicyHandoff(symbol);
+      const result = boundDraft
+        ? await (() => {
+            if (!transport?.handoff)
+              throw new Error("Bound draft handoff transport unavailable");
+            return transport.handoff(symbol, true);
+          })()
+        : await api.valuePolicyHandoff(symbol);
       if (
         result.action !== "no_order" ||
-        result.status !== "EXTERNAL_SIGNATURE_REQUIRED" ||
+        !["EXTERNAL_SIGNATURE_REQUIRED", "NOT_READY"].includes(result.status) ||
         result.verification.approval_changed !== false ||
         result.verification.research_admitted !== false
       )
@@ -124,7 +172,10 @@ function ExternalReviewHandoff({ symbol }: { symbol: string }) {
         {busy ? "正在读取…" : "读取本人授权的审核交接材料"}
       </button>
       {failure && <p role="alert">{failure}</p>}
-      {material && (
+      {material?.status === "NOT_READY" && (
+        <HandoffNotReady material={material} />
+      )}
+      {material?.status === "EXTERNAL_SIGNATURE_REQUIRED" && (
         <>
           <p>
             需要外部签署；读取与下载均不改变研究批准。已固定授权根：
@@ -175,10 +226,12 @@ function ExternalReviewHandoff({ symbol }: { symbol: string }) {
 
 export function ValuePolicyReview({
   symbol,
+  boundDraft = false,
   transport,
   onRegistered,
 }: {
   symbol: string;
+  boundDraft?: boolean;
   transport?: ValuePolicyTransport;
   onRegistered?: (result: PolicyRegistration) => void;
 }) {
@@ -211,7 +264,12 @@ export function ValuePolicyReview({
           revision={revision}
         />
       )}
-      <ExternalReviewHandoff key={`handoff-${symbol}`} symbol={symbol} />
+      <ExternalReviewHandoff
+        key={`handoff-${symbol}-${boundDraft}`}
+        symbol={symbol}
+        boundDraft={boundDraft}
+        transport={transport}
+      />
       <details>
         <summary>查看待确认价格政策</summary>
         {result.loading ? (

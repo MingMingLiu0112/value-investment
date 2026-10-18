@@ -2,28 +2,28 @@
   "stage": "S2",
   "status": "PARTIAL",
   "action": "no_order",
-  "captured_at": "2026-10-18T09:39:44.059886+00:00",
-  "source_commit": "f7b64043e9a97f46cfe02532b2d5a5f8ac703c6f",
+  "captured_at": "2026-10-18T09:43:53.760684+00:00",
+  "source_commit": "c461e8a9e755afc1daea39635cf431368f27de7e",
   "runtime_identity": {
     "schema_version": "runtime-identity-v2",
     "action": "no_order",
-    "checked_at": "2026-10-18T09:39:43.961966+00:00",
+    "checked_at": "2026-10-18T09:43:53.622018+00:00",
     "status": "MATCHED",
     "code_status": "MATCHED",
     "config_status": "MATCHED",
     "reasons": [],
-    "current_source_head": "f7b64043e9a97f46cfe02532b2d5a5f8ac703c6f",
+    "current_source_head": "c461e8a9e755afc1daea39635cf431368f27de7e",
     "source_worktree_dirty": false,
-    "backend_loaded_head": "f7b64043e9a97f46cfe02532b2d5a5f8ac703c6f",
+    "backend_loaded_head": "c461e8a9e755afc1daea39635cf431368f27de7e",
     "backend_module_sha256_loaded": "34fd554e335dc7c1fc6f529bd13e49005e541c400f71a65c5ee08ddd671d19d9",
     "backend_module_sha256_on_disk": "34fd554e335dc7c1fc6f529bd13e49005e541c400f71a65c5ee08ddd671d19d9",
     "web_build": {
       "schema_version": "web-build-identity-v1",
-      "commit": "f7b64043e9a97f46cfe02532b2d5a5f8ac703c6f",
-      "built_at": "2026-10-18T09:38:42.257Z",
+      "commit": "c461e8a9e755afc1daea39635cf431368f27de7e",
+      "built_at": "2026-10-18T09:42:58.232Z",
       "source_dirty": false
     },
-    "web_index_sha256": "bfb975fc74067ac181e35df4a05a65de147531fb7585bb2b9c6f6dd0b2bbe1ea",
+    "web_index_sha256": "34c5bd2b9c934823286b18607cc91f5b3578ba2042fba33ebc580085ee6c26c5",
     "config_changes": {
       "behavior": [],
       "data": []
@@ -56,7 +56,7 @@
       "calendar_scope": "WEEKDAY_ONLY_EXCHANGE_HOLIDAYS_NOT_MODELED"
     }
   },
-  "data_version": "midea-bound-draft-20261018-v3",
+  "data_version": "midea-bound-draft-20261018-v4",
   "input_verification": {
     "status": "SOURCE_AND_MODEL_INPUTS_MATCH",
     "input_sha256": "574a7a1b649d27ac330860e63b20b587f4aec9da984be4f8a57b884f657cb5c6",

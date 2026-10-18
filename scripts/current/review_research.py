@@ -18,12 +18,16 @@ from value_investment_agent.application.product.common import require_inside, sh
 
 
 def main() -> int:
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument('--symbol', required=True)
     parser.add_argument('--candidate', '--pending-review-candidate',
-        dest='pending_review_candidate', type=Path, required=True)
+        dest='pending_review_candidate', type=Path)
     parser.add_argument('--candidate-sha256', '--pending-review-candidate-sha256',
-        dest='pending_review_candidate_sha256', required=True)
+        dest='pending_review_candidate_sha256')
+    parser.add_argument('--prepare-bound-draft', action='store_true',
+        help='Prepare exact source-bound inputs for review without changing economic assumptions or approving them.')
     parser.add_argument('--output', type=Path)
     parser.add_argument('--preview', action='store_true', help='Read-only noninteractive review preview.')
     parser.add_argument('--advanced-preview', action='store_true', help='Include exact hashes in read-only preview.')
@@ -38,6 +42,23 @@ def main() -> int:
         'research_reviews', 'research_reviews_sha256', 'schedule_request',
         'recommendation_schema_version')})
     args = parser.parse_args()
+    if args.prepare_bound_draft:
+        if (args.output is None or args.pending_review_candidate is not None
+                or args.pending_review_candidate_sha256 is not None
+                or args.preview or args.advanced_preview or args.resume_incomplete
+                or args.incomplete_consumption_sha256 is not None
+                or any(getattr(args, role) is not None for role in (
+                    'signed_review_response', 'signed_review_response_sha256',
+                    'review_trust_root', 'review_trust_root_sha256',
+                    'previous_review_response', 'previous_review_response_sha256'))):
+            parser.error('bound-draft preparation requires --output and excludes candidate/signature/preview inputs')
+        from value_investment_agent.application.product.bound_draft_review import prepare_bound_draft_review_candidate
+        result = prepare_bound_draft_review_candidate(root=ROOT, symbol=args.symbol,
+            output_dir=ROOT / args.output)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
+    if args.pending_review_candidate is None or args.pending_review_candidate_sha256 is None:
+        parser.error('review requires --candidate and --candidate-sha256')
     args.preview = args.preview or args.advanced_preview
     if args.resume_incomplete and args.output is None:
         parser.error('resume requires --output pointing to the original incomplete directory')

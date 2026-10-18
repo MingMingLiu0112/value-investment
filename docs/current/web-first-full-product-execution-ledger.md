@@ -230,3 +230,67 @@ The narrow repair preserves verified metadata, rejects explicitly invalid
 values and supports legacy missing metadata. Related regression: 93 passed.
 It neither collects extra quotes nor completes the nine unassessed structures.
 No S3 acceptance, strategy advantage, browser PASS or formal eligibility follows.
+
+Latest code checkpoint: c461e8a9e755afc1daea39635cf431368f27de7e is pushed.
+The local rebuilt service reports code/config MATCHED and serves the v4 bound
+draft. Five independent hotspot detail projections still match. Latest exact-SHA
+Core 39116419282 (offline/Postgres) and Web 39116419314 SUCCESS, independently
+queried for c461e8a9 rather than inherited from f7b64043. Post-commit
+API/CI observations are retained locally for the next evidence commit.
+
+Exact S2 next engineering gap (read-only independent audit): the public bound
+draft is not a registered pending-review candidate. G3 selection in
+research_review_wizard.py/user_research_workflow.py only permits candidates
+bound to the publication; its registry has 600519/600887, not 000333.
+research_materiality_reviews.py also finds neither an incremental scan binding
+nor a registered research package for this Midea version. Do not reuse prior
+signatures, run a proposal builder that changes inputs, fabricate a review
+candidate, or relax complete acquired-scan requirements to make a button work.
+Next: adapt the exact v3 package hash/descriptor into the existing consumed
+review packet and pending-review contracts, with positive/negative integration
+tests before adding any Web signing handoff. The existing packet builder already
+checks the consumed workbench/package/descriptor. The actual research scheduler
+and full acquired-scan gates must still be honored. This handoff is NOT_DONE;
+the visible source-bound draft is not approval-workflow closure.
+
+Continuation commands (PS7, repo root): .tmp/web-first-draft-check.ps1;
+.tmp/web-first-hotspot-check.ps1; .tmp/web-first-ci-wait.ps1. Reuse the official
+launcher; .tmp/web-first-start.ps1 only wraps it and retains authorization output
+privately. Never publish .tmp/web-first-runtime/launch-private.log. S1 browser
+recovery remains pending the one existing request; no alternate-browser bypass.
+
+### S2 exact-version review handoff adapter (local implementation)
+
+The next gap above is now implemented for local verification, not yet stage
+acceptance. A symbol-neutral adapter retains the verified package bytes and
+descriptor, runs the existing workbench through the ordinary scoped scheduler,
+and constructs the existing pending-research-candidate-v1/intake contracts.
+The explicit engineering replay question is consumed_input_review_handoff;
+no new official evidence, economic parameter, prior stop resolution or approval
+is invented. Actual Midea replay retains all three active FCFF Evidence Stops.
+Its consumed valuation is unchanged and G1/G3/PriceBridge remain restricted.
+
+The existing authenticated handoff route has an explicit bound_draft selector;
+legacy publication-based selection is unchanged. Current draft, package,
+descriptor, actual workbench and consumed packet must all match. A changed
+draft or missing source/candidate returns NOT_READY with no signing commands.
+The ordinary CLI now supports --prepare-bound-draft and preserves --preview.
+No GET creates candidates or writes review responses. The local registration
+uses a separate field in the existing workflow config, not a new approval registry.
+No actual reviewer key or real signature was created.
+
+Independent review found and fixed a rehashed-packet deception: packet contents
+are now recomputed by a pure projection from verified consumed inputs and
+compared in full. Historical packet output shape is preserved. Current v4
+interpretation notes are explicitly separate from retained consumed research,
+including the H1/FY ROE correction. Positive TEST_ONLY signature consumption
+passes without whole-model approval and cannot grant research/price/event
+permission. Focused Python: 184 passed; Web: 224 passed plus format/typecheck/build.
+Independent bounded review found no remaining concrete P0/P1 in this repair.
+
+Actual local candidate: runtime/bound-draft-reviews/midea-consumed-v3-dated-20261018.
+Existing CLI --preview successfully reads three concrete review groups. Direct
+wizard returns EXTERNAL_SIGNATURE_REQUIRED, whereas materiality remains
+MATERIALITY_HANDOFF_BLOCKED because complete acquired scan coverage is missing.
+Committed-runtime API and exact-SHA CI checks are pending. Browser interaction
+remains NOT_VERIFIED; S1/S2 and total product completion are not passed.

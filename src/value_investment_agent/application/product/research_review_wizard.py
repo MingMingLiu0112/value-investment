@@ -9,7 +9,7 @@ from .common import require_inside, sha256_file, write_new_json
 from .research_reviews import prepare_pending_review_intake, prepare_pending_review_response
 
 
-def build_external_review_handoff(*, root: Path, symbol: str, now) -> dict:
+def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=False) -> dict:
     """Deliver the existing exact-version signing contract, never a local G3 button."""
     from .publication_chain import load_current_chain
     from .user_research_workflow import selected_review_candidate
@@ -17,16 +17,54 @@ def build_external_review_handoff(*, root: Path, symbol: str, now) -> dict:
     from ...infrastructure.evidence.trust_root_registry import pinned_trust_root_fingerprints
 
     root = root.resolve()
-    chain = load_current_chain(root)
-    binding = selected_review_candidate(root=root, symbol=symbol,
-        published={'source_bindings': chain['sources']['source_bindings']})
+    draft_inputs = None
+    if bound_draft:
+        from .bound_draft_review import current_bound_draft_inputs
+        try:
+            draft_inputs = current_bound_draft_inputs(root=root, symbol=symbol, now=now)
+            binding = selected_review_candidate(root=root, symbol=symbol,
+                published={}, bound_draft=True, now=now)
+        except (ValueError, OSError, KeyError, TypeError):
+            result = dict(action='no_order', status='NOT_READY', symbol=symbol,
+                blockers=['EXACT_VERSION_REVIEW_CANDIDATE_MISSING_OR_INVALID'
+                    if draft_inputs else 'CURRENT_SOURCE_BOUND_DRAFT_UNAVAILABLE'],
+                verification=dict(approval_changed=False, research_admitted=False))
+            if draft_inputs:
+                result['bindings'] = draft_inputs
+            return result
+    else:
+        chain = load_current_chain(root)
+        binding = selected_review_candidate(root=root, symbol=symbol,
+            published={'source_bindings': chain['sources']['source_bindings']})
     preview = preview_pending_review_response(root=root,
         candidate_path=root / binding['path'], candidate_sha256=binding['sha256'])
+    consumed_materials = None
+    if bound_draft:
+        from .bound_draft_review import verify_bound_draft_review_candidate
+        candidate = verify_bound_draft_review_candidate(root=root, symbol=symbol,
+            binding=binding, now=now)
+        packet_path = require_inside(root / 'runtime',
+            (root / binding['path']).parent / 'consumed-review.json', 'consumed review packet')
+        packet_binding = dict(path=packet_path.relative_to(root).as_posix(), sha256=sha256_file(packet_path))
+        if packet_binding not in candidate['source_bindings']:
+            raise ValueError('Consumed review packet is not bound to the candidate')
+        consumed_materials = json.loads(packet_path.read_bytes())
+        current_draft = json.loads((root / draft_inputs['draft']['path']).read_bytes())
+        consumed_materials['current_draft_interpretation'] = dict(
+            scope='DISPLAY_INTERPRETATION_NOT_A_CHANGE_TO_CONSUMED_RESEARCH',
+            research_version=current_draft.get('research_version'),
+            summary=current_draft.get('summary'),
+            counter_evidence=current_draft.get('counter_evidence', []),
+            limitations=current_draft.get('limitations', []))
+        if (sha256_file(packet_path) != packet_binding['sha256']
+                or sha256_file(root / draft_inputs['draft']['path']) != draft_inputs['draft']['sha256']):
+            raise ValueError('Bound review materials changed during read')
     valuation_hash = preview['draft']['valuation_artifact_sha256']
     review = None
-    manifest = json.loads((root / review_manifest_binding(root)['path']).read_bytes())
-    if symbol in manifest['items']:
-        review = load_value_policy_review(root, symbol, now)
+    if not bound_draft:
+        manifest = json.loads((root / review_manifest_binding(root)['path']).read_bytes())
+        if symbol in manifest['items']:
+            review = load_value_policy_review(root, symbol, now)
     if (not valuation_hash or (review is not None
             and review['draft']['basis']['valuation_input_version'] != valuation_hash)):
         raise ValueError('Review handoff does not bind the current valuation')
@@ -35,7 +73,18 @@ def build_external_review_handoff(*, root: Path, symbol: str, now) -> dict:
                       f'--candidate-sha256 {binding["sha256"]}')
     from .research_materiality_reviews import registered_materiality_handoff
     try:
-        materiality_handoff = registered_materiality_handoff(root=root, symbol=symbol, today=now)
+        if bound_draft:
+            from .research_materiality_reviews import prepare_materiality_review_handoff
+            package = json.loads((root / draft_inputs['package']['path']).read_bytes())
+            scan = package['model_validity_input']['event_scan_ref']
+            materiality_handoff = prepare_materiality_review_handoff(root=root,
+                package_path=root / draft_inputs['package']['path'],
+                package_sha256=draft_inputs['package']['sha256'],
+                scan_path=root / scan['path'], scan_sha256=scan['sha256'])
+            if materiality_handoff.get('model_context', {}).get('input_descriptor_sha256') != draft_inputs['input_sha256']:
+                raise ValueError('Materiality handoff requires a separately rebound model descriptor')
+        else:
+            materiality_handoff = registered_materiality_handoff(root=root, symbol=symbol, today=now)
     except (ValueError, OSError, KeyError, TypeError) as error:
         materiality_handoff = dict(status='MATERIALITY_HANDOFF_BLOCKED', action='no_order',
             approval_granted=False, g3_approval_granted=False, reason=str(error), steps=[])
@@ -45,8 +94,10 @@ def build_external_review_handoff(*, root: Path, symbol: str, now) -> dict:
         model_context=preview['draft']['model_context'],
         valuation_artifact_sha256=valuation_hash,
         review_questions=preview['review_questions'], unsigned_response=preview['draft'],
-        public_research_materials=review['model_review'] if review else preview['draft']['model_context'],
-        source_bindings=review['source_bindings'] if review else [binding],
+        public_research_materials=(consumed_materials if bound_draft else
+            review['model_review'] if review else preview['draft']['model_context']),
+        source_bindings=review['source_bindings'] if review else ([binding, draft_inputs['draft'], draft_inputs['package']]
+            if draft_inputs else [binding]),
         authorization=dict(pinned_root_count=count,
             status='AUTHORIZED_IDENTITY_REQUIRED' if count == 0 else 'EXACT_REVIEWER_SCOPE_MUST_BE_VERIFIED'),
         steps=[

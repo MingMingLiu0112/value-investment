@@ -1,6 +1,12 @@
 {
   "schema_version": "user-research-workflow-v1",
   "action": "no_order",
+  "bound_draft_review_candidates": {
+    "000333": {
+      "path": "runtime/bound-draft-reviews/midea-consumed-v3-dated-20261018/candidate.json",
+      "sha256": "2c329f188d538d0b90293aae1d989916c556afedc358f0c08964605b4ff5fba5"
+    }
+  },
   "review_candidates": {
     "600519": {
       "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/candidate.json",

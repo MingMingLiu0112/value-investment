@@ -163,3 +163,23 @@ Independent S3 preparation repairs lost candidate industry/rank metadata;
 93 related tests pass. It does not complete market structure coverage or S3
 acceptance. Remaining browser, economic, approval, private, operational and
 later-stage requirements remain open; total Goal IN_PROGRESS.
+
+Latest code c461e8a9e755afc1daea39635cf431368f27de7e is pushed and passes
+exact-SHA Core 39116419282 (offline/Postgres) and Web 39116419314. Local rebuilt
+runtime code/config MATCHED; detail API serves v4 and five independent hotspot
+details retain parity. These post-commit observations are local pending the
+next scoped evidence commit. Actual browser acceptance remains NOT_VERIFIED.
+The exact-version draft-to-G3/materiality handoff is still an engineering gap,
+documented in the single execution ledger; no approval closure is claimed.
+
+S2 successor implements exact-source-bound draft preparation into the existing
+pending candidate/intake contract and an authenticated explicit Web handoff.
+No economic input changes, stop resolution, real keys, signature or price
+approval are introduced. Rehashed packet deception is rejected through a pure
+consumed-input projection. Legacy selection remains isolated. Missing/stale
+materials have no signable response. TEST_ONLY actual signature consumption
+passes with no whole-model approval; 184 related Python tests and 224 Web tests
+pass, as do Web format/typecheck/build. Actual Midea CLI preview and direct
+wizard work; materiality correctly remains blocked by incomplete acquired scan.
+Latest committed runtime/API/CI and actual browser checks are still pending.
+Overall Goal IN_PROGRESS; no formal investment or stage-completion claim.

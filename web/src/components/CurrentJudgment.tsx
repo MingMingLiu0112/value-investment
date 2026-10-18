@@ -29,14 +29,18 @@ const valuePolicyTransport = {
   status: api.valuePolicyStatus,
   preview: api.previewValuePolicy,
   confirm: api.confirmValuePolicy,
+  handoff: (symbol: string, boundDraft = false) =>
+    api.valuePolicyHandoff(symbol, undefined, boundDraft),
 };
 
 export function JudgmentSummary({
   decision,
   personalContext,
+  boundDraft = false,
 }: {
   decision: DecisionItem;
   personalContext?: ReactNode;
+  boundDraft?: boolean;
 }) {
   const isValue = ["CORE_VALUE", "value"].includes(decision.strategy ?? "");
   const PublicPlan = isValue ? "details" : "section";
@@ -224,6 +228,7 @@ export function JudgmentSummary({
       {isValue && decision.symbol && (
         <ValuePolicyReview
           symbol={decision.symbol}
+          boundDraft={boundDraft}
           transport={valuePolicyTransport}
         />
       )}

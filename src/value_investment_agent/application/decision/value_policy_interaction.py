@@ -118,11 +118,12 @@ class ValuePolicyInteractionService:
             draft_prices=deepcopy(prepared["draft_prices"]),
             price_scope="PRIVATE_POLICY_ARITHMETIC_NOT_ADMITTED")
 
-    def review_handoff(self, symbol, *, principal, now):
+    def review_handoff(self, symbol, *, principal, now, bound_draft=False):
         require_policy_authority(principal)
         self._clock(now)
         from ..product.research_review_wizard import build_external_review_handoff
-        return build_external_review_handoff(root=self.root, symbol=symbol, now=now)
+        return build_external_review_handoff(root=self.root, symbol=symbol, now=now,
+                                            bound_draft=bound_draft)
 
     def preview(self, symbol, selection, *, principal, now):
         require_policy_authority(principal)

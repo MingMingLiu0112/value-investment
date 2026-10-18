@@ -317,9 +317,13 @@ export const api = {
     getPrivate<PolicyStatus>(
       `value-policy-review/${encodeURIComponent(symbol)}/status`,
     ),
-  valuePolicyHandoff: (symbol: string, signal?: AbortSignal) =>
+  valuePolicyHandoff: (
+    symbol: string,
+    signal?: AbortSignal,
+    boundDraft = false,
+  ) =>
     getPrivate<PolicyHandoff>(
-      `value-policy-review/${encodeURIComponent(symbol)}/handoff`,
+      `value-policy-review/${encodeURIComponent(symbol)}/handoff${boundDraft ? "?bound_draft=true" : ""}`,
       signal,
     ),
   confirmValuePolicy: (

@@ -6,29 +6,56 @@ export type PolicyRule = {
   rationale: string;
 };
 
-export type PolicyHandoff = {
-  action: "no_order";
-  status: "EXTERNAL_SIGNATURE_REQUIRED";
-  candidate_binding: unknown;
-  model_context: unknown;
-  valuation_artifact_sha256: string;
-  review_questions: unknown;
-  unsigned_response: unknown;
-  authorization: { pinned_root_count: number; status: string };
-  steps: { id: string; action: string }[];
-  verification: { approval_changed: false; research_admitted: false };
-  commands: { draft_preview: string; consume_signed_response: string };
-  materiality_handoff?: {
-    status: string;
-    approval_granted: false;
-    reason?: string;
-    scan_window?: { scan_from: string; scan_to: string };
-    announcements?: unknown[];
-    unsigned_response?: unknown;
-    commands?: { consume_signed_response: string; recompute: string };
-    publication_required?: boolean;
-  };
+export type MaterialityReviewHandoff = {
+  status: string;
+  approval_granted: false;
+  reason?: string;
+  scan_window?: { scan_from: string; scan_to: string };
+  announcements?: unknown[];
+  unsigned_response?: unknown;
+  commands?: { consume_signed_response: string; recompute: string };
+  publication_required?: boolean;
 };
+
+export type PolicyHandoffNotReady = {
+  action: "no_order";
+  status: "NOT_READY";
+  symbol: string;
+  blockers: string[];
+  bindings?: {
+    draft: { path: string; sha256: string };
+    package: { path: string; sha256: string };
+    input_sha256: string;
+  };
+  verification: { approval_changed: false; research_admitted: false };
+  materiality_handoff?: MaterialityReviewHandoff;
+};
+
+export type PolicyHandoff =
+  | PolicyHandoffNotReady
+  | {
+      action: "no_order";
+      status: "EXTERNAL_SIGNATURE_REQUIRED";
+      candidate_binding: unknown;
+      model_context: unknown;
+      valuation_artifact_sha256: string;
+      review_questions: unknown;
+      unsigned_response: unknown;
+      authorization: { pinned_root_count: number; status: string };
+      steps: { id: string; action: string }[];
+      verification: { approval_changed: false; research_admitted: false };
+      commands: { draft_preview: string; consume_signed_response: string };
+      materiality_handoff?: {
+        status: string;
+        approval_granted: false;
+        reason?: string;
+        scan_window?: { scan_from: string; scan_to: string };
+        announcements?: unknown[];
+        unsigned_response?: unknown;
+        commands?: { consume_signed_response: string; recompute: string };
+        publication_required?: boolean;
+      };
+    };
 
 export type PolicySelection = {
   effective_from: string;
@@ -80,6 +107,7 @@ export type PolicyStatus =
     };
 
 export type ValuePolicyTransport = {
+  handoff?(symbol: string, boundDraft?: boolean): Promise<PolicyHandoff>;
   status(symbol: string): Promise<PolicyStatus>;
   preview(symbol: string, selection: PolicySelection): Promise<PolicyPreview>;
   confirm(
@@ -111,6 +139,20 @@ export function createValuePolicyTransport(
     return result as T;
   }
   return {
+    handoff: async (symbol, boundDraft = false) => {
+      const response = await fetch(
+        `/api/v1/value-policy-review/${encodeURIComponent(symbol)}/handoff${boundDraft ? "?bound_draft=true" : ""}`,
+        {
+          credentials: "same-origin",
+          headers: await authenticatedHeaders(),
+          cache: "no-store",
+        },
+      );
+      const result = await response.json();
+      if (!response.ok || result.action !== "no_order")
+        throw new Error(result.detail ?? "审核交接读取失败");
+      return result as PolicyHandoff;
+    },
     status: async (symbol) => {
       const response = await fetch(
         `/api/v1/value-policy-review/${encodeURIComponent(symbol)}/status`,
