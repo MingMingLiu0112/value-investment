@@ -1,68 +1,68 @@
 {
+  "stage": "S5",
+  "source_commit": "6a72bde664d2125affac4727b56b84d7100597a0",
+  "action": "no_order",
   "actual_browser_evidence": "NOT_VERIFIED",
   "checks": [
     {
+      "symbol": "600150",
       "schema_version": "price-action-plan-independent-v2",
-      "matched": true,
       "action": "no_order",
-      "symbol": "600150"
+      "matched": true
     },
     {
+      "symbol": "600667",
       "schema_version": "price-action-plan-independent-v2",
-      "matched": true,
       "action": "no_order",
-      "symbol": "600667"
+      "matched": true
     },
     {
+      "symbol": "002008",
       "schema_version": "price-action-plan-independent-v2",
-      "matched": true,
       "action": "no_order",
-      "symbol": "002008"
+      "matched": true
     },
     {
+      "symbol": "600019",
       "schema_version": "price-action-plan-independent-v2",
-      "matched": true,
       "action": "no_order",
-      "symbol": "600019"
+      "matched": true
     },
     {
+      "symbol": "000338",
       "schema_version": "price-action-plan-independent-v2",
-      "matched": true,
       "action": "no_order",
-      "symbol": "000338"
+      "matched": true
     },
     {
+      "symbol": "600176",
       "schema_version": "price-action-plan-independent-v2",
-      "matched": true,
       "action": "no_order",
-      "symbol": "600176"
+      "matched": true
     },
     {
+      "symbol": "000560",
       "schema_version": "price-action-plan-independent-v2",
-      "matched": true,
       "action": "no_order",
-      "symbol": "000560"
+      "matched": true
     },
     {
+      "symbol": "601857",
       "schema_version": "price-action-plan-independent-v2",
-      "matched": true,
       "action": "no_order",
-      "symbol": "601857"
+      "matched": true
     },
     {
+      "symbol": "600127",
       "schema_version": "price-action-plan-independent-v2",
-      "matched": true,
       "action": "no_order",
-      "symbol": "600127"
+      "matched": true
     },
     {
+      "symbol": "000333",
       "schema_version": "price-action-plan-independent-v2",
-      "matched": true,
       "action": "no_order",
-      "symbol": "000333"
+      "matched": true
     }
-  ],
-  "stage": "S5",
-  "source_commit": "44a7e8cdd4469527133e1375f72d4ff11a2b2a9e",
-  "action": "no_order"
+  ]
 }

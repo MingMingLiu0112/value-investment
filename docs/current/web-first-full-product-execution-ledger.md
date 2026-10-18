@@ -583,3 +583,15 @@ existing TEST_ONLY M5 lifecycle remains isolated and unchanged. This is a bounde
 S5 source/lifecycle increment; actual price-condition orchestration, remaining
 reminder types, S6 and S7 are still open. S5 remains IN_PROGRESS, total Goal active.
 Final tests/browser/restart/CI evidence accompanies the scoped commit.
+
+Scoped service/API final tests: 45 passed; source plus complete Web API regression:
+371 passed; Web full regression: 229 passed, final targeted test: 4 passed,
+typecheck/build pass. Browser confirms explicit real collection for 600150 and
+000333, automatic non-session stop, 600150 history after restart, source expansion,
+and 390x844 viewport without horizontal overflow (375/375). Real browser manual
+STOP was not exercised because collection finished first; in-flight STOP and stale
+session rejection are covered by injected service/API regressions. Independent
+review's stale STOP finding is fixed and rechecked. Initial remote Core failed
+because one folded YAML command line was over-indented; 34588e40 fixes that
+workflow invocation, without changing any test or investment threshold. Successor
+exact-SHA CI evidence is recorded separately; no previous CI pass is substituted.
