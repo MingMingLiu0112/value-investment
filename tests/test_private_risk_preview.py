@@ -348,6 +348,77 @@ def test_web_choices_project_real_adapter_without_changing_actual_result(project
     assert service.journal.path.read_bytes() == before
 
 
+def test_test_only_positive_sizing_manual_fills_and_restart_close_the_loop(projected_account, tmp_path, monkeypatch):
+    from datetime import date
+    from decimal import Decimal
+    from value_investment_agent.application.portfolio.private_portfolio_service import (
+        PrivatePortfolioService, JournalValidationError,
+    )
+
+    service = projected_account
+    plan = binding()
+    plan["plan"].update(entry_trigger_price="10", invalidation_price="9.9", current_reference_close={})
+    monkeypatch.setattr(preview, "_current_plan", lambda *args: (deepcopy(plan), None))
+    result = preview.preview_private_hotspot_risk(service.journal, repository_root=tmp_path,
+        generated_at=NOW, payload={"symbol": "300364",
+            "assumptions": ASSUMPTIONS, "scenario": scenario_choices()})
+    scenario = result["scenario_preview"]
+    quantity = scenario["review_quantity"]
+    assert quantity is not None, scenario["blockers"]
+    assert quantity >= 100 and quantity % 100 == 0 and scenario["blockers"] == []
+    assert scenario["namespace"] == "SIMULATED" and scenario["formal_review_quantity"] is None
+    assert scenario["trade_eligible"] is scenario["formal_eligibility"] is False
+    before = service.portfolio_view(today=date(2026, 10, 14))
+
+    def request(side, transaction, day, price):
+        return {"idempotency_key": transaction + "-prepare", "expected_revision": len(service.records()),
+            "fill": {"transaction_id": transaction, "side": side, "sleeve": "HOTSPOT_SATELLITE",
+                "symbol": "300364", "exchange": "SZSE", "quantity": str(quantity),
+                "price_cny": price, "fees_cny": "1", "trade_date": day,
+                "next_sell_session": "2026-10-15" if side == "BUY" else None,
+                "trading_unit": "100", "decision_id": "TEST_ONLY-scenario",
+                "research_version": "TEST_ONLY"}}
+
+    def confirm(body):
+        prior = service.portfolio_view(today=date.fromisoformat(body["fill"]["trade_date"]))
+        prepared, digest = service.prepare_fill(body)
+        # Preparation is not a transaction and must not change cash or lots.
+        current = service.portfolio_view(today=date.fromisoformat(body["fill"]["trade_date"]))
+        assert current["cash_cny"] == prior["cash_cny"]
+        assert current["positions"] == prior["positions"]
+        assert current["pending_draft"] is not None and prepared["status"] == "FILL_PREPARED"
+        confirmation = {"idempotency_key": body["fill"]["transaction_id"] + "-confirm",
+            "expected_revision": len(service.records()), "prepared_record_sha256": digest,
+            "confirmed_at": body["fill"]["trade_date"] + "T20:00:00+08:00",
+            "confirmation_note": "TEST_ONLY simulated manual fill; not a broker transaction"}
+        first = service.confirm_fill(confirmation)
+        assert service.confirm_fill(confirmation) == first
+        return first[0]
+
+    bought = confirm(request("BUY", "TEST_ONLY-positive-buy", "2026-10-14", "10"))
+    assert Decimal(bought["cash_cny"]) == Decimal(before["cash_cny"]) - Decimal(quantity) * 10 - 1
+    journal_before_rejection = service.journal.path.read_bytes()
+    with pytest.raises(JournalValidationError):
+        service.prepare_fill(request("SELL", "TEST_ONLY-early-sell", "2026-10-14", "11"))
+    assert service.journal.path.read_bytes() == journal_before_rejection
+    sold = confirm(request("SELL", "TEST_ONLY-positive-sell", "2026-10-15", "11"))
+    assert Decimal(sold["cash_cny"]) == Decimal(before["cash_cny"]) + Decimal(quantity) - 2
+    assert Decimal(sold["realized_pnl_cny"]) == Decimal(quantity) - 2
+    assert sold["positions"] == before["positions"]
+    assert [trade["research_version"] for trade in sold["trades"]] == ["TEST_ONLY", "TEST_ONLY"]
+    stable = service.journal.path.read_bytes()
+    restarted = PrivatePortfolioService(service.journal).portfolio_view(today=date(2026, 10, 15))
+    for key in ("cash_cny", "positions", "realized_pnl_cny", "revision"):
+        assert restarted[key] == sold[key]
+    # A record cannot contain its own digest; replay attaches that audit field.
+    for immediate, replayed in zip(sold["trades"], restarted["trades"], strict=True):
+        assert len(replayed["record_sha256"]) == 64
+        assert {key: value for key, value in replayed.items() if key != "record_sha256"} == {
+            key: value for key, value in immediate.items() if key != "record_sha256"}
+    assert service.journal.path.read_bytes() == stable
+    assert restarted["action"] == "no_order"
+
+
 @pytest.mark.parametrize("change,blocker", [
     ("no_risks", "SCENARIO_HOLDING_RISK_MISSING:CORE_VALUE:300364"),
     ("no_attributes", "SCENARIO_SECURITY_RISK_MISSING:300364:cyclical"),

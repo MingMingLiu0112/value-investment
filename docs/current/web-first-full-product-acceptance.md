@@ -12,9 +12,10 @@ Permanent action=no_order. This is the single acceptance record, not a new plan.
 | S1 generic browser/persistence interaction | NOT_VERIFIED | Browser URL policy refused acquiring the current tab; no workaround attempted |
 | S2 independent financial-input integrity work | PARTIAL | Opt-in v3 consumed-fact binding and offline real-source candidate; no S1 waiver or S2 acceptance |
 | S3 hotspot integration | PARTIAL | 10 real cross-industry completed-close cases; strict PIT/strategy validation/browser not accepted |
-| S4 private integration | IN_PROGRESS | TEST_ONLY single-account risk/fill/restart loop passed; retained public announcement coverage wired; full cross-sleeve lifecycle and actual browser acceptance pending |
-| S5 intraday acceptance | IN_PROGRESS | Clock/calendar/completed-bar adapter and isolated M5 persistence tested; live producer/monitor/Web lifecycle not connected |
-| S6-S7 new-goal acceptance | NOT_STARTED | Inherited capabilities do not substitute for the new Goal's acceptance |
+| S4 private integration | IN_PROGRESS | TEST_ONLY browser cross-sleeve bookkeeping and isolated positive sizing/manual-fill/replay regression passed; complete approved-research positive browser chain pending |
+| S5 intraday acceptance | IN_PROGRESS | Bounded real-source observation START/STOP/restart and plan-reference Web binding available; full completed-bar/condition reminder acceptance pending |
+| S6 research workflows | IN_PROGRESS | Bounded event/financial Mock workflows and retained packet read model available; live provider and complete four-workflow daily integration pending |
+| S7 final product acceptance | NOT_STARTED | Inherited capabilities and scoped S4/S5 checks do not substitute for complete new-Goal acceptance |
 | Real personal use | NOT_REACHED | No real private account facts/IPS/reconciliation or final signoff created |
 | Formal investment eligibility | NOT_GRANTED | No real research/strategy signatures, no evidence advantage inferred from test fixtures |
 | Continuous production operations | NOT_ACCEPTED | No production scheduling/deployment authorized or performed |
@@ -269,3 +270,25 @@ in-session behavior and failure/lifecycle coverage use injected TEST_ONLY inputs
 not fabricated live trading-session evidence. S5 remains IN_PROGRESS; no full
 stage/product/user acceptance is inferred. Detailed scoped receipt:
 `artifacts/current/web-first-acceptance/s5/public-observation-validation.json`.
+
+## Plan-reference and retained Agent integration (2026-10-18)
+
+Scoped engineering only; S5/S6 and total product acceptance remain incomplete.
+Real 600150 browser observation binds 36.45 entry-reference / 34.41 invalidation-
+reference, retains OUTSIDE_EXCHANGE_SESSION and survives local server restart.
+It grants no completed-bar confirmation, M5 admission or investment eligibility.
+The browser also opens the authenticated 600519 three-role historical Mock packet
+(research cutoff 2026-10-08) with exact cninfo originals. No new LLM request or
+economic claim approval is represented. Adapter/API real-contract regression:
+59 passed. Core integration: 328 passed; Web regression: 232 passed, plus the
+polling-stop regression (6 targeted tests). Typecheck/build/format passed.
+
+Actual browser discovered two issues, both repaired: refreshing hid the STOP
+control, and expanded source hashes overflowed narrow screens. STOP remains
+available during polling; source text now wraps. Expanded authenticated Agent
+panel has scroll/client widths 375/375 at 390x844 and 415/415 at 430x844.
+Screenshots: s5/plan-reference-desktop.png, s5/retained-agent-desktop.png,
+s5/retained-agent-mobile390.png and s5/retained-agent-mobile430.png.
+172437f8 and successor e62cc025 exact-SHA Core/Postgres/Web CI passed separately.
+Actual browser START -> STOP -> refresh succeeds on e62cc025, retaining the
+600150 plan and negative non-session observation at 20:47:55 Beijing time.

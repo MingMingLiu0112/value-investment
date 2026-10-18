@@ -2,6 +2,36 @@
 
 ## 2026-10-18 S4 browser bookkeeping loop and S6 bounded Mock workflows
 
+Successor inspection on baseline 7a1e09ae traced the actual 000333 null expiry to
+`infrastructure/hotspot/current_price_case.py::_display_close`: its explicit
+LAST_COMPLETED_CLOSE_DISPLAY_ONLY contract returns next_session=null. The
+projector preserves this lack of future validity. No calendar date, B1 admission
+or formal investment permission was invented to unblock sizing.
+
+A separate TEST_ONLY integration regression now connects the real scenario risk
+engine to a 100-share-unit manual buy, same-day T+1 rejection, next-day sale,
+explicit fees, idempotent confirmations and journal restart. Preparation leaves
+cash/holdings unchanged; rejected selling leaves journal bytes unchanged; replay
+recovers cash, positions, trades and realized PnL. Synthetic price 10 / stop 9.9
+belongs only to that fixture, never actual 300364 research. The complete risk
+preview module passes 62 tests. This is automated integration evidence, not a
+positive browser or signed-research acceptance, and not investment performance.
+The normal user browser tab still reports connection failure to browser tools;
+its URL policy rejects observation. No alternate browser/workaround was used.
+
+The existing `scripts/current/run_agent_research_pilot.py` now exposes
+`--workflow event|financial --mode mock` with pinned source-request JSON;
+financial inputs optionally bind their transcription and metric workbench.
+Legacy execution/output remains supported. These branches reject live/offline
+modes and paid-provider settings, never register or publish a packet, and return
+exit 2 for a blocked missing-input outcome. Root exercised the CLI against the
+retained real 600519 originals (historical research cutoff 2026-10-08): three
+event questions, byte-identical repeat, and a financial missing-period-contract
+refusal without creating an output packet. Evidence:
+`artifacts/current/web-first-acceptance/s6/daily-cli-validation.json`.
+Combined S4/S6/IPS/ledger/account-continuity regression: 137 passed. The CLI is
+not yet the complete four-workflow daily launcher, and no live model was called.
+
 Actual TEST_ONLY browser operations initialized virtual cash and IPS, confirmed
 two buys in separate sleeves, rejected same-day selling, confirmed next-day
 hotspot selling, reconciled internal records and displayed all three fills in
