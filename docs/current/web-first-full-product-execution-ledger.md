@@ -116,3 +116,51 @@ exact corrected-commit CI are being refreshed. Actual browser acceptance remains
 selected tab is still a data-URL connection-error page. User recovery was
 requested once; no alternative browser/surface bypass is attempted. S1 remains
 PARTIAL, S2-S7 are not accepted, and no total-goal completion is claimed.
+
+Corrected source 28a4e9448153074fc0a628518ed1a2de1654c427 is pushed.
+Local checks: 327 Python/API, 213 Web, format/typecheck/build all pass.
+Rebuilt/restarted runtime is MATCHED with clean source. Actual read APIs verify
+five homepage/successor-detail pairs have matching schema, blockers and risk
+eligibility; all remain observation-only without real strategy release authority.
+Independent bounded static review found no concrete P1 in the opt-in API/Web
+boundary: no TEST_ONLY, private-store or formal-eligibility bypass. Fresh CI is
+recorded in the existing github-current receipt when concluded. Browser recovery
+remains the exact outstanding S1 interaction boundary; no S2 graduation occurs.
+
+Exact 28a4e944 Core 39114093485 (both jobs) and Web 39114089866 SUCCESS.
+Duplicate Web 39114093513 remains in progress at last observation. Latest
+post-commit runtime/API/CI observations are local receipts in the same S1
+namespace; no evidence-only source rebuild loop is introduced.
+
+## Independent S2 input-integrity work while S1 UI remains unverified
+
+Objective section 16 permits independent work during a human/environment wait.
+This security/integrity repair does not depend on browser interaction. S1 is
+not waived or passed, and S2 stage acceptance is not claimed.
+
+Reproduced the actual Midea package flaw: changing only consumed book equity
+or ordinary shares was accepted by v2, despite unchanged summary/source anchors.
+Added opt-in source-bound-research-inputs-v3. It inherits v2 provenance/cutoff
+and assumption checks, requires complete unique operating-input mappings,
+canonical units/scope/basis date, positive values and integral shares, and binds
+actual inputs to source anchors. Explicit share basis separates issued shares
+from shares excluding treasury. Supported source normalizations are narrowly
+deterministic: same-page share-component sum and thousand-CNY to CNY. Unknown,
+duplicate, self-referential, nested, mismatched and unconsumed derivations fail.
+Official exchange filings are admitted as anchors only under the v3 contract;
+v1/v2 behavior and immutable artifacts are unchanged.
+
+Offline actual candidate: s2/midea-consumed-v3 in the existing acceptance namespace.
+All ten retained source hashes verify. H1 p7 equity 212861055 thousand CNY
+normalizes to 212861055000 CNY; HKEX p2 A shares excluding treasury 6813498835
+plus H shares 650848500 equals 7464347335. Derived totals are explicitly marked,
+not claimed to be literally printed on the page. Independent local-source
+review rebuilt the same descriptor and found no concrete P1 in the bounded
+implementation/candidate review. Bear/Base/Bull are unchanged at approximately
+36.01/45.74/58.17. Both consumed-input tamper cases are now rejected by v3.
+
+Targeted regression: 213 passed, including source contracts, derived components
+and the unchanged residual-income model. Broader Core regression is running.
+No current pointer, real approval, price admission, personal position or Excel
+was changed. Binding consistency is not financial/economic approval. Remaining
+S2 work includes economic research, lawful review handoff and Web acceptance.

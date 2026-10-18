@@ -10,7 +10,8 @@ Permanent action=no_order. This is the single acceptance record, not a new plan.
 | S0 baseline/requirements | PASS | 0e794af Core/Web CI; 2936 local Core tests passed, 35 skipped; requirements conflict inventory |
 | S1 independent strategy implementation | PARTIAL | 87339513 Core/Web CI success; 120 focused Python/API and 212 Web tests; local committed source/backend/Web MATCHED |
 | S1 generic browser/persistence interaction | NOT_VERIFIED | Browser URL policy refused acquiring the current tab; no workaround attempted |
-| S2-S7 new-goal acceptance | NOT_STARTED | Inherited capabilities do not substitute for the new Goal's acceptance |
+| S2 independent financial-input integrity work | PARTIAL | Opt-in v3 consumed-fact binding and offline real-source candidate; no S1 waiver or S2 acceptance |
+| S3-S7 new-goal acceptance | NOT_STARTED | Inherited capabilities do not substitute for the new Goal's acceptance |
 | Real personal use | NOT_REACHED | No real private account facts/IPS/reconciliation or final signoff created |
 | Formal investment eligibility | NOT_GRANTED | No real research/strategy signatures, no evidence advantage inferred from test fixtures |
 | Continuous production operations | NOT_ACCEPTED | No production scheduling/deployment authorized or performed |
@@ -89,3 +90,35 @@ default and successor detail reads, stale/retired cases and the full Web API sui
 These changes do not pass actual-browser acceptance. New-commit CI and runtime
 must be bound after commit; older CI evidence applies only to its own SHA.
 Overall Goal IN_PROGRESS; S1 PARTIAL; formal eligibility NOT_GRANTED.
+
+Corrected source 28a4e9448153074fc0a628518ed1a2de1654c427 is pushed, with
+327 Python/API and 213 Web tests passing; format/typecheck/build pass. Local
+runtime has matching source/backend/Web identities. The five actual successor
+detail API results match the homepage successor (detail-api-parity.json).
+An independent bounded static review found no concrete P1 in the opt-in view;
+it cannot enable TEST_ONLY, expose private state or grant formal eligibility.
+Actual browser interaction remains NOT_VERIFIED. Exact-SHA CI is recorded in
+github-current.json; in-progress CI must not be described as success.
+
+Exact corrected-SHA Core 39114093485 (offline and PostgreSQL) and Web
+39114089866 concluded SUCCESS. Duplicate Web run 39114093513 was still
+in progress at the last observation; no conclusion is inferred for that run.
+
+## Independent S2 integrity preparation
+
+An actual in-memory mutation reproduced v2's missing linkage from summary
+anchors to consumed capital inputs. The opt-in v3 successor checks complete
+source-to-input mappings, units, scope, valuation-basis date and explicit share
+basis. It also validates deterministic raw-component normalization. Historical
+v1/v2 behavior and formulas are preserved; old approvals are not migrated.
+
+Real local-source candidate and receipt are in s2/midea-consumed-v3. Equity
+thousand-CNY conversion and A+H excluding-treasury arithmetic match retained
+official pages and all ten source hashes. The normalized facts match model
+inputs and unchanged valuation values. Tampered equity/shares fail validation.
+Independent bounded review found no concrete P1. Targeted regression: 213 pass.
+
+This is offline PARTIAL work permitted during the independent UI wait, not S1
+graduation or S2 acceptance. No current research pointer or investment approval
+changed. Original economic/event/PIT/G1/G3 limitations remain. S1 browser
+acceptance, full S2 research/decision and later product stages are incomplete.

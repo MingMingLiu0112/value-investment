@@ -1,14 +1,6 @@
 {
-  "hotspot_count": 5,
-  "commit": "501c5972670adb3bf58b08445de5b62997d78f8e",
-  "unified_count": 11,
   "hotspots": [
     {
-      "formal_eligibility": false,
-      "status": "OBSERVATION_ONLY",
-      "symbol": "600150",
-      "review_status": "MISSING",
-      "risk_review_eligible": false,
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -25,14 +17,14 @@
         "CURRENT_CASE_NOT_BOUND_TO_STRATEGY_RELEASE",
         "CURRENT_STRUCTURE_NOT_QUALIFIED",
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED"
-      ]
+      ],
+      "review_status": "MISSING",
+      "status": "OBSERVATION_ONLY",
+      "formal_eligibility": false,
+      "risk_review_eligible": false,
+      "symbol": "600150"
     },
     {
-      "formal_eligibility": false,
-      "status": "OBSERVATION_ONLY",
-      "symbol": "600391",
-      "review_status": "MISSING",
-      "risk_review_eligible": false,
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -49,14 +41,14 @@
         "CURRENT_CASE_NOT_BOUND_TO_STRATEGY_RELEASE",
         "CURRENT_STRUCTURE_NOT_QUALIFIED",
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED"
-      ]
+      ],
+      "review_status": "MISSING",
+      "status": "OBSERVATION_ONLY",
+      "formal_eligibility": false,
+      "risk_review_eligible": false,
+      "symbol": "600391"
     },
     {
-      "formal_eligibility": false,
-      "status": "OBSERVATION_ONLY",
-      "symbol": "600967",
-      "review_status": "MISSING",
-      "risk_review_eligible": false,
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -73,14 +65,14 @@
         "CURRENT_CASE_NOT_BOUND_TO_STRATEGY_RELEASE",
         "CURRENT_STRUCTURE_NOT_QUALIFIED",
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED"
-      ]
+      ],
+      "review_status": "MISSING",
+      "status": "OBSERVATION_ONLY",
+      "formal_eligibility": false,
+      "risk_review_eligible": false,
+      "symbol": "600967"
     },
     {
-      "formal_eligibility": false,
-      "status": "OBSERVATION_ONLY",
-      "symbol": "600316",
-      "review_status": "MISSING",
-      "risk_review_eligible": false,
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -97,14 +89,14 @@
         "CURRENT_CASE_NOT_BOUND_TO_STRATEGY_RELEASE",
         "CURRENT_STRUCTURE_NOT_QUALIFIED",
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED"
-      ]
+      ],
+      "review_status": "MISSING",
+      "status": "OBSERVATION_ONLY",
+      "formal_eligibility": false,
+      "risk_review_eligible": false,
+      "symbol": "600316"
     },
     {
-      "formal_eligibility": false,
-      "status": "OBSERVATION_ONLY",
-      "symbol": "600893",
-      "review_status": "MISSING",
-      "risk_review_eligible": false,
       "blockers": [
         "security_identity:MISSING",
         "security_risk:MISSING",
@@ -121,14 +113,22 @@
         "CURRENT_CASE_NOT_BOUND_TO_STRATEGY_RELEASE",
         "CURRENT_STRUCTURE_NOT_QUALIFIED",
         "CURRENT_ENTRY_CONDITION_NOT_OBSERVED"
-      ]
+      ],
+      "review_status": "MISSING",
+      "status": "OBSERVATION_ONLY",
+      "formal_eligibility": false,
+      "risk_review_eligible": false,
+      "symbol": "600893"
     }
   ],
-  "real_investment_eligibility": "NOT_GRANTED",
+  "commit": "28a4e9448153074fc0a628518ed1a2de1654c427",
   "stage": "S1",
-  "captured_at": "2026-10-18T17:01:07.0066018+08:00",
-  "actual_browser_evidence": "NOT_VERIFIED_BROWSER_URL_POLICY_REJECTED",
   "action": "no_order",
+  "hotspot_count": 5,
+  "captured_at": "2026-10-18T17:08:42.2225950+08:00",
   "runtime": "MATCHED",
-  "publication_id": "pub-cb73f09b88c4150ecf0d"
+  "actual_browser_evidence": "NOT_VERIFIED_BROWSER_URL_POLICY_REJECTED",
+  "unified_count": 11,
+  "publication_id": "pub-cb73f09b88c4150ecf0d",
+  "real_investment_eligibility": "NOT_GRANTED"
 }

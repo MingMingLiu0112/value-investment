@@ -1,6 +1,6 @@
 {
   "action": "no_order",
-  "head": "501c5972670adb3bf58b08445de5b62997d78f8e",
+  "head": "28a4e9448153074fc0a628518ed1a2de1654c427",
   "pulls": [
     {
       "number": 1,
@@ -11,37 +11,21 @@
   ],
   "runs": [
     {
-      "id": 39113593056,
-      "name": "Web Workbench",
-      "head_sha": "501c5972670adb3bf58b08445de5b62997d78f8e",
-      "status": "completed",
-      "conclusion": "failure",
-      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39113593056",
-      "jobs": [
-        {
-          "id": 117634704363,
-          "name": "web",
-          "status": "completed",
-          "conclusion": "failure"
-        }
-      ]
-    },
-    {
-      "id": 39113592936,
+      "id": 39114093485,
       "name": "Core Research Gates",
-      "head_sha": "501c5972670adb3bf58b08445de5b62997d78f8e",
+      "head_sha": "28a4e9448153074fc0a628518ed1a2de1654c427",
       "status": "completed",
       "conclusion": "success",
-      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39113592936",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39114093485",
       "jobs": [
         {
-          "id": 117634703751,
+          "id": 117636197744,
           "name": "offline-core",
           "status": "completed",
           "conclusion": "success"
         },
         {
-          "id": 117634703976,
+          "id": 117636197932,
           "name": "postgres-integration",
           "status": "completed",
           "conclusion": "success"
@@ -49,18 +33,34 @@
       ]
     },
     {
-      "id": 39113590291,
+      "id": 39114093513,
       "name": "Web Workbench",
-      "head_sha": "501c5972670adb3bf58b08445de5b62997d78f8e",
+      "head_sha": "28a4e9448153074fc0a628518ed1a2de1654c427",
       "status": "completed",
-      "conclusion": "failure",
-      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39113590291",
+      "conclusion": "success",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39114093513",
       "jobs": [
         {
-          "id": 117634695136,
+          "id": 117636197953,
           "name": "web",
           "status": "completed",
-          "conclusion": "failure"
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 39114089866,
+      "name": "Web Workbench",
+      "head_sha": "28a4e9448153074fc0a628518ed1a2de1654c427",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39114089866",
+      "jobs": [
+        {
+          "id": 117636185559,
+          "name": "web",
+          "status": "completed",
+          "conclusion": "success"
         }
       ]
     }
