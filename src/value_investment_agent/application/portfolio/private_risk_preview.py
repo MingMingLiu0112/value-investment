@@ -133,7 +133,7 @@ def _projected_scenario(scenario, *, journal, symbol, assumptions, binding,
             raise ValueError("Missing plan expiry")
         date.fromisoformat(expiry)
     except ValueError:
-        gaps.append("SCENARIO_PLAN_EXPIRY_MISSING_OR_INVALID")
+        gaps.append("PLAN_EXPIRY_MISSING_OR_INVALID")
     service = PrivatePortfolioService(journal)
     replayed = service._replay(service.records())
     if replayed is None:

@@ -48,6 +48,15 @@ positive isolated risk/plan/research binding, S5 remaining completed-bar/event
 orchestration, S6 launcher/workflows and S7 acceptance. Do not repeat the passed
 three-fill bookkeeping exercise or claim full S4/S6/Goal completion.
 
+Rebuilt TEST_ONLY browser subsequently verified the expiry repair: explicit
+missing-expiry message, preserved cash/cost/PnL and no quantity, replacing HTTP
+500. Screenshot `s4/test-only-scenario-expiry-repaired.png` is that repaired
+negative path (not a positive sizing pass). Remote 2f516aee Web/Postgres passed;
+Core was 3519 passed / 1 failed / 87 skipped because the old signed-workflow
+fixture supplied a schema-less synthetic hotspot plan. The fixture now explicitly
+uses the supported independent hotspot plan contract and strategy; production
+scope checks remain intact. The complete signed-workflow file passes 16 tests.
+
 ## 2026-10-18 interruption audit and S0 start
 
 Previous goal turn: PROGRESS (independent source/runtime audit, counterexamples,

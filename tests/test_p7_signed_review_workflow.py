@@ -433,6 +433,7 @@ def test_full_signed_research_public_publish_ips_risk_buy_sell_history(synthetic
     write_new_json(bars_path, dict(namespace='SIMULATED', scope='TEST_ONLY', bars=bars))
     bars_binding = dict(path=bars_path.relative_to(root).as_posix(), sha256=sha256_file(bars_path))
     hotspot_plan = dict(calculate_price_levels(bars, period='daily'), symbol=symbol,
+        schema_version='price-action-plan-independent-v2', strategy='HOTSPOT_SATELLITE',
         namespace='SIMULATED', scope='TEST_ONLY_SYNTHETIC_PRICE_SCENARIO',
         research_version=plan['research_version'], signed_research_binding=import_binding,
         source_bindings=[bars_binding])

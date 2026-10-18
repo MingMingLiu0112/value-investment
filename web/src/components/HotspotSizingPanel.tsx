@@ -90,8 +90,6 @@ function gapLabel(code: string) {
   const labels: Record<string, string> = {
     PLAN_EXPIRY_MISSING_OR_INVALID:
       "当前计划缺少有效到期信息，需更新并核验计划。",
-    SCENARIO_PLAN_EXPIRY_MISSING_OR_INVALID:
-      "当前计划缺少有效到期信息，不能计算情景数量；需更新并核验计划。",
     PUBLIC_SNAPSHOT_UNAVAILABLE: "当前公开判断尚不可核验",
     PUBLICATION_VERSION_MISMATCH: "公开判断版本已变化，请刷新",
     CURRENT_PRICE_REGISTRY_CHANGED: "当前价格证据已变化，请刷新",

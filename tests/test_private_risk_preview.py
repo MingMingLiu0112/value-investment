@@ -310,7 +310,7 @@ def test_web_choices_missing_plan_expiry_returns_gap_not_server_error(projected_
         repository_root=tmp_path, generated_at=NOW,
         payload={"symbol": "300364", "assumptions": ASSUMPTIONS,
                  "scenario": scenario_choices()})
-    assert "SCENARIO_PLAN_EXPIRY_MISSING_OR_INVALID" in result["scenario_preview"]["blockers"]
+    assert "PLAN_EXPIRY_MISSING_OR_INVALID" in result["scenario_preview"]["blockers"]
     assert result["scenario_preview"]["review_quantity"] is None
     assert projected_account.journal.path.read_bytes() == before
 
