@@ -1,0 +1,17 @@
+{
+  "schema_version": "web-agent-research-registry-v1",
+  "action": "no_order",
+  "cases": {
+    "600519": {
+      "packet": {
+        "path": "runtime/agent-research-pilot-20261009/600519-mock-llm-v3.json",
+        "sha256": "4b55d65ab426ee9f0215dc2f0121d638684a6d6164f76d2293b8bc8ecc501c36"
+      },
+      "workbench": {
+        "path": "runtime/d2-model-bound-followup-20261008/workbench-v10.json",
+        "sha256": "b88fa501a3bcd76fb538ab633a9ea1f086cc0aa35877e41c2bacf3c996935d2c"
+      },
+      "scope": "MOCK_LLM_RESEARCH_NOT_ADMITTED"
+    }
+  }
+}

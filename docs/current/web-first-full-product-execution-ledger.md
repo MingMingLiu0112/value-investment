@@ -584,6 +584,28 @@ S5 source/lifecycle increment; actual price-condition orchestration, remaining
 reminder types, S6 and S7 are still open. S5 remains IN_PROGRESS, total Goal active.
 Final tests/browser/restart/CI evidence accompanies the scoped commit.
 
+### S5 plan-reference binding and S6 retained research read model
+
+Existing current plans now bind server-side to bounded public quote observations.
+The binding preserves original rule, evidence hashes, expiry and blockers. Each
+sample replays its condition state against retained raw sources; repeated states
+do not create duplicate transitions. Reference crossings remain unadmitted
+observations, never completed-bar confirmations or formal investment permission.
+Candidate-list errors preserve the live session identity and STOP operation.
+
+The authenticated stock detail can read exact registered retained AI packets,
+including three roles, original citations, counterevidence and follow-up. The
+initial actual binding is historical 600519 MOCK research with cutoff 2026-10-08;
+it is neither fresh analysis nor claim-semantic approval. No provider is called.
+Missing, replaced or corrupt materials never upgrade research or eligibility.
+
+Integration: 328 backend tests passed; 232 Web tests passed; typecheck/build
+passed. The candidate-error STOP regression plus authenticated route tests pass
+(10 tests). One initial targeted run omitted the required TEMP/TMP setup and
+failed fixture isolation; the corrected environment passed without changing gates.
+Committed-build browser/restart and exact-SHA CI must be recorded separately.
+S5 and S6 remain IN_PROGRESS; full Goal is active and Excel remains FROZEN.
+
 Scoped service/API final tests: 45 passed; source plus complete Web API regression:
 371 passed; Web full regression: 229 passed, final targeted test: 4 passed,
 typecheck/build pass. Browser confirms explicit real collection for 600150 and

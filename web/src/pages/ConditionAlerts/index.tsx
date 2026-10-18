@@ -58,7 +58,38 @@ const observationLabels: Record<string, string> = {
   CROSS_SOURCE_PRICE_CONFLICT: "两个来源的价格不一致。",
   STALE_QUOTE: "报价已过期。",
   DUAL_PROVIDER_EXACT_PRICE_MATCH: "双源价格一致，仍需结合原策略条件复核。",
+  EXPLICIT_PRICE_CONDITION_MATCHED: "观测报价已越过参考价，需要复核。",
+  EXPLICIT_PRICE_CONDITION_NOT_MATCHED: "观测报价尚未越过参考价。",
+  DATA_UNAVAILABLE: "缺少可用报价，暂停条件判断。",
+  PLAN_REFERENCE_EXPIRED: "原价格计划已过期，需要更新计划后再观察。",
+  QUOTE_PRECEDES_PLAN_AVAILABILITY: "报价早于计划可用时间，不能据此验证条件。",
+  STALE_OR_CONFLICTING_CLOCK: "报价过期或时间不一致，暂停条件判断。",
 };
+
+const conditionStatusLabels: Record<string, string> = {
+  NOT_TRIGGERED: "未满足参考价条件",
+  STRUCTURE_OBSERVATION: "报价越过参考价，等待收线复核",
+  RISK_REVIEW: "报价跌破失效参考，需风险复核",
+  CONDITION_REVIEW: "条件需复核",
+  STALE_OR_UNAVAILABLE: "数据不可用，暂停判断",
+};
+
+function referenceLabel(kind: string) {
+  return kind === "INVALIDATION_REFERENCE_LT" ? "失效参考" : "突破参考";
+}
+
+function referenceNextStep(value?: string) {
+  if (
+    value ===
+    "REVIEW_EXISTING_INVALIDATION_WITH_COMPLETED_BAR_STRATEGY_AND_PRIVATE_GATES"
+  )
+    return "先核对已完成K线和原失效规则，再复核实际持仓与可卖数量；当前不构成卖出许可。";
+  if (value === "AWAIT_COMPLETED_BAR_AND_EXISTING_STRATEGY_CONFIRMATION")
+    return "等待已完成K线与量价条件确认，再检查策略、事件及个人风险资格；当前不构成买入许可。";
+  if (value === "RESTORE_VERIFIED_PLAN_AND_FRESH_QUOTE")
+    return "先恢复可核验的有效计划和新鲜报价，当前暂停判断。";
+  return "继续观察原参考价条件；不授予交易许可。";
+}
 
 export default function ConditionAlerts() {
   const [testOnly, setTestOnly] = useState(false);
@@ -212,6 +243,13 @@ export default function ConditionAlerts() {
             {!testOnly && result.data.public_observation && (
               <section style={{ marginTop: 16 }}>
                 <Typography.Title level={4}>公开行情观测</Typography.Title>
+                {result.data.public_observation.choices_status ===
+                  "UNAVAILABLE" && (
+                  <Alert
+                    type="warning"
+                    message={result.data.public_observation.choices_detail}
+                  />
+                )}
                 <Typography.Paragraph>
                   {observationLabels[
                     result.data.public_observation.detail ?? ""
@@ -234,7 +272,7 @@ export default function ConditionAlerts() {
                   />
                   <Popconfirm
                     title="启动本机有界公开行情观测？"
-                    description="每分钟检查，最多十次；不产生正式 M5 提醒或投资许可，服务重启后不自动恢复。"
+                    description="每分钟检查，最多十次；按当前计划比较参考价，报价变化不替代收线和风险确认。服务重启后不自动恢复。"
                     okText="启动观测"
                     cancelText="返回"
                     onConfirm={() => controlObservation("start")}
@@ -242,7 +280,11 @@ export default function ConditionAlerts() {
                     <Button
                       icon={<PlayCircleOutlined />}
                       disabled={
-                        !symbol || !!pending || result.data.monitor_running
+                        !symbol ||
+                        !!pending ||
+                        result.data.monitor_running ||
+                        result.data.public_observation.choices_status ===
+                          "UNAVAILABLE"
                       }
                     >
                       启动观测
@@ -257,6 +299,87 @@ export default function ConditionAlerts() {
                   </Button>
                   <Tag>{result.data.public_observation.status}</Tag>
                 </Space>
+                {result.data.public_observation.condition_observation && (
+                  <section style={{ marginTop: 16 }}>
+                    <Typography.Title level={4}>
+                      计划参考价复核
+                    </Typography.Title>
+                    <Typography.Paragraph>
+                      以下是观测当时的结果，停止观测后不代表当前价格。报价越过参考价仍须完成收线、事件、策略及个人风险复核。
+                    </Typography.Paragraph>
+                    <List
+                      dataSource={
+                        result.data.public_observation.condition_observation
+                          .states
+                      }
+                      renderItem={(item) => (
+                        <List.Item>
+                          <div
+                            style={{ minWidth: 0, overflowWrap: "anywhere" }}
+                          >
+                            <Typography.Text strong>
+                              {referenceLabel(item.kind)}：
+                              {item.condition.operator === "GT"
+                                ? "高于"
+                                : "低于"}{" "}
+                              {formatUnitPrice(item.condition.threshold)} 元
+                            </Typography.Text>
+                            <p>
+                              {conditionStatusLabels[
+                                item.status ?? item.state.status
+                              ] ?? "需要复核"}
+                            </p>
+                            <p>
+                              {observationLabels[
+                                item.reason ?? item.state.reason
+                              ] ??
+                                item.reason ??
+                                item.state.reason}{" "}
+                              · {shanghaiTime(item.state.checked_at)}
+                              （北京时间）
+                            </p>
+                            <p>{referenceNextStep(item.next_step)}</p>
+                          </div>
+                        </List.Item>
+                      )}
+                    />
+                    <Typography.Link
+                      href={`/decisions/hotspot-${result.data.public_observation.symbol}?independent_hotspot=true`}
+                    >
+                      查看原价格计划与未满足的条件
+                    </Typography.Link>
+                    <details style={{ marginTop: 12 }}>
+                      <summary>本次观测的条件变化历史</summary>
+                      <List
+                        dataSource={
+                          result.data.public_observation
+                            .condition_transitions ?? []
+                        }
+                        locale={{
+                          emptyText: "没有新增条件变化；相同状态不会重复提醒",
+                        }}
+                        renderItem={(item) => (
+                          <List.Item>
+                            <div
+                              style={{ minWidth: 0, overflowWrap: "anywhere" }}
+                            >
+                              {referenceLabel(item.kind)} ·{" "}
+                              {conditionStatusLabels[item.status] ?? "需要复核"}
+                              <p>{shanghaiTime(item.checked_at)}（北京时间）</p>
+                              <p>
+                                {item.price
+                                  ? `观测价 ${formatUnitPrice(item.price)} 元；`
+                                  : "无可用报价；"}
+                                参考价 {formatUnitPrice(item.threshold)} 元
+                              </p>
+                              <p>{referenceNextStep(item.next_step)}</p>
+                            </div>
+                          </List.Item>
+                        )}
+                      />
+                    </details>
+                  </section>
+                )}
                 <List
                   dataSource={result.data.public_observation.samples}
                   locale={{ emptyText: "尚无真实公开行情观测记录" }}

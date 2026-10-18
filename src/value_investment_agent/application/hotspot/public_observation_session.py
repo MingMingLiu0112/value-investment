@@ -13,11 +13,13 @@ from urllib.parse import urlsplit
 
 from .intraday_monitor import _atomic_write
 from .intraday_observation import project_intraday_observation
+from .intraday_plan_observation import evaluate_quote_plan
 from ..portfolio.private_journal_lock import InterProcessLock, LockTimeout
 from ...quote_session_collection import collect_session_bundle, resolve_session_reference
 
 
 SCHEMA = "local-public-observation-session-v1"
+PLAN_SCHEMA = "local-public-observation-session-v2"
 MAX_BYTES = 8_000_000
 AGE = timedelta(seconds=120)
 
@@ -143,11 +145,16 @@ class PublicObservationSession:
             stream.write(raw)
             stream.flush()
         _atomic_write(self.directory / "current.json",
-                      {"schema_version": SCHEMA, "report_id": report_id, "sha256": _sha(raw)})
+                      {"schema_version": self._current["schema_version"], "report_id": report_id, "sha256": _sha(raw)})
 
-    def start(self, symbol) -> dict:
+    def start(self, symbol, *, plan_binding=None) -> dict:
         if not isinstance(symbol, str) or not re.fullmatch(r"[0-9]{6}", symbol):
             raise ValueError("Exact symbol required")
+        plan_binding = deepcopy(plan_binding)
+        if plan_binding is not None:
+            if not isinstance(plan_binding, dict) or plan_binding.get("symbol") != symbol:
+                raise ValueError("Plan and observation security differ")
+            evaluate_quote_plan(plan_binding, None, previous=None, now=_stamp(self.clock()))
         with self._mutex:
             self._check_directory()
             if self._closed:
@@ -170,6 +177,8 @@ class PublicObservationSession:
                 self._current = {"schema_version": SCHEMA, "session_id": str(uuid4()),
                     "symbol": symbol, "status": "RUNNING", "detail": "LOCAL_PUBLIC_OBSERVATION_ONLY",
                     "samples": [], "bindings": []}
+                if plan_binding is not None:
+                    self._current.update(schema_version=PLAN_SCHEMA, plan_binding=plan_binding)
                 self._persist()
                 self._thread = threading.Thread(target=self._work, args=(symbol, lock),
                                                 name="public-observation", daemon=True)
@@ -211,6 +220,11 @@ class PublicObservationSession:
                     if (self._current["samples"] and checked < datetime.fromisoformat(
                             self._current["samples"][-1]["checked_at"])):
                         raise ValueError("Server observation clock regressed")
+                    if self._current["schema_version"] == PLAN_SCHEMA:
+                        sample["condition_result"] = evaluate_quote_plan(
+                            self._current["plan_binding"], sample.get("observation"),
+                            previous=(self._current["samples"][-1]["condition_result"]
+                                if self._current["samples"] else None), now=checked)
                     self._current["samples"].append(sample)
                     self._current["bindings"].append(binding)
                     self._persist()
@@ -241,10 +255,16 @@ class PublicObservationSession:
             status, detail = "STOPPING", "WAITING_FOR_IN_FLIGHT_COLLECTION"
         elif not running and status == "RUNNING":
             status, detail = "STOPPED", "RETAINED_OBSERVATIONS_NO_LOCAL_WORKER"
-        return {"status": status, "monitor_running": running, "symbol": report["symbol"],
+        result = {"status": status, "monitor_running": running, "symbol": report["symbol"],
                 "session_id": report["session_id"],
                 "detail": detail, "samples": deepcopy(report["samples"]),
                 "action": "no_order", "eligibility": False, "m5_admitted": False}
+        if report["schema_version"] == PLAN_SCHEMA:
+            results = [sample["condition_result"] for sample in report["samples"]]
+            result.update(plan_binding=deepcopy(report["plan_binding"]),
+                condition_observation=deepcopy(results[-1]) if results else None,
+                condition_transitions=[deepcopy(item) for batch in results for item in batch["transitions"]])
+        return result
 
     def read(self) -> dict:
         with self._mutex:
@@ -258,16 +278,22 @@ class PublicObservationSession:
                             "detail": "LOCAL_PUBLIC_OBSERVATION_ONLY", "samples": [],
                             "action": "no_order", "eligibility": False, "m5_admitted": False}
                 pointer = _read(pointer_path)
-                if pointer["schema_version"] != SCHEMA:
+                if pointer["schema_version"] not in {SCHEMA, PLAN_SCHEMA}:
                     raise ValueError("Unknown pointer schema")
                 report = _read(self.directory / (_uuid(pointer["report_id"]) + ".report.json"), pointer["sha256"])
-                if (report["schema_version"] != SCHEMA or report["status"] not in {"RUNNING", "STOPPED", "FAILED"}
+                if (report["schema_version"] != pointer["schema_version"] or report["status"] not in {"RUNNING", "STOPPED", "FAILED"}
                         or not re.fullmatch(r"[0-9]{6}", report["symbol"])
                         or len(report["samples"]) > 10 or len(report["bindings"]) != len(report["samples"])):
                     raise ValueError("Invalid observation report")
                 _uuid(report["session_id"])
+                if report["schema_version"] == PLAN_SCHEMA:
+                    if report["plan_binding"]["symbol"] != report["symbol"]:
+                        raise ValueError("Plan security mismatch")
+                    evaluate_quote_plan(report["plan_binding"], None, previous=None,
+                        now=_stamp(self.clock()))
                 ids = set()
                 previous = None
+                previous_conditions = None
                 for sample, binding in zip(report["samples"], report["bindings"]):
                     identity = _uuid(sample["sample_id"])
                     checked = _stamp(datetime.fromisoformat(sample["checked_at"]))
@@ -278,11 +304,18 @@ class PublicObservationSession:
                     previous = checked
                     if binding["sha256"] is not None:
                         bundle = _read(self.directory / (identity + ".bundle.json"), binding["sha256"])
-                        if _sample(bundle, identity=identity, symbol=report["symbol"], checked=checked) != sample:
-                            raise ValueError("Observation replay mismatch")
-                    elif sample != {"sample_id": identity, "symbol": report["symbol"], "checked_at": checked.isoformat(),
-                                    "status": "STALE_OR_UNAVAILABLE", "reason": "COLLECTION_OR_EVIDENCE_FAILED", "source_refs": []}:
-                        raise ValueError("Unbound observation sample")
+                        expected_sample = _sample(bundle, identity=identity, symbol=report["symbol"], checked=checked)
+                    else:
+                        expected_sample = {"sample_id": identity, "symbol": report["symbol"], "checked_at": checked.isoformat(),
+                                    "status": "STALE_OR_UNAVAILABLE", "reason": "COLLECTION_OR_EVIDENCE_FAILED", "source_refs": []}
+                    if report["schema_version"] == PLAN_SCHEMA:
+                        if report["plan_binding"]["symbol"] != report["symbol"]:
+                            raise ValueError("Plan security mismatch")
+                        previous_conditions = evaluate_quote_plan(report["plan_binding"], expected_sample.get("observation"),
+                            previous=previous_conditions, now=checked)
+                        expected_sample["condition_result"] = previous_conditions
+                    if expected_sample != sample:
+                        raise ValueError("Observation replay mismatch")
                 if self._thread is not None and self._current["session_id"] != report["session_id"]:
                     raise ValueError("Active observation pointer changed")
                 return self._view(report)

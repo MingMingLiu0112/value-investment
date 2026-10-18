@@ -41,6 +41,9 @@ jobs:
           tests/test_intraday_monitor_alerts.py
           tests/test_intraday_monitor_lifecycle.py
           tests/test_public_observation_session.py
+          tests/test_intraday_plan_observation.py
+          tests/test_web_agent_research.py
+          tests/web_api/test_agent_research_api.py
           tests/web_api/test_condition_alert_api.py
           tests/test_hotspot_replay_read_model.py
           tests/test_judgment_snapshot.py

@@ -245,13 +245,71 @@ async function getPrivate<T>(path: string, signal?: AbortSignal): Promise<T> {
   return (await read(response)) as T;
 }
 
+export type QuotePlanObservation = {
+  binding_sha256: string;
+  states: {
+    kind: string;
+    status?: string;
+    reason?: string;
+    next_step?: string;
+    blockers?: string[];
+    condition: { threshold: string; operator: "GT" | "LT" };
+    state: { status: string; reason: string; checked_at: string };
+  }[];
+  transitions: QuotePlanTransition[];
+};
+
+export type AgentResearchResponse = {
+  status: string;
+  reason: string;
+  mode: "MOCK" | "OFFLINE_REPLAY" | "LIVE" | null;
+  research_as_of?: string;
+  generated_at?: string;
+  model_id?: string;
+  findings: {
+    finding_id: string;
+    role: string;
+    claim: string;
+    evidence_refs: string[];
+    counter_evidence_refs: string[];
+    proposed_follow_up: string;
+  }[];
+  sources: {
+    evidence_id: string;
+    title: string;
+    sha256: string;
+    available_at: string;
+    source_url?: string;
+  }[];
+  decision_changed: false;
+  approval_count: 0;
+  formal_fact_count: 0;
+};
+
+export type QuotePlanTransition = {
+  transition_id: string;
+  kind: string;
+  status: string;
+  checked_at: string;
+  price: string | null;
+  threshold: string;
+  reason: string;
+  next_step?: string;
+  blockers?: string[];
+};
+
 export type PublicObservationResponse = {
+  choices_status?: "UNAVAILABLE";
+  choices_detail?: string;
   status: string;
   monitor_running: boolean;
   symbol?: string;
   session_id?: string;
   detail?: string;
   choices?: { symbol: string; company_name: string }[];
+  plan_binding?: { symbol: string; binding_sha256: string };
+  condition_observation?: QuotePlanObservation | null;
+  condition_transitions?: QuotePlanTransition[];
   samples: {
     sample_id: string;
     symbol: string;
@@ -301,6 +359,11 @@ export type ConditionAlertsResponse = {
 };
 
 export const api = {
+  agentResearch: (symbol: string, signal?: AbortSignal) =>
+    getPrivate<AgentResearchResponse>(
+      `agent-research/${encodeURIComponent(symbol)}`,
+      signal,
+    ),
   controlPublicObservation: (
     operation: "start" | "stop",
     symbol?: string,

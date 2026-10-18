@@ -1,6 +1,7 @@
 import { useParams, Link } from "@umijs/max";
 import { CurrentHolding } from "./CurrentHolding";
 import { ResearchDraftPanel } from "./ResearchDraftPanel";
+import { AgentResearchPanel } from "./AgentResearchPanel";
 import { useCallback } from "react";
 import type { PropsWithChildren } from "react";
 import {
@@ -926,6 +927,12 @@ export default function DecisionDetail() {
                 <Button>查看历史判断</Button>
               </Link>
             </Space>
+            {decision.symbol && /^\d{6}$/.test(decision.symbol) && (
+              <AgentResearchPanel
+                key={decision.symbol}
+                symbol={decision.symbol}
+              />
+            )}
             {!!chain?.gaps.length && (
               <details>
                 <summary>

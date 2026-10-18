@@ -72,3 +72,57 @@ it("separates real public observation controls from formal alerts", () => {
   expect(html).not.toContain("双源报价核验通过");
   response.data.public_observation = undefined;
 });
+
+it("shows bound reference conditions and risk review without a trade permission", () => {
+  response.data.public_observation = {
+    status: "STOPPED",
+    monitor_running: false,
+    samples: [],
+    choices: [],
+    symbol: "600150",
+    condition_observation: {
+      binding_sha256: "a".repeat(64),
+      states: [
+        {
+          kind: "ENTRY_REFERENCE_GT",
+          condition: { threshold: "36.45", operator: "GT" },
+          state: {
+            status: "NOT_TRIGGERED",
+            reason: "EXPLICIT_PRICE_CONDITION_NOT_MATCHED",
+            checked_at: "2026-10-16T02:00:00Z",
+          },
+        },
+        {
+          kind: "INVALIDATION_REFERENCE_LT",
+          status: "RISK_REVIEW",
+          condition: { threshold: "34.41", operator: "LT" },
+          state: {
+            status: "STRUCTURE_OBSERVATION",
+            reason: "EXPLICIT_PRICE_CONDITION_MATCHED",
+            checked_at: "2026-10-16T02:00:00Z",
+          },
+        },
+      ],
+    },
+    condition_transitions: [
+      {
+        transition_id: "local",
+        kind: "INVALIDATION_REFERENCE_LT",
+        status: "RISK_REVIEW",
+        threshold: "34.41",
+        price: "34",
+        checked_at: "2026-10-16T02:00:00Z",
+        reason: "EXPLICIT_PRICE_CONDITION_MATCHED",
+      },
+    ],
+  };
+  const html = renderToStaticMarkup(<ConditionAlerts />);
+  expect(html).toContain("计划参考价复核");
+  expect(html).toContain("36.45");
+  expect(html).toContain("34.41");
+  expect(html).toContain("需风险复核");
+  expect(html).toContain("停止观测后不代表当前价格");
+  expect(html).toContain("本次观测的条件变化历史");
+  expect(html).not.toContain("允许买入");
+  response.data.public_observation = undefined;
+});

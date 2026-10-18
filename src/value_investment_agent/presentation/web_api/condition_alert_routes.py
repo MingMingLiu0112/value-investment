@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from ...application.hotspot.intraday_monitor import read_intraday_monitor
 from ...application.hotspot.public_observation_session import PublicObservationSession
 from ...application.hotspot.current_registry import load_price_conditions
+from ...application.hotspot.intraday_plan_observation import bind_quote_plan
 from .local_auth import AUTHORIZATION_REQUIRED, LocalAuthorizationError, authorize
 
 
@@ -15,14 +16,22 @@ def register_condition_alert_routes(api: FastAPI, *, project, sessions, port,
     observation_session = PublicObservationSession(project, clock=clock)
     api.router.add_event_handler("shutdown", observation_session.close)
 
-    def observation_view():
-        state = observation_session.read()
+    def current_candidates():
         candidates = load_price_conditions(project, now=clock(), research_version=None)
-        choices = [{"symbol": item["symbol"], "company_name": item["company_name"]}
-            for item in candidates.get("items", [])
+        return [item for item in candidates.get("items", [])
             if item.get("price_action_plan", {}).get("candidate_lifecycle")
                 != "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"]
-        return {**state, "choices": choices}
+
+    def observation_view():
+        state = observation_session.read()
+        try:
+            choices = [{"symbol": item["symbol"], "company_name": item["company_name"]}
+                for item in current_candidates()]
+            return {**state, "choices": choices}
+        except (OSError, ValueError, KeyError, TypeError):
+            # Candidate availability must not hide an existing worker or STOP.
+            return {**state, "choices": [], "choices_status": "UNAVAILABLE",
+                "choices_detail": "候选清单暂不可用；已运行会话仍可停止，历史记录继续保留。"}
 
     @api.post("/api/v1/condition-alerts/public-observation/{operation}")
     def control_observation(operation: str, request: Request, payload: dict = Body(...)):
@@ -39,11 +48,13 @@ def register_condition_alert_routes(api: FastAPI, *, project, sessions, port,
                 detail="仅支持明确确认的本地公开行情观测。"), status_code=422, headers=headers)
         try:
             if operation == "start":
-                view = observation_view()
-                if payload["symbol"] not in {item["symbol"] for item in view["choices"]}:
+                candidates = current_candidates()
+                selected = next((item for item in candidates if item["symbol"] == payload["symbol"]), None)
+                if selected is None:
                     return JSONResponse(dict(action="no_order", status="INVALID_CANDIDATE",
                         detail="请从当前已核验的公开候选中选择证券。"), status_code=422, headers=headers)
-                state = observation_session.start(payload["symbol"])
+                binding = bind_quote_plan(selected["price_action_plan"], symbol=selected["symbol"], now=clock())
+                state = observation_session.start(payload["symbol"], plan_binding=binding)
             else:
                 if not isinstance(payload["expected_session_id"], str) or not payload["expected_session_id"]:
                     raise ValueError("Exact observed session identity required")
@@ -72,7 +83,7 @@ def register_condition_alert_routes(api: FastAPI, *, project, sessions, port,
                 return JSONResponse(dict(action="no_order", status="NOT_STARTED", test_only=False,
                     monitor_running=view["monitor_running"], alerts=[], history=[],
                     public_observation=view,
-                    detail="公开报价观测不等于条件提醒；正式 M5 事件监控仍未启动。"), headers=headers)
+                    detail="本地参考价变化仅提示复核；未完成收线、策略及个人风险检查时不能据此交易。"), headers=headers)
             except (OSError, ValueError, KeyError, TypeError):
                 return JSONResponse(dict(action="no_order", status="UNAVAILABLE", test_only=False,
                     monitor_running=False, alerts=[], history=[],

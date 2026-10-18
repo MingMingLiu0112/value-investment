@@ -4,6 +4,42 @@ import pytest
 from test_held_continuity_api import client_for, unlock
 
 
+def test_missing_candidates_cannot_hide_running_session_or_stop(tmp_path, monkeypatch):
+    from value_investment_agent.presentation.web_api import condition_alert_routes as routes
+
+    class RunningSession:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def read(self):
+            return dict(status="RUNNING", monitor_running=True, session_id="retained-session", samples=[])
+
+        def stop(self, *, expected_session_id):
+            assert expected_session_id == "retained-session"
+            return dict(status="STOPPED", monitor_running=False)
+
+        def close(self):
+            pass
+
+    def unavailable(*args, **kwargs):
+        raise ValueError("registry cannot be verified")
+
+    monkeypatch.setattr(routes, "PublicObservationSession", RunningSession)
+    monkeypatch.setattr(routes, "load_price_conditions", unavailable)
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY.jsonl", monkeypatch)
+    unlock(client, secret)
+    response = client.get("/api/v1/condition-alerts")
+    assert response.status_code == 200
+    state = response.json()
+    assert state["monitor_running"] is True
+    assert state["public_observation"]["session_id"] == "retained-session"
+    assert state["public_observation"]["choices_status"] == "UNAVAILABLE"
+    stopped = client.post("/api/v1/condition-alerts/public-observation/stop",
+        json=dict(acknowledged=True, expected_session_id="retained-session"))
+    assert stopped.status_code == 200
+    assert stopped.json()["status"] == "STOPPED"
+
+
 def test_alert_history_requires_session_and_never_initializes_store(tmp_path, monkeypatch):
     journal = tmp_path / "TEST_ONLY_private.jsonl"
     client, secret = client_for(tmp_path, journal, monkeypatch)
@@ -153,7 +189,8 @@ def test_public_observation_controls_are_authenticated_and_server_scoped(tmp_pat
         def read(self):
             return dict(status="NOT_STARTED", monitor_running=False, samples=[],
                 action="no_order", eligibility=False, m5_admitted=False)
-        def start(self, symbol):
+        def start(self, symbol, *, plan_binding):
+            assert plan_binding == {"symbol": symbol, "test_binding": "server-owned"}
             calls.append(("start", symbol))
             return {**self.read(), "monitor_running": True}
         def stop(self, *, expected_session_id):
@@ -164,6 +201,8 @@ def test_public_observation_controls_are_authenticated_and_server_scoped(tmp_pat
         def close(self):
             pass
     monkeypatch.setattr(routes, "PublicObservationSession", Observation)
+    monkeypatch.setattr(routes, "bind_quote_plan", lambda plan, *, symbol, now:
+        {"symbol": symbol, "test_binding": "server-owned"})
     monkeypatch.setattr(routes, "load_price_conditions", lambda *args, **kwargs: {"items": [
         dict(symbol="600150", company_name="公开候选", price_action_plan={}),
         dict(symbol="000333", company_name="历史候选", price_action_plan={
@@ -177,6 +216,7 @@ def test_public_observation_controls_are_authenticated_and_server_scoped(tmp_pat
     assert client.post(endpoint + "start", json=payload).status_code == 403
     client.headers["origin"] = "http://127.0.0.1:8791"
     for invalid in ({**payload, "namespace": "ACTUAL"}, {**payload, "path": "foreign"},
+                    {**payload, "plan_binding": {"forged": True}},
                     {**payload, "acknowledged": False}, {**payload, "symbol": "000333"},
                     {**payload, "symbol": "600519"}, {**payload, "symbol": []}):
         assert client.post(endpoint + "start", json=invalid).status_code in {409, 422}

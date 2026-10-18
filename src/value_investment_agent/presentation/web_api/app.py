@@ -64,6 +64,7 @@ from .local_auth import (
 )
 from .private_routes import portfolio_connection, register_private_routes
 from .condition_alert_routes import register_condition_alert_routes
+from .agent_research_routes import register_agent_research_routes
 from .runtime_identity import data_freshness, git_head, runtime_identity, sha256
 from .value_policy_routes import register_value_policy_routes
 from ...application.decision.value_policy_interaction import (
@@ -786,6 +787,7 @@ def create_app(
     register_private_routes(
         api, project, sessions=sessions, port=bound_port)
     register_condition_alert_routes(api, project=project, sessions=sessions, port=bound_port)
+    register_agent_research_routes(api, project=project, sessions=sessions, port=bound_port)
     register_value_policy_routes(api, sessions=sessions, port=bound_port,
         principal_resolver=lambda request: PolicyPrincipal("local-account-owner", frozenset({PERMISSION})),
         get_service=lambda: value_policy_service or ValuePolicyInteractionService(

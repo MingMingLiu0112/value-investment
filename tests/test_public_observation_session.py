@@ -87,6 +87,46 @@ def test_stale_page_cannot_stop_successor_observation_session(tmp_path):
         s.close()
 
 
+def test_bound_plan_crossings_persist_replay_and_reject_rewritten_history(tmp_path):
+    from test_current_price_registry import register
+    from test_hotspot_current_price_case import NOW as BOUND_AT
+    from test_intraday_plan_observation import NOW as PLAN_NOW
+    from test_intraday_observation import field
+    from value_investment_agent.application.hotspot.current_registry import load_price_conditions
+    from value_investment_agent.application.hotspot.intraday_plan_observation import bind_quote_plan
+    register(tmp_path)
+    plan = load_price_conditions(tmp_path, now=BOUND_AT, research_version="TEST_ONLY")["items"][0]["price_action_plan"]
+    binding = bind_quote_plan(plan, symbol="600519", now=BOUND_AT)
+    values = iter(["14", "14", "10"])
+    at = [PLAN_NOW]
+    def collector(symbols):
+        at[0] += timedelta(seconds=1)
+        data = bundle(now=at[0])
+        price = next(values)
+        field(data, "tencent", 3, price)
+        field(data, "sina", 3, price)
+        return data
+    s = PublicObservationSession(tmp_path, clock=lambda: at[0], collector=collector,
+        max_samples=3, interval_seconds=.001)
+    try:
+        s.start("600519", plan_binding=binding)
+        result = wait_stopped(s)
+        assert result["status"] == "STOPPED"
+        assert result["condition_observation"]["binding_sha256"] == binding["binding_sha256"]
+        assert result["samples"][1]["condition_result"]["transitions"] == []
+        assert all(item["m5_admitted"] is False for item in result["condition_transitions"])
+        assert result["condition_observation"]["states"][1]["status"] == "RISK_REVIEW"
+        restored = PublicObservationSession(tmp_path, clock=lambda: at[0])
+        assert restored.read() == result
+        _, _, report = current_paths(s)
+        report["samples"][0]["condition_result"]["states"][0]["condition"]["threshold"] = "999"
+        rewrite_report(s, report)
+        assert restored.read()["status"] == "CORRUPT"
+        restored.close()
+    finally:
+        s.close()
+
+
 @pytest.mark.parametrize("symbol", ["600519", "000333"])
 def test_real_contract_bounded_storage_replay_and_restart(tmp_path, symbol):
     calls = []
