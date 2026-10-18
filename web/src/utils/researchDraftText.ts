@@ -10,8 +10,7 @@ const STATUS_TEXT: Record<string, string> = {
   MODEL_VALIDITY_UNKNOWN: "模型有效性未确立",
   EVENT_MATERIALITY_PENDING_HUMAN_REVIEW: "公告材料性待人工复核",
   EVENT_COVERAGE_INCOMPLETE: "公告检索覆盖不完整",
-  STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN:
-    "严格同期规则的信息时点尚未证明",
+  STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: "严格同期规则的信息时点尚未证明",
 };
 
 const CHANGE_TEXT: Record<string, string> = {
@@ -23,16 +22,14 @@ const CHANGE_TEXT: Record<string, string> = {
     "九项情景假设已绑定到带哈希的假设备忘录",
   four_announcements_covered_including_2026_10_17_buyback_progress:
     "已覆盖四项公告，包括 2026-10-17 回购进展",
-  event_coverage_is_honestly_incomplete:
-    "事件覆盖仍不完整，未将缺口视为通过",
+  event_coverage_is_honestly_incomplete: "事件覆盖仍不完整，未将缺口视为通过",
   evidence_stop_resolution_is_now_append_only_and_reusable_for_normal_research:
     "证据缺口处理已追加留存并可复用于常规研究",
   bear_base_bull_values_unchanged: "Bear / Base / Bull 数值未变化",
   human_research_approval_absent: "尚无正式人工研究批准",
   formal_G3_absent: "G3 正式研究门尚未通过",
   event_materiality_pending_human_review: "公告材料性仍待人工复核",
-  strict_contemporaneous_pit_not_proven:
-    "严格同期规则的信息时点尚未证明",
+  strict_contemporaneous_pit_not_proven: "严格同期规则的信息时点尚未证明",
   price_admitted_false: "价格尚未准入",
   position_guidance_null: "未生成仓位指引",
   action_no_order: "不构成下单指令",
@@ -105,7 +102,10 @@ export function researchChangeText(value: string): string {
 }
 
 export function researchGateText(value: string): string {
-  return value.split("_").join(" ").replace(/^G(\d)\s*/, "G$1 · ");
+  return value
+    .split("_")
+    .join(" ")
+    .replace(/^G(\d)\s*/, "G$1 · ");
 }
 
 export function researchSentence(value: string): string {

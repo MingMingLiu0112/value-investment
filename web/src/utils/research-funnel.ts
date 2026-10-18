@@ -68,9 +68,7 @@ export function funnelEvidenceRows(
   ];
 }
 
-export function funnelChannelRows(
-  funnel: ResearchFunnelStatus,
-): Array<{
+export function funnelChannelRows(funnel: ResearchFunnelStatus): Array<{
   key: string;
   channel: string;
   passed: number;

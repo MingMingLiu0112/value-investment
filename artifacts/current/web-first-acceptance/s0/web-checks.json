@@ -1,0 +1,26 @@
+[
+  {
+    "started_at": "2026-10-18T16:16:02.6600017+08:00",
+    "command": "npm run format --prefix web",
+    "finished_at": "2026-10-18T16:16:11.4338234+08:00",
+    "exit_code": 0
+  },
+  {
+    "started_at": "2026-10-18T16:16:11.4582368+08:00",
+    "command": "npm run typecheck --prefix web",
+    "finished_at": "2026-10-18T16:17:11.6869921+08:00",
+    "exit_code": 0
+  },
+  {
+    "started_at": "2026-10-18T16:17:11.6874334+08:00",
+    "command": "npm run test --prefix web",
+    "finished_at": "2026-10-18T16:18:15.4696078+08:00",
+    "exit_code": 0
+  },
+  {
+    "started_at": "2026-10-18T16:18:15.4700137+08:00",
+    "command": "npm run build --prefix web",
+    "finished_at": "2026-10-18T16:20:09.1062208+08:00",
+    "exit_code": 0
+  }
+]

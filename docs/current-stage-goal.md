@@ -1,5 +1,22 @@
 # 当前总目标：价值投资建议与情绪卫星仓系统
 
+## 2026-10-18 Web-first full product successor
+
+Latest explicit user Goal: WEB-FIRST-FULL-PRODUCT-CLOSURE-V1, objective attachment
+064c26dd-a712-499f-9db8-7a12da99e3eb/goal-objective.md. Future scope is defined by
+[product requirements](current/product-requirements-web-first-v1.md) and the single
+[execution ledger](current/web-first-full-product-execution-ledger.md).
+Implement S0 through S7 in dependency order, reusing existing infrastructure.
+Web-first; Excel-frozen (preserve history/integrity, no synchronization or new
+publication development). Introduce a VERSIONED independent HOTSPOT_SATELLITE
+admission policy: value valuation/G3 is not its prerequisite; security, events,
+data timing, strategy validation, execution and shared private risk remain gates.
+Historical D5 policies and evidence retain their original meaning.
+No orders, production task changes/migration/deployment, paid calls without cost
+authorization, real reviewer enrollment/signatures, fabricated private inputs or
+final user acceptance. External waits block dependent nodes only.
+Earlier scopes below are retained historical context, not competing current tasks.
+
 ## 2026-10-11 P0-P3 dual-strategy productization
 
 Latest explicit task: P0-P3-DUAL-STRATEGY-PRODUCTIZATION, inheriting f226656.
