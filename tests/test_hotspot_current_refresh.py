@@ -59,16 +59,44 @@ def test_bounded_fallback_does_not_claim_industry_admission():
         select_watch_candidates(report, limit=6)
 
 
+@pytest.mark.parametrize("metadata", [{}, {"industry": None, "rank": None}])
+def test_legacy_watch_candidates_allow_missing_industry_and_rank(metadata):
+    selected, scope = select_watch_candidates(dict(hotspot_watch_queue=[
+        dict(symbol="600519", company_name="TEST_ONLY", **metadata),
+    ]))
+    assert selected == [dict(symbol="600519", company_name="TEST_ONLY")]
+    assert scope == "HOTSPOT_WATCH_QUEUE"
+
+
+@pytest.mark.parametrize("rank", [True, False, 0, -1, "1", 1.0])
+def test_watch_candidate_rejects_invalid_explicit_rank(rank):
+    with pytest.raises(ValueError, match="Invalid watch rank"):
+        select_watch_candidates(dict(candidate_pool=[
+            dict(symbol="600519", industry="TEST_ONLY", rank=rank),
+        ]))
+
+
+@pytest.mark.parametrize("industry", ["", " ", 1, []])
+def test_watch_candidate_rejects_invalid_explicit_industry(industry):
+    with pytest.raises(ValueError, match="Invalid watch industry"):
+        select_watch_candidates(dict(candidate_pool=[
+            dict(symbol="600519", industry=industry, rank=1),
+        ]))
+
+
 def test_quality_ranking_promotes_a_lower_ranked_candidate_and_excludes_unassessed(
     tmp_path, monkeypatch,
 ):
     from value_investment_agent.application.hotspot import current_refresh as module
 
-    symbols = [f"60000{index}" for index in range(1, 8)]
+    symbols = [f"60000{index}" for index in range(7, 0, -1)]
     rows = [
         dict(symbol=symbol, company_name=symbol, industry=f"industry-{index % 3}", rank=index)
         for index, symbol in enumerate(symbols, start=1)
     ]
+    selected, _ = select_watch_candidates(dict(candidate_pool=rows), limit=7)
+    assert selected == rows
+    assert rows[0]["rank"] == 1 and rows[0]["industry"] == "industry-1"
     source = tmp_path / "runtime" / "candidate-pool.json"
     source.parent.mkdir(parents=True)
     source.write_text(json.dumps(dict(
@@ -117,14 +145,21 @@ def test_quality_ranking_promotes_a_lower_ranked_candidate_and_excludes_unassess
     )
     assert result["status"] == "WRITTEN"
     assert result["selection_pipeline"]["candidate_pool_count"] == 7
+    assert result["selection_pipeline"]["candidate_pool_industry_count"] == 3
     assert result["selection_pipeline"]["assessed_count"] == 6
     assert result["selection_pipeline"]["failed_count"] == 1
     assert result["items"][0]["symbol"] == symbols[5]
+    assert [item["symbol"] for item in result["items"]] == [symbols[5], *symbols[:4]]
+    assert [item["activity_rank"] for item in result["items"]] == [6, 1, 2, 3, 4]
+    assert [item["industry"] for item in result["items"]] == [
+        rows[index]["industry"] for index in (5, 0, 1, 2, 3)
+    ]
     assert symbols[6] not in {item["symbol"] for item in result["items"]}
     assert all(item["structure_tier"] != "UNASSESSED" for item in result["items"])
     registry = json.loads((tmp_path / "config/current-price-conditions.json").read_text())
     assert registry["selected_symbols"][0] == symbols[5]
     assert registry["candidate_pool_symbols"] == symbols
+    assert registry["selection_pipeline"]["candidate_pool_industry_count"] == 3
     assert registry["selection_pipeline"]["quality_counts"] == {
         "STRUCTURE_QUALIFIED_OBSERVATION": 1,
         "ACTIVE_ONLY": 5,

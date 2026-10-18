@@ -198,7 +198,7 @@ review found a model-validity display-spoof gap; the loader now recomputes the
 existing validity evaluator and rejects mismatched status/dates/blockers.
 
 The local read-only draft pointer selects the separately versioned
-s2/midea-consumed-v3-dated/public-draft-v3.json. Its predecessor remains intact.
+s2/midea-consumed-v3-dated/public-draft-v4.json. Its predecessors remain intact.
 The source bundle retains local official originals; a checkout without these
 originals must fail closed rather than display an unverified v2 draft. New
 synthetic integration tests use the real descriptor, quote verifier, valuation
@@ -212,3 +212,21 @@ passed 257 tests including final validity-negative cases; broader regression and
 exact commit/runtime/API checks remain pending. No actual browser acceptance, G3,
 event approval, formal price admission, private position, Excel or production
 schedule has changed. S1 and S2 remain PARTIAL, and the full Goal is IN_PROGRESS.
+
+S2 integration source f7b64043 is pushed: exact-SHA Core 39116150362 (offline
+and Postgres) and Web 39116150356/39116147145 SUCCESS. Its rebuilt local runtime
+was MATCHED; actual detail API returned the bound v3 draft with source/model
+input verification and G3 false, and five hotspot homepage/detail projections
+matched. The broad local intermediate regression passed 3134 / skipped 35;
+the final focused suite with all validity and assumption drift cases passed 257.
+The later v4 narrative-only correction removes a contradictory inherited H1/FY
+ROE comparison in counterevidence as well as the already corrected summary;
+all model inputs and numeric results remain unchanged. Latest successor
+runtime/API/CI must be rechecked after its commit, not inferred from f7b64043.
+
+S3 independent preparation: the existing candidate selector discarded industry
+and activity rank, corrupting industry coverage statistics and tie ordering.
+The narrow repair preserves verified metadata, rejects explicitly invalid
+values and supports legacy missing metadata. Related regression: 93 passed.
+It neither collects extra quotes nor completes the nine unassessed structures.
+No S3 acceptance, strategy advantage, browser PASS or formal eligibility follows.

@@ -150,3 +150,16 @@ Local Web format/typecheck/build and 219 tests pass; focused Python 257 pass.
 Broader regression, committed runtime and API evidence are pending. Browser
 interaction is NOT_VERIFIED, so neither S1/S2 acceptance nor full engineering
 completion is asserted. Excel remains FROZEN; action=no_order.
+
+Integration f7b64043 passed exact-SHA Core 39116150362 and Web
+39116150356/39116147145. Actual matched local API served the verified source-bound
+draft, preserved G3 false/unadmitted price, and matched five independent hotspot
+details. Local intermediate broader Core: 3134 pass / 35 skip; final focused
+input/draft regression: 257 pass. A subsequent narrative-only v4 fixes inherited
+counterevidence's invalid half-year/full-year ROE comparison; no numerical
+valuation change. Successor commit/runtime/API/CI checks remain independent.
+
+Independent S3 preparation repairs lost candidate industry/rank metadata;
+93 related tests pass. It does not complete market structure coverage or S3
+acceptance. Remaining browser, economic, approval, private, operational and
+later-stage requirements remain open; total Goal IN_PROGRESS.

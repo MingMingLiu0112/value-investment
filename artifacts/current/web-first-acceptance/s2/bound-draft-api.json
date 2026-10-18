@@ -1,0 +1,179 @@
+{
+  "stage": "S2",
+  "status": "PARTIAL",
+  "action": "no_order",
+  "captured_at": "2026-10-18T09:39:44.059886+00:00",
+  "source_commit": "f7b64043e9a97f46cfe02532b2d5a5f8ac703c6f",
+  "runtime_identity": {
+    "schema_version": "runtime-identity-v2",
+    "action": "no_order",
+    "checked_at": "2026-10-18T09:39:43.961966+00:00",
+    "status": "MATCHED",
+    "code_status": "MATCHED",
+    "config_status": "MATCHED",
+    "reasons": [],
+    "current_source_head": "f7b64043e9a97f46cfe02532b2d5a5f8ac703c6f",
+    "source_worktree_dirty": false,
+    "backend_loaded_head": "f7b64043e9a97f46cfe02532b2d5a5f8ac703c6f",
+    "backend_module_sha256_loaded": "34fd554e335dc7c1fc6f529bd13e49005e541c400f71a65c5ee08ddd671d19d9",
+    "backend_module_sha256_on_disk": "34fd554e335dc7c1fc6f529bd13e49005e541c400f71a65c5ee08ddd671d19d9",
+    "web_build": {
+      "schema_version": "web-build-identity-v1",
+      "commit": "f7b64043e9a97f46cfe02532b2d5a5f8ac703c6f",
+      "built_at": "2026-10-18T09:38:42.257Z",
+      "source_dirty": false
+    },
+    "web_index_sha256": "bfb975fc74067ac181e35df4a05a65de147531fb7585bb2b9c6f6dd0b2bbe1ea",
+    "config_changes": {
+      "behavior": [],
+      "data": []
+    },
+    "publication": {
+      "status": "VERIFIED",
+      "publication_id": "pub-cb73f09b88c4150ecf0d",
+      "packet_sha256": "f0efba54ff69ccc774eba6a9ce4ec43deea2b541488af934cce11606c31b6dff",
+      "published_at": "2026-10-17T13:53:57.371737+00:00",
+      "dates": {
+        "current_natural_date": "2026-10-17",
+        "latest_completed_trade_session": "2026-10-16",
+        "quote_trade_date": "2026-10-16",
+        "quote_observed_at": "2026-10-16T09:00:31.652222+00:00",
+        "research_as_of": "2026-10-11",
+        "model_validity": {
+          "status": "UNKNOWN",
+          "valid_through": null
+        },
+        "decision_published_on": "2026-10-12",
+        "excel_published_as_of": "2026-10-01",
+        "excel_quote_observation_as_of": "2026-10-09"
+      }
+    },
+    "data_freshness": {
+      "status": "FRESH",
+      "quote_trade_date": "2026-10-16",
+      "evaluated_on": "2026-10-18",
+      "weekday_age": 0,
+      "calendar_scope": "WEEKDAY_ONLY_EXCHANGE_HOLIDAYS_NOT_MODELED"
+    }
+  },
+  "data_version": "midea-bound-draft-20261018-v3",
+  "input_verification": {
+    "status": "SOURCE_AND_MODEL_INPUTS_MATCH",
+    "input_sha256": "574a7a1b649d27ac330860e63b20b587f4aec9da984be4f8a57b884f657cb5c6",
+    "computed_at": "2026-10-18T09:24:36.822583+00:00",
+    "cutoff_at": "2026-10-17T10:58:56.051146+00:00",
+    "basis_date": "2026-06-30",
+    "share_basis": "ordinary_shares_excluding_treasury",
+    "capital_inputs": [
+      {
+        "field": "start_book_equity",
+        "value": "212861055000",
+        "unit": "CNY",
+        "scope": "consolidated_parent_equity",
+        "period_end": "2026-06-30",
+        "source_id": "midea_2026h1",
+        "physical_page": 7,
+        "normalization_rule": "CNY_THOUSANDS_TO_CNY",
+        "component_values": [
+          "212861055"
+        ]
+      },
+      {
+        "field": "ordinary_shares",
+        "value": "7464347335",
+        "unit": "shares",
+        "scope": "ordinary_shares_excluding_treasury",
+        "period_end": "2026-06-30",
+        "source_id": "midea_202606_hkex_monthly_return",
+        "physical_page": 2,
+        "normalization_rule": "SUM_COMPONENTS",
+        "component_values": [
+          "6813498835",
+          "650848500"
+        ]
+      }
+    ],
+    "economic_approval": false
+  },
+  "scenarios": [
+    {
+      "scenario": "bear",
+      "per_share_value": "36.0121866604528720800629631840921914063801838080",
+      "terminal_residual_contribution_ratio": "0.04534430046962670813598094236",
+      "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061",
+      "dividend_crosscheck_difference": "0E-36"
+    },
+    {
+      "scenario": "base",
+      "per_share_value": "45.7417037044192281574936570926129861357849631511",
+      "terminal_residual_contribution_ratio": "0.1567110536503976527408765945",
+      "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061",
+      "dividend_crosscheck_difference": "-2E-36"
+    },
+    {
+      "scenario": "bull",
+      "per_share_value": "58.1686744055803340295467634666441075299523416697",
+      "terminal_residual_contribution_ratio": "0.2672536050867622579183066563",
+      "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061",
+      "dividend_crosscheck_difference": "-2E-36"
+    }
+  ],
+  "quote_fact": {
+    "quote_date": "2026-10-16",
+    "current_price": "84.60",
+    "currency": "CNY",
+    "status": "VERIFIED_CLOSE_NOT_ADMITTED",
+    "providers": [
+      {
+        "id": "midea_quote_20261016-tencent",
+        "kind": "quote_provider_document",
+        "provider": "tencent",
+        "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+        "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+        "observed_trade_at": "2026-10-16T16:14:30+08:00"
+      },
+      {
+        "id": "midea_quote_20261016-sina",
+        "kind": "quote_provider_document",
+        "provider": "sina",
+        "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+        "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+        "observed_trade_at": "2026-10-16T15:35:30+08:00"
+      }
+    ]
+  },
+  "gates": {
+    "symbol": "000333",
+    "results": {
+      "G0_证据门": true,
+      "G1_财务门": false,
+      "G2_商业论点门": true,
+      "G3_估值门": false
+    },
+    "blockers": [
+      "DRAFT_NOT_APPROVED",
+      "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "EVENT_COVERAGE_INCOMPLETE",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "G1_财务门",
+      "G3_估值门"
+    ],
+    "conclusion": "研究未完成"
+  },
+  "public_draft_pointer_changed": true,
+  "formal_price_admission": false,
+  "real_approval_changed": false,
+  "actual_browser_evidence": "NOT_VERIFIED",
+  "user_visible_result": "NEW_READ_ONLY_SOURCE_BOUND_DRAFT_RETURNED_BY_DETAIL_API",
+  "remaining_engineering_gaps": [
+    "Actual browser acceptance",
+    "S2 full research and lawful review handoff"
+  ],
+  "remaining_external_gates": [
+    "Human economic approval",
+    "Event materiality",
+    "Strict contemporaneous PIT"
+  ]
+}

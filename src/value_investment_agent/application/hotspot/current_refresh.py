@@ -61,7 +61,18 @@ def select_watch_candidates(report: dict, *, limit: int = 5) -> tuple[list[dict]
         if len(symbol) != 6 or not symbol.isdigit() or not symbol.startswith(("0", "3", "6")):
             raise ValueError("Invalid watch symbol")
         if symbol not in seen:
-            selected.append(dict(symbol=symbol, company_name=names.get(symbol, symbol)))
+            candidate = dict(symbol=symbol, company_name=names.get(symbol, symbol))
+            industry = row.get("industry")
+            if industry is not None:
+                if not isinstance(industry, str) or not industry.strip():
+                    raise ValueError("Invalid watch industry")
+                candidate["industry"] = industry
+            rank = row.get("rank")
+            if rank is not None:
+                if type(rank) is not int or rank <= 0:
+                    raise ValueError("Invalid watch rank")
+                candidate["rank"] = rank
+            selected.append(candidate)
             seen.add(symbol)
         if len(selected) == limit:
             break
