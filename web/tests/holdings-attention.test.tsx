@@ -14,7 +14,12 @@ it("surfaces observed conditional reduction only for verified current held secur
     portfolio: {
       status: "CONNECTED",
       cash_cny: "100",
-      positions: [{ symbol: "300059" }],
+      positions: [
+        {
+          symbol: "300059",
+          sleeves: [{ sleeve: "HOTSPOT_SATELLITE", quantity: "100" }],
+        },
+      ],
     },
     risk: { blockers: [] },
   } as unknown as PrivateStateHandle;
@@ -38,6 +43,15 @@ it("surfaces observed conditional reduction only for verified current held secur
     );
   expect(view([item])).toContain("已出现策略退出或减仓复核事项");
   expect(view([item])).toContain("/decisions/hotspot-300059");
+  state.portfolio!.positions[0].sleeves = [
+    { sleeve: "CORE_VALUE", quantity: "100" },
+  ] as any;
+  expect(view([item])).not.toContain("已出现策略退出或减仓复核事项");
+  state.portfolio!.positions[0].sleeves = [
+    { sleeve: "CORE_VALUE", quantity: "100" },
+    { sleeve: "HOTSPOT_SATELLITE", quantity: "100" },
+  ] as any;
+  expect(view([item])).toContain("已出现策略退出或减仓复核事项");
   expect(view([item], false)).not.toContain("已出现策略退出或减仓复核事项");
   expect(view([{ ...item, symbol: "600887" }])).not.toContain(
     "已出现策略退出或减仓复核事项",

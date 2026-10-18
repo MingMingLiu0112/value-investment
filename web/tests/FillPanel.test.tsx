@@ -121,6 +121,46 @@ beforeEach(() => {
   captured.prepare.mockClear();
 });
 
+it("reuses a lost-response request and suppresses concurrent preparation", async () => {
+  renderToStaticMarkup(
+    React.createElement(FillPanel, {
+      revision: 4,
+      draft: null,
+      onDone: vi.fn(),
+    }),
+  );
+  const form = {
+    transaction_id: "TEST_ONLY_RETRY",
+    side: "SELL",
+    sleeve: "CORE_VALUE",
+    symbol: "000333",
+    exchange: "SZSE",
+    quantity: "100",
+    price_cny: "10",
+    fees_cny: "1",
+    trade_date: "2026-10-15",
+  };
+  let reject!: (reason: Error) => void;
+  captured.prepare.mockImplementationOnce(
+    () =>
+      new Promise((_, fail) => {
+        reject = fail;
+      }),
+  );
+  const first = captured.submit!(form);
+  expect(await captured.submit!(form)).toBe(false);
+  expect(captured.prepare).toHaveBeenCalledTimes(1);
+  reject(new Error("response lost"));
+  expect(await first).toBe(false);
+  const original = captured.prepare.mock.calls[0][0];
+  await captured.submit!(form);
+  expect(captured.prepare.mock.calls[1][0]).toEqual(original);
+  await captured.submit!({ ...form, quantity: "200" });
+  expect(captured.prepare.mock.calls[2][0].idempotency_key).not.toBe(
+    original.idempotency_key,
+  );
+});
+
 it("reads candidate identity and strategy without accepting execution hints", () => {
   expect(
     fillContextFromSearch(

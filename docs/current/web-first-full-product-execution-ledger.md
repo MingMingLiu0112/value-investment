@@ -1,5 +1,35 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+## 2026-10-18 S4 browser bookkeeping loop and S6 bounded Mock workflows
+
+Actual TEST_ONLY browser operations initialized virtual cash and IPS, confirmed
+two buys in separate sleeves, rejected same-day selling, confirmed next-day
+hotspot selling, reconciled internal records and displayed all three fills in
+history. Restart preserved revision 10, cash 9097, CORE_VALUE 100 shares/cost
+1001 and synthetic realized PnL 98. Journal SHA-256 stayed unchanged. These are
+synthetic accounting outcomes, never strategy performance or real signatures.
+Receipt: `artifacts/current/web-first-acceptance/s4/private-browser-loop.json`.
+
+The exercise exposed a cross-strategy exit alert after the hotspot sleeve was
+fully sold. Fixed alerts to require actual positive holdings in the matching
+strategy; verified in the rebuilt browser. Fill requests now retain immutable
+retry bodies and synchronous locks, with an accessible confirmation-note field.
+Web full regression before the alert change: 234 passed; subsequent alert/Daily
+targeted regression: 16 passed. Typecheck and build passed.
+
+S6 adds bounded offline event and annual cash-row research questions using the
+existing snapshot, source verifier, disclosed-metric verifier and Mock pilot.
+Cross-workflow/changed-transcription reuse refuses immutable old packets. Selected
+financial rows are not full financial analysis or approved economic comparability.
+Root integration tests: 134 passed. No daily launcher or new current Web packet
+is wired by this slice; S6 remains IN_PROGRESS, including live-provider and other
+research workflows. S4 risk scenario and full approved-research positive E2E also
+remain incomplete. Total Goal ACTIVE; Excel FROZEN; action=no_order.
+
+Port 8001 HTTP responds 200, but the user-restored normal browser tab still fails
+the browser URL policy gate. No alternate browser or policy workaround used.
+This affects normal-browser acceptance only, not isolated engineering checks.
+
 ## 2026-10-18 interruption audit and S0 start
 
 Previous goal turn: PROGRESS (independent source/runtime audit, counterexamples,
@@ -18,7 +48,7 @@ or real investment approval inferred. action=no_order.
 | S3 hotspot | PARTIAL | Display-only 10-industry/10-case API parity, bounded daily/detail browser checks; zero qualified structures and incomplete full-stage validation |
 | S4 private workflow | IN_PROGRESS | Composed TEST_ONLY cross-sleeve BUY/partial-SELL/T+1/restart loop and bounded public/locked desktop/mobile checks pass; real/private browser acceptance remains |
 | S5 intraday alerts | IN_PROGRESS | Retained QUOTE/completed-bar bridges; atomic TEST_ONLY history/read/cancel/expiry Web loop, exact 44a7e8cd Core/Postgres/Web CI pass; actual manual monitor/source orchestration and other reminder rules remain |
-| S6 Agent/research operations | NOT_STARTED | Existing provider reused; paid live trial separately gated |
+| S6 Agent/research operations | IN_PROGRESS | Authenticated retained Mock/replay packets connected to stock details with exact source replay; new research workflows and daily orchestration remain; paid live trial separately gated |
 | S7 integration/recovery/acceptance | NOT_STARTED | Four viewports, five E2E chains, isolated recovery, latest CI |
 
 Artifacts namespace: artifacts/current/web-first-acceptance/.

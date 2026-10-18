@@ -22,6 +22,26 @@ export function HoldingsAttention({
   const portfolio = state.portfolio;
   const connected = portfolio?.status === "CONNECTED";
   const held = new Set(portfolio?.positions.map((row) => row.symbol) ?? []);
+  const heldInStrategy = (row: DecisionItem) => {
+    const strategy = ["hotspot", "HOTSPOT_SATELLITE"].includes(
+      row.strategy ?? "",
+    )
+      ? "HOTSPOT_SATELLITE"
+      : ["value", "CORE_VALUE"].includes(row.strategy ?? "")
+        ? "CORE_VALUE"
+        : undefined;
+    return (
+      !!strategy &&
+      !!portfolio?.positions.some(
+        (position) =>
+          position.symbol === row.symbol &&
+          position.sleeves?.some(
+            (sleeve) =>
+              sleeve.sleeve === strategy && Number(sleeve.quantity) > 0,
+          ),
+      )
+    );
+  };
   async function refreshHeld() {
     if (!connected || portfolio?.revision === undefined || refreshing) return;
     setRefreshing(true);
@@ -53,6 +73,7 @@ export function HoldingsAttention({
     (row) =>
       decisionsVerified &&
       held.has(row.symbol ?? "") &&
+      heldInStrategy(row) &&
       (["REDUCE", "EXIT", "EXIT_REVIEW"].includes(
         row.action_intent ?? row.price_action_plan?.action_intent ?? "",
       ) ||

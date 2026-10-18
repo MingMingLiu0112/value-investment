@@ -188,12 +188,22 @@ it("unverified holdings decisions cannot become either an exit alert or a no-exi
       status: "CONNECTED",
       cash_cny: "100",
       total_equity_cny: null,
-      positions: [{ symbol: "300364" }],
+      positions: [
+        {
+          symbol: "300364",
+          sleeves: [{ sleeve: "HOTSPOT_SATELLITE", quantity: "100" }],
+        },
+      ],
     },
     risk: { blockers: [] },
   } as unknown as PrivateStateHandle;
   const decisions = [
-    { id: "hotspot-300364", symbol: "300364", action_intent: "EXIT" },
+    {
+      id: "hotspot-300364",
+      symbol: "300364",
+      strategy: "HOTSPOT_SATELLITE",
+      action_intent: "EXIT",
+    },
   ];
   const html = renderToStaticMarkup(
     <HoldingsAttention state={connected} decisions={decisions} />,

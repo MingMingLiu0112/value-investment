@@ -15,11 +15,12 @@ import {
   Typography,
 } from "antd";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ApiError, api } from "../services/api";
 import type { PortfolioDraft } from "../types/api";
 import { formatMoney } from "../utils/format";
 import { PositionTable, sleeveLabel } from "./PositionTable";
+import { retryableWrite } from "./PrivateRiskContext";
 
 const AMOUNT = /^\d+(\.\d{1,4})?$/;
 const SHARES = /^\d+$/;
@@ -88,42 +89,63 @@ function DraftReview({
   const [failure, setFailure] = useState<string>();
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const lock = useRef(false);
+  const confirmAttempt = useRef(retryableWrite());
+  const cancelAttempt = useRef(retryableWrite());
   const fill = draft.fill as Record<string, unknown>;
 
   const confirmDraft = async () => {
+    if (lock.current || !note.trim()) return;
+    lock.current = true;
     setBusy(true);
     setFailure(undefined);
     try {
-      await api.confirmFill({
-        idempotency_key: crypto.randomUUID(),
-        expected_revision: revision,
-        prepared_record_sha256: draft.prepared_record_sha256,
-        confirmed_at: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-        confirmation_note: note.trim(),
-      });
+      await api.confirmFill(
+        confirmAttempt.current.body(
+          JSON.stringify([revision, draft.prepared_record_sha256, note.trim()]),
+          () => ({
+            idempotency_key: crypto.randomUUID(),
+            expected_revision: revision,
+            prepared_record_sha256: draft.prepared_record_sha256,
+            confirmed_at: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+            confirmation_note: note.trim(),
+          }),
+        ),
+      );
+      confirmAttempt.current.clear();
       onDone();
     } catch (cause) {
       setFailure(failureMessage(cause, "确认失败"));
     } finally {
+      lock.current = false;
       setBusy(false);
     }
   };
 
   const cancelDraft = async () => {
+    if (lock.current) return;
+    lock.current = true;
     setBusy(true);
     setFailure(undefined);
     try {
-      await api.cancelFill({
-        idempotency_key: crypto.randomUUID(),
-        expected_revision: revision,
-        prepared_record_sha256: draft.prepared_record_sha256,
-        cancelled_at: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
-        reason: note || "录入有误，人工作废",
-      });
+      await api.cancelFill(
+        cancelAttempt.current.body(
+          JSON.stringify([revision, draft.prepared_record_sha256, note]),
+          () => ({
+            idempotency_key: crypto.randomUUID(),
+            expected_revision: revision,
+            prepared_record_sha256: draft.prepared_record_sha256,
+            cancelled_at: dayjs().format("YYYY-MM-DDTHH:mm:ssZ"),
+            reason: note || "录入有误，人工作废",
+          }),
+        ),
+      );
+      cancelAttempt.current.clear();
       onDone();
     } catch (cause) {
       setFailure(failureMessage(cause, "作废失败"));
     } finally {
+      lock.current = false;
       setBusy(false);
     }
   };
@@ -196,6 +218,7 @@ function DraftReview({
         <div>
           <Typography.Text type="secondary">处理说明</Typography.Text>
           <Input
+            aria-label="成交处理说明"
             style={{ width: 320, display: "block" }}
             value={note}
             onChange={(event) => setNote(event.target.value)}
@@ -242,6 +265,8 @@ export function FillPanel({
   initialResearchVersion?: string;
 }) {
   const [failure, setFailure] = useState<string>();
+  const prepareLock = useRef(false);
+  const prepareAttempt = useRef(retryableWrite());
   const context = fillContextFromSearch(
     typeof window === "undefined" ? "" : window.location.search,
   );
@@ -254,6 +279,8 @@ export function FillPanel({
     return <DraftReview draft={draft} revision={revision} onDone={onDone} />;
 
   const submit = async (form: Record<string, unknown>) => {
+    if (prepareLock.current) return false;
+    prepareLock.current = true;
     setFailure(undefined);
     const side = text(form.side).toUpperCase();
     const nextSell = form.next_sell_session
@@ -265,8 +292,7 @@ export function FillPanel({
       const contextMatches =
         text(form.symbol) === linkedSymbol &&
         text(form.sleeve).toUpperCase() === linkedSleeve;
-      await api.prepareFill({
-        idempotency_key: crypto.randomUUID(),
+      const payload = {
         expected_revision: revision,
         note: text(form.note) || null,
         fill: {
@@ -285,12 +311,21 @@ export function FillPanel({
           trading_unit: side === "BUY" ? text(form.trading_unit) : null,
           corporate_action: false,
         },
-      });
+      };
+      await api.prepareFill(
+        prepareAttempt.current.body(JSON.stringify(payload), () => ({
+          ...payload,
+          idempotency_key: crypto.randomUUID(),
+        })),
+      );
+      prepareAttempt.current.clear();
       onDone();
       return true;
     } catch (cause) {
       setFailure(failureMessage(cause, "生成草稿失败"));
       return false;
+    } finally {
+      prepareLock.current = false;
     }
   };
 
