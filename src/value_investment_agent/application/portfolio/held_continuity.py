@@ -156,7 +156,7 @@ def build_held_plan_provider(root: Path, replayed, *, now: datetime):
         except (ValueError, KeyError, TypeError):
             continue
 
-    def provider(symbol):
+    def strategy_plan(symbol):
         current_plan = plans.get(symbol)
         # The explicit private refresh writes ordinary immutable current cases.
         # Rediscover/reverify them after restart without publishing a held list.
@@ -190,6 +190,46 @@ def build_held_plan_provider(root: Path, replayed, *, now: datetime):
         if value is not None:
             return value
         return current_plan
+
+    def provider(symbol):
+        plan = strategy_plan(symbol)
+        if plan is None:
+            return None
+        result = {**plan, "announcement_coverage_status": "UNKNOWN"}
+        result.pop("announcement_coverage", None)
+        result.pop("announcement_coverage_gap", None)
+        try:
+            from ..product.quote_bridge import POINTER_PATH
+            from ..product.incremental_validity import (
+                registered_package, read_bound_json, load_incremental_scan_binding,
+            )
+            from ..product.daily_event_observation import verify_retained_event_coverage
+
+            if not isinstance(plan.get("market_trade_date"), str):
+                raise ValueError("Plan has no verified completed-session date for announcement coverage")
+            cutoff = date.fromisoformat(plan["market_trade_date"])
+            package_ref, package = registered_package(root, symbol)
+            pointer = json.loads((root / POINTER_PATH).read_bytes())
+            binding_ref = pointer["quotes"][symbol]["incremental_validity_binding"]
+            load_incremental_scan_binding(root=root, binding_ref=binding_ref, symbol=symbol,
+                package_path=root / package_ref["path"], package_sha256=package_ref["sha256"],
+                review_cutoff=cutoff, today=now)
+            _, binding = read_bound_json(root, binding_ref, "held announcement binding")
+            _, observation = read_bound_json(root, binding["observation_ref"], "held announcement observation")
+            coverage = verify_retained_event_coverage(root, observation, symbol=symbol,
+                required_from=date.fromisoformat(package["point_in_time"]["research_as_of"]),
+                required_to=cutoff, now=now)
+            result.update(announcement_coverage_status=coverage["coverage_status"],
+                announcement_coverage={**coverage,
+                    "scope": "RESEARCH_CUTOFF_TO_PLAN_COMPLETED_SESSION_ONLY",
+                    "observation_binding": binding["observation_ref"],
+                    "earlier_event_reviews_replaced": False})
+        except (OSError, ValueError, KeyError, TypeError, ArithmeticError) as error:
+            result["announcement_coverage_gap"] = {
+                "code": "RETAINED_COVERAGE_NOT_VERIFIED",
+                "reason": str(error)[:300],
+            }
+        return result
 
     return selected, provider
 

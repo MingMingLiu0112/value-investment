@@ -342,3 +342,38 @@ metadata still fail closed. Retired rows remain in historical/detail views.
 The existing daily packet builder published local Web snapshot
 pub-8b9016624014e824aa3b; no Excel, server deployment or scheduling was changed.
 Final successor runtime/API/CI checks remain pending until that code is committed.
+
+3994e748dc653a11896b37061438a70e053097f5 rebuilt and restarted successfully.
+Actual local runtime MATCHED; independent list has 10 current hotspots and
+unified list has 16 strategy objects. All ten detail projections match the
+list and all formal/trade eligibility flags remain false. API receipts are in
+s3/api-smoke.json, detail-api-parity.json and runtime-identity.json. Their stage
+label was corrected from inherited S1 helper metadata to S3; measured results
+are unchanged. Actual browser remains NOT_VERIFIED, not an API substitute.
+
+### S4 retained announcement coverage and isolated private loop
+
+The held-plan provider now replays exact registered incremental observations,
+including retained official response bytes, issuer identity, pagination, full
+elapsed window and original document hashes. Authored COMPLETE labels cannot
+substitute for that replay. Coverage is limited to the research cutoff through
+the plan's verified completed session; earlier reviews remain applicable.
+
+Actual 2026-10-18 acquisition for 2026-10-11 through 2026-10-16 passed for
+600519 (zero announcements) and 600887 (two retained original PDFs). Existing
+incremental registration was used only after independent raw replay succeeded.
+Neither registration grants materiality approval, model revalidation or G3.
+Public-only provider probe now reports COMPLETE for those two symbols; 000333
+has no exact registered original package and 000651/600741/601088 have no
+verified completed-session date in the selected plan. Those remain UNKNOWN.
+Evidence: s4/public-coverage-probe.json. No private journal was opened by it.
+
+The TEST_ONLY single-account API loop covers confirmed IPS, both sleeves,
+conditional risk preview, manual fill, fees, T+1, history and restart; preview
+does not mutate the journal and actual fills invalidate prior reconciliation.
+Combined coverage/event/held/private regressions: 140 passed (14.06 seconds).
+Synthetic public inputs in the isolated loop do not grant real eligibility.
+Actual browser inventory still reports a connection-refused page after the
+user's opened-page reply; browser interaction remains NOT_VERIFIED. S4 remains
+IN_PROGRESS and the full product Goal remains IN_PROGRESS. No Excel changes,
+production scheduling, real signatures or orders were performed.

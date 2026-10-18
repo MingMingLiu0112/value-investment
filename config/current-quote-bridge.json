@@ -11,8 +11,8 @@
       "research_package_sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5",
       "registered_at": "2026-10-16T09:00:32.603507+00:00",
       "incremental_validity_binding": {
-        "path": "runtime/incremental-validity/600887/2026-10-16-20261016T0900428785311Z/incremental-binding.json",
-        "sha256": "e80c935ebd7115a27c2c9f416890c612ac3592894a8804db6d07628abd7a26e1"
+        "path": "runtime/web-first-event-coverage/600887-20261018/incremental-binding.json",
+        "sha256": "759abcdc5a75df7673f1589738eae7f8fb0df666b66220d6b9f0c081e4fad237"
       }
     },
     "600519": {
@@ -22,8 +22,8 @@
       "research_package_sha256": "f100c2a26b0d61a3f9d90a1b60976b00d8217b55592360f6940b0696a46829bf",
       "registered_at": "2026-10-16T09:00:33.682521+00:00",
       "incremental_validity_binding": {
-        "path": "runtime/incremental-validity/600519/2026-10-16-20261016T0900457483625Z/incremental-binding.json",
-        "sha256": "715e29a73cb4606dd13e5bc336a4a371c39ea19a2d21082b928abf996a43348d"
+        "path": "runtime/web-first-event-coverage/600519-20261018/incremental-binding.json",
+        "sha256": "2194ea2544dfa5a6f3e65035cb800e5617a133d9ae8ada84d3fea886f42ba0c4"
       }
     },
     "000333": {
