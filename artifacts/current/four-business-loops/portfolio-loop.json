@@ -1,0 +1,69 @@
+{
+  "stage": "G2_PORTFOLIO_LOOP",
+  "commit": "b98f49e3f84bac8a0e044adfff89c3341e2422d7",
+  "delivery_branch": "codex/web-d1-investment-workbench",
+  "working_tree_delivery": true,
+  "status": "PARTIAL",
+  "action": "no_order",
+  "files_changed": [
+    "src/value_investment_agent/application/portfolio/judgment_snapshot.py",
+    "src/value_investment_agent/application/portfolio/private_risk_preview.py",
+    "src/value_investment_agent/application/portfolio/private_risk_projection.py",
+    "src/value_investment_agent/domain/portfolio/dual_sleeve_risk.py",
+    "web/src/components/FillPanel.tsx",
+    "web/src/components/HotspotSizingPanel.tsx",
+    "web/src/pages/Portfolio/index.tsx",
+    "tests/test_g2_core_sizing.py",
+    "tests/test_g2_judgment_binding.py",
+    "tests/web_api/test_g2_registered_portfolio_loop.py"
+  ],
+  "actual_data_used": [
+    "Local TEST_ONLY account TEST_ONLY_BROWSER_LOOP_20261019, revision 7, cash 9390.00 CNY and 100 SSE shares of 600019.",
+    "Authenticated local Web portfolio page at http://127.0.0.1:8001/portfolio."
+  ],
+  "test_only_data_used": [
+    "Synthetic IPS, sleeve capacities, fills, fees, T+1 settlement, restart replay and risk projections."
+  ],
+  "tests_passed": {
+    "targeted_four_loop_regression": 75,
+    "full_python_regression": "6662 passed, 44 skipped",
+    "web_regression": 251,
+    "web_typecheck": "PASS",
+    "web_format": "PASS",
+    "web_build": "PASS"
+  },
+  "tests_failed": [],
+  "api_checks": [
+    "Same-day SELL was rejected with HTTP 422 for insufficient sellable shares; the next eligible sell session is 2026-10-20.",
+    "The browser displays cash, holding, fills and unresolved risk blockers after restart."
+  ],
+  "browser_checks": {
+    "status": "PARTIAL",
+    "evidence": ["artifacts/current/four-business-loops/browser-portfolio-desktop.png"],
+    "interaction_acceptance": "TEST_ONLY_ONLY",
+    "limitation": "No real broker statement, private IPS or external reconciliation was supplied."
+  },
+  "replay_checks": [
+    "Manual fills, fees, T+1 eligibility and account state replay consistently after process restart.",
+    "Expired or mismatched sizing plans are rejected before execution can be recorded."
+  ],
+  "negative_checks": [
+    "Missing private inputs remain BLOCKED_PRIVATE_INPUT.",
+    "Price-based valuation remains PRICE_NOT_ADMITTED when the research or quote bridge is not valid."
+  ],
+  "user_visible_result": "The Web portfolio page exposes a TEST_ONLY cash and holding state, manual fill history and explicit risk blockers without issuing an order.",
+  "real_world_gates": {
+    "private_ips_portfolio_cash": "BLOCKED_PRIVATE_INPUT",
+    "external_broker_reconciliation": "NOT_CONFIRMED",
+    "price_admission": "PRICE_NOT_ADMITTED",
+    "user_visible_acceptance": "TEST_ONLY_ONLY",
+    "production_scheduling": "NOT_AUTHORIZED"
+  },
+  "remaining_p0": [],
+  "remaining_p1": [
+    "Resolve the cross-sleeve cash contract before marking G2 PASS: a broker-confirmed fill can currently be recorded while only the downstream risk projection reports SLEEVE_CASH_OVERDRAWN.",
+    "Import and reconcile a real user-approved IPS, holdings, cash and broker statement through the private intake boundary.",
+    "Reduce the measured portfolio and held-continuity API latency without changing risk semantics."
+  ],
+  "next_executable_step": "Complete the private-input intake in one user-approved import, then require immediate sleeve-level risk status on every manual fill response."
+}

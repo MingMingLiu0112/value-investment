@@ -1,4 +1,5 @@
 """TEST_ONLY local collection sessions; all collectors injected, no network."""
+import base64
 from copy import deepcopy
 from datetime import timedelta
 import hashlib
@@ -14,6 +15,20 @@ import pytest
 
 from test_intraday_observation import NOW, bundle, doc
 from value_investment_agent.application.hotspot.public_observation_session import PublicObservationSession
+from value_investment_agent.infrastructure.hotspot.sina_price_case import ENDPOINT
+
+
+def bars(now, value="14"):
+    result = {}
+    for period in ("60m", "15m"):
+        rows = [dict(day="2026-09-28 10:30:00", open=value, high=value,
+                     low=value, close=value, volume="100", amount="1400")]
+        raw = ("/*TEST_ONLY*/=(" + json.dumps(rows) + ");").encode()
+        result[period] = dict(raw_base64=base64.b64encode(raw).decode(),
+            sha256=hashlib.sha256(raw).hexdigest(),
+            source_url=ENDPOINT + f"?symbol=sh600519&scale={period[:-1]}&ma=no&datalen=8",
+            http_status=200, fetched_at=(now - timedelta(seconds=1)).isoformat())
+    return result
 
 
 def wait_stopped(session):
@@ -107,6 +122,7 @@ def test_bound_plan_crossings_persist_replay_and_reject_rewritten_history(tmp_pa
         field(data, "sina", 3, price)
         return data
     s = PublicObservationSession(tmp_path, clock=lambda: at[0], collector=collector,
+        bar_collector=lambda symbol: bars(at[0]),
         max_samples=3, interval_seconds=.001)
     try:
         s.start("600519", plan_binding=binding)
@@ -445,11 +461,13 @@ def test_default_collector_and_freshness_contract(tmp_path, monkeypatch):
 
 
 def test_source_clock_regression_fails_worker_instead_of_committing_bad_history(tmp_path):
+    at = [NOW]
     calls = []
-    def clock():
-        calls.append(1)
-        return NOW if len(calls) == 1 else NOW - timedelta(seconds=1)
-    s = PublicObservationSession(tmp_path, clock=clock, collector=lambda symbols: bundle(),
+    def collector(symbols):
+        calls.append(symbols)
+        at[0] = NOW if len(calls) == 1 else NOW - timedelta(seconds=1)
+        return bundle()
+    s = PublicObservationSession(tmp_path, clock=lambda: at[0], collector=collector,
                                  max_samples=2, interval_seconds=.001)
     s.start("600519")
     result = wait_stopped(s)

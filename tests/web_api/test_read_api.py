@@ -123,7 +123,14 @@ def test_fixture_projection_and_detail(tmp_path):
 def test_hotspot_detail_uses_independent_projection_after_current_case_verification(tmp_path, monkeypatch, stale):
     from copy import deepcopy
     from value_investment_agent.presentation.web_api import app as api_module
+    from value_investment_agent.presentation.web_api import private_routes
     from value_investment_agent.application.hotspot import independent_price_conditions as projection
+    from value_investment_agent.application.portfolio.private_portfolio_service import PrivateStoreUnavailable
+
+    def no_private_root(**kwargs):
+        raise PrivateStoreUnavailable("TEST_ONLY isolated private root absence")
+
+    monkeypatch.setattr(private_routes, "resolve_private_root", no_private_root)
 
     client = _fixture(tmp_path)
     plan = dict(schema_version='price-action-plan-current-v1', symbol='600519',

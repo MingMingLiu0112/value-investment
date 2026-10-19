@@ -52,7 +52,7 @@ def test_safe_refresh_failure_keeps_previous_snapshot_bytes(tmp_path):
     project.mkdir()
     for directory in ('src', 'scripts'):
         shutil.copytree(ROOT / directory, project / directory,
-                        ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+                        ignore=shutil.ignore_patterns('__pycache__', '*.pyc', 'node_modules'))
     (project / 'config').mkdir()
     # No workbook/private data is copied or consulted. Missing active inputs
     # and the unavailable network must never republish the retained snapshot.
@@ -188,3 +188,122 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         assert receipt['retained_publication_id'] == 'retained'
     else:
         assert json.loads(pointer.read_bytes())['publication_id'] == 'verified'
+
+
+def _research_discovery_project(tmp_path, *, discovery_status='READY'):
+    project = tmp_path / ('research-discovery-' + discovery_status.lower())
+    current = project / 'scripts/current'
+    current.mkdir(parents=True)
+    (project / 'src/value_investment_agent').mkdir(parents=True)
+    (project / 'src/value_investment_agent/__init__.py').write_text('', encoding='utf-8')
+    (project / 'config').mkdir()
+    (project / 'config/current-quote-bridge.json').write_text(
+        json.dumps({'quotes': {}}), encoding='utf-8')
+    (project / '.tmp').mkdir()
+    shutil.copy2(ROOT / 'scripts/current/run_daily_workbench.ps1', current)
+
+    discovery = {
+        'schema_version': 'agent-daily-discovery-v1', 'action': 'no_order', 'mode': 'MOCK',
+        'status': discovery_status, 'approval_count': 0, 'registered_or_published': False,
+        'batch_plan': ({'path': 'runtime/agent-research-discovery/batch.json',
+                        'sha256': 'b' * 64} if discovery_status == 'READY' else None),
+        'items': ([{'symbol': '600519', 'workflow': 'event', 'status': 'EXPORTED'}]
+                  if discovery_status == 'READY' else
+                  [{'workflow': 'retrospective', 'status': 'WAITING_CONFIRMED_TEST_ONLY_INPUT'}]),
+    }
+    (current / 'run_agent_research_pilot.py').write_text(
+        'import json,sys\n'
+        'from pathlib import Path\n'
+        'args=sys.argv[1:]\n'
+        "with Path('.tmp/research-calls.jsonl').open('a',encoding='utf-8') as stream:\n"
+        "    stream.write(json.dumps(args)+'\\n')\n"
+        "if '--discover-contexts' in args:\n"
+        f"    result={discovery!r}\n"
+        '    print(json.dumps(result))\n'
+        f"    raise SystemExit({2 if discovery_status == 'BLOCKED' else 0})\n"
+        "if '--batch-plan' in args:\n"
+        "    result={'schema_version':'daily-agent-mock-batch-result-v1','action':'no_order',"
+        "'mode':'MOCK','status':'SUCCESS','items':[],'approval_count':0,"
+        "'registered_or_published':False,'decision_changed':False}\n"
+        '    print(json.dumps(result))\n'
+        '    raise SystemExit(0)\n'
+        'raise SystemExit(9)\n', encoding='utf-8')
+    (current / 'build_daily_public_packet.py').write_text(
+        'import json\n'
+        "print(json.dumps({'publication_id':'none','source_bindings_verified':False}))\n"
+        'raise SystemExit(2)\n', encoding='utf-8')
+    return project
+
+
+def _research_calls(project):
+    return [json.loads(line) for line in
+            (project / '.tmp/research-calls.jsonl').read_text(encoding='utf-8').splitlines()]
+
+
+def _research_receipt(project):
+    return json.loads((project / '.tmp/daily-workbench-research-latest.json')
+                      .read_text(encoding='utf-8-sig'))
+
+
+def test_daily_entry_auto_discovers_mock_plan_and_registers_only_discovered_batch(tmp_path):
+    if not PWSH.is_file():
+        pytest.skip('Windows PowerShell 7 required')
+    project = _research_discovery_project(tmp_path)
+    completed = subprocess.run([
+        str(PWSH), '-NoProfile', '-File', str(project / 'scripts/current/run_daily_workbench.ps1'),
+        '-Mode', 'READ_ONLY', '-NoServer', '-AutoDiscoverResearchContexts', '-RegisterResearchDrafts'],
+        cwd=project, capture_output=True, text=True, encoding='utf-8', timeout=60)
+    assert completed.returncode == 2, completed.stdout + completed.stderr
+    calls = _research_calls(project)
+    assert len(calls) == 2
+    assert '--discover-contexts' in calls[0] and '--mode' in calls[0]
+    assert calls[0][calls[0].index('--mode') + 1] == 'mock'
+    assert '--authorize-paid-api' not in calls[0] + calls[1]
+    assert calls[1][calls[1].index('--batch-plan') + 1] == \
+        'runtime/agent-research-discovery/batch.json'
+    assert calls[1][calls[1].index('--batch-plan-sha256') + 1] == 'b' * 64
+    assert '--register-drafts' in calls[1]
+    receipt = _research_receipt(project)
+    assert receipt['status'] == 'SUCCESS'
+    assert receipt['source'] == 'AUTO_DISCOVERY'
+    assert receipt['discovery']['status'] == 'READY'
+    assert receipt['action'] == 'no_order'
+
+
+def test_daily_entry_discovery_without_contexts_fails_closed_before_registration(tmp_path):
+    if not PWSH.is_file():
+        pytest.skip('Windows PowerShell 7 required')
+    project = _research_discovery_project(tmp_path, discovery_status='BLOCKED')
+    completed = subprocess.run([
+        str(PWSH), '-NoProfile', '-File', str(project / 'scripts/current/run_daily_workbench.ps1'),
+        '-Mode', 'READ_ONLY', '-NoServer', '-AutoDiscoverResearchContexts', '-RegisterResearchDrafts'],
+        cwd=project, capture_output=True, text=True, encoding='utf-8', timeout=60)
+    assert completed.returncode == 2, completed.stdout + completed.stderr
+    calls = _research_calls(project)
+    assert len(calls) == 1 and '--discover-contexts' in calls[0]
+    assert all('--register-drafts' not in call for call in calls)
+    receipt = _research_receipt(project)
+    assert receipt['status'] == 'BLOCKED'
+    assert receipt['source'] == 'AUTO_DISCOVERY'
+    assert receipt['discovery']['batch_plan'] is None
+    assert receipt['result'] is None
+    assert '未发现可用上下文' in completed.stdout
+
+
+def test_daily_entry_pinned_mock_plan_overrides_auto_discovery(tmp_path):
+    if not PWSH.is_file():
+        pytest.skip('Windows PowerShell 7 required')
+    project = _research_discovery_project(tmp_path)
+    completed = subprocess.run([
+        str(PWSH), '-NoProfile', '-File', str(project / 'scripts/current/run_daily_workbench.ps1'),
+        '-Mode', 'READ_ONLY', '-NoServer', '-AutoDiscoverResearchContexts',
+        '-ResearchMockPlan', 'runtime/pinned.json',
+        '-ResearchMockPlanSha256', 'c' * 64, '-RegisterResearchDrafts'],
+        cwd=project, capture_output=True, text=True, encoding='utf-8', timeout=60)
+    assert completed.returncode == 2, completed.stdout + completed.stderr
+    calls = _research_calls(project)
+    assert len(calls) == 1 and '--discover-contexts' not in calls[0]
+    assert calls[0][calls[0].index('--batch-plan') + 1] == 'runtime/pinned.json'
+    assert calls[0][calls[0].index('--batch-plan-sha256') + 1] == 'c' * 64
+    receipt = _research_receipt(project)
+    assert receipt['source'] == 'PINNED_MOCK_PLAN'

@@ -8,7 +8,7 @@ import json
 import pytest
 
 from value_investment_agent.application.hotspot.intraday_bar_observation import project_intraday_bar_observation
-from value_investment_agent.application.hotspot.intraday_conditions import evaluate_intraday_condition
+from value_investment_agent.application.hotspot.intraday_conditions import CHINA, evaluate_intraday_condition
 from value_investment_agent.infrastructure.hotspot.sina_price_case import ENDPOINT, parse_klines
 
 
@@ -79,7 +79,6 @@ def test_source_identity_hash_and_receipt_tampering_rejected(change):
 
 
 @pytest.mark.parametrize("rows", [
-    [row(), row("2026-10-16 11:30:00")],
     [row("2026-10-16 10:29:00")], [row("2026-10-16 12:00:00")],
     [row("2026-10-16 10:30:00.000001")], [row("2026-10-16T10:30:00+08:00")],
     [row("2026-10-19 10:30:00")], [row("2026-10-15 15:00:00")],
@@ -91,6 +90,14 @@ def test_incomplete_future_stale_off_grid_and_invalid_bars_never_fall_back(rows)
     result = project(document(rows=rows))
     assert result["status"] == "STALE_OR_UNAVAILABLE", result
     assert result["observation"] is None
+
+
+def test_live_partial_bar_is_preserved_but_never_used_as_the_completed_bar():
+    result = project(document(rows=[row(), row("2026-10-16 11:30:00")]))
+    assert result["status"] == "COMPLETED_BAR_VERIFIED"
+    assert result["observation"]["bar_end"] == "2026-10-16T02:30:00+00:00"
+    assert result["observation"]["close"] == "11"
+    assert result["observation"]["completed"] is True
 
 
 @pytest.mark.parametrize("stamp", ["2026-10-16T12:00:00+08:00", "2026-10-16T09:29:00+08:00",
@@ -140,6 +147,15 @@ def test_explicit_parser_cutoff_requires_aware_same_date_exchange_clock():
     for clock in (NOW.replace(tzinfo=None), NOW + timedelta(days=1)):
         with pytest.raises(ValueError):
             parse_klines(raw, period="60m", as_of=date(2026, 10, 16), completed_through=clock)
+
+
+def test_explicit_parser_cutoff_drops_only_the_live_partial_bar():
+    rows = [row("2026-10-16 10:30:00"), row("2026-10-16 11:30:00")]
+    raw = base64.b64decode(document(rows=rows)["raw_base64"])
+    cutoff = datetime(2026, 10, 16, 10, 31, tzinfo=CHINA)
+    parsed = parse_klines(raw, period="60m", as_of=date(2026, 10, 16),
+                          completed_through=cutoff)
+    assert [item["time"] for item in parsed] == ["2026-10-16 10:30:00"]
 
 
 @pytest.mark.parametrize("changes", [{"now": NOW.replace(tzinfo=None)}, {"max_age": timedelta(0)},

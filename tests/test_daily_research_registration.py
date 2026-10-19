@@ -202,3 +202,15 @@ def test_partial_batch_registers_only_ready_valid_draft(tmp_path, registrar):
     assert read_web_agent_research(tmp_path, symbol="600519", workflow="event",
                                   now=now)["status"] == "VERIFIED"
     unapproved(result)
+
+
+def test_crash_left_registration_marker_does_not_block_real_registration(tmp_path, registrar):
+    _, item, now = draft(tmp_path)
+    marker = tmp_path / ".tmp/agent-research-registration.lock"
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text("crash-left", encoding="utf-8")
+    result = registrar(root=tmp_path, batch_result=batch(item), now=now)
+    receipt(result, "UPDATED", 1)
+    assert marker.is_file()
+    assert read_web_agent_research(tmp_path, symbol="600519", workflow="event",
+                                  now=now)["status"] == "VERIFIED"

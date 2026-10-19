@@ -15,7 +15,7 @@ BLOCKERS = ("INTRADAY_SINGLE_PROVIDER", "SINGLE_PROVIDER_NO_B1_CLOSE_CROSSCHECK"
 
 
 def project_intraday_bar_observation(document: dict, *, symbol: str, period: str,
-        now: datetime, max_age: timedelta) -> dict:
+        now: datetime, max_age: timedelta, max_bar_age: timedelta | None = None) -> dict:
     """Replay retained raw_base64/sha256/source_url/fetched_at/http_status.
 
     The bar's exchange-local end is source_at (a conservative price clock),
@@ -24,8 +24,11 @@ def project_intraday_bar_observation(document: dict, *, symbol: str, period: str
     or prove that acquisition metadata cannot have been deliberately forged.
     """
     if (not isinstance(now, datetime) or now.utcoffset() is None
-            or not isinstance(max_age, timedelta) or max_age <= timedelta(0)):
+            or not isinstance(max_age, timedelta) or max_age <= timedelta(0)
+            or (max_bar_age is not None and (not isinstance(max_bar_age, timedelta)
+                or max_bar_age <= timedelta(0)))):
         raise ValueError("Aware server clock and positive max_age required")
+    bar_age = max_age if max_bar_age is None else max_bar_age
     if (not isinstance(symbol, str) or len(symbol) != 6 or not symbol.isascii()
             or not symbol.isdigit() or not symbol.startswith(("0", "3", "6"))
             or period not in PERIODS):
@@ -55,7 +58,8 @@ def project_intraday_bar_observation(document: dict, *, symbol: str, period: str
                     or not 1 <= int(query["datalen"][0]) <= 2500))):
             result["reason"] = "SOURCE_URL_IDENTITY_MISMATCH"
             return result
-        if type(document["http_status"]) is not int or document["http_status"] != 200:
+        if (document.get("error") or document.get("adjustment", "UNADJUSTED") != "UNADJUSTED"
+                or type(document["http_status"]) is not int or document["http_status"] != 200):
             return result
         fetched = _stamp(document["fetched_at"])
         if (fetched > now or now - fetched > max_age
@@ -76,7 +80,7 @@ def project_intraday_bar_observation(document: dict, *, symbol: str, period: str
                             completed_through=fetched)
         bar = bars[-1]
         end = datetime.fromisoformat(bar["time"]).replace(tzinfo=CHINA).astimezone(timezone.utc)
-        if not end <= fetched <= now or now - end > max_age:
+        if not end <= fetched <= now or now - end > bar_age:
             result["reason"] = "STALE_COMPLETED_BAR"
             return result
         opening, high, low, close = (Decimal(bar[key]) for key in ("open", "high", "low", "close"))
@@ -92,6 +96,10 @@ def project_intraday_bar_observation(document: dict, *, symbol: str, period: str
             "source_at": end.isoformat(), "received_at": fetched.isoformat(),
             "price": bar["close"], "quality": "VERIFIED", "suspended": False,
             "input_kind": "COMPLETED_BAR", "period": period, "bar_end": end.isoformat(),
+            "bar_start": (end - timedelta(minutes=int(PERIODS[period]))).isoformat(),
+            "open": bar["open"], "high": bar["high"], "low": bar["low"],
+            "close": bar["close"], "volume": bar["volume"], "amount": bar["amount"],
+            "adjustment_basis": "UNADJUSTED", "raw_sha256": digest,
             "completed": True, "bar": dict(bar), "evidence_refs": [ref],
             "verified_at": now.isoformat(), "blockers": list(BLOCKERS),
             "action": "no_order", "eligibility": False, "formal_eligibility": False,

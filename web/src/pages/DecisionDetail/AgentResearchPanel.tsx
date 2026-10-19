@@ -1,29 +1,206 @@
 import { useCallback, useState } from "react";
-import { Alert, Descriptions, Segmented, Typography } from "antd";
+import { Alert, Button, Descriptions, Segmented, Tag, Typography } from "antd";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
 import { RemoteState } from "../../components/RemoteState";
 
+const WORKFLOW_LABELS: Record<string, string> = {
+  event: "公告事件",
+  financial: "财报",
+  hotspot: "热点",
+  retrospective: "测试复盘",
+  legacy: "历史综合",
+};
+
+const MODE_LABELS: Record<string, string> = {
+  MOCK: "Mock 模拟",
+  OFFLINE_REPLAY: "离线回放",
+  LIVE: "大模型研究",
+};
+
+function shortSha(value: string): string {
+  return value.slice(0, 12);
+}
+
 export function AgentResearchPanel({ symbol }: { symbol: string }) {
   const [workflow, setWorkflow] = useState<string | undefined>();
+  const [reviewTarget, setReviewTarget] = useState<
+    { symbol: string; name: string | null; workflow: string } | undefined
+  >();
+  const activeSymbol = reviewTarget?.symbol ?? symbol;
   const load = useCallback(
-    (signal: AbortSignal) => api.agentResearch(symbol, signal, workflow),
-    [symbol, workflow],
+    (signal: AbortSignal) => api.agentResearch(activeSymbol, signal, workflow),
+    [activeSymbol, workflow],
   );
   const { data, loading, error, retry } = useApi(load);
+  const queue = useApi(api.agentResearchStatus);
+  const queueItems = queue.data?.review_queue ?? [];
+
+  const openReviewItem = (item: (typeof queueItems)[number]) => {
+    setReviewTarget({
+      symbol: item.symbol,
+      name: item.name,
+      workflow: item.workflow,
+    });
+    setWorkflow(item.workflow);
+  };
+
   return (
     <details style={{ marginTop: 12, minWidth: 0, overflowWrap: "anywhere" }}>
-      <summary>AI 研究材料、反证与来源</summary>
+      <summary>
+        AI 研究材料、反证与来源
+        {queueItems.length ? ` · 待复核 ${queueItems.length}` : ""}
+      </summary>
+      <section style={{ marginTop: 12 }} aria-label="待人工复核队列">
+        <Typography.Title level={5}>待人工复核队列</Typography.Title>
+        <RemoteState
+          loading={queue.loading}
+          error={queue.error}
+          retry={queue.retry}
+        >
+          {queueItems.length === 0 ? (
+            <Alert
+              type="info"
+              showIcon
+              message={
+                queue.data?.status === "UNAVAILABLE"
+                  ? "研究复核队列暂不可用"
+                  : "暂无待人工复核的已登记研究草稿"
+              }
+              description={
+                queue.data?.failures?.length
+                  ? `有 ${queue.data.failures.length} 项登记未能核验；未核验材料不会进入复核队列。`
+                  : "仅展示已登记且绑定核验通过、仍待人工复核的研究草案。"
+              }
+            />
+          ) : (
+            <>
+              <Alert
+                type="warning"
+                showIcon
+                message={`${queueItems.length} 项跨公司研究草稿待人工复核`}
+                description="只读队列：action=no_order；审批保持不变；正式资格保持不变；不得据此下单。"
+              />
+              <div role="list" style={{ marginTop: 8 }}>
+                {queueItems.map((item) => {
+                  const source = item.source_scope;
+                  return (
+                    <div
+                      role="listitem"
+                      key={`${item.symbol}-${item.workflow}`}
+                      style={{
+                        borderBottom: "1px solid #f0f0f0",
+                        padding: "10px 0",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 6,
+                          alignItems: "center",
+                        }}
+                      >
+                        <strong>
+                          {item.name
+                            ? `${item.name}（${item.symbol}）`
+                            : item.symbol}
+                        </strong>
+                        <Tag>
+                          {WORKFLOW_LABELS[item.workflow] || item.workflow}
+                        </Tag>
+                        <Tag color="gold">待人工复核</Tag>
+                        {source.test_only && (
+                          <Tag color="red">Mock/测试材料，非正式证据</Tag>
+                        )}
+                        {source.excerpt_origin ===
+                          "DERIVED_FROM_VERIFIED_PLAN" && (
+                          <Tag color="blue">DERIVED_FROM_VERIFIED_PLAN</Tag>
+                        )}
+                      </div>
+                      <div>
+                        研究截止：{item.research_as_of || "未提供"} · 材料生成：
+                        {item.available_at || "未提供"}
+                        {item.source_available_at
+                          ? ` · 来源可用：${item.source_available_at}`
+                          : ""}
+                      </div>
+                      <div>
+                        来源范围：{source.scope}
+                        {source.data_scope
+                          ? ` · 数据范围：${source.data_scope}`
+                          : ""}
+                        {` · ${MODE_LABELS[source.mode] || source.mode}`} ·
+                        非正式证据
+                      </div>
+                      <div>
+                        绑定：packet {item.packet_binding.path} @ SHA-256{" "}
+                        {shortSha(item.packet_binding.sha256)} · registration{" "}
+                        {item.registration_binding.path} @ SHA-256{" "}
+                        {shortSha(item.registration_binding.sha256)}
+                      </div>
+                      <div>
+                        复核原因：{item.pending_findings_count}{" "}
+                        条研究结论仍需人工核对证据与语义。
+                      </div>
+                      <div>
+                        下一步：打开已登记草稿逐条复核；不生成订单，不改变审批或正式资格。
+                      </div>
+                      <Button
+                        size="small"
+                        type="primary"
+                        onClick={() => openReviewItem(item)}
+                      >
+                        打开该研究草稿
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </RemoteState>
+      </section>
+      {reviewTarget && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginTop: 12 }}
+          message={`正在查看队列目标：${
+            reviewTarget.name
+              ? `${reviewTarget.name}（${reviewTarget.symbol}）`
+              : reviewTarget.symbol
+          } · ${WORKFLOW_LABELS[reviewTarget.workflow] || reviewTarget.workflow}`}
+          action={
+            <Button
+              size="small"
+              onClick={() => {
+                setReviewTarget(undefined);
+                setWorkflow(undefined);
+              }}
+            >
+              返回当前股票
+            </Button>
+          }
+        />
+      )}
       <Segmented
         aria-label="研究材料类型"
         value={workflow || data?.workflow || "legacy"}
         options={[
-          { label: "公告事件", value: "event" },
-          { label: "财报", value: "financial" },
-          { label: "历史综合", value: "legacy" },
+          { label: WORKFLOW_LABELS.event, value: "event" },
+          { label: WORKFLOW_LABELS.financial, value: "financial" },
+          { label: WORKFLOW_LABELS.hotspot, value: "hotspot" },
+          { label: WORKFLOW_LABELS.retrospective, value: "retrospective" },
+          { label: WORKFLOW_LABELS.legacy, value: "legacy" },
         ]}
-        onChange={(value) => setWorkflow(String(value))}
-        style={{ marginBlock: 12, maxWidth: "100%" }}
+        onChange={(value) => {
+          const next = String(value);
+          if (reviewTarget && next !== reviewTarget.workflow)
+            setReviewTarget(undefined);
+          setWorkflow(next);
+        }}
+        style={{ marginBlock: 12, maxWidth: "100%", overflowX: "auto" }}
       />
       <RemoteState loading={loading} error={error} retry={retry}>
         {data?.status !== "VERIFIED" ? (

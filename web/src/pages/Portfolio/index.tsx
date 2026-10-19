@@ -4,6 +4,7 @@ import {
   Col,
   Descriptions,
   Row,
+  Segmented,
   Space,
   Statistic,
   Tag,
@@ -83,6 +84,9 @@ export default function Portfolio() {
   const initialDecisionId = params?.get("decision_id") || undefined;
   const initialResearchVersion = params?.get("research_version") || undefined;
   const [sizingSymbol, setSizingSymbol] = useState(initialSymbol ?? "");
+  const [sizingSleeve, setSizingSleeve] = useState<
+    "CORE_VALUE" | "HOTSPOT_SATELLITE"
+  >(initialSleeve === "CORE_VALUE" ? "CORE_VALUE" : "HOTSPOT_SATELLITE");
   const loadRiskContext = useCallback(
     (signal: AbortSignal) => {
       if (!/^\d{6}$/.test(sizingSymbol))
@@ -324,8 +328,21 @@ export default function Portfolio() {
             onDone={refreshAll}
           />
           <details style={{ marginTop: 16 }}>
-            <summary>查看热点条件性仓位上限</summary>
+            <summary>查看条件性仓位上限</summary>
+            <Segmented
+              aria-label="仓位试算策略"
+              value={sizingSleeve}
+              options={[
+                { label: "价值仓", value: "CORE_VALUE" },
+                { label: "热点仓", value: "HOTSPOT_SATELLITE" },
+              ]}
+              onChange={(value) =>
+                setSizingSleeve(value as "CORE_VALUE" | "HOTSPOT_SATELLITE")
+              }
+            />
             <HotspotSizingPanel
+              key={sizingSleeve}
+              sleeve={sizingSleeve}
               initialSymbol={sizingSymbol || undefined}
               onPreview={api.riskPreview}
               context={

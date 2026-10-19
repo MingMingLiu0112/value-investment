@@ -53,13 +53,14 @@ def test_tampered_original_rejected_even_on_repeat(tmp_path):
         run_daily_event_mock(**args)
 
 
-def test_bad_response_does_not_leave_packet_or_lock_and_can_retry(tmp_path):
+def test_bad_response_leaves_no_packet_or_runtime_lock_and_can_retry(tmp_path):
     args = setup(tmp_path)
     good = args["responses"]
     args["responses"] = {key: "invalid" for key in good}
     with pytest.raises(ValueError, match="not valid JSON"):
         run_daily_event_mock(**args)
     assert not args["output"].exists()
+    # OS lock state lives outside the research output tree.
     assert not args["output"].with_suffix(".json.lock").exists()
     args["responses"] = good
     assert run_daily_event_mock(**args)["findings"]

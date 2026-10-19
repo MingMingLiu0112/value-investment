@@ -66,9 +66,14 @@ def parse_klines(raw: bytes, *, period: str, as_of: date,
         if completed_through is not None:
             if (stamp.utcoffset() is not None or stamp.microsecond
                     or stamp.strftime("%H:%M:%S") not in SESSION_TIMES[period]
-                    or not is_exchange_session("SSE", stamp.date())
-                    or stamp.replace(tzinfo=ZoneInfo("Asia/Shanghai")) > completed_through):
+                    or not is_exchange_session("SSE", stamp.date())):
                 raise ValueError("Uncompleted, future or off-grid provider bar")
+            if stamp.replace(tzinfo=ZoneInfo("Asia/Shanghai")) > completed_through:
+                if stamp.date() != as_of:
+                    raise ValueError("Future-dated provider bar")
+                # The live endpoint appends the current partial bar. Exclude it
+                # from the completed set rather than rejecting every prior bar.
+                continue
         if stamp.date() > as_of or (stamp.date() == as_of and stamp.time() > time(15)):
             continue
         if stamp.time() < time(9, 30) or stamp.time() > time(15):

@@ -10,8 +10,9 @@ from typing import Any, Mapping
 from ...pre_decision_eligibility import PreDecisionEligibility, STATUS_ELIGIBLE
 
 SCHEMA_VERSION = "value-action-plan-v1"
-RULE_VERSION = "value-action-plan-projection-v2"
+RULE_VERSION = "value-action-plan-projection-v3"
 ACTIONS = ("entry", "add", "reduce", "exit")
+ACTION_INTENTS = ("OPEN", "ADD", "HOLD", "REDUCE", "EXIT")
 
 
 @dataclass(frozen=True)
@@ -212,11 +213,18 @@ def build_value_action_plan(*, explanation: Mapping[str, Any],
                 conditions[action] = thesis_condition
             else:
                 conditions[action]["thesis_review"] = thesis_condition
-    intent = {"BUY_CANDIDATE": "OPEN", "ADD_CANDIDATE": "ADD", "HOLD": "WATCH",
-              "TRIM_CANDIDATE": "REDUCE", "SELL_CANDIDATE": "EXIT"}.get(kind, "WATCH")
+    hold_logic = entry.get("hold_logic")
+    if kind == "HOLD" and isinstance(hold_logic, str) and hold_logic.strip():
+        conditions["hold"] = dict(kind="HOLD_THESIS", price=None,
+            reasoning=hold_logic.strip(), triggered=True,
+            rule_version="recommendation-rules-v1", entry_id=explanation.get("entry_id"),
+            consistency_status=explanation.get("thesis_consistency_status"),
+            qualification="EXISTING_THESIS_HOLD_REVIEW_NOT_TRADE_AUTHORIZATION")
+    intent = {"BUY_CANDIDATE": "OPEN", "ADD_CANDIDATE": "ADD", "HOLD": "HOLD",
+              "TRIM_CANDIDATE": "REDUCE", "SELL_CANDIDATE": "EXIT"}.get(kind)
     review_eligible = (repository_replayed and kind in {
-        "BUY_CANDIDATE", "ADD_CANDIDATE", "TRIM_CANDIDATE", "SELL_CANDIDATE"})
-    protected = intent in {"OPEN", "ADD", "REDUCE", "EXIT"}
+        "BUY_CANDIDATE", "ADD_CANDIDATE", "HOLD", "TRIM_CANDIDATE", "SELL_CANDIDATE"})
+    protected = intent in ACTION_INTENTS
     if protected:
         blockers.append("VALUE_DECISION_REQUIRES_HUMAN_CONFIRMATION")
     formal_blockers = []
@@ -243,8 +251,14 @@ def build_value_action_plan(*, explanation: Mapping[str, Any],
             formal_blockers.append("VALUE_APPLICABLE_ACTION_PRICE_POLICY_REQUIRED")
         elif selected.get("triggered") is not True:
             formal_blockers.append("VALUE_ACTION_PRICE_CONDITION_NOT_MET")
+    elif intent == "HOLD":
+        selected = conditions.get("hold")
+        if not selected or selected.get("triggered") is not True:
+            formal_blockers.append("VALUE_HOLD_THESIS_CONDITION_REQUIRED")
     elif intent in {"REDUCE", "EXIT"}:
-        formal_blockers.append("VALUE_EXISTING_THESIS_REVIEW_NOT_FORMAL_ACTION_ADMISSION")
+        selected = conditions[intent.lower()]
+        if not selected or selected.get("triggered") is not True:
+            formal_blockers.append("VALUE_" + intent + "_THESIS_CONDITION_REQUIRED")
     else:
         formal_blockers.append("VALUE_ACTION_CANDIDATE_REQUIRED")
     formal_eligible = review_eligible and not formal_blockers
@@ -252,7 +266,9 @@ def build_value_action_plan(*, explanation: Mapping[str, Any],
     if not scenario_ready and not protected:
         state = "BLOCKED"
     qualification = "CONDITIONAL_PRICE_PLAN" if policy_usable else "RESEARCH_SCENARIO"
-    if intent in {"REDUCE", "EXIT"}:
+    if intent == "HOLD":
+        qualification = "EXISTING_THESIS_HOLD_REVIEW"
+    elif intent in {"REDUCE", "EXIT"}:
         qualification = "INDEPENDENT_THESIS_REVIEW"
     dependency_refs = explanation.get("decision_dependency_refs") or []
     input_version = next((ref.get("payload_sha256") for ref in dependency_refs
@@ -272,6 +288,7 @@ def build_value_action_plan(*, explanation: Mapping[str, Any],
         price_comparison_eligible=comparable, reference_close=quote.get("price"),
         market_trade_date=quote.get("quote_date"), reference_price_scope=quote.get("scope", "RETAINED_PRICE_BRIDGE"),
         safety_margin_policy=policy_view, **{action + "_condition": conditions[action] for action in ACTIONS},
+        hold_condition=conditions.get("hold"),
         thesis=explanation.get("thesis"), thesis_invalidation=deepcopy(explanation.get("thesis_breakers") or []),
         supporting_facts=deepcopy(explanation.get("support") or []),
         counter_evidence=deepcopy(explanation.get("counter_evidence") or []),

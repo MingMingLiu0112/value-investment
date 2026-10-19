@@ -41,6 +41,12 @@ const eventLabels: Record<string, string> = {
   PRICE_ATTRACTIVENESS_CHANGED: "价格条件变化",
   SOURCE_SCAN_FAILED: "数据不可用，暂停条件判断",
   SOURCE_SCAN_RECOVERED: "数据恢复，重新复核条件",
+  BAR_CONFIRMATION_PENDING: "报价越线，等待收线",
+  STRUCTURE_CONFIRMED_OBSERVATION: "完成收线条件观察",
+  STRUCTURE_INVALIDATED: "失效参考触及，需复核",
+  PRICE_APPROACHING: "价格触及参考位",
+  PRICE_CONDITION_CLEARED: "参考价条件已解除",
+  DATA_STALE: "数据不可用，暂停判断",
 };
 
 const observationLabels: Record<string, string> = {
@@ -145,11 +151,13 @@ export default function ConditionAlerts() {
     operation: "acknowledge" | "cancel" | "expire",
   ) => {
     const snapshot = result.data?.snapshot_sha256;
-    if (!testOnly || !snapshot || pending) return;
+    if (!snapshot || pending) return;
     setPending(alertId);
     setInteraction(undefined);
     try {
-      if (operation === "acknowledge")
+      if (!testOnly)
+        await api.transitionObservationAlert(alertId, operation, snapshot);
+      else if (operation === "acknowledge")
         await api.acknowledgeConditionAlert(alertId, snapshot);
       else await api.transitionConditionAlert(alertId, operation, snapshot);
       setInteraction({
@@ -468,6 +476,15 @@ export default function ConditionAlerts() {
                           <Tag>
                             {eventLabels[event.event_type] ?? "条件复核"}
                           </Tag>
+                          {event.input_kind === "COMPLETED_BAR" && (
+                            <Tag
+                              color={event.completed_bar ? "blue" : "default"}
+                            >
+                              {event.completed_bar
+                                ? "60/15分钟完成K线"
+                                : "K线未完成或校验失败"}
+                            </Tag>
+                          )}
                           <Typography.Text>
                             {shanghaiTime(event.detected_at)}（北京时间）
                           </Typography.Text>
@@ -478,12 +495,15 @@ export default function ConditionAlerts() {
                             {terminalLabel}
                           </Tag>
                         ) : (
-                          testOnly &&
                           alert &&
                           alert.available_operations.includes("ACKNOWLEDGE") &&
                           result.data?.snapshot_sha256 && (
                             <Popconfirm
-                              title="确认已阅读这条隔离提醒？"
+                              title={
+                                testOnly
+                                  ? "确认已阅读这条隔离提醒？"
+                                  : "确认已阅读这条观察提醒？"
+                              }
                               description="只记录已阅，不批准研究、投资政策或交易。"
                               okText="确认已阅"
                               cancelText="返回"
@@ -503,8 +523,7 @@ export default function ConditionAlerts() {
                             </Popconfirm>
                           )
                         )}
-                        {testOnly &&
-                          alert &&
+                        {alert &&
                           result.data?.snapshot_sha256 &&
                           !terminalLabel && (
                             <Space wrap style={{ marginLeft: 8 }}>
@@ -549,6 +568,18 @@ export default function ConditionAlerts() {
                           )}
                         <details>
                           <summary>查看来源与记录</summary>
+                          {event.price && (
+                            <p>
+                              当时观测价 {formatUnitPrice(event.price)} 元
+                              {event.threshold
+                                ? `；原计划参考价 ${formatUnitPrice(event.threshold)} 元`
+                                : ""}
+                              {event.input_kind !== "COMPLETED_BAR" &&
+                              event.completed_bar === false
+                                ? "；报价观察，尚未完成K线确认"
+                                : ""}
+                            </p>
+                          )}
                           {alert?.expiry_at && (
                             <p>
                               价格观察通知期限：{shanghaiTime(alert.expiry_at)}
@@ -561,6 +592,28 @@ export default function ConditionAlerts() {
                               （北京时间）
                             </p>
                           )}
+                          {event.input_kind === "COMPLETED_BAR" &&
+                            event.completed_periods && (
+                              <div>
+                                <p>
+                                  {event.completed_bar
+                                    ? "60分钟与15分钟完成K线已通过来源、时钟和未完成K线校验。"
+                                    : "完成K线链未通过，以下周期不能作为确认依据。"}
+                                </p>
+                                {Object.entries(event.completed_periods).map(
+                                  ([period, row]) => (
+                                    <p key={period}>
+                                      {period === "60m" ? "60分钟" : "15分钟"}：
+                                      {row.completed ? "已完成" : "未确认"}，
+                                      {row.bar_end
+                                        ? `收线于 ${shanghaiTime(row.bar_end)}（北京时间）`
+                                        : "收线时间不可核验"}
+                                      ；{row.reason}
+                                    </p>
+                                  ),
+                                )}
+                              </div>
+                            )}
                           {event.evidence_refs?.map((ref, index) => {
                             if (
                               !ref.source_url ||

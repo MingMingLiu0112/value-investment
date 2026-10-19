@@ -325,3 +325,10 @@ normalized earnings, accounting comparability and financial admission remain
 unproven. Engineering faf0486e exact-HEAD Core/offline, PostgreSQL and Web CI all
 PASS; local rebuilt code/config/Web identity matched. No new browser acceptance.
 Evidence: s6/retained-financial-validation.json. Total Goal remains incomplete.
+
+Actual isolated public-chain restore PASS (s7/public-chain-restore.json): 28
+restored files verified, zero mismatches, publication and historical workbook
+copy hashes match, corrupted ciphertext rejected. Scope does not include complete
+Web-first Agent/alerts/private/database recovery or real off-machine retrieval;
+S7 is still PARTIAL. No production or Excel mutation. Latest rebuilt b98f49e3
+local code/config/Web identity MATCHED and authenticated workflow API passed.

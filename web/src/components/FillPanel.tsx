@@ -77,6 +77,19 @@ export function failureMessage(cause: unknown, fallback: string): string {
   return cause instanceof Error ? cause.message : fallback;
 }
 
+export function fillFailure(
+  cause: unknown,
+  fallback: string,
+): { message: string; refreshRequired: boolean } {
+  return {
+    message: failureMessage(cause, fallback),
+    refreshRequired:
+      cause instanceof ApiError &&
+      cause.status === 409 &&
+      cause.code === "VERSION_CONFLICT",
+  };
+}
+
 export function clearRejectedAttempt(
   attempt: ReturnType<typeof retryableWrite>,
   cause: unknown,
@@ -95,7 +108,10 @@ function DraftReview({
   revision: number;
   onDone: () => void;
 }) {
-  const [failure, setFailure] = useState<string>();
+  const [failure, setFailure] = useState<{
+    message: string;
+    refreshRequired: boolean;
+  }>();
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
@@ -125,7 +141,7 @@ function DraftReview({
       onDone();
     } catch (cause) {
       clearRejectedAttempt(confirmAttempt.current, cause);
-      setFailure(failureMessage(cause, "确认失败"));
+      setFailure(fillFailure(cause, "确认失败"));
     } finally {
       lock.current = false;
       setBusy(false);
@@ -154,7 +170,7 @@ function DraftReview({
       onDone();
     } catch (cause) {
       clearRejectedAttempt(cancelAttempt.current, cause);
-      setFailure(failureMessage(cause, "作废失败"));
+      setFailure(fillFailure(cause, "作废失败"));
     } finally {
       lock.current = false;
       setBusy(false);
@@ -168,7 +184,12 @@ function DraftReview({
           type="error"
           showIcon
           message="草稿处理失败"
-          description={failure}
+          description={failure.message}
+          action={
+            failure.refreshRequired ? (
+              <Button onClick={onDone}>刷新台账</Button>
+            ) : undefined
+          }
         />
       )}
       <Alert
@@ -275,7 +296,10 @@ export function FillPanel({
   initialDecisionId?: string;
   initialResearchVersion?: string;
 }) {
-  const [failure, setFailure] = useState<string>();
+  const [failure, setFailure] = useState<{
+    message: string;
+    refreshRequired: boolean;
+  }>();
   const prepareLock = useRef(false);
   const prepareAttempt = useRef(retryableWrite());
   const context = fillContextFromSearch(
@@ -334,7 +358,7 @@ export function FillPanel({
       return true;
     } catch (cause) {
       clearRejectedAttempt(prepareAttempt.current, cause);
-      setFailure(failureMessage(cause, "生成草稿失败"));
+      setFailure(fillFailure(cause, "生成草稿失败"));
       return false;
     } finally {
       prepareLock.current = false;
@@ -351,7 +375,12 @@ export function FillPanel({
           type="error"
           showIcon
           message="未能生成草稿"
-          description={failure}
+          description={failure.message}
+          action={
+            failure.refreshRequired ? (
+              <Button onClick={onDone}>刷新台账</Button>
+            ) : undefined
+          }
         />
       )}
       <ProForm
@@ -402,7 +431,6 @@ export function FillPanel({
           options={[
             { value: "SSE", label: "上交所 SSE" },
             { value: "SZSE", label: "深交所 SZSE" },
-            { value: "BSE", label: "北交所 BSE" },
           ]}
           rules={[{ required: true, message: "请选择交易所" }]}
         />

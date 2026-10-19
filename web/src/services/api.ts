@@ -288,6 +288,66 @@ export type AgentResearchResponse = {
   formal_fact_count: 0;
 };
 
+export type AgentResearchReviewQueueItem = {
+  symbol: string;
+  name: string | null;
+  workflow: string;
+  status: "PENDING_HUMAN_REVIEW";
+  verification_status: "VERIFIED";
+  research_as_of: string | null;
+  available_at: string | null;
+  source_available_at: string | null;
+  source_scope: {
+    scope: string;
+    data_scope: string | null;
+    mode: "MOCK" | "OFFLINE_REPLAY" | "LIVE";
+    classification:
+      | "TEST_ONLY_OR_MOCK_NOT_FORMAL_EVIDENCE"
+      | "RESEARCH_DRAFT_NOT_FORMAL_EVIDENCE";
+    test_only: boolean;
+    formal_evidence: false;
+    excerpt_origin: "DERIVED_FROM_VERIFIED_PLAN" | null;
+  };
+  packet_binding: { path: string; sha256: string };
+  registration_binding: { path: string; sha256: string };
+  review_reason: string;
+  review_reason_text: string;
+  next_action: string;
+  next_action_text: string;
+  pending_findings_count: number;
+  action: "no_order";
+  approval_unchanged: true;
+  formal_eligibility_unchanged: true;
+  decision_changed: false;
+};
+
+export type AgentResearchStatusResponse = {
+  action: "no_order";
+  status: string;
+  items: {
+    symbol: string;
+    workflow: string;
+    status: string;
+    mode: AgentResearchResponse["mode"];
+    research_cutoff: string | null;
+    packet_sha256: string | null;
+    generated_at: string | null;
+    findings_count: number;
+    pending_human_review: number;
+  }[];
+  failures: {
+    symbol: string | null;
+    workflow: string | null;
+    status: string;
+    reason: string;
+  }[];
+  review_queue: AgentResearchReviewQueueItem[];
+  review_queue_count: number;
+  approval_unchanged: true;
+  formal_eligibility_unchanged: true;
+  decision_changed: false;
+};
+
 export type PrivateRetrospective = {
   status: string;
   mode: "MOCK";
@@ -335,6 +395,14 @@ export type PublicObservationResponse = {
   plan_binding?: { symbol: string; binding_sha256: string };
   condition_observation?: QuotePlanObservation | null;
   condition_transitions?: QuotePlanTransition[];
+  completed_plan_observation?: {
+    status: string;
+    checked_at: string;
+    periods: Record<
+      string,
+      { status: string; reason: string; document_sha256?: string | null }
+    >;
+  } | null;
   samples: {
     sample_id: string;
     symbol: string;
@@ -343,6 +411,7 @@ export type PublicObservationResponse = {
     reason: string;
     source_refs: { source_url: string; sha256: string }[];
     observation?: { price?: string } | null;
+    bar_collection_status?: "CAPTURED" | "UNAVAILABLE";
   }[];
   eligibility: false;
   m5_admitted: false;
@@ -380,6 +449,23 @@ export type ConditionAlertsResponse = {
     source_event_id: string;
     effective_at?: string | null;
     evidence_refs?: { source_url?: string; sha256?: string }[];
+    price?: string | null;
+    threshold?: string;
+    plan_sha256?: string;
+    completed_bar?: boolean;
+    input_kind?: "QUOTE" | "COMPLETED_BAR";
+    period?: string;
+    bar_end?: string | null;
+    completed_periods?: Record<
+      string,
+      {
+        status: string;
+        reason: string;
+        bar_end: string | null;
+        completed: boolean;
+        price?: string | null;
+      }
+    > | null;
   }[];
 };
 
@@ -394,6 +480,8 @@ export const api = {
       `agent-research/${encodeURIComponent(symbol)}${workflow ? `?workflow=${encodeURIComponent(workflow)}` : ""}`,
       signal,
     ),
+  agentResearchStatus: (signal?: AbortSignal) =>
+    getPrivate<AgentResearchStatusResponse>("agent-research-status", signal),
   controlPublicObservation: (
     operation: "start" | "stop",
     symbol?: string,
@@ -409,6 +497,15 @@ export const api = {
     getPrivate<ConditionAlertsResponse>(
       `condition-alerts?test_only=${testOnly}`,
       signal,
+    ),
+  transitionObservationAlert: (
+    alertId: string,
+    operation: "acknowledge" | "cancel" | "expire",
+    expectedSnapshot: string,
+  ) =>
+    post<ConditionAlertsResponse>(
+      `condition-alerts/observation/${encodeURIComponent(alertId)}/${operation}`,
+      { acknowledged: true, expected_snapshot_sha256: expectedSnapshot },
     ),
   acknowledgeConditionAlert: (alertId: string, expectedSnapshot: string) =>
     post<ConditionAlertsResponse>(

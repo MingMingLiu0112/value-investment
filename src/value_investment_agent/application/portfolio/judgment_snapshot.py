@@ -13,10 +13,10 @@ def capture_judgment_snapshot(root, fill):
     if packet is None or not identifier:
         return None
     symbol = fill["symbol"]
-    if identifier == "hotspot-" + symbol:
+    if identifier == "hotspot-" + symbol and fill.get("sleeve") == "HOTSPOT_SATELLITE":
         plan = next((row["price_action_plan"] for row in packet.get("price_conditions", {}).get("items", [])
                      if row["symbol"] == symbol), None)
-    elif identifier == symbol:
+    elif identifier == symbol and fill.get("sleeve") == "CORE_VALUE":
         plan = packet.get("value_price_conditions", {}).get(symbol)
     else:
         plan = None

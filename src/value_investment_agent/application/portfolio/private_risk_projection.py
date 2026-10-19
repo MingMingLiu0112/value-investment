@@ -333,6 +333,7 @@ def build_risk_input(
     repository_root: Path | None = None,
     generated_at: datetime | None = None,
     hotspot_request: dict[str, Any] | None = None,
+    candidate_symbol: str | None = None,
     _prices=None,
 ) -> dict[str, Any]:
     now = generated_at or datetime.now().astimezone()
@@ -379,7 +380,7 @@ def build_risk_input(
         "cash_reserve_cny": reserve,
         "allocations": _allocations_payload(replayed, sellable_as_of),
         "security_attributes": _verified_attributes(repository_root, replayed, now,
-            candidate_symbol=hotspot_request["symbol"] if hotspot_request is not None else None),
+            candidate_symbol=hotspot_request["symbol"] if hotspot_request is not None else candidate_symbol),
         "hotspot_request": hotspot_request,
     }
 

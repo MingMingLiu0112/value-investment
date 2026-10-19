@@ -64,6 +64,7 @@ export function JudgmentSummary({
   )?.conditional_action_rules;
   const reviewConditions = new Map<string, string[]>();
   for (const [label, condition] of [
+    ["持有条件", planConditionText(plan?.hold_condition)],
     ["退出复核", planConditionText(plan?.exit_condition)],
     ["减仓复核", planConditionText(plan?.reduce_condition)],
     [
@@ -574,6 +575,8 @@ function JudgmentEvidence({ decision }: { decision: DecisionItem }) {
                 系统不下单。证券级条件不代表个人加减仓资格，须核对资金池、现金、可卖股数、T+1、停牌、涨跌停、跳空、流动性及费用。
                 <div>
                   加仓：{planConditionText(plan?.add_condition) ?? "未提供"}
+                  ；持有：
+                  {planConditionText(plan?.hold_condition) ?? "未提供"}
                   ；减仓：
                   {planConditionText(plan?.reduce_condition) ?? "未提供"}
                   ；退出复核：

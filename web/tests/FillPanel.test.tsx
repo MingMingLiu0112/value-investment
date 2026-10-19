@@ -10,7 +10,21 @@ const captured = vi.hoisted(() => ({
   submit: undefined as
     undefined | ((form: Record<string, unknown>) => Promise<void>),
   prepare: vi.fn().mockResolvedValue({}),
+  alerts: [] as Record<string, any>[],
 }));
+const reactState = vi.hoisted(() => ({
+  use: null as
+    | null
+    | ((initial: unknown) => [unknown, (next: unknown) => void] | undefined),
+}));
+vi.mock("react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react")>();
+  return {
+    ...actual,
+    useState: (initial: unknown) =>
+      reactState.use?.(initial) ?? actual.useState(initial),
+  };
+});
 vi.mock("@ant-design/pro-components", async () => {
   const React = await import("react");
   const field = (props: Record<string, any>) => {
@@ -27,6 +41,41 @@ vi.mock("@ant-design/pro-components", async () => {
     ProFormTextArea: field,
     ProFormDatePicker: field,
     ProFormDateTimePicker: field,
+  };
+});
+vi.mock("antd", async () => {
+  const React = await import("react");
+  const wrapper = (props: Record<string, any>) =>
+    React.createElement("div", null, props.children);
+  return {
+    Alert: (props: Record<string, any>) => {
+      captured.alerts.push(props);
+      return React.createElement(
+        "div",
+        null,
+        props.message,
+        props.description,
+        props.action,
+      );
+    },
+    Button: (props: Record<string, any>) =>
+      React.createElement(
+        "button",
+        { disabled: props.disabled },
+        props.children,
+      ),
+    Descriptions: (props: Record<string, any>) =>
+      React.createElement(
+        "div",
+        null,
+        (props.items ?? []).map((item: Record<string, any>) =>
+          React.createElement("div", { key: item.key }, item.children),
+        ),
+      ),
+    Input: { TextArea: wrapper },
+    Popconfirm: wrapper,
+    Space: wrapper,
+    Typography: { Title: wrapper, Text: wrapper },
   };
 });
 
@@ -70,6 +119,10 @@ it("does not submit a buy without explicit settlement inputs", async () => {
       onDone: vi.fn(),
     }),
   );
+  const exchange = captured.fields.find((item) => item.name === "exchange")!;
+  expect(exchange.options.map((item: { value: string }) => item.value)).toEqual(
+    ["SSE", "SZSE"],
+  );
   expect(await captured.submit!({ side: "BUY" })).toBe(false);
   expect(captured.prepare).not.toHaveBeenCalled();
 });
@@ -80,6 +133,7 @@ vi.mock("../src/services/api", () => ({
 import {
   FillPanel,
   fillContextFromSearch,
+  fillFailure,
   failureMessage,
   clearRejectedAttempt,
 } from "../src/components/FillPanel";
@@ -120,7 +174,61 @@ it("keeps unknown API failures visible", () => {
 
 beforeEach(() => {
   captured.fields.length = 0;
+  captured.alerts.length = 0;
   captured.prepare.mockClear();
+});
+
+it("classifies VERSION_CONFLICT as a dedicated ledger refresh requirement", () => {
+  const conflict = Object.assign(
+    new ApiError(409, "VERSION_CONFLICT", "当前 revision 为 7，请求为 4"),
+    {
+      status: 409,
+      code: "VERSION_CONFLICT",
+      detail: "当前 revision 为 7，请求为 4",
+    },
+  );
+  expect(fillFailure(conflict, "生成草稿失败")).toEqual({
+    message: "VERSION_CONFLICT：当前 revision 为 7，请求为 4",
+    refreshRequired: true,
+  });
+  expect(fillFailure(new Error("response lost"), "生成草稿失败")).toEqual({
+    message: "response lost",
+    refreshRequired: false,
+  });
+});
+
+it("renders a dedicated ledger refresh action for VERSION_CONFLICT", () => {
+  const refresh = vi.fn();
+  reactState.use = (initial) =>
+    initial === undefined
+      ? [
+          {
+            message: "VERSION_CONFLICT：当前 revision 已变化",
+            refreshRequired: true,
+          },
+          vi.fn(),
+        ]
+      : undefined;
+  try {
+    renderToStaticMarkup(
+      React.createElement(FillPanel, {
+        revision: 4,
+        draft: null,
+        onDone: refresh,
+      }),
+    );
+  } finally {
+    reactState.use = null;
+  }
+  const alert = captured.alerts.find((item) => item.message === "未能生成草稿");
+  expect(alert?.description).toContain("VERSION_CONFLICT");
+  const action = alert?.action as React.ReactElement<{
+    onClick: () => void;
+    children?: React.ReactNode;
+  }>;
+  expect(action.props.children).toBe("刷新台账");
+  action.props.onClick();
+  expect(refresh).toHaveBeenCalledOnce();
 });
 
 it("renews rejected requests but preserves uncertain outcomes", () => {

@@ -28,7 +28,8 @@ def write(path, value):
 
 def state(root):
     return {p.relative_to(root): (p.read_bytes(), p.stat().st_mtime_ns)
-            for p in root.rglob("*") if p.is_file()}
+            for p in root.rglob("*")
+            if p.is_file() and not p.name.endswith(("agent-research-registration.lock", ".json.lock"))}
 
 
 def register(root, packet_path, workbench, scope):

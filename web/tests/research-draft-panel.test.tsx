@@ -58,6 +58,28 @@ vi.mock("antd", () => {
 
 import { ResearchDraftPanel } from "../src/pages/DecisionDetail/ResearchDraftPanel";
 
+it("shows financial facts with scope and units and preserves missing values", () => {
+  const html = renderToStaticMarkup(
+    <ResearchDraftPanel
+      draft={{
+        ...draft,
+        financial_facts: {
+          h1_2026_revenue_cny: "260042490000",
+          h1_2026_parent_profit_cny: "26446037000",
+          unavailable: null,
+          actual_zero: "0",
+        },
+      }}
+    />,
+  );
+  expect(html).toContain("2026 上半年合并收入（元）");
+  expect(html).toContain("260042490000");
+  expect(html).toContain("2026 上半年归母净利润（元）");
+  expect(html).toContain("26446037000");
+  expect(html).toContain("未提供");
+  expect(html).toContain("研究草稿（未批准）");
+});
+
 const draft = {
   schema_version: "public-research-draft-v1",
   action: "no_order",

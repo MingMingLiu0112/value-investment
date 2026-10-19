@@ -1,6 +1,7 @@
 import React from "react";
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 const { renderToStaticMarkup } = require("react-dom/server");
+const harness = vi.hoisted(() => ({ calls: 0 }));
 const response = vi.hoisted(() => ({
   loading: false,
   error: undefined,
@@ -12,8 +13,33 @@ const response = vi.hoisted(() => ({
     sources: [],
   } as any,
 }));
-vi.mock("../src/hooks/useApi", () => ({ useApi: () => response }));
+const queue = vi.hoisted(() => ({
+  loading: false,
+  error: undefined,
+  retry: () => {},
+  data: {
+    action: "no_order",
+    status: "NOT_CONNECTED",
+    failures: [],
+    review_queue: [],
+    review_queue_count: 0,
+  } as any,
+}));
+vi.mock("../src/hooks/useApi", () => ({
+  useApi: () => (harness.calls++ % 2 === 0 ? response : queue),
+}));
 import { AgentResearchPanel } from "../src/pages/DecisionDetail/AgentResearchPanel";
+
+beforeEach(() => {
+  harness.calls = 0;
+  queue.data = {
+    action: "no_order",
+    status: "NOT_CONNECTED",
+    failures: [],
+    review_queue: [],
+    review_queue_count: 0,
+  };
+});
 
 it("shows absence without inventing an AI conclusion", () => {
   const html = renderToStaticMarkup(<AgentResearchPanel symbol="600519" />);
@@ -34,6 +60,8 @@ it("separates missing financial work from the retained event draft", () => {
   expect(html).toContain("研究材料类型");
   expect(html).toContain("公告事件");
   expect(html).toContain("财报");
+  expect(html).toContain("热点");
+  expect(html).toContain("测试复盘");
   expect(html).toContain("其他研究材料不会代替此项");
   expect(html).not.toContain("材料绑定已核验");
 });
@@ -68,4 +96,107 @@ it("labels retained mock research and separates citations from authority", () =>
   expect(html).toContain("不代表当前研究结论、正式批准或交易许可");
   expect(html).toContain("反面证据");
   expect(html).toContain("核对最新公告");
+});
+
+it("shows an explicit empty human-review queue", () => {
+  const html = renderToStaticMarkup(<AgentResearchPanel symbol="600519" />);
+  expect(html).toContain("待人工复核队列");
+  expect(html).toContain("暂无待人工复核的已登记研究草稿");
+  expect(html).toContain("仅展示已登记且绑定核验通过、仍待人工复核的研究草案");
+});
+
+it("shows cross-company scope labels without treating mock research as formal evidence", () => {
+  queue.data = {
+    action: "no_order",
+    status: "VERIFIED",
+    failures: [],
+    review_queue_count: 2,
+    review_queue: [
+      {
+        symbol: "600519",
+        name: "示例公司",
+        workflow: "event",
+        status: "PENDING_HUMAN_REVIEW",
+        verification_status: "VERIFIED",
+        research_as_of: "2026-10-08",
+        available_at: "2026-10-08T10:00:00+08:00",
+        source_available_at: "2026-10-07",
+        source_scope: {
+          scope: "MOCK_LLM_RESEARCH_NOT_ADMITTED",
+          data_scope: null,
+          mode: "MOCK",
+          classification: "TEST_ONLY_OR_MOCK_NOT_FORMAL_EVIDENCE",
+          test_only: true,
+          formal_evidence: false,
+          excerpt_origin: null,
+        },
+        packet_binding: { path: "runtime/event.json", sha256: "a".repeat(64) },
+        registration_binding: {
+          path: "config/current-agent-research.json",
+          sha256: "b".repeat(64),
+        },
+        review_reason: "VERIFIED_RESEARCH_FINDINGS_PENDING_HUMAN_REVIEW",
+        review_reason_text: "Pending human review",
+        next_action: "OPEN_REGISTERED_DRAFT_FOR_HUMAN_REVIEW",
+        next_action_text: "Review only",
+        pending_findings_count: 3,
+        action: "no_order",
+        approval_unchanged: true,
+        formal_eligibility_unchanged: true,
+        decision_changed: false,
+      },
+      {
+        symbol: "600000",
+        name: null,
+        workflow: "hotspot",
+        status: "PENDING_HUMAN_REVIEW",
+        verification_status: "VERIFIED",
+        research_as_of: "2026-10-08",
+        available_at: "2026-10-08T11:00:00+08:00",
+        source_available_at: "2026-10-08",
+        source_scope: {
+          scope: "MOCK_LLM_RESEARCH_NOT_ADMITTED",
+          data_scope: "PUBLIC_RESEARCH",
+          mode: "MOCK",
+          classification: "TEST_ONLY_OR_MOCK_NOT_FORMAL_EVIDENCE",
+          test_only: true,
+          formal_evidence: false,
+          excerpt_origin: "DERIVED_FROM_VERIFIED_PLAN",
+        },
+        packet_binding: {
+          path: "runtime/hotspot.json",
+          sha256: "c".repeat(64),
+        },
+        registration_binding: {
+          path: "config/current-agent-research.json",
+          sha256: "d".repeat(64),
+        },
+        review_reason: "VERIFIED_RESEARCH_FINDINGS_PENDING_HUMAN_REVIEW",
+        review_reason_text: "Pending human review",
+        next_action: "OPEN_REGISTERED_DRAFT_FOR_HUMAN_REVIEW",
+        next_action_text: "Review only",
+        pending_findings_count: 3,
+        action: "no_order",
+        approval_unchanged: true,
+        formal_eligibility_unchanged: true,
+        decision_changed: false,
+      },
+    ],
+  };
+  const html = renderToStaticMarkup(<AgentResearchPanel symbol="600519" />);
+  expect(html).toContain("待复核 2");
+  expect(html).toContain("2 项跨公司研究草稿待人工复核");
+  expect(html).toContain("示例公司（600519）");
+  expect(html).toContain("600000");
+  expect(html).toContain("PUBLIC_RESEARCH");
+  expect(html).toContain("DERIVED_FROM_VERIFIED_PLAN");
+  expect(html).toContain("Mock/测试材料，非正式证据");
+  expect(html).toContain("action=no_order");
+  expect(html).toContain("审批保持不变");
+  expect(html).toContain("正式资格保持不变");
+  expect(html).toContain("runtime/event.json");
+  expect(html).toContain("runtime/hotspot.json");
+  expect(html).toContain("config/current-agent-research.json");
+  expect(html).toContain("打开该研究草稿");
+  expect(html).not.toContain("代理审批");
 });

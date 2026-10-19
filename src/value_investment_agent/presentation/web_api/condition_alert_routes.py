@@ -33,6 +33,16 @@ def register_condition_alert_routes(api: FastAPI, *, project, sessions, port,
             return {**state, "choices": [], "choices_status": "UNAVAILABLE",
                 "choices_detail": "候选清单暂不可用；已运行会话仍可停止，历史记录继续保留。"}
 
+    def ordinary_response():
+        view = observation_view()
+        inbox = view.get("notification_inbox", {})
+        return dict(action="no_order", status="OBSERVATION_UNAVAILABLE" if view["status"] == "CORRUPT"
+            else "OBSERVATION_ONLY" if inbox.get("history") else "NOT_STARTED",
+            test_only=False, monitor_running=view["monitor_running"],
+            alerts=inbox.get("alerts", []), history=inbox.get("history", []),
+            snapshot_sha256=inbox.get("snapshot_sha256"), public_observation=view,
+            detail="真实来源条件变化仅用于观察复核；正式策略、收线及个人风险资格独立检查。")
+
     @api.post("/api/v1/condition-alerts/public-observation/{operation}")
     def control_observation(operation: str, request: Request, payload: dict = Body(...)):
         headers = {"Cache-Control": "no-store"}
@@ -79,11 +89,7 @@ def register_condition_alert_routes(api: FastAPI, *, project, sessions, port,
         # SIMULATED records or unadmitted observations into actual alerts.
         if not test_only:
             try:
-                view = observation_view()
-                return JSONResponse(dict(action="no_order", status="NOT_STARTED", test_only=False,
-                    monitor_running=view["monitor_running"], alerts=[], history=[],
-                    public_observation=view,
-                    detail="本地参考价变化仅提示复核；未完成收线、策略及个人风险检查时不能据此交易。"), headers=headers)
+                return JSONResponse(ordinary_response(), headers=headers)
             except (OSError, ValueError, KeyError, TypeError):
                 return JSONResponse(dict(action="no_order", status="UNAVAILABLE", test_only=False,
                     monitor_running=False, alerts=[], history=[],
@@ -95,6 +101,26 @@ def register_condition_alert_routes(api: FastAPI, *, project, sessions, port,
             return JSONResponse(dict(action="no_order", status="UNAVAILABLE", test_only=True,
                 monitor_running=False, alerts=[], history=[], detail="隔离提醒记录无法核验。"),
                 status_code=503, headers=headers)
+
+    @api.post("/api/v1/condition-alerts/observation/{alert_id}/{operation}")
+    def observation_transition(alert_id: str, operation: str, request: Request, payload: dict = Body(...)):
+        headers = {"Cache-Control": "no-store"}
+        try:
+            authorize(request, session=sessions, port=port)
+        except LocalAuthorizationError as error:
+            return JSONResponse(dict(action="no_order", status=error.code, detail=error.detail),
+                status_code=401 if error.code == AUTHORIZATION_REQUIRED else 403, headers=headers)
+        if (operation not in {"acknowledge", "cancel", "expire"}
+                or set(payload) != {"acknowledged", "expected_snapshot_sha256"}
+                or payload.get("acknowledged") is not True):
+            return JSONResponse(dict(action="no_order", status="INVALID_REQUEST"), status_code=422, headers=headers)
+        try:
+            observation_session.transition_notification(alert_id=alert_id, operation=operation.upper(),
+                expected_snapshot_sha256=payload["expected_snapshot_sha256"])
+            return JSONResponse(ordinary_response(), headers=headers)
+        except (ValueError, KeyError, TypeError, OSError):
+            return JSONResponse(dict(action="no_order", status="OBSERVATION_CONFLICT",
+                detail="提醒或来源版本已变化，请刷新后重试。"), status_code=409, headers=headers)
 
     @api.post("/api/v1/condition-alerts/test-only/{alert_id}/{operation}")
     def transition(alert_id: str, operation: str, request: Request, payload: dict = Body(...)):

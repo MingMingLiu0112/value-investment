@@ -22,6 +22,95 @@ vi.mock("@umijs/max", () => ({
 vi.mock("../src/hooks/useApi", () => ({ useApi: () => response }));
 import ConditionAlerts from "../src/pages/ConditionAlerts";
 
+it("lets the user read a real-source observation notification without test mode", () => {
+  const data = response.data as any;
+  data.snapshot_sha256 = "a".repeat(64);
+  data.alerts = [
+    {
+      alert_id: "observation-bound",
+      event_id: "event-bound",
+      status: "PENDING",
+      available_operations: ["ACKNOWLEDGE", "CANCEL"],
+    },
+  ];
+  data.history = [
+    {
+      event_id: "event-bound",
+      symbol: "600150",
+      event_type: "BAR_CONFIRMATION_PENDING",
+      detected_at: "2026-10-19T02:00:00Z",
+      source_event_id: "source-bound",
+      reason: "verified quote",
+      price: "36.5",
+      threshold: "36.45",
+      completed_bar: false,
+    },
+  ];
+  const html = renderToStaticMarkup(<ConditionAlerts />);
+  expect(html).toContain("报价越线，等待收线");
+  expect(html).toContain("标为已阅");
+  expect(html).toContain("取消通知");
+  expect(html).toContain("尚未完成K线确认");
+  data.alerts = [];
+  data.history = [];
+  delete data.snapshot_sha256;
+});
+
+it("shows completed 60m and 15m bar confirmation and their completion times", () => {
+  const data = response.data as any;
+  data.snapshot_sha256 = "b".repeat(64);
+  data.alerts = [
+    {
+      alert_id: "completed-event",
+      event_id: "completed-event",
+      status: "PENDING",
+      available_operations: ["ACKNOWLEDGE", "CANCEL"],
+    },
+  ];
+  data.history = [
+    {
+      event_id: "completed-event",
+      symbol: "600150",
+      event_type: "STRUCTURE_CONFIRMED_OBSERVATION",
+      detected_at: "2026-10-19T02:31:00Z",
+      source_event_id: "completed-source",
+      reason:
+        "60m:SINGLE_PROVIDER_COMPLETED_BAR_ONLY; 15m:SINGLE_PROVIDER_COMPLETED_BAR_ONLY",
+      price: "36.5",
+      threshold: "36.45",
+      completed_bar: true,
+      input_kind: "COMPLETED_BAR",
+      period: "60m+15m",
+      bar_end: "2026-10-19T02:30:00Z",
+      completed_periods: {
+        "60m": {
+          status: "COMPLETED_BAR_VERIFIED",
+          reason: "SINGLE_PROVIDER_COMPLETED_BAR_ONLY",
+          bar_end: "2026-10-19T02:30:00Z",
+          completed: true,
+          price: "36.5",
+        },
+        "15m": {
+          status: "COMPLETED_BAR_VERIFIED",
+          reason: "SINGLE_PROVIDER_COMPLETED_BAR_ONLY",
+          bar_end: "2026-10-19T02:30:00Z",
+          completed: true,
+          price: "36.5",
+        },
+      },
+    },
+  ];
+  const html = renderToStaticMarkup(<ConditionAlerts />);
+  expect(html).toContain("完成收线条件观察");
+  expect(html).toContain("60/15分钟完成K线");
+  expect(html).toContain("60分钟：已完成");
+  expect(html).toContain("15分钟：已完成");
+  expect(html).not.toContain("完成K线链未通过");
+  data.alerts = [];
+  data.history = [];
+  delete data.snapshot_sha256;
+});
+
 it("keeps the verified session and stop control visible during polling", () => {
   response.loading = true;
   response.data.monitor_running = true;

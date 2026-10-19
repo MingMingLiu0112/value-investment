@@ -21,7 +21,8 @@ def test_service_overwrites_client_snapshot_and_confirm_preserves_server_capture
     body = request(ledger)
     forged = {"snapshot_sha256": "f" * 64, "plan": {"action_eligibility": True},
         "trade_time_availability_proven": True, "personal_risk_at_trade": "FAKE"}
-    body["fill"].update(decision_id=decision, research_version=plan["research_version"], judgment_snapshot=forged)
+    body["fill"].update(decision_id=decision, research_version=plan["research_version"], judgment_snapshot=forged,
+        sleeve="HOTSPOT_SATELLITE" if decision.startswith("hotspot-") else "CORE_VALUE")
     prepared, digest = ledger.prepare_fill(body, repository_root=tmp_path)
     snapshot = deepcopy(prepared["draft"]["fill"]["judgment_snapshot"])
     assert snapshot is not None and snapshot != forged
@@ -48,7 +49,7 @@ def test_service_overwrites_client_snapshot_and_confirm_preserves_server_capture
     assert body["fill"]["judgment_snapshot"] == forged
 
 
-@pytest.mark.parametrize("mode", ["no_repository_root", "unavailable_packet", "wrong_version", "missing_plan"])
+@pytest.mark.parametrize("mode", ["no_repository_root", "unavailable_packet", "wrong_version", "missing_plan", "wrong_sleeve"])
 def test_unverified_client_snapshot_is_erased_and_stays_null_on_confirm(ledger, tmp_path, monkeypatch, mode):
     plan = {"symbol": "600887", "research_version": "TEST_ONLY-company-version", "action": "no_order"}
     packet = {"research_version": "TEST_ONLY-global-version", "publication_id": "TEST_ONLY-publication",
@@ -58,6 +59,8 @@ def test_unverified_client_snapshot_is_erased_and_stays_null_on_confirm(ledger, 
     body = request(ledger)
     body["fill"].update(decision_id="600887", research_version=packet["research_version"]
         if mode == "wrong_version" else plan["research_version"])
+    if mode == "wrong_sleeve":
+        body["fill"]["sleeve"] = "HOTSPOT_SATELLITE"
     body["fill"]["judgment_snapshot"] = {"snapshot_sha256": "f" * 64, "trade_time_availability_proven": True}
     prepared, digest = ledger.prepare_fill(body, repository_root=None if mode == "no_repository_root" else tmp_path)
     assert prepared["draft"]["fill"]["judgment_snapshot"] is None

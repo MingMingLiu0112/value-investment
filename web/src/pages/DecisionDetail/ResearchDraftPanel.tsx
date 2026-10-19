@@ -12,6 +12,22 @@ import {
 } from "../../utils/researchDraftText";
 
 const LABEL_STYLE = { width: 132, whiteSpace: "nowrap" as const };
+const FINANCIAL_LABELS: Record<string, string> = {
+  period_end: "期间截止",
+  fy2025_parent_profit_cny: "2025 全年归母净利润（元）",
+  fy2025_parent_equity_cny: "2025 年末归母权益（元）",
+  fy2025_weighted_roe: "2025 全年加权 ROE（比率）",
+  h1_2026_revenue_cny: "2026 上半年合并收入（元）",
+  h1_2026_parent_profit_cny: "2026 上半年归母净利润（元）",
+  h1_2026_adjusted_parent_profit_cny: "2026 上半年扣非归母净利润（元）",
+  h1_2026_adjusted_parent_profit_yoy: "扣非归母净利润同比（比率）",
+  h1_2026_parent_equity_cny: "2026 半年末归母权益（元）",
+  h1_2026_roe: "2026 上半年加权 ROE（比率）",
+  ordinary_shares_20260630: "2026 半年末普通股分母（股）",
+  h1_2026_parent_equity_thousand_cny: "2026 半年末归母权益原值（千元）",
+  a_ordinary_shares_excluding_treasury: "A 股扣库存股（股）",
+  h_ordinary_shares: "H 股（股）",
+};
 
 function httpUrl(value?: string | null): string | null {
   return value && /^https?:\/\//i.test(value) ? value : null;
@@ -123,6 +139,27 @@ export function ResearchDraftPanel({ draft }: { draft: ResearchDraft }) {
           },
         ]}
       />
+
+      {Object.keys(draft.financial_facts ?? {}).length > 0 && (
+        <section aria-label="财务事实" style={{ marginTop: 16 }}>
+          <Typography.Title level={5} style={{ fontSize: 14 }}>
+            财务事实
+          </Typography.Title>
+          <Descriptions
+            bordered
+            column={1}
+            size="small"
+            labelStyle={{ overflowWrap: "anywhere" }}
+            items={Object.entries(draft.financial_facts ?? {}).map(
+              ([key, value]) => ({
+                key,
+                label: FINANCIAL_LABELS[key] ?? key,
+                children: value ?? "未提供",
+              }),
+            )}
+          />
+        </section>
+      )}
 
       {verification && (
         <section aria-label="财务输入溯源" style={{ marginTop: 16 }}>

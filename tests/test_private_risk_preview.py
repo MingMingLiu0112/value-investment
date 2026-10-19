@@ -142,7 +142,7 @@ def test_full_test_only_binding_delegates_to_existing_engine_and_never_grants_ad
     assert service.journal.path.read_bytes() == before
 
 
-@pytest.mark.parametrize("mutation", ["chain", "registry", "plan", "retired", "stale"])
+@pytest.mark.parametrize("mutation", ["chain", "registry", "plan", "retired", "stale", "expired"])
 def test_current_binding_rejects_chain_registry_plan_and_lifecycle_changes(tmp_path, monkeypatch, mutation):
     plan = binding()["plan"]
     plan["signal_state"] = "WATCH"
@@ -160,6 +160,9 @@ def test_current_binding_rejects_chain_registry_plan_and_lifecycle_changes(tmp_p
         packet["price_conditions"]["items"][0]["price_action_plan"] = deepcopy(plan)
     elif mutation == "stale":
         plan["signal_state"] = "STALE"
+        packet["price_conditions"]["items"][0]["price_action_plan"] = deepcopy(plan)
+    elif mutation == "expired":
+        plan["signal_state"] = "EXPIRED"
         packet["price_conditions"]["items"][0]["price_action_plan"] = deepcopy(plan)
     monkeypatch.setattr(preview, "load_current_packet", lambda root: (packet, None))
     monkeypatch.setattr(preview, "load_current_chain", lambda root: {"bindings": []})

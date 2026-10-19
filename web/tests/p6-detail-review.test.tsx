@@ -141,6 +141,7 @@ describe("detail operation plan boundaries", () => {
               invalidation_price: "24.700",
               exit_condition: exit,
               invalidation_condition: invalidation,
+              hold_condition: "现金转换与品牌力不恶化则维持原论点",
               reduce_condition: "组合风险超限须单独复核",
             },
           }}
@@ -152,6 +153,7 @@ describe("detail operation plan boundaries", () => {
         same ? "退出复核 / 结构失效" : "结构失效：原投资论点被新证据推翻",
       );
       expect(summary).toContain("减仓复核：组合风险超限须单独复核");
+      expect(summary).toContain("持有条件：现金转换与品牌力不恶化则维持原论点");
       expect(summary).toContain("证券资格：未核验");
       expect(summary).toContain("个人组合：未核验");
     },

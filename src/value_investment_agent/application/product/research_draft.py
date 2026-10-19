@@ -174,10 +174,18 @@ def _verify_bound_draft(root: Path, payload: dict[str, Any], now: datetime) -> d
     rows = valuation["scenarios"]
     if len(rows) != 3:
         raise ValueError("bound draft requires three unique scenarios")
+    sensitivities = {row["scenario"]: row for row in result.sensitivities}
     for row in rows:
         value = Decimal(row["per_share_value"])
         if not value.is_finite() or value != getattr(result, row["scenario"] + "_value"):
             raise ValueError("bound draft scenario differs from shared model")
+        for field in ("terminal_residual_contribution_ratio", "basis_to_valuation_factor",
+                      "dividend_crosscheck_difference"):
+            if field in row:
+                expected = sensitivities[row["scenario"]].get(field)
+                displayed = Decimal(row[field])
+                if expected is None or not displayed.is_finite() or displayed != Decimal(expected):
+                    raise ValueError("bound draft derivation differs from shared model")
     quote = descriptor.quote
     displayed_quote = payload["quote_fact"]
     if (quote is None or quote.status != "verified_close"

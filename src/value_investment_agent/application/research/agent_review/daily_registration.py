@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 import tempfile
 
+from ...product.common import write_new_bytes
+from ...portfolio.private_journal_lock import InterProcessLock, LockTimeout
 from .llm_pilot import MOCK_SCOPE
 from .web_research import (
     REGISTRY_PATH, REGISTRY_SCHEMA, REGISTRY_WORKFLOWS_SCHEMA,
@@ -31,8 +33,11 @@ def register_daily_draft_results(*, root: Path, batch_result: dict, now: datetim
         raise ValueError("Explicit bounded Mock batch result required")
     registry_path = _public_path(root, REGISTRY_PATH)
     registry_path.parent.mkdir(parents=True, exist_ok=True)
-    lock = registry_path.with_suffix(".registration.lock")
-    handle = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    lock = InterProcessLock(root / ".tmp" / "agent-research-registration.lock", timeout_seconds=0.05)
+    try:
+        lock.acquire()
+    except LockTimeout as exc:
+        raise RuntimeError("Daily display registration is already active") from exc
     try:
         previous = _raw(registry_path, 64 * 1024) if registry_path.exists() else None
         registry = (_json(previous) if previous is not None else {
@@ -60,7 +65,7 @@ def register_daily_draft_results(*, root: Path, batch_result: dict, now: datetim
                     continue
                 try:
                     identity = (symbol, workflow)
-                    if identity in seen or workflow not in {"event", "financial"}:
+                    if identity in seen or workflow not in {"event", "financial", "hotspot", "retrospective"}:
                         raise ValueError("Duplicate or unsupported daily workflow")
                     seen.add(identity)
                     result = job["result"]
@@ -105,8 +110,11 @@ def register_daily_draft_results(*, root: Path, batch_result: dict, now: datetim
                         if history.read_bytes() != previous:
                             raise ValueError("Registry history conflicts")
                     else:
-                        with history.open("xb") as stream:
-                            stream.write(previous)
+                        try:
+                            write_new_bytes(history, previous)
+                        except FileExistsError:
+                            if history.read_bytes() != previous:
+                                raise ValueError("Registry history conflicts")
                 os.replace(candidate_path, registry_path)
         registered = sum(item["status"] == "REGISTERED" for item in items)
         good = sum(item["status"] in {"REGISTERED", "UNCHANGED"} for item in items)
@@ -116,5 +124,4 @@ def register_daily_draft_results(*, root: Path, batch_result: dict, now: datetim
                 "items": items, "registered_count": registered, "approval_count": 0,
                 "decision_changed": False, "formal_eligibility_changed": False}
     finally:
-        os.close(handle)
-        lock.unlink()
+        lock.release()

@@ -20,6 +20,8 @@ from value_investment_agent.application.research.agent_review.daily_research imp
     run_daily_event_mock, run_daily_financial_mock,
 )
 from value_investment_agent.application.research.agent_review.daily_batch import run_daily_mock_batch
+from value_investment_agent.application.research.agent_review.context_workflows import run_daily_context_mock
+from value_investment_agent.application.research.agent_review.discovery import discover_daily_mock_inputs
 from value_investment_agent.application.research.agent_review.daily_registration import register_daily_draft_results
 from value_investment_agent.application.research.agent_review.source_context import ExcerptRequest
 from value_investment_agent.infrastructure.agent_runtime.provider import (
@@ -39,13 +41,18 @@ def _daily_mock(args, parser) -> int:
         parser.error("daily workflows require explicit --mode mock")
     if args.provider_config or args.provider_config_sha256 or args.authorize_paid_api:
         parser.error("daily Mock workflows do not accept provider configuration or paid authorization")
-    for key in ("source_requests", "transcription", "metric_workbench", "mock_responses"):
+    for key in ("source_requests", "transcription", "metric_workbench", "mock_responses", "context"):
         if (getattr(args, key) is None) != (getattr(args, key + "_sha256") is None):
             parser.error(key.replace("_", "-") + " requires both path and sha256")
     if args.workflow == "event" and (args.transcription or args.metric_workbench):
         parser.error("financial inputs require --workflow financial")
     if args.workflow == "financial" and args.mock_responses:
         parser.error("financial Mock questions are generated from verified rows, not response fixtures")
+    if args.workflow in {"hotspot", "retrospective"}:
+        if not args.context or any((args.mock_responses, args.transcription, args.metric_workbench)):
+            parser.error("context workflows require pinned --context without other workflow inputs")
+    elif args.context:
+        parser.error("context requires --workflow hotspot or retrospective")
     requests = ()
     if args.source_requests:
         value = _pinned_json(args.source_requests, args.source_requests_sha256, "source requests")
@@ -62,6 +69,9 @@ def _daily_mock(args, parser) -> int:
         values = _pinned_json(args.mock_responses, args.mock_responses_sha256, "mock responses")
         result = run_daily_event_mock(**kwargs, responses={
             key: json.dumps(value, ensure_ascii=False) for key, value in values.items()})
+    elif args.workflow in {"hotspot", "retrospective"}:
+        result = run_daily_context_mock(**kwargs, workflow=args.workflow,
+            context_path=ROOT / args.context, context_sha256=args.context_sha256)
     else:
         result = run_daily_financial_mock(**kwargs,
             transcription=None if args.transcription is None else ROOT / args.transcription,
@@ -80,6 +90,13 @@ def main() -> int:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--batch-plan", type=Path)
     parser.add_argument("--batch-plan-sha256")
+    parser.add_argument("--discover-contexts", action="store_true",
+                        help="Export a deterministic pinned Mock batch from server-owned public registries")
+    parser.add_argument("--discovery-output", type=Path,
+                        default=Path("runtime/agent-research-discovery"))
+    parser.add_argument("--max-hotspots", type=int, default=3)
+    parser.add_argument("--test-only-retrospective", type=Path)
+    parser.add_argument("--test-only-retrospective-sha256")
     parser.add_argument("--register-drafts", action="store_true",
                         help="Explicit source-reverified display registration, never research approval")
     parser.add_argument("--mode", choices=("offline", "mock", "live"), default="offline")
@@ -88,12 +105,30 @@ def main() -> int:
     parser.add_argument("--provider-config", type=Path)
     parser.add_argument("--provider-config-sha256")
     parser.add_argument("--authorize-paid-api", action="store_true")
-    parser.add_argument("--workflow", choices=("legacy", "event", "financial"), default="legacy",
-                        help="Daily event/financial workflows are Mock-only; no registration or publication")
-    for name in ("source-requests", "transcription", "metric-workbench"):
+    parser.add_argument("--workflow", choices=("legacy", "event", "financial", "hotspot", "retrospective"), default="legacy",
+                        help="Daily workflows are Mock-only; batch registration is explicit and display-only")
+    for name in ("source-requests", "transcription", "metric-workbench", "context"):
         parser.add_argument("--" + name, type=Path)
         parser.add_argument("--" + name + "-sha256")
     args = parser.parse_args()
+    if args.discover_contexts:
+        if (args.mode != "mock" or args.workflow != "legacy" or args.register_drafts
+                or args.authorize_paid_api or any(getattr(args, key) is not None for key in (
+                    "batch_plan", "batch_plan_sha256", "symbol", "workbench", "workbench_sha256", "output",
+                    "provider_config", "provider_config_sha256", "mock_responses", "mock_responses_sha256",
+                    "source_requests", "source_requests_sha256", "transcription", "transcription_sha256",
+                    "metric_workbench", "metric_workbench_sha256", "context", "context_sha256"))):
+            parser.error("discovery requires --mode mock and cannot run/register jobs or accept provider inputs")
+        if bool(args.test_only_retrospective) != bool(args.test_only_retrospective_sha256):
+            parser.error("TEST_ONLY retrospective requires both path and sha256")
+        pin = None if args.test_only_retrospective is None else dict(
+            path=args.test_only_retrospective.as_posix(), sha256=args.test_only_retrospective_sha256)
+        result = discover_daily_mock_inputs(root=ROOT, output_directory=args.discovery_output,
+            now=datetime.now(timezone.utc), max_hotspots=args.max_hotspots, retrospective=pin)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0 if result["status"] == "READY" else 3 if result["status"] == "PARTIAL" else 2
+    if args.test_only_retrospective or args.test_only_retrospective_sha256:
+        parser.error("TEST_ONLY retrospective export requires --discover-contexts")
     if args.batch_plan is not None or args.batch_plan_sha256 is not None:
         if not args.batch_plan or not args.batch_plan_sha256 or args.mode != "mock":
             parser.error("batch requires pinned --batch-plan and explicit --mode mock")
@@ -102,7 +137,7 @@ def main() -> int:
                     "symbol", "workbench", "workbench_sha256", "output", "provider_config",
                     "provider_config_sha256", "mock_responses", "mock_responses_sha256",
                     "source_requests", "source_requests_sha256", "transcription", "transcription_sha256",
-                    "metric_workbench", "metric_workbench_sha256")):
+                    "metric_workbench", "metric_workbench_sha256", "context", "context_sha256")):
             parser.error("batch plan cannot be mixed with single-job/provider arguments")
         result = run_daily_mock_batch(root=ROOT, plan=args.batch_plan,
                                       plan_sha256=args.batch_plan_sha256)
@@ -125,8 +160,8 @@ def main() -> int:
         return _daily_mock(args, parser)
     if any(getattr(args, key) is not None for key in (
             "source_requests", "source_requests_sha256", "transcription", "transcription_sha256",
-            "metric_workbench", "metric_workbench_sha256")):
-        parser.error("daily workflow inputs require --workflow event or financial")
+            "metric_workbench", "metric_workbench_sha256", "context", "context_sha256")):
+        parser.error("daily workflow inputs require a non-legacy --workflow")
     if args.mode == "offline":
         packet = run_agent_research_pilot(
             root=ROOT, symbol=args.symbol, workbench=ROOT / args.workbench,
@@ -145,7 +180,7 @@ def main() -> int:
             limits = {}
         else:
             if not args.authorize_paid_api or not args.provider_config or not args.provider_config_sha256:
-                parser.error("live mode requires explicit authorization and a pinned provider config")
+                parser.error("LIVE_LLM_NOT_AUTHORIZED: live mode requires explicit authorization and a pinned provider config")
             config_path = require_inside(ROOT, ROOT / args.provider_config, "provider config")
             if sha256_file(config_path) != args.provider_config_sha256:
                 raise ValueError("Provider configuration hash mismatch")

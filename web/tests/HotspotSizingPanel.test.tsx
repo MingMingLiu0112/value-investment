@@ -8,6 +8,19 @@ const captured = vi.hoisted(() => ({
   submit: undefined as
     undefined | ((form: Record<string, unknown>) => Promise<boolean>),
 }));
+const reactState = vi.hoisted(() => ({
+  use: null as
+    | null
+    | ((initial: unknown) => [unknown, (next: unknown) => void] | undefined),
+}));
+vi.mock("react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react")>();
+  return {
+    ...actual,
+    useState: (initial: unknown) =>
+      reactState.use?.(initial) ?? actual.useState(initial),
+  };
+});
 vi.mock("@ant-design/pro-components", async () => {
   const React = await import("react");
   return {
@@ -27,11 +40,130 @@ vi.mock("@ant-design/pro-components", async () => {
     },
   };
 });
-import { HotspotSizingPanel } from "../src/components/HotspotSizingPanel";
+vi.mock("antd", async () => {
+  const React = await import("react");
+  const wrapper = (props: Record<string, any>) =>
+    React.createElement("div", null, props.children);
+  return {
+    Alert: (props: Record<string, any>) =>
+      React.createElement("div", null, props.message, props.description),
+    Checkbox: wrapper,
+    Descriptions: (props: Record<string, any>) =>
+      React.createElement(
+        "div",
+        null,
+        (props.items ?? []).map((item: Record<string, any>) =>
+          React.createElement(
+            "div",
+            { key: item.key },
+            item.label,
+            item.children,
+          ),
+        ),
+      ),
+    Typography: { Title: wrapper, Text: wrapper },
+  };
+});
+import {
+  HotspotSizingPanel,
+  type HotspotSizingResponse,
+} from "../src/components/HotspotSizingPanel";
 import type { PrivateRiskContext } from "../src/components/PrivateRiskContext";
 
 beforeEach(() => {
   captured.fields.length = 0;
+});
+
+it("CORE sends only tranche and buy-cost inputs, preserving the strategy boundary", async () => {
+  const onPreview = vi.fn().mockResolvedValue({
+    action: "no_order",
+    sizing_preview: {
+      symbol: "600519",
+      review_quantity: null,
+      blockers: [],
+    },
+  });
+  const html = renderToStaticMarkup(
+    <HotspotSizingPanel
+      sleeve="CORE_VALUE"
+      initialSymbol="600519"
+      onPreview={onPreview}
+    />,
+  );
+  expect(html).toContain("价值仓分批资金上限试算");
+  expect(captured.fields.some((field) => field.name === "gap_stress_cny")).toBe(
+    false,
+  );
+  expect(
+    await captured.submit!({
+      symbol: "600519",
+      lot_size: "100",
+      max_trade_notional_cny: "1000",
+      entry_slippage_cny: "0",
+      buy_fee_fraction: "0",
+      minimum_buy_fee_cny: "1",
+      gap_stress_cny: "999",
+      entry_price_cny: "1",
+      formal_eligibility: true,
+    }),
+  ).toBe(true);
+  expect(onPreview).toHaveBeenCalledWith({
+    symbol: "600519",
+    sleeve: "CORE_VALUE",
+    assumptions: {
+      lot_size: "100",
+      max_trade_notional_cny: "1000",
+      entry_slippage_cny: "0",
+      buy_fee_fraction: "0",
+      minimum_buy_fee_cny: "1",
+    },
+  });
+});
+
+it("renders a positive CORE scenario as simulated shares while formal sizing remains null", () => {
+  const response: HotspotSizingResponse = {
+    action: "no_order",
+    scenario_preview: {
+      namespace: "TEST_ONLY",
+      status: "AVAILABLE",
+      review_quantity: 300,
+      blockers: [],
+      engine: {
+        core_quantity_review: {
+          cash_required_cny: "3000",
+          tranche_budget_cny: "5000",
+        },
+      },
+    },
+    sizing_preview: {
+      symbol: "600519",
+      review_quantity: null,
+      blockers: [],
+      formal_eligibility: false,
+      plan_binding: null,
+    },
+  };
+  let hook = 0;
+  reactState.use = () => (hook++ === 0 ? [response, vi.fn()] : undefined);
+  let html = "";
+  try {
+    html = renderToStaticMarkup(
+      <HotspotSizingPanel
+        sleeve="CORE_VALUE"
+        initialSymbol="600519"
+        onPreview={vi.fn()}
+      />,
+    );
+  } finally {
+    reactState.use = null;
+  }
+  expect(html).toContain("价值仓分批资金上限试算");
+  expect(html).toContain("假设情景数量，不是正式可操作股数");
+  expect(html).toContain("SIMULATED：300 股");
+  expect(html).toContain("条件性数量上限（股）");
+  expect(html).toContain("暂不能计算");
+  expect(html).not.toContain("正式可操作：300 股");
+  expect(html).not.toContain("BUY");
 });
 
 it("submits only explicit assumptions, leaving prices and eligibility to the server", async () => {

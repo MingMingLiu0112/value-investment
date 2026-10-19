@@ -14,6 +14,7 @@ import { CostAssumptionsPanel } from "./CostAssumptionsPanel";
 import { reusableCostFields } from "./PrivateRiskContext";
 
 export type HotspotSizingRequest = {
+  sleeve?: "CORE_VALUE";
   symbol: string;
   assumptions: Record<string, string>;
   scenario?: {
@@ -41,6 +42,10 @@ export type HotspotSizingResponse = {
     review_quantity: number | null;
     blockers: string[];
     engine?: {
+      core_quantity_review?: {
+        cash_required_cny?: string;
+        tranche_budget_cny?: string;
+      } | null;
       hotspot_quantity_review?: {
         cash_required_cny?: string;
         stressed_loss_cny?: string;
@@ -102,11 +107,19 @@ function gapLabel(code: string) {
     PRICE_LIMIT_STATE_UNKNOWN: "涨跌停执行状态尚未核验",
     EXTERNAL_ACCOUNT_RECONCILIATION_MISSING:
       "尚未提供本人逐项核对的外部账户对账引用",
+    CURRENT_VALUE_PLAN_UNAVAILABLE_OR_CHANGED:
+      "价值计划或登记政策已变化，需更新并核验",
+    VALUE_PLAN_NOT_QUALIFIED_FOR_SIZING:
+      "价值研究、当前价格或条件性建加仓资格尚不完整",
+    VALUE_REGISTERED_POLICY_REQUIRED: "尚无适用的已登记价值价格政策",
+    CORE_EXECUTION_AND_RISK_CHOICES_REQUIRE_SCENARIO:
+      "价值仓数量需明确本次执行与持仓风险假设",
   };
   return labels[code] ?? blockerText(code);
 }
 
 export function HotspotSizingPanel({
+  sleeve = "HOTSPOT_SATELLITE",
   initialSymbol,
   onPreview,
   context,
@@ -114,6 +127,7 @@ export function HotspotSizingPanel({
   onContextRefresh,
   onSymbolChange,
 }: {
+  sleeve?: "CORE_VALUE" | "HOTSPOT_SATELLITE";
   initialSymbol?: string;
   onPreview: (request: HotspotSizingRequest) => Promise<HotspotSizingResponse>;
   context?: PrivateRiskContext;
@@ -123,6 +137,19 @@ export function HotspotSizingPanel({
   onContextRefresh?: () => void;
   onSymbolChange?: (symbol: string) => void;
 }) {
+  const core = sleeve === "CORE_VALUE";
+  const title = core ? "价值仓分批资金上限试算" : "热点条件性仓位试算";
+  const activeFields = sizingFields.filter(
+    ([key]) =>
+      !core ||
+      [
+        "entry_slippage_cny",
+        "buy_fee_fraction",
+        "minimum_buy_fee_cny",
+        "lot_size",
+        "max_trade_notional_cny",
+      ].includes(key),
+  );
   const [result, setResult] = useState<HotspotSizingResponse>();
   const [failure, setFailure] = useState<string>();
   const [scenarioEnabled, setScenarioEnabled] = useState(false);
@@ -139,7 +166,7 @@ export function HotspotSizingPanel({
     setHoldingGaps([]);
     setSecurityGaps([]);
     setScenarioEnabled(false);
-  }, [initialSymbol, context]);
+  }, [initialSymbol, context, sleeve]);
   const currentContext =
     context?.action === "no_order" && context.symbol === initialSymbol
       ? context
@@ -162,12 +189,14 @@ export function HotspotSizingPanel({
     setResult(undefined);
     try {
       const assumptions = Object.fromEntries(
-        sizingFields.flatMap(([key]) => {
+        activeFields.flatMap(([key]) => {
           if (
             key === "lot_size" &&
             currentContext?.verified_rules.lot_size != null
           )
-            return [];
+            return core
+              ? [[key, String(currentContext.verified_rules.lot_size)]]
+              : [];
           const value = String(form[key] ?? "").trim();
           return value ? [[key, value]] : [];
         }),
@@ -181,6 +210,7 @@ export function HotspotSizingPanel({
         return form[key] === "yes";
       };
       const response = await onPreview({
+        ...(core ? { sleeve: "CORE_VALUE" as const } : {}),
         symbol: String(form.symbol ?? "").trim(),
         assumptions,
         ...(scenarioEnabled
@@ -254,14 +284,18 @@ export function HotspotSizingPanel({
   };
   const preview = result?.sizing_preview;
   return (
-    <section aria-label="热点条件性仓位试算">
+    <section aria-label={title}>
       <Typography.Title level={4} style={{ fontSize: 16, marginTop: 24 }}>
-        热点条件性仓位试算
+        {title}
       </Typography.Title>
       <Alert
         type="info"
         showIcon
-        message="仅供本人风险复核，不代表可以买入，也不保证保护价能够成交"
+        message={
+          core
+            ? "仅供本人复核分批资金上限，退出依据为投资逻辑与流动性复核"
+            : "仅供本人风险复核，不代表可以买入，也不保证保护价能够成交"
+        }
       />
       {failure && (
         <Alert
@@ -272,7 +306,7 @@ export function HotspotSizingPanel({
         />
       )}
       <ProForm
-        name="hotspot-sizing"
+        name={core ? "core-sizing" : "hotspot-sizing"}
         formRef={formRef}
         layout="vertical"
         onFinish={submit}
@@ -308,9 +342,13 @@ export function HotspotSizingPanel({
             items={[
               {
                 key: "budget",
-                label: "已确认热点资金池（元）",
+                label: core
+                  ? "已确认价值资金池（元）"
+                  : "已确认热点资金池（元）",
                 children: String(
-                  currentContext.policy.hotspot_budget_cny ?? "未知",
+                  (core
+                    ? currentContext.policy.core_value_budget_cny
+                    : currentContext.policy.hotspot_budget_cny) ?? "未知",
                 ),
               },
               {
@@ -327,7 +365,7 @@ export function HotspotSizingPanel({
                   currentContext.policy.cash_reserve_cny ?? "未知",
                 ),
               },
-            ]}
+            ].filter((item) => !core || item.key !== "risk")}
           />
         )}
         {currentContext?.rule_gaps.map((gap) => (
@@ -365,7 +403,7 @@ export function HotspotSizingPanel({
         <details>
           <summary>高级参数：费用、滑点、压力及交易单位</summary>
           <ProForm.Group>
-            {sizingFields
+            {activeFields
               .filter(
                 ([key]) =>
                   key !== "lot_size" ||
@@ -493,40 +531,61 @@ export function HotspotSizingPanel({
                   <Descriptions
                     column={1}
                     size="small"
-                    items={[
-                      {
-                        key: "cash",
-                        label: "情景资金占用（元）",
-                        children:
-                          result.scenario_preview.engine
-                            ?.hotspot_quantity_review?.cash_required_cny ??
-                          "暂不能计算",
-                      },
-                      {
-                        key: "loss",
-                        label: "情景压力损失（元）",
-                        children:
-                          result.scenario_preview.engine
-                            ?.hotspot_quantity_review?.stressed_loss_cny ??
-                          "暂不能计算",
-                      },
-                      {
-                        key: "budget",
-                        label: "情景风险预算（元）",
-                        children:
-                          result.scenario_preview.engine
-                            ?.hotspot_quantity_review?.planned_risk_limit_cny ??
-                          "暂不能计算",
-                      },
-                      {
-                        key: "exit",
-                        label: "情景压力退出价（元，不保证成交）",
-                        children:
-                          result.scenario_preview.engine
-                            ?.hotspot_quantity_review
-                            ?.stressed_exit_price_cny ?? "暂不能计算",
-                      },
-                    ]}
+                    items={
+                      core
+                        ? [
+                            {
+                              key: "cash",
+                              label: "情景资金占用（元）",
+                              children:
+                                result.scenario_preview.engine
+                                  ?.core_quantity_review?.cash_required_cny ??
+                                "暂不能计算",
+                            },
+                            {
+                              key: "tranche",
+                              label: "本人本批资金上限（元）",
+                              children:
+                                result.scenario_preview.engine
+                                  ?.core_quantity_review?.tranche_budget_cny ??
+                                "暂不能计算",
+                            },
+                          ]
+                        : [
+                            {
+                              key: "cash",
+                              label: "情景资金占用（元）",
+                              children:
+                                result.scenario_preview.engine
+                                  ?.hotspot_quantity_review
+                                  ?.cash_required_cny ?? "暂不能计算",
+                            },
+                            {
+                              key: "loss",
+                              label: "情景压力损失（元）",
+                              children:
+                                result.scenario_preview.engine
+                                  ?.hotspot_quantity_review
+                                  ?.stressed_loss_cny ?? "暂不能计算",
+                            },
+                            {
+                              key: "budget",
+                              label: "情景风险预算（元）",
+                              children:
+                                result.scenario_preview.engine
+                                  ?.hotspot_quantity_review
+                                  ?.planned_risk_limit_cny ?? "暂不能计算",
+                            },
+                            {
+                              key: "exit",
+                              label: "情景压力退出价（元，不保证成交）",
+                              children:
+                                result.scenario_preview.engine
+                                  ?.hotspot_quantity_review
+                                  ?.stressed_exit_price_cny ?? "暂不能计算",
+                            },
+                          ]
+                    }
                   />
                 )}
                 {result.scenario_preview.blockers.map((code) => (
@@ -630,7 +689,17 @@ export function HotspotSizingPanel({
                   preview.sizing_details?.full_capital_at_risk_cny ??
                   "暂不能计算",
               },
-            ]}
+            ].filter(
+              (item) =>
+                !core ||
+                ![
+                  "stop",
+                  "riskLimit",
+                  "loss",
+                  "stressExit",
+                  "fullCapital",
+                ].includes(item.key),
+            )}
           />
           {!!preview.blockers.length && (
             <Alert

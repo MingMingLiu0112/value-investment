@@ -18,7 +18,7 @@ from ...product.agent_research_surface import project_verified_agent_packet
 REGISTRY_PATH = "config/current-agent-research.json"
 REGISTRY_SCHEMA = "web-agent-research-registry-v1"
 REGISTRY_WORKFLOWS_SCHEMA = "web-agent-research-registry-v2"
-WORKFLOWS = ("legacy", "event", "financial")
+WORKFLOWS = ("legacy", "event", "financial", "hotspot", "retrospective")
 SCHEMA = "web-agent-research-v1"
 OFFLINE_SCOPE = "OFFLINE_REPLAY_NOT_NEW_LLM_RESEARCH"
 MODES = {OFFLINE_SCOPE: "OFFLINE_REPLAY", MOCK_SCOPE: "MOCK", LIVE_SCOPE: "LIVE"}
@@ -141,7 +141,7 @@ def _read_registered_research(root: Path, *, symbol: str, now: datetime,
         if case_entry is None:
             return _empty(symbol, "NOT_CONNECTED", "SYMBOL_NOT_REGISTERED")
         workflows = case_entry["workflows"] if multi else {"legacy": case_entry}
-        selected = workflow or next((name for name in ("event", "financial", "legacy") if name in workflows))
+        selected = workflow or next((name for name in ("event", "financial", "hotspot", "retrospective", "legacy") if name in workflows))
         entry = workflows.get(selected)
         if entry is None:
             result = _empty(symbol, "NOT_CONNECTED", "WORKFLOW_NOT_REGISTERED")
@@ -158,12 +158,13 @@ def _read_registered_research(root: Path, *, symbol: str, now: datetime,
             tracked[path] = (ref["sha256"], MAX_JSON)
             objects.append(_json(raw))
         packet, workbench = objects
-        if selected in {"event", "financial"}:
+        if selected != "legacy":
             # Daily packets must carry the workflow-specific provider input pin;
             # a generic three-role packet cannot masquerade as a daily workflow.
             workflow_binding = entry["workflow_binding"]
             if (not isinstance(workflow_binding, dict) or workflow_binding.get("workflow") != {
-                    "event": "announcement_event", "financial": "financial_report"}[selected]
+                    "event": "announcement_event", "financial": "financial_report",
+                    "hotspot": "hotspot", "retrospective": "retrospective"}[selected]
                     or workflow_binding.get("version") != 2
                     or workflow_binding.get("workbench") != entry["workbench"]
                     or workflow_binding.get("research_input_fingerprint") != packet.get("research_input_fingerprint")
@@ -172,6 +173,13 @@ def _read_registered_research(root: Path, *, symbol: str, now: datetime,
                         != packet.get("provider_input_sha256")):
                 raise ValueError("Daily workflow packet identity mismatch")
             keys = {"workflow", "version", "workbench", "research_input_fingerprint"}
+            if selected in {"hotspot", "retrospective"}:
+                keys |= {"context", "data_scope"}
+                ref = workflow_binding["context"]
+                path = _binding(root, ref)
+                if hashlib.sha256(_raw(path, MAX_JSON)).hexdigest() != ref["sha256"]:
+                    raise ValueError("Daily workflow context changed")
+                tracked[path] = (ref["sha256"], MAX_JSON)
             if selected == "financial":
                 keys |= {"transcription", "metric_workbench", "period_checks", "economic_comparability_approved"}
                 if workflow_binding.get("economic_comparability_approved") is not False:
@@ -227,6 +235,16 @@ def _read_registered_research(root: Path, *, symbol: str, now: datetime,
                 _time(original["available_at"], now)
         snapshot = load_research_snapshot(root=root, workbench=workbench_path,
             expected_sha256=entry["workbench"]["sha256"], symbol=symbol)
+        if selected in {"hotspot", "retrospective"}:
+            from .context_workflows import verify_workflow_context, context_responses
+
+            value = verify_workflow_context(root=root, snapshot=snapshot, workflow=selected,
+                context_path=_binding(root, workflow_binding["context"]),
+                context_sha256=workflow_binding["context"]["sha256"],
+                excerpts=(packet.get("source_context") or {}).get("excerpts", []))
+            if (value["scope"] != workflow_binding["data_scope"]
+                    or context_responses(value) != packet["raw_responses"]):
+                raise ValueError("Workflow context responses/scope mismatch")
         # The existing projector dispatches offline replay vs verify_llm_packet,
         # including exact source-context verification and semantic quality checks.
         payload = {"as_of": snapshot.as_of.isoformat(), "generated_at": now.isoformat(),
@@ -263,6 +281,9 @@ def _read_registered_research(root: Path, *, symbol: str, now: datetime,
             bindings={"registry": {"path": registry_name, "sha256": hashlib.sha256(registry_raw).hexdigest()},
                       "packet": entry["packet"], "workbench": entry["workbench"]},
             findings=views, sources=sources)
+        if selected in {"hotspot", "retrospective"}:
+            result.update(data_scope=workflow_binding["data_scope"],
+                          live_status="LIVE_LLM_NOT_AUTHORIZED")
         return deepcopy(result)
     except (OSError, ValueError, KeyError, TypeError, AttributeError, OverflowError):
         return _empty(symbol, "UNAVAILABLE", "REGISTERED_RESEARCH_VERIFICATION_FAILED")

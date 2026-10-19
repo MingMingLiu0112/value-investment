@@ -12,6 +12,7 @@ from ...domain.portfolio.security_attributes import (
 from ..hotspot.current_registry import load_price_conditions, registry_identity
 from ..product.public_snapshot import load_current_packet
 from ..product.publication_chain import load_current_chain
+from ..decision.value_action_plan import load_registered_value_action_plans, load_value_action_policy
 from .private_risk_projection import build_risk_input, review_private_risk_rehearsal
 from .private_portfolio_service import PrivatePortfolioService, reconciliation_state
 from .security_attributes import load_verified_security_attributes, trading_rules_for
@@ -23,7 +24,7 @@ ASSUMPTION_FIELDS = (
 )
 
 
-def _scenario_preview(scenario, *, symbol, generated_at):
+def _scenario_preview(scenario, *, symbol, generated_at, core_request=None):
     """Consume a complete hypothetical engine contract without borrowing actual facts.
 
     Request schema: scenario={acknowledged: true, risk_input: <dual-sleeve-risk-input-v1>}.
@@ -52,11 +53,12 @@ def _scenario_preview(scenario, *, symbol, generated_at):
     shared = risk_input.get("shared_budget")
     if not isinstance(shared, dict) or shared.get("policy_scope") != "SYNTHETIC_POLICY_ONLY":
         raise ValueError("Scenario requires explicit SYNTHETIC_POLICY_ONLY budget assumptions")
-    request = risk_input.get("hotspot_request")
+    request = core_request if core_request is not None else risk_input.get("hotspot_request")
     if not isinstance(request, dict) or request.get("symbol") != symbol:
         raise ValueError("Scenario requires a hypothetical hotspot request for the requested symbol")
-    report = review_dual_sleeve_risk(risk_input, generated_at=generated_at, allow_synthetic=True)
-    review = report.get("hotspot_quantity_review") or {}
+    report = review_dual_sleeve_risk(risk_input, generated_at=generated_at, allow_synthetic=True,
+        **({"core_request": core_request} if core_request is not None else {}))
+    review = report.get("core_quantity_review" if core_request is not None else "hotspot_quantity_review") or {}
     blockers = list(dict.fromkeys([*report.get("blockers", []), *review.get("blockers", [])]))
     output.update(status=review.get("status", "BLOCKED"), blockers=blockers,
         review_quantity=None if blockers else review.get("review_quantity"),
@@ -127,11 +129,16 @@ def _projected_scenario(scenario, *, journal, symbol, assumptions, binding,
             "reconciliation_inferred": False, "private_inputs_inferred": False},
         required_holding_risks=[], security_risk_gaps=[])
     gaps = list(plan_blockers)
+    core = (binding or {}).get("plan", {}).get("strategy") == "CORE_VALUE"
     expiry = (binding or {}).get("plan", {}).get("expires_after_session")
     try:
-        if not isinstance(expiry, str):
+        if core:
+            expiry = binding["valid_until"]
+            datetime.fromisoformat(expiry)
+        elif not isinstance(expiry, str):
             raise ValueError("Missing plan expiry")
-        date.fromisoformat(expiry)
+        else:
+            date.fromisoformat(expiry)
     except ValueError:
         gaps.append("PLAN_EXPIRY_MISSING_OR_INVALID")
     service = PrivatePortfolioService(journal)
@@ -154,7 +161,16 @@ def _projected_scenario(scenario, *, journal, symbol, assumptions, binding,
         output["blockers"] = list(dict.fromkeys(gaps))
         return output
     plan = binding["plan"]
-    request = {**assumptions, "lot_size": int(Decimal(str(assumptions["lot_size"]))),
+    if core:
+        request = {key: assumptions[key] for key in (
+            "entry_slippage_cny", "buy_fee_fraction", "minimum_buy_fee_cny", "max_trade_notional_cny")}
+        request.update(symbol=symbol, lot_size=int(Decimal(str(assumptions["lot_size"]))),
+            entry_price_cny=plan["reference_close"], quote_as_of=plan["market_trade_date"],
+            available_at=binding["available_at"], valid_until=expiry,
+            liquidity_verified=execution["liquid"], limit_up=execution["limit_up"], limit_down=execution["limit_down"])
+        output["core_sizing_inputs"] = deepcopy(request)
+    else:
+        request = {**assumptions, "lot_size": int(Decimal(str(assumptions["lot_size"]))),
         "symbol": symbol, "sleeve": "HOTSPOT_SATELLITE",
         "entry_price_cny": plan["entry_trigger_price"], "stop_price_cny": plan["invalidation_price"],
         "quote_as_of": plan["market_trade_date"], "available_at": plan["data_available_at"],
@@ -166,7 +182,7 @@ def _projected_scenario(scenario, *, journal, symbol, assumptions, binding,
     data = deepcopy(build_risk_input(replayed,
         sellable_as_of=generated_at.astimezone(ZoneInfo("Asia/Shanghai")).date(),
         namespace="SIMULATED", repository_root=repository_root, generated_at=generated_at,
-        hotspot_request=request))
+        hotspot_request=None if core else request, candidate_symbol=symbol))
     data["portfolio"]["snapshot"]["namespace"] = "SIMULATED"
     data["portfolio"]["policy"]["sensitivity"] = "SIMULATED_DEMONSTRATION"
     data["shared_budget"]["policy_scope"] = "SYNTHETIC_POLICY_ONLY"
@@ -231,7 +247,7 @@ def _projected_scenario(scenario, *, journal, symbol, assumptions, binding,
         return output
     data["security_attributes"] = projected
     calculated = _scenario_preview({"acknowledged": True, "risk_input": data},
-        symbol=symbol, generated_at=generated_at)
+        symbol=symbol, generated_at=generated_at, core_request=request if core else None)
     output.update(status=calculated["status"], review_quantity=calculated["review_quantity"],
         blockers=calculated["blockers"], engine=calculated["engine"])
     _enforce_quantity_rule(output, verified_rules)
@@ -243,10 +259,11 @@ def _enforce_quantity_rule(output, rule):
     if blockers:
         output.update(review_quantity=None, status="BLOCKED",
             blockers=list(dict.fromkeys([*output.get("blockers", []), *blockers])))
-        review = (output.get("engine") or {}).get("hotspot_quantity_review")
-        if review:
-            review.update(review_quantity=None, status="BLOCKED",
-                blockers=list(dict.fromkeys([*review.get("blockers", []), *blockers])))
+        for key in ("hotspot_quantity_review", "core_quantity_review"):
+            review = (output.get("engine") or {}).get(key)
+            if review:
+                review.update(review_quantity=None, status="BLOCKED",
+                    blockers=list(dict.fromkeys([*review.get("blockers", []), *blockers])))
 
 
 def _current_plan(root, symbol, now):
@@ -267,13 +284,16 @@ def _current_plan(root, symbol, now):
         if row["symbol"] == symbol), None)
     if plan is None or frozen != plan:
         return None, "CURRENT_PLAN_UNAVAILABLE_OR_CHANGED"
-    if (plan.get("signal_state") in {"STALE", "BLOCKED", "TRIGGER_REJECTED"}
+    if (plan.get("signal_state") in {"STALE", "BLOCKED", "TRIGGER_REJECTED", "EXPIRED"}
             or plan.get("candidate_lifecycle") == "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"):
         return None, "CURRENT_PLAN_STALE_OR_INVALIDATED"
     return {"publication_id": packet["publication_id"], "plan": plan}, None
 
 
 def preview_private_hotspot_risk(journal, *, repository_root, generated_at: datetime, payload):
+    if payload.get("sleeve") == "CORE_VALUE":
+        return preview_private_core_risk(journal, repository_root=repository_root,
+            generated_at=generated_at, payload=payload)
     # Always preserve the existing engine's account facts and missing-input report.
     result = review_private_risk_rehearsal(journal, generated_at=generated_at, repository_root=repository_root)
     blockers = []
@@ -377,4 +397,87 @@ def preview_private_hotspot_risk(journal, *, repository_root, generated_at: date
             symbol=symbol, generated_at=generated_at)
         if scenario is not None:
             result["scenario_preview"]["scope"] = "TEST_ONLY_RAW_ENGINE_INPUT"
+    return result
+
+
+def _current_value_plan(root, symbol, now):
+    packet, error = load_current_packet(root)
+    if packet is None:
+        return None, "PUBLIC_SNAPSHOT_UNAVAILABLE"
+    chain = load_current_chain(root)
+    observed = [{"role": row["role"], "path": row["path"], "sha256": row["sha256"]}
+        for row in sorted(chain["bindings"], key=lambda row: str(row["role"]))]
+    if packet.get("identity_inputs", {}).get("chain") != observed:
+        return None, "PUBLICATION_VERSION_MISMATCH"
+    fresh = load_registered_value_action_plans(root, now=now, symbols=[symbol])
+    plan = next((item for item in fresh["items"] if item["symbol"] == symbol), None)
+    frozen = packet.get("value_price_conditions", {}).get(symbol)
+    # The public packet adds presentation aliases; compare every authoritative
+    # field reconstructed by the registered-plan loader, not those aliases.
+    if plan is None or not isinstance(frozen, dict) or any(frozen.get(key) != value for key, value in plan.items()):
+        return None, "CURRENT_VALUE_PLAN_UNAVAILABLE_OR_CHANGED"
+    if (plan.get("formal_eligibility") is not True or plan.get("current_quote_verified") is not True
+            or plan.get("strategy") != "CORE_VALUE" or plan.get("action_intent") not in {"OPEN", "ADD"}):
+        return None, "VALUE_PLAN_NOT_QUALIFIED_FOR_SIZING"
+    registration = (plan.get("safety_margin_policy") or {}).get("source_binding")
+    policy = load_value_action_policy(root=root, binding=registration, symbol=symbol, now=now)
+    if policy is None:
+        return None, "VALUE_REGISTERED_POLICY_REQUIRED"
+    return {"publication_id": packet["publication_id"], "plan": plan,
+        "available_at": packet["generated_at"],
+        "valid_until": policy.effective_through.isoformat() + "T23:59:59+08:00"}, None
+
+
+def preview_private_core_risk(journal, *, repository_root, generated_at, payload):
+    """Registered economic-price condition plus an explicit hypothetical tranche cap.
+
+    CORE has no mechanical stop. Quantity is a capital ceiling for human review;
+    execution/risk choices remain acknowledged hypotheses, never trade authority.
+    """
+    if set(payload) - {"symbol", "sleeve", "assumptions", "scenario"}:
+        raise ValueError("Unsupported CORE sizing fields")
+    symbol = payload.get("symbol")
+    if not isinstance(symbol, str) or len(symbol) != 6 or not symbol.isascii() or not symbol.isdigit():
+        raise ValueError("CORE sizing requires a six-digit security")
+    required = {"lot_size", "max_trade_notional_cny", "entry_slippage_cny", "buy_fee_fraction", "minimum_buy_fee_cny"}
+    assumptions = deepcopy(payload.get("assumptions", {}))
+    if not isinstance(assumptions, dict) or set(assumptions) != required:
+        raise ValueError("CORE requires explicit tranche budget, unit, slippage and buy costs")
+    for key, value in assumptions.items():
+        try:
+            amount = Decimal(str(value))
+        except InvalidOperation as error:
+            raise ValueError("CORE assumptions require finite nonnegative numbers") from error
+        if isinstance(value, bool) or not amount.is_finite() or amount < 0:
+            raise ValueError("CORE assumptions require finite nonnegative numbers")
+        if key == "buy_fee_fraction" and amount > 1:
+            raise ValueError("CORE fee fraction exceeds one")
+        if key == "lot_size" and (amount <= 0 or amount != amount.to_integral_value()):
+            raise ValueError("CORE trading unit requires a positive integer")
+    result = review_private_risk_rehearsal(journal, generated_at=generated_at, repository_root=repository_root)
+    attributes = load_verified_security_attributes(repository_root, {symbol}, now=generated_at)
+    rules = trading_rules_for(attributes, symbol)
+    if rules and Decimal(str(assumptions["lot_size"])) != rules["lot_size"]:
+        raise ValueError("CORE trading unit conflicts with verified rules")
+    binding, blockers = None, []
+    try:
+        binding, error = _current_value_plan(repository_root, symbol, generated_at)
+        if error:
+            blockers.append(error)
+    except (OSError, ValueError, KeyError, TypeError, ArithmeticError):
+        blockers.append("CURRENT_VALUE_PLAN_UNAVAILABLE_OR_CHANGED")
+    scenario = payload.get("scenario")
+    if scenario is None:
+        projected = _scenario_preview(None, symbol=symbol, generated_at=generated_at)
+    else:
+        projected = _projected_scenario(scenario, journal=journal, symbol=symbol,
+            assumptions=assumptions, binding=binding, plan_blockers=blockers,
+            actual_revision=(result.get("facts") or {}).get("revision"),
+            repository_root=repository_root, generated_at=generated_at, verified_rules=rules)
+    result["sizing_preview"] = {"symbol": symbol, "sleeve": "CORE_VALUE", "review_quantity": None,
+        "formal_review_quantity": None, "status": "BLOCKED", "formal_eligibility": False,
+        "trade_eligible": False, "plan_binding": binding,
+        "effective_sizing_inputs": assumptions, "verified_rules": rules,
+        "blockers": list(dict.fromkeys([*blockers, "CORE_EXECUTION_AND_RISK_CHOICES_REQUIRE_SCENARIO"]))}
+    result["scenario_preview"] = projected
     return result

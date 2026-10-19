@@ -5,6 +5,7 @@ import re
 
 from ...product.common import load_json_object, require_inside, sha256_file
 from .daily_research import run_daily_event_mock, run_daily_financial_mock
+from .context_workflows import run_daily_context_mock
 from .source_context import ExcerptRequest
 
 
@@ -31,14 +32,17 @@ def run_daily_mock_batch(*, root: Path, plan: Path, plan_sha256: str) -> dict:
     # Validate the entire write set before invoking even one research job.
     for job in value["jobs"]:
         allowed = {"symbol", "workflow", "workbench", "output", "source_requests",
-                   "mock_responses", "transcription", "metric_workbench"}
+                   "mock_responses", "transcription", "metric_workbench", "context"}
         if (not isinstance(job, dict) or set(job) - allowed
                 or not {"symbol", "workflow", "workbench", "output"} <= set(job)
                 or not re.fullmatch(r"\d{6}", job["symbol"])
-                or job["workflow"] not in {"event", "financial"}):
+                or job["workflow"] not in {"event", "financial", "hotspot", "retrospective"}):
             raise ValueError("Invalid batch job")
         if (job["workflow"] == "event" and {"transcription", "metric_workbench"} & set(job)
-                or job["workflow"] == "financial" and "mock_responses" in job):
+                or job["workflow"] == "financial" and "mock_responses" in job
+                or job["workflow"] in {"event", "financial"} and "context" in job
+                or job["workflow"] in {"hotspot", "retrospective"}
+                and {"mock_responses", "transcription", "metric_workbench"} & set(job)):
             raise ValueError("Cross-workflow inputs are forbidden")
         output = require_inside(root / "runtime", root / job["output"], "batch output")
         if output.suffix != ".json" or output in outputs:
@@ -48,6 +52,13 @@ def run_daily_mock_batch(*, root: Path, plan: Path, plan_sha256: str) -> dict:
     for job in value["jobs"]:
         item = {"symbol": job["symbol"], "workflow": job["workflow"]}
         try:
+            if job["workflow"] in {"hotspot", "retrospective"}:
+                from .web_research import _public_path
+
+                for key in ("workbench", "context", "source_requests"):
+                    if key in job:
+                        target = require_inside(root, root / job[key]["path"], key)
+                        _public_path(root, target.relative_to(root).as_posix(), runtime_only=True)
             workbench = pinned(job["workbench"], "workbench")
             requests = ()
             if "source_requests" in job:
@@ -64,6 +75,10 @@ def run_daily_mock_batch(*, root: Path, plan: Path, plan_sha256: str) -> dict:
                 replies = load_json_object(pinned(job["mock_responses"], "mock responses"), "mock responses")
                 result = run_daily_event_mock(**kwargs, responses={
                     key: json.dumps(row, ensure_ascii=False) for key, row in replies.items()})
+            elif job["workflow"] in {"hotspot", "retrospective"}:
+                context_path = pinned(job["context"], "workflow context")
+                result = run_daily_context_mock(**kwargs, workflow=job["workflow"],
+                    context_path=context_path, context_sha256=job["context"]["sha256"])
             else:
                 extras = {}
                 for key in ("transcription", "metric_workbench"):
@@ -73,7 +88,7 @@ def run_daily_mock_batch(*, root: Path, plan: Path, plan_sha256: str) -> dict:
                 result = run_daily_financial_mock(**kwargs, **extras)
             item.update(status="DRAFT_READY" if result.get("packet") else "BLOCKED_INPUT",
                         result=result)
-        except (ValueError, OSError, KeyError, TypeError) as exc:
+        except (ValueError, OSError, KeyError, TypeError, RuntimeError) as exc:
             # No raw file content, credentials or private paths in the batch receipt.
             item.update(status="FAILED", error_type=type(exc).__name__)
         items.append(item)

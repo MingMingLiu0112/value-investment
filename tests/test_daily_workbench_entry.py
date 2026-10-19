@@ -46,6 +46,10 @@ def test_daily_entry_orchestrates_existing_clis_without_new_side_doors():
     assert "scripts/collect_quote_sessions.py" in text
     assert "scripts/current/pin_current_quote_bridge.py" in text
     assert "start_web_workbench.ps1" in text
+    assert "-AutoDiscoverResearchContexts" in text
+    assert "--discover-contexts" in text
+    assert "--test-only-retrospective" in text
+    assert "--authorize-paid-api" not in text
     # It never orders, never publishes the canonical workbook and never signs
     # a human approval.
     assert "action=no_order" in text

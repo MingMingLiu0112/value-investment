@@ -14,7 +14,7 @@ from value_investment_agent.application.decision.value_action_plan import (
 )
 from value_investment_agent.application.product.value_decision_explanation import project_value_decision_explanation
 from value_investment_agent.domain.decision.value_action_plan import (
-    RegisteredValueActionPolicy, ValuePriceRule, build_value_action_plan,
+    ACTION_INTENTS, RegisteredValueActionPolicy, ValuePriceRule, build_value_action_plan,
 )
 
 
@@ -44,16 +44,26 @@ def test_existing_decisions_are_projected_without_implicit_prices_or_approval(ki
     restored = synthetic_restored(kind)
     original = deepcopy(restored.recommendation.as_policy())
     plan = project_value_action_plan(restored, evidence_scope="SYNTHETIC_TEST")
-    assert plan["action_intent"] in {"OPEN", "ADD", "REDUCE", "EXIT", "WATCH"}
+    explanation = project_value_decision_explanation(restored, evidence_scope="SYNTHETIC_TEST")
+    if kind == "NO_ACTION":
+        assert plan["action_intent"] is None
+    else:
+        assert plan["action_intent"] in ACTION_INTENTS
     assert plan["candidate_action"] == kind
     if kind == "HOLD":
-        assert plan["action_intent"] == "WATCH"
+        assert plan["action_intent"] == "HOLD"
+        assert plan["hold_condition"]["kind"] == "HOLD_THESIS"
+        assert plan["hold_condition"]["triggered"] is True
+        assert plan["hold_condition"]["reasoning"] == explanation["entry_thesis"]["hold_logic"]
+        assert plan["qualification"] == "EXISTING_THESIS_HOLD_REVIEW"
     assert plan["bear"] == original["valuation_range"]["bear"]
     assert plan["base"] == original["valuation_range"]["base"]
     assert plan["bull"] == original["valuation_range"]["bull"]
     assert plan["safety_margin_policy"] is None
     assert all(plan[action + "_trigger_price"] is None for action in ("entry", "add", "reduce", "exit"))
-    assert plan["formal_eligibility"] is False and plan["portfolio_eligibility"] is None
+    expected_formal = kind in {"HOLD", "TRIM_CANDIDATE", "SELL_CANDIDATE"}
+    assert plan["formal_eligibility"] is expected_formal
+    assert plan["portfolio_eligibility"] is None
     assert "BLOCKED_PRIVATE_INPUT" not in plan["blockers"]
     assert plan["position_guidance"] is None and plan["action"] == "no_order"
     assert plan["valuation_recomputed"] is False and plan["approval_changed"] is False

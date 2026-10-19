@@ -157,6 +157,7 @@ export interface CurrentPricePlan {
     >
   >;
   add_condition?: PlanCondition | null;
+  hold_condition?: PlanCondition | null;
   reduce_condition?: PlanCondition | null;
   exit_condition?: PlanCondition | null;
 }

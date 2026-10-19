@@ -125,6 +125,24 @@ def test_bound_draft_rebuilds_real_descriptor_and_shared_model(bound_draft):
     assert loaded["action"] == "no_order"
 
 
+@pytest.mark.parametrize("field", ["terminal_residual_contribution_ratio",
+    "basis_to_valuation_factor", "dividend_crosscheck_difference"])
+@pytest.mark.parametrize("value", ["999", "NaN"])
+def test_displayed_derivations_cannot_drift_from_shared_model(bound_draft, field, value):
+    root, package, payload, now = bound_draft
+    descriptor = build_descriptor(package, root=root)
+    result = ResidualIncomeEquityValuationModel().value(descriptor.facts, descriptor.research_case)
+    for row, computed in zip(payload["valuation"]["scenarios"], result.sensitivities):
+        if field in computed:
+            row[field] = computed[field]
+    assert _verify_bound_draft(root, payload, now)["economic_approval"] is False
+    payload["valuation"]["scenarios"][0][field] = value
+    with pytest.raises(ValueError, match="derivation differs"):
+        _verify_bound_draft(root, payload, now)
+    publish(root, payload)
+    assert load_current_research_draft(root, payload["symbol"], now=now) is None
+
+
 @pytest.mark.parametrize("field", [
     "model_id", "model_as_of", "last_material_event_check", "status", "blockers",
 ])

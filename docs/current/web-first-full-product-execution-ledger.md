@@ -833,6 +833,35 @@ API check passed. The local helper now waits for fresh bootstrap output. This is
 not a browser acceptance claim. S6 remains IN_PROGRESS (hotspot Agent and complete
 daily operational integration pending); S7 and the full Goal remain incomplete.
 
+### S7 scoped actual isolated public-chain restore
+
+Existing `run_closure_restore_drill.py` ran against current local publication
+pub-9b49ff2e54323150a06d into `.tmp/web-first-s7-public-20261018`, with fresh
+local AES-GCM drill key separate from the package directory. Receipt:
+`artifacts/current/web-first-acceptance/s7/public-chain-restore.json`.
+24 source files copied, 28 restored files verified, no missing/mismatched files,
+publication identity matched, the historical workbook copy matched its existing
+pointer, and a corrupted encrypted copy was rejected. Original Excel was only
+read; no server, production database, scheduling or offsite transfer was used.
+
+This is ONLY the existing public-chain restore scope. Its legacy
+OFF_MACHINE_BACKUP_READY field is packaging readiness, not independent-machine
+retrieval; REAL_OFF_MACHINE_COPY_CONFIRMED remains NOT_CONFIRMED. The existing
+selector does not yet close the complete Web-first recovery inventory: new
+Agent registry/inputs, alert history, private ledger/strategy records and database
+recovery need separately bound coverage and acceptance. Do not mark S7 or full
+product recovery PASS from this receipt. Latest engineering/config commit is
+b98f49e3; rebuilt local code/config/Web identity MATCHED and authenticated
+financial/event/legacy reads VERIFIED. Exact latest-SHA CI is checked separately.
+
+Final latest-SHA verification: b98f49e3 Core/offline, PostgreSQL and Web CI PASS;
+rebuilt local identity MATCHED; authenticated three-workflow API PASS. The final
+actual Windows offline-failure regression passed (1 test); retained financial
+replay returns SUCCESS without changing packet bytes or modification time.
+Current scoped receipt: s6/current-batch-handoff-closure.json. These latest local
+receipts and the scoped restore addendum are preserved in the worktree for the
+next substantive integration, without creating an evidence-only commit loop.
+
 Scoped service/API final tests: 45 passed; source plus complete Web API regression:
 371 passed; Web full regression: 229 passed, final targeted test: 4 passed,
 typecheck/build pass. Browser confirms explicit real collection for 600150 and
@@ -844,3 +873,73 @@ review's stale STOP finding is fixed and rechecked. Initial remote Core failed
 because one folded YAML command line was over-indented; 34588e40 fixes that
 workflow invocation, without changing any test or investment threshold. Successor
 exact-SHA CI evidence is recorded separately; no previous CI pass is substituted.
+
+## 2026-10-19 Four business loops successor
+
+Latest explicit user scope: VALUE-INVESTMENT-FOUR-BUSINESS-LOOPS-V1. This
+existing ledger remains the single execution authority; there is no competing
+four-loop task ledger. Web-first, Excel FROZEN and permanent action=no_order.
+
+G0 baseline: b98f49e3f84bac8a0e044adfff89c3341e2422d7 on
+codex/web-d1-investment-workbench. Exact baseline CI: Core 39136610119 and Web
+39136610159 both SUCCESS. Existing dirty s4/s5 acceptance receipts, public
+snapshot pointer, acceptance/ledger text and untracked prior audits were
+recorded and preserved. Public snapshot is pub-9b49ff2e54323150a06d, quote
+session 2026-10-16, research cutoff 2026-10-11; those dates are not advanced by
+starting development on 2026-10-19. Source/config/runtime versions remain
+separate. No real private account has been entered by the agent.
+
+| Loop | Actual baseline | Current concrete work | Gate |
+| --- | --- | --- | --- |
+| G1 hotspot | Ten cross-industry completed-close observations; bounded live quote worker and plan-reference transitions exist, ordinary alert API always empty | Extend same replay-verified observation store with inbox, reading lifecycle, deduplication and cross-session history; connect completed bars | IN_PROGRESS |
+| G2 portfolio | Append-only ledger, dual sleeves, fills/T+1/restart exist; previous browser case does not prove registered-plan sizing | Reject expired sizing plans and cross-sleeve thesis capture; complete real-contract TEST_ONLY sizing/fill rehearsal | IN_PROGRESS |
+| G3 value | 000333 original-bound draft, shared residual-income arithmetic, unresolved economic/materiality/G3 gates | Render available financial facts and verify model diagnostics; preserve true blocked admission and signed isolated positives | IN_PROGRESS |
+| G4 Agent | Financial/event Mock batch and verified draft registration exist; hotspot/retrospective disconnected | Reuse provider/batch/registrar for four work types and source-driven context export | IN_PROGRESS |
+| G5 integration | Scoped older HTTP/browser/recovery receipts exist, not complete four-loop acceptance | API, actual browser, restart/replay, shared regression and exact-commit CI | NOT_STARTED |
+
+Machine receipts for this successor live only under
+artifacts/current/four-business-loops/. Engineering, source quality, human
+approval, actual personal input, live model authorization and prospective
+strategy validation are reported independently. No loop is marked PASS from
+interface existence or a test count alone.
+
+### Four-loop delivery checkpoint, 2026-10-19
+
+The implementation slice for G1-G4 is present in the working tree and passes the
+local regression gates, but no complete investment loop is being represented as
+production accepted. The five required machine receipts now exist and all carry
+`status=PARTIAL`: `hotspot-loop`, `portfolio-loop`, `value-loop`, `agent-loop`
+and `web-integration`.
+
+Actual state:
+
+- G1 has completed-bar observation, deduplicated reminder inbox, lifecycle and
+  restart recovery. The current public packet remains observation-only with no
+  formally admitted hotspot or positive real-session chain.
+- G2 has deterministic dual-sleeve sizing, fees, fills, T+1 and restart replay.
+  The accepted browser case is TEST_ONLY. Real IPS/portfolio/cash, broker
+  reconciliation and price admission remain unavailable.
+- G3 has source-bound financial facts, valuation diagnostics and five-action
+  contracts. The current 000333 research still has model validity UNKNOWN,
+  PriceBridge INVALID and no formal economic or G3 approval; action remains
+  `no_order`.
+- G4 reuses the existing provider/registration path for event, financial,
+  hotspot and retrospective workflows. Only Mock drafts and TEST_ONLY
+  retrospective inputs have been executed; no paid live model call or formal
+  fact approval is claimed.
+- G5 is integrated in the authenticated Web shell with static browser evidence,
+  but complete same-commit five-workflow interaction and off-machine recovery
+  remain unproven.
+
+Local verification for this checkpoint: targeted four-loop regression `75
+passed`; full Python regression `6662 passed, 44 skipped`; Web `251 passed`;
+Prettier check, TypeScript check and production build `PASS`. Exact-SHA remote
+Core/Postgres/Web CI is deliberately recorded only after the delivery commit.
+
+Current P0 list is empty. Known P1 issues remain: the manual-fill path can record
+a broker-confirmed cross-sleeve fill before the downstream projection reports
+`SLEEVE_CASH_OVERDRAWN`; portfolio and held-continuity reads are slow; Agent PIT
+is date-level rather than exact timestamp-level; live sessions, private inputs,
+human research approvals and final browser acceptance are still missing. These
+limits are why every loop receipt is PARTIAL and why the overall Goal is not
+complete. Excel remains frozen and `action=no_order` remains permanent.

@@ -15,6 +15,13 @@ SAFE_REFRESH
   explicit human/engineering steps and are listed as pending actions, never
   signed here.
 
+RESEARCH DISCOVERY (optional, Mock/TEST_ONLY only)
+  -AutoDiscoverResearchContexts exports a bounded Mock batch from existing
+  server-owned event, financial, hotspot and optional confirmed TEST_ONLY
+  retrospective contexts, then runs that exact hash-pinned batch. A manually
+  supplied -ResearchMockPlan pair remains the override. No live provider path,
+  research approval, position size or order is reachable here.
+
 The entry stays action=no_order: it reports what the existing gates decided,
 and price triggers never waive formal gates or create a position size or order.
 
@@ -33,6 +40,9 @@ param(
     [string]$Symbols = '',
     [string]$ResearchMockPlan = '',
     [string]$ResearchMockPlanSha256 = '',
+    [switch]$AutoDiscoverResearchContexts,
+    [string]$ResearchTestOnlyRetrospective = '',
+    [string]$ResearchTestOnlyRetrospectiveSha256 = '',
     [switch]$RegisterResearchDrafts
 )
 $ErrorActionPreference = 'Stop'
@@ -40,6 +50,9 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
     & 'C:\Users\we\AppData\Local\Programs\PowerShell\7\pwsh.exe' -NoProfile -File $PSCommandPath `
         -Mode $Mode -Port $Port -Open:$Open -NoServer:$NoServer -Reauthorize:$Reauthorize -Symbols $Symbols `
         -ResearchMockPlan $ResearchMockPlan -ResearchMockPlanSha256 $ResearchMockPlanSha256 `
+        -AutoDiscoverResearchContexts:$AutoDiscoverResearchContexts `
+        -ResearchTestOnlyRetrospective $ResearchTestOnlyRetrospective `
+        -ResearchTestOnlyRetrospectiveSha256 $ResearchTestOnlyRetrospectiveSha256 `
         -RegisterResearchDrafts:$RegisterResearchDrafts
     exit $LASTEXITCODE
 }
@@ -123,6 +136,13 @@ function Invoke-PythonJson {
     [pscustomobject]@{ ExitCode = $code; Text = $text; Json = $parsed }
 }
 
+function Write-ResearchReceipt {
+    param([hashtable]$Value)
+    $path = Join-Path $env:TEMP 'daily-workbench-research-latest.json'
+    $Value | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath "$path.pending" -Encoding utf8
+    Move-Item -LiteralPath "$path.pending" -Destination $path -Force
+}
+
 Write-Host '================ TL9 每日工作台 ================'
 Write-Host "运行模式 : $Mode"
 
@@ -138,35 +158,89 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Python   : $python"
 
 # Explicit offline drafts are independent of quote refresh and public publication.
-# No model credentials, automatic registration or private account input is used.
-if ($ResearchMockPlan -or $ResearchMockPlanSha256 -or $RegisterResearchDrafts) {
-    try {
-    if (-not $ResearchMockPlan -or -not $ResearchMockPlanSha256) {
-        throw 'Research Mock plan requires both path and SHA-256.'
-    }
-    $researchArgs = @('scripts/current/run_agent_research_pilot.py',
-        '--mode', 'mock', '--batch-plan', $ResearchMockPlan,
-        '--batch-plan-sha256', $ResearchMockPlanSha256)
-    if ($RegisterResearchDrafts) { $researchArgs += '--register-drafts' }
-    $research = Invoke-PythonJson $researchArgs
-    $researchReceipt = Join-Path $env:TEMP 'daily-workbench-research-latest.json'
+# Discovery is opt-in and only exports bounded Mock/TEST_ONLY inputs. A pinned
+# manual batch remains the override, and no live provider path is reachable here.
+if ($AutoDiscoverResearchContexts -or $ResearchMockPlan -or $ResearchMockPlanSha256 `
+        -or $ResearchTestOnlyRetrospective -or $ResearchTestOnlyRetrospectiveSha256 `
+        -or $RegisterResearchDrafts) {
     $researchResult = @{
-        action = 'no_order'; mode = 'MOCK'; exit_code = $research.ExitCode
-        status = 'FAILED'; result = $research.Json
+        action = 'no_order'; mode = 'MOCK'; scope = 'TEST_ONLY_ENGINEERING'
+        exit_code = 2; status = 'BLOCKED'; source = $null; discovery = $null; result = $null
     }
-    if ($research.Json) { $researchResult.status = $research.Json.status }
-    $researchResult | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath "$researchReceipt.pending" -Encoding utf8
-    Move-Item -LiteralPath "$researchReceipt.pending" -Destination $researchReceipt -Force
-    Write-Host "研究草案 : $($researchResult.status)（MOCK；不批准研究或交易）"
-    if ($research.Json.display_registration) {
-        Write-Host "草案展示登记 : $($research.Json.display_registration.status)（仅供已认证 Web 阅读）"
-    }
-    if ($research.ExitCode -ne 0) {
-        $notes.Add('部分离线研究草案未完成；详见 .tmp/daily-workbench-research-latest.json；继续其他更新。')
-    }
+    try {
+        $planPath = $null
+        $planSha256 = $null
+        if ($ResearchMockPlan -or $ResearchMockPlanSha256) {
+            if (-not $ResearchMockPlan -or -not $ResearchMockPlanSha256) {
+                throw 'Research Mock plan requires both path and SHA-256.'
+            }
+            $planPath = $ResearchMockPlan
+            $planSha256 = $ResearchMockPlanSha256
+            $researchResult.source = 'PINNED_MOCK_PLAN'
+        } elseif ($AutoDiscoverResearchContexts) {
+            $discoveryArgs = @('scripts/current/run_agent_research_pilot.py',
+                '--mode', 'mock', '--discover-contexts')
+            if ($ResearchTestOnlyRetrospective -or $ResearchTestOnlyRetrospectiveSha256) {
+                if (-not $ResearchTestOnlyRetrospective -or -not $ResearchTestOnlyRetrospectiveSha256) {
+                    throw 'TEST_ONLY retrospective discovery requires both path and SHA-256.'
+                }
+                $discoveryArgs += @('--test-only-retrospective', $ResearchTestOnlyRetrospective,
+                    '--test-only-retrospective-sha256', $ResearchTestOnlyRetrospectiveSha256)
+            }
+            $discovery = Invoke-PythonJson $discoveryArgs
+            $researchResult.discovery = $discovery.Json
+            $researchResult.source = 'AUTO_DISCOVERY'
+            if (-not $discovery.Json) {
+                throw 'Research context discovery returned no readable result.'
+            }
+            if ($discovery.Json.action -ne 'no_order' -or $discovery.Json.mode -ne 'MOCK' `
+                    -or $discovery.Json.approval_count -ne 0 -or
+                    $discovery.Json.registered_or_published -ne $false) {
+                throw 'Research context discovery violated the Mock/no-order boundary.'
+            }
+            if ($discovery.ExitCode -eq 2 -or $discovery.Json.status -eq 'BLOCKED' `
+                    -or -not $discovery.Json.batch_plan) {
+                $researchResult.exit_code = if ($discovery.ExitCode -ne 0) { $discovery.ExitCode } else { 2 }
+                $researchResult.status = 'BLOCKED'
+                Write-ResearchReceipt $researchResult
+                $notes.Add('自动上下文发现未产生可用研究批次；未登记任何研究；继续其他更新。')
+                Write-Host '研究草案 : BLOCKED（未发现可用上下文；未登记研究）'
+                $planPath = $null
+            } else {
+                $planPath = [string]$discovery.Json.batch_plan.path
+                $planSha256 = [string]$discovery.Json.batch_plan.sha256
+                if (-not $planPath -or $planSha256 -notmatch '^[0-9a-f]{64}$') {
+                    throw 'Research context discovery returned an invalid batch plan pin.'
+                }
+            }
+        } else {
+            throw 'Explicit -AutoDiscoverResearchContexts or a pinned Research Mock plan is required.'
+        }
+        if ($planPath) {
+            $researchArgs = @('scripts/current/run_agent_research_pilot.py',
+                '--mode', 'mock', '--batch-plan', $planPath,
+                '--batch-plan-sha256', $planSha256)
+            if ($RegisterResearchDrafts) { $researchArgs += '--register-drafts' }
+            $research = Invoke-PythonJson $researchArgs
+            $researchResult.exit_code = $research.ExitCode
+            $researchResult.result = $research.Json
+            $researchResult.status = if ($research.Json) { [string]$research.Json.status } else { 'FAILED' }
+            Write-ResearchReceipt $researchResult
+            Write-Host "研究草案 : $($researchResult.status)（MOCK；不批准研究或交易）"
+            if ($research.Json.display_registration) {
+                Write-Host "草案展示登记 : $($research.Json.display_registration.status)（仅供已认证 Web 阅读）"
+            }
+            if ($research.ExitCode -ne 0) {
+                $notes.Add('部分离线研究草案未完成；详见 .tmp/daily-workbench-research-latest.json；继续其他更新。')
+            }
+        }
     } catch {
+        $researchResult.exit_code = 2
+        $researchResult.status = 'BLOCKED'
+        $researchResult.error = $_.Exception.Message
+        Write-ResearchReceipt $researchResult
         $notes.Add('离线研究批次运行失败；其他行情及公开快照更新继续，未自动登记研究。')
-        Write-Host '研究草案 : FAILED（独立失败；未授予研究或交易资格）'
+        Write-Host '研究草案 : BLOCKED（独立失败；未授予研究或交易资格）'
     }
 }
 
