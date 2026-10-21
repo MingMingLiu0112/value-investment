@@ -442,7 +442,7 @@ def register_enriched_research(result: dict, *, root: Path, points: list[dict],
         cache_dir=root / '.tmp/value-enrichment-extraction',
         name=result.get('company_name'), sector=result.get('sector'))
     # JSON normalization allows persisted Decimal values to be revalidated.
-    for field in ('adopted_points', 'sourced_arithmetic_points', 'after', 'input_points_sha256'):
+    for field in ('adopted_points', 'sourced_arithmetic_points', 'after', 'input_points_sha256', 'debt_scope'):
         normalize = lambda value: json.loads(json.dumps(value, default=str))
         if normalize(checked[field]) != normalize(result[field]):
             raise ValueError('Research admission differs from revalidated source facts: ' + field)
@@ -462,8 +462,11 @@ def register_enriched_research(result: dict, *, root: Path, points: list[dict],
             input_fact_ids=point['metadata']['input_fact_ids'],
             evidence_refs=point['metadata'].get('evidence_refs', []))
     blockers = list(dict.fromkeys([*facts.blockers, 'ECONOMIC_REVIEW_NOT_GRANTED_BY_ENRICHMENT']))
+    from dataclasses import fields
+    cleared = {name: None for name in ('scenario_inputs', 'valuation_timing')
+               if name in {field.name for field in fields(facts)}}
     updated_facts = replace(facts, operating_inputs=inputs, evidence_refs=list(refs.values()),
-                            blockers=blockers, verified=False)
+                            blockers=blockers, verified=False, **cleared)
     kind, _ = artifact_payload(updated_facts)
     identity = ResearchArtifactIdentity('security', case.symbol, kind, 'c3-v1', case.as_of, cutoff)
     stored_facts = repository.save_object(updated_facts, identity=identity,
@@ -479,11 +482,12 @@ def register_enriched_research(result: dict, *, root: Path, points: list[dict],
         financial_facts=case_ref, admitted_fact_ids=[p['data_point_id'] for p in points],
         operating_inputs=consumed.operating_inputs, quality=result['after'],
         sourced_arithmetic_observations=result.get('sourced_arithmetic_points', []),
-        complete_debt_verified=result['debt_scope']['complete_debt_verified'],
+        complete_debt_verified=checked['debt_scope']['complete_debt_verified'],
         economic_admission='NOT_PROVEN', action='no_order'))
     case_refs = {ref['id']: ref for ref in case.evidence_refs}
     case_refs[case_ref['id']] = case_ref
     updated_case = replace(case, financial_summary=summary, evidence_refs=list(case_refs.values()),
+        research_status='DATA_CHECK', valuation_status='NOT_ASSESSED',
         research_version=case.research_version + ':' + stored_facts.envelope.payload_sha256[:16],
         generated_at=cutoff, run_id=run_id,
         blockers=list(dict.fromkeys([*case.blockers, *blockers])))
@@ -530,7 +534,7 @@ def verify_enrichment_adoption(*, root: Path, result_binding: dict,
     checked = enrich_retained_company(root, source, points, evaluation_at=stamp,
         cache_dir=root / '.tmp/value-enrichment-extraction',
         name=result.get('company_name'), sector=result.get('sector'))
-    for field in ('adopted_points', 'sourced_arithmetic_points', 'after', 'input_points_sha256'):
+    for field in ('adopted_points', 'sourced_arithmetic_points', 'after', 'input_points_sha256', 'debt_scope'):
         if json.loads(json.dumps(checked[field], default=str)) != result[field]:
             raise ValueError('Enrichment result differs from revalidated source facts: ' + field)
     registration = result.get('research_registration')
@@ -571,6 +575,9 @@ def verify_enrichment_adoption(*, root: Path, result_binding: dict,
             'sourced_arithmetic_observations', [])
         if observations != checked.get('sourced_arithmetic_points', []):
             raise ValueError('Registered research observations differ from sourced arithmetic')
+        complete_debt = case.payload_object()['financial_summary']['value_enrichment'].get('complete_debt_verified')
+        if complete_debt is not checked['debt_scope']['complete_debt_verified']:
+            raise ValueError('Registered research debt scope differs from revalidated source')
         registered = True
     return dict(status='VERIFIED_FACT_ADOPTION', symbol=source.symbol,
         adopted_fact_ids=[p['data_point_id'] for p in checked['adopted_points']],

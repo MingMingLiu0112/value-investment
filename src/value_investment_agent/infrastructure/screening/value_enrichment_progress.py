@@ -124,3 +124,31 @@ class ValueEnrichmentProgress:
         if len(declarations) > 128:
             raise ValueError('retained enrichment replay exceeds 128-source budget')
         return [item[1] for _, item in sorted(declarations.items())]
+
+    def registered_adoption(self, symbol: str, *, cutoff: datetime):
+        """Read the latest symbol binding from checkpoints, never scan run folders."""
+        if cutoff.utcoffset() is None:
+            raise ValueError('enrichment consumption cutoff must be timezone-aware')
+        paths = list(self.directory.glob('*.json'))
+        if len(paths) > 4096:
+            raise ValueError('enrichment progress exceeds bounded checkpoint read budget')
+        candidates = []
+        for path in paths:
+            envelope = json.loads(path.read_bytes())
+            payload = envelope['payload']
+            adoption = payload.get('registered_adoption')
+            if not adoption or adoption.get('symbol') != symbol:
+                continue
+            if envelope['sha256'] != digest(payload):
+                raise ValueError('enrichment progress integrity mismatch')
+            stamp = datetime.fromisoformat(payload['completed_at'])
+            if stamp.utcoffset() is None:
+                raise ValueError('enrichment progress clock invalid')
+            if stamp <= cutoff:
+                candidates.append((stamp, path, payload))
+        if not candidates:
+            return None
+        _, path, payload = max(candidates, key=lambda row: (row[0], row[1].name))
+        self._load_checkpoint(path, payload['key'])
+        outcome = json.loads((self.root / payload['execution_binding']['path']).read_bytes())
+        return dict(payload['registered_adoption'], result_binding=outcome['result_binding'])

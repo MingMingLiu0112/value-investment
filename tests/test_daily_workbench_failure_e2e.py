@@ -75,6 +75,8 @@ def test_safe_refresh_failure_keeps_previous_snapshot_bytes(tmp_path):
         shutil.copy2(ROOT / 'config' / name, project / 'config' / name)
     pointer = project / 'config/current-daily-public-snapshot.json'
     old = json.loads(pointer.read_bytes())
+    if not (ROOT / old['packet_path']).is_file():
+        pytest.skip('Retained public snapshot original is absent from this source-only checkout')
     artifact = project / old['packet_path']
     artifact.parent.mkdir(parents=True)
     shutil.copy2(ROOT / old['packet_path'], artifact)

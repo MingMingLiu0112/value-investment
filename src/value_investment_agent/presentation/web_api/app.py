@@ -569,6 +569,9 @@ def create_app(
             draft = load_current_research_draft(project, decision_id)
             if draft is not None:
                 payload["research_draft"] = draft
+            from ...application.research.value_enrichment_batch import read_verified_enrichment_progress
+            payload["financial_progress"] = read_verified_enrichment_progress(
+                root=project, symbol=decision_id, evaluation_at=datetime.now(timezone.utc))
             return payload
 
         for company in published.get("companies", []):

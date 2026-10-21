@@ -36,6 +36,40 @@ vi.mock("../src/components/HotspotReplayReview", () => ({
 import DecisionDetail from "../src/pages/DecisionDetail";
 import DecisionHistory from "../src/pages/DecisionHistory";
 
+it("shows verified financial input progress separately from economic approval", () => {
+  state.data = {
+    decision: { id: "600887", symbol: "600887", strategy: "CORE_VALUE" },
+    financial_progress: {
+      status: "VERIFIED_FACT_ADOPTION",
+      action: "no_order",
+      symbol: "600887",
+      adopted_fact_count: 1,
+      research_inputs_updated: true,
+      quality_coverage_before: "0.5556",
+      quality_coverage_after: "0.6667",
+      formal_eligibility: false,
+    },
+  };
+  const html = renderToStaticMarkup(<DecisionDetail />);
+  expect(html).toContain("财务补证已回流研究");
+  expect(html).toContain("55.6");
+  expect(html).toContain("66.7");
+  expect(html).toContain("投资资格仍独立核验");
+  for (const mutation of [
+    { symbol: "600519" },
+    { formal_eligibility: true },
+    { adopted_fact_count: 0 },
+    { quality_coverage_after: "" },
+  ]) {
+    const original = state.data.financial_progress;
+    state.data.financial_progress = { ...original, ...mutation };
+    expect(renderToStaticMarkup(<DecisionDetail />)).not.toContain(
+      "财务补证已回流研究",
+    );
+    state.data.financial_progress = original;
+  }
+});
+
 it("keeps research collapsed and trade navigation ahead of the current chart without autofilling execution prices", () => {
   state.data = {
     decision: {

@@ -28,6 +28,41 @@ COMPLETED_PLAN_SCHEMA = "local-public-observation-session-v3"
 SCHEMAS = {SCHEMA, PLAN_SCHEMA, COMPLETED_PLAN_SCHEMA}
 MAX_BYTES = 8_000_000
 AGE = timedelta(seconds=120)
+CONFIRMATION_FIELDS = {"confirmation_scope", "pending_confirmations",
+                       "price_conditions_observed", "structure_confirmation"}
+
+
+def _legacy_completed(expected, plan):
+    """Reconstruct the exact pre-V5 result from source-replayed current cursors."""
+    legacy = {key: deepcopy(value) for key, value in expected.items()
+              if key not in CONFIRMATION_FIELDS | {"result_sha256"}}
+    if (expected["status"] == "WAITING_CONFIRMATION"
+            and expected["price_conditions_observed"]
+            and plan.get("opportunity_quality", {}).get("structure_tier")
+                == "STRUCTURE_QUALIFIED_OBSERVATION"):
+        legacy["status"] = "STRUCTURE_CONFIRMED_OBSERVATION"
+    legacy["result_sha256"] = _sha(_bytes(legacy))
+    return legacy
+
+
+def _completed_view(result):
+    if CONFIRMATION_FIELDS <= result.keys():
+        return deepcopy(result)
+    current = deepcopy(result)
+    current.update(audit_result_sha256=result["result_sha256"],
+        audit_status=result["status"], structure_confirmation=False,
+        confirmation_scope="COMPLETED_CLOSE_VS_FROZEN_PRIMARY_PRICE_REFERENCES_ONLY",
+        pending_confirmations=["PRIOR_FIVE_VOLUME_RULE", "PER_PERIOD_BREAKOUT_RULES",
+                               "DAILY_60M_15M_STRUCTURE_REASSESSMENT"],
+        price_conditions_observed=all(
+            item["status"] == "COMPLETED_BAR_VERIFIED"
+            and item["states"][0]["state"]["status"] == "CONDITION_REVIEW"
+            for item in result["periods"].values()))
+    if current["status"] == "STRUCTURE_CONFIRMED_OBSERVATION":
+        current["status"] = "WAITING_CONFIRMATION"
+    current.pop("result_sha256")
+    current["result_sha256"] = _sha(_bytes(current))
+    return current
 
 
 def _bytes(value):
@@ -352,7 +387,9 @@ class PublicObservationSession:
                 condition_transitions=[deepcopy(item) for batch in results for item in batch["transitions"]])
         if report["schema_version"] == COMPLETED_PLAN_SCHEMA:
             completed = [sample["completed_plan_result"] for sample in report["samples"]]
-            result["completed_plan_observation"] = deepcopy(completed[-1]) if completed else None
+            result["completed_plan_observation"] = _completed_view(completed[-1]) if completed else None
+            for sample in result["samples"]:
+                sample["completed_plan_result"] = _completed_view(sample["completed_plan_result"])
         return result
 
     def _verified_reports(self, entries, cursors=None):
@@ -420,6 +457,9 @@ class PublicObservationSession:
                 expected["bar_bindings"] = deepcopy(bar_bindings)
                 expected["bar_collection_status"] = sample["bar_collection_status"]
                 expected["completed_plan_result"] = previous_completed
+                if not CONFIRMATION_FIELDS.intersection(sample["completed_plan_result"]):
+                    expected["completed_plan_result"] = _legacy_completed(
+                        previous_completed, report["plan_binding"]["plan"])
             if expected != sample:
                 raise ValueError("Observation replay mismatch")
         return report
@@ -451,6 +491,12 @@ class PublicObservationSession:
                     return {**self._view(report), "notification_inbox": {
                         "status": "CLOCK_UNAVAILABLE", "alerts": [], "history": [], "action": "no_order"}}
                 inbox = project_notification_inbox(reports, now=now, snapshot_sha256=_sha(_bytes(pointer)))
+                # Keep audit event/action identities while withdrawing legacy
+                # price-only confirmation credit from the public presentation.
+                for event in inbox["history"]:
+                    if event["event_type"] == "STRUCTURE_CONFIRMED_OBSERVATION":
+                        event.update(audit_event_type=event["event_type"],
+                                     event_type="BAR_CONFIRMATION_PENDING", structure_confirmation=False)
                 return {**self._view(report), "notification_inbox": inbox}
             except Exception:
                 return {"status": "CORRUPT", "monitor_running": self._thread is not None,

@@ -293,6 +293,70 @@ def _allocations_payload(replayed: ReplayedPortfolio, sellable_as_of: date) -> l
             for row in grouped.values()]
 
 
+def _confirmed_committed_risk(payload, *, records, source, repository_root, generated_at):
+    """Import only explicit amounts from the existing pinned private risk contract.
+
+    The caller supplies a trusted local binding, never a plan or request-body
+    override. Existing private-path, namespace, confirmation and risk validation
+    remain authoritative. A changed journal requires a new explicit binding.
+    """
+    from ..product.dual_sleeve_risk import run_dual_sleeve_review, semantic_content
+    from .private_portfolio_service import JournalConflict, JournalValidationError
+    from .personal_entry_thesis import _journal
+
+    fields = {"input_path", "input_sha256", "private_root", "journal_revision", "journal_tip_sha256"}
+    if not isinstance(source, dict) or set(source) != fields or repository_root is None:
+        raise JournalValidationError("Exact pinned private committed-risk source required")
+    if (type(source["journal_revision"]) is not int or source["journal_revision"] != len(records)
+            or source["journal_tip_sha256"] != records[-1]["record_sha256"]):
+        raise JournalConflict("REVISION_CONFLICT", "Committed-risk source requires current journal tip")
+    _journal(records, account_scope=records[0]["body"]["account_scope"],
+        expected_revision=len(records), as_of=generated_at)
+    if not all(isinstance(source[key], (str, Path)) and str(source[key]).strip()
+               for key in ("input_path", "private_root")):
+        raise JournalValidationError("Explicit private committed-risk paths required")
+    report = run_dual_sleeve_review(root=Path(repository_root), input_path=Path(source["input_path"]),
+        input_sha256=source["input_sha256"], private_root=Path(source["private_root"]),
+        generated_at=generated_at)
+    if (report.get("namespace") != NAMESPACE_ACTUAL
+            or report.get("sensitivity") != "PRIVATE_USER_CONFIRMED"
+            or report.get("status") not in {"RISK_REVIEW_CALCULATED", "REVIEW_REQUIRED"}):
+        raise JournalValidationError("Confirmed ACTUAL private risk input required")
+    original = report["risk_input_semantics"]
+    for key in ("portfolio", "shared_budget", "sleeves", "cash_reserve_cny"):
+        if semantic_content(original[key]) != semantic_content(payload[key]):
+            raise JournalValidationError("Committed-risk source differs from current journal: " + key)
+    rows = {(sleeve, row["symbol"]): row for sleeve, review in report["sleeves"].items()
+            for row in review["holdings"]}
+    if set(rows) != {(row["sleeve"], row["symbol"]) for row in payload["allocations"]}:
+        raise JournalValidationError("Committed-risk source allocation identities differ")
+    replacements = []
+    for row in payload["allocations"]:
+        checked = rows[(row["sleeve"], row["symbol"])]
+        for key in ("quantity", "sellable_quantity", "cost_basis_cny"):
+            if Decimal(checked[key]) != Decimal(row[key]):
+                raise JournalValidationError("Committed-risk source allocation differs: " + key)
+        replacements.append({**row, "committed_risk_cny": checked["committed_risk_cny"],
+            "evidence_ref": source["input_sha256"]})
+    payload["allocations"] = replacements
+    return {"input_sha256": source["input_sha256"], "journal_revision": len(records),
+            "journal_tip_sha256": source["journal_tip_sha256"], "basis": "EXPLICIT_PRIVATE_INPUT_AMOUNT"}
+
+
+def _committed_risk_gaps(payload, *, revision, source_binding):
+    """Separate missing private assertions from known ledger accounting facts."""
+    missing = [{"sleeve": row["sleeve"], "symbol": row["symbol"],
+                "quantity": row["quantity"], "cost_basis_cny": row["cost_basis_cny"],
+                "field": "committed_risk_cny"}
+               for row in payload["allocations"] if row["committed_risk_cny"] is None]
+    return {"action": "no_order", "revision": revision,
+        "status": "BLOCKED_PRIVATE_INPUT" if missing else "COMPLETE",
+        "source_binding": source_binding, "missing_inputs": missing,
+        "required_basis": "Explicit user-confirmed amount and evidence_ref for each held sleeve/security in dual-sleeve-risk-input-v1",
+        "automatic_derivation": False,
+        "reason": "Risk budgets, holding cost, market value and narrative thesis breakers do not establish committed risk. Hotspot numeric protection also needs confirmed gap, slippage and fee assumptions; core has no mechanical stop."}
+
+
 def _sleeve_policy(replayed):
     policy = replayed.policy
     if not policy.get("_confirmed_at"):
@@ -483,8 +547,16 @@ def review_private_risk_rehearsal(
     repository_root: Path | None = None,
     hotspot_request: dict[str, Any] | None = None,
     core_request: dict[str, Any] | None = None,
+    committed_risk_source: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Run the real engine on real confirmed facts; report the exact gaps."""
+    """Run the real engine on confirmed facts, retaining unknown private inputs.
+
+    committed_risk_source is an optional trusted local-service argument with
+    input_path/input_sha256/private_root/journal_revision/journal_tip_sha256.
+    It reuses the existing explicit private input loader; do not construct it
+    from a public plan, scenario choices or an unauthenticated request body.
+    No implicit discovery or persistence occurs.
+    """
     service = PrivatePortfolioService(journal)
     records = service.records()
     if not records:
@@ -502,6 +574,10 @@ def review_private_risk_rehearsal(
     payload = build_risk_input(replayed, sellable_as_of=sellable_as_of,
         repository_root=repository_root, generated_at=generated_at, hotspot_request=hotspot_request,
         core_request=core_request, _prices=prices)
+    source_binding = None
+    if committed_risk_source is not None:
+        source_binding = _confirmed_committed_risk(payload, records=records,
+            source=committed_risk_source, repository_root=repository_root, generated_at=generated_at)
     extra = _account_time_blockers(replayed, generated_at)
     if replayed.policy.get("effective_date") and date.fromisoformat(replayed.policy["effective_date"]) > generated_at.astimezone(ZoneInfo("Asia/Shanghai")).date():
         extra.append("POLICY_NOT_EFFECTIVE")
@@ -530,6 +606,9 @@ def review_private_risk_rehearsal(
                 report[key] = {**report[key], "review_quantity": None, "status": "BLOCKED",
                     "blockers": list(dict.fromkeys([*report[key].get("blockers", []),
                         "EXTERNAL_ACCOUNT_RECONCILIATION_MISSING"]))}
+    if committed_risk_source is not None and service.records() != records:
+        from .private_portfolio_service import JournalConflict
+        raise JournalConflict("REVISION_CONFLICT", "Portfolio changed during committed-risk review")
     return {
         "action": "no_order",
         "status": report["status"],
@@ -537,6 +616,8 @@ def review_private_risk_rehearsal(
         "engine": report,
         "facts": _facts(replayed, prices, generated_at=generated_at),
         "security_attributes": payload["security_attributes"],
+        "committed_risk": _committed_risk_gaps(payload, revision=replayed.revision,
+            source_binding=source_binding),
         "policy": {"confirmation_status": "HUMAN_CONFIRMED" if replayed.policy.get("_confirmed_at") else "INCOMPLETE_LEGACY_POLICY",
             "effective_date": replayed.policy.get("effective_date"), "max_drawdown_pct": replayed.policy.get("max_drawdown_pct"),
             "dividend_income_goal_cny": replayed.policy.get("dividend_income_goal_cny"),

@@ -19,7 +19,8 @@ from ...infrastructure.screening.value_enrichment_progress import ValueEnrichmen
 from ...m2_discovery_engine import _point_available_at
 
 
-def load_enrichment_research_contexts(*, root: Path, symbols, evaluation_at: datetime):
+def load_enrichment_research_contexts(*, root: Path, symbols, evaluation_at: datetime,
+                                     _reuse=True):
     """Load registered typed inputs only; never run approvals or select a model."""
     from dataclasses import fields, replace
     from ..product.publication_chain import bound_object
@@ -37,6 +38,7 @@ def load_enrichment_research_contexts(*, root: Path, symbols, evaluation_at: dat
     registry_path = root / 'config/current-agent-research.json'
     registry = json.loads(registry_path.read_bytes()) if registry_path.is_file() else {}
     contexts, diagnostics = {}, {}
+    repository = InMemoryResearchArtifactRepository()
     for symbol in dict.fromkeys(symbols):
         if not isinstance(symbol, str) or not re.fullmatch(r'\d{6}', symbol):
             raise ValueError('Research context requires security identity')
@@ -92,10 +94,150 @@ def load_enrichment_research_contexts(*, root: Path, symbols, evaluation_at: dat
             contexts[symbol] = dict(case=case, facts=facts)
             diagnostics[symbol] = dict(status='REGISTERED_CONTEXT_LOADED', source=provenance,
                                        economic_admission='NOT_PROVEN')
+            if _reuse:
+                try:
+                    restored = _verified_registered_adoption(root, symbol, evaluation_at,
+                                                             repository=repository)
+                    if restored:
+                        restored_case, restored_facts = restored[1]['case'], restored[1]['facts']
+                        contexts[symbol] = dict(
+                            case=replace(restored_case, as_of=evaluation_at.date(),
+                                research_status='DATA_CHECK', valuation_status='NOT_ASSESSED'),
+                            facts=replace(restored_facts, **updates))
+                        diagnostics[symbol]['status'] = 'VERIFIED_ENRICHMENT_CONTEXT_RESTORED'
+                except (ValueError, KeyError, TypeError, OSError) as error:
+                    diagnostics[symbol]['reuse_status'] = 'UNVERIFIED'
+                    diagnostics[symbol]['reuse_reason'] = type(error).__name__ + ':' + str(error)
         except (ValueError, KeyError, TypeError, OSError) as error:
             diagnostics[symbol] = dict(status='NO_USABLE_REGISTERED_RESEARCH_CONTEXT',
                 reason=type(error).__name__ + ':' + str(error))
-    return InMemoryResearchArtifactRepository(), contexts, diagnostics
+    return repository, contexts, diagnostics
+
+
+def _context_digest(context):
+    from ...research_artifact_codecs import artifact_payload
+    payload = {key: artifact_payload(context[key])[1] for key in ('case', 'facts')}
+    return _canonical_hash(json.loads(json.dumps(payload, default=str)))
+
+
+def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=None):
+    """Revalidate lineage and replay registration; checkpoints grant no authority."""
+    from .value_evidence_enrichment_v1 import verify_enrichment_adoption
+    from ...research_artifact_repository import InMemoryResearchArtifactRepository
+    from ...research_artifact_codecs import ResearchCaseCodec
+    from ...research_input import facts_from_payload
+
+    if not isinstance(symbol, str) or not re.fullmatch(r'\d{6}', symbol):
+        raise ValueError('Research context requires security identity')
+    root = root.resolve()
+    binding = ValueEnrichmentProgress(root).registered_adoption(symbol, cutoff=evaluation_at)
+    if binding is None:
+        return None
+    export_binding = binding['financial_export']
+    export = require_inside(root / 'runtime', root / export_binding['path'], 'financial export')
+    summary = verify_enrichment_adoption(root=root, result_binding=binding['result_binding'],
+        financial_export_path=export, financial_export_sha256=export_binding['sha256'],
+        evaluation_at=evaluation_at)
+    if not summary['research_inputs_updated'] or not summary['adopted_fact_count']:
+        raise ValueError('No verified typed fact adoption')
+    result = _load_bound(root / binding['result_binding']['path'], binding['result_binding']['sha256'])
+    stamp = datetime.fromisoformat(result['evaluation_at'])
+    _, contexts, _ = load_enrichment_research_contexts(root=root, symbols=[symbol],
+        evaluation_at=stamp, _reuse=False)
+    baseline = contexts[symbol]
+    if _context_digest(baseline) != binding['baseline_sha256']:
+        raise ValueError('Registered enrichment baseline changed')
+    points, _ = load_retained_financial_export(export, evaluation_at=stamp)
+    saved = result['research_registration']
+    run_id = saved['artifacts'][-1]['envelope']['run_id']
+    # Reconstruct the entire registration from the current registered baseline.
+    # Check all payload fields, including inherited inputs and approval flags.
+    replay = register_enriched_research(result, root=root, points=points,
+        repository=InMemoryResearchArtifactRepository(), **baseline, run_id=run_id)
+    old = {a['envelope']['identity']['artifact_type']: a for a in saved['artifacts']}
+    new = {a['envelope']['identity']['artifact_type']: a for a in replay['artifacts']}
+    for kind in ('financial_facts', 'research_case'):
+        expected = json.loads(new[kind]['envelope']['canonical_payload'])
+        actual = json.loads(old[kind]['envelope']['canonical_payload'])
+        if kind == 'research_case':
+            link = expected['financial_summary']['value_enrichment']['financial_facts']
+            link['artifact_id'] = saved['financial_facts_artifact_id']
+            for ref in expected['evidence_refs']:
+                if ref.get('id') == 'value-enrichment-financial-facts':
+                    ref['artifact_id'] = saved['financial_facts_artifact_id']
+        if expected != actual:
+            raise ValueError('Registered enrichment differs from baseline replay: ' + kind)
+    if repository is not None:
+        replay = register_enriched_research(result, root=root, points=points,
+            repository=repository, **baseline, run_id=run_id)
+    typed = {a['envelope']['identity']['artifact_type']:
+             json.loads(a['envelope']['canonical_payload']) for a in replay['artifacts']}
+    context = dict(case=ResearchCaseCodec().from_payload(typed['research_case']),
+                   facts=facts_from_payload(typed['financial_facts']))
+    return summary, context, result
+
+
+def read_verified_enrichment_progress(root: Path, symbol: str, evaluation_at: datetime) -> dict | None:
+    """Bounded facts-only public supplement; never changes published economics."""
+    try:
+        verified = _verified_registered_adoption(root, symbol, evaluation_at)
+        if verified is None:
+            return None
+        summary, _, result = verified
+        keys = ('status', 'symbol', 'adopted_fact_count', 'research_inputs_updated',
+                'quality_coverage_before', 'quality_coverage_after', 'formal_eligibility', 'action')
+        return dict({key: summary[key] for key in keys}, as_of=result['evaluation_at'],
+                    verified_at=evaluation_at.isoformat())
+    except (ValueError, KeyError, TypeError, OSError):
+        return None
+
+
+def persist_verified_enrichment_adoption(*, root: Path, result: dict,
+        financial_export_path: Path, financial_export_sha256: str, output_dir: Path) -> dict:
+    """Persist a single real issuer through the existing result/checkpoint contract.
+
+    Registration is rebuilt from registered inputs, never a caller's approval or
+    arbitrary typed payload. This also supports explicit research outside a queue.
+    """
+    from copy import deepcopy
+    from .value_evidence_enrichment_v1 import verify_enrichment_adoption
+    root = root.resolve()
+    stamp = datetime.fromisoformat(result['evaluation_at'])
+    symbol = result['symbol']
+    export = require_inside(root / 'runtime', financial_export_path, 'financial export')
+    _load_bound(export, financial_export_sha256)
+    repository, contexts, _ = load_enrichment_research_contexts(root=root, symbols=[symbol],
+        evaluation_at=stamp, _reuse=False)
+    baseline = contexts[symbol]
+    points, _ = load_retained_financial_export(export, evaluation_at=stamp)
+    packet = deepcopy(result)
+    output = require_inside(root / 'runtime', output_dir, 'adoption output')
+    with ValueEnrichmentProgress(root).locked() as progress:
+        if output.exists():
+            raise FileExistsError('Adoption requires a fresh output directory')
+        packet['research_registration'] = register_enriched_research(packet, root=root,
+            points=points, repository=repository, **baseline, run_id=output.name + ':' + symbol)
+        packet['source_extraction'].pop('page_texts', None)
+        output.mkdir(parents=True)
+        result_path = output / (symbol + '.json')
+        write_new_json(result_path, json.loads(json.dumps(packet, default=str)))
+        result_binding = dict(path=result_path.relative_to(root).as_posix(),
+                              sha256=hashlib.sha256(result_path.read_bytes()).hexdigest())
+        now = datetime.now(timezone.utc)
+        summary = verify_enrichment_adoption(root=root, result_binding=result_binding,
+            financial_export_path=export, financial_export_sha256=financial_export_sha256,
+            evaluation_at=now)
+        if not summary['research_inputs_updated'] or not summary['adopted_fact_count']:
+            raise ValueError('No verified typed adoption to persist')
+        adoption = dict(symbol=symbol, baseline_sha256=_context_digest(baseline),
+            financial_export=dict(path=export.relative_to(root).as_posix(), sha256=financial_export_sha256))
+        attempt = output / (symbol + '-attempt.json')
+        write_new_json(attempt, dict(symbol=symbol, state=packet['state'], result_binding=result_binding))
+        progress.save(dict(key=_canonical_hash(dict(adoption=adoption, result_binding=result_binding)),
+            attempt=1, retryable=False, completed_at=now.isoformat(), retry_after=now.isoformat(),
+            registered_adoption=adoption, execution_binding=dict(path=attempt.relative_to(root).as_posix(),
+                sha256=hashlib.sha256(attempt.read_bytes()).hexdigest())))
+    return dict(summary, result_binding=result_binding)
 
 
 def _original(root, point, *, allow_network):
@@ -245,6 +387,7 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
         item = {'symbol': symbol, 'state': 'EVIDENCE_ENRICHING',
             'transitions': ['SCREENED', 'EVIDENCE_ENRICHING'], 'formal_eligibility': False,
             'attempt': previous['attempt'] + 1 if previous else 1, 'retryable': False}
+        adoption = None
         try:
             candidates = [point for point in points if point.get('symbol') == symbol
                 and point.get('source_name') == 'CNINFO statutory disclosure'
@@ -261,10 +404,18 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
                 name=row.get('company_name'))
             if symbol in research_contexts:
                 context = research_contexts[symbol]
+                _, baselines, _ = load_enrichment_research_contexts(root=root, symbols=[symbol],
+                    evaluation_at=datetime.fromisoformat(result['evaluation_at']), _reuse=False)
+                if symbol in baselines:
+                    context = baselines[symbol]
                 result['research_registration'] = register_enriched_research(result,
                     root=root, points=points,
                     repository=repository, case=context['case'], facts=context['facts'],
                     run_id=output.name + ':' + symbol)
+                if (symbol in baselines and result['research_registration']['status'] == 'RESEARCH_INPUTS_UPDATED'):
+                    adoption = dict(symbol=symbol, baseline_sha256=_context_digest(context),
+                        financial_export=dict(path=export.relative_to(root).as_posix(),
+                                              sha256=financial_export_sha256))
             # Page text remains in the extraction cache, not the small run receipt.
             result['source_extraction'].pop('page_texts', None)
             packet = json.loads(json.dumps(result, default=str, ensure_ascii=False, allow_nan=False))
@@ -301,6 +452,7 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
                                        research_contexts.get(row['symbol'])),
             'attempt': item['attempt'], 'retryable': item['retryable'],
             'completed_at': datetime.now(timezone.utc).isoformat(),
+            'registered_adoption': adoption,
             'retry_after': (now + timedelta(seconds=60 * 2 ** (item['attempt'] - 1))).isoformat(),
             'execution_binding': {'path': checkpoint.relative_to(root).as_posix(),
                 'sha256': hashlib.sha256(checkpoint.read_bytes()).hexdigest()}})

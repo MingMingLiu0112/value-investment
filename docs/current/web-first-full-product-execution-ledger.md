@@ -1,5 +1,53 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+### V5 restart, compatibility and risk integration checkpoint
+
+Latest integration follows ea6cf5d9b7c503b1f6dc2a25524133ea5f576e4d.
+The shared checkout was independently switched to feat/p0-pit-validation;
+Root preserves that checkout and pushes explicit reviewed commits to the
+authorized codex/web-d1-investment-workbench ref without resetting other work.
+
+Default research loading now restores the existing hash-bound adopted inputs
+after replaying the current registered baseline, original sources and complete
+typed registration. The public detail exposes only a separate verified factual
+supplement. Actual 600519 shows one adopted ratio and 55.6% to 66.7% coverage;
+it still has no approved current valuation. Independent review found a forged
+debt-completeness marker could survive replay; complete debt_scope comparison
+and source-derived case flags fix that P1. The exact reproduction is rejected
+and the independent 14-case durable replay review passed.
+
+Legacy observation records now replay using their exact historical schema and
+source bindings without rewriting originals. Actual Windows Web reads STOPPED
+and all four prior alerts, with five current candidates plus one retained choice.
+No production observation session was started. Current hotspot plans remain
+conditional observation, not BUY; 600693 has entry 9.140, invalidation 8.660 and
+60-minute volume ratio 0.75 against the existing 1.2 requirement.
+
+The private risk service now accepts the existing explicit private risk contract
+through a trusted server-side argument, bound to account/journal tip/policy/lots.
+It does not infer committed risk from cost, stops or budgets. Tests pass 340
+portfolio cases. The Web does not yet supply a trusted committed-risk binding:
+that remaining integration and the user-confirmed basis are explicitly PARTIAL.
+Do not call personal risk or the entire engineering workflow complete.
+
+Actual TEST_ONLY browser bookkeeping preserved thesis, IPS and synthetic
+external reconciliation across restart, with cash 359990, 1100 shares,
+cost 1650005 and realized PnL 9995 after the simulated sale. These are not the
+user's funds or real approvals. Browser scenario sizing remained blocked;
+the positive signed five-action chain is backend TEST_ONLY evidence only.
+
+Latest local runs: 301 Web tests, typecheck/format/build; 237 API tests;
+90 value-replay/observation/API regressions passed. Earlier clean-source full
+Core run: 4027 passed, 73 skipped, one missing ignored original; that original
+test now explicitly skips only when the real original is absent. Actual local
+network-failure checks still ran. Final source CI is recorded separately by SHA.
+
+The total Goal remains IN_PROGRESS. Economic admission, independent strategy
+PIT/OOS/Shadow validation, real private risk readiness and user acceptance are
+not passed. Next: current-source CI and evidence receipt, then Web-safe explicit
+private risk input integration and legitimate financial/strategy evidence.
+Excel remains FROZEN; action=no_order.
+
 ## 2026-10-21 V5 integrated vertical workflows (acceptance running)
 
 Baseline 815315a33ae6a0bf579735cace886afa8068e453; inherited V4 working

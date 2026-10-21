@@ -866,6 +866,23 @@ export default function DecisionDetail() {
   const { data, loading, error, retry } = useApi(load);
   const packet = useApi(api.packet);
   const decision = data?.decision;
+  const progress = data?.financial_progress;
+  const verifiedProgress =
+    progress?.status === "VERIFIED_FACT_ADOPTION" &&
+    progress.action === "no_order" &&
+    progress.formal_eligibility === false &&
+    progress.symbol === decision?.symbol &&
+    progress.research_inputs_updated === true &&
+    Number.isSafeInteger(progress.adopted_fact_count) &&
+    progress.adopted_fact_count > 0 &&
+    [progress.quality_coverage_before, progress.quality_coverage_after].every(
+      (value) =>
+        typeof value === "string" &&
+        value.trim() !== "" &&
+        Number.isFinite(Number(value)) &&
+        Number(value) >= 0 &&
+        Number(value) <= 1,
+    );
   const research = decision?.research ?? null;
   const chain =
     packet.data?.publication_id &&
@@ -899,6 +916,15 @@ export default function DecisionDetail() {
                   style={{ marginTop: 12 }}
                 />
               )}
+            {verifiedProgress && progress && (
+              <Typography.Paragraph role="status">
+                财务补证已回流研究：已核验采纳 {progress.adopted_fact_count}{" "}
+                个派生事实，财务覆盖从{" "}
+                {(Number(progress.quality_coverage_before) * 100).toFixed(1)}%
+                到 {(Number(progress.quality_coverage_after) * 100).toFixed(1)}
+                %。 这是财务输入更新；估值、事件审核和投资资格仍独立核验。
+              </Typography.Paragraph>
+            )}
             <JudgmentSummary
               decision={decision}
               boundDraft={

@@ -684,7 +684,7 @@ def project_held_continuity(positions: list[dict], risk: dict, *,
 
 def review_held_continuity(journal, *, repository_root: Path, generated_at: datetime,
                            selected_symbols=(), plan_provider=None, authenticated_subject=None,
-                           sell_review_request=None) -> dict:
+                           sell_review_request=None, committed_risk_source=None) -> dict:
     """Read confirmed lots, existing T+1 and the existing risk engine, never write.
 
     The default resolver uses current value/hotspot engines and confirmed
@@ -707,8 +707,9 @@ def review_held_continuity(journal, *, repository_root: Path, generated_at: date
     replayed = service._replay(records)
     if plan_provider is None:
         selected_symbols, plan_provider = build_held_plan_provider(repository_root, replayed, now=generated_at)
+    risk_kwargs = {"committed_risk_source": committed_risk_source} if committed_risk_source is not None else {}
     risk = review_private_risk_rehearsal(journal, repository_root=repository_root,
-        generated_at=generated_at, today=day)
+        generated_at=generated_at, today=day, **risk_kwargs)
     if replayed is None:
         result = project_held_continuity([], risk, selected_symbols=selected_symbols,
             plan_provider=plan_provider, generated_at=generated_at)
@@ -733,11 +734,13 @@ def review_held_continuity(journal, *, repository_root: Path, generated_at: date
     return result
 
 
-def review_private_held_sell(journal, *, repository_root, generated_at, payload, authenticated_subject):
+def review_private_held_sell(journal, *, repository_root, generated_at, payload, authenticated_subject,
+                             committed_risk_source=None):
     """Read-only private quantity intent; strategy and risk grant no execution permission."""
     request = _sell_review_request(payload)
     report = review_held_continuity(journal, repository_root=repository_root, generated_at=generated_at,
-        authenticated_subject=authenticated_subject, sell_review_request=request)
+        authenticated_subject=authenticated_subject, sell_review_request=request,
+        committed_risk_source=committed_risk_source)
     matches = [decision for row in report["items"] if row["symbol"] == request["symbol"]
         and row["exchange"] == request["exchange"] for decision in row["actionable_decisions"]
         if decision["strategy"] == request["sleeve"] and Decimal(decision["held_quantity"]) > 0]

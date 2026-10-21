@@ -504,3 +504,122 @@ def test_same_plan_completed_bar_conflict_survives_restart_and_missing_sample(tm
         restored = PublicObservationSession(tmp_path, clock=lambda: at[0])
         assert restored.read() == result
         restored.close()
+
+
+def legacy_session(root):
+    from test_current_price_registry import register
+    from test_hotspot_current_price_case import NOW as BOUND_AT
+    from test_intraday_plan_observation import NOW as PLAN_NOW
+    from value_investment_agent.application.hotspot.current_registry import load_price_conditions
+    from value_investment_agent.application.hotspot.intraday_plan_observation import bind_quote_plan
+    register(root)
+    plan = load_price_conditions(root, now=BOUND_AT, research_version="TEST_ONLY")["items"][0]["price_action_plan"]
+    plan["opportunity_quality"] = {"structure_tier": "STRUCTURE_QUALIFIED_OBSERVATION"}
+    binding = bind_quote_plan(plan, symbol="600519", now=BOUND_AT)
+    session = PublicObservationSession(root, clock=lambda: PLAN_NOW,
+        collector=lambda symbols: bundle(now=PLAN_NOW), bar_collector=lambda symbol: bars(PLAN_NOW),
+        max_samples=2, interval_seconds=.001)
+    session.start("600519", plan_binding=binding)
+    assert wait_stopped(session)["status"] == "STOPPED"
+    _, _, report = current_paths(session)
+    for sample in report["samples"]:
+        result = sample["completed_plan_result"]
+        assert result["price_conditions_observed"]
+        for field in ("confirmation_scope", "pending_confirmations", "price_conditions_observed", "structure_confirmation"):
+            result.pop(field)
+        result["status"] = "STRUCTURE_CONFIRMED_OBSERVATION"
+        seal_result(result)
+    reseal_session(session, report)
+    session.close()
+    return session, plan, PLAN_NOW
+
+
+def seal_result(result):
+    from value_investment_agent.application.hotspot.intraday_plan_observation import _digest
+    result.pop("result_sha256", None)
+    result["result_sha256"] = _digest(result)
+
+
+def reseal_session(session, report):
+    pointer, path, _ = current_paths(session)
+    raw = json.dumps(report).encode()
+    path.write_bytes(raw)
+    ref = json.loads(pointer.read_bytes())
+    ref["sha256"] = hashlib.sha256(raw).hexdigest()
+    for entry in ref["sessions"]:
+        if entry["report_id"] == ref["report_id"]:
+            entry["sha256"] = ref["sha256"]
+    pointer.write_text(json.dumps(ref), encoding="utf-8")
+
+
+def test_legacy_source_replay_preserves_audit_ids_and_withdraws_price_only_credit(tmp_path):
+    from value_investment_agent.application.hotspot.public_condition_notifications import project_notification_inbox
+    session, _, at = legacy_session(tmp_path)
+    _, _, original = current_paths(session)
+    audit = project_notification_inbox([original], now=at, snapshot_sha256="TEST_ONLY")
+    # A replacement current registry must not invalidate immutable session sources.
+    (tmp_path / "config/current-price-conditions.json").write_text("{}", encoding="utf-8")
+    before = files(tmp_path)
+    restored = PublicObservationSession(tmp_path, clock=lambda: at)
+    view = restored.read()
+    assert view["status"] == "STOPPED"
+    assert files(tmp_path) == before
+    assert [e["event_id"] for e in view["notification_inbox"]["history"]] == [e["event_id"] for e in audit["history"]]
+    assert all(e["event_type"] != "STRUCTURE_CONFIRMED_OBSERVATION" for e in view["notification_inbox"]["history"])
+    for sample, old in zip(view["samples"], original["samples"]):
+        current = sample["completed_plan_result"]
+        assert current["status"] == "WAITING_CONFIRMATION" and current["structure_confirmation"] is False
+        assert current["audit_result_sha256"] == old["completed_plan_result"]["result_sha256"]
+    inbox = view["notification_inbox"]
+    alert_id = inbox["alerts"][0]["alert_id"]
+    changed = restored.transition_notification(alert_id=alert_id, operation="ACKNOWLEDGE",
+        expected_snapshot_sha256=inbox["snapshot_sha256"])
+    assert next(a for a in changed["notification_inbox"]["alerts"]
+                if a["alert_id"] == alert_id)["status"] == "ACKNOWLEDGED"
+    # Notification receipts may append a report; immutable source handles stay intact.
+    for relative, contents in before.items():
+        if relative.name != "current.json":
+            assert files(tmp_path)[relative] == contents
+    restored.close()
+
+
+@pytest.mark.parametrize("mutation", ["bundle", "bar", "digest", "rehash", "partial_shape"])
+def test_legacy_replay_rejects_changed_originals_and_forged_results(tmp_path, mutation):
+    session, _, at = legacy_session(tmp_path)
+    _, _, report = current_paths(session)
+    sample = report["samples"][0]
+    if mutation in {"bundle", "bar"}:
+        suffix = ".bundle.json" if mutation == "bundle" else ".60m.bar.json"
+        path = session.directory / (sample["sample_id"] + suffix)
+        path.write_bytes(path.read_bytes() + b" ")
+    else:
+        result = sample["completed_plan_result"]
+        if mutation == "partial_shape":
+            result["structure_confirmation"] = False
+            seal_result(result)
+        elif mutation == "digest":
+            result["result_sha256"] = "0" * 64
+        else:
+            result["periods"]["60m"]["reason"] = "FORGED"
+            seal_result(result)
+        reseal_session(session, report)
+    restored = PublicObservationSession(tmp_path, clock=lambda: at)
+    assert restored.read()["status"] == "CORRUPT"
+    restored.close()
+
+
+def test_legacy_to_current_session_keeps_same_bar_conflict_cursor(tmp_path):
+    from value_investment_agent.application.hotspot.intraday_plan_observation import bind_quote_plan
+    _, plan, at = legacy_session(tmp_path)
+    at += timedelta(seconds=1)
+    session = PublicObservationSession(tmp_path, clock=lambda: at,
+        collector=lambda symbols: bundle(now=at), bar_collector=lambda symbol: bars(at, "15"),
+        max_samples=1, interval_seconds=.001)
+    session.start("600519", plan_binding=bind_quote_plan(plan, symbol="600519", now=at))
+    result = wait_stopped(session)
+    assert result["status"] == "STOPPED"
+    assert result["completed_plan_observation"]["periods"]["60m"]["reason"] == "CONFLICTING_REPEATED_OBSERVATION"
+    session.close()
+    restored = PublicObservationSession(tmp_path, clock=lambda: at)
+    assert restored.read() == result
+    restored.close()

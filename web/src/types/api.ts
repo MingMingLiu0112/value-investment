@@ -666,6 +666,16 @@ export interface DetailResponse {
   status: ApiStatus;
   decision: DecisionItem | null;
   research_draft?: ResearchDraft | null;
+  financial_progress?: {
+    status: "VERIFIED_FACT_ADOPTION" | "UNVERIFIED";
+    action: "no_order";
+    symbol: string;
+    adopted_fact_count: number;
+    research_inputs_updated: boolean;
+    quality_coverage_before: string;
+    quality_coverage_after: string;
+    formal_eligibility: false;
+  } | null;
   publication?: PublicPacketBlock;
   reason?: string;
 }
