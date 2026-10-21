@@ -3,8 +3,8 @@
   "action": "no_order",
   "publications": {
     "600519": {
-      "path": "runtime/pending-candidate-replay-v5-final-20261021/600519/publication.json",
-      "sha256": "9420dbbc50a95eba349157fe099b679587000b12e2b8ff3e429e2b7dc816542e"
+      "path": "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json",
+      "sha256": "fdd213de83cc1b37e5d6a5aa929d67524cdc044155e62e8ebf2deaf4d6b9ae7d"
     }
   }
 }

@@ -971,6 +971,14 @@ export default function DecisionDetail() {
                     ? "新来源版本已完成研究消费，可办理精确版本审核；研究日为 "
                     : "原研究已按当前程序核验重放，研究日仍为 "}
                   {replay.research_as_of}
+                  {replay.valuation_basis_scope ===
+                    "EX_POST_PRIOR_COMPLETED_SESSION" &&
+                    replay.valuation_basis_date && (
+                      <>
+                        ；估值基准为 {replay.valuation_basis_date}
+                        收盘，属事后估计，不代表当前行情有效
+                      </>
+                    )}
                   ；未获经济或买卖批准。{" "}
                   <a href="#value-review-handoff">
                     查看有权审核人的材料与签署路径

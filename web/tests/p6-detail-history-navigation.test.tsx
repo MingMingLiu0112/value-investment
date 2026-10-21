@@ -86,10 +86,14 @@ it("shows a new consumed input version as review material without borrowing appr
       price_admitted: false,
       scope: "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY",
       research_as_of: "2026-10-21",
+      valuation_basis_date: "2026-10-20",
+      valuation_basis_scope: "EX_POST_PRIOR_COMPLETED_SESSION",
     },
   };
   const html = renderToStaticMarkup(<DecisionDetail />);
   expect(html).toContain("新来源版本已完成研究消费");
+  expect(html).toContain("2026-10-20");
+  expect(html).toContain("事后估计，不代表当前行情有效");
   expect(html).toContain("2026-10-21");
   expect(html).toContain("未获经济或买卖批准");
   expect(html).toContain('href="#value-review-handoff"');

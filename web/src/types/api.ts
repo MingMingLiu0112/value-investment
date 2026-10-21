@@ -682,6 +682,8 @@ export interface DetailResponse {
     research_as_of?: string;
     replayed_at?: string;
     prepared_at?: string;
+    valuation_basis_date?: string;
+    valuation_basis_scope?: "EX_POST_PRIOR_COMPLETED_SESSION";
     next_url?: string;
   };
   financial_progress?: {

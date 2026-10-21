@@ -584,6 +584,10 @@ def create_app(
                         prepared_at=candidate["generated_at"],
                         candidate_binding=supplement["candidate_binding"],
                         scope=supplement["scope"], next_url="#value-review-handoff")
+                    if candidate.get("valuation_basis_scope") == "EX_POST_PRIOR_COMPLETED_SESSION":
+                        payload["review_replay"].update(
+                            valuation_basis_scope=candidate["valuation_basis_scope"],
+                            valuation_basis_date=candidate["valuation_basis_date"])
                     return payload
             except (ValueError, OSError, KeyError, TypeError):
                 payload["review_replay"] = dict(status="SOURCE_UNAVAILABLE", symbol=decision_id,

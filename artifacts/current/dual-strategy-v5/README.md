@@ -112,3 +112,54 @@ validators were corrected without changing source producers or their pinned
 receipts. `test-results/v5-market-date.xml` records 122 passing targeted tests,
 including fixed UTC 16:00 regressions and preserved future-instant rejection.
 This correction must receive its own exact-SHA Core result.
+
+Prior-session continuation (separate from investment admission):
+
+- `prior-session-decision-closure.json` binds the actual 600887 successor:
+  research generated on China 2026-10-22, ex-post valuation basis at the verified
+  2026-10-21 completed close, and 36 original announcements covering July 1
+  through October 21. The basis is derived from the existing verified B1 quote
+  bundle, not an arbitrary caller date. Original acquisition metadata remains.
+- Bear/base/bull are unapproved shared-model research estimates, never entry or
+  exit prices. G3, materiality, economic and current-market approval remain false;
+  position guidance remains null. The announcement coverage CODE_GAP is closed
+  for this exact candidate; financial assumptions and economic admission are not.
+- The observation above predates the materiality transport fix: its null status
+  records the browser-discovered defect and is deliberately not rewritten.
+  Later handoff/browser receipts must establish the correction independently.
+- `test-results/v5-prior-basis-integration.xml`: 486 tests passed before that
+  transport correction, covering the producer, actual-source contracts and API.
+  Full Web passed 321 tests plus typecheck/format/build for the basis notice.
+- e2d97007 Web/Postgres passed. Its Core result was 4396 passed, 101 skipped,
+  two failures in obsolete assertions that expected the repaired midnight bug.
+  Those assertions now test successful China-day production at all four UTC
+  boundaries; future-day and future-instant rejection remain. The focused
+  regression receipt records 128 passing tests. Final delivery needs new CI.
+- 600519's standard replay was regenerated against the corrected validators,
+  keeping its original October 11 economic research date. Its independent
+  seven-announcement context remains separate and unsigned.
+
+Actual research runtime remains local-only. A source clone without those
+transitive originals must fail closed; this is still an engineering release gap.
+Real IPS, holdings/reconciliation, signing authority, independent hotspot
+validation and final user acceptance are not established by these checks.
+
+The materiality view now exposes an exact raw-packet signing handoff separately
+from its Web transport fields. Missing saved packets expose preparation only;
+blocked source/context verification cannot provide a signing command. Its initial
+88-test verification and independent audit do not establish the subsequent
+schedule-request correction or final browser acceptance. Full Web after the
+preparation-path change passes 322 tests, typecheck, format and build.
+
+The final isolated browser check was interrupted by a local listener exit.
+The browser then entered a data-URL failure page which its URL policy would not
+allow the agent to navigate. Manual navigation has been requested; do not count
+this check or screenshots of the repaired handoff as PASS until actually observed.
+
+`prior-session-handoff-verification.json` now records the real read-only transport
+verification after the schedule fix: 36 announcements, unchanged raw signing SHA,
+the exact original request hash, and ALLOW_NORMAL_RESEARCH under the existing
+scheduler. No signing or request consumption was performed. The final focused
+transport suite passes 98 tests, with an independent 28-test schedule audit and
+no remaining P0/P1/P2 in that bounded code review. Final browser acceptance and
+economic permission remain separate and unpassed.

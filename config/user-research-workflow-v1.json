@@ -9,8 +9,8 @@
   },
   "supplemental_review_candidates": {
     "600887": {
-      "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/pending-candidate/candidate.json",
-      "sha256": "038e1dfae8be45a663456b9d8bad40fe1c5b67c4a011228ea9a641f5bae43e82"
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/candidate.json",
+      "sha256": "1088eab6d48cf0c8f33a59cb7fa90d445eb72e0faf884f00530446bbd1b10303"
     }
   },
   "bound_draft_review_candidates": {

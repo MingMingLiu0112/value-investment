@@ -1718,3 +1718,61 @@ microsecond, and keep unvalued drafts rejected. Focused verification: 122 passed
 including the original source/event failures, research application and bound
 draft contracts. See test-results/v5-market-date.xml. Later exact-SHA CI must
 establish the final source delivery result; 2c252717 Core is not PASS.
+
+### V5 verified prior-session research and announcement handoff
+
+The existing 600887 shared model now consumes a separately bound candidate
+generated on China October 22 using the verified October 21 completed-close
+basis. This is explicitly ex-post research, not contemporaneous PIT or current
+market validity. Three replay-verified official windows cover July 1 through
+October 21 with 36 announcements and the exact same model descriptor. The new
+October 17-21 observation was actually acquired; source bytes and old availability
+metadata remain unchanged. This closes the perpetual same-day coverage CODE_GAP
+for this candidate without weakening EventScan or inventing an approval.
+
+The shared model's bear/base/bull output remains conditional_research_only.
+Normalized earnings, financial scope, economic approval, G3, materiality signatures
+and current-market eligibility must be evaluated separately. There is no approved
+entry/exit price or personal quantity. The original public economics are unchanged.
+The current 600519 standard replay was regenerated after the date-validator code
+change, preserving its October 11 economic date and separate seven-event context.
+
+Verification before the final transport fix: 486 integration tests passed,
+including full API coverage; Web 321 tests/typecheck/format/build passed. Exact
+e2d97007 Web/Postgres passed; Core had only two legacy assertions expecting the
+old UTC-midnight failure (4396 passed, 101 skipped). Those assertions were updated
+to exercise successful equivalent China dates with future-input rejection intact;
+128 focused regressions pass. This does not make e2d97007 Core successful.
+
+Actual browser inspection exposed a blank materiality status: a raw signing packet
+had been returned where the Web expected a transport wrapper with status and
+commands. Fix this existing boundary while preserving the exact raw signing bytes
+and their path/SHA; no wrapper may be consumed as a signed raw packet. Later
+browser/test receipts must prove this correction. Source portability, economic
+research/admission, independent hotspot validation and real private input remain
+open; the total Goal and twelve closure statuses remain IN_PROGRESS/PARTIAL or
+NOT_PROVEN as recorded, not full-product acceptance.
+
+The materiality transport fix retains raw signing bytes and provides explicit
+preparation when no saved packet exists. Full Web now passes 322 tests and
+typecheck/format/build. Initial backend verification passed 88 tests and an
+independent audit found no P0/P1/P2. A further real integration check identified
+that 600887 recomputation lacked its original schedule request. The exact request
+was recovered from config/daily-trade-assistant-600887-scope-v1.json and retained
+byte-for-byte beside the candidate, matching the hash already bound by its
+workbench receipt. The read adapter must verify that anchor before exposing the
+recompute command; no new scope or looser scheduler rule is authorized.
+
+Final browser validation is still pending: the isolated listener exited, and the
+browser entered a data-URL error page blocked by its URL policy. Manual navigation
+was requested while source verification continued. Earlier actual homepage and
+detail screenshots remain valid only for their recorded checkpoints. They do not
+prove the latest materiality/recompute view or final product acceptance.
+
+The schedule correction is now verified: 98 focused tests pass, and independent
+review reran 28 schedule cases with no P0/P1/P2. Root's real read-only handoff
+verification confirms the original request SHA, 36 announcements, unchanged raw
+contract and ALLOW_NORMAL_RESEARCH from the existing scheduler. Signing identity,
+G3, economic, materiality and current-market approval remain false/unproven; no
+signature or schedule consumption was performed. See
+artifacts/current/dual-strategy-v5/prior-session-handoff-verification.json.
