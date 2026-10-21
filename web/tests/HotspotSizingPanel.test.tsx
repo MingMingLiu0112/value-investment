@@ -7,6 +7,7 @@ const captured = vi.hoisted(() => ({
   fields: [] as Record<string, any>[],
   submit: undefined as
     undefined | ((form: Record<string, unknown>) => Promise<boolean>),
+  change: undefined as undefined | ((changed: Record<string, unknown>) => void),
 }));
 const reactState = vi.hoisted(() => ({
   use: null as
@@ -27,6 +28,7 @@ vi.mock("@ant-design/pro-components", async () => {
     ProForm: Object.assign(
       (props: Record<string, any>) => {
         captured.submit = props.onFinish;
+        captured.change = props.onValuesChange;
         return React.createElement("div", null, props.children);
       },
       {
@@ -314,4 +316,61 @@ it("folds advanced inputs and only prefills confirmed unexpired costs", () => {
     captured.fields.find((field) => field.name === "buy_fee_fraction")
       ?.initialValue,
   ).toBeUndefined();
+});
+
+it("shares explicit assumptions without sharing simulated execution or preview results", async () => {
+  const onRequest = vi.fn();
+  const onPreview = vi.fn().mockResolvedValue({
+    action: "no_order",
+    sizing_preview: { symbol: "300364", review_quantity: 500, blockers: [] },
+  });
+  renderToStaticMarkup(
+    <HotspotSizingPanel
+      initialSymbol="300364"
+      onPreview={onPreview}
+      onRequest={onRequest}
+    />,
+  );
+  await captured.submit!({
+    symbol: "300364",
+    gap_stress_cny: "0.5",
+    buy_fee_fraction: "0",
+    scenario: { acknowledged: true },
+    quantity: "500",
+    result: { review_quantity: 500 },
+  });
+  expect(onRequest.mock.lastCall![0]).toEqual({
+    symbol: "300364",
+    sleeve: "HOTSPOT_SATELLITE",
+    assumptions: { gap_stress_cny: "0.5", buy_fee_fraction: "0" },
+  });
+  await captured.submit!({ symbol: "300364" });
+  expect(onRequest.mock.lastCall![0]).toBeNull();
+});
+
+it("invalidates shared inputs on edits and never restores them from a late preview", async () => {
+  const onRequest = vi.fn();
+  let resolve!: (value: unknown) => void;
+  const onPreview = vi.fn().mockImplementation(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  );
+  renderToStaticMarkup(
+    <HotspotSizingPanel
+      initialSymbol="300364"
+      onPreview={onPreview}
+      onRequest={onRequest}
+    />,
+  );
+  const pending = captured.submit!({ symbol: "300364", gap_stress_cny: "0.5" });
+  captured.change!({ gap_stress_cny: "0.7" });
+  expect(onRequest.mock.lastCall![0]).toBeNull();
+  resolve({
+    action: "no_order",
+    sizing_preview: { symbol: "300364", blockers: [] },
+  });
+  await pending;
+  expect(onRequest.mock.lastCall![0]).toBeNull();
 });

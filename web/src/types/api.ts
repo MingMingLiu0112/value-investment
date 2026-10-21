@@ -832,6 +832,20 @@ export interface PortfolioPosition {
   weight_pct: string | null;
 }
 
+export interface RecordingTimeRiskCapture {
+  status: string;
+  scope?: string;
+  reason?: string;
+  risk_status?: string | null;
+  review_quantity?: number | string | null;
+  blockers?: string[];
+}
+
+export interface RecordingTimeRiskEvidence {
+  recording_time_personal_risk?: RecordingTimeRiskCapture | null;
+  recording_time_risk_status?: string;
+}
+
 export interface PortfolioTrade {
   judgment_snapshot?: {
     publication_id: string;
@@ -839,6 +853,7 @@ export interface PortfolioTrade {
     trade_time_availability_proven: boolean;
     snapshot_sha256: string;
     plan: CurrentPricePlan;
+    personal_risk_capture?: RecordingTimeRiskCapture;
   } | null;
   transaction_id: string;
   side: string;
@@ -928,6 +943,7 @@ export interface WriteResponse {
   revision?: number;
   record_sha256?: string;
   detail?: unknown;
+  personal_risk_capture?: RecordingTimeRiskCapture;
   [key: string]: unknown;
 }
 

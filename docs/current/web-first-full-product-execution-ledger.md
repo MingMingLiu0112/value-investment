@@ -1990,3 +1990,34 @@ research candidate incorporating corrected evidence without rewriting old input
 or granting economic approval. Real G3, materiality, hotspot admission, private
 inputs and natural validation gates remain independent. Total Goal IN_PROGRESS;
 real assisted use NOT_PROVEN; action=no_order.
+
+### V5 manual-fill recording-time risk continuity
+
+The c9124708 evidence-checkout and diagnostic checkpoint passed exact Core
+39659783343 (including Postgres) and Web 39659783292 CI. The bounded public
+browser receipt remains explicitly tied to its earlier 67561f4d source.
+
+Manual fill prepare now optionally accepts risk_preview.assumptions only. The
+existing authenticated server risk engine derives account, security and sleeve
+from the fill, computes outside the journal lock and rechecks revision/tip,
+publication, research and current source/signature bindings inside the write.
+Failure records an unavailable optional attachment without suppressing lawful
+actual fill recording or bypassing cash, settlement, version and confirmation
+checks. Replay/idempotency retains the original immutable capture, not a later
+recalculation. No client result, scenario or quantity can certify this evidence.
+
+Evidence is RECORDING_TIME_RISK_NOT_PROVEN_PRETRADE, never trade-time knowledge
+or investment permission. Retrospective verifies its exact prepared record and
+still reports the independent pretrade gap. The UI reuses explicitly submitted
+same-context sizing assumptions, defaults capture off, excludes SELL and clears
+account/revision/security/sleeve drift. Draft and retrospective display bounded
+availability and failure in plain language; an actual trade can still be saved.
+
+Root backend plus Web API integration: 456 passed. Root Web: 374 passed,
+typecheck and formatting passed. Independent backend review: 34 passed, no
+bounded P0/P1/P2. Independent frontend review reran 51 focused cases and found
+no reproducible defect. Actual clean-runtime private browser flow still needs
+its own recorded result; these source checks do not
+prove real private readiness or formal qualification. See test-results/
+recording-risk-{root,author,independent}.xml and recording-risk-web.json.
+Total Goal IN_PROGRESS; real assisted use NOT_PROVEN; action=no_order.

@@ -58,6 +58,7 @@ jobs:
           tests/test_public_evidence_archive.py
           tests/test_public_snapshot_retained_path.py
           tests/test_private_judgment_snapshot_service.py
+          tests/test_recording_time_risk_snapshot.py
           tests/test_security_attributes.py
           tests/test_value_model_identity.py
           tests/test_value_policy_review.py

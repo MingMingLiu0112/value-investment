@@ -14,7 +14,9 @@ import dayjs from "dayjs";
 import { useCallback, useState } from "react";
 import { DualSleeveRisk } from "../../components/DualSleeveRisk";
 import { HotspotSizingPanel } from "../../components/HotspotSizingPanel";
+import type { SizingAssumptionsSelection } from "../../components/HotspotSizingPanel";
 import { FillPanel, fillContextFromSearch } from "../../components/FillPanel";
+import type { PreparedRecordingRisk } from "../../components/FillPanel";
 import { PortfolioSetupForm } from "../../components/PortfolioSetupForm";
 import { PositionTable } from "../../components/PositionTable";
 import { PortfolioPolicyPanel } from "../../components/PortfolioPolicyPanel";
@@ -93,6 +95,10 @@ export default function Portfolio() {
   const [sizingSleeve, setSizingSleeve] = useState<
     "CORE_VALUE" | "HOTSPOT_SATELLITE"
   >(initialSleeve === "CORE_VALUE" ? "CORE_VALUE" : "HOTSPOT_SATELLITE");
+  const [riskAssumptions, setRiskAssumptions] = useState<
+    (SizingAssumptionsSelection & { revision: number; account: string }) | null
+  >(null);
+  const [preparedRisk, setPreparedRisk] = useState<PreparedRecordingRisk>();
   const loadRiskContext = useCallback(
     (signal: AbortSignal) => {
       if (!/^\d{6}$/.test(sizingSymbol))
@@ -107,8 +113,25 @@ export default function Portfolio() {
   const data = state.portfolio;
   const risk = state.risk;
   const reconciliation = reconciliationView(data?.reconciliation);
+  const account = risk?.facts?.account_scope ?? "";
+  const captureRequest = useCallback(
+    (selection: SizingAssumptionsSelection | null) => {
+      setRiskAssumptions(
+        selection && data
+          ? {
+              ...selection,
+              assumptions: { ...selection.assumptions },
+              revision: data.revision,
+              account,
+            }
+          : null,
+      );
+    },
+    [data?.revision, account],
+  );
 
   const refreshAll = () => {
+    setRiskAssumptions(null);
     state.retry();
     riskContext.retry();
   };
@@ -379,6 +402,7 @@ export default function Portfolio() {
               onConfirmCosts={api.confirmCosts}
               onContextRefresh={refreshAll}
               onSymbolChange={setSizingSymbol}
+              onRequest={captureRequest}
             />
           </details>
           <Typography.Title level={4} style={{ fontSize: 16, marginTop: 24 }}>
@@ -394,6 +418,16 @@ export default function Portfolio() {
             initialSleeve={initialSleeve}
             initialDecisionId={initialDecisionId}
             initialResearchVersion={initialResearchVersion}
+            preparedRisk={preparedRisk}
+            onPreparedRisk={setPreparedRisk}
+            riskAssumptions={
+              riskAssumptions?.revision === data.revision &&
+              riskAssumptions.account === account &&
+              riskAssumptions.symbol === sizingSymbol &&
+              riskAssumptions.sleeve === sizingSleeve
+                ? riskAssumptions
+                : undefined
+            }
           />
           <PortfolioReconciliationPanel
             portfolio={data}

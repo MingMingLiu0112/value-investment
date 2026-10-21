@@ -1,14 +1,23 @@
 import { useCallback, useState } from "react";
 import { Alert, Select } from "antd";
 import { api } from "../services/api";
+import type { PrivateRetrospective } from "../services/api";
 import { useApi } from "../hooks/useApi";
 import { RemoteState } from "./RemoteState";
-import type { PortfolioTrade } from "../types/api";
+import type { PortfolioTrade, RecordingTimeRiskEvidence } from "../types/api";
+import { describeCode } from "../utils/codes";
+
+function recordingRiskStatus(value?: string | null) {
+  const text = describeCode(value);
+  return value && text === value ? "状态未识别" : text;
+}
 
 const gapLabels: Record<string, string> = {
   TRADE_TIME_PLAN_AND_DATA_AVAILABILITY_NOT_PROVEN:
     "尚不能证明实际成交前已知该计划与数据",
   PERSONAL_RISK_AT_TRADE_NOT_PROVEN: "成交时的个人风险未追溯核验",
+  RECORDING_TIME_PERSONAL_RISK_MISSING: "未保留可核验的录入时个人风险",
+  RECORDING_TIME_PERSONAL_RISK_INVALID: "录入时个人风险留存校验未通过",
   DEVIATION_REASON_NOT_RECORDED: "未记录偏离计划的原因",
   SUBSEQUENT_RISK_NOT_EVALUATED_NO_LATER_EVIDENCE: "缺少后续风险证据",
   SAVED_JUDGMENT_MISSING: "没有录入时判断快照",
@@ -23,6 +32,8 @@ function Review({ day }: { day: string }) {
     [day],
   );
   const { data, loading, error, retry } = useApi(load);
+  const items: (PrivateRetrospective["items"][number] &
+    RecordingTimeRiskEvidence)[] = data?.items ?? [];
   if (!loading && !error && data?.status === "BLOCKED_PRIVATE_INPUT") {
     return (
       <Alert
@@ -43,13 +54,32 @@ function Review({ day }: { day: string }) {
             : "依据本人确认的台账，未经券商核实；参考价差不证明交易违规。"
         }
       />
-      {data?.items.map((item) => (
+      {items.map((item) => (
         <section key={item.manual_fill.transaction_id}>
           <h4>
             {item.manual_fill.symbol} ·{" "}
             {item.manual_fill.side === "BUY" ? "买入" : "卖出"}{" "}
             {item.manual_fill.quantity} 股 · {item.manual_fill.price_cny} 元
           </h4>
+          <p>
+            录入时风险：
+            {item.recording_time_risk_status ===
+              "AVAILABLE_RECORDING_TIME_ONLY" &&
+            item.recording_time_personal_risk?.status ===
+              "SERVER_VERIFIED_RECORDING_TIME_RISK" ? (
+              <>
+                已保留；原风险状态：
+                {recordingRiskStatus(
+                  item.recording_time_personal_risk.risk_status,
+                )}
+                ；当时复核股数：
+                {item.recording_time_personal_risk.review_quantity ?? "未提供"}
+              </>
+            ) : (
+              "未保留可核验结果"
+            )}
+            。仅为录入时留存，不能证明成交前已核验。
+          </p>
           {item.differences.map((difference) => (
             <p key={difference.field}>
               {(

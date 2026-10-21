@@ -1,5 +1,5 @@
 import React from "react";
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 const { renderToStaticMarkup } = require("react-dom/server");
 const response = vi.hoisted(() => ({
   loading: false,
@@ -36,6 +36,11 @@ const response = vi.hoisted(() => ({
 vi.mock("../src/hooks/useApi", () => ({ useApi: () => response }));
 import { PrivateRetrospectivePanel } from "../src/components/PrivateRetrospectivePanel";
 
+const originalData = structuredClone(response.data);
+beforeEach(() => {
+  response.data = structuredClone(originalData);
+});
+
 it("never requests or invents review dates without confirmed trades", () => {
   expect(renderToStaticMarkup(<PrivateRetrospectivePanel trades={[]} />)).toBe(
     "",
@@ -70,4 +75,70 @@ it("does not turn a missing journal into a real-account or no-trades claim", () 
   expect(html).toContain("私人台账尚不可用，无法复盘");
   expect(html).not.toContain("依据本人确认的台账");
   expect(html).not.toContain("该日没有已确认成交");
+});
+
+it.each([0, 100, null])(
+  "shows retained recording evidence and original review quantity %s without claiming pretrade",
+  (quantity) => {
+    Object.assign(response.data.items[0], {
+      recording_time_risk_status: "AVAILABLE_RECORDING_TIME_ONLY",
+      recording_time_personal_risk: {
+        status: "SERVER_VERIFIED_RECORDING_TIME_RISK",
+        risk_status: "BLOCKED_PRIVATE_INPUT",
+        review_quantity: quantity,
+      },
+    });
+    const html = renderToStaticMarkup(
+      <PrivateRetrospectivePanel
+        trades={[{ trade_date: "2026-10-22" } as any]}
+      />,
+    );
+    expect(html).toContain("已保留；原风险状态：私人风险输入不完整");
+    expect(html).not.toContain("BLOCKED_PRIVATE_INPUT");
+    expect(html).toContain(`当时复核股数：${quantity ?? "未提供"}`);
+    expect(html).toContain("不能证明成交前已核验");
+    expect(html).toContain("不推断其已获批准");
+  },
+);
+
+it.each([
+  ["RECORDING_TIME_PERSONAL_RISK_MISSING", "未保留可核验的录入时个人风险"],
+  ["RECORDING_TIME_PERSONAL_RISK_INVALID", "录入时个人风险留存校验未通过"],
+])("shows unavailable evidence honestly (%s)", (gap, label) => {
+  Object.assign(response.data.items[0], {
+    recording_time_risk_status: "UNAVAILABLE",
+    recording_time_personal_risk: null,
+    evidence_gaps: [gap],
+  });
+  const html = renderToStaticMarkup(
+    <PrivateRetrospectivePanel
+      trades={[{ trade_date: "2026-10-22" } as any]}
+    />,
+  );
+  expect(html).toContain("未保留可核验结果");
+  expect(html).toContain(label);
+  expect(html).toContain("不能证明成交前已核验");
+  expect(html).not.toContain("当时复核股数");
+});
+
+it("shows the newly confirmed fill evidence on the refreshed retrospective", () => {
+  expect(renderToStaticMarkup(<PrivateRetrospectivePanel trades={[]} />)).toBe(
+    "",
+  );
+  Object.assign(response.data.items[0], {
+    recording_time_risk_status: "AVAILABLE_RECORDING_TIME_ONLY",
+    recording_time_personal_risk: {
+      status: "SERVER_VERIFIED_RECORDING_TIME_RISK",
+      risk_status: "BLOCKED_PRIVATE_INPUT",
+      review_quantity: 0,
+    },
+  });
+  const html = renderToStaticMarkup(
+    <PrivateRetrospectivePanel
+      trades={[{ trade_date: "2026-10-22" } as any]}
+    />,
+  );
+  expect(html).toContain("成交复盘草稿");
+  expect(html).toContain("已保留；原风险状态：私人风险输入不完整");
+  expect(html).toContain("当时复核股数：0");
 });

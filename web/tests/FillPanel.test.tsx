@@ -11,6 +11,10 @@ const captured = vi.hoisted(() => ({
     undefined | ((form: Record<string, unknown>) => Promise<void>),
   prepare: vi.fn().mockResolvedValue({}),
   alerts: [] as Record<string, any>[],
+  change: undefined as undefined | ((changed: Record<string, unknown>) => void),
+  checkbox: undefined as Record<string, any> | undefined,
+  buttons: [] as Record<string, any>[],
+  confirm: vi.fn().mockResolvedValue({}),
 }));
 const reactState = vi.hoisted(() => ({
   use: null as
@@ -34,6 +38,7 @@ vi.mock("@ant-design/pro-components", async () => {
   return {
     ProForm: (props: Record<string, any>) => {
       captured.submit = props.onFinish;
+      captured.change = props.onValuesChange;
       return React.createElement("div", null, props.children);
     },
     ProFormText: field,
@@ -48,6 +53,10 @@ vi.mock("antd", async () => {
   const wrapper = (props: Record<string, any>) =>
     React.createElement("div", null, props.children);
   return {
+    Checkbox: (props: Record<string, any>) => {
+      captured.checkbox = props;
+      return wrapper(props);
+    },
     Alert: (props: Record<string, any>) => {
       captured.alerts.push(props);
       return React.createElement(
@@ -58,12 +67,14 @@ vi.mock("antd", async () => {
         props.action,
       );
     },
-    Button: (props: Record<string, any>) =>
-      React.createElement(
+    Button: (props: Record<string, any>) => {
+      captured.buttons.push(props);
+      return React.createElement(
         "button",
         { disabled: props.disabled },
         props.children,
-      ),
+      );
+    },
     Descriptions: (props: Record<string, any>) =>
       React.createElement(
         "div",
@@ -72,7 +83,8 @@ vi.mock("antd", async () => {
           React.createElement("div", { key: item.key }, item.children),
         ),
       ),
-    Input: { TextArea: wrapper },
+    Input: Object.assign(wrapper, { TextArea: wrapper }),
+    Table: () => null,
     Popconfirm: wrapper,
     Space: wrapper,
     Typography: { Title: wrapper, Text: wrapper },
@@ -128,7 +140,7 @@ it("does not submit a buy without explicit settlement inputs", async () => {
 });
 vi.mock("../src/services/api", () => ({
   ApiError: class extends Error {},
-  api: { prepareFill: captured.prepare },
+  api: { prepareFill: captured.prepare, confirmFill: captured.confirm },
 }));
 import {
   FillPanel,
@@ -189,6 +201,9 @@ beforeEach(() => {
   captured.fields.length = 0;
   captured.alerts.length = 0;
   captured.prepare.mockClear();
+  captured.checkbox = undefined;
+  captured.buttons = [];
+  captured.confirm.mockClear();
 });
 
 it("classifies VERSION_CONFLICT as a dedicated ledger refresh requirement", () => {
@@ -377,4 +392,273 @@ it("requires actual execution inputs and submits the unchanged research referenc
     },
   });
   expect(done).toHaveBeenCalledOnce();
+});
+
+const riskSelection = {
+  symbol: "600887",
+  sleeve: "HOTSPOT_SATELLITE" as const,
+  revision: 4,
+  assumptions: { buy_fee_fraction: "0.0003", gap_stress_cny: "0.5" },
+};
+const buyForm = {
+  transaction_id: "TEST_ONLY_RECORDING_RISK",
+  side: "BUY",
+  sleeve: "HOTSPOT_SATELLITE",
+  symbol: "600887",
+  exchange: "SSE",
+  quantity: "100",
+  price_cny: "20",
+  fees_cny: "5",
+  trade_date: "2026-10-21",
+  next_sell_session: "2026-10-22",
+  trading_unit: "100",
+};
+
+function renderRiskForm() {
+  const slots: unknown[] = [];
+  let index = 0;
+  reactState.use = (initial) => {
+    const slot = index++;
+    if (!(slot in slots)) slots[slot] = initial;
+    return [
+      slots[slot],
+      (next) => {
+        slots[slot] = typeof next === "function" ? next(slots[slot]) : next;
+      },
+    ];
+  };
+  const render = (selection = riskSelection, revision = 4) => {
+    index = 0;
+    renderToStaticMarkup(
+      <FillPanel
+        revision={revision}
+        draft={null}
+        onDone={vi.fn()}
+        initialSymbol="600887"
+        initialSleeve="HOTSPOT_SATELLITE"
+        riskAssumptions={selection}
+      />,
+    );
+  };
+  render();
+  captured.change!({ side: "BUY" });
+  render();
+  return render;
+}
+
+it("requires explicit opt-in and sends only reused assumptions for the matching BUY", async () => {
+  try {
+    const render = renderRiskForm();
+    expect(captured.checkbox?.checked).toBe(false);
+    expect(captured.checkbox?.disabled).toBe(false);
+    await captured.submit!(buyForm);
+    expect(captured.prepare.mock.lastCall![0]).not.toHaveProperty(
+      "risk_preview",
+    );
+    captured.checkbox!.onChange({ target: { checked: true } });
+    render();
+    await captured.submit!(buyForm);
+    expect(captured.prepare.mock.lastCall![0].risk_preview).toEqual({
+      assumptions: riskSelection.assumptions,
+    });
+  } finally {
+    reactState.use = null;
+  }
+});
+
+it.each([
+  ["SELL", { side: "SELL" }],
+  ["other security", { symbol: "000333" }],
+  ["other sleeve", { sleeve: "CORE_VALUE" }],
+])("does not attach buy-risk assumptions to %s", async (_, changed) => {
+  try {
+    const render = renderRiskForm();
+    captured.checkbox!.onChange({ target: { checked: true } });
+    render();
+    await captured.submit!({ ...buyForm, ...changed });
+    expect(captured.prepare.mock.lastCall![0]).not.toHaveProperty(
+      "risk_preview",
+    );
+  } finally {
+    reactState.use = null;
+  }
+});
+
+it("clears consent on identity edits and does not reuse a replaced selection or old revision", async () => {
+  try {
+    const render = renderRiskForm();
+    captured.checkbox!.onChange({ target: { checked: true } });
+    render();
+    captured.change!({ symbol: "000333" });
+    captured.change!({ symbol: "600887" });
+    render();
+    expect(captured.checkbox?.checked).toBe(false);
+    captured.checkbox!.onChange({ target: { checked: true } });
+    render({
+      ...riskSelection,
+      assumptions: { ...riskSelection.assumptions, buy_fee_fraction: "0.001" },
+    });
+    await captured.submit!(buyForm);
+    expect(captured.prepare.mock.lastCall![0]).not.toHaveProperty(
+      "risk_preview",
+    );
+    render(riskSelection, 5);
+    expect(captured.checkbox?.disabled).toBe(true);
+    await captured.submit!(buyForm);
+    expect(captured.prepare.mock.lastCall![0]).not.toHaveProperty(
+      "risk_preview",
+    );
+  } finally {
+    reactState.use = null;
+  }
+});
+
+it("keeps a failed optional capture visible without blocking the actual fill draft", async () => {
+  const done = vi.fn();
+  const onPreparedRisk = vi.fn();
+  const outcome = {
+    status: "UNAVAILABLE",
+    reason: "MATCHING_PUBLIC_JUDGMENT_UNAVAILABLE",
+  };
+  captured.prepare.mockResolvedValueOnce({
+    record_sha256: "prepared",
+    personal_risk_capture: outcome,
+  });
+  renderToStaticMarkup(
+    <FillPanel
+      revision={4}
+      draft={null}
+      onDone={done}
+      onPreparedRisk={onPreparedRisk}
+    />,
+  );
+  await captured.submit!(buyForm);
+  expect(done).toHaveBeenCalledOnce();
+  expect(onPreparedRisk).toHaveBeenCalledWith({
+    prepared: "prepared",
+    outcome,
+  });
+  const html = renderToStaticMarkup(
+    <FillPanel
+      revision={5}
+      onDone={vi.fn()}
+      preparedRisk={{ prepared: "prepared", outcome }}
+      draft={{
+        status: "DRAFT_UNRECONFIRMED",
+        prepared_record_sha256: "prepared",
+        fill: buyForm,
+        cash_cny: "100",
+        realized_pnl_cny: "0",
+        positions: [],
+      }}
+    />,
+  );
+  expect(html).toContain("录入时风险核验未能保存");
+  expect(html).toContain("不证明成交前已核验");
+  expect(html).toContain("确认");
+});
+
+it.each([{ blockers: [] }, { blockers: ["TEST_ONLY_PLAN_NOT_FORMAL"] }])(
+  "reads the retained server capture on draft reload (%j)",
+  ({ blockers }) => {
+    const html = renderToStaticMarkup(
+      <FillPanel
+        revision={5}
+        onDone={vi.fn()}
+        draft={{
+          status: "DRAFT_UNRECONFIRMED",
+          prepared_record_sha256: "prepared",
+          fill: {
+            ...buyForm,
+            judgment_snapshot: {
+              personal_risk_capture: {
+                status: "SERVER_VERIFIED_RECORDING_TIME_RISK",
+                blockers,
+              },
+            },
+          },
+          cash_cny: "100",
+          realized_pnl_cny: "0",
+          positions: [],
+        }}
+      />,
+    );
+    expect(html).toContain(
+      blockers.length ? "存在阻断项" : "录入时风险核验可用",
+    );
+    expect(html).toContain("不证明成交前已核验");
+  },
+);
+
+it("translates capture failures and hides unknown codes and path details", () => {
+  const html = renderToStaticMarkup(
+    <FillPanel
+      revision={5}
+      onDone={vi.fn()}
+      preparedRisk={{
+        prepared: "prepared",
+        outcome: {
+          status: "UNAVAILABLE",
+          reason: "RISK_CAPTURE_CURRENT_SOURCE_CHANGED:D:/private/ledger.json",
+          blockers: ["UNKNOWN_CAPTURE:D:/private/account.json"],
+        },
+      }}
+      draft={{
+        status: "DRAFT_UNRECONFIRMED",
+        prepared_record_sha256: "prepared",
+        fill: buyForm,
+        cash_cny: "100",
+        realized_pnl_cny: "0",
+        positions: [],
+      }}
+    />,
+  );
+  expect(html).toContain("风险来源已变化，需重新核验");
+  expect(html).toContain("录入时风险资料未能核验");
+  expect(html).not.toContain("RISK_CAPTURE_");
+  expect(html).not.toContain("UNKNOWN_CAPTURE");
+  expect(html).not.toContain("D:/private");
+});
+
+it("still confirms the actual fill and refreshes after optional capture failure", async () => {
+  const refreshed = vi.fn();
+  reactState.use = (initial) =>
+    initial === "" ? ["已核对隔离成交单", vi.fn()] : undefined;
+  try {
+    renderToStaticMarkup(
+      <FillPanel
+        revision={5}
+        onDone={refreshed}
+        preparedRisk={{
+          prepared: "prepared",
+          outcome: {
+            status: "UNAVAILABLE",
+            reason: "RISK_CAPTURE_PROVIDER_UNAVAILABLE",
+          },
+        }}
+        draft={{
+          status: "DRAFT_UNRECONFIRMED",
+          prepared_record_sha256: "prepared",
+          fill: buyForm,
+          cash_cny: "100",
+          realized_pnl_cny: "0",
+          positions: [],
+        }}
+      />,
+    );
+    const confirm = captured.buttons.find(
+      (button) => button.children === "确认成交",
+    )!;
+    expect(confirm.disabled).toBe(false);
+    await confirm.onClick();
+    expect(captured.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        expected_revision: 5,
+        prepared_record_sha256: "prepared",
+      }),
+    );
+    expect(refreshed).toHaveBeenCalledOnce();
+  } finally {
+    reactState.use = null;
+  }
 });

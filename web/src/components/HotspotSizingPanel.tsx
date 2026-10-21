@@ -36,6 +36,11 @@ export type HotspotSizingRequest = {
     }[];
   };
 };
+export type SizingAssumptionsSelection = {
+  symbol: string;
+  sleeve: "CORE_VALUE" | "HOTSPOT_SATELLITE";
+  assumptions: Record<string, string>;
+};
 export type HotspotSizingResponse = {
   actionable_decision?: ConditionalAccountDecision;
   action: "no_order";
@@ -130,6 +135,7 @@ export function HotspotSizingPanel({
   onConfirmCosts,
   onContextRefresh,
   onSymbolChange,
+  onRequest,
 }: {
   sleeve?: "CORE_VALUE" | "HOTSPOT_SATELLITE";
   initialSymbol?: string;
@@ -140,6 +146,7 @@ export function HotspotSizingPanel({
   ) => Promise<{ action: "no_order"; status: string }>;
   onContextRefresh?: () => void;
   onSymbolChange?: (symbol: string) => void;
+  onRequest?: (selection: SizingAssumptionsSelection | null) => void;
 }) {
   const core = sleeve === "CORE_VALUE";
   const title = core ? "价值仓分批资金上限试算" : "热点条件性仓位试算";
@@ -172,7 +179,8 @@ export function HotspotSizingPanel({
     setSecurityGaps([]);
     setScenarioEnabled(false);
     setUseDisplayMarks(false);
-  }, [initialSymbol, context, sleeve]);
+    onRequest?.(null);
+  }, [initialSymbol, context, sleeve, onRequest]);
   const currentContext =
     context?.action === "no_order" && context.symbol === initialSymbol
       ? context
@@ -193,6 +201,7 @@ export function HotspotSizingPanel({
     const current = ++generation.current;
     setFailure(undefined);
     setResult(undefined);
+    onRequest?.(null);
     try {
       const assumptions = Object.fromEntries(
         activeFields.flatMap(([key]) => {
@@ -215,6 +224,12 @@ export function HotspotSizingPanel({
           throw new Error("请明确选择全部情景假设。");
         return form[key] === "yes";
       };
+      if (activeFields.some(([key]) => String(form[key] ?? "").trim()))
+        onRequest?.({
+          symbol: String(form.symbol ?? "").trim(),
+          sleeve,
+          assumptions: { ...assumptions },
+        });
       const response = await onPreview({
         ...(core ? { sleeve: "CORE_VALUE" as const } : {}),
         symbol: String(form.symbol ?? "").trim(),
@@ -323,6 +338,7 @@ export function HotspotSizingPanel({
           generation.current++;
           setResult(undefined);
           setFailure(undefined);
+          onRequest?.(null);
           if ("symbol" in changed) {
             formRef.current?.setFieldsValue(
               Object.fromEntries(sizingFields.map(([key]) => [key, undefined])),

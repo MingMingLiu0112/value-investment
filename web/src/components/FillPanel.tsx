@@ -8,6 +8,7 @@ import {
 import {
   Alert,
   Button,
+  Checkbox,
   Descriptions,
   Input,
   Popconfirm,
@@ -17,10 +18,78 @@ import {
 import dayjs from "dayjs";
 import { useRef, useState } from "react";
 import { ApiError, api } from "../services/api";
-import type { PortfolioDraft } from "../types/api";
+import type { PortfolioDraft, RecordingTimeRiskCapture } from "../types/api";
 import { formatMoney } from "../utils/format";
 import { PositionTable, sleeveLabel } from "./PositionTable";
+import { blockerText } from "../utils/packet";
+import { describeCode } from "../utils/codes";
 import { retryableWrite } from "./PrivateRiskContext";
+import type { SizingAssumptionsSelection } from "./HotspotSizingPanel";
+
+export type PreparedRecordingRisk = {
+  prepared: string;
+  outcome: RecordingTimeRiskCapture;
+};
+
+function recordingRiskReason(value: string) {
+  const code = value.split(":")[0];
+  const labels: Record<string, string> = {
+    MATCHING_PUBLIC_JUDGMENT_UNAVAILABLE: "未找到匹配的公开判断",
+    RISK_CAPTURE_ASSUMPTIONS_REQUIRED: "缺少明确填写的风险参数",
+    RISK_CAPTURE_STRATEGY_MISMATCH: "风险资料与成交策略不匹配",
+    RISK_CAPTURE_JOURNAL_CHANGED: "台账已变化，录入时风险未能保留",
+    RISK_CAPTURE_IDENTITY_OR_NAMESPACE_MISMATCH: "风险资料与本账户成交不匹配",
+    RISK_CAPTURE_TIME_MISMATCH: "录入时风险的时间依据未能核验",
+    RISK_CAPTURE_CURRENT_SOURCE_CHANGED: "风险来源已变化，需重新核验",
+    RISK_CAPTURE_PROVIDER_UNAVAILABLE: "录入时风险核验暂不可用",
+    RISK_CAPTURE_BINDING_UNVERIFIED: "录入时风险资料未能核验",
+    RISK_CAPTURE_FAILED_OR_UNSUPPORTED: "录入时风险资料未能核验",
+  };
+  if (labels[code]) return labels[code];
+  const translated = blockerText(code);
+  if (translated !== code) return translated;
+  const described = describeCode(code);
+  return described !== code ? described : "录入时风险资料未能核验";
+}
+
+function RecordingRiskResult({
+  capture,
+}: {
+  capture?: RecordingTimeRiskCapture;
+}) {
+  if (!capture) return null;
+  const available = capture.status === "SERVER_VERIFIED_RECORDING_TIME_RISK";
+  const blocked = available && !!capture.blockers?.length;
+  return (
+    <Alert
+      style={{ marginTop: 16 }}
+      type={available && !blocked ? "info" : "warning"}
+      showIcon
+      message={
+        available
+          ? blocked
+            ? "录入时风险核验已保存，存在阻断项"
+            : "录入时风险核验可用"
+          : "录入时风险核验未能保存"
+      }
+      description={
+        <>
+          <div>
+            仅反映录入时核验，不证明成交前已核验；成交仍可按实际记录确认。
+          </div>
+          {(capture.reason || capture.blockers?.length) && (
+            <div>
+              {[capture.reason, ...(capture.blockers ?? [])]
+                .filter((value): value is string => !!value)
+                .map(recordingRiskReason)
+                .join("；")}
+            </div>
+          )}
+        </>
+      }
+    />
+  );
+}
 
 const AMOUNT = /^\d+(\.\d{1,4})?$/;
 const SHARES = /^\d+$/;
@@ -112,10 +181,12 @@ function DraftReview({
   draft,
   revision,
   onDone,
+  capture,
 }: {
   draft: PortfolioDraft;
   revision: number;
   onDone: (warning?: string) => void;
+  capture?: RecordingTimeRiskCapture;
 }) {
   const [failure, setFailure] = useState<{
     message: string;
@@ -208,6 +279,16 @@ function DraftReview({
         message="待确认成交草稿（DRAFT_UNRECONFIRMED）"
         description="草稿尚未计入持仓与现金，确认或作废后才会写入私人台账。"
       />
+      <RecordingRiskResult
+        capture={
+          capture ??
+          (
+            fill.judgment_snapshot as {
+              personal_risk_capture?: RecordingTimeRiskCapture;
+            } | null
+          )?.personal_risk_capture
+        }
+      />
       <Descriptions
         bordered
         column={2}
@@ -296,6 +377,9 @@ export function FillPanel({
   initialSleeve,
   initialDecisionId,
   initialResearchVersion,
+  riskAssumptions,
+  preparedRisk,
+  onPreparedRisk,
 }: {
   revision: number;
   draft: PortfolioDraft | null;
@@ -304,6 +388,9 @@ export function FillPanel({
   initialSleeve?: "CORE_VALUE" | "HOTSPOT_SATELLITE";
   initialDecisionId?: string;
   initialResearchVersion?: string;
+  riskAssumptions?: SizingAssumptionsSelection & { revision: number };
+  preparedRisk?: PreparedRecordingRisk;
+  onPreparedRisk?: (capture: PreparedRecordingRisk | undefined) => void;
 }) {
   const [budgetWarning, setBudgetWarning] = useState<string | null>(null);
   const [failure, setFailure] = useState<{
@@ -312,6 +399,7 @@ export function FillPanel({
   }>();
   const prepareLock = useRef(false);
   const prepareAttempt = useRef(retryableWrite());
+  const [riskChoice, setRiskChoice] = useState<typeof riskAssumptions>();
   const context = fillContextFromSearch(
     typeof window === "undefined" ? "" : window.location.search,
   );
@@ -319,12 +407,32 @@ export function FillPanel({
   const researchVersion = initialResearchVersion ?? context.research_version;
   const linkedSymbol = initialSymbol ?? context.symbol;
   const linkedSleeve = initialSleeve ?? context.strategy;
+  const [fillIdentity, setFillIdentity] = useState({
+    symbol: linkedSymbol ?? "",
+    sleeve: linkedSleeve ?? "",
+    side: "",
+  });
+  const riskMatches = (identity: {
+    symbol: string;
+    sleeve: string;
+    side: string;
+  }) =>
+    identity.side === "BUY" &&
+    riskAssumptions?.revision === revision &&
+    riskAssumptions.symbol === identity.symbol &&
+    riskAssumptions.sleeve === identity.sleeve &&
+    Object.keys(riskAssumptions.assumptions).length > 0;
 
   if (draft)
     return (
       <DraftReview
         draft={draft}
         revision={revision}
+        capture={
+          preparedRisk?.prepared === draft.prepared_record_sha256
+            ? preparedRisk.outcome
+            : undefined
+        }
         onDone={(warning) => {
           setBudgetWarning(warning ?? null);
           onDone();
@@ -349,6 +457,15 @@ export function FillPanel({
       const payload = {
         expected_revision: revision,
         note: text(form.note) || null,
+        ...(riskChoice &&
+        riskChoice === riskAssumptions &&
+        riskMatches({
+          side,
+          symbol: text(form.symbol),
+          sleeve: text(form.sleeve).toUpperCase(),
+        })
+          ? { risk_preview: { assumptions: { ...riskChoice.assumptions } } }
+          : {}),
         fill: {
           transaction_id: text(form.transaction_id),
           side,
@@ -366,12 +483,22 @@ export function FillPanel({
           corporate_action: false,
         },
       };
-      await api.prepareFill(
+      const response = await api.prepareFill(
         prepareAttempt.current.body(JSON.stringify(payload), () => ({
           ...payload,
           idempotency_key: crypto.randomUUID(),
         })),
       );
+      const saved = response;
+      onPreparedRisk?.(
+        saved.personal_risk_capture && saved.record_sha256
+          ? {
+              prepared: saved.record_sha256,
+              outcome: saved.personal_risk_capture,
+            }
+          : undefined,
+      );
+      setRiskChoice(undefined);
       prepareAttempt.current.clear();
       onDone();
       return true;
@@ -413,8 +540,34 @@ export function FillPanel({
       <ProForm
         layout="vertical"
         onFinish={submit}
+        onValuesChange={(changed: Record<string, unknown>) => {
+          if (["side", "symbol", "sleeve"].some((key) => key in changed)) {
+            setRiskChoice(undefined);
+            setFillIdentity((previous) => ({
+              ...previous,
+              ...Object.fromEntries(
+                ["side", "symbol", "sleeve"]
+                  .filter((key) => key in changed)
+                  .map((key) => [key, text(changed[key]).toUpperCase()]),
+              ),
+            }));
+          }
+        }}
         submitter={{ searchConfig: { submitText: "生成草稿" } }}
       >
+        <Checkbox
+          disabled={!riskMatches(fillIdentity)}
+          checked={
+            !!riskChoice &&
+            riskChoice === riskAssumptions &&
+            riskMatches(fillIdentity)
+          }
+          onChange={(event) =>
+            setRiskChoice(event.target.checked ? riskAssumptions : undefined)
+          }
+        >
+          保存录入时风险核验
+        </Checkbox>
         <ProFormText
           name="transaction_id"
           label="成交编号"
