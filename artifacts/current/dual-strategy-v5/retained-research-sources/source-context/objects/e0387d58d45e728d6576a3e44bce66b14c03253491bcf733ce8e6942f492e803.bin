@@ -1,0 +1,599 @@
+{
+  "schema_version": "m1-valuation-package-v1",
+  "package_version": "20260923.1",
+  "descriptor_version": "600887-m1-valuation-v1",
+  "symbol": "600887",
+  "name": "伊利股份",
+  "profile_id": "quality_compounder",
+  "requested_model": null,
+  "run_id": "600887-m1-valuation-20260922",
+  "point_in_time": {
+    "report_period": "2026-06-30",
+    "research_as_of": "2026-09-22",
+    "valuation_date": "2026-09-22",
+    "available_at": "2026-09-23T09:00:00+08:00",
+    "computed_at": "2026-09-23T09:10:00+08:00"
+  },
+  "dependencies": {
+    "rule_version": "m1-valuation-rules-v1",
+    "model_id": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-v1",
+    "parser_version": "pdfium-m1-20260923",
+    "scan_watermark": "m1-cninfo-event-scan-v1:a6a2dffac4a14726"
+  },
+  "sources": [
+    {
+      "id": "yili_fy2025_annual",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+      "published_at": "2026-04-30T00:00:00+08:00",
+      "retrieved_at": "2026-09-23T00:52:00+00:00",
+      "parser_version": "pdfium-m1-20260923"
+    },
+    {
+      "id": "yili_2026h1",
+      "kind": "official_issuer_filing",
+      "location": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "retrieved_at": "2026-09-23T00:52:00+00:00",
+      "parser_version": "pdfium-m1-20260923"
+    },
+    {
+      "id": "china_cost_equity_20260914",
+      "kind": "valuation_reference",
+      "location": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+      "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154",
+      "published_at": "2026-09-14T10:43:55+00:00",
+      "retrieved_at": "2026-09-23T00:53:00+00:00",
+      "parser_version": "valuation-evidence-v1"
+    },
+    {
+      "id": "yili_quote_20260922",
+      "kind": "quote_session",
+      "location": "runtime/quote-sessions/20260923T005634211464Z/bundle.json",
+      "sha256": "5e49dc79bbc0132b040175e993e2f5dd5a3813c7167ade7aa2afc5c51cea19c0",
+      "retrieved_at": "2026-09-23T00:56:34+00:00",
+      "parser_version": "quote-session-collection-v1"
+    }
+  ],
+  "research_case": {
+    "symbol": "600887",
+    "name": "伊利股份",
+    "as_of": "2026-09-22",
+    "run_id": "600887-m1-valuation-20260922",
+    "generated_at": "2026-09-22T16:00:00+08:00",
+    "research_version": "600887-m1-valuation-v1",
+    "industry": "食品饮料-乳制品",
+    "investment_path": "成熟优质复利 / 现金回报",
+    "thesis": "全国品牌、乳业规模与全渠道形成可持续经营利润，但当前利润下行要求把历史高 ROE 显著折减，并证明分红政策可覆盖下行周期。",
+    "return_driver": "常温/低温乳品结构升级、奶粉品类份额和渠道现金转换；利润再投资或股东回报的效率。",
+    "mispricing_hypothesis": "未证明市场系统性低估。当前只检验有条件权益价值区间能否容纳市价，不把当前价当作买入信号。",
+    "financial_summary": {
+      "period_end": "2026-06-30",
+      "revenue_2025_cny": "115636231250.05",
+      "parent_profit_2025_cny": "11565166497.81",
+      "parent_equity_2025_cny": "54655690475.89",
+      "weighted_roe_2025": "0.2087",
+      "h1_2026_parent_profit_yoy": "-0.2002"
+    },
+    "positives": [
+      {
+        "kind": "fact",
+        "text": "FY2025 审计报告为无保留意见，归母净利润 115.65 亿元，加权平均 ROE 20.87%。",
+        "evidence_refs": [
+          "yili_fy2025_annual"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "FY2025 末期每 10 股 9.00 元现金红利，已披露 2025-2027 年分红率不低于 75%、每股不低于 1.22 元的股东回报政策。",
+        "evidence_refs": [
+          "yili_fy2025_annual"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "高 ROE、低资本强度和明确分红政策是权益价值模型的正面输入，但不抵消当前利润下行的反证。",
+        "evidence_refs": [
+          "yili_fy2025_annual",
+          "yili_2026h1"
+        ]
+      }
+    ],
+    "counter_evidence": [
+      {
+        "kind": "fact",
+        "text": "2026H1 收入 +4.13%，归母净利润 -20.02%，扣非归母净利润 -20.25%；加权平均 ROE 10.09%。",
+        "evidence_refs": [
+          "yili_2026h1"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "2026H1 计提商誉减值 15.47 亿元、资产减值合计 24.56 亿元；合同负债较期初下降 53.15%。",
+        "evidence_refs": [
+          "yili_2026h1"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "利润下行与减值说明历史 ROE 不能机械外推；模型必须使用更低的预测 ROE 和显式品牌再投资风险。",
+        "evidence_refs": [
+          "yili_2026h1",
+          "yili_fy2025_annual"
+        ]
+      }
+    ],
+    "thesis_breakers": [
+      {
+        "kind": "hypothesis",
+        "text": "若下一报告期归母利润继续明显下降且经营现金流回落，高分红承诺需要重新评估。",
+        "evidence_refs": [
+          "yili_2026h1"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "若并购资产再次出现大额减值或增量 ROIC 持续缺失，全国品牌再投资论点被削弱。",
+        "evidence_refs": [
+          "yili_2026h1"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "若乳制品价格带、份额或核心品类毛利率持续恶化，优质复利特征不再成立。",
+        "evidence_refs": [
+          "yili_2026h1"
+        ]
+      }
+    ],
+    "next_events": [
+      {
+        "kind": "fact",
+        "text": "观察下一份法定财务报告的收入、分产品毛利率、经营现金流、合同负债、应收和短期借款。",
+        "evidence_refs": [
+          "yili_2026h1"
+        ]
+      },
+      {
+        "kind": "gap",
+        "text": "补充普通股分母、可分配现金和回购/分红执行情况后再做正式人工批准。"
+      }
+    ],
+    "evidence_status": "verified",
+    "valuation_status": "not_ready",
+    "research_status": "financial_scope_approved",
+    "blockers": [
+      "formal G3 human valuation approval not present",
+      "issuer-specific beta evidence missing; generic beta=1 assumption used",
+      "ROIC and incremental ROIC remain unverified",
+      "H1 2026 interim report is unaudited"
+    ],
+    "evidence_refs": [
+      {
+        "id": "yili_fy2025_annual",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+        "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+      },
+      {
+        "id": "yili_2026h1",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+        "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+      },
+      {
+        "id": "china_cost_equity_20260914",
+        "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+        "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+      }
+    ],
+    "quote_date": "2026-09-22",
+    "financial_period": "2026-06-30",
+    "missing_date_reasons": {}
+  },
+  "facts": {
+    "kind": "quality_compounder",
+    "symbol": "600887",
+    "as_of": "2026-09-22",
+    "verified": true,
+    "confidence": "低",
+    "evidence_refs": [
+      {
+        "id": "yili_fy2025_annual",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+        "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+      },
+      {
+        "id": "yili_2026h1",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+        "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+      }
+    ],
+    "blockers": [],
+    "operating_inputs": {
+      "start_book_equity": "54655690475.89",
+      "ordinary_shares": "6325360667"
+    },
+    "scenario_inputs": {
+      "bear": {
+        "cost_of_equity": "0.08",
+        "forecast_roes": [
+          "0.11",
+          "0.10",
+          "0.09",
+          "0.09",
+          "0.09"
+        ],
+        "terminal_roe": "0.09",
+        "terminal_growth": "0.02",
+        "retention": "0.30"
+      },
+      "base": {
+        "cost_of_equity": "0.08",
+        "forecast_roes": [
+          "0.16",
+          "0.15",
+          "0.14",
+          "0.13",
+          "0.13"
+        ],
+        "terminal_roe": "0.13",
+        "terminal_growth": "0.02",
+        "retention": "0.30"
+      },
+      "bull": {
+        "cost_of_equity": "0.08",
+        "forecast_roes": [
+          "0.20",
+          "0.19",
+          "0.18",
+          "0.17",
+          "0.17"
+        ],
+        "terminal_roe": "0.17",
+        "terminal_growth": "0.02",
+        "retention": "0.30"
+      }
+    }
+  },
+  "assumptions": {
+    "evidence_refs": [
+      {
+        "id": "yili_fy2025_annual",
+        "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+      },
+      {
+        "id": "yili_2026h1",
+        "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+      },
+      {
+        "id": "china_cost_equity_20260914",
+        "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+      }
+    ],
+    "assumptions": [
+      {
+        "name": "cost_of_equity",
+        "unit": "decimal",
+        "bear": "0.08",
+        "base": "0.08",
+        "bull": "0.08",
+        "basis": "dated CNY risk-free rate plus China ERP, generic beta=1",
+        "rationale": "10Y yield 1.6813%, total China ERP 5.14%, plus 1.18% non-issuer residual risk bound; no Yili-specific beta evidence is reused.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "china_cost_equity_20260914",
+            "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+          }
+        ],
+        "blockers": [
+          "issuer-specific beta evidence missing; generic beta=1 assumption used"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2026",
+        "unit": "decimal",
+        "bear": "0.11",
+        "base": "0.16",
+        "bull": "0.20",
+        "basis": "FY2025 20.87% ROE with 2026H1 10.09% half-year ROE",
+        "rationale": "Explicit decay from audited historical ROE to the current reported half-year run-rate.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "yili_fy2025_annual",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+          },
+          {
+            "id": "yili_2026h1",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2027",
+        "unit": "decimal",
+        "bear": "0.10",
+        "base": "0.15",
+        "bull": "0.19",
+        "basis": "bounded continuation from 2026 scenario",
+        "rationale": "No independent multi-year issuer forecast is asserted; this is a scenario bound, not a fact.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "yili_2026h1",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2028",
+        "unit": "decimal",
+        "bear": "0.09",
+        "base": "0.14",
+        "bull": "0.18",
+        "basis": "bounded continuation from 2027 scenario",
+        "rationale": "Assumption remains explicitly low-confidence and is fully visible in the registered scenario inputs.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "yili_2026h1",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2029",
+        "unit": "decimal",
+        "bear": "0.09",
+        "base": "0.13",
+        "bull": "0.17",
+        "basis": "bounded continuation from 2028 scenario",
+        "rationale": "No high-confidence forecast is claimed at this horizon.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "yili_2026h1",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2030",
+        "unit": "decimal",
+        "bear": "0.09",
+        "base": "0.13",
+        "bull": "0.17",
+        "basis": "bounded continuation from 2029 scenario",
+        "rationale": "The final explicit year converges toward terminal economics without claiming it is the true path.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "yili_2026h1",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "terminal_roe",
+        "unit": "decimal",
+        "bear": "0.09",
+        "base": "0.13",
+        "bull": "0.17",
+        "basis": "mature dairy-brand economics under normalised competition",
+        "rationale": "Terminal spread over cost of equity is bounded and declines in the bear case; no unobservable franchise premium is claimed.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "yili_2026h1",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "terminal_growth",
+        "unit": "decimal",
+        "bear": "0.02",
+        "base": "0.02",
+        "bull": "0.02",
+        "basis": "long-run nominal growth bound below cost of equity",
+        "rationale": "No company-specific high-growth terminal path is assumed.",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "china_cost_equity_20260914",
+            "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "retention",
+        "unit": "decimal",
+        "bear": "0.30",
+        "base": "0.30",
+        "bull": "0.30",
+        "basis": "simple self-funded reinvestment assumption",
+        "rationale": "Retention is held constant so model inputs remain transparent; distribution policy is analysed separately.",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "yili_fy2025_annual",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      }
+    ],
+    "blockers": []
+  },
+  "assumption_bindings": [
+    {
+      "assumption_name": "cost_of_equity",
+      "scenario": "base",
+      "field_path": "cost_of_equity",
+      "expected_value": "0.08",
+      "evidence_refs": [
+        {
+          "id": "china_cost_equity_20260914"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2026",
+      "scenario": "bear",
+      "field_path": "forecast_roes.0",
+      "expected_value": "0.11",
+      "evidence_refs": [
+        {
+          "id": "yili_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2026",
+      "scenario": "base",
+      "field_path": "forecast_roes.0",
+      "expected_value": "0.16",
+      "evidence_refs": [
+        {
+          "id": "yili_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2026",
+      "scenario": "bull",
+      "field_path": "forecast_roes.0",
+      "expected_value": "0.20",
+      "evidence_refs": [
+        {
+          "id": "yili_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2030",
+      "scenario": "base",
+      "field_path": "forecast_roes.4",
+      "expected_value": "0.13",
+      "evidence_refs": [
+        {
+          "id": "yili_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roe",
+      "scenario": "bear",
+      "field_path": "terminal_roe",
+      "expected_value": "0.09",
+      "evidence_refs": [
+        {
+          "id": "yili_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roe",
+      "scenario": "base",
+      "field_path": "terminal_roe",
+      "expected_value": "0.13",
+      "evidence_refs": [
+        {
+          "id": "yili_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roe",
+      "scenario": "bull",
+      "field_path": "terminal_roe",
+      "expected_value": "0.17",
+      "evidence_refs": [
+        {
+          "id": "yili_2026h1"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "base",
+      "field_path": "terminal_growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "china_cost_equity_20260914"
+        }
+      ]
+    },
+    {
+      "assumption_name": "retention",
+      "scenario": "base",
+      "field_path": "retention",
+      "expected_value": "0.30",
+      "evidence_refs": [
+        {
+          "id": "yili_fy2025_annual"
+        }
+      ]
+    }
+  ],
+  "quote": {
+    "symbol": "600887",
+    "ref_id": "yili_quote_20260922",
+    "bundle_path": "runtime/quote-sessions/20260923T005634211464Z/bundle.json",
+    "bundle_sha256": "5e49dc79bbc0132b040175e993e2f5dd5a3813c7167ade7aa2afc5c51cea19c0"
+  },
+  "model_validity_input": {
+    "model_id": "residual-income-equity-shared-v1",
+    "valid_from": "2026-09-22",
+    "events": [],
+    "event_scan_evidence_refs": [
+      {
+        "id": "600887-event-scan-20260923T051018Z",
+        "symbol": "600887",
+        "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/evidence.json",
+        "sha256": "a6a2dffac4a14726968979c3e401ce7e3b9f65a8d5c9c58a1f9dec1625f05a90"
+      }
+    ],
+    "blockers": [],
+    "event_scan_ref": {
+      "id": "600887-event-scan-20260923T051018Z",
+      "symbol": "600887",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/evidence.json",
+      "sha256": "a6a2dffac4a14726968979c3e401ce7e3b9f65a8d5c9c58a1f9dec1625f05a90"
+    }
+  },
+  "blockers": [
+    "G3 human approval pending",
+    "valuation is conditional_research_only and must never imply a buy decision",
+    "pre-model event-scan disclosures require human review"
+  ]
+}

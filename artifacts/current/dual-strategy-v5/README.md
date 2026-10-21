@@ -163,3 +163,33 @@ scheduler. No signing or request consumption was performed. The final focused
 transport suite passes 98 tests, with an independent 28-test schedule audit and
 no remaining P0/P1/P2 in that bounded code review. Final browser acceptance and
 economic permission remain separate and unpassed.
+
+The final local Web check passes 323 tests, typecheck, format and build. Exact
+source delivery a1692f3fe5ef997ca83e64d3072e91ce2186932c passed Core Research
+Gates (39641980365), including isolated Postgres, and Web Workbench
+(39641979967). `github-prior-session-ci.json` binds those observations. It does
+not claim final browser acceptance, economic approval or a portable runtime;
+the later public-archive release must establish portability separately.
+
+Scoped public-research portability continuation:
+
+- `retained-research-sources/` contains the independently reviewed 197-file
+  public archive: 180 runtime paths, 37 source/context records and retained
+  historical producer bytes. Historical producer bytes are never installed.
+  Euler verified exact object-set equality after archive-path relocation and
+  inspected the new receipt; no private account or session data is included.
+- The existing `restore_public_archive(repository, manifest_path, destination)`
+  consumes `retained-research-sources/public-evidence/manifest.json`. It restores
+  only runtime originals and refuses an existing different hash. It does not
+  overwrite source/configuration files or restore a private account.
+- All 36 current context paths retain their expected bytes using exact-path Git
+  attributes. Only six blobs differ from a1692f3f, solely in CRLF/LF bytes; their
+  normalized content is identical. No financial formulas or thresholds changed.
+- `full-source-checkout-verification.json` records Root's full staged Windows
+  checkout with autocrlf enabled, initially no runtime, 180 restored files,
+  36 exact current context hashes, both existing research verifiers passing and
+  the actual 36-announcement handoff reporting SCHEDULE_VERIFIED. This supersedes
+  the local-only limitation for these two precisely bound research entries.
+- This is not a complete inherited research archive, automatic first-launch
+  restoration, clean Web deployment, current investment admission or final
+  browser/user acceptance. The earlier local-only observations remain historical.

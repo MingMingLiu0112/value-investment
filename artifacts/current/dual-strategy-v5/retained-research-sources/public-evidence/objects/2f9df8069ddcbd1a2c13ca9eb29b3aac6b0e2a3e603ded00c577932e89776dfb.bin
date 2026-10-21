@@ -1,0 +1,31 @@
+{
+  "schema_version": "m1-event-scan-v1",
+  "symbol": "600519",
+  "provider": "CNINFO",
+  "scan_from": "2026-09-14",
+  "scan_to": "2026-10-08",
+  "validity_from": "2026-06-30",
+  "validity_to": "2026-10-08",
+  "status": "PENDING_HUMAN_REVIEW",
+  "coverage_status": "INCOMPLETE",
+  "pre_model_review_status": "NONE",
+  "retrieved_at": "2026-10-08T06:45:06.352481+00:00",
+  "parser_version": "capital-index-only-not-full-event-scan-v1",
+  "action": "no_order",
+  "blockers": [
+    "Retained capital-query scope is not complete material-event coverage from the model book basis through the decision cutoff.",
+    "No materiality approval is inferred from a zero-result bounded index."
+  ],
+  "index_binding": {
+    "path": "runtime\\historical-filing-index\\20261008T064505231961Z\\600519-1-2f4fa1d8546bf40bb03d37cb06eeb46f4e445ff57c97367062a6a8e3785cb34b.json",
+    "sha256": "2f4fa1d8546bf40bb03d37cb06eeb46f4e445ff57c97367062a6a8e3785cb34b"
+  },
+  "evidence_refs": [
+    {
+      "id": "bounded_capital_index",
+      "path": "runtime\\historical-filing-index\\20261008T064505231961Z\\600519-1-2f4fa1d8546bf40bb03d37cb06eeb46f4e445ff57c97367062a6a8e3785cb34b.json",
+      "sha256": "2f4fa1d8546bf40bb03d37cb06eeb46f4e445ff57c97367062a6a8e3785cb34b"
+    }
+  ],
+  "announcements": []
+}

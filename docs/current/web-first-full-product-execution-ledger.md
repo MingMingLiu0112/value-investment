@@ -1776,3 +1776,36 @@ contract and ALLOW_NORMAL_RESEARCH from the existing scheduler. Signing identity
 G3, economic, materiality and current-market approval remain false/unproven; no
 signature or schedule consumption was performed. See
 artifacts/current/dual-strategy-v5/prior-session-handoff-verification.json.
+
+Source checkpoint a1692f3fe5ef997ca83e64d3072e91ce2186932c is pushed to the
+authorized delivery branch. Its exact Core/Web workflows (39641980365,
+39641979967) and isolated Postgres passed. Final local Web has 323 passing tests,
+typecheck/format/build pass. The earlier timezone failures are resolved on this
+checkpoint. This is source/test acceptance only; final repaired-handoff browser
+acceptance remains pending the manual URL-policy recovery, and real assisted
+use remains NOT_PROVEN.
+
+### V5 scoped research-source restoration
+
+The two exact current research entries can now be restored from the independently
+reviewed retained-research-sources archive. Euler checked the final 197-file
+manifest/object set and sanitized receipt; 217 expected/actual records match and
+no private account, session or signing secret is included. Top-level runtime is
+not tracked. The existing restore library verifies the entire package and refuses
+conflicting originals; shared runtime was not overwritten.
+
+Root tested a full staged checkout with Windows autocrlf enabled, not a source
+overlay with copied worktree configuration. It started without runtime, restored
+180 originals, verified all 36 current-context hashes and passed both existing
+600887/600519 verifiers plus the actual 36-announcement materiality handoff and
+bound scope request. Four source files and two config blobs needed retained CRLF
+bytes; all six are normalized-content identical to a1692f3f. Exact-path attributes
+also preserve the other currently hash-bound LF/CRLF context files. Historical
+producer bytes stay archive-only, never executable replacements.
+
+See full-source-checkout-verification.json and the two retained manifests. This
+closes scoped public-research restoration for these exact seeds; it does not prove
+whole-site cold start, automatic archive restoration, all inherited research,
+economic qualification, current-market validity or final user/browser acceptance.
+The final packaging SHA requires its own Core/Web result. Total Goal remains
+IN_PROGRESS and real assisted use NOT_PROVEN.

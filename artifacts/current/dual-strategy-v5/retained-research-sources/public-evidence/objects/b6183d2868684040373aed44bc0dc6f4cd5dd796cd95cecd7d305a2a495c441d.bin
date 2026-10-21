@@ -1,0 +1,69 @@
+{
+  "schema_version": "cninfo-raw-index-v1",
+  "symbol": "600887",
+  "scan_from": "2026-10-11",
+  "scan_to": "2026-10-16",
+  "action": "no_order",
+  "pagination_complete": true,
+  "responses": [
+    {
+      "url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+      "method": "POST",
+      "request": {
+        "pageNum": "1",
+        "pageSize": "30",
+        "tabName": "fulltext",
+        "column": "sse",
+        "stock": "",
+        "searchkey": "伊利股份",
+        "secid": "",
+        "plate": "",
+        "category": "",
+        "trade": "",
+        "seDate": "",
+        "sortName": "",
+        "sortType": "",
+        "isHLtitle": "true"
+      },
+      "page": 1,
+      "acquired_at": "2026-10-18T10:35:39.682907+00:00",
+      "sha256": "2499c82f90fbc5f2279677bf2298466ae748f3afe3f4ae010241ee1e5e348039",
+      "size_bytes": 24414,
+      "body_representation": "RECEIVED_RESPONSE_CONTENT_NOT_RESERIALIZED_JSON",
+      "path": "runtime/web-first-event-coverage/600887-20261018/raw-index/response-0001.bin",
+      "request_kind": "issuer_discovery",
+      "metadata_path": "runtime/web-first-event-coverage/600887-20261018/raw-index/response-0001.json",
+      "metadata_sha256": "5b8bd2742c595f909c4c7e5ee55b68e0747fc54a446b20b5e4f53cc2728db704"
+    },
+    {
+      "url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+      "method": "POST",
+      "request": {
+        "pageNum": "1",
+        "pageSize": "30",
+        "tabName": "fulltext",
+        "column": "sse",
+        "stock": "600887,gssh0600887",
+        "searchkey": "",
+        "secid": "",
+        "plate": "",
+        "category": "",
+        "trade": "",
+        "seDate": "2026-10-11~2026-10-16",
+        "sortName": "",
+        "sortType": "",
+        "isHLtitle": "true"
+      },
+      "page": 1,
+      "acquired_at": "2026-10-18T10:35:39.899722+00:00",
+      "sha256": "aa05e1c3daa1d1f2a0af4ebc5ef74a4c5f5ddc83d978ded8fe05e6dda76e87ab",
+      "size_bytes": 1881,
+      "body_representation": "RECEIVED_RESPONSE_CONTENT_NOT_RESERIALIZED_JSON",
+      "path": "runtime/web-first-event-coverage/600887-20261018/raw-index/response-0002.bin",
+      "request_kind": "window",
+      "metadata_path": "runtime/web-first-event-coverage/600887-20261018/raw-index/response-0002.json",
+      "metadata_sha256": "172fafba3c8a0c2acb71f0e8987e5e3a001a9cc361438aaeee7e3279c4e9e5ae"
+    }
+  ],
+  "total_bytes": 26295
+}

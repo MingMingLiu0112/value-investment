@@ -1,0 +1,18 @@
+{
+  "symbol": "600519",
+  "receipt_version": "moutai-preclose-capital-receipt-v1",
+  "collection_started_at": "2026-10-08T14:45:03.588026+08:00",
+  "collection_finished_at": "2026-10-08T14:45:06.403292+08:00",
+  "through": "2026-10-08",
+  "preclose_complete": true,
+  "query_index": {
+    "path": "runtime\\historical-filing-index\\20261008T064505231961Z\\600519-1-2f4fa1d8546bf40bb03d37cb06eeb46f4e445ff57c97367062a6a8e3785cb34b.json",
+    "sha256": "2f4fa1d8546bf40bb03d37cb06eeb46f4e445ff57c97367062a6a8e3785cb34b"
+  },
+  "capital_refresh": {
+    "path": "runtime\\company-research\\600519-current-capital-refresh-20261008T064506Z\\evidence.json",
+    "sha256": "ce04d68b3ccc06f9ca7ea42689c61249f5444558dd47e9493c98b0098e23373d"
+  },
+  "next_step": "Rebuild a dated policy, current model and admission chain after the close. This receipt alone does not approve a valuation, simulation or order.",
+  "trade_approved": false
+}

@@ -1,0 +1,190 @@
+{
+  "benchmark": "H00300",
+  "company_wacc_approved": false,
+  "estimates": {
+    "2015Feb_2019Dec": {
+      "approximate_95pct_slope_interval_iid_assumption": [
+        0.6409681118193886,
+        1.1363295670897098
+      ],
+      "equity_return_slope": 0.8886488394545492,
+      "first_month_end": "2015-02-27",
+      "last_month_end": "2019-12-31",
+      "monthly_intercept_not_alpha": 0.03324729261258523,
+      "observations": 59,
+      "ols_slope_standard_error_iid_assumption": 0.12636771818120435,
+      "r_squared": 0.4645498120719386
+    },
+    "2020_2022": {
+      "approximate_95pct_slope_interval_iid_assumption": [
+        0.9052210454343967,
+        1.7539589232739745
+      ],
+      "equity_return_slope": 1.3295899843541856,
+      "first_month_end": "2020-01-23",
+      "last_month_end": "2022-12-30",
+      "monthly_intercept_not_alpha": 0.014828502722781349,
+      "observations": 36,
+      "ols_slope_standard_error_iid_assumption": 0.21651476475499432,
+      "r_squared": 0.525870320257912
+    },
+    "2023_2025": {
+      "approximate_95pct_slope_interval_iid_assumption": [
+        0.6188096965330723,
+        1.142551112832928
+      ],
+      "equity_return_slope": 0.8806804046830001,
+      "first_month_end": "2023-01-31",
+      "last_month_end": "2025-12-31",
+      "monthly_intercept_not_alpha": -0.009303582646100945,
+      "observations": 36,
+      "ols_slope_standard_error_iid_assumption": 0.1336075041581265,
+      "r_squared": 0.5609986991300652
+    },
+    "full_2015Feb_2025Dec": {
+      "approximate_95pct_slope_interval_iid_assumption": [
+        0.8039962722824422,
+        1.171072610519841
+      ],
+      "equity_return_slope": 0.9875344414011415,
+      "first_month_end": "2015-02-27",
+      "last_month_end": "2025-12-31",
+      "monthly_intercept_not_alpha": 0.01608289852512217,
+      "observations": 131,
+      "ols_slope_standard_error_iid_assumption": 0.09364192301974458,
+      "r_squared": 0.4629813591152504
+    },
+    "last_60_months_ending_2025Dec": {
+      "approximate_95pct_slope_interval_iid_assumption": [
+        0.8163448738080055,
+        1.3896131941275147
+      ],
+      "equity_return_slope": 1.10297903396776,
+      "first_month_end": "2021-01-29",
+      "last_month_end": "2025-12-31",
+      "monthly_intercept_not_alpha": -0.00217724654531751,
+      "observations": 60,
+      "ols_slope_standard_error_iid_assumption": 0.14624191844885442,
+      "r_squared": 0.49514329250032185
+    }
+  },
+  "events": [
+    {
+      "bonus_per_old_share": "0.10000",
+      "cash_per_old_share": "4.37400",
+      "date": "2015-07-17",
+      "gross_factor": "1.015513335188203028737231210",
+      "record_date": "2015-07-16"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "6.171",
+      "date": "2016-07-01",
+      "gross_factor": "1.001442175938613318717456837",
+      "record_date": "2016-06-30"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "6.787",
+      "date": "2017-07-07",
+      "gross_factor": "0.9929317075310320628097723584",
+      "record_date": "2017-07-06"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "10.999",
+      "date": "2018-06-15",
+      "gross_factor": "0.9977090303130525485606706270",
+      "record_date": "2018-06-14"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "14.539",
+      "date": "2019-06-28",
+      "gross_factor": "1.002197019119787223365283284",
+      "record_date": "2019-06-27"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "17.025",
+      "date": "2020-06-24",
+      "gross_factor": "1.001719226856561546286876907",
+      "record_date": "2020-06-23"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "19.293",
+      "date": "2021-06-25",
+      "gross_factor": "1.020910036024274074611348855",
+      "record_date": "2021-06-24"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "21.675",
+      "date": "2022-06-30",
+      "gross_factor": "1.018066502463054187192118227",
+      "record_date": "2022-06-29"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "21.91",
+      "date": "2022-12-27",
+      "gross_factor": "1.007376324581242896341113394",
+      "record_date": "2022-12-26"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "25.911",
+      "date": "2023-06-30",
+      "gross_factor": "1.001867877295458391443126317",
+      "record_date": "2023-06-29"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "19.106",
+      "date": "2023-12-20",
+      "gross_factor": "0.9963558208955223880597014925",
+      "record_date": "2023-12-19"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "30.876",
+      "date": "2024-06-19",
+      "gross_factor": "1.006819585934932632270785409",
+      "record_date": "2024-06-18"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "23.882",
+      "date": "2024-12-20",
+      "gross_factor": "0.9966937672871225846383969156",
+      "record_date": "2024-12-19"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "27.673",
+      "date": "2025-06-26",
+      "gross_factor": "1.008227125207192901814940175",
+      "record_date": "2025-06-25"
+    },
+    {
+      "bonus_per_old_share": "0",
+      "cash_per_old_share": "23.957",
+      "date": "2025-12-19",
+      "gross_factor": "1.002066387141858839972047519",
+      "record_date": "2025-12-18"
+    }
+  ],
+  "historical_valuation_approved": false,
+  "limits": [
+    "Stock series assumes gross cash entitlements reinvested fractionally at ex-date close, even before cash is paid; bonus shares valued at that close. This is a theoretical return measure, not an executable account.",
+    "Uses actual cash entitlement per eligible share, not ex-reference cash over a different share denominator. Taxes, fees and minimum lots are absent.",
+    "Regressions use raw monthly returns with an intercept, not risk-free excess returns. The slope is descriptive market co-movement; intercept is not certified alpha.",
+    "Excludes partial January 2015 opening month; ends December 2025 and is not a September 2026 current beta.",
+    "Observed listed equity includes financial business, cash and leverage. It is not unlevered industrial asset beta and cannot be directly used as company WACC.",
+    "Market TRI identity is source-checked but historical methodology and independent values remain unaccepted; the two nonmatching source dates are not used.",
+    "Monthly sampling and window sensitivity are research conventions. No parameter chosen to achieve an attractive valuation; no historical decision input is approved.",
+    "The reported OLS interval uses an IID residual approximation. It is descriptive only and does not address autocorrelation, non-normal returns, benchmark choice or the industrial-asset scope mismatch."
+  ],
+  "symbol": "600519"
+}
