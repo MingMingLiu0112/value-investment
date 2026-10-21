@@ -97,6 +97,19 @@ describe("detail current personal holding", () => {
     expect(html).toContain("当前已确认台账未记录该证券持仓");
     expect(html).not.toContain("当前是否持仓未知");
   });
+  it("labels isolated holdings and does not expose their label while locked", () => {
+    fixture.state.risk = {
+      facts: { account_scope: "TEST_ONLY_V5_BROWSER" },
+      blockers: [],
+    } as any;
+    expect(
+      renderToStaticMarkup(<CurrentHolding decision={decision} />),
+    ).toContain("TEST_ONLY 演练持仓，不是你的真实账户或个人交易建议。");
+    fixture.state.kind = "LOCKED";
+    expect(
+      renderToStaticMarkup(<CurrentHolding decision={decision} />),
+    ).not.toContain("TEST_ONLY 演练持仓");
+  });
 });
 
 it("keeps personal arithmetic, observed conditions, risk eligibility and execution separate", () => {

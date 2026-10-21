@@ -47,6 +47,22 @@ Final local integration: 192 risk/declaration/scenario/API tests passed; all Web
 declaration, explicit SIMULATED marks or metadata source/time/fallback changes.
 Exact-source CI and final browser results are bound in the V5 acceptance receipts.
 
+Additional browser checks: the overconcentrated TEST_ONLY account was rejected
+by the unchanged engine. Two explicit simulated SELL records (core 600 shares,
+hotspot 300 shares at synthetic fill price 1309.69, fees 5 each) updated cash to
+1538701, remaining shares to 200 and cost to 300002.50. Synthetic external
+reconciliation was reconfirmed; no actual brokerage statement was used. A repeat
+scenario still correctly rejected the existing hotspot cash/marked-equity budget
+breach. Do not relax the IPS to force this sample through. A distinct, predeclared
+small TEST_ONLY account is being prepared for a positive browser scenario; it
+cannot change real strategy or economic eligibility.
+
+Stock detail now labels TEST_ONLY held context as the portfolio and daily views
+already did; the marker is never exposed from retained state while locked.
+Final Web regression: 312 passed, typecheck/format/build passed. Source
+6950565b passed both Core (offline and isolated Postgres) and Web CI before this
+last display-scope correction; final-source CI is verified separately.
+
 ### V5 restart, compatibility and risk integration checkpoint
 
 Latest integration follows ea6cf5d9b7c503b1f6dc2a25524133ea5f576e4d.

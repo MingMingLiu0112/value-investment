@@ -28,6 +28,11 @@ export function CurrentHolding({ decision }: { decision: DecisionItem }) {
         </p>
       ) : (
         <>
+          {state.risk?.facts?.account_scope?.startsWith("TEST_ONLY") && (
+            <p role="status">
+              TEST_ONLY 演练持仓，不是你的真实账户或个人交易建议。
+            </p>
+          )}
           <p>
             台账时点：{portfolio.as_of ?? "未提供"}；可用现金{" "}
             {formatMoney(portfolio.cash_cny)} 元。
