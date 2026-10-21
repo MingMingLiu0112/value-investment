@@ -1949,3 +1949,44 @@ requires recovery of its separate blocked URL. No real signature, private accoun
 readiness, natural Shadow session, production action or Excel change is claimed.
 All twelve Goal acceptance statuses remain partial, blocked or not proven.
 Total Goal IN_PROGRESS; real assisted use NOT_PROVEN; action=no_order.
+
+### V5 clean runtime and Windows evidence checkout closure
+
+Detached local acceptance checkout .tmp/v5a at 67561f4d uses its own Web build
+and backend on loopback 8031; runtime identity is MATCHED, source is clean and
+the original shared checkout and 8001 listener remain untouched. Restore used
+retained public archives plus exact SHA-verified local public runtime seeds.
+This proves bounded local acceptance, not a GitHub-only full-site cold start.
+Historical WPS provenance contains local path metadata and stays local; no
+private journal, bootstrap secret or workbook was copied or published.
+
+Actual Windows checkout exposed four registry evidence files converted to CRLF.
+Their Git blobs match the registered originals. Restore exact blobs locally and
+add four precise -text attributes to prevent future conversion; never edit the
+registered hashes or economic contents. All fourteen registry evidence hashes
+then pass. A missing bound discovery receipt was restored from its verified
+local public original. Daily API, strategy API and company detail now agree
+with snapshot pub-7e44f6474752da43eaf7, dated 2026-10-21, formal admissions zero.
+
+Real browser navigation verified the daily candidates, 600693 four conditional
+actions and 000333 verified-close-only restrictions. Desktop measured 1280x720;
+mobile measured 390x844 with document width 375 and no horizontal page overflow.
+These fresh mobile observations supersede the earlier unsupported-override
+failure only for this bounded public page scope. Private workflows and final
+user acceptance remain unproven. See clean-local-public-web-acceptance.json and
+its hash-bound screenshots; no all-product Web PASS is implied.
+
+When the daily API is unavailable because its source receipt cannot be verified,
+the home page previously blamed a null publication ID on a version conflict.
+Show the actual dependency category first, sanitize diagnostic paths and reserve
+version-conflict wording for two current nonempty differing identities. The
+candidate gate is unchanged. Thirty focused SSR cases, typecheck and formatting
+pass; independent bounded review found no P0/P1/P2. Source changes after the
+67561f4d browser checkpoint need their own exact-SHA verification.
+
+Next executable work: preserve verified recording-time personal risk alongside
+manual fills without claiming pretrade knowledge; create a new bounded Midea
+research candidate incorporating corrected evidence without rewriting old input
+or granting economic approval. Real G3, materiality, hotspot admission, private
+inputs and natural validation gates remain independent. Total Goal IN_PROGRESS;
+real assisted use NOT_PROVEN; action=no_order.

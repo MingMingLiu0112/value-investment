@@ -10,6 +10,7 @@ import { api } from "../../services/api";
 import type { DecisionItem } from "../../types/api";
 import { describeCode } from "../../utils/codes";
 import { hasValuationResult } from "../../utils/opportunityView";
+import { blockerText } from "../../utils/packet";
 import {
   judgmentGroup,
   judgmentGroups,
@@ -24,6 +25,21 @@ function updateTime(value: string | null | undefined): string {
   return Number.isNaN(date.getTime())
     ? "时间未核验"
     : `${date.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false })}（北京时间）`;
+}
+
+function unavailableDependencyText(value?: string | null): string {
+  const code = value?.split(":", 1)[0].trim();
+  if (
+    code === "VALUE_DISCOVERY_RECEIPT_BINDING_UNAVAILABLE" ||
+    code === "VALUE_DISCOVERY_RECEIPT_UNAVAILABLE"
+  )
+    return "价值投资初筛的来源回执缺失或未通过核验，补齐并核验后才能展示候选。";
+  // Only translate the code; backend diagnostics can contain local source paths.
+  if (code && /^[A-Za-z][A-Za-z0-9_.]*$/.test(code)) {
+    const translated = blockerText(describeCode(code));
+    if (translated !== code) return translated;
+  }
+  return "当前结果所需的来源依赖缺失或未通过核验。";
 }
 
 function StrategySection({
@@ -185,6 +201,32 @@ export default function DailyDecisions() {
     quoteFresh && researchFresh && quoteDate
       ? `价值研究价格参考截至 ${quoteDate} 收盘；热点行情日期分别核验。`
       : `研究截至 ${researchDate ?? "日期待核验"}；${quoteDate ? `行情日期 ${quoteDate}` : "行情日期待核验"}，未满足的条件不会转成操作建议。`;
+  const dailyUnavailable =
+    data?.status === "UNAVAILABLE" ||
+    data?.publication?.packet_status === "UNAVAILABLE";
+  const versionMismatch =
+    !dailyUnavailable &&
+    data?.publication?.packet_status === "CURRENT" &&
+    packetCurrent &&
+    !!data.publication.publication_id?.trim() &&
+    !!packet.data?.publication_id?.trim() &&
+    !publicationVersionsMatch(
+      data.publication.publication_id,
+      packet.data?.publication_id,
+    );
+  const stopReason =
+    error ||
+    packet.error ||
+    (dailyUnavailable
+      ? unavailableDependencyText(
+          data?.gate_code || data?.blockers?.[0] || data?.reason,
+        )
+      : null) ||
+    (packet.data?.chain_error
+      ? unavailableDependencyText(packet.data.chain_error)
+      : null) ||
+    (versionMismatch ? "判断与快照版本不一致，请刷新后重试。" : null) ||
+    "正式发布链尚未就绪。";
   return (
     <Workbench>
       <header className="opportunity-page-head">
@@ -251,15 +293,7 @@ export default function DailyDecisions() {
       {!loading && !packet.loading && !usable && (
         <div className="opportunity-stop" role="status">
           <strong>当前结果不可核验，已停止展示候选。</strong>
-          <p>
-            {error ||
-              packet.error ||
-              packet.data?.chain_error ||
-              (data?.publication?.publication_id !== packet.data?.publication_id
-                ? "判断与快照版本不一致，请刷新后重试。"
-                : null) ||
-              "正式发布链尚未就绪。"}
-          </p>
+          <p>{stopReason}</p>
           <Button
             onClick={() => {
               retry();

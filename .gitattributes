@@ -87,3 +87,9 @@ artifacts/current/dual-strategy-v5/retained-quote-snapshot/** -text whitespace=c
 config/current-company-research-registry.json -text whitespace=cr-at-eol
 src/value_investment_agent/application/decision/value_action_plan.py -text whitespace=cr-at-eol
 artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json -text whitespace=cr-at-eol
+
+# Current company registry evidence is hash-bound to the original Git bytes.
+artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/public-draft-v4.json -text whitespace=cr-at-eol
+artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/package.json -text whitespace=cr-at-eol
+docs/current/tl8-c-000333-share-denominator-recheck-receipt-20261013.json -text whitespace=cr-at-eol
+docs/current/tl8-c-601088-cycle-model-boundary-receipt-20261013.json -text whitespace=cr-at-eol
