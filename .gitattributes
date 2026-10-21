@@ -47,4 +47,4 @@ config/hotspot-replay-review-v1.json -text
 config/public-market-evidence-retention-v1.json -text
 
 # Retained replay originals include source-code bytes pinned by the manifest.
-runtime/hotspot-retained-source-replays/** -text whitespace=cr-at-eol
+artifacts/current/dual-strategy-v5/retained-hotspot-sources/** -text whitespace=cr-at-eol

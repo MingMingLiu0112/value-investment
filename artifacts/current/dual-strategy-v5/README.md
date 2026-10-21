@@ -67,3 +67,11 @@ Actual 600519 pending replay runtime is local-only: its transitive hash closure
 and producer newline identity are not portable yet. Missing local research
 assets fail closed on a fresh clone. This remains an engineering release gap,
 not a user approval requirement.
+
+Packaging correction: e64460c7 Web/Postgres passed; Core found missing CLI
+inventory entries and prohibited top-level runtime tracking. The exact public
+hotspot closure now lives under `retained-hotspot-sources/`, via a fresh export
+manifest preserving the raw source SHA values and original manifest identity.
+Local runtime originals remain untouched. The original integration observation
+is retained rather than rewritten; its delivery-path claim is superseded by
+`public-packaging-correction.json` and the later exact-SHA CI result.

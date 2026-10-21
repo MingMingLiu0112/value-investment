@@ -13,6 +13,7 @@ from .independent_admission import _contains_test_namespace
 
 MANIFEST_SCHEMA = "hotspot-retained-source-manifest-v1"
 FOLDER = "runtime/hotspot-retained-source-replays"
+PUBLIC_FOLDER = "artifacts/current/dual-strategy-v5/retained-hotspot-sources"
 FROZEN_RULES = {
     "src/value_investment_agent/domain/hotspot/current_price.py": current_price,
     "src/value_investment_agent/domain/hotspot/price_action_plan.py": price_action_plan,
@@ -38,6 +39,20 @@ def _document(raw: bytes, namespace: str) -> dict:
     if namespace == "ACTUAL" and _contains_test_namespace(value):
         raise ValueError("TEST_ONLY evidence cannot enter ACTUAL retained replay")
     return value
+
+
+def _manifest_directory(root: Path, binding: dict, *, folders=(FOLDER, PUBLIC_FOLDER)) -> Path:
+    name = binding["path"]
+    if (not isinstance(name, str) or Path(name).is_absolute() or ".." in Path(name).parts
+            or Path(name).as_posix() != name):
+        raise ValueError("Retained manifest requires a canonical relative path")
+    path = root / name
+    directory = path.resolve().parent
+    if (path.name != "manifest.json"
+            or directory.parent not in {(root / name).resolve() for name in folders}
+            or len(directory.name) != 32 or any(c not in "0123456789abcdef" for c in directory.name)):
+        raise ValueError("Retained manifest outside append-only source directory")
+    return directory
 
 
 def _spec(raw: bytes, namespace: str, now: datetime, *, source_root: Path) -> dict:
@@ -141,12 +156,7 @@ def build_retained_descriptive_validation(*, root: Path, manifest_binding: dict,
     """Reverify copies without consulting mutable config or the original runtime."""
     root = root.resolve()
     _clock(now)
-    manifest_path = root / manifest_binding["path"]
-    parent = (root / FOLDER).resolve()
-    directory = manifest_path.resolve().parent
-    if (manifest_path.name != "manifest.json" or directory.parent != parent
-            or len(directory.name) != 32 or any(c not in "0123456789abcdef" for c in directory.name)):
-        raise ValueError("Retained manifest outside append-only source directory")
+    directory = _manifest_directory(root, manifest_binding)
     manifest = json.loads(_read(root, manifest_binding))
     namespace = manifest.get("namespace")
     if (manifest.get("schema_version") != MANIFEST_SCHEMA or namespace not in {"ACTUAL", "TEST_ONLY"}
@@ -158,6 +168,16 @@ def build_retained_descriptive_validation(*, root: Path, manifest_binding: dict,
     retained = datetime.fromisoformat(manifest["retained_at"])
     if retained.utcoffset() is None or retained > now:
         raise ValueError("Retained copy is not yet available")
+    if directory.parent == (root / PUBLIC_FOLDER).resolve():
+        original = manifest["original_manifest_binding"]
+        _manifest_directory(root, original, folders=(FOLDER,))
+        digest = original["sha256"]
+        if (not isinstance(digest, str) or len(digest) != 64
+                or any(c not in "0123456789abcdef" for c in digest)):
+            raise ValueError("Invalid original manifest digest")
+        exported = datetime.fromisoformat(manifest["exported_at"])
+        if exported.utcoffset() is None or not retained <= exported <= now:
+            raise ValueError("Public export is not yet available or predates retention")
     source_root = directory / "sources"
     originals = {}
     source_bindings = []
@@ -220,6 +240,39 @@ def build_retained_descriptive_validation(*, root: Path, manifest_binding: dict,
             "Overlapping signal outcomes are price paths, not independent trades",
             "No execution, dated costs, tradability or corporate-action comparability established"],
         performance_claim_allowed=False, action="no_order")
+
+
+def export_retained_descriptive_sources(*, root: Path, manifest_binding: dict, now: datetime) -> dict:
+    """Publish a new immutable byte-exact copy; leave local runtime untouched.
+
+    The original manifest binding is provenance, not a runtime dependency of the
+    public copy. The new externally pinned manifest binds every exported byte.
+    """
+    root = root.resolve()
+    _manifest_directory(root, manifest_binding, folders=(FOLDER,))
+    build_retained_descriptive_validation(root=root, manifest_binding=manifest_binding, now=now)
+    original = json.loads(_read(root, manifest_binding))
+    sources = [(row["original_binding"], _read(root, row["retained_binding"]))
+               for row in original["files"]]
+    directory = root / PUBLIC_FOLDER / uuid4().hex
+    directory.mkdir(parents=True, exist_ok=False)
+    files = []
+    for binding, raw in sources:
+        target = directory / "sources" / binding["path"]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("xb") as stream:
+            stream.write(raw)
+        files.append(dict(original_binding=dict(binding), retained_binding=dict(
+            path=target.relative_to(root).as_posix(), sha256=binding["sha256"])))
+    manifest = dict(original, files=files, original_manifest_binding=dict(manifest_binding),
+                    exported_at=now.isoformat())
+    raw = (json.dumps(manifest, sort_keys=True, indent=2, allow_nan=False) + "\n").encode("utf-8")
+    path = directory / "manifest.json"
+    with path.open("xb") as stream:
+        stream.write(raw)
+    binding = dict(path=path.relative_to(root).as_posix(), sha256=sha256(raw).hexdigest())
+    build_retained_descriptive_validation(root=root, manifest_binding=binding, now=now)
+    return binding
 
 
 def load_retained_replay_summary(*, root: Path, manifest_binding: dict, now: datetime) -> dict:

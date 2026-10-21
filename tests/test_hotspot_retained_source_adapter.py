@@ -165,6 +165,61 @@ def test_archive_rule_newline_change_still_fails_raw_hash(isolated, tmp_path):
         adapter.build_retained_descriptive_validation(root=tmp_path, manifest_binding=retained, now=NOW)
 
 
+def test_public_export_preserves_bytes_and_replays_without_runtime(isolated, tmp_path):
+    retained = retain(tmp_path, isolated())
+    old_manifest_bytes = (tmp_path / retained["path"]).read_bytes()
+    old = json.loads(old_manifest_bytes)
+    exported = adapter.export_retained_descriptive_sources(root=tmp_path, manifest_binding=retained, now=NOW)
+    assert exported["path"].startswith(adapter.PUBLIC_FOLDER + "/")
+    assert (tmp_path / retained["path"]).read_bytes() == old_manifest_bytes
+    public = json.loads((tmp_path / exported["path"]).read_bytes())
+    assert public["original_manifest_binding"] == retained
+    assert public["exported_at"] == NOW.isoformat()
+    assert [row["original_binding"] for row in public["files"]] == [row["original_binding"] for row in old["files"]]
+    for source, copy in zip(old["files"], public["files"]):
+        assert (tmp_path / source["retained_binding"]["path"]).read_bytes() == (tmp_path / copy["retained_binding"]["path"]).read_bytes()
+    # Remove every original runtime/protocol/rule dependency from this isolated
+    # root. Public replay must rely exclusively on its newly bound copies.
+    public_files = {tmp_path / exported["path"],
+                    *(tmp_path / row["retained_binding"]["path"] for row in public["files"])}
+    for path in tmp_path.rglob("*"):
+        if path.is_file() and path not in public_files:
+            path.unlink()
+    summary = adapter.load_retained_replay_summary(root=tmp_path, manifest_binding=exported, now=NOW)
+    assert summary["signal_event_count"] > 0
+    assert summary["trade_count"] is None and summary["formal_eligibility"] is False
+
+
+@pytest.mark.parametrize("kind", ["raw", "escape_copy", "escape_original", "future_export", "past_export"])
+def test_public_export_tampering_is_rejected(isolated, tmp_path, kind):
+    exported = adapter.export_retained_descriptive_sources(root=tmp_path,
+        manifest_binding=retain(tmp_path, isolated()), now=NOW)
+    manifest = json.loads((tmp_path / exported["path"]).read_bytes())
+    if kind == "raw":
+        path = tmp_path / manifest["files"][0]["retained_binding"]["path"]
+        path.write_bytes(path.read_bytes() + b"changed")
+    elif kind == "escape_copy":
+        manifest["files"][0]["retained_binding"]["path"] = "../outside.json"
+    elif kind == "escape_original":
+        manifest["original_manifest_binding"]["path"] = "../outside/manifest.json"
+    elif kind == "future_export":
+        manifest["exported_at"] = "2026-10-22T00:00:00+00:00"
+    else:
+        manifest["exported_at"] = "2026-07-10T00:00:00+00:00"
+    exported = write(tmp_path, exported["path"], manifest)
+    with pytest.raises(ValueError):
+        adapter.build_retained_descriptive_validation(root=tmp_path, manifest_binding=exported, now=NOW)
+
+
+@pytest.mark.parametrize("parent", ["runtime/other", "artifacts/current/other", "artifacts/current/dual-strategy-v5/other"])
+def test_only_exact_manifest_parents_are_accepted(isolated, tmp_path, parent):
+    retained = retain(tmp_path, isolated())
+    raw = (tmp_path / retained["path"]).read_bytes()
+    misplaced = write(tmp_path, parent + "/" + "a" * 32 + "/manifest.json", raw)
+    with pytest.raises(ValueError, match="outside append-only source directory"):
+        adapter.build_retained_descriptive_validation(root=tmp_path, manifest_binding=misplaced, now=NOW)
+
+
 @pytest.mark.parametrize("kind", ["copied_raw", "omitted_provenance", "future_copy", "escaping_original"])
 def test_tampering_fails_closed_even_with_rebound_manifest(isolated, tmp_path, kind):
     binding = retain(tmp_path, isolated())
@@ -288,6 +343,7 @@ def test_public_retained_archive_replays_without_legacy_originals(tmp_path_facto
     root = tmp_path_factory.mktemp("pub")
     config = json.loads((ROOT / "config/hotspot-replay-review-v1.json").read_bytes())
     binding = config["retained_manifest_binding"]
+    assert binding["path"].startswith(adapter.PUBLIC_FOLDER + "/")
     raw = (ROOT / binding["path"]).read_bytes()
     assert sha256(raw).hexdigest() == binding["sha256"]
     manifest = json.loads(raw)
@@ -301,11 +357,12 @@ def test_public_retained_archive_replays_without_legacy_originals(tmp_path_facto
         write(root, copied["path"], raw)
         assert not (root / row["original_binding"]["path"]).exists()
     assert len([path for path in root.rglob("*") if path.is_file()]) == 20
+    assert not (root / "runtime").exists()
     assert not (root / "config/current-price-conditions.json").exists()
     # Evaluate at the recorded archive cutoff, rather than the synthetic tests'
     # midnight clock, which predates this real archive's acquisition.
     summary = adapter.load_retained_replay_summary(root=root, manifest_binding=binding,
-        now=datetime.fromisoformat(manifest["retained_at"]))
+        now=datetime.fromisoformat(manifest["exported_at"]))
     assert summary["namespace"] == "ACTUAL" and summary["scope"] == "DESCRIPTIVE"
     assert summary["signal_event_count"] == 161
     assert summary["mature_five_session_count"] == 150

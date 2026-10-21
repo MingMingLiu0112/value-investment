@@ -1595,3 +1595,18 @@ research, then lawful review. Preserve hotspot PIT/OOS/cost/Shadow and genuine
 private IPS/account gates. The goal remains IN_PROGRESS, REAL_ASSISTED_USE_READY
 NOT_PROVEN. Twelve individually scoped statuses and exact evidence are recorded
 in artifacts/current/dual-strategy-v5/integrated-continuation.json.
+
+### V5 packaging correction after exact-SHA CI
+
+Source e64460c7 passed Web and isolated Postgres, but Core failed three repository
+architecture checks: the replay CLI was absent from two discovery inventories,
+and the retained archive was tracked under forbidden top-level runtime. This is
+an integration omission, not a research qualification failure. The CLI is now
+registered in both inventories. The archive is exported as a new immutable copy
+under artifacts/current/dual-strategy-v5/retained-hotspot-sources, preserving all
+19 source byte hashes and recording its original manifest plus actual export
+time. The original local runtime is unchanged and no longer included in delivery.
+Verifier path boundaries remain exact; architecture tests are not relaxed.
+The new public archive still replays 161/150/11 with unknown actual trade count.
+Earlier screenshots and integrated-continuation.json remain dated observations;
+the new packaging receipt supersedes only their public archive delivery path.
