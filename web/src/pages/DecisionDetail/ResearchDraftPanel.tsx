@@ -6,6 +6,7 @@ import {
   researchAssumptionName,
   researchChangeText,
   researchConfidenceText,
+  researchForecastOrdinals,
   researchGateText,
   researchSentence,
   researchStatusText,
@@ -82,6 +83,16 @@ export function ResearchDraftPanel({ draft }: { draft: ResearchDraft }) {
     draft.input_verification.economic_approval === false
       ? draft.input_verification
       : null;
+  const datedAnnualModel =
+    draft.valuation.model_type === "residual_income_or_equity_value" &&
+    draft.valuation.model_version === "residual-income-equity-shared-dated-v2";
+  const forecastOrdinals = datedAnnualModel
+    ? researchForecastOrdinals(
+        draft.valuation.assumptions.map((row) => row.name),
+      )
+    : new Map<string, number>();
+  const verifiedAnnualBasis =
+    verification && datedAnnualModel ? verification.basis_date : null;
 
   return (
     <section
@@ -331,7 +342,10 @@ export function ResearchDraftPanel({ draft }: { draft: ResearchDraft }) {
           <List.Item style={{ overflowWrap: "anywhere" }}>
             <div>
               <Typography.Text strong>
-                {researchAssumptionName(row.name)}
+                {researchAssumptionName(row.name, {
+                  ordinal: forecastOrdinals.get(row.name) ?? 0,
+                  verifiedAnnualBasis,
+                })}
               </Typography.Text>
               <div>
                 Bear {String(row.bear ?? "未提供")} / Base{" "}

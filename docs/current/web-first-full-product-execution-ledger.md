@@ -1897,3 +1897,55 @@ materiality handoff after manual URL-policy recovery; continue defensible econom
 assumption review without waiting for nonpublic internal allocations. Preserve real
 economic/strategy admission and real private-input gates. No stage/total completion
 is claimed by this bounded quote-observation repair.
+
+### V5 held-hotspot ADD and model-period business corrections
+
+Quote checkpoint 51e2e7319837698f61e328198cdb82347fa15c0c passed exact
+Core Research Gates (39651831788, including Postgres) and Web Workbench
+(39651831791). registered-quote-final-ci.json records this checkpoint only.
+
+Actual company-detail review found that historical forecast_roe_2026 parameter
+IDs were displayed as calendar-year forecasts, although the dated model starts
+on 2026-06-30. Display now identifies the verified first model period ending
+2027-06-30. Reordered assumptions preserve the parameter-to-period mapping;
+missing, duplicate or unknown fields/model/timing use conservative generic
+labels. No economic input, value, date or source package changes. Actual Windows
+desktop browser shows the corrected periods and the unapproved-research notice;
+340 Web tests, typecheck, formatting and build passed. Genuine mobile acceptance
+remains NOT_PASSED because the advertised viewport override did not apply.
+
+Raman identified a real business CODE_GAP: the producer already computes a
+completed pullback-recovery ADD, but private sizing required an OPEN breakout
+and a producer ADD intent that the public producer never emits. The bounded fix
+selects ADD scope from replayed same-security/same-sleeve private holdings, not
+client input. Public OPEN remains unchanged. Private ADD consumes the original
+replayed recovery rule and current completed reference price, requires signed
+independent admission, owned EntryThesis/current consistency, and the unchanged
+cost, liquidity, quantity and shared-risk engines. Replaying case fields and
+action rules rejects drift. Only the exact known public OPEN wording projection
+may differ; the independent reviewer reproduced and closed that initial P2.
+No public WATCH is promoted and no actual strategy release or trade is created.
+
+Author integration: 299 passed. Independent final review: 151 passed, no bounded
+residual P0/P1/P2. Root ADD plus all Web API tests: 263 passed. These overlapping
+suites are not summed. The signed positive fixtures are isolated engineering
+contracts, not actual securities, user approvals or strategy validation.
+
+Gauss performed a source-verified 12-cell sensitivity experiment using the
+existing dated equity model; Euler independently replayed the arithmetic and
+27 bindings. Fixed retention/growth isolate existing ROE paths and explicit
+discount assumptions, with paired terminal-ROE-equals-cost stress cases. The
+6.8213% comparison uses dated sovereign/ERP inputs and an assumed beta of one;
+it is neither a measured Midea cost nor a lower bound. The result is unregistered,
+unapproved, not published as current valuation and never compared to market price.
+Historical source packages, dates, normalized earnings unknowns and gates remain.
+
+The owned 8001 local listener restarted on PID 3168 and public desktop detail
+was rechecked. Runtime identity is explicitly MISMATCH because the canonical
+checkout is another task's dirty feat/p0-pit-validation branch; no reset, branch
+switch or suppression was used. Local availability and passing source CI are
+not release acceptance. Authenticated materiality browser verification still
+requires recovery of its separate blocked URL. No real signature, private account
+readiness, natural Shadow session, production action or Excel change is claimed.
+All twelve Goal acceptance statuses remain partial, blocked or not proven.
+Total Goal IN_PROGRESS; real assisted use NOT_PROVEN; action=no_order.

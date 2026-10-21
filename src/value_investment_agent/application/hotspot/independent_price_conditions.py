@@ -6,9 +6,26 @@ from pathlib import Path
 from .current_registry import load_price_conditions
 from .independent_admission import load_independent_admission
 
+INDEPENDENT_OPEN_RULE = (
+    "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；"
+    "仅在无持仓且热点独立策略、证券与事件、时点、验证及个人风险门禁全部通过后，"
+    "进入人工开仓复核。"
+)
+
+
+def observed_held_add(plan: dict) -> bool:
+    """Inspect the existing producer rule, never establish ownership or admission."""
+    add = plan.get("add_condition")
+    return (isinstance(add, dict)
+        and add == (plan.get("conditional_action_rules") or {}).get("ADD")
+        and add.get("intent") == "ADD" and add.get("observed") is True
+        and add.get("requires_existing_holding") is True
+        and add.get("action") == "no_order"
+        and plan.get("signal_state") not in {"STALE", "BLOCKED", "TRIGGER_REJECTED", "EXPIRED"})
+
 
 def project_independent_price_condition(root: Path, *, symbol: str, plan: dict,
-        now: datetime, allow_test_only: bool = False) -> dict:
+        now: datetime, allow_test_only: bool = False, review_action: str = "OPEN") -> dict:
     """Read-only projection of a caller-verified current plan; preserve its bytes.
 
     This helper does not verify a client-supplied plan. Callers must obtain it
@@ -21,14 +38,12 @@ def project_independent_price_condition(root: Path, *, symbol: str, plan: dict,
         raise ValueError("Independent projection requires a matching current no-order plan")
     if type(allow_test_only) is not bool:
         raise ValueError("Test-only permission requires an explicit boolean")
+    if review_action not in {"OPEN", "ADD"}:
+        raise ValueError("Unsupported independent review action")
     output = deepcopy(plan)
     # The successor has independent admission; retain legacy wording only in
     # immutable source cases, not in the user's current conditional plan.
-    open_rule = (
-        "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；"
-        "仅在无持仓且热点独立策略、证券与事件、时点、验证及个人风险门禁全部通过后，"
-        "进入人工开仓复核。"
-    )
+    open_rule = INDEPENDENT_OPEN_RULE
     if isinstance(output.get("entry_condition"), dict):
         output["entry_condition"]["rule"] = open_rule
     if isinstance(output.get("conditional_action_rules", {}).get("OPEN"), dict):
@@ -47,10 +62,21 @@ def project_independent_price_condition(root: Path, *, symbol: str, plan: dict,
     if case_binding not in admission.get("gate_source_bindings", {}).get("price_structure", []):
         blockers.append("CURRENT_CASE_NOT_BOUND_TO_STRATEGY_RELEASE")
     quality = plan.get("opportunity_quality")
-    if (not isinstance(quality, dict)
+    if review_action == "ADD":
+        # A recovery does not require another rolling-window OPEN breakout.
+        # Keep the same daily/space/conflict safeguards and signed admission.
+        behavior = plan.get("price_behavior") or {}
+        if (not isinstance(quality, dict) or quality.get("structure_tier") == "CONFLICT_OR_REJECTED"
+                or behavior.get("daily_trend") not in {"UPTREND", "RANGE"}
+                or behavior.get("observation_quality") != "RESEARCH_ONLY"
+                or behavior.get("structural_invalidation") is not False):
+            blockers.append("CURRENT_STRUCTURE_NOT_QUALIFIED")
+        if not observed_held_add(plan):
+            blockers.append("CURRENT_ADD_CONDITION_NOT_CONFIRMED")
+    elif (not isinstance(quality, dict)
             or quality.get("structure_tier") != "STRUCTURE_QUALIFIED_OBSERVATION"):
         blockers.append("CURRENT_STRUCTURE_NOT_QUALIFIED")
-    if plan.get("signal_state") != "TRIGGER_OBSERVED":
+    if review_action == "OPEN" and plan.get("signal_state") != "TRIGGER_OBSERVED":
         blockers.append("CURRENT_ENTRY_CONDITION_NOT_OBSERVED")
     if plan.get("candidate_lifecycle") == "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY":
         blockers.append("NOT_IN_CURRENT_CANDIDATE_POOL")
@@ -62,6 +88,8 @@ def project_independent_price_condition(root: Path, *, symbol: str, plan: dict,
         risk_review_eligible=admission["risk_review_eligible"] is True and not blockers,
         formal_eligibility=False, action_eligibility=False, portfolio_eligibility=None,
         position_guidance=None, trade_eligible=False, action="no_order")
+    if review_action == "ADD":
+        output["risk_review_action"] = "ADD"
     return output
 
 

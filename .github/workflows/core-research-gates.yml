@@ -66,6 +66,7 @@ jobs:
           tests/web_api/test_p5_reviews.py
           tests/test_private_first_use_workflow.py
           tests/test_private_risk_preview.py
+          tests/test_private_hotspot_add_preview.py
           tests/test_screening_financial_export_v2.py
           tests/test_m2_cli_versioned_integration.py
           tests/test_hotspot_two_stage_retained.py

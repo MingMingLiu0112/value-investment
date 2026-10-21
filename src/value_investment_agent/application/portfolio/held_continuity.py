@@ -53,9 +53,18 @@ def evaluate_owned_held_advisory(root, *, context, plan, now, allow_test_only=Fa
         # A held review is independent of a new-entry trigger or today's ranking.
         # Re-read the case and signed release instead of trusting plan flags.
         verified_plan = load_held_price_plan(root, plan["symbol"], plan, now=now)
-        for key in ("market_trade_date", "signal_state", "model_or_rule_version"):
+        for key in ("market_trade_date", "signal_state", "model_or_rule_version",
+                    "add_condition", "price_behavior",
+                    "opportunity_quality", "current_reference_price", "invalidation_price"):
             if plan.get(key) != verified_plan.get(key):
                 raise ValueError("Held hotspot plan differs from its verified case")
+        from ..hotspot.independent_price_conditions import INDEPENDENT_OPEN_RULE
+        original_rules = verified_plan.get("conditional_action_rules")
+        projected_rules = deepcopy(original_rules)
+        if isinstance(projected_rules, dict) and isinstance(projected_rules.get("OPEN"), dict):
+            projected_rules["OPEN"]["rule"] = INDEPENDENT_OPEN_RULE
+        if plan.get("conditional_action_rules") not in (original_rules, projected_rules):
+            raise ValueError("Held hotspot action rules differ from their verified case")
         admission = load_independent_admission(root, symbol=plan["symbol"], now=now,
             allow_test_only=allow_test_only)
         case_binding = {"path": plan["case_path"], "sha256": plan["case_sha256"]}

@@ -57,6 +57,7 @@ vi.mock("antd", () => {
 });
 
 import { ResearchDraftPanel } from "../src/pages/DecisionDetail/ResearchDraftPanel";
+import { researchAssumptionName } from "../src/utils/researchDraftText";
 
 it("shows financial facts with scope and units and preserves missing values", () => {
   const html = renderToStaticMarkup(
@@ -242,6 +243,185 @@ describe("research draft panel", () => {
       ],
     },
   };
+
+  const forecastDraft: ResearchDraft = {
+    ...verifiedDraft,
+    valuation: {
+      ...verifiedDraft.valuation,
+      assumptions: [
+        draft.valuation.assumptions[0],
+        ...["2026", "2027", "2028", "2029", "2030"].map((suffix) => ({
+          name: `forecast_roe_${suffix}`,
+          bear: "0.15",
+          base: "0.18",
+          bull: "0.205",
+        })),
+        draft.valuation.assumptions[1],
+      ],
+    },
+  };
+
+  it("labels verified dated-model ROE periods from the capital basis, not parameter years", () => {
+    const before = JSON.stringify(forecastDraft);
+    const html = renderToStaticMarkup(
+      <ResearchDraftPanel draft={forecastDraft} />,
+    );
+    expect(html).toContain(
+      "第1期预测 ROE（2026-06-30 至 2027-06-30，模型年度）",
+    );
+    expect(html).toContain(
+      "第2期预测 ROE（2027-06-30 至 2028-06-30，模型年度）",
+    );
+    expect(html).toContain(
+      "第5期预测 ROE（2030-06-30 至 2031-06-30，模型年度）",
+    );
+    expect(html).not.toContain("2026 年预测 ROE");
+    expect(html).not.toContain("2027 年预测 ROE");
+    expect(html).toContain("Bear 0.15 / Base 0.18 / Bull 0.205");
+    expect(html).toContain("45.74");
+    expect(html).toContain("研究草稿（未批准）");
+    expect(html).toContain("不允许正式价格比较");
+    expect(JSON.stringify(forecastDraft)).toBe(before);
+  });
+
+  it("keeps model period labels attached to their values when assumptions are reordered", () => {
+    const reordered: ResearchDraft = {
+      ...forecastDraft,
+      valuation: {
+        ...forecastDraft.valuation,
+        assumptions: forecastDraft.valuation.assumptions
+          .map((row) =>
+            row.name === "forecast_roe_2030"
+              ? { ...row, bear: "0.11", base: "0.15", bull: "0.185" }
+              : row,
+          )
+          .reverse(),
+      },
+    };
+    const before = JSON.stringify(reordered);
+    const html = renderToStaticMarkup(<ResearchDraftPanel draft={reordered} />);
+    const first = "第1期预测 ROE（2026-06-30 至 2027-06-30，模型年度）";
+    const fifth = "第5期预测 ROE（2030-06-30 至 2031-06-30，模型年度）";
+    const firstIndex = html.indexOf(first);
+    const fifthIndex = html.indexOf(fifth);
+    expect(fifthIndex).toBeGreaterThanOrEqual(0);
+    expect(firstIndex).toBeGreaterThan(fifthIndex);
+    expect(html.slice(firstIndex, html.indexOf("</li>", firstIndex))).toContain(
+      "Bear 0.15 / Base 0.18 / Bull 0.205",
+    );
+    expect(html.slice(fifthIndex, html.indexOf("</li>", fifthIndex))).toContain(
+      "Bear 0.11 / Base 0.15 / Bull 0.185",
+    );
+    expect(JSON.stringify(reordered)).toBe(before);
+  });
+
+  it.each([
+    "missing_first",
+    "missing_middle",
+    "missing_last",
+    "duplicate",
+    "unknown",
+    "unknown_extra",
+  ])(
+    "omits period numbers and dates for an incomplete or ambiguous parameter sequence: %s",
+    (failure) => {
+      let assumptions = [...forecastDraft.valuation.assumptions];
+      const missing = {
+        missing_first: "2026",
+        missing_middle: "2028",
+        missing_last: "2030",
+      }[failure as "missing_first" | "missing_middle" | "missing_last"];
+      if (missing)
+        assumptions = assumptions.filter(
+          (row) => row.name !== `forecast_roe_${missing}`,
+        );
+      else if (failure === "duplicate") assumptions.push(assumptions[1]);
+      else if (failure === "unknown")
+        assumptions = assumptions.map((row) =>
+          row.name === "forecast_roe_2028"
+            ? { ...row, name: "forecast_roe_2099" }
+            : row,
+        );
+      else
+        assumptions.push({ ...assumptions[1], name: "forecast_roe_unknown" });
+      const ambiguous: ResearchDraft = {
+        ...forecastDraft,
+        valuation: { ...forecastDraft.valuation, assumptions },
+      };
+      const html = renderToStaticMarkup(
+        <ResearchDraftPanel draft={ambiguous} />,
+      );
+      expect(html).toContain("预测 ROE（模型年度）");
+      expect(html).not.toMatch(/第\d+期预测 ROE/);
+      expect(html).not.toContain("2026-06-30 至 2027-06-30");
+      expect(html).not.toContain("2030-06-30 至 2031-06-30");
+      expect(html).toContain("Bear 0.15 / Base 0.18 / Bull 0.205");
+      expect(html).toContain("研究草稿（未批准）");
+    },
+  );
+
+  it.each(["missing", "unknown", "economic_approval", "legacy"])(
+    "uses ordinal periods when timing verification is %s",
+    (failure) => {
+      const unverified = JSON.parse(JSON.stringify(forecastDraft));
+      if (failure === "missing") delete unverified.input_verification;
+      else if (failure === "unknown")
+        unverified.input_verification.status = "UNKNOWN";
+      else if (failure === "economic_approval")
+        unverified.input_verification.economic_approval = true;
+      else unverified.schema_version = "public-research-draft-v1";
+      const html = renderToStaticMarkup(
+        <ResearchDraftPanel draft={unverified} />,
+      );
+      expect(html).toContain("第1期预测 ROE（模型年度）");
+      expect(html).toContain("第5期预测 ROE（模型年度）");
+      expect(html).not.toContain("2026-06-30 至 2027-06-30");
+      expect(html).not.toContain("2026 年预测 ROE");
+      expect(html).not.toContain("2026-10-16 至 2027-10-16");
+      expect(html).toContain("研究草稿（未批准）");
+    },
+  );
+
+  it.each(["", "2026-02-29", "2024-02-29", "not-a-date"])(
+    "does not invent or roll a model anniversary for basis %s",
+    (basis) => {
+      const invalid: ResearchDraft = {
+        ...forecastDraft,
+        input_verification: {
+          ...forecastDraft.input_verification!,
+          basis_date: basis,
+        },
+      };
+      const html = renderToStaticMarkup(<ResearchDraftPanel draft={invalid} />);
+      expect(html).toContain("第1期预测 ROE（模型年度）");
+      expect(html).not.toContain("第1期预测 ROE（202");
+      expect(html).not.toContain("2026 年预测 ROE");
+    },
+  );
+
+  it("does not infer annual timing for an unknown model or calendar years from parameter names", () => {
+    const unknown: ResearchDraft = {
+      ...forecastDraft,
+      valuation: { ...forecastDraft.valuation, model_version: "unknown-model" },
+    };
+    const html = renderToStaticMarkup(<ResearchDraftPanel draft={unknown} />);
+    expect(html).toContain("预测 ROE（模型年度）");
+    expect(html).not.toMatch(/第\d+期预测 ROE/);
+    expect(html).not.toContain("2026-06-30 至 2027-06-30");
+    expect(researchAssumptionName("forecast_roe_2099", { ordinal: 1 })).toBe(
+      "第1期预测 ROE（模型年度）",
+    );
+    expect(
+      researchAssumptionName("forecast_roe_2099", {
+        ordinal: 2,
+        verifiedAnnualBasis: "2023-12-31",
+      }),
+    ).toBe("第2期预测 ROE（2024-12-31 至 2025-12-31，模型年度）");
+    expect(researchAssumptionName("forecast_roe_2026")).toBe(
+      "预测 ROE（模型年度）",
+    );
+    expect(researchAssumptionName("cost_of_equity")).toBe("股权成本");
+  });
 
   it("shows server-verified capital inputs and dated normalization without economic approval", () => {
     const html = renderToStaticMarkup(

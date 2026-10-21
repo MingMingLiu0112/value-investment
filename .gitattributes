@@ -86,3 +86,4 @@ artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json
 artifacts/current/dual-strategy-v5/retained-quote-snapshot/** -text whitespace=cr-at-eol
 config/current-company-research-registry.json -text whitespace=cr-at-eol
 src/value_investment_agent/application/decision/value_action_plan.py -text whitespace=cr-at-eol
+artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json -text whitespace=cr-at-eol
