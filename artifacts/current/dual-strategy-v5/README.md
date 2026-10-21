@@ -1,5 +1,22 @@
 # V5 evidence checkpoints
 
+## Latest closure continuation (2026-10-22)
+
+The delivery branch currently points to `d14575cc1755c132478005485e08daf59fac4c6f`.
+The latest Web Workbench and Core Research Gates runs for that commit completed
+successfully. A focused Windows regression run covering daily publication
+identity, public-evidence restore, hotspot refresh and independent gates,
+TEST_ONLY private full-loop behavior, and held-decision gaps passed 65 tests.
+Web typecheck and production build also passed, and the worktree remained clean.
+
+This evidence confirms the bounded engineering workflow only. The current local
+Web daily view fails closed when no verifiable current publication is present;
+it must not reconstruct candidates from historical runtime files. 600519 and
+000333 remain `action=no_order`; research approval, G3, real private inputs,
+real hotspot session evidence, formal investment eligibility and final user
+acceptance remain unpassed. No part of this continuation grants a broker order
+or investment permission.
+
 The goal remains IN_PROGRESS. All checkpoints retain action=no_order. Public
 observations, isolated TEST_ONLY workflow evidence and real investment admission
 are separate claims.
