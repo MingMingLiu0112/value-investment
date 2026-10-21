@@ -1809,3 +1809,36 @@ whole-site cold start, automatic archive restoration, all inherited research,
 economic qualification, current-market validity or final user/browser acceptance.
 The final packaging SHA requires its own Core/Web result. Total Goal remains
 IN_PROGRESS and real assisted use NOT_PROVEN.
+
+### V5 economic-interpretation correction (000333)
+
+Final packaging commit 7c55b92a7fafed625929c51957ee4ead1ee17b10 passed exact
+Core Research Gates (39644565332, including Postgres) and Web Workbench
+(39644565288). The local github-portable-research-ci.json records this observation;
+it is not whole-product or investment acceptance.
+
+Actual retained issuer pages 7/8/55/56/98/170/173-175 exposed and corrected an
+economic interpretation error in the Midea draft generator: H1 weighted ROE
+11.33% must be compared with prior H1 11.29% (+0.04 percentage points), not with
+FY ROE 19.70% to claim deterioration. The issuer attributes much of the adjusted
+profit decline to different recurring/nonrecurring classifications for FX losses
+and risk-management instruments. This does not prove operating profit fell by
+the same 25.31%, nor prove underlying earnings recovered.
+
+The registered public correction consumes the retained official PDF (SHA
+576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8).
+Root and two read-only workers checked units, same-period ROE, derivative
+subcategories and six reconciliations. Scope differences of CNY39.969 million
+and CNY163.209 million remain explicit. Tax/ownership matching and OCI inclusion
+are unresolved; no mixed-instrument blanket add-back, inferred tax allocation,
+new normalized earnings, valuation or approval is created. Historical packages,
+scenario parameters and raw issuer bytes are unchanged. Existing Web research
+composition consumes the corrected registry summary and verified evidence.
+
+Focused existing publication-identity, Midea provenance/applicability and
+materiality-handoff regressions: 42 passed. Live composition is CURRENT with zero
+formal admissions. The new frozen Web publication and browser acceptance require
+separate verification; a successful build alone is not a visible-user result.
+The failed browser tab still awaits manual recovery under its URL security policy.
+All twelve product/investment statuses remain partial, blocked or not proven;
+total Goal IN_PROGRESS, real assisted use NOT_PROVEN, Excel FROZEN, action=no_order.

@@ -82,3 +82,4 @@ src/value_investment_agent/application/product/workbench.py -text whitespace=cr-
 src/value_investment_agent/valuation_models/residual_income.py -text whitespace=cr-at-eol
 src/value_investment_agent/valuation_router.py -text whitespace=cr-at-eol
 artifacts/current/dual-strategy-v5/retained-research-sources/** -text whitespace=cr-at-eol
+artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json -text whitespace=cr-at-eol

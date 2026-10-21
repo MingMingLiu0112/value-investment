@@ -8,14 +8,20 @@
       "name": "美的集团",
       "status": "PENDING_RESEARCH",
       "valuation_route": "residual_income_or_equity_value",
-      "summary": "当前source-bound剩余收益条件研究包已登记匹配归母权益、普通股分母、历史归母盈利及三情景输入；这不代表完整财务质量、经济假设或估值已准入，不构成可靠当前估值。",
+      "summary": "半年加权ROE为11.33%，上年同期11.29%，同比增加0.04个百分点，不能与全年ROE直接比较。归母净利同比增长1.66%，扣非下降25.31%主要涉及公司披露的汇兑与风险管理工具损益分类不对称，不能据此认定经营盈利下降同幅。已有条件研究包不等于正常化盈利、经济假设或正式估值获批。",
       "missing_inputs": [
+        "已提取外汇合约及交叉货币互换分项；仍缺已处置收益按工具分拆、两表范围差额、OCI重分类包含关系、项目税额及主体归属，不能将混合收益全额抵销汇兑损失",
         "既有条件情景尚需经济及事件重大性审核；历史归母盈利不等于正常化盈利",
         "超额收益持续期、分配与权益成本须有经济证据及既有审核链支持"
       ],
       "required_actor": "EVIDENCE",
-      "next_step": "复核当前source-bound草稿与既有待审回执，沿既有审核链评审已登记情景；不重复采集已绑定权益、股数和历史盈利，不以工业FCFF绕过金融范围缺口。",
+      "next_step": "先查看已核验的同期ROE和非经常性损益勾稽，再核实外汇风险管理工具的经济匹配及税后归母影响；补齐正常化盈利解释后沿既有审核链评审情景，不重复采集权益、股数或历史盈利。",
       "evidence": [
+        {
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462",
+          "note": "2026-10-22原件p7/8/55/56/98/170/173-175复核：同期ROE、工具分项、两表口径差及扣非会计勾稽；保留正常化盈利及审批缺口，不修改历史包或情景参数"
+        },
         {
           "path": "artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/public-draft-v4.json",
           "sha256": "c2c7de481405146ee3fc27d364e698baf7435768fe020f30e2a9b4de68c93f23",
