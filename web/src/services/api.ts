@@ -36,6 +36,7 @@ import type {
 } from "../components/HotspotSizingPanel";
 import type { PrivateRiskContext } from "../components/PrivateRiskContext";
 import type { EntryThesisView } from "./entryThesis";
+import type { CommittedRiskView } from "./committedRisk";
 import type {
   PolicyPreview,
   PolicyRegistration,
@@ -625,6 +626,10 @@ export const api = {
     post<WriteResponse>("private/portfolio/entry-thesis/revoke", body),
   risk: (signal?: AbortSignal) =>
     getPrivate<RiskResponse>("private/portfolio/risk", signal),
+  committedRisk: (signal?: AbortSignal) =>
+    getPrivate<CommittedRiskView>("private/portfolio/committed-risk", signal),
+  confirmCommittedRisk: (body: Record<string, unknown>) =>
+    post<CommittedRiskView>("private/portfolio/committed-risk/confirm", body),
   heldContinuity: (signal?: AbortSignal) =>
     getPrivate<HeldContinuityResponse>(
       "private/portfolio/held-continuity",

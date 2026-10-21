@@ -38,6 +38,7 @@ vi.mock("@ant-design/pro-components", async () => {
       captured.fields.push(props);
       return null;
     },
+    ProFormSelect: () => null,
   };
 });
 vi.mock("antd", async () => {
@@ -213,6 +214,43 @@ it("can request explicit missing-input review without silently filling fees", as
   renderToStaticMarkup(<HotspotSizingPanel onPreview={onPreview} />);
   await captured.submit!({ symbol: "300364" });
   expect(onPreview).toHaveBeenCalledWith({ symbol: "300364", assumptions: {} });
+});
+
+it("opts into display marks only in an explicitly selected simulated scenario", async () => {
+  for (const selected of [false, true]) {
+    let booleanState = 0;
+    reactState.use = (initial) =>
+      initial === false
+        ? [++booleanState === 1 ? true : selected, () => {}]
+        : undefined;
+    const onPreview = vi.fn().mockResolvedValue({
+      action: "no_order",
+      sizing_preview: { symbol: "600693", review_quantity: null, blockers: [] },
+    });
+    try {
+      renderToStaticMarkup(
+        <HotspotSizingPanel initialSymbol="600693" onPreview={onPreview} />,
+      );
+      expect(
+        await captured.submit!({
+          symbol: "600693",
+          scenario_liquid: "yes",
+          scenario_limit_up: "no",
+          scenario_limit_down: "no",
+          cyclical_600693: "no",
+        }),
+      ).toBe(true);
+      const request = onPreview.mock.calls[0][0];
+      expect(request.scenario.acknowledged).toBe(true);
+      expect(request.scenario.use_verified_display_marks).toBe(
+        selected ? true : undefined,
+      );
+      expect(request).not.toHaveProperty("use_verified_display_marks");
+      expect(request.assumptions).not.toHaveProperty("price_admitted");
+    } finally {
+      reactState.use = null;
+    }
+  }
 });
 
 it("rejects an unverified or failed response", async () => {

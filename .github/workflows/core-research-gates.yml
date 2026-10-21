@@ -82,6 +82,7 @@ jobs:
           tests/test_value_enrichment_batch.py
           tests/test_value_enrichment_durable_reuse.py
           tests/test_private_committed_risk.py
+          tests/test_private_committed_risk_service.py
           tests/test_private_risk_partial_facts.py
           tests/test_p62_positive_workflow.py
           tests/test_p7_signed_review_workflow.py

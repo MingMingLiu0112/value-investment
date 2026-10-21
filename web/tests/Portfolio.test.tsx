@@ -86,6 +86,9 @@ vi.mock("../src/components/PositionTable", () => ({
 vi.mock("../src/components/PortfolioPolicyPanel", () => ({
   PortfolioPolicyPanel: () => null,
 }));
+vi.mock("../src/components/CommittedRiskPanel", () => ({
+  CommittedRiskPanel: () => null,
+}));
 vi.mock("../src/components/HotspotSizingPanel", () => ({
   HotspotSizingPanel: (props: Record<string, any>) => {
     captured.sizing = props;

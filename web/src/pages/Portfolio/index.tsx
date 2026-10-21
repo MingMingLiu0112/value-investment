@@ -32,6 +32,7 @@ import { HoldingsAttention } from "../../components/HoldingsAttention";
 import { useApi } from "../../hooks/useApi";
 import { PortfolioReconciliationPanel } from "../../components/PortfolioReconciliationPanel";
 import { EntryThesisPanel } from "../../components/EntryThesisPanel";
+import { CommittedRiskPanel } from "../../components/CommittedRiskPanel";
 
 /**
  * TL10-RC：私人状态来自与每日页共用的 usePrivateState；台账损坏或目录
@@ -345,6 +346,11 @@ export default function Portfolio() {
           <PortfolioPolicyPanel
             revision={data.revision}
             fillPending={!!data.pending_draft}
+            onDone={refreshAll}
+          />
+          <CommittedRiskPanel
+            key={`risk-basis-${data.revision}`}
+            revision={data.revision}
             onDone={refreshAll}
           />
           <details style={{ marginTop: 16 }}>

@@ -243,6 +243,62 @@ def test_registered_plan_to_actual_risk_to_actionable_decision(actual_contract_p
 
 
 @pytest.mark.parametrize('sleeve', ['CORE_VALUE', 'HOTSPOT_SATELLITE'])
+def test_trusted_source_reaches_initial_and_quantity_reviews(actual_contract_preview, tmp_path, monkeypatch, sleeve):
+    service, legacy, _, packet, _, _ = actual_contract_preview
+    register_hotspot_contract(tmp_path, legacy)
+    packet['price_conditions']['items'][0]['price_action_plan'] = deepcopy(legacy)
+    # This test observes the orchestration boundary; source legality is covered by
+    # the real declaration/loader tests, rather than minting a second risk input.
+    source = object()
+    original = preview.review_private_risk_rehearsal
+    calls = []
+    def observe(*args, **kwargs):
+        calls.append(dict(kwargs))
+        assert kwargs.pop('committed_risk_source') is source
+        return original(*args, **kwargs)
+    monkeypatch.setattr(preview, 'review_private_risk_rehearsal', observe)
+    assumptions = ASSUMPTIONS if sleeve == 'HOTSPOT_SATELLITE' else {key: ASSUMPTIONS[key] for key in (
+        'lot_size', 'max_trade_notional_cny', 'entry_slippage_cny', 'buy_fee_fraction', 'minimum_buy_fee_cny')}
+    before = service.journal.path.read_bytes()
+    preview.preview_private_hotspot_risk(service.journal, repository_root=tmp_path, generated_at=NOW,
+        payload={'symbol': '300364', **({'sleeve': sleeve} if sleeve == 'CORE_VALUE' else {}),
+            'assumptions': assumptions}, committed_risk_source=source)
+    assert len(calls) == 2
+    assert not {'core_request', 'hotspot_request'} & calls[0].keys()
+    assert ('core_request' if sleeve == 'CORE_VALUE' else 'hotspot_request') in calls[1]
+    assert service.journal.path.read_bytes() == before
+
+
+@pytest.mark.parametrize('sleeve', ['CORE_VALUE', 'HOTSPOT_SATELLITE'])
+def test_client_payload_cannot_supply_committed_risk_source(service, tmp_path, sleeve):
+    assumptions = ASSUMPTIONS if sleeve == 'HOTSPOT_SATELLITE' else {key: ASSUMPTIONS[key] for key in (
+        'lot_size', 'max_trade_notional_cny', 'entry_slippage_cny', 'buy_fee_fraction', 'minimum_buy_fee_cny')}
+    with pytest.raises(ValueError):
+        preview.preview_private_hotspot_risk(service.journal, repository_root=tmp_path, generated_at=NOW,
+            payload={'symbol': '300364', **({'sleeve': sleeve} if sleeve == 'CORE_VALUE' else {}),
+                'assumptions': assumptions, 'committed_risk_source': {'input_path': 'forged'}})
+
+
+@pytest.mark.parametrize('sleeve', ['CORE_VALUE', 'HOTSPOT_SATELLITE'])
+def test_invalid_trusted_source_is_not_retried_without_binding(service, tmp_path, monkeypatch, sleeve):
+    from value_investment_agent.application.portfolio.private_portfolio_service import JournalConflict
+    calls = []
+    source = object()
+    def reject(*args, **kwargs):
+        calls.append(kwargs)
+        assert kwargs['committed_risk_source'] is source
+        raise JournalConflict('REVISION_CONFLICT', 'Source binding is stale')
+    monkeypatch.setattr(preview, 'review_private_risk_rehearsal', reject)
+    assumptions = ASSUMPTIONS if sleeve == 'HOTSPOT_SATELLITE' else {key: ASSUMPTIONS[key] for key in (
+        'lot_size', 'max_trade_notional_cny', 'entry_slippage_cny', 'buy_fee_fraction', 'minimum_buy_fee_cny')}
+    with pytest.raises(JournalConflict):
+        preview.preview_private_hotspot_risk(service.journal, repository_root=tmp_path, generated_at=NOW,
+            payload={'symbol': '300364', **({'sleeve': sleeve} if sleeve == 'CORE_VALUE' else {}),
+                'assumptions': assumptions}, committed_risk_source=source)
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize('sleeve', ['CORE_VALUE', 'HOTSPOT_SATELLITE'])
 def test_registered_plan_positive_scenario_cannot_supply_actual_execution(actual_contract_preview, tmp_path, sleeve):
     service, legacy, _, packet, attribute, _ = actual_contract_preview
     register_hotspot_contract(tmp_path, legacy)
@@ -793,6 +849,85 @@ def test_web_choices_require_marked_holdings(projected_account, tmp_path, monkey
         generated_at=NOW, payload={"symbol": "300364", "assumptions": ASSUMPTIONS, "scenario": scenario_choices()})
     assert "holding_market_value" in result["scenario_preview"]["blockers"]
     assert result["scenario_preview"]["review_quantity"] is None
+
+
+def display_mark():
+    return {"price_cny": "20", "trade_date": NOW.date().isoformat(),
+        "available_at": (NOW - timedelta(hours=1)).isoformat(), "bundle_sha256": "a" * 64,
+        "case_path": "TEST_ONLY-verified-close.json", "case_sha256": "b" * 64,
+        "scope": "VERIFIED_LATEST_COMPLETED_CLOSE_DISPLAY_ONLY", "observation_scope": "SAME_SESSION_B1",
+        "price_admitted": False, "current_pit": False, "formal_eligibility": False}
+
+
+def test_explicit_display_marks_enable_only_hypothetical_valuation(projected_account, tmp_path, monkeypatch):
+    from value_investment_agent.application.portfolio import private_risk_projection as projection
+    source = display_mark()
+    monkeypatch.setattr(projection, "_verified_prices", lambda *args: {"300364": deepcopy(source)})
+    payload = {"symbol": "300364", "assumptions": {**ASSUMPTIONS, "lot_size": "1"}}
+    before = projected_account.journal.path.read_bytes()
+    baseline = preview.preview_private_hotspot_risk(projected_account.journal,
+        repository_root=tmp_path, generated_at=NOW, payload=payload)
+    choices = scenario_choices()
+    without = preview.preview_private_hotspot_risk(projected_account.journal,
+        repository_root=tmp_path, generated_at=NOW, payload={**payload, "scenario": choices})
+    assert "holding_market_value" in without["scenario_preview"]["blockers"]
+    choices["use_verified_display_marks"] = True
+    result = preview.preview_private_hotspot_risk(projected_account.journal,
+        repository_root=tmp_path, generated_at=NOW, payload={**payload, "scenario": choices})
+    scenario = result.pop("scenario_preview")
+    baseline.pop("scenario_preview")
+    assert result == baseline
+    assert scenario["review_quantity"] > 0, scenario["blockers"]
+    assert scenario["engine"]["namespace"] == "SIMULATED"
+    assert scenario["formal_eligibility"] is scenario["trade_eligible"] is False
+    assert scenario["projection"]["valuation_marks"] == [{"symbol": "300364", "source": source}]
+    assert "NOT_FORMAL_PRICE_INPUT" in scenario["projection"]["valuation_marks_limitation"]
+    assert source["price_admitted"] is source["current_pit"] is False
+    assert projected_account.journal.path.read_bytes() == before
+
+
+@pytest.mark.parametrize("fault", ["missing", "corrupt", "negative", "nan", "future_date", "future_available", "hash"])
+def test_display_mark_opt_in_rejects_missing_invalid_or_future_closes(projected_account, tmp_path, monkeypatch, fault):
+    from value_investment_agent.application.portfolio import private_risk_projection as projection
+    source = display_mark()
+    if fault == "corrupt": source["price_cny"] = "broken"
+    if fault == "negative": source["price_cny"] = "-1"
+    if fault == "nan": source["price_cny"] = "NaN"
+    if fault == "future_date": source["trade_date"] = (NOW + timedelta(days=1)).date().isoformat()
+    if fault == "future_available": source["available_at"] = (NOW + timedelta(seconds=1)).isoformat()
+    if fault == "hash": source["bundle_sha256"] = "invalid"
+    monkeypatch.setattr(projection, "_verified_prices", lambda *args: {} if fault == "missing" else {"300364": source})
+    choices = {**scenario_choices(), "use_verified_display_marks": True}
+    scenario = preview._projected_scenario(choices, journal=projected_account.journal, symbol="300364",
+        assumptions={**ASSUMPTIONS, "lot_size": "1"}, binding=binding(), plan_blockers=[],
+        actual_revision=len(projected_account.records()), repository_root=tmp_path, generated_at=NOW)
+    assert "holding_market_value" in scenario["blockers"]
+    assert scenario["review_quantity"] is None
+    assert scenario["projection"]["valuation_marks"] == []
+
+
+@pytest.mark.parametrize("value", [False, None, 1, "true", [], {}])
+def test_display_mark_choice_requires_literal_true(projected_account, tmp_path, value):
+    with pytest.raises(ValueError, match="explicit boolean true"):
+        preview.preview_private_hotspot_risk(projected_account.journal, repository_root=tmp_path,
+            generated_at=NOW, payload={"symbol": "300364", "assumptions": ASSUMPTIONS,
+                "scenario": {**scenario_choices(), "use_verified_display_marks": value}})
+
+
+def test_display_mark_helper_rejects_actual_namespace(projected_account, tmp_path, monkeypatch):
+    from value_investment_agent.application.portfolio import private_risk_projection as projection
+    monkeypatch.setattr(projection, "_verified_prices", lambda *args: pytest.fail("ACTUAL entered display mark loader"))
+    with pytest.raises(ValueError, match="SIMULATED namespace"):
+        projection._verified_scenario_display_marks(tmp_path, projected_account._replay(projected_account.records()),
+            NOW, namespace="ACTUAL")
+
+
+@pytest.mark.parametrize("sleeve", ["CORE_VALUE", "HOTSPOT_SATELLITE"])
+def test_display_mark_option_is_not_a_formal_request_field(projected_account, tmp_path, sleeve):
+    with pytest.raises(ValueError):
+        preview.preview_private_hotspot_risk(projected_account.journal, repository_root=tmp_path,
+            generated_at=NOW, payload={"symbol": "300364", **({"sleeve": sleeve} if sleeve == "CORE_VALUE" else {}),
+                "assumptions": ASSUMPTIONS, "use_verified_display_marks": True})
 
 
 @pytest.mark.parametrize("change", ["boolean", "cash", "reconciliation", "risk_negative", "risk_duplicate",

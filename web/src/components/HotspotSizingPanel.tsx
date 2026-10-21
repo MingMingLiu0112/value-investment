@@ -21,6 +21,7 @@ export type HotspotSizingRequest = {
   assumptions: Record<string, string>;
   scenario?: {
     acknowledged: true;
+    use_verified_display_marks?: true;
     execution: { liquid: boolean; limit_up: boolean; limit_down: boolean };
     holding_risks: {
       sleeve: string;
@@ -156,6 +157,7 @@ export function HotspotSizingPanel({
   const [result, setResult] = useState<HotspotSizingResponse>();
   const [failure, setFailure] = useState<string>();
   const [scenarioEnabled, setScenarioEnabled] = useState(false);
+  const [useDisplayMarks, setUseDisplayMarks] = useState(false);
   const [holdingGaps, setHoldingGaps] = useState<
     { sleeve: string; symbol: string }[]
   >([]);
@@ -169,6 +171,7 @@ export function HotspotSizingPanel({
     setHoldingGaps([]);
     setSecurityGaps([]);
     setScenarioEnabled(false);
+    setUseDisplayMarks(false);
   }, [initialSymbol, context, sleeve]);
   const currentContext =
     context?.action === "no_order" && context.symbol === initialSymbol
@@ -220,6 +223,9 @@ export function HotspotSizingPanel({
           ? {
               scenario: {
                 acknowledged: true as const,
+                ...(useDisplayMarks
+                  ? { use_verified_display_marks: true as const }
+                  : {}),
                 execution: {
                   liquid: boolChoice("scenario_liquid"),
                   limit_up: boolChoice("scenario_limit_up"),
@@ -440,6 +446,7 @@ export function HotspotSizingPanel({
             generation.current++;
             setResult(undefined);
             setScenarioEnabled(event.target.checked);
+            setUseDisplayMarks(false);
           }}
         >
           明确使用本人假设进行情景试算，不作为正式交易资格
@@ -450,6 +457,16 @@ export function HotspotSizingPanel({
               type="warning"
               message="假设仅用于本次 SIMULATED 试算，不登记为已核验的市场事实或批准。"
             />
+            <Checkbox
+              checked={useDisplayMarks}
+              onChange={(event) => {
+                generation.current++;
+                setResult(undefined);
+                setUseDisplayMarks(event.target.checked);
+              }}
+            >
+              本次模拟按最近已核验收盘价估算持仓市值，不作为正式仓位准入价格
+            </Checkbox>
             <ProForm.Group>
               {[
                 ["scenario_liquid", "假设候选可流动成交"],

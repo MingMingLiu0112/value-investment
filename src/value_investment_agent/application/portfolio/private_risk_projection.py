@@ -170,6 +170,32 @@ def _verified_prices(root, replayed, now):
         return {}
 
 
+def _verified_scenario_display_marks(root, replayed, now, *, namespace):
+    """Copy verified closes for explicitly chosen hypothetical valuation only."""
+    if namespace != "SIMULATED":
+        raise ValueError("Verified display marks require SIMULATED namespace")
+    day = now.astimezone(ZoneInfo("Asia/Shanghai")).date()
+    marks = {}
+    for symbol, row in _verified_prices(root, replayed, now).items():
+        try:
+            price = Decimal(str(row["price_cny"]))
+            trade_date = date.fromisoformat(row["trade_date"])
+            source_hash = row.get("bundle_sha256") or row.get("case_sha256")
+            if (isinstance(row["price_cny"], bool) or not price.is_finite() or price <= 0
+                    or not replayed.state.last_trade_date <= trade_date <= day
+                    or not isinstance(source_hash, str) or len(source_hash) != 64
+                    or any(char not in "0123456789abcdef" for char in source_hash.lower())):
+                continue
+            if row.get("available_at") is not None:
+                available = datetime.fromisoformat(row["available_at"])
+                if available.tzinfo is None or available > now:
+                    continue
+            marks[symbol] = dict(row)
+        except (ValueError, TypeError, KeyError, ArithmeticError):
+            continue
+    return marks
+
+
 def _price_permissions(*sources):
     """Carry independent admission evidence; verified observation is not admission."""
     scopes = [source[key] for source in sources for key in

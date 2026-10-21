@@ -54,6 +54,7 @@ RECORD_KINDS = frozenset({
     "RECONCILED_CONFIRMED",
     "POLICY_PREPARED", "POLICY_CONFIRMED", "COST_ASSUMPTIONS_CONFIRMED",
     "PERSONAL_ENTRY_THESIS_CONFIRMED", "PERSONAL_ENTRY_THESIS_REVOKED",
+    "COMMITTED_RISK_CONFIRMED",
 })
 EXCHANGES = frozenset({"SSE", "SZSE", "BSE"})
 SIDES = frozenset({"BUY", "SELL"})
@@ -635,6 +636,12 @@ class PrivatePortfolioService:
                 policy = {**body["policy"], "_confirmed_at": body["confirmed_at"],
                     "_state_version": state.version, "_record_sha256": record["record_sha256"]}
                 pending_policy = None
+            elif kind == "COMMITTED_RISK_CONFIRMED":
+                if state is None or pending is not None or pending_policy is not None:
+                    raise JournalValidationError("Committed-risk event requires confirmed accounting state")
+                from .private_committed_risk import validate_committed_risk_event
+                validate_committed_risk_event(record, account_scope=state.baseline.account_scope,
+                    ips_record_sha256=policy.get("_record_sha256"), lots=state.lots)
         if state is None:
             return None
         return ReplayedPortfolio(len(records), state, policy, tuple(trades), snapshot, pending, draft,

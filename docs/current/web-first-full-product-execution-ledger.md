@@ -1,5 +1,35 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+### V5 private risk declaration and simulated valuation closure
+
+Continuation on 09fa460e7fd63767fe036914448e1e23211ecae6. The following
+supersedes the earlier checkpoint's missing Web committed-risk binding.
+Authenticated portfolio Web now accepts explicit per-security/per-sleeve risk
+amounts and evidence, with read acknowledgement, second confirmation and an
+immutable non-accounting journal receipt. Account/revision/tip/subject/IPS/lots
+are checked server-side; corrections append rather than rewrite history.
+Restart replay, CAS, idempotence, source tampering and atomic failure are covered.
+No amount is inferred from cost, stops or budgets. TEST_ONLY declarations cannot
+provide ACTUAL risk input. Rejected risk sources leave independently replayed
+cash, cost and share facts visible while formal quantities remain unavailable.
+
+Actual Windows browser TEST_ONLY confirmation updated revision 9 to 10;
+correction to 11 persisted value-pool 21000 and hotspot-pool 5000 after reload.
+Cash 359990, 1100 shares, cost 1650005 and realized PnL 9995 stayed unchanged.
+This is an isolated bookkeeping test, not the user's risk acceptance. Focused
+service/projection/preview/API tests: 175 passed. All API tests: 242 passed.
+Independent final read-only review found no concrete P0/P1 in this declaration
+workflow. Exact final-source CI and browser receipts are recorded separately.
+
+Browser scenario checks exposed another engineering blocker: verified display
+closes were excluded even from hypothetical held valuations. Add explicit opt-in
+for these closes only inside SIMULATED, retaining source/date/admission flags.
+Never promote that choice into formal price admission. Root owns Web and shared
+integration; portfolio worker owns the bounded projection and preview tests.
+Final positive scenario/browser verification remains pending until the revised
+source is built and exercised. Real economic/strategy admission, real private
+readiness and final user acceptance remain NOT_PROVEN; total Goal IN_PROGRESS.
+
 ### V5 restart, compatibility and risk integration checkpoint
 
 Latest integration follows ea6cf5d9b7c503b1f6dc2a25524133ea5f576e4d.

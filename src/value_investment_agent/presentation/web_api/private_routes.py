@@ -36,6 +36,7 @@ from ...application.portfolio.held_continuity import review_held_continuity, ref
 from ...application.portfolio.private_risk_preview import preview_private_hotspot_risk
 from ...application.portfolio.private_risk_experience import PrivateRiskExperienceService
 from ...application.portfolio.personal_entry_thesis import PersonalEntryThesisService
+from ...application.portfolio.private_committed_risk import PrivateCommittedRiskService
 from ...application.research.agent_review.daily_retrospective import run_daily_retrospective_mock
 from .local_auth import (
     AUTHORIZATION_REQUIRED,
@@ -142,6 +143,17 @@ def register_private_routes(
 
     def entry_thesis() -> PersonalEntryThesisService:
         return PersonalEntryThesisService(service().journal)
+
+    def committed_risk() -> PrivateCommittedRiskService:
+        journal = service().journal
+        return PrivateCommittedRiskService(journal, repository_root=project,
+            private_root=journal.path.parent.parent)
+
+    def committed_source(now):
+        records = service().records()
+        if not records or records[-1]["kind"] != "COMMITTED_RISK_CONFIRMED":
+            return None
+        return committed_risk().source(authenticated_subject="LOCAL_OPERATOR", now=now)
 
     def refuse(request: Request, *, require_token: bool = True) -> JSONResponse | None:
         try:
@@ -252,9 +264,20 @@ def register_private_routes(
         if refusal is not None:
             return refusal
         try:
-            return review_private_risk_rehearsal(
+            now = datetime.now(timezone.utc)
+            source_rejected = False
+            try:
+                source = committed_source(now)
+            except (JournalValidationError, ValueError, OSError):
+                source, source_rejected = None, True
+            result = review_private_risk_rehearsal(
                 PrivateJournal(resolve_private_root(repository_root=project)),
-                generated_at=datetime.now(timezone.utc), repository_root=project)
+                generated_at=now, repository_root=project,
+                committed_risk_source=source)
+            if source_rejected:
+                result["blockers"] = list(dict.fromkeys([*result["blockers"], "COMMITTED_RISK_SOURCE_REJECTED"]))
+                result["committed_risk"]["status"] = "SOURCE_REJECTED"
+            return result
         except PrivateStoreUnavailable as error:
             return {
                 "action": "no_order", "status": "PRIVATE_ROOT_UNAVAILABLE",
@@ -274,8 +297,10 @@ def register_private_routes(
         if refusal is not None:
             return refusal
         try:
+            now = datetime.now(timezone.utc)
             result = review_held_continuity(service().journal, repository_root=project,
-                generated_at=datetime.now(timezone.utc), authenticated_subject="LOCAL_OPERATOR")
+                generated_at=now, authenticated_subject="LOCAL_OPERATOR",
+                committed_risk_source=committed_source(now))
             return JSONResponse(content=result, headers={"Cache-Control": "no-store"})
         except PrivateStoreUnavailable:
             status, code = 503, "PRIVATE_ROOT_UNAVAILABLE"
@@ -294,8 +319,10 @@ def register_private_routes(
         if refusal is not None:
             return refusal
         try:
+            now = datetime.now(timezone.utc)
             result = review_private_held_sell(service().journal, repository_root=project,
-                generated_at=datetime.now(timezone.utc), payload=payload, authenticated_subject="LOCAL_OPERATOR")
+                generated_at=now, payload=payload, authenticated_subject="LOCAL_OPERATOR",
+                committed_risk_source=committed_source(now))
             return JSONResponse(content=result, headers={"Cache-Control": "no-store"})
         except PrivateStoreUnavailable as error:
             status, code, detail = 503, "PRIVATE_ROOT_UNAVAILABLE", str(error)
@@ -331,16 +358,51 @@ def register_private_routes(
         if refusal is not None:
             return refusal
         try:
+            now = datetime.now(timezone.utc)
             return preview_private_hotspot_risk(
                 PrivateJournal(resolve_private_root(repository_root=project)), repository_root=project,
-                generated_at=datetime.now(timezone.utc), payload=payload,
-                authenticated_subject="LOCAL_OPERATOR")
+                generated_at=now, payload=payload,
+                authenticated_subject="LOCAL_OPERATOR", committed_risk_source=committed_source(now))
         except PrivateStoreUnavailable as error:
             return JSONResponse(status_code=503, content={"action": "no_order",
                 "status": "PRIVATE_ROOT_UNAVAILABLE", "detail": str(error)})
         except (JournalValidationError, ValueError) as error:
             return JSONResponse(status_code=422, content={"action": "no_order",
                 "status": "VALIDATION_FAILED", "detail": str(error)})
+
+    @api.get("/api/v1/private/portfolio/committed-risk")
+    def committed_risk_view(request: Request):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        try:
+            return committed_risk().read(authenticated_subject="LOCAL_OPERATOR", now=datetime.now(timezone.utc))
+        except PrivateStoreUnavailable:
+            status, code = 503, "PRIVATE_ROOT_UNAVAILABLE"
+        except JournalConflict as error:
+            status, code = 409, error.code
+        except (JournalValidationError, ValueError):
+            status, code = 422, VALIDATION_FAILED
+        return JSONResponse(status_code=status, content={"action": "no_order", "status": code,
+            "detail": "风险依据暂不能安全读取；请先核对当前账户及未完成草稿。"})
+
+    @api.post("/api/v1/private/portfolio/committed-risk/confirm")
+    def confirm_committed_risk(request: Request, payload: dict = Body(...)):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        try:
+            result = committed_risk().confirm(payload, authenticated_subject="LOCAL_OPERATOR", now=datetime.now(timezone.utc))
+            return {**result, "request_binding": {key: payload[key] for key in
+                ("expected_revision", "account_scope", "journal_tip_sha256")}}
+        except PrivateStoreUnavailable:
+            status, code = 503, "PRIVATE_ROOT_UNAVAILABLE"
+        except JournalConflict as error:
+            status, code = 409, error.code
+        except (JournalValidationError, ValueError):
+            status, code = 422, VALIDATION_FAILED
+        return JSONResponse(status_code=status, content={"action": "no_order", "status": code,
+            "detail": "未保存风险依据；请重新读取当前持仓、金额及明确确认。"})
 
     @api.get("/api/v1/private/portfolio/entry-thesis")
     def entry_thesis_view(request: Request):
