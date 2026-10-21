@@ -30,6 +30,23 @@ Final positive scenario/browser verification remains pending until the revised
 source is built and exercised. Real economic/strategy admission, real private
 readiness and final user acceptance remain NOT_PROVEN; total Goal IN_PROGRESS.
 
+Follow-up integration: the current published economic report retained Oct12
+official identities, while the existing latest SAFE_REFRESH already bound Oct21
+official originals. The existing official-attribute adapter now independently
+replays that hash-bound marketwide manifest and official original, selecting the
+freshest valid metadata without rewriting the economic report. Invalid/future
+alternate sources fall back; a valid newer absent identity stays absent. Actual
+600693 and 600519 now replay with official identity and 100/100 auction quantity
+rules. Cyclical/common-factor/liquidity facts remain UNKNOWN. Their quantity-rule
+original expires 2026-10-22T17:47:49Z and must be refreshed through the existing
+bounded capture flow; identity freshness is not historical PIT or price admission.
+
+Final local integration: 192 risk/declaration/scenario/API tests passed; all Web
+311 tests, typecheck, formatting and build passed. Metadata plus full Web API:
+270 passed. Independent read-only reviews found no concrete P0/P1 in the risk
+declaration, explicit SIMULATED marks or metadata source/time/fallback changes.
+Exact-source CI and final browser results are bound in the V5 acceptance receipts.
+
 ### V5 restart, compatibility and risk integration checkpoint
 
 Latest integration follows ea6cf5d9b7c503b1f6dc2a25524133ea5f576e4d.
