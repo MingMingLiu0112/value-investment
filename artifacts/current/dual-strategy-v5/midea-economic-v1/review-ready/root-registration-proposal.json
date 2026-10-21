@@ -1,0 +1,20 @@
+{
+  "action": "no_order",
+  "registration_performed": false,
+  "current_research_drafts": {
+    "config": "config/current-research-drafts.json",
+    "key": "drafts.000333",
+    "binding": {
+      "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/review-ready/public-draft.json",
+      "sha256": "d6f389fe91d29a1e5d877ef0f59813a8e0954bea385ee3ddccb2c31dd4b0d26e"
+    }
+  },
+  "bound_draft_review_candidates": {
+    "config": "config/user-research-workflow-v1.json",
+    "key": "bound_draft_review_candidates.000333",
+    "binding": {
+      "path": "runtime/midea-economic-review-ready-20261021T193106744906Z/candidate.json",
+      "sha256": "51a1389c053067ab740ac9a8e7fa45d1e289a4ef605f224b38d14f667b99dfc8"
+    }
+  }
+}

@@ -93,3 +93,8 @@ artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/public-draft-v
 artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/package.json -text whitespace=cr-at-eol
 docs/current/tl8-c-000333-share-denominator-recheck-receipt-20261013.json -text whitespace=cr-at-eol
 docs/current/tl8-c-601088-cycle-model-boundary-receipt-20261013.json -text whitespace=cr-at-eol
+
+# Unregistered research candidates and event supplements are byte-bound public
+# evidence; failed build diagnostics remain local and are never included.
+artifacts/current/dual-strategy-v5/midea-economic-v1/** -text whitespace=cr-at-eol
+runtime/event-scan-supplements/000333-economic-v1-unsigned-20261021T193558422113Z/** -text whitespace=cr-at-eol
