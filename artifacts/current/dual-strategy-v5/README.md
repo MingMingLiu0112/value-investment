@@ -97,3 +97,11 @@ was not read or changed. The authorization-recovery regression was also repaired
 192 focused integration tests, 248 full API tests and 320 Web tests pass;
 typecheck, format and build pass. Counts do not establish investment efficacy,
 final user acceptance or overall Goal completion.
+
+`github-new-source-ci.json` binds successful Core/Web workflows to 030e7581.
+`value-entry-browser.json` and `value-entry-{desktop,mobile}.png` record the
+later homepage fix: all 15 published value research objects are directly
+reachable despite having no approved operation prices. Desktop 1280px and
+mobile 390px were observed, with no page overflow. Full Web now passes 321
+tests; an independent bounded review found no P0/P1. This does not update
+economic qualification or imply a real personal account was connected.

@@ -113,7 +113,25 @@ function StrategySection({
         </div>
       ) : (
         <div className="opportunity-empty">
-          <Empty description={empty} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          {other.length ? (
+            <>
+              <p>
+                {other.length}{" "}
+                家公司尚无可用的价值投资操作价；可查看已发布研究及未满足条件。
+              </p>
+              <nav aria-label="价值研究快捷入口">
+                {other.map((item) => (
+                  <span key={item.id}>
+                    <Link to={`/decisions/${encodeURIComponent(item.id)}`}>
+                      {item.name} {item.symbol}
+                    </Link>{" "}
+                  </span>
+                ))}
+              </nav>
+            </>
+          ) : (
+            <Empty description={empty} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          )}
         </div>
       )}
       {!!other.length && (

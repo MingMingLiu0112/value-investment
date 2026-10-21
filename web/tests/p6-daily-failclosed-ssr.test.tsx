@@ -112,6 +112,29 @@ beforeEach(() => {
   };
 });
 
+it("keeps unvalued company research reachable without claiming there are no value leads", () => {
+  state.daily.data.sections.value = [
+    {
+      id: "600887",
+      symbol: "600887",
+      name: "伊利股份",
+      strategy: "value",
+      action: "no_order",
+      status: "PENDING_RESEARCH",
+    },
+  ];
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain('aria-label="价值研究快捷入口"');
+  expect(html).toContain('href="/decisions/600887"');
+  expect(html).toContain("尚无可用的价值投资操作价");
+  expect(html).not.toContain("当前没有可展示的价值投资线索");
+  expect(html).not.toContain("正式可买入");
+  state.packet.data.publication_id = "wrong-publication";
+  expect(renderToStaticMarkup(<DailyDecisions />)).not.toContain(
+    'aria-label="价值研究快捷入口"',
+  );
+});
+
 it("shows an explicit unfinished-update message when finished_at is null", () => {
   state.update.data = {
     action: "no_order",

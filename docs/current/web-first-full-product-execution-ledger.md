@@ -1679,3 +1679,27 @@ separate from the original economic candidate; the original candidate's missing
 scan is not falsely cleared. See new-source-continuation.json. Final source SHA
 CI must still be verified after the scoped commit; local-only research assets
 and real investment qualification remain separate incomplete work.
+
+### V5 final homepage discoverability checkpoint
+
+New-source delivery 030e7581cd30ac99ac84315487af4daa04e7f6da passed exact-SHA
+Core Research Gates (39630169513) and Web Workbench (39630169305).
+See github-new-source-ci.json; this is source CI, not investment approval.
+
+The homepage now exposes all 15 existing published value research links when
+none has an admissible operation price. It states that price eligibility is
+missing rather than falsely implying there are no research leads. Publication
+version checks, candidate counts, ranking and strategy thresholds are unchanged.
+Actual Windows browser checks at 1280px and 390px found 15 links and no horizontal
+page overflow. Clicking 600887 opens its new consumed-source notice while
+retaining unapproved operation prices and locked private data. Screenshots and
+observations: value-entry-browser.json and value-entry-{desktop,mobile}.png.
+
+Independent read-only review found no P0/P1. Focused homepage tests: 15 passed;
+full Web: 321 passed, typecheck/format/build passed. The final delivery SHA needs
+its own CI observation. Total Goal stays IN_PROGRESS. The 12 closure statuses
+in new-source-continuation.json remain unchanged: actual economic admission,
+hotspot strategy validation and real private portfolio readiness are unproven.
+Issuer-specific debt/ROIC and earnings assumptions, economic/event version
+binding and local-only runtime portability remain engineering/research work;
+they must not be misclassified as solely user authorization or natural time.
