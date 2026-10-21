@@ -1703,3 +1703,18 @@ hotspot strategy validation and real private portfolio readiness are unproven.
 Issuer-specific debt/ROIC and earnings assumptions, economic/event version
 binding and local-only runtime portability remain engineering/research work;
 they must not be misclassified as solely user authorization or natural time.
+
+### V5 China research-day boundary correction
+
+The exact 2c252717 Web and Postgres checks passed, but Core failed nine tests
+after UTC 16:00: source candidates used the China research date while validators
+compared it to a UTC calendar date. This is a real boundary defect, not a missing
+investment approval. Three existing validators now compare calendar dates in
+Asia/Shanghai. Absolute availability/computation comparisons remain unchanged.
+Producer code, retained receipt bytes, candidate SHA bindings and model inputs
+are not rewritten. Nine fixed-time timezone-equivalence cases check UTC 15:59,
+16:00 and 23:59, reject the next China day and future availability by one
+microsecond, and keep unvalued drafts rejected. Focused verification: 122 passed,
+including the original source/event failures, research application and bound
+draft contracts. See test-results/v5-market-date.xml. Later exact-SHA CI must
+establish the final source delivery result; 2c252717 Core is not PASS.

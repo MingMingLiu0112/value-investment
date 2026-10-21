@@ -105,3 +105,10 @@ reachable despite having no approved operation prices. Desktop 1280px and
 mobile 390px were observed, with no page overflow. Full Web now passes 321
 tests; an independent bounded review found no P0/P1. This does not update
 economic qualification or imply a real personal account was connected.
+
+The 2c252717 Core workflow subsequently found a China/UTC midnight boundary
+defect (nine failures); its Web/Postgres checks passed. Three existing date
+validators were corrected without changing source producers or their pinned
+receipts. `test-results/v5-market-date.xml` records 122 passing targeted tests,
+including fixed UTC 16:00 regressions and preserved future-instant rejection.
+This correction must receive its own exact-SHA Core result.

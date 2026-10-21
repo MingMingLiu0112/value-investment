@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 import re
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from .common import normalize_symbol, sha256_file
 
@@ -91,7 +92,7 @@ def _validate_draft(payload: dict[str, Any], symbol: str, now: datetime) -> None
     research_as_of = payload.get("research_as_of")
     if not isinstance(research_as_of, str):
         raise ValueError("research_as_of is required")
-    if date.fromisoformat(research_as_of[:10]) > now.date():
+    if date.fromisoformat(research_as_of[:10]) > now.astimezone(ZoneInfo("Asia/Shanghai")).date():
         raise ValueError("research_as_of is in the future")
 
     valuation = payload.get("valuation")

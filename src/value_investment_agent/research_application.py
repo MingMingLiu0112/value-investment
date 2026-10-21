@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 import re
 from typing import Any, Callable, Mapping, Sequence
+from zoneinfo import ZoneInfo
 
 from .current_research_status import (
     ENGINEERING_READY,
@@ -286,7 +287,11 @@ class ResearchRunSpec:
             raise ValueError("Research as_of cannot override the case date")
         if self.research_case.as_of < facts_as_of:
             raise ValueError("Research case cannot precede its financial facts")
-        if self.available_at is not None and self.available_at.date() < self.research_case.as_of:
+        if (
+            self.available_at is not None
+            and self.available_at.astimezone(ZoneInfo("Asia/Shanghai")).date()
+            < self.research_case.as_of
+        ):
             raise ValueError("Research availability cannot precede research as-of")
         if self.input_sources and self.available_at is None:
             raise ValueError("Research input sources require available_at")
