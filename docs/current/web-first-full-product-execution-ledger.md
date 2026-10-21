@@ -1128,3 +1128,45 @@ The bounded executor and final parser/summary changes were made after collection
 and are covered separately by 80 passing targeted tests; do not pretend that the
 earlier full run covered every subsequent change. Latest-source CI and committed
 browser acceptance still need verification before any release claim.
+
+### V3 source verification follow-up: 2026-10-21
+
+Source commit 6e54f391 added bounded financial enrichment and evidence-aware
+decisions. Follow-up 58e933c5 fixes duplicate pytest targets in Core CI, adds
+a duplicate-target regression check, and explicitly skips the local retained
+ten-symbol replay only when its untracked original report is absent. When the
+report exists, its pinned hash and all downstream source checks still execute.
+No synthetic result substitutes for that real replay. The separate structural
+unit/replay tests remain in CI.
+
+GitHub validation for 58e933c5: Core push run 39528561963 and Core PR run
+39528567599 succeeded; Web run 39528567500 succeeded. Disposable PostgreSQL
+and offline-core jobs both succeeded. This supersedes the failed Core runs for
+6e54f391, not the investment admission requirements. Targeted local repair tests:
+37 passed. A source-only clean archive of 6e54f391 passed 261 / skipped 1;
+the later CI repair is independently checked by GitHub's clean checkout.
+
+The actual SAFE_REFRESH with bounded enrichment completed PARTIAL at
+2026-10-21 09:29:57 Asia/Shanghai. It covered 5576 universe rows and 111
+deduplicated research leads, with zero quality-qualified deep-research rows.
+Two issuers were re-evaluated: 000589 extracted 16 candidates / matched 15
+registered facts; 000612 extracted 17 / matched 16. Both retain debt-scope gaps.
+Matches are not new admitted facts. The scan's provider trade date remains
+unverified; source-proven quote dates are 2026-10-20. Existing published research
+is still dated 2026-10-11 (5573 universe / 114 watch), not silently overwritten.
+
+Rebuilt and restarted only the existing local workbench at port 8001 using
+its owned launcher. Build identity is 58e933c5 with source_dirty=false. Actual
+browser verification at 1440x900 and 390x844 shows the enrichment summary and
+distinct evaluated NO_TRADE / UNASSESSABLE counts; no horizontal overflow.
+Screenshots: artifacts/current/dual-strategy-decision-v3/daily-desktop-58e933c5.png
+and daily-mobile-58e933c5.png. The public application audit reports 5 evaluated,
+15 unassessable, 0 operation-eligible, action=no_order. The connected portfolio
+shown in browser is explicitly TEST_ONLY, not the user's real account. No
+confirmation, transaction or personal policy form was submitted.
+
+V3 remains PARTIAL / final acceptance NOT_PASSED. Remaining engineering includes
+durable authenticated personal Entry Thesis confirmation and held-decision
+handoff, admitted enrichment revisions/re-ranking, and complete current cross-day
+history. Separate financial, release and real-account reconciliation gaps remain.
+Neither CI green nor these UI checks establish a usable real trading strategy.
