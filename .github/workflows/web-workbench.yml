@@ -6,6 +6,7 @@ on:
     paths:
       - 'web/**'
       - 'src/value_investment_agent/presentation/web_api/**'
+      - 'src/value_investment_agent/application/research/**'
       - 'src/value_investment_agent/application/portfolio/web_reconciliation.py'
       - 'tests/web_api/**'
       - 'pyproject.toml'

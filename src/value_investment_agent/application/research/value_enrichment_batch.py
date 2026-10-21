@@ -120,7 +120,7 @@ def _context_digest(context):
     return _canonical_hash(json.loads(json.dumps(payload, default=str)))
 
 
-def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=None):
+def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=None, binding=None):
     """Revalidate lineage and replay registration; checkpoints grant no authority."""
     from .value_evidence_enrichment_v1 import verify_enrichment_adoption
     from ...research_artifact_repository import InMemoryResearchArtifactRepository
@@ -130,7 +130,8 @@ def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=Non
     if not isinstance(symbol, str) or not re.fullmatch(r'\d{6}', symbol):
         raise ValueError('Research context requires security identity')
     root = root.resolve()
-    binding = ValueEnrichmentProgress(root).registered_adoption(symbol, cutoff=evaluation_at)
+    if binding is None:
+        binding = ValueEnrichmentProgress(root).registered_adoption(symbol, cutoff=evaluation_at)
     if binding is None:
         return None
     export_binding = binding['financial_export']
@@ -348,9 +349,14 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
         raise ValueError('Enrichment requires an intact research-only priority queue')
     export = require_inside(root / 'runtime', financial_export_path, 'financial export')
     _load_bound(export, financial_export_sha256)
-    if (queue['inputs']['financial_export_path'] != export.relative_to(root).as_posix()
-            or queue['inputs']['financial_export_sha256'] != financial_export_sha256):
+    supplied = dict(path=export.relative_to(root).as_posix(), sha256=financial_export_sha256)
+    effective = dict(path=queue['inputs']['financial_export_path'],
+                     sha256=queue['inputs']['financial_export_sha256'])
+    if supplied != effective and supplied != queue['inputs'].get('base_financial_export'):
         raise ValueError('Queue and enrichment financial input binding differ')
+    export = require_inside(root / 'runtime', root / effective['path'], 'effective financial export')
+    financial_export_sha256 = effective['sha256']
+    export_payload = _load_bound(export, financial_export_sha256)
     inputs = queue['inputs']
     expected = build_value_research_priority_v2(root=root,
         report_path=root / inputs['report_path'], report_sha256=inputs['report_sha256'],
@@ -373,6 +379,7 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
     if len({row['symbol'] for row in selected}) != len(selected):
         raise ValueError('Duplicate enrichment selection')
     points, _ = load_retained_financial_export(export, evaluation_at=now)
+    retained_sources = {(s['symbol'], s['period']): s for s in export_payload.get('value_enrichment_sources', [])}
     output.mkdir(parents=True)
     items, skipped, lawful_sources, adopted_fact_ids = [], [], [], []
     for row in selected:
@@ -401,9 +408,17 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
             if len(sources) != 1:
                 raise ValueError('OFFICIAL_ANNUAL_SOURCE_MISSING_OR_AMBIGUOUS')
             point = next(iter(sources.values()))
-            path, acquired, reused = _original(root, point, allow_network=allow_network)
-            source = RetainedAnnualSource(symbol, period, path.relative_to(root).as_posix(),
-                point['sha256'], point['source_url'], acquired.isoformat())
+            retained = retained_sources.get((symbol, period))
+            if retained and any((p.get('metadata') or {}).get('income_source_version')
+                                for p in points if p.get('symbol') == symbol):
+                source = RetainedAnnualSource(**retained)
+                if source.sha256 != point['sha256'] or source.source_url != point['source_url']:
+                    raise ValueError('Reused income official source binding mismatch')
+                reused = True
+            else:
+                path, acquired, reused = _original(root, point, allow_network=allow_network)
+                source = RetainedAnnualSource(symbol, period, path.relative_to(root).as_posix(),
+                    point['sha256'], point['source_url'], acquired.isoformat())
             result = enrich_retained_company(root, source, points,
                 evaluation_at=datetime.now(timezone.utc), cache_dir=root / '.tmp/value-enrichment-extraction',
                 name=row.get('company_name'))

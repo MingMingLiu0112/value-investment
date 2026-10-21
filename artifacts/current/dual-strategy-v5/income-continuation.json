@@ -1,0 +1,337 @@
+{
+  "schema_version": "v5-income-continuation-v1",
+  "generated_at": "2026-10-21T13:18:22.399950+00:00",
+  "source_commit": "ac48ff6bda3d1a1fcd35c29631f7b28a0d711f51",
+  "action": "no_order",
+  "real_or_test": "REAL_PUBLIC_DATA",
+  "real_result": {
+    "receipt": {
+      "path": "runtime/value-evidence-enrichment/income-adoption-20261021T130759980905Z/receipt.json",
+      "sha256": "4cd9215510d4f60f2a3b1f136a4a30260833e4d583c3a9976b9ff2af9e89c5c8"
+    },
+    "action": "no_order",
+    "real_or_test": "REAL_PUBLIC_DATA",
+    "generated_at": "2026-10-21T13:07:59.980905+00:00",
+    "official": {
+      "symbol": "600519",
+      "period": "2025-12-31",
+      "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "available_at": "2026-09-11 14:23:38.396608+00:00"
+    },
+    "secondary": {
+      "path": "runtime/value-evidence-enrichment/income-20261021T125910975568Z/sina-income.json",
+      "sha256": "e51d940053be3a79232267a9c53791fa7ac59a91f2f504403fb89ae88756c5a8",
+      "acquired_at": "2026-10-21T12:59:11.221478+00:00",
+      "source_url": "https://quotes.sina.cn/cn/api/openapi.php/CompanyFinanceService.getFinanceReport2022?paperCode=sh600519&source=lrb&type=0&page=1&num=16",
+      "receipt": {
+        "path": "runtime/value-evidence-enrichment/income-20261021T125910975568Z/source.json",
+        "sha256": "0197073eddefe72ff29bc57767468b54a07b0ca2abeb3009ad0f66787e024c95"
+      }
+    },
+    "new_input_count": 2,
+    "added_inputs": [
+      {
+        "symbol": "600519",
+        "field_name": "revenue",
+        "period_label": "2024-12-31",
+        "value": "170899152276.34",
+        "unit": "CNY",
+        "data_point_id": "income-input:cb33a043fc68894f39ac6848a7c66f24662c6134f61661848503031064c2b940",
+        "source_id": "official-income:474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+        "source_name": "CNINFO statutory disclosure",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+        "source_path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+        "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+        "available_at": "2026-10-21T12:59:11.221478+00:00",
+        "fetched_at": "2026-10-21T12:59:11.221478+00:00",
+        "created_at": "2026-10-21T12:59:11.221478+00:00",
+        "validation_status": "verified",
+        "human_reviewed": false,
+        "metadata": {
+          "automatic_cross_source_verification": true,
+          "verification_method": "official_pdf_plus_independent_structured_source",
+          "statement_scope": "consolidated",
+          "currency": "CNY",
+          "income_source_version": "official-sina-income-input-v1",
+          "income_secondary": {
+            "path": "runtime/value-evidence-enrichment/income-20261021T125910975568Z/sina-income.json",
+            "sha256": "e51d940053be3a79232267a9c53791fa7ac59a91f2f504403fb89ae88756c5a8",
+            "acquired_at": "2026-10-21T12:59:11.221478+00:00",
+            "source_url": "https://quotes.sina.cn/cn/api/openapi.php/CompanyFinanceService.getFinanceReport2022?paperCode=sh600519&source=lrb&type=0&page=1&num=16",
+            "receipt": {
+              "path": "runtime/value-evidence-enrichment/income-20261021T125910975568Z/source.json",
+              "sha256": "0197073eddefe72ff29bc57767468b54a07b0ca2abeb3009ad0f66787e024c95"
+            }
+          },
+          "income_official_source": {
+            "symbol": "600519",
+            "period": "2025-12-31",
+            "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "available_at": "2026-09-11 14:23:38.396608+00:00"
+          },
+          "official_page": 61,
+          "official_excerpt": "营业收入 44 168,838,102,514.79 170,899,152,276.34",
+          "secondary_item_field": "BIZINCO",
+          "secondary_report_period": "2024-12-31",
+          "historical_pit_admission": "NOT_ADMITTED",
+          "economic_approval": false
+        }
+      },
+      {
+        "symbol": "600519",
+        "field_name": "net_income",
+        "period_label": "2024-12-31",
+        "value": "86228146421.62",
+        "unit": "CNY",
+        "data_point_id": "income-input:d711e701ff4b10264fd71cdaa0bbdd2059849364a1cda522f6b0a3c2280301a6",
+        "source_id": "official-income:474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+        "source_name": "CNINFO statutory disclosure",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+        "source_path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+        "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+        "available_at": "2026-10-21T12:59:11.221478+00:00",
+        "fetched_at": "2026-10-21T12:59:11.221478+00:00",
+        "created_at": "2026-10-21T12:59:11.221478+00:00",
+        "validation_status": "verified",
+        "human_reviewed": false,
+        "metadata": {
+          "automatic_cross_source_verification": true,
+          "verification_method": "official_pdf_plus_independent_structured_source",
+          "statement_scope": "consolidated",
+          "currency": "CNY",
+          "income_source_version": "official-sina-income-input-v1",
+          "income_secondary": {
+            "path": "runtime/value-evidence-enrichment/income-20261021T125910975568Z/sina-income.json",
+            "sha256": "e51d940053be3a79232267a9c53791fa7ac59a91f2f504403fb89ae88756c5a8",
+            "acquired_at": "2026-10-21T12:59:11.221478+00:00",
+            "source_url": "https://quotes.sina.cn/cn/api/openapi.php/CompanyFinanceService.getFinanceReport2022?paperCode=sh600519&source=lrb&type=0&page=1&num=16",
+            "receipt": {
+              "path": "runtime/value-evidence-enrichment/income-20261021T125910975568Z/source.json",
+              "sha256": "0197073eddefe72ff29bc57767468b54a07b0ca2abeb3009ad0f66787e024c95"
+            }
+          },
+          "income_official_source": {
+            "symbol": "600519",
+            "period": "2025-12-31",
+            "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "available_at": "2026-09-11 14:23:38.396608+00:00"
+          },
+          "official_page": 62,
+          "official_excerpt": "归属于母公司股东的净利润\r\n（净亏损以“-”号填列）\r\n82,320,067,101.68 86,228,146,421.62",
+          "secondary_item_field": "PARENETP",
+          "secondary_report_period": "2024-12-31",
+          "historical_pit_admission": "NOT_ADMITTED",
+          "economic_approval": false
+        }
+      }
+    ],
+    "summary": {
+      "status": "VERIFIED_FACT_ADOPTION",
+      "symbol": "600519",
+      "adopted_fact_ids": [
+        "value-ratio:628bd94d982da63f5f674d5ddfdcb94bebc97ffcb5cbbe6e1e9ba09684a5399c",
+        "value-growth:3557ab3fc272264ad1003cecf1ff81965035ef1ea2436add62406544a0a5f14b",
+        "value-growth:fe2dcde0d3cf51114704a1fda719b33841fa21152897e42a802270f2c7a83290"
+      ],
+      "adopted_fact_count": 3,
+      "research_inputs_updated": true,
+      "sourced_arithmetic_observation_count": 0,
+      "quality_coverage_before": "0.5556",
+      "quality_coverage_after": "0.8889",
+      "complete_debt_verified": false,
+      "new_fact_approvals": 0,
+      "formal_eligibility": false,
+      "action": "no_order",
+      "result_binding": {
+        "path": "runtime/value-evidence-enrichment/income-adoption-20261021T130759980905Z/durable/600519.json",
+        "sha256": "869e936ad0a7eefc8a2bb2b04e50d67ab156bb7b95d25eaa2377a379e5372f50"
+      }
+    },
+    "diagnostics": {
+      "600519": {
+        "status": "VERIFIED_ENRICHMENT_CONTEXT_RESTORED",
+        "source": {
+          "kind": "HASH_BOUND_TYPED_WORKBENCH_ONLY",
+          "path": "runtime/d2-model-bound-followup-20261008/workbench-v10.json",
+          "sha256": "b88fa501a3bcd76fb538ab633a9ea1f086cc0aa35877e41c2bacf3c996935d2c"
+        },
+        "economic_admission": "NOT_PROVEN"
+      }
+    },
+    "public_progress": {
+      "status": "VERIFIED_FACT_ADOPTION",
+      "symbol": "600519",
+      "adopted_fact_count": 3,
+      "research_inputs_updated": true,
+      "quality_coverage_before": "0.5556",
+      "quality_coverage_after": "0.8889",
+      "formal_eligibility": false,
+      "action": "no_order",
+      "as_of": "2026-10-21T13:07:59.980905+00:00",
+      "verified_at": "2026-10-21T13:08:16.007203+00:00",
+      "adopted_metrics": [
+        {
+          "field_name": "debt_ratio",
+          "value": "16.41536219224762329957853997",
+          "unit": "percent",
+          "period_label": "2025-12-31"
+        },
+        {
+          "field_name": "revenue_yoy",
+          "value": "-1.206003502122310075731217400",
+          "unit": "percent",
+          "period_label": "2025-12-31"
+        },
+        {
+          "field_name": "net_income_yoy",
+          "value": "-4.532254817158085759953691710",
+          "unit": "percent",
+          "period_label": "2025-12-31"
+        }
+      ]
+    },
+    "operating_inputs": {
+      "debt_ratio": "16.41536219224762329957853997",
+      "revenue_yoy": "-1.206003502122310075731217400",
+      "net_income_yoy": "-4.532254817158085759953691710"
+    },
+    "complete_debt_verified": false,
+    "financial_facts_verified": false,
+    "economic_approval": false,
+    "formal_eligibility": false,
+    "strict_historical_pit": "NOT_ADMITTED",
+    "original_export_unchanged": true,
+    "inputs": {
+      "path": "runtime/value-evidence-enrichment/income-adoption-20261021T130759980905Z/financial-inputs.json",
+      "sha256": "39f06bf4ca56f9df2796151cee661f6de1f7708730d7ee2ac62bb26f32b1bc87"
+    }
+  },
+  "retained_secondary_raw": {
+    "path": "artifacts/current/dual-strategy-v5/source-evidence/sina-income-20261021.json",
+    "sha256": "e51d940053be3a79232267a9c53791fa7ac59a91f2f504403fb89ae88756c5a8"
+  },
+  "independent_review": "Both acquisition-clock and self-resealed-cache P1 findings fixed; no remaining scoped P0/P1 found.",
+  "backend_tests": {
+    "tests": 112,
+    "failures": 0,
+    "errors": 0,
+    "receipt": {
+      "path": "artifacts/current/dual-strategy-v5/test-results/v5-income-results.xml",
+      "sha256": "2095ed3f1f7c4d42ead664a24259d03bdb9e8b755a4e010ee03e5f716725b808"
+    }
+  },
+  "web_tests": {
+    "tests": 312,
+    "passed": 312,
+    "failures": 0
+  },
+  "ci": {
+    "action": "no_order",
+    "head": "ac48ff6bda3d1a1fcd35c29631f7b28a0d711f51",
+    "runs": [
+      {
+        "id": 39605684932,
+        "name": "Web Workbench",
+        "head_sha": "ac48ff6bda3d1a1fcd35c29631f7b28a0d711f51",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39605684932",
+        "jobs": [
+          {
+            "id": 119241141396,
+            "name": "web",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-21T13:10:39Z",
+            "active_steps": []
+          }
+        ]
+      },
+      {
+        "id": 39605684940,
+        "name": "Core Research Gates",
+        "head_sha": "ac48ff6bda3d1a1fcd35c29631f7b28a0d711f51",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39605684940",
+        "jobs": [
+          {
+            "id": 119241141286,
+            "name": "offline-core",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-21T13:10:39Z",
+            "active_steps": []
+          },
+          {
+            "id": 119241141782,
+            "name": "postgres-integration",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-21T13:10:39Z",
+            "active_steps": []
+          }
+        ]
+      },
+      {
+        "id": 39605674914,
+        "name": "Core Research Gates",
+        "head_sha": "ac48ff6bda3d1a1fcd35c29631f7b28a0d711f51",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39605674914",
+        "jobs": [
+          {
+            "id": 119241108179,
+            "name": "postgres-integration",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-21T13:10:35Z",
+            "active_steps": []
+          },
+          {
+            "id": 119241108263,
+            "name": "offline-core",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-21T13:10:34Z",
+            "active_steps": []
+          }
+        ]
+      },
+      {
+        "id": 39605675063,
+        "name": "Web Workbench",
+        "head_sha": "ac48ff6bda3d1a1fcd35c29631f7b28a0d711f51",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39605675063",
+        "jobs": [
+          {
+            "id": 119241107929,
+            "name": "web",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-21T13:10:35Z",
+            "active_steps": []
+          }
+        ]
+      }
+    ]
+  },
+  "total_goal": "IN_PROGRESS",
+  "formal_eligibility": false,
+  "remaining": [
+    "Complete consolidated financing scope and independent debt assurance",
+    "Normalized economics and legitimate model/event/G3/price admission",
+    "Strict hotspot PIT/OOS/cost/Shadow validation and independent admission",
+    "Real private account inputs and actual user acceptance"
+  ],
+  "runtime_identity_limit": "Shared checkout remains on a different ref with preserved unrelated edits. Browser runs current working source/build; source-commit CI is separate and no clean deployment identity is asserted."
+}

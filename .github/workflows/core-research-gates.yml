@@ -81,6 +81,9 @@ jobs:
           tests/test_value_evidence_enrichment_v1.py
           tests/test_value_enrichment_batch.py
           tests/test_value_enrichment_durable_reuse.py
+          tests/test_income_source_correlation.py
+          tests/test_income_source_correlation_integration.py
+          tests/test_value_income_durable_queue.py
           tests/test_private_committed_risk.py
           tests/test_private_committed_risk_service.py
           tests/test_current_security_metadata.py

@@ -1485,3 +1485,33 @@ growth integration, immutable adoption/restart and public projection. Current We
 types/detail display the three verified metrics separately from published
 economics. Browser/build/CI evidence for this continuation is recorded separately
 from the earlier b6969333 checkpoint. No real signatures or transactions occur.
+
+### V5 continuation: durable queue feedback and browser-bound fill
+
+Completed the previously unperformed signed-research browser replay in an
+independent TEST_ONLY account. The actual daily card links to the stock detail,
+then to a draft bound to decision 600519 / research synthetic-d2-v1. Confirmed
+BUY300 at 5.01 plus fee 5 produces cash 8492, cost 1508 and 300 shares; quote 5
+produces market value 1500, equity 9992 and unrealized P/L -8. Reload retains
+these facts. Both portfolio retrospective and history retain the original
+research link. The mock retrospective explicitly preserves missing pretrade
+availability/risk proof. A prior unlinked draft was voided with its audit trail
+preserved. An independent read-only journal replay verifies the same result.
+Desktop and actual 390px mobile pages were checked; mobile document width is
+375px. No real account, user signature, formal quantity or broker order exists
+in this replay. Evidence: signed-browser-continuation.json and
+signed-browser-ledger-verification.json under artifacts/current/dual-strategy-v5/.
+
+Fixed the automatic feedback gap between durable income adoption and later
+queue/worker inputs. The queue reconstructs an immutable supplemental export
+from current base inputs and source-reverified durable adoption, preserving
+its original discovery receipt and cutoff. The worker checks the rebuilt
+queue before consuming the effective export; the base export is not replaced.
+Actual 600519 replay retains two new inputs, three metrics and 88.89% coverage;
+an empty candidate selection does not insert 600519 into the current lead pool.
+This real source-reuse check is separate from isolated full queue/worker tests.
+Complete debt, economic approval, hotspot strategy admission, real private
+account readiness and total Goal completion remain unproven. Excel is FROZEN;
+action=no_order. Current 12 acceptance states remain in the V5 checkpoint until
+individually superseded by evidence; positive replay does not turn WEB_E2E or
+REAL_ASSISTED_USE_READY into an unqualified whole-product PASS.
