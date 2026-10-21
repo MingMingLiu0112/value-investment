@@ -180,6 +180,7 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         '    Path("config/current-daily-public-snapshot.json").write_text(json.dumps(packet))\n'
         f'print(json.dumps(packet))\nraise SystemExit(2 if scenario == "core_recovered" and count == 1 else {build_exit})\n', encoding='utf-8')
     readiness = dict(prices_ready=scenario in {'complete', 'core_recovered', 'incremental_unavailable', 'm2_unavailable', 'm2_historical', 'm2_manifest_missing'}, quotes_ready=True,
+        continuity_ready=True,
         publication_ready=scenario != 'unavailable', core_integrity_ok=True,
         market_trade_dates=['2026-10-14'], price_securities=[], quote_securities=[])
     refresh = dict(status='WRITTEN', items=[], failures=[] if scenario in {'complete', 'incremental_unavailable', 'm2_unavailable', 'm2_historical', 'm2_manifest_missing'} else [

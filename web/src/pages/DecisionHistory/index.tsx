@@ -11,6 +11,7 @@ import {
 } from "antd";
 import type { PropsWithChildren } from "react";
 import { useState } from "react";
+import { Link } from "@umijs/max";
 import { Workbench } from "../../components/Workbench";
 import { RemoteState } from "../../components/RemoteState";
 import { ConfirmedTrades } from "../../components/ConfirmedTrades";
@@ -445,6 +446,14 @@ export default function DecisionHistory() {
   return (
     <Workbench>
       <Typography.Title level={2}>复盘</Typography.Title>
+      {privateState.risk?.facts?.account_scope?.startsWith("TEST_ONLY") && (
+        <Alert
+          type="warning"
+          showIcon
+          message="TEST_ONLY 隔离演练复盘"
+          description="以下账户成交用于工程验收，不是本人真实成交，也不代表策略表现或投资资格。"
+        />
+      )}
       <Section title="我的实际成交与原判断版本">
         {privateState.portfolio &&
         !["LOADING", "LOCKED", "UNAVAILABLE"].includes(privateState.kind) ? (
@@ -465,6 +474,56 @@ export default function DecisionHistory() {
       </Section>
       <Typography.Title level={3}>研究快照与判断变化</Typography.Title>
       <RemoteState loading={loading} error={error} retry={retry}>
+        <Section title="热点观察变化">
+          {data?.observation_changes?.status === "SOURCE_REVALIDATED" ? (
+            <>
+              <p>
+                截至 {data.observation_changes.completed_session}{" "}
+                的已核验观察记录；不代表交易批准。
+              </p>
+              <List
+                dataSource={data.observation_changes.items}
+                locale={{ emptyText: "该次已核验记录没有观察对象" }}
+                renderItem={(item) => (
+                  <List.Item>
+                    <Space wrap>
+                      <Link to={`/decisions/hotspot-${item.symbol}`}>
+                        {item.symbol}
+                      </Link>
+                      <span>
+                        {
+                          {
+                            new: "新入选",
+                            continue: "继续观察",
+                            approach: "接近条件",
+                            triggered: "已观察到条件",
+                            invalid: "结构不符合",
+                            expired: "计划已过期",
+                            left: "已退出观察",
+                          }[item.transition]
+                        }
+                      </span>
+                      {item.trend_strengthened && (
+                        <Tag color="green">趋势增强</Tag>
+                      )}
+                      {!item.selected_today && <span>保留观察历史</span>}
+                      <Typography.Text type="secondary">
+                        行情日 {item.market_trade_date}
+                      </Typography.Text>
+                    </Space>
+                  </List.Item>
+                )}
+              />
+            </>
+          ) : (
+            <Alert
+              type="info"
+              showIcon
+              message="当前跨日观察记录尚未通过来源复算"
+              description="这不等于没有变化；既有研究历史和本人已确认成交仍在本页保留。"
+            />
+          )}
+        </Section>
         {data &&
           (items.length === 0 ? (
             <Alert

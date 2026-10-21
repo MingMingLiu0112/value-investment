@@ -36,6 +36,9 @@ it.each(["BUY", "ADD"] as const)(
           decision_action: action,
           review_quantity: 100,
           blockers: [],
+          ownership_verified: true,
+          held_quantity: "100",
+          entry_thesis_record_sha256: "a".repeat(64),
         }}
       />,
     );
@@ -51,6 +54,62 @@ it("rejects conflicting positive action and veto", () => {
   );
   expect(html).toContain("动作与风险结果不一致");
   expect(html).not.toContain("100");
+});
+
+it.each(["HOLD", "REDUCE", "EXIT"] as const)("refuses unowned %s", (action) => {
+  const html = renderToStaticMarkup(
+    <ActionableDecisionResult
+      decision={{
+        ...baseline,
+        decision_action: action,
+        blockers: [],
+        review_quantity: action === "HOLD" ? null : 100,
+      }}
+    />,
+  );
+  expect(html).toContain("持仓动作依据不完整");
+});
+
+it.each(["HOLD", "REDUCE", "EXIT"] as const)(
+  "renders owned %s only with lawful quantities",
+  (action) => {
+    const html = renderToStaticMarkup(
+      <ActionableDecisionResult
+        decision={{
+          ...baseline,
+          decision_action: action,
+          blockers: [],
+          review_quantity: action === "HOLD" ? null : 100,
+          ownership_verified: true,
+          held_quantity: "200",
+          sellable_quantity: "100",
+          entry_thesis_record_sha256: "a".repeat(64),
+          decision_reason: "Original thesis comparison",
+        }}
+      />,
+    );
+    expect(html).toContain("Original thesis comparison");
+    expect(html).not.toContain("NO_TRADE");
+    expect(html).not.toContain("不提供操作结论");
+  },
+);
+
+it("refuses a T+1 exit beyond sellable shares", () => {
+  const html = renderToStaticMarkup(
+    <ActionableDecisionResult
+      decision={{
+        ...baseline,
+        decision_action: "EXIT",
+        blockers: [],
+        review_quantity: 200,
+        ownership_verified: true,
+        held_quantity: "200",
+        sellable_quantity: "100",
+        entry_thesis_record_sha256: "a".repeat(64),
+      }}
+    />,
+  );
+  expect(html).toContain("可卖数量不符");
 });
 
 it("shows server-owned prices and exit conditions without inventing missing fees", () => {
@@ -69,4 +128,32 @@ it("shows server-owned prices and exit conditions without inventing missing fees
   expect(html).toContain("2026-10-21");
   expect(html).toContain("结构失效后重新核验");
   expect(html).toContain("未提供");
+});
+
+it("distinguishes entry consistency from a newer broken thesis", () => {
+  const html = renderToStaticMarkup(
+    <ActionableDecisionResult
+      decision={{
+        ...baseline,
+        original_thesis: "Original cash-flow thesis",
+        entry_consistency_status: "CONSISTENT",
+        consistency_status: "BROKEN",
+      }}
+    />,
+  );
+  expect(html).toContain("买入绑定时的一致性：原逻辑仍一致");
+  expect(html).toContain("原逻辑与当前证据对比：原逻辑已破坏，需复核");
+});
+
+it("never presents original consistency as a current review", () => {
+  const html = renderToStaticMarkup(
+    <ActionableDecisionResult
+      decision={{
+        ...baseline,
+        original_thesis: "Original cash-flow thesis",
+        entry_consistency_status: "CONSISTENT",
+      }}
+    />,
+  );
+  expect(html).toContain("原逻辑与当前证据对比：尚未完成当前证据核验");
 });

@@ -13,6 +13,7 @@ from ...domain.hotspot.daily_selection import rank_daily_candidates
 from ...infrastructure.hotspot.current_price_case import load_current_price_case
 from .daily_selection import verify_daily_selection
 from .price_action_case import project_current_price_action_plan
+from .quantitative_validation import ProtocolBinding, compute_quantitative_validation
 
 
 SCHEMA_VERSION = "hotspot-structure-validation-v2"
@@ -472,6 +473,133 @@ def build_hotspot_structure_validation(
         report_payload, "evidence_sha256"
     )
     return report_payload
+
+
+def build_hotspot_quantitative_validation(*, root: Path, protocol_binding: dict | ProtocolBinding,
+                                        now: datetime) -> dict[str, Any]:
+    """Compute bound execution metrics or replay a legacy observation protocol."""
+    from .event_replay import build_replay
+
+    if isinstance(protocol_binding, ProtocolBinding):
+        protocol_binding = dict(path=protocol_binding.path, sha256=protocol_binding.sha256)
+
+    if (not isinstance(protocol_binding, dict)
+            or not isinstance(protocol_binding.get("path"), str)
+            or not protocol_binding["path"]
+            or not isinstance(protocol_binding.get("sha256"), str)
+            or len(protocol_binding["sha256"]) != 64
+            or any(c not in "0123456789abcdef" for c in protocol_binding["sha256"])):
+        raise ValueError("Quantitative validation requires a hash-bound protocol")
+    if now.utcoffset() is None:
+        raise ValueError("Quantitative protocol requires a timezone-aware clock")
+    root = Path(root).resolve()
+    name = protocol_binding["path"]
+    if Path(name).is_absolute():
+        raise ValueError("Quantitative protocol path must be repository-relative")
+    path = _inside(root, name, root, "quantitative protocol")
+    protocol, raw = _read_object(path, "quantitative protocol")
+    if _hash_bytes(raw) != protocol_binding["sha256"]:
+        raise ValueError("Quantitative protocol hash mismatch")
+    if protocol.get("schema_version") == "hotspot-execution-protocol-v1":
+        result = compute_quantitative_validation(root=root,
+            binding=ProtocolBinding(**protocol_binding), protocol=protocol, now=now)
+        result["evidence_sha256"] = _recomputed_digest(result, "evidence_sha256")
+        return result
+    # Validate the complete existing protocol and every bound original before
+    # exposing observations; the replay engine enforces registration and rules.
+    replay = build_replay(root=root, spec_path=Path(name),
+                          expected_sha256=protocol_binding["sha256"], now=now)
+    result = dict(schema_version="hotspot-quantitative-validation-v1",
+        protocol_binding=dict(protocol_binding), evaluated_at=now.isoformat(),
+        status="PARTIAL", strategy_validation="NOT_PROVEN",
+        metrics_scope="SIGNAL_PRICE_PATH_ONLY", replay=replay,
+        execution_metrics=dict(status="UNASSESSABLE", trade_count=None,
+            win_rate=None, payoff_ratio=None, net_return_distribution=None,
+            maximum_drawdown=None, cost_sensitivity=None,
+            t_plus_one_feasibility="UNKNOWN"),
+        remaining_requirements=["Source-bound fills, rejections and unfilled orders",
+            "Dated fees, slippage, liquidity, suspension and price limits",
+            "T+1 inventory and execution feasibility",
+            "Contemporaneous universe, classification and input availability",
+            "Predeclared untouched OOS execution sample"],
+        formal_eligibility=False, performance_claim_allowed=False, action=ACTION)
+    result["evidence_sha256"] = _recomputed_digest(result, "evidence_sha256")
+    return result
+
+
+def build_hotspot_review_handoff(*, root: Path, evaluated_at: datetime,
+                                quantitative_protocol_binding: dict | None = None,
+                                **validation_inputs: Any) -> dict[str, Any]:
+    """Rebuild retained validation and prepare an unsigned independent review.
+
+    This deliberately cannot approve a gate, sign a release or write a current
+    pointer. Retrospective structure evidence does not establish strategy edge.
+    """
+    from ...domain.hotspot.independent_admission import GATES
+    from .independent_admission import _contains_test_namespace
+
+    if evaluated_at.utcoffset() is None:
+        raise ValueError("Review handoff requires a timezone-aware cutoff")
+    report = build_hotspot_structure_validation(
+        root=root, evaluated_at=evaluated_at, **validation_inputs)
+    _validate_report(report)
+    if report["evidence_sha256"] != _recomputed_digest(report, "evidence_sha256"):
+        raise ValueError("Review handoff validation digest mismatch")
+    bindings = report["source_files"]
+    sources = [bindings["selection_report"], bindings["current_price_conditions"],
+               *bindings["cases"].values()]
+    for binding in sources:
+        path = _inside(root.resolve(), binding["path"], root.resolve(), "review source")
+        document, raw = _read_object(path, "review source")
+        if _hash_bytes(raw) != binding["sha256"]:
+            raise ValueError("Review handoff source hash mismatch")
+        if _contains_test_namespace(document):
+            raise ValueError("TEST_ONLY evidence cannot enter ACTUAL review handoff")
+    requirements = [
+        dict(gap="STRICT_PIT", status="NOT_PROVEN",
+             evidence_required=["contemporaneous frozen rule and input availability",
+                                "effective-dated industry and survivorship universe",
+                                "replay admission through historical_validation contracts"]),
+        dict(gap="COST_AND_EXECUTION", status="NOT_RUN",
+             evidence_required=["source-bound fills and rejected/unfilled orders",
+                                "fees, slippage and cost sensitivity",
+                                "limit up/down, suspension, liquidity, T+1 and single-trade risk"]),
+        dict(gap="OOS_AND_STABILITY", status="NOT_RUN",
+             evidence_required=["predeclared disjoint train/test windows and frozen thresholds",
+                                "walk-forward with untouched OOS and no threshold retuning",
+                                "trade count, win rate, payoff ratio and return distribution",
+                                "maximum drawdown, market regimes, sector concentration",
+                                "sample representativeness and statistical limitations"]),
+    ]
+    result = dict(schema_version="hotspot-independent-review-handoff-v1",
+        namespace="ACTUAL", strategy="HOTSPOT_SATELLITE", action=ACTION,
+        evaluated_at=evaluated_at.isoformat(), data_trade_date=report["selection_trade_date"],
+        status="PENDING_INDEPENDENT_REVIEW", strategy_validation=report["strategy_validation"],
+        formal_release_status="NOT_REQUESTED", formal_eligibility=False,
+        risk_review_eligible=False, personal_risk_status="NOT_EVALUATED",
+        validation_evidence=report, source_bindings=sources,
+        validation_requirements=requirements,
+        review_requirements=[dict(gate=gate, status="PENDING_REVIEW",
+            required_context=["security identity", "matching frozen strategy rule",
+                              "source hash and availability", "expiry and invalidation"],
+            evidence_binding_required=True) for gate in GATES],
+        authorization_requirements=dict(status="MISSING",
+            verifier="application.hotspot.independent_admission:load_independent_admission",
+            required=["independent authorized reviewer", "pinned scoped trust root",
+                      "reviewer-signed source-bound gate assessments and release",
+                      "ACTUAL namespace and current validity interval"],
+            reviewer_id=None, signature=None),
+        reopen_when="Attach missing validation evidence, then obtain independent lawful review; recheck current data before release.")
+    if quantitative_protocol_binding is not None:
+        quantitative = build_hotspot_quantitative_validation(root=root,
+            protocol_binding=quantitative_protocol_binding, now=evaluated_at)
+        if quantitative.get("namespace") != "ACTUAL":
+            raise ValueError("ACTUAL review requires ACTUAL quantitative evidence")
+        result["quantitative_validation"] = quantitative
+        result["source_bindings"].extend([quantitative["protocol_binding"],
+                                         *quantitative["source_bindings"]])
+    result["evidence_sha256"] = _recomputed_digest(result, "evidence_sha256")
+    return result
 
 
 def render_validation_markdown(report: Mapping[str, Any]) -> str:

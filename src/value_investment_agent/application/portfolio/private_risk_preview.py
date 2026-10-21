@@ -268,7 +268,7 @@ def _enforce_quantity_rule(output, rule):
                     blockers=list(dict.fromkeys([*review.get("blockers", []), *blockers])))
 
 
-def _actionable_decision(result, *, binding, symbol, sleeve, generated_at):
+def _actionable_decision(result, *, binding, symbol, sleeve, generated_at, entry_context=None):
     """Assemble only actual verified inputs; scenario output is never consulted."""
     sizing = result["sizing_preview"]
     engine = result.get("engine") or {}
@@ -331,9 +331,12 @@ def _actionable_decision(result, *, binding, symbol, sleeve, generated_at):
         if (plan.get("action_intent") != "ADD" or not isinstance(add, dict)
                 or not (add.get("triggered") is True or add.get("observed") is True)):
             blockers.append("CURRENT_ADD_CONDITION_NOT_CONFIRMED")
-        # A public example's entry thesis is not the account's original thesis.
-        # The current journal has no authenticated ownership-binding event.
-        blockers.append("PERSONAL_ENTRY_THESIS_CONFIRMATION_RECORD_UNSUPPORTED")
+        context = entry_context or {}
+        blockers.extend(context.get("blockers") or [])
+        if not context.get("ownership_verified") or not context.get("advisory_dependencies_valid"):
+            blockers.append("OWNED_ENTRY_DEPENDENCIES_REQUIRED")
+        if not context.get("current_add_advisory_verified"):
+            blockers.append("OWNED_CURRENT_ADD_ADVISORY_REQUIRED")
     if plan.get("symbol") != symbol or plan.get("action_intent") not in {"OPEN", "ADD"}:
         blockers.append("CURRENT_PLAN_NOT_BUY_OR_ADD")
     if not held and plan.get("action_intent") == "ADD":
@@ -367,6 +370,9 @@ def _actionable_decision(result, *, binding, symbol, sleeve, generated_at):
     outcome = negative if blockers else "ADD" if held else "BUY"
     status = negative if blockers else "CONDITIONAL_MANUAL_REVIEW"
     return {"action": "no_order", "decision_action": outcome,
+        "ownership_verified": held and (entry_context or {}).get("ownership_verified") is True,
+        "held_quantity": (entry_context or {}).get("held_quantity"),
+        "entry_thesis_record_sha256": (entry_context or {}).get("entry_thesis_record_sha256"),
         "decision_layer": "PERSONAL_ACTION_REVIEW",
         "symbol": symbol, "strategy": sleeve, "status": status,
         "company_name": plan.get("company_name"),
@@ -426,10 +432,11 @@ def _current_plan(root, symbol, now):
     return {"publication_id": packet["publication_id"], "plan": independent}, None
 
 
-def preview_private_hotspot_risk(journal, *, repository_root, generated_at: datetime, payload):
+def preview_private_hotspot_risk(journal, *, repository_root, generated_at: datetime, payload,
+                                 authenticated_subject=None):
     if payload.get("sleeve") == "CORE_VALUE":
         return preview_private_core_risk(journal, repository_root=repository_root,
-            generated_at=generated_at, payload=payload)
+            generated_at=generated_at, payload=payload, authenticated_subject=authenticated_subject)
     # Always preserve the existing engine's account facts and missing-input report.
     result = review_private_risk_rehearsal(journal, generated_at=generated_at, repository_root=repository_root)
     blockers = []
@@ -534,7 +541,10 @@ def preview_private_hotspot_risk(journal, *, repository_root, generated_at: date
         if scenario is not None:
             result["scenario_preview"]["scope"] = "TEST_ONLY_RAW_ENGINE_INPUT"
     result["actionable_decision"] = _actionable_decision(result, binding=binding,
-        symbol=symbol, sleeve="HOTSPOT_SATELLITE", generated_at=generated_at)
+        symbol=symbol, sleeve="HOTSPOT_SATELLITE", generated_at=generated_at,
+        entry_context=_preview_entry_context(journal, result=result, binding=binding, symbol=symbol,
+            sleeve="HOTSPOT_SATELLITE", authenticated_subject=authenticated_subject,
+            repository_root=repository_root, generated_at=generated_at))
     return result
 
 
@@ -573,7 +583,7 @@ def _current_value_plan(root, symbol, now):
         "valid_until": policy.effective_through.isoformat() + "T23:59:59+08:00"}, None
 
 
-def preview_private_core_risk(journal, *, repository_root, generated_at, payload):
+def preview_private_core_risk(journal, *, repository_root, generated_at, payload, authenticated_subject=None):
     """Registered value plan with actual risk facts; scenarios remain separate."""
     if set(payload) - {"symbol", "sleeve", "assumptions", "scenario"}:
         raise ValueError("Unsupported CORE sizing fields")
@@ -646,5 +656,38 @@ def preview_private_core_risk(journal, *, repository_root, generated_at, payload
         "sizing_details": review or None, "blockers": blockers}
     result["scenario_preview"] = projected
     result["actionable_decision"] = _actionable_decision(result, binding=binding,
-        symbol=symbol, sleeve="CORE_VALUE", generated_at=generated_at)
+        symbol=symbol, sleeve="CORE_VALUE", generated_at=generated_at,
+        entry_context=_preview_entry_context(journal, result=result, binding=binding, symbol=symbol,
+            sleeve="CORE_VALUE", authenticated_subject=authenticated_subject,
+            repository_root=repository_root, generated_at=generated_at))
     return result
+
+
+def _preview_entry_context(journal, *, result, binding, symbol, sleeve, authenticated_subject,
+                           repository_root, generated_at):
+    from .personal_entry_thesis import owned_entry_context
+    from .held_continuity import evaluate_owned_held_advisory
+    held = any(position.get('symbol') == symbol and any(
+        row.get('sleeve') == sleeve and Decimal(row.get('quantity', '0')) > 0
+        for row in position.get('sleeves', []))
+        for position in (result.get('facts') or {}).get('positions', []))
+    if not held:
+        return None
+    records = PrivatePortfolioService(journal).records()
+    if records and (result.get("facts") or {}).get("revision") != len(records):
+        raise ValueError("Private journal changed during sizing; retry")
+    try:
+        context = owned_entry_context(records=records, symbol=symbol, sleeve=sleeve,
+            authenticated_subject=authenticated_subject, as_of=generated_at)
+    except (ValueError, KeyError, TypeError, ArithmeticError) as error:
+        return {'ownership_verified': False, 'advisory_dependencies_valid': False,
+                'blockers': ['OWNED_ENTRY_DEPENDENCIES_INVALID:' + str(error)[:200]]}
+    if context.get("advisory_dependencies_valid") and binding:
+        try:
+            action, blockers, _ = evaluate_owned_held_advisory(repository_root,
+                context=context, plan=binding["plan"], now=generated_at)
+            context["current_add_advisory_verified"] = action == "ADD_CANDIDATE" and not blockers
+            context["blockers"].extend(blockers)
+        except (ValueError, OSError, KeyError, TypeError, ArithmeticError) as error:
+            context["blockers"].append("HELD_ADVISORY_DEPENDENCY_INVALID:" + str(error)[:200])
+    return context

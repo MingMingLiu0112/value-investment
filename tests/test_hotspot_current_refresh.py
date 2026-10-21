@@ -9,6 +9,56 @@ from value_investment_agent.quote_sessions import CHINA
 from test_daily_quote_binding import _write_bundle
 
 
+@pytest.mark.parametrize("live_clock,source_seconds,expected", [
+    (True, 2, "SOURCE_BOUND_OBSERVATION_ONLY"),
+    (False, 2, "UNASSESSABLE"),
+    (True, 10, "UNASSESSABLE"),
+])
+def test_continuity_uses_real_post_collection_clock_without_advancing_explicit_cutoff(
+    tmp_path, monkeypatch, live_clock, source_seconds, expected,
+):
+    from datetime import timedelta
+    from test_hotspot_current_price_case import Response, NOW
+    from value_investment_agent.infrastructure.hotspot.current_price_case import collect_current_price_case
+    from value_investment_agent.application.hotspot import current_refresh as module
+    at = [NOW]
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return at[0].astimezone(tz)
+
+    monkeypatch.setattr(module, "datetime", Clock)
+    bundle_path = _write_bundle(tmp_path)
+    bundle = json.loads(bundle_path.read_bytes())
+    source = tmp_path / "runtime/watch.json"
+    source.write_text(json.dumps(dict(schema_version="hotspot-observation-report-v1", action="no_order",
+        hotspot_watch_queue=[dict(symbol="600519", name="TEST_ONLY")],
+        dated_quote_observations=[dict(symbol="600519", quote_date="2026-09-24",
+            status="DATED_DUAL_PROVIDER_OBSERVATION_NOT_PRICE_ADMISSION")])), encoding="utf-8")
+
+    def collect(**kwargs):
+        # Reuse the refresh's retained bundle; capture() would create the same
+        # fixture quote directory a second time before testing the clock.
+        case = collect_current_price_case(**kwargs, now=NOW + timedelta(seconds=source_seconds),
+            fetch=lambda _url, params, timeout: Response(params["scale"]))
+        at[0] = NOW + timedelta(seconds=3)
+        return case
+
+    result = module.refresh_current_price_conditions(root=tmp_path, watch_source_path=source,
+        watch_source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+        bundle_collector=lambda symbols: bundle, case_collector=collect,
+        **({} if live_clock else dict(now=NOW)))
+    assert result["status"] == "WRITTEN", result
+    assert result["observation_continuity"]["status"] == expected, result
+    if expected == "SOURCE_BOUND_OBSERVATION_ONLY":
+        saved = json.loads((tmp_path / result["observation_continuity"]["path"]).read_bytes())
+        assert datetime.fromisoformat(saved["evaluated_at"]) == at[0]
+        assert datetime.fromisoformat(saved["items"][0]["observation"]["plan"]["data_available_at"]) == NOW + timedelta(seconds=2)
+    else:
+        assert result["observation_continuity"]["reason"] == "Observation unavailable at evaluation cutoff"
+
+
 def test_verified_empty_daily_selection_retires_old_candidates_without_acquisition(tmp_path, monkeypatch):
     from value_investment_agent.application.hotspot import current_refresh as module
     from value_investment_agent.application.hotspot import current_registry
@@ -235,13 +285,17 @@ def test_injected_quality_cannot_short_circuit_case_recalculation(tmp_path, monk
 
 
 @pytest.mark.parametrize('tier,state,expected', [
-    ('STRUCTURE_QUALIFIED_OBSERVATION', 'TRIGGER_OBSERVED', 'ACTIVE_ONLY'),
+    ('STRUCTURE_QUALIFIED_OBSERVATION', 'TRIGGER_OBSERVED', 'STRUCTURE_QUALIFIED_OBSERVATION'),
     ('CONFLICT_OR_REJECTED', 'TRIGGER_REJECTED', 'CONFLICT_OR_REJECTED'),
 ])
-def test_retired_candidate_does_not_retain_current_quality(tmp_path, monkeypatch, tier, state, expected):
+def test_retired_candidate_preserves_valid_quality_without_fresh_assessment(tmp_path, monkeypatch, tier, state, expected):
     from value_investment_agent.application.hotspot import current_registry
     runtime = tmp_path / 'runtime'
     runtime.mkdir()
+    (runtime / 'bundle.json').write_text(json.dumps(dict(finished_at='2026-10-14T16:00:00+08:00')), encoding='utf-8')
+    (runtime / 'case.json').write_text(json.dumps(dict(
+        current_reference_close=dict(bundle_path='runtime/bundle.json'),
+        source_bindings=dict(primary=dict(fetched_at='2026-10-14T16:00:00+08:00')))), encoding='utf-8')
     def binding(name, symbol):
         path = runtime / name
         path.write_text(json.dumps(dict(observation_list=[dict(symbol=symbol)])), encoding='utf-8')
@@ -265,6 +319,7 @@ def test_retired_candidate_does_not_retain_current_quality(tmp_path, monkeypatch
                                               case_sha256='a' * 64))
     monkeypatch.setattr(current_registry, 'project_current_price_action_plan',
                         lambda case: dict(signal_state=state, action_intent='OPEN',
+                                        market_trade_date='2026-10-14', expires_after_session='2026-10-15',
                                           opportunity_quality=dict(structure_tier=tier,
                                                                    structure_reasons=['ORIGINAL_REASON'])))
     loaded = current_registry.load_price_conditions(tmp_path,
@@ -273,12 +328,9 @@ def test_retired_candidate_does_not_retain_current_quality(tmp_path, monkeypatch
     retired = next(row['price_action_plan'] for row in loaded['items'] if row['symbol'] == '601318')
     assert retired['candidate_lifecycle'] == 'PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY'
     assert retired['opportunity_quality']['structure_tier'] == expected
-    if expected == 'ACTIVE_ONLY':
-        assert retired['signal_state'] == 'STALE'
-        assert retired['opportunity_quality']['structure_reasons'] == ['PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY']
-    else:
-        assert retired['signal_state'] == 'TRIGGER_REJECTED'
-        assert retired['opportunity_quality']['structure_reasons'] == ['ORIGINAL_REASON']
+    assert retired['retained_observation_valid'] is True
+    assert retired['signal_state'] == state
+    assert retired['opportunity_quality']['structure_reasons'] == ['ORIGINAL_REASON']
 
 
 def test_refresh_archives_bundle_and_does_not_replace_registry_on_failure(tmp_path, monkeypatch):

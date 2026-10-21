@@ -133,7 +133,7 @@ def test_real_missing_components_never_promote_pending_aggregate(tmp_path, sourc
     assert points == before
 
 
-def test_isolated_complete_scope_reuses_assurance_and_scores_without_mutation(tmp_path, source):
+def _complete_points(tmp_path, source):
     rows = components()
     for row in rows:
         row['metadata']['official_evidence']['sha256'] = source.sha256
@@ -155,12 +155,22 @@ def test_isolated_complete_scope_reuses_assurance_and_scores_without_mutation(tm
                       sha256=hashlib.sha256(backing.read_bytes()).hexdigest())
         points.append(second)
     points.extend(deepcopy(rows))
+    return points, rows
+
+
+def test_isolated_complete_scope_reuses_assurance_and_scores_without_mutation(tmp_path, source):
+    points, rows = _complete_points(tmp_path, source)
     original = deepcopy(points)
     result = enrich_retained_company(tmp_path, source, points, evaluation_at=NOW,
                                      cache_dir=tmp_path / '.tmp/cache', components=rows)
     assert result['before']['total_score'] is None
     assert isinstance(result['after']['total_score'], Decimal)
-    assert result['adopted_debt_fact_ids'] == ['interest_bearing_debt']
+    assert len(result['adopted_debt_fact_ids']) == 1
+    assert result['adopted_debt_fact_ids'][0].startswith('interest_bearing_debt:scope:')
+    assert result['adopted_points'][0]['metadata']['supersedes_id'] == 'interest_bearing_debt'
+    assert datetime.fromisoformat(result['adopted_points'][0]['available_at']) <= NOW
+    assert result['adopted_points'][0]['metadata']['derivation_rule_pit_status'] == 'NOT_ADMITTED'
+    assert result['adopted_points'][0]['metadata']['complete_debt_verified'] is True
     assert points == original
     forged = deepcopy(points)
     for p in forged:
@@ -193,6 +203,29 @@ def test_isolated_complete_scope_reuses_assurance_and_scores_without_mutation(tm
     assert any('ORIGINAL_BINDING_MISMATCH' in i for i in denied['debt_scope']['issues'])
 
 
+def test_old_derived_debt_cannot_survive_failed_current_revalidation(tmp_path, source):
+    from datetime import timedelta
+    from value_investment_agent.application.research.value_evidence_enrichment_v1 import consume_retained_enrichment
+    points, rows = _complete_points(tmp_path, source)
+    first = enrich_retained_company(tmp_path, source, points, evaluation_at=NOW,
+        cache_dir=tmp_path / '.tmp/stale-debt', components=rows)
+    later = enrich_retained_company(tmp_path, source, points, evaluation_at=NOW+timedelta(days=1),
+        cache_dir=tmp_path / '.tmp/stale-debt', components=rows)
+    assert first['adopted_points'] == later['adopted_points']
+    accumulated = points + deepcopy(first['adopted_points'])
+    for point in accumulated:
+        if point['data_point_id'] == 'secondary-short_term_borrowings':
+            point['validation_status'] = 'pending'
+    rejected = enrich_retained_company(tmp_path, source, accumulated, evaluation_at=NOW,
+        cache_dir=tmp_path / '.tmp/stale-debt', components=rows)
+    assert rejected['debt_scope']['status'] == 'DATA_GAP'
+    assert rejected['after']['total_score'] is None
+    assert rejected['adopted_points'] == []
+    active, _ = consume_retained_enrichment(tmp_path, accumulated, [], evaluation_at=NOW)
+    assert not any(':scope:' in point['data_point_id'] for point in active)
+    assert len(accumulated) > len(active)  # The caller's original archive was not mutated.
+
+
 def test_balance_candidates_have_scope_period_and_do_not_fill_blank_debt():
     pages = ['\u5408\u5e76\u8d44\u4ea7\u8d1f\u503a\u8868\n2025\u5e7412\u670831\u65e5 2024\u5e7412\u670831\u65e5\n'
              '\u5355\u4f4d\uff1a\u5143 \u5e01\u79cd\uff1a\u4eba\u6c11\u5e01\n'
@@ -218,3 +251,324 @@ def test_scope_flag_without_retained_independent_fact_cannot_score(tmp_path, sou
                                      cache_dir=tmp_path / '.tmp/cache', components=rows)
     assert result['debt_scope']['complete_debt_verified'] is False
     assert any('INDEPENDENT_FACT_NOT_RETAINED' in i for i in result['debt_scope']['issues'])
+
+
+def test_lawful_consumption_reaches_priority_and_rechecks_source(tmp_path, source, monkeypatch):
+    from dataclasses import asdict, replace
+    import json
+    from test_value_research_priority_v2 import _inputs
+    from value_investment_agent.application.research.value_research_priority_v2 import build_value_research_priority_v2
+
+    source = replace(source, symbol='600001')
+    monkeypatch.setattr(adapter, 'extract_pages', lambda path, limit: [
+        '\u80a1\u7968\u4ee3\u7801: 600001; 2025\u5e74\u5e74\u5ea6\u62a5\u544a TEST_ONLY amount 10'])
+    points, _ = _complete_points(tmp_path, source)
+    for point in points:
+        point['symbol'] = source.symbol
+    args = _inputs(tmp_path)
+    supplement = tmp_path / 'runtime/consumption.json'
+    payload = {'points': [], 'annual_points': points, 'value_enrichment_sources': [asdict(source)]}
+    def build():
+        supplement.write_text(json.dumps(payload), encoding='utf-8')
+        return build_value_research_priority_v2(**dict(args, financial_export_path=supplement,
+            financial_export_sha256=hashlib.sha256(supplement.read_bytes()).hexdigest()))
+    result = build()
+    assert result['deep_research_priority'], result['retained_enrichment_adoption'][0]['debt_scope']['issues']
+    assert result['deep_research_priority'][0]['symbol'] == source.symbol
+    assert result['deep_research_priority'][0]['quality_score'] is not None
+    assert result['retained_enrichment_adoption'][0]['adopted_debt_fact_ids'][0].startswith('interest_bearing_debt:scope:')
+    assert result['new_verification_or_approval_count'] == 0
+    assert points == payload['annual_points']
+    for point in points:
+        if point['data_point_id'] == 'secondary-short_term_borrowings':
+            point['validation_status'] = 'pending'
+    denied = build()
+    assert not denied['deep_research_priority']
+    assert not denied['retained_enrichment_adoption'][0]['adopted_debt_fact_ids']
+    (tmp_path / 'annual.pdf').write_bytes(b'changed original')
+    with pytest.raises(ValueError, match='hash mismatch'):
+        build()
+
+
+@pytest.mark.parametrize('future', [False, True])
+def test_completed_checkpoint_feedback_is_consumed_only_after_actual_completion(tmp_path, source, monkeypatch, future):
+    from dataclasses import replace
+    import json
+    from datetime import timedelta
+    from test_value_research_priority_v2 import _inputs
+    from value_investment_agent.application.research.value_research_priority_v2 import build_value_research_priority_v2
+    from value_investment_agent.infrastructure.screening.value_enrichment_progress import ValueEnrichmentProgress
+    source = replace(source, symbol='600001')
+    monkeypatch.setattr(adapter, 'extract_pages', lambda path, limit: [
+        '\u80a1\u7968\u4ee3\u7801: 600001; 2025\u5e74\u5e74\u5ea6\u62a5\u544a TEST_ONLY amount 10'])
+    points, _ = _complete_points(tmp_path, source)
+    for point in points:
+        point['symbol'] = source.symbol
+    args = _inputs(tmp_path)
+    path = tmp_path / 'runtime/reviewed-financial.json'
+    path.write_text(json.dumps({'points': [], 'annual_points': points}), encoding='utf-8')
+    args.update(financial_export_path=path, financial_export_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+    before = build_value_research_priority_v2(**args)
+    assert before['deep_research_priority'] == []
+    cutoff = datetime.fromisoformat(before['evaluation_at'])
+    result = enrich_retained_company(tmp_path, source, points, evaluation_at=cutoff-timedelta(minutes=2),
+        cache_dir=tmp_path / '.tmp/test-only-feedback')
+    result_path = tmp_path / 'runtime/test-only-result.json'
+    result_path.write_text(json.dumps(result, default=str), encoding='utf-8')
+    binding = lambda p: {'path': p.relative_to(tmp_path).as_posix(), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()}
+    attempt = tmp_path / 'runtime/test-only-attempt.json'
+    attempt.write_text(json.dumps({'state': 'QUALITY_EVALUATED', 'result_binding': binding(result_path)}), encoding='utf-8')
+    progress = ValueEnrichmentProgress(tmp_path)
+    with progress.locked():
+        progress.save({'key': 'f'*64, 'attempt': 1, 'execution_binding': binding(attempt),
+            'completed_at': (cutoff + timedelta(minutes=1) if future else cutoff-timedelta(minutes=1)).isoformat()})
+    after = build_value_research_priority_v2(**args)
+    assert bool(after['deep_research_priority']) is (not future)
+    if not future:
+        assert after['retained_enrichment_adoption'][0]['adopted_debt_fact_ids']
+        assert after['new_verification_or_approval_count'] == 0
+        source_path = tmp_path / source.path
+        source_path.write_bytes(b'changed TEST_ONLY original')
+        with pytest.raises(ValueError, match='hash mismatch'):
+            build_value_research_priority_v2(**args)
+
+
+@pytest.fixture
+def balance_inputs(tmp_path, source, monkeypatch):
+    pages = ['\u80a1\u7968\u4ee3\u7801: 600887; 2025\u5e74\u5e74\u5ea6\u62a5\u544a',
+        '\u5408\u5e76\u8d44\u4ea7\u8d1f\u503a\u8868\n2025\u5e7412\u670831\u65e5 2024\u5e7412\u670831\u65e5\n'
+        '\u5355\u4f4d\uff1a\u5143 \u5e01\u79cd\uff1a\u4eba\u6c11\u5e01\n'
+        '\u8d44\u4ea7\u603b\u8ba1 1,000.00 900.00\n\u8d1f\u503a\u5408\u8ba1 200.00 180.00']
+    monkeypatch.setattr(adapter, 'extract_pages', lambda path, limit: pages[:limit])
+    rows = []
+    for field, value in [('total_assets', '1000'), ('total_liabilities', '200')]:
+        rows.append(dict(symbol=source.symbol, field_name=field, value=value, unit='CNY',
+            data_point_id=field, source_id='official', source_url=source.source_url,
+            sha256=source.sha256, period_label=source.period, validation_status='verified',
+            created_at=source.available_at, fetched_at=source.available_at,
+            metadata=dict(automatic_cross_source_verification=True,
+                          statement_scope='consolidated', currency='CNY')))
+    return source, rows, pages
+
+
+def test_official_balance_derivation_consumption_is_stable_and_not_complete_debt(tmp_path, balance_inputs):
+    from dataclasses import asdict
+    from value_investment_agent.application.research.value_evidence_enrichment_v1 import consume_retained_enrichment
+    source, points, _ = balance_inputs
+    original = deepcopy(points)
+    first, reports = consume_retained_enrichment(tmp_path, points, [asdict(source)], evaluation_at=NOW)
+    ratio = first[-1]
+    assert ratio['field_name'] == 'debt_ratio' and Decimal(ratio['value']) == 20
+    assert reports[0]['adopted_fact_ids'] == [ratio['data_point_id']]
+    assert not reports[0]['debt_scope']['complete_debt_verified']
+    assert reports[0]['adopted_debt_fact_ids'] == []
+    second, _ = consume_retained_enrichment(tmp_path, first, [asdict(source)], evaluation_at=NOW)
+    assert first == second and points == original
+
+
+@pytest.mark.parametrize('change', ['pending', 'quarantine', 'parent', 'unit', 'source', 'amount', 'future', 'duplicate'])
+def test_balance_derivation_rejects_invalid_input_assurance_or_binding(tmp_path, balance_inputs, change):
+    source, points, _ = balance_inputs
+    if change == 'pending':
+        points[0]['validation_status'] = 'pending'
+    elif change == 'quarantine':
+        points[0]['metadata']['evidence_quarantine'] = True
+    elif change == 'parent':
+        points[0]['metadata']['statement_scope'] = 'parent'
+    elif change == 'unit':
+        points[0]['unit'] = 'CNY 100M'
+    elif change == 'source':
+        points[0]['sha256'] = 'b' * 64
+    elif change == 'amount':
+        points[0]['value'] = '1001'
+    elif change == 'future':
+        points[0]['available_at'] = '2027-01-01T00:00:00+00:00'
+    else:
+        points.append(dict(deepcopy(points[0]), data_point_id='different-input-version'))
+    result = enrich_retained_company(tmp_path, source, points, evaluation_at=NOW,
+        cache_dir=tmp_path / '.tmp/balance')
+    assert result['balance_ratio_adoption']['status'] == 'REJECTED_WITH_REASON'
+    assert not result['adopted_points']
+
+
+def test_balance_period_and_blank_unit_cannot_be_inferred(tmp_path, balance_inputs):
+    source, points, pages = balance_inputs
+    pages[1] = pages[1].replace('2025', '2026')
+    result = enrich_retained_company(tmp_path, source, points, evaluation_at=NOW,
+        cache_dir=tmp_path / '.tmp/wrong-period')
+    assert not result['adopted_points']
+
+
+def test_source_derived_fact_registers_typed_research_and_revalidates_before_writing(tmp_path, income_inputs):
+    from datetime import date
+    from value_investment_agent.application.research.value_evidence_enrichment_v1 import register_enriched_research
+    from value_investment_agent.research_case import ResearchCase
+    from value_investment_agent.research_artifact_repository import InMemoryResearchArtifactRepository
+    from value_investment_agent.research_artifacts import parse_stored_artifact_payload
+    from value_investment_agent.research_input import facts_from_payload
+    from value_investment_agent.valuation_models.fcff import FinancialFacts
+    source, points, _ = income_inputs
+    points[:] = [p for p in points if p['period_label'] != '2024-12-31']
+    result = enrich_retained_company(tmp_path, source, points, evaluation_at=NOW,
+        cache_dir=tmp_path / '.tmp/registration')
+    case = ResearchCase(symbol=source.symbol, name='TEST_ONLY', as_of=NOW.date(),
+        generated_at=NOW, run_id='test', research_version='test-v1', industry='TEST_ONLY',
+        investment_path='UNASSESSED', thesis='TEST_ONLY', return_driver='UNASSESSED',
+        mispricing_hypothesis='UNASSESSED', financial_summary={}, positives=[], counter_evidence=[],
+        thesis_breakers=[], next_events=[], evidence_status='PARTIAL', valuation_status='NOT_ASSESSED',
+        research_status='DATA_CHECK', blockers=['MISSING_ECONOMIC_INPUTS'], evidence_refs=[],
+        quote_date=None, financial_period=date(2025, 12, 31),
+        missing_date_reasons={'quote_date': 'No quote used by this test'})
+    facts = FinancialFacts(source.symbol, NOW.date(), False, [], ['MISSING_ECONOMIC_INPUTS'])
+    repository = InMemoryResearchArtifactRepository()
+    args = dict(root=tmp_path, points=points, repository=repository, case=case, facts=facts, run_id='test')
+    registered = register_enriched_research(result, **args)
+    stored = repository.load_by_id(registered['financial_facts_artifact_id'])
+    consumed = facts_from_payload(parse_stored_artifact_payload(stored))
+    assert consumed.operating_inputs['debt_ratio'] == Decimal(20)
+    assert not consumed.verified and consumed.scenario_inputs is None
+    assert not registered['formal_eligibility']
+    case_payload = parse_stored_artifact_payload(repository.load_by_id(registered['research_case_artifact_id']))
+    assert case_payload['financial_summary']['value_enrichment']['financial_facts']['sha256'] == stored.envelope.payload_sha256
+    observations = case_payload['financial_summary']['value_enrichment']['sourced_arithmetic_observations']
+    assert len(observations) == 2 and all(p['validation_status'] == 'pending' for p in observations)
+    assert 'revenue_yoy' not in consumed.operating_inputs
+    assert register_enriched_research(result, **args) == registered
+    from value_investment_agent.application.research.value_evidence_enrichment_v1 import verify_enrichment_adoption
+    import json
+    runtime = tmp_path / 'runtime'
+    runtime.mkdir()
+    export = runtime / 'financial.json'
+    export.write_text(json.dumps({'points': points}), encoding='utf-8')
+    result_path = runtime / 'result.json'
+    saved = dict(result, research_registration=registered)
+    def verify_saved():
+        result_path.write_text(json.dumps(saved, default=str), encoding='utf-8')
+        return verify_enrichment_adoption(root=tmp_path,
+            result_binding={'path': 'runtime/result.json', 'sha256': hashlib.sha256(result_path.read_bytes()).hexdigest()},
+            financial_export_path=export, financial_export_sha256=hashlib.sha256(export.read_bytes()).hexdigest(),
+            evaluation_at=NOW)
+    summary = verify_saved()
+    assert summary['status'] == 'VERIFIED_FACT_ADOPTION' and summary['adopted_fact_count'] == 1
+    assert summary['research_inputs_updated'] and summary['new_fact_approvals'] == 0
+    assert summary['sourced_arithmetic_observation_count'] == 2
+    assert not summary['complete_debt_verified'] and not summary['formal_eligibility']
+    saved['research_registration']['artifacts'][0]['envelope']['canonical_payload'] = '{"forged":true}'
+    with pytest.raises(ValueError, match='hash does not match'):
+        verify_saved()
+    # The mutation above is to the returned transport snapshot, not repository state.
+    saved['research_registration'] = register_enriched_research(result, **args)
+    saved['adopted_points'] = deepcopy(result['adopted_points'])
+    saved['adopted_points'][0]['value'] = '0'
+    with pytest.raises(ValueError, match='revalidated source facts'):
+        verify_saved()
+    forged = deepcopy(result)
+    forged['adopted_points'][0]['value'] = '0'
+    with pytest.raises(ValueError, match='revalidated source facts'):
+        register_enriched_research(forged, **args)
+    (tmp_path / source.path).write_bytes(b'changed original')
+    with pytest.raises(ValueError, match='hash mismatch'):
+        register_enriched_research(result, **args)
+    assert len(repository.list_versions('security', source.symbol, 'financial_facts')) == 1
+
+
+def test_ratio_feedback_reranks_research_queue_without_economic_admission(tmp_path, balance_inputs, monkeypatch):
+    from dataclasses import asdict, replace
+    import json
+    from test_value_research_priority_v2 import _inputs
+    from value_investment_agent.application.research.value_research_priority_v2 import build_value_research_priority_v2
+    source, points, pages = balance_inputs
+    source = replace(source, symbol='600004')
+    pages[0] = pages[0].replace('600887', source.symbol)
+    for point in points:
+        point['symbol'] = source.symbol
+    args = _inputs(tmp_path, pending=True)
+    payload = json.loads(args['financial_export_path'].read_bytes())
+    payload['annual_points'].extend(points)
+    supplement = tmp_path / 'runtime/balance-supplement.json'
+    def build():
+        supplement.write_text(json.dumps(payload), encoding='utf-8')
+        return build_value_research_priority_v2(**dict(args, financial_export_path=supplement,
+            financial_export_sha256=hashlib.sha256(supplement.read_bytes()).hexdigest()))
+    before = build()
+    payload['value_enrichment_sources'] = [asdict(source)]
+    after = build()
+    assert before['evidence_enrichment_work_queue'][0]['symbol'] != source.symbol
+    assert after['evidence_enrichment_work_queue'][0]['symbol'] == source.symbol
+    assert 'debt_ratio' in after['evidence_enrichment_work_queue'][0]['evidence_completeness']['accepted_fields']
+    assert not after['deep_research_priority']
+    assert after['new_verification_or_approval_count'] == 0
+
+
+@pytest.fixture
+def income_inputs(balance_inputs):
+    source, points, pages = balance_inputs
+    pages.extend(['\u5408\u5e76\u5229\u6da6\u8868\n2025\u5e74\u5ea6 2024\u5e74\u5ea6\n'
+        '\u5355\u4f4d\uff1a\u5143 \u5e01\u79cd\uff1a\u4eba\u6c11\u5e01\n'
+        '\u8425\u4e1a\u603b\u6536\u5165 999.00 888.00\n\u8425\u4e1a\u6536\u5165 44 120.00 100.00',
+        '\u4e94\u3001\u51c0\u5229\u6da6 30.00 20.00\n'
+        '\u5f52\u5c5e\u4e8e\u6bcd\u516c\u53f8\u80a1\u4e1c\u7684\u51c0\u5229\u6da6\n'
+        '\uff08\u51c0\n\u4e8f\u635f\u4ee5\u201c-\u201d\u53f7\u586b\u5217\uff09\n24.00 20.00'])
+    for field, current, prior in [('revenue', '120', '100'), ('net_income', '24', '20')]:
+        for period, value in [(source.period, current), ('2024-12-31', prior)]:
+            points.append(dict(deepcopy(points[0]), field_name=field, value=value,
+                data_point_id=field + ':' + period, period_label=period))
+    return source, points, pages
+
+
+def test_growth_derives_both_fields_with_admitted_denominators_and_reuses(tmp_path, income_inputs):
+    from dataclasses import asdict
+    from value_investment_agent.application.research.value_evidence_enrichment_v1 import consume_retained_enrichment
+    source, points, _ = income_inputs
+    first, reports = consume_retained_enrichment(tmp_path, points, [asdict(source)], evaluation_at=NOW)
+    derived = [p for p in first if p['field_name'].endswith('_yoy')]
+    assert {p['field_name'] for p in derived} == {'revenue_yoy', 'net_income_yoy'}
+    assert all(Decimal(p['value']) == 20 and p['validation_status'] == 'verified' for p in derived)
+    second, _ = consume_retained_enrichment(tmp_path, first, [asdict(source)], evaluation_at=NOW)
+    assert first == second
+    assert all(row['status'] == 'FACT_ADMITTED' for row in reports[0]['income_growth_adoption'])
+
+
+@pytest.mark.parametrize('change', ['prior_missing', 'prior_pending', 'prior_parent', 'prior_future',
+    'duplicate', 'current_mismatch', 'nonpositive'])
+def test_growth_keeps_unadmitted_inputs_out_of_quality(tmp_path, income_inputs, change):
+    source, points, pages = income_inputs
+    prior = next(p for p in points if p['data_point_id'] == 'revenue:2024-12-31')
+    if change == 'prior_missing':
+        points.remove(prior)
+    elif change == 'prior_pending':
+        prior['validation_status'] = 'pending'
+    elif change == 'prior_parent':
+        prior['metadata']['statement_scope'] = 'parent'
+    elif change == 'prior_future':
+        prior['available_at'] = '2027-01-01T00:00:00+00:00'
+    elif change == 'duplicate':
+        points.append(dict(prior, data_point_id='duplicate'))
+    elif change == 'current_mismatch':
+        next(p for p in points if p['data_point_id'] == 'revenue:2025-12-31')['value'] = '121'
+    else:
+        pages[2] = pages[2].replace('120.00 100.00', '120.00 0.00')
+    result = enrich_retained_company(tmp_path, source, points, evaluation_at=NOW,
+        cache_dir=tmp_path / '.tmp/income')
+    assert 'revenue_yoy' not in {p['field_name'] for p in result['adopted_points']}
+    if change != 'nonpositive':
+        observation = result['sourced_arithmetic_points'][0]
+        assert observation['validation_status'] == 'pending'
+        assert not observation['metadata']['automatic_cross_source_verification']
+        assert Decimal(observation['value']) == 20
+
+
+@pytest.mark.parametrize('change', ['unit', 'columns', 'restatement', 'parent', 'three_columns'])
+def test_income_parser_rejects_unproven_table_layout(income_inputs, change):
+    _, _, pages = income_inputs
+    if change == 'unit':
+        pages[2] = pages[2].replace('\u5355\u4f4d\uff1a\u5143', '')
+    elif change == 'columns':
+        pages[2] = pages[2].replace('2025\u5e74\u5ea6 2024\u5e74\u5ea6', '2024\u5e74\u5ea6 2025\u5e74\u5ea6')
+    elif change == 'restatement':
+        pages[2] += '\n\u8c03\u6574\u540e'
+    elif change == 'parent':
+        pages[2] = pages[2].replace('\u5408\u5e76\u5229\u6da6\u8868', '\u6bcd\u516c\u53f8\u5229\u6da6\u8868')
+    else:
+        pages[2] = pages[2].replace('120.00 100.00', '120.00 100.00 90.00')
+    assert not [p for p in adapter.extract_income_comparatives(pages, '2025-12-31') if p['field_name'] == 'revenue']

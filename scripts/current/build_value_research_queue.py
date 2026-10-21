@@ -58,13 +58,21 @@ def main() -> int:
     summary = {key: value for key, value in queue.items() if key not in
                {"entries", "deep_research_priority", "evidence_enrichment_work_queue"}}
     if args.execute_enrichment:
-        from value_investment_agent.application.research.value_enrichment_batch import execute_value_enrichment_batch
+        from datetime import datetime, timezone
+        from value_investment_agent.application.research.value_enrichment_batch import (
+            execute_value_enrichment_batch, load_enrichment_research_contexts,
+        )
         from value_investment_agent.application.product.common import sha256_file
         folder = output.with_name(output.stem + '-enrichment')
+        repository, contexts, context_status = load_enrichment_research_contexts(root=ROOT,
+            symbols=[row['symbol'] for row in queue['evidence_enrichment_work_queue']],
+            evaluation_at=datetime.now(timezone.utc))
         execution = execute_value_enrichment_batch(root=ROOT, queue=queue,
             financial_export_path=ROOT / args.financial_export,
             financial_export_sha256=args.financial_export_sha256, output_dir=folder,
-            budget=args.execution_budget, allow_network=args.allow_public_evidence_downloads)
+            budget=args.execution_budget, allow_network=args.allow_public_evidence_downloads,
+            repository=repository, research_contexts=contexts)
+        summary['research_context_loading'] = context_status
         summary['enrichment_execution'] = dict(status=execution['status'],
             path=(folder / 'execution.json').relative_to(ROOT).as_posix(),
             sha256=sha256_file(folder / 'execution.json'), attempted_count=execution['attempted_count'])

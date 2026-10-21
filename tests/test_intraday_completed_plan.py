@@ -43,7 +43,10 @@ def test_completed_confirmation_exact_source_contract_and_deterministic_replay(p
     binding, docs = qualified(plan), documents()
     before = deepcopy((binding, docs))
     result = project_completed_plan(binding, docs, now=NOW)
-    assert result["status"] == "STRUCTURE_CONFIRMED_OBSERVATION", result
+    assert result["status"] == "WAITING_CONFIRMATION", result
+    assert result["price_conditions_observed"] is True
+    assert result["structure_confirmation"] is False
+    assert "PRIOR_FIVE_VOLUME_RULE" in result["pending_confirmations"]
     assert result == project_completed_plan(binding, docs, now=NOW)
     assert (binding, docs) == before
     assert len(result["evidence"]) == 2
@@ -119,7 +122,7 @@ def test_live_partial_bar_is_excluded_from_completed_plan_state(plan):
     rows.append({**rows[-1], "day": "2026-09-28 11:00:00"})
     docs["15m"] = raw_document("15m", rows, NOW)
     result = project_completed_plan(qualified(plan), docs, now=NOW)
-    assert result["status"] == "STRUCTURE_CONFIRMED_OBSERVATION"
+    assert result["status"] == "WAITING_CONFIRMATION"
     assert all(row["state"]["last_bar_end"] != "2026-09-28T03:00:00+00:00"
                for row in result["periods"]["15m"]["states"])
 
@@ -151,7 +154,7 @@ def test_missing_collection_recovers_and_same_bar_conflict_is_retained(plan):
     initial = project_completed_plan(binding, {}, now=NOW)
     assert initial["status"] == "INSUFFICIENT_DATA"
     recovered = project_completed_plan(binding, documents(), previous=initial, now=NOW)
-    assert recovered["status"] == "STRUCTURE_CONFIRMED_OBSERVATION"
+    assert recovered["status"] == "WAITING_CONFIRMATION"
     conflict = project_completed_plan(binding, documents("15"), previous=recovered, now=NOW)
     assert conflict["status"] == "INSUFFICIENT_DATA"
     assert all(p["status"] == "INSUFFICIENT_DATA" for p in conflict["periods"].values())

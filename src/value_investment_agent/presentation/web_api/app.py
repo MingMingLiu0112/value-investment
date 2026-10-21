@@ -700,6 +700,7 @@ def create_app(
 
     @api.get("/api/v1/decision-history")
     def decision_history():
+        from ...application.product.daily_refresh import read_observation_changes
         decisions = bound_decisions()
         history = build_research_history(
             project,
@@ -708,6 +709,15 @@ def create_app(
             published_decisions=decisions)
         current = _public(project)
         history["publication"] = _publication_block(project, current)
+        snapshot, _ = _load_snapshot(project)
+        expected = ((snapshot or {}).get("identity_inputs") or {}).get("current_price_conditions") or {}
+        history["observation_changes"] = (
+            {**read_observation_changes(project, now=datetime.now(timezone.utc),
+                expected_registry_sha256=expected["observed_sha256"]),
+             "publication_id": snapshot["publication_id"]}
+            if expected.get("observed_sha256") else
+            dict(status="UNAVAILABLE", scope="OBSERVATION_ONLY", items=[],
+                 action="no_order", formal_eligibility=False))
         return history
 
     @api.get("/api/v1/daily-public-packet")

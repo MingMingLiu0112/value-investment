@@ -32,9 +32,10 @@ from ...application.portfolio.private_portfolio_service import (
     resolve_private_root,
 )
 from ...application.portfolio.private_risk_projection import review_private_risk_rehearsal
-from ...application.portfolio.held_continuity import review_held_continuity, refresh_held_continuity
+from ...application.portfolio.held_continuity import review_held_continuity, refresh_held_continuity, review_private_held_sell
 from ...application.portfolio.private_risk_preview import preview_private_hotspot_risk
 from ...application.portfolio.private_risk_experience import PrivateRiskExperienceService
+from ...application.portfolio.personal_entry_thesis import PersonalEntryThesisService
 from ...application.research.agent_review.daily_retrospective import run_daily_retrospective_mock
 from .local_auth import (
     AUTHORIZATION_REQUIRED,
@@ -138,6 +139,9 @@ def register_private_routes(
 
     def risk_experience() -> PrivateRiskExperienceService:
         return PrivateRiskExperienceService(service().journal)
+
+    def entry_thesis() -> PersonalEntryThesisService:
+        return PersonalEntryThesisService(service().journal)
 
     def refuse(request: Request, *, require_token: bool = True) -> JSONResponse | None:
         try:
@@ -271,7 +275,7 @@ def register_private_routes(
             return refusal
         try:
             result = review_held_continuity(service().journal, repository_root=project,
-                generated_at=datetime.now(timezone.utc))
+                generated_at=datetime.now(timezone.utc), authenticated_subject="LOCAL_OPERATOR")
             return JSONResponse(content=result, headers={"Cache-Control": "no-store"})
         except PrivateStoreUnavailable:
             status, code = 503, "PRIVATE_ROOT_UNAVAILABLE"
@@ -283,6 +287,25 @@ def register_private_routes(
             content={"schema_version": "private-held-continuity-v1", "action": "no_order",
                      "sensitivity": "PRIVATE", "status": code, "blockers": [code],
                      "revision": None, "items": [], "risk": None, "position_guidance": None})
+
+    @api.post("/api/v1/private/portfolio/held-continuity/sell-review")
+    def held_sell_review(request: Request, payload: dict = Body(...)):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        try:
+            result = review_private_held_sell(service().journal, repository_root=project,
+                generated_at=datetime.now(timezone.utc), payload=payload, authenticated_subject="LOCAL_OPERATOR")
+            return JSONResponse(content=result, headers={"Cache-Control": "no-store"})
+        except PrivateStoreUnavailable as error:
+            status, code, detail = 503, "PRIVATE_ROOT_UNAVAILABLE", str(error)
+        except JournalConflict as error:
+            status, code, detail = 409, error.code, str(error)
+        except (JournalValidationError, ValueError) as error:
+            status, code, detail = 422, VALIDATION_FAILED, str(error)
+        return JSONResponse(status_code=status, headers={"Cache-Control": "no-store"},
+            content={"action": "no_order", "status": code, "detail": detail,
+                     "ledger_written": False, "broker_execution_permission": False})
 
     @api.post("/api/v1/private/portfolio/held-continuity/refresh")
     def refresh_held(request: Request, payload: dict = Body(...)):
@@ -310,13 +333,47 @@ def register_private_routes(
         try:
             return preview_private_hotspot_risk(
                 PrivateJournal(resolve_private_root(repository_root=project)), repository_root=project,
-                generated_at=datetime.now(timezone.utc), payload=payload)
+                generated_at=datetime.now(timezone.utc), payload=payload,
+                authenticated_subject="LOCAL_OPERATOR")
         except PrivateStoreUnavailable as error:
             return JSONResponse(status_code=503, content={"action": "no_order",
                 "status": "PRIVATE_ROOT_UNAVAILABLE", "detail": str(error)})
         except (JournalValidationError, ValueError) as error:
             return JSONResponse(status_code=422, content={"action": "no_order",
                 "status": "VALIDATION_FAILED", "detail": str(error)})
+
+    @api.get("/api/v1/private/portfolio/entry-thesis")
+    def entry_thesis_view(request: Request):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        try:
+            return entry_thesis().view(repository_root=project,
+                authenticated_subject="LOCAL_OPERATOR", now=datetime.now(timezone.utc))
+        except PrivateStoreUnavailable as error:
+            return JSONResponse(status_code=503, content={"action": "no_order",
+                "status": "PRIVATE_ROOT_UNAVAILABLE", "detail": str(error)})
+        except (JournalValidationError, ValueError) as error:
+            return JSONResponse(status_code=422, content={"action": "no_order",
+                "status": VALIDATION_FAILED, "detail": str(error)})
+
+    @api.post("/api/v1/private/portfolio/entry-thesis/confirm")
+    def confirm_entry_thesis(request: Request, payload: dict = Body(...)):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        # This single-user principal comes from the authenticated server route,
+        # never a form field, session token persisted in a journal, or a name claim.
+        return emit(lambda: entry_thesis().confirm(payload, repository_root=project,
+            authenticated_subject="LOCAL_OPERATOR", now=datetime.now(timezone.utc)))
+
+    @api.post("/api/v1/private/portfolio/entry-thesis/revoke")
+    def revoke_entry_thesis(request: Request, payload: dict = Body(...)):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        return emit(lambda: entry_thesis().revoke(payload,
+            authenticated_subject="LOCAL_OPERATOR", now=datetime.now(timezone.utc)))
 
     @api.post("/api/v1/private/portfolio/initialize")
     def initialize(request: Request, payload: dict = Body(...)):

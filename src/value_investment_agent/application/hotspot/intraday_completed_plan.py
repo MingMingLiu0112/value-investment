@@ -94,14 +94,22 @@ def project_completed_plan(binding: dict, documents: dict, previous=None, *, now
     risk = any(row["kind"] == "INVALIDATION_REFERENCE_LT" and
                row["state"]["status"] == "CONDITION_REVIEW" for row in rows)
     usable = all(row["state"]["status"] != "STALE_OR_UNAVAILABLE" for row in rows)
-    confirmed = (usable and all(item["states"][0]["state"]["status"] == "CONDITION_REVIEW"
-                                for item in periods.values()) and
-        plan.get("opportunity_quality", {}).get("structure_tier") == "STRUCTURE_QUALIFIED_OBSERVATION")
+    price_conditions_observed = (usable and all(
+        item["states"][0]["state"]["status"] == "CONDITION_REVIEW"
+        for item in periods.values()))
+    # These cursors compare closes with the frozen primary price references.
+    # They do not run the original prior-five volume rule, daily trend or each
+    # supporting period's own breakout rule. Old quality cannot fill that gap.
     status = ("RISK_REVIEW" if risk else "INSUFFICIENT_DATA" if not usable else
-              "STRUCTURE_CONFIRMED_OBSERVATION" if confirmed else "WAITING_CONFIRMATION")
+              "WAITING_CONFIRMATION")
     result = dict(schema_version=SCHEMA, symbol=binding["symbol"],
         binding_sha256=binding["binding_sha256"], checked_at=now.isoformat(), scope=SCOPE,
         periods=periods, status=status, evidence=evidence,
+        price_conditions_observed=price_conditions_observed,
+        confirmation_scope="COMPLETED_CLOSE_VS_FROZEN_PRIMARY_PRICE_REFERENCES_ONLY",
+        structure_confirmation=False,
+        pending_confirmations=["PRIOR_FIVE_VOLUME_RULE", "PER_PERIOD_BREAKOUT_RULES",
+                               "DAILY_60M_15M_STRUCTURE_REASSESSMENT"],
         blockers=list(dict.fromkeys([*plan["blockers"], *BLOCKERS,
             *(["PLAN_REFERENCE_EXPIRED"] if expired else [])])),
         action="no_order", eligibility=False, formal_eligibility=False, m5_admitted=False,

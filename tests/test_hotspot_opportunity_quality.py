@@ -5,6 +5,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
+from hotspot_retained_originals import require_retained_originals
 
 from value_investment_agent.domain.hotspot.confirmed_price_structure import analyze_price_behavior
 from value_investment_agent.domain.hotspot.current_price import current_signal
@@ -15,7 +16,10 @@ from value_investment_agent.domain.hotspot.opportunity_quality import classify_s
 def test_completed_real_cases_preserve_negative_evidence(symbol):
     root = Path(__file__).resolve().parents[1]
     paths = list((root / "runtime/hotspot-current-price-cases").glob(f"{symbol}-2026-10-15-*/case.json"))
+    if not paths:
+        pytest.skip("Local retained negative case absent: " + symbol)
     assert len(paths) == 1
+    require_retained_originals(root, paths[0])
     case = json.loads(paths[0].read_text(encoding="utf-8"))
     structures = {period: ("BREAKOUT" if level["breakout_observed"] else
                   "INVALIDATED" if Decimal(level["reference_close"]) < Decimal(level["invalidation_price"]) else

@@ -16,11 +16,26 @@ import type {
   HeldContinuityResponse,
   WriteResponse,
 } from "../types/api";
+
+export interface HeldSellReviewRequest {
+  schema_version: "private-held-sell-review-request-v1";
+  action: "no_order";
+  expected_revision: number;
+  account_scope: string;
+  symbol: string;
+  exchange: string;
+  sleeve: string;
+  requested_action: "REDUCE" | "EXIT";
+  requested_quantity: number;
+  entry_thesis_record_sha256: string;
+  read_and_confirmed: true;
+}
 import type {
   HotspotSizingRequest,
   HotspotSizingResponse,
 } from "../components/HotspotSizingPanel";
 import type { PrivateRiskContext } from "../components/PrivateRiskContext";
+import type { EntryThesisView } from "./entryThesis";
 import type {
   PolicyPreview,
   PolicyRegistration,
@@ -545,11 +560,20 @@ export const api = {
             attempted_count?: number;
             reevaluated_count?: number;
             data_gap_count?: number;
+            verified_adopted_fact_count?: number;
+            research_inputs_updated_count?: number;
             items?: {
               symbol: string;
               company_name: string;
               extracted_candidates?: number;
               matched_candidates?: number;
+              adoption?: {
+                status: "VERIFIED_FACT_ADOPTION";
+                adopted_fact_count: number;
+                research_inputs_updated: boolean;
+                quality_coverage_before: string;
+                quality_coverage_after: string;
+              } | null;
             }[];
           };
         };
@@ -593,6 +617,12 @@ export const api = {
     ),
   portfolio: (signal?: AbortSignal) =>
     getPrivate<PortfolioResponse>("portfolio", signal),
+  entryThesis: (signal?: AbortSignal) =>
+    getPrivate<EntryThesisView>("private/portfolio/entry-thesis", signal),
+  confirmEntryThesis: (body: Record<string, unknown>) =>
+    post<WriteResponse>("private/portfolio/entry-thesis/confirm", body),
+  revokeEntryThesis: (body: Record<string, unknown>) =>
+    post<WriteResponse>("private/portfolio/entry-thesis/revoke", body),
   risk: (signal?: AbortSignal) =>
     getPrivate<RiskResponse>("private/portfolio/risk", signal),
   heldContinuity: (signal?: AbortSignal) =>
@@ -600,6 +630,16 @@ export const api = {
       "private/portfolio/held-continuity",
       signal,
     ),
+  reviewHeldSell: (body: HeldSellReviewRequest) =>
+    post<{
+      schema_version: "private-held-sell-review-v1";
+      action: "no_order";
+      revision: number;
+      ledger_written: false;
+      broker_execution_permission: false;
+      request: HeldSellReviewRequest;
+      actionable_decision: import("../components/ActionableDecisionResult").ConditionalAccountDecision;
+    }>("private/portfolio/held-continuity/sell-review", { ...body }),
   riskPreview: (body: HotspotSizingRequest) =>
     post<HotspotSizingResponse>("private/portfolio/risk-preview", body),
   refreshHeldContinuity: (body: {

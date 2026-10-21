@@ -63,7 +63,8 @@ def _validate_plan(plan, symbol, now):
             or plan.get("action_eligibility") is not False or plan.get("formal_eligibility") is not False
             or plan.get("model_or_rule_version") != RULE_VERSION
             or plan.get("signal_state") not in {"WATCH", "TRIGGER_PENDING", "TRIGGER_OBSERVED", "TRIGGER_REJECTED"}
-            or plan.get("candidate_lifecycle") == "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"):
+            or (plan.get("candidate_lifecycle") == "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"
+                and plan.get("retained_observation_valid") is not True)):
         raise ValueError("Unsupported, missing, historical or stale reference plan")
     venue = "SSE" if symbol.startswith("6") else "SZSE"
     if any(plan[key] != venue for key in ("venue", "exchange") if key in plan):

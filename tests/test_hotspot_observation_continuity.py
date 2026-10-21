@@ -2,8 +2,10 @@ from copy import deepcopy
 from datetime import date, datetime, timezone
 import hashlib
 import json
+from pathlib import Path
 
 import pytest
+from hotspot_retained_originals import require_retained_originals
 
 from value_investment_agent.application.hotspot.observation_continuity import (
     _bound, _compare, compare_observation_continuity,
@@ -66,7 +68,7 @@ def test_reject_future_regression_unknown_state_and_unbounded_union():
         ({"000001": observation(day="2026-10-21")}, {}),
         ({"000001": observation()}, {"000001": observation(day="2026-10-20")}),
         ({"000001": observation("ACTION_ELIGIBLE")}, {}),
-        ({str(i): observation() for i in range(21)}, {}),
+        ({str(i): observation() for i in range(41)}, {}),
     ]:
         with pytest.raises(ValueError):
             _compare(current, previous, completed_session=date(2026, 10, 20), leave_symbols=())
@@ -90,6 +92,86 @@ def test_naive_cutoff_rejected_before_io(tmp_path):
     with pytest.raises(ValueError, match="timezone-aware"):
         compare_observation_continuity(root=tmp_path, current_binding={}, previous_binding=None,
             completed_session=date(2026, 10, 20), now=datetime(2026, 10, 20))
+
+
+def test_same_day_before_exchange_close_is_not_a_completed_session(tmp_path):
+    with pytest.raises(ValueError, match="completed exchange session"):
+        compare_observation_continuity(root=tmp_path, current_binding={}, previous_binding=None,
+            completed_session=date(2026, 10, 20),
+            now=datetime.fromisoformat("2026-10-20T14:59:59+08:00"))
+
+
+def test_held_security_outside_shortlist_or_expired_still_requests_monitoring(monkeypatch, tmp_path):
+    from value_investment_agent.application.hotspot import observation_continuity as service
+
+    monkeypatch.setattr(service, "_observations", lambda root, binding, now:
+        {"000001": observation()} if binding.get("previous") else {})
+    result = compare_observation_continuity(root=tmp_path, current_binding={},
+        previous_binding={"previous": True}, completed_session=date(2026, 10, 21),
+        now=datetime.fromisoformat("2026-10-21T16:00:00+08:00"), held_symbols=("000001", "600150"))
+    assert result["items"][0]["transition"] == "expired"
+    requests = result["holding_monitoring_requests"]
+    assert [row["symbol"] for row in requests] == ["000001", "600150"]
+    assert requests[0]["observation_transition"] == "expired"
+    assert requests[1]["observation_binding"] is None
+    assert all(row["ownership_verified"] is row["action_eligibility"] is False for row in requests)
+    assert all(row["action"] == "no_order" for row in requests)
+
+
+@pytest.mark.parametrize("symbols", [("000001", "000001"), ("bad",), tuple(str(i) for i in range(21))])
+def test_invalid_held_scope_rejected_before_io(tmp_path, symbols):
+    with pytest.raises(ValueError, match="held security"):
+        compare_observation_continuity(root=tmp_path, current_binding={}, previous_binding=None,
+            completed_session=date(2026, 10, 20), now=datetime(2026, 10, 21, tzinfo=timezone.utc),
+            held_symbols=symbols)
+
+
+def retained_two_day_replay():
+    root = Path(__file__).resolve().parents[1]
+    previous = dict(path="runtime/hotspot-current-refresh/778da53185194f9090ae7a1b68915b4e/previous-registry.json",
+        sha256="9f2351ff37a5299291f11c5ac680b50e71051da82f9b41e954e78b57a14913b2")
+    current = dict(path="runtime/hotspot-current-refresh/1a1abfa7672647cd97f39a930c4abe82/previous-registry.json",
+        sha256="317f151100baaaac268f6dd759290b623ec66b4835e932901f63448cdfff7f93")
+    require_retained_originals(root, root / previous["path"], root / current["path"])
+    return compare_observation_continuity(root=root, current_binding=current,
+        previous_binding=previous, completed_session=date(2026, 10, 16),
+        now=datetime.now(timezone.utc))
+
+
+def test_real_oct15_oct16_continuity_revalidates_original_handles():
+    result = retained_two_day_replay()
+    observations = [row["observation"] for row in result["items"]]
+    assert {"2026-10-15", "2026-10-16"} <= {row["plan"]["market_trade_date"] for row in observations}
+    retained = [row for row in result["items"] if not row["selected_today"]]
+    assert retained
+    assert all(row["observation"]["plan"]["market_trade_date"] <= "2026-10-16" for row in retained)
+    assert all(row["formal_eligibility"] is False for row in result["items"])
+
+
+def test_synthetic_source_bound_continuity_replays_and_rejects_changed_original(tmp_path):
+    from test_current_price_registry import register
+    from test_hotspot_current_price_case import NOW
+    case = register(tmp_path)
+    registry = json.loads((tmp_path / "config/current-price-conditions.json").read_bytes())
+    watch = tmp_path / "runtime/watch.json"
+    watch.write_text(json.dumps(dict(schema_version="hotspot-observation-report-v1", action="no_order",
+        dated_quote_observations=[dict(symbol="600519", quote_date="2026-09-24",
+            status="DATED_DUAL_PROVIDER_OBSERVATION_NOT_PRICE_ADMISSION")])), encoding="utf-8")
+    registry["watch_source_binding"]["sha256"] = hashlib.sha256(watch.read_bytes()).hexdigest()
+    snapshot = tmp_path / "runtime/continuity-registry.json"
+    snapshot.write_text(json.dumps(registry), encoding="utf-8")
+    binding = dict(path=snapshot.relative_to(tmp_path).as_posix(),
+                   sha256=hashlib.sha256(snapshot.read_bytes()).hexdigest())
+    args = dict(root=tmp_path, current_binding=binding, previous_binding=None,
+                completed_session=date(2026, 9, 24), now=NOW)
+    result = compare_observation_continuity(**args)
+    assert result["items"][0]["transition"] == "new"
+    assert result["items"][0]["observation"]["case_binding"]["sha256"] == case["case_sha256"]
+    assert result["formal_eligibility"] is False
+    original = tmp_path / case["source_bindings"]["15m"]["path"]
+    original.write_bytes(original.read_bytes() + b" ")
+    with pytest.raises(ValueError, match="hash"):
+        compare_observation_continuity(**args)
 
 
 def test_service_rebuilds_retained_case_at_acquisition_cutoff(monkeypatch, tmp_path):

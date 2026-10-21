@@ -68,9 +68,16 @@ jobs:
           tests/test_m2_cli_versioned_integration.py
           tests/test_hotspot_two_stage_retained.py
           tests/test_personal_entry_thesis.py
+          tests/test_owned_held_actions.py
+          tests/test_owned_portfolio_closure.py
+          tests/web_api/test_personal_entry_thesis_api.py
           tests/test_held_decision_code_gap.py
           tests/test_value_research_priority_v2.py
           tests/test_hotspot_observation_continuity.py
+          tests/test_observation_history_read.py
+          tests/test_daily_refresh_value_adoption_integration.py
+          tests/test_hotspot_quantitative_validation.py
+          tests/test_hotspot_review_handoff.py
           tests/test_value_evidence_enrichment_v1.py
           tests/test_value_enrichment_batch.py
           tests/test_private_risk_partial_facts.py

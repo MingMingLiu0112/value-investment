@@ -53,6 +53,7 @@ RECORD_KINDS = frozenset({
     "BASELINE_CONFIRMED", "FILL_PREPARED", "FILL_CONFIRMED", "FILL_CANCELLED",
     "RECONCILED_CONFIRMED",
     "POLICY_PREPARED", "POLICY_CONFIRMED", "COST_ASSUMPTIONS_CONFIRMED",
+    "PERSONAL_ENTRY_THESIS_CONFIRMED", "PERSONAL_ENTRY_THESIS_REVOKED",
 })
 EXCHANGES = frozenset({"SSE", "SZSE", "BSE"})
 SIDES = frozenset({"BUY", "SELL"})
@@ -519,6 +520,22 @@ class PrivatePortfolioService:
     def records(self) -> list[dict[str, Any]]:
         return self.journal.read()
 
+    def entry_thesis_candidates(self, *, repository_root: Path, authenticated_subject: str,
+                                repository=None) -> dict:
+        from .personal_entry_thesis import list_personal_entry_thesis_candidates
+        return list_personal_entry_thesis_candidates(self, repository_root=repository_root,
+            authenticated_subject=authenticated_subject, repository=repository)
+
+    def confirm_entry_thesis(self, request: Mapping[str, Any], *, authenticated_subject: str,
+                             repository_root: Path, repository=None) -> tuple[dict, str]:
+        from .personal_entry_thesis import confirm_personal_entry_thesis
+        return confirm_personal_entry_thesis(self, request, authenticated_subject=authenticated_subject,
+            repository_root=repository_root, repository=repository)
+
+    def revoke_entry_thesis(self, request: Mapping[str, Any], *, authenticated_subject: str) -> tuple[dict, str]:
+        from .personal_entry_thesis import revoke_personal_entry_thesis
+        return revoke_personal_entry_thesis(self, request, authenticated_subject=authenticated_subject)
+
     def _find_idempotent(self, records: Sequence[Mapping[str, Any]], key: str, digest: str) -> Mapping[str, Any] | None:
         for record in records:
             if record.get("idempotency_key") == key:
@@ -527,7 +544,12 @@ class PrivatePortfolioService:
                 return record
         return None
 
-    def _replay(self, records: Sequence[Mapping[str, Any]]) -> ReplayedPortfolio | None:
+    def _replay(self, records: Sequence[Mapping[str, Any]], *, _validate_theses=True) -> ReplayedPortfolio | None:
+        if _validate_theses and any(record["kind"].startswith("PERSONAL_ENTRY_THESIS_") for record in records):
+            from .personal_entry_thesis import resolve_personal_entry_thesis
+            resolve_personal_entry_thesis(records=records,
+                account_scope=records[0]["body"]["account_scope"], expected_revision=len(records),
+                as_of=self._now())
         state: Reconciliation | None = None
         policy: dict[str, Any] = {}
         trades: list[dict[str, Any]] = []

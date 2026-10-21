@@ -1,5 +1,40 @@
 # 当前总目标：价值投资建议与情绪卫星仓系统
 
+## 2026-10-21 V5 end-to-end closure
+
+Latest explicit user scope is DUAL-STRATEGY-END-TO-END-CLOSURE-V5, attachment
+946dfca3-5100-4dcc-98df-ec0e63dfbf0d (SHA256
+db301e6e0bd5ab5af6df4d283b769b0a03b2863ebdec92facada95e4f41cb5de),
+read together with the 2026-10-21 dual-strategy PRD. Inherit HEAD 815315a3 and
+all existing V4 working changes. Complete the shortest source-to-research/value,
+independent hotspot, private thesis/risk/fill and Web/history paths before
+expanding coverage. Root owns shared decision/API/Web, publication, Git and CI;
+three disjoint workers own value, hotspot and portfolio implementations.
+Keep the existing execution ledger as the only current engineering ledger;
+machine evidence belongs in artifacts/current/dual-strategy-v5/.
+Engineering tests, actual evidence, economic/strategy admission, private account
+readiness and browser acceptance require separate results. No synthetic approval
+may promote real inputs. Preserve frozen engines/evidence, private journals,
+Web-first, Excel-frozen and action=no_order. No paid calls, production deployment,
+scheduler changes, production migrations or PR merge are authorized.
+The dated V4 and earlier blocks below remain inherited scope and evidence.
+
+## 2026-10-21 V4 trade-readiness closure
+
+Latest explicit user scope is DUAL-STRATEGY-TRADE-READINESS-CLOSURE-V4,
+attachment 622da781-f1e0-46c5-b204-cb85dbc38787. Baseline is
+815315a33ae6a0bf579735cace886afa8068e453 plus preserved existing working changes.
+Execute S0-S7 within four existing business boundaries: trusted financial
+enrichment/adoption, independent hotspot validation, authenticated personal
+Entry Thesis/held actions, and unified conditional decisions/Web verification.
+The existing execution ledger remains the single progress authority; V4 machine
+receipts belong in artifacts/current/trade-readiness-v4/. Keep engineering,
+real evidence, economic/strategy authorization and actual personal use separate.
+No new valuation framework, database, journal system or Web application.
+Excel remains frozen; no production/scheduler/server changes, paid APIs,
+fabricated reviewer signatures or orders. Permanent action=no_order.
+The dated V3 and earlier blocks below remain inherited context, not current scope.
+
 ## 2026-10-20 V3 real decision closure
 
 Latest explicit user scope: DUAL-STRATEGY-REAL-DECISION-CLOSURE-V3, attachment

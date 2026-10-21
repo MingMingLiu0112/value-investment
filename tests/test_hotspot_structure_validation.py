@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 
 import pytest
+from hotspot_retained_originals import require_retained_originals
 
 from value_investment_agent.application.hotspot.validation_evidence import (
     _recomputed_digest,
@@ -45,6 +46,7 @@ EXPECTED_POOL = (
 
 @pytest.fixture(scope="module")
 def real_report() -> dict:
+    require_retained_originals(ROOT, SELECTION, POINTER, *NEGATIVE_CASES, INCOMPLETE)
     assert sha256(POINTER.read_bytes()).hexdigest() == "e65444f2b42130161d02fb5397c15f09061cc0250f77888966f0b48026eb8a8d"
     return build_hotspot_structure_validation(
         root=ROOT,
@@ -139,6 +141,7 @@ def test_writer_is_append_only_and_manifest_hashes_outputs(real_report, tmp_path
 
 
 def test_hash_mismatch_and_pre_availability_evaluation_fail_closed():
+    require_retained_originals(ROOT, SELECTION)
     with pytest.raises(ValueError, match="hash mismatch"):
         build_hotspot_structure_validation(
             root=ROOT,
@@ -151,6 +154,7 @@ def test_hash_mismatch_and_pre_availability_evaluation_fail_closed():
 
 
 def test_pointer_must_be_bound_to_the_exact_selection_report():
+    require_retained_originals(ROOT, OTHER_SELECTION, POINTER)
     digest = sha256(OTHER_SELECTION.read_bytes()).hexdigest()
     with pytest.raises(ValueError, match="different selection report"):
         build_hotspot_structure_validation(
@@ -260,6 +264,7 @@ def test_writer_rejects_nested_evidence_tampering(real_report, tmp_path, mutatio
 
 
 def test_limitations_follow_pool_and_unassessed_counts():
+    require_retained_originals(ROOT, SELECTION, POINTER, NEGATIVE_CASES[0])
     report = build_hotspot_structure_validation(
         root=ROOT,
         selection_report_path=SELECTION,

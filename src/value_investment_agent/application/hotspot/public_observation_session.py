@@ -208,6 +208,20 @@ class PublicObservationSession:
                 existing = self.read()
                 if existing["status"] == "CORRUPT":
                     raise ValueError("Existing observation history is corrupt")
+                cursors = {}
+                pointer_path = self.directory / "current.json"
+                if plan_binding is not None and pointer_path.exists():
+                    reports = self._verified_reports(self._entries(_read(pointer_path)), cursors)
+                    # The API may bind the identical verified plan again at a
+                    # later request time. Keep the original cursor identity.
+                    for report in reversed(reports):
+                        old_binding = report.get("plan_binding") or {}
+                        if old_binding.get("plan_sha256") == plan_binding["plan_sha256"]:
+                            plan_binding = deepcopy(old_binding)
+                            break
+                seed = cursors.get((plan_binding or {}).get("binding_sha256"))
+                self._seed_conditions = seed["condition_result"] if seed else None
+                self._seed_completed = seed.get("completed_plan_result") if seed else None
                 self._stop = threading.Event()
                 self._failure = False
                 schema = COMPLETED_PLAN_SCHEMA if plan_binding is not None else SCHEMA
@@ -215,7 +229,8 @@ class PublicObservationSession:
                     "symbol": symbol, "status": "RUNNING", "detail": "LOCAL_PUBLIC_OBSERVATION_ONLY",
                     "samples": [], "bindings": []}
                 if plan_binding is not None:
-                    self._current.update(plan_binding=plan_binding)
+                    self._current.update(plan_binding=plan_binding,
+                        cursor_policy="CONTINUE_SAME_PLAN_BINDING_V1")
                 self._persist()
                 self._thread = threading.Thread(target=self._work, args=(symbol, lock),
                                                 name="public-observation", daemon=True)
@@ -289,12 +304,12 @@ class PublicObservationSession:
                         sample["condition_result"] = evaluate_quote_plan(
                             self._current["plan_binding"], sample.get("observation"),
                             previous=(self._current["samples"][-1]["condition_result"]
-                                if self._current["samples"] else None), now=checked)
+                                if self._current["samples"] else self._seed_conditions), now=checked)
                     if self._current["schema_version"] == COMPLETED_PLAN_SCHEMA:
                         sample["completed_plan_result"] = project_completed_plan(
                             self._current["plan_binding"], bar_documents,
                             previous=(self._current["samples"][-1]["completed_plan_result"]
-                                if self._current["samples"] else None), now=checked,
+                                if self._current["samples"] else self._seed_completed), now=checked,
                             include_documents=False)
                     self._current["samples"].append(sample)
                     self._current["bindings"].append(binding)
@@ -340,7 +355,17 @@ class PublicObservationSession:
             result["completed_plan_observation"] = deepcopy(completed[-1]) if completed else None
         return result
 
-    def _verified_report(self, entry):
+    def _verified_reports(self, entries, cursors=None):
+        cursors = {} if cursors is None else cursors
+        reports = []
+        for entry in entries:
+            report = self._verified_report(entry, cursors)
+            reports.append(report)
+            if report.get("plan_binding") and report["samples"]:
+                cursors[report["plan_binding"]["binding_sha256"]] = report["samples"][-1]
+        return reports
+
+    def _verified_report(self, entry, cursors=None):
         report = _read(self.directory / (_uuid(entry["report_id"]) + ".report.json"), entry["sha256"])
         if (report["schema_version"] not in SCHEMAS
                 or report["status"] not in {"RUNNING", "STOPPED", "FAILED"}
@@ -353,6 +378,15 @@ class PublicObservationSession:
                 raise ValueError("Plan security mismatch")
             evaluate_quote_plan(report["plan_binding"], None, previous=None, now=_stamp(self.clock()))
         ids, previous, previous_conditions, previous_completed = set(), None, None, None
+        policy = report.get("cursor_policy")
+        if policy is not None:
+            if policy != "CONTINUE_SAME_PLAN_BINDING_V1" or "plan_binding" not in report:
+                raise ValueError("Unknown observation cursor policy")
+            seed = (cursors or {}).get(report["plan_binding"]["binding_sha256"])
+            if seed:
+                previous_conditions = seed["condition_result"]
+                previous_completed = seed.get("completed_plan_result")
+                previous = _stamp(datetime.fromisoformat(seed["checked_at"]))
         for sample, binding in zip(report["samples"], report["bindings"]):
             identity = _uuid(sample["sample_id"])
             checked = _stamp(datetime.fromisoformat(sample["checked_at"]))
@@ -405,7 +439,7 @@ class PublicObservationSession:
                 if pointer["schema_version"] not in SCHEMAS:
                     raise ValueError("Unknown pointer schema")
                 entries = self._entries(pointer)
-                reports = [self._verified_report(entry) for entry in entries]
+                reports = self._verified_reports(entries)
                 report = next(row for entry, row in zip(entries, reports) if entry["report_id"] == pointer["report_id"])
                 if report["schema_version"] != pointer["schema_version"]:
                     raise ValueError("Observation pointer schema mismatch")
@@ -438,7 +472,7 @@ class PublicObservationSession:
                 inbox = view.get("notification_inbox")
                 if inbox:
                     pointer = _read(self.directory / "current.json")
-                    reports = [self._verified_report(entry) for entry in self._entries(pointer)]
+                    reports = self._verified_reports(self._entries(pointer))
                     if any(receipt.get("alert_id") == alert_id and receipt.get("operation") == operation
                            and receipt.get("expected_snapshot_sha256") == expected_snapshot_sha256
                            for report in reports for receipt in report.get("notification_actions", [])):
@@ -454,8 +488,10 @@ class PublicObservationSession:
                     raise ValueError("Observation notification transition unavailable")
                 pointer = _read(self.directory / "current.json")
                 if self._thread is None:
-                    self._current = self._verified_report(next(row for row in self._entries(pointer)
-                        if row["report_id"] == pointer["report_id"]))
+                    entries = self._entries(pointer)
+                    reports = self._verified_reports(entries)
+                    self._current = next(report for entry, report in zip(entries, reports)
+                        if entry["report_id"] == pointer["report_id"])
                 self._current.setdefault("notification_actions", []).append({
                     "alert_id": alert_id, "operation": operation,
                     "occurred_at": _stamp(self.clock()).isoformat(),

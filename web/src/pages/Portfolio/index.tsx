@@ -31,6 +31,7 @@ import { blockerText } from "../../utils/packet";
 import { HoldingsAttention } from "../../components/HoldingsAttention";
 import { useApi } from "../../hooks/useApi";
 import { PortfolioReconciliationPanel } from "../../components/PortfolioReconciliationPanel";
+import { EntryThesisPanel } from "../../components/EntryThesisPanel";
 
 /**
  * TL10-RC：私人状态来自与每日页共用的 usePrivateState；台账损坏或目录
@@ -83,6 +84,10 @@ export default function Portfolio() {
   ).strategy;
   const initialDecisionId = params?.get("decision_id") || undefined;
   const initialResearchVersion = params?.get("research_version") || undefined;
+  const [entrySaved, setEntrySaved] = useState<{
+    fill: string;
+    message: string;
+  }>();
   const [sizingSymbol, setSizingSymbol] = useState(initialSymbol ?? "");
   const [sizingSleeve, setSizingSleeve] = useState<
     "CORE_VALUE" | "HOTSPOT_SATELLITE"
@@ -253,6 +258,13 @@ export default function Portfolio() {
                   ]
                 : []
             }
+          />
+          {entrySaved && <Alert type="success" message={entrySaved.message} />}
+          <EntryThesisPanel
+            revision={data.revision}
+            onDone={refreshAll}
+            initialFill={entrySaved?.fill}
+            onSaved={(fill, message) => setEntrySaved({ fill, message })}
           />
           <Descriptions
             bordered

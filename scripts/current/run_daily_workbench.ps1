@@ -327,7 +327,7 @@ if ($Mode -eq 'SAFE_REFRESH') {
         }
     }
     $reuse = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py', '--check-reuse', '--symbols', $Symbols)
-    if ($reuse.ExitCode -eq 0 -and $reuse.Json.prices_ready) {
+    if ($reuse.ExitCode -eq 0 -and $reuse.Json.prices_ready -and $reuse.Json.continuity_ready) {
         Write-Host "  价格结构 : 复用已核验最近完成交易日 $($reuse.Json.market_trade_dates -join ',') 的完整已选候选；未重新采集。"
         $priceRefresh = [pscustomobject]@{ ExitCode = 0; Json = [pscustomobject]@{ status = 'UNCHANGED'; items = @(); failures = @() } }
     } else {

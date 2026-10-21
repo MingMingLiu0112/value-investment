@@ -1,5 +1,5 @@
 """Check immutable registered inputs before acquiring another daily refresh."""
-from datetime import datetime
+from datetime import date, datetime
 import json
 from pathlib import Path
 import hashlib
@@ -18,6 +18,56 @@ PUBLIC_NOTES = frozenset({
     '采集或登记不完整：未发布新快照，Web 保留上一验证版本，不能称为本次新数据。',
     '部分证券数据未能更新；已核验证券可用，缺项不代表今日已刷新。',
 })
+
+
+def read_observation_changes(root: Path, *, now: datetime, expected_registry_sha256: str | None = None) -> dict:
+    """Replay retained source bindings before publishing observation history."""
+    unavailable = dict(status="UNAVAILABLE", scope="OBSERVATION_ONLY", items=[],
+        action="no_order", formal_eligibility=False)
+    try:
+        from ..hotspot.observation_continuity import compare_observation_continuity
+        root = root.resolve()
+        registry_path = root / "config/current-price-conditions.json"
+        registry_raw = registry_path.read_bytes()
+        registry_sha = hashlib.sha256(registry_raw).hexdigest()
+        if expected_registry_sha256 is not None and registry_sha != expected_registry_sha256:
+            return unavailable
+        registry = json.loads(registry_raw)
+        pointer = registry["observation_continuity"]
+        path = (root / pointer["path"]).resolve()
+        if (pointer["status"] != "SOURCE_BOUND_OBSERVATION_ONLY"
+                or not path.is_relative_to((root / "runtime/hotspot-current-refresh").resolve())
+                or path.name != "observation-continuity.json" or path.stat().st_size > 5_000_000):
+            return unavailable
+        raw = path.read_bytes()
+        if hashlib.sha256(raw).hexdigest() != pointer["sha256"]:
+            return unavailable
+        saved = json.loads(raw)
+        cutoff = datetime.fromisoformat(saved["evaluated_at"])
+        if now.utcoffset() is None or cutoff.utcoffset() is None or cutoff > now:
+            return unavailable
+        snapshot = path.with_name("registry-snapshot.json")
+        if json.loads(snapshot.read_bytes()) != {k: v for k, v in registry.items()
+                                               if k != "observation_continuity"}:
+            return unavailable
+        def binding(source):
+            return dict(path=source.relative_to(root).as_posix(),
+                        sha256=hashlib.sha256(source.read_bytes()).hexdigest())
+        previous = path.with_name("previous-registry.json")
+        replay = compare_observation_continuity(root=root, current_binding=binding(snapshot),
+            previous_binding=binding(previous) if previous.is_file() else None,
+            completed_session=date.fromisoformat(saved["completed_session"]), now=cutoff)
+        if replay != saved or registry_path.read_bytes() != registry_raw:
+            return unavailable
+        fields = ("symbol", "transition", "reason", "trend_strengthened", "selected_today", "fresh_evidence")
+        return dict(status="SOURCE_REVALIDATED", scope="OBSERVATION_ONLY",
+            registry_sha256=registry_sha,
+            completed_session=replay["completed_session"], evaluated_at=replay["evaluated_at"],
+            items=[{**{key: row[key] for key in fields},
+                    "market_trade_date": row["observation"]["plan"]["market_trade_date"]}
+                   for row in replay["items"]], action="no_order", formal_eligibility=False)
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, ArithmeticError):
+        return unavailable
 
 
 def read_latest_run(root: Path) -> dict | None:
@@ -100,12 +150,28 @@ def _enrichment_execution_summary(root, folder, binding, queue):
                 or len({row['symbol'] for row in rows}) != len(rows)
                 or any(row['symbol'] not in candidates or row['formal_eligibility'] is not False for row in rows)):
             return unavailable
+        verified_adoptions = {}
+        for row in rows:
+            if row.get('adopted_fact_ids'):
+                from ..research.value_evidence_enrichment_v1 import verify_enrichment_adoption
+                inputs = queue['inputs']
+                adoption = verify_enrichment_adoption(root=root, result_binding=row['result_binding'],
+                    financial_export_path=root / inputs['financial_export_path'],
+                    financial_export_sha256=inputs['financial_export_sha256'],
+                    evaluation_at=datetime.fromisoformat(value['finished_at']))
+                if (adoption['symbol'] != row['symbol']
+                        or adoption['adopted_fact_ids'] != row['adopted_fact_ids']):
+                    return unavailable
+                verified_adoptions[row['symbol']] = adoption
         return {'status': 'VERIFIED_RESEARCH_EXECUTION', 'attempted_count': len(rows),
+            'verified_adopted_fact_count': sum(row['adopted_fact_count'] for row in verified_adoptions.values()),
+            'research_inputs_updated_count': sum(row['research_inputs_updated'] for row in verified_adoptions.values()),
             'reevaluated_count': sum('QUALITY_REEVALUATED' in row['transitions'] for row in rows),
             'data_gap_count': sum(row['state'] == 'DATA_UNAVAILABLE' for row in rows),
             'items': [{'symbol': row['symbol'], 'company_name': candidates[row['symbol']]['company_name'],
                 'state': row['state'], 'extracted_candidates': row.get('extracted_candidates'),
-                'matched_candidates': row.get('matched_candidates')} for row in rows],
+                'matched_candidates': row.get('matched_candidates'),
+                'adoption': verified_adoptions.get(row['symbol'])} for row in rows],
             'formal_eligibility': False, 'action': 'no_order'}
     except (OSError, ValueError, TypeError, KeyError):
         return unavailable
@@ -196,6 +262,7 @@ def refresh_readiness(root: Path, *, now: datetime, symbols: list[str]) -> dict:
                   for symbol, row in quotes.items()]
     integrity_ok = "CURRENT_PRICE_REGISTRY_UNAVAILABLE" not in prices.get("blockers", [])
     return dict(action="no_order", prices_ready=bool(prices_ready), quotes_ready=quote_ready,
+                continuity_ready=read_observation_changes(root, now=now)['status'] == 'SOURCE_REVALIDATED',
                 market_trade_dates=sorted(dates), quotes=quotes,
                 price_securities=price_rows, quote_securities=quote_rows,
                 publication_ready=integrity_ok and (bool(rows) or any(quote_valid.values())

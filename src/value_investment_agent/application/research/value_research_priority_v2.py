@@ -48,6 +48,17 @@ def build_value_research_priority_v2(
     if "annual_points" in payload:
         points, adoption = adopt_annual_export(export, sha256=financial_export_sha256,
             evaluation_at=receipt.generated_at, base_points=base)
+    enrichment_adoption = []
+    from ...infrastructure.screening.value_enrichment_progress import ValueEnrichmentProgress
+    declarations = {(s['symbol'], s['period']): s for s in payload.get('value_enrichment_sources', [])}
+    for source in ValueEnrichmentProgress(root).completed_sources(cutoff=receipt.generated_at):
+        identity = (source['symbol'], source['period'])
+        if identity in declarations and declarations[identity] != source:
+            raise ValueError('conflicting declared and completed enrichment source')
+        declarations[identity] = source
+    from .value_evidence_enrichment_v1 import consume_retained_enrichment
+    points, enrichment_adoption = consume_retained_enrichment(root, points,
+        list(declarations.values()), evaluation_at=receipt.generated_at)
     grouped = defaultdict(list)
     excluded = defaultdict(int)
     identities = {}
@@ -126,6 +137,7 @@ def build_value_research_priority_v2(
         "selected_enrichment_count": min(enrichment_budget, len(enrichment)),
         "tie_break": "SYMBOL_ASCENDING_ADMINISTRATIVE_ONLY_NO_ORDINAL_RANK",
         "new_verification_or_approval_count": 0, "annual_evidence_adoption": adoption,
+        "retained_enrichment_adoption": enrichment_adoption,
         "retained_adoption_metadata_unverified": retained.get("annual_evidence_adoption"),
         "inputs": dict(legacy["inputs"], financial_export_path=export.relative_to(root.resolve()).as_posix(),
             financial_export_sha256=financial_export_sha256),

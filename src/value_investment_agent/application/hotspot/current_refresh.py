@@ -111,6 +111,7 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
                                      candidate_pool_limit: int | None = None,
                                      bundle_collector=None, case_collector=None, now=None,
                                      observation_scope=STRICT_CLOSE_SCOPE) -> dict:
+    live_clock = now is None
     if type(limit) is not int or not 1 <= limit <= 10:
         raise ValueError("Final observation limit must be 1..10")
     if candidate_pool_limit is not None and (
@@ -259,11 +260,15 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
                 sessions.add(report["trade_date"])
             if len(sessions) != 1:
                 raise ValueError("Continuity requires one verified completed session")
+            # Cases are acquired after the quote bundle. A live replay must use
+            # the actual post-acquisition clock; explicit historical cutoffs
+            # remain fixed and must still reject unavailable source evidence.
+            continuity_now = datetime.now(timezone.utc) if live_clock else now
             change = compare_observation_continuity(root=root,
                 current_binding={"path": snapshot.relative_to(root).as_posix(),
                     "sha256": hashlib.sha256(snapshot.read_bytes()).hexdigest()},
                 previous_binding=previous_binding,
-                completed_session=date.fromisoformat(next(iter(sessions))), now=now)
+                completed_session=date.fromisoformat(next(iter(sessions))), now=continuity_now)
             path = archive / "observation-continuity.json"
             _write(path, change)
             continuity = {"status": "SOURCE_BOUND_OBSERVATION_ONLY",

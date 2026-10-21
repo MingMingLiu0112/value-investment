@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime
+from datetime import date, datetime, time
 from pathlib import Path
 
 from .price_action_case import project_current_price_action_plan
 from ...infrastructure.hotspot.current_price_case import load_current_price_case
 from .daily_selection import verify_daily_selection
+from ...domain.execution.exchange_calendar import next_exchange_session
+from ...quote_sessions import CHINA
 
 REGISTRY = "config/current-price-conditions.json"
 
@@ -128,9 +130,18 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
                 raise ValueError("Duplicate or unbound current candidate")
             seen.add(symbol)
             try:
+                case_now = now
+                if retired:
+                    retained = json.loads(_path(root, item["case_path"]).read_bytes())
+                    close = retained["current_reference_close"]
+                    bundle = json.loads(_path(root, close["bundle_path"]).read_bytes())
+                    case_now = max(datetime.fromisoformat(stamp) for stamp in [
+                        bundle["finished_at"], *(s["fetched_at"] for s in retained["source_bindings"].values())])
+                    if case_now.utcoffset() is None or case_now > now:
+                        raise ValueError("Retained case unavailable at evaluation cutoff")
                 case = load_current_price_case(root=root, symbol=symbol,
                     case_path=_path(root, item["case_path"]),
-                    expected_sha256=item["case_sha256"], now=now)
+                    expected_sha256=item["case_sha256"], now=case_now)
                 plan = project_current_price_action_plan(case)
                 if daily and case["market_trade_date"] != watch_report["trade_date"]:
                     raise ValueError("Daily selection/current case date conflict")
@@ -154,13 +165,15 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
                 plan.update(formal_eligibility=False, portfolio_eligibility=None, sleeve="HOTSPOT_SATELLITE")
                 if retired:
                     plan["candidate_lifecycle"] = "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"
-                    if plan["signal_state"] != "TRIGGER_REJECTED":
+                    expiry = (date.fromisoformat(plan["expires_after_session"])
+                              if plan.get("expires_after_session") else next_exchange_session(
+                                  "SSE" if symbol.startswith("6") else "SZSE",
+                                  date.fromisoformat(plan["market_trade_date"])))
+                    expired = now >= datetime.combine(expiry, time(15), CHINA)
+                    plan["retained_observation_valid"] = not expired
+                    if expired and plan["signal_state"] != "TRIGGER_REJECTED":
                         plan.update(signal_state="STALE", action_intent="WATCH",
                                     explanation="未进入本次当日候选名单；旧价格结构仅供复盘，不作为今日机会。")
-                    if plan["opportunity_quality"]["structure_tier"] == "STRUCTURE_QUALIFIED_OBSERVATION":
-                        plan["opportunity_quality"].update(
-                            structure_tier="ACTIVE_ONLY",
-                            structure_reasons=["PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"])
                 items.append({"symbol": symbol, "company_name": item["company_name"],
                               "price_action_plan": plan})
             except (ValueError, OSError, KeyError, TypeError, ArithmeticError):

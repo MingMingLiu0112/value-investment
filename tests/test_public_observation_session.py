@@ -473,3 +473,34 @@ def test_source_clock_regression_fails_worker_instead_of_committing_bad_history(
     result = wait_stopped(s)
     assert result["status"] == "FAILED" and len(result["samples"]) == 1
     s.close()
+
+
+def test_same_plan_completed_bar_conflict_survives_restart_and_missing_sample(tmp_path):
+    from test_current_price_registry import register
+    from test_hotspot_current_price_case import NOW as BOUND_AT
+    from test_intraday_plan_observation import NOW as PLAN_NOW
+    from value_investment_agent.application.hotspot.current_registry import load_price_conditions
+    from value_investment_agent.application.hotspot.intraday_plan_observation import bind_quote_plan
+    register(tmp_path)
+    plan = load_price_conditions(tmp_path, now=BOUND_AT, research_version="TEST_ONLY")["items"][0]["price_action_plan"]
+    binding = bind_quote_plan(plan, symbol="600519", now=BOUND_AT)
+    at = [PLAN_NOW]
+    for value, reason in [("14", None), ("15", "CONFLICTING_REPEATED_OBSERVATION"),
+                          (None, None), ("14", "RECOVERY_REQUIRES_NEW_OBSERVATION")]:
+        at[0] += timedelta(seconds=1)
+        rebound = bind_quote_plan(plan, symbol="600519", now=at[0])
+        s = PublicObservationSession(tmp_path, clock=lambda: at[0],
+            collector=lambda symbols: bundle(now=at[0]),
+            bar_collector=lambda symbol: bars(at[0], value) if value else {},
+            max_samples=1, interval_seconds=.001)
+        s.start("600519", plan_binding=rebound)
+        result = wait_stopped(s)
+        assert result["status"] == "STOPPED", result
+        completed = result["completed_plan_observation"]
+        if reason:
+            assert completed["status"] == "INSUFFICIENT_DATA"
+            assert completed["periods"]["60m"]["reason"] == reason
+        s.close()
+        restored = PublicObservationSession(tmp_path, clock=lambda: at[0])
+        assert restored.read() == result
+        restored.close()

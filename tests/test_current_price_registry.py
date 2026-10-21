@@ -40,6 +40,44 @@ def test_registered_case_versions_and_raw_change_fail_closed(tmp_path):
     assert blocked["blockers"] == ["CURRENT_PRICE_CASE_UNAVAILABLE:600519"]
 
 
+def test_retained_candidate_preserves_original_plan_until_exact_deadline(tmp_path, monkeypatch):
+    from datetime import datetime
+    from value_investment_agent.application.hotspot.intraday_plan_observation import bind_quote_plan, evaluate_quote_plan
+    register(tmp_path)
+    pointer = tmp_path / REGISTRY
+    registry = json.loads(pointer.read_bytes())
+    original = load_price_conditions(tmp_path, now=NOW, research_version="TEST_ONLY")["items"][0]["price_action_plan"]
+    retained = {**registry["items"][0], "watch_source_binding": registry["watch_source_binding"],
+                "watch_source_scope": registry["watch_source_scope"]}
+    registry["previous_items"] = [retained]
+    registry["items"] = []
+    # Isolate shortlist membership; the retained price case uses the real loader.
+    monkeypatch.setattr("value_investment_agent.application.hotspot.current_registry.verify_daily_selection",
+                        lambda root, report: None)
+    registry["watch_source_binding"] = dict(path="runtime/empty-watch.json", sha256="")
+    source = tmp_path / "runtime/empty-watch.json"
+    source.write_text(json.dumps(dict(schema_version="hotspot-daily-selection-v1", rows=[{}],
+        failures=[], ranking=dict(candidates=[]), candidate_pool=[], observation_list=[])), encoding="utf-8")
+    registry["watch_source_binding"]["sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
+    pointer.write_text(json.dumps(registry), encoding="utf-8")
+    before = datetime.fromisoformat("2026-09-28T14:59:59+08:00")
+    result = load_price_conditions(tmp_path, now=before, research_version="TEST_ONLY")
+    assert len(result["items"]) == 1, result
+    plan = result["items"][0]["price_action_plan"]
+    assert plan["candidate_lifecycle"] == "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"
+    assert plan["retained_observation_valid"] is True
+    for key in ("signal_state", "opportunity_quality", "data_available_at", "expires_after_session"):
+        assert plan[key] == original[key]
+    binding = bind_quote_plan(plan, symbol="600519", now=before)
+    deadline = datetime.fromisoformat(binding["valid_until"])
+    assert evaluate_quote_plan(binding, None, previous=None, now=deadline)["plan_status"] == "STALE_OR_UNAVAILABLE"
+    expired = load_price_conditions(tmp_path, now=deadline, research_version="TEST_ONLY")["items"][0]["price_action_plan"]
+    assert expired["retained_observation_valid"] is False
+    assert expired["signal_state"] == "STALE"
+    with pytest.raises(ValueError):
+        bind_quote_plan(expired, symbol="600519", now=deadline)
+
+
 def test_changed_watch_source_and_escape_refused(tmp_path):
     register(tmp_path)
     (tmp_path / "runtime/watch.json").write_text("{}", encoding="utf-8")

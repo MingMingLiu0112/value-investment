@@ -5,6 +5,22 @@ import type { PortfolioReconciliation } from "../types/api";
  * 未收录的代码一律返回 null，由调用方决定如何原样展示，绝不猜测含义。
  */
 const CODE_TEXT: Record<string, string> = {
+  PERSONAL_ENTRY_THESIS_CONFIRMATION_REQUIRED:
+    "尚未确认本账户这笔买入的原始投资逻辑",
+  AUTHENTICATED_PERSONAL_ENTRY_SUBJECT_REQUIRED: "需要有效的本机本人确认会话",
+  OWNED_ENTRY_DEPENDENCIES_REQUIRED:
+    "原始投资逻辑与剩余持仓的归属依据尚未完整核验",
+  OWNED_CURRENT_ADD_ADVISORY_REQUIRED: "当前研究尚未支持与原逻辑一致的加仓复核",
+  CURRENT_STRATEGY_PLAN_UNAVAILABLE: "这笔持仓尚无当前有效的策略计划",
+  EXTERNAL_ACCOUNT_RECONCILIATION_MISSING:
+    "尚未完成与真实账户或券商对账单的核对",
+  HISTORICAL_RECONSTRUCTION_NOT_ORIGINAL_PIT_ENTRY:
+    "事后补录仅供复盘，不能替代当时可得的投资证据",
+  SELL_QUANTITY_MUST_BE_INTEGER_WITHIN_SELLABLE:
+    "复核卖出数量超过当前可卖数量或不符合整数股要求",
+  OWNED_ENTRY_DEPENDENCIES_INVALID:
+    "原投资逻辑的来源、时点或账本绑定未通过核验",
+  HELD_ADVISORY_DEPENDENCY_INVALID: "当前持仓研究或策略复核依据未通过校验",
   CURRENT_PLAN_NOT_FORMALLY_ELIGIBLE: "当前证券计划尚未通过适用的正式准入",
   CURRENT_ENTRY_CONDITION_NOT_OBSERVED: "完整价格入场条件尚未满足",
   CURRENT_VALUE_QUOTE_NOT_VERIFIED: "价值计划使用的当前价格尚未核验",

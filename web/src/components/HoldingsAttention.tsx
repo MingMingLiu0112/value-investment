@@ -3,10 +3,162 @@ import type { DecisionItem } from "../types/api";
 import type { PrivateStateHandle } from "../hooks/usePrivateState";
 import { blockerText } from "../utils/packet";
 import { formatMoney } from "../utils/format";
-import { useState } from "react";
-import { Button } from "antd";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Button, Checkbox, InputNumber, Select, Space } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import { api } from "../services/api";
+import type { HeldSellReviewRequest } from "../services/api";
+import { ActionableDecisionResult } from "./ActionableDecisionResult";
+import type { ConditionalAccountDecision } from "./ActionableDecisionResult";
+
+function HeldSellReview({
+  decision,
+  revision,
+  account,
+  exchange,
+}: {
+  decision: ConditionalAccountDecision;
+  revision: number;
+  account: string;
+  exchange: string;
+}) {
+  const [intent, setIntent] = useState<"REDUCE" | "EXIT">("REDUCE");
+  const [quantity, setQuantity] = useState<number | null>(null);
+  const [ack, setAck] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  const [result, setResult] = useState<ConditionalAccountDecision>();
+  const requestId = useRef(0);
+  const identity = JSON.stringify([revision, account, exchange, decision]);
+  useEffect(() => {
+    requestId.current += 1;
+    setResult(undefined);
+    setAck(false);
+    setError(undefined);
+    return () => {
+      requestId.current += 1;
+    };
+  }, [identity]);
+  async function review() {
+    if (
+      busy ||
+      !ack ||
+      quantity === null ||
+      !Number.isSafeInteger(quantity) ||
+      quantity <= 0 ||
+      !decision.entry_thesis_record_sha256
+    )
+      return;
+    const id = ++requestId.current;
+    setBusy(true);
+    setError(undefined);
+    setResult(undefined);
+    try {
+      const request: HeldSellReviewRequest = {
+        schema_version: "private-held-sell-review-request-v1",
+        action: "no_order",
+        expected_revision: revision,
+        account_scope: account,
+        symbol: decision.symbol,
+        exchange,
+        sleeve: decision.strategy,
+        requested_action: intent,
+        requested_quantity: quantity,
+        entry_thesis_record_sha256: decision.entry_thesis_record_sha256,
+        read_and_confirmed: true,
+      };
+      const response = await api.reviewHeldSell(request);
+      if (id !== requestId.current) return;
+      const value = response.actionable_decision;
+      if (
+        response.schema_version !== "private-held-sell-review-v1" ||
+        response.action !== "no_order" ||
+        response.ledger_written !== false ||
+        response.broker_execution_permission !== false ||
+        response.revision !== revision ||
+        !response.request ||
+        Object.keys(response.request).length !== Object.keys(request).length ||
+        (Object.keys(request) as (keyof HeldSellReviewRequest)[]).some(
+          (key) => response.request[key] !== request[key],
+        ) ||
+        value.symbol !== decision.symbol ||
+        value.strategy !== decision.strategy ||
+        value.entry_thesis_record_sha256 !==
+          decision.entry_thesis_record_sha256 ||
+        (!["UNASSESSABLE", "NO_TRADE"].includes(value.decision_action) &&
+          (value.decision_action !== request.requested_action ||
+            value.review_quantity !== request.requested_quantity))
+      )
+        throw new Error("复核结果与当前持仓版本不一致，请重新读取。");
+      setResult(value);
+    } catch (cause) {
+      if (id === requestId.current)
+        setError(
+          cause instanceof Error ? cause.message : "复核失败，请重新读取持仓。",
+        );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <details>
+      <summary>复核 {decision.symbol} 的减仓或退出数量</summary>
+      <p>只核验本人指定数量；不修改持仓，不提交订单。实际成交后请另行登记。</p>
+      <Space wrap>
+        <Select
+          aria-label="卖出复核方向"
+          value={intent}
+          options={[
+            { value: "REDUCE", label: "减仓复核" },
+            { value: "EXIT", label: "退出复核" },
+          ]}
+          onChange={(value) => {
+            setIntent(value);
+            setResult(undefined);
+            setAck(false);
+            requestId.current += 1;
+          }}
+        />
+        <InputNumber
+          aria-label="卖出复核股数"
+          min={1}
+          precision={0}
+          value={quantity}
+          onChange={(value) => {
+            setQuantity(value);
+            setResult(undefined);
+            setAck(false);
+            requestId.current += 1;
+          }}
+        />
+        <Checkbox
+          checked={ack}
+          onChange={(event) => {
+            setAck(event.target.checked);
+            if (!event.target.checked) {
+              requestId.current += 1;
+              setResult(undefined);
+              setError(undefined);
+            }
+          }}
+        >
+          我已核对资金池、原投资逻辑及指定股数
+        </Checkbox>
+        <Button
+          loading={busy}
+          disabled={
+            !ack || !Number.isSafeInteger(quantity) || (quantity ?? 0) <= 0
+          }
+          onClick={review}
+        >
+          核验卖出条件
+        </Button>
+      </Space>
+      {error && <Alert type="error" message={error} />}
+      {result && <ActionableDecisionResult decision={result} />}
+    </details>
+  );
+}
 
 export function HoldingsAttention({
   state,
@@ -126,6 +278,31 @@ export function HoldingsAttention({
                 ：已出现策略退出或减仓复核事项，需结合可卖数量和个人风险检查。
               </p>
             ))}
+            {state.heldContinuity?.items.flatMap((row) =>
+              (row.actionable_decisions ?? []).map((decision) => (
+                <div key={`owned-${row.symbol}-${decision.strategy}`}>
+                  <ActionableDecisionResult decision={decision} />
+                  {decision.ownership_verified &&
+                    decision.entry_thesis_record_sha256 &&
+                    portfolio.revision !== undefined &&
+                    state.risk?.facts?.account_scope &&
+                    portfolio.positions.find(
+                      (position) => position.symbol === row.symbol,
+                    )?.exchange && (
+                      <HeldSellReview
+                        decision={decision}
+                        revision={portfolio.revision}
+                        account={state.risk.facts.account_scope}
+                        exchange={
+                          portfolio.positions.find(
+                            (position) => position.symbol === row.symbol,
+                          )!.exchange
+                        }
+                      />
+                    )}
+                </div>
+              )),
+            )}
             {state.heldContinuity?.items.map((row) => (
               <p key={`held-${row.symbol}`}>
                 <Link to={`/portfolio?symbol=${row.symbol}`}>{row.symbol}</Link>

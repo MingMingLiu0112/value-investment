@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, localcontext
 import hashlib
 import json
 from pathlib import Path
@@ -18,11 +18,127 @@ from ...infrastructure.screening.value_evidence_enrichment_v1 import (
 from ...m2_discovery_engine import _point_available_at
 
 VERSION = 'value-debt-scope-enrichment-v1'
+RATIO_VERSION = 'value-sourced-balance-ratio-v1'
+GROWTH_VERSION = 'value-sourced-income-growth-v1'
+DERIVED_VERSIONS = {VERSION, RATIO_VERSION, GROWTH_VERSION}
 CORRELATION_METHOD = 'official_pdf_plus_independent_structured_source'
 STRUCTURED_SOURCES = {
     'AkShare / Sina detailed financial statements',
     'AkShare / Sina financial indicators',
 }
+
+
+def _derive_balance_ratio(source, company, packet, evaluation_at):
+    """Arithmetic inherits admitted input assurance, never promotes candidates."""
+    inputs, refs, issues = [], [], []
+    for field in ('total_assets', 'total_liabilities'):
+        eligible = []
+        for point in company:
+            if (point.get('field_name') != field or point.get('period_label') != source.period
+                    or not _accepted(point) or point.get('unit') != 'CNY'
+                    or point.get('sha256') != source.sha256
+                    or point.get('source_url') != source.source_url
+                    or (point.get('metadata') or {}).get('statement_scope') == 'parent'):
+                continue
+            candidates = [c for c in packet.get('balance_total_candidates', []) if c['field_name'] == field
+                and c['unit'] == 'CNY' and Decimal(c['value']) == Decimal(str(point['value']))]
+            if candidates:
+                eligible.append((point, candidates[0]))
+        if len(eligible) != 1:
+            issues.append('MISSING_OR_AMBIGUOUS_ADMITTED_OFFICIAL_INPUT:' + field)
+            continue
+        point, candidate = eligible[0]
+        inputs.append(point)
+        refs.append(dict(id=point['data_point_id'], field_name=field, value=point['value'],
+            unit='CNY', path=source.path, sha256=source.sha256, source_url=source.source_url,
+            page=candidate['page'], excerpt=candidate['excerpt']))
+    if issues:
+        return [], {'version': RATIO_VERSION, 'status': 'REJECTED_WITH_REASON', 'issues': issues}
+    assets, liabilities = (Decimal(str(p['value'])) for p in inputs)
+    if not assets.is_finite() or not liabilities.is_finite() or assets <= 0 or liabilities < 0:
+        return [], {'version': RATIO_VERSION, 'status': 'REJECTED_WITH_REASON',
+                    'issues': ['INVALID_BALANCE_RATIO_INPUT']}
+    clocks = [datetime.fromisoformat(source.available_at)]
+    for point in inputs:
+        clocks.extend(datetime.fromisoformat(str(point[k])) for k in
+            ('available_at', 'created_at', 'fetched_at') if point.get(k))
+    if any(c.utcoffset() is None or c > evaluation_at for c in clocks):
+        raise ValueError('Balance ratio input unavailable at cutoff')
+    known_at = max(clocks).isoformat()
+    binding = dict(version=RATIO_VERSION, source=asdict(source), inputs=inputs,
+                   parser=packet['identity']['implementation_sha256'])
+    digest = hashlib.sha256(json.dumps(binding, sort_keys=True, default=str).encode()).hexdigest()
+    point = dict(symbol=source.symbol, field_name='debt_ratio', period_label=source.period,
+        data_point_id='value-ratio:' + digest, value=str(liabilities / assets * 100), unit='percent',
+        source_id='derived:' + digest, source_name='Derived from admitted official balances',
+        source_url=source.source_url, sha256=source.sha256, source_path=source.path,
+        created_at=known_at, fetched_at=known_at, available_at=known_at,
+        validation_status='verified', human_reviewed=False,
+        metadata=dict(automatic_cross_source_verification=True,
+            assurance_basis='INHERITED_FROM_EXISTING_ADMITTED_INPUTS_NOT_NEW_SOURCE_VERIFICATION',
+            derivation_formula=RATIO_VERSION, formula='total_liabilities / total_assets * 100',
+            input_fact_ids=[p['data_point_id'] for p in inputs], evidence_refs=refs,
+            statement_scope='consolidated', currency='CNY',
+            derivation_rule_pit_status='NOT_ADMITTED'))
+    return [point], dict(version=RATIO_VERSION, status='FACT_ADMITTED', issues=[],
+                         input_fact_ids=point['metadata']['input_fact_ids'], evidence_refs=refs)
+
+
+def _derive_income_growth(source, company, packet):
+    admitted, observations, reports = [], [], []
+    for field, output in (('revenue', 'revenue_yoy'), ('net_income', 'net_income_yoy')):
+        rows = [row for row in packet.get('income_comparatives', []) if row['field_name'] == field]
+        issues = []
+        if len(rows) != 1:
+            reports.append(dict(field_name=output, status='REJECTED_WITH_REASON',
+                                issues=['INCOME_COMPARATIVE_MISSING_OR_AMBIGUOUS']))
+            continue
+        row = rows[0]
+        current, prior = Decimal(row['value']), Decimal(row['prior_value'])
+        if not current.is_finite() or not prior.is_finite() or prior <= 0:
+            reports.append(dict(field_name=output, status='REJECTED_WITH_REASON',
+                                issues=['NONPOSITIVE_OR_INVALID_GROWTH_DENOMINATOR']))
+            continue
+        inputs = []
+        for period, value in ((source.period, current), (row['prior_period_label'], prior)):
+            matches = [p for p in company if p.get('field_name') == field
+                and p.get('period_label') == period and p.get('unit') == 'CNY'
+                and _accepted(p) and Decimal(str(p['value'])) == value
+                and (p.get('metadata') or {}).get('statement_scope') != 'parent']
+            if len(matches) != 1:
+                issues.append('ADMITTED_INPUT_MISSING_OR_AMBIGUOUS:' + field + ':' + period)
+            else:
+                inputs.append(matches[0])
+        with localcontext() as ctx:
+            ctx.prec = 28
+            value = str((current / prior - 1) * 100)
+        ref = dict(id='income-comparative:' + output, path=source.path, sha256=source.sha256,
+            source_url=source.source_url, **row)
+        binding = dict(version=GROWTH_VERSION, source=asdict(source), comparative=row,
+            inputs=inputs, parser=packet['identity']['implementation_sha256'])
+        digest = hashlib.sha256(json.dumps(binding, sort_keys=True, default=str).encode()).hexdigest()
+        clocks = [datetime.fromisoformat(source.available_at)]
+        for p in inputs:
+            clocks.extend(datetime.fromisoformat(str(p[k])) for k in
+                ('available_at', 'created_at', 'fetched_at') if p.get(k))
+        known_at = max(clocks).isoformat()
+        point = dict(symbol=source.symbol, field_name=output, period_label=source.period,
+            data_point_id='value-growth:' + digest, value=value, unit='percent',
+            source_id='derived:' + digest, source_name='Derived from official income comparative',
+            source_url=source.source_url, sha256=source.sha256, source_path=source.path,
+            available_at=known_at, created_at=known_at, fetched_at=known_at,
+            validation_status='pending' if issues else 'verified', human_reviewed=False,
+            metadata=dict(derivation_formula=GROWTH_VERSION, formula='(current / prior - 1) * 100',
+                automatic_cross_source_verification=not issues,
+                assurance_basis='BOTH_RETAINED_INPUTS_REQUIRED_FOR_INHERITED_ASSURANCE',
+                statement_scope='consolidated', currency='CNY',
+                input_fact_ids=[p['data_point_id'] for p in inputs], evidence_refs=[ref],
+                prior_period_label=row['prior_period_label'], source_observation_verified=True,
+                rejection_reasons=issues, derivation_rule_pit_status='NOT_ADMITTED'))
+        (observations if issues else admitted).append(point)
+        reports.append(dict(field_name=output, status='SOURCE_VERIFIED_PENDING_INPUT_ADMISSION' if issues else 'FACT_ADMITTED',
+                            value=value, issues=issues, evidence_refs=[ref]))
+    return admitted, observations, reports
 
 
 def validate_debt_scope(symbol: str, period: str, components: list[dict], *,
@@ -122,13 +238,15 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
     original = deepcopy(points)
     packet = extract_retained_annual(root, source, evaluation_at=evaluation_at, cache_dir=cache_dir)
     company = [deepcopy(p) for p in points if p.get('symbol') == source.symbol
-               and _point_available_at(p, evaluation_at) is not None]
+               and _point_available_at(p, evaluation_at) is not None
+               and (p.get('metadata') or {}).get('derivation_formula') not in DERIVED_VERSIONS]
     before = evaluate_financial_quality(source.symbol, name, sector, company,
                                         evaluation_date=evaluation_at.date())
     if components is None:
         # Existing numeric balances remain unclassified until note review.
         components = [p for p in company if p.get('field_name') in DEBT_LABELS
-                      and p.get('period_label') == source.period]
+                      and p.get('period_label') == source.period
+                      and p.get('source_id') != (p.get('metadata') or {}).get('secondary_source_id')]
     scope = validate_debt_scope(source.symbol, source.period, components,
                                 evaluation_at=evaluation_at)
     binding_issues = []
@@ -202,6 +320,7 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
     # Complete scope is necessary but not sufficient to manufacture the scorer's
     # independent verification flag. Retain the existing aggregate's assurance.
     adopted = []
+    adopted_points = []
     if scope['complete_debt_verified']:
         for p in company:
             if (p['field_name'] == 'interest_bearing_debt' and p['period_label'] == source.period
@@ -210,20 +329,254 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
                     and (p.get('metadata') or {}).get('statement_scope') == 'consolidated'
                     and (p.get('metadata') or {}).get('currency') == 'CNY'
                     and (p.get('metadata') or {}).get('automatic_cross_source_verification') is True
-                    and not (p.get('metadata') or {}).get('evidence_quarantine')):
-                meta = p.setdefault('metadata', {})
+                    and not (p.get('metadata') or {}).get('evidence_quarantine')
+                    and (p.get('metadata') or {}).get('derivation_formula') != VERSION):
+                derived = deepcopy(p)
+                meta = derived.setdefault('metadata', {})
+                clocks = [datetime.fromisoformat(source.available_at)]
+                secondary_ids = {(item.get('metadata') or {}).get('secondary_data_point_id') for item in components}
+                secondary_points = [item for item in company if item.get('data_point_id') in secondary_ids]
+                for input_point in [p, *components, *secondary_points]:
+                    for key in ('available_at', 'fetched_at', 'created_at'):
+                        if input_point.get(key):
+                            clocks.append(datetime.fromisoformat(str(input_point[key])))
+                    reviewed = (input_point.get('metadata') or {}).get('debt_scope_reviewed_at')
+                    if reviewed:
+                        clocks.append(datetime.fromisoformat(reviewed))
+                if any(clock.utcoffset() is None or clock > evaluation_at for clock in clocks):
+                    raise ValueError('Derived debt input availability is invalid at cutoff')
+                known_at = max(clocks).isoformat()
                 meta.update(complete_debt_verified=True, debt_scope_validation=scope,
-                            derivation_formula=VERSION)
-                adopted.append(p['data_point_id'])
-    after = evaluate_financial_quality(source.symbol, name, sector, company,
+                            derivation_formula=VERSION, supersedes_id=p['data_point_id'],
+                            input_fact_ids=[p['data_point_id'], *scope['input_fact_ids'],
+                                            *sorted(identity for identity in secondary_ids if identity)],
+                            derivation_available_at=known_at,
+                            availability_basis='MAX_BOUND_INPUT_CLOCKS_NOT_FIRST_COMPUTATION',
+                            derivation_rule_pit_status='NOT_ADMITTED')
+                version_hash = hashlib.sha256(json.dumps(dict(source=asdict(source), scope=scope,
+                    original=p, components=components, independent_points=secondary_points),
+                    sort_keys=True, default=str).encode()).hexdigest()
+                derived.update(data_point_id=p['data_point_id'] + ':scope:' + version_hash,
+                    created_at=known_at, available_at=known_at)
+                adopted.append(derived['data_point_id'])
+                adopted_points.append(derived)
+    ratio_points, ratio_adoption = _derive_balance_ratio(source, company, packet, evaluation_at)
+    adopted_points.extend(ratio_points)
+    growth_points, growth_observations, growth_adoption = _derive_income_growth(source, company, packet)
+    adopted_points.extend(growth_points)
+    after = evaluate_financial_quality(source.symbol, name, sector, company + adopted_points,
                                        evaluation_date=evaluation_at.date())
     assert points == original
     return dict(version=VERSION, symbol=source.symbol, period=source.period,
+                company_name=name, sector=sector,
                 evaluation_at=evaluation_at.isoformat(), mode='RETAINED_SOURCE_REEVALUATION',
                 source_extraction=packet, candidate_matches=matches, debt_scope=scope,
                 before=asdict(before), after=asdict(after), adopted_debt_fact_ids=adopted,
+                adopted_points=adopted_points,
+                balance_ratio_adoption=ratio_adoption,
+                income_growth_adoption=growth_adoption,
+                sourced_arithmetic_points=growth_observations,
                 input_points_sha256=hashlib.sha256(json.dumps(points, sort_keys=True, default=str).encode()).hexdigest(),
                 state='QUALITY_EVALUATED' if after.total_score is not None else 'DATA_UNAVAILABLE',
                 next_action=('RETAIN_CURRENT_RESEARCH_GATES' if after.total_score is not None
                              else 'VERIFY_MISSING_SAME_PERIOD_FACTS_AND_DEBT_NOTE_CLASSIFICATIONS'),
                 verification_created=False, formal_eligibility=False, action='no_order')
+
+
+def consume_retained_enrichment(root: Path, points: list[dict], sources: list[dict], *,
+                               evaluation_at: datetime) -> tuple[list[dict], list[dict]]:
+    """Re-run original and independent-source checks, never trust saved PASS flags.
+
+    Source declarations belong to the hash-bound financial export. Existing
+    admitted facts retain their IDs and assurance; only debt scope is derived.
+    """
+    if not isinstance(sources, list) or len(sources) > 128:
+        raise ValueError('retained enrichment sources require a bounded list of at most 128')
+    merged = [deepcopy(p) for p in points if (p.get('metadata') or {}).get('derivation_formula') not in DERIVED_VERSIONS]
+    reports, seen = [], set()
+    for declaration in sources:
+        source = RetainedAnnualSource(**declaration)
+        identity = (source.symbol, source.period)
+        if identity in seen:
+            raise ValueError('duplicate retained enrichment source identity')
+        seen.add(identity)
+        result = enrich_retained_company(root, source, merged, evaluation_at=evaluation_at,
+            cache_dir=root / '.tmp/value-enrichment-consumption')
+        identities = {p['data_point_id']: p for p in merged if p.get('data_point_id')}
+        for point in result['adopted_points']:
+            if point['data_point_id'] in identities:
+                if identities[point['data_point_id']] != point:
+                    raise ValueError('conflicting derived financial fact identity')
+            else:
+                merged.append(point)
+                identities[point['data_point_id']] = point
+        reports.append({'symbol': source.symbol, 'period': source.period,
+            'source': declaration, 'debt_scope': result['debt_scope'],
+            'adopted_debt_fact_ids': result['adopted_debt_fact_ids'],
+            'adopted_fact_ids': [p['data_point_id'] for p in result['adopted_points']],
+            'balance_ratio_adoption': result['balance_ratio_adoption'],
+            'income_growth_adoption': result['income_growth_adoption'],
+            'verification_created': False, 'formal_eligibility': False})
+    return merged, reports
+
+
+def register_enriched_research(result: dict, *, root: Path, points: list[dict],
+                              repository, case, facts, run_id: str) -> dict:
+    """Consume admitted enrichment through existing typed research codecs.
+
+    The caller supplies its case/model contract. Financial completeness and
+    economic approval are deliberately not inferred from source admission.
+    """
+    from ...research_artifacts import ResearchArtifactIdentity, parse_stored_artifact_payload
+    from ...research_artifact_codecs import artifact_payload
+
+    if case.symbol != result['symbol'] or facts.symbol != result['symbol']:
+        raise ValueError('Enrichment research identity mismatch')
+    if facts.as_of > case.as_of:
+        raise ValueError('Research facts exceed case date')
+    cutoff = datetime.fromisoformat(result['evaluation_at'])
+    if case.generated_at > cutoff or case.as_of > cutoff.date():
+        raise ValueError('Research case unavailable at enrichment cutoff')
+    source = RetainedAnnualSource(**result['source_extraction']['identity']['source'])
+    checked = enrich_retained_company(root, source, points, evaluation_at=cutoff,
+        cache_dir=root / '.tmp/value-enrichment-extraction',
+        name=result.get('company_name'), sector=result.get('sector'))
+    # JSON normalization allows persisted Decimal values to be revalidated.
+    for field in ('adopted_points', 'sourced_arithmetic_points', 'after', 'input_points_sha256'):
+        normalize = lambda value: json.loads(json.dumps(value, default=str))
+        if normalize(checked[field]) != normalize(result[field]):
+            raise ValueError('Research admission differs from revalidated source facts: ' + field)
+    points = result['adopted_points']
+    if not points:
+        return {'status': 'REJECTED_WITH_REASON', 'issues': ['NO_ADMITTED_ENRICHMENT_FACTS'],
+                'artifacts': [], 'formal_eligibility': False, 'action': 'no_order'}
+    refs = {ref['id']: ref for ref in facts.evidence_refs}
+    inputs = dict(facts.operating_inputs)
+    for point in points:
+        if _point_available_at(point, cutoff) is None or not _accepted(point):
+            raise ValueError('Unadmitted enrichment fact cannot enter research')
+        inputs[point['field_name']] = Decimal(str(point['value']))
+        refs[point['data_point_id']] = dict(id=point['data_point_id'],
+            value=point['value'], unit=point['unit'], period_label=point['period_label'],
+            source_url=point['source_url'], sha256=point['sha256'],
+            input_fact_ids=point['metadata']['input_fact_ids'],
+            evidence_refs=point['metadata'].get('evidence_refs', []))
+    blockers = list(dict.fromkeys([*facts.blockers, 'ECONOMIC_REVIEW_NOT_GRANTED_BY_ENRICHMENT']))
+    updated_facts = replace(facts, operating_inputs=inputs, evidence_refs=list(refs.values()),
+                            blockers=blockers, verified=False)
+    kind, _ = artifact_payload(updated_facts)
+    identity = ResearchArtifactIdentity('security', case.symbol, kind, 'c3-v1', case.as_of, cutoff)
+    stored_facts = repository.save_object(updated_facts, identity=identity,
+        evidence_refs=list(refs.values()), run_id=run_id, advance_head=False)
+    repository.verify(stored_facts)
+    # Decode the stored payload before creating the dependent case: this binds
+    # research consumption to the repository version, not a parallel dict.
+    from ...research_input import facts_from_payload
+    consumed = facts_from_payload(parse_stored_artifact_payload(stored_facts))
+    case_ref = dict(id='value-enrichment-financial-facts', artifact_id=stored_facts.artifact_id,
+                    sha256=stored_facts.envelope.payload_sha256)
+    summary = dict(case.financial_summary, value_enrichment=dict(
+        financial_facts=case_ref, admitted_fact_ids=[p['data_point_id'] for p in points],
+        operating_inputs=consumed.operating_inputs, quality=result['after'],
+        sourced_arithmetic_observations=result.get('sourced_arithmetic_points', []),
+        complete_debt_verified=result['debt_scope']['complete_debt_verified'],
+        economic_admission='NOT_PROVEN', action='no_order'))
+    case_refs = {ref['id']: ref for ref in case.evidence_refs}
+    case_refs[case_ref['id']] = case_ref
+    updated_case = replace(case, financial_summary=summary, evidence_refs=list(case_refs.values()),
+        research_version=case.research_version + ':' + stored_facts.envelope.payload_sha256[:16],
+        generated_at=cutoff, run_id=run_id,
+        blockers=list(dict.fromkeys([*case.blockers, *blockers])))
+    stored_case = repository.save_object(updated_case,
+        identity=ResearchArtifactIdentity('security', case.symbol, 'research_case', 'c3-v1', case.as_of, cutoff),
+        evidence_refs=updated_case.evidence_refs, run_id=run_id, advance_head=False)
+    repository.verify(stored_case)
+    return dict(status='RESEARCH_INPUTS_UPDATED', artifacts=[asdict(stored_facts), asdict(stored_case)],
+        financial_facts_artifact_id=stored_facts.artifact_id,
+        research_case_artifact_id=stored_case.artifact_id,
+        financial_facts_sha256=stored_facts.envelope.payload_sha256,
+        research_case_sha256=stored_case.envelope.payload_sha256,
+        consumed_operating_inputs=consumed.operating_inputs,
+        formal_eligibility=False, economic_admission='NOT_PROVEN', action='no_order')
+
+
+def verify_enrichment_adoption(*, root: Path, result_binding: dict,
+                              financial_export_path: Path, financial_export_sha256: str,
+                              evaluation_at: datetime) -> dict:
+    """Verify bound immutable inputs; shared hash-keyed extraction cache may write.
+
+    Original bytes and clocks are checked on every cache hit. Cached extraction
+    is keyed by source and parser implementation; economic status is not cached.
+    """
+    from ..product.common import require_inside
+    from .value_research_queue import _load_bound
+    from ...infrastructure.screening.financial_export_v2 import load_retained_financial_export
+    from ...research_artifacts import ResearchArtifactEnvelope, ResearchArtifactIdentity
+
+    root = root.resolve()
+    if evaluation_at.utcoffset() is None:
+        raise ValueError('Adoption verification cutoff must include timezone')
+    path = require_inside(root / 'runtime', root / result_binding['path'], 'enrichment result')
+    if path.stat().st_size > 32_000_000:
+        raise ValueError('enrichment result exceeds verification budget')
+    result = _load_bound(path, result_binding['sha256'])
+    stamp = datetime.fromisoformat(result['evaluation_at'])
+    if stamp.utcoffset() is None or stamp > evaluation_at or result.get('action') != 'no_order':
+        raise ValueError('Enrichment result unavailable at verification cutoff')
+    export = require_inside(root / 'runtime', financial_export_path, 'financial export')
+    _load_bound(export, financial_export_sha256)
+    points, _ = load_retained_financial_export(export, evaluation_at=stamp)
+    source = RetainedAnnualSource(**result['source_extraction']['identity']['source'])
+    checked = enrich_retained_company(root, source, points, evaluation_at=stamp,
+        cache_dir=root / '.tmp/value-enrichment-extraction',
+        name=result.get('company_name'), sector=result.get('sector'))
+    for field in ('adopted_points', 'sourced_arithmetic_points', 'after', 'input_points_sha256'):
+        if json.loads(json.dumps(checked[field], default=str)) != result[field]:
+            raise ValueError('Enrichment result differs from revalidated source facts: ' + field)
+    registration = result.get('research_registration')
+    registered = False
+    if registration and registration.get('status') == 'RESEARCH_INPUTS_UPDATED':
+        artifacts = {}
+        for stored in registration['artifacts']:
+            raw = stored['envelope']
+            ident = raw['identity']
+            identity = ResearchArtifactIdentity(**dict(ident,
+                as_of=datetime.fromisoformat(ident['as_of']).date(),
+                available_at=datetime.fromisoformat(ident['available_at'])))
+            if identity.scope_key != source.symbol or identity.available_at != stamp:
+                raise ValueError('Registered enrichment artifact identity mismatch')
+            envelope = ResearchArtifactEnvelope(identity=identity, canonical_payload=raw['canonical_payload'],
+                payload_sha256=raw['payload_sha256'], evidence_refs=tuple(raw['evidence_refs']), run_id=raw['run_id'])
+            kind = identity.artifact_type
+            if kind in artifacts:
+                raise ValueError('Duplicate registered enrichment artifact')
+            artifacts[kind] = (stored['artifact_id'], envelope)
+        facts_id, facts = artifacts['financial_facts']
+        case_id, case = artifacts['research_case']
+        if (facts_id != registration['financial_facts_artifact_id']
+                or case_id != registration['research_case_artifact_id']
+                or facts.payload_sha256 != registration['financial_facts_sha256']
+                or case.payload_sha256 != registration['research_case_sha256']):
+            raise ValueError('Registered enrichment artifact binding mismatch')
+        facts_payload = facts.payload_object()
+        from ...research_input import facts_from_payload
+        consumed = facts_from_payload(facts_payload)
+        for point in checked['adopted_points']:
+            if consumed.operating_inputs.get(point['field_name']) != Decimal(str(point['value'])):
+                raise ValueError('Registered facts did not consume admitted enrichment')
+        case_link = case.payload_object()['financial_summary']['value_enrichment']['financial_facts']
+        if case_link.get('artifact_id') != facts_id or case_link.get('sha256') != facts.payload_sha256:
+            raise ValueError('Registered research case did not consume financial facts version')
+        observations = case.payload_object()['financial_summary']['value_enrichment'].get(
+            'sourced_arithmetic_observations', [])
+        if observations != checked.get('sourced_arithmetic_points', []):
+            raise ValueError('Registered research observations differ from sourced arithmetic')
+        registered = True
+    return dict(status='VERIFIED_FACT_ADOPTION', symbol=source.symbol,
+        adopted_fact_ids=[p['data_point_id'] for p in checked['adopted_points']],
+        adopted_fact_count=len(checked['adopted_points']), research_inputs_updated=registered,
+        sourced_arithmetic_observation_count=len(checked.get('sourced_arithmetic_points', [])),
+        quality_coverage_before=str(checked['before']['coverage_ratio']),
+        quality_coverage_after=str(checked['after']['coverage_ratio']),
+        complete_debt_verified=checked['debt_scope']['complete_debt_verified'],
+        new_fact_approvals=0, formal_eligibility=False, action='no_order')

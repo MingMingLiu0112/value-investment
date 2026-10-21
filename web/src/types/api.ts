@@ -677,6 +677,30 @@ export interface HistoryResponse {
   counts?: { symbols: number; versions: number };
   items: ResearchHistoryItem[];
   note?: string;
+  observation_changes?: {
+    status: "SOURCE_REVALIDATED" | "UNAVAILABLE";
+    scope: "OBSERVATION_ONLY";
+    completed_session?: string;
+    evaluated_at?: string;
+    formal_eligibility: false;
+    action: "no_order";
+    items: Array<{
+      symbol: string;
+      transition:
+        | "new"
+        | "continue"
+        | "approach"
+        | "triggered"
+        | "invalid"
+        | "expired"
+        | "left";
+      reason: string;
+      trend_strengthened: boolean;
+      selected_today: boolean;
+      fresh_evidence: boolean;
+      market_trade_date: string;
+    }>;
+  };
 }
 
 export interface ResearchVersionRow {
@@ -889,6 +913,7 @@ export interface HeldContinuityResponse {
     review_reasons: string[];
     data_gaps: string[];
     strategy_plan: CurrentPricePlan | null;
+    actionable_decisions?: import("../components/ActionableDecisionResult").ConditionalAccountDecision[];
   }[];
 }
 

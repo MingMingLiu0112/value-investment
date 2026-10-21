@@ -42,6 +42,9 @@ def test_reuse_requires_all_active_cases_not_retired_survivors(tmp_path, monkeyp
             'quote_date': '2026-10-14', 'latest_completed_session': '2026-10-14'}})
     check = lambda: module.refresh_readiness(tmp_path, now=datetime.now(timezone.utc), symbols=['600887'])
     assert check()['prices_ready'] and check()['quotes_ready']
+    assert not check()['continuity_ready']
+    monkeypatch.setattr(module, 'read_observation_changes', lambda *a, **k: {'status': 'SOURCE_REVALIDATED'})
+    assert check()['continuity_ready']
     rows.pop()
     assert not check()['prices_ready']
     rows.append({'symbol': symbols[-1], 'price_action_plan': {'candidate_lifecycle': 'PREVIOUS'}})

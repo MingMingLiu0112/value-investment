@@ -5,7 +5,7 @@ Callers supply the completed exchange session, never the machine's date.
 """
 
 from copy import deepcopy
-from datetime import date, datetime
+from datetime import date, datetime, time
 import hashlib
 import json
 from pathlib import Path
@@ -89,8 +89,8 @@ def _observations(root, binding, now):
 
 def _compare(current, previous, *, completed_session, leave_symbols):
     symbols = sorted(current.keys() | previous.keys())
-    if len(symbols) > 20:
-        raise ValueError("Continuity union exceeds 20 symbols")
+    if len(symbols) > 40:
+        raise ValueError("Continuity union exceeds 40 symbols")
     if not set(leave_symbols) <= set(symbols):
         raise ValueError("Cannot leave an unknown observation")
     rows = []
@@ -140,7 +140,7 @@ def _compare(current, previous, *, completed_session, leave_symbols):
 
 def compare_observation_continuity(*, root: Path, current_binding: dict,
                                    previous_binding: dict | None, completed_session: date,
-                                   now: datetime, leave_symbols=()) -> dict:
+                                   now: datetime, leave_symbols=(), held_symbols=()) -> dict:
     """Verify two retained registries and return deterministic observation changes.
 
     Absence from today's shortlist does not imply an exit. Only explicit exits,
@@ -149,15 +149,30 @@ def compare_observation_continuity(*, root: Path, current_binding: dict,
     """
     if now.utcoffset() is None or type(completed_session) is not date:
         raise ValueError("Explicit session and timezone-aware cutoff required")
+    local_now = now.astimezone(CHINA)
     if (not is_exchange_session("SSE", completed_session)
-            or completed_session > now.astimezone(CHINA).date()):
+            or completed_session > local_now.date()
+            or (completed_session == local_now.date() and local_now.time() < time(15))):
         raise ValueError("Invalid completed exchange session")
+    held_symbols = tuple(held_symbols)
+    if (len(held_symbols) > 20 or len(set(held_symbols)) != len(held_symbols)
+            or any(not isinstance(symbol, str) or len(symbol) != 6
+                   or not symbol.isascii() or not symbol.isdigit() for symbol in held_symbols)):
+        raise ValueError("Bounded unique held security identities required")
     root = Path(root).resolve()
     current = _observations(root, current_binding, now)
     previous = _observations(root, previous_binding, now) if previous_binding else {}
+    rows = _compare(current, previous, completed_session=completed_session, leave_symbols=leave_symbols)
+    by_symbol = {row["symbol"]: row for row in rows}
+    # Expiry or shortlist removal never disposes of a caller-supplied holding.
+    monitoring = [dict(symbol=symbol, status="SEPARATE_HOLDING_REASSESSMENT_REQUIRED",
+        observation_transition=by_symbol.get(symbol, {}).get("transition"),
+        observation_binding=(by_symbol[symbol]["observation"]["case_binding"] if symbol in by_symbol else None),
+        ownership_verified=False, action_eligibility=False, action="no_order")
+        for symbol in sorted(held_symbols)]
     return dict(schema_version="hotspot-observation-continuity-v1", scope="OBSERVATION_ONLY",
         completed_session=completed_session.isoformat(), evaluated_at=now.isoformat(),
-        items=_compare(current, previous, completed_session=completed_session, leave_symbols=leave_symbols),
+        items=rows, holding_monitoring_requests=monitoring,
         holdings_scope="NOT_EVALUATED_SEPARATE_MONITORING_REQUIRED",
         price_admitted=False, current_price_admitted=False,
         formal_eligibility=False, action_eligibility=False, action="no_order")

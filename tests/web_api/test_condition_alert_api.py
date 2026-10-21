@@ -4,6 +4,24 @@ import pytest
 from test_held_continuity_api import client_for, unlock
 
 
+def test_retained_observation_choices_require_valid_unexpired_original_plan(tmp_path, monkeypatch):
+    from value_investment_agent.presentation.web_api import condition_alert_routes as routes
+    def candidate(symbol, retained, valid):
+        plan = {"retained_observation_valid": valid}
+        if retained:
+            plan["candidate_lifecycle"] = "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"
+        return dict(symbol=symbol, company_name="TEST_ONLY", price_action_plan=plan)
+    monkeypatch.setattr(routes, "load_price_conditions", lambda *args, **kwargs: dict(items=[
+        candidate("000001", False, None), candidate("000002", True, True),
+        candidate("000003", True, False), candidate("000004", True, None)]))
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY.jsonl", monkeypatch)
+    unlock(client, secret)
+    response = client.get("/api/v1/condition-alerts")
+    assert response.status_code == 200
+    assert [row["symbol"] for row in response.json()["public_observation"]["choices"]] == ["000001", "000002"]
+    assert response.json()["monitor_running"] is False
+
+
 def test_missing_candidates_cannot_hide_running_session_or_stop(tmp_path, monkeypatch):
     from value_investment_agent.presentation.web_api import condition_alert_routes as routes
 

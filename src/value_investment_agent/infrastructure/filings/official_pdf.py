@@ -7,6 +7,14 @@ import requests
 import pypdfium2 as pdfium
 
 
+def is_transient_evidence_failure(error: Exception) -> bool:
+    """Classify transport failures without leaking the HTTP client into use cases."""
+    return isinstance(error, (OSError, TimeoutError, ConnectionError,
+        requests.Timeout, requests.ConnectionError)) or (
+        isinstance(error, requests.HTTPError) and error.response is not None
+        and (error.response.status_code == 429 or error.response.status_code >= 500))
+
+
 def validate_pdf_original(path: Path) -> None:
     raw = path.read_bytes()
     if not raw.startswith(b"%PDF-") or b"%%EOF" not in raw[-4096:]:

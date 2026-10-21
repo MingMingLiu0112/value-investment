@@ -382,6 +382,23 @@ export default function DailyDecisions() {
                           .data_gap_count
                       }{" "}
                       家。
+                      {update.data.last_run.research_priority.execution
+                        .verified_adopted_fact_count != null && (
+                        <span>
+                          {" "}
+                          已核验采纳{" "}
+                          {
+                            update.data.last_run.research_priority.execution
+                              .verified_adopted_fact_count
+                          }{" "}
+                          个派生事实，
+                          {
+                            update.data.last_run.research_priority.execution
+                              .research_inputs_updated_count
+                          }{" "}
+                          家已更新研究输入；经济审核独立保留。
+                        </span>
+                      )}
                       {update.data.last_run.research_priority.execution.items?.map(
                         (item) => (
                           <span key={item.symbol}>
@@ -390,6 +407,22 @@ export default function DailyDecisions() {
                             {item.extracted_candidates == null
                               ? "原件未通过提取核验。"
                               : `提取 ${item.extracted_candidates} 个候选，匹配留存事实 ${item.matched_candidates ?? "未核验"} 个；匹配不代表新增事实准入。`}
+                            {item.adoption?.status ===
+                              "VERIFIED_FACT_ADOPTION" && (
+                              <span>
+                                {" "}
+                                已核验采纳 {
+                                  item.adoption.adopted_fact_count
+                                }{" "}
+                                个派生事实；财务覆盖{" "}
+                                {item.adoption.quality_coverage_before} →{" "}
+                                {item.adoption.quality_coverage_after}；
+                                {item.adoption.research_inputs_updated
+                                  ? "已更新研究输入"
+                                  : "尚未关联研究版本"}
+                                。
+                              </span>
+                            )}
                           </span>
                         ),
                       )}

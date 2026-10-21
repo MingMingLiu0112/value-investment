@@ -9,6 +9,59 @@ vi.mock("@umijs/max", () => ({
 import { HoldingsAttention } from "../src/components/HoldingsAttention";
 import type { DecisionItem } from "../src/types/api";
 
+it("offers explicit quantity review only for an owned thesis-bound sleeve", () => {
+  const decision = {
+    action: "no_order",
+    decision_action: "UNASSESSABLE",
+    symbol: "000333",
+    strategy: "CORE_VALUE",
+    decision_reason: "需要指定数量",
+    blockers: [],
+    review_quantity: null,
+    broker_execution_permission: false,
+    ownership_verified: true,
+    held_quantity: "200",
+    entry_thesis_record_sha256: "a".repeat(64),
+  };
+  const state = {
+    retry: () => {},
+    portfolio: {
+      status: "CONNECTED",
+      revision: 4,
+      positions: [
+        {
+          symbol: "000333",
+          exchange: "SZSE",
+          sleeves: [{ sleeve: "CORE_VALUE", quantity: "200" }],
+        },
+      ],
+    },
+    risk: { facts: { account_scope: "TEST_ONLY" }, blockers: [] },
+    heldContinuity: {
+      items: [
+        {
+          symbol: "000333",
+          quantity: "200",
+          sellable_quantity: "200",
+          review_reasons: [],
+          data_gaps: [],
+          actionable_decisions: [decision],
+        },
+      ],
+    },
+  } as unknown as PrivateStateHandle;
+  let html = renderToStaticMarkup(
+    <HoldingsAttention state={state} decisions={[]} />,
+  );
+  expect(html).toContain("核验卖出条件");
+  expect(html).toContain("不提交订单");
+  decision.ownership_verified = false;
+  html = renderToStaticMarkup(
+    <HoldingsAttention state={state} decisions={[]} />,
+  );
+  expect(html).not.toContain("核验卖出条件");
+});
+
 it("labels test holdings on the daily surface as non-personal", () => {
   const state = {
     risk: { facts: { account_scope: "TEST_ONLY_BROWSER_LOOP" }, blockers: [] },

@@ -24,17 +24,12 @@ def test_public_actual_entry_and_pass_flags_do_not_prove_private_ownership(cover
     original = deepcopy(source)
     row = project([position("300364", sleeve)], lambda _: source,
                   risk={"engine": {"status": "PASS"}, "blockers": []})["items"][0]
-    assert row["decision_assessment_status"] == "CODE_GAP"
+    assert row["decision_assessment_status"] == "UNASSESSABLE"
     gaps = {gap["code"]: gap for gap in row["code_gaps"]}
-    assert set(gaps) == {
-        "HELD_ENTRY_THESIS_IDENTITY_ADAPTER_MISSING",
-        "HELD_ANNOUNCEMENT_REVIEW_ADAPTER_MISSING",
-        "HELD_ADVISORY_ENGINE_ADAPTER_MISSING",
-    }
-    assert all(gap["gap_category"] == "CODE_GAP" and gap["required_interface"] for gap in gaps.values())
-    assert set(gaps) <= set(row["data_gaps"])
-    assert "ENTRY_THESIS_REVIEW_REQUIRED" in row["data_gaps"]
-    assert "ANNOUNCEMENT_REVIEW_REQUIRED" in row["data_gaps"]
+    assert gaps == {}
+    assert "AUTHENTICATED_PERSONAL_ENTRY_SUBJECT_REQUIRED" in row["data_gaps"]
+    assert "OWNED_ENTRY_DEPENDENCIES_REQUIRED" in row["data_gaps"]
+    assert row["actionable_decision"]["decision_action"] == "UNASSESSABLE"
     assert ("ANNOUNCEMENT_COVERAGE_UNKNOWN" in row["data_gaps"]) == (coverage == "UNKNOWN")
     assert row["formal_eligibility"] is False
     assert row["personal_sell_permission"] is False
@@ -45,7 +40,7 @@ def test_public_actual_entry_and_pass_flags_do_not_prove_private_ownership(cover
 
 def test_missing_plan_keeps_code_gap_separate_from_current_evidence_gap():
     row = project([position("300364")], lambda _: None)["items"][0]
-    assert row["decision_assessment_status"] == "CODE_GAP"
+    assert row["decision_assessment_status"] == "UNASSESSABLE"
     assert "CURRENT_STRATEGY_PLAN_UNAVAILABLE" in row["data_gaps"]
     assert "TEST_ONLY_RISK_GAP" in row["data_gaps"]
     assert row["review_reasons"] == []
@@ -55,7 +50,7 @@ def test_isolated_confirmed_journal_reports_adapter_gap_without_writes(service, 
     before = service.journal.path.read_bytes()
     result = review_held_continuity(service.journal, repository_root=tmp_path,
         generated_at=NOW, plan_provider=lambda _: None)
-    assert result["items"][0]["decision_assessment_status"] == "CODE_GAP"
+    assert result["items"][0]["decision_assessment_status"] == "UNASSESSABLE"
     assert result["revision"] == len(service.records())
     assert service.journal.path.read_bytes() == before
 

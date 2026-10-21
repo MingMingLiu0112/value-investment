@@ -1,5 +1,41 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+## 2026-10-21 V5 integrated vertical workflows (acceptance running)
+
+Baseline 815315a33ae6a0bf579735cace886afa8068e453; inherited V4 working
+changes preserved. Three disjoint workers completed value adoption, hotspot
+continuity/validation and private thesis/held-action implementation. Root wired
+verified adoption summaries, authenticated explicit sell reviews, source-replayed
+observation history, retained alert choices and continuity-aware daily refresh.
+
+Actual retained 600519 evidence admitted one derived debt/assets ratio and
+persisted/reloaded typed research inputs; quality coverage moved from 5/9 to
+6/9. Two growth observations remain unadmitted pending prior-input assurance.
+Complete financing scope and economic/model/event/G3/price admission remain
+unproven. Extraction matches and synthetic approvals do not grant real eligibility.
+
+Latest actual SAFE_REFRESH published pub-70c87bb81ba42bb5a51e with verified
+source hashes and October 21 prices; overall PARTIAL because value enrichment
+still has source/scope gaps. Subsequent READ_ONLY verified the same publication
+with exit 0; that is read-only integrity, not a successful new research run.
+Live continuity was independently revalidated: 15 items, 9 continue/6 expired.
+Actual current formal admission remains zero. Excel and real private data were
+not modified; no production deployment, scheduler or order was invoked.
+
+TEST_ONLY browser work confirmed durable retrospective thesis reconstruction,
+reload recovery, a manually recorded simulated sale and correct cash/quantity/
+realized-PnL changes. This is isolated bookkeeping evidence, not trading profit
+or real user approval. Real and test browser acceptance, source regressions and
+exact-commit CI are still being finalized; do not mark total closure PASS.
+
+Evidence directory: artifacts/current/dual-strategy-v5/. Remaining executable
+work: final build/restart, desktop/mobile current API/browser verification,
+isolated clean-source Core checks, exact-SHA Core/Web CI and final acceptance.
+The original full working-tree Core run had 4005 passed/35 skipped/7 failed;
+five concrete/race-fixture failures were repaired; two inventory failures are
+caused by preserved unrelated untracked p0 scripts and require clean-source
+verification, not deletion or an inventory waiver. action=no_order.
+
 ## 2026-10-18 S4 browser bookkeeping loop and S6 bounded Mock workflows
 
 ### Successor: workflow-specific Web research and private retrospective
@@ -1170,3 +1206,85 @@ durable authenticated personal Entry Thesis confirmation and held-decision
 handoff, admitted enrichment revisions/re-ranking, and complete current cross-day
 history. Separate financial, release and real-account reconciliation gaps remain.
 Neither CI green nor these UI checks establish a usable real trading strategy.
+
+## V4 S0: actual breakpoints (2026-10-21)
+
+Task: DUAL-STRATEGY-TRADE-READINESS-CLOSURE-V4. Actual baseline HEAD is
+815315a33ae6a0bf579735cace886afa8068e453, with pre-existing uncommitted audit
+artifacts and public runtime pointers preserved. No clean-tree claim is made.
+Machine baseline: artifacts/current/trade-readiness-v4/baseline.json. Actual
+application HTTP probe returned 5 evaluated / 15 unassessable / 0 eligible,
+scope PUBLISHED_COMPANIES_ONLY, not a new whole-market screening result.
+Measured public daily response 4.897s, identity 1.907s, update-status 0.720s;
+these are single local observations, not latency SLA measurements.
+
+| Question / existing authority | Input and observed failure | Minimum implementation scope |
+| --- | --- | --- |
+| Quality: application/research/value_evidence_enrichment_v1.py:enrich_retained_company | Retained report + registered independent facts; extraction does not establish complete debt scope | Retain explicit debt-component classifications; source-bound adoption, never missing-to-zero |
+| Latest two debt gaps: infrastructure/screening/value_evidence_enrichment_v1.py:validate_debt_scope | 000589/000612 annual originals; unverified financing boundaries prevent a full score | Verify components, consolidation, notes and duplicate adjustments |
+| Queue feedback: application/research/value_enrichment_batch.py:execute_value_enrichment_batch | Bound queue and export; results do not mutate/adopt facts and selected[:budget] restarts at first issuers | Persist resumable progress; re-open only on changed evidence/rules or bounded retries; lawful adoption feedback |
+| Cross-day: application/hotspot/observation_continuity.py:compare_observation_continuity | Current/previous bound registry; retained replay exists but full current Web continuity is incomplete | Preserve off-Top5 observation history and separate held monitoring |
+| Release: application/hotspot/independent_admission.py:load_independent_admission | config/current-hotspot-independent-admission-v1.json does not exist locally | Prepare evidence-specific lawful review handoff; never generate a real signature |
+| Strategy validation: domain/hotspot/independent_admission.py:evaluate_independent_hotspot | Missing signed release and current-rule validation proof | Version-bound PIT/cost/OOS evaluation using existing engines; report insufficient samples honestly |
+| Entry binding: application/portfolio/personal_entry_thesis.py:validate_personal_entry_thesis_binding_contract | Existing registered artifacts and BUY journal; returns CONTRACT_VALIDATED_NOT_PERSISTED | Authenticated append-only confirmation, correction/revocation, durable replay |
+| Held actions: application/portfolio/held_continuity.py:_held_decision_code_gaps | Entry/announcement/advisory adapters absent; no trustworthy original-thesis ownership | Resolve journal-backed identity into existing advisory and risk contracts |
+| Pretrade risk: application/portfolio/private_risk_preview.py:preview_private_core_risk | Existing registered plan, private facts, fees, budgets; actual risk is already a prerequisite | Preserve and test shared budget rejection, no risk waiver from public flags |
+| Public results: application/decision/public_strategy_assessment.py:project_actionable_evaluation | Public plans lack complete research/release or trigger confirmation; no private capacity in public scope | Connect legitimate qualified services to personal review; keep NO_TRADE and UNASSESSABLE distinct |
+
+Initial red regression: tests/web_api/test_personal_entry_thesis_api.py produced
+3 failures because GET/POST Entry Thesis routes are absent (404 rather than
+authenticated 401/connected-state response). This is an engineering failure,
+not an account-input authorization wait. S1/S2/S3 implementation proceeds in
+disjoint scopes; Root owns shared routes, Web, integration and final verification.
+
+### V4 S2: hotspot quantitative validation and unsigned handoff
+
+2026-10-21 08:13 UTC sidecar review of the uncommitted working tree on
+815315a33ae6a0bf579735cace886afa8068e453. Receipt:
+`artifacts/current/trade-readiness-v4/hotspot-strategy-validation.json`.
+S2 remains PARTIAL; real strategy validation is NOT_PROVEN and formal release
+is BLOCKED. No real strategy readiness or current trading opportunity is claimed.
+
+Completed engineering includes a typed, hash-bound execution protocol and
+independently testable numeric engine. It computes dated minimum/proportional
+commissions, sell tax, transfer fees, slippage, unfilled/rejected orders, T+1,
+trade-return distributions, win/payoff ratios and bar-close equity drawdown.
+Predeclared disjoint test folds reset cash/inventory; cross-cutoff orders and
+future signal availability are rejected. Zero/base/double-cost scenarios rerun
+execution. Supplied frozen orders are not proof of historical strategy selection;
+no training or parameter fitting occurs, and strict PIT/OOS admission stays false.
+
+Read-only recomputation of the existing TEST_ONLY fixture matched the receipt:
+fold A has two trades, net PnL +186.40/-112.45 CNY, fees 21.05 CNY, slippage
+5.00 CNY, one T+1 rejection and maximum drawdown 0.01103922877562239849
+(fraction, approximately 1.104%). Fold B independently has one closed trade.
+The three-trade sample is REJECTED_INSUFFICIENT_SAMPLE against its predeclared
+fixture minimum of 30; that minimum is not a production strategy threshold.
+The fixture clock is synthetic 2026-10-24, not actual current market evidence.
+
+The retained ACTUAL handoff was rebuilt in memory and all eight input hashes
+reverified. Its selection date remains 2026-10-16: ten candidates/ten industries,
+one bound selection-date case, nine unassessed; six cases including historical
+cases, five conflicting/rejected and zero qualified structure observations.
+Separate retained ten-symbol structure-test coverage does not fill those nine
+current-report gaps. The handoff remains PENDING_INDEPENDENT_REVIEW, unsigned,
+formal_eligibility=false. The formal-release pointer is absent. Retrying the old
+five-case protocol still rejects the changed hash of
+`config/current-price-conditions.json`; neither the protocol nor pointer was rebound.
+
+Existing local test evidence: 37 quantitative/handoff tests passed in 13.72s;
+all 25 hotspot test files passed 307/failed 0/skipped 0 in 73.44s, recorded in
+`.tmp/v4-s2-execution-all.log` with SHA256
+`ddfdcabba938a5bb3a6fbeb5ca1abf1482226f13f3ef9ac7c60da98cba40a70f`.
+These are prior working-tree runs, not a new sidecar test run, exact-commit CI,
+or final Root integration acceptance. Frozen historical_validation.py hash remains
+806d890817611000a588c9ee76ee00cc18a2529d5e1ee9769c092cc00452c5ba.
+
+Remaining evidence includes contemporaneous universe/classification and rule/input
+availability, real frozen orders with dated execution-state/cost evidence,
+representative untouched OOS/Shadow observations and independent lawful review.
+The engine supports full exits only; partial fills, corporate actions and queue
+modeling remain unsupported. Real cost-adjusted strategy performance is NOT_RUN.
+Root owns latest integration tests, held-decision/private-risk code and API/Web/
+restart acceptance; this sidecar did not inspect or change private data or code.
+Only this V4 S2 subsection and its receipt were updated; action=no_order.

@@ -57,7 +57,7 @@ def test_actionable_assembly_uses_actual_risk_and_same_sleeve_holdings(sleeve, h
     assert decision['action'] == 'no_order'
     assert decision['status'] == ('UNASSESSABLE' if held else 'CONDITIONAL_MANUAL_REVIEW')
     assert decision['trade_eligible'] is decision['broker_execution_permission'] is False
-    assert decision['blockers'] == (['PERSONAL_ENTRY_THESIS_CONFIRMATION_RECORD_UNSUPPORTED'] if held else [])
+    assert decision['blockers'] == (['OWNED_ENTRY_DEPENDENCIES_REQUIRED', 'OWNED_CURRENT_ADD_ADVISORY_REQUIRED'] if held else [])
     if sleeve == 'HOTSPOT_SATELLITE':
         assert plan['plan']['formal_eligibility'] is False
         assert plan['plan']['independent_admission']['review_status'] == 'VERIFIED'

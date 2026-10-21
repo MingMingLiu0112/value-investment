@@ -20,7 +20,8 @@ def register_condition_alert_routes(api: FastAPI, *, project, sessions, port,
         candidates = load_price_conditions(project, now=clock(), research_version=None)
         return [item for item in candidates.get("items", [])
             if item.get("price_action_plan", {}).get("candidate_lifecycle")
-                != "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"]
+                != "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"
+            or item.get("price_action_plan", {}).get("retained_observation_valid") is True]
 
     def observation_view():
         state = observation_session.read()

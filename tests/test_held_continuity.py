@@ -221,3 +221,20 @@ def test_unbound_or_empty_sleeve_cannot_emit_exit(fault):
     assert row["quantity"] == "100" and row["strategy_plan"] is None
     assert "INVALIDATION_OR_EXIT_REVIEW" not in row["review_reasons"]
     assert "CURRENT_STRATEGY_PLAN_UNAVAILABLE" in row["data_gaps"]
+
+
+def test_same_security_resolves_both_held_strategy_plans(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+    from decimal import Decimal
+    hotspot = plan('300364')
+    core = dict(symbol='300364', action='no_order', schema_version='value-action-plan-v1', strategy='CORE_VALUE')
+    monkeypatch.setattr(continuity, 'load_price_conditions', lambda *a, **k:
+        dict(items=[dict(symbol='300364', price_action_plan=hotspot)]))
+    monkeypatch.setattr(continuity, 'load_registered_value_action_plans', lambda *a, **k: dict(items=[core]))
+    replayed = SimpleNamespace(trades=[], state=SimpleNamespace(lots=[
+        SimpleNamespace(symbol='300364', sleeve=sleeve, quantity=Decimal(100))
+        for sleeve in ('CORE_VALUE', 'HOTSPOT_SATELLITE')]))
+    _, provider = continuity.build_held_plan_provider(tmp_path, replayed, now=NOW)
+    assert provider.for_sleeve('300364', 'CORE_VALUE')['strategy'] == 'CORE_VALUE'
+    assert provider.for_sleeve('300364', 'HOTSPOT_SATELLITE')['strategy'] == 'HOTSPOT_SATELLITE'
+    assert provider.for_sleeve('300364', 'OTHER') is None

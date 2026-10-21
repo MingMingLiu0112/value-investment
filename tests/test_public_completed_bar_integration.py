@@ -40,13 +40,14 @@ def test_normal_plan_session_collects_completed_bars_deduplicates_and_replays(tm
     try:
         session.start("600519", plan_binding=binding)
         view = wait_stopped(session)
-        assert view["completed_plan_observation"]["status"] == "STRUCTURE_CONFIRMED_OBSERVATION"
+        assert view["completed_plan_observation"]["status"] == "WAITING_CONFIRMATION"
+        assert view["completed_plan_observation"]["structure_confirmation"] is False
         history = view["notification_inbox"]["history"]
         events = [row for row in history if row["input_kind"] == "COMPLETED_BAR"
                   and row["completed_bar"] is True]
         assert len(events) == 1
         event = events[0]
-        assert event["event_type"] == "STRUCTURE_CONFIRMED_OBSERVATION"
+        assert event["event_type"] == "BAR_CONFIRMATION_PENDING"
         assert event["period"] == "60m+15m"
         assert event["bar_end"] == "2026-09-28T02:30:00+00:00"
         assert set(event["completed_periods"]) == {"60m", "15m"}
@@ -110,7 +111,7 @@ def test_bar_receipt_captured_after_quote_uses_the_post_collection_sample_clock(
         assert view["samples"][0]["bar_collection_status"] == "CAPTURED"
         assert all(item["status"] != "STALE_OR_UNAVAILABLE"
                    for item in view["completed_plan_observation"]["periods"].values())
-        assert view["completed_plan_observation"]["status"] == "STRUCTURE_CONFIRMED_OBSERVATION"
+        assert view["completed_plan_observation"]["status"] == "WAITING_CONFIRMATION"
         assert view["completed_plan_observation"]["action"] == "no_order"
     finally:
         session.close()

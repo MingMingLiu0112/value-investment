@@ -72,6 +72,33 @@ it("prioritizes actual trades over research and proxy replay while a locked ledg
   expect(html).not.toContain("无实际成交");
 });
 
+it("shows verified retained observation changes without upgrading trading permission", () => {
+  state.data = {
+    items: [],
+    observation_changes: {
+      status: "SOURCE_REVALIDATED",
+      completed_session: "2026-10-20",
+      items: [
+        {
+          symbol: "000333",
+          transition: "continue",
+          trend_strengthened: true,
+          selected_today: false,
+          market_trade_date: "2026-10-19",
+        },
+      ],
+    },
+  };
+  const html = renderToStaticMarkup(<DecisionHistory />);
+  expect(html).toContain("/decisions/hotspot-000333");
+  expect(html).toContain("继续观察");
+  expect(html).toContain("保留观察历史");
+  expect(html).toContain("不代表交易批准");
+  expect(html).toContain("趋势增强");
+  state.data.observation_changes = { status: "UNAVAILABLE", items: [] };
+  expect(renderToStaticMarkup(<DecisionHistory />)).toContain("不等于没有变化");
+});
+
 it("offers keyboard-accessible snapshot choices and keeps the selected audit collapsed", () => {
   state.data = {
     items: [
