@@ -154,6 +154,12 @@ function forgetSession(): void {
   }
 }
 
+function forgetRefusedSession(token: string): void {
+  // A late 401 must not discard a newer authorization or its shared handshake.
+  if (!handshake && (sessionToken ?? readStoredToken()) === token)
+    forgetSession();
+}
+
 /**
  * Whether this tab already holds an unlock session. The private-state mapping
  * uses it to tell a session that expired (service restarted) apart from a
@@ -201,11 +207,15 @@ async function unlockSession(): Promise<string> {
 }
 
 async function operatorToken(): Promise<string> {
-  if (sessionToken) return sessionToken;
-  const stored = readStoredToken();
-  if (stored) {
-    sessionToken = stored;
-    return stored;
+  if (handshake) return handshake;
+  // A freshly supplied launch link takes priority over a stale stored session.
+  if (!fragmentSecret()) {
+    if (sessionToken) return sessionToken;
+    const stored = readStoredToken();
+    if (stored) {
+      sessionToken = stored;
+      return stored;
+    }
   }
   if (!handshake) {
     handshake = unlockSession()
@@ -224,38 +234,44 @@ async function post<T>(
   path: string,
   body: Record<string, unknown>,
 ): Promise<T> {
-  const send = async (): Promise<Response> =>
-    fetch(`/api/v1/${path}`, {
+  let usedToken = "";
+  const send = async (): Promise<Response> => {
+    usedToken = await operatorToken();
+    return fetch(`/api/v1/${path}`, {
       method: "POST",
       credentials: "same-origin",
       headers: {
         "Content-Type": "application/json",
-        [SESSION_HEADER]: await operatorToken(),
+        [SESSION_HEADER]: usedToken,
       },
       body: JSON.stringify(body),
     });
+  };
   let response = await send();
   if (response.status === 401) {
     // The session token expired or the service restarted; a rejected request
     // never touched the ledger, so one re-handshake and one retry is safe.
-    forgetSession();
+    forgetRefusedSession(usedToken);
     response = await send();
   }
   return (await read(response)) as T;
 }
 
 async function getPrivate<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const send = async (): Promise<Response> =>
-    fetch("/api/v1/" + path, {
+  let usedToken = "";
+  const send = async (): Promise<Response> => {
+    usedToken = await operatorToken();
+    return fetch("/api/v1/" + path, {
       signal,
       credentials: "same-origin",
-      headers: { [SESSION_HEADER]: await operatorToken() },
+      headers: { [SESSION_HEADER]: usedToken },
     });
+  };
   let response = await send();
   if (response.status === 401) {
     // Same re-handshake pattern as POST: the refused read never reached the
     // ledger, so one fresh token and one retry is safe.
-    forgetSession();
+    forgetRefusedSession(usedToken);
     response = await send();
   }
   return (await read(response)) as T;

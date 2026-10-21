@@ -75,3 +75,25 @@ manifest preserving the raw source SHA values and original manifest identity.
 Local runtime originals remain untouched. The original integration observation
 is retained rather than rewritten; its delivery-path claim is superseded by
 `public-packaging-correction.json` and the later exact-SHA CI result.
+
+New-source continuation: `600887-new-input-handoff.json` records an actual
+standard-model consumed candidate and read-only external-signature handoff.
+It preserves old source observations, rejects the old availability timeline,
+and records only a current local reobservation. It is not a new approved public
+valuation, online reacquisition, price-policy approval or historical PIT proof.
+The current private/public economics remain unchanged. Four review groups are
+unsigned; the announcement scan and signing identity remain explicit gaps.
+These local runtime dependencies are not included in the public source tree;
+fresh clones must fail closed rather than imply materials are available.
+
+`new-source-continuation.json` supersedes only the previous source-integration
+checkpoint: new 600887 consumed review material and a distinct 600519 event-only
+context now reach the existing authenticated Web handoff. Actual signatures are
+still absent. The loader recognizes properly authenticated imports and rejects
+revocation, incomplete journals and source drift; the wrapper rechecks before
+returning. `600887-new-input-*` and `600519-independent-event-*` are actual
+Windows browser evidence with a read-only TEST_ONLY account. Real personal data
+was not read or changed. The authorization-recovery regression was also repaired.
+192 focused integration tests, 248 full API tests and 320 Web tests pass;
+typecheck, format and build pass. Counts do not establish investment efficacy,
+final user acceptance or overall Goal completion.

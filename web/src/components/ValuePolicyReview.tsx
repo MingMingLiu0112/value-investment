@@ -175,6 +175,11 @@ function ExternalReviewHandoff({
       {material?.status === "NOT_READY" && (
         <HandoffNotReady material={material} />
       )}
+      {material?.supplemental_materiality_handoff && (
+        <IndependentEventSupplement
+          material={material.supplemental_materiality_handoff}
+        />
+      )}
       {material?.status === "EXTERNAL_SIGNATURE_REQUIRED" && (
         <>
           <p>
@@ -221,6 +226,24 @@ function ExternalReviewHandoff({
         </>
       )}
     </section>
+  );
+}
+
+export function IndependentEventSupplement({
+  material,
+}: {
+  material: PolicyHandoff["supplemental_materiality_handoff"];
+}) {
+  if (!material) return null;
+  return (
+    <details>
+      <summary>独立新版本公告审核材料</summary>
+      <p>
+        本材料属于单独消费的公告研究版本，不替换上方估值候选，不授予
+        G3、当前估值或操作资格。
+      </p>
+      <MaterialityHandoff material={material} />
+    </details>
   );
 }
 

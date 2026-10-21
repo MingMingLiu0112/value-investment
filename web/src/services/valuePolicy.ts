@@ -29,6 +29,7 @@ export type PolicyHandoffNotReady = {
   };
   verification: { approval_changed: false; research_admitted: false };
   materiality_handoff?: MaterialityReviewHandoff;
+  supplemental_materiality_handoff?: MaterialityReviewHandoff;
 };
 
 export type PolicyHandoff =
@@ -55,6 +56,7 @@ export type PolicyHandoff =
         commands?: { consume_signed_response: string; recompute: string };
         publication_required?: boolean;
       };
+      supplemental_materiality_handoff?: MaterialityReviewHandoff;
     };
 
 export type PolicySelection = {

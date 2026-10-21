@@ -11,16 +11,47 @@ from .research_reviews import prepare_pending_review_intake, prepare_pending_rev
 
 
 def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=False) -> dict:
+    """Keep an independent event-only version separate from current G3 materials."""
+    from .event_supplement_handoff import load_current_event_supplement_handoff
+    try:
+        event = load_current_event_supplement_handoff(root=root, symbol=symbol, now=now)
+    except (ValueError, OSError, KeyError, TypeError):
+        event = dict(status='MATERIALITY_HANDOFF_BLOCKED', action='no_order',
+            approval_granted=False, g3_approval_granted=False,
+            reason='独立公告研究版本当前核验未通过，不能交付签署回应。')
+    try:
+        result = _build_external_review_handoff(root=root, symbol=symbol, now=now, bound_draft=bound_draft)
+    except (ValueError, OSError, KeyError, TypeError):
+        if event is None:
+            raise
+        result = dict(action='no_order', status='NOT_READY', symbol=symbol,
+            blockers=['CURRENT_G3_HANDOFF_MISSING_OR_INVALID'],
+            verification=dict(approval_changed=False, research_admitted=False))
+    if event is not None:
+        try:
+            if load_current_event_supplement_handoff(root=root, symbol=symbol, now=now) != event:
+                raise ValueError('Independent event handoff changed during G3 projection')
+        except (ValueError, OSError, KeyError, TypeError):
+            event = dict(status='MATERIALITY_HANDOFF_BLOCKED', action='no_order',
+                approval_granted=False, g3_approval_granted=False,
+                reason='独立公告研究版本或授权在读取期间发生变化，请重新核验。')
+        result['supplemental_materiality_handoff'] = event
+    return result
+
+
+def _build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=False) -> dict:
     """Deliver the existing exact-version signing contract, never a local G3 button."""
     from .publication_chain import load_current_chain
     from .user_research_workflow import selected_review_candidate
     from ..decision.value_price_policy import load_value_policy_review, review_manifest_binding
     from ...infrastructure.evidence.trust_root_registry import pinned_trust_root_fingerprints
     from .pending_replay_publication import POINTER_PATH as REPLAY_POINTER_PATH, load_current_pending_replay
+    from .pending_candidate_supplement import load_current_pending_candidate_supplement
 
     root = root.resolve()
     draft_inputs = None
     replay = None
+    supplement = None
     replay_unavailable = dict(action='no_order', status='NOT_READY', symbol=symbol,
         blockers=['CURRENT_PENDING_REPLAY_MISSING_OR_INVALID'],
         verification=dict(approval_changed=False, research_admitted=False))
@@ -39,6 +70,18 @@ def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=F
                 result['bindings'] = draft_inputs
             return result
     else:
+        try:
+            supplement = load_current_pending_candidate_supplement(root=root, symbol=symbol)
+            if supplement is not None:
+                if (now.utcoffset() is None or
+                        datetime.fromisoformat(supplement['candidate']['generated_at']) > now):
+                    raise ValueError('Supplemental candidate is not yet available')
+                binding = supplement['candidate_binding']
+        except (ValueError, OSError, KeyError, TypeError):
+            return dict(action='no_order', status='NOT_READY', symbol=symbol,
+                blockers=['CURRENT_PENDING_CANDIDATE_SUPPLEMENT_MISSING_OR_INVALID'],
+                verification=dict(approval_changed=False, research_admitted=False))
+    if not bound_draft and supplement is None:
         try:
             replay = load_current_pending_replay(root=root, symbol=symbol)
             if replay is None and (root / REPLAY_POINTER_PATH).exists():
@@ -79,6 +122,14 @@ def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=F
         if (sha256_file(packet_path) != packet_binding['sha256']
                 or sha256_file(root / draft_inputs['draft']['path']) != draft_inputs['draft']['sha256']):
             raise ValueError('Bound review materials changed during read')
+    elif supplement is not None:
+        packet_binding = supplement['review_packet_binding']
+        packet_path = require_inside(root / 'runtime', root / packet_binding['path'], 'supplement review packet')
+        # The standard producer binds the consumed package/workbench. The
+        # adapter recomputes their packet and verifies its exact saved bytes.
+        consumed_materials = json.loads(packet_path.read_bytes())
+        if sha256_file(packet_path) != packet_binding['sha256']:
+            raise ValueError('Supplement review materials changed during read')
     elif replay is not None:
         packet_binding = replay['publication']['review_packet_binding']
         packet_path = require_inside(root / 'runtime', root / packet_binding['path'], 'replay review packet')
@@ -89,7 +140,7 @@ def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=F
             raise ValueError('Replay review materials changed during read')
     valuation_hash = preview['draft']['valuation_artifact_sha256']
     review = None
-    if not bound_draft:
+    if not bound_draft and supplement is None:
         manifest = json.loads((root / review_manifest_binding(root)['path']).read_bytes())
         if symbol in manifest['items']:
             review = load_value_policy_review(root, symbol, now)
@@ -101,9 +152,10 @@ def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=F
                       f'--candidate-sha256 {binding["sha256"]}')
     from .research_materiality_reviews import registered_materiality_handoff
     try:
-        if bound_draft or replay is not None:
+        if bound_draft or replay is not None or supplement is not None:
             from .research_materiality_reviews import prepare_materiality_review_handoff
-            package_binding = draft_inputs['package'] if bound_draft else replay['publication']['package_binding']
+            package_binding = (draft_inputs['package'] if bound_draft else
+                supplement['package_binding'] if supplement is not None else replay['publication']['package_binding'])
             package = json.loads((root / package_binding['path']).read_bytes())
             scan = package.get('model_validity_input', {}).get('event_scan_ref')
             if not isinstance(scan, dict):
@@ -113,7 +165,7 @@ def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=F
                 package_sha256=package_binding['sha256'],
                 scan_path=root / scan['path'], scan_sha256=scan['sha256'])
             input_sha256 = (draft_inputs['input_sha256'] if bound_draft else
-                replay['candidate']['model_context']['input_descriptor_sha256'])
+                (supplement if supplement is not None else replay)['candidate']['model_context']['input_descriptor_sha256'])
             if materiality_handoff.get('model_context', {}).get('input_descriptor_sha256') != input_sha256:
                 raise ValueError('Materiality handoff requires a separately rebound model descriptor')
         else:
@@ -127,13 +179,16 @@ def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=F
                 raise ValueError('Registered replay changed during handoff')
         except (ValueError, OSError, KeyError, TypeError):
             return replay_unavailable
+    if supplement is not None:
+        if load_current_pending_candidate_supplement(root=root, symbol=symbol) != supplement:
+            raise ValueError('Registered supplemental candidate changed during handoff')
     result = dict(action='no_order', status='EXTERNAL_SIGNATURE_REQUIRED',
         materiality_handoff=materiality_handoff,
         symbol=symbol, candidate_binding=binding,
         model_context=preview['draft']['model_context'],
         valuation_artifact_sha256=valuation_hash,
         review_questions=preview['review_questions'], unsigned_response=preview['draft'],
-        public_research_materials=(consumed_materials if bound_draft or replay is not None else
+        public_research_materials=(consumed_materials if bound_draft or replay is not None or supplement is not None else
             review['model_review'] if review else preview['draft']['model_context']),
         source_bindings=review['source_bindings'] if review else ([binding, draft_inputs['draft'], draft_inputs['package']]
             if draft_inputs else [binding]),
@@ -162,6 +217,13 @@ def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=F
             *result['source_bindings'], replay['registry_binding'], replay['publication_binding'],
             binding, publication['predecessor_binding'], publication['package_binding'],
             publication['workbench_binding'], publication['review_packet_binding']]}.values())
+    if supplement is not None:
+        result['candidate_preparation_mode'] = supplement['mode']
+        result['current_public_price_policy_changed'] = False
+        result['source_bindings'] = list({item['path']: item for item in [
+            *result['source_bindings'], supplement['registry_binding'],
+            supplement['candidate_binding'], supplement['package_binding'],
+            supplement['workbench_binding'], supplement['review_packet_binding']]}.values())
     return result
 
 

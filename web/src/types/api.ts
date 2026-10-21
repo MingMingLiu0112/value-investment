@@ -668,7 +668,10 @@ export interface DetailResponse {
   decision: DecisionItem | null;
   research_draft?: ResearchDraft | null;
   review_replay?: {
-    status: "VERIFIED_EXACT_INPUT_REPLAY" | "SOURCE_UNAVAILABLE";
+    status:
+      | "VERIFIED_EXACT_INPUT_REPLAY"
+      | "VERIFIED_NEW_INPUT_CANDIDATE"
+      | "SOURCE_UNAVAILABLE";
     symbol: string;
     action: "no_order";
     formal_eligibility: false;
@@ -678,6 +681,7 @@ export interface DetailResponse {
     scope?: "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY";
     research_as_of?: string;
     replayed_at?: string;
+    prepared_at?: string;
     next_url?: string;
   };
   financial_progress?: {

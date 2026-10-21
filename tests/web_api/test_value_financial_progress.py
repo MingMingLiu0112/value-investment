@@ -7,6 +7,7 @@ from test_read_api import _fixture
 from value_investment_agent.presentation.web_api.app import create_app
 from value_investment_agent.application.research import value_enrichment_batch
 from value_investment_agent.application.product import pending_replay_publication
+from value_investment_agent.application.product import pending_candidate_supplement
 import pytest
 
 
@@ -57,3 +58,34 @@ def test_review_replay_does_not_rewrite_decision_or_publication(tmp_path, monkey
     if not invalid:
         assert actual['review_replay']['research_as_of'] == '2026-10-11'
         assert actual['review_replay']['approval_changed'] is False
+
+
+@pytest.mark.parametrize('invalid', [False, True])
+def test_new_input_candidate_supersedes_only_review_materials_never_public_economics(tmp_path, monkeypatch, invalid):
+    _fixture(tmp_path)
+    with TestClient(create_app(tmp_path)) as client:
+        original = client.get('/api/v1/decisions/600519').json()
+
+        def read(**kwargs):
+            assert kwargs['symbol'] == '600519'
+            if invalid:
+                raise ValueError('TEST_ONLY changed registered supplement')
+            return dict(candidate=dict(candidate_research_as_of='2026-10-21',
+                generated_at='2026-10-21T15:00:00+00:00'),
+                candidate_binding=dict(path='runtime/TEST_ONLY/candidate.json', sha256='0' * 64),
+                scope='UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY')
+
+        def forbidden(**kwargs):
+            raise AssertionError('A configured supplement must never fall back to an old replay')
+
+        monkeypatch.setattr(pending_candidate_supplement, 'load_current_pending_candidate_supplement', read)
+        monkeypatch.setattr(pending_replay_publication, 'load_current_pending_replay', forbidden)
+        actual = client.get('/api/v1/decisions/600519').json()
+        assert actual['decision'] == original['decision']
+        assert actual['publication']['publication_id'] == original['publication']['publication_id']
+        status = actual['review_replay']
+        assert status['status'] == ('SOURCE_UNAVAILABLE' if invalid else 'VERIFIED_NEW_INPUT_CANDIDATE')
+        assert status['formal_eligibility'] is False
+        if not invalid:
+            assert status['research_as_of'] == '2026-10-21'
+            assert status['approval_changed'] is status['research_admitted'] is status['price_admitted'] is False

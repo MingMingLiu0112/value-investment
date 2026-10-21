@@ -957,7 +957,8 @@ export default function DecisionDetail() {
                     ))}
               </Typography.Paragraph>
             )}
-            {replay?.status === "VERIFIED_EXACT_INPUT_REPLAY" &&
+            {(replay?.status === "VERIFIED_EXACT_INPUT_REPLAY" ||
+              replay?.status === "VERIFIED_NEW_INPUT_CANDIDATE") &&
               replay.symbol === decision.symbol &&
               replay.action === "no_order" &&
               replay.formal_eligibility === false &&
@@ -966,7 +967,10 @@ export default function DecisionDetail() {
               replay.price_admitted === false &&
               replay.scope === "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY" && (
                 <Typography.Paragraph role="status">
-                  原研究已按当前程序核验重放，研究日仍为 {replay.research_as_of}
+                  {replay.status === "VERIFIED_NEW_INPUT_CANDIDATE"
+                    ? "新来源版本已完成研究消费，可办理精确版本审核；研究日为 "
+                    : "原研究已按当前程序核验重放，研究日仍为 "}
+                  {replay.research_as_of}
                   ；未获经济或买卖批准。{" "}
                   <a href="#value-review-handoff">
                     查看有权审核人的材料与签署路径
@@ -975,7 +979,7 @@ export default function DecisionDetail() {
               )}
             {replay?.status === "SOURCE_UNAVAILABLE" && (
               <Typography.Paragraph role="status">
-                研究重放材料当前核验未通过，不能据此办理审核或更新操作资格。
+                研究审核材料当前核验未通过，不能据此办理审核或更新操作资格。
               </Typography.Paragraph>
             )}
             <JudgmentSummary

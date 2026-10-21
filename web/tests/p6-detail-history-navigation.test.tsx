@@ -73,6 +73,34 @@ it("links verified unchanged research replay to external review without admittin
   state.data = {};
 });
 
+it("shows a new consumed input version as review material without borrowing approval", () => {
+  state.data = {
+    decision: { id: "600887", symbol: "600887", strategy: "CORE_VALUE" },
+    review_replay: {
+      status: "VERIFIED_NEW_INPUT_CANDIDATE",
+      symbol: "600887",
+      action: "no_order",
+      formal_eligibility: false,
+      approval_changed: false,
+      research_admitted: false,
+      price_admitted: false,
+      scope: "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY",
+      research_as_of: "2026-10-21",
+    },
+  };
+  const html = renderToStaticMarkup(<DecisionDetail />);
+  expect(html).toContain("新来源版本已完成研究消费");
+  expect(html).toContain("2026-10-21");
+  expect(html).toContain("未获经济或买卖批准");
+  expect(html).toContain('href="#value-review-handoff"');
+  expect(html).not.toContain("原研究已按当前程序核验重放");
+  state.data.review_replay.status = "SOURCE_UNAVAILABLE";
+  const invalid = renderToStaticMarkup(<DecisionDetail />);
+  expect(invalid).not.toContain("新来源版本已完成研究消费");
+  expect(invalid).toContain("研究审核材料当前核验未通过");
+  state.data = {};
+});
+
 it("shows verified financial input progress separately from economic approval", () => {
   state.data = {
     decision: { id: "600887", symbol: "600887", strategy: "CORE_VALUE" },

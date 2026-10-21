@@ -1,0 +1,20 @@
+{
+  "schema_version": "v5-exact-source-ci-v1",
+  "action": "no_order",
+  "source_commit": "d57f20600d5d3354a46051bbf04beb3ce7e1463a",
+  "core": {
+    "run_id": 39624187766,
+    "status": "completed",
+    "conclusion": "success",
+    "offline_core": "success",
+    "isolated_postgres": "success"
+  },
+  "web": {
+    "run_id": 39624187808,
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "scope": "EXACT_GIT_SOURCE_TESTS_NOT_CLEAN_RUNTIME_OR_INVESTMENT_ADMISSION",
+  "formal_eligibility": false,
+  "goal_complete": false
+}

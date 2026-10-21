@@ -1610,3 +1610,72 @@ Verifier path boundaries remain exact; architecture tests are not relaxed.
 The new public archive still replays 161/150/11 with unknown actual trade count.
 Earlier screenshots and integrated-continuation.json remain dated observations;
 the new packaging receipt supersedes only their public archive delivery path.
+
+### V5 new-source research and independent event consumption
+
+Delivery baseline d57f20600d5d3354a46051bbf04beb3ce7e1463a has exact-SHA
+Core/Postgres and Web success (runs 39624187766 and 39624187808).
+The shared checkout remains on another task's feat/p0-pit-validation; unrelated
+P0 files must remain untouched and excluded from this delivery branch.
+
+600887 retained originals now have a separate, truthful current local
+reobservation receipt. Original retrieval/availability metadata and bytes are
+preserved; this is neither online reacquisition nor contemporaneous PIT proof.
+The standard pending-candidate producer actually consumes the new package.
+The shared model emits a dated, unapproved candidate with four unsigned review
+groups. The registered supplemental path is a read-only review overlay, not a
+current economic publication. The adapter reprojects the consumed review packet
+from its exact package/workbench and rejects issuer, context or hash drift.
+Wizard/API/Web expose this new version without inheriting an old price-policy
+valuation hash, old G3 or current action prices. Registration drift fails closed
+instead of silently returning old materials. The current public economic case,
+private policy and investment eligibility remain unchanged.
+
+Root verified the actual 600887 handoff as EXTERNAL_SIGNATURE_REQUIRED with
+zero pinned signing roots. Missing announcement coverage stays explicit. The
+source registry and candidate dependencies remained byte-identical during the
+check. Evidence: 600887-new-input-handoff.json. Focused adapter, wizard, replay
+and API regressions: 55 passed. Independent review found no P0/P1 in this scope.
+
+600519 has a separate event-only package covering 2026-07-01 through 2026-10-20,
+including all seven announcements. Its new context has been consumed by the
+ordinary company application and matches the exact unsigned materiality packet.
+The genuine model result remains not_ready with null bear/base/bull; there is
+no G3 candidate for this context. Existing review_materiality.py consume and
+run_company_research.py accept the exact signed/reviewed context in isolation.
+No real response was signed or imported. A separate Web handoff must not replace
+the older economic candidate or treat the new event context as its G3 approval.
+
+Local source/event/architecture run: 83 passed, two inventory failures caused
+only by three unrelated untracked P0 scripts. Do not register or remove another
+task's files to conceal these failures; validate the scoped delivery tree and
+final CI independently. No tests, thresholds or repository boundaries changed.
+Earlier passing counts are dated observations, not final new-commit CI evidence.
+Goal stays IN_PROGRESS; real economic admission, hotspot strategy admission,
+real private portfolio readiness and user acceptance remain NOT_PROVEN.
+
+Final new-source integration checkpoint: 192 focused source, event, candidate,
+wizard, signed-materiality and API tests passed; full Web API suite passed 248.
+Web typecheck, formatting, 320 tests and production build passed. The separate
+event loader detects authenticated imported responses through the existing exact
+context journal and signature consumer, while retaining every independent gate.
+An independent review found a state-drift issue between event verification and
+old G3 projection; the wrapper now revalidates the event before returning and
+removes signing commands on drift. All three original reproductions are closed.
+No remaining P0/P1 was found in the bounded independent review.
+
+Browser validation also exposed stale authorization recovery: a fresh launch
+fragment could compete with cached expired sessions across parallel reads. The
+existing session helper now prioritizes a single fresh handshake, and late old
+401 responses cannot discard a newer session. Nine focused authorization tests
+pass, including no-link rejection. Actual browser restart/re-authorization with
+the old stored session restores the isolated TEST_ONLY holdings and real public
+review materials. It does not grant G3 or access to a real private account.
+
+Windows 1440x900 and 390x844 evidence shows 600887's new unsigned candidate and
+600519's independently consumed seven-announcement context, exact originals,
+external signing and subsequent research commands. The new event context stays
+separate from the original economic candidate; the original candidate's missing
+scan is not falsely cleared. See new-source-continuation.json. Final source SHA
+CI must still be verified after the scoped commit; local-only research assets
+and real investment qualification remain separate incomplete work.

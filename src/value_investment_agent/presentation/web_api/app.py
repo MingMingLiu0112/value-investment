@@ -572,6 +572,23 @@ def create_app(
             from ...application.research.value_enrichment_batch import read_verified_enrichment_progress
             payload["financial_progress"] = read_verified_enrichment_progress(
                 root=project, symbol=decision_id, evaluation_at=datetime.now(timezone.utc))
+            from ...application.product.pending_candidate_supplement import load_current_pending_candidate_supplement
+            try:
+                supplement = load_current_pending_candidate_supplement(root=project, symbol=decision_id)
+                if supplement is not None:
+                    candidate = supplement["candidate"]
+                    payload["review_replay"] = dict(status="VERIFIED_NEW_INPUT_CANDIDATE",
+                        symbol=decision_id, action="no_order", formal_eligibility=False,
+                        approval_changed=False, research_admitted=False, price_admitted=False,
+                        research_as_of=candidate["candidate_research_as_of"],
+                        prepared_at=candidate["generated_at"],
+                        candidate_binding=supplement["candidate_binding"],
+                        scope=supplement["scope"], next_url="#value-review-handoff")
+                    return payload
+            except (ValueError, OSError, KeyError, TypeError):
+                payload["review_replay"] = dict(status="SOURCE_UNAVAILABLE", symbol=decision_id,
+                    action="no_order", formal_eligibility=False)
+                return payload
             from ...application.product.pending_replay_publication import load_current_pending_replay
             try:
                 replay = load_current_pending_replay(root=project, symbol=decision_id)

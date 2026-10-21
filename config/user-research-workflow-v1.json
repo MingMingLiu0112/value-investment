@@ -1,6 +1,18 @@
 {
   "schema_version": "user-research-workflow-v1",
   "action": "no_order",
+  "supplemental_event_consumptions": {
+    "600519": {
+      "path": "runtime/v5-event-supplement-consumed-20261021T151651051751Z/consumption.json",
+      "sha256": "f5930d231cc2ec52ce818ce785ed3b16a3b9efc1dcd916c7941be0ff035fe658"
+    }
+  },
+  "supplemental_review_candidates": {
+    "600887": {
+      "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/pending-candidate/candidate.json",
+      "sha256": "038e1dfae8be45a663456b9d8bad40fe1c5b67c4a011228ea9a641f5bae43e82"
+    }
+  },
   "bound_draft_review_candidates": {
     "000333": {
       "path": "runtime/bound-draft-reviews/midea-consumed-v3-dated-20261018/candidate.json",
