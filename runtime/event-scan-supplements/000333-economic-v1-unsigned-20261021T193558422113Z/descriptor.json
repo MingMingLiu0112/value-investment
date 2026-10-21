@@ -1,0 +1,2698 @@
+{
+  "schema_version": "m1-fixed-sample-input-v1",
+  "descriptor_version": "event-supplement-20261022T033558472378-01c129cb402c",
+  "symbol": "000333",
+  "name": "美的集团",
+  "profile_id": "mature_manufacturing",
+  "requested_model": "residual_income_or_equity_value",
+  "run_id": "event-supplement-20261022T033558472378-01c129cb402c",
+  "point_in_time": {
+    "report_period": "2026-06-30",
+    "research_as_of": "2026-10-22",
+    "valuation_date": "2026-10-16",
+    "available_at": "2026-10-22T03:35:58.472378+08:00",
+    "computed_at": "2026-10-22T03:35:58.472378+08:00"
+  },
+  "dependencies": {
+    "rule_version": "m1-valuation-rules-v1",
+    "profile_id": "mature_manufacturing",
+    "model_id": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "parser_version": "source-bound-consumed-capital-v3",
+    "scan_watermark": "01c129cb402ca396c8d8c5ab65db4dc8e7419e14a1ed11708cc5a1024c20809c"
+  },
+  "sources": [
+    {
+      "id": "midea_fy2025_annual",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225065145.PDF",
+      "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6",
+      "published_at": "2026-03-31T00:00:00+08:00",
+      "retrieved_at": "2026-10-17T10:58:56.046707+00:00",
+      "parser_version": "midea-draft-case-input-v2",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "000333",
+        "issuer_name": "美的集团",
+        "organization_id": "9900005965"
+      }
+    },
+    {
+      "id": "midea_2026h1",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-08-29/1225531404.PDF",
+      "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8",
+      "published_at": "2026-08-29T00:00:00+08:00",
+      "retrieved_at": "2026-10-17T10:58:56.050143+00:00",
+      "parser_version": "midea-draft-case-input-v2",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "000333",
+        "issuer_name": "美的集团",
+        "organization_id": "9900005965"
+      }
+    },
+    {
+      "id": "midea_202606_hkex_monthly_return",
+      "kind": "official_exchange_filing",
+      "location": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0707/2026070700419_c.pdf",
+      "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd",
+      "published_at": "2026-07-07T16:30:00+08:00",
+      "retrieved_at": "2026-10-17T10:58:56.050381+00:00",
+      "parser_version": "midea-draft-case-input-v2",
+      "issuer_identity": {
+        "venue": "HKEX",
+        "security_code": "00300",
+        "issuer_name": "美的集團",
+        "organization_id": null
+      }
+    },
+    {
+      "id": "cninfo_1225608903",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF",
+      "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+      "published_at": "2026-10-17T00:00:00+08:00",
+      "retrieved_at": "2026-10-17T17:49:52+08:00",
+      "parser_version": "midea-draft-case-input-v2",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "000333",
+        "issuer_name": "美的集团",
+        "organization_id": "9900005965"
+      }
+    },
+    {
+      "id": "cninfo_1225603532",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF",
+      "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+      "published_at": "2026-10-14T00:00:00+08:00",
+      "retrieved_at": "2026-10-17T17:49:52+08:00",
+      "parser_version": "midea-draft-case-input-v2",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "000333",
+        "issuer_name": "美的集团",
+        "organization_id": "9900005965"
+      }
+    },
+    {
+      "id": "cninfo_1225603533",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF",
+      "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+      "published_at": "2026-10-14T00:00:00+08:00",
+      "retrieved_at": "2026-10-17T17:49:52+08:00",
+      "parser_version": "midea-draft-case-input-v2",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "000333",
+        "issuer_name": "美的集团",
+        "organization_id": "9900005965"
+      }
+    },
+    {
+      "id": "cninfo_1225603534",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF",
+      "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+      "published_at": "2026-10-14T00:00:00+08:00",
+      "retrieved_at": "2026-10-17T17:49:52+08:00",
+      "parser_version": "midea-draft-case-input-v2",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "000333",
+        "issuer_name": "美的集团",
+        "organization_id": "9900005965"
+      }
+    },
+    {
+      "id": "midea_quote_20261016",
+      "kind": "quote_session",
+      "location": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+      "published_at": "2026-10-16T17:00:31+08:00",
+      "retrieved_at": "2026-10-16T17:00:31+08:00",
+      "parser_version": "quote-session-collection-v1"
+    },
+    {
+      "id": "midea_event_scan_20261017",
+      "kind": "research_artifact",
+      "location": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+      "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f",
+      "published_at": "2026-10-17T17:49:45.662894+08:00",
+      "retrieved_at": "2026-10-17T17:49:45.662894+08:00",
+      "parser_version": "midea-draft-event-scan-v2"
+    },
+    {
+      "id": "midea_assumption_memo_20261017_v2",
+      "kind": "research_artifact",
+      "location": "runtime/company-research/midea-draft-20261017-v2/assumption-memo-v2.json",
+      "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402",
+      "published_at": "2026-10-17T10:58:56.033982+00:00",
+      "retrieved_at": "2026-10-17T10:58:56.033982+00:00",
+      "parser_version": "midea-draft-assumption-memo-v2"
+    },
+    {
+      "id": "midea-economic-v1-accounting",
+      "kind": "research_artifact",
+      "location": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+      "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462",
+      "published_at": null,
+      "retrieved_at": "2026-10-21T19:15:18.461640+00:00",
+      "parser_version": "midea-economic-v1-case-input"
+    },
+    {
+      "id": "midea-economic-v1-stress",
+      "kind": "research_artifact",
+      "location": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+      "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8",
+      "published_at": null,
+      "retrieved_at": "2026-10-21T19:15:18.461640+00:00",
+      "parser_version": "midea-economic-v1-case-input"
+    },
+    {
+      "id": "midea-economic-v1-business",
+      "kind": "research_artifact",
+      "location": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+      "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8",
+      "published_at": null,
+      "retrieved_at": "2026-10-21T19:15:18.461640+00:00",
+      "parser_version": "midea-economic-v1-case-input"
+    },
+    {
+      "id": "midea-economic-v1-distribution",
+      "kind": "research_artifact",
+      "location": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+      "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1",
+      "published_at": null,
+      "retrieved_at": "2026-10-21T19:15:18.461640+00:00",
+      "parser_version": "midea-economic-v1-case-input"
+    },
+    {
+      "id": "midea-economic-v1-proposal",
+      "kind": "research_artifact",
+      "location": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+      "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99",
+      "published_at": null,
+      "retrieved_at": "2026-10-21T19:15:18.461640+00:00",
+      "parser_version": "midea-economic-v1-case-input"
+    },
+    {
+      "id": "event-supplement-01c129cb402ca396c8d8c5ab65db4dc8e7419e14a1ed11708cc5a1024c20809c",
+      "kind": "research_artifact",
+      "location": "runtime/event-scan-supplements/000333-economic-v1-unsigned-20261021T193558422113Z/event-scan.json",
+      "sha256": "01c129cb402ca396c8d8c5ab65db4dc8e7419e14a1ed11708cc5a1024c20809c",
+      "published_at": null,
+      "retrieved_at": "2026-10-22T03:35:58.472378+08:00",
+      "parser_version": "retained-cninfo-window-composition-v1"
+    }
+  ],
+  "research_case": {
+    "symbol": "000333",
+    "name": "美的集团",
+    "as_of": "2026-10-22",
+    "run_id": "event-supplement-20261022T033558472378-01c129cb402c",
+    "generated_at": "2026-10-22T03:35:58.472378+08:00",
+    "research_version": "event-supplement-20261022T033558472378-01c129cb402c",
+    "industry": "家用电器-白色家电",
+    "investment_path": "成熟制造复利 / 全球化与现金回报",
+    "thesis": "同期H1加权ROE11.33%对11.29%，不能由半年/全年误比认定恶化。扣非下降涉及汇兑与风险管理工具分类不对称，不能等同主业等幅下降。规模、渠道、全球化及ToB增长支持研究资本回报持续性，毛利率与销量反证限制外推。全部旧ROE及终端参数仅保留为低置信待审条件。",
+    "return_driver": "家电主业效率、全球化收入结构、ToB业务质量、现金转换与股东回报。",
+    "mispricing_hypothesis": "本版本只收口经济研究依据与反证；不比较现价，不证明低估，不选择压力实验最优格。",
+    "financial_summary": {
+      "period_end": "2026-06-30",
+      "fy2025_parent_profit_cny": "43945411000",
+      "fy2025_parent_equity_cny": "223221305000",
+      "fy2025_weighted_roe": "0.1970",
+      "h1_2026_revenue_cny": "260042490000",
+      "h1_2026_parent_profit_cny": "26446037000",
+      "h1_2026_adjusted_parent_profit_cny": "19595179000",
+      "h1_2026_adjusted_parent_profit_yoy": "-0.2531",
+      "h1_2026_parent_equity_cny": "212861055000",
+      "h1_2026_roe": "0.1133",
+      "ordinary_shares_20260630": "7464347335",
+      "h1_2026_parent_equity_thousand_cny": "212861055",
+      "a_ordinary_shares_excluding_treasury": "6813498835",
+      "h_ordinary_shares": "650848500",
+      "h1_2025_weighted_roe": "0.1129",
+      "h1_weighted_roe_yoy_change_pp": "0.04",
+      "normalized_parent_profit_cny": null,
+      "economic_research_proposal_binding": {
+        "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+        "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+      },
+      "pressure_experiment_binding": {
+        "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+        "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+      },
+      "reported_business_facts": {
+        "operating_revenue_cny": "456451731000",
+        "operating_revenue_growth_pct": "12.11",
+        "household_revenue_cny": "299927239000",
+        "household_revenue_growth_pct": "11.28",
+        "commercial_industrial_revenue_cny": "122752958000",
+        "commercial_industrial_revenue_growth_pct": "17.47",
+        "household_gross_margin_pct": "29.90",
+        "household_gross_margin_change_pct_points": "-0.08",
+        "commercial_industrial_gross_margin_pct": "20.81",
+        "commercial_industrial_gross_margin_change_pct_points": "-0.58",
+        "air_conditioner_volume_growth_pct": "12.89",
+        "refrigeration_volume_growth_pct": "2.62",
+        "washing_appliance_volume_growth_pct": "-6.17",
+        "research_development_expense_cny": "17787624000",
+        "research_development_expense_growth_pct": "9.58"
+      },
+      "historical_proposed_cash_payout_ratios": {
+        "2022": "0.581577402",
+        "2023": "0.615694411",
+        "2024": "0.693139013"
+      },
+      "economic_parameters_validated": false,
+      "interpretation_scope": "Reported/comparative facts and bounded hypotheses; not normalized earnings, paid dividends or verified forward inputs.",
+      "event_scan_supplement": {
+        "predecessor": {
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/review-ready/package.json",
+          "sha256": "949b8ff22ad052e2cbffbb2a528df1fc3e436a42aab5501342af18854dd69cdc"
+        },
+        "prior_research_as_of": "2026-10-22",
+        "valuation_date_retained": "2026-10-16",
+        "valuation_recomputed": false,
+        "economic_approval": false
+      }
+    },
+    "positives": [
+      {
+        "kind": "fact",
+        "text": "FY2025归母净利润439.45亿元、归母权益2,232.21亿元，加权ROE 19.70%。",
+        "evidence_refs": [
+          "midea_fy2025_annual"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "FY2025每10股派38.00元，披露基数7,522,863,645股。",
+        "evidence_refs": [
+          "midea_fy2025_annual"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "规模、渠道和全球化仍可能支持高于门槛的资本回报，但必须由未来盈利和现金转换验证。",
+        "evidence_refs": [
+          "midea_fy2025_annual",
+          "midea_2026h1"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "FY2025家用收入2999.27239亿元、+11.28%；商用工业1227.52958亿元、+17.47%；研发177.87624亿元、+9.58%。",
+        "evidence_refs": [
+          "midea-economic-v1-business",
+          "midea_fy2025_annual"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "历史拟派现金分红比率约58%至69%，可支持讨论60%至70%派付条件，但不证明实际支付或未来可分配现金。",
+        "evidence_refs": [
+          "midea-economic-v1-distribution"
+        ]
+      }
+    ],
+    "counter_evidence": [
+      {
+        "kind": "fact",
+        "text": "H1扣非归母利润195.95179亿元，同比-25.31%；该降幅是披露事实，不等于已识别的主业盈利降幅。",
+        "evidence_refs": [
+          "midea-economic-v1-accounting",
+          "midea_2026h1"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "H1加权ROE11.33%，上年同期11.29%，同比+0.04个百分点；不与FY2025的19.70%直接比较或乘二年化。",
+        "evidence_refs": [
+          "midea-economic-v1-accounting",
+          "midea_2026h1"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "FY2025家用/商用工业毛利率分别变动-0.08/-0.58个百分点，洗衣机销量-6.17%；收入增长并未消除竞争及产品结构压力。",
+        "evidence_refs": [
+          "midea-economic-v1-business",
+          "midea_fy2025_annual"
+        ]
+      },
+      {
+        "kind": "gap",
+        "text": "衍生工具范围桥、OCI包含关系及项目税后归母未知，不能混合收益全额加回或构造正常化利润。",
+        "evidence_refs": [
+          "midea-economic-v1-accounting"
+        ]
+      },
+      {
+        "kind": "gap",
+        "text": "2026年10月14日三项公告及10月17日回购进展公告仍待逐条材料性复核，模型有效性只能保持UNKNOWN。",
+        "evidence_refs": [
+          "cninfo_1225608903",
+          "cninfo_1225603532",
+          "cninfo_1225603533",
+          "cninfo_1225603534"
+        ]
+      }
+    ],
+    "thesis_breakers": [
+      {
+        "kind": "hypothesis",
+        "text": "若未来两年ROE持续低于9%的候选权益门槛，剩余收益假设失效。",
+        "evidence_refs": [
+          "midea_2026h1"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "若利润下降伴随经营现金转换和资产负债表质量同步恶化，当前底部ROE路径仍需下调。",
+        "evidence_refs": [
+          "midea_2026h1"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "若股本注销、回购或分红导致普通股分母与可分配现金桥接发生变化，必须重算每股价值。",
+        "evidence_refs": [
+          "midea_202606_hkex_monthly_return",
+          "cninfo_1225608903",
+          "cninfo_1225603532",
+          "cninfo_1225603533",
+          "cninfo_1225603534"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "新同口径定期披露改变利润/毛利率/现金转换或资本回报判断。",
+        "evidence_refs": [
+          "midea-economic-v1-proposal"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "已披露资本、库存股、回购注销、分配或重大公告改变输入。",
+        "evidence_refs": [
+          "midea-economic-v1-proposal"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "可核验新工具范围、税后归属或OCI桥足以改变正常化解释。",
+        "evidence_refs": [
+          "midea-economic-v1-proposal"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "独立审核否定持续期、权益成本、分配或终端经济依据。",
+        "evidence_refs": [
+          "midea-economic-v1-proposal"
+        ]
+      }
+    ],
+    "next_events": [
+      {
+        "kind": "fact",
+        "text": "人工复核临时股东会决议、法律意见、注册资本减少及最新回购进展公告。",
+        "evidence_refs": [
+          "cninfo_1225608903",
+          "cninfo_1225603532",
+          "cninfo_1225603533",
+          "cninfo_1225603534"
+        ]
+      },
+      {
+        "kind": "gap",
+        "text": "下一期定期报告发布后复核利润、现金转换和ROE路径。",
+        "evidence_refs": [
+          "midea_2026h1"
+        ]
+      }
+    ],
+    "evidence_status": "verified",
+    "valuation_status": "NOT_ASSESSED",
+    "research_status": "DATA_CHECK",
+    "blockers": [
+      "DRAFT_NOT_APPROVED",
+      "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "EVENT_COVERAGE_INCOMPLETE",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "ECONOMIC_PARAMETERS_NOT_VALIDATED"
+    ],
+    "evidence_refs": [
+      {
+        "id": "midea_fy2025_annual",
+        "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+      },
+      {
+        "id": "midea_2026h1",
+        "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+      },
+      {
+        "id": "midea_202606_hkex_monthly_return",
+        "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+      },
+      {
+        "id": "cninfo_1225608903",
+        "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd"
+      },
+      {
+        "id": "cninfo_1225603532",
+        "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd"
+      },
+      {
+        "id": "cninfo_1225603533",
+        "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c"
+      },
+      {
+        "id": "cninfo_1225603534",
+        "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733"
+      },
+      {
+        "id": "midea-economic-v1-accounting",
+        "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+        "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+      },
+      {
+        "id": "midea-economic-v1-stress",
+        "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+        "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+      },
+      {
+        "id": "midea-economic-v1-business",
+        "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+        "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+      },
+      {
+        "id": "midea-economic-v1-distribution",
+        "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+        "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+      },
+      {
+        "id": "midea-economic-v1-proposal",
+        "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+        "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+      }
+    ],
+    "quote_date": null,
+    "financial_period": "2026-06-30",
+    "missing_date_reasons": {
+      "quote_date": "Unsigned event supplement does not acquire or admit a quote"
+    }
+  },
+  "facts": {
+    "facts_type": "quality_compounder",
+    "symbol": "000333",
+    "as_of": "2026-10-16",
+    "verified": false,
+    "confidence": "低",
+    "evidence_refs": [
+      {
+        "id": "midea_fy2025_annual",
+        "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+      },
+      {
+        "id": "midea_2026h1",
+        "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+      },
+      {
+        "id": "midea_202606_hkex_monthly_return",
+        "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+      }
+    ],
+    "blockers": [],
+    "operating_inputs": {
+      "start_book_equity": "212861055000",
+      "ordinary_shares": "7464347335"
+    },
+    "scenario_inputs": {
+      "bear": {
+        "cost_of_equity": "0.09",
+        "forecast_roes": [
+          "0.15",
+          "0.14",
+          "0.13",
+          "0.12",
+          "0.11"
+        ],
+        "terminal_roe": "0.095",
+        "terminal_growth": "0.015",
+        "retention": "0.40"
+      },
+      "base": {
+        "cost_of_equity": "0.09",
+        "forecast_roes": [
+          "0.18",
+          "0.17",
+          "0.16",
+          "0.155",
+          "0.15"
+        ],
+        "terminal_roe": "0.11",
+        "terminal_growth": "0.02",
+        "retention": "0.35"
+      },
+      "bull": {
+        "cost_of_equity": "0.09",
+        "forecast_roes": [
+          "0.205",
+          "0.20",
+          "0.195",
+          "0.19",
+          "0.185"
+        ],
+        "terminal_roe": "0.13",
+        "terminal_growth": "0.025",
+        "retention": "0.30"
+      }
+    },
+    "confidence_evidence": null,
+    "valuation_timing": {
+      "basis_at": "2026-06-30T23:59:59+08:00",
+      "valuation_at": "2026-10-16T17:00:31+08:00",
+      "evidence_refs": [
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea_202606_hkex_monthly_return",
+          "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+        }
+      ],
+      "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+    }
+  },
+  "assumptions": {
+    "symbol": "000333",
+    "profile_id": "mature_manufacturing",
+    "model_type": "residual_income_or_equity_value",
+    "as_of": "2026-10-16",
+    "assumptions": [
+      {
+        "name": "cost_of_equity",
+        "unit": "decimal",
+        "bear": "0.09",
+        "base": "0.09",
+        "bull": "0.09",
+        "basis": "9% retained candidate hurdle; dated proxy is only a stress comparator.",
+        "rationale": "依据：9%是原候选门槛；12格记录2026-09-08无风险proxy1.6813%与2026-01-05中国ERP5.14%，beta=1是假设。 反例：6.8213%不是下界、不是美的当前实测权益成本，也未证明9%适当。 失效/处理：不改9%输入，不借用其他公司beta；公司专属风险与币种/日期适用性仍需独立经济判断。",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea-economic-v1-accounting",
+            "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+            "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+          },
+          {
+            "id": "midea-economic-v1-stress",
+            "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+            "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+          },
+          {
+            "id": "midea-economic-v1-business",
+            "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+            "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+          },
+          {
+            "id": "midea-economic-v1-distribution",
+            "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+            "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+          },
+          {
+            "id": "midea-economic-v1-proposal",
+            "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+            "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2026",
+        "unit": "ratio",
+        "bear": "0.15",
+        "base": "0.18",
+        "bull": "0.205",
+        "basis": "Retained model-year path; historical field names are not calendar-year forecasts.",
+        "rationale": "依据：FY2025加权ROE19.70%为历史参照；家用与商用工业收入增长、研发投入支持研究持续经营能力。 反例：半年加权ROE不能乘二，也不等于模型期初权益ROE；毛利率下行与洗衣机销量下降反对机械外推。 失效/处理：保留全部旧数值但仅作低置信待审条件；未来同口径收益/现金转换不支持时重开，不按估值结果选路径。",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea-economic-v1-accounting",
+            "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+            "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+          },
+          {
+            "id": "midea-economic-v1-stress",
+            "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+            "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+          },
+          {
+            "id": "midea-economic-v1-business",
+            "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+            "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+          },
+          {
+            "id": "midea-economic-v1-distribution",
+            "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+            "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+          },
+          {
+            "id": "midea-economic-v1-proposal",
+            "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+            "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2027",
+        "unit": "ratio",
+        "bear": "0.14",
+        "base": "0.17",
+        "bull": "0.20",
+        "basis": "Retained model-year path; historical field names are not calendar-year forecasts.",
+        "rationale": "依据：FY2025加权ROE19.70%为历史参照；家用与商用工业收入增长、研发投入支持研究持续经营能力。 反例：半年加权ROE不能乘二，也不等于模型期初权益ROE；毛利率下行与洗衣机销量下降反对机械外推。 失效/处理：保留全部旧数值但仅作低置信待审条件；未来同口径收益/现金转换不支持时重开，不按估值结果选路径。",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea-economic-v1-accounting",
+            "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+            "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+          },
+          {
+            "id": "midea-economic-v1-stress",
+            "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+            "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+          },
+          {
+            "id": "midea-economic-v1-business",
+            "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+            "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+          },
+          {
+            "id": "midea-economic-v1-distribution",
+            "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+            "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+          },
+          {
+            "id": "midea-economic-v1-proposal",
+            "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+            "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2028",
+        "unit": "ratio",
+        "bear": "0.13",
+        "base": "0.16",
+        "bull": "0.195",
+        "basis": "Retained model-year path; historical field names are not calendar-year forecasts.",
+        "rationale": "依据：FY2025加权ROE19.70%为历史参照；家用与商用工业收入增长、研发投入支持研究持续经营能力。 反例：半年加权ROE不能乘二，也不等于模型期初权益ROE；毛利率下行与洗衣机销量下降反对机械外推。 失效/处理：保留全部旧数值但仅作低置信待审条件；未来同口径收益/现金转换不支持时重开，不按估值结果选路径。",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea-economic-v1-accounting",
+            "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+            "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+          },
+          {
+            "id": "midea-economic-v1-stress",
+            "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+            "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+          },
+          {
+            "id": "midea-economic-v1-business",
+            "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+            "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+          },
+          {
+            "id": "midea-economic-v1-distribution",
+            "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+            "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+          },
+          {
+            "id": "midea-economic-v1-proposal",
+            "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+            "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2029",
+        "unit": "ratio",
+        "bear": "0.12",
+        "base": "0.155",
+        "bull": "0.19",
+        "basis": "Retained model-year path; historical field names are not calendar-year forecasts.",
+        "rationale": "依据：FY2025加权ROE19.70%为历史参照；家用与商用工业收入增长、研发投入支持研究持续经营能力。 反例：半年加权ROE不能乘二，也不等于模型期初权益ROE；毛利率下行与洗衣机销量下降反对机械外推。 失效/处理：保留全部旧数值但仅作低置信待审条件；未来同口径收益/现金转换不支持时重开，不按估值结果选路径。",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea-economic-v1-accounting",
+            "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+            "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+          },
+          {
+            "id": "midea-economic-v1-stress",
+            "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+            "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+          },
+          {
+            "id": "midea-economic-v1-business",
+            "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+            "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+          },
+          {
+            "id": "midea-economic-v1-distribution",
+            "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+            "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+          },
+          {
+            "id": "midea-economic-v1-proposal",
+            "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+            "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2030",
+        "unit": "ratio",
+        "bear": "0.11",
+        "base": "0.15",
+        "bull": "0.185",
+        "basis": "Retained model-year path; historical field names are not calendar-year forecasts.",
+        "rationale": "依据：FY2025加权ROE19.70%为历史参照；家用与商用工业收入增长、研发投入支持研究持续经营能力。 反例：半年加权ROE不能乘二，也不等于模型期初权益ROE；毛利率下行与洗衣机销量下降反对机械外推。 失效/处理：保留全部旧数值但仅作低置信待审条件；未来同口径收益/现金转换不支持时重开，不按估值结果选路径。",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea-economic-v1-accounting",
+            "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+            "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+          },
+          {
+            "id": "midea-economic-v1-stress",
+            "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+            "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+          },
+          {
+            "id": "midea-economic-v1-business",
+            "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+            "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+          },
+          {
+            "id": "midea-economic-v1-distribution",
+            "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+            "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+          },
+          {
+            "id": "midea-economic-v1-proposal",
+            "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+            "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "terminal_roe",
+        "unit": "ratio",
+        "bear": "0.095",
+        "base": "0.11",
+        "bull": "0.13",
+        "basis": "Retained 9.5/11/13%; excess-return persistence remains an unverified hypothesis.",
+        "rationale": "依据：共享剩余收益模型和压力附件揭示尾部敏感性；资本212861055000元及扣库存普通股7464347335沿用原锚点。 反例：收入增长不证明永久超额回报；终端ROE/成本压力仅数学对照，干净盈余/未来OCI/资本变动及再投资约束未获经济验证。 失效/处理：不改终端参数，不将代数股利一致性当现金能力；终值依赖高或资本变动时须重审。",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea-economic-v1-accounting",
+            "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+            "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+          },
+          {
+            "id": "midea-economic-v1-stress",
+            "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+            "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+          },
+          {
+            "id": "midea-economic-v1-business",
+            "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+            "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+          },
+          {
+            "id": "midea-economic-v1-distribution",
+            "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+            "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+          },
+          {
+            "id": "midea-economic-v1-proposal",
+            "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+            "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "terminal_growth",
+        "unit": "ratio",
+        "bear": "0.015",
+        "base": "0.02",
+        "bull": "0.025",
+        "basis": "Retained 1.5/2/2.5%; g below cost is mathematical admissibility, not economic proof.",
+        "rationale": "依据：共享剩余收益模型和压力附件揭示尾部敏感性；资本212861055000元及扣库存普通股7464347335沿用原锚点。 反例：收入增长不证明永久超额回报；终端ROE/成本压力仅数学对照，干净盈余/未来OCI/资本变动及再投资约束未获经济验证。 失效/处理：不改终端参数，不将代数股利一致性当现金能力；终值依赖高或资本变动时须重审。",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea-economic-v1-accounting",
+            "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+            "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+          },
+          {
+            "id": "midea-economic-v1-stress",
+            "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+            "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+          },
+          {
+            "id": "midea-economic-v1-business",
+            "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+            "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+          },
+          {
+            "id": "midea-economic-v1-distribution",
+            "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+            "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+          },
+          {
+            "id": "midea-economic-v1-proposal",
+            "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+            "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "retention",
+        "unit": "ratio",
+        "bear": "0.40",
+        "base": "0.35",
+        "bull": "0.30",
+        "basis": "Retained 40/35/30%; historical proposed dividends only bound discussion, not capacity.",
+        "rationale": "依据：2022/2023/2024拟现金分红/归母利润约58.16/61.57/69.31%，可与模型60/65/70%派付条件对照。 反例：拟分红不等于实付或未来现金能力；回购用途、母公司可分配利润、集团融资和OCI/资本变化不能忽略。 失效/处理：只支持区间讨论，不证明可持续派息；不能把全部回购直接算作分红或认定留存=1-全部现金回报。",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_202606_hkex_monthly_return",
+            "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+          },
+          {
+            "id": "midea-economic-v1-accounting",
+            "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+            "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+          },
+          {
+            "id": "midea-economic-v1-stress",
+            "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+            "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+          },
+          {
+            "id": "midea-economic-v1-business",
+            "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+            "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+          },
+          {
+            "id": "midea-economic-v1-distribution",
+            "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+            "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+          },
+          {
+            "id": "midea-economic-v1-proposal",
+            "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+            "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "descending"
+      }
+    ],
+    "status": "PARTIAL",
+    "blockers": [
+      "CANDIDATE_DRAFT_ASSUMPTIONS_NOT_HUMAN_VALIDATED",
+      "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+    ],
+    "evidence_refs": [
+      {
+        "id": "midea_assumption_memo_20261017_v2",
+        "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+      },
+      {
+        "id": "midea_fy2025_annual",
+        "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+      },
+      {
+        "id": "midea_2026h1",
+        "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+      },
+      {
+        "id": "midea_202606_hkex_monthly_return",
+        "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+      },
+      {
+        "id": "midea-economic-v1-accounting",
+        "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+        "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+      },
+      {
+        "id": "midea-economic-v1-stress",
+        "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+        "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+      },
+      {
+        "id": "midea-economic-v1-business",
+        "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+        "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+      },
+      {
+        "id": "midea-economic-v1-distribution",
+        "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+        "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+      },
+      {
+        "id": "midea-economic-v1-proposal",
+        "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+        "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+      }
+    ]
+  },
+  "assumption_bindings": [
+    {
+      "assumption_name": "cost_of_equity",
+      "scenario": "bear",
+      "field_path": "cost_of_equity",
+      "expected_value": "0.09",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2026",
+      "scenario": "bear",
+      "field_path": "forecast_roes.0",
+      "expected_value": "0.15",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2027",
+      "scenario": "bear",
+      "field_path": "forecast_roes.1",
+      "expected_value": "0.14",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2028",
+      "scenario": "bear",
+      "field_path": "forecast_roes.2",
+      "expected_value": "0.13",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2029",
+      "scenario": "bear",
+      "field_path": "forecast_roes.3",
+      "expected_value": "0.12",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2030",
+      "scenario": "bear",
+      "field_path": "forecast_roes.4",
+      "expected_value": "0.11",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roe",
+      "scenario": "bear",
+      "field_path": "terminal_roe",
+      "expected_value": "0.095",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "bear",
+      "field_path": "terminal_growth",
+      "expected_value": "0.015",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "retention",
+      "scenario": "bear",
+      "field_path": "retention",
+      "expected_value": "0.40",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_202606_hkex_monthly_return",
+          "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "cost_of_equity",
+      "scenario": "base",
+      "field_path": "cost_of_equity",
+      "expected_value": "0.09",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2026",
+      "scenario": "base",
+      "field_path": "forecast_roes.0",
+      "expected_value": "0.18",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2027",
+      "scenario": "base",
+      "field_path": "forecast_roes.1",
+      "expected_value": "0.17",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2028",
+      "scenario": "base",
+      "field_path": "forecast_roes.2",
+      "expected_value": "0.16",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2029",
+      "scenario": "base",
+      "field_path": "forecast_roes.3",
+      "expected_value": "0.155",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2030",
+      "scenario": "base",
+      "field_path": "forecast_roes.4",
+      "expected_value": "0.15",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roe",
+      "scenario": "base",
+      "field_path": "terminal_roe",
+      "expected_value": "0.11",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "base",
+      "field_path": "terminal_growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "retention",
+      "scenario": "base",
+      "field_path": "retention",
+      "expected_value": "0.35",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_202606_hkex_monthly_return",
+          "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "cost_of_equity",
+      "scenario": "bull",
+      "field_path": "cost_of_equity",
+      "expected_value": "0.09",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2026",
+      "scenario": "bull",
+      "field_path": "forecast_roes.0",
+      "expected_value": "0.205",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2027",
+      "scenario": "bull",
+      "field_path": "forecast_roes.1",
+      "expected_value": "0.20",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2028",
+      "scenario": "bull",
+      "field_path": "forecast_roes.2",
+      "expected_value": "0.195",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2029",
+      "scenario": "bull",
+      "field_path": "forecast_roes.3",
+      "expected_value": "0.19",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roe_2030",
+      "scenario": "bull",
+      "field_path": "forecast_roes.4",
+      "expected_value": "0.185",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roe",
+      "scenario": "bull",
+      "field_path": "terminal_roe",
+      "expected_value": "0.13",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_2026h1",
+          "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "bull",
+      "field_path": "terminal_growth",
+      "expected_value": "0.025",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    },
+    {
+      "assumption_name": "retention",
+      "scenario": "bull",
+      "field_path": "retention",
+      "expected_value": "0.30",
+      "evidence_refs": [
+        {
+          "id": "midea_assumption_memo_20261017_v2",
+          "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+        },
+        {
+          "id": "midea_fy2025_annual",
+          "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+        },
+        {
+          "id": "midea_202606_hkex_monthly_return",
+          "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+        },
+        {
+          "id": "midea-economic-v1-accounting",
+          "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+          "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+        },
+        {
+          "id": "midea-economic-v1-stress",
+          "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+          "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+        },
+        {
+          "id": "midea-economic-v1-business",
+          "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+          "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+        },
+        {
+          "id": "midea-economic-v1-distribution",
+          "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+          "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+        },
+        {
+          "id": "midea-economic-v1-proposal",
+          "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+          "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+        }
+      ]
+    }
+  ],
+  "distribution_result": null,
+  "quote": null,
+  "model_validity_input": {
+    "model_id": "residual-income-equity-shared-dated-v2",
+    "valid_from": "2026-10-16",
+    "events": [],
+    "event_scan_evidence_refs": [
+      {
+        "id": "event-supplement-01c129cb402ca396c8d8c5ab65db4dc8e7419e14a1ed11708cc5a1024c20809c",
+        "symbol": "000333",
+        "path": "runtime/event-scan-supplements/000333-economic-v1-unsigned-20261021T193558422113Z/event-scan.json",
+        "sha256": "01c129cb402ca396c8d8c5ab65db4dc8e7419e14a1ed11708cc5a1024c20809c"
+      }
+    ],
+    "event_scan": {
+      "schema_version": "m1-event-scan-v1",
+      "symbol": "000333",
+      "provider": "cninfo",
+      "scan_from": "2026-10-13",
+      "scan_to": "2026-10-21",
+      "validity_from": "2026-10-16",
+      "validity_to": "2026-10-21",
+      "status": "PENDING_HUMAN_REVIEW",
+      "coverage_status": "COMPLETE",
+      "pre_model_review_status": "PENDING_HUMAN_REVIEW",
+      "announcements": [
+        {
+          "announcement_id": "1225608903",
+          "published_at": "2026-10-17T00:00:00+08:00",
+          "title": "关于以集中竞价交易方式回购A股股份进展情况的公告",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF",
+          "rule_kind": "unknown",
+          "review_status": "PENDING_HUMAN_REVIEW",
+          "materiality_candidate": true,
+          "pre_model": false,
+          "evidence_refs": [
+            {
+              "id": "window-0:cninfo:1225608903",
+              "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+              "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+            }
+          ],
+          "notes": "原件已归档；是否影响原论点、预测或估值尚待版本绑定材料性复核。"
+        },
+        {
+          "announcement_id": "1225603534",
+          "published_at": "2026-10-14T00:00:00+08:00",
+          "title": "关于回购注销部分限制性股票减资暨通知债权人的公告",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF",
+          "rule_kind": "unknown",
+          "review_status": "PENDING_HUMAN_REVIEW",
+          "materiality_candidate": true,
+          "pre_model": true,
+          "evidence_refs": [
+            {
+              "id": "window-0:cninfo:1225603534",
+              "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+              "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+            }
+          ],
+          "notes": "原件已归档；是否影响原论点、预测或估值尚待版本绑定材料性复核。"
+        },
+        {
+          "announcement_id": "1225603533",
+          "published_at": "2026-10-14T00:00:00+08:00",
+          "title": "北京市嘉源律师事务所关于美的集团2026年第一次临时股东会的法律意见书",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF",
+          "rule_kind": "unknown",
+          "review_status": "PENDING_HUMAN_REVIEW",
+          "materiality_candidate": true,
+          "pre_model": true,
+          "evidence_refs": [
+            {
+              "id": "window-0:cninfo:1225603533",
+              "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+              "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+            }
+          ],
+          "notes": "原件已归档；是否影响原论点、预测或估值尚待版本绑定材料性复核。"
+        },
+        {
+          "announcement_id": "1225603532",
+          "published_at": "2026-10-14T00:00:00+08:00",
+          "title": "2026年第一次临时股东会决议公告",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF",
+          "rule_kind": "unknown",
+          "review_status": "PENDING_HUMAN_REVIEW",
+          "materiality_candidate": true,
+          "pre_model": true,
+          "evidence_refs": [
+            {
+              "id": "window-0:cninfo:1225603532",
+              "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+              "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+            }
+          ],
+          "notes": "原件已归档；是否影响原论点、预测或估值尚待版本绑定材料性复核。"
+        }
+      ],
+      "blockers": [
+        "PRE_MODEL_AND_VALIDITY_EVENTS_REQUIRE_EXACT_MODEL_REVIEW"
+      ],
+      "evidence_refs": [
+        {
+          "id": "window-0:observation",
+          "path": "runtime/event-scan-supplements/000333-gapfill-20261021T193045590723Z/observation.json",
+          "sha256": "9264d46b526a466ddb3829d79d7968150bdc0776504e6dbac79ee917a5211e43"
+        },
+        {
+          "id": "window-0:scan",
+          "path": "runtime/event-scan-supplements/000333-gapfill-20261021T193045590723Z/event-scan.json",
+          "sha256": "63fd5c955b8c06473f3cde2cc888e7442de85a5715a1e04ed441fe1730aae27d"
+        },
+        {
+          "id": "window-0:daily-index-000333",
+          "path": "runtime/event-scan-supplements/000333-gapfill-20261021T193045590723Z/cninfo-index.json",
+          "sha256": "5bcc150438b582e6b04100f79420802df774356aa8bde3a7bce63670feb212db",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "window-0:daily-raw-index-manifest-000333",
+          "path": "runtime/event-scan-supplements/000333-gapfill-20261021T193045590723Z/raw-index-manifest.json",
+          "sha256": "dde344d88a8a9ca8c985ea83544b2d279e555224d04d86e98c360ec6abdf5614",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "window-0:daily-raw-000333-1",
+          "path": "runtime/event-scan-supplements/000333-gapfill-20261021T193045590723Z/raw-index/response-0001.bin",
+          "sha256": "ade5b96fb096f2db4d2b5e80fa40358bf52b7d09c7678833f9097859e3386351",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "window-0:daily-raw-metadata-000333-1",
+          "path": "runtime/event-scan-supplements/000333-gapfill-20261021T193045590723Z/raw-index/response-0001.json",
+          "sha256": "39381d85d64c1f54bc0b112f407e87416027a448bd13a5f5d25a3364dd75db1f",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "window-0:daily-raw-000333-2",
+          "path": "runtime/event-scan-supplements/000333-gapfill-20261021T193045590723Z/raw-index/response-0002.bin",
+          "sha256": "521885341556f8d482eeb6d5ff0d7ec047c8af33c9af974374092e1181aa649a",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "window-0:daily-raw-metadata-000333-2",
+          "path": "runtime/event-scan-supplements/000333-gapfill-20261021T193045590723Z/raw-index/response-0002.json",
+          "sha256": "32c316756232de3a5295e0b5e24096819b06b23a8af5817dbee6b68033364527",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "window-0:cninfo:1225608903",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+          "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+        },
+        {
+          "id": "window-0:cninfo:1225603534",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+          "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+        },
+        {
+          "id": "window-0:cninfo:1225603533",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+          "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+        },
+        {
+          "id": "window-0:cninfo:1225603532",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+          "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+        }
+      ],
+      "retrieved_at": "2026-10-21T19:30:46.697117+00:00",
+      "parser_version": "retained-cninfo-window-composition-v1"
+    },
+    "blockers": [
+      "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "EVENT_COVERAGE_INCOMPLETE",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "pending_complete_event_materiality_review"
+    ]
+  },
+  "valuation_approval": null,
+  "blockers": [
+    "DRAFT_NOT_APPROVED",
+    "G3_HUMAN_APPROVAL_ABSENT",
+    "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+    "EVENT_COVERAGE_INCOMPLETE",
+    "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+    "POSITION_GUIDANCE_BLOCKED_PRIVATE_INPUT"
+  ],
+  "input_sha256": "e7c67b743bfdddae6168333204fb58f7b98b02b921da44ae6a13a13aad1f1dd8",
+  "source_contract": {
+    "consumed_fact_bindings": [
+      {
+        "anchor_field": "h1_2026_parent_equity_cny",
+        "field_path": "operating_inputs.start_book_equity"
+      },
+      {
+        "anchor_field": "ordinary_shares_20260630",
+        "field_path": "operating_inputs.ordinary_shares"
+      }
+    ],
+    "cutoff_at": "2026-10-22T03:35:58.472378+08:00",
+    "distribution_input_status": "NOT_ADMITTED",
+    "event_coverage_status": "COMPLETE",
+    "fact_anchors": [
+      {
+        "field": "fy2025_parent_profit_cny",
+        "period_end": "2025-12-31",
+        "physical_page": 10,
+        "scope": "consolidated_parent_profit",
+        "source_id": "midea_fy2025_annual",
+        "source_value": "43945411000",
+        "unit": "CNY"
+      },
+      {
+        "field": "fy2025_parent_equity_cny",
+        "period_end": "2025-12-31",
+        "physical_page": 10,
+        "scope": "consolidated_parent_equity",
+        "source_id": "midea_fy2025_annual",
+        "source_value": "223221305000",
+        "unit": "CNY"
+      },
+      {
+        "field": "fy2025_weighted_roe",
+        "period_end": "2025-12-31",
+        "physical_page": 10,
+        "scope": "weighted_average_parent_roe",
+        "source_id": "midea_fy2025_annual",
+        "source_value": "0.1970",
+        "unit": "ratio"
+      },
+      {
+        "field": "h1_2026_revenue_cny",
+        "period_end": "2026-06-30",
+        "physical_page": 7,
+        "scope": "consolidated_revenue",
+        "source_id": "midea_2026h1",
+        "source_value": "260042490000",
+        "unit": "CNY"
+      },
+      {
+        "field": "h1_2026_parent_profit_cny",
+        "period_end": "2026-06-30",
+        "physical_page": 7,
+        "scope": "consolidated_parent_profit",
+        "source_id": "midea_2026h1",
+        "source_value": "26446037000",
+        "unit": "CNY"
+      },
+      {
+        "field": "h1_2026_adjusted_parent_profit_cny",
+        "period_end": "2026-06-30",
+        "physical_page": 7,
+        "scope": "consolidated_parent_profit_ex_nonrecurring",
+        "source_id": "midea_2026h1",
+        "source_value": "19595179000",
+        "unit": "CNY"
+      },
+      {
+        "field": "h1_2026_adjusted_parent_profit_yoy",
+        "period_end": "2026-06-30",
+        "physical_page": 7,
+        "scope": "consolidated_parent_profit_ex_nonrecurring_yoy",
+        "source_id": "midea_2026h1",
+        "source_value": "-0.2531",
+        "unit": "ratio"
+      },
+      {
+        "derivation": {
+          "component_fields": [
+            "h1_2026_parent_equity_thousand_cny"
+          ],
+          "rule": "CNY_THOUSANDS_TO_CNY"
+        },
+        "field": "h1_2026_parent_equity_cny",
+        "period_end": "2026-06-30",
+        "physical_page": 7,
+        "scope": "consolidated_parent_equity",
+        "source_id": "midea_2026h1",
+        "source_value": "212861055000",
+        "unit": "CNY"
+      },
+      {
+        "field": "h1_2026_roe",
+        "period_end": "2026-06-30",
+        "physical_page": 7,
+        "scope": "weighted_average_parent_roe",
+        "source_id": "midea_2026h1",
+        "source_value": "0.1133",
+        "unit": "ratio"
+      },
+      {
+        "field": "h1_2026_parent_equity_thousand_cny",
+        "period_end": "2026-06-30",
+        "physical_page": 7,
+        "scope": "consolidated_parent_equity",
+        "source_id": "midea_2026h1",
+        "source_value": "212861055",
+        "unit": "CNY_thousand"
+      },
+      {
+        "field": "a_ordinary_shares_excluding_treasury",
+        "period_end": "2026-06-30",
+        "physical_page": 2,
+        "scope": "ordinary_shares_excluding_treasury",
+        "source_id": "midea_202606_hkex_monthly_return",
+        "source_value": "6813498835",
+        "unit": "shares"
+      },
+      {
+        "field": "h_ordinary_shares",
+        "period_end": "2026-06-30",
+        "physical_page": 2,
+        "scope": "ordinary_shares_excluding_treasury",
+        "source_id": "midea_202606_hkex_monthly_return",
+        "source_value": "650848500",
+        "unit": "shares"
+      },
+      {
+        "derivation": {
+          "component_fields": [
+            "a_ordinary_shares_excluding_treasury",
+            "h_ordinary_shares"
+          ],
+          "rule": "SUM_COMPONENTS"
+        },
+        "field": "ordinary_shares_20260630",
+        "period_end": "2026-06-30",
+        "physical_page": 2,
+        "scope": "ordinary_shares_excluding_treasury",
+        "source_id": "midea_202606_hkex_monthly_return",
+        "source_value": "7464347335",
+        "unit": "shares"
+      },
+      {
+        "field": "h1_2025_weighted_roe",
+        "period_end": "2025-06-30",
+        "physical_page": 7,
+        "scope": "weighted_average_parent_roe",
+        "source_id": "midea_2026h1",
+        "source_value": "0.1129",
+        "unit": "ratio"
+      }
+    ],
+    "fact_semantics_scope": "source_anchored_parent_profit_equity_and_share_denominator_not_full_financial_quality",
+    "scenario_memo": {
+      "id": "midea-economic-v1-proposal",
+      "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+    },
+    "schema_version": "source-bound-research-inputs-v3",
+    "share_basis": "ordinary_shares_excluding_treasury",
+    "source_catalog_sha256": "6a9bbdcb489a82655c455955c0686ad0c7e25ca6e209848be65b7e0513d59c09",
+    "strict_contemporaneous_pit": "NOT_PROVEN"
+  }
+}
