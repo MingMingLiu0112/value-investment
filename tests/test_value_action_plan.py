@@ -274,3 +274,212 @@ def test_policy_loader_rejects_unregistered_and_future_registration(tmp_path, mo
     chain["model"]["product_extensions"]["value_action_policy_registry"] = binding
     with pytest.raises(ValueError, match="not available"):
         load_value_action_policy(root=tmp_path, binding=binding, symbol=explanation["symbol"], now=now)
+
+
+def _registered_only_quote(tmp_path, monkeypatch):
+    from test_quote_session_collection import Session
+    from test_quote_sessions import NOW
+    from value_investment_agent.application.decision import value_action_plan as module
+    from value_investment_agent.quote_session_collection import collect_session_bundle
+
+    monkeypatch.setattr(module, "load_current_chain", lambda root: dict(model=dict(
+        additional_evidence_bindings=[], product_extensions={})))
+    config = tmp_path / "config"
+    config.mkdir()
+    (config / "current-company-research-registry.json").write_text(json.dumps(dict(
+        schema_version="current-company-research-registry-v1", action="no_order",
+        companies={"000333": dict(name="Synthetic registered company", evidence=[],
+            missing_inputs=["valuation_scenarios_missing", "等待已验证收盘行情",
+                            "price_bridge_pending_external_data"])})), encoding="utf-8")
+    bundle = tmp_path / "runtime/quotes/bundle.json"
+    bundle.parent.mkdir(parents=True)
+    payload = collect_session_bundle(["000333"], session=Session(), clock=lambda: NOW)
+    bundle.write_text(json.dumps(payload), encoding="utf-8")
+    pointer = config / "current-quote-bridge.json"
+    pointer.write_text(json.dumps(dict(schema_version="current-quote-bridge-v1", action="no_order",
+        quotes={"000333": dict(registration_scope="QUOTE_OBSERVATION_ONLY",
+            quote_bundle="runtime/quotes/bundle.json",
+            quote_bundle_sha256=hashlib.sha256(bundle.read_bytes()).hexdigest())})), encoding="utf-8")
+    return module, bundle, pointer, NOW
+
+
+def _assert_registry_gates(plan):
+    assert plan["qualification"] == "REGISTERED_RESEARCH_GAPS_ONLY"
+    assert plan["research_as_of"] is None
+    assert plan["research_as_of_basis"] == "REGISTERED_RESEARCH_GAPS_ONLY"
+    assert "尚无完整估值情景" in plan["explanation"]
+    assert plan["bear"] is plan["base"] is plan["bull"] is None
+    assert plan["safety_margin_policy"] is None
+    assert plan["price_comparison_eligible"] is False
+    assert plan["formal_eligibility"] is plan["security_review_eligible"] is False
+    assert plan["portfolio_eligibility"] is plan["action_intent"] is None
+    assert plan["position_guidance"] is None and plan["action"] == "no_order"
+    assert plan["valuation_recomputed"] is plan["approval_changed"] is False
+    assert plan["signal_state"] == "BLOCKED"
+    assert "valuation_scenarios_missing" in plan["blockers"]
+    assert "price_bridge_pending_external_data" in plan["blockers"]
+    for action in ("entry", "add", "reduce", "exit", "hold"):
+        assert plan[action + "_condition"] is None
+
+
+@pytest.mark.parametrize("next_morning", [False, True])
+def test_registered_only_shows_real_bridge_verified_close_as_observation(
+        tmp_path, monkeypatch, next_morning):
+    module, bundle, pointer, now = _registered_only_quote(tmp_path, monkeypatch)
+    if next_morning:
+        now += timedelta(hours=18)
+    execute = module.execute_quote_bridge_for_symbol
+    calls = []
+
+    def bridge(root, symbol, *, today):
+        calls.append((root, symbol, today))
+        execution = execute(root, symbol, today=today)
+        assert execution["status"] == "QUOTE_VERIFIED_WITHOUT_RESEARCH_DISPLAY_ONLY"
+        assert execution["price_admitted"] is False
+        # Even an upstream comparison flag cannot qualify registry-only research.
+        execution["compatibility"]["comparison_eligible"]["eligible"] = True
+        return execution
+
+    monkeypatch.setattr(module, "execute_quote_bridge_for_symbol", bridge)
+    result = load_registered_value_action_plans(tmp_path, now=now, symbols=["000333"])
+    assert not result["blockers"] and len(result["items"]) == 1
+    assert calls == [(tmp_path.resolve(), "000333", now)]
+    plan = result["items"][0]
+    _assert_registry_gates(plan)
+    assert plan["reference_close"] == "60"
+    assert plan["market_trade_date"] == "2026-09-07"
+    assert plan["current_quote_verified"] is True and not plan["current_quote_blockers"]
+    assert plan["reference_price_scope"] == ("LAST_COMPLETED_CLOSE_DISPLAY_ONLY" if next_morning
+        else "QUOTE_VERIFIED_WITHOUT_RESEARCH_DISPLAY_ONLY")
+    assert plan["resolved_historical_quote_blockers"] == ["等待已验证收盘行情"]
+    assert "等待已验证收盘行情" not in plan["blockers"]
+    for path in (bundle, pointer):
+        binding = dict(path=path.relative_to(tmp_path).as_posix(),
+            sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+        assert binding in plan["source_bindings"] and binding in result["source_bindings"]
+
+
+@pytest.mark.parametrize("failure", ["future", "stale", "bundle_tamper", "source_tamper",
+    "missing_source", "missing_bundle", "missing_registration"])
+def test_registered_quote_failure_keeps_research_item_blocked(tmp_path, monkeypatch, failure):
+    module, bundle, pointer, now = _registered_only_quote(tmp_path, monkeypatch)
+    if failure == "future":
+        now -= timedelta(hours=1)
+    elif failure == "stale":
+        now += timedelta(days=1)
+    elif failure == "bundle_tamper":
+        bundle.write_bytes(bundle.read_bytes() + b" ")
+    elif failure in {"source_tamper", "missing_source"}:
+        payload = json.loads(bundle.read_bytes())
+        source = payload["references"]["000333"]["document_refs"]["sina"]
+        if failure == "missing_source":
+            del payload["documents"][source]
+        else:
+            payload["documents"][source]["sha256"] = "0" * 64
+        bundle.write_text(json.dumps(payload), encoding="utf-8")
+        registration = json.loads(pointer.read_bytes())
+        registration["quotes"]["000333"]["quote_bundle_sha256"] = hashlib.sha256(bundle.read_bytes()).hexdigest()
+        pointer.write_text(json.dumps(registration), encoding="utf-8")
+    elif failure == "missing_bundle":
+        bundle.unlink()
+    else:
+        pointer.unlink()
+    result = load_registered_value_action_plans(tmp_path, now=now)
+    assert len(result["items"]) == 1 and not result["blockers"]
+    plan = result["items"][0]
+    _assert_registry_gates(plan)
+    assert plan["reference_close"] is plan["market_trade_date"] is None
+    assert plan["reference_price_scope"] == "NO_VERIFIED_CLOSE"
+    assert plan["current_quote_verified"] is False
+    assert plan["current_quote_blockers"] == ["VALUE_LATEST_COMPLETED_QUOTE_NOT_VERIFIED"]
+    assert plan["current_quote_blockers"][0] in plan["blockers"]
+    assert "等待已验证收盘行情" in plan["blockers"]
+
+
+@pytest.mark.parametrize("failure", ["date", "price", "bundle_path", "bundle_sha256", "sources", "exception"])
+def test_registered_display_price_alone_or_broken_quote_never_drops_research(
+        tmp_path, monkeypatch, failure):
+    module, bundle, pointer, now = _registered_only_quote(tmp_path, monkeypatch)
+    execution = module.execute_quote_bridge_for_symbol(tmp_path, "000333", today=now)
+    if failure == "date":
+        future = (now.date() + timedelta(days=1)).isoformat()
+        execution["quote"].update(quote_date=future, latest_completed_session=future)
+    elif failure == "price":
+        execution["quote"]["display_price"] = "NaN"
+    elif failure == "sources":
+        execution["sources"] = []
+    elif failure != "exception":
+        del execution["quote"][failure]
+
+    def bridge(*args, **kwargs):
+        if failure == "exception":
+            raise ValueError("Synthetic broken quote")
+        return execution
+
+    monkeypatch.setattr(module, "execute_quote_bridge_for_symbol", bridge)
+    result = load_registered_value_action_plans(tmp_path, now=now)
+    assert len(result["items"]) == 1 and not result["blockers"]
+    plan = result["items"][0]
+    _assert_registry_gates(plan)
+    assert plan["current_quote_verified"] is False and plan["reference_close"] is None
+    assert plan["reference_price_scope"] == "NO_VERIFIED_CLOSE"
+    assert plan["current_quote_blockers"]
+
+
+@pytest.mark.parametrize("quote_state", ["verified", "unverified", "invalid_price"])
+def test_registered_pointer_changed_after_bridge_is_not_delivered(
+        tmp_path, monkeypatch, quote_state):
+    module, bundle, pointer, now = _registered_only_quote(tmp_path, monkeypatch)
+    execute = module.execute_quote_bridge_for_symbol
+    old_binding = dict(path=pointer.relative_to(tmp_path).as_posix(),
+        sha256=hashlib.sha256(pointer.read_bytes()).hexdigest())
+
+    def bridge(root, symbol, *, today):
+        execution = execute(root, symbol, today=today)
+        assert execution["compatibility"]["verified_quote"]["eligible"] is True
+        assert execution["pointer"] == old_binding
+        pointer.write_bytes(pointer.read_bytes() + b" ")
+        if quote_state == "unverified":
+            execution["compatibility"]["verified_quote"]["eligible"] = False
+        elif quote_state == "invalid_price":
+            execution["quote"]["display_price"] = "NaN"
+        return execution
+
+    monkeypatch.setattr(module, "execute_quote_bridge_for_symbol", bridge)
+    result = load_registered_value_action_plans(tmp_path, now=now)
+    assert not result["blockers"] and len(result["items"]) == 1
+    plan = result["items"][0]
+    _assert_registry_gates(plan)
+    assert plan["current_quote_verified"] is False
+    assert plan["reference_close"] is plan["market_trade_date"] is None
+    assert plan["current_quote_blockers"] == ["VALUE_LATEST_COMPLETED_QUOTE_NOT_VERIFIED"]
+    assert "等待已验证收盘行情" in plan["blockers"]
+    if quote_state == "verified":
+        assert plan["quote_bridge_status"] == "NOT_ADMITTED"
+        assert "Registered quote pointer hash mismatch" in plan["required_confirmations"]
+    for sources in (plan["source_bindings"], result["source_bindings"]):
+        assert old_binding not in sources
+        assert not any(source["path"] in {old_binding["path"], "runtime/quotes/bundle.json"}
+                       for source in sources)
+
+
+@pytest.mark.parametrize("failure", ["missing", "wrong_path", "wrong_hash"])
+def test_registered_observation_requires_exact_pointer_binding(tmp_path, monkeypatch, failure):
+    module, bundle, pointer, now = _registered_only_quote(tmp_path, monkeypatch)
+    execution = module.execute_quote_bridge_for_symbol(tmp_path, "000333", today=now)
+    if failure == "missing":
+        del execution["pointer"]
+    elif failure == "wrong_path":
+        execution["pointer"]["path"] = "config/other-quote-bridge.json"
+    else:
+        execution["pointer"]["sha256"] = "0" * 64
+    monkeypatch.setattr(module, "execute_quote_bridge_for_symbol", lambda *a, **k: execution)
+    result = load_registered_value_action_plans(tmp_path, now=now)
+    assert not result["blockers"] and len(result["items"]) == 1
+    plan = result["items"][0]
+    _assert_registry_gates(plan)
+    assert plan["reference_close"] is None and plan["current_quote_verified"] is False
+    assert plan["current_quote_blockers"]
+    for sources in (plan["source_bindings"], result["source_bindings"]):
+        assert not any(source["path"] in {"config/current-quote-bridge.json",
+            "config/other-quote-bridge.json", "runtime/quotes/bundle.json"} for source in sources)

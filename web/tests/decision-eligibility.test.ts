@@ -80,7 +80,7 @@ it("explains registered condition objects and missing value policies without man
     "PRICE_NOT_ADMITTED",
   ]);
   expect(translated).toBe(
-    "当前发布尚未绑定完整研究评估，补行情不足以完成准入；估值尚未通过准入；尚未接入经核验的当前行情",
+    "当前发布尚未绑定完整研究评估，补行情不足以完成准入；估值尚未通过准入；当前价格尚未获准用于正式决策",
   );
   expect(translated).not.toMatch(
     /RESEARCH_ASSESSMENT_NOT_BOUND|VALUATION_NOT_ADMITTED|PRICE_NOT_ADMITTED/,

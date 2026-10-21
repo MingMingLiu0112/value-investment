@@ -59,7 +59,7 @@ const CODE_TEXT: Record<string, string> = {
   AWAITING_VERIFIED_CLOSE: "等待双源核验收盘行情登记",
   PRIVATE_PORTFOLIO_NOT_CONNECTED: "私人组合尚未接入，无法核对持仓",
   PUBLICATION_UNAVAILABLE: "当前发布物不可用",
-  PRICE_NOT_ADMITTED: "尚未接入经核验的当前行情",
+  PRICE_NOT_ADMITTED: "当前价格尚未获准用于正式决策",
   ACCOUNT_AS_OF_IN_FUTURE: "账户事实日期晚于当前日期，不能作为当前权益",
   ACCOUNT_FACTS_NOT_YET_AVAILABLE:
     "账户事实确认时间尚未到达，当前权益暂不可核验",

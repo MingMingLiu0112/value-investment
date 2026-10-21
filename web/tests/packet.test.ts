@@ -55,7 +55,9 @@ function makePacket(
 
 describe("daily public packet display helpers", () => {
   it("translates bare codes and CODE:symbol pairs without inventing labels", () => {
-    expect(blockerText("PRICE_NOT_ADMITTED")).toBe("尚未接入经核验的当前行情");
+    expect(blockerText("PRICE_NOT_ADMITTED")).toBe(
+      "当前价格尚未获准用于正式决策",
+    );
     expect(blockerText("NEEDS_RE_RESEARCH:600887")).toBe(
       "需要重新研究以覆盖最新已核验收盘（600887）",
     );

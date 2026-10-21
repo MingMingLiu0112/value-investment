@@ -34,7 +34,7 @@ SCHEMA_VERSION = "daily-public-packet-v1"
 # revision yields a new publication_id instead of silently reusing a stored
 # record that an older revision computed.
 # v20 retains source-verified retired observations with their original expiry.
-ENGINE_VERSION = "daily-public-packet-engine-v20"
+ENGINE_VERSION = "daily-public-packet-engine-v21"
 # v4 folds every content-deciding input into the identity: the company
 # research registry and its evidence files, the archived quote bundles, the
 # bound decision-explanation files and the business clock (natural date +

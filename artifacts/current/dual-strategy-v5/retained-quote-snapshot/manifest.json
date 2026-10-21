@@ -1,0 +1,18 @@
+{
+  "schema_version": "tl11-p4-public-evidence-archive-v1",
+  "action": "no_order",
+  "private_data": false,
+  "scope": "EXACT_PUBLIC_QUOTE_OBSERVATION_SNAPSHOT_NOT_WHOLE_SITE",
+  "items": [
+    {
+      "original_path": "runtime/daily-public-packet/daily-public-packet-pub-c7e8c45a229c2006ee96.json",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-quote-snapshot/objects/a2df025c307e2bf19bfc65fe2041ec535a955619c63312f9ad1728286e48baba.bin",
+      "sha256": "a2df025c307e2bf19bfc65fe2041ec535a955619c63312f9ad1728286e48baba"
+    },
+    {
+      "original_path": "runtime/daily-public-packet/receipts/daily-public-packet-pub-c7e8c45a229c2006ee96.receipt.json",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-quote-snapshot/objects/9b0ca436302ce57b842d7d62cb9be58d41ce99dcc32ea67d56e6471727a37b91.bin",
+      "sha256": "9b0ca436302ce57b842d7d62cb9be58d41ce99dcc32ea67d56e6471727a37b91"
+    }
+  ]
+}

@@ -1842,3 +1842,58 @@ separate verification; a successful build alone is not a visible-user result.
 The failed browser tab still awaits manual recovery under its URL security policy.
 All twelve product/investment statuses remain partial, blocked or not proven;
 total Goal IN_PROGRESS, real assisted use NOT_PROVEN, Excel FROZEN, action=no_order.
+
+### V5 registered-company quote observation wiring
+
+Actual browser verification of 000333 exposed a CODE_GAP: registry-only companies
+never called the existing quote bridge, so the detail showed no reference close
+despite independently verified public originals. Reuse that bridge in the existing
+adapter. Actual 2026-10-21 observations now show 000333=83.86, 000651=37.13 and
+600741=14.85. Their scenarios, formal comparison, actions, private quantities and
+approval remain unavailable. Correct the registry-only qualification/research-date
+defaults rather than implying a valuation exists. Price-not-admitted text must
+describe decision admission, not falsely claim that no verified quote exists.
+
+Independent review caught a pointer change between initial verification and final
+projection. The final implementation rechecks the fixed registration path and raw
+SHA and includes bundle/pointer bindings only on success. Drift revokes the quote
+observation, retains the research entry and excludes the stale binding. Independent
+50-case review and the original replacement probe confirm closure, with no remaining
+P0/P1/P2 in this bounded adapter. Root's real three-company verification preserves
+all formal/portfolio gates. Initial integration: 309 passed; after the pointer fix:
+72 targeted adapter/current-plan/API cases passed. Packet-version/identity and
+incremental-bridge regression: 22 passed.
+
+Bump the existing public packet engine to v21 for the changed projection semantics.
+Local snapshot pub-c7e8c45a229c2006ee96 is published with zero formal admissions.
+Public packet and receipt are retained byte-for-byte using the existing archive
+format and restore library; two-file isolated restoration passed. Euler's bounded
+privacy/hash review found no private account, IPS, token, signature or TEST_ONLY
+account. This is exact-snapshot restoration, not whole-site cold start. Frozen
+research economics and historical packages remain unchanged. The next economic
+step uses defensible forward assumptions/sensitivity in the existing model; it does
+not require undisclosed internal tax allocations or authorize blanket add-backs.
+
+The earlier d531be43 source checkpoint passed exact Core/Web/Postgres CI. Final
+quote-wiring SHA and desktop/mobile browser results must be recorded separately.
+The isolated materiality tab remains subject to manual URL-policy recovery; public
+main-site verification does not substitute for that authenticated workflow.
+Total Goal IN_PROGRESS; real assisted use NOT_PROVEN; action=no_order.
+
+Final local Web: 323 tests, typecheck, formatting and build passed. Actual existing
+main-site browser detail displays 83.86/2026-10-21 with verified-close-only wording
+and no decision admission. Saved screenshot has measured document width 1265 with
+no page overflow. The advertised viewport override did not apply: requesting 390
+still measured 1265, so mobile acceptance is NOT_PASSED, not a reused desktop PASS.
+Override was reset. See registered-quote-web-acceptance.json for this exact scope.
+Do not generalize the public-detail check to the separate authenticated materiality
+workflow. The main 8001 listener restarted successfully on owned PID 41152; an old
+temporary launcher readiness helper expected obsolete flat identity fields and
+reported failure, while listener ownership, live API and browser were verified.
+
+Continuation: verify final delivery SHA Core/Web CI; recover genuine 390px browser
+testing through a supported viewport mechanism; complete the existing authenticated
+materiality handoff after manual URL-policy recovery; continue defensible economic
+assumption review without waiting for nonpublic internal allocations. Preserve real
+economic/strategy admission and real private-input gates. No stage/total completion
+is claimed by this bounded quote-observation repair.

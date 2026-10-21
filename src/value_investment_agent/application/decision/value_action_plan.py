@@ -15,7 +15,7 @@ from ...price_bridge import price_bridge_from_payload
 from ...research_artifact_codecs import decode_artifact
 from ...research_artifacts import ARTIFACT_VALUATION_RESULT
 from ..product.publication_chain import bound_object, load_current_chain, STRUCTURE_ERRORS
-from ..product.quote_bridge import execute_quote_bridge_for_symbol
+from ..product.quote_bridge import POINTER_PATH as QUOTE_POINTER_PATH, execute_quote_bridge_for_symbol
 from ..product.value_decision_explanation import project_value_decision_explanation
 from ..product.decision_surface import verify_current_decision_workbench
 from ..product.research_reviews import verify_human_approval_transport_provenance
@@ -132,6 +132,43 @@ def _check_retained_evidence(root: Path, explanation: dict) -> list[dict]:
         if binding not in bindings:
             bindings.append(binding)
     return bindings
+
+
+def _registered_quote_observation(root: Path, symbol: str, *, now: datetime) -> tuple[dict, dict, list[dict]]:
+    """Reuse quote verification without admitting a registry entry to research."""
+    execution = {}
+    try:
+        execution = dict(execute_quote_bridge_for_symbol(root, symbol, today=now))
+        pointer = execution.pop("pointer", None)
+        close = execution.get("quote") or {}
+        compatibility = execution.get("compatibility") or {}
+        if ((compatibility.get("verified_quote") or {}).get("eligible") is not True
+                or close.get("latest_completed_session") is None
+                or close.get("quote_date") != close["latest_completed_session"]):
+            return execution, {}, []
+        quote_day = date.fromisoformat(close["quote_date"])
+        price = Decimal(close["display_price"])
+        if quote_day > now.astimezone(CHINA).date() or not price.is_finite() or price <= 0:
+            raise ValueError("Registered close identity/availability invalid")
+        binding = dict(path=close["bundle_path"], sha256=close["bundle_sha256"])
+        bound_object(root, binding)
+        if not execution.get("sources"):
+            raise ValueError("Registered close lacks verified source evidence")
+        # bound_object only accepts runtime bindings; the pointer has one fixed config path.
+        if (not isinstance(pointer, dict) or set(pointer) != {"path", "sha256"}
+                or pointer["path"] != QUOTE_POINTER_PATH):
+            raise ValueError("Registered close lacks its exact quote pointer binding")
+        pointer_path = (root / QUOTE_POINTER_PATH).resolve()
+        if (not pointer_path.is_relative_to(root)
+                or hashlib.sha256(pointer_path.read_bytes()).hexdigest() != pointer["sha256"]):
+            raise ValueError("Registered quote pointer hash mismatch")
+        return execution, dict(symbol=symbol, price=close["display_price"],
+            quote_date=close["quote_date"], status="verified_close",
+            scope=close.get("display_scope") or execution["status"],
+            comparison_eligible=False), [binding, pointer]
+    except (*STRUCTURE_ERRORS, ArithmeticError) as error:
+        return {**execution, "status": "NOT_ADMITTED", "reason": str(error),
+                "next_step": str(error)}, {}, []
 
 
 def load_registered_value_action_plans(root: Path, *, now: datetime,
@@ -265,8 +302,33 @@ def load_registered_value_action_plans(root: Path, *, now: datetime,
                     if not path.is_relative_to(root) or hashlib.sha256(path.read_bytes()).hexdigest() != evidence["sha256"]:
                         raise ValueError("Registered company evidence changed")
                     sources.append(dict(path=evidence["path"], sha256=evidence["sha256"]))
-                plan = build_value_action_plan(explanation=explanation, source_bindings=tuple(sources)).as_policy()
+                execution, quote, quote_sources = _registered_quote_observation(root, symbol, now=now)
+                sources.extend(quote_sources)
+                historical_blockers = list(explanation["blockers"])
+                resolved_quote_blockers = [reason for reason in historical_blockers
+                    if quote and reason == "等待已验证收盘行情"]
+                explanation["blockers"] = [reason for reason in historical_blockers
+                    if reason not in resolved_quote_blockers]
+                quote_blockers = [] if quote else ["VALUE_LATEST_COMPLETED_QUOTE_NOT_VERIFIED"]
+                explanation["blockers"].extend(quote_blockers)
+                plan = build_value_action_plan(explanation=explanation, reference_quote=quote,
+                    source_bindings=tuple(sources)).as_policy()
                 plan["research_as_of"] = None
+                plan["research_as_of_basis"] = "REGISTERED_RESEARCH_GAPS_ONLY"
+                plan["qualification"] = "REGISTERED_RESEARCH_GAPS_ONLY"
+                plan["explanation"] = "仅展示注册研究缺口及通过核验的收盘事实；尚无完整估值情景，不授予价格比较或操作资格。"
+                if not quote:
+                    plan["reference_price_scope"] = "NO_VERIFIED_CLOSE"
+                plan["quote_bridge_status"] = execution["status"]
+                plan["current_quote_verified"] = bool(quote)
+                plan["current_quote_blockers"] = quote_blockers
+                plan["historical_research_blockers"] = historical_blockers
+                plan["resolved_historical_quote_blockers"] = resolved_quote_blockers
+                plan["current_pricing_blockers"] = [reason for reason in plan["blockers"]
+                    if reason.startswith("VALUE_")]
+                next_step = execution.get("next_step") or execution.get("reason")
+                if next_step:
+                    plan["required_confirmations"].append(next_step)
                 plan["verification_scope"] = "REGISTERED_RESEARCH_GAPS_ONLY"
                 items.append(plan)
                 bindings.extend(source for source in sources if source not in bindings)

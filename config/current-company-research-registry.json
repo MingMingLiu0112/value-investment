@@ -15,7 +15,7 @@
         "超额收益持续期、分配与权益成本须有经济证据及既有审核链支持"
       ],
       "required_actor": "EVIDENCE",
-      "next_step": "先查看已核验的同期ROE和非经常性损益勾稽，再核实外汇风险管理工具的经济匹配及税后归母影响；补齐正常化盈利解释后沿既有审核链评审情景，不重复采集权益、股数或历史盈利。",
+      "next_step": "基于已核验的同期ROE、工具分项及会计桥，沿现有剩余收益模型提出有界的前瞻ROE、持续期、分配与权益成本假设，评审反例及敏感性；精确税后归属未知继续保留，不强求未公开内部拆分，不机械加回工具收益，也不将补证视为估值批准。",
       "evidence": [
         {
           "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
