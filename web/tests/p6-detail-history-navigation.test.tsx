@@ -48,6 +48,26 @@ it("shows verified financial input progress separately from economic approval", 
       quality_coverage_before: "0.5556",
       quality_coverage_after: "0.6667",
       formal_eligibility: false,
+      adopted_metrics: [
+        {
+          field_name: "revenue_yoy",
+          value: "-1.206",
+          unit: "percent",
+          period_label: "2025-12-31",
+        },
+        {
+          field_name: "net_income_yoy",
+          value: "-4.532",
+          unit: "percent",
+          period_label: "2025-12-31",
+        },
+        {
+          field_name: "debt_ratio",
+          value: "999",
+          unit: "CNY",
+          period_label: "2025-12-31",
+        },
+      ],
     },
   };
   const html = renderToStaticMarkup(<DecisionDetail />);
@@ -55,6 +75,11 @@ it("shows verified financial input progress separately from economic approval", 
   expect(html).toContain("55.6");
   expect(html).toContain("66.7");
   expect(html).toContain("投资资格仍独立核验");
+  expect(html).toContain("营业收入同比");
+  expect(html).toContain("-1.21");
+  expect(html).toContain("归母净利润同比");
+  expect(html).toContain("-4.53");
+  expect(html).not.toContain("999.00");
   for (const mutation of [
     { symbol: "600519" },
     { formal_eligibility: true },

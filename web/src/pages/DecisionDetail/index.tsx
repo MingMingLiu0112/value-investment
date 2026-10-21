@@ -923,6 +923,37 @@ export default function DecisionDetail() {
                 {(Number(progress.quality_coverage_before) * 100).toFixed(1)}%
                 到 {(Number(progress.quality_coverage_after) * 100).toFixed(1)}
                 %。 这是财务输入更新；估值、事件审核和投资资格仍独立核验。
+                {Array.isArray(progress.adopted_metrics) &&
+                  progress.adopted_metrics
+                    .filter(
+                      (metric) =>
+                        [
+                          "debt_ratio",
+                          "revenue_yoy",
+                          "net_income_yoy",
+                        ].includes(metric.field_name) &&
+                        metric.unit === "percent" &&
+                        typeof metric.value === "string" &&
+                        metric.value.trim() !== "" &&
+                        Number.isFinite(Number(metric.value)) &&
+                        /^\d{4}-12-31$/.test(metric.period_label),
+                    )
+                    .map((metric) => (
+                      <span
+                        key={`${metric.field_name}-${metric.period_label}`}
+                        style={{ display: "block" }}
+                      >
+                        {metric.period_label} ·{" "}
+                        {
+                          {
+                            debt_ratio: "资产负债率",
+                            revenue_yoy: "营业收入同比",
+                            net_income_yoy: "归母净利润同比",
+                          }[metric.field_name]
+                        }
+                        ：{Number(metric.value).toFixed(2)}%
+                      </span>
+                    ))}
               </Typography.Paragraph>
             )}
             <JudgmentSummary

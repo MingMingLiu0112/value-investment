@@ -1457,3 +1457,31 @@ tests prove SIMULATED sizing and ledger closure; no test should manufacture a
 formal ACTUAL quantity. A separately isolated signed-research browser replay is
 still unperformed; it would remain TEST_ONLY rather than satisfy real formal
 admission. Do not weaken the account namespace to make this checkpoint pass.
+
+### V5 continuation: real comparative input admission
+
+2026-10-21: retained a new Sina consolidated income-statement snapshot with its
+original acquisition receipt. Exact BIZINCO and PARENETP values agree with the
+official FY2025 consolidated income statement for current and prior periods.
+Two previously missing FY2024 inputs now permit the existing growth derivation
+to admit revenue_yoy -1.2060035021% and net_income_yoy -4.5322548172%.
+The existing typed repository/checkpoint/default-restart chain consumes three
+derived facts (the existing debt ratio plus two growth metrics), raising coverage
+from the prior checkpoint's 66.67% to 88.89%. The base export is unchanged.
+Complete interest-bearing debt, total quality score and economic admission remain
+unproven. These observations are available from their actual 2026-10-21 capture,
+not from the original reporting period; strict historical PIT is not admitted.
+
+Source correlation is reusable across supported Shanghai/Shenzhen issuers and
+rechecks the exact official original, independent raw bytes, field/period/scope,
+currency, source endpoint and pinned acquisition receipt. It rejects a backdated
+descriptor that differs from its retained acquisition receipt. Financial adoption
+now reparses the official PDF before trusting a warm extraction cache; a forged
+cache with a recomputed internal digest is rejected. Independent adversarial
+review found no remaining P0/P1 in this scope after both fixes.
+
+112 focused backend tests passed, covering source correlation, real parser to
+growth integration, immutable adoption/restart and public projection. Current Web
+types/detail display the three verified metrics separately from published
+economics. Browser/build/CI evidence for this continuation is recorded separately
+from the earlier b6969333 checkpoint. No real signatures or transactions occur.

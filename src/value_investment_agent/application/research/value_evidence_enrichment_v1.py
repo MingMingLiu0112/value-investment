@@ -236,10 +236,13 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
     already admitted PIT facts enter re-evaluation. No database/pointer writes.
     """
     original = deepcopy(points)
-    packet = extract_retained_annual(root, source, evaluation_at=evaluation_at, cache_dir=cache_dir)
+    packet = extract_retained_annual(root, source, evaluation_at=evaluation_at, cache_dir=cache_dir,
+                                     verify_cache=True)
     company = [deepcopy(p) for p in points if p.get('symbol') == source.symbol
                and _point_available_at(p, evaluation_at) is not None
                and (p.get('metadata') or {}).get('derivation_formula') not in DERIVED_VERSIONS]
+    from .income_source_correlation import reverify_income_inputs
+    reverify_income_inputs(root, source, company, evaluation_at=evaluation_at)
     before = evaluate_financial_quality(source.symbol, name, sector, company,
                                         evaluation_date=evaluation_at.date())
     if components is None:

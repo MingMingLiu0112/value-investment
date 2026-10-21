@@ -186,8 +186,12 @@ def read_verified_enrichment_progress(root: Path, symbol: str, evaluation_at: da
         summary, _, result = verified
         keys = ('status', 'symbol', 'adopted_fact_count', 'research_inputs_updated',
                 'quality_coverage_before', 'quality_coverage_after', 'formal_eligibility', 'action')
+        metrics = [dict(field_name=point['field_name'], value=point['value'],
+                        unit=point['unit'], period_label=point['period_label'])
+                   for point in result['adopted_points']
+                   if point['field_name'] in {'debt_ratio', 'revenue_yoy', 'net_income_yoy'}]
         return dict({key: summary[key] for key in keys}, as_of=result['evaluation_at'],
-                    verified_at=evaluation_at.isoformat())
+                    verified_at=evaluation_at.isoformat(), adopted_metrics=metrics)
     except (ValueError, KeyError, TypeError, OSError):
         return None
 
@@ -298,7 +302,8 @@ def _work_key(root, row, points, allow_network, retry_token, context=None):
     from ...infrastructure.screening import value_evidence_enrichment_v1 as extraction
     from ...infrastructure.screening import evidence_screen_v3
     from ... import financial_quality, filing_extract
-    modules = [Path(__file__), Path(value_evidence_enrichment_v1.__file__),
+    from . import income_source_correlation
+    modules = [Path(__file__), Path(income_source_correlation.__file__), Path(value_evidence_enrichment_v1.__file__),
         Path(value_research_priority_v2.__file__), Path(extraction.__file__),
         Path(evidence_screen_v3.__file__), Path(financial_quality.__file__), Path(filing_extract.__file__)]
     company = [p for p in points if p.get('symbol') == row['symbol']]

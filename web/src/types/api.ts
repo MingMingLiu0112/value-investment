@@ -674,6 +674,12 @@ export interface DetailResponse {
     research_inputs_updated: boolean;
     quality_coverage_before: string;
     quality_coverage_after: string;
+    adopted_metrics?: {
+      field_name: "debt_ratio" | "revenue_yoy" | "net_income_yoy";
+      value: string;
+      unit: string;
+      period_label: string;
+    }[];
     formal_eligibility: false;
   } | null;
   publication?: PublicPacketBlock;
