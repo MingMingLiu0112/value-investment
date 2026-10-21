@@ -8,14 +8,24 @@
       "name": "美的集团",
       "status": "PENDING_RESEARCH",
       "valuation_route": "residual_income_or_equity_value",
-      "summary": "v5已明确授权共享剩余收益/股权价值路由；美的工业FCFF拆分不适用，不能靠登记FCFF情景解除范围缺口。6月末普通股分母7,464,347,335股已核验；路由授权不代表估值输入或估值已准入。",
+      "summary": "当前source-bound剩余收益条件研究包已登记匹配归母权益、普通股分母、历史归母盈利及三情景输入；这不代表完整财务质量、经济假设或估值已准入，不构成可靠当前估值。",
       "missing_inputs": [
-        "剩余收益路由的匹配归母权益、盈利及情景输入尚未注册",
+        "既有条件情景尚需经济及事件重大性审核；历史归母盈利不等于正常化盈利",
         "超额收益持续期、分配与权益成本须有经济证据及既有审核链支持"
       ],
       "required_actor": "EVIDENCE",
-      "next_step": "按已授权股权路由补齐并核验经济输入，再走既有审核与注册链；不以工业FCFF绕过金融范围缺口。",
+      "next_step": "复核当前source-bound草稿与既有待审回执，沿既有审核链评审已登记情景；不重复采集已绑定权益、股数和历史盈利，不以工业FCFF绕过金融范围缺口。",
       "evidence": [
+        {
+          "path": "artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/public-draft-v4.json",
+          "sha256": "c2c7de481405146ee3fc27d364e698baf7435768fe020f30e2a9b4de68c93f23",
+          "note": "当前来源绑定条件草稿；非经济或估值批准"
+        },
+        {
+          "path": "artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/package.json",
+          "sha256": "61525b2918dc33f9f3cc761649b89dc1ba9c13443e4dcfb80381b8be9702facf",
+          "note": "归母权益212861055000元、普通股7464347335股及bear/base/bull已登记；历史盈利保持原分类"
+        },
         {
           "path": "runtime/company-research/midea-valuation-applicability-20261013-v5/evidence.json",
           "sha256": "b69e2fc931a016393ae5d274ad8d7aec8c5aaad52787e92ae377c5ff5ee5f541",

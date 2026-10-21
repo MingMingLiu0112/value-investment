@@ -1531,3 +1531,67 @@ is TEST_ONLY, with historically reconstructed ownership rather than original PIT
 Evidence: held-review-retry-browser.json and held-review-journal-verification.json
 in artifacts/current/dual-strategy-v5. This fixes an interaction, not real sell
 eligibility or overall V5 completion. Excel remains FROZEN; action=no_order.
+
+### V5 continuation: automatic acquisition, retained replay and usable handoff
+
+The bounded worker now automatically acquires an immutable Sina income original
+and correlates it with the official consolidated filing before admitting inputs.
+Its retry identity uses the verified registered baseline, so derived adoption or
+the next day's loader label cannot reset the three-attempt budget indefinitely.
+Actual 600519 acquisition admitted two comparative inputs and three derived
+metrics, reaching 88.89% coverage without changing the base export, discovery
+membership, total quality score or economic approval. Independent review found
+no remaining P0/P1 in this scope. Offline mode performs no network acquisition.
+
+Historical hotspot replay now consumes an immutable 20-file retained closure,
+not mutable current-price configuration. Actual retained data yields 161 signal
+events, 150 complete five-session followups and 11 right-censored events. The
+Web history page distinguishes the full historical interval from its frozen
+validation subwindow. Trade count remains null, not zero or 161. Contemporaneous
+selection, dated execution costs, untouched OOS and real Shadow are not proven;
+no strategy admission was granted. Only the exact privacy-reviewed public
+retained files are included in source delivery, not the surrounding runtime.
+Archive SHA checks remain byte-exact. Running Python rule identity permits only
+CRLF/LF normalization; whitespace, BOM, comments and other rule changes fail.
+A mandatory archive-only test copies just these 20 files and reproduces the
+161/150/11 counts without legacy originals or optional skips. Twenty-seven
+focused portability/API regressions pass.
+
+600519 old pending research has an immutable exact-input successor with a
+separate Web publication; the original research date remains 2026-10-11 and
+later 88.89% facts are not silently merged into its economic scenarios. An
+authenticated, read-only Web handoff exposes questions, support, counterevidence,
+candidate/model hashes and the existing external-signature path. No signing
+identity is pinned. Missing model-bound announcement scans remain an explicit
+engineering/evidence gap, not an approvable empty checklist. The original
+600887 replay is rejected for inconsistent source-availability timestamps.
+000333 registry text now reflects its verified existing draft while retaining
+PENDING_RESEARCH and all economic restrictions.
+
+Fresh independently verified quote 1309.69 on 2026-10-21 survives stale economic
+research clearing, with CURRENT_VERIFIED_CLOSE_NOT_VALUATION_COMPARABLE scope.
+Bear/base/bull, action prices and formal eligibility are still cleared. The Web
+explicitly labels the verified quote as not comparable to current research.
+
+Integration verification: 249 focused Core/API tests and 315 full Web tests
+passed, with typecheck, format and build. The final handoff wording received a
+separate focused regression. Actual Windows desktop and 390px browser checks
+cover public value detail, retained hotspot history and a read-only actual
+research handoff using a separate TEST_ONLY account. Private journal remained
+unchanged; no real signature, private confirmation or transaction was submitted.
+Shared unrelated dirty work is preserved. Browser build-time chunk reloads were
+resolved by reloading after the settled build; clean production deployment is
+not asserted. Source evidence and test checkpoints are separate observations.
+
+Delivery limitation: actual 600519 replay runtime stays local. Its transitive
+closure requires 78 hash-bound files; ordinary cross-platform source newline
+conversion also changes producer hashes. Fresh clones fail closed rather than
+pretend these runtime assets exist. The retained hotspot archive is separately
+complete. Do not call local evidence visibility portable release acceptance.
+
+Continuation: repair 600887 through a separately evidenced new package; create
+a new model-bound 600519 announcement-scan version, complete debt/economic
+research, then lawful review. Preserve hotspot PIT/OOS/cost/Shadow and genuine
+private IPS/account gates. The goal remains IN_PROGRESS, REAL_ASSISTED_USE_READY
+NOT_PROVEN. Twelve individually scoped statuses and exact evidence are recorded
+in artifacts/current/dual-strategy-v5/integrated-continuation.json.

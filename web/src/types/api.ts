@@ -118,6 +118,7 @@ export interface CurrentPricePlan {
   supporting_facts?: unknown;
   counter_evidence?: unknown;
   reference_close?: string | null;
+  reference_price_scope?: string;
   price_comparison_eligible?: boolean;
   thesis?: string | null;
   conditional_valuation_range?: Partial<
@@ -666,6 +667,19 @@ export interface DetailResponse {
   status: ApiStatus;
   decision: DecisionItem | null;
   research_draft?: ResearchDraft | null;
+  review_replay?: {
+    status: "VERIFIED_EXACT_INPUT_REPLAY" | "SOURCE_UNAVAILABLE";
+    symbol: string;
+    action: "no_order";
+    formal_eligibility: false;
+    approval_changed?: false;
+    research_admitted?: false;
+    price_admitted?: false;
+    scope?: "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY";
+    research_as_of?: string;
+    replayed_at?: string;
+    next_url?: string;
+  };
   financial_progress?: {
     status: "VERIFIED_FACT_ADOPTION" | "UNVERIFIED";
     action: "no_order";

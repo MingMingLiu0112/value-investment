@@ -36,6 +36,43 @@ vi.mock("../src/components/HotspotReplayReview", () => ({
 import DecisionDetail from "../src/pages/DecisionDetail";
 import DecisionHistory from "../src/pages/DecisionHistory";
 
+it("links verified unchanged research replay to external review without admitting it", () => {
+  state.data = {
+    decision: { id: "600887", symbol: "600887", strategy: "CORE_VALUE" },
+    review_replay: {
+      status: "VERIFIED_EXACT_INPUT_REPLAY",
+      symbol: "600887",
+      action: "no_order",
+      formal_eligibility: false,
+      approval_changed: false,
+      research_admitted: false,
+      price_admitted: false,
+      scope: "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY",
+      research_as_of: "2026-10-11",
+    },
+  };
+  const html = renderToStaticMarkup(<DecisionDetail />);
+  expect(html).toContain("原研究已按当前程序核验重放");
+  expect(html).toContain("2026-10-11");
+  expect(html).toContain("未获经济或买卖批准");
+  expect(html).toContain('href="#value-review-handoff"');
+  for (const mutation of [
+    { symbol: "600519" },
+    { formal_eligibility: true },
+    { approval_changed: true },
+    { research_admitted: true },
+    { price_admitted: true },
+  ]) {
+    const original = state.data.review_replay;
+    state.data.review_replay = { ...original, ...mutation };
+    expect(renderToStaticMarkup(<DecisionDetail />)).not.toContain(
+      "原研究已按当前程序核验重放",
+    );
+    state.data.review_replay = original;
+  }
+  state.data = {};
+});
+
 it("shows verified financial input progress separately from economic approval", () => {
   state.data = {
     decision: { id: "600887", symbol: "600887", strategy: "CORE_VALUE" },

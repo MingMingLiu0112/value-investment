@@ -867,6 +867,7 @@ export default function DecisionDetail() {
   const packet = useApi(api.packet);
   const decision = data?.decision;
   const progress = data?.financial_progress;
+  const replay = data?.review_replay;
   const verifiedProgress =
     progress?.status === "VERIFIED_FACT_ADOPTION" &&
     progress.action === "no_order" &&
@@ -954,6 +955,27 @@ export default function DecisionDetail() {
                         ：{Number(metric.value).toFixed(2)}%
                       </span>
                     ))}
+              </Typography.Paragraph>
+            )}
+            {replay?.status === "VERIFIED_EXACT_INPUT_REPLAY" &&
+              replay.symbol === decision.symbol &&
+              replay.action === "no_order" &&
+              replay.formal_eligibility === false &&
+              replay.approval_changed === false &&
+              replay.research_admitted === false &&
+              replay.price_admitted === false &&
+              replay.scope === "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY" && (
+                <Typography.Paragraph role="status">
+                  原研究已按当前程序核验重放，研究日仍为 {replay.research_as_of}
+                  ；未获经济或买卖批准。{" "}
+                  <a href="#value-review-handoff">
+                    查看有权审核人的材料与签署路径
+                  </a>
+                </Typography.Paragraph>
+              )}
+            {replay?.status === "SOURCE_UNAVAILABLE" && (
+              <Typography.Paragraph role="status">
+                研究重放材料当前核验未通过，不能据此办理审核或更新操作资格。
               </Typography.Paragraph>
             )}
             <JudgmentSummary

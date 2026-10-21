@@ -15,6 +15,22 @@ type Replay = {
   computed_at: string;
   items: { symbol: string; v1_segments: { validation: Segment } }[];
   limitations: string[];
+  retained_validation?: {
+    evaluated_at: string;
+    partitions: {
+      start_date: string;
+      validation_start: string;
+      end_date: string;
+    };
+    items: { symbol: string; v1_segments: { validation: Segment } }[];
+    signal_event_count: number;
+    mature_five_session_count: number;
+    right_censored_count: number;
+    trade_count: null;
+    formal_eligibility: false;
+    strategy_validation: "NOT_PROVEN";
+    limitations: string[];
+  };
 };
 async function load(signal: AbortSignal): Promise<Replay> {
   const response = await fetch("/api/v1/hotspot-replay-review", { signal });
@@ -37,14 +53,47 @@ export function HotspotReplayReview() {
         {result.data && !result.error ? (
           <>
             <p>
-              回放生成于 {result.data.computed_at}；历史检验不能声称前瞻样本外。
+              回放生成于{" "}
+              {result.data.retained_validation?.evaluated_at ??
+                result.data.computed_at}
+              ；历史检验不能声称前瞻样本外。
             </p>
+            {result.data.retained_validation && (
+              <section aria-label="留存样本价格路径检验">
+                <p>
+                  历史价格路径（
+                  {
+                    result.data.retained_validation.partitions.start_date
+                  } 至 {result.data.retained_validation.partitions.end_date}）：
+                  {result.data.retained_validation.signal_event_count} 次触发，
+                  {
+                    result.data.retained_validation.mature_five_session_count
+                  }{" "}
+                  次完整五日随访，
+                  {result.data.retained_validation.right_censored_count}{" "}
+                  次随访窗口尚未完整。
+                </p>
+                <p>
+                  实际成交数：未核验。以上触发可能重叠；历史选股范围、当时可得信息、费用及可成交性尚未证明，不能据此判断策略净收益或批准买入。
+                </p>
+                <p>
+                  下表仅列冻结验证窗口（
+                  {
+                    result.data.retained_validation.partitions.validation_start
+                  }{" "}
+                  至 {result.data.retained_validation.partitions.end_date}
+                  ）的分公司随访，不是独立样本外交易。
+                </p>
+              </section>
+            )}
             <Table
               size="small"
               rowKey="symbol"
               pagination={false}
               scroll={{ x: 600 }}
-              dataSource={result.data.items.map((row) => ({
+              dataSource={(
+                result.data.retained_validation?.items ?? result.data.items
+              ).map((row) => ({
                 symbol: row.symbol,
                 ...row.v1_segments.validation,
               }))}
@@ -71,7 +120,10 @@ export function HotspotReplayReview() {
               <summary>查看验证限制</summary>
               <DetailSection
                 title="限制与未知结果"
-                value={result.data.limitations}
+                value={
+                  result.data.retained_validation?.limitations ??
+                  result.data.limitations
+                }
               />
             </details>
           </>

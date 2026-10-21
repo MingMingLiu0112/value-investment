@@ -45,3 +45,25 @@ interaction regression, not a real sell approval or full-product acceptance.
 Any positive sizing or manual-fill demonstration labeled TEST_ONLY/SIMULATED is
 an engineering replay, never a real user signature, production approval, broker
 order or proof of investment performance.
+
+Later integration evidence (not total Goal completion):
+
+- `automatic-income-real.json`: fresh real acquisition, official correlation,
+  durable input adoption and unchanged discovery membership. Bounded automatic
+  worker behavior and stable retry exhaustion are covered separately by tests.
+- `pending-candidate-replay-handoff.*`, `replay-external-review-handoff.json`:
+  exact-input 600519 successor and actual read-only signature handoff. These
+  dated agent checkpoints precede Root's final readable event-gap wording.
+  Original research/economic dates are retained; no approvals are inferred.
+- `integrated-continuation.json`: Root's final source/test/API/browser bindings,
+  runtime portability limitations, independent audits and twelve status fields.
+- `current-quote-value-*.png`, `retained-hotspot-history-*.png`,
+  `real-review-handoff-*.png`: Windows browser desktop and actual 390px checks.
+  The last pair uses actual public research and an isolated TEST_ONLY account;
+  it does not display a real user portfolio or signature.
+
+The exact 20-file retained hotspot source archive is delivered for replay.
+Actual 600519 pending replay runtime is local-only: its transitive hash closure
+and producer newline identity are not portable yet. Missing local research
+assets fail closed on a fresh clone. This remains an engineering release gap,
+not a user approval requirement.

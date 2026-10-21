@@ -265,4 +265,43 @@ describe("read-only policy and replay review", () => {
     expect(html).not.toContain("累计观察会话为 0");
     expect(html).not.toMatch(/<details[^>]*\bopen/);
   });
+
+  it("shows retained signal followups separately from unverified trades", () => {
+    state.error = null;
+    state.data = {
+      action: "no_order",
+      computed_at: "2026-10-14",
+      items: [],
+      limitations: [],
+      retained_validation: {
+        partitions: {
+          start_date: "2026-08-31",
+          validation_start: "2026-09-14",
+          end_date: "2026-10-14",
+        },
+        evaluated_at: "2026-10-21",
+        items: [],
+        signal_event_count: 161,
+        mature_five_session_count: 150,
+        right_censored_count: 11,
+        trade_count: null,
+        formal_eligibility: false,
+        strategy_validation: "NOT_PROVEN",
+      },
+    };
+    const html = renderToStaticMarkup(<HotspotReplayReview />);
+    expect(html).toContain("161 次触发");
+    expect(html).toContain("150 次完整五日随访");
+    expect(html).toContain("11 次随访窗口尚未完整");
+    expect(html).toContain("实际成交数：未核验");
+    expect(html).toContain("不能据此判断策略净收益或批准买入");
+    expect(html).toContain("下表仅列冻结验证窗口");
+    expect(html).toContain("2026-09-14");
+    state.error = "source drift";
+    expect(renderToStaticMarkup(<HotspotReplayReview />)).not.toContain(
+      "161 次触发",
+    );
+    state.data = null;
+    state.error = null;
+  });
 });

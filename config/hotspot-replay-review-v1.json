@@ -1,5 +1,9 @@
 {
   "action": "no_order",
   "manifest_sha256": "084db88666db823d788a928388a99633bbc7916363729dcda8720f363fe33373",
-  "structure_manifest_sha256": "1c4e270a58e909b6b51fee1909892c3155338d745ca6e06728da2cbf912aceb5"
+  "structure_manifest_sha256": "1c4e270a58e909b6b51fee1909892c3155338d745ca6e06728da2cbf912aceb5",
+  "retained_manifest_binding": {
+    "path": "runtime/hotspot-retained-source-replays/90a2563ecff349719e9f70318a9caf4d/manifest.json",
+    "sha256": "ce5725c8667f72d96023b778f864fa59d835f2314fe97964ceaaf0cefc32f61e"
+  }
 }

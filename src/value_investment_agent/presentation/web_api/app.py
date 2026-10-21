@@ -572,6 +572,21 @@ def create_app(
             from ...application.research.value_enrichment_batch import read_verified_enrichment_progress
             payload["financial_progress"] = read_verified_enrichment_progress(
                 root=project, symbol=decision_id, evaluation_at=datetime.now(timezone.utc))
+            from ...application.product.pending_replay_publication import load_current_pending_replay
+            try:
+                replay = load_current_pending_replay(root=project, symbol=decision_id)
+                if replay is not None:
+                    candidate = replay["candidate"]
+                    payload["review_replay"] = dict(status="VERIFIED_EXACT_INPUT_REPLAY",
+                        symbol=decision_id, action="no_order", formal_eligibility=False,
+                        approval_changed=False, research_admitted=False, price_admitted=False,
+                        research_as_of=candidate["candidate_research_as_of"],
+                        replayed_at=candidate["generated_at"],
+                        publication_binding=replay["publication_binding"],
+                        scope=replay["scope"], next_url="#value-review-handoff")
+            except (ValueError, OSError, KeyError, TypeError):
+                payload["review_replay"] = dict(status="SOURCE_UNAVAILABLE", symbol=decision_id,
+                    action="no_order", formal_eligibility=False)
             return payload
 
         for company in published.get("companies", []):
@@ -684,8 +699,18 @@ def create_app(
             pins = json.loads((project / "config/hotspot-replay-review-v1.json").read_bytes())
             if pins.get("action") != "no_order":
                 raise ValueError("Invalid review pins")
-            return load_replay_summary(root=project, manifest_sha256=pins["manifest_sha256"],
-                                      structure_manifest_sha256=pins["structure_manifest_sha256"])
+            result = load_replay_summary(root=project, manifest_sha256=pins["manifest_sha256"],
+                                         structure_manifest_sha256=pins["structure_manifest_sha256"])
+            if "retained_manifest_binding" in pins:
+                from ...application.hotspot.retained_source_replay import load_retained_replay_summary
+                retained = load_retained_replay_summary(root=project,
+                    manifest_binding=pins["retained_manifest_binding"], now=datetime.now(timezone.utc))
+                if (retained.get("namespace") != "ACTUAL" or retained.get("scope") != "DESCRIPTIVE"
+                        or retained.get("action") != "no_order" or retained.get("formal_eligibility") is not False
+                        or retained.get("trade_count") is not None):
+                    raise ValueError("Retained review scope mismatch")
+                result["retained_validation"] = retained
+            return result
         except (ValueError, OSError, KeyError, TypeError):
             return JSONResponse(status_code=409, content={
                 "action": "no_order", "status": "REPLAY_UNAVAILABLE"})

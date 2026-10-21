@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
@@ -15,9 +16,14 @@ def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=F
     from .user_research_workflow import selected_review_candidate
     from ..decision.value_price_policy import load_value_policy_review, review_manifest_binding
     from ...infrastructure.evidence.trust_root_registry import pinned_trust_root_fingerprints
+    from .pending_replay_publication import POINTER_PATH as REPLAY_POINTER_PATH, load_current_pending_replay
 
     root = root.resolve()
     draft_inputs = None
+    replay = None
+    replay_unavailable = dict(action='no_order', status='NOT_READY', symbol=symbol,
+        blockers=['CURRENT_PENDING_REPLAY_MISSING_OR_INVALID'],
+        verification=dict(approval_changed=False, research_admitted=False))
     if bound_draft:
         from .bound_draft_review import current_bound_draft_inputs
         try:
@@ -33,9 +39,23 @@ def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=F
                 result['bindings'] = draft_inputs
             return result
     else:
-        chain = load_current_chain(root)
-        binding = selected_review_candidate(root=root, symbol=symbol,
-            published={'source_bindings': chain['sources']['source_bindings']})
+        try:
+            replay = load_current_pending_replay(root=root, symbol=symbol)
+            if replay is None and (root / REPLAY_POINTER_PATH).exists():
+                registry = json.loads((root / REPLAY_POINTER_PATH).read_bytes())
+                if symbol in registry['publications']:
+                    raise ValueError('Registered replay has no valid publication binding')
+            if replay is not None:
+                if (now.utcoffset() is None or any(datetime.fromisoformat(stamp) > now
+                        for stamp in (replay['publication']['generated_at'], replay['candidate']['generated_at']))):
+                    raise ValueError('Replay review inputs are not yet available')
+                binding = replay['publication']['candidate_binding']
+        except (ValueError, OSError, KeyError, TypeError):
+            return replay_unavailable
+        if replay is None:
+            chain = load_current_chain(root)
+            binding = selected_review_candidate(root=root, symbol=symbol,
+                published={'source_bindings': chain['sources']['source_bindings']})
     preview = preview_pending_review_response(root=root,
         candidate_path=root / binding['path'], candidate_sha256=binding['sha256'])
     consumed_materials = None
@@ -59,6 +79,14 @@ def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=F
         if (sha256_file(packet_path) != packet_binding['sha256']
                 or sha256_file(root / draft_inputs['draft']['path']) != draft_inputs['draft']['sha256']):
             raise ValueError('Bound review materials changed during read')
+    elif replay is not None:
+        packet_binding = replay['publication']['review_packet_binding']
+        packet_path = require_inside(root / 'runtime', root / packet_binding['path'], 'replay review packet')
+        if packet_binding not in replay['candidate']['source_bindings']:
+            raise ValueError('Replay review packet is not bound to the candidate')
+        consumed_materials = json.loads(packet_path.read_bytes())
+        if sha256_file(packet_path) != packet_binding['sha256']:
+            raise ValueError('Replay review materials changed during read')
     valuation_hash = preview['draft']['valuation_artifact_sha256']
     review = None
     if not bound_draft:
@@ -73,28 +101,39 @@ def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=F
                       f'--candidate-sha256 {binding["sha256"]}')
     from .research_materiality_reviews import registered_materiality_handoff
     try:
-        if bound_draft:
+        if bound_draft or replay is not None:
             from .research_materiality_reviews import prepare_materiality_review_handoff
-            package = json.loads((root / draft_inputs['package']['path']).read_bytes())
-            scan = package['model_validity_input']['event_scan_ref']
+            package_binding = draft_inputs['package'] if bound_draft else replay['publication']['package_binding']
+            package = json.loads((root / package_binding['path']).read_bytes())
+            scan = package.get('model_validity_input', {}).get('event_scan_ref')
+            if not isinstance(scan, dict):
+                raise ValueError('原研究包尚未绑定完整公告扫描；须先按对应模型版本补齐并核验后，再办理事件审核。')
             materiality_handoff = prepare_materiality_review_handoff(root=root,
-                package_path=root / draft_inputs['package']['path'],
-                package_sha256=draft_inputs['package']['sha256'],
+                package_path=root / package_binding['path'],
+                package_sha256=package_binding['sha256'],
                 scan_path=root / scan['path'], scan_sha256=scan['sha256'])
-            if materiality_handoff.get('model_context', {}).get('input_descriptor_sha256') != draft_inputs['input_sha256']:
+            input_sha256 = (draft_inputs['input_sha256'] if bound_draft else
+                replay['candidate']['model_context']['input_descriptor_sha256'])
+            if materiality_handoff.get('model_context', {}).get('input_descriptor_sha256') != input_sha256:
                 raise ValueError('Materiality handoff requires a separately rebound model descriptor')
         else:
             materiality_handoff = registered_materiality_handoff(root=root, symbol=symbol, today=now)
     except (ValueError, OSError, KeyError, TypeError) as error:
         materiality_handoff = dict(status='MATERIALITY_HANDOFF_BLOCKED', action='no_order',
             approval_granted=False, g3_approval_granted=False, reason=str(error), steps=[])
-    return dict(action='no_order', status='EXTERNAL_SIGNATURE_REQUIRED',
+    if replay is not None:
+        try:
+            if load_current_pending_replay(root=root, symbol=symbol) != replay:
+                raise ValueError('Registered replay changed during handoff')
+        except (ValueError, OSError, KeyError, TypeError):
+            return replay_unavailable
+    result = dict(action='no_order', status='EXTERNAL_SIGNATURE_REQUIRED',
         materiality_handoff=materiality_handoff,
         symbol=symbol, candidate_binding=binding,
         model_context=preview['draft']['model_context'],
         valuation_artifact_sha256=valuation_hash,
         review_questions=preview['review_questions'], unsigned_response=preview['draft'],
-        public_research_materials=(consumed_materials if bound_draft else
+        public_research_materials=(consumed_materials if bound_draft or replay is not None else
             review['model_review'] if review else preview['draft']['model_context']),
         source_bindings=review['source_bindings'] if review else ([binding, draft_inputs['draft'], draft_inputs['package']]
             if draft_inputs else [binding]),
@@ -116,6 +155,14 @@ def build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=F
             policy_confirmation_is_not_g3=True,
             required_results=['authenticated-review-response.json', '共享研究重新核验结果', '当前发布版本及页面资格']),
         position_guidance=None)
+    if replay is not None:
+        publication = replay['publication']
+        result['replay_publication_binding'] = replay['publication_binding']
+        result['source_bindings'] = list({item['path']: item for item in [
+            *result['source_bindings'], replay['registry_binding'], replay['publication_binding'],
+            binding, publication['predecessor_binding'], publication['package_binding'],
+            publication['workbench_binding'], publication['review_packet_binding']]}.values())
+    return result
 
 
 def preview_pending_review_response(*, root: Path, candidate_path: Path,
