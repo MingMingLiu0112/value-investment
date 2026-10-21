@@ -583,6 +583,7 @@ export default function DailyDecisions() {
           )}
           <ConfirmationTasks
             decisions={data.sections.value}
+            hotspotDecisions={hotspotItems}
             connected={state.portfolio?.status === "CONNECTED"}
             privateReadable={!!state.portfolio}
           />

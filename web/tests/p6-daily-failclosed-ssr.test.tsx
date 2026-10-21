@@ -147,6 +147,14 @@ it("uses the current independent hotspot publication for the date summary", () =
   expect(html).not.toContain("热点已完成交易日 2026-10-14");
 });
 
+it("puts hotspot condition review and sizing entry in the daily confirmation queue", () => {
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain("热点条件复核");
+  expect(html).toContain("查看热点操作条件");
+  expect(html).toContain("进入风险试算与成交登记");
+  expect(html).toContain("不把 WATCH 当作买入");
+});
+
 it("keeps unvalued company research reachable without claiming there are no value leads", () => {
   state.daily.data.sections.value = [
     {

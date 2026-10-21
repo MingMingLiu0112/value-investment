@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { useApi } from "../hooks/useApi";
 import { api } from "../services/api";
 import type { DecisionItem } from "../types/api";
+import { fillLink, judgmentState } from "../utils/currentJudgment";
 
 const readableStatuses = new Set([
   "REGISTERED",
@@ -113,12 +114,36 @@ function PersonalPolicyTask({ item }: { item: DecisionItem }) {
   );
 }
 
+function HotspotReviewTask({ item }: { item: DecisionItem }) {
+  if (!item.symbol || !item.price_action_plan) return null;
+  const plan = item.price_action_plan;
+  return (
+    <li>
+      <span>
+        {item.name ?? item.symbol}：热点条件复核（{judgmentState(item)}）
+      </span>
+      <p>
+        核对日线趋势、60 分钟入场观察价、15 分钟辅助条件和结构失效价；条件未满足时继续观察，不把 WATCH 当作买入。
+      </p>
+      <Link to={`/decisions/${encodeURIComponent(item.id)}`}>
+        查看热点操作条件
+      </Link>{" "}
+      <Link to={fillLink(item)}>进入风险试算与成交登记</Link>
+      <p>
+        当前参考价 {plan.current_reference_price ?? "未核验"}；入场观察价 {plan.entry_trigger_price ?? "未形成"}；失效价 {plan.invalidation_price ?? "未形成"}。
+      </p>
+    </li>
+  );
+}
+
 export function ConfirmationTasks({
   decisions,
+  hotspotDecisions = [],
   connected,
   privateReadable = true,
 }: {
   decisions: DecisionItem[];
+  hotspotDecisions?: DecisionItem[];
   connected: boolean;
   privateReadable?: boolean;
 }) {
@@ -143,6 +168,13 @@ export function ConfirmationTasks({
         {privateReadable &&
           companies.map((item) => (
             <PersonalPolicyTask key={item.id} item={item} />
+          ))}
+        {hotspotDecisions
+          .filter((item) =>
+            ["hotspot", "HOTSPOT_SATELLITE"].includes(item.strategy ?? ""),
+          )
+          .map((item) => (
+            <HotspotReviewTask key={`hotspot-${item.id}`} item={item} />
           ))}
       </ul>
     </section>
