@@ -30,11 +30,15 @@ function HeldSellReview({
   const [result, setResult] = useState<ConditionalAccountDecision>();
   const requestId = useRef(0);
   const identity = JSON.stringify([revision, account, exchange, decision]);
-  useEffect(() => {
+  function invalidateReview() {
     requestId.current += 1;
+    setBusy(false);
     setResult(undefined);
     setAck(false);
     setError(undefined);
+  }
+  useEffect(() => {
+    invalidateReview();
     return () => {
       requestId.current += 1;
     };
@@ -97,7 +101,7 @@ function HeldSellReview({
           cause instanceof Error ? cause.message : "复核失败，请重新读取持仓。",
         );
     } finally {
-      setBusy(false);
+      if (id === requestId.current) setBusy(false);
     }
   }
   return (
@@ -114,9 +118,7 @@ function HeldSellReview({
           ]}
           onChange={(value) => {
             setIntent(value);
-            setResult(undefined);
-            setAck(false);
-            requestId.current += 1;
+            invalidateReview();
           }}
         />
         <InputNumber
@@ -126,9 +128,7 @@ function HeldSellReview({
           value={quantity}
           onChange={(value) => {
             setQuantity(value);
-            setResult(undefined);
-            setAck(false);
-            requestId.current += 1;
+            invalidateReview();
           }}
         />
         <Checkbox
@@ -136,9 +136,7 @@ function HeldSellReview({
           onChange={(event) => {
             setAck(event.target.checked);
             if (!event.target.checked) {
-              requestId.current += 1;
-              setResult(undefined);
-              setError(undefined);
+              invalidateReview();
             }
           }}
         >

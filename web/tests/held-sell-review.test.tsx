@@ -143,7 +143,7 @@ function response(request: HeldSellReviewRequest) {
   return {
     schema_version: "private-held-sell-review-v1",
     action: "no_order",
-    revision: 4,
+    revision: request.expected_revision,
     ledger_written: false,
     broker_execution_permission: false,
     request: { ...request },
@@ -246,5 +246,41 @@ it.each(["ack", "quantity", "intent", "revision"])(
     resolve(response(request));
     await pending;
     expect(render()).not.toContain("当前条件下复核数量：");
+    expect(harness.controls.submit.loading).toBe(false);
+    harness.review.mockImplementation(async (next) => response(next));
+    acknowledge(true);
+    await harness.controls.submit.onClick();
+    expect(harness.review).toHaveBeenCalledTimes(2);
+    const next = harness.review.mock.calls[1][0] as HeldSellReviewRequest;
+    expect(render()).toContain(
+      `当前条件下复核数量：${next.requested_quantity}`,
+    );
   },
 );
+
+it("keeps a replacement review pending when its superseded response arrives", async () => {
+  prepare();
+  const first = deferred();
+  harness.controls.quantity.onChange(100);
+  render();
+  expect(harness.controls.submit.loading).toBe(false);
+  acknowledge(true);
+  let resolveNext!: (value: ReturnType<typeof response>) => void;
+  harness.review.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        resolveNext = resolve;
+      }),
+  );
+  const nextPending = harness.controls.submit.onClick() as Promise<void>;
+  render();
+  const nextRequest = harness.review.mock.calls[1][0] as HeldSellReviewRequest;
+  first.resolve(response(first.request));
+  await first.pending;
+  expect(render()).not.toContain("当前条件下复核数量：");
+  expect(harness.controls.submit.loading).toBe(true);
+  resolveNext(response(nextRequest));
+  await nextPending;
+  expect(render()).toContain("当前条件下复核数量：100");
+  expect(harness.controls.submit.loading).toBe(false);
+});

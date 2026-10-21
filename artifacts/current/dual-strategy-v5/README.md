@@ -35,6 +35,13 @@ not override the later 88.89%/three-derived-fact continuation. Their formal and
 real-user readiness limitations remain applicable unless explicitly reverified.
 
 The current real public snapshot has zero formal operation-eligible candidates.
+`held-review-retry-browser.json` and `held-review-journal-verification.json`
+record a later desktop/mobile read-only sell-review retry. Changing quantity
+invalidates a pending review, resets acknowledgement and permits a replacement
+without waiting for the obsolete request. The result remains UNASSESSABLE;
+revision 7, cash 8492 and cost 1508 are unchanged. This is an isolated TEST_ONLY
+interaction regression, not a real sell approval or full-product acceptance.
+
 Any positive sizing or manual-fill demonstration labeled TEST_ONLY/SIMULATED is
 an engineering replay, never a real user signature, production approval, broker
 order or proof of investment performance.

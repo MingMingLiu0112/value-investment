@@ -1515,3 +1515,19 @@ account readiness and total Goal completion remain unproven. Excel is FROZEN;
 action=no_order. Current 12 acceptance states remain in the V5 checkpoint until
 individually superseded by evidence; positive replay does not turn WEB_E2E or
 REAL_ASSISTED_USE_READY into an unqualified whole-product PASS.
+
+### V5 continuation: replace an obsolete held-position review
+
+Fixed the read-only sell-review request lifecycle: changing quantity, intent,
+acknowledgement or identity invalidates the obsolete request and immediately
+releases its busy state. Its late response/finally cannot replace the current
+result or clear a newer request's busy state. Twenty-one focused tests and all
+313 Web tests pass; typecheck, targeted formatting and build pass. Independent
+scoped review found no P0/P1. Actual desktop and 390px browser checks reproduce
+replacement before the old response, with acknowledgement reset. The negative
+UNASSESSABLE result and all investment gates remain intact. Independent journal
+replay verifies unchanged revision 7, cash 8492 and cost 1508. All account data
+is TEST_ONLY, with historically reconstructed ownership rather than original PIT.
+Evidence: held-review-retry-browser.json and held-review-journal-verification.json
+in artifacts/current/dual-strategy-v5. This fixes an interaction, not real sell
+eligibility or overall V5 completion. Excel remains FROZEN; action=no_order.
