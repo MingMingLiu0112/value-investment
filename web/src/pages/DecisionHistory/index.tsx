@@ -524,6 +524,45 @@ export default function DecisionHistory() {
             />
           )}
         </Section>
+        <Section title="每日公开发布版本">
+          {data?.published_decision_history?.history?.length ? (
+            <List
+              size="small"
+              bordered
+              dataSource={[...data.published_decision_history.history].reverse()}
+              renderItem={(row) => (
+                <List.Item>
+                  <Space direction="vertical" size={2}>
+                    <Typography.Text strong>
+                      {row.published_at || "发布时间未提供"} · {row.publication_id}
+                    </Typography.Text>
+                    <Typography.Text type="secondary">
+                      决策截止 {row.decision_cutoff || "未提供"}；研究版本 {row.research_version || "未提供"}；
+                      数据包 SHA-256 {shortDigest(row.packet_sha256) || "未提供"}
+                    </Typography.Text>
+                    <Typography.Text type="secondary">
+                      仅证明该公开发布版本可复核，动作固定为 no_order，不代表历史买卖或策略收益。
+                    </Typography.Text>
+                  </Space>
+                </List.Item>
+              )}
+            />
+          ) : (
+            <Alert
+              type="info"
+              showIcon
+              message={
+                data?.published_decision_history?.status === "CURRENT_ONLY"
+                  ? "当前有发布版本，但尚无可复核的历史发布记录"
+                  : "尚无可复核的每日公开发布版本"
+              }
+              description={
+                data?.published_decision_history?.note ||
+                "缺少经 SHA-256 校验的发布回执时，页面不会补造历史记录。"
+              }
+            />
+          )}
+        </Section>
         {data &&
           (items.length === 0 ? (
             <Alert

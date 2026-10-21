@@ -713,6 +713,23 @@ export interface HistoryResponse {
   counts?: { symbols: number; versions: number };
   items: ResearchHistoryItem[];
   note?: string;
+  published_decision_history?: {
+    status: "HISTORY_AVAILABLE" | "CURRENT_ONLY" | "NOT_AVAILABLE";
+    history: Array<{
+      publication_id: string;
+      research_version?: string | null;
+      decision_cutoff?: string | null;
+      generated_at?: string | null;
+      published_at?: string | null;
+      packet_path?: string | null;
+      packet_sha256?: string | null;
+      content_sha256?: string | null;
+      receipt_path?: string | null;
+      action: "no_order";
+    }>;
+    note?: string;
+    skipped_publications?: Array<{ artifact: string; reason: string }>;
+  };
   observation_changes?: {
     status: "SOURCE_REVALIDATED" | "UNAVAILABLE";
     scope: "OBSERVATION_ONLY";

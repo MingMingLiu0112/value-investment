@@ -21,6 +21,9 @@ import re
 from pathlib import Path
 from typing import Any, Mapping
 
+from ...application.product.daily_public_packet import packet_content_sha256
+from ...application.product.public_snapshot import _resolve_runtime
+
 ACTION = "no_order"
 PROPOSAL_SCHEMA = "finite-earnings-path-proposal-v1"
 PROPOSAL_DIRECTORY = "config/research-proposals"
@@ -44,8 +47,8 @@ _NOTE = ("只展示真实存在、可按 SHA-256 复算的研究版本；比较�
          "不会把研究观察升级为任何买卖准入。")
 _VERIFICATION_NOTE = ("版本文件与声明来源的 SHA-256 均在读取时复算；这只能证明文件未被改动，"
                       "既不等于来源证据已获人工复核，也不构成任何投资准入。")
-_HISTORY_NOTE = ("提案历史不是发布决策历史：当前仓库尚未归档按时间排序的正式发布决策，"
-                 "因此不生成历史买入/卖出/减仓记录。")
+_HISTORY_NOTE = ("发布历史只来自可按 SHA-256 复核的每日公开数据包回执；"
+                 "它记录发布版本，不生成历史买入/卖出/减仓记录。")
 _RECONSTRUCTION_NOTE = ("历史重建只在存在可复算的历史决策产物时展示；"
                         "本轮没有绑定该类产物。")
 
@@ -195,6 +198,59 @@ def load_proposal_versions(root: Path) -> list[dict[str, Any]]:
     return scan_proposal_versions(root)["versions"]
 
 
+def _scan_published_packets(root: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Read-only timeline of published packets whose receipt and bytes agree."""
+    directory = Path(root) / "runtime/daily-public-packet/receipts"
+    history: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    if not directory.is_dir():
+        return history, skipped
+    for receipt_path in sorted(directory.glob("*.receipt.json")):
+        label = receipt_path.relative_to(Path(root)).as_posix()
+        try:
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            skipped.append({"artifact": label, "reason": "UNREADABLE_RECEIPT"})
+            continue
+        if not isinstance(receipt, dict) or receipt.get("schema_version") != "daily-public-packet-receipt-v1":
+            skipped.append({"artifact": label, "reason": "INVALID_RECEIPT"})
+            continue
+        if receipt.get("action") != ACTION or not isinstance(receipt.get("publication_id"), str):
+            skipped.append({"artifact": label, "reason": "RECEIPT_SCOPE_INVALID"})
+            continue
+        target = _resolve_runtime(root, receipt.get("packet_path"))
+        if target is None or not target.is_file():
+            skipped.append({"artifact": label, "reason": "PACKET_MISSING"})
+            continue
+        try:
+            raw = target.read_bytes()
+            packet = json.loads(raw.decode("utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            skipped.append({"artifact": label, "reason": "PACKET_UNREADABLE"})
+            continue
+        if (not isinstance(packet, dict) or packet.get("action") != ACTION
+                or packet.get("publication_id") != receipt.get("publication_id")
+                or hashlib.sha256(raw).hexdigest() != receipt.get("packet_sha256")
+                or packet.get("content_sha256") != receipt.get("content_sha256")
+                or packet_content_sha256(packet) != receipt.get("content_sha256")):
+            skipped.append({"artifact": label, "reason": "PACKET_BINDING_INVALID"})
+            continue
+        history.append({
+            "publication_id": receipt["publication_id"],
+            "research_version": receipt.get("research_version"),
+            "decision_cutoff": (packet.get("dates") or {}).get("decision_cutoff"),
+            "generated_at": receipt.get("generated_at"),
+            "published_at": receipt.get("published_at"),
+            "packet_path": receipt.get("packet_path"),
+            "packet_sha256": receipt.get("packet_sha256"),
+            "content_sha256": receipt.get("content_sha256"),
+            "receipt_path": label,
+            "action": ACTION,
+        })
+    history.sort(key=lambda row: (row.get("published_at") or "", row["publication_id"]))
+    return history, skipped
+
+
 def _bound_to_publication(symbol: str, digest: str, published: str | None) -> bool:
     """The publication embeds the proposal digest; compare it exactly, not loosely."""
     if not isinstance(published, str) or symbol not in published:
@@ -319,6 +375,7 @@ def build_research_history(root: Path, *, published_versions: Mapping[str, str] 
                 "decision_cutoff": row.get("decision_cutoff"),
                 "artifact": row.get("artifact"), "sha256": row.get("sha256")}
                for symbol, row in sorted(decisions.items())]
+    published_history, skipped_publications = _scan_published_packets(root)
     return {
         "action": ACTION,
         "status": status,
@@ -329,8 +386,10 @@ def build_research_history(root: Path, *, published_versions: Mapping[str, str] 
         "research_proposal_history": {"status": status, "counts": counts, "items": items,
                                       "note": _NOTE},
         "published_decision_history": {
-            "status": "CURRENT_ONLY" if current else "NOT_AVAILABLE",
-            "history": [], "current_published_decisions": current, "note": _HISTORY_NOTE},
+            "status": ("HISTORY_AVAILABLE" if published_history else
+                       "CURRENT_ONLY" if current else "NOT_AVAILABLE"),
+            "history": published_history, "current_published_decisions": current,
+            "skipped_publications": skipped_publications, "note": _HISTORY_NOTE},
         "historical_reconstruction": {"status": "NOT_AVAILABLE", "items": [],
                                       "note": _RECONSTRUCTION_NOTE},
         "skipped_proposals": scan["skipped"],

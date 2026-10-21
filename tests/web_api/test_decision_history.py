@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from value_investment_agent.presentation.read_models.research_history import build_research_history
 from value_investment_agent.presentation.web_api.app import create_app
+from value_investment_agent.application.product.daily_public_packet import packet_content_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -189,6 +190,50 @@ def test_published_decisions_stay_separate_from_proposals(tmp_path):
     assert item["timeline"]["proposal_available_at_status"] == "NOT_RECORDED_IN_PROPOSAL"
     assert item["timeline"]["published_decision_cutoff"] == "2026-01-03"
     assert body["historical_reconstruction"]["status"] == "NOT_AVAILABLE"
+
+
+def test_verified_daily_publication_receipts_form_read_only_history(tmp_path):
+    packet = {
+        "action": "no_order",
+        "packet_status": "CURRENT",
+        "publication_id": "pub-history-1",
+        "research_version": "research-v1",
+        "dates": {"decision_cutoff": "2026-10-20"},
+    }
+    packet["content_sha256"] = packet_content_sha256(packet)
+    packet_path = tmp_path / "runtime/daily-public-packet/2026/packet.json"
+    packet_path.parent.mkdir(parents=True, exist_ok=True)
+    raw = (json.dumps(packet, ensure_ascii=False, sort_keys=True) + "\n").encode("utf-8")
+    packet_path.write_bytes(raw)
+    receipt_path = tmp_path / "runtime/daily-public-packet/receipts/daily-public-packet-pub-history-1.receipt.json"
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text(json.dumps({
+        "schema_version": "daily-public-packet-receipt-v1",
+        "action": "no_order",
+        "publication_id": "pub-history-1",
+        "research_version": "research-v1",
+        "packet_path": "runtime/daily-public-packet/2026/packet.json",
+        "packet_sha256": hashlib.sha256(raw).hexdigest(),
+        "content_sha256": packet["content_sha256"],
+        "generated_at": "2026-10-20T09:00:00+00:00",
+        "published_at": "2026-10-20T09:01:00+00:00",
+    }, ensure_ascii=False), encoding="utf-8")
+
+    body = build_research_history(tmp_path)
+    history = body["published_decision_history"]
+    assert history["status"] == "HISTORY_AVAILABLE"
+    assert history["history"] == [{
+        "publication_id": "pub-history-1",
+        "research_version": "research-v1",
+        "decision_cutoff": "2026-10-20",
+        "generated_at": "2026-10-20T09:00:00+00:00",
+        "published_at": "2026-10-20T09:01:00+00:00",
+        "packet_path": "runtime/daily-public-packet/2026/packet.json",
+        "packet_sha256": hashlib.sha256(raw).hexdigest(),
+        "content_sha256": packet["content_sha256"],
+        "receipt_path": "runtime/daily-public-packet/receipts/daily-public-packet-pub-history-1.receipt.json",
+        "action": "no_order",
+    }]
 
 
 def test_corrupt_proposal_is_reported_not_silently_dropped(tmp_path):
