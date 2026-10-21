@@ -23,6 +23,12 @@ const state = vi.hoisted(() => ({
     error: undefined as string | undefined,
     retry: () => {},
   },
+  independentHotspot: {
+    data: undefined as any,
+    loading: false,
+    error: undefined as string | undefined,
+    retry: () => {},
+  },
 }));
 vi.mock("@umijs/max", () => ({
   Link: ({ to, children, ...props }: any) => (
@@ -39,12 +45,14 @@ vi.mock("../src/hooks/useApi", () => ({
         ? state.packet
         : load === api.updateStatus
           ? state.update
-          : {
-              data: undefined,
-              loading: false,
-              error: undefined,
-              retry: () => {},
-            },
+          : load === api.independentHotspot
+            ? state.independentHotspot
+            : {
+                data: undefined,
+                loading: false,
+                error: undefined,
+                retry: () => {},
+              },
 }));
 vi.mock("../src/hooks/usePrivateState", () => ({
   usePrivateState: () => ({
@@ -110,6 +118,33 @@ beforeEach(() => {
     retry: () => {},
     data: undefined,
   };
+  state.independentHotspot = {
+    loading: false,
+    error: undefined,
+    retry: () => {},
+    data: undefined,
+  };
+});
+
+it("uses the current independent hotspot publication for the date summary", () => {
+  state.daily.data.sections.hotspot[0].price_action_plan.market_trade_date =
+    "2026-10-14";
+  state.independentHotspot.data = {
+    publication: { publication_id: "pub-verified" },
+    items: [
+      {
+        symbol: "300364",
+        price_action_plan: {
+          action: "no_order",
+          signal_state: "WATCH",
+          market_trade_date: "2026-10-21",
+        },
+      },
+    ],
+  };
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain("热点已完成交易日 2026-10-21");
+  expect(html).not.toContain("热点已完成交易日 2026-10-14");
 });
 
 it("keeps unvalued company research reachable without claiming there are no value leads", () => {

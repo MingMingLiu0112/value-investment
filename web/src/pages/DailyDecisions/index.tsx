@@ -186,10 +186,26 @@ export default function DailyDecisions() {
     );
   const researchDate = packet.data?.dates.research_as_of ?? data?.as_of ?? null;
   const quoteDate = packet.data?.dates.quote_trade_date ?? null;
+  const hotspotItems =
+    data?.sections.hotspot.map((item) => {
+      const replacement =
+        independentHotspot.data?.publication?.publication_id ===
+        packet.data?.publication_id
+          ? independentHotspot.data?.items.find(
+              (row) => row.symbol === item.symbol,
+            )
+          : undefined;
+      return replacement
+        ? {
+            ...item,
+            price_action_plan: replacement.price_action_plan,
+          }
+        : item;
+    }) ?? [];
   const hotspotDates = usable
     ? [
         ...new Set(
-          data.sections.hotspot
+          hotspotItems
             .map((item) => item.price_action_plan?.market_trade_date)
             .filter(Boolean),
         ),
@@ -507,7 +523,7 @@ export default function DailyDecisions() {
             </p>
             <a href="#confirmations">查看需要我确认的事项</a>
           </section>
-          {![...data.sections.value, ...data.sections.hotspot].some(
+          {![...data.sections.value, ...hotspotItems].some(
             (item) => judgmentGroup(item) === 0,
           ) && (
             <p className="opportunity-no-action">
@@ -534,21 +550,7 @@ export default function DailyDecisions() {
               id="daily-hotspot"
               title="热点波段"
               horizon="短中期"
-              items={data.sections.hotspot.map((item) => {
-                const replacement =
-                  independentHotspot.data?.publication?.publication_id ===
-                  packet.data?.publication_id
-                    ? independentHotspot.data?.items.find(
-                        (row) => row.symbol === item.symbol,
-                      )
-                    : undefined;
-                return replacement
-                  ? {
-                      ...item,
-                      price_action_plan: replacement.price_action_plan,
-                    }
-                  : item;
-              })}
+              items={hotspotItems}
               empty="当前没有通过观察条件的热点候选；不会凑出买点"
             />
           </div>
