@@ -81,7 +81,11 @@ function StrategySection({
       {!foldUnvalued &&
         !items.some((item) =>
           ["B", "C", "D"].includes(hotspotOpportunityQuality(item)?.code ?? ""),
-        ) && <p role="status">今日没有符合当前策略条件的入场机会。</p>}
+        ) && (
+          <p role="status">
+            当前展示的热点计划中，尚无已确认的入场结构；未覆盖证券不作结论。
+          </p>
+        )}
       {main.length ? (
         <div className="opportunity-list">
           {judgmentGroups.map((label, group) => {
@@ -256,7 +260,7 @@ export default function DailyDecisions() {
               <strong>{quoteFresh ? "发布时已核验" : "发布时未获核验"}</strong>
             </span>
             <span>
-              正式复核{" "}
+              已登记证券级复核{" "}
               <strong>
                 {
                   [...data.sections.value, ...data.sections.hotspot].filter(
@@ -282,6 +286,121 @@ export default function DailyDecisions() {
               </strong>
             </span>
           </div>
+          <section
+            className="daily-action-conclusion"
+            aria-label="明确行动结论"
+          >
+            <h2>
+              {data.actionable_evaluation?.conclusion ===
+              "NO_QUALIFIED_NEW_TRADE"
+                ? "本次已评价范围内，无符合全部条件的新交易机会。"
+                : "本次未形成完整有效的选股决策，不能据此判断市场没有机会。"}
+            </h2>
+            <p>
+              当前发布公司中已评价后不交易{" "}
+              {data.actionable_evaluation?.evaluated_count ?? 0} 家；
+              证据或资格不足{" "}
+              {data.actionable_evaluation?.unassessable_count ?? "未核验"} 家。
+              公共计划不包含个人账户容量，不能计为个人可操作机会。
+            </p>
+            <details>
+              <summary>逐公司结论与统计范围</summary>
+              <ul>
+                {data.actionable_evaluation?.items.map((item) => (
+                  <li key={`${item.strategy}-${item.symbol}`}>
+                    <Link
+                      to={`/decisions/${item.strategy === "HOTSPOT_SATELLITE" ? "hotspot-" : ""}${item.symbol}`}
+                    >
+                      {item.company_name || item.symbol} · {item.symbol}
+                    </Link>
+                    {item.decision_action === "UNASSESSABLE"
+                      ? " · 无法评价 — "
+                      : " · 不交易 — "}
+                    {item.decision_reason}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </section>
+          {update.data?.last_run?.screening && (
+            <section aria-label="本次全市场初筛">
+              <h3>本次全市场初筛（尚非交易机会）</h3>
+              {update.data.last_run.screening.status ===
+              "VERIFIED_RESEARCH_SCAN" ? (
+                <p>
+                  {update.data.last_run.screening.as_of} · 覆盖{" "}
+                  {update.data.last_run.screening.universe_count} 只，
+                  去重研究线索 {update.data.last_run.screening.lead_count} 只，
+                  Quality 通过{" "}
+                  {update.data.last_run.screening.channel_counts?.quality ??
+                    "未核验"}{" "}
+                  只。
+                  这是初筛结果，不是已完成研究或具备操作资格的股票；下方研究列表仍使用其已发布版本。
+                  {update.data.last_run.screening.quote_date_verification !==
+                    "VERIFIED" && " 全市场行情日期仍需独立核验。"}
+                </p>
+              ) : (
+                <p>本次初筛清单无法核验，不能据此判断市场没有机会。</p>
+              )}
+            </section>
+          )}
+          {update.data?.last_run?.research_priority && (
+            <section aria-label="证据研究队列">
+              <h3>研究推进</h3>
+              {update.data.last_run.research_priority.status ===
+              "VERIFIED_RESEARCH_PRIORITY" ? (
+                <p>
+                  {update.data.last_run.research_priority.as_of}
+                  ：年度质量证据可完整评分的深研线索{" "}
+                  {
+                    update.data.last_run.research_priority.deep_research_count
+                  }{" "}
+                  家；需要补证{" "}
+                  {update.data.last_run.research_priority.enrichment_count}{" "}
+                  家，本轮优先处理{" "}
+                  {
+                    update.data.last_run.research_priority
+                      .selected_enrichment_count
+                  }{" "}
+                  家。 队列选择不代表补证成功、估值获准或交易资格。
+                  {update.data.last_run.research_priority.execution?.status ===
+                    "VERIFIED_RESEARCH_EXECUTION" && (
+                    <>
+                      实际执行补证{" "}
+                      {
+                        update.data.last_run.research_priority.execution
+                          .attempted_count
+                      }{" "}
+                      家， 完成质量重评{" "}
+                      {
+                        update.data.last_run.research_priority.execution
+                          .reevaluated_count
+                      }{" "}
+                      家， 仍有数据或口径缺口{" "}
+                      {
+                        update.data.last_run.research_priority.execution
+                          .data_gap_count
+                      }{" "}
+                      家。
+                      {update.data.last_run.research_priority.execution.items?.map(
+                        (item) => (
+                          <span key={item.symbol}>
+                            {" "}
+                            {item.company_name}（{item.symbol}）：
+                            {item.extracted_candidates == null
+                              ? "原件未通过提取核验。"
+                              : `提取 ${item.extracted_candidates} 个候选，匹配留存事实 ${item.matched_candidates ?? "未核验"} 个；匹配不代表新增事实准入。`}
+                          </span>
+                        ),
+                      )}
+                    </>
+                  )}
+                </p>
+              ) : (
+                <p>研究队列未通过来源校验，不能展示为本轮完成的研究。</p>
+              )}
+            </section>
+          )}
           <HoldingsAttention
             state={state}
             decisionsVerified={true}

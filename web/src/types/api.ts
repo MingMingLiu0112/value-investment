@@ -473,6 +473,23 @@ export interface DailyDualSleeveSurface {
 }
 
 export interface DailyResponse {
+  actionable_evaluation?: {
+    action: "no_order";
+    scope: "PUBLISHED_COMPANIES_ONLY";
+    evaluated_count: number;
+    unassessable_count: number;
+    operation_eligible_count: number;
+    conclusion: "INCOMPLETE_EVALUATION" | "NO_QUALIFIED_NEW_TRADE";
+    items: {
+      symbol: string;
+      company_name?: string;
+      strategy: string;
+      decision_action: "NO_TRADE" | "UNASSESSABLE";
+      decision_reason: string;
+      evaluation_status: string;
+      eligibility: false;
+    }[];
+  };
   action: "no_order";
   status: ApiStatus;
   as_of?: string;

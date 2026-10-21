@@ -25,6 +25,15 @@ import { retryableWrite } from "./PrivateRiskContext";
 const AMOUNT = /^\d+(\.\d{1,4})?$/;
 const SHARES = /^\d+$/;
 
+export function fillBudgetWarning(response: unknown): string | undefined {
+  const review = (
+    response as { sleeve_cash_review?: { blockers?: string[] } } | null
+  )?.sleeve_cash_review;
+  if (review?.blockers?.includes("SLEEVE_CASH_OVERDRAWN"))
+    return "真实成交已记录，但含费用的资金池预算已超支。暂停新增买入，核对券商成交及两策略预算；不要删除真实成交来掩盖超支。";
+  return undefined;
+}
+
 export type FillContext = {
   symbol?: string;
   strategy?: "CORE_VALUE" | "HOTSPOT_SATELLITE";
@@ -106,7 +115,7 @@ function DraftReview({
 }: {
   draft: PortfolioDraft;
   revision: number;
-  onDone: () => void;
+  onDone: (warning?: string) => void;
 }) {
   const [failure, setFailure] = useState<{
     message: string;
@@ -125,7 +134,7 @@ function DraftReview({
     setBusy(true);
     setFailure(undefined);
     try {
-      await api.confirmFill(
+      const response = await api.confirmFill(
         confirmAttempt.current.body(
           JSON.stringify([revision, draft.prepared_record_sha256, note.trim()]),
           () => ({
@@ -138,7 +147,7 @@ function DraftReview({
         ),
       );
       confirmAttempt.current.clear();
-      onDone();
+      onDone(fillBudgetWarning(response));
     } catch (cause) {
       clearRejectedAttempt(confirmAttempt.current, cause);
       setFailure(fillFailure(cause, "确认失败"));
@@ -187,7 +196,7 @@ function DraftReview({
           description={failure.message}
           action={
             failure.refreshRequired ? (
-              <Button onClick={onDone}>刷新台账</Button>
+              <Button onClick={() => onDone()}>刷新台账</Button>
             ) : undefined
           }
         />
@@ -296,6 +305,7 @@ export function FillPanel({
   initialDecisionId?: string;
   initialResearchVersion?: string;
 }) {
+  const [budgetWarning, setBudgetWarning] = useState<string | null>(null);
   const [failure, setFailure] = useState<{
     message: string;
     refreshRequired: boolean;
@@ -311,7 +321,16 @@ export function FillPanel({
   const linkedSleeve = initialSleeve ?? context.strategy;
 
   if (draft)
-    return <DraftReview draft={draft} revision={revision} onDone={onDone} />;
+    return (
+      <DraftReview
+        draft={draft}
+        revision={revision}
+        onDone={(warning) => {
+          setBudgetWarning(warning ?? null);
+          onDone();
+        }}
+      />
+    );
 
   const submit = async (form: Record<string, unknown>) => {
     if (prepareLock.current) return false;
@@ -367,6 +386,14 @@ export function FillPanel({
 
   return (
     <>
+      {budgetWarning && (
+        <Alert
+          type="warning"
+          showIcon
+          message="成交后预算异常"
+          description={budgetWarning}
+        />
+      )}
       <Typography.Title level={4} style={{ fontSize: 16, marginTop: 24 }}>
         记录一笔成交（先生成草稿）
       </Typography.Title>

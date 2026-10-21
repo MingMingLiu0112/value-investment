@@ -126,6 +126,14 @@ export default function Portfolio() {
   return (
     <Workbench>
       <Typography.Title level={2}>我的持仓</Typography.Title>
+      {risk?.facts?.account_scope?.startsWith("TEST_ONLY") && (
+        <Alert
+          type="warning"
+          showIcon
+          message="TEST_ONLY 隔离演练账户"
+          description="以下资金、持仓及成交仅用于工程验证，不是你的真实账户，不能据此形成个人交易建议。"
+        />
+      )}
       <Alert
         type="info"
         showIcon

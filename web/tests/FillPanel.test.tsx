@@ -132,11 +132,24 @@ vi.mock("../src/services/api", () => ({
 }));
 import {
   FillPanel,
+  fillBudgetWarning,
   fillContextFromSearch,
   fillFailure,
   failureMessage,
   clearRejectedAttempt,
 } from "../src/components/FillPanel";
+
+it("explains a recorded broker fill exceeding a sleeve budget without pretending rollback", () => {
+  expect(
+    fillBudgetWarning({
+      sleeve_cash_review: { blockers: ["SLEEVE_CASH_OVERDRAWN"] },
+    }),
+  ).toContain("真实成交已记录");
+  expect(
+    fillBudgetWarning({ sleeve_cash_review: { blockers: [] } }),
+  ).toBeUndefined();
+  expect(fillBudgetWarning(undefined)).toBeUndefined();
+});
 import { retryableWrite } from "../src/components/PrivateRiskContext";
 import { ApiError } from "../src/services/api";
 

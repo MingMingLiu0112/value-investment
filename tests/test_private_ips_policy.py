@@ -201,6 +201,38 @@ def test_multi_lot_costs_and_unregistered_fixture_attributes_remain_blocked(serv
     assert result["facts"]["total_equity_cny"] == "10995"
 
 
+@pytest.mark.parametrize('sleeve,price,overdrawn', [
+    ('HOTSPOT_SATELLITE', '20', True), ('HOTSPOT_SATELLITE', '19.95', False),
+    ('CORE_VALUE', '50', True), ('CORE_VALUE', '49.95', False),
+])
+def test_recorded_fill_persists_immediate_sleeve_risk_and_replays(service, sleeve, price, overdrawn):
+    confirm_policy(service)
+    _, digest = service.prepare_fill({'idempotency_key': 'broker-fill',
+        'expected_revision': len(service.records()), 'fill': {
+            'transaction_id': 'TEST_ONLY-broker-fill', 'side': 'BUY', 'sleeve': sleeve,
+            'symbol': '300364', 'exchange': 'SZSE', 'quantity': '100',
+            'price_cny': price, 'fees_cny': '5', 'trade_date': '2026-10-13',
+            'next_sell_session': '2026-10-14', 'trading_unit': '100'}})
+    request = {'idempotency_key': 'confirm-broker-fill', 'expected_revision': len(service.records()),
+        'prepared_record_sha256': digest, 'confirmed_at': '2026-10-13T21:00:00+08:00',
+        'confirmation_note': 'TEST_ONLY actual occurred broker fill'}
+    response, receipt = service.confirm_fill(request)
+    risk = response['sleeve_cash_review']
+    assert response['status'] == 'FILL_CONFIRMED'
+    assert risk['blockers'] == (['SLEEVE_CASH_OVERDRAWN'] if overdrawn else [])
+    assert risk['sleeves'][sleeve]['shortfall_cny'] == ('5' if overdrawn else '0')
+    assert risk['trade_eligible'] is False
+    if overdrawn:
+        assert 'Pause new purchases' in risk['explanation']
+    restarted = PrivatePortfolioService(PrivateJournal(service.journal.path))
+    assert restarted.confirm_fill(request) == (response, receipt)
+    assert restarted.records()[-1]['response']['sleeve_cash_review'] == risk
+    assert projection.sleeve_cash_review(restarted._replay(restarted.records())) == risk
+    projected = projection.review_private_risk_rehearsal(restarted.journal, generated_at=NOW)
+    assert ('SLEEVE_CASH_OVERDRAWN' in projected['blockers']) == overdrawn
+    assert restarted._replay(restarted.records()).state.version == 1
+
+
 def test_authenticated_policy_and_marked_portfolio_routes(service, tmp_path, monkeypatch):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient

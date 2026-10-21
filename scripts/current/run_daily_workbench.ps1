@@ -43,7 +43,9 @@ param(
     [switch]$AutoDiscoverResearchContexts,
     [string]$ResearchTestOnlyRetrospective = '',
     [string]$ResearchTestOnlyRetrospectiveSha256 = '',
-    [switch]$RegisterResearchDrafts
+    [switch]$RegisterResearchDrafts,
+    [switch]$BuildValueResearchPriority,
+    [switch]$ExecuteValueEnrichment
 )
 $ErrorActionPreference = 'Stop'
 if ($PSVersionTable.PSVersion.Major -lt 7) {
@@ -53,12 +55,19 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
         -AutoDiscoverResearchContexts:$AutoDiscoverResearchContexts `
         -ResearchTestOnlyRetrospective $ResearchTestOnlyRetrospective `
         -ResearchTestOnlyRetrospectiveSha256 $ResearchTestOnlyRetrospectiveSha256 `
-        -RegisterResearchDrafts:$RegisterResearchDrafts
+        -RegisterResearchDrafts:$RegisterResearchDrafts -BuildValueResearchPriority:$BuildValueResearchPriority `
+        -ExecuteValueEnrichment:$ExecuteValueEnrichment
     exit $LASTEXITCODE
 }
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new()
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
 $OutputEncoding = [System.Text.UTF8Encoding]::new()
+if ($BuildValueResearchPriority -and $Mode -ne 'SAFE_REFRESH') {
+    throw 'Value research priority requires explicit SAFE_REFRESH; READ_ONLY never starts research work.'
+}
+if ($ExecuteValueEnrichment -and (-not $BuildValueResearchPriority -or $Mode -ne 'SAFE_REFRESH')) {
+    throw 'Financial enrichment requires SAFE_REFRESH and BuildValueResearchPriority.'
+}
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 Set-Location -LiteralPath $root
 $env:PYTHONPATH = Join-Path $root 'src'
@@ -258,8 +267,65 @@ $packet = $build.Json
 $buildExit = $build.ExitCode
 $coreBlocked = ($buildExit -ne 0 -or -not $packet.source_bindings_verified)
 $verified = $null
+$marketwideScreen = $null
+$valueResearchPriority = $null
 
 if ($Mode -eq 'SAFE_REFRESH') {
+    $marketwideDirectory = 'runtime/daily-marketwide/' + [DateTimeOffset]::UtcNow.ToString('yyyyMMddTHHmmssfffffffZ')
+    Write-Host '[SAFE_REFRESH] M2 全市场年度财务证据重筛（研究线索，不授予正式资格）...'
+    $marketwide = Invoke-PythonJson @('scripts/run_m2_opportunity_discovery.py', '--no-wps', '--no-workbook', '--output-dir', $marketwideDirectory)
+    $marketwideScreen = @{
+        exit_code = $marketwide.ExitCode; output_dir = $marketwideDirectory
+        manifest_path = $marketwideDirectory + '/manifest.json'
+        current_publication_eligible = $false; status = 'BLOCKED'
+    }
+    if ($marketwide.ExitCode -eq 0 -and $marketwide.Json -and
+        $marketwide.Json.action -eq 'no_order' -and
+        $marketwide.Json.input_mode -eq 'LIVE_COLLECTION' -and
+        $marketwide.Json.rule_version -eq 'm2-evidence-screen-v3') {
+        $marketwideScreen.status = 'RESEARCH_ONLY'
+        $marketwideScreen.rule_version = $marketwide.Json.rule_version
+        $marketwideScreen.financial_input = $marketwide.Json.financial_input
+        $marketwideScreen.data_health = $marketwide.Json.data_health
+        $marketwideScreen.coverage_counts = $marketwide.Json.coverage_counts
+        $marketwideScreen.receipt_path = $marketwide.Json.receipt_path
+        try {
+            $marketwideScreen.manifest_sha256 = (Get-FileHash -LiteralPath (Join-Path $root $marketwideScreen.manifest_path) -Algorithm SHA256).Hash.ToLowerInvariant()
+        } catch {
+            $marketwideScreen.status = 'BLOCKED'
+            $notes.Add('M2 重筛清单无法绑定哈希；不展示为本次可信筛选，其他行情更新继续。')
+        }
+        Write-Host "  M2 输出 : $marketwideDirectory（保留数据时点和缺口，不自动登记为当前发布）"
+    } else {
+        $notes.Add('M2 全市场重筛未完成；不得将历史研究线索称为本次已刷新。')
+    }
+    if ($BuildValueResearchPriority -and $marketwideScreen.status -eq 'RESEARCH_ONLY') {
+        try {
+            $scanManifest = Get-Content -LiteralPath (Join-Path $root $marketwideScreen.manifest_path) -Raw -Encoding utf8 | ConvertFrom-Json
+            $queuePath = $marketwideDirectory + '/research-priority-v2.json'
+            $executionArgs = if ($ExecuteValueEnrichment) { @('--execute-enrichment', '--allow-public-evidence-downloads', '--execution-budget', '2') } else { @() }
+            $queue = Invoke-PythonJson (@('scripts/current/build_value_research_queue.py',
+                '--priority-version', 'v2', '--report', $scanManifest.files.lead_report.path,
+                '--report-sha256', $scanManifest.files.lead_report.sha256,
+                '--receipt', $scanManifest.files.receipt.path, '--receipt-sha256', $scanManifest.files.receipt.sha256,
+                '--financial-export', $scanManifest.files.financial.path, '--financial-export-sha256', $scanManifest.files.financial.sha256,
+                '--budget', '10', '--enrichment-budget', '10', '--output', $queuePath) + $executionArgs)
+            if ($queue.ExitCode -ne 0 -or $queue.Json.action -ne 'no_order') { throw 'Research priority build failed' }
+            $valueResearchPriority = @{ status = 'RESEARCH_QUEUE_ONLY'; path = $queuePath
+                sha256 = (Get-FileHash -LiteralPath (Join-Path $root $queuePath) -Algorithm SHA256).Hash.ToLowerInvariant()
+                selected_deep_research_count = $queue.Json.selected_deep_research_count
+                selected_enrichment_count = $queue.Json.selected_enrichment_count }
+            if ($queue.Json.enrichment_execution) {
+                $valueResearchPriority.execution = $queue.Json.enrichment_execution
+                if ($queue.Json.enrichment_execution.status -ne 'COMPLETED') {
+                    $notes.Add('财务补证已执行但仍有来源或口径缺口；未授予财务事实、估值或交易准入。')
+                }
+            }
+        } catch {
+            $valueResearchPriority = @{ status = 'BLOCKED' }
+            $notes.Add('研究排序未完成；不影响独立行情核验，不将线索升级为正式研究。')
+        }
+    }
     $reuse = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py', '--check-reuse', '--symbols', $Symbols)
     if ($reuse.ExitCode -eq 0 -and $reuse.Json.prices_ready) {
         Write-Host "  价格结构 : 复用已核验最近完成交易日 $($reuse.Json.market_trade_dates -join ',') 的完整已选候选；未重新采集。"
@@ -440,6 +506,8 @@ $receipt = @{
     status = $status; exit_code = $updateExit; published = [bool]($packet.snapshot -and $buildExit -eq 0)
     publication_id = $packet.snapshot.publication_id; notes = @($notes.ToArray())
 }
+if ($marketwideScreen) { $receipt.marketwide_screen = $marketwideScreen }
+if ($valueResearchPriority) { $receipt.value_research_priority = $valueResearchPriority }
 if ($verified.Json) {
     $receipt.price_securities = @($verified.Json.price_securities)
     $receipt.quote_securities = @($verified.Json.quote_securities)

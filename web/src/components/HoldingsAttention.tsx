@@ -95,6 +95,11 @@ export function HoldingsAttention({
     <section className="opportunity-holdings" aria-label="持仓今日复核">
       <div>
         <h2>我的持仓今天需要关注</h2>
+        {state.risk?.facts?.account_scope?.startsWith("TEST_ONLY") && (
+          <p role="status">
+            TEST_ONLY 演练持仓，不是你的真实账户或个人交易建议。
+          </p>
+        )}
         {connected ? (
           <>
             <p>

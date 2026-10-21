@@ -32,6 +32,30 @@ def _write(path, value):
         json.dump(value, stream, ensure_ascii=False, indent=2)
 
 
+def structure_selection_evidence(plan: dict) -> dict:
+    """Order observations by existing evidence, without granting admission."""
+    behavior = plan.get("price_behavior") or {}
+    return dict(
+        trade_space_known=behavior.get("observation_quality") == "RESEARCH_ONLY",
+        primary_confirmed=(behavior.get("breakout", {}).get("confirmed_on_next_completed_bar") is True
+                           or behavior.get("pullback_recovery", {}).get("observed") is True),
+        daily_uptrend=behavior.get("daily_trend") == "UPTREND",
+        auxiliary_confirmed=behavior.get("auxiliary_15m", {}).get("observed") is True,
+    )
+
+
+def final_observation_key(item: dict) -> tuple:
+    tiers = {"STRUCTURE_QUALIFIED_OBSERVATION": 0, "ACTIVE_ONLY": 1,
+             "CONFLICT_OR_REJECTED": 2}
+    evidence = item.get("structure_selection_evidence") or {}
+    return (tiers[item["structure_tier"]],
+            1 if item["signal_state"] == "TRIGGER_REJECTED" else 0,
+            *(0 if evidence.get(field) is True else 1 for field in (
+                "trade_space_known", "primary_confirmed", "daily_uptrend", "auxiliary_confirmed")),
+            item["activity_rank"] if type(item.get("activity_rank")) is int else 10**6,
+            item["symbol"])
+
+
 def select_watch_candidates(report: dict, *, limit: int = 5) -> tuple[list[dict], str]:
     has_pool = isinstance(report.get("candidate_pool"), list) and bool(report["candidate_pool"])
     maximum = 30 if has_pool else 10 if report.get("schema_version") == "hotspot-daily-selection-v1" else 5
@@ -87,6 +111,11 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
                                      candidate_pool_limit: int | None = None,
                                      bundle_collector=None, case_collector=None, now=None,
                                      observation_scope=STRICT_CLOSE_SCOPE) -> dict:
+    if type(limit) is not int or not 1 <= limit <= 10:
+        raise ValueError("Final observation limit must be 1..10")
+    if candidate_pool_limit is not None and (
+            type(candidate_pool_limit) is not int or not limit <= candidate_pool_limit <= 30):
+        raise ValueError("Candidate pool must cover final limit and remain at most 30")
     if observation_scope not in {STRICT_CLOSE_SCOPE, DISPLAY_CLOSE_SCOPE}:
         raise ValueError("Unsupported current-case observation scope")
     root = Path(root).resolve()
@@ -148,6 +177,7 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
                 "structure_reasons": list(quality.get("structure_reasons") or []),
                 "signal_state": signal_state,
                 "activity_rank": row.get("rank"),
+                "structure_selection_evidence": structure_selection_evidence(plan),
             })
         except (ValueError, OSError, KeyError, TypeError, ArithmeticError) as error:
             failures.append({**row, "reason": str(error)})
@@ -159,12 +189,7 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
            production_database_changed=False, financial_or_strategy_approval=False))
     tier_order = {"STRUCTURE_QUALIFIED_OBSERVATION": 0, "ACTIVE_ONLY": 1,
                   "CONFLICT_OR_REJECTED": 2}
-    assessed.sort(key=lambda item: (
-        tier_order[item["structure_tier"]],
-        1 if item["signal_state"] == "TRIGGER_REJECTED" else 0,
-        item["activity_rank"] if isinstance(item["activity_rank"], int) else 10**6,
-        item["symbol"],
-    ))
+    assessed.sort(key=final_observation_key)
     items = assessed[:limit]
     pipeline = dict(
         activity_observation_count=len(report.get("observation_list") or []),
@@ -179,8 +204,10 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
             for tier in tier_order
         },
         stage_order=["activity_observation", "cross_industry_candidate_pool",
-                     "completed_price_structure", "quality_then_activity_ranking"],
-        final_rule_version="hotspot-quality-then-activity-ranking-v1",
+                     "completed_price_structure", "structure_evidence_then_activity_ranking"],
+        final_rule_version="hotspot-structure-evidence-then-activity-ranking-v2",
+        ranking_scope="OBSERVATION_PRIORITY_NOT_STRATEGY_ADMISSION",
+        rejected_representative_count=sum(item["structure_tier"] == "CONFLICT_OR_REJECTED" for item in items),
         action="no_order",
     )
     registry = dict(schema_version="current-price-conditions-v1", action="no_order",
@@ -191,7 +218,10 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
                     assessed_candidates=[{key: item[key] for key in (
                         "symbol", "company_name", "activity_rank", "structure_tier",
                         "structure_reasons", "signal_state", "case_path", "case_sha256",
+                        "structure_selection_evidence",
                     )} for item in assessed],
+                    rejected_representatives=[item for item in assessed
+                                              if item["structure_tier"] == "CONFLICT_OR_REJECTED"],
                     selection_pipeline=pipeline,
                     selected_symbols=[item["symbol"] for item in items],
                     completed_at=bundle["finished_at"])
@@ -213,10 +243,41 @@ def refresh_current_price_conditions(*, root: Path, watch_source_path: Path,
         except (ValueError, OSError, KeyError, TypeError):
             # An invalid previous pointer is not evidence and is never imported.
             pass
+    continuity = {"status": "UNASSESSABLE", "reason": "NO_CURRENT_STRUCTURE"}
+    if items or empty_daily:
+        from .observation_continuity import compare_observation_continuity
+        snapshot = archive / "registry-snapshot.json"
+        _write(snapshot, registry)
+        previous_snapshot = archive / "previous-registry.json"
+        previous_binding = ({"path": previous_snapshot.relative_to(root).as_posix(),
+            "sha256": hashlib.sha256(previous_snapshot.read_bytes()).hexdigest()}
+            if previous_snapshot.is_file() else None)
+        try:
+            sessions = {row["result"]["expected_session"] for row in observations
+                        if row["result"].get("passed")}
+            if empty_daily:
+                sessions.add(report["trade_date"])
+            if len(sessions) != 1:
+                raise ValueError("Continuity requires one verified completed session")
+            change = compare_observation_continuity(root=root,
+                current_binding={"path": snapshot.relative_to(root).as_posix(),
+                    "sha256": hashlib.sha256(snapshot.read_bytes()).hexdigest()},
+                previous_binding=previous_binding,
+                completed_session=date.fromisoformat(next(iter(sessions))), now=now)
+            path = archive / "observation-continuity.json"
+            _write(path, change)
+            continuity = {"status": "SOURCE_BOUND_OBSERVATION_ONLY",
+                "path": path.relative_to(root).as_posix(),
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+        except (OSError, ValueError, KeyError, TypeError, ArithmeticError) as error:
+            # Continuity is not a new authority over independently valid prices.
+            continuity = {"status": "UNASSESSABLE", "reason": str(error)}
+        registry["observation_continuity"] = continuity
     result = dict(status="WRITTEN" if items or empty_daily else "BLOCKED", items=items, failures=failures,
                   observation_scope=observation_scope,
                   bundle_path=bundle_path.relative_to(root).as_posix(), bundle_sha256=bundle_sha,
-                  watch_source_scope=scope, selection_pipeline=pipeline, action="no_order")
+                  watch_source_scope=scope, selection_pipeline=pipeline,
+                  observation_continuity=continuity, action="no_order")
     _write(archive / "refresh.json", result)
     if items or empty_daily:
         if hashlib.sha256(source.read_bytes()).hexdigest() != watch_source_sha256:

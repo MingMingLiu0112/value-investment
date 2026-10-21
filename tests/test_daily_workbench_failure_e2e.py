@@ -45,6 +45,21 @@ def test_daily_entry_busy_preserves_active_receipt(tmp_path):
         holder.communicate('\n', timeout=10)
 
 
+def test_read_only_cannot_start_value_priority_work(tmp_path):
+    if not PWSH.is_file():
+        pytest.skip('Windows PowerShell 7 required')
+    current = tmp_path / 'scripts/current'
+    current.mkdir(parents=True)
+    shutil.copy2(ROOT / 'scripts/current/run_daily_workbench.ps1', current)
+    completed = subprocess.run([str(PWSH), '-NoProfile', '-File',
+        str(current / 'run_daily_workbench.ps1'), '-Mode', 'READ_ONLY',
+        '-BuildValueResearchPriority', '-NoServer'], cwd=tmp_path,
+        capture_output=True, text=True, encoding='utf-8', timeout=20)
+    assert completed.returncode != 0
+    assert 'requires explicit SAFE_REFRESH' in completed.stderr
+    assert not (tmp_path / '.tmp/daily-workbench-latest-run.json').exists()
+
+
 def test_safe_refresh_failure_keeps_previous_snapshot_bytes(tmp_path):
     if not PWSH.is_file():
         pytest.skip('Windows PowerShell 7 required')
@@ -108,6 +123,9 @@ def test_safe_refresh_failure_keeps_previous_snapshot_bytes(tmp_path):
     ('complete', 0, 'SUCCESS', True),
     ('partial', 3, 'PARTIAL', True),
     ('incremental_unavailable', 3, 'PARTIAL', True),
+    ('m2_unavailable', 3, 'PARTIAL', True),
+    ('m2_historical', 3, 'PARTIAL', True),
+    ('m2_manifest_missing', 3, 'PARTIAL', True),
     ('research_unavailable', 3, 'PARTIAL', True),
     ('unavailable', 2, 'BLOCKED', False),
     ('core_conflict', 2, 'BLOCKED', False),
@@ -132,6 +150,17 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         json.dumps({'quotes': {'600887': {}}}), encoding='utf-8')
     shutil.copy2(ROOT / 'scripts/current/run_daily_workbench.ps1', current)
     packet = dict(action='no_order', publication_id='verified', source_bindings_verified=True)
+    (project / 'scripts/run_m2_opportunity_discovery.py').write_text(
+        'import json,sys\nfrom pathlib import Path\n'
+        f'scenario={scenario!r}\n'
+        'out=Path(sys.argv[sys.argv.index("--output-dir")+1])\n'
+        'if scenario != "m2_manifest_missing":\n'
+        '    out.mkdir(parents=True)\n'
+        '    (out/"manifest.json").write_text(json.dumps({"action":"no_order","test_only":True}))\n'
+        'print(json.dumps({"action":"no_order", "rule_version":"m2-evidence-screen-v3",'
+        '"input_mode":"HISTORICAL_REPLAY" if scenario == "m2_historical" else "LIVE_COLLECTION",'
+        '"current_publication_eligible":False,"financial_input":{"input_adapter_version":"financial-export-v2"}}))\n'
+        'raise SystemExit(2 if scenario == "m2_unavailable" else 0)\n', encoding='utf-8')
     # Stub only child adapters in the isolated project; execute the real PS entry.
     build_exit = 4 if scenario == 'core_conflict' else 2 if scenario == 'core_unavailable' else 0
     (current / 'build_daily_public_packet.py').write_text(
@@ -150,10 +179,10 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         '    packet["snapshot"]={"publication_id":"verified","status":"VERIFIED"}\n'
         '    Path("config/current-daily-public-snapshot.json").write_text(json.dumps(packet))\n'
         f'print(json.dumps(packet))\nraise SystemExit(2 if scenario == "core_recovered" and count == 1 else {build_exit})\n', encoding='utf-8')
-    readiness = dict(prices_ready=scenario in {'complete', 'core_recovered', 'incremental_unavailable'}, quotes_ready=True,
+    readiness = dict(prices_ready=scenario in {'complete', 'core_recovered', 'incremental_unavailable', 'm2_unavailable', 'm2_historical', 'm2_manifest_missing'}, quotes_ready=True,
         publication_ready=scenario != 'unavailable', core_integrity_ok=True,
         market_trade_dates=['2026-10-14'], price_securities=[], quote_securities=[])
-    refresh = dict(status='WRITTEN', items=[], failures=[] if scenario in {'complete', 'incremental_unavailable'} else [
+    refresh = dict(status='WRITTEN', items=[], failures=[] if scenario in {'complete', 'incremental_unavailable', 'm2_unavailable', 'm2_historical', 'm2_manifest_missing'} else [
         dict(symbol='300001', reason='missing 15m')])
     (current / 'refresh_current_price_conditions.py').write_text(
         'import json,sys\n'
@@ -182,6 +211,14 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
     assert completed.returncode == expected_exit, completed.stdout + completed.stderr
     assert receipt['status'] == expected_status and receipt['published'] is published
     assert receipt['finished_at']
+    assert receipt['marketwide_screen']['current_publication_eligible'] is False
+    assert receipt['marketwide_screen']['status'] == (
+        'BLOCKED' if scenario in {'m2_unavailable', 'm2_historical', 'm2_manifest_missing'} else 'RESEARCH_ONLY')
+    if receipt['marketwide_screen']['status'] == 'RESEARCH_ONLY':
+        assert receipt['marketwide_screen']['manifest_sha256'] == digest(
+            project / receipt['marketwide_screen']['manifest_path'])
+    elif scenario == 'm2_manifest_missing':
+        assert 'manifest_sha256' not in receipt['marketwide_screen']
     assert int((project / '.tmp/build-calls').read_text()) == (3 if published else 2)
     if not published:
         assert pointer.read_bytes() == before

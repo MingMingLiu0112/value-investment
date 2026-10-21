@@ -943,3 +943,188 @@ is date-level rather than exact timestamp-level; live sessions, private inputs,
 human research approvals and final browser acceptance are still missing. These
 limits are why every loop receipt is PARTIAL and why the overall Goal is not
 complete. Excel remains frozen and `action=no_order` remains permanent.
+
+## 2026-10-20 Dual-strategy actionable decision V2
+
+User successor: DUAL-STRATEGY-ACTIONABLE-DECISION-V2. Actual HEAD at entry is
+e435d1fcb7f9636c6c540f7c61e3372c6cbf1c00, not the older b98 baseline. Exact
+baseline Core run 39212011280 and Web run 39212011327 both SUCCESS. Existing
+s4/s5 receipts, snapshot pointer and untracked audits were already dirty and
+are preserved; they are not new delivery evidence.
+
+Read-only actual application audit: the current publication reports universe
+5573, research leads 114 and formal admissions 0. Its 29 displayed companies
+cannot currently establish complete actionable eligibility. This is incomplete
+evaluation, NOT evidence that the whole market has no opportunities. The live
+public route was exercised with a temporary in-process operator session; no
+account, approval, original workbook or production service was changed.
+
+Concrete successor work: latest-report financial field consistency and missing
+versus rejected channel semantics; structure-evidence-first observation ranking;
+pretrade sleeve capacity and post-fill overspend disclosure; shared plan-derived
+public evaluation and actual-account conditional decision output. Display
+projections cannot approve research or mint personal capacity. Private action
+assembly is separate from public read-only NO_TRADE explanations. TEST_ONLY
+positive contracts do not establish real company investment readiness.
+
+Verification is ongoing. Do not inherit the baseline CI pass as validation of
+this working tree, and do not mark the V2 Goal complete from these changes.
+
+V2 audit corrections to the previous checkpoint's "P0 empty": actual execution
+still had three code gaps, not just external gates: legacy hotspot plans could
+not reach the independent risk contract; CORE had scenario-only sizing; held
+continuity unconditionally requested thesis/announcement review instead of
+consuming the full authorized continuity chain. The first two are being wired
+to existing verifiers/engines. The held-decision gap must not be described as
+only missing personal input or waived by displaying NO_TRADE.
+
+Retained-source re-evaluation (NOT a current market publication): annual rows
+adopted 16480, of which 6206 already verified statutory facts; general-enterprise
+annual-period coverage 43 -> 659. Actual nonquote financial coverage is 728,
+not the earlier 873 which included quote-only records. Quality outcomes remain
+0 PASS, 5452 DATA_GAP and 121 UNSUPPORTED; 775 earlier rejections were actually
+missing evidence. Lead count remains 114. Full financing debt and verified
+ROIC have not been manufactured. One official 600741 annual PDF was fetched
+again and matched its retained SHA; this verifies those original cash/ROE rows,
+not all financial quality or investment eligibility. Bounded evidence is under
+runtime/screening-A-20261020-v1/, with source and implementation hashes.
+
+### Actual close update, 2026-10-20
+
+The unique SAFE_REFRESH entry completed SUCCESS twice, with the second run
+reusing the admitted-date quote observations and completed structure cases.
+Both runs resolve the SAME publication pub-9b63d8aae9b265fdcf6a (SHA-256
+69e1e9adbc287c9f507bcc30ec4dcd58451c4b6b1cf5524e2e10149097f10cd3).
+Six existing value securities now have verified 2026-10-20 dual-source closes;
+this does not repair their economic/model/event admissions. Five current
+hotspot observations are 300821, 300308, 002242, 300012 and 688825, all WATCH,
+formal eligibility false. No broker action, private ledger write or Excel
+publication occurred.
+
+The real M2 input run covers 5575 securities, with 111 deduplicated research
+leads: quality 0, value/dividend/cyclical 50 each before deduplication. Its
+provider trade-date qualification remains unverified, so it is research-only,
+not a current formal investment universe. The previous published research
+list still contains 114 historical leads. The Web update receipt separately
+hash-binds the latest scan manifest instead of silently replacing that
+published research authority or counting new leads as completed research.
+
+The previous full regression reached 6751 PASS / 44 SKIP with one CLI-size
+architecture failure. Financial-export/timestamp replay helpers were moved
+from the root CLI into the existing screening infrastructure; the threshold
+was not raised, and 58 related tests pass. The legacy READ_ONLY test now runs
+in an isolated project and proves the actual pointer/latest receipt unchanged
+(4 tests PASS). Agent replay fixtures pin retained metadata, while expiry
+negatives still use a later clock; a market update must not invalidate an
+offline fixture or make historical tests appear current.
+
+Personal decision boundary: BUY requires the actual registered plan and risk
+contract; simulated accounts remain vetoed. ADD additionally needs a dedicated
+observed add condition and the user's original thesis ownership. That durable
+confirmation adapter does not yet exist, so current ADD is NO_TRADE with an
+explicit CODE_GAP, not a fabricated positive. Held HOLD/REDUCE/EXIT similarly
+remain unaccepted; the new strict entry/consistency validator alone is not a
+completed personal decision workflow. Final V2 acceptance remains NOT_PASSED.
+
+Browser continuation verification: rebuilt the current working-tree Web bundle,
+restarted only the repository-owned loopback 8001 process through its existing
+launcher, and verified the actual API-backed daily -> 000333 detail -> portfolio
+-> history -> daily route. The current daily shows 2026-10-20 quote dates,
+5575 scanned / 111 research leads, and separately 5 evaluated NO_TRADE / 15
+NOT_ASSESSABLE in the published-company scope. The demo account remains revision
+7 and is visibly TEST_ONLY; no form or journal confirmation was submitted.
+At viewport width 390 the document width is 375, without horizontal overflow.
+Screenshots: artifacts/current/dual-strategy-v2/daily-current-20261020.png and
+daily-current-mobile-20261020.png. These are working-tree product checks, not
+economic approval or final user acceptance. Private reads and evidence-backed
+pages can remain in loading state for a noticeable interval; latency remains
+an observed usability risk, not a passed performance acceptance.
+
+The existing Core Research Gates workflow now includes the new versioned
+screening, CLI integration, retained hotspot selection, personal entry contract,
+held code-gap, decision read-model and refresh-readiness tests. This is CI
+configuration only; the baseline green run is not evidence of new-source CI.
+
+Continuation verification result: full Python release regression returned
+6801 passed / 44 skipped / 10 failed in 1363.70 seconds. All ten failures were
+isolated Windows CLI fixtures whose mock M2 child omitted the newly mandatory
+manifest, correctly causing BLOCKED/PARTIAL instead of their expected states.
+The fixtures now materialize their isolated manifest and assert its recorded
+hash; an explicit missing-manifest negative was added. The entire affected
+file then passed 18 tests in 62.33 seconds. No production logic was loosened.
+The full suite was NOT rerun after this test-only repair; do not call this a
+single all-green full run. Web repeat: 42 files / 261 passed; build PASS.
+Changes remain uncommitted, and latest-source GitHub CI remains NOT_RUN.
+
+## V3 continuation, 2026-10-21
+
+Inherited baseline remains e435d1fc plus the V2 dirty tree, not a clean submitted
+release. Public outcome assembly now lives under application/decision with a
+documented presentation compatibility shim. UNASSESSABLE is distinct from a
+calculated NO_TRADE in public and private outcomes; no unowned holding becomes
+HOLD or ADD. Targeted public/API/architecture tests: 94 PASS; risk and integrated
+action contracts: 127 PASS; combined resumed target set: 283 PASS. Current Web:
+262 PASS, typecheck/build PASS. A new full regression is running, not yet passed.
+
+Three real retained 2025 annual sources were extracted and re-evaluated with
+original hashes/periods retained: 600519 (17 candidates, 14 retained matches),
+600887 (16/13), 600741 (15/5). Complete debt scope remains DATA_GAP in all three;
+no missing bucket is zero-filled and candidate matches are not new E3 facts.
+Independent source backing bytes, PIT and classification are required before
+adopting scope into an already verified aggregate. Frozen quality/scoring and
+historical engines have not changed. Evidence summary is in the V3 artifacts.
+
+The v2 research scheduler reuses the validated v1 discovery inputs, separates
+complete-quality research from evidence work, and labels unknown valuation,
+dividend durability, business quality and events rather than scoring them.
+The existing daily entry has an explicit -BuildValueResearchPriority switch,
+valid only with SAFE_REFRESH. READ_ONLY cannot start this work. Actual controlled
+execution on 2026-10-21 returned SUCCESS: universe 5576, deduplicated leads 111,
+quality 0, selected enrichment 10, complete-quality deep research 0. This selects
+work; it does NOT claim all ten companies have been enriched. Market-wide date
+qualification remains UNVERIFIED_PROVIDER_TRADE_DATE. Verified value/hotspot
+closes remain 2026-10-20, not today's intraday prices. Publication:
+pub-21cd20169c8e3ae9c899. No Excel/private journal/server/scheduler change.
+
+Hotspot observation continuity verifies retained registry/case/watch originals,
+distinguishes activity-only exclusion from expiry/invalidity, and never grants
+price admission. Existing refresh now archives a snapshot and attempts this
+comparison; missing historical evidence reports UNASSESSABLE without suppressing
+independently valid prices. Replay and integration remain distinct from a
+completed current cross-day production/browser acceptance. Existing candidate
+and held-monitoring gates remain unchanged.
+
+Remaining real engineering is not hidden as an authorization gap: automatic
+execution of the entire enrichment queue, admitted source revisions/re-ranking,
+personal entry ownership and held advisory handoff, and complete cross-day Web
+history are NOT finished. G3/strategy release/private IPS and external account
+reconciliation are separate human/data dependencies. V3 final acceptance is
+NOT_PASSED; current work must not be described as a closed real trading product.
+
+### V3 bounded enrichment execution
+
+An explicit -ExecuteValueEnrichment option now requires SAFE_REFRESH plus
+-BuildValueResearchPriority. It invokes the existing queue CLI with an execution
+budget of two (service maximum three). The application replays the queue from
+its bound original inputs, downloads only a registered official annual URL with
+an expected hash through the existing bounded PDF adapter, caches immutable
+originals, extracts candidates and runs the unchanged quality scorer. Each issuer
+gets an immutable result and failure/reopen reason; no fact or approval is minted.
+READ_ONLY cannot reach this network path. Queue execution is not automatic full
+coverage, admitted fact persistence or completion of deep research.
+
+Actual execution initially exposed a parser error: two genuine annual reports
+put their labelled stock code on page six, not within the first three pages.
+The adapter now verifies explicit labelled code within the first twelve pages,
+retaining the report-year/Hash checks and rejecting a different labelled issuer.
+With no network permission on the rerun, both cached originals were reused:
+000589 extracted 16 / matched 15; 000612 extracted 17 / matched 16. Both remain
+DATA_UNAVAILABLE for complete financial quality due to debt-scope gaps, not
+because extraction failed. The initial failure and repair receipts both remain
+under runtime/value-evidence-enrichment/runs/. No original was deleted or redated.
+
+The full regression snapshot completed 6863 passed / 44 skipped in 1112.14s.
+The bounded executor and final parser/summary changes were made after collection
+and are covered separately by 80 passing targeted tests; do not pretend that the
+earlier full run covered every subsequent change. Latest-source CI and committed
+browser acceptance still need verification before any release claim.

@@ -2,7 +2,7 @@ name: Core Research Gates
 
 on:
   push:
-    branches: [main]
+    branches: [main, codex/web-d1-investment-workbench]
   pull_request:
 
 permissions:
@@ -63,6 +63,17 @@ jobs:
           tests/web_api/test_p5_reviews.py
           tests/test_private_first_use_workflow.py
           tests/test_private_risk_preview.py
+          tests/test_screening_financial_export_v2.py
+          tests/test_m2_cli_versioned_integration.py
+          tests/test_hotspot_two_stage_retained.py
+          tests/test_personal_entry_thesis.py
+          tests/test_held_decision_code_gap.py
+          tests/test_strategy_decision_read_model.py
+          tests/test_daily_refresh_readiness.py
+          tests/test_value_research_priority_v2.py
+          tests/test_hotspot_observation_continuity.py
+          tests/test_value_evidence_enrichment_v1.py
+          tests/test_value_enrichment_batch.py
           tests/test_private_risk_partial_facts.py
           tests/test_p62_positive_workflow.py
           tests/test_p7_signed_review_workflow.py

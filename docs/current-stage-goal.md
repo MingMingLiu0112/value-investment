@@ -1,5 +1,33 @@
 # 当前总目标：价值投资建议与情绪卫星仓系统
 
+## 2026-10-20 V3 real decision closure
+
+Latest explicit user scope: DUAL-STRATEGY-REAL-DECISION-CLOSURE-V3, attachment
+d07f560e-3f56-47c8-86b4-8c856e63121c. Inherit the dirty V2 working tree on
+e435d1fcb7f9636c6c540f7c61e3372c6cbf1c00; it is not a new committed baseline.
+Execute A-G progressively: real source-bound financial enrichment and ranking,
+independent hotspot structure/continuity, application-owned decision assembly,
+private risk and Web verification through the existing daily entry. Preserve
+legacy engines and historical receipts. UNASSESSABLE is not NO_TRADE; screening,
+strategy and personal action review remain distinct. Existing ledger:
+current/web-first-full-product-execution-ledger.md. V3 receipts:
+artifacts/current/dual-strategy-decision-v3/. Excel frozen; no orders, paid calls,
+approval fabrication, production deployment or scheduler changes. G3, strategy
+authorization and personal account inputs retain their respective human gates.
+Earlier successor blocks below are historical context.
+
+## 2026-10-20 Actionable dual-strategy successor
+
+Latest explicit user task: DUAL-STRATEGY-ACTIONABLE-DECISION-V2, attachment
+2323127a-977e-45c0-bb0c-a616500a9784. Baseline e435d1fc. Continue actual
+screening, registered research/structure plans, shared private risk and Web
+decision integration. Existing plan, journal, risk and publication authorities
+remain authoritative; display envelopes cannot grant admission. Distinguish
+evaluated NO_TRADE from NOT_ASSESSABLE and do not infer market-wide absence of
+opportunities from incomplete coverage. Web first; Excel frozen; no orders.
+Real approvals, personal inputs, paid model calls and production scheduling
+retain their separate gates. Earlier scopes below remain historical context.
+
 ## 2026-10-18 Web-first full product successor
 
 Latest explicit user Goal: WEB-FIRST-FULL-PRODUCT-CLOSURE-V1, objective attachment

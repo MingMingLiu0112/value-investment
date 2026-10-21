@@ -534,6 +534,34 @@ export const api = {
       action: "no_order";
       status: string;
       last_run: {
+        research_priority?: {
+          status: string;
+          as_of?: string;
+          deep_research_count?: number;
+          enrichment_count?: number;
+          selected_enrichment_count?: number;
+          execution?: {
+            status: string;
+            attempted_count?: number;
+            reevaluated_count?: number;
+            data_gap_count?: number;
+            items?: {
+              symbol: string;
+              company_name: string;
+              extracted_candidates?: number;
+              matched_candidates?: number;
+            }[];
+          };
+        };
+        screening?: {
+          status: string;
+          scope: string;
+          as_of?: string;
+          universe_count?: number;
+          lead_count?: number;
+          channel_counts?: Record<string, number>;
+          quote_date_verification?: string;
+        };
         status: string;
         finished_at: string | null;
         published: boolean;

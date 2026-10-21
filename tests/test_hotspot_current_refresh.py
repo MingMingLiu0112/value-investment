@@ -37,6 +37,7 @@ def test_verified_empty_daily_selection_retires_old_candidates_without_acquisiti
         watch_source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
         bundle_collector=forbidden, case_collector=forbidden)
     assert result['status'] == 'WRITTEN' and not result['items'] and not result['failures']
+    assert result['observation_continuity']['status'] == 'UNASSESSABLE'
     registered = json.loads(pointer.read_bytes())
     assert registered['items'] == [] and registered['selected_symbols'] == []
     assert registered['previous_items'][0]['symbol'] == '600519'
@@ -84,8 +85,9 @@ def test_watch_candidate_rejects_invalid_explicit_industry(industry):
         ]))
 
 
+@pytest.mark.parametrize("structure_priority", [False, True])
 def test_quality_ranking_promotes_a_lower_ranked_candidate_and_excludes_unassessed(
-    tmp_path, monkeypatch,
+    tmp_path, monkeypatch, structure_priority,
 ):
     from value_investment_agent.application.hotspot import current_refresh as module
 
@@ -129,6 +131,8 @@ def test_quality_ranking_promotes_a_lower_ranked_candidate_and_excludes_unassess
     def project_case(case):
         return dict(
             signal_state="WATCH",
+            price_behavior=(dict(observation_quality="RESEARCH_ONLY", daily_trend="UPTREND")
+                            if structure_priority and case["symbol"] == symbols[4] else {}),
             opportunity_quality=dict(
                 structure_tier=tiers[case["symbol"]],
                 structure_reasons=["TEST_ONLY"],
@@ -149,10 +153,11 @@ def test_quality_ranking_promotes_a_lower_ranked_candidate_and_excludes_unassess
     assert result["selection_pipeline"]["assessed_count"] == 6
     assert result["selection_pipeline"]["failed_count"] == 1
     assert result["items"][0]["symbol"] == symbols[5]
-    assert [item["symbol"] for item in result["items"]] == [symbols[5], *symbols[:4]]
-    assert [item["activity_rank"] for item in result["items"]] == [6, 1, 2, 3, 4]
+    expected = (5, 4, 0, 1, 2) if structure_priority else (5, 0, 1, 2, 3)
+    assert [item["symbol"] for item in result["items"]] == [symbols[index] for index in expected]
+    assert [item["activity_rank"] for item in result["items"]] == [index + 1 for index in expected]
     assert [item["industry"] for item in result["items"]] == [
-        rows[index]["industry"] for index in (5, 0, 1, 2, 3)
+        rows[index]["industry"] for index in expected
     ]
     assert symbols[6] not in {item["symbol"] for item in result["items"]}
     assert all(item["structure_tier"] != "UNASSESSED" for item in result["items"])
@@ -165,6 +170,26 @@ def test_quality_ranking_promotes_a_lower_ranked_candidate_and_excludes_unassess
         "ACTIVE_ONLY": 5,
         "CONFLICT_OR_REJECTED": 0,
     }
+    assert registry["assessed_candidates"][1]["structure_selection_evidence"]["trade_space_known"] is structure_priority
+    assert registry["selection_pipeline"]["ranking_scope"] == "OBSERVATION_PRIORITY_NOT_STRATEGY_ADMISSION"
+
+
+@pytest.mark.parametrize("limit,pool", [(True, None), (0, None), (11, None), (5, 4), (5, True), (5, 31)])
+def test_invalid_final_or_pool_limit_is_rejected_before_acquisition(tmp_path, limit, pool):
+    with pytest.raises(ValueError, match="limit|pool"):
+        refresh_current_price_conditions(root=tmp_path, watch_source_path="missing.json",
+            watch_source_sha256="a" * 64, limit=limit, candidate_pool_limit=pool)
+
+
+def test_structural_conflict_cannot_be_promoted_by_positive_auxiliary_evidence():
+    from value_investment_agent.application.hotspot.current_refresh import final_observation_key
+    active = dict(symbol="600001", activity_rank=999, structure_tier="ACTIVE_ONLY", signal_state="WATCH")
+    rejected = dict(symbol="600002", activity_rank=1, structure_tier="CONFLICT_OR_REJECTED",
+        signal_state="TRIGGER_REJECTED", structure_reasons=["PRIMARY_STRUCTURE_INVALIDATED"],
+        structure_selection_evidence=dict(trade_space_known=True, primary_confirmed=True,
+            daily_uptrend=True, auxiliary_confirmed=True))
+    assert sorted([rejected, active], key=final_observation_key) == [active, rejected]
+    assert rejected["structure_reasons"] == ["PRIMARY_STRUCTURE_INVALIDATED"]
 
 
 def test_injected_quality_cannot_short_circuit_case_recalculation(tmp_path, monkeypatch):

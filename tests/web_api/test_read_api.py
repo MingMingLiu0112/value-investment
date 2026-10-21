@@ -208,6 +208,19 @@ def _not_connected_report(**overrides):
     return report
 
 
+def test_daily_actionable_scope_does_not_invent_market_or_personal_conclusions(tmp_path):
+    client = _fixture(tmp_path)
+    body = client.get("/api/v1/daily-decisions").json()
+    evaluation = body["actionable_evaluation"]
+    assert evaluation["scope"] == "PUBLISHED_COMPANIES_ONLY"
+    assert evaluation["conclusion"] == "INCOMPLETE_EVALUATION"
+    assert evaluation["operation_eligible_count"] == 0
+    assert evaluation["unassessable_count"] == len(evaluation["items"])
+    assert evaluation["action"] == "no_order"
+    assert all(row["decision_action"] == "UNASSESSABLE" and row["review_quantity"] is None
+               for row in evaluation["items"])
+
+
 def test_daily_dual_sleeve_section_restates_the_bound_report(tmp_path):
     """The section restates the published review and never fills guidance in."""
     client = _fixture(tmp_path, extra_extensions={

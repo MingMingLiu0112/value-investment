@@ -2,6 +2,8 @@
 from datetime import datetime
 import json
 from pathlib import Path
+import hashlib
+import re
 
 from ..hotspot.current_registry import load_price_conditions
 from .quote_bridge import execute_quote_bridge_for_symbol
@@ -30,11 +32,119 @@ def read_latest_run(root: Path) -> dict | None:
         result = {key: value.get(key) for key in fields}
         notes = value.get('notes')
         result['notes'] = [note for note in notes if isinstance(note, str) and note in PUBLIC_NOTES] if isinstance(notes, list) else []
+        if isinstance(value.get('marketwide_screen'), dict):
+            result['screening'] = _screening_summary(root, value['marketwide_screen'])
+        if isinstance(value.get('value_research_priority'), dict):
+            result['research_priority'] = _priority_summary(root, value['value_research_priority'])
         if isinstance(notes, list) and len(result['notes']) != len(notes):
             result['notes'].append('部分运行说明仅保留在本机回执；请检查本次更新状态。')
         return result
     except (OSError, ValueError, KeyError, TypeError):
         return None
+
+
+def _priority_summary(root, binding):
+    """Expose verified scheduling counts, never raw facts or investment ranks."""
+    unavailable = {'status': 'UNVERIFIED', 'scope': 'RESEARCH_SCHEDULING_ONLY'}
+    try:
+        digest = binding['sha256']
+        if not isinstance(digest, str) or not re.fullmatch(r'[0-9a-f]{64}', digest):
+            return unavailable
+        path = (root / binding['path']).resolve()
+        if (not path.is_relative_to((root / 'runtime/daily-marketwide').resolve())
+                or path.name != 'research-priority-v2.json' or path.stat().st_size > 10_000_000):
+            return unavailable
+        raw = path.read_bytes()
+        if len(raw) > 10_000_000 or hashlib.sha256(raw).hexdigest() != digest:
+            return unavailable
+        value = json.loads(raw)
+        from ..research.value_research_queue import _canonical_hash
+        if (value['schema_version'] != 'value-research-priority-v2'
+                or value['action'] != 'no_order' or value['admission'] != 'RESEARCH_QUEUE_ONLY'
+                or value['content_sha256'] != _canonical_hash({k: v for k, v in value.items() if k != 'content_sha256'})):
+            return unavailable
+        deep, enrichment = value['deep_research_priority'], value['evidence_enrichment_work_queue']
+        rows = deep + enrichment
+        if (len(rows) > 6000 or len({row['symbol'] for row in rows}) != len(rows)
+                or any(type(value[key]) is not int or not 0 <= value[key] <= len(queue)
+                       for key, queue in (('selected_deep_research_count', deep), ('selected_enrichment_count', enrichment)))):
+            return unavailable
+        result = {'status': 'VERIFIED_RESEARCH_PRIORITY', 'scope': 'RESEARCH_SCHEDULING_ONLY',
+            'as_of': value['as_of'], 'deep_research_count': len(deep), 'enrichment_count': len(enrichment),
+            'selected_deep_research_count': value['selected_deep_research_count'],
+            'selected_enrichment_count': value['selected_enrichment_count'],
+            'formal_eligibility': False, 'action': 'no_order'}
+        if isinstance(binding.get('execution'), dict):
+            result['execution'] = _enrichment_execution_summary(root, path.parent, binding['execution'], value)
+        return result
+    except (OSError, ValueError, KeyError, TypeError):
+        return unavailable
+
+
+def _enrichment_execution_summary(root, folder, binding, queue):
+    unavailable = {'status': 'UNVERIFIED'}
+    try:
+        path = (root / binding['path']).resolve()
+        if not path.is_relative_to(folder) or path.name != 'execution.json' or path.stat().st_size > 500_000:
+            return unavailable
+        raw = path.read_bytes()
+        if len(raw) > 500_000 or hashlib.sha256(raw).hexdigest() != binding['sha256']:
+            return unavailable
+        value = json.loads(raw)
+        rows = value['items']
+        candidates = {row['symbol']: row for row in queue['evidence_enrichment_work_queue']}
+        if (value['schema_version'] != 'value-enrichment-execution-v1' or value['action'] != 'no_order'
+                or value['queue_content_sha256'] != queue['content_sha256'] or value['formal_eligibility'] is not False
+                or value['new_fact_approvals'] != 0 or not 0 <= len(rows) <= 3
+                or type(value['attempted_count']) is not int or value['attempted_count'] != len(rows)
+                or len({row['symbol'] for row in rows}) != len(rows)
+                or any(row['symbol'] not in candidates or row['formal_eligibility'] is not False for row in rows)):
+            return unavailable
+        return {'status': 'VERIFIED_RESEARCH_EXECUTION', 'attempted_count': len(rows),
+            'reevaluated_count': sum('QUALITY_REEVALUATED' in row['transitions'] for row in rows),
+            'data_gap_count': sum(row['state'] == 'DATA_UNAVAILABLE' for row in rows),
+            'items': [{'symbol': row['symbol'], 'company_name': candidates[row['symbol']]['company_name'],
+                'state': row['state'], 'extracted_candidates': row.get('extracted_candidates'),
+                'matched_candidates': row.get('matched_candidates')} for row in rows],
+            'formal_eligibility': False, 'action': 'no_order'}
+    except (OSError, ValueError, TypeError, KeyError):
+        return unavailable
+
+
+def _screening_summary(root, binding):
+    """Display a pinned research scan separately from the decision publication."""
+    unavailable = {'status': 'UNVERIFIED', 'scope': 'RESEARCH_LEADS_NOT_ACTIONS'}
+    try:
+        name, digest = binding['manifest_path'], binding['manifest_sha256']
+        if not isinstance(name, str) or not re.fullmatch(r'[0-9a-f]{64}', digest):
+            return unavailable
+        base = (root / 'runtime/daily-marketwide').resolve()
+        path = (root / name).resolve()
+        if not path.is_relative_to(base) or path.name != 'manifest.json' or path.is_symlink():
+            return unavailable
+        if path.stat().st_size > 512_000:
+            return unavailable
+        raw = path.read_bytes()
+        if len(raw) > 512_000 or hashlib.sha256(raw).hexdigest() != digest:
+            return unavailable
+        summary = json.loads(raw)['summary']
+        if (summary['action'] != 'no_order' or summary['input_mode'] != 'LIVE_COLLECTION'
+                or summary['rule_version'] != 'm2-evidence-screen-v3'):
+            return unavailable
+        health = summary['data_health']
+        counts = summary['channel_counts']
+        lead_count = summary.get('lead_count', summary.get('deduplicated_lead_count'))
+        if lead_count is None:
+            lead_count = summary['legacy_comparison']['new_candidate_count']
+        if any(type(n) is not int or n < 0 for n in [health['universe_count'], lead_count, *counts.values()]):
+            return unavailable
+        return {'status': 'VERIFIED_RESEARCH_SCAN', 'scope': 'RESEARCH_LEADS_NOT_ACTIONS',
+            'as_of': summary['as_of'], 'quote_date_verification': summary['quote_date_verification'],
+            'universe_count': health['universe_count'], 'lead_count': lead_count,
+            'channel_counts': counts, 'data_status': health['status'],
+            'blockers': health.get('blockers', []), 'formal_eligibility': False, 'action': 'no_order'}
+    except (OSError, ValueError, TypeError, KeyError):
+        return unavailable
 
 
 def refresh_readiness(root: Path, *, now: datetime, symbols: list[str]) -> dict:

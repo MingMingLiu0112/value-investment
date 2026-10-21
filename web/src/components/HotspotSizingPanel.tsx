@@ -12,6 +12,8 @@ import type { RiskFacts } from "../types/api";
 import type { PrivateRiskContext } from "./PrivateRiskContext";
 import { CostAssumptionsPanel } from "./CostAssumptionsPanel";
 import { reusableCostFields } from "./PrivateRiskContext";
+import { ActionableDecisionResult } from "./ActionableDecisionResult";
+import type { ConditionalAccountDecision } from "./ActionableDecisionResult";
 
 export type HotspotSizingRequest = {
   sleeve?: "CORE_VALUE";
@@ -34,6 +36,7 @@ export type HotspotSizingRequest = {
   };
 };
 export type HotspotSizingResponse = {
+  actionable_decision?: ConditionalAccountDecision;
   action: "no_order";
   facts?: RiskFacts | null;
   scenario_preview?: {
@@ -509,6 +512,9 @@ export function HotspotSizingPanel({
           </>
         )}
       </ProForm>
+      {result?.actionable_decision && (
+        <ActionableDecisionResult decision={result.actionable_decision} />
+      )}
       {result?.scenario_preview &&
         result.scenario_preview.status !== "NOT_REQUESTED" && (
           <Alert

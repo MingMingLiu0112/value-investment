@@ -1080,6 +1080,8 @@ class PrivatePortfolioService:
         payload = self._portfolio_payload(replayed_after)
         payload["status"] = "FILL_CONFIRMED"
         payload["confirmed_transaction_id"] = fill.transaction_id
+        from .private_risk_projection import sleeve_cash_review
+        payload["sleeve_cash_review"] = sleeve_cash_review(replayed_after)
         record = self.journal.append(
             kind="FILL_CONFIRMED",
             body=body,

@@ -207,7 +207,7 @@ def test_context_cli_calls_real_chain(cli, tmp_path, monkeypatch, capsys, workfl
 
 
 def test_api_context_workflow_replays_without_provider(tmp_path, monkeypatch):
-    from test_agent_research_api import registered_client, unlock, ROUTE
+    from web_api.test_agent_research_api import registered_client, unlock, ROUTE
 
     args, _ = context_inputs(tmp_path, "retrospective")
     result = run_daily_context_mock(**args)

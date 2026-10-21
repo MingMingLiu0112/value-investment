@@ -1,0 +1,23 @@
+{
+  "schema_version": "dual-strategy-v3-baseline-v1",
+  "source_commit": "e435d1fcb7f9636c6c540f7c61e3372c6cbf1c00",
+  "source_state": "DIRTY_INHERITED_V2_NOT_COMMITTED",
+  "branch": "codex/web-d1-investment-workbench",
+  "action": "no_order",
+  "data_trade_date": "2026-10-20",
+  "source_receipt": "artifacts/current/dual-strategy-v2/progress.json",
+  "input_coverage": {"market_scan": 5575, "deduplicated_leads": 111},
+  "actual_pass": {"quality": 0, "formal_strategy_admission": 0},
+  "actual_reject": {"published_scope_evaluated_no_trade": 5},
+  "data_insufficient": {"published_scope_unassessable": 15},
+  "strategy_review": "NOT_ADMITTED",
+  "private_risk": "TEST_ONLY_ACCOUNT_NOT_REAL_PERSONAL_READINESS",
+  "positive_negative_tests": "V2_FULL_6801_PASS_44_SKIP_10_FIXTURE_FAILURES_THEN_AFFECTED_FILE_18_PASS",
+  "browser_result": "V2_WORKING_TREE_VERIFIED_NOT_V3_ACCEPTANCE",
+  "limitations": [
+    "Provider market-wide trade date remains unverified",
+    "Financial debt scope and quality evidence incomplete",
+    "Retained 114-lead published research is distinct from new 111-lead scan",
+    "No current-source GitHub CI or V3 final acceptance"
+  ]
+}

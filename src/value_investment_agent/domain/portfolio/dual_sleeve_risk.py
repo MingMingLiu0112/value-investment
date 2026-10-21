@@ -377,8 +377,11 @@ def _hotspot_review(request, *, bundle, total, budget, reviews, policies, attrs,
             high = middle-1
     quantity = low*lot
     cost, risk = amounts(quantity)
+    blockers = [] if quantity else ['hotspot:budget_below_one_lot']
+    if not quantity and amounts(lot)[0] > Decimal(review['available_funds_cny']):
+        blockers.append(HOTSPOT + ':sleeve_cash_budget_insufficient')
     return dict(status='QUANTITY_REVIEW_ONLY' if quantity else 'BLOCKED_BELOW_ONE_LOT',
-        blockers=[] if quantity else ['hotspot:budget_below_one_lot'], review_quantity=quantity,
+        blockers=blockers, review_quantity=quantity,
         symbol=symbol, sleeve=HOTSPOT, planned_risk_limit_cny=str(risk_limit),
         same_security_existing_risk_cny=str(sum((Decimal(x) for x in same_risk), Decimal(0))),
         stressed_loss_cny=str(risk), cash_required_cny=str(cost), stressed_exit_price_cny=str(stress_exit),
@@ -457,8 +460,11 @@ def _core_review(request, *, bundle, total, budget, reviews, policies, attrs,
         else:
             high = middle-1
     quantity = low*lot
+    blockers = [] if quantity else ['core:budget_below_one_lot']
+    if not quantity and cost(lot) > Decimal(reviews[CORE]['available_funds_cny']):
+        blockers.append(CORE + ':sleeve_cash_budget_insufficient')
     return dict(status='QUANTITY_REVIEW_ONLY' if quantity else 'BLOCKED_BELOW_ONE_LOT',
-        blockers=[] if quantity else ['core:budget_below_one_lot'], review_quantity=quantity,
+        blockers=blockers, review_quantity=quantity,
         symbol=symbol, sleeve=CORE, cash_required_cny=str(cost(quantity)), capital_limit_cny=str(capital_limit),
         tranche_budget_cny=str(values['max_trade_notional_cny']), mechanical_stop_required=False,
         exit_basis='FUNDAMENTAL_THESIS_AND_LIQUIDITY_REVIEW', trade_eligible=False)

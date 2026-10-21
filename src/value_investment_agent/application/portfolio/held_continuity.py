@@ -268,12 +268,44 @@ def load_held_price_plan(root: Path, symbol: str, binding: dict, *, now: datetim
     return {**plan, "case_path": case["case_path"], "case_sha256": case["case_sha256"]}
 
 
+def _held_decision_code_gaps() -> list[dict]:
+    """Missing adapters, not external approvals or evidence of thesis ownership.
+
+    Journal decision/version strings and recording-time public plan snapshots
+    do not bind an account's opening lot to its original EntryThesisSnapshot.
+    Even an ACTUAL public research entry cannot establish that private link.
+    """
+    return [
+        {"code": "HELD_ENTRY_THESIS_IDENTITY_ADAPTER_MISSING", "gap_category": "CODE_GAP",
+         "blocks": ["ENTRY_THESIS_REVIEW_REQUIRED"],
+         "required_interface": (
+             "Read-only authenticated journal resolver: account scope, journal revision, "
+             "opening transaction/lot, symbol, exchange and sleeve -> user-confirmed original "
+             "EntryThesisSnapshot artifact identity/hash and matching InvestmentConsistencyReview. "
+             "Verify ownership, available-at and actual-entry provenance; public examples, "
+             "decision_id and research_version alone are insufficient.")},
+        {"code": "HELD_ANNOUNCEMENT_REVIEW_ADAPTER_MISSING", "gap_category": "CODE_GAP",
+         "blocks": ["ANNOUNCEMENT_REVIEW_REQUIRED"],
+         "required_interface": (
+             "Resolve and validate existing EventMaterialityReview against the owned entry, "
+             "current research version and retained announcement coverage/cutoff. "
+             "Coverage COMPLETE alone does not establish reviewed event impact.")},
+        {"code": "HELD_ADVISORY_ENGINE_ADAPTER_MISSING", "gap_category": "CODE_GAP",
+         "blocks": ["FORMAL_HELD_DECISION_UNAVAILABLE"],
+         "required_interface": (
+             "Pass verified owned entry/consistency and existing research, valuation, model, "
+             "price, approval and event dependencies to build_advisory_decision_recommendation_v3; "
+             "join its result with existing private risk at the same journal revision. "
+             "Preserve strategy-specific admission, T+1, human review and no_order gates.")},
+    ]
+
+
 def project_held_continuity(positions: list[dict], risk: dict, *,
                             selected_symbols, plan_provider, generated_at: datetime) -> dict:
     """Join ALL existing ledger positions to existing plans and risk results.
 
-    Ranking membership is descriptive only. Unknown thesis/event/budget facts
-    remain explicit review gaps, independently of a known exit trigger.
+    Ranking membership is descriptive only. Missing held-decision adapters are
+    CODE_GAP, independently of known exit triggers or external evidence gaps.
     """
     if generated_at.utcoffset() is None:
         raise ValueError("Timezone-aware review clock required")
@@ -325,6 +357,8 @@ def project_held_continuity(positions: list[dict], risk: dict, *,
             announcement_coverage = "UNKNOWN"
             gaps.append("ANNOUNCEMENT_COVERAGE_UNKNOWN")
         gaps.append("ANNOUNCEMENT_REVIEW_REQUIRED")
+        code_gaps = _held_decision_code_gaps()
+        gaps.extend(gap["code"] for gap in code_gaps)
         if not risk.get("engine"):
             gaps.append("PORTFOLIO_RISK_REVIEW_UNAVAILABLE")
         valuation_blockers = (risk.get("facts") or {}).get("valuation_blockers") or []
@@ -344,6 +378,7 @@ def project_held_continuity(positions: list[dict], risk: dict, *,
             "tracking_basis": "ACTUAL_HELD_SECURITY_NOT_RANKING",
             "review_priority": 0 if "INVALIDATION_OR_EXIT_REVIEW" in reasons else 1,
             "review_reasons": reasons, "data_gaps": list(dict.fromkeys(gaps)),
+            "decision_assessment_status": "CODE_GAP", "code_gaps": code_gaps,
             "strategy_plan": deepcopy(plan), "formal_eligibility": False,
             "personal_sell_permission": False, "position_guidance": None, "action": "no_order"})
     rows.sort(key=lambda row: (row["review_priority"], row["symbol"], row["exchange"]))

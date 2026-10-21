@@ -5,6 +5,24 @@
   gap: 20px;
   margin-bottom: 18px;
 }
+.daily-action-conclusion {
+  padding: 16px 0;
+  border-bottom: 1px solid #dce3e5;
+  overflow-wrap: anywhere;
+}
+.daily-action-conclusion h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  line-height: 1.5;
+}
+.daily-action-conclusion p,
+.daily-action-conclusion li {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.daily-action-conclusion summary {
+  cursor: pointer;
+}
 .opportunity-title.ant-typography {
   margin: 0 0 4px;
   font-size: 26px;

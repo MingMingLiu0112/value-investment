@@ -59,21 +59,31 @@ def test_daily_entry_orchestrates_existing_clis_without_new_side_doors():
     assert 'open_current_trial_workbook.py' not in text
 
 
-def test_daily_entry_runs_read_only_and_reports_plain_language():
+def test_daily_entry_runs_read_only_and_reports_plain_language(tmp_path):
     pwsh = _pwsh()
     if pwsh is None:
         pytest.skip("PowerShell 7 is unavailable")
+    project = tmp_path / "isolated-entry"
+    current = project / "scripts/current"
+    current.mkdir(parents=True)
+    shutil.copy2(SCRIPT, current / SCRIPT.name)
+    shutil.copy2(ROOT / "scripts/current/build_daily_public_packet.py", current)
+    shutil.copytree(ROOT / "src", project / "src", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    protected = [ROOT / "config/current-daily-public-snapshot.json",
+                 ROOT / ".tmp/daily-workbench-latest-run.json"]
+    before = {path: path.read_bytes() if path.exists() else None for path in protected}
     completed = subprocess.run(
-        [pwsh, "-NoProfile", "-File", str(SCRIPT), "-Mode", "READ_ONLY", "-NoServer"],
-        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=600,
+        [pwsh, "-NoProfile", "-File", str(current / SCRIPT.name), "-Mode", "READ_ONLY", "-NoServer", "-Symbols", "600519"],
+        cwd=project, capture_output=True, text=True, encoding="utf-8", timeout=60,
     )
     output = completed.stdout or ""
-    assert completed.returncode in {0, 2, 3}, (completed.returncode, output, completed.stderr)
+    assert completed.returncode == 2, (completed.returncode, output, completed.stderr)
     assert "运行结果" in output
     assert "action=no_order" in output
-    if completed.returncode == 0:
-        assert "数据版本 : pub-" in output
-        assert "来源绑定 : 全部哈希校验通过" in output
+    assert {path: path.read_bytes() if path.exists() else None for path in protected} == before
+    receipt = json.loads((project / ".tmp/daily-workbench-latest-run.json").read_text(encoding="utf-8-sig"))
+    assert receipt["status"] == "BLOCKED"
+    assert receipt["action"] == "no_order"
 
 
 def test_daily_entry_keeps_update_and_web_results_separate():

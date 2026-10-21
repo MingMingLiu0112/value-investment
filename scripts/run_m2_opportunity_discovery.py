@@ -35,6 +35,15 @@ from value_investment_agent.m2_opportunity_discovery import (
 )
 from value_investment_agent.official_universe import collect_security_lists
 from value_investment_agent.application.product.value_discovery_surface import publish_value_discovery_report
+from value_investment_agent.infrastructure.screening.evidence_screen_v3 import (
+    VERSION as EVIDENCE_SCREEN_VERSION,
+    build_discovery_receipt as build_evidence_receipt,
+)
+from value_investment_agent.infrastructure.screening.financial_export_v2 import (
+    load_retained_financial_export as _load_retained_financial_export,
+    financial_fetched_at as _financial_fetched_at,
+    retained_run_clock as _retained_run_clock,
+)
 
 
 CHINA = timezone(timedelta(hours=8))
@@ -73,33 +82,11 @@ def _reference(
     )
 
 
-def _load_retained_financial_export(path: Path) -> tuple[list[dict], dict]:
-    if not path.exists():
-        return [], {}
-    payload = json.loads(path.read_text(encoding="utf-8-sig"))
-    points = payload.get("points") or []
-    return points, payload
-
-
 def _payload_fetched_at(payload: Mapping[str, object], name: str) -> datetime:
     value = payload.get("fetched_at")
     if not value:
         raise RuntimeError(f"{name} payload has no fetched_at and cannot be replay-restamped")
     return datetime.fromisoformat(str(value))
-
-
-def _financial_fetched_at(payload: Mapping[str, object]) -> datetime:
-    generated_at = payload.get("retained_generated_at") or payload.get("generated_at")
-    if generated_at:
-        return datetime.fromisoformat(str(generated_at))
-    point_times = [
-        str(point.get("fetched_at") or point.get("created_at") or "")
-        for point in payload.get("points") or []
-        if point.get("fetched_at") or point.get("created_at")
-    ]
-    if point_times:
-        return datetime.fromisoformat(max(point_times))
-    raise RuntimeError("Retained financial export has no generated_at or point timestamp")
 
 
 def _collect_official(output_dir: Path, root: Path) -> tuple[dict, EvidenceReference]:
@@ -135,20 +122,6 @@ def _collect_official(output_dir: Path, root: Path) -> tuple[dict, EvidenceRefer
     return payload, reference
 
 
-def _retained_run_clock(output_dir: Path) -> tuple[datetime, str, str]:
-    """Recover the original PIT clock before replaying retained inputs."""
-    receipt_path = output_dir / "receipt.json"
-    if not receipt_path.is_file():
-        raise RuntimeError(
-            "--reuse-inputs requires an existing receipt.json; refusing to relabel "
-            "retained inputs with the current clock"
-        )
-    receipt = discovery_receipt_from_payload(
-        json.loads(receipt_path.read_text(encoding="utf-8"))
-    )
-    return receipt.generated_at, receipt.quote_date or receipt.as_of.isoformat(), receipt.run_id
-
-
 def run_once(
     *,
     root: Path,
@@ -158,6 +131,7 @@ def run_once(
     skip_dividend: bool,
     reuse_inputs: bool,
     project_leads: bool = False,
+    skip_workbook: bool = False,
 ) -> dict:
     if wps_dir is not None:
         raise ValueError("M2 may not create a second WPS workbook; use the runtime preview")
@@ -167,13 +141,25 @@ def run_once(
     output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     policy = M2ScreeningPolicy(max_per_channel=max_per_channel)
+    receipt_builder = build_evidence_receipt
 
     if reuse_inputs:
         retained_generated_at, quote_date, retained_run_id = _retained_run_clock(output_dir)
         generated_at = retained_generated_at
         run_id = f"m2-replay-{wall_now.astimezone(CHINA).strftime('%Y%m%dT%H%M%S')}Z"
         replay_of_run_id = retained_run_id
+        original = json.loads((output_dir / 'receipt.json').read_text(encoding='utf-8'))
+        if original['rule_version'] == EVIDENCE_SCREEN_VERSION:
+            receipt_builder = build_evidence_receipt
+        elif original['rule_version'] == policy.rule_version:
+            receipt_builder = build_discovery_receipt
+        else:
+            raise ValueError('unsupported retained M2 rule version')
     else:
+        if any((output_dir / name).exists() for name in (
+            'receipt.json', 'official-universe.json', 'tencent-market.json',
+            'sina-industry-quotes.json', 'eastmoney-dividends.json', 'retained-financial-points.json')):
+            raise ValueError('fresh M2 collection requires a new input directory; use --reuse-inputs for history')
         generated_at = wall_now
         quote_date = wall_now.astimezone(CHINA).date().isoformat()
         run_id = f"m2-{wall_now.astimezone(CHINA).strftime('%Y%m%dT%H%M%S')}Z"
@@ -284,11 +270,13 @@ def run_once(
             )
 
         financial_points, financial_export = _load_retained_financial_export(
-            root / "runtime" / "server-export-payload.json"
+            root / "runtime" / "server-export-payload.json", evaluation_at=datetime.now(timezone.utc)
         )
         financial_path = _write(output_dir, "retained-financial-points.json", _json_bytes({
             "points": financial_points,
             "retained_generated_at": financial_export.get("generated_at"),
+            "input_adapter_version": "financial-export-v2",
+            "annual_evidence_adoption": financial_export.get('annual_evidence_adoption'),
         }))
         financial_fetched = _financial_fetched_at({
             "points": financial_points,
@@ -313,7 +301,7 @@ def run_once(
         "dividend": dividend_ref,
         "financial": financial_ref,
     }
-    receipt = build_discovery_receipt(
+    receipt = receipt_builder(
         run_id=run_id,
         generated_at=generated_at,
         official_payload=official_payload,
@@ -336,7 +324,7 @@ def run_once(
     policy_path = _write(output_dir, "policy.json", _json_bytes(policy.as_policy()))
 
     workbook_path = output_dir / "m2-opportunity-discovery.xlsx"
-    workbook_info = write_discovery_workbook(
+    workbook_info = None if skip_workbook else write_discovery_workbook(
         receipt,
         policy,
         output=workbook_path,
@@ -350,7 +338,7 @@ def run_once(
         and replay.candidate_signature == receipt.candidate_signature
         and replay.coverage_signature == receipt.coverage_signature
     )
-    replay_build = build_discovery_receipt(
+    replay_build = receipt_builder(
         run_id=run_id,
         generated_at=generated_at,
         official_payload=json.loads((output_dir / "official-universe.json").read_text(encoding="utf-8")),
@@ -373,6 +361,7 @@ def run_once(
         channel: len(result.candidates)
         for channel, result in receipt.channel_results.items()
     }
+    retained_financial_input = json.loads(financial_path.read_text(encoding='utf-8'))
     summary = {
         "run_id": run_id,
         "action": ACTION_NO_ORDER,
@@ -381,6 +370,12 @@ def run_once(
         "quote_date": receipt.quote_date,
         "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
         "replay_of_run_id": replay_of_run_id,
+        "input_mode": "HISTORICAL_REPLAY" if reuse_inputs else "LIVE_COLLECTION",
+        "current_publication_eligible": False,
+        "financial_input": {
+            key: retained_financial_input.get(key)
+            for key in ('input_adapter_version', 'annual_evidence_adoption', 'retained_generated_at')
+        },
         "rule_version": receipt.rule_version,
         "data_health": receipt.data_health.as_policy(),
         "channel_counts": counts,
@@ -417,7 +412,7 @@ def run_once(
                 ("receipt", receipt_path),
                 *(((("lead_report", lead_report_path),) if lead_report_path else ())),
                 ("policy", policy_path),
-                ("workbook", workbook_path),
+                *(((("workbook", workbook_path),) if not skip_workbook else ())),
             )
         },
     }
@@ -433,6 +428,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-per-channel", type=int, default=50)
     parser.add_argument("--skip-dividend", action="store_true")
     parser.add_argument("--reuse-inputs", action="store_true")
+    parser.add_argument("--no-workbook", action="store_true", help="Write evidence JSON only; preserve Excel-frozen scope")
     return parser.parse_args()
 
 
@@ -451,6 +447,7 @@ def main() -> int:
         skip_dividend=args.skip_dividend,
         reuse_inputs=args.reuse_inputs,
         project_leads=True,
+        skip_workbook=args.no_workbook,
     )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0

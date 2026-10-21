@@ -4,6 +4,7 @@ const { renderToStaticMarkup } = require("react-dom/server") as {
   renderToStaticMarkup: (element: React.ReactNode) => string;
 };
 const captured = vi.hoisted(() => ({
+  accountScope: "" as string,
   equity: "9995" as string | null,
   status: "VERIFIED_LATEST_COMPLETED_CLOSE",
   riskProps: {} as Record<string, any>,
@@ -45,6 +46,7 @@ vi.mock("../src/hooks/usePrivateState", () => ({
       trades: [],
     },
     risk: {
+      facts: { account_scope: captured.accountScope },
       status: "BLOCKED_PRIVATE_INPUT",
       blockers: ["security_attributes.missing"],
       engine: {
@@ -54,6 +56,14 @@ vi.mock("../src/hooks/usePrivateState", () => ({
     },
   }),
 }));
+
+it("labels the isolated account before showing portfolio amounts", () => {
+  captured.accountScope = "TEST_ONLY_BROWSER_LOOP";
+  const html = renderToStaticMarkup(<Portfolio />);
+  expect(html).toContain("TEST_ONLY 隔离演练账户");
+  expect(html).toContain("不是你的真实账户");
+  captured.accountScope = "";
+});
 vi.mock("../src/components/DualSleeveRisk", () => ({
   DualSleeveRisk: (props: Record<string, any>) => {
     captured.riskProps = props;
@@ -92,7 +102,15 @@ vi.mock("../src/components/RemoteState", () => ({ RemoteState: () => null }));
 vi.mock("antd", () => {
   const wrapper = ({ children }: { children: React.ReactNode }) => children;
   return {
-    Alert: () => null,
+    Alert: (props: {
+      message?: React.ReactNode;
+      description?: React.ReactNode;
+    }) => (
+      <div>
+        {props.message}
+        {props.description}
+      </div>
+    ),
     Segmented: (props: Record<string, any>) => {
       captured.segmented = props;
       return `策略选择:${props.value};`;
@@ -111,6 +129,7 @@ vi.mock("antd", () => {
 import Portfolio from "../src/pages/Portfolio";
 
 beforeEach(() => {
+  captured.accountScope = "";
   captured.segmented = undefined;
   captured.sizing = undefined;
 });

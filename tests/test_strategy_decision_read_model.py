@@ -4,6 +4,73 @@ from copy import deepcopy
 import pytest
 
 from value_investment_agent.presentation.read_models.strategy_decision import project_strategy_decision
+from value_investment_agent.presentation.read_models.strategy_decision import (
+    project_actionable_evaluation, summarize_actionable_evaluations,
+)
+
+
+def test_unassessable_is_not_market_without_opportunities():
+    result = summarize_actionable_evaluations([{"symbol": "000333"}])
+    assert result["conclusion"] == "INCOMPLETE_EVALUATION"
+    assert result["evaluated_count"] == 0
+    assert result["unassessable_count"] == 1
+    assert result["items"][0]["decision_action"] == "UNASSESSABLE"
+
+
+def test_public_flags_cannot_authorize_actions_or_invent_ownership(hotspot_plan):
+    hotspot_plan.update(signal_state="ACTION_ELIGIBLE", action_intent="HOLD",
+                        formal_eligibility=True, action_eligibility=True,
+                        personal_risk_status="PASS", review_quantity=100)
+    row = project_actionable_evaluation({"symbol": "000333", "strategy": "hotspot",
+                                        "price_action_plan": hotspot_plan})
+    assert row["decision_action"] == "UNASSESSABLE"
+    assert row["eligibility"] is False
+    assert row["review_quantity"] is None
+    assert row["personal_risk_status"] == "NOT_EVALUATED_PUBLIC_VIEW"
+
+
+def test_observed_rejection_is_distinct_from_missing_evidence(hotspot_plan):
+    hotspot_plan.update(signal_state="TRIGGER_REJECTED")
+    result = summarize_actionable_evaluations([{"symbol": "000333", "strategy": "hotspot",
+                                               "price_action_plan": hotspot_plan}])
+    assert result["evaluated_count"] == 1
+    assert result["conclusion"] == "NO_QUALIFIED_NEW_TRADE"
+    assert result["scope"] == "PUBLISHED_COMPANIES_ONLY"
+    assert result["items"][0]["decision_action"] == "NO_TRADE"
+    assert result["items"][0]["decision_layer"] == "STRATEGY_VERDICT"
+    assert result["items"][0]["personal_action_review"]["state"] == "UNASSESSABLE"
+    hotspot_plan["signal_state"] = "STALE"
+    result = summarize_actionable_evaluations([{"symbol": "000333", "price_action_plan": hotspot_plan}])
+    assert result["unassessable_count"] == 1
+    assert result["conclusion"] == "INCOMPLETE_EVALUATION"
+
+
+def test_watch_label_alone_does_not_prove_price_rejection(hotspot_plan):
+    hotspot_plan.update(signal_state="WATCH", entry_condition={"price": "12"})
+    result = project_actionable_evaluation({"symbol": "000333", "strategy": "hotspot",
+                                          "price_action_plan": hotspot_plan})
+    assert result["evaluation_status"] == "NOT_ASSESSABLE"
+
+
+def test_pending_structure_without_period_evidence_stays_unassessable(hotspot_plan):
+    hotspot_plan.update(signal_state="TRIGGER_PENDING", price_behavior={"daily_trend": "UNKNOWN"})
+    result = summarize_actionable_evaluations([{"symbol": "000333", "price_action_plan": hotspot_plan}])
+    assert result["conclusion"] == "INCOMPLETE_EVALUATION"
+
+
+def test_bad_extra_condition_cannot_break_other_company_results(hotspot_plan):
+    hotspot_plan.update(add_condition={"action": "BUY"})
+    result = summarize_actionable_evaluations([
+        {"symbol": "000333", "price_action_plan": hotspot_plan}, {"symbol": "600519"}])
+    assert len(result["items"]) == 2
+    assert result["unassessable_count"] == 2
+
+
+def test_value_price_and_quote_date_are_not_the_decision_date(value_plan):
+    value_plan.update(market_trade_date="2026-10-14", decision_as_of="2026-10-16", reference_close="80", current_quote_verified=True)
+    result = project_actionable_evaluation({"symbol": "000333", "price_action_plan": value_plan})
+    assert result["data_trade_date"] == "2026-10-14"
+    assert result["current_verified_reference_price"] == "80"
 
 
 @pytest.fixture

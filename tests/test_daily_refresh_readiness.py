@@ -1,7 +1,32 @@
 from datetime import datetime, timezone
 import json
+import hashlib
 
 from value_investment_agent.application.product import daily_refresh as module
+
+
+def test_current_scan_summary_is_pinned_and_never_promoted_to_trade_eligibility(tmp_path):
+    path = tmp_path / 'runtime/daily-marketwide/run/manifest.json'
+    path.parent.mkdir(parents=True)
+    value = {'summary': {'action': 'no_order', 'input_mode': 'LIVE_COLLECTION',
+        'rule_version': 'm2-evidence-screen-v3', 'as_of': '2026-10-20',
+        'quote_date_verification': 'UNVERIFIED_PROVIDER_TRADE_DATE',
+        'data_health': {'universe_count': 5575, 'status': 'PARTIAL'},
+        'channel_counts': {'quality': 0, 'value': 50},
+        'legacy_comparison': {'new_candidate_count': 111}, 'secret': 'DO_NOT_EXPOSE'}}
+    raw = json.dumps(value).encode()
+    path.write_bytes(raw)
+    pin = {'manifest_path': path.relative_to(tmp_path).as_posix(),
+           'manifest_sha256': hashlib.sha256(raw).hexdigest()}
+    result = module._screening_summary(tmp_path, pin)
+    assert result['universe_count'] == 5575 and result['lead_count'] == 111
+    assert result['scope'] == 'RESEARCH_LEADS_NOT_ACTIONS'
+    assert result['formal_eligibility'] is False
+    assert 'DO_NOT_EXPOSE' not in repr(result)
+    path.write_bytes(raw + b' ')
+    assert module._screening_summary(tmp_path, pin)['status'] == 'UNVERIFIED'
+    assert module._screening_summary(tmp_path, {'manifest_path': '../manifest.json',
+        'manifest_sha256': pin['manifest_sha256']})['status'] == 'UNVERIFIED'
 
 
 def test_reuse_requires_all_active_cases_not_retired_survivors(tmp_path, monkeypatch):
@@ -137,3 +162,55 @@ def test_quote_reuse_independent_of_missing_price_structure(tmp_path, monkeypatc
         {'items': [], 'blockers': ['CURRENT_PRICE_REGISTRY_UNAVAILABLE']})
     result = module.refresh_readiness(tmp_path, now=datetime.now(timezone.utc), symbols=['600887'])
     assert not result['publication_ready'] and not result['core_integrity_ok']
+
+
+def test_priority_summary_is_bound_and_not_an_investment_rank(tmp_path):
+    import hashlib
+    from value_investment_agent.application.research.value_research_queue import _canonical_hash
+    path = tmp_path / 'runtime/daily-marketwide/test/research-priority-v2.json'
+    path.parent.mkdir(parents=True)
+    queue = {'schema_version': 'value-research-priority-v2', 'action': 'no_order',
+        'admission': 'RESEARCH_QUEUE_ONLY', 'as_of': '2026-10-20',
+        'deep_research_priority': [], 'evidence_enrichment_work_queue': [{'symbol': '600519'}],
+        'selected_deep_research_count': 0, 'selected_enrichment_count': 1}
+    queue['content_sha256'] = _canonical_hash(queue)
+    path.write_text(json.dumps(queue), encoding='utf-8')
+    binding = {'path': path.relative_to(tmp_path).as_posix(),
+               'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
+    result = module._priority_summary(tmp_path, binding)
+    assert result['status'] == 'VERIFIED_RESEARCH_PRIORITY'
+    assert result['enrichment_count'] == 1 and result['formal_eligibility'] is False
+    assert 'symbol' not in json.dumps(result)
+    path.write_text('{}', encoding='utf-8')
+    assert module._priority_summary(tmp_path, binding)['status'] == 'UNVERIFIED'
+    binding['sha256'] = hashlib.sha256(path.read_bytes()).hexdigest()
+    assert module._priority_summary(tmp_path, binding)['status'] == 'UNVERIFIED'
+    binding['path'] = '../../private.json'
+    assert module._priority_summary(tmp_path, binding)['status'] == 'UNVERIFIED'
+
+
+def test_enrichment_summary_cannot_promote_or_misbind_execution(tmp_path):
+    import hashlib
+    folder = tmp_path / 'runtime/run'
+    folder.mkdir(parents=True)
+    path = folder / 'execution.json'
+    queue = {'content_sha256': 'a' * 64, 'evidence_enrichment_work_queue': [
+        {'symbol': '600519', 'company_name': 'TEST_ONLY'}]}
+    body = {'schema_version': 'value-enrichment-execution-v1', 'action': 'no_order',
+        'queue_content_sha256': 'a' * 64, 'formal_eligibility': False, 'new_fact_approvals': 0,
+        'attempted_count': 1, 'items': [{'symbol': '600519', 'state': 'DATA_UNAVAILABLE',
+            'formal_eligibility': False, 'transitions': ['QUALITY_REEVALUATED'],
+            'extracted_candidates': 10, 'matched_candidates': 8}]}
+    def read():
+        path.write_text(json.dumps(body), encoding='utf-8')
+        binding = {'path': path.relative_to(tmp_path).as_posix(),
+                   'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
+        return module._enrichment_execution_summary(tmp_path, folder, binding, queue)
+    result = read()
+    assert result['attempted_count'] == result['reevaluated_count'] == result['data_gap_count'] == 1
+    assert result['formal_eligibility'] is False
+    body['new_fact_approvals'] = 1
+    assert read()['status'] == 'UNVERIFIED'
+    body['new_fact_approvals'] = 0
+    body['queue_content_sha256'] = 'b' * 64
+    assert read()['status'] == 'UNVERIFIED'

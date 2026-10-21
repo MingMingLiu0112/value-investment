@@ -3,7 +3,7 @@ from datetime import timedelta
 
 import pytest
 
-from test_held_continuity_api import client_for, unlock
+from web_api.test_held_continuity_api import client_for, unlock
 from test_web_agent_research import build, sha, state, write, daily_registry
 from value_investment_agent.application.research.agent_review.web_research import REGISTRY_PATH
 from value_investment_agent.infrastructure.agent_runtime.provider import MockLLMProvider, OpenAICompatibleChatProvider

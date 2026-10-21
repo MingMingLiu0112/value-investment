@@ -9,6 +9,17 @@ vi.mock("@umijs/max", () => ({
 import { HoldingsAttention } from "../src/components/HoldingsAttention";
 import type { DecisionItem } from "../src/types/api";
 
+it("labels test holdings on the daily surface as non-personal", () => {
+  const state = {
+    risk: { facts: { account_scope: "TEST_ONLY_BROWSER_LOOP" }, blockers: [] },
+  } as unknown as PrivateStateHandle;
+  const html = renderToStaticMarkup(
+    <HoldingsAttention state={state} decisions={[]} />,
+  );
+  expect(html).toContain("TEST_ONLY 演练持仓");
+  expect(html).toContain("不是你的真实账户");
+});
+
 it("surfaces observed conditional reduction only for verified current held securities", () => {
   const state = {
     portfolio: {

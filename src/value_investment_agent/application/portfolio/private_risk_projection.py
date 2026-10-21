@@ -325,6 +325,25 @@ def _sleeve_policy(replayed):
     return shared, sleeves, policy["cash_reserve_cny"]
 
 
+def sleeve_cash_review(replayed):
+    """Explain ledger-funded sleeve limits without requiring market data."""
+    _, sleeves, _ = _sleeve_policy(replayed)
+    if sleeves is None:
+        return {"action": "no_order", "status": "BLOCKED_PRIVATE_INPUT",
+            "blockers": ["sleeve_policy.private_input_missing"], "sleeves": None,
+            "trade_eligible": False}
+    overdrawn = any(Decimal(row["cash_cny"]) < 0 for row in sleeves.values())
+    return {"action": "no_order", "status": "REVIEW_REQUIRED" if overdrawn else "RISK_REVIEW_CALCULATED",
+        "blockers": ["SLEEVE_CASH_OVERDRAWN"] if overdrawn else [],
+        "sleeves": {name: {"cash_cny": row["cash_cny"],
+            "shortfall_cny": str(max(Decimal(0), -Decimal(row["cash_cny"]))) } for name, row in sleeves.items()},
+        "explanation": ("Recorded fills exceed a sleeve's confirmed cash budget, including fees. "
+            "Pause new purchases and reconcile broker fills and IPS sleeve allocations; "
+            "any budget change requires explicit confirmation." if overdrawn else
+            "Recorded fills remain within confirmed sleeve cash budgets; other risk gates still apply."),
+        "trade_eligible": False}
+
+
 def build_risk_input(
     replayed: ReplayedPortfolio,
     *,
@@ -333,9 +352,12 @@ def build_risk_input(
     repository_root: Path | None = None,
     generated_at: datetime | None = None,
     hotspot_request: dict[str, Any] | None = None,
+    core_request: dict[str, Any] | None = None,
     candidate_symbol: str | None = None,
     _prices=None,
 ) -> dict[str, Any]:
+    if hotspot_request is not None and core_request is not None:
+        raise ValueError("Review one sleeve request at a time")
     now = generated_at or datetime.now().astimezone()
     prices = _verified_prices(repository_root, replayed, now) if _prices is None else _prices
     # Explicit hypothetical prices belong only to the existing SIMULATED
@@ -380,7 +402,7 @@ def build_risk_input(
         "cash_reserve_cny": reserve,
         "allocations": _allocations_payload(replayed, sellable_as_of),
         "security_attributes": _verified_attributes(repository_root, replayed, now,
-            candidate_symbol=hotspot_request["symbol"] if hotspot_request is not None else candidate_symbol),
+            candidate_symbol=(hotspot_request or core_request or {}).get("symbol", candidate_symbol)),
         "hotspot_request": hotspot_request,
     }
 
@@ -460,6 +482,7 @@ def review_private_risk_rehearsal(
     today: date | None = None,
     repository_root: Path | None = None,
     hotspot_request: dict[str, Any] | None = None,
+    core_request: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Run the real engine on real confirmed facts; report the exact gaps."""
     service = PrivatePortfolioService(journal)
@@ -477,7 +500,8 @@ def review_private_risk_rehearsal(
     sellable_as_of = max(replayed.state.last_trade_date, today or datetime.now().astimezone().date())
     prices = _verified_prices(repository_root, replayed, generated_at)
     payload = build_risk_input(replayed, sellable_as_of=sellable_as_of,
-        repository_root=repository_root, generated_at=generated_at, hotspot_request=hotspot_request, _prices=prices)
+        repository_root=repository_root, generated_at=generated_at, hotspot_request=hotspot_request,
+        core_request=core_request, _prices=prices)
     extra = _account_time_blockers(replayed, generated_at)
     if replayed.policy.get("effective_date") and date.fromisoformat(replayed.policy["effective_date"]) > generated_at.astimezone(ZoneInfo("Asia/Shanghai")).date():
         extra.append("POLICY_NOT_EFFECTIVE")
@@ -487,7 +511,8 @@ def review_private_risk_rehearsal(
         from ...domain.portfolio.dual_sleeve_risk import _blocked
         report = _blocked(NAMESPACE_ACTUAL, extra, generated_at)
     else:
-        report = review_dual_sleeve_risk(payload, generated_at=generated_at)
+        report = review_dual_sleeve_risk(payload, generated_at=generated_at,
+            **({"core_request": core_request} if core_request is not None else {}))
     if any(not _formal_price_input(row) for row in prices.values()):
         report["blockers"] = list(dict.fromkeys([*report["blockers"],
             "DISPLAY_ONLY_HELD_MARK_NOT_FORMAL_PRICE_INPUT"]))
@@ -500,11 +525,11 @@ def review_private_risk_rehearsal(
         report["status"] = "BLOCKED_PRIVATE_INPUT"
         report["position_guidance"] = None
         report["trade_eligible"] = False
-        if report.get("hotspot_quantity_review"):
-            report["hotspot_quantity_review"] = {**report["hotspot_quantity_review"],
-                "review_quantity": None, "status": "BLOCKED",
-                "blockers": list(dict.fromkeys([*report["hotspot_quantity_review"].get("blockers", []),
-                    "EXTERNAL_ACCOUNT_RECONCILIATION_MISSING"]))}
+        for key in ("hotspot_quantity_review", "core_quantity_review"):
+            if report.get(key):
+                report[key] = {**report[key], "review_quantity": None, "status": "BLOCKED",
+                    "blockers": list(dict.fromkeys([*report[key].get("blockers", []),
+                        "EXTERNAL_ACCOUNT_RECONCILIATION_MISSING"]))}
     return {
         "action": "no_order",
         "status": report["status"],

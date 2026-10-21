@@ -182,6 +182,88 @@ it("labels frozen freshness as verification at publication time", () => {
   expect(html).not.toContain("行情状态 <strong>最近完成交易日");
 });
 
+it("never calls incomplete evaluation a market with no opportunities", () => {
+  state.daily.data.actionable_evaluation = {
+    conclusion: "INCOMPLETE_EVALUATION",
+    evaluated_count: 1,
+    unassessable_count: 2,
+    operation_eligible_count: 0,
+    items: [
+      {
+        symbol: "000333",
+        strategy: "CORE_VALUE",
+        decision_action: "UNASSESSABLE",
+        decision_reason: "经济假设未批准",
+      },
+    ],
+  };
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain("不能据此判断市场没有机会");
+  expect(html).toContain("无法评价");
+  expect(html).not.toContain("· 不交易");
+  expect(html).toContain("经济假设未批准");
+  expect(html).not.toContain("本次已评价范围内，无符合全部条件的新交易机会。");
+});
+
+it("keeps today's screening leads distinct from published research and actions", () => {
+  state.update.data = {
+    last_run: {
+      status: "SUCCESS",
+      finished_at: "2026-10-20T14:00:00Z",
+      screening: {
+        status: "VERIFIED_RESEARCH_SCAN",
+        as_of: "2026-10-20",
+        universe_count: 5575,
+        lead_count: 111,
+        channel_counts: { quality: 0 },
+        quote_date_verification: "UNVERIFIED_PROVIDER_TRADE_DATE",
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain("本次全市场初筛（尚非交易机会）");
+  expect(html).toContain("5575");
+  expect(html).toContain("111");
+  expect(html).toContain("全市场行情日期仍需独立核验");
+});
+
+it("shows research scheduling separately from successful enrichment and approvals", () => {
+  state.update.data = {
+    last_run: {
+      status: "SUCCESS",
+      finished_at: "2026-10-21T01:00:00Z",
+      research_priority: {
+        status: "VERIFIED_RESEARCH_PRIORITY",
+        as_of: "2026-10-20",
+        deep_research_count: 0,
+        enrichment_count: 111,
+        selected_enrichment_count: 10,
+        execution: {
+          status: "VERIFIED_RESEARCH_EXECUTION",
+          attempted_count: 2,
+          reevaluated_count: 2,
+          data_gap_count: 2,
+          items: [
+            {
+              symbol: "000589",
+              company_name: "贵州轮胎",
+              extracted_candidates: 16,
+              matched_candidates: 15,
+            },
+          ],
+        },
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain("研究推进");
+  expect(html).toContain("111");
+  expect(html).toContain("不代表补证成功、估值获准或交易资格");
+  expect(html).toContain("实际执行补证");
+  expect(html).toContain("贵州轮胎");
+  expect(html).toContain("匹配不代表新增事实准入");
+});
+
 it("unverified holdings decisions cannot become either an exit alert or a no-exit conclusion", () => {
   const connected = {
     portfolio: {

@@ -5,6 +5,22 @@ import type { PortfolioReconciliation } from "../types/api";
  * 未收录的代码一律返回 null，由调用方决定如何原样展示，绝不猜测含义。
  */
 const CODE_TEXT: Record<string, string> = {
+  CURRENT_PLAN_NOT_FORMALLY_ELIGIBLE: "当前证券计划尚未通过适用的正式准入",
+  CURRENT_ENTRY_CONDITION_NOT_OBSERVED: "完整价格入场条件尚未满足",
+  CURRENT_VALUE_QUOTE_NOT_VERIFIED: "价值计划使用的当前价格尚未核验",
+  ACTUAL_RISK_REVIEW_REQUIRED: "真实账户风险未完成有效核验",
+  VERIFIED_TRADING_RULE_REQUIRED: "证券交易单位与交易规则尚未核验",
+  CONFIRMED_IPS_REQUIRED: "尚未确认个人投资政策及风险上限",
+  POSITIVE_ACTUAL_REVIEW_QUANTITY_REQUIRED: "真实资金风险条件下没有可复核数量",
+  TEST_ONLY_PLAN_NOT_FORMAL: "测试计划不能用于真实账户交易判断",
+  CURRENT_PLAN_EXPIRED: "当前计划已到期，不能继续使用原价位",
+  CURRENT_PLAN_ADD_CONDITION_MISSING: "尚无与原买入逻辑一致的加仓条件",
+  CURRENT_ADD_CONDITION_NOT_CONFIRMED:
+    "专门的加仓条件尚未满足，不能用新建仓条件自动加仓",
+  PERSONAL_ENTRY_THESIS_CONFIRMATION_RECORD_UNSUPPORTED:
+    "尚未建立本账户原始买入论点的确认绑定，不能证明加仓与原逻辑一致",
+  CURRENT_PLAN_NOT_BUY_OR_ADD: "当前计划不支持新建仓或加仓",
+  ADD_REQUIRES_SAME_SLEEVE_HOLDING: "该策略尚无实际持仓，不能标记为加仓",
   CASH_ONLY_NO_QUOTE_REQUIRED: "仅现金账户，无需证券行情估值",
   VERIFIED_LATEST_COMPLETED_CLOSE: "按最近已核验收盘价估值",
   no_order: "仅供研究复核，不构成下单",

@@ -21,12 +21,340 @@ def binding():
         "current_reference_close": {"limit_up": False, "limit_down": False}}}
 
 
+def decision_inputs(sleeve, held=False):
+    """Isolated assembly contract only; never real research or account approval."""
+    plan = binding()
+    plan['publication_id'] = 'isolated-verified-contract-fixture'
+    plan['plan'].update(strategy=sleeve, namespace='ACTUAL', research_version='isolated-contract-v1',
+        formal_eligibility=sleeve == 'CORE_VALUE', action_intent='ADD' if held else 'OPEN',
+        signal_state='TRIGGER_OBSERVED', current_quote_verified=True,
+        add_condition={'rule': 'approved add condition', 'triggered': True} if held else None)
+    if sleeve == 'CORE_VALUE':
+        plan['plan'].pop('expires_after_session')
+        plan['valid_until'] = '2026-10-15T23:59:59+08:00'
+    else:
+        plan['plan'].update(risk_review_eligible=True, independent_admission={
+            'namespace': 'ACTUAL', 'review_status': 'VERIFIED', 'risk_review_eligible': True, 'blockers': []})
+    result = {'status': 'RISK_REVIEW_CALCULATED', 'blockers': [],
+        'engine': {'namespace': 'ACTUAL', 'status': 'RISK_REVIEW_CALCULATED', 'blockers': []},
+        'policy': {'confirmation_status': 'HUMAN_CONFIRMED'},
+        'facts': {'account_scope': 'ISOLATED_REAL_CONTRACT', 'reconciliation_status': 'RECONCILED',
+            'reconciliation': {'scope': 'EXTERNAL_ACCOUNT_STATEMENT'}, 'positions': [
+            {'symbol': '300364', 'sleeves': [{'sleeve': sleeve if held else
+                ('CORE_VALUE' if sleeve == 'HOTSPOT_SATELLITE' else 'HOTSPOT_SATELLITE'), 'quantity': '100'}]}]},
+        'sizing_preview': {'review_quantity': 100, 'verified_rules': {'lot_size': 100}, 'blockers': []}}
+    return result, plan
+
+
+@pytest.mark.parametrize('sleeve', ['CORE_VALUE', 'HOTSPOT_SATELLITE'])
+@pytest.mark.parametrize('held,action', [(False, 'BUY'), (True, 'ADD')])
+def test_actionable_assembly_uses_actual_risk_and_same_sleeve_holdings(sleeve, held, action):
+    result, plan = decision_inputs(sleeve, held)
+    decision = preview._actionable_decision(result, binding=plan, symbol='300364',
+        sleeve=sleeve, generated_at=NOW)
+    assert decision['decision_action'] == ('UNASSESSABLE' if held else action)
+    assert decision['review_quantity'] == (None if held else 100)
+    assert decision['action'] == 'no_order'
+    assert decision['status'] == ('UNASSESSABLE' if held else 'CONDITIONAL_MANUAL_REVIEW')
+    assert decision['trade_eligible'] is decision['broker_execution_permission'] is False
+    assert decision['blockers'] == (['PERSONAL_ENTRY_THESIS_CONFIRMATION_RECORD_UNSUPPORTED'] if held else [])
+    if sleeve == 'HOTSPOT_SATELLITE':
+        assert plan['plan']['formal_eligibility'] is False
+        assert plan['plan']['independent_admission']['review_status'] == 'VERIFIED'
+    else:
+        assert 'expires_after_session' not in plan['plan']
+        assert decision['plan_expiry'] == plan['valid_until']
+
+
+@pytest.mark.parametrize('gap', ['formal', 'risk', 'quantity', 'rules', 'policy', 'reconciliation',
+    'expiry', 'test_plan', 'simulated', 'add_without_holding', 'signal'])
+def test_actionable_missing_gate_never_inherits_positive_scenario(gap):
+    result, plan = decision_inputs('HOTSPOT_SATELLITE')
+    result['scenario_preview'] = {'review_quantity': 1000, 'status': 'QUANTITY_REVIEW_ONLY'}
+    if gap == 'formal': plan['plan']['risk_review_eligible'] = False
+    if gap == 'risk': result['blockers'] = ['SLEEVE_CASH_OVERDRAWN']
+    if gap == 'quantity': result['sizing_preview']['review_quantity'] = 0
+    if gap == 'rules': result['sizing_preview']['verified_rules'] = None
+    if gap == 'policy': result['policy'] = {}
+    if gap == 'reconciliation': result['facts']['reconciliation'] = {}
+    if gap == 'expiry': plan['plan']['expires_after_session'] = '2026-10-13'
+    if gap == 'test_plan': plan['publication_id'] = 'TEST_ONLY'
+    if gap == 'simulated': result['engine']['namespace'] = 'SIMULATED'
+    if gap == 'add_without_holding': plan['plan']['action_intent'] = 'ADD'
+    if gap == 'signal': plan['plan']['signal_state'] = 'WATCH'
+    decision = preview._actionable_decision(result, binding=plan, symbol='300364',
+        sleeve='HOTSPOT_SATELLITE', generated_at=NOW)
+    assert decision['decision_action'] == ('NO_TRADE' if gap in {'risk', 'signal'} else 'UNASSESSABLE')
+    assert decision['blockers'] and decision['decision_reason']
+    assert decision['review_quantity'] is None
+
+
+@pytest.mark.parametrize('changed', ['untriggered', 'missing_trigger', 'open_only'])
+def test_existing_holding_never_turns_an_open_plan_into_automatic_add(changed):
+    result, plan = decision_inputs('CORE_VALUE', held=True)
+    if changed == 'untriggered':
+        plan['plan']['add_condition']['triggered'] = False
+    elif changed == 'missing_trigger':
+        plan['plan']['add_condition'].pop('triggered')
+    else:
+        plan['plan']['action_intent'] = 'OPEN'
+    decision = preview._actionable_decision(result, binding=plan, symbol='300364',
+        sleeve='CORE_VALUE', generated_at=NOW)
+    assert decision['decision_action'] == 'UNASSESSABLE'
+    assert 'CURRENT_ADD_CONDITION_NOT_CONFIRMED' in decision['blockers']
+
+
+@pytest.fixture
+def actual_contract_preview(tmp_path, monkeypatch, request):
+    """Isolated injection at verified storage/provider boundaries, real risk engine."""
+    from datetime import date
+    from types import SimpleNamespace
+    from test_private_ips_policy import full_policy
+    from test_portfolio_risk_assessment import _attributes
+    from value_investment_agent.application.portfolio import private_risk_projection as projection
+    from value_investment_agent.application.portfolio.private_portfolio_service import PrivateJournal, PrivatePortfolioService
+    service = PrivatePortfolioService(PrivateJournal(tmp_path / 'contract-journal.jsonl'))
+    service.initialize({'idempotency_key': 'init', 'expected_revision': 0,
+        'account_scope': getattr(request, 'param', 'ISOLATED_REAL_CONTRACT'), 'as_of': '2026-10-14', 'cash_cny': '10000',
+        'holdings': [], 'sleeve_allocations': {}, 'policy': {}, 'confirmed_at': NOW.isoformat(),
+        'confirmation_note': 'Isolated contract fixture only'})
+    policy = full_policy()
+    policy['sleeves']['CORE_VALUE']['cash_cny'] = '7000'
+    _, digest = service.prepare_policy({'idempotency_key': 'ips', 'expected_revision': 1, 'policy': policy})
+    service.confirm_policy({'idempotency_key': 'ips-confirm', 'expected_revision': 2,
+        'prepared_record_sha256': digest, 'confirmed_at': NOW.isoformat(), 'confirmation_note': 'Isolated fixture'})
+    service.reconcile({'idempotency_key': 'external', 'expected_revision': 3, 'reconciled_at': NOW.isoformat(),
+        'confirmation_note': 'Isolated statement', 'account_evidence': {'id': 'fixture-statement', 'kind': 'broker_statement'}})
+    rule = {'lot_size': 100, 'minimum_buy_quantity': 100, 'buy_quantity_increment': 100,
+        'maximum_buy_quantity': 100000}
+    attribute = {**_attributes('300364').as_policy(), 'trading_rules': rule}
+    monkeypatch.setattr(preview, 'load_verified_security_attributes', lambda *a, **kw: [deepcopy(attribute)])
+    monkeypatch.setattr(projection, '_verified_attributes', lambda *a, candidate_symbol=None, **kw:
+        [deepcopy(attribute)] if candidate_symbol == '300364' else [])
+    legacy = {**binding()['plan'], 'schema_version': 'price-action-plan-current-v1', 'action': 'no_order',
+        'action_intent': 'OPEN', 'signal_state': 'TRIGGER_OBSERVED', 'entry_trigger_price': '10',
+        'invalidation_price': '9.9', 'model_or_rule_version': 'contract-v1', 'case_path': 'case.json',
+        'opportunity_quality': {'structure_tier': 'STRUCTURE_QUALIFIED_OBSERVATION'},
+        'blockers': ['VALUE_GATE_NOT_PROVEN']}
+    core = {'symbol': '300364', 'strategy': 'CORE_VALUE', 'action': 'no_order', 'action_intent': 'OPEN',
+        'formal_eligibility': True, 'current_quote_verified': True, 'reference_close': '10',
+        'market_trade_date': '2026-10-14', 'safety_margin_policy': {'source_binding': {'path': 'registered.json', 'sha256': 'b' * 64}},
+        'blockers': []}
+    packet = {'publication_id': 'isolated-registered-contract', 'generated_at': NOW.isoformat(),
+        'research_version': 'contract', 'identity_inputs': {'chain': [], 'current_price_conditions': {'version': 1}},
+        'price_conditions': {'items': [{'symbol': '300364', 'price_action_plan': deepcopy(legacy)}]},
+        'value_price_conditions': {'300364': deepcopy(core)}}
+    monkeypatch.setattr(preview, 'load_current_packet', lambda *a: (deepcopy(packet), None))
+    monkeypatch.setattr(preview, 'load_current_chain', lambda *a: {'bindings': []})
+    monkeypatch.setattr(preview, 'registry_identity', lambda *a: {'version': 1})
+    monkeypatch.setattr(preview, 'load_price_conditions', lambda *a, **kw: {'items': [{'symbol': '300364', 'price_action_plan': deepcopy(legacy)}]})
+    monkeypatch.setattr(preview, 'load_registered_value_action_plans', lambda *a, **kw: {'items': [deepcopy(core)]})
+    monkeypatch.setattr(preview, 'load_value_action_policy', lambda **kw: SimpleNamespace(effective_through=date(2026, 10, 15)))
+    quote = {'display_price': '10', 'quote_date': '2026-10-14', 'latest_completed_session': '2026-10-14',
+        'limit_up': False, 'limit_down': False}
+    monkeypatch.setattr(preview, 'execute_quote_bridge_for_symbol', lambda *a, **kw: {
+        'compatibility': {'verified_quote': {'eligible': True}}, 'quote': deepcopy(quote)})
+    return service, legacy, core, packet, attribute, quote
+
+
+def register_hotspot_contract(root, legacy, *, namespace='ACTUAL'):
+    """Exercise signed registry verification; test trust is scoped by conftest."""
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from authorization_trust_registry_fixture import pin_test_trust_root
+    from value_investment_agent.application.hotspot.independent_admission import POINTER, PURPOSE, canonical_payload
+    from value_investment_agent.domain.hotspot.independent_admission import GATES
+    import hashlib
+    def write(name, value):
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        raw = canonical_payload(value)
+        path.write_bytes(raw)
+        return {'path': name, 'sha256': hashlib.sha256(raw).hexdigest()}
+    case = write('case.json', {'namespace': namespace, 'action': 'no_order'})
+    legacy['case_sha256'] = case['sha256']
+    key = Ed25519PrivateKey.generate()
+    trust = {'schema_version': 'independent-hotspot-trust-root-v1', 'reviewer_id': 'isolated-contract',
+        'public_key': key.public_key().public_bytes_raw().hex(), 'scopes': ['independent_hotspot_strategy_release'],
+        'symbols': ['300364'], 'valid_from': (NOW - timedelta(days=1)).isoformat(),
+        'valid_until': (NOW + timedelta(days=1)).isoformat()}
+    source = {**case, 'namespace': namespace, 'available_at': (NOW - timedelta(hours=1)).isoformat()}
+    gates = [write('gates/' + name + '.json', {'schema_version': 'independent-hotspot-gate-assessment-v1',
+        'action': 'no_order', 'namespace': namespace, 'symbol': '300364', 'rule_version': 'contract-v1',
+        'gate': name, 'status': 'PASS', 'available_at': source['available_at'],
+        'expires_at': (NOW + timedelta(hours=1)).isoformat(), 'source_bindings': [source]}) for name in GATES]
+    release = {'schema_version': 'independent-hotspot-release-v1', 'action': 'no_order', 'symbol': '300364',
+        'namespace': namespace, 'rule_version': 'contract-v1', 'reviewer_id': trust['reviewer_id'],
+        'reviewed_at': NOW.isoformat(), 'expires_at': (NOW + timedelta(hours=1)).isoformat(), 'gates': gates}
+    write(POINTER, {'schema_version': 'current-hotspot-independent-admission-v1', 'action': 'no_order',
+        'items': [{'symbol': '300364', 'release': write('release.json', {'payload': release,
+            'signature': key.sign(PURPOSE + canonical_payload(release)).hex()}), 'trust': write('trust.json', trust)}]})
+    pin_test_trust_root(trust)
+
+
+@pytest.mark.parametrize('sleeve', ['CORE_VALUE', 'HOTSPOT_SATELLITE'])
+@pytest.mark.parametrize('fault', [None, 'execution', 'attribute', 'frozen', 'test_only', 'expired', 'internal', 'source'])
+def test_registered_plan_to_actual_risk_to_actionable_decision(actual_contract_preview, tmp_path, monkeypatch, sleeve, fault):
+    service, legacy, core, packet, attribute, quote = actual_contract_preview
+    register_hotspot_contract(tmp_path, legacy, namespace='TEST_ONLY' if fault == 'test_only' else 'ACTUAL')
+    packet['price_conditions']['items'][0]['price_action_plan'] = deepcopy(legacy)
+    if fault == 'execution':
+        quote.pop('limit_up')
+        legacy['current_reference_close'].pop('limit_up')
+        packet['price_conditions']['items'][0]['price_action_plan'] = deepcopy(legacy)
+    if fault == 'attribute': attribute['liquidity_profile'] = 'UNKNOWN'
+    if fault == 'frozen':
+        packet['value_price_conditions']['300364']['reference_close'] = '11'
+        packet['price_conditions']['items'][0]['price_action_plan']['entry_trigger_price'] = '11'
+    if fault == 'test_only' and sleeve == 'CORE_VALUE': packet['publication_id'] = 'TEST_ONLY'
+    if fault == 'expired' and sleeve == 'CORE_VALUE':
+        from datetime import date
+        from types import SimpleNamespace
+        monkeypatch.setattr(preview, 'load_value_action_policy', lambda **kw: SimpleNamespace(effective_through=date(2026, 10, 13)))
+    if fault == 'internal':
+        service.reconcile({'idempotency_key': 'internal', 'expected_revision': len(service.records()),
+            'reconciled_at': NOW.isoformat(), 'confirmation_note': 'Isolated internal arithmetic'})
+    if fault == 'source':
+        (tmp_path / 'case.json').write_text('{}', encoding='utf-8')
+        quote['display_price'] = '11'
+    before = service.journal.path.read_bytes()
+    assumptions = ASSUMPTIONS if sleeve == 'HOTSPOT_SATELLITE' else {key: ASSUMPTIONS[key] for key in (
+        'lot_size', 'max_trade_notional_cny', 'entry_slippage_cny', 'buy_fee_fraction', 'minimum_buy_fee_cny')}
+    result = preview.preview_private_hotspot_risk(service.journal, repository_root=tmp_path,
+        generated_at=NOW + timedelta(hours=2) if fault == 'expired' else NOW,
+        payload={'symbol': '300364', **({'sleeve': sleeve} if sleeve == 'CORE_VALUE' else {}),
+            'assumptions': assumptions})
+    decision = result['actionable_decision']
+    assert decision['decision_action'] == ('BUY' if fault is None else 'UNASSESSABLE'), decision
+    if fault is None:
+        assert decision['review_quantity'] == 100
+        assert result['engine']['namespace'] == 'ACTUAL'
+        assert result['engine']['blockers'] == []
+        if sleeve == 'HOTSPOT_SATELLITE':
+            plan = result['sizing_preview']['plan_binding']['plan']
+            assert plan['risk_review_eligible'] is True and plan['formal_eligibility'] is False
+            assert plan['legacy_observation_blockers'] == ['VALUE_GATE_NOT_PROVEN']
+        else:
+            assert 'expires_after_session' not in core
+            assert result['engine']['core_quantity_review']['review_quantity'] == 100
+    else:
+        assert decision['blockers'] and decision['review_quantity'] is None
+    assert decision['action'] == 'no_order' and decision['broker_execution_permission'] is False
+    assert service.journal.path.read_bytes() == before
+
+
+@pytest.mark.parametrize('sleeve', ['CORE_VALUE', 'HOTSPOT_SATELLITE'])
+def test_registered_plan_positive_scenario_cannot_supply_actual_execution(actual_contract_preview, tmp_path, sleeve):
+    service, legacy, _, packet, attribute, _ = actual_contract_preview
+    register_hotspot_contract(tmp_path, legacy)
+    packet['price_conditions']['items'][0]['price_action_plan'] = deepcopy(legacy)
+    attribute['liquidity_profile'] = 'UNKNOWN'
+    assumptions = ASSUMPTIONS if sleeve == 'HOTSPOT_SATELLITE' else {key: ASSUMPTIONS[key] for key in (
+        'lot_size', 'max_trade_notional_cny', 'entry_slippage_cny', 'buy_fee_fraction', 'minimum_buy_fee_cny')}
+    scenario = {'acknowledged': True, 'execution': {'liquid': True, 'limit_up': False, 'limit_down': False},
+        'holding_risks': [], 'security_risks': [{'symbol': '300364', 'cyclical': False, 'common_factors': []}]}
+    result = preview.preview_private_hotspot_risk(service.journal, repository_root=tmp_path, generated_at=NOW,
+        payload={'symbol': '300364', **({'sleeve': sleeve} if sleeve == 'CORE_VALUE' else {}),
+            'assumptions': assumptions, 'scenario': scenario})
+    assert result['scenario_preview']['review_quantity'] == 100, result['scenario_preview']['blockers']
+    assert result['scenario_preview']['engine']['namespace'] == 'SIMULATED'
+    assert result['actionable_decision']['decision_action'] == 'UNASSESSABLE'
+    assert 'CANDIDATE_LIQUIDITY_UNKNOWN' in result['actionable_decision']['blockers']
+
+
+@pytest.mark.parametrize('actual_contract_preview', ['TEST_ONLY_BROWSER_LOOP_20261019',
+    'SIMULATED_ACCOUNT', 'test-only-account', 'SYNTHETIC_ACCOUNT'], indirect=True)
+@pytest.mark.parametrize('sleeve', ['CORE_VALUE', 'HOTSPOT_SATELLITE'])
+def test_test_account_scope_never_upgrades_even_with_actual_engine(actual_contract_preview, tmp_path, sleeve):
+    service, legacy, _, packet, _, _ = actual_contract_preview
+    register_hotspot_contract(tmp_path, legacy)
+    packet['price_conditions']['items'][0]['price_action_plan'] = deepcopy(legacy)
+    assumptions = ASSUMPTIONS if sleeve == 'HOTSPOT_SATELLITE' else {key: ASSUMPTIONS[key] for key in (
+        'lot_size', 'max_trade_notional_cny', 'entry_slippage_cny', 'buy_fee_fraction', 'minimum_buy_fee_cny')}
+    result = preview.preview_private_hotspot_risk(service.journal, repository_root=tmp_path, generated_at=NOW,
+        payload={'symbol': '300364', **({'sleeve': sleeve} if sleeve == 'CORE_VALUE' else {}), 'assumptions': assumptions})
+    assert result['engine']['namespace'] == 'ACTUAL'
+    assert result['engine']['blockers'] == []
+    assert result['sizing_preview']['review_quantity'] == 100
+    decision = result['actionable_decision']
+    assert decision['decision_action'] == 'UNASSESSABLE'
+    assert decision['blockers'] == ['TEST_OR_SIMULATED_ACCOUNT_NOT_ELIGIBLE']
+    assert decision['review_quantity'] is None
+    assert decision['eligibility']['manual_review_eligible'] is False
+    assert decision['action'] == 'no_order' and decision['broker_execution_permission'] is False
+
+
+@pytest.mark.parametrize('scope', [None, '', '   ', False])
+def test_missing_account_scope_cannot_claim_actual_eligibility(scope):
+    result, plan = decision_inputs('CORE_VALUE')
+    result['facts']['account_scope'] = scope
+    decision = preview._actionable_decision(result, binding=plan, symbol='300364',
+        sleeve='CORE_VALUE', generated_at=NOW)
+    assert decision['decision_action'] == 'UNASSESSABLE'
+    assert 'ACTUAL_ACCOUNT_SCOPE_REQUIRED' in decision['blockers']
+
+
+@pytest.mark.parametrize('sleeve', ['CORE_VALUE', 'HOTSPOT_SATELLITE'])
+def test_actionable_projects_plan_metadata_and_existing_risk_details(actual_contract_preview, tmp_path, sleeve):
+    service, legacy, core, packet, _, _ = actual_contract_preview
+    metadata = {'company_name': 'Isolated fixture', 'generated_at': '2026-10-14T19:00:00+08:00',
+        'research_as_of': '2026-10-13', 'decision_as_of': '2026-10-14',
+        'entry_trigger_price': '10', 'current_reference_price': '10',
+        'entry_condition': {'rule': 'Registered entry rule'}, 'add_condition': {'rule': 'Registered add rule'},
+        'reduce_condition': {'rule': 'Registered reduce rule'}, 'exit_condition': {'rule': 'Registered exit rule'},
+        'invalidation_condition': {'rule': 'Registered invalidation rule'},
+        'evidence_refs': [{'id': 'verified-source'}], 'qualification': 'SECURITY_AUXILIARY_REVIEW'}
+    legacy.update(deepcopy(metadata))
+    core.update(deepcopy(metadata))
+    register_hotspot_contract(tmp_path, legacy)
+    packet['price_conditions']['items'][0]['price_action_plan'] = deepcopy(legacy)
+    packet['value_price_conditions']['300364'] = deepcopy(core)
+    assumptions = ASSUMPTIONS if sleeve == 'HOTSPOT_SATELLITE' else {key: ASSUMPTIONS[key] for key in (
+        'lot_size', 'max_trade_notional_cny', 'entry_slippage_cny', 'buy_fee_fraction', 'minimum_buy_fee_cny')}
+    result = preview.preview_private_hotspot_risk(service.journal, repository_root=tmp_path, generated_at=NOW,
+        payload={'symbol': '300364', **({'sleeve': sleeve} if sleeve == 'CORE_VALUE' else {}), 'assumptions': assumptions})
+    decision = result['actionable_decision']
+    assert decision['decision_action'] == 'BUY', decision['blockers']
+    source_plan = deepcopy(result['sizing_preview']['plan_binding']['plan'])
+    for field in ('company_name', 'research_as_of', 'decision_as_of', 'entry_condition', 'add_condition',
+            'reduce_condition', 'exit_condition', 'invalidation_condition'):
+        assert decision[field] == source_plan[field]
+    assert decision['generated_at'] == decision['decision_generated_at'] == NOW.isoformat()
+    assert decision['plan_generated_at'] == metadata['generated_at']
+    assert decision['data_trade_date'] == '2026-10-14'
+    assert decision['current_verified_reference_price'] == decision['entry_price_or_range'] == '10'
+    assert decision['plan_expiry'] == ('2026-10-15T23:59:59+08:00' if sleeve == 'CORE_VALUE' else '2026-10-15')
+    details = result['sizing_preview']['sizing_details']
+    assert decision['risk_sizing'] == details
+    assert decision['available_cash_impact'] == details['cash_required_cny'] == '1000'
+    assert decision['expected_fees_and_slippage']['buy_fee_fraction'] == '0'
+    assert decision['personal_risk_status'] == 'RISK_REVIEW_CALCULATED'
+    assert decision['formal_review_status'] == ('SECURITY_AUXILIARY_REVIEW' if sleeve == 'CORE_VALUE' else 'VERIFIED')
+    assert {'id': 'verified-source'} in decision['evidence_refs']
+    assert decision['eligibility'] == {'status': 'CONDITIONAL_MANUAL_REVIEW', 'manual_review_eligible': True,
+        'trade_eligible': False, 'broker_execution_permission': False}
+    if sleeve == 'CORE_VALUE':
+        assert decision['downside_risk_scenarios'] is None
+        assert decision['expected_fees_and_slippage']['sell_fee_fraction'] is None
+    else:
+        assert decision['downside_risk_scenarios'][0]['stressed_loss_cny'] == details['stressed_loss_cny']
+    decision['entry_condition']['rule'] = 'Edited output only'
+    assert result['sizing_preview']['plan_binding']['plan']['entry_condition'] == source_plan['entry_condition']
+
+
 def test_missing_assumptions_and_public_plan_keep_facts_and_null_quantity(service, tmp_path):
     before = service.journal.path.read_bytes()
     result = preview.preview_private_hotspot_risk(service.journal, repository_root=tmp_path,
         generated_at=NOW, payload={"symbol": "300364"})
     assert result["facts"]["cash_cny"] == "8000"
     assert result["sizing_preview"]["review_quantity"] is None
+    assert result['actionable_decision']['decision_action'] == 'UNASSESSABLE'
+    decision = result['actionable_decision']
+    for field in ('company_name', 'plan_generated_at', 'research_as_of', 'decision_as_of', 'data_trade_date',
+            'current_verified_reference_price', 'entry_condition', 'entry_price_or_range', 'add_condition',
+            'reduce_condition', 'exit_condition', 'invalidation_condition', 'plan_expiry', 'risk_sizing',
+            'available_cash_impact', 'expected_fees_and_slippage', 'downside_risk_scenarios', 'evidence_refs', 'formal_review_status'):
+        assert decision[field] is None, field
+    assert decision['eligibility']['manual_review_eligible'] is False
     assert "PUBLIC_SNAPSHOT_UNAVAILABLE" in result["sizing_preview"]["blockers"]
     assert "ASSUMPTION_MISSING:lot_size" in result["sizing_preview"]["blockers"]
     assert service.journal.path.read_bytes() == before

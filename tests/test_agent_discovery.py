@@ -16,6 +16,9 @@ from value_investment_agent.application.research.agent_review.web_research impor
 
 
 PROJECT = Path(__file__).resolve().parents[1]
+# Replay the retained 2026-10-16 cases before their next-session expiry. The
+# production clock remains live; later dates must reject those cases.
+REPLAY_AT = datetime.fromisoformat("2026-10-19T02:00:00+00:00")
 
 
 def copy_registered_public_inputs(root):
@@ -27,7 +30,10 @@ def copy_registered_public_inputs(root):
         assert not any(word in name.lower() for word in ("private", "secret", "credential", "journal"))
         if name in seen:
             return
-        source = PROJECT / name
+        # Freeze the public fixture's metadata independently of daily updates.
+        fixture = {"config/current-price-conditions.json": "agent-discovery-price-registry-v1.json",
+                   "config/current-agent-research.json": "agent-discovery-research-registry-v1.json"}.get(name)
+        source = PROJECT / "tests/fixtures" / fixture if fixture else PROJECT / name
         raw = source.read_bytes()
         if digest is not None:
             assert hashlib.sha256(raw).hexdigest() == digest
@@ -76,12 +82,25 @@ def confirmed_test_only_input(root):
 
 def discover(root, retrospective=None):
     return discover_daily_mock_inputs(root=root, output_directory=Path("runtime/agent-research-discovery"),
-        now=datetime.now(timezone.utc), max_hotspots=1, retrospective=retrospective)
+        now=REPLAY_AT, max_hotspots=1, retrospective=retrospective)
 
 
 def batch(root, found):
     return run_daily_mock_batch(root=root, plan=Path(found["batch_plan"]["path"]),
                                plan_sha256=found["batch_plan"]["sha256"])
+
+
+def test_expired_retained_hotspots_do_not_block_other_workflows(tmp_path):
+    copy_registered_public_inputs(tmp_path)
+    found = discover_daily_mock_inputs(root=tmp_path,
+        output_directory=Path("runtime/agent-research-discovery"),
+        now=datetime.fromisoformat("2026-10-20T02:00:00+00:00"), max_hotspots=1)
+    assert found["status"] == "PARTIAL"
+    assert any(row["workflow"] == "hotspot" and row["status"] == "FAILED_INPUT"
+               for row in found["items"])
+    assert any(row["workflow"] in {"event", "financial"} and row["status"] in {"EXPORTED", "UNCHANGED"}
+               for row in found["items"])
+    assert found["approval_count"] == 0
 
 
 def test_real_public_four_workflows_discover_register_http_and_unchanged(tmp_path, monkeypatch):
@@ -92,6 +111,14 @@ def test_real_public_four_workflows_discover_register_http_and_unchanged(tmp_pat
     import uvicorn
     from value_investment_agent.presentation.web_api.app import create_app
     from value_investment_agent.infrastructure.agent_runtime.provider import MockLLMProvider
+    from value_investment_agent.application.research.agent_review import llm_pilot
+
+    class ReplayClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return REPLAY_AT.astimezone(tz) if tz is not None else REPLAY_AT.replace(tzinfo=None)
+
+    monkeypatch.setattr(llm_pilot, "datetime", ReplayClock)
 
     def forbidden(*args, **kwargs):
         pytest.fail("Discovery and Mock workflows must not perform network provider calls")

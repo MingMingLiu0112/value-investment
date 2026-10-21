@@ -53,7 +53,7 @@ from ..read_models.dual_sleeve_surface import (
 )
 from ..read_models.research_history import build_research_history
 from ..read_models.value_decision_detail import project_value_decision_detail
-from ..read_models.strategy_decision import project_strategy_decision
+from ...application.decision.public_strategy_assessment import project_strategy_decision, summarize_actionable_evaluations
 from .local_auth import (
     BOOTSTRAP_ENV,
     SESSION_HEADER,
@@ -517,7 +517,12 @@ def create_app(
         # Formal admissions are counted from the published rows themselves; no row
         # carries an admitted valuation status yet, so the count stays derived, not fixed.
         formal_count = count_formal_admissions(named)
+        hotspot_items = [current_item(row) for row in current_items(packet)] or [
+            dict(_item(c, as_of, "UNKNOWN"), strategy="hotspot")
+            for c in hotspot.get("items", []) if isinstance(c, dict)
+            and c.get("action") == "no_order" and _ID.fullmatch(str(c.get("symbol", "")))]
         return {"action": "no_order", "status": "RESEARCH_OBSERVATION",
+                "actionable_evaluation": summarize_actionable_evaluations([*value, *hotspot_items]),
                 "as_of": as_of,
                 "market": _pick(market, "status", "reason"),
                 "summary": {"universe_count": len(records),
@@ -527,10 +532,7 @@ def create_app(
                 "dual_sleeve": dual_sleeve,
                 "publication": pinned_publication(packet, current),
                 "sections": {"holdings": [], "value": value,
-                             "hotspot": [current_item(row) for row in current_items(packet)] or [dict(_item(c, as_of, "UNKNOWN"), strategy="hotspot")
-                                         for c in hotspot.get("items", []) if isinstance(c, dict)
-                                         and c.get("action") == "no_order"
-                                         and _ID.fullmatch(str(c.get("symbol", "")))]},
+                             "hotspot": hotspot_items},
                 # The public packet never claims anything about the private ledger;
                 # private connection state is owned by the authorized private routes.
                 "blockers": ["NO_FORMAL_ADMISSION"]}
