@@ -1399,3 +1399,61 @@ modeling remain unsupported. Real cost-adjusted strategy performance is NOT_RUN.
 Root owns latest integration tests, held-decision/private-risk code and API/Web/
 restart acceptance; this sidecar did not inspect or change private data or code.
 Only this V4 S2 subsection and its receipt were updated; action=no_order.
+
+## V5 integration checkpoint (2026-10-21)
+
+Goal DUAL-STRATEGY-END-TO-END-CLOSURE-V5 remains IN_PROGRESS. Source checkpoint
+`b6969333373e8be58bc3050362346ae73adc2bc8` has successful Core Research Gates
+(including Postgres) and Web Workbench CI. These checks do not establish formal
+investment eligibility or final user acceptance. Excel remains FROZEN.
+
+Implemented and verified the authenticated append-only private committed-risk
+confirmation/correction workflow, restart replay, journal-tip/IPS/lot binding and
+preservation of independent cash/cost facts when a risk source is rejected.
+Explicit opt-in SIMULATED display-close marks retain their source/date and never
+become ACTUAL formal market inputs. Official security identity and trading units
+can now consume the separately hash-verified current SAFE_REFRESH universe;
+stale economic research is neither rewritten nor promoted. Stock detail labels
+the existing TEST_ONLY private holding context.
+
+Actual browser evidence at desktop and 390px mobile includes positive scenario
+sizing of 700 shares for 600693, stressed loss CNY395 against a CNY400 budget,
+and a manually recorded simulated BUY700 at CNY9.15 with CNY5 fees. Reloaded
+TEST_ONLY account facts are cash CNY193590, cost CNY6410 and 700 shares, with
+next sell session 2026-10-22. The scenario is not a formal quantity or approved
+strategy. A separate overconcentrated fixture correctly rejects concentration
+and hotspot-budget breaches without changing IPS. No real private confirmation,
+trade, broker order, production scheduler or signature was submitted.
+
+Actual public results remain 5576 scanned / 111 leads / zero full quality PASS;
+latest published decisions are 6 NO_TRADE / 24 UNASSESSABLE / zero formal
+operation-eligible. A source-bound 600519 official fact was durably admitted and
+quality coverage changed 55.56% to 66.67%; complete debt scope and a new admitted
+economic valuation remain unproven. Current quote date is 2026-10-21; economic
+publication dates remain separately visible. Observation-only 600693 reference /
+entry / invalidation is CNY8.970 / 9.140 / 8.660; 60m volume ratio 0.75 remains
+below the existing 1.2 requirement. WATCH has not been relabeled BUY.
+
+Local receipts retain 192 risk tests, 270 metadata/API tests and 312 Web tests,
+with Web typecheck/format/build passing. Counts overlap and must not be summed.
+Latest browser/public/CI evidence binds the source checkpoint above; older
+observations retain their original source SHA. Shared unrelated dirty/untracked
+files are preserved, so clean whole-runtime release identity is not asserted.
+
+Exact continuation: independently verify the approved TEST_ONLY decision to
+formal personal-quantity browser path; complete lawful debt/forecast/economic
+research updates and their actual approval handoff; retain strict hotspot
+PIT/OOS/cost/Shadow admission; obtain real user IPS/portfolio/reconciliation only
+from the user. Real approval and natural-time evidence must not be substituted
+by synthetic fixtures. Final actual-user acceptance remains NOT_PASSED.
+Evidence: `artifacts/current/dual-strategy-v5/final-acceptance.json` and
+`web-e2e.json`. The existing local Web entry remains http://127.0.0.1:8001/daily.
+
+Independent portfolio review resolved the formal-quantity question: the existing
+formal preview deliberately rejects TEST_ONLY/SIMULATED accounts and plans.
+`TEST_OR_SIMULATED_ACCOUNT_NOT_ELIGIBLE` and `TEST_ONLY_PLAN_NOT_FORMAL` are
+required negative gates, not an adapter bug. Existing signed isolated research
+tests prove SIMULATED sizing and ledger closure; no test should manufacture a
+formal ACTUAL quantity. A separately isolated signed-research browser replay is
+still unperformed; it would remain TEST_ONLY rather than satisfy real formal
+admission. Do not weaken the account namespace to make this checkpoint pass.

@@ -1,0 +1,9 @@
+{
+  "tests": 312,
+  "passed": 312,
+  "failures": 0,
+  "receipt": {
+    "path": ".tmp/v5-web-final-results.json",
+    "sha256": "27e7d4fe00471d96cbd96f3f6fc345cb2eba55459f6e13067ae5ea7e8d854fd8"
+  }
+}
