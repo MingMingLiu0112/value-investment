@@ -529,19 +529,24 @@ export default function DecisionHistory() {
             <List
               size="small"
               bordered
-              dataSource={[...data.published_decision_history.history].reverse()}
+              dataSource={[
+                ...data.published_decision_history.history,
+              ].reverse()}
               renderItem={(row) => (
                 <List.Item>
                   <Space direction="vertical" size={2}>
                     <Typography.Text strong>
-                      {row.published_at || "发布时间未提供"} · {row.publication_id}
+                      {row.published_at || "发布时间未提供"} ·{" "}
+                      {row.publication_id}
                     </Typography.Text>
                     <Typography.Text type="secondary">
-                      决策截止 {row.decision_cutoff || "未提供"}；研究版本 {row.research_version || "未提供"}；
-                      数据包 SHA-256 {shortDigest(row.packet_sha256) || "未提供"}
+                      决策截止 {row.decision_cutoff || "未提供"}；研究版本{" "}
+                      {row.research_version || "未提供"}； 数据包 SHA-256{" "}
+                      {shortDigest(row.packet_sha256) || "未提供"}
                     </Typography.Text>
                     <Typography.Text type="secondary">
-                      仅证明该公开发布版本可复核，动作固定为 no_order，不代表历史买卖或策略收益。
+                      仅证明该公开发布版本可复核，动作固定为
+                      no_order，不代表历史买卖或策略收益。
                     </Typography.Text>
                   </Space>
                 </List.Item>

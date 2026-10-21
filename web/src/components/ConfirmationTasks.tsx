@@ -123,14 +123,17 @@ function HotspotReviewTask({ item }: { item: DecisionItem }) {
         {item.name ?? item.symbol}：热点条件复核（{judgmentState(item)}）
       </span>
       <p>
-        核对日线趋势、60 分钟入场观察价、15 分钟辅助条件和结构失效价；条件未满足时继续观察，不把 WATCH 当作买入。
+        核对日线趋势、60 分钟入场观察价、15
+        分钟辅助条件和结构失效价；条件未满足时继续观察，不把 WATCH 当作买入。
       </p>
       <Link to={`/decisions/${encodeURIComponent(item.id)}`}>
         查看热点操作条件
       </Link>{" "}
       <Link to={fillLink(item)}>进入风险试算与成交登记</Link>
       <p>
-        当前参考价 {plan.current_reference_price ?? "未核验"}；入场观察价 {plan.entry_trigger_price ?? "未形成"}；失效价 {plan.invalidation_price ?? "未形成"}。
+        当前参考价 {plan.current_reference_price ?? "未核验"}；入场观察价{" "}
+        {plan.entry_trigger_price ?? "未形成"}；失效价{" "}
+        {plan.invalidation_price ?? "未形成"}。
       </p>
     </li>
   );
