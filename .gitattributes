@@ -111,3 +111,6 @@ config/current-quote-bridge.json -text whitespace=cr-at-eol
 web/**/*.ts text eol=lf
 web/**/*.tsx text eol=lf
 web/**/*.css text eol=lf
+web/scripts/*.mjs text eol=lf
+web/package.json text eol=lf
+web/tsconfig.json text eol=lf
