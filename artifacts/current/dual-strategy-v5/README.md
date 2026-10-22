@@ -2,12 +2,14 @@
 
 ## Latest closure continuation (2026-10-22)
 
-The delivery branch currently points to `d14575cc1755c132478005485e08daf59fac4c6f`.
+The delivery branch currently points to `01ac78bd1a041b6f14bd599f54f071ccdc54245a`.
 The latest Web Workbench and Core Research Gates runs for that commit completed
-successfully. A focused Windows regression run covering daily publication
+successfully. The focused Windows regression run covering daily publication
 identity, public-evidence restore, hotspot refresh and independent gates,
 TEST_ONLY private full-loop behavior, and held-decision gaps passed 65 tests.
-Web typecheck and production build also passed, and the worktree remained clean.
+The current rerun also passed the same focused suite with 52 tests, the full Web
+suite with 376 tests across 46 files, TypeScript typecheck, and the production
+build. The worktree and delivery branch remain clean and aligned.
 
 This evidence confirms the bounded engineering workflow only. The current local
 Web daily view fails closed when no verifiable current publication is present;
@@ -20,6 +22,27 @@ or investment permission.
 The goal remains IN_PROGRESS. All checkpoints retain action=no_order. Public
 observations, isolated TEST_ONLY workflow evidence and real investment admission
 are separate claims.
+
+## Remaining gates to initial assisted use
+
+The safe engineering work in this bounded continuation is complete. The
+remaining gates are external or require real user evidence and therefore are
+not replaced by TEST_ONLY results:
+
+| Gate | Current status | Required evidence | Can proceed in parallel |
+| --- | --- | --- | --- |
+| M4 private inputs | Pending | User-confirmed IPS, cash, holdings and reconciliation | Public research and isolated regression |
+| M6 production authorization | Not granted | Explicit authorization for the intended production runtime | Documentation and fail-closed checks |
+| M3 contemporaneous PIT | Not proven | Naturally formed contemporaneous source evidence | Engineering and TEST_ONLY workflows |
+| Research qualification | Not ready | New verified evidence and approved recalculation for each security | Hotspot and private-input work |
+| M6 real sessions | 0 counted | At least 20 consecutive real exchange sessions with retained observations | All non-market engineering |
+| M7 user acceptance | Not started | Final user acceptance of the real Web workflow and evidence | All external gates above |
+
+The 2026-10-22 isolated browser service was reachable and displayed the
+fail-closed 600887 research view. Its portfolio page remained locked because
+no launcher bootstrap secret was presented; this is correct behavior and is not
+counted as private-account acceptance. The positive TEST_ONLY full-loop proof is
+the automated Web API suite, not the locked browser page.
 
 Income source checkpoint: ac48ff6bda3d1a1fcd35c29631f7b28a0d711f51.
 Later queue-reuse and browser observations below are separate continuation
