@@ -36,7 +36,8 @@ SCHEMA_VERSION = "daily-public-packet-v1"
 # v20 retains source-verified retired observations with their original expiry.
 # v22 keeps per-case inspection clocks out of immutable decision content.
 # v23 publishes the current source-replayed pending plan with its own identity.
-ENGINE_VERSION = "daily-public-packet-engine-v23"
+# v24 keeps publication-context restrictions separate from replayed model fields.
+ENGINE_VERSION = "daily-public-packet-engine-v24"
 # v4 folds every content-deciding input into the identity: the company
 # research registry and its evidence files, the archived quote bundles, the
 # bound decision-explanation files and the business clock (natural date +
@@ -954,8 +955,12 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
                     if all(plan.get(key) is not None for key in ('bear', 'base', 'bull')) else None),
                 action_eligibility=plan["formal_eligibility"],
                 support=plan["supporting_facts"], counter=plan["counter_evidence"],
-                blockers=list(dict.fromkeys([*value_blockers, *plan["blockers"]])))
-        if "RESEARCH_ASSESSMENT_NOT_BOUND" in entry["blockers"]:
+                blockers=plan["blockers"],
+                publication_blockers=list(dict.fromkeys([*value_blockers, *plan["blockers"]])))
+        pending_source_plan = (symbol in registered_plans
+            and registered_plans[symbol].get('verification_scope') == 'SOURCE_BOUND_PENDING_ARITHMETIC_NOT_APPROVAL'
+            and registered_plans[symbol].get('formal_eligibility') is False)
+        if "RESEARCH_ASSESSMENT_NOT_BOUND" in entry["blockers"] and not pending_source_plan:
             value_conditions[symbol].update(
                 action_eligibility=False,
                 formal_eligibility=False,

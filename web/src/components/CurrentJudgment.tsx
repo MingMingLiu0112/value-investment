@@ -454,7 +454,14 @@ function JudgmentEvidence({ decision }: { decision: DecisionItem }) {
                 )}
                 <div>
                   缺失确认：
-                  {confirmationText(plan?.blockers ?? decision.blockers)}
+                  {confirmationText(
+                    plan
+                      ? [
+                          ...(plan.blockers ?? []),
+                          ...(plan.publication_blockers ?? []),
+                        ]
+                      : decision.blockers,
+                  )}
                 </div>
                 {plan?.validation && (
                   <div aria-label="本计划的策略验证证据">

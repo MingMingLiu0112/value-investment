@@ -263,7 +263,7 @@ def test_partial_registry_without_bound_assessment_exposes_research_gaps_and_eng
         assert work["actor"] == "ENGINEERING"
         assert "不代表不存在历史研究" in work["label"]
         fallback = packet["value_price_conditions"][symbol]
-        assert set(entry["blockers"]) <= set(fallback["blockers"])
+        assert set(entry["blockers"]) <= set([*fallback["blockers"], *fallback["publication_blockers"]])
         assert fallback["required_confirmations"] == fallback["blockers"]
         assert work["label"] in fallback["next_observation"]
         assert "不是仅缺行情" in fallback["explanation"]

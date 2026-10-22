@@ -38,6 +38,7 @@ export interface DecisionItem {
 }
 
 export interface CurrentPricePlan {
+  publication_blockers?: string[];
   validation?: {
     source_integrity: string;
     applicability: string;

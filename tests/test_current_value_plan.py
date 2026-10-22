@@ -26,6 +26,28 @@ def test_pending_only_plan_survives_read_time_replay(registered):
     assert actual['formal_eligibility'] is actual['price_comparison_eligible'] is False
 
 
+def test_published_pending_plan_survives_publication_context_and_read_replay(registered, monkeypatch):
+    import json
+    from test_daily_public_packet_identity import build_verified_tree, _write_registry
+    from value_investment_agent.application.product import daily_public_packet as publisher
+    root, symbol, _, _ = registered
+    build_verified_tree(root)
+    _write_registry(root, None)
+    registry_path = root / 'config/current-company-research-registry.json'
+    registry = json.loads(registry_path.read_bytes())
+    registry['companies'] = {symbol: next(iter(registry['companies'].values()))}
+    registry_path.write_text(json.dumps(registry), encoding='utf-8')
+    current = current_value_plan.load_current_value_action_plans(root, now=NOW, symbols=[symbol])
+    monkeypatch.setattr(publisher, 'load_current_value_action_plans', lambda *a, **k: deepcopy(current))
+    packet = publisher.build_daily_public_packet(root, generated_at=NOW)
+    frozen = packet['value_price_conditions'][symbol]
+    assert frozen['publication_blockers']
+    assert frozen['base'] == current['items'][0]['base']
+    actual = revalidate_current_value_plan(root, frozen, now=NOW)
+    assert actual['base'] == frozen['base']
+    assert actual['formal_eligibility'] is False
+
+
 def test_read_time_replay_does_not_mix_two_selected_analysis_versions(registered, monkeypatch):
     root, _, _, _ = registered
     plan = current_value_plan.load_current_value_action_plans(root, now=NOW)['items'][0]

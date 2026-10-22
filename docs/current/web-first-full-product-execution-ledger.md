@@ -2218,3 +2218,10 @@ The e2604a21 source checkpoint passed the exact full offline Core selection:
 311 related identity, value-plan, Web API, launcher and architecture tests with
 4 optional skips. Real scan-to-read-model verification passed for 111 leads and
 50,063 provider observations; the observation receipt is local runtime evidence.
+
+The publish-then-read check additionally exposed presentation blockers being
+mistaken for changed model inputs. Engine v24 retains these as publication
+context while preserving the exact unadmitted source plan for replay. Current
+research ranges remain readable without granting formal eligibility. A regression
+uses a real-format pending candidate, complete publication tree and read-side
+replay; the actual two-company check covers the same full route.
