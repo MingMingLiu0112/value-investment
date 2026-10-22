@@ -33,6 +33,7 @@ jobs:
           tests/test_research_gate.py
           tests/test_strategy_readiness.py
           tests/test_first_use_value_analysis.py
+          tests/test_public_financial_snapshot.py
           tests/test_hotspot_current_case_review.py
           tests/test_hotspot_observation_plan.py
           tests/test_hotspot_pool_web_projection.py

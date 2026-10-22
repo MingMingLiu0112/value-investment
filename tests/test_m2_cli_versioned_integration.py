@@ -12,7 +12,7 @@ from test_m2_opportunity_discovery import (
 )
 
 
-@pytest.mark.parametrize('financial_mode', ['available', 'missing', 'empty', 'undated_points'])
+@pytest.mark.parametrize('financial_mode', ['available', 'missing', 'empty', 'undated_points', 'public'])
 def test_registered_fresh_cli_adopts_annual_and_replays_its_own_version(tmp_path, monkeypatch, capsys, financial_mode):
     root = tmp_path
     runtime = root / 'runtime'
@@ -26,7 +26,7 @@ def test_registered_fresh_cli_adopts_annual_and_replays_its_own_version(tmp_path
     elif financial_mode == 'undated_points':
         export = {'points': [{k: v for k, v in p.items() if k not in {'fetched_at', 'created_at'}}
                              for p in _financial_points()]}
-    if financial_mode != 'missing':
+    if financial_mode not in {'missing', 'public'}:
         (runtime / 'server-export-payload.json').write_text(json.dumps(export), encoding='utf-8')
     calls = []
 
@@ -50,6 +50,12 @@ def test_registered_fresh_cli_adopts_annual_and_replays_its_own_version(tmp_path
     monkeypatch.setattr(RUN_M2, 'write_discovery_workbook', lambda *a, **k: pytest.fail('Excel-frozen'))
     monkeypatch.setattr(sys, 'argv', ['run_m2_opportunity_discovery.py', '--no-wps',
                                     '--no-workbook', '--output-dir', str(output)])
+    if financial_mode == 'public':
+        from test_public_financial_snapshot import collect, row
+        from value_investment_agent.application.discovery import public_financial_input as service
+        binding, _ = collect(root, monkeypatch, rows=[row('600001')])
+        monkeypatch.setattr(service, 'collect_public_annual_summary', lambda **_: binding)
+        sys.argv.append('--collect-public-financials')
     if financial_mode == 'undated_points':
         with pytest.raises(RuntimeError, match='no generated_at or point timestamp'):
             RUN_M2.main()
@@ -66,6 +72,12 @@ def test_registered_fresh_cli_adopts_annual_and_replays_its_own_version(tmp_path
         assert summary['financial_input']['annual_evidence_adoption']['added_rows'] == 9
         assert len(financial['points']) == 18
         assert financial['points'][-9:] == annual
+    elif financial_mode == 'public':
+        assert len(financial['points']) == 4
+        assert summary['financial_input']['status'] == 'PROVIDER_OBSERVATIONS_ONLY'
+        assert summary['data_health']['financial_evidence_count'] == 1
+        assert summary['channel_counts']['quality'] == 0
+        assert summary['financial_input']['public_financial_input']['accepted_official_fact_count'] == 0
     else:
         assert financial['points'] == [] and financial['retained_generated_at'] is None
         assert summary['financial_input']['status'] == 'NOT_AVAILABLE'
@@ -77,6 +89,11 @@ def test_registered_fresh_cli_adopts_annual_and_replays_its_own_version(tmp_path
         assert summary['quote_date_verification'] == 'UNVERIFIED_PROVIDER_TRADE_DATE'
     assert not (output / 'm2-opportunity-discovery.xlsx').exists()
     assert not (root / 'config/current-daily-public-snapshot.json').exists()
+    original_receipt = (output / 'receipt.json').read_bytes()
+    with pytest.raises(ValueError, match='input-only directory'):
+        RUN_M2.run_once(root=root, output_dir=output, wps_dir=None, max_per_channel=50,
+            skip_dividend=False, reuse_inputs=True, skip_workbook=True, project_leads=True)
+    assert (output / 'receipt.json').read_bytes() == original_receipt
 
     with pytest.raises(ValueError, match='new input directory'):
         RUN_M2.run_once(root=root, output_dir=output, wps_dir=None, max_per_channel=50,
@@ -91,6 +108,15 @@ def test_registered_fresh_cli_adopts_annual_and_replays_its_own_version(tmp_path
     assert all(replay['replay'].values())
     assert replay['financial_input'] == summary['financial_input']
     assert calls == ['official']
+    if financial_mode == 'public':
+        with pytest.raises(ValueError, match='historical replay'):
+            RUN_M2.run_once(root=root, output_dir=output, wps_dir=None, max_per_channel=50,
+                skip_dividend=False, reuse_inputs=True, skip_workbook=True, collect_public_financials=True)
+        original = root / json.loads((root / binding['path']).read_bytes())['pages'][0]['path']
+        original.write_text('{}')
+        with pytest.raises(ValueError, match='original hash'):
+            RUN_M2.run_once(root=root, output_dir=output, wps_dir=None, max_per_channel=50,
+                skip_dividend=False, reuse_inputs=True, skip_workbook=True)
 
 
 def test_existing_publication_cli_blocks_historical_m2_publication(monkeypatch):
@@ -117,6 +143,7 @@ def test_daily_safe_refresh_calls_registered_m2_without_replay_or_publication():
     call = text[start:end]
     assert "'scripts/run_m2_opportunity_discovery.py'" in call
     assert "'--no-workbook'" in call
+    assert "'--collect-public-financials'" in call
     assert '--reuse-inputs' not in call
     assert '--auto-marketwide' not in call
     assert 'receipt.marketwide_screen = $marketwideScreen' in text

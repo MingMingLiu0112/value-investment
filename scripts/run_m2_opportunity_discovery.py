@@ -40,9 +40,11 @@ from value_investment_agent.infrastructure.screening.evidence_screen_v3 import (
     build_discovery_receipt as build_evidence_receipt,
 )
 from value_investment_agent.infrastructure.screening.financial_export_v2 import (
-    load_retained_financial_export as _load_retained_financial_export,
     financial_fetched_at as _financial_fetched_at,
     retained_run_clock as _retained_run_clock,
+)
+from value_investment_agent.application.discovery.public_financial_input import (
+    build_financial_input, verify_public_supplement,
 )
 
 
@@ -132,11 +134,16 @@ def run_once(
     reuse_inputs: bool,
     project_leads: bool = False,
     skip_workbook: bool = False,
+    collect_public_financials: bool = False,
 ) -> dict:
+    if reuse_inputs and collect_public_financials:
+        raise ValueError('historical replay cannot collect current financial observations')
     if wps_dir is not None:
         raise ValueError("M2 may not create a second WPS workbook; use the runtime preview")
     if reuse_inputs and (output_dir / "m2-opportunity-discovery.xlsx").exists():
         raise ValueError("reuse requires an input-only directory; existing workbook must remain immutable")
+    if reuse_inputs and project_leads and (output_dir / 'value-discovery-report.json').exists():
+        raise ValueError('reuse requires an input-only directory; existing research report must remain immutable')
     wall_now = datetime.now(timezone.utc)
     output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -263,27 +270,21 @@ def run_once(
                 fetched_at=generated_at,
             )
 
-        financial_points, financial_export = _load_retained_financial_export(
-            root / "runtime" / "server-export-payload.json", evaluation_at=datetime.now(timezone.utc)
-        )
-        financial_payload = {
-            "points": financial_points,
-            "retained_generated_at": financial_export.get("generated_at"),
-            "input_adapter_version": "financial-export-v2",
-            "annual_evidence_adoption": financial_export.get('annual_evidence_adoption'),
-            "status": "RETAINED_POINTS_NOT_NEW_APPROVAL" if financial_points else "NOT_AVAILABLE",
-            "gap_reason": None if financial_points else "MISSING_OR_EMPTY_RETAINED_FINANCIAL_EXPORT",
-        }
+        financial_payload = build_financial_input(root=root, output_dir=output_dir,
+                                                 collect_public=collect_public_financials)
+        financial_points = financial_payload['points']
         financial_path = _write(output_dir, "retained-financial-points.json", _json_bytes(financial_payload))
 
+    verify_public_supplement(root=root, payload=financial_payload,
+                             evaluation_at=generated_at if reuse_inputs else datetime.now(timezone.utc))
     missing_financial = financial_payload.get("status") == "NOT_AVAILABLE"
     if missing_financial and financial_points:
         raise ValueError("NOT_AVAILABLE financial input cannot contain financial facts")
     # Absence is a gap, not evidence fetched at the collection clock.
     financial_ref = None if missing_financial else _reference(
         "financial", financial_path, root=root,
-        source_name="Retained point-in-time financial evidence export",
-        source_url="internal://runtime/server-export-payload",
+        source_name="Retained financial evidence and E1 public observations" if financial_payload.get('public_financial_input') else "Retained point-in-time financial evidence export",
+        source_url="internal://m2/retained-financial-points" if financial_payload.get('public_financial_input') else "internal://runtime/server-export-payload",
         fetched_at=_financial_fetched_at(financial_payload))
 
     if not reuse_inputs:
@@ -370,7 +371,7 @@ def run_once(
         "current_publication_eligible": False,
         "financial_input": {
             key: retained_financial_input.get(key)
-            for key in ('status', 'gap_reason', 'input_adapter_version', 'annual_evidence_adoption', 'retained_generated_at')
+            for key in ('status', 'gap_reason', 'input_adapter_version', 'annual_evidence_adoption', 'retained_generated_at', 'public_financial_input')
         },
         "rule_version": receipt.rule_version,
         "data_health": receipt.data_health.as_policy(),
@@ -425,6 +426,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--skip-dividend", action="store_true")
     parser.add_argument("--reuse-inputs", action="store_true")
     parser.add_argument("--no-workbook", action="store_true", help="Write evidence JSON only; preserve Excel-frozen scope")
+    parser.add_argument('--collect-public-financials', action='store_true', help='Collect public annual E1 observations; never financial admission')
     return parser.parse_args()
 
 
@@ -444,6 +446,7 @@ def main() -> int:
         reuse_inputs=args.reuse_inputs,
         project_leads=True,
         skip_workbook=args.no_workbook,
+        collect_public_financials=args.collect_public_financials,
     )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0

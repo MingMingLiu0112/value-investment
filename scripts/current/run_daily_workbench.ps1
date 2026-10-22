@@ -307,7 +307,7 @@ $valueResearchPriority = $null
 if ($Mode -eq 'SAFE_REFRESH') {
     $marketwideDirectory = 'runtime/daily-marketwide/' + [DateTimeOffset]::UtcNow.ToString('yyyyMMddTHHmmssfffffffZ')
     Write-Host '[SAFE_REFRESH] M2 全市场年度财务证据重筛（研究线索，不授予正式资格）...'
-    $marketwide = Invoke-PythonJson @('scripts/run_m2_opportunity_discovery.py', '--no-wps', '--no-workbook', '--output-dir', $marketwideDirectory)
+    $marketwide = Invoke-PythonJson @('scripts/run_m2_opportunity_discovery.py', '--no-wps', '--no-workbook', '--collect-public-financials', '--output-dir', $marketwideDirectory)
     $marketwideScreen = @{
         exit_code = $marketwide.ExitCode; output_dir = $marketwideDirectory
         manifest_path = $marketwideDirectory + '/manifest.json'

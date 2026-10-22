@@ -2125,3 +2125,48 @@ Canonical Excel, private journal and the PTA server are untouched. Public GitHub
 push and fresh remote CI remain pending explicit public-upload authorization;
 local tests are not reported as GitHub CI. Real assisted trading NOT_REACHED;
 action=no_order.
+
+## 2026-10-22 Public Financial Acquisition Closure
+
+The user requested reuse of the previously supplied GitHub data projects rather
+than treating a missing local export as universal source unavailability. Work is
+isolated on `codex/public-financial-data-20261022`, inheriting `beeb57c8`.
+
+The existing M2 CLI now has `--collect-public-financials`; SAFE_REFRESH passes it.
+The new infrastructure adapter retains a bounded, serial, complete annual-summary
+snapshot, verifies identity/pagination/bytes and normalizes named fields with
+Decimal. Application orchestration preserves all existing companies' retained
+facts and supplements uncovered companies with explicitly unverified E1 values.
+Provider notice dates never become historical PIT eligibility. Offline replay
+checks the manifest, every original response and the exact resulting observations.
+Failures remain local to financial coverage; no values, approvals or debt scopes
+are fabricated. An input-only replay preflight also prevents overwriting the
+receipt before discovering an existing immutable research-report output.
+
+Actual complete collection and separate-directory replay: 5,580 annual provider
+rows, 50,063 observations, 157 missing fields; 5,575 matched financial-observation
+companies in the official 5,577-security universe. Quality admissions remain zero;
+the 111 deduplicated research leads are not buy signals. Provider quote date is
+still unverified; no financial/E3, economic, PIT, strategy or personal admission
+is granted. Original collection files were unchanged by replay.
+
+Evidence in this worktree:
+`runtime/financial-pipeline-validation/20261022T131335358486Z/collection/manifest.json`,
+SHA-256 `8fbfab0e7b8715e5d8cfd0abb2cd7db1fb6bce894789434a6dbb8dba79ff7172`;
+separate replay in the sibling `replay/` directory. Compact local evidence is
+`.tmp/financial-pipeline-evidence.json`. The earlier diagnostic
+`runtime/marketwide-financial-first-use-20261022` encountered the existing CLI
+overwrite failure during replay and is NOT the acceptance artifact.
+
+Focused final regression: 204 passed, 7 skipped (optional environments), including
+financial quality, M2 integration/replay, daily failure isolation and all frozen
+path/architecture checks; `.tmp/public-financial-final.xml`. A delegated read-only
+review found no reportable source/PIT/admission/pagination defect. This is not a
+fresh full-Core or GitHub CI result. The new offline tests are registered in Core
+CI; public push remains unauthorized. No remote upload or paid API was used.
+
+This collection release is not yet promoted to the live 8001 Web checkout. The
+existing user-facing release, Canonical Excel, private inputs and PTA environment
+remain unchanged. Current API/source alternatives and their limitations are in
+`docs/data-source-and-financial-coverage-matrix.md`; no new roadmap was created.
+Real assisted trading NOT_REACHED; action=no_order.
