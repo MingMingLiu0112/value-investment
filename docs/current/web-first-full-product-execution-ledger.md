@@ -2206,3 +2206,15 @@ private ledger, Canonical Excel, server or broker changed. Public GitHub upload
 remains unauthorized, so local tests must not be called fresh GitHub CI.
 Economic assumption/model-validity review and true PIT/OOS/execution validation
 remain substantive gaps; real assisted trading NOT_REACHED; action=no_order.
+
+Release integration found one additional consumer defect: the public packet
+builder still called the legacy value-plan loader. Engine v23 now calls the
+source-replayed current loader, binds the actual plan fingerprint in identity v10,
+and preserves its own conditional range. Construction and read-side identity use
+the same contract. Actual 600519/600887 replay verified the published main range
+equals current analysis and remains stable on repeat; no eligibility changed.
+The e2604a21 source checkpoint passed the exact full offline Core selection:
+4,745 passed, 78 optional skips. The subsequent publisher/identity repair passed
+311 related identity, value-plan, Web API, launcher and architecture tests with
+4 optional skips. Real scan-to-read-model verification passed for 111 leads and
+50,063 provider observations; the observation receipt is local runtime evidence.

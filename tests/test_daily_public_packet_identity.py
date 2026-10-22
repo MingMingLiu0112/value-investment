@@ -22,6 +22,31 @@ from value_investment_agent.application.product.daily_public_packet import (
 NOW = datetime(2026, 10, 13, 4, 0, tzinfo=timezone.utc)
 
 
+def test_current_pending_plan_is_published_and_changes_publication_identity(tmp_path, monkeypatch):
+    build_verified_tree(tmp_path)
+    from copy import deepcopy
+    from test_value_action_plan import _explanation, build_value_action_plan
+    original = dict(items=[build_value_action_plan(explanation=_explanation()).as_policy()],
+        blockers=[], policy_inventory={}, action='no_order')
+    def pending(base):
+        result = deepcopy(original)
+        plan = result['items'][0]
+        plan.update(symbol='600519', bear='10', base=base, bull='30',
+            verification_scope='SOURCE_BOUND_PENDING_ARITHMETIC_NOT_APPROVAL',
+            research_as_of='2026-10-12', formal_eligibility=False)
+        return result
+    monkeypatch.setattr(daily_public_packet, 'load_current_value_action_plans', lambda *a, **k: pending('20'))
+    first = _build(tmp_path)
+    plan = first['value_price_conditions']['600519']
+    assert plan['base'] == plan['conditional_valuation_range']['base'] == '20'
+    assert plan['formal_eligibility'] is plan['action_eligibility'] is False
+    assert first['publication_id'] == _build(tmp_path)['publication_id']
+    monkeypatch.setattr(daily_public_packet, 'load_current_value_action_plans', lambda *a, **k: pending('21'))
+    second = _build(tmp_path)
+    assert second['publication_id'] != first['publication_id']
+    assert second['value_price_conditions']['600519']['base'] == '21'
+
+
 def _write_bytes(root: Path, path: str, raw: bytes) -> dict:
     target = root / path
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -127,7 +152,8 @@ def test_identity_inputs_cover_the_chain_and_the_business_clock(tmp_path):
     root = build_verified_tree(tmp_path)
     packet = _build(root)
     inputs = packet["identity_inputs"]
-    assert inputs["schema"] == "daily-public-packet-identity-v9"
+    assert inputs["schema"] == "daily-public-packet-identity-v10"
+    assert len(inputs['current_value_plans_sha256']) == 64
     assert inputs["engine"] == packet["engine_version"]
     assert inputs["natural_date"] == "2026-10-13"
     assert {item["role"] for item in inputs["chain"]} == {

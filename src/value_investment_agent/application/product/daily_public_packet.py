@@ -25,7 +25,7 @@ from .daily_research_status import (
 from .publication_chain import STRUCTURE_ERRORS, try_load_current_chain
 from .quote_bridge import execute_quote_bridge_for_symbol
 from ..hotspot.current_registry import registry_identity, load_price_conditions
-from ..decision.value_action_plan import load_registered_value_action_plans
+from ..decision.current_value_plan import load_current_value_action_plans
 
 
 SCHEMA_VERSION = "daily-public-packet-v1"
@@ -35,14 +35,15 @@ SCHEMA_VERSION = "daily-public-packet-v1"
 # record that an older revision computed.
 # v20 retains source-verified retired observations with their original expiry.
 # v22 keeps per-case inspection clocks out of immutable decision content.
-ENGINE_VERSION = "daily-public-packet-engine-v22"
+# v23 publishes the current source-replayed pending plan with its own identity.
+ENGINE_VERSION = "daily-public-packet-engine-v23"
 # v4 folds every content-deciding input into the identity: the company
 # research registry and its evidence files, the archived quote bundles, the
 # bound decision-explanation files and the business clock (natural date +
 # latest completed session) that decides the trading day, freshness and
 # admission. A change in any of them mints a new publication_id instead of
 # reusing a stored record with different facts.
-IDENTITY_SCHEMA = "daily-public-packet-identity-v9"
+IDENTITY_SCHEMA = "daily-public-packet-identity-v10"
 ACTION = "no_order"
 CHINA = ZoneInfo("Asia/Shanghai")
 QUOTE_POINTER_PATH = "config/current-quote-bridge.json"
@@ -100,7 +101,9 @@ def publication_identity(inputs: Mapping[str, Any]) -> str:
 
 def identity_inputs(root: Path, chain: Mapping[str, Any], *,
                     natural_day: str,
-                    latest_completed_session: str | None) -> dict:
+                    latest_completed_session: str | None,
+                    evaluated_at: datetime | None = None,
+                    value_plans: Mapping[str, Any] | None = None) -> dict:
     """The explicit version inputs behind one daily public packet.
 
     Everything the packet content derives from appears here exactly once:
@@ -111,6 +114,8 @@ def identity_inputs(root: Path, chain: Mapping[str, Any], *,
     that decides trading day, freshness and admission.
     """
     summary = _quote_pointer_summary(root)
+    if value_plans is None:
+        value_plans = load_current_value_action_plans(root, now=_now(evaluated_at))
     registry_entries, registry_binding, _ = _research_registry(root)
     evidence: list[dict] = []
     for symbol in sorted(registry_entries):
@@ -159,6 +164,7 @@ def identity_inputs(root: Path, chain: Mapping[str, Any], *,
     return {
         "schema": IDENTITY_SCHEMA,
         "engine": ENGINE_VERSION,
+        "current_value_plans_sha256": hashlib.sha256(_canonical(value_plans).encode('utf-8')).hexdigest(),
         "natural_date": natural_day,
         "latest_completed_session": latest_completed_session,
         "chain": [{"role": item["role"], "path": item["path"], "sha256": item["sha256"]}
@@ -893,9 +899,11 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
 
     receipt_binding = next((item for item in chain["bindings"]
                             if item["role"] == "publication_receipt"), None)
+    value_plans = load_current_value_action_plans(root, now=now)
     identity = identity_inputs(
         root, chain, natural_day=natural_day,
-        latest_completed_session=dates["latest_completed_trade_session"])
+        latest_completed_session=dates["latest_completed_trade_session"],
+        evaluated_at=now, value_plans=value_plans)
     current_conditions = load_price_conditions(root, now=now,
         research_version=_stem(receipt_binding["path"]) if receipt_binding else None)
     if "case_reviews" in current_conditions:
@@ -907,7 +915,6 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
             for review in current_conditions["case_reviews"]]}
     deduped = list(dict.fromkeys([*deduped, *current_conditions["blockers"]]))
     value_conditions = {}
-    value_plans = load_registered_value_action_plans(root, now=now, symbols=list(company_statuses))
     registered_plans = {plan["symbol"]: plan for plan in value_plans["items"]}
     deduped = list(dict.fromkeys([*deduped, *value_plans["blockers"]]))
     for symbol, entry in company_statuses.items():
@@ -943,7 +950,8 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
             value_conditions[symbol].update(plan)
             value_conditions[symbol].update(decision_id=symbol,
                 current_reference_price=plan["reference_close"],
-                conditional_valuation_range=valuation.get("conditional_range"),
+                conditional_valuation_range=({key: plan[key] for key in ('bear', 'base', 'bull')}
+                    if all(plan.get(key) is not None for key in ('bear', 'base', 'bull')) else None),
                 action_eligibility=plan["formal_eligibility"],
                 support=plan["supporting_facts"], counter=plan["counter_evidence"],
                 blockers=list(dict.fromkeys([*value_blockers, *plan["blockers"]])))
@@ -1039,7 +1047,7 @@ def publication_block(root: Path, chain: Mapping[str, Any], *,
                        for row in bridge_rows
                        if isinstance((_bridge_status(row) or {}).get("latest_completed_session"), str)})
     identity = identity_inputs(root, chain, natural_day=now.astimezone(CHINA).date().isoformat(),
-                               latest_completed_session=sessions[-1] if sessions else None)
+                               latest_completed_session=sessions[-1] if sessions else None, evaluated_at=now)
     return {
         "schema_version": SCHEMA_VERSION,
         "engine_version": ENGINE_VERSION,
