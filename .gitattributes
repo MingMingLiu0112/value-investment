@@ -106,3 +106,8 @@ artifacts/current/research-funnel-audit-20261017-v2/report.md -text
 artifacts/current/research-funnel-audit-20261017-v2/human-review-packet.json -text
 config/archive/price-conditions-20261017-e65444f2.json -text whitespace=cr-at-eol
 config/current-quote-bridge.json -text whitespace=cr-at-eol
+
+# Prettier-managed Web sources must survive Windows clean checkouts unchanged.
+web/**/*.ts text eol=lf
+web/**/*.tsx text eol=lf
+web/**/*.css text eol=lf
