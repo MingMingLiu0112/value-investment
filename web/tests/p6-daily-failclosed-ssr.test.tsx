@@ -152,6 +152,9 @@ it("puts hotspot condition review and sizing entry in the daily confirmation que
   const html = renderToStaticMarkup(<DailyDecisions />);
   expect(html).toContain("热点条件复核");
   expect(html).toContain("查看热点操作条件");
+  expect(html).toContain(
+    'href="/decisions/hotspot-300364?independent_hotspot=true"',
+  );
   expect(html).toContain("进入风险试算与成交登记");
   expect(html).toContain("不把 WATCH 当作买入");
 });

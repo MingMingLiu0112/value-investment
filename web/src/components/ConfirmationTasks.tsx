@@ -126,7 +126,9 @@ function HotspotReviewTask({ item }: { item: DecisionItem }) {
         核对日线趋势、60 分钟入场观察价、15
         分钟辅助条件和结构失效价；条件未满足时继续观察，不把 WATCH 当作买入。
       </p>
-      <Link to={`/decisions/${encodeURIComponent(item.id)}`}>
+      <Link
+        to={`/decisions/${encodeURIComponent(item.id)}?independent_hotspot=true`}
+      >
         查看热点操作条件
       </Link>{" "}
       <Link to={fillLink(item)}>进入风险试算与成交登记</Link>
