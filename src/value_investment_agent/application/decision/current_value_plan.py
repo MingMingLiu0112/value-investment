@@ -10,6 +10,55 @@ from ...domain.decision.value_action_plan import build_value_action_plan
 from ..product.research_draft import load_current_research_analysis
 
 
+def _pending_plan_can_replace(plan: dict | None) -> bool:
+    return plan is None or (
+        plan.get('verification_scope') in {
+            'HASH_BOUND_PUBLISHED_RESEARCH_NOT_NEW_APPROVAL',
+            'REGISTERED_RESEARCH_GAPS_ONLY', 'SOURCE_BOUND_PENDING_ARITHMETIC_NOT_APPROVAL'}
+        and plan.get('candidate_action') == 'NO_ACTION'
+        and plan.get('action_intent') is None
+        and not plan.get('security_review_eligible')
+        and not plan.get('formal_eligibility')
+        and (plan.get('scenario_validity') or {}).get('status') in {
+            'conditional_research_only', 'not_ready'})
+
+
+def _pending_analysis_plan(analysis: dict, prior: dict | None, now: datetime) -> dict:
+    prior = prior or {}
+    sources = list(analysis['source_bindings'])
+    quote = {}
+    if prior.get('current_quote_verified') is True:
+        quote = dict(symbol=analysis['symbol'], price=prior['reference_close'],
+            quote_date=prior['market_trade_date'], status='verified_close', comparison_eligible=False,
+            scope='CURRENT_VERIFIED_CLOSE_NOT_VALUATION_COMPARABLE')
+        sources.extend(source for source in prior['source_bindings'] if source not in sources)
+    historical_blockers = list(analysis['blockers'])
+    resolved = [reason for reason in historical_blockers if quote and reason in {
+        '等待已验证收盘行情', 'price_bridge_pending_external_data'}]
+    quote_blockers = [] if quote else ['VALUE_LATEST_COMPLETED_QUOTE_NOT_VERIFIED']
+    context = analysis['review_binding']['model_context']
+    explanation = dict(symbol=analysis['symbol'], company_name=analysis['company_name'], action='no_order',
+        research_as_of=analysis['research_as_of'],
+        decision_as_of=now.astimezone(ZoneInfo('Asia/Shanghai')).date().isoformat(),
+        valuation=analysis['valuation'], model_id=context['model_id'], model_validity=analysis['model_validity'],
+        candidate_action='NO_ACTION',
+        blockers=[reason for reason in historical_blockers if reason not in resolved] + quote_blockers,
+        thesis=analysis['thesis'], support=analysis['supporting_evidence'],
+        counter_evidence=analysis['counter_evidence'], thesis_breakers=analysis['thesis_breakers'],
+        next_events=analysis['next_events'], evidence_refs=analysis['valuation']['evidence_refs'])
+    plan = build_value_action_plan(explanation=explanation, reference_quote=quote,
+        source_bindings=tuple(sources)).as_policy()
+    plan.update(verification_scope='SOURCE_BOUND_PENDING_ARITHMETIC_NOT_APPROVAL',
+        profile_id=context['profile_id'], valuation_input_version=analysis['input_descriptor_sha256'],
+        current_quote_verified=bool(quote), current_quote_blockers=quote_blockers,
+        historical_research_blockers=historical_blockers, resolved_historical_quote_blockers=resolved,
+        current_pricing_blockers=[reason for reason in plan['blockers'] if reason.startswith('VALUE_')],
+        quote_bridge_status=prior.get('quote_bridge_status', 'NOT_ADMITTED'))
+    if not quote:
+        plan['reference_price_scope'] = 'NO_VERIFIED_CLOSE'
+    return plan
+
+
 def load_current_value_action_plans(root: Path, *, now: datetime,
         symbols: list[str] | tuple[str, ...] | None = None) -> dict:
     """Extend the byte-bound legacy loader with independently verified analysis."""
@@ -35,17 +84,20 @@ def load_current_value_action_plans(root: Path, *, now: datetime,
         if analysis is None:
             continue
         plan = by_symbol.get(symbol)
-        if plan is None and analysis['arithmetic_complete']:
-            explanation = dict(symbol=symbol, company_name=analysis['company_name'], action="no_order",
-                research_as_of=analysis['research_as_of'],
-                decision_as_of=now.astimezone(ZoneInfo('Asia/Shanghai')).date().isoformat(),
-                valuation=analysis['valuation'], candidate_action="NO_ACTION", blockers=analysis['blockers'],
-                thesis=analysis['thesis'], counter_evidence=analysis['counter_evidence'],
-                thesis_breakers=analysis['thesis_breakers'], next_events=analysis['next_events'])
-            plan = build_value_action_plan(explanation=explanation,
-                source_bindings=tuple(analysis['source_bindings'])).as_policy()
-            plan['verification_scope'] = "SOURCE_BOUND_PENDING_ARITHMETIC_NOT_APPROVAL"
-            items.append(plan)
+        if (_pending_plan_can_replace(plan) and analysis['arithmetic_complete']
+                and (plan is None or not plan.get('research_as_of')
+                     or plan['research_as_of'] <= analysis['research_as_of'])):
+            replacement = _pending_analysis_plan(analysis, plan, now)
+            if plan is None:
+                items.append(replacement)
+            else:
+                items[items.index(plan)] = replacement
+            plan = replacement
+        elif plan is not None and _pending_plan_can_replace(plan) and not analysis['arithmetic_complete']:
+            replacement = _invalidate_current_conditions(plan, plan, analysis['blockers'])
+            replacement['signal_state'] = 'BLOCKED'
+            items[items.index(plan)] = replacement
+            plan = replacement
         if plan is not None:
             plan['research_analysis'] = analysis
             plan['research_analysis_status'] = analysis['status']
@@ -55,11 +107,10 @@ def load_current_value_action_plans(root: Path, *, now: datetime,
     return {**current, 'status': 'VALUE_RESEARCH_OBSERVATION' if items else 'BLOCKED'}
 
 
-def _with_current_analysis(root: Path, plan: dict, now: datetime) -> dict:
+def _with_analysis(plan: dict, analysis: dict | None) -> dict:
     result = dict(plan)
     result.pop('research_analysis', None)
     result.pop('research_analysis_status', None)
-    analysis = load_current_research_analysis(root, plan['symbol'], now=now)
     if analysis is not None:
         result['research_analysis'] = analysis
         result['research_analysis_status'] = analysis['status']
@@ -69,10 +120,17 @@ def _with_current_analysis(root: Path, plan: dict, now: datetime) -> dict:
 def revalidate_current_value_plan(root: Path, frozen: dict, *, now: datetime) -> dict:
     if frozen.get("schema_version") != "value-action-plan-v1":
         return frozen
-    current = load_registered_value_action_plans(root, now=now, symbols=[frozen["symbol"]])
+    current = load_current_value_action_plans(root, now=now, symbols=[frozen["symbol"]])
     rebuilt = next((row for row in current["items"] if row["symbol"] == frozen["symbol"]), None)
-    if rebuilt is not None and all(frozen.get(key) == value for key, value in rebuilt.items()):
-        return _with_current_analysis(root, frozen, now)
+    analysis = (rebuilt.get('research_analysis') if rebuilt is not None else
+        load_current_research_analysis(root, frozen['symbol'], now=now))
+    if rebuilt is not None and all(frozen.get(key) == value for key, value in rebuilt.items()
+            if key not in {'research_analysis', 'research_analysis_status'}):
+        return _with_analysis(frozen, analysis)
+    return _with_analysis(_invalidate_current_conditions(frozen, rebuilt, current['blockers']), analysis)
+
+
+def _invalidate_current_conditions(frozen: dict, rebuilt: dict | None, blockers: list[str]) -> dict:
     # Retain the immutable prior packet itself for historical review, while the
     # current view must not reuse conditions whose source/date no longer checks.
     result = {**frozen, "signal_state": "STALE" if rebuilt else "BLOCKED", "action_intent": None,
@@ -82,7 +140,7 @@ def revalidate_current_value_plan(root: Path, frozen: dict, *, now: datetime) ->
               "current_quote_blockers": ["CURRENT_VERIFIED_QUOTE_NOT_AVAILABLE_IN_REBUILT_PLAN"],
               "bear": None, "base": None, "bull": None, "conditional_valuation_range": None,
               "invalidation_price": None,
-              "blockers": list(dict.fromkeys([*frozen.get("blockers", []), "CURRENT_VALUE_PLAN_CHANGED_OR_STALE", *current["blockers"]])),
+              "blockers": list(dict.fromkeys([*frozen.get("blockers", []), "CURRENT_VALUE_PLAN_CHANGED_OR_STALE", *blockers])),
               "explanation": "本次读取无法重现已发布估值与价格条件；旧方案仅保留在历史版本，当前不作为操作依据。"}
     # A new verified quote remains an observable fact even when old economics
     # cannot be reproduced. Never reuse the frozen quote's verification flag.
@@ -102,4 +160,4 @@ def revalidate_current_value_plan(root: Path, frozen: dict, *, now: datetime) ->
     for action in ("entry", "add", "reduce", "exit"):
         result[action + "_condition"] = None
         result[action + "_trigger_price"] = None
-    return _with_current_analysis(root, result, now)
+    return result

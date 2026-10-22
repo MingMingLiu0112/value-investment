@@ -116,6 +116,8 @@ jobs:
           tests/test_quote_session_collection.py
           tests/test_quote_session_conversion.py
           tests/test_daily_refresh_readiness.py
+          tests/test_hotspot_operational_evidence.py
+          tests/test_independent_hotspot_open_wording.py
           tests/test_workbench_startup_readiness.py
           tests/test_daily_workbench_failure_e2e.py
           tests/web_api/test_daily_update_status.py

@@ -32,12 +32,15 @@ def test_independent_open_wording_preserves_prices_flags_and_legacy_input(isolat
     assert "热点独立策略" in rule
     assert "价值" not in rule and "VALUE_GATE" not in rule
     for key in baseline:
-        assert result[key] == baseline[key]
+        if key != "operational_conditions":
+            assert result[key] == baseline[key]
     expected_entry = {**original["entry_condition"], "rule": rule}
     expected_rules = deepcopy(original["conditional_action_rules"])
     expected_rules["OPEN"]["rule"] = rule
     assert result["entry_condition"] == expected_entry
     assert result["conditional_action_rules"] == expected_rules
+    assert result["operational_conditions"] == {
+        **baseline["operational_conditions"], "conditions": expected_rules}
     assert result["risk_review_eligible"] is True
     for flag in ("formal_eligibility", "action_eligibility", "trade_eligible"):
         assert result[flag] is False

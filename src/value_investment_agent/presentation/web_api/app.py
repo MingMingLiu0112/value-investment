@@ -42,6 +42,7 @@ from ...application.hotspot.price_action_case import project_price_action_plan
 from ...application.hotspot.independent_price_conditions import (
     load_independent_price_conditions,
     project_independent_price_condition,
+    project_independent_price_conditions,
 )
 from ...application.decision.current_value_plan import revalidate_current_value_plan
 from ...application.decision.strategy_readiness import attach_strategy_readiness
@@ -539,12 +540,8 @@ def create_app(
         # Formal admissions are counted from the published rows themselves; no row
         # carries an admitted valuation status yet, so the count stays derived, not fixed.
         formal_count = count_formal_admissions(named)
-        hotspot_rows = [
-            {**row, "price_action_plan": project_independent_price_condition(
-                project, symbol=row["symbol"], plan=row["price_action_plan"],
-                now=datetime.now(timezone.utc))}
-            for row in current_items(packet, active_only=True)
-        ]
+        hotspot_rows = project_independent_price_conditions(project,
+            items=current_items(packet, active_only=True), now=datetime.now(timezone.utc))["items"]
         hotspot_items = [current_item(row) for row in hotspot_rows]
         if "price_conditions" not in (packet or {}):
             hotspot_items = [

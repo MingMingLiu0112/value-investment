@@ -249,7 +249,8 @@ def _screening_summary(root, binding):
         raw = path.read_bytes()
         if len(raw) > 512_000 or hashlib.sha256(raw).hexdigest() != digest:
             return unavailable
-        summary = json.loads(raw)['summary']
+        manifest = json.loads(raw)
+        summary = manifest['summary']
         if (summary['action'] != 'no_order' or summary['input_mode'] != 'LIVE_COLLECTION'
                 or summary['rule_version'] != 'm2-evidence-screen-v3'):
             return unavailable
@@ -260,11 +261,13 @@ def _screening_summary(root, binding):
             lead_count = summary['legacy_comparison']['new_candidate_count']
         if any(type(n) is not int or n < 0 for n in [health['universe_count'], lead_count, *counts.values()]):
             return unavailable
+        from ..discovery.current_scan import current_scan_details
+        details = current_scan_details(root, manifest)
+        if details['status'] != 'SOURCE_REVALIDATED':
+            return {**unavailable, 'details': details, 'formal_eligibility': False, 'action': 'no_order'}
         return {'status': 'VERIFIED_RESEARCH_SCAN', 'scope': 'RESEARCH_LEADS_NOT_ACTIONS',
-            'as_of': summary['as_of'], 'quote_date_verification': summary['quote_date_verification'],
-            'universe_count': health['universe_count'], 'lead_count': lead_count,
-            'channel_counts': counts, 'data_status': health['status'],
-            'blockers': health.get('blockers', []), 'formal_eligibility': False, 'action': 'no_order'}
+            **details.pop('summary'), 'formal_eligibility': False, 'action': 'no_order',
+            'details': details}
     except (OSError, ValueError, TypeError, KeyError):
         return unavailable
 

@@ -10,6 +10,15 @@ from .common import load_json_object, require_inside, sha256_file, write_new_jso
 
 def publish_value_discovery_report(*, root: Path, receipt_path: Path,
                                    receipt_sha256: str, output_path: Path) -> dict:
+    report = project_value_discovery_report(root=root, receipt_path=receipt_path,
+                                            receipt_sha256=receipt_sha256)
+    write_new_json(output_path, report)
+    return report
+
+
+def project_value_discovery_report(*, root: Path, receipt_path: Path,
+                                   receipt_sha256: str) -> dict:
+    """Revalidate sources without writing or granting research admission."""
     receipt_path = require_inside(root / "runtime", receipt_path, "M2 receipt")
     if sha256_file(receipt_path) != receipt_sha256:
         raise ValueError("M2 receipt hash mismatch")
@@ -59,5 +68,4 @@ def publish_value_discovery_report(*, root: Path, receipt_path: Path,
             "lead_symbols": [lead["symbol"] for lead in leads],
         },
     }
-    write_new_json(output_path, report)
     return report

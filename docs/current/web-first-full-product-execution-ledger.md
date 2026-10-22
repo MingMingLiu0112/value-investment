@@ -2170,3 +2170,39 @@ existing user-facing release, Canonical Excel, private inputs and PTA environmen
 remain unchanged. Current API/source alternatives and their limitations are in
 `docs/data-source-and-financial-coverage-matrix.md`; no new roadmap was created.
 Real assisted trading NOT_REACHED; action=no_order.
+
+## 2026-10-22 Dual Strategy Data-to-Web Integration
+
+Continuation of ordinary engineering, not a new Goal or roadmap. Three bounded
+work packages retain existing investment rules and the single 8001 release:
+
+- Value: a newly source-verified pending analysis now replaces outdated pending
+  plan arithmetic, without replacing an admitted decision. Revalidation uses the
+  same constructor; failed source checks clear stale conditions while retaining
+  an independently verified quote. Real retained 600519/600887 replay passed;
+  these are conditional research ranges, not economically approved valuations.
+- Hotspot: current independent conditions are joined with a reverified historical
+  sample, exact case/rule applicability, timeframe roles and execution gaps. One
+  batch replays once. Source loss/stale cases cannot preserve operational levels.
+  Actual retained evidence is 161 signal events, 150 mature five-session
+  observations, 11 right-censored events; trade count remains null. This is not
+  strategy OOS, cost/T+1 feasibility or prospective Shadow approval.
+- Web: today's complete M2 lead list is searchable/filterable separately from
+  published research. Reasons, channels, evidence IDs and source-recomputed E1
+  financial observations are visible. Receipt-consumed file path/hash/time are
+  checked; summary counts derive from the reprojected receipt. Missing/damaged
+  sources suppress affected values instead of claiming verified or empty results.
+
+Independent review identified and fixed financial-file mixing and unverified
+summary-count presentation, with regression tests. Targeted API regression:
+279 passed, 2 optional skips. Frontend: 437 passed, 2 optional browser skips;
+typecheck passed. Focused value regression: 127 passed including actual retained
+company replay. Frozen bytes are not modified. Final exact-Core, local release
+identity and browser receipts belong to `.tmp/` and must be read after running;
+these lines do not claim a future test or deployment already succeeded.
+
+No valuation formula, economic approval, strategy threshold, portfolio approval,
+private ledger, Canonical Excel, server or broker changed. Public GitHub upload
+remains unauthorized, so local tests must not be called fresh GitHub CI.
+Economic assumption/model-validity review and true PIT/OOS/execution validation
+remain substantive gaps; real assisted trading NOT_REACHED; action=no_order.

@@ -320,3 +320,45 @@
   display: block;
   padding: 6px 0;
 }
+.current-screening {
+  min-width: 0;
+  border-top: 1px solid #d9e2df;
+  padding: 16px 0;
+}
+.scan-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 12px 0;
+}
+.scan-filters .ant-input-affix-wrapper {
+  width: 220px;
+  max-width: 100%;
+}
+.scan-filters .ant-select {
+  width: 180px;
+  max-width: 100%;
+}
+.scan-evidence {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.scan-table-scroll {
+  overflow-x: auto;
+}
+.scan-table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.scan-table-scroll th,
+.scan-table-scroll td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #d9e2df;
+  vertical-align: top;
+}
+.scan-evidence code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

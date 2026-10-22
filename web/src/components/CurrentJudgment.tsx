@@ -456,6 +456,28 @@ function JudgmentEvidence({ decision }: { decision: DecisionItem }) {
                   缺失确认：
                   {confirmationText(plan?.blockers ?? decision.blockers)}
                 </div>
+                {plan?.validation && (
+                  <div aria-label="本计划的策略验证证据">
+                    {plan.validation.source_integrity === "VERIFIED" ? (
+                      <>
+                        来源已复核的历史样本：
+                        {plan.validation.signal_event_count} 次触发，
+                        {plan.validation.mature_five_session_count}{" "}
+                        次有完整五日观察，
+                        {plan.validation.right_censored_count} 次后续观察未满。
+                        {plan.validation.applicability ===
+                        "SAME_CASE_DESCRIPTIVE_ONLY"
+                          ? "与当前同源案例匹配，仅证明该样本的描述性回放。"
+                          : "来自其他日期或案例，不能验证当前结构。"}
+                      </>
+                    ) : (
+                      "历史验证原件尚不可核验；当前价格观察不因此变成通过。"
+                    )}
+                    <div>
+                      触发次数不是成交笔数。费用、T+1可成交性、未触碰样本外和真实影子运行尚未证明，不据此给出胜率、收益或仓位。
+                    </div>
+                  </div>
+                )}
                 {missingPricePolicies(decision) && (
                   <div>{missingPricePolicies(decision)}</div>
                 )}

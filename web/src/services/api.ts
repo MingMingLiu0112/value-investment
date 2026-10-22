@@ -16,6 +16,7 @@ import type {
   HeldContinuityResponse,
   WriteResponse,
 } from "../types/api";
+import type { CurrentScreening } from "../types/discovery";
 
 export interface HeldSellReviewRequest {
   schema_version: "private-held-sell-review-request-v1";
@@ -594,15 +595,7 @@ export const api = {
             }[];
           };
         };
-        screening?: {
-          status: string;
-          scope: string;
-          as_of?: string;
-          universe_count?: number;
-          lead_count?: number;
-          channel_counts?: Record<string, number>;
-          quote_date_verification?: string;
-        };
+        screening?: CurrentScreening;
         status: string;
         finished_at: string | null;
         published: boolean;

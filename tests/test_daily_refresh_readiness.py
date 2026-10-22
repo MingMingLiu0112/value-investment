@@ -6,7 +6,121 @@ import pytest
 from value_investment_agent.application.product import daily_refresh as module
 
 
-def test_current_scan_summary_is_pinned_and_never_promoted_to_trade_eligibility(tmp_path):
+def _scan_fixture(root):
+    from test_m2_opportunity_discovery import _receipt
+    from value_investment_agent.application.product.value_discovery_surface import publish_value_discovery_report
+    directory = root / 'runtime/daily-marketwide/run'
+    directory.mkdir(parents=True)
+    receipt = _receipt()
+    for reference in receipt.evidence_refs:
+        (root / reference.path).write_text(reference.id, encoding='utf-8')
+    receipt_path = directory / 'receipt.json'
+    receipt_path.write_text(json.dumps(receipt.as_policy()), encoding='utf-8')
+    pin = lambda p: {'path': p.relative_to(root).as_posix(), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()}
+    report_path = directory / 'report.json'
+    report = publish_value_discovery_report(root=root, receipt_path=receipt_path,
+        receipt_sha256=pin(receipt_path)['sha256'], output_path=report_path)
+    return {'files': {'receipt': pin(receipt_path), 'lead_report': pin(report_path)},
+        'summary': {'as_of': report['as_of'], 'channel_counts': report['channel_counts'],
+                    'data_health': report['data_health']}}, pin
+
+
+def test_current_leads_reproject_sources_without_promoting_or_writing(tmp_path):
+    from value_investment_agent.application.discovery.current_scan import current_scan_details
+    manifest, _ = _scan_fixture(tmp_path)
+    before = {str(p): p.read_bytes() for p in tmp_path.rglob('*.json')}
+    result = current_scan_details(tmp_path, manifest)
+    assert result['status'] == 'SOURCE_REVALIDATED'
+    assert result['leads'] and result['formal_eligibility'] is False
+    assert result['action'] == 'no_order'
+    assert result['financial']['status'] == 'PUBLIC_SUPPLEMENT_REVALIDATION_FAILED'
+    assert all(row['research_state'] == 'DISCOVERED' for row in result['leads'])
+    assert before == {str(p): p.read_bytes() for p in tmp_path.rglob('*.json')}
+
+
+def test_scan_summary_recomputes_counts_and_degrades_with_originals(tmp_path):
+    manifest, pin = _scan_fixture(tmp_path)
+    manifest['summary'].update(action='no_order', input_mode='LIVE_COLLECTION',
+        rule_version='m2-evidence-screen-v3', lead_count=9999,
+        quote_date_verification='UNVERIFIED_PROVIDER_TRADE_DATE')
+    path = tmp_path / 'runtime/daily-marketwide/run/manifest.json'
+    path.write_text(json.dumps(manifest), encoding='utf-8')
+    binding = dict(manifest_path=pin(path)['path'], manifest_sha256=pin(path)['sha256'])
+    result = module._screening_summary(tmp_path, binding)
+    assert result['lead_count'] == len(result['details']['leads']) != 9999
+    (tmp_path / 'runtime/tencent.json').write_text('changed')
+    assert module._screening_summary(tmp_path, binding)['status'] == 'UNVERIFIED'
+
+
+def test_public_financial_values_are_recomputed_and_independently_degraded(tmp_path, monkeypatch):
+    from test_public_financial_snapshot import collect, load, row
+    from value_investment_agent.application.discovery.current_scan import current_scan_details
+    manifest, pin = _scan_fixture(tmp_path)
+    binding, _ = collect(tmp_path, monkeypatch, rows=[row('600001')])
+    points, info = load(tmp_path, binding)
+    info.update(retained_symbols_preserved=[], adopted_observation_count=len(points))
+    financial = tmp_path / 'runtime/daily-marketwide/run/financial-points.json'
+    financial.write_text(json.dumps(dict(points=points, public_financial_input=info)), encoding='utf-8')
+    manifest['files']['financial'] = pin(financial)
+    # Bind the exact supplemental bytes to the scan's actual consumed evidence.
+    receipt_path = tmp_path / manifest['files']['receipt']['path']
+    receipt = json.loads(receipt_path.read_bytes())
+    receipt['generated_at'] = datetime.now(timezone.utc).isoformat()
+    for ref in receipt['evidence_refs']:
+        if ref['id'] == 'financial':
+            ref.update(pin(financial))
+    receipt_path.write_text(json.dumps(receipt), encoding='utf-8')
+    manifest['files']['receipt'] = pin(receipt_path)
+    from value_investment_agent.application.product.value_discovery_surface import project_value_discovery_report
+    report = project_value_discovery_report(root=tmp_path, receipt_path=receipt_path, receipt_sha256=pin(receipt_path)['sha256'])
+    report_path = tmp_path / manifest['files']['lead_report']['path']
+    report_path.write_text(json.dumps(report), encoding='utf-8')
+    manifest['files']['lead_report'] = pin(report_path)
+    result = current_scan_details(tmp_path, manifest)
+    assert result['financial']['status'] == 'PROVIDER_OBSERVATIONS_NOT_FORMAL_FACTS'
+    lead = next(r for r in result['leads'] if r['symbol'] == '600001')
+    assert len(lead['financial_observations']) == 4
+    assert next(p for p in lead['financial_observations'] if p['field_name'] == 'operating_cash_flow_per_share')['value'] == '0'
+    other = financial.with_name('other-financial.json')
+    other.write_bytes(financial.read_bytes())
+    manifest['files']['financial'] = pin(other)
+    mixed = current_scan_details(tmp_path, manifest)
+    assert mixed['financial']['status'] == 'PUBLIC_SUPPLEMENT_REVALIDATION_FAILED'
+    assert all('financial_observations' not in row for row in mixed['leads'])
+    manifest['files']['financial'] = pin(financial)
+    original = tmp_path / json.loads((tmp_path / binding['path']).read_bytes())['pages'][0]['path']
+    original.write_text('{}')
+    damaged = current_scan_details(tmp_path, manifest)
+    assert damaged['status'] == 'SOURCE_REVALIDATED'
+    assert damaged['financial']['status'] == 'PUBLIC_SUPPLEMENT_REVALIDATION_FAILED'
+    assert all('financial_observations' not in row for row in damaged['leads'])
+
+
+@pytest.mark.parametrize('damage', ['original', 'report', 'rebound_report', 'summary', 'escape', 'receipt'])
+def test_current_leads_reject_forged_or_damaged_chain(tmp_path, damage):
+    from value_investment_agent.application.discovery.current_scan import current_scan_details
+    manifest, pin = _scan_fixture(tmp_path)
+    report = tmp_path / manifest['files']['lead_report']['path']
+    if damage == 'original':
+        (tmp_path / 'runtime/tencent.json').write_text('changed')
+    elif damage in {'report', 'rebound_report'}:
+        payload = json.loads(report.read_bytes())
+        payload['leads'][0]['screening_reasons'] = ['fabricated BUY']
+        report.write_text(json.dumps(payload), encoding='utf-8')
+        if damage == 'rebound_report':
+            manifest['files']['lead_report'] = pin(report)
+    elif damage == 'summary':
+        manifest['summary']['as_of'] = '2099-01-01'
+    elif damage == 'escape':
+        manifest['files']['lead_report']['path'] = '../private.json'
+    else:
+        manifest['files']['receipt']['sha256'] = '0' * 64
+    result = current_scan_details(tmp_path, manifest)
+    assert result['status'] == 'SOURCE_REVALIDATION_FAILED'
+    assert result['leads'] == [] and result['formal_eligibility'] is False
+
+
+def test_summary_without_source_chain_cannot_claim_verified_scan(tmp_path):
     path = tmp_path / 'runtime/daily-marketwide/run/manifest.json'
     path.parent.mkdir(parents=True)
     value = {'summary': {'action': 'no_order', 'input_mode': 'LIVE_COLLECTION',
@@ -20,7 +134,8 @@ def test_current_scan_summary_is_pinned_and_never_promoted_to_trade_eligibility(
     pin = {'manifest_path': path.relative_to(tmp_path).as_posix(),
            'manifest_sha256': hashlib.sha256(raw).hexdigest()}
     result = module._screening_summary(tmp_path, pin)
-    assert result['universe_count'] == 5575 and result['lead_count'] == 111
+    assert result['status'] == 'UNVERIFIED'
+    assert 'universe_count' not in result and 'lead_count' not in result
     assert result['scope'] == 'RESEARCH_LEADS_NOT_ACTIONS'
     assert result['formal_eligibility'] is False
     assert 'DO_NOT_EXPOSE' not in repr(result)

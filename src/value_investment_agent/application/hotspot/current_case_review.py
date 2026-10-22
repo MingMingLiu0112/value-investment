@@ -89,7 +89,8 @@ def suppress_current_price_conditions(plan: dict) -> dict:
                 "add_trigger_price", "reduce_trigger_price", "exit_trigger_price", "invalidation_price",
                 "entry_condition", "add_condition", "reduce_condition", "exit_condition",
                 "invalidation_condition", "price_behavior", "opportunity_quality", "risk_reward_ratio",
-                "security_risk_trigger", "next_completed_eligible_session", "next_session_date"):
+                "security_risk_trigger", "next_completed_eligible_session", "next_session_date",
+                "operational_conditions"):
         output[key] = None
     output.update(levels=None if plan.get("levels") is None else {},
         period_structure={}, conditional_action_rules={}, trend_state="NOT_ASSESSED",

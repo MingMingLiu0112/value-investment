@@ -6,6 +6,7 @@ from pathlib import Path
 from .current_registry import load_price_conditions
 from .independent_admission import load_independent_admission
 from .current_case_review import suppress_current_price_conditions
+from .replay_read_model import load_current_hotspot_validation
 
 INDEPENDENT_OPEN_RULE = (
     "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；"
@@ -25,7 +26,7 @@ def observed_held_add(plan: dict) -> bool:
         and plan.get("signal_state") not in {"STALE", "BLOCKED", "TRIGGER_REJECTED", "EXPIRED"})
 
 
-def project_independent_price_condition(root: Path, *, symbol: str, plan: dict,
+def _project_independent_price_condition(root: Path, *, symbol: str, plan: dict,
         now: datetime, allow_test_only: bool = False, review_action: str = "OPEN") -> dict:
     """Read-only projection of a caller-verified current plan; preserve its bytes.
 
@@ -107,14 +108,83 @@ def project_independent_price_condition(root: Path, *, symbol: str, plan: dict,
     return output
 
 
+def _attach_operational_evidence(plan: dict, validation: dict) -> dict:
+    """Join verified conditions to sample-specific evidence without new signals."""
+    output = deepcopy(plan)
+    evidence = deepcopy(validation)
+    same_case = any(row.get("symbol") == plan["symbol"]
+        and row.get("case_path") == plan.get("case_path")
+        and row.get("case_sha256") == plan.get("case_sha256")
+        for row in evidence["case_bindings"])
+    matching_rule = plan.get("model_or_rule_version") in evidence["rule_versions"]
+    evidence["applicability"] = (
+        "NO_VERIFIED_VALIDATION" if evidence["source_integrity"] != "VERIFIED" else
+        "SAME_CASE_DESCRIPTIVE_ONLY" if same_case and matching_rule else
+        "HISTORICAL_OTHER_CASES_NOT_CURRENT_STRUCTURE")
+    evidence["current_rule_matches_replayed_rule"] = matching_rule
+    if evidence["source_integrity"] == "VERIFIED" and not (same_case and matching_rule):
+        evidence["blockers"].append("RETAINED_SAMPLE_DOES_NOT_VALIDATE_CURRENT_CASE")
+    output["validation"] = evidence
+    current = plan["current_data_status"] == "CURRENT"
+    behavior = plan.get("price_behavior") or {}
+    quality = plan.get("opportunity_quality") or {}
+    levels = plan.get("levels") or {}
+    output["operational_conditions"] = dict(
+        schema_version="hotspot-operational-conditions-v1",
+        status="OBSERVATION_ONLY" if current else "UNAVAILABLE_CURRENT_CONDITIONS",
+        case_binding=dict(path=plan.get("case_path"), sha256=plan.get("case_sha256")),
+        data_available_at=plan.get("data_available_at"),
+        market_trade_date=plan.get("market_trade_date"),
+        expires_after_session=plan.get("expires_after_session") if current else None,
+        observation_scope=plan.get("observation_scope", plan.get("reference_price_scope")),
+        timeframes={period: dict(role=role,
+            structure=(plan.get("period_structure") or {}).get(period),
+            **deepcopy(levels.get(period, {}))) for period, role in (
+                ("daily", "TREND_CONTEXT"), ("60m", "PRIMARY_TRIGGER"),
+                ("15m", "AUXILIARY_OBSERVATION_ONLY"))} if current else {},
+        conditions=deepcopy(plan.get("conditional_action_rules", {})) if current else {},
+        signal_state=plan.get("signal_state"), daily_trend=behavior.get("daily_trend"),
+        structure_tier=quality.get("structure_tier"),
+        structure_reasons=deepcopy(quality.get("structure_reasons", [])),
+        risk_reward_ratio=plan.get("risk_reward_ratio") if current else None,
+        risk_reward_scope=behavior.get("risk_reward_scope"),
+        execution_checks=deepcopy(behavior.get("execution_checks", [])),
+        execution_metrics=deepcopy(evidence["execution_metrics"]),
+        validation_evidence_sha256=evidence.get("evidence_sha256"),
+        validation_applicability=evidence["applicability"],
+        blockers=list(dict.fromkeys([*plan["blockers"], *evidence["blockers"]])),
+        holdings_status="UNKNOWN", personal_permission=False, position_guidance=None,
+        formal_eligibility=False, action="no_order")
+    return output
+
+
+def project_independent_price_condition(root: Path, *, symbol: str, plan: dict,
+        now: datetime, allow_test_only: bool = False, review_action: str = "OPEN") -> dict:
+    """Project a caller-verified case with independently reverified validation."""
+    output = _project_independent_price_condition(root, symbol=symbol, plan=plan,
+        now=now, allow_test_only=allow_test_only, review_action=review_action)
+    validation = load_current_hotspot_validation(root=root, now=now)
+    return _attach_operational_evidence(output, validation)
+
+
+def project_independent_price_conditions(root: Path, *, items: list[dict], now: datetime,
+        allow_test_only: bool = False) -> dict:
+    """Project caller-verified rows with one retained replay for the entire batch."""
+    output = dict(schema_version="independent-hotspot-price-conditions-v1",
+                  items=deepcopy(items), action="no_order")
+    validation = load_current_hotspot_validation(root=root, now=now)
+    output["validation"] = deepcopy(validation)
+    for item in output.get("items", []):
+        plan = _project_independent_price_condition(root,
+            symbol=item["symbol"], plan=item["price_action_plan"], now=now,
+            allow_test_only=allow_test_only)
+        item["price_action_plan"] = _attach_operational_evidence(plan, validation)
+    return output
+
+
 def load_independent_price_conditions(root: Path, *, now: datetime,
         research_version: str | None, allow_test_only: bool = False) -> dict:
     legacy = load_price_conditions(root, now=now, research_version=research_version,
                                    retain_stale_observations=True)
-    output = deepcopy(legacy)
-    output.update(schema_version="independent-hotspot-price-conditions-v1", action="no_order")
-    for item in output.get("items", []):
-        item["price_action_plan"] = project_independent_price_condition(root,
-            symbol=item["symbol"], plan=item["price_action_plan"], now=now,
-            allow_test_only=allow_test_only)
-    return output
+    return {**deepcopy(legacy), **project_independent_price_conditions(root,
+        items=legacy.get("items", []), now=now, allow_test_only=allow_test_only)}

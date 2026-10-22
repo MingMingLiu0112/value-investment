@@ -4,6 +4,7 @@ import { DecisionCard } from "../../components/DecisionCard";
 import { HoldingsAttention } from "../../components/HoldingsAttention";
 import { ConfirmationTasks } from "../../components/ConfirmationTasks";
 import { DailyStrategyReadiness } from "../../components/StrategyReadiness";
+import { CurrentScreening } from "../../components/CurrentScreening";
 import { Workbench } from "../../components/Workbench";
 import { useApi } from "../../hooks/useApi";
 import { usePrivateState } from "../../hooks/usePrivateState";
@@ -439,26 +440,10 @@ export default function DailyDecisions() {
             }
           />
           {update.data?.last_run?.screening && (
-            <section aria-label="本次全市场初筛">
-              <h3>本次全市场初筛（尚非交易机会）</h3>
-              {update.data.last_run.screening.status ===
-              "VERIFIED_RESEARCH_SCAN" ? (
-                <p>
-                  {update.data.last_run.screening.as_of} · 覆盖{" "}
-                  {update.data.last_run.screening.universe_count} 只，
-                  去重研究线索 {update.data.last_run.screening.lead_count} 只，
-                  Quality 通过{" "}
-                  {update.data.last_run.screening.channel_counts?.quality ??
-                    "未核验"}{" "}
-                  只。
-                  这是初筛结果，不是已完成研究或具备操作资格的股票；下方研究列表仍使用其已发布版本。
-                  {update.data.last_run.screening.quote_date_verification !==
-                    "VERIFIED" && " 全市场行情日期仍需独立核验。"}
-                </p>
-              ) : (
-                <p>本次初筛清单无法核验，不能据此判断市场没有机会。</p>
-              )}
-            </section>
+            <CurrentScreening
+              scan={update.data.last_run.screening}
+              decisions={data.sections.value}
+            />
           )}
           {update.data?.last_run?.research_priority && (
             <section aria-label="证据研究队列">

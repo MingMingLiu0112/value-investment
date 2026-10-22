@@ -12,7 +12,7 @@ from value_investment_agent.application.research.value_research_analysis import 
 )
 
 
-NOW = datetime(2026, 10, 22, 12, tzinfo=timezone.utc)
+NOW = datetime.now(timezone.utc) + timedelta(days=1)
 
 
 def test_source_to_scenarios_sensitivity_and_review_preserves_bytes(registered):
@@ -126,7 +126,7 @@ def test_read_time_invalidated_plan_discards_frozen_analysis(monkeypatch, tmp_pa
         research_analysis=dict(arithmetic_complete=True, scenarios=[dict(per_share_value='42')]),
         research_analysis_status='CONDITIONAL_ANALYSIS_VERIFIED')
     monkeypatch.setattr(current_value_plan, 'load_registered_value_action_plans',
-        lambda *args, **kwargs: dict(items=[], blockers=['SOURCE_MISSING']))
+        lambda *args, **kwargs: dict(items=[], blockers=['SOURCE_MISSING'], source_bindings=[]))
     result = current_value_plan.revalidate_current_value_plan(tmp_path, frozen, now=NOW)
     assert 'research_analysis' not in result
     assert result['formal_eligibility'] is False

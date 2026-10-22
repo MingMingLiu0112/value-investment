@@ -38,6 +38,18 @@ export interface DecisionItem {
 }
 
 export interface CurrentPricePlan {
+  validation?: {
+    source_integrity: string;
+    applicability: string;
+    signal_event_count: number | null;
+    mature_five_session_count: number | null;
+    right_censored_count: number | null;
+    strategy_validation: string;
+    strict_pit_admitted: boolean;
+    strict_oos_admitted: boolean;
+    elapsed_real_shadow_sessions: number;
+    execution_metrics: { status: string; trade_count: number | null };
+  };
   research_analysis?: ValueResearchAnalysis | null;
   independent_admission?: {
     status: string;
