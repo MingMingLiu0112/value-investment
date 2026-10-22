@@ -1,5 +1,5 @@
 param(
-    [ValidateRange(1024, 65535)][int]$Port = 8001,
+    [ValidateSet(8001)][int]$Port = 8001,
     [switch]$Open,
     [switch]$Reauthorize
 )
@@ -31,7 +31,7 @@ function Test-WorkbenchIdentity {
         return ($Process -and
             [string]::Equals($recordedRoot, $canonicalRoot, [StringComparison]::OrdinalIgnoreCase) -and
             [string]::Equals($Process.ExecutablePath, $ExpectedPython, [StringComparison]::OrdinalIgnoreCase) -and
-            $Process.ProcessId -eq $State.pid -and
+            $Process.ProcessId -eq $State.pid -and [int]$State.port -eq 8001 -and
             $actualCreation.UtcTicks -eq $recordedCreation.UtcTicks -and
             $Process.CommandLine -match 'value_investment_agent.presentation.web_api.app:app' -and
             @($Listeners | Where-Object { $_.OwningProcess -eq $State.pid -and
@@ -85,12 +85,11 @@ if (Test-Path -LiteralPath $statePath) {
         }
     } catch { Write-Host '原启动记录无法核验，保留现有进程。' }
 }
-while ($Port -le 65535) {
-    $probe = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
-    try { $probe.Start(); break } catch { $Port++ } finally { $probe.Stop() }
-}
-if ($Port -gt 65535) { throw '没有可用的本机回环端口。' }
-if ($Port -ne $requestedPort) { Write-Host "端口 $requestedPort 已占用，未停止任何进程；改用 http://127.0.0.1:$Port 。" }
+# Keep one stable user endpoint; an unknown listener must never be replaced.
+$probe = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
+try { $probe.Start() }
+catch { throw '端口 8001 已占用，且未通过本项目进程归属核验；拒绝另开端口或停止未知进程。' }
+finally { $probe.Stop() }
 $env:VALUE_INVESTMENT_WEB_PORT = "$Port"
 # WEB-D3 P0.2: the private API starts locked. This per-run secret is the only
 # way to unlock it; it is handed to the browser through the URL fragment (never

@@ -2,60 +2,60 @@
   "schema_version": "current-quote-bridge-v1",
   "action": "no_order",
   "note": "登记一份已归档的双源收盘行情；登记本身不构成估值或交易批准。",
-  "registered_at": "2026-10-16T09:00:36.647045+00:00",
+  "registered_at": "2026-10-21T07:13:00.238066+00:00",
   "quotes": {
     "600887": {
-      "quote_bundle": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
-      "quote_bundle_sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+      "quote_bundle": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+      "quote_bundle_sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
       "research_package": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
       "research_package_sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5",
-      "registered_at": "2026-10-16T09:00:32.603507+00:00",
+      "registered_at": "2026-10-21T07:12:47.219413+00:00",
       "incremental_validity_binding": {
-        "path": "runtime/web-first-event-coverage/600887-20261018/incremental-binding.json",
-        "sha256": "759abcdc5a75df7673f1589738eae7f8fb0df666b66220d6b9f0c081e4fad237"
+        "path": "runtime/incremental-validity/600887/2026-10-21-20261021T0713160389288Z/incremental-binding.json",
+        "sha256": "67829d2585165f1c73066c13e267abffb57f2ff3a08a92db91cdccc8f5b73b22"
       }
     },
     "600519": {
-      "quote_bundle": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
-      "quote_bundle_sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+      "quote_bundle": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+      "quote_bundle_sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
       "research_package": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/package.json",
       "research_package_sha256": "f100c2a26b0d61a3f9d90a1b60976b00d8217b55592360f6940b0696a46829bf",
-      "registered_at": "2026-10-16T09:00:33.682521+00:00",
+      "registered_at": "2026-10-21T07:12:48.687631+00:00",
       "incremental_validity_binding": {
-        "path": "runtime/web-first-event-coverage/600519-20261018/incremental-binding.json",
-        "sha256": "2194ea2544dfa5a6f3e65035cb800e5617a133d9ae8ada84d3fea886f42ba0c4"
+        "path": "runtime/incremental-validity/600519/2026-10-21-20261021T0713215665958Z/incremental-binding.json",
+        "sha256": "032ae7d3fd7f62b25882bd5b7dcd2062df89c3d695612b75f5c03dc2a2e4a21b"
       }
     },
     "000333": {
-      "quote_bundle": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
-      "quote_bundle_sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+      "quote_bundle": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+      "quote_bundle_sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
       "research_package": null,
       "research_package_sha256": null,
-      "registered_at": "2026-10-16T09:00:34.615191+00:00",
+      "registered_at": "2026-10-21T07:12:50.415158+00:00",
       "registration_scope": "QUOTE_OBSERVATION_ONLY"
     },
     "000651": {
-      "quote_bundle": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
-      "quote_bundle_sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+      "quote_bundle": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+      "quote_bundle_sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
       "research_package": null,
       "research_package_sha256": null,
-      "registered_at": "2026-10-16T09:00:35.302959+00:00",
+      "registered_at": "2026-10-21T07:12:52.989785+00:00",
       "registration_scope": "QUOTE_OBSERVATION_ONLY"
     },
     "600741": {
-      "quote_bundle": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
-      "quote_bundle_sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+      "quote_bundle": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+      "quote_bundle_sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
       "research_package": null,
       "research_package_sha256": null,
-      "registered_at": "2026-10-16T09:00:35.972375+00:00",
+      "registered_at": "2026-10-21T07:12:55.606224+00:00",
       "registration_scope": "QUOTE_OBSERVATION_ONLY"
     },
     "601088": {
-      "quote_bundle": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
-      "quote_bundle_sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+      "quote_bundle": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+      "quote_bundle_sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
       "research_package": null,
       "research_package_sha256": null,
-      "registered_at": "2026-10-16T09:00:36.647045+00:00",
+      "registered_at": "2026-10-21T07:13:00.238066+00:00",
       "registration_scope": "QUOTE_OBSERVATION_ONLY"
     }
   }

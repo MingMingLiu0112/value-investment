@@ -9,6 +9,7 @@ from pathlib import Path
 from .price_action_case import project_current_price_action_plan
 from ...infrastructure.hotspot.current_price_case import load_current_price_case
 from .daily_selection import verify_daily_selection
+from .current_case_review import inspect_current_price_case, expire_price_action_plan
 from ...domain.execution.exchange_calendar import next_exchange_session
 from ...quote_sessions import CHINA
 
@@ -78,7 +79,8 @@ def registry_identity(root: Path) -> dict:
     return result
 
 
-def load_price_conditions(root: Path, *, now: datetime, research_version: str | None) -> dict:
+def load_price_conditions(root: Path, *, now: datetime, research_version: str | None,
+                          retain_stale_observations: bool = False) -> dict:
     path = root / REGISTRY
     if not path.is_file():
         return {"status": "NOT_CONNECTED", "items": [], "blockers": []}
@@ -103,6 +105,7 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
         watch_symbols = {row["symbol"] for row in watch_report.get("dated_quote_observations", [])}
         watch_symbols.update(row["symbol"] for row in watch_report.get("observation_list", []))
         items, blockers, retired_warnings, seen = [], [], [], set()
+        case_reviews, current_count = [], 0
         if len(registry.get("previous_items", [])) > 10:
             raise ValueError("Too many retired observations")
         for item in registry["items"] + registry.get("previous_items", []):
@@ -139,9 +142,19 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
                         bundle["finished_at"], *(s["fetched_at"] for s in retained["source_bindings"].values())])
                     if case_now.utcoffset() is None or case_now > now:
                         raise ValueError("Retained case unavailable at evaluation cutoff")
-                case = load_current_price_case(root=root, symbol=symbol,
-                    case_path=_path(root, item["case_path"]),
-                    expected_sha256=item["case_sha256"], now=case_now)
+                review = None
+                if not retired:
+                    review = inspect_current_price_case(root=root, symbol=symbol,
+                        case_binding=dict(path=item["case_path"], sha256=item["case_sha256"]), now=now)
+                    case_reviews.append({key: value for key, value in review.items() if key != "case"})
+                    if review["data_status"] == "INVALID" or (
+                            review["data_status"] == "STALE" and not retain_stale_observations):
+                        raise ValueError(review["diagnostic"])
+                    case = review["case"]
+                else:
+                    case = load_current_price_case(root=root, symbol=symbol,
+                        case_path=_path(root, item["case_path"]),
+                        expected_sha256=item["case_sha256"], now=case_now)
                 plan = project_current_price_action_plan(case)
                 if daily and case["market_trade_date"] != watch_report["trade_date"]:
                     raise ValueError("Daily selection/current case date conflict")
@@ -174,6 +187,14 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
                     if expired and plan["signal_state"] != "TRIGGER_REJECTED":
                         plan.update(signal_state="STALE", action_intent="WATCH",
                                     explanation="未进入本次当日候选名单；旧价格结构仅供复盘，不作为今日机会。")
+                if not retired:
+                    plan.update(current_data_status=review["data_status"],
+                                source_integrity=review["source_integrity"])
+                    if review["data_status"] == "STALE":
+                        plan = expire_price_action_plan(plan, review=review)
+                        blockers.append(f"CURRENT_MARKET_DATA_STALE:{symbol}")
+                    else:
+                        current_count += 1
                 items.append({"symbol": symbol, "company_name": item["company_name"],
                               "price_action_plan": plan})
             except (ValueError, OSError, KeyError, TypeError, ArithmeticError):
@@ -182,9 +203,9 @@ def load_price_conditions(root: Path, *, now: datetime, research_version: str | 
                 else:
                     blockers.append(f"CURRENT_PRICE_CASE_UNAVAILABLE:{symbol}")
         return {"status": ("CURRENT_EMPTY_SELECTION" if not registry["items"] else
-                           "CURRENT_OBSERVATION" if items else "BLOCKED"), "items": items,
+                           "CURRENT_OBSERVATION" if current_count else "BLOCKED"), "items": items,
                 "selection_trade_date": selection_trade_date,
                 "watch_source_scope": registry["watch_source_scope"], "blockers": blockers,
-                "retired_warnings": retired_warnings}
+                "retired_warnings": retired_warnings, "case_reviews": case_reviews}
     except (ValueError, OSError, KeyError, TypeError, AttributeError, ArithmeticError):
         return {"status": "BLOCKED", "items": [], "blockers": ["CURRENT_PRICE_REGISTRY_UNAVAILABLE"]}

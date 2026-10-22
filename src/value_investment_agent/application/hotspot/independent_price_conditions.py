@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .current_registry import load_price_conditions
 from .independent_admission import load_independent_admission
+from .current_case_review import suppress_current_price_conditions
 
 INDEPENDENT_OPEN_RULE = (
     "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；"
@@ -56,6 +57,16 @@ def project_independent_price_condition(root: Path, *, symbol: str, plan: dict,
             "review_status": "REJECTED", "blockers": ["INDEPENDENT_RELEASE_INVALID"],
             "action": "no_order"}
     blockers = list(admission["blockers"])
+    # Admission and current-data integrity are separate dimensions. A signed
+    # release cannot recover stale data or discard a failed publication check.
+    data_blockers = [item for item in plan.get("blockers", []) if item.startswith((
+        "CURRENT_", "DISPLAY_ONLY_", "PUBLICATION_"))]
+    blockers.extend(data_blockers)
+    data_status = ("INVALID" if plan.get("signal_state") == "BLOCKED" else
+        "STALE" if plan.get("signal_state") in {"STALE", "EXPIRED"}
+        or plan.get("retained_observation_valid") is False else plan.get("current_data_status", "CURRENT"))
+    if data_status != "CURRENT":
+        blockers.append("CURRENT_MARKET_DATA_STALE" if data_status == "STALE" else "CURRENT_CASE_EVIDENCE_INVALID")
     if admission.get("rule_version") != plan.get("model_or_rule_version"):
         blockers.append("STRATEGY_RULE_VERSION_MISMATCH")
     case_binding = {"path": plan.get("case_path"), "sha256": plan.get("case_sha256")}
@@ -85,17 +96,21 @@ def project_independent_price_condition(root: Path, *, symbol: str, plan: dict,
     output.update(schema_version="price-action-plan-independent-v2",
         legacy_observation_blockers=deepcopy(plan.get("blockers", [])),
         independent_admission=admission, blockers=list(dict.fromkeys(blockers)),
+        current_data_status=data_status,
         risk_review_eligible=admission["risk_review_eligible"] is True and not blockers,
         formal_eligibility=False, action_eligibility=False, portfolio_eligibility=None,
         position_guidance=None, trade_eligible=False, action="no_order")
     if review_action == "ADD":
         output["risk_review_action"] = "ADD"
+    if data_status != "CURRENT":
+        output = suppress_current_price_conditions(output)
     return output
 
 
 def load_independent_price_conditions(root: Path, *, now: datetime,
         research_version: str | None, allow_test_only: bool = False) -> dict:
-    legacy = load_price_conditions(root, now=now, research_version=research_version)
+    legacy = load_price_conditions(root, now=now, research_version=research_version,
+                                   retain_stale_observations=True)
     output = deepcopy(legacy)
     output.update(schema_version="independent-hotspot-price-conditions-v1", action="no_order")
     for item in output.get("items", []):

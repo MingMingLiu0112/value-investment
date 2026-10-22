@@ -2,6 +2,7 @@ import React from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { PrivateStateHandle } from "../src/hooks/usePrivateState";
 import { api } from "../src/services/api";
+import { evaluationFixture } from "./fixtures/strategy-readiness";
 const { renderToStaticMarkup } = require("react-dom/server");
 
 const state = vi.hoisted(() => ({
@@ -362,6 +363,42 @@ it("never calls incomplete evaluation a market with no opportunities", () => {
   expect(html).not.toContain("· 不交易");
   expect(html).toContain("经济假设未批准");
   expect(html).not.toContain("本次已评价范围内，无符合全部条件的新交易机会。");
+});
+
+it("mounts separate readiness workflows only within the verified daily publication", () => {
+  const value = evaluationFixture();
+  const hotspot = evaluationFixture("HOTSPOT_SATELLITE");
+  state.daily.data.actionable_evaluation = {
+    items: [value, hotspot],
+    conclusion: "INCOMPLETE_EVALUATION",
+    evaluated_count: 0,
+    unassessable_count: 2,
+  };
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain('aria-label="每日双策略流程"');
+  expect(html).toContain("公司研究形成");
+  expect(html).toContain("回放与策略验证");
+  expect(html).toContain("无法评价");
+  expect(html).toContain("independent_hotspot=true");
+  state.packet.data.publication_id = "other-publication";
+  expect(renderToStaticMarkup(<DailyDecisions />)).not.toContain(
+    'aria-label="每日双策略流程"',
+  );
+});
+
+it("keeps the old daily UI without readiness and never changes UNASSESSABLE to NO_TRADE", () => {
+  const legacy = { ...evaluationFixture(), readiness: undefined };
+  state.daily.data.actionable_evaluation = {
+    items: [legacy],
+    conclusion: "INCOMPLETE_EVALUATION",
+    evaluated_count: 0,
+    unassessable_count: 1,
+  };
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).not.toContain('aria-label="每日双策略流程"');
+  expect(html).toContain("逐公司结论与统计范围");
+  expect(html).toContain("无法评价");
+  expect(html).not.toContain("· 不交易");
 });
 
 it("keeps today's screening leads distinct from published research and actions", () => {

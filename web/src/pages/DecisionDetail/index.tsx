@@ -16,6 +16,9 @@ import {
   Typography,
 } from "antd";
 import { Workbench } from "../../components/Workbench";
+import { StrategyReadinessPanel } from "../../components/StrategyReadiness";
+import { ValueResearchAnalysis } from "../../components/ValueResearchAnalysis";
+import { readinessStrategy } from "../../utils/strategyReadiness";
 import { RemoteState } from "../../components/RemoteState";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
@@ -24,7 +27,10 @@ import {
   CurrentJudgmentChart,
   JudgmentSummary,
 } from "../../components/CurrentJudgment";
-import { fillLink } from "../../utils/currentJudgment";
+import {
+  fillLink,
+  publicationVersionsMatch,
+} from "../../utils/currentJudgment";
 import { statusLabel } from "../../utils/presentation";
 import { codeText, strategyText } from "../../utils/codes";
 import {
@@ -865,7 +871,36 @@ export default function DecisionDetail() {
   );
   const { data, loading, error, retry } = useApi(load);
   const packet = useApi(api.packet);
+  const daily = useApi(api.daily);
   const decision = data?.decision;
+  const readinessItem =
+    decision &&
+    !loading &&
+    !error &&
+    !packet.loading &&
+    !packet.error &&
+    !daily.loading &&
+    !daily.error &&
+    data?.action === "no_order" &&
+    daily.data?.action === "no_order" &&
+    data.publication?.packet_status === "CURRENT" &&
+    daily.data.publication?.packet_status === "CURRENT" &&
+    packet.data?.packet_status === "CURRENT" &&
+    publicationVersionsMatch(
+      data.publication.publication_id,
+      packet.data.publication_id,
+    ) &&
+    publicationVersionsMatch(
+      data.publication.publication_id,
+      daily.data.publication.publication_id,
+    )
+      ? daily.data.actionable_evaluation?.items.find(
+          (item) =>
+            item.symbol === decision.symbol &&
+            readinessStrategy(item.strategy) ===
+              readinessStrategy(decision.strategy),
+        )
+      : undefined;
   const progress = data?.financial_progress;
   const replay = data?.review_replay;
   const verifiedProgress =
@@ -907,6 +942,17 @@ export default function DecisionDetail() {
               {String(decision.name || decision.symbol || decision.id)}{" "}
               {decision.name && decision.symbol}
             </Typography.Title>
+            {readinessItem?.readiness && (
+              <StrategyReadinessPanel
+                item={readinessItem}
+                decision={decision}
+                company={
+                  packet.data?.source_bindings_verified === true
+                    ? packet.data.company_statuses?.[readinessItem.symbol]
+                    : undefined
+                }
+              />
+            )}
             {chain?.research_conclusion?.evidence_verified &&
               chain.research_conclusion.summary && (
                 <Alert
@@ -1002,6 +1048,12 @@ export default function DecisionDetail() {
                 ) : undefined
               }
             />
+            {!loading &&
+              !error &&
+              data?.action === "no_order" &&
+              data.publication?.packet_status === "CURRENT" && (
+                <ValueResearchAnalysis decision={decision} />
+              )}
             {data?.research_draft && (
               <ResearchDraftPanel draft={data.research_draft} />
             )}

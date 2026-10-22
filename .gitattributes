@@ -98,3 +98,11 @@ docs/current/tl8-c-601088-cycle-model-boundary-receipt-20261013.json -text white
 # evidence; failed build diagnostics remain local and are never included.
 artifacts/current/dual-strategy-v5/midea-economic-v1/** -text whitespace=cr-at-eol
 runtime/event-scan-supplements/000333-economic-v1-unsigned-20261021T193558422113Z/** -text whitespace=cr-at-eol
+
+# These public audit outputs are verified by their original byte hashes.
+artifacts/current/research-funnel-audit-20261017-v2/manifest.json -text
+artifacts/current/research-funnel-audit-20261017-v2/result.json -text
+artifacts/current/research-funnel-audit-20261017-v2/report.md -text
+artifacts/current/research-funnel-audit-20261017-v2/human-review-packet.json -text
+config/archive/price-conditions-20261017-e65444f2.json -text whitespace=cr-at-eol
+config/current-quote-bridge.json -text whitespace=cr-at-eol

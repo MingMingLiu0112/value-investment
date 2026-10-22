@@ -3,6 +3,7 @@ import { Button, Empty, Skeleton, Typography } from "antd";
 import { DecisionCard } from "../../components/DecisionCard";
 import { HoldingsAttention } from "../../components/HoldingsAttention";
 import { ConfirmationTasks } from "../../components/ConfirmationTasks";
+import { DailyStrategyReadiness } from "../../components/StrategyReadiness";
 import { Workbench } from "../../components/Workbench";
 import { useApi } from "../../hooks/useApi";
 import { usePrivateState } from "../../hooks/usePrivateState";
@@ -11,6 +12,10 @@ import type { DecisionItem } from "../../types/api";
 import { describeCode } from "../../utils/codes";
 import { hasValuationResult } from "../../utils/opportunityView";
 import { blockerText } from "../../utils/packet";
+import {
+  readinessDetailUrl,
+  readinessStrategy,
+} from "../../utils/strategyReadiness";
 import {
   judgmentGroup,
   judgmentGroups,
@@ -377,7 +382,15 @@ export default function DailyDecisions() {
                 {data.actionable_evaluation?.items.map((item) => (
                   <li key={`${item.strategy}-${item.symbol}`}>
                     <Link
-                      to={`/decisions/${item.strategy === "HOTSPOT_SATELLITE" ? "hotspot-" : ""}${item.symbol}`}
+                      to={readinessDetailUrl(
+                        item,
+                        [...data.sections.value, ...data.sections.hotspot].find(
+                          (row) =>
+                            row.symbol === item.symbol &&
+                            readinessStrategy(row.strategy) ===
+                              readinessStrategy(item.strategy),
+                        ),
+                      )}
                     >
                       {item.company_name || item.symbol} · {item.symbol}
                     </Link>
@@ -390,6 +403,15 @@ export default function DailyDecisions() {
               </ul>
             </details>
           </section>
+          <DailyStrategyReadiness
+            items={data.actionable_evaluation?.items ?? []}
+            decisions={[...data.sections.value, ...data.sections.hotspot]}
+            companyStatuses={
+              packet.data?.source_bindings_verified === true
+                ? packet.data.company_statuses
+                : undefined
+            }
+          />
           {update.data?.last_run?.screening && (
             <section aria-label="本次全市场初筛">
               <h3>本次全市场初筛（尚非交易机会）</h3>

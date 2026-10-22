@@ -16,6 +16,12 @@ describe("machine code translation", () => {
       "目前没有通过全部正式审核条件的买卖候选",
     );
     expect(codeText("PRICE_NOT_ADMITTED")).toBe("当前价格尚未获准用于正式决策");
+    expect(codeText("PUBLICATION_REGISTRY_MISMATCH")).toBe(
+      "当前发布注册表与已验证数据包不一致",
+    );
+    expect(codeText("PUBLICATION_REGISTRY_UNAVAILABLE")).toBe(
+      "当前发布注册表尚无法核验",
+    );
     expect(codeText("minimum_cash_cny")).toBe("现金底线");
     expect(codeText("time_horizon_years")).toBe("投资期限");
     expect(codeText("concentration_allowed")).toBe("是否允许集中");

@@ -38,6 +38,7 @@ export interface DecisionItem {
 }
 
 export interface CurrentPricePlan {
+  research_analysis?: ValueResearchAnalysis | null;
   independent_admission?: {
     status: string;
     review_status: string;
@@ -161,6 +162,47 @@ export interface CurrentPricePlan {
   hold_condition?: PlanCondition | null;
   reduce_condition?: PlanCondition | null;
   exit_condition?: PlanCondition | null;
+}
+
+export interface ValueResearchAnalysis {
+  schema_version: "value-research-analysis-v1";
+  symbol: string;
+  action: "no_order";
+  status: "CONDITIONAL_ANALYSIS_VERIFIED" | "SOURCE_OR_REPLAY_UNAVAILABLE";
+  arithmetic_complete: boolean;
+  economic_assumptions_reviewed: false;
+  action_admitted: false;
+  strategy_admitted: false;
+  price_comparison_eligible: false;
+  valuation_date?: string | null;
+  research_as_of?: string | null;
+  computed_at?: string | null;
+  scenarios: {
+    scenario: "bear" | "base" | "bull";
+    per_share_value: string | number | null;
+    inputs: Record<string, unknown>;
+  }[];
+  sensitivity?: {
+    status?: string;
+    rows: {
+      assumption_name: string;
+      field_path: string;
+      basis?: string | null;
+      rationale?: string | null;
+      evidence_refs?: { id?: string }[];
+      points: {
+        bound: string;
+        input_value: string | number | null;
+        status: string;
+        per_share_value: string | number | null;
+        delta_from_base?: string | number | null;
+        reason?: string;
+      }[];
+    }[];
+  } | null;
+  counter_evidence?: unknown;
+  model_applicability?: { blockers?: string[]; scope?: string | null };
+  source_bindings: { path: string; sha256: string }[];
 }
 
 export interface CurrentPriceCase {
@@ -473,6 +515,53 @@ export interface DailyDualSleeveSurface {
   source: string | null;
 }
 
+export type ReadinessStatus = "READY" | "PARTIAL" | "PENDING" | "NOT_EVALUATED";
+
+export interface StrategyReadiness {
+  schema_version: "strategy-readiness-v1";
+  strategy: string;
+  action: "no_order";
+  authorization_granted: false;
+  steps: {
+    key: string;
+    label: string;
+    status: ReadinessStatus;
+    reason: string;
+  }[];
+  primary_gap: {
+    code: string;
+    category: string;
+    summary: string;
+    next_action: string;
+    url: string;
+  } | null;
+  conditional_valuation: {
+    bear: string | number | null;
+    base: string | number | null;
+    bull: string | number | null;
+    currency: string | null;
+    as_of: string | null;
+    scope: "UNAPPROVED_RESEARCH_ONLY";
+  } | null;
+  price_snapshot: {
+    value: string | number | null;
+    date: string | null;
+    usage: "DISPLAY_ONLY";
+  } | null;
+  independent_of_value_valuation: boolean;
+}
+
+export interface DailyEvaluationItem {
+  symbol: string;
+  company_name?: string;
+  strategy: string;
+  decision_action: "NO_TRADE" | "UNASSESSABLE";
+  decision_reason: string;
+  evaluation_status: string;
+  eligibility: false;
+  readiness?: StrategyReadiness | null;
+}
+
 export interface DailyResponse {
   actionable_evaluation?: {
     action: "no_order";
@@ -481,15 +570,7 @@ export interface DailyResponse {
     unassessable_count: number;
     operation_eligible_count: number;
     conclusion: "INCOMPLETE_EVALUATION" | "NO_QUALIFIED_NEW_TRADE";
-    items: {
-      symbol: string;
-      company_name?: string;
-      strategy: string;
-      decision_action: "NO_TRADE" | "UNASSESSABLE";
-      decision_reason: string;
-      evaluation_status: string;
-      eligibility: false;
-    }[];
+    items: DailyEvaluationItem[];
   };
   action: "no_order";
   status: ApiStatus;
@@ -1199,7 +1280,7 @@ export interface DailyPublicSnapshot {
 }
 
 export interface RuntimeIdentity {
-  schema_version: "runtime-identity-v1";
+  schema_version: "runtime-identity-v1" | "runtime-identity-v2";
   action: "no_order";
   checked_at: string;
   status: "MATCHED" | "MISMATCH";
@@ -1215,6 +1296,11 @@ export interface RuntimeIdentity {
     source_dirty: boolean;
   } | null;
   web_index_sha256: string | null;
+  publication_registry?: {
+    status: "MATCHED" | "MISMATCH" | "UNAVAILABLE";
+    checked_count: number;
+    mismatched_roles: string[];
+  };
   publication: {
     status: string;
     publication_id: string | null;

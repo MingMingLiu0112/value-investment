@@ -110,6 +110,33 @@ def read_web_build(root: Path) -> dict | None:
     return value
 
 
+def publication_registry_status(root: Path, packet: dict | None) -> dict:
+    """Check mutable public registries against the snapshot that the UI serves."""
+    roles = {
+        "quote_bridge_pointer": "config/current-quote-bridge.json",
+        "research_registry": "config/current-company-research-registry.json",
+        "current_price_conditions": "config/current-price-conditions.json",
+        "hotspot_structure_rule": "config/hotspot-confirmed-structure-v1.json",
+    }
+    if (not isinstance(packet, dict) or packet.get("packet_status") != "CURRENT"
+            or packet.get("source_bindings_verified") is not True):
+        return {"status": "UNAVAILABLE", "checked_count": 0, "mismatched_roles": []}
+    inputs = packet.get("identity_inputs")
+    inputs = inputs if isinstance(inputs, dict) else {}
+    mismatches = []
+    for role, relative in roles.items():
+        binding = inputs.get(role)
+        target = root / relative
+        if (not isinstance(binding, dict) or binding.get("path") != relative
+                or not isinstance(binding.get("observed_sha256"), str)
+                or not re.fullmatch(r"[0-9a-f]{64}", binding["observed_sha256"])
+                or not target.resolve().is_relative_to(root.resolve())
+                or sha256(target) != binding["observed_sha256"]):
+            mismatches.append(role)
+    return {"status": "MISMATCH" if mismatches else "MATCHED",
+            "checked_count": len(roles), "mismatched_roles": mismatches}
+
+
 def runtime_identity(root: Path, *, backend_head: str | None,
                      backend_module: Path, backend_module_sha: str | None) -> dict:
     current_head = git_head(root)

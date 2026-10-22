@@ -9,6 +9,36 @@ from value_investment_agent.presentation.web_api import runtime_identity as iden
 HEAD = "a" * 40
 
 
+def test_publication_registry_checks_snapshot_not_git_cleanliness(tmp_path):
+    import hashlib
+    paths = dict(quote_bridge_pointer="config/current-quote-bridge.json",
+        research_registry="config/current-company-research-registry.json",
+        current_price_conditions="config/current-price-conditions.json",
+        hotspot_structure_rule="config/hotspot-confirmed-structure-v1.json")
+    packet = dict(packet_status="CURRENT", source_bindings_verified=True, identity_inputs={})
+    (tmp_path / "config").mkdir()
+    for role, relative in paths.items():
+        content = b'{"action":"no_order"}'
+        (tmp_path / relative).write_bytes(content)
+        packet["identity_inputs"][role] = dict(path=relative,
+            observed_sha256=hashlib.sha256(content).hexdigest())
+    assert identity.publication_registry_status(tmp_path, packet)["status"] == "MATCHED"
+    (tmp_path / paths["current_price_conditions"]).write_bytes(b'{}')
+    result = identity.publication_registry_status(tmp_path, packet)
+    assert result["status"] == "MISMATCH"
+    assert result["mismatched_roles"] == ["current_price_conditions"]
+    assert result["checked_count"] == 4
+
+
+def test_publication_registry_rejects_missing_and_arbitrary_paths(tmp_path):
+    assert identity.publication_registry_status(tmp_path, None)["status"] == "UNAVAILABLE"
+    packet = dict(packet_status="CURRENT", source_bindings_verified=True,
+        identity_inputs={"quote_bridge_pointer": dict(path="../private.json", observed_sha256="a"*64)})
+    result = identity.publication_registry_status(tmp_path, packet)
+    assert result["status"] == "MISMATCH"
+    assert "quote_bridge_pointer" in result["mismatched_roles"]
+
+
 def test_runtime_identity_reports_matching_build_and_backend(tmp_path, monkeypatch):
     module = tmp_path / "backend.py"
     module.write_text("loaded", encoding="utf-8")

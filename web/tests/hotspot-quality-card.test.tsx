@@ -59,7 +59,7 @@ it("shows second-layer quality even when a local trigger was observed against a 
   expect(html).toContain("A · 活跃观察，结构不满足");
   expect(html).toContain("日线下降，局部触发不构成入场条件");
   expect(html).not.toContain("decision-state-formal");
-  expect(html).toContain('href="/decisions/current"');
+  expect(html).toContain('href="/decisions/current?independent_hotspot=true"');
 });
 
 it("never upgrades a backend active-only observation to a qualified structure", () => {

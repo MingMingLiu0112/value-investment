@@ -53,8 +53,10 @@ export default function SystemStatus() {
                   : runtime.error
                     ? "无法核对"
                     : runtime.data?.status === "MATCHED" && clientMatchesServed
-                      ? "前端、后端与当前源码一致"
-                      : "版本不一致；请查看下方各层版本",
+                      ? runtime.data.publication_registry?.status === "MATCHED"
+                        ? "前端、后端、当前源码与发布注册表一致"
+                        : "前端、后端与当前源码一致；发布注册表未核验"
+                      : "运行状态存在差异；请查看下方版本问题",
               },
               {
                 key: "client",
@@ -95,7 +97,7 @@ export default function SystemStatus() {
                 label: "版本问题",
                 children: runtime.error
                   ? runtime.error
-                  : runtime.data?.reasons.join("、") ||
+                  : runtime.data?.reasons.map(describeCode).join("、") ||
                     (clientMatchesServed ? "无" : "浏览器页面与服务器构建不同"),
               },
             ]}

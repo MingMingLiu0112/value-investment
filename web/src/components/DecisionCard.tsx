@@ -128,7 +128,7 @@ export function DecisionCard({ item }: { item: DecisionItem }) {
       )}
       <Link
         className="decision-link"
-        to={`/decisions/${encodeURIComponent(item.id)}`}
+        to={`/decisions/${encodeURIComponent(item.id)}${hotspot ? "?independent_hotspot=true" : ""}`}
       >
         查看操作条件 <ArrowRightOutlined aria-hidden />
       </Link>

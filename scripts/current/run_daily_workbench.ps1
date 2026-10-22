@@ -33,7 +33,7 @@ Exit codes (update result first, Web result second):
 #>
 param(
     [ValidateSet('READ_ONLY', 'SAFE_REFRESH')][string]$Mode = 'READ_ONLY',
-    [ValidateRange(1024, 65535)][int]$Port = 8001,
+    [ValidateSet(8001)][int]$Port = 8001,
     [switch]$Open,
     [switch]$NoServer,
     [switch]$Reauthorize,

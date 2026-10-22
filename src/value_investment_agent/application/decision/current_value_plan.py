@@ -2,8 +2,68 @@
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
+from zoneinfo import ZoneInfo
+import json
 
 from .value_action_plan import load_registered_value_action_plans
+from ...domain.decision.value_action_plan import build_value_action_plan
+from ..product.research_draft import load_current_research_analysis
+
+
+def load_current_value_action_plans(root: Path, *, now: datetime,
+        symbols: list[str] | tuple[str, ...] | None = None) -> dict:
+    """Extend the byte-bound legacy loader with independently verified analysis."""
+    current = load_registered_value_action_plans(root, now=now, symbols=symbols)
+    items, blockers, bindings = current['items'], current['blockers'], current['source_bindings']
+    analysis_symbols = set(symbols or [item['symbol'] for item in items])
+    if symbols is None:
+        for name, field in (("user-research-workflow-v1.json", "supplemental_review_candidates"),
+                            ("current-pending-candidate-replays-v1.json", "publications")):
+            path = root / "config" / name
+            if path.exists():
+                try:
+                    entries = json.loads(path.read_bytes()).get(field, {})
+                    if (not isinstance(entries, dict) or any(not isinstance(key, str)
+                            or len(key) != 6 or not key.isdigit() for key in entries)):
+                        raise ValueError("Invalid pending analysis registry")
+                    analysis_symbols.update(entries)
+                except (ValueError, OSError, KeyError, TypeError) as error:
+                    blockers.append("VALUE_ANALYSIS_REGISTRY_UNAVAILABLE:" + str(error))
+    by_symbol = {item['symbol']: item for item in items}
+    for symbol in sorted(analysis_symbols):
+        analysis = load_current_research_analysis(root, symbol, now=now)
+        if analysis is None:
+            continue
+        plan = by_symbol.get(symbol)
+        if plan is None and analysis['arithmetic_complete']:
+            explanation = dict(symbol=symbol, company_name=analysis['company_name'], action="no_order",
+                research_as_of=analysis['research_as_of'],
+                decision_as_of=now.astimezone(ZoneInfo('Asia/Shanghai')).date().isoformat(),
+                valuation=analysis['valuation'], candidate_action="NO_ACTION", blockers=analysis['blockers'],
+                thesis=analysis['thesis'], counter_evidence=analysis['counter_evidence'],
+                thesis_breakers=analysis['thesis_breakers'], next_events=analysis['next_events'])
+            plan = build_value_action_plan(explanation=explanation,
+                source_bindings=tuple(analysis['source_bindings'])).as_policy()
+            plan['verification_scope'] = "SOURCE_BOUND_PENDING_ARITHMETIC_NOT_APPROVAL"
+            items.append(plan)
+        if plan is not None:
+            plan['research_analysis'] = analysis
+            plan['research_analysis_status'] = analysis['status']
+        if not analysis['arithmetic_complete']:
+            blockers.extend(analysis['blockers'])
+        bindings.extend(source for source in analysis['source_bindings'] if source not in bindings)
+    return {**current, 'status': 'VALUE_RESEARCH_OBSERVATION' if items else 'BLOCKED'}
+
+
+def _with_current_analysis(root: Path, plan: dict, now: datetime) -> dict:
+    result = dict(plan)
+    result.pop('research_analysis', None)
+    result.pop('research_analysis_status', None)
+    analysis = load_current_research_analysis(root, plan['symbol'], now=now)
+    if analysis is not None:
+        result['research_analysis'] = analysis
+        result['research_analysis_status'] = analysis['status']
+    return result
 
 
 def revalidate_current_value_plan(root: Path, frozen: dict, *, now: datetime) -> dict:
@@ -12,7 +72,7 @@ def revalidate_current_value_plan(root: Path, frozen: dict, *, now: datetime) ->
     current = load_registered_value_action_plans(root, now=now, symbols=[frozen["symbol"]])
     rebuilt = next((row for row in current["items"] if row["symbol"] == frozen["symbol"]), None)
     if rebuilt is not None and all(frozen.get(key) == value for key, value in rebuilt.items()):
-        return frozen
+        return _with_current_analysis(root, frozen, now)
     # Retain the immutable prior packet itself for historical review, while the
     # current view must not reuse conditions whose source/date no longer checks.
     result = {**frozen, "signal_state": "STALE" if rebuilt else "BLOCKED", "action_intent": None,
@@ -42,4 +102,4 @@ def revalidate_current_value_plan(root: Path, frozen: dict, *, now: datetime) ->
     for action in ("entry", "add", "reduce", "exit"):
         result[action + "_condition"] = None
         result[action + "_trigger_price"] = None
-    return result
+    return _with_current_analysis(root, result, now)

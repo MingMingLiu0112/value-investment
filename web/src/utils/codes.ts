@@ -49,6 +49,8 @@ const CODE_TEXT: Record<string, string> = {
   UNVERIFIED_PROVIDER_TRADE_DATE: "行情供应商的交易日期尚未独立核实",
   NO_FORMAL_ADMISSION: "目前没有通过全部正式审核条件的买卖候选",
   PUBLICATION_CHAIN_UNAVAILABLE: "发布链不可用（哈希或结构校验未通过）",
+  PUBLICATION_REGISTRY_MISMATCH: "当前发布注册表与已验证数据包不一致",
+  PUBLICATION_REGISTRY_UNAVAILABLE: "当前发布注册表尚无法核验",
   NEEDS_RE_RESEARCH: "需要重新研究以覆盖最新已核验收盘",
   MODEL_VALIDITY_UNKNOWN: "模型有效性未确立",
   VALUE_EXPLANATION_BINDING_UNAVAILABLE: "研究解释绑定不可用",

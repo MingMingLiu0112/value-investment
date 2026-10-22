@@ -158,7 +158,16 @@ def project_actionable_evaluation(item: dict) -> dict:
         if plan.get("qualification") == "RESEARCH_SCENARIO":
             result["decision_reason"] = "估值或适用价格政策证据不足；研究情景不是已批准的建仓价格。"
             return result
-    if state in {"STALE", "EXPIRED", "BLOCKED", "HISTORICAL_OBSERVATION_NOT_ADMITTED"}:
+    if state == "BLOCKED":
+        if view["strategy"] == "CORE_VALUE":
+            result["decision_reason"] = "研究估值或操作政策尚未形成可用依据；已取得行情也不能代替研究。"
+        elif "CURRENT_CASE_CHANGED_OR_STALE" in result["required_confirmation"] or not plan.get("price_behavior"):
+            result["decision_reason"] = "当前价格结构或原始证据未通过核验，暂不能形成波段操作判断。"
+        else:
+            result["decision_reason"] = "波段结构已有观察，但独立策略验证、事件或风险前置未通过；不是价值估值未通过。"
+        result["current_verified_reference_price"] = None
+        return result
+    if state in {"STALE", "EXPIRED", "HISTORICAL_OBSERVATION_NOT_ADMITTED"}:
         result["decision_reason"] = "行情或计划失效，不能据此判断当前是否存在交易机会。"
         result["current_verified_reference_price"] = None
         return result

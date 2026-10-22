@@ -274,8 +274,9 @@ def _published_runtime_artifacts_present() -> bool:
 def test_live_history_binds_real_published_decisions():
     body = TestClient(create_app(ROOT)).get("/api/v1/decision-history").json()
     assert body["status"] == "CONNECTED"
-    assert body["published_decision_history"]["status"] == "CURRENT_ONLY"
-    assert body["published_decision_history"]["history"] == []
+    history = body["published_decision_history"]["history"]
+    assert body["published_decision_history"]["status"] == (
+        "HISTORY_AVAILABLE" if history else "CURRENT_ONLY")
     current = {row["symbol"]: row for row in
                body["published_decision_history"]["current_published_decisions"]}
     assert current["600887"]["candidate_action"] == "NO_ACTION"

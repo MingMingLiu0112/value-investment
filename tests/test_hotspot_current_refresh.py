@@ -317,6 +317,9 @@ def test_retired_candidate_preserves_valid_quality_without_fresh_assessment(tmp_
     monkeypatch.setattr(current_registry, 'load_current_price_case',
                         lambda **kwargs: dict(symbol=kwargs['symbol'], case_path='runtime/case.json',
                                               case_sha256='a' * 64))
+    monkeypatch.setattr(current_registry, 'inspect_current_price_case', lambda **kwargs: dict(
+        data_status='CURRENT', source_integrity='VERIFIED',
+        case=dict(symbol=kwargs['symbol'], case_path='runtime/case.json', case_sha256='a' * 64)))
     monkeypatch.setattr(current_registry, 'project_current_price_action_plan',
                         lambda case: dict(signal_state=state, action_intent='OPEN',
                                         market_trade_date='2026-10-14', expires_after_session='2026-10-15',

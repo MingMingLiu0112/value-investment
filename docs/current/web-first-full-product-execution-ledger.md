@@ -1880,6 +1880,43 @@ The isolated materiality tab remains subject to manual URL-policy recovery; publ
 main-site verification does not substitute for that authenticated workflow.
 Total Goal IN_PROGRESS; real assisted use NOT_PROVEN; action=no_order.
 
+### 2026-10-22 bounded dual-strategy integration
+
+Ordinary engineering work, not a new Goal. Three bounded workers integrated
+value research, independent hotspot observations and the existing daily/detail
+Web pages on a branch from 63d48ff2. The original dirty canonical checkout,
+private journal, canonical workbook and PTA server were not modified by this
+work package. The user-facing endpoint remains loopback 8001.
+
+Current pending 600519 and 600887 research is recomputed from its exact registered
+source inputs. The read model exposes three scenarios, consumed assumptions,
+one-factor sensitivity, counterevidence and source bindings. Arithmetic is not
+economic approval. New analysis never inherits an older model's validity, and
+a failed current quote check never recovers a frozen quote as current evidence.
+The original valuation model and frozen value_action_plan bytes are unchanged.
+
+Daily hotspot rows now use the same independent-v2 projection as their detail
+links. Retired candidates remain in history, not today's pool. Source-integrity
+failures and verified stale observations stay distinct, and stale conditions
+are suppressed. The retained five-security replay has 161 signal events, 150
+complete five-day paths and 11 right-censored paths, not 161 trades. Cost
+evidence, strict PIT/OOS, natural Shadow sessions and human approval remain
+unproven. No private capacity or action permission is inferred.
+
+The retained publication pub-c7e8c45a229c2006ee96 required two matching current
+registries. Their exact public source bytes were restored, with SHA-256 guards;
+runtime identity now checks all four public registry bindings. One historical
+price registry required restoration of its original CRLF bytes (e65444f2...),
+not a changed audit expectation. Exact Git attributes protect these originals.
+
+Targeted integration: 333 passed, 2 explicitly gated live-process skips.
+Hotspot portable regression: 358 passed, 3 missing-original skips; restored
+historical structure regression: 17 passed. Frontend worker verification:
+430 tests passed and responsive layout checked at 1440/768/390/320 pixels.
+These do not prove investment effectiveness or real-account readiness. Full
+clean-checkout Core, remote CI and the final live build are separate acceptance
+steps; their results must be recorded before claiming release completion.
+
 Final local Web: 323 tests, typecheck, formatting and build passed. Actual existing
 main-site browser detail displays 83.86/2026-10-21 with verified-close-only wording
 and no decision admission. Saved screenshot has measured document width 1265 with

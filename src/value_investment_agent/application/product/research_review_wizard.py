@@ -363,6 +363,15 @@ def _build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=
             *result['source_bindings'], supplement['registry_binding'],
             supplement['candidate_binding'], supplement['package_binding'],
             supplement['workbench_binding'], supplement['review_packet_binding']]}.values())
+    if replay is not None or supplement is not None:
+        from ..research.value_research_analysis import project_value_research_analysis
+        inputs = supplement if supplement is not None else replay['publication']
+        analysis = project_value_research_analysis(root=root, now=now,
+            package_binding=inputs['package_binding'], workbench_binding=inputs['workbench_binding'])
+        analysis['review_binding'] = dict(candidate_binding=binding,
+            model_context=result['model_context'], valuation_artifact_sha256=valuation_hash,
+            review_packet_binding=inputs['review_packet_binding'])
+        result['value_research_analysis'] = analysis
     if ((bound_draft or replay is not None or supplement is not None)
             and materiality_handoff.get('handoff_binding')):
         result['source_bindings'] = list({item['path']: item for item in [

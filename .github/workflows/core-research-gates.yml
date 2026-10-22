@@ -31,6 +31,10 @@ jobs:
         run: >-
           mkdir -p .tmp && python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest --junitxml=.tmp/offline-core-results.xml
           tests/test_research_gate.py
+          tests/test_strategy_readiness.py
+          tests/test_first_use_value_analysis.py
+          tests/test_hotspot_current_case_review.py
+          tests/test_hotspot_observation_plan.py
           tests/test_core_workflow_targets.py
           tests/test_hotspot_price_behavior.py
           tests/test_hotspot_event_replay.py

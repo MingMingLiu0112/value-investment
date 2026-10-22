@@ -165,9 +165,25 @@ def test_hotspot_detail_uses_independent_projection_after_current_case_verificat
         assert result['signal_state'] == 'STALE'
         assert result['entry_trigger_price'] is result['invalidation_price'] is None
     assert packet == before
+    daily = client.get('/api/v1/daily-decisions').json()
+    daily_plan = daily['sections']['hotspot'][0]['price_action_plan']
+    assert daily_plan['schema_version'] == 'price-action-plan-independent-v2'
+    assert 'VALUE_GATE_NOT_PROVEN' not in daily_plan['blockers']
+    daily_readiness = next(row['readiness'] for row in daily['actionable_evaluation']['items']
+                           if row['strategy'] == 'HOTSPOT_SATELLITE')
+    assert daily_readiness['independent_of_value_valuation'] is True
+    assert daily_readiness['authorization_granted'] is False
+    assert not any(step['key'] == 'valuation' for step in daily_readiness['steps'])
+    assert packet == before
     legacy = client.get('/api/v1/decisions/hotspot-600519-test').json()['decision']['price_action_plan']
     assert legacy['schema_version'] == 'price-action-plan-current-v1'
     assert 'VALUE_GATE_NOT_PROVEN' in legacy['blockers']
+    plan['candidate_lifecycle'] = 'PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY'
+    retired = client.get('/api/v1/daily-decisions').json()
+    assert retired['sections']['hotspot'] == []
+    assert not any(row['strategy'] == 'HOTSPOT_SATELLITE'
+                   for row in retired['actionable_evaluation']['items'])
+    assert client.get('/api/v1/decisions/hotspot-600519-test').json()['decision'] is not None
     portfolio = client.get("/api/v1/portfolio").json()
     assert portfolio["action"] == "no_order"
     assert portfolio["status"] == "NOT_CONNECTED"

@@ -1,13 +1,503 @@
 {
   "schema_version": "current-price-conditions-v1",
   "action": "no_order",
-  "observation_scope": "LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
+  "observation_scope": "SAME_SESSION_B1",
   "watch_source_binding": {
-    "path": "runtime/hotspot-daily-selection/318a078e87de44d9a08b1cecafdda4e1/report.json",
-    "sha256": "3df8773984d1945607e7197ce4a68fb79ab4bded8d06f198471fadf166cb135e"
+    "path": "runtime/hotspot-daily-selection/220ddb31a4ed40fda304d0c08511ecfb/report.json",
+    "sha256": "68454c29991a5fb41086e3c4eedd35ebf9fbf012473eee0e6e665fa2ba70190d"
   },
   "watch_source_scope": "DATED_DAILY_CROSS_INDUSTRY_CANDIDATE_POOL",
   "items": [
+    {
+      "symbol": "600246",
+      "company_name": "万通发展",
+      "industry": "房地产",
+      "rank": 1209,
+      "case_path": "runtime/hotspot-current-price-cases/600246-2026-10-21-497a76cb885b41f18993e14b2f783cad/case.json",
+      "case_sha256": "29b4e09ceae8b75460f5067a8a8e4b18ecdc2e99fb1455d1bf2be909d73cd86a",
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "activity_rank": 1209,
+      "structure_selection_evidence": {
+        "trade_space_known": true,
+        "primary_confirmed": true,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    },
+    {
+      "symbol": "600693",
+      "company_name": "东百集团",
+      "industry": "商贸零售",
+      "rank": 1470,
+      "case_path": "runtime/hotspot-current-price-cases/600693-2026-10-21-5b3b6b71a87a45c19ae85aad1e8dce60/case.json",
+      "case_sha256": "dd0dededcc34aa5a2545c4516fc0c12dc7d0a108e27948d8f91fcfa183980b94",
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "activity_rank": 1470,
+      "structure_selection_evidence": {
+        "trade_space_known": true,
+        "primary_confirmed": false,
+        "daily_uptrend": true,
+        "auxiliary_confirmed": true
+      }
+    },
+    {
+      "symbol": "000592",
+      "company_name": "平潭发展",
+      "industry": "农林牧渔",
+      "rank": 126,
+      "case_path": "runtime/hotspot-current-price-cases/000592-2026-10-21-d5fa905cea5d4de7aac9ce7e4065997d/case.json",
+      "case_sha256": "d24f89afffa8914821b0abf93ab611790ebe386a8ef62fc4413f324c469141d1",
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "activity_rank": 126,
+      "structure_selection_evidence": {
+        "trade_space_known": true,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    },
+    {
+      "symbol": "300308",
+      "company_name": "中际旭创",
+      "industry": "通信",
+      "rank": 225,
+      "case_path": "runtime/hotspot-current-price-cases/300308-2026-10-21-f1fa7482056447eaa34a0a33496e4fd3/case.json",
+      "case_sha256": "fe94a8ae8205f2fb97ccb4c20e360e03f6a37fad8e40cb4e0832904a155543d2",
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "activity_rank": 225,
+      "structure_selection_evidence": {
+        "trade_space_known": true,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    },
+    {
+      "symbol": "688825",
+      "company_name": "长鑫科技",
+      "industry": "电子",
+      "rank": 724,
+      "case_path": "runtime/hotspot-current-price-cases/688825-2026-10-21-efc35799f3ed4ca7be6044a3d50d540d/case.json",
+      "case_sha256": "ec07fb644af5b0e001cb3e27e2a1b396fbd78ee68b3e807d37cfd6f210492c96",
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "activity_rank": 724,
+      "structure_selection_evidence": {
+        "trade_space_known": true,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    }
+  ],
+  "failures": [],
+  "candidate_pool_symbols": [
+    "600825",
+    "000592",
+    "300308",
+    "000938",
+    "600176",
+    "688825",
+    "600246",
+    "600667",
+    "601857",
+    "600693"
+  ],
+  "assessed_candidates": [
+    {
+      "symbol": "600246",
+      "company_name": "万通发展",
+      "activity_rank": 1209,
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "case_path": "runtime/hotspot-current-price-cases/600246-2026-10-21-497a76cb885b41f18993e14b2f783cad/case.json",
+      "case_sha256": "29b4e09ceae8b75460f5067a8a8e4b18ecdc2e99fb1455d1bf2be909d73cd86a",
+      "structure_selection_evidence": {
+        "trade_space_known": true,
+        "primary_confirmed": true,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    },
+    {
+      "symbol": "600693",
+      "company_name": "东百集团",
+      "activity_rank": 1470,
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "case_path": "runtime/hotspot-current-price-cases/600693-2026-10-21-5b3b6b71a87a45c19ae85aad1e8dce60/case.json",
+      "case_sha256": "dd0dededcc34aa5a2545c4516fc0c12dc7d0a108e27948d8f91fcfa183980b94",
+      "structure_selection_evidence": {
+        "trade_space_known": true,
+        "primary_confirmed": false,
+        "daily_uptrend": true,
+        "auxiliary_confirmed": true
+      }
+    },
+    {
+      "symbol": "000592",
+      "company_name": "平潭发展",
+      "activity_rank": 126,
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "case_path": "runtime/hotspot-current-price-cases/000592-2026-10-21-d5fa905cea5d4de7aac9ce7e4065997d/case.json",
+      "case_sha256": "d24f89afffa8914821b0abf93ab611790ebe386a8ef62fc4413f324c469141d1",
+      "structure_selection_evidence": {
+        "trade_space_known": true,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    },
+    {
+      "symbol": "300308",
+      "company_name": "中际旭创",
+      "activity_rank": 225,
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "case_path": "runtime/hotspot-current-price-cases/300308-2026-10-21-f1fa7482056447eaa34a0a33496e4fd3/case.json",
+      "case_sha256": "fe94a8ae8205f2fb97ccb4c20e360e03f6a37fad8e40cb4e0832904a155543d2",
+      "structure_selection_evidence": {
+        "trade_space_known": true,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    },
+    {
+      "symbol": "688825",
+      "company_name": "长鑫科技",
+      "activity_rank": 724,
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "case_path": "runtime/hotspot-current-price-cases/688825-2026-10-21-efc35799f3ed4ca7be6044a3d50d540d/case.json",
+      "case_sha256": "ec07fb644af5b0e001cb3e27e2a1b396fbd78ee68b3e807d37cfd6f210492c96",
+      "structure_selection_evidence": {
+        "trade_space_known": true,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    },
+    {
+      "symbol": "600667",
+      "company_name": "太极实业",
+      "activity_rank": 1295,
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "case_path": "runtime/hotspot-current-price-cases/600667-2026-10-21-f1e984aa24e0476192e3e8cfc63f1d0e/case.json",
+      "case_sha256": "9dfad3f0205ee1332fbfd05fbfff95ae3a4f8b537cd74a21f42f655136ea0228",
+      "structure_selection_evidence": {
+        "trade_space_known": true,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    },
+    {
+      "symbol": "600825",
+      "company_name": "新华传媒",
+      "activity_rank": 1,
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "case_path": "runtime/hotspot-current-price-cases/600825-2026-10-21-cb4a11eef8174fdc9527167ac81f274d/case.json",
+      "case_sha256": "d436f3c896512ae0aec6cdd2cb8a557d9eadba6d94056d674dd4debe0d784251",
+      "structure_selection_evidence": {
+        "trade_space_known": false,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    },
+    {
+      "symbol": "000938",
+      "company_name": "紫光股份",
+      "activity_rank": 340,
+      "structure_tier": "CONFLICT_OR_REJECTED",
+      "structure_reasons": [
+        "DAILY_DOWNTREND_CONFLICT"
+      ],
+      "signal_state": "WATCH",
+      "case_path": "runtime/hotspot-current-price-cases/000938-2026-10-21-ce5754d3dcf14690829bee7ab744c8fc/case.json",
+      "case_sha256": "ae82ed2d1b77c356708f0c1a1a94805f4f0095dc89b022b4b367983e37487f84",
+      "structure_selection_evidence": {
+        "trade_space_known": false,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    },
+    {
+      "symbol": "600176",
+      "company_name": "中国巨石",
+      "activity_rank": 656,
+      "structure_tier": "CONFLICT_OR_REJECTED",
+      "structure_reasons": [
+        "DAILY_DOWNTREND_CONFLICT"
+      ],
+      "signal_state": "WATCH",
+      "case_path": "runtime/hotspot-current-price-cases/600176-2026-10-21-cab041b2fb2d4d34a2826dd551ca7c26/case.json",
+      "case_sha256": "40bb48bc914c058014062e3ad6b0e6c2b1c3cefd8bd1da767642682aa1582f26",
+      "structure_selection_evidence": {
+        "trade_space_known": false,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    },
+    {
+      "symbol": "601857",
+      "company_name": "中国石油",
+      "activity_rank": 1426,
+      "structure_tier": "CONFLICT_OR_REJECTED",
+      "structure_reasons": [
+        "DAILY_DOWNTREND_CONFLICT"
+      ],
+      "signal_state": "WATCH",
+      "case_path": "runtime/hotspot-current-price-cases/601857-2026-10-21-34c92d2e6342439ca6a44484ccd9978d/case.json",
+      "case_sha256": "2cc50ddba6f8f9b8fa306fa2fcf7b66621c8da9fa500c1d313c0d331a00f246b",
+      "structure_selection_evidence": {
+        "trade_space_known": false,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    }
+  ],
+  "rejected_representatives": [
+    {
+      "symbol": "000938",
+      "company_name": "紫光股份",
+      "industry": "计算机",
+      "rank": 340,
+      "case_path": "runtime/hotspot-current-price-cases/000938-2026-10-21-ce5754d3dcf14690829bee7ab744c8fc/case.json",
+      "case_sha256": "ae82ed2d1b77c356708f0c1a1a94805f4f0095dc89b022b4b367983e37487f84",
+      "structure_tier": "CONFLICT_OR_REJECTED",
+      "structure_reasons": [
+        "DAILY_DOWNTREND_CONFLICT"
+      ],
+      "signal_state": "WATCH",
+      "activity_rank": 340,
+      "structure_selection_evidence": {
+        "trade_space_known": false,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    },
+    {
+      "symbol": "600176",
+      "company_name": "中国巨石",
+      "industry": "建筑材料",
+      "rank": 656,
+      "case_path": "runtime/hotspot-current-price-cases/600176-2026-10-21-cab041b2fb2d4d34a2826dd551ca7c26/case.json",
+      "case_sha256": "40bb48bc914c058014062e3ad6b0e6c2b1c3cefd8bd1da767642682aa1582f26",
+      "structure_tier": "CONFLICT_OR_REJECTED",
+      "structure_reasons": [
+        "DAILY_DOWNTREND_CONFLICT"
+      ],
+      "signal_state": "WATCH",
+      "activity_rank": 656,
+      "structure_selection_evidence": {
+        "trade_space_known": false,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    },
+    {
+      "symbol": "601857",
+      "company_name": "中国石油",
+      "industry": "石油石化",
+      "rank": 1426,
+      "case_path": "runtime/hotspot-current-price-cases/601857-2026-10-21-34c92d2e6342439ca6a44484ccd9978d/case.json",
+      "case_sha256": "2cc50ddba6f8f9b8fa306fa2fcf7b66621c8da9fa500c1d313c0d331a00f246b",
+      "structure_tier": "CONFLICT_OR_REJECTED",
+      "structure_reasons": [
+        "DAILY_DOWNTREND_CONFLICT"
+      ],
+      "signal_state": "WATCH",
+      "activity_rank": 1426,
+      "structure_selection_evidence": {
+        "trade_space_known": false,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      }
+    }
+  ],
+  "selection_pipeline": {
+    "activity_observation_count": 5,
+    "candidate_pool_count": 10,
+    "candidate_pool_industry_count": 10,
+    "assessed_count": 10,
+    "failed_count": 0,
+    "final_count": 5,
+    "quality_counts": {
+      "STRUCTURE_QUALIFIED_OBSERVATION": 0,
+      "ACTIVE_ONLY": 7,
+      "CONFLICT_OR_REJECTED": 3
+    },
+    "stage_order": [
+      "activity_observation",
+      "cross_industry_candidate_pool",
+      "completed_price_structure",
+      "structure_evidence_then_activity_ranking"
+    ],
+    "final_rule_version": "hotspot-structure-evidence-then-activity-ranking-v2",
+    "ranking_scope": "OBSERVATION_PRIORITY_NOT_STRATEGY_ADMISSION",
+    "rejected_representative_count": 0,
+    "action": "no_order"
+  },
+  "selected_symbols": [
+    "600246",
+    "600693",
+    "000592",
+    "300308",
+    "688825"
+  ],
+  "completed_at": "2026-10-21T10:46:57.618034+00:00",
+  "previous_items": [
+    {
+      "symbol": "603986",
+      "company_name": "兆易创新",
+      "industry": "电子",
+      "rank": 709,
+      "case_path": "runtime/hotspot-current-price-cases/603986-2026-10-21-014c56c60bf74b7885949a12d4a9b6be/case.json",
+      "case_sha256": "917a83cf54a1d1fc0684fa4e06f0af587cc15870242a69b5c20c7d7b9f86a844",
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "activity_rank": 709,
+      "structure_selection_evidence": {
+        "trade_space_known": true,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      },
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/5be3b1341a92420b84fa03dfefd3366e/report.json",
+        "sha256": "d1702e5d8aa6d98e9a4a620366b1067fdb51b6aaa4147c06e3a47bed94036874"
+      },
+      "watch_source_scope": "DATED_DAILY_CROSS_INDUSTRY_CANDIDATE_POOL"
+    },
+    {
+      "symbol": "300821",
+      "company_name": "东岳硅材",
+      "industry": "基础化工",
+      "rank": 2716,
+      "case_path": "runtime/hotspot-current-price-cases/300821-2026-10-20-d087e8af5a574ff282589076439931a2/case.json",
+      "case_sha256": "83280b8fcf13a15be0e4993a4cd880ffdd6a751572bb8f3fff48fdb14aee714b",
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "activity_rank": 2716,
+      "structure_selection_evidence": {
+        "trade_space_known": true,
+        "primary_confirmed": false,
+        "daily_uptrend": true,
+        "auxiliary_confirmed": false
+      },
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/edf609b37940427ba2ca40e5ec2802a9/report.json",
+        "sha256": "82f3265b94884286468387a3b84e744dd64e1ea7f6c0bfb675dd65bcbdb62c48"
+      },
+      "watch_source_scope": "DATED_DAILY_CROSS_INDUSTRY_CANDIDATE_POOL"
+    },
+    {
+      "symbol": "002242",
+      "company_name": "九阳股份",
+      "industry": "家用电器",
+      "rank": 1437,
+      "case_path": "runtime/hotspot-current-price-cases/002242-2026-10-20-ade5ed6440a143f89b99853414b24cf3/case.json",
+      "case_sha256": "8fb2d8db051dbdcc4a219cd83764d9018f2150b14fac1b963124803b17b4b321",
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "activity_rank": 1437,
+      "structure_selection_evidence": {
+        "trade_space_known": false,
+        "primary_confirmed": false,
+        "daily_uptrend": true,
+        "auxiliary_confirmed": false
+      },
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/edf609b37940427ba2ca40e5ec2802a9/report.json",
+        "sha256": "82f3265b94884286468387a3b84e744dd64e1ea7f6c0bfb675dd65bcbdb62c48"
+      },
+      "watch_source_scope": "DATED_DAILY_CROSS_INDUSTRY_CANDIDATE_POOL"
+    },
+    {
+      "symbol": "300012",
+      "company_name": "华测检测",
+      "industry": "社会服务",
+      "rank": 2274,
+      "case_path": "runtime/hotspot-current-price-cases/300012-2026-10-20-9379720c7854483caf4cb2345a91ecec/case.json",
+      "case_sha256": "e52b80936f923b12a4ee2131cf1feac27265d95670ddce46293ee476ed8058d0",
+      "structure_tier": "ACTIVE_ONLY",
+      "structure_reasons": [
+        "STRUCTURE_CONFIRMATION_PENDING"
+      ],
+      "signal_state": "WATCH",
+      "activity_rank": 2274,
+      "structure_selection_evidence": {
+        "trade_space_known": false,
+        "primary_confirmed": false,
+        "daily_uptrend": false,
+        "auxiliary_confirmed": false
+      },
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/edf609b37940427ba2ca40e5ec2802a9/report.json",
+        "sha256": "82f3265b94884286468387a3b84e744dd64e1ea7f6c0bfb675dd65bcbdb62c48"
+      },
+      "watch_source_scope": "DATED_DAILY_CROSS_INDUSTRY_CANDIDATE_POOL"
+    },
     {
       "symbol": "600150",
       "company_name": "中国船舶",
@@ -20,7 +510,12 @@
         "STRUCTURE_CONFIRMATION_PENDING"
       ],
       "signal_state": "WATCH",
-      "activity_rank": 1
+      "activity_rank": 1,
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/318a078e87de44d9a08b1cecafdda4e1/report.json",
+        "sha256": "3df8773984d1945607e7197ce4a68fb79ab4bded8d06f198471fadf166cb135e"
+      },
+      "watch_source_scope": "DATED_DAILY_CROSS_INDUSTRY_CANDIDATE_POOL"
     },
     {
       "symbol": "600667",
@@ -34,7 +529,12 @@
         "STRUCTURE_CONFIRMATION_PENDING"
       ],
       "signal_state": "WATCH",
-      "activity_rank": 573
+      "activity_rank": 573,
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/318a078e87de44d9a08b1cecafdda4e1/report.json",
+        "sha256": "3df8773984d1945607e7197ce4a68fb79ab4bded8d06f198471fadf166cb135e"
+      },
+      "watch_source_scope": "DATED_DAILY_CROSS_INDUSTRY_CANDIDATE_POOL"
     },
     {
       "symbol": "002008",
@@ -48,7 +548,12 @@
         "STRUCTURE_CONFIRMATION_PENDING"
       ],
       "signal_state": "WATCH",
-      "activity_rank": 748
+      "activity_rank": 748,
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/318a078e87de44d9a08b1cecafdda4e1/report.json",
+        "sha256": "3df8773984d1945607e7197ce4a68fb79ab4bded8d06f198471fadf166cb135e"
+      },
+      "watch_source_scope": "DATED_DAILY_CROSS_INDUSTRY_CANDIDATE_POOL"
     },
     {
       "symbol": "600019",
@@ -62,7 +567,12 @@
         "STRUCTURE_CONFIRMATION_PENDING"
       ],
       "signal_state": "WATCH",
-      "activity_rank": 1269
+      "activity_rank": 1269,
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/318a078e87de44d9a08b1cecafdda4e1/report.json",
+        "sha256": "3df8773984d1945607e7197ce4a68fb79ab4bded8d06f198471fadf166cb135e"
+      },
+      "watch_source_scope": "DATED_DAILY_CROSS_INDUSTRY_CANDIDATE_POOL"
     },
     {
       "symbol": "000338",
@@ -76,7 +586,12 @@
         "DAILY_DOWNTREND_CONFLICT"
       ],
       "signal_state": "WATCH",
-      "activity_rank": 135
+      "activity_rank": 135,
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/318a078e87de44d9a08b1cecafdda4e1/report.json",
+        "sha256": "3df8773984d1945607e7197ce4a68fb79ab4bded8d06f198471fadf166cb135e"
+      },
+      "watch_source_scope": "DATED_DAILY_CROSS_INDUSTRY_CANDIDATE_POOL"
     },
     {
       "symbol": "600176",
@@ -91,377 +606,17 @@
         "SUPPORTING_STRUCTURE_INVALIDATED"
       ],
       "signal_state": "WATCH",
-      "activity_rank": 420
-    },
-    {
-      "symbol": "000560",
-      "company_name": "我爱我家",
-      "industry": "房地产",
-      "rank": 487,
-      "case_path": "runtime/hotspot-current-price-cases/000560-2026-10-16-2f288dd8e2464ce091412f95be968cd0/case.json",
-      "case_sha256": "6fde4c65ccaca264ffe40edc6746ee533e8d4970a56f8daa03854d2e847db26f",
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "INSUFFICIENT_UPPER_SPACE"
-      ],
-      "signal_state": "WATCH",
-      "activity_rank": 487
-    },
-    {
-      "symbol": "601857",
-      "company_name": "中国石油",
-      "industry": "石油石化",
-      "rank": 704,
-      "case_path": "runtime/hotspot-current-price-cases/601857-2026-10-16-15e856c8ecb0473b8178f10b791bad17/case.json",
-      "case_sha256": "dd1696e30ce240ea6060f31f39c9c5f50de21d67d9bd9a5125e243fbd4854472",
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "DAILY_DOWNTREND_CONFLICT"
-      ],
-      "signal_state": "TRIGGER_PENDING",
-      "activity_rank": 704
-    },
-    {
-      "symbol": "600127",
-      "company_name": "金健米业",
-      "industry": "农林牧渔",
-      "rank": 1312,
-      "case_path": "runtime/hotspot-current-price-cases/600127-2026-10-16-6700c02ee101483bab640c830e99b097/case.json",
-      "case_sha256": "a1edb5ee6a30029699c09be7bafb7c17ad63296772d18b58e25ee45107ae279c",
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "DAILY_DOWNTREND_CONFLICT"
-      ],
-      "signal_state": "WATCH",
-      "activity_rank": 1312
-    },
-    {
-      "symbol": "000333",
-      "company_name": "美的集团",
-      "industry": "家用电器",
-      "rank": 1411,
-      "case_path": "runtime/hotspot-current-price-cases/000333-2026-10-16-835fe9d78ead4a7392a7a014aacc5064/case.json",
-      "case_sha256": "5c3641d912d63bf65f4b4638d2834327a8aac3c9e6a213107d292fe1395bfd49",
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "INSUFFICIENT_UPPER_SPACE"
-      ],
-      "signal_state": "WATCH",
-      "activity_rank": 1411
-    }
-  ],
-  "failures": [],
-  "candidate_pool_symbols": [
-    "600150",
-    "000338",
-    "600176",
-    "000560",
-    "600667",
-    "601857",
-    "002008",
-    "600019",
-    "600127",
-    "000333"
-  ],
-  "assessed_candidates": [
-    {
-      "symbol": "600150",
-      "company_name": "中国船舶",
-      "activity_rank": 1,
-      "structure_tier": "ACTIVE_ONLY",
-      "structure_reasons": [
-        "STRUCTURE_CONFIRMATION_PENDING"
-      ],
-      "signal_state": "WATCH",
-      "case_path": "runtime/hotspot-current-price-cases/600150-2026-10-16-a1d2229173c84e87803d44f78c288cb7/case.json",
-      "case_sha256": "a0532111c1d74d63ae6b7dbcddc47f029d13693b754f0c0210901e4b47f64862"
-    },
-    {
-      "symbol": "600667",
-      "company_name": "太极实业",
-      "activity_rank": 573,
-      "structure_tier": "ACTIVE_ONLY",
-      "structure_reasons": [
-        "STRUCTURE_CONFIRMATION_PENDING"
-      ],
-      "signal_state": "WATCH",
-      "case_path": "runtime/hotspot-current-price-cases/600667-2026-10-16-df78ab2e2de34fafa31a4d5badd495e7/case.json",
-      "case_sha256": "5901fdc3bb58674c32c073aef8b4b98b6100004d977831065fc40637d619a828"
-    },
-    {
-      "symbol": "002008",
-      "company_name": "大族激光",
-      "activity_rank": 748,
-      "structure_tier": "ACTIVE_ONLY",
-      "structure_reasons": [
-        "STRUCTURE_CONFIRMATION_PENDING"
-      ],
-      "signal_state": "WATCH",
-      "case_path": "runtime/hotspot-current-price-cases/002008-2026-10-16-c16b41928f9045c08d2cdda19d55753e/case.json",
-      "case_sha256": "9210c69c868d345efc858f11fe5196b6ea70c7899803cf270819602579ea7fb6"
-    },
-    {
-      "symbol": "600019",
-      "company_name": "宝钢股份",
-      "activity_rank": 1269,
-      "structure_tier": "ACTIVE_ONLY",
-      "structure_reasons": [
-        "STRUCTURE_CONFIRMATION_PENDING"
-      ],
-      "signal_state": "WATCH",
-      "case_path": "runtime/hotspot-current-price-cases/600019-2026-10-16-f50f688ee8df4a6da2e29128b2e17e91/case.json",
-      "case_sha256": "8cc9c3d62a08ec62413fa13d30f24d96382e5410d0c9b59ed29a331b3c6d25f1"
-    },
-    {
-      "symbol": "000338",
-      "company_name": "潍柴动力",
-      "activity_rank": 135,
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "DAILY_DOWNTREND_CONFLICT"
-      ],
-      "signal_state": "WATCH",
-      "case_path": "runtime/hotspot-current-price-cases/000338-2026-10-16-2bc8ebe792364a92a055f98decc704ac/case.json",
-      "case_sha256": "76a31ce1e7d4a3fd2436cf24b93fb9ccefc56b6c4b42ce2dec696c4ceba1d62b"
-    },
-    {
-      "symbol": "600176",
-      "company_name": "XD中国巨",
       "activity_rank": 420,
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "DAILY_DOWNTREND_CONFLICT",
-        "SUPPORTING_STRUCTURE_INVALIDATED"
-      ],
-      "signal_state": "WATCH",
-      "case_path": "runtime/hotspot-current-price-cases/600176-2026-10-16-679618f8092a4242b0ecd1574f9982d6/case.json",
-      "case_sha256": "44d51ea8e5f51af7793a098133609e292462322a08b32f008ec566111f63484c"
-    },
-    {
-      "symbol": "000560",
-      "company_name": "我爱我家",
-      "activity_rank": 487,
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "INSUFFICIENT_UPPER_SPACE"
-      ],
-      "signal_state": "WATCH",
-      "case_path": "runtime/hotspot-current-price-cases/000560-2026-10-16-2f288dd8e2464ce091412f95be968cd0/case.json",
-      "case_sha256": "6fde4c65ccaca264ffe40edc6746ee533e8d4970a56f8daa03854d2e847db26f"
-    },
-    {
-      "symbol": "601857",
-      "company_name": "中国石油",
-      "activity_rank": 704,
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "DAILY_DOWNTREND_CONFLICT"
-      ],
-      "signal_state": "TRIGGER_PENDING",
-      "case_path": "runtime/hotspot-current-price-cases/601857-2026-10-16-15e856c8ecb0473b8178f10b791bad17/case.json",
-      "case_sha256": "dd1696e30ce240ea6060f31f39c9c5f50de21d67d9bd9a5125e243fbd4854472"
-    },
-    {
-      "symbol": "600127",
-      "company_name": "金健米业",
-      "activity_rank": 1312,
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "DAILY_DOWNTREND_CONFLICT"
-      ],
-      "signal_state": "WATCH",
-      "case_path": "runtime/hotspot-current-price-cases/600127-2026-10-16-6700c02ee101483bab640c830e99b097/case.json",
-      "case_sha256": "a1edb5ee6a30029699c09be7bafb7c17ad63296772d18b58e25ee45107ae279c"
-    },
-    {
-      "symbol": "000333",
-      "company_name": "美的集团",
-      "activity_rank": 1411,
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "INSUFFICIENT_UPPER_SPACE"
-      ],
-      "signal_state": "WATCH",
-      "case_path": "runtime/hotspot-current-price-cases/000333-2026-10-16-835fe9d78ead4a7392a7a014aacc5064/case.json",
-      "case_sha256": "5c3641d912d63bf65f4b4638d2834327a8aac3c9e6a213107d292fe1395bfd49"
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/318a078e87de44d9a08b1cecafdda4e1/report.json",
+        "sha256": "3df8773984d1945607e7197ce4a68fb79ab4bded8d06f198471fadf166cb135e"
+      },
+      "watch_source_scope": "DATED_DAILY_CROSS_INDUSTRY_CANDIDATE_POOL"
     }
   ],
-  "selection_pipeline": {
-    "activity_observation_count": 10,
-    "candidate_pool_count": 10,
-    "candidate_pool_industry_count": 10,
-    "assessed_count": 10,
-    "failed_count": 0,
-    "final_count": 10,
-    "quality_counts": {
-      "STRUCTURE_QUALIFIED_OBSERVATION": 0,
-      "ACTIVE_ONLY": 4,
-      "CONFLICT_OR_REJECTED": 6
-    },
-    "stage_order": [
-      "activity_observation",
-      "cross_industry_candidate_pool",
-      "completed_price_structure",
-      "quality_then_activity_ranking"
-    ],
-    "final_rule_version": "hotspot-quality-then-activity-ranking-v1",
-    "action": "no_order"
-  },
-  "selected_symbols": [
-    "600150",
-    "600667",
-    "002008",
-    "600019",
-    "000338",
-    "600176",
-    "000560",
-    "601857",
-    "600127",
-    "000333"
-  ],
-  "completed_at": "2026-10-18T10:08:38.847596+00:00",
-  "previous_items": [
-    {
-      "symbol": "600391",
-      "company_name": "航发科技",
-      "industry": "国防军工",
-      "rank": 2,
-      "case_path": "runtime/hotspot-current-price-cases/600391-2026-10-16-2a24ddee85b545299ddba491b5d8985a/case.json",
-      "case_sha256": "fe10bc3b142301a01b8794c46d4dd5e9ff95afa87b0c42b2d1b9328ac7893997",
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "INSUFFICIENT_UPPER_SPACE"
-      ],
-      "signal_state": "WATCH",
-      "activity_rank": 2,
-      "watch_source_binding": {
-        "path": "runtime/hotspot-daily-selection/561a1e66bf424d4e87426fbf1f080106/report.json",
-        "sha256": "c2ef47a982ea85f04ed4d5e6324f9beda00e0f80f55cd4b19590d1c96d53f4f1"
-      },
-      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
-    },
-    {
-      "symbol": "600967",
-      "company_name": "内蒙一机",
-      "industry": "国防军工",
-      "rank": 3,
-      "case_path": "runtime/hotspot-current-price-cases/600967-2026-10-16-d1a1263b773d4a86afc9f281211ff9ee/case.json",
-      "case_sha256": "115fb88ad13273b9405d8c098f3c5758f72a1c176e6bdc23afcef172679e2ef3",
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "DAILY_DOWNTREND_CONFLICT"
-      ],
-      "signal_state": "WATCH",
-      "activity_rank": 3,
-      "watch_source_binding": {
-        "path": "runtime/hotspot-daily-selection/561a1e66bf424d4e87426fbf1f080106/report.json",
-        "sha256": "c2ef47a982ea85f04ed4d5e6324f9beda00e0f80f55cd4b19590d1c96d53f4f1"
-      },
-      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
-    },
-    {
-      "symbol": "600316",
-      "company_name": "洪都航空",
-      "industry": "国防军工",
-      "rank": 4,
-      "case_path": "runtime/hotspot-current-price-cases/600316-2026-10-16-f26733241dbb442aa0ed6e410a5b2440/case.json",
-      "case_sha256": "edb0e26bc9887019d56b5632fe00c985f2622267e436711abf5165710061cb1d",
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "DAILY_DOWNTREND_CONFLICT"
-      ],
-      "signal_state": "WATCH",
-      "activity_rank": 4,
-      "watch_source_binding": {
-        "path": "runtime/hotspot-daily-selection/561a1e66bf424d4e87426fbf1f080106/report.json",
-        "sha256": "c2ef47a982ea85f04ed4d5e6324f9beda00e0f80f55cd4b19590d1c96d53f4f1"
-      },
-      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
-    },
-    {
-      "symbol": "600893",
-      "company_name": "航发动力",
-      "industry": "国防军工",
-      "rank": 5,
-      "case_path": "runtime/hotspot-current-price-cases/600893-2026-10-16-d898a9021461443e89752500a193df42/case.json",
-      "case_sha256": "4f1ae6b7aa748468eee843e22140e4fec8d986dbf1479da74f3ed8113caccfbd",
-      "structure_tier": "CONFLICT_OR_REJECTED",
-      "structure_reasons": [
-        "INSUFFICIENT_UPPER_SPACE"
-      ],
-      "signal_state": "WATCH",
-      "activity_rank": 5,
-      "watch_source_binding": {
-        "path": "runtime/hotspot-daily-selection/561a1e66bf424d4e87426fbf1f080106/report.json",
-        "sha256": "c2ef47a982ea85f04ed4d5e6324f9beda00e0f80f55cd4b19590d1c96d53f4f1"
-      },
-      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
-    },
-    {
-      "symbol": "300059",
-      "company_name": "东方财富",
-      "case_path": "runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/case.json",
-      "case_sha256": "f5a1c3a6021896c073c014b064114713e5dbd397df185c4a86b874fc6b00437e",
-      "watch_source_binding": {
-        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
-        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
-      },
-      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
-    },
-    {
-      "symbol": "601318",
-      "company_name": "中国平安",
-      "case_path": "runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/case.json",
-      "case_sha256": "92ad443d0f6b0d4187b202035e0aba9df7953115c406f0ab72cedca0f6f4d580",
-      "watch_source_binding": {
-        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
-        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
-      },
-      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
-    },
-    {
-      "symbol": "600030",
-      "company_name": "中信证券",
-      "case_path": "runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/case.json",
-      "case_sha256": "6b98c3c625776610acc02fbc1e83a07ccc3861e61ad9498b839caebc5b1c49d3",
-      "watch_source_binding": {
-        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
-        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
-      },
-      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
-    },
-    {
-      "symbol": "601211",
-      "company_name": "国泰海通",
-      "case_path": "runtime/hotspot-current-price-cases/601211-2026-10-15-435f26924a344d679662dd4322215867/case.json",
-      "case_sha256": "c3f589d1f70a77da633e52bf63bf74e65ac262561b19f0d8d206b681fadad2c3",
-      "watch_source_binding": {
-        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
-        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
-      },
-      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
-    },
-    {
-      "symbol": "000712",
-      "company_name": "锦龙股份",
-      "case_path": "runtime/hotspot-current-price-cases/000712-2026-10-15-825dd26405284611b970cf22169fab36/case.json",
-      "case_sha256": "846ba8d1ddab43b0e3d22985917161ce3a7236f903ee88262f2ea6410d6d1f9b",
-      "watch_source_binding": {
-        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
-        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
-      },
-      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
-    },
-    {
-      "symbol": "300364",
-      "company_name": "中文在线",
-      "case_path": "runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/case.json",
-      "case_sha256": "a385019f1b9097fdd3bc19d6ea08596ecb07df2939efed4cb8ab023b5d4dec49",
-      "watch_source_binding": {
-        "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/report.json",
-        "sha256": "989aa97241824b61cd3bf3283b4705e846a4d9de78ad4651c5d12bcb00235b8b"
-      },
-      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
-    }
-  ]
+  "observation_continuity": {
+    "status": "SOURCE_BOUND_OBSERVATION_ONLY",
+    "path": "runtime/hotspot-current-refresh/16c1978d225149228316ba340800bf50/observation-continuity.json",
+    "sha256": "8e993ad8a719b43df0c32019da07d526a5490cff9fd6f130bbae8b381421fff4"
+  }
 }

@@ -17,7 +17,7 @@
   .workbench-header > .ant-menu {
     order: 3;
     width: 100%;
-    flex-basis: 100%;
+    flex: 0 0 100% !important;
     border-bottom: 0;
   }
   .workbench-system {

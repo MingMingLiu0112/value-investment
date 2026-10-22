@@ -3,3 +3,4 @@ dist/
 .umi/
 .umi-production/
 package-lock.json
+tests/.tmp/

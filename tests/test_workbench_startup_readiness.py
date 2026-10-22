@@ -12,6 +12,24 @@ PWSH = Path('C:/Users/we/AppData/Local/Programs/PowerShell/7/pwsh.exe')
 SCRIPT = ROOT / 'scripts/current/start_web_workbench.ps1'
 
 
+def test_user_endpoint_is_fixed_and_never_falls_back():
+    source = SCRIPT.read_text(encoding='utf-8')
+    assert '[ValidateSet(8001)]' in source
+    assert '$Port++' not in source
+    assert 'while ($Port -le' not in source
+    assert '[int]$State.port -eq 8001' in source
+    assert "catch { throw '端口 8001 已占用" in source
+
+
+def test_noncanonical_port_is_rejected_before_starting():
+    if not PWSH.is_file():
+        pytest.skip('PowerShell 7 unavailable')
+    result = subprocess.run([str(PWSH), '-NoProfile', '-File', str(SCRIPT), '-Port', '8002'],
+        capture_output=True, text=True, encoding='utf-8', timeout=10)
+    assert result.returncode != 0
+    assert '8001' in result.stderr
+
+
 @pytest.mark.parametrize('scenario, expected', [('ready', True), ('wrong_owner', False),
     ('exited', False), ('failed_http', False)])
 def test_bounded_health_confirmation(scenario, expected):

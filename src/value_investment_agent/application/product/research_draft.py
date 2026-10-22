@@ -275,3 +275,22 @@ def load_current_research_draft(
         return payload
     except (OSError, ValueError, TypeError, KeyError, ArithmeticError, json.JSONDecodeError, UnicodeError):
         return None
+
+
+def load_current_research_analysis(
+    root: Path, symbol: str, *, now: datetime | None = None,
+) -> dict[str, Any] | None:
+    """Expose registered pending arithmetic independently of legacy draft approval."""
+    from ..research.value_research_analysis import load_current_value_research_analysis
+
+    normalized = normalize_symbol(symbol)
+    try:
+        return load_current_value_research_analysis(root=root, symbol=normalized,
+            now=now or datetime.now(timezone.utc))
+    except (OSError, ValueError, TypeError, KeyError, ArithmeticError, UnicodeError) as error:
+        return dict(schema_version="value-research-analysis-v1", symbol=normalized,
+            status="SOURCE_OR_REPLAY_UNAVAILABLE", action="no_order",
+            arithmetic_complete=False, economic_assumptions_reviewed=False,
+            strategy_admitted=False, action_admitted=False, price_comparison_eligible=False,
+            scenarios=[], sensitivity=None, source_bindings=[],
+            blockers=["VALUE_RESEARCH_ANALYSIS_UNAVAILABLE:" + str(error)])

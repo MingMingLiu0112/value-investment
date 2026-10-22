@@ -1,5 +1,6 @@
 import hashlib
 import json
+from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,6 +9,15 @@ from value_investment_agent.presentation.web_api import app as module
 from value_investment_agent.application.hotspot.price_action_case import project_current_price_action_plan
 from test_hotspot_current_price_case import capture, NOW
 from test_read_api import _fixture
+
+
+@pytest.fixture(autouse=True)
+def evaluation_clock(monkeypatch):
+    class EvaluationClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW.astimezone(tz) if tz else NOW.replace(tzinfo=None)
+    monkeypatch.setattr(module, "datetime", EvaluationClock)
 
 
 def test_frozen_current_daily_detail_chart_and_tamper(tmp_path, monkeypatch):
@@ -24,9 +34,14 @@ def test_frozen_current_daily_detail_chart_and_tamper(tmp_path, monkeypatch):
     client = TestClient(module.create_app(tmp_path))
     daily = client.get("/api/v1/daily-decisions").json()
     row = daily["sections"]["hotspot"][0]
-    assert row["id"] == "hotspot-600519" and row["price_action_plan"] == plan
-    detail = client.get("/api/v1/decisions/hotspot-600519").json()["decision"]
+    assert row["id"] == "hotspot-600519"
+    assert row["price_action_plan"]["schema_version"] == "price-action-plan-independent-v2"
+    assert row["price_action_plan"]["case_sha256"] == plan["case_sha256"]
+    assert row["price_action_plan"]["formal_eligibility"] is False
+    detail = client.get("/api/v1/decisions/hotspot-600519?independent_hotspot=true").json()["decision"]
     assert detail == row
+    legacy = client.get("/api/v1/decisions/hotspot-600519").json()["decision"]
+    assert legacy["price_action_plan"] == plan
     chart = client.get("/api/v1/current-price-case/600519").json()
     assert chart["price_action_plan"] == plan
     assert chart["bars"]["60m"] == case["bars"]["60m"]
@@ -145,7 +160,7 @@ def test_changed_registry_invalidates_frozen_current_candidate(tmp_path, monkeyp
     else:
         path.unlink()
     daily = client.get("/api/v1/daily-decisions").json()["sections"]["hotspot"][0]
-    detail = client.get("/api/v1/decisions/hotspot-600519").json()["decision"]
+    detail = client.get("/api/v1/decisions/hotspot-600519?independent_hotspot=true").json()["decision"]
     assert daily == detail
     blocked = detail["price_action_plan"]
     assert blocked["signal_state"] == "BLOCKED"

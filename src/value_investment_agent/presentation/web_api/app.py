@@ -44,6 +44,7 @@ from ...application.hotspot.independent_price_conditions import (
     project_independent_price_condition,
 )
 from ...application.decision.current_value_plan import revalidate_current_value_plan
+from ...application.decision.strategy_readiness import attach_strategy_readiness
 from ...infrastructure.hotspot.sina_price_case import load_historical_case
 from ...infrastructure.hotspot.current_price_case import load_current_price_case
 from ..read_models.dual_sleeve_surface import (
@@ -65,7 +66,7 @@ from .local_auth import (
 from .private_routes import portfolio_connection, register_private_routes
 from .condition_alert_routes import register_condition_alert_routes
 from .agent_research_routes import register_agent_research_routes
-from .runtime_identity import data_freshness, git_head, runtime_identity, sha256
+from .runtime_identity import data_freshness, git_head, publication_registry_status, runtime_identity, sha256
 from .value_policy_routes import register_value_policy_routes
 from ...application.decision.value_policy_interaction import (
     ValuePolicyInteractionService, PolicyPrincipal, PERMISSION,
@@ -517,12 +518,24 @@ def create_app(
         # Formal admissions are counted from the published rows themselves; no row
         # carries an admitted valuation status yet, so the count stays derived, not fixed.
         formal_count = count_formal_admissions(named)
-        hotspot_items = [current_item(row) for row in current_items(packet)] or [
+        hotspot_rows = [
+            {**row, "price_action_plan": project_independent_price_condition(
+                project, symbol=row["symbol"], plan=row["price_action_plan"],
+                now=datetime.now(timezone.utc))}
+            for row in current_items(packet)
+            if row["price_action_plan"].get("candidate_lifecycle")
+            != "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"
+        ]
+        hotspot_items = [current_item(row) for row in hotspot_rows]
+        if "price_conditions" not in (packet or {}):
+            hotspot_items = [
             dict(_item(c, as_of, "UNKNOWN"), strategy="hotspot")
             for c in hotspot.get("items", []) if isinstance(c, dict)
             and c.get("action") == "no_order" and _ID.fullmatch(str(c.get("symbol", "")))]
         return {"action": "no_order", "status": "RESEARCH_OBSERVATION",
-                "actionable_evaluation": summarize_actionable_evaluations([*value, *hotspot_items]),
+                "actionable_evaluation": attach_strategy_readiness(
+                    summarize_actionable_evaluations([*value, *hotspot_items]),
+                    [*value, *hotspot_items], packet),
                 "as_of": as_of,
                 "market": _pick(market, "status", "reason"),
                 "summary": {"universe_count": len(records),
@@ -815,6 +828,12 @@ def create_app(
             "dates": snapshot["dates"],
         }
         identity["data_freshness"] = data_freshness(snapshot.get("dates"))
+        packet, _ = _load_snapshot(project)
+        registry = publication_registry_status(project, packet)
+        identity["publication_registry"] = registry
+        if registry["status"] != "MATCHED":
+            identity["status"] = "MISMATCH"
+            identity["reasons"].append("PUBLICATION_REGISTRY_" + registry["status"])
         return identity
 
     @api.get("/api/v1/research-funnel-status")
