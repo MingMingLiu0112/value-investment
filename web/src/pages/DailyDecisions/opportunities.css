@@ -10,6 +10,12 @@
   border-bottom: 1px solid #dce3e5;
   overflow-wrap: anywhere;
 }
+.daily-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  margin-bottom: 16px;
+}
 .daily-action-conclusion h2 {
   margin: 0 0 8px;
   font-size: 17px;
@@ -113,9 +119,12 @@
 }
 .opportunity-counts {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   color: #6c797f;
   font-size: 11px;
+}
+.opportunity-counts > span {
   white-space: nowrap;
 }
 .opportunity-counts strong {

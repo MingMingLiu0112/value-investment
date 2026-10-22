@@ -224,7 +224,7 @@ def create_app(
     sessions = LocalOperatorSession(bootstrap_secret=secret, ttl_seconds=session_ttl_seconds)
     api = FastAPI(title="Value Investment Read API")
 
-    def current_items(packet):
+    def current_items(packet, *, active_only=False):
         rows = (packet or {}).get("price_conditions", {}).get("items", [])
         registry = (packet or {}).get("identity_inputs", {}).get("current_price_conditions")
         registry_matches = True
@@ -237,6 +237,8 @@ def create_app(
         checked = []
         for row in rows:
             plan = row["price_action_plan"]
+            if active_only and plan.get("candidate_lifecycle") == "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY":
+                continue
             try:
                 if not registry_matches:
                     raise ValueError("Current price registry differs from frozen publication")
@@ -359,7 +361,10 @@ def create_app(
     def independent_hotspot_conditions():
         packet, _ = _load_snapshot(project)
         current = _public(project)
-        if current is None or not chain_matches_packet(packet, current):
+        return independent_hotspot_for_publication(packet, current)
+
+    def independent_hotspot_for_publication(packet, current):
+        if packet is None or current is None or not chain_matches_packet(packet, current):
             return {"action": "no_order", "status": "UNAVAILABLE", "items": [],
                     "reason": "PUBLICATION_VERSION_MISMATCH"}
         try:
@@ -370,13 +375,24 @@ def create_app(
             output["items"] = [row for row in output.get("items", [])
                 if row["price_action_plan"].get("candidate_lifecycle")
                 != "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"]
-            published = {row["symbol"]: row["price_action_plan"] for row in current_items(packet)}
+            published = {row["symbol"]: row["price_action_plan"]
+                         for row in current_items(packet, active_only=True)}
+            accepted, gaps = [], list(output.get("blockers", []))
+            if output.get("status") in {"BLOCKED", "NOT_CONNECTED"} and not gaps:
+                gaps.append("INDEPENDENT_HOTSPOT_EVIDENCE_UNAVAILABLE")
             for row in output.get("items", []):
                 old = published.get(row["symbol"], {})
                 plan = row["price_action_plan"]
                 if (old.get("signal_state") in {"STALE", "BLOCKED"} or not old
                         or any(old.get(key) != plan.get(key) for key in ("case_path", "case_sha256"))):
-                    raise ValueError("Independent view differs from current published evidence")
+                    gaps.append("CURRENT_HOTSPOT_PLAN_UNAVAILABLE:" + row["symbol"])
+                    continue
+                accepted.append(row)
+            output["items"] = accepted
+            if gaps:
+                output["blockers"] = list(dict.fromkeys(gaps))
+                output["status"] = "PARTIAL" if accepted else "UNAVAILABLE"
+                output["reason"] = "INDEPENDENT_HOTSPOT_EVIDENCE_UNAVAILABLE"
             output["publication"] = pinned_publication(packet, current)
             output["decision_views"] = [project_strategy_decision(row["price_action_plan"],
                 symbol=row["symbol"]) for row in output.get("items", [])]
@@ -387,22 +403,27 @@ def create_app(
 
     @api.get("/api/v1/strategy-decisions")
     def strategy_decisions():
-        hotspot = independent_hotspot_conditions()
-        if hotspot.get("status") == "UNAVAILABLE":
-            return {"action": "no_order", "status": "UNAVAILABLE", "items": []}
         packet, _ = _load_snapshot(project)
-        if (packet or {}).get("publication_id") != hotspot.get("publication", {}).get("publication_id"):
+        current = _public(project)
+        if packet is None or current is None or not chain_matches_packet(packet, current):
             return {"action": "no_order", "status": "UNAVAILABLE", "items": []}
+        # Both sleeves consume one verified publication. Failure of a sibling
+        # branch cannot suppress the independently verified value plans.
+        hotspot = independent_hotspot_for_publication(packet, current)
         values, gaps = [], []
+        if hotspot.get("status") in {"UNAVAILABLE", "PARTIAL"}:
+            gaps.extend(hotspot.get("blockers") or ["INDEPENDENT_HOTSPOT_EVIDENCE_UNAVAILABLE"])
         for symbol in (packet or {}).get("value_price_conditions", {}):
             try:
                 plan = value_plan(symbol, packet)
                 values.append(project_strategy_decision(plan, symbol=symbol))
-            except (ValueError, KeyError, TypeError):
+            except (ValueError, OSError, KeyError, TypeError, ArithmeticError):
                 gaps.append("VALUE_PLAN_UNAVAILABLE:" + symbol)
-        return {"action": "no_order", "status": "CONDITIONAL_REVIEW_ONLY",
-            "publication": hotspot["publication"],
-            "items": [*values, *hotspot.get("decision_views", [])], "blockers": gaps}
+        items = [*values, *hotspot.get("decision_views", [])]
+        status = ("PARTIAL" if items else "UNAVAILABLE") if gaps else "CONDITIONAL_REVIEW_ONLY"
+        return {"action": "no_order", "status": status,
+            "publication": pinned_publication(packet, current),
+            "items": items, "blockers": gaps}
 
     @api.get("/api/v1/daily-decisions")
     def daily_decisions():
@@ -522,9 +543,7 @@ def create_app(
             {**row, "price_action_plan": project_independent_price_condition(
                 project, symbol=row["symbol"], plan=row["price_action_plan"],
                 now=datetime.now(timezone.utc))}
-            for row in current_items(packet)
-            if row["price_action_plan"].get("candidate_lifecycle")
-            != "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"
+            for row in current_items(packet, active_only=True)
         ]
         hotspot_items = [current_item(row) for row in hotspot_rows]
         if "price_conditions" not in (packet or {}):

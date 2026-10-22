@@ -88,6 +88,7 @@ try {
 try {
 
 $notes = [System.Collections.Generic.List[string]]::new()
+$nodes = [System.Collections.Generic.List[object]]::new()
 $startedAt = [DateTimeOffset]::UtcNow.ToString('o')
 $receiptPath = Join-Path $env:TEMP 'daily-workbench-latest-run.json'
 # An interrupted/failed invocation must not leave yesterday's SUCCESS as its result.
@@ -95,6 +96,7 @@ $initialReceipt = @{
     schema_version = 'daily-workbench-run-v1'; action = 'no_order'; mode = $Mode
     started_at = $startedAt; finished_at = $null; status = 'BLOCKED'; exit_code = 2
     published = $false; notes = @('本次更新尚未完成；继续显示历史已验证快照。')
+    nodes = @(); node_receipt_scope = 'COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION'
 }
 $priorPointer = Join-Path $root 'config/current-daily-public-snapshot.json'
 if (Test-Path -LiteralPath $priorPointer) {
@@ -113,15 +115,20 @@ trap {
         status = 'BLOCKED'; exit_code = 2; published = $false
         retained_publication_id = $initialReceipt.retained_publication_id
         notes = @('刷新后快照生成失败，Web 保留上一验证版本。')
+        nodes = @($nodes.ToArray()); node_receipt_scope = 'COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION'
     }
     $failedReceipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
     Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
     Write-Host "运行结果 : BLOCKED - $($_.Exception.Message)"
     exit 2
 }
-if (-not $Symbols) {
-    $quoteRegistry = Get-Content -LiteralPath (Join-Path $root 'config/current-quote-bridge.json') -Raw -Encoding utf8 | ConvertFrom-Json
-    $Symbols = @($quoteRegistry.quotes.PSObject.Properties.Name) -join ','
+if (-not $Symbols -and $Mode -eq 'SAFE_REFRESH') {
+    try {
+        $quoteRegistry = Get-Content -LiteralPath (Join-Path $root 'config/current-quote-bridge.json') -Raw -Encoding utf8 | ConvertFrom-Json
+        $Symbols = @($quoteRegistry.quotes.PSObject.Properties.Name | Where-Object { $_ -match '^\d{6}$' }) -join ','
+    } catch {
+        $notes.Add('行情登记不可读；不猜测待采证券，独立筛选与价格观察继续。')
+    }
 }
 
 function Resolve-Python {
@@ -134,14 +141,41 @@ function Resolve-Python {
 
 function Invoke-PythonJson {
     param([string[]]$PythonArgs)
-    $raw = & $script:python -X utf8 -B @PythonArgs 2>&1 | Out-String
-    $code = $LASTEXITCODE
-    $text = $raw.Trim()
-    $parsed = $null
-    $start = $text.IndexOf('{')
-    if ($start -ge 0) {
-        try { $parsed = $text.Substring($start) | ConvertFrom-Json } catch { $parsed = $null }
+    $node = @{
+        sequence = $nodes.Count + 1; command = $PythonArgs[0]
+        operation = if ($PythonArgs -contains '--check-reuse') { 'CHECK_REUSE' }
+                    elseif ($PythonArgs -contains '--no-publish') { 'BUILD_ONLY' } else { 'RUN' }
+        started_at = [DateTimeOffset]::UtcNow.ToString('o'); finished_at = $null
+        execution_status = 'RUNNING'; exit_code = $null; output_status = 'PENDING'
     }
+    $nodes.Add($node)
+    $initialReceipt.nodes = @($nodes.ToArray())
+    $initialReceipt | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
+    Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
+    $text = ''; $code = 2
+    $parsed = $null
+    try {
+        # A failed child is a node result, not a reason to skip independent work.
+        $PSNativeCommandUseErrorActionPreference = $false
+        $raw = & $script:python -X utf8 -B @PythonArgs 2>&1 | Out-String
+        $code = $LASTEXITCODE
+        $text = $raw.Trim()
+        $start = $text.IndexOf('{')
+        if ($start -ge 0) {
+            try { $parsed = $text.Substring($start) | ConvertFrom-Json } catch { $parsed = $null }
+        }
+        if ($parsed -isnot [pscustomobject]) { $parsed = $null }
+        $node.output_status = if ($parsed) { 'JSON_OBJECT' } else { 'INVALID_JSON' }
+    } catch {
+        $text = $_.Exception.Message
+        $node.output_status = 'INVOCATION_FAILED'
+    }
+    $node.exit_code = $code
+    $node.execution_status = if ($code -eq 0 -and $parsed) { 'SUCCEEDED' } else { 'FAILED' }
+    $node.finished_at = [DateTimeOffset]::UtcNow.ToString('o')
+    $initialReceipt.nodes = @($nodes.ToArray())
+    $initialReceipt | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
+    Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
     [pscustomobject]@{ ExitCode = $code; Text = $text; Json = $parsed }
 }
 
@@ -259,13 +293,13 @@ if ($AutoDiscoverResearchContexts -or $ResearchMockPlan -or $ResearchMockPlanSha
 $excelArgs = @()
 $build = Invoke-PythonJson @('scripts/current/build_daily_public_packet.py', '--no-publish')
 if (-not $build.Json) {
-    Write-Host '运行结果 : BLOCKED - 每日公开数据包生成失败（无法解析输出）。'
+    Write-Host '刷新前快照不可读；SAFE_REFRESH 仍继续独立采集，发布必须重新核验。'
     if ($build.Text) { Write-Host $build.Text }
-    throw 'Daily packet output unavailable'
+    $notes.Add('刷新前快照不可读；独立采集继续，未沿用其数据作为新结果。')
 }
 $packet = $build.Json
-$buildExit = $build.ExitCode
-$coreBlocked = ($buildExit -ne 0 -or -not $packet.source_bindings_verified)
+$buildExit = if ($build.Json) { $build.ExitCode } else { 2 }
+$coreBlocked = ($buildExit -ne 0 -or -not $build.Json -or -not $packet.source_bindings_verified)
 $verified = $null
 $marketwideScreen = $null
 $valueResearchPriority = $null
@@ -298,6 +332,22 @@ if ($Mode -eq 'SAFE_REFRESH') {
         Write-Host "  M2 输出 : $marketwideDirectory（保留数据时点和缺口，不自动登记为当前发布）"
     } else {
         $notes.Add('M2 全市场重筛未完成；不得将历史研究线索称为本次已刷新。')
+        if ($marketwide.Text) {
+            try {
+            $diagnosticPath = Join-Path $root ($marketwideDirectory + '/collector-error.log')
+            New-Item -ItemType Directory -Force -Path (Split-Path $diagnosticPath -Parent) | Out-Null
+            $marketwide.Text | Set-Content -LiteralPath $diagnosticPath -Encoding utf8
+            $marketwideScreen.diagnostic = @{
+                path = $marketwideDirectory + '/collector-error.log'
+                sha256 = (Get-FileHash -LiteralPath $diagnosticPath -Algorithm SHA256).Hash.ToLowerInvariant()
+                scope = 'LOCAL_DIAGNOSTIC_ONLY_NOT_DATA_EVIDENCE'
+            }
+            Write-Host "  M2 失败诊断 : $diagnosticPath（保留 stdout/stderr，不构成数据证据）"
+            } catch {
+                $marketwideScreen.diagnostic = @{ status = 'WRITE_FAILED'; scope = 'LOCAL_DIAGNOSTIC_ONLY_NOT_DATA_EVIDENCE' }
+                Write-Host '  M2 诊断日志无法写入；独立行情更新继续，未授予任何数据资格。'
+            }
+        }
     }
     if ($BuildValueResearchPriority -and $marketwideScreen.status -eq 'RESEARCH_ONLY') {
         try {
@@ -343,7 +393,10 @@ if ($Mode -eq 'SAFE_REFRESH') {
         $notes.Add('当前价格条件采集存在缺项；未通过验证的证券不会升级为当前触发。')
     }
     Write-Host '[SAFE_REFRESH] 采集已授权的公开行情来源（腾讯/新浪，只读页面）...'
-    if ($reuse.ExitCode -eq 0 -and $reuse.Json.quotes_ready) {
+    if (-not $Symbols) {
+        $notes.Add('未确定待采行情证券；跳过行情采集，独立价格观察继续。')
+        $collect = [pscustomobject]@{ ExitCode = 2; Text = ''; Json = $null }
+    } elseif ($reuse.ExitCode -eq 0 -and $reuse.Json.quotes_ready) {
         Write-Host '  行情 : 复用已核验最近完成交易日的登记；未重新采集。'
         $collect = [pscustomobject]@{ ExitCode = 0; Json = [pscustomobject]@{ observations = @(); status = 'UNCHANGED' } }
     } else {
@@ -354,6 +407,12 @@ if ($Mode -eq 'SAFE_REFRESH') {
         Write-Host '  行情采集未完成，采集器最后输出：'
         ($collect.Text -split "`n" | Select-Object -Last 12) | ForEach-Object { Write-Host "    $_" }
     }
+    elseif ($collect.Json.status -ne 'UNCHANGED' -and
+            (-not $collect.Json.path -or $collect.Json.bundle_sha256 -notmatch '^[0-9a-f]{64}$' -or
+             $collect.Json.observations -isnot [array])) {
+        $notes.Add('行情采集未完成（网络或来源不可用）；本次继续使用已登记行情。')
+        Write-Host '  行情归档结果缺少必要字段；不登记，独立复核继续。'
+    }
     elseif ($collect.Json.status -ne 'UNCHANGED') {
         $bundleDir = [string]$collect.Json.path
         $bundlePath = Join-Path $bundleDir 'bundle.json'
@@ -363,7 +422,8 @@ if ($Mode -eq 'SAFE_REFRESH') {
         $pointerFile = Join-Path $root 'config/current-quote-bridge.json'
         $pointer = $null
         if (Test-Path -LiteralPath $pointerFile) {
-            $pointer = Get-Content -LiteralPath $pointerFile -Raw -Encoding utf8 | ConvertFrom-Json
+            try { $pointer = Get-Content -LiteralPath $pointerFile -Raw -Encoding utf8 | ConvertFrom-Json }
+            catch { $notes.Add('行情登记不可读；不猜测待采证券，独立筛选与价格观察继续。') }
         }
         foreach ($observation in @($collect.Json.observations)) {
             $symbol = [string]$observation.symbol
@@ -494,6 +554,10 @@ if (-not $coreBlocked) {
     $rebuild = Invoke-PythonJson (@('scripts/current/build_daily_public_packet.py') + $excelArgs)
     if ($rebuild.Json) { $packet = $rebuild.Json; $buildExit = $rebuild.ExitCode }
     else { $buildExit = 2; $notes.Add('刷新后快照生成失败，Web 保留上一验证版本。') }
+    if ($buildExit -eq 0 -and (-not $rebuild.Json.source_bindings_verified -or -not $rebuild.Json.snapshot.publication_id)) {
+        $buildExit = 2
+        $notes.Add('刷新后快照生成失败，Web 保留上一验证版本。')
+    }
 }
 else { if ($buildExit -eq 0) { $buildExit = 2 }; $notes.Add('采集或登记不完整：未发布新快照，Web 保留上一验证版本，不能称为本次新数据。') }
 
@@ -505,6 +569,7 @@ $receipt = @{
     started_at = $startedAt; finished_at = [DateTimeOffset]::UtcNow.ToString('o')
     status = $status; exit_code = $updateExit; published = [bool]($packet.snapshot -and $buildExit -eq 0)
     publication_id = $packet.snapshot.publication_id; notes = @($notes.ToArray())
+    nodes = @($nodes.ToArray()); node_receipt_scope = 'COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION'
 }
 if ($marketwideScreen) { $receipt.marketwide_screen = $marketwideScreen }
 if ($valueResearchPriority) { $receipt.value_research_priority = $valueResearchPriority }
@@ -515,8 +580,10 @@ if ($verified.Json) {
 }
 $snapshotPointer = Join-Path $root 'config/current-daily-public-snapshot.json'
 if (Test-Path -LiteralPath $snapshotPointer) {
-    $retained = Get-Content -LiteralPath $snapshotPointer -Raw -Encoding utf8 | ConvertFrom-Json
-    $receipt.retained_publication_id = $retained.publication_id
+    try {
+        $retained = Get-Content -LiteralPath $snapshotPointer -Raw -Encoding utf8 | ConvertFrom-Json
+        $receipt.retained_publication_id = $retained.publication_id
+    } catch { $receipt.retained_publication_id = $initialReceipt.retained_publication_id }
 }
 $receiptPath = Join-Path $env:TEMP 'daily-workbench-latest-run.json'
 $receipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8

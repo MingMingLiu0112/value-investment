@@ -214,12 +214,6 @@ def run_once(
         financial_path = required_inputs["financial"]
         financial_payload = json.loads(financial_path.read_text(encoding="utf-8"))
         financial_points = financial_payload.get("points") or []
-        financial_ref = _reference(
-            "financial", financial_path, root=root,
-            source_name="Retained point-in-time financial evidence export",
-            source_url="internal://runtime/server-export-payload",
-            fetched_at=_financial_fetched_at(financial_payload),
-        )
     else:
         official_payload, official_ref = _collect_official(output_dir, root)
 
@@ -272,24 +266,25 @@ def run_once(
         financial_points, financial_export = _load_retained_financial_export(
             root / "runtime" / "server-export-payload.json", evaluation_at=datetime.now(timezone.utc)
         )
-        financial_path = _write(output_dir, "retained-financial-points.json", _json_bytes({
+        financial_payload = {
             "points": financial_points,
             "retained_generated_at": financial_export.get("generated_at"),
             "input_adapter_version": "financial-export-v2",
             "annual_evidence_adoption": financial_export.get('annual_evidence_adoption'),
-        }))
-        financial_fetched = _financial_fetched_at({
-            "points": financial_points,
-            "generated_at": financial_export.get("generated_at"),
-        })
-        financial_ref = _reference(
-            "financial",
-            financial_path,
-            root=root,
-            source_name="Retained point-in-time financial evidence export",
-            source_url="internal://runtime/server-export-payload",
-            fetched_at=financial_fetched,
-        )
+            "status": "RETAINED_POINTS_NOT_NEW_APPROVAL" if financial_points else "NOT_AVAILABLE",
+            "gap_reason": None if financial_points else "MISSING_OR_EMPTY_RETAINED_FINANCIAL_EXPORT",
+        }
+        financial_path = _write(output_dir, "retained-financial-points.json", _json_bytes(financial_payload))
+
+    missing_financial = financial_payload.get("status") == "NOT_AVAILABLE"
+    if missing_financial and financial_points:
+        raise ValueError("NOT_AVAILABLE financial input cannot contain financial facts")
+    # Absence is a gap, not evidence fetched at the collection clock.
+    financial_ref = None if missing_financial else _reference(
+        "financial", financial_path, root=root,
+        source_name="Retained point-in-time financial evidence export",
+        source_url="internal://runtime/server-export-payload",
+        fetched_at=_financial_fetched_at(financial_payload))
 
     if not reuse_inputs:
         generated_at = datetime.now(timezone.utc)
@@ -299,8 +294,9 @@ def run_once(
         "tencent": tencent_ref,
         "sina": sina_ref,
         "dividend": dividend_ref,
-        "financial": financial_ref,
     }
+    if financial_ref is not None:
+        run_refs["financial"] = financial_ref
     receipt = receipt_builder(
         run_id=run_id,
         generated_at=generated_at,
@@ -374,7 +370,7 @@ def run_once(
         "current_publication_eligible": False,
         "financial_input": {
             key: retained_financial_input.get(key)
-            for key in ('input_adapter_version', 'annual_evidence_adoption', 'retained_generated_at')
+            for key in ('status', 'gap_reason', 'input_adapter_version', 'annual_evidence_adoption', 'retained_generated_at')
         },
         "rule_version": receipt.rule_version,
         "data_health": receipt.data_health.as_policy(),

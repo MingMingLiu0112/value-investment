@@ -1059,7 +1059,7 @@ export default function DecisionDetail() {
             )}
             <Space wrap style={{ margin: "12px 0" }}>
               {decision.symbol && /^\d{6}$/.test(decision.symbol) && (
-                <Link to={fillLink(decision)}>
+                <Link to={`${fillLink(decision)}#portfolio-fill`}>
                   <Button type="primary">记录我的实际成交</Button>
                 </Link>
               )}

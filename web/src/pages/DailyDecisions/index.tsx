@@ -8,7 +8,7 @@ import { Workbench } from "../../components/Workbench";
 import { useApi } from "../../hooks/useApi";
 import { usePrivateState } from "../../hooks/usePrivateState";
 import { api } from "../../services/api";
-import type { DecisionItem } from "../../types/api";
+import type { DailyEvaluationItem, DecisionItem } from "../../types/api";
 import { describeCode } from "../../utils/codes";
 import { hasValuationResult } from "../../utils/opportunityView";
 import { blockerText } from "../../utils/packet";
@@ -54,6 +54,7 @@ function StrategySection({
   empty,
   id,
   foldUnvalued = false,
+  evaluations = [],
 }: {
   title: string;
   horizon: string;
@@ -61,7 +62,21 @@ function StrategySection({
   empty: string;
   id: string;
   foldUnvalued?: boolean;
+  evaluations?: DailyEvaluationItem[];
 }) {
+  const evaluationFor = (item: DecisionItem) =>
+    evaluations.find(
+      (row) =>
+        row.symbol === item.symbol &&
+        readinessStrategy(row.strategy) === readinessStrategy(item.strategy),
+    );
+  const groupFor = (item: DecisionItem) =>
+    evaluationFor(item)?.decision_action === "NO_TRADE"
+      ? 5
+      : judgmentGroup(item);
+  const card = (item: DecisionItem) => (
+    <DecisionCard key={item.id} item={item} evaluation={evaluationFor(item)} />
+  );
   const main = foldUnvalued
     ? items.filter(hasValuationResult)
     : [...items].sort((a, b) => {
@@ -75,10 +90,10 @@ function StrategySection({
     ? items.filter((item) => !hasValuationResult(item))
     : [];
   const counts = {
-    formal: items.filter((item) => judgmentGroup(item) === 0).length,
-    pending: items.filter((item) => [1, 2].includes(judgmentGroup(item)))
-      .length,
-    watch: items.filter((item) => judgmentGroup(item) >= 3).length,
+    formal: items.filter((item) => groupFor(item) === 0).length,
+    pending: items.filter((item) => [1, 2].includes(groupFor(item))).length,
+    watch: items.filter((item) => [3, 4].includes(groupFor(item))).length,
+    noTrade: items.filter((item) => groupFor(item) === 5).length,
   };
   return (
     <section id={id} className="opportunity-strategy" aria-label={title}>
@@ -97,6 +112,11 @@ function StrategySection({
           <span>
             <strong>{counts.watch}</strong> 研究观察
           </span>
+          {!!counts.noTrade && (
+            <span>
+              <strong>{counts.noTrade}</strong> 暂不新建仓
+            </span>
+          )}
         </div>
       </div>
       {!foldUnvalued &&
@@ -110,24 +130,28 @@ function StrategySection({
       {main.length ? (
         <div className="opportunity-list">
           {judgmentGroups.map((label, group) => {
-            const rows = main.filter((item) => judgmentGroup(item) === group);
+            const rows = main.filter((item) => groupFor(item) === group);
             if (group === 4 && rows.length)
               return (
                 <details key={label} aria-label="已失效或等待补齐数据">
                   <summary>
                     已失效 / 等待重新形成结构或补齐数据（{rows.length}）
                   </summary>
-                  {rows.map((item) => (
-                    <DecisionCard key={item.id} item={item} />
-                  ))}
+                  {rows.map(card)}
                 </details>
               );
             return rows.length ? (
               <section key={label} aria-label={label}>
-                <h3>{label}</h3>
-                {rows.map((item) => (
-                  <DecisionCard key={item.id} item={item} />
-                ))}
+                <h3>
+                  {group === 5 &&
+                  rows.some(
+                    (item) =>
+                      evaluationFor(item)?.decision_action === "NO_TRADE",
+                  )
+                    ? "已评价，暂不新建仓"
+                    : label}
+                </h3>
+                {rows.map(card)}
               </section>
             ) : null;
           })}
@@ -158,9 +182,7 @@ function StrategySection({
       {!!other.length && (
         <details aria-label="其他待研究公司">
           <summary>其他待研究公司（{other.length}）</summary>
-          {other.map((item) => (
-            <DecisionCard key={item.id} item={item} />
-          ))}
+          {other.map(card)}
         </details>
       )}
     </section>
@@ -170,7 +192,6 @@ function StrategySection({
 export default function DailyDecisions() {
   const { data, loading, error, retry } = useApi(api.daily);
   const packet = useApi(api.packet);
-  const independentHotspot = useApi(api.independentHotspot);
   const update = useApi(api.updateStatus);
   const historical = useApi(api.historicalCases);
   const state = usePrivateState();
@@ -191,22 +212,9 @@ export default function DailyDecisions() {
     );
   const researchDate = packet.data?.dates.research_as_of ?? data?.as_of ?? null;
   const quoteDate = packet.data?.dates.quote_trade_date ?? null;
-  const hotspotItems =
-    data?.sections.hotspot.map((item) => {
-      const replacement =
-        independentHotspot.data?.publication?.publication_id ===
-        packet.data?.publication_id
-          ? independentHotspot.data?.items.find(
-              (row) => row.symbol === item.symbol,
-            )
-          : undefined;
-      return replacement
-        ? {
-            ...item,
-            price_action_plan: replacement.price_action_plan,
-          }
-        : item;
-    }) ?? [];
+  // Daily already carries the independent hotspot contract. Keep its plan,
+  // readiness, counts and explanation from the same response on every refresh.
+  const hotspotItems = data?.sections.hotspot ?? [];
   const hotspotDates = usable
     ? [
         ...new Set(
@@ -281,6 +289,23 @@ export default function DailyDecisions() {
           <Link to="/system">数据状态</Link>
         </div>
       </header>
+      <nav className="daily-navigation" aria-label="今日工作入口">
+        {usable && (
+          <>
+            <a href="#daily-value">价值投资观察</a>
+            <a href="#daily-hotspot">热点波段观察</a>
+            <a href="#confirmations">待我确认</a>
+          </>
+        )}
+        <Link to="/portfolio">
+          {state.portfolio?.status === "CONNECTED"
+            ? "持仓与风险"
+            : "连接我的持仓"}
+        </Link>
+        {state.portfolio?.status === "CONNECTED" && (
+          <Link to="/portfolio#portfolio-fill">记录实际成交</Link>
+        )}
+      </nav>
       <p className="opportunity-subtitle" role="status">
         最近更新：
         {update.data?.last_run
@@ -370,11 +395,12 @@ export default function DailyDecisions() {
                 : "本次未形成完整有效的选股决策，不能据此判断市场没有机会。"}
             </h2>
             <p>
-              当前发布公司中已评价后不交易{" "}
+              当前发布公司中已评价后暂不新建仓{" "}
               {data.actionable_evaluation?.evaluated_count ?? 0} 家；
               证据或资格不足{" "}
               {data.actionable_evaluation?.unassessable_count ?? "未核验"} 家。
               公共计划不包含个人账户容量，不能计为个人可操作机会。
+              暂不新建仓不代表应继续持有；已有持仓的加减仓与退出须独立复核。
             </p>
             <details>
               <summary>逐公司结论与统计范围</summary>
@@ -396,7 +422,7 @@ export default function DailyDecisions() {
                     </Link>
                     {item.decision_action === "UNASSESSABLE"
                       ? " · 无法评价 — "
-                      : " · 不交易 — "}
+                      : " · 暂不新建仓 — "}
                     {item.decision_reason}
                   </li>
                 ))}
@@ -553,19 +579,13 @@ export default function DailyDecisions() {
             </p>
           )}
           <div className="opportunity-grid">
-            <div
-              style={{ gridColumn: "1 / -1", display: "flex", gap: 24 }}
-              aria-label="策略快捷跳转"
-            >
-              <a href="#daily-value">价值投资</a>
-              <a href="#daily-hotspot">热点波段</a>
-            </div>
             <StrategySection
               id="daily-value"
               foldUnvalued
               title="价值投资"
               horizon="中长期"
               items={data.sections.value}
+              evaluations={data.actionable_evaluation?.items}
               empty="当前没有可展示的价值投资线索"
             />
             <StrategySection
@@ -573,6 +593,7 @@ export default function DailyDecisions() {
               title="热点波段"
               horizon="短中期"
               items={hotspotItems}
+              evaluations={data.actionable_evaluation?.items}
               empty="当前没有通过观察条件的热点候选；不会凑出买点"
             />
           </div>

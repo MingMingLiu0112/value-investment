@@ -26,6 +26,52 @@ from ..decision.value_action_plan import load_registered_value_action_plans
 
 
 def evaluate_owned_held_advisory(root, *, context, plan, now, allow_test_only=False):
+    """Review each original; a multi-entry readout never grants aggregate action."""
+    contexts = context.get("entry_contexts")
+    if contexts is None:
+        return _evaluate_owned_single_entry(root, context=context, plan=plan, now=now,
+            allow_test_only=allow_test_only)
+    if context.get("symbol") != plan.get("symbol") or context.get("sleeve") != _plan_sleeve(plan):
+        raise ValueError("Owned per-entry plan scope mismatch")
+    if (not isinstance(contexts, list) or len(contexts) < 2 or not context.get("ownership_verified")
+            or any(not part.get("ownership_verified") or not part.get("advisory_dependencies_valid")
+                or part.get("blockers") or any(part.get(key) != context.get(key) for key in
+                    ("account_scope", "journal_revision", "symbol", "sleeve", "namespace")) for part in contexts)
+            or sum((Decimal(part["held_quantity"]) for part in contexts), Decimal(0)) != Decimal(context["held_quantity"])):
+        raise ValueError("Incomplete owned per-entry review context")
+    originals = [part["entry_artifact"].artifact_id for part in contexts]
+    if len(set(originals)) != len(originals):
+        raise ValueError("Duplicate owned entry review")
+    expected = [b["record_sha256"] for b in context["bindings"]]
+    observed = [b["record_sha256"] for part in contexts for b in part["bindings"]]
+    if len(observed) != len(set(observed)) or sorted(expected) != sorted(observed):
+        raise ValueError("Owned entry review does not cover every surviving binding")
+    from .personal_entry_thesis import owned_entry_display
+    rows = []
+    for part in contexts:
+        row = owned_entry_display(part)["entry_thesis_bindings"][0]
+        try:
+            action, blockers, evidence = _evaluate_owned_single_entry(root, context=part, plan=plan,
+                now=now, allow_test_only=allow_test_only)
+        except (ValueError, OSError, KeyError, TypeError, ArithmeticError) as error:
+            action, blockers, evidence = "NO_ACTION", ["OWNED_ENTRY_REVIEW_INVALID:" + str(error)[:200]], {}
+        rows.append({**row, "research_action": action, "blockers": list(blockers),
+            "current_consistency_status": evidence.get("current_consistency_status"),
+            "evidence": evidence, "action": "no_order", "review_quantity": None,
+            "formal_eligibility": False, "broker_execution_permission": False})
+    assessed = [row for row in rows if not row["blockers"]]
+    actions = {row["research_action"] for row in assessed}
+    status = ("INCOMPLETE" if len(assessed) != len(rows) else
+              "CONFLICTING_ENTRY_ACTIONS" if len(actions) != 1 else "CONSISTENT_ENTRY_ACTIONS")
+    return "NO_ACTION", ["MULTIPLE_OWNED_ENTRY_THESES_REQUIRE_SEPARATE_REVIEW"], {
+        "schema_version": "owned-per-entry-research-review-v1", "action": "no_order",
+        "scope": "PER_ENTRY_RESEARCH_REVIEW_ONLY", "entry_review_status": status,
+        "entry_reviews": rows, "current_consistency_status": None,
+        "aggregate_authority": "NONE", "formal_eligibility": False,
+        "broker_execution_permission": False}
+
+
+def _evaluate_owned_single_entry(root, *, context, plan, now, allow_test_only=False):
     """Use existing typed advisory rules and publication replay, never UI flags."""
     from ..decision.build_advisory_decision_recommendation_v3 import (
         build_advisory_decision_recommendation_v3, derive_recommendation_rule_inputs,
@@ -128,6 +174,34 @@ def evaluate_owned_held_advisory(root, *, context, plan, now, allow_test_only=Fa
 SELL_REVIEW_SCHEMA = "private-held-sell-review-request-v1"
 
 
+def _concentration_alert(code):
+    """Known measured exposure alerts, never missing-input or execution gaps."""
+    if not isinstance(code, str):
+        return False
+    if code in {"aggregate:single_security_concentration", "aggregate:industry_concentration",
+                "aggregate:cyclical_exposure"}:
+        return True
+    parts = code.split(":")
+    return (len(parts) >= 3 and bool(":".join(parts[2:]).strip())
+        and ((parts[0] in {"CORE_VALUE", "HOTSPOT_SATELLITE"} and parts[1] in {
+            "single_security_concentration", "industry_concentration", "factor_concentration"})
+            or (parts[0] == "shared" and parts[1] in {"single_security_cap", "industry_cap"})))
+
+
+def _held_risk_blockers(risk, engine):
+    blockers = []
+    for source in (risk, engine):
+        codes = source.get("blockers")
+        if codes is None:
+            continue
+        if not isinstance(codes, (list, tuple)):
+            blockers.append("PRIVATE_RISK_BLOCKERS_INVALID")
+            continue
+        for code in codes:
+            blockers.append(code if isinstance(code, str) and code.strip() else "PRIVATE_RISK_BLOCKERS_INVALID")
+    return list(dict.fromkeys(blockers))
+
+
 def _sell_review_request(payload):
     import re
     required = {"schema_version", "action", "expected_revision", "account_scope", "symbol", "exchange",
@@ -168,15 +242,46 @@ def owned_held_action(*, context, plan, risk, sleeve_position, advisory_provider
     review = context.get('investment_consistency_review')
     output.update(original_thesis=entry.thesis if entry is not None else None,
                   consistency_status=review.status if review is not None else None)
+    multi_entry = context.get("entry_contexts") is not None
+    if multi_entry:
+        from .personal_entry_thesis import owned_entry_display
+        output.update(owned_entry_display(context))
+        if (context.get("ownership_verified") and plan is not None
+                and context.get("blockers") == ["MULTIPLE_OWNED_ENTRY_THESES_REQUIRE_SEPARATE_REVIEW"]):
+            try:
+                _, _, evidence = advisory_provider()
+                if (evidence.get("scope") != "PER_ENTRY_RESEARCH_REVIEW_ONLY"
+                        or evidence.get("aggregate_authority") != "NONE"):
+                    raise ValueError("Per-entry review cannot grant aggregate authority")
+                output.update(advisory=evidence, entry_reviews=evidence["entry_reviews"],
+                              entry_review_status=evidence["entry_review_status"])
+                labels = {"HOLD": "支持持有研究复核", "ADD_CANDIDATE": "支持加仓研究复核",
+                          "TRIM_CANDIDATE": "需减仓研究复核", "SELL_CANDIDATE": "需退出研究复核"}
+                reasons = [f"{row['entry_date']} 批次：" + ("证据不足" if row["blockers"] else
+                    labels.get(row["research_action"], "尚不支持行动")) for row in evidence["entry_reviews"]]
+                output["decision_reason"] = "；".join(reasons) + "。各批次独立保留；尚未形成整仓动作或数量授权，卖出需逐批确认。"
+            except (ValueError, OSError, KeyError, TypeError, ArithmeticError) as error:
+                blockers.append("HELD_PER_ENTRY_REVIEW_INVALID:" + str(error)[:200])
     if (not output["ownership_verified"] or not context.get("advisory_dependencies_valid")
             or not re.fullmatch(r"[0-9a-f]{64}", output["entry_thesis_record_sha256"] or "")
             or Decimal(sleeve_position["quantity"]) <= 0
             or Decimal(context.get("held_quantity", "0")) != Decimal(sleeve_position["quantity"])):
         blockers.append("OWNED_ENTRY_DEPENDENCIES_REQUIRED")
     engine = risk.get("engine") or {}
-    blockers.extend(risk.get("blockers") or [])
-    blockers.extend(engine.get("blockers") or [])
-    if engine.get("namespace") != "ACTUAL" or engine.get("status") != "RISK_REVIEW_CALCULATED":
+    risk_blockers = _held_risk_blockers(risk, engine)
+    # A confirmed sell intent can reduce an already measured concentration.
+    # Keep those alerts visible; the current advisory and quantity checks below
+    # must still independently support the same REDUCE/EXIT, never HOLD/ADD.
+    reduction_review = (isinstance(sell_review_request, dict)
+        and sell_review_request.get("requested_action") in ("REDUCE", "EXIT")
+        and engine.get("namespace") == "ACTUAL" and engine.get("status") == "REVIEW_REQUIRED"
+        and risk.get("status", "REVIEW_REQUIRED") == "REVIEW_REQUIRED")
+    warnings = [code for code in risk_blockers if reduction_review and _concentration_alert(code)]
+    blockers.extend(code for code in risk_blockers if code not in warnings)
+    output.update(personal_risk_status=engine.get("status"), risk_warnings=warnings,
+                  risk_reduction_only=bool(warnings), risk_resolution_verified=False)
+    if (engine.get("namespace") != "ACTUAL" or (engine.get("status") != "RISK_REVIEW_CALCULATED"
+            and not (reduction_review and warnings))):
         blockers.append("ACTUAL_RISK_REVIEW_REQUIRED")
     if (risk.get("policy") or {}).get("confirmation_status") != "HUMAN_CONFIRMED":
         blockers.append("CONFIRMED_IPS_REQUIRED")
@@ -225,6 +330,8 @@ def owned_held_action(*, context, plan, risk, sleeve_position, advisory_provider
             blockers.extend(rejected)
             action = {"ADD_CANDIDATE": "ADD", "HOLD": "HOLD", "TRIM_CANDIDATE": "REDUCE",
                       "SELL_CANDIDATE": "EXIT"}.get(selected)
+            if warnings and action not in {"REDUCE", "EXIT"}:
+                blockers.extend(warnings)
             if action is None:
                 blockers.append("HELD_ADVISORY_ACTION_NOT_SUPPORTED")
             elif action == "ADD":
@@ -284,6 +391,8 @@ def owned_held_action(*, context, plan, risk, sleeve_position, advisory_provider
                 "REDUCE": "原投资逻辑一致性或当前策略与风险提示减仓复核；以可卖数量为限。",
                 "EXIT": "原投资逻辑或当前策略退出条件已形成退出复核依据；以可卖数量为限。",
             }[action])
+        if warnings:
+            output["decision_reason"] += " 当前集中度警告仍然有效；本次仅复核减少既有持仓，不代表减仓后风险已解除。"
     return output
 
 
@@ -581,7 +690,7 @@ def project_held_continuity(positions: list[dict], risk: dict, *,
         if Decimal(position["quantity"]) <= 0:
             continue
         symbol = position["symbol"]
-        gaps = list(risk.get("blockers") or [])
+        gaps = _held_risk_blockers(risk, risk.get("engine") or {})
         reasons = []
         plan = None
         held_sleeves = {row["sleeve"] for row in position.get("sleeves", ())

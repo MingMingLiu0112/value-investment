@@ -12,7 +12,8 @@ from test_m2_opportunity_discovery import (
 )
 
 
-def test_registered_fresh_cli_adopts_annual_and_replays_its_own_version(tmp_path, monkeypatch, capsys):
+@pytest.mark.parametrize('financial_mode', ['available', 'missing', 'empty', 'undated_points'])
+def test_registered_fresh_cli_adopts_annual_and_replays_its_own_version(tmp_path, monkeypatch, capsys, financial_mode):
     root = tmp_path
     runtime = root / 'runtime'
     runtime.mkdir()
@@ -20,7 +21,13 @@ def test_registered_fresh_cli_adopts_annual_and_replays_its_own_version(tmp_path
     annual = [dict(p, data_point_id=f'annual-{i}') for i, p in enumerate(_financial_points())]
     export = {'points': [dict(p, period_label='2026-06-30') for p in _financial_points()],
               'annual_points': annual, 'generated_at': '2026-09-23T08:00:00+00:00'}
-    (runtime / 'server-export-payload.json').write_text(json.dumps(export), encoding='utf-8')
+    if financial_mode == 'empty':
+        export = {'points': []}
+    elif financial_mode == 'undated_points':
+        export = {'points': [{k: v for k, v in p.items() if k not in {'fetched_at', 'created_at'}}
+                             for p in _financial_points()]}
+    if financial_mode != 'missing':
+        (runtime / 'server-export-payload.json').write_text(json.dumps(export), encoding='utf-8')
     calls = []
 
     def official(directory, project):
@@ -43,16 +50,31 @@ def test_registered_fresh_cli_adopts_annual_and_replays_its_own_version(tmp_path
     monkeypatch.setattr(RUN_M2, 'write_discovery_workbook', lambda *a, **k: pytest.fail('Excel-frozen'))
     monkeypatch.setattr(sys, 'argv', ['run_m2_opportunity_discovery.py', '--no-wps',
                                     '--no-workbook', '--output-dir', str(output)])
+    if financial_mode == 'undated_points':
+        with pytest.raises(RuntimeError, match='no generated_at or point timestamp'):
+            RUN_M2.main()
+        assert not (output / 'manifest.json').exists()
+        return
     assert RUN_M2.main() == 0
     summary = json.loads(capsys.readouterr().out)
     assert summary['rule_version'] == 'm2-evidence-screen-v3'
     assert summary['input_mode'] == 'LIVE_COLLECTION'
     assert summary['current_publication_eligible'] is False
-    assert summary['financial_input']['annual_evidence_adoption']['added_rows'] == 9
     assert summary['replay']['raw_inputs_match']
     financial = json.loads((output / 'retained-financial-points.json').read_text(encoding='utf-8'))
-    assert len(financial['points']) == 18
-    assert financial['points'][-9:] == annual
+    if financial_mode == 'available':
+        assert summary['financial_input']['annual_evidence_adoption']['added_rows'] == 9
+        assert len(financial['points']) == 18
+        assert financial['points'][-9:] == annual
+    else:
+        assert financial['points'] == [] and financial['retained_generated_at'] is None
+        assert summary['financial_input']['status'] == 'NOT_AVAILABLE'
+        assert summary['data_health']['financial_evidence_count'] == 0
+        assert summary['channel_counts']['quality'] == 0
+        receipt = json.loads((output / 'receipt.json').read_text(encoding='utf-8'))
+        assert all(ref['id'] != 'financial' for ref in receipt['evidence_refs'])
+        assert sum(summary['channel_counts'][key] for key in ('value', 'cyclical')) > 0
+        assert summary['quote_date_verification'] == 'UNVERIFIED_PROVIDER_TRADE_DATE'
     assert not (output / 'm2-opportunity-discovery.xlsx').exists()
     assert not (root / 'config/current-daily-public-snapshot.json').exists()
 
@@ -67,6 +89,7 @@ def test_registered_fresh_cli_adopts_annual_and_replays_its_own_version(tmp_path
     assert replay['generated_at'] == summary['generated_at']
     assert replay['current_publication_eligible'] is False
     assert all(replay['replay'].values())
+    assert replay['financial_input'] == summary['financial_input']
     assert calls == ['official']
 
 

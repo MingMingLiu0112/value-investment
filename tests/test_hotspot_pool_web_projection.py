@@ -95,7 +95,7 @@ def test_retired_stale_item_is_filtered_without_poisoning_active_list_or_detail(
 
 
 @pytest.mark.parametrize("state", ["STALE", "BLOCKED"])
-def test_active_unavailable_plan_still_rejects_entire_independent_list(pool_api, state):
+def test_only_unavailable_plan_never_exposes_current_levels(pool_api, state):
     client, packet, independent = pool_api
     packet["price_conditions"]["items"][0]["price_action_plan"]["signal_state"] = state
     assert "candidate_lifecycle" not in independent["items"][0]["price_action_plan"]
@@ -103,3 +103,94 @@ def test_active_unavailable_plan_still_rejects_entire_independent_list(pool_api,
     assert payload["status"] == "UNAVAILABLE"
     assert payload["items"] == []
     assert payload["reason"] == "INDEPENDENT_HOTSPOT_EVIDENCE_UNAVAILABLE"
+
+
+def test_one_failed_active_company_does_not_hide_verified_sibling(pool_api):
+    client, packet, independent = pool_api
+    failed = deepcopy(packet["price_conditions"]["items"][0])
+    failed["symbol"] = "600999"
+    failed["price_action_plan"].update(symbol="600999", signal_state="STALE")
+    failed["price_action_plan"].pop("daily_selection_binding")
+    failed["price_action_plan"].pop("daily_selection")
+    packet["price_conditions"]["items"].append(failed)
+    successor = deepcopy(failed)
+    successor["price_action_plan"]["schema_version"] = "price-action-plan-independent-v2"
+    independent["items"].append(successor)
+    before = deepcopy(independent)
+    payload = client.get("/api/v1/independent-hotspot-conditions").json()
+    assert payload["status"] == "PARTIAL"
+    assert [row["symbol"] for row in payload["items"]] == ["600002"]
+    assert payload["blockers"] == ["CURRENT_HOTSPOT_PLAN_UNAVAILABLE:600999"]
+    assert payload["decision_views"][0]["formal_eligibility"] is False
+    assert independent == before
+
+
+def test_failed_hotspot_does_not_hide_value_strategy(pool_api, monkeypatch):
+    client, packet, _ = pool_api
+    packet["price_conditions"]["items"][0]["price_action_plan"]["signal_state"] = "STALE"
+    value = {"schema_version": "value-action-plan-v1", "symbol": "600519",
+             "strategy": "CORE_VALUE", "action": "no_order", "blockers": [],
+             "signal_state": "BLOCKED", "entry_condition": None}
+    packet["value_price_conditions"] = {"600519": value}
+    monkeypatch.setattr(module, "revalidate_current_value_plan", lambda *a, **kw: deepcopy(value))
+    payload = client.get("/api/v1/strategy-decisions").json()
+    assert payload["status"] == "PARTIAL"
+    assert [row["symbol"] for row in payload["items"]] == ["600519"]
+    assert payload["items"][0]["formal_eligibility"] is False
+    assert payload["items"][0]["entry_condition"] is None
+    assert payload["blockers"] == ["CURRENT_HOTSPOT_PLAN_UNAVAILABLE:600002"]
+    assert payload["publication"]["publication_id"] == packet["publication_id"]
+
+
+def test_combined_strategies_share_one_snapshot_read(pool_api, monkeypatch):
+    client, packet, _ = pool_api
+    reads = []
+
+    def once(root):
+        reads.append(root)
+        assert len(reads) == 1
+        return packet, None
+
+    monkeypatch.setattr(module, "_load_snapshot", once)
+    payload = client.get("/api/v1/strategy-decisions").json()
+    assert payload["status"] == "CONDITIONAL_REVIEW_ONLY"
+    assert len(reads) == 1
+
+
+@pytest.mark.parametrize("error", [ValueError, OSError, ArithmeticError])
+def test_failed_value_company_does_not_hide_hotspot(pool_api, monkeypatch, error):
+    client, packet, _ = pool_api
+    packet["value_price_conditions"] = {"600519": {"symbol": "600519"}}
+
+    def reject(*args, **kwargs):
+        raise error("TEST_ONLY_CHANGED_VALUE_EVIDENCE")
+
+    monkeypatch.setattr(module, "revalidate_current_value_plan", reject)
+    payload = client.get("/api/v1/strategy-decisions").json()
+    assert payload["status"] == "PARTIAL"
+    assert [row["strategy"] for row in payload["items"]] == ["HOTSPOT_SATELLITE"]
+    assert payload["blockers"] == ["VALUE_PLAN_UNAVAILABLE:600519"]
+
+
+def test_invalid_publication_still_blocks_both_strategies(pool_api, monkeypatch):
+    client, _, _ = pool_api
+    monkeypatch.setattr(module, "_public", lambda root: None)
+    payload = client.get("/api/v1/strategy-decisions").json()
+    assert payload == {"action": "no_order", "status": "UNAVAILABLE", "items": []}
+
+
+def test_missing_daily_snapshot_cannot_use_valid_legacy_chain(pool_api, monkeypatch):
+    client, _, _ = pool_api
+    monkeypatch.setattr(module, "_load_snapshot", lambda root: (None, None))
+    for endpoint in ("strategy-decisions", "independent-hotspot-conditions"):
+        payload = client.get("/api/v1/" + endpoint).json()
+        assert payload["status"] == "UNAVAILABLE" and payload["items"] == []
+
+
+def test_registry_failure_is_not_a_verified_empty_opportunity_list(pool_api):
+    client, _, independent = pool_api
+    independent.update(status="BLOCKED", items=[], blockers=["CURRENT_PRICE_REGISTRY_UNAVAILABLE"])
+    payload = client.get("/api/v1/strategy-decisions").json()
+    assert payload["status"] == "UNAVAILABLE"
+    assert payload["items"] == []
+    assert payload["blockers"] == ["CURRENT_PRICE_REGISTRY_UNAVAILABLE"]

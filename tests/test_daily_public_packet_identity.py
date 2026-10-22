@@ -159,6 +159,35 @@ def test_same_business_day_keeps_the_identity_and_next_day_mints_a_new_one(tmp_p
     assert tomorrow["identity_inputs"]["natural_date"] == "2026-10-14"
 
 
+def test_case_inspection_clock_does_not_break_repeat_publication(tmp_path, monkeypatch):
+    root = build_verified_tree(tmp_path)
+    observed = []
+
+    def conditions(root, *, now, research_version):
+        result = {"status": "CURRENT_OBSERVATION", "items": [], "blockers": [],
+                  "case_reviews": [{"symbol": "600519", "data_status": "CURRENT",
+                      "source_integrity": "VERIFIED", "source_available_at": "2026-10-12T08:00:00+00:00",
+                      "evaluated_at": now.isoformat()}]}
+        observed.append(result)
+        return result
+
+    monkeypatch.setattr(daily_public_packet, "load_price_conditions", conditions)
+    first = _build(root)
+    second = build_daily_public_packet(root, generated_at=NOW.replace(minute=15))
+    assert first["publication_id"] == second["publication_id"]
+    assert first["content_sha256"] == second["content_sha256"]
+    assert first["generated_at"] != second["generated_at"]
+    assert "evaluated_at" in observed[0]["case_reviews"][0]
+    assert "evaluated_at" not in first["price_conditions"]["case_reviews"][0]
+    assert first["price_conditions"]["case_reviews"][0]["source_available_at"] == "2026-10-12T08:00:00+00:00"
+    # Neither outcomes nor genuine evidence timing become ignored digest fields.
+    for key, value in (("data_status", "STALE"), ("source_integrity", "INVALID"),
+                       ("source_available_at", "2026-10-12T09:00:00+00:00")):
+        changed = json.loads(json.dumps(first))
+        changed["price_conditions"]["case_reviews"][0][key] = value
+        assert packet_content_sha256(changed) != first["content_sha256"]
+
+
 def test_research_registry_content_mints_a_new_identity(tmp_path):
     root = build_verified_tree(tmp_path)
     before = _build(root)

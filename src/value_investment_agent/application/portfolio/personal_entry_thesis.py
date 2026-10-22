@@ -697,11 +697,51 @@ def owned_entry_context(*, records, symbol, sleeve, authenticated_subject, as_of
         entries.append(reader.load_by_id(contract["entry_ref"]["artifact_id"]))
         reviews.append(reader.load_by_id(contract["consistency_ref"]["artifact_id"]))
     if len({entry.artifact_id for entry in entries}) != 1:
+        # Each surviving original is evaluated separately. The legacy record
+        # hash remains a journal anchor, not approval of a multi-entry sale.
+        groups = {}
+        for index, entry in enumerate(entries):
+            groups.setdefault(entry.artifact_id, []).append(index)
+        contexts = []
+        for indices in groups.values():
+            last = indices[-1]
+            contexts.append({**result, "bindings": [bindings[i] for i in indices],
+                "entry_thesis_record_sha256": bindings[last]["record_sha256"],
+                "held_quantity": str(sum((Decimal(rows[i]["remaining_quantity"]) for i in indices), Decimal(0))),
+                "entry_artifact": entries[last], "consistency_artifact": reviews[last],
+                "entry_thesis": decode_artifact(ARTIFACT_ENTRY_THESIS_SNAPSHOT, parse_stored_artifact_payload(entries[last])),
+                "investment_consistency_review": decode_artifact(ARTIFACT_INVESTMENT_CONSISTENCY_REVIEW,
+                    parse_stored_artifact_payload(reviews[last]))})
+        result["entry_contexts"] = contexts
         result.update(advisory_dependencies_valid=False,
             blockers=["MULTIPLE_OWNED_ENTRY_THESES_REQUIRE_SEPARATE_REVIEW"])
+        if len({part["entry_thesis"].entry_id for part in contexts}) != len(contexts):
+            result.update(advisory_dependencies_valid=False,
+                blockers=["MULTIPLE_OWNED_ENTRY_VERSIONS_REQUIRE_SEPARATE_REVIEW"])
         return result
     result.update(entry_artifact=entries[-1], consistency_artifact=reviews[-1],
         entry_thesis=decode_artifact(ARTIFACT_ENTRY_THESIS_SNAPSHOT, parse_stored_artifact_payload(entries[-1])),
         investment_consistency_review=decode_artifact(ARTIFACT_INVESTMENT_CONSISTENCY_REVIEW,
             parse_stored_artifact_payload(reviews[-1])))
     return result
+
+
+def owned_entry_display(context):
+    """Private read model retaining every surviving original, without approval."""
+    contexts = context.get("entry_contexts") or ([context] if context.get("entry_thesis") is not None else [])
+    items = []
+    for part in contexts:
+        entry = part["entry_thesis"]
+        items.append(dict(entry_artifact_id=part["entry_artifact"].artifact_id,
+            entry_id=entry.entry_id, entry_date=entry.entry_date.isoformat(), entry_price=str(entry.entry_price),
+            remaining_quantity=part["held_quantity"], original_thesis=entry.thesis,
+            entry_consistency_status=part["investment_consistency_review"].status,
+            bindings=[{key: binding[key] for key in ("record_sha256", "fill_record_sha256")}
+                      for binding in part["bindings"]]))
+    statuses = {item["entry_consistency_status"] for item in items}
+    return dict(entry_thesis_bindings=items,
+        entry_thesis_binding_scope="ALL_ACTIVE_ENTRIES" if len(items) > 1 else "SINGLE_ENTRY",
+        multi_entry_sell_confirmation_required=len(items) > 1,
+        original_thesis=(items[0]["original_thesis"] if len(items) == 1 else
+            "\n".join(f"{item['entry_date']} | {item['remaining_quantity']} 股 | {item['original_thesis']}" for item in items) or None),
+        entry_consistency_status=next(iter(statuses)) if len(statuses) == 1 else None)

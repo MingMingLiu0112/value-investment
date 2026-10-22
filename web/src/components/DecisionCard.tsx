@@ -1,6 +1,7 @@
 import { ArrowRightOutlined } from "@ant-design/icons";
 import { Link } from "@umijs/max";
-import type { DecisionItem } from "../types/api";
+import type { DailyEvaluationItem, DecisionItem } from "../types/api";
+import { readinessStrategy } from "../utils/strategyReadiness";
 import { strategyText } from "../utils/codes";
 import {
   judgmentGroup,
@@ -11,7 +12,21 @@ import {
 import { firstResearchText } from "../utils/opportunityView";
 import { formatDecimal } from "../utils/format";
 
-export function DecisionCard({ item }: { item: DecisionItem }) {
+export function DecisionCard({
+  item,
+  evaluation,
+}: {
+  item: DecisionItem;
+  evaluation?: DailyEvaluationItem;
+}) {
+  const sameEvaluation =
+    evaluation?.symbol === item.symbol &&
+    readinessStrategy(item.strategy) != null &&
+    readinessStrategy(evaluation?.strategy) ===
+      readinessStrategy(item.strategy) &&
+    evaluation?.eligibility === false
+      ? evaluation
+      : undefined;
   const plan = item.price_action_plan;
   const quality = hotspotOpportunityQuality(item);
   const hotspot = ["hotspot", "HOTSPOT_SATELLITE"].includes(
@@ -44,12 +59,16 @@ export function DecisionCard({ item }: { item: DecisionItem }) {
         </div>
         <span
           className={
-            judgmentGroup(item) === 0
+            !sameEvaluation && judgmentGroup(item) === 0
               ? "decision-state decision-state-formal"
               : "decision-state"
           }
         >
-          {judgmentState(item)}
+          {sameEvaluation
+            ? sameEvaluation.decision_action === "NO_TRADE"
+              ? "已评价，暂不新建仓"
+              : "输入或资格不足，无法评价"
+            : judgmentState(item)}
         </span>
       </div>
       <div className="decision-meta">
@@ -57,6 +76,16 @@ export function DecisionCard({ item }: { item: DecisionItem }) {
           ? `${plan?.daily_selection?.industry ?? "行业未核验"} · 行情 ${plan?.market_trade_date ?? "未核验"}`
           : `价值研究 ${plan?.valuation_date ?? item.as_of ?? "日期未核验"}`}
       </div>
+      {sameEvaluation && (
+        <p className="decision-reason" aria-label="本次评价结论">
+          <strong>
+            {sameEvaluation.decision_action === "NO_TRADE"
+              ? "已评价，暂不新建仓"
+              : "输入或资格不足，无法评价"}
+          </strong>
+          ：{sameEvaluation.decision_reason}
+        </p>
+      )}
       {quality && (
         <p aria-label="机会质量分类">
           {quality.code ? `${quality.code} · ` : ""}

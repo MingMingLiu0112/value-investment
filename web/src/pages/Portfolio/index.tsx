@@ -11,12 +11,14 @@ import {
   Typography,
 } from "antd";
 import dayjs from "dayjs";
-import { useCallback, useState } from "react";
+import { Link, useLocation } from "@umijs/max";
+import { useCallback, useEffect, useState } from "react";
 import { DualSleeveRisk } from "../../components/DualSleeveRisk";
 import { HotspotSizingPanel } from "../../components/HotspotSizingPanel";
 import type { SizingAssumptionsSelection } from "../../components/HotspotSizingPanel";
 import { FillPanel, fillContextFromSearch } from "../../components/FillPanel";
 import type { PreparedRecordingRisk } from "../../components/FillPanel";
+import type { FillContext } from "../../components/FillPanel";
 import { PortfolioSetupForm } from "../../components/PortfolioSetupForm";
 import { PositionTable } from "../../components/PositionTable";
 import { PortfolioPolicyPanel } from "../../components/PortfolioPolicyPanel";
@@ -76,17 +78,32 @@ function PrivateStateAlert({ state }: { state: PrivateStateHandle }) {
 }
 
 export default function Portfolio() {
-  const params =
-    typeof window === "undefined"
-      ? null
-      : new URLSearchParams(window.location.search);
-  const hintedSymbol = params?.get("symbol") ?? "";
-  const initialSymbol = /^\d{6}$/.test(hintedSymbol) ? hintedSymbol : undefined;
-  const initialSleeve = fillContextFromSearch(
-    params?.toString() ?? "",
-  ).strategy;
-  const initialDecisionId = params?.get("decision_id") || undefined;
-  const initialResearchVersion = params?.get("research_version") || undefined;
+  const location = useLocation();
+  const context = fillContextFromSearch(location.search);
+  // A different security/strategy/version must not inherit unsaved sizing or
+  // prepared fill state. Fragment-only navigation preserves the current form.
+  return (
+    <PortfolioContext
+      key={JSON.stringify(context)}
+      context={context}
+      hash={location.hash}
+    />
+  );
+}
+
+function PortfolioContext({
+  context,
+  hash,
+}: {
+  context: FillContext;
+  hash: string;
+}) {
+  const {
+    symbol: initialSymbol,
+    strategy: initialSleeve,
+    decision_id: initialDecisionId,
+    research_version: initialResearchVersion,
+  } = context;
   const [entrySaved, setEntrySaved] = useState<{
     fill: string;
     message: string;
@@ -134,7 +151,30 @@ export default function Portfolio() {
     setRiskAssumptions(null);
     state.retry();
     riskContext.retry();
+    judgments.retry();
   };
+
+  useEffect(() => {
+    if (state.kind === "LOADING" || !data) return;
+    const id = hash.slice(1);
+    if (
+      ![
+        "portfolio-positions",
+        "portfolio-risk",
+        "portfolio-sizing",
+        "portfolio-fill",
+        "portfolio-setup",
+      ].includes(id)
+    )
+      return;
+    const target =
+      document.getElementById(id) ??
+      (data.status === "NOT_CONNECTED"
+        ? document.getElementById("portfolio-setup")
+        : null);
+    if (target instanceof HTMLDetailsElement) target.open = true;
+    target?.scrollIntoView({ block: "start" });
+  }, [hash, state.kind, data?.status]);
 
   if (state.kind === "LOADING") {
     return (
@@ -155,6 +195,38 @@ export default function Portfolio() {
   return (
     <Workbench>
       <Typography.Title level={2}>我的持仓</Typography.Title>
+      <nav className="portfolio-navigation" aria-label="持仓工作入口">
+        <Link to="/daily">返回今日双策略</Link>
+        {data.status === "NOT_CONNECTED" ? (
+          <a href="#portfolio-setup">填写初始账户与持仓</a>
+        ) : (
+          <>
+            <a href="#portfolio-positions">已确认持仓</a>
+            <a href="#portfolio-risk">两策略风险</a>
+            <a
+              href="#portfolio-sizing"
+              onClick={() => {
+                const target = document.getElementById("portfolio-sizing");
+                if (target instanceof HTMLDetailsElement) target.open = true;
+              }}
+            >
+              条件仓位试算
+            </a>
+            <a href="#portfolio-fill">记录实际成交</a>
+          </>
+        )}
+      </nav>
+      {initialSymbol && (
+        <p role="status">
+          当前复核 {initialSymbol} ·{" "}
+          {initialSleeve === "CORE_VALUE"
+            ? "价值投资"
+            : initialSleeve === "HOTSPOT_SATELLITE"
+              ? "热点波段"
+              : "策略待本人选择"}
+          。 仅带入证券与研究身份，不预填成交价格或数量，也不代表获准交易。
+        </p>
+      )}
       {risk?.facts?.account_scope?.startsWith("TEST_ONLY") && (
         <Alert
           type="warning"
@@ -185,7 +257,9 @@ export default function Portfolio() {
               </>
             }
           />
-          <PortfolioSetupForm onDone={refreshAll} />
+          <section id="portfolio-setup" aria-label="初始化账户与持仓">
+            <PortfolioSetupForm onDone={refreshAll} />
+          </section>
         </>
       ) : (
         <>
@@ -355,28 +429,32 @@ export default function Portfolio() {
               />
             </details>
           )}
-          <PositionTable title="已确认持仓" positions={data.positions} />
-          <DualSleeveRisk
-            data={risk}
-            loading={false}
-            error={
-              risk
-                ? undefined
-                : "双策略风险复核读取失败；读取成功前不展示任何仓位结论，请重试。"
-            }
-            retry={state.retry}
-          />
-          <PortfolioPolicyPanel
-            revision={data.revision}
-            fillPending={!!data.pending_draft}
-            onDone={refreshAll}
-          />
-          <CommittedRiskPanel
-            key={`risk-basis-${data.revision}`}
-            revision={data.revision}
-            onDone={refreshAll}
-          />
-          <details style={{ marginTop: 16 }}>
+          <section id="portfolio-positions" aria-label="已确认持仓">
+            <PositionTable title="已确认持仓" positions={data.positions} />
+          </section>
+          <section id="portfolio-risk" aria-label="双策略风险核验">
+            <DualSleeveRisk
+              data={risk}
+              loading={false}
+              error={
+                risk
+                  ? undefined
+                  : "双策略风险复核读取失败；读取成功前不展示任何仓位结论，请重试。"
+              }
+              retry={state.retry}
+            />
+            <PortfolioPolicyPanel
+              revision={data.revision}
+              fillPending={!!data.pending_draft}
+              onDone={refreshAll}
+            />
+            <CommittedRiskPanel
+              key={`risk-basis-${data.revision}`}
+              revision={data.revision}
+              onDone={refreshAll}
+            />
+          </section>
+          <details id="portfolio-sizing" style={{ marginTop: 16 }}>
             <summary>查看条件性仓位上限</summary>
             <Segmented
               aria-label="仓位试算策略"
@@ -410,25 +488,27 @@ export default function Portfolio() {
           </Typography.Title>
           <ConfirmedTrades trades={data.trades} />
           <PrivateRetrospectivePanel trades={data.trades} />
-          <FillPanel
-            revision={data.revision}
-            draft={data.pending_draft}
-            onDone={refreshAll}
-            initialSymbol={initialSymbol}
-            initialSleeve={initialSleeve}
-            initialDecisionId={initialDecisionId}
-            initialResearchVersion={initialResearchVersion}
-            preparedRisk={preparedRisk}
-            onPreparedRisk={setPreparedRisk}
-            riskAssumptions={
-              riskAssumptions?.revision === data.revision &&
-              riskAssumptions.account === account &&
-              riskAssumptions.symbol === sizingSymbol &&
-              riskAssumptions.sleeve === sizingSleeve
-                ? riskAssumptions
-                : undefined
-            }
-          />
+          <section id="portfolio-fill" aria-label="记录实际成交">
+            <FillPanel
+              revision={data.revision}
+              draft={data.pending_draft}
+              onDone={refreshAll}
+              initialSymbol={initialSymbol}
+              initialSleeve={initialSleeve}
+              initialDecisionId={initialDecisionId}
+              initialResearchVersion={initialResearchVersion}
+              preparedRisk={preparedRisk}
+              onPreparedRisk={setPreparedRisk}
+              riskAssumptions={
+                riskAssumptions?.revision === data.revision &&
+                riskAssumptions.account === account &&
+                riskAssumptions.symbol === sizingSymbol &&
+                riskAssumptions.sleeve === sizingSleeve
+                  ? riskAssumptions
+                  : undefined
+              }
+            />
+          </section>
           <PortfolioReconciliationPanel
             portfolio={data}
             onConfirm={api.confirmReconciliation}

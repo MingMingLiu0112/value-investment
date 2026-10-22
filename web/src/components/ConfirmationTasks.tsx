@@ -131,7 +131,9 @@ function HotspotReviewTask({ item }: { item: DecisionItem }) {
       >
         查看热点操作条件
       </Link>{" "}
-      <Link to={fillLink(item)}>进入风险试算与成交登记</Link>
+      <Link to={`${fillLink(item)}#portfolio-sizing`}>
+        进入风险试算与成交登记
+      </Link>
       <p>
         当前参考价 {plan.current_reference_price ?? "未核验"}；入场观察价{" "}
         {plan.entry_trigger_price ?? "未形成"}；失效价{" "}

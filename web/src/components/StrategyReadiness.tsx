@@ -26,6 +26,7 @@ import {
   type ReadinessStrategy,
 } from "../utils/strategyReadiness";
 import "./strategy-readiness.css";
+import { fillLink } from "../utils/currentJudgment";
 
 function conditionPrice(
   condition?: PlanCondition | null,
@@ -187,6 +188,11 @@ export function StrategyReadinessPanel({
     readinessStrategy(decision.strategy) === strategy
       ? decision.price_action_plan
       : undefined;
+  const portfolioUrl =
+    decision?.symbol === item.symbol &&
+    readinessStrategy(decision.strategy) === strategy
+      ? fillLink(decision)
+      : `/portfolio?${new URLSearchParams({ symbol: item.symbol, strategy: strategy === "CORE_VALUE" ? "value" : "hotspot" })}`;
   return (
     <section className="strategy-readiness" aria-label="策略就绪阶段">
       <div className="readiness-heading">
@@ -270,7 +276,7 @@ export function StrategyReadinessPanel({
         ) : (
           <Link to="/history">查看回放与策略证据</Link>
         )}
-        <Link to="/portfolio">核验真实组合容量</Link>
+        <Link to={`${portfolioUrl}#portfolio-sizing`}>核验真实组合容量</Link>
         <Link to="/system">查看数据状态</Link>
       </nav>
     </section>
@@ -345,7 +351,7 @@ export function DailyStrategyReadiness({
                         {item.decision_action === "UNASSESSABLE"
                           ? "无法评价"
                           : item.decision_action === "NO_TRADE"
-                            ? "已评价，本次不交易"
+                            ? "已评价，暂不新建仓"
                             : "原判断未核验"}
                         {readiness?.primary_gap &&
                           ` · ${readinessGapLabel(readiness.primary_gap.category)}`}

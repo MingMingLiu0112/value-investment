@@ -3,6 +3,7 @@ import type { DecisionItem } from "../types/api";
 import type { PrivateStateHandle } from "../hooks/usePrivateState";
 import { blockerText } from "../utils/packet";
 import { formatMoney } from "../utils/format";
+import { readinessDetailUrl } from "../utils/strategyReadiness";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Checkbox, InputNumber, Select, Space } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
@@ -270,7 +271,12 @@ export function HoldingsAttention({
             {refreshResult && <p role="status">{refreshResult}</p>}
             {changes.map((row) => (
               <p key={row.id}>
-                <Link to={`/decisions/${encodeURIComponent(row.id)}`}>
+                <Link
+                  to={readinessDetailUrl(
+                    { symbol: row.symbol ?? "", strategy: row.strategy ?? "" },
+                    row,
+                  )}
+                >
                   {row.name ?? row.symbol}
                 </Link>
                 ：已出现策略退出或减仓复核事项，需结合可卖数量和个人风险检查。

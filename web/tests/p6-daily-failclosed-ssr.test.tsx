@@ -127,7 +127,7 @@ beforeEach(() => {
   };
 });
 
-it("uses the current independent hotspot publication for the date summary", () => {
+it("keeps hotspot dates and plans from the daily response instead of mixing independent requests", () => {
   state.daily.data.sections.hotspot[0].price_action_plan.market_trade_date =
     "2026-10-14";
   state.independentHotspot.data = {
@@ -144,8 +144,45 @@ it("uses the current independent hotspot publication for the date summary", () =
     ],
   };
   const html = renderToStaticMarkup(<DailyDecisions />);
-  expect(html).toContain("热点已完成交易日 2026-10-21");
-  expect(html).not.toContain("热点已完成交易日 2026-10-14");
+  expect(html).toContain("热点已完成交易日 2026-10-14");
+  expect(html).not.toContain("热点已完成交易日 2026-10-21");
+});
+
+it("shows evaluated no-trade reasons separately from missing value inputs", () => {
+  const hotspot = {
+    ...evaluationFixture("HOTSPOT_SATELLITE"),
+    symbol: "300364",
+    decision_action: "NO_TRADE",
+    decision_reason: "日线与主周期结构冲突，本次不交易。",
+  };
+  const value = {
+    ...evaluationFixture(),
+    decision_reason: "现金流口径仍待核验，无法评价。",
+  };
+  state.daily.data.actionable_evaluation = {
+    items: [value, hotspot],
+    evaluated_count: 1,
+    unassessable_count: 1,
+    conclusion: "INCOMPLETE_EVALUATION",
+  };
+  state.daily.data.sections.value = [
+    {
+      id: "600887",
+      symbol: "600887",
+      strategy: "value",
+      name: "价值输入不足测试",
+    },
+  ];
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain("已评价，暂不新建仓");
+  expect(html).toContain("已有持仓的加减仓与退出须独立复核");
+  expect(html).toContain("日线与主周期结构冲突，本次不交易。");
+  expect(html).toContain("输入或资格不足，无法评价");
+  expect(html).toContain("现金流口径仍待核验，无法评价。");
+  expect(html).toContain("不能据此判断市场没有机会");
+  expect(html).toContain('href="#daily-hotspot"');
+  expect(html).toContain('href="#daily-value"');
+  expect(html).toContain('href="/portfolio"');
 });
 
 it("puts hotspot condition review and sizing entry in the daily confirmation queue", () => {

@@ -34,7 +34,8 @@ SCHEMA_VERSION = "daily-public-packet-v1"
 # revision yields a new publication_id instead of silently reusing a stored
 # record that an older revision computed.
 # v20 retains source-verified retired observations with their original expiry.
-ENGINE_VERSION = "daily-public-packet-engine-v21"
+# v22 keeps per-case inspection clocks out of immutable decision content.
+ENGINE_VERSION = "daily-public-packet-engine-v22"
 # v4 folds every content-deciding input into the identity: the company
 # research registry and its evidence files, the archived quote bundles, the
 # bound decision-explanation files and the business clock (natural date +
@@ -897,6 +898,13 @@ def build_daily_public_packet(root: Path, *, generated_at: datetime | None = Non
         latest_completed_session=dates["latest_completed_trade_session"])
     current_conditions = load_price_conditions(root, now=now,
         research_version=_stem(receipt_binding["path"]) if receipt_binding else None)
+    if "case_reviews" in current_conditions:
+        # The packet's generated_at already records this inspection. Keep all
+        # source/availability times and outcomes hashed; only the redundant
+        # wall-clock stamp must not change a same-input publication on retry.
+        current_conditions = {**current_conditions, "case_reviews": [
+            {key: value for key, value in review.items() if key != "evaluated_at"}
+            for review in current_conditions["case_reviews"]]}
     deduped = list(dict.fromkeys([*deduped, *current_conditions["blockers"]]))
     value_conditions = {}
     value_plans = load_registered_value_action_plans(root, now=now, symbols=list(company_statuses))

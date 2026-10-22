@@ -12,6 +12,9 @@ const captured = vi.hoisted(() => ({
   sizing: undefined as Record<string, any> | undefined,
   fill: undefined as Record<string, any> | undefined,
   revision: 2,
+  search: "",
+  portfolioStatus: "CONNECTED",
+  privateKind: "BLOCKED_PRIVATE_INPUT",
 }));
 const reactState = vi.hoisted(() => ({
   use: null as
@@ -27,17 +30,23 @@ vi.mock("react", async (importOriginal) => {
   };
 });
 vi.mock("@umijs/max", () => ({
-  Link: ({ children }: { children: React.ReactNode }) => children,
-  useSearchParams: () => [new URLSearchParams()],
+  Link: ({ to, children }: { to: string; children: React.ReactNode }) => (
+    <a href={to}>{children}</a>
+  ),
+  useLocation: () => ({
+    search: captured.search,
+    hash: "",
+    pathname: "/portfolio",
+  }),
 }));
 vi.mock("../src/hooks/usePrivateState", () => ({
   usePrivateState: () => ({
-    kind: "BLOCKED_PRIVATE_INPUT",
+    kind: captured.privateKind,
     label: "已接入，风险输入不完整",
     detail: "security_attributes.missing",
     retry: vi.fn(),
     portfolio: {
-      status: "CONNECTED",
+      status: captured.portfolioStatus,
       revision: captured.revision,
       cash_cny: "7337",
       total_equity_cny: captured.equity,
@@ -75,12 +84,12 @@ vi.mock("../src/components/DualSleeveRisk", () => ({
 vi.mock("../src/components/Workbench", () => ({
   Workbench: ({ children }: { children: React.ReactNode }) => children,
 }));
-vi.mock("../src/components/FillPanel", () => ({
+vi.mock("../src/components/FillPanel", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../src/components/FillPanel")>()),
   FillPanel: (props: Record<string, any>) => {
     captured.fill = props;
     return null;
   },
-  fillContextFromSearch: () => ({}),
 }));
 vi.mock("../src/components/PortfolioSetupForm", () => ({
   PortfolioSetupForm: () => null,
@@ -142,6 +151,47 @@ beforeEach(() => {
   captured.sizing = undefined;
   captured.fill = undefined;
   captured.revision = 2;
+  captured.search = "";
+  captured.portfolioStatus = "CONNECTED";
+  captured.privateKind = "BLOCKED_PRIVATE_INPUT";
+});
+
+it("provides reachable existing forms without inventing trade inputs", () => {
+  captured.search =
+    "?symbol=600887&strategy=value&decision_id=value-id&research_version=research-v1&quantity=9999&price=1";
+  const html = renderToStaticMarkup(<Portfolio />);
+  for (const id of [
+    "portfolio-positions",
+    "portfolio-risk",
+    "portfolio-sizing",
+    "portfolio-fill",
+  ]) {
+    expect(html).toContain(`href="#${id}"`);
+    expect(html).toContain(`id="${id}"`);
+  }
+  expect(html).toContain('href="/daily"');
+  expect(captured.fill).toMatchObject({
+    initialSymbol: "600887",
+    initialSleeve: "CORE_VALUE",
+    initialDecisionId: "value-id",
+    initialResearchVersion: "research-v1",
+  });
+  expect(captured.sizing).toMatchObject({
+    initialSymbol: "600887",
+    sleeve: "CORE_VALUE",
+  });
+  expect(captured.fill?.quantity).toBeUndefined();
+  expect(captured.fill?.price).toBeUndefined();
+  expect(html).not.toContain("9999");
+});
+
+it("offers initialization rather than unreachable fill anchors for an unconnected account", () => {
+  captured.portfolioStatus = "NOT_CONNECTED";
+  const html = renderToStaticMarkup(<Portfolio />);
+  expect(html).toContain('id="portfolio-setup"');
+  expect(html).toContain('href="#portfolio-setup"');
+  expect(html).not.toContain('href="#portfolio-fill"');
+  expect(captured.fill).toBeUndefined();
 });
 
 it("routes the workbench sleeve selector to the sizing panel", () => {

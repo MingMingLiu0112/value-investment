@@ -2058,3 +2058,70 @@ its own recorded result; these source checks do not
 prove real private readiness or formal qualification. See test-results/
 recording-risk-{root,author,independent}.xml and recording-risk-web.json.
 Total Goal IN_PROGRESS; real assisted use NOT_PROVEN; action=no_order.
+
+### 2026-10-22 local dual-strategy usability integration
+
+This ordinary engineering task continues on the isolated
+`codex/dual-strategy-first-use-20261022` checkout, inheriting `599c509f`.
+The user's shared checkout is not reset or cleaned. The only user Web endpoint
+remains `http://127.0.0.1:8001/daily`; this is not a new deployment or port.
+
+The daily page now uses one publication for both strategy views. A missing or
+invalid hotspot case is omitted with a scoped gap, not a reason to hide an
+independently verified value case. The reverse isolation is also tested.
+Retired cases are excluded before expensive current revalidation. Current
+hotspot details retain the independent-hotspot identity. Portfolio navigation
+preserves the selected symbol/sleeve/research context while clearing forms on
+context drift; hash-only navigation preserves the current draft.
+
+For an explicitly confirmed REDUCE/EXIT review, known measured concentration
+alerts remain visible without preventing a separately justified risk-reducing
+review. Quantity, T+1, ownership, entry thesis, current advisory, account/revision
+and non-concentration risk checks still apply. ADD is not enabled by this change.
+Multiple surviving entries retain and evaluate each original thesis separately;
+their combined read model grants no aggregate sale authority or quantity. A
+latest single-entry hash is never treated as approval of all entries.
+
+The daily runner records bounded command outcomes, continues independent nodes
+after a child failure, preserves the prior verified snapshot when publication
+fails, and distinguishes execution success from data admission. Packet engine
+v22 removes only the volatile case-inspection clock from newly composed semantic
+content. The verifier still accepts exact historical bytes; changed source times,
+hashes and outcomes still change content identity. Two real same-input v22
+publications returned WRITTEN then UNCHANGED, fixing the observed v21 conflict.
+
+Real public observations on 2026-10-22 include six dual-source completed-session
+quotes, two official incremental validity scans, and a ten-company hotspot
+screen with five retained rejected representatives. All five current hotspot
+reviews reject new entry on structure/space conditions. This is not a new buy
+signal or OOS/PIT/Shadow admission. Missing financial or economic evidence must
+remain a visible gap; an empty export cannot be restamped into financial facts.
+
+The observed M2 crash was a missing retained financial export, not failure of
+all public quote access. The bounded CLI fix records NOT_AVAILABLE without a
+financial evidence reference; nonempty undated financial facts still fail.
+Its real standalone run covered 5,577 securities with zero financial evidence
+and zero quality-channel candidates. Value/cyclical/dividend rows are research
+leads only, with provider quote dates still unverified and dividend sustainability
+unapproved. Both retained-input replay checks passed; 60 focused integration
+tests passed. No public source success is treated as financial completeness.
+The final complete SAFE_REFRESH run succeeded across ten command nodes and
+published `pub-93b15b49d9642a703dcd`. Its M2 manifest is retained at
+`runtime/daily-marketwide/20261022T1031369885561Z/manifest.json` with SHA-256
+`578f661676f5fda3e19586c1232528cf5fa76dd3f8be3319d66f80647e991e95`.
+Execution SUCCESS is explicitly separate from M2 data health PARTIAL and
+RESEARCH_ONLY eligibility; no financial evidence or formal admission was added.
+
+Focused verification: 251 Web API tests passed; 435 frontend tests passed with
+the isolated React/browser tests enabled; 201 related ownership regressions
+passed. These overlap with other suites and are not summed. They use TEST_ONLY
+fixtures for private actions and do not certify an actual account. Final clean
+Core, exact-commit build and live 8001 checks are recorded separately in the
+local acceptance receipt after execution, not inferred from these counts.
+
+Formal research admission remains zero. Economic/materiality approval, real
+strategy validation and actual private portfolio prerequisites are not fabricated.
+Canonical Excel, private journal and the PTA server are untouched. Public GitHub
+push and fresh remote CI remain pending explicit public-upload authorization;
+local tests are not reported as GitHub CI. Real assisted trading NOT_REACHED;
+action=no_order.

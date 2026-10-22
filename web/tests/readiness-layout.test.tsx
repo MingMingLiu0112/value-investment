@@ -26,6 +26,8 @@ it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
       usage: "DISPLAY_ONLY",
     };
     const hotspot = evaluationFixture("HOTSPOT_SATELLITE");
+    hotspot.decision_action = "NO_TRADE";
+    hotspot.decision_reason = "多周期结构冲突，暂不新建仓。";
     const publication = {
       packet_status: "CURRENT",
       publication_id: "layout-fixture",
@@ -37,7 +39,7 @@ it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
       strategy,
       price_action_plan: {
         action: "no_order",
-        signal_state: "WATCH",
+        signal_state: strategy === "hotspot" ? "TRIGGER_REJECTED" : "WATCH",
         entry_trigger_price: "25.750",
         invalidation_price: "20.250",
         market_trade_date: "2026-10-21",
@@ -99,7 +101,7 @@ it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
               resolveDir: process.cwd(),
             }));
             builder.onLoad({ filter: /[\\/]hooks[\\/]useApi\.ts$/ }, () => ({
-              contents: `const responses = ${JSON.stringify(state)}; export const useApi = load => ({data: responses[load], loading: false, error: undefined, retry: () => {}});`,
+              contents: `const responses = ${JSON.stringify(state)}; export const useApi = load => ({data: responses[load], loading: false, error: undefined, retry: () => {window.__readinessRetries ??= {}; window.__readinessRetries[load] = (window.__readinessRetries[load] ?? 0) + 1;}});`,
             }));
             builder.onLoad({ filter: /[\\/]services[\\/]api\.ts$/ }, () => ({
               contents:
@@ -158,6 +160,28 @@ it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
             bundle.outputFiles[0].text,
         });
         await page.locator(".daily-readiness").waitFor({ state: "visible" });
+        expect(await page.locator("#daily-hotspot").innerText()).toContain(
+          "已评价，暂不新建仓",
+        );
+        expect(
+          await page
+            .locator("#daily-hotspot .opportunity-list > details")
+            .count(),
+        ).toBe(0);
+        expect(
+          await page
+            .locator("#daily-hotspot .decision-link")
+            .getAttribute("href"),
+        ).toBe("/decisions/hotspot-600887?independent_hotspot=true");
+        await page.getByRole("button", { name: "刷新页面数据" }).click();
+        expect(
+          await page.evaluate(() => (window as any).__readinessRetries.daily),
+        ).toBe(width === 1440 ? 1 : [1440, 768, 390, 320].indexOf(width) + 1);
+        expect(
+          await page.evaluate(
+            () => (window as any).__readinessRetries.independentHotspot,
+          ),
+        ).toBeUndefined();
         await page.locator(".readiness-security > summary").first().click();
         await page.locator(".readiness-security > summary").nth(1).focus();
         await page.keyboard.press("Enter");

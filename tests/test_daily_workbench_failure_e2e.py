@@ -128,6 +128,10 @@ def test_safe_refresh_failure_keeps_previous_snapshot_bytes(tmp_path):
     ('m2_unavailable', 3, 'PARTIAL', True),
     ('m2_historical', 3, 'PARTIAL', True),
     ('m2_manifest_missing', 3, 'PARTIAL', True),
+    ('m2_crash', 3, 'PARTIAL', True),
+    ('quote_malformed', 3, 'PARTIAL', True),
+    ('pre_unreadable', 3, 'PARTIAL', True),
+    ('pre_and_post_unreadable', 2, 'BLOCKED', False),
     ('research_unavailable', 3, 'PARTIAL', True),
     ('unavailable', 2, 'BLOCKED', False),
     ('core_conflict', 2, 'BLOCKED', False),
@@ -155,6 +159,8 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
     (project / 'scripts/run_m2_opportunity_discovery.py').write_text(
         'import json,sys\nfrom pathlib import Path\n'
         f'scenario={scenario!r}\n'
+        'if scenario == "m2_crash":\n'
+        '    raise RuntimeError("TEST_ONLY private diagnostic not for public receipt")\n'
         'out=Path(sys.argv[sys.argv.index("--output-dir")+1])\n'
         'if scenario != "m2_manifest_missing":\n'
         '    out.mkdir(parents=True)\n'
@@ -172,6 +178,9 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         'count=int(counter.read_text())+1 if counter.exists() else 1\n'
         'counter.write_text(str(count))\n'
         f'scenario={scenario!r}\n'
+        'if (scenario == "pre_unreadable" and count == 1) or scenario == "pre_and_post_unreadable":\n'
+        '    print("TEST_ONLY invalid initial packet output")\n'
+        '    raise SystemExit(0)\n'
         'if scenario == "post_integrity_loss" and count > 1:\n'
         '    packet["source_bindings_verified"]=False\n'
         'if scenario == "post_unreadable" and count > 1:\n'
@@ -181,16 +190,28 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         '    packet["snapshot"]={"publication_id":"verified","status":"VERIFIED"}\n'
         '    Path("config/current-daily-public-snapshot.json").write_text(json.dumps(packet))\n'
         f'print(json.dumps(packet))\nraise SystemExit(2 if scenario == "core_recovered" and count == 1 else {build_exit})\n', encoding='utf-8')
-    readiness = dict(prices_ready=scenario in {'complete', 'core_recovered', 'incremental_unavailable', 'm2_unavailable', 'm2_historical', 'm2_manifest_missing'}, quotes_ready=True,
+    readiness = dict(prices_ready=scenario in {'complete', 'core_recovered', 'incremental_unavailable', 'm2_unavailable', 'm2_historical', 'm2_manifest_missing', 'pre_unreadable', 'pre_and_post_unreadable', 'quote_malformed'}, quotes_ready=scenario not in {'m2_crash', 'quote_malformed'},
         continuity_ready=True,
         publication_ready=scenario != 'unavailable', core_integrity_ok=True,
         market_trade_dates=['2026-10-14'], price_securities=[], quote_securities=[])
-    refresh = dict(status='WRITTEN', items=[], failures=[] if scenario in {'complete', 'incremental_unavailable', 'm2_unavailable', 'm2_historical', 'm2_manifest_missing'} else [
+    refresh = dict(status='WRITTEN', items=[], failures=[] if scenario in {'complete', 'incremental_unavailable', 'm2_unavailable', 'm2_historical', 'm2_manifest_missing', 'pre_unreadable', 'pre_and_post_unreadable', 'm2_crash'} else [
         dict(symbol='300001', reason='missing 15m')])
     (current / 'refresh_current_price_conditions.py').write_text(
         'import json,sys\n'
         f'value=json.loads({json.dumps(readiness)!r}) if "--check-reuse" in sys.argv else json.loads({json.dumps(refresh)!r})\n'
         'print(json.dumps(value))\n', encoding='utf-8')
+    (project / 'scripts/collect_quote_sessions.py').write_text(
+        'import json,sys\n'
+        f'if {scenario == "quote_malformed"!r}:\n'
+        '    print(json.dumps({"status":"COLLECTED"}))\n'
+        '    raise SystemExit(0)\n'
+        'print(json.dumps({"path":"runtime/TEST_ONLY-quotes","bundle_sha256":"a"*64,'
+        '"status":"COLLECTED","observations":[{"symbol":"600887",'
+        '"result":{"status":"matched_close","passed":True,"expected_session":"2026-10-14"},'
+        '"b1_acquisition":{"eligible":True}}]}))\n', encoding='utf-8')
+    (current / 'pin_current_quote_bridge.py').write_text(
+        'import json\nprint(json.dumps({"status":"PINNED","action":"no_order"}))\n',
+        encoding='utf-8')
     (current / 'collect_registered_validity_scan.py').write_text(
         'import json,sys\n'
         f'failed={scenario == "incremental_unavailable"!r}\n'
@@ -216,13 +237,38 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
     assert receipt['finished_at']
     assert receipt['marketwide_screen']['current_publication_eligible'] is False
     assert receipt['marketwide_screen']['status'] == (
-        'BLOCKED' if scenario in {'m2_unavailable', 'm2_historical', 'm2_manifest_missing'} else 'RESEARCH_ONLY')
+        'BLOCKED' if scenario in {'m2_unavailable', 'm2_historical', 'm2_manifest_missing', 'm2_crash'} else 'RESEARCH_ONLY')
     if receipt['marketwide_screen']['status'] == 'RESEARCH_ONLY':
         assert receipt['marketwide_screen']['manifest_sha256'] == digest(
             project / receipt['marketwide_screen']['manifest_path'])
     elif scenario == 'm2_manifest_missing':
         assert 'manifest_sha256' not in receipt['marketwide_screen']
     assert int((project / '.tmp/build-calls').read_text()) == (3 if published else 2)
+    assert receipt['node_receipt_scope'] == 'COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION'
+    nodes = receipt['nodes']
+    assert [row['sequence'] for row in nodes] == list(range(1, len(nodes) + 1))
+    assert all(row['started_at'] <= row['finished_at'] for row in nodes)
+    assert all(row['execution_status'] != 'RUNNING' for row in nodes)
+    if scenario.startswith('pre_'):
+        assert nodes[0]['execution_status'] == 'FAILED'
+        assert nodes[0]['output_status'] == 'INVALID_JSON'
+        assert any(row['command'] == 'scripts/run_m2_opportunity_discovery.py' for row in nodes)
+    if scenario == 'm2_crash':
+        failed = next(row for row in nodes if row['command'] == 'scripts/run_m2_opportunity_discovery.py')
+        assert failed['exit_code'] != 0 and failed['execution_status'] == 'FAILED'
+        for command in ('scripts/collect_quote_sessions.py', 'scripts/current/pin_current_quote_bridge.py'):
+            assert any(row['command'] == command and row['execution_status'] == 'SUCCEEDED' for row in nodes)
+        assert 'private diagnostic' not in json.dumps(receipt)
+        diagnostic = receipt['marketwide_screen']['diagnostic']
+        log = project / diagnostic['path']
+        assert log.is_relative_to(project / 'runtime/daily-marketwide')
+        assert digest(log) == diagnostic['sha256']
+        assert diagnostic['scope'] == 'LOCAL_DIAGNOSTIC_ONLY_NOT_DATA_EVIDENCE'
+        assert 'Traceback' in log.read_text(encoding='utf-8-sig')
+        assert 'TEST_ONLY private diagnostic not for public receipt' in log.read_text(encoding='utf-8-sig')
+    if scenario == 'quote_malformed':
+        assert not any(row['command'] == 'scripts/current/pin_current_quote_bridge.py' for row in nodes)
+        assert any(row['command'] == 'scripts/current/review_registered_research_validity.py' for row in nodes)
     if not published:
         assert pointer.read_bytes() == before
         assert receipt['retained_publication_id'] == 'retained'
@@ -273,6 +319,37 @@ def _research_discovery_project(tmp_path, *, discovery_status='READY'):
         "print(json.dumps({'publication_id':'none','source_bindings_verified':False}))\n"
         'raise SystemExit(2)\n', encoding='utf-8')
     return project
+
+
+def test_read_only_records_failed_prebuild_without_reaching_collectors(tmp_path):
+    if not PWSH.is_file():
+        pytest.skip('Windows PowerShell 7 required')
+    project = _research_discovery_project(tmp_path)
+    pointer = project / 'config/current-daily-public-snapshot.json'
+    pointer.write_bytes(b'{"publication_id":"retained"}')
+    (project / 'config/current-quote-bridge.json').write_bytes(b'broken quote registry')
+    (project / 'scripts/current/build_daily_public_packet.py').write_text(
+        'import json\nfrom pathlib import Path\n'
+        'receipt=json.loads(Path(".tmp/daily-workbench-latest-run.json").read_text(encoding="utf-8-sig"))\n'
+        'assert receipt["nodes"][-1]["execution_status"] == "RUNNING"\n'
+        'assert receipt["nodes"][-1]["finished_at"] is None\n'
+        'assert receipt["published"] is False\n'
+        'Path(".tmp/progress-observed").write_text("RUNNING")\n'
+        'print("TEST_ONLY malformed build result")\n', encoding='utf-8')
+    completed = subprocess.run([str(PWSH), '-NoProfile', '-File',
+        str(project / 'scripts/current/run_daily_workbench.ps1'),
+        '-Mode', 'READ_ONLY', '-NoServer'], cwd=project,
+        capture_output=True, text=True, encoding='utf-8', timeout=30)
+    receipt = json.loads((project / '.tmp/daily-workbench-latest-run.json')
+                        .read_text(encoding='utf-8-sig'))
+    assert completed.returncode == 2, completed.stdout + completed.stderr
+    assert receipt['status'] == 'BLOCKED' and receipt['published'] is False
+    assert pointer.read_bytes() == b'{"publication_id":"retained"}'
+    assert (project / '.tmp/progress-observed').read_text() == 'RUNNING'
+    assert len(receipt['nodes']) == 1
+    assert receipt['nodes'][0]['command'] == 'scripts/current/build_daily_public_packet.py'
+    assert receipt['nodes'][0]['output_status'] == 'INVALID_JSON'
+    assert not (project / 'runtime').exists()
 
 
 def _research_calls(project):

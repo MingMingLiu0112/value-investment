@@ -112,7 +112,7 @@ describe("explicit readiness contract", () => {
     );
     expect(html).toContain("各阶段未核验");
     expect(html).toContain("无法评价");
-    expect(html).not.toContain("已评价，本次不交易");
+    expect(html).not.toContain("已评价，暂不新建仓");
   });
 
   it("preserves known conditional numbers and their unapproved scopes", () => {

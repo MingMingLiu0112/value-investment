@@ -17,7 +17,62 @@ PUBLIC_NOTES = frozenset({
     '刷新后快照生成失败，Web 保留上一验证版本。',
     '采集或登记不完整：未发布新快照，Web 保留上一验证版本，不能称为本次新数据。',
     '部分证券数据未能更新；已核验证券可用，缺项不代表今日已刷新。',
+    '刷新前快照不可读；独立采集继续，未沿用其数据作为新结果。',
+    '行情登记不可读；不猜测待采证券，独立筛选与价格观察继续。',
+    '未确定待采行情证券；跳过行情采集，独立价格观察继续。',
 })
+
+_NODE_COMMANDS = frozenset({
+    'scripts/current/build_daily_public_packet.py',
+    'scripts/run_m2_opportunity_discovery.py',
+    'scripts/current/build_value_research_queue.py',
+    'scripts/current/refresh_current_price_conditions.py',
+    'scripts/collect_quote_sessions.py',
+    'scripts/current/pin_current_quote_bridge.py',
+    'scripts/current/collect_registered_validity_scan.py',
+    'scripts/current/review_registered_research_validity.py',
+    'scripts/current/run_agent_research_pilot.py',
+})
+
+
+def _node_execution_summary(value):
+    """Expose command outcomes, never raw output, arguments or data admission."""
+    scope = 'COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION'
+    if value.get('node_receipt_scope') != scope:
+        return {}
+    rows = value.get('nodes')
+    if not isinstance(rows, list) or len(rows) > 256:
+        return {}
+    sanitized = []
+    fields = ('sequence', 'command', 'operation', 'started_at', 'finished_at',
+              'execution_status', 'exit_code', 'output_status')
+    try:
+        for sequence, row in enumerate(rows, start=1):
+            if (type(row['sequence']) is not int or row['sequence'] != sequence
+                    or row['command'] not in _NODE_COMMANDS
+                    or row['operation'] not in {'CHECK_REUSE', 'BUILD_ONLY', 'RUN'}
+                    or row['execution_status'] not in {'RUNNING', 'SUCCEEDED', 'FAILED'}
+                    or row['output_status'] not in {'PENDING', 'JSON_OBJECT', 'INVALID_JSON', 'INVOCATION_FAILED'}):
+                return {}
+            started = datetime.fromisoformat(row['started_at'])
+            if started.utcoffset() is None:
+                return {}
+            if row['execution_status'] == 'RUNNING':
+                if (row['exit_code'] is not None or row['finished_at'] is not None
+                        or row['output_status'] != 'PENDING' or sequence != len(rows)):
+                    return {}
+            else:
+                finished = datetime.fromisoformat(row['finished_at'])
+                if (type(row['exit_code']) is not int or finished.utcoffset() is None
+                        or finished < started or row['output_status'] == 'PENDING'):
+                    return {}
+                succeeded = row['exit_code'] == 0 and row['output_status'] == 'JSON_OBJECT'
+                if (row['execution_status'] == 'SUCCEEDED') != succeeded:
+                    return {}
+            sanitized.append({key: row[key] for key in fields})
+    except (KeyError, TypeError, ValueError):
+        return {}
+    return {'node_receipt_scope': scope, 'nodes': sanitized}
 
 
 def read_observation_changes(root: Path, *, now: datetime, expected_registry_sha256: str | None = None) -> dict:
@@ -80,6 +135,7 @@ def read_latest_run(root: Path) -> dict | None:
         fields = ('schema_version', 'action', 'mode', 'started_at', 'finished_at', 'status',
                   'exit_code', 'published', 'publication_id', 'retained_publication_id', 'notes')
         result = {key: value.get(key) for key in fields}
+        result.update(_node_execution_summary(value))
         notes = value.get('notes')
         result['notes'] = [note for note in notes if isinstance(note, str) and note in PUBLIC_NOTES] if isinstance(notes, list) else []
         if isinstance(value.get('marketwide_screen'), dict):

@@ -106,7 +106,9 @@ it("surfaces observed conditional reduction only for verified current held secur
       />,
     );
   expect(view([item])).toContain("已出现策略退出或减仓复核事项");
-  expect(view([item])).toContain("/decisions/hotspot-300059");
+  expect(view([item])).toContain(
+    'href="/decisions/hotspot-300059?independent_hotspot=true"',
+  );
   state.portfolio!.positions[0].sleeves = [
     { sleeve: "CORE_VALUE", quantity: "100" },
   ] as any;

@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 import json
 import hashlib
+import pytest
 
 from value_investment_agent.application.product import daily_refresh as module
 
@@ -142,6 +143,52 @@ def test_latest_run_only_exposes_status_not_secret(tmp_path):
     assert 'bootstrap' not in receipt
     assert 'secret' not in json.dumps(receipt) and 'private/' not in json.dumps(receipt)
     assert '本次更新尚未完成；继续显示历史已验证快照。' in receipt['notes']
+
+
+def _node_receipt():
+    return {'schema_version': 'daily-workbench-run-v1', 'action': 'no_order',
+        'status': 'PARTIAL', 'published': True, 'notes': [],
+        'node_receipt_scope': 'COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION',
+        'nodes': [{'sequence': 1, 'command': 'scripts/run_m2_opportunity_discovery.py',
+            'operation': 'RUN', 'started_at': '2026-10-22T09:00:00+00:00',
+            'finished_at': '2026-10-22T09:00:01+00:00', 'execution_status': 'FAILED',
+            'exit_code': 2, 'output_status': 'INVALID_JSON',
+            'raw_output': 'secret private/account.json', 'argv': ['private/account.json']}]}
+
+
+def test_node_receipts_are_execution_only_and_do_not_expose_raw_diagnostics(tmp_path):
+    (tmp_path / '.tmp').mkdir()
+    (tmp_path / '.tmp/daily-workbench-latest-run.json').write_text(
+        json.dumps(_node_receipt()), encoding='utf-8')
+    result = module.read_latest_run(tmp_path)
+    assert result['node_receipt_scope'] == 'COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION'
+    assert result['nodes'][0]['execution_status'] == 'FAILED'
+    assert result['nodes'][0]['exit_code'] == 2
+    assert not {'raw_output', 'argv', 'formal_eligibility'} & result['nodes'][0].keys()
+    assert 'private/' not in json.dumps(result)
+
+
+@pytest.mark.parametrize('field,value', [
+    ('sequence', True), ('sequence', 2), ('command', 'private/account.json'),
+    ('operation', 'TRADE'), ('execution_status', 'SUCCEEDED'), ('exit_code', False),
+    ('finished_at', '2026-10-22T08:59:59+00:00'), ('started_at', '2026-10-22T09:00:00'),
+    ('output_status', 'PENDING'), ('output_status', 'secret'),
+])
+def test_untrusted_node_metadata_fails_closed(field, value):
+    receipt = _node_receipt()
+    receipt['nodes'][0][field] = value
+    assert module._node_execution_summary(receipt) == {}
+
+
+def test_running_node_receipt_is_not_a_success():
+    receipt = _node_receipt()
+    receipt['nodes'][0].update(execution_status='RUNNING', exit_code=None,
+        finished_at=None, output_status='PENDING')
+    result = module._node_execution_summary(receipt)
+    assert result['nodes'][0]['execution_status'] == 'RUNNING'
+    assert result['nodes'][0]['exit_code'] is None
+    receipt['nodes'].append({**receipt['nodes'][0], 'sequence': 2})
+    assert module._node_execution_summary(receipt) == {}
 
 
 def test_startup_preserves_unknown_listener_and_checks_identity():

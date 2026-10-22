@@ -6,6 +6,40 @@ vi.mock("@umijs/max", () => ({
 }));
 vi.mock("@ant-design/icons", () => ({ ArrowRightOutlined: () => null }));
 import { DecisionCard } from "../src/components/DecisionCard";
+import { evaluationFixture } from "./fixtures/strategy-readiness";
+
+it("preserves a rejection reason without treating it as a sell or a missing valuation", () => {
+  const evaluation = {
+    ...evaluationFixture("HOTSPOT_SATELLITE"),
+    decision_action: "NO_TRADE" as const,
+    decision_reason: "多周期结构冲突，暂不新建仓。",
+  };
+  const item = {
+    id: "hotspot-600887",
+    symbol: "600887",
+    strategy: "hotspot",
+    price_action_plan: {
+      action: "no_order" as const,
+      signal_state: "TRIGGER_REJECTED",
+      entry_trigger_price: null,
+      invalidation_price: null,
+    },
+  };
+  const html = renderToStaticMarkup(
+    <DecisionCard item={item} evaluation={evaluation} />,
+  );
+  expect(html).toContain("已评价，暂不新建仓");
+  expect(html).toContain(evaluation.decision_reason);
+  expect(html).not.toContain("估值未就绪");
+  expect(html).not.toContain("decision-state-formal");
+  for (const change of [{ symbol: "600519" }, { strategy: "CORE_VALUE" }]) {
+    expect(
+      renderToStaticMarkup(
+        <DecisionCard item={item} evaluation={{ ...evaluation, ...change }} />,
+      ),
+    ).not.toContain(evaluation.decision_reason);
+  }
+});
 
 it.each([false, true])(
   "keeps independent risk review separate from trading permission (%s)",
