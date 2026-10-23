@@ -51,7 +51,13 @@ const labels: Record<string, string> = {
   PRICE_BASIS_INCOMPARABLE: "跨越分配事件，不复权价格不能直接比较",
   CURRENT_DATA_UNAVAILABLE: "当前行情证据不可用，无法判断结构",
   ENTRY_STRUCTURE_OBSERVED: "当前开仓结构条件已观察到，仅供研究",
-  ENTRY_STRUCTURE_NOT_QUALIFIED: "当前开仓结构尚不满足观察条件",
+  ENTRY_STRUCTURE_NOT_QUALIFIED:
+    "完整开仓结构尚未通过，不能据此认定价格触发未成立",
+  ENTRY_TRIGGER_NOT_OBSERVED: "本次单周期开仓价格触发尚未观察到",
+  ENTRY_BEHAVIOR_QUALITY_NOT_USABLE: "价格行为质量尚不足以支持完整开仓结构观察",
+  ENTRY_MULTIPERIOD_STRUCTURE_NOT_QUALIFIED: "完整多周期结构分级尚未达标",
+  OWNED_ENTRY_REQUIRED_FOR_HELD_REVIEW:
+    "缺少原入场依据，当前仅作结构观察，不能推断持有或加仓",
   ENTRY_EVIDENCE_UNAVAILABLE: "原始参考在指定入场时点不可用",
   ENTRY_CURRENT_RULE_MISMATCH: "原始与当前参考的本次重算规则不一致",
   ORIGINAL_PROTECTION_BREACHED: "曾收盘跌破原始保护价；后来恢复不能抹去破位",
@@ -86,7 +92,7 @@ const fields: Record<string, string> = {
   coverage: "数据覆盖",
   entry_at: "参考入场时点",
   observed: "是否观察到条件",
-  current_pit: "当前 PIT 标志",
+  current_pit: "本次输入时点检查",
   source_integrity: "原件完整性",
   current: "当前参考",
   entry: "原始参考",
@@ -421,8 +427,9 @@ export function HotspotLifecycleReview({
       <p>
         价格观察（元）：{text(price?.price)}；观察日期：{text(price?.as_of)}
         ；原件可得时点：{text(price?.available_at)}。
-        {text(price?.reference_price_scope)}；不是盘中实时价，也不等于当前
-        PIT、策略或交易准入。
+        {text(price?.reference_price_scope)}
+        ；不是盘中实时价。本次输入时点检查不等于历史
+        PIT、样本外、策略或交易准入。
       </p>
       <p>未评估不等于未触发；维持结构观察不代表原始投资论据已经验证。</p>
       {comparison && (
@@ -461,7 +468,12 @@ export function HotspotLifecycleReview({
                     .map(([key, value]) => (
                       <div key={key}>
                         <dt>{fields[key] ?? key}</dt>
-                        <dd style={{ marginLeft: 0 }}>{text(value)}</dd>
+                        <dd style={{ marginLeft: 0 }}>
+                          {text(value)}
+                          {key === "current_pit" &&
+                            value === true &&
+                            "（仅指输入不晚于本次评估；历史 PIT／样本外仍须另行审查）"}
+                        </dd>
                       </div>
                     ))}
                 </dl>

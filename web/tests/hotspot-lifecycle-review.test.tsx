@@ -58,6 +58,182 @@ it("shows no-entry current observations, real dates and explanatory steps withou
   expect(fixture).toEqual(before);
 });
 
+it("does not translate a true OPEN trigger with insufficient full structure into an absent price trigger", () => {
+  // TEST_ONLY producer contract mirroring the observed Oct23 OPEN/ACTIVE_ONLY combination.
+  const review = lifecycleFixture();
+  review.decision_explanation.decision_path.push(
+    {
+      check: "CURRENT_OPEN",
+      outcome: "OBSERVED",
+      values: { observed: true, price: "137.20" },
+      evidence_bindings: [review.current_case_binding],
+    },
+    {
+      check: "STRUCTURE_QUALITY",
+      outcome: "UNKNOWN",
+      values: { observation_quality: "UNKNOWN" },
+      evidence_bindings: [review.current_case_binding],
+    },
+    {
+      check: "OPPORTUNITY_QUALITY",
+      outcome: "ACTIVE_ONLY",
+      values: { structure_tier: "ACTIVE_ONLY" },
+      evidence_bindings: [review.current_case_binding],
+    },
+  );
+  const before = structuredClone(review);
+  const html = render(review);
+  expect(html).toContain("完整开仓结构尚未通过，不能据此认定价格触发未成立");
+  expect(html).toContain("当前开仓结构条件</strong>：已观察到条件");
+  expect(html).toContain("价格行为质量</strong>：未知");
+  expect(html).toContain("多周期机会分级</strong>：仅活跃观察");
+  expect(html).toContain("本次观察：<strong>继续观察</strong>");
+  expect(html).not.toContain("当前开仓结构尚不满足观察条件");
+  expect(review).toEqual(before);
+});
+
+it("explains positive input-time checks without upgrading historical PIT or OOS assurance", () => {
+  const review = lifecycleFixture();
+  review.current_pit = true;
+  review.decision_explanation.decision_path[0].values.current_pit = true;
+  const before = structuredClone(review),
+    html = render(review);
+  expect(html).toContain("本次输入时点检查");
+  expect(html).toContain("仅指输入不晚于本次评估");
+  expect(html).toContain("历史 PIT／样本外仍须另行审查");
+  expect(html).not.toContain("当前 PIT 标志");
+  expect(review).toEqual(before);
+  expect(review.formal_eligibility).toBe(false);
+  expect(review.trade_eligible).toBe(false);
+});
+
+it.each([
+  [
+    "ENTRY_TRIGGER_NOT_OBSERVED",
+    false,
+    "RESEARCH_ONLY",
+    "ACTIVE_ONLY",
+    "本次单周期开仓价格触发尚未观察到",
+  ],
+  [
+    "ENTRY_BEHAVIOR_QUALITY_NOT_USABLE",
+    true,
+    "UNKNOWN",
+    "ACTIVE_ONLY",
+    "价格行为质量尚不足以支持完整开仓结构观察",
+  ],
+  [
+    "ENTRY_MULTIPERIOD_STRUCTURE_NOT_QUALIFIED",
+    true,
+    "RESEARCH_ONLY",
+    "ACTIVE_ONLY",
+    "完整多周期结构分级尚未达标",
+  ],
+] as const)(
+  "translates producer reason %s without changing the observed OPEN state",
+  (basis, open, quality, tier, phrase) => {
+    const review = lifecycleFixture();
+    review.decision_explanation.basis_code = basis;
+    review.decision_explanation.why_not_add = [
+      basis,
+      "OWNED_ENTRY_REQUIRED_FOR_HELD_REVIEW",
+    ];
+    review.decision_explanation.decision_path.push(
+      {
+        check: "CURRENT_OPEN",
+        outcome: open ? "OBSERVED" : "NOT_OBSERVED",
+        values: { observed: open, price: "137.20" },
+        evidence_bindings: [review.current_case_binding],
+      },
+      {
+        check: "STRUCTURE_QUALITY",
+        outcome: quality,
+        values: { observation_quality: quality },
+        evidence_bindings: [review.current_case_binding],
+      },
+      {
+        check: "OPPORTUNITY_QUALITY",
+        outcome: tier,
+        values: { structure_tier: tier },
+        evidence_bindings: [review.current_case_binding],
+      },
+    );
+    const before = structuredClone(review),
+      plan = lifecyclePlan(),
+      originalPlan = structuredClone(plan),
+      html = render(review, plan);
+    expect(html).toContain(phrase);
+    expect(html).toContain(
+      "缺少原入场依据，当前仅作结构观察，不能推断持有或加仓",
+    );
+    expect(html).toContain(
+      `当前开仓结构条件</strong>：${open ? "已观察到条件" : "本次未观察到条件"}`,
+    );
+    expect(html).toContain("本次观察：<strong>继续观察</strong>");
+    expect(html).not.toContain(basis);
+    expect(review).toEqual(before);
+    expect(plan).toEqual(originalPlan);
+  },
+);
+
+it("keeps quality and multi-period why-not-add reasons neutral when the trigger itself was not observed", () => {
+  const review = lifecycleFixture();
+  review.decision_explanation.basis_code = "ENTRY_TRIGGER_NOT_OBSERVED";
+  review.decision_explanation.why_not_add = [
+    "ENTRY_TRIGGER_NOT_OBSERVED",
+    "ENTRY_BEHAVIOR_QUALITY_NOT_USABLE",
+    "ENTRY_MULTIPERIOD_STRUCTURE_NOT_QUALIFIED",
+    "OWNED_ENTRY_REQUIRED_FOR_HELD_REVIEW",
+  ];
+  const html = render(review);
+  expect(html).toContain("本次单周期开仓价格触发尚未观察到");
+  expect(html).toContain("价格行为质量尚不足以支持完整开仓结构观察");
+  expect(html).not.toContain("开仓触发已观察到，但");
+});
+
+it("does not turn a false input-time flag into a positive assurance", () => {
+  const review = lifecycleFixture(),
+    before = structuredClone(review),
+    html = render(review);
+  expect(html).toMatch(/本次输入时点检查<\/dt><dd[^>]*>否/);
+  expect(html).not.toContain("仅指输入不晚于本次评估");
+  expect(html).toContain("历史");
+  expect(html).toContain("样本外、策略或交易准入");
+  expect(review).toEqual(before);
+});
+
+it("does not add a new behavior-quality gate to a producer-supplied ENTRY_OBSERVATION", () => {
+  const review = lifecycleFixture();
+  review.observed_review = "ENTRY_OBSERVATION";
+  review.decision_explanation.selected_review = "ENTRY_OBSERVATION";
+  review.decision_explanation.basis_code = "ENTRY_STRUCTURE_OBSERVED";
+  review.decision_explanation.decision_path.push(
+    {
+      check: "CURRENT_OPEN",
+      outcome: "OBSERVED",
+      values: { observed: true },
+      evidence_bindings: [review.current_case_binding],
+    },
+    {
+      check: "STRUCTURE_QUALITY",
+      outcome: "UNKNOWN",
+      values: {},
+      evidence_bindings: [review.current_case_binding],
+    },
+    {
+      check: "OPPORTUNITY_QUALITY",
+      outcome: "STRUCTURE_QUALIFIED_OBSERVATION",
+      values: {},
+      evidence_bindings: [review.current_case_binding],
+    },
+  );
+  const before = structuredClone(review),
+    html = render(review);
+  expect(html).toContain("本次观察：<strong>开仓结构观察</strong>");
+  expect(html).not.toContain("状态互相矛盾");
+  expect(review).toEqual(before);
+});
+
 it("preserves original protection and first breach despite recovery or a lower rolling level", () => {
   const html = render(lifecycleHeldFixture());
   for (const value of [
