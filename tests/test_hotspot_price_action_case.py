@@ -43,6 +43,17 @@ def test_provider_symbol_and_cutoff_are_enforced():
         parse_klines(b"{}", period="60m", as_of=date(2026, 10, 13))
 
 
+@pytest.mark.parametrize("raw,reason", [
+    (b"", "JSONP"),
+    (b"=([]);", "No bars"),
+    (b"=([broken]);", "Expecting value"),
+    (("=(" + json.dumps([{}] * 2501) + ");").encode(), "kline rows"),
+])
+def test_shared_decoder_preserves_existing_empty_corrupt_and_size_boundaries(raw, reason):
+    with pytest.raises(ValueError, match=reason):
+        parse_klines(raw, period="60m", as_of=date(2026, 10, 13))
+
+
 def test_capture_keeps_original_hash_and_rejects_duplicate_case(tmp_path):
     class Response:
         def __init__(self, period):

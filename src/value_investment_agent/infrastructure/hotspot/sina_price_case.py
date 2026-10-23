@@ -36,6 +36,19 @@ def _source_url_valid(url: str, *, symbol: str, scale: str) -> bool:
             and query.get("ma") == ["no"])
 
 
+def decode_klines(raw: bytes) -> list[dict]:
+    """Decode the existing provider wrapper without discarding source metadata."""
+    text = raw.decode("utf-8")
+    opening = text.find("=([")
+    closing = text.rfind("]);")
+    if opening < 0 or closing < opening:
+        raise ValueError("Provider JSONP wrapper invalid")
+    rows = json.loads(text[opening + 2:closing + 1])
+    if not isinstance(rows, list) or len(rows) > 2500:
+        raise ValueError("Provider did not return kline rows")
+    return rows
+
+
 def parse_klines(raw: bytes, *, period: str, as_of: date,
                  completed_through: datetime | None = None) -> list[dict]:
     """Historical full-close parsing by default; explicit cutoff opts into bars.
@@ -52,14 +65,7 @@ def parse_klines(raw: bytes, *, period: str, as_of: date,
         completed_through = completed_through.astimezone(ZoneInfo("Asia/Shanghai"))
         if completed_through.date() != as_of or not is_exchange_session("SSE", as_of):
             raise ValueError("Completed-through date must be a covered exchange session")
-    text = raw.decode("utf-8")
-    opening = text.find("=([")
-    closing = text.rfind("]);")
-    if opening < 0 or closing < opening:
-        raise ValueError("Provider JSONP wrapper invalid")
-    rows = json.loads(text[opening + 2:closing + 1])
-    if not isinstance(rows, list) or len(rows) > 2500:
-        raise ValueError("Provider did not return kline rows")
+    rows = decode_klines(raw)
     result = []
     for row in rows:
         stamp = datetime.fromisoformat(row["day"])

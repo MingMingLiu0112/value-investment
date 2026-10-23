@@ -4,6 +4,7 @@ Each decision consumes only its explicitly bound snapshot. A retrospective
 manifest is not a preregistration receipt, performance test, or Shadow ledger.
 """
 from datetime import date, datetime, timedelta
+import base64
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -12,6 +13,7 @@ from .candidate_selection import select_current_hotspot_candidates
 from .event_replay import _bound_bytes
 from .strategy_execution_replay import fingerprint
 from ...domain.execution.exchange_calendar import is_exchange_session, SCHEDULE_VERSION
+from ...infrastructure.hotspot.sina_price_case import decode_klines
 
 VERSION = "hotspot-selection-history-v1"
 SPEC_VERSION = "hotspot-selection-history-spec-v1"
@@ -61,6 +63,70 @@ def _sessions(start, end):
             if is_exchange_session("SSE", first + timedelta(days=i))]
 
 
+def _reject_test_namespace(value):
+    if isinstance(value, dict):
+        namespace = value.get("namespace")
+        if isinstance(namespace, str) and namespace.strip().upper() in {"TEST_ONLY", "SIMULATED"}:
+            raise ValueError("ACTUAL history cannot consume test evidence namespace")
+        for item in value.values():
+            _reject_test_namespace(item)
+        # Quote/calendars retain their actual provider documents in this envelope.
+        encoded = value.get("raw_base64")
+        if isinstance(encoded, str):
+            try:
+                document = json.loads(base64.b64decode(encoded, validate=True))
+            except (ValueError, UnicodeError):
+                pass  # Non-JSON provider bodies are validated by the existing loaders.
+            else:
+                _reject_test_namespace(document)
+    elif isinstance(value, list):
+        for item in value:
+            _reject_test_namespace(item)
+
+
+def _check_actual_sources(root, snapshot):
+    """Inspect only the bound documents this replay consumes, never crawl paths.
+
+    Invalid bindings keep the existing PARTIAL/INVALID path. Explicit test scope
+    is a separate fatal scope mismatch, including sources normalizers discard.
+    """
+    checked = []
+
+    def read(binding, decoder=json.loads):
+        try:
+            name = Path(binding["path"])
+            if name.is_absolute() or not (root / name).resolve().is_relative_to((root / "runtime").resolve()):
+                return None
+            raw = _bound_bytes(root, binding)
+            document = decoder(raw)
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+        _reject_test_namespace(document)
+        checked.append({key: binding[key] for key in ("path", "sha256")})
+        return document
+
+    _reject_test_namespace(snapshot)
+    watch = read(snapshot["watch_binding"])
+    if isinstance(watch, dict):
+        sources = watch.get("source_bindings")
+        if isinstance(sources, list):
+            for binding in sources[:2]:
+                read(binding)
+    for binding in snapshot["case_bindings"].values():
+        case = read(binding)
+        if not isinstance(case, dict):
+            continue
+        quote = case.get("current_reference_close")
+        if isinstance(quote, dict) and "bundle_path" in quote and "bundle_sha256" in quote:
+            read(dict(path=quote["bundle_path"], sha256=quote["bundle_sha256"]))
+        sources = case.get("source_bindings")
+        if isinstance(sources, dict):
+            for period in ("60m", "15m"):
+                if period in sources:
+                    read(sources[period], decode_klines)
+    return checked
+
+
 def replay_selection_history(*, root: Path, specification: dict, now: datetime) -> dict:
     """Reproduce all snapshot members and retain gaps; no source writes.
 
@@ -101,6 +167,8 @@ def replay_selection_history(*, root: Path, specification: dict, now: datetime) 
         indexed[item["session"]] = item
     root = root.resolve()
     rows, previous, bindings = [], None, []
+    if specification["namespace"] == "ACTUAL":
+        _reject_test_namespace(specification)
     previous_contract = None
     for session in expected:
         item = indexed.get(session)
@@ -110,6 +178,8 @@ def replay_selection_history(*, root: Path, specification: dict, now: datetime) 
             previous = None
             previous_contract = None
             continue
+        if specification["namespace"] == "ACTUAL":
+            bindings.extend(_check_actual_sources(root, item))
         selection = select_current_hotspot_candidates(root=root, now=_time(item["decision_at"]),
             watch_binding=item["watch_binding"], case_bindings=item["case_bindings"], limit=30)
         coverage = selection.get("coverage", {})
@@ -155,6 +225,8 @@ def replay_selection_history(*, root: Path, specification: dict, now: datetime) 
         declared_registration_precedes_decisions=bool(snapshots) and all(
             registered <= _time(x["decision_at"]) for x in snapshots),
         registration_assurance="DECLARED_TIMESTAMP_NOT_INDEPENDENT_PREREGISTRATION_PROOF",
+        source_namespace_assurance=("EXPLICIT_TEST_MARKERS_REJECTED_NOT_SOURCE_AUTHENTICATION"
+            if specification["namespace"] == "ACTUAL" else "TEST_ONLY_NOT_ACTUAL_EVIDENCE"),
         metrics_scope="DATED_UNIVERSE_AND_STRUCTURE_REPLAY_NOT_EXECUTION_OR_WALK_FORWARD",
         strict_pit_admitted=False, strict_oos_admitted=False, strategy_validation="NOT_PROVEN",
         elapsed_real_shadow_sessions=0, formal_eligibility=False, trade_eligible=False,
