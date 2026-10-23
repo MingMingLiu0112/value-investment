@@ -2812,3 +2812,30 @@ opening action state, semantic amendment absence, no_change or price comparabili
 Fresh clean Core, build identity, live registry/packet switch and actual 8001
 rendering of this successor remain pending at this checkpoint. 8001 still runs
 c4bb99b5 with its unchanged prior public pointers. No remote CI/push is claimed.
+
+### 2026-10-24 - Core failure diagnosis and explicit validity clocks
+
+The clean 4c748451 Core run finished with 5374 passed, 94 skipped and three
+failed legacy unsigned-replay price-policy assertions. This checkpoint is not
+green. The archived failed XML is .tmp/core-4c748451-failed.xml in gc1, SHA256
+db2d9d2c49b957b6cd1a37453c77486642a12bb9f8b16fd74067c2e3c3894b08.
+bd27adef updates that test contract and explicitly retains mismatch/rejected
+policy rejection for the non-replay path. Focused regression passed 103 with
+one optional skip; independent caller/test review passed 45 with one deselected.
+
+279cd6df integrates independently reviewed a39f5f8f. Incremental research
+validity now uses the explicit package valuation_date, not research_as_of, and
+reports those clocks separately. Missing dates are rejected. Independent review
+passed 81 selected tests and reproduced the real 600887 dates: model October 21,
+research October 22, review October 23. The retained scan starts October 22, so
+the incomplete model window remains UNKNOWN; the October 23 announcement stays
+pending materiality. No model date, source date or investment approval moved.
+
+The isolated real quote-context transition failed before registration and
+restored its owned quote pointer exactly (SHA256
+1701300c24adff421696e533cc21dabd2c9d16bc1ce4283415ca85e9e4770523).
+Its retained official October 22-23 query and one original announcement are not
+proof of October 21 coverage. A separately versioned explicit scan-start repair
+is in progress; history and the failed transition remain retained. The live
+8001 release is still c4bb99b5. Full successor Core, build and deployment are
+pending; no public push, production task or formal strategy approval occurred.
