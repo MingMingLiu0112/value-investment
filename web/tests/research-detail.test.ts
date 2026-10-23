@@ -17,6 +17,239 @@ import {
   unknownText,
 } from "../src/utils/researchDetail";
 
+/** TEST_ONLY mapping DTO: not a real approved company or a production READY. */
+function asofTestExecution(): any {
+  const scope = {
+    scope: "CURRENT_AS_OF_SNAPSHOT_V1",
+    action: "no_order",
+    observed_at: "2026-10-24T09:10:00+08:00",
+    knowledge_as_of: "2026-10-24T09:12:00+08:00",
+    full_calendar_window_elapsed: false,
+    strict_contemporaneous_pit: false,
+    formal_eligibility: false,
+    strategy_approval_granted: false,
+    research_comparison_only: true,
+  };
+  return {
+    ...scope,
+    schema_version: "quote-bridge-execution-v1",
+    status: "QUOTE_VERIFIED_WITH_CURRENT_ASOF_SNAPSHOT",
+    price_admitted: true,
+    comparison_eligible: true,
+    research_day: "2026-10-11",
+    quote_date: "2026-10-23",
+    sources: [],
+    current_snapshot_validity: {
+      ...scope,
+      schema_version: "current-snapshot-validity-result-v1",
+      symbol: "600887",
+      status: "VALID_AS_OF_SNAPSHOT",
+      usable_for_research_comparison: true,
+      g3_approval_granted: false,
+      blockers: [],
+    },
+    current_event_coverage: {
+      ...scope,
+      status: "CURRENT_AS_OF_SNAPSHOT",
+      required_through: "2026-10-24",
+      query_through: "2026-10-24",
+      covered_through: null,
+    },
+    compatibility: {
+      research_compatible: { eligible: true },
+      comparison_eligible: { eligible: true },
+      formal_decision_eligible: { eligible: false },
+    },
+  };
+}
+
+describe("TEST_ONLY current-asof scope mapping, not real approval", () => {
+  it("keeps knowledge/observation/research/quote dates distinct without whole-day or PIT claims", () => {
+    const view = bridgeExecutionView(asofTestExecution(), "600887")!;
+    expect(view.comparable).toBe(true);
+    expect(view.snapshotScope?.verified).toBe(true);
+    expect(view.comparableLabel).toContain("不是买卖许可");
+    expect(view.rows.find((r) => r.key === "snapshot_observed")?.value).toBe(
+      "2026-10-24T09:10:00+08:00",
+    );
+    expect(view.rows.find((r) => r.key === "snapshot_knowledge")?.value).toBe(
+      "2026-10-24T09:12:00+08:00",
+    );
+    expect(view.rows.find((r) => r.key === "research_day")?.value).toBe(
+      "2026-10-11",
+    );
+    expect(view.quoteDate).toBe("2026-10-23");
+    expect(view.rows.some((r) => r.key === "current_event_covered")).toBe(
+      false,
+    );
+    expect(view.snapshotScope?.notice).toContain("不是全天公告覆盖");
+    expect(view.snapshotScope?.notice).toContain("不证明历史 PIT");
+    expect(
+      view.ladder.find((r) => r.key === "formal_decision_eligible")?.eligible,
+    ).toBe(false);
+    const headline = researchHeadline({
+      bridge: view,
+      valuation: { base: "10", valuation_date: "2026-10-20" },
+    });
+    expect(headline).toContain("估值日 2026-10-20");
+    expect(headline).toContain("原研究截止 2026-10-11");
+    expect(headline).toContain("截至已采集时点");
+    expect(headline).not.toContain("行情在研究覆盖范围内");
+  });
+
+  it.each([
+    [
+      "missing scope",
+      (v: any) => {
+        delete v.scope;
+      },
+    ],
+    [
+      "unknown scope",
+      (v: any) => {
+        v.scope = "UNKNOWN_VERSION";
+      },
+    ],
+    [
+      "unknown schema",
+      (v: any) => {
+        v.schema_version = "UNKNOWN_VERSION";
+      },
+    ],
+    [
+      "missing snapshot",
+      (v: any) => {
+        delete v.current_snapshot_validity;
+      },
+    ],
+    [
+      "missing coverage",
+      (v: any) => {
+        delete v.current_event_coverage;
+      },
+    ],
+    [
+      "unknown snapshot status",
+      (v: any) => {
+        v.current_snapshot_validity.status = "READY";
+      },
+    ],
+    [
+      "formal authority",
+      (v: any) => {
+        v.formal_eligibility = true;
+      },
+    ],
+    [
+      "strategy authority",
+      (v: any) => {
+        v.strategy_approval_granted = true;
+      },
+    ],
+    [
+      "inner authority",
+      (v: any) => {
+        v.current_snapshot_validity.g3_approval_granted = true;
+      },
+    ],
+    [
+      "full day",
+      (v: any) => {
+        v.full_calendar_window_elapsed = true;
+      },
+    ],
+    [
+      "PIT",
+      (v: any) => {
+        v.strict_contemporaneous_pit = true;
+      },
+    ],
+    [
+      "covered day",
+      (v: any) => {
+        v.current_event_coverage.covered_through = "2026-10-24";
+      },
+    ],
+    [
+      "missing knowledge",
+      (v: any) => {
+        delete v.knowledge_as_of;
+      },
+    ],
+    [
+      "bad time",
+      (v: any) => {
+        v.observed_at = "2026-10-24";
+      },
+    ],
+    [
+      "invalid date",
+      (v: any) => {
+        v.observed_at = "2026-02-30T09:10:00+08:00";
+      },
+    ],
+    [
+      "mixed observation",
+      (v: any) => {
+        v.current_event_coverage.observed_at = "2026-10-24T09:15:00+08:00";
+      },
+    ],
+    [
+      "wrong symbol",
+      (v: any) => {
+        v.current_snapshot_validity.symbol = "600519";
+      },
+    ],
+    [
+      "false READY",
+      (v: any) => {
+        v.comparison_eligible = false;
+      },
+    ],
+    [
+      "quote not admitted",
+      (v: any) => {
+        v.price_admitted = false;
+      },
+    ],
+    [
+      "missing scope restriction",
+      (v: any) => {
+        delete v.research_comparison_only;
+      },
+    ],
+    [
+      "formal ladder",
+      (v: any) => {
+        v.compatibility.formal_decision_eligible.eligible = true;
+      },
+    ],
+  ])(
+    "does not turn %s into comparison/transaction eligibility",
+    (_, mutate) => {
+      const dto = asofTestExecution();
+      mutate(dto);
+      const view = bridgeExecutionView(dto, "600887")!;
+      expect(view.comparable).toBe(false);
+      expect(view.comparableLabel).not.toContain(
+        "仅具备已采集时点研究比较资格",
+      );
+      expect(
+        view.ladder.find((r) => r.key === "formal_decision_eligible")?.eligible,
+      ).toBe(false);
+      expect(
+        view.ladder.find((r) => r.key === "comparison_eligible")?.eligible,
+      ).toBe(false);
+    },
+  );
+
+  it("accepts equivalent explicit instants and never consults a browser clock", () => {
+    const dto = asofTestExecution();
+    dto.current_snapshot_validity.observed_at = "2026-10-24T01:10:00Z";
+    expect(bridgeExecutionView(dto, "600887")?.comparable).toBe(true);
+  });
+});
+
 it("separates partial current event coverage from retained price comparison and historical model status", () => {
   const execution = {
     schema_version: "TEST_ONLY",

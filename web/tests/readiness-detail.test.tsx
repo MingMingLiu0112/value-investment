@@ -185,3 +185,91 @@ it("does not borrow lifecycle from a nested decision or infer an entry from earl
     "尚未接入或当前不可核验",
   );
 });
+
+/** TEST_ONLY future as-of DTO; the actual 600887 policy is not approved. */
+function mountTestOnlyAsOfResearch() {
+  const scope = {
+    scope: "CURRENT_AS_OF_SNAPSHOT_V1",
+    action: "no_order",
+    observed_at: "2026-10-24T09:10:00+08:00",
+    knowledge_as_of: "2026-10-24T09:12:00+08:00",
+    full_calendar_window_elapsed: false,
+    strict_contemporaneous_pit: false,
+    formal_eligibility: false,
+    strategy_approval_granted: false,
+    research_comparison_only: true,
+  };
+  state.detail.data.decision.research = {
+    symbol: "600887",
+    decision_cutoff: "2026-10-11",
+    gates: [],
+    valuation: {
+      bear: "8",
+      base: "10",
+      bull: "12",
+      valuation_date: "2026-10-20",
+    },
+    price: { current_price: "9", price_as_of: "2026-10-23" },
+    price_bridge_execution: {
+      ...scope,
+      schema_version: "quote-bridge-execution-v1",
+      status: "QUOTE_VERIFIED_WITH_CURRENT_ASOF_SNAPSHOT",
+      price_admitted: true,
+      comparison_eligible: true,
+      research_day: "2026-10-11",
+      quote_date: "2026-10-23",
+      sources: [],
+      current_snapshot_validity: {
+        ...scope,
+        schema_version: "current-snapshot-validity-result-v1",
+        symbol: "600887",
+        status: "VALID_AS_OF_SNAPSHOT",
+        usable_for_research_comparison: true,
+        g3_approval_granted: false,
+        blockers: [],
+      },
+      current_event_coverage: {
+        ...scope,
+        status: "CURRENT_AS_OF_SNAPSHOT",
+        required_through: "2026-10-24",
+        query_through: "2026-10-24",
+        covered_through: null,
+      },
+    },
+  };
+}
+
+it("TEST_ONLY maps future as-of scope in the existing detail without pretending a real approval", () => {
+  mountTestOnlyAsOfResearch();
+  const html = renderToStaticMarkup(<DecisionDetail />);
+  expect(html).toContain("公告快照取得时间（非重新计算时间）");
+  expect(html).toContain("知识可得上界（全部输入可得时点）");
+  for (const date of [
+    "2026-10-24T09:10:00+08:00",
+    "2026-10-24T09:12:00+08:00",
+    "2026-10-11",
+    "2026-10-20",
+    "2026-10-23",
+  ])
+    expect(html).toContain(date);
+  expect(html).toContain("不是全天公告覆盖");
+  expect(html).toContain("不证明历史 PIT");
+  expect(html).toContain("不授予策略资格或买卖许可");
+  expect(html).not.toContain("已核验收盘行情在研究覆盖范围内");
+  expect(html).toContain("overflow-wrap:anywhere");
+  expect(html).toContain("原始操作判断");
+  expect(html).not.toMatch(/(?:price|quantity)=/);
+});
+
+it("TEST_ONLY refuses an incomplete future scope and leaves the legacy view unchanged", () => {
+  mountTestOnlyAsOfResearch();
+  delete state.detail.data.decision.research.price_bridge_execution
+    .knowledge_as_of;
+  const html = renderToStaticMarkup(<DecisionDetail />);
+  expect(html).toContain("快照范围未核验，暂不可比较");
+  expect(html).not.toContain("仅具备已采集时点研究比较资格");
+  delete state.detail.data.decision.research;
+  const legacy = renderToStaticMarkup(<DecisionDetail />);
+  expect(legacy).not.toContain("知识可得上界");
+  expect(legacy).toContain("原始操作判断");
+});

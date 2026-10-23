@@ -209,7 +209,10 @@ function ResearchDecision({
   const validity = (research.model_validity ??
     {}) as Partial<ResearchModelValidity>;
   const price = (research.price ?? {}) as Partial<ResearchPrice>;
-  const bridge = bridgeExecutionView(research.price_bridge_execution);
+  const bridge = bridgeExecutionView(
+    research.price_bridge_execution,
+    decision.symbol || research.symbol,
+  );
   const state = (research.suggested_state ??
     {}) as Partial<ResearchSuggestedState>;
   const provenance = (research.valuation_provenance ??
@@ -457,6 +460,14 @@ function ResearchDecision({
       </Section>
 
       <Section title="价格与估值的关系">
+        {bridge?.snapshotScope && (
+          <Typography.Paragraph
+            type="secondary"
+            style={{ overflowWrap: "anywhere" }}
+          >
+            {bridge.snapshotScope.notice}
+          </Typography.Paragraph>
+        )}
         {hasPrice ? (
           <Descriptions
             bordered
@@ -497,34 +508,35 @@ function ResearchDecision({
             }
           />
         )}
-        {(marginBase !== null || marginBear !== null) && (
-          <Descriptions
-            bordered
-            column={1}
-            size="small"
-            style={{ marginTop: 12 }}
-            items={[
-              ...(marginBase !== null
-                ? [
-                    {
-                      key: "margin_base",
-                      label: "相对 Base",
-                      children: marginBase,
-                    },
-                  ]
-                : []),
-              ...(marginBear !== null
-                ? [
-                    {
-                      key: "margin_bear",
-                      label: "相对 Bear",
-                      children: marginBear,
-                    },
-                  ]
-                : []),
-            ]}
-          />
-        )}
+        {(!bridge?.snapshotScope || bridge.comparable) &&
+          (marginBase !== null || marginBear !== null) && (
+            <Descriptions
+              bordered
+              column={1}
+              size="small"
+              style={{ marginTop: 12 }}
+              items={[
+                ...(marginBase !== null
+                  ? [
+                      {
+                        key: "margin_base",
+                        label: "相对 Base",
+                        children: marginBase,
+                      },
+                    ]
+                  : []),
+                ...(marginBear !== null
+                  ? [
+                      {
+                        key: "margin_bear",
+                        label: "相对 Bear",
+                        children: marginBear,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          )}
         <SubTitle>价格阻塞</SubTitle>
         <BulletList items={priceBlockers} empty="未提供价格阻塞说明" />
       </Section>
@@ -536,6 +548,11 @@ function ResearchDecision({
               bordered
               column={1}
               size="small"
+              style={
+                bridge.snapshotScope
+                  ? { overflowWrap: "anywhere", minWidth: 0 }
+                  : undefined
+              }
               items={[
                 {
                   key: "bridge_status",

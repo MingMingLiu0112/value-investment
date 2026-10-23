@@ -26,6 +26,10 @@ export interface BridgeExecutionView {
   statusLabel: string;
   comparableLabel: string;
   comparable: boolean;
+  snapshotScope?: {
+    verified: boolean;
+    notice: string;
+  } | null;
   quoteDate: string | null;
   displayPrice: string | null;
   rows: Array<{ key: string; label: string; value: string }>;
@@ -67,17 +71,103 @@ function text(value: unknown): string | null {
   return asText ? asText : null;
 }
 
+const ASOF_SCOPE = "CURRENT_AS_OF_SNAPSHOT_V1";
+const ASOF_STATUS = "QUOTE_VERIFIED_WITH_CURRENT_ASOF_SNAPSHOT";
+
+function snapshotTime(value: unknown): number | null {
+  if (typeof value !== "string") return null;
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.exec(
+      value,
+    );
+  if (!match) return null;
+  const calendar = new Date(`${match[1]}-${match[2]}-${match[3]}T00:00:00Z`);
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) &&
+    calendar.toISOString().slice(0, 10) === value.slice(0, 10)
+    ? parsed
+    : null;
+}
+
+/** Validate display scope only. No clock, financial calculation or new admission. */
+function snapshotScopeView(
+  execution: PriceBridgeExecution,
+  expectedSymbol?: string,
+) {
+  const snapshot = execution.current_snapshot_validity;
+  const coverage = execution.current_event_coverage;
+  if (
+    execution.scope == null &&
+    execution.research_comparison_only == null &&
+    execution.knowledge_as_of == null &&
+    !snapshot &&
+    execution.status !== ASOF_STATUS &&
+    coverage?.scope == null &&
+    coverage?.status !== "CURRENT_AS_OF_SNAPSHOT"
+  )
+    return null;
+  const observed = snapshotTime(execution.observed_at);
+  const knowledge = snapshotTime(execution.knowledge_as_of);
+  const limited = (
+    value: typeof execution | typeof snapshot | typeof coverage,
+  ) =>
+    value?.scope === ASOF_SCOPE &&
+    value.action === "no_order" &&
+    value.full_calendar_window_elapsed === false &&
+    value.strict_contemporaneous_pit === false &&
+    value.formal_eligibility === false &&
+    value.strategy_approval_granted === false;
+  const verified =
+    execution.schema_version === "quote-bridge-execution-v1" &&
+    execution.status === ASOF_STATUS &&
+    execution.price_admitted === true &&
+    limited(execution) &&
+    execution.research_comparison_only === true &&
+    observed !== null &&
+    knowledge !== null &&
+    observed <= knowledge &&
+    limited(snapshot) &&
+    snapshot?.schema_version === "current-snapshot-validity-result-v1" &&
+    snapshot.status === "VALID_AS_OF_SNAPSHOT" &&
+    snapshot.usable_for_research_comparison === true &&
+    typeof snapshot.symbol === "string" &&
+    /^\d{6}$/.test(snapshot.symbol) &&
+    (!expectedSymbol || snapshot.symbol === expectedSymbol) &&
+    snapshot.g3_approval_granted === false &&
+    Array.isArray(snapshot.blockers) &&
+    snapshot.blockers.length === 0 &&
+    snapshotTime(snapshot.observed_at) === observed &&
+    snapshotTime(snapshot.knowledge_as_of) === knowledge &&
+    limited(coverage) &&
+    coverage?.status === "CURRENT_AS_OF_SNAPSHOT" &&
+    coverage.research_comparison_only === true &&
+    coverage.covered_through === null &&
+    snapshotTime(coverage.observed_at) === observed &&
+    snapshotTime(coverage.knowledge_as_of) === knowledge &&
+    execution.compatibility?.formal_decision_eligible?.eligible !== true;
+  return {
+    verified,
+    notice: verified
+      ? "仅截至已采集时点的研究比较；不是全天公告覆盖，不证明历史 PIT，不授予策略资格或买卖许可。原研究日与估值日未变。"
+      : "快照范围字段缺失、不认识或相互矛盾，暂不可比较；不代表没有机会，也不授予买卖许可。原研究日与估值日未变。",
+  };
+}
+
 /**
  * 只整理共享程序真正执行过的准入结果：状态码转中文，字段缺失显示未提供，
  * 不新增价格、边际或仓位推断。
  */
 export function bridgeExecutionView(
   execution?: PriceBridgeExecution | null,
+  expectedSymbol?: string,
 ): BridgeExecutionView | null {
   if (!execution || typeof execution !== "object") return null;
   const status = text(execution.status);
   if (!status) return null;
-  const comparable = execution.comparison_eligible === true;
+  const snapshotScope = snapshotScopeView(execution, expectedSymbol);
+  const comparable =
+    execution.comparison_eligible === true &&
+    (!snapshotScope || snapshotScope.verified);
   const price = text(execution.display_price);
   const quoteDate = text(execution.quote_date);
   const rows = [
@@ -126,6 +216,30 @@ export function bridgeExecutionView(
         : "未提供",
     },
   ];
+  if (snapshotScope)
+    rows.push(
+      {
+        key: "snapshot_observed",
+        label: "公告快照取得时间（非重新计算时间）",
+        value:
+          snapshotTime(execution.observed_at) !== null
+            ? execution.observed_at!
+            : "未提供或无效",
+      },
+      {
+        key: "snapshot_knowledge",
+        label: "知识可得上界（全部输入可得时点）",
+        value:
+          snapshotTime(execution.knowledge_as_of) !== null
+            ? execution.knowledge_as_of!
+            : "未提供或无效",
+      },
+      {
+        key: "snapshot_scope",
+        label: "研究比较范围",
+        value: snapshotScope.notice,
+      },
+    );
   if (execution.incremental_validity) {
     const incremental = execution.incremental_validity;
     const coverage = eventCoverageDates(execution);
@@ -157,7 +271,10 @@ export function bridgeExecutionView(
       },
     );
   }
-  if (execution.incremental_validity || execution.current_event_coverage) {
+  if (
+    !snapshotScope &&
+    (execution.incremental_validity || execution.current_event_coverage)
+  ) {
     const coverage = eventCoverageDates(execution);
     rows.push(
       {
@@ -202,14 +319,45 @@ export function bridgeExecutionView(
     }));
   return {
     status,
-    statusLabel: bridgeStatusLabel(status),
+    statusLabel: snapshotScope
+      ? snapshotScope.verified
+        ? "已核验行情与已采集时点快照，仅供研究比较"
+        : "快照范围未核验，暂不可比较"
+      : bridgeStatusLabel(status),
+    snapshotScope,
     comparable,
-    comparableLabel: comparable ? "已具备比较资格" : "尚不具备比较资格",
+    comparableLabel: snapshotScope
+      ? comparable
+        ? "仅具备已采集时点研究比较资格（不是买卖许可）"
+        : "尚不具备已采集时点研究比较资格"
+      : comparable
+        ? "已具备比较资格"
+        : "尚不具备比较资格",
     quoteDate,
     displayPrice: price,
     rows,
-    ladder: compatibilityLadder(execution.compatibility),
-    reason: text(execution.reason),
+    ladder: compatibilityLadder(execution.compatibility).map((row) =>
+      !snapshotScope
+        ? row
+        : {
+            ...row,
+            label:
+              row.key === "research_compatible"
+                ? "截至已采集时点的研究兼容性（非全天覆盖）"
+                : row.key === "comparison_eligible"
+                  ? "仅研究价格比较（不是买卖许可）"
+                  : row.label,
+            eligible:
+              snapshotScope.verified &&
+              row.key !== "formal_decision_eligible" &&
+              (row.key !== "comparison_eligible" || comparable) &&
+              row.eligible,
+          },
+    ),
+    reason:
+      snapshotScope && !snapshotScope.verified
+        ? snapshotScope.notice
+        : text(execution.reason),
     nextStep: text(execution.next_step),
     sources,
   };
@@ -399,6 +547,18 @@ export function researchHeadline(input: HeadlineInput): string {
   const base = headlineValue(valuation.base);
   const baseText = base !== null ? `基准 ${base} 元，` : "";
   const bridge = input.bridge;
+  if (bridge?.snapshotScope) {
+    const originalDay =
+      text(input.researchDay) ??
+      bridge.rows.find((row) => row.key === "research_day")?.value ??
+      "未提供";
+    const datedScope = `估值日 ${text(valuation.valuation_date) ?? "未提供"}，原研究截止 ${originalDay}`;
+    return `已有条件性估值研究（${baseText}${datedScope}），${
+      bridge.comparable
+        ? "仅可截至已采集时点进行研究价格比较，不代表全天研究覆盖或历史 PIT 已通过，也不是买卖许可。"
+        : "当前快照比较尚未就绪，不能由行情准入或 READY 推断买卖许可。"
+    }`;
+  }
   if (bridge?.comparable) {
     const margin = text(input.marginToBase);
     const marginText = margin ? `安全边际：${margin}；` : "";

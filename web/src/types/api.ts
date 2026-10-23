@@ -496,7 +496,32 @@ export interface PriceBridgeSource {
   sha256: string | null;
 }
 
-export interface CurrentEventCoverage {
+/** Read-only scope metadata; never confers strategy or execution authority. */
+export interface CurrentSnapshotScope {
+  scope?: string | null;
+  knowledge_as_of?: string | null;
+  observed_at?: string | null;
+  full_calendar_window_elapsed?: boolean | null;
+  strict_contemporaneous_pit?: boolean | null;
+  research_comparison_only?: boolean | null;
+  formal_eligibility?: boolean | null;
+  strategy_approval_granted?: boolean | null;
+  action?: string | null;
+  source_assurance?: string | null;
+}
+
+export interface CurrentSnapshotValidity extends CurrentSnapshotScope {
+  schema_version: string | null;
+  status: string | null;
+  symbol: string | null;
+  evaluated_at?: string | null;
+  usable_for_research_comparison: boolean | null;
+  g3_approval_granted?: boolean | null;
+  blockers: string[];
+  bindings?: Record<string, unknown>;
+}
+
+export interface CurrentEventCoverage extends CurrentSnapshotScope {
   required_through: string | null;
   query_through: string | null;
   covered_through: string | null;
@@ -506,11 +531,13 @@ export interface CurrentEventCoverage {
     | "PARTIAL_CURRENT_SNAPSHOT"
     | "CLOSED_WINDOW_NOT_CURRENT"
     | "SNAPSHOT_NOT_CURRENT"
-    | "FULL_WINDOW";
+    | "FULL_WINDOW"
+    | "CURRENT_AS_OF_SNAPSHOT";
 }
 
 /** One executed admission of the registered close against the registered research cutoff. */
-export interface PriceBridgeExecution {
+export interface PriceBridgeExecution extends CurrentSnapshotScope {
+  current_snapshot_validity?: CurrentSnapshotValidity | null;
   current_event_coverage?: CurrentEventCoverage | null;
   historical_model_validity?: { status?: string | null } | null;
   incremental_validity?: {
