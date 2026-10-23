@@ -134,6 +134,48 @@ export function ValueResearchAnalysis({
         {analysis.computed_at || "未提供"}
       </p>
       <h3>三情景与实际模型输入</h3>
+      {analysis.economic_assessment?.schema_version ===
+        "value-economic-assessment-v1" &&
+        analysis.economic_assessment.symbol === decision.symbol &&
+        analysis.economic_assessment.action === "no_order" &&
+        analysis.economic_assessment.primary_valuation_usable === false && (
+          <section aria-label="经济性与现金回报核查">
+            <h4>经济性与现金回报核查</h4>
+            <p>
+              {analysis.economic_assessment.model_applicability?.assessment ===
+              "STRESS_ONLY"
+                ? "当前属于短优势期压力估值，不能充当中性主估值。"
+                : "延续经营情景仍需验证竞争优势与衰减，不等于获批主估值。"}
+            </p>
+            <p>
+              历史扣非归母 TTM 利润：
+              {readinessNumber(
+                analysis.economic_assessment.earnings
+                  ?.historical_ex_nonrecurring_ttm_cny,
+              )}{" "}
+              元。历史利润不等于正常化盈利。
+            </p>
+            <p>
+              正常化盈利和可持续分红能力尚未建立，不据此生成买入价或分红承诺。
+            </p>
+            {!!analysis.economic_assessment.historical_cash_observations
+              ?.length && (
+              <details>
+                <summary>已重算的历史现金桥</summary>
+                <ul>
+                  {analysis.economic_assessment.historical_cash_observations.map(
+                    (row) => (
+                      <li key={row.id}>
+                        {row.id}：{readinessNumber(row.recomputed_value)}{" "}
+                        元；仅历史观察
+                      </li>
+                    ),
+                  )}
+                </ul>
+              </details>
+            )}
+          </section>
+        )}
       <div className="value-analysis-grid">
         {(["bear", "base", "bull"] as const).map((key) => {
           const matches = analysis.scenarios.filter(

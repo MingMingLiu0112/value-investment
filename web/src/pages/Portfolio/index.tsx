@@ -37,6 +37,7 @@ import { useApi } from "../../hooks/useApi";
 import { PortfolioReconciliationPanel } from "../../components/PortfolioReconciliationPanel";
 import { EntryThesisPanel } from "../../components/EntryThesisPanel";
 import { CommittedRiskPanel } from "../../components/CommittedRiskPanel";
+import { SimulatedTradeJourney } from "../../components/SimulatedTradeJourney";
 
 /**
  * TL10-RC：私人状态来自与每日页共用的 usePrivateState；台账损坏或目录
@@ -189,12 +190,14 @@ function PortfolioContext({
       <Workbench>
         <Typography.Title level={2}>我的持仓</Typography.Title>
         <PrivateStateAlert state={state} />
+        <SimulatedTradeJourney />
       </Workbench>
     );
   }
   return (
     <Workbench>
       <Typography.Title level={2}>我的持仓</Typography.Title>
+      <SimulatedTradeJourney />
       <nav className="portfolio-navigation" aria-label="持仓工作入口">
         <Link to="/daily">返回今日双策略</Link>
         {data.status === "NOT_CONNECTED" ? (

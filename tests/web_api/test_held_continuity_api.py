@@ -64,7 +64,7 @@ def test_real_route_revision_matches_portfolio_and_keeps_value_without_hotspot_t
     value = {"symbol": "600887", "schema_version": "value-action-plan-v1", "action": "no_order",
         "action_intent": intent, "signal_state": signal, "blockers": ["TEST_ONLY_RESEARCH_GAP"],
         "exit_condition": {"status": "REVIEW_REQUIRED"}}
-    monkeypatch.setattr(continuity, "load_registered_value_action_plans", lambda *a, **k: {"items": [value]})
+    monkeypatch.setattr(continuity, "load_current_value_action_plans", lambda *a, **k: {"items": [value]})
     client, secret = client_for(tmp_path, path, monkeypatch)
     unlock(client, secret)
     before = path.read_bytes()
@@ -104,7 +104,7 @@ def test_provider_uses_verified_current_then_private_confirmed_history_beyond_ca
     current = {"symbol": symbol, "action": "no_order", "signal_state": "WATCH"}
     monkeypatch.setattr(continuity, "load_price_conditions", lambda *a, **k: {"items":
         [{"symbol": symbol, "price_action_plan": current}] if mode == "current" else []})
-    monkeypatch.setattr(continuity, "load_registered_value_action_plans", lambda *a, **k: {"items": []})
+    monkeypatch.setattr(continuity, "load_current_value_action_plans", lambda *a, **k: {"items": []})
     calls = []
     def load(root, actual_symbol, actual_binding, *, now):
         calls.append(actual_symbol)
@@ -207,7 +207,7 @@ def test_explicit_refresh_auth_revision_and_persisted_case_discovery_without_led
             "action_intent": "EXIT"}
     monkeypatch.setattr(continuity, "load_held_price_plan", verify)
     monkeypatch.setattr(continuity, "load_price_conditions", lambda *a, **k: {"items": []})
-    monkeypatch.setattr(continuity, "load_registered_value_action_plans", lambda *a, **k: {"items": []})
+    monkeypatch.setattr(continuity, "load_current_value_action_plans", lambda *a, **k: {"items": []})
     before = path.read_bytes()
     assert client.post(route, json={"expected_revision": 0}).status_code == 409
     assert client.post(route, json={"expected_revision": 1, "symbols": ["999999"]}).status_code == 422

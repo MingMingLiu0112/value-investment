@@ -178,6 +178,25 @@ export interface CurrentPricePlan {
 }
 
 export interface ValueResearchAnalysis {
+  economic_assessment?: {
+    schema_version: "value-economic-assessment-v1";
+    action: "no_order";
+    symbol: string;
+    primary_valuation_usable: false;
+    economic_assumptions_reviewed: false;
+    model_applicability?: { assessment: string };
+    earnings?: {
+      historical_ex_nonrecurring_ttm_cny: string | null;
+      normalization_status: string;
+    };
+    sustainable_distribution_status?: string;
+    historical_cash_observations?: {
+      id: string;
+      recomputed_value: string;
+      scope: string;
+    }[];
+    blockers: string[];
+  } | null;
   schema_version: "value-research-analysis-v1";
   symbol: string;
   action: "no_order";

@@ -148,13 +148,41 @@ def actual_contract_preview(tmp_path, monkeypatch, request):
     monkeypatch.setattr(preview, 'load_current_chain', lambda *a: {'bindings': []})
     monkeypatch.setattr(preview, 'registry_identity', lambda *a: {'version': 1})
     monkeypatch.setattr(preview, 'load_price_conditions', lambda *a, **kw: {'items': [{'symbol': '300364', 'price_action_plan': deepcopy(legacy)}]})
-    monkeypatch.setattr(preview, 'load_registered_value_action_plans', lambda *a, **kw: {'items': [deepcopy(core)]})
+    monkeypatch.setattr(preview, 'load_current_value_action_plans', lambda *a, **kw: {'items': [deepcopy(core)]})
     monkeypatch.setattr(preview, 'load_value_action_policy', lambda **kw: SimpleNamespace(effective_through=date(2026, 10, 15)))
     quote = {'display_price': '10', 'quote_date': '2026-10-14', 'latest_completed_session': '2026-10-14',
         'limit_up': False, 'limit_down': False}
     monkeypatch.setattr(preview, 'execute_quote_bridge_for_symbol', lambda *a, **kw: {
         'compatibility': {'verified_quote': {'eligible': True}}, 'quote': deepcopy(quote)})
     return service, legacy, core, packet, attribute, quote
+
+
+def test_current_pending_value_plan_is_unqualified_not_falsely_changed(actual_contract_preview):
+    service, legacy, core, packet, attribute, quote = actual_contract_preview
+    core.update(formal_eligibility=False, action_intent=None,
+        verification_scope='SOURCE_BOUND_PENDING_ARITHMETIC_NOT_APPROVAL',
+        research_analysis={'status': 'PENDING_REVIEW', 'base': '11'})
+    packet['value_price_conditions']['300364'] = deepcopy(core)
+    plan, error = preview._current_value_plan(None, '300364', NOW)
+    assert plan is None
+    assert error == 'VALUE_PLAN_NOT_QUALIFIED_FOR_SIZING'
+
+
+def test_current_value_source_change_cannot_be_sized(actual_contract_preview):
+    service, legacy, core, packet, attribute, quote = actual_contract_preview
+    core['reference_close'] = '9'
+    plan, error = preview._current_value_plan(None, '300364', NOW)
+    assert plan is None
+    assert error == 'CURRENT_VALUE_PLAN_UNAVAILABLE_OR_CHANGED'
+
+
+def test_current_value_risk_uses_fresh_diagnostics_not_saved_prose(actual_contract_preview):
+    service, legacy, core, packet, attribute, quote = actual_contract_preview
+    core['research_analysis'] = {'status': 'FRESH_SOURCE_REPLAY'}
+    packet['value_price_conditions']['300364']['research_analysis'] = {'status': 'OLD_DIAGNOSTIC'}
+    result, error = preview._current_value_plan(None, '300364', NOW)
+    assert error is None
+    assert result['plan']['research_analysis']['status'] == 'FRESH_SOURCE_REPLAY'
 
 
 def register_hotspot_contract(root, legacy, *, namespace='ACTUAL', case_binding=None):

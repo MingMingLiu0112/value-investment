@@ -282,11 +282,20 @@ def load_current_research_analysis(
 ) -> dict[str, Any] | None:
     """Expose registered pending arithmetic independently of legacy draft approval."""
     from ..research.value_research_analysis import load_current_value_research_analysis
+    from ..research.value_economic_assessment import load_current_value_economic_assessment
 
     normalized = normalize_symbol(symbol)
     try:
-        return load_current_value_research_analysis(root=root, symbol=normalized,
-            now=now or datetime.now(timezone.utc))
+        evaluated_at = now or datetime.now(timezone.utc)
+        result = load_current_value_research_analysis(root=root, symbol=normalized, now=evaluated_at)
+        if result is not None:
+            assessment = load_current_value_economic_assessment(
+                root=root, symbol=normalized, now=evaluated_at)
+            # The read-time clock is not a new research version. Keep the
+            # source/content fingerprint stable for plan and fill revalidation.
+            result['economic_assessment'] = ({key: value for key, value in assessment.items()
+                if key != 'assessed_at'} if assessment is not None else None)
+        return result
     except (OSError, ValueError, TypeError, KeyError, ArithmeticError, UnicodeError) as error:
         return dict(schema_version="value-research-analysis-v1", symbol=normalized,
             status="SOURCE_OR_REPLAY_UNAVAILABLE", action="no_order",

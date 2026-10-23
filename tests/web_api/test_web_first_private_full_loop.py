@@ -263,7 +263,7 @@ def test_web_first_single_private_account_full_loop(client, make_client, workspa
     # the journal position, without inventing a verified retained market plan.
     selected = [{"symbol": SYMBOL, "price_action_plan": deepcopy(plan)}]
     monkeypatch.setattr(continuity, "load_price_conditions", lambda *a, **k: {"items": deepcopy(selected)})
-    monkeypatch.setattr(continuity, "load_registered_value_action_plans", lambda *a, **k: {"items": []})
+    monkeypatch.setattr(continuity, "load_current_value_action_plans", lambda *a, **k: {"items": []})
     held_route = "/api/v1/private/portfolio/held-continuity"
     before_tracking = journal.read_bytes()
     selected_response = client.get(held_route)

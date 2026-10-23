@@ -26,6 +26,16 @@ def test_pending_only_plan_survives_read_time_replay(registered):
     assert actual['formal_eligibility'] is actual['price_comparison_eligible'] is False
 
 
+def test_read_clock_does_not_create_new_economic_research_version(registered):
+    root, symbol, _, _ = registered
+    first = current_value_plan.load_current_value_action_plans(root, now=NOW)['items'][0]
+    later = current_value_plan.load_current_value_action_plans(root, now=NOW + timedelta(minutes=1))['items'][0]
+    assert first['research_analysis'] == later['research_analysis']
+    assessment = first['research_analysis']['economic_assessment']
+    assert assessment is None or 'assessed_at' not in assessment
+    assert first['formal_eligibility'] is later['formal_eligibility'] is False
+
+
 def test_published_pending_plan_survives_publication_context_and_read_replay(registered, monkeypatch):
     import json
     from test_daily_public_packet_identity import build_verified_tree, _write_registry

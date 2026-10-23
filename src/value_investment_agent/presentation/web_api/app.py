@@ -742,6 +742,12 @@ def create_app(
         result = read_latest_run(project)
         return {"action": "no_order", "status": "RECORDED" if result else "NOT_RECORDED", "last_run": result}
 
+    @api.get("/api/v1/simulated-trade-journey")
+    def simulated_trade_journey():
+        from ...application.portfolio.simulated_trade_journey import run_simulated_trade_journey
+        return JSONResponse(run_simulated_trade_journey(root=project, now=datetime.now(timezone.utc)),
+            headers={"Cache-Control": "no-store"})
+
     @api.get("/api/v1/hotspot-replay-review")
     def hotspot_replay_review():
         from ...application.hotspot.replay_read_model import load_replay_summary
@@ -760,6 +766,21 @@ def create_app(
                         or retained.get("trade_count") is not None):
                     raise ValueError("Retained review scope mismatch")
                 result["retained_validation"] = retained
+                from ...application.hotspot.strategy_execution_replay import build_strategy_execution_replay
+                execution = build_strategy_execution_replay(root=project, now=datetime.now(timezone.utc))
+                if (execution.get("action") != "no_order" or execution.get("formal_eligibility") is not False
+                        or execution.get("strategy_validation") != "NOT_PROVEN"):
+                    raise ValueError("Execution experiment cannot grant admission")
+                result["execution_validation"] = {
+                    key: execution[key] for key in ("schema_version", "evaluated_at", "status",
+                        "metrics_scope", "summary", "gaps", "costs", "parameter_fingerprint",
+                        "source_fingerprint", "strategy_validation", "formal_eligibility", "action")}
+                result["execution_validation"]["case_results"] = [
+                    {"symbol": row["symbol"], "cost_multiplier": scenario["cost_multiplier"],
+                     "folds": [{key: fold[key] for key in ("fold", "trade_count",
+                         "net_pnl_cny", "ending_equity_cny", "maximum_drawdown", "same_fills_gross_return",
+                         "total_fees_cny", "total_slippage_cny")} for fold in scenario["folds"]]}
+                    for row in execution["results"] for scenario in row["scenarios"]]
             return result
         except (ValueError, OSError, KeyError, TypeError):
             return JSONResponse(status_code=409, content={

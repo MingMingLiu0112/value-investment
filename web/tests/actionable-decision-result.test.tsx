@@ -18,6 +18,42 @@ const baseline: ConditionalAccountDecision = {
   review_quantity: null,
   broker_execution_permission: false,
 };
+it("shows source-bound thesis and counter evidence without granting a trade", () => {
+  const html = renderToStaticMarkup(
+    <ActionableDecisionResult
+      decision={{
+        ...baseline,
+        logic_card: {
+          source_status: "BOUND_TO_REVERIFIED_PLAN",
+          research_as_of: "2026-10-22",
+          thesis: "cash generation",
+          counter_evidence: ["demand weakens"],
+          thesis_breakers: ["cash deteriorates"],
+          source_bindings: [{ path: "facts.json", sha256: "a".repeat(64) }],
+        },
+      }}
+    />,
+  );
+  expect(html).toContain("cash generation");
+  expect(html).toContain("demand weakens");
+  expect(html).toContain("cash deteriorates");
+  expect(html).toContain("facts.json");
+  expect(html).toContain("未给出个人可操作股数");
+});
+it("does not present unbound prose as verified investment logic", () => {
+  const html = renderToStaticMarkup(
+    <ActionableDecisionResult
+      decision={{
+        ...baseline,
+        logic_card: {
+          source_status: "NOT_SOURCE_BOUND",
+          thesis: "unverified claim",
+        },
+      }}
+    />,
+  );
+  expect(html).not.toContain("unverified claim");
+});
 it("does not turn incomplete account inputs into buy quantities", () => {
   const html = renderToStaticMarkup(
     <ActionableDecisionResult decision={baseline} />,

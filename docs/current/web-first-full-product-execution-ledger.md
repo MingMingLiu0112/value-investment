@@ -2225,3 +2225,45 @@ context while preserving the exact unadmitted source plan for replay. Current
 research ranges remain readable without granting formal eligibility. A regression
 uses a real-format pending candidate, complete publication tree and read-side
 replay; the actual two-company check covers the same full route.
+
+### 2026-10-23 - Isolated dual-strategy assisted-use journey
+
+User explicitly chose a SIMULATED account for this round. Existing private
+records are not asserted to be current actual account facts. No user journal,
+Canonical Excel, server, approvals, signatures or strategy thresholds changed.
+
+Current-value plan consumption is unified across private sizing, held continuity
+and value price policy. Fresh read-time economic diagnostics do not create a new
+plan version. Source, price, eligibility and effective-policy checks remain.
+The account decision carries source-bound thesis, support, counter-evidence,
+breakers and original entry context; recording-time risk freezes this server
+projection without claiming pre-trade knowledge or broker permission.
+
+Value economic diagnostics recompute historical earnings/cash bridges,
+scenario distributions, excess-return duration and terminal contribution from
+the retained company inputs. Historical profits and partial cash proxies are
+not normalized earnings or sustainable dividends. Primary economic valuation,
+advantage/fade and equity-cost validation remain substantive research gaps.
+
+Hotspot execution replay now derives intentions from completed-bar prefixes and
+uses the existing simulator. The retained five-company sample contains 161
+triggers, 150 mature observations and 11 censored observations. Under explicitly
+assumed stock status/cost conventions there are 10 simulated closed trades;
+strict historical-status mode has zero. These are isolated security/partition
+experiments, not portfolio returns, contemporaneous PIT, untouched OOS, real
+fills or strategy approval. Cost and source fingerprints accompany the output.
+
+The Portfolio page offers an explicit disposable SIMULATED journey using the
+existing journal and dual-sleeve risk engine: value buy, hotspot buy, value add,
+hold, rejected same-day sale, next-session reduction and exits. Both sleeves
+share cash and aggregate security exposure. Preparation, confirmation
+idempotency, T+1, fees, restart equality and temporary-journal removal are checked.
+All prices, thesis transitions and costs in this journey are synthetic; the
+scripted profitable outcome is an accounting fixture, not investment evidence.
+
+Targeted real-source/architecture verification: 87 passed. Current-consumer and
+private flow regression: 210 passed, 2 optional skips. Full offline Core,
+final Web build and port-8001 activation require their actual local receipts;
+this entry does not predeclare them passed. Public push is not authorized;
+local verification is not fresh GitHub CI. Real assisted trading NOT_REACHED.
+action=no_order.

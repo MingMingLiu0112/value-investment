@@ -69,6 +69,14 @@ def attach_recording_time_risk(root, snapshot, *, fill, records, capture, now):
                 plan.get("risk_review_action", "OPEN"))
         if error or current != binding:
             raise ValueError("RISK_CAPTURE_CURRENT_SOURCE_CHANGED")
+        from .decision_logic import project_decision_logic
+        logic = project_decision_logic(plan, outcome=decision.get("decision_action"),
+            blockers=decision.get("blockers") or [])
+        if decision.get('logic_card') is not None:
+            # This is the trusted server risk result, never the fill request.
+            # Preserve its verified owned-entry context rather than rebuilding
+            # a context-free card at recording time.
+            logic = deepcopy(decision['logic_card'])
         outcome.update(status="SERVER_VERIFIED_RECORDING_TIME_RISK", generated_at=generated.isoformat(),
             verified_at=now.isoformat(), account_scope=facts["account_scope"],
             journal_revision=len(records), journal_tip_sha256=records[-1]["record_sha256"],
@@ -77,6 +85,7 @@ def attach_recording_time_risk(root, snapshot, *, fill, records, capture, now):
             blockers=deepcopy(list(dict.fromkeys([*result.get("blockers", []),
                 *sizing.get("blockers", []), *decision.get("blockers", [])]))),
             decision_action=decision.get("decision_action"),
+            logic_card=logic,
             review_quantity=decision.get("review_quantity"),
             risk_sizing=deepcopy(sizing.get("sizing_details")),
             assumptions=deepcopy(sizing.get("effective_sizing_inputs")),

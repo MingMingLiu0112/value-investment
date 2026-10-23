@@ -32,6 +32,19 @@ export interface ConditionalAccountDecision {
   invalidation_condition?: PlanCondition | null;
   risk_sizing?: Record<string, string | number | boolean | null> | null;
   expected_fees_and_slippage?: Record<string, string | null> | null;
+  logic_card?: {
+    source_status: string;
+    research_as_of?: string | null;
+    thesis?: unknown;
+    return_driver?: unknown;
+    supporting_evidence?: unknown;
+    counter_evidence?: unknown;
+    thesis_breakers?: unknown;
+    next_review?: unknown;
+    original_thesis?: unknown;
+    source_bindings?: { path: string; sha256: string }[];
+    content_sha256?: string;
+  };
 }
 
 export function ActionableDecisionResult({
@@ -119,6 +132,50 @@ export function ActionableDecisionResult({
         </p>
       )}
       <p>{decision.decision_reason}</p>
+      {decision.logic_card?.source_status === "BOUND_TO_REVERIFIED_PLAN" && (
+        <section aria-label="本次投资逻辑与反证">
+          <h4>本次投资逻辑与反证</h4>
+          <p>
+            研究截止：{decision.logic_card.research_as_of ?? "未提供"}
+            ；逻辑卡不改变上方准入与仓位结论。
+          </p>
+          <dl>
+            {[
+              ["为什么关注", decision.logic_card.thesis],
+              ["原始买入逻辑与一致性", decision.logic_card.original_thesis],
+              ["预期回报来源", decision.logic_card.return_driver],
+              ["支持证据", decision.logic_card.supporting_evidence],
+              ["最强反证", decision.logic_card.counter_evidence],
+              ["什么情况证明判断失效", decision.logic_card.thesis_breakers],
+              ["接下来跟踪什么", decision.logic_card.next_review],
+            ].map(([label, value]) => (
+              <div
+                key={String(label)}
+                style={{ overflowWrap: "anywhere", marginBottom: 6 }}
+              >
+                <dt>{String(label)}</dt>
+                <dd style={{ marginLeft: 0 }}>{logicText(value)}</dd>
+              </div>
+            ))}
+          </dl>
+          <details>
+            <summary>本次逻辑来源与版本</summary>
+            <ul>
+              {decision.logic_card.source_bindings?.map((row) => (
+                <li
+                  key={row.path + row.sha256}
+                  style={{ overflowWrap: "anywhere" }}
+                >
+                  {row.path} · SHA-256 {row.sha256}
+                </li>
+              ))}
+            </ul>
+            <p style={{ overflowWrap: "anywhere" }}>
+              逻辑指纹：{decision.logic_card.content_sha256}
+            </p>
+          </details>
+        </section>
+      )}
       {decision.original_thesis && (
         <p>原始买入逻辑：{decision.original_thesis}</p>
       )}
@@ -193,6 +250,18 @@ export function ActionableDecisionResult({
       <p>实际买卖由本人在券商软件决定并操作，随后登记真实成交。</p>
     </section>
   );
+}
+
+function logicText(value: unknown): string {
+  if (value == null || value === "") return "尚无充分研究依据";
+  if (typeof value === "string") return value;
+  if (Array.isArray(value))
+    return value.length ? value.map(logicText).join("；") : "尚无充分研究依据";
+  if (typeof value === "object")
+    return Object.entries(value)
+      .map(([key, item]) => `${key}: ${logicText(item)}`)
+      .join("；");
+  return String(value);
 }
 
 function consistencyText(status: string | null | undefined): string {

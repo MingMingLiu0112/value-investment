@@ -111,7 +111,7 @@ def test_registered_plans_core_and_post_buy_resizing(synthetic_chain, monkeypatc
         return response.json()
 
     with _use_test_trust_registry(trust), connect() as client:
-        fresh = preview.load_registered_value_action_plans(root, now=NOW, symbols=[SYMBOL])
+        fresh = preview.load_current_value_action_plans(root, now=NOW, symbols=[SYMBOL])
         assert fresh['items'], fresh
         current = fresh['items'][0]
         frozen = packet['value_price_conditions'][SYMBOL]

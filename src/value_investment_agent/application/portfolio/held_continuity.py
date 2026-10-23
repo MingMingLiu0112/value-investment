@@ -22,7 +22,7 @@ from ...infrastructure.hotspot.current_price_case import load_current_price_case
 from ...quote_session_collection import collect_session_bundle
 from ...quote_sessions import parse_quote, evaluate_quote_session
 from ..hotspot.current_registry import load_price_conditions
-from ..decision.value_action_plan import load_registered_value_action_plans
+from ..decision.current_value_plan import load_current_value_action_plans
 
 
 def evaluate_owned_held_advisory(root, *, context, plan, now, allow_test_only=False):
@@ -573,7 +573,7 @@ def build_held_plan_provider(root: Path, replayed, *, now: datetime):
         # loader rather than requiring the hotspot data_available_at field.
         value = None
         try:
-            result = (load_registered_value_action_plans(root, now=now, symbols=[symbol])
+            result = (load_current_value_action_plans(root, now=now, symbols=[symbol])
                       if "CORE_VALUE" in allowed else {"items": []})
             value = next((row for row in result["items"] if row["symbol"] == symbol), None)
         except (OSError, ValueError, KeyError, TypeError, ArithmeticError):

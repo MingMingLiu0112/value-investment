@@ -14,12 +14,14 @@ from ..hotspot.independent_price_conditions import project_independent_price_con
 from ..product.quote_bridge import execute_quote_bridge_for_symbol
 from ..product.public_snapshot import load_current_packet
 from ..product.publication_chain import load_current_chain
-from ..decision.value_action_plan import load_registered_value_action_plans, load_value_action_policy
+from ..decision.value_action_plan import load_value_action_policy
+from ..decision.current_value_plan import load_current_value_action_plans
 from .private_risk_projection import (
     build_risk_input, review_private_risk_rehearsal, _verified_scenario_display_marks,
 )
 from .private_portfolio_service import PrivatePortfolioService, reconciliation_state
 from .security_attributes import load_verified_security_attributes, trading_rules_for
+from .decision_logic import project_decision_logic
 
 ASSUMPTION_FIELDS = (
     "gap_stress_cny", "entry_slippage_cny", "exit_slippage_cny", "buy_fee_fraction",
@@ -385,6 +387,8 @@ def _actionable_decision(result, *, binding, symbol, sleeve, generated_at, entry
     outcome = negative if blockers else "ADD" if held else "BUY"
     status = negative if blockers else "CONDITIONAL_MANUAL_REVIEW"
     return {"action": "no_order", "decision_action": outcome,
+        "logic_card": project_decision_logic(plan, outcome=outcome, blockers=blockers,
+            entry_context=entry_context),
         "ownership_verified": held and (entry_context or {}).get("ownership_verified") is True,
         "held_quantity": (entry_context or {}).get("held_quantity"),
         "entry_thesis_record_sha256": (entry_context or {}).get("entry_thesis_record_sha256"),
@@ -586,12 +590,13 @@ def _current_value_plan(root, symbol, now):
         for row in sorted(chain["bindings"], key=lambda row: str(row["role"]))]
     if packet.get("identity_inputs", {}).get("chain") != observed:
         return None, "PUBLICATION_VERSION_MISMATCH"
-    fresh = load_registered_value_action_plans(root, now=now, symbols=[symbol])
+    fresh = load_current_value_action_plans(root, now=now, symbols=[symbol])
     plan = next((item for item in fresh["items"] if item["symbol"] == symbol), None)
     frozen = packet.get("value_price_conditions", {}).get(symbol)
-    # The public packet adds presentation aliases; compare every authoritative
-    # field reconstructed by the registered-plan loader, not those aliases.
-    if plan is None or not isinstance(frozen, dict) or any(frozen.get(key) != value for key, value in plan.items()):
+    # Read-time diagnostics are freshly source-verified by the current loader,
+    # not authority in the saved packet. Compare its actual decision contract.
+    if plan is None or not isinstance(frozen, dict) or any(frozen.get(key) != value
+            for key, value in plan.items() if key not in {'research_analysis', 'research_analysis_status'}):
         return None, "CURRENT_VALUE_PLAN_UNAVAILABLE_OR_CHANGED"
     if (plan.get("formal_eligibility") is not True or plan.get("current_quote_verified") is not True
             or plan.get("strategy") != "CORE_VALUE" or plan.get("action_intent") not in {"OPEN", "ADD"}):

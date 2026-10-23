@@ -12,7 +12,7 @@ from ...domain.decision.value_price_policy import (
     PREPARED_SCHEMA, payload_hash, policy_basis, preview_draft_prices, validate_draft,
 )
 from ..product.publication_chain import bound_object
-from .value_action_plan import load_registered_value_action_plans
+from .current_value_plan import load_current_value_action_plans
 
 CHINA = ZoneInfo("Asia/Shanghai")
 REVIEW_MANIFEST_PATH = "artifacts/current/tl11-p5-20261014/value-policy-review-manifest.json"
@@ -42,7 +42,7 @@ def review_manifest_binding(root):
 def _current_plan(root, symbol, now):
     if now.utcoffset() is None:
         raise ValueError("Policy clock requires timezone")
-    result = load_registered_value_action_plans(root, now=now, symbols=[symbol])
+    result = load_current_value_action_plans(root, now=now, symbols=[symbol])
     matches = [p for p in result["items"] if p["symbol"] == symbol]
     if result["blockers"] or len(matches) != 1:
         raise ValueError("Current bound value research unavailable")

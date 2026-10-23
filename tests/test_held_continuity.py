@@ -153,7 +153,7 @@ def test_default_resolver_follows_actual_sleeves_after_full_hotspot_sale(service
                  action_intent="WATCH", signal_state="CONDITION_PENDING")
     monkeypatch.setattr(continuity, "load_price_conditions", lambda *a, **k:
                         {"items": [{"symbol": "300364", "price_action_plan": hotspot}]})
-    monkeypatch.setattr(continuity, "load_registered_value_action_plans", lambda *a, **k:
+    monkeypatch.setattr(continuity, "load_current_value_action_plans", lambda *a, **k:
                         {"items": [value] if value_available else []})
     monkeypatch.setattr(continuity, "_case_history", lambda *a: [])
 
@@ -230,7 +230,7 @@ def test_same_security_resolves_both_held_strategy_plans(monkeypatch, tmp_path):
     core = dict(symbol='300364', action='no_order', schema_version='value-action-plan-v1', strategy='CORE_VALUE')
     monkeypatch.setattr(continuity, 'load_price_conditions', lambda *a, **k:
         dict(items=[dict(symbol='300364', price_action_plan=hotspot)]))
-    monkeypatch.setattr(continuity, 'load_registered_value_action_plans', lambda *a, **k: dict(items=[core]))
+    monkeypatch.setattr(continuity, 'load_current_value_action_plans', lambda *a, **k: dict(items=[core]))
     replayed = SimpleNamespace(trades=[], state=SimpleNamespace(lots=[
         SimpleNamespace(symbol='300364', sleeve=sleeve, quantity=Decimal(100))
         for sleeve in ('CORE_VALUE', 'HOTSPOT_SATELLITE')]))
