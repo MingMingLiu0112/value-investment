@@ -33,6 +33,10 @@ const states: Record<string, string> = {
   SPECIALIZED_RESEARCH_REQUIRED: "需行业专用研究",
   GENERAL_RESEARCH: "一般企业研究",
 };
+const dataStates: Record<string, string> = {
+  PROVIDER_OBSERVATIONS_NOT_FORMAL_FACTS: "供应商财务观察，非正式核验事实",
+  SOURCE_REVALIDATION_FAILED: "来源重新核验失败",
+};
 function safeSource(url?: string) {
   if (!url) return undefined;
   try {
@@ -128,7 +132,10 @@ export function DualStrategySelection() {
   );
   const count = lane.coverage || {};
   return (
-    <section aria-label="双策略选股" style={{ marginBlock: 24 }}>
+    <section
+      aria-label="双策略选股"
+      style={{ marginBlock: 24, minWidth: 0, overflowWrap: "anywhere" }}
+    >
       <h2>双策略选股</h2>
       <Radio.Group
         value={mode}
@@ -158,9 +165,10 @@ export function DualStrategySelection() {
             : "活跃不等于上涨预测。结构入选仍需独立策略验证、费用与账户风控；零入选也是有效结果。"
         }
       />
-      <p>
+      <p style={{ overflowWrap: "anywhere" }}>
         数据日期：{lane.quote_date || lane.trade_date || "未核验"} ·{" "}
-        {lane.data_status || lane.status} · 规则：{lane.rule_version}
+        {dataStates[lane.data_status || ""] || lane.data_status || lane.status}{" "}
+        · 规则：{lane.rule_version}
       </p>
       {lane.snapshot_status === "RETAINED_DATED_RESEARCH" && (
         <Alert

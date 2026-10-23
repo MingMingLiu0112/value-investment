@@ -94,6 +94,7 @@ it("distinguishes full coverage, bounded queue, observed facts and trade permiss
           official_fact_admission_count: 0,
         },
         quote_date: "2026-10-22",
+        data_status: "PROVIDER_OBSERVATIONS_NOT_FORMAL_FACTS",
         rule_version: "value-observation-research-priority-v1",
         blockers: [],
       },
@@ -106,6 +107,9 @@ it("distinguishes full coverage, bounded queue, observed facts and trade permiss
   expect(html).toContain("贵州茅台");
   expect(html).toContain("尚未成为官方核验事实");
   expect(html).toContain("适用估值");
+  expect(html).toContain("供应商财务观察，非正式核验事实");
+  expect(html).toContain("overflow-wrap:anywhere");
+  expect(html).not.toContain("PROVIDER_OBSERVATIONS_NOT_FORMAL_FACTS");
   expect(html).not.toContain("/decisions/600519");
 });
 
