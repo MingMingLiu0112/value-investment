@@ -211,6 +211,10 @@ export function verifiedSourceBoundJourney(
           row.historical_reference_scope === "NOT_ORIGINAL_PIT_ENTRY") &&
         object(row.fill) &&
         row.fill.symbol === row.symbol &&
+        row.fill.research_version === source.research.research_version &&
+        row.fill.decision_id === source.symbol &&
+        row.fill.sleeve === "CORE_VALUE" &&
+        row.fill.exchange === "SSE" &&
         row.fill.side === row.side &&
         [row.fill.quantity, row.fill.price_cny, row.fill.fees_cny].every(
           decimal,

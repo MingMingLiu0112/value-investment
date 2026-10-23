@@ -149,6 +149,10 @@ function sourcePacket(manual = false): any {
               scope: "EXPLICIT_SIMULATED_MANUAL_FILL_NOT_STRATEGY_ACTION",
               fill: {
                 symbol: "600519",
+                research_version: cases[0].research.research_version,
+                decision_id: "600519",
+                sleeve: "CORE_VALUE",
+                exchange: "SSE",
                 side: "BUY",
                 quantity: "100",
                 price_cny: "10",
@@ -339,6 +343,77 @@ it.each([
     expect(verifiedSourceBoundJourney(p)).toBe(false);
   },
 );
+
+it.each([
+  [
+    "same-symbol stale research",
+    (p: any) => {
+      p.manual_rehearsal.fills[0].fill.research_version =
+        "TEST_ONLY_OLD_VERSION_600519";
+    },
+  ],
+  [
+    "missing research version",
+    (p: any) => {
+      delete p.manual_rehearsal.fills[0].fill.research_version;
+    },
+  ],
+  [
+    "another case research version",
+    (p: any) => {
+      p.manual_rehearsal.fills[0].fill.research_version =
+        p.cases[1].research.research_version;
+    },
+  ],
+  [
+    "wrong server decision identity",
+    (p: any) => {
+      p.manual_rehearsal.fills[0].fill.decision_id = "600887";
+    },
+  ],
+  [
+    "missing server decision identity",
+    (p: any) => {
+      delete p.manual_rehearsal.fills[0].fill.decision_id;
+    },
+  ],
+  [
+    "non-value sleeve",
+    (p: any) => {
+      p.manual_rehearsal.fills[0].fill.sleeve = "HOTSPOT_SATELLITE";
+    },
+  ],
+  [
+    "wrong exchange",
+    (p: any) => {
+      p.manual_rehearsal.fills[0].fill.exchange = "SZSE";
+    },
+  ],
+  [
+    "inner symbol conflict",
+    (p: any) => {
+      p.manual_rehearsal.fills[0].fill.symbol = "600887";
+    },
+  ],
+  [
+    "inner side conflict",
+    (p: any) => {
+      p.manual_rehearsal.fills[0].fill.side = "SELL";
+    },
+  ],
+  [
+    "candidate path conflict",
+    (p: any) => {
+      p.manual_rehearsal.fills[0].source_candidate_binding.path =
+        "TEST_ONLY/other/candidate.json";
+    },
+  ],
+] as const)("refuses mismatched fill/case identity: %s", (_, change) => {
+  const response = sourcePacket(true);
+  expect(verifiedSourceBoundJourney(response)).toBe(true);
+  change(response);
+  expect(verifiedSourceBoundJourney(response)).toBe(false);
+});
 
 it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
   "exercises only TEST_ONLY mocked GET/POST, consent, loading/error/empty and 320/390 layout",

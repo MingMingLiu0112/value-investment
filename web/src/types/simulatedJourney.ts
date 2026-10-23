@@ -97,6 +97,10 @@ export type ManualRow = {
   scope: string;
   fill: {
     symbol: string;
+    research_version: string;
+    decision_id: string;
+    sleeve: "CORE_VALUE";
+    exchange: "SSE";
     side: string;
     quantity: string;
     price_cny: string;
