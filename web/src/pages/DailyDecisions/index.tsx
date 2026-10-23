@@ -321,7 +321,7 @@ export default function DailyDecisions() {
       <p className="opportunity-subtitle" role="status">
         最近更新：
         {update.data?.last_run
-          ? `${({ SUCCESS: "完成", PARTIAL: "部分完成", BLOCKED: "失败，保留旧快照" } as Record<string, string>)[update.data.last_run.status] ?? "状态未核验"} · ${updateTime(update.data.last_run.finished_at)}`
+          ? `${!update.data.last_run.finished_at?.trim() ? "尚未完成，可能仍在运行或已中断" : ({ SUCCESS: "完成", PARTIAL: "部分完成", BLOCKED: "失败，保留旧快照" } as Record<string, string>)[update.data.last_run.status] ?? "状态未核验"} · ${updateTime(update.data.last_run.finished_at)}`
           : "尚无可核验运行记录"}
         。
         {update.data?.last_run?.status === "BLOCKED" &&

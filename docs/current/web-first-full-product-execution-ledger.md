@@ -2561,3 +2561,61 @@ from yesterday's candidate. Rejected/mixed/retired inputs cannot revive actions;
 stale evidence yields UNKNOWN. API/source/architecture selection: 55 passed.
 Private owned-held and ADD integration is a separate remaining task. This new
 consumer is not part of the preceding 2b481645 Core receipt or 197dc6c4 release.
+
+### 2026-10-23 - Live daily source replay and next integration checkpoint
+
+Verified build 197dc6c4b60bae5d71f0ba6214fd35646711babf was fast-forwarded into
+dual1 and activated on the existing 8001 only. Runtime identity and public
+registry identity both returned MATCHED. The subsequent single SAFE_REFRESH
+completed at 20:32:52 China time, publication pub-09afccad20193e95bcbf, packet
+SHA256 4169514207eef1b2091e1aedafb558acf53b76026137938dbc4de8e84f7c0223.
+Six registered quote observations now use October 23 matched closes. Five new
+public hotspot observations were calculated; none gained formal eligibility.
+
+The actual node-bound review was SOURCE_REPLAYED, checked at
+2026-10-23T12:31:56.463078+00:00. Its retained report is
+dual1/runtime/research-validity-reviews/registered-20261023T1231555886786Z.json,
+SHA256 900ec2ec3affeb67a2b338922b847f0e6d29c4fe04cb2f5849e689dd0da6dde5.
+October 11 remains the research baseline. October 23 scans contain zero and
+four announcements for 600519/600887, respectively, but the current calendar
+day has not elapsed: complete-day event coverage is UNCONFIRMED, not October 23.
+Both models remain UNKNOWN and require event review. The other four securities
+are quote observations without registered research, not completed research.
+SUCCESS denotes command execution and public publication, not strategy approval.
+
+Actual 8001 browser verification showed the new quote and machine-review dates,
+expanded six-company receipt (bounded first five rows), preserved research date,
+and explicit unknown coverage. Screenshots were visually inspected at 390 and
+1280 pixels, with document widths 375 and 1265 respectively; no horizontal
+overflow. Screenshot export to D: was denied by the browser tool, so no saved
+image file is claimed. Public data refreshed; private pages stayed locked.
+The live worktree now has three expected public-pointer changes from that run;
+they are data updates, not uncommitted source or approval records.
+
+Sibling bfceddd8 was independently reviewed and integrated as 42d73158.
+New focused tests: 37 passed. Existing clean full receipt: 765 passed / 24
+skipped; 13 result and 23 retained-source hashes matched. Official publication
+coverage does not grant effective corporate-action or price-basis coverage.
+The new two tests are added to the existing Core list. This successor is not
+included in the older full-Core receipt or current live release.
+
+Independent frontend review identified mixed parent/child freshness and unknown
+price-basis display contradictions in the new, not-yet-released lifecycle
+consumer; the owning worker is fixing them. A separate observed daily display
+issue now distinguishes an unfinished receipt from confirmed failure without
+asserting a process is running; 63 focused date/display tests passed.
+
+Independent economic review rejected J1 for primary use: the extra TTM reset,
+retained-capital use and total-profit fade are not economically justified as a
+neutral base. J1 remains conditional research only. Source-backed operating and
+distribution bridges are being investigated; no candidate or G3 approval was
+invented. Owned Entry-to-original-price-case continuity remains a required
+consumer gap, with existing journal reuse and synthetic testing in progress.
+No canonical Excel, private records, server, production task or order changed.
+
+Combined source-consumer and architecture regression after 42d73158: 80 passed,
+1 skipped (optional retained archive absent from this integration checkout).
+The frontend contradiction fix is integrated as 39eb0766; author verification
+reports 56 focused tests and typecheck, with independent closure review pending.
+Do not attribute that fix or the unfinished-run display correction to the
+already published 197dc6c4 build.

@@ -325,6 +325,8 @@ it("shows an explicit unfinished-update message when finished_at is null", () =>
   };
   const html = renderToStaticMarkup(<DailyDecisions />);
   expect(html).toContain("更新尚未完成，暂无完成时间");
+  expect(html).toContain("尚未完成，可能仍在运行或已中断");
+  expect(html).not.toContain("失败，保留旧快照");
   expect(html).not.toContain("1970");
 });
 
