@@ -2541,3 +2541,23 @@ reference pairs are not owned Entries or independent OOS. No newly confirmed
 P1/P2 was found in that bounded review; strategy effectiveness is NOT_PROVEN.
 The sibling continues a bounded source-coverage package; shared lifecycle/Web
 consumers remain the main chat's responsibility. No live release is asserted.
+
+### 2026-10-23 - Verified daily release checkpoint and next consumer
+
+Clean checkout 2b481645 ran the exact 359-file offline Core command from CI:
+5186 passed, 86 skipped, 38 inherited deprecation warnings. Receipt is
+`.tmp/gc1/.tmp/offline-core-results.xml` relative to the root checkout. Skips
+remain optional retained/environment tests, not successful strategy validation.
+Successor 197dc6c4 differs only in two frontend files: independent review found
+and closed a mixed-version fallback using a financial-change enum in the model
+validity field. Incomplete coverage now withholds VALID and a false no-recompute
+claim. Independent 23-test review, 63 focused tests, final 519 passed / 3 skipped
+frontend regression and typecheck passed. No fresh GitHub CI is claimed.
+
+The next public consumer calls the existing lifecycle v2 engine from the existing
+hotspot decision-detail route. It recomputes only the source-bound public current
+case, keeps original candidate fields unchanged and never infers an owned Entry
+from yesterday's candidate. Rejected/mixed/retired inputs cannot revive actions;
+stale evidence yields UNKNOWN. API/source/architecture selection: 55 passed.
+Private owned-held and ADD integration is a separate remaining task. This new
+consumer is not part of the preceding 2b481645 Core receipt or 197dc6c4 release.

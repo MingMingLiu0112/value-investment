@@ -388,6 +388,7 @@ jobs:
           tests/test_hotspot_lifecycle_explanation.py
           tests/test_hotspot_lifecycle_explanation_text.py
           tests/test_hotspot_price_comparability.py
+          tests/web_api/test_hotspot_lifecycle_surface.py
           tests/test_hotspot_machine_admission.py
 
       - name: Verify isolated synthetic private-workspace rehearsal

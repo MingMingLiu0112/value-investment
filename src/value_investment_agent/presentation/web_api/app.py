@@ -581,8 +581,12 @@ def create_app(
                 row = {**row, "price_action_plan": project_independent_price_condition(
                     project, symbol=row["symbol"], plan=row["price_action_plan"],
                     now=datetime.now(timezone.utc))}
+            from ...application.product.hotspot_lifecycle_surface import current_hotspot_lifecycle
+            lifecycle = current_hotspot_lifecycle(root=project, symbol=row["symbol"],
+                plan=row["price_action_plan"], now=datetime.now(timezone.utc)) if row else None
             return {"action": "no_order", "status": "CURRENT_OBSERVATION" if row else "NOT_FOUND",
                     "publication": pinned_publication(packet, current),
+                    "hotspot_lifecycle_review": lifecycle,
                     "decision": current_item(row) if row else None}
         if not _ID.fullmatch(decision_id):
             return {"action": "no_order", "status": "NOT_FOUND", "decision": None, "reason": "UNKNOWN_DECISION"}
