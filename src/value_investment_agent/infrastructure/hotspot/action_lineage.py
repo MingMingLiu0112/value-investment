@@ -43,6 +43,7 @@ def parse_action_identity(pages, *, symbol):
         r"(?:权益分派(?:实施公告|方案)?|利润分配方案)[。;]", text)
     noncash = re.search(r"每10股转增([1-9][0-9]*(?:\.[0-9]+)?)股", text)
     return dict(symbol=symbol, announcement_number=number[1], title=title[0], kind=kind,
+        action_title=re.sub(r"(?:的)?(?:更正|修订|取消|撤销)(?=公告$)", "", title[0]),
         published_date=date(*map(int, publication.groups())).isoformat(), references=refs,
         operative_correction="现更正如下:" in text and "更正前:" in text and "更正后:" in text,
         operative_cancellation=cancellation is not None,

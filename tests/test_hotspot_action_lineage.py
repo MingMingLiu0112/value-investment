@@ -108,6 +108,13 @@ def test_cancellation_rumour_clarification_is_not_an_operative_cancellation():
     assert result["cancellation_asserted_by_this_document"] is None
 
 
+def test_current_title_cannot_reassign_a_different_year_reference():
+    text = CORRECTION[0].replace("2024年年度权益分派实施的更正公告", "2023年年度权益分派实施的更正公告")
+    result = relate_action_documents(*identities([text]))
+    assert result["relation_status"] == "UNRESOLVED"
+    assert result["cancellation_asserted_by_this_document"] is None
+
+
 @pytest.mark.parametrize("word", ["不取消", "未取消", "拟取消"])
 def test_negative_or_proposed_title_cannot_certify_cancellation(word):
     text = CORRECTION[0].replace("2024年年度权益分派实施的更正公告", f"关于{word}2024年年度权益分派实施公告的公告")

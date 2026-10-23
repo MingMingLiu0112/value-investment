@@ -17,6 +17,7 @@ def relate_action_documents(original: dict, amendment: dict) -> dict:
         return result
     reference = references[0]
     if (original.get("kind") != "IMPLEMENTATION" or original.get("symbol") != amendment.get("symbol")
+            or not original.get("action_title") or original.get("action_title") != amendment.get("action_title")
             or reference.get("number") != original.get("announcement_number")
             or reference.get("title") != original.get("title")
             or reference.get("published_date") != original.get("published_date")):
