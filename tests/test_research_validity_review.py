@@ -70,7 +70,7 @@ def _fixture(tmp_path: Path, *, announcement: bool = False) -> dict:
         "symbol": "600887", "name": "伊利股份",
         "package_version": "pending-600887-2026-10-11-test",
         "profile_id": "quality_compounder",
-        "point_in_time": {"research_as_of": "2026-10-11", "report_period": "2026-06-30",
+        "point_in_time": {"research_as_of": "2026-10-11", "valuation_date": "2026-10-11", "report_period": "2026-06-30",
                           "available_at": "2026-10-11T08:00:00+00:00"},
         "model_validity_input": {"model_id": "residual-income-equity-shared-dated-v2",
                                  "valid_from": "2026-10-11", "events": [],
@@ -204,6 +204,90 @@ def test_completed_incremental_window_reuses_model_without_changing_research_or_
     assert {path: path.read_bytes() for path in tmp_path.rglob("*.json")} == before
 
 
+@pytest.mark.parametrize("announcement", [False, True])
+def test_separate_valuation_basis_keeps_uncovered_model_window_unknown(tmp_path, announcement):
+    fixture = _fixture(tmp_path, announcement=announcement)
+    package = json.loads(fixture["package"].read_bytes())
+    package["point_in_time"]["valuation_date"] = "2026-10-10"
+    package["facts"] = {"as_of": "2026-10-10"}
+    package["model_validity_input"]["valid_from"] = "2026-10-10"
+    package["model_validity_input"]["blockers"] = []
+    fixture["package_sha256"] = _write(fixture["package"], package)
+    before = {path: path.read_bytes() for path in tmp_path.rglob("*.json")}
+    review = _run(tmp_path, fixture, output_path=None)
+    current = review["model_validity_review"]["current"]
+    assert current["model_as_of"] == current["valid_from"] == "2026-10-10"
+    assert current["status"] == "UNKNOWN"
+    assert "event scan validity window starts on a different date" in current["blockers"]
+    assert review["previous_research_version"]["research_as_of"] == "2026-10-11"
+    assert review["valuation_basis"] == {"valuation_date": "2026-10-10",
+        "source": "point_in_time.valuation_date", "package_sha256": fixture["package_sha256"]}
+    assert review["incremental_review"]["original_model_as_of"] == "2026-10-10"
+    assert review["incremental_review"]["model_recalculation_required"] is None
+    assert review["window"]["validity_from"] == "2026-10-11"
+    counterfactual = review["model_validity_review"]["if_event_window_reviewed"]
+    if announcement:
+        assert counterfactual is None
+        assert review["status"] == STATUS_REQUIRES_MATERIALITY_REVIEW
+    else:
+        assert counterfactual["status"] == "UNKNOWN"
+        assert counterfactual["model_as_of"] == "2026-10-10"
+    assert review["incremental_review"]["g3_approval_granted"] is False
+    assert review["price_compatibility"]["comparison_eligible_within_review"]["eligible"] is False
+    assert review["action"] == "no_order"
+    assert {path: path.read_bytes() for path in tmp_path.rglob("*.json")} == before
+
+
+@pytest.mark.parametrize("schema", ["m1-valuation-package-v1", "m1-valuation-package-v2"])
+def test_existing_explicit_package_dates_remain_supported(tmp_path, schema):
+    fixture = _completed_fixture(tmp_path)
+    package = json.loads(fixture["package"].read_bytes())
+    package["schema_version"] = schema
+    package["point_in_time"]["valuation_date"] = "2026-10-10"
+    package["facts"] = {"as_of": "2026-10-10"}
+    # A later validity start is legal; it is not the model's valuation date.
+    fixture["package_sha256"] = _write(fixture["package"], package)
+    review = _run(tmp_path, fixture)
+    assert review["model_validity_review"]["current"]["status"] == "VALID"
+    assert review["model_validity_review"]["current"]["model_as_of"] == "2026-10-10"
+
+
+@pytest.mark.parametrize("failure", ["missing_date", "naive_timestamp_date", "future_date",
+    "facts_mismatch", "before_model", "missing_valid_from"])
+def test_model_basis_cannot_be_inferred_or_repaired_from_research_cutoff(tmp_path, failure):
+    fixture = _completed_fixture(tmp_path)
+    package = json.loads(fixture["package"].read_bytes())
+    if failure == "missing_date":
+        del package["point_in_time"]["valuation_date"]
+    elif failure == "naive_timestamp_date":
+        package["point_in_time"]["valuation_date"] = "2026-10-11T00:00:00"
+    elif failure == "future_date":
+        package["point_in_time"]["valuation_date"] = "2099-10-11"
+    elif failure == "facts_mismatch":
+        package["facts"] = {"as_of": "2026-10-10"}
+    elif failure == "before_model":
+        package["model_validity_input"]["valid_from"] = "2026-10-10"
+    else:
+        del package["model_validity_input"]["valid_from"]
+    fixture["package_sha256"] = _write(fixture["package"], package)
+    with pytest.raises(ValueError):
+        _run(tmp_path, fixture)
+    assert not fixture["output"].exists()
+
+
+def test_separate_model_date_does_not_clear_unknown_applicability(tmp_path):
+    fixture = _completed_fixture(tmp_path)
+    package = json.loads(fixture["package"].read_bytes())
+    package["point_in_time"]["valuation_date"] = "2026-10-10"
+    package["model_validity_input"]["blockers"] = ["UNKNOWN_MODEL_APPLICABILITY"]
+    fixture["package_sha256"] = _write(fixture["package"], package)
+    review = _run(tmp_path, fixture)
+    assert review["status"] == STATUS_BLOCKED_ON_MODEL_VALIDITY
+    assert "UNKNOWN_MODEL_APPLICABILITY" in review["model_validity_review"]["current"]["blockers"]
+    assert review["incremental_review"]["model_recalculation_required"] is None
+    assert review["incremental_review"]["formal_eligibility"] is False
+
+
 @pytest.mark.parametrize("failure", ["missing", "tampered", "unbound", "escape", "incomplete"])
 def test_empty_scan_cannot_claim_unchanged_facts_without_retained_coverage(tmp_path, failure):
     fixture = _completed_fixture(tmp_path)
@@ -233,7 +317,9 @@ def test_empty_scan_cannot_claim_unchanged_facts_without_retained_coverage(tmp_p
     ("clock", "2026-10-13T04:00:00"),
     ("clock", "2026-10-11T04:00:00+00:00"),
     ("package_available", "2099-10-13T04:00:00+00:00"),
+    ("package_available", "2026-10-11T08:00:00"),
     ("scan_available", "2099-10-13T04:00:00+00:00"),
+    ("scan_available", "2026-10-13T03:00:00"),
     ("validity_to", "2026-10-11"),
     ("scan_to", "2026-10-13"),
 ])
@@ -471,7 +557,7 @@ def test_daily_progress_replays_raw_pagination_before_claiming_event_coverage(tm
     now = datetime.now(timezone.utc)
     package = {"symbol": "600519", "name": "TEST_ONLY", "package_version": "TEST_ONLY",
         "profile_id": "quality_compounder", "point_in_time": {
-            "research_as_of": START.isoformat(), "report_period": START.isoformat(),
+            "research_as_of": START.isoformat(), "valuation_date": START.isoformat(), "report_period": START.isoformat(),
             "available_at": "2020-01-01T00:00:00+00:00"},
         "model_validity_input": {"model_id": "TEST_ONLY", "valid_from": START.isoformat(),
                                  "events": [], "blockers": []}}

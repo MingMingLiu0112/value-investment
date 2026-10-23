@@ -164,14 +164,25 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
         raise ValueError("研究包缺少 point_in_time")
     research_day = _required_date(point_in_time.get("research_as_of"),
                                   "point_in_time.research_as_of")
-    package_available = _available_at(point_in_time.get("available_at"), "research available_at", today)
     if date.fromisoformat(research_day) > review_cutoff:
         raise ValueError("研究截止日不能晚于复核截止日")
+    # Both M1 package versions require this explicit date in ResearchPitFrame.
+    # Research cutoff is a knowledge boundary, not the valuation model's date.
+    valuation_day = _required_date(point_in_time.get("valuation_date"),
+                                   "point_in_time.valuation_date")
+    model_as_of = date.fromisoformat(valuation_day)
+    if model_as_of > review_cutoff:
+        raise ValueError("Valuation date cannot follow review cutoff")
+    facts = package.get("facts")
+    if isinstance(facts, dict) and facts.get("as_of") is not None:
+        if _required_date(facts["as_of"], "facts.as_of") != valuation_day:
+            raise ValueError("Research valuation date must match facts as-of")
+    package_available = _available_at(point_in_time.get("available_at"), "research available_at", today)
     validity_input = package.get("model_validity_input")
     if not isinstance(validity_input, dict) or not validity_input.get("model_id"):
         raise ValueError("研究包缺少 model_validity_input.model_id")
     valid_from = date.fromisoformat(_required_date(
-        validity_input.get("valid_from") or research_day, "model_validity_input.valid_from"))
+        validity_input.get("valid_from"), "model_validity_input.valid_from"))
     scan_file = _resolve(root, event_scan_path, "event scan")
     if sha256_file(scan_file) != event_scan_sha256:
         raise ValueError("事件扫描 Hash 与登记不一致")
@@ -199,9 +210,13 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
     coverage_complete = scan.coverage_status == COVERAGE_COMPLETE
     blockers = list(validity_input.get("blockers") or [])
     current = evaluate_model_validity(model_id=str(validity_input["model_id"]), symbol=symbol,
-        model_as_of=date.fromisoformat(research_day), valid_from=valid_from,
+        model_as_of=model_as_of, valid_from=valid_from,
         quote_date=review_cutoff, events=[], event_scan_evidence_refs=[],
         blockers=blockers, event_scan=scan)
+    if "event scan validity window starts on a different date" in current.blockers:
+        # The shared evaluator's INVALID window is not proof of a stale model.
+        # Keep its exact blocker and all original dates; coverage remains unknown.
+        current = replace(current, status="UNKNOWN")
     # Do not let an empty later scan erase unresolved registered material events.
     if validity_input.get("events") or validity_input.get("event_materiality"):
         current = replace(current, status="UNKNOWN", material_event_found=None,
@@ -211,9 +226,11 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
         reviewed = None
     if reviewed is not None:
         reviewed_validity = evaluate_model_validity(model_id=str(validity_input["model_id"]),
-            symbol=symbol, model_as_of=date.fromisoformat(research_day), valid_from=valid_from,
+            symbol=symbol, model_as_of=model_as_of, valid_from=valid_from,
             quote_date=review_cutoff, events=[], event_scan_evidence_refs=[],
             blockers=blockers, event_scan=reviewed)
+        if "event scan validity window starts on a different date" in reviewed_validity.blockers:
+            reviewed_validity = replace(reviewed_validity, status="UNKNOWN")
         reviewed_payload = _model_validity_payload(reviewed_validity)
     else:
         reviewed_payload = None
@@ -355,18 +372,22 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
             "package_sha256": package_sha256,
             "package_version": package.get("package_version"),
             "research_as_of": research_day,
+            "valuation_date": valuation_day,
             "report_period": point_in_time.get("report_period"),
             "model_id": validity_input.get("model_id"),
             "profile_id": package.get("profile_id"),
         },
         "review_cutoff": review_cutoff.isoformat(),
+        "valuation_basis": {"valuation_date": valuation_day,
+                            "source": "point_in_time.valuation_date",
+                            "package_sha256": package_sha256},
         "source_availability_cutoff": max(availability).isoformat(),
         "incremental_review": {
             "status": "MODEL_VALID_AT_REVIEW_CUTOFF" if reusable else "REVIEW_REQUIRED",
             "research_cutoff_changed": False,
             "model_recalculation_required": False if reusable else True if current.status == "STALE" else None,
             "model_valid_through": review_cutoff.isoformat() if reusable else None,
-            "original_model_as_of": research_day,
+            "original_model_as_of": valuation_day,
             "formal_eligibility": False, "g3_approval_granted": False,
             "price_bridge_changed": False, "action": "no_order",
             "note": "仅复核原模型在新时点的有效性；不得改研究截止日冒充覆盖，价格比较与G3仍走原门禁。",
@@ -622,6 +643,7 @@ def render_research_validity_review_markdown(review: dict[str, Any]) -> str:
         "",
         f"- 结论状态：`{review['status']}`",
         f"- 登记研究版本：`{previous.get('package_version')}`（研究截止日 {previous.get('research_as_of')}）",
+        f"- 原模型估值基准日：{previous.get('valuation_date')}（不随研究复核截止日推进）",
         f"- 复核截止日：{review['review_cutoff']}；来源可用截止：{review.get('source_availability_cutoff')}",
         f"- 永久动作边界：`action={review['action']}`",
         "",
