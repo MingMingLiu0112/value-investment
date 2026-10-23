@@ -329,6 +329,199 @@ def _registered_fixture(tmp_path, *, fallback=False):
     return fixture
 
 
+def _progress_fixture(tmp_path):
+    fixture = _registered_fixture(tmp_path)
+    output = tmp_path / "runtime/reviews/daily.json"
+    result = review_registered_research_validity(root=tmp_path, review_cutoff=CUTOFF,
+        today=TODAY, output_path=output)
+    binding = {"path": output.relative_to(tmp_path).as_posix(), "sha256": _sha(output)}
+    return fixture, output, binding, result
+
+
+def _progress(tmp_path, binding, **overrides):
+    from value_investment_agent.application.product.research_validity_review import replay_registered_review_progress
+    options = dict(root=tmp_path, binding=binding, started_at=TODAY.replace(hour=3).isoformat(),
+        finished_at=TODAY.replace(hour=5).isoformat(), now=TODAY.replace(hour=6))
+    return replay_registered_review_progress(**{**options, **overrides})
+
+
+def test_daily_machine_review_progress_replays_and_preserves_missing_company(tmp_path):
+    _, output, binding, _ = _progress_fixture(tmp_path)
+    original = output.read_bytes()
+    progress = _progress(tmp_path, binding)
+    assert progress["status"] == "SOURCE_REPLAYED"
+    assert progress["checked_at"] == TODAY.isoformat()
+    assert progress["research_cutoff_changed"] is False
+    assert progress["formal_eligibility"] is False
+    rows = {row["symbol"]: row for row in progress["rows"]}
+    assert rows["600887"]["research_as_of"] == "2026-10-11"
+    assert rows["600887"]["scan_through"] == CUTOFF.isoformat()
+    # The legacy fixture has no raw pagination receipt, hence no complete-day claim.
+    assert rows["600887"]["event_coverage_through"] is None
+    assert rows["600887"]["event_coverage_status"] == "UNCONFIRMED"
+    assert rows["600887"]["facts_change_status"] == "UNKNOWN"
+    assert rows["600887"]["formal_eligibility"] is False
+    assert rows["000651"]["model_validity_status"] == "UNKNOWN"
+    assert rows["000651"]["scan_through"] is None
+    assert output.read_bytes() == original
+    assert _progress(tmp_path, binding) == progress
+
+
+@pytest.mark.parametrize("changed", ["result", "rehashed_result", "source", "package", "pointer", "missing"])
+def test_daily_review_progress_rejects_changed_dependencies(tmp_path, changed):
+    fixture, output, binding, result = _progress_fixture(tmp_path)
+    if changed in {"result", "rehashed_result"}:
+        result["reviews"][0]["model_validity_status"] = "VALID"
+        _write(output, result)
+        if changed == "rehashed_result":
+            binding["sha256"] = _sha(output)
+    elif changed == "source":
+        (tmp_path / "runtime/events/index.json").write_text("changed", encoding="utf-8")
+    elif changed == "package":
+        fixture["package"].write_text("{}", encoding="utf-8")
+    elif changed == "pointer":
+        _write(tmp_path / "config/current-quote-bridge.json", {"quotes": {}})
+    else:
+        output.unlink()
+    progress = _progress(tmp_path, binding)
+    assert progress["status"] == "UNVERIFIED"
+    assert progress["checked_at"] is None and progress["rows"] == []
+    assert progress["formal_eligibility"] is False
+
+
+@pytest.mark.parametrize("overrides", [
+    {"started_at": "2026-10-13T05:00:00+00:00"},
+    {"finished_at": "2026-10-13T03:00:00+00:00"},
+    {"finished_at": "2026-10-13T07:00:00+00:00"},
+    {"started_at": "2026-10-13T03:00:00"},
+    {"now": TODAY.replace(tzinfo=None)},
+])
+def test_daily_review_progress_cannot_borrow_another_run_or_future_clock(tmp_path, overrides):
+    _, _, binding, _ = _progress_fixture(tmp_path)
+    assert _progress(tmp_path, binding, **overrides)["status"] == "UNVERIFIED"
+
+
+def test_daily_status_consumes_replayed_research_receipt_without_advancing_research(tmp_path):
+    from value_investment_agent.application.product.daily_refresh import read_latest_run
+    _, _, binding, _ = _progress_fixture(tmp_path)
+    path = tmp_path / ".tmp/daily-workbench-latest-run.json"
+    receipt = {"schema_version": "daily-workbench-run-v1", "action": "no_order",
+        "status": "PARTIAL", "mode": "SAFE_REFRESH", "notes": [],
+        "started_at": TODAY.replace(hour=3).isoformat(),
+        "finished_at": TODAY.replace(hour=5).isoformat(), "research_validity_review": binding,
+        "node_receipt_scope": "COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION", "nodes": [{
+            "sequence": 1, "command": "scripts/current/review_registered_research_validity.py",
+            "operation": "RUN", "started_at": TODAY.replace(minute=0, second=0).isoformat(),
+            "finished_at": TODAY.replace(minute=1).isoformat(), "execution_status": "SUCCEEDED",
+            "exit_code": 0, "output_status": "JSON_OBJECT",
+            "output_binding": {**binding, "review_cutoff": CUTOFF.isoformat(), "symbols": ["000651", "600887"]}}]}
+    _write(path, receipt)
+    progress = read_latest_run(tmp_path)["research_review"]
+    assert progress["status"] == "SOURCE_REPLAYED"
+    assert progress["checked_at"] == TODAY.isoformat()
+    assert progress["formal_eligibility"] is False
+    receipt.pop("research_validity_review")
+    _write(path, receipt)
+    assert read_latest_run(tmp_path)["research_review"]["status"] == "RECEIPT_UNAVAILABLE"
+    receipt["nodes"] = []
+    _write(path, receipt)
+    assert read_latest_run(tmp_path)["research_review"]["status"] == "NOT_RECORDED"
+
+
+@pytest.mark.parametrize("failure", ["no_node", "failed", "another_artifact", "another_time", "read_only", "cutoff", "symbols"])
+def test_daily_progress_must_belong_to_this_successful_execution_node(tmp_path, failure):
+    from value_investment_agent.application.product.daily_refresh import read_latest_run
+    _progress_fixture(tmp_path)
+    output = tmp_path / "runtime/reviews/daily.json"
+    binding = {"path": output.relative_to(tmp_path).as_posix(), "sha256": _sha(output)}
+    node = {"sequence": 1, "command": "scripts/current/review_registered_research_validity.py",
+        "operation": "RUN", "started_at": TODAY.isoformat(), "finished_at": TODAY.replace(minute=1).isoformat(),
+        "execution_status": "SUCCEEDED", "exit_code": 0, "output_status": "JSON_OBJECT",
+        "output_binding": {**binding, "review_cutoff": CUTOFF.isoformat(), "symbols": ["000651", "600887"]}}
+    receipt = {"schema_version": "daily-workbench-run-v1", "action": "no_order", "status": "PARTIAL",
+        "mode": "SAFE_REFRESH", "notes": [], "started_at": TODAY.replace(hour=3).isoformat(),
+        "finished_at": TODAY.replace(hour=5).isoformat(), "research_validity_review": binding,
+        "node_receipt_scope": "COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION", "nodes": [node]}
+    if failure == "no_node":
+        receipt["nodes"] = []
+    elif failure == "failed":
+        node.update(execution_status="FAILED", exit_code=2)
+    elif failure == "another_artifact":
+        node["output_binding"]["sha256"] = "0" * 64
+    elif failure == "another_time":
+        node["started_at"] = TODAY.replace(second=1).isoformat()
+    elif failure == "read_only":
+        receipt["mode"] = "READ_ONLY"
+    elif failure == "cutoff":
+        node["output_binding"]["review_cutoff"] = "2026-10-11"
+    else:
+        node["output_binding"]["symbols"] = ["600887"]
+    _write(tmp_path / ".tmp/daily-workbench-latest-run.json", receipt)
+    progress = read_latest_run(tmp_path)["research_review"]
+    assert progress["status"] == "UNVERIFIED"
+    assert progress["checked_at"] is None and progress["rows"] == []
+
+
+@pytest.mark.parametrize("populated,prior_pending", [(False, False), (True, False), (False, True)])
+def test_daily_progress_replays_raw_pagination_before_claiming_event_coverage(tmp_path, monkeypatch, populated, prior_pending):
+    from datetime import timedelta
+    from test_retained_event_coverage import archive, START, END
+
+    observation = archive(tmp_path, monkeypatch, populated=populated)
+    now = datetime.now(timezone.utc)
+    package = {"symbol": "600519", "name": "TEST_ONLY", "package_version": "TEST_ONLY",
+        "profile_id": "quality_compounder", "point_in_time": {
+            "research_as_of": START.isoformat(), "report_period": START.isoformat(),
+            "available_at": "2020-01-01T00:00:00+00:00"},
+        "model_validity_input": {"model_id": "TEST_ONLY", "valid_from": START.isoformat(),
+                                 "events": [], "blockers": []}}
+    if prior_pending:
+        scan_path = tmp_path / observation["scan_binding"]["path"]
+        scan = json.loads(scan_path.read_bytes())
+        old_ref = {"path": "runtime/prior-pending.json",
+                   "sha256": _write(tmp_path / "runtime/prior-pending.json", scan)}
+        package["model_validity_input"]["event_scan_ref"] = old_ref
+        scan.update(status=SCAN_COMPLETE_NO_MATERIAL_EVENT, blockers=[])
+        observation["scan_binding"]["sha256"] = _write(scan_path, scan)
+        _write(tmp_path / "runtime/events/observation.json", observation)
+    package_ref = {"path": "runtime/package.json", "sha256": _write(tmp_path / "runtime/package.json", package)}
+    observation_ref = {"path": "runtime/events/observation.json",
+                       "sha256": _sha(tmp_path / "runtime/events/observation.json")}
+    supplement = {"schema_version": "incremental-validity-binding-v1", "symbol": "600519",
+        "package_ref": package_ref, "research_as_of": START.isoformat(), "review_cutoff": END.isoformat(),
+        "model_id": "TEST_ONLY", "observation_ref": observation_ref,
+        "scan_ref": observation["scan_binding"], "action": "no_order"}
+    supplement_ref = {"path": "runtime/supplement.json",
+                      "sha256": _write(tmp_path / "runtime/supplement.json", supplement)}
+    _write(tmp_path / "config/current-quote-bridge.json", {"schema_version": "current-quote-bridge-v1",
+        "action": "no_order", "quotes": {"600519": {"research_package": package_ref["path"],
+            "research_package_sha256": package_ref["sha256"], "incremental_validity_binding": supplement_ref}}})
+    output = tmp_path / "runtime/reviews/daily.json"
+    report = review_registered_research_validity(root=tmp_path, review_cutoff=END, today=now,
+        output_path=output, incremental_bindings=[supplement_ref])
+    binding = {"path": output.relative_to(tmp_path).as_posix(), "sha256": _sha(output)}
+    options = dict(started_at=(now - timedelta(minutes=1)).isoformat(), finished_at=now.isoformat(), now=now)
+    progress = _progress(tmp_path, binding, **options)
+    assert progress["status"] == "SOURCE_REPLAYED"
+    row = progress["rows"][0]
+    assert row["event_coverage_through"] == END.isoformat()
+    assert row["event_coverage_status"] == "COMPLETE"
+    assert row["announcement_count"] == int(populated)
+    assert row["facts_change_status"] == ("REVIEW_REQUIRED" if populated else "NONE")
+    assert row["model_validity_status"] == "UNKNOWN"
+    assert row["model_recalculation_required"] is None
+    if not prior_pending:
+        assert row["materiality_review_required"] is True
+    else:
+        assert report["reviews"][0]["model_validity_status"] == "VALID"
+        (tmp_path / "runtime/prior-pending.json").write_text("{}", encoding="utf-8")
+        assert _progress(tmp_path, binding, **options)["status"] == "UNVERIFIED"
+    assert row["formal_eligibility"] is False
+    raw = next((tmp_path / "runtime/events/raw-index").glob("*.bin"))
+    raw.write_bytes(b"changed raw response")
+    assert _progress(tmp_path, binding, **options)["status"] == "UNVERIFIED"
+
+
 @pytest.mark.parametrize("fallback", [False, True])
 def test_registered_reviews_isolate_symbols_and_reuse_immutable_artifact(tmp_path, fallback):
     _registered_fixture(tmp_path, fallback=fallback)

@@ -4440,8 +4440,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "MEDIUM",
-      "line_count": 41,
-      "sha256": "6d1f3608b65132019577819abbc86a9318b3a6acd2af8ae3445d00f15a1ea26d"
+      "line_count": 43,
+      "sha256": "e36f0c8d162213e702e56072a1508644d028ef559923f7edc035844ea37802d2"
     },
     {
       "path": "scripts/current/review_research.py",
@@ -4535,8 +4535,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "HIGH",
-      "line_count": 391,
-      "sha256": "1633d5206228d1628f909f23004ccb289987e5869f47a99af62a0709027d4f5c"
+      "line_count": 674,
+      "sha256": "1057f437e3c1a8ae71894ddad75ee5c619e856af286d8cd9445327342eadf9f4"
     },
     {
       "path": "scripts/current/run_update_and_publish.py",

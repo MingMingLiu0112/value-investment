@@ -1,5 +1,5 @@
 """Check immutable registered inputs before acquiring another daily refresh."""
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 import json
 from pathlib import Path
 import hashlib
@@ -69,7 +69,20 @@ def _node_execution_summary(value):
                 succeeded = row['exit_code'] == 0 and row['output_status'] == 'JSON_OBJECT'
                 if (row['execution_status'] == 'SUCCEEDED') != succeeded:
                     return {}
-            sanitized.append({key: row[key] for key in fields})
+            item = {key: row[key] for key in fields}
+            binding = row.get('output_binding')
+            if (row['command'] == 'scripts/current/review_registered_research_validity.py'
+                    and row['execution_status'] == 'SUCCEEDED' and isinstance(binding, dict)):
+                if (not isinstance(binding.get('path'), str)
+                        or not binding['path'].startswith('runtime/')
+                        or not re.fullmatch(r'[a-f0-9]{64}', str(binding.get('sha256', '')))
+                        or not isinstance(binding.get('symbols'), list)
+                        or len(binding['symbols']) > 100
+                        or any(not re.fullmatch(r'[0-9]{6}', str(s)) for s in binding['symbols'])):
+                    return {}
+                date.fromisoformat(binding['review_cutoff'])
+                item['output_binding'] = {key: binding[key] for key in ('path', 'sha256', 'review_cutoff', 'symbols')}
+            sanitized.append(item)
     except (KeyError, TypeError, ValueError):
         return {}
     return {'node_receipt_scope': scope, 'nodes': sanitized}
@@ -136,6 +149,34 @@ def read_latest_run(root: Path) -> dict | None:
                   'exit_code', 'published', 'publication_id', 'retained_publication_id', 'notes')
         result = {key: value.get(key) for key in fields}
         result.update(_node_execution_summary(value))
+        if isinstance(value.get('research_validity_review'), dict):
+            from .research_validity_review import replay_registered_review_progress
+            binding = value['research_validity_review']
+            matching = [node for node in result.get('nodes', [])
+                        if node.get('output_binding')
+                        and {key: node['output_binding'][key] for key in ('path', 'sha256')} == binding]
+            result['research_review'] = {'status': 'UNVERIFIED', 'checked_at': None,
+                'review_cutoff': None, 'rows': [], 'action': 'no_order', 'formal_eligibility': False}
+            if value.get('mode') == 'SAFE_REFRESH' and len(matching) == 1:
+                node = matching[0]
+                try:
+                    times = [datetime.fromisoformat(stamp) for stamp in
+                             (value['started_at'], node['started_at'], node['finished_at'], value['finished_at'])]
+                    within_run = all(stamp.utcoffset() is not None for stamp in times) and times == sorted(times)
+                except (ValueError, TypeError, KeyError):
+                    within_run = False
+                if within_run:
+                    result['research_review'] = replay_registered_review_progress(root=root,
+                        binding=binding, started_at=node['started_at'], finished_at=node['finished_at'],
+                        now=datetime.now(timezone.utc), expected_cutoff=node['output_binding']['review_cutoff'],
+                        expected_symbols=node['output_binding']['symbols'])
+        else:
+            nodes = result.get('nodes') or []
+            attempted = any(row['command'] == 'scripts/current/review_registered_research_validity.py'
+                            for row in nodes)
+            result['research_review'] = {'status': 'RECEIPT_UNAVAILABLE' if attempted else 'NOT_RECORDED',
+                'checked_at': None, 'review_cutoff': None, 'rows': [], 'action': 'no_order',
+                'formal_eligibility': False}
         notes = value.get('notes')
         result['notes'] = [note for note in notes if isinstance(note, str) and note in PUBLIC_NOTES] if isinstance(notes, list) else []
         if isinstance(value.get('marketwide_screen'), dict):

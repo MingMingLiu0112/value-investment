@@ -2478,3 +2478,39 @@ the displayed research date. The original research cutoff stays immutable.
 No new release, strategy/economic approval, private account write, Excel update,
 production change or order is asserted. Real history remains PARTIAL/NOT_PROVEN;
 simulation and historical replay do not graduate it. Goal remains IN_PROGRESS.
+
+### 2026-10-23 - Source-replayed daily research progress
+
+SAFE_REFRESH now binds the registered-research review artifact and exact symbols,
+cutoff and hash to its successful command receipt. The read model replays current
+source dependencies at the original check time and requires the check to fall
+inside that command's actual execution window. Missing, changed, future or
+borrowed receipts withhold progress instead of borrowing a software timestamp.
+The existing shared ModelValidity resolver retains unresolved original events;
+only the retained official-response verifier can prove a complete event window.
+An empty query or command success cannot approve materiality or model validity.
+
+Focused backend/failure regression: 109 passed, 1 optional skip; an independent
+review reran 23 focused cases after the two identified P2 defects were repaired.
+The defects were receipt-to-node association and disagreement with the shared
+resolver over unresolved original events. Full integrated Core and Web checks
+remain separate pending evidence, not implied by these results.
+
+Real public-source verification acquired new, unregistered official event
+windows through October 22 for 600519 and 600887. Their retained original HTTP
+responses prove those complete calendar windows, not October 23 coverage.
+600519 returned zero new announcements but retains original-event review work;
+600887 returned three announcements requiring materiality review. Both remain
+UNKNOWN in current model validity; research baseline October 11 is unchanged.
+Receipt `.tmp/daily-review-real-20261023T113652555067Z.json` binds the public
+report SHA eef000397492b0ca254a2c48ee8071056536b310e9a61eb14f9a2148c73e451d.
+The four existing public configuration pointers remained byte-identical. These
+unregistered observations are not a published daily update or an approval.
+
+The independent 600519 economic review does not admit the current B continuity
+candidate as a neutral primary valuation: capital retained under ten years of
+flat earnings and the following total-profit fade still need a coherent joint
+economic assumption. Historical arithmetic, finite dividend-policy intentions
+and scenario calculations do not resolve that question. A bounded source-backed
+joint assessment is continuing; no candidate, reviewer or approval is invented.
+No private records, canonical workbook, production environment or orders changed.

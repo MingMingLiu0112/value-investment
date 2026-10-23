@@ -30,6 +30,8 @@ def main() -> int:
                               for path, digest in args.incremental_binding or []])
     print(json.dumps({"artifact": args.output.as_posix(),
         "artifact_sha256": sha256_file(ROOT / args.output), "action": "no_order",
+        "review_cutoff": result["review_cutoff"],
+        "symbols": [row["symbol"] for row in result["reviews"]],
         "reviews": [{"symbol": row["symbol"], "status": row["status"],
                      "model_validity_status": row["model_validity_status"],
                      "reason": row.get("reason")} for row in result["reviews"]]},

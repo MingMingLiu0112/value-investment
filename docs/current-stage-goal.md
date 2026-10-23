@@ -1,5 +1,21 @@
 # 当前总目标：价值投资建议与情绪卫星仓系统
 
+## 2026-10-23 Dual-strategy research-to-decision closure
+
+The latest user-started Goal is DUAL-STRATEGY-RESEARCH-TO-DECISION-CLOSURE-20261023.
+Inherit the verified local 4b5b35b7 release and the existing execution ledger;
+integrate the reviewed sibling swing work before extending the business chains.
+Root owns value research, shared API/Web/portfolio, independent review,
+integration and the sole local port 8001. The existing sibling owns swing
+research and implementation; bounded workers have disjoint scopes.
+Strategy research/source review, independent validation and user confirmation
+remain distinct from engineering tests. Actual-source cases, simulated-account
+workflow, source-bound daily research review and usable Web are required.
+Preserve immutable research dates, private records, Excel, server/PTA and
+production boundaries. No paid API, production reviewer identity, order,
+broker, remote push or production task change is implied. action=no_order.
+Earlier stage scopes below are inherited context, not competing current tasks.
+
 ## 2026-10-21 V5 end-to-end closure
 
 Latest explicit user scope is DUAL-STRATEGY-END-TO-END-CLOSURE-V5, attachment

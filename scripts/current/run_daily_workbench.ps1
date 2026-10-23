@@ -172,6 +172,14 @@ function Invoke-PythonJson {
     }
     $node.exit_code = $code
     $node.execution_status = if ($code -eq 0 -and $parsed) { 'SUCCEEDED' } else { 'FAILED' }
+    if ($node.execution_status -eq 'SUCCEEDED' -and
+        $node.command -eq 'scripts/current/review_registered_research_validity.py' -and
+        $parsed.artifact -and $parsed.artifact_sha256 -and $parsed.review_cutoff -and $parsed.symbols) {
+        $node.output_binding = @{
+            path = [string]$parsed.artifact; sha256 = [string]$parsed.artifact_sha256
+            review_cutoff = [string]$parsed.review_cutoff; symbols = @($parsed.symbols)
+        }
+    }
     $node.finished_at = [DateTimeOffset]::UtcNow.ToString('o')
     $initialReceipt.nodes = @($nodes.ToArray())
     $initialReceipt | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
@@ -303,6 +311,7 @@ $coreBlocked = ($buildExit -ne 0 -or -not $build.Json -or -not $packet.source_bi
 $verified = $null
 $marketwideScreen = $null
 $valueResearchPriority = $null
+$researchValidityReview = $null
 
 if ($Mode -eq 'SAFE_REFRESH') {
     $marketwideDirectory = 'runtime/daily-marketwide/' + [DateTimeOffset]::UtcNow.ToString('yyyyMMddTHHmmssfffffffZ')
@@ -523,6 +532,12 @@ if ($Mode -eq 'SAFE_REFRESH') {
         $reviewOutput = 'runtime/research-validity-reviews/registered-' + [DateTimeOffset]::UtcNow.ToString('yyyyMMddTHHmmssfffffffZ') + '.json'
         $validityReview = Invoke-PythonJson ($reviewArgs + @('--output', $reviewOutput))
         if ($validityReview.ExitCode -eq 0 -and $validityReview.Json) {
+            if ($validityReview.Json.artifact -and $validityReview.Json.artifact_sha256) {
+                $researchValidityReview = @{
+                    path = [string]$validityReview.Json.artifact
+                    sha256 = [string]$validityReview.Json.artifact_sha256
+                }
+            }
             Write-Host '  增量有效性 : 已写入逐证券审计；未改研究截止日或授予任何批准。'
             foreach ($item in @($validityReview.Json.reviews)) {
                 Write-Host "  $($item.symbol) : $($item.model_validity_status) / $($item.status) $($item.reason)"
@@ -573,6 +588,7 @@ $receipt = @{
 }
 if ($marketwideScreen) { $receipt.marketwide_screen = $marketwideScreen }
 if ($valueResearchPriority) { $receipt.value_research_priority = $valueResearchPriority }
+if ($researchValidityReview) { $receipt.research_validity_review = $researchValidityReview }
 if ($verified.Json) {
     $receipt.price_securities = @($verified.Json.price_securities)
     $receipt.quote_securities = @($verified.Json.quote_securities)

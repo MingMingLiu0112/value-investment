@@ -218,7 +218,9 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         'print(json.dumps({"binding_ref":{"path":"runtime/TEST_ONLY-scan.json","sha256":"a"*64}}))\n'
         'raise SystemExit(2 if failed else 0)\n', encoding='utf-8')
     (current / 'review_registered_research_validity.py').write_text(
-        'import json\nprint(json.dumps({"reviews":[{"symbol":"600887",'
+        'import json\nprint(json.dumps({"artifact":"runtime/TEST_ONLY-review.json",'
+        '"artifact_sha256":"a"*64,"review_cutoff":"2026-10-14","symbols":["600887"],'
+        '"reviews":[{"symbol":"600887",'
         '"model_validity_status":"UNKNOWN","status":"REQUIRES_MATERIALITY_REVIEW"}]}))\n',
         encoding='utf-8')
     before = pointer.read_bytes()
@@ -235,6 +237,11 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
     assert completed.returncode == expected_exit, completed.stdout + completed.stderr
     assert receipt['status'] == expected_status and receipt['published'] is published
     assert receipt['finished_at']
+    assert receipt['research_validity_review'] == {"path": "runtime/TEST_ONLY-review.json", "sha256": "a" * 64}
+    review_node = next(row for row in receipt['nodes']
+                      if row['command'] == 'scripts/current/review_registered_research_validity.py')
+    assert review_node['output_binding'] == {**receipt['research_validity_review'],
+        "review_cutoff": "2026-10-14", "symbols": ["600887"]}
     assert receipt['marketwide_screen']['current_publication_eligible'] is False
     assert receipt['marketwide_screen']['status'] == (
         'BLOCKED' if scenario in {'m2_unavailable', 'm2_historical', 'm2_manifest_missing', 'm2_crash'} else 'RESEARCH_ONLY')

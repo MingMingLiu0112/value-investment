@@ -413,7 +413,7 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
 
 
 def review_registered_research_validity(*, root: Path, review_cutoff: date,
-        today: datetime, output_path: Path, symbols: list[str] | None = None,
+        today: datetime, output_path: Path | None = None, symbols: list[str] | None = None,
         incremental_bindings: list[dict] | None = None) -> dict[str, Any]:
     """Review only pointer-bound packages and their declared scans, independently.
 
@@ -425,7 +425,7 @@ def review_registered_research_validity(*, root: Path, review_cutoff: date,
     root = root.resolve()
     if today.utcoffset() is None or review_cutoff > today.astimezone(ZoneInfo("Asia/Shanghai")).date():
         raise ValueError("Review requires an aware clock and a non-future cutoff")
-    target = _resolve(root, output_path, "registered review output")
+    target = _resolve(root, output_path, "registered review output") if output_path is not None else None
     pointer_file = root / POINTER_PATH
     pointer = load_json_object(pointer_file, "quote bridge pointer")
     if pointer.get("schema_version") != POINTER_SCHEMA or not isinstance(pointer.get("quotes"), dict):
@@ -495,6 +495,8 @@ def review_registered_research_validity(*, root: Path, review_cutoff: date,
         "generated_at": today.isoformat(), "review_cutoff": review_cutoff.isoformat(),
         "action": "no_order", "research_cutoff_changed": False, "g3_approval_granted": False,
         "pointer_ref": {"path": POINTER_PATH, "sha256": sha256_file(pointer_file)}, "reviews": rows}
+    if target is None:
+        return result
     if target.exists():
         existing = load_json_object(target, "registered validity reviews")
 
@@ -510,6 +512,102 @@ def review_registered_research_validity(*, root: Path, review_cutoff: date,
         return existing
     write_new_json(target, result)
     return result
+
+
+def replay_registered_review_progress(*, root: Path, binding: dict,
+        started_at: str, finished_at: str, now: datetime,
+        expected_cutoff: str | None = None, expected_symbols: list[str] | None = None) -> dict[str, Any]:
+    """Expose an actual daily check, replayed from its exact current dependencies.
+
+    A completed machine check is not completed materiality research. Missing,
+    replaced or unreplayable inputs withhold dates instead of inventing progress.
+    """
+    unavailable = {"status": "UNVERIFIED", "checked_at": None, "review_cutoff": None,
+        "rows": [], "action": "no_order", "formal_eligibility": False}
+    try:
+        root = root.resolve()
+        source = require_inside(root / "runtime", root / binding["path"], "daily research review")
+        if source.stat().st_size > 10_000_000 or sha256_file(source) != binding["sha256"]:
+            return unavailable
+        saved = load_json_object(source, "daily research review")
+        started, finished, checked = (datetime.fromisoformat(value) for value in
+                                     (started_at, finished_at, saved["generated_at"]))
+        if (any(value.utcoffset() is None for value in (started, finished, checked, now))
+                or not started <= checked <= finished <= now
+                or saved["schema_version"] != "registered-research-validity-reviews-v1"
+                or saved["action"] != "no_order" or saved["g3_approval_granted"] is not False
+                or saved["research_cutoff_changed"] is not False
+                or saved["pointer_ref"]["path"] != "config/current-quote-bridge.json"
+                or sha256_file(root / saved["pointer_ref"]["path"]) != saved["pointer_ref"]["sha256"]):
+            return unavailable
+        rows = saved["reviews"]
+        if not isinstance(rows, list) or len(rows) > 100:
+            return unavailable
+        if (expected_cutoff is not None and expected_cutoff != saved["review_cutoff"]
+                or expected_symbols is not None and expected_symbols != [row["symbol"] for row in rows]):
+            return unavailable
+        replay = review_registered_research_validity(root=root,
+            review_cutoff=date.fromisoformat(saved["review_cutoff"]), today=checked,
+            symbols=[row["symbol"] for row in rows],
+            incremental_bindings=[row["incremental_binding_ref"] for row in rows
+                                  if row.get("incremental_binding_ref")])
+        if replay != saved or sha256_file(source) != binding["sha256"]:
+            return unavailable
+        progress = []
+        for row in replay["reviews"]:
+            review = row["review"] or {}
+            window = review.get("window") or {}
+            events = review.get("material_events") or {}
+            previous = review.get("previous_research_version") or {}
+            # A scan can be from a partially elapsed current day. Only the
+            # retained official-response verifier proves a complete window.
+            coverage_through = None
+            validity = (review.get("model_validity_review") or {}).get("current") or {}
+            if row.get("incremental_binding_ref"):
+                from .incremental_validity import read_bound_json, resolve_incremental_model_validity
+                from .daily_event_observation import verify_retained_event_coverage
+
+                _, supplement = read_bound_json(root, row["incremental_binding_ref"], "review supplement")
+                _, observation = read_bound_json(root, supplement["observation_ref"], "review observation")
+                resolved = resolve_incremental_model_validity(root=root, symbol=row["symbol"],
+                    binding_ref=row["incremental_binding_ref"], review_cutoff=date.fromisoformat(replay["review_cutoff"]),
+                    today=checked)
+                validity = _model_validity_payload(resolved)
+                try:
+                    coverage = verify_retained_event_coverage(root, observation, symbol=row["symbol"],
+                        required_from=date.fromisoformat(supplement["research_as_of"]),
+                        required_to=date.fromisoformat(replay["review_cutoff"]), now=checked)
+                    coverage_through = coverage["scan_to"]
+                except ValueError:
+                    pass
+            facts_status = (review.get("facts_change") or {}).get("status", "UNKNOWN")
+            if coverage_through is None and facts_status in {"NONE", "REVIEWED_NO_MODEL_INVALIDATION"}:
+                facts_status = "UNKNOWN"
+            validity_status = validity.get("status", "UNKNOWN")
+            if validity_status == "VALID" and (validity.get("blockers") or coverage_through is None):
+                validity_status = "UNKNOWN"
+            progress.append({"symbol": row["symbol"], "status": row["status"],
+                "research_as_of": previous.get("research_as_of"),
+                "scan_through": window.get("scan_to"),
+                "event_coverage_through": coverage_through,
+                "event_coverage_status": "COMPLETE" if coverage_through is not None else "UNCONFIRMED",
+                "announcement_count": (len(events["announcements"]) if "announcements" in events else None),
+                "facts_change_status": facts_status,
+                "model_validity_status": validity_status,
+                "model_recalculation_required": (True if validity_status == "STALE" else
+                                                  False if validity_status == "VALID" else None),
+                "materiality_review_required": (("ORIGINAL_EVENT_REVIEW_UNRESOLVED" in validity.get("blockers", [])) or any(item.get("required") is not False
+                    and ("EVENT" in item["gate"] or "MATERIALITY" in item["gate"])
+                    for item in review.get("approval_required", [])) if review else None),
+                "formal_eligibility": False})
+        if sha256_file(root / saved["pointer_ref"]["path"]) != saved["pointer_ref"]["sha256"]:
+            return unavailable
+        return {"status": "SOURCE_REPLAYED", "checked_at": saved["generated_at"],
+            "review_cutoff": saved["review_cutoff"], "rows": progress,
+            "action": "no_order", "formal_eligibility": False,
+            "research_cutoff_changed": False, "scope": "MACHINE_REVIEW_NOT_RESEARCH_APPROVAL"}
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, OverflowError):
+        return unavailable
 
 
 def render_research_validity_review_markdown(review: dict[str, Any]) -> str:
