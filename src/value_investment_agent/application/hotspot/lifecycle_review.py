@@ -103,6 +103,14 @@ def _explain(result, basis, *, plan=None, entry_plan=None, case=None):
     if basis not in {"CURRENT_ADD_CONDITION_OBSERVED", "NO_STRUCTURAL_CHANGE_OBSERVED"}:
         why_not_add.append(basis)
     if plan:
+        if result["entry_case_binding"] is None:
+            why_not_add.append("OWNED_ENTRY_REQUIRED_FOR_HELD_REVIEW")
+            if not result["current_conditions"]["OPEN"]["observed"]:
+                why_not_add.append("ENTRY_TRIGGER_NOT_OBSERVED")
+            if plan["price_behavior"].get("observation_quality") != "RESEARCH_ONLY":
+                why_not_add.append("ENTRY_BEHAVIOR_QUALITY_NOT_USABLE")
+            if plan["opportunity_quality"]["structure_tier"] != "STRUCTURE_QUALIFIED_OBSERVATION":
+                why_not_add.append("ENTRY_MULTIPERIOD_STRUCTURE_NOT_QUALIFIED")
         if not result["current_conditions"]["ADD"]["observed"]:
             why_not_add.append("ADD_CONDITION_NOT_OBSERVED")
         if plan["price_behavior"].get("observation_quality") != "RESEARCH_ONLY":
@@ -114,7 +122,7 @@ def _explain(result, basis, *, plan=None, entry_plan=None, case=None):
             reference_price_scope=plan.get("reference_price_scope"), current_pit=result["current_pit"])
     result["decision_explanation"] = deepcopy(dict(
         schema_version="hotspot-lifecycle-explanation-v1", selected_review=result["observed_review"],
-        basis_code=basis, decision_path=path, why_not_add=why_not_add,
+        basis_code=basis, decision_path=path, why_not_add=list(dict.fromkeys(why_not_add)),
         required_external_reviews=result["required_external_reviews"],
         current_price_observation=price, recomputed_rule_versions=versions if plan else None,
         source_scope="REFERENCE_CASES_NOT_VERIFIED_OWNERSHIP_OR_ENTRY_THESIS", action="no_order"))
@@ -173,9 +181,15 @@ def build_hotspot_lifecycle_review(*, root: Path, symbol: str,
             if result["current_open_observed"] and plan["opportunity_quality"]["structure_tier"]
                 == "STRUCTURE_QUALIFIED_OBSERVATION" else "WATCH")
         result["blockers"].append("OWNED_ENTRY_REQUIRED_FOR_HELD_REVIEW")
-        return _explain(result, "ENTRY_STRUCTURE_OBSERVED"
-            if result["observed_review"] == "ENTRY_OBSERVATION" else "ENTRY_STRUCTURE_NOT_QUALIFIED",
-            plan=plan, case=current["case"])
+        if result["observed_review"] == "ENTRY_OBSERVATION":
+            basis = "ENTRY_STRUCTURE_OBSERVED"
+        elif not result["current_open_observed"]:
+            basis = "ENTRY_TRIGGER_NOT_OBSERVED"
+        elif plan["price_behavior"].get("observation_quality") != "RESEARCH_ONLY":
+            basis = "ENTRY_BEHAVIOR_QUALITY_NOT_USABLE"
+        else:
+            basis = "ENTRY_MULTIPERIOD_STRUCTURE_NOT_QUALIFIED"
+        return _explain(result, basis, plan=plan, case=current["case"])
     original = inspect_current_price_case(root=root, symbol=symbol,
         case_binding=entry_case_binding, now=entry_at)
     if original["data_status"] != "CURRENT":

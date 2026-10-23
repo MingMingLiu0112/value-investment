@@ -90,7 +90,7 @@ def test_missing_entry_is_only_observation_not_verified_holding(tmp_path):
     result = subject.build_hotspot_lifecycle_review(root=tmp_path, symbol=SYMBOL,
         current_case_binding=_binding(current), now=CURRENT_AT)
     explanation = result["decision_explanation"]
-    assert explanation["basis_code"] == "ENTRY_STRUCTURE_NOT_QUALIFIED"
+    assert explanation["basis_code"] == "ENTRY_TRIGGER_NOT_OBSERVED"
     steps = _steps(result)
     assert steps["ENTRY_REFERENCE"]["outcome"] == "NOT_SUPPLIED"
     assert steps["ORIGINAL_PROTECTION"]["outcome"] == "NOT_EVALUATED"
