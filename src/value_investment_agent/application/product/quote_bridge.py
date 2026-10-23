@@ -8,11 +8,12 @@ unadmitted, and the verdict names the reason instead of a display price.
 """
 from __future__ import annotations
 
-from dataclasses import replace
+from copy import deepcopy
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timezone
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
 from .common import load_json_object, require_inside, sha256_file
@@ -224,12 +225,101 @@ def quote_compatibility_ladder(verdict: dict[str, Any],
     }
 
 
-def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime) -> dict[str, Any]:
+@dataclass(frozen=True)
+class CurrentSnapshotBridgeContext:
+    """Trusted in-process DI only; never construct from an HTTP/JSON approval flag."""
+    policy_binding: dict
+    baseline_reviews_binding: dict
+    authorize_policy: Callable
+
+
+def _execute_snapshot_bridge(root, symbol, today, context, entry, bundle, pointer_digest, result):
+    from .current_snapshot_validity import evaluate_current_snapshot_validity, SCOPE
+    from ...price_bridge import bridge_with_quote
+
+    result = deepcopy(result)
+    result.update(status="CURRENT_SNAPSHOT_VALIDITY_BLOCKED", price_admitted=False,
+                  scope=SCOPE, formal_eligibility=False, strategy_approval_granted=False)
+    result["compatibility"]["original_cutoff_compatible"] = deepcopy(
+        result["compatibility"]["research_compatible"])
+    result["compatibility"]["research_compatible"] = {"eligible": False, "scope": SCOPE}
+    result["compatibility"]["comparison_eligible"] = {"eligible": False, "scope": SCOPE}
+    try:
+        if type(context) is not CurrentSnapshotBridgeContext or not callable(context.authorize_policy):
+            raise ValueError("Current snapshot comparison requires trusted internal DI")
+        if result["research_case"] is None:
+            raise ValueError("Current snapshot comparison requires registered research")
+        args = dict(root=root, symbol=symbol, now=today,
+            incremental_binding_ref=deepcopy(entry["incremental_validity_binding"]),
+            baseline_reviews_binding=deepcopy(context.baseline_reviews_binding),
+            policy_binding=deepcopy(context.policy_binding), authorize_policy=context.authorize_policy)
+        snapshot = evaluate_current_snapshot_validity(**args)
+        result["current_snapshot_validity"] = snapshot.as_policy()
+        if not snapshot.usable_for_research_comparison:
+            raise ValueError("Current snapshot not usable: " + ";".join(snapshot.blockers))
+        if (result["quote_verification_status"] not in {
+                "QUOTE_VERIFIED_FOR_RESEARCH_INPUT", "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
+                "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"}
+                or result["quote"]["latest_completed_session"] != result["quote"]["quote_date"]):
+            raise ValueError("Current snapshot requires latest officially completed verified quote")
+        quote = quote_snapshot_from_bundle_file(bundle, root, symbol=symbol,
+            ref_id="current-snapshot-quote-" + entry["quote_bundle_sha256"],
+            expected_sha256=entry["quote_bundle_sha256"], require_current_b1=True)
+        if quote.status != QUOTE_STATUS_VERIFIED_CLOSE or quote.blockers:
+            raise ValueError("Current snapshot quote rejected: " + ";".join(quote.blockers))
+        comparison = bridge_with_quote(snapshot.valuation, snapshot.model_validity, quote,
+                                       blockers=snapshot.valuation.blockers)
+        # Repeat the complete native approval/source closure after shared calculation.
+        replay = evaluate_current_snapshot_validity(**args)
+        result["current_snapshot_validity"] = replay.as_policy()
+        if not replay.usable_for_research_comparison or replay != snapshot:
+            raise ValueError("Current snapshot inputs or approval changed during comparison")
+        _, _, final_verdict = admit_quote_for_research(root, bundle, symbol,
+            result["research_day"], today=today)
+        final_quote = quote_snapshot_from_bundle_file(bundle, root, symbol=symbol,
+            ref_id="current-snapshot-quote-" + entry["quote_bundle_sha256"],
+            expected_sha256=entry["quote_bundle_sha256"], require_current_b1=True)
+        if (final_verdict.get("bundle_sha256") != entry["quote_bundle_sha256"]
+                or final_verdict.get("quote_date") != result["quote"]["latest_completed_session"]
+                or final_quote != quote or sha256_file(root / POINTER_PATH) != pointer_digest):
+            raise ValueError("Current snapshot quote or pointer changed during comparison")
+        if comparison.bridge_status != "READY" or comparison.blockers or snapshot.model_validity.blockers:
+            raise ValueError("Shared PriceBridge rejected snapshot comparison: " +
+                             ";".join(comparison.blockers or [comparison.bridge_status]))
+        scope = dict(scope=SCOPE, knowledge_as_of=snapshot.as_policy()["knowledge_as_of"],
+            observed_at=snapshot.as_policy()["observed_at"], full_calendar_window_elapsed=False,
+            strict_contemporaneous_pit=False, research_comparison_only=True,
+            source_assurance=snapshot.as_policy()["source_assurance"],
+            formal_eligibility=False, strategy_approval_granted=False, action="no_order")
+        result["price_comparison"] = {**json.loads(comparison.to_json()), **scope}
+        result["conditional_valuation"] = json.loads(snapshot.valuation.to_json())
+        result["current_event_coverage"] = {**scope, "status": "CURRENT_AS_OF_SNAPSHOT",
+            "required_through": today.astimezone(CHINA).date().isoformat(), "covered_through": None}
+        result["compatibility"]["research_compatible"] = {**scope, "eligible": True,
+            "coverage_basis": SCOPE, "reason": "仅限已核验时点的研究价格比较；原研究日未变。"}
+        result["compatibility"]["comparison_eligible"] = {**scope, "eligible": True,
+            "reason": "Shared PriceBridge READY for as-of research comparison only"}
+        result.update(status="QUOTE_VERIFIED_WITH_CURRENT_ASOF_SNAPSHOT", price_admitted=True,
+            reason="READY: as-of research price comparison only", **scope,
+            next_step="不授予正式资格、策略或账户权限；真实政策仍须独立批准。")
+    except (ValueError, KeyError, TypeError, OSError, AttributeError) as error:
+        result.update(reason=str(error), next_step="复核绑定、政策、来源及 B1；不得回退为全天覆盖。")
+        result["price_comparison"] = {"bridge_status": "INVALID", "scope": SCOPE,
+            "blockers": [str(error)], "formal_eligibility": False, "action": "no_order"}
+        result["compatibility"]["comparison_eligible"]["reason"] = str(error)
+    return result
+
+
+def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime,
+        current_snapshot_context: CurrentSnapshotBridgeContext | None = None) -> dict[str, Any]:
     """Run the shared admission for one symbol against the pinned registration.
 
     The result is total and hash-checked: it never raises, never admits a price the
     registered research cutoff cannot legally see, and names the exact blocking
     field so the Web page and the CLI cannot disagree about one archived close.
+    A trusted in-process snapshot context selects a separate, explicitly scoped
+    as-of research comparison; it never changes the original research cutoff or
+    grants formal eligibility. No context means the unchanged legacy path.
     """
     root = root.resolve()
     execution: dict[str, Any] = {
@@ -287,6 +377,9 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
             "sources": verdict.get("source_evidence") or [],
             "compatibility": quote_compatibility_ladder(verdict, execution["research_day"]),
             "next_step": _NEXT_STEPS.get(status, "按以上原因复核后重跑价格桥接。")}
+    if current_snapshot_context is not None:
+        return _execute_snapshot_bridge(root, symbol, today, current_snapshot_context,
+                                        entry, bundle, pointer_digest, result)
     if "incremental_validity_binding" in entry:
         ref = entry["incremental_validity_binding"]
         display_b1_rejected = False
