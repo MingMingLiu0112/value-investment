@@ -115,6 +115,39 @@ def test_current_title_cannot_reassign_a_different_year_reference():
     assert result["cancellation_asserted_by_this_document"] is None
 
 
+@pytest.mark.parametrize("statement", [
+    '此前公告记载：“公司曾召开会议。公司决定取消本次权益分派。”该段仅为历史引述，本次未作取消决定。',
+    '此前公告记载：「公司曾召开会议；公司决定取消本次权益分派。」本次未作取消决定。',
+    '此前公告记载：“会议讨论‘公司曾召开会议。公司决定取消本次权益分派。’后结束。”本次未作取消决定。',
+    '此前公告记载："公司曾召开会议。公司决定取消本次权益分派。"本次未作取消决定。',
+    '此前公告记载：“公司曾召开会议。公司决定取消本次权益分派。',
+    '此前公告记载：“公司曾召开会议。公司决定取消本次权益分派。』',
+    '此前公告记载：公司曾召开会议。”公司决定取消本次权益分派。',
+    '公司决定取消本次权益分派。公司未决定取消本次权益分派。',
+    '公司决定取消本次权益分派。本次未作取消决定。',
+    '公司决定取消本次权益分派。本公司尚未作出任何取消决定。',
+    '公司“历史文字”决定取消本次权益分派。',
+])
+def test_cross_sentence_quotes_or_current_denial_cannot_declare_cancellation(statement):
+    text = CORRECTION[0].replace("2024年年度权益分派实施的更正公告", "关于取消2024年年度权益分派实施公告的公告")
+    text = text.split("，现更正如下：")[0] + "。" + statement + "董事会2025年5月20日"
+    original, candidate = identities([text])
+    result = relate_action_documents(original, candidate)
+    assert candidate["operative_cancellation"] is False
+    assert result["relation_status"] == "EXPLICIT_TARGET_MATCH"
+    assert result["effect_status"] == "UNKNOWN"
+    assert result["cancellation_asserted_by_this_document"] is None
+    safe(result)
+
+
+def test_quoted_history_does_not_suppress_a_separate_unquoted_operative_decision():
+    text = CORRECTION[0].replace("2024年年度权益分派实施的更正公告", "关于取消2024年年度权益分派实施公告的公告")
+    text = text.split("，现更正如下：")[0] + '。此前说明：“本次未作取消决定”；公司决定取消本次权益分派。董事会2025年5月20日'
+    result = relate_action_documents(*identities([text]))
+    assert result["effect_status"] == "CANCELLATION_DECLARED"
+    safe(result)
+
+
 @pytest.mark.parametrize("word", ["不取消", "未取消", "拟取消"])
 def test_negative_or_proposed_title_cannot_certify_cancellation(word):
     text = CORRECTION[0].replace("2024年年度权益分派实施的更正公告", f"关于{word}2024年年度权益分派实施公告的公告")

@@ -13,6 +13,30 @@ REFERENCE = re.compile(r"于(20\d{2})年(\d{1,2})月(\d{1,2})日在[^。]{0,180}
                        r"\(公告编号:?(" + NUMBER + r")\)")
 
 
+def _unquoted_text(text):
+    """Preserve quote scope across sentences/pages; broken quotes fail closed.
+
+    Mask rather than remove spans so fragments on either side cannot join into
+    an operative statement. Reference extraction still uses the original text.
+    """
+    pairs = {"“": "”", "‘": "’", "「": "」", "『": "』", "《": "》", '"': '"', "'": "'"}
+    closers = set(pairs.values())
+    stack, visible, reliable = [], [], True
+    for character in text:
+        if stack and character == stack[-1]:
+            stack.pop()
+            visible.append(" ")
+        elif character in pairs:
+            stack.append(pairs[character])
+            visible.append(" ")
+        elif character in closers:
+            reliable = False
+            visible.append(" ")
+        else:
+            visible.append(" " if stack else character)
+    return "".join(visible), reliable and not stack
+
+
 def parse_action_identity(pages, *, symbol):
     if not pages or len(pages) > 16 or sum(map(len, pages)) > 120_000:
         raise ValueError("Readable bounded action document required")
@@ -39,8 +63,11 @@ def parse_action_identity(pages, *, symbol):
     refs = [dict(number=m[5], title=m[4], published_date=date(*map(int, m.groups()[:3])).isoformat(),
                  matched_text=m[0]) for m in REFERENCE.finditer(preamble)]
     section = re.search(r"更正前:([^:]{1,40}):", text)
+    operative_text, quotes_reliable = _unquoted_text(text)
+    denial = re.search(r"(?:本次|本公告|本公司|公司)(?:并未|尚未|未|没有|不)"
+        r"(?:作出(?:任何)?|做出(?:任何)?|作(?:任何)?|决定|涉及|实施|执行)?(?:取消|撤销)", operative_text)
     cancellation = re.search(r"(?:^|[。;])(?:本公司|公司)决定(?:取消|撤销)(?:上述|本次)"
-        r"(?:权益分派(?:实施公告|方案)?|利润分配方案)[。;]", text)
+        r"(?:权益分派(?:实施公告|方案)?|利润分配方案)[。;]", operative_text) if quotes_reliable and not denial else None
     noncash = re.search(r"每10股转增([1-9][0-9]*(?:\.[0-9]+)?)股", text)
     return dict(symbol=symbol, announcement_number=number[1], title=title[0], kind=kind,
         action_title=re.sub(r"(?:的)?(?:更正|修订|取消|撤销)(?=公告$)", "", title[0]),
