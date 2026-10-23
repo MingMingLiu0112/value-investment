@@ -229,6 +229,45 @@ def test_joint_domain_requires_decimal_and_capital_scope_without_mutating_input(
                    - ledger['terminal_retention'] * ledger['terminal_profit']) < D('.000001')
 
 
+def test_joint_operative_narrative_does_not_inherit_predecessor_stress_label(
+        tmp_path, synthetic_pending_candidate_clock):
+    source, policy_path, request = candidate_inputs(tmp_path)
+    package = json.loads(source.read_text(encoding='utf-8'))
+    package['package_version'] = 'TEST_ONLY-stress-predecessor'
+    old = package['research_case']
+    old['thesis'] = 'LEGACY STRESS_ONLY: 后五年全资本机械衰减。'
+    old['mispricing_hypothesis'] = '旧全资本强衰减可能高估侵蚀。'
+    old['blockers'].append('本候选优势期和全资本衰减未获主模型批准')
+    old['counter_evidence'].append(dict(kind='hypothesis', text='旧十年全资本衰减压力路径不能作为主估值。',
+                                       evidence_refs=['facts']))
+    old['financial_summary']['profit_adjustment_research'] = dict(open_questions=['capital-return fade assumptions'])
+    package['assumptions'].setdefault('blockers', []).append('Selected finite model assumptions remain pending economic approval.')
+    source.write_text(json.dumps(package), encoding='utf-8')
+    policy = json.loads(policy_path.read_text(encoding='utf-8'))
+    policy['source_package_sha256'] = sha256_file(source)
+    policy_path.write_text(json.dumps(policy), encoding='utf-8')
+    policy_inputs(tmp_path, source, policy_path)
+    run_pending(tmp_path, source, policy_path, request)
+    folder = tmp_path / 'runtime/pending'
+    current = json.loads((folder / 'package.json').read_text(encoding='utf-8'))
+    case = current['research_case']
+    assert 'STRESS_ONLY' not in case['thesis']
+    assert '本候选以历史归母盈利与权益为锚点' in case['thesis']
+    assert '全资本' not in case['mispricing_hypothesis']
+    assert not any('全资本' in blocker for blocker in case['blockers'])
+    historical = case['financial_summary']['predecessor_research_narrative']
+    assert historical['statements']['thesis'] == old['thesis']
+    assert historical['package_binding']['sha256'] == sha256_file(source)
+    assert historical['research_version'] == package['package_version']
+    assert case['counter_evidence'][-2]['text'].startswith('历史版本 ' + package['package_version'])
+    assert case['financial_summary']['profit_adjustment_research']['scope'] == 'PREDECESSOR_RESEARCH_NOT_CURRENT_JOINT_MODEL'
+    assert not any('finite model' in item for item in current['assumptions']['blockers'])
+    proposal = json.loads((folder / 'valuation-proposal.json').read_text(encoding='utf-8'))
+    assert proposal['baseline_scope'] == 'PREDECESSOR_MODEL_COMPARISON_NOT_CURRENT_JOINT_PATH'
+    verify_pending_research_candidate(root=tmp_path, path=folder / 'candidate.json',
+        expected_sha256=sha256_file(folder / 'candidate.json'))
+
+
 @pytest.mark.parametrize('fault', ['missing_generator', 'missing_neutral', 'missing_helper', 'duplicate', 'unknown'])
 def test_joint_verifier_requires_exact_implementation_set(tmp_path, synthetic_pending_candidate_clock, fault):
     package, path, request = candidate_inputs(tmp_path)
@@ -418,4 +457,16 @@ def test_staged_cc1_unregistered_source_e2e():
     package = json.loads((output / 'pending/package.json').read_text(encoding='utf-8'))
     assert package['quote'] is None
     assert package['research_case']['financial_summary']['normalized_parent_profit_cny'] is None
+    current = package['research_case']
+    assert 'STRESS_ONLY' not in current['thesis']
+    assert '不是全资本机械衰减路径' in current['thesis']
+    assert '全资本强衰减' not in current['mispricing_hypothesis']
+    assert all('全资本' not in blocker for blocker in current['blockers'])
+    for item in current['counter_evidence']:
+        if '全资本' in item['text'] or '强衰减' in item['text']:
+            assert item['text'].startswith('历史版本 ')
+    assert current['financial_summary']['predecessor_research_narrative']['package_binding']['sha256'] == policy['source_package_sha256']
+    assert not any('finite model' in item or 'Strong-fade' in item for item in package['assumptions']['blockers'])
+    proposal = json.loads((output / 'pending/valuation-proposal.json').read_text(encoding='utf-8'))
+    assert proposal['baseline_scope'] == 'PREDECESSOR_MODEL_COMPARISON_NOT_CURRENT_JOINT_PATH'
     print('UNREGISTERED_CC1_CANDIDATE=' + str(output / 'pending/candidate.json'))

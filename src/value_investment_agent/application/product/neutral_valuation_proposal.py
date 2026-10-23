@@ -359,7 +359,9 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
             historical_input_scope='SOURCE_LINKED_RESEARCH_INPUT_NOT_PDF_CERTIFICATION',
             joint_historical=policy['joint_historical'],
             cash_funding_status=('FAIL' if any(ledger['cash_funding_status'] == 'FAIL'
-                for row in rows for ledger in row['joint_capital_ledgers'].values()) else 'PASS'))
+                for row in rows for ledger in row['joint_capital_ledgers'].values()) else 'PASS'),
+            baseline_scope='PREDECESSOR_MODEL_COMPARISON_NOT_CURRENT_JOINT_PATH',
+            predecessor_research_version=package.get('package_version') or ('package-sha256:' + package_sha256))
     anchor_label = ('历史扣非归母盈利代理' if anchor_field == 'ttm_ex_nonrecurring_parent_profit_cny'
                     else '历史报告归母盈利代理')
     lines = [f'# {case.name}：主估值候选待审', '',
@@ -367,6 +369,9 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
         f'{anchor_label}：{anchor / Decimal("100000000"):.2f}亿元；正常化盈利仍未确认。',
         f'原研究截止：{case.as_of}；新提案生成：{result["generated_at"]}。没有推进事件或价格准入。', '',
         '| 尾部选择 | 条件低档/中档/高档（元/股） | 中档相对旧压力 |', '| --- | --- | --- |']
+    if joint:
+        lines[-2] = '| 联结资本方案 | 条件低档/中档/高档（元/股） | 中档相对前版本 |'
+        lines.insert(6, f'历史比较基线仅指前版本 {result["predecessor_research_version"]}，不描述当前joint模型。')
     for row in rows:
         value = row['valuation']
         label = ('五年联结资本路径＋持续经营终端' if joint else

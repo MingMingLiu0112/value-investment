@@ -30,6 +30,37 @@ JOINT_IMPLEMENTATIONS = frozenset({
 })
 
 
+def _joint_narrative(source, choice, package_binding):
+    """Project current hypotheses separately from immutable predecessor claims."""
+    prior = source['research_case']
+    version = source.get('package_version') or ('package-sha256:' + package_binding['sha256'])
+    historical = f'历史版本 {version}（仅旧模型研究，不描述当前joint路径）：'
+    model_terms = ('全资本', '强衰减', 'STRESS_ONLY', 'whole-equity', 'mechanical fade', '十年')
+
+    def annotate(items):
+        result = deepcopy(items)
+        for item in result:
+            if any(term in item.get('text', '') for term in model_terms):
+                item['text'] = historical + item['text']
+        return result
+
+    return dict(thesis='本候选以历史归母盈利与权益为锚点，实际消费五年经营盈利、'
+        '新增资本回报、留存与分配联结路径及持续经营终端；不是全资本机械衰减路径。'
+        '这是低置信、尚待经济审阅的研究假设，不是获准主估值。' + choice['rationale'],
+        mispricing_hypothesis='待检验的是本候选经营、资本配置及终端效率假设与外部预期的差异；'
+        '未据当前价格验证预期差，不认定市场误定价。反证：' + choice['countercase'],
+        positives=annotate(prior.get('positives', [])),
+        counter_evidence=annotate(prior.get('counter_evidence', [])),
+        thesis_breakers=annotate(prior.get('thesis_breakers', [])),
+        next_events=annotate(prior.get('next_events', [])),
+        predecessor_narrative=dict(scope='PREDECESSOR_RESEARCH_NOT_CURRENT_JOINT_MODEL',
+            package_binding=deepcopy(package_binding), research_version=version,
+            statements={key: deepcopy(prior.get(key)) for key in
+                ('thesis', 'mispricing_hypothesis', 'positives', 'counter_evidence',
+                 'thesis_breakers', 'next_events', 'blockers')},
+            assumption_blockers=deepcopy(source['assumptions'].get('blockers', []))))
+
+
 def _joint_implementations(bindings):
     if (not isinstance(bindings, list) or len(bindings) != len(JOINT_IMPLEMENTATIONS)
             or any(not isinstance(row, dict) or set(row) != {'path', 'sha256'} for row in bindings)
@@ -78,6 +109,20 @@ def _verify_joint_economic_inputs(*, root, path, data, policy, package, descript
             or summary.get('pending_joint_capital_research') != expected_summary
             or summary.get('normalized_parent_profit_cny') is not None):
         raise ValueError('joint candidate economic derivation differs from consumed inputs/ledger')
+    narrative = _joint_narrative(original, choices[0], dict(
+        path=original_binding['path'], sha256=original_binding['sha256']))
+    if (package['research_case']['thesis'] != narrative['thesis']
+            or package['research_case']['mispricing_hypothesis'] != narrative['mispricing_hypothesis']
+            or summary.get('predecessor_research_narrative') != narrative['predecessor_narrative']):
+        raise ValueError('joint candidate current/predecessor narrative scope mismatch')
+    for key in ('positives', 'counter_evidence', 'thesis_breakers', 'next_events'):
+        actual = package['research_case'][key]
+        if key == 'counter_evidence':
+            if not actual or actual[-1].get('text') != choices[0]['countercase']:
+                raise ValueError('joint candidate countercase scope mismatch')
+            actual = actual[:-1]
+        if actual != narrative[key]:
+            raise ValueError('joint candidate historical evidence scope mismatch')
     proposal_path = path.parent / 'valuation-proposal.json'
     proposal_binding = dict(path=proposal_path.relative_to(root).as_posix(), sha256=sha256_file(proposal_path))
     if proposal_binding not in data['source_bindings']:
@@ -304,9 +349,20 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
          else '本候选优势期和全资本衰减未获主模型批准')
         if item == '现有强衰减压力情景不是中性主估值' else item
         for item in case['blockers']]
+    if joint:
+        case['blockers'] = list(dict.fromkeys(
+            '本候选五年联结资本及持续经营终端未获主模型批准'
+            if any(term in item for term in ('全资本', '强衰减', 'STRESS_ONLY', 'Strong-fade'))
+            else item for item in case['blockers']))
     case['evidence_refs'].append(proposal_ref)
     case['thesis'] += (' 本候选实际消费五年联结资本假设：' if proposal.get('input_mode') == JOINT_SCHEMA
                        else ' 本候选实际消费既有有限方案：') + choice['rationale']
+    if joint:
+        narrative = _joint_narrative(source, choice, dict(
+            path=package_path.relative_to(root).as_posix(), sha256=package_sha256))
+        for key in ('thesis', 'mispricing_hypothesis', 'positives', 'counter_evidence',
+                    'thesis_breakers', 'next_events'):
+            case[key] = narrative[key]
     case['counter_evidence'].append(dict(kind='hypothesis', text=choice['countercase'],
                                         evidence_refs=[proposal_ref['id']]))
     summary = case['financial_summary']
@@ -316,6 +372,12 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
     summary['pending_model_choice'] = choice_id
     summary['pending_model_limits'] = proposal['assurance_limits']
     if proposal.get('input_mode') == JOINT_SCHEMA:
+        summary['predecessor_research_narrative'] = narrative['predecessor_narrative']
+        diagnostics = summary.get('profit_adjustment_research')
+        if isinstance(diagnostics, dict):
+            diagnostics.update(scope='PREDECESSOR_RESEARCH_NOT_CURRENT_JOINT_MODEL',
+                predecessor_research_version=narrative['predecessor_narrative']['research_version'],
+                predecessor_package_sha256=package_sha256)
         summary['pending_joint_capital_research'] = dict(
             input_mode=JOINT_SCHEMA, scope='RESEARCH_ASSUMPTIONS_NOT_NORMALIZED_FACTS',
             ledgers=deepcopy(choice['joint_capital_ledgers']), policy_sha256=policy_sha256,
@@ -373,11 +435,17 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
             evidence_refs=refs, blockers=[]))
         bindings.extend(dict(assumption_name=name, scenario=key, field_path=field,
             expected_value=value, evidence_refs=refs) for key, value in values.items())
+    inherited_assumption_blockers = source['assumptions'].get('blockers', [])
+    if joint:
+        inherited_assumption_blockers = [
+            'Joint capital and continuing-franchise assumptions remain pending economic approval.'
+            if ('Strong-fade' in item or 'Selected finite model' in item) else item
+            for item in inherited_assumption_blockers]
     candidate['assumptions'] = dict(assumptions=assumptions, evidence_refs=refs,
         blockers=[('Selected joint capital assumptions remain pending economic approval.' if joint
                    else 'Selected finite model assumptions remain pending economic approval.')
             if item == 'Strong-fade stress assumptions are not admitted as the neutral main valuation.' else item
-            for item in source['assumptions'].get('blockers', [])])
+            for item in inherited_assumption_blockers])
     candidate['assumption_bindings'] = bindings
     candidate['quote'] = None
     candidate.pop('entry_thesis', None)
