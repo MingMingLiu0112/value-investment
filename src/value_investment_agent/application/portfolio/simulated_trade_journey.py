@@ -1,12 +1,14 @@
 """Disposable scripted account journey using the existing journal and risk engine."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from copy import deepcopy
 from decimal import Decimal
 from hashlib import sha256
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from zoneinfo import ZoneInfo
 
 from ...domain.execution.exchange_calendar import next_exchange_session
 from ...domain.portfolio.dual_sleeve_risk import CORE, HOTSPOT, review_dual_sleeve_risk
@@ -217,3 +219,228 @@ def run_simulated_trade_journey(root: Path, now: datetime) -> dict:
             risk="domain.portfolio.dual_sleeve_risk.review_dual_sleeve_risk", allow_synthetic=True,
             separate_ledger=False, test_imports=False, monkeypatch=False))
     return json.loads(json.dumps(result, allow_nan=False))
+
+
+def _source_bound_cases(root, symbols, now):
+    from ..decision.current_value_plan import load_current_value_action_plans
+    from ..decision.public_strategy_assessment import project_actionable_evaluation
+    from ..research.value_research_analysis import _bound
+    from ..product.common import load_json_object, normalize_symbol
+
+    selected = tuple(normalize_symbol(symbol) for symbol in symbols)
+    if not selected or len(set(selected)) != len(selected):
+        raise ValueError("Explicit unique research securities required")
+    loaded = load_current_value_action_plans(root, symbols=selected, now=now)
+    cases, protected = [], {}
+    for symbol in selected:
+        matches = [plan for plan in loaded['items'] if plan['symbol'] == symbol]
+        if len(matches) != 1:
+            raise ValueError("Exact current source-bound plan unavailable: " + symbol)
+        plan = matches[0]
+        analysis = plan.get('research_analysis') or {}
+        if (analysis.get('status') != 'CONDITIONAL_ANALYSIS_VERIFIED'
+                or analysis.get('arithmetic_complete') is not True
+                or analysis.get('action') != 'no_order'
+                or not analysis.get('research_version')
+                or plan.get('research_version') != analysis['research_version']):
+            raise ValueError("Current research attribution unavailable: " + symbol)
+        binding = analysis['review_binding']['candidate_binding']
+        candidate = load_json_object(_bound(root, binding), 'simulated public research reference')
+        if (candidate['symbol'] != symbol or candidate['model_context'] != analysis['review_binding']['model_context']
+                or plan.get('valuation_input_version') != analysis['input_descriptor_sha256']):
+            raise ValueError("Current plan and candidate research differ")
+        for ref in [*analysis['source_bindings'], *plan.get('source_bindings', []),
+                    *candidate['source_bindings'], *candidate['implementation_bindings']]:
+            pinned = dict(path=ref['path'], sha256=ref['sha256'])
+            _bound(root, pinned)
+            if pinned['path'] in protected and protected[pinned['path']] != pinned['sha256']:
+                raise ValueError("Conflicting public research source bindings")
+            protected[pinned['path']] = pinned['sha256']
+        evaluation = project_actionable_evaluation(dict(symbol=symbol, strategy=CORE, price_action_plan=plan))
+        reasons = list(dict.fromkeys([evaluation['decision_reason'], *plan.get('blockers', []),
+            *plan.get('formal_eligibility_blockers', [])]))
+        slots = [dict(intent=intent, outcome='WAIT' if intent == 'WAIT' else 'NO_ACTION',
+            strategy_verdict=evaluation['decision_action'], reasons=reasons + ([] if intent in {'BUY', 'WAIT'} else
+                ['ORIGINAL_ENTRY_AND_PERSONAL_RISK_NOT_ESTABLISHED']),
+            formal_eligibility=False, review_quantity=None, action='no_order')
+            for intent in ('BUY', 'ADD', 'HOLD', 'REDUCE', 'EXIT', 'WAIT')]
+        cases.append(dict(symbol=symbol, company_name=analysis['company_name'],
+            research=dict(candidate_binding=deepcopy(binding), research_version=analysis['research_version'],
+                model_context=deepcopy(candidate['model_context']), generated_at=candidate['generated_at'],
+                replayed_at=candidate.get('replayed_at'), research_as_of=analysis['research_as_of'],
+                valuation_date=analysis['valuation_date'], available_at=analysis['available_at'],
+                computed_at=analysis['computed_at'], thesis=deepcopy(analysis['thesis']),
+                thesis_breakers=deepcopy(analysis['thesis_breakers']),
+                scope='SOURCE_BOUND_CONDITIONAL_RESEARCH_NOT_TRADE_APPROVAL'),
+            plan=dict(research_version=plan['research_version'], signal_state=plan['signal_state'],
+                candidate_action=plan['candidate_action'], verification_scope=plan['verification_scope']),
+            evaluation=evaluation, action_slots=slots, action='no_order'))
+    return cases, protected
+
+
+def _manual_account_state(service):
+    """Ledger accounting only: no production risk projection or namespace relabel."""
+    replay = _replayed(service)
+    view = service._portfolio_payload(replay, today=service._now().date())
+    return dict({key: deepcopy(view[key]) for key in
+            ('cash_cny', 'positions', 'realized_pnl_cny', 'revision', 'pending_draft')},
+        confirmed_fees_cny=str(sum((Decimal(row['fees_cny']) for row in replay.trades), Decimal(0))))
+
+
+def run_source_bound_simulated_trade_journey(root: Path, now: datetime, *,
+        symbols=('600519', '600887'), manual_fills=None, initial_cash_cny='100000',
+        workspace_root: Path | None = None) -> dict:
+    """Read current public research; optionally rehearse explicitly requested fills.
+
+    Manual fills are independent hypothetical accounting, never strategy verdicts.
+    A requested historical narrative is not an original PIT Entry. The legacy
+    all-synthetic journey above remains a separate demonstration.
+    """
+    from ..research.value_research_analysis import _bound
+    from .personal_entry_thesis import owned_entry_context
+
+    if not isinstance(now, datetime) or now.utcoffset() is None:
+        raise ValueError("Source-bound journey requires an aware research clock")
+    if now > datetime.now(now.tzinfo):
+        raise ValueError("Source-bound journey cannot use a future research clock")
+    root = Path(root).resolve(strict=True)
+    if manual_fills is not None and not isinstance(manual_fills, list):
+        raise ValueError("Manual rehearsal must be an explicit list")
+    cases, protected = _source_bound_cases(root, symbols, now)
+    by_symbol = {case['symbol']: case for case in cases}
+
+    def recheck():
+        for path, digest in protected.items():
+            _bound(root, dict(path=path, sha256=digest))
+
+    manual = dict(status='NOT_REQUESTED', fills=[], account_state=None, journal_receipt=None,
+                  temporary_journal_removed=True, actual_account_used=False)
+    if manual_fills:
+        try:
+            opening_day = date.fromisoformat(manual_fills[0]['fill']['trade_date'])
+        except (KeyError, TypeError) as error:
+            raise ValueError("Manual rehearsal requires an explicit first execution date") from error
+        if opening_day > datetime.now(ZoneInfo('Asia/Shanghai')).date():
+            raise ValueError("Hypothetical execution cannot be in the future")
+        workspace = Path(workspace_root or root).resolve(strict=True)
+        temporary = workspace / '.tmp'
+        if temporary.is_symlink():
+            raise ValueError("Simulation temporary directory must not be a symlink")
+        temporary.mkdir(exist_ok=True)
+        if temporary.resolve().parent != workspace:
+            raise ValueError("Simulation must remain inside workspace .tmp")
+        with TemporaryDirectory(prefix='source-bound-simulated-', dir=temporary) as directory:
+            journal = Path(directory) / 'SIMULATED-journal.jsonl'
+            service = PrivatePortfolioService(PrivateJournal(journal))
+            recorded = service._now()
+            service.initialize(dict(idempotency_key='SIMULATED-init', expected_revision=0,
+                account_scope='SIMULATED_SOURCE_BOUND_MANUAL_REHEARSAL',
+                as_of=opening_day.isoformat(), cash_cny=initial_cash_cny, holdings=[],
+                sleeve_allocations={}, policy={}, confirmed_at=recorded.isoformat(),
+                confirmation_note='Explicit simulated bookkeeping only; no real account or approval'))
+            rows, t1 = [], []
+            for index, request in enumerate(manual_fills):
+                if not isinstance(request, dict) or set(request) - {'fill', 'research_reference'}:
+                    raise ValueError("Unsupported manual rehearsal fields")
+                fill = deepcopy(request['fill'])
+                if (fill.get('symbol') not in by_symbol or fill.get('sleeve') != CORE
+                        or set(fill) & {'judgment_snapshot', 'decision_id', 'research_version'}):
+                    raise ValueError("Manual fill must use selected research and server-derived attribution")
+                if date_from_fill := fill.get('trade_date'):
+                    if date.fromisoformat(date_from_fill) > datetime.now(ZoneInfo('Asia/Shanghai')).date():
+                        raise ValueError("Hypothetical execution cannot be in the future")
+                reference = request.get('research_reference')
+                if reference not in (None, 'HISTORICAL_RECONSTRUCTION'):
+                    raise ValueError("Only explicit historical research-reference reconstruction is supported")
+                case = by_symbol[fill['symbol']]
+                research = case['research']
+                fill.update(decision_id=fill['symbol'], research_version=research['research_version'])
+                recheck()
+                before = _manual_account_state(service)
+                prepared, digest = service.prepare_fill(dict(idempotency_key=f'SIMULATED-prepare-{index}',
+                    expected_revision=len(service.records()), fill=fill,
+                    note='Explicit hypothetical manual fill; not a strategy instruction'), repository_root=root)
+                draft = _manual_account_state(service)
+                if before['cash_cny'] != draft['cash_cny'] or before['positions'] != draft['positions']:
+                    raise ValueError("Prepared draft changed confirmed accounting")
+                confirmation = dict(idempotency_key=f'SIMULATED-confirm-{index}', expected_revision=len(service.records()),
+                    prepared_record_sha256=digest, confirmed_at=service._now().isoformat(),
+                    confirmation_note='SIMULATED manual confirmation, not investment approval')
+                confirmed, fill_hash = service.confirm_fill(confirmation)
+                count = len(service.records())
+                repeated = service.confirm_fill(confirmation)
+                idempotent = repeated == (confirmed, fill_hash) and len(service.records()) == count
+                fill_record = next(row for row in service.records() if row['record_sha256'] == fill_hash)
+                actual_fill = fill_record['body']['fill']
+                snapshot = actual_fill.get('judgment_snapshot')
+                historical = None
+                if reference is not None:
+                    if fill['side'] != 'BUY':
+                        raise ValueError("Historical Entry narrative requires a buy fill")
+                    breakers = [item if isinstance(item, str) else item['text'] for item in research['thesis_breakers']]
+                    historical, _ = service.confirm_entry_thesis(dict(
+                        idempotency_key=f'SIMULATED-reference-{index}', expected_revision=len(service.records()),
+                        fill_record_sha256=fill_hash, binding_mode='HISTORICAL_RECONSTRUCTION',
+                        read_and_confirmed=True, confirmation_note='SIMULATED historical research reference only',
+                        reconstruction=dict(thesis=research['thesis'],
+                            hold_logic=('Research reference only; no approved HOLD, ADD, risk or original PIT Entry. '
+                                + json.dumps(research['candidate_binding'], sort_keys=True)),
+                            invalidation_conditions=breakers, research_version=research['research_version'],
+                            strategy_version='SOURCE_BOUND_PENDING_ARITHMETIC_NOT_APPROVAL')),
+                        authenticated_subject='SIMULATED_REHEARSAL_SUBJECT', repository_root=root)
+                context = owned_entry_context(records=service.records(), symbol=fill['symbol'], sleeve=CORE,
+                    authenticated_subject='SIMULATED_REHEARSAL_SUBJECT', as_of=service._now())
+                rows.append(dict(symbol=fill['symbol'], side=fill['side'],
+                    scope='EXPLICIT_SIMULATED_MANUAL_FILL_NOT_STRATEGY_ACTION', fill=actual_fill,
+                    execution_price_scope='CALLER_SUPPLIED_HYPOTHETICAL_FILL_NOT_QUOTE_OR_FAIR_VALUE',
+                    fill_record_sha256=fill_hash, recorded_at=fill_record['recorded_at'],
+                    source_candidate_binding=deepcopy(research['candidate_binding']),
+                    prepared_status=prepared['status'], confirmed_status=confirmed['status'],
+                    prepared_cash_unchanged=True, confirmation_idempotent=idempotent,
+                    snapshot_status=('EXACT_PUBLICATION_RECORDING_TIME_REFERENCE_NOT_PRETRADE'
+                        if snapshot else 'SNAPSHOT_UNAVAILABLE_NO_EXACT_PUBLISHED_RESEARCH'),
+                    historical_reference_status=historical['status'] if historical else 'NOT_REQUESTED',
+                    historical_reference_scope='NOT_ORIGINAL_PIT_ENTRY' if historical else None,
+                    original_entry_advisory_eligible=context['advisory_dependencies_valid'],
+                    entry_blockers=context['blockers'], after=_manual_account_state(service)))
+                if fill['side'] == 'BUY':
+                    sellable = sum((lot.quantity for lot in _replayed(service).state.lots
+                        if lot.symbol == fill['symbol'] and lot.sleeve == CORE
+                        and lot.sellable_on <= date.fromisoformat(fill['trade_date'])), Decimal(0))
+                    if sellable >= Decimal(fill['quantity']):
+                        rows[-1]['t1_negative_status'] = 'NOT_APPLICABLE_OLDER_SELLABLE_LOTS'
+                        continue
+                    sell = {key: actual_fill[key] for key in
+                            ('symbol', 'exchange', 'quantity', 'price_cny', 'fees_cny', 'trade_date', 'sleeve')}
+                    sell.update(side='SELL', transaction_id=f'SIMULATED-T1-{index}')
+                    prior = journal.read_bytes()
+                    try:
+                        service.prepare_fill(dict(idempotency_key=f'SIMULATED-T1-{index}',
+                            expected_revision=len(service.records()), fill=sell))
+                    except JournalValidationError as error:
+                        if 'insufficient sellable shares' not in str(error):
+                            raise
+                        t1.append(journal.read_bytes() == prior)
+                        rows[-1]['t1_negative_status'] = 'REJECTED_WITHOUT_JOURNAL_WRITE'
+                    else:
+                        raise ValueError("T+1 negative unexpectedly permitted")
+            recheck()
+            final = _manual_account_state(service)
+            restart = PrivatePortfolioService(PrivateJournal(journal))
+            if _manual_account_state(restart) != final:
+                raise ValueError("Restart accounting differs")
+            manual = dict(status='EXPLICIT_SIMULATED_RECORDS_ONLY', fills=rows, account_state=final,
+                accounting_baseline=dict(as_of=opening_day.isoformat(), cash_cny=initial_cash_cny,
+                    scope='SYNTHETIC_OPENING_CASH_NOT_HISTORICAL_ACCOUNT_EVIDENCE'),
+                restart_equal=True, same_session_sell_rejected=all(t1) if t1 else None,
+                t1_negative_checks=len(t1),
+                journal_receipt=dict(sha256=sha256(journal.read_bytes()).hexdigest(),
+                    record_count=len(service.records()), retained=False), actual_account_used=False)
+        manual['temporary_journal_removed'] = not journal.exists()
+    recheck()
+    return dict(schema_version='source-bound-simulated-trade-journey-v1', action='no_order',
+        namespace='SIMULATED', research_namespace='PUBLIC_SOURCE_BOUND', research_evaluated_at=now.isoformat(),
+        scope='PUBLIC_RESEARCH_WITH_OPTIONAL_ISOLATED_MANUAL_ACCOUNTING',
+        cases=cases, manual_rehearsal=manual, source_files_verified=len(protected),
+        strategy_validated=False, approval_changed=False, broker_execution_permission=False,
+        position_guidance=None, personal_risk_evaluated=False)
