@@ -216,20 +216,94 @@ it("requires the complete previously read candidate set before accepting a manua
   expect(sourceBoundCandidatesMatch(packet, mixed)).toBe(false);
 });
 
-it.skipIf(
-  !process.env.SOURCE_BOUND_JOURNEY_JSON ||
-    !process.env.SOURCE_BOUND_MANUAL_JSON,
-)(
+const legacyReceiptHashes = {
+  read: "4b0c4015ffc84d5b33657d1ab1b57f2cca73445ea2d26e76f60e1a7cc794989f",
+  manual: "17b5fe0ed2cd05730ff0a72f1014ba0a064b9b068a8289bc87f98fb6ae3a9ced",
+};
+const receiptInputNames = [
+  "SOURCE_BOUND_JOURNEY_JSON",
+  "SOURCE_BOUND_MANUAL_JSON",
+  "SOURCE_BOUND_JOURNEY_SHA256",
+  "SOURCE_BOUND_MANUAL_SHA256",
+] as const;
+
+function pinnedReceiptInputs(env: Record<string, string | undefined>) {
+  const explicitHashes =
+    env.SOURCE_BOUND_JOURNEY_SHA256 !== undefined ||
+    env.SOURCE_BOUND_MANUAL_SHA256 !== undefined;
+  const inputs = {
+    read: {
+      file: env.SOURCE_BOUND_JOURNEY_JSON,
+      expected: explicitHashes
+        ? env.SOURCE_BOUND_JOURNEY_SHA256
+        : legacyReceiptHashes.read,
+    },
+    manual: {
+      file: env.SOURCE_BOUND_MANUAL_JSON,
+      expected: explicitHashes
+        ? env.SOURCE_BOUND_MANUAL_SHA256
+        : legacyReceiptHashes.manual,
+    },
+  };
+  for (const input of Object.values(inputs)) {
+    expect(
+      typeof input.file,
+      "Each opt-in receipt requires an explicit file",
+    ).toBe("string");
+    expect(input.file?.trim()).toBeTruthy();
+    expect(
+      input.expected,
+      "Both expected SHA-256 values must be explicitly pinned when overriding",
+    ).toMatch(/^[a-fA-F0-9]{64}$/);
+  }
+  return inputs;
+}
+
+function assertPinnedBytes(bytes: Buffer, expected: unknown) {
+  expect(expected).toMatch(/^[a-fA-F0-9]{64}$/);
+  expect(createHash("sha256").update(bytes).digest("hex")).toBe(
+    (expected as string).toLowerCase(),
+  );
+}
+
+it("rejects wrong or malformed expected receipt hashes rather than learning them from the input", () => {
+  const bytes = Buffer.from("TEST_ONLY receipt bytes");
+  for (const expected of ["0".repeat(64), "not-a-sha", "", undefined])
+    expect(() => assertPinnedBytes(bytes, expected)).toThrow();
+});
+
+it("retains legacy pins and rejects incomplete explicit receipt pairs", () => {
+  const files = {
+    SOURCE_BOUND_JOURNEY_JSON: "TEST_ONLY/read.json",
+    SOURCE_BOUND_MANUAL_JSON: "TEST_ONLY/manual.json",
+  };
+  expect(pinnedReceiptInputs(files).read.expected).toBe(
+    legacyReceiptHashes.read,
+  );
+  expect(pinnedReceiptInputs(files).manual.expected).toBe(
+    legacyReceiptHashes.manual,
+  );
+  expect(() =>
+    pinnedReceiptInputs({
+      ...files,
+      SOURCE_BOUND_JOURNEY_SHA256: "a".repeat(64),
+    }),
+  ).toThrow();
+  expect(() =>
+    pinnedReceiptInputs({
+      SOURCE_BOUND_JOURNEY_JSON: files.SOURCE_BOUND_JOURNEY_JSON,
+    }),
+  ).toThrow();
+});
+
+it.skipIf(!receiptInputNames.some((name) => process.env[name] !== undefined))(
   "validates the user-pinned actual in-process API receipts without any Live request",
   () => {
-    const read = readFileSync(process.env.SOURCE_BOUND_JOURNEY_JSON!);
-    const manual = readFileSync(process.env.SOURCE_BOUND_MANUAL_JSON!);
-    expect(createHash("sha256").update(read).digest("hex")).toBe(
-      "4b0c4015ffc84d5b33657d1ab1b57f2cca73445ea2d26e76f60e1a7cc794989f",
-    );
-    expect(createHash("sha256").update(manual).digest("hex")).toBe(
-      "17b5fe0ed2cd05730ff0a72f1014ba0a064b9b068a8289bc87f98fb6ae3a9ced",
-    );
+    const inputs = pinnedReceiptInputs(process.env);
+    const read = readFileSync(inputs.read.file!);
+    const manual = readFileSync(inputs.manual.file!);
+    assertPinnedBytes(read, inputs.read.expected);
+    assertPinnedBytes(manual, inputs.manual.expected);
     const first = JSON.parse(read.toString("utf8")),
       second = JSON.parse(manual.toString("utf8"));
     expect(verifiedSourceBoundJourney(first)).toBe(true);
