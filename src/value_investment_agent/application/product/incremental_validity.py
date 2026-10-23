@@ -166,7 +166,7 @@ def collect_registered_validity_scan(*, root: Path, symbol: str, review_cutoff: 
 
 
 def _verify_v2_observation(root, binding, package, observation, symbol, review_cutoff, today):
-    from .daily_event_observation import verify_retained_event_coverage
+    from .daily_event_observation import verify_retained_event_coverage, verify_retained_event_snapshot
 
     research, valuation, start = _model_window(root, package, symbol, review_cutoff, today)
     if (binding.get("research_as_of") != research.isoformat()
@@ -184,66 +184,10 @@ def _verify_v2_observation(root, binding, package, observation, symbol, review_c
         verify_retained_event_coverage(root, observation, symbol=symbol,
             required_from=start, required_to=review_cutoff, now=today)
     elif binding.get("coverage_mode") == PARTIAL_WINDOW:
-        _verify_partial_observation(root, binding, observation, symbol, start, review_cutoff, today)
+        verify_retained_event_snapshot(root, observation, symbol=symbol,
+            required_from=start, required_to=review_cutoff, now=today)
     else:
         raise ValueError("V2 requires explicit coverage_mode")
-
-
-def _verify_partial_observation(root, binding, observation, symbol, start, end, today):
-    """Authenticate snapshot bytes, never attest complete calendar coverage."""
-    from .daily_event_observation import _replay_raw_index
-    from ...disclosures import SEARCH_URL, validate_cninfo_announcement_window
-
-    _, scan_payload = read_bound_json(root, binding["scan_ref"], "partial event scan")
-    scan = event_scan_from_payload(scan_payload)
-    acquired = _available(observation.get("acquired_at"), "partial acquisition", today)
-    if (observation.get("schema_version") != "daily-event-observation-v1"
-            or observation.get("symbol") != symbol or observation.get("action") != "no_order"
-            or observation.get("scan_binding") != binding["scan_ref"]
-            or observation.get("scan_from") != start.isoformat() or observation.get("scan_to") != end.isoformat()
-            or observation.get("source_bindings") != list(scan.evidence_refs)
-            or observation.get("pagination_complete") is not True
-            or observation.get("collection_status") != "OFFICIAL_QUERY_ARCHIVED"
-            or type(observation.get("announcement_count")) is not int
-            or observation["announcement_count"] != len(scan.announcements)
-            or observation.get("full_calendar_window_elapsed") is not False
-            or end != acquired.astimezone(ZoneInfo("Asia/Shanghai")).date()
-            or observation.get("index_representation") != "PARSED_OFFICIAL_QUERY_WITH_RECEIVED_RESPONSE_CONTENT"
-            or scan.symbol != symbol or scan.provider != "cninfo"
-            or scan.scan_from != start or scan.validity_from != start
-            or scan.scan_to != end or scan.validity_to != end or scan.retrieved_at != acquired
-            or scan.status != "PENDING_HUMAN_REVIEW"):
-        raise ValueError("Partial V2 requires an explicit same-day pending snapshot")
-    refs = {ref["id"]: ref for ref in scan.evidence_refs}
-    if len(refs) != len(scan.evidence_refs):
-        raise ValueError("Duplicate snapshot source identity")
-    for ref in scan.evidence_refs:
-        path = require_inside(root, root / ref["path"], "snapshot source")
-        if sha256_file(path) != ref["sha256"]:
-            raise ValueError("Partial source hash mismatch")
-    _, index = read_bound_json(root, refs[f"daily-index-{symbol}"], "snapshot index")
-    _, manifest = read_bound_json(root, refs[f"daily-raw-index-manifest-{symbol}"], "snapshot manifest")
-    params = index["parameters"]
-    if (index.get("url") != SEARCH_URL or params.get("seDate") != f"{start}~{end}"
-            or params.get("stock", "").split(",")[0] != symbol
-            or any(params.get(key) for key in ("searchkey", "category", "trade", "secid", "plate"))
-            or manifest.get("schema_version") != "cninfo-raw-index-v1"
-            or manifest.get("symbol") != symbol or manifest.get("action") != "no_order"
-            or manifest.get("scan_from") != start.isoformat() or manifest.get("scan_to") != end.isoformat()
-            or manifest.get("pagination_complete") is not True):
-        raise ValueError("Partial raw request/window mismatch")
-    archive = (root / binding["scan_ref"]["path"]).parent
-    rows = _replay_raw_index(root, archive, manifest["responses"], index)
-    validate_cninfo_announcement_window(rows, start.isoformat(), end.isoformat())
-    if {str(row["announcementId"]) for row in rows} != {item.announcement_id for item in scan.announcements}:
-        raise ValueError("Partial announcement set mismatch")
-    for record in manifest["responses"]:
-        _, metadata = read_bound_json(root, {"path": record["metadata_path"],
-            "sha256": record["metadata_sha256"]}, "partial raw metadata")
-        if (metadata != {k: v for k, v in record.items() if k not in {"metadata_path", "metadata_sha256"}}
-                or record.get("url") != SEARCH_URL or record.get("method") != "POST"
-                or _available(record.get("acquired_at"), "partial raw received", today) > acquired):
-            raise ValueError("Partial raw receipt mismatch")
 
 
 def load_incremental_scan_binding(*, root: Path, binding_ref: dict, symbol: str,

@@ -67,11 +67,27 @@ def archive(root, monkeypatch, *, populated=False, two_pages=False):
     return observation
 
 
-def verify(root, observation, **overrides):
+def verify(root, observation, *, snapshot=False, **overrides):
     args = dict(symbol="600519", required_from=START, required_to=END,
                 now=datetime.now(timezone.utc))
     args.update(overrides)
-    return service.verify_retained_event_coverage(root, observation, **args)
+    verifier = service.verify_retained_event_snapshot if snapshot else service.verify_retained_event_coverage
+    return verifier(root, observation, **args)
+
+
+def archive_mode(root, monkeypatch, *, snapshot, **kwargs):
+    if snapshot:
+        captured = datetime(2020, 1, 2, 10, tzinfo=timezone.utc)
+
+        class Clock(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return captured.astimezone(tz) if tz else captured.replace(tzinfo=None)
+
+        # Fixed synthetic acquisition, not a clock/flag modification in validation.
+        monkeypatch.setitem(globals(), "datetime", Clock)
+        monkeypatch.setattr(service, "datetime", Clock)
+    return archive(root, monkeypatch, **kwargs)
 
 
 def rebind(root, observation):
@@ -143,11 +159,53 @@ def test_missing_partial_stale_unavailable_observations_fail_closed(tmp_path, mo
         verify(tmp_path, observation, **overrides)
 
 
+@pytest.mark.parametrize("populated,two_pages", [(False, False), (True, False), (True, True)])
+def test_snapshot_uses_strict_originals_but_never_proves_completed_window(tmp_path, monkeypatch, populated, two_pages):
+    observation = archive_mode(tmp_path, monkeypatch, snapshot=True, populated=populated, two_pages=two_pages)
+    before = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
+    result = verify(tmp_path, observation, snapshot=True)
+    assert result["source_integrity_verified"] is True
+    assert result["coverage_status"] == "INCOMPLETE"
+    assert result["completed_window"] is False
+    assert result["coverage_mode"] == "PARTIAL_INTRADAY_SNAPSHOT"
+    assert result["materiality_approved"] is result["model_revalidated"] is False
+    assert result["action"] == "no_order"
+    assert observation["full_calendar_window_elapsed"] is False
+    assert read(tmp_path / "runtime/events/event-scan.json")["status"] == "PENDING_HUMAN_REVIEW"
+    with pytest.raises(ValueError):
+        verify(tmp_path, observation)
+    assert before == {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
+
+
+@pytest.mark.parametrize("failure", ["elapsed", "reviewed", "wrong_capture_day", "future", "naive"])
+def test_snapshot_temporal_mode_cannot_be_promoted_or_backdated(tmp_path, monkeypatch, failure):
+    observation = archive_mode(tmp_path, monkeypatch, snapshot=True)
+    if failure == "elapsed":
+        observation["full_calendar_window_elapsed"] = True
+    elif failure == "reviewed":
+        path = tmp_path / observation["scan_binding"]["path"]
+        scan = read(path)
+        scan["status"] = "COMPLETE_NO_MATERIAL_EVENT_IN_VALIDITY_WINDOW"
+        observation["scan_binding"]["sha256"] = write(path, scan)
+    else:
+        observation["acquired_at"] = {"wrong_capture_day": "2020-01-03T10:00:00+00:00",
+            "future": "2099-01-02T10:00:00+00:00", "naive": "2020-01-02T10:00:00"}[failure]
+    with pytest.raises(ValueError):
+        verify(tmp_path, observation, snapshot=True)
+
+
+def test_elapsed_archive_requires_full_verifier_not_snapshot_label(tmp_path, monkeypatch):
+    observation = archive(tmp_path, monkeypatch)
+    with pytest.raises(ValueError):
+        verify(tmp_path, observation, snapshot=True)
+
+
+@pytest.mark.parametrize("snapshot", [False, True])
 @pytest.mark.parametrize("failure", ["issuer", "window", "scan_set", "scan_title", "count", "page",
     "metadata_url", "metadata_time", "filtered", "manifest_symbol", "duplicate_page", "coverage",
-    "original", "same_day", "path_escape"])
-def test_rehashed_forgeries_fail_semantic_replay(tmp_path, monkeypatch, failure):
-    observation = archive(tmp_path, monkeypatch, populated=True)
+    "original", "same_day", "path_escape", "future_publication"])
+def test_rehashed_forgeries_fail_semantic_replay(tmp_path, monkeypatch, failure, snapshot):
+    observation = archive_mode(tmp_path, monkeypatch, snapshot=snapshot, populated=True)
     folder = tmp_path / "runtime/events"
     index = read(folder / "cninfo-index.json")
     manifest = read(folder / "raw-index-manifest.json")
@@ -191,6 +249,11 @@ def test_rehashed_forgeries_fail_semantic_replay(tmp_path, monkeypatch, failure)
         record["acquired_at"] = "2020-01-02T23:59:59+08:00"
     elif failure == "path_escape":
         record["path"] = "../outside.bin"
+    elif failure == "future_publication":
+        published = datetime.now(timezone.utc) + timedelta(hours=1)
+        body["announcements"][0]["announcementTime"] = int(published.timestamp() * 1000)
+        index["announcements"] = body["announcements"]
+        scan["announcements"][0]["published_at"] = published.isoformat()
     write(body_path, body)
     write(folder / "cninfo-index.json", index)
     write(folder / "raw-index-manifest.json", manifest)
@@ -203,13 +266,14 @@ def test_rehashed_forgeries_fail_semantic_replay(tmp_path, monkeypatch, failure)
         observation["source_bindings"] = scan["evidence_refs"]
         observation["scan_binding"]["sha256"] = write(folder / "event-scan.json", scan)
     with pytest.raises(ValueError):
-        verify(tmp_path, observation)
+        verify(tmp_path, observation, snapshot=snapshot)
 
 
+@pytest.mark.parametrize("snapshot", [False, True])
 @pytest.mark.parametrize("target", ["event-scan.json", "cninfo-index.json", "raw-index-manifest.json",
                                     "raw-index/response-0001.bin", "raw-index/response-0001.json"])
-def test_oversized_files_rejected_by_stat_before_read_or_hash(tmp_path, monkeypatch, target):
-    observation = archive(tmp_path, monkeypatch)
+def test_oversized_files_rejected_by_stat_before_read_or_hash(tmp_path, monkeypatch, target, snapshot):
+    observation = archive_mode(tmp_path, monkeypatch, snapshot=snapshot)
     path = tmp_path / "runtime/events" / target
     limit = (32 * 1024 if target.endswith("0001.json") else
              service.MAX_CNINFO_RAW_RESPONSE_BYTES if target.endswith(".bin") else
@@ -232,13 +296,14 @@ def test_oversized_files_rejected_by_stat_before_read_or_hash(tmp_path, monkeypa
     monkeypatch.setattr(path_type, "read_bytes", guarded_read)
     monkeypatch.setattr(service, "sha256_file", guarded_hash)
     with pytest.raises(ValueError, match="byte bounds"):
-        verify(tmp_path, observation)
+        verify(tmp_path, observation, snapshot=snapshot)
 
 
+@pytest.mark.parametrize("snapshot", [False, True])
 @pytest.mark.parametrize("failure", ["wrong_org", "missing_identity", "ambiguous_identity", "fulltext",
     "page_size_zero", "page_size_large", "extra_filter", "has_more", "metadata_body_mismatch"])
-def test_rehashed_empty_window_requires_identity_and_unfiltered_complete_pages(tmp_path, monkeypatch, failure):
-    observation = archive(tmp_path, monkeypatch)
+def test_rehashed_empty_window_requires_identity_and_unfiltered_complete_pages(tmp_path, monkeypatch, failure, snapshot):
+    observation = archive_mode(tmp_path, monkeypatch, snapshot=snapshot)
     folder = tmp_path / "runtime/events"
     index = read(folder / "cninfo-index.json")
     manifest = read(folder / "raw-index-manifest.json")
@@ -273,11 +338,12 @@ def test_rehashed_empty_window_requires_identity_and_unfiltered_complete_pages(t
     write(folder / "raw-index-manifest.json", manifest)
     rebind(tmp_path, observation)
     with pytest.raises(ValueError):
-        verify(tmp_path, observation)
+        verify(tmp_path, observation, snapshot=snapshot)
 
 
-def test_missing_last_page_rejected_even_with_rehashed_scan_and_index(tmp_path, monkeypatch):
-    observation = archive(tmp_path, monkeypatch, populated=True, two_pages=True)
+@pytest.mark.parametrize("snapshot", [False, True])
+def test_missing_last_page_rejected_even_with_rehashed_scan_and_index(tmp_path, monkeypatch, snapshot):
+    observation = archive_mode(tmp_path, monkeypatch, snapshot=snapshot, populated=True, two_pages=True)
     folder = tmp_path / "runtime/events"
     manifest = read(folder / "raw-index-manifest.json")
     manifest["responses"].pop()
@@ -288,7 +354,7 @@ def test_missing_last_page_rejected_even_with_rehashed_scan_and_index(tmp_path, 
     write(folder / "raw-index-manifest.json", manifest)
     rebind(tmp_path, observation)
     with pytest.raises(ValueError):
-        verify(tmp_path, observation)
+        verify(tmp_path, observation, snapshot=snapshot)
 
 
 def test_raw_total_budget_preflight_precedes_any_body_read_or_hash(tmp_path, monkeypatch):

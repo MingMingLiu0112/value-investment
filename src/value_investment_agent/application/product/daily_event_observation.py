@@ -69,7 +69,21 @@ def verify_retained_event_coverage(root: Path, observation: dict, *, symbol: str
         raise ValueError("Retained event coverage is unavailable or malformed") from error
 
 
-def _verify_retained_event_coverage(root, observation, *, symbol, required_from, required_to, now):
+def verify_retained_event_snapshot(root: Path, observation: dict, *, symbol: str,
+                                   required_from: date, required_to: date, now: datetime) -> dict:
+    """Verify identical retained originals for a same-day PENDING snapshot only.
+
+    This does not prove an elapsed calendar window or approve materiality.
+    """
+    try:
+        return _verify_retained_event_coverage(root.resolve(), observation, symbol=symbol,
+            required_from=required_from, required_to=required_to, now=now, snapshot=True)
+    except (OSError, KeyError, TypeError, AttributeError, OverflowError) as error:
+        raise ValueError("Retained event snapshot is unavailable or malformed") from error
+
+
+def _verify_retained_event_coverage(root, observation, *, symbol, required_from, required_to, now,
+                                    snapshot=False):
     china = ZoneInfo("Asia/Shanghai")
 
     def stamp(value):
@@ -93,7 +107,8 @@ def _verify_retained_event_coverage(root, observation, *, symbol, required_from,
         return payload
 
     if (now.utcoffset() is None or type(required_from) is not date or type(required_to) is not date
-            or not required_from <= required_to < now.astimezone(china).date()
+            or not required_from <= required_to <= now.astimezone(china).date()
+            or (not snapshot and required_to >= now.astimezone(china).date())
             or not isinstance(symbol, str) or len(symbol) != 6 or not symbol.isascii() or not symbol.isdigit()):
         raise ValueError("Retained coverage requires an elapsed exact symbol/date window")
     start, end = required_from.isoformat(), required_to.isoformat()
@@ -102,10 +117,11 @@ def _verify_retained_event_coverage(root, observation, *, symbol, required_from,
             or observation.get("symbol") != symbol or observation.get("action") != "no_order"
             or observation.get("scan_from") != start or observation.get("scan_to") != end
             or observation.get("pagination_complete") is not True
-            or observation.get("full_calendar_window_elapsed") is not True
+            or observation.get("full_calendar_window_elapsed") is not (not snapshot)
             or observation.get("collection_status") != "OFFICIAL_QUERY_ARCHIVED"
             or observation.get("index_representation") != "PARSED_OFFICIAL_QUERY_WITH_RECEIVED_RESPONSE_CONTENT"
-            or required_to >= acquired.astimezone(china).date()):
+            or (required_to != acquired.astimezone(china).date() if snapshot else
+                required_to >= acquired.astimezone(china).date())):
         raise ValueError("Retained observation window/coverage mismatch")
     scan_ref = observation["scan_binding"]
     scan = event_scan_from_payload(document(scan_ref))
@@ -113,6 +129,7 @@ def _verify_retained_event_coverage(root, observation, *, symbol, required_from,
             or scan.scan_to != required_to or scan.validity_from != required_from
             or scan.validity_to != required_to or scan.retrieved_at != acquired
             or scan.coverage_status != COVERAGE_COMPLETE
+            or (snapshot and scan.status != SCAN_PENDING_HUMAN_REVIEW)
             or observation["source_bindings"] != list(scan.evidence_refs)
             or type(observation["announcement_count"]) is not int
             or observation["announcement_count"] != len(scan.announcements)):
@@ -173,8 +190,9 @@ def _verify_retained_event_coverage(root, observation, *, symbol, required_from,
             raise ValueError("Retained raw metadata identity mismatch")
         paths.update((record["path"], record["metadata_path"]))
         received = stamp(record["acquired_at"])
-        if received > acquired or (record["request_kind"] == "window"
-                and required_to >= received.astimezone(china).date()):
+        if received > acquired or (record["request_kind"] == "window" and
+                (required_to != received.astimezone(china).date() if snapshot else
+                 required_to >= received.astimezone(china).date())):
             raise ValueError("Retained raw response predates full window or follows observation")
         payload = document(body_ref, MAX_CNINFO_RAW_RESPONSE_BYTES)
         records_on_page = payload.get("announcements") or []
@@ -216,12 +234,19 @@ def _verify_retained_event_coverage(root, observation, *, symbol, required_from,
         if (urlparse(url).scheme != "https" or urlparse(url).hostname != "static.cninfo.com.cn"
                 or item.source_url != url or item.title != row["announcementTitle"]
                 or item.published_at != datetime.fromtimestamp(row["announcementTime"] / 1000, china)
+                or item.published_at > acquired
                 or not item.evidence_refs):
             raise ValueError("Retained announcement content mismatch")
         for ref in item.evidence_refs:
             if ref.get("source_url") != url or refs.get(ref["id"]) != ref:
                 raise ValueError("Retained announcement original binding mismatch")
             validate_pdf_original(bound(ref, 32 * 1024 * 1024))
+    if snapshot:
+        return {"symbol": symbol, "scan_from": start, "scan_to": end,
+                "coverage_status": "INCOMPLETE", "scan_binding": dict(scan_ref),
+                "source_integrity_verified": True, "completed_window": False,
+                "coverage_mode": "PARTIAL_INTRADAY_SNAPSHOT",
+                "action": "no_order", "materiality_approved": False, "model_revalidated": False}
     return {"symbol": symbol, "scan_from": start, "scan_to": end,
             "coverage_status": COVERAGE_COMPLETE, "scan_binding": dict(scan_ref),
             "action": "no_order", "materiality_approved": False, "model_revalidated": False}
