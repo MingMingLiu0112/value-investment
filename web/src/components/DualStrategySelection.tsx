@@ -43,6 +43,20 @@ function safeSource(url?: string) {
     return undefined;
   }
 }
+export function selectionPriceCondition(value: unknown, invalidation = false) {
+  if (!value || typeof value !== "object") return "尚未建立可核验的条件";
+  const condition = value as { price?: unknown; rule?: unknown };
+  const price =
+    typeof condition.price === "string" || typeof condition.price === "number"
+      ? `${condition.price} 元`
+      : "价位未形成";
+  const rule = invalidation
+    ? "后续已完成收盘价低于前五根最低价时，价格结构失效，需重新复核。"
+    : typeof condition.rule === "string"
+      ? condition.rule
+      : "规则尚未形成";
+  return `${price}；${rule}`;
+}
 function Condition({ item }: { item: SelectionCondition }) {
   return (
     <li>
@@ -241,12 +255,29 @@ export function DualStrategySelection() {
                   </ul>
                   <p>
                     进入条件：
-                    {JSON.stringify(row.entry_condition ?? "尚未建立")}
+                    {selectionPriceCondition(row.entry_condition)}
                   </p>
                   <p>
                     失效条件：
-                    {JSON.stringify(row.invalidation_condition ?? "尚未建立")}
+                    {selectionPriceCondition(row.invalidation_condition, true)}
                   </p>
+                  <p>
+                    有效交易日：{row.valid_from_session || "未知"} 至{" "}
+                    {row.expires_after_session || "未知"}；资料可得时间：
+                    {row.source_available_at || "未知"}。
+                  </p>
+                  <details>
+                    <summary>结构证据指纹</summary>
+                    <ul>
+                      {row.evidence_refs?.map((ref) => (
+                        <li key={ref}>
+                          <code style={{ overflowWrap: "anywhere" }}>
+                            {ref}
+                          </code>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
                 </>
               )}
               <p>

@@ -15,6 +15,10 @@ export interface SelectionCondition {
   }[];
 }
 export interface SelectionRow {
+  valid_from_session?: string;
+  expires_after_session?: string;
+  source_available_at?: string;
+  evidence_refs?: string[];
   channel_evaluations?: { channel: string; status: string; reason: string }[];
   blockers?: string[];
   symbol: string;

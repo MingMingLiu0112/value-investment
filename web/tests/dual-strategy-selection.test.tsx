@@ -3,8 +3,24 @@ import { expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
 vi.mock("../src/hooks/useApi", () => ({ useApi: () => state.value }));
 vi.mock("../src/services/api", () => ({ api: { strategySelection: vi.fn() } }));
-import { DualStrategySelection } from "../src/components/DualStrategySelection";
+import {
+  DualStrategySelection,
+  selectionPriceCondition,
+} from "../src/components/DualStrategySelection";
 const { renderToStaticMarkup } = require("react-dom/server");
+it("renders only condition price and rule, never raw permission JSON", () => {
+  expect(
+    selectionPriceCondition({
+      price: "42.450",
+      rule: "完整60分钟收盘确认",
+      formal_eligibility: false,
+    }),
+  ).toBe("42.450 元；完整60分钟收盘确认");
+  expect(selectionPriceCondition(null)).toContain("尚未建立");
+  expect(selectionPriceCondition({ price: "41.450" }, true)).toContain(
+    "价格结构失效",
+  );
+});
 
 it("does not show retained data as current during loading or error", () => {
   state.value = {
