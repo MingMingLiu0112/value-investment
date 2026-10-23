@@ -125,6 +125,7 @@ def project_value_research_analysis(*, root: Path, package_binding: dict,
     blockers = list(dict.fromkeys([*case.get("blockers", []), *packet["decision_blockers"]]))
     analysis = dict(schema_version=SCHEMA, symbol=descriptor.symbol, company_name=descriptor.name,
         action="no_order", status="CONDITIONAL_ANALYSIS_VERIFIED",
+        joint_capital_review=None,
         arithmetic_complete=True, economic_assumptions_reviewed=False,
         economic_review_status="PENDING_EXACT_VERSION_REVIEW",
         strategy_admitted=False, action_admitted=False, price_comparison_eligible=False,
@@ -187,10 +188,21 @@ def load_current_value_research_analysis(*, root: Path, symbol: str, now: dateti
         package_binding=bindings["package_binding"], workbench_binding=bindings["workbench_binding"],
         review_packet_binding=bindings["review_packet_binding"], model_context=candidate["model_context"])
     analysis["human_review_groups"] = candidate.get("review_groups", [])
+    from ..product.economic_review_materials import project_joint_capital_review
+    joint = project_joint_capital_review(root=root, binding=bindings["candidate_binding"],
+        symbol=symbol, model_context=candidate["model_context"], now=now)
+    if joint is not None:
+        if (joint["input_descriptor_sha256"] != analysis["input_descriptor_sha256"]
+                or any(row["valuation_per_share"] != analysis["valuation"][row["scenario"] + "_value"]
+                       for row in joint["scenarios"])):
+            raise ValueError("Joint review differs from public consumed analysis")
+        analysis["joint_capital_review"] = joint
     for binding in (current["registry_binding"], current.get("publication_binding"),
                     bindings["candidate_binding"], bindings["review_packet_binding"]):
         if binding is not None:
             _bound(root, binding)
             if binding not in analysis["source_bindings"]:
                 analysis["source_bindings"].append(binding)
+    for binding in analysis["source_bindings"]:
+        _bound(root, binding)
     return analysis

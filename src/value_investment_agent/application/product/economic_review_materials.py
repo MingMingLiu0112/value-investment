@@ -18,14 +18,23 @@ SCHEMA = 'value-economic-review-materials-v1'
 
 
 def _joint_capital_review(*, root, handoff, now):
-    binding = handoff['candidate_binding']
+    return project_joint_capital_review(root=root, binding=handoff['candidate_binding'],
+        symbol=handoff['symbol'], model_context=handoff['model_context'], now=now)
+
+
+def project_joint_capital_review(*, root, binding, symbol, model_context, now):
+    """Project public consumed capital ledgers, without constructing a signing handoff."""
+    from ..research.value_research_analysis import _available
+
+    root = root.resolve()
+    _bound(root, binding)
     candidate = verify_pending_research_candidate(root=root, path=root / binding['path'],
         expected_sha256=binding['sha256'])
+    _available(candidate['generated_at'], now)
     if candidate.get('input_mode') != JOINT_SCHEMA:
         return None
-    if (candidate['symbol'] != handoff['symbol']
-            or candidate['model_context'] != handoff['model_context']):
-        raise ValueError('Joint review differs from the signing candidate')
+    if candidate['symbol'] != symbol or candidate['model_context'] != model_context:
+        raise ValueError('Joint review differs from the exact selected candidate')
     proposal_path = (root / binding['path']).parent / 'valuation-proposal.json'
     proposal_binding = dict(path=proposal_path.relative_to(root).as_posix(),
         sha256=sha256_file(proposal_path))
@@ -33,8 +42,8 @@ def _joint_capital_review(*, root, handoff, now):
         raise ValueError('Joint review proposal is not bound to the candidate')
     proposal = load_json_object(_bound(root, proposal_binding), 'joint review proposal')
     policy = load_json_object(_bound(root, candidate['economic_policy_binding']), 'joint review policy')
-    from ..research.value_research_analysis import _available
     _available(proposal['generated_at'], now)
+    _available(policy['generated_at'], now)
     selected = next(row for row in proposal['choices'] if row['id'] == candidate['selected_choice'])
     policy_choice = next(row for row in policy['choices'] if row['id'] == candidate['selected_choice'])
     timing = candidate['candidate_valuation']['assumptions'].get('valuation_timing')
@@ -54,7 +63,7 @@ def _joint_capital_review(*, root, handoff, now):
             ledger=deepcopy(selected['joint_capital_ledgers'][name]),
             valuation_per_share=candidate['candidate_valuation'][name + '_value'])
             for name in ('bear', 'base', 'bull')])
-    for source in (binding, proposal_binding, candidate['economic_policy_binding']):
+    for source in (binding, *candidate['source_bindings'], *candidate['implementation_bindings']):
         _bound(root, source)
     return result
 

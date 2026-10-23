@@ -6,6 +6,7 @@ import json
 import pytest
 
 from test_pending_candidate_supplement import registered
+from test_economic_review_materials import joint_registered
 from value_investment_agent.application.product.research_draft import load_current_research_analysis
 from value_investment_agent.application.research.value_research_analysis import (
     load_current_value_research_analysis, project_value_research_analysis,
@@ -43,6 +44,7 @@ def test_source_to_scenarios_sensitivity_and_review_preserves_bytes(registered):
     assert analysis['strategy_admitted'] is analysis['action_admitted'] is False
     assert analysis['price_comparison_eligible'] is False
     assert analysis['action'] == 'no_order'
+    assert analysis['joint_capital_review'] is None
     assert analysis['review_binding']['candidate_binding']['path'].endswith('candidate.json')
     assert analysis['source_catalog']
     assert all(source['sha256'] for source in analysis['source_catalog'])
@@ -168,3 +170,129 @@ def test_source_drift_during_sensitivity_discards_all_results(registered, monkey
     assert result['arithmetic_complete'] is False
     assert result['scenarios'] == []
     assert 'hash mismatch' in result['blockers'][0]
+
+
+def test_public_joint_review_matches_handoff_without_calling_signing_or_private_paths(joint_registered, monkeypatch):
+    from value_investment_agent.application.product import economic_review_materials as materials
+    from value_investment_agent.application.product import research_review_wizard as wizard
+    import io
+    import socket
+
+    root, symbol, _, _ = joint_registered
+    expected = wizard.build_external_review_handoff(root=root, symbol=symbol, now=NOW)[
+        'economic_review_materials']['joint_capital_review']
+    before = {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
+    original_open = io.open
+
+    def readonly_open(file, mode='r', *args, **kwargs):
+        assert not any(flag in mode for flag in 'wax+'), 'public projection tried to write'
+        assert 'private' not in str(file).lower(), 'public projection tried to read private state'
+        return original_open(file, mode, *args, **kwargs)
+
+    def forbidden(*args, **kwargs):
+        pytest.fail('Public analysis must not invoke handoff/signing/network')
+
+    monkeypatch.setattr(io, 'open', readonly_open)
+    monkeypatch.setattr(socket, 'create_connection', forbidden)
+    monkeypatch.setattr(socket.socket, 'connect', forbidden)
+    monkeypatch.setattr(materials, 'prepare_pending_review_response', forbidden)
+    monkeypatch.setattr(wizard, 'build_external_review_handoff', forbidden)
+    first = load_current_value_research_analysis(root=root, symbol=symbol, now=NOW)
+    second = load_current_value_research_analysis(root=root, symbol=symbol, now=NOW + timedelta(minutes=1))
+    assert first['joint_capital_review'] == second['joint_capital_review'] == expected
+    joint = first['joint_capital_review']
+    assert set(joint) == {'schema_version', 'symbol', 'action', 'status', 'scope', 'candidate_binding',
+        'proposal_binding', 'policy_binding', 'input_descriptor_sha256', 'selected_choice', 'date_scope',
+        'basis_at', 'valuation_at', 'scenarios'}
+    assert first['approval_changed'] is first['economic_assumptions_reviewed'] is False
+    assert first['strategy_admitted'] is first['action_admitted'] is False
+    assert joint['scenarios'][0]['ledger']['cash_funding_status'] == 'FAIL'
+    assert before == {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
+
+
+@pytest.mark.parametrize('target', ['candidate.json', 'valuation-proposal.json', 'policy'])
+def test_public_joint_drift_never_falls_back_to_prior_ledger(joint_registered, monkeypatch, target):
+    from value_investment_agent.application.research import value_research_analysis as service
+    root, symbol, candidate_path, _ = joint_registered
+    candidate = json.loads(candidate_path.read_bytes())
+    path = root / candidate['economic_policy_binding']['path'] if target == 'policy' else candidate_path.parent / target
+    path.write_bytes(path.read_bytes() + b'\nCHANGED')
+    monkeypatch.setattr(service, 'load_current_pending_replay', lambda **kwargs: pytest.fail('stale fallback'))
+    with pytest.raises(ValueError):
+        service.load_current_value_research_analysis(root=root, symbol=symbol, now=NOW)
+
+
+def test_public_joint_selector_change_during_projection_is_rejected(joint_registered, monkeypatch):
+    from value_investment_agent.application.product import economic_review_materials as materials
+    root, symbol, _, registry = joint_registered
+    original = materials.project_joint_capital_review
+
+    def changed(**kwargs):
+        result = original(**kwargs)
+        registry.write_bytes(registry.read_bytes() + b'\n')
+        return result
+
+    monkeypatch.setattr(materials, 'project_joint_capital_review', changed)
+    with pytest.raises(ValueError, match='hash mismatch'):
+        load_current_value_research_analysis(root=root, symbol=symbol, now=NOW)
+
+
+def test_public_joint_source_change_at_projection_end_is_rejected(joint_registered, monkeypatch):
+    from value_investment_agent.application.product import economic_review_materials as materials
+    root, symbol, candidate_path, _ = joint_registered
+    original = materials.project_joint_capital_review
+
+    def changed(**kwargs):
+        result = original(**kwargs)
+        candidate = json.loads(candidate_path.read_bytes())
+        source = root / candidate['economic_policy_binding']['path']
+        source.write_bytes(source.read_bytes() + b'\n')
+        return result
+
+    monkeypatch.setattr(materials, 'project_joint_capital_review', changed)
+    with pytest.raises(ValueError, match='hash mismatch'):
+        load_current_value_research_analysis(root=root, symbol=symbol, now=NOW)
+
+
+@pytest.mark.parametrize('naive', [False, True])
+def test_public_joint_projection_respects_requested_clock(joint_registered, naive):
+    root, symbol, candidate_path, _ = joint_registered
+    generated = datetime.fromisoformat(json.loads(candidate_path.read_bytes())['generated_at'])
+    now = generated.replace(tzinfo=None) if naive else generated - timedelta(seconds=1)
+    with pytest.raises(ValueError):
+        load_current_value_research_analysis(root=root, symbol=symbol, now=now)
+
+
+def test_real_public_cc1_and_nonjoint_companion_readback(monkeypatch):
+    """Opt-in read-only public originals, never construct/register a new candidate."""
+    import os
+    import io
+    import socket
+    from pathlib import Path
+    from value_investment_agent.application.product import economic_review_materials as materials
+    location = os.environ.get('VALUE_PUBLIC_JOINT_REAL_ROOT')
+    if not location:
+        pytest.skip('Explicit public fixture root not supplied')
+    root = Path(location)
+    original_open = io.open
+
+    def readonly_open(file, mode='r', *args, **kwargs):
+        assert not any(flag in mode for flag in 'wax+'), 'real readback tried to write'
+        assert 'private' not in str(file).lower(), 'real readback tried to read private data'
+        return original_open(file, mode, *args, **kwargs)
+
+    monkeypatch.setattr(io, 'open', readonly_open)
+    monkeypatch.setattr(socket, 'create_connection', lambda *args, **kwargs: pytest.fail('no HTTP'))
+    monkeypatch.setattr(socket.socket, 'connect', lambda *args, **kwargs: pytest.fail('no HTTP'))
+    monkeypatch.setattr(materials, 'prepare_pending_review_response',
+        lambda **kwargs: pytest.fail('Real public read must not construct signing response'))
+    now = datetime.now(timezone.utc)
+    joint = load_current_value_research_analysis(root=root, symbol='600519', now=now)
+    companion = load_current_value_research_analysis(root=root, symbol='600887', now=now)
+    assert joint['joint_capital_review']['schema_version'] == 'joint-capital-review-v1'
+    assert joint['joint_capital_review']['status'] == 'CONDITIONAL_PATH_NOT_APPROVED'
+    assert len(joint['joint_capital_review']['scenarios']) == 3
+    assert all(len(row['ledger']['rows']) == 5 for row in joint['joint_capital_review']['scenarios'])
+    assert companion['joint_capital_review'] is None
+    assert joint['economic_assumptions_reviewed'] is joint['approval_changed'] is False
+    assert joint['action'] == companion['action'] == 'no_order'
