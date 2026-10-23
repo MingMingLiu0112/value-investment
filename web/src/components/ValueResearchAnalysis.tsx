@@ -9,6 +9,7 @@ import {
   researchSentence,
 } from "../utils/researchDraftText";
 import "./value-research-analysis.css";
+import { AccountingBridgeReview } from "./AccountingBridgeReview";
 
 const scenarios = { bear: "保守 Bear", base: "基准 Base", bull: "乐观 Bull" };
 
@@ -158,6 +159,11 @@ export function ValueResearchAnalysis({
             <p>
               正常化盈利和可持续分红能力尚未建立，不据此生成买入价或分红承诺。
             </p>
+            <AccountingBridgeReview
+              review={analysis.economic_assessment.accounting_bridge_review}
+              symbol={decision.symbol}
+              descriptor={analysis.input_descriptor_sha256}
+            />
             {!!analysis.economic_assessment.historical_cash_observations
               ?.length && (
               <details>

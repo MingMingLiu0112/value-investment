@@ -22,6 +22,8 @@ def main() -> int:
         sys.stdout.reconfigure(encoding='utf-8')
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument('--symbol', required=True)
+    parser.add_argument('--verify-economics', action='store_true',
+        help='Build a source-bound economic review bundle; never approve G3. Exit 2 means not admitted.')
     parser.add_argument('--candidate', '--pending-review-candidate',
         dest='pending_review_candidate', type=Path)
     parser.add_argument('--candidate-sha256', '--pending-review-candidate-sha256',
@@ -42,6 +44,25 @@ def main() -> int:
         'research_reviews', 'research_reviews_sha256', 'schedule_request',
         'recommendation_schema_version')})
     args = parser.parse_args()
+    if args.verify_economics:
+        if (args.output is None or args.prepare_bound_draft or args.preview or args.advanced_preview
+                or args.pending_review_candidate or args.pending_review_candidate_sha256
+                or args.resume_incomplete or args.incomplete_consumption_sha256
+                or any(getattr(args, name) is not None for name in (
+                    'signed_review_response', 'signed_review_response_sha256',
+                    'review_trust_root', 'review_trust_root_sha256',
+                    'previous_review_response', 'previous_review_response_sha256'))):
+            parser.error('economic verification requires --output and excludes approval/draft inputs')
+        from value_investment_agent.application.research.economic_review_bundle import build_current_economic_review_bundle
+        from value_investment_agent.application.product.common import write_new_json
+        output = require_inside(ROOT / 'runtime', ROOT / args.output, 'economic verification output')
+        result = build_current_economic_review_bundle(root=ROOT, symbol=args.symbol,
+            now=datetime.now(timezone.utc))
+        write_new_json(output, result)
+        print(json.dumps(dict(symbol=args.symbol, report=str(output.relative_to(ROOT)),
+            sha256=sha256_file(output), primary_valuation_usable=result['primary_valuation_usable'],
+            action='no_order'), ensure_ascii=False, indent=2))
+        return 0 if result['primary_valuation_usable'] is True else 2
     if args.prepare_bound_draft:
         if (args.output is None or args.pending_review_candidate is not None
                 or args.pending_review_candidate_sha256 is not None

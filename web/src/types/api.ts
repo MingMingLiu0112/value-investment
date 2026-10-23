@@ -204,6 +204,35 @@ export interface PrivateAccountObservations {
   }[];
 }
 
+export interface AccountingBridgeReview {
+  schema_version: "economic-review-bundle-v1";
+  symbol: string;
+  action: "no_order";
+  status: string;
+  input_descriptor_sha256: string;
+  bundle_sha256: string;
+  primary_valuation_usable: false;
+  economic_approval_granted: false;
+  source_bindings: { path: string; sha256: string }[];
+  unknown_fields: string[];
+  bridge_results: {
+    kind: "parent_cash" | "equity";
+    period: string;
+    entity_scope: string;
+    unit: "CNY";
+    source_binding: { path: string; sha256: string };
+    source_url: string;
+    physical_pages: number[];
+    terms: Record<string, string>;
+    reported_adjustment: string | null;
+    derived_adjustment_cny: string;
+    computed_closing_cny: string;
+    reported_closing_cny: string;
+    difference_cny: string;
+    assurance: string;
+  }[];
+}
+
 export interface ValueResearchAnalysis {
   economic_assessment?: {
     schema_version: "value-economic-assessment-v1";
@@ -211,6 +240,8 @@ export interface ValueResearchAnalysis {
     symbol: string;
     primary_valuation_usable: false;
     economic_assumptions_reviewed: false;
+    input_descriptor_sha256?: string;
+    accounting_bridge_review?: AccountingBridgeReview;
     model_applicability?: { assessment: string };
     earnings?: {
       historical_ex_nonrecurring_ttm_cny: string | null;
@@ -233,6 +264,7 @@ export interface ValueResearchAnalysis {
   action_admitted: false;
   strategy_admitted: false;
   price_comparison_eligible: false;
+  input_descriptor_sha256?: string;
   valuation_date?: string | null;
   research_as_of?: string | null;
   computed_at?: string | null;

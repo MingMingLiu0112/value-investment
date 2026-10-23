@@ -15,6 +15,22 @@ from value_investment_agent.application.research.value_research_analysis import 
 NOW = datetime.now(timezone.utc) + timedelta(days=1)
 
 
+@pytest.mark.parametrize('changed', ['input_descriptor_sha256', 'review_binding'])
+def test_economic_assessment_cannot_mix_current_research_versions(registered, monkeypatch, changed):
+    from value_investment_agent.application.research import value_economic_assessment
+    root, symbol, _, _ = registered
+    original = value_economic_assessment.load_current_value_economic_assessment
+    def mixed(**kwargs):
+        result = original(**kwargs)
+        result[changed] = 'b' * 64 if changed == 'input_descriptor_sha256' else {}
+        return result
+    monkeypatch.setattr(value_economic_assessment, 'load_current_value_economic_assessment', mixed)
+    result = load_current_research_analysis(root, symbol, now=NOW)
+    assert result['status'] == 'SOURCE_OR_REPLAY_UNAVAILABLE'
+    assert result['scenarios'] == []
+    assert result['action_admitted'] is False
+
+
 def test_source_to_scenarios_sensitivity_and_review_preserves_bytes(registered):
     root, symbol, candidate, _ = registered
     before = {path: path.read_bytes() for path in root.rglob('*') if path.is_file()}

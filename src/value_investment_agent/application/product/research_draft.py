@@ -291,6 +291,11 @@ def load_current_research_analysis(
         if result is not None:
             assessment = load_current_value_economic_assessment(
                 root=root, symbol=normalized, now=evaluated_at)
+            if assessment is None or any(
+                assessment.get(key) != result.get(key)
+                for key in ('symbol', 'input_descriptor_sha256', 'review_binding')
+            ):
+                raise ValueError('Economic assessment changed during research projection')
             # The read-time clock is not a new research version. Keep the
             # source/content fingerprint stable for plan and fill revalidation.
             result['economic_assessment'] = ({key: value for key, value in assessment.items()

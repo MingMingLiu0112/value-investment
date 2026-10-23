@@ -1,5 +1,46 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+### 2026-10-23 value accounting evidence integration and parallel ownership
+
+Ordinary engineering continues from b32d0fd1. The user split value-investment
+work into the main chat and hotspot work into an independent sw1 worktree;
+shared integration and port 8001 publication remain with the main chat.
+The five inherited hotspot files were copied after SHA-256 verification. Their
+unfinished admission repair is not part of this value-only delivery.
+
+The current pending valuation now carries accounting_bridge_review within the
+existing economic assessment. It reuses the registered analysis, rechecks the
+exact candidate descriptor, source bytes and cutoff, and recomputes six supported
+cash/equity bridges with separate parent and consolidated ownership scopes.
+Read-time timestamps are excluded from nested content fingerprints. The product
+projection rejects mismatched assessment/candidate versions during loading.
+The existing review_research.py --verify-economics mode exports immutable review
+material under runtime; exit 2 explicitly means primary valuation is not admitted.
+
+Actual retained-source replay: 600519 has six reconciled historical bridges and
+13 unresolved fields. 600887 has NO_SUPPORTED_BOUND_BRIDGE for this specific
+bridge contract; this does not erase its separately verified historical cash
+observations or imply complete research. Derived reconciliation residuals remain
+distinct from independently certified PDF rows. Historical model forward values
+are retained only as lineage; current forward economic assessment stays unknown.
+TTM calculations now reject wrong/repeated/reordered periods and a different
+disclosed profit basis. No normalization, distribution sustainability, G3 or
+primary-model approval is inferred from arithmetic or source hashes.
+
+The existing company research panel displays historical balances, calculation
+terms, ownership scope, report pages and original filing links. Incompatible
+versions and source bindings do not display bridge amounts. Actual bound public
+research was rendered in an isolated browser at 1440/390/320 pixels without
+horizontal overflow; preview artifacts are in .tmp/value-bridge-preview/.
+
+Targeted value integration, adversarial cases, actual source replay and
+architecture: 121 passed (.tmp/economic-assessment-bridge-p2.xml). Full frontend:
+458 passed, two optional browser tests skipped; typecheck passed. Separate actual
+bridge browser checks passed at all six company/viewport combinations. These
+results do not claim fresh full-Core, GitHub CI, deployment or strategy admission.
+Canonical Excel, private account records, server/PTA and current live port 8001
+were not changed by this package. primary_valuation_usable=false; action=no_order.
+
 ### 2026-10-23 explainable dual-strategy research selection
 
 Ordinary engineering scope, based on a09e9128, developed on

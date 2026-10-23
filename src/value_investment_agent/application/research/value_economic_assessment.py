@@ -10,6 +10,7 @@ from pathlib import Path
 from ...valuation_models.residual_income import scenario_value
 from ..product.common import normalize_symbol
 from .value_research_analysis import _available, _bound, load_current_value_research_analysis
+from .economic_review_bundle import _build_economic_review_bundle
 
 
 METHODOLOGY = [
@@ -56,7 +57,7 @@ def _review_calculations(review: dict, catalog: dict, symbol: str, now: datetime
         if len(ids) != len(coefficients) or len(columns) != len(ids):
             raise ValueError("Invalid financial calculation inputs")
         terms, evidence = [], []
-        for fact_id, index, sign in zip(ids, columns, coefficients):
+        for position, (fact_id, index, sign) in enumerate(zip(ids, columns, coefficients)):
             fact = facts[fact_id]
             source = catalog.get(fact["source_id"])
             binding = fact["source_binding"]
@@ -74,6 +75,19 @@ def _review_calculations(review: dict, catalog: dict, symbol: str, now: datetime
                 if binding.get(field):
                     _available(binding[field], now)
             column = fact["columns"][index]
+            if name == "ttm_ex_nonrecurring_parent_profit":
+                # Existing official review rows carry their accounting basis in
+                # the disclosed label, not in the convenient local fact ID.
+                label = "".join(str(fact.get("label", "")).split())
+                expected_label = ("\u5f52\u5c5e\u4e8e\u4e0a\u5e02\u516c\u53f8\u80a1\u4e1c\u7684"
+                                  "\u6263\u9664\u975e\u7ecf\u5e38\u6027\u635f\u76ca\u7684\u51c0\u5229\u6da6")
+                if (label != expected_label or expected_label not in
+                        "".join(str(fact.get("evidence_excerpt", "")).split())):
+                    raise ValueError("TTM calculation requires disclosed ex-nonrecurring parent profit basis")
+                period = {"H12026": "H1_2026", "H12025": "H1_2025"}.get(
+                    column["period"], column["period"])
+                if period != ("FY2025", "H1_2026", "H1_2025")[position]:
+                    raise ValueError("TTM calculation requires ordered distinct FY2025/H1_2026/H1_2025 periods")
             if name in {"calendar2025_parent_partial_cash_proxy", "fy_parent_FY2025_cash_capex_proxy"} and column["period"] != "FY2025":
                 raise ValueError("Cash calculation mixes reporting periods")
             terms.append(sign * _number(column["value"]))
@@ -212,7 +226,12 @@ def load_current_value_economic_assessment(*, root: Path, symbol: str, now: date
         dict(id="EQUITY_COST", question="Review dated CNY nominal risk-free, equity premium and beta inputs for this equity scope, with source dates and sensitivity.", evidence_fields=["assumptions", "sensitivity"]),
         dict(id="CURRENT_EXPECTATIONS", question="Use an independently verified PriceBridge and a bounded registered inverse model; report no solution rather than extending parameter bounds.", evidence_fields=["review_binding"]),
     ]
+    accounting_review = _build_economic_review_bundle(root=root, analysis=analysis, now=now)
+    # The outer assessment already records the same cutoff; omit the volatile
+    # nested timestamp to keep its content fingerprint stable across replays.
+    accounting_review.pop("evaluated_at")
     result = dict(schema_version="value-economic-assessment-v1", symbol=symbol, action="no_order",
+        accounting_bridge_review=accounting_review,
         status="ECONOMIC_DIAGNOSTICS_COMPLETE_PRIMARY_NOT_ESTABLISHED", assessed_at=now.isoformat(),
         input_descriptor_sha256=analysis["input_descriptor_sha256"], review_binding=analysis["review_binding"],
         research_as_of=analysis["research_as_of"], valuation_date=analysis["valuation_date"],
