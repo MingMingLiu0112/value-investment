@@ -4,6 +4,98 @@ import type { DailyMachineResearchReview } from "../types/api";
 const record = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
 
+function observedTime(value: unknown): string | null {
+  return typeof value === "string" &&
+    !!day(value.slice(0, 10)) &&
+    /T.*(?:Z|[+-]\d{2}:\d{2})$/.test(value) &&
+    Number.isFinite(Date.parse(value))
+    ? value
+    : null;
+}
+
+/** Source-declared window completeness only; never consult the browser clock. */
+export function eventCoverageDates(value: unknown, requiredDay?: unknown) {
+  const bridge = record(value) ? value : {};
+  const explicit = record(bridge.current_event_coverage)
+    ? bridge.current_event_coverage
+    : null;
+  const incremental = record(bridge.incremental_validity)
+    ? bridge.incremental_validity
+    : {};
+  const requiredThrough = day(requiredDay) ?? day(explicit?.required_through);
+  const queryThrough = day(
+    explicit
+      ? explicit.query_through
+      : (incremental.review_cutoff ?? bridge.review_cutoff),
+  );
+  const observedAt = observedTime(
+    explicit ? explicit.observed_at : incremental.observed_at,
+  );
+  const flag = explicit
+    ? explicit.full_calendar_window_elapsed
+    : incremental.full_calendar_window_elapsed;
+  const full = flag === true;
+  const declaredCovered = explicit
+    ? day(explicit.covered_through)
+    : full
+      ? queryThrough
+      : null;
+  const status = explicit?.status;
+  const consistent = explicit
+    ? (typeof incremental.full_calendar_window_elapsed !== "boolean" ||
+        incremental.full_calendar_window_elapsed === flag) &&
+      !!requiredThrough &&
+      day(explicit.required_through) === requiredThrough &&
+      !!queryThrough &&
+      !!observedAt &&
+      (status === "FULL_WINDOW"
+        ? full &&
+          declaredCovered === queryThrough &&
+          queryThrough === requiredThrough
+        : status === "PARTIAL_CURRENT_SNAPSHOT"
+          ? flag === false &&
+            explicit.covered_through === null &&
+            queryThrough === requiredThrough
+          : status === "CLOSED_WINDOW_NOT_CURRENT"
+            ? full &&
+              declaredCovered === queryThrough &&
+              queryThrough < requiredThrough
+            : status === "SNAPSHOT_NOT_CURRENT"
+              ? flag === false &&
+                explicit.covered_through === null &&
+                queryThrough < requiredThrough
+              : false)
+    : true;
+  const currentComplete =
+    consistent &&
+    full &&
+    !!observedAt &&
+    !!queryThrough &&
+    queryThrough === requiredThrough &&
+    (!explicit || status === "FULL_WINDOW");
+  const coveredThrough = consistent && full ? declaredCovered : null;
+  const label = !consistent
+    ? "公告窗口字段缺失或矛盾，完整覆盖未确认"
+    : currentComplete
+      ? "后端确认当前所需日期的完整公告窗口；事件影响及模型批准仍须另审"
+      : requiredThrough && queryThrough && queryThrough < requiredThrough
+        ? "旧查询窗口未覆盖当前所需日期；不能作为当前日完整覆盖"
+        : flag === false
+          ? "局部公告快照（partial），不是全天完整覆盖"
+          : full
+            ? "仅确认已结束的查询窗口，当前日完整覆盖未确认"
+            : "未提供完整窗口证明，当前日覆盖未知";
+  return {
+    requiredThrough,
+    queryThrough,
+    observedAt,
+    coveredThrough,
+    currentComplete,
+    label,
+    fullCalendarWindowElapsed: typeof flag === "boolean" ? flag : null,
+  };
+}
+
 export function dailyMachineResearchReview(lastRun: unknown) {
   const raw = record(lastRun) ? lastRun.research_review : undefined;
   const empty = {
@@ -37,6 +129,7 @@ export function dailyMachineResearchReview(lastRun: unknown) {
   const rows: DailyMachineResearchReview["rows"] = raw.rows.map((row) => {
     const complete =
       row.event_coverage_status === "COMPLETE" &&
+      row.full_calendar_window_elapsed !== false &&
       !!day(row.event_coverage_through);
     const modelStatus =
       ["VALID", "STALE", "UNKNOWN"].includes(row.model_validity_status) &&
@@ -48,6 +141,11 @@ export function dailyMachineResearchReview(lastRun: unknown) {
       status: typeof row.status === "string" ? row.status : "UNKNOWN",
       research_as_of: day(row.research_as_of),
       scan_through: day(row.scan_through),
+      observed_at: observedTime(row.observed_at),
+      full_calendar_window_elapsed:
+        typeof row.full_calendar_window_elapsed === "boolean"
+          ? row.full_calendar_window_elapsed
+          : null,
       event_coverage_status: complete ? "COMPLETE" : "UNCONFIRMED",
       event_coverage_through: complete ? day(row.event_coverage_through) : null,
       announcement_count:
@@ -56,7 +154,9 @@ export function dailyMachineResearchReview(lastRun: unknown) {
           : null,
       facts_change_status:
         !complete &&
-        ["NONE", "REVIEWED_NO_MODEL_INVALIDATION"].includes(row.facts_change_status)
+        ["NONE", "REVIEWED_NO_MODEL_INVALIDATION"].includes(
+          row.facts_change_status,
+        )
           ? "UNKNOWN"
           : typeof row.facts_change_status === "string"
             ? row.facts_change_status
@@ -66,8 +166,8 @@ export function dailyMachineResearchReview(lastRun: unknown) {
         row.model_recalculation_required === false && modelStatus !== "VALID"
           ? null
           : typeof row.model_recalculation_required === "boolean"
-          ? row.model_recalculation_required
-          : null,
+            ? row.model_recalculation_required
+            : null,
       materiality_review_required:
         typeof row.materiality_review_required === "boolean"
           ? row.materiality_review_required
@@ -136,14 +236,22 @@ export function dailyResearchDates(packet: unknown) {
       bridge.incremental_status === "VALID" &&
       Array.isArray(bridge.blockers) &&
       bridge.blockers.length === 0;
+    const currentCoverage = eventCoverageDates(
+      verified && bound ? bridge : undefined,
+      verified && bound ? dates.current_natural_date : undefined,
+    );
     return [
       {
         symbol,
         name: typeof item.name === "string" ? item.name : symbol,
         cutoff: verified && bound ? cutoff : null,
-        label: valid
-          ? "增量事件有效性已核验"
-          : "事件覆盖尚未完成有效核验，暂不可用",
+        priceComparisonCovered: valid,
+        ...currentCoverage,
+        label:
+          verified && bound
+            ? currentCoverage.label +
+              (valid ? "" : "；增量事件模型有效性尚未核验，暂不可用")
+            : "事件覆盖尚未完成来源核验，暂不可用",
       },
     ];
   });
@@ -155,7 +263,7 @@ export function dailyResearchDates(packet: unknown) {
       (researchStatus === "INCREMENTALLY_COVERS" &&
         events.some(
           (event) =>
-            event.label === "增量事件有效性已核验" &&
+            event.priceComparisonCovered &&
             !!event.cutoff &&
             event.cutoff >= quoteDate,
         )));

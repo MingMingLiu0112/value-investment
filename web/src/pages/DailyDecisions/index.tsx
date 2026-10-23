@@ -321,7 +321,7 @@ export default function DailyDecisions() {
       <p className="opportunity-subtitle" role="status">
         最近更新：
         {update.data?.last_run
-          ? `${!update.data.last_run.finished_at?.trim() ? "尚未完成，可能仍在运行或已中断" : ({ SUCCESS: "完成", PARTIAL: "部分完成", BLOCKED: "失败，保留旧快照" } as Record<string, string>)[update.data.last_run.status] ?? "状态未核验"} · ${updateTime(update.data.last_run.finished_at)}`
+          ? `${!update.data.last_run.finished_at?.trim() ? "尚未完成，可能仍在运行或已中断" : (({ SUCCESS: "完成", PARTIAL: "部分完成", BLOCKED: "失败，保留旧快照" } as Record<string, string>)[update.data.last_run.status] ?? "状态未核验")} · ${updateTime(update.data.last_run.finished_at)}`
           : "尚无可核验运行记录"}
         。
         {update.data?.last_run?.status === "BLOCKED" &&
@@ -406,11 +406,17 @@ export default function DailyDecisions() {
                 {machineReview.rows.slice(0, 5).map((row, index) => (
                   <li key={`${row.symbol}-${index}`}>
                     <strong>{row.symbol}</strong>：研究基准{" "}
-                    {row.research_as_of ?? "未知"}；扫描截至{" "}
-                    {row.scan_through ?? "未知"}； 原始响应完整日窗口截至{" "}
+                    {row.research_as_of ?? "未知"}；公告查询截至{" "}
+                    {row.scan_through ?? "未知"}；快照取得时间{" "}
+                    {row.observed_at ?? "未提供（不能用机器复核时间代替）"}
+                    ；原始响应完整日窗口截至{" "}
                     {row.event_coverage_through ?? "未确认完整覆盖"}；公告{" "}
-                    {row.announcement_count ?? "未知"} 份。 财务变化：
-                    {row.facts_change_status ?? "UNKNOWN"}；模型有效性：
+                    {row.announcement_count ?? "未知"} 份。
+                    {row.full_calendar_window_elapsed === false &&
+                      "本次仅局部快照（partial），不是全天完整覆盖。"}{" "}
+                    财务变化：
+                    {row.facts_change_status ?? "UNKNOWN"}
+                    ；归档机器回执模型标志（非当前准入）：
                     {row.model_validity_status ?? "UNKNOWN"}。
                     {row.model_recalculation_required === true
                       ? "模型需要重算。"
@@ -434,14 +440,18 @@ export default function DailyDecisions() {
             </details>
           )}
           <details>
-            <summary>已发布逐公司增量有效性</summary>
+            <summary>逐公司公告查询与覆盖（非批准）</summary>
             {researchDates.events.length ? (
               <ul>
                 {researchDates.events.map((event) => (
                   <li key={event.symbol}>
-                    {event.name} · {event.symbol}：{event.label}；增量复核截至{" "}
+                    {event.name} · {event.symbol}：{event.label}；原增量复核截至{" "}
                     {event.cutoff ?? "未提供有效日期"}
-                    。覆盖截止日不是实际复核时间。
+                    ；当前覆盖目标 {event.requiredThrough ?? "未提供"}
+                    ；公告查询截至 {event.queryThrough ?? "未提供"}
+                    ；快照取得时间 {event.observedAt ?? "未提供"}；完整窗口截至{" "}
+                    {event.coveredThrough ?? "未确认完整覆盖"}。
+                    查询截止日不是全天覆盖证明，也不是实际复核时间；原研究基准与行情日期保持不变。
                   </li>
                 ))}
               </ul>

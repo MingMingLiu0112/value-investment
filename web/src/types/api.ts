@@ -496,13 +496,30 @@ export interface PriceBridgeSource {
   sha256: string | null;
 }
 
+export interface CurrentEventCoverage {
+  required_through: string | null;
+  query_through: string | null;
+  covered_through: string | null;
+  observed_at: string | null;
+  full_calendar_window_elapsed: boolean | null;
+  status:
+    | "PARTIAL_CURRENT_SNAPSHOT"
+    | "CLOSED_WINDOW_NOT_CURRENT"
+    | "SNAPSHOT_NOT_CURRENT"
+    | "FULL_WINDOW";
+}
+
 /** One executed admission of the registered close against the registered research cutoff. */
 export interface PriceBridgeExecution {
+  current_event_coverage?: CurrentEventCoverage | null;
+  historical_model_validity?: { status?: string | null } | null;
   incremental_validity?: {
     status: string | null;
     review_cutoff: string | null;
     announcement_count: number | null;
     blockers: string[];
+    observed_at?: string | null;
+    full_calendar_window_elapsed?: boolean | null;
   } | null;
   schema_version: string | null;
   status: string | null;
@@ -1351,6 +1368,8 @@ export interface DailyMachineResearchReview {
     status: string;
     research_as_of: string | null;
     scan_through: string | null;
+    observed_at?: string | null;
+    full_calendar_window_elapsed?: boolean | null;
     event_coverage_through: string | null;
     event_coverage_status: "COMPLETE" | "UNCONFIRMED";
     announcement_count: number | null;

@@ -178,7 +178,7 @@ it.each(["COVERS", "INCREMENTALLY_COVERS"])(
     expect(html).toContain("最近机器复核");
     expect(html).toContain("尚无可核验复核回执");
     expect(html).toContain("增量复核截至 2026-10-22");
-    expect(html).toContain("覆盖截止日不是实际复核时间");
+    expect(html).toContain("查询截止日不是全天覆盖证明");
     expect(html).toContain("研究日期覆盖不等于估值、事件或交易获准");
   },
 );
@@ -195,6 +195,42 @@ it.each(["PARTIAL", "BLOCKED"])(
     expect(html).not.toContain("增量事件有效性已核验");
   },
 );
+
+it("shows same-day query as a partial snapshot rather than completed daily coverage", () => {
+  const packet = state.packet.data;
+  packet.source_bindings_verified = true;
+  packet.dates.current_natural_date = "2026-10-24";
+  packet.company_statuses = {
+    "600519": {
+      symbol: "600519",
+      name: "TEST_ONLY 查询窗口",
+      price_bridge: {
+        incremental_status: "UNKNOWN",
+        review_cutoff: "2026-10-24",
+        blockers: [],
+        incremental_validity_binding: {
+          path: "TEST_ONLY/review.json",
+          sha256: "a".repeat(64),
+        },
+        current_event_coverage: {
+          required_through: "2026-10-24",
+          query_through: "2026-10-24",
+          covered_through: null,
+          observed_at: "2026-10-24T10:20:00+08:00",
+          full_calendar_window_elapsed: false,
+          status: "PARTIAL_CURRENT_SNAPSHOT",
+        },
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain("局部公告快照（partial），不是全天完整覆盖");
+  expect(html).toContain("2026-10-24T10:20:00+08:00");
+  expect(html).toContain("未确认完整覆盖");
+  expect(html).toContain("2026-10-11");
+  expect(html).toContain("2026-10-14");
+  expect(html).not.toContain("增量事件有效性已核验");
+});
 
 it("separates source-replayed machine review from original research and complete event coverage", () => {
   state.update.data = {

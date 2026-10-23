@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import {
   dailyResearchDates,
   dailyMachineResearchReview,
+  eventCoverageDates,
 } from "../src/utils/dailyResearchDates";
 
 function packet(status = "COVERS") {
@@ -60,7 +61,7 @@ it("does not confuse generation, research cutoff or event coverage with an actua
   expect(result.latestReviewLabel).toContain("尚无可核验复核回执");
   expect(result.latestReviewLabel).not.toContain("2026-10-23");
   expect(result.events[0].cutoff).toBe("2026-10-22");
-  expect(result.events[0].label).toBe("增量事件有效性已核验");
+  expect(result.events[0].label).toContain("完整窗口证明");
 });
 
 it.each(["PENDING", "STALE", "INVALID", "UNKNOWN"])(
@@ -200,4 +201,131 @@ it("keeps zero-announcement incomplete windows unknown and preserves observed re
   expect(output.event_coverage_through).toBe("2026-10-22");
   expect(output.model_validity_status).toBe("VALID");
   expect(output.model_recalculation_required).toBe(false);
+});
+
+function currentWindow(overrides: Record<string, unknown> = {}) {
+  return {
+    required_through: "2026-10-24",
+    query_through: "2026-10-24",
+    covered_through: null,
+    observed_at: "2026-10-24T10:20:00+08:00",
+    full_calendar_window_elapsed: false,
+    status: "PARTIAL_CURRENT_SNAPSHOT",
+    ...overrides,
+  };
+}
+
+it("never turns a same-day query or quote timestamp into full calendar coverage", () => {
+  const result = eventCoverageDates({
+    current_event_coverage: currentWindow(),
+    incremental_validity: { status: "VALID" },
+  });
+  expect(result.queryThrough).toBe("2026-10-24");
+  expect(result.observedAt).toBe("2026-10-24T10:20:00+08:00");
+  expect(result.coveredThrough).toBeNull();
+  expect(result.currentComplete).toBe(false);
+  expect(result.label).toContain("partial");
+  const missing = eventCoverageDates(
+    {
+      review_cutoff: "2026-10-24",
+      collected_at: "2026-10-24T12:00:00+08:00",
+      generated_at: "2026-10-24T12:10:00+08:00",
+    },
+    "2026-10-24",
+  );
+  expect(missing.currentComplete).toBe(false);
+  expect(missing.observedAt).toBeNull();
+  expect(missing.coveredThrough).toBeNull();
+});
+
+it.each([true, false])(
+  "labels an old window as not current, elapsed=%s",
+  (full) => {
+    const result = eventCoverageDates({
+      current_event_coverage: currentWindow({
+        query_through: "2026-10-23",
+        covered_through: full ? "2026-10-23" : null,
+        full_calendar_window_elapsed: full,
+        status: full ? "CLOSED_WINDOW_NOT_CURRENT" : "SNAPSHOT_NOT_CURRENT",
+      }),
+    });
+    expect(result.currentComplete).toBe(false);
+    expect(result.label).toContain("旧查询窗口未覆盖");
+    expect(result.coveredThrough).toBe(full ? "2026-10-23" : null);
+  },
+);
+
+it("requires an explicit full-window proof and acquisition timestamp, not calendar arithmetic", () => {
+  const full = currentWindow({
+    covered_through: "2026-10-24",
+    full_calendar_window_elapsed: true,
+    status: "FULL_WINDOW",
+  });
+  expect(
+    eventCoverageDates({ current_event_coverage: full }).currentComplete,
+  ).toBe(true);
+  const conflict = eventCoverageDates({
+    current_event_coverage: full,
+    incremental_validity: { full_calendar_window_elapsed: false },
+  });
+  expect(conflict.currentComplete).toBe(false);
+  expect(conflict.coveredThrough).toBeNull();
+  expect(
+    eventCoverageDates({ current_event_coverage: full }, "2026-10-25")
+      .currentComplete,
+  ).toBe(false);
+  for (const mutation of [
+    { full_calendar_window_elapsed: false },
+    { observed_at: null },
+    { covered_through: null },
+    { status: "UNKNOWN" },
+  ]) {
+    const result = eventCoverageDates({
+      current_event_coverage: { ...full, ...mutation },
+    });
+    expect(result.currentComplete).toBe(false);
+    expect(result.coveredThrough).toBeNull();
+  }
+  const legacy = eventCoverageDates(
+    {
+      incremental_validity: {
+        review_cutoff: "2026-10-24",
+        full_calendar_window_elapsed: false,
+        observed_at: full.observed_at,
+      },
+    },
+    "2026-10-24",
+  );
+  expect(legacy.label).toContain("partial");
+  expect(legacy.currentComplete).toBe(false);
+});
+
+it("keeps bound original research and quote dates separate from current event coverage", () => {
+  const value = packet("INCREMENTALLY_COVERS") as any;
+  value.dates.current_natural_date = "2026-10-24";
+  value.dates.quote_trade_date = "2026-10-22";
+  value.company_statuses["600519"].price_bridge.current_event_coverage =
+    currentWindow();
+  const result = dailyResearchDates(value);
+  expect(result.researchAsOf).toBe("2026-10-11");
+  expect(result.quoteDate).toBe("2026-10-22");
+  expect(result.researchCovered).toBe(true);
+  expect(result.events[0].currentComplete).toBe(false);
+  expect(result.events[0].label).toContain("partial");
+  value.source_bindings_verified = false;
+  expect(dailyResearchDates(value).events[0].observedAt).toBeNull();
+});
+
+it("does not show a machine COMPLETE row as complete when its explicit elapsed flag is false", () => {
+  const value = machineReceipt(),
+    row = value.research_review.rows[0] as Record<string, unknown>;
+  row.event_coverage_status = "COMPLETE";
+  row.event_coverage_through = "2026-10-24";
+  row.full_calendar_window_elapsed = false;
+  row.observed_at = "2026-10-24T10:20:00+08:00";
+  row.model_validity_status = "VALID";
+  const result = dailyMachineResearchReview(value).rows[0];
+  expect(result.event_coverage_through).toBeNull();
+  expect(result.model_validity_status).toBe("UNKNOWN");
+  expect(result.observed_at).toBe(row.observed_at);
 });

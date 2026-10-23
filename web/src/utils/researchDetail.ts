@@ -5,6 +5,7 @@ import type {
   ResearchReadingRow,
   ResearchValuation,
 } from "../types/api";
+import { eventCoverageDates } from "./dailyResearchDates";
 
 export interface EvidenceLine {
   text: string;
@@ -127,10 +128,11 @@ export function bridgeExecutionView(
   ];
   if (execution.incremental_validity) {
     const incremental = execution.incremental_validity;
+    const coverage = eventCoverageDates(execution);
     rows.push(
       {
         key: "incremental_cutoff",
-        label: "增量公告复核截止日（不改原研究截止）",
+        label: "公告查询截至（不代表全天完整覆盖，不改原研究截止）",
         value: text(incremental.review_cutoff) ?? "未提供",
       },
       {
@@ -140,8 +142,11 @@ export function bridgeExecutionView(
       },
       {
         key: "incremental_status",
-        label: "增量模型有效性",
-        value: text(incremental.status) ?? "未提供",
+        label: "当前增量模型有效性（不等于历史价格比较资格）",
+        value:
+          incremental.status === "VALID" && !coverage.currentComplete
+            ? "UNKNOWN（原回执为 VALID，当前日完整覆盖未确认）"
+            : (text(incremental.status) ?? "未提供"),
       },
       {
         key: "incremental_blockers",
@@ -151,6 +156,42 @@ export function bridgeExecutionView(
           "无已返回阻塞；仍需核对独立正式资格",
       },
     );
+  }
+  if (execution.incremental_validity || execution.current_event_coverage) {
+    const coverage = eventCoverageDates(execution);
+    rows.push(
+      {
+        key: "current_event_required",
+        label: "当前公告覆盖目标",
+        value: coverage.requiredThrough ?? "未提供",
+      },
+      {
+        key: "current_event_query",
+        label: "公告查询截至",
+        value: coverage.queryThrough ?? "未提供",
+      },
+      {
+        key: "current_event_observed",
+        label: "公告快照取得时间（不是行情采集或机器重放时间）",
+        value: coverage.observedAt ?? "未提供",
+      },
+      {
+        key: "current_event_covered",
+        label: "后端确认的完整窗口截至",
+        value: coverage.coveredThrough ?? "未确认完整覆盖",
+      },
+      {
+        key: "current_event_status",
+        label: "当前公告窗口状态",
+        value: coverage.label,
+      },
+    );
+    if (execution.historical_model_validity)
+      rows.push({
+        key: "historical_model_validity",
+        label: "历史模型有效性（不是当前状态）",
+        value: text(execution.historical_model_validity.status) ?? "未提供",
+      });
   }
   const sources = (Array.isArray(execution.sources) ? execution.sources : [])
     .filter((row) => row && text(row.source_url))

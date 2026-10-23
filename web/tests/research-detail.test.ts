@@ -17,6 +17,53 @@ import {
   unknownText,
 } from "../src/utils/researchDetail";
 
+it("separates partial current event coverage from retained price comparison and historical model status", () => {
+  const execution = {
+    schema_version: "TEST_ONLY",
+    status: "QUOTE_VERIFIED_FOR_RESEARCH_INPUT",
+    comparison_eligible: true,
+    quote_date: "2026-10-23",
+    research_day: "2026-10-11",
+    sources: [],
+    incremental_validity: {
+      status: "VALID",
+      review_cutoff: "2026-10-24",
+      announcement_count: 0,
+      blockers: [],
+    },
+    current_event_coverage: {
+      required_through: "2026-10-24",
+      query_through: "2026-10-24",
+      covered_through: null,
+      observed_at: "2026-10-24T10:20:00+08:00",
+      full_calendar_window_elapsed: false,
+      status: "PARTIAL_CURRENT_SNAPSHOT",
+    },
+    historical_model_validity: { status: "VALID" },
+  };
+  const view = bridgeExecutionView(execution as any)!;
+  expect(view.comparable).toBe(true);
+  expect(view.quoteDate).toBe("2026-10-23");
+  expect(view.rows.find((row) => row.key === "research_day")?.value).toBe(
+    "2026-10-11",
+  );
+  expect(
+    view.rows.find((row) => row.key === "current_event_status")?.value,
+  ).toContain("partial");
+  expect(
+    view.rows.find((row) => row.key === "current_event_observed")?.value,
+  ).toBe("2026-10-24T10:20:00+08:00");
+  expect(
+    view.rows.find((row) => row.key === "incremental_status")?.value,
+  ).toContain("UNKNOWN");
+  expect(
+    view.rows.find((row) => row.key === "historical_model_validity")?.value,
+  ).toBe("VALID");
+  expect(
+    view.rows.find((row) => row.key === "current_event_covered")?.value,
+  ).toBe("未确认完整覆盖");
+});
+
 describe("research detail helpers", () => {
   it("maps gate statuses to friendly labels", () => {
     expect(gateStatusLabel("PASS")).toBe("已通过");
