@@ -308,6 +308,7 @@ jobs:
           tests/test_daily_event_observation.py
           tests/test_research_review_packet.py
           tests/test_agent_source_context.py
+          tests/test_pdfium_serialization.py
           tests/test_monthly_research_review.py
           tests/test_llm_agent_research.py
           tests/test_agent_research_pilot.py

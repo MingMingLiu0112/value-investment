@@ -3256,3 +3256,60 @@ enabled; its TEST_ONLY downstream probe is not actual readiness. Report is
 .tmp/current-asof-snapshot-reachability-review-20261024.md. This is independent
 engineering still to do, not an external-data wait or a completed trading loop.
 Live remains248ee135 and the Goal remains ACTIVE. action=no_order.
+
+### 2026-10-24 - Actual614f publication and a reproduced native PDF concurrency gap
+
+The original clean614f4650 Core runner was observed alive and attached rather
+than restarted after an output-observation loss. It completed with exit0:
+5587 passed,100 skipped. Retained Core XML SHA256 is
+56676a802ba5e54ebfcbb69501a37e431cd0d421b3794f353cf943da63f75b19.
+Frontend747 passed,10 skipped; XML308a9b66c96b1410bfa4f11de40804d72a1f961679ec6b5fd43772356c52bd92.
+TypeScript and compiled identity readback exited0. These are local results,
+not a new remote GitHub CI run or strategy effectiveness proof.
+
+Actual sole-port8001 publication now uses614f46503c56c7e7f8199b7c0d7037020f8aa475.
+Runtime/source/build/public registries matched; authority pointer50746cc7 remained
+unchanged. SAFE_REFRESH actually ran, exit3/PARTIAL, with fresh October24 filing
+queries and separate October23 latest-completed-session quotes. Publication is
+pub-ee56ab87bc1c76c38d99, packet SHA256
+cc8e22adea62136011fcef83bf9787b578ac04dfc37eda150166110a37d9f808.
+The marketwide collection failed;5577-company retained screening is explicitly
+RETAINED_DATED_RESEARCH, never relabeled today's refreshed universe. Historical
+301061 and the sealed simulated swing native readers passed release readback.
+The actual daily/company browser flow passed1440/390/320 widths without horizontal
+overflow; evidence is .tmp/live-ui-614f4650/receipt.json and its six screenshots.
+
+Full source/manual browser acceptance did NOT pass: source GET returned409 in
+the long-lived service, while fresh-process direct/ASGI reads returned200.
+Actual600887 public diagnostics identified Official original PDF cannot be parsed.
+Independent three-thread native parsing reproduced PDFium access/cleanup failures;
+a serialized control passed. Upstream pypdfium2 documentation explicitly forbids
+concurrent native calls even on different documents. A minimal successor shares
+one process-wide reentrant lock across the three existing PDFium entrypoints,
+including native cleanup, without changing values, hashes or admission rules.
+Safe parser diagnostics record only error class and integer err_code, not paths
+or original messages. Independent new-code real-PDF stress passed24 paired
+validate/extract operations with no outer test lock and normal process exit;
+all text matched baseline53649124084c7d8ceafd6b8bb79a03781ab090ddecbffc2d3a88706e4ba4690e.
+This does not yet prove the running service has recovered: clean successor
+verification, release and actual source/manual browser replay remain required.
+
+New concurrency/legacy-decoder/architecture selection passed34. Broader affected
+selection was135 passed,1 skipped,11 failed during legacy prospective fixture
+setup because archived runtime inputs are absent. Unmodified clean614f independently
+fails29 cases of that legacy module on missing historical files; it is not a
+passing legacy suite. A proposed copy of only pre-pinned public originals also
+refused a pre-existing config Hash mismatch before copying, rather than rewriting
+the binding or source. No skips or assertions were weakened. These residual
+fixture failures are separate from the existing offline Core list and the real
+native concurrency repair; do not call the entire repository green.
+
+Current-as-of successor5f9f/69db is independently reviewed, not integrated or
+enabled. The identified final observation/scan JSON recheck P2 is closed by the
+successor; native signed TEST_ONLY baseline3-probe and7-case checks passed.
+Shared quote consumption still needs integration. Sibling1827705d adds bound
+A-share repurchase observations without treating planned cancellation as effective;
+it is delivered but not yet integrated here. JS1 economic review is REVISE; JS2
+cash-linked successor is awaiting independent review, not G3 or primary admission.
+The full Goal remains ACTIVE. Private accounts, canonical Excel, server/PTA,
+production tasks and broker operations are untouched. action=no_order.
