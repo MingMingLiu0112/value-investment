@@ -334,8 +334,13 @@ def test_registered_quote_consumes_signed_materiality_and_identity_tracks_revoca
         assert publication_after != publication_before
         after = execute_quote_bridge_for_symbol(root, SYMBOL, today=f['today'])
         assert after['incremental_validity'].get('materiality_review_route', {}).get('status') == 'AUTHENTICATED_RESPONSE_IMPORTED', after
-        assert after['incremental_validity']['status'] == 'VALID'
-        assert after['price_comparison']['bridge_status'] == 'READY'
+        # Authentication approves its exact historical window, not unqueried later dates.
+        assert after['historical_model_validity']['status'] == 'VALID'
+        assert after['historical_price_comparison']['bridge_status'] == 'READY'
+        assert after['incremental_validity']['status'] == 'UNKNOWN'
+        assert 'CURRENT_EVENT_COVERAGE_NOT_VERIFIED' in after['incremental_validity']['blockers']
+        assert after['price_comparison']['bridge_status'] != 'READY'
+        assert after['price_admitted'] is False
         assert after['incremental_validity']['formal_eligibility'] is False
         assert receipt['whole_model_approved'] is False
         _store(root, registry.name, dict(schema_version='authorization-trust-root-registry-v1',
@@ -345,6 +350,8 @@ def test_registered_quote_consumes_signed_materiality_and_identity_tracks_revoca
         revoked = execute_quote_bridge_for_symbol(root, SYMBOL, today=f['today'])
         assert revoked['incremental_validity']['status'] == 'UNKNOWN'
         assert revoked.get('price_comparison', {}).get('bridge_status') != 'READY'
+        assert revoked.get('historical_model_validity', {}).get('status') != 'VALID'
+        assert revoked.get('historical_price_comparison', {}).get('bridge_status') != 'READY'
 
 
 @pytest.mark.parametrize('role', ['response', 'trust_root', 'receipt', 'packet', 'materiality'])

@@ -3229,3 +3229,30 @@ existing strict policy; this discovery repair is not a new as-of-snapshot admiss
 or permission to silently upgrade daily strategy readiness. Real OOS/Shadow,
 non-stress primary economic admission and user confirmations remain separate.
 Live remains248ee135. The full Goal is ACTIVE, not complete. action=no_order.
+
+### 2026-10-24 - Full integrated run exposed one obsolete approval-window assertion
+
+Clean2bb724b2 ran the exact370-file Core command: 1 failed,5586 passed,100 skipped,
+38 inherited warnings (963.25 seconds). This is NOT a passing Core result.
+gc1/.tmp/core-2bb724b2-failed.xml is retained with SHA256
+733a0ccec1b663510850c01d0ae04647c0c5d967e225f86e6abd79dc75cf9fee.
+The sole failure was the old P7 signature-transport test requiring a signed past
+window to make the next day's CURRENT model VALID/READY. No production code was
+changed to satisfy it. The corrected test still requires authenticated import,
+historical VALID/READY, changed publication/input identity and no whole-model
+approval; CURRENT stays UNKNOWN/unadmitted, and revocation removes historical
+as well as current eligibility. Independent10-case and five-original tamper
+probes passed; Root's complete two affected modules passed53. A new clean full
+run is still required before claiming an integrated green result or publishing.
+
+A separate bounded reachability review confirmed a remaining real DESIGN gap:
+current-day full calendar coverage cannot be acquired before that day ends, while
+current-day partial is always UNKNOWN under the inherited policy. Merely removing
+the date guard would restore the unqueried-weekend bug. The next policy work must
+prove CURRENT_AS_OF_SNAPSHOT research reuse from actual available-at, a legally
+reviewed baseline and zero new/changed disclosures, without claiming whole-day
+coverage, historical PIT, strategy admission or G3. It is not implemented or
+enabled; its TEST_ONLY downstream probe is not actual readiness. Report is
+.tmp/current-asof-snapshot-reachability-review-20261024.md. This is independent
+engineering still to do, not an external-data wait or a completed trading loop.
+Live remains248ee135 and the Goal remains ACTIVE. action=no_order.
