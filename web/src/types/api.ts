@@ -237,6 +237,17 @@ export interface AccountingBridgeReview {
 }
 
 export interface ValueResearchAnalysis {
+  valuation?: {
+    model_type: string;
+    model_version: string;
+    valuation_date: string;
+    bear_value: string;
+    base_value: string;
+    bull_value: string;
+    assumptions: {
+      valuation_timing?: { basis_at: string; valuation_at: string } | null;
+    };
+  };
   joint_capital_review?:
     import("../services/valuePolicy").JointCapitalReview | null;
   review_binding?: {
@@ -305,7 +316,11 @@ export interface ValueResearchAnalysis {
     }[];
   } | null;
   counter_evidence?: unknown;
-  model_applicability?: { blockers?: string[]; scope?: string | null };
+  model_applicability?: {
+    blockers?: string[];
+    scope?: string | null;
+    route?: { profile_id: string; selected_model: string; model_type: string };
+  };
   source_bindings: { path: string; sha256: string }[];
 }
 

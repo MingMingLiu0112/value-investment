@@ -122,9 +122,37 @@ function jointDecision() {
     model_context: {
       input_descriptor_sha256: analysis.input_descriptor_sha256,
       model_id: "TEST_ONLY_RI",
+      model_version: "TEST_ONLY_RI_V1",
+      profile_id: "TEST_ONLY_PROFILE",
+      research_case_sha256: "1".repeat(64),
+      facts_sha256: "2".repeat(64),
+      assumptions_sha256: "3".repeat(64),
+      research_as_of: analysis.research_as_of,
     },
   };
   analysis.source_bindings.push(candidate, proposal, policy);
+  analysis.model_applicability!.route = {
+    profile_id: "TEST_ONLY_PROFILE",
+    selected_model: "TEST_ONLY_RI",
+    model_type: "TEST_ONLY_RI",
+  };
+  analysis.valuation = {
+    model_type: "TEST_ONLY_RI",
+    model_version: "TEST_ONLY_RI_V1",
+    valuation_date: "2026-10-11",
+    bear_value: "100.123456789",
+    base_value: "100.123456789",
+    bull_value: "100.123456789",
+    assumptions: {
+      valuation_timing: {
+        basis_at: "2026-06-30T23:59:59+08:00",
+        valuation_at: "2026-10-11T08:00:00Z",
+      },
+    },
+  };
+  analysis.scenarios.forEach((row) => {
+    row.per_share_value = "100.123456789";
+  });
   analysis.joint_capital_review = {
     schema_version: "joint-capital-review-v1",
     symbol: analysis.symbol,
@@ -243,10 +271,142 @@ it("preserves undated conditional models without borrowing computed_at", () => {
   review.date_scope = "UNDATED_CONDITIONAL_MODEL";
   review.basis_at = null;
   review.valuation_at = null;
+  delete decision.price_action_plan!.research_analysis!.valuation!.assumptions
+    .valuation_timing;
   const html = render(decision);
   expect(html).toContain("未建立定价时点");
   expect(html).toContain("不能当作当前价值");
   expect(html).not.toContain("资料基准：2026-10-22");
+});
+
+it.each([
+  (a: any) => {
+    a.joint_capital_review.scenarios[1].valuation_per_share = "999999";
+  },
+  (a: any) => {
+    a.joint_capital_review.scenarios[1].valuation_per_share =
+      "100.123456789000000001";
+  },
+  (a: any) => {
+    a.scenarios[1].per_share_value = "999999";
+  },
+  (a: any) => {
+    a.scenarios[1].per_share_value = 100.123456789;
+  },
+  (a: any) => {
+    a.valuation.base_value = "999999";
+  },
+  (a: any) => {
+    a.scenarios.push(a.scenarios[0]);
+  },
+  (a: any) => {
+    a.scenarios = [];
+  },
+  (a: any) => {
+    a.joint_capital_review.basis_at = "2027-06-30T23:59:59+08:00";
+  },
+  (a: any) => {
+    a.joint_capital_review.valuation_at = "2020-01-01T00:00:00Z";
+  },
+  (a: any) => {
+    a.joint_capital_review.valuation_at = "2026-02-30T08:00:00Z";
+  },
+  (a: any) => {
+    a.joint_capital_review.valuation_at = "2026-10-11T24:00:00Z";
+  },
+  (a: any) => {
+    a.joint_capital_review.valuation_at = "2026-10-11T08:00:00.000001Z";
+  },
+  (a: any) => {
+    a.valuation.assumptions.valuation_timing.valuation_at =
+      "2026-02-30T08:00:00Z";
+    a.joint_capital_review.valuation_at = "2026-02-30T08:00:00Z";
+  },
+  (a: any) => {
+    delete a.valuation.assumptions.valuation_timing;
+  },
+  (a: any) => {
+    a.valuation_date = "2020-01-01";
+  },
+  (a: any) => {
+    a.valuation.valuation_date = "2020-01-01";
+  },
+  (a: any) => {
+    a.joint_capital_review.date_scope = "UNDATED_CONDITIONAL_MODEL";
+    a.joint_capital_review.basis_at = null;
+    a.joint_capital_review.valuation_at = null;
+  },
+  (a: any) => {
+    a.review_binding.model_context = {
+      input_descriptor_sha256: a.input_descriptor_sha256,
+    };
+  },
+  (a: any) => {
+    a.review_binding.model_context.model_id = "DIFFERENT_MODEL";
+  },
+  (a: any) => {
+    a.review_binding.model_context.model_version = "DIFFERENT_VERSION";
+  },
+  (a: any) => {
+    a.review_binding.model_context.profile_id = "DIFFERENT_PROFILE";
+  },
+  (a: any) => {
+    delete a.review_binding.model_context.model_version;
+  },
+  (a: any) => {
+    delete a.review_binding.model_context.facts_sha256;
+  },
+  (a: any) => {
+    a.review_binding.model_context.assumptions_sha256 = "invalid";
+  },
+  (a: any) => {
+    a.review_binding.model_context.research_case_sha256 = null;
+  },
+  (a: any) => {
+    a.review_binding.model_context.research_as_of = "2026-02-30";
+  },
+  (a: any) => {
+    a.review_binding.model_context.research_as_of = "2020-01-01";
+  },
+  (a: any) => {
+    delete a.valuation;
+  },
+  (a: any) => {
+    delete a.valuation.model_version;
+  },
+  (a: any) => {
+    delete a.model_applicability.route;
+  },
+  (a: any) => {
+    a.model_applicability.route.selected_model = "OTHER";
+  },
+])(
+  "rejects cross-version public values, dates and model identity without an assessment %#",
+  (change) => {
+    const decision = jointDecision(),
+      analysis = decision.price_action_plan!.research_analysis!;
+    expect(analysis.economic_assessment).toBeUndefined();
+    change(analysis);
+    expect(publicJointCapitalReviewMatches(analysis, analysis.symbol)).toBe(
+      false,
+    );
+    expect(render(decision)).toContain("暂不可作为核验结果展示");
+  },
+);
+
+it("compares exact decimal equivalents and equivalent instants without float rounding", () => {
+  const decision = jointDecision(),
+    analysis = decision.price_action_plan!.research_analysis!;
+  analysis.joint_capital_review!.scenarios[1].valuation_per_share =
+    "100123456789e-9";
+  analysis.joint_capital_review!.valuation_at =
+    "2026-10-11T16:00:00.000000+08:00";
+  expect(publicJointCapitalReviewMatches(analysis, analysis.symbol)).toBe(true);
+  analysis.joint_capital_review!.scenarios[1].valuation_per_share =
+    "100.123456789000000001";
+  expect(publicJointCapitalReviewMatches(analysis, analysis.symbol)).toBe(
+    false,
+  );
 });
 
 it.each([
@@ -392,6 +552,37 @@ it.skipIf(!process.env.PUBLIC_JOINT_ANALYSIS)(
     expect(render(decision)).toContain(
       analysis.joint_capital_review.proposal_binding.sha256,
     );
+    for (const change of [
+      (a: any) => {
+        a.joint_capital_review.scenarios[1].valuation_per_share = "999999";
+      },
+      (a: any) => {
+        a.joint_capital_review.basis_at = "2027-06-30T23:59:59+08:00";
+      },
+      (a: any) => {
+        a.joint_capital_review.valuation_at = "2020-01-01T00:00:00Z";
+      },
+      (a: any) => {
+        a.joint_capital_review.valuation_at = "2026-02-30T08:00:00Z";
+      },
+      (a: any) => {
+        a.review_binding.model_context.model_id = "DIFFERENT_MODEL";
+      },
+      (a: any) => {
+        a.review_binding.model_context.model_version = "DIFFERENT_VERSION";
+      },
+      (a: any) => {
+        a.review_binding.model_context = {
+          input_descriptor_sha256: a.input_descriptor_sha256,
+        };
+      },
+    ]) {
+      const damaged = structuredClone(analysis);
+      change(damaged);
+      expect(publicJointCapitalReviewMatches(damaged, damaged.symbol)).toBe(
+        false,
+      );
+    }
     expect(decision).toEqual(before);
   },
 );

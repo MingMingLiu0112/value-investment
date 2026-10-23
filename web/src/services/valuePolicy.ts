@@ -332,6 +332,138 @@ export function jointCapitalReviewMatches(
   }
 }
 
+/** Canonical decimal identity without rounding either side to a JS number. */
+function decimalIdentity(value: unknown): string | null {
+  if (!finiteDecimal(value)) return null;
+  const [mantissa, power = "0"] = value.toLowerCase().split("e");
+  const [whole, fraction = ""] = mantissa.replace(/^[+-]/, "").split(".");
+  const digits = (whole + fraction).replace(/^0+/, "");
+  if (!digits) return "0";
+  const coefficient = digits.replace(/0+$/, "");
+  const exponent =
+    BigInt(power) -
+    BigInt(fraction.length) +
+    BigInt(digits.length - coefficient.length);
+  return `${mantissa.startsWith("-") ? "-" : ""}${coefficient}e${exponent}`;
+}
+
+function calendarDate(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+    return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(0);
+  date.setUTCFullYear(year, month - 1, day);
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
+/** Preserve fractional seconds when comparing actual model instants. */
+function instant(value: unknown): bigint | null {
+  if (typeof value !== "string") return null;
+  const parts =
+    /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:\d{2})$/.exec(
+      value,
+    );
+  if (
+    !parts ||
+    !calendarDate(parts[1]) ||
+    Number(parts[2]) > 23 ||
+    Number(parts[3]) > 59 ||
+    Number(parts[4]) > 59
+  )
+    return null;
+  const offset = parts[6];
+  if (
+    offset !== "Z" &&
+    (Number(offset.slice(1, 3)) > 23 || Number(offset.slice(4)) > 59)
+  )
+    return null;
+  const milliseconds = Date.parse(
+    `${parts[1]}T${parts[2]}:${parts[3]}:${parts[4]}${offset}`,
+  );
+  if (!Number.isFinite(milliseconds)) return null;
+  return (
+    BigInt(milliseconds) * BigInt(1000000) +
+    BigInt((parts[5] ?? "").padEnd(9, "0"))
+  );
+}
+
+function publicModelMatches(analysis: ValueResearchAnalysis): boolean {
+  const context = analysis.review_binding?.model_context;
+  const valuation = analysis.valuation;
+  const route = analysis.model_applicability?.route;
+  const joint = analysis.joint_capital_review;
+  if (
+    !record(context) ||
+    !record(valuation) ||
+    !record(route) ||
+    !joint ||
+    !["model_id", "model_version", "profile_id"].every(
+      (key) =>
+        typeof context[key] === "string" && !!(context[key] as string).trim(),
+    ) ||
+    !["research_case_sha256", "facts_sha256", "assumptions_sha256"].every(
+      (key) => digest(context[key]),
+    ) ||
+    !calendarDate(context.research_as_of) ||
+    context.research_as_of !== analysis.research_as_of ||
+    context.model_id !== valuation.model_type ||
+    context.model_version !== valuation.model_version ||
+    context.model_id !== route.selected_model ||
+    context.model_id !== route.model_type ||
+    context.profile_id !== route.profile_id ||
+    !record(valuation.assumptions)
+  )
+    return false;
+  const timing = valuation.assumptions.valuation_timing;
+  if (joint.date_scope === "UNDATED_CONDITIONAL_MODEL") {
+    if (
+      timing != null ||
+      joint.basis_at !== null ||
+      joint.valuation_at !== null
+    )
+      return false;
+  } else {
+    if (!record(timing)) return false;
+    const basis = instant(joint.basis_at),
+      at = instant(joint.valuation_at);
+    if (
+      basis === null ||
+      at === null ||
+      basis > at ||
+      basis !== instant(timing.basis_at) ||
+      at !== instant(timing.valuation_at) ||
+      !calendarDate(analysis.valuation_date) ||
+      analysis.valuation_date !== valuation.valuation_date ||
+      typeof timing.valuation_at !== "string" ||
+      timing.valuation_at.slice(0, 10) !== analysis.valuation_date
+    )
+      return false;
+  }
+  if (!Array.isArray(analysis.scenarios)) return false;
+  return joint.scenarios.every((row) => {
+    const matches = analysis.scenarios.filter(
+      (item) => item?.scenario === row.scenario,
+    );
+    const expected =
+      matches.length === 1 ? decimalIdentity(matches[0].per_share_value) : null;
+    return (
+      expected !== null &&
+      expected === decimalIdentity(row.valuation_per_share) &&
+      expected ===
+        decimalIdentity(
+          valuation[
+            `${row.scenario}_value` as
+              "bear_value" | "base_value" | "bull_value"
+          ],
+        )
+    );
+  });
+}
+
 /** Public research identity checks; no fabricated signing handoff is involved. */
 export function publicJointCapitalReviewMatches(
   analysis: ValueResearchAnalysis,
@@ -384,12 +516,14 @@ export function publicJointCapitalReviewMatches(
     )
       return false;
     ordered(reviewBinding.model_context);
-    return jointCapitalSourceMatches(
-      analysis.joint_capital_review,
-      symbol,
-      reviewBinding.candidate_binding,
-      analysis.input_descriptor_sha256,
-      analysis.source_bindings,
+    return (
+      jointCapitalSourceMatches(
+        analysis.joint_capital_review,
+        symbol,
+        reviewBinding.candidate_binding,
+        analysis.input_descriptor_sha256,
+        analysis.source_bindings,
+      ) && publicModelMatches(analysis)
     );
   } catch {
     return false;
