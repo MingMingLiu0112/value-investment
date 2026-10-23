@@ -186,6 +186,12 @@ def render_hotspot_action_coverage_markdown(coverage):
     lines.extend('- ' + gaps.get(gap, _lifecycle_value(gap)) for gap in coverage.get('gaps', []))
     for item in coverage.get('pending_announcements', []):
         lines.append(f"- 待审公告：{_lifecycle_value(item.get('title'))}；发布日期：{_lifecycle_value(item.get('published_at'))}；来源：{_lifecycle_value(item.get('source_url'))}。")
+    for relation in (coverage.get('lineage_review') or {}).get('links', []):
+        lines += [f"- 原公告 {_lifecycle_value(relation.get('original_number'))} → 后续公告 {_lifecycle_value(relation.get('amendment_number'))}：{_lifecycle_value(relation.get('relation_status'))}；原文效应：{_lifecycle_value(relation.get('effect_status'))}。",
+            f"  更正章节：{_lifecycle_value(relation.get('changed_section'))}；本文件是否明确撤销：{_lifecycle_value(relation.get('cancellation_asserted_by_this_document'))}。",
+            '  关联成立不等于完整修订链或价格可比性已证明；原保护位和持仓判断不据此自动改写。']
+        if relation.get('original_noncash_terms_present') is True:
+            lines.append('  原公告含非现金转增条款，现金单事件公式不能替代整个分配方案的股份与价格基准核验。')
     lines.extend('- ' + _lifecycle_binding(ref) for ref in coverage.get('evidence_bindings', []))
     lines.append('策略仍未证明有效；action=no_order。')
     return '\n'.join(lines) + '\n'

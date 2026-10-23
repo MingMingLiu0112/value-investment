@@ -13,6 +13,7 @@ from ..product.daily_event_observation import verify_retained_event_coverage
 from ...infrastructure.evidence.historical_price_correspondence import require_inside, sha256_file
 from ...quote_sessions import CHINA
 from ...infrastructure.hotspot.cash_implementation import load_cash_implementation
+from ...infrastructure.hotspot.action_lineage import inspect_action_lineage
 
 
 VERSION = "hotspot-official-action-coverage-v1"
@@ -97,6 +98,8 @@ def inspect_official_action_coverage(*, root: Path, symbol: str, start: date,
         result["gaps"][0:1] = [] if covers else ["PUBLICATION_SCAN_DOES_NOT_COVER_PRICE_FORMATION_WINDOW"]
         if pending:
             result["gaps"].append("ANNOUNCEMENT_SEMANTICS_UNREVIEWED")
+        result["lineage_review"] = inspect_action_lineage(root=root, symbol=symbol, announcements=pending,
+            acquired_at=observation["acquired_at"], now=now)
     except (OSError, ValueError, KeyError, TypeError, AttributeError, OverflowError) as error:
         result.update(official_publication_coverage="INVALID_OR_UNAVAILABLE", diagnostic=str(error))
         result["gaps"][0] = "OFFICIAL_PUBLICATION_WINDOW_INVALID_OR_UNAVAILABLE"

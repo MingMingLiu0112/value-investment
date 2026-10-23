@@ -177,6 +177,14 @@ def build_hotspot_lifecycle_review(*, root: Path, symbol: str,
     result["current_open_observed"] = plan["conditional_action_rules"]["OPEN"]["observed"]
     result["opportunity_quality"] = plan["opportunity_quality"]
     if entry_case_binding is None:
+        if official_event_observation_binding is not None:
+            start = min(_stamp(row["time"]).date() for rows in current["case"]["bars"].values() for row in rows)
+            end = _stamp(current["case"]["bars"]["60m"][-1]["time"]).date()
+            result["price_comparability"] = inspect_price_comparability(root=root, symbol=symbol,
+                start=start, end=end, now=now, registry_binding=corporate_action_registry_binding)
+            result["price_comparability"]["official_disclosure_coverage"] = inspect_official_action_coverage(
+                root=root, symbol=symbol, start=start, end=end, now=now,
+                observation_binding=official_event_observation_binding)
         result.update(status="CURRENT_STRUCTURE_ONLY", observed_review="ENTRY_OBSERVATION"
             if result["current_open_observed"] and plan["opportunity_quality"]["structure_tier"]
                 == "STRUCTURE_QUALIFIED_OBSERVATION" else "WATCH")
