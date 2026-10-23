@@ -33,7 +33,9 @@ from value_investment_agent.m2_opportunity_discovery import (
     EvidenceReference,
     discovery_receipt_from_payload,
 )
-from value_investment_agent.official_universe import collect_security_lists
+from value_investment_agent.application.discovery.official_universe_collection import (
+    collect_official_m2_input, screening_quote_date,
+)
 from value_investment_agent.application.product.value_discovery_surface import publish_value_discovery_report
 from value_investment_agent.infrastructure.screening.evidence_screen_v3 import (
     VERSION as EVIDENCE_SCREEN_VERSION,
@@ -92,36 +94,7 @@ def _payload_fetched_at(payload: Mapping[str, object], name: str) -> datetime:
 
 
 def _collect_official(output_dir: Path, root: Path) -> tuple[dict, EvidenceReference]:
-    retained = root / "runtime" / "exchange-lists" / "official-universe.json"
-    live_error: str | None = None
-    try:
-        raw_dir = output_dir / "official-raw"
-        payload = collect_security_lists(raw_dir)
-        raw = _json_bytes(payload)
-        path = _write(output_dir, "official-universe.json", raw)
-        live_error = None
-    except Exception as error:
-        live_error = str(error)
-        if not retained.exists():
-            raise RuntimeError("Official universe collection failed and no retained fallback exists") from error
-        payload = json.loads(retained.read_text(encoding="utf-8"))
-        path = _write(output_dir, "official-universe.json", _json_bytes(payload))
-    if live_error:
-        payload = dict(payload)
-        payload["m2_live_collection_error"] = live_error
-        path = _write(output_dir, "official-universe.json", _json_bytes(payload))
-    fetched_at = payload.get("fetched_at")
-    if not fetched_at:
-        raise RuntimeError("Official universe payload has no fetched_at")
-    reference = _reference(
-        "official",
-        path,
-        root=root,
-        source_name="沪深北交易所官方证券清单",
-        source_url="https://www.szse.cn | https://query.sse.com.cn | https://www.bse.cn",
-        fetched_at=datetime.fromisoformat(fetched_at),
-    )
-    return payload, reference
+    return collect_official_m2_input(output_dir, root)
 
 
 def run_once(
@@ -289,7 +262,8 @@ def run_once(
 
     if not reuse_inputs:
         generated_at = datetime.now(timezone.utc)
-        quote_date = generated_at.astimezone(CHINA).date().isoformat()
+    quote_date = screening_quote_date(official_payload, generated_at,
+        retained_quote_date=quote_date if reuse_inputs else None)
     run_refs = {
         "official": official_ref,
         "tencent": tencent_ref,

@@ -114,3 +114,6 @@ web/**/*.css text eol=lf
 web/scripts/*.mjs text eol=lf
 web/package.json text eol=lf
 web/tsconfig.json text eol=lf
+
+# Original exchange notice bytes: never normalize or format fetched evidence.
+docs/evidence/official-list-calendar-2026/*.raw -text -diff
