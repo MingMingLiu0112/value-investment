@@ -7,14 +7,16 @@ from pathlib import Path
 
 from .event_replay import _bound_bytes
 from .retained_source_replay import build_retained_descriptive_validation, _verified_case
+from ...historical_fees import SOURCES as FEE_NOTICE_URLS
+from ...infrastructure.hotspot.statutory_fee_evidence import inspect_statutory_fee_evidence
 from ...domain.hotspot import strategy_execution_replay as engine
 
 OFFICIAL_SOURCES = [
     {"topic": "SELL_STAMP_TAX_HALVED_FROM_20230828", "rate": "0.0005",
      "url": "https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20230827_5725662.shtml"},
     {"topic": "TRANSFER_FEE_DOUBLE_SIDED_FROM_20220429", "rate": "0.00001",
-     "url": "https://www.chinaclear.cn/zdjs/gszb/202204/f89e788c65a241e88e7f0d0348de586f.shtml",
-     "retrieval_status": "DIRECT_NOTICE_UNAVAILABLE_REFERENCE_REQUIRES_RECHECK"},
+     "url": FEE_NOTICE_URLS["transfer-2022"],
+     "retrieval_status": "RETAINED_OFFICIAL_ORIGINAL_VERIFICATION_REQUIRED"},
     {"topic": "EXCHANGE_HANDLING_FEE_INCLUDED_IN_ASSUMED_ALL_IN_COMMISSION",
      "url": "https://www.sse.com.cn/services/tradingservice/charge/ssecharge/"},
     {"topic": "EXCHANGE_TRADING_RULES_T1_AND_DATED_STOCK_LIMITS",
@@ -71,6 +73,12 @@ def build_strategy_execution_replay(*, root: Path, now: datetime,
         scope="RETROSPECTIVE_FEE_SENSITIVITY_NOT_PERSONAL_CONFIRMED_SCHEDULE",
         commission_basis="ASSUMED_ALL_IN_INCLUDING_EXCHANGE_HANDLING_AND_REGULATORY_FEES_EXCLUDING_TRANSFER_AND_STAMP",
         official_sources=OFFICIAL_SOURCES)
+    fee_evidence = inspect_statutory_fee_evidence(root=root, now=now)
+    components = fee_evidence["published_components"] or {}
+    fee_evidence["declared_rates_match_notices"] = (
+        fee_evidence["source_status"] == "VERIFIED_RETAINED_OFFICIAL_NOTICES"
+        and costs["sell_tax_rate"] == components.get("sell_stamp_rate")
+        and costs["transfer_fee_rate"] == components.get("transfer_rate"))
     results = []
     for item in spec["cases"]:
         case, available = _verified_case(source_root, item, manifest["namespace"], spec["end_date"], now)
@@ -120,7 +128,9 @@ def build_strategy_execution_replay(*, root: Path, now: datetime,
         "src/value_investment_agent/domain/hotspot/price_action_plan.py",
         "src/value_investment_agent/domain/hotspot/current_price.py",
         "src/value_investment_agent/domain/execution/exchange_calendar.py",
-        "src/value_investment_agent/application/hotspot/strategy_execution_replay.py"]
+        "src/value_investment_agent/application/hotspot/strategy_execution_replay.py",
+        "src/value_investment_agent/infrastructure/hotspot/statutory_fee_evidence.py",
+        "src/value_investment_agent/historical_fees.py"]
     # Imported files belong to the executing checkout, which can differ from
     # the read-only evidence root. Record actual implementation bytes.
     checkout = Path(__file__).resolve().parents[4]
@@ -152,6 +162,7 @@ def build_strategy_execution_replay(*, root: Path, now: datetime,
         historical_protocol_binding=manifest["historical_protocol_binding"],
         parameters=parameters, parameter_fingerprint=fingerprint(parameters),
         costs=costs, cost_fingerprint=fingerprint(costs),
+        statutory_fee_evidence=fee_evidence,
         source_fingerprint=fingerprint(bindings), summary=summary, results=results,
         gaps=["CONTEMPORANEOUS_UNIVERSE_SELECTION_AND_SOURCE_PIT_NOT_PROVEN",
             "UNTOUCHED_OOS_NOT_PROVEN_RETROSPECTIVE_PARTITIONS_ONLY",

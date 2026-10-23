@@ -171,6 +171,7 @@ def _execution_evidence(root, now):
         strict_rejection_counts=dict(strict_rejections),
         parameters=replay["parameters"], parameter_fingerprint=replay["parameter_fingerprint"],
         costs=replay["costs"], cost_fingerprint=replay["cost_fingerprint"],
+        statutory_fee_evidence=replay.get("statutory_fee_evidence"),
         costed_partitions=lanes,
         metrics_scope="ISOLATED_SECURITY_PARTITION_ASSUMED_STATE_NOT_PORTFOLIO_OR_OOS_RETURN")
 
@@ -197,7 +198,12 @@ def validate_current_hotspot_strategy(*, root: Path, now: datetime) -> dict:
         execution = _execution_evidence(root, now)
         availability = execution["decision_availability"]
         protocol = execution["protocol"]
+        fee_evidence = execution.get("statutory_fee_evidence") or {}
+        verified_notices = fee_evidence.get("declared_rates_match_notices") is True
         checks.extend([
+            _check("STATUTORY_FEE_NOTICE_CORRESPONDENCE", "PASS" if verified_notices else "INSUFFICIENT_DATA",
+                "Archived notice components match replay rates; not full policy continuity or personal invoice"
+                if verified_notices else "Archived statutory fee originals not verified for this replay", fee_evidence),
             _check("RETAINED_EXECUTION_REPLAY", "PASS", "Existing rule, exits and simulator rerun from verified originals"),
             _check("HISTORICAL_SOURCE_PIT", "FAIL" if availability["source_acquired_after_decision"] else "INSUFFICIENT_DATA",
                 "Strict archived PIT not established: actual acquisition follows historical decisions; no claim that public prices were unknowable", availability),
@@ -213,11 +219,11 @@ def validate_current_hotspot_strategy(*, root: Path, now: datetime) -> dict:
                 "0x/1x/2x cost scenarios recomputed; fee components reconcile, not a profitability verdict",
                 dict(cost_fingerprint=execution["cost_fingerprint"], partitions=len(execution["costed_partitions"]))),
             _check("EXECUTABLE_COST_BASIS", "INSUFFICIENT_DATA",
-                "All-in commission, slippage and next-open fill remain assumptions; transfer-fee reference requires recheck"),
+                "All-in commission, slippage, current policy continuity and next-open fill remain unverified"),
         ])
     except errors:
         checks.append(_check("RETAINED_EXECUTION_REPLAY", "FAIL", "Retained source or numeric replay rejected"))
-        for name in ("HISTORICAL_SOURCE_PIT", "PREDECLARED_UNTOUCHED_OOS", "HISTORICAL_UNIVERSE_CLASSIFICATION",
+        for name in ("STATUTORY_FEE_NOTICE_CORRESPONDENCE", "HISTORICAL_SOURCE_PIT", "PREDECLARED_UNTOUCHED_OOS", "HISTORICAL_UNIVERSE_CLASSIFICATION",
                      "STRICT_TRADABILITY_EXECUTION", "COST_ARITHMETIC_AND_SENSITIVITY", "EXECUTABLE_COST_BASIS"):
             checks.append(_check(name, "NOT_ASSESSED", "Execution dependencies rejected"))
     checks.extend([

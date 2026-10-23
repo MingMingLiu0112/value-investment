@@ -225,3 +225,35 @@ PDF 归档 → 原生覆盖核验 → 波段价格形成窗口匹配 → 待审�
 没有修改生命周期已批准保护位、策略阈值、Web 或账户；没有生成 owned Entry、OOS 或真实 Shadow。
 正式同口径确认仍须独立完整窗口证明，调用者不能用 `complete=true` 字段放行。
 中文输出 `render_cash_event_mapping_markdown` 保留原价、参考换算、依据页码和未完成项，供主会话整合。
+
+## 9. 法定费用原件对应补齐
+
+本有界包继承 `50a01b30`，选择补齐 `EXECUTABLE_COST_BASIS` 中一项具体来源缺口，而非另建验证框架。
+再次用固定历史规格复算 Oct14–22，仍为 3/7；未补齐候选行情不回填为当时已知。
+当前目录已有 Oct23 新指针，旧可选真实测试用 Oct23 05:00 UTC 截止读取该新指针会失败，
+在未改的 `50a01b30` 也已复现；它与本包费用改动无关，不能改写当前指针来让历史测试通过。
+
+现有 `strategy_execution_replay.py` 的过户费链接与已归档正确通知不同。本包修正为
+`historical_fees.SOURCES['transfer-2022']`，并复用 `runtime/trading-rule-evidence/20260908T115226080339Z`
+已有三份原件和 manifest：2008 年单边印花税、2023 年印花税减半、2022 年股票交易过户费调整。
+三份原件固定 Hash 继承已有研究代码和冻结费用说明；不修改该历史组件、原件或冻结说明。
+
+`infrastructure/hotspot/statutory_fee_evidence.py` 只读核对唯一 source_id、请求和最终官方 URL、
+路径、字节 Hash、取得时间及正文条款，拒绝维护页、重定向替代、重复来源、未来日期与重新填写的 Hash。
+本次中国结算通知在线访问超时，实际复核依据是已有归档原文，不声称重新成功抓取了在线通知。
+已复核的[财政部原始单边通知](https://www.mof.gov.cn/zhengwuxinxi/caizhengxinwen/200809/t20080919_76432.htm)
+和[减半公告](https://www.mof.gov.cn/jrttts/202308/t20230828_3904235.htm)仍分别保留生效日期与买卖方向。
+
+正向结果为 `VERIFIED_RETAINED_OFFICIAL_NOTICES`，既有回放增加 `statutory_fee_evidence` 与实际实现 Hash。
+独立验证新增 `STATUTORY_FEE_NOTICE_CORRESPONDENCE`，只表示原件对应、回放声明费率一致。
+完整 `EXECUTABLE_COST_BASIS` 仍为 `INSUFFICIENT_DATA`，原有正式准入检查集合不变。
+未取得原件的验证根目录为 MISSING/INVALID，不默认零成本，也不阻断已有假设回放。
+
+复用 `historical_fees.statutory_components` 在其原有 2015–2025 范围内做未舍入算术检查：
+10 万元成交额在 2023-08-25 卖出对应印花税 100、过户费 1；2023-08-28 卖出为 50 和 1，
+同日买入为 0 和 1。示例不是实际成交，日期是成交日；未把公告日期或信号日期用作成交日期。
+回放的佣金、最低收费、滑点与税费**数值均未修改**，真实留存回放计数摘要与上一回执一致。
+
+仍未证明 2026 年全部费用政策连续性、个人佣金内含项目、分笔与到账舍入、实际成交价格、
+流动性与可卖数量。历史归档取得时间不变，不构成新的独立 PIT/OOS 或真实 Shadow。
+本包只是把一项真实法定费用来源缺口落到可复算原件；策略保持 NOT_PROVEN，永久 `action=no_order`。
