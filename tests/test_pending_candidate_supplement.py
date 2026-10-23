@@ -86,6 +86,36 @@ def test_consumed_packet_exact_bindings_and_existing_unsigned_signature_contract
     assert before == {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
 
 
+def test_joint_candidate_reaches_existing_web_and_unsigned_review_without_approval(
+        tmp_path, synthetic_pending_candidate_clock):
+    from test_joint_capital_path import policy_inputs
+    from value_investment_agent.application.product.neutral_valuation_proposal import JOINT_SCHEMA
+    package, policy, request = candidate_inputs(tmp_path)
+    policy_inputs(tmp_path, package, policy)
+    settings = json.loads(policy.read_bytes())
+    settings['human_review_groups'] = [dict(id='ECONOMICS', question='Is the joined capital path credible?',
+        support='TEST_ONLY ledger.', countercase='Cash conversion and terminal returns are uncertain.',
+        impact='Pending only.', field_paths=['facts.scenario_inputs'])]
+    write(policy, settings)
+    candidate = run(tmp_path, package, policy, request)
+    candidate_path = tmp_path / 'runtime/pending/candidate.json'
+    workflow = tmp_path / supplement.WORKFLOW_PATH
+    write(workflow, dict(schema_version='user-research-workflow-v1', action='no_order',
+        supplemental_review_candidates={candidate['symbol']: bind(tmp_path, candidate_path)}))
+    before = {p: p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()}
+    material = supplement.load_current_pending_candidate_supplement(root=tmp_path, symbol=candidate['symbol'])
+    assert material['candidate']['input_mode'] == JOINT_SCHEMA
+    assert material['model_context'] == candidate['model_context']
+    assert len(material['candidate']['implementation_bindings']) == 3
+    response = prepare_pending_review_response(root=tmp_path, candidate_path=candidate_path,
+        candidate_sha256=material['candidate_binding']['sha256'])
+    assert response['model_context'] == material['model_context']
+    assert response['whole_model_approval'] is response['reviewer_id'] is None
+    assert material['research_admitted'] is material['price_admitted'] is False
+    assert material['position_guidance'] is None and material['action'] == 'no_order'
+    assert before == {p: p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()}
+
+
 @pytest.mark.parametrize('case', ['missing-file', 'missing-field', 'missing-symbol'])
 def test_absent_is_none_without_looking_up_old_candidates(tmp_path, case):
     if case != 'missing-file':
@@ -125,7 +155,7 @@ def test_invalid_registration_raises_without_fallback(registered, case):
         supplement.load_current_pending_candidate_supplement(root=root, symbol=symbol)
 
 
-@pytest.mark.parametrize('case', ['mode', 'bound-mode', 'producer', 'context', 'admission',
+@pytest.mark.parametrize('case', ['mode', 'bound-mode', 'input-mode', 'producer', 'context', 'admission',
                                 'future', 'source', 'packet-missing', 'packet-rehashed', 'workbench-rehashed'])
 def test_rehashed_mutations_cannot_supply_consumed_or_approved_material(registered, case):
     root, _, path, _ = registered
@@ -134,6 +164,8 @@ def test_rehashed_mutations_cannot_supply_consumed_or_approved_material(register
         candidate['preparation_mode'] = 'IMMUTABLE_CURRENT_IMPLEMENTATION_EXACT_INPUT_REPLAY_V1'
     elif case == 'bound-mode':
         candidate['bound_draft_inputs'] = {}
+    elif case == 'input-mode':
+        candidate['input_mode'] = 'UNREGISTERED_INPUT_MODE'
     elif case == 'producer':
         candidate['implementation_bindings'] = []
     elif case == 'context':
