@@ -1,5 +1,39 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+### 2026-10-23 exact-version economic review handoff
+
+The preceding clean integration checkpoint de6937f0 completed the exact offline
+Core selection: 4,976 passed, 85 skipped. Its Web build also passed. Those are
+local engineering results, not fresh GitHub CI or economic/strategy approval.
+
+The existing external-review handoff now joins economic assessment and accounting
+bridge material to the original candidate's review groups. Earnings, duration,
+distribution, cost/terminal and event/model questions retain their original field
+scope and unsigned response contract. Candidate-author support remains an
+unapproved assertion; historical arithmetic is not normalized earnings or
+sustainable future distributions. No new signing or approval mechanism is added.
+
+The reader verifies candidate, descriptor, package/workbench, review packet and
+the valuation artifact through the existing response replay; it rechecks the
+registry and sources after material preparation. Mixed versions or source drift
+cannot be handed off as valid material. Read-time clocks do not create new
+economic material identities. The Web presents facts, conditions, countercases
+and remaining questions without a local G3 approval button.
+
+Actual retained-source 600519 and 600887 handoffs passed exact identity and
+read-only verification. 600519 retains six reconciled bridges and 13 unknowns;
+600887 remains STRESS_ONLY and NO_SUPPORTED_BOUND_BRIDGE for this bridge
+contract. Zero returned bridge unknowns for an unsupported company do not mean
+complete research. Original sources and approval journals were unchanged.
+Related backend/architecture/response-contract selection: 102 passed. Full
+successor regression, frontend and publication results require their later
+receipts; they are not predeclared by this entry.
+
+Primary economic approval, current event validity and price admission remain
+separate substantive gates. No private account, Canonical Excel, server/PTA,
+database, scheduler, public push or broker operation is part of this change.
+action=no_order; real assisted trading NOT_REACHED.
+
 ### 2026-10-23 isolated dual-branch integration
 
 Value commit 7f0a312c and independently developed hotspot commit 556d930c were

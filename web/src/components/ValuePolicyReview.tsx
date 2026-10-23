@@ -6,6 +6,7 @@ import type { PolicyHandoff } from "../services/valuePolicy";
 import { useApi } from "../hooks/useApi";
 import { DetailSection } from "./DetailSection";
 import { ValuePolicyEditor } from "./ValuePolicyEditor";
+import { EconomicReviewMaterials } from "./EconomicReviewMaterials";
 import type {
   PolicyRegistration,
   PolicySelection,
@@ -158,7 +159,8 @@ function ExternalReviewHandoff({
         result.action !== "no_order" ||
         !["EXTERNAL_SIGNATURE_REQUIRED", "NOT_READY"].includes(result.status) ||
         result.verification.approval_changed !== false ||
-        result.verification.research_admitted !== false
+        result.verification.research_admitted !== false ||
+        result.symbol !== symbol
       )
         throw new Error("交接材料未通过只读边界校验");
       setMaterial(result);
@@ -217,6 +219,7 @@ function ExternalReviewHandoff({
           <button type="button" onClick={download}>
             下载审核材料 JSON
           </button>
+          <EconomicReviewMaterials handoff={material} symbol={symbol} />
           <MaterialityHandoff material={material.materiality_handoff} />
           <DetailSection title="候选绑定" value={material.candidate_binding} />
           <DetailSection

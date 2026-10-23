@@ -1,3 +1,48 @@
+import type { ValueResearchAnalysis } from "../types/api";
+
+type EvidenceBinding = { path: string; sha256: string };
+
+export type EconomicReviewMaterial = {
+  schema_version: "value-economic-review-materials-v1";
+  symbol: string;
+  action: "no_order";
+  status: "PENDING_ECONOMIC_JUDGMENT" | "STRESS_ONLY_NOT_PRIMARY";
+  candidate_binding: EvidenceBinding;
+  model_context: Record<string, unknown>;
+  input_descriptor_sha256: string;
+  valuation_artifact_sha256: string;
+  assessment_sha256: string;
+  materials_sha256: string;
+  primary_valuation_usable: false;
+  approval_changed: false;
+  groups: {
+    id: string;
+    title: string;
+    field_paths: string[];
+    verified_observations: string[];
+    conditional_assumptions: string[];
+    counter_evidence: string[];
+    judgment_questions: string[];
+    evidence_refs: EvidenceBinding[];
+  }[];
+  economic_assessment: NonNullable<
+    ValueResearchAnalysis["economic_assessment"]
+  > & {
+    assessment_sha256: string;
+    approval_changed: false;
+    strategy_admitted: false;
+    action_admitted: false;
+    review_binding: {
+      candidate_binding: EvidenceBinding;
+      model_context: Record<string, unknown>;
+      package_binding?: EvidenceBinding;
+      workbench_binding?: EvidenceBinding;
+      review_packet_binding?: EvidenceBinding;
+    };
+  };
+  source_bindings: EvidenceBinding[];
+};
+
 export type PolicyRule = {
   action: "entry" | "add" | "reduce" | "exit";
   scenario: "bear" | "base" | "bull";
@@ -43,6 +88,7 @@ export type PolicyHandoff =
   | {
       action: "no_order";
       status: "EXTERNAL_SIGNATURE_REQUIRED";
+      symbol: string;
       candidate_binding: unknown;
       model_context: unknown;
       valuation_artifact_sha256: string;
@@ -54,7 +100,180 @@ export type PolicyHandoff =
       commands: { draft_preview: string; consume_signed_response: string };
       materiality_handoff?: MaterialityReviewHandoff;
       supplemental_materiality_handoff?: MaterialityReviewHandoff;
+      economic_review_materials?: EconomicReviewMaterial;
     };
+
+const record = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === "object" && !Array.isArray(value);
+const digest = (value: unknown): value is string =>
+  typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+const strings = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === "string");
+function binding(value: unknown): value is EvidenceBinding {
+  return (
+    record(value) &&
+    typeof value.path === "string" &&
+    value.path.length > 0 &&
+    !/^(?:[\\/]|[a-z]+:)/i.test(value.path) &&
+    !value.path.split(/[\\/]/).includes("..") &&
+    digest(value.sha256)
+  );
+}
+function ordered(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(ordered);
+  if (record(value))
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, ordered(value[key])]),
+    );
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "boolean" ||
+    (typeof value === "number" && Number.isFinite(value))
+  )
+    return value;
+  throw new Error("Non-JSON review context");
+}
+const same = (left: unknown, right: unknown) =>
+  JSON.stringify(ordered(left)) === JSON.stringify(ordered(right));
+
+/** Presentation identity check only; source/hash verification stays server-owned. */
+export function economicMaterialsMatch(
+  handoff: PolicyHandoff,
+  symbol: string,
+): boolean {
+  try {
+    if (
+      handoff.status !== "EXTERNAL_SIGNATURE_REQUIRED" ||
+      handoff.symbol !== symbol ||
+      handoff.action !== "no_order" ||
+      handoff.verification.approval_changed !== false ||
+      handoff.verification.research_admitted !== false
+    )
+      return false;
+    const material = handoff.economic_review_materials;
+    if (
+      !material ||
+      material.schema_version !== "value-economic-review-materials-v1" ||
+      material.symbol !== symbol ||
+      material.action !== "no_order" ||
+      !["PENDING_ECONOMIC_JUDGMENT", "STRESS_ONLY_NOT_PRIMARY"].includes(
+        material.status,
+      ) ||
+      material.primary_valuation_usable !== false ||
+      material.approval_changed !== false ||
+      !binding(material.candidate_binding) ||
+      !binding(handoff.candidate_binding) ||
+      !same(material.candidate_binding, handoff.candidate_binding) ||
+      !record(material.model_context) ||
+      !record(handoff.model_context) ||
+      !same(material.model_context, handoff.model_context) ||
+      !digest(material.input_descriptor_sha256) ||
+      material.input_descriptor_sha256 !==
+        handoff.model_context.input_descriptor_sha256 ||
+      !digest(material.valuation_artifact_sha256) ||
+      material.valuation_artifact_sha256 !==
+        handoff.valuation_artifact_sha256 ||
+      !digest(material.assessment_sha256) ||
+      !digest(material.materials_sha256) ||
+      !Array.isArray(material.source_bindings) ||
+      !material.source_bindings.length ||
+      !material.source_bindings.every(binding)
+    )
+      return false;
+    const assessment = material.economic_assessment;
+    if (
+      !assessment ||
+      assessment.schema_version !== "value-economic-assessment-v1" ||
+      assessment.symbol !== symbol ||
+      assessment.action !== "no_order" ||
+      assessment.primary_valuation_usable !== false ||
+      assessment.economic_assumptions_reviewed !== false ||
+      assessment.approval_changed !== false ||
+      assessment.strategy_admitted !== false ||
+      assessment.action_admitted !== false ||
+      assessment.assessment_sha256 !== material.assessment_sha256 ||
+      assessment.input_descriptor_sha256 !== material.input_descriptor_sha256 ||
+      !record(assessment.review_binding) ||
+      !same(
+        assessment.review_binding.candidate_binding,
+        handoff.candidate_binding,
+      ) ||
+      !same(assessment.review_binding.model_context, handoff.model_context) ||
+      !strings(assessment.blockers) ||
+      (assessment.model_applicability?.assessment === "STRESS_ONLY") !==
+        (material.status === "STRESS_ONLY_NOT_PRIMARY")
+    )
+      return false;
+    const bridge = assessment.accounting_bridge_review;
+    if (
+      bridge &&
+      (bridge.schema_version !== "economic-review-bundle-v1" ||
+        bridge.symbol !== symbol ||
+        bridge.action !== "no_order" ||
+        bridge.primary_valuation_usable !== false ||
+        bridge.economic_approval_granted !== false ||
+        bridge.input_descriptor_sha256 !== material.input_descriptor_sha256 ||
+        !digest(bridge.bundle_sha256) ||
+        !strings(bridge.unknown_fields) ||
+        !Array.isArray(bridge.source_bindings) ||
+        !bridge.source_bindings.every(binding) ||
+        !Array.isArray(bridge.bridge_results) ||
+        !bridge.bridge_results.every(
+          (row) =>
+            record(row) &&
+            binding(row.source_binding) &&
+            record(row.terms) &&
+            Object.values(row.terms).every(
+              (value) => typeof value === "string",
+            ) &&
+            typeof row.source_url === "string" &&
+            Array.isArray(row.physical_pages) &&
+            row.physical_pages.every(
+              (page) => Number.isInteger(page) && page > 0,
+            ),
+        ))
+    )
+      return false;
+    const questions = handoff.review_questions;
+    if (
+      !Array.isArray(material.groups) ||
+      !Array.isArray(questions) ||
+      material.groups.length !== questions.length ||
+      new Set(material.groups.map((group) => group.id)).size !==
+        material.groups.length
+    )
+      return false;
+    return material.groups.every((group, index) => {
+      const question = questions[index];
+      return (
+        record(group) &&
+        typeof group.id === "string" &&
+        !!group.id &&
+        typeof group.title === "string" &&
+        !!group.title &&
+        record(question) &&
+        group.id === question.id &&
+        strings(group.field_paths) &&
+        same(group.field_paths, question.field_paths) &&
+        strings(group.verified_observations) &&
+        strings(group.conditional_assumptions) &&
+        strings(group.counter_evidence) &&
+        strings(group.judgment_questions) &&
+        Array.isArray(group.evidence_refs) &&
+        group.evidence_refs.every(
+          (ref) =>
+            binding(ref) &&
+            material.source_bindings.some((source) => same(source, ref)),
+        )
+      );
+    });
+  } catch {
+    return false;
+  }
+}
 
 export type PolicySelection = {
   effective_from: string;

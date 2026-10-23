@@ -378,6 +378,7 @@ jobs:
           tests/test_hotspot_candidate_selection.py
           tests/test_economic_review_cli.py
           tests/test_economic_review_bundle.py
+          tests/test_economic_review_materials.py
           tests/test_hotspot_audit_cli.py
           tests/test_hotspot_independent_validation.py
           tests/test_hotspot_lifecycle_review.py

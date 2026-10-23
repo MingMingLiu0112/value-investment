@@ -201,6 +201,36 @@ def test_bound_draft_path_does_not_consult_replay_registry(monkeypatch, tmp_path
     assert actual['blockers'] == ['CURRENT_SOURCE_BOUND_DRAFT_UNAVAILABLE']
 
 
+@pytest.mark.parametrize('replacement', ['verified-supplement', 'invalid-supplement'])
+def test_new_higher_priority_candidate_during_economic_read_never_returns_old_replay(
+        registered, monkeypatch, replacement):
+    from value_investment_agent.application.product import (
+        economic_review_materials, pending_candidate_supplement,
+    )
+    changed = False
+    original_loader = pending_candidate_supplement.load_current_pending_candidate_supplement
+    original_materials = economic_review_materials.build_economic_review_materials
+
+    def current(**kwargs):
+        if changed:
+            if replacement == 'invalid-supplement':
+                raise ValueError('TEST_ONLY new higher-priority candidate source drift')
+            # Selector output only; the original replay/calculations remain real.
+            return {'candidate_binding': {'path': 'runtime/TEST_ONLY/new.json', 'sha256': 'a' * 64}}
+        return original_loader(**kwargs)
+
+    def material(**kwargs):
+        nonlocal changed
+        result = original_materials(**kwargs)
+        changed = True
+        return result
+
+    monkeypatch.setattr(pending_candidate_supplement, 'load_current_pending_candidate_supplement', current)
+    monkeypatch.setattr(economic_review_materials, 'build_economic_review_materials', material)
+    with pytest.raises(ValueError, match='changed during economic handoff|higher-priority candidate'):
+        handoff(registered)
+
+
 @pytest.mark.skipif(not (Path(__file__).resolve().parents[1] /
     'runtime/pending-candidate-replay-v5-final-20261021/600519/publication.json').is_file(),
     reason='Retained local real-source replay is not a public CI fixture')

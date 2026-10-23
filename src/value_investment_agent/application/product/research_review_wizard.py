@@ -370,8 +370,22 @@ def _build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=
             package_binding=inputs['package_binding'], workbench_binding=inputs['workbench_binding'])
         analysis['review_binding'] = dict(candidate_binding=binding,
             model_context=result['model_context'], valuation_artifact_sha256=valuation_hash,
+            package_binding=inputs['package_binding'], workbench_binding=inputs['workbench_binding'],
             review_packet_binding=inputs['review_packet_binding'])
         result['value_research_analysis'] = analysis
+        from .economic_review_materials import build_economic_review_materials
+        result['economic_review_materials'] = build_economic_review_materials(
+            root=root, handoff=result, analysis=analysis, now=now)
+        # Economic replay can outlive the first registry read. Never hand off a
+        # mixture of the old signing candidate and a newly selected assessment.
+        current_supplement = load_current_pending_candidate_supplement(root=root, symbol=symbol)
+        if current_supplement != supplement:
+            raise ValueError('Registered candidate changed during economic handoff')
+        if supplement is None and load_current_pending_replay(root=root, symbol=symbol) != replay:
+            raise ValueError('Registered candidate changed during economic handoff')
+        if prepare_pending_review_response(root=root, candidate_path=root / binding['path'],
+                candidate_sha256=binding['sha256']) != preview['draft']:
+            raise ValueError('Unsigned response changed during economic handoff')
     if ((bound_draft or replay is not None or supplement is not None)
             and materiality_handoff.get('handoff_binding')):
         result['source_bindings'] = list({item['path']: item for item in [
