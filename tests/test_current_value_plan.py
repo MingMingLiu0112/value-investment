@@ -23,6 +23,8 @@ def test_pending_only_plan_survives_read_time_replay(registered):
 
     assert actual == plan
     assert actual['base'] == actual['research_analysis']['valuation']['base_value']
+    assert actual['research_version'] == actual['research_analysis']['research_version']
+    assert actual['research_version']
     assert actual['formal_eligibility'] is actual['price_comparison_eligible'] is False
 
 
@@ -31,6 +33,7 @@ def test_read_clock_does_not_create_new_economic_research_version(registered):
     first = current_value_plan.load_current_value_action_plans(root, now=NOW)['items'][0]
     later = current_value_plan.load_current_value_action_plans(root, now=NOW + timedelta(minutes=1))['items'][0]
     assert first['research_analysis'] == later['research_analysis']
+    assert first['research_version'] == later['research_version']
     assessment = first['research_analysis']['economic_assessment']
     assert assessment is None or 'assessed_at' not in assessment
     assert first['formal_eligibility'] is later['formal_eligibility'] is False
@@ -103,6 +106,7 @@ def test_current_pending_inputs_replace_unadmitted_plan_values(registered, monke
     assert [plan[key] for key in ('bear', 'base', 'bull')] == [
         analysis['valuation'][key + '_value'] for key in ('bear', 'base', 'bull')]
     assert plan['research_as_of'] == analysis['research_as_of']
+    assert plan['research_version'] == analysis['research_version']
     assert plan['valuation_date'] == analysis['valuation_date']
     assert plan['model_id'] == analysis['review_binding']['model_context']['model_id']
     assert plan['model_version'] == analysis['valuation']['model_version']
@@ -167,6 +171,30 @@ def test_selected_pending_source_drift_cannot_reuse_legacy_arithmetic(registered
     assert actual['research_analysis']['arithmetic_complete'] is False
     assert actual['reference_close'] == ('27.80' if has_legacy else None)
     assert pending['base'] is not None
+
+
+def test_published_pending_plan_can_be_attributed_without_conferring_approval(registered, monkeypatch):
+    from value_investment_agent.application.portfolio import judgment_snapshot
+
+    root, symbol, _, _ = registered
+    plan = current_value_plan.load_current_value_action_plans(root, now=NOW)['items'][0]
+    packet = dict(publication_id='TEST_ONLY-pending-publication', content_sha256='a' * 64,
+        value_price_conditions={symbol: plan})
+    monkeypatch.setattr(judgment_snapshot, 'load_current_packet', lambda _: (packet, None))
+    fill = dict(symbol=symbol, sleeve='CORE_VALUE', decision_id=symbol,
+        research_version=plan['research_version'])
+    snapshot = judgment_snapshot.capture_judgment_snapshot(root, fill)
+
+    assert snapshot['research_version'] == plan['research_analysis']['research_version']
+    assert snapshot['plan'] == plan
+    assert snapshot['plan']['candidate_action'] == 'NO_ACTION'
+    assert snapshot['plan']['formal_eligibility'] is snapshot['plan']['price_comparison_eligible'] is False
+    assert snapshot['trade_time_availability_proven'] is False
+    assert snapshot['current_source_reverified'] is False
+    assert snapshot['personal_risk_at_trade'] is None
+    assert judgment_snapshot.capture_judgment_snapshot(root, {**fill, 'research_version': 'another'}) is None
+    monkeypatch.setattr(judgment_snapshot, 'load_current_packet', lambda _: (None, 'UNAVAILABLE'))
+    assert judgment_snapshot.capture_judgment_snapshot(root, fill) is None
 
 
 @pytest.mark.skipif(not os.environ.get('VALUE_PLAN_REPLAY_ROOT'), reason='Retained public runtime not supplied')

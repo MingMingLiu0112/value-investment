@@ -38,7 +38,7 @@ def _pending_analysis_plan(analysis: dict, prior: dict | None, now: datetime) ->
     quote_blockers = [] if quote else ['VALUE_LATEST_COMPLETED_QUOTE_NOT_VERIFIED']
     context = analysis['review_binding']['model_context']
     explanation = dict(symbol=analysis['symbol'], company_name=analysis['company_name'], action='no_order',
-        research_as_of=analysis['research_as_of'],
+        research_as_of=analysis['research_as_of'], research_version=analysis['research_version'],
         decision_as_of=now.astimezone(ZoneInfo('Asia/Shanghai')).date().isoformat(),
         valuation=analysis['valuation'], model_id=context['model_id'], model_validity=analysis['model_validity'],
         candidate_action='NO_ACTION',
