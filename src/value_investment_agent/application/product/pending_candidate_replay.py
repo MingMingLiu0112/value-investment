@@ -18,7 +18,7 @@ from ...m1_valuation_package_builder import build_descriptor
 from ...research_input import build_research_run_spec
 
 
-MODE = 'IMMUTABLE_CURRENT_IMPLEMENTATION_EXACT_INPUT_REPLAY_V1'
+MODE = 'IMMUTABLE_CURRENT_IMPLEMENTATION_EXACT_INPUT_REPLAY_V2'
 GENERATOR = 'src/value_investment_agent/application/product/pending_research_candidate.py'
 IMPLEMENTATIONS = (
     GENERATOR,
@@ -148,11 +148,11 @@ def _request(package: dict) -> dict:
 
 
 def _successor(root: Path, target: Path, predecessor: dict, binding: dict,
-               workbench: dict, generated_at: str) -> dict:
+               workbench: dict, replayed_at: str) -> dict:
     result = deepcopy(predecessor)
-    result.update(generated_at=generated_at, predecessor_binding=binding,
+    result.update(replayed_at=replayed_at, predecessor_binding=binding,
         preparation_mode=MODE, research_date_advanced=False, valuation_date_advanced=False,
-        date_semantics='Actual replay time is envelope-only; all package dates and economic inputs are unchanged.',
+        date_semantics='Original candidate generation, package dates and economic inputs are unchanged; replayed_at records actual envelope replay only.',
         candidate_valuation=workbench.get('valuation'), execution_status=workbench.get('suggested_state'),
         schedule_gate=workbench.get('schedule_gate'),
         research_blockers=workbench.get('research_blockers', []),
@@ -161,9 +161,15 @@ def _successor(root: Path, target: Path, predecessor: dict, binding: dict,
             *(workbench.get('decision_recommendation') or {}).get('blockers', []),
             *workbench.get('research_blockers', [])])))
     sources = {item['path']: item for item in predecessor['source_bindings']}
+    additional = []
+    if 'coverage_binding' in predecessor:
+        handoff = target / 'basis-materiality-handoff.json'
+        result['coverage_binding'] = dict(predecessor['coverage_binding'],
+            handoff_binding=_binding(root, handoff))
+        additional.append(handoff)
     for path in (root / binding['path'], target / 'package.json', target / 'workbench.json',
                  target / 'consumed-review.json', target / 'schedule-request.json',
-                 root / 'config/research-evidence-stop-ledger-v1.json'):
+                 root / 'config/research-evidence-stop-ledger-v1.json', *additional):
         sources[path.relative_to(root).as_posix()] = _binding(root, path)
     result['source_bindings'] = list(sources.values())
     result['implementation_bindings'] = [_binding(root, root / name) for name in IMPLEMENTATIONS]
@@ -186,11 +192,11 @@ def verify_pending_candidate_replay(*, root: Path, binding: dict) -> dict:
     if load_json_object(path.parent / 'schedule-request.json', 'replay scope') != _request(package):
         raise ValueError('Replay must not reopen evidence or change review scope')
     workbench = load_json_object(path.parent / 'workbench.json', 'replayed workbench')
-    if _available(candidate['generated_at']) < max(
+    if _available(candidate['replayed_at']) < max(
             _available(predecessor['generated_at']), _available(workbench['generated_at'])):
         raise ValueError('Replay receipt predates its predecessor or actual workbench')
     expected = _successor(root, path.parent, predecessor, predecessor_binding,
-        workbench, candidate['generated_at'])
+        workbench, candidate['replayed_at'])
     if candidate != expected:
         raise ValueError('Replay differs from its exact predecessor/successor contract')
     if workbench.get('valuation') != predecessor['candidate_valuation']:
@@ -236,6 +242,13 @@ def prepare_pending_candidate_replay(*, root: Path, predecessor_path: Path,
     packet = load_json_object(target / 'consumed-review.json', 'replayed review packet')
     if packet['gate']['results'].get('G3_估值门') is not False:
         raise ValueError('Replay cannot promote G3; no successor created')
+    if 'coverage_binding' in predecessor:
+        from .research_materiality_reviews import prepare_materiality_review_handoff
+        scan = predecessor['coverage_binding']['scan_binding']
+        handoff = prepare_materiality_review_handoff(root=root, package_path=package_path,
+            package_sha256=sha256_file(package_path), scan_path=root / scan['path'],
+            scan_sha256=scan['sha256'])
+        write_new_json(target / 'basis-materiality-handoff.json', handoff)
     # Fail closed on changes during calculation, including the implementation itself.
     _predecessor(root, binding)
     _sources(root, implementations)

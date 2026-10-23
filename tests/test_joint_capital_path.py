@@ -291,7 +291,7 @@ def test_joint_verifier_requires_exact_implementation_set(tmp_path, synthetic_pe
 
 
 @pytest.mark.parametrize('fault', ['roe', 'ledger', 'policy_driver', 'source_value', 'proposal_ledger',
-                                  'policy_symbol', 'policy_action'])
+                                  'policy_symbol', 'policy_action', 'proposal_driver_copy'])
 def test_recomputed_package_workbench_and_receipt_cannot_divorce_joint_policy(
         tmp_path, synthetic_pending_candidate_clock, monkeypatch, fault):
     source, policy_path, request = candidate_inputs(tmp_path)
@@ -311,10 +311,13 @@ def test_recomputed_package_workbench_and_receipt_cannot_divorce_joint_policy(
                 binding['expected_value'] = value
     elif fault == 'ledger':
         package['research_case']['financial_summary']['pending_joint_capital_research']['ledgers']['base']['rows'][0]['profit'] = '1'
-    elif fault == 'proposal_ledger':
+    elif fault in ('proposal_ledger', 'proposal_driver_copy'):
         proposal_path = folder / 'valuation-proposal.json'
         proposal = json.loads(proposal_path.read_text(encoding='utf-8'))
-        proposal['choices'][0]['joint_capital_ledgers']['base']['rows'][0]['profit'] = '1'
+        if fault == 'proposal_ledger':
+            proposal['choices'][0]['joint_capital_ledgers']['base']['rows'][0]['profit'] = '1'
+        else:
+            proposal['choices'][0]['joint_drivers']['base']['new_operating_return'] = '.99'
         proposal_path.write_text(json.dumps(proposal), encoding='utf-8')
         for source_row in package['sources']:
             if source_row['local_path'] == proposal_path.relative_to(tmp_path).as_posix():
@@ -395,6 +398,22 @@ def test_recomputed_package_workbench_and_receipt_cannot_divorce_joint_policy(
     verify_current_decision_workbench(rebuilt)
     assert receipt['model_context'] == build_research_review_model_context(
         descriptor=build_descriptor(package, root=tmp_path), spec=build_research_run_spec(descriptor))
+    if fault == 'proposal_driver_copy':
+        from value_investment_agent.application.product.economic_review_materials import _joint_capital_review
+        candidate_binding = dict(path=candidate_path.relative_to(tmp_path).as_posix(),
+            sha256=sha256_file(candidate_path))
+        verified = verify_pending_research_candidate(root=tmp_path, path=candidate_path,
+            expected_sha256=candidate_binding['sha256'])
+        before = {p: p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()}
+        review = _joint_capital_review(root=tmp_path, handoff=dict(candidate_binding=candidate_binding,
+            symbol=verified['symbol'], model_context=verified['model_context']), now=datetime.now(timezone.utc))
+        policy = json.loads(policy_path.read_bytes())
+        assert review['scenarios'][1]['drivers'] == policy['choices'][0]['joint_drivers']['base']
+        assert review['scenarios'][1]['drivers']['new_operating_return'] != '.99'
+        assert review['scenarios'][1]['ledger'] == proposal['choices'][0]['joint_capital_ledgers']['base']
+        assert review['status'] == 'CONDITIONAL_PATH_NOT_APPROVED' and review['action'] == 'no_order'
+        assert all(p.read_bytes() == raw for p, raw in before.items())
+        return
     with pytest.raises(ValueError, match='economic derivation|extracted value/unit/scope|policy identity/version'):
         verify_pending_research_candidate(root=tmp_path, path=candidate_path,
             expected_sha256=sha256_file(candidate_path))

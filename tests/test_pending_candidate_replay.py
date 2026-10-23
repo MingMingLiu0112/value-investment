@@ -87,7 +87,8 @@ def test_real_application_replay_freezes_entire_package_and_keeps_old_receipt_in
     assert candidate['candidate_research_as_of'] == old['candidate_research_as_of']
     assert candidate['model_context'] == old['model_context']
     assert candidate['candidate_valuation'] == old['candidate_valuation']
-    assert candidate['generated_at'] != old['generated_at']
+    assert candidate['generated_at'] == old['generated_at']
+    assert datetime.fromisoformat(candidate['replayed_at']) > datetime.fromisoformat(old['generated_at'])
     assert candidate['research_date_advanced'] is candidate['valuation_date_advanced'] is False
     assert candidate['predecessor_binding'] == binding(root, old_path)
     assert len(candidate['implementation_bindings']) == len(replay.IMPLEMENTATIONS)
@@ -305,12 +306,86 @@ def test_rehashed_replay_receipt_cannot_fake_its_actual_availability(stale, time
     path = root / result['candidate_binding']['path']
     candidate = json.loads(path.read_text(encoding='utf-8'))
     if timestamp == 'backdated':
-        candidate['generated_at'] = old['generated_at']
+        candidate['replayed_at'] = old['generated_at']
     else:
         at = datetime.now(timezone.utc) + timedelta(days=1)
         if timestamp == 'naive':
             at = at.replace(tzinfo=None)
-        candidate['generated_at'] = at.isoformat()
+        candidate['replayed_at'] = at.isoformat()
     write(path, candidate)
     with pytest.raises(ValueError):
         replay.verify_pending_candidate_replay(root=root, binding=binding(root, path))
+
+
+def test_prior_session_replay_keeps_original_basis_clock_and_separate_actual_replay_time(
+        tmp_path, monkeypatch, synthetic_pending_candidate_clock):
+    from test_pending_research_candidate import prior_session_inputs
+    code_root = Path(__file__).resolve().parents[1]
+    for name in replay.IMPLEMENTATIONS:
+        target = tmp_path / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((code_root / name).read_bytes())
+    producer = tmp_path / replay.GENERATOR
+    original_bytes = producer.read_bytes()
+    producer.write_bytes(original_bytes + b'\n# TEST_ONLY historical producer\n')
+    package, policy, request, kwargs = prior_session_inputs(tmp_path, monkeypatch)
+    old = run(tmp_path, package, policy, request, **kwargs)
+    path = tmp_path / 'runtime/pending/candidate.json'
+    producer.write_bytes(original_bytes)
+    original_package = (path.parent / 'package.json').read_bytes()
+    # The envelope clock advances while the research/basis clock stays frozen.
+    later_replay_time = datetime.now(timezone.utc) + timedelta(days=10)
+    class LaterReplayClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            stamp = later_replay_time
+            return stamp.replace(tzinfo=None) if tz is None else stamp.astimezone(tz)
+    monkeypatch.setattr(replay, 'datetime', LaterReplayClock)
+    result = replay.prepare_pending_candidate_replay(root=tmp_path, predecessor_path=path,
+        predecessor_sha256=sha256_file(path), output_dir=tmp_path / 'runtime/replay')
+    candidate = replay.verify_pending_candidate_replay(root=tmp_path, binding=result['candidate_binding'])
+    assert candidate['generated_at'] == old['generated_at']
+    assert datetime.fromisoformat(candidate['replayed_at']) == LaterReplayClock.now(timezone.utc)
+    assert candidate['valuation_basis_date'] == old['valuation_basis_date'] == '2026-10-09'
+    assert candidate['candidate_research_as_of'] == old['candidate_research_as_of']
+    assert candidate['candidate_valuation'] == old['candidate_valuation']
+    assert candidate['model_context'] == old['model_context']
+    old_coverage = old['coverage_binding']
+    new_coverage = candidate['coverage_binding']
+    assert {k: v for k, v in old_coverage.items() if k != 'handoff_binding'} == {
+        k: v for k, v in new_coverage.items() if k != 'handoff_binding'}
+    assert new_coverage['handoff_binding']['path'] == 'runtime/replay/basis-materiality-handoff.json'
+    assert (tmp_path / 'runtime/replay/package.json').read_bytes() == original_package
+    assert candidate['price_admitted'] is candidate['research_admitted'] is False
+
+
+def test_replay_cannot_rewrite_original_candidate_generation_time(stale):
+    root, _, _ = stale
+    result = prepare(stale)
+    path = root / result['candidate_binding']['path']
+    candidate = json.loads(path.read_bytes())
+    candidate['generated_at'] = candidate['replayed_at']
+    write(path, candidate)
+    with pytest.raises(ValueError, match='predecessor/successor'):
+        replay.verify_pending_candidate_replay(root=root, binding=binding(root, path))
+
+
+def test_unapproved_replay_review_is_independent_of_old_public_price_policy(stale, monkeypatch):
+    from value_investment_agent.application.product.research_review_wizard import build_external_review_handoff
+    from value_investment_agent.application.decision import value_price_policy
+    root, _, old = stale
+    result = prepare(stale)
+    publish(root, result)
+    monkeypatch.setattr(value_price_policy, 'review_manifest_binding',
+        lambda root: pytest.fail('Old price policy must not gate an unsigned research review'))
+    before = {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
+    handoff = build_external_review_handoff(root=root, symbol=old['symbol'], now=datetime.now(timezone.utc))
+    assert handoff['status'] == 'EXTERNAL_SIGNATURE_REQUIRED'
+    assert handoff['candidate_binding'] == result['candidate_binding']
+    assert handoff['model_context'] == old['model_context']
+    assert handoff['current_public_price_policy_changed'] is False
+    assert handoff['verification']['approval_changed'] is handoff['verification']['research_admitted'] is False
+    assert handoff['unsigned_response']['whole_model_approval'] is None
+    assert all(group['response'] is None for group in handoff['unsigned_response']['groups'])
+    assert handoff['position_guidance'] is None
+    assert all(p.read_bytes() == raw for p, raw in before.items())

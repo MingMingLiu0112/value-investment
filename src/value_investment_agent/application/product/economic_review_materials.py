@@ -1,6 +1,7 @@
 """Readable economic questions bound to the existing unsigned review contract."""
 from __future__ import annotations
 
+from copy import deepcopy
 from decimal import Decimal
 from hashlib import sha256
 import json
@@ -8,9 +9,54 @@ import json
 from ..research.value_economic_assessment import load_current_value_economic_assessment
 from ..research.value_research_analysis import _bound
 from .research_reviews import prepare_pending_review_response
+from .common import load_json_object, sha256_file
+from .neutral_valuation_proposal import JOINT_SCHEMA
+from .pending_research_candidate import verify_pending_research_candidate
 
 
 SCHEMA = 'value-economic-review-materials-v1'
+
+
+def _joint_capital_review(*, root, handoff, now):
+    binding = handoff['candidate_binding']
+    candidate = verify_pending_research_candidate(root=root, path=root / binding['path'],
+        expected_sha256=binding['sha256'])
+    if candidate.get('input_mode') != JOINT_SCHEMA:
+        return None
+    if (candidate['symbol'] != handoff['symbol']
+            or candidate['model_context'] != handoff['model_context']):
+        raise ValueError('Joint review differs from the signing candidate')
+    proposal_path = (root / binding['path']).parent / 'valuation-proposal.json'
+    proposal_binding = dict(path=proposal_path.relative_to(root).as_posix(),
+        sha256=sha256_file(proposal_path))
+    if proposal_binding not in candidate['source_bindings']:
+        raise ValueError('Joint review proposal is not bound to the candidate')
+    proposal = load_json_object(_bound(root, proposal_binding), 'joint review proposal')
+    policy = load_json_object(_bound(root, candidate['economic_policy_binding']), 'joint review policy')
+    from ..research.value_research_analysis import _available
+    _available(proposal['generated_at'], now)
+    selected = next(row for row in proposal['choices'] if row['id'] == candidate['selected_choice'])
+    policy_choice = next(row for row in policy['choices'] if row['id'] == candidate['selected_choice'])
+    timing = candidate['candidate_valuation']['assumptions'].get('valuation_timing')
+    # The candidate verifier already recompiles the ledger and model outputs.
+    # Projection copies those consumed values, never recalculates a forecast.
+    result = dict(schema_version='joint-capital-review-v1', symbol=candidate['symbol'],
+        action='no_order', status='CONDITIONAL_PATH_NOT_APPROVED',
+        scope='RESEARCH_ASSUMPTIONS_NOT_NORMALIZED_FACTS',
+        candidate_binding=deepcopy(binding), proposal_binding=proposal_binding,
+        policy_binding=deepcopy(candidate['economic_policy_binding']),
+        input_descriptor_sha256=candidate['model_context']['input_descriptor_sha256'],
+        selected_choice=candidate['selected_choice'],
+        date_scope='DATED_CONDITIONAL_MODEL' if timing else 'UNDATED_CONDITIONAL_MODEL',
+        basis_at=timing['basis_at'] if timing else None,
+        valuation_at=timing['valuation_at'] if timing else None,
+        scenarios=[dict(scenario=name, drivers=deepcopy(policy_choice['joint_drivers'][name]),
+            ledger=deepcopy(selected['joint_capital_ledgers'][name]),
+            valuation_per_share=candidate['candidate_valuation'][name + '_value'])
+            for name in ('bear', 'base', 'bull')])
+    for source in (binding, proposal_binding, candidate['economic_policy_binding']):
+        _bound(root, source)
+    return result
 
 
 def _display(value, *, percent=False):
@@ -116,6 +162,9 @@ def build_economic_review_materials(*, root, handoff, analysis, now):
         primary_valuation_usable=False, approval_changed=False,
         groups=[_group_material(g, assessment, handoff['materiality_handoff']) for g in groups],
         economic_assessment=assessment, source_bindings=assessment['source_bindings'])
+    joint = _joint_capital_review(root=root, handoff=handoff, now=now)
+    if joint is not None:
+        result['joint_capital_review'] = joint
     for binding in result['source_bindings']:
         _bound(root, binding)
     result['materials_sha256'] = sha256(json.dumps(result, sort_keys=True,

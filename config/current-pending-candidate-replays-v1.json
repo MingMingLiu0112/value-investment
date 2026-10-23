@@ -2,9 +2,9 @@
   "schema_version": "current-pending-candidate-replays-v1",
   "action": "no_order",
   "publications": {
-    "600519": {
-      "path": "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json",
-      "sha256": "fdd213de83cc1b37e5d6a5aa929d67524cdc044155e62e8ebf2deaf4d6b9ae7d"
+    "600887": {
+      "path": "runtime/cc1-companion-replay-20261023-v2-final/600887/publication.json",
+      "sha256": "86b26ff6d4df03bacca7d49702a2e163448e1723e876e5776f37c57cdec54f3f"
     }
   }
 }

@@ -51,7 +51,7 @@ def verify_pending_replay_publication(*, root: Path, binding: dict) -> dict:
     publication = load_json_object(path, 'replay publication')
     _available(publication['generated_at'])
     candidate = verify_pending_candidate_replay(root=root, binding=publication['candidate_binding'])
-    if datetime.fromisoformat(publication['generated_at']) < datetime.fromisoformat(candidate['generated_at']):
+    if datetime.fromisoformat(publication['generated_at']) < datetime.fromisoformat(candidate['replayed_at']):
         raise ValueError('Replay publication predates its candidate')
     expected = _content(root, publication['candidate_binding'])
     expected['generated_at'] = publication['generated_at']

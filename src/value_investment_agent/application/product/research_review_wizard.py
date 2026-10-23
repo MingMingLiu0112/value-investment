@@ -279,7 +279,9 @@ def _build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=
             raise ValueError('Replay review materials changed during read')
     valuation_hash = preview['draft']['valuation_artifact_sha256']
     review = None
-    if not bound_draft and supplement is None:
+    # Unadmitted replay inputs have their own exact research signature context.
+    # A separate old price-policy draft cannot approve or prevent that review.
+    if not bound_draft and supplement is None and replay is None:
         manifest = json.loads((root / review_manifest_binding(root)['path']).read_bytes())
         if symbol in manifest['items']:
             review = load_value_policy_review(root, symbol, now)
@@ -351,6 +353,7 @@ def _build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=
         position_guidance=None)
     if replay is not None:
         publication = replay['publication']
+        result['current_public_price_policy_changed'] = False
         result['replay_publication_binding'] = replay['publication_binding']
         result['source_bindings'] = list({item['path']: item for item in [
             *result['source_bindings'], replay['registry_binding'], replay['publication_binding'],

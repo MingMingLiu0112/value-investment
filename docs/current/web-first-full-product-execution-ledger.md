@@ -2744,3 +2744,52 @@ The next CC1 joint-input implementation is isolated in cp1 and is not included
 in this live release or its Core receipt. Formal primary valuation, independently
 validated strategy, user version approval, exact original execution continuity
 and real assisted-use acceptance remain unfinished. action=no_order.
+
+### 2026-10-23 - Actual joint research handoff and preserved companion replay
+
+Live 8001 was subsequently verified on c4bb99b5: the source-bound 300033
+reason distinguishes an observed trigger from insufficient entry quality.
+No WATCH outcome, price threshold or strategy permission changed. The full
+de66fdd5 Core receipt is historical; it is not a later joint-code Core result.
+
+The integrated CC1 candidate is bound at
+runtime/cc1-review-ready-20261023/6851224875844dd9beb207512f7ea28b/pending/candidate.json,
+SHA256 5ab18cbc1fab4aca44a65e2ad0dd7b0e9279ab4969bd880d7d42522ec7703af2.
+Actual registry-to-wizard consumption returns five unsigned groups and LOW,
+conditional arithmetic, not primary/G3 approval. The existing economic materials
+now project its three consumed five-year capital/cash ledgers and original dates.
+Drivers come from the bound policy, not redundant proposal metadata. Independent
+fully resealed mismatch replay confirms that misleading metadata is not displayed.
+Cash failures retain negative balances; undated models retain null dates.
+
+Real 600887 replay exposed two transport defects: replay time was substituted for
+the original B1/basis generation clock, and its unsigned handoff retained the old
+package path. V2 preserves the complete package bytes, valuation, model context
+and original generated_at, adds actual replayed_at, and creates a separately
+verified unsigned path handoff. The successful candidate is
+runtime/cc1-companion-replay-20261023-v2-final/600887/candidate.json,
+SHA256 2cac3cdf933032f2c7606758bfce6f767904bb378a77726599b9a3df95bc6146.
+Earlier failed attempts remain unregistered. Its separate old public price-policy
+draft no longer blocks an unsigned research review; formal policy/action checks
+are unchanged. Independent review closed the date/path and caller issues.
+
+Actual existing wizard readback succeeds for both companies, with five/four
+unsigned groups, conditional arithmetic and economic materials. No reviewer,
+signature, approval, position or order was manufactured. Main focused regression:
+142 passed, one optional retained-source E2E skip. Fresh full Core, frontend
+integration and live publication of these new materials are still pending.
+
+Public staging follows the existing current-price registry's 169 named
+dependencies and explicit current research/review bindings. All 311 staged files
+match their digests; no accounts or spreadsheets were copied. The attempted
+generic full historical JSON closure is NOT PASSED: old opaque captures and
+historical mutable-pointer references are not a current dependency contract.
+That failed audit is not waived or reported green. A strict original document
+Hash was recovered from the protected root without editing it. The original
+snapshot builder now independently verifies current source bindings and six
+October 23 quotes; publication remains separate from source staging.
+
+Third-company MJ1 has real-source numerical research and independent economic
+review in progress. Convertible claims, cash-upstream capacity and explicit
+pressure labels remain unresolved; no new current-primary registration is made.
+All formal strategy, human, market and real-use gates remain separate. no_order.
