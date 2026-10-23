@@ -645,6 +645,14 @@ def test_reuse_inputs_preserves_original_clock_instead_of_relabeling_today(tmp_p
     financial_points = _financial_points()
 
     run_refs = {key: clocked_reference(key) for key in ("official", "tencent", "sina", "dividend", "financial")}
+    official_path = output_dir / 'official-universe.json'
+    official_raw = json.dumps(official_payload, ensure_ascii=False).encode('utf-8')
+    official_path.write_bytes(official_raw)
+    run_refs['official'] = EvidenceReference(
+        id='official', path=official_path.relative_to(project).as_posix(),
+        sha256=hashlib.sha256(official_raw).hexdigest(),
+        source_name='TEST_ONLY retained v1', source_url='https://example.test/official',
+        fetched_at=datetime(2026, 9, 22, 7, 0, tzinfo=timezone.utc))
     original = build_discovery_receipt(
         run_id="m2-original-clock-fixture",
         generated_at=generated_at,

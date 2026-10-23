@@ -175,3 +175,75 @@ existing exchange calendar, M2 engine and evidence-screen-v3 have no diff from
 `248ee135`. No HTTP, full Core, main integration, deployment, public push or live
 refresh performed in this correction. Independent re-review and actual HTTP remain
 main-owned. `action=no_order`.
+
+## Receipt-Anchored Downgrade Correction (2026-10-24)
+
+Parent: `cb3bdf40bb7a04ce052d862f344a32fca17326a6`.
+The preceding correction did NOT close a combined downgrade: changing the parser
+to V1 AND removing the V2 envelope could select historical semantics before the
+raw verifier. Treat the previous P2 closure as superseded by this correction.
+
+`read_receipt_bound_official_input(path, root=root, receipt=original)` now runs in
+the existing CLI reuse path BEFORE JSON decoding or version dispatch. The ORIGINAL
+sealed receipt must contain exactly one `id=official` evidence reference with a
+valid SHA-256 and a relative path identifying this exact official input. Missing,
+duplicate, different-file (even byte-identical), out-of-root and hash-mismatched
+bindings reject without replay output writes. Only the returned hash-checked bytes
+are decoded, then the existing V2 raw replay verifier runs. Payload shape cannot
+select a weaker route without changing the original receipt-bound bytes.
+
+The replay anchor is the supplied retained receipt, NOT a signature/trust root:
+this does not authenticate malicious replacement of BOTH receipt and all inputs.
+No new approval, registry, signature or security platform has been introduced.
+Real V1 retains historical date semantics and deterministic JSON replay; matching
+its original input identity does not retroactively grant V2 raw-document proof.
+The old TEST_ONLY V1 clock fixture had placeholder `official.json`/dummy hash; its
+official reference now binds its actually written `official-universe.json` bytes.
+No real historical packet or frozen file is rewritten for compatibility.
+
+### Exact Meaning of raw_inputs_match
+
+`summary.replay.raw_inputs_match=true` means the selected receipt builder, replayed
+with the retained input JSON projections, the same evaluation clock, quote label,
+policy and run references, reconstructs the NEW run's receipt and its candidate
+and coverage signatures exactly. It is not, by itself:
+- equality to the original historical receipt (the replay run has its own identity);
+- a cryptographic authenticity guarantee or all-provider-original validation;
+- verified market quote dates, strict historical PIT, current freshness or admission;
+- proof that reconstructed V1 inputs passed the V2 official raw parser.
+
+Original official input path/byte binding is now a mandatory separate reuse
+precondition. V2 official raw hash/reparse/pagination/timing equality is an additional
+separate precondition. Other provider projections retain existing semantics.
+`receipt_bytes_match` remains the NEW receipt's serialization roundtrip check.
+
+### Focused Evidence
+
+Command (same PowerShell7/UTF-8/temp/source environment as above):
+```text
+python -m pytest tests/test_official_universe.py
+ tests/test_m2_cli_versioned_integration.py tests/test_m2_opportunity_discovery.py
+ -q -p no:cacheprovider --basetemp=.tmp/calfix3
+```
+Result: **99 passed, 1 skipped** (host symlink privilege), four original SZSE style
+warnings. Includes actual CLI combined V1 downgrade and unversioned downgrade:
+remove all three V2 fields, zero a raw SHA, keep the original receipt. Both fail
+specifically with `Original official receipt input hash mismatch` before parsing.
+Missing/duplicate/incorrect-identity/incorrect-hash receipt references also reject.
+Earlier isolated V2 raw negatives use explicitly TEST_ONLY resealed temp receipts
+so they still exercise the raw verifier rather than being masked by this new guard.
+The explicit 5577-company source also reproduces the combined downgrade against
+a temp receipt bound to its V2 reconstruction; the real source remains read-only.
+All negative CLI runs assert every temporary run file is unchanged after rejection.
+
+Additional bounded calendar/layer checks:
+```text
+python -m pytest tests/test_exchange_calendar.py tests/test_architecture_boundaries.py
+ tests/test_architecture_migration_agent_runtime.py
+ -q -p no:cacheprovider --basetemp=.tmp/calfix4arch
+```
+Result: **42 passed**. Combined focused results: **141 passed, 1 skipped**.
+
+All nine frozen SHA-256s still match; v1 collector, original exchange calendar and
+screening engines have no diff from 248ee135. No HTTP, Live, publication, original
+source rewrite, investment-rule change or public push. `action=no_order`.

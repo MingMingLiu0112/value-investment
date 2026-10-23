@@ -278,7 +278,9 @@ def test_application_does_not_copy_a_retained_fallback(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize('damage', [None, 'source_hash', 'company_name', 'missing_raw',
     'raw_bytes', 'pagination', 'missing_page', 'timing', 'unknown_version',
-    'null_version', 'stripped_version', 'downgraded_version', 'linked_raw'])
+    'null_version', 'stripped_version', 'downgraded_version', 'linked_raw',
+    'combined_downgrade', 'combined_unversioned', 'receipt_missing',
+    'receipt_duplicate', 'receipt_identity', 'receipt_hash'])
 def test_v2_m2_receipt_session_label_does_not_restamp_fetched_time(
         v2_documents, tmp_path, monkeypatch, capsys, damage):
     import sys
@@ -351,6 +353,14 @@ def test_v2_m2_receipt_session_label_does_not_restamp_fetched_time(
         del retained['parser_version']
     elif damage == 'downgraded_version':
         retained['parser_version'] = 'official-security-lists-v1'
+    elif damage in {'combined_downgrade', 'combined_unversioned'}:
+        for key in ('collection_timing', 'available_at', 'effective_session'):
+            del retained[key]
+        if damage == 'combined_downgrade':
+            retained['parser_version'] = 'official-security-lists-v1'
+        else:
+            del retained['parser_version']
+        retained['sources'][0]['sha256'] = '0'*64
     elif damage == 'linked_raw':
         target = Path(retained['sources'][0]['local_path'])
         link = target.with_suffix('.link')
@@ -361,6 +371,24 @@ def test_v2_m2_receipt_session_label_does_not_restamp_fetched_time(
         retained['sources'][0]['local_path'] = str(link)
     # Re-serialize the JSON: recalculating its hash must not replace raw verification.
     (output/'official-universe.json').write_bytes(RUN_M2._json_bytes(retained))
+    receipt_payload = json.loads(original_receipt)
+    official_ref = next(ref for ref in receipt_payload['evidence_refs'] if ref['id'] == 'official')
+    if damage and damage not in {'combined_downgrade', 'combined_unversioned'}:
+        # TEST_ONLY resealing isolates the existing raw verifier negatives from
+        # the new receipt guard. Real callers cannot request a verification bypass.
+        official_ref['sha256'] = sha256((output/'official-universe.json').read_bytes()).hexdigest()
+        if damage == 'receipt_missing':
+            receipt_payload['evidence_refs'].remove(official_ref)
+        elif damage == 'receipt_duplicate':
+            receipt_payload['evidence_refs'].append(dict(official_ref))
+        elif damage == 'receipt_identity':
+            alias = output/'other-official.json'
+            alias.write_bytes((output/'official-universe.json').read_bytes())
+            official_ref['path'] = alias.relative_to(tmp_path).as_posix()
+        elif damage == 'receipt_hash':
+            official_ref['sha256'] = '0'*64
+        (output/'receipt.json').write_bytes(RUN_M2._json_bytes(receipt_payload))
+    before_replay = {p.name: p.read_bytes() for p in output.iterdir() if p.is_file()}
     def no_network(*args, **kwargs):
         pytest.fail('Retained CLI replay must not collect data')
     for name in ('_collect_official', 'fetch_tencent_board_rank',
@@ -370,9 +398,11 @@ def test_v2_m2_receipt_session_label_does_not_restamp_fetched_time(
     monkeypatch.setattr(sys, 'argv', ['run_m2_opportunity_discovery.py', '--reuse-inputs',
         '--output-dir', str(output), '--no-wps', '--no-workbook'])
     if damage:
-        with pytest.raises(ValueError):
+        message = 'Original official receipt input hash mismatch' if damage in {
+            'combined_downgrade', 'combined_unversioned'} else None
+        with pytest.raises(ValueError, match=message):
             RUN_M2.main()
-        assert (output/'receipt.json').read_bytes() == original_receipt
+        assert {p.name: p.read_bytes() for p in output.iterdir() if p.is_file()} == before_replay
     else:
         assert RUN_M2.main() == 0
         replay = json.loads(capsys.readouterr().out)
@@ -401,7 +431,7 @@ def test_unversioned_legacy_requires_explicit_complete_shape(v2_documents):
 
 @pytest.mark.skipif(not __import__('os').environ.get('OFFICIAL_LIST_REPLAY_ROOT'),
     reason='Explicit retained public list root not supplied')
-@pytest.mark.parametrize('damage', [None, 'source_hash', 'company_name'])
+@pytest.mark.parametrize('damage', [None, 'source_hash', 'company_name', 'combined_downgrade'])
 def test_v2_readonly_reparse_of_retained_official_bytes(tmp_path, monkeypatch, damage):
     import os
     import sys
@@ -439,21 +469,36 @@ def test_v2_readonly_reparse_of_retained_official_bytes(tmp_path, monkeypatch, d
         for name in ('receipt.json', 'tencent-market.json', 'sina-industry-quotes.json',
                      'eastmoney-dividends.json', 'retained-financial-points.json'):
             (output/name).write_bytes((path.parent/name).read_bytes())
+        # TEST_ONLY receipt for this explicit V2 reconstruction. Actual sealed
+        # receipts and raw files remain read-only; no new acquisition is claimed.
+        replay_root = Path(os.path.commonpath([str(root.resolve()), str(output.resolve())]))
+        receipt = json.loads((output/'receipt.json').read_bytes())
+        official_ref = next(ref for ref in receipt['evidence_refs'] if ref['id'] == 'official')
+        official_ref['path'] = (output/'official-universe.json').relative_to(replay_root).as_posix()
+        official_ref['sha256'] = sha256(RUN_M2._json_bytes(rebuilt)).hexdigest()
         if damage == 'source_hash':
             rebuilt['sources'][0]['sha256'] = '0'*64
-        else:
+        elif damage == 'company_name':
             rebuilt['records'][0]['name'] = 'TEST_ONLY_TAMPERED'
+        else:
+            rebuilt['parser_version'] = 'official-security-lists-v1'
+            for key in ('collection_timing', 'available_at', 'effective_session'):
+                del rebuilt[key]
+            rebuilt['sources'][0]['sha256'] = '0'*64
         (output/'official-universe.json').write_bytes(RUN_M2._json_bytes(rebuilt))
+        if damage != 'combined_downgrade':
+            official_ref['sha256'] = sha256(RUN_M2._json_bytes(rebuilt)).hexdigest()
+        (output/'receipt.json').write_bytes(RUN_M2._json_bytes(receipt))
         before = {p.name: p.read_bytes() for p in output.iterdir()}
         def no_network(*args, **kwargs):
             pytest.fail('Retained actual-source CLI must not collect data')
         for name in ('_collect_official', 'fetch_tencent_board_rank',
                      'fetch_sina_industry_quotes', 'fetch_eastmoney_dividends'):
             monkeypatch.setattr(RUN_M2, name, no_network)
-        monkeypatch.setattr(RUN_M2, 'ROOT', root)
+        monkeypatch.setattr(RUN_M2, 'ROOT', replay_root)
         monkeypatch.setattr(sys, 'argv', ['run_m2_opportunity_discovery.py', '--reuse-inputs',
             '--output-dir', str(output), '--no-wps', '--no-workbook'])
-        with pytest.raises(ValueError, match='raw hash mismatch|differs from raw replay'):
+        with pytest.raises(ValueError, match='raw hash mismatch|differs from raw replay|receipt input hash mismatch'):
             RUN_M2.main()
         assert {p.name: p.read_bytes() for p in output.iterdir()} == before
     assert path.read_bytes() == original

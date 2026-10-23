@@ -60,6 +60,38 @@ def official_input_version(payload: dict) -> str:
     raise ValueError('Unsupported unversioned official list format')
 
 
+def read_receipt_bound_official_input(path: Path, *, root: Path, receipt: dict) -> bytes:
+    """Check the original receipt identity before parsing version-controlled input.
+
+    The retained receipt is the replay anchor, not a signature/trust root. This
+    does not authenticate a receipt and input that were both maliciously replaced.
+    """
+    references = receipt.get('evidence_refs')
+    if not isinstance(references, list):
+        raise ValueError('Missing original official receipt binding')
+    matches = [ref for ref in references if isinstance(ref, dict) and ref.get('id') == 'official']
+    if len(matches) != 1:
+        raise ValueError('Original official receipt binding must be unique')
+    reference = matches[0]
+    name, digest = reference.get('path'), reference.get('sha256')
+    if (not isinstance(name, str) or not name or Path(name).is_absolute()
+            or '..' in Path(name).parts or not isinstance(digest, str)
+            or len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest)):
+        raise ValueError('Invalid original official receipt binding')
+    try:
+        root = root.resolve(strict=True)
+        expected = (root / name).resolve(strict=True)
+        actual = path.resolve(strict=True)
+        if not actual.is_relative_to(root) or expected != actual:
+            raise ValueError('Original official receipt input identity mismatch')
+        raw = path.read_bytes()
+    except OSError as exc:
+        raise ValueError('Original official receipt input unavailable') from exc
+    if sha256(raw).hexdigest() != digest:
+        raise ValueError('Original official receipt input hash mismatch')
+    return raw
+
+
 def verify_retained_official_input(payload: dict, *, root: Path) -> None:
     """V2 replay proves the retained projection against its bound raw documents.
 

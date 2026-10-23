@@ -35,6 +35,7 @@ from value_investment_agent.m2_opportunity_discovery import (
 )
 from value_investment_agent.application.discovery.official_universe_collection import (
     collect_official_m2_input, screening_quote_date, verify_retained_official_input,
+    read_receipt_bound_official_input,
 )
 from value_investment_agent.application.product.value_discovery_surface import publish_value_discovery_report
 from value_investment_agent.infrastructure.screening.evidence_screen_v3 import (
@@ -159,7 +160,8 @@ def run_once(
                 "--reuse-inputs requires every retained input: " + ", ".join(missing_inputs)
             )
         official_path = required_inputs["official"]
-        official_payload = json.loads(official_path.read_text(encoding="utf-8"))
+        official_bytes = read_receipt_bound_official_input(official_path, root=root, receipt=original)
+        official_payload = json.loads(official_bytes.decode('utf-8'))
         verify_retained_official_input(official_payload, root=root)
         official_fetched = _payload_fetched_at(official_payload, "official")
         official_ref = _reference(
@@ -303,7 +305,9 @@ def run_once(
         root=root,
     )
 
-    # Replay from the exact receipt bytes and from the retained raw inputs.
+    # These equalities prove deterministic reconstruction from retained JSON,
+    # not independent original-source verification or historical quote/PIT validity.
+    # V2 official raw replay and original receipt binding are separate checks above.
     replay = discovery_receipt_from_payload(json.loads(receipt_bytes.decode("utf-8")))
     replay_matches_receipt = (
         replay == receipt
