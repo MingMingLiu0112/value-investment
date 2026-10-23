@@ -84,7 +84,7 @@ def _current_scope(root, now):
         activity_rule_version=current["activity_rule_version"],
         signal_rule_version=SIGNAL_RULE_VERSION,
         structure_rule_version=current["structure_rule_version"],
-        source_bindings=current["source_bindings"], registry_binding=current["registry_binding"],
+        source_bindings=current["source_bindings"], registry_binding=current.get("registry_binding"),
         watch_binding=current["source_bindings"][0])
 
 

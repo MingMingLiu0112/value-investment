@@ -1,5 +1,6 @@
 """Independent review computes evidence limits, not a second admission policy."""
 from datetime import datetime, timezone
+from functools import partial
 from hashlib import sha256
 import json
 import os
@@ -11,6 +12,29 @@ from value_investment_agent.application.hotspot import independent_validation as
 from value_investment_agent.application.hotspot.strategy_execution_replay import fingerprint
 
 NOW = datetime(2026, 10, 23, 5, tzinfo=timezone.utc)
+
+
+def _fixed_oct22_selection(root):
+    """Retained historical inputs; never follow a later mutable current pointer."""
+    watch = dict(path="runtime/hotspot-daily-selection/e9916940bfbd4f91bb05d0cecaf94363/report.json",
+        sha256="c13be62b28412322ff4f5cc8e1e0968e26283df5c820e40e5ff5b0a62c351f73")
+    originals = [
+        ("600036-2026-10-22-8342287a809d44c69b8b32c964271f20", "91f115b86fa4f1efc9a3b6e78e9cc3b2dd5239c7f8d8a05763f7482bc83135fb"),
+        ("601857-2026-10-22-fec18fe436fb48f4bdd05938e9f1c218", "cd36c137aeecda6879c21eb2a749cbb5f2751a2eb1ec2410593ac30e31ac269d"),
+        ("003006-2026-10-22-f685210b247c4e579ecf31df36db376b", "32f5fed0561ab08f9fb142f7cd67709d1444f13c76a5ea1d5a6496c4d7a2909b"),
+        ("601318-2026-10-22-d9b6599481424551a97a406e1d7dd931", "c6a9448ddd12da72f290f33d12e01e153496b23aef20d2ac56363a7f28dc46a7"),
+        ("600176-2026-10-22-3e6a71dba43c4edda5d59d6b7b4c5bdf", "a7f7aa54d9c4199a9e7a4e9bfc7073d2d2d528da1bd18927a392e81e1f8e7bf0"),
+        ("600019-2026-10-22-838d779909884a518cd6e4acfeda9f3c", "7aef643c44bcbf353205befb2cae0fcd87d667716337361539ce4cebfd36e4a2"),
+        ("300750-2026-10-22-33fb0e21b19e42c298afea658cf277fe", "7403915e9a25adab62fadfc881c14d6ec24efa552aec7a3d66a3cc542d40d5fd"),
+        ("002594-2026-10-22-aabe0beb73ce4d1f8ee9029278d4a9ea", "63e0314cefbaa3e776d80cba949f70211a127c1626b7e6018e01345798f56ff9"),
+        ("002353-2026-10-22-0a012f12eaf44f1cb616ef11afcf9d43", "48da4ad206805955ddf63e6bad8088559c1b1186192c7a7dfd8be58b88f15d1f"),
+        ("000333-2026-10-22-78fd9640ce1c4de5a1352f4bb2516a76", "484fb973edf75547f0ba42cb7c030f4718fad452e913aaafa97da299dc3e7874"),
+    ]
+    cases = {name[:6]: dict(path=f"runtime/hotspot-current-price-cases/{name}/case.json", sha256=digest)
+             for name, digest in originals}
+    if any(not (root / row["path"]).is_file() for row in [watch, *cases.values()]):
+        pytest.skip("Fixed historical Oct22 raw evidence unavailable")
+    return watch, cases
 
 
 def execution():
@@ -178,8 +202,13 @@ def test_numeric_dependency_checks_are_computed_not_copied_flags(tmp_path, monke
 
 
 @pytest.mark.skipif(not os.environ.get("HOTSPOT_RETAINED_ROOT"), reason="Explicit read-only real source root required")
-def test_real_source_replay_refutes_current_independent_oos_without_mutation():
+def test_real_source_replay_refutes_current_independent_oos_without_mutation(monkeypatch):
     root = Path(os.environ["HOTSPOT_RETAINED_ROOT"])
+    watch, cases = _fixed_oct22_selection(root)
+    # Bind inputs only; all selector, price, timestamp and source checks remain
+    # native. A missing registry means explicit inputs, not a fictional pointer.
+    monkeypatch.setattr(subject, "select_current_hotspot_candidates", partial(
+        subject.select_current_hotspot_candidates, watch_binding=watch, case_bindings=cases))
     paths = [root / "config/current-price-conditions.json", root / subject.STRUCTURE_POINTER,
              root / "config/hotspot-replay-review-v1.json"]
     before = {p: p.read_bytes() for p in paths}
@@ -193,7 +222,19 @@ def test_real_source_replay_refutes_current_independent_oos_without_mutation():
     assert len(actual["costed_partitions"]) == 30
     assert {r["cost_multiplier"] for r in actual["costed_partitions"]} == {"0", "1", "2"}
     assert report["current_scope"]["trade_date"] == "2026-10-22"
+    assert report["current_scope"]["watch_binding"] == watch
+    assert report["current_scope"]["registry_binding"] is None
     assert report["current_scope"]["coverage"]["candidate_pool"] == 10
     assert report["historical_structure"]["selection_trade_date"] == "2026-10-16"
     assert report["historical_structure"]["matches_current_scope"] is False
     assert report["strict_oos_admitted"] is False
+
+
+@pytest.mark.skipif(not os.environ.get("HOTSPOT_RETAINED_ROOT"), reason="Explicit read-only real source root required")
+def test_fixed_historical_selection_still_rejects_unavailable_at_cutoff():
+    root = Path(os.environ["HOTSPOT_RETAINED_ROOT"])
+    watch, cases = _fixed_oct22_selection(root)
+    result = subject.select_current_hotspot_candidates(root=root, watch_binding=watch, case_bindings=cases,
+        now=datetime(2026, 10, 22, 0, tzinfo=timezone.utc))
+    assert result["status"] == "UNASSESSABLE" and result["data_status"] == "INVALID"
+    assert result["items"] == [] and result["formal_eligibility"] is False
