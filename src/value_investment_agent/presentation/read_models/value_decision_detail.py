@@ -128,8 +128,9 @@ def _price_bridge_execution(value: Any, published_bridge_status: Any) -> dict | 
         "current_snapshot_validity": ({key: row["current_snapshot_validity"].get(key) for key in (
             "schema_version", "scope", "status", "symbol", "evaluated_at", "knowledge_as_of",
             "observed_at", "full_calendar_window_elapsed", "strict_contemporaneous_pit",
-            "usable_for_research_comparison", "source_assurance", "bindings", "blockers",
-            "formal_eligibility", "g3_approval_granted", "strategy_approval_granted", "action")}
+            "usable_for_research_comparison", "source_assurance", "availability_basis", "bindings", "blockers",
+            "formal_eligibility", "g3_approval_granted", "strategy_approval_granted",
+            "research_cutoff_changed", "action")}
             if isinstance(row.get("current_snapshot_validity"), dict) else None),
         "current_event_coverage": ({**{key: row["current_event_coverage"].get(key) for key in (
             "required_through", "query_through", "covered_through", "observed_at",

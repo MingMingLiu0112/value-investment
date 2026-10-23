@@ -35,6 +35,8 @@ def test_snapshot_scope_survives_daily_company_and_detail_projections(tmp_path):
         source_assurance="REPLAYED_OFFICIAL_QUERY_NOT_REALTIME_INDEX_COMPLETENESS",
         formal_eligibility=False, strategy_approval_granted=False, action="no_order")
     validity = dict(**scope, status="VALID_AS_OF_SNAPSHOT", usable_for_research_comparison=True,
+        availability_basis="ALL_INPUTS_REVALIDATED_NOT_HISTORICAL_IMPORT_TIME",
+        research_cutoff_changed=False,
         evaluated_at=NOW.isoformat(), bindings={"policy": {"path": "runtime/TEST_ONLY-policy.json", "sha256": "a" * 64}},
         blockers=[])
     execution = dict(**scope, schema_version="quote-bridge-execution-v1",
@@ -60,6 +62,8 @@ def test_snapshot_scope_survives_daily_company_and_detail_projections(tmp_path):
         assert projection["current_snapshot_validity"]["bindings"] == validity["bindings"]
         assert projection["current_event_coverage"]["covered_through"] is None
     assert summary["needs_re_research"] is False
+    assert detail["current_snapshot_validity"]["availability_basis"] == validity["availability_basis"]
+    assert detail["current_snapshot_validity"]["research_cutoff_changed"] is False
     assert detail["compatibility"]["comparison_eligible"]["research_comparison_only"] is True
     assert detail["compatibility"]["formal_decision_eligible"]["eligible"] is False
     assert execution == original

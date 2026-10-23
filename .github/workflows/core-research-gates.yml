@@ -108,6 +108,9 @@ jobs:
           tests/test_held_continuity.py
           tests/test_private_risk_held_marks.py
           tests/test_incremental_quote_bridge.py
+          tests/test_current_snapshot_quote_bridge.py
+          tests/test_daily_public_packet_identity.py
+          tests/web_api/test_value_decision_detail.py
           tests/test_private_risk_experience.py
           tests/test_private_risk_cash_floor.py
           tests/test_value_policy_interaction.py
@@ -287,6 +290,7 @@ jobs:
           tests/test_research_e2e_replay.py
           tests/test_m1_post_review_receipts_boundary.py
           tests/test_m2_opportunity_discovery.py
+          tests/test_official_universe.py
           tests/test_m2_coverage_sampling.py
           tests/test_m2_research_report.py
           tests/test_m2_acceptance_audit.py

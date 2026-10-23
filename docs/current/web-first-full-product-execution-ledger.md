@@ -3334,3 +3334,36 @@ This is not signed G3, registered primary, current fair value or trade approval.
 Native pending-package preparation continues without changing existing research.
 Live remains614f with the source GET409 still awaiting the verified PDF repair
 release. The Goal stays ACTIVE and action=no_order.
+
+### 2026-10-24 - Reviewed scoped bridge consumer integrated for clean verification
+
+Native consumer d152/4f8/21f638 is integrated as c8b54b4b/9bcb237e/5a024093.
+Two independently reproduced P2s were closed before integration: pointer X-Y-X
+could mix the displayed case with another approved package, and a late rejected
+quote verdict was ignored. Successor checks both exact case identities, replays
+the native input closure and compares the complete final admission verdict.
+The query date comes from re-read bound observation/scan/binding bytes, not now.
+Independent3-probe verification closed the issues. No real policy was selected.
+
+Company-detail display e77b2611 (author505edd6f) preserves old behavior by default.
+Its TEST_ONLY scope cases distinguish observed time from the conservative input
+availability upper bound and deny whole-day/PIT/strategy/order implications.
+Root also retains availability_basis and research_cutoff_changed in the compact
+detail projection; it intentionally does not copy the entire valuation payload.
+Integrated native bridge/producer/detail/official-universe/architecture targets
+passed150,5 skipped; final metadata assertion1 passed. These overlap prior runs.
+Full clean Core/frontend/build and actual source/manual Web recovery are next;
+the long-lived614f source-GET409 must not be reported fixed before that readback.
+
+JS2 now replays through build_descriptor, ResearchRunSpec and the existing
+ResearchApplicationService to a native LOW conditional ValuationResult. Cold
+native replay matches exactly; the sealed higher-precision research calculation
+differs by at most8e-45 CNY. Pending candidate/workbench/five-group compilation
+remains a real CODE_GAP: the finite older compiler regenerates the old capital
+path and resets the valuation coordinate. The native sealed package/receipt are
+under runtime/public-research/600519-js2-native-input-20261024/.
+Do not bypass the compiler by forging a candidate or approval, overwrite the
+Hash-bound old compiler, or call this native-input-only result admitted primary.
+The next value input work must preserve the linked cash terms and coordinate in
+a versioned, generic successor using the existing research and review workflow.
+The full Goal remains ACTIVE; protected environments remain untouched. no_order.
