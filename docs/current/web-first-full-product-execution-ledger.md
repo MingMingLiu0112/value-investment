@@ -2710,3 +2710,37 @@ The integrated original-entry UI passed independent review, 22 focused tests
 including 320/390 browser layouts, and typecheck. Main full frontend:
 579 passed, 5 optional skips; typecheck and clean build 648af690 passed.
 These are not fresh GitHub CI and not an 8001 release receipt. action=no_order.
+
+### 2026-10-23 - Verified de66fdd5 release on the existing port
+
+Clean checkout de66fdd5341dd1efc97856184a6ddb62ffdac5d9 completed all 365
+offline Core files: 5315 passed, 90 skipped, 38 inherited deprecation warnings,
+zero failures/errors. XML: gc1/.tmp/core-de66fdd5.xml; SHA256
+ce2fe36021c51ace84f724df03cf68e57335811a98ca3172a2f6f0a15443aba0.
+The Web source bytes are unchanged from the 579-passed/5-skipped full frontend
+run; typecheck passed and the final build embeds de66fdd5 with source_dirty=false.
+No new remote GitHub CI or public push is claimed.
+
+The main chat fast-forwarded dual1, copied the verified build and restarted only
+its known 8001 workbench. HTTP backend/frontend identity and publication registry
+all returned MATCHED on de66fdd5. The single active-release pointer records the
+same commit. All three public pointers retain their pre-release SHA256 values;
+today's pub-09afccad20193e95bcbf and actual machine-review receipt are preserved.
+No private page was unlocked. Four already archived public fee originals were
+copied by Hash into the live tree and independently reverified there. The real
+statutory-archive optional test passed against its actual original archive root;
+the earlier dual1 MISSING result was a missing local copy, not an approved fee.
+
+Actual 8001 navigation confirmed the October 11 research baseline, October 23
+quotes, actual machine-check time and separate event/model gaps. The public
+300033 detail now renders source-bound lifecycle steps and current raw structure
+without pretending there is an owned Entry. A newly observed P2 explanation
+contradiction is being corrected: OPEN observed=true with a nonqualified
+multi-period structure correctly stays WATCH, but its generic reason currently
+sounds as if the single-period trigger were false. This is a reason/translation
+repair, not authority to change strategy thresholds or the WATCH result.
+
+The next CC1 joint-input implementation is isolated in cp1 and is not included
+in this live release or its Core receipt. Formal primary valuation, independently
+validated strategy, user version approval, exact original execution continuity
+and real assisted-use acceptance remain unfinished. action=no_order.
