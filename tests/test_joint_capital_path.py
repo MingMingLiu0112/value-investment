@@ -290,9 +290,10 @@ def test_joint_verifier_requires_exact_implementation_set(tmp_path, synthetic_pe
             expected_sha256=sha256_file(candidate_path))
 
 
-@pytest.mark.parametrize('fault', ['roe', 'ledger', 'policy_driver', 'source_value', 'proposal_ledger'])
+@pytest.mark.parametrize('fault', ['roe', 'ledger', 'policy_driver', 'source_value', 'proposal_ledger',
+                                  'policy_symbol', 'policy_action'])
 def test_recomputed_package_workbench_and_receipt_cannot_divorce_joint_policy(
-        tmp_path, synthetic_pending_candidate_clock, fault):
+        tmp_path, synthetic_pending_candidate_clock, monkeypatch, fault):
     source, policy_path, request = candidate_inputs(tmp_path)
     policy_inputs(tmp_path, source, policy_path)
     receipt = run_pending(tmp_path, source, policy_path, request)
@@ -333,6 +334,10 @@ def test_recomputed_package_workbench_and_receipt_cannot_divorce_joint_policy(
         policy = json.loads(policy_path.read_text(encoding='utf-8'))
         if fault == 'policy_driver':
             policy['choices'][0]['joint_drivers']['base']['new_operating_return'] = '.11'
+        elif fault == 'policy_symbol':
+            policy['symbol'] = '000333'
+        elif fault == 'policy_action':
+            policy['action'] = 'order'
         else:
             policy['joint_historical']['revenue']['value'] = '1'
         policy_path.write_text(json.dumps(policy), encoding='utf-8')
@@ -342,6 +347,28 @@ def test_recomputed_package_workbench_and_receipt_cannot_divorce_joint_policy(
         for source_row in package['sources']:
             if source_row['local_path'] == policy_path.relative_to(tmp_path).as_posix():
                 source_row['sha256'] = digest
+        if fault in ('policy_symbol', 'policy_action'):
+            # Fully reseal the nested proposal and package references too; this
+            # is not a test that succeeds merely because some old Hash remains.
+            proposal_path = folder / 'valuation-proposal.json'
+            proposal = json.loads(proposal_path.read_text(encoding='utf-8'))
+            for binding in proposal['source_bindings']:
+                if binding['path'] == policy_path.relative_to(tmp_path).as_posix():
+                    binding['sha256'] = digest
+            proposal_path.write_text(json.dumps(proposal), encoding='utf-8')
+            proposal_digest = sha256_file(proposal_path)
+            def refresh_proposal_refs(value):
+                if isinstance(value, dict):
+                    if (value.get('path') == proposal_path.relative_to(tmp_path).as_posix()
+                            or value.get('local_path') == proposal_path.relative_to(tmp_path).as_posix()):
+                        value['sha256'] = proposal_digest
+                    for nested in value.values():
+                        refresh_proposal_refs(nested)
+                elif isinstance(value, list):
+                    for nested in value:
+                        refresh_proposal_refs(nested)
+            refresh_proposal_refs(package)
+            assert all(sha256_file(tmp_path / b['path']) == b['sha256'] for b in proposal['source_bindings'])
     package_path.write_text(json.dumps(package), encoding='utf-8')
     work_path = folder / 'workbench.json'
     rebuilt = build_current_workbench_for_symbol(root=tmp_path, symbol=package['symbol'],
@@ -363,9 +390,38 @@ def test_recomputed_package_workbench_and_receipt_cannot_divorce_joint_policy(
         binding['sha256'] = sha256_file(tmp_path / binding['path'])
     candidate_path = folder / 'candidate.json'
     candidate_path.write_text(json.dumps(receipt), encoding='utf-8')
-    with pytest.raises(ValueError, match='economic derivation|extracted value/unit/scope'):
+    # Validate every outer identity before the semantic rejection assertion.
+    assert all(sha256_file(tmp_path / b['path']) == b['sha256'] for b in receipt['source_bindings'])
+    verify_current_decision_workbench(rebuilt)
+    assert receipt['model_context'] == build_research_review_model_context(
+        descriptor=build_descriptor(package, root=tmp_path), spec=build_research_run_spec(descriptor))
+    with pytest.raises(ValueError, match='economic derivation|extracted value/unit/scope|policy identity/version'):
         verify_pending_research_candidate(root=tmp_path, path=candidate_path,
             expected_sha256=sha256_file(candidate_path))
+    if fault in ('policy_symbol', 'policy_action'):
+        # Counterfactual confirms the fixture is otherwise fully coherent:
+        # remove only the new semantic guard inside this isolated test process.
+        from value_investment_agent.application.product import pending_research_candidate as subject
+        with monkeypatch.context() as patch:
+            patch.setattr(subject, 'validate_proposal_policy_identity', lambda **kwargs: None)
+            accepted_without_guard = verify_pending_research_candidate(root=tmp_path, path=candidate_path,
+                expected_sha256=sha256_file(candidate_path))
+            assert accepted_without_guard['status'] == 'PENDING_REVIEW'
+            assert accepted_without_guard['action'] == 'no_order'
+
+
+@pytest.mark.parametrize('mode', ['finite', 'joint'])
+@pytest.mark.parametrize('field,value', [('symbol', '000333'), ('action', 'order')])
+def test_builder_shares_no_order_policy_identity_guard(tmp_path, mode, field, value):
+    package, path = proposal_inputs(tmp_path)
+    if mode == 'joint':
+        policy_inputs(tmp_path, package, path)
+    policy = json.loads(path.read_text(encoding='utf-8'))
+    policy[field] = value
+    path.write_text(json.dumps(policy), encoding='utf-8')
+    with pytest.raises(ValueError, match='policy identity/version'):
+        run(tmp_path, package, path)
+    assert not (tmp_path / 'runtime/proposal.json').exists()
 
 
 @pytest.mark.skipif(os.environ.get('RUN_STAGED_CC1') != '1', reason='Opt-in public source E2E, no selectors changed')

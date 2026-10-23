@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 from .common import load_json_object, require_inside, sha256_file, write_new_json
 from .neutral_valuation_proposal import (
     build_neutral_valuation_proposal, JOINT_SCHEMA, _joint_inputs, _profit_anchor,
-    compile_joint_choice,
+    compile_joint_choice, validate_proposal_policy_identity,
 )
 from .financial_valuation_rebase import rebase_proposal_facts
 from .source_bound_inputs import verify_package_local_sources
@@ -78,6 +78,8 @@ def _verify_joint_economic_inputs(*, root, path, data, policy, package, descript
             or dict(path=original_binding['path'], sha256=original_binding['sha256']) not in data['source_bindings']):
         raise ValueError('joint candidate predecessor binding mismatch')
     original = load_json_object(original_path, 'joint predecessor')
+    validate_proposal_policy_identity(policy=policy, package=original,
+        package_sha256=original_binding['sha256'], candidate_symbol=package['symbol'])
     verify_package_local_sources(root, original)
     old_descriptor = build_descriptor(original, root=root)
     old_facts = old_descriptor.facts

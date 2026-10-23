@@ -23,6 +23,15 @@ from ...domain.valuation.joint_capital_path import HISTORICAL_FIELDS, compile_jo
 JOINT_SCHEMA = 'joint-capital-path-proposal-v1'
 
 
+def validate_proposal_policy_identity(*, policy, package, package_sha256, candidate_symbol=None):
+    """Construction and readback must enforce the same no-order source identity."""
+    if (policy.get('schema_version') not in ('finite-earnings-path-proposal-v1', JOINT_SCHEMA)
+            or policy.get('action') != 'no_order' or policy.get('symbol') != package.get('symbol')
+            or policy.get('source_package_sha256') != package_sha256
+            or (candidate_symbol is not None and policy.get('symbol') != candidate_symbol)):
+        raise ValueError('proposal policy identity/version mismatch')
+
+
 def _json_numbers(value):
     if isinstance(value, Decimal):
         return str(value)
@@ -194,10 +203,7 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
     package = load_json_object(package_path, 'proposal package')
     policy = load_json_object(policy_path, 'proposal policy')
     joint = policy.get('schema_version') == JOINT_SCHEMA
-    if (policy.get('schema_version') not in ('finite-earnings-path-proposal-v1', JOINT_SCHEMA)
-            or policy.get('action') != 'no_order' or policy.get('symbol') != package.get('symbol')
-            or policy.get('source_package_sha256') != package_sha256):
-        raise ValueError('proposal policy identity/version mismatch')
+    validate_proposal_policy_identity(policy=policy, package=package, package_sha256=package_sha256)
     sources = [(package_path, package_sha256), (policy_path, policy_sha256),
                *verify_package_local_sources(root, package)]
     for binding in policy.get('rationale_bindings', []):
