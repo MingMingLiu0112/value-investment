@@ -2455,3 +2455,26 @@ Unexplained display residuals remain explicit rather than being added to cash.
 No private account identifiers, holdings, images or balances are included in
 this source change. Local related backend/API/architecture regression:
 191 passed; frontend: 443 passed and 2 optional browser skips; typecheck passed.
+
+### 2026-10-23 - Dual-strategy Goal integration in progress
+
+The user launched DUAL-STRATEGY-RESEARCH-TO-DECISION-CLOSURE-20261023.
+Root checkout b6969333 remains dirty and untouched; verified live checkout dual1
+stays on 4b5b35b7. The clean vv1 integration checkout inherited that live baseline
+and cherry-picked reviewed swing deliveries 29123dc5, ee4473c5, c2cbd384 as
+bf3a9f17, 5574b9ca, 8e735ada. The five new tests enter the existing Core list,
+and the existing CLI inventory records the changed structure-validation entry.
+Integrated targeted/architecture regression: 231 passed, receipt
+`.tmp/goal-integration.xml`. This is not full Core or remote CI approval.
+
+The sibling owns source-backed swing strategy specification and corporate-action
+comparability; bounded independent workers own value economics review and daily
+research-date frontend corrections. Root owns shared integration and daily
+research review receipt consumption. Existing SAFE_REFRESH already invokes
+official event acquisition and registered-validity review; the remaining product
+gap includes persisting/replaying those results for the user, not merely changing
+the displayed research date. The original research cutoff stays immutable.
+
+No new release, strategy/economic approval, private account write, Excel update,
+production change or order is asserted. Real history remains PARTIAL/NOT_PROVEN;
+simulation and historical replay do not graduate it. Goal remains IN_PROGRESS.
