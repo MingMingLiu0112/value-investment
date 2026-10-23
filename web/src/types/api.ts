@@ -237,6 +237,15 @@ export interface AccountingBridgeReview {
 }
 
 export interface ValueResearchAnalysis {
+  joint_capital_review?:
+    import("../services/valuePolicy").JointCapitalReview | null;
+  review_binding?: {
+    candidate_binding: { path: string; sha256: string };
+    model_context: Record<string, unknown>;
+    package_binding?: { path: string; sha256: string };
+    workbench_binding?: { path: string; sha256: string };
+    review_packet_binding?: { path: string; sha256: string };
+  };
   economic_assessment?: {
     schema_version: "value-economic-assessment-v1";
     action: "no_order";
@@ -244,6 +253,7 @@ export interface ValueResearchAnalysis {
     primary_valuation_usable: false;
     economic_assumptions_reviewed: false;
     input_descriptor_sha256?: string;
+    review_binding?: ValueResearchAnalysis["review_binding"];
     accounting_bridge_review?: AccountingBridgeReview;
     model_applicability?: { assessment: string };
     earnings?: {

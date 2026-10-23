@@ -215,19 +215,17 @@ const driverFields = [
   "terminal_profit_scale",
 ];
 
-/** Shape and identity only. No ledger recomputation or economic approval in UI. */
-export function jointCapitalReviewMatches(
-  handoff: PolicyHandoff,
+/** Source-only presentation validation; never an approval or file-hash verifier. */
+function jointCapitalSourceMatches(
+  value: unknown,
   symbol: string,
-): boolean {
+  candidateBinding: unknown,
+  descriptor: unknown,
+  sources: EvidenceBinding[],
+): value is JointCapitalReview {
   try {
-    if (
-      !economicMaterialsMatch(handoff, symbol) ||
-      handoff.status !== "EXTERNAL_SIGNATURE_REQUIRED"
-    )
-      return false;
-    const material = handoff.economic_review_materials!;
-    const review = material.joint_capital_review;
+    if (!record(value)) return false;
+    const review = value;
     if (
       !review ||
       review.schema_version !== "joint-capital-review-v1" ||
@@ -236,14 +234,14 @@ export function jointCapitalReviewMatches(
       review.status !== "CONDITIONAL_PATH_NOT_APPROVED" ||
       review.scope !== "RESEARCH_ASSUMPTIONS_NOT_NORMALIZED_FACTS" ||
       !binding(review.candidate_binding) ||
-      !same(review.candidate_binding, handoff.candidate_binding) ||
+      !same(review.candidate_binding, candidateBinding) ||
       !binding(review.proposal_binding) ||
       !binding(review.policy_binding) ||
       ![review.proposal_binding, review.policy_binding].every((ref) =>
-        material.source_bindings.some((source) => same(source, ref)),
+        sources.some((source) => same(source, ref)),
       ) ||
       !digest(review.input_descriptor_sha256) ||
-      review.input_descriptor_sha256 !== material.input_descriptor_sha256 ||
+      review.input_descriptor_sha256 !== descriptor ||
       typeof review.selected_choice !== "string" ||
       !review.selected_choice.trim() ||
       !(review.date_scope === "UNDATED_CONDITIONAL_MODEL"
@@ -268,7 +266,9 @@ export function jointCapitalReviewMatches(
         Object.keys(item.drivers).some(
           (key) => key !== "years" && !driverFields.includes(key),
         ) ||
-        !driverFields.every((key) => finiteDecimal(item.drivers[key])) ||
+        !driverFields.every((key) =>
+          finiteDecimal((item.drivers as Record<string, unknown>)[key]),
+        ) ||
         !Array.isArray(item.drivers.years) ||
         item.drivers.years.length !== 5 ||
         !item.drivers.years.every(
@@ -284,6 +284,7 @@ export function jointCapitalReviewMatches(
       return (
         record(ledger) &&
         ledger.scope === review.scope &&
+        typeof ledger.cash_funding_status === "string" &&
         ["PASS", "FAIL"].includes(ledger.cash_funding_status) &&
         strings(ledger.limitations) &&
         jointTerminalFields.every((key) => finiteDecimal(ledger[key])) &&
@@ -302,6 +303,94 @@ export function jointCapitalReviewMatches(
         )
       );
     });
+  } catch {
+    return false;
+  }
+}
+
+/** Retains the full signing-context check before sharing source-only validation. */
+export function jointCapitalReviewMatches(
+  handoff: PolicyHandoff,
+  symbol: string,
+): boolean {
+  try {
+    if (
+      !economicMaterialsMatch(handoff, symbol) ||
+      handoff.status !== "EXTERNAL_SIGNATURE_REQUIRED"
+    )
+      return false;
+    const material = handoff.economic_review_materials!;
+    return jointCapitalSourceMatches(
+      material.joint_capital_review,
+      symbol,
+      handoff.candidate_binding,
+      material.input_descriptor_sha256,
+      material.source_bindings,
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Public research identity checks; no fabricated signing handoff is involved. */
+export function publicJointCapitalReviewMatches(
+  analysis: ValueResearchAnalysis,
+  symbol: string,
+): boolean {
+  try {
+    const reviewBinding = analysis.review_binding;
+    if (
+      analysis.schema_version !== "value-research-analysis-v1" ||
+      analysis.symbol !== symbol ||
+      analysis.action !== "no_order" ||
+      analysis.status !== "CONDITIONAL_ANALYSIS_VERIFIED" ||
+      analysis.arithmetic_complete !== true ||
+      analysis.economic_assumptions_reviewed !== false ||
+      analysis.action_admitted !== false ||
+      analysis.strategy_admitted !== false ||
+      analysis.price_comparison_eligible !== false ||
+      !digest(analysis.input_descriptor_sha256) ||
+      !record(reviewBinding) ||
+      !binding(reviewBinding.candidate_binding) ||
+      !record(reviewBinding.model_context) ||
+      reviewBinding.model_context.input_descriptor_sha256 !==
+        analysis.input_descriptor_sha256 ||
+      !Array.isArray(analysis.source_bindings) ||
+      !analysis.source_bindings.every(binding) ||
+      !analysis.source_bindings.some((source) =>
+        same(source, reviewBinding.candidate_binding),
+      )
+    )
+      return false;
+    // Reject contradictory public assessment identities if one is supplied.
+    const assessment = analysis.economic_assessment;
+    if (
+      assessment &&
+      (assessment.symbol !== symbol ||
+        assessment.action !== "no_order" ||
+        assessment.input_descriptor_sha256 !==
+          analysis.input_descriptor_sha256 ||
+        assessment.primary_valuation_usable !== false ||
+        assessment.economic_assumptions_reviewed !== false ||
+        (assessment.review_binding &&
+          (!same(
+            assessment.review_binding.candidate_binding,
+            reviewBinding.candidate_binding,
+          ) ||
+            !same(
+              assessment.review_binding.model_context,
+              reviewBinding.model_context,
+            ))))
+    )
+      return false;
+    ordered(reviewBinding.model_context);
+    return jointCapitalSourceMatches(
+      analysis.joint_capital_review,
+      symbol,
+      reviewBinding.candidate_binding,
+      analysis.input_descriptor_sha256,
+      analysis.source_bindings,
+    );
   } catch {
     return false;
   }

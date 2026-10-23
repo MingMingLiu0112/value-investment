@@ -1,6 +1,11 @@
-import type { PolicyHandoff } from "../services/valuePolicy";
+import type {
+  PolicyHandoff,
+  JointCapitalReview as JointReview,
+} from "../services/valuePolicy";
+import type { ValueResearchAnalysis } from "../types/api";
 import {
   jointCapitalReviewMatches,
+  publicJointCapitalReviewMatches,
   jointRowFields,
   jointTerminalFields,
 } from "../services/valuePolicy";
@@ -124,6 +129,41 @@ export function JointCapitalReview({
       </p>
     );
   const review = handoff.economic_review_materials.joint_capital_review;
+  return <JointCapitalLedger review={review} />;
+}
+
+export function PublicJointCapitalReview({
+  analysis,
+  symbol,
+}: {
+  analysis: ValueResearchAnalysis;
+  symbol: string;
+}) {
+  if (analysis.joint_capital_review == null) return null;
+  if (!publicJointCapitalReviewMatches(analysis, symbol))
+    return (
+      <p role="alert">
+        公开联合资本路径与分析版本或来源绑定不一致，或账本字段无效，暂不可作为核验结果展示。
+      </p>
+    );
+  return (
+    <section aria-label="公开联合经营与资本年度账">
+      <p>
+        前瞻假设 ·
+        LOW／低置信度，未批准。仅供公开条件研究，不是正常化事实、当前可交易价值或已证实现金。
+      </p>
+      <JointCapitalLedger review={analysis.joint_capital_review!} publicView />
+    </section>
+  );
+}
+
+function JointCapitalLedger({
+  review,
+  publicView = false,
+}: {
+  review: Readonly<JointReview>;
+  publicView?: boolean;
+}) {
   return (
     <section
       aria-label="联合资本路径待审"
@@ -224,7 +264,10 @@ export function JointCapitalReview({
           </details>
           <h5>反证与未解决条件</h5>
           <p>
-            若归母现金转换不足、维持投入高于折旧摊销代理，或新增资本回报下降，本路径可能无法支持所列分配。以下限制来自原账本；具体反证见本次五组待审材料。
+            若归母现金转换不足、维持投入高于折旧摊销代理，或新增资本回报下降，本路径可能无法支持所列分配。以下限制来自原账本；
+            {publicView
+              ? "具体反证见本页条件研究分析。"
+              : "具体反证见本次五组待审材料。"}
           </p>
           <ul>
             {scenario.ledger.limitations.map((text, index) => (
