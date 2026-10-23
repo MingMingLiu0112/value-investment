@@ -95,6 +95,9 @@ def test_native_entrypoint_reaches_shared_bridge_with_explicit_asof_scope(consum
         assert envelope['formal_eligibility'] is False
         assert envelope['action'] == 'no_order'
     assert result['current_event_coverage']['covered_through'] is None
+    binding = json.loads((case['root']/case['binding_ref']['path']).read_bytes())
+    observation = json.loads((case['root']/binding['observation_ref']['path']).read_bytes())
+    assert result['current_event_coverage']['query_through'] == observation['scan_to'] == binding['review_cutoff']
     assert result['research_comparison_only'] is True
     assert result['price_comparison']['strict_contemporaneous_pit'] is False
     assert result['compatibility']['formal_decision_eligible']['eligible'] is False
@@ -169,8 +172,9 @@ def test_previous_china_day_snapshot_cannot_be_reused_by_consumer(consumer):
 
 
 @pytest.mark.parametrize('different_content', [False, True])
-def test_independent_native_reader_cannot_mix_another_same_day_case(consumer, monkeypatch, different_content):
-    """Isolate reader disagreement; all signed approval/Gate/source replay stays native."""
+def test_native_pointer_aba_cannot_mix_another_same_day_case(consumer, monkeypatch, different_content):
+    """Switch actual pointer X->Y->X; signed approval/Gate/package loading stays native."""
+    from value_investment_agent.application.product import quote_bridge
     case = consumer
     original = case['package_path'].read_bytes()
     other = case['root']/'runtime/TEST_ONLY-other-same-day-package.json'
@@ -181,18 +185,23 @@ def test_independent_native_reader_cannot_mix_another_same_day_case(consumer, mo
     else:
         other.write_bytes(original)
     pointer = json.loads(case['pointer'].read_bytes())
+    approved_pointer_bytes = case['pointer'].read_bytes()
     pointer['quotes']['600519'].update(research_package=other.relative_to(case['root']).as_posix(),
         research_package_sha256=sha256_file(other))
     _write(case['pointer'], pointer)
-    # Explicit resolver-disagreement seam, not a substitute baseline approval.
-    # Ordinary static X/Y pointers may already fail in the evaluator's policy check.
-    def approved_package(root, symbol):
-        _, payload = service.read_bound_json(root, case['package_ref'], 'TEST_ONLY approved Y')
-        return dict(case['package_ref']), payload
-    monkeypatch.setattr(service, 'registered_package', approved_package)
+    other_pointer_bytes = case['pointer'].read_bytes()
+    original_admit = quote_bridge.admit_quote_for_research
+    calls = []
+    def admit(*args, **kwargs):
+        admitted = original_admit(*args, **kwargs)
+        calls.append(True)
+        case['pointer'].write_bytes(approved_pointer_bytes if len(calls) == 1 else other_pointer_bytes)
+        return admitted
+    monkeypatch.setattr(quote_bridge, 'admit_quote_for_research', admit)
     result = execute(case)
     assert result['research_case']['package_path'] == other.relative_to(case['root']).as_posix()
     assert result['current_snapshot_validity']['bindings']['package'] == case['package_ref']
+    assert len(calls) == 1  # Identity mismatch stops comparison before the X restoration.
     assert result['price_admitted'] is False, result['status']
     assert result['price_comparison']['bridge_status'] != 'READY'
 
@@ -231,7 +240,7 @@ def test_case_date_projection_cannot_override_bound_package(consumer, monkeypatc
     assert 'research case dates or identity changed' in result['reason']
 
 
-@pytest.mark.parametrize('role', ['original_case', 'pointer'])
+@pytest.mark.parametrize('role', ['original_case', 'pointer', 'observation', 'scan', 'increment'])
 def test_final_quote_read_cannot_hide_case_or_pointer_drift(consumer, monkeypatch, role):
     from value_investment_agent.application.product import quote_bridge
     original = quote_bridge.admit_quote_for_research
@@ -240,7 +249,12 @@ def test_final_quote_read_cannot_hide_case_or_pointer_drift(consumer, monkeypatc
         admitted = original(*args, **kwargs)
         calls.append(True)
         if len(calls) == 2:
-            path = consumer['package_path'] if role == 'original_case' else consumer['pointer']
+            if role in {'original_case', 'pointer'}:
+                path = consumer['package_path'] if role == 'original_case' else consumer['pointer']
+            else:
+                refs = json.loads((consumer['root']/consumer['binding_ref']['path']).read_bytes())
+                ref = consumer['binding_ref'] if role == 'increment' else refs[role+'_ref']
+                path = consumer['root']/ref['path']
             path.write_bytes(path.read_bytes()+b' ')
         return admitted
     monkeypatch.setattr(quote_bridge, 'admit_quote_for_research', admit)

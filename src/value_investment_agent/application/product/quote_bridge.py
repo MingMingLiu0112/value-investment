@@ -252,6 +252,23 @@ def _verify_snapshot_case(root, symbol, entry, result, snapshot):
         raise ValueError("Current snapshot research case dates or identity changed")
 
 
+def _snapshot_query_through(root, snapshot):
+    from .incremental_validity import read_bound_json
+
+    refs = snapshot.bindings
+    _, binding = read_bound_json(root, refs["increment"], "snapshot query binding")
+    _, observation = read_bound_json(root, refs["observation"], "snapshot query observation")
+    _, scan = read_bound_json(root, refs["scan"], "snapshot query scan")
+    if (binding["observation_ref"] != refs["observation"] or binding["scan_ref"] != refs["scan"]
+            or observation["scan_binding"] != refs["scan"]
+            or observation["scan_to"] != binding["review_cutoff"]
+            or scan["scan_to"] != observation["scan_to"]
+            or datetime.fromisoformat(observation["acquired_at"]) != snapshot.observed_at
+            or observation["full_calendar_window_elapsed"] is not False):
+        raise ValueError("Current snapshot query metadata differs from verified inputs")
+    return observation["scan_to"]
+
+
 def _execute_snapshot_bridge(root, symbol, today, context, entry, bundle, pointer_digest, result, verdict):
     from .current_snapshot_validity import evaluate_current_snapshot_validity, SCOPE
     from ...price_bridge import bridge_with_quote
@@ -311,6 +328,7 @@ def _execute_snapshot_bridge(root, symbol, today, context, entry, bundle, pointe
                 or final_quote != quote):
             raise ValueError("Current snapshot quote or pointer changed during comparison")
         _verify_snapshot_case(root, symbol, entry, result, replay)
+        query_through = _snapshot_query_through(root, replay)
         if sha256_file(root / POINTER_PATH) != pointer_digest:
             raise ValueError("Current snapshot pointer changed during final verification")
         if comparison.bridge_status != "READY" or comparison.blockers or snapshot.model_validity.blockers:
@@ -324,7 +342,8 @@ def _execute_snapshot_bridge(root, symbol, today, context, entry, bundle, pointe
         result["price_comparison"] = {**json.loads(comparison.to_json()), **scope}
         result["conditional_valuation"] = json.loads(snapshot.valuation.to_json())
         result["current_event_coverage"] = {**scope, "status": "CURRENT_AS_OF_SNAPSHOT",
-            "required_through": today.astimezone(CHINA).date().isoformat(), "covered_through": None}
+            "required_through": today.astimezone(CHINA).date().isoformat(),
+            "query_through": query_through, "covered_through": None}
         result["compatibility"]["research_compatible"] = {**scope, "eligible": True,
             "coverage_basis": SCOPE, "reason": "仅限已核验时点的研究价格比较；原研究日未变。"}
         result["compatibility"]["comparison_eligible"] = {**scope, "eligible": True,
