@@ -102,6 +102,45 @@ def test_production_pointer_rebuilds_model_and_computes_shared_price_bridge(prod
     assert any(item.get("path") == ref["path"] for item in comparison["evidence_refs"])
 
 
+def test_v2_real_consumer_keeps_raw_complete_window_pending_not_price_ready(production_chain, monkeypatch):
+    import test_retained_event_coverage as retained
+    from value_investment_agent.application.product import daily_event_observation
+
+    root, _, _, package_path, _ = production_chain
+    package = json.loads(package_path.read_bytes())
+    start = date.fromisoformat(package["model_validity_input"]["valid_from"])
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW.astimezone(tz) if tz else NOW.replace(tzinfo=None)
+
+    monkeypatch.setattr(retained, "START", start)
+    monkeypatch.setattr(retained, "END", CUTOFF)
+    monkeypatch.setattr(retained, "datetime", Clock)
+    monkeypatch.setattr(daily_event_observation, "datetime", Clock)
+    observation = retained.archive(root, monkeypatch)
+    binding = {"schema_version": service.BINDING_SCHEMA_V2, "symbol": SYMBOL, "action": "no_order",
+        "package_ref": {"path": package_path.relative_to(root).as_posix(), "sha256": service.sha256_file(package_path)},
+        "research_as_of": package["point_in_time"]["research_as_of"],
+        "valuation_date": package["point_in_time"]["valuation_date"],
+        "model_valid_from": start.isoformat(), "scan_from": start.isoformat(),
+        "review_cutoff": CUTOFF.isoformat(), "model_id": package["model_validity_input"]["model_id"],
+        "scan_ref": observation["scan_binding"], "observation_ref": {"path": "runtime/events/observation.json",
+            "sha256": _write(root / "runtime/events/observation.json", observation)},
+        "materiality_approved": False, "g3_approval_granted": False, "research_cutoff_changed": False,
+        "coverage_mode": "FULL_ELAPSED_WINDOW"}
+    ref = {"path": "runtime/events/v2-binding.json",
+        "sha256": _write(root / "runtime/events/v2-binding.json", binding)}
+    registration = service.register_incremental_validity_binding(root, SYMBOL, ref, CUTOFF, NOW)
+    assert registration["model_validity_status"] == "UNKNOWN"
+    execution = execute_quote_bridge_for_symbol(root, SYMBOL, today=NOW)
+    assert execution["status"] == "INCREMENTAL_VALIDITY_BLOCKED"
+    assert execution["compatibility"]["comparison_eligible"]["eligible"] is False
+    assert execution["compatibility"]["formal_decision_eligible"]["eligible"] is False
+    assert execution["action"] == "no_order"
+
+
 def test_next_morning_verified_display_names_b1_comparison_refusal(production_chain):
     root, ref, _, package, _ = production_chain
     service.register_incremental_validity_binding(root, SYMBOL, ref, CUTOFF, NOW)

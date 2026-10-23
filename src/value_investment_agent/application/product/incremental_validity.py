@@ -15,6 +15,83 @@ if TYPE_CHECKING:
     from ...model_validity import ModelValidity
 
 BINDING_SCHEMA = "incremental-validity-binding-v1"
+BINDING_SCHEMA_V2 = "incremental-validity-binding-v2"
+FULL_WINDOW = "FULL_ELAPSED_WINDOW"
+PARTIAL_WINDOW = "PARTIAL_INTRADAY_SNAPSHOT"
+
+
+def _exact_date(value, label):
+    if not isinstance(value, str):
+        raise ValueError(f"{label} requires an explicit ISO date")
+    parsed = date.fromisoformat(value)
+    if parsed.isoformat() != value:
+        raise ValueError(f"{label} requires an exact ISO date")
+    return parsed
+
+
+def _available(value, label, today):
+    if not isinstance(value, str):
+        raise ValueError(f"{label} requires an explicit aware timestamp")
+    stamp = datetime.fromisoformat(value)
+    if stamp.utcoffset() is None or stamp > today:
+        raise ValueError(f"{label} is naive or in the future")
+    return stamp
+
+
+def incremental_scan_start(binding: dict) -> date:
+    """Read a versioned start label; callers must also load/verify the binding."""
+    if binding.get("schema_version") == BINDING_SCHEMA:
+        return _exact_date(binding.get("research_as_of"), "v1 research_as_of")
+    if binding.get("schema_version") == BINDING_SCHEMA_V2:
+        start = _exact_date(binding.get("scan_from"), "v2 scan_from")
+        if start != _exact_date(binding.get("model_valid_from"), "v2 model_valid_from"):
+            raise ValueError("V2 scan start must match model valid_from")
+        return start
+    raise ValueError("Unknown incremental binding schema")
+
+
+def _model_window(root, package, symbol, review_cutoff, today):
+    """Use the pinned ResearchPitFrame/ModelValidityInput, never advance either."""
+    from .source_bound_inputs import verify_package_local_sources
+
+    if today.utcoffset() is None or type(review_cutoff) is not date:
+        raise ValueError("Incremental review requires an aware clock and exact cutoff")
+    if package.get("symbol") != symbol:
+        raise ValueError("Incremental package symbol mismatch")
+    pit, validity = package["point_in_time"], package["model_validity_input"]
+    research = _exact_date(pit.get("research_as_of"), "research_as_of")
+    valuation = _exact_date(pit.get("valuation_date"), "valuation_date")
+    start = _exact_date(validity.get("valid_from"), "model valid_from")
+    if (not valuation <= start <= review_cutoff or research > review_cutoff
+            or review_cutoff > today.astimezone(ZoneInfo("Asia/Shanghai")).date()):
+        raise ValueError("Incremental model/research window is reversed or in the future")
+    if not 0 <= (review_cutoff - start).days <= 31:
+        raise ValueError("Incremental acquisition must cover at most 31 days from model valid_from")
+    if not isinstance(validity.get("model_id"), str) or not validity["model_id"].strip():
+        raise ValueError("Incremental model identity missing")
+    available = _available(pit.get("available_at"), "package available_at", today)
+    if available.astimezone(ZoneInfo("Asia/Shanghai")).date() > research:
+        raise ValueError("Package availability follows research cutoff")
+    facts = package.get("facts") or {}
+    if facts.get("as_of") is not None and _exact_date(facts["as_of"], "facts.as_of") != valuation:
+        raise ValueError("Research valuation date must match facts as-of")
+    verify_package_local_sources(root, package)
+    for source in package.get("sources", []):
+        # Legacy M1 v1 ResearchSourceDescriptor only records acquisition time.
+        source_available_value = source.get("source_available_at")
+        if source_available_value is None and package.get("schema_version") == "m1-valuation-package-v1":
+            source_available_value = source.get("retrieved_at")
+        source_available = _available(source_available_value, "source available_at", today)
+        if source_available > available:
+            raise ValueError("Source follows package availability")
+        for field in ("published_at", "retrieved_at"):
+            if source.get(field) is not None:
+                stamp = _available(source[field], "source " + field, today)
+                if stamp > available or (field == "published_at" and stamp > source_available):
+                    raise ValueError("Source chronology exceeds declared availability")
+                if field == "retrieved_at" and stamp < source_available:
+                    raise ValueError("Source retrieval precedes observed availability")
+    return research, valuation, start
 
 
 def read_bound_json(root: Path, ref: dict, label: str) -> tuple[Path, dict]:
@@ -46,9 +123,8 @@ def collect_registered_validity_scan(*, root: Path, symbol: str, review_cutoff: 
     root = root.resolve()
     symbol = normalize_symbol(symbol)
     package_ref, package = registered_package(root, symbol)
-    start = date.fromisoformat(package["point_in_time"]["research_as_of"])
-    if not 0 <= (review_cutoff - start).days <= 31:
-        raise ValueError("Incremental acquisition must cover at most 31 days from original model cutoff")
+    research, valuation, start = _model_window(root, package, symbol, review_cutoff,
+                                              datetime.now(timezone.utc))
     output_dir = require_inside(root / "runtime", root / output_dir, "incremental acquisition")
     if output_dir.exists():
         path = output_dir / "incremental-binding.json"
@@ -57,6 +133,8 @@ def collect_registered_validity_scan(*, root: Path, symbol: str, review_cutoff: 
             package_path=root / package_ref["path"], package_sha256=package_ref["sha256"],
             review_cutoff=review_cutoff, today=datetime.now(timezone.utc))
         _, binding = read_bound_json(root, ref, "existing incremental binding")
+        if incremental_scan_start(binding) != start:
+            raise ValueError("Existing acquisition does not cover model valid_from; cannot reuse")
         _, observation = read_bound_json(root, binding["observation_ref"], "existing observation")
         if any(sha256_file(require_inside(root, root / source["path"], "retained source")) != source["sha256"]
                for source in observation["source_bindings"]):
@@ -68,25 +146,114 @@ def collect_registered_validity_scan(*, root: Path, symbol: str, review_cutoff: 
     # Revalidate the package after network acquisition; never bind a moved target.
     read_bound_json(root, package_ref, "original research package")
     observation_path = output_dir / "observation.json"
-    binding = {"schema_version": BINDING_SCHEMA, "symbol": symbol, "action": "no_order",
-        "package_ref": package_ref, "research_as_of": start.isoformat(),
+    binding = {"schema_version": BINDING_SCHEMA_V2, "symbol": symbol, "action": "no_order",
+        "package_ref": package_ref, "research_as_of": research.isoformat(),
+        "valuation_date": valuation.isoformat(), "model_valid_from": start.isoformat(),
+        "scan_from": start.isoformat(),
         "review_cutoff": review_cutoff.isoformat(), "model_id": package["model_validity_input"]["model_id"],
         "observation_ref": {"path": observation_path.relative_to(root).as_posix(),
                             "sha256": sha256_file(observation_path)},
         "scan_ref": observation["scan_binding"], "materiality_approved": False,
+        "coverage_mode": FULL_WINDOW if observation.get("full_calendar_window_elapsed") is True else PARTIAL_WINDOW,
         "g3_approval_granted": False, "research_cutoff_changed": False}
+    # Validate retained raw coverage before publishing a reusable binding.
+    _verify_v2_observation(root, binding, package, observation, symbol, review_cutoff,
+                           datetime.now(timezone.utc))
     path = output_dir / "incremental-binding.json"
     write_new_json(path, binding)
     return {"binding_ref": {"path": path.relative_to(root).as_posix(), "sha256": sha256_file(path)},
             "observation": observation, "action": "no_order"}
 
 
+def _verify_v2_observation(root, binding, package, observation, symbol, review_cutoff, today):
+    from .daily_event_observation import verify_retained_event_coverage
+
+    research, valuation, start = _model_window(root, package, symbol, review_cutoff, today)
+    if (binding.get("research_as_of") != research.isoformat()
+            or binding.get("valuation_date") != valuation.isoformat()
+            or binding.get("model_valid_from") != start.isoformat()
+            or binding.get("scan_from") != start.isoformat()
+            or any(binding.get(flag) is not False for flag in
+                   ("materiality_approved", "g3_approval_granted", "research_cutoff_changed"))):
+        raise ValueError("V2 model/research basis or authority mismatch")
+    available = _available(package["point_in_time"].get("available_at"), "package available_at", today)
+    acquired = _available(observation.get("acquired_at"), "observation acquired_at", today)
+    if acquired < available:
+        raise ValueError("V2 observation precedes bound package availability")
+    if binding.get("coverage_mode") == FULL_WINDOW:
+        verify_retained_event_coverage(root, observation, symbol=symbol,
+            required_from=start, required_to=review_cutoff, now=today)
+    elif binding.get("coverage_mode") == PARTIAL_WINDOW:
+        _verify_partial_observation(root, binding, observation, symbol, start, review_cutoff, today)
+    else:
+        raise ValueError("V2 requires explicit coverage_mode")
+
+
+def _verify_partial_observation(root, binding, observation, symbol, start, end, today):
+    """Authenticate snapshot bytes, never attest complete calendar coverage."""
+    from .daily_event_observation import _replay_raw_index
+    from ...disclosures import SEARCH_URL, validate_cninfo_announcement_window
+
+    _, scan_payload = read_bound_json(root, binding["scan_ref"], "partial event scan")
+    scan = event_scan_from_payload(scan_payload)
+    acquired = _available(observation.get("acquired_at"), "partial acquisition", today)
+    if (observation.get("schema_version") != "daily-event-observation-v1"
+            or observation.get("symbol") != symbol or observation.get("action") != "no_order"
+            or observation.get("scan_binding") != binding["scan_ref"]
+            or observation.get("scan_from") != start.isoformat() or observation.get("scan_to") != end.isoformat()
+            or observation.get("source_bindings") != list(scan.evidence_refs)
+            or observation.get("pagination_complete") is not True
+            or observation.get("collection_status") != "OFFICIAL_QUERY_ARCHIVED"
+            or type(observation.get("announcement_count")) is not int
+            or observation["announcement_count"] != len(scan.announcements)
+            or observation.get("full_calendar_window_elapsed") is not False
+            or end != acquired.astimezone(ZoneInfo("Asia/Shanghai")).date()
+            or observation.get("index_representation") != "PARSED_OFFICIAL_QUERY_WITH_RECEIVED_RESPONSE_CONTENT"
+            or scan.symbol != symbol or scan.provider != "cninfo"
+            or scan.scan_from != start or scan.validity_from != start
+            or scan.scan_to != end or scan.validity_to != end or scan.retrieved_at != acquired
+            or scan.status != "PENDING_HUMAN_REVIEW"):
+        raise ValueError("Partial V2 requires an explicit same-day pending snapshot")
+    refs = {ref["id"]: ref for ref in scan.evidence_refs}
+    if len(refs) != len(scan.evidence_refs):
+        raise ValueError("Duplicate snapshot source identity")
+    for ref in scan.evidence_refs:
+        path = require_inside(root, root / ref["path"], "snapshot source")
+        if sha256_file(path) != ref["sha256"]:
+            raise ValueError("Partial source hash mismatch")
+    _, index = read_bound_json(root, refs[f"daily-index-{symbol}"], "snapshot index")
+    _, manifest = read_bound_json(root, refs[f"daily-raw-index-manifest-{symbol}"], "snapshot manifest")
+    params = index["parameters"]
+    if (index.get("url") != SEARCH_URL or params.get("seDate") != f"{start}~{end}"
+            or params.get("stock", "").split(",")[0] != symbol
+            or any(params.get(key) for key in ("searchkey", "category", "trade", "secid", "plate"))
+            or manifest.get("schema_version") != "cninfo-raw-index-v1"
+            or manifest.get("symbol") != symbol or manifest.get("action") != "no_order"
+            or manifest.get("scan_from") != start.isoformat() or manifest.get("scan_to") != end.isoformat()
+            or manifest.get("pagination_complete") is not True):
+        raise ValueError("Partial raw request/window mismatch")
+    archive = (root / binding["scan_ref"]["path"]).parent
+    rows = _replay_raw_index(root, archive, manifest["responses"], index)
+    validate_cninfo_announcement_window(rows, start.isoformat(), end.isoformat())
+    if {str(row["announcementId"]) for row in rows} != {item.announcement_id for item in scan.announcements}:
+        raise ValueError("Partial announcement set mismatch")
+    for record in manifest["responses"]:
+        _, metadata = read_bound_json(root, {"path": record["metadata_path"],
+            "sha256": record["metadata_sha256"]}, "partial raw metadata")
+        if (metadata != {k: v for k, v in record.items() if k not in {"metadata_path", "metadata_sha256"}}
+                or record.get("url") != SEARCH_URL or record.get("method") != "POST"
+                or _available(record.get("acquired_at"), "partial raw received", today) > acquired):
+            raise ValueError("Partial raw receipt mismatch")
+
+
 def load_incremental_scan_binding(*, root: Path, binding_ref: dict, symbol: str,
         package_path: Path, package_sha256: str, review_cutoff: date, today: datetime) -> dict:
     """Resolve a caller-selected supplement, never choose a file by recency."""
+    if today.utcoffset() is None or type(review_cutoff) is not date:
+        raise ValueError("Incremental review requires an aware clock and exact cutoff")
     _, binding = read_bound_json(root, binding_ref, "incremental validity binding")
     expected_package = {"path": package_path.relative_to(root).as_posix(), "sha256": package_sha256}
-    if (binding.get("schema_version") != BINDING_SCHEMA or binding.get("symbol") != symbol
+    if (binding.get("schema_version") not in {BINDING_SCHEMA, BINDING_SCHEMA_V2} or binding.get("symbol") != symbol
             or binding.get("package_ref") != expected_package
             or binding.get("review_cutoff") != review_cutoff.isoformat()
             or binding.get("action") != "no_order"):
@@ -102,9 +269,10 @@ def load_incremental_scan_binding(*, root: Path, binding_ref: dict, symbol: str,
     acquired = datetime.fromisoformat(observation["acquired_at"])
     if acquired.utcoffset() is None or acquired > today or acquired != scan.retrieved_at:
         raise ValueError("Incremental observation availability mismatch")
+    start = incremental_scan_start(binding).isoformat()
     if (observation.get("schema_version") != "daily-event-observation-v1"
             or observation.get("symbol") != symbol or observation.get("scan_binding") != scan_ref
-            or observation.get("scan_from") != binding["research_as_of"]
+            or observation.get("scan_from") != start
             or observation.get("scan_to") != review_cutoff.isoformat()
             or observation.get("pagination_complete") is not True
             or observation.get("collection_status") != "OFFICIAL_QUERY_ARCHIVED"
@@ -116,6 +284,8 @@ def load_incremental_scan_binding(*, root: Path, binding_ref: dict, symbol: str,
         raise ValueError("Incremental observation cannot assert full-day coverage at acquisition")
     if not elapsed and scan.status != "PENDING_HUMAN_REVIEW":
         raise ValueError("Snapshot-only observation cannot establish completed event-window review")
+    if binding["schema_version"] == BINDING_SCHEMA_V2:
+        _verify_v2_observation(root, binding, package, observation, symbol, review_cutoff, today)
     return scan_ref
 
 
@@ -135,10 +305,37 @@ def resolve_incremental_model_validity(*, root: Path, symbol: str, binding_ref: 
     scan_ref = load_incremental_scan_binding(root=root, binding_ref=binding_ref, symbol=symbol,
         package_path=package_path, package_sha256=package_ref["sha256"],
         review_cutoff=review_cutoff, today=today)
-    review = review_research_validity(root=root, symbol=symbol, package_path=package_path,
-        package_sha256=package_ref["sha256"], event_scan_path=root / scan_ref["path"],
-        event_scan_sha256=scan_ref["sha256"], review_cutoff=review_cutoff, today=today)
-    payload = review["model_validity_review"]["current"]
+    _, binding = read_bound_json(root, binding_ref, "incremental validity binding")
+    if binding["schema_version"] == BINDING_SCHEMA_V2:
+        from ...model_validity import evaluate_model_validity
+        from .research_validity_review import _model_validity_payload
+
+        _, scan_payload = read_bound_json(root, scan_ref, "incremental event scan")
+        scan = event_scan_from_payload(scan_payload)
+        _, valuation, start = _model_window(root, package, symbol, review_cutoff, today)
+        original = package["model_validity_input"]
+        validity = evaluate_model_validity(model_id=original["model_id"], symbol=symbol,
+            model_as_of=valuation, valid_from=start, quote_date=review_cutoff, events=[],
+            event_scan_evidence_refs=[], blockers=list(original.get("blockers") or []), event_scan=scan)
+        payload = _model_validity_payload(validity)
+        if binding["coverage_mode"] == PARTIAL_WINDOW:
+            payload.update(status="UNKNOWN", material_event_found=None)
+            payload["blockers"].append("INTRADAY_SNAPSHOT_NOT_FULL_WINDOW")
+        if original.get("events") or original.get("event_materiality"):
+            payload.update(status="UNKNOWN", material_event_found=None)
+            payload["blockers"].append("REGISTERED_EVENT_CONTEXT_REQUIRES_REVIEW")
+        if any(item.materiality_candidate or item.review_status != "REVIEWED_NO_MATERIAL_CANDIDATE"
+               for item in scan.announcements):
+            if payload["status"] == "VALID":
+                payload.update(status="UNKNOWN", material_event_found=None)
+                payload["blockers"].append("ANNOUNCEMENT_REVIEW_INCOMPLETE")
+        reusable = payload["status"] == "VALID" and not payload["blockers"]
+    else:
+        review = review_research_validity(root=root, symbol=symbol, package_path=package_path,
+            package_sha256=package_ref["sha256"], event_scan_path=root / scan_ref["path"],
+            event_scan_sha256=scan_ref["sha256"], review_cutoff=review_cutoff, today=today)
+        payload = review["model_validity_review"]["current"]
+        reusable = review["incremental_review"]["status"] == "MODEL_VALID_AT_REVIEW_CUTOFF"
     original_ref = package["model_validity_input"].get("event_scan_ref")
     if original_ref and original_ref != scan_ref:
         _, original_scan = read_bound_json(root, original_ref, "original model event scan")
@@ -148,7 +345,7 @@ def resolve_incremental_model_validity(*, root: Path, symbol: str, binding_ref: 
             payload["blockers"].append("ORIGINAL_EVENT_REVIEW_UNRESOLVED")
     # The shared evaluator can retain blockers alongside VALID. Do not expose
     # that label as a usable incremental price input until all reuse gates pass.
-    if payload["status"] == "VALID" and review["incremental_review"]["status"] != "MODEL_VALID_AT_REVIEW_CUTOFF":
+    if payload["status"] == "VALID" and not reusable:
         payload.update(status="UNKNOWN", material_event_found=None)
     payload["evidence_refs"] = [*payload["evidence_refs"],
         {"id": "incremental-validity-binding-" + binding_ref["sha256"], **binding_ref}]
