@@ -394,6 +394,8 @@ def _partial_v2(root, monkeypatch):
 
     monkeypatch.setattr(retained, "datetime", Clock)
     monkeypatch.setattr(daily_event_observation, "datetime", Clock)
+    from value_investment_agent.application.product import incremental_validity
+    monkeypatch.setattr(incremental_validity, "datetime", Clock)
     return _v2_supplement(root, monkeypatch)
 
 
@@ -407,10 +409,13 @@ def test_v2_same_day_snapshot_is_archivable_and_registers_only_unknown(tmp_path,
     assert "INTRADAY_SNAPSHOT_NOT_FULL_WINDOW" in validity.blockers
     result = register_incremental_validity_binding(tmp_path, "600519", ref, date(2020, 1, 2), now)
     assert result["model_validity_status"] == "UNKNOWN" and result["g3_approval_granted"] is False
-    # Reuse stays explicit partial V2, never silently falls back to V1.
-    result = collect_registered_validity_scan(root=tmp_path, symbol="600519", review_cutoff=date(2020, 1, 2),
-        output_dir=tmp_path / "runtime/events")
-    assert result["binding_ref"] == ref
+    # Same-day partial evidence remains readable, but cannot be reused as a new
+    # current acquisition; the CLI uses an independent directory each run.
+    old_bytes = (tmp_path / ref["path"]).read_bytes()
+    with pytest.raises(ValueError):
+        collect_registered_validity_scan(root=tmp_path, symbol="600519", review_cutoff=date(2020, 1, 2),
+            output_dir=tmp_path / "runtime/events")
+    assert (tmp_path / ref["path"]).read_bytes() == old_bytes
     assert json.loads((tmp_path / ref["path"]).read_bytes())["schema_version"] == BINDING_SCHEMA_V2
     output = tmp_path / "runtime/new-partial"
     observation = json.loads((tmp_path / binding["observation_ref"]["path"]).read_bytes())
@@ -427,6 +432,100 @@ def test_v2_same_day_snapshot_is_archivable_and_registers_only_unknown(tmp_path,
     new_binding = json.loads((tmp_path / collected["binding_ref"]["path"]).read_bytes())
     assert new_binding["coverage_mode"] == "PARTIAL_INTRADAY_SNAPSHOT"
     assert _resolve_v2(tmp_path, collected["binding_ref"], now).status == "UNKNOWN"
+
+
+def test_past_partial_window_cannot_be_reused_as_complete_acquisition(tmp_path, monkeypatch):
+    from value_investment_agent.application.product import incremental_validity as service
+
+    ref, _, _, _ = _partial_v2(tmp_path, monkeypatch)
+    before = (tmp_path / ref["path"]).read_bytes()
+
+    class NextDay(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            stamp = datetime(2020, 1, 3, 10, tzinfo=timezone.utc)
+            return stamp.astimezone(tz) if tz else stamp.replace(tzinfo=None)
+
+    monkeypatch.setattr(service, "datetime", NextDay)
+    with pytest.raises(ValueError, match="partial acquisition cannot reuse"):
+        collect_registered_validity_scan(root=tmp_path, symbol="600519", review_cutoff=date(2020, 1, 2),
+            output_dir=tmp_path / "runtime/events")
+    assert (tmp_path / ref["path"]).read_bytes() == before
+
+
+def test_weekend_second_snapshot_requeries_and_retains_new_pending_filing(tmp_path, monkeypatch):
+    """TEST_ONLY received raw bodies, with Friday basis and Saturday event time."""
+    from value_investment_agent import disclosures
+    from value_investment_agent.application.product import daily_event_observation as daily
+    from value_investment_agent.application.product import incremental_validity as service
+    from pypdf import PdfWriter
+    from hashlib import sha256
+
+    friday, saturday = date(2026, 10, 23), date(2026, 10, 24)
+    clock = [datetime(2026, 10, 24, 2, tzinfo=timezone.utc)]
+    rows, calls = [], []
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return clock[0].astimezone(tz) if tz else clock[0].replace(tzinfo=None)
+
+    monkeypatch.setattr(daily, 'datetime', Clock)
+    monkeypatch.setattr(service, 'datetime', Clock)
+
+    def request(parameters, *, raw_response_sink):
+        calls.append(dict(parameters))
+        payload = dict(totalAnnouncement=len(rows), announcements=list(rows), hasMore=False)
+        if not parameters['seDate']:
+            payload = dict(totalAnnouncement=1, announcements=[dict(secCode='600519', orgId='TEST_ONLY_weekend')])
+        body = json.dumps(payload).encode()
+        raw_response_sink(body, dict(url=disclosures.SEARCH_URL, method='POST', request=parameters,
+            page=int(parameters['pageNum']), acquired_at=clock[0].isoformat(),
+            sha256=sha256(body).hexdigest(), size_bytes=len(body)))
+        return payload
+
+    def pdf(url, path):
+        writer = PdfWriter()
+        writer.add_blank_page(width=100, height=100)
+        with path.open('wb') as stream:
+            writer.write(stream)
+        return service.sha256_file(path)
+
+    monkeypatch.setattr(disclosures, '_request_json', request)
+    monkeypatch.setattr(daily, 'download_disclosure_pdf', pdf)
+    package = dict(symbol='600519', name='TEST_ONLY_WEEKEND', point_in_time=dict(
+        research_as_of=str(friday), valuation_date=str(friday), available_at='2026-10-23T08:00:00+00:00'),
+        model_validity_input=dict(model_id='TEST_ONLY', valid_from=str(friday), events=[],
+            blockers=['pending_complete_event_materiality_review']))
+    package_ref = dict(path='runtime/package.json', sha256=_write(tmp_path / 'runtime/package.json', package))
+    _write(tmp_path / 'config/current-quote-bridge.json', dict(schema_version='current-quote-bridge-v1',
+        action='no_order', quotes={'600519': dict(research_package=package_ref['path'],
+            research_package_sha256=package_ref['sha256'])}))
+    first_dir = tmp_path / 'runtime/weekend-first'
+    first = collect_registered_validity_scan(root=tmp_path, symbol='600519', review_cutoff=saturday, output_dir=first_dir)
+    first_bytes = {p: p.read_bytes() for p in first_dir.rglob('*') if p.is_file()}
+    count = len(calls)
+    clock[0] = datetime(2026, 10, 24, 4, tzinfo=timezone.utc)
+    rows.append(dict(secCode='600519', orgId='TEST_ONLY_weekend', announcementId='999',
+        announcementTitle='TEST_ONLY Saturday material filing', adjunctUrl='finalpage/2026-10-24/999.PDF',
+        announcementTime=int(datetime(2026, 10, 24, 3, tzinfo=timezone.utc).timestamp() * 1000)))
+    with pytest.raises(ValueError):
+        collect_registered_validity_scan(root=tmp_path, symbol='600519', review_cutoff=saturday, output_dir=first_dir)
+    assert len(calls) == count  # Refuse immutable-dir reuse; a fresh directory triggers a new request.
+    second = collect_registered_validity_scan(root=tmp_path, symbol='600519', review_cutoff=saturday,
+        output_dir=tmp_path / 'runtime/weekend-second')
+    assert len(calls) > count
+    assert calls[-1]['seDate'] == '2026-10-23~2026-10-24'
+    assert first['observation']['announcement_count'] == 0
+    assert second['observation']['announcement_count'] == 1
+    assert second['observation']['full_calendar_window_elapsed'] is False
+    assert second['binding_ref'] != first['binding_ref']
+    validity = resolve_incremental_model_validity(root=tmp_path, symbol='600519', binding_ref=second['binding_ref'],
+        review_cutoff=saturday, today=clock[0])
+    assert validity.status == 'UNKNOWN'
+    assert 'pending_complete_event_materiality_review' in validity.blockers
+    assert 'INTRADAY_SNAPSHOT_NOT_FULL_WINDOW' in validity.blockers
+    assert all(p.read_bytes() == data for p, data in first_bytes.items())
 
 
 @pytest.mark.parametrize("failure", ["promote_full", "missing_mode", "elapsed", "reviewed", "future_raw", "wrong_request"])

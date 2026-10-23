@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -213,13 +214,15 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         'import json\nprint(json.dumps({"status":"PINNED","action":"no_order"}))\n',
         encoding='utf-8')
     (current / 'collect_registered_validity_scan.py').write_text(
-        'import json,sys\n'
+        'import json,sys\nfrom pathlib import Path\n'
+        'with Path(".tmp/scan-calls.jsonl").open("a",encoding="utf-8") as stream:\n'
+        '    stream.write(json.dumps(sys.argv[1:])+"\\n")\n'
         f'failed={scenario == "incremental_unavailable"!r}\n'
         'print(json.dumps({"binding_ref":{"path":"runtime/TEST_ONLY-scan.json","sha256":"a"*64}}))\n'
         'raise SystemExit(2 if failed else 0)\n', encoding='utf-8')
     (current / 'review_registered_research_validity.py').write_text(
-        'import json\nprint(json.dumps({"artifact":"runtime/TEST_ONLY-review.json",'
-        '"artifact_sha256":"a"*64,"review_cutoff":"2026-10-14","symbols":["600887"],'
+        'import json,sys\nprint(json.dumps({"artifact":"runtime/TEST_ONLY-review.json",'
+        '"artifact_sha256":"a"*64,"review_cutoff":sys.argv[sys.argv.index("--review-cutoff")+1],"symbols":["600887"],'
         '"reviews":[{"symbol":"600887",'
         '"model_validity_status":"UNKNOWN","status":"REQUIRES_MATERIALITY_REVIEW"}]}))\n',
         encoding='utf-8')
@@ -247,8 +250,21 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
     assert receipt['research_validity_review'] == {"path": "runtime/TEST_ONLY-review.json", "sha256": "a" * 64}
     review_node = next(row for row in receipt['nodes']
                       if row['command'] == 'scripts/current/review_registered_research_validity.py')
+    # The quote fixture deliberately remains Oct 14. Event review follows the
+    # actual China civil day, including weekends, not that market session.
+    china = timezone(timedelta(hours=8))
+    days = {datetime.fromisoformat(receipt[key]).astimezone(china).date().isoformat()
+            for key in ('started_at', 'finished_at')}
+    cutoff = review_node['output_binding']['review_cutoff']
+    assert cutoff in days
+    assert cutoff != readiness['market_trade_dates'][0]
     assert review_node['output_binding'] == {**receipt['research_validity_review'],
-        "review_cutoff": "2026-10-14", "symbols": ["600887"]}
+        "review_cutoff": cutoff, "symbols": ["600887"]}
+    scan_calls = [json.loads(line) for line in (scratch / 'scan-calls.jsonl').read_text().splitlines()]
+    assert len(scan_calls) == 1
+    assert scan_calls[0][scan_calls[0].index('--review-cutoff') + 1] == cutoff
+    directory = scan_calls[0][scan_calls[0].index('--output-dir') + 1]
+    assert directory.startswith(f'runtime/incremental-validity/600887/{cutoff}-')
     assert receipt['marketwide_screen']['current_publication_eligible'] is False
     assert receipt['marketwide_screen']['status'] == (
         'BLOCKED' if scenario in {'m2_unavailable', 'm2_historical', 'm2_manifest_missing', 'm2_crash'} else 'RESEARCH_ONLY')
@@ -291,6 +307,16 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         assert receipt['retained_publication_id'] == 'retained'
     else:
         assert json.loads(pointer.read_bytes())['publication_id'] == 'verified'
+    if scenario == 'complete':
+        # Execute the real orchestrator twice; a successful earlier snapshot
+        # must not suppress the second provider invocation on the same day.
+        again = subprocess.run([str(PWSH), '-NoProfile', '-File',
+            str(current / 'run_daily_workbench.ps1'), '-Mode', 'SAFE_REFRESH', '-NoServer'],
+            cwd=project, capture_output=True, text=True, encoding='utf-8', timeout=60)
+        assert again.returncode == 0, again.stdout + again.stderr
+        repeated = [json.loads(line) for line in (scratch / 'scan-calls.jsonl').read_text().splitlines()]
+        assert len(repeated) == 2
+        assert repeated[1][repeated[1].index('--output-dir') + 1] != directory
 
 
 def _research_discovery_project(tmp_path, *, discovery_status='READY'):

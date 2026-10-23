@@ -85,17 +85,26 @@ def test_production_pointer_rebuilds_model_and_computes_shared_price_bridge(prod
     assert service.register_incremental_validity_binding(root, SYMBOL, ref, CUTOFF, NOW) == registration
     assert pointer.read_bytes() == pinned
     execution = execute_quote_bridge_for_symbol(root, SYMBOL, today=NOW)
-    assert execution["status"] == "QUOTE_VERIFIED_WITH_INCREMENTAL_VALIDITY", execution.get("reason")
-    comparison = execution["price_comparison"]
+    assert execution["status"] == "INCREMENTAL_VALIDITY_BLOCKED", execution.get("reason")
+    comparison = execution["historical_price_comparison"]
     valuation = execution["conditional_valuation"]
     assert comparison["bridge_status"] == "READY"
     assert Decimal(comparison["margin_to_base"]) == (Decimal(valuation["base_value"]) - Decimal("5")) / Decimal(valuation["base_value"])
     assert execution["research_day"] == DAY.isoformat()
     assert execution["compatibility"]["original_cutoff_compatible"]["eligible"] is False
-    assert execution["compatibility"]["research_compatible"]["eligible"] is True
-    assert execution["compatibility"]["research_compatible"]["coverage_basis"] == "EXPLICIT_INCREMENTAL_VALIDITY"
+    assert execution["compatibility"]["research_compatible"]["eligible"] is False
     assert execution["quote_verification_status"] == "QUOTE_VERIFIED_BUT_RESEARCH_STALE"
-    assert execution["compatibility"]["comparison_eligible"]["eligible"] is True
+    assert execution["compatibility"]["comparison_eligible"]["eligible"] is False
+    assert execution["price_admitted"] is False
+    assert execution["price_comparison"]["bridge_status"] != "READY"
+    assert execution["historical_model_validity"]["status"] == "VALID"
+    assert execution["incremental_validity"]["model_validity"]["status"] == "UNKNOWN"
+    assert "CURRENT_EVENT_COVERAGE_NOT_VERIFIED" in execution["incremental_validity"]["blockers"]
+    assert execution["current_event_coverage"]["required_through"] == "2026-09-23"
+    assert execution["current_event_coverage"]["covered_through"] == CUTOFF.isoformat()
+    assert execution["current_event_coverage"]["status"] == "CLOSED_WINDOW_NOT_CURRENT"
+    assert execution["quote"]["quote_date"] == CUTOFF.isoformat()
+    assert "READY" not in execution["compatibility"]["comparison_eligible"]["reason"]
     assert execution["compatibility"]["formal_decision_eligible"]["eligible"] is False
     assert execution["action"] == "no_order"
     assert package.read_bytes() == before
@@ -141,6 +150,77 @@ def test_v2_real_consumer_keeps_raw_complete_window_pending_not_price_ready(prod
     assert execution["action"] == "no_order"
 
 
+def test_known_stale_model_survives_missing_current_coverage(production_chain, monkeypatch):
+    """Inject an already-established typed adverse verdict, not an approval."""
+    from dataclasses import replace
+    from value_investment_agent import price_bridge
+
+    root, ref, _, package, _ = production_chain
+    service.register_incremental_validity_binding(root, SYMBOL, ref, CUTOFF, NOW)
+    resolve = service.resolve_incremental_model_validity
+    bridge = price_bridge.bridge_with_quote
+    seen = []
+
+    def stale(**kwargs):
+        return replace(resolve(**kwargs), status="STALE", material_event_found=True,
+                       blockers=["TEST_ONLY_KNOWN_MATERIAL_DAMAGE"])
+
+    def observe(valuation, validity, quote, **kwargs):
+        seen.append(validity)
+        return bridge(valuation, validity, quote, **kwargs)
+
+    monkeypatch.setattr(service, "resolve_incremental_model_validity", stale)
+    monkeypatch.setattr(price_bridge, "bridge_with_quote", observe)
+    before = package.read_bytes()
+    result = execute_quote_bridge_for_symbol(root, SYMBOL, today=NOW)
+    current = result["incremental_validity"]["model_validity"]
+    assert current["status"] == "STALE"
+    assert current["material_event_found"] is True
+    assert "TEST_ONLY_KNOWN_MATERIAL_DAMAGE" in current["blockers"]
+    assert "CURRENT_EVENT_COVERAGE_NOT_VERIFIED" in current["blockers"]
+    assert seen[0].status == "STALE"  # Actual shared bridge receives the adverse typed input.
+    assert "CURRENT_EVENT_COVERAGE_NOT_VERIFIED" in seen[0].blockers
+    assert result["historical_model_validity"]["status"] == "STALE"
+    assert "CURRENT_EVENT_COVERAGE_NOT_VERIFIED" not in result["historical_model_validity"]["blockers"]
+    assert result["historical_price_comparison"]["bridge_status"] != "READY"
+    assert result["price_comparison"]["bridge_status"] != "READY"
+    assert result["status"] == "INCREMENTAL_VALIDITY_BLOCKED"
+    assert result["price_admitted"] is False
+    assert result["quote"]["quote_date"] == CUTOFF.isoformat()
+    assert result["conditional_valuation"]["base_value"]
+    assert result["action"] == "no_order"
+    assert package.read_bytes() == before
+
+
+def test_failed_current_collection_cannot_promote_retained_historical_ready(production_chain, monkeypatch):
+    from value_investment_agent.application.product import daily_event_observation
+
+    root, ref, _, _, _ = production_chain
+    service.register_incremental_validity_binding(root, SYMBOL, ref, CUTOFF, NOW)
+    pointer = root / "config/current-quote-bridge.json"
+    before = pointer.read_bytes()
+    clock_calls = []
+
+    def unavailable(**kwargs):
+        clock_calls.append(kwargs)
+        raise OSError("TEST_ONLY Saturday/next-day acquisition unavailable")
+
+    monkeypatch.setattr(daily_event_observation, "collect_daily_event_observation", unavailable)
+    with pytest.raises(OSError, match="acquisition unavailable"):
+        service.collect_registered_validity_scan(root=root, symbol=SYMBOL,
+            review_cutoff=NOW.date(), output_dir=root / "runtime/failed-current-scan")
+    assert clock_calls[0]["end"] == NOW.date()
+    assert pointer.read_bytes() == before
+    result = execute_quote_bridge_for_symbol(root, SYMBOL, today=NOW)
+    assert result["historical_price_comparison"]["bridge_status"] == "READY"
+    assert result["historical_model_validity"]["status"] == "VALID"
+    assert result["incremental_validity"]["status"] == "UNKNOWN"
+    assert result["price_comparison"]["bridge_status"] != "READY"
+    assert result["price_admitted"] is False
+    assert result["conditional_valuation"]["base_value"]
+    assert result["quote"]["quote_date"] == CUTOFF.isoformat()
+
+
 def test_next_morning_verified_display_names_b1_comparison_refusal(production_chain):
     root, ref, _, package, _ = production_chain
     service.register_incremental_validity_binding(root, SYMBOL, ref, CUTOFF, NOW)
@@ -171,7 +251,8 @@ def test_next_morning_verified_display_names_b1_comparison_refusal(production_ch
     assert "未满足 B1" in result["reason"]
     assert "报价未通过核验" not in result["reason"]
     assert "展示收盘无需重复核验" in result["next_step"]
-    assert result["incremental_validity"]["status"] == "VALID"
+    assert result["incremental_validity"]["status"] == "UNKNOWN"
+    assert result["historical_model_validity"]["status"] == "VALID"
     assert "conditional_valuation" not in result
     assert package.read_bytes() == before
 
@@ -180,7 +261,9 @@ def test_next_morning_verified_display_names_b1_comparison_refusal(production_ch
 def test_production_incremental_failures_never_reuse_ready(production_chain, monkeypatch, failure):
     root, ref, _, _, source = production_chain
     service.register_incremental_validity_binding(root, SYMBOL, ref, CUTOFF, NOW)
-    assert execute_quote_bridge_for_symbol(root, SYMBOL, today=NOW)["price_comparison"]["bridge_status"] == "READY"
+    previous = execute_quote_bridge_for_symbol(root, SYMBOL, today=NOW)
+    assert previous["historical_price_comparison"]["bridge_status"] == "READY"
+    assert previous["price_admitted"] is False
     if failure == "source":
         source.write_text("changed", encoding="utf-8")
     elif failure == "binding":
@@ -210,14 +293,14 @@ def test_packet_consumes_production_comparison_and_tracks_source_bytes(productio
     service.register_incremental_validity_binding(root, SYMBOL, ref, CUTOFF, NOW)
     packet = build_daily_public_packet(root, generated_at=NOW)
     row = packet["price_bridge_statuses"][SYMBOL]
-    assert row["comparison_eligible"] is True, row
-    assert row["price_comparison"]["bridge_status"] == "READY"
+    assert row["comparison_eligible"] is False, row
+    assert row["price_comparison"]["bridge_status"] != "READY"
     company = packet["company_statuses"][SYMBOL]
-    assert company["incremental_status"] == "VALID"
+    assert company["incremental_status"] == "UNKNOWN"
     assert company["incremental_validity_binding"] == ref
     assert company["review_cutoff"] == CUTOFF.isoformat()
     assert company["announcement_count"] == 0
-    assert company["model_validity"]["status"] == "VALID"
+    assert company["model_validity"]["status"] == "UNKNOWN"
     assert packet["engine_version"] == ENGINE_VERSION
     source.write_text("tampered", encoding="utf-8")
     changed = build_daily_public_packet(root, generated_at=NOW)
@@ -309,7 +392,9 @@ def test_repin_same_package_preserves_binding_but_changed_package_clears_it(prod
     pin_quote_bridge_for_symbol(root, SYMBOL, bundle, package)
     pointer = root / "config/current-quote-bridge.json"
     assert json.loads(pointer.read_text(encoding="utf-8"))["quotes"][SYMBOL]["incremental_validity_binding"] == ref
-    assert execute_quote_bridge_for_symbol(root, SYMBOL, today=NOW)["price_comparison"]["bridge_status"] == "READY"
+    result = execute_quote_bridge_for_symbol(root, SYMBOL, today=NOW)
+    assert result["historical_price_comparison"]["bridge_status"] == "READY"
+    assert result["price_admitted"] is False
     payload = json.loads(package.read_text(encoding="utf-8"))
     payload["name"] = "TEST_ONLY changed research bytes"
     _write(package, payload)

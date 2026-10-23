@@ -59,6 +59,20 @@ def test_daily_entry_orchestrates_existing_clis_without_new_side_doors():
     assert 'open_current_trial_workbook.py' not in text
 
 
+def test_event_review_day_is_independent_from_quote_reuse_and_always_fresh():
+    text = SCRIPT.read_text(encoding="utf-8")
+    review = text[text.index("# Filings can change on non-trading days"):
+                  text.index("# Recompute after incremental registration")]
+    assert "[DateTimeOffset]::UtcNow.ToOffset([TimeSpan]::FromHours(8))" in review
+    assert "$reviewCutoff-$scanStamp" in review
+    assert "collect_registered_validity_scan.py" in review
+    assert "'--review-cutoff', $reviewCutoff" in review
+    assert "'--output-dir', $scanDirectory" in review
+    assert "market_trade_dates" not in review
+    assert "expected_session" not in review
+    assert "incremental_validity_binding" not in review
+
+
 @pytest.mark.parametrize('retention', ['none', 'previous_success', 'previous_retained', 'explicit'])
 def test_daily_entry_runs_read_only_and_reports_plain_language(tmp_path, retention):
     pwsh = _pwsh()
