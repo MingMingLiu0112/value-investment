@@ -97,6 +97,14 @@ def _quote_sources(value: Any) -> list[dict]:
     return rows
 
 
+def _snapshot_scope(value: dict) -> dict:
+    """Preserve executed research-only limits without deriving new eligibility."""
+    return {key: value[key] for key in (
+        "scope", "knowledge_as_of", "observed_at", "full_calendar_window_elapsed",
+        "strict_contemporaneous_pit", "research_comparison_only", "source_assurance",
+        "formal_eligibility", "strategy_approval_granted", "action") if key in value}
+
+
 def _price_bridge_execution(value: Any, published_bridge_status: Any) -> dict | None:
     """Copy the executed admission verdict; never recompute a price or a margin.
 
@@ -116,9 +124,16 @@ def _price_bridge_execution(value: Any, published_bridge_status: Any) -> dict | 
         "status": _text(row.get("status")),
         "reason": _text(row.get("reason")),
         "next_step": _text(row.get("next_step")),
-        "current_event_coverage": ({key: row["current_event_coverage"].get(key) for key in (
+        **_snapshot_scope(row),
+        "current_snapshot_validity": ({key: row["current_snapshot_validity"].get(key) for key in (
+            "schema_version", "scope", "status", "symbol", "evaluated_at", "knowledge_as_of",
+            "observed_at", "full_calendar_window_elapsed", "strict_contemporaneous_pit",
+            "usable_for_research_comparison", "source_assurance", "bindings", "blockers",
+            "formal_eligibility", "g3_approval_granted", "strategy_approval_granted", "action")}
+            if isinstance(row.get("current_snapshot_validity"), dict) else None),
+        "current_event_coverage": ({**{key: row["current_event_coverage"].get(key) for key in (
             "required_through", "query_through", "covered_through", "observed_at",
-            "full_calendar_window_elapsed", "status")}
+            "full_calendar_window_elapsed", "status")}, **_snapshot_scope(row["current_event_coverage"])}
             if isinstance(row.get("current_event_coverage"), dict) else None),
         "historical_model_validity": ({"status": _text(row["historical_model_validity"].get("status"))}
             if isinstance(row.get("historical_model_validity"), dict) else None),
@@ -164,7 +179,8 @@ def _compatibility(value: Any) -> dict | None:
     for key in LADDER_KEYS:
         item = _object(row.get(key))
         eligible = item.get("eligible") if isinstance(item.get("eligible"), bool) else None
-        result[key] = {"eligible": eligible, "reason": _text(item.get("reason"))}
+        result[key] = {"eligible": eligible, "reason": _text(item.get("reason")),
+                       **_snapshot_scope(item)}
     if all(value["eligible"] is None for value in result.values()):
         return None
     return result

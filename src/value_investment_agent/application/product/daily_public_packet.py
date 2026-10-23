@@ -37,7 +37,7 @@ SCHEMA_VERSION = "daily-public-packet-v1"
 # v22 keeps per-case inspection clocks out of immutable decision content.
 # v23 publishes the current source-replayed pending plan with its own identity.
 # v24 keeps publication-context restrictions separate from replayed model fields.
-ENGINE_VERSION = "daily-public-packet-engine-v24"
+ENGINE_VERSION = "daily-public-packet-engine-v25"
 # v4 folds every content-deciding input into the identity: the company
 # research registry and its evidence files, the archived quote bundles, the
 # bound decision-explanation files and the business clock (natural date +
@@ -220,6 +220,11 @@ def _bridge_status(execution: Mapping[str, Any]) -> dict:
     research_day = execution.get("research_day")
     quote_date = quote.get("quote_date")
     incremental = execution.get("incremental_validity") or {}
+    snapshot = execution.get("current_snapshot_validity") or {}
+    snapshot_reuse = (execution.get("scope") == "CURRENT_AS_OF_SNAPSHOT_V1"
+        and snapshot.get("status") == "VALID_AS_OF_SNAPSHOT"
+        and snapshot.get("usable_for_research_comparison") is True
+        and snapshot.get("full_calendar_window_elapsed") is False)
     return {
         "status": execution.get("status"),
         "quote_verification_status": execution.get("quote_verification_status", execution.get("status")),
@@ -228,7 +233,7 @@ def _bridge_status(execution: Mapping[str, Any]) -> dict:
         "quote_observed_at": quote.get("collected_at") if isinstance(quote.get("collected_at"), str) else None,
         "research_day": research_day if isinstance(research_day, str) else None,
         "needs_re_research": bool(isinstance(quote_date, str) and isinstance(research_day, str)
-                                  and quote_date > research_day and not incremental),
+                                  and quote_date > research_day and not incremental and not snapshot_reuse),
         "incremental_status": incremental.get("status"),
         "review_cutoff": incremental.get("review_cutoff"),
         "announcement_count": incremental.get("announcement_count"),
@@ -247,6 +252,11 @@ def _bridge_status(execution: Mapping[str, Any]) -> dict:
         "latest_completed_session": quote.get("latest_completed_session"),
         "reason": execution.get("reason"),
         "next_step": execution.get("next_step"),
+        **{key: execution[key] for key in (
+            "scope", "knowledge_as_of", "observed_at", "full_calendar_window_elapsed",
+            "strict_contemporaneous_pit", "research_comparison_only", "source_assurance",
+            "formal_eligibility", "strategy_approval_granted", "current_snapshot_validity")
+            if key in execution},
     }
 
 
@@ -438,12 +448,17 @@ def _company_entry(root: Path, symbol: str, name: str,
         "pending_actions": pending,
         "blockers": [],
     }
-    if bridge and bridge.get("incremental_status"):
+    if bridge and (bridge.get("incremental_status") or bridge.get("current_snapshot_validity")):
         for key in ("incremental_status", "review_cutoff", "announcement_count", "model_validity",
                     "incremental_validity_binding", "incremental_validity", "price_comparison",
                     "current_event_coverage", "historical_model_validity"):
             entry[key] = bridge.get(key)
         entry["blockers"].extend(bridge.get("blockers", []))
+        entry.update({key: bridge[key] for key in (
+            "scope", "knowledge_as_of", "observed_at", "full_calendar_window_elapsed",
+            "strict_contemporaneous_pit", "research_comparison_only", "source_assurance",
+            "formal_eligibility", "strategy_approval_granted", "current_snapshot_validity")
+            if key in bridge})
     if explanation_broken:
         entry["blockers"].append("VALUE_EXPLANATION_BINDING_UNAVAILABLE")
     if not explanation and not decision:

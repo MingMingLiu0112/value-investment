@@ -24,6 +24,49 @@ from value_investment_agent.application.product.daily_public_packet import (
 NOW = datetime(2026, 10, 13, 4, 0, tzinfo=timezone.utc)
 
 
+def test_snapshot_scope_survives_daily_company_and_detail_projections(tmp_path):
+    """Projection-only DTO fixture; this is not a native approval/bridge test."""
+    from copy import deepcopy
+    from value_investment_agent.presentation.read_models.value_decision_detail import _price_bridge_execution
+
+    scope = dict(scope="CURRENT_AS_OF_SNAPSHOT_V1", knowledge_as_of="2026-10-13T04:00:00+00:00",
+        observed_at="2026-10-13T03:59:00+00:00", full_calendar_window_elapsed=False,
+        strict_contemporaneous_pit=False, research_comparison_only=True,
+        source_assurance="REPLAYED_OFFICIAL_QUERY_NOT_REALTIME_INDEX_COMPLETENESS",
+        formal_eligibility=False, strategy_approval_granted=False, action="no_order")
+    validity = dict(**scope, status="VALID_AS_OF_SNAPSHOT", usable_for_research_comparison=True,
+        evaluated_at=NOW.isoformat(), bindings={"policy": {"path": "runtime/TEST_ONLY-policy.json", "sha256": "a" * 64}},
+        blockers=[])
+    execution = dict(**scope, schema_version="quote-bridge-execution-v1",
+        status="QUOTE_VERIFIED_WITH_CURRENT_ASOF_SNAPSHOT", price_admitted=True,
+        research_day="2026-10-11", research_case={"package_version": "TEST_ONLY"},
+        quote={"quote_date": "2026-10-12", "display_price": "10"},
+        current_snapshot_validity=validity, current_event_coverage={**scope,
+            "status": "CURRENT_AS_OF_SNAPSHOT", "required_through": "2026-10-13",
+            "query_through": "2026-10-13", "covered_through": None},
+        compatibility={"comparison_eligible": {**scope, "eligible": True},
+            "research_compatible": {**scope, "eligible": True},
+            "formal_decision_eligible": {"eligible": False}},
+        price_comparison={**scope, "bridge_status": "READY"})
+    original = deepcopy(execution)
+    summary = daily_public_packet._bridge_status(execution)
+    entry = daily_public_packet._company_entry(tmp_path, "600519", "TEST_ONLY",
+        None, None, None, None, summary, None, False, None)
+    detail = _price_bridge_execution(execution, "READY")
+    for projection in (summary, entry, detail):
+        for key in scope:
+            if key != "action":
+                assert projection[key] == scope[key]
+        assert projection["current_snapshot_validity"]["bindings"] == validity["bindings"]
+        assert projection["current_event_coverage"]["covered_through"] is None
+    assert summary["needs_re_research"] is False
+    assert detail["compatibility"]["comparison_eligible"]["research_comparison_only"] is True
+    assert detail["compatibility"]["formal_decision_eligible"]["eligible"] is False
+    assert execution == original
+    execution["current_snapshot_validity"]["status"] = "UNKNOWN"
+    assert daily_public_packet._bridge_status(execution)["needs_re_research"] is True
+
+
 def test_packet_forwards_replayed_coverage_and_historical_validity(synthetic_chain):
     from test_incremental_quote_bridge import NOW as BRIDGE_NOW, CUTOFF, SYMBOL, production_chain
     from value_investment_agent.application.product import incremental_validity as service

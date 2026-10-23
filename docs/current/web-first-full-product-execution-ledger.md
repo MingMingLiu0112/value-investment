@@ -3313,3 +3313,24 @@ it is delivered but not yet integrated here. JS1 economic review is REVISE; JS2
 cash-linked successor is awaiting independent review, not G3 or primary admission.
 The full Goal remains ACTIVE. Private accounts, canonical Excel, server/PTA,
 production tasks and broker operations are untouched. action=no_order.
+
+### 2026-10-24 - Native snapshot contract and limited research consumer boundaries
+
+Reviewed sibling1827705d is integrated as be575948. As-of contract5f9f/69db is
+integrated as bab271af/5c87a93e, with no actual policy selection or G3 change.
+Integrated snapshot/legacy bridge/capital/PDF/architecture selection204 passed,
+2 skipped. Root's daily/detail metadata selection33 passed: limited scope,
+observed/knowledge timestamps, source assurance, full=false and formal=false are
+preserved rather than stripped. The additive producer changes use engine-v25.
+These DTO projection tests are not new native approvals or end-user readiness.
+The shared bridge successor is still under independent review; two confirmed
+pointer/verdict P2s on d152 were not shipped or enabled. Its default remains None.
+Frontend metadata rendering is delegated with a disjoint scope, not yet integrated.
+
+JS2 received ACCEPT_FOR_CONDITIONAL_PRIMARY_REVIEW only for TIMING_DELAY, LOW
+confidence. Its parent cash/commitment and linked profit/dividend/equity arithmetic
+passed independent research review; future release remains a falsifiable assumption.
+This is not signed G3, registered primary, current fair value or trade approval.
+Native pending-package preparation continues without changing existing research.
+Live remains614f with the source GET409 still awaiting the verified PDF repair
+release. The Goal stays ACTIVE and action=no_order.
