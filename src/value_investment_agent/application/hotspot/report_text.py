@@ -1,5 +1,6 @@
 """User-readable report text without changing observation semantics."""
 from decimal import Decimal
+from html import escape
 
 
 def render_hotspot_markdown(report):
@@ -32,4 +33,171 @@ def render_hotspot_markdown(report):
         change = Decimal(sector['equal_weight_change_percent'])
         lines.append(f"| {sector['theme']} | {change:.2f}% | 未知 |")
     lines += ['', '价值、风险、事件、PIT、样本外与Shadow等门禁仍未证明；观察状态不构成买卖建议。']
+    return '\n'.join(lines) + '\n'
+
+
+_LIFECYCLE_REASONS = {
+    'CURRENT_DATA_UNAVAILABLE': '当前行情证据不可用，无法判断当前结构',
+    'ENTRY_STRUCTURE_OBSERVED': '当前开仓结构条件已被观察到，仅供研究观察',
+    'ENTRY_STRUCTURE_NOT_QUALIFIED': '当前开仓结构尚不满足观察条件',
+    'ENTRY_EVIDENCE_UNAVAILABLE': '原始参考 case 在指定入场时点不可用',
+    'ENTRY_CURRENT_RULE_MISMATCH': '原始参考与当前参考的本次重算规则不一致',
+    'ORIGINAL_PROTECTION_BREACHED': '曾收盘跌破原始参考保护价；后来恢复不能抹去这次破位',
+    'CURRENT_PROTECTION_BREACHED': '当前保护条件已触发破位结构复核',
+    'ENTRY_TO_CURRENT_DATA_INCOMPLETE': '从参考入场时点到当前的数据不完整，不能据此确认持有或加仓结构',
+    'CURRENT_REDUCTION_CONDITION_OBSERVED': '当前减仓结构条件已被观察到，仅供复核',
+    'CURRENT_ADD_CONDITION_OBSERVED': '当前加仓结构条件已被观察到，仅供复核',
+    'NO_STRUCTURAL_CHANGE_OBSERVED': '本次未观察到需要改变结构观察状态的条件',
+    'ADD_CONDITION_NOT_OBSERVED': '未观察到加仓结构条件',
+    'ADD_STRUCTURE_QUALITY_NOT_USABLE': '加仓结构质量不可用于当前判断',
+}
+_LIFECYCLE_REVIEWS = {
+    'UNKNOWN': '当前结构结论未知', 'WATCH': '继续观察',
+    'ENTRY_OBSERVATION': '开仓结构观察',
+    'EXIT_STRUCTURE_REVIEW': '退出结构复核',
+    'REDUCE_STRUCTURE_REVIEW': '减仓结构复核',
+    'ADD_STRUCTURE_REVIEW': '加仓结构复核',
+    'HOLD_STRUCTURE_OBSERVATION': '维持结构观察',
+}
+_LIFECYCLE_EXTERNAL = {
+    'OWNED_ENTRY_THESIS': '核验真实持仓归属及原始入场论据',
+    'CORPORATE_ACTION_COMPARABILITY': '核验公司行动与价格口径可比性',
+    'INDEPENDENT_STRATEGY_ADMISSION': '完成独立策略准入复核',
+    'EVENT_RISK': '复核事件风险',
+    'PORTFOLIO_CAPACITY': '复核组合容量与约束',
+    'SELLABLE_QUANTITY_T_PLUS_ONE_AND_EXECUTION': '复核可卖数量、T+1 与执行条件',
+}
+_LIFECYCLE_CHECKS = {
+    'CURRENT_DATA': '当前行情证据', 'ENTRY_REFERENCE': '原始参考证据',
+    'ENTRY_RULE_COMPATIBILITY': '本次重算规则兼容性',
+    'ORIGINAL_PROTECTION': '原始参考保护价', 'CONTINUITY_COVERAGE': '连续行情覆盖',
+    'CURRENT_EXIT': '当前退出结构条件', 'CURRENT_REDUCE': '当前减仓结构条件',
+    'CURRENT_ADD': '当前加仓结构条件', 'CURRENT_OPEN': '当前开仓结构条件',
+    'STRUCTURE_QUALITY': '价格行为质量', 'OPPORTUNITY_QUALITY': '多周期机会分级',
+}
+_LIFECYCLE_OUTCOMES = {
+    'CURRENT': '当前可用', 'STALE': '已过期', 'INVALID': '无效', 'UNKNOWN': '未知',
+    'VERIFIED_REFERENCE_ONLY': '仅参考证据已核验，不代表真实入场或持仓',
+    'UNVERIFIED': '未核验', 'NOT_SUPPLIED': '未提供',
+    'MATCH': '一致', 'MISMATCH': '不一致', 'NOT_EVALUATED': '未评估',
+    'BREACHED': '已观察到破位', 'NO_OBSERVED_BREACH': '未观察到破位',
+    'COMPLETE': '覆盖完整', 'INCOMPLETE': '覆盖不完整',
+    'OBSERVED': '已观察到条件', 'NOT_OBSERVED': '未观察到条件',
+    'RESEARCH_ONLY': '仅供研究', 'UNFAVORABLE_DAILY_TREND': '日线趋势不利',
+    'INSUFFICIENT_UPPER_SPACE': '上方空间不足',
+    'ACTIVE_ONLY': '仅活跃观察', 'CONFLICT_OR_REJECTED': '存在结构冲突或已拒绝',
+    'STRUCTURE_QUALIFIED_OBSERVATION': '结构合格观察',
+}
+_LIFECYCLE_PRICE_SCOPES = {
+    'LATEST_COMPLETED_SESSION_DUAL_SOURCE_CLOSE': '最近已完成交易时段的双源收盘观察',
+    'LAST_COMPLETED_CLOSE_DISPLAY_ONLY': '最近已完成收盘，仅供展示',
+    'HISTORICAL_CLOSE_NOT_CURRENT_QUOTE': '历史收盘，非当前报价',
+}
+_LIFECYCLE_VALUE_LABELS = {
+    'price': '价格', 'as_of': '观察日期', 'available_at': '原件可得时点',
+    'reference_price_scope': '价格范围', 'current_pit': '当前 PIT 标志',
+    'source_integrity': '原件完整性状态',
+    'current': '当前参考', 'entry': '原始参考',
+    'original_protection_price': '原始参考保护价',
+    'current_rolling_protection_price': '当前滚动保护价',
+    'first_breach_at': '首次收盘破位时点', 'breach_count': '收盘破位次数',
+    'first_breach_close': '首次破位收盘价',
+    'inspected_bar_count': '已检查 K 线数量', 'missing_completed_bars': '缺失的已完成 K 线',
+    'coverage': '数据覆盖', 'current_data_status': '当前行情状态',
+    'entry_at': '参考入场时点', 'observed': '是否观察到条件',
+    'observation_quality': '观察质量', 'structure_tier': '结构等级',
+    'model_or_rule_version': '本次重算规则版本',
+    'rule_version': '规则版本', 'structure_reasons': '分级原因', 'daily_trend': '日线趋势',
+    'risk_reward_ratio': '结构距离比', 'risk_reward_scope': '距离比口径',
+    'risk_reward_blocker': '距离比缺失原因',
+    'intent': '结构动作', 'rule': '条件规则', 'status': '状态',
+    'requires_existing_holding': '是否要求已有持仓', 'formal_eligibility': '正式准入',
+    'personal_permission': '个人权限', 'action': '订单行为', 'blockers': '阻断原因',
+}
+
+
+def _lifecycle_value(value):
+    if value is None or value == '':
+        return '未知'
+    if isinstance(value, bool):
+        return '是' if value else '否'
+    if isinstance(value, dict):
+        return '；'.join(f"{_lifecycle_value(_LIFECYCLE_VALUE_LABELS.get(key, key))}：{_lifecycle_value(item)}"
+                        for key, item in value.items()) or '未知'
+    if isinstance(value, (list, tuple)):
+        return '、'.join(_lifecycle_value(item) for item in value) or '无列明项'
+    text = escape(str(value), quote=False).replace('\r', ' ').replace('\n', ' ')
+    for character in ('\\', '`', '*', '[', ']', '|', '#'):
+        text = text.replace(character, '\\' + character)
+    return text
+
+
+def _lifecycle_code(code, labels):
+    if code is None or code == '':
+        return '未知'
+    return f"{labels.get(code, '未识别的代码')}（{_lifecycle_value(code)}）"
+
+
+def _lifecycle_binding(binding):
+    binding = binding or {}
+    return f"原件：{_lifecycle_value(binding.get('path'))}；SHA-256：{_lifecycle_value(binding.get('sha256'))}"
+
+
+def render_hotspot_lifecycle_markdown(review):
+    """Present the supplied lifecycle explanation; never recompute its decisions."""
+    explanation = review.get('decision_explanation')
+    if (not isinstance(explanation, dict)
+            or explanation.get('schema_version') != 'hotspot-lifecycle-explanation-v1'
+            or explanation.get('action') != 'no_order' or review.get('action') != 'no_order'
+            or explanation.get('selected_review') != review.get('observed_review')):
+        raise ValueError('Consistent no_order lifecycle explanation required')
+    price = explanation.get('current_price_observation') or {}
+    comparison = review.get('original_entry_comparison') or {}
+    versions = explanation.get('recomputed_rule_versions') or {}
+    lines = ['# 热点结构连续性复核', '',
+        '仅供研究与结构复核，不授予个人加仓或交易权限，不产生订单。',
+        '参考 case 不等于已拥有的 Entry、已核验的入场论据或真实成交记录；持仓归属未经本报告核验。',
+        'HOLD 仅指维持结构观察，不代表原始投资论据（thesis）已验证。', '',
+        f"证券：{_lifecycle_value(review.get('symbol'))}；评估时点：{_lifecycle_value(review.get('evaluated_at'))}。",
+        f"策略验证：{_lifecycle_value(review.get('strategy_validation'))}；订单行为：no_order。", '',
+        '## 本次结构结论', '',
+        f"观察结果：{_lifecycle_code(explanation.get('selected_review'), _LIFECYCLE_REVIEWS)}。",
+        f"判定依据：{_lifecycle_code(explanation.get('basis_code'), _LIFECYCLE_REASONS)}。", '',
+        '## 当前价格与保护价', '',
+        f"当前价格观察（元）：{_lifecycle_value(price.get('price'))}；观察日期：{_lifecycle_value(price.get('as_of'))}；原件可得时点：{_lifecycle_value(price.get('available_at'))}。",
+        f"价格范围：{_lifecycle_code(price.get('reference_price_scope'), _LIFECYCLE_PRICE_SCOPES)}；当前 PIT 标志：{_lifecycle_value(price.get('current_pit'))}。",
+        '上述价格不是盘中实时价；仅供展示的收盘价不等于当前 PIT 证据，原件完整性核验也不代表策略或交易准入。',
+        f"原始参考保护价（元）：{_lifecycle_value(comparison.get('original_protection_price'))}；当前滚动保护价（元）：{_lifecycle_value(comparison.get('current_rolling_protection_price'))}。",
+        f"首次收盘破位时点：{_lifecycle_value(comparison.get('first_breach_at'))}；收盘破位次数：{_lifecycle_value(comparison.get('breach_count'))}。",
+        f"首次破位收盘价（元）：{_lifecycle_value(comparison.get('first_breach_close'))}。",
+        f"数据覆盖：{_lifecycle_value(comparison.get('coverage'))}；已检查 K 线数量：{_lifecycle_value(comparison.get('inspected_bar_count'))}。", '',
+        '## 本次重算规则与证据', '',
+        f"当前参考重算规则：{_lifecycle_value(versions.get('current'))}。",
+        f"原始参考重算规则：{_lifecycle_value(versions.get('entry'))}。",
+        '这里的规则版本仅说明本次重算，不证明原入场当时真实采用了这些规则。',
+        f"来源范围：{_lifecycle_value(explanation.get('source_scope'))}。",
+        '以下输入引用不表示已核验；各项实际使用的证据以判定路径中的绑定为准。',
+        f"当前参考 case 输入引用：{_lifecycle_binding(review.get('current_case_binding'))}。",
+        f"原始参考 case 输入引用：{_lifecycle_binding(review.get('entry_case_binding'))}。", '',
+        '## 判定路径', '']
+    for index, step in enumerate(explanation.get('decision_path') or [], start=1):
+        lines += [f"{index}. 检查：{_lifecycle_code(step.get('check'), _LIFECYCLE_CHECKS)}；结果：{_lifecycle_code(step.get('outcome'), _LIFECYCLE_OUTCOMES)}。",
+                  f"   数值与状态：{_lifecycle_value(step.get('values'))}。"]
+        bindings = step.get('evidence_bindings') or []
+        lines.extend(f"   {_lifecycle_binding(binding)}。" for binding in bindings)
+        if not bindings:
+            lines.append('   证据绑定：未知。')
+    if not explanation.get('decision_path'):
+        lines.append('判定路径：未知。')
+    lines += ['', '## 为何不能据此加仓', '',
+              '上述结构结果不能单独作为加仓依据；仍须完成外部复核。']
+    reasons = explanation.get('why_not_add') or []
+    lines.extend('- ' + _lifecycle_code(code, _LIFECYCLE_REASONS) for code in reasons)
+    if not reasons:
+        lines.append('- 结构层面的未加仓原因未列明；不代表已获加仓权限。')
+    lines += ['', '## 必须复核事项', '']
+    external = explanation.get('required_external_reviews') or []
+    lines.extend('- ' + _lifecycle_code(code, _LIFECYCLE_EXTERNAL) for code in external)
+    if not external:
+        lines.append('- 外部复核事项：未知，不能视为已完成。')
     return '\n'.join(lines) + '\n'

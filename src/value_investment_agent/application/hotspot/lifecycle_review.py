@@ -4,6 +4,7 @@ The caller supplies a reference case from its verified Entry Thesis. This module
 rechecks public case bytes; it does not establish ownership or sellable shares.
 """
 from datetime import datetime, time, timedelta
+from copy import deepcopy
 from decimal import Decimal
 from pathlib import Path
 
@@ -27,7 +28,7 @@ def _compare_entry_bars(*, bars, entry_at, protection, symbol):
     """Keep the original level and every observed breach, including recoveries."""
     points = [(_stamp(row["time"]), row) for row in bars]
     after = [(stamp, row) for stamp, row in points if stamp > entry_at]
-    breached = [stamp.isoformat() for stamp, row in after
+    breached = [(stamp, row) for stamp, row in after
                 if Decimal(row["close"]) < Decimal(protection)]
     expected = set()
     venue = "SSE" if symbol.startswith("6") else "SZSE"
@@ -43,11 +44,75 @@ def _compare_entry_bars(*, bars, entry_at, protection, symbol):
     observed = {stamp for stamp, _ in after}
     missing = sorted(expected - observed)
     return dict(original_protection_price=protection,
-        first_breach_at=breached[0] if breached else None,
+        first_breach_at=breached[0][0].isoformat() if breached else None,
+        first_breach_close=breached[0][1]["close"] if breached else None,
         breach_count=len(breached), inspected_bar_count=len(after),
         missing_completed_bars=[stamp.isoformat() for stamp in missing],
         coverage="COMPLETE" if expected and not missing else "INCOMPLETE",
         comparison_scope="UNADJUSTED_PRICE_STRUCTURE_REQUIRES_CORPORATE_ACTION_REVIEW")
+
+
+def _explain(result, basis, *, plan=None, entry_plan=None, case=None):
+    """Describe already evaluated rules, without granting a personal permission."""
+    current_refs = [result["current_case_binding"]] if plan else []
+    entry_refs = [result["entry_case_binding"]] if entry_plan else []
+    path = [dict(check="CURRENT_DATA", outcome=result["current_data_status"],
+        values=dict(blockers=[result["current_data_reason"]] if result["current_data_reason"] else [],
+            current_pit=result["current_pit"],
+            source_integrity=result["source_integrity"]), evidence_bindings=current_refs)]
+    path.append(dict(check="ENTRY_REFERENCE", outcome="VERIFIED_REFERENCE_ONLY" if entry_plan
+        else "UNVERIFIED" if result["entry_case_binding"] else "NOT_SUPPLIED",
+        values=dict(entry_at=result["entry_at"], blockers=["ENTRY_CASE_NOT_VALID_AT_ENTRY"]
+            if basis == "ENTRY_EVIDENCE_UNAVAILABLE" else []), evidence_bindings=entry_refs))
+    versions = dict(current=plan.get("model_or_rule_version") if plan else None,
+        entry=entry_plan.get("model_or_rule_version") if entry_plan else None)
+    path.append(dict(check="ENTRY_RULE_COMPATIBILITY", outcome=(
+        "MATCH" if versions["current"] == versions["entry"] else "MISMATCH")
+        if entry_plan else "NOT_EVALUATED", values=versions,
+        evidence_bindings=current_refs + entry_refs))
+    comparison = result["original_entry_comparison"]
+    path.append(dict(check="ORIGINAL_PROTECTION", outcome=("BREACHED"
+        if comparison["first_breach_at"] else "NO_OBSERVED_BREACH")
+        if comparison else "NOT_EVALUATED", values=comparison or {},
+        evidence_bindings=current_refs + entry_refs if comparison else []))
+    path.append(dict(check="CONTINUITY_COVERAGE", outcome=comparison["coverage"]
+        if comparison else "NOT_EVALUATED", values=dict(missing_completed_bars=
+        comparison["missing_completed_bars"]) if comparison else {},
+        evidence_bindings=current_refs + entry_refs if comparison else []))
+    for intent in ("EXIT", "REDUCE", "ADD", "OPEN"):
+        condition = result["current_conditions"].get(intent)
+        path.append(dict(check="CURRENT_" + intent, outcome=("OBSERVED"
+            if condition["observed"] else "NOT_OBSERVED") if condition else "NOT_EVALUATED",
+            values=condition or {}, evidence_bindings=current_refs))
+    path.append(dict(check="STRUCTURE_QUALITY", outcome=plan["price_behavior"].get(
+        "observation_quality", "UNKNOWN") if plan else "NOT_EVALUATED",
+        values={key: plan["price_behavior"].get(key) for key in (
+            "rule_version", "observation_quality", "daily_trend", "risk_reward_ratio",
+            "risk_reward_scope", "risk_reward_blocker", "blockers")} if plan else {},
+        evidence_bindings=current_refs))
+    path.append(dict(check="OPPORTUNITY_QUALITY", outcome=plan["opportunity_quality"]["structure_tier"]
+        if plan else "NOT_EVALUATED", values=result.get("opportunity_quality", {}),
+        evidence_bindings=current_refs))
+    why_not_add = []
+    if basis not in {"CURRENT_ADD_CONDITION_OBSERVED", "NO_STRUCTURAL_CHANGE_OBSERVED"}:
+        why_not_add.append(basis)
+    if plan:
+        if not result["current_conditions"]["ADD"]["observed"]:
+            why_not_add.append("ADD_CONDITION_NOT_OBSERVED")
+        if plan["price_behavior"].get("observation_quality") != "RESEARCH_ONLY":
+            why_not_add.append("ADD_STRUCTURE_QUALITY_NOT_USABLE")
+    price = None
+    if case is not None:
+        price = dict(price=case.get("current_reference_price"),
+            as_of=case.get("market_trade_date"), available_at=plan.get("data_available_at"),
+            reference_price_scope=plan.get("reference_price_scope"), current_pit=result["current_pit"])
+    result["decision_explanation"] = deepcopy(dict(
+        schema_version="hotspot-lifecycle-explanation-v1", selected_review=result["observed_review"],
+        basis_code=basis, decision_path=path, why_not_add=why_not_add,
+        required_external_reviews=result["required_external_reviews"],
+        current_price_observation=price, recomputed_rule_versions=versions if plan else None,
+        source_scope="REFERENCE_CASES_NOT_VERIFIED_OWNERSHIP_OR_ENTRY_THESIS", action="no_order"))
+    return result
 
 
 def build_hotspot_lifecycle_review(*, root: Path, symbol: str,
@@ -81,9 +146,12 @@ def build_hotspot_lifecycle_review(*, root: Path, symbol: str,
     current = inspect_current_price_case(root=root, symbol=symbol,
         case_binding=current_case_binding, now=now)
     result["current_data_status"] = current["data_status"]
+    result["current_data_reason"] = current.get("reason")
+    result["current_pit"] = current.get("current_pit", False)
+    result["source_integrity"] = current.get("source_integrity", "NOT_VERIFIED")
     if current["data_status"] != "CURRENT":
         result["blockers"] = [current["reason"]]
-        return result
+        return _explain(result, "CURRENT_DATA_UNAVAILABLE")
     plan = project_current_price_action_plan(current["case"])
     result["current_conditions"] = plan["conditional_action_rules"]
     result["current_conditions"]["OPEN"]["rule"] = INDEPENDENT_OPEN_RULE
@@ -95,16 +163,19 @@ def build_hotspot_lifecycle_review(*, root: Path, symbol: str,
             if result["current_open_observed"] and plan["opportunity_quality"]["structure_tier"]
                 == "STRUCTURE_QUALIFIED_OBSERVATION" else "WATCH")
         result["blockers"].append("OWNED_ENTRY_REQUIRED_FOR_HELD_REVIEW")
-        return result
+        return _explain(result, "ENTRY_STRUCTURE_OBSERVED"
+            if result["observed_review"] == "ENTRY_OBSERVATION" else "ENTRY_STRUCTURE_NOT_QUALIFIED",
+            plan=plan, case=current["case"])
     original = inspect_current_price_case(root=root, symbol=symbol,
         case_binding=entry_case_binding, now=entry_at)
     if original["data_status"] != "CURRENT":
         result["blockers"].append("ENTRY_CASE_NOT_VALID_AT_ENTRY")
-        return result
+        return _explain(result, "ENTRY_EVIDENCE_UNAVAILABLE", plan=plan, case=current["case"])
     entry_plan = project_current_price_action_plan(original["case"])
     if entry_plan["model_or_rule_version"] != plan["model_or_rule_version"]:
         result["blockers"].append("ENTRY_CURRENT_RULE_MISMATCH")
-        return result
+        return _explain(result, "ENTRY_CURRENT_RULE_MISMATCH", plan=plan,
+            entry_plan=entry_plan, case=current["case"])
     comparison = _compare_entry_bars(bars=current["case"]["bars"]["60m"],
         entry_at=entry_at, protection=entry_plan["invalidation_price"], symbol=symbol)
     comparison["current_rolling_protection_price"] = plan["invalidation_price"]
@@ -112,15 +183,20 @@ def build_hotspot_lifecycle_review(*, root: Path, symbol: str,
     rules = result["current_conditions"]
     if comparison["first_breach_at"] or rules["EXIT"]["observed"]:
         observed = "EXIT_STRUCTURE_REVIEW"
+        basis = "ORIGINAL_PROTECTION_BREACHED" if comparison["first_breach_at"] else "CURRENT_PROTECTION_BREACHED"
     elif comparison["coverage"] != "COMPLETE":
         result["blockers"].append("ENTRY_TO_CURRENT_BAR_COVERAGE_INCOMPLETE")
-        return result
+        return _explain(result, "ENTRY_TO_CURRENT_DATA_INCOMPLETE", plan=plan,
+            entry_plan=entry_plan, case=current["case"])
     elif rules["REDUCE"]["observed"]:
         observed = "REDUCE_STRUCTURE_REVIEW"
+        basis = "CURRENT_REDUCTION_CONDITION_OBSERVED"
     elif rules["ADD"]["observed"] and plan["price_behavior"]["observation_quality"] == "RESEARCH_ONLY":
         observed = "ADD_STRUCTURE_REVIEW"
+        basis = "CURRENT_ADD_CONDITION_OBSERVED"
     else:
         observed = "HOLD_STRUCTURE_OBSERVATION"
+        basis = "NO_STRUCTURAL_CHANGE_OBSERVED"
     result.update(status="STRUCTURAL_COMPARISON_ONLY", observed_review=observed)
     result["blockers"].append("STRUCTURAL_OBSERVATION_IS_NOT_PERSONAL_ACTION")
-    return result
+    return _explain(result, basis, plan=plan, entry_plan=entry_plan, case=current["case"])
