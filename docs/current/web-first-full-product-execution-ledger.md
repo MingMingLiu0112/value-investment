@@ -2793,3 +2793,22 @@ Third-company MJ1 has real-source numerical research and independent economic
 review in progress. Convertible claims, cash-upstream capacity and explicit
 pressure labels remain unresolved; no new current-primary registration is made.
 All formal strategy, human, market and real-use gates remain separate. no_order.
+
+### 2026-10-24 - Integrated consumer verification checkpoint
+
+Frontend 85fb64d5 is integrated as 4f3fd33b; source-bound five-year scenarios now
+render in the existing economic review section, including funding FAIL, nullable
+undated timing and unapproved terminal assumptions. Main typecheck and full Web
+suite passed: 613 tests, seven optional skips. Independent author verification
+included 320/390 layout checks and actual CC1 backend projection.
+
+Swing 2c59cbb9 is integrated as b198db09. Independent review found no confirmed
+new P1/P2; 86 distinct focused cases passed across sealed/current public archive
+configurations. Main integration, current official originals, architecture and
+Core-list checks passed 120 tests. The new cash-window test is added to the one
+explicit offline Core workflow. A verified publication window still cannot prove
+opening action state, semantic amendment absence, no_change or price comparability.
+
+Fresh clean Core, build identity, live registry/packet switch and actual 8001
+rendering of this successor remain pending at this checkpoint. 8001 still runs
+c4bb99b5 with its unchanged prior public pointers. No remote CI/push is claimed.

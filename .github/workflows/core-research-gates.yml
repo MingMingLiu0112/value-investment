@@ -394,6 +394,7 @@ jobs:
           tests/test_hotspot_action_coverage_lifecycle.py
           tests/test_owned_hotspot_lifecycle.py
           tests/test_hotspot_cash_event_mapping.py
+          tests/test_hotspot_cash_action_window.py
           tests/test_hotspot_statutory_fee_evidence.py
           tests/web_api/test_hotspot_lifecycle_surface.py
           tests/test_hotspot_machine_admission.py
