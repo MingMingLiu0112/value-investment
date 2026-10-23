@@ -322,3 +322,8 @@ SHA256 `b4b8b6ddbf251ac00596879dd8857896f8a46acb4951e729b03248d15e89dc2c`。
 输出保留完整原生 lifecycle 对象、模拟入场冻结指纹和独立 journal 路径/Hash/幂等/重启回执，
 供主会话按既有只读展示集成。`namespace=SIMULATED`、`position_guidance=null`、
 `actual_owned_entry_created=false`、`strategy_validation=NOT_PROVEN`、永久 `action=no_order`。
+
+每个入场/后续来源单独保留声明范围；显式 TEST_ONLY/SIMULATED 不得升级为公开来源认证，
+混合或不可核验来源保留相应状态，缺少测试标签只能是 `ORIGIN_NOT_ATTESTED`，不是实源证明。
+官方事件按各截止时点的原生 `official_publication_coverage` 汇总，传入 observation 绑定本身
+不等于核验成功；无效/缺失/未执行状态仍如实保留，也不据此证明有效公司行动覆盖。

@@ -21,6 +21,30 @@ def _digest(value):
         separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
 
 
+def _source_scope(root, binding, review):
+    if review["source_integrity"] != "VERIFIED":
+        return "UNVERIFIED"
+    case = json.loads(_bound_bytes(root, binding))
+    quote = case["current_reference_close"]
+    bundle = json.loads(_bound_bytes(root,
+        dict(path=quote["bundle_path"], sha256=quote["bundle_sha256"])))
+    declarations = {str(item.get(key, "")).strip().upper() for item in (case, bundle)
+        for key in ("namespace", "fixture_scope")}
+    if any(item.get("test_only") for item in (case, bundle)) or "TEST_ONLY" in declarations:
+        return "TEST_ONLY"
+    if declarations & {"SIMULATED", "SYNTHETIC"}:
+        return "SIMULATED"
+    return "ORIGIN_NOT_ATTESTED"
+
+
+def _event_scope(review, binding):
+    coverage = (review.get("price_comparability") or {}).get("official_disclosure_coverage", {})
+    return dict(evaluated_at=review["evaluated_at"], supplied_binding=deepcopy(binding),
+        official_publication_coverage=coverage.get("official_publication_coverage",
+            "NOT_EVALUATED" if binding is not None else "MISSING"),
+        corporate_action_coverage=coverage.get("corporate_action_coverage", "UNKNOWN"))
+
+
 def run_simulated_hotspot_lifecycle(*, source_root: Path, workspace_root: Path,
         symbol: str, entry_case_binding: dict, entry_at: datetime,
         followups: list[dict], generated_at: datetime,
@@ -45,12 +69,6 @@ def run_simulated_hotspot_lifecycle(*, source_root: Path, workspace_root: Path,
     if original["data_status"] != "CURRENT":
         raise ValueError("Entry source not valid at assumed entry cutoff")
     case = original["case"]
-    quote = case["current_reference_close"]
-    bundle = json.loads(_bound_bytes(source_root,
-        dict(path=quote["bundle_path"], sha256=quote["bundle_sha256"])))
-    source_scope = ("TEST_ONLY" if bundle.get("test_only") or
-        bundle.get("fixture_scope") == "TEST_ONLY" else
-        "PUBLIC_PROVIDER_ARCHIVE_NOT_INDEPENDENT_MINUTE_VALIDATION")
     plan = project_current_price_action_plan(case)
     price = Decimal(case["current_reference_price"])
     if not price.is_finite() or price <= 0:
@@ -73,6 +91,15 @@ def run_simulated_hotspot_lifecycle(*, source_root: Path, workspace_root: Path,
         current_case_binding=row["case_binding"], now=row["evaluated_at"],
         entry_case_binding=entry_case_binding, entry_at=entry_at,
         official_event_observation_binding=official_event_observation_binding) for row in followups]
+    evidence_scopes = [dict(case_binding=deepcopy(entry_case_binding),
+        evaluated_at=entry_at.isoformat(), scope=_source_scope(source_root, entry_case_binding, original))]
+    evidence_scopes.extend(dict(case_binding=deepcopy(row["case_binding"]),
+        evaluated_at=review["evaluated_at"], scope=_source_scope(source_root, row["case_binding"], review))
+        for row, review in zip(followups, reviews))
+    scopes = {row["scope"] for row in evidence_scopes}
+    source_scope = next(iter(scopes)) if len(scopes) == 1 else "MIXED_OR_UNVERIFIED_SOURCES"
+    event_scopes = [_event_scope(review, official_event_observation_binding)
+        for review in (entry_review, *reviews)]
 
     # Only create a new isolated scenario ledger, never accept a caller's journal.
     parent = workspace_root
@@ -125,6 +152,7 @@ def run_simulated_hotspot_lifecycle(*, source_root: Path, workspace_root: Path,
         symbol=symbol, generated_at=generated_at.isoformat(), action="no_order",
         scope="RETAINED_SOURCE_RETROSPECTIVE_NOT_PIT_OOS_OR_SHADOW",
         market_source_scope=source_scope,
+        market_evidence_scopes=evidence_scopes, official_event_reviews=event_scopes,
         entry_reference=frozen, entry_freeze_sha256=frozen_hash, steps=steps,
         actual_account_used=False, actual_owned_entry_created=False,
         broker_execution_permission=False, formal_eligibility=False, trade_eligible=False,
@@ -140,5 +168,5 @@ def run_simulated_hotspot_lifecycle(*, source_root: Path, workspace_root: Path,
             fees="5 CNY synthetic journal fixture, NOT verified actual execution costs",
             entry="Discretionary hypothetical close mark, NOT evidence of a strategy-qualified entry",
             timing="Historical evaluation cutoffs; journal confirmation generated now, never backdated",
-            event_coverage="SUPPLIED_OBSERVATION_REVERIFIED" if official_event_observation_binding
+            event_coverage="SEE_PER_CUTOFF_NATIVE_REVIEWS" if official_event_observation_binding is not None
                 else "OFFICIAL_EVENT_OBSERVATION_NOT_SUPPLIED"))

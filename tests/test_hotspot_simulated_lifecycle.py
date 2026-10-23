@@ -104,6 +104,52 @@ def test_corrupt_followup_preserves_specific_rejection_without_add_or_exit(tmp_p
     assert "CURRENT_CASE_EVIDENCE_INVALID" in review["blockers"]
     assert review["original_entry_comparison"] is None
     assert result["followup_fill_count"] == 0
+    assert result["market_source_scope"] == "MIXED_OR_UNVERIFIED_SOURCES"
+    assert result["market_evidence_scopes"][-1]["scope"] == "UNVERIFIED"
+
+
+def _declare_bundle_scope(root, case, namespace):
+    path = root / case["case_path"]
+    payload = json.loads(path.read_bytes())
+    quote = payload["current_reference_close"]
+    bundle_path = root / quote["bundle_path"]
+    bundle = json.loads(bundle_path.read_bytes())
+    for key in ("test_only", "fixture_scope", "namespace"):
+        bundle.pop(key, None)
+    if namespace:
+        bundle["namespace"] = namespace
+    bundle_path.write_text(json.dumps(bundle), encoding="utf-8")
+    quote["bundle_sha256"] = sha256(bundle_path.read_bytes()).hexdigest()
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    case["case_sha256"] = sha256(path.read_bytes()).hexdigest()
+
+
+@pytest.mark.parametrize("namespace", ["TEST_ONLY", "SIMULATED"])
+def test_declared_namespaces_are_not_public_source_attestations(tmp_path, namespace):
+    root, entry, _, current = _history(tmp_path)
+    for case in (entry, current):
+        _declare_bundle_scope(root, case, namespace)
+    result = _run(root, entry, current)
+    assert result["market_source_scope"] == namespace
+
+
+def test_unmarked_entry_and_test_followup_are_not_classified_as_public(tmp_path):
+    root, entry, _, current = _history(tmp_path)
+    _declare_bundle_scope(root, entry, None)
+    result = _run(root, entry, current)
+    assert result["market_source_scope"] == "MIXED_OR_UNVERIFIED_SOURCES"
+    assert [row["scope"] for row in result["market_evidence_scopes"]] == ["ORIGIN_NOT_ATTESTED", "TEST_ONLY"]
+
+
+def test_invalid_official_binding_never_claims_reverification_success(tmp_path):
+    root, entry, _, current = _history(tmp_path)
+    result = _run(root, entry, current,
+        official_event_observation_binding=dict(path="runtime/missing-official.json", sha256="a" * 64))
+    assert result["assumptions"]["event_coverage"] == "SEE_PER_CUTOFF_NATIVE_REVIEWS"
+    assert {row["official_publication_coverage"] for row in result["official_event_reviews"]} == {
+        "INVALID_OR_UNAVAILABLE"}
+    assert {row["corporate_action_coverage"] for row in result["official_event_reviews"]} == {"UNKNOWN"}
+    assert result["followup_fill_count"] == 0
 
 
 def test_each_run_has_new_journal_and_followups_never_reconfirm_entry(tmp_path):
@@ -150,7 +196,7 @@ def test_retained_300750_window_remains_descriptive(tmp_path):
             evaluated_at=datetime.fromisoformat("2026-10-23T21:00:00+08:00"))],
         generated_at=datetime.now().astimezone())
     assert result["entry_reference"]["original_protection_price"] == "218.450"
-    assert result["market_source_scope"] == "PUBLIC_PROVIDER_ARCHIVE_NOT_INDEPENDENT_MINUTE_VALIDATION"
+    assert result["market_source_scope"] == "ORIGIN_NOT_ATTESTED"
     review = result["steps"][0]["lifecycle_review"]
     assert review["original_entry_comparison"]["coverage"] == "COMPLETE"
     assert review["original_entry_comparison"]["inspected_bar_count"] == 4
