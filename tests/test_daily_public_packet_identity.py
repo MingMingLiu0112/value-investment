@@ -12,6 +12,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from test_d2_conditional_shared_service import synthetic_chain
+
 from value_investment_agent.application.product import daily_public_packet
 from value_investment_agent.application.product.daily_public_packet import (
     build_daily_public_packet,
@@ -20,6 +22,36 @@ from value_investment_agent.application.product.daily_public_packet import (
 
 
 NOW = datetime(2026, 10, 13, 4, 0, tzinfo=timezone.utc)
+
+
+def test_packet_forwards_replayed_coverage_and_historical_validity(synthetic_chain):
+    from test_incremental_quote_bridge import NOW as BRIDGE_NOW, CUTOFF, SYMBOL, production_chain
+    from value_investment_agent.application.product import incremental_validity as service
+    from value_investment_agent.application.product.quote_bridge import execute_quote_bridge_for_symbol
+
+    root, ref, _, _, raw = production_chain.__wrapped__(synthetic_chain)
+    build_verified_tree(root)
+    service.register_incremental_validity_binding(root, SYMBOL, ref, CUTOFF, BRIDGE_NOW)
+    execution = execute_quote_bridge_for_symbol(root, SYMBOL, today=BRIDGE_NOW)
+    packet = build_daily_public_packet(root, generated_at=BRIDGE_NOW)
+    for row in (packet["price_bridge_statuses"][SYMBOL], packet["company_statuses"][SYMBOL]):
+        assert row["current_event_coverage"] == execution["current_event_coverage"]
+        assert row["historical_model_validity"] == execution["historical_model_validity"]
+        assert row["historical_model_validity"]["status"] == "VALID"
+        assert row["model_validity"]["status"] == "UNKNOWN"
+        assert row["incremental_validity"]["observed_at"] == "2026-09-23T00:00:00+00:00"
+        assert row["incremental_validity"]["full_calendar_window_elapsed"] is True
+    assert packet["price_bridge_statuses"][SYMBOL]["comparison_eligible"] is False
+    assert packet["action"] == "no_order"
+
+    raw.write_bytes(b"TEST_ONLY raw source drift")
+    changed = build_daily_public_packet(root, generated_at=BRIDGE_NOW)
+    assert changed["publication_id"] != packet["publication_id"]
+    for row in (changed["price_bridge_statuses"][SYMBOL], changed["company_statuses"][SYMBOL]):
+        assert row["current_event_coverage"] is None
+        assert row["incremental_validity"]["observed_at"] is None
+        assert row["incremental_validity"]["full_calendar_window_elapsed"] is None
+    assert changed["price_bridge_statuses"][SYMBOL]["comparison_eligible"] is False
 
 
 def test_current_pending_plan_is_published_and_changes_publication_identity(tmp_path, monkeypatch):

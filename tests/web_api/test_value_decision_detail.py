@@ -6,6 +6,7 @@ import json
 from types import SimpleNamespace
 
 from test_read_api import _fixture
+from test_d2_conditional_shared_service import synthetic_chain
 
 from value_investment_agent.application.product import quote_bridge
 from value_investment_agent.quote_snapshot import QUOTE_STATUS_VERIFIED_CLOSE
@@ -211,6 +212,48 @@ def test_price_bridge_block_is_absent_without_a_registration(tmp_path):
     assert execution["status"] == "POINTER_UNAVAILABLE"
     assert execution["price_admitted"] is False
     assert execution["comparison_eligible"] is False
+
+
+def test_detail_forwards_native_coverage_without_promoting_historical_validity(synthetic_chain, monkeypatch):
+    from test_incremental_quote_bridge import production_chain, NOW, CUTOFF, SYMBOL
+    from value_investment_agent.application.product import incremental_validity as service
+    from value_investment_agent.presentation.web_api import app as web_app
+
+    root, ref, _, _, raw = production_chain.__wrapped__(synthetic_chain)
+    service.register_incremental_validity_binding(root, SYMBOL, ref, CUTOFF, NOW)
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW.astimezone(tz) if tz else NOW.replace(tzinfo=None)
+
+    monkeypatch.setattr(web_app, "datetime", Clock)
+    expected = quote_bridge.execute_quote_bridge_for_symbol(root, SYMBOL, today=NOW)
+    # ASGI TestClient only: real producer and projection, no socket or HTTP collection.
+    client = _fixture(root, explanation_extra=EXPLANATION, company_extra=COMPANY)
+    body = client.get("/api/v1/decisions/600519").json()
+    research = body["decision"]["research"]
+    execution = research["price_bridge_execution"]
+    assert execution["current_event_coverage"] == expected["current_event_coverage"]
+    assert execution["historical_model_validity"] == {"status": "VALID"}
+    assert execution["incremental_validity"] == {
+        "status": "UNKNOWN", "review_cutoff": CUTOFF.isoformat(), "announcement_count": 0,
+        "blockers": expected["incremental_validity"]["blockers"],
+        "observed_at": "2026-09-23T00:00:00+00:00", "full_calendar_window_elapsed": True}
+    assert execution["price_admitted"] is False
+    assert execution["comparison_eligible"] is False
+    assert execution["quote_date"] == CUTOFF.isoformat()
+    assert research["decision_cutoff"] == EXPLANATION["decision_as_of"]
+    assert research["position_guidance"] is None
+    assert body["action"] == "no_order"
+
+    raw.write_bytes(b"TEST_ONLY invalid original after successful replay")
+    failed = client.get("/api/v1/decisions/600519").json()["decision"]["research"]["price_bridge_execution"]
+    assert failed["status"] == "INCREMENTAL_VALIDITY_BLOCKED"
+    assert failed["current_event_coverage"] is None
+    assert failed["incremental_validity"]["observed_at"] is None
+    assert failed["incremental_validity"]["full_calendar_window_elapsed"] is None
+    assert failed["comparison_eligible"] is False
 
 
 def _admitted(root, symbol, *, today):

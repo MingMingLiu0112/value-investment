@@ -445,6 +445,8 @@ def test_daily_machine_review_progress_replays_and_preserves_missing_company(tmp
     # The legacy fixture has no raw pagination receipt, hence no complete-day claim.
     assert rows["600887"]["event_coverage_through"] is None
     assert rows["600887"]["event_coverage_status"] == "UNCONFIRMED"
+    assert rows["600887"]["observed_at"] is None
+    assert rows["600887"]["full_calendar_window_elapsed"] is None
     assert rows["600887"]["facts_change_status"] == "UNKNOWN"
     assert rows["600887"]["formal_eligibility"] is False
     assert rows["000651"]["model_validity_status"] == "UNKNOWN"
@@ -614,6 +616,8 @@ def test_daily_progress_replays_raw_pagination_before_claiming_event_coverage(tm
     assert report["reviews"][0]["review"]["valuation_basis"]["valuation_date"] == START.isoformat()
     assert row["event_coverage_through"] == END.isoformat()
     assert row["event_coverage_status"] == "COMPLETE"
+    assert row["observed_at"] == observation["acquired_at"]
+    assert row["full_calendar_window_elapsed"] is True
     assert row["announcement_count"] == int(populated)
     assert row["facts_change_status"] == ("REVIEW_REQUIRED" if populated else "NONE")
     assert row["model_validity_status"] == "UNKNOWN"
@@ -627,7 +631,43 @@ def test_daily_progress_replays_raw_pagination_before_claiming_event_coverage(tm
     assert row["formal_eligibility"] is False
     raw = next((tmp_path / "runtime/events/raw-index").glob("*.bin"))
     raw.write_bytes(b"changed raw response")
-    assert _progress(tmp_path, binding, **options)["status"] == "UNVERIFIED"
+    failed = _progress(tmp_path, binding, **options)
+    assert failed["status"] == "UNVERIFIED"
+    assert failed["checked_at"] is None
+    assert failed["rows"] == []  # Corrupt raw cannot retain a previous full-coverage row.
+
+
+def test_daily_machine_progress_forwards_verified_partial_observation_not_full_coverage(tmp_path, monkeypatch):
+    from datetime import timedelta
+    from test_incremental_validity import _partial_v2
+
+    ref, _, package, _ = _partial_v2(tmp_path, monkeypatch)
+    now = datetime(2020, 1, 2, 10, tzinfo=timezone.utc)
+    package_payload = json.loads(package.read_bytes())
+    output = tmp_path / "runtime/reviews/partial.json"
+    report = review_registered_research_validity(root=tmp_path, review_cutoff=date(2020, 1, 2),
+        today=now, output_path=output, incremental_bindings=[ref])
+    binding = {"path": output.relative_to(tmp_path).as_posix(), "sha256": _sha(output)}
+    progress = _progress(tmp_path, binding, started_at=(now - timedelta(minutes=1)).isoformat(),
+        finished_at=now.isoformat(), now=now)
+    assert progress["status"] == "SOURCE_REPLAYED", report
+    row = progress["rows"][0]
+    assert row["research_as_of"] == package_payload["point_in_time"]["research_as_of"]
+    assert row["observed_at"] == now.isoformat()
+    assert row["full_calendar_window_elapsed"] is False
+    assert row["event_coverage_through"] is None
+    assert row["event_coverage_status"] == "UNCONFIRMED"
+    assert row["model_validity_status"] == "UNKNOWN"
+    assert row["model_recalculation_required"] is None
+    assert row["formal_eligibility"] is False
+    assert progress["research_cutoff_changed"] is False
+    raw = next((tmp_path / "runtime/events/raw-index").glob("*.bin"))
+    raw.write_bytes(b"TEST_ONLY changed partial raw response")
+    failed = _progress(tmp_path, binding, started_at=(now - timedelta(minutes=1)).isoformat(),
+        finished_at=now.isoformat(), now=now)
+    assert failed["status"] == "UNVERIFIED"
+    assert failed["rows"] == []
+    assert failed["checked_at"] is None
 
 
 @pytest.mark.parametrize("fallback", [False, True])

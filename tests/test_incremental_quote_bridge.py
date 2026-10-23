@@ -103,6 +103,10 @@ def test_production_pointer_rebuilds_model_and_computes_shared_price_bridge(prod
     assert execution["current_event_coverage"]["required_through"] == "2026-09-23"
     assert execution["current_event_coverage"]["covered_through"] == CUTOFF.isoformat()
     assert execution["current_event_coverage"]["status"] == "CLOSED_WINDOW_NOT_CURRENT"
+    assert execution["current_event_coverage"]["observed_at"] == "2026-09-23T00:00:00+00:00"
+    assert execution["current_event_coverage"]["full_calendar_window_elapsed"] is True
+    assert execution["incremental_validity"]["observed_at"] == "2026-09-23T00:00:00+00:00"
+    assert execution["incremental_validity"]["full_calendar_window_elapsed"] is True
     assert execution["quote"]["quote_date"] == CUTOFF.isoformat()
     assert "READY" not in execution["compatibility"]["comparison_eligible"]["reason"]
     assert execution["compatibility"]["formal_decision_eligible"]["eligible"] is False
@@ -148,6 +152,18 @@ def test_v2_real_consumer_keeps_raw_complete_window_pending_not_price_ready(prod
     assert execution["compatibility"]["comparison_eligible"]["eligible"] is False
     assert execution["compatibility"]["formal_decision_eligible"]["eligible"] is False
     assert execution["action"] == "no_order"
+    assert execution["incremental_validity"]["observed_at"] == observation["acquired_at"]
+    assert execution["incremental_validity"]["full_calendar_window_elapsed"] is True
+    assert execution["current_event_coverage"]["full_calendar_window_elapsed"] is True
+    # Real collector-shaped retained files, with explicitly synthetic bodies.
+    raw = next((root / "runtime/events/raw-index").glob("*.bin"))
+    raw.write_bytes(b"TEST_ONLY corrupt retained official index body")
+    failed = execute_quote_bridge_for_symbol(root, SYMBOL, today=NOW)
+    assert failed["status"] == "INCREMENTAL_VALIDITY_BLOCKED"
+    assert failed.get("current_event_coverage") is None
+    assert failed["incremental_validity"]["observed_at"] is None
+    assert failed["incremental_validity"]["full_calendar_window_elapsed"] is None
+    assert failed["price_admitted"] is False
 
 
 def test_known_stale_model_survives_missing_current_coverage(production_chain, monkeypatch):
@@ -190,6 +206,41 @@ def test_known_stale_model_survives_missing_current_coverage(production_chain, m
     assert result["conditional_valuation"]["base_value"]
     assert result["action"] == "no_order"
     assert package.read_bytes() == before
+
+
+@pytest.mark.parametrize("phase", ["before_native_replay", "during_bridge"])
+def test_bad_raw_cannot_publish_declared_full_coverage(production_chain, monkeypatch, phase):
+    from value_investment_agent import price_bridge
+
+    root, ref, _, _, raw = production_chain
+    service.register_incremental_validity_binding(root, SYMBOL, ref, CUTOFF, NOW)
+    original = execute_quote_bridge_for_symbol(root, SYMBOL, today=NOW)
+    assert original["current_event_coverage"]["full_calendar_window_elapsed"] is True
+    pointer = (root / "config/current-quote-bridge.json").read_bytes()
+    bridge = price_bridge.bridge_with_quote
+    calls = []
+
+    def drift(*args, **kwargs):
+        calls.append(True)
+        result = bridge(*args, **kwargs)
+        raw.write_bytes(b"TEST_ONLY changed after first native verification")
+        return result
+
+    if phase == "before_native_replay":
+        raw.write_bytes(b"TEST_ONLY changed before native verification")
+    else:
+        monkeypatch.setattr(price_bridge, "bridge_with_quote", drift)
+    result = execute_quote_bridge_for_symbol(root, SYMBOL, today=NOW)
+    assert bool(calls) is (phase == "during_bridge")
+    assert result["status"] == "INCREMENTAL_VALIDITY_BLOCKED"
+    assert result.get("current_event_coverage") is None
+    assert result["incremental_validity"]["observed_at"] is None
+    assert result["incremental_validity"]["full_calendar_window_elapsed"] is None
+    assert result["price_admitted"] is False
+    assert result["price_comparison"]["bridge_status"] != "READY"
+    assert result["compatibility"]["comparison_eligible"]["eligible"] is False
+    assert result["action"] == "no_order"
+    assert (root / "config/current-quote-bridge.json").read_bytes() == pointer
 
 
 def test_failed_current_collection_cannot_promote_retained_historical_ready(production_chain, monkeypatch):
