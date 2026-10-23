@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from hashlib import sha256
 import json
 from pathlib import Path
 
@@ -16,19 +17,62 @@ from .public_financial_input import verify_public_supplement
 
 
 def select_current_value_candidates(*, root: Path, now: datetime, limit: int = 30) -> dict:
-    """Read only the bound latest run. Never discover a supposedly newer directory."""
+    """Separate the latest attempt from its explicitly retained research snapshot."""
     root = root.resolve()
     try:
         path = root / '.tmp/daily-workbench-latest-run.json'
         if path.is_symlink() or path.stat().st_size > 512_000:
             raise ValueError('invalid latest-run pointer')
-        run = json.loads(path.read_text(encoding='utf-8-sig'))
+        raw = path.read_bytes()
+        if len(raw) > 512_000:
+            raise ValueError('oversized latest-run pointer')
+        run = json.loads(raw.decode('utf-8-sig'))
         if (run['schema_version'] != 'daily-workbench-run-v1' or run['action'] != 'no_order'
-                or run['mode'] != 'SAFE_REFRESH' or run['marketwide_screen']['status'] != 'RESEARCH_ONLY'):
+                or run['mode'] not in {'SAFE_REFRESH', 'READ_ONLY'}):
             raise ValueError('unsupported latest run')
-        binding = dict(path=run['marketwide_screen']['manifest_path'],
-                       sha256=run['marketwide_screen']['manifest_sha256'])
-        return select_value_candidates(root=root, manifest_binding=binding, now=now, limit=limit)
+        if now.utcoffset() is None:
+            raise ValueError('timezone-aware cutoff required')
+        for field in ('started_at', 'finished_at'):
+            if run.get(field) is not None:
+                when = datetime.fromisoformat(run[field])
+                if when.utcoffset() is None or when > now:
+                    raise ValueError('latest attempt not available at cutoff')
+        if (run.get('started_at') is not None and run.get('finished_at') is not None
+                and datetime.fromisoformat(run['started_at']) > datetime.fromisoformat(run['finished_at'])):
+            raise ValueError('inverted latest attempt times')
+        attempt = run.get('marketwide_screen') or {}
+        current = run['mode'] == 'SAFE_REFRESH' and attempt.get('status') == 'RESEARCH_ONLY'
+        screen = attempt if current else run['retained_marketwide_screen']
+        if screen['status'] != 'RESEARCH_ONLY':
+            raise ValueError('unsupported retained screen')
+        binding = dict(path=screen['manifest_path'], sha256=screen['manifest_sha256'])
+        result = select_value_candidates(root=root, manifest_binding=binding, now=now, limit=limit)
+        if current:
+            start = datetime.fromisoformat(run['started_at'])
+            finish = datetime.fromisoformat(run['finished_at'])
+            generated = datetime.fromisoformat(result['available_at'])
+            output = screen['output_dir'].replace('\\', '/').rstrip('/')
+            if (binding['path'].replace('\\', '/') != output + '/manifest.json'
+                    or not start <= generated <= finish):
+                raise ValueError('screen does not belong to the current attempt')
+        # Revalidation never turns yesterday's screen into this attempt's success.
+        result['snapshot_status'] = ('CURRENT_ATTEMPT_SOURCE_REVALIDATED' if current
+                                     else 'RETAINED_DATED_RESEARCH')
+        result['refresh_status'] = ('SOURCE_REVALIDATED' if current else
+            'NOT_ATTEMPTED' if run['mode'] == 'READ_ONLY' else
+            'INCOMPLETE' if run.get('finished_at') is None or not attempt else 'COLLECTION_FAILED')
+        result['latest_attempt'] = dict(mode=run['mode'], status=attempt.get('status', 'NOT_ATTEMPTED'),
+            run_status=run.get('status'), started_at=run.get('started_at'), finished_at=run.get('finished_at'))
+        if not current:
+            result.setdefault('blockers', []).append('RETAINED_RESEARCH_NOT_CURRENT_REFRESH')
+        result.setdefault('source_bindings', []).append(dict(
+            path=path.relative_to(root).as_posix(), sha256=sha256(raw).hexdigest()))
+        result['input_sha256'] = fingerprint(result['source_bindings'])
+        if path.read_bytes() != raw:
+            raise ValueError('latest-run pointer changed during revalidation')
+        result.pop('selection_sha256', None)
+        result['selection_sha256'] = fingerprint(result)
+        return result
     except (OSError, ValueError, TypeError, KeyError, AttributeError) as error:
         return _unavailable(error)
 

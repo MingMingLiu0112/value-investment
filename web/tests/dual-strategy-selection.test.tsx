@@ -108,3 +108,32 @@ it("distinguishes full coverage, bounded queue, observed facts and trade permiss
   expect(html).toContain("适用估值");
   expect(html).not.toContain("/decisions/600519");
 });
+
+it.each([
+  ["COLLECTION_FAILED", "本次全市场采集失败"],
+  ["NOT_ATTEMPTED", "本次未进行全市场采集"],
+  ["INCOMPLETE", "本次全市场刷新尚未完成"],
+])("labels retained research separately from refresh %s", (status, message) => {
+  state.value = {
+    data: {
+      content_sha256: "b".repeat(64),
+      value: {
+        items: [{ symbol: "600519", company_name: "贵州茅台" }],
+        shortlist: [],
+        coverage: { universe_count: 5577, observation_count: 50055 },
+        snapshot_status: "RETAINED_DATED_RESEARCH",
+        refresh_status: status,
+        quote_date: "2026-10-23",
+        available_at: "2026-10-23T12:30:22+00:00",
+        latest_attempt: { finished_at: "2026-10-23T17:52:04+00:00" },
+      },
+      hotspot: { items: [] },
+    },
+  };
+  const html = renderToStaticMarkup(<DualStrategySelection />);
+  expect(html).toContain(message);
+  expect(html).toContain("2026-10-23T12:30:22+00:00");
+  expect(html).toContain("贵州茅台");
+  expect(html).toContain("不提供买入或仓位资格");
+  expect(html).not.toContain("无法核验，不代表零候选");
+});

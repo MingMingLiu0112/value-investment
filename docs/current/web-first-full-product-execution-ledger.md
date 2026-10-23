@@ -2882,3 +2882,97 @@ the swing specification. Neither specification is user strategy approval.
 MJ1 independent research accepts only LOW conditional review; ordinary claims,
 financing and terminal-cash gaps remain. Live 8001 is still c4bb99b5. No private
 account, Canonical workbook, production system or order was changed.
+
+### 2026-10-24 - c681d1f0 live checkpoint and remaining product breaks
+
+Clean gc1 at c681d1f0705e745c226c6bd5ae3056864ff72e71 passed the exact 368-file
+offline Core workflow: 5440 passed, 94 skipped, 38 inherited warnings. Its
+.tmp/core-c681d1f0-passed.xml SHA256 is
+d3e69df013df16aef5bd341cb8e2ce6db2ce0c9e7ea5f590749baecb9f02a5e5.
+Web build, repository Umi setup, typecheck and full tests passed on that checkout:
+613 passed, seven skipped. Initial typecheck lacked generated .umi types; setup
+fixed the environment, not application code. No remote push or GitHub CI is claimed.
+
+8001 is now c681d1f0. Backend, clean build, configuration, four public registry
+roles and the active-release pointer were independently read back MATCHED.
+Current public packet is pub-512c7141aaacce8b52d7, SHA256
+bd43091729369f442aae0f55ff070aeac25ca9f381883720731cdf87219ac74c.
+The original authority pointer bytes remain SHA256
+50746cc7595d0151d33c3a56f1cd283713392fd099d79491fde7bc2fca757387.
+A transient line-ending alignment of that pointer was rejected by runtime's
+BEHAVIOR_CONFIG_DIRTY gate and fully reverted. Its pin/authority never changed.
+The correct staging contract leaves local control-plane and absent signature
+state untouched, copies only bound public research, then rebuilds through the
+live publisher. No gate was relaxed. The original research JSON byte repair is
+separately backed up; other input conflicts still fail closed.
+
+Actual live SAFE_REFRESH ran 01:50:08-01:52:04 Asia/Shanghai, with no server,
+private-account or workbook operation. It reused the retained closes and price
+cases and replayed both actual official scans. The saved review is
+runtime/research-validity-reviews/registered-20261023T1751117422431Z.json,
+SHA256 7077d0d119e06cc2e7c0bc08a32807d02b5e09114afb520e4749e70cf98a69a7.
+Browser inspection confirms latest machine check 01:51:12, complete original
+response windows through October 23 for 600519/600887, zero/one announcements,
+and UNKNOWN/pending materiality, without changing original research dates.
+The strict new Moutai scan binding is a799066284c9fdff756d8a207a4dc75e55864714e66267577717b7471f1ce283.
+
+This live run is PARTIAL, not all-market success: BSE's list was not dated the
+natural day, and runtime/exchange-lists/official-universe.json fallback was absent.
+The value queue currently reports SOURCE_REVALIDATION_FAILED; retained 114 clues
+must not be called freshly screened, and unknown coverage is not zero opportunity.
+This is a concrete remaining discovery/data-path task, not an external-data waiver.
+
+Actual browser verification also found that the new five-year JointCapitalReview
+is only available through the owner-authorized review handoff. Public analysis
+shows real scenarios/inputs but not that ledger. Public source-only projection
+and existing-component reuse are now separately assigned to Aquinas/Zeno from
+c681d1f0; their unfinished work is not part of this live checkpoint. Private
+handoff/signature gates must stay unchanged. Real simulated-account attribution
+is repaired, but a source-consuming six-action simulation is still unfinished.
+The goal remains active; strategy validity, user confirmation and actual assisted
+use remain NOT_PROVEN/not reached. action=no_order, private workspace LOCKED.
+
+### 2026-10-24 - public capital ledger and retained screening integration
+
+The source-only JointCapitalReview backend (06fa5005 -> b2f5e13f) and public
+renderer (1e03d0c3 -> ac59cb9c) are integrated, not yet released. An independent
+backend review found no new P1/P2; its 48-pass/one-skip fixture run is separate
+from the main opt-in actual-public-original readback, which passed for 600519
+and 600887. Public research never constructs a signing handoff or unlocks the
+private owner surface. Non-joint 600887 returns no invented capital ledger.
+
+Independent UI review found two P2 inconsistencies: finite but conflicting
+valuation values/dates, and descriptor-only model context accepted without an
+assessment. 3ee3abf2 -> db24f0c6 binds the existing full model identity, route,
+scenario values and actual model timing, with exact decimal comparison. Original
+private signing guards remain unchanged. The correction awaits independent
+re-review and clean integrated regression; author tests are not release proof.
+
+The value queue failure was reproduced against LIVE's exact failed receipt:
+the collector rejected BSE's October 23 original on civil-day October 24, and
+the selector rejected the failed latest attempt before reading any source Hash.
+The explicit October 23 archived manifest is still valid research material:
+80ef79cd9bb62b5eb8168cb59ca0a575b152ec9da14db85e37be149e3a31d43e,
+runtime/daily-marketwide/20261023T1229185986655Z/manifest.json. Its 5577-company,
+30-row replay is not a successful October 24 collection or strict historical PIT.
+
+The existing daily receipt now carries an explicit retained_marketwide_screen;
+the existing selector revalidates it and keeps original dates while separately
+reporting collection failure, no collection or incomplete execution. No directory
+recency search, new registry, threshold change or old-file restamp was added.
+Explicit restoration uses a manifest/SHA pair on the existing daily CLI. A corrupt
+current binding cannot fall back. Independent review caught two additional P2s:
+an old source could be mislabeled as the new attempt, and an unfinished receipt
+could be called collector failure. The correction requires a coherent run window
+and exact output path for CURRENT, and labels unfinished/unknown as INCOMPLETE,
+not proof that a process is alive. It awaits the final independent recheck.
+
+Main focused regression initially failed at fixture setup because TEMP did not
+point at the repository scratch directory; no application assertions ran in that
+attempt. With the existing TEMP/TMP rule, 118 passed/one optional skip; the actual
+public readback passed separately. Real PowerShell entry tests passed all 17
+isolated success/partial/failure scenarios, preserving the old explicit screen
+only on failure and retaining the real current binding on success. After adding
+run/source identity negatives, the focused selection/consumer suite passed 70.
+This does not fix the collector's session-date contract or admit any strategy.
+Live remains c681d1f0 until clean regression, source checks and 8001 verification.

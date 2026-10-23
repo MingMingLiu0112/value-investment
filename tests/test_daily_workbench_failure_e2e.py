@@ -224,6 +224,13 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         '"model_validity_status":"UNKNOWN","status":"REQUIRES_MATERIALITY_REVIEW"}]}))\n',
         encoding='utf-8')
     before = pointer.read_bytes()
+    previous_screen = dict(status='RESEARCH_ONLY',
+        manifest_path='runtime/daily-marketwide/TEST_ONLY-retained/manifest.json', manifest_sha256='b' * 64)
+    scratch = project / '.tmp'
+    scratch.mkdir(exist_ok=True)
+    (scratch / 'daily-workbench-latest-run.json').write_text(json.dumps(dict(
+        schema_version='daily-workbench-run-v1', action='no_order', mode='SAFE_REFRESH',
+        marketwide_screen=previous_screen)), encoding='utf-8')
     research_args = []
     if scenario == 'research_unavailable':
         (current / 'run_agent_research_pilot.py').write_text(
@@ -248,8 +255,11 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
     if receipt['marketwide_screen']['status'] == 'RESEARCH_ONLY':
         assert receipt['marketwide_screen']['manifest_sha256'] == digest(
             project / receipt['marketwide_screen']['manifest_path'])
+        assert receipt['retained_marketwide_screen'] == receipt['marketwide_screen']
     elif scenario == 'm2_manifest_missing':
         assert 'manifest_sha256' not in receipt['marketwide_screen']
+    if receipt['marketwide_screen']['status'] == 'BLOCKED':
+        assert receipt['retained_marketwide_screen'] == previous_screen
     assert int((project / '.tmp/build-calls').read_text()) == (3 if published else 2)
     assert receipt['node_receipt_scope'] == 'COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION'
     nodes = receipt['nodes']

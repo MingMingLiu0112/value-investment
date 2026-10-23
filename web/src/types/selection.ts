@@ -52,6 +52,18 @@ export interface SelectionLane {
   status?: string;
   blockers?: string[];
   rule_version?: string;
+  snapshot_status?:
+    "CURRENT_ATTEMPT_SOURCE_REVALIDATED" | "RETAINED_DATED_RESEARCH";
+  refresh_status?:
+    "SOURCE_REVALIDATED" | "NOT_ATTEMPTED" | "INCOMPLETE" | "COLLECTION_FAILED";
+  available_at?: string;
+  latest_attempt?: {
+    mode: string;
+    status: string;
+    run_status?: string;
+    started_at?: string;
+    finished_at?: string;
+  };
 }
 export interface DualStrategySelection {
   value: SelectionLane;

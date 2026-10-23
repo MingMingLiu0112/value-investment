@@ -45,7 +45,9 @@ param(
     [string]$ResearchTestOnlyRetrospectiveSha256 = '',
     [switch]$RegisterResearchDrafts,
     [switch]$BuildValueResearchPriority,
-    [switch]$ExecuteValueEnrichment
+    [switch]$ExecuteValueEnrichment,
+    [string]$RetainedMarketwideManifest = '',
+    [string]$RetainedMarketwideManifestSha256 = ''
 )
 $ErrorActionPreference = 'Stop'
 if ($PSVersionTable.PSVersion.Major -lt 7) {
@@ -56,7 +58,9 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
         -ResearchTestOnlyRetrospective $ResearchTestOnlyRetrospective `
         -ResearchTestOnlyRetrospectiveSha256 $ResearchTestOnlyRetrospectiveSha256 `
         -RegisterResearchDrafts:$RegisterResearchDrafts -BuildValueResearchPriority:$BuildValueResearchPriority `
-        -ExecuteValueEnrichment:$ExecuteValueEnrichment
+        -ExecuteValueEnrichment:$ExecuteValueEnrichment `
+        -RetainedMarketwideManifest $RetainedMarketwideManifest `
+        -RetainedMarketwideManifestSha256 $RetainedMarketwideManifestSha256
     exit $LASTEXITCODE
 }
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new()
@@ -67,6 +71,9 @@ if ($BuildValueResearchPriority -and $Mode -ne 'SAFE_REFRESH') {
 }
 if ($ExecuteValueEnrichment -and (-not $BuildValueResearchPriority -or $Mode -ne 'SAFE_REFRESH')) {
     throw 'Financial enrichment requires SAFE_REFRESH and BuildValueResearchPriority.'
+}
+if ([bool]$RetainedMarketwideManifest -ne [bool]$RetainedMarketwideManifestSha256) {
+    throw 'Retained research requires an explicit manifest path and SHA256 pair.'
 }
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 Set-Location -LiteralPath $root
@@ -91,6 +98,38 @@ $notes = [System.Collections.Generic.List[string]]::new()
 $nodes = [System.Collections.Generic.List[object]]::new()
 $startedAt = [DateTimeOffset]::UtcNow.ToString('o')
 $receiptPath = Join-Path $env:TEMP 'daily-workbench-latest-run.json'
+# Preserve an explicit research binding, not a directory-recency fallback.
+# The application replays every source on read; carrying this is not admission.
+$retainedMarketwideScreen = $null
+if (Test-Path -LiteralPath $receiptPath) {
+    try {
+        $previousRun = Get-Content -LiteralPath $receiptPath -Raw -Encoding utf8 | ConvertFrom-Json
+        if ($previousRun.schema_version -eq 'daily-workbench-run-v1' -and $previousRun.action -eq 'no_order') {
+            if ($previousRun.mode -eq 'SAFE_REFRESH' -and $previousRun.marketwide_screen.status -eq 'RESEARCH_ONLY') {
+                $retainedMarketwideScreen = $previousRun.marketwide_screen
+            } else { $retainedMarketwideScreen = $previousRun.retained_marketwide_screen }
+        }
+    } catch { $notes.Add('原研究筛选引用不可读；不猜测或搜索其他历史目录。') }
+}
+if ($RetainedMarketwideManifest) {
+    $relative = $RetainedMarketwideManifest.Replace('\', '/')
+    if ($relative -notmatch '^runtime/daily-marketwide/[A-Za-z0-9_-]+/manifest\.json$' -or
+        $RetainedMarketwideManifestSha256 -cnotmatch '^[0-9a-f]{64}$') {
+        throw 'Retained research requires a repository-local marketwide manifest and lowercase SHA256.'
+    }
+    $manifestFile = Join-Path $root $relative
+    foreach ($sourcePath in @($manifestFile, (Split-Path $manifestFile -Parent))) {
+        if ((Get-Item -LiteralPath $sourcePath).Attributes -band [IO.FileAttributes]::ReparsePoint) {
+            throw 'Retained manifest must not traverse a link.'
+        }
+    }
+    $actual = (Get-FileHash -LiteralPath $manifestFile -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actual -cne $RetainedMarketwideManifestSha256) { throw 'Retained manifest hash mismatch.' }
+    $retainedMarketwideScreen = @{
+        status = 'RESEARCH_ONLY'; manifest_path = $relative; manifest_sha256 = $actual
+    }
+    $notes.Add('显式保留有日期的研究筛选；不是本次刷新成功，页面仍须逐项重验来源。')
+}
 # An interrupted/failed invocation must not leave yesterday's SUCCESS as its result.
 $initialReceipt = @{
     schema_version = 'daily-workbench-run-v1'; action = 'no_order'; mode = $Mode
@@ -98,6 +137,7 @@ $initialReceipt = @{
     published = $false; notes = @('本次更新尚未完成；继续显示历史已验证快照。')
     nodes = @(); node_receipt_scope = 'COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION'
 }
+if ($retainedMarketwideScreen) { $initialReceipt.retained_marketwide_screen = $retainedMarketwideScreen }
 $priorPointer = Join-Path $root 'config/current-daily-public-snapshot.json'
 if (Test-Path -LiteralPath $priorPointer) {
     try { $initialReceipt.retained_publication_id = (Get-Content -LiteralPath $priorPointer -Raw -Encoding utf8 | ConvertFrom-Json).publication_id } catch { }
@@ -117,6 +157,7 @@ trap {
         notes = @('刷新后快照生成失败，Web 保留上一验证版本。')
         nodes = @($nodes.ToArray()); node_receipt_scope = 'COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION'
     }
+    if ($retainedMarketwideScreen) { $failedReceipt.retained_marketwide_screen = $retainedMarketwideScreen }
     $failedReceipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
     Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
     Write-Host "运行结果 : BLOCKED - $($_.Exception.Message)"
@@ -587,6 +628,9 @@ $receipt = @{
     nodes = @($nodes.ToArray()); node_receipt_scope = 'COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION'
 }
 if ($marketwideScreen) { $receipt.marketwide_screen = $marketwideScreen }
+if ($marketwideScreen -and $marketwideScreen.status -eq 'RESEARCH_ONLY') {
+    $receipt.retained_marketwide_screen = $marketwideScreen
+} elseif ($retainedMarketwideScreen) { $receipt.retained_marketwide_screen = $retainedMarketwideScreen }
 if ($valueResearchPriority) { $receipt.value_research_priority = $valueResearchPriority }
 if ($researchValidityReview) { $receipt.research_validity_review = $researchValidityReview }
 if ($verified.Json) {

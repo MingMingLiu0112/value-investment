@@ -162,6 +162,20 @@ export function DualStrategySelection() {
         数据日期：{lane.quote_date || lane.trade_date || "未核验"} ·{" "}
         {lane.data_status || lane.status} · 规则：{lane.rule_version}
       </p>
+      {lane.snapshot_status === "RETAINED_DATED_RESEARCH" && (
+        <Alert
+          type="warning"
+          showIcon
+          message={
+            lane.refresh_status === "COLLECTION_FAILED"
+              ? "本次全市场采集失败；下列为重新核验通过的历史研究队列，不是今日刷新结果。"
+              : lane.refresh_status === "INCOMPLETE"
+                ? "本次全市场刷新尚未完成；下列为重新核验通过的历史研究队列。"
+                : "本次未进行全市场采集；下列为重新核验通过的历史研究队列。"
+          }
+          description={`原筛选生成时间：${lane.available_at || "未提供"}；最近运行：${lane.latest_attempt?.finished_at || lane.latest_attempt?.started_at || "未完成"}。只用于安排研究，不提供买入或仓位资格。`}
+        />
+      )}
       <p>
         {unavailable
           ? "来源无法核验，覆盖与候选数量未知，不能判断是否有候选。"

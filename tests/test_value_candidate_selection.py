@@ -148,13 +148,136 @@ def test_current_entry_delegates_exact_binding(tmp_path, monkeypatch):
     binding = dict(path='runtime/daily-marketwide/test/manifest.json', sha256='a' * 64)
     (base / 'daily-workbench-latest-run.json').write_text(json.dumps(dict(
         schema_version='daily-workbench-run-v1', action='no_order', mode='SAFE_REFRESH',
+        started_at='2026-10-23T07:00:00+00:00', finished_at='2026-10-23T07:01:00+00:00',
         marketwide_screen=dict(status='RESEARCH_ONLY', manifest_path=binding['path'],
-            manifest_sha256=binding['sha256']))), encoding='utf-8')
+            manifest_sha256=binding['sha256'], output_dir='runtime/daily-marketwide/test'))), encoding='utf-8')
     def replay(**kwargs):
         assert kwargs == dict(root=tmp_path.resolve(), manifest_binding=binding, now=NOW, limit=20)
-        return dict(action='no_order', status='TEST_DELEGATED')
+        return dict(action='no_order', status='TEST_DELEGATED', available_at='2026-10-23T07:00:30+00:00')
     monkeypatch.setattr(app, 'select_value_candidates', replay)
     assert app.select_current_value_candidates(root=tmp_path, now=NOW, limit=20)['status'] == 'TEST_DELEGATED'
+
+
+def _run_pointer(root, binding, *, mode='SAFE_REFRESH', current=False, **changes):
+    screen = dict(status='RESEARCH_ONLY', manifest_path=binding['path'], manifest_sha256=binding['sha256'],
+                  output_dir=binding['path'].rsplit('/', 1)[0])
+    run = dict(schema_version='daily-workbench-run-v1', action='no_order', mode=mode,
+        status='PARTIAL', started_at='2026-10-23T07:00:00+00:00',
+        finished_at='2026-10-23T07:01:00+00:00',
+        marketwide_screen=screen if current else dict(status='BLOCKED'),
+        retained_marketwide_screen=screen, **changes)
+    path = root / '.tmp/daily-workbench-latest-run.json'
+    path.parent.mkdir(exist_ok=True)
+    path.write_text(json.dumps(run), encoding='utf-8')
+    return path, run
+
+
+@pytest.mark.parametrize('mode,expected', [('SAFE_REFRESH', 'COLLECTION_FAILED'), ('READ_ONLY', 'NOT_ATTEMPTED')])
+def test_failed_attempt_retains_exact_dated_research_with_original_times(source_package, mode, expected):
+    root, binding, _, _ = source_package
+    direct = app.select_value_candidates(root=root, manifest_binding=binding, now=NOW)
+    path, run = _run_pointer(root, binding, mode=mode)
+    before = path.read_bytes()
+    result = app.select_current_value_candidates(root=root, now=NOW)
+    assert result['items'] == direct['items']
+    assert result['as_of'] == direct['as_of']
+    assert result['available_at'] == direct['available_at']
+    assert result['quote_date'] == direct['quote_date']
+    assert result['snapshot_status'] == 'RETAINED_DATED_RESEARCH'
+    assert result['refresh_status'] == expected
+    assert result['latest_attempt']['status'] == 'BLOCKED'
+    assert result['latest_attempt']['finished_at'] == run['finished_at']
+    assert result['formal_eligibility'] is False and result['buy_eligible'] is False
+    assert result['source_bindings'][-1]['sha256'] == hashlib.sha256(before).hexdigest()
+    assert result['selection_sha256'] == fingerprint({k: v for k, v in result.items() if k != 'selection_sha256'})
+    assert path.read_bytes() == before
+
+
+def test_current_corrupt_manifest_must_not_fall_back_to_valid_retained_binding(source_package):
+    root, binding, _, _ = source_package
+    path, run = _run_pointer(root, binding, current=True)
+    run['marketwide_screen'] = dict(run['marketwide_screen'], manifest_sha256='f' * 64)
+    path.write_text(json.dumps(run), encoding='utf-8')
+    result = app.select_current_value_candidates(root=root, now=NOW)
+    assert result['data_status'] == 'SOURCE_REVALIDATION_FAILED' and result['items'] == []
+
+
+def test_unfinished_attempt_is_not_called_failed_or_fresh(source_package):
+    root, binding, _, _ = source_package
+    path, run = _run_pointer(root, binding)
+    run['finished_at'] = None
+    path.write_text(json.dumps(run), encoding='utf-8')
+    result = app.select_current_value_candidates(root=root, now=NOW)
+    assert result['snapshot_status'] == 'RETAINED_DATED_RESEARCH'
+    assert result['refresh_status'] == 'INCOMPLETE'
+    assert result['input_sha256'] == fingerprint(result['source_bindings'])
+
+
+@pytest.mark.parametrize('fault', ['old_receipt', 'missing_start', 'missing_finish', 'inverted', 'different_output'])
+def test_current_label_requires_coherent_attempt_identity(source_package, fault):
+    root, binding, _, _ = source_package
+    path, run = _run_pointer(root, binding, current=True)
+    run.update(started_at='2026-09-23T07:00:00+00:00', finished_at='2026-09-23T09:00:00+00:00')
+    if fault == 'old_receipt':
+        run.update(started_at='2026-10-23T07:00:00+00:00', finished_at='2026-10-23T09:00:00+00:00')
+    elif fault == 'missing_start':
+        run.pop('started_at')
+    elif fault == 'missing_finish':
+        run['finished_at'] = None
+    elif fault == 'inverted':
+        run['finished_at'] = '2026-09-23T06:00:00+00:00'
+    else:
+        run['marketwide_screen']['output_dir'] = 'runtime/daily-marketwide/another'
+    path.write_text(json.dumps(run), encoding='utf-8')
+    assert app.select_current_value_candidates(root=root, now=NOW)['data_status'] == 'SOURCE_REVALIDATION_FAILED'
+
+
+def test_current_completed_attempt_has_its_own_source_generation(source_package):
+    root, binding, _, _ = source_package
+    path, run = _run_pointer(root, binding, current=True)
+    run.update(started_at='2026-09-23T07:00:00+00:00', finished_at='2026-09-23T09:00:00+00:00')
+    path.write_text(json.dumps(run), encoding='utf-8')
+    result = app.select_current_value_candidates(root=root, now=NOW)
+    assert result['snapshot_status'] == 'CURRENT_ATTEMPT_SOURCE_REVALIDATED'
+    assert result['refresh_status'] == 'SOURCE_REVALIDATED'
+
+
+@pytest.mark.parametrize('damage', ['tamper', 'missing', 'no_binding', 'future_attempt', 'future_source', 'wrong_policy'])
+def test_retained_binding_revalidates_all_sources_and_time(source_package, damage):
+    root, binding, manifest, write = source_package
+    path, run = _run_pointer(root, binding)
+    cutoff = NOW
+    if damage == 'tamper':
+        raw = root / manifest['files']['official']['path']
+        raw.write_bytes(raw.read_bytes() + b' ')
+    elif damage == 'missing':
+        (root / manifest['files']['financial']['path']).unlink()
+    elif damage == 'no_binding':
+        run.pop('retained_marketwide_screen')
+    elif damage == 'future_attempt':
+        run['finished_at'] = '2026-10-24T08:00:00+00:00'
+    elif damage == 'future_source':
+        cutoff = datetime(2026, 9, 22, tzinfo=timezone.utc)
+        run.pop('started_at')
+        run.pop('finished_at')
+    elif damage == 'wrong_policy':
+        manifest['files']['policy'] = write('new-policy.json', dict(value_max_pe='1000'))
+        changed = write('manifest.json', manifest)
+        run['retained_marketwide_screen']['manifest_sha256'] = changed['sha256']
+    path.write_text(json.dumps(run), encoding='utf-8')
+    assert app.select_current_value_candidates(root=root, now=cutoff)['data_status'] == 'SOURCE_REVALIDATION_FAILED'
+
+
+def test_pointer_race_is_not_published_as_a_stable_selection(source_package, monkeypatch):
+    root, binding, _, _ = source_package
+    path, _ = _run_pointer(root, binding)
+    replay = app.select_value_candidates
+    def changed(**kwargs):
+        result = replay(**kwargs)
+        path.write_bytes(path.read_bytes() + b' ')
+        return result
+    monkeypatch.setattr(app, 'select_value_candidates', changed)
+    assert app.select_current_value_candidates(root=root, now=NOW)['data_status'] == 'SOURCE_REVALIDATION_FAILED'
 
 
 LIVE = Path('D:/GPTProject/value-investment/.tmp/dual1')

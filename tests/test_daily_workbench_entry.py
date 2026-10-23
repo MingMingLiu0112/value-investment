@@ -59,7 +59,8 @@ def test_daily_entry_orchestrates_existing_clis_without_new_side_doors():
     assert 'open_current_trial_workbook.py' not in text
 
 
-def test_daily_entry_runs_read_only_and_reports_plain_language(tmp_path):
+@pytest.mark.parametrize('retention', ['none', 'previous_success', 'previous_retained', 'explicit'])
+def test_daily_entry_runs_read_only_and_reports_plain_language(tmp_path, retention):
     pwsh = _pwsh()
     if pwsh is None:
         pytest.skip("PowerShell 7 is unavailable")
@@ -69,11 +70,29 @@ def test_daily_entry_runs_read_only_and_reports_plain_language(tmp_path):
     shutil.copy2(SCRIPT, current / SCRIPT.name)
     shutil.copy2(ROOT / "scripts/current/build_daily_public_packet.py", current)
     shutil.copytree(ROOT / "src", project / "src", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    import hashlib
+    screen = None
+    extra = []
+    if retention != 'none':
+        manifest = project / 'runtime/daily-marketwide/retained/manifest.json'
+        manifest.parent.mkdir(parents=True)
+        manifest.write_bytes(b'{}')
+        screen = dict(status='RESEARCH_ONLY', manifest_path=manifest.relative_to(project).as_posix(),
+                      manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest())
+        if retention == 'explicit':
+            extra = ['-RetainedMarketwideManifest', screen['manifest_path'],
+                     '-RetainedMarketwideManifestSha256', screen['manifest_sha256']]
+        else:
+            previous = dict(schema_version='daily-workbench-run-v1', mode='SAFE_REFRESH', action='no_order')
+            previous['marketwide_screen' if retention == 'previous_success' else 'retained_marketwide_screen'] = screen
+            scratch = project / '.tmp'
+            scratch.mkdir()
+            (scratch / 'daily-workbench-latest-run.json').write_text(json.dumps(previous), encoding='utf-8')
     protected = [ROOT / "config/current-daily-public-snapshot.json",
                  ROOT / ".tmp/daily-workbench-latest-run.json"]
     before = {path: path.read_bytes() if path.exists() else None for path in protected}
     completed = subprocess.run(
-        [pwsh, "-NoProfile", "-File", str(current / SCRIPT.name), "-Mode", "READ_ONLY", "-NoServer", "-Symbols", "600519"],
+        [pwsh, "-NoProfile", "-File", str(current / SCRIPT.name), "-Mode", "READ_ONLY", "-NoServer", "-Symbols", "600519", *extra],
         cwd=project, capture_output=True, text=True, encoding="utf-8", timeout=60,
     )
     output = completed.stdout or ""
@@ -84,6 +103,13 @@ def test_daily_entry_runs_read_only_and_reports_plain_language(tmp_path):
     receipt = json.loads((project / ".tmp/daily-workbench-latest-run.json").read_text(encoding="utf-8-sig"))
     assert receipt["status"] == "BLOCKED"
     assert receipt["action"] == "no_order"
+    if screen:
+        assert receipt['retained_marketwide_screen'] == screen
+        assert 'marketwide_screen' not in receipt
+        # Binding propagation is not source admission; the dummy manifest fails application replay.
+        from value_investment_agent.application.discovery.value_candidate_selection import select_current_value_candidates
+        from datetime import datetime, timezone
+        assert select_current_value_candidates(root=project, now=datetime.now(timezone.utc))['data_status'] == 'SOURCE_REVALIDATION_FAILED'
 
 
 def test_daily_entry_keeps_update_and_web_results_separate():
