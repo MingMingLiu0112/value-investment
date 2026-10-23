@@ -382,7 +382,7 @@ def test_versioned_start_has_no_v2_fallback():
                 "research_as_of": "2020-01-02", **payload})
 
 
-def _partial_v2(root, monkeypatch):
+def _partial_v2(root, monkeypatch, *, populated=False):
     import test_retained_event_coverage as retained
     from value_investment_agent.application.product import daily_event_observation
     clock = datetime(2020, 1, 2, 10, tzinfo=timezone.utc)
@@ -396,7 +396,7 @@ def _partial_v2(root, monkeypatch):
     monkeypatch.setattr(daily_event_observation, "datetime", Clock)
     from value_investment_agent.application.product import incremental_validity
     monkeypatch.setattr(incremental_validity, "datetime", Clock)
-    return _v2_supplement(root, monkeypatch)
+    return _v2_supplement(root, monkeypatch, populated=populated)
 
 
 def test_v2_same_day_snapshot_is_archivable_and_registers_only_unknown(tmp_path, monkeypatch):

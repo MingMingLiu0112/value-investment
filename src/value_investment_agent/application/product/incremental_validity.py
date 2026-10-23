@@ -351,6 +351,12 @@ def register_incremental_validity_binding(root: Path, symbol: str, binding_ref: 
             "model_validity_status": validity.status, "action": "no_order", "g3_approval_granted": False}
 
 
+def resolve_current_snapshot_validity(**kwargs):
+    """Explicit successor use case; never changes legacy V1/V2 validity dispatch."""
+    from .current_snapshot_validity import evaluate_current_snapshot_validity
+    return evaluate_current_snapshot_validity(**kwargs)
+
+
 def rebuild_registered_valuation(root: Path, symbol: str):
     """Compute the original pinned model via the existing in-memory application."""
     from .source_bound_inputs import verify_package_local_sources
