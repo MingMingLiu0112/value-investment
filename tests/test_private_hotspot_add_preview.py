@@ -9,6 +9,7 @@ import json
 import pytest
 
 from test_private_risk_preview import actual_contract_preview as base_account, register_hotspot_contract, NOW, ASSUMPTIONS
+from test_private_risk_preview import simulated_hotspot_machine_validation
 from test_hotspot_price_behavior import rows, retest_rows
 from test_advisory_decision_recommendation_v3 import _entry, _consistency
 from value_investment_agent.application.portfolio import private_risk_preview as preview
@@ -113,9 +114,14 @@ def bind_entry(service, root, monkeypatch):
 
 @pytest.mark.parametrize('fault', [None, 'no_holding', 'other_sleeve', 'source', 'admission',
     'test_release', 'capacity', 'no_thesis', 'broken_thesis', 'fees',
-    'add_rule_drift', 'behavior_drift', 'price_drift', 'open_text_drift'])
-def test_producer_watch_recovery_consumed_only_by_owned_private_add(actual_contract_preview, tmp_path, monkeypatch, fault):
+    'add_rule_drift', 'behavior_drift', 'price_drift', 'open_text_drift', 'machine_proof'])
+def test_producer_watch_recovery_consumed_only_by_owned_private_add(actual_contract_preview, tmp_path, monkeypatch, fault,
+        simulated_hotspot_machine_validation):
     service, legacy, _, packet, _, _ = actual_contract_preview
+    if fault == 'machine_proof':
+        from value_investment_agent.application.hotspot import independent_validation
+        monkeypatch.setattr(independent_validation, 'verify_strategy_admission_sources',
+            simulated_hotspot_machine_validation['original_verifier'])
     case = retained_recovery(tmp_path, monkeypatch)
     produced = project_current_price_action_plan(case)
     produced.update(case_path=case['case_path'], case_sha256=case['case_sha256'], research_version='contract')

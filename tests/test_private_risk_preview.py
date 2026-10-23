@@ -185,8 +185,23 @@ def test_current_value_risk_uses_fresh_diagnostics_not_saved_prose(actual_contra
     assert result['plan']['research_analysis']['status'] == 'FRESH_SOURCE_REPLAY'
 
 
+@pytest.fixture
+def simulated_hotspot_machine_validation(monkeypatch):
+    """Isolate downstream sizing from machine proof; never creates real proof."""
+    from value_investment_agent.application.hotspot import independent_validation
+    original = independent_validation.verify_strategy_admission_sources
+    calls = []
+    def simulate(**kwargs):
+        calls.append(kwargs)
+        assert kwargs['symbol'] == '300364'
+        assert kwargs['documents']
+        return {'scope': 'TEST_ONLY_VERIFIER_STUB_NOT_STRATEGY_VALIDATION'}
+    monkeypatch.setattr(independent_validation, 'verify_strategy_admission_sources', simulate)
+    return {'calls': calls, 'original_verifier': original}
+
+
 def register_hotspot_contract(root, legacy, *, namespace='ACTUAL', case_binding=None):
-    """Exercise signed registry verification; test trust is scoped by conftest."""
+    """Signed isolated claims only: this helper supplies NO machine proof."""
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from authorization_trust_registry_fixture import pin_test_trust_root
     from value_investment_agent.application.hotspot.independent_admission import POINTER, PURPOSE, canonical_payload
@@ -205,11 +220,21 @@ def register_hotspot_contract(root, legacy, *, namespace='ACTUAL', case_binding=
         'public_key': key.public_key().public_bytes_raw().hex(), 'scopes': ['independent_hotspot_strategy_release'],
         'symbols': ['300364'], 'valid_from': (NOW - timedelta(days=1)).isoformat(),
         'valid_until': (NOW + timedelta(days=1)).isoformat()}
-    source = {**case, 'namespace': namespace, 'available_at': (NOW - timedelta(hours=1)).isoformat()}
+    source = {**case, 'namespace': namespace, 'available_at': NOW.isoformat()}
+    def checked_sources(name):
+        typed = dict(schema_version='independent-hotspot-source-evidence-v1', action='no_order',
+            namespace=namespace, symbol='300364', rule_version=legacy['model_or_rule_version'],
+            gate=name, status='PASS', available_at=source['available_at'],
+            expires_at=(NOW + timedelta(hours=1)).isoformat(), evidence_bindings=[case])
+        if name == 'strategy_validation':
+            typed.update(strict_pit_admitted=True, strict_oos_admitted=True,
+                actual_sample_accepted=True, strategy_validation='PASSED')
+        declared = write('sources/' + name + '.json', typed)
+        return [source, {**declared, 'namespace': namespace, 'available_at': source['available_at']}]
     gates = [write('gates/' + name + '.json', {'schema_version': 'independent-hotspot-gate-assessment-v1',
         'action': 'no_order', 'namespace': namespace, 'symbol': '300364', 'rule_version': legacy['model_or_rule_version'],
         'gate': name, 'status': 'PASS', 'available_at': source['available_at'],
-        'expires_at': (NOW + timedelta(hours=1)).isoformat(), 'source_bindings': [source]}) for name in GATES]
+        'expires_at': (NOW + timedelta(hours=1)).isoformat(), 'source_bindings': checked_sources(name)}) for name in GATES]
     release = {'schema_version': 'independent-hotspot-release-v1', 'action': 'no_order', 'symbol': '300364',
         'namespace': namespace, 'rule_version': legacy['model_or_rule_version'], 'reviewer_id': trust['reviewer_id'],
         'reviewed_at': NOW.isoformat(), 'expires_at': (NOW + timedelta(hours=1)).isoformat(), 'gates': gates}
@@ -221,7 +246,8 @@ def register_hotspot_contract(root, legacy, *, namespace='ACTUAL', case_binding=
 
 @pytest.mark.parametrize('sleeve', ['CORE_VALUE', 'HOTSPOT_SATELLITE'])
 @pytest.mark.parametrize('fault', [None, 'execution', 'attribute', 'frozen', 'test_only', 'expired', 'internal', 'source'])
-def test_registered_plan_to_actual_risk_to_actionable_decision(actual_contract_preview, tmp_path, monkeypatch, sleeve, fault):
+def test_registered_plan_to_actual_risk_to_actionable_decision(actual_contract_preview, tmp_path, monkeypatch, sleeve, fault,
+        simulated_hotspot_machine_validation):
     service, legacy, core, packet, attribute, quote = actual_contract_preview
     register_hotspot_contract(tmp_path, legacy, namespace='TEST_ONLY' if fault == 'test_only' else 'ACTUAL')
     packet['price_conditions']['items'][0]['price_action_plan'] = deepcopy(legacy)
@@ -267,6 +293,22 @@ def test_registered_plan_to_actual_risk_to_actionable_decision(actual_contract_p
     else:
         assert decision['blockers'] and decision['review_quantity'] is None
     assert decision['action'] == 'no_order' and decision['broker_execution_permission'] is False
+    assert service.journal.path.read_bytes() == before
+
+
+def test_signed_claims_without_machine_proof_never_grant_private_action(actual_contract_preview, tmp_path):
+    service, legacy, _, packet, _, _ = actual_contract_preview
+    register_hotspot_contract(tmp_path, legacy)
+    packet['price_conditions']['items'][0]['price_action_plan'] = deepcopy(legacy)
+    before = service.journal.path.read_bytes()
+    result = preview.preview_private_hotspot_risk(service.journal, repository_root=tmp_path,
+        generated_at=NOW, payload={'symbol': '300364', 'assumptions': ASSUMPTIONS})
+    decision = result['actionable_decision']
+    assert decision['decision_action'] == 'UNASSESSABLE'
+    assert decision['review_quantity'] is None
+    assert 'INDEPENDENT_RELEASE_INVALID' in decision['blockers']
+    assert decision['eligibility']['manual_review_eligible'] is False
+    assert decision['action'] == 'no_order'
     assert service.journal.path.read_bytes() == before
 
 
@@ -348,7 +390,8 @@ def test_registered_plan_positive_scenario_cannot_supply_actual_execution(actual
 @pytest.mark.parametrize('actual_contract_preview', ['TEST_ONLY_BROWSER_LOOP_20261019',
     'SIMULATED_ACCOUNT', 'test-only-account', 'SYNTHETIC_ACCOUNT'], indirect=True)
 @pytest.mark.parametrize('sleeve', ['CORE_VALUE', 'HOTSPOT_SATELLITE'])
-def test_test_account_scope_never_upgrades_even_with_actual_engine(actual_contract_preview, tmp_path, sleeve):
+def test_test_account_scope_never_upgrades_even_with_actual_engine(actual_contract_preview, tmp_path, sleeve,
+        simulated_hotspot_machine_validation):
     service, legacy, _, packet, _, _ = actual_contract_preview
     register_hotspot_contract(tmp_path, legacy)
     packet['price_conditions']['items'][0]['price_action_plan'] = deepcopy(legacy)
@@ -378,7 +421,8 @@ def test_missing_account_scope_cannot_claim_actual_eligibility(scope):
 
 
 @pytest.mark.parametrize('sleeve', ['CORE_VALUE', 'HOTSPOT_SATELLITE'])
-def test_actionable_projects_plan_metadata_and_existing_risk_details(actual_contract_preview, tmp_path, sleeve):
+def test_actionable_projects_plan_metadata_and_existing_risk_details(actual_contract_preview, tmp_path, sleeve,
+        simulated_hotspot_machine_validation):
     service, legacy, core, packet, _, _ = actual_contract_preview
     metadata = {'company_name': 'Isolated fixture', 'generated_at': '2026-10-14T19:00:00+08:00',
         'research_as_of': '2026-10-13', 'decision_as_of': '2026-10-14',

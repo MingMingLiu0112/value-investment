@@ -7,13 +7,14 @@ import json
 import pytest
 
 from test_private_risk_preview import actual_contract_preview, register_hotspot_contract, NOW, ASSUMPTIONS
+from test_private_risk_preview import simulated_hotspot_machine_validation
 from value_investment_agent.application.portfolio import judgment_snapshot as snapshots
 from value_investment_agent.application.portfolio import private_risk_preview as preview
 from value_investment_agent.application.portfolio.private_portfolio_service import PrivatePortfolioService, JournalConflict
 
 
 @pytest.fixture
-def recording(actual_contract_preview, tmp_path, monkeypatch):
+def recording(actual_contract_preview, tmp_path, monkeypatch, simulated_hotspot_machine_validation):
     ledger, legacy, _, packet, _, _ = actual_contract_preview
     ledger._clock = lambda: NOW
     register_hotspot_contract(tmp_path, legacy)
@@ -30,6 +31,20 @@ def recording(actual_contract_preview, tmp_path, monkeypatch):
         return preview.preview_private_hotspot_risk(ledger.journal, repository_root=tmp_path,
             generated_at=NOW, payload=selected, authenticated_subject='LOCAL_OPERATOR')
     return ledger, request, provider, packet
+
+
+def test_unproven_strategy_keeps_recording_but_never_approves_quantity(
+        recording, tmp_path, monkeypatch, simulated_hotspot_machine_validation):
+    from value_investment_agent.application.hotspot import independent_validation
+    monkeypatch.setattr(independent_validation, 'verify_strategy_admission_sources',
+        simulated_hotspot_machine_validation['original_verifier'])
+    ledger, request, provider, _ = recording
+    prepared, _ = ledger.prepare_fill(request, repository_root=tmp_path, risk_capture_provider=provider)
+    assert prepared['status'] == 'FILL_PREPARED'
+    risk = prepared['draft']['fill']['judgment_snapshot']['personal_risk_at_trade']
+    assert risk['review_quantity'] is None
+    assert risk['formal_eligibility'] is risk['trade_eligible'] is False
+    assert request['fill']['quantity'] == '200'
 
 
 def confirm_and_reload(ledger, digest):

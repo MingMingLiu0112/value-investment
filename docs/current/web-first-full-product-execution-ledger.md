@@ -1,5 +1,31 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+### 2026-10-23 isolated dual-branch integration
+
+Value commit 7f0a312c and independently developed hotspot commit 556d930c were
+merged only into codex/dual-integration-20261023. Value clean-checkout selection:
+130 passed. Hotspot clean-checkout selection: 512 passed, 24 skipped. Main-chat
+independent hotspot review: 87 passed and no new confirmed P1/P2 in that scope.
+
+ACTUAL hotspot admission now requires a bound machine-replayed audit; signed
+flags alone cannot establish PIT/OOS, executable costs, WFO or real Shadow.
+V1 still cannot establish all those requirements and remains NOT_PROVEN.
+The new lifecycle interface retains the original protection level and observed
+breaches, distinguishes incomplete coverage, and never establishes ownership or
+personal action. It is not yet a shared Web/portfolio lifecycle feature: an
+authenticated original-case association and corporate-action comparability must
+be supplied and tested before integration with personal holdings.
+
+Seven inherited shared-consumer failures exposed old synthetic signed claims.
+The downstream sizing/recording unit fixtures now explicitly stub only the
+machine verifier; real signature/source checks and the real risk engine still
+run. Separate unstubbed tests reject BUY/ADD or quantity approval without machine
+proof. Recording a user's execution remains separate from approval to execute.
+Shared consumer/admission/signed-chain selection: 262 passed. No production
+threshold or private-risk rule was relaxed. Existing CLI inventory and offline
+CI selection include the new hotspot tests. Full integrated Core and publication
+are pending at this record; no remote CI or actual strategy admission is claimed.
+
 ### 2026-10-23 value accounting evidence integration and parallel ownership
 
 Ordinary engineering continues from b32d0fd1. The user split value-investment

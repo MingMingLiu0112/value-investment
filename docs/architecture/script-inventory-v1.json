@@ -4054,8 +4054,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "MEDIUM",
-      "line_count": 74,
-      "sha256": "8cc81b56b684c98c8cbc7d81311d69e9c5ae226e598840ddff24e0226b8b7327"
+      "line_count": 91,
+      "sha256": "b5a62a1504b86fca342067ca1b61da3e24aa41a4dadb833264519e52cb5e91db"
     },
     {
       "path": "scripts/current/build_product_workbench_candidate.py",
