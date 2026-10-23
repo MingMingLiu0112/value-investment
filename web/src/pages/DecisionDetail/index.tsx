@@ -18,6 +18,7 @@ import {
 import { Workbench } from "../../components/Workbench";
 import { StrategyReadinessPanel } from "../../components/StrategyReadiness";
 import { ValueResearchAnalysis } from "../../components/ValueResearchAnalysis";
+import { HotspotLifecycleReview } from "../../components/HotspotLifecycleReview";
 import { readinessStrategy } from "../../utils/strategyReadiness";
 import { RemoteState } from "../../components/RemoteState";
 import { useApi } from "../../hooks/useApi";
@@ -1048,6 +1049,20 @@ export default function DecisionDetail() {
                 ) : undefined
               }
             />
+            {(decision.strategy === "hotspot" ||
+              decision.strategy === "HOTSPOT_SATELLITE") && (
+              <HotspotLifecycleReview
+                symbol={decision.symbol ?? ""}
+                plan={decision.price_action_plan}
+                review={data?.hotspot_lifecycle_review}
+                available={
+                  !loading &&
+                  !error &&
+                  data?.action === "no_order" &&
+                  data.publication?.packet_status === "CURRENT"
+                }
+              />
+            )}
             {!loading &&
               !error &&
               data?.action === "no_order" &&

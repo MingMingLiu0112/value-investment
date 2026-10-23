@@ -38,6 +38,9 @@ export interface DecisionItem {
 }
 
 export interface CurrentPricePlan {
+  case_path?: string;
+  case_sha256?: string;
+  candidate_lifecycle?: string;
   publication_blockers?: string[];
   validation?: {
     source_integrity: string;
@@ -834,7 +837,56 @@ export interface ResearchDraft {
   version_comparison: ResearchDraftVersionComparison;
 }
 
+export interface HotspotLifecycleReview {
+  schema_version: "hotspot-entry-structure-continuity-v2";
+  symbol: string;
+  action: "no_order";
+  evaluated_at: string;
+  status: string;
+  observed_review: string;
+  current_data_status: string;
+  source_integrity: string;
+  current_pit: boolean;
+  current_case_binding: { path: string; sha256: string };
+  entry_case_binding: { path: string; sha256: string } | null;
+  entry_at: string | null;
+  holding_ownership: "NOT_VERIFIED_HERE";
+  position_guidance: null;
+  personal_action: "NO_ACTION";
+  formal_eligibility: false;
+  trade_eligible: false;
+  risk_review_eligible: false;
+  strategy_validation: string;
+  current_conditions_scope: "RAW_UNADJUSTED_NOT_PERSONAL_ACTION";
+  original_entry_comparison: Record<string, unknown> | null;
+  price_comparability: Record<string, unknown> | null;
+  unadjusted_structural_observation: Record<string, unknown> | null;
+  blockers: string[];
+  required_external_reviews: string[];
+  decision_explanation: {
+    schema_version: "hotspot-lifecycle-explanation-v1";
+    action: "no_order";
+    selected_review: string;
+    basis_code: string;
+    decision_path: {
+      check: string;
+      outcome: string;
+      values: Record<string, unknown>;
+      evidence_bindings: { path: string; sha256: string }[];
+    }[];
+    why_not_add: string[];
+    required_external_reviews: string[];
+    current_price_observation: Record<string, unknown> | null;
+    recomputed_rule_versions: {
+      current: string | null;
+      entry: string | null;
+    } | null;
+    source_scope: "REFERENCE_CASES_NOT_VERIFIED_OWNERSHIP_OR_ENTRY_THESIS";
+  };
+}
+
 export interface DetailResponse {
+  hotspot_lifecycle_review?: HotspotLifecycleReview | null;
   action: "no_order";
   status: ApiStatus;
   decision: DecisionItem | null;
