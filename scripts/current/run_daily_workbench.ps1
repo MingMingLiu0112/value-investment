@@ -533,8 +533,8 @@ if ($Mode -eq 'SAFE_REFRESH') {
 
 if ($Mode -eq 'SAFE_REFRESH') {
     $verified = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py', '--check-reuse', '--symbols', $Symbols)
-    $reviewDates = @($verified.Json.market_trade_dates) + @($verified.Json.quote_securities | ForEach-Object { $_.latest_completed_session })
-    $reviewCutoff = $reviewDates | Where-Object { $_ -match '^\d{4}-\d{2}-\d{2}$' } | Sort-Object -Unique | Select-Object -Last 1
+    # Filings can change on non-trading days; their window is independent of quotes.
+    $reviewCutoff = [DateTimeOffset]::UtcNow.ToOffset([TimeSpan]::FromHours(8)).ToString('yyyy-MM-dd')
     if ($reviewCutoff) {
         $reviewArgs = @('scripts/current/review_registered_research_validity.py', '--review-cutoff', $reviewCutoff)
         $quoteRegistry = $null
@@ -545,23 +545,8 @@ if ($Mode -eq 'SAFE_REFRESH') {
             $scanSymbol = $registeredQuote.Name
             $scanStamp = [DateTimeOffset]::UtcNow.ToString('yyyyMMddTHHmmssfffffffZ')
             $scanDirectory = "runtime/incremental-validity/$scanSymbol/$reviewCutoff-$scanStamp"
-            $newScanDirectory = $scanDirectory
-            $existingBinding = $registeredQuote.Value.incremental_validity_binding
-            try { if ($existingBinding -and $existingBinding.path) {
-                $boundPath = [System.IO.Path]::GetFullPath((Join-Path $root ([string]$existingBinding.path)))
-                if ($boundPath.StartsWith((Join-Path $root 'runtime') + [System.IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -and (Test-Path -LiteralPath $boundPath)) {
-                    $boundScan = Get-Content -LiteralPath $boundPath -Raw -Encoding utf8 | ConvertFrom-Json
-                    if ($boundScan.review_cutoff -eq $reviewCutoff -and
-                        (Get-FileHash -LiteralPath $boundPath -Algorithm SHA256).Hash.ToLowerInvariant() -eq $existingBinding.sha256) {
-                        $scanDirectory = Split-Path ([string]$existingBinding.path) -Parent
-                    }
-                }
-            } } catch { Write-Host "  ${scanSymbol}: 原增量绑定无法复用，尝试独立新采集。" }
+            # Today's snapshot cannot cover announcements published after its acquisition.
             $scan = Invoke-PythonJson @('scripts/current/collect_registered_validity_scan.py', '--symbol', $scanSymbol, '--review-cutoff', $reviewCutoff, '--output-dir', $scanDirectory, '--register')
-            if ($scan.ExitCode -ne 0 -and $scanDirectory -ne $newScanDirectory) {
-                Write-Host "  ${scanSymbol}: 旧扫描原件无法核验，保留旧证据并独立重采一次。"
-                $scan = Invoke-PythonJson @('scripts/current/collect_registered_validity_scan.py', '--symbol', $scanSymbol, '--review-cutoff', $reviewCutoff, '--output-dir', $newScanDirectory, '--register')
-            }
             if ($scan.ExitCode -eq 0 -and $scan.Json.binding_ref) {
                 $reviewArgs += @('--incremental-binding', [string]$scan.Json.binding_ref.path, [string]$scan.Json.binding_ref.sha256)
                 Write-Host "  ${scanSymbol}: 正式公告增量证据已绑定；未授予材料性或估值批准。"

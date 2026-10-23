@@ -8,6 +8,7 @@ unadmitted, and the verdict names the reason instead of a display price.
 """
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, datetime, timezone
 import json
 from pathlib import Path
@@ -25,6 +26,16 @@ CHINA = ZoneInfo("Asia/Shanghai")
 POINTER_PATH = "config/current-quote-bridge.json"
 POINTER_SCHEMA = "current-quote-bridge-v1"
 EXECUTION_SCHEMA = "quote-bridge-execution-v1"
+
+
+def _current_event_validity(validity, current_window: bool):
+    if current_window:
+        return validity
+    # A historical no-event review cannot establish today's state; keep known damage.
+    stale = validity.status == "STALE"
+    return replace(validity, status="STALE" if stale else "UNKNOWN",
+        material_event_found=True if stale else None,
+        blockers=list(dict.fromkeys([*validity.blockers, "CURRENT_EVENT_COVERAGE_NOT_VERIFIED"])))
 
 
 # 每个准入结果给用户一句下一步；未收录的状态不推测含义。
@@ -306,11 +317,26 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
                 observation_ref=binding["observation_ref"],
                 announcements=scan["announcements"],
                 full_calendar_window_elapsed=observation["full_calendar_window_elapsed"])
+            current_day = today.astimezone(ZoneInfo("Asia/Shanghai")).date()
+            current_window = review_cutoff == current_day
+            full_window = observation["full_calendar_window_elapsed"] is True
+            result["current_event_coverage"] = {
+                "required_through": current_day.isoformat(),
+                "query_through": review_cutoff.isoformat(),
+                "covered_through": review_cutoff.isoformat() if full_window else None,
+                "observed_at": observation["acquired_at"],
+                "full_calendar_window_elapsed": full_window,
+                "status": ("FULL_WINDOW" if full_window else "PARTIAL_CURRENT_SNAPSHOT") if current_window
+                    else ("CLOSED_WINDOW_NOT_CURRENT" if full_window else "SNAPSHOT_NOT_CURRENT")}
             validity = resolve_incremental_model_validity(root=root, symbol=symbol, binding_ref=ref,
                 review_cutoff=review_cutoff, today=today)
             from .research_materiality_reviews import apply_registered_materiality_review
             validity, materiality_route = apply_registered_materiality_review(
                 root=root, symbol=symbol, today=today, fallback=validity)
+            historical_validity = validity
+            if not current_window:
+                result["historical_model_validity"] = json.loads(validity.to_json())
+            validity = _current_event_validity(validity, current_window)
             result["incremental_validity"].update(status=validity.status,
                 model_validity=json.loads(validity.to_json()), blockers=list(validity.blockers),
                 materiality_review_route=materiality_route)
@@ -336,11 +362,16 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
                 review_cutoff=review_cutoff, today=today)
             replayed, replayed_route = apply_registered_materiality_review(
                 root=root, symbol=symbol, today=today, fallback=replayed)
+            replayed = _current_event_validity(replayed, current_window)
             if replayed_route != materiality_route:
                 raise ValueError("Materiality review changed during price comparison")
             if replayed.to_json() != validity.to_json() or sha256_file(pointer_path) != pointer_digest:
                 raise ValueError("Incremental inputs changed during price comparison")
             eligible = comparison.bridge_status == "READY" and not comparison.blockers and not validity.blockers
+            if not current_window:
+                reason = "当前公告尚未复核至 " + current_day.isoformat() + "；旧报价与旧窗口只保留历史比较。"
+                result["historical_price_comparison"] = json.loads(bridge_with_quote(
+                    valuation, historical_validity, quote, blockers=valuation.blockers).to_json())
             result["compatibility"]["original_cutoff_compatible"] = dict(result["compatibility"]["research_compatible"])
             result["compatibility"]["incremental_model_compatible"] = {"eligible": validity.status == "VALID" and not validity.blockers,
                 "reason": "原模型有效性经显式增量证据重验；原研究截止日未改变。"}
@@ -349,9 +380,10 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
                     "coverage_basis": "EXPLICIT_INCREMENTAL_VALIDITY",
                     "reason": f"原截止日 {case['research_as_of']} 未变；显式增量复核覆盖至 {review_cutoff}，共享价格桥通过。"}
             result["compatibility"]["comparison_eligible"] = {"eligible": eligible,
-                "reason": "共享 PriceBridge 实际重建结果：" + comparison.bridge_status}
+                "reason": ("共享 PriceBridge 实际重建结果：" + comparison.bridge_status) if current_window else reason}
             result.update(status="QUOTE_VERIFIED_WITH_INCREMENTAL_VALIDITY" if eligible else "INCREMENTAL_VALIDITY_BLOCKED",
-                price_admitted=eligible, reason="；".join(comparison.blockers) or comparison.bridge_status,
+                price_admitted=eligible, reason=("；".join(comparison.blockers) or comparison.bridge_status)
+                    if current_window else reason,
                 next_step="增量证据仅支持条件研究比较；G3 与正式决策门仍须独立通过。" if eligible else
                           "完成所绑定公告的材料性及模型适用性复核；不得修改研究截止日或预支 G3。")
         except (ValueError, KeyError, TypeError, OSError, AttributeError) as error:

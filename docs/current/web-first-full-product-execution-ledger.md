@@ -3133,3 +3133,51 @@ manual 9e5ef6d78905fee3d238543fcf63452cd7d28995a35fe864ce1cee6a4a2f1af7)
 plus real filing DTO passed49, with one browser-opt-in skip. These are two scoped
 frontend files, not a full frontend suite. Clean Core/build/actual8001 acceptance
 for the integrated release is next; Live is still248ee135, not this working tree.
+
+### 2026-10-24 - Clean baseline verified; real daily-event discovery gap repaired
+
+Exact clean15fee3ae passed the existing369-file Core command: 5540 passed,
+98 skipped, 38 inherited warnings, 1081.09 seconds. Retained gc1 result
+.tmp/core-15fee3ae-passed.xml has SHA256
+24308ae59ede17a894fd1dd8aeb0d9a4dcd7b74579354ea591f36a7bd706066c.
+The same clean checkout completed Umi setup, TypeScript and the full frontend
+with actual source/Hash opt-ins: 732 passed,10 skipped. Its frontend XML SHA256
+is 8b8aa9c5d4924e64aa463e17c4a157e42f3f38d910764c5e2b9f04c454833c4b.
+These results do NOT cover the subsequent daily-event repair or new swing module.
+No new remote GitHub CI or8001 release is claimed.
+
+Independent read-only review found a real P2: SAFE_REFRESH used the latest quote
+session as its filing cutoff and reused the same archived acquisition. Actual
+Saturday scans queried only through Friday; a TEST_ONLY Saturday event remained
+undiscovered, so an otherwise VALID/READY synthetic chain could stay misleadingly
+current. The real two companies remained UNKNOWN/unadmitted under pending gates;
+no real account exposure or actual Saturday material event is claimed.
+
+The repair uses the current China civil date for filings, independently of quotes,
+and a new acquisition directory per daily run. The collector still replays complete
+past windows but refuses reuse of current-day/partial snapshots. At application
+level, a past window cannot establish current validity: typed VALID becomes UNKNOWN,
+known STALE remains STALE, and the real shared PriceBridge rejects current admission.
+Historical validity/comparison and independent valuation/quote date are preserved.
+Current partial snapshots remain subject to the existing UNKNOWN/materiality gates;
+they are not upgraded to whole-day evidence by the system clock.
+
+The separate test-only commit0a0b9793 covers four existing test files. Independent
+review passed10 focused cases and a China-midnight probe. Main five-file run had
+109 passes and one stale real-input date assertion: the current explicit600887
+package is now October22, not hardcodedOctober11. The affected complete9-test file
+passed after verifying the actual registered package path/Hash/date/version;
+no input was changed back and existing refusal assertions remain. Further clean
+integrated regression and actual daily acquisition are still required.
+
+The sibling has delivered2bd0d9b8/dd1a0a07 real-source retrospective lifecycle with
+a discretionary SIMULATED Entry, independently reviewed (single-file16 passed).
+The13-file sealed closure is staged only in vv1, receipt SHA256
+dafbc40c53e241e699fa905059917434ffe26c3a9cb344f6bb40a9d9d458a1b1;
+the original8 sources remain ORIGIN_NOT_ATTESTED, not historical PIT/OOS/Shadow.
+Source-bound Web consumption is being completed separately; no current owned Entry
+or executable followup is created. MJ1 ordinary-claim/cash allocation arithmetic
+also received independent PASS, but economic implementability remains PARTIAL:
+cash-upstream, financing, claim timing and terminal sustainability are not proved.
+The Goal stays ACTIVE; Live remains248ee135 and all protected environments stay
+unchanged. action=no_order.

@@ -122,9 +122,10 @@ def collect_registered_validity_scan(*, root: Path, symbol: str, review_cutoff: 
 
     root = root.resolve()
     symbol = normalize_symbol(symbol)
+    now = datetime.now(timezone.utc)
     package_ref, package = registered_package(root, symbol)
     research, valuation, start = _model_window(root, package, symbol, review_cutoff,
-                                              datetime.now(timezone.utc))
+                                              now)
     output_dir = require_inside(root / "runtime", root / output_dir, "incremental acquisition")
     if output_dir.exists():
         path = output_dir / "incremental-binding.json"
@@ -136,6 +137,9 @@ def collect_registered_validity_scan(*, root: Path, symbol: str, review_cutoff: 
         if incremental_scan_start(binding) != start:
             raise ValueError("Existing acquisition does not cover model valid_from; cannot reuse")
         _, observation = read_bound_json(root, binding["observation_ref"], "existing observation")
+        if (review_cutoff >= now.astimezone(ZoneInfo("Asia/Shanghai")).date()
+                or observation.get("full_calendar_window_elapsed") is not True):
+            raise ValueError("Current-day or partial acquisition cannot reuse a prior snapshot; use a new output directory")
         if any(sha256_file(require_inside(root, root / source["path"], "retained source")) != source["sha256"]
                for source in observation["source_bindings"]):
             raise ValueError("Retained incremental source changed; cannot reuse acquisition")

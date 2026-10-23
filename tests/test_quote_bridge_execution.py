@@ -195,6 +195,13 @@ def test_real_600887_registration_stays_unadmitted_until_the_cutoff_covers_it():
     entry = json.loads(REAL_POINTER.read_text(encoding="utf-8"))["quotes"]["600887"]
     if not (ROOT / entry["quote_bundle"]).is_file():
         pytest.skip("the registered quote bundle is not present in this checkout")
+    package_path = (ROOT / entry["research_package"]).resolve()
+    assert package_path.is_relative_to(ROOT.resolve())
+    if not package_path.is_file():
+        pytest.skip("the explicitly registered research package is not present in this checkout")
+    package_bytes = package_path.read_bytes()
+    assert hashlib.sha256(package_bytes).hexdigest() == entry["research_package_sha256"]
+    package = json.loads(package_bytes)
     # Replay at the registration instant: the daily entry (SAFE_REFRESH) moves
     # this pointer whenever a newer dual-source close is registered.
     execution = execute_quote_bridge_for_symbol(
@@ -204,8 +211,8 @@ def test_real_600887_registration_stays_unadmitted_until_the_cutoff_covers_it():
     assert execution["status"] == ("INCREMENTAL_VALIDITY_BLOCKED" if "incremental_validity_binding" in entry
                                     else "QUOTE_VERIFIED_BUT_RESEARCH_STALE")
     assert execution["price_admitted"] is False
-    assert execution["research_day"] == "2026-10-11"
-    assert execution["research_case"]["package_version"].startswith("pending-600887-2026-10-11")
+    assert execution["research_day"] == package["point_in_time"]["research_as_of"]
+    assert execution["research_case"]["package_version"] == package["package_version"]
     quote = execution["quote"]
     assert quote["bundle_path"] == entry["quote_bundle"]
     assert quote["bundle_sha256"] == entry["quote_bundle_sha256"]
