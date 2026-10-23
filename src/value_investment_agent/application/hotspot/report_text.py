@@ -187,6 +187,36 @@ def render_hotspot_action_coverage_markdown(coverage):
     return '\n'.join(lines) + '\n'
 
 
+def render_cash_event_mapping_markdown(review):
+    """Display event arithmetic separately from approved lifecycle protection."""
+    if review.get('schema_version') != 'hotspot-cash-event-mapping-v1' or review.get('action') != 'no_order':
+        raise ValueError('Cash event no_order mapping required')
+    proof = review.get('event_proof') or {}
+    terms, mapping = proof.get('terms') or {}, review.get('mapping') or {}
+    lines = ['# 单次现金分红口径复核', '',
+        '价格输入仅为解释性参考，不是已核验行情、真实入场或个人保护价；不产生交易指令。',
+        f"本次原件核验时点：{_lifecycle_value(review.get('evaluated_at'))}；不证明历史决策时点已经取得这些资料。",
+        f"证券：{_lifecycle_value(review.get('symbol'))}；状态：{_lifecycle_value(review.get('status'))}。",
+        f"实施公告编号：{_lifecycle_value(terms.get('announcement_number'))}；公告日期：{_lifecycle_value(terms.get('published_date'))}。",
+        f"登记日：{_lifecycle_value(terms.get('record_date'))}；除息生效日：{_lifecycle_value(terms.get('ex_date'))}；公告付款日：{_lifecycle_value(terms.get('cash_payment_date'))}。",
+        '公告付款日不是账户实际收到现金的证明。',
+        f"每股税前现金：{_lifecycle_value(terms.get('cash_per_share'))}；原文页码：{_lifecycle_value(terms.get('term_pages'))}。", '',
+        f"保留的原保护参考价：{_lifecycle_value(review.get('original_protection_price'))}；保留的当期参考价：{_lifecycle_value(review.get('original_current_price'))}。",
+        f"仅考虑本事件后的保护参考坐标：{_lifecycle_value(mapping.get('event_only_protection_on_current_basis'))}。",
+        f"当期参考价还原至原坐标：{_lifecycle_value(mapping.get('event_only_current_on_original_basis'))}。",
+        f"原始价差：{_lifecycle_value(mapping.get('raw_distance_to_original_protection'))}；单事件换算后价差：{_lifecycle_value(mapping.get('event_only_distance_to_protection'))}。",
+        f"算式：{_lifecycle_value(mapping.get('formula'))}。", '',
+        '这是未作交易所最小报价单位取整的单事件坐标换算，不是市场价格预测、止损成交价、税后收益或总回报。',
+        '更正、取消或非现金条款未解决时不换算；没有发现修订资料也不能证明不存在修订。',
+        '期初待生效行动与全部窗口覆盖未证明，不得将该数值写回已批准保护位，也不得据此推翻原破位记录。',
+        f"修订链状态：{_lifecycle_value(proof.get('revision_status'))}；窗口可比性：{_lifecycle_value(review.get('window_comparability'))}。",
+        f"未完成项：{_lifecycle_value(review.get('blockers'))}。"]
+    lines.extend('- ' + _lifecycle_binding(ref) for ref in proof.get('evidence_bindings', []))
+    original = proof.get('body_evidence_binding') or {}
+    lines += [f"正文来源：{_lifecycle_value(original.get('url'))}。", 'action=no_order；策略 NOT_PROVEN。']
+    return '\n'.join(lines) + '\n'
+
+
 def render_hotspot_lifecycle_markdown(review):
     """Present the supplied lifecycle explanation; never recompute its decisions."""
     explanation = review.get('decision_explanation')
