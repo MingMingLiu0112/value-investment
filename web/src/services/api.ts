@@ -1,4 +1,5 @@
 import type {
+  PrivateAccountObservations,
   DailyResponse,
   DailyPublicPacket,
   DailyPublicSnapshot,
@@ -627,6 +628,11 @@ export const api = {
     ),
   portfolio: (signal?: AbortSignal) =>
     getPrivate<PortfolioResponse>("portfolio", signal),
+  accountObservations: (signal?: AbortSignal) =>
+    getPrivate<PrivateAccountObservations>(
+      "private/portfolio/account-observations",
+      signal,
+    ),
   entryThesis: (signal?: AbortSignal) =>
     getPrivate<EntryThesisView>("private/portfolio/entry-thesis", signal),
   confirmEntryThesis: (body: Record<string, unknown>) =>

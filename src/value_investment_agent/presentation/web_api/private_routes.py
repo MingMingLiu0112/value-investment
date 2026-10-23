@@ -264,6 +264,20 @@ def register_private_routes(
                 reason="私人流水校验失败，已停止投影任何持仓",
                 blockers=("PRIVATE_JOURNAL_INVALID", "PRICE_NOT_ADMITTED"))
 
+    @api.get("/api/v1/private/portfolio/account-observations")
+    def account_observations(request: Request):
+        refusal = refuse(request)
+        if refusal is not None:
+            return refusal
+        from ...application.portfolio.account_observations import load_account_observations
+        try:
+            payload = load_account_observations(private_root=service().journal.path.parent.parent,
+                repository_root=project)
+            return JSONResponse(payload, headers={'Cache-Control': 'no-store'})
+        except (PrivateStoreUnavailable, ValueError, OSError):
+            return JSONResponse(status_code=409, content={'action': 'no_order',
+                'status': 'ACCOUNT_OBSERVATIONS_UNAVAILABLE'}, headers={'Cache-Control': 'no-store'})
+
     @api.get("/api/v1/private/portfolio/risk")
     def portfolio_risk(request: Request):
         refusal = refuse(request)

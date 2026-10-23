@@ -372,6 +372,7 @@ jobs:
           tests/test_value_economic_assessment.py
           tests/test_hotspot_strategy_execution_replay.py
           tests/test_simulated_trade_journey.py
+          tests/test_account_observations.py
 
       - name: Verify isolated synthetic private-workspace rehearsal
         run: python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest-m4-synthetic --junitxml=.tmp/m4-synthetic-results.xml tests/test_m4_synthetic_onboarding_rehearsal.py

@@ -2284,3 +2284,17 @@ b283ecd5d0c3b793825ed183b7d675278dcecf123c880b725dad19698f33afa6.
 It retains the latest completed 2026-10-22 quotes, not invented 2026-10-23
 closing prices. Formal admissions remain zero. Only the public JSON pointer
 changed; no workbook or private account was published or changed.
+
+### 2026-10-23 - Private actual-account screenshot observations
+
+The authenticated Portfolio surface can now read independently hash-bound
+account observation files from the private root, outside Git and sync folders.
+Each account remains separate from simulated journeys and the active trading
+journal. The reader verifies the screenshot, snapshot, account-relative paths
+and inferred share arithmetic. A failed account is withheld; there are no
+ledger writes, invented fills, strategy allocation, sellable shares or approvals.
+Displayed values retain their screenshot date and are not called live quotes.
+Unexplained display residuals remain explicit rather than being added to cash.
+No private account identifiers, holdings, images or balances are included in
+this source change. Local related backend/API/architecture regression:
+191 passed; frontend: 443 passed and 2 optional browser skips; typecheck passed.

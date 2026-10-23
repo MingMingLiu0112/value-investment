@@ -177,6 +177,33 @@ export interface CurrentPricePlan {
   exit_condition?: PlanCondition | null;
 }
 
+export interface PrivateAccountObservations {
+  action: "no_order";
+  unavailable_count: number;
+  accounts: {
+    account_label: string;
+    snapshot_date: string;
+    displayed_clock_time: string;
+    active_trading_ledger: false;
+    trade_eligible: false;
+    snapshot_sha256: string;
+    observed_totals: Record<string, string | null>;
+    holdings: {
+      symbol: string;
+      name: string;
+      quantity_inferred: string;
+      displayed_cost_per_share_cny: string;
+      displayed_price_cny: string;
+      market_value_cny: string;
+      displayed_weight_pct: string;
+    }[];
+    reconciliation: {
+      header_market_value_minus_rows_cny: string;
+      total_assets_minus_header_market_value_and_available_funds_cny: string;
+    };
+  }[];
+}
+
 export interface ValueResearchAnalysis {
   economic_assessment?: {
     schema_version: "value-economic-assessment-v1";
