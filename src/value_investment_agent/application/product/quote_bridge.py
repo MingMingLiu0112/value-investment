@@ -290,12 +290,13 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
     if "incremental_validity_binding" in entry:
         ref = entry["incremental_validity_binding"]
         display_b1_rejected = False
+        coverage_replayed = False
         result["incremental_validity"] = {"status": "UNKNOWN", "binding_ref": ref,
             "review_cutoff": None, "announcement_count": None, "model_validity": None,
             "blockers": [], "action": "no_order", "formal_eligibility": False}
         try:
             from .incremental_validity import (read_bound_json, resolve_incremental_model_validity,
-                                               rebuild_registered_valuation)
+                                               rebuild_registered_valuation, verify_incremental_observation_sources)
             from ...price_bridge import bridge_with_quote
 
             _, binding = read_bound_json(root, ref, "incremental validity binding")
@@ -316,6 +317,7 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
                 source_bindings=sources, scan_ref=binding["scan_ref"],
                 observation_ref=binding["observation_ref"],
                 announcements=scan["announcements"],
+                observed_at=observation["acquired_at"],
                 full_calendar_window_elapsed=observation["full_calendar_window_elapsed"])
             current_day = today.astimezone(ZoneInfo("Asia/Shanghai")).date()
             current_window = review_cutoff == current_day
@@ -330,6 +332,8 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
                     else ("CLOSED_WINDOW_NOT_CURRENT" if full_window else "SNAPSHOT_NOT_CURRENT")}
             validity = resolve_incremental_model_validity(root=root, symbol=symbol, binding_ref=ref,
                 review_cutoff=review_cutoff, today=today)
+            verify_incremental_observation_sources(root, observation)
+            coverage_replayed = True
             from .research_materiality_reviews import apply_registered_materiality_review
             validity, materiality_route = apply_registered_materiality_review(
                 root=root, symbol=symbol, today=today, fallback=validity)
@@ -358,8 +362,10 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
             comparison = bridge_with_quote(valuation, validity, quote, blockers=valuation.blockers)
             result["price_comparison"] = json.loads(comparison.to_json())
             # Recheck all supplemental bytes and the registration after computation.
+            coverage_replayed = False
             replayed = resolve_incremental_model_validity(root=root, symbol=symbol, binding_ref=ref,
                 review_cutoff=review_cutoff, today=today)
+            verify_incremental_observation_sources(root, observation)
             replayed, replayed_route = apply_registered_materiality_review(
                 root=root, symbol=symbol, today=today, fallback=replayed)
             replayed = _current_event_validity(replayed, current_window)
@@ -367,6 +373,7 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
                 raise ValueError("Materiality review changed during price comparison")
             if replayed.to_json() != validity.to_json() or sha256_file(pointer_path) != pointer_digest:
                 raise ValueError("Incremental inputs changed during price comparison")
+            coverage_replayed = True
             eligible = comparison.bridge_status == "READY" and not comparison.blockers and not validity.blockers
             if not current_window:
                 reason = "当前公告尚未复核至 " + current_day.isoformat() + "；旧报价与旧窗口只保留历史比较。"
@@ -387,6 +394,9 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime)
                 next_step="增量证据仅支持条件研究比较；G3 与正式决策门仍须独立通过。" if eligible else
                           "完成所绑定公告的材料性及模型适用性复核；不得修改研究截止日或预支 G3。")
         except (ValueError, KeyError, TypeError, OSError, AttributeError) as error:
+            if not coverage_replayed:
+                result.pop("current_event_coverage", None)
+                result["incremental_validity"].update(full_calendar_window_elapsed=None, observed_at=None)
             result["incremental_validity"]["blockers"] = list(dict.fromkeys([
                 *result["incremental_validity"]["blockers"], str(error)]))
             result.update(status="INCREMENTAL_VALIDITY_BLOCKED", price_admitted=False,

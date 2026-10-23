@@ -301,6 +301,16 @@ def resolve_incremental_model_validity(*, root: Path, symbol: str, binding_ref: 
     return model_validity_from_payload(payload)
 
 
+def verify_incremental_observation_sources(root: Path, observation: dict) -> None:
+    sources = observation.get("source_bindings")
+    if not isinstance(sources, list) or not sources:
+        raise ValueError("Incremental observation requires bound original sources")
+    for source in sources:
+        path = require_inside(root, root / source["path"], "incremental source")
+        if sha256_file(path) != source["sha256"]:
+            raise ValueError("Cannot register or publish changed incremental source")
+
+
 def register_incremental_validity_binding(root: Path, symbol: str, binding_ref: dict,
                                         review_cutoff: date, today: datetime) -> dict:
     """Atomically attach verified evidence, including pending review, not approval."""
@@ -315,10 +325,7 @@ def register_incremental_validity_binding(root: Path, symbol: str, binding_ref: 
         review_cutoff=review_cutoff, today=today)
     _, binding = read_bound_json(root, binding_ref, "incremental binding")
     _, observation = read_bound_json(root, binding["observation_ref"], "incremental observation")
-    for source in observation["source_bindings"]:
-        path = require_inside(root, root / source["path"], "incremental source")
-        if sha256_file(path) != source["sha256"]:
-            raise ValueError("Cannot register changed incremental source")
+    verify_incremental_observation_sources(root, observation)
     entry = pointer["quotes"][symbol]
     if binding["package_ref"] != {"path": entry["research_package"], "sha256": entry["research_package_sha256"]}:
         raise ValueError("Quote pointer changed during incremental registration")

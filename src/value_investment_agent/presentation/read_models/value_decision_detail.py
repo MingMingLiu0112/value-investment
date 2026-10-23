@@ -116,11 +116,20 @@ def _price_bridge_execution(value: Any, published_bridge_status: Any) -> dict | 
         "status": _text(row.get("status")),
         "reason": _text(row.get("reason")),
         "next_step": _text(row.get("next_step")),
+        "current_event_coverage": ({key: row["current_event_coverage"].get(key) for key in (
+            "required_through", "query_through", "covered_through", "observed_at",
+            "full_calendar_window_elapsed", "status")}
+            if isinstance(row.get("current_event_coverage"), dict) else None),
+        "historical_model_validity": ({"status": _text(row["historical_model_validity"].get("status"))}
+            if isinstance(row.get("historical_model_validity"), dict) else None),
         "incremental_validity": ({
             "status": _text(row["incremental_validity"].get("status")),
             "review_cutoff": _text(row["incremental_validity"].get("review_cutoff")),
             "announcement_count": row["incremental_validity"].get("announcement_count"),
             "blockers": _strings(row["incremental_validity"].get("blockers")),
+            "observed_at": _text(row["incremental_validity"].get("observed_at")),
+            "full_calendar_window_elapsed": (row["incremental_validity"].get("full_calendar_window_elapsed")
+                if type(row["incremental_validity"].get("full_calendar_window_elapsed")) is bool else None),
         } if isinstance(row.get("incremental_validity"), dict) else None),
         "price_admitted": admitted,
         "comparison_eligible": bool(admitted and _text(published_bridge_status) == "READY"),

@@ -235,6 +235,8 @@ def _bridge_status(execution: Mapping[str, Any]) -> dict:
         "model_validity": incremental.get("model_validity"),
         "incremental_validity_binding": incremental.get("binding_ref"),
         "incremental_validity": incremental or None,
+        "current_event_coverage": execution.get("current_event_coverage"),
+        "historical_model_validity": execution.get("historical_model_validity"),
         "price_comparison": execution.get("price_comparison"),
         "conditional_valuation": execution.get("conditional_valuation"),
         "blockers": list(dict.fromkeys([*incremental.get("blockers", []),
@@ -438,7 +440,8 @@ def _company_entry(root: Path, symbol: str, name: str,
     }
     if bridge and bridge.get("incremental_status"):
         for key in ("incremental_status", "review_cutoff", "announcement_count", "model_validity",
-                    "incremental_validity_binding", "incremental_validity", "price_comparison"):
+                    "incremental_validity_binding", "incremental_validity", "price_comparison",
+                    "current_event_coverage", "historical_model_validity"):
             entry[key] = bridge.get(key)
         entry["blockers"].extend(bridge.get("blockers", []))
     if explanation_broken:

@@ -598,11 +598,12 @@ def replay_registered_review_progress(*, root: Path, binding: dict,
             # A scan can be from a partially elapsed current day. Only the
             # retained official-response verifier proves a complete window.
             coverage_through = None
+            observed_at, full_calendar_window_elapsed = None, None
             validity = (review.get("model_validity_review") or {}).get("current") or {}
             if row.get("incremental_binding_ref"):
                 from .incremental_validity import (incremental_scan_start, read_bound_json,
                                                    resolve_incremental_model_validity)
-                from .daily_event_observation import verify_retained_event_coverage
+                from .daily_event_observation import verify_retained_event_coverage, verify_retained_event_snapshot
 
                 _, supplement = read_bound_json(root, row["incremental_binding_ref"], "review supplement")
                 _, observation = read_bound_json(root, supplement["observation_ref"], "review observation")
@@ -611,10 +612,17 @@ def replay_registered_review_progress(*, root: Path, binding: dict,
                     today=checked)
                 validity = _model_validity_payload(resolved)
                 try:
-                    coverage = verify_retained_event_coverage(root, observation, symbol=row["symbol"],
-                        required_from=incremental_scan_start(supplement),
-                        required_to=date.fromisoformat(replay["review_cutoff"]), now=checked)
-                    coverage_through = coverage["scan_to"]
+                    if observation["full_calendar_window_elapsed"] is True:
+                        coverage = verify_retained_event_coverage(root, observation, symbol=row["symbol"],
+                            required_from=incremental_scan_start(supplement),
+                            required_to=date.fromisoformat(replay["review_cutoff"]), now=checked)
+                        coverage_through = coverage["scan_to"]
+                    else:
+                        verify_retained_event_snapshot(root, observation, symbol=row["symbol"],
+                            required_from=incremental_scan_start(supplement),
+                            required_to=date.fromisoformat(replay["review_cutoff"]), now=checked)
+                    observed_at = observation["acquired_at"]
+                    full_calendar_window_elapsed = observation["full_calendar_window_elapsed"]
                 except ValueError:
                     pass
             facts_status = (review.get("facts_change") or {}).get("status", "UNKNOWN")
@@ -626,6 +634,8 @@ def replay_registered_review_progress(*, root: Path, binding: dict,
             progress.append({"symbol": row["symbol"], "status": row["status"],
                 "research_as_of": previous.get("research_as_of"),
                 "scan_through": window.get("scan_to"),
+                "observed_at": observed_at,
+                "full_calendar_window_elapsed": full_calendar_window_elapsed,
                 "event_coverage_through": coverage_through,
                 "event_coverage_status": "COMPLETE" if coverage_through is not None else "UNCONFIRMED",
                 "announcement_count": (len(events["announcements"]) if "announcements" in events else None),

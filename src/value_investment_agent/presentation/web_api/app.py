@@ -794,6 +794,14 @@ def create_app(
                 except (ValueError, OSError, KeyError, TypeError):
                     result['historical_action_lineage'] = dict(action='no_order', status='UNAVAILABLE',
                         reason='OFFICIAL_LINEAGE_SOURCES_NOT_VERIFIED', formal_eligibility=False)
+            if "simulated_hotspot_lifecycle_receipt_binding" in pins:
+                from ...application.hotspot.simulated_lifecycle import load_simulated_hotspot_lifecycle
+                try:
+                    result['simulated_hotspot_lifecycle'] = load_simulated_hotspot_lifecycle(project,
+                        pins['simulated_hotspot_lifecycle_receipt_binding'], datetime.now(timezone.utc))
+                except (ValueError, OSError, KeyError, TypeError, ArithmeticError):
+                    result['simulated_hotspot_lifecycle'] = dict(action='no_order', status='UNAVAILABLE',
+                        reason='SIMULATED_LIFECYCLE_SOURCES_NOT_VERIFIED', formal_eligibility=False)
             return result
         except (ValueError, OSError, KeyError, TypeError):
             return JSONResponse(status_code=409, content={

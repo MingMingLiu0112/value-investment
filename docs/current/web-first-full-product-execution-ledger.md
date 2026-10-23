@@ -3181,3 +3181,51 @@ also received independent PASS, but economic implementability remains PARTIAL:
 cash-upstream, financing, claim timing and terminal sustainability are not proved.
 The Goal stays ACTIVE; Live remains248ee135 and all protected environments stay
 unchanged. action=no_order.
+
+### 2026-10-24 - Integrated event proof projection and sealed swing Web review
+
+Daily discovery repair7c348987 and date-UI11879898 are integrated. New source
+metadata now crosses the actual daily/company/machine read-model boundaries:
+query target, observed snapshot time, partial/full and historical/current model
+states are distinct; the browser never supplies a date from its clock. Test-only
+commitsb9ba3336/09219dbc cover these producers and invalid-source cases.
+Two independent P2s were reproduced and repaired: legacy resolver UNKNOWN was
+mistaken for successful raw verification, and machine projection retained a full
+flag after the native verifier failed. First/second bridge reads now explicitly
+check the entire source-Hash closure; machine metadata is assigned only after the
+full-window or snapshot native verifier succeeds. Valid source proof survives
+unrelated valuation/materiality failure; bad sources clear coverage/observed time.
+Independent reruns closed both issues. Main four-file selection passed111 before
+the final machine correction; its subsequent9-case selection includes legitimate
+full/partial and corrupted raw/manifest paths. These counts overlap.
+
+The sibling lifecycle package is integrated as e466a3d1/fd833962, with read-only
+consumer c48fafb7 (author da9d7e4b). Root actual-source/architecture49 passed;
+after the reader, the lifecycle/API selection passed62 with one opt-in skip.
+The independent reader review passed38 and verified all13 staged files unchanged
+with every write/journal transaction forbidden. Each historical cutoff is actually
+recomputed, source_root is never followed outside the supplied runtime, original
+protection218.450 is frozen, and later rolling216.510 does not replace it.
+Official event coverage remains MISSING/UNKNOWN; source origin is NOT_ATTESTED,
+not historical PIT, owned Entry, strategy admission or current-signal authority.
+
+The existing hotspot history API has an optional explicitly bound simulation
+consumer; missing/invalid sources affect only that subsection. Existing history
+and the301061 correction remain independently readable. The new Web subsection
+explains original entry, subsequent raw ADD/REDUCE/EXIT observations, the actual
+rules and blocking conditions, and isolated accounting. It is not an action list.
+Root actual-history API response SHA256
+f2318b2e83b4bcfa82656c55ffea1712024854cba8861a373a78fa32a91ac33f
+and source-research response3e59260e4fe31b1fe54cbe49444f3a73e1438e06c6582eee1ef17a06612c0572
+are retained in .tmp/source-bound-api-verification/dc8c9caab31e4f04af490e5c6ae6a1d0/.
+Both HTTP200 with private resolution forbidden. The independent Web review found
+no new confirmed P1/P2; actual DTO plus date/SSR targets passed99 and TypeScript.
+
+The original Core list now also includes test_hotspot_simulated_lifecycle.py;
+there is no parallel script/test inventory. Final clean integrated Core/frontend,
+build, actual fresh daily attempt and8001 mobile/desktop interactions are still
+pending at this checkpoint. The current-day partial remains UNKNOWN under the
+existing strict policy; this discovery repair is not a new as-of-snapshot admission
+or permission to silently upgrade daily strategy readiness. Real OOS/Shadow,
+non-stress primary economic admission and user confirmations remain separate.
+Live remains248ee135. The full Goal is ACTIVE, not complete. action=no_order.

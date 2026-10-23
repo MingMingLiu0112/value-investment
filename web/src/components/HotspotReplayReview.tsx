@@ -2,6 +2,7 @@ import { Alert, Table } from "antd";
 import { useApi } from "../hooks/useApi";
 import { DetailSection } from "./DetailSection";
 import { HistoricalActionLineageReview } from "./HistoricalActionLineageReview";
+import { SimulatedHotspotLifecycleReview } from "./SimulatedHotspotLifecycleReview";
 
 type Segment = {
   trigger_count: number;
@@ -13,6 +14,7 @@ type Segment = {
 };
 type Replay = {
   historical_action_lineage?: unknown;
+  simulated_hotspot_lifecycle?: unknown;
   action: "no_order";
   computed_at: string;
   items: { symbol: string; v1_segments: { validation: Segment } }[];
@@ -83,6 +85,9 @@ export function HotspotReplayReview() {
           <>
             <HistoricalActionLineageReview
               value={result.data.historical_action_lineage}
+            />
+            <SimulatedHotspotLifecycleReview
+              value={result.data.simulated_hotspot_lifecycle}
             />
             <p>
               回放生成于{" "}
