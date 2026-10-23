@@ -410,6 +410,43 @@ it("compares exact decimal equivalents and equivalent instants without float rou
 });
 
 it.each([
+  [
+    "2026-10-24T04:52:55.167144+14:00",
+    "2026-10-23T14:52:55.167144Z",
+    "2026-10-23",
+  ],
+  [
+    "2026-10-23T16:00:00.000001Z",
+    "2026-10-24T00:00:00.000001+08:00",
+    "2026-10-24",
+  ],
+  [
+    "2026-10-23T15:59:59.999999Z",
+    "2026-10-24T05:59:59.999999+14:00",
+    "2026-10-23",
+  ],
+])(
+  "matches the Shanghai financial date across offset day boundaries: %s",
+  (modelAt, jointAt, day) => {
+    const decision = jointDecision(),
+      analysis = decision.price_action_plan!.research_analysis!;
+    analysis.valuation!.assumptions.valuation_timing!.valuation_at = modelAt;
+    analysis.joint_capital_review!.valuation_at = jointAt;
+    analysis.valuation_date = day;
+    analysis.valuation!.valuation_date = day;
+    expect(publicJointCapitalReviewMatches(analysis, analysis.symbol)).toBe(
+      true,
+    );
+    const wrongDay = day === "2026-10-23" ? "2026-10-24" : "2026-10-23";
+    analysis.valuation_date = wrongDay;
+    analysis.valuation!.valuation_date = wrongDay;
+    expect(publicJointCapitalReviewMatches(analysis, analysis.symbol)).toBe(
+      false,
+    );
+  },
+);
+
+it.each([
   (a: any) => {
     delete a.review_binding;
   },

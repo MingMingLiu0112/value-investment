@@ -391,6 +391,22 @@ function instant(value: unknown): bigint | null {
   );
 }
 
+const financialDayFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Shanghai",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function financialDay(value: string): string {
+  const parts = Object.fromEntries(
+    financialDayFormatter
+      .formatToParts(new Date(value))
+      .map((part) => [part.type, part.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
 function publicModelMatches(analysis: ValueResearchAnalysis): boolean {
   const context = analysis.review_binding?.model_context;
   const valuation = analysis.valuation;
@@ -439,7 +455,7 @@ function publicModelMatches(analysis: ValueResearchAnalysis): boolean {
       !calendarDate(analysis.valuation_date) ||
       analysis.valuation_date !== valuation.valuation_date ||
       typeof timing.valuation_at !== "string" ||
-      timing.valuation_at.slice(0, 10) !== analysis.valuation_date
+      financialDay(timing.valuation_at) !== analysis.valuation_date
     )
       return false;
   }
