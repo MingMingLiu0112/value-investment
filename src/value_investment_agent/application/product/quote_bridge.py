@@ -233,11 +233,31 @@ class CurrentSnapshotBridgeContext:
     authorize_policy: Callable
 
 
-def _execute_snapshot_bridge(root, symbol, today, context, entry, bundle, pointer_digest, result):
+def _verify_snapshot_case(root, symbol, entry, result, snapshot):
+    from .incremental_validity import read_bound_json
+
+    case = result["research_case"]
+    expected = {"path": case["package_path"], "sha256": case["package_sha256"]}
+    if snapshot.bindings.get("package") != expected:
+        raise ValueError("Current snapshot research package identity mismatch")
+    # Re-read the original case, not only the evaluator's independently resolved package.
+    _, package = read_bound_json(root, expected, "current snapshot original case")
+    pit = package["point_in_time"]
+    if (_research_case_binding(root, entry) != case or package.get("symbol") != symbol
+            or pit["research_as_of"] != case["research_as_of"]
+            or pit["research_as_of"] != result["research_day"]
+            or snapshot.valuation.symbol != symbol or snapshot.model_validity.symbol != symbol
+            or pit["valuation_date"] != snapshot.valuation.valuation_date.isoformat()
+            or pit["valuation_date"] != snapshot.model_validity.model_as_of.isoformat()):
+        raise ValueError("Current snapshot research case dates or identity changed")
+
+
+def _execute_snapshot_bridge(root, symbol, today, context, entry, bundle, pointer_digest, result, verdict):
     from .current_snapshot_validity import evaluate_current_snapshot_validity, SCOPE
     from ...price_bridge import bridge_with_quote
 
     result = deepcopy(result)
+    initial_verdict = deepcopy(verdict)
     result.update(status="CURRENT_SNAPSHOT_VALIDITY_BLOCKED", price_admitted=False,
                   scope=SCOPE, formal_eligibility=False, strategy_approval_granted=False)
     result["compatibility"]["original_cutoff_compatible"] = deepcopy(
@@ -257,6 +277,7 @@ def _execute_snapshot_bridge(root, symbol, today, context, entry, bundle, pointe
         result["current_snapshot_validity"] = snapshot.as_policy()
         if not snapshot.usable_for_research_comparison:
             raise ValueError("Current snapshot not usable: " + ";".join(snapshot.blockers))
+        _verify_snapshot_case(root, symbol, entry, result, snapshot)
         if (result["quote_verification_status"] not in {
                 "QUOTE_VERIFIED_FOR_RESEARCH_INPUT", "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
                 "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"}
@@ -274,15 +295,24 @@ def _execute_snapshot_bridge(root, symbol, today, context, entry, bundle, pointe
         result["current_snapshot_validity"] = replay.as_policy()
         if not replay.usable_for_research_comparison or replay != snapshot:
             raise ValueError("Current snapshot inputs or approval changed during comparison")
+        _verify_snapshot_case(root, symbol, entry, result, replay)
         _, _, final_verdict = admit_quote_for_research(root, bundle, symbol,
             result["research_day"], today=today)
         final_quote = quote_snapshot_from_bundle_file(bundle, root, symbol=symbol,
             ref_id="current-snapshot-quote-" + entry["quote_bundle_sha256"],
             expected_sha256=entry["quote_bundle_sha256"], require_current_b1=True)
-        if (final_verdict.get("bundle_sha256") != entry["quote_bundle_sha256"]
+        if (final_verdict != initial_verdict
+                or final_verdict.get("status") not in {
+                    "QUOTE_VERIFIED_FOR_RESEARCH_INPUT", "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
+                    "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"}
+                or final_verdict.get("latest_completed_session") != final_verdict.get("quote_date")
+                or final_verdict.get("bundle_sha256") != entry["quote_bundle_sha256"]
                 or final_verdict.get("quote_date") != result["quote"]["latest_completed_session"]
-                or final_quote != quote or sha256_file(root / POINTER_PATH) != pointer_digest):
+                or final_quote != quote):
             raise ValueError("Current snapshot quote or pointer changed during comparison")
+        _verify_snapshot_case(root, symbol, entry, result, replay)
+        if sha256_file(root / POINTER_PATH) != pointer_digest:
+            raise ValueError("Current snapshot pointer changed during final verification")
         if comparison.bridge_status != "READY" or comparison.blockers or snapshot.model_validity.blockers:
             raise ValueError("Shared PriceBridge rejected snapshot comparison: " +
                              ";".join(comparison.blockers or [comparison.bridge_status]))
@@ -379,7 +409,7 @@ def execute_quote_bridge_for_symbol(root: Path, symbol: str, *, today: datetime,
             "next_step": _NEXT_STEPS.get(status, "按以上原因复核后重跑价格桥接。")}
     if current_snapshot_context is not None:
         return _execute_snapshot_bridge(root, symbol, today, current_snapshot_context,
-                                        entry, bundle, pointer_digest, result)
+                                        entry, bundle, pointer_digest, result, verdict)
     if "incremental_validity_binding" in entry:
         ref = entry["incremental_validity_binding"]
         display_b1_rejected = False
