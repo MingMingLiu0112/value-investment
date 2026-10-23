@@ -1,10 +1,12 @@
 import { Link } from "@umijs/max";
+import { useState } from "react";
 import { Button, Empty, Skeleton, Typography } from "antd";
 import { DecisionCard } from "../../components/DecisionCard";
 import { HoldingsAttention } from "../../components/HoldingsAttention";
 import { ConfirmationTasks } from "../../components/ConfirmationTasks";
 import { DailyStrategyReadiness } from "../../components/StrategyReadiness";
 import { CurrentScreening } from "../../components/CurrentScreening";
+import { DualStrategySelection } from "../../components/DualStrategySelection";
 import { Workbench } from "../../components/Workbench";
 import { useApi } from "../../hooks/useApi";
 import { usePrivateState } from "../../hooks/usePrivateState";
@@ -191,6 +193,7 @@ function StrategySection({
 }
 
 export default function DailyDecisions() {
+  const [selectionRevision, setSelectionRevision] = useState(0);
   const { data, loading, error, retry } = useApi(api.daily);
   const packet = useApi(api.packet);
   const update = useApi(api.updateStatus);
@@ -282,6 +285,7 @@ export default function DailyDecisions() {
               update.retry();
               historical.retry();
               state.retry();
+              setSelectionRevision((value) => value + 1);
             }}
             aria-label="刷新页面数据"
           >
@@ -439,11 +443,15 @@ export default function DailyDecisions() {
                 : undefined
             }
           />
+          <DualStrategySelection key={selectionRevision} />
           {update.data?.last_run?.screening && (
-            <CurrentScreening
-              scan={update.data.last_run.screening}
-              decisions={data.sections.value}
-            />
+            <details>
+              <summary>原始初筛与来源核验</summary>
+              <CurrentScreening
+                scan={update.data.last_run.screening}
+                decisions={data.sections.value}
+              />
+            </details>
           )}
           {update.data?.last_run?.research_priority && (
             <section aria-label="证据研究队列">

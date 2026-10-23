@@ -742,6 +742,12 @@ def create_app(
         result = read_latest_run(project)
         return {"action": "no_order", "status": "RECORDED" if result else "NOT_RECORDED", "last_run": result}
 
+    @api.get("/api/v1/strategy-selection")
+    def strategy_selection():
+        from ...application.discovery.dual_strategy_selection import build_dual_strategy_selection
+        return JSONResponse(build_dual_strategy_selection(root=project,
+            now=datetime.now(timezone.utc)), headers={"Cache-Control": "no-store"})
+
     @api.get("/api/v1/simulated-trade-journey")
     def simulated_trade_journey():
         from ...application.portfolio.simulated_trade_journey import run_simulated_trade_journey

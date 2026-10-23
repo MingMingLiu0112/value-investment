@@ -1,0 +1,77 @@
+import React from "react";
+import { expect, it, vi } from "vitest";
+const state = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
+vi.mock("../src/hooks/useApi", () => ({ useApi: () => state.value }));
+vi.mock("../src/services/api", () => ({ api: { strategySelection: vi.fn() } }));
+import { DualStrategySelection } from "../src/components/DualStrategySelection";
+const { renderToStaticMarkup } = require("react-dom/server");
+
+it("does not show retained data as current during loading or error", () => {
+  state.value = {
+    loading: true,
+    data: { value: { items: [{ symbol: "OLD" }] } },
+  };
+  let html = renderToStaticMarkup(<DualStrategySelection />);
+  expect(html).toContain("正在核验");
+  expect(html).not.toContain("OLD");
+  state.value = { error: "failed", retry: vi.fn() };
+  html = renderToStaticMarkup(<DualStrategySelection />);
+  expect(html).toContain("未生成新结论");
+});
+it("does not call a lane failure zero candidates", () => {
+  state.value = {
+    data: {
+      content_sha256: "a".repeat(64),
+      value: {
+        status: "SOURCE_OR_SELECTION_UNAVAILABLE",
+        items: [],
+        shortlist: [],
+      },
+      hotspot: { items: [] },
+    },
+  };
+  const html = renderToStaticMarkup(<DualStrategySelection />);
+  expect(html).toContain("无法核验，不代表零候选");
+  expect(html).toContain("数量未知");
+  expect(html).not.toContain("覆盖 0 家");
+});
+it("distinguishes full coverage, bounded queue, observed facts and trade permission", () => {
+  state.value = {
+    data: {
+      content_sha256: "a".repeat(64),
+      value: {
+        items: [
+          {
+            symbol: "600519",
+            company_name: "贵州茅台",
+            industry: "饮料",
+            profile_status: "GENERAL_RESEARCH",
+            observation_summary: {
+              favorable: 4,
+              unfavorable: 0,
+              missing: 0,
+              conflicting: 0,
+            },
+          },
+        ],
+        coverage: {
+          universe_count: 5577,
+          research_queue_count: 4977,
+          observation_count: 50063,
+          official_fact_admission_count: 0,
+        },
+        quote_date: "2026-10-22",
+        rule_version: "value-observation-research-priority-v1",
+        blockers: [],
+      },
+      hotspot: { items: [] },
+    },
+  };
+  const html = renderToStaticMarkup(<DualStrategySelection />);
+  expect(html).toContain("5577");
+  expect(html).toContain("当前展示前 1 家");
+  expect(html).toContain("贵州茅台");
+  expect(html).toContain("尚未成为官方核验事实");
+  expect(html).toContain("适用估值");
+  expect(html).not.toContain("/decisions/600519");
+});

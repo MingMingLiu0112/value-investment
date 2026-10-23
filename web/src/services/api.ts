@@ -18,6 +18,7 @@ import type {
   WriteResponse,
 } from "../types/api";
 import type { CurrentScreening } from "../types/discovery";
+import type { DualStrategySelection } from "../types/selection";
 
 export interface HeldSellReviewRequest {
   schema_version: "private-held-sell-review-request-v1";
@@ -504,6 +505,8 @@ export type ConditionAlertsResponse = {
 };
 
 export const api = {
+  strategySelection: (signal?: AbortSignal) =>
+    get<DualStrategySelection>("strategy-selection", signal),
   privateRetrospective: (reviewDate: string, signal?: AbortSignal) =>
     getPrivate<PrivateRetrospective>(
       `private/portfolio/retrospective?review_date=${encodeURIComponent(reviewDate)}`,

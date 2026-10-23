@@ -1,5 +1,37 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+### 2026-10-23 explainable dual-strategy research selection
+
+Ordinary engineering scope, based on a09e9128, developed on
+codex/dual-selection-closure-20261023 with three disjoint implementation/review
+workers. New application selectors reuse the existing M2 policy, retained annual
+provider observations, dated cross-industry activity pool and completed price
+structure rules. No thresholds were tuned to manufacture selections.
+
+Value replay of the bound October 22 inputs covers 5577 official securities,
+5575 companies with 50063 observations, 119 specialized research profiles and
+4977 eligible research work items. Default display is 30 work items, not 4977
+quality passes or investment recommendations. Official financial fact admission
+remains zero. Conditions retain value/unit/period/availability/hash and distinguish
+observed, missing and conflicting data. Financial institutions require specialized
+research; cyclical companies require normalized earnings/dividend evidence.
+
+Hotspot replay covers 5218 quoted securities, a ten-industry/ten-security pool and
+ten completed structure cases: zero selected, ten excluded. Current selection is
+not the historical five-security execution replay sample. Structure, PIT/OOS,
+costs, Shadow and human approval remain separate gates. Zero selection is valid.
+
+New read-only /api/v1/strategy-selection separates failures by lane, rejects
+investment/order authority and bounds public rows/response size while retaining
+full coverage counts. Daily Web displays the queue, condition details and source
+references separately from existing decisions. No account, journal, official
+workbook, production service, server or paid API was changed. action=no_order.
+
+Targeted integrated backend checks: 85 passed. Frontend: 445 passed, two optional
+browser tests skipped; typecheck passed before final formatting. Final clean Core,
+release activation and actual browser acceptance must be recorded after execution.
+No new remote CI success or strategy advantage is claimed.
+
 ### V5 private risk declaration and simulated valuation closure
 
 Continuation on 09fa460e7fd63767fe036914448e1e23211ecae6. The following
