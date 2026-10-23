@@ -34,6 +34,14 @@ separate substantive gates. No private account, Canonical Excel, server/PTA,
 database, scheduler, public push or broker operation is part of this change.
 action=no_order; real assisted trading NOT_REACHED.
 
+The cdeea53d source checkpoint subsequently passed all 353 exact offline Core
+test files: 4,995 passed, 85 skipped. Full frontend: 491 passed, 3 optional skips;
+typecheck and clean Web build passed. Real two-company material rendered at
+1440/390/320 pixels without horizontal overflow. Final display-only refinement
+rounds explanatory money/rate strings; the full-precision economic assessment,
+model inputs and signed response remain unchanged. Its focused regression and
+release identity are verified separately from the cdeea53d Core checkpoint.
+
 ### 2026-10-23 isolated dual-branch integration
 
 Value commit 7f0a312c and independently developed hotspot commit 556d930c were

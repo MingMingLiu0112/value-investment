@@ -14,6 +14,21 @@ from value_investment_agent.application.product.research_reviews import prepare_
 NOW = datetime.now(timezone.utc) + timedelta(days=1)
 
 
+def test_readable_numbers_do_not_change_full_precision_assessment(registered):
+    actual = handoff(registered)
+    assessment = actual['economic_review_materials']['economic_assessment']
+    before = deepcopy(assessment)
+    row = materials._group_material(dict(id='EARNINGS', field_paths=[]),
+        assessment, actual['materiality_handoff'])
+    raw = assessment['scenarios'][0]['first_year_profit_cny']
+    assert materials._display(raw) in row['conditional_assumptions'][0]
+    assert assessment == before
+    assert materials._display('81367067677.4400000000001') == '81,367,067,677.44'
+    assert materials._display('0.075', percent=True) == '7.50%'
+    with pytest.raises(ValueError):
+        materials._display('NaN')
+
+
 def handoff(registered, now=NOW):
     root, symbol, _, _ = registered
     return wizard.build_external_review_handoff(root=root, symbol=symbol, now=now)
