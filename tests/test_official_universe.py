@@ -239,6 +239,34 @@ def test_incomplete_calendar_rejects_before_any_network_or_directory(tmp_path, m
     assert not (tmp_path/'never').exists()
 
 
+@pytest.mark.parametrize('failed_label', ['SZSE_A', 'BSE_0'])
+def test_v2_rejects_redirect_and_identifies_the_unavailable_source(v2_documents, tmp_path, monkeypatch, failed_label):
+    documents = {document['label']: document['raw'] for document in v2_documents}
+    class Response:
+        def __init__(self, url, label):
+            self.url, self.label = url, label
+            self.status_code = 307 if label == failed_label else 200
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def raise_for_status(self): pass
+        def iter_content(self, size):
+            assert self.status_code == 200, 'Redirect content must not be read as official data'
+            yield documents[self.label]
+    class Session:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def request(self, method, url, **kwargs):
+            assert kwargs['allow_redirects'] is False
+            if url.startswith(session_lists.SZSE_URL): label = 'SZSE_A'
+            elif url.startswith(session_lists.SSE_URL): label = 'SSE_1' if 'STOCK_TYPE=1' in url else 'SSE_8'
+            else: label = 'BSE_0'
+            return Response(url, label)
+    monkeypatch.setattr(session_lists.requests, 'Session', Session)
+    with pytest.raises(ValueError, match=f'{failed_label} HTTP 307'):
+        session_lists.collect_security_lists_v2(tmp_path/'raw', clock=lambda: SATURDAY)
+    assert not list(tmp_path.rglob('*.part'))
+
+
 @pytest.mark.parametrize('fault', ['duplicate_document', 'future_listing', 'small_universe', 'naive_fetch'])
 def test_v2_keeps_coverage_and_available_time_guards(v2_documents, fault):
     docs = deepcopy(v2_documents)

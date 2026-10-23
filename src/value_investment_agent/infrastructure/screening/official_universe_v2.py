@@ -83,7 +83,8 @@ def collect_security_lists_v2(directory: Path, *, clock=None):
                                  timeout=(15, 30), stream=True, allow_redirects=False) as response:
                 response.raise_for_status()
                 if response.status_code != 200:
-                    raise ValueError('Official exchange response must be HTTP 200, no redirects')
+                    raise ValueError('Official exchange response must be HTTP 200, no redirects: '
+                                     f'{label} HTTP {response.status_code}')
                 raw = bytearray()
                 for chunk in response.iter_content(65536):
                     raw.extend(chunk)

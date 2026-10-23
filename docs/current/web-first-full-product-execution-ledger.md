@@ -3101,3 +3101,35 @@ implementation, not a clean-release or actual8001 acceptance. Live remains
 248ee135. Calendar replay corrections and the actual-payload test-version binding
 are still under separate review; fresh collection and release remain unverified.
 The Goal remains ACTIVE, with economic/strategy/user/account gates separate.
+
+### 2026-10-24 - Integrated official session calendar and bounded real trial
+
+Calendar V2 and replay repairs are integrated as ac520b84, 7fc9fffc and e516533d.
+The third commit closes the independently reproduced compound downgrade: original
+receipt official-path/byte identity is checked before parsing/version dispatch;
+V2 then reparses its complete raw closure. True V1 replay stays historical V1,
+without receiving new source/PIT claims. The independent final selection passed
+28 with one host symlink-permission skip. Main integrated selection passed143,
+one skip and four existing SZSE-style warnings, including actual retained5577
+read-only reparse. All9 frozen paths retain their exact bytes.
+
+One actual HTTP-only trial ran October24 04:07:58-04:08:01 CST into NEW
+runtime/official-list-v2-trial/ce98e6e3627f42c28f61bba3bc377df3/.
+It FAILED the existing no-redirect source gate; no official-universe projection or
+fresh screening publication was manufactured. Limited diagnostics found SZSE and
+SSE HTTP200, and BSE_0 HTTP307 to its same URL under both direct and environment
+proxy policy. No redirect/challenge was followed or bypassed. This is current
+source availability, not proof the new weekend session contract failed. A small
+diagnostic improvement names the exact failing label/status while preserving the
+HTTP200 requirement; two negative tests prove redirect bodies are never admitted.
+The trial receipt remains, and previous dated research must stay readable.
+
+The optional frontend actual-payload test initially failed its old fixed Hash
+after an explicit new API replay changed the generation timestamp. 797811ba keeps
+the old default pins and supports explicit file/expected-SHA pairs; missing or bad
+pins fail, and no production strategy is approved. The final main actual pair
+(read d9a0b8deff5b9b27207235dd8b37106a70a62f14c978621ba2815355ca249b64;
+manual 9e5ef6d78905fee3d238543fcf63452cd7d28995a35fe864ce1cee6a4a2f1af7)
+plus real filing DTO passed49, with one browser-opt-in skip. These are two scoped
+frontend files, not a full frontend suite. Clean Core/build/actual8001 acceptance
+for the integrated release is next; Live is still248ee135, not this working tree.
