@@ -1,7 +1,6 @@
-"""TEST_ONLY raw HTTP replay + trusted-baseline seam; no production approval.
+"""Native signed/G3/Gate and raw-page/PDF E2E plus focused seam negatives.
 
-The positive seam represents an already authenticated baseline; it does NOT test
-signature minting. Separate negatives exercise the default native baseline loader.
+All economic inputs, keys, identities and clocks are TEST_ONLY, never production.
 """
 from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
@@ -12,6 +11,7 @@ import pytest
 
 from test_incremental_validity import _partial_v2, _write
 from test_pending_review_response import signed, consume, whole_approval
+from test_d2_conditional_shared_service import synthetic_chain
 from value_investment_agent.application.product import current_snapshot_validity as service
 from value_investment_agent.application.product.incremental_validity import (
     resolve_current_snapshot_validity, resolve_incremental_model_validity,
@@ -42,6 +42,7 @@ def snapshot(tmp_path, monkeypatch, request):
         action='no_order', symbol='600519', rule='ZERO_NEW_OR_CHANGED_FILINGS',
         baseline_package=binding['package_ref'], baseline_reviews=reviews,
         approval_id=baseline.approval_id, approval_transport=baseline.approval_transport,
+        approval_set=baseline.approval_set,
         valuation_sha256=valuation_result_sha256(valuation),
         model_id='TEST_ONLY', model_version='TEST_ONLY', rule_version=baseline.rule_version,
         research_version=baseline.research_version, max_snapshot_age_seconds=600,
@@ -100,7 +101,7 @@ def test_native_snapshot_reaches_scoped_shared_bridge_without_upgrading_legacy(s
 
 @pytest.mark.parametrize('change', ['missing_policy', 'missing_authorizer', 'denied', 'expired',
     'stale_snapshot', 'ttl_missing', 'ttl_bool', 'midnight', 'naive', 'future',
-    'model', 'package', 'approval', 'rule', 'research', 'transport', 'valuation', 'policy_hash', 'reviews_hash'])
+    'model', 'package', 'approval', 'rule', 'research', 'transport', 'approval_set', 'valuation', 'policy_hash', 'reviews_hash'])
 def test_policy_clock_and_identity_fail_closed(snapshot, change):
     args, policy = snapshot['args'], snapshot['policy']
     overrides = {}
@@ -120,6 +121,7 @@ def test_policy_clock_and_identity_fail_closed(snapshot, change):
     elif change == 'rule': policy['rule_version'] = 'other'
     elif change == 'research': policy['research_version'] = 'other'
     elif change == 'transport': policy['approval_transport'] = {'transport': 'FAKE'}
+    elif change == 'approval_set': policy['approval_set'] = {'g3_only': 'TEST_ONLY_OMISSION'}
     elif change == 'valuation': policy['valuation_sha256'] = '0'*64
     elif change == 'policy_hash': args['policy_binding']['sha256'] = '0'*64
     elif change == 'reviews_hash': args['baseline_reviews_binding']['sha256'] = '0'*64
@@ -278,3 +280,231 @@ def test_native_authenticated_g3_does_not_upgrade_pending_or_expired_baseline(si
         with pytest.raises(ValueError, match=('BASELINE_APPROVAL_AUTHORITY_EXPIRED'
                 if expired else 'BASELINE_RESEARCH_NOT_APPROVED')):
             service._replay_approved_baseline(root, package, receipt['review_packet_binding'], now)
+
+
+@pytest.fixture
+def native_snapshot(synthetic_chain, monkeypatch, request):
+    """Native signed/event/G3/Gate baseline, native partial pages/PDF; economics TEST_ONLY."""
+    from hashlib import sha256
+    from pypdf import PdfWriter
+    from test_p7_signed_review_workflow import _complete_signed_case
+    from value_investment_agent import disclosures
+    from value_investment_agent.application.product import daily_event_observation as daily
+    from value_investment_agent.event_scan import event_scan_from_payload
+
+    root, source, *rest = synthetic_chain
+    chain = list(synthetic_chain)
+    package = json.loads(source.read_bytes())
+    raw_source = root/'runtime/TEST_ONLY-baseline-financial-original.json'
+    _write(raw_source, {'TEST_ONLY': 'economic inputs are fixtures, never issuer evidence'})
+    for item in package['sources']:
+        item.update(local_path=raw_source.relative_to(root).as_posix(), sha256=sha256_file(raw_source))
+    for evidence in package['facts']['evidence_refs']:
+        if evidence['id'] == 'f-1':
+            evidence['sha256'] = sha256_file(raw_source)
+    package['rule_version'] = 'TEST_ONLY_SNAPSHOT_BASELINE_RULE'
+    pdf = root/'runtime/TEST_ONLY-approved-filing.pdf'
+    writer = PdfWriter()
+    writer.add_blank_page(width=100, height=100)
+    with pdf.open('wb') as stream: writer.write(stream)
+    scan_path = root/'synthetic-scan.json'
+    original_scan = event_scan_from_payload(json.loads(scan_path.read_bytes()))
+    item = original_scan.announcements[0]
+    url = 'https://static.cninfo.com.cn/finalpage/2026-09-21/9000000001.PDF'
+    ref = dict(id='synthetic-disclosure', path=pdf.relative_to(root).as_posix(),
+               sha256=sha256_file(pdf), source_url=url)
+    scan = replace(original_scan, evidence_refs=(ref,), announcements=(
+        replace(item, source_url=url, evidence_refs=(ref,)),))
+    scan_sha = _write(scan_path, scan.as_policy())
+    package['model_validity_input']['event_scan_ref']['sha256'] = scan_sha
+    _write(source, package)
+    chain[6] = replace(chain[6], scan_sha256=scan_sha, decisions=tuple(
+        replace(decision, source_ref={k:v for k,v in ref.items() if k != 'sha256'},
+                source_sha256=ref['sha256']) for decision in chain[6].decisions))
+    chain[7] = scan_sha
+    stale = getattr(request, 'param', False)
+    if stale:
+        chain[6] = replace(chain[6], decisions=tuple(replace(decision,
+            human_decision='MATERIAL_REQUIRES_RECALCULATION', requires_model_stale=True,
+            requires_recalculation=True) for decision in chain[6].decisions))
+    # Recompile only the TEST_ONLY economics after binding its original bytes;
+    # the following helper still performs all native signing/import/G3 checks.
+    from value_investment_agent.m1_valuation_package_builder import build_descriptor
+    from value_investment_agent.research_input import build_research_run_spec
+    from value_investment_agent.research_application import ResearchApplicationService
+    from value_investment_agent.human_research_approval import artifact_fingerprint
+    descriptor = build_descriptor(package, root=root)
+    calculated = ResearchApplicationService().run_company_research(build_research_run_spec(descriptor))
+    exact = descriptor.as_policy()
+    chain[5] = replace(chain[5], valuation_artifact_sha256=valuation_result_sha256(calculated.valuation),
+        research_case_sha256=artifact_fingerprint(exact['research_case']),
+        facts_artifact_sha256=artifact_fingerprint(exact['facts']),
+        assumption_set_sha256=artifact_fingerprint(exact['assumptions']))
+    restored, _, _ = _complete_signed_case(tuple(chain), monkeypatch, price_eligible=not stale)
+    assert restored.dependency_objects['model_validity'].status == ('STALE' if stale else 'VALID')
+    assert restored.dependency_objects['human_approval'].verified_transport is not None
+    now = datetime(2026, 9, 21, 10, 6, tzinfo=timezone.utc)
+    acquired = now-timedelta(minutes=1)
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return acquired.astimezone(tz) if tz else acquired.replace(tzinfo=None)
+    monkeypatch.setattr(daily, 'datetime', Clock)
+    def request(parameters, *, raw_response_sink):
+        rows = [dict(secCode='600519', orgId='TEST_ONLY_native', announcementId=item.announcement_id,
+            announcementTitle=item.title, adjunctUrl='finalpage/2026-09-21/9000000001.PDF',
+            announcementTime=int(item.published_at.timestamp()*1000))]
+        payload = dict(totalAnnouncement=1, announcements=rows, hasMore=False)
+        if not parameters['seDate']:
+            payload = dict(totalAnnouncement=1, announcements=[dict(secCode='600519', orgId='TEST_ONLY_native')])
+        body = json.dumps(payload).encode()
+        raw_response_sink(body, dict(url=disclosures.SEARCH_URL, method='POST', request=parameters,
+            page=int(parameters['pageNum']), acquired_at=acquired.isoformat(),
+            sha256=sha256(body).hexdigest(), size_bytes=len(body)))
+        return payload
+    monkeypatch.setattr(disclosures, '_request_json', request)
+    def download(url, path):
+        path.write_bytes(pdf.read_bytes())
+        return sha256_file(path)
+    monkeypatch.setattr(daily, 'download_disclosure_pdf', download)
+    observation = daily.collect_daily_event_observation(root=root, symbol='600519', issuer_name='TEST_ONLY',
+        start=date(2026,9,21), end=date(2026,9,21), output_dir=root/'runtime/native-partial', retain_raw_index=True)
+    package_path = root/'runtime/TEST_ONLY-signing/package.json'
+    package_ref = dict(path=package_path.relative_to(root).as_posix(), sha256=sha256_file(package_path))
+    _write(root/'config/current-quote-bridge.json', dict(schema_version='current-quote-bridge-v1',
+        action='no_order', quotes={'600519':dict(research_package=package_ref['path'],
+            research_package_sha256=package_ref['sha256'])}))
+    binding = dict(schema_version='incremental-validity-binding-v2', symbol='600519', action='no_order',
+        package_ref=package_ref, research_as_of='2026-09-21', valuation_date='2026-09-21',
+        model_valid_from='2026-09-21', scan_from='2026-09-21', review_cutoff='2026-09-21',
+        model_id=package['model_validity_input']['model_id'], materiality_approved=False,
+        g3_approval_granted=False, research_cutoff_changed=False, coverage_mode='PARTIAL_INTRADAY_SNAPSHOT',
+        scan_ref=observation['scan_binding'], observation_ref=dict(path='runtime/native-partial/observation.json',
+            sha256=sha256_file(root/'runtime/native-partial/observation.json')))
+    binding_ref = dict(path='runtime/native-partial/binding.json', sha256=_write(root/'runtime/native-partial/binding.json',binding))
+    reviews_path=root/'runtime/TEST_ONLY-signing/complete-reviews.json'
+    reviews_ref=dict(path=reviews_path.relative_to(root).as_posix(),sha256=sha256_file(reviews_path))
+    return dict(root=root,now=now,package_path=package_path,package_ref=package_ref,
+        reviews_ref=reviews_ref,binding_ref=binding_ref,observation=observation,restored=restored)
+
+
+def test_native_signed_baseline_and_native_partial_reach_scoped_ready(native_snapshot):
+    from value_investment_agent.operations.authorization.trust_root_registry import _use_test_trust_registry
+    case=native_snapshot
+    with _use_test_trust_registry(case['root']/'TEST_ONLY-combined-trust-registry.json'):
+        baseline=service._replay_approved_baseline(case['root'],json.loads(case['package_path'].read_bytes()),
+            case['reviews_ref'],case['now'])
+        policy=dict(schema_version=service.POLICY_SCHEMA,scope=service.SCOPE,action='no_order',symbol='600519',
+            rule='ZERO_NEW_OR_CHANGED_FILINGS',baseline_package=case['package_ref'],baseline_reviews=case['reviews_ref'],
+            approval_id=baseline.approval_id,approval_transport=baseline.approval_transport,
+            approval_set=baseline.approval_set,
+            model_id=baseline.validity.model_id,model_version=baseline.valuation.model_version,
+            rule_version=baseline.rule_version,research_version=baseline.research_version,
+            valuation_sha256=valuation_result_sha256(baseline.valuation),max_snapshot_age_seconds=600,
+            valid_from='2026-09-21T10:00:00+00:00',valid_until='2026-09-21T11:00:00+00:00',
+            confirmed_at='2026-09-21T10:01:00+00:00')
+        ref=dict(path='runtime/TEST_ONLY-native-snapshot-policy.json',
+            sha256=_write(case['root']/'runtime/TEST_ONLY-native-snapshot-policy.json',policy))
+        result=resolve_current_snapshot_validity(root=case['root'],symbol='600519',
+            incremental_binding_ref=case['binding_ref'],baseline_reviews_binding=case['reviews_ref'],
+            policy_binding=ref,now=case['now'],authorize_policy=lambda **kwargs:True)
+    assert result.usable_for_research_comparison,result.blockers
+    quote=QuoteSnapshot('600519',date(2026,9,21),Decimal('5'),QUOTE_STATUS_VERIFIED_CLOSE,
+        [{'id':'TEST_ONLY_NATIVE_QUOTE','sha256':'a'*64}])
+    assert bridge_with_quote(result.valuation,result.model_validity,quote).bridge_status=='READY'
+    assert result.as_policy()['formal_eligibility'] is False
+    assert result.knowledge_as_of == case['now']
+    assert result.observed_at == case['now']-timedelta(minutes=1)
+    assert baseline.available_at == case['now']
+    assert result.bindings['approval_set']['materiality']
+    assert result.bindings['approval_set']['g3_completion']
+    assert result.valuation == case['restored'].dependency_objects['valuation']
+
+
+@pytest.mark.parametrize('native_snapshot', [True], indirect=True)
+@pytest.mark.parametrize('expired', [False, True])
+def test_native_known_stale_survives_price_denial_expiry_and_missing_policy(native_snapshot, expired):
+    from value_investment_agent.operations.authorization.trust_root_registry import _use_test_trust_registry
+    case = native_snapshot
+    now = case['now']+(timedelta(days=2) if expired else timedelta())
+    with _use_test_trust_registry(case['root']/'TEST_ONLY-combined-trust-registry.json'):
+        baseline = service._replay_approved_baseline(case['root'], json.loads(case['package_path'].read_bytes()),
+            case['reviews_ref'], now)
+        assert baseline.validity.status == 'STALE'
+        assert any('NOT_APPROVED' in blocker for blocker in baseline.blockers)
+        result = resolve_current_snapshot_validity(root=case['root'], symbol='600519',
+            incremental_binding_ref=case['binding_ref'], baseline_reviews_binding=case['reviews_ref'],
+            policy_binding=None, now=now)
+    assert result.status == 'STALE'
+    assert result.model_validity.material_event_found is True
+    assert not result.usable_for_research_comparison
+
+
+def test_native_materiality_set_cannot_be_stripped_while_retaining_g3(native_snapshot):
+    from value_investment_agent.operations.authorization.trust_root_registry import _use_test_trust_registry
+    case = native_snapshot
+    packet = json.loads((case['root']/case['reviews_ref']['path']).read_bytes())
+    del packet['bindings']['event_materiality']
+    del packet['authenticated_materiality_binding']
+    packet['schema_version'] = 'shared-research-review-inputs-v1'
+    ref = dict(path='runtime/TEST_ONLY-shrunken-packet.json',
+        sha256=_write(case['root']/'runtime/TEST_ONLY-shrunken-packet.json', packet))
+    with _use_test_trust_registry(case['root']/'TEST_ONLY-combined-trust-registry.json'):
+        with pytest.raises(ValueError, match='APPROVAL_SET_SHRANK'):
+            service._replay_approved_baseline(case['root'], json.loads(case['package_path'].read_bytes()),
+                ref, case['now'])
+
+
+def test_final_policy_read_is_a_real_bound_read(snapshot, monkeypatch):
+    read = service.read_bound_json
+    called = []
+    def drift(root, ref, label):
+        if label == 'snapshot policy final read':
+            called.append(True)
+            (root/ref['path']).write_bytes(b'TEST_ONLY_FINAL_POLICY_DRIFT')
+        return read(root, ref, label)
+    monkeypatch.setattr(service, 'read_bound_json', drift)
+    result = evaluate(snapshot)
+    assert called == [True]
+    assert not result.usable_for_research_comparison
+
+
+def test_availability_upper_bound_does_not_refresh_an_old_query(snapshot, monkeypatch):
+    now = snapshot['args']['now']+timedelta(minutes=11)
+    baseline = replace(snapshot['baseline'], available_at=now)
+    monkeypatch.setattr(service, '_replay_approved_baseline', lambda *args: baseline)
+    result = evaluate(snapshot, now=now)
+    assert result.knowledge_as_of == now
+    assert result.observed_at == snapshot['args']['now']
+    assert not result.usable_for_research_comparison
+    assert any('FRESHNESS_EXPIRED' in blocker for blocker in result.blockers)
+
+
+def test_native_baseline_computation_date_drift_breaks_signed_context(native_snapshot):
+    from value_investment_agent.operations.authorization.trust_root_registry import _use_test_trust_registry
+    case = native_snapshot
+    package = json.loads(case['package_path'].read_bytes())
+    package['point_in_time']['computed_at'] = (case['now']+timedelta(seconds=1)).isoformat()
+    with _use_test_trust_registry(case['root']/'TEST_ONLY-combined-trust-registry.json'):
+        # The native signed model context rejects this mutation before availability checks.
+        with pytest.raises(ValueError, match='materiality artifact model context missing, unknown or mismatched'):
+            service._replay_approved_baseline(case['root'], package, case['reviews_ref'], case['now'])
+
+
+@pytest.mark.parametrize('role', ['observation_ref', 'scan_ref'])
+def test_last_policy_callback_cannot_change_query_json(snapshot, role):
+    calls = []
+    ref = snapshot['binding'][role]
+    path = snapshot['args']['root']/ref['path']
+    before = path.read_bytes()
+    def authorize(**kwargs):
+        calls.append(True)
+        if len(calls) == 2:
+            path.write_bytes(before+b' ')  # Semantic JSON unchanged, exact bytes drift.
+        return True
+    result = evaluate(snapshot, authorize_policy=authorize)
+    assert len(calls) == 2
+    assert not result.usable_for_research_comparison
+    assert result.status == 'UNKNOWN'
+    assert any('snapshot final input hash mismatch' in blocker for blocker in result.blockers)
+    assert result.as_policy()['formal_eligibility'] is False
