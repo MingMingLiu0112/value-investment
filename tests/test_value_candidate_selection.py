@@ -158,13 +158,17 @@ def test_current_entry_delegates_exact_binding(tmp_path, monkeypatch):
 
 
 LIVE = Path('D:/GPTProject/value-investment/.tmp/dual1')
+REAL_MANIFEST = dict(path='runtime/daily-marketwide/20261022T1443164468299Z/manifest.json',
+    sha256='719eb923b09a4298e568ff81d0ae00502251873a5a48332cf861f7495e7980ed')
 
 
 @pytest.fixture(scope='module')
 def real_replay():
-    if not (LIVE / '.tmp/daily-workbench-latest-run.json').is_file():
+    path = LIVE / REAL_MANIFEST['path']
+    if not path.is_file():
         pytest.skip('retained public sources unavailable; synthetic unit tests remain offline')
-    return app.select_current_value_candidates(root=LIVE, now=NOW)
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == REAL_MANIFEST['sha256']
+    return app.select_value_candidates(root=LIVE, manifest_binding=REAL_MANIFEST, now=NOW)
 
 
 def test_real_cross_industry_replay(real_replay):
@@ -183,10 +187,9 @@ def test_real_cross_industry_replay(real_replay):
 
 
 def test_real_future_cutoff_is_not_pit_backfill(real_replay):
-    result = app.select_current_value_candidates(root=LIVE,
-        now=datetime(2026, 10, 21, tzinfo=timezone.utc))
-    assert result['data_status'] == 'SOURCE_REVALIDATION_FAILED'
-    assert result['shortlist'] == []
+    with pytest.raises(ValueError, match='not available at cutoff'):
+        app.select_value_candidates(root=LIVE, manifest_binding=REAL_MANIFEST,
+            now=datetime(2026, 10, 21, tzinfo=timezone.utc))
 
 
 def test_real_fingerprint_and_explainability(real_replay):

@@ -2665,3 +2665,48 @@ to stop all conditional modeling. A populated operating/capital/terminal
 successor is being constructed for independent review; J1 remains rejected for
 primary use. No primary candidate, signature or user confirmation was invented.
 All current strategy and real-use gates remain separate. action=no_order.
+
+### 2026-10-23 - Joined valuation research and immutable replay corrections
+
+The source-backed CC1 operating/capital/dividend/terminal hypothesis has been
+numerically constructed and independently reproduced. The independent verdict
+is ACCEPT_FOR_CONDITIONAL_PRIMARY_REVIEW with LOW confidence, not primary/G3,
+current-data, strategy or portfolio admission. The corrected historical net
+investment proxy is 6.35943bn CNY (7.8157% of the profit anchor); the separately
+chosen 10% future retention is unchanged. RI and dividend arithmetic reconcile.
+The base terminal's high marginal-return condition and roughly 77% terminal PV
+weight remain explicit; the 80% parent-cash-conversion stress fails funding in
+year four and ends near -17.463bn CNY. No parameters were changed to hide failure.
+Final report/script and independent exact-hash addendum are retained under
+vv1/.tmp/value-coherent-candidate*.md and value_coherent_candidate_20261023.py.
+
+Joint-input integration is continuing in the isolated cp1 worktree. The existing
+RI model already supports the required explicit ROEs; proposal construction and
+its finite-fade wording need a versioned input mode. Seventy verified public
+source/material copy checks passed, without copying private runtime data or
+changing a current selector. This is not a registered or published CC1 candidate.
+
+Sibling 23ef64f9 and 219926f7 are integrated as fada69b4 and f813465f.
+Archived statutory notices now bind declared fee components to the existing
+replay. Independent review verified three official archived bodies and found
+no confirmed P1/P2. Its focused run: 36 passed, 2 optional historical skips;
+complete commissions, slippage, 2026 policy continuity, PIT/OOS and Shadow remain
+unproven. The historical watch fixture binds exact Oct22 input hashes instead
+of borrowing a later current pointer. No investment threshold was changed.
+
+The first final Core attempt used an overlong Windows temporary directory and
+was stopped after reproducing MAX_PATH failures. The short-path clean e817699b
+run completed with 5296 passed, 88 skipped and two failures: optional retained
+value tests read today's mutable current pointer at a fixed earlier clock.
+Production correctly rejected the future input. The tests now bind immutable
+manifest 20261022T1443164468299Z, SHA256
+719eb923b09a4298e568ff81d0ae00502251873a5a48332cf861f7495e7980ed,
+and preserve the earlier-cutoff rejection. Real replay covers 5577 securities,
+5575 provider-observation companies and 30 research-priority items, with zero
+formal financial admissions. Main combined focused correction/fee/history run:
+99 passed, 1 optional statutory-archive skip. A final successor Core is pending.
+
+The integrated original-entry UI passed independent review, 22 focused tests
+including 320/390 browser layouts, and typecheck. Main full frontend:
+579 passed, 5 optional skips; typecheck and clean build 648af690 passed.
+These are not fresh GitHub CI and not an 8001 release receipt. action=no_order.
