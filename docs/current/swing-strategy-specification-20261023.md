@@ -111,3 +111,79 @@ Oct22 案例中能在各自历史截止前重新核验前序参考的 300750/601
 原始破位、反弹、缺日、伪造 Hash、未来日期和真假覆盖标记使用 TEST_ONLY 夹具验证，不冒充真实持仓。
 共享 API/Web/组合/CI、独立审查和正式发布由主会话整合；本分支不更改 8001、Canonical Excel、私人账户或服务器。
 最终提交及精确测试/真实来源回执由本包交付说明提供，不重复改写唯一执行台账。
+
+## 7. 官方窗口覆盖接入与独立验证准备
+
+本节为 `SW-COVERAGE-AND-VALIDATION-READINESS` 的代码与真实原件复核结果，继承
+`cca1ef97`，不更改信号参数、策略准入或共享发布。只读复用
+`application/product/daily_event_observation.py:verify_retained_event_coverage`；未修改该共享模块。
+
+新增 `application/hotspot/corporate_action_coverage.py:inspect_official_action_coverage`：
+
+```python
+inspect_official_action_coverage(
+    root=public_archive_root, symbol="600519", start=formation_start,
+    end=formation_end, now=aware_cutoff,
+    observation_binding={"path": relative_observation_path, "sha256": expected_hash},
+)
+```
+
+实际链路为已有官方全量查询采集器（`retain_raw_index=True`）→ 原始分页响应/请求元数据与
+PDF 归档 → 原生覆盖核验 → 波段价格形成窗口匹配 → 待审公司行动清单。
+新增接口只读，既不重新联网也不生成扫描“完整”标记。查询可覆盖更宽窗口，但不能少于原始与当前
+参考 case 的全部形成期；未闭合自然日的扫描不能冒充全天完整。
+原生核验逐项检查证券、orgId、非关键词过滤、分页数量/顺序、实际原始字节、Hash、公告集合与 PDF。
+本地 Hash 证明归档一致性，不是外部公证、服务器签名或独立历史时间戳。
+
+输出严格分轴：
+
+| 字段 | 含义与可达状态 |
+| --- | --- |
+| `official_publication_coverage` | `COMPLETE` / `PARTIAL` / `MISSING` / `INVALID_OR_UNAVAILABLE`；只指查询原件及其发布日期范围 |
+| `corporate_action_coverage` / `price_comparability` | 本接口均维持 `UNKNOWN`，不能覆盖分配登记适配器已确认的 `INCOMPARABLE` |
+| `pending_announcements` | 每份公告均保留 ID、标题、来源、发布日期和原件绑定，等待正文及生效条款审查；标题无关键词不能豁免 |
+| `action_family_coverage` | 现金、送转、配股、拆并股、吸收合并/股份转换、修订取消逐类 `UNKNOWN`，不能默认为无事件 |
+| `opening_pending_actions_verified` | `false`：窗口前已公告、窗口内才生效的行动还缺期初状态 |
+| `historical_availability_proven` | `false`：归档取得时点不回填为公告发布时间，也不自动证明独立 PIT |
+
+生命周期新增可选参数 `official_event_observation_binding={path, sha256}`；在原始参考与当前行情均通过
+核验后，将结果放在 `price_comparability.official_disclosure_coverage`。不改变原保护价、原始破位记录、
+既有可比性拒绝和 `action=no_order`。缺少 owned Entry 仍不生成个人持仓操作。
+中文报告把公告查询完整与价格口径完整分开解释；没有归档时公告数量显示未知，而不是 0。
+
+### 真实归档复核
+
+2026-10-23 只读核验已有两份 `runtime/incremental-validity/{symbol}/goal-20261023-completed-window/`
+归档，扫描范围均为 2026-10-11 至 2026-10-22：
+
+- 600519：0 条公告，原始查询覆盖通过；600887：3 条公告，原始查询和 PDF 覆盖通过，三份正文仍待语义审查。
+- 两者均不能证明期初待生效行动、实施条款及修订取消链完整，故不是同口径确认。
+- 将所需价格形成期扩到 2026-09-01 时，输出 `PARTIAL`，不偷偷缩短保护位形成期。
+- 在 2026-10-22 23:59:59 截止复核这两份次日取得的原件时，输出 `INVALID_OR_UNAVAILABLE`。
+- 实际历史公开参考 300750、601318 的原保护位分别为 280.230、50.850，当前滚动保护位分别为
+  218.450、50.240；原始首次破位记录均保留，但价格口径未证明可比。这些数字仅解释历史参考计算，
+  不是今天的保护价、真实入场或个人卖出提示。对应证券尚无本包绑定的完整官方行动扫描。
+- **没有宣称真实行情参考与完整同口径证明已端到端通过**。600519 的原生完整扫描与保护位串联使用
+  明确的 TEST_ONLY 原始响应和时钟夹具，验证完整公告查询仍不能抹除原保护价或放行机械退出。
+
+### 可取得资料与独立样本缺口
+
+再次运行现有 `validate_current_hotspot_strategy` 和 `replay_selection_history`，没有新建策略验证平台：
+
+| 资料 | 本次真实结果 | 可用范围 / 下一依赖 |
+| --- | --- | --- |
+| Oct14–22 候选池/行情原件 | 7 个交易日仅 3 个可完整复算；Oct19 缺失，Oct14/20/21 不完整 | 可诊断覆盖；已看过的数据不能重新命名 untouched OOS |
+| 既有五公司 Apr13–Oct15 历史条件样本 | 协议 Oct16 登记，验证段从 Jul1 开始；159/159 信号所用归档晚于决策时点 | 回放而非独立样本外；不能回填登记日或取得日 |
+| 严格执行路径 | 159 次因 `MISSING_DATED_STOCK_STATUS` 拒绝 | 需要对应当日停牌、ST/上市、限价与成交约束原件，不伪造“正常交易” |
+| 成本复算 | 0x/1x/2x 算术通过 | 不证明真实费率、滑点、可成交性或盈利；成本依据仍不足 |
+| 当前候选池原件 | 原件核验通过；Oct22 在本次 Oct23 评估时为 `STALE` | 完整性通过与当前可用分开，不把旧结构报告当新候选准入 |
+| 官方公告完整窗口 | 600519/600887 范围内原件可核验 | 仍缺期初行动、实施条款、修订取消与统一价基映射；不能自动输出 CONFIRMED |
+| 未污染独立历史段 / 真实 Shadow | 本次未发现可证明的 untouched OOS；不检查或制造 Shadow 日志 | 协议与经济门槛须先固定，再收取未使用窗口的当时数据；本报告新增自然时段信用为 0 |
+
+公开历史数据可用于补充原件与规则诊断，但“今天下载到过去 K 线”不等于已有当时取得链；
+独立归档来源须证明原始可得性、当时证券/行业池和修订历史，不能仅靠文件 mtime。
+前瞻留存须沿现有采集接口，先绑定固定规则、成本、候选全集、区间与准入标准，再积累资料；
+本包不启动定时任务、不注册伪历史协议，也不把拟定的 126 日设计视为已批准/已执行的验证。
+
+剩余明确依赖为：公司行动语义与期初状态审阅、同价基证据合同、当时全市场/行业与可交易状态、
+固定且独立的未污染验证窗口及真实 Shadow。它们阻止策略正式准入，不阻止其他已授权工程。

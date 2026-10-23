@@ -153,6 +153,40 @@ def _lifecycle_binding(binding):
     return f"原件：{_lifecycle_value(binding.get('path'))}；SHA-256：{_lifecycle_value(binding.get('sha256'))}"
 
 
+def render_hotspot_action_coverage_markdown(coverage):
+    """Explain the two coverage axes without promoting an empty query to proof."""
+    if (coverage.get('schema_version') != 'hotspot-official-action-coverage-v1'
+            or coverage.get('action') != 'no_order'):
+        raise ValueError('Official no_order coverage contract required')
+    labels = {'COMPLETE': '所需价格窗口内的官方公告查询已完整核验',
+        'PARTIAL': '已核验公告范围不足以覆盖整个价格形成窗口',
+        'MISSING': '没有提供完整官方扫描归档',
+        'INVALID_OR_UNAVAILABLE': '公告归档无法核验或在评估时点尚不可得'}
+    gaps = {
+        'OFFICIAL_PUBLICATION_WINDOW_MISSING': '缺少官方完整公告扫描原件',
+        'OFFICIAL_PUBLICATION_WINDOW_INVALID_OR_UNAVAILABLE': '公告原件或日期核验失败',
+        'PUBLICATION_SCAN_DOES_NOT_COVER_PRICE_FORMATION_WINDOW': '公告查询范围未覆盖全部价格形成期',
+        'OPENING_PENDING_ACTION_STATE_MISSING': '缺少窗口开始前已公告、尚待生效的公司行动状态',
+        'EFFECTIVE_TERMS_AND_AMENDMENT_CHAIN_UNREVIEWED': '实施条款及后续修订、取消链尚未逐项核验',
+        'SAME_BASIS_PRICE_MAPPING_NOT_VERIFIED': '原保护价和当前价的同口径映射未验证',
+        'ANNOUNCEMENT_SEMANTICS_UNREVIEWED': '公告正文尚未完成公司行动语义审查',
+    }
+    lines = ['## 官方公告覆盖与价格口径', '',
+        _lifecycle_code(coverage.get('official_publication_coverage'), labels) + '。',
+        f"所需价格形成期：{_lifecycle_value(coverage.get('required_from'))} 至 {_lifecycle_value(coverage.get('required_to'))}。",
+        f"实际公告查询窗口：{_lifecycle_value(coverage.get('publication_window'))}；归档取得时点：{_lifecycle_value(coverage.get('source_available_at'))}。",
+        f"归档公告数：{_lifecycle_value(coverage.get('announcement_count'))}。",
+        '公告查询完整不等于公司行动完整。零公告不证明没有此前已公布、当前才生效的分红、送转、配股、拆并股或修订取消。',
+        '公司行动覆盖与价格可比性仍待核验；不折算原保护价，不自动确认持有、加仓、减仓或退出。',
+        '以下公告仅为待审原件；归档时间不能回填为历史决策时点，也不构成 OOS 或真实 Shadow。', '']
+    lines.extend('- ' + gaps.get(gap, _lifecycle_value(gap)) for gap in coverage.get('gaps', []))
+    for item in coverage.get('pending_announcements', []):
+        lines.append(f"- 待审公告：{_lifecycle_value(item.get('title'))}；发布日期：{_lifecycle_value(item.get('published_at'))}；来源：{_lifecycle_value(item.get('source_url'))}。")
+    lines.extend('- ' + _lifecycle_binding(ref) for ref in coverage.get('evidence_bindings', []))
+    lines.append('策略仍未证明有效；action=no_order。')
+    return '\n'.join(lines) + '\n'
+
+
 def render_hotspot_lifecycle_markdown(review):
     """Present the supplied lifecycle explanation; never recompute its decisions."""
     explanation = review.get('decision_explanation')
@@ -191,14 +225,19 @@ def render_hotspot_lifecycle_markdown(review):
         f"原始参考 case 输入引用：{_lifecycle_binding(review.get('entry_case_binding'))}。", '',
         '## 判定路径', '']
     for index, step in enumerate(explanation.get('decision_path') or [], start=1):
+        values = {key: value for key, value in (step.get('values') or {}).items()
+                  if key != 'official_disclosure_coverage'}
         lines += [f"{index}. 检查：{_lifecycle_code(step.get('check'), _LIFECYCLE_CHECKS)}；结果：{_lifecycle_code(step.get('outcome'), _LIFECYCLE_OUTCOMES)}。",
-                  f"   数值与状态：{_lifecycle_value(step.get('values'))}。"]
+                  f"   数值与状态：{_lifecycle_value(values)}。"]
         bindings = step.get('evidence_bindings') or []
         lines.extend(f"   {_lifecycle_binding(binding)}。" for binding in bindings)
         if not bindings:
             lines.append('   证据绑定：未知。')
     if not explanation.get('decision_path'):
         lines.append('判定路径：未知。')
+    coverage = (review.get('price_comparability') or {}).get('official_disclosure_coverage')
+    if coverage:
+        lines += ['', render_hotspot_action_coverage_markdown(coverage)]
     lines += ['', '## 为何不能据此加仓', '',
               '上述结构结果不能单独作为加仓依据；仍须完成外部复核。']
     raw_observation = review.get('unadjusted_structural_observation')

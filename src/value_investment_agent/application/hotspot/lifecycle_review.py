@@ -9,6 +9,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from .current_case_review import inspect_current_price_case
+from .corporate_action_coverage import inspect_official_action_coverage
 from .independent_price_conditions import INDEPENDENT_OPEN_RULE
 from .price_action_case import project_current_price_action_plan
 from ...domain.execution.exchange_calendar import is_exchange_session
@@ -124,7 +125,8 @@ def build_hotspot_lifecycle_review(*, root: Path, symbol: str,
         current_case_binding: dict, now: datetime,
         entry_case_binding: dict | None = None,
         entry_at: datetime | None = None,
-        corporate_action_registry_binding: dict | None = None) -> dict:
+        corporate_action_registry_binding: dict | None = None,
+        official_event_observation_binding: dict | None = None) -> dict:
     """Source-bound explanations, never a personal action or approved strategy.
 
     Missing entry means no held review. The current entry observation remains
@@ -193,6 +195,9 @@ def build_hotspot_lifecycle_review(*, root: Path, symbol: str,
     end = _stamp(current["case"]["bars"]["60m"][-1]["time"]).date()
     comparability = inspect_price_comparability(root=root, symbol=symbol, start=start, end=end,
         now=now, registry_binding=corporate_action_registry_binding)
+    comparability["official_disclosure_coverage"] = inspect_official_action_coverage(
+        root=root, symbol=symbol, start=start, end=end, now=now,
+        observation_binding=official_event_observation_binding)
     result["price_comparability"] = comparability
     rules = result["current_conditions"]
     if comparison["first_breach_at"] or rules["EXIT"]["observed"]:
