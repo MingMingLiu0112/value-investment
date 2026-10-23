@@ -786,6 +786,14 @@ def create_app(
                          "net_pnl_cny", "ending_equity_cny", "maximum_drawdown", "same_fills_gross_return",
                          "total_fees_cny", "total_slippage_cny")} for fold in scenario["folds"]]}
                     for row in execution["results"] for scenario in row["scenarios"]]
+            if "historical_action_observation_binding" in pins:
+                from ...application.product.historical_action_lineage import load_historical_action_lineage
+                try:
+                    result['historical_action_lineage'] = load_historical_action_lineage(root=project,
+                        observation_binding=pins['historical_action_observation_binding'], now=datetime.now(timezone.utc))
+                except (ValueError, OSError, KeyError, TypeError):
+                    result['historical_action_lineage'] = dict(action='no_order', status='UNAVAILABLE',
+                        reason='OFFICIAL_LINEAGE_SOURCES_NOT_VERIFIED', formal_eligibility=False)
             return result
         except (ValueError, OSError, KeyError, TypeError):
             return JSONResponse(status_code=409, content={

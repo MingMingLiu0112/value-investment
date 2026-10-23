@@ -3060,3 +3060,44 @@ date issue, not a waived external blocker), next-package API/Web integration,
 non-stress economic admission, swing OOS/coverage and necessary user gates.
 The full Goal is ACTIVE and NOT complete. Private accounts, canonical Excel,
 server/PTA and production jobs were not operated. action=no_order permanently.
+
+### 2026-10-24 - Source-bound manual rehearsal and historical filing consumer
+
+The integration branch now contains the source-bound API ff6f578c, frontend
+ad1c1ccd, behavior-preserving protocol/guard extraction 79b53840 and exact
+fill/research identity fix cab985be. The existing portfolio surface distinguishes
+actual-source research from purely hypothetical accounting. Reading creates no
+fill; POST requires explicit hypothetical confirmation and the entire current
+candidate identity set. Research drift rejects before journal creation. Both
+actual cases remain UNASSESSABLE, without quantities or advisory eligibility.
+The explicit two-fill TEST_ONLY API exercise used assumed prices, 100000 initial
+cash and 10 total fees, ending at 97990 cash; restart/T+1 and disposable-journal
+cleanup passed. It did not record a user trade or original PIT Entry.
+
+The existing historical replay API now consumes one exact, reverified official
+301061 filing observation, staged as ten unchanged originals. Its 2025-021 to
+2025-022 relation corrects the share table; cancellation is false. This historical
+example is not attached to current candidates and grants neither complete action
+coverage, comparable protection prices, historical PIT nor strategy admission.
+The optional source failure is local UNAVAILABLE, not a failure of independent
+replay or evidence that no corporate action exists.
+
+Independent review exposed three real P2s: post-parse source drift, an object-valued
+render field and an unpinned official URL. They are fixed and independently
+rechecked (Python7, frontend7 including the actual DTO). Main targeted tests passed
+116 with one optional source skip; after the three fixes, the affected Python62
+and frontend7 passed, as did TypeScript. These overlapping suites are not added
+into a fabricated unique count. The first real-source test attempt failed because
+vv1 staged only the ten filing sources, not the opt-in lifecycle price case;
+rerunning against the complete explicit sw1 source root passed without weakening
+the test. No full Core or new GitHub CI is claimed for this checkpoint.
+
+In-process actual public API readback is retained under
+.tmp/source-bound-api-verification/37108b273c6f418fa6b2607051d4085a/:
+historical SHA256 c3be9673f93aa24745a058341659b1b5b45bdddd71e67ee5b83e5935f1442100;
+research SHA256 c276b27e39cce80b4dbc8fe5d4c86f83e7a307469f0ca2f7470eef602522ca05.
+Both HTTP200; the private-root resolver was forbidden. This checks the working
+implementation, not a clean-release or actual8001 acceptance. Live remains
+248ee135. Calendar replay corrections and the actual-payload test-version binding
+are still under separate review; fresh collection and release remain unverified.
+The Goal remains ACTIVE, with economic/strategy/user/account gates separate.

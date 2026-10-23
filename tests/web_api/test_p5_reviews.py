@@ -50,6 +50,26 @@ def test_source_mode_missing_inputs_is_not_the_legacy_positive_demo(tmp_path, mo
     assert not list(tmp_path.rglob('*.jsonl'))
 
 
+@pytest.mark.parametrize('failure', ['missing', 'source_drift'])
+def test_bad_historical_action_binding_keeps_replay_independent_and_visible(tmp_path, monkeypatch, failure):
+    from value_investment_agent.application.hotspot import replay_read_model
+    (tmp_path / 'config').mkdir()
+    (tmp_path / 'config/hotspot-replay-review-v1.json').write_text(json.dumps(dict(action='no_order',
+        manifest_sha256='fixture', structure_manifest_sha256='fixture',
+        historical_action_observation_binding=dict(path='runtime/missing.json', sha256='a' * 64))), encoding='utf-8')
+    monkeypatch.setattr(replay_read_model, 'load_replay_summary', lambda **kwargs:
+        dict(action='no_order', items=[], formal_eligibility=False))
+    if failure == 'source_drift':
+        from value_investment_agent.application.product import historical_action_lineage
+        def changed_after_parsing(**kwargs):
+            raise ValueError('Historical evidence changed during replay')
+        monkeypatch.setattr(historical_action_lineage, 'load_historical_action_lineage', changed_after_parsing)
+    result = TestClient(create_app(root=tmp_path)).get('/api/v1/hotspot-replay-review')
+    assert result.status_code == 200
+    assert result.json()['historical_action_lineage']['status'] == 'UNAVAILABLE'
+    assert result.json()['formal_eligibility'] is False and result.json()['items'] == []
+
+
 @pytest.mark.parametrize('mutation', [
     'no_confirmation', 'numeric_confirmation', 'empty_fills', 'too_many_fills',
     'actual_namespace', 'workspace', 'clock', 'approval', 'other_sleeve', 'other_symbol',

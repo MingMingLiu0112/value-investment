@@ -34,6 +34,68 @@ def safe(result):
     assert result["action"] == "no_order"
 
 
+def test_historical_lineage_reader_rejects_unbound_or_future_originals(tmp_path):
+    from value_investment_agent.application.product.historical_action_lineage import load_historical_action_lineage
+    path = tmp_path / 'runtime/observation.json'
+    path.parent.mkdir()
+    path.write_bytes(b'{}')
+    with pytest.raises(ValueError, match='Hash'):
+        load_historical_action_lineage(root=tmp_path,
+            observation_binding=dict(path='runtime/observation.json', sha256='f' * 64),
+            now=datetime.now(timezone.utc))
+    with pytest.raises(ValueError):
+        load_historical_action_lineage(root=tmp_path,
+            observation_binding=dict(path='../private.json', sha256='f' * 64),
+            now=datetime.now(timezone.utc))
+
+
+def test_real_historical_lineage_reader_is_not_a_current_candidate_or_pit():
+    from value_investment_agent.application.product.historical_action_lineage import load_historical_action_lineage
+    root = Path(os.environ.get('HOTSPOT_LINEAGE_ROOT', '.'))
+    relative = 'runtime/swing-amendment-case-20261024/b7d9c8efcfc94bc0b30b4273268caa21/observation.json'
+    if not (root / relative).is_file():
+        pytest.skip('Explicit retained official observation is unavailable')
+    binding = dict(path=relative, sha256='379c2c9a829494b39b5b3351d2fcec14fd6e499e40c60147902c7073b877cd89')
+    result = load_historical_action_lineage(root=root, observation_binding=binding, now=datetime.now(timezone.utc))
+    assert result['symbol'] == '301061'
+    assert result['lineage_review']['links'][0]['cancellation_asserted_by_this_document'] is False
+    assert result['historical_pit_proven'] is result['formal_eligibility'] is result['comparison_allowed'] is False
+    assert result['scope'] == 'HISTORICAL_FILING_RELATION_NOT_CURRENT_CANDIDATE_OR_TRADE'
+    with pytest.raises(ValueError):
+        load_historical_action_lineage(root=root, observation_binding=binding,
+            now=datetime(2026, 10, 23, tzinfo=timezone.utc))
+
+
+@pytest.mark.parametrize('changed', ['observation', 'raw', 'index'])
+def test_historical_reader_rechecks_all_sources_after_parsing(tmp_path, monkeypatch, changed):
+    from value_investment_agent.application.product import historical_action_lineage as reader
+    from hashlib import sha256
+    directory = tmp_path / 'runtime'
+    directory.mkdir()
+    documents = {
+        'observation': dict(schema_version='daily-event-observation-v1', action='no_order',
+            symbol='301061', scan_from='2025-05-20', scan_to='2025-05-21'),
+        'raw': {}, 'index': {},
+    }
+    references = []
+    for name, body in documents.items():
+        path = directory / f'{name}.json'
+        path.write_text(json.dumps(body), encoding='utf-8')
+        references.append(dict(path=f'runtime/{name}.json', sha256=sha256(path.read_bytes()).hexdigest()))
+
+    def parsed_then_changed(**kwargs):
+        result = dict(official_publication_coverage='COMPLETE', evidence_bindings=references,
+            lineage_review=dict(action='no_order', complete_chain_proven=False,
+                comparison_allowed=False, historical_availability_proven=False))
+        (directory / f'{changed}.json').write_bytes(b'changed after parsing')
+        return result
+
+    monkeypatch.setattr(reader, 'inspect_official_action_coverage', parsed_then_changed)
+    with pytest.raises(ValueError, match='changed during replay'):
+        reader.load_historical_action_lineage(root=tmp_path, observation_binding=references[0],
+            now=datetime.now(timezone.utc))
+
+
 def test_explicit_correction_links_to_identity_without_declaring_event_cancelled():
     result = relate_action_documents(*identities())
     assert result["relation_status"] == "EXPLICIT_TARGET_MATCH"

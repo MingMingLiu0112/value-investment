@@ -1,5 +1,9 @@
 {
   "action": "no_order",
+  "historical_action_observation_binding": {
+    "path": "runtime/swing-amendment-case-20261024/b7d9c8efcfc94bc0b30b4273268caa21/observation.json",
+    "sha256": "379c2c9a829494b39b5b3351d2fcec14fd6e499e40c60147902c7073b877cd89"
+  },
   "manifest_sha256": "084db88666db823d788a928388a99633bbc7916363729dcda8720f363fe33373",
   "structure_manifest_sha256": "1c4e270a58e909b6b51fee1909892c3155338d745ca6e06728da2cbf912aceb5",
   "retained_manifest_binding": {
