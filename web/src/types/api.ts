@@ -1260,6 +1260,31 @@ export interface PacketFreshness {
   as_of?: string | null;
 }
 
+/** Optional last_run.research_review; machine replay is not research approval. */
+export interface DailyMachineResearchReview {
+  status:
+    "SOURCE_REPLAYED" | "UNVERIFIED" | "RECEIPT_UNAVAILABLE" | "NOT_RECORDED";
+  checked_at: string | null;
+  review_cutoff: string | null;
+  scope?: "MACHINE_REVIEW_NOT_RESEARCH_APPROVAL";
+  action: "no_order";
+  formal_eligibility: false;
+  rows: {
+    symbol: string;
+    status: string;
+    research_as_of: string | null;
+    scan_through: string | null;
+    event_coverage_through: string | null;
+    event_coverage_status: "COMPLETE" | "UNCONFIRMED";
+    announcement_count: number | null;
+    facts_change_status: string | null;
+    model_validity_status: string | null;
+    model_recalculation_required: boolean | null;
+    materiality_review_required: boolean | null;
+    formal_eligibility: false;
+  }[];
+}
+
 export interface PacketPendingAction {
   code: string;
   actor: string;

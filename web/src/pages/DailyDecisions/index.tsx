@@ -16,6 +16,10 @@ import { describeCode } from "../../utils/codes";
 import { hasValuationResult } from "../../utils/opportunityView";
 import { blockerText } from "../../utils/packet";
 import {
+  dailyResearchDates,
+  dailyMachineResearchReview,
+} from "../../utils/dailyResearchDates";
+import {
   readinessDetailUrl,
   readinessStrategy,
 } from "../../utils/strategyReadiness";
@@ -214,8 +218,12 @@ export default function DailyDecisions() {
       data.publication?.publication_id,
       packet.data?.publication_id,
     );
-  const researchDate = packet.data?.dates.research_as_of ?? data?.as_of ?? null;
-  const quoteDate = packet.data?.dates.quote_trade_date ?? null;
+  const researchDates = dailyResearchDates(usable ? packet.data : undefined);
+  const machineReview = dailyMachineResearchReview(
+    !update.loading && !update.error ? update.data?.last_run : undefined,
+  );
+  const researchDate = usable ? researchDates.researchAsOf : null;
+  const quoteDate = usable ? researchDates.quoteDate : null;
   // Daily already carries the independent hotspot contract. Keep its plan,
   // readiness, counts and explanation from the same response on every refresh.
   const hotspotItems = data?.sections.hotspot ?? [];
@@ -229,10 +237,9 @@ export default function DailyDecisions() {
       ].join("、")
     : "";
   const quoteFresh = packet.data?.data_freshness.quote.status === "FRESH";
-  const researchFresh = packet.data?.data_freshness.research.status === "FRESH";
   const subtitle =
-    quoteFresh && researchFresh && quoteDate
-      ? `价值研究价格参考截至 ${quoteDate} 收盘；热点行情日期分别核验。`
+    quoteFresh && researchDates.researchCovered && quoteDate
+      ? `价值研究价格参考截至 ${quoteDate} 收盘；研究日期覆盖不等于估值、事件或交易获准。`
       : `研究截至 ${researchDate ?? "日期待核验"}；${quoteDate ? `行情日期 ${quoteDate}` : "行情日期待核验"}，未满足的条件不会转成操作建议。`;
   const dailyUnavailable =
     data?.status === "UNAVAILABLE" ||
@@ -338,6 +345,112 @@ export default function DailyDecisions() {
           。研究批准和本人确认不会由刷新代签。
         </p>
       </details>
+      {usable && (
+        <section
+          aria-label="研究与行情日期"
+          style={{
+            minWidth: 0,
+            maxWidth: "100%",
+            overflowWrap: "anywhere",
+            padding: "12px 0",
+          }}
+        >
+          <dl
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(min(100%, 15rem), 1fr))",
+              gap: "12px 20px",
+              margin: 0,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <dt>原研究基准</dt>
+              <dd style={{ margin: 0 }}>
+                {researchDate ?? "未提供，研究基准不可用"}
+              </dd>
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <dt>最近机器复核</dt>
+              <dd style={{ margin: 0 }}>
+                {machineReview.checkedAt
+                  ? updateTime(machineReview.checkedAt)
+                  : machineReview.label}
+              </dd>
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <dt>价值行情日期</dt>
+              <dd style={{ margin: 0 }}>
+                {quoteDate ?? "未提供，行情日期不可用"}
+              </dd>
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <dt>研究覆盖状态</dt>
+              <dd style={{ margin: 0 }}>{researchDates.coverageLabel}</dd>
+            </div>
+          </dl>
+          <p>
+            {machineReview.label}
+            。研究基准与发布版本保持独立，不因机器复核自动推进。复核时间不是新采集时间，查询窗口仍以各行日期为准。
+          </p>
+          {machineReview.checkedAt && (
+            <details>
+              <summary>
+                本次机器复核进度 · {machineReview.rows.length} 家
+              </summary>
+              <p>
+                任务复核截至 {machineReview.reviewCutoff ?? "未提供有效日期"}
+                ；扫描截至不代表原始公告已完整覆盖，更不代表事件影响已审查通过。
+              </p>
+              <ul>
+                {machineReview.rows.slice(0, 5).map((row, index) => (
+                  <li key={`${row.symbol}-${index}`}>
+                    <strong>{row.symbol}</strong>：研究基准{" "}
+                    {row.research_as_of ?? "未知"}；扫描截至{" "}
+                    {row.scan_through ?? "未知"}； 原始响应完整日窗口截至{" "}
+                    {row.event_coverage_through ?? "未确认完整覆盖"}；公告{" "}
+                    {row.announcement_count ?? "未知"} 份。 财务变化：
+                    {row.facts_change_status ?? "UNKNOWN"}；模型有效性：
+                    {row.model_validity_status ?? "UNKNOWN"}。
+                    {row.model_recalculation_required === true
+                      ? "模型需要重算。"
+                      : row.model_recalculation_required === false
+                        ? "本次未提出重算；覆盖不足时仍不能排除重算需要。"
+                        : "模型重算需求未知。"}
+                    {row.materiality_review_required === true
+                      ? "需要事件材料性审核。"
+                      : row.materiality_review_required === false
+                        ? "本次未列新增材料性待办，不代表已获批准。"
+                        : "事件审查需求未知，不能视为已通过。"}
+                  </li>
+                ))}
+              </ul>
+              {machineReview.rows.length > 5 && (
+                <p>
+                  以上展示前 5 家，共 {machineReview.rows.length}{" "}
+                  家；完整范围见本次复核回执。
+                </p>
+              )}
+            </details>
+          )}
+          <details>
+            <summary>已发布逐公司增量有效性</summary>
+            {researchDates.events.length ? (
+              <ul>
+                {researchDates.events.map((event) => (
+                  <li key={event.symbol}>
+                    {event.name} · {event.symbol}：{event.label}；增量复核截至{" "}
+                    {event.cutoff ?? "未提供有效日期"}
+                    。覆盖截止日不是实际复核时间。
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>尚无已绑定的逐公司事件覆盖材料，暂不可用。</p>
+            )}
+          </details>
+        </section>
+      )}
       {(loading || packet.loading) && (
         <Skeleton active paragraph={{ rows: 8 }} />
       )}

@@ -8,9 +8,13 @@ import { analysisDecision } from "./fixtures/value-research-analysis";
 it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
   "keeps the full daily page and expanded workflows within desktop and mobile viewports",
   async () => {
-    const output = resolve("tests/.tmp/readiness-layout");
+    const output = resolve("../.tmp/daily-research-layout");
     mkdirSync(output, { recursive: true });
-    const state = { daily: {} as any, packet: {} as any };
+    const state = {
+      daily: {} as any,
+      packet: {} as any,
+      updateStatus: {} as any,
+    };
     const value = evaluationFixture();
     value.readiness!.conditional_valuation = {
       bear: "31.000",
@@ -62,11 +66,40 @@ it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
     };
     state.packet = {
       action: "no_order",
+      source_bindings_verified: true,
       ...publication,
       dates: { research_as_of: "2026-09-30", quote_trade_date: "2026-10-21" },
       data_freshness: {
         quote: { status: "FRESH" },
         research: { status: "STALE" },
+      },
+    };
+    state.updateStatus = {
+      last_run: {
+        status: "PARTIAL",
+        research_review: {
+          status: "SOURCE_REPLAYED",
+          checked_at: "2026-10-23T16:00:00+08:00",
+          review_cutoff: "2026-10-22",
+          scope: "MACHINE_REVIEW_NOT_RESEARCH_APPROVAL",
+          action: "no_order",
+          formal_eligibility: false,
+          rows: [
+            {
+              symbol: "600519",
+              status: "UNKNOWN",
+              research_as_of: "2026-10-11",
+              scan_through: "2026-10-22",
+              event_coverage_through: null,
+              announcement_count: 3,
+              facts_change_status: "UNKNOWN",
+              model_validity_status: "UNKNOWN",
+              model_recalculation_required: true,
+              materiality_review_required: true,
+              formal_eligibility: false,
+            },
+          ],
+        },
       },
     };
     const { build } = require("esbuild") as typeof import("esbuild");
@@ -160,6 +193,17 @@ it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
             bundle.outputFiles[0].text,
         });
         await page.locator(".daily-readiness").waitFor({ state: "visible" });
+        const researchDates = page.locator('[aria-label="研究与行情日期"]');
+        expect(await researchDates.innerText()).toContain("最近机器复核");
+        await researchDates
+          .locator("details")
+          .evaluateAll((elements: HTMLDetailsElement[]) =>
+            elements.forEach((element) => {
+              element.open = true;
+            }),
+          );
+        expect(await researchDates.innerText()).toContain("未确认完整覆盖");
+        expect(await researchDates.innerText()).toContain("模型需要重算");
         expect(await page.locator("#daily-hotspot").innerText()).toContain(
           "已评价，暂不新建仓",
         );
@@ -189,7 +233,11 @@ it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
         const measurement = await page.evaluate(() => ({
           width: window.innerWidth,
           scrollWidth: document.documentElement.scrollWidth,
-          overflowing: [...document.querySelectorAll(".daily-readiness *")]
+          overflowing: [
+            ...document.querySelectorAll(
+              '.daily-readiness *, [aria-label="研究与行情日期"] *',
+            ),
+          ]
             .filter((element) => {
               const bounds = element.getBoundingClientRect();
               return (
@@ -247,5 +295,5 @@ it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
       }
     }
   },
-  60000,
+  180000,
 );

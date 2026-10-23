@@ -148,6 +148,98 @@ it("keeps hotspot dates and plans from the daily response instead of mixing inde
   expect(html).not.toContain("热点已完成交易日 2026-10-21");
 });
 
+it.each(["COVERS", "INCREMENTALLY_COVERS"])(
+  "shows actual research producer enum %s and separate evidence dates",
+  (status) => {
+    const packet = state.packet.data;
+    packet.source_bindings_verified = true;
+    packet.data_freshness.research.status = status;
+    packet.dates.quote_trade_date =
+      status === "COVERS" ? "2026-10-11" : "2026-10-22";
+    packet.generated_at = "2026-10-23T08:00:00+08:00";
+    packet.company_statuses = {
+      "600519": {
+        symbol: "600519",
+        name: "TEST_ONLY 研究样本",
+        price_bridge: {
+          incremental_status: "VALID",
+          review_cutoff: "2026-10-22",
+          blockers: [],
+          incremental_validity_binding: {
+            path: "TEST_ONLY/review.json",
+            sha256: "a".repeat(64),
+          },
+        },
+      },
+    };
+    const html = renderToStaticMarkup(<DailyDecisions />);
+    expect(html).toContain("原研究基准");
+    expect(html).toContain("2026-10-11");
+    expect(html).toContain("最近机器复核");
+    expect(html).toContain("尚无可核验复核回执");
+    expect(html).toContain("增量复核截至 2026-10-22");
+    expect(html).toContain("覆盖截止日不是实际复核时间");
+    expect(html).toContain("研究日期覆盖不等于估值、事件或交易获准");
+  },
+);
+
+it.each(["PARTIAL", "BLOCKED"])(
+  "does not promote %s update completion time into research review",
+  (status) => {
+    state.update.data = {
+      last_run: { status, finished_at: "2026-10-23T15:00:00+08:00" },
+    };
+    const html = renderToStaticMarkup(<DailyDecisions />);
+    expect(html).toContain("尚无可核验复核回执");
+    expect(html).toContain("事件覆盖材料，暂不可用");
+    expect(html).not.toContain("增量事件有效性已核验");
+  },
+);
+
+it("separates source-replayed machine review from original research and complete event coverage", () => {
+  state.update.data = {
+    last_run: {
+      status: "PARTIAL",
+      finished_at: "2026-10-23T18:00:00+08:00",
+      research_review: {
+        status: "SOURCE_REPLAYED",
+        checked_at: "2026-10-23T16:00:00+08:00",
+        review_cutoff: "2026-10-22",
+        scope: "MACHINE_REVIEW_NOT_RESEARCH_APPROVAL",
+        action: "no_order",
+        formal_eligibility: false,
+        rows: [
+          {
+            symbol: "600519",
+            status: "UNKNOWN",
+            research_as_of: "2026-10-11",
+            scan_through: "2026-10-22",
+            event_coverage_through: null,
+            announcement_count: 3,
+            facts_change_status: "UNKNOWN",
+            model_validity_status: "UNKNOWN",
+            model_recalculation_required: true,
+            materiality_review_required: true,
+            formal_eligibility: false,
+          },
+        ],
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain("本次机器复核进度");
+  expect(html).toContain("未确认完整覆盖");
+  expect(html).toContain("模型需要重算");
+  expect(html).toContain("需要事件材料性审核");
+  expect(html).toContain("不是人工经济审核或正式交易准入");
+  expect(html).toContain("研究基准与发布版本保持独立");
+  expect(html).toContain("2026-10-11");
+  state.update.error = "TEST_ONLY retry failed";
+  const failed = renderToStaticMarkup(<DailyDecisions />);
+  expect(failed).not.toContain("本次机器复核进度");
+  expect(failed).toContain("尚无可核验复核回执");
+});
+
 it("shows evaluated no-trade reasons separately from missing value inputs", () => {
   const hotspot = {
     ...evaluationFixture("HOTSPOT_SATELLITE"),
