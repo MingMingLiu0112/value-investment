@@ -198,6 +198,103 @@ function text(value: unknown): string {
     );
   return labels[String(value)] ?? String(value);
 }
+
+/** Check producer postconditions, never select or recalculate a trading rule. */
+function consistentState(review: Review, plan: CurrentPricePlan) {
+  const explanation = review.decision_explanation;
+  const outcome = (check: string) => {
+    const matches = explanation.decision_path.filter(
+      (step) => step.check === check,
+    );
+    return matches.length === 1 ? matches[0].outcome : undefined;
+  };
+  const hasEntry = review.entry_case_binding !== null;
+  if (
+    hasEntry !==
+    (typeof review.entry_at === "string" && !!review.entry_at.trim())
+  )
+    return false;
+  if (plan.signal_state === "STALE" && review.current_data_status === "CURRENT")
+    return false;
+  if (
+    outcome("CURRENT_DATA") &&
+    outcome("CURRENT_DATA") !== review.current_data_status
+  )
+    return false;
+  if (
+    review.price_comparability &&
+    outcome("PRICE_COMPARABILITY") &&
+    outcome("PRICE_COMPARABILITY") !== review.price_comparability.status
+  )
+    return false;
+  if (review.current_data_status !== "CURRENT")
+    return (
+      review.status === "NOT_ASSESSABLE" &&
+      review.observed_review === "UNKNOWN" &&
+      explanation.current_price_observation === null &&
+      explanation.decision_path
+        .filter((step) => /^CURRENT_(ADD|REDUCE|EXIT|OPEN)$/.test(step.check))
+        .every((step) => step.outcome === "NOT_EVALUATED")
+    );
+  if (review.status === "NOT_ASSESSABLE")
+    return review.observed_review === "UNKNOWN";
+  if (review.source_integrity !== "VERIFIED") return false;
+  if (review.status === "CURRENT_STRUCTURE_ONLY")
+    return (
+      !hasEntry &&
+      ["WATCH", "ENTRY_OBSERVATION"].includes(review.observed_review)
+    );
+  if (
+    review.status !== "STRUCTURAL_COMPARISON_ONLY" ||
+    !hasEntry ||
+    !record(review.original_entry_comparison) ||
+    review.price_comparability?.status !== "CONFIRMED" ||
+    outcome("CURRENT_DATA") !== "CURRENT" ||
+    outcome("ENTRY_REFERENCE") !== "VERIFIED_REFERENCE_ONLY" ||
+    outcome("ENTRY_RULE_COMPATIBILITY") !== "MATCH" ||
+    outcome("PRICE_COMPARABILITY") !== "CONFIRMED"
+  )
+    return false;
+  const versions = explanation.recomputed_rule_versions;
+  if (!versions?.entry || versions.current !== versions.entry) return false;
+  const firstBreach = review.original_entry_comparison.first_breach_at;
+  if (firstBreach !== null && (typeof firstBreach !== "string" || !firstBreach))
+    return false;
+  if (
+    outcome("ORIGINAL_PROTECTION") !==
+    (firstBreach ? "BREACHED" : "NO_OBSERVED_BREACH")
+  )
+    return false;
+  // EXIT may retain a known earlier breach even when later bar coverage has gaps.
+  if (review.observed_review === "EXIT_STRUCTURE_REVIEW")
+    return (
+      outcome("ORIGINAL_PROTECTION") === "BREACHED" ||
+      outcome("CURRENT_EXIT") === "OBSERVED"
+    );
+  if (firstBreach || outcome("CURRENT_EXIT") !== "NOT_OBSERVED") return false;
+  if (
+    review.original_entry_comparison.coverage !== "COMPLETE" ||
+    outcome("CONTINUITY_COVERAGE") !== "COMPLETE"
+  )
+    return false;
+  if (review.observed_review === "ADD_STRUCTURE_REVIEW")
+    return (
+      outcome("CURRENT_REDUCE") === "NOT_OBSERVED" &&
+      outcome("CURRENT_ADD") === "OBSERVED" &&
+      outcome("STRUCTURE_QUALITY") === "RESEARCH_ONLY"
+    );
+  if (review.observed_review === "REDUCE_STRUCTURE_REVIEW")
+    return outcome("CURRENT_REDUCE") === "OBSERVED";
+  return (
+    review.observed_review === "HOLD_STRUCTURE_OBSERVATION" &&
+    outcome("CURRENT_REDUCE") === "NOT_OBSERVED" &&
+    (outcome("CURRENT_ADD") === "NOT_OBSERVED" ||
+      (outcome("CURRENT_ADD") === "OBSERVED" &&
+        !!outcome("STRUCTURE_QUALITY") &&
+        outcome("STRUCTURE_QUALITY") !== "RESEARCH_ONLY" &&
+        outcome("STRUCTURE_QUALITY") !== "NOT_EVALUATED"))
+  );
+}
 function Evidence({
   bindings,
 }: {
@@ -250,6 +347,47 @@ export function HotspotLifecycleReview({
         <p role="alert">
           结构连续性材料与当前证券、父计划来源或只读合同不匹配，暂不可评价。
         </p>
+      </section>
+    );
+  if (!consistentState(review, plan!))
+    return (
+      <section
+        aria-label="波段结构连续性复核"
+        style={{ minWidth: 0, maxWidth: "100%", overflowWrap: "anywhere" }}
+      >
+        <h3>波段结构连续性复核</h3>
+        <p role="alert">
+          父计划、入场参考、价格可比性或评估状态互相矛盾，暂不可评价；不采纳为当前持有、加仓、减仓或退出结论。
+        </p>
+        <details>
+          <summary>原报告历史说明（不作为当前动作）</summary>
+          <p>
+            原报告评估时点：{text(review.evaluated_at)}；原报告依据：
+            {text(review.decision_explanation.basis_code)}
+            。参考证据不是已核验持仓归属。
+          </p>
+          {review.original_entry_comparison && (
+            <dl>
+              {Object.entries(review.original_entry_comparison).map(
+                ([key, value]) => (
+                  <div key={key}>
+                    <dt>{fields[key] ?? key}</dt>
+                    <dd style={{ marginLeft: 0 }}>{text(value)}</dd>
+                  </div>
+                ),
+              )}
+            </dl>
+          )}
+          <p>
+            保留原始保护价与首次破位记录，不将未复权历史记录升级为有效动作。
+          </p>
+          <Evidence
+            bindings={[
+              review.current_case_binding,
+              ...(review.entry_case_binding ? [review.entry_case_binding] : []),
+            ]}
+          />
+        </details>
       </section>
     );
   const explain = review.decision_explanation;

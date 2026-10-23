@@ -131,5 +131,73 @@ export function lifecycleHeldFixture(): HotspotLifecycleReview {
     comparison_scope:
       "UNADJUSTED_PRICE_STRUCTURE_REQUIRES_CORPORATE_ACTION_REVIEW",
   };
+  review.price_comparability = { status: "CONFIRMED" };
+  review.decision_explanation.recomputed_rule_versions = {
+    current: "TEST_ONLY-current-rule-v2",
+    entry: "TEST_ONLY-current-rule-v2",
+  };
+  const evidence = [review.current_case_binding, review.entry_case_binding];
+  review.decision_explanation.decision_path = [
+    {
+      check: "CURRENT_DATA",
+      outcome: "CURRENT",
+      values: {},
+      evidence_bindings: evidence,
+    },
+    {
+      check: "ENTRY_REFERENCE",
+      outcome: "VERIFIED_REFERENCE_ONLY",
+      values: {},
+      evidence_bindings: evidence,
+    },
+    {
+      check: "ENTRY_RULE_COMPATIBILITY",
+      outcome: "MATCH",
+      values: {},
+      evidence_bindings: evidence,
+    },
+    {
+      check: "PRICE_COMPARABILITY",
+      outcome: "CONFIRMED",
+      values: {},
+      evidence_bindings: evidence,
+    },
+    {
+      check: "ORIGINAL_PROTECTION",
+      outcome: "BREACHED",
+      values: {},
+      evidence_bindings: evidence,
+    },
+    {
+      check: "CONTINUITY_COVERAGE",
+      outcome: "COMPLETE",
+      values: {},
+      evidence_bindings: evidence,
+    },
+    {
+      check: "CURRENT_EXIT",
+      outcome: "NOT_OBSERVED",
+      values: {},
+      evidence_bindings: evidence,
+    },
+    {
+      check: "CURRENT_REDUCE",
+      outcome: "NOT_OBSERVED",
+      values: {},
+      evidence_bindings: evidence,
+    },
+    {
+      check: "CURRENT_ADD",
+      outcome: "NOT_OBSERVED",
+      values: {},
+      evidence_bindings: evidence,
+    },
+    {
+      check: "STRUCTURE_QUALITY",
+      outcome: "RESEARCH_ONLY",
+      values: {},
+      evidence_bindings: evidence,
+    },
+  ];
   return review;
 }

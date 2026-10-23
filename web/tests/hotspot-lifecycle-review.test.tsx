@@ -81,6 +81,10 @@ it("keeps a raw unadjusted ADD record out of the effective conclusion when price
   review.observed_review = "UNKNOWN";
   review.decision_explanation.selected_review = "UNKNOWN";
   review.decision_explanation.basis_code = "PRICE_BASIS_UNKNOWN";
+  review.price_comparability = { status: "UNKNOWN" };
+  review.decision_explanation.decision_path.find(
+    (step) => step.check === "PRICE_COMPARABILITY",
+  )!.outcome = "UNKNOWN";
   review.unadjusted_structural_observation = {
     observed_review: "ADD_STRUCTURE_REVIEW",
     action: "no_order",
@@ -95,13 +99,14 @@ it.each(["UNKNOWN", "INCOMPARABLE"])(
   "explains %s price comparability without changing the supplied decision",
   (status) => {
     const review = lifecycleHeldFixture();
+    review.status = "NOT_ASSESSABLE";
+    review.observed_review = "UNKNOWN";
+    review.decision_explanation.selected_review = "UNKNOWN";
+    review.price_comparability = { status };
     review.decision_explanation.basis_code = `PRICE_BASIS_${status}`;
-    review.decision_explanation.decision_path.push({
-      check: "PRICE_COMPARABILITY",
-      outcome: status,
-      values: { status },
-      evidence_bindings: [],
-    });
+    review.decision_explanation.decision_path.find(
+      (step) => step.check === "PRICE_COMPARABILITY",
+    )!.outcome = status;
     const html = render(review);
     expect(html).toContain(
       status === "UNKNOWN" ? "公司行动覆盖未核验" : "不复权价格不能直接比较",
@@ -112,6 +117,7 @@ it.each(["UNKNOWN", "INCOMPARABLE"])(
 it("shows stale unknown assessment rather than filling prices or treating unevaluated as false", () => {
   const review = lifecycleFixture();
   review.current_data_status = "STALE";
+  review.status = "NOT_ASSESSABLE";
   review.observed_review = "UNKNOWN";
   review.decision_explanation.selected_review = "UNKNOWN";
   review.decision_explanation.basis_code = "CURRENT_DATA_UNAVAILABLE";
@@ -199,4 +205,140 @@ it("missing material and failed/reloading responses cannot imply zero opportunit
     "暂不可评价",
   );
   expect(render(null)).toContain("不等于没有机会或未触发风险");
+});
+
+it("rejects stale parent with a current child but retains only clearly historical explanation", () => {
+  const plan = lifecyclePlan();
+  plan.signal_state = "STALE";
+  const html = render(lifecycleHeldFixture(), plan);
+  expect(html).toContain("状态互相矛盾，暂不可评价");
+  expect(html).toContain("原报告历史说明（不作为当前动作）");
+  expect(html).toContain("11.00");
+  expect(html).toContain("2026-10-20T11:30:00+08:00");
+  expect(html).not.toContain("本次观察：");
+  expect(html).not.toContain("价格观察（元）：12.3400");
+});
+
+it.each([
+  "HOLD_STRUCTURE_OBSERVATION",
+  "ADD_STRUCTURE_REVIEW",
+  "REDUCE_STRUCTURE_REVIEW",
+  "EXIT_STRUCTURE_REVIEW",
+])(
+  "rejects %s without reference entry, confirmed comparability or a completed assessment",
+  (selected) => {
+    for (const change of [
+      (r: Review) => {
+        r.entry_case_binding = null;
+        r.entry_at = null;
+      },
+      (r: Review) => {
+        r.entry_at = null;
+      },
+      (r: Review) => {
+        r.price_comparability = { status: "UNKNOWN" };
+      },
+      (r: Review) => {
+        r.price_comparability = { status: "INCOMPARABLE" };
+      },
+      (r: Review) => {
+        r.status = "NOT_ASSESSABLE";
+      },
+      (r: Review) => {
+        r.current_data_status = "STALE";
+      },
+      (r: Review) => {
+        r.decision_explanation.decision_path.find(
+          (s) => s.check === "ENTRY_REFERENCE",
+        )!.outcome = "UNVERIFIED";
+      },
+      (r: Review) => {
+        r.decision_explanation.decision_path.find(
+          (s) => s.check === "PRICE_COMPARABILITY",
+        )!.outcome = "NOT_EVALUATED";
+      },
+    ]) {
+      const review = lifecycleHeldFixture();
+      review.observed_review = selected;
+      review.decision_explanation.selected_review = selected;
+      change(review);
+      const html = render(review);
+      expect(html).toContain("状态互相矛盾，暂不可评价");
+      expect(html).not.toContain("本次观察：");
+    }
+  },
+);
+
+it.each([
+  "HOLD_STRUCTURE_OBSERVATION",
+  "ADD_STRUCTURE_REVIEW",
+  "REDUCE_STRUCTURE_REVIEW",
+  "EXIT_STRUCTURE_REVIEW",
+])("does not display public no-entry observations as %s", (selected) => {
+  const review = lifecycleFixture();
+  review.observed_review = selected;
+  review.decision_explanation.selected_review = selected;
+  expect(render(review)).toContain("状态互相矛盾，暂不可评价");
+});
+
+it.each([
+  "HOLD_STRUCTURE_OBSERVATION",
+  "ADD_STRUCTURE_REVIEW",
+  "REDUCE_STRUCTURE_REVIEW",
+  "EXIT_STRUCTURE_REVIEW",
+])(
+  "accepts consistent reference-only %s without claiming owned holdings",
+  (selected) => {
+    const review = lifecycleHeldFixture();
+    review.observed_review = selected;
+    review.decision_explanation.selected_review = selected;
+    if (selected !== "EXIT_STRUCTURE_REVIEW") {
+      review.original_entry_comparison!.first_breach_at = null;
+      review.original_entry_comparison!.first_breach_close = null;
+      review.original_entry_comparison!.breach_count = 0;
+    }
+    review.decision_explanation.decision_path.find(
+      (s) => s.check === "ORIGINAL_PROTECTION",
+    )!.outcome =
+      selected === "EXIT_STRUCTURE_REVIEW" ? "BREACHED" : "NO_OBSERVED_BREACH";
+    if (selected === "ADD_STRUCTURE_REVIEW")
+      review.decision_explanation.decision_path.find(
+        (s) => s.check === "CURRENT_ADD",
+      )!.outcome = "OBSERVED";
+    if (selected === "REDUCE_STRUCTURE_REVIEW")
+      review.decision_explanation.decision_path.find(
+        (s) => s.check === "CURRENT_REDUCE",
+      )!.outcome = "OBSERVED";
+    const html = render(review);
+    expect(html).toContain("本次观察：");
+    expect(html).toContain("不授予个人加仓或交易权限");
+    expect(html).toContain("不等于真实持仓");
+  },
+);
+
+it("does not require no-entry candidates to have a confirmed price-comparability review", () => {
+  const review = lifecycleFixture();
+  expect(review.price_comparability).toBeNull();
+  expect(render(review)).toContain("未提供原入场，仅当前结构观察");
+  expect(render(review)).not.toContain("状态互相矛盾");
+});
+
+it("requires assessed action conditions, but preserves an exit breach despite incomplete subsequent coverage", () => {
+  const review = lifecycleHeldFixture();
+  review.original_entry_comparison!.coverage = "INCOMPLETE";
+  review.decision_explanation.decision_path.find(
+    (s) => s.check === "CONTINUITY_COVERAGE",
+  )!.outcome = "INCOMPLETE";
+  expect(render(review)).toContain("本次观察：<strong>退出结构复核</strong>");
+  review.observed_review = "ADD_STRUCTURE_REVIEW";
+  review.decision_explanation.selected_review = "ADD_STRUCTURE_REVIEW";
+  expect(render(review)).toContain("状态互相矛盾");
+  review.original_entry_comparison!.coverage = "COMPLETE";
+  review.decision_explanation.decision_path.find(
+    (s) => s.check === "CONTINUITY_COVERAGE",
+  )!.outcome = "COMPLETE";
+  review.decision_explanation.decision_path.find(
+    (s) => s.check === "CURRENT_ADD",
+  )!.outcome = "NOT_EVALUATED";
+  expect(render(review)).toContain("状态互相矛盾");
 });
