@@ -2839,3 +2839,46 @@ proof of October 21 coverage. A separately versioned explicit scan-start repair
 is in progress; history and the failed transition remain retained. The live
 8001 release is still c4bb99b5. Full successor Core, build and deployment are
 pending; no public push, production task or formal strategy approval occurred.
+
+### 2026-10-24 - Real model-window acquisition and recording identity
+
+The explicit V2 incremental binding keeps research_as_of, valuation_date and
+model_valid_from separate. Complete and same-day partial snapshots share the
+strict raw-response/PDF verifier; partial snapshots remain UNKNOWN and cannot
+assert elapsed coverage. V1 historical semantics are retained. The first combined
+run reproduced a batch-consumer defect (246 passed, three failed): a correct
+model-start scan was still rejected against the research day. The caller now
+accepts a different start only through a verified V2 binding whose selected scan
+path and hash match exactly. Direct unbound calls, rehashed wrong bindings and
+same-bytes alias paths cannot borrow that authority. Combined regression then
+passed 249, including architecture checks; full clean Core is still pending.
+
+One bounded official acquisition in vv1 successfully registered the real
+October 21-23 publication window on October 24, 01:08:51 Asia/Shanghai. It contains
+one original announcement, 1225615375. The transition result is
+runtime/reviewed-quote-context/0551dc5a68994de6a09c5b6383d36f95/result.json,
+SHA256 4c33b93e61f9e19bb6d49186374e99a8b670ceca65be32825df0a7e0d8fd4018.
+The new quote-pointer SHA256 is
+e148f3ddb785e3e0d519a67c91d7ce08b84ac368806a3bdc3574279a4094911f.
+Its P2 package bytes remain unchanged; valuation/research/review dates stay
+October 21/22/23. PriceBridge returns INCREMENTAL_VALIDITY_BLOCKED, UNKNOWN,
+price_admitted=false and ORIGINAL_EVENT_REVIEW_UNRESOLVED. Actual acquisition
+does not manufacture event materiality or earlier review approval. The failed
+predecessor and its rollback remain retained, not rewritten as success.
+
+An independent source-bound simulated-account probe found a separate P2:
+pending plans omitted the research version that already existed in their
+verified ResearchCase. 10f6617b preserves that existing version through analysis,
+plan and optional recording-time judgment snapshot. Main regression passed 40,
+including both retained real companies; independent focused review passed 19
+with two optional skips. Research remains NO_ACTION/UNASSESSABLE. A recording-time
+snapshot does not become original pretrade Entry, actual risk or strategy proof.
+The old all-synthetic accounting journey is not a completed source-bound
+six-action business loop; that orchestration remains unfinished.
+
+The value strategy's existing rules, source references and custom-threshold
+hypotheses are now indexed in value-strategy-specification-20261023.md, alongside
+the swing specification. Neither specification is user strategy approval.
+MJ1 independent research accepts only LOW conditional review; ordinary claims,
+financing and terminal-cash gaps remain. Live 8001 is still c4bb99b5. No private
+account, Canonical workbook, production system or order was changed.

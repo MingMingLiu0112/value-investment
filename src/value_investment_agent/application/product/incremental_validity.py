@@ -277,7 +277,8 @@ def resolve_incremental_model_validity(*, root: Path, symbol: str, binding_ref: 
     else:
         review = review_research_validity(root=root, symbol=symbol, package_path=package_path,
             package_sha256=package_ref["sha256"], event_scan_path=root / scan_ref["path"],
-            event_scan_sha256=scan_ref["sha256"], review_cutoff=review_cutoff, today=today)
+        event_scan_sha256=scan_ref["sha256"], review_cutoff=review_cutoff,
+        incremental_binding_ref=binding_ref, today=today)
         payload = review["model_validity_review"]["current"]
         reusable = review["incremental_review"]["status"] == "MODEL_VALID_AT_REVIEW_CUTOFF"
     original_ref = package["model_validity_input"].get("event_scan_ref")

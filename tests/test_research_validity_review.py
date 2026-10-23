@@ -549,7 +549,8 @@ def test_daily_progress_must_belong_to_this_successful_execution_node(tmp_path, 
 
 
 @pytest.mark.parametrize("populated,prior_pending", [(False, False), (True, False), (False, True)])
-def test_daily_progress_replays_raw_pagination_before_claiming_event_coverage(tmp_path, monkeypatch, populated, prior_pending):
+@pytest.mark.parametrize("split_basis", [False, True])
+def test_daily_progress_replays_raw_pagination_before_claiming_event_coverage(tmp_path, monkeypatch, populated, prior_pending, split_basis):
     from datetime import timedelta
     from test_retained_event_coverage import archive, START, END
 
@@ -557,7 +558,7 @@ def test_daily_progress_replays_raw_pagination_before_claiming_event_coverage(tm
     now = datetime.now(timezone.utc)
     package = {"symbol": "600519", "name": "TEST_ONLY", "package_version": "TEST_ONLY",
         "profile_id": "quality_compounder", "point_in_time": {
-            "research_as_of": START.isoformat(), "valuation_date": START.isoformat(), "report_period": START.isoformat(),
+            "research_as_of": (END if split_basis else START).isoformat(), "valuation_date": START.isoformat(), "report_period": START.isoformat(),
             "available_at": "2020-01-01T00:00:00+00:00"},
         "model_validity_input": {"model_id": "TEST_ONLY", "valid_from": START.isoformat(),
                                  "events": [], "blockers": []}}
@@ -574,9 +575,14 @@ def test_daily_progress_replays_raw_pagination_before_claiming_event_coverage(tm
     observation_ref = {"path": "runtime/events/observation.json",
                        "sha256": _sha(tmp_path / "runtime/events/observation.json")}
     supplement = {"schema_version": "incremental-validity-binding-v1", "symbol": "600519",
-        "package_ref": package_ref, "research_as_of": START.isoformat(), "review_cutoff": END.isoformat(),
+        "package_ref": package_ref, "research_as_of": package["point_in_time"]["research_as_of"], "review_cutoff": END.isoformat(),
         "model_id": "TEST_ONLY", "observation_ref": observation_ref,
         "scan_ref": observation["scan_binding"], "action": "no_order"}
+    if split_basis:
+        supplement.update(schema_version="incremental-validity-binding-v2",
+            valuation_date=START.isoformat(), model_valid_from=START.isoformat(),
+            scan_from=START.isoformat(), coverage_mode="FULL_ELAPSED_WINDOW", materiality_approved=False,
+            g3_approval_granted=False, research_cutoff_changed=False)
     supplement_ref = {"path": "runtime/supplement.json",
                       "sha256": _write(tmp_path / "runtime/supplement.json", supplement)}
     _write(tmp_path / "config/current-quote-bridge.json", {"schema_version": "current-quote-bridge-v1",
@@ -585,11 +591,27 @@ def test_daily_progress_replays_raw_pagination_before_claiming_event_coverage(tm
     output = tmp_path / "runtime/reviews/daily.json"
     report = review_registered_research_validity(root=tmp_path, review_cutoff=END, today=now,
         output_path=output, incremental_bindings=[supplement_ref])
+    if split_basis:
+        direct = dict(root=tmp_path, symbol="600519", package_path=tmp_path / package_ref["path"],
+            package_sha256=package_ref["sha256"], review_cutoff=END, today=now,
+            event_scan_path=tmp_path / observation["scan_binding"]["path"],
+            event_scan_sha256=observation["scan_binding"]["sha256"])
+        with pytest.raises(ValueError, match="有效期起点"):
+            review_research_validity(**direct)
+        with pytest.raises(ValueError, match="hash mismatch"):
+            review_research_validity(**direct, incremental_binding_ref={**supplement_ref, "sha256": "0" * 64})
+        alias = tmp_path / "runtime/scan-alias.json"
+        alias.write_bytes(direct["event_scan_path"].read_bytes())
+        with pytest.raises(ValueError, match="different event scan"):
+            review_research_validity(**{**direct, "event_scan_path": alias},
+                incremental_binding_ref=supplement_ref)
     binding = {"path": output.relative_to(tmp_path).as_posix(), "sha256": _sha(output)}
     options = dict(started_at=(now - timedelta(minutes=1)).isoformat(), finished_at=now.isoformat(), now=now)
     progress = _progress(tmp_path, binding, **options)
     assert progress["status"] == "SOURCE_REPLAYED"
     row = progress["rows"][0]
+    assert row["research_as_of"] == package["point_in_time"]["research_as_of"]
+    assert report["reviews"][0]["review"]["valuation_basis"]["valuation_date"] == START.isoformat()
     assert row["event_coverage_through"] == END.isoformat()
     assert row["event_coverage_status"] == "COMPLETE"
     assert row["announcement_count"] == int(populated)

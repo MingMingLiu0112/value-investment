@@ -145,6 +145,7 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
                              event_scan_path: Path, event_scan_sha256: str,
                              quote_bundle: Path | None = None,
                              quote_bundle_sha256: str | None = None,
+                             incremental_binding_ref: dict | None = None,
                              output_path: Path | None = None, today: datetime) -> dict[str, Any]:
     """Run one hash-bound validity review; never returns an approval."""
     root = root.resolve()
@@ -190,7 +191,20 @@ def review_research_validity(*, root: Path, symbol: str, package_path: Path,
     scan = event_scan_from_payload(scan_payload)
     if scan.symbol != symbol:
         raise ValueError("事件扫描与标的标的不一致")
-    if scan.validity_from.isoformat() != research_day:
+    expected_start = research_day
+    if incremental_binding_ref is not None:
+        from .incremental_validity import (BINDING_SCHEMA_V2, incremental_scan_start,
+                                           load_incremental_scan_binding, read_bound_json)
+
+        selected_scan = load_incremental_scan_binding(root=root, binding_ref=incremental_binding_ref,
+            symbol=symbol, package_path=package_file, package_sha256=package_sha256,
+            review_cutoff=review_cutoff, today=today)
+        if selected_scan != {"path": scan_file.relative_to(root).as_posix(), "sha256": event_scan_sha256}:
+            raise ValueError("Incremental review selected a different event scan")
+        _, supplement = read_bound_json(root, incremental_binding_ref, "review supplement")
+        if supplement["schema_version"] == BINDING_SCHEMA_V2:
+            expected_start = incremental_scan_start(supplement).isoformat()
+    if scan.validity_from.isoformat() != expected_start:
         raise ValueError("事件扫描的有效期起点必须等于研究截止日")
     if scan.scan_to < review_cutoff:
         raise ValueError("事件扫描未覆盖复核截止日")
@@ -506,7 +520,8 @@ def review_registered_research_validity(*, root: Path, review_cutoff: date,
                 package_path=package_path, package_sha256=package_sha,
                 review_cutoff=review_cutoff, event_scan_path=scan_path,
                 event_scan_sha256=ref["sha256"], quote_bundle=entry.get("quote_bundle"),
-                quote_bundle_sha256=entry.get("quote_bundle_sha256"), today=today)
+                quote_bundle_sha256=entry.get("quote_bundle_sha256"),
+                incremental_binding_ref=supplemental[0] if supplemental else None, today=today)
             row.update(status=review["status"], review=review,
                        model_validity_status=review["model_validity_review"]["current"]["status"])
         except (ValueError, OSError, KeyError, TypeError, AttributeError) as error:
@@ -585,7 +600,8 @@ def replay_registered_review_progress(*, root: Path, binding: dict,
             coverage_through = None
             validity = (review.get("model_validity_review") or {}).get("current") or {}
             if row.get("incremental_binding_ref"):
-                from .incremental_validity import read_bound_json, resolve_incremental_model_validity
+                from .incremental_validity import (incremental_scan_start, read_bound_json,
+                                                   resolve_incremental_model_validity)
                 from .daily_event_observation import verify_retained_event_coverage
 
                 _, supplement = read_bound_json(root, row["incremental_binding_ref"], "review supplement")
@@ -596,7 +612,7 @@ def replay_registered_review_progress(*, root: Path, binding: dict,
                 validity = _model_validity_payload(resolved)
                 try:
                     coverage = verify_retained_event_coverage(root, observation, symbol=row["symbol"],
-                        required_from=date.fromisoformat(supplement["research_as_of"]),
+                        required_from=incremental_scan_start(supplement),
                         required_to=date.fromisoformat(replay["review_cutoff"]), now=checked)
                     coverage_through = coverage["scan_to"]
                 except ValueError:
