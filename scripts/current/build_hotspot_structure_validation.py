@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import re
@@ -37,8 +37,10 @@ def _sha256(value: str) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--selection-report", type=Path, required=True)
-    parser.add_argument("--selection-report-sha256", type=_sha256, required=True)
+    parser.add_argument('--independent-audit', action='store_true',
+        help='Audit current independent strategy evidence without creating a release; exit 2 if not admitted.')
+    parser.add_argument("--selection-report", type=Path)
+    parser.add_argument("--selection-report-sha256", type=_sha256)
     parser.add_argument(
         "--current-price-conditions",
         type=Path,
@@ -50,6 +52,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--evaluated-at", type=_timestamp)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args(argv)
+    if args.independent_audit:
+        if (args.selection_report or args.selection_report_sha256 or args.historical_case
+                or args.incomplete_live_directory or args.incomplete_live_reason
+                or args.current_price_conditions != Path('config/current-price-conditions.json')):
+            parser.error('independent audit reads registered current sources, not injected alternatives')
+        from value_investment_agent.application.hotspot.independent_validation import validate_current_hotspot_strategy
+        from value_investment_agent.application.product.common import require_inside, write_new_json, sha256_file
+        output = require_inside(ROOT / 'runtime', ROOT / args.output_dir, 'independent audit output') / 'independent-validation.json'
+        report = validate_current_hotspot_strategy(root=ROOT, now=args.evaluated_at or datetime.now(timezone.utc))
+        write_new_json(output, report)
+        print(json.dumps(dict(report=str(output.relative_to(ROOT)), sha256=sha256_file(output),
+            strategy_validation=report['strategy_validation'], action='no_order'), indent=2))
+        return 0 if report['strategy_validation'] == 'PASSED' else 2
+    if args.selection_report is None or args.selection_report_sha256 is None:
+        parser.error('structure validation requires --selection-report and --selection-report-sha256')
 
     report = build_hotspot_structure_validation(
         root=ROOT,

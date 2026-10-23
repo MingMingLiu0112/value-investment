@@ -12,6 +12,58 @@ from ...infrastructure.evidence.trust_root_registry import require_pinned_trust_
 
 POINTER = "config/current-hotspot-independent-admission-v1.json"
 PURPOSE = b"value-investment:independent-hotspot-release:v1\x00"
+SOURCE_SCHEMA = "independent-hotspot-source-evidence-v1"
+_KNOWLEDGE_TIMES = frozenset({"available_at", "known_at", "retrieved_at", "fetched_at",
+    "generated_at", "evaluated_at", "registered_at", "computed_at", "reviewed_at"})
+
+
+def _source_semantics(document, *, source, gate, payload) -> bool:
+    """A signature authenticates a claim; it cannot override its cited evidence."""
+    cutoff = _time(source["available_at"])
+    def inspect(value):
+        if isinstance(value, dict):
+            for key, item in value.items():
+                if key in _KNOWLEDGE_TIMES and item is not None:
+                    if not isinstance(item, str) or _time(item) > cutoff:
+                        raise ValueError("Source internal availability exceeds declared availability")
+                if gate["gate"] == "strategy_validation" and gate["status"] == "PASS":
+                    if key in {"strict_pit_admitted", "strict_oos_admitted", "actual_sample_accepted"} and item is not True:
+                        raise ValueError("Source contradicts strategy validation admission")
+                    if key == "strategy_validation" and (not isinstance(item, str) or item not in {"PASS", "PASSED"}):
+                        raise ValueError("Source contradicts strategy validation admission")
+                inspect(item)
+        elif isinstance(value, list):
+            for item in value:
+                inspect(item)
+    inspect(document)
+    if not isinstance(document, dict):
+        return False
+    for name in ("symbol", "rule_version"):
+        if name in document and document[name] != payload[name]:
+            raise ValueError("Source security or rule context mismatch")
+    if document.get("schema_version") != SOURCE_SCHEMA:
+        return False
+    references = document.get("evidence_bindings")
+    declared = {(row["path"], row["sha256"]) for row in gate["source_bindings"]
+                if row["path"] != source["path"]}
+    if (not isinstance(references, list) or not references
+            or any(not isinstance(row, dict) or set(row) != {"path", "sha256"}
+                   or (row["path"], row["sha256"]) not in declared for row in references)):
+        raise ValueError("Typed evidence must cite the gate's independently bound raw sources")
+    if (document.get("action") != "no_order" or document.get("namespace") != payload["namespace"]
+            or document.get("symbol") != payload["symbol"]
+            or document.get("rule_version") != payload["rule_version"]
+            or document.get("gate") != gate["gate"] or document.get("status") != gate["status"]
+            or _time(document.get("available_at")) > cutoff
+            or _time(document.get("expires_at")) < _time(gate["expires_at"])):
+        raise ValueError("Typed source gate context or validity mismatch")
+    if gate["gate"] == "strategy_validation" and gate["status"] == "PASS":
+        if any(document.get(name) is not True for name in
+               ("strict_pit_admitted", "strict_oos_admitted", "actual_sample_accepted")):
+            raise ValueError("Strategy source requires verified PIT, OOS and accepted sample")
+        if document.get("strategy_validation") not in ("PASS", "PASSED"):
+            raise ValueError("Strategy source is not validated")
+    return True
 
 
 def canonical_payload(value: dict) -> bytes:
@@ -42,6 +94,8 @@ def _read(root: Path, binding: dict) -> dict:
 
 
 def _time(value) -> datetime:
+    if not isinstance(value, str):
+        raise ValueError("Independent hotspot time requires ISO text")
     stamp = datetime.fromisoformat(value)
     if stamp.utcoffset() is None:
         raise ValueError("Independent hotspot time requires timezone")
@@ -126,6 +180,8 @@ def load_independent_admission(root: Path, *, symbol: str, now: datetime,
                 or not isinstance(gate["source_bindings"], list) or not gate["source_bindings"]
                 or _time(gate["available_at"]) > reviewed):
             raise ValueError("Independent hotspot gate context or provenance invalid")
+        typed_source = False
+        source_documents = []
         for source in gate["source_bindings"]:
             if (not isinstance(source, dict)
                     or set(source) != {"path", "sha256", "namespace", "available_at"}
@@ -139,6 +195,17 @@ def load_independent_admission(root: Path, *, symbol: str, now: datetime,
                 source_document = None
             if payload["namespace"] == "ACTUAL" and _contains_test_namespace(source_document):
                 raise ValueError("Test-only source cannot enter actual admission")
+            typed_source = _source_semantics(source_document, source=source,
+                gate=gate, payload=payload) or typed_source
+            source_documents.append(source_document)
+        if payload["namespace"] == "ACTUAL" and gate["status"] == "PASS" and not typed_source:
+            raise ValueError("Actual gate PASS requires typed applicable source evidence")
+        if (payload["namespace"] == "ACTUAL" and gate["status"] == "PASS"
+                and gate["gate"] == "strategy_validation"):
+            from .independent_validation import verify_strategy_admission_sources
+            verify_strategy_admission_sources(root=root, documents=source_documents,
+                symbol=symbol, rule_version=payload["rule_version"],
+                cutoff=_time(gate["available_at"]))
         evidence.append(HotspotGateEvidence(gate["gate"], gate["status"],
             _time(gate["available_at"]), _time(gate["expires_at"]), binding["sha256"]))
         gate_sources[gate["gate"]] = [
