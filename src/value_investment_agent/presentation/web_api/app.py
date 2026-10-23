@@ -67,6 +67,7 @@ from .local_auth import (
 from .private_routes import portfolio_connection, register_private_routes
 from .condition_alert_routes import register_condition_alert_routes
 from .agent_research_routes import register_agent_research_routes
+from .simulated_journey_routes import register_simulated_journey_routes
 from .runtime_identity import data_freshness, git_head, publication_registry_status, runtime_identity, sha256
 from .value_policy_routes import register_value_policy_routes
 from ...application.decision.value_policy_interaction import (
@@ -752,12 +753,6 @@ def create_app(
         return JSONResponse(build_dual_strategy_selection(root=project,
             now=datetime.now(timezone.utc)), headers={"Cache-Control": "no-store"})
 
-    @api.get("/api/v1/simulated-trade-journey")
-    def simulated_trade_journey():
-        from ...application.portfolio.simulated_trade_journey import run_simulated_trade_journey
-        return JSONResponse(run_simulated_trade_journey(root=project, now=datetime.now(timezone.utc)),
-            headers={"Cache-Control": "no-store"})
-
     @api.get("/api/v1/hotspot-replay-review")
     def hotspot_replay_review():
         from ...application.hotspot.replay_read_model import load_replay_summary
@@ -915,6 +910,7 @@ def create_app(
         api, project, sessions=sessions, port=bound_port)
     register_condition_alert_routes(api, project=project, sessions=sessions, port=bound_port)
     register_agent_research_routes(api, project=project, sessions=sessions, port=bound_port)
+    register_simulated_journey_routes(api, project=project)
     register_value_policy_routes(api, sessions=sessions, port=bound_port,
         principal_resolver=lambda request: PolicyPrincipal("local-account-owner", frozenset({PERMISSION})),
         get_service=lambda: value_policy_service or ValuePolicyInteractionService(

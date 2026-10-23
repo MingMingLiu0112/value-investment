@@ -121,12 +121,54 @@ def test_source_read_default_does_not_create_a_journal_or_manual_fill(registered
     assert before == {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
 
 
+def test_source_manual_buy_derives_next_session_without_client_calendar(registered):
+    root, symbol, _, _ = registered
+    request = _manual_request(symbol, reference=False)
+    request['fill'].pop('next_sell_session')
+    result = run_source_bound_simulated_trade_journey(root, datetime.now(timezone.utc),
+        symbols=[symbol], manual_fills=[request], initial_cash_cny='100000')
+    fill = result['manual_rehearsal']['fills'][0]
+    assert fill['fill']['next_sell_session'] == '2026-10-26'
+    assert fill['t1_negative_status'] == 'REJECTED_WITHOUT_JOURNAL_WRITE'
+    assert result['manual_rehearsal']['temporary_journal_removed'] is True
+
+
+@pytest.mark.parametrize('field', ['candidate_binding', 'research_version', 'symbol', 'missing'])
+def test_changed_user_visible_source_is_rejected_before_a_journal(registered, field):
+    root, symbol, _, _ = registered
+    read = run_source_bound_simulated_trade_journey(root, datetime.now(timezone.utc), symbols=[symbol])
+    case = read['cases'][0]
+    expected = dict(symbol=symbol, candidate_binding=dict(case['research']['candidate_binding']),
+                    research_version=case['research']['research_version'])
+    if field == 'candidate_binding':
+        expected[field]['sha256'] = '0' * 64
+    elif field in {'symbol', 'research_version'}:
+        expected[field] = 'CHANGED'
+    else:
+        expected.pop('research_version')
+    before = {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
+    with pytest.raises(ValueError, match='Research changed'):
+        run_source_bound_simulated_trade_journey(root, datetime.now(timezone.utc), symbols=[symbol],
+            initial_cash_cny='100000', manual_fills=[_manual_request(symbol)], expected_candidates=[expected])
+    assert before == {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
+
+
+def test_source_rehearsal_does_not_force_wait_on_an_unexpected_admitted_decision(registered, monkeypatch):
+    from value_investment_agent.application.decision import public_strategy_assessment
+    root, symbol, _, _ = registered
+    monkeypatch.setattr(public_strategy_assessment, 'project_actionable_evaluation',
+        lambda *args, **kwargs: dict(eligibility=True, decision_action='BUY_REVIEW'))
+    with pytest.raises(ValueError, match='cannot represent admitted'):
+        run_source_bound_simulated_trade_journey(root, datetime.now(timezone.utc), symbols=[symbol])
+    assert not list(root.rglob('*.jsonl'))
+
+
 @pytest.mark.parametrize('reference', [False, True])
 def test_source_manual_service_journal_restart_and_t1_do_not_create_strategy_permission(registered, reference):
     root, symbol, _, _ = registered
     protected = {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
     result = run_source_bound_simulated_trade_journey(root, datetime.now(timezone.utc), symbols=[symbol],
-        manual_fills=[_manual_request(symbol, reference=reference)])
+        manual_fills=[_manual_request(symbol, reference=reference)], initial_cash_cny='100000')
     _assert_source_wait(result)
     manual = result['manual_rehearsal']
     assert manual['restart_equal'] is manual['same_session_sell_rejected'] is True
@@ -154,7 +196,7 @@ def test_source_drift_is_not_relabelled_as_simulated_research(registered, fault)
     path.write_bytes(path.read_bytes() + b'changed')
     with pytest.raises((ValueError, KeyError)):
         run_source_bound_simulated_trade_journey(root, datetime.now(timezone.utc), symbols=[symbol],
-            manual_fills=[_manual_request(symbol)])
+            manual_fills=[_manual_request(symbol)], initial_cash_cny='100000')
     assert not list(root.rglob('*.jsonl'))
 
 
@@ -173,7 +215,7 @@ def test_source_drift_after_manual_confirmation_discards_attribution_and_cleans_
     monkeypatch.setattr(service.PrivatePortfolioService, 'confirm_fill', drift)
     with pytest.raises(ValueError, match='hash mismatch'):
         run_source_bound_simulated_trade_journey(root, datetime.now(timezone.utc), symbols=[symbol],
-            manual_fills=[_manual_request(symbol, reference=False)])
+            manual_fills=[_manual_request(symbol, reference=False)], initial_cash_cny='100000')
     assert not list(root.rglob('*.jsonl'))
     assert not list((root / '.tmp').glob('source-bound-simulated-*'))
 
@@ -189,7 +231,7 @@ def test_source_journey_does_not_accept_temporal_or_approval_shortcuts(registere
     elif fault == 'caller_snapshot': request['fill']['judgment_snapshot'] = {'approved': True}
     else: request['research_reference'] = 'CONTEMPORANEOUS'
     with pytest.raises(ValueError):
-        run_source_bound_simulated_trade_journey(root, now, symbols=[symbol], manual_fills=[request])
+        run_source_bound_simulated_trade_journey(root, now, symbols=[symbol], manual_fills=[request], initial_cash_cny='100000')
     assert not list(root.rglob('*.jsonl'))
 
 
@@ -200,7 +242,7 @@ def test_requested_backdated_second_fill_is_rejected_by_original_ledger(register
     earlier['fill'].update(transaction_id='SIMULATED-EARLIER', trade_date='2026-10-22', next_sell_session='2026-10-23')
     with pytest.raises(ValueError, match='trade date precedes confirmed state'):
         run_source_bound_simulated_trade_journey(root, datetime.now(timezone.utc), symbols=[symbol],
-            manual_fills=[first, earlier])
+            manual_fills=[first, earlier], initial_cash_cny='100000')
     assert not list(root.rglob('*.jsonl'))
 
 
@@ -209,7 +251,7 @@ def test_t1_probe_does_not_treat_older_sellable_lots_as_a_settlement_failure(reg
     older = _manual_request(symbol, reference=False)
     older['fill'].update(transaction_id='SIMULATED-OLDER', trade_date='2026-10-22', next_sell_session='2026-10-23')
     result = run_source_bound_simulated_trade_journey(root, datetime.now(timezone.utc), symbols=[symbol],
-        manual_fills=[older, _manual_request(symbol, reference=False)])
+        manual_fills=[older, _manual_request(symbol, reference=False)], initial_cash_cny='100000')
     manual = result['manual_rehearsal']
     assert manual['fills'][0]['t1_negative_status'] == 'REJECTED_WITHOUT_JOURNAL_WRITE'
     assert manual['fills'][1]['t1_negative_status'] == 'NOT_APPLICABLE_OLDER_SELLABLE_LOTS'
@@ -247,11 +289,11 @@ def test_actual_two_company_source_read_and_explicit_manual_rehearsal(tmp_path, 
     monkeypatch.setattr(journey, 'review_dual_sleeve_risk',
         lambda *args, **kwargs: pytest.fail('No production/synthetic risk override'))
     now = datetime.now(timezone.utc)
-    read = run_source_bound_simulated_trade_journey(root, now, workspace_root=tmp_path)
+    read = run_source_bound_simulated_trade_journey(root, now, symbols=('600519', '600887'), workspace_root=tmp_path)
     _assert_source_wait(read)
     assert read['manual_rehearsal']['status'] == 'NOT_REQUESTED'
-    result = run_source_bound_simulated_trade_journey(root, now, workspace_root=tmp_path,
-        manual_fills=[_manual_request(symbol) for symbol in ('600519', '600887')])
+    result = run_source_bound_simulated_trade_journey(root, now, symbols=('600519', '600887'), workspace_root=tmp_path,
+        manual_fills=[_manual_request(symbol) for symbol in ('600519', '600887')], initial_cash_cny='100000')
     _assert_source_wait(result)
     manual = result['manual_rehearsal']
     assert manual['account_state']['cash_cny'] == '97990'

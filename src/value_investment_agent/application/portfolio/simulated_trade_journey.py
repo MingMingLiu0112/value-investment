@@ -22,6 +22,10 @@ SYMBOL = format(600519, "06d")
 ACCOUNT = "SIMULATED_DISPOSABLE_DUAL_SLEEVE_JOURNEY"
 
 
+class SourceResearchVersionChanged(ValueError):
+    """The explicit user-visible research identity no longer matches the source."""
+
+
 def _policy(day):
     return dict(investable_assets_cny="10000", core_value_budget_cny="5000",
         hotspot_budget_cny="3000", cash_reserve_cny="2000", minimum_cash_cny="2000",
@@ -257,6 +261,8 @@ def _source_bound_cases(root, symbols, now):
                 raise ValueError("Conflicting public research source bindings")
             protected[pinned['path']] = pinned['sha256']
         evaluation = project_actionable_evaluation(dict(symbol=symbol, strategy=CORE, price_action_plan=plan))
+        if evaluation.get('eligibility') is not False:
+            raise ValueError('Conditional rehearsal cannot represent admitted strategy decisions')
         reasons = list(dict.fromkeys([evaluation['decision_reason'], *plan.get('blockers', []),
             *plan.get('formal_eligibility_blockers', [])]))
         slots = [dict(intent=intent, outcome='WAIT' if intent == 'WAIT' else 'NO_ACTION',
@@ -270,6 +276,8 @@ def _source_bound_cases(root, symbols, now):
                 replayed_at=candidate.get('replayed_at'), research_as_of=analysis['research_as_of'],
                 valuation_date=analysis['valuation_date'], available_at=analysis['available_at'],
                 computed_at=analysis['computed_at'], thesis=deepcopy(analysis['thesis']),
+                confidence=analysis['valuation']['confidence'],
+                counter_evidence=deepcopy(analysis.get('counter_evidence', [])),
                 thesis_breakers=deepcopy(analysis['thesis_breakers']),
                 scope='SOURCE_BOUND_CONDITIONAL_RESEARCH_NOT_TRADE_APPROVAL'),
             plan=dict(research_version=plan['research_version'], signal_state=plan['signal_state'],
@@ -288,8 +296,8 @@ def _manual_account_state(service):
 
 
 def run_source_bound_simulated_trade_journey(root: Path, now: datetime, *,
-        symbols=('600519', '600887'), manual_fills=None, initial_cash_cny='100000',
-        workspace_root: Path | None = None) -> dict:
+        symbols, manual_fills=None, initial_cash_cny=None,
+        workspace_root: Path | None = None, expected_candidates: list[dict] | None = None) -> dict:
     """Read current public research; optionally rehearse explicitly requested fills.
 
     Manual fills are independent hypothetical accounting, never strategy verdicts.
@@ -308,6 +316,15 @@ def run_source_bound_simulated_trade_journey(root: Path, now: datetime, *,
         raise ValueError("Manual rehearsal must be an explicit list")
     cases, protected = _source_bound_cases(root, symbols, now)
     by_symbol = {case['symbol']: case for case in cases}
+    if expected_candidates is not None:
+        identities = [dict(symbol=case['symbol'], candidate_binding=case['research']['candidate_binding'],
+            research_version=case['research']['research_version']) for case in cases]
+        if (not isinstance(expected_candidates, list)
+                or any(not isinstance(row, dict) or not isinstance(row.get('symbol'), str)
+                       for row in expected_candidates)
+                or sorted(expected_candidates, key=lambda row: row['symbol'])
+                != sorted(identities, key=lambda row: row['symbol'])):
+            raise SourceResearchVersionChanged('Research changed after the displayed source read')
 
     def recheck():
         for path, digest in protected.items():
@@ -316,6 +333,8 @@ def run_source_bound_simulated_trade_journey(root: Path, now: datetime, *,
     manual = dict(status='NOT_REQUESTED', fills=[], account_state=None, journal_receipt=None,
                   temporary_journal_removed=True, actual_account_used=False)
     if manual_fills:
+        if initial_cash_cny is None:
+            raise ValueError('Manual rehearsal requires explicit opening cash')
         try:
             opening_day = date.fromisoformat(manual_fills[0]['fill']['trade_date'])
         except (KeyError, TypeError) as error:
@@ -349,6 +368,9 @@ def run_source_bound_simulated_trade_journey(root: Path, now: datetime, *,
                 if date_from_fill := fill.get('trade_date'):
                     if date.fromisoformat(date_from_fill) > datetime.now(ZoneInfo('Asia/Shanghai')).date():
                         raise ValueError("Hypothetical execution cannot be in the future")
+                if fill.get('side') == 'BUY' and 'next_sell_session' not in fill:
+                    fill['next_sell_session'] = next_exchange_session(
+                        fill['exchange'], date.fromisoformat(fill['trade_date'])).isoformat()
                 reference = request.get('research_reference')
                 if reference not in (None, 'HISTORICAL_RECONSTRUCTION'):
                     raise ValueError("Only explicit historical research-reference reconstruction is supported")

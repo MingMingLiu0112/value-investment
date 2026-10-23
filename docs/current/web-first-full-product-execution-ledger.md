@@ -2976,3 +2976,87 @@ only on failure and retaining the real current binding on success. After adding
 run/source identity negatives, the focused selection/consumer suite passed 70.
 This does not fix the collector's session-date contract or admit any strategy.
 Live remains c681d1f0 until clean regression, source checks and 8001 verification.
+
+### 2026-10-24 - 248ee135 live, real retained queue and public capital ledger
+
+The release is now 248ee135aae5c98a47fbb50f8747f291f7f054a7 on the existing
+8001, with backend/build/source/config and all four public registry roles MATCHED.
+The active-release pointer was read back. Only the three allowed public data
+selectors differ in LIVE; no other source changes or new user workbook exist.
+The local authority pointer was not copied across checkouts and still has the
+original 50746cc7595d0151d33c3a56f1cd283713392fd099d79491fde7bc2fca757387 bytes.
+
+Clean Core at 4299a3ff passed 5465, skipped 95, with 38 inherited warnings
+(1196.59 seconds). .tmp/core-4299a3ff-passed.xml in gc1 has SHA256
+dc828d6accd69e1ec22687e251a9bb2990a80248cdc57c09d9b2407e590377b2.
+Subsequent commits bf0ad039 and 248ee135 change only frontend code/tests;
+git diff 4299a3ff..248ee135 -- src scripts tests config .github is empty.
+Do not call that a separate full Core execution at 248ee135. Its exact clean
+checkout passed TypeScript, full frontend 685/9 skipped, and production build.
+No public push or new remote GitHub CI is claimed.
+
+The independent public-UI P2s are closed, including the additional equivalent
+cross-midnight timezone rejection. Public source projection naturally read both
+actual registered companies; 53 distinct 600519 and 42 distinct 600887 source
+bindings were individually hashed. The resulting unmodified actual CC1 payload
+passed the real public guard/SSR and all 86 file tests with 320/390 layout enabled.
+These are source/display checks, not economic assumption or strategy approval.
+
+An actual LIVE SAFE_REFRESH ran 02:50:33-02:52:30 Asia/Shanghai. It completed
+PARTIAL, exit3: M2 again rejected the Friday BSE list on Saturday, while existing
+verified closes/price cases were reused and both official incremental validity
+windows were actually replayed. No fresh quote acquisition is claimed. Its run
+receipt SHA256 is 2726e8bdd40a7875af371931281e424bc684484512c82640b83d7070d2e5b451.
+Research review runtime/research-validity-reviews/registered-20261023T1851383268863Z.json
+has SHA256 846e0c5a00303b17162887e31aa76592947e0843a9745262d3fbdb29e7c73707.
+Machine review time is 02:51:38; original research dates and materiality/model
+UNKNOWN gates remain. This is not completed human research or G3.
+
+The new public packet is pub-aafe7f68fe671f238b4d, SHA256
+ef0fc90f05d4c19ec7f0f4b4633500b047c2b6c303c7bf13ec6c3a69d4427231.
+The existing daily CLI explicitly bound the already verified October23 screening
+manifest, not a directory-recency search. Actual API and browser readbacks show
+5577 companies, 50055 financial observations, 4980 research-scheduling candidates
+and 30 displayed rows; official financial admission remains zero. Original screen
+generation stays October23 20:30:22 CST, quote label October23, with
+RETAINED_DATED_RESEARCH and COLLECTION_FAILED separately visible. This is useful
+dated research, not new all-market collection or strict historical PIT.
+
+Initial actual 320-width QA failed because a long English data-status string
+expanded the page. 248ee135 translates that status and wraps metadata, without
+changing data or rules. The original failing bf0 screenshots are retained.
+The final same-port real page harness passed desktop1440/mobile390/mobile320,
+with document scroll widths exactly1440/390/320 for BOTH daily and 600519 detail.
+Six screenshots and the exact-commit receipt are under
+.tmp/live-ui-248ee135/ in vv1. Private state stayed LOCKED; no owner authorization
+was supplied. The display-only hotfix reused the same actual refresh receipt;
+it did not manufacture a second collection or newer machine review date.
+
+Next packages are independently reviewed but NOT in this published release:
+- cp1 c489eb6482df10d3cc4675d4546b197f952d61c0 adds source-bound WAIT-to-manual
+  simulation to the existing application use case. Default creates no fill or
+  journal; explicit manual rehearsal uses the existing service, restart, fees,
+  T+1 rejection and disposable cleanup. Author20 and independent15 tests passed,
+  including both actual public cases. Six slots remain NO_ACTION/WAIT, not six
+  positive strategy decisions; current Web still calls the older synthetic case.
+- sw1 fbf9735d -> 4bfb9ea9 -> 4995e491 binds official corrections to explicitly
+  referenced implementation notices. Independent review caught a cross-sentence
+  historical quote falsely read as cancellation; 4995e491 fixes it, with the
+  final focused34 passing. The real 2025-021 -> 2025-022 case corrects the share
+  table, not the whole distribution. Full revision-chain/initial-state/noncash
+  comparability and independent historical PIT remain unproved. No owned Entry,
+  current_pit=false, WATCH/UNKNOWN and no_order remain.
+
+The MJ1 ordinary-claims followup now archives two actual official HKEX originals
+under runtime/public-research/mj1-ordinary-claims-20261024/, manifest SHA256
+fc2fb6a91a242d2ba9be5c100dde915660e181497b32427216a7a4e1cdfd55eb.
+Root independently checked both byte hashes/sizes; first actual availability is
+October24 02:34 CST. Exact publication instants remain null, historical PIT and
+formal admission false. Ordinary-claim allocation/upstream cash/financing choices
+remain research gaps, not facts created by archiving.
+
+Remaining work includes the collector's effective-session contract (an engineering
+date issue, not a waived external blocker), next-package API/Web integration,
+non-stress economic admission, swing OOS/coverage and necessary user gates.
+The full Goal is ACTIVE and NOT complete. Private accounts, canonical Excel,
+server/PTA and production jobs were not operated. action=no_order permanently.

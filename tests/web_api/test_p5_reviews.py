@@ -3,6 +3,7 @@ from value_investment_agent.presentation.web_api.app import create_app
 from value_investment_agent.application.decision import value_price_policy
 import json
 import pytest
+from test_pending_candidate_supplement import registered
 
 
 def test_missing_review_routes_fail_closed_without_private_auth(tmp_path):
@@ -27,6 +28,110 @@ def test_simulated_journey_route_uses_no_private_account_and_removes_journal(tmp
     assert body['actual_account_used'] is body['strategy_validated'] is False
     assert all(body['checks'].values())
     assert not list(tmp_path.rglob('*.jsonl'))
+
+
+def _source_manual_payload(symbol='600887'):
+    return dict(confirmed_hypothetical=True, initial_cash_cny='100000', expected_candidates=[dict(
+        symbol=symbol, candidate_binding=dict(path='runtime/TEST_ONLY/candidate.json', sha256='a' * 64),
+        research_version='TEST_ONLY')], manual_fills=[dict(
+        fill=dict(transaction_id='SIMULATED-API-EXPLICIT', side='BUY', sleeve='CORE_VALUE',
+            symbol=symbol, exchange='SSE', quantity='100', price_cny='10', fees_cny='5',
+            trade_date='2026-10-23', trading_unit='100'))])
+
+
+def test_source_mode_missing_inputs_is_not_the_legacy_positive_demo(tmp_path, monkeypatch):
+    from value_investment_agent.application.portfolio import private_portfolio_service
+    monkeypatch.setattr(private_portfolio_service, 'resolve_private_root',
+        lambda *args, **kwargs: pytest.fail('public source mode must not resolve a real account'))
+    response = TestClient(create_app(root=tmp_path)).get('/api/v1/simulated-trade-journey?mode=source_bound')
+    assert response.status_code == 409 and response.headers['cache-control'] == 'no-store'
+    assert response.json()['status'] == 'SOURCE_OR_REHEARSAL_UNAVAILABLE'
+    assert response.json()['action'] == 'no_order' and 'steps' not in response.json()
+    assert not list(tmp_path.rglob('*.jsonl'))
+
+
+@pytest.mark.parametrize('mutation', [
+    'no_confirmation', 'numeric_confirmation', 'empty_fills', 'too_many_fills',
+    'actual_namespace', 'workspace', 'clock', 'approval', 'other_sleeve', 'other_symbol',
+    'sell_session', 'nonfinite_price', 'numeric_quantity', 'no_expected_identity',
+])
+def test_source_manual_api_rejects_unsupported_scope_before_service(tmp_path, monkeypatch, mutation):
+    from value_investment_agent.presentation.web_api import simulated_journey_routes as routes
+    payload = _source_manual_payload()
+    fill = payload['manual_fills'][0]['fill']
+    if mutation == 'no_confirmation':
+        payload.pop('confirmed_hypothetical')
+    elif mutation == 'numeric_confirmation':
+        payload['confirmed_hypothetical'] = 1
+    elif mutation == 'empty_fills':
+        payload['manual_fills'] = []
+    elif mutation == 'too_many_fills':
+        payload['manual_fills'] *= 5
+    elif mutation == 'actual_namespace':
+        payload['namespace'] = 'ACTUAL'
+    elif mutation == 'workspace':
+        payload['workspace_root'] = '../private'
+    elif mutation == 'clock':
+        payload['now'] = '2027-01-01T00:00:00Z'
+    elif mutation == 'approval':
+        fill['strategy_admitted'] = True
+    elif mutation == 'other_sleeve':
+        fill['sleeve'] = 'TACTICAL_HOTSPOT'
+    elif mutation == 'other_symbol':
+        fill['symbol'] = '000001'
+    elif mutation == 'sell_session':
+        fill['next_sell_session'] = '2026-10-24'
+    elif mutation == 'nonfinite_price':
+        fill['price_cny'] = 'NaN'
+    elif mutation == 'no_expected_identity':
+        payload.pop('expected_candidates')
+    else:
+        fill['quantity'] = 100
+    monkeypatch.setattr(routes, 'run_source_bound_simulated_trade_journey',
+        lambda *args, **kwargs: pytest.fail('request validation must precede the service'))
+    response = TestClient(create_app(root=tmp_path)).post('/api/v1/simulated-trade-journey', json=payload)
+    assert response.status_code == 422 and response.json()['action'] == 'no_order'
+    assert not list(tmp_path.rglob('*.jsonl'))
+
+
+def test_source_api_actual_use_case_requires_explicit_manual_request(registered, monkeypatch):
+    from value_investment_agent.presentation.web_api import simulated_journey_routes as routes
+    from value_investment_agent.application.portfolio import private_portfolio_service
+    root, symbol, _, _ = registered
+    actual = routes.run_source_bound_simulated_trade_journey
+    # The isolated registered fixture has one company; production defaults to both registered samples.
+    monkeypatch.setattr(routes, 'run_source_bound_simulated_trade_journey',
+        lambda project, now, **kwargs: actual(project, now, **dict(kwargs, symbols=[symbol])))
+    monkeypatch.setattr(private_portfolio_service, 'resolve_private_root',
+        lambda *args, **kwargs: pytest.fail('source rehearsal must not consult private root'))
+    before = {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
+    client = TestClient(create_app(root=root))
+    read = client.get('/api/v1/simulated-trade-journey?mode=source_bound')
+    assert read.status_code == 200, read.text
+    assert read.json()['manual_rehearsal']['status'] == 'NOT_REQUESTED'
+    assert before == {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
+    payload = _source_manual_payload(symbol)
+    payload['expected_candidates'] = [dict(symbol=case['symbol'],
+        candidate_binding=case['research']['candidate_binding'], research_version=case['research']['research_version'])
+        for case in read.json()['cases']]
+    rejected = client.post('/api/v1/simulated-trade-journey', json=_source_manual_payload(symbol))
+    assert rejected.status_code == 409 and rejected.json()['status'] == 'RESEARCH_VERSION_CHANGED'
+    assert not list(root.rglob('*.jsonl'))
+    response = client.post('/api/v1/simulated-trade-journey', json=payload)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert response.headers['cache-control'] == 'no-store'
+    assert body['position_guidance'] is None and body['personal_risk_evaluated'] is False
+    assert body['cases'][0]['evaluation']['eligibility'] is False
+    assert all(slot['outcome'] in {'WAIT', 'NO_ACTION'} for slot in body['cases'][0]['action_slots'])
+    manual = body['manual_rehearsal']
+    assert manual['actual_account_used'] is False
+    assert manual['restart_equal'] and manual['temporary_journal_removed']
+    assert manual['account_state']['cash_cny'] == '98995'
+    assert manual['fills'][0]['fill']['next_sell_session'] == '2026-10-26'
+    assert manual['fills'][0]['confirmation_idempotent'] is True
+    assert manual['fills'][0]['original_entry_advisory_eligible'] is False
+    assert not list(root.rglob('*.jsonl'))
 
 
 def test_value_review_route_preserves_unapproved_scope(tmp_path, monkeypatch):

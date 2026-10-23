@@ -372,6 +372,7 @@ jobs:
           tests/test_value_economic_assessment.py
           tests/test_hotspot_strategy_execution_replay.py
           tests/test_simulated_trade_journey.py
+          tests/test_hotspot_action_lineage.py
           tests/test_account_observations.py
           tests/test_dual_strategy_selection.py
           tests/test_value_candidate_selection.py
