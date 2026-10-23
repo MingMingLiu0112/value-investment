@@ -637,6 +637,66 @@ def test_daily_progress_replays_raw_pagination_before_claiming_event_coverage(tm
     assert failed["rows"] == []  # Corrupt raw cannot retain a previous full-coverage row.
 
 
+@pytest.mark.parametrize("damaged", ["raw_body", "raw_manifest"])
+def test_source_replayed_machine_report_does_not_claim_invalid_native_coverage(tmp_path, monkeypatch, damaged):
+    from datetime import timedelta
+    from test_retained_event_coverage import archive, START, END
+    from value_investment_agent.application.product.daily_event_observation import verify_retained_event_coverage
+
+    observation = archive(tmp_path, monkeypatch)
+    now = datetime.now(timezone.utc)
+    package = {"symbol": "600519", "name": "TEST_ONLY", "package_version": "TEST_ONLY",
+        "profile_id": "quality_compounder", "point_in_time": {
+            "research_as_of": START.isoformat(), "valuation_date": START.isoformat(),
+            "report_period": START.isoformat(), "available_at": "2020-01-01T00:00:00+00:00"},
+        "model_validity_input": {"model_id": "TEST_ONLY", "valid_from": START.isoformat(),
+                                 "events": [], "blockers": []}}
+    package_ref = {"path": "runtime/package.json", "sha256": _write(tmp_path / "runtime/package.json", package)}
+    supplement = {"schema_version": "incremental-validity-binding-v1", "symbol": "600519",
+        "action": "no_order", "package_ref": package_ref, "research_as_of": START.isoformat(),
+        "review_cutoff": END.isoformat(), "model_id": "TEST_ONLY", "scan_ref": observation["scan_binding"],
+        "observation_ref": {"path": "runtime/events/observation.json",
+                            "sha256": _sha(tmp_path / "runtime/events/observation.json")}}
+    ref = {"path": "runtime/supplement.json", "sha256": _write(tmp_path / "runtime/supplement.json", supplement)}
+    _write(tmp_path / "config/current-quote-bridge.json", {"schema_version": "current-quote-bridge-v1",
+        "action": "no_order", "quotes": {"600519": {"research_package": package_ref["path"],
+            "research_package_sha256": package_ref["sha256"], "incremental_validity_binding": ref}}})
+    proof = dict(symbol="600519", required_from=START, required_to=END, now=now)
+    assert verify_retained_event_coverage(tmp_path, observation, **proof)["scan_to"] == END.isoformat()
+    assert observation["full_calendar_window_elapsed"] is True
+    raw = (next((tmp_path / "runtime/events/raw-index").glob("*.bin")) if damaged == "raw_body"
+           else tmp_path / "runtime/events/raw-index-manifest.json")
+    raw.write_bytes(b"TEST_ONLY corrupted original, not a materiality decision")
+    with pytest.raises(ValueError):
+        verify_retained_event_coverage(tmp_path, observation, **proof)
+
+    # Save AFTER damage: the machine report itself is legitimate and replayable.
+    # This must reach the native-proof failure branch, not fail its saved hash.
+    output = tmp_path / "runtime/reviews/bad-native-proof.json"
+    review_registered_research_validity(root=tmp_path, review_cutoff=END, today=now,
+        output_path=output, incremental_bindings=[ref])
+    binding = {"path": output.relative_to(tmp_path).as_posix(), "sha256": _sha(output)}
+    before = output.read_bytes()
+    progress = _progress(tmp_path, binding, started_at=(now - timedelta(minutes=1)).isoformat(),
+        finished_at=now.isoformat(), now=now)
+    assert progress["status"] == "SOURCE_REPLAYED"
+    assert progress["checked_at"] == now.isoformat()
+    row = progress["rows"][0]
+    assert row["symbol"] == "600519"
+    assert row["scan_through"] == END.isoformat()
+    assert row["observed_at"] is None
+    assert row["full_calendar_window_elapsed"] is None
+    assert row["event_coverage_through"] is None
+    assert row["event_coverage_status"] == "UNCONFIRMED"
+    assert row["facts_change_status"] == "UNKNOWN"
+    assert row["model_validity_status"] == "UNKNOWN"
+    assert row["model_recalculation_required"] is None
+    assert row["formal_eligibility"] is False
+    assert progress["research_cutoff_changed"] is False
+    assert progress["action"] == "no_order"
+    assert output.read_bytes() == before
+
+
 def test_daily_machine_progress_forwards_verified_partial_observation_not_full_coverage(tmp_path, monkeypatch):
     from datetime import timedelta
     from test_incremental_validity import _partial_v2
