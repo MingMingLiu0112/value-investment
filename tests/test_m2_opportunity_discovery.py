@@ -62,7 +62,7 @@ def _reference(ref_id: str) -> EvidenceReference:
 
 def _official_payload() -> dict:
     return {
-        "parser_version": "test",
+        "parser_version": "official-security-lists-v1",
         "complete": True,
         "scope": "沪深A股测试",
         "fetched_at": "2026-09-23T08:00:00+00:00",

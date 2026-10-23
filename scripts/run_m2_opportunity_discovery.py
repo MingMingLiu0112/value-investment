@@ -34,7 +34,7 @@ from value_investment_agent.m2_opportunity_discovery import (
     discovery_receipt_from_payload,
 )
 from value_investment_agent.application.discovery.official_universe_collection import (
-    collect_official_m2_input, screening_quote_date,
+    collect_official_m2_input, screening_quote_date, verify_retained_official_input,
 )
 from value_investment_agent.application.product.value_discovery_surface import publish_value_discovery_report
 from value_investment_agent.infrastructure.screening.evidence_screen_v3 import (
@@ -160,6 +160,7 @@ def run_once(
             )
         official_path = required_inputs["official"]
         official_payload = json.loads(official_path.read_text(encoding="utf-8"))
+        verify_retained_official_input(official_payload, root=root)
         official_fetched = _payload_fetched_at(official_payload, "official")
         official_ref = _reference(
             "official", official_path, root=root,

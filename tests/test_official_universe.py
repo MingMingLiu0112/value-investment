@@ -276,9 +276,19 @@ def test_application_does_not_copy_a_retained_fallback(tmp_path, monkeypatch):
     assert not (tmp_path/'runtime/new/official-universe.json').exists()
 
 
-def test_v2_m2_receipt_session_label_does_not_restamp_fetched_time(v2_documents, tmp_path, monkeypatch):
+@pytest.mark.parametrize('damage', [None, 'source_hash', 'company_name', 'missing_raw',
+    'raw_bytes', 'pagination', 'missing_page', 'timing', 'unknown_version',
+    'null_version', 'stripped_version', 'downgraded_version', 'linked_raw'])
+def test_v2_m2_receipt_session_label_does_not_restamp_fetched_time(
+        v2_documents, tmp_path, monkeypatch, capsys, damage):
+    import sys
     from test_m2_opportunity_discovery import RUN_M2, _tencent_payload, _sina_payload, _dividend_payload
     from value_investment_agent.m2_opportunity_discovery import EvidenceReference
+    for document in v2_documents:
+        path = tmp_path/'runtime/raw'/document['label']
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(document['raw'])
+        document['local_path'] = str(path)
     payload = _replay_v2(v2_documents)
     class Clock(datetime):
         @classmethod
@@ -311,12 +321,94 @@ def test_v2_m2_receipt_session_label_does_not_restamp_fetched_time(v2_documents,
     ref = next(ref for ref in receipt['evidence_refs'] if ref['id'] == 'official')
     assert ref['fetched_at'] == payload['fetched_at']
     assert summary['replay']['raw_inputs_match'] is True
+    original_receipt = (output/'receipt.json').read_bytes()
+    retained = json.loads((output/'official-universe.json').read_bytes())
+    if damage == 'source_hash':
+        retained['sources'][0]['sha256'] = '0'*64
+    elif damage == 'company_name':
+        retained['records'][0]['name'] = 'TEST_ONLY_TAMPERED'
+    elif damage == 'missing_raw':
+        Path(retained['sources'][0]['local_path']).unlink()
+    elif damage == 'raw_bytes':
+        Path(retained['sources'][-1]['local_path']).write_bytes(b'TAMPERED')
+    elif damage == 'pagination':
+        source = retained['sources'][-1]
+        path = Path(source['local_path'])
+        page = json.loads(path.read_bytes())
+        page[0]['totalPages'] = 3
+        raw = json.dumps(page).encode()
+        path.write_bytes(raw)
+        source['sha256'] = sha256(raw).hexdigest()
+    elif damage == 'missing_page':
+        retained['sources'].pop()
+    elif damage == 'timing':
+        retained['collection_timing']['fetched_at'] = SATURDAY.isoformat()
+    elif damage == 'unknown_version':
+        retained['parser_version'] = 'official-security-lists-v999'
+    elif damage == 'null_version':
+        retained['parser_version'] = None
+    elif damage == 'stripped_version':
+        del retained['parser_version']
+    elif damage == 'downgraded_version':
+        retained['parser_version'] = 'official-security-lists-v1'
+    elif damage == 'linked_raw':
+        target = Path(retained['sources'][0]['local_path'])
+        link = target.with_suffix('.link')
+        try:
+            link.symlink_to(target)
+        except OSError:
+            pytest.skip('Host does not permit symlink creation')
+        retained['sources'][0]['local_path'] = str(link)
+    # Re-serialize the JSON: recalculating its hash must not replace raw verification.
+    (output/'official-universe.json').write_bytes(RUN_M2._json_bytes(retained))
+    def no_network(*args, **kwargs):
+        pytest.fail('Retained CLI replay must not collect data')
+    for name in ('_collect_official', 'fetch_tencent_board_rank',
+                 'fetch_sina_industry_quotes', 'fetch_eastmoney_dividends'):
+        monkeypatch.setattr(RUN_M2, name, no_network)
+    monkeypatch.setattr(RUN_M2, 'ROOT', tmp_path)
+    monkeypatch.setattr(sys, 'argv', ['run_m2_opportunity_discovery.py', '--reuse-inputs',
+        '--output-dir', str(output), '--no-wps', '--no-workbook'])
+    if damage:
+        with pytest.raises(ValueError):
+            RUN_M2.main()
+        assert (output/'receipt.json').read_bytes() == original_receipt
+    else:
+        assert RUN_M2.main() == 0
+        replay = json.loads(capsys.readouterr().out)
+        assert replay['generated_at'] == summary['generated_at']
+        assert replay['quote_date'] == '2026-10-23'
+        assert replay['rule_version'] == summary['rule_version']
+        assert replay['replay']['raw_inputs_match'] is True
+        assert replay['quote_date_verification'] == 'UNVERIFIED_PROVIDER_TRADE_DATE'
+
+
+@pytest.mark.parametrize('version', ['official-security-lists-v999', 'test', None, 2, ''])
+def test_quote_date_rejects_unknown_declared_versions(version):
+    with pytest.raises(ValueError, match='Unsupported'):
+        screening_quote_date({'parser_version': version}, SATURDAY)
+
+
+def test_unversioned_legacy_requires_explicit_complete_shape(v2_documents):
+    legacy = _replay_v2(v2_documents)
+    for key in ('parser_version', 'collection_timing', 'available_at', 'effective_session'):
+        del legacy[key]
+    assert screening_quote_date(legacy, SATURDAY, retained_quote_date='2026-09-23') == '2026-09-23'
+    del legacy['sources']
+    with pytest.raises(ValueError, match='unversioned'):
+        screening_quote_date(legacy, SATURDAY)
 
 
 @pytest.mark.skipif(not __import__('os').environ.get('OFFICIAL_LIST_REPLAY_ROOT'),
     reason='Explicit retained public list root not supplied')
-def test_v2_readonly_reparse_of_retained_official_bytes():
+@pytest.mark.parametrize('damage', [None, 'source_hash', 'company_name'])
+def test_v2_readonly_reparse_of_retained_official_bytes(tmp_path, monkeypatch, damage):
     import os
+    import sys
+    from test_m2_opportunity_discovery import RUN_M2
+    from value_investment_agent.application.discovery.official_universe_collection import (
+        verify_retained_official_input,
+    )
     root = Path(os.environ['OFFICIAL_LIST_REPLAY_ROOT'])
     # Explicit sealed input; no mtime selection, copying, collection or restamp.
     path = root/'runtime/daily-marketwide/20261023T1229185986655Z/official-universe.json'
@@ -338,4 +430,30 @@ def test_v2_readonly_reparse_of_retained_official_bytes():
     assert rebuilt['exchange_counts'] == {'BSE':353,'SSE':2318,'SZSE':2906}
     assert rebuilt['effective_session'] == '2026-10-23'
     assert completed_list_session(SATURDAY).isoformat() == rebuilt['effective_session']
+    verify_retained_official_input(rebuilt, root=root)
+    if damage is not None:
+        # TEST_ONLY V2 reconstruction of explicit old bytes, not a new collection.
+        # Exercise the real --reuse-inputs CLI before any output/reference writes.
+        output = tmp_path/'historical-cli-negative'
+        output.mkdir()
+        for name in ('receipt.json', 'tencent-market.json', 'sina-industry-quotes.json',
+                     'eastmoney-dividends.json', 'retained-financial-points.json'):
+            (output/name).write_bytes((path.parent/name).read_bytes())
+        if damage == 'source_hash':
+            rebuilt['sources'][0]['sha256'] = '0'*64
+        else:
+            rebuilt['records'][0]['name'] = 'TEST_ONLY_TAMPERED'
+        (output/'official-universe.json').write_bytes(RUN_M2._json_bytes(rebuilt))
+        before = {p.name: p.read_bytes() for p in output.iterdir()}
+        def no_network(*args, **kwargs):
+            pytest.fail('Retained actual-source CLI must not collect data')
+        for name in ('_collect_official', 'fetch_tencent_board_rank',
+                     'fetch_sina_industry_quotes', 'fetch_eastmoney_dividends'):
+            monkeypatch.setattr(RUN_M2, name, no_network)
+        monkeypatch.setattr(RUN_M2, 'ROOT', root)
+        monkeypatch.setattr(sys, 'argv', ['run_m2_opportunity_discovery.py', '--reuse-inputs',
+            '--output-dir', str(output), '--no-wps', '--no-workbook'])
+        with pytest.raises(ValueError, match='raw hash mismatch|differs from raw replay'):
+            RUN_M2.main()
+        assert {p.name: p.read_bytes() for p in output.iterdir()} == before
     assert path.read_bytes() == original

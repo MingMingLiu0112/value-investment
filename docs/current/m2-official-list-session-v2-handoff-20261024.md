@@ -119,3 +119,59 @@ all sources/hash/page checks pass; no quote/PIT/admission authority.
 Then main can run the existing M2 CLI in a separate fresh output directory using
 its existing --no-wps --no-workbook contract. Actual full refresh, independent
 review, integration and publication remain main-owned acceptance.
+
+## Incremental Independent-Review Corrections (2026-10-24)
+
+Parent of this correction: `1df7e193e9d07fe65397e79ef1b733783c49f833`.
+Both reported P2 paths now fail closed:
+
+1. The existing `--reuse-inputs` CLI calls
+   `verify_retained_official_input(payload, root=root)` BEFORE recomputing its JSON
+   reference or writing a replay receipt. For V2 it reads every bound raw file,
+   rejects missing/out-of-root/linked/oversized files, and calls the existing
+   `replay_official_documents` with the ORIGINAL start/available times. The entire
+   rebuilt payload must equal the retained payload: records, source SHA bindings,
+   complete pagination, counts, calendar and timing envelope. Hashing the retained
+   JSON alone is no longer treated as raw verification.
+2. Version dispatch explicitly supports `official-security-lists-v1` and
+   `official-security-lists-v2-session-date`. Unversioned compatibility requires
+   exactly the full original legacy envelope (nonempty records/sources, fetched_at,
+   count maps, scope, complete=true), without V2 fields. Unknown/null/test versions,
+   stripped-version V2 and V2 envelopes relabelled V1 reject. The shared TEST_ONLY
+   legacy fixture now declares the actual V1 parser version instead of `test`;
+   no historical retained source or frozen file was rewritten.
+
+The V1 route keeps its previous date/replay semantics and receives no new V2 raw
+verification claim. This raw replay is integrity/consistency validation, not a
+signature, historical HTTP-clock attestation, verified quote date or admission.
+
+Focused verification (PowerShell7, UTF-8; Python3.13; PYTHONPATH=src;tests;
+TEMP/TMP/TMPDIR=cp1/.tmp; OFFICIAL_LIST_REPLAY_ROOT=explicit dual1 public root):
+```text
+python -m pytest tests/test_official_universe.py
+ tests/test_m2_cli_versioned_integration.py tests/test_m2_opportunity_discovery.py
+ tests/test_exchange_calendar.py tests/test_architecture_boundaries.py
+ tests/test_architecture_migration_agent_runtime.py
+ -q -p no:cacheprovider --basetemp=.tmp/calfix2
+```
+Result: **134 passed, 1 skipped**, three original SZSE workbook style warnings.
+The sole skip is the linked-path negative because this Windows host disallows
+symlink creation; this specific host case is not claimed exercised here.
+
+Actual CLI negatives cover source hash, company projection, missing/changed raw,
+rehashed inconsistent BSE pagination, missing page, timing projection, unknown/null
+version, stripped V2 version and V1 downgrade. A valid V2 CLI replay retains its
+original generated_at, Friday session, unverified quote status and screening rule.
+The explicit sealed 5577-company source (official JSON SHA-256
+`f500d22bd3ad16f3a139950608b4f0e21cd391f7682b62ed395a56b5011dc98b`)
+was reparsed read-only and its V2 reconstruction verified. Two CLI negatives use
+only TEST_ONLY .tmp JSON copies of that reconstruction (zero original SHA / changed
+company name), with actual source files still read-only. Both reject before writes;
+temporary input/receipt bytes are unchanged. These reconstructions are NOT a new
+collection and are never registered as one.
+
+`git diff --check` passes. All nine frozen manifest SHA-256s match. Legacy collector,
+existing exchange calendar, M2 engine and evidence-screen-v3 have no diff from
+`248ee135`. No HTTP, full Core, main integration, deployment, public push or live
+refresh performed in this correction. Independent re-review and actual HTTP remain
+main-owned. `action=no_order`.
