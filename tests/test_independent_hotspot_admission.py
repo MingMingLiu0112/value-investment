@@ -169,6 +169,89 @@ def test_missing_server_registry_is_observation_only(tmp_path):
     assert all("VALUE" not in blocker and "G3" not in blocker for blocker in result["blockers"])
 
 
+def actual_sources(release, raw_updates=None, typed_updates=None, *, omit_typed=False):
+    root, payload, trust, publish = release
+    payload['namespace'] = 'ACTUAL'
+    raw_document = dict(namespace='ACTUAL', action='no_order',
+        available_at=(NOW-timedelta(hours=2)).isoformat())
+    raw_document.update(raw_updates or {})
+    raw = canonical_payload(raw_document)
+    (root/'source.json').write_bytes(raw)
+    raw_binding = dict(path='source.json', sha256=hashlib.sha256(raw).hexdigest())
+    for binding in payload['gates']:
+        path = root/binding['path']
+        gate = json.loads(path.read_bytes())
+        gate['namespace'] = 'ACTUAL'
+        source = dict(**raw_binding, namespace='ACTUAL', available_at=(NOW-timedelta(hours=2)).isoformat())
+        typed = dict(schema_version='independent-hotspot-source-evidence-v1', action='no_order',
+            namespace='ACTUAL', symbol=payload['symbol'], rule_version=payload['rule_version'],
+            gate=gate['gate'], status='PASS', available_at=(NOW-timedelta(hours=1)).isoformat(),
+            expires_at=gate['expires_at'], evidence_bindings=[raw_binding])
+        if gate['gate'] == 'strategy_validation':
+            typed.update(strict_pit_admitted=True, strict_oos_admitted=True,
+                         actual_sample_accepted=True, strategy_validation='PASSED')
+            typed.update(typed_updates or {})
+        typed_name = 'typed-' + gate['gate'] + '.json'
+        typed_raw = canonical_payload(typed)
+        (root/typed_name).write_bytes(typed_raw)
+        gate['source_bindings'] = [source] if omit_typed else [source, dict(path=typed_name,
+            sha256=hashlib.sha256(typed_raw).hexdigest(), namespace='ACTUAL', available_at=typed['available_at'])]
+        updated = canonical_payload(gate)
+        path.write_bytes(updated)
+        binding['sha256'] = hashlib.sha256(updated).hexdigest()
+    publish()
+    pin_test_trust_root(trust)
+    return root
+
+
+def test_typed_actual_claims_cannot_replace_machine_validated_strategy(release):
+    root = actual_sources(release)
+    with pytest.raises(ValueError, match='machine-replayable'):
+        load_independent_admission(root, symbol='000333', now=NOW)
+
+
+@pytest.mark.parametrize('updates', [
+    {'elapsed_real_shadow_sessions': 0}, {'elapsed_real_shadow_sessions': 19},
+    {'elapsed_real_shadow_sessions': 20, 'strategy': 'OTHER_STRATEGY'},
+    {'elapsed_real_shadow_sessions': 20, 'sessions': ['2026-10-01'] * 20},
+    {'metrics_scope': 'FROZEN_ORDER_EXECUTION_SIMULATION'},
+])
+def test_signed_counts_and_execution_summaries_cannot_replace_proof(release, updates):
+    root = actual_sources(release, typed_updates=updates)
+    with pytest.raises(ValueError, match='machine-replayable'):
+        load_independent_admission(root, symbol='000333', now=NOW)
+
+
+@pytest.mark.parametrize('updates', [
+    {'strategy_validation': 'NOT_PROVEN'}, {'strict_pit_admitted': False},
+    {'strict_oos_admitted': False}, {'actual_sample_accepted': False},
+    {'generated_at': '2099-01-01T00:00:00+00:00'},
+    {'available_at': '2099-01-01T00:00:00+00:00'},
+])
+def test_signature_cannot_override_negative_or_future_underlying_evidence(release, updates):
+    # Both the source hashes and outer release signature remain valid.
+    root = actual_sources(release, updates)
+    with pytest.raises(ValueError, match='Source internal availability|contradicts strategy'):
+        load_independent_admission(root, symbol='000333', now=NOW)
+
+
+@pytest.mark.parametrize('updates', [
+    {'symbol': '600519'}, {'rule_version': 'wrong-rule'}, {'gate': 'trend'},
+    {'status': 'UNKNOWN'}, {'evidence_bindings': []},
+    {'strict_pit_admitted': 1}, {'actual_sample_accepted': False},
+])
+def test_wrong_or_incomplete_typed_gate_evidence_cannot_be_signed_through(release, updates):
+    root = actual_sources(release, typed_updates=updates)
+    with pytest.raises(ValueError):
+        load_independent_admission(root, symbol='000333', now=NOW)
+
+
+def test_actual_gate_pass_rejects_untyped_generic_json(release):
+    root = actual_sources(release, omit_typed=True)
+    with pytest.raises(ValueError, match='requires typed applicable'):
+        load_independent_admission(root, symbol='000333', now=NOW)
+
+
 @pytest.mark.parametrize("variant", ["array", "wrapped", "missing_namespace", "wrong_namespace", "future_source"])
 def test_actual_release_rejects_test_or_incomplete_source_provenance(release, variant):
     root, payload, trust, publish = release
