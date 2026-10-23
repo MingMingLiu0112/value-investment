@@ -23,6 +23,8 @@ def _write(root, name, value):
 def _fixture(root, count=8, zero_turnover=False):
     case = capture(root)
     symbols = ["600519", *[f"300{i:03}" for i in range(1, count)]]
+    source_url = "https://qt.gtimg.cn/q=" + ",".join(
+        ("sh" if symbol.startswith("6") else "sz") + symbol for symbol in symbols)
     raw, rows = [], []
     at = NOW.isoformat()
     for i, symbol in enumerate(symbols):
@@ -37,13 +39,18 @@ def _fixture(root, count=8, zero_turnover=False):
             amount_cny=str(Decimal(amount)*10000), trade_date="2026-09-24",
             status="DATED_COMPLETED_QUOTE", available_at=at,
             classification_available_at=at, classification_effective_date=None,
-            source_url="https://qt.gtimg.cn/q=sh600519"))
+            source_url=source_url))
     quote = _write(root, "runtime/selection/quotes.txt", "".join(raw).encode("gb18030"))
     for row in rows:
         row["sha256"] = quote["sha256"]
     classification = _write(root, "runtime/selection/classification.json",
         dict(fetched_at=at, rows=[dict(code=row["symbol"], name=row["symbol"],
                                       **{"class": row["industry"]}) for row in rows]))
+    # Collection retains suspended originals as failures, not successful quotes.
+    failures = [dict(symbol=row["symbol"], reason="Invalid or suspended quote")
+                for row in rows] if zero_turnover else []
+    if zero_turnover:
+        rows = []
     close = case["current_reference_close"]
     calendar = dict(path=close["bundle_path"], sha256=close["bundle_sha256"])
     ranking = rank_daily_candidates(rows, trade_date="2026-09-24", limit=5,
@@ -52,8 +59,9 @@ def _fixture(root, count=8, zero_turnover=False):
         trade_date="2026-09-24", available_at=at, limit=5, rows=rows, ranking=ranking,
         observation_list=ranking["candidates"], candidate_pool=ranking["candidate_pool"],
         candidate_pool_limit=max(5, count), hotspot_watch_queue=ranking["candidate_pool"],
+        failures=failures,
         source_bindings=[dict(classification, available_at=at), dict(calendar, available_at=at),
-                         dict(quote, available_at=at, source_url=rows[0]["source_url"])])
+                         dict(quote, available_at=at, source_url=source_url)])
     watch = _write(root, "runtime/selection/report.json", report)
     binding = dict(path=case["case_path"], sha256=case["case_sha256"])
     _write(root, "config/current-price-conditions.json",
@@ -135,6 +143,85 @@ def test_changed_market_provenance_never_selects(tmp_path, kind):
     assert result["status"] == "UNASSESSABLE" and result["items"] == []
 
 
+@pytest.mark.parametrize("damage", ["trim_rows", "empty_rows", "missing_pool", "null_pool"])
+def test_rebound_report_cannot_hide_valid_original_quotes_or_downgrade_v3(tmp_path, damage):
+    watch, _, report, _ = _fixture(tmp_path)
+    originals = {b["path"]: (tmp_path / b["path"]).read_bytes() for b in report["source_bindings"]}
+    if damage == "trim_rows":
+        report["rows"] = report["rows"][:1]
+    elif damage == "empty_rows":
+        report["rows"] = []
+    # Use the default limit so a missing pool cannot fail merely on limit drift.
+    report["candidate_pool_limit"] = 10
+    ranking = rank_daily_candidates(report["rows"], trade_date=report["trade_date"],
+                                    limit=report["limit"], candidate_pool_limit=10)
+    report.update(ranking=ranking, observation_list=ranking["candidates"],
+                  candidate_pool=ranking["candidate_pool"], hotspot_watch_queue=ranking["candidate_pool"])
+    if damage in {"missing_pool", "null_pool"}:
+        report["hotspot_watch_queue"] = report["observation_list"]
+        if damage == "missing_pool":
+            del report["candidate_pool"]
+        else:
+            report["candidate_pool"] = None
+    watch = _write(tmp_path, watch["path"], report)
+    result = module.select_current_hotspot_candidates(root=tmp_path, now=NOW,
+        watch_binding=watch, case_bindings={})
+    assert result["status"] == "UNASSESSABLE", result
+    assert result["data_status"] == "INVALID"
+    assert result["items"] == result["shortlist"] == []
+    assert "HOTSPOT_SELECTION_SOURCE_INVALID" in result["blockers"]
+    assert all((tmp_path / name).read_bytes() == raw for name, raw in originals.items())
+
+
+@pytest.mark.parametrize("version", ["v1", "v2"])
+@pytest.mark.parametrize("damage", [None, "trim_rows", "empty_rows"])
+def test_explicit_legacy_version_keeps_scope_but_cannot_omit_originals(tmp_path, version, damage):
+    watch, _, report, _ = _fixture(tmp_path)
+    if damage == "trim_rows":
+        report["rows"] = report["rows"][:1]
+    elif damage == "empty_rows":
+        report["rows"] = []
+    ranking = rank_daily_candidates(report["rows"], trade_date=report["trade_date"], limit=report["limit"])
+    ranking["rule_version"] = "hotspot-dated-sector-liquidity-ranking-" + version
+    for key in ("candidate_pool", "candidate_pool_limit", "candidate_pool_rule"):
+        ranking.pop(key)
+        report.pop(key, None)
+    if version == "v1":
+        for item in ranking["candidates"]:
+            for key in ("activity_tier", "activity_reason", "structure_tier", "structure_reason"):
+                item.pop(key)
+    report.update(ranking=ranking, observation_list=ranking["candidates"], hotspot_watch_queue=ranking["candidates"])
+    watch = _write(tmp_path, watch["path"], report)
+    before = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
+    result = module.select_current_hotspot_candidates(root=tmp_path, now=NOW,
+        watch_binding=watch, case_bindings={})
+    if damage is None:
+        assert result["status"] == "RESEARCH_SELECTION_REPLAYED", result
+        assert result["activity_rule_version"] == ranking["rule_version"]
+        assert result["coverage"]["candidate_pool"] == 5
+    else:
+        assert result["status"] == "UNASSESSABLE", result
+        assert "valid original quotes" in result["diagnostic"]
+    assert result["action"] == "no_order" and result["formal_eligibility"] is False
+    assert before == {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
+
+
+@pytest.mark.parametrize("version", [None, "hotspot-dated-sector-liquidity-ranking-v0"])
+def test_legacy_fallback_requires_an_explicit_supported_version(tmp_path, version):
+    watch, _, report, _ = _fixture(tmp_path)
+    report.pop("candidate_pool")
+    report["hotspot_watch_queue"] = report["observation_list"]
+    if version is None:
+        report["ranking"].pop("rule_version")
+    else:
+        report["ranking"]["rule_version"] = version
+    watch = _write(tmp_path, watch["path"], report)
+    result = module.select_current_hotspot_candidates(root=tmp_path, now=NOW,
+        watch_binding=watch, case_bindings={})
+    assert result["status"] == "UNASSESSABLE"
+    assert "Unsupported daily ranking rule version" in result["diagnostic"]
+
+
 @pytest.mark.parametrize("kind", ["hash", "wrong_symbol", "date", "uncompleted", "future"])
 def test_bad_structure_is_unknown_not_structural_exclusion(tmp_path, kind):
     watch, binding, _, case = _fixture(tmp_path)
@@ -206,7 +293,8 @@ def test_verified_zero_candidate_pool_is_legal(tmp_path):
     assert result["status"] == "RESEARCH_SELECTION_REPLAYED", result
     assert result["coverage"]["candidate_pool"] == 0
     assert result["items"] == result["shortlist"] == []
-    assert len(result["activity_exclusions"]) == 8
+    assert result["activity_exclusions"] == []
+    assert len(result["data_failures"]) == 8
 
 
 @pytest.mark.parametrize("tier,status", [

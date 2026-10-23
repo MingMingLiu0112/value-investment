@@ -2,13 +2,13 @@
 from datetime import datetime, timezone
 import hashlib
 import json
-import re
-from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
 
-from ...domain.hotspot.daily_selection import rank_daily_candidates
-from ...infrastructure.hotspot.daily_market import collect_dated_market
+from ...domain.hotspot.daily_selection import rank_daily_candidates, RULE_VERSION
+from ...infrastructure.hotspot.daily_market import (
+    collect_dated_market, parse_dated_market, requested_quote_symbols,
+)
 from ...m2_market_data import fetch_sina_industry_quotes, parse_sina_industry
 from ...quote_session_collection import collect_session_bundle
 from ...quote_sessions import parse_quote, evaluate_quote_session
@@ -95,6 +95,16 @@ def verify_daily_selection(root: Path, report: dict) -> None:
     if report.get("action") != "no_order" or report.get("schema_version") != "hotspot-daily-selection-v1":
         raise ValueError("Invalid daily selection contract")
     candidate_pool = report.get("candidate_pool")
+    reported_version = report["ranking"].get("rule_version")
+    legacy_versions = {"hotspot-dated-sector-liquidity-ranking-v1",
+                       "hotspot-dated-sector-liquidity-ranking-v2"}
+    if reported_version not in legacy_versions | {RULE_VERSION}:
+        raise ValueError("Unsupported daily ranking rule version")
+    if reported_version == RULE_VERSION:
+        if not isinstance(candidate_pool, list):
+            raise ValueError("Daily v3 candidate_pool is required")
+        if type(report.get("candidate_pool_limit")) is not int:
+            raise ValueError("Daily candidate-pool limit must be explicit for v3")
     replay = rank_daily_candidates(
         report["rows"], trade_date=report["trade_date"], limit=report["limit"],
         candidate_pool_limit=(
@@ -103,11 +113,7 @@ def verify_daily_selection(root: Path, report: dict) -> None:
             else None
         ),
     )
-    reported_version = report["ranking"].get("rule_version")
-    if reported_version in {
-        "hotspot-dated-sector-liquidity-ranking-v1",
-        "hotspot-dated-sector-liquidity-ranking-v2",
-    }:
+    if reported_version in legacy_versions:
         replay["rule_version"] = reported_version
         # Candidate-pool fields were introduced in v3. Legacy reports remain
         # replayable without rewriting their historical ranking object.
@@ -133,23 +139,33 @@ def verify_daily_selection(root: Path, report: dict) -> None:
             raise ValueError("Daily selection original changed")
     classification = json.loads((root / report["source_bindings"][0]["path"]).read_bytes())
     index = {r["symbol"]: r for r in parse_sina_industry(classification)}
-    quote_bindings = {binding["sha256"]: binding for binding in report["source_bindings"][2:]}
     originals = {}
-    for digest, binding in quote_bindings.items():
-        text = (root / binding["path"]).read_bytes().decode("gb18030")
-        originals[digest] = {match[1][2:]: match[2].split("~")
-            for match in re.finditer(r'v_((?:sh|sz)\d{6})="([^"\r\n]*)";', text)}
+    for binding in report["source_bindings"][2:]:
+        symbols = requested_quote_symbols(binding["source_url"])
+        if not set(symbols).issubset(index):
+            raise ValueError("Daily quote request outside classification")
+        available_at = datetime.fromisoformat(binding["available_at"])
+        if available_at.utcoffset() is None:
+            raise ValueError("Daily quote acquisition requires a timezone")
+        raw = (root / binding["path"]).read_bytes()
+        try:
+            quotes, _ = parse_dated_market(raw, symbols=symbols,
+                available_at=available_at, source_url=binding["source_url"])
+        except ValueError:
+            # The collector retains malformed batches as failures, without rows.
+            quotes = []
+        for quote in quotes:
+            if quote["symbol"] in originals:
+                raise ValueError("Duplicate daily quote original")
+            originals[quote["symbol"]] = quote
+    if {row["symbol"] for row in report["rows"]} != set(originals):
+        raise ValueError("Daily rows omit or add valid original quotes")
     for row in report["rows"]:
-        fields = originals[row["sha256"]][row["symbol"]]
-        source = quote_bindings[row["sha256"]]
-        close, previous = Decimal(fields[3]), Decimal(fields[4])
-        trade_at = datetime.strptime(fields[30], "%Y%m%d%H%M%S")
-        if (row["company_name"] != fields[1] or row["close"] != str(close)
-                or row["change_percent"] != str((close / previous - 1) * 100)
-                or row["amount_cny"] != str(Decimal(fields[37]) * 10000)
-                or row["trade_date"] != trade_at.date().isoformat()
+        quote = originals[row["symbol"]]
+        if (any(row[key] != quote[key] for key in (
+                "company_name", "close", "change_percent", "amount_cny", "trade_date",
+                "available_at", "source_url", "sha256", "status"))
+                or ("quote_at" in row and row["quote_at"] != quote["quote_at"])
                 or row["industry"] != index[row["symbol"]]["industry"]
-                or row["available_at"] != source["available_at"]
-                or row["source_url"] != source["source_url"]
                 or row["classification_available_at"] != classification["fetched_at"]):
             raise ValueError("Daily facts differ from original evidence")

@@ -39,6 +39,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--independent-audit', action='store_true',
         help='Audit current independent strategy evidence without creating a release; exit 2 if not admitted.')
+    parser.add_argument('--selection-history-spec', type=Path,
+        help='Replay bound daily snapshots; exit 0 means complete replay, never strategy admission.')
+    parser.add_argument('--selection-history-sha256', type=_sha256)
     parser.add_argument("--selection-report", type=Path)
     parser.add_argument("--selection-report-sha256", type=_sha256)
     parser.add_argument(
@@ -52,6 +55,26 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--evaluated-at", type=_timestamp)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args(argv)
+    if args.selection_history_spec is not None:
+        if (args.independent_audit or not args.selection_history_sha256 or args.selection_report
+                or args.selection_report_sha256 or args.historical_case or args.incomplete_live_directory
+                or args.incomplete_live_reason
+                or args.current_price_conditions != Path('config/current-price-conditions.json')):
+            parser.error('history replay requires an exact specification hash and excludes other modes')
+        from value_investment_agent.application.hotspot.selection_history import replay_selection_history
+        from value_investment_agent.application.hotspot.event_replay import _bound_bytes
+        from value_investment_agent.application.product.common import require_inside, write_new_json, sha256_file
+        source = dict(path=args.selection_history_spec.as_posix(), sha256=args.selection_history_sha256)
+        specification = json.loads(_bound_bytes(ROOT, source))
+        output = require_inside(ROOT / 'runtime', ROOT / args.output_dir, 'history output') / 'selection-history.json'
+        report = replay_selection_history(root=ROOT, specification=specification,
+            now=args.evaluated_at or datetime.now(timezone.utc))
+        write_new_json(output, report)
+        print(json.dumps(dict(report=str(output.relative_to(ROOT)), sha256=sha256_file(output),
+            status=report['status'], strategy_validation=report['strategy_validation'], action='no_order')))
+        return 0 if report['status'] == 'REPLAYED' else 2
+    if args.selection_history_sha256:
+        parser.error('--selection-history-sha256 requires --selection-history-spec')
     if args.independent_audit:
         if (args.selection_report or args.selection_report_sha256 or args.historical_case
                 or args.incomplete_live_directory or args.incomplete_live_reason
