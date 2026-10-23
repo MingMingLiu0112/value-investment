@@ -133,7 +133,7 @@ def test_replay_change_while_preparing_materials_removes_commands(registered, mo
 
 
 @pytest.mark.parametrize('state', ['matching', 'mismatch', 'rejected-policy'])
-def test_replay_keeps_applicable_current_policy_basis_checks(registered, monkeypatch, state):
+def test_unsigned_replay_does_not_import_old_public_price_policy(registered, monkeypatch, state):
     root, old, result, _ = registered
     preview = wizard.preview_pending_review_response(root=root,
         candidate_path=root / result['candidate_binding']['path'],
@@ -152,14 +152,19 @@ def test_replay_keeps_applicable_current_policy_basis_checks(registered, monkeyp
             model_review={'scope': 'CURRENT_POLICY_REVIEW_NOT_REPLAY_MATERIALS'})
 
     monkeypatch.setattr(value_price_policy, 'load_value_policy_review', current_policy)
-    if state == 'matching':
-        actual = handoff(registered)
-        assert actual['status'] == 'EXTERNAL_SIGNATURE_REQUIRED'
-        assert actual['public_research_materials']['consumed_operating_inputs']
-    else:
-        with pytest.raises(ValueError, match='current valuation|Current research changed'):
-            handoff(registered)
-    assert calls == [(root, old['symbol'])]
+    before = {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
+    actual = handoff(registered)
+    assert actual['status'] == 'EXTERNAL_SIGNATURE_REQUIRED'
+    assert actual['public_research_materials']['consumed_operating_inputs']
+    assert actual['candidate_binding'] == result['candidate_binding']
+    assert actual['valuation_artifact_sha256'] == expected_hash
+    assert actual['current_public_price_policy_changed'] is False
+    assert actual['verification']['approval_changed'] is actual['verification']['research_admitted'] is False
+    assert actual['unsigned_response']['whole_model_approval'] is None
+    assert all(group['response'] is None for group in actual['unsigned_response']['groups'])
+    assert actual['position_guidance'] is None
+    assert calls == []
+    assert all(p.read_bytes() == raw for p, raw in before.items())
 
 
 def test_replay_does_not_mint_reviewer_authority_when_roots_are_pinned(registered, monkeypatch):
