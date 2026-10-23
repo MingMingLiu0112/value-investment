@@ -2514,3 +2514,30 @@ economic assumption. Historical arithmetic, finite dividend-policy intentions
 and scenario calculations do not resolve that question. A bounded source-backed
 joint assessment is continuing; no candidate, reviewer or approval is invented.
 No private records, canonical workbook, production environment or orders changed.
+
+### 2026-10-23 - Daily UI and swing comparability integration
+
+Daily backend checkpoint 9da379a7 and frontend c4fe345b now distinguish the
+immutable research baseline, actual machine-check time, raw official event-window
+coverage and quote date. Producer COVERS/INCREMENTALLY_COVERS states are consumed
+explicitly; neither coverage nor command completion grants economic approval.
+Additional governance/API regression: 49 passed. Final UI/whole-Core/release
+results will be recorded from their actual execution, not assumed here.
+
+Sibling delivery cca1ef97 is integrated as 1296c8ff. Its lifecycle v2 contract
+withholds observed actions on UNKNOWN/INCOMPARABLE price basis while retaining
+unadjusted structural observations and the original protection/breach record.
+The current retained-distribution adapter cannot prove complete corporate-action
+coverage or emit CONFIRMED. The hypothetical complete-coverage branch is tested
+with explicit synthetic data, not approved real positions. Existing frozen
+source paths and strategy thresholds are unchanged. The new comparability test
+is added to the existing offline Core selection.
+
+Main independent review: 78 focused tests passed; the sibling's exact clean
+checkout receipt verifies 684 passed / 24 skipped. Ten retained-source output
+hashes and 86 source-binding checks matched. Three companies' known ex-date
+windows are incomparable; their recent windows remain UNKNOWN. Two public
+reference pairs are not owned Entries or independent OOS. No newly confirmed
+P1/P2 was found in that bounded review; strategy effectiveness is NOT_PROVEN.
+The sibling continues a bounded source-coverage package; shared lifecycle/Web
+consumers remain the main chat's responsibility. No live release is asserted.
