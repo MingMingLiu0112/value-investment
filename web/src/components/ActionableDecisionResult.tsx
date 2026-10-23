@@ -1,6 +1,8 @@
 import { blockerText } from "../utils/packet";
 import { planConditionText } from "../utils/currentJudgment";
 import type { PlanCondition } from "../types/api";
+import { OwnedHotspotEntryReview } from "./OwnedHotspotEntryReview";
+import type { OwnedHotspotLifecycle } from "./OwnedHotspotEntryReview";
 
 export interface ConditionalAccountDecision {
   action: "no_order";
@@ -17,6 +19,8 @@ export interface ConditionalAccountDecision {
   sellable_quantity?: string | number | null;
   entry_thesis_record_sha256?: string | null;
   original_thesis?: string | null;
+  owned_hotspot_lifecycle?: OwnedHotspotLifecycle | null;
+  advisory?: { review_basis?: string };
   consistency_status?: string | null;
   entry_consistency_status?: string | null;
   data_trade_date?: string | null;
@@ -99,7 +103,10 @@ export function ActionableDecisionResult({
   )
     return <p role="alert">动作与风险结果不一致，不提供可操作股数。</p>;
   return (
-    <section aria-label="账户条件性行动结论">
+    <section
+      aria-label="账户条件性行动结论"
+      style={{ minWidth: 0, maxWidth: "100%", overflowWrap: "anywhere" }}
+    >
       <h3>
         {decision.decision_action === "BUY"
           ? "条件性新建仓复核"
@@ -179,6 +186,17 @@ export function ActionableDecisionResult({
       {decision.original_thesis && (
         <p>原始买入逻辑：{decision.original_thesis}</p>
       )}
+      <OwnedHotspotEntryReview
+        material={decision.owned_hotspot_lifecycle}
+        symbol={decision.symbol}
+        strategy={decision.strategy}
+        ownershipVerified={decision.ownership_verified}
+        currentTradeDate={decision.data_trade_date}
+        thesisExit={
+          decision.decision_action === "EXIT" &&
+          decision.advisory?.review_basis === "VERIFIED_THESIS_BREAKER"
+        }
+      />
       {decision.entry_consistency_status && (
         <p>
           买入绑定时的一致性：
