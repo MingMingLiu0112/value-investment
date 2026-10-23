@@ -17,6 +17,95 @@ from ...valuation_models.residual_income import (
     ResidualIncomeScenarioInputs, current_projection, _shared_scenario_calculation,
     valuation_time_factor,
 )
+from ...domain.valuation.joint_capital_path import HISTORICAL_FIELDS, compile_joint_capital_path
+
+
+JOINT_SCHEMA = 'joint-capital-path-proposal-v1'
+
+
+def _json_numbers(value):
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, dict):
+        return {key: _json_numbers(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_numbers(item) for item in value]
+    return value
+
+
+def _joint_inputs(policy, package, sources, root):
+    generated = datetime.fromisoformat(policy['generated_at'])
+    if generated.utcoffset() is None or generated > datetime.now(timezone.utc):
+        raise ValueError('joint proposal availability must be actual, aware and not future')
+    if policy.get('assumption_scope') != 'RESEARCH_ASSUMPTIONS_NOT_OFFICIAL_FORECAST':
+        raise ValueError('joint proposal must explicitly declare research assumptions')
+    catalog = {row['id']: row for row in package['sources']}
+    for row in policy['rationale_bindings']:
+        if row.get('id'):
+            if row['id'] in catalog:
+                raise ValueError('joint rationale source id conflicts with package source')
+            catalog[row['id']] = dict(local_path=row['path'], sha256=row['sha256'])
+    declared = policy['joint_historical']
+    if not isinstance(declared, dict) or set(declared) != HISTORICAL_FIELDS:
+        raise ValueError('joint historical inputs must be complete, not defaulted')
+    values = {}
+    for field, item in declared.items():
+        scope = ('consolidated_parent' if field in ('parent_profit', 'nonrecurring')
+                 else 'parent_cash_lookthrough_proxy' if field == 'cash' else 'consolidated')
+        if (not isinstance(item, dict) or item.get('unit') != 'CNY' or item.get('scope') != scope
+                or not isinstance(item.get('rationale'), str) or not item['rationale'].strip()
+                or item.get('source_id') not in catalog):
+            raise ValueError('joint historical unit/ownership/source/rationale mismatch: ' + field)
+        source = catalog[item['source_id']]
+        path = require_inside(root, root / source['local_path'], 'joint historical source')
+        if sha256_file(path) != source['sha256']:
+            raise ValueError('joint historical source hash mismatch')
+        sources.append((path, source['sha256']))
+        # Manual research declarations cannot masquerade as machine extraction.
+        if 'field_path' in item:
+            if (not isinstance(item['field_path'], list) or not item['field_path']
+                    or any(not isinstance(key, str) for key in item['field_path'])):
+                raise ValueError('joint extracted observation requires a concrete field path')
+            node = load_json_object(path, 'joint extracted observation')
+            for key in item['field_path']:
+                node = node[key] if isinstance(node, dict) else node[int(key)]
+            if (_profit_amount(node['value']) != _profit_amount(item['value'])
+                    or node.get('unit') != item['unit'] or node.get('scope') != item['scope']):
+                raise ValueError('joint historical extracted value/unit/scope mismatch')
+        else:
+            review = catalog.get(item.get('review_source_id'))
+            if (item.get('mapping_basis') != 'MANUALLY_REVIEWED_DECLARATION_NOT_MACHINE_EXTRACTED'
+                    or not review or item['review_source_id'] == item['source_id']):
+                raise ValueError('joint manual mapping requires an explicit independent review source')
+            review_path = require_inside(root, root / review['local_path'], 'joint historical review')
+            if sha256_file(review_path) != review['sha256']:
+                raise ValueError('joint historical review hash mismatch')
+            sources.append((review_path, review['sha256']))
+        values[field] = item['value']
+    return values
+
+
+def compile_joint_choice(*, choice, historical, book, anchor):
+    """Same economic compiler for construction and read-only candidate replay."""
+    if (set(choice) != {'id', 'rationale', 'countercase', 'joint_drivers', 'cost_of_equity'}
+            or any(not isinstance(choice[key], str) or not choice[key].strip()
+                   for key in ('id', 'rationale', 'countercase'))
+            or set(choice['joint_drivers']) != {'bear', 'base', 'bull'}
+            or set(choice['cost_of_equity']) != {'bear', 'base', 'bull'}):
+        raise ValueError('joint choice requires explicit three-scenario drivers and rationale')
+    scenarios, ledgers = {}, {}
+    for name in ('bear', 'base', 'bull'):
+        ledger = compile_joint_capital_path(start_book=book, profit_anchor=anchor,
+            historical=historical, drivers=choice['joint_drivers'][name])
+        if isinstance(choice['cost_of_equity'][name], (bool, float)):
+            raise ValueError('joint cost requires an explicit decimal value')
+        cost = _profit_amount(choice['cost_of_equity'][name])
+        if not Decimal('0.01') <= cost <= Decimal('0.30') or cost <= ledger['terminal_growth']:
+            raise ValueError('joint cost must exceed growth within explicit research bounds')
+        scenarios[name] = ResidualIncomeScenarioInputs(cost, ledger['forecast_roe'],
+            ledger['terminal_roe'], ledger['terminal_growth'], ledger['retention'])
+        ledgers[name] = _json_numbers(ledger)
+    return scenarios, ledgers
 
 
 _PROFIT_FIELDS = {
@@ -104,7 +193,8 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
         raise ValueError('proposal input hash mismatch')
     package = load_json_object(package_path, 'proposal package')
     policy = load_json_object(policy_path, 'proposal policy')
-    if (policy.get('schema_version') != 'finite-earnings-path-proposal-v1'
+    joint = policy.get('schema_version') == JOINT_SCHEMA
+    if (policy.get('schema_version') not in ('finite-earnings-path-proposal-v1', JOINT_SCHEMA)
             or policy.get('action') != 'no_order' or policy.get('symbol') != package.get('symbol')
             or policy.get('source_package_sha256') != package_sha256):
         raise ValueError('proposal policy identity/version mismatch')
@@ -117,6 +207,18 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
         sources.append((path, binding['sha256']))
     if not policy.get('rationale_bindings'):
         raise ValueError('proposal requires independently reviewable economic rationale')
+    historical = _joint_inputs(policy, package, sources, root) if joint else None
+    implementation_bindings = []
+    if joint:
+        for relative in (
+                'src/value_investment_agent/domain/valuation/joint_capital_path.py',
+                'src/value_investment_agent/application/product/neutral_valuation_proposal.py',
+                'src/value_investment_agent/valuation_models/residual_income.py'):
+            path = require_inside(root, root / relative, 'joint implementation')
+            digest = sha256_file(path)
+            if relative != 'src/value_investment_agent/valuation_models/residual_income.py':
+                implementation_bindings.append(dict(path=relative, sha256=digest))
+            sources.append((path, digest))
     descriptor = build_descriptor(package, root=root)
     facts, case = descriptor.facts, descriptor.research_case
     if not isinstance(facts, QualityCompounderFacts) or not facts.scenario_inputs:
@@ -138,37 +240,42 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
             or len({row['id'] for row in choices}) != len(choices)):
         raise ValueError('proposal requires one to three distinct economic choices')
     growths = policy.get('income_growth')
-    if not isinstance(growths, dict) or set(growths) != {'bear', 'base', 'bull'}:
+    if not joint and (not isinstance(growths, dict) or set(growths) != {'bear', 'base', 'bull'}):
         raise ValueError('proposal requires explicit three-scenario earnings conditions')
     if baseline.status != 'conditional_research_only':
         raise ValueError('proposal baseline is not a usable conditional calculation')
     book, shares = facts.operating_inputs['start_book_equity'], facts.operating_inputs['ordinary_shares']
     rows = []
     for choice in choices:
-        years, fade = choice['growth_years'], choice['fade_years']
-        if (type(years) is not int or type(fade) is not int or not 1 <= years <= 20
+        joint_ledgers = {}
+        if joint:
+            scenarios, joint_ledgers = compile_joint_choice(choice=choice,
+                historical=historical, book=book, anchor=anchor)
+        else:
+            years, fade = choice['growth_years'], choice['fade_years']
+            if (type(years) is not int or type(fade) is not int or not 1 <= years <= 20
                 or not 1 <= fade <= 20 or not choice.get('rationale') or not choice.get('countercase')):
-            raise ValueError('proposal choice requires bounded duration, rationale and countercase')
-        scenarios = {}
-        for name, original in facts.scenario_inputs.items():
-            growth = Decimal(str(growths[name]))
-            if not growth.is_finite() or not Decimal('-0.10') <= growth <= Decimal('0.10'):
-                raise ValueError('proposal growth exceeds the registered research bounds')
-            if rebase is not None:
-                condition = policy['scenario_conditions'][name]
-                cost = _profit_amount(condition['cost_of_equity'])
-                retention = _profit_amount(condition['retention'])
-                terminal_growth = _profit_amount(condition['terminal_growth'])
-                if not Decimal('0.08') <= cost <= Decimal('0.12') or not Decimal('0.10') <= retention <= Decimal('0.25'):
-                    raise ValueError('proposal explicit cost/retention exceeds finite research bounds')
-                original = ResidualIncomeScenarioInputs(cost, original.forecast_roes,
-                    cost, terminal_growth, retention)
-            scenarios[name] = ResidualIncomeScenarioInputs(
-                cost_of_equity=original.cost_of_equity,
-                forecast_roes=tuple(current_projection(book, anchor, original.cost_of_equity,
-                    growth, 1 - original.retention, years, fade)),
-                terminal_roe=original.terminal_roe, terminal_growth=original.terminal_growth,
-                retention=original.retention)
+                raise ValueError('proposal choice requires bounded duration, rationale and countercase')
+            scenarios = {}
+            for name, original in facts.scenario_inputs.items():
+                growth = Decimal(str(growths[name]))
+                if not growth.is_finite() or not Decimal('-0.10') <= growth <= Decimal('0.10'):
+                    raise ValueError('proposal growth exceeds the registered research bounds')
+                if rebase is not None:
+                    condition = policy['scenario_conditions'][name]
+                    cost = _profit_amount(condition['cost_of_equity'])
+                    retention = _profit_amount(condition['retention'])
+                    terminal_growth = _profit_amount(condition['terminal_growth'])
+                    if not Decimal('0.08') <= cost <= Decimal('0.12') or not Decimal('0.10') <= retention <= Decimal('0.25'):
+                        raise ValueError('proposal explicit cost/retention exceeds finite research bounds')
+                    original = ResidualIncomeScenarioInputs(cost, original.forecast_roes,
+                        cost, terminal_growth, retention)
+                scenarios[name] = ResidualIncomeScenarioInputs(
+                    cost_of_equity=original.cost_of_equity,
+                    forecast_roes=tuple(current_projection(book, anchor, original.cost_of_equity,
+                        growth, 1 - original.retention, years, fade)),
+                    terminal_roe=original.terminal_roe, terminal_growth=original.terminal_growth,
+                    retention=original.retention)
         proposed = replace(facts, scenario_inputs=scenarios, confidence='低', confidence_evidence=None)
         valuation = model.value(proposed, case)
         annuals, actual_inputs = {}, {}
@@ -212,6 +319,9 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
             calculation_inputs_sha256=hashlib.sha256(encode_json_bytes(inputs)).hexdigest(),
             annual_arithmetic=annuals,
             base_difference_from_old_pressure=str(valuation.base_value - baseline.base_value)))
+        if joint:
+            rows[-1]['joint_capital_ledgers'] = joint_ledgers
+            rows[-1]['input_mode'] = JOINT_SCHEMA
     preference = policy.get('research_preference')
     if preference is not None:
         if (not isinstance(preference, dict)
@@ -244,6 +354,12 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
     for path, digest in sources:
         if sha256_file(path) != digest:
             raise ValueError('proposal source changed during calculation')
+    if joint:
+        result.update(input_mode=JOINT_SCHEMA, implementation_bindings=implementation_bindings,
+            historical_input_scope='SOURCE_LINKED_RESEARCH_INPUT_NOT_PDF_CERTIFICATION',
+            joint_historical=policy['joint_historical'],
+            cash_funding_status=('FAIL' if any(ledger['cash_funding_status'] == 'FAIL'
+                for row in rows for ledger in row['joint_capital_ledgers'].values()) else 'PASS'))
     anchor_label = ('历史扣非归母盈利代理' if anchor_field == 'ttm_ex_nonrecurring_parent_profit_cny'
                     else '历史报告归母盈利代理')
     lines = [f'# {case.name}：主估值候选待审', '',
@@ -253,7 +369,9 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
         '| 尾部选择 | 条件低档/中档/高档（元/股） | 中档相对旧压力 |', '| --- | --- | --- |']
     for row in rows:
         value = row['valuation']
-        lines.append(f'| {row["id"]}：{row["growth_years"]}年盈利段＋{row["fade_years"]}年全资本衰减 | '
+        label = ('五年联结资本路径＋持续经营终端' if joint else
+                 f'{row["growth_years"]}年盈利段＋{row["fade_years"]}年全资本衰减')
+        lines.append(f'| {row["id"]}：{label} | '
             + ' / '.join(f'{Decimal(value[key]):.2f}' for key in ('bear_value', 'base_value', 'bull_value'))
             + f' | {Decimal(row["base_difference_from_old_pressure"]):+.2f} |')
     lines.extend(['', '逐年明细保留财务基准日口径；日期桥按同一共享模型换算至估值日，不代表净资产已更新。', '',
@@ -266,6 +384,12 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
             f'{Decimal(bridge["valuation_date_per_share_cny"]):.4f} | {bridge["model_per_share_difference_cny"]} |')
     for row in rows:
         lines.extend(['', f'{row["id"]}经济依据：{row["rationale"]}', f'反面风险：{row["countercase"]}', ''])
+        if joint:
+            lines.extend(['五年联结路径为研究假设，不是正常化财务事实；母公司现金转换与终端资本效率仍待审。',
+                '| 情景 | 条件现金资金检验 | 终端ROE假设 | 终端留存率 |', '| --- | --- | --- | --- |'])
+            for name, ledger in row['joint_capital_ledgers'].items():
+                lines.append(f'| {name} | {ledger["cash_funding_status"]} | '
+                    f'{ledger["terminal_roe"]} | {ledger["terminal_retention"]} |')
     if rebase is not None:
         lines.extend(['## 本次真正消费的财报输入', '',
             f'归母权益：{book}元；披露总股数：{shares}股；财务基准日：{rebase["start_book_equity"]["period_end"]}。',
