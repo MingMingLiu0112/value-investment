@@ -27,7 +27,8 @@ class FrozenClock(datetime):
 
 
 @pytest.fixture
-def case(tmp_path, monkeypatch):
+def case(tmp_path, monkeypatch, request):
+    sleeve = getattr(request, "param", "CORE_VALUE")
     monkeypatch.setattr(journal_module, "datetime", FrozenClock)
     monkeypatch.setattr(repository_module, "datetime", FrozenClock)
     service = journal_module.PrivatePortfolioService(
@@ -37,7 +38,7 @@ def case(tmp_path, monkeypatch):
         "holdings": [], "sleeve_allocations": {}, "policy": {},
         "confirmed_at": "2026-10-13T16:00:00+08:00", "confirmation_note": "TEST_ONLY baseline"})
     _, digest = service.prepare_fill({"idempotency_key": "buy", "expected_revision": 1,
-        "fill": {"transaction_id": "TEST_ONLY-original-buy", "side": "BUY", "sleeve": "CORE_VALUE",
+        "fill": {"transaction_id": "TEST_ONLY-original-buy", "side": "BUY", "sleeve": sleeve,
             "symbol": "300364", "exchange": "SZSE", "quantity": "100", "price_cny": "18",
             "fees_cny": "1", "trade_date": "2026-10-14", "next_sell_session": "2026-10-15",
             "trading_unit": "100"}})
@@ -60,7 +61,7 @@ def case(tmp_path, monkeypatch):
     binding = {"schema_version": personal.BINDING_SCHEMA, "account_scope": "TEST_ONLY_PERSONAL_ENTRY",
         "journal_revision": len(records), "journal_tip_sha256": records[-1]["record_sha256"],
         "fill_record_sha256": records[-1]["record_sha256"], "transaction_id": "TEST_ONLY-original-buy",
-        "symbol": "300364", "exchange": "SZSE", "sleeve": "CORE_VALUE",
+        "symbol": "300364", "exchange": "SZSE", "sleeve": sleeve,
         "entry_ref": personal._ref(entry_artifact), "consistency_ref": personal._ref(consistency_artifact),
         "confirmation": {"subject": "TEST_ONLY-user", "confirmed_at": AS_OF.isoformat(),
             "note": "TEST_ONLY explicit original thesis binding", "explicit_original_entry_binding": True},
@@ -519,8 +520,30 @@ def test_conflicting_newest_review_versions_are_rejected(case, tmp_path):
         _resolve_current(args, tmp_path)
 
 
-@pytest.mark.parametrize("sleeve", ["CORE_VALUE", "HOTSPOT_SATELLITE"])
-def test_held_advisory_consumes_current_broken_artifact_for_original_entry(case, tmp_path, monkeypatch, sleeve):
+@pytest.mark.parametrize("fault", ["symbol", "sleeve"])
+def test_single_entry_advisory_rejects_cross_security_or_strategy_before_review(case, tmp_path, monkeypatch, fault):
+    from value_investment_agent.application.portfolio.held_continuity import evaluate_owned_held_advisory
+    args, service, _ = case
+    _confirm_registered_entry(args, service, tmp_path)
+    context = personal.owned_entry_context(records=service.records(), symbol="300364", sleeve="CORE_VALUE",
+        authenticated_subject="LOCAL_OPERATOR", as_of=AS_OF)
+    _save_current_review(args, status="BROKEN")
+    def unexpected(*args, **kwargs):
+        pytest.fail("A different security or strategy must not reach current thesis evaluation")
+    monkeypatch.setattr(personal, "resolve_current_entry_consistency", unexpected)
+    plan = dict(symbol="300364", schema_version="value-action-plan-v1", strategy="CORE_VALUE")
+    if fault == "symbol":
+        plan["symbol"] = "600519"
+    else:
+        plan.update(schema_version="price-action-plan-independent-v2", strategy="HOTSPOT_SATELLITE")
+    before = service.journal.path.read_bytes()
+    with pytest.raises(ValueError, match="scope mismatch"):
+        evaluate_owned_held_advisory(tmp_path, context=context, plan=plan, now=AS_OF)
+    assert service.journal.path.read_bytes() == before
+
+
+@pytest.mark.parametrize("case", ["CORE_VALUE", "HOTSPOT_SATELLITE"], indirect=True)
+def test_held_advisory_consumes_current_broken_artifact_for_original_entry(case, tmp_path, monkeypatch):
     from types import SimpleNamespace
     from value_investment_agent.application.portfolio.held_continuity import evaluate_owned_held_advisory
     from value_investment_agent.application.decision import build_advisory_decision_recommendation_v3 as advisory
@@ -530,8 +553,9 @@ def test_held_advisory_consumes_current_broken_artifact_for_original_entry(case,
     from value_investment_agent.application.portfolio import held_continuity
     from value_investment_agent.application.decision import restore_decision_recommendation as restore
     args, service, _ = case
+    sleeve = args["binding_candidate"]["sleeve"]
     _confirm_registered_entry(args, service, tmp_path)
-    context = personal.owned_entry_context(records=service.records(), symbol="300364", sleeve="CORE_VALUE",
+    context = personal.owned_entry_context(records=service.records(), symbol="300364", sleeve=sleeve,
         authenticated_subject="LOCAL_OPERATOR", as_of=AS_OF)
     broken = _save_current_review(args)
     monkeypatch.setattr(personal, "_application_repository", lambda *a, **k: args["repository"])
@@ -568,6 +592,8 @@ def test_held_advisory_consumes_current_broken_artifact_for_original_entry(case,
     assert action == "SELL_CANDIDATE" and not blockers
     if sleeve == "HOTSPOT_SATELLITE":
         assert evidence["current_consistency_review"] == personal._ref(broken)
+        assert evidence["review_basis"] == "VERIFIED_THESIS_BREAKER"
+        assert evidence["owned_hotspot_lifecycle"]["pretrade_proven"] is False
     assert service.journal.path.read_bytes() == before
 
 

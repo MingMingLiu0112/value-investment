@@ -2619,3 +2619,49 @@ The frontend contradiction fix is integrated as 39eb0766; author verification
 reports 56 focused tests and typecheck, with independent closure review pending.
 Do not attribute that fix or the unfinished-run display correction to the
 already published 197dc6c4 build.
+
+### 2026-10-23 - Original-entry consumer and cash-event integration
+
+Sibling 50a01b30 is integrated as 6b25c2af. The new parser reconciles one
+retained official pure-cash implementation PDF with the reviewed registry and
+computes a conditional single-event price-coordinate change. Original levels
+are retained. Reference prices are synthetic; complete corporate-action window,
+amendment absence, actual protection price and strategy effectiveness remain
+unproven. The actual retained 600519 original replay is included in the main
+focused run, not counted as PIT/OOS or an owned position.
+
+The existing owned-context consumer now passes only exact hash-matched confirmed
+BUY records from its already verified journal into the original-case resolver.
+It exposes the bounded explanation, never raw journal records. Single and multi
+Entry reviews enforce symbol and sleeve before evaluating the current Thesis;
+the action join also checks the held sleeve. Previously synthetic fixtures that
+only changed the plan sleeve were corrected to create matching fills/bindings.
+
+Independent strategy admission does not supply missing original-price or
+execution-time continuity. Such gaps withhold HOLD/ADD and structure-based
+reduce actions. A separately verified current BROKEN Thesis can still support
+an exit research review for that same original Entry, subject to unchanged
+admission, portfolio, explicit sell review and sellable-quantity checks.
+This exception neither proves pretrade knowledge nor grants broker authority.
+The current resolver deliberately reports exact execution time as unproven;
+the legacy recording-time snapshot is not relabelled as trade-time evidence.
+
+Main focused source/consumer/risk/architecture run: 280 passed, including the
+optional retained-original cash replay configured against dual1. Receipt:
+vv1/.tmp/owned-consumer-cash-20261023.xml. Independent latest-diff review found
+no remaining confirmed P1/P2 in this scope and ran 24 focused tests, 108
+deselected. Full successor Core/frontend/build/release are still pending.
+
+The actual existing Web SIMULATED account journey was run while private access
+remained locked: both sleeves share cash; scripted buy/add/hold/reduce/exit,
+fees, T+1 refusal, restart replay and idempotence passed. This is a disposable
+accounting/risk journey with hypothetical research/prices/policy, not an
+independently admitted strategy or a complete source-bound owned-entry E2E.
+Its original five focused tests also passed. No parallel ledger was introduced.
+
+Independent source/economic review accepts the checked historical 600519 full
+P&L and cash/equity bridges. It rejects treating future uncertainty as a reason
+to stop all conditional modeling. A populated operating/capital/terminal
+successor is being constructed for independent review; J1 remains rejected for
+primary use. No primary candidate, signature or user confirmation was invented.
+All current strategy and real-use gates remain separate. action=no_order.

@@ -10,7 +10,11 @@ const CODE_TEXT: Record<string, string> = {
   AUTHENTICATED_PERSONAL_ENTRY_SUBJECT_REQUIRED: "需要有效的本机本人确认会话",
   OWNED_ENTRY_DEPENDENCIES_REQUIRED:
     "原始投资逻辑与剩余持仓的归属依据尚未完整核验",
+  OWNED_ENTRY_STRATEGY_MISMATCH:
+    "原始买入逻辑的策略归属与这笔持仓不一致",
   OWNED_CURRENT_ADD_ADVISORY_REQUIRED: "当前研究尚未支持与原逻辑一致的加仓复核",
+  OWNED_HOTSPOT_EXECUTION_CONTINUITY_UNPROVEN:
+    "原始价格依据或成交时点尚未核验，不能用当前候选替代入场依据判断持有或加仓",
   CURRENT_STRATEGY_PLAN_UNAVAILABLE: "这笔持仓尚无当前有效的策略计划",
   EXTERNAL_ACCOUNT_RECONCILIATION_MISSING:
     "尚未完成与真实账户或券商对账单的核对",

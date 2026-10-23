@@ -27,12 +27,12 @@ from ..decision.current_value_plan import load_current_value_action_plans
 
 def evaluate_owned_held_advisory(root, *, context, plan, now, allow_test_only=False):
     """Review each original; a multi-entry readout never grants aggregate action."""
+    if context.get("symbol") != plan.get("symbol") or context.get("sleeve") != _plan_sleeve(plan):
+        raise ValueError("Owned per-entry plan scope mismatch")
     contexts = context.get("entry_contexts")
     if contexts is None:
         return _evaluate_owned_single_entry(root, context=context, plan=plan, now=now,
             allow_test_only=allow_test_only)
-    if context.get("symbol") != plan.get("symbol") or context.get("sleeve") != _plan_sleeve(plan):
-        raise ValueError("Owned per-entry plan scope mismatch")
     if (not isinstance(contexts, list) or len(contexts) < 2 or not context.get("ownership_verified")
             or any(not part.get("ownership_verified") or not part.get("advisory_dependencies_valid")
                 or part.get("blockers") or any(part.get(key) != context.get(key) for key in
@@ -111,6 +111,10 @@ def _evaluate_owned_single_entry(root, *, context, plan, now, allow_test_only=Fa
             projected_rules["OPEN"]["rule"] = INDEPENDENT_OPEN_RULE
         if plan.get("conditional_action_rules") not in (original_rules, projected_rules):
             raise ValueError("Held hotspot action rules differ from their verified case")
+        from .owned_hotspot_lifecycle import resolve_owned_hotspot_lifecycle
+        lifecycle = resolve_owned_hotspot_lifecycle(root=root, context=context,
+            confirmed_fill_records=context.get("confirmed_fill_records", []),
+            current_plan=verified_plan, now=now)
         admission = load_independent_admission(root, symbol=plan["symbol"], now=now,
             allow_test_only=allow_test_only)
         case_binding = {"path": plan["case_path"], "sha256": plan["case_sha256"]}
@@ -129,7 +133,20 @@ def _evaluate_owned_single_entry(root, *, context, plan, now, allow_test_only=Fa
             model_validity_status="VALID" if validation_current else "UNKNOWN",
             event_review_current=event_current)
         result = evaluate_recommendation_action(rules)
+        # A separately verified broken thesis can still warrant an exit review;
+        # it is not a price-structure exit or proof of entry-time continuity.
+        broken_thesis_exit = (result.action == "SELL_CANDIDATE" and review.status == "BROKEN"
+            and "thesis_broken" in result.reason_codes)
+        if (lifecycle.get("pretrade_proven") is not True or lifecycle.get("blockers")) and not broken_thesis_exit:
+            return None, ["OWNED_HOTSPOT_EXECUTION_CONTINUITY_UNPROVEN"], {
+                "current_consistency_status": review.status,
+                "current_consistency_review": current["consistency_ref"],
+                "independent_admission": admission,
+                "owned_hotspot_lifecycle": lifecycle,
+                "reason_codes": ["OWNED_HOTSPOT_EXECUTION_CONTINUITY_UNPROVEN"]}
         return result.action, list(result.blockers), {"rule_version": result.rule_version,
+            "owned_hotspot_lifecycle": lifecycle,
+            "review_basis": "VERIFIED_THESIS_BREAKER" if broken_thesis_exit else "OWNED_PRICE_CONTINUITY",
             "current_consistency_status": review.status,
             "reason_codes": list(result.reason_codes), "independent_admission": admission,
             "current_consistency_review": current["consistency_ref"]}
@@ -240,6 +257,8 @@ def owned_held_action(*, context, plan, risk, sleeve_position, advisory_provider
         trade_eligible=False, broker_execution_permission=False, advisory=None)
     entry = context.get('entry_thesis')
     review = context.get('investment_consistency_review')
+    if context.get("sleeve") != sleeve_position["sleeve"]:
+        blockers.append("OWNED_ENTRY_STRATEGY_MISMATCH")
     output.update(original_thesis=entry.thesis if entry is not None else None,
                   consistency_status=review.status if review is not None else None)
     multi_entry = context.get("entry_contexts") is not None
@@ -325,6 +344,8 @@ def owned_held_action(*, context, plan, risk, sleeve_position, advisory_provider
         try:
             selected, rejected, evidence = advisory_provider()
             output["advisory"] = evidence
+            if evidence.get("owned_hotspot_lifecycle") is not None:
+                output["owned_hotspot_lifecycle"] = evidence["owned_hotspot_lifecycle"]
             output["entry_consistency_status"] = output["consistency_status"]
             output["consistency_status"] = evidence.get("current_consistency_status")
             blockers.extend(rejected)

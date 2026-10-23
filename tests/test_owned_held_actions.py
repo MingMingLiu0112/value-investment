@@ -77,6 +77,19 @@ def test_known_ownership_cannot_waive_risk_or_execution(case, tmp_path, fault):
     assert result['formal_eligibility'] is False
 
 
+def test_different_strategy_entry_cannot_support_a_current_owned_action(case, tmp_path):
+    context = confirmed_context(case, tmp_path)
+    args = inputs(context, 'SELL_CANDIDATE')
+    args['context']['sleeve'] = 'HOTSPOT_SATELLITE'
+    def unexpected():
+        pytest.fail('Mismatched owned strategy must not reach the action provider')
+    args['advisory_provider'] = unexpected
+    result = owned_held_action(**args)
+    assert result['decision_action'] == 'UNASSESSABLE'
+    assert result['review_quantity'] is None
+    assert 'OWNED_ENTRY_STRATEGY_MISMATCH' in result['blockers']
+
+
 def test_narrative_reconstruction_stays_ineligible_after_durable_confirmation(case, tmp_path):
     args, service, _ = case
     thesis_service(args, service).confirm(narrative_request(args), repository_root=tmp_path,

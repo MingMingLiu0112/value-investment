@@ -392,6 +392,7 @@ def _actionable_decision(result, *, binding, symbol, sleeve, generated_at, entry
         "ownership_verified": held and (entry_context or {}).get("ownership_verified") is True,
         "held_quantity": (entry_context or {}).get("held_quantity"),
         "entry_thesis_record_sha256": (entry_context or {}).get("entry_thesis_record_sha256"),
+        "owned_hotspot_lifecycle": (entry_context or {}).get("owned_hotspot_lifecycle"),
         "decision_layer": "PERSONAL_ACTION_REVIEW",
         "symbol": symbol, "strategy": sleeve, "status": status,
         "company_name": plan.get("company_name"),
@@ -720,8 +721,10 @@ def _preview_entry_context(journal, *, result, binding, symbol, sleeve, authenti
                 'blockers': ['OWNED_ENTRY_DEPENDENCIES_INVALID:' + str(error)[:200]]}
     if context.get("advisory_dependencies_valid") and binding:
         try:
-            action, blockers, _ = evaluate_owned_held_advisory(repository_root,
+            action, blockers, evidence = evaluate_owned_held_advisory(repository_root,
                 context=context, plan=binding["plan"], now=generated_at)
+            if evidence.get("owned_hotspot_lifecycle") is not None:
+                context["owned_hotspot_lifecycle"] = evidence["owned_hotspot_lifecycle"]
             context["current_add_advisory_verified"] = action == "ADD_CANDIDATE" and not blockers
             context["blockers"].extend(blockers)
         except (ValueError, OSError, KeyError, TypeError, ArithmeticError) as error:

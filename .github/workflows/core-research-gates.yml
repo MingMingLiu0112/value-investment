@@ -390,6 +390,8 @@ jobs:
           tests/test_hotspot_price_comparability.py
           tests/test_hotspot_official_action_coverage.py
           tests/test_hotspot_action_coverage_lifecycle.py
+          tests/test_owned_hotspot_lifecycle.py
+          tests/test_hotspot_cash_event_mapping.py
           tests/web_api/test_hotspot_lifecycle_surface.py
           tests/test_hotspot_machine_admission.py
 

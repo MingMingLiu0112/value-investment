@@ -199,8 +199,12 @@ def test_producer_watch_recovery_consumed_only_by_owned_private_add(actual_contr
         payload={'symbol': '300364', 'assumptions': assumptions}, authenticated_subject='LOCAL_OPERATOR')
     decision = result['actionable_decision']
     if fault is None:
-        assert decision['decision_action'] == 'ADD', decision
-        assert decision['review_quantity'] > 0
+        # The old positive fixture has no original case reference on its Entry.
+        # Current WATCH recovery and a signed strategy fixture cannot replace it.
+        assert decision['decision_action'] == 'UNASSESSABLE', decision
+        assert decision['review_quantity'] is None
+        assert 'OWNED_HOTSPOT_EXECUTION_CONTINUITY_UNPROVEN' in decision['blockers']
+        assert decision['owned_hotspot_lifecycle']['items'][0]['source_reference_status'] == 'UNVERIFIED'
         assert decision['ownership_verified'] is True
         assert decision['plan_binding']['plan']['action_intent'] == 'WATCH'
         assert decision['entry_price_or_range'] == '0.125'

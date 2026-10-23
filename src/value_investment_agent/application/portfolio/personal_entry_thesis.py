@@ -685,6 +685,10 @@ def owned_entry_context(*, records, symbol, sleeve, authenticated_subject, as_of
     result.update(ownership_verified=True, bindings=bindings,
         entry_thesis_record_sha256=bindings[-1]["record_sha256"],
         held_quantity=str(sum((Decimal(row["remaining_quantity"]) for row in rows), Decimal(0))))
+    fill_hashes = {binding["fill_record_sha256"] for binding in bindings}
+    # Internal inputs for the original-source resolver, never a public read model.
+    result["confirmed_fill_records"] = [deepcopy(record) for record in records
+        if record["kind"] == "FILL_CONFIRMED" and record["record_sha256"] in fill_hashes]
     if any(b["binding_mode"] != "CONTEMPORANEOUS" or b["provenance"] != "REGISTERED_ARTIFACT_BINDING"
            for b in bindings):
         result["blockers"] = ["HISTORICAL_RECONSTRUCTION_NOT_ORIGINAL_PIT_ENTRY"]

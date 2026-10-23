@@ -193,9 +193,9 @@ def test_signed_research_open_owned_four_actions_manual_sales_restart(synthetic_
     client.close()
 
 
-@pytest.mark.parametrize('status,expected', [('CONSISTENT', 'HOLD'), ('FULFILLED', 'ADD_CANDIDATE'),
-    ('WEAKENED', 'TRIM_CANDIDATE'), ('BROKEN', 'SELL_CANDIDATE')])
-def test_hotspot_owned_adapter_uses_signed_independent_sources_without_value_g3(pipeline, monkeypatch, status, expected):
+@pytest.mark.parametrize('status,expected', [('CONSISTENT', None), ('FULFILLED', None),
+    ('WEAKENED', None), ('BROKEN', 'SELL_CANDIDATE')])
+def test_independent_admission_does_not_supply_missing_owned_price_continuity(pipeline, monkeypatch, status, expected):
     root, plan = pipeline['root'], pipeline['plan']
     entry = replace(_entry(), symbol='600519', entry_date=HOTSPOT_NOW.date(), confirmed_at=HOTSPOT_NOW)
     review = replace(_consistency(status), symbol='600519', as_of=HOTSPOT_NOW.date())
@@ -210,11 +210,14 @@ def test_hotspot_owned_adapter_uses_signed_independent_sources_without_value_g3(
     monkeypatch.setattr(thesis, '_application_repository', lambda *a, **k: thesis._CandidateRepository([original, current]))
     monkeypatch.setattr(thesis, 'registered_entry_workbenches', lambda *a, **k:
         pytest.fail('Independent hotspot must not require value G3'))
-    context = dict(namespace='TEST_ONLY', entry_artifact=original, entry_thesis=entry,
+    context = dict(namespace='TEST_ONLY', symbol='600519', sleeve='HOTSPOT_SATELLITE',
+                   ownership_verified=True, action='no_order', entry_artifact=original, entry_thesis=entry,
                    investment_consistency_review=review)
     action, blockers, evidence = evaluate_owned_held_advisory(root, context=context, plan=plan,
         now=HOTSPOT_NOW, allow_test_only=True)
-    assert action == expected and not blockers
+    assert action == expected
+    assert blockers == ([] if status == 'BROKEN' else ['OWNED_HOTSPOT_EXECUTION_CONTINUITY_UNPROVEN'])
+    assert evidence['owned_hotspot_lifecycle']['pretrade_proven'] is False
     assert evidence['independent_admission']['namespace'] == 'TEST_ONLY'
     with pytest.raises(ValueError):
         evaluate_owned_held_advisory(root, context=context, plan=plan, now=HOTSPOT_NOW)
