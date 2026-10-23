@@ -13,10 +13,11 @@ from .independent_price_conditions import INDEPENDENT_OPEN_RULE
 from .price_action_case import project_current_price_action_plan
 from ...domain.execution.exchange_calendar import is_exchange_session
 from ...domain.hotspot.current_price import SESSION_TIMES
+from ...infrastructure.hotspot.price_comparability import inspect_price_comparability
 from ...quote_sessions import CHINA
 
 
-VERSION = "hotspot-entry-structure-continuity-v1"
+VERSION = "hotspot-entry-structure-continuity-v2"
 
 
 def _stamp(value):
@@ -70,6 +71,10 @@ def _explain(result, basis, *, plan=None, entry_plan=None, case=None):
         "MATCH" if versions["current"] == versions["entry"] else "MISMATCH")
         if entry_plan else "NOT_EVALUATED", values=versions,
         evidence_bindings=current_refs + entry_refs))
+    comparability = result["price_comparability"]
+    path.append(dict(check="PRICE_COMPARABILITY", outcome=comparability["status"]
+        if comparability else "NOT_EVALUATED", values=comparability or {},
+        evidence_bindings=comparability["evidence_bindings"] if comparability else []))
     comparison = result["original_entry_comparison"]
     path.append(dict(check="ORIGINAL_PROTECTION", outcome=("BREACHED"
         if comparison["first_breach_at"] else "NO_OBSERVED_BREACH")
@@ -118,7 +123,8 @@ def _explain(result, basis, *, plan=None, entry_plan=None, case=None):
 def build_hotspot_lifecycle_review(*, root: Path, symbol: str,
         current_case_binding: dict, now: datetime,
         entry_case_binding: dict | None = None,
-        entry_at: datetime | None = None) -> dict:
+        entry_at: datetime | None = None,
+        corporate_action_registry_binding: dict | None = None) -> dict:
     """Source-bound explanations, never a personal action or approved strategy.
 
     Missing entry means no held review. The current entry observation remains
@@ -133,7 +139,9 @@ def build_hotspot_lifecycle_review(*, root: Path, symbol: str,
         raise ValueError("Entry confirmation must be known at cutoff")
     result = dict(schema_version=VERSION, symbol=symbol, action="no_order",
         evaluated_at=now.isoformat(), status="NOT_ASSESSABLE", observed_review="UNKNOWN",
-        original_entry_comparison=None, current_conditions={}, blockers=[],
+        original_entry_comparison=None, price_comparability=None,
+        unadjusted_structural_observation=None, current_conditions={}, blockers=[],
+        current_conditions_scope="RAW_UNADJUSTED_NOT_PERSONAL_ACTION",
         current_case_binding=dict(current_case_binding),
         entry_case_binding=dict(entry_case_binding) if entry_case_binding else None,
         entry_at=entry_at.isoformat() if entry_at else None,
@@ -180,6 +188,12 @@ def build_hotspot_lifecycle_review(*, root: Path, symbol: str,
         entry_at=entry_at, protection=entry_plan["invalidation_price"], symbol=symbol)
     comparison["current_rolling_protection_price"] = plan["invalidation_price"]
     result["original_entry_comparison"] = comparison
+    start = min(_stamp(row["time"]).date() for case in (original["case"], current["case"])
+        for rows in case["bars"].values() for row in rows)
+    end = _stamp(current["case"]["bars"]["60m"][-1]["time"]).date()
+    comparability = inspect_price_comparability(root=root, symbol=symbol, start=start, end=end,
+        now=now, registry_binding=corporate_action_registry_binding)
+    result["price_comparability"] = comparability
     rules = result["current_conditions"]
     if comparison["first_breach_at"] or rules["EXIT"]["observed"]:
         observed = "EXIT_STRUCTURE_REVIEW"
@@ -197,6 +211,12 @@ def build_hotspot_lifecycle_review(*, root: Path, symbol: str,
     else:
         observed = "HOLD_STRUCTURE_OBSERVATION"
         basis = "NO_STRUCTURAL_CHANGE_OBSERVED"
+    result["unadjusted_structural_observation"] = dict(observed_review=observed, basis_code=basis,
+        scope="RAW_UNADJUSTED_NOT_COMPARABILITY_ADMITTED", action="no_order")
+    if comparability["status"] != "CONFIRMED":
+        result["blockers"].append("PRICE_BASIS_" + comparability["status"])
+        return _explain(result, "PRICE_BASIS_" + comparability["status"], plan=plan,
+            entry_plan=entry_plan, case=current["case"])
     result.update(status="STRUCTURAL_COMPARISON_ONLY", observed_review=observed)
     result["blockers"].append("STRUCTURAL_OBSERVATION_IS_NOT_PERSONAL_ACTION")
     return _explain(result, basis, plan=plan, entry_plan=entry_plan, case=current["case"])

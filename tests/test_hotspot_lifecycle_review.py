@@ -90,5 +90,6 @@ def test_review_priority_preserves_original_break(monkeypatch, reduce, add, brea
         current_case_binding=dict(path="current", sha256="a" * 64), now=NOW,
         entry_case_binding=dict(path="entry", sha256="b" * 64),
         entry_at=datetime(2026, 9, 24, 9, 30, tzinfo=CHINA))
-    assert result["observed_review"] == expected
+    assert result["observed_review"] == "UNKNOWN"
+    assert result["unadjusted_structural_observation"]["observed_review"] == expected
     assert result["personal_action"] == "NO_ACTION"

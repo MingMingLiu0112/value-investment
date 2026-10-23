@@ -141,8 +141,9 @@ def test_bound_history_recovery_preserves_original_break_despite_lower_rolling_p
     assert current_plan["conditional_action_rules"]["EXIT"]["observed"] is False
     before = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
     result = _review(history)
-    assert result["status"] == "STRUCTURAL_COMPARISON_ONLY"
-    assert result["observed_review"] == "EXIT_STRUCTURE_REVIEW"
+    assert result["status"] == "NOT_ASSESSABLE"
+    assert result["observed_review"] == "UNKNOWN"
+    assert result["unadjusted_structural_observation"]["observed_review"] == "EXIT_STRUCTURE_REVIEW"
     comparison = result["original_entry_comparison"]
     assert Decimal(comparison["original_protection_price"]) == Decimal("11")
     assert Decimal(comparison["current_rolling_protection_price"]) == Decimal("9")
@@ -165,7 +166,8 @@ def test_bound_history_whole_session_gap_cannot_grant_hold_or_add(tmp_path, miss
     assert comparison["breach_count"] == 0
     if missing_day is None:
         assert comparison["coverage"] == "COMPLETE"
-        assert result["observed_review"] == "HOLD_STRUCTURE_OBSERVATION"
+        assert result["observed_review"] == "UNKNOWN"
+        assert result["unadjusted_structural_observation"]["observed_review"] == "HOLD_STRUCTURE_OBSERVATION"
     else:
         assert comparison["coverage"] == "INCOMPLETE"
         assert comparison["inspected_bar_count"] == 8

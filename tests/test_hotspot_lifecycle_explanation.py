@@ -37,8 +37,9 @@ def test_bound_recovery_explains_original_break_not_new_rolling_threshold(tmp_pa
     before = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
     result = _review(history)
     explanation = result["decision_explanation"]
-    assert explanation["basis_code"] == "ORIGINAL_PROTECTION_BREACHED"
-    assert explanation["selected_review"] == "EXIT_STRUCTURE_REVIEW"
+    assert explanation["basis_code"] == "PRICE_BASIS_UNKNOWN"
+    assert explanation["selected_review"] == "UNKNOWN"
+    assert result["unadjusted_structural_observation"]["basis_code"] == "ORIGINAL_PROTECTION_BREACHED"
     steps = _steps(result)
     original = steps["ORIGINAL_PROTECTION"]["values"]
     assert Decimal(original["original_protection_price"]) == 11
@@ -51,11 +52,11 @@ def test_bound_recovery_explains_original_break_not_new_rolling_threshold(tmp_pa
     assert explanation["current_price_observation"]["available_at"] <= CURRENT_AT.isoformat()
     assert steps["ORIGINAL_PROTECTION"]["evidence_bindings"] == [
         _binding(history[3]), _binding(history[1])]
-    assert "ORIGINAL_PROTECTION_BREACHED" in explanation["why_not_add"]
+    assert "PRICE_BASIS_UNKNOWN" in explanation["why_not_add"]
     assert explanation["required_external_reviews"] == result["required_external_reviews"]
     assert explanation["source_scope"] == "REFERENCE_CASES_NOT_VERIFIED_OWNERSHIP_OR_ENTRY_THESIS"
     text = render_hotspot_lifecycle_markdown(result)
-    assert "ORIGINAL_PROTECTION_BREACHED" in text
+    assert "PRICE_BASIS_UNKNOWN" in text
     assert "2026-09-22T11:30:00+08:00" in text
     assert _binding(history[1])["sha256"] in text
     assert "NOT_PROVEN" in text and "no_order" in text
@@ -66,7 +67,7 @@ def test_bound_recovery_explains_original_break_not_new_rolling_threshold(tmp_pa
 
 
 @pytest.mark.parametrize("missing_day,basis,outcome", [
-    (None, "NO_STRUCTURAL_CHANGE_OBSERVED", "HOLD_STRUCTURE_OBSERVATION"),
+    (None, "PRICE_BASIS_UNKNOWN", "UNKNOWN"),
     (23, "ENTRY_TO_CURRENT_DATA_INCOMPLETE", "UNKNOWN"),
 ])
 def test_native_history_honestly_distinguishes_no_change_and_unknown(tmp_path, missing_day, basis, outcome):
@@ -146,12 +147,13 @@ def test_explanation_uses_same_priority_as_existing_conditions(tmp_path, monkeyp
     monkeypatch.setattr(subject, "project_current_price_action_plan", project)
     result = _review(history)
     explanation = result["decision_explanation"]
-    assert explanation["basis_code"] == basis
+    assert explanation["basis_code"] == "PRICE_BASIS_UNKNOWN"
+    assert result["unadjusted_structural_observation"]["basis_code"] == basis
     assert explanation["selected_review"] == result["observed_review"]
     if quality != "RESEARCH_ONLY":
         assert "ADD_STRUCTURE_QUALITY_NOT_USABLE" in explanation["why_not_add"]
     if basis == "CURRENT_ADD_CONDITION_OBSERVED":
-        assert explanation["why_not_add"] == []
+        assert explanation["why_not_add"] == ["PRICE_BASIS_UNKNOWN"]
         assert explanation["required_external_reviews"]
     _assert_no_permission(result)
 

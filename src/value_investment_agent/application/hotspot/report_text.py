@@ -37,6 +37,8 @@ def render_hotspot_markdown(report):
 
 
 _LIFECYCLE_REASONS = {
+    'PRICE_BASIS_UNKNOWN': '公司行动覆盖未核验，原始保护价与当前价不能假定可直接比较',
+    'PRICE_BASIS_INCOMPARABLE': '价格窗口跨越已收录实施分配事件，不复权价格不能直接比较',
     'CURRENT_DATA_UNAVAILABLE': '当前行情证据不可用，无法判断当前结构',
     'ENTRY_STRUCTURE_OBSERVED': '当前开仓结构条件已被观察到，仅供研究观察',
     'ENTRY_STRUCTURE_NOT_QUALIFIED': '当前开仓结构尚不满足观察条件',
@@ -68,6 +70,7 @@ _LIFECYCLE_EXTERNAL = {
     'SELLABLE_QUANTITY_T_PLUS_ONE_AND_EXECUTION': '复核可卖数量、T+1 与执行条件',
 }
 _LIFECYCLE_CHECKS = {
+    'PRICE_COMPARABILITY': '公司行动与价格口径可比性',
     'CURRENT_DATA': '当前行情证据', 'ENTRY_REFERENCE': '原始参考证据',
     'ENTRY_RULE_COMPATIBILITY': '本次重算规则兼容性',
     'ORIGINAL_PROTECTION': '原始参考保护价', 'CONTINUITY_COVERAGE': '连续行情覆盖',
@@ -76,6 +79,7 @@ _LIFECYCLE_CHECKS = {
     'STRUCTURE_QUALITY': '价格行为质量', 'OPPORTUNITY_QUALITY': '多周期机会分级',
 }
 _LIFECYCLE_OUTCOMES = {
+    'CONFIRMED': '同口径覆盖已确认，仅限此证据范围', 'INCOMPARABLE': '不宜直接比较',
     'CURRENT': '当前可用', 'STALE': '已过期', 'INVALID': '无效', 'UNKNOWN': '未知',
     'VERIFIED_REFERENCE_ONLY': '仅参考证据已核验，不代表真实入场或持仓',
     'UNVERIFIED': '未核验', 'NOT_SUPPLIED': '未提供',
@@ -94,6 +98,12 @@ _LIFECYCLE_PRICE_SCOPES = {
     'HISTORICAL_CLOSE_NOT_CURRENT_QUOTE': '历史收盘，非当前报价',
 }
 _LIFECYCLE_VALUE_LABELS = {
+    'window_start': '价格形成窗口起日', 'window_end': '价格形成窗口止日',
+    'crossing_events': '跨越的已收录事件', 'ex_date': '除息除权日',
+    'complete_corporate_action_coverage': '全部公司行动覆盖已证明',
+    'historical_availability_proven': '独立历史可得性已证明',
+    'pdf_semantics_reverified': '本次重审原文语义',
+    'adjusted_protection_price': '已核验调整后保护价',
     'price': '价格', 'as_of': '观察日期', 'available_at': '原件可得时点',
     'reference_price_scope': '价格范围', 'current_pit': '当前 PIT 标志',
     'source_integrity': '原件完整性状态',
@@ -191,6 +201,10 @@ def render_hotspot_lifecycle_markdown(review):
         lines.append('判定路径：未知。')
     lines += ['', '## 为何不能据此加仓', '',
               '上述结构结果不能单独作为加仓依据；仍须完成外部复核。']
+    raw_observation = review.get('unadjusted_structural_observation')
+    if raw_observation:
+        lines += [f"未作复权的原始结构记录：{_lifecycle_code(raw_observation.get('observed_review'), _LIFECYCLE_REVIEWS)}。",
+                  '原始破位与保护价仍保留；这不是已核验可比性的持有、加仓或退出结论。']
     reasons = explanation.get('why_not_add') or []
     lines.extend('- ' + _lifecycle_code(code, _LIFECYCLE_REASONS) for code in reasons)
     if not reasons:
