@@ -27,10 +27,26 @@ full coverage counts. Daily Web displays the queue, condition details and source
 references separately from existing decisions. No account, journal, official
 workbook, production service, server or paid API was changed. action=no_order.
 
-Targeted integrated backend checks: 85 passed. Frontend: 445 passed, two optional
-browser tests skipped; typecheck passed before final formatting. Final clean Core,
-release activation and actual browser acceptance must be recorded after execution.
-No new remote CI success or strategy advantage is claimed.
+Targeted backend plus architecture checks: 115 passed. Exact offline-Core CI
+selection (346 files), started from clean ab6efa7a with unchanged backend during
+execution: 4889 passed, 82 skipped, 38 existing deprecation warnings. Receipt:
+.tmp/final-clean-core.xml. Subsequent changes are limited to frontend presentation
+and this ledger. Final frontend: 448 passed, two optional browser tests skipped;
+typecheck passed. All nine frozen-path hashes and canonical workbook hash match.
+
+Actual Windows browser verified value condition expansion, hotspot full-pool
+counts/exclusion reasons, search surface, primary refresh replacing old results,
+and mobile-width layout. Independent review found and corrected oversized full
+universe responses, incomplete authority checks, failure-as-zero display and
+disconnected refresh. The real value failure envelope with empty coverage is
+explicitly tested. Hotspot conditions are human-readable with validity and
+evidence references; sorting is disclosed rather than presented as expected return.
+Public API replay is approximately 0.53 MB instead of 30 MB. Original runtime
+activation at ab6efa7a was MATCHED on port 8001; final frontend release must pass
+the same identity check. No public push/new remote CI success or strategy
+advantage is claimed. Economic valuation admission, independently validated
+strategy advantage and actual personal sizing remain uncompleted business gates;
+this package closes explainable research selection, not direct trading readiness.
 
 ### V5 private risk declaration and simulated valuation closure
 

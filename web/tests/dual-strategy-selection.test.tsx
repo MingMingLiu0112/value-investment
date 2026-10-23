@@ -51,6 +51,23 @@ it("does not call a lane failure zero candidates", () => {
   expect(html).toContain("数量未知");
   expect(html).not.toContain("覆盖 0 家");
 });
+it("recognizes the actual value source failure envelope with empty coverage", () => {
+  state.value = {
+    data: {
+      content_sha256: "a".repeat(64),
+      value: {
+        data_status: "SOURCE_REVALIDATION_FAILED",
+        coverage: {},
+        items: [],
+        shortlist: [],
+      },
+      hotspot: { items: [] },
+    },
+  };
+  const html = renderToStaticMarkup(<DualStrategySelection />);
+  expect(html).toContain("数量未知");
+  expect(html).not.toContain("覆盖 0 家");
+});
 it("distinguishes full coverage, bounded queue, observed facts and trade permission", () => {
   state.value = {
     data: {

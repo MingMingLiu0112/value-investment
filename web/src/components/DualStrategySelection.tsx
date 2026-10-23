@@ -117,7 +117,10 @@ export function DualStrategySelection() {
   const unavailable =
     ["SOURCE_OR_SELECTION_UNAVAILABLE", "UNASSESSABLE"].includes(
       lane.status || "",
-    ) || !lane.coverage;
+    ) ||
+    lane.data_status === "SOURCE_REVALIDATION_FAILED" ||
+    !lane.coverage ||
+    Object.keys(lane.coverage).length === 0;
   const rows = lane.items.filter((row) =>
     `${row.symbol} ${row.company_name || row.name || ""} ${row.industry || ""}`.includes(
       query.trim(),
@@ -141,6 +144,11 @@ export function DualStrategySelection() {
           ? "全市场 → 来源核验 → 多通道初筛 → 财务观察 → 研究优先队列 → 公司研究与适用估值 → 人工复核"
           : "完整交易日 → 行业活跃度与流动性 → 跨行业候选池 → 已完成多周期结构 → 策略验证与账户风控 → 人工复核"}
       </p>
+      {mode === "value" && (
+        <p>
+          队列排序：观察条件满足数优先，再比较不满足数、缺失数及既有初筛通道数；相同条件以证券代码排序，不按预期收益排名。
+        </p>
+      )}
       <Alert
         type="info"
         showIcon
