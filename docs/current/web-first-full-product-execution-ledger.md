@@ -2277,3 +2277,10 @@ surface rejects missing checks, missing workflow steps and any actual-account
 or strategy-validation claim. Per-step reasons are Chinese and explicitly
 synthetic. Local runtime activation/readback evidence remains separate from
 these code-test results.
+
+The current-day JSON observation publication is pub-0455405df97dabd92069,
+engine v24; packet SHA-256
+b283ecd5d0c3b793825ed183b7d675278dcecf123c880b725dad19698f33afa6.
+It retains the latest completed 2026-10-22 quotes, not invented 2026-10-23
+closing prices. Formal admissions remain zero. Only the public JSON pointer
+changed; no workbook or private account was published or changed.
