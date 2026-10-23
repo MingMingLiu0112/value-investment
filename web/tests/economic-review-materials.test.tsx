@@ -1,8 +1,14 @@
 import React from "react";
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { EconomicReviewMaterials } from "../src/components/EconomicReviewMaterials";
-import { economicMaterialsMatch } from "../src/services/valuePolicy";
+import {
+  economicMaterialsMatch,
+  jointCapitalReviewMatches,
+  jointRowFields,
+  jointTerminalFields,
+} from "../src/services/valuePolicy";
 import type { PolicyHandoff } from "../src/services/valuePolicy";
 const { renderToStaticMarkup } = require("react-dom/server");
 
@@ -141,6 +147,280 @@ const render = (handoff: PolicyHandoff = fixture(), symbol = "600519") =>
   renderToStaticMarkup(
     <EconomicReviewMaterials handoff={handoff} symbol={symbol} />,
   );
+
+function jointFixture(): Handoff {
+  const handoff = fixture();
+  const material = handoff.economic_review_materials!;
+  const proposal = { path: "TEST_ONLY/proposal.json", sha256: "2".repeat(64) };
+  const policy = { path: "TEST_ONLY/policy.json", sha256: "3".repeat(64) };
+  material.source_bindings.push(proposal, policy);
+  material.joint_capital_review = {
+    schema_version: "joint-capital-review-v1",
+    symbol: "600519",
+    action: "no_order",
+    status: "CONDITIONAL_PATH_NOT_APPROVED",
+    scope: "RESEARCH_ASSUMPTIONS_NOT_NORMALIZED_FACTS",
+    candidate_binding: structuredClone(material.candidate_binding),
+    proposal_binding: structuredClone(proposal),
+    policy_binding: structuredClone(policy),
+    input_descriptor_sha256: material.input_descriptor_sha256,
+    selected_choice: "TEST_ONLY_CONDITIONAL",
+    date_scope: "DATED_CONDITIONAL_MODEL",
+    basis_at: "2026-06-30T23:59:59+08:00",
+    valuation_at: "2026-10-11T08:00:00Z",
+    scenarios: (["bear", "base", "bull"] as const).map((scenario) => ({
+      scenario,
+      valuation_per_share: "123.456789",
+      drivers: {
+        years: Array.from({ length: 5 }, (_, i) => ({
+          year: i + 1,
+          revenue_growth: "0.01",
+          cost_ratio: "0.2",
+        })),
+        retention: "0.1",
+        operating_allocation: "0.9",
+        new_operating_return: "0.1",
+        new_liquidity_return: "0.01",
+        parent_cash_conversion: "1",
+        terminal_growth: "0.01",
+        terminal_profit_scale: "1",
+      },
+      ledger: {
+        ...Object.fromEntries(jointTerminalFields.map((key) => [key, "0.1"])),
+        forecast_roe: Array(5).fill("0.1"),
+        scope: "RESEARCH_ASSUMPTIONS_NOT_NORMALIZED_FACTS",
+        limitations: ["TEST_ONLY cash conversion remains unapproved"],
+        cash_funding_status: "PASS",
+        rows: Array.from({ length: 5 }, (_, i) => ({
+          ...Object.fromEntries(
+            jointRowFields.map((key) => [key, "123456789.123456789"]),
+          ),
+          year: i + 1,
+          cash_funding_status: "PASS",
+        })),
+      },
+    })),
+  };
+  return handoff;
+}
+
+describe("joint capital read-only presentation", () => {
+  it("shows three scenarios and all five future rows without changing the handoff", () => {
+    const handoff = jointFixture(),
+      before = structuredClone(handoff),
+      html = render(handoff);
+    expect(jointCapitalReviewMatches(handoff, "600519")).toBe(true);
+    for (const text of [
+      "谨慎情景",
+      "中性条件情景",
+      "乐观情景",
+      "第 5 年",
+      "未来假设",
+      "新增经营资本",
+      "新增流动资本",
+      "期末权益",
+      "期末现金代理",
+      "终端 ROE 假设（非已验证 ROIC）",
+      "proxy",
+      "不代表可分红能力",
+      "TEST_ONLY cash conversion",
+      "123456789.123456789",
+    ])
+      expect(html).toContain(text);
+    expect(html).not.toContain("<button");
+    expect(handoff).toEqual(before);
+  });
+  it("preserves a negative cash shortfall and FAIL, not a zero or a pass", () => {
+    const handoff = jointFixture(),
+      ledger =
+        handoff.economic_review_materials!.joint_capital_review!.scenarios[0]
+          .ledger;
+    ledger.cash_funding_status = "FAIL";
+    ledger.rows[0].cash_funding_status = "FAIL";
+    ledger.rows[0].cash_close = "-123456789.123456789";
+    const html = render(handoff);
+    expect(html).toContain("FAIL：假设路径存在现金资金缺口");
+    expect(html).toContain("-1.23 亿元");
+    expect(html).toContain("-123456789.123456789");
+  });
+  it("leaves undated models explicitly undated, never fills the calculation time", () => {
+    const handoff = jointFixture(),
+      review = handoff.economic_review_materials!.joint_capital_review!;
+    review.date_scope = "UNDATED_CONDITIONAL_MODEL";
+    review.basis_at = null;
+    review.valuation_at = null;
+    expect(jointCapitalReviewMatches(handoff, "600519")).toBe(true);
+    expect(render(handoff)).toContain("未建立定价时点");
+    expect(render(handoff)).toContain("不能当作当前价值");
+  });
+  it.each([
+    (r: any) => {
+      r.symbol = "600887";
+    },
+    (r: any) => {
+      r.schema_version = "v2";
+    },
+    (r: any) => {
+      r.action = "order";
+    },
+    (r: any) => {
+      r.status = "APPROVED";
+    },
+    (r: any) => {
+      r.scope = "VERIFIED_FACTS";
+    },
+    (r: any) => {
+      r.candidate_binding = {
+        path: "TEST_ONLY/other.json",
+        sha256: "a".repeat(64),
+      };
+    },
+    (r: any) => {
+      r.input_descriptor_sha256 = "0".repeat(64);
+    },
+    (r: any) => {
+      r.proposal_binding.sha256 = "0".repeat(64);
+    },
+    (r: any) => {
+      r.policy_binding.path = "../policy.json";
+    },
+    (r: any) => {
+      delete r.selected_choice;
+    },
+    (r: any) => {
+      r.date_scope = "UNKNOWN";
+    },
+    (r: any) => {
+      r.basis_at = null;
+    },
+    (r: any) => {
+      r.date_scope = "UNDATED_CONDITIONAL_MODEL";
+    },
+    (r: any) => {
+      r.scenarios.pop();
+    },
+    (r: any) => {
+      r.scenarios[1].scenario = "bear";
+    },
+    (r: any) => {
+      r.scenarios[0].valuation_per_share = "Infinity";
+    },
+    (r: any) => {
+      r.scenarios[0].drivers.retention = true;
+    },
+    (r: any) => {
+      r.scenarios[0].drivers.years[0].cost_ratio = "NaN";
+    },
+    (r: any) => {
+      r.scenarios[0].ledger.rows[0].cash_close = Infinity;
+    },
+    (r: any) => {
+      delete r.scenarios[0].ledger.rows[0].profit;
+    },
+    (r: any) => {
+      r.scenarios[0].ledger.rows[4].year = 1;
+    },
+    (r: any) => {
+      r.scenarios[0].ledger.terminal_roe = "1e9999";
+    },
+    (r: any) => {
+      r.scenarios[0].ledger.cash_funding_status = "APPROVED";
+    },
+  ])(
+    "rejects corrupt or mismatched ledger %# while keeping older economic materials readable",
+    (change) => {
+      const handoff = jointFixture();
+      change(handoff.economic_review_materials!.joint_capital_review);
+      expect(jointCapitalReviewMatches(handoff, "600519")).toBe(false);
+      const html = render(handoff);
+      expect(html).toContain("暂不可展示为核验账本");
+      expect(html).not.toContain("123456789.123456789");
+      expect(html).toContain("经济判断审核材料");
+    },
+  );
+  it.skipIf(!process.env.JOINT_CAPITAL_HANDOFF)(
+    "accepts actual backend-revalidated CC1 projection",
+    () => {
+      const handoff = JSON.parse(
+        readFileSync(process.env.JOINT_CAPITAL_HANDOFF!, "utf8"),
+      ) as Handoff;
+      const before = structuredClone(handoff);
+      expect(jointCapitalReviewMatches(handoff, handoff.symbol)).toBe(true);
+      expect(render(handoff, handoff.symbol)).toContain("三情景五年条件演算");
+      expect(handoff).toEqual(before);
+    },
+  );
+  it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
+    "fits fully expanded ledgers inside 320/390 pixels",
+    async () => {
+      const output = resolve("../.tmp/joint-capital-layout");
+      mkdirSync(output, { recursive: true });
+      const { chromium } = require(process.env.READINESS_PLAYWRIGHT_MODULE!);
+      const context = await chromium.launchPersistentContext(
+        resolve(output, "browser-profile"),
+        {
+          executablePath: process.env.READINESS_BROWSER_PATH,
+          headless: true,
+          downloadsPath: output,
+        },
+      );
+      const measurements: unknown[] = [];
+      try {
+        const page = await context.newPage();
+        await page.route("**/*", (route: any) => route.abort());
+        const handoff = process.env.JOINT_CAPITAL_HANDOFF
+          ? (JSON.parse(
+              readFileSync(process.env.JOINT_CAPITAL_HANDOFF, "utf8"),
+            ) as Handoff)
+          : jointFixture();
+        for (const width of [320, 390]) {
+          await page.setViewportSize({ width, height: 900 });
+          await page.setContent(
+            `<html lang="zh-CN"><meta charset="utf-8"><style>body{margin:0;font:14px Arial}main{box-sizing:border-box;width:100%;padding:16px}</style><main>${render(handoff, handoff.symbol)}</main></html>`,
+          );
+          await page
+            .locator("details")
+            .evaluateAll((elements: HTMLDetailsElement[]) =>
+              elements.forEach((element) => {
+                element.open = true;
+              }),
+            );
+          const size = await page.evaluate(() => ({
+            width: innerWidth,
+            scrollWidth: document.documentElement.scrollWidth,
+            overflowing: [...document.querySelectorAll("main *")]
+              .filter((element) => {
+                const bounds = element.getBoundingClientRect();
+                return (
+                  bounds.width > 0 &&
+                  (bounds.right > innerWidth + 1 || bounds.left < -1)
+                );
+              })
+              .map((element) => element.tagName),
+          }));
+          expect(size.scrollWidth).toBeLessThanOrEqual(width);
+          expect(size.overflowing).toEqual([]);
+          measurements.push(size);
+          await page.screenshot({
+            path: resolve(output, `${width}.png`),
+            fullPage: true,
+          });
+          await page.screenshot({
+            path: resolve(output, `${width}-viewport.png`),
+            fullPage: false,
+          });
+        }
+        writeFileSync(
+          resolve(output, "dimensions.json"),
+          JSON.stringify(measurements, null, 2),
+        );
+      } finally {
+        await context.close();
+      }
+    },
+    90000,
+  );
+});
 
 describe("read-only economic review materials", () => {
   it("renders only actual groups, with facts, assumptions, counterevidence, questions and source identities", () => {

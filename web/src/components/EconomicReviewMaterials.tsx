@@ -1,6 +1,7 @@
 import type { PolicyHandoff } from "../services/valuePolicy";
 import { economicMaterialsMatch } from "../services/valuePolicy";
 import { AccountingBridgeReview } from "./AccountingBridgeReview";
+import { JointCapitalReview } from "./JointCapitalReview";
 
 const titles: Record<string, string> = {
   EARNINGS: "可持续盈利",
@@ -67,6 +68,7 @@ export function EconomicReviewMaterials({
         symbol={symbol}
         descriptor={material.input_descriptor_sha256}
       />
+      <JointCapitalReview handoff={handoff} symbol={symbol} />
       {material.groups.map((group) => (
         <details key={group.id}>
           <summary>{titles[group.id] ?? group.title}</summary>

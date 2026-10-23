@@ -2,6 +2,36 @@ import type { ValueResearchAnalysis } from "../types/api";
 
 type EvidenceBinding = { path: string; sha256: string };
 
+export type JointCapitalReview = {
+  schema_version: "joint-capital-review-v1";
+  symbol: string;
+  action: "no_order";
+  status: "CONDITIONAL_PATH_NOT_APPROVED";
+  scope: "RESEARCH_ASSUMPTIONS_NOT_NORMALIZED_FACTS";
+  candidate_binding: EvidenceBinding;
+  proposal_binding: EvidenceBinding;
+  policy_binding: EvidenceBinding;
+  input_descriptor_sha256: string;
+  selected_choice: string;
+  date_scope: "DATED_CONDITIONAL_MODEL" | "UNDATED_CONDITIONAL_MODEL";
+  basis_at: string | null;
+  valuation_at: string | null;
+  scenarios: {
+    scenario: "bear" | "base" | "bull";
+    drivers: Record<string, unknown> & {
+      years: { year: number; revenue_growth: string; cost_ratio: string }[];
+    };
+    ledger: Record<string, unknown> & {
+      rows: (Record<string, unknown> & { year: number })[];
+      forecast_roe: string[];
+      cash_funding_status: "PASS" | "FAIL";
+      scope: string;
+      limitations: string[];
+    };
+    valuation_per_share: string;
+  }[];
+};
+
 export type EconomicReviewMaterial = {
   schema_version: "value-economic-review-materials-v1";
   symbol: string;
@@ -41,6 +71,7 @@ export type EconomicReviewMaterial = {
     };
   };
   source_bindings: EvidenceBinding[];
+  joint_capital_review?: JointCapitalReview;
 };
 
 export type PolicyRule = {
@@ -138,6 +169,143 @@ function ordered(value: unknown): unknown {
 }
 const same = (left: unknown, right: unknown) =>
   JSON.stringify(ordered(left)) === JSON.stringify(ordered(right));
+
+const finiteDecimal = (value: unknown): value is string =>
+  typeof value === "string" &&
+  /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(value) &&
+  Number.isFinite(Number(value));
+
+export const jointRowFields = [
+  "revenue",
+  "cost",
+  "legacy_pre_tax_profit",
+  "legacy_parent_profit",
+  "new_operating_profit",
+  "new_liquidity_profit",
+  "profit",
+  "opening_book",
+  "roe",
+  "retained",
+  "dividend",
+  "closing_book",
+  "net_operating_addition",
+  "net_liquidity_addition",
+  "maintenance_capex_assumption",
+  "cash_open",
+  "cash_close",
+] as const;
+export const jointTerminalFields = [
+  "retention",
+  "terminal_roe",
+  "terminal_growth",
+  "terminal_profit",
+  "terminal_book",
+  "terminal_retention",
+  "terminal_net_operating_investment",
+  "terminal_new_liquidity_investment",
+  "terminal_dividend",
+] as const;
+const driverFields = [
+  "retention",
+  "operating_allocation",
+  "new_operating_return",
+  "new_liquidity_return",
+  "parent_cash_conversion",
+  "terminal_growth",
+  "terminal_profit_scale",
+];
+
+/** Shape and identity only. No ledger recomputation or economic approval in UI. */
+export function jointCapitalReviewMatches(
+  handoff: PolicyHandoff,
+  symbol: string,
+): boolean {
+  try {
+    if (
+      !economicMaterialsMatch(handoff, symbol) ||
+      handoff.status !== "EXTERNAL_SIGNATURE_REQUIRED"
+    )
+      return false;
+    const material = handoff.economic_review_materials!;
+    const review = material.joint_capital_review;
+    if (
+      !review ||
+      review.schema_version !== "joint-capital-review-v1" ||
+      review.symbol !== symbol ||
+      review.action !== "no_order" ||
+      review.status !== "CONDITIONAL_PATH_NOT_APPROVED" ||
+      review.scope !== "RESEARCH_ASSUMPTIONS_NOT_NORMALIZED_FACTS" ||
+      !binding(review.candidate_binding) ||
+      !same(review.candidate_binding, handoff.candidate_binding) ||
+      !binding(review.proposal_binding) ||
+      !binding(review.policy_binding) ||
+      ![review.proposal_binding, review.policy_binding].every((ref) =>
+        material.source_bindings.some((source) => same(source, ref)),
+      ) ||
+      !digest(review.input_descriptor_sha256) ||
+      review.input_descriptor_sha256 !== material.input_descriptor_sha256 ||
+      typeof review.selected_choice !== "string" ||
+      !review.selected_choice.trim() ||
+      !(review.date_scope === "UNDATED_CONDITIONAL_MODEL"
+        ? review.basis_at === null && review.valuation_at === null
+        : review.date_scope === "DATED_CONDITIONAL_MODEL" &&
+          [review.basis_at, review.valuation_at].every(
+            (value) =>
+              typeof value === "string" &&
+              /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(value) &&
+              Number.isFinite(Date.parse(value)),
+          )) ||
+      !Array.isArray(review.scenarios) ||
+      review.scenarios.length !== 3
+    )
+      return false;
+    return review.scenarios.every((item, index) => {
+      if (
+        !record(item) ||
+        item.scenario !== ["bear", "base", "bull"][index] ||
+        !finiteDecimal(item.valuation_per_share) ||
+        !record(item.drivers) ||
+        Object.keys(item.drivers).some(
+          (key) => key !== "years" && !driverFields.includes(key),
+        ) ||
+        !driverFields.every((key) => finiteDecimal(item.drivers[key])) ||
+        !Array.isArray(item.drivers.years) ||
+        item.drivers.years.length !== 5 ||
+        !item.drivers.years.every(
+          (row, i) =>
+            record(row) &&
+            row.year === i + 1 &&
+            finiteDecimal(row.revenue_growth) &&
+            finiteDecimal(row.cost_ratio),
+        )
+      )
+        return false;
+      const ledger = item.ledger;
+      return (
+        record(ledger) &&
+        ledger.scope === review.scope &&
+        ["PASS", "FAIL"].includes(ledger.cash_funding_status) &&
+        strings(ledger.limitations) &&
+        jointTerminalFields.every((key) => finiteDecimal(ledger[key])) &&
+        Array.isArray(ledger.forecast_roe) &&
+        ledger.forecast_roe.length === 5 &&
+        ledger.forecast_roe.every(finiteDecimal) &&
+        Array.isArray(ledger.rows) &&
+        ledger.rows.length === 5 &&
+        ledger.rows.every(
+          (row, i) =>
+            record(row) &&
+            row.year === i + 1 &&
+            jointRowFields.every((key) => finiteDecimal(row[key])) &&
+            typeof row.cash_funding_status === "string" &&
+            ["PASS", "FAIL"].includes(row.cash_funding_status),
+        )
+      );
+    });
+  } catch {
+    return false;
+  }
+}
 
 /** Presentation identity check only; source/hash verification stays server-owned. */
 export function economicMaterialsMatch(
