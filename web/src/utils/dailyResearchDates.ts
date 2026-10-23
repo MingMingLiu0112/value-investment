@@ -38,6 +38,11 @@ export function dailyMachineResearchReview(lastRun: unknown) {
     const complete =
       row.event_coverage_status === "COMPLETE" &&
       !!day(row.event_coverage_through);
+    const modelStatus =
+      ["VALID", "STALE", "UNKNOWN"].includes(row.model_validity_status) &&
+      (complete || row.model_validity_status !== "VALID")
+        ? row.model_validity_status
+        : "UNKNOWN";
     return {
       symbol: row.symbol,
       status: typeof row.status === "string" ? row.status : "UNKNOWN",
@@ -50,20 +55,17 @@ export function dailyMachineResearchReview(lastRun: unknown) {
           ? row.announcement_count
           : null,
       facts_change_status:
-        !complete && row.facts_change_status === "NONE"
+        !complete &&
+        ["NONE", "REVIEWED_NO_MODEL_INVALIDATION"].includes(row.facts_change_status)
           ? "UNKNOWN"
           : typeof row.facts_change_status === "string"
             ? row.facts_change_status
             : null,
-      model_validity_status:
-        !complete &&
-        row.model_validity_status === "REVIEWED_NO_MODEL_INVALIDATION"
-          ? "UNKNOWN"
-          : typeof row.model_validity_status === "string"
-            ? row.model_validity_status
-            : null,
+      model_validity_status: modelStatus,
       model_recalculation_required:
-        typeof row.model_recalculation_required === "boolean"
+        row.model_recalculation_required === false && modelStatus !== "VALID"
+          ? null
+          : typeof row.model_recalculation_required === "boolean"
           ? row.model_recalculation_required
           : null,
       materiality_review_required:

@@ -176,12 +176,19 @@ it("keeps zero-announcement incomplete windows unknown and preserves observed re
   row.event_coverage_status = "UNCONFIRMED";
   row.announcement_count = 0;
   row.facts_change_status = "NONE";
-  row.model_validity_status = "REVIEWED_NO_MODEL_INVALIDATION";
+  row.model_validity_status = "VALID";
+  row.model_recalculation_required = false;
   let output = dailyMachineResearchReview(value).rows[0];
   expect(output.event_coverage_status).toBe("UNCONFIRMED");
   expect(output.event_coverage_through).toBeNull();
   expect(output.facts_change_status).toBe("UNKNOWN");
   expect(output.model_validity_status).toBe("UNKNOWN");
+  expect(output.model_recalculation_required).toBeNull();
+  row.facts_change_status = "REVIEWED_NO_MODEL_INVALIDATION";
+  output = dailyMachineResearchReview(value).rows[0];
+  expect(output.facts_change_status).toBe("UNKNOWN");
+  expect(output.model_validity_status).toBe("UNKNOWN");
+  expect(output.model_recalculation_required).toBeNull();
   row.facts_change_status = "REVIEW_REQUIRED";
   expect(dailyMachineResearchReview(value).rows[0].facts_change_status).toBe(
     "REVIEW_REQUIRED",
@@ -191,4 +198,6 @@ it("keeps zero-announcement incomplete windows unknown and preserves observed re
   output = dailyMachineResearchReview(value).rows[0];
   expect(output.event_coverage_status).toBe("COMPLETE");
   expect(output.event_coverage_through).toBe("2026-10-22");
+  expect(output.model_validity_status).toBe("VALID");
+  expect(output.model_recalculation_required).toBe(false);
 });
