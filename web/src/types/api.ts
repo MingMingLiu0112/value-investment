@@ -515,6 +515,8 @@ export interface CurrentSnapshotValidity extends CurrentSnapshotScope {
   status: string | null;
   symbol: string | null;
   evaluated_at?: string | null;
+  availability_basis?: string | null;
+  research_cutoff_changed?: boolean | null;
   usable_for_research_comparison: boolean | null;
   g3_approval_granted?: boolean | null;
   blockers: string[];
