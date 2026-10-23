@@ -299,3 +299,26 @@ SHA256 `b4b8b6ddbf251ac00596879dd8857896f8a46acb4951e729b03248d15e89dc2c`。
 生命周期沿用既有官方输入展示该关联，价格形成窗口不足仍为 PARTIAL，整体可比性仍 UNKNOWN。
 真实公开行情仅使用周末最近收盘展示合同，`current_pit=false`；没有创建 owned Entry 或持仓。
 剩余为完整期初行动状态、多级修订链、未支持格式与非现金模型、独立历史 PIT 和正式账户事实核对。
+
+## 12. 真实来源与明确模拟 Entry 的连续性演练
+
+`application.hotspot.simulated_lifecycle.run_simulated_hotspot_lifecycle` 复用既有
+`build_hotspot_lifecycle_review` 与 `PrivateJournal/PrivatePortfolioService`，不注册新平台、
+不建立 owned Entry 绑定。来源根目录只读，独立工作树的 `runtime/swing-simulated-lifecycle/<uuid>/`
+只新建 `SIMULATED-journal.jsonl`。来源绑定相对于 `source_root`，journal 绑定相对于 `workspace_root`。
+
+模拟 Entry 是人为指定的 100 股收盘参考价记账假设，**不是当时可成交报价，不是策略准入或用户确认**。
+即使实际 OPEN 未观察到也保留该事实，不倒改规则来制造入场。生成/确认使用本次实际时间，历史
+`assumed_entry_at` 仅为回放截止时点；5 元费用是记账测试假设，不冒充实际成本。冻结原始来源绑定、
+入场规则、入场未通过原因和原保护位，并使用同一版本规则检查后续价格。准备/确认/幂等与重启重放
+走既有 journal 合同；后续 ADD/REDUCE/EXIT 只输出复核及具体缺口，不追加后续成交，不调整真实仓位。
+
+实际归档验证案例为 300750 的 2026-10-22、23 日公开价格窗口，原保护位 `218.450` 保持不变，
+后续滚动保护位 `216.510` 不能覆盖它。后续 4 根小时线完整、未观察到原保护位收盘跌破；原始结构为
+`REDUCE_STRUCTURE_REVIEW`，但整体公司行动可比性仍 UNKNOWN，正式观察仍 UNKNOWN。
+该证券没有可供本包使用的官方公告 observation，明确记录缺失，不能使用 301061 更正案例来替代。
+单来源分钟数据、独立准入、真实事件风险及个人组合约束仍未证明；没有新增 OOS 或真实 Shadow。
+
+输出保留完整原生 lifecycle 对象、模拟入场冻结指纹和独立 journal 路径/Hash/幂等/重启回执，
+供主会话按既有只读展示集成。`namespace=SIMULATED`、`position_guidance=null`、
+`actual_owned_entry_created=false`、`strategy_validation=NOT_PROVEN`、永久 `action=no_order`。
