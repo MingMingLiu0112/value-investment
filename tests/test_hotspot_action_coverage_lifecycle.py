@@ -57,6 +57,12 @@ def test_complete_query_cannot_erase_original_protection_or_raw_breach(tmp_path,
     coverage = after["price_comparability"]["official_disclosure_coverage"]
     assert coverage["official_publication_coverage"] == "COMPLETE"
     assert_not_admitted(coverage)
+    if known_crossing:
+        event_windows = after["price_comparability"]["cash_action_window_reviews"]
+        assert len(event_windows) == 1
+        assert event_windows[0]["comparison_allowed"] is False
+        assert event_windows[0]["no_change"] is None
+        assert event_windows[0]["status"] == "EVENT_CHAIN_UNAVAILABLE"
     _assert_no_permission(after)
     text = render_hotspot_lifecycle_markdown(after)
     assert "零公告不证明" in text and "原始参考保护价（元）：11" in text

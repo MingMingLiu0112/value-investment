@@ -218,6 +218,13 @@ def render_cash_event_mapping_markdown(review):
     lines.extend('- ' + _lifecycle_binding(ref) for ref in proof.get('evidence_bindings', []))
     original = proof.get('body_evidence_binding') or {}
     lines += [f"正文来源：{_lifecycle_value(original.get('url'))}。", 'action=no_order；策略 NOT_PROVEN。']
+    window = review.get('event_window_review')
+    if window:
+        lines += ['', '## 官方后续公告窗口', '',
+            f"窗口核验：{_lifecycle_value(window.get('status'))}；自动纳入核验的其他原件数：{_lifecycle_value(window.get('related_document_count'))}。",
+            f"修订状态：{_lifecycle_value(window.get('revision_status'))}；具体缺口：{_lifecycle_value(window.get('gaps'))}。",
+            '没有完整期初公司行动状态和修订语义证据，整体比较未放行；不能从零后续公告推断没有变化。']
+        lines.extend('- ' + _lifecycle_binding(ref) for ref in window.get('evidence_bindings', []))
     return '\n'.join(lines) + '\n'
 
 
@@ -260,7 +267,7 @@ def render_hotspot_lifecycle_markdown(review):
         '## 判定路径', '']
     for index, step in enumerate(explanation.get('decision_path') or [], start=1):
         values = {key: value for key, value in (step.get('values') or {}).items()
-                  if key != 'official_disclosure_coverage'}
+                  if key not in {'official_disclosure_coverage', 'cash_action_window_reviews'}}
         lines += [f"{index}. 检查：{_lifecycle_code(step.get('check'), _LIFECYCLE_CHECKS)}；结果：{_lifecycle_code(step.get('outcome'), _LIFECYCLE_OUTCOMES)}。",
                   f"   数值与状态：{_lifecycle_value(values)}。"]
         bindings = step.get('evidence_bindings') or []
@@ -272,6 +279,12 @@ def render_hotspot_lifecycle_markdown(review):
     coverage = (review.get('price_comparability') or {}).get('official_disclosure_coverage')
     if coverage:
         lines += ['', render_hotspot_action_coverage_markdown(coverage)]
+    for window in (review.get('price_comparability') or {}).get('cash_action_window_reviews', []):
+        lines += ['', '## 现金事件与后续公告窗口', '',
+            f"事件窗口核验：{_lifecycle_value(window.get('status'))}；实施原文在官方索引中：{_lifecycle_value(window.get('implementation_in_index'))}。",
+            f"自动核对的其他原件数：{_lifecycle_value(window.get('related_document_count'))}；修订状态：{_lifecycle_value(window.get('revision_status'))}。",
+            '全量公告查询与单事件对应仍不能代替期初公司行动状态和全部修订语义核验，整体价格比较未放行。',
+            f"具体缺口：{_lifecycle_value(window.get('gaps'))}。"]
     lines += ['', '## 为何不能据此加仓', '',
               '上述结构结果不能单独作为加仓依据；仍须完成外部复核。']
     raw_observation = review.get('unadjusted_structural_observation')

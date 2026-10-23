@@ -12,6 +12,7 @@ from pathlib import Path
 from ..product.daily_event_observation import verify_retained_event_coverage
 from ...infrastructure.evidence.historical_price_correspondence import require_inside, sha256_file
 from ...quote_sessions import CHINA
+from ...infrastructure.hotspot.cash_implementation import load_cash_implementation
 
 
 VERSION = "hotspot-official-action-coverage-v1"
@@ -99,4 +100,70 @@ def inspect_official_action_coverage(*, root: Path, symbol: str, start: date,
     except (OSError, ValueError, KeyError, TypeError, AttributeError, OverflowError) as error:
         result.update(official_publication_coverage="INVALID_OR_UNAVAILABLE", diagnostic=str(error))
         result["gaps"][0] = "OFFICIAL_PUBLICATION_WINDOW_INVALID_OR_UNAVAILABLE"
+    return result
+
+
+def inspect_cash_action_window(*, root: Path, symbol: str, record_date: date,
+        registry_binding: dict, start: date, end: date, now: datetime,
+        observation_binding: dict) -> dict:
+    """Bind an implementation and EVERY other archived publication to its review.
+
+    A complete publication range is required even for this event-local check.
+    The opening action state and semantic absence of amendments remain separate;
+    this result never certifies no-change or permits full-window comparison.
+    """
+    coverage = inspect_official_action_coverage(root=root, symbol=symbol, start=start,
+        end=end, now=now, observation_binding=observation_binding)
+    result = dict(schema_version="hotspot-cash-action-window-v1", symbol=symbol,
+        action="no_order", status="WINDOW_UNAVAILABLE", publication_coverage=coverage,
+        implementation_proof=None, implementation_in_index=False,
+        related_document_count=None, revision_status="NOT_EVALUATED",
+        price_comparability="UNKNOWN", no_change=None, comparison_allowed=False,
+        opening_state_verified=False, revision_absence_proven=False,
+        formal_eligibility=False, scope="EVENT_PUBLICATION_CHAIN_NOT_COMPLETE_PRICE_BASIS",
+        evidence_bindings=list(coverage["evidence_bindings"]),
+        gaps=["OPENING_PENDING_ACTION_STATE_MISSING", "SEMANTIC_REVISION_ABSENCE_NOT_PROVEN"])
+    if coverage["official_publication_coverage"] != "COMPLETE":
+        result["gaps"].append("COMPLETE_PRICE_FORMATION_PUBLICATION_WINDOW_REQUIRED")
+        return result
+    try:
+        original = load_cash_implementation(root=root, symbol=symbol, record_date=record_date,
+            registry_binding=registry_binding, now=now)
+        result["implementation_proof"] = original
+        binding = original["body_evidence_binding"]
+        if coverage["publication_window"]["start"] > original["terms"]["published_date"]:
+            result.update(status="IMPLEMENTATION_PUBLICATION_NOT_COVERED")
+            result["gaps"].append("SCAN_STARTS_AFTER_IMPLEMENTATION_PUBLICATION")
+            return result
+        matches = [row for row in coverage["pending_announcements"] if row["source_url"] == binding["url"]]
+        if len(matches) != 1:
+            result.update(status="IMPLEMENTATION_NOT_IN_INDEX")
+            result["gaps"].append("IMPLEMENTATION_MISSING_OR_DUPLICATED_IN_OFFICIAL_INDEX")
+            return result
+        if any(ref["sha256"] != binding["sha256"] for ref in matches[0]["evidence_bindings"]):
+            raise ValueError("Implementation original conflicts with official window")
+        result["implementation_in_index"] = True
+        related = []
+        for row in coverage["pending_announcements"]:
+            if row["announcement_id"] == matches[0]["announcement_id"]:
+                continue
+            for ref in row["evidence_bindings"]:
+                related.append(dict(path=ref["path"], sha256=ref["sha256"], url=row["source_url"],
+                                    available_at=coverage["source_available_at"]))
+        result["related_document_count"] = len(related)
+        # No title/keyword filter: a neutral title must not hide a body correction.
+        checked = load_cash_implementation(root=root, symbol=symbol, record_date=record_date,
+            registry_binding=registry_binding, now=now, related_disclosure_bindings=tuple(related))
+        if any(sha256_file(require_inside(root, root / ref["path"], "cash window source")) != ref["sha256"]
+               for ref in coverage["evidence_bindings"]):
+            raise ValueError("Official publication window changed during event review")
+        result.update(implementation_proof=checked, revision_status=checked["revision_status"],
+            status="REVISION_REVIEW_REQUIRED" if checked["revision_status"] == "PENDING_LINKAGE"
+            else "IMPLEMENTATION_AND_PUBLICATION_WINDOW_BOUND")
+        result["evidence_bindings"].extend(checked["evidence_bindings"])
+        if checked["revision_status"] == "PENDING_LINKAGE":
+            result["gaps"].append("CORRECTION_OR_CANCELLATION_LINKAGE_REQUIRED")
+    except (OSError, ValueError, KeyError, TypeError, ArithmeticError) as error:
+        result.update(status="EVENT_CHAIN_UNAVAILABLE", implementation_in_index=False, diagnostic=str(error))
+        result["gaps"].append("EVENT_BODY_OR_WINDOW_CORRESPONDENCE_FAILED")
     return result

@@ -260,3 +260,21 @@ PDF 归档 → 原生覆盖核验 → 波段价格形成窗口匹配 → 待审�
 仍未证明 2026 年全部费用政策连续性、个人佣金内含项目、分笔与到账舍入、实际成交价格、
 流动性与可卖数量。历史归档取得时间不变，不构成新的独立 PIT/OOS 或真实 Shadow。
 本包只是把一项真实法定费用来源缺口落到可复算原件；策略保持 NOT_PROVEN，永久 `action=no_order`。
+
+## 10. 实施原文与官方后续公告窗口联查
+
+`corporate_action_coverage.inspect_cash_action_window` 复用全量原始响应核验和现金实施条款核验，
+要求查询覆盖价格形成期及实施公告发布日起的区间，并将索引中的全部其他 PDF 自动送入后续公告核验，
+不按标题关键词预先剔除。`IMPLEMENTATION_AND_PUBLICATION_WINDOW_BOUND` 表示这一事件及查询原件对应，
+`REVISION_REVIEW_REQUIRED` 表示发现需要链接审阅的更正/修订/取消/撤销原文；后者阻断参考坐标换算。
+原件冲突、缺失、窗口过短、实施原文未在索引中、未来取得或不可读的其他原件都不放行。
+
+`build_cash_event_mapping` 新增可选 `official_event_observation_binding`，把自动窗口核验放入
+`event_window_review`；生命周期在同时提供官方窗口和分配登记绑定时，为跨界现金事件输出
+`price_comparability.cash_action_window_reviews`，保留原价、原保护位、原始破位记录与原准入状态。
+
+真实查询 600519 的 2025-12-11 至 2025-12-19 官方全量窗口得到一份实施公告，复用了原有同 Hash PDF，
+新封存原始分页响应与请求元数据。实际近期零公告窗口无法覆盖这份较早的实施公告发布日；
+扩展价格形成期超出封存查询范围也被拒绝。新取得时间保留为实际 2026-10-23，不回填历史 PIT。
+即使只查到实施原文，仍未证明完整期初公司行动状态或修订语义不存在：`no_change=null`、
+`comparison_allowed=false`、`price_comparability=UNKNOWN`。单事件条件算术不升级为整体可比性。

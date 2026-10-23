@@ -9,7 +9,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from .current_case_review import inspect_current_price_case
-from .corporate_action_coverage import inspect_official_action_coverage
+from .corporate_action_coverage import inspect_official_action_coverage, inspect_cash_action_window
 from .independent_price_conditions import INDEPENDENT_OPEN_RULE
 from .price_action_case import project_current_price_action_plan
 from ...domain.execution.exchange_calendar import is_exchange_session
@@ -212,6 +212,11 @@ def build_hotspot_lifecycle_review(*, root: Path, symbol: str,
     comparability["official_disclosure_coverage"] = inspect_official_action_coverage(
         root=root, symbol=symbol, start=start, end=end, now=now,
         observation_binding=official_event_observation_binding)
+    if corporate_action_registry_binding and official_event_observation_binding:
+        comparability["cash_action_window_reviews"] = [inspect_cash_action_window(
+            root=root, symbol=symbol, record_date=datetime.fromisoformat(event["record_date"]).date(),
+            registry_binding=corporate_action_registry_binding, start=start, end=end, now=now,
+            observation_binding=official_event_observation_binding) for event in comparability["crossing_events"]]
     result["price_comparability"] = comparability
     rules = result["current_conditions"]
     if comparison["first_breach_at"] or rules["EXIT"]["observed"]:
