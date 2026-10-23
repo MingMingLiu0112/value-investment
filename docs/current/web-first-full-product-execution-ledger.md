@@ -2267,3 +2267,13 @@ final Web build and port-8001 activation require their actual local receipts;
 this entry does not predeclare them passed. Public push is not authorized;
 local verification is not fresh GitHub CI. Real assisted trading NOT_REACHED.
 action=no_order.
+
+The 8181b0dc source checkpoint completed the exact 342-file offline Core
+selection: 4,797 passed, 82 environment-dependent skips. The subsequent
+logic-card identity/source/fingerprint hardening and its linked account,
+recording, API and architecture regression passed 221 tests. Final frontend
+regression: 441 passed, 2 optional browser skips; typecheck passed. The simulated
+surface rejects missing checks, missing workflow steps and any actual-account
+or strategy-validation claim. Per-step reasons are Chinese and explicitly
+synthetic. Local runtime activation/readback evidence remains separate from
+these code-test results.

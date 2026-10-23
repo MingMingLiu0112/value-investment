@@ -77,6 +77,14 @@ def attach_recording_time_risk(root, snapshot, *, fill, records, capture, now):
             # Preserve its verified owned-entry context rather than rebuilding
             # a context-free card at recording time.
             logic = deepcopy(decision['logic_card'])
+            digest = hashlib.sha256(json.dumps(
+                {key: value for key, value in logic.items() if key != 'content_sha256'},
+                ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
+            if (logic.get('content_sha256') != digest or logic.get('symbol') != fill['symbol']
+                    or logic.get('decision_action') != decision.get('decision_action')
+                    or logic.get('action') != 'no_order' or logic.get('broker_execution_permission') is not False
+                    or (logic.get('source_bindings') and logic['source_bindings'] != plan.get('source_bindings'))):
+                raise ValueError('RISK_CAPTURE_LOGIC_CARD_CHANGED')
         outcome.update(status="SERVER_VERIFIED_RECORDING_TIME_RISK", generated_at=generated.isoformat(),
             verified_at=now.isoformat(), account_scope=facts["account_scope"],
             journal_revision=len(records), journal_tip_sha256=records[-1]["record_sha256"],
@@ -95,7 +103,7 @@ def attach_recording_time_risk(root, snapshot, *, fill, records, capture, now):
         # refusal to record an otherwise lawful fill. No exception text is saved.
         known = {"MATCHING_PUBLIC_JUDGMENT_UNAVAILABLE", "RISK_CAPTURE_JOURNAL_CHANGED",
             "RISK_CAPTURE_IDENTITY_OR_NAMESPACE_MISMATCH", "RISK_CAPTURE_TIME_MISMATCH",
-            "RISK_CAPTURE_CURRENT_SOURCE_CHANGED"}
+            "RISK_CAPTURE_CURRENT_SOURCE_CHANGED", "RISK_CAPTURE_LOGIC_CARD_CHANGED"}
         outcome["reason"] = (capture.get("error") or
             (str(error) if isinstance(error, ValueError) and str(error) in known
              else "RISK_CAPTURE_BINDING_UNVERIFIED"))

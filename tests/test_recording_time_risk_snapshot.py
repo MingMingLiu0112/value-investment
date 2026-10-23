@@ -86,6 +86,29 @@ def test_core_uses_existing_core_assumptions_and_keeps_public_eligibility(record
     assert confirm_and_reload(ledger, digest) == snapshot
 
 
+def test_recording_preserves_verified_server_logic_card(recording, tmp_path):
+    ledger, request, provider, packet = recording
+    preview_result = provider({'symbol': '300364', 'assumptions': ASSUMPTIONS})
+    expected = deepcopy(preview_result['actionable_decision']['logic_card'])
+    prepared, digest = ledger.prepare_fill(request, repository_root=tmp_path,
+        risk_capture_provider=provider)
+    saved = prepared['draft']['fill']['judgment_snapshot']['personal_risk_at_trade']['logic_card']
+    assert saved == expected
+    assert confirm_and_reload(ledger, digest)['personal_risk_at_trade']['logic_card'] == expected
+
+
+def test_tampered_server_logic_card_is_not_certified(recording, tmp_path):
+    ledger, request, provider, packet = recording
+    def changed(selected):
+        result = provider(selected)
+        result['actionable_decision']['logic_card']['original_thesis'] = 'changed after calculation'
+        return result
+    prepared, digest = ledger.prepare_fill(request, repository_root=tmp_path, risk_capture_provider=changed)
+    assert prepared['personal_risk_capture']['status'] == 'UNAVAILABLE'
+    assert prepared['personal_risk_capture']['reason'] == 'RISK_CAPTURE_LOGIC_CARD_CHANGED'
+    assert confirm_and_reload(ledger, digest)['personal_risk_at_trade'] is None
+
+
 @pytest.mark.parametrize('fault', ['account', 'revision', 'symbol', 'sleeve', 'research', 'publication',
     'future', 'old_time', 'namespace', 'source', 'exception', 'verifier_exception', 'no_provider',
     'client_result', 'client_scenario', 'missing_snapshot', 'snapshot_exception', 'sell'])

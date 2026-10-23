@@ -32,6 +32,42 @@ const labels: Record<string, string> = {
   CORE_EXIT: "价值仓退出",
   HOTSPOT_EXIT: "热点仓退出",
 };
+const reasons: Record<string, string> = {
+  CORE_BUY:
+    "模拟假设：现金创造能力稳定，假设价值高于价格，且价值仓预算允许建立初始仓位。不是对该股票的实际判断。",
+  HOTSPOT_BUY:
+    "模拟假设：突破结构满足预设条件，止损压力和热点仓预算允许建仓；不表示真实突破策略已验证。",
+  CORE_ADD:
+    "模拟假设：价格下降，但企业价值、原始逻辑和置信度未变，且合并持仓风险仍允许；不是因为下跌就加仓。",
+  HOLD: "模拟假设：原始现金创造逻辑仍成立，没有出现失效事实，因此不新增交易。",
+  T_PLUS_ONE_REJECTED:
+    "当日买入股份尚不可卖出，现有成交服务拒绝该请求，现金与持仓保持不变。",
+  CORE_REDUCE:
+    "模拟假设：部分价值预期兑现，需要降低暴露；剩余投资逻辑尚未破坏。",
+  CORE_EXIT:
+    "模拟假设：新证据破坏了当初买入的现金创造逻辑，因此退出，不以涨跌幅作为唯一理由。",
+  HOTSPOT_EXIT:
+    "模拟假设：突破失败，满足原定保护条件，并已到可卖交易日；假设成交价不代表保证能够止损。",
+};
+
+export function verifiedSimulatedJourney(body: Journey): boolean {
+  return (
+    body?.namespace === "SIMULATED" &&
+    body.action === "no_order" &&
+    body.actual_account_used === false &&
+    body.strategy_validated === false &&
+    body.broker_execution_permission === false &&
+    Array.isArray(body.steps) &&
+    body.steps.map((row) => row.label).join(",") ===
+      Object.keys(labels).join(",") &&
+    [
+      "confirmation_idempotency",
+      "restart_equality",
+      "same_day_sell_rejected",
+      "temporary_journal_removed",
+    ].every((key) => body.checks?.[key] === true)
+  );
+}
 
 export function SimulatedTradeJourney() {
   const [data, setData] = useState<Journey>();
@@ -46,17 +82,7 @@ export function SimulatedTradeJourney() {
         cache: "no-store",
       });
       const body: Journey = await response.json();
-      if (
-        !response.ok ||
-        body.namespace !== "SIMULATED" ||
-        body.action !== "no_order" ||
-        body.actual_account_used !== false ||
-        body.strategy_validated !== false ||
-        body.broker_execution_permission !== false ||
-        !Array.isArray(body.steps) ||
-        !body.checks ||
-        !Object.values(body.checks).every((value) => value === true)
-      ) {
+      if (!response.ok || !verifiedSimulatedJourney(body)) {
         throw new Error("模拟闭环核验未通过，不展示为已完成。");
       }
       setData(body);
@@ -108,7 +134,7 @@ export function SimulatedTradeJourney() {
             expandable={{
               expandedRowRender: (row) => (
                 <p style={{ overflowWrap: "anywhere" }}>
-                  {row.rationale ?? row.reason}
+                  {reasons[row.label] ?? row.rationale ?? row.reason}
                 </p>
               ),
             }}
