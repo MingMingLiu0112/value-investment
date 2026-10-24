@@ -4051,3 +4051,105 @@ full regression, new commit's GitHub CI and release/user browser verification
 remain pending. No simulation peripheral expansion or persistent account retry;
 private accounts, Canonical Excel, server/PTA, production DB/jobs, broker and
 production identities remain untouched. Goal ACTIVE; action=no_order.
+
+### 2026-10-24 - Published business baseline and core-only queue correction
+
+Exact release cecb43f562f0315ff1e542ed74565eb98effdfd3 passed the clean checkout
+Core6324/146 skipped, frontend898/21 skipped and API330/2 skipped; typecheck,
+format and build passed. GitHub Core40076858935 and Web40076858948 SUCCESS.
+The archived prospective suite still lacks historical inputs and is NOT passed.
+These checks establish implementation regression, not economic approval or
+strategy effectiveness. The existing PR branch was pushed; main was not merged.
+
+8001 publication receipt:
+dual1/.tmp/release-cecb43f5-20261024T0843446728876Z/release-receipt.json,
+SHA256935df075902301cf48d3bd55b3a855f22dd48306da023fdabed12c77bb3d2d05.
+Source/backend/frontend/registries MATCHED; refresh remains PARTIAL/exit3.
+Actual fresh collection revalidated observed SSE/SZSE5224 securities, BSE failed;
+no all-A completion claim. Financial50055 E1 observations still have zero formal
+official fact admissions. The current swing source pool5219 is separate from
+the observed official value universe, not an all-A coverage certification.
+Its10 candidates are5 excluded/5 pending/0 selected. Current formal admission0.
+
+Readonly actual browser checks passed at1440/390/320 for daily research,
+600519/600887 historical earnings, native economic appendix and swing reasons.
+Receipts in vv1/.tmp/live-ui-cecb43f5:
+9fd858b9-1dd3-4d7c-bd63-bab2f6138b64/receipt.json
+SHA256d5ccd314fe90a3de17221e6fa9ec0ef2f12e7ff3494826090158a5d7a9ee1a8b;
+ecd1dc95-82a5-45c2-881c-4641524a53f0/receipt.json
+SHA256da3da601ef6655e38df2c3c14da8a26b47df95f2c2cff7134f03bdc229734a15.
+No account writes. Geometry checks do not prove polished UX: long financial
+numbers and expanded swing content need local mobile readability fixes. Those
+unpublished P2 changes are retained but are not the next priority or acceptance.
+
+fc85c2b5 integrates independently reviewed author2eb0ad71: Chinese annual-income
+note references now match retained Yili consolidated rows. Exact real-root test
+36 passed, including both real companies. Independent extraction checked8 real
+current/comparative revenue and parent-profit amounts and11 destructive probes.
+This is the next candidate, NOT running8001 or a new formal financial approval.
+Actual retained official/Sina comparison is in ns1/runtime/income-source-comparison/
+20261024T083440789422Z/comparison-result.json:8 amounts matched,4 lawful income
+inputs per company, historical PIT NOT_ADMITTED, economic approval false.
+These inputs still need the existing financial export/adoption consumer; they
+are not normalized earnings, full debt scope, nine-field quality or G3.
+
+Latest explicit user direction now supersedes the old simulation-first queue.
+Do not expand accounts, simulation journeys, generic audits/Agent frameworks,
+Excel or cosmetic Web work unless directly blocking the core business. Preserve
+existing journals and failed receipts. Only a concrete P0 safety defect may
+preempt actual strategy work. The current single queue is:
+1. Value:600519 first,600887 cross-check; lawful real income facts into existing
+   financial export/enrichment, then complete debt/earnings/distribution research
+   and applicable main valuation/event/price review. Never manufacture missing
+   debt, normalized earnings, approval or verified state.
+2. Swing:existing sibling freezes rules and closes one real PIT/market-pool/
+   execution-cost/comparability gap; retain3/7 NOT_PROVEN and OOS/Shadow limits.
+3. Root:consume both security verdicts through existing unified risk and Web/API;
+   separate sufficient negative NO_TRADE from UNASSESSABLE evidence gaps and
+   legitimately qualified CONDITIONAL_MANUAL_REVIEW. No public-state shortcut
+   to private quantity, holdings ownership or personal approval.
+
+Each package must identify actual security/strategy, decisive prior gap, concrete
+state change, business code, real source result, positive/negative tests,
+API/Web consumption, remaining economic/validation/authorization prerequisites
+and next autonomous work. A package that cannot cross admission must say why.
+Goal tool rechecked ACTIVE. No new Goal, strategy thresholds, production task,
+private account, Canonical Excel, server/PTA or order change. action=no_order.
+
+### 2026-10-24 - Real601888 missing research no longer masquerades as NO_TRADE
+
+Decisive CODE_GAP: public_strategy_assessment.project_actionable_evaluation
+treated an untriggered WATCH/TRIGGER_PENDING observation as EVALUATED_NO_TRADE
+even when the independent release lacked identity/event/data/validation/execution
+evidence. Existing /api/v1/daily-decisions consumes this projector directly.
+The old live baseline remains a record of that defect; no runtime was rewritten.
+
+Root now reuses independent_admission GATES/RULE_VERSION. A current matching
+independent result with only evidenced FAIL vetoes may support NO_TRADE without
+trade_eligible or personal authority. Missing/unknown/expired/not-yet-available
+gates, absent strategy review, rule/case/source mismatch or unavailable current
+data remain UNASSESSABLE. Legacy observation-only plans cannot stand in for a
+completed independent evaluation. Existing entry/exit observations are retained;
+this change grants no price, holding, quantity or personal review permission.
+
+Independent cold read on vv1 fc85c2b5 plus this patch reproduced real601888:
+NO_TRADE/EVALUATED_NO_TRADE -> UNASSESSABLE/NOT_ASSESSABLE. Reference session
+2026-10-23, dual-source close50.010 is historical research, not a trade instruction.
+Case runtime/hotspot-current-price-cases/
+601888-2026-10-23-da51ede8c28e477887646d0b280a1c92/case.json
+SHA256a600939509d7881d31565750882c8d201db8a2026018c57fbb05b843af0ca1b9;
+quote bundle SHA256374d9a8798ff93d523cd0a2a5cbc908c1306890c6556939b54a3f78feb519a7f;
+60m original SHA256df034a5d51b601c4fefc2b04e015100aeee6460751ac9f11249ea0b77ede9726;
+15m original SHA256f8e179d0113237c049ce298f35d03a17cf55761d02e6230e9442400987585b02.
+Minute originals are single-source unadjusted Sina; daily is derived from60m,
+not independently observed daily evidence. No new PIT/OOS/Shadow credit.
+The independent in-memory probe was not sealed as a new runtime receipt.
+
+Independent probes59 passed: fully evaluated trend:FAIL stays NO_TRADE despite
+risk_review_eligible=false; UNKNOWN stays UNASSESSABLE. Root read-model/readiness/
+decision tests94 passed; public API/current-price/independent-admission83 passed;
+existing architecture33 passed. Real600519/600887 remain UNASSESSABLE for genuine
+economic/valuation gaps. This is an unpublished source fix, not actual8001
+acceptance, main valuation approval or strategy validation. Next autonomous work
+is the already running real financial export/adoption package and sibling's
+execution/PIT validation; mobile polish and simulation expansion remain deferred.

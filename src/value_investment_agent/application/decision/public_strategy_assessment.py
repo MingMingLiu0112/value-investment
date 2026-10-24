@@ -4,6 +4,8 @@ from __future__ import annotations
 from copy import deepcopy
 import re
 
+from ...domain.hotspot.independent_admission import GATES, RULE_VERSION
+
 
 SCHEMA = "strategy-decision-read-model-v1"
 _STRATEGIES = {
@@ -44,6 +46,30 @@ def _condition(value):
 def _fields(plan, names):
     return {name: deepcopy(plan[name]) for name in names
             if isinstance(plan.get(name), (str, bool, int, float))}
+
+
+def _hotspot_evaluation_complete(plan):
+    admission = plan.get("independent_admission")
+    if (plan.get("schema_version") != "price-action-plan-independent-v2"
+            or plan.get("current_data_status") != "CURRENT"
+            or not isinstance(admission, dict)
+            or admission.get("schema_version") != RULE_VERSION
+            or admission.get("symbol") != plan["symbol"]
+            or admission.get("rule_version") != plan.get("model_or_rule_version")
+            or admission.get("action") != "no_order"
+            or admission.get("review_status") != "VERIFIED"):
+        return False
+    # An evidenced FAIL is an evaluated veto, unlike missing/unknown/expired
+    # evidence. Neither a PASS label nor personal trade eligibility is required.
+    evaluated_vetoes = {gate + ":FAIL" for gate in GATES}
+    for blockers, allowed in ((admission.get("blockers"), evaluated_vetoes),
+            (plan.get("blockers"), evaluated_vetoes | {
+                "CURRENT_STRUCTURE_NOT_QUALIFIED", "CURRENT_ENTRY_CONDITION_NOT_OBSERVED",
+                "CURRENT_ADD_CONDITION_NOT_CONFIRMED"})):
+        if (not isinstance(blockers, list) or any(not isinstance(x, str) for x in blockers)
+                or not set(blockers) <= allowed):
+            return False
+    return True
 
 
 def project_strategy_decision(plan: dict, *, symbol: str | None = None) -> dict:
@@ -176,6 +202,11 @@ def project_actionable_evaluation(item: dict) -> dict:
         return result
     if not view["evidence_refs"]:
         result["decision_reason"] = "计划未提供可追溯证据引用，不能把状态标签当作已完成评价。"
+        return result
+    if view["strategy"] == "HOTSPOT_SATELLITE" and not _hotspot_evaluation_complete(plan):
+        result["decision_reason"] = (
+            "已有价格结构观察，但独立策略、事件、执行或时点依据尚不完整；"
+            "即使入场未触发，也不能将证据不足表述为已充分评价的不交易结论。")
         return result
     entry = plan.get("entry_condition") or {}
     entry_known = isinstance(entry, dict) and entry.get("price") is not None

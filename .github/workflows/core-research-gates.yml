@@ -98,6 +98,7 @@ jobs:
           tests/test_value_enrichment_batch.py
           tests/test_value_enrichment_durable_reuse.py
           tests/test_income_source_correlation.py
+          tests/test_income_chinese_note.py
           tests/test_income_source_correlation_integration.py
           tests/test_value_income_durable_queue.py
           tests/test_sina_income_automatic_enrichment.py

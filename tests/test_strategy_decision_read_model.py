@@ -30,6 +30,7 @@ def test_public_flags_cannot_authorize_actions_or_invent_ownership(hotspot_plan)
 
 
 def test_observed_rejection_is_distinct_from_missing_evidence(hotspot_plan):
+    _complete_hotspot_evaluation(hotspot_plan)
     hotspot_plan.update(signal_state="TRIGGER_REJECTED")
     result = summarize_actionable_evaluations([{"symbol": "000333", "strategy": "hotspot",
                                                "price_action_plan": hotspot_plan}])
@@ -43,6 +44,58 @@ def test_observed_rejection_is_distinct_from_missing_evidence(hotspot_plan):
     result = summarize_actionable_evaluations([{"symbol": "000333", "price_action_plan": hotspot_plan}])
     assert result["unassessable_count"] == 1
     assert result["conclusion"] == "INCOMPLETE_EVALUATION"
+
+
+def _complete_hotspot_evaluation(plan):
+    from datetime import datetime, timezone
+    from value_investment_agent.domain.hotspot.independent_admission import (
+        GATES, HotspotGateEvidence, evaluate_independent_hotspot,
+    )
+
+    plan.update(schema_version="price-action-plan-independent-v2", current_data_status="CURRENT", blockers=[])
+    plan["independent_admission"] = evaluate_independent_hotspot(
+        symbol=plan["symbol"], strategy_rule_version=plan["model_or_rule_version"],
+        evidence=tuple(HotspotGateEvidence(gate, "PASS",
+            datetime(2026, 10, 16, 0, tzinfo=timezone.utc),
+            datetime(2026, 10, 17, 0, tzinfo=timezone.utc), "a" * 64) for gate in GATES),
+        now=datetime(2026, 10, 16, 8, tzinfo=timezone.utc), authorization_status="VERIFIED",
+        namespace="TEST_ONLY")
+
+
+@pytest.mark.parametrize("gap", ["event_risk:MISSING", "strategy_validation:UNKNOWN",
+    "data_quality:EXPIRED", "completed_bars:NOT_YET_AVAILABLE"])
+def test_untriggered_structure_with_missing_prerequisite_is_not_no_trade(hotspot_plan, gap):
+    _complete_hotspot_evaluation(hotspot_plan)
+    hotspot_plan.update(signal_state="TRIGGER_PENDING", period_structure={"60m": "UPTREND", "15m": "UPTREND"},
+        price_behavior={"daily_trend": "UPTREND"}, blockers=[gap])
+    hotspot_plan["independent_admission"].update(status="OBSERVATION_ONLY", blockers=[gap])
+    row = project_actionable_evaluation({"symbol": "000333", "price_action_plan": hotspot_plan})
+    assert row["decision_action"] == "UNASSESSABLE"
+    assert row["entry_condition"]["observed"] is False
+    assert row["eligibility"] is False
+    assert row["review_quantity"] is None
+
+
+def test_complete_negative_evaluation_does_not_require_trade_eligibility(hotspot_plan):
+    _complete_hotspot_evaluation(hotspot_plan)
+    hotspot_plan.update(signal_state="TRIGGER_PENDING", period_structure={"60m": "UPTREND", "15m": "UPTREND"},
+        price_behavior={"daily_trend": "UPTREND"}, blockers=["CURRENT_ENTRY_CONDITION_NOT_OBSERVED"])
+    row = project_actionable_evaluation({"symbol": "000333", "price_action_plan": hotspot_plan})
+    assert row["decision_action"] == "NO_TRADE"
+    assert row["personal_action_review"]["state"] == "UNASSESSABLE"
+    assert row["review_quantity"] is None
+    hotspot_plan["independent_admission"].update(blockers=["trend:FAIL"], risk_review_eligible=False)
+    hotspot_plan.update(signal_state="TRIGGER_REJECTED", blockers=["trend:FAIL"])
+    assert project_actionable_evaluation({"symbol": "000333", "price_action_plan": hotspot_plan})["decision_action"] == "NO_TRADE"
+
+
+@pytest.mark.parametrize("change", [{"blockers": ["CURRENT_CASE_NOT_BOUND_TO_STRATEGY_RELEASE"]},
+    {"current_data_status": "STALE"}, {"independent_admission": None},
+    {"schema_version": "price-action-plan-current-v1"}])
+def test_rejection_without_current_independent_basis_is_unassessable(hotspot_plan, change):
+    _complete_hotspot_evaluation(hotspot_plan)
+    hotspot_plan.update(signal_state="TRIGGER_REJECTED", **change)
+    assert project_actionable_evaluation({"symbol": "000333", "price_action_plan": hotspot_plan})["decision_action"] == "UNASSESSABLE"
 
 
 def test_watch_label_alone_does_not_prove_price_rejection(hotspot_plan):
