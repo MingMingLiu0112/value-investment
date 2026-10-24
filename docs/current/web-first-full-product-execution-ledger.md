@@ -4928,3 +4928,33 @@ facts and original gross borrowing/repayment rows in the existing economic
 consumer. Do not repeat the already completed FY/H1 balance bridge, infer gross
 flows from net, treat a mixed dividend/interest line as ordinary dividends, or
 turn missing maintenance/liquidity/maturity evidence into zeros.
+
+### 2026-10-25 consume already bound600887 parent cash bridges
+
+The actual current pending package already contains FY2025/H12026 parent cash
+residual calculations and original seven-row facts. Existing economic consumer
+ignored those calculations and only displayed partial cash proxies. This is a
+consumer CODE_GAP, not a newly discovered financial fact or a new valuation.
+
+Reused _review_calculations and historical_cash_observations: verify seven
+ordered labels, same period/source, parent-only scope, CNY, positive physical
+page, official catalog URL/hash and availability; replay opening+CFO+CFI+CFF+
+FX-closing, separately check reported movement and cross-period continuity.
+Movement has coefficient0 to avoid counting it twice, not to skip validation.
+Null amounts reject, never become zero. No new parser/schema/source adapter or
+gross financing figures. Existing panel can expand amounts, period, page,
+original URL and SHA with the explicit no-free-cash/no-dividend-certification
+boundary. It does not label the group cash as parent or the interest/dividend
+mixed line as ordinary dividends.
+
+Actual source results: FY parent closing13404587376.75; H1 closing14939427794.14
+CNY; both residual0.00 and FY closing equals H1 opening. Source bindings remain
+FY d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac p91,
+H1 423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2 p57.
+Root backend66 passed including actual two-company replay, final null/URL
+negative suite12 passed; panel/material tests178 passed/7 optional skipped;
+typecheck passed. Independent review confirmed actual two cash bridges and
+10 local cases plus4 missing probes, no explicitP1/P2. Original FY/H1 cash
+research is inherited, not counted as new research. Clean checkout/CI/actual
+8001 acceptance of this cash patch still pending. primary_valuation_usable=false,
+approval_changed=false, action=no_order. No main merge or product graduation.

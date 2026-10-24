@@ -34,6 +34,67 @@ def test_mechanism_explanation_rejects_missing_inputs():
         economic._mechanism_explanation([])
 
 
+@pytest.mark.parametrize('fault', [None, 'period', 'scope', 'label', 'movement',
+    'balance', 'continuity', 'hash', 'future', 'reordered', 'null', 'url'])
+def test_parent_cash_balances_use_bound_rows_and_separate_periods(fault):
+    labels = ('经营活动产生的现金流量净额', '投资活动产生的现金流量净额',
+        '筹资活动产生的现金流量净额', '汇率变动对现金及现金等价物的影响',
+        '现金及现金等价物净增加额', '期初现金及现金等价物余额', '期末现金及现金等价物余额')
+    facts, calculations = [], {}
+    for name, period, values in [
+        ('fy_parent_FY2025_cash_residual', 'FY2025', ['10','20','-5','1','26','100','126']),
+        ('h1_parent_H12026_cash_residual', 'H12026', ['12','-2','-3','0','7','126','133'])]:
+        ids = []
+        for index, (label, value) in enumerate(zip(labels, values)):
+            identifier = f'{period}-{index}'
+            ids.append(identifier)
+            facts.append(dict(id=identifier, label=label, source_id=period,
+                source_binding=dict(id=period, sha256='a'*64,
+                    source_url=f'https://example.invalid/{period}'),
+                unit='CNY', currency='CNY', columns=[dict(period=period, value=value)],
+                physical_page=10, evidence_excerpt=label + value,
+                statement_scope='listed_parent_only'))
+        calculations[name] = dict(input_fact_ids=ids, input_column_indices=[0]*7,
+            value='0', scope='listed_parent_only', formula='opening+CFO+CFI+CFF+FX-closing')
+    if fault == 'period':
+        facts[0]['columns'][0]['period'] = 'FY2024'
+    elif fault == 'scope':
+        facts[0]['statement_scope'] = 'consolidated'
+    elif fault == 'label':
+        facts[0]['label'] = '营业收入'
+    elif fault == 'movement':
+        facts[4]['columns'][0]['value'] = '27'
+    elif fault == 'balance':
+        facts[6]['columns'][0]['value'] = '127'
+    elif fault == 'continuity':
+        facts[12]['columns'][0]['value'] = '127'
+        facts[13]['columns'][0]['value'] = '134'
+    elif fault == 'hash':
+        facts[0]['source_binding']['sha256'] = 'b'*64
+    elif fault == 'null':
+        facts[0]['columns'][0]['value'] = None
+    elif fault == 'url':
+        facts[0]['source_binding']['source_url'] = 'https://example.invalid/forged'
+    elif fault == 'future':
+        facts[0]['source_binding']['available_at_conservative'] = (NOW + timedelta(days=1)).isoformat()
+    elif fault == 'reordered':
+        ids = calculations['fy_parent_FY2025_cash_residual']['input_fact_ids']
+        ids[0], ids[1] = ids[1], ids[0]
+    args = (dict(symbol='600887', facts=facts, calculations=calculations),
+            {period: dict(sha256='a'*64, kind='official_issuer_filing',
+                location=f'https://example.invalid/{period}')
+             for period in ['FY2025', 'H12026']}, '600887', NOW)
+    if fault:
+        with pytest.raises(ValueError):
+            economic._review_calculations(*args)
+    else:
+        rows = economic._review_calculations(*args)
+        assert len(rows) == 2
+        assert all(Decimal(row['recomputed_value']) == 0 for row in rows)
+        assert rows[1]['evidence'][0]['value'] == '12'
+        assert rows[1]['evidence'][0]['label'] == labels[0]
+
+
 def test_verified_scenario_cash_and_excess_returns_are_computed_without_admission(registered):
     root, symbol, _, _ = registered
     before = {p: sha256_file(p) for p in root.rglob('*') if p.is_file()}
@@ -264,6 +325,11 @@ def test_real_source_bound_readonly_replay(symbol):
         assert result['model_applicability']['assessment'] == 'STRESS_ONLY'
         assert '永久超额回报归零' in result['model_applicability']['reasons'][1]
         assert result['historical_cash_observations']
+        bridges = {row['id']: row for row in result['historical_cash_observations']
+                   if row['id'].endswith('_cash_residual')}
+        assert len(bridges) == 2
+        assert bridges['fy_parent_FY2025_cash_residual']['evidence'][6]['value'] == '13404587376.75'
+        assert bridges['h1_parent_H12026_cash_residual']['evidence'][6]['value'] == '14939427794.14'
         assert all(row['explicit_years'] == 4 for row in result['scenarios'])
         assert result['earnings']['historical_bridge']['computed_ttm_cny'] == '9647734710.01'
         cash, = result['cash_return_diagnostics']

@@ -181,6 +181,12 @@ def _review_calculations(review: dict, catalog: dict, symbol: str, now: datetime
         "fy2025_plan_dividends": (1, 1),
         "fy_parent_FY2025_cash_capex_proxy": (1, -1),
         "ttm_ex_nonrecurring_parent_profit": (1, 1, -1)}
+    cash_periods = {'fy_parent_FY2025_cash_residual': 'FY2025',
+                    'h1_parent_H12026_cash_residual': 'H12026'}
+    cash_labels = ('经营活动产生的现金流量净额', '投资活动产生的现金流量净额',
+        '筹资活动产生的现金流量净额', '汇率变动对现金及现金等价物的影响',
+        '现金及现金等价物净增加额', '期初现金及现金等价物余额', '期末现金及现金等价物余额')
+    signs.update({name: (1, 1, 1, 1, 0, 1, -1) for name in cash_periods})
     rows = []
     for name, coefficients in signs.items():
         calculation = review.get("calculations", {}).get(name)
@@ -189,7 +195,7 @@ def _review_calculations(review: dict, catalog: dict, symbol: str, now: datetime
         ids, columns = calculation["input_fact_ids"], calculation["input_column_indices"]
         if len(ids) != len(coefficients) or len(columns) != len(ids):
             raise ValueError("Invalid financial calculation inputs")
-        terms, evidence = [], []
+        terms, evidence, amounts = [], [], []
         for position, (fact_id, index, sign) in enumerate(zip(ids, columns, coefficients)):
             fact = facts[fact_id]
             source = catalog.get(fact["source_id"])
@@ -208,6 +214,15 @@ def _review_calculations(review: dict, catalog: dict, symbol: str, now: datetime
                 if binding.get(field):
                     _available(binding[field], now)
             column = fact["columns"][index]
+            if name in cash_periods:
+                label = ''.join(str(fact.get('label', '')).split())
+                if (column['period'] != cash_periods[name] or label != cash_labels[position]
+                        or label not in ''.join(str(fact.get('evidence_excerpt', '')).split())
+                        or source.get('kind') != 'official_issuer_filing'
+                        or binding.get('source_url') != source.get('location')
+                        or not str(binding.get('source_url', '')).startswith('https://')
+                        or type(fact['physical_page']) is not int or fact['physical_page'] < 1):
+                    raise ValueError('Parent cash bridge row label, period or page mismatch')
             if name == "ttm_ex_nonrecurring_parent_profit":
                 # Existing official review rows carry their accounting basis in
                 # the disclosed label, not in the convenient local fact ID.
@@ -223,17 +238,34 @@ def _review_calculations(review: dict, catalog: dict, symbol: str, now: datetime
                     raise ValueError("TTM calculation requires ordered distinct FY2025/H1_2026/H1_2025 periods")
             if name in {"calendar2025_parent_partial_cash_proxy", "fy_parent_FY2025_cash_capex_proxy"} and column["period"] != "FY2025":
                 raise ValueError("Cash calculation mixes reporting periods")
-            terms.append(sign * _number(column["value"]))
+            amount = _number(column['value'])
+            if amount is None:
+                raise ValueError('Financial calculation requires an observed amount')
+            amounts.append(amount)
+            terms.append(sign * amount)
             evidence.append(dict(fact_id=fact_id, source_id=fact["source_id"],
                 sha256=binding["sha256"], source_url=binding.get("source_url"),
                 physical_page=fact["physical_page"], excerpt=fact["evidence_excerpt"],
                 statement_scope=fact["statement_scope"], period=column["period"],
                 value=column["value"], coefficient=sign))
+            if name in cash_periods:
+                evidence[-1]['label'] = label
         computed = sum(terms, Decimal(0))
+        if name in cash_periods:
+            if (computed != 0 or amounts[4] != amounts[6] - amounts[5]
+                    or len({row['source_id'] for row in evidence}) != 1
+                    or calculation.get('scope') != 'listed_parent_only'):
+                raise ValueError('Parent cash balance or movement does not reconcile')
         if computed != _number(calculation["value"]):
             raise ValueError("Financial calculation does not reconcile")
         rows.append(dict(id=name, **calculation, recomputed_value=str(computed),
             calculation_verified=True, evidence=evidence))
+    bridges = {row['id']: row for row in rows if row['id'] in cash_periods}
+    if len(bridges) == 2:
+        annual = bridges['fy_parent_FY2025_cash_residual']['evidence']
+        interim = bridges['h1_parent_H12026_cash_residual']['evidence']
+        if _number(annual[6]['value']) != _number(interim[5]['value']):
+            raise ValueError('Parent cash bridge periods are not continuous')
     return rows
 
 

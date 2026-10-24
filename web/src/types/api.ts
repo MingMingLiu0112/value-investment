@@ -343,6 +343,14 @@ export interface ValueResearchAnalysis {
       id: string;
       recomputed_value: string;
       scope: string;
+      evidence?: {
+        label?: string;
+        period: string;
+        value: string;
+        source_url?: string;
+        physical_page: number;
+        sha256: string;
+      }[];
     }[];
     blockers: string[];
   } | null;

@@ -196,6 +196,33 @@ export function ValueResearchAnalysis({
                       <li key={row.id}>
                         {row.id}：{readinessNumber(row.recomputed_value)}{" "}
                         元；仅历史观察
+                        {row.id.endsWith("_cash_residual") &&
+                        row.evidence?.length ? (
+                          <details>
+                            <summary>母公司现金余额与流量原文</summary>
+                            <p>
+                              对账成立不等于自由现金或可持续分红；融资、维护投入与可动用性仍需核验。
+                            </p>
+                            <ul>
+                              {row.evidence.map((fact) => (
+                                <li key={`${fact.period}-${fact.label}`}>
+                                  {fact.period} · {fact.label}：
+                                  {readinessNumber(fact.value)} 元； 原件第{" "}
+                                  {fact.physical_page} 页；SHA-256 {fact.sha256}
+                                  {fact.source_url && (
+                                    <a
+                                      href={fact.source_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      原始出处
+                                    </a>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        ) : null}
                       </li>
                     ),
                   )}

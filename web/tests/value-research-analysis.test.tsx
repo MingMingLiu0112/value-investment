@@ -991,6 +991,23 @@ it("renders current economic mechanics without inventing a fade or approval", ()
       assessment: "CONTINUITY_ALTERNATIVE_REQUIRES_VALIDATION",
       reasons: ["三情景共用权益成本", "终端仍假设超额回报持续"],
     },
+    historical_cash_observations: [
+      {
+        id: "fy_parent_FY2025_cash_residual",
+        recomputed_value: "0",
+        scope: "listed_parent_only",
+        evidence: [
+          {
+            label: "期末现金及现金等价物余额",
+            period: "FY2025",
+            value: "13404587376.75",
+            physical_page: 91,
+            sha256: "a".repeat(64),
+            source_url: "https://example.invalid/official.pdf",
+          },
+        ],
+      },
+    ],
     blockers: [],
   };
   const html = render(decision);
@@ -998,6 +1015,10 @@ it("renders current economic mechanics without inventing a fade or approval", ()
   expect(html).toContain("终端仍假设超额回报持续");
   expect(html).toContain("不等于获批主估值");
   expect(html).not.toContain("仍需验证竞争优势与衰减");
+  expect(html).toContain("母公司现金余额与流量原文");
+  expect(html).toContain("对账成立不等于自由现金或可持续分红");
+  expect(html).toContain("期末现金及现金等价物余额");
+  expect(html).toContain("https://example.invalid/official.pdf");
 });
 
 it("keeps legacy analyses without the optional ledger unchanged", () => {
