@@ -207,13 +207,178 @@ function mutation(
     },
   };
 }
+function supportedFixture(phase: Parameters<typeof fixture>[0] = "entry"): any {
+  const p = fixture(phase);
+  p.account.confirmed_fill_correction = "PRICE_QUANTITY_FEES_ONLY_V1";
+  p.account.fill_corrections = {};
+  p.account.correction_reconciliation_status = "NOT_APPLICABLE";
+  for (const entry of p.account.entries) {
+    entry.fill_correction = null;
+    entry.hypothesis_review_status = "UNCHANGED";
+  }
+  return p;
+}
+function correctedFixture(): any {
+  const p = supportedFixture();
+  const { record_sha256, confirmed_at, ...original } =
+    p.account.portfolio.trades[0];
+  const effective = {
+    ...original,
+    quantity: "200",
+    price_cny: "12",
+    fees_cny: "7",
+  };
+  const correction = {
+    original_fill: original,
+    effective_fill: effective,
+    effective_version_sha256: "f".repeat(64),
+    correction_record_sha256s: ["f".repeat(64)],
+  };
+  p.account.fill_corrections[record_sha256] = correction;
+  p.account.correction_reconciliation_status =
+    "INVALIDATED_RECONCILIATION_REQUIRED";
+  p.account.revision = p.account.portfolio.revision = 5;
+  p.account.portfolio.trades[0] = {
+    ...effective,
+    record_sha256,
+    confirmed_at,
+    fill_correction: structuredClone(correction),
+  };
+  p.account.entries[0].fill_correction = structuredClone(correction);
+  p.account.entries[0].hypothesis_review_status =
+    "ACCOUNT_HISTORY_CORRECTED_REVIEW_REQUIRED";
+  p.account.entries[0].remaining_quantity = "200";
+  p.account.portfolio.cash_cny = "7593";
+  const position = p.account.portfolio.positions[0];
+  position.quantity = position.sleeves[0].quantity = "200";
+  position.cost_cny = position.sleeves[0].cost_cny = "2407";
+  return p;
+}
+it("validates opt-in correction states without treating reconciliation as risk approval", () => {
+  for (const phase of [
+    "empty",
+    "initialized",
+    "pending",
+    "filled",
+    "entry",
+  ] as const)
+    expect(verifiedPersistentSimulatedWorkbench(supportedFixture(phase))).toBe(
+      true,
+    );
+  expect(verifiedPersistentSimulatedWorkbench(correctedFixture())).toBe(true);
+  const p = correctedFixture();
+  p.account.correction_reconciliation_status = "RECONCILED_AFTER_CORRECTION";
+  expect(verifiedPersistentSimulatedWorkbench(p)).toBe(true);
+  expect(p.account.entries[0].hypothesis).toEqual(
+    fixture("entry").account.entries[0].hypothesis,
+  );
+  const decimalQuantity = correctedFixture();
+  decimalQuantity.account.fill_corrections[
+    "c".repeat(64)
+  ].effective_fill.quantity = "200.0";
+  decimalQuantity.account.portfolio.trades[0].fill_correction = structuredClone(
+    decimalQuantity.account.fill_corrections["c".repeat(64)],
+  );
+  decimalQuantity.account.entries[0].fill_correction = structuredClone(
+    decimalQuantity.account.fill_corrections["c".repeat(64)],
+  );
+  expect(verifiedPersistentSimulatedWorkbench(decimalQuantity)).toBe(true);
+});
+it.each([
+  (p: any) => {
+    delete p.account.fill_corrections;
+  },
+  (p: any) => {
+    p.account.confirmed_fill_correction = "UNSUPPORTED";
+  },
+  (p: any) => {
+    p.account.correction_reconciliation_status = "NOT_APPLICABLE";
+  },
+  (p: any) => {
+    p.account.correction_reconciliation_status = "RISK_PASSED";
+  },
+  (p: any) => {
+    p.account.entries[0].hypothesis_review_status = "UNCHANGED";
+  },
+  (p: any) => {
+    p.account.entries[0].fill_correction = null;
+  },
+  (p: any) => {
+    p.account.fill_corrections["c".repeat(64)].effective_version_sha256 =
+      "a".repeat(64);
+  },
+  (p: any) => {
+    p.account.fill_corrections["c".repeat(64)].correction_record_sha256s = [];
+  },
+  (p: any) => {
+    p.account.fill_corrections["c".repeat(64)].effective_fill.quantity = "0";
+  },
+  (p: any) => {
+    p.account.fill_corrections["c".repeat(64)].effective_fill.symbol = "300750";
+  },
+  (p: any) => {
+    p.account.fill_corrections["c".repeat(64)].effective_fill.side = "SELL";
+  },
+  (p: any) => {
+    p.account.fill_corrections["c".repeat(64)].effective_fill.trade_date =
+      "2026-10-22";
+  },
+  (p: any) => {
+    p.account.fill_corrections["c".repeat(64)].effective_fill.sleeve =
+      "HOTSPOT_SATELLITE";
+  },
+  (p: any) => {
+    p.account.portfolio.trades[0].quantity = "100";
+  },
+  (p: any) => {
+    delete p.account.portfolio.trades[0].fill_correction;
+  },
+  (p: any) => {
+    p.account.fill_corrections["a".repeat(64)] =
+      p.account.fill_corrections["c".repeat(64)];
+    delete p.account.fill_corrections["c".repeat(64)];
+  },
+])("rejects broken correction lineage/identity/versions %#", (change) => {
+  const p = correctedFixture();
+  change(p);
+  expect(verifiedPersistentSimulatedWorkbench(p)).toBe(false);
+});
+it("binds correction replies to requested target, prior version and submitted values", async () => {
+  const fetcher = vi.spyOn(globalThis, "fetch");
+  const body = {
+    ...simulatedCommon(supportedFixture(), "TEST_ONLY-correction"),
+    target_fill_record_sha256: "c".repeat(64),
+    expected_original_version: "c".repeat(64),
+    changes: { quantity: "200", price_cny: "12", fees_cny: "7" },
+    confirmed_at: fixture().server_now,
+    reason: "TEST_ONLY correct manual typo",
+  };
+  try {
+    const p = correctedFixture();
+    p.mutation = { operation: "correct-fill", record_sha256: "f".repeat(64) };
+    fetcher.mockResolvedValue({ ok: true, json: async () => p } as Response);
+    await expect(
+      writeSimulatedPortfolio("correct-fill", body),
+    ).resolves.toEqual(p);
+    for (const override of [
+      { expected_original_version: "e".repeat(64) },
+      { target_fill_record_sha256: "a".repeat(64) },
+      { changes: { price_cny: "13" } },
+    ])
+      await expect(
+        writeSimulatedPortfolio("correct-fill", { ...body, ...override }),
+      ).rejects.toMatchObject({ uncertain: true });
+  } finally {
+    fetcher.mockRestore();
+  }
+});
 it("renders conservatively without reading or initializing on SSR", () => {
   const fetcher = vi.spyOn(globalThis, "fetch");
   try {
     const html = renderToStaticMarkup(<PersistentSimulatedPortfolio />);
     expect(fetcher).not.toHaveBeenCalled();
     expect(html).toContain("持久模拟账户");
-    expect(html).toContain("确认后更正暂不支持");
+    expect(html).toContain("成交更正能力需读取服务器回执确认");
     expect(html).toContain("风险及仓位未评估");
   } finally {
     fetcher.mockRestore();
@@ -337,6 +502,42 @@ it("uses only same-origin no-store requests, rejects wrong mutation and reports 
   }
 });
 
+it("preserves uncertainty only for explicit committed-read-failure 409, without automatic retry", async () => {
+  const fetcher = vi.spyOn(globalThis, "fetch");
+  const body = simulatedCommon(fixture(), "TEST_ONLY-original-request-key");
+  try {
+    fetcher.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({ mutation_may_have_committed: true }),
+    } as Response);
+    await expect(
+      writeSimulatedPortfolio("initialize", body),
+    ).rejects.toMatchObject({
+      status: 409,
+      uncertain: true,
+      message: expect.stringContaining("写入可能已经完成"),
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(fetcher.mock.calls[0][1]!.body as string)).toEqual(body);
+    for (const [status, flag] of [
+      [409, false],
+      [409, "true"],
+      [422, true],
+    ] as const) {
+      fetcher.mockResolvedValueOnce({
+        ok: false,
+        status,
+        json: async () => ({ mutation_may_have_committed: flag }),
+      } as Response);
+      await expect(
+        writeSimulatedPortfolio("initialize", body),
+      ).rejects.toMatchObject({ status, uncertain: false });
+    }
+  } finally {
+    fetcher.mockRestore();
+  }
+});
 it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
   "TEST_ONLY records explicit writes, reopens draft, rejects stale source and preserves uncertain retry at 320/390",
   async () => {
@@ -547,6 +748,94 @@ it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
       await panel
         .getByText("原假说：TEST_ONLY thesis", { exact: true })
         .waitFor();
+      expect(
+        await panel.locator('[aria-label="模拟已确认成交更正"]').count(),
+      ).toBe(0);
+      await read().click();
+      await reply(supportedFixture());
+      const correctionPanel = panel.locator(
+        '[aria-label="模拟已确认成交更正"]',
+      );
+      await correctionPanel.waitFor();
+      await panel.getByLabel("选择更正的原交易").selectOption("c".repeat(64));
+      const correct = panel.getByRole("button", {
+        name: "确认追加模拟成交更正",
+        exact: true,
+      });
+      await consent().check();
+      expect(await correct.isDisabled()).toBe(true);
+      await panel.getByLabel("更正后股数", { exact: true }).fill("200");
+      await panel.getByLabel("更正后假设价格", { exact: true }).fill("12");
+      await panel.getByLabel("更正后假设费用", { exact: true }).fill("7");
+      expect(await correct.isDisabled()).toBe(true);
+      await panel
+        .getByLabel("模拟成交更正原因", { exact: true })
+        .fill("TEST_ONLY manual typo, no counter trade");
+      await correct.click();
+      const correctionRequest = await last();
+      const correctionBody = JSON.parse(correctionRequest.options.body);
+      expect(correctionRequest.url).toBe(
+        `${simulatedPortfolioUrl}/correct-fill`,
+      );
+      expect(Object.keys(correctionBody).sort()).toEqual(
+        [
+          "confirmed_hypothetical",
+          "idempotency_key",
+          "expected_revision",
+          "target_fill_record_sha256",
+          "expected_original_version",
+          "changes",
+          "confirmed_at",
+          "reason",
+        ].sort(),
+      );
+      expect(correctionBody.expected_original_version).toBe("c".repeat(64));
+      expect(correctionBody.confirmed_at).toBe(fixture().server_now);
+      expect(correctionBody.changes).toEqual({
+        quantity: "200",
+        price_cny: "12",
+        fees_cny: "7",
+      });
+      await reply({ mutation_may_have_committed: true }, 409);
+      await panel.getByText(/写入可能已经完成，但读回失败（409）/).waitFor();
+      await panel
+        .getByRole("button", { name: "以相同请求重试模拟写入", exact: true })
+        .waitFor();
+      await consent().check();
+      await panel
+        .getByRole("button", { name: "以相同请求重试模拟写入", exact: true })
+        .click();
+      expect((await last()).options.body).toBe(correctionRequest.options.body);
+      const corrected = correctedFixture();
+      corrected.mutation = {
+        operation: "correct-fill",
+        record_sha256: "f".repeat(64),
+      };
+      await reply(corrected);
+      await panel.getByText(/旧对账已失效，必须重新核对/).waitFor();
+      expect(
+        await panel
+          .getByText("原假说：TEST_ONLY thesis", { exact: true })
+          .count(),
+      ).toBe(1);
+      await panel.getByLabel("选择更正的原交易").selectOption("c".repeat(64));
+      await panel.getByLabel("更正后假设费用", { exact: true }).fill("8");
+      await panel
+        .getByLabel("模拟成交更正原因", { exact: true })
+        .fill("TEST_ONLY fee followup");
+      await consent().check();
+      await correct.click();
+      const followup = JSON.parse((await last()).options.body);
+      expect(followup.expected_original_version).toBe("f".repeat(64));
+      expect(followup.changes).toEqual({ fees_cny: "8" });
+      await reply({ detail: "TEST_ONLY stale effective version" }, 409);
+      await panel.getByText(/研究来源已变化（409）/).waitFor();
+      expect(
+        await panel.locator('[aria-label="模拟已确认成交更正"]').count(),
+      ).toBe(0);
+      await read().click();
+      await reply(correctedFixture());
+      await panel.getByText(/旧对账已失效，必须重新核对/).waitFor();
       const layouts = [];
       for (const width of [320, 390]) {
         await page.setViewportSize({ width, height: 900 });

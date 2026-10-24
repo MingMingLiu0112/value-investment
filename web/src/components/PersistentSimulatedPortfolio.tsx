@@ -57,7 +57,33 @@ export function PersistentSimulatedPortfolio() {
   const [thesis, setThesis] = useState(""),
     [hold, setHold] = useState(""),
     [breakers, setBreakers] = useState("");
+  const [correctionTarget, setCorrectionTarget] = useState<{
+    hash: string;
+    version: string;
+  }>();
+  const [changes, setChanges] = useState({
+    quantity: "",
+    price_cny: "",
+    fees_cny: "",
+  });
+  const [correctionReason, setCorrectionReason] = useState("");
+  const correctionSupported =
+    view?.account.confirmed_fill_correction === "PRICE_QUANTITY_FEES_ONLY_V1";
   const portfolio = view?.account.portfolio;
+  const correctionTrade = portfolio?.trades.find(
+    (t) => t.record_sha256 === correctionTarget?.hash,
+  );
+  const correctionLineage = correctionTarget
+    ? view?.account.fill_corrections?.[correctionTarget.hash]
+    : undefined;
+  const correctionVersion =
+    correctionLineage?.effective_version_sha256 ??
+    correctionTrade?.record_sha256;
+  const nonemptyChanges = Object.fromEntries(
+    Object.entries(changes)
+      .filter(([, v]) => v.trim())
+      .map(([k, v]) => [k, v.trim()]),
+  );
   const pending = portfolio?.pending_draft;
   const entry = view?.account.entries.find(
     (row) => row.fill_record_sha256 === entryHash,
@@ -77,6 +103,7 @@ export function PersistentSimulatedPortfolio() {
     setConfirmed(false);
     setView(undefined);
     setRetry(undefined);
+    setCorrectionTarget(undefined);
     try {
       setView(await readSimulatedPortfolio());
     } catch (fault) {
@@ -110,14 +137,21 @@ export function PersistentSimulatedPortfolio() {
         throw new SimulatedRequestError(0, true);
       setView(result);
       setRetry(undefined);
+      if (operation === "correct-fill") {
+        setCorrectionTarget(undefined);
+        setChanges({ quantity: "", price_cny: "", fees_cny: "" });
+        setCorrectionReason("");
+      }
       setNotice(
-        operation === "prepare-fill"
-          ? "草稿已保存，现金和持仓尚未确认变动；请检查后另行确认或取消。"
-          : operation === "confirm-entry"
-            ? "模拟Entry假说已绑定；不是原始PIT入场或研究批准。"
-            : operation === "cancel-fill"
-              ? "草稿已取消，不是撤销已确认成交。"
-              : "模拟记录已保存，可刷新核对恢复；不是实际成交或系统建议。",
+        operation === "correct-fill"
+          ? "模拟成交更正已追加，原交易与原Entry假说未重写；旧对账失效状态请按回执复核，不表示风险通过。"
+          : operation === "prepare-fill"
+            ? "草稿已保存，现金和持仓尚未确认变动；请检查后另行确认或取消。"
+            : operation === "confirm-entry"
+              ? "模拟Entry假说已绑定；不是原始PIT入场或研究批准。"
+              : operation === "cancel-fill"
+                ? "草稿已取消，不是撤销已确认成交。"
+                : "模拟记录已保存，可刷新核对恢复；不是实际成交或系统建议。",
       );
     } catch (fault) {
       setView(undefined);
@@ -185,6 +219,28 @@ export function PersistentSimulatedPortfolio() {
         "用户明确确认模拟入场假说及当前来源Hash；事后重建不授予策略资格",
     });
   }
+  function correctFill(event: React.FormEvent) {
+    event.preventDefault();
+    if (
+      !view ||
+      !canWrite ||
+      !correctionSupported ||
+      pending ||
+      !correctionTarget ||
+      correctionTarget.version !== correctionVersion ||
+      !Object.keys(nonemptyChanges).length ||
+      !correctionReason.trim()
+    )
+      return;
+    void mutate("correct-fill", {
+      ...simulatedCommon(view),
+      target_fill_record_sha256: correctionTarget.hash,
+      expected_original_version: correctionTarget.version,
+      changes: nonemptyChanges,
+      confirmed_at: view.server_now,
+      reason: correctionReason.trim(),
+    });
+  }
   return (
     <section
       aria-label="持久模拟账户"
@@ -200,7 +256,12 @@ export function PersistentSimulatedPortfolio() {
         手工假设记账会保留，重新打开后可读取恢复。与实盘和临时演练隔离；买卖按钮仅记录人工假设，不是选股、加减仓建议或券商订单。
       </p>
       <p>
-        尚未确认IPS，风险及仓位未评估；无市场价格，不显示收益率或估值。确认后更正暂不支持，不能称为完整交易闭环。
+        尚未确认IPS，风险及仓位未评估；无市场价格，不显示收益率或估值。
+        {!view
+          ? "成交更正能力需读取服务器回执确认。"
+          : correctionSupported
+            ? "仅支持追加价格、数量、费用更正，不改交易身份，不代表完整交易闭环。"
+            : "确认后更正暂不支持，不能称为完整交易闭环。"}
       </p>
       <Button
         aria-label="读取 / 刷新模拟账户"
@@ -446,6 +507,198 @@ export function PersistentSimulatedPortfolio() {
                     </li>
                   ))}
                 </ul>
+                {correctionSupported && (
+                  <section aria-label="模拟已确认成交更正">
+                    <h4>已确认模拟成交更正</h4>
+                    <p>
+                      只追加价格、数量或费用更正，不制造反向成交；证券、买卖方向、日期和策略仓不可修改。原交易Hash与原Entry假说保留，不自动变成新投资逻辑。
+                    </p>
+                    <p>
+                      {view.account.correction_reconciliation_status ===
+                      "INVALIDATED_RECONCILIATION_REQUIRED"
+                        ? "旧对账已失效，必须重新核对；原Entry需要复核，风险及仓位未评估。"
+                        : view.account.correction_reconciliation_status ===
+                            "RECONCILED_AFTER_CORRECTION"
+                          ? "服务器记录更正后已重新对账；这不等于风险、原Entry假说或策略获准。"
+                          : "尚无成交更正。"}
+                    </p>
+                    {Object.entries(view.account.fill_corrections ?? {}).map(
+                      ([target, c]) => (
+                        <section key={target} aria-label="模拟成交原值与有效值">
+                          <p>
+                            {c.original_fill.symbol} ·{" "}
+                            {sleeveName(c.original_fill.sleeve)} ·{" "}
+                            {c.original_fill.side} ·{" "}
+                            {c.original_fill.trade_date} · 原交易{" "}
+                            {c.original_fill.transaction_id}
+                          </p>
+                          <p>
+                            原记录：{c.original_fill.quantity} 股，价格{" "}
+                            {c.original_fill.price_cny} 元，费用{" "}
+                            {c.original_fill.fees_cny} 元。
+                          </p>
+                          <p>
+                            当前有效记录：{c.effective_fill.quantity} 股，价格{" "}
+                            {c.effective_fill.price_cny} 元，费用{" "}
+                            {c.effective_fill.fees_cny}{" "}
+                            元。仍为人工模拟，不是行情。
+                          </p>
+                          <details>
+                            <summary>原交易、更正链及有效版本Hash</summary>
+                            <p>{target}</p>
+                            <p>{c.effective_version_sha256}</p>
+                            <ul>
+                              {c.correction_record_sha256s.map((h) => (
+                                <li key={h}>{h}</li>
+                              ))}
+                            </ul>
+                          </details>
+                        </section>
+                      ),
+                    )}
+                    <form onSubmit={correctFill}>
+                      <fieldset disabled={busy} style={fieldStyle}>
+                        <legend>追加模拟成交更正（非实际交易）</legend>
+                        <label>
+                          选择更正的原交易
+                          <select
+                            required
+                            style={inputStyle}
+                            value={correctionTarget?.hash ?? ""}
+                            onChange={(e) => {
+                              const target = e.target.value;
+                              setCorrectionTarget(
+                                target
+                                  ? {
+                                      hash: target,
+                                      version:
+                                        view.account.fill_corrections?.[target]
+                                          ?.effective_version_sha256 ?? target,
+                                    }
+                                  : undefined,
+                              );
+                              setChanges({
+                                quantity: "",
+                                price_cny: "",
+                                fees_cny: "",
+                              });
+                              setCorrectionReason("");
+                            }}
+                          >
+                            <option value="">请选择已确认原交易</option>
+                            {portfolio.trades.map((t) => (
+                              <option
+                                key={t.record_sha256}
+                                value={t.record_sha256}
+                              >
+                                {t.symbol} · {t.side} · {t.trade_date} ·{" "}
+                                {t.transaction_id}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        {correctionTrade && (
+                          <>
+                            <p>
+                              身份固定：{correctionTrade.symbol} ·{" "}
+                              {correctionTrade.exchange} ·{" "}
+                              {sleeveName(correctionTrade.sleeve)} ·{" "}
+                              {correctionTrade.side} ·{" "}
+                              {correctionTrade.trade_date}。
+                            </p>
+                            <p>
+                              原值：
+                              {
+                                (
+                                  correctionLineage?.original_fill ??
+                                  correctionTrade
+                                ).quantity
+                              }{" "}
+                              股 / 价格{" "}
+                              {
+                                (
+                                  correctionLineage?.original_fill ??
+                                  correctionTrade
+                                ).price_cny
+                              }{" "}
+                              元 / 费用{" "}
+                              {
+                                (
+                                  correctionLineage?.original_fill ??
+                                  correctionTrade
+                                ).fees_cny
+                              }{" "}
+                              元。
+                            </p>
+                            <p>
+                              当前有效值：{correctionTrade.quantity} 股 / 价格{" "}
+                              {correctionTrade.price_cny} 元 / 费用{" "}
+                              {correctionTrade.fees_cny} 元。
+                            </p>
+                            <details>
+                              <summary>本次固定目标及版本</summary>
+                              <p>{correctionTarget?.hash}</p>
+                              <p>{correctionTarget?.version}</p>
+                            </details>
+                          </>
+                        )}
+                        {(
+                          [
+                            ["quantity", "更正后股数"],
+                            ["price_cny", "更正后假设价格"],
+                            ["fees_cny", "更正后假设费用"],
+                          ] as const
+                        ).map(([key, label]) => (
+                          <label key={key}>
+                            {label}
+                            <input
+                              style={inputStyle}
+                              value={changes[key]}
+                              onChange={(e) =>
+                                setChanges({
+                                  ...changes,
+                                  [key]: e.target.value,
+                                })
+                              }
+                            />
+                          </label>
+                        ))}
+                        <p>
+                          空白字段保持不变，至少填写一项。零股数、现金不足、T+1或非法后继历史由服务器拒绝；不通过反向交易绕过。
+                        </p>
+                        <label>
+                          模拟成交更正原因
+                          <textarea
+                            required
+                            style={inputStyle}
+                            value={correctionReason}
+                            onChange={(e) =>
+                              setCorrectionReason(e.target.value)
+                            }
+                          />
+                        </label>
+                        {pending && (
+                          <p>
+                            存在未处理草稿，不能更正已确认成交。请先处理草稿。
+                          </p>
+                        )}
+                        <Button
+                          htmlType="submit"
+                          disabled={
+                            !canWrite ||
+                            !!pending ||
+                            !correctionTarget ||
+                            correctionTarget.version !== correctionVersion ||
+                            !Object.keys(nonemptyChanges).length ||
+                            !correctionReason.trim()
+                          }
+                        >
+                          确认追加模拟成交更正
+                        </Button>
+                      </fieldset>
+                    </form>
+                  </section>
+                )}
                 <h4>原Entry假说与剩余量</h4>
                 {!view.account.entries.length && (
                   <p>暂无可核对原Entry；成交记录不自动产生投资逻辑。</p>
@@ -476,6 +729,12 @@ export function PersistentSimulatedPortfolio() {
                     <p>
                       事后模拟重建：原始PIT未证明，建议资格为false。未提供卖出逐批理由对照，不宣称卖出逻辑已闭环。
                     </p>
+                    {e.hypothesis_review_status ===
+                      "ACCOUNT_HISTORY_CORRECTED_REVIEW_REQUIRED" && (
+                      <p>
+                        账户成交历史已更正，原Entry假说未重写，需要重新复核；不是新逻辑已确认。
+                      </p>
+                    )}
                   </section>
                 ))}
                 <form onSubmit={bindEntry}>

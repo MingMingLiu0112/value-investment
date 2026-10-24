@@ -4,7 +4,8 @@ export type SimulatedOperation =
   | "prepare-fill"
   | "confirm-fill"
   | "cancel-fill"
-  | "confirm-entry";
+  | "confirm-entry"
+  | "correct-fill";
 export type SimulatedBinding = { path: string; sha256: string };
 export type SimulatedFill = {
   transaction_id: string;
@@ -33,6 +34,15 @@ export type SimulatedEntry = {
   entry_confirmation_sha256: string | null;
   original_pit_proven: false;
   advisory_eligible: false;
+  fill_correction?: SimulatedFillCorrection | null;
+  hypothesis_review_status?:
+    "UNCHANGED" | "ACCOUNT_HISTORY_CORRECTED_REVIEW_REQUIRED";
+};
+export type SimulatedFillCorrection = {
+  original_fill: SimulatedFill & Record<string, unknown>;
+  effective_fill: SimulatedFill & Record<string, unknown>;
+  effective_version_sha256: string;
+  correction_record_sha256s: string[];
 };
 export type PersistentSimulatedWorkbench = {
   schema_version: "persistent-simulated-workbench-v1";
@@ -58,7 +68,12 @@ export type PersistentSimulatedWorkbench = {
     actual_account_used: false;
     ownership_verified: false;
     position_guidance: null;
-    confirmed_fill_correction: "UNSUPPORTED";
+    confirmed_fill_correction: "UNSUPPORTED" | "PRICE_QUANTITY_FEES_ONLY_V1";
+    fill_corrections?: Record<string, SimulatedFillCorrection>;
+    correction_reconciliation_status?:
+      | "INVALIDATED_RECONCILIATION_REQUIRED"
+      | "RECONCILED_AFTER_CORRECTION"
+      | "NOT_APPLICABLE";
     source_scope: "HASH_BOUND_REFERENCE_NOT_STRATEGY_OR_MARKET_PRICE_ADMISSION";
     entries: SimulatedEntry[];
     portfolio: {
@@ -83,6 +98,7 @@ export type PersistentSimulatedWorkbench = {
       trades: (SimulatedFill & {
         record_sha256: string;
         confirmed_at: string;
+        fill_correction?: SimulatedFillCorrection;
       })[];
       pending_draft: {
         status: "DRAFT_UNRECONFIRMED";

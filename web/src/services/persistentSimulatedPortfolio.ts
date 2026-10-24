@@ -33,13 +33,152 @@ const fill = (v: unknown) =>
   /^\d{6}$/.test(v.symbol) &&
   ["SSE", "SZSE"].includes(v.exchange) &&
   decimal(v.quantity) &&
-  /^\d+$/.test(v.quantity) &&
+  /^\+?\d+(?:\.0+)?$/.test(v.quantity) &&
   Number(v.quantity) > 0 &&
   decimal(v.price_cny) &&
   Number(v.price_cny) > 0 &&
   decimal(v.fees_cny) &&
   Number(v.fees_cny) >= 0 &&
   date(v.trade_date);
+const correctionFields = ["quantity", "price_cny", "fees_cny"] as const;
+const fillFields = [
+  "transaction_id",
+  "side",
+  "sleeve",
+  "symbol",
+  "exchange",
+  "quantity",
+  "price_cny",
+  "fees_cny",
+  "trade_date",
+] as const;
+const canonical = (v: any): any =>
+  Array.isArray(v)
+    ? v.map(canonical)
+    : object(v)
+      ? Object.fromEntries(
+          Object.keys(v)
+            .sort()
+            .map((key) => [key, canonical(v[key])]),
+        )
+      : v;
+const same = (a: unknown, b: unknown) =>
+  JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+const sameDecimal = (a: unknown, b: unknown) => {
+  if (!decimal(a) || !decimal(b)) return false;
+  const normalize = (value: string) => {
+    const sign = value.startsWith("-") ? "-" : "";
+    const [whole, fraction = ""] = value.replace(/^[+-]/, "").split(".");
+    const normalized = `${whole.replace(/^0+/, "") || "0"}.${fraction.replace(/0+$/, "")}`;
+    return normalized === "0." ? normalized : sign + normalized;
+  };
+  return normalize(a as string) === normalize(b as string);
+};
+/** Cross-check the server's projection/lineage, not a second accounting replay. */
+function correctionsValid(a: Record<string, any>): boolean {
+  const supported =
+    a.confirmed_fill_correction === "PRICE_QUANTITY_FEES_ONLY_V1";
+  if (supported && !object(a.fill_corrections)) return false;
+  if (
+    !supported &&
+    a.fill_corrections !== undefined &&
+    (!object(a.fill_corrections) || Object.keys(a.fill_corrections).length)
+  )
+    return false;
+  const map = a.fill_corrections ?? {};
+  const hasCorrections = Object.keys(map).length > 0;
+  const reconciliation = a.correction_reconciliation_status;
+  if (
+    (supported || reconciliation !== undefined) &&
+    !(hasCorrections
+      ? [
+          "INVALIDATED_RECONCILIATION_REQUIRED",
+          "RECONCILED_AFTER_CORRECTION",
+        ].includes(reconciliation)
+      : reconciliation === "NOT_APPLICABLE")
+  )
+    return false;
+  const trades = a.portfolio?.trades ?? [];
+  const seenVersions = new Set<string>();
+  for (const [target, correction] of Object.entries(map)) {
+    if (
+      !hash(target) ||
+      !object(correction) ||
+      !fill(correction.original_fill) ||
+      !fill(correction.effective_fill) ||
+      !hash(correction.effective_version_sha256) ||
+      !Array.isArray(correction.correction_record_sha256s) ||
+      !correction.correction_record_sha256s.length ||
+      !correction.correction_record_sha256s.every(
+        (version: unknown) =>
+          hash(version) &&
+          version !== target &&
+          !trades.some((t: any) => t.record_sha256 === version),
+      ) ||
+      new Set(correction.correction_record_sha256s).size !==
+        correction.correction_record_sha256s.length ||
+      correction.effective_version_sha256 !==
+        correction.correction_record_sha256s[
+          correction.correction_record_sha256s.length - 1
+        ]
+    )
+      return false;
+    for (const version of correction.correction_record_sha256s) {
+      if (seenVersions.has(version)) return false;
+      seenVersions.add(version);
+    }
+    const withoutValues = (row: Record<string, unknown>) =>
+      Object.fromEntries(
+        Object.entries(row).filter(
+          ([key]) =>
+            !correctionFields.includes(
+              key as (typeof correctionFields)[number],
+            ),
+        ),
+      );
+    if (
+      !same(
+        withoutValues(correction.original_fill),
+        withoutValues(correction.effective_fill),
+      )
+    )
+      return false;
+    const matching = trades.filter((t: any) => t.record_sha256 === target);
+    if (
+      matching.length !== 1 ||
+      !same(matching[0].fill_correction, correction) ||
+      !fillFields.every((key) =>
+        correctionFields.includes(key as (typeof correctionFields)[number])
+          ? sameDecimal(matching[0][key], correction.effective_fill[key])
+          : matching[0][key] === correction.effective_fill[key],
+      )
+    )
+      return false;
+  }
+  if (
+    !trades.every((t: any) =>
+      map[t.record_sha256]
+        ? same(t.fill_correction, map[t.record_sha256])
+        : t.fill_correction === undefined || t.fill_correction === null,
+    )
+  )
+    return false;
+  return a.entries.every((e: any) => {
+    const expected = map[e.fill_record_sha256] ?? null;
+    if (
+      (supported || e.fill_correction !== undefined) &&
+      !same(e.fill_correction, expected)
+    )
+      return false;
+    const review = hasCorrections
+      ? "ACCOUNT_HISTORY_CORRECTED_REVIEW_REQUIRED"
+      : "UNCHANGED";
+    return (
+      !(supported || e.hypothesis_review_status !== undefined) ||
+      e.hypothesis_review_status === review
+    );
+  });
+}
 export function verifiedPersistentSimulatedWorkbench(
   v: unknown,
 ): v is PersistentSimulatedWorkbench {
@@ -65,7 +204,9 @@ export function verifiedPersistentSimulatedWorkbench(
     a.actual_account_used !== false ||
     a.ownership_verified !== false ||
     a.position_guidance !== null ||
-    a.confirmed_fill_correction !== "UNSUPPORTED" ||
+    !["UNSUPPORTED", "PRICE_QUANTITY_FEES_ONLY_V1"].includes(
+      a.confirmed_fill_correction,
+    ) ||
     a.source_scope !==
       "HASH_BOUND_REFERENCE_NOT_STRATEGY_OR_MARKET_PRICE_ADMISSION" ||
     !text(a.account_id) ||
@@ -173,6 +314,7 @@ export function verifiedPersistentSimulatedWorkbench(
     )
       return false;
   } else return false;
+  if (!correctionsValid(a)) return false;
   const s = v.sources;
   if (
     !["AVAILABLE", "UNAVAILABLE"].includes(s.status) ||
@@ -212,8 +354,14 @@ export function verifiedPersistentSimulatedWorkbench(
         "confirm-fill",
         "cancel-fill",
         "confirm-entry",
+        "correct-fill",
       ].includes(v.mutation.operation) &&
-      hash(v.mutation.record_sha256))
+      hash(v.mutation.record_sha256) &&
+      (v.mutation.operation !== "correct-fill" ||
+        (a.confirmed_fill_correction === "PRICE_QUANTITY_FEES_ONLY_V1" &&
+          Object.values(a.fill_corrections).some(
+            (c: any) => c.effective_version_sha256 === v.mutation.record_sha256,
+          ))))
   );
 }
 export class SimulatedRequestError extends Error {
@@ -223,7 +371,9 @@ export class SimulatedRequestError extends Error {
   ) {
     super(
       status === 409
-        ? "记录版本或研究来源已变化（409），请刷新核对；不会自动重试。"
+        ? uncertain
+          ? "写入可能已经完成，但读回失败（409）。旧展示已清空，请先刷新核对，或显式以同一请求重试；不会自动重试。"
+          : "记录版本或研究来源已变化（409），请刷新核对；不会自动重试。"
         : status === 422
           ? "输入或记账条件未通过（422），请检查日期、费用、可卖数量及原Entry来源。"
           : "未能核验服务器结果；写入可能已完成，请先刷新核对，或显式以同一请求重试。",
@@ -263,14 +413,53 @@ export async function writeSimulatedPortfolio(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    if (!response.ok)
-      throw new SimulatedRequestError(response.status, response.status >= 500);
+    if (!response.ok) {
+      let failure: unknown;
+      try {
+        failure = await response.json();
+      } catch {
+        /* HTTP status remains authoritative without JSON. */
+      }
+      const mayHaveCommitted =
+        response.status === 409 &&
+        object(failure) &&
+        failure.mutation_may_have_committed === true;
+      throw new SimulatedRequestError(
+        response.status,
+        response.status >= 500 || mayHaveCommitted,
+      );
+    }
     const result: unknown = await response.json();
     if (
       !verifiedPersistentSimulatedWorkbench(result) ||
       result.mutation?.operation !== operation
     )
       throw new SimulatedRequestError(0, true);
+    if (operation === "correct-fill") {
+      const target =
+        typeof body.target_fill_record_sha256 === "string"
+          ? body.target_fill_record_sha256
+          : "";
+      const correction = result.account.fill_corrections?.[target];
+      if (
+        !correction ||
+        correction.effective_version_sha256 !== result.mutation.record_sha256 ||
+        (correction.correction_record_sha256s[
+          correction.correction_record_sha256s.length - 2
+        ] ?? target) !== body.expected_original_version ||
+        !object(body.changes) ||
+        !Object.keys(body.changes).length ||
+        !Object.entries(body.changes).every(
+          ([key, value]) =>
+            correctionFields.includes(
+              key as (typeof correctionFields)[number],
+            ) &&
+            typeof value === "string" &&
+            sameDecimal(correction.effective_fill[key], value),
+        )
+      )
+        throw new SimulatedRequestError(0, true);
+    }
     return result;
   } catch (error) {
     if (error instanceof SimulatedRequestError) throw error;
