@@ -1,6 +1,7 @@
 import React from "react";
 import { expect, it, vi } from "vitest";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import { SourceBoundDualJourney } from "../src/components/SourceBoundDualJourney";
 import {
@@ -11,6 +12,23 @@ import {
   verifiedDualJourney,
 } from "../src/services/sourceBoundDualJourney";
 const { renderToStaticMarkup } = require("react-dom/server");
+
+it.skipIf(!process.env.PUBLIC_DUAL_ACCOUNT_RESULT)(
+  "accepts the exact independently bound real-source API result without granting eligibility",
+  () => {
+    const raw = readFileSync(process.env.PUBLIC_DUAL_ACCOUNT_RESULT!);
+    expect(createHash("sha256").update(raw).digest("hex")).toBe(
+      process.env.PUBLIC_DUAL_ACCOUNT_RESULT_SHA256,
+    );
+    const result = JSON.parse(raw.toString("utf8"));
+    expect(verifiedDualJourney(result)).toBe(true);
+    expect(result.formal_eligibility).toBe(false);
+    expect(result.manual_rehearsal.account_state.cash_cny).toBe("7990");
+    expect(result.manual_rehearsal.temporary_journal_removed).toBe(true);
+    expect(result.source_identity.core[0].symbol).toBe("600519");
+    expect(result.source_identity.hotspot.symbol).toBe("300750");
+  },
+);
 
 /** TEST_ONLY protocol fixtures. No real account, live API, price or strategy claim. */
 function packet(manual = false): any {

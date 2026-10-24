@@ -3539,3 +3539,53 @@ Full clean Core/frontend/API/typecheck/format/build, exact-head GitHub CI and ne
 sole-port8001 screenshots are next. Portfolio two-source shared-account work is
 delegated to a disjoint branch and is not part of this frozen release batch.
 The complete Goal remains ACTIVE. No actual orders, private/Excel/server changes.
+
+### 2026-10-24 - Shared source-bound two-sleeve account and FIFO explanation
+
+Portfolio author dd79f539 is integrated as2e4da004. Independent review found a real
+FIFO explanation defect: a sale consuming A could name later Entry B as its
+original thesis. Increment2cce67c0/integration2d3cb8b4 closes it using existing
+native lot deltas, not a new matching algorithm. Multi-Entry sales must supply
+per-consumed-Entry reasons and return every actual consumed quantity/reference;
+the old single reference is null. Independent cross-batch150/remaining50 probes
+closed the P2, with no new confirmed P1/P2. No matching or investment rule changed.
+
+The existing Web simulation now has a separate server-pinned dual-sleeve resource
+under /api/v1/simulated-trade-journey/dual-sleeve, not a second account ledger.
+GET reads registered600519 research plus the registered sealed300750 simulation,
+without creating an account. POST accepts only explicit TEST_ONLY hypotheses and
+the exact displayed source identity. Paths, clocks, authority, private namespace
+and caller-supplied sell sessions are not accepted. Conflicts remain409; invalid
+HTTP scope is422. No private-root resolver is used. Exact source-pointer changes
+at final read are rejected, and temporary journals are removed on errors.
+
+Root HTTP+portfolio selection66 passed/1 skipped, the skip is the explicit opt-in
+real-source test rather than waived coverage. Earlier old/new API selection51
+passed and architecture/Core-list checks31 passed. Actual public native600519 plus
+sealed300750 HTTP GET/explicit POST succeeded with hypothetical10000 cash, two
+100-share fills at explicitly hypothetical10 and5 total-cost each. Shared final
+cash7990/fees10/two holdings are accounting evidence, not observed market fills.
+Receipt .tmp/real-dual-account-api/b2392d0d71a948e7a030e2f042a7dfab/receipt.json
+SHA2566b591414ddeb9fe46a2830c216b51c22b74c2f6cbcdd76826be8415f044034db.
+That two-BUY receipt predates the FIFO increment; its buy path is unchanged and
+does not substitute for the separately verified cross-batch sell cases.
+
+Frontend385c8caa/integrationdab9dc9b displays source dates/LOW/UNKNOWN, six-action
+nonrecommendations, explicit hypotheses, shared cash/budgets/fees and original
+Entry reasoning. Default simulation budgets remain5000/3000/2000, not a personal
+IPS. Strict frontend validation consumed the exact real HTTP result:23 passed,
+1 browser-opt-in skipped. Author browser tests are TEST_ONLY intercepted responses;
+actual new account UI on8001 and its exact-head full regression are NOT yet done.
+The retained swing journal is evidence only, never reused as this account.
+
+Separately,759f85f3 GitHub Core40052995421 and Web40052995397 passed. Clean full
+verification reported5885 passed/110 skipped Core,805 passed/15 skipped frontend,
+282 passed/2 skipped API; typecheck/format/build passed. Actual publication caught
+two new native modules whose Git index LF differed from verified CRLF bytes.
+No semantic code difference was found and no source Hash was weakened. Narrow
+7ce83487 stores the already-bound actual implementation bytes in Git; the two
+native hashes remain77070f77... andd79aa294.... A NEW exact-head clean pipeline
+and GitHub CI are required; prior759 results are not relabeled as7ce results.
+The attempted publication did not restart8001. Pending native signed transport
+work remains a separate independently reviewed slice, not economic approval.
+The full Goal remains ACTIVE, strategy validation NOT_PROVEN, action=no_order.

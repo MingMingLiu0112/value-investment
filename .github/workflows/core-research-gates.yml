@@ -71,6 +71,7 @@ jobs:
           tests/test_value_price_policy.py
           tests/test_value_review_replay.py
           tests/web_api/test_p5_reviews.py
+          tests/web_api/test_dual_simulated_journey.py
           tests/test_private_first_use_workflow.py
           tests/test_private_risk_preview.py
           tests/test_private_hotspot_add_preview.py
@@ -384,6 +385,7 @@ jobs:
           tests/test_value_economic_assessment.py
           tests/test_hotspot_strategy_execution_replay.py
           tests/test_simulated_trade_journey.py
+          tests/test_source_bound_dual_sleeve_journey.py
           tests/test_hotspot_action_lineage.py
           tests/test_hotspot_capital_disclosure.py
           tests/test_hotspot_simulated_lifecycle.py
