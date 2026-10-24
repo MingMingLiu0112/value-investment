@@ -500,7 +500,7 @@ def test_fresh_case_reaches_research_application_without_consuming_a_stop(
     )
     monkeypatch.setattr(
         company_research, "build_research_run_spec", lambda descriptor:
-        SimpleNamespace(input_descriptor_sha256='a' * 64)
+        SimpleNamespace(input_descriptor_sha256='a' * 64, research_mode='valuation')
     )
     monkeypatch.setattr(
         company_research, "ResearchApplicationService", RecordingResearchService
@@ -575,7 +575,7 @@ def test_explicit_daily_inputs_reach_descriptor_before_one_shot_consumption(
         return payload
     monkeypatch.setattr(company_research, 'build_descriptor', descriptor)
     monkeypatch.setattr(company_research, 'build_research_run_spec', lambda payload:
-        SimpleNamespace(input_descriptor_sha256='a' * 64))
+        SimpleNamespace(input_descriptor_sha256='a' * 64, research_mode='valuation'))
     def claim(**kwargs):
         calls.append('consume')
         return dict(created=True)
@@ -638,7 +638,7 @@ def test_recommendation_v3_opt_in_reaches_product_descriptor(tmp_path, monkeypat
     monkeypatch.setattr(
         company_research,
         'build_research_run_spec',
-        lambda payload: SimpleNamespace(input_descriptor_sha256='a' * 64),
+        lambda payload: SimpleNamespace(input_descriptor_sha256='a' * 64, research_mode='valuation'),
     )
 
     class Service:

@@ -4546,3 +4546,14 @@ This is not live8001 acceptance yet.41 public research files have been staged
 with exact matching hashes into local dual1 runtime, refusing overwrite of
 different bytes. No existing current pointer, private fact or server changed
 by staging. Final exact commit/clean verification/CI/8001 activation pending.
+
+13f3961b clean verification: core consumers174 passed/0 skipped (explicit actual
+source roots), full Web953 passed/24 skipped, typecheck/build passed with clean
+source identity13f3961b326bf9c25605d3322e69b0bc841318a5. Frozen10 plus native2
+raw hashes match. Web40104664877 and isolated Postgres passed. Core40104664870
+failed3/6533 passed/253 skipped: three old evidence-stop unit mocks omitted the
+new mandatory ResearchRunSpec.research_mode. Their typed production contract
+always has that field. Test-only correction explicitly sets valuation mode in
+the three SimpleNamespace stubs; no production fallback/guard/strategy changed.
+Scoped recheck58 passed/2 optional skipped. Prior failed CI remains retained.
+Final retry required before any8001 activation; current live remains62f5a04c.
