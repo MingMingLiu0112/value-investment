@@ -96,6 +96,11 @@ export type EconomicReview = {
   source_bindings: EconomicBinding[];
   joint_adverse_cash?: JointCashDiagnostic;
   replacement_bear?: ReplacementBearComparison;
+  unsupported_challenges?: {
+    id: string;
+    status: "UNSUPPORTED";
+    reason: string;
+  }[];
 };
 
 const object = (v: any) => !!v && typeof v === "object" && !Array.isArray(v);
@@ -358,6 +363,25 @@ export function verifiedEconomicReview(
   symbol: string,
   expected: EconomicBinding,
 ): v is EconomicReview {
+  if (
+    v?.unsupported_challenges !== undefined &&
+    (!Array.isArray(v.unsupported_challenges) ||
+      new Set(v.unsupported_challenges.map((row: any) => row?.id)).size !==
+        v.unsupported_challenges.length ||
+      !v.unsupported_challenges.every(
+        (row: any) =>
+          object(row) &&
+          [
+            "PERSISTENT_UPSTREAM_RESTRICTION",
+            "TERMINAL_APPROPRIATION_CONTINUES",
+            "DELAY_BOUNDARY_FULL_PATH",
+          ].includes(row.id) &&
+          row.status === "UNSUPPORTED" &&
+          typeof row.reason === "string" &&
+          !!row.reason.trim(),
+      ))
+  )
+    return false;
   if (
     v?.point_in_time !== undefined &&
     (!object(v.point_in_time) ||

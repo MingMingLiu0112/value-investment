@@ -4744,3 +4744,45 @@ workflow now includes tests/test_core_public_review.py in its existing pytest
 list; no jobs, permissions, secrets, signing or deployment behavior changed.
 Exact-commit CI for this follow-up is pending; do not claim the new module was
 included in the earlier92bd65a5 CI run.
+
+Actual browser acceptance completed after that commit:
+vv1/.tmp/live-ui-92bd65a5/ee94aeeb-8031-4923-8b0f-b680ea871e93/receipt.json.
+1440/390/320 widths PASS, no document overflow; source-bound annual cash balances
+and46.18% depositor concentration visible, current public three-company review
+remains UNASSESSABLE with no personal amounts. Empty test profile; private APIs
+and all writes blocked. Actual current operating facts, economic comparison and
+screened000544 research still visible. These are not approved trading signals.
+Follow-up79c08983cc994247dca98315fa95dd9b19b45859 is pushed (CI+ledger only;
+src/web/config identical to92bd65a5). Core40118360639/Web40118360630 are pending.
+Sole8001 remains exact92bd65a5, not mislabeled79c08983.
+Next independent public work: bounded600887 note-level normalization research
+and four-channel applicability audit. No new framework or trading rule change.
+
+### 2026-10-25 next core economic checkpoint (working)
+
+79c08983 Core40118360639/Web40118360630 both SUCCESS. Actual offline-core log
+includes tests/test_core_public_review.py;6611 passed/262 optional skipped.
+Do not confuse this suite total with strategy validity or personal readiness.
+Read-only source report for000544 was independently Hash-checked:
+daily-marketwide/20261024T1107246488513Z/value-discovery-report.json,
+759bc9d78c45a0771ef2b54b113c5bac5e54ad3eb45f6ccaf2c55ea4e91d35aa.
+It is a Value/Cyclical LEAD, PARTIAL, provider date unverified; research rank1
+comes from selection-binding, not buy ranking. Quality remains DATA_GAP and the
+dividend channel BUDGET_EXCLUDED is not silently lost. No new required bug found.
+
+600519 PERSISTENT_UPSTREAM_RESTRICTION: existing sealed research already shows
+that reducing distribution can repair finite cash capacity, but not the current
+terminal contract. No new stress path/model/value was created. Existing API's
+UNSUPPORTED reasons are now specific and displayed by the current economic
+appendix, distinguishing cash repair, legal distribution and terminal valuation;
+unremitted assets are not treated as zero.31 explicit actual-source backend
+tests passed,52 Web tests passed/2 old opt-in skipped, typecheck PASS. Independent
+five-file review found no explicit newP1/P2. This is explanation closure, not a
+new capability to value persistent restrictions; not yet deployed.
+
+600887 has an autonomous rebuild task: retain old implementation-drift failure
+and reconstruct a new unapproved input through existing source-reobservation /
+finite-candidate APIs. No old builder, valuation model, approval or private data
+may change. Reuse known inventory/tax/nonrecurring counterevidence with exact
+original bindings; no impairment or tax addbacks. Runtime preparation is in
+progress, not counted as delivered. Root owns existing consumer pointer.

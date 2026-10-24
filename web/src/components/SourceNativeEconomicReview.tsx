@@ -91,6 +91,17 @@ export function EconomicReviewResult({ value }: { value: EconomicReview }) {
       <p>
         两种终端占比口径不同，不能相加。终端占比较高说明价值依赖长期假设；窄幅三情景不能覆盖共同风险。
       </p>
+      {value.unsupported_challenges?.length ? (
+        <div aria-label="当前模型无法估值的条件">
+          <h5>以下条件不输出估值</h5>
+          <ul>
+            {value.unsupported_challenges.map((item) => (
+              <li key={item.id}>{item.reason}</li>
+            ))}
+          </ul>
+          <p>这不是零估值或买卖信号；不得沿用原终端给这些条件计算目标价。</p>
+        </div>
+      ) : null}
       <p>
         首年现金边界仅为固定盈利、分配、分析底线及付款假设下的关系，不是长期安全阈值、延迟概率或分红保证。资本成本挑战不是当前目标价或获批的新估值。
       </p>

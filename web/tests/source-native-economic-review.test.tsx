@@ -42,6 +42,45 @@ it("opening the existing company page does not issue implicit new requests", () 
   spy.mockRestore();
 });
 
+it("explains a distribution remedy without inventing a persistent-restriction valuation", () => {
+  const value = fixture();
+  value.unsupported_challenges = [
+    {
+      id: "PERSISTENT_UPSTREAM_RESTRICTION",
+      status: "UNSUPPORTED",
+      reason:
+        "TEST_ONLY：降低分配可缓解有限期现金约束，但持续暂留不符合当前终端合同；不按零价值处理。",
+    },
+  ];
+  expect(verifiedEconomicReview(value, "600519", ref)).toBe(true);
+  const html = renderToStaticMarkup(<EconomicReviewResult value={value} />);
+  expect(html).toContain("以下条件不输出估值");
+  expect(html).toContain("降低分配可缓解有限期现金约束");
+  expect(html).toContain("不得沿用原终端");
+  expect(html).toContain("不是零估值或买卖信号");
+});
+
+it.each(["status", "id", "duplicate", "reason"])(
+  "rejects an unsupported challenge mislabeled as usable: %s",
+  (fault) => {
+    const value = fixture();
+    value.unsupported_challenges = [
+      {
+        id: "PERSISTENT_UPSTREAM_RESTRICTION",
+        status: "UNSUPPORTED",
+        reason: "TEST_ONLY",
+      },
+    ];
+    if (fault === "status") value.unsupported_challenges[0].status = "VALUED";
+    else if (fault === "id")
+      value.unsupported_challenges[0].id = "APPROVED_FALLBACK";
+    else if (fault === "duplicate")
+      value.unsupported_challenges.push({ ...value.unsupported_challenges[0] });
+    else value.unsupported_challenges[0].reason = " ";
+    expect(verifiedEconomicReview(value, "600519", ref)).toBe(false);
+  },
+);
+
 function jointCounterexample() {
   return {
     status: "INHERITED_PAYOUT_INFEASIBLE",

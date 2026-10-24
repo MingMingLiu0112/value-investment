@@ -235,6 +235,12 @@ def test_real_js2_actual_inputs_and_independent_checked_quantities(public_js2):
             -D(first['project_cash'])-D(first['fund_capital_call']))
         assert abs(cash_at_boundary-floor) < D('1E-30')
     assert all(item['status'] == 'UNSUPPORTED' for item in result['unsupported_challenges'])
+    persistent = next(item for item in result['unsupported_challenges']
+                      if item['id'] == 'PERSISTENT_UPSTREAM_RESTRICTION')
+    assert '降低分配可缓解有限期现金约束' in persistent['reason']
+    assert '当前模型不输出此分支估值' in persistent['reason']
+    assert '不按零价值' in persistent['reason']
+    assert set(persistent) == {'id', 'status', 'reason'}
     assert result['normalized_parent_profit_cny'] is None
     assert result['g3_status'] == 'NOT_APPROVED_FOR_THIS_PENDING_CANDIDATE'
     joint = result['joint_adverse_cash']

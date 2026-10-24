@@ -446,9 +446,13 @@ def build_source_native_economic_review(*, root: Path, candidate_binding: dict,
         thesis_breakers=deepcopy(package['research_case']['thesis_breakers']),
         five_groups=groups, scenarios=scenarios, joint_adverse_cash=joint_adverse_cash,
         unsupported_challenges=[dict(id=name, status='UNSUPPORTED', reason=reason) for name, reason in (
-            ('PERSISTENT_UPSTREAM_RESTRICTION', 'Frozen cash kernel requires full release in year two; no replacement ledger built.'),
-            ('TERMINAL_APPROPRIATION_CONTINUES', 'Frozen cash kernel requires conditional terminal appropriation zero.'),
-            ('DELAY_BOUNDARY_FULL_PATH', 'First-year algebra is not a new cash ledger or multi-year stress validation.'))])
+            ('PERSISTENT_UPSTREAM_RESTRICTION',
+             '持续资金暂留：降低分配可缓解有限期现金约束，但现金闭合不等于法定分配资格。'
+             '当前现金合同要求第二年全额释放、固定留存和计划分配，终端暂留资产为零且全额分配利润；'
+             '持续暂留不满足这些条件，因此当前模型不输出此分支估值。'
+             '暂留资产仍归股东，不按零价值、永久费用或任意折价处理。'),
+            ('TERMINAL_APPROPRIATION_CONTINUES', '若终端仍需法定提取，便不符合当前终端提取为零的条件；不能直接沿用全额分配估值。'),
+            ('DELAY_BOUNDARY_FULL_PATH', '首年现金边界仅是固定假设下的代数关系，不是完整多年现金路径或压力验证，不能据此估值。'))])
     if replacement_candidate_binding is not None:
         result['replacement_bear'] = _replacement_bear(root, candidate_binding, candidate, package,
             ledger, replacement_candidate_binding, clock, refs)
