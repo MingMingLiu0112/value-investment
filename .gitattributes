@@ -117,3 +117,7 @@ web/tsconfig.json text eol=lf
 
 # Original exchange notice bytes: never normalize or format fetched evidence.
 docs/evidence/official-list-calendar-2026/*.raw -text -diff
+
+# Preserve the actual implementation bytes bound by native cash candidates.
+src/value_investment_agent/application/product/source_native_candidate_v2.py -text whitespace=cr-at-eol
+src/value_investment_agent/domain/valuation/source_native_cash_v1.py -text whitespace=cr-at-eol
