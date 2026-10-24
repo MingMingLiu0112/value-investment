@@ -466,3 +466,269 @@ def run_source_bound_simulated_trade_journey(root: Path, now: datetime, *,
         cases=cases, manual_rehearsal=manual, source_files_verified=len(protected),
         strategy_validated=False, approval_changed=False, broker_execution_permission=False,
         position_guidance=None, personal_risk_evaluated=False)
+
+
+def _dual_hotspot_source(root, binding, now):
+    from ..hotspot.simulated_lifecycle import load_simulated_hotspot_lifecycle
+
+    verified = load_simulated_hotspot_lifecycle(root, binding, now)
+    report = verified['report']
+    entry = report['entry_reference']
+    return dict(sleeve=HOTSPOT, symbol=report['symbol'], receipt_binding=deepcopy(binding),
+        source_scope=report['market_source_scope'], historical_only=True,
+        current_signal=False, current_pit=False, entry_reference=deepcopy(entry),
+        entry_freeze_sha256=report['entry_freeze_sha256'],
+        lifecycle_reviews=[deepcopy(row['lifecycle_review']) for row in report['steps']],
+        strategy_validated=False, formal_eligibility=False, review_quantity=None,
+        action_slots=[dict(intent=intent, outcome='WAIT' if intent == 'WAIT' else 'NO_ACTION',
+            reasons=['RETAINED_SIMULATION_NOT_CURRENT_STRATEGY_OR_OWNED_ENTRY',
+                'PRICE_COMPARABILITY_AND_STRATEGY_ADMISSION_NOT_PROVEN'],
+            review_quantity=None, formal_eligibility=False, action='no_order')
+            for intent in ('BUY', 'ADD', 'HOLD', 'REDUCE', 'EXIT', 'WAIT')], action='no_order')
+
+
+def _dual_account_view(service, account, *, moment=None):
+    from .private_risk_projection import build_risk_input, sleeve_cash_review
+
+    replay = _replayed(service)
+    moment = moment or service._now()
+    marks = {symbol: dict(price_cny=price, trade_date=moment.date().isoformat())
+        for symbol, price in account['hypothetical_marks'].items()}
+    # Existing aggregation partitions each security into sleeves, never duplicate NAV.
+    snapshot = _snapshot_payload(replay, marks)
+    marked = all(row['market_value_cny'] is not None for row in snapshot['holdings'])
+    equity = (Decimal(snapshot['cash_cny']) + sum(
+        (Decimal(row['market_value_cny']) for row in snapshot['holdings']), Decimal(0))) if marked else None
+    payload = build_risk_input(replay, sellable_as_of=moment.date(), namespace='SIMULATED',
+        generated_at=moment, _prices=marks)
+    payload['portfolio']['snapshot']['namespace'] = 'SIMULATED'
+    payload['portfolio']['policy']['sensitivity'] = 'TEST_ONLY_DISPOSABLE_ACCOUNT'
+    if payload['shared_budget'] is not None:
+        payload['shared_budget']['policy_scope'] = 'SYNTHETIC_POLICY_ONLY'
+    risk = review_dual_sleeve_risk(payload, generated_at=moment, allow_synthetic=True)
+    return dict(_manual_account_state(service), sleeve_cash_review=sleeve_cash_review(replay),
+        aggregate_holdings=snapshot['holdings'], hypothetical_equity_cny=str(equity) if equity is not None else None,
+        mark_scope='CALLER_TEST_ONLY_MARKS_NOT_CURRENT_QUOTES_OR_INTRINSIC_VALUE',
+        risk_review=risk, risk_scope='DISPOSABLE_ACCOUNT_MISSING_RISK_INPUTS_REMAIN_BLOCKED')
+
+
+def _validate_dual_account(account, now):
+    from ...domain.portfolio.dual_sleeve_risk import decimal
+
+    if (not isinstance(account, dict) or set(account) != {'namespace', 'confirmed', 'opening_day',
+            'initial_cash_cny', 'policy', 'hypothetical_marks'}
+            or account['namespace'] != 'TEST_ONLY' or account['confirmed'] is not True):
+        raise ValueError('Explicit confirmed TEST_ONLY hypothetical account required')
+    day = date.fromisoformat(account['opening_day'])
+    if day > now.astimezone(ZoneInfo('Asia/Shanghai')).date():
+        raise ValueError('Future hypothetical account date')
+    cash = decimal(account['initial_cash_cny'], 'opening cash', positive=True)
+    policy = account['policy']
+    if (not isinstance(policy, dict) or decimal(policy['investable_assets_cny'], 'policy assets') != cash
+            or policy['effective_date'] != day.isoformat()
+            or not {'no_order', 'SIMULATED_ONLY'} <= set(policy['restrictions'])):
+        raise ValueError('Hypothetical policy must match account date/cash and simulated scope')
+    reserve = decimal(policy['cash_reserve_cny'], 'reserve')
+    if sum((decimal(policy['sleeves'][name]['cash_cny'], name) for name in (CORE, HOTSPOT)), reserve) != cash:
+        raise ValueError('Sleeve cash and reserve must partition the one opening cash balance')
+    for name, field in ((CORE, 'core_value_budget_cny'), (HOTSPOT, 'hotspot_budget_cny')):
+        if decimal(policy['sleeves'][name]['cash_cny'], name) > decimal(policy[field], field):
+            raise ValueError('Sleeve cash exceeds explicit capital budget')
+    if not isinstance(account['hypothetical_marks'], dict):
+        raise ValueError('Explicit hypothetical marks mapping required (empty allowed)')
+    for price in account['hypothetical_marks'].values():
+        decimal(price, 'hypothetical mark', positive=True)
+    return day
+
+
+def _dual_manual_rehearsal(*, workspace, core_root, account, requests, cases, hotspot, recheck, now):
+    from .personal_entry_thesis import owned_entry_context, resolve_personal_entry_thesis
+
+    opening = _validate_dual_account(account, now)
+    sources = {(CORE, case['symbol']): dict(version=case['research']['research_version'],
+        reference=case['research']) for case in cases}
+    sources[(HOTSPOT, hotspot['symbol'])] = dict(version=hotspot['entry_freeze_sha256'], reference=hotspot)
+    temporary = workspace / '.tmp'
+    if temporary.is_symlink():
+        raise ValueError('Simulation .tmp cannot be a symlink')
+    temporary.mkdir(exist_ok=True)
+    if temporary.resolve().parent != workspace:
+        raise ValueError('Simulation must stay in workspace .tmp')
+    rows, entries = [], {}
+    with TemporaryDirectory(prefix='source-bound-dual-', dir=temporary) as directory:
+        journal = Path(directory) / 'SIMULATED-journal.jsonl'
+        service = PrivatePortfolioService(PrivateJournal(journal))
+        service.initialize(dict(idempotency_key='SIMULATED-init', expected_revision=0,
+            account_scope='TEST_ONLY_SOURCE_BOUND_DUAL_REHEARSAL', as_of=opening.isoformat(),
+            cash_cny=account['initial_cash_cny'], holdings=[], sleeve_allocations={}, policy={},
+            confirmed_at=service._now().isoformat(), confirmation_note='Explicit TEST_ONLY disposable account'))
+        _, digest = service.prepare_policy(dict(idempotency_key='SIMULATED-policy',
+            expected_revision=len(service.records()), policy=account['policy']))
+        service.confirm_policy(dict(idempotency_key='SIMULATED-confirm-policy',
+            expected_revision=len(service.records()), prepared_record_sha256=digest,
+            confirmed_at=service._now().isoformat(), confirmation_note='Explicit hypothetical budgets, not real IPS'))
+        for index, request in enumerate(requests):
+            if (not isinstance(request, dict) or set(request) - {'fill', 'intent', 'rationale',
+                    'entry_transaction_id', 'entry_narrative', 'requested_quantity'}):
+                raise ValueError('Unsupported dual rehearsal request')
+            fill = deepcopy(request['fill'])
+            if set(fill) - {'transaction_id', 'side', 'sleeve', 'symbol', 'exchange', 'quantity',
+                    'price_cny', 'fees_cny', 'trade_date', 'trading_unit', 'next_sell_session'}:
+                raise ValueError('Caller cannot supply Entry, snapshot, model context or authority')
+            key = (fill['sleeve'], fill['symbol'])
+            if key not in sources:
+                raise ValueError('Manual fill differs from selected source/sleeve')
+            if (fill['symbol'][0] not in {'0', '3', '6'}
+                    or fill['exchange'] != ('SSE' if fill['symbol'].startswith('6') else 'SZSE')):
+                raise ValueError('Manual fill exchange differs from source security')
+            intent, rationale = request['intent'], request['rationale']
+            if (intent not in {'BUY', 'ADD', 'REDUCE', 'EXIT'} or not isinstance(rationale, str)
+                    or not rationale.strip() or fill['side'] != ('BUY' if intent in {'BUY', 'ADD'} else 'SELL')):
+                raise ValueError('Explicit manual intention, matching side and rationale required')
+            day = date.fromisoformat(fill['trade_date'])
+            if not opening <= day <= now.astimezone(ZoneInfo('Asia/Shanghai')).date():
+                raise ValueError('Hypothetical fill is outside the declared nonfuture account window')
+            linked = request.get('entry_transaction_id')
+            if intent == 'BUY':
+                if linked is not None or 'entry_narrative' not in request:
+                    raise ValueError('Opening BUY requires explicit retrospective Entry narrative')
+            elif (linked not in entries or entries[linked]['key'] != key
+                    or 'entry_narrative' in request):
+                raise ValueError('Followup must reference the original same-security/sleeve Entry')
+            if fill['side'] == 'BUY' and 'next_sell_session' not in fill:
+                fill['next_sell_session'] = next_exchange_session(fill['exchange'], day).isoformat()
+            quantity = Decimal(fill['quantity'])
+            requested = Decimal(request.get('requested_quantity', fill['quantity']))
+            if not requested.is_finite() or requested < quantity or requested != requested.to_integral_value():
+                raise ValueError('Partial-fill requested quantity must cover the actual fill')
+            replay = _replayed(service)
+            if intent != 'BUY':
+                resolved = resolve_personal_entry_thesis(records=service.records(),
+                    account_scope='TEST_ONLY_SOURCE_BOUND_DUAL_REHEARSAL',
+                    expected_revision=len(service.records()), as_of=service._now(),
+                    authenticated_subject='SIMULATED_DUAL_SUBJECT')
+                if not any(row['fill_record_sha256'] == entries[linked]['fill_record_sha256']
+                        and Decimal(row['remaining_quantity']) > 0 for row in resolved['items']):
+                    raise ValueError('Referenced original Entry is no longer held')
+                held = sum((lot.quantity for lot in replay.state.lots
+                    if (lot.sleeve, lot.symbol) == key), Decimal(0))
+                if ((intent == 'EXIT' and quantity != held)
+                        or (intent == 'REDUCE' and quantity >= held)):
+                    raise ValueError('Manual REDUCE/EXIT label must match the actual remaining position')
+            _, sleeves, reserve = _sleeve_policy(replay)
+            if fill['side'] == 'BUY':
+                debit = quantity * Decimal(fill['price_cny']) + Decimal(fill['fees_cny'])
+                if (debit > Decimal(sleeves[key[0]]['cash_cny'])
+                        or replay.state.cash_cny - debit < max(Decimal(reserve),
+                            Decimal(account['policy']['minimum_cash_cny']))):
+                    raise ValueError('Explicit hypothetical sleeve cash/shared reserve exceeded')
+            recheck()
+            before = _dual_account_view(service, account)
+            # Do not attach value model context to HOTSPOT or fabricate a public judgment.
+            prepared, digest = service.prepare_fill(dict(idempotency_key=f'SIMULATED-fill-{index}',
+                expected_revision=len(service.records()), fill=fill,
+                note='Manual hypothesis, not strategy recommendation: ' + rationale))
+            draft = _manual_account_state(service)
+            if draft['cash_cny'] != before['cash_cny'] or draft['positions'] != before['positions']:
+                raise ValueError('Draft changed confirmed accounting')
+            confirmation = dict(idempotency_key=f'SIMULATED-confirm-{index}',
+                expected_revision=len(service.records()), prepared_record_sha256=digest,
+                confirmed_at=service._now().isoformat(), confirmation_note='Explicit TEST_ONLY manual bookkeeping')
+            confirmed = service.confirm_fill(confirmation)
+            count = len(service.records())
+            if service.confirm_fill(confirmation) != confirmed or len(service.records()) != count:
+                raise ValueError('Fill confirmation is not idempotent')
+            fill_hash = confirmed[1]
+            if fill['side'] == 'BUY':
+                narrative = deepcopy(request['entry_narrative'] if intent == 'BUY' else entries[linked]['narrative'])
+                if set(narrative) != {'thesis', 'hold_logic', 'invalidation_conditions'}:
+                    raise ValueError('Explicit Entry thesis, hold logic and invalidation conditions required')
+                service.confirm_entry_thesis(dict(idempotency_key=f'SIMULATED-entry-{index}',
+                    expected_revision=len(service.records()), fill_record_sha256=fill_hash,
+                    binding_mode='HISTORICAL_RECONSTRUCTION', read_and_confirmed=True,
+                    reconstruction=dict(narrative, research_version=sources[key]['version'],
+                        strategy_version='TEST_ONLY_SOURCE_BOUND_MANUAL_NOT_STRATEGY_APPROVAL'),
+                    confirmation_note='Retrospective hypothetical reference; not original PIT Entry'),
+                    authenticated_subject='SIMULATED_DUAL_SUBJECT', repository_root=core_root)
+                entries[fill['transaction_id']] = dict(key=key, narrative=narrative,
+                    fill_record_sha256=fill_hash)
+            context = owned_entry_context(records=service.records(), symbol=fill['symbol'], sleeve=fill['sleeve'],
+                authenticated_subject='SIMULATED_DUAL_SUBJECT', as_of=service._now())
+            if context['advisory_dependencies_valid'] is not False:
+                raise ValueError('Hypothetical Entry unexpectedly became advisory eligible')
+            rows.append(dict(intent=intent, fill=fill, fill_record_sha256=fill_hash,
+                rationale=rationale, original_entry_transaction_id=linked,
+                original_entry_reference=deepcopy(entries.get(linked or fill['transaction_id'])),
+                source_version=sources[key]['version'], source_reference=deepcopy(sources[key]['reference']),
+                scope='EXPLICIT_MANUAL_HYPOTHESIS_NOT_SYSTEM_ACTION',
+                execution_price_scope='CALLER_HYPOTHETICAL_NOT_MARKET_FILL',
+                fee_scope='CALLER_TOTAL_COST_HYPOTHESIS_NOT_VERIFIED_FEE_SCHEDULE',
+                requested_quantity=str(requested), unfilled_quantity=str(requested - quantity),
+                unfilled_scope='INFORMATION_ONLY_NOT_OPEN_ORDER', confirmation_idempotent=True,
+                prepared_cash_unchanged=True, original_pit_proven=False,
+                original_entry_advisory_eligible=False, entry_blockers=context['blockers'],
+                before=before, after=_dual_account_view(service, account)))
+        recheck()
+        final_clock = service._now()
+        final = _dual_account_view(service, account, moment=final_clock)
+        restarted = PrivatePortfolioService(PrivateJournal(journal))
+        if _dual_account_view(restarted, account, moment=final_clock) != final:
+            raise ValueError('Dual-sleeve restart accounting differs')
+        receipt = dict(sha256=sha256(journal.read_bytes()).hexdigest(), record_count=len(service.records()), retained=False)
+    return dict(status='EXPLICIT_SIMULATED_RECORDS_ONLY', fills=rows, account_state=final,
+        restart_equal=True, temporary_journal_removed=not journal.exists(), journal_receipt=receipt,
+        assumptions=deepcopy(account), actual_account_used=False, persistent_simulated_portfolio=False)
+
+
+def run_source_bound_dual_sleeve_journey(*, core_root: Path, hotspot_root: Path,
+        workspace_root: Path, now: datetime, core_symbols, hotspot_receipt_binding: dict,
+        expected_sources: dict | None = None, test_only_account: dict | None = None,
+        manual_fills: list[dict] | None = None) -> dict:
+    """Read native value research + sealed swing replay, optionally one disposable account.
+
+    No sources authorize a fill. Only explicit TEST_ONLY manual hypotheses create
+    an isolated journal; the retained swing account is read, never reused/copied.
+    Source cutoffs remain historical and confirmations use the actual wall clock.
+    """
+    from ..research.value_research_analysis import _bound
+
+    if (not isinstance(now, datetime) or now.utcoffset() is None
+            or now > datetime.now(now.tzinfo)):
+        raise ValueError('An aware, nonfuture source evaluation clock is required')
+    core_root, hotspot_root, workspace = (Path(path).resolve(strict=True)
+        for path in (core_root, hotspot_root, workspace_root))
+    if manual_fills is not None and not isinstance(manual_fills, list):
+        raise ValueError('Manual hypotheses must be an explicit list')
+    binding = deepcopy(hotspot_receipt_binding)
+    core_symbols = tuple(core_symbols)
+    cases, protected = _source_bound_cases(core_root, core_symbols, now)
+    hotspot = _dual_hotspot_source(hotspot_root, binding, now)
+    identity = dict(core=[dict(symbol=case['symbol'], candidate_binding=case['research']['candidate_binding'],
+        research_version=case['research']['research_version']) for case in cases],
+        hotspot=dict(symbol=hotspot['symbol'], receipt_binding=binding,
+            entry_freeze_sha256=hotspot['entry_freeze_sha256']))
+    if expected_sources is not None and expected_sources != identity:
+        raise SourceResearchVersionChanged('Displayed dual source identities changed')
+
+    def recheck():
+        for path, digest in protected.items():
+            _bound(core_root, dict(path=path, sha256=digest))
+        current, _ = _source_bound_cases(core_root, core_symbols, now)
+        if current != cases or _dual_hotspot_source(hotspot_root, binding, now) != hotspot:
+            raise SourceResearchVersionChanged('Source changed during the dual rehearsal')
+
+    manual = dict(status='NOT_REQUESTED', fills=[], account_state=None, journal_receipt=None,
+        temporary_journal_removed=True, actual_account_used=False, persistent_simulated_portfolio=False)
+    if manual_fills:
+        if expected_sources is None:
+            raise ValueError('Manual rehearsal requires the displayed exact source identities')
+        manual = _dual_manual_rehearsal(workspace=workspace, core_root=core_root,
+            account=deepcopy(test_only_account), requests=deepcopy(manual_fills), cases=cases,
+            hotspot=hotspot, recheck=recheck, now=now)
+    recheck()
+    return dict(schema_version='source-bound-dual-sleeve-journey-v1', namespace='SIMULATED',
+        action='no_order', scope='DISPOSABLE_SOURCE_BOUND_REHEARSAL_NOT_PERSISTENT_PORTFOLIO',
+        research_evaluated_at=now.isoformat(), source_identity=identity, core_cases=cases,
+        hotspot_case=hotspot, manual_rehearsal=manual, actual_account_used=False,
+        formal_eligibility=False, strategy_validated=False, approval_changed=False,
+        broker_execution_permission=False, position_guidance=None)
