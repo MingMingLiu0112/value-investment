@@ -3589,3 +3589,11 @@ and GitHub CI are required; prior759 results are not relabeled as7ce results.
 The attempted publication did not restart8001. Pending native signed transport
 work remains a separate independently reviewed slice, not economic approval.
 The full Goal remains ACTIVE, strategy validation NOT_PROVEN, action=no_order.
+
+Independent Root API/Web review found one additional P2: the client accepted FIFO
+rows whose consumed quantities did not total the sold quantity. Backend matching
+was already strict. The successor uses exact BigInt integer equality, rejects
+101/1100/unsafe-integer mismatches, and performs no financial recomputation.
+Independent26 passed/1 optional-browser skipped with real-result validation and
+ES2020 typecheck closed this P2. Native unsigned review remains unapproved; this
+account slice is still pending exact-head full CI/clean release and actual8001 UI.

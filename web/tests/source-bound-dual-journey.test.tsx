@@ -353,6 +353,14 @@ it("binds every consumed FIFO Entry without claiming a single original reference
     expect(verifiedDualJourney(p)).toBe(false);
   }
 });
+it.each(["1", "1000", "9007199254740993"])(
+  "rejects an inconsistent consumed FIFO total %s without floating-point rounding",
+  (quantity) => {
+    const p = fifoPacket();
+    p.manual_rehearsal.fills[3].consumed_original_entries[0].quantity = quantity;
+    expect(verifiedDualJourney(p)).toBe(false);
+  },
+);
 it.each([
   (p: any) => {
     p.core_cases = [];

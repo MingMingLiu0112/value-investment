@@ -316,6 +316,14 @@ export function verifiedDualJourney(
           })
         )
           return false;
+        if (
+          !/^\d+$/.test(fill.quantity) ||
+          consumed.reduce(
+            (quantity: bigint, item: any) => quantity + BigInt(item.quantity),
+            0n,
+          ) !== BigInt(fill.quantity)
+        )
+          return false;
         if (consumed.length > 1) {
           if (original !== null || row.original_entry_transaction_id !== null)
             return false;
