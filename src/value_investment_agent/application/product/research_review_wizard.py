@@ -367,10 +367,16 @@ def _build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=
             supplement['candidate_binding'], supplement['package_binding'],
             supplement['workbench_binding'], supplement['review_packet_binding']]}.values())
     if replay is not None or supplement is not None:
-        from ..research.value_research_analysis import project_value_research_analysis
+        from ..research.value_research_analysis import project_value_research_analysis, load_current_value_research_analysis
+        from .source_native_candidate_v2 import SCHEMA as NATIVE_SCHEMA
         inputs = supplement if supplement is not None else replay['publication']
-        analysis = project_value_research_analysis(root=root, now=now,
-            package_binding=inputs['package_binding'], workbench_binding=inputs['workbench_binding'])
+        if supplement is not None and supplement['candidate']['schema_version'] == NATIVE_SCHEMA:
+            analysis = load_current_value_research_analysis(root=root, symbol=symbol, now=now)
+            if analysis is None:
+                raise ValueError('Registered native research analysis unavailable')
+        else:
+            analysis = project_value_research_analysis(root=root, now=now,
+                package_binding=inputs['package_binding'], workbench_binding=inputs['workbench_binding'])
         analysis['review_binding'] = dict(candidate_binding=binding,
             model_context=result['model_context'], valuation_artifact_sha256=valuation_hash,
             package_binding=inputs['package_binding'], workbench_binding=inputs['workbench_binding'],

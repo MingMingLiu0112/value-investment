@@ -11,7 +11,6 @@ from ..research.value_research_analysis import _bound
 from .research_reviews import prepare_pending_review_response
 from .common import load_json_object, sha256_file
 from .neutral_valuation_proposal import JOINT_SCHEMA
-from .pending_research_candidate import verify_pending_research_candidate
 
 
 SCHEMA = 'value-economic-review-materials-v1'
@@ -28,7 +27,8 @@ def project_joint_capital_review(*, root, binding, symbol, model_context, now):
 
     root = root.resolve()
     _bound(root, binding)
-    candidate = verify_pending_research_candidate(root=root, path=root / binding['path'],
+    from .source_native_candidate_v2 import verify_review_candidate
+    candidate = verify_review_candidate(root=root, path=root / binding['path'],
         expected_sha256=binding['sha256'])
     _available(candidate['generated_at'], now)
     if candidate.get('input_mode') != JOINT_SCHEMA:
@@ -174,6 +174,14 @@ def build_economic_review_materials(*, root, handoff, analysis, now):
     joint = _joint_capital_review(root=root, handoff=handoff, now=now)
     if joint is not None:
         result['joint_capital_review'] = joint
+    native = analysis.get('source_native_cash_review')
+    if native is not None:
+        if native['candidate_binding'] != handoff['candidate_binding'] or native['model_context'] != handoff['model_context']:
+            raise ValueError('Native cash materials differ from the selected review candidate')
+        result['source_native_cash_review'] = deepcopy(native)
+        for binding in native['source_bindings']:
+            if binding not in result['source_bindings']:
+                result['source_bindings'].append(binding)
     for binding in result['source_bindings']:
         _bound(root, binding)
     result['materials_sha256'] = sha256(json.dumps(result, sort_keys=True,

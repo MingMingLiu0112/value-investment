@@ -153,6 +153,8 @@ jobs:
           tests/test_research_validity_review.py
           tests/test_incremental_validity.py
           tests/test_current_snapshot_validity.py
+          tests/test_source_native_candidate_v2.py
+          tests/test_source_native_workflow_integration.py
           tests/test_daily_research_status.py
           tests/test_hotspot_current_price_case.py
           tests/test_hotspot_current_refresh.py

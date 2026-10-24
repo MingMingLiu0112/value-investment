@@ -197,6 +197,15 @@ def load_current_value_research_analysis(*, root: Path, symbol: str, now: dateti
                        for row in joint["scenarios"])):
             raise ValueError("Joint review differs from public consumed analysis")
         analysis["joint_capital_review"] = joint
+    from ..product.source_native_candidate_v2 import SCHEMA as NATIVE_SCHEMA, project_source_native_review_materials
+    if candidate['schema_version'] == NATIVE_SCHEMA:
+        native = project_source_native_review_materials(root=root,
+            candidate_binding=bindings['candidate_binding'], now=now)
+        if (native['symbol'] != symbol or any(native['scenarios'][name]['per_share_value'] !=
+                analysis['valuation'][name + '_value'] for name in ('bear', 'base', 'bull'))):
+            raise ValueError('Native cash materials differ from public consumed analysis')
+        analysis['source_native_cash_review'] = dict(native,
+            candidate_binding=dict(bindings['candidate_binding']), model_context=candidate['model_context'])
     for binding in (current["registry_binding"], current.get("publication_binding"),
                     bindings["candidate_binding"], bindings["review_packet_binding"]):
         if binding is not None:

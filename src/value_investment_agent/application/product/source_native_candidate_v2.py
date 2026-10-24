@@ -299,7 +299,9 @@ def project_source_native_review_materials(*, root: Path, candidate_binding: dic
         scope='SOURCE_BOUND_CONDITIONAL_RESEARCH_NOT_G3', action='no_order',
         confidence=candidate['candidate_valuation']['confidence'],
         point_in_time=deepcopy(package['point_in_time']),
-        valuation_timing=deepcopy(package['facts']['valuation_timing']),
+        valuation_timing=deepcopy(package['facts'].get('valuation_timing')),
+        valuation_timing_status=('EXPLICIT_MODEL_TIMING' if package['facts'].get('valuation_timing')
+            else 'MISSING_EXPLICIT_MODEL_TIMING'),
         historical_cash_bridge=deepcopy(ledger['history']), joint_assumptions=deepcopy(ledger['plan']),
         scenarios={name:dict(cash_ledger=deepcopy(ledger['cases']['TIMING_DELAY'][name]['annual_rows']),
             inputs=deepcopy(package['facts']['scenario_inputs'][name]),
