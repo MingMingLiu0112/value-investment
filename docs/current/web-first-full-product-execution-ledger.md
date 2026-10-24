@@ -3682,3 +3682,66 @@ groups, no reviewer/approval. Receipt
 SHA2563897285ccd8fd3e6c8e49357d51b40fa19962fa212bbd630ca2430f61a06398a.
 This proves a real source-bound preparation command, not economic admission.
 Full successor regression/CI and actual shared-account8001 acceptance remain.
+
+### 2026-10-24 - d289 shared-account Web milestone published, not whole-Goal completion
+
+Exact d28925124c5b68b816043a1d12cc4bfddaf6d853 passed GitHub
+Core40058460587/Web40058460653. Its own clean pipeline passed6108 Core/114 skipped,
+830 frontend/17 skipped and310 API/2 skipped; setup/typecheck/format/build passed.
+No older receipt was relabeled as this source version. The prospective archived
+fixture suite remains NOT_PASS_MISSING_HISTORICAL_INPUTS outside canonical Core.
+
+Actual8001 now runsd289 with matching backend/build/source/active/public registries.
+Both legacy source cases and the new dual-sleeve GET cold-read before activation
+and read back successfully afterward. Authority pointer remains unchanged.
+Release receipt .tmp/release-d2892512-20261024T0400537772026Z/release-receipt.json
+SHA2565574007317ef71d064f7750bd7c5323e03b1ef43088afba28b0f92c6b0522d5b.
+Actual SAFE_REFRESH remainsPARTIAL/exit3; packetpub-1f21e92ba6345b7eb33a,
+SHA25647eae7cdb973b23eb8770bf1176aee7eb3cb230438d30389d4d2072741e8531d.
+M2 BSE_0 HTTP307 still prevents fresh whole-market enumeration;5577 entries are
+retained dated research, not refreshed financial coverage. October24 filing
+queries are bound but not materiality approval; October23 quotes were reused.
+
+Real browser GET/explicit TEST_ONLY POST passed on8001 using new empty profiles,
+one POST per rehearsal, actual native600519 plus sealed300750 and the existing
+service. Shared hypothetical cash7990, total fees10, sleeve cash3995/1995 and
+two100-share holdings were displayed with original reconstructed narratives.
+Price10 is an explicit manual test hypothesis, not the market or a feasible real
+fill. Risk remains blocked and no executable quantity/approval is granted.
+Both journal removal and restart equality are returned by the application;
+the browser contract itself is not an independent filesystem audit.
+
+Initial expanded-evidence three-width receipt in drui1:
+.tmp/live-dual-account-verification/4c753a0f-3f27-468e-9ffc-b2d6b80156ae/receipt.json
+SHA25691ef5c912dea3e3dc740440ec1c843a4ee4d11c4951a205b88e470bca2fc0275.
+A separate UUID run additionally captured readable collapsed summary/account
+viewports at1440/390/320, with every original overflow assertion retained:
+.tmp/live-dual-account-verification/aea5b379-9df7-4257-bb29-f4c1dd583aa3/receipt.json
+SHA256e46dce5c5738c204f26516f7e5628c18059bea0ff2e9db585a2da9b243efc99b.
+Both runs passed with one explicit disposable POST each and no page errors.
+Actual screenshot review confirmed Chinese cash/risk/Entry explanations fit.
+
+This closes a SOURCE_BOUND_DISPOSABLE_SHARED_ACCOUNT product milestone, not a
+persistent simulation portfolio or six-action personal trading workflow. The
+confirmed-fill correction path is still missing; cancel_fill cancels drafts only.
+No sealed74bb journal was appended. A bounded successor is assigned in an
+independent worktree to reuse the existing engine with a genuinely persisted
+SIMULATED/account context, not an output-only namespace rewrite. Root owns its
+API/Web integration and it cannot touch actual-account routing or private roots.
+
+Independent economic research and a second source/math review found no definite
+arithmetic/double-counting error in the conditional600519 package, but did expose
+shared cash/terminal/Ke uncertainty not covered by its narrow three operating
+scenarios. See [the scoped research note](600519-native-economic-review-20261024.md).
+Those findings are not group responses, G3 or prices for trading; subsequent
+read-model integration must preserve the original candidate and source closure.
+
+Remaining Goal requirements include substantive primary/economic admission and
+cross-company validation, independent strategy evidence (swing remains3/7 and
+NOT_PROVEN), persistent simulated monitoring and confirmed-fill correction,
+current model/event/price eligibility, user strategy confirmation and final
+assisted-use acceptance. Private actual input is not inferred from simulation.
+All completed source milestones are pushed to the existing PR branch;main is
+not merged. Complete Goal staysACTIVE, INITIAL_ASSISTED_USE=NOT_REACHED,
+action=no_order. No private account/Canonical Excel/server/PTA/production task
+was modified and no paid API, production signing identity or broker was used.
