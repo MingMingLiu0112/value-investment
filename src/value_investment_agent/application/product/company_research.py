@@ -349,6 +349,8 @@ def run_company_research_for_symbol(
         'status': 'LOCAL_BYTES_VERIFIED' if local_source_bindings else 'NO_LOCAL_BINDING_METADATA',
         'scope': 'byte_integrity_not_fact_semantics_or_investment_approval',
         'source_contract_status': (
+            'SOURCE_CUTOFF_VALIDATED_NO_SCENARIOS_OR_FACT_ADMISSION'
+            if spec.research_mode == 'research_only_v1' else
             'SOURCE_CUTOFF_AND_SCENARIO_BINDINGS_VALIDATED'
             if package_payload.get('schema_version') == 'm1-valuation-package-v2'
             else 'LEGACY_CONTRACT_NOT_REAL_INPUT_ADMISSION'

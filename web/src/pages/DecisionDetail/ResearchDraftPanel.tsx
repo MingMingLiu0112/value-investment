@@ -1,5 +1,10 @@
 import { Alert, Descriptions, List, Table, Tag, Typography } from "antd";
-import type { ResearchDraft, ResearchDraftAssumption } from "../../types/api";
+import type {
+  ResearchDraft,
+  ResearchOnlyDraft,
+  ValuationResearchDraft,
+  ResearchDraftAssumption,
+} from "../../types/api";
 import { formatScenarioValue } from "../../utils/researchDetail";
 import { shortDigest } from "../../utils/history";
 import {
@@ -65,6 +70,283 @@ function ListOrEmpty({ items, empty }: { items: string[]; empty: string }) {
 }
 
 export function ResearchDraftPanel({ draft }: { draft: ResearchDraft }) {
+  if (draft.schema_version === "public-research-only-draft-v1") {
+    return <ResearchOnlyDraftPanel draft={draft} />;
+  }
+  if (
+    draft.schema_version !== "public-research-draft-v1" &&
+    draft.schema_version !== "public-research-draft-v2"
+  ) {
+    return <Alert type="warning" message="无法核验研究草稿版本" />;
+  }
+  return <ValuationResearchDraftPanel draft={draft} />;
+}
+
+const OBSERVATION_LABELS: Record<string, string> = {
+  operating_cash_flow: "经营活动现金净额",
+  reported_asset_purchase_cash: "购建资产支付现金（非完整资本开支）",
+  investing_cash_flow: "投资活动现金净额",
+  financing_cash_flow: "筹资活动现金净额",
+  combined_distributions_and_interest_paid:
+    "分配股利、利润或偿付利息支付现金（合并项）",
+};
+const TOPIC_LABELS: Record<string, string> = {
+  CASH_CONVERSION: "现金转换",
+  CONCESSION: "特许经营",
+  CAPEX: "资本开支",
+  FINANCING: "融资与偿债",
+  DIVIDEND: "分红能力",
+};
+const RESEARCH_ONLY_BLOCKERS: Record<string, string> = {
+  MODEL_APPLICABILITY_UNASSESSED_RESEARCH_ONLY:
+    "尚未选定适用估值模型，不能给出合理价值或交易判断。",
+  NORMALIZED_CASH_AND_REINVESTMENT_NOT_RECONCILED:
+    "正常化现金与再投资义务尚未核清。",
+  RESTATED_H1_COMPARATIVES_REQUIRE_SCOPE_RECONCILIATION:
+    "半年报比较数据存在重述，不能未经口径核对直接拼接 TTM。",
+  UNVERIFIED_PROVIDER_TRADE_DATE: "初筛行情交易日期尚未核验，未用于价格判断。",
+  BSE_COVERAGE_MISSING: "本次初筛未覆盖北交所，不代表全市场覆盖。",
+  NO_HUMAN_ECONOMIC_APPROVAL: "尚未完成经济研究人工准入。",
+};
+
+function ResearchOnlyDraftPanel({ draft }: { draft: ResearchOnlyDraft }) {
+  const verification = draft.input_verification;
+  // This checks display-contract integrity, not authenticity of original files.
+  const sha256 = (value: unknown) =>
+    typeof value === "string" &&
+    value.length === 64 &&
+    /^[0-9a-f]{64}$/.test(value);
+  const evidenceIds = new Set<string>();
+  const evidenceValid =
+    Array.isArray(draft.evidence) &&
+    draft.evidence.length > 0 &&
+    draft.evidence.every((ref) => {
+      if (
+        !ref ||
+        typeof ref.id !== "string" ||
+        !ref.id.trim() ||
+        ref.id !== ref.id.trim() ||
+        !sha256(ref.sha256) ||
+        evidenceIds.has(ref.id)
+      )
+        return false;
+      evidenceIds.add(ref.id);
+      return true;
+    });
+  const observationRefsValid =
+    Array.isArray(draft.observations) &&
+    draft.observations.every(
+      (row) =>
+        row &&
+        Array.isArray(row.evidence_refs) &&
+        row.evidence_refs.length > 0 &&
+        new Set(row.evidence_refs).size === row.evidence_refs.length &&
+        row.evidence_refs.every(
+          (id) => typeof id === "string" && evidenceIds.has(id),
+        ),
+    );
+  if (
+    draft.action !== "no_order" ||
+    draft.research_mode !== "research_only_v1" ||
+    draft.status !== "RESEARCH_DRAFT_NOT_APPROVED" ||
+    draft.assessment_status !== "UNASSESSABLE" ||
+    draft.native_status !== "UNSUPPORTED" ||
+    draft.observations_verified !== false ||
+    draft.confidence !== "LOW" ||
+    verification?.status !== "SOURCE_INPUTS_MATCH_NO_VALUATION" ||
+    verification.economic_approval !== false ||
+    verification.source_contract_status !==
+      "SOURCE_CUTOFF_VALIDATED_NO_SCENARIOS_OR_FACT_ADMISSION" ||
+    verification.input_sha256 !== draft.research_input_binding?.input_sha256 ||
+    !sha256(verification.input_sha256) ||
+    !sha256(draft.research_input_binding?.input_sha256) ||
+    !sha256(draft.research_input_binding?.package?.sha256) ||
+    !evidenceValid ||
+    !observationRefsValid ||
+    [
+      draft.valuation,
+      draft.model_validity,
+      draft.quote_fact,
+      draft.price_bridge,
+      draft.gates,
+    ].some((v) => v !== null) ||
+    !Array.isArray(draft.observations) ||
+    !Array.isArray(draft.evidence) ||
+    !Array.isArray(draft.research_topics)
+  ) {
+    return <Alert type="warning" message="研究草稿不可核验，未展示观测数值" />;
+  }
+  return (
+    <section style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+      <Typography.Title level={4}>
+        {draft.company_name} · 初步研究
+      </Typography.Title>
+      <Alert
+        type="warning"
+        message="模型尚未适用 · 资料不足（UNASSESSABLE）"
+        description={draft.summary}
+      />
+      <p>
+        <Tag>官方原文观测 · 未准入</Tag>
+        <Tag>低置信度</Tag>
+        <Tag>非买卖建议</Tag>
+      </p>
+      <Descriptions
+        column={1}
+        size="small"
+        items={[
+          {
+            key: "period",
+            label: "财务期间",
+            children: draft.financial_period,
+          },
+          {
+            key: "research",
+            label: "研究日期",
+            children: draft.research_as_of,
+          },
+          {
+            key: "cutoff",
+            label: "知识截止",
+            children: verification.cutoff_at,
+          },
+          {
+            key: "available",
+            label: "草稿可得时间",
+            children: draft.available_at,
+          },
+          {
+            key: "version",
+            label: "研究版本",
+            children: draft.research_version,
+          },
+        ]}
+      />
+      <Typography.Title level={5}>研究逻辑与待核问题</Typography.Title>
+      <Typography.Paragraph>{draft.thesis}</Typography.Paragraph>
+      <Typography.Paragraph>
+        回报来源：{draft.return_driver}
+      </Typography.Paragraph>
+      <Typography.Paragraph>
+        误定价假设：{draft.mispricing_hypothesis}
+      </Typography.Paragraph>
+      {draft.research_topics.map((topic) => (
+        <div key={topic.id}>
+          <Typography.Text strong>
+            {TOPIC_LABELS[topic.id] ?? topic.id}
+          </Typography.Text>
+          <Typography.Paragraph>{topic.explanation}</Typography.Paragraph>
+          <ul>
+            {topic.missing.map((text, i) => (
+              <li key={i}>{text}</li>
+            ))}
+          </ul>
+          <Typography.Text type="secondary">
+            依据：{topic.evidence_refs.join("、")}
+          </Typography.Text>
+        </div>
+      ))}
+      <Typography.Title level={5}>
+        报表观测（不是标准化自由现金流）
+      </Typography.Title>
+      <div style={{ maxWidth: "100%", overflowX: "auto" }}>
+        <table
+          style={{ width: "100%", minWidth: 560, borderCollapse: "collapse" }}
+        >
+          <thead>
+            <tr>
+              {[
+                "项目 / 口径",
+                "期间 / 原值",
+                "比较期间 / 原值",
+                "原文依据",
+              ].map((t) => (
+                <th key={t} style={{ textAlign: "left", padding: 8 }}>
+                  {t}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {draft.observations.map((row, i) => (
+              <tr key={i}>
+                <td style={{ padding: 8 }}>
+                  {OBSERVATION_LABELS[row.field_name] ?? row.field_name}
+                  <br />
+                  {row.statement_scope === "consolidated"
+                    ? "合并口径"
+                    : (row.statement_scope ?? "口径待核")}{" "}
+                  · {row.unit ?? "单位待核"}
+                </td>
+                <td style={{ padding: 8 }}>
+                  {row.period_label ?? "期间待核"}
+                  <br />
+                  {row.value ?? "缺失（不补零）"}
+                </td>
+                <td style={{ padding: 8 }}>
+                  {row.prior_period_label ?? "比较期待核"}
+                  <br />
+                  {row.prior_value ?? "缺失（不补零）"}
+                </td>
+                <td style={{ padding: 8 }}>{row.evidence_refs.join("、")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Typography.Title level={5}>反证与未完成事项</Typography.Title>
+      <ul>
+        {draft.counter_evidence.map((row, i) => (
+          <li key={i}>
+            {typeof row === "string" ? (
+              row
+            ) : (
+              <>
+                {row.text}
+                {row.evidence_refs?.length ? (
+                  <div>依据：{row.evidence_refs.join("、")}</div>
+                ) : null}
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+      <ul>
+        {draft.blockers.map((text, i) => (
+          <li key={i}>{RESEARCH_ONLY_BLOCKERS[text] ?? text}</li>
+        ))}
+      </ul>
+      <Typography.Title level={5}>原始出处</Typography.Title>
+      <ul>
+        {draft.evidence.map((ref) => (
+          <li key={ref.id}>
+            {httpUrl(ref.url) ? (
+              <a href={ref.url!} target="_blank" rel="noreferrer">
+                {ref.title ?? ref.id}
+              </a>
+            ) : (
+              ref.id
+            )}{" "}
+            第{ref.physical_page ?? ref.page ?? "待核"}页
+            <div>
+              发布：{ref.published_at ?? ref.published_date ?? "日期待核"}
+              ；实际取得：{ref.retrieved_at}；可得：{ref.available_at}
+            </div>
+            <div>SHA-256：{ref.sha256}</div>
+            {ref.excerpt && <div>{ref.excerpt}</div>}
+          </li>
+        ))}
+      </ul>
+      <Typography.Paragraph>{draft.boundary}</Typography.Paragraph>
+    </section>
+  );
+}
+
+function ValuationResearchDraftPanel({
+  draft,
+}: {
+  draft: ValuationResearchDraft;
+}) {
   const scenarios = draft.valuation.scenarios.map((row) => ({
     ...row,
     display_value: formatScenarioValue(row.per_share_value),

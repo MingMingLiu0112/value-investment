@@ -22,6 +22,7 @@ ARTIFACT_ROOT = Path("artifacts/current")
 POINTER_SCHEMA = "current-research-drafts-v1"
 DRAFT_SCHEMA = "public-research-draft-v1"
 BOUND_DRAFT_SCHEMA = "public-research-draft-v2"
+RESEARCH_ONLY_DRAFT_SCHEMA = "public-research-only-draft-v1"
 DRAFT_STATUS = "RESEARCH_DRAFT_NOT_APPROVED"
 _HASH_RE = re.compile(r"[0-9a-f]{64}\Z")
 _FORBIDDEN_KEYS = {
@@ -77,7 +78,7 @@ def _reject_execution_fields(value: object) -> None:
 
 
 def _validate_draft(payload: dict[str, Any], symbol: str, now: datetime) -> None:
-    if payload.get("schema_version") not in {DRAFT_SCHEMA, BOUND_DRAFT_SCHEMA}:
+    if payload.get("schema_version") not in {DRAFT_SCHEMA, BOUND_DRAFT_SCHEMA, RESEARCH_ONLY_DRAFT_SCHEMA}:
         raise ValueError("unknown research draft schema")
     if payload.get("action") != "no_order":
         raise ValueError("research draft must remain no_order")
@@ -94,6 +95,16 @@ def _validate_draft(payload: dict[str, Any], symbol: str, now: datetime) -> None
         raise ValueError("research_as_of is required")
     if date.fromisoformat(research_as_of[:10]) > now.astimezone(ZoneInfo("Asia/Shanghai")).date():
         raise ValueError("research_as_of is in the future")
+
+    if payload['schema_version'] == RESEARCH_ONLY_DRAFT_SCHEMA:
+        # Authors bind inputs, not display values or approval claims. All
+        # presentation fields below are derived by a read-only native replay.
+        if set(payload) != {'schema_version', 'action', 'symbol', 'status', 'research_mode',
+                            'research_as_of', 'available_at', 'research_input_binding'}:
+            raise ValueError('research-only draft must contain only its input binding and identity')
+        if payload['research_mode'] != 'research_only_v1':
+            raise ValueError('unknown research-only mode')
+        return
 
     valuation = payload.get("valuation")
     if not isinstance(valuation, dict) or valuation.get("status") != "conditional_research_only":
@@ -227,6 +238,90 @@ def _verify_bound_draft(root: Path, payload: dict[str, Any], now: datetime) -> d
         capital_inputs=capital, economic_approval=False)
 
 
+def _verify_research_only_draft(root: Path, payload: dict, now: datetime) -> dict:
+    from ...m1_valuation_package_builder import build_descriptor
+    from ...research_input import build_research_run_spec
+    from ...research_application import ResearchApplicationService
+    from ...research_artifact_repository import InMemoryResearchArtifactRepository
+    from .source_bound_inputs import verify_package_local_sources
+
+    binding = payload['research_input_binding']
+    if not isinstance(binding, dict) or set(binding) != {'package', 'input_sha256'}:
+        raise ValueError('research-only draft requires an exact input binding')
+    ref = binding['package']
+    if (not isinstance(ref, dict) or set(ref) != {'path', 'sha256'}
+            or not isinstance(ref['path'], str)
+            or not isinstance(ref['sha256'], str) or not _HASH_RE.fullmatch(ref['sha256'])
+            or not isinstance(binding['input_sha256'], str)
+            or not _HASH_RE.fullmatch(binding['input_sha256'])):
+        raise ValueError('invalid research-only package binding')
+    relative = Path(ref['path'])
+    target = (root / relative).resolve()
+    if (relative.is_absolute() or '..' in relative.parts or not relative.parts
+            or not target.is_relative_to(root.resolve()) or sha256_file(target) != ref['sha256']):
+        raise ValueError('research-only package path/hash mismatch')
+    package = _json_object(target)
+    if package.get('research_mode') != 'research_only_v1' or package.get('symbol') != payload['symbol']:
+        raise ValueError('research-only package mode/symbol mismatch')
+    sources = verify_package_local_sources(root, package)
+    descriptor = build_descriptor(package, root=root)
+    timing = descriptor.point_in_time
+    if (descriptor.input_sha256 != binding['input_sha256']
+            or timing.research_as_of.isoformat() != payload['research_as_of']
+            or timing.available_at > _aware_timestamp(payload['available_at'])
+            or timing.available_at > now or timing.computed_at > now):
+        raise ValueError('research-only input identity/time mismatch')
+    # Do not invoke the scheduled command wrapper: even a GET with a reopen
+    # request must never consume a schedule stop or write a repository artifact.
+    outcome = ResearchApplicationService(InMemoryResearchArtifactRepository(), now_utc=lambda: now
+        ).run_company_research(build_research_run_spec(descriptor))
+    if (outcome.status != 'UNSUPPORTED' or len(outcome.stored_artifacts) != 2
+            or any(getattr(outcome, key) is not None for key in (
+                'valuation', 'model_validity', 'quote_snapshot', 'price_bridge', 'gate',
+                'decision_recommendation', 'pre_decision_eligibility'))):
+        raise ValueError('research-only replay attempted downstream admission')
+    case = descriptor.research_case
+    catalog = package['source_contract']['source_catalog']
+    evidence = []
+    by_id = {row['id']: row for row in catalog}
+    refs_by_id = {}
+    for row in (*case.evidence_refs, *descriptor.facts.evidence_refs):
+        previous = refs_by_id.setdefault(row['id'], {})
+        if any(key in previous and previous[key] != value for key, value in row.items()):
+            raise ValueError('research-only evidence id has conflicting references')
+        previous.update(row)
+    for observation in descriptor.facts.observations:
+        if any(ref_id not in refs_by_id for ref_id in observation['evidence_refs']):
+            raise ValueError('research-only observation has no displayed source')
+    for row in refs_by_id.values():
+        source = by_id[row['id']]
+        evidence.append(dict(row, url=source['location'],
+            published_at=source.get('published_at'), published_date=source.get('published_date'),
+            available_at=source['source_available_at'], retrieved_at=source['retrieved_at']))
+    result = dict(payload, company_name=case.name, run_id=case.run_id,
+        research_version=case.research_version, financial_period=descriptor.facts.as_of.isoformat(),
+        assessment_status='UNASSESSABLE', native_status=outcome.status,
+        issuer_identity_status=outcome.issuer_identity_status,
+        confidence='LOW', observations_verified=False,
+        summary='模型尚未适用；官方原文中的观测尚未完成财务事实与经济研究准入，不代表充分评价后的不交易。',
+        thesis=case.thesis, return_driver=case.return_driver,
+        mispricing_hypothesis=case.mispricing_hypothesis,
+        observations=descriptor.facts.observations,
+        research_topics=case.financial_summary.get('research_topics', []),
+        counter_evidence=list(case.counter_evidence), thesis_breakers=list(case.thesis_breakers),
+        next_events=list(case.next_events), blockers=list(outcome.blockers), evidence=evidence,
+        valuation=None, model_validity=None, quote_fact=None, price_bridge=None, gates=None,
+        input_verification=dict(status='SOURCE_INPUTS_MATCH_NO_VALUATION',
+            source_contract_status='SOURCE_CUTOFF_VALIDATED_NO_SCENARIOS_OR_FACT_ADMISSION',
+            input_sha256=descriptor.input_sha256, computed_at=timing.computed_at.isoformat(),
+            cutoff_at=package['source_contract']['cutoff_at'], economic_approval=False),
+        boundary='仅研究草稿：非原始历史PIT证明，非正式财务事实、估值、持仓或交易建议。')
+    if (sha256_file(target) != ref['sha256']
+            or verify_package_local_sources(root, package) != sources):
+        raise ValueError('research-only package/source changed during replay')
+    return result
+
+
 def load_current_research_draft(
     root: Path,
     symbol: str,
@@ -237,6 +332,7 @@ def load_current_research_draft(
 
     try:
         normalized = normalize_symbol(symbol)
+        pointer_digest = sha256_file(root / POINTER_PATH)
         pointer = _json_object(root / POINTER_PATH)
         if pointer.get("schema_version") != POINTER_SCHEMA or pointer.get("action") != "no_order":
             raise ValueError("unknown research draft pointer")
@@ -272,6 +368,10 @@ def load_current_research_draft(
         payload.pop("input_verification", None)
         if payload["schema_version"] == BOUND_DRAFT_SCHEMA:
             payload["input_verification"] = _verify_bound_draft(root, payload, current)
+        elif payload['schema_version'] == RESEARCH_ONLY_DRAFT_SCHEMA:
+            payload = _verify_research_only_draft(root, payload, current)
+        if sha256_file(target) != digest or sha256_file(root / POINTER_PATH) != pointer_digest:
+            raise ValueError('research draft/pointer changed during verification')
         return payload
     except (OSError, ValueError, TypeError, KeyError, ArithmeticError, json.JSONDecodeError, UnicodeError):
         return None

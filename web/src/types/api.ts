@@ -861,7 +861,86 @@ export interface ResearchDraftVersionComparison {
   next_gate?: string | null;
 }
 
-export interface ResearchDraft {
+export type ResearchDraft = ValuationResearchDraft | ResearchOnlyDraft;
+
+export type ResearchOnlyStatement =
+  | string
+  | {
+      kind?: string;
+      text: string;
+      evidence_refs?: string[];
+    };
+
+export interface ResearchOnlyDraft {
+  schema_version: "public-research-only-draft-v1";
+  research_mode: "research_only_v1";
+  action: "no_order";
+  symbol: string;
+  company_name: string;
+  run_id: string;
+  research_version: string;
+  status: "RESEARCH_DRAFT_NOT_APPROVED";
+  research_as_of: string;
+  available_at: string;
+  financial_period: string;
+  assessment_status: "UNASSESSABLE";
+  native_status: "UNSUPPORTED";
+  issuer_identity_status: string;
+  confidence: "LOW";
+  observations_verified: false;
+  summary: string;
+  thesis: string;
+  return_driver: string;
+  mispricing_hypothesis: string;
+  valuation: null;
+  quote_fact: null;
+  price_bridge: null;
+  model_validity: null;
+  gates: null;
+  observations: {
+    field_name: string;
+    value: string | null;
+    prior_value?: string | null;
+    period_label?: string;
+    prior_period_label?: string;
+    unit?: string;
+    statement_scope?: string;
+    evidence_refs: string[];
+  }[];
+  research_topics: {
+    id: string;
+    status: string;
+    explanation: string;
+    evidence_refs: string[];
+    missing: string[];
+  }[];
+  evidence: (ResearchDraftEvidence & {
+    page?: number;
+    physical_page?: number;
+    excerpt?: string;
+    published_date?: string | null;
+    retrieved_at: string;
+  })[];
+  counter_evidence: ResearchOnlyStatement[];
+  thesis_breakers: ResearchOnlyStatement[];
+  next_events: ResearchOnlyStatement[];
+  blockers: string[];
+  boundary: string;
+  research_input_binding: {
+    package: { path: string; sha256: string };
+    input_sha256: string;
+  };
+  input_verification: {
+    status: "SOURCE_INPUTS_MATCH_NO_VALUATION";
+    source_contract_status: "SOURCE_CUTOFF_VALIDATED_NO_SCENARIOS_OR_FACT_ADMISSION";
+    input_sha256: string;
+    computed_at: string;
+    cutoff_at: string;
+    economic_approval: false;
+  };
+}
+
+export interface ValuationResearchDraft {
   schema_version: "public-research-draft-v1" | "public-research-draft-v2";
   action: "no_order";
   symbol: string;
