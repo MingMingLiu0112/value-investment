@@ -60,8 +60,13 @@ def official_input_version(payload: dict) -> str:
             return PARTIAL_VERSION
         if version == VERSION:
             return VERSION
-        if version == LEGACY_VERSION and not v2_fields.intersection(payload):
-            return LEGACY_VERSION
+        if version == LEGACY_VERSION:
+            if (payload.get('complete') is not True
+                    or payload.get('status') in ('PARTIAL', 'UNAVAILABLE')
+                    or payload.get('scope') == 'OBSERVED_VENUES_ONLY_NOT_ALL_A'):
+                raise ValueError('Legacy official input must be complete and contain no partial coverage semantics')
+            if not v2_fields.intersection(payload):
+                return LEGACY_VERSION
         raise ValueError('Unsupported official list parser version')
     legacy_keys = {'records', 'sources', 'fetched_at', 'exchange_counts',
                    'board_counts', 'scope', 'complete'}
@@ -71,6 +76,7 @@ def official_input_version(payload: dict) -> str:
             and isinstance(payload['exchange_counts'], dict)
             and isinstance(payload['board_counts'], dict)
             and isinstance(payload['scope'], str) and bool(payload['scope'])
+            and payload['scope'] != 'OBSERVED_VENUES_ONLY_NOT_ALL_A'
             and isinstance(payload['fetched_at'], str)):
         aware(datetime.fromisoformat(payload['fetched_at']))
         return LEGACY_VERSION

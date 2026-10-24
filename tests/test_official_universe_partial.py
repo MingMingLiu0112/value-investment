@@ -341,3 +341,49 @@ def test_partial_cannot_skip_replay_by_downgrading_version_and_erasing_dates(cov
         del payload[key]
     with pytest.raises(ValueError, match='relabelled'):
         app.verify_retained_official_input(payload, root=tmp_path)
+
+
+@pytest.mark.parametrize('remaining', ['all', 'complete_false', 'complete_missing', 'complete_integer',
+    'partial_status', 'unavailable_status', 'partial_scope'])
+def test_declared_legacy_rejects_partial_after_all_new_coverage_and_date_fields_removed(
+        coverage_documents, tmp_path, remaining):
+    payload = retained_partial(coverage_documents, tmp_path)
+    payload['parser_version'] = 'official-security-lists-v1'
+    for key in ('required_venues', 'covered_venues', 'missing_venues', 'failed_venues',
+            'venue_coverage', 'request_failures', 'collection_timing', 'available_at', 'effective_session'):
+        del payload[key]
+    if remaining != 'all':
+        payload.update(complete=True, scope='Historical full A-share list')
+        payload.pop('status')
+        if remaining == 'complete_false': payload['complete'] = False
+        elif remaining == 'complete_missing': del payload['complete']
+        elif remaining == 'complete_integer': payload['complete'] = 1
+        elif remaining == 'partial_status': payload['status'] = 'PARTIAL'
+        elif remaining == 'unavailable_status': payload['status'] = 'UNAVAILABLE'
+        else: payload['scope'] = 'OBSERVED_VENUES_ONLY_NOT_ALL_A'
+    # Source-contract rejection is independent of any original receipt hash.
+    with pytest.raises(ValueError, match='Legacy official input must be complete'):
+        app.official_input_version(payload)
+    with pytest.raises(ValueError, match='Legacy official input must be complete'):
+        app.verify_retained_official_input(payload, root=tmp_path)
+
+
+def test_unversioned_legacy_cannot_relabel_partial_scope_even_with_complete_true(coverage_documents, tmp_path):
+    payload = retained_partial(coverage_documents, tmp_path)
+    legacy_keys = {'records', 'sources', 'fetched_at', 'exchange_counts', 'board_counts', 'scope', 'complete'}
+    payload = {key: payload[key] for key in legacy_keys}
+    payload['complete'] = True
+    with pytest.raises(ValueError, match='Unsupported unversioned'):
+        app.verify_retained_official_input(payload, root=tmp_path)
+
+
+@pytest.mark.parametrize('declared', [False, True])
+def test_complete_legacy_keeps_original_replay_and_retained_date_semantics(coverage_documents, tmp_path, declared):
+    payload = replay(coverage_documents)
+    for key in ('parser_version', 'collection_timing', 'available_at', 'effective_session'):
+        del payload[key]
+    if declared:
+        payload['parser_version'] = 'official-security-lists-v1'
+    assert app.official_input_version(payload) == 'official-security-lists-v1'
+    app.verify_retained_official_input(payload, root=tmp_path)
+    assert app.screening_quote_date(payload, SATURDAY, retained_quote_date='2026-09-23') == '2026-09-23'

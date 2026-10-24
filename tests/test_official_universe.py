@@ -151,8 +151,8 @@ def test_weekend_v2_preserves_actual_acquisition_and_provider_dates(v2_documents
     assert payload['collection_timing']['quote_date_verified'] is False
     assert payload['collection_timing']['strict_contemporaneous_pit'] is False
     assert screening_quote_date(payload, SATURDAY+timedelta(seconds=3)) == '2026-10-23'
-    assert screening_quote_date(dict(parser_version='official-security-lists-v1'), SATURDAY) == '2026-10-24'
-    assert screening_quote_date(dict(parser_version='official-security-lists-v1'), SATURDAY,
+    assert screening_quote_date(dict(parser_version='official-security-lists-v1', complete=True), SATURDAY) == '2026-10-24'
+    assert screening_quote_date(dict(parser_version='official-security-lists-v1', complete=True), SATURDAY,
         retained_quote_date='2026-09-23') == '2026-09-23'
     assert screening_quote_date(payload, SATURDAY+timedelta(seconds=3),
         retained_quote_date='2026-10-23') == '2026-10-23'
@@ -473,6 +473,10 @@ def test_v2_readonly_reparse_of_retained_official_bytes(tmp_path, monkeypatch, d
     original = path.read_bytes()
     assert sha256(original).hexdigest() == 'f500d22bd3ad16f3a139950608b4f0e21cd391f7682b62ed395a56b5011dc98b'
     payload = json.loads(original)
+    from value_investment_agent.application.discovery.official_universe_collection import official_input_version
+    assert payload['complete'] is True
+    assert official_input_version(payload) == 'official-security-lists-v1'
+    verify_retained_official_input(payload, root=root)
     documents = []
     for ref in payload['sources']:
         raw = Path(ref['local_path']).read_bytes()
