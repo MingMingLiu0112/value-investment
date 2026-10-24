@@ -1,5 +1,10 @@
 from datetime import date
 import json
+import os
+from pathlib import Path
+from hashlib import sha256
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -8,6 +13,96 @@ from value_investment_agent.application.hotspot.price_action_case import project
 from value_investment_agent.infrastructure.hotspot.sina_price_case import (
     collect_historical_case, load_historical_case, parse_klines,
 )
+
+
+def _require_report_bound_historical_case(root, row):
+    case = load_historical_case(root=root, symbol=row['symbol'], as_of=date(2026,10,21))
+    if case['source_bindings'] != row['source_bindings']:
+        raise ValueError('Historical case differs from sealed source bindings or acquisition times')
+    return case
+
+
+@pytest.mark.skipif(not os.environ.get('HOTSPOT_MISSING_WINDOW_ROOT'), reason='Explicit retrospective missing-window originals')
+@pytest.mark.parametrize('symbol', ['600825', '000938', '600176', '600667', '601857'])
+def test_real_missing_oct21_window_is_retrospective_not_repaired_pit(symbol):
+    from value_investment_agent.domain.hotspot.confirmed_price_structure import analyze_price_behavior
+    from value_investment_agent.domain.hotspot.current_price import current_signal, completed_session_bars
+    from value_investment_agent.infrastructure.hotspot.sina_price_case import decode_klines
+    from value_investment_agent.application.hotspot.lifecycle_review import _compare_entry_bars
+    root = Path(os.environ['HOTSPOT_MISSING_WINDOW_ROOT'])
+    raw = (root / 'completed-validation.json').read_bytes()
+    assert sha256(raw).hexdigest() == os.environ['HOTSPOT_MISSING_WINDOW_REPORT_SHA256']
+    report = json.loads(raw)
+    assert report['baseline_coverage'] == dict(expected=7, replayed=3)
+    assert report['contemporaneous_coverage_added'] == report['historical_pit_credit'] == 0
+    assert report['strategy_validation'] == 'NOT_PROVEN' and report['action'] == 'no_order'
+    row = next(item for item in report['rows'] if item['symbol'] == symbol)
+    case = _require_report_bound_historical_case(root, row)
+    assert case['levels'] == row['levels']
+    assert analyze_price_behavior(case['bars']) == row['behavior']
+    assert current_signal(case['levels'])[0] == row['retrospective_signal_state'] == 'WATCH'
+    for period in ('60m', '15m'):
+        binding = case['source_bindings'][period]
+        original = (root / binding['path']).read_bytes()
+        assert sha256(original).hexdigest() == binding['sha256']
+        assert datetime.fromisoformat(binding['fetched_at']) > datetime(2026,10,21,15,tzinfo=ZoneInfo('Asia/Shanghai'))
+        values = decode_klines(original)
+        changed = 0
+        for value in values:
+            if value['day'][:10] > '2026-10-21':
+                value['volume'] = '999999999'
+                value['high'] = str(float(value['high']) * 100)
+                changed += 1
+        assert changed > 0
+        altered = ('=(' + json.dumps(values) + ');').encode()
+        assert parse_klines(altered, period=period, as_of=date(2026,10,21)) == case['bars'][period]
+        completed_session_bars(case['bars'][period], period=period)
+    future = completed_session_bars(parse_klines((root / case['source_bindings']['60m']['path']).read_bytes(),
+        period='60m', as_of=date(2026,10,23)), period='60m')
+    reference = _compare_entry_bars(bars=future,
+        entry_at=datetime(2026,10,21,15,tzinfo=ZoneInfo('Asia/Shanghai')),
+        protection=case['levels']['60m']['invalidation_price'], symbol=symbol)
+    for key, value in reference.items():
+        assert row['reference_only_followup'][key] == value
+    assert reference['coverage'] == 'COMPLETE' and reference['inspected_bar_count'] == 8
+    assert row['reference_only_followup']['reference_is_owned_entry'] is False
+    assert row['reference_only_followup']['exit_review_admitted'] is False
+    assert row['reference_only_followup']['price_comparability'] == 'UNKNOWN'
+
+
+@pytest.mark.skipif(not os.environ.get('HOTSPOT_MISSING_WINDOW_ROOT'), reason='Explicit retrospective originals')
+@pytest.mark.parametrize('change', ['future_tail_and_rehash', 'acquisition_time'])
+def test_rehashed_case_cannot_replace_sealed_missing_window_sources(tmp_path, change):
+    import shutil
+    from datetime import timedelta
+    from value_investment_agent.infrastructure.hotspot.sina_price_case import decode_klines
+    root = Path(os.environ['HOTSPOT_MISSING_WINDOW_ROOT'])
+    raw = (root / 'completed-validation.json').read_bytes()
+    assert sha256(raw).hexdigest() == os.environ['HOTSPOT_MISSING_WINDOW_REPORT_SHA256']
+    row = json.loads(raw)['rows'][0]
+    relative = Path('runtime/hotspot-price-cases') / (row['symbol'] + '-2026-10-21')
+    target = tmp_path / relative
+    shutil.copytree(root / relative, target)
+    case = json.loads((target / 'case.json').read_bytes())
+    if change == 'future_tail_and_rehash':
+        source = tmp_path / case['source_bindings']['60m']['path']
+        values = decode_klines(source.read_bytes())
+        assert any(value['day'][:10] > '2026-10-21' for value in values)
+        for value in values:
+            if value['day'][:10] > '2026-10-21':
+                value['volume'] = '999999999'
+        source.write_bytes(('=(' + json.dumps(values) + ');').encode())
+        digest = sha256(source.read_bytes()).hexdigest()
+        for period in ('60m', 'daily'):
+            case['source_bindings'][period]['sha256'] = digest
+    else:
+        before = datetime.fromisoformat(case['source_bindings']['15m']['fetched_at'])
+        case['source_bindings']['15m']['fetched_at'] = (before - timedelta(seconds=1)).isoformat()
+    (target / 'case.json').write_text(json.dumps(case), encoding='utf-8')
+    # A self-consistent replacement can replay the same cutoff, but is not the sealed source.
+    load_historical_case(root=tmp_path, symbol=row['symbol'], as_of=date(2026,10,21))
+    with pytest.raises(ValueError, match='sealed source bindings'):
+        _require_report_bound_historical_case(tmp_path, row)
 
 
 def _bars():
