@@ -541,8 +541,46 @@ def _validate_dual_account(account, now):
     return day
 
 
+def _dual_consumed_entries(before, after, entries, fill, request):
+    """Attribute native confirmed FIFO deltas, never choose lots for the ledger."""
+    consumed = []
+    for digest, original in before.items():
+        quantity = Decimal(original['remaining_quantity']) - Decimal(after[digest]['remaining_quantity'])
+        if quantity < 0:
+            raise ValueError('Native sell unexpectedly increased an original Entry')
+        if quantity == 0:
+            continue
+        transaction = original['transaction_id']
+        if (original['symbol'], original['exchange'], original['sleeve']) != (
+                fill['symbol'], fill['exchange'], fill['sleeve']):
+            raise ValueError('Native sell consumed an unrelated Entry')
+        reference = entries.get(transaction)
+        if reference is None or reference['fill_record_sha256'] != digest:
+            raise ValueError('Consumed original Entry narrative unavailable')
+        consumed.append(dict(transaction_id=transaction, quantity=str(quantity),
+            original_entry_reference=deepcopy(reference)))
+    if sum((Decimal(row['quantity']) for row in consumed), Decimal(0)) != Decimal(fill['quantity']):
+        raise ValueError('Original Entry consumption does not equal the native confirmed sell')
+    linked = request.get('entry_transaction_id')
+    if len(consumed) == 1:
+        if linked != consumed[0]['transaction_id']:
+            raise ValueError('Sell Entry reference differs from native FIFO consumption')
+    elif linked is not None:
+        raise ValueError('Multi-Entry FIFO sell cannot claim a single original Entry')
+    rationales = request.get('entry_rationales')
+    if rationales is None and len(consumed) == 1:
+        rationales = {consumed[0]['transaction_id']: request['rationale']}
+    if (not isinstance(rationales, dict) or set(rationales) != {row['transaction_id'] for row in consumed}
+            or any(not isinstance(reason, str) or not reason.strip() for reason in rationales.values())):
+        raise ValueError('Exact per-consumed-Entry manual rationale required for FIFO sell')
+    for row in consumed:
+        row['manual_rationale'] = rationales[row['transaction_id']]
+        row['consistency_scope'] = 'MANUAL_REASON_COMPARED_WITH_RECONSTRUCTED_THESIS_NOT_APPROVAL'
+    return consumed
+
+
 def _dual_manual_rehearsal(*, workspace, core_root, account, requests, cases, hotspot, recheck, now):
-    from .personal_entry_thesis import owned_entry_context, resolve_personal_entry_thesis
+    from .personal_entry_thesis import owned_entry_context, resolve_personal_entry_thesis, _sources
 
     opening = _validate_dual_account(account, now)
     sources = {(CORE, case['symbol']): dict(version=case['research']['research_version'],
@@ -569,7 +607,7 @@ def _dual_manual_rehearsal(*, workspace, core_root, account, requests, cases, ho
             confirmed_at=service._now().isoformat(), confirmation_note='Explicit hypothetical budgets, not real IPS'))
         for index, request in enumerate(requests):
             if (not isinstance(request, dict) or set(request) - {'fill', 'intent', 'rationale',
-                    'entry_transaction_id', 'entry_narrative', 'requested_quantity'}):
+                    'entry_transaction_id', 'entry_narrative', 'requested_quantity', 'entry_rationales'}):
                 raise ValueError('Unsupported dual rehearsal request')
             fill = deepcopy(request['fill'])
             if set(fill) - {'transaction_id', 'side', 'sleeve', 'symbol', 'exchange', 'quantity',
@@ -590,10 +628,12 @@ def _dual_manual_rehearsal(*, workspace, core_root, account, requests, cases, ho
                 raise ValueError('Hypothetical fill is outside the declared nonfuture account window')
             linked = request.get('entry_transaction_id')
             if intent == 'BUY':
-                if linked is not None or 'entry_narrative' not in request:
+                if linked is not None or 'entry_narrative' not in request or 'entry_rationales' in request:
                     raise ValueError('Opening BUY requires explicit retrospective Entry narrative')
-            elif (linked not in entries or entries[linked]['key'] != key
-                    or 'entry_narrative' in request):
+            elif ('entry_narrative' in request
+                    or (linked is not None and (linked not in entries or entries[linked]['key'] != key))
+                    or (intent == 'ADD' and (linked is None or 'entry_rationales' in request))
+                    or (fill['side'] == 'SELL' and linked is None and 'entry_rationales' not in request)):
                 raise ValueError('Followup must reference the original same-security/sleeve Entry')
             if fill['side'] == 'BUY' and 'next_sell_session' not in fill:
                 fill['next_sell_session'] = next_exchange_session(fill['exchange'], day).isoformat()
@@ -607,7 +647,8 @@ def _dual_manual_rehearsal(*, workspace, core_root, account, requests, cases, ho
                     account_scope='TEST_ONLY_SOURCE_BOUND_DUAL_REHEARSAL',
                     expected_revision=len(service.records()), as_of=service._now(),
                     authenticated_subject='SIMULATED_DUAL_SUBJECT')
-                if not any(row['fill_record_sha256'] == entries[linked]['fill_record_sha256']
+                if linked is not None and not any(
+                        row['fill_record_sha256'] == entries[linked]['fill_record_sha256']
                         and Decimal(row['remaining_quantity']) > 0 for row in resolved['items']):
                     raise ValueError('Referenced original Entry is no longer held')
                 held = sum((lot.quantity for lot in replay.state.lots
@@ -624,6 +665,7 @@ def _dual_manual_rehearsal(*, workspace, core_root, account, requests, cases, ho
                     raise ValueError('Explicit hypothetical sleeve cash/shared reserve exceeded')
             recheck()
             before = _dual_account_view(service, account)
+            original_sources = _sources(service.records())[0] if fill['side'] == 'SELL' else None
             # Do not attach value model context to HOTSPOT or fabricate a public judgment.
             prepared, digest = service.prepare_fill(dict(idempotency_key=f'SIMULATED-fill-{index}',
                 expected_revision=len(service.records()), fill=fill,
@@ -639,6 +681,8 @@ def _dual_manual_rehearsal(*, workspace, core_root, account, requests, cases, ho
             if service.confirm_fill(confirmation) != confirmed or len(service.records()) != count:
                 raise ValueError('Fill confirmation is not idempotent')
             fill_hash = confirmed[1]
+            consumed = (_dual_consumed_entries(original_sources, _sources(service.records())[0],
+                entries, fill, request) if fill['side'] == 'SELL' else [])
             if fill['side'] == 'BUY':
                 narrative = deepcopy(request['entry_narrative'] if intent == 'BUY' else entries[linked]['narrative'])
                 if set(narrative) != {'thesis', 'hold_logic', 'invalidation_conditions'}:
@@ -657,8 +701,12 @@ def _dual_manual_rehearsal(*, workspace, core_root, account, requests, cases, ho
             if context['advisory_dependencies_valid'] is not False:
                 raise ValueError('Hypothetical Entry unexpectedly became advisory eligible')
             rows.append(dict(intent=intent, fill=fill, fill_record_sha256=fill_hash,
-                rationale=rationale, original_entry_transaction_id=linked,
-                original_entry_reference=deepcopy(entries.get(linked or fill['transaction_id'])),
+                rationale=rationale,
+                original_entry_transaction_id=(consumed[0]['transaction_id'] if len(consumed) == 1
+                    else None if consumed else linked),
+                original_entry_reference=(deepcopy(consumed[0]['original_entry_reference']) if len(consumed) == 1
+                    else None if consumed else deepcopy(entries.get(linked or fill['transaction_id']))),
+                consumed_original_entries=consumed,
                 source_version=sources[key]['version'], source_reference=deepcopy(sources[key]['reference']),
                 scope='EXPLICIT_MANUAL_HYPOTHESIS_NOT_SYSTEM_ACTION',
                 execution_price_scope='CALLER_HYPOTHETICAL_NOT_MARKET_FILL',

@@ -137,6 +137,88 @@ def test_partial_add_reduce_exit_link_original_hypothesis_not_system_suggestion(
     _assert_no_authority(result)
 
 
+def _different_entries(sleeve):
+    first, second = _fill('A', sleeve), _fill('B', sleeve)
+    for name, request in (('A', first), ('B', second)):
+        request['entry_narrative'] = dict(thesis=name + ' distinct thesis',
+            hold_logic=name + ' distinct holding rationale',
+            invalidation_conditions=[name + ' specific breaker'])
+    return [first, second]
+
+
+@pytest.mark.parametrize('sleeve', [CORE, HOTSPOT])
+def test_fifo_sell_of_a_cannot_claim_still_held_b(dual, sleeve):
+    sell = _fill('wrong', sleeve, intent='REDUCE', day='2026-10-22', entry='B')
+    with pytest.raises(ValueError, match='differs from native FIFO'):
+        _manual(dual, [*_different_entries(sleeve), sell])
+    assert not list(dual['workspace_root'].glob('.tmp/source-bound-dual-*'))
+
+
+@pytest.mark.parametrize('sleeve', [CORE, HOTSPOT])
+def test_fifo_single_sell_reports_actual_a_narrative_not_b(dual, sleeve):
+    sell = _fill('right', sleeve, intent='REDUCE', day='2026-10-22', entry='A')
+    result = _manual(dual, [*_different_entries(sleeve), sell])
+    row = result['manual_rehearsal']['fills'][-1]
+    assert row['original_entry_transaction_id'] == 'A'
+    consumed, = row['consumed_original_entries']
+    assert consumed['transaction_id'] == 'A' and consumed['quantity'] == '100'
+    assert consumed['original_entry_reference']['narrative']['thesis'] == 'A distinct thesis'
+    assert consumed['manual_rationale'] == sell['rationale']
+    assert row['after']['positions'][0]['quantity'] == '100'
+    assert result['manual_rehearsal']['temporary_journal_removed'] is True
+
+
+@pytest.mark.parametrize('sleeve', [CORE, HOTSPOT])
+@pytest.mark.parametrize('intent,quantity', [('REDUCE', '150'), ('EXIT', '200')])
+def test_native_cross_entry_fifo_quantities_and_separate_reason_comparisons(dual, sleeve, intent, quantity):
+    sell = _fill('cross', sleeve, intent=intent, day='2026-10-22')
+    sell['fill']['quantity'] = quantity
+    sell['entry_rationales'] = {'A': 'A breaker occurred; review A thesis',
+        'B': 'B valuation exposure reduced; compare B holding rationale'}
+    result = _manual(dual, [*_different_entries(sleeve), sell])
+    _assert_no_authority(result)
+    row = result['manual_rehearsal']['fills'][-1]
+    assert row['original_entry_transaction_id'] is row['original_entry_reference'] is None
+    assert [(item['transaction_id'], item['quantity']) for item in row['consumed_original_entries']] == [
+        ('A', '100'), ('B', '50' if intent == 'REDUCE' else '100')]
+    for item in row['consumed_original_entries']:
+        name = item['transaction_id']
+        assert item['original_entry_reference']['narrative']['thesis'] == name + ' distinct thesis'
+        assert item['manual_rationale'] == sell['entry_rationales'][name]
+    final = result['manual_rehearsal']['account_state']
+    assert final['cash_cny'] == ('9485' if intent == 'REDUCE' else '9985')
+    assert final['confirmed_fees_cny'] == '15'
+    assert (final['positions'] == []) is (intent == 'EXIT')
+    if intent == 'REDUCE':
+        assert final['positions'][0]['quantity'] == '50'
+    assert result['manual_rehearsal']['restart_equal'] is result['manual_rehearsal']['temporary_journal_removed'] is True
+
+
+@pytest.mark.parametrize('fault', ['single_b', 'missing_map', 'missing_a', 'extra_entry', 'blank_reason'])
+@pytest.mark.parametrize('intent,quantity', [('REDUCE', '150'), ('EXIT', '200')])
+def test_cross_entry_sell_refuses_incomplete_or_misleading_reason_mapping(dual, fault, intent, quantity):
+    sell = _fill('cross', CORE, intent=intent, day='2026-10-22', entry=None)
+    sell['fill']['quantity'] = quantity
+    sell['entry_rationales'] = {'A': 'A explicit reason', 'B': 'B explicit reason'}
+    if fault == 'single_b': sell['entry_transaction_id'] = 'B'
+    elif fault == 'missing_map': sell.pop('entry_rationales')
+    elif fault == 'missing_a': sell['entry_rationales'].pop('A')
+    elif fault == 'extra_entry': sell['entry_rationales']['UNCONSUMED'] = 'Not actually consumed'
+    else: sell['entry_rationales']['A'] = ' '
+    with pytest.raises(ValueError, match='Multi-Entry|per-consumed-Entry|Followup must reference'):
+        _manual(dual, [*_different_entries(CORE), sell])
+    assert not list(dual['workspace_root'].glob('.tmp/source-bound-dual-*'))
+
+
+def test_add_link_can_remain_b_without_claiming_fifo_sell_identity(dual):
+    add = _fill('add-to-B', CORE, intent='ADD', entry='B')
+    result = _manual(dual, [*_different_entries(CORE), add])
+    row = result['manual_rehearsal']['fills'][-1]
+    assert row['original_entry_transaction_id'] == 'B' and row['consumed_original_entries'] == []
+    assert row['original_entry_reference']['narrative']['thesis'] == 'B distinct thesis'
+    assert row['original_entry_advisory_eligible'] is False
+
+
 @pytest.mark.parametrize('fault', ['t1', 'duplicate', 'wrong_sleeve', 'budget', 'cash',
     'no_fee', 'snapshot', 'entry_context', 'unconfirmed', 'version', 'future', 'exit_label'])
 def test_manual_refusals_clean_disposable_ledger_without_relaxing_native_guards(dual, fault):
