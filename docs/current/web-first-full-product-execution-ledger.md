@@ -4248,3 +4248,83 @@ Bounded source study in eb1/.tmp/600519-financing-scope-review-20261024.md is
 research only. Next work must address this exact economic scope and main-value
 assumptions, not broad collection or simulation peripherals. All later changes
 above are unpublished; sole8001 remainscecb43f5. action=no_order; Goal ACTIVE.
+
+### 2026-10-24: actual core publication and bounded economic follow-up
+
+The preceding unpublished/cecb43f5 statement is historical. Sole8001 now runs
+8dfee8ac070e7f9c7669824952b76a0ef4501461, with runtime and public registries MATCHED.
+Clean verification receipt gc1/.tmp/release-verification-8dfee8ac.json records
+Core6396 passed/162 skipped, frontend898/21 skipped, API330/2 skipped and build/
+typecheck/format success. GitHub Core40085222640 and Web40085222671 succeeded.
+These are engineering checks, not investment validation or approval.
+
+Initial publication post-readback FAILED, preserved in dual1/.tmp/
+release-8dfee8ac-20261024T1104286378068Z. Identical Git parser content had LF versus
+tested CRLF bytes, changing raw implementation-bound derived-fact identities.
+Old bytes were backed up; live parser was aligned to exact tested bytes only
+after normalized-text and Git-blob equality checks. No financial amounts,
+registrations, source identities or verification rules were rewritten.
+The guarded stat-cache refresh staged no logical change. Cold readback passed
+in dual1/.tmp/release-8dfee8ac-resumed-20261024T113459Z/release-receipt.json;
+packaging-repair.json preserves the initial failure and original registrations.
+
+Both600519 and600887 actual HTTP results now expose VERIFIED_FACT_ADOPTION,
+2 derived growth facts each, financial coverage2/9, formal_eligibility=false.
+Original operating analysis/source hashes remain unchanged. Actual read-only
+browser checks at1440/390/320 show both issuers' financial facts and existing
+economic research, no viewport overflow, no private/account writes. Receipt:
+vv1/.tmp/live-ui-8dfee8ac/dd512a10-df65-4a36-b282-13a51b915257/receipt.json,
+SHA25678ad413e117f63f245d6ac4fef2dae23368d984a308e6896c6f4e21430493d96.
+SAFE_REFRESH remains PARTIAL;5224 SSE/SZSE is not complete all-A coverage.
+No G3, normalized-profit, price, strategy or personal-position approval exists
+merely because this publication is now readable.
+
+New core follow-up a74749ad/d9f1c7da integrates author's2513cf7c/e252b249:
+600519 main economic-input proposal and one joint adverse cash diagnostic.
+Independent44 tests and original-source reconstruction found no explicitP1/P2.
+FY ex-parent decline4.5776401 percent is mechanically repeated, with10 percent
+fresh annual withholding and no release; inherited90 percent planned payout,
+project budget, fund call and parent cash constraints are preserved. Year5 cash
+is2.525bn CNY (25.25 hundred-million CNY) below the analytical floor; retained-profit constraint
+does not fail. This is a counterexample, not a forecast or company insolvency.
+M equals plannedD because both payout and withholding are complementary10/90;
+no duplicate earnings/withholding cash loss is imposed. D is not actually paid,
+unremittedU remains owned, terminal unsupported, no new price is produced.
+Author receipt ns1/.tmp/joint-adverse-cash-real-20261024.json SHA256
+243d7888b706c0eb5f4bb46ec22a4b3c453e65e34059c22409d0ae1790ac85b9.
+This follow-up is NOT yet published; Root is connecting the existing research
+consumer and company-page explanation, not adding a second research framework.
+
+Swing688825 remains1 signal/0 trades, MISSING_DATED_STOCK_STATUS; the600030
+preselected-date check also lacks dated status. Retrospective bars and cash
+announcements cannot manufacture contemporaneous PIT or tradability. Sibling
+is doing bounded official dated-state investigation, rules unchanged, history
+3/7, strategyNOT_PROVEN. Goal remains ACTIVE; action=no_order.
+
+The joint diagnostic is now wired into the EXISTING source-native economic
+consumer/API and company-page component. It cold-extracts official FY/H1 rows,
+reconciles the bound TTM, verifies company/source/period/availability/Hash and
+final source closure, then calls the pure diagnostic. No saved-result JSON is
+the arithmetic source. Missing optional inputs hide only this diagnostic's
+numbers; verified parent candidate values survive. Final source drift rejects
+the response. No new model, approval registry, page or simulation feature.
+
+Root targeted domain/consumer/API66 passed with actual-public-root enabled;
+architecture33 passed; frontend26 passed using actual local TestClient JSON;
+typecheck passed. Independent consumer review reproduced real output and five
+wrong-company/period/amount/anchor negative cases without bypassing validators.
+A frontendP2 was reproduced (negative cash margin mislabeled feasible), fixed
+by exact BigInt decimal contract consistency, and independently confirmed
+closed. This validates response consistency, not a frontend valuation engine.
+All10 frozen manifest paths matched. Real local response:
+vv1/.tmp/joint-consumer-readback-7f51b0/economic-review.json SHA256
+6d046793bef36763ed32e409e23a70cbd31936f3f5e8189c9bf0bc381bc1e7aa;
+receipt records54 unchanged bindings. These new computations are local-only;
+latest8001 remains8dfee8ac. New exact-commit CI/release remains separate.
+
+600030 bounded official search also closed without fabricating dated status:
+sibling receipt SHA256a5f69bd0bfd06e55e4d3a68f10bba83074081f64d8fecb08e28523f79a0c8e28.
+Reopen only with authorized exchange historical raw static/status/price-limit
+export plus date/field documentation; no paid access was invoked. Retrospective
+reconstruction would still not establish contemporaneous PIT/Shadow. Do not
+repeat broad endpoint searches or treat this external gap as Goal completion.

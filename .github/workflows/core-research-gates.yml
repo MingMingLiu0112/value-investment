@@ -164,6 +164,7 @@ jobs:
           tests/test_source_native_signed_review_v2.py
           tests/test_source_native_review_cli.py
           tests/test_source_native_economic_review_v1.py
+          tests/test_joint_adverse_cash_v1.py
           tests/test_operating_earnings_bridge.py
           tests/test_current_operating_earnings.py
           tests/web_api/test_source_native_economic_api.py

@@ -1,4 +1,33 @@
 export type EconomicBinding = { path: string; sha256: string };
+type JointCashDiagnostic = {
+  status:
+    | "UNSUPPORTED"
+    | "INHERITED_PAYOUT_INFEASIBLE"
+    | "FIVE_YEAR_CONDITIONAL_PLAN_FEASIBLE";
+  reason?: string;
+  scope?: "MECHANICAL_COUNTEREXAMPLE_NOT_FORECAST_OR_ACCOUNTING_FACT";
+  action?: "no_order";
+  disclosed_annual_growth?: string;
+  first_cash_failure_year?: number | null;
+  first_retained_profit_failure_year?: number | null;
+  terminal_status?: "UNSUPPORTED_NO_RELEASE_NO_FULL_PAYOUT_TERMINAL";
+  rows: {
+    year: number;
+    P: string;
+    M: string;
+    U: string;
+    C: string;
+    B: string;
+    D: string;
+    cash_floor: string;
+    cash_margin: string;
+    retained_profit: string;
+    status: "UNFUNDED_PLAN" | "CONDITIONAL_PLAN_FEASIBLE";
+    D_scope: "PLANNED_NOT_PAID_NO_AUTOMATIC_DIVIDEND_CUT";
+    cash_constraint_failed: boolean;
+    retained_constraint_failed: boolean;
+  }[];
+};
 export type EconomicReview = {
   schema_version: "source-native-economic-review-v1";
   status: "CONDITIONAL_ECONOMIC_RESEARCH";
@@ -38,6 +67,7 @@ export type EconomicReview = {
     approval_status: "PENDING_NOT_APPROVED";
   }[];
   source_bindings: EconomicBinding[];
+  joint_adverse_cash?: JointCashDiagnostic;
 };
 
 const object = (v: any) => !!v && typeof v === "object" && !Array.isArray(v);
@@ -53,11 +83,96 @@ const binding = (v: any) =>
   !v.path.split(/[\\/]/).includes("..") &&
   /^[a-f0-9]{64}$/.test(v.sha256);
 
+function consistentCashConstraint(r: any): boolean {
+  const values = [r.C, r.cash_floor, r.cash_margin, r.retained_profit];
+  if (!values.every((v) => number(v) && v.length <= 200)) return false;
+  const scale = Math.max(...values.map((v) => (v.split(".")[1] ?? "").length));
+  const units = (v: string) => {
+    const [whole, fraction = ""] = v.split(".");
+    return BigInt(whole + fraction.padEnd(scale, "0"));
+  };
+  const [cash, floor, margin, retained] = values.map(units);
+  return (
+    cash - floor === margin &&
+    r.cash_constraint_failed === margin < BigInt(0) &&
+    r.retained_constraint_failed === retained < BigInt(0)
+  );
+}
+
+function verifiedJointCash(v: any): boolean {
+  if (!object(v) || !Array.isArray(v.rows)) return false;
+  if (v.status === "UNSUPPORTED")
+    return (
+      typeof v.reason === "string" && !!v.reason.trim() && v.rows.length === 0
+    );
+  const year = (n: any) => Number.isInteger(n) && n >= 1 && n <= 5;
+  return (
+    [
+      "INHERITED_PAYOUT_INFEASIBLE",
+      "FIVE_YEAR_CONDITIONAL_PLAN_FEASIBLE",
+    ].includes(v.status) &&
+    v.scope === "MECHANICAL_COUNTEREXAMPLE_NOT_FORECAST_OR_ACCOUNTING_FACT" &&
+    v.action === "no_order" &&
+    number(v.disclosed_annual_growth) &&
+    v.terminal_status === "UNSUPPORTED_NO_RELEASE_NO_FULL_PAYOUT_TERMINAL" &&
+    [v.first_cash_failure_year, v.first_retained_profit_failure_year].every(
+      (n) => n === null || year(n),
+    ) &&
+    v.rows.length > 0 &&
+    v.rows.length <= 5 &&
+    v.rows.every(
+      (r: any, i: number) =>
+        object(r) &&
+        r.year === i + 1 &&
+        [
+          "P",
+          "M",
+          "U",
+          "C",
+          "B",
+          "D",
+          "cash_floor",
+          "cash_margin",
+          "retained_profit",
+        ].every((k) => number(r[k])) &&
+        r.D_scope === "PLANNED_NOT_PAID_NO_AUTOMATIC_DIVIDEND_CUT" &&
+        typeof r.cash_constraint_failed === "boolean" &&
+        typeof r.retained_constraint_failed === "boolean" &&
+        consistentCashConstraint(r) &&
+        r.status ===
+          (r.cash_constraint_failed || r.retained_constraint_failed
+            ? "UNFUNDED_PLAN"
+            : "CONDITIONAL_PLAN_FEASIBLE"),
+    ) &&
+    v.rows
+      .slice(0, -1)
+      .every((r: any) => r.status === "CONDITIONAL_PLAN_FEASIBLE") &&
+    v.first_cash_failure_year ===
+      (v.rows.find((r: any) => r.cash_constraint_failed)?.year ?? null) &&
+    v.first_retained_profit_failure_year ===
+      (v.rows.find((r: any) => r.retained_constraint_failed)?.year ?? null) &&
+    (v.status === "INHERITED_PAYOUT_INFEASIBLE"
+      ? v.rows.at(-1).status === "UNFUNDED_PLAN" &&
+        [v.first_cash_failure_year, v.first_retained_profit_failure_year].some(
+          (n) => n === v.rows.length,
+        )
+      : v.rows.length === 5 &&
+        v.rows.at(-1).status === "CONDITIONAL_PLAN_FEASIBLE" &&
+        v.first_cash_failure_year === null &&
+        v.first_retained_profit_failure_year === null)
+  );
+}
+
 export function verifiedEconomicReview(
   v: any,
   symbol: string,
   expected: EconomicBinding,
 ): v is EconomicReview {
+  if (
+    v?.joint_adverse_cash !== undefined &&
+    !verifiedJointCash(v.joint_adverse_cash)
+  )
+    return false;
   if (
     !object(v) ||
     v.schema_version !== "source-native-economic-review-v1" ||

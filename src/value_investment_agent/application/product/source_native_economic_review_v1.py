@@ -5,7 +5,7 @@ is created. Diagnostic ratios/first-year identities are not new financial models
 """
 from copy import deepcopy
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, localcontext
 from pathlib import Path
 
@@ -13,16 +13,24 @@ from .common import require_inside, sha256_file
 from .incremental_validity import read_bound_json
 from .source_native_candidate_v2 import SCHEMA as NATIVE_SCHEMA, verify_source_native_candidate, _equal_numbers
 from ...domain.valuation.source_native_cash_v1 import replay_timing_delay_inputs
+from ...domain.valuation.joint_adverse_cash_v1 import diagnose_joint_adverse_cash
+from ..research.operating_earnings_bridge import research_from_retained_sources
 from ...m1_valuation_package_builder import build_descriptor
 from ...valuation_models.residual_income import _shared_scenario_calculation
 
 SCHEMA = 'source-native-economic-review-v1'
 KE_CHALLENGE_DELTA = Decimal('0.02')
+JOINT_SOURCE_SPEC = 'docs/current/two-company-earnings-bridge-20261024/sources.json'
+JOINT_SCOPE = 'MECHANICAL_COUNTEREXAMPLE_NOT_FORECAST_OR_ACCOUNTING_FACT'
 IMPLEMENTATIONS = (
     'src/value_investment_agent/application/product/source_native_economic_review_v1.py',
     'src/value_investment_agent/application/product/source_native_candidate_v2.py',
     'src/value_investment_agent/domain/valuation/source_native_cash_v1.py',
     'src/value_investment_agent/valuation_models/residual_income.py',
+    'src/value_investment_agent/domain/valuation/joint_adverse_cash_v1.py',
+    'src/value_investment_agent/application/research/operating_earnings_bridge.py',
+    'src/value_investment_agent/infrastructure/filings/pdf_text.py',
+    'src/value_investment_agent/infrastructure/filings/pdfium_runtime.py',
 )
 GROUP_NOTES = {
     'EARNINGS': ('\u76c8\u5229\u57fa\u7840',
@@ -83,6 +91,107 @@ def _kernel_projection(facts, scenario):
         ri_terminal_fraction=calculation['terminal_residual_contribution_ratio'],
         ri_terminal_pv_cny=str(Decimal(calculation['present_value_terminal_residual_income_cny']) * factor),
         convention='DDM_TERMINAL_DIVIDENDS_VS_RI_TERMINAL_RESIDUAL_NOT_INTERCHANGEABLE')
+
+
+def _decimal_strings(value):
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, dict):
+        return {key: _decimal_strings(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_decimal_strings(item) for item in value]
+    return value
+
+
+def _joint_adverse_review(root, package, ledger, clock, refs):
+    """Optional cold-original diagnostic; never substitute saved bridge results."""
+    def unsupported(reason):
+        return dict(status='UNSUPPORTED', reason=reason, rows=[], scope=JOINT_SCOPE, action='no_order')
+
+    if not (root/JOINT_SOURCE_SPEC).is_file():
+        return unsupported('No applicable retained earnings source specification')
+    try:
+        spec_ref = dict(path=JOINT_SOURCE_SPEC, sha256=sha256_file(root/JOINT_SOURCE_SPEC))
+        _, specification = _json(root, spec_ref)
+        refs.extend(_closure(root, [spec_ref]))
+        executing_root = Path(__file__).resolve().parents[4]
+        if sha256_file(executing_root/JOINT_SOURCE_SPEC) != spec_ref['sha256']:
+            raise ValueError('Joint source specification differs from executing root')
+        if (specification['schema_version'] != 'two-company-earnings-source-spec-v1'
+                or specification['action'] != 'no_order'
+                or specification['scope'] != 'RETAINED_PUBLIC_ORIGINALS_NOT_RESEARCH_ADMISSION'):
+            raise ValueError('Unsupported joint source specification contract')
+        symbol = package['research_case']['symbol']
+        specs = deepcopy(specification['companies'].get(symbol))
+        if not specs:
+            return unsupported('No applicable company source specification')
+        summary = package['research_case']['financial_summary']
+        reconciliation = summary.get('historical_profit_reconciliation')
+        if not reconciliation:
+            return unsupported('No bound historical profit reconciliation')
+        source_rows = reconciliation['source_rows']
+        if (reconciliation['symbol'] != symbol or reconciliation['action'] != 'no_order'
+                or reconciliation['report_period'] != package['facts']['as_of']
+                or len(source_rows) != 3
+                or [row['period'] for row in source_rows] != ['FY2025', 'H1_2026', 'H1_2025']
+                or len(specs) != 2):
+            raise ValueError('Joint earnings period/company identity mismatch')
+        for spec, rows, periods in zip(specs, (source_rows[:1], source_rows[1:]),
+                (['FY2025', 'FY2024'], ['H12026', 'H12025'])):
+            row = rows[0]
+            catalog = [item for item in package['sources'] if item['id'] == spec['source_id']]
+            if len(catalog) != 1:
+                raise ValueError('Joint earnings source must have one catalog identity')
+            source = catalog[0]
+            if (spec['symbol'] != symbol or spec['periods'] != periods
+                    or source['issuer_identity']['security_code'] != symbol
+                    or source['issuer_identity']['issuer_name'] != spec['issuer']
+                    or source['kind'] != 'official_issuer_filing'
+                    or source['local_path'] != row['path']
+                    or source['location'] != spec['source_url']
+                    or source['sha256'] != spec['sha256']):
+                raise ValueError('Joint official source identity mismatch')
+            for item in rows:
+                if (item['source_id'] != spec['source_id'] or item['sha256'] != spec['sha256']
+                        or item['source_url'] != spec['source_url'] or item['path'] != row['path']
+                        or item['currency'] != 'CNY' or item['profit_basis'] != 'attributable_to_parent'
+                        or item['statement_scope'] != 'consolidated'):
+                    raise ValueError('Joint reconciliation source identity mismatch')
+                reviewed = datetime.fromisoformat(item['reviewed_at'])
+                if reviewed.utcoffset() is None or reviewed > clock:
+                    raise ValueError('Joint reconciliation review is unavailable')
+            published = datetime.fromisoformat(source['published_at'])
+            if (published.utcoffset() is None
+                    or published.astimezone(timezone(timedelta(hours=8))).date().isoformat() != spec['published_date']):
+                raise ValueError('Joint publication date mismatch')
+            for key in ('retrieved_at', 'source_available_at', 'original_retrieved_at', 'original_source_available_at'):
+                available = datetime.fromisoformat(source[key])
+                if available.utcoffset() is None or not published <= available <= clock:
+                    raise ValueError('Joint source availability mismatch')
+            spec['path'] = row['path']
+            spec['original_acquired_at'] = source['original_retrieved_at']
+            spec['fields'] = specification['common_fields'] + spec.get('extra_fields', [])
+            refs.extend(_closure(root, [dict(path=spec['path'], sha256=spec['sha256'])]))
+        bridge = research_from_retained_sources(root=root, specs=specs, now=clock)
+        annual, interim = [item['rows']['ex_parent_profit'] for item in bridge['original_statements']]
+        observed = (annual['values'][0], interim['values'][0], interim['values'][1])
+        if any(Decimal(row['ex_nonrecurring_profit_cny']) != Decimal(value)
+               for row, value in zip(source_rows, observed)):
+            raise ValueError('Joint cold original differs from bound earnings rows')
+        anchor = Decimal(bridge['ttm']['lines_cny']['ex_parent_profit'])
+        if (anchor != Decimal(summary['ttm_ex_nonrecurring_parent_profit_cny'])
+                or anchor != Decimal(reconciliation['ttm_ex_nonrecurring_parent_profit_cny'])):
+            raise ValueError('Joint cold TTM differs from package anchor')
+        result = diagnose_joint_adverse_cash(annual_profit_fact=annual, profit_anchor=anchor,
+            plan=ledger['plan'], history=ledger['history'],
+            opening_book=package['facts']['operating_inputs']['start_book_equity'],
+            project_budget=ledger['cases']['TIMING_DELAY']['base']['project_budget'])
+        if result['status'] == 'UNSUPPORTED':
+            return unsupported(result.get('unsupported_reason') or 'Domain diagnostic unsupported')
+        _closure(root, refs)
+        return _decimal_strings(result)
+    except (ValueError, KeyError, TypeError, OSError, ArithmeticError, StopIteration) as error:
+        return unsupported('Joint diagnostic failed closed: ' + str(error))
 
 
 def _first_year_boundary(plan, case):
@@ -189,6 +298,7 @@ def build_source_native_economic_review(*, root: Path, candidate_binding: dict,
                 cash_replay_scope='ALL_TRANSITIONS_VERIFIED_BY_EXISTING_NATIVE_KERNEL',
                 first_year_boundary=_first_year_boundary(ledger['plan'], case)))
     summary = package['research_case']['financial_summary']
+    joint_adverse_cash = _joint_adverse_review(root, package, ledger, clock, refs)
     groups = [dict(deepcopy(group), title=GROUP_NOTES[group['id']][0],
         interpretation=GROUP_NOTES[group['id']][1], approval_status='PENDING_NOT_APPROVED',
         evidence_bindings=deepcopy(refs)) for group in candidate['review_groups']]
@@ -212,7 +322,7 @@ def build_source_native_economic_review(*, root: Path, candidate_binding: dict,
         historical_unknowns=deepcopy(ledger['history'].get('unknowns', [])),
         counter_evidence=deepcopy(package['research_case']['counter_evidence']),
         thesis_breakers=deepcopy(package['research_case']['thesis_breakers']),
-        five_groups=groups, scenarios=scenarios,
+        five_groups=groups, scenarios=scenarios, joint_adverse_cash=joint_adverse_cash,
         unsupported_challenges=[dict(id=name, status='UNSUPPORTED', reason=reason) for name, reason in (
             ('PERSISTENT_UPSTREAM_RESTRICTION', 'Frozen cash kernel requires full release in year two; no replacement ledger built.'),
             ('TERMINAL_APPROPRIATION_CONTINUES', 'Frozen cash kernel requires conditional terminal appropriation zero.'),

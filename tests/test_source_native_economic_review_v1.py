@@ -49,6 +49,10 @@ def test_second_company_uses_kernels_and_never_creates_approval(sample):
     assert result['share_basis']['current_shares'] is None
     assert result['share_basis']['corporate_action_comparability'] == 'NOT_ASSESSED'
     assert len(result['five_groups']) == 5
+    joint = result['joint_adverse_cash']
+    assert joint['status'] == 'UNSUPPORTED' and joint['reason']
+    assert joint['rows'] == []
+    assert set(joint) == {'status', 'reason', 'rows', 'scope', 'action'}
     assert all(group['approval_status'] == 'PENDING_NOT_APPROVED' for group in result['five_groups'])
     for row in result['scenarios']:
         assert row['original']['candidate_per_historical_share_cny'] == candidate['candidate_valuation'][row['scenario']+'_value']
@@ -169,11 +173,12 @@ def test_saved_report_prices_are_not_copied(synthetic_native):
 
 
 @pytest.fixture
-def public_js2(tmp_path):
+def public_js2(tmp_path_factory):
     source_root = os.environ.get('SOURCE_NATIVE_REAL_ROOT')
     if not source_root:
         pytest.skip('Explicit retained public root required; no network/private discovery')
     source = Path(source_root)
+    tmp_path = tmp_path_factory.mktemp('js2')
     candidate_name = 'runtime/source-native-pending/3bb7bfe05c3f4c7d9a52d34b07588087/candidate.json'
     candidate = json.loads((source/candidate_name).read_bytes())
     assert sha256_file(source/candidate_name) == 'bfba1fb08f316cd4791e2f8d36490a86345e969d1f2c97663fb7a1e42aa912d8'
@@ -183,6 +188,9 @@ def public_js2(tmp_path):
         shutil.copyfile(source/ref['path'], target)
         assert sha256_file(target) == ref['sha256']
     implementations(tmp_path)
+    spec = tmp_path/review.JOINT_SOURCE_SPEC
+    spec.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(CODE/review.JOINT_SOURCE_SPEC, spec)
     doc = tmp_path/'docs/current/600519-native-economic-review-20261024.md'
     doc.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(CODE/'docs/current/600519-native-economic-review-20261024.md', doc)
@@ -229,6 +237,18 @@ def test_real_js2_actual_inputs_and_independent_checked_quantities(public_js2):
     assert all(item['status'] == 'UNSUPPORTED' for item in result['unsupported_challenges'])
     assert result['normalized_parent_profit_cny'] is None
     assert result['g3_status'] == 'NOT_APPROVED_FOR_THIS_PENDING_CANDIDATE'
+    joint = result['joint_adverse_cash']
+    assert joint['status'] == 'INHERITED_PAYOUT_INFEASIBLE', joint
+    assert joint['scope'] == review.JOINT_SCOPE and joint['action'] == 'no_order'
+    assert joint['first_cash_failure_year'] == joint['first_policy_failure_year'] == 5
+    assert joint['first_retained_profit_failure_year'] is None
+    assert len(joint['rows']) == 5
+    assert joint['rows'][-1]['cash_constraint_failed'] is True
+    assert joint['rows'][-1]['retained_constraint_failed'] is False
+    assert D(joint['profit_anchor']) == D('81367067677.44')
+    assert all(isinstance(row['P'], str) for row in joint['rows'])
+    assert not any('valuation' in key or 'approved' in key for key in joint)
+    json.dumps(result)
     assert snapshot(root) == before
     print(json.dumps(dict(schema_version=result['schema_version'], candidate_binding=ref,
         confidence=result['confidence'], g3_status=result['g3_status'],
@@ -237,3 +257,96 @@ def test_real_js2_actual_inputs_and_independent_checked_quantities(public_js2):
         ri_terminal_fraction=base['original']['ri_terminal_fraction'],
         ke_plus_200bp_value=base['ke_plus_200bp']['result']['per_historical_share_cny'],
         action=result['action']), ensure_ascii=True))
+
+
+@pytest.mark.parametrize('change', [
+    'id', 'hash', 'url', 'period', 'published', 'future_available',
+    'reviewed', 'amount', 'anchor', 'duplicate_catalog',
+])
+def test_joint_cold_evidence_mismatch_has_no_numeric_projection(public_js2, change):
+    """TEST_ONLY mutations of copied real inputs, not newly authorized candidates."""
+    root, ref, _ = public_js2
+    candidate = json.loads((root/ref['path']).read_bytes())
+    package = json.loads((root/candidate['source_package_binding']['path']).read_bytes())
+    ledger = json.loads((root/candidate['native_cash_ledger_binding']['path']).read_bytes())
+    summary = package['research_case']['financial_summary']
+    row = summary['historical_profit_reconciliation']['source_rows'][0]
+    source = next(item for item in package['sources'] if item['id'] == row['source_id'])
+    if change == 'id': row['source_id'] = 'cninfo:wrong'
+    elif change == 'hash': row['sha256'] = '0'*64
+    elif change == 'url': row['source_url'] += '?other=1'
+    elif change == 'period': row['period'] = 'FY2024'
+    elif change == 'published': source['published_at'] = '2026-04-18T00:00:00+08:00'
+    elif change == 'future_available': source['source_available_at'] = '2099-01-01T00:00:00+00:00'
+    elif change == 'reviewed': row['reviewed_at'] = '2099-01-01T00:00:00+00:00'
+    elif change == 'amount': row['ex_nonrecurring_profit_cny'] = '1'
+    elif change == 'anchor': summary['ttm_ex_nonrecurring_parent_profit_cny'] = '1'
+    elif change == 'duplicate_catalog': package['sources'].append(dict(source))
+    before = snapshot(root)
+    result = review._joint_adverse_review(root, package, ledger, datetime.now(timezone.utc), [])
+    assert result['status'] == 'UNSUPPORTED' and result['reason'].startswith('Joint diagnostic failed closed:')
+    assert result['rows'] == []
+    assert set(result) == {'status', 'reason', 'rows', 'scope', 'action'}
+    assert snapshot(root) == before
+
+
+def test_optional_cold_extraction_failure_preserves_parent_valuation(public_js2, monkeypatch):
+    root, ref, _ = public_js2
+    def unavailable(**kwargs):
+        raise ValueError('TEST_ONLY unreadable official statement')
+    monkeypatch.setattr(review, 'research_from_retained_sources', unavailable)
+    before = snapshot(root)
+    result = review.build_source_native_economic_review(root=root, candidate_binding=ref)
+    candidate = json.loads((root/ref['path']).read_bytes())
+    assert result['joint_adverse_cash']['status'] == 'UNSUPPORTED'
+    assert result['joint_adverse_cash']['rows'] == []
+    assert 'TEST_ONLY unreadable' in result['joint_adverse_cash']['reason']
+    assert result['research_admitted'] is result['price_admitted'] is result['approval_changed'] is False
+    for scenario in result['scenarios']:
+        assert scenario['original']['candidate_per_historical_share_cny'] == candidate['candidate_valuation'][scenario['scenario']+'_value']
+    assert snapshot(root) == before
+
+
+@pytest.mark.parametrize('target', ['spec', 'domain', 'extractor', 'pdf', 'original'])
+def test_joint_final_closure_rejects_drift_after_cold_calculation(public_js2, monkeypatch, target):
+    root, ref, _ = public_js2
+    original = review.diagnose_joint_adverse_cash
+    targets = dict(spec=review.JOINT_SOURCE_SPEC,
+        domain='src/value_investment_agent/domain/valuation/joint_adverse_cash_v1.py',
+        extractor='src/value_investment_agent/application/research/operating_earnings_bridge.py',
+        pdf='src/value_investment_agent/infrastructure/filings/pdf_text.py')
+    def drift(**kwargs):
+        result = original(**kwargs)
+        name = kwargs['annual_profit_fact']['path'] if target == 'original' else targets[target]
+        path = root/name
+        path.write_bytes(path.read_bytes()+b'\nTEST_ONLY_FINAL_CLOSURE_DRIFT')
+        return result
+    monkeypatch.setattr(review, 'diagnose_joint_adverse_cash', drift)
+    with pytest.raises(ValueError):
+        review.build_source_native_economic_review(root=root, candidate_binding=ref)
+
+
+def test_joint_spec_must_match_executing_root_without_weakening_parent(public_js2):
+    root, ref, _ = public_js2
+    spec = root/review.JOINT_SOURCE_SPEC
+    spec.write_bytes(spec.read_bytes()+b'\n')
+    result = review.build_source_native_economic_review(root=root, candidate_binding=ref)
+    assert result['joint_adverse_cash']['status'] == 'UNSUPPORTED'
+    assert 'differs from executing root' in result['joint_adverse_cash']['reason']
+    assert result['joint_adverse_cash']['rows'] == []
+    assert len(result['scenarios']) == 3 and result['approval_changed'] is False
+
+
+def test_synthetic_company_with_spec_but_no_official_reconciliation_is_unsupported(sample):
+    root, ref, _ = sample
+    spec = root/review.JOINT_SOURCE_SPEC
+    spec.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(CODE/review.JOINT_SOURCE_SPEC, spec)
+    before = snapshot(root)
+    result = review.build_source_native_economic_review(root=root, candidate_binding=ref)
+    joint = result['joint_adverse_cash']
+    assert joint['status'] == 'UNSUPPORTED' and joint['reason']
+    assert set(joint) == {'status', 'reason', 'rows', 'scope', 'action'}
+    assert joint['rows'] == []
+    assert len(result['scenarios']) == 3 and result['approval_changed'] is False
+    assert snapshot(root) == before

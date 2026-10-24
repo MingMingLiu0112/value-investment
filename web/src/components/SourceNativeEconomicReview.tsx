@@ -91,6 +91,53 @@ export function EconomicReviewResult({ value }: { value: EconomicReview }) {
       <p>
         首年现金边界仅为固定盈利、分配、分析底线及付款假设下的关系，不是长期安全阈值、延迟概率或分红保证。资本成本挑战不是当前目标价或获批的新估值。
       </p>
+      {value.joint_adverse_cash && (
+        <section aria-label="联合逆境现金诊断">
+          <h5>盈利下降与持续资金暂留：联合逆境反例</h5>
+          {value.joint_adverse_cash.status === "UNSUPPORTED" ? (
+            <p>
+              证据或计算条件不足，暂不展示逆境数值：
+              {value.joint_adverse_cash.reason}
+            </p>
+          ) : (
+            <>
+              <p>
+                将已披露年度扣非同比{" "}
+                {percent(value.joint_adverse_cash.disclosed_annual_growth!)}
+                机械重复五年，并假设每年10%资金暂留、五年不回收，保留原项目付款和90%计划分配。
+                这是反例，不是盈利预测或公司资金危机判断。
+              </p>
+              <p>
+                {value.joint_adverse_cash.first_cash_failure_year !== null
+                  ? `第${value.joint_adverse_cash.first_cash_failure_year}年首次低于母公司现金分析底线。`
+                  : "已计算期间未突破母公司现金分析底线。"}
+                {value.joint_adverse_cash.first_retained_profit_failure_year !==
+                null
+                  ? `第${value.joint_adverse_cash.first_retained_profit_failure_year}年首次突破留存利润约束。`
+                  : "已计算期间未突破留存利润约束。"}
+                暂留资产仍属股东，不把未回收等同永久损失；终端分配不受此诊断支持，不计算新估值或入场价。
+              </p>
+              <ol>
+                {value.joint_adverse_cash.rows.map((cash) => (
+                  <li key={cash.year}>
+                    第{cash.year}年：归母盈利 {readinessNumber(cash.P)}元；
+                    母公司假设资金 {readinessNumber(cash.M)}元； 累计暂留{" "}
+                    {readinessNumber(cash.U)}元； 计划分配{" "}
+                    {readinessNumber(cash.D)}元； 母公司期末现金{" "}
+                    {readinessNumber(cash.C)}元； 现金底线余量{" "}
+                    {readinessNumber(cash.cash_margin)}元。
+                    {cash.status === "UNFUNDED_PLAN" &&
+                      "原分配计划不可满足约束，非实际已支付股息。"}
+                  </li>
+                ))}
+              </ol>
+              <p>
+                暂留比例与利润留存率均为10%，不能重复计算额外现金冲击；本诊断未证明支付日流动性或法定可分配资格。
+              </p>
+            </>
+          )}
+        </section>
+      )}
       <h5>五组经济复核仍需判断的事实与假设</h5>
       <ul>
         {value.five_groups.map((group) => (

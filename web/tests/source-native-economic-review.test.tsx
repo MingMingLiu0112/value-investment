@@ -42,6 +42,88 @@ it("opening the existing company page does not issue implicit new requests", () 
   spy.mockRestore();
 });
 
+function jointCounterexample() {
+  return {
+    status: "INHERITED_PAYOUT_INFEASIBLE",
+    scope: "MECHANICAL_COUNTEREXAMPLE_NOT_FORECAST_OR_ACCOUNTING_FACT",
+    action: "no_order",
+    disclosed_annual_growth: "-0.04",
+    first_cash_failure_year: 1,
+    first_retained_profit_failure_year: null,
+    terminal_status: "UNSUPPORTED_NO_RELEASE_NO_FULL_PAYOUT_TERMINAL",
+    rows: [
+      {
+        year: 1,
+        P: "100",
+        M: "90",
+        U: "10",
+        C: "30",
+        B: "200",
+        D: "90",
+        cash_floor: "40",
+        cash_margin: "-10",
+        retained_profit: "50",
+        status: "UNFUNDED_PLAN",
+        D_scope: "PLANNED_NOT_PAID_NO_AUTOMATIC_DIVIDEND_CUT",
+        cash_constraint_failed: true,
+        retained_constraint_failed: false,
+      },
+    ],
+  };
+}
+
+it("shows a computed joint counterexample without turning it into a forecast or paid dividend", () => {
+  const value = fixture();
+  value.joint_adverse_cash = jointCounterexample();
+  expect(verifiedEconomicReview(value, "600519", ref)).toBe(true);
+  const html = renderToStaticMarkup(<EconomicReviewResult value={value} />);
+  for (const text of [
+    "联合逆境反例",
+    "不是盈利预测",
+    "第1年首次",
+    "非实际已支付股息",
+    "不计算新估值或入场价",
+  ])
+    expect(html).toContain(text);
+});
+
+it.each([
+  "number",
+  "sequence",
+  "paid",
+  "terminal",
+  "failure",
+  "wrongConstraint",
+  "cashContradiction",
+  "marginMismatch",
+  "retainedContradiction",
+])("rejects malformed joint diagnostic: %s", (fault) => {
+  const value = fixture();
+  value.joint_adverse_cash = jointCounterexample();
+  const cash = value.joint_adverse_cash;
+  if (fault === "number") cash.rows[0].C = "NaN";
+  else if (fault === "sequence") cash.rows[0].year = 3;
+  else if (fault === "paid") cash.rows[0].D_scope = "PAID";
+  else if (fault === "terminal") cash.terminal_status = "VALUED";
+  else if (fault === "wrongConstraint")
+    cash.first_retained_profit_failure_year = 1;
+  else if (fault === "cashContradiction") {
+    cash.status = "FIVE_YEAR_CONDITIONAL_PLAN_FEASIBLE";
+    cash.first_cash_failure_year = null;
+    cash.rows = Array.from({ length: 5 }, (_, i) => ({
+      ...cash.rows[0],
+      year: i + 1,
+      status: "CONDITIONAL_PLAN_FEASIBLE",
+      cash_constraint_failed: false,
+    }));
+  } else if (fault === "marginMismatch")
+    cash.rows[0].cash_margin = "-9.99999999999999999999999999999999";
+  else if (fault === "retainedContradiction")
+    cash.rows[0].retained_profit = "-0.00000000000000000000000000001";
+  else cash.first_cash_failure_year = null;
+  expect(verifiedEconomicReview(value, "600519", ref)).toBe(false);
+});
+
 it.each([
   "symbol",
   "candidate",
@@ -106,8 +188,18 @@ it.skipIf(!process.env.NATIVE_ECONOMIC_REVIEW_JSON)(
     expect(
       verifiedEconomicReview(value, "600519", receipt.candidate_binding),
     ).toBe(true);
-    expect(
-      renderToStaticMarkup(<EconomicReviewResult value={value} />),
-    ).toContain("不能直接形成买入或加仓资格");
+    const html = renderToStaticMarkup(<EconomicReviewResult value={value} />);
+    expect(html).toContain("不能直接形成买入或加仓资格");
+    if (
+      value.joint_adverse_cash &&
+      value.joint_adverse_cash.status !== "UNSUPPORTED"
+    ) {
+      expect(html).toContain("联合逆境反例");
+      expect(html).toContain("非实际已支付股息");
+      expect(html).toContain(
+        `第${value.joint_adverse_cash.first_cash_failure_year}年首次`,
+      );
+      expect(value.joint_adverse_cash.first_cash_failure_year).toBe(5);
+    }
   },
 );
