@@ -52,6 +52,9 @@ export function SourceNativeCashReview({
   if (!sourceNativeCashReviewMatches(analysis, symbol))
     return (
       <section aria-label="原生现金路径条件研究">
+        <p className="value-analysis-boundary">
+          仅待审资料，新版本签名消费链尚未接通。这是工程缺口，不是等待用户授权。
+        </p>
         <p role="status">
           原生现金路径的分支、日期、来源或估值绑定待核验，暂不展示本附录现金数值。不得据此认定经济或交易准入。
         </p>
@@ -64,6 +67,9 @@ export function SourceNativeCashReview({
       style={{ minWidth: 0, maxWidth: "100%", overflowWrap: "anywhere" }}
     >
       <h3>原生现金路径条件研究</h3>
+      <p className="value-analysis-boundary">
+        仅待审资料，新版本签名消费链尚未接通。这是工程缺口，不是等待用户授权；不能签署消费或视为已准备正式准入。
+      </p>
       <p className="value-analysis-boundary">
         低置信度（LOW） · 前瞻假设，非正常化事实 · 未获主估值 / G3 或策略批准。
       </p>

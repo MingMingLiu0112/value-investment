@@ -84,6 +84,7 @@ function nativeDecision() {
     scope: "SOURCE_BOUND_CONDITIONAL_RESEARCH_NOT_G3",
     action: "no_order",
     cash_branch: "TIMING_DELAY",
+    authenticated_consumption_supported: false,
     confidence: "低",
     research_admitted: false,
     primary_registered: false,
@@ -166,6 +167,9 @@ it("TEST_ONLY displays a dated low-confidence native path without calculating, f
     "长期无法上划",
     "不证明其他分支成立",
     "本附录不证明历史现金桥完整",
+    "仅待审资料，新版本签名消费链尚未接通",
+    "这是工程缺口，不是等待用户授权",
+    "不能签署消费或视为已准备正式准入",
     "模型允许支付股息",
     "母公司单体权益",
     "-12,345.67",
@@ -194,6 +198,12 @@ it.each([
   },
   (a: any) => {
     a.source_native_cash_review.cash_branch = "UNKNOWN";
+  },
+  (a: any) => {
+    a.source_native_cash_review.authenticated_consumption_supported = true;
+  },
+  (a: any) => {
+    delete a.source_native_cash_review.authenticated_consumption_supported;
   },
   (a: any) => {
     a.source_native_cash_review.joint_assumptions.TIMING_DELAY.release = "none";
@@ -286,6 +296,7 @@ it.each([
       <ValueResearchAnalysis decision={decision} />,
     );
     expect(html).toContain("暂不展示本附录现金数值");
+    expect(html).toContain("仅待审资料，新版本签名消费链尚未接通");
     expect(html).not.toContain("模型允许支付股息");
     expect(html).not.toContain("-12,345.67");
   },

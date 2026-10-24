@@ -110,6 +110,7 @@ export type SourceNativeCashReview = {
   scope: "SOURCE_BOUND_CONDITIONAL_RESEARCH_NOT_G3";
   action: "no_order";
   cash_branch: "TIMING_DELAY";
+  authenticated_consumption_supported: false;
   confidence: "低" | "LOW";
   research_admitted: false;
   primary_registered: false;
@@ -657,6 +658,7 @@ export function sourceNativeCashReviewMatches(
       native.scope !== "SOURCE_BOUND_CONDITIONAL_RESEARCH_NOT_G3" ||
       native.action !== "no_order" ||
       native.cash_branch !== "TIMING_DELAY" ||
+      native.authenticated_consumption_supported !== false ||
       !["LOW", "低"].includes(native.confidence) ||
       !["LOW", "低"].includes(valuation.confidence ?? "") ||
       valuation.symbol !== symbol ||
