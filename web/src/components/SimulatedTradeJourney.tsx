@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 import { Alert, Button, Table } from "antd";
+import { codeText } from "../utils/codes";
+import { blockerText } from "../utils/researchDetail";
 import type {
   Journey,
   ExpectedCandidate,
@@ -67,6 +69,162 @@ const reasonLabels: Record<string, string> = {
   ORIGINAL_ENTRY_AND_PERSONAL_RISK_NOT_ESTABLISHED:
     "原入场依据及个人风险条件尚未建立",
 };
+
+function ReadableReasons({ values }: { values: string[] }) {
+  const rows = [...new Set(values)].map((raw) => {
+    const existing = blockerText(raw);
+    return {
+      raw,
+      label:
+        reasonLabels[raw] ??
+        codeText(raw) ??
+        (/\p{Script=Han}/u.test(raw)
+          ? raw
+          : /\p{Script=Han}/u.test(existing)
+            ? existing
+            : null),
+    };
+  });
+  const unknown = rows.filter((row) => row.label === null);
+  return (
+    <>
+      {rows.some((row) => row.label !== null) && (
+        <ul style={{ paddingInlineStart: 20, marginBlock: 8 }}>
+          {rows
+            .filter((row) => row.label !== null)
+            .map((row) => (
+              <li key={row.raw}>{row.label}</li>
+            ))}
+        </ul>
+      )}
+      {unknown.length > 0 && (
+        <details>
+          <summary>
+            另有 {unknown.length}{" "}
+            项未识别原因：含义待核验，仍为否定前提（展开原文）
+          </summary>
+          <ul style={{ paddingInlineStart: 20 }}>
+            {unknown.map((row) => (
+              <li key={row.raw}>
+                <code>{row.raw}</code>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </>
+  );
+}
+
+/** Presentation only: exact shared strings, never inference or decision changes. */
+export function SourceActionReasons({
+  slots,
+}: {
+  slots: SourceBoundJourney["cases"][number]["action_slots"];
+}) {
+  const occurrences = new Map<string, number[]>();
+  slots.forEach((slot, index) => {
+    for (const reason of new Set(slot.reasons))
+      occurrences.set(reason, [...(occurrences.get(reason) ?? []), index]);
+  });
+  const groups = new Map<string, { actions: number[]; reasons: string[] }>();
+  for (const [reason, actions] of occurrences) {
+    if (actions.length < 2) continue;
+    const key = actions.join(",");
+    const group: { actions: number[]; reasons: string[] } = groups.get(key) ?? {
+      actions,
+      reasons: [],
+    };
+    group.reasons.push(reason);
+    groups.set(key, group);
+  }
+  const shared = [...groups.values()];
+  const sharedSet = new Set(shared.flatMap((group) => group.reasons));
+  return (
+    <section
+      aria-label="六动作核验（非建议）"
+      style={{ minWidth: 0, maxWidth: "100%", overflowWrap: "anywhere" }}
+    >
+      <h5>六动作核验（非建议）</h5>
+      <p>
+        <strong>共同未满足条件（按适用动作核对）</strong>
+      </p>
+      {shared.length > 0 ? (
+        shared.map((group, index) => (
+          <div key={group.actions.join(",")}>
+            <p>
+              共同条件第 {index + 1} 组 · 适用动作：
+              {group.actions
+                .map(
+                  (action) =>
+                    intents[slots[action].intent as keyof typeof intents],
+                )
+                .join("、")}
+            </p>
+            <ReadableReasons values={group.reasons} />
+          </div>
+        ))
+      ) : (
+        <p>没有可合并的共同原因，请分别核对各动作；不代表条件通过。</p>
+      )}
+      <ol style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        {slots.map((slot, slotIndex) => {
+          const specific = [...new Set(slot.reasons)].filter(
+            (reason) => !sharedSet.has(reason),
+          );
+          const intent = intents[slot.intent as keyof typeof intents];
+          const applicable = shared.flatMap((group, index) =>
+            group.actions.includes(slotIndex) ? [index + 1] : [],
+          );
+          return (
+            <li
+              key={slot.intent}
+              aria-label={`${intent}动作核验`}
+              style={{
+                minWidth: 0,
+                paddingBlock: 12,
+                borderTop: "1px solid #e5e7eb",
+              }}
+            >
+              <h5 style={{ marginBlock: "0 8px" }}>
+                {intent} ·{" "}
+                <span>
+                  {slot.outcome === "WAIT"
+                    ? "WAIT · 等待条件"
+                    : "NO_ACTION · 不形成动作"}
+                </span>
+              </h5>
+              {specific.length > 0 ? (
+                <ReadableReasons values={specific} />
+              ) : (
+                <p>本动作没有新增特有原因，不代表获准。</p>
+              )}
+              {applicable.length > 0 && (
+                <p>
+                  本动作受上列共同条件第 {applicable.join("、")}{" "}
+                  组全部原因约束。
+                </p>
+              )}
+              <details>
+                <summary>
+                  本动作完整原始原因（{slot.reasons.length}{" "}
+                  项，保留原顺序及重复）
+                </summary>
+                <ol style={{ paddingInlineStart: 20 }}>
+                  {slot.reasons.map((reason, index) => (
+                    <li key={index}>
+                      <code>{reason}</code>
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
 const emptyFill = () => ({
   transaction_id: "",
   side: "BUY",
@@ -245,11 +403,6 @@ function SourceBoundJourneyPanel() {
                 研究截至：{item.research.research_as_of}；估值日：
                 {item.research.valuation_date}
               </p>
-              <p>
-                研究版本：{item.research.research_version}；模型：
-                {String(item.research.model_context.model_id)}／
-                {String(item.research.model_context.model_version)}
-              </p>
               <h5>投资逻辑引用（未批准）</h5>
               <Lines value={item.research.thesis} />
               <p>
@@ -260,39 +413,14 @@ function SourceBoundJourneyPanel() {
               <Lines value={item.research.counter_evidence} />
               <h5>逻辑失效条件</h5>
               <Lines value={item.research.thesis_breakers} />
-              <Table
-                size="small"
-                rowKey="intent"
-                pagination={false}
-                scroll={{ x: 560 }}
-                dataSource={item.action_slots}
-                columns={[
-                  {
-                    title: "动作槽（非建议）",
-                    render: (_, row) =>
-                      intents[row.intent as keyof typeof intents],
-                  },
-                  {
-                    title: "实际结果",
-                    render: (_, row) =>
-                      row.outcome === "WAIT"
-                        ? "WAIT · 等待条件"
-                        : "NO_ACTION · 不形成动作",
-                  },
-                  {
-                    title: "当前原因",
-                    render: (_, row) => (
-                      <ul>
-                        {row.reasons.map((reason, index) => (
-                          <li key={index}>{reasonLabels[reason] ?? reason}</li>
-                        ))}
-                      </ul>
-                    ),
-                  },
-                ]}
-              />
+              <SourceActionReasons slots={item.action_slots} />
               <details>
-                <summary>来源绑定与各类日期</summary>
+                <summary>来源绑定、研究版本与各类日期</summary>
+                <p>
+                  研究版本：{item.research.research_version}；模型：
+                  {String(item.research.model_context.model_id)}／
+                  {String(item.research.model_context.model_version)}
+                </p>
                 <p>候选：{item.research.candidate_binding.path}</p>
                 <p>SHA-256：{item.research.candidate_binding.sha256}</p>
                 <p>
@@ -342,11 +470,12 @@ function SourceBoundJourneyPanel() {
                     手工模拟{row.side === "BUY" ? "买入" : "卖出"} {row.symbol}
                     ：{row.fill.quantity} 股，用户假设价 {row.fill.price_cny}{" "}
                     元，费用 {row.fill.fees_cny} 元，假设成交日{" "}
-                    {row.fill.trade_date}。
-                    <p>
-                      记录时点：{row.recorded_at}；来源候选：
-                      {row.source_candidate_binding.sha256}
-                    </p>
+                    {row.fill.trade_date}。<p>记录时点：{row.recorded_at}</p>
+                    <details>
+                      <summary>模拟记录来源绑定（非成交前已知证明）</summary>
+                      <p>候选：{row.source_candidate_binding.path}</p>
+                      <p>SHA-256：{row.source_candidate_binding.sha256}</p>
+                    </details>
                     <p>
                       记录时研究快照状态：
                       {row.snapshot_status ===

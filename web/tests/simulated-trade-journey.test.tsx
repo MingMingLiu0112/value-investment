@@ -8,6 +8,7 @@ import {
   verifiedSimulatedJourney,
   verifiedSourceBoundJourney,
   sourceBoundCandidatesMatch,
+  SourceActionReasons,
 } from "../src/components/SimulatedTradeJourney";
 const { renderToStaticMarkup } = require("react-dom/server");
 
@@ -58,6 +59,83 @@ it("does not run on render or present a scripted account as live", () => {
   expect(html).toContain("不会自动记账或成交");
   expect(fetcher).not.toHaveBeenCalled();
   fetcher.mockRestore();
+});
+
+it("TEST_ONLY deduplicates exact shared reasons without losing Chinese, unknown or action-specific premises", () => {
+  const slots = sourcePacket().cases[0].action_slots;
+  for (const slot of slots)
+    slot.reasons = [
+      "CURRENT_PLAN_EXPIRED",
+      "CURRENT_PLAN_EXPIRED",
+      "model_validity_unavailable",
+      "TEST_ONLY 中文否定前提必须保留",
+      "TEST_ONLY_UNKNOWN_A",
+      "TEST_ONLY_UNKNOWN_A",
+      "TEST_ONLY_UNKNOWN_B",
+    ];
+  slots[0].reasons.push("TEST_ONLY 买入特有：价格依据不足");
+  slots[4].reasons.push(
+    "TEST_ONLY 退出特有：原始论点待核验",
+    "TEST_ONLY_EXIT_UNKNOWN",
+  );
+  slots[5].reasons.push("research_case:TEST_ONLY_FUTURE_CODE");
+  const before = JSON.stringify(slots);
+  const fetcher = vi.spyOn(globalThis, "fetch");
+  const html = renderToStaticMarkup(
+    <SourceActionReasons slots={slots} />,
+  ).replace(/<!--[\s\S]*?-->/g, "");
+  const visible = html.replace(/<details>[\s\S]*?<\/details>/g, "");
+  expect(visible.match(/当前计划已到期，不能继续使用原价位/g)).toHaveLength(1);
+  expect(visible.match(/模型有效性尚未提供/g)).toHaveLength(1);
+  expect(visible.match(/TEST_ONLY 中文否定前提必须保留/g)).toHaveLength(1);
+  expect(visible).toContain("TEST_ONLY 买入特有：价格依据不足");
+  expect(visible).toContain("TEST_ONLY 退出特有：原始论点待核验");
+  expect(visible).not.toContain("TEST_ONLY_UNKNOWN_A");
+  expect(visible).not.toContain("TEST_ONLY_FUTURE_CODE");
+  expect(html).toContain("research_case:TEST_ONLY_FUTURE_CODE");
+  expect(html).toContain("另有 2 项未识别原因");
+  expect(html).toContain("另有 1 项未识别原因");
+  expect(html).toContain("仍为否定前提");
+  expect(html).toContain("TEST_ONLY_EXIT_UNKNOWN");
+  const originals = html.match(
+    /<summary>本动作完整原始原因[\s\S]*?<\/details>/g,
+  )!;
+  expect(originals).toHaveLength(6);
+  for (let i = 0; i < slots.length; i++) {
+    expect(originals[i]).toContain(`${slots[i].reasons.length} 项`);
+    expect(originals[i].match(/<li>/g)).toHaveLength(slots[i].reasons.length);
+    for (const reason of slots[i].reasons)
+      expect(originals[i]).toContain(reason);
+  }
+  expect(html.match(/NO_ACTION · 不形成动作/g)).toHaveLength(5);
+  expect(html.match(/WAIT · 等待条件/g)).toHaveLength(1);
+  expect(html).not.toContain("<table");
+  expect(html).toContain("overflow-wrap:anywhere");
+  expect(html).toContain("max-width:100%");
+  expect(JSON.stringify(slots)).toBe(before);
+  expect(fetcher).not.toHaveBeenCalled();
+  fetcher.mockRestore();
+});
+
+it("TEST_ONLY shows a partly shared reason once with exact applicable actions, never as a six-action premise", () => {
+  const slots = sourcePacket().cases[0].action_slots;
+  slots[0].reasons.push("TEST_ONLY 部分适用的否定前提");
+  slots[1].reasons.push("TEST_ONLY 部分适用的否定前提");
+  const html = renderToStaticMarkup(
+    <SourceActionReasons slots={slots} />,
+  ).replace(/<!--[\s\S]*?-->/g, "");
+  const visible = html.replace(/<details>[\s\S]*?<\/details>/g, "");
+  expect(visible.match(/TEST_ONLY 部分适用的否定前提/g)).toHaveLength(1);
+  expect(visible).toContain("适用动作：买入、加仓</p>");
+  expect(visible.match(/本动作受上列共同条件第 1、2 组/g)).toHaveLength(2);
+  expect(visible.match(/本动作受上列共同条件第 1 组/g)).toHaveLength(4);
+  const distinct = slots.map((slot: any, index: number) => ({
+    ...slot,
+    reasons: [`TEST_ONLY 独立原因${index}`],
+  }));
+  const other = renderToStaticMarkup(<SourceActionReasons slots={distinct} />);
+  expect(other).toContain("没有可合并的共同原因");
+  for (let i = 0; i < 6; i++) expect(other).toContain(`TEST_ONLY 独立原因${i}`);
 });
 
 function sourcePacket(manual = false): any {
@@ -648,9 +726,17 @@ it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
       expect(body.manual_fills[0].fill.transaction_id).toMatch(/^SIMULATED-/);
       expect(body.manual_fills[0].fill.sleeve).toBe("CORE_VALUE");
       expect(body.manual_fills[0].fill.price_cny).toBe("10");
+      const narrowSource = sourcePacket(true);
+      for (const item of narrowSource.cases)
+        for (const slot of item.action_slots)
+          slot.reasons.push(
+            "CURRENT_PLAN_EXPIRED",
+            "TEST_ONLY 手机中文原因始终可读",
+            `TEST_ONLY_UNKNOWN_MOBILE_${"X".repeat(240)}`,
+          );
       await page.evaluate(
         (p: unknown) => (window as any).reply(p),
-        sourcePacket(true),
+        narrowSource,
       );
       await page
         .getByRole("heading", {
@@ -690,6 +776,26 @@ it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
           scrollWidth: document.documentElement.scrollWidth,
         }));
         expect(size.scrollWidth).toBeLessThanOrEqual(width);
+        const sourceLayout = await page
+          .locator('[aria-label="六动作核验（非建议）"]')
+          .evaluateAll((elements: HTMLElement[]) =>
+            elements.map((element) => ({
+              left: element.getBoundingClientRect().left,
+              right: element.getBoundingClientRect().right,
+              width: element.clientWidth,
+              scrollWidth: element.scrollWidth,
+              actions: element.querySelectorAll(":scope > ol > li").length,
+              tables: element.querySelectorAll("table").length,
+            })),
+          );
+        expect(sourceLayout).toHaveLength(2);
+        for (const layout of sourceLayout) {
+          expect(layout.left).toBeGreaterThanOrEqual(0);
+          expect(layout.right).toBeLessThanOrEqual(width);
+          expect(layout.scrollWidth).toBeLessThanOrEqual(layout.width);
+          expect(layout.actions).toBe(6);
+          expect(layout.tables).toBe(0);
+        }
         measurements.push(size);
         await page.screenshot({
           path: resolve(output, `${width}.png`),
