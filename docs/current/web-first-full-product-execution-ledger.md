@@ -4328,3 +4328,40 @@ Reopen only with authorized exchange historical raw static/status/price-limit
 export plus date/field documentation; no paid access was invoked. Retrospective
 reconstruction would still not establish contemporaneous PIT/Shadow. Do not
 repeat broad endpoint searches or treat this external gap as Goal completion.
+
+### 2026-10-24 20:12 CST:95994e40 published core economic diagnostic
+
+All preceding8dfee8ac-current/unpublished follow-up statements are historical.
+Core code95994e40f2f8047480c009f8400f97ae51a33c2b is pushed to the existingPR1
+branch, NOT main. Its GitHub Core40091844939 and Web40091844899 both SUCCESS.
+Existing clean gc1 checkout was fast-forwarded and verified:99 targeted backend/
+API/architecture passed with actual retained public sources, frontend25 passed/
+1 optional real-output skipped there; that optional real output separately
+passed in vv1 (26 total/0 skipped). Typecheck/build passed; dist/build-info.json
+binds95994e40 with source_dirty=false. No new full-local6396-run is claimed.
+
+Sole8001 now runs95994e40, runtime/public registry MATCHED. Existing activation
+was reused after cold TestClient verification, without market reacquisition,
+registration mutation or SAFE_REFRESH. Original build preserved in dual1/.tmp/
+release-joint-20261024T120553Z/previous-dist. Actual live economicGET verifies
+year5 joint cash failure and research-only boundaries; both issuers retain their
+2 verified growth facts. Publication receipt in that directory SHA256
+55588525fd322c79e387ef62c38e6208dc53c5c0fbd6e9f39c4c88b5fda546c9.
+Public pointers, authority, workflow registry and exact parser bytes unchanged.
+
+Read-only actual browser1440/390/320 passed with no horizontal overflow; new
+joint diagnostic and source-bound two-company financial/earnings/economic
+views rendered. Desktop/mobile joint-cash screenshots visually checked.
+Browser receipt vv1/.tmp/live-ui-95994e40/6d1016ee-96f3-4aa3-9519-a1fe99ac0c0b/
+receipt.json SHA25612254d75366f31e7b7584ff69cd95b94d0c560439393fb730c79133067dce807.
+No private/authenticated account acceptance was performed or claimed.
+
+Remaining business priorities:600519 complete financing scope, economic main
+input/range/terminal judgment and exact-version lawful approval; independent
+hotspot dated-state evidence, PIT/OOS/Shadow and strategy confirmation; then
+existing shared conditional decision/risk consumption. Financial coverage2/9,
+normalized profit null and formal eligibility false are NOT closed by this
+diagnostic. No unrelated simulation/UI/framework work was resumed. Source and
+delivery completeness are distinct from real-assisted-use readiness. GoalACTIVE;
+action=no_order. This later documentation-only record does not change the
+published code/build identity95994e40 or assert CI for a different commit.
