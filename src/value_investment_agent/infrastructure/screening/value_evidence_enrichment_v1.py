@@ -101,6 +101,8 @@ def extract_income_comparatives(pages: list[str], period: str) -> list[dict]:
     active, unit_page, multiplier = False, None, None
     rows = []
     number = r'(-?\d[\d,]*\.\d{2})(?!\d)'
+    note = (r'(?:\d{1,2}|[\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e]{1,6}\s*'
+            r'(?:\(\s*[1-9]\d{0,2}\s*\)|\uff08\s*[1-9]\d{0,2}\s*\uff09))\s+')
     labels = {'revenue': '\u8425\u4e1a\u6536\u5165',
               'net_income': '\u5f52\u5c5e\u4e8e\u6bcd\u516c\u53f8\u80a1\u4e1c\u7684\u51c0\u5229\u6da6'}
     for page_number, page in enumerate(pages, 1):
@@ -131,7 +133,7 @@ def extract_income_comparatives(pages: list[str], period: str) -> list[dict]:
             # The profit note may wrap to the following line. Total net profit
             # and minority profit cannot match this attributable-profit label.
             loss = r'(?:\s*[\uff08(]\s*\u51c0\s*\u4e8f\s*\u635f\s*\u4ee5[^\uff09)]*[\uff09)])?' if field == 'net_income' else ''
-            for match in re.finditer(pattern + loss + r'\s+(?:\d{1,2}\s+)?' + number + r'\s+' + number, scan):
+            for match in re.finditer(pattern + loss + r'\s+(?:' + note + r')?' + number + r'\s+' + number, scan):
                 if re.match(r'[^\S\r\n]+' + number, scan[match.end():]):
                     continue
                 rows.append(dict(field_name=field, value=str(Decimal(match[1].replace(',', '')) * multiplier),
