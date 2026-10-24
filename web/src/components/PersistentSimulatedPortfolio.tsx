@@ -157,9 +157,7 @@ export function PersistentSimulatedPortfolio() {
     if (!view || !pending || !canWrite) return;
     void mutate(operation, {
       ...simulatedCommon(view),
-      ...(operation === "confirm-fill"
-        ? { prepared_record_sha256: pending.prepared_record_sha256 }
-        : {}),
+      prepared_record_sha256: pending.prepared_record_sha256,
       confirmed_at: view.server_now,
       confirmation_note:
         operation === "confirm-fill"

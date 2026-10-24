@@ -1,7 +1,8 @@
 import React from "react";
 import { expect, it, vi } from "vitest";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, relative, resolve } from "node:path";
+import { createHash } from "node:crypto";
 import { PersistentSimulatedPortfolio } from "../src/components/PersistentSimulatedPortfolio";
 import {
   readSimulatedPortfolio,
@@ -12,6 +13,41 @@ import {
   writeSimulatedPortfolio,
 } from "../src/services/persistentSimulatedPortfolio";
 const { renderToStaticMarkup } = require("react-dom/server");
+
+it.skipIf(!process.env.PERSISTENT_SIMULATED_VIEWS_PATH)(
+  "validates actual public-reference API states including cancellation, FIFO and restored Entries",
+  () => {
+    const file = resolve(process.env.PERSISTENT_SIMULATED_VIEWS_PATH!);
+    const within = relative(resolve(process.cwd(), "..", ".tmp"), file);
+    expect(within).not.toMatch(/^(?:\.\.|[A-Za-z]:|[\\/])/);
+    const bytes = readFileSync(file);
+    const receipt = JSON.parse(
+      readFileSync(resolve(dirname(file), "receipt.json"), "utf8"),
+    );
+    expect(receipt.scope).toBe(
+      "REAL_PUBLIC_REFERENCES_WITH_TEST_ONLY_ACCOUNT_NOT_INVESTMENT_APPROVAL",
+    );
+    expect(receipt.status).toBe("PASS");
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe(
+      receipt.views_sha256,
+    );
+    const states = JSON.parse(bytes.toString("utf8"));
+    expect(states.length).toBe(receipt.view_count);
+    for (const state of states)
+      expect(verifiedPersistentSimulatedWorkbench(state)).toBe(true);
+    expect(states[0].account.status).toBe("NOT_INITIALIZED");
+    expect(
+      states.some((s: any) => s.mutation?.operation === "cancel-fill"),
+    ).toBe(true);
+    expect(states.at(-1).account.portfolio.cash_cny).toBe(
+      receipt.final_cash_cny,
+    );
+    expect(states.at(-1).account.entries[0].remaining_quantity).toBe("0");
+    expect(states.at(-1).account.entries[0].hypothesis).not.toBeNull();
+    expect(receipt.separate_process_restoration).toBe(true);
+    expect(receipt.sources_unchanged).toBe(true);
+  },
+);
 
 /** TEST_ONLY native-service-shaped fixtures; no journal, actual account or API. */
 function fixture(
@@ -437,7 +473,7 @@ it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
         .click();
       const cancelled = JSON.parse((await last()).options.body);
       expect(cancelled.expected_revision).toBe(2);
-      expect(cancelled).not.toHaveProperty("prepared_record_sha256");
+      expect(cancelled.prepared_record_sha256).toBe("b".repeat(64));
       expect(cancelled.confirmed_at).toBe(fixture().server_now);
       await reply(mutation("initialized", "cancel-fill", false));
       await read().click();
