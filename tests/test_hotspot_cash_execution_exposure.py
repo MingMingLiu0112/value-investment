@@ -105,6 +105,93 @@ def _replay():
         source_bindings=[], implementation_bindings=[], content_sha256='TEST_ONLY', summary={})
 
 
+def _execution_pair():
+    intention = dict(id='TEST_ONLY-buy', symbol='000001', side='BUY', quantity=100,
+        decision_at='2026-06-26T14:00:00+08:00', actual_execution_at='2026-06-26T14:00:01+08:00',
+        execute_at='2026-06-26T15:00:00+08:00')
+    fill = dict(order_id=intention['id'], symbol='000001', side='BUY', quantity=100,
+        time=intention['execute_at'], hypothetical_execution_at=intention['actual_execution_at'],
+        price='10.00', fees_cny='5.01', slippage_cny='0',
+        fee_components=dict(commission_cny='5', transfer_fee_cny='0.01', sell_stamp_tax_cny='0'))
+    return intention, dict(fills=[fill], rejected_orders=[])
+
+
+def test_execution_linkage_preserves_native_fill_and_rejection_not_intent_as_fill():
+    intention, fold = _execution_pair()
+    original = deepcopy(fold)
+    result = app._execution_review(intention, fold)
+    assert result['outcome'] == 'FILLED' and result['filled_quantity'] == 100
+    assert result['simulated_fill'] == fold['fills'][0] and result['actual_broker_execution'] is False
+    assert fold == original
+    fold['fills'] = []
+    fold['rejected_orders'] = [dict(order_id=intention['id'], reason='ORDER_LIMIT')]
+    result = app._execution_review(intention, fold)
+    assert result['outcome'] == 'REJECTED' and result['filled_quantity'] == 0
+    assert result['rejection_reasons'] == ['ORDER_LIMIT'] and result['simulated_fill'] is None
+    fold['rejected_orders'] = []
+    result = app._execution_review(intention, fold)
+    assert result['outcome'] == 'UNFILLED' and result['filled_quantity'] is None
+    assert result['execution_verified'] is False
+
+
+@pytest.mark.parametrize('change', ['duplicate', 'rejected_and_filled', 'wrong_quantity',
+    'wrong_symbol', 'wrong_side', 'wrong_time', 'wrong_hypothetical_time', 'missing_fee'])
+def test_execution_linkage_conflicts_are_not_presented_as_fills(change):
+    intention, fold = _execution_pair()
+    if change == 'duplicate':
+        fold['fills'].append(dict(fold['fills'][0]))
+    elif change == 'rejected_and_filled':
+        fold['rejected_orders'].append(dict(order_id=intention['id'], reason='CASH'))
+    elif change == 'missing_fee':
+        del fold['fills'][0]['fees_cny']
+    else:
+        key, value = {'wrong_quantity': ('quantity', 200), 'wrong_symbol': ('symbol', '000002'),
+            'wrong_side': ('side', 'SELL'), 'wrong_time': ('time', intention['decision_at']),
+            'wrong_hypothetical_time': ('hypothetical_execution_at', intention['decision_at'])}[change]
+        fold['fills'][0][key] = value
+    result = app._execution_review(intention, fold)
+    assert result['outcome'] == 'NOT_ASSESSABLE' and result['filled_quantity'] is None
+    assert result['simulated_fill'] is None and result['execution_verified'] is False
+
+
+@pytest.mark.parametrize('value', ['2026-06-26T13:59:00+08:00', '2026-06-26T15:00:00+08:00',
+    '2026-06-26T14:00:01', None])
+def test_even_matching_fill_timestamps_cannot_hide_invalid_chronology(value):
+    intention, fold = _execution_pair()
+    intention['actual_execution_at'] = fold['fills'][0]['hypothetical_execution_at'] = value
+    result = app._execution_review(intention, fold)
+    assert result['outcome'] == 'NOT_ASSESSABLE'
+    assert result['linkage_status'] == 'INVALID_EXECUTION_CHRONOLOGY'
+    assert result['filled_quantity'] is None
+
+
+@pytest.mark.parametrize('change', ['none_fee', 'empty_parts', 'bad_sum', 'none_quantity',
+    'bool_quantity', 'negative_price', 'nan_slippage', 'infinite_part', 'duplicate_rejection'])
+def test_native_result_value_or_duplicate_rejection_fail_closed(change):
+    intention, fold = _execution_pair()
+    fill = fold['fills'][0]
+    if change == 'duplicate_rejection':
+        fold['fills'] = []
+        fold['rejected_orders'] = [dict(order_id=intention['id'], reason='ORDER_LIMIT')] * 2
+    elif change in ('none_quantity', 'bool_quantity'):
+        intention['quantity'] = fill['quantity'] = None if change == 'none_quantity' else True
+    elif change == 'none_fee':
+        fill['fees_cny'] = None
+    elif change == 'empty_parts':
+        fill['fee_components'] = {}
+    elif change == 'bad_sum':
+        fill['fee_components']['commission_cny'] = '6'
+    elif change == 'negative_price':
+        fill['price'] = '-1'
+    elif change == 'nan_slippage':
+        fill['slippage_cny'] = 'NaN'
+    else:
+        fill['fee_components']['commission_cny'] = 'Infinity'
+    result = app._execution_review(intention, fold)
+    assert result['outcome'] == 'NOT_ASSESSABLE' and result['filled_quantity'] is None
+    assert result['simulated_fill'] is None and result['execution_verified'] is False
+
+
 def test_hypothetical_cash_is_reported_not_credited_or_turned_into_price_adjustment(tmp_path, monkeypatch):
     proof = dict(terms=parse_sse_cash_entitlement(_ah_pages(), symbol='000001'),
         source_binding=dict(path='cash.pdf', sha256='test'), acquired_at='2026-10-24T09:00:00+08:00')
@@ -202,6 +289,15 @@ def test_real_fixed_sample_signal_crosses_ex_date_without_adjusting_returns():
         assert lane['ex_date_intentions'][0]['six_bar_lookback_present'] is True
         assert lane['ex_date_intentions'][0]['raw_lookback_crosses_ex_date'] is True
         assert lane['cash_credited_to_replay'] is False
+        execution = lane['ex_date_intentions'][0]['execution_review']
+        assert execution['execution_verified'] is True
+        assert execution['actual_broker_execution'] is False
+        if lane['cost_multiplier'] == '0':
+            assert execution['outcome'] == 'FILLED' and execution['filled_quantity'] == 100
+            assert execution['simulated_fill']['fees_cny'] == '0.00'
+        else:
+            assert execution['outcome'] == 'REJECTED' and execution['filled_quantity'] == 0
+            assert execution['simulated_fill'] is None
     assert result['strict_pit_admitted'] is result['strict_oos_admitted'] is False
     assert result['adjusted_strategy_return'] is None and result['action'] == 'no_order'
     assert before == {p: sha256((root/p).read_bytes()).hexdigest() for p in before}
