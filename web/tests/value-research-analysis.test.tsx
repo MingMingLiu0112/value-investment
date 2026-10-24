@@ -1,5 +1,6 @@
 import React from "react";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
+import { createHash } from "node:crypto";
 import { ValueResearchAnalysis } from "../src/components/ValueResearchAnalysis";
 import { analysisDecision } from "./fixtures/value-research-analysis";
 import { readinessNumber } from "../src/utils/strategyReadiness";
@@ -7,10 +8,412 @@ import {
   jointRowFields,
   jointTerminalFields,
   publicJointCapitalReviewMatches,
+  sourceNativeCashReviewMatches,
+  nativeCashFields,
 } from "../src/services/valuePolicy";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 const { renderToStaticMarkup } = require("react-dom/server");
+
+/** TEST_ONLY source-shaped contract, not a coherent financial model or approval. */
+function nativeDecision() {
+  const decision = analysisDecision();
+  const analysis: any = decision.price_action_plan!.research_analysis!;
+  const candidate = {
+    path: "TEST_ONLY/native-candidate.json",
+    sha256: "b".repeat(64),
+  };
+  const source = {
+    path: "TEST_ONLY/native-source.json",
+    sha256: "c".repeat(64),
+  };
+  const context = {
+    input_descriptor_sha256: "a".repeat(64),
+    research_case_sha256: "d".repeat(64),
+    facts_sha256: "e".repeat(64),
+    assumptions_sha256: "f".repeat(64),
+    model_id: "TEST_ONLY_MODEL",
+    model_version: "TEST_ONLY_V1",
+    profile_id: "TEST_ONLY_PROFILE",
+    research_as_of: "2026-10-24",
+  };
+  const timing = {
+    basis_at: "2026-06-30T23:59:59+08:00",
+    valuation_at: "2026-06-30T23:59:59+08:00",
+  };
+  Object.assign(analysis, {
+    approval_changed: false,
+    available_at: "2026-10-24T01:00:00Z",
+    computed_at: "2026-10-24T01:00:00Z",
+    research_as_of: "2026-10-24",
+    valuation_date: "2026-06-30",
+    input_descriptor_sha256: context.input_descriptor_sha256,
+    source_bindings: [candidate, source],
+    review_binding: { candidate_binding: candidate, model_context: context },
+    model_applicability: {
+      route: {
+        profile_id: context.profile_id,
+        selected_model: context.model_id,
+        model_type: context.model_id,
+      },
+    },
+    valuation: {
+      symbol: decision.symbol,
+      confidence: "低",
+      status: "conditional_research_only",
+      model_type: context.model_id,
+      model_version: context.model_version,
+      valuation_date: "2026-06-30",
+      assumptions: { valuation_timing: timing },
+    },
+  });
+  const inputs = {
+    cost_of_equity: "0.07",
+    retention: "0.10",
+    terminal_growth: "0",
+    terminal_roe: "0.20",
+    forecast_roes: ["0.20", "0.20", "0.20", "0.20", "0.20"],
+  };
+  analysis.scenarios.forEach((row: any) => {
+    row.inputs = structuredClone(inputs);
+    analysis.valuation[`${row.scenario}_value`] = row.per_share_value;
+  });
+  analysis.source_native_cash_review = {
+    schema_version: "source-native-economic-review-materials-v1",
+    symbol: decision.symbol,
+    scope: "SOURCE_BOUND_CONDITIONAL_RESEARCH_NOT_G3",
+    action: "no_order",
+    cash_branch: "TIMING_DELAY",
+    confidence: "低",
+    research_admitted: false,
+    primary_registered: false,
+    approval_changed: false,
+    strict_contemporaneous_pit: "NOT_PROVEN",
+    candidate_binding: structuredClone(candidate),
+    model_context: structuredClone(context),
+    source_bindings: [source],
+    point_in_time: {
+      available_at: analysis.available_at,
+      computed_at: analysis.computed_at,
+      report_period: "2026-06-30",
+      research_as_of: analysis.research_as_of,
+      valuation_date: analysis.valuation_date,
+    },
+    valuation_timing_status: "EXPLICIT_MODEL_TIMING",
+    valuation_timing: {
+      ...timing,
+      evidence_refs: [{ ...source, id: "TEST_ONLY_NATIVE_SOURCE" }],
+    },
+    historical_cash_bridge: {
+      unit: "CNY",
+      scope: "standalone parent, NOT consolidated free cash",
+      unknowns: ["TEST_ONLY historical bridge is not certified"],
+    },
+    joint_assumptions: {
+      action: "no_order",
+      horizon: 5,
+      explicit_retention: "0.10",
+      incremental_parent_cash_yield: "0.01",
+      ke: "0.07",
+      TIMING_DELAY: {
+        meaning: "TEST_ONLY temporary delay",
+        release:
+          "all opening incremental delayed asset in year 2; no fresh withholding after year 1",
+        withheld_fraction: "0.10",
+        withheld_years: [1],
+      },
+    },
+    scenarios: Object.fromEntries(
+      analysis.scenarios.map((row: any) => [
+        row.scenario,
+        {
+          inputs: structuredClone(row.inputs),
+          per_share_value: row.per_share_value,
+          cash_ledger: Array.from({ length: 5 }, (_, index) => ({
+            ...Object.fromEntries(nativeCashFields.map((key) => [key, "0"])),
+            year: index + 1,
+            roe: "0.20",
+            profit: "700",
+            cash_close: "-12345.67",
+          })),
+        },
+      ]),
+    ),
+  };
+  return decision;
+}
+
+it("TEST_ONLY displays a dated low-confidence native path without calculating, fetching or approving it", () => {
+  const decision = nativeDecision();
+  const before = structuredClone(decision);
+  expect(
+    sourceNativeCashReviewMatches(
+      decision.price_action_plan!.research_analysis!,
+      decision.symbol!,
+    ),
+  ).toBe(true);
+  const fetcher = vi.spyOn(globalThis, "fetch");
+  const html = renderToStaticMarkup(
+    <ValueResearchAnalysis decision={decision} />,
+  );
+  for (const text of [
+    'aria-label="原生现金路径条件研究"',
+    "2026-06-30",
+    "低置信度（LOW）",
+    "不是今日公允价值",
+    "暂时延迟",
+    "永久性现金费用",
+    "长期无法上划",
+    "不证明其他分支成立",
+    "本附录不证明历史现金桥完整",
+    "模型允许支付股息",
+    "母公司单体权益",
+    "-12,345.67",
+  ])
+    expect(html).toContain(text);
+  expect(html).not.toContain("NO_SUPPORTED_BOUND_BRIDGE");
+  expect(html).not.toContain("<table");
+  expect(html).not.toMatch(/<details[^>]*\bopen/);
+  expect(fetcher).not.toHaveBeenCalled();
+  fetcher.mockRestore();
+  expect(decision).toEqual(before);
+});
+
+it.each([
+  (a: any) => {
+    a.source_native_cash_review.schema_version = "UNKNOWN";
+  },
+  (a: any) => {
+    a.source_native_cash_review.scope = "APPROVED";
+  },
+  (a: any) => {
+    delete a.source_native_cash_review.cash_branch;
+  },
+  (a: any) => {
+    a.source_native_cash_review.cash_branch = "PERMANENT_CASH_COST";
+  },
+  (a: any) => {
+    a.source_native_cash_review.cash_branch = "UNKNOWN";
+  },
+  (a: any) => {
+    a.source_native_cash_review.joint_assumptions.TIMING_DELAY.release = "none";
+  },
+  (a: any) => {
+    a.source_native_cash_review.joint_assumptions.ke = "0.20";
+  },
+  (a: any) => {
+    a.source_native_cash_review.action = "order";
+  },
+  (a: any) => {
+    a.source_native_cash_review.confidence = "HIGH";
+  },
+  (a: any) => {
+    a.valuation.confidence = "HIGH";
+  },
+  (a: any) => {
+    a.source_native_cash_review.primary_registered = true;
+  },
+  (a: any) => {
+    a.source_native_cash_review.research_admitted = true;
+  },
+  (a: any) => {
+    a.source_native_cash_review.approval_changed = true;
+  },
+  (a: any) => {
+    a.source_native_cash_review.symbol = "600519";
+  },
+  (a: any) => {
+    a.source_native_cash_review.candidate_binding.sha256 = "0".repeat(64);
+  },
+  (a: any) => {
+    a.source_native_cash_review.model_context.input_descriptor_sha256 =
+      "0".repeat(64);
+  },
+  (a: any) => {
+    delete a.source_native_cash_review.model_context.model_version;
+    delete a.review_binding.model_context.model_version;
+    delete a.valuation.model_version;
+  },
+  (a: any) => {
+    a.source_native_cash_review.point_in_time.valuation_date = "2026-10-24";
+  },
+  (a: any) => {
+    a.source_native_cash_review.valuation_timing.valuation_at =
+      "2026-02-30T00:00:00Z";
+  },
+  (a: any) => {
+    a.source_native_cash_review.source_bindings[0].sha256 = "0".repeat(64);
+  },
+  (a: any) => {
+    a.source_native_cash_review.scenarios.base.per_share_value = "999999.1234";
+  },
+  (a: any) => {
+    a.source_native_cash_review.scenarios.base.per_share_value += "1";
+  },
+  (a: any) => {
+    a.scenarios[0].per_share_value = "999999.1234";
+  },
+  (a: any) => {
+    delete a.source_native_cash_review.scenarios.bull;
+  },
+  (a: any) => {
+    a.source_native_cash_review.scenarios.base.cash_ledger.pop();
+  },
+  (a: any) => {
+    delete a.source_native_cash_review.scenarios.base.cash_ledger[0]
+      .dividend_paid;
+  },
+  (a: any) => {
+    a.source_native_cash_review.scenarios.base.cash_ledger[0].cash_close =
+      "NaN";
+  },
+  (a: any) => {
+    a.source_native_cash_review.scenarios.base.cash_ledger[0].roe = "0.99";
+  },
+  (a: any) => {
+    a.source_native_cash_review.scenarios.base.inputs.terminal_growth = "0.01";
+  },
+])(
+  "TEST_ONLY rejects native cash contract damage %# without presenting its numbers",
+  (change) => {
+    const decision = nativeDecision();
+    const analysis = decision.price_action_plan!.research_analysis!;
+    change(analysis);
+    expect(sourceNativeCashReviewMatches(analysis, decision.symbol!)).toBe(
+      false,
+    );
+    const html = renderToStaticMarkup(
+      <ValueResearchAnalysis decision={decision} />,
+    );
+    expect(html).toContain("暂不展示本附录现金数值");
+    expect(html).not.toContain("模型允许支付股息");
+    expect(html).not.toContain("-12,345.67");
+  },
+);
+
+it("keeps the old view byte-identical when the optional native appendix is absent", () => {
+  const decision = analysisDecision();
+  const before = renderToStaticMarkup(
+    <ValueResearchAnalysis decision={decision} />,
+  );
+  decision.price_action_plan!.research_analysis!.source_native_cash_review =
+    null;
+  expect(
+    renderToStaticMarkup(<ValueResearchAnalysis decision={decision} />),
+  ).toBe(before);
+});
+
+it("TEST_ONLY matches equivalent UTC instants using the Shanghai valuation date, not the browser clock", () => {
+  const decision = nativeDecision();
+  const a: any = decision.price_action_plan!.research_analysis!;
+  a.valuation.assumptions.valuation_timing = {
+    basis_at: "2026-06-30T00:30:00+08:00",
+    valuation_at: "2026-06-30T00:30:00+08:00",
+  };
+  Object.assign(a.source_native_cash_review.valuation_timing, {
+    basis_at: "2026-06-29T16:30:00Z",
+    valuation_at: "2026-06-29T16:30:00Z",
+  });
+  expect(sourceNativeCashReviewMatches(a, decision.symbol!)).toBe(true);
+});
+
+it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
+  "fits the source-native appendix at 320/390 using static public or TEST_ONLY data, no API",
+  async () => {
+    const decision = nativeDecision();
+    if (process.env.PUBLIC_NATIVE_ANALYSIS) {
+      const analysis = JSON.parse(
+        readFileSync(process.env.PUBLIC_NATIVE_ANALYSIS, "utf8"),
+      );
+      decision.symbol = analysis.symbol;
+      decision.price_action_plan!.research_analysis = analysis;
+    }
+    const output = resolve("../.tmp/source-native-cash-layout");
+    mkdirSync(output, { recursive: true });
+    const { chromium } = require(process.env.READINESS_PLAYWRIGHT_MODULE!);
+    const context = await chromium.launchPersistentContext(
+      resolve(output, "profile"),
+      {
+        executablePath: process.env.READINESS_BROWSER_PATH,
+        headless: true,
+        downloadsPath: output,
+      },
+    );
+    try {
+      const page = await context.newPage();
+      await page.route("**/*", (route: any) => route.abort());
+      const css = readFileSync(
+        resolve("src/components/value-research-analysis.css"),
+        "utf8",
+      );
+      const dimensions = [];
+      for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.setContent(
+          `<html lang="zh-CN"><meta charset="utf-8"><style>body{margin:0;font:14px Arial}main{box-sizing:border-box;width:100%;padding:16px}${css}</style><main>${renderToStaticMarkup(<ValueResearchAnalysis decision={decision} />)}</main></html>`,
+        );
+        await page
+          .locator("details")
+          .evaluateAll((items: HTMLDetailsElement[]) =>
+            items.forEach((item) => {
+              item.open = true;
+            }),
+          );
+        const native = page.locator('[aria-label="原生现金路径条件研究"]');
+        await native.waitFor();
+        expect(await native.locator("table").count()).toBe(0);
+        expect(await native.locator("details").count()).toBe(19);
+        const size = await page.evaluate(() => ({
+          width: innerWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+          overflowing: [...document.querySelectorAll("main *")]
+            .filter((item) => {
+              const r = item.getBoundingClientRect();
+              return r.width > 0 && (r.right > innerWidth + 1 || r.left < -1);
+            })
+            .map((item) => item.tagName),
+        }));
+        expect(size.scrollWidth).toBeLessThanOrEqual(width);
+        expect(size.overflowing).toEqual([]);
+        dimensions.push(size);
+        await native.evaluate((element: HTMLElement) =>
+          element.scrollIntoView({ block: "start" }),
+        );
+        await page.screenshot({ path: resolve(output, `${width}.png`) });
+      }
+      writeFileSync(
+        resolve(output, "dimensions.json"),
+        JSON.stringify(dimensions, null, 2),
+      );
+    } finally {
+      await context.close();
+    }
+  },
+  90000,
+);
+
+it.skipIf(!process.env.PUBLIC_NATIVE_ANALYSIS)(
+  "renders the actual explicitly branched public native receipt, no source mutation or live API",
+  () => {
+    const bytes = readFileSync(process.env.PUBLIC_NATIVE_ANALYSIS!);
+    expect(process.env.PUBLIC_NATIVE_ANALYSIS_SHA256).toMatch(/^[a-f0-9]{64}$/);
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe(
+      process.env.PUBLIC_NATIVE_ANALYSIS_SHA256,
+    );
+    const analysis = JSON.parse(bytes.toString("utf8"));
+    expect(sourceNativeCashReviewMatches(analysis, analysis.symbol)).toBe(true);
+    const decision = analysisDecision();
+    decision.symbol = analysis.symbol;
+    decision.price_action_plan!.research_analysis = analysis;
+    const html = renderToStaticMarkup(
+      <ValueResearchAnalysis decision={decision} />,
+    );
+    expect(html).toContain('aria-label="原生现金路径条件研究"');
+    expect(html).toContain("2026-06-30");
+    expect(html).toContain("低置信度（LOW）");
+    expect(html).not.toContain("NO_SUPPORTED_BOUND_BRIDGE");
+  },
+);
 
 it("shows a collapsed source-bound analysis with actual dates, inputs, counterevidence and bounded precision", () => {
   const decision = analysisDecision();

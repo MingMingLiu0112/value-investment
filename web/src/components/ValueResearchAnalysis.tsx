@@ -11,6 +11,7 @@ import {
 import "./value-research-analysis.css";
 import { AccountingBridgeReview } from "./AccountingBridgeReview";
 import { PublicJointCapitalReview } from "./JointCapitalReview";
+import { SourceNativeCashReview } from "./SourceNativeCashReview";
 
 const scenarios = { bear: "保守 Bear", base: "基准 Base", bull: "乐观 Bull" };
 
@@ -216,6 +217,7 @@ export function ValueResearchAnalysis({
         })}
       </div>
       <PublicJointCapitalReview analysis={analysis} symbol={analysis.symbol} />
+      <SourceNativeCashReview analysis={analysis} symbol={decision.symbol!} />
       <h3>单因素敏感性</h3>
       <p>
         只改变一项已登记端点，其余输入固定在

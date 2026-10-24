@@ -74,6 +74,89 @@ export type EconomicReviewMaterial = {
   joint_capital_review?: JointCapitalReview;
 };
 
+export const nativeCashFields = [
+  "opening_book",
+  "profit",
+  "roe",
+  "book_close",
+  "actual_retention",
+  "legacy_profit_before_new_cash_cost",
+  "permanent_after_tax_cash_expense",
+  "assumed_parent_standalone_profit",
+  "parent_net_funds",
+  "incremental_parent_cash_income",
+  "opening_parent_cash",
+  "opening_delayed_asset",
+  "newly_withheld",
+  "released",
+  "delayed_close",
+  "cash_capacity",
+  "cash_close",
+  "cash_bridge_residual",
+  "project_cash",
+  "fund_capital_call",
+  "fund_asset_at_cost",
+  "dividend_planned",
+  "dividend_paid",
+  "retained_profit_capacity",
+  "parent_retained_profit_close",
+  "parent_equity_close",
+  "statutory_appropriation",
+] as const;
+
+export type SourceNativeCashReview = {
+  schema_version: "source-native-economic-review-materials-v1";
+  symbol: string;
+  scope: "SOURCE_BOUND_CONDITIONAL_RESEARCH_NOT_G3";
+  action: "no_order";
+  cash_branch: "TIMING_DELAY";
+  confidence: "低" | "LOW";
+  research_admitted: false;
+  primary_registered: false;
+  approval_changed: false;
+  strict_contemporaneous_pit: "NOT_PROVEN";
+  point_in_time: {
+    valuation_date: string;
+    report_period: string;
+    research_as_of: string;
+    available_at: string;
+    computed_at: string;
+  };
+  valuation_timing_status: "EXPLICIT_MODEL_TIMING";
+  valuation_timing: {
+    basis_at: string;
+    valuation_at: string;
+    evidence_refs: (EvidenceBinding & { id: string })[];
+  };
+  historical_cash_bridge: { scope: string; unit: "CNY"; unknowns: string[] };
+  joint_assumptions: Record<string, unknown> & {
+    action: "no_order";
+    horizon: 5;
+    explicit_retention: string;
+    incremental_parent_cash_yield: string;
+    ke: string;
+    TIMING_DELAY: {
+      meaning: string;
+      release: string;
+      withheld_fraction: string;
+      withheld_years: number[];
+    };
+  };
+  scenarios: Record<
+    "bear" | "base" | "bull",
+    {
+      cash_ledger: (Record<(typeof nativeCashFields)[number], string> & {
+        year: number;
+      })[];
+      inputs: Record<string, unknown>;
+      per_share_value: string;
+    }
+  >;
+  candidate_binding: EvidenceBinding;
+  model_context: Record<string, unknown>;
+  source_bindings: EvidenceBinding[];
+};
+
 export type PolicyRule = {
   action: "entry" | "add" | "reduce" | "exit";
   scenario: "bear" | "base" | "bull";
@@ -541,6 +624,189 @@ export function publicJointCapitalReviewMatches(
         analysis.source_bindings,
       ) && publicModelMatches(analysis)
     );
+  } catch {
+    return false;
+  }
+}
+
+/** Exact native appendix identity only; never recalculates cash or approves research. */
+export function sourceNativeCashReviewMatches(
+  analysis: ValueResearchAnalysis,
+  symbol: string,
+): boolean {
+  try {
+    const native = analysis.source_native_cash_review;
+    const valuation = analysis.valuation;
+    const review = analysis.review_binding;
+    if (
+      !native ||
+      !valuation ||
+      !review ||
+      analysis.symbol !== symbol ||
+      analysis.schema_version !== "value-research-analysis-v1" ||
+      analysis.action !== "no_order" ||
+      analysis.status !== "CONDITIONAL_ANALYSIS_VERIFIED" ||
+      analysis.arithmetic_complete !== true ||
+      analysis.economic_assumptions_reviewed !== false ||
+      analysis.action_admitted !== false ||
+      analysis.strategy_admitted !== false ||
+      analysis.price_comparison_eligible !== false ||
+      analysis.approval_changed !== false ||
+      native.schema_version !== "source-native-economic-review-materials-v1" ||
+      native.symbol !== symbol ||
+      native.scope !== "SOURCE_BOUND_CONDITIONAL_RESEARCH_NOT_G3" ||
+      native.action !== "no_order" ||
+      native.cash_branch !== "TIMING_DELAY" ||
+      !["LOW", "低"].includes(native.confidence) ||
+      !["LOW", "低"].includes(valuation.confidence ?? "") ||
+      valuation.symbol !== symbol ||
+      valuation.status !== "conditional_research_only" ||
+      native.research_admitted !== false ||
+      native.primary_registered !== false ||
+      native.approval_changed !== false ||
+      native.strict_contemporaneous_pit !== "NOT_PROVEN" ||
+      !binding(native.candidate_binding) ||
+      !same(native.candidate_binding, review.candidate_binding) ||
+      !record(native.model_context) ||
+      !same(native.model_context, review.model_context) ||
+      !["model_id", "model_version", "profile_id"].every(
+        (key) =>
+          typeof native.model_context[key] === "string" &&
+          !!(native.model_context[key] as string).trim(),
+      ) ||
+      !digest(analysis.input_descriptor_sha256) ||
+      native.model_context.input_descriptor_sha256 !==
+        analysis.input_descriptor_sha256 ||
+      !["research_case_sha256", "facts_sha256", "assumptions_sha256"].every(
+        (key) => digest(native.model_context[key]),
+      ) ||
+      native.model_context.model_id !== valuation.model_type ||
+      native.model_context.model_version !== valuation.model_version ||
+      native.model_context.profile_id !==
+        analysis.model_applicability?.route?.profile_id ||
+      native.model_context.model_id !==
+        analysis.model_applicability?.route?.selected_model ||
+      native.model_context.model_id !==
+        analysis.model_applicability?.route?.model_type ||
+      !calendarDate(native.model_context.research_as_of) ||
+      native.model_context.research_as_of !== analysis.research_as_of ||
+      !Array.isArray(analysis.source_bindings) ||
+      !analysis.source_bindings.every(binding) ||
+      !Array.isArray(native.source_bindings) ||
+      !native.source_bindings.length ||
+      !native.source_bindings.every(binding)
+    )
+      return false;
+    const closure = new Map<string, string>();
+    for (const ref of analysis.source_bindings) {
+      if (closure.has(ref.path) && closure.get(ref.path) !== ref.sha256)
+        return false;
+      closure.set(ref.path, ref.sha256);
+    }
+    const bound = (ref: unknown) =>
+      binding(ref) && closure.get(ref.path) === ref.sha256;
+    if (
+      !bound(native.candidate_binding) ||
+      !native.source_bindings.every(bound)
+    )
+      return false;
+    const pit = native.point_in_time,
+      timing = native.valuation_timing;
+    const available = instant(pit?.available_at),
+      computed = instant(pit?.computed_at);
+    const basis = instant(timing?.basis_at),
+      at = instant(timing?.valuation_at);
+    const consumedTiming = valuation.assumptions?.valuation_timing;
+    if (
+      !pit ||
+      !timing ||
+      native.valuation_timing_status !== "EXPLICIT_MODEL_TIMING" ||
+      !calendarDate(pit.report_period) ||
+      !calendarDate(pit.research_as_of) ||
+      !calendarDate(pit.valuation_date) ||
+      pit.valuation_date !== analysis.valuation_date ||
+      pit.valuation_date !== valuation.valuation_date ||
+      pit.research_as_of !== analysis.research_as_of ||
+      available === null ||
+      computed === null ||
+      available > computed ||
+      available !== instant(analysis.available_at) ||
+      computed !== instant(analysis.computed_at) ||
+      basis === null ||
+      at === null ||
+      basis > at ||
+      !consumedTiming ||
+      basis !== instant(consumedTiming.basis_at) ||
+      at !== instant(consumedTiming.valuation_at) ||
+      financialDay(timing.valuation_at) !== pit.valuation_date ||
+      !Array.isArray(timing.evidence_refs) ||
+      !timing.evidence_refs.length ||
+      !timing.evidence_refs.every(
+        (ref) => bound(ref) && typeof ref.id === "string" && !!ref.id.trim(),
+      )
+    )
+      return false;
+    const plan = native.joint_assumptions;
+    if (
+      !plan ||
+      plan.action !== "no_order" ||
+      plan.horizon !== 5 ||
+      ![
+        plan.explicit_retention,
+        plan.incremental_parent_cash_yield,
+        plan.ke,
+        plan.TIMING_DELAY?.withheld_fraction,
+      ].every(finiteDecimal) ||
+      !same(plan.TIMING_DELAY?.withheld_years, [1]) ||
+      plan.TIMING_DELAY?.release !==
+        "all opening incremental delayed asset in year 2; no fresh withholding after year 1" ||
+      native.historical_cash_bridge?.unit !== "CNY" ||
+      !strings(native.historical_cash_bridge.unknowns) ||
+      !record(native.scenarios) ||
+      Object.keys(native.scenarios).sort().join(",") !== "base,bear,bull" ||
+      !Array.isArray(analysis.scenarios) ||
+      analysis.scenarios.length !== 3
+    )
+      return false;
+    return (["bear", "base", "bull"] as const).every((name) => {
+      const scenario = native.scenarios[name];
+      const matches = analysis.scenarios.filter((row) => row.scenario === name);
+      const expected = decimalIdentity(valuation[`${name}_value`]);
+      return (
+        expected !== null &&
+        matches.length === 1 &&
+        record(scenario) &&
+        expected === decimalIdentity(scenario.per_share_value) &&
+        expected === decimalIdentity(matches[0].per_share_value) &&
+        record(scenario.inputs) &&
+        same(scenario.inputs, matches[0].inputs) &&
+        decimalIdentity(scenario.inputs.cost_of_equity) ===
+          decimalIdentity(plan.ke) &&
+        decimalIdentity(scenario.inputs.retention) ===
+          decimalIdentity(plan.explicit_retention) &&
+        [
+          "cost_of_equity",
+          "retention",
+          "terminal_growth",
+          "terminal_roe",
+        ].every((key) => finiteDecimal(scenario.inputs[key])) &&
+        Array.isArray(scenario.inputs.forecast_roes) &&
+        scenario.inputs.forecast_roes.length === 5 &&
+        scenario.inputs.forecast_roes.every(finiteDecimal) &&
+        Array.isArray(scenario.cash_ledger) &&
+        scenario.cash_ledger.length === 5 &&
+        scenario.cash_ledger.every(
+          (row, index) =>
+            record(row) &&
+            row.year === index + 1 &&
+            nativeCashFields.every((field) => finiteDecimal(row[field])) &&
+            decimalIdentity(row.roe) ===
+              decimalIdentity(
+                (scenario.inputs.forecast_roes as string[])[index],
+              ),
+        )
+      );
+    });
   } catch {
     return false;
   }

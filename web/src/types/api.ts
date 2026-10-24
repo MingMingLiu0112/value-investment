@@ -237,7 +237,14 @@ export interface AccountingBridgeReview {
 }
 
 export interface ValueResearchAnalysis {
+  source_native_cash_review?:
+    import("../services/valuePolicy").SourceNativeCashReview | null;
+  approval_changed?: boolean;
+  available_at?: string | null;
   valuation?: {
+    symbol?: string;
+    confidence?: string;
+    status?: string;
     model_type: string;
     model_version: string;
     valuation_date: string;
