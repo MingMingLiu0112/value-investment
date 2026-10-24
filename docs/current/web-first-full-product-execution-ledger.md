@@ -4958,3 +4958,69 @@ typecheck passed. Independent review confirmed actual two cash bridges and
 research is inherited, not counted as new research. Clean checkout/CI/actual
 8001 acceptance of this cash patch still pending. primary_valuation_usable=false,
 approval_changed=false, action=no_order. No main merge or product graduation.
+
+### 2026-10-25 actual8774f203 release and f911d952 clean acceptance
+
+8774f203359c8c51bd3818ee93883ffabc3604bd Core40126441690 and Web40126441790
+completed SUCCESS. Sole8001 exact8774f203/MATCHED, publication PASS:
+dual1/.tmp/release-joint-20261024T195334Z/receipt.json. No public packet rebuild,
+new acquisition, authority/private/Excel write or observation recompute.
+Actual two-company mechanism browser checks passed at1440/390/320:
+vv1/.tmp/live-ui-8774f203/e48c51fc-9f9b-49ff-9d9a-52d86fc4268c/receipt.json.
+All six pages have viewport-matching document width; actual390 screenshot
+visually reviewed. Existing quote/financial progress and unapproved boundaries
+preserved. API does not promote the LOW conditional center into neutral value.
+
+Cash consumer f911d9526a614a1db1734f7d6a0c89c4049059cf is separately pushed,
+not yet live. Clean checkout66 passed/2 explicit optional source-data skipped,
+clean build passed; actual clean-code/retained-public-data API additionally PASS:
+vv1/.tmp/yili-current-public-20261024T195736Z/result.json,
+ab1a148912b6c88d20157c068f2faaa7092f9930e615d4527c7ab2c151c2a760.
+This proof explicitly checks both source-bound cash residuals and closing
+balances through actual API, denies private IO, and keeps all three public
+security verdicts UNASSESSABLE. It is not a self-contained legacy-data fixture
+claim. Core40127462933/Web40127462928 were still in_progress at this entry;
+wait for their actual terminal result, do not restart due to log unavailability.
+
+### 2026-10-25 exactf911d952 cash consumer published
+
+Core40127462933 and Web40127462928 completed SUCCESS. Existing8001 now exact
+f911d9526a614a1db1734f7d6a0c89c4049059cf/MATCHED, publication receipt PASS:
+dual1/.tmp/release-joint-20261024T200754Z/receipt.json,
+parent_cash_readback=true. All prior guarded authority/workflow/parser/public
+pointer bytes unchanged; no acquisition, packet rebuild, new observation,
+private account, Excel, server/PTA or production task change.
+
+Actual browser PASS, six company/width checks including expanded source cash
+rows and amounts at1440/390/320:
+vv1/.tmp/live-ui-f911d952/5ef9c460-5bf9-4900-a5e4-344d8c4d47c3/receipt.json.
+390 cash screenshot visually reviewed: amount/label/hash wrap without overlap.
+Empty profile, private APIs and writes denied.600887 remains source-verified
+conditional research, not main valuation or sustainable-dividend approval.
+
+Independent bounded CORE_VALUE closeout checked actual code and public HTTP,
+not only documents. No additional specific autonomous core CODE_GAP confirmed.
+Existing conditions reuse entry thesis and buy/sell consistency; thesis exit
+need not wait for overvaluation trigger. UNASSESSABLE and EVALUATED_NO_TRADE
+remain separate. Daily public evaluation was evaluated_count0/unassessable20/
+conditional_review0, INCOMPLETE_EVALUATION, NOT a no-market-opportunity claim.
+The audit did not prove positive real production buy/sell admission.
+
+Remaining handoff, not an instruction to sign or force trades:
+- Economic/G3: independent formal judgment bound to the exact600519/600887
+  candidate, current profitability/distribution/Ke/terminal assumptions and
+  strongest counterevidence. Reject/insufficient is legitimate; no automatic
+  approval from arithmetic or this ledger.
+- Event/materiality/model: complete the applicable official event-window and
+  current-model reviews; an acquired scan is not a materiality conclusion.
+- Price/policy: admit the appropriate quote and explicit conditional price
+  policy only after its prerequisites; do not insert generic margin thresholds.
+- HOTSPOT: qualified historical security-state/PIT inputs and independent OOS /
+  real-time Shadow still NOT_PROVEN; retained3/7 does not prove strategy edge.
+- Personal capacity: no actual-account IO authorized in this work package;
+  public research is not personal order quantity or permission.
+
+No new cash-gross-flow extraction/adapter was started merely because the PDF
+exists: source-byte verification is not row certification, and already completed
+cash research must not be counted again. Initial real assisted use remains
+NOT_READY; full Goal remains incomplete. action=no_order.
