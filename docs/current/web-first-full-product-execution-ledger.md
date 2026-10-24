@@ -3494,3 +3494,48 @@ strict content-addressed lineage integration. The independently assigned bridge
 adapter must not convert historical arithmetic into future distribution approval.
 New UI, full exact-head regression and final sole-port8001 publication remain
 pending. Permanent no_order; no main merge or private/Excel/server changes.
+
+### 2026-10-24 - Integrated value cash view and bounded source compatibility batch
+
+Frozen-compatible adapter f714c7d9 passed GitHub Core40049404358 and Web40049404421.
+Independent review confirmed the actual legacy600887 thirteen-file receipt,
+not only the expanded architecture index. Native signature consumption is still
+unsupported, explicitly preview-only, and must not be described as awaiting only
+user permission. No current primary or authority was changed.
+
+Native cash view7df42e5f/93ebd91d passed119 frontend tests,3 skipped with the exact
+actual de926 analysis JSON and its Hash supplied. It shows the selected temporary
+delay branch, model-year profit/cash/dividend/equity, June30 valuation coordinate,
+LOW confidence and unimplemented authenticated-consumption warning. It does not
+recalculate values, infer current fair value or grant strategy/position approval.
+Actual new-version8001 layout acceptance remains pending publication.
+
+Historical bridge adapter2c2a7dba uses exact declared bridge identity, original
+Hash/URL/issuer/report period and a single canonical catalog copy. Original paths
+remain lineage, old source bytes unchanged. Independent45-target/11-negative
+checks found no new confirmed P1/P2. Actual Root workflow now reports
+HISTORICAL_BRIDGES_REPLAYED_NOT_ECONOMIC_APPROVAL, not NO_SUPPORTED_BOUND_BRIDGE.
+Receipt runtime/source-native-workflow-verification/60516f784e9c45e789a90c7ccef46a16/receipt.json
+SHA256eb573709c827fcf7b1540031d1bc20be80624717c71d337f2faeb7e6bef68f03;
+both value source cases remain readable and ineligible, no manual request or
+ledger creation. Six zero residuals do not validate future remittance, maintenance
+requirements, normalized earnings or G3. Existing unknowns stay explicit.
+
+Sibling cash chain007/b913/204/00c is integrated as0c2e4013/43d291cf/698d0f7d/839d8f68.
+Old two P2s and the later retained-source-closure P2 were independently closed
+before integration. Gross6.957 and reference deduction6.9065252 stay distinct;
+9/10 subject links, one unreadable source, UNKNOWN comparability and unchanged
+protection remain. These opt-in adapters alone do not complete the user wave
+decision chain. Their related-source actual archive check passed separately.
+
+Integrated source/native/bridge/cash/architecture selection152 passed,3 skipped.
+Two optional legacy economic tests were then attempted against today's retained
+tree but rejected correctly because their fixed2026-10-23T12UTC cutoff predates
+the registered candidates. They are NOT passed; the clock/assertions were not
+changed. Current-time actual workflow evidence above is separate, not historical
+PIT or OOS. Canonical Core/default skip boundaries remain intact.
+
+Full clean Core/frontend/API/typecheck/format/build, exact-head GitHub CI and new
+sole-port8001 screenshots are next. Portfolio two-source shared-account work is
+delegated to a disjoint branch and is not part of this frozen release batch.
+The complete Goal remains ACTIVE. No actual orders, private/Excel/server changes.
