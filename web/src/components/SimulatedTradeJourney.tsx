@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { SourceBoundDualJourney } from "./SourceBoundDualJourney";
 import { Alert, Button, Table } from "antd";
 import { codeText } from "../utils/codes";
 import { blockerText } from "../utils/researchDetail";
@@ -738,6 +739,7 @@ export function SimulatedTradeJourney() {
   return (
     <div style={{ minWidth: 0, maxWidth: "100%", overflowWrap: "anywhere" }}>
       <SourceBoundJourneyPanel />
+      <SourceBoundDualJourney />
       <section
         aria-label="纯假设计账演练"
         style={{ marginBlock: 20, minWidth: 0 }}
