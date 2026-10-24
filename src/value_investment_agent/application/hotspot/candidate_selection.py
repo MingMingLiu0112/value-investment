@@ -6,6 +6,7 @@ No collection, registry mutation or order is performed here.
 from __future__ import annotations
 
 from datetime import datetime, time
+from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
@@ -15,10 +16,51 @@ from .current_refresh import final_observation_key, structure_selection_evidence
 from .current_registry import REGISTRY
 from .daily_selection import verify_daily_selection
 from .price_action_case import project_current_price_action_plan
+from .independent_price_conditions import INDEPENDENT_OPEN_RULE
 from ...domain.hotspot.opportunity_quality import RULE_VERSION as STRUCTURE_RULE
 from ...quote_sessions import CHINA, evaluate_quote_session, parse_quote
 
 RULE_VERSION = "hotspot-watch-pool-completed-structure-selection-v1"
+
+
+def _structure_wait_explanation(plan: dict) -> dict:
+    """Expose existing predicates, not a second classifier or holding decision."""
+    behavior = plan['price_behavior']
+    quality = plan['opportunity_quality']
+    reasons = list(quality['structure_reasons'])
+    if quality['structure_tier'] == 'ACTIVE_ONLY':
+        if behavior['daily_trend'] not in ('UPTREND', 'RANGE'):
+            reasons.append('DAILY_TREND_NOT_ESTABLISHED')
+        if behavior['risk_reward_ratio'] is None:
+            reasons.append('UPPER_TRADE_SPACE_NOT_ESTABLISHED')
+        if plan['period_structure']['60m'] != 'BREAKOUT':
+            reasons.append('PRIMARY_PRICE_OR_VOLUME_BREAKOUT_NOT_MET')
+            if plan['period_structure']['60m'] == 'PRICE_ABOVE_VOLUME_PENDING':
+                reasons.append('PRIMARY_VOLUME_CONFIRMATION_NOT_MET')
+            elif plan['period_structure']['60m'] == 'RANGE':
+                reasons.append('PRIMARY_CLOSE_NOT_ABOVE_PRIOR_HIGH')
+        if not (behavior['breakout']['confirmed_on_next_completed_bar']
+                or behavior['pullback_recovery']['observed']):
+            reasons.append('NEXT_BAR_OR_PULLBACK_CONFIRMATION_NOT_OBSERVED')
+    conditions = deepcopy(plan['conditional_action_rules'])
+    conditions['OPEN']['rule'] = INDEPENDENT_OPEN_RULE
+    return dict(state='WAIT', structure_rule_version=quality['rule_version'],
+        wait_reasons=list(dict.fromkeys([*reasons, 'INDEPENDENT_STRATEGY_ADMISSION_REVIEW_REQUIRED'])),
+        rule_inputs=dict(daily_trend=behavior['daily_trend'], observation_quality=behavior['observation_quality'],
+            primary_structure=plan['period_structure']['60m'],
+            structural_distance_ratio=behavior['risk_reward_ratio'],
+            next_bar_confirmed=behavior['breakout']['confirmed_on_next_completed_bar'],
+            pullback_recovery_observed=behavior['pullback_recovery']['observed']),
+        period_levels=deepcopy(plan['levels']), conditional_observations=conditions,
+        condition_scope='PATTERN_OBSERVATIONS_NOT_OWNERSHIP_OR_ADMISSION',
+        holding_review_status='NOT_EVALUATED_ENTRY_NOT_SUPPLIED', holding_action_eligibility=False,
+        owned_entry_supplied=False, holding_ownership_assessed=False,
+        price_comparability='UNKNOWN', company_action_review_checked=False,
+        strategy_validation='NOT_EVALUATED', independent_admission_checked=False,
+        data_available_at=plan['data_available_at'],
+        observation_scope=plan.get('observation_scope', 'SAME_SESSION_B1'),
+        current_pit=plan.get('current_pit', False), formal_eligibility=False,
+        next_observation=plan['next_observation'], action='no_order')
 
 
 def _read(root: Path, binding: dict) -> dict:
@@ -171,6 +213,7 @@ def select_current_hotspot_candidates(*, root: Path, now: datetime,
                         structure_status="PASS" if status == "SELECTED" else "FAIL" if status == "EXCLUDED" else "PENDING",
                         structure_tier=tier, missing_periods=[], reasons=quality["structure_reasons"],
                         signal_state=plan["signal_state"], period_structure=plan["period_structure"],
+                        decision_explanation=_structure_wait_explanation(plan),
                         activity_rank=candidate.get("rank"),
                         structure_selection_evidence=structure_selection_evidence(plan),
                         entry_condition=plan["entry_condition"],
@@ -186,6 +229,14 @@ def select_current_hotspot_candidates(*, root: Path, now: datetime,
                     item.update(data_status="STALE", reasons=["WATCH_POOL_STALE"])
             if watch_status == "STALE":
                 item.update(data_status="STALE", reasons=["WATCH_POOL_STALE"])
+            if 'decision_explanation' not in item:
+                item['decision_explanation'] = dict(state='WAIT', wait_reasons=list(item['reasons']),
+                    data_status=item['data_status'], period_levels=None, conditional_observations={},
+                    holding_review_status='NOT_EVALUATED_ENTRY_NOT_SUPPLIED',
+                    owned_entry_supplied=False, holding_ownership_assessed=False,
+                    holding_action_eligibility=False, independent_admission_checked=False,
+                    strategy_validation='NOT_EVALUATED', formal_eligibility=False, current_pit=False,
+                    price_comparability='UNKNOWN', company_action_review_checked=False, action='no_order')
             result["items"].append(item)
         qualified = [row for row in result["items"] if row["selection_status"] == "SELECTED"]
         result["shortlist"] = sorted(qualified, key=final_observation_key)

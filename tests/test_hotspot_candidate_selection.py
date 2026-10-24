@@ -3,6 +3,8 @@ from datetime import datetime
 from decimal import Decimal
 import hashlib
 import json
+import os
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -319,6 +321,100 @@ def test_projection_uses_existing_tier_without_reimplementing_rules(tmp_path, mo
     assert row["entry_condition"]["personal_permission"] is False
     assert row["invalidation_condition"]["price"] is not None
     assert row["formal_eligibility"] is False
+    explanation = row['decision_explanation']
+    assert explanation['state'] == 'WAIT' and explanation['formal_eligibility'] is False
+    assert explanation['holding_action_eligibility'] is False
+    assert explanation['holding_review_status'] == 'NOT_EVALUATED_ENTRY_NOT_SUPPLIED'
+    assert explanation['independent_admission_checked'] is False
+    assert explanation['conditional_observations']['OPEN']['rule'] == module.INDEPENDENT_OPEN_RULE
+
+
+@pytest.mark.parametrize('missing,reason', [
+    ('trend', 'DAILY_TREND_NOT_ESTABLISHED'), ('space', 'UPPER_TRADE_SPACE_NOT_ESTABLISHED'),
+    ('primary', 'PRIMARY_PRICE_OR_VOLUME_BREAKOUT_NOT_MET'),
+    ('confirmation', 'NEXT_BAR_OR_PULLBACK_CONFIRMATION_NOT_OBSERVED')])
+def test_wait_explanation_identifies_native_unmet_condition_without_mutating_plan(tmp_path, missing, reason):
+    _fixture(tmp_path)
+    # Use the already verified case binding, not a caller-defined investment signal.
+    registry = json.loads((tmp_path/module.REGISTRY).read_bytes())
+    bound = registry['assessed_candidates'][0]
+    verified = module.inspect_current_price_case(root=tmp_path, symbol='600519',
+        case_binding=dict(path=bound['case_path'], sha256=bound['case_sha256']), now=NOW)
+    plan = module.project_current_price_action_plan(verified['case'])
+    plan['opportunity_quality']['structure_tier'] = 'ACTIVE_ONLY'
+    plan['price_behavior'].update(daily_trend='RANGE', risk_reward_ratio='2')
+    plan['period_structure']['60m'] = 'BREAKOUT'
+    plan['price_behavior']['breakout']['confirmed_on_next_completed_bar'] = True
+    if missing == 'trend':
+        plan['price_behavior']['daily_trend'] = 'UNKNOWN'
+    elif missing == 'space':
+        plan['price_behavior']['risk_reward_ratio'] = None
+    elif missing == 'primary':
+        plan['period_structure']['60m'] = 'PRICE_ABOVE_VOLUME_PENDING'
+    else:
+        plan['price_behavior']['breakout']['confirmed_on_next_completed_bar'] = False
+        plan['price_behavior']['pullback_recovery']['observed'] = False
+    before = deepcopy(plan)
+    explanation = module._structure_wait_explanation(plan)
+    assert reason in explanation['wait_reasons']
+    if missing == 'primary':
+        assert 'PRIMARY_VOLUME_CONFIRMATION_NOT_MET' in explanation['wait_reasons']
+    assert plan == before
+    assert all(condition['personal_permission'] is False for condition in explanation['conditional_observations'].values())
+
+
+def test_missing_case_explains_wait_without_numeric_or_holding_conditions(tmp_path):
+    _fixture(tmp_path)
+    report = module.select_current_hotspot_candidates(root=tmp_path, now=NOW)
+    missing = [row for row in report['items'] if row['data_status'] == 'MISSING']
+    assert missing
+    for row in missing:
+        explanation = row['decision_explanation']
+        assert explanation['state'] == 'WAIT' and explanation['period_levels'] is None
+        assert explanation['conditional_observations'] == {}
+        assert explanation['wait_reasons'] == row['reasons']
+        assert explanation['holding_action_eligibility'] is False
+
+
+@pytest.mark.skipif(not os.environ.get('HOTSPOT_CURRENT_SWING_ROOT'), reason='Explicit latest-session originals')
+def test_real_latest_completed_session_has_specific_wait_not_value_gate_or_holding_permission():
+    root = Path(os.environ['HOTSPOT_CURRENT_SWING_ROOT'])
+    raw = (root/module.REGISTRY).read_bytes()
+    registry = json.loads(raw)
+    cases = {r['symbol']:dict(path=r['case_path'],sha256=r['case_sha256']) for r in registry['assessed_candidates']}
+    before = json.loads((root/'selection-result.json').read_bytes())
+    result = module.select_current_hotspot_candidates(root=root, now=datetime.fromisoformat(before['evaluated_at']),
+        watch_binding=registry['watch_source_binding'], case_bindings=cases, limit=30)
+    assert result['coverage'] == before['coverage']
+    assert result['trade_date'] == '2026-10-23'
+    assert result['coverage']['structure_verified'] == 10
+    assert result['coverage']['selected'] == 0 and result['coverage']['pending_confirmation'] == 5
+    for row in result['items']:
+        explanation = row['decision_explanation']
+        assert explanation['state'] == 'WAIT'
+        assert explanation['observation_scope'] == 'LAST_COMPLETED_CLOSE_DISPLAY_ONLY'
+        assert explanation['current_pit'] is explanation['formal_eligibility'] is False
+        assert explanation['holding_action_eligibility'] is False
+        assert explanation['independent_admission_checked'] is False
+        assert 'VALUE_GATE_NOT_PROVEN' not in explanation['wait_reasons']
+        assert explanation['conditional_observations']['OPEN']['rule'] == module.INDEPENDENT_OPEN_RULE
+        for intent in ('ADD', 'REDUCE', 'EXIT'):
+            assert explanation['conditional_observations'][intent]['requires_existing_holding'] is True
+            assert explanation['conditional_observations'][intent]['personal_permission'] is False
+        if row['selection_status'] == 'PENDING_CONFIRMATION':
+            assert len(explanation['wait_reasons']) > 2
+    by_symbol = {row['symbol']:row['decision_explanation'] for row in result['items']}
+    assert 'UPPER_TRADE_SPACE_NOT_ESTABLISHED' in by_symbol['300033']['wait_reasons']
+    assert 'PRIMARY_VOLUME_CONFIRMATION_NOT_MET' in by_symbol['688825']['wait_reasons']
+    expired = module.select_current_hotspot_candidates(root=root,
+        now=datetime(2026,10,26,16,tzinfo=CHINA), watch_binding=registry['watch_source_binding'],
+        case_bindings=cases, limit=30)
+    assert expired['data_status'] == 'STALE'
+    for row in expired['items']:
+        assert row['decision_explanation']['state'] == 'WAIT'
+        assert row['decision_explanation']['period_levels'] is None
+        assert row['decision_explanation']['conditional_observations'] == {}
+    assert (root/module.REGISTRY).read_bytes() == raw
 
 
 def test_real_retained_watch_pool_replay_is_read_only():
