@@ -19,14 +19,14 @@ def _body_payment_date_review(pages, payment_date):
     body = sections[0]
     day = r'(20\d{2})年(\d{1,2})月(\d{1,2})日'
     mentions = re.findall(r'(?:现金)?红利发放日(?:\(|为|:)' + day, body)
-    dates = [date(*map(int, values)).isoformat() for values in mentions]
-    if any(value != payment_date for value in dates):
-        raise ValueError('Body payment date conflicts with cash date table')
     supported = re.findall(r'(?:^|。)已办理指定交易的(?:投资者|股东)可于红利发放日\('
         + day + r'\)在其指定的证券营业部领取现金红利[,，]', body)
-    if (not dates or len(supported) != len(dates)
-            or body.count('红利发放日') != len(dates)):
-        return dict(unknown, declared_dates=dates)
+    if (not supported or len(supported) != len(mentions)
+            or body.count('红利发放日') != len(supported)):
+        return unknown
+    dates = [date(*map(int, values)).isoformat() for values in supported]
+    if any(value != payment_date for value in dates):
+        raise ValueError('Body payment date conflicts with cash date table')
     return dict(status='EXPLICIT_SUPPORTED_SENTENCE_MATCHES_TABLE', declared_dates=dates,
         absence_of_conflict_proven=False,
         scope='SUPPORTED_PAYMENT_SENTENCE_ONLY_NOT_ALL_SEMANTIC_DATE_CLAIMS')

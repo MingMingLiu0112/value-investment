@@ -48,11 +48,10 @@ def test_a_subtotal_is_reconciled_independently_of_all_share_amount():
 
 
 @pytest.mark.parametrize('day', [25, 27])
-@pytest.mark.parametrize('prefix,suffix', [('（', '）'), ('为', '')])
-def test_explicit_body_payment_date_conflicts_reject_without_changing_tables(day, prefix, suffix):
+def test_explicit_body_payment_date_conflicts_reject_without_changing_tables(day):
     pages = _ah_pages()
     pages[1] = pages[1].replace('TEST_ONLY董事会', '四、分配实施办法。'
-        f'已办理指定交易的投资者可于红利发放日{prefix}2026年6月{day}日{suffix}'
+        f'已办理指定交易的投资者可于红利发放日（2026年6月{day}日）'
         '在其指定的证券营业部领取现金红利，未办理指定交易的股东暂由结算保管。'
         '五、有关咨询办法。TEST_ONLY董事会')
     with pytest.raises(ValueError, match='Body payment date conflicts'):
@@ -64,6 +63,9 @@ def test_explicit_body_payment_date_conflicts_reject_without_changing_tables(day
      'EXPLICIT_SUPPORTED_SENTENCE_MATCHES_TABLE'),
     ('预计现金将于2026年6月26日到账。', 'UNKNOWN'),
     ('并非已办理指定交易的投资者可于红利发放日（2026年6月26日）在其指定的证券营业部领取现金红利，', 'UNKNOWN'),
+    ('并非已办理指定交易的投资者可于红利发放日（2026年6月27日）在其指定的证券营业部领取现金红利，', 'UNKNOWN'),
+    ('并非已办理指定交易的投资者可于红利发放日（2026年2月30日）在其指定的证券营业部领取现金红利，', 'UNKNOWN'),
+    ('已办理指定交易的投资者可于红利发放日为2026年6月27日在其指定的证券营业部领取现金红利，', 'UNKNOWN'),
     ('咨询日期为2026年6月27日。', 'UNKNOWN'), ('图像不可读。', 'UNKNOWN')])
 def test_only_explicit_supported_body_sentence_is_cross_checked(wording, status):
     pages = _ah_pages()
