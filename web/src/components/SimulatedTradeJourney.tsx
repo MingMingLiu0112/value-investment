@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { PersistentSimulatedPortfolio } from "./PersistentSimulatedPortfolio";
 import { SourceBoundDualJourney } from "./SourceBoundDualJourney";
 import { Alert, Button, Table } from "antd";
 import { codeText } from "../utils/codes";
@@ -738,6 +739,7 @@ export function SimulatedTradeJourney() {
   }
   return (
     <div style={{ minWidth: 0, maxWidth: "100%", overflowWrap: "anywhere" }}>
+      <PersistentSimulatedPortfolio />
       <SourceBoundJourneyPanel />
       <SourceBoundDualJourney />
       <section
