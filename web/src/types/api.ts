@@ -237,6 +237,24 @@ export interface AccountingBridgeReview {
 }
 
 export interface OperatingEarningsReview {
+  context_scope?: "INDEPENDENT_RETAINED_FILINGS_V1";
+  scope?: string;
+  availability_scope?: string;
+  read_at?: string;
+  report_periods?: string[][];
+  execution_bindings?: { path: string; sha256: string }[];
+  action_admitted?: false;
+  approval_changed?: false;
+  primary_valuation_usable?: false;
+  source_spec_binding?: { path: string; sha256: string };
+  source_bindings?: {
+    source_id: string;
+    path: string;
+    sha256: string;
+    source_url: string;
+    published_date: string;
+    original_acquired_at: string | null;
+  }[];
   status: string;
   schema_version?: string;
   symbol: string;
@@ -263,6 +281,7 @@ export interface OperatingEarningsReview {
         field: string;
         label: string;
         source_id: string;
+        path?: string;
         source_url: string;
         sha256: string;
         physical_page: number;
@@ -275,6 +294,8 @@ export interface OperatingEarningsReview {
 }
 
 export interface ValueResearchAnalysis {
+  historical_operating_review?: OperatingEarningsReview;
+  blockers?: string[];
   source_native_cash_review?:
     import("../services/valuePolicy").SourceNativeCashReview | null;
   approval_changed?: boolean;

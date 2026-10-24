@@ -181,7 +181,7 @@ def test_final_source_recheck_rejects_drift(tmp_path, monkeypatch, inputs):
 def test_extractor_negative_boundaries(tmp_path, monkeypatch, failure):
     source = tmp_path/"fixture.pdf"
     source.write_bytes(b"SYNTHETIC_PDF_PARSER_TEST_ONLY")
-    text = ("600887 伊利2026年半年度报告 合并利润表2026年1—6月 单位：元 币种：人民币 2026年半年度 2025年半年度\n"
+    text = ("公司代码：600887 伊利2026年半年度报告 合并利润表2026年1—6月 单位：元 币种：人民币 2026年半年度 2025年半年度\n"
             "一、营业总收入 10,000.00 9,000.00\n其中：营业收入 9,000.00 8,000.00\n"
             "利息收入 1,000.00 1,000.00\n二、营业总成本 5,000.00 4,000.00")
     spec = dict(symbol="600887", issuer="伊利", path="fixture.pdf", sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
@@ -208,13 +208,49 @@ def test_extractor_negative_boundaries(tmp_path, monkeypatch, failure):
 def test_extractor_keeps_column_separators(tmp_path, monkeypatch):
     path = tmp_path/"test.pdf"
     path.write_bytes(b"TEST_ONLY")
-    text = "600887伊利2026年半年度报告 合并利润表2026年1—6月 单位：元 币种：人民币2026年半年度2025年半年度\n一、营业总收入 10,000.00 9,000.00\n二、营业总成本 5,000.00 4,000.00"
+    text = "公司代码：600887 伊利2026年半年度报告 合并利润表2026年1—6月 单位：元 币种：人民币2026年半年度2025年半年度\n一、营业总收入 10,000.00 9,000.00\n二、营业总成本 5,000.00 4,000.00"
     monkeypatch.setattr(module, "extract_pages", lambda path: [text])
     spec = dict(symbol="600887", issuer="伊利", path="test.pdf", sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
         statement_pages=[1], summary_page=1, column_labels=["2026年半年度", "2025年半年度"],
         fields=["total_revenue"], periods=["H12026", "H12025"], source_id="TEST_ONLY", source_url="TEST_ONLY",
         original_acquired_at=None, published_date="2026-01-01")
     assert module.extract_statement(root=tmp_path, spec=spec)["rows"]["total_revenue"]["values"] == ["10000.00", "9000.00"]
+
+
+@pytest.mark.parametrize('label',['公司代码：','证券代码:','股票代码 '])
+@pytest.mark.parametrize('fault',['none','fax_symbol','phone_only','long_code','conflicting_code','wrong_issuer'])
+def test_extractor_binds_explicit_issuer_code_not_telephone(tmp_path,monkeypatch,label,fault):
+    path=tmp_path/'TEST_ONLY.pdf';path.write_bytes(b'TEST_ONLY tagged issuer header')
+    heading=label+'600887 伊利2026年半年度报告 传真0471-3601621\n'
+    spec=dict(symbol='600887',issuer='伊利',path='TEST_ONLY.pdf',
+        sha256=hashlib.sha256(path.read_bytes()).hexdigest(),statement_pages=[1],summary_page=1,
+        periods=['H12026','H12025'],column_labels=['2026年半年度','2025年半年度'],fields=['total_revenue'],
+        source_id='TEST_ONLY',source_url='https://example.test/TEST_ONLY.pdf',
+        original_acquired_at=None,published_date='2026-08-27')
+    if fault=='fax_symbol':spec['symbol']='601621'
+    elif fault=='phone_only':heading='伊利2026年半年度报告 电话600887 传真0471-3601621\n'
+    elif fault=='long_code':heading=heading.replace('600887','6008879')
+    elif fault=='conflicting_code':heading+='证券代码：600519\n'
+    elif fault=='wrong_issuer':spec['issuer']='贵州茅台'
+    text=heading+'合并利润表2026年1—6月 单位：元 币种：人民币2026年半年度2025年半年度\n一、营业总收入 10,000.00 9,000.00\n二、营业总成本 5,000.00 4,000.00'
+    monkeypatch.setattr(module,'extract_pages',lambda path:[text])
+    if fault=='none':
+        assert module.extract_statement(root=tmp_path,spec=spec)['rows']['total_revenue']['values']==['10000.00','9000.00']
+    else:
+        with pytest.raises(ValueError,match='Original issuer mismatch'):
+            module.extract_statement(root=tmp_path,spec=spec)
+
+
+@pytest.mark.parametrize('report_index',[0,1])
+@pytest.mark.parametrize('fault',['fax_symbol','wrong_symbol','wrong_issuer'])
+def test_real_original_issuer_header_rejects_fax_substring(report_index,fault):
+    root,specs=_real_specs('600887')
+    spec=dict(specs[report_index])
+    if fault=='fax_symbol':spec['symbol']='601621'
+    elif fault=='wrong_symbol':spec['symbol']='600519'
+    else:spec['issuer']='贵州茅台'
+    with pytest.raises(ValueError,match='Original issuer mismatch'):
+        module.extract_statement(root=root,spec=spec)
 
 
 def test_saved_public_research_replays_without_saved_amounts():

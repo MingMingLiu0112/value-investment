@@ -4557,3 +4557,58 @@ always has that field. Test-only correction explicitly sets valuation mode in
 the three SimpleNamespace stubs; no production fallback/guard/strategy changed.
 Scoped recheck58 passed/2 optional skipped. Prior failed CI remains retained.
 Final retry required before any8001 activation; current live remains62f5a04c.
+
+### 822c3ec5 activation and real-browser residual found
+
+Core40105840888 and Web40105840885 SUCCESS for exact code
+822c3ec519868f37c9308ab7bd2b0b17d4d3bbba. Clean test-only retry58 passed/2
+optional skipped; production source/config/Web identical to13f3961b, whose
+174 actual-input core and953/24 Web results above remain separately scoped.
+New exact clean build generated. Sole8001 now822c3ec5, runtime/public registries
+MATCHED. Local release receipt: dual1/.tmp/release-joint-20261024T152707Z/receipt.json.
+Actual public reads000544 research-only and600519 operating comparison PASS;
+original trust roots/workflow/public pointers/raw filing parser preserved.
+
+Real browser is NOT yet accepted. First attempt assumed two decimals but page
+correctly used the existing four-decimal price formatter; failure screenshot
+retained. Corrected helper then reached a genuine600887 residual: old pending
+candidate's full implementation hash rejects current-engine replay after the
+explicit research-mode extension. Strict status SOURCE_OR_REPLAY_UNAVAILABLE /
+pending candidate implementation drift remains; do not relax or re-sign it.
+Historical earnings, currently nested inside that valuation-only display,
+were hidden together. Actual financial2-fact adoption still verifies. A bounded
+core consumer repair is under investigation: independently validated historical
+financial explanation must remain visible WITHOUT claiming old valuation replay,
+current-value readiness or investment approval. No new model/endpoint/framework.
+Do not label overall browser or dual-strategy assisted use PASS yet. Goal active;
+action=no_order. New000544 mobile verification proceeds independently.
+
+### 2026-10-25: bounded historical-financial consumer repair
+
+000544 actual822c3ec5 browser passed1440/390/320 widths (no horizontal overflow):
+vv1/.tmp/live-ui-822c3ec5/aaf4ab77-c0e7-4112-b2b0-0eca22e032a2/receipt.json.
+The full older UI helper remains failed at600887 until this repair is activated;
+do not relabel those retained failures as passes.
+
+Independent historical source loader now projects source-spec/PDF cold arithmetic
+beside the failed valuation analysis. It binds spec/PDF/executing dependencies
+and actual read_at, leaves unknown acquisition timestamps unknown, and rechecks
+the closure after calculation. No old candidate descriptor/approval identity or
+valuation scenarios are reused. Frontend retains the old-version replay refusal
+and displays only separately verified historical drivers. Normalized profit null,
+all investment/admission flags false. No new endpoint/model/framework.
+
+Independent review reproduced one real issuer defect in the old parser: code
+601621 matched an Ili fax-number substring. Explicit labelled security-code
+recognition now rejects it, conflicting labels and wrong issuer. Original raw
+PDFs unchanged; original adverse probe and real two-company positive amounts
+independently rechecked. No legacy candidate Hash guard was weakened.
+
+Root scope58 passed/32 opt-in skipped with actual retained consumer enabled;
+new real HTTP source consumer passed. Separate two-component real HTTP JSON
+rendering137 passed/5 old opt-in skipped. Independent review closed issuerP2
+and found no further explicitP1/P2 in this bounded source/consumer scope.
+Author result vv1/.tmp/retained-operating-consumer-20261025-v2/result.json SHA
+19aa1163d1a0aaa9be87bd061acc4286af4de38ecb0660b53698bb52f0fe716e.
+Current repair is working-state, not live822c3ec5 yet. Exact commit, clean
+verification, CI and actual8001 readback remain required. action=no_order.

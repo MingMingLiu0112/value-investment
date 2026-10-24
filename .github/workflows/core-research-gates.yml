@@ -173,6 +173,7 @@ jobs:
           tests/test_joint_adverse_cash_v1.py
           tests/test_operating_earnings_bridge.py
           tests/test_current_operating_earnings.py
+          tests/test_retained_operating_consumer.py
           tests/web_api/test_source_native_economic_api.py
           tests/test_content_addressed_economic_bridge.py
           tests/test_hotspot_cash_basis_v2.py

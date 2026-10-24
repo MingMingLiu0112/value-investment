@@ -383,6 +383,7 @@ def load_current_research_analysis(
     """Expose registered pending arithmetic independently of legacy draft approval."""
     from ..research.value_research_analysis import load_current_value_research_analysis
     from ..research.value_economic_assessment import load_current_value_economic_assessment
+    from ..research.value_economic_assessment import load_retained_operating_bridge
 
     normalized = normalize_symbol(symbol)
     try:
@@ -400,11 +401,15 @@ def load_current_research_analysis(
             # source/content fingerprint stable for plan and fill revalidation.
             result['economic_assessment'] = ({key: value for key, value in assessment.items()
                 if key != 'assessed_at'} if assessment is not None else None)
-        return result
     except (OSError, ValueError, TypeError, KeyError, ArithmeticError, UnicodeError) as error:
-        return dict(schema_version="value-research-analysis-v1", symbol=normalized,
+        result = dict(schema_version="value-research-analysis-v1", symbol=normalized,
             status="SOURCE_OR_REPLAY_UNAVAILABLE", action="no_order",
             arithmetic_complete=False, economic_assumptions_reviewed=False,
             strategy_admitted=False, action_admitted=False, price_comparison_eligible=False,
             scenarios=[], sensitivity=None, source_bindings=[],
             blockers=["VALUE_RESEARCH_ANALYSIS_UNAVAILABLE:" + str(error)])
+    if result is not None and result.get('status') == 'SOURCE_OR_REPLAY_UNAVAILABLE':
+        appendix = load_retained_operating_bridge(root=root, symbol=normalized, now=evaluated_at)
+        if appendix is not None:
+            result['historical_operating_review'] = appendix
+    return result

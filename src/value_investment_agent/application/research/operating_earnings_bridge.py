@@ -110,8 +110,12 @@ def extract_statement(*, root: Path, spec: dict) -> dict:
     contract = _report_contract(spec)
     path = _source_path(root, spec)
     pages = extract_pages(path)
-    header = _compact("".join(pages[:8]))
-    if spec["symbol"] not in header or spec["issuer"] not in header:
+    header_text = "\n".join(pages[:8])
+    header = _compact(header_text)
+    # Report labels, unlike arbitrary digit substrings, cannot match a fax or
+    # telephone number. Repeated matching labels are fine; conflicting codes are not.
+    codes = set(re.findall(r"(?:公司|证券|股票)\s*代码\s*[:：]?\s*([0-9]{6})(?!\d)", header_text))
+    if codes != {spec["symbol"]} or spec["issuer"] not in header:
         raise ValueError("Original issuer mismatch")
     if contract["title"] not in header:
         raise ValueError("Original report type/year mismatch")

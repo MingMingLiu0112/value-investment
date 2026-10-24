@@ -104,7 +104,20 @@ export function ValueResearchAnalysis({
     );
   if (!verified)
     return (
-      <p role="status">条件研究分析的来源或重算尚未核验，暂不展示计算结果。</p>
+      <>
+        <p role="status">
+          {analysis.blockers?.some((reason) =>
+            reason.includes("implementation drift"),
+          )
+            ? "旧估值候选绑定的是旧程序版本，当前不能重放，暂不展示计算结果。"
+            : "条件研究分析的来源或重算尚未核验，暂不展示计算结果。"}
+        </p>
+        {analysis.status === "SOURCE_OR_REPLAY_UNAVAILABLE" &&
+          decision.price_action_plan?.action === "no_order" &&
+          analysis.symbol === decision.symbol && (
+            <OperatingEarningsBridge analysis={analysis} />
+          )}
+      </>
     );
   const sensitivity = Array.isArray(analysis.sensitivity?.rows)
     ? analysis.sensitivity.rows

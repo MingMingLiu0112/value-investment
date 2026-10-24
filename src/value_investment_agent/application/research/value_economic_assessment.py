@@ -14,6 +14,17 @@ from .economic_review_bundle import _build_economic_review_bundle
 from .operating_earnings_bridge import research_from_retained_sources
 
 
+_OPERATING_EXECUTION_PATHS = (
+    'src/value_investment_agent/application/research/value_economic_assessment.py',
+    'src/value_investment_agent/application/research/operating_earnings_bridge.py',
+    'src/value_investment_agent/infrastructure/filings/pdf_text.py',
+    'src/value_investment_agent/infrastructure/filings/pdfium_runtime.py',
+)
+_EXECUTED_OPERATING_BINDINGS = tuple(dict(path=name, sha256=sha256(
+    (Path(__file__).resolve().parents[4] / name).read_bytes()).hexdigest())
+    for name in _OPERATING_EXECUTION_PATHS)
+
+
 METHODOLOGY = [
     "https://pages.stern.nyu.edu/adamodar/New_Home_Page/valquestions/highgrowthperiod.htm",
     "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/littlebook/cashflows.htm",
@@ -32,6 +43,64 @@ def _number(value):
 
 def _ratio(numerator, denominator):
     return str(numerator / denominator) if denominator is not None and denominator > 0 else None
+
+
+def _operating_review_fields(result):
+    return {key: result[key] for key in (
+        'schema_version', 'symbol', 'action', 'scope', 'breakdown_status',
+        'h1_change', 'annual_change', 'commercial_subtotal', 'unallocated_balances_cny',
+        'normalized_parent_profit_cny', 'normalized_range', 'tax_rate_assumption',
+        'parent_attribution_assumption', 'normalization_open_items', 'interpretation_limits',
+        'g3_changed', 'price_admitted', 'strategy_admitted', 'normalized_earnings_admitted')}
+
+
+def load_retained_operating_bridge(*, root: Path, symbol: str, now: datetime) -> dict | None:
+    """Independent original-statement explanation, never a candidate replay fallback."""
+    symbol = normalize_symbol(symbol)
+    name = 'docs/current/two-company-earnings-bridge-20261024/sources.json'
+    path = root / name
+    if not path.exists():
+        return None
+    unavailable = dict(status='SOURCE_REVALIDATION_FAILED', symbol=symbol, action='no_order',
+        context_scope='INDEPENDENT_RETAINED_FILINGS_V1', normalized_parent_profit_cny=None,
+        g3_changed=False, price_admitted=False, strategy_admitted=False,
+        action_admitted=False, approval_changed=False, primary_valuation_usable=False)
+    try:
+        raw = path.read_bytes()
+        binding = dict(path=name, sha256=sha256(raw).hexdigest())
+        spec = json.loads(raw)
+        if (spec['schema_version'] != 'two-company-earnings-source-spec-v1'
+                or spec['scope'] != 'RETAINED_PUBLIC_ORIGINALS_NOT_RESEARCH_ADMISSION'
+                or spec['action'] != 'no_order'):
+            raise ValueError('Unsupported historical source specification')
+        items = spec['companies'].get(symbol)
+        if items is None:
+            return None
+        if (len(items) != 2 or any(row['symbol'] != symbol for row in items)
+                or len({row['source_id'] for row in items}) != 2):
+            raise ValueError('Historical originals require distinct matching issuer sources')
+        for ref in _EXECUTED_OPERATING_BINDINGS:
+            _bound(root, ref)
+        # The retained parser checks actual PDF issuer/year, consolidated scope,
+        # amounts, reconciliation and source bytes; no saved result JSON is read.
+        result = research_from_retained_sources(root=root,
+            specs=[dict(row, fields=spec['common_fields'] + row['extra_fields']) for row in items], now=now)
+        review = _operating_review_fields(result)
+        if result['symbol'] != symbol or result['action'] != 'no_order':
+            raise ValueError('Historical source result belongs to another issuer')
+        review.update(status='SOURCE_VERIFIED_HISTORICAL_DRIVERS_NOT_NORMALIZED',
+            context_scope='INDEPENDENT_RETAINED_FILINGS_V1',
+            action_admitted=False, approval_changed=False, primary_valuation_usable=False,
+            read_at=now.isoformat(), report_periods=[row['periods'] for row in items],
+            execution_bindings=[dict(ref) for ref in _EXECUTED_OPERATING_BINDINGS],
+            historical_ttm_cny=result['ttm']['lines_cny']['ex_parent_profit'],
+            source_spec_binding=binding, source_bindings=result['source_bindings'],
+            availability_scope='RETAINED_ORIGINAL_RESEARCH_NOT_CONTEMPORANEOUS_PIT_PROOF')
+        for ref in [binding, *result['source_bindings'], *_EXECUTED_OPERATING_BINDINGS]:
+            _bound(root, dict(path=ref['path'], sha256=ref['sha256']))
+        return review
+    except (OSError, ValueError, KeyError, TypeError, StopIteration, ArithmeticError, IndexError):
+        return unavailable
 
 
 def _current_operating_bridge(root, analysis, historical, now):
@@ -65,12 +134,7 @@ def _current_operating_bridge(root, analysis, historical, now):
             return dict(unavailable, status='HISTORICAL_ANCHOR_MISMATCH')
         _bound(root, binding)
         # Expose the computed bridge, not the separately saved author result JSON.
-        review = {key: result[key] for key in (
-            'schema_version', 'symbol', 'action', 'scope', 'breakdown_status',
-            'h1_change', 'annual_change', 'commercial_subtotal', 'unallocated_balances_cny',
-            'normalized_parent_profit_cny', 'normalized_range', 'tax_rate_assumption',
-            'parent_attribution_assumption', 'normalization_open_items', 'interpretation_limits',
-            'g3_changed', 'price_admitted', 'strategy_admitted', 'normalized_earnings_admitted')}
+        review = _operating_review_fields(result)
         review.update(status='SOURCE_VERIFIED_HISTORICAL_DRIVERS_NOT_NORMALIZED',
             input_descriptor_sha256=analysis['input_descriptor_sha256'],
             candidate_binding=analysis['review_binding']['candidate_binding'],

@@ -1,8 +1,12 @@
 import React from "react";
 import { expect, it } from "vitest";
+import { ValueResearchAnalysis } from "../src/components/ValueResearchAnalysis";
 const { renderToStaticMarkup } = require("react-dom/server");
 import { OperatingEarningsBridge } from "../src/components/OperatingEarningsBridge";
-import { analysisFixture } from "./fixtures/value-research-analysis";
+import {
+  analysisFixture,
+  analysisDecision,
+} from "./fixtures/value-research-analysis";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { readinessNumber } from "../src/utils/strategyReadiness";
@@ -74,6 +78,149 @@ function fixture() {
   };
   return analysis;
 }
+
+function independentFixture() {
+  const analysis = fixture();
+  const review = structuredClone(
+    analysis.economic_assessment!.earnings!.operating_quality_bridge!,
+  );
+  delete review.candidate_binding;
+  delete review.input_descriptor_sha256;
+  Object.assign(review, {
+    context_scope: "INDEPENDENT_RETAINED_FILINGS_V1",
+    scope: "HISTORICAL_EARNINGS_DRIVERS_NOT_FORWARD_NORMALIZED_EARNINGS",
+    availability_scope:
+      "RETAINED_ORIGINAL_RESEARCH_NOT_CONTEMPORANEOUS_PIT_PROOF",
+    read_at: "2026-10-24T14:00:00Z",
+    report_periods: [
+      ["FY2025", "FY2024"],
+      ["H12026", "H12025"],
+    ],
+    execution_bindings: Array.from({ length: 4 }, (_, i) => ({
+      path: `TEST_ONLY/parser-${i}.py`,
+      sha256: "d".repeat(64),
+    })),
+    action_admitted: false,
+    approval_changed: false,
+    primary_valuation_usable: false,
+    source_spec_binding: {
+      path: "TEST_ONLY/sources.json",
+      sha256: "e".repeat(64),
+    },
+    source_bindings: [
+      {
+        source_id: "TEST_ONLY_ANNUAL",
+        path: "TEST_ONLY/annual.pdf",
+        sha256: "f".repeat(64),
+        source_url: "https://example.test/annual.pdf",
+        published_date: "2026-04-30",
+        original_acquired_at: null,
+      },
+      {
+        source_id: "TEST_ONLY",
+        path: "TEST_ONLY/interim.pdf",
+        sha256: "c".repeat(64),
+        source_url: "https://example.test/filing.pdf",
+        published_date: "2026-08-27",
+        original_acquired_at: null,
+      },
+    ],
+  });
+  review.h1_change!.rows[0].fact_refs[0].path = "TEST_ONLY/interim.pdf";
+  analysis.status = "SOURCE_OR_REPLAY_UNAVAILABLE";
+  analysis.arithmetic_complete = false;
+  analysis.scenarios = [];
+  analysis.source_bindings = [];
+  delete analysis.economic_assessment;
+  analysis.historical_operating_review = review;
+  const decision = analysisDecision();
+  decision.price_action_plan!.research_analysis = analysis;
+  return decision;
+}
+
+it("shows independently bound historical drivers before the old valuation early return", () => {
+  const decision = independentFixture();
+  const html = renderToStaticMarkup(
+    <ValueResearchAnalysis decision={decision} />,
+  );
+  for (const text of [
+    "暂不展示计算结果",
+    "利润为什么变化",
+    "独立财报解释",
+    "未知（不补造）",
+    "TEST_ONLY_SOURCE_EXCERPT",
+    "本次读取核验",
+  ])
+    expect(html).toContain(text);
+  expect(html).not.toContain("三情景与实际模型输入");
+  expect(html).not.toContain("已完成计算，经济假设未复核");
+});
+
+it.each([
+  "symbol",
+  "spec_hash",
+  "source_hash",
+  "ref_path",
+  "execution_hash",
+  "read_at",
+  "candidate",
+  "normalized",
+  "permission",
+  "period",
+])("hides independent numbers on %s mismatch", (fault) => {
+  const decision = independentFixture();
+  const analysis = decision.price_action_plan!.research_analysis!;
+  const review = analysis.historical_operating_review!;
+  if (fault === "symbol") analysis.symbol = "600519";
+  if (fault === "spec_hash") review.source_spec_binding!.sha256 = "BAD";
+  if (fault === "source_hash")
+    review.source_bindings![1].sha256 = "a".repeat(64);
+  if (fault === "ref_path")
+    review.h1_change!.rows[0].fact_refs[0].path = "TEST_ONLY/wrong.pdf";
+  if (fault === "execution_hash") review.execution_bindings![0].sha256 = "BAD";
+  if (fault === "read_at") delete review.read_at;
+  if (fault === "candidate")
+    review.candidate_binding = {
+      path: "TEST_ONLY/old-candidate.json",
+      sha256: "a".repeat(64),
+    };
+  if (fault === "normalized")
+    (review as any).normalized_parent_profit_cny = "100";
+  if (fault === "permission") (review as any).action_admitted = true;
+  if (fault === "period")
+    review.report_periods = [
+      ["FY2024", "FY2023"],
+      ["H12026", "H12025"],
+    ];
+  const html = renderToStaticMarkup(
+    <ValueResearchAnalysis decision={decision} />,
+  );
+  expect(html).not.toContain("TEST_ONLY_SOURCE_EXCERPT");
+  expect(html).not.toContain("利润为什么变化");
+  expect(html).not.toContain("三情景与实际模型输入");
+});
+
+it.skipIf(!process.env.RETAINED_OPERATING_CONSUMER_OUTPUT)(
+  "renders real native public HTTP failure plus independent official bridge",
+  () => {
+    const output = JSON.parse(
+      readFileSync(process.env.RETAINED_OPERATING_CONSUMER_OUTPUT!, "utf8"),
+    );
+    const decision = output.isolated_http.decision;
+    const analysis = decision.price_action_plan.research_analysis;
+    expect(analysis.status).toBe("SOURCE_OR_REPLAY_UNAVAILABLE");
+    expect(analysis.arithmetic_complete).toBe(false);
+    expect(analysis.scenarios).toEqual([]);
+    const html = renderToStaticMarkup(
+      <ValueResearchAnalysis decision={decision} />,
+    );
+    expect(html).toContain("利润为什么变化");
+    expect(html).toContain("static.cninfo.com.cn");
+    expect(html).toContain("正常化盈利仍未知");
+  expect(html).toContain("旧估值候选绑定的是旧程序版本");
+    expect(html).not.toContain("三情景与实际模型输入");
+  },
+);
 
 it("explains source-bound drivers without creating normalized earnings or buying permission", () => {
   const html = renderToStaticMarkup(
