@@ -11,6 +11,7 @@ from value_investment_agent.domain.hotspot.current_price import aggregate_sessio
 from value_investment_agent.domain.hotspot.price_action_plan import RULE_VERSION
 from value_investment_agent.domain.hotspot.strategy_execution_replay import replay_strategy_execution
 from value_investment_agent.domain.hotspot.quantitative_validation import simulate_fold
+from value_investment_agent.domain.hotspot.quantitative_validation import validate_replay_order_quantity
 from value_investment_agent.application.hotspot.strategy_execution_replay import (
     build_strategy_execution_replay, fingerprint,
 )
@@ -59,6 +60,74 @@ def test_actual_rule_generates_intents_next_open_then_t1_retry_and_gap_exit():
         test_start="2026-10-08T09:30:00+08:00", test_end="2026-10-15T15:00:00+08:00"))
     assert raw["ending_equity_cny"] == fold["ending_equity_cny"]
     assert result["formal_eligibility"] is result["strict_oos_admitted"] is False
+
+
+@pytest.mark.parametrize('quantity', [200, 201])
+def test_star_quantity_uses_native_execution_with_t1_and_same_fixed_signal(quantity):
+    args = fixture()
+    args.update(symbol='688001', quantity=quantity)
+    result = replay_strategy_execution(**args)
+    fold = result['folds'][0]
+    assert fold['signal_event_count'] == 1 and fold['trade_count'] == 1
+    assert fold['rejection_counts']['T_PLUS_ONE'] == 1
+    assert all(fill['quantity'] == quantity for fill in fold['fills'])
+    assert result['experiment_version'].endswith('-star-limit-units-v2')
+    assert result['full_tradability_verified'] is False
+    assert result['formal_eligibility'] is result['strict_oos_admitted'] is False
+    args.pop('stock_states')
+    strict = replay_strategy_execution(**args)
+    assert strict['trade_count'] == 0
+    assert strict['folds'][0]['rejection_counts']['MISSING_DATED_STOCK_STATUS'] > 0
+
+
+@pytest.mark.parametrize('quantity', [0, 100, 199, 100001, True, 200.0])
+def test_star_buy_quantity_rejects_invalid_or_unsupported_size(quantity):
+    with pytest.raises(ValueError):
+        validate_replay_order_quantity('688001', quantity, 'BUY', '2026-10-09T13:00:01+08:00')
+
+
+def test_star_quantity_does_not_retroactively_apply_reviewed_rule_or_assume_partial_exit():
+    with pytest.raises(ValueError, match='effective window'):
+        validate_replay_order_quantity('688001', 200, 'BUY', '2026-07-03T10:30:00+08:00')
+    validate_replay_order_quantity('688001', 100000, 'BUY', '2026-10-09T13:00:01+08:00')
+    validate_replay_order_quantity('688001', 199, 'SELL', '2026-10-09T13:00:01+08:00')
+    args = fixture()
+    args.update(symbol='688001', quantity=201)
+    replay = replay_strategy_execution(**args)['folds'][0]
+    inputs = deepcopy(replay['simulator_inputs'])
+    for order in inputs['orders']:
+        if order['side'] == 'SELL':
+            order['quantity'] = 199
+    result = simulate_fold(dict(initial_cash_cny='100000', costs=args['costs']), inputs,
+        dict(id='development',test_start='2026-10-08T09:30:00+08:00',test_end='2026-10-15T15:00:00+08:00'))
+    assert any(row['reason'] == 'FULL_EXIT_INVENTORY_REQUIRED' for row in result['rejected_orders'])
+
+
+@pytest.mark.skipif(not os.environ.get('HOTSPOT_STAR_QUANTITY_ROOT'), reason='Explicit real STAR source root')
+def test_real_star_candidate_progresses_to_strict_missing_state_not_fill():
+    import json
+    from value_investment_agent.infrastructure.hotspot.current_price_case import load_current_price_case
+    root = Path(os.environ['HOTSPOT_STAR_QUANTITY_ROOT'])
+    evidence = root/'runtime/swing-star-quantity-20261024/c4d8a89377b94812a20f2f2dcfe963f7'
+    before = json.loads((evidence/'before-688825.json').read_bytes())
+    assert before['status'] == 'UNASSESSABLE'
+    assert before['diagnostic'] == 'Security board lot and limit conventions not supported'
+    source = root/before['source_root']
+    at = datetime.fromisoformat(json.loads((source/'selection-result.json').read_bytes())['evaluated_at'])
+    case = load_current_price_case(root=source,symbol='688825',
+        case_path=Path(before['case_binding']['path']),expected_sha256=before['case_binding']['sha256'],now=at)
+    for quantity in (200,201):
+        replay = replay_strategy_execution(symbol='688825',bars_by_period=case['bars'],
+            spec=before['spec'],costs=before['costs'],quantity=quantity,mode='STRICT')
+        assert replay['signal_event_count'] == 1
+        assert replay['trade_count'] == 0
+        assert sum(fold['rejection_counts'].get('MISSING_DATED_STOCK_STATUS',0) for fold in replay['folds']) == 1
+        assert replay['strict_pit_admitted'] is replay['strict_oos_admitted'] is False
+        assert replay['full_tradability_verified'] is False
+        assert replay['action'] == 'no_order'
+    with pytest.raises(ValueError, match='STAR limit quantity'):
+        replay_strategy_execution(symbol='688825',bars_by_period=case['bars'],
+            spec=before['spec'],costs=before['costs'],quantity=100,mode='STRICT')
 
 
 @pytest.mark.parametrize("change,reason", [
@@ -138,7 +207,7 @@ def test_invalid_evidence_and_parameters_rejected(change):
     elif change == "bad_quantity":
         args["quantity"] = 1
     elif change == "unsupported_board":
-        args["symbol"] = "688001"
+        args["symbol"] = "689001"
     else:
         args["costs"]["slippage_bps"] = "9999"
         args["cost_multiplier"] = "2"

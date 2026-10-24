@@ -26,6 +26,21 @@ def stamp(value):
     return result
 
 
+def validate_replay_order_quantity(symbol, quantity, side, execution_at):
+    """Limit-order mechanics only; never establish board permission or tradability."""
+    if type(quantity) is not int or quantity <= 0 or side not in ('BUY', 'SELL'):
+        raise ValueError('Positive integer BUY/SELL quantity required')
+    if symbol.startswith('688'):
+        if stamp(execution_at).astimezone(CHINA).date().isoformat() < '2026-07-06':
+            raise ValueError('STAR quantity rule before reviewed effective window is unsupported')
+        if quantity > 100000 or (side == 'BUY' and quantity < 200):
+            raise ValueError('STAR limit quantity must be 200..100000 for BUY')
+        # Sub-200 SELL is allowed here only for the existing full-exit matcher,
+        # which separately requires the entire remaining inventory to be sold.
+    elif quantity % 100:
+        raise ValueError('Round-lot BUY/SELL required')
+
+
 def simulate_fold(protocol, inputs, fold, *, cost_multiplier=Decimal(1)):
     """One isolated long-only account, full exits, next-bar bounded fills.
 
@@ -55,9 +70,7 @@ def simulate_fold(protocol, inputs, fold, *, cost_multiplier=Decimal(1)):
             continue
         if not start <= decision < execution <= end:
             raise ValueError("Order crosses OOS fold cutoff")
-        if (type(order["quantity"]) is not int or order["quantity"] <= 0
-                or order["quantity"] % 100 or order["side"] not in ("BUY", "SELL")):
-            raise ValueError("Round-lot BUY/SELL required")
+        validate_replay_order_quantity(order['symbol'], order['quantity'], order['side'], order['execute_at'])
         orders.setdefault((execution, order["symbol"]), []).append(order)
     seen = set()
     for bar in sorted(inputs["bars"], key=lambda row: (stamp(row["time"]), row["symbol"])):

@@ -9,7 +9,7 @@ from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP
 
 from .current_price import completed_session_bars
 from .price_action_plan import RULE_VERSION, calculate_price_levels
-from .quantitative_validation import CHINA, number, simulate_fold, stamp
+from .quantitative_validation import CHINA, number, simulate_fold, stamp, validate_replay_order_quantity
 
 EXPERIMENT_VERSION = "breakout-next-bar-fixed-lot-close-invalidation-five-session-v1"
 DEFAULT_INITIAL_CASH_CNY = 100_000
@@ -82,9 +82,9 @@ def replay_strategy_execution(*, symbol, bars_by_period, spec, costs,
         raise ValueError("Explicit stock-state mode required")
     if not isinstance(symbol, str) or len(symbol) != 6 or not symbol.isdigit():
         raise ValueError("Invalid security identity")
-    if not symbol.startswith(("0", "30", "60")):
+    if not symbol.startswith(("0", "30", "60", "688")):
         raise ValueError("Security board lot and limit conventions not supported")
-    if type(quantity) is not int or quantity <= 0 or quantity % 100:
+    if not symbol.startswith('688') and (type(quantity) is not int or quantity <= 0 or quantity % 100):
         raise ValueError("Positive round-lot quantity required")
     ratio = number(participation)
     if not 0 < ratio <= 1 or number(initial_cash) <= 0:
@@ -96,6 +96,8 @@ def replay_strategy_execution(*, symbol, bars_by_period, spec, costs,
     # Frozen specification validation, including unchanged five-session horizon.
     from .event_replay import validate_spec
     validate_spec(spec)
+    if symbol.startswith('688'):
+        validate_replay_order_quantity(symbol, quantity, 'BUY', spec['start_date'] + 'T09:30:00+08:00')
     rows = completed_session_bars(bars_by_period["60m"], period="60m")
     daily = bars_by_period["daily"]
     calculate_price_levels(daily, period="daily")
@@ -200,7 +202,7 @@ def replay_strategy_execution(*, symbol, bars_by_period, spec, costs,
             execution_observations=observations,
             net_return=str(number(metrics["ending_equity_cny"]) / number(initial_cash) - 1))
         results.append(metrics)
-    return dict(experiment_version=EXPERIMENT_VERSION, rule_version=RULE_VERSION,
+    result = dict(experiment_version=EXPERIMENT_VERSION, rule_version=RULE_VERSION,
         symbol=symbol, mode=mode, folds=results,
         trade_count=sum(r["trade_count"] for r in results),
         signal_event_count=sum(r["signal_event_count"] for r in results),
@@ -208,3 +210,11 @@ def replay_strategy_execution(*, symbol, bars_by_period, spec, costs,
         right_censored_intentions=sum(r["right_censored_intentions"] for r in results),
         strict_pit_admitted=False, strict_oos_admitted=False, formal_eligibility=False,
         strategy_validation="NOT_PROVEN", performance_claim_allowed=False, action="no_order")
+    if symbol.startswith('688'):
+        result.update(experiment_version=EXPERIMENT_VERSION + '-star-limit-units-v2',
+            quantity_rule_scope='SSE_STAR_LIMIT_ORDERS_REVIEWED_FROM_20260706',
+            full_tradability_verified=False,
+            remaining_execution_gaps=['DATED_STOCK_STATE_AND_PRICE_LIMITS',
+                'CONTINUOUS_AUCTION_PRICE_CAGE_AND_ORDER_BOOK', 'INVESTOR_BOARD_PERMISSION',
+                'CORPORATE_ACTION_ODD_BALANCE_NOT_GENERATED'])
+    return result
