@@ -13,7 +13,7 @@ from pathlib import Path
 from .daily_selection import verify_daily_selection
 from .price_action_case import project_current_price_action_plan
 from ...infrastructure.hotspot.current_price_case import load_current_price_case
-from ...domain.execution.exchange_calendar import is_exchange_session
+from ...domain.execution.exchange_calendar import is_exchange_session, next_exchange_session
 from ...quote_sessions import CHINA
 
 
@@ -103,13 +103,20 @@ def _compare(current, previous, *, completed_session, leave_symbols):
             raise ValueError("Future observation session")
         if old and fresh and day < date.fromisoformat(old["plan"]["market_trade_date"]):
             raise ValueError("Observation session regressed")
-        expiry = date.fromisoformat(plan.get("expires_after_session") or plan["market_trade_date"])
+        expiry_value = plan.get("expires_after_session")
+        if expiry_value is None and plan.get("reference_price_scope") == "LAST_COMPLETED_CLOSE_DISPLAY_ONLY":
+            venue = "SSE" if symbol.startswith("6") else "SZSE"
+            expiry = next_exchange_session(venue, day)
+        elif expiry_value is None:
+            raise ValueError("Observation plan expiry required")
+        else:
+            expiry = date.fromisoformat(expiry_value)
         state = plan["signal_state"]
         changed = old is not None and observation["case_binding"] != old["case_binding"]
         comparable = bool(old and old["plan"]["model_or_rule_version"] == plan["model_or_rule_version"])
         if symbol in leave_symbols:
             transition, reason = "left", "EXPLICIT_OBSERVATION_POOL_EXIT"
-        elif completed_session > expiry:
+        elif completed_session >= expiry:
             transition, reason = "expired", "PLAN_SESSION_EXPIRED"
         elif state in {"TRIGGER_REJECTED", "BLOCKED"}:
             transition, reason = "invalid", state

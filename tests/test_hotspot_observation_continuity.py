@@ -19,13 +19,14 @@ def observation(state="WATCH", day="2026-10-19", digest="a", selected=True):
 
 
 @pytest.mark.parametrize("state,old,session,leave,expected", [
-    ("WATCH", False, "2026-10-20", (), "new"),
-    ("WATCH", True, "2026-10-20", (), "continue"),
-    ("TRIGGER_PENDING", True, "2026-10-20", (), "approach"),
-    ("TRIGGER_OBSERVED", True, "2026-10-20", (), "triggered"),
-    ("TRIGGER_REJECTED", True, "2026-10-20", (), "invalid"),
-    ("BLOCKED", True, "2026-10-20", (), "invalid"),
-    ("STALE", True, "2026-10-20", (), "expired"),
+    ("WATCH", False, "2026-10-19", (), "new"),
+    ("WATCH", True, "2026-10-19", (), "continue"),
+    ("TRIGGER_PENDING", True, "2026-10-19", (), "approach"),
+    ("TRIGGER_OBSERVED", True, "2026-10-19", (), "triggered"),
+    ("TRIGGER_REJECTED", True, "2026-10-19", (), "invalid"),
+    ("BLOCKED", True, "2026-10-19", (), "invalid"),
+    ("STALE", True, "2026-10-19", (), "expired"),
+    ("TRIGGER_OBSERVED", True, "2026-10-20", (), "expired"),
     ("TRIGGER_OBSERVED", True, "2026-10-21", (), "expired"),
     ("WATCH", True, "2026-10-20", ("000001",), "left"),
 ])
@@ -45,18 +46,19 @@ def test_transitions_preserve_evidence(state, old, session, leave, expected):
 
 def test_dropped_shortlist_retained_until_original_expiry():
     previous = {"000001": observation()}
-    row = _compare({}, previous, completed_session=date(2026, 10, 20), leave_symbols=())[0]
+    row = _compare({}, previous, completed_session=date(2026, 10, 19), leave_symbols=())[0]
     assert row["transition"] == "continue"
     assert row["selected_today"] is False
     assert row["fresh_evidence"] is False
     assert row["reason"] == "RETAINED_WITHOUT_FRESH_REASSESSMENT"
     assert row["observation"] == previous["000001"]
-    assert _compare({}, previous, completed_session=date(2026, 10, 21), leave_symbols=())[0]["transition"] == "expired"
+    assert _compare({}, previous, completed_session=date(2026, 10, 20), leave_symbols=())[0]["transition"] == "expired"
 
 
 def test_strengthening_requires_new_evidence_and_same_rule():
     previous = {"000001": observation()}
     fresh = observation(digest="b", day="2026-10-20")
+    fresh["plan"]["expires_after_session"] = "2026-10-21"
     fresh["plan"]["price_behavior"]["daily_trend"] = "UPTREND"
     assert _compare({"000001": fresh}, previous, completed_session=date(2026, 10, 20), leave_symbols=())[0]["trend_strengthened"]
     fresh["plan"]["model_or_rule_version"] = "new-rule"
@@ -71,7 +73,29 @@ def test_reject_future_regression_unknown_state_and_unbounded_union():
         ({str(i): observation() for i in range(41)}, {}),
     ]:
         with pytest.raises(ValueError):
-            _compare(current, previous, completed_session=date(2026, 10, 20), leave_symbols=())
+            _compare(current, previous, completed_session=date(2026, 10, 19), leave_symbols=())
+
+
+def test_display_plan_uses_next_exchange_session_without_mutating_evidence():
+    item = observation(day="2026-10-23")
+    item["plan"].update(expires_after_session=None,
+        reference_price_scope="LAST_COMPLETED_CLOSE_DISPLAY_ONLY")
+    before = deepcopy(item)
+    assert _compare({"000001": item}, {}, completed_session=date(2026, 10, 23),
+        leave_symbols=())[0]["transition"] == "new"
+    expired = _compare({}, {"000001": item}, completed_session=date(2026, 10, 26),
+        leave_symbols=())[0]
+    assert expired["transition"] == "expired"
+    assert expired["reason"] == "PLAN_SESSION_EXPIRED"
+    assert expired["action"] == "no_order"
+    assert item == before
+
+
+def test_missing_non_display_expiry_is_rejected():
+    item = observation()
+    item["plan"].pop("expires_after_session")
+    with pytest.raises(ValueError, match="expiry required"):
+        _compare({"000001": item}, {}, completed_session=date(2026, 10, 19), leave_symbols=())
 
 
 def test_bound_rejects_tampering_and_escape(tmp_path):
@@ -107,8 +131,8 @@ def test_held_security_outside_shortlist_or_expired_still_requests_monitoring(mo
     monkeypatch.setattr(service, "_observations", lambda root, binding, now:
         {"000001": observation()} if binding.get("previous") else {})
     result = compare_observation_continuity(root=tmp_path, current_binding={},
-        previous_binding={"previous": True}, completed_session=date(2026, 10, 21),
-        now=datetime.fromisoformat("2026-10-21T16:00:00+08:00"), held_symbols=("000001", "600150"))
+        previous_binding={"previous": True}, completed_session=date(2026, 10, 20),
+        now=datetime.fromisoformat("2026-10-20T15:00:00+08:00"), held_symbols=("000001", "600150"))
     assert result["items"][0]["transition"] == "expired"
     requests = result["holding_monitoring_requests"]
     assert [row["symbol"] for row in requests] == ["000001", "600150"]
