@@ -4612,3 +4612,12 @@ Author result vv1/.tmp/retained-operating-consumer-20261025-v2/result.json SHA
 19aa1163d1a0aaa9be87bd061acc4286af4de38ecb0660b53698bb52f0fe716e.
 Current repair is working-state, not live822c3ec5 yet. Exact commit, clean
 verification, CI and actual8001 readback remain required. action=no_order.
+
+ebac588713a0f4bab6079a0f9ace8bd1e6e0b138 is pushed. Clean targeted backend87
+passed/33 optional skipped; actual consumer was separately exercised in Root
+58/32 run and independent review, not claimed as an unskipped clean test.
+Clean full Web964 passed/25 optional skipped, typecheck/build passed. Web CI
+40110636190 stopped solely at Prettier on the new test file; the one-line
+format correction changes no production code. Scoped formatting of all four
+affected Web files now passes. Final retry/build identity and live readback
+remain pending. Keep the prior remote failure; do not label it GREEN.

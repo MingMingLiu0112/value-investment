@@ -217,7 +217,7 @@ it.skipIf(!process.env.RETAINED_OPERATING_CONSUMER_OUTPUT)(
     expect(html).toContain("利润为什么变化");
     expect(html).toContain("static.cninfo.com.cn");
     expect(html).toContain("正常化盈利仍未知");
-  expect(html).toContain("旧估值候选绑定的是旧程序版本");
+    expect(html).toContain("旧估值候选绑定的是旧程序版本");
     expect(html).not.toContain("三情景与实际模型输入");
   },
 );
