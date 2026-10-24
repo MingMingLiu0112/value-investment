@@ -75,3 +75,24 @@ def test_native_handoff_keeps_five_groups_and_unsigned_economic_materials(synthe
     assert materials['source_native_cash_review']['candidate_binding'] == binding
     assert materials['primary_valuation_usable'] is False
     assert handoff['materiality_handoff']['g3_approval_granted'] is False
+
+
+@pytest.mark.parametrize('change', ['original_drift', 'conflicting_closure'])
+def test_native_analysis_rechecks_complete_material_source_closure(synthetic_native, monkeypatch, change):
+    from value_investment_agent.application.product import source_native_candidate_v2 as native
+    root, candidate, _, _ = register_native(synthetic_native)
+    projector = native.project_source_native_review_materials
+
+    def change_after_projection(**kwargs):
+        result = projector(**kwargs)
+        if change == 'original_drift':
+            original = root / synthetic_native[1]['path']
+            original.write_bytes(original.read_bytes() + b'\nTEST_ONLY_CONCURRENT_SOURCE_DRIFT')
+        else:
+            ref = result['source_bindings'][0]
+            result['source_bindings'].append(dict(path=ref['path'], sha256='0' * 64))
+        return result
+
+    monkeypatch.setattr(native, 'project_source_native_review_materials', change_after_projection)
+    with pytest.raises(ValueError):
+        load_current_value_research_analysis(root=root, symbol=candidate['symbol'], now=datetime.now(timezone.utc))

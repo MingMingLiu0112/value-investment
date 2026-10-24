@@ -3413,3 +3413,49 @@ compiler e7eaae42 also has a confirmed final original-Hash rebind P2 returned to
 its owner; outer rejection is not an excuse for contradictory replay provenance.
 Native intake/publication and the shared source-bound account remain unfinished.
 The full Goal stays ACTIVE, no_order; no private/Excel/server/production changes.
+
+### 2026-10-24 - Native cash candidate reaches the existing unsigned workflow
+
+GitHub Core40045663003 and Web40045663016 both passed exact7d15d37f. Earlier
+failures remain documented rather than relabeled green. Subsequent integration
+has not inherited those remote checks as its own result.
+
+Mobile reason presentation1756b7b2 now groups exact repeated strings per company
+and shows all six actions vertically, preserving each action's full original
+reasons in expansion, dates and nonapproval scope. Integrated full frontend771
+passed,13 skipped; typecheck and full formatter passed. It is not yet the live
+b35 browser surface and needs a clean build and actual new-version screenshots.
+
+Source-native compiler e49334f5/e96e8e4c reuses the existing RI application and
+keeps exact original input bytes, explicit cash assumptions and source closure.
+Independent original-Hash rebind P2 is closed. Shared workflow9f954c12 adds
+explicit candidate-version dispatch, v2 implementation/mode validation, native
+material projection and existing five-group/unsigned handoff. Old v1 compilers
+and the nine frozen paths are unchanged. Missing optional model timing is shown
+as MISSING_EXPLICIT_MODEL_TIMING, never filled from the current date.
+
+Independent Root-integration review found a final native-source closure omission.
+The successor merges all native sources, rejects same-path Hash conflicts and
+uses the existing final bound-source checks. Its original-drift/conflicting-Hash
+negative cases and independent four-probe review passed. New/legacy focused
+selection172 passed,1 skipped before this repair; repaired selection130 passed,
+1 skipped. These overlap and are not a full clean Core or a strategy validation.
+
+Actual public JS2 preparation succeeded through the existing review_research.py
+--preview command with five groups, no reviewer and no whole-model approval.
+Candidate runtime/source-native-pending/3bb7bfe05c3f4c7d9a52d34b07588087/candidate.json
+SHA256 bfba1fb08f316cd4791e2f8d36490a86345e969d1f2c97663fb7a1e42aa912d8;
+root-preparation-receipt.json SHA256
+f6fd90eee4a099e9d8111fa9f808004d3d56ca45d0aa7d16fa4db0fb6315608a.
+Only the TIMING_DELAY conditional branch is compiled. This is LOW research with
+June30 valuation coordinates, not today's fair value, G3 or registered primary.
+No current research/strategy/publication pointer was changed by this preparation.
+Real native supplement registration, readable cash-path Web material, exact-head
+clean regression/publication and a shared source-bound dual-sleeve account remain
+required next work; do not turn this CLI milestone into whole-Goal completion.
+
+Bounded BSE source diagnostics observed self-redirects on both official API and
+list page. No verified replacement official enumeration was found; no automatic
+redirect, access challenge bypass or third-party-as-official substitution was
+added. This environment/data gap retains the dated screening label and does not
+block native research, account or presentation engineering. action=no_order.

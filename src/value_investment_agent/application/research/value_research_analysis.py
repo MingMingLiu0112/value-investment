@@ -206,6 +206,13 @@ def load_current_value_research_analysis(*, root: Path, symbol: str, now: dateti
             raise ValueError('Native cash materials differ from public consumed analysis')
         analysis['source_native_cash_review'] = dict(native,
             candidate_binding=dict(bindings['candidate_binding']), model_context=candidate['model_context'])
+        closure = {ref['path']: ref['sha256'] for ref in analysis['source_bindings']}
+        for ref in native['source_bindings']:
+            if ref['path'] in closure and closure[ref['path']] != ref['sha256']:
+                raise ValueError('Native cash source conflicts with public analysis')
+            if ref['path'] not in closure:
+                analysis['source_bindings'].append(dict(ref))
+                closure[ref['path']] = ref['sha256']
     for binding in (current["registry_binding"], current.get("publication_binding"),
                     bindings["candidate_binding"], bindings["review_packet_binding"]):
         if binding is not None:
