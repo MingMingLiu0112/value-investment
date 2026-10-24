@@ -35,6 +35,14 @@ REQUIRED = {"total_revenue", "total_cost", "operating_profit", "nonoperating_inc
             "parent_profit", "minority_profit", "ex_parent_profit", "operating_revenue", "interest_income",
             "cost_of_sales", "taxes_surcharges", "selling", "administration", "research", "finance"}
 MONEY = re.compile(r"(?<![\d.])-?\d{1,3}(?:,\d{3})+\.\d{2}(?!\d)")
+REPORT_CONTRACTS = {
+    ("FY2025", "FY2024"): dict(report_type="ANNUAL", columns=["2025年度", "2024年度"],
+        title="2025年年度报告", statement_period="2025年1-12月",
+        summary_columns="主要会计数据2025年2024年本期比上年同期增减(%)2023年", monetary_columns=3),
+    ("H12026", "H12025"): dict(report_type="INTERIM", columns=["2026年半年度", "2025年半年度"],
+        title="2026年半年度报告", statement_period="2026年1-6月",
+        summary_columns="主要会计数据本报告期(1-6月)上年同期本报告期比上年同期增减(%)", monetary_columns=2),
+}
 
 
 def _compact(text):
@@ -67,13 +75,46 @@ def _source_path(root, binding):
     return path
 
 
+def _report_contract(spec):
+    contract = REPORT_CONTRACTS.get(tuple(spec["periods"]))
+    if (contract is None or spec["column_labels"] != contract["columns"]
+            or spec.get("report_type", contract["report_type"]) != contract["report_type"]):
+        raise ValueError("Report type/period/column contract mismatch")
+    return contract
+
+
+def _summary_profit_row(summary, contract):
+    text = summary.replace("（", "(").replace("）", ")")
+    start, end = "(一)主要会计数据", "(二)主要财务指标"
+    if text.count(start) != 1 or text.count(end) != 1:
+        raise ValueError("Missing/ambiguous summary table boundary")
+    table = text.split(start, 1)[1].split(end, 1)[0]
+    label, next_row = LABELS["ex_parent_profit"], "经营活动产生的现金流量净额"
+    if table.count(label) != 1 or table.count(next_row) != 1 or table.index(label) >= table.index(next_row):
+        raise ValueError("Missing/ambiguous complete summary row boundary")
+    if contract["summary_columns"] not in table[:table.index(label)]:
+        raise ValueError("Summary period/column header mismatch")
+    # Match the complete row, including the intervening percentage column and
+    # annual third-year amount. Never scan ahead for a second money token.
+    body = table.split(label, 1)[1].split(next_row, 1)[0]
+    pattern = MONEY.pattern+r"\|"+MONEY.pattern+r"\|[+-]?\d+(?:\.\d+)?"
+    if contract["monetary_columns"] == 3:
+        pattern += r"\|"+MONEY.pattern
+    if re.fullmatch(pattern, body) is None:
+        raise ValueError("Incomplete summary profit row")
+    return label+body
+
+
 def extract_statement(*, root: Path, spec: dict) -> dict:
     """Read actual retained PDF amounts, checking issuer, table, columns and scope."""
+    contract = _report_contract(spec)
     path = _source_path(root, spec)
     pages = extract_pages(path)
     header = _compact("".join(pages[:8]))
     if spec["symbol"] not in header or spec["issuer"] not in header:
         raise ValueError("Original issuer mismatch")
+    if contract["title"] not in header:
+        raise ValueError("Original report type/year mismatch")
     statement = _compact("".join(pages[p-1] for p in spec["statement_pages"]))
     if "合并利润表" not in statement:
         raise ValueError("Missing consolidated statement heading")
@@ -82,10 +123,16 @@ def extract_statement(*, root: Path, spec: dict) -> dict:
         raise ValueError("Unsupported statement unit/currency")
     first_label = statement.index("一、营业总收入")
     column_header = statement[:first_label]
+    if contract["statement_period"] not in column_header.replace("—", "-").replace("–", "-"):
+        raise ValueError("Original statement reporting period mismatch")
     current_label, previous_label = spec["column_labels"]
     if current_label not in column_header or previous_label not in column_header or column_header.index(current_label) >= column_header.index(previous_label):
         raise ValueError("Statement column order mismatch")
     summary = _compact(pages[spec["summary_page"]-1])
+    if "ex_parent_profit" in spec["fields"]:
+        if contract["title"] not in summary:
+            raise ValueError("Original summary report type/year mismatch")
+        summary = _summary_profit_row(summary, contract)
     if len(spec["fields"]) != len(set(spec["fields"])) or set(spec["fields"])-set(LABELS):
         raise ValueError("Unknown/duplicate statement field")
     rows = {}

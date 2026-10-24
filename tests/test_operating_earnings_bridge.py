@@ -181,7 +181,7 @@ def test_final_source_recheck_rejects_drift(tmp_path, monkeypatch, inputs):
 def test_extractor_negative_boundaries(tmp_path, monkeypatch, failure):
     source = tmp_path/"fixture.pdf"
     source.write_bytes(b"SYNTHETIC_PDF_PARSER_TEST_ONLY")
-    text = ("600887 伊利 合并利润表 单位：元 币种：人民币 2026年半年度 2025年半年度\n"
+    text = ("600887 伊利2026年半年度报告 合并利润表2026年1—6月 单位：元 币种：人民币 2026年半年度 2025年半年度\n"
             "一、营业总收入 10,000.00 9,000.00\n其中：营业收入 9,000.00 8,000.00\n"
             "利息收入 1,000.00 1,000.00\n二、营业总成本 5,000.00 4,000.00")
     spec = dict(symbol="600887", issuer="伊利", path="fixture.pdf", sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
@@ -208,7 +208,7 @@ def test_extractor_negative_boundaries(tmp_path, monkeypatch, failure):
 def test_extractor_keeps_column_separators(tmp_path, monkeypatch):
     path = tmp_path/"test.pdf"
     path.write_bytes(b"TEST_ONLY")
-    text = "600887伊利 合并利润表 单位：元 币种：人民币2026年半年度2025年半年度\n一、营业总收入 10,000.00 9,000.00\n二、营业总成本 5,000.00 4,000.00"
+    text = "600887伊利2026年半年度报告 合并利润表2026年1—6月 单位：元 币种：人民币2026年半年度2025年半年度\n一、营业总收入 10,000.00 9,000.00\n二、营业总成本 5,000.00 4,000.00"
     monkeypatch.setattr(module, "extract_pages", lambda path: [text])
     spec = dict(symbol="600887", issuer="伊利", path="test.pdf", sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
         statement_pages=[1], summary_page=1, column_labels=["2026年半年度", "2025年半年度"],
@@ -222,7 +222,7 @@ def test_saved_public_research_replays_without_saved_amounts():
     if not raw:
         pytest.skip("Opt-in retained originals")
     project = Path(__file__).resolve().parents[1]
-    location = project/"docs/current/two-company-earnings-bridge-20261024/research-results.json"
+    location = project/"docs/current/two-company-earnings-bridge-20261024/research-results-v2.json"
     saved = json.loads(location.read_text(encoding="utf-8"))
     for key in ("source_spec_fingerprint", "implementation_fingerprint"):
         ref = saved[key]
@@ -235,3 +235,93 @@ def test_saved_public_research_replays_without_saved_amounts():
         actual = module.research_from_retained_sources(root=Path(raw), specs=specs,
             now=datetime.fromisoformat(retained["observed_at"]))
         assert actual == retained
+    previous = json.loads(location.with_name("research-results.json").read_text(encoding="utf-8"))
+    values = 0
+    for symbol, current in saved["results"].items():
+        for old_statement, statement in zip(previous["results"][symbol]["original_statements"], current["original_statements"]):
+            for key, fact in statement["rows"].items():
+                assert fact["values"] == old_statement["rows"][key]["values"]
+                values += len(fact["values"])
+        for key in ("h1_change", "annual_change", "ttm", "commercial_subtotal", "unallocated_balances_cny"):
+            assert current[key] == previous["results"][symbol][key]
+    assert values == 204
+
+
+def _real_specs(symbol):
+    raw = os.environ.get("EARNINGS_BRIDGE_REAL_ROOT")
+    if not raw:
+        pytest.skip("Opt-in retained public originals")
+    location = Path(__file__).resolve().parents[1]/"docs/current/two-company-earnings-bridge-20261024/sources.json"
+    document = json.loads(location.read_text(encoding="utf-8"))
+    return Path(raw), [dict(item, fields=document["common_fields"]+item["extra_fields"])
+                       for item in document["companies"][symbol]]
+
+
+def test_real_summary_missing_comparison_cannot_borrow_cashflow(monkeypatch):
+    root, specs = _real_specs("600887")
+    interim = specs[1]
+    original = module.extract_pages
+    def damaged(path):
+        pages = original(path)
+        if path == (root/interim["path"]).resolve():
+            page = interim["summary_page"]-1
+            assert pages[page].count("7,016,349,502.87") == 1
+            pages[page] = pages[page].replace("7,016,349,502.87", "")
+            assert "9,759,147,483.18" in pages[page]
+        return pages
+    monkeypatch.setattr(module, "extract_pages", damaged)
+    with pytest.raises(ValueError):
+        module.research_from_retained_sources(root=root, specs=specs,
+            now=datetime(2026, 10, 24, 12, tzinfo=timezone.utc))
+
+
+@pytest.mark.parametrize("symbol", ["600519", "600887"])
+@pytest.mark.parametrize("mode", ["periods_only", "periods_and_labels", "explicit_interim"])
+def test_real_annual_cannot_be_relabelled_interim(symbol, mode):
+    root, specs = _real_specs(symbol)
+    annual = specs[0]
+    forged = dict(annual, periods=["H12026", "H12025"])
+    if mode != "periods_only":
+        forged["column_labels"] = ["2026年半年度", "2025年半年度"]
+    if mode == "explicit_interim":
+        forged["report_type"] = "INTERIM"
+    with pytest.raises(ValueError):
+        module.research_from_retained_sources(root=root, specs=[annual, forged],
+            now=datetime(2026, 10, 24, 12, tzinfo=timezone.utc))
+
+
+@pytest.mark.parametrize("symbol", ["600519", "600887"])
+@pytest.mark.parametrize("report_index", [0, 1])
+def test_real_summary_complete_row_requires_comparative(monkeypatch, symbol, report_index):
+    root, specs = _real_specs(symbol)
+    selected = specs[report_index]
+    original = module.extract_pages
+    pages = original((root/selected["path"]).resolve())
+    initial = module.extract_statement(root=root, spec=selected)
+    previous = f'{Decimal(initial["rows"]["ex_parent_profit"]["values"][1]):,.2f}'
+    page = selected["summary_page"]-1
+    assert pages[page].count(previous) == 1
+    pages[page] = pages[page].replace(previous, "")
+    monkeypatch.setattr(module, "extract_pages", lambda path: list(pages))
+    with pytest.raises(ValueError, match="Incomplete summary profit row"):
+        module.extract_statement(root=root, spec=selected)
+
+
+@pytest.mark.parametrize("symbol", ["600519", "600887"])
+@pytest.mark.parametrize("mutation", ["declared_type", "unknown_type", "both_period_and_labels", "original_statement_period"])
+def test_real_report_contract_is_bound(monkeypatch, symbol, mutation):
+    root, specs = _real_specs(symbol)
+    spec = dict(specs[1])
+    if mutation == "declared_type": spec["report_type"] = "ANNUAL"
+    elif mutation == "unknown_type": spec["report_type"] = "CUSTOM_INTERIM"
+    elif mutation == "both_period_and_labels":
+        spec.update(periods=["FY2025", "FY2024"], column_labels=["2025年度", "2024年度"])
+    else:
+        import re
+        pages = module.extract_pages((root/spec["path"]).resolve())
+        page = spec["statement_pages"][0]-1
+        pages[page], changed = re.subn(r"2026\s*年\s*1[—–－-]\s*6\s*月", "2026年1—12月", pages[page])
+        assert changed == 1
+        monkeypatch.setattr(module, "extract_pages", lambda path: list(pages))
+    with pytest.raises(ValueError):
+        module.extract_statement(root=root, spec=spec)
