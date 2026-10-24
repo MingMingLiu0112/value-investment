@@ -1,6 +1,6 @@
 """Economic read model: actual kernels, TEST_ONLY variants, opt-in retained JS2."""
 from datetime import datetime, timezone
-from decimal import Decimal as D
+from decimal import Decimal as D, localcontext
 import json
 import os
 from pathlib import Path
@@ -199,13 +199,33 @@ def test_real_js2_actual_inputs_and_independent_checked_quantities(public_js2):
     assert result['share_basis']['ordinary_shares'] == '1250081601'
     assert result['share_basis']['financial_basis'] == '2026-06-30'
     assert result['point_in_time']['research_as_of'] == '2026-10-24'
-    assert abs(D(base['original']['per_historical_share_cny'])-D('929.145098627591685335814533390435112363613340182')) < D('1E-30')
-    assert abs(D(base['original']['ddm_terminal_fraction'])-D('0.741297961743089238333316000130372394611074299478')) < D('1E-40')
-    assert abs(D(base['original']['ri_terminal_fraction'])-D('0.560197109929102901337927382446321836389304560177')) < D('1E-40')
-    boundary = base['first_year_boundary']
-    assert abs(D(boundary['original_cash_above_floor_cny'])-D('11957898293.575')) < D('1E-30')
-    assert D('.24726') < D(boundary['cash_only_delay_boundary_fraction']) < D('.24728')
-    assert D('712.35') < D(base['ke_plus_200bp']['result']['per_historical_share_cny']) < D('712.37')
+    candidate = json.loads((root/ref['path']).read_bytes())
+    ledger = json.loads((root/candidate['native_cash_ledger_binding']['path']).read_bytes())
+    case = ledger['cases']['TIMING_DELAY']['base']
+    with localcontext() as context:
+        context.prec = 48
+        # Independent test-only cash-flow arithmetic, not report-value bands or
+        # another production valuation engine. No saved existing_RI_output used.
+        cost, shares = D(ledger['plan']['ke']), D(result['share_basis']['ordinary_shares'])
+        explicit = sum((D(row['dividend_paid'])/(1+cost)**row['year'] for row in case['annual_rows']), D(0))
+        terminal = D(case['terminal_assumed_dividend'])/cost/(1+cost)**len(case['annual_rows'])
+        assert abs(D(base['original']['per_historical_share_cny'])-(explicit+terminal)/shares) < D('1E-30')
+        assert abs(D(base['original']['per_historical_share_cny'])-D(candidate['candidate_valuation']['base_value'])) < D('1E-30')
+        assert abs(D(base['original']['ddm_terminal_fraction'])-terminal/(explicit+terminal)) < D('1E-40')
+        terminal_ri = (D(case['terminal_profit'])-cost*D(case['terminal_book']))/cost/(1+cost)**len(case['annual_rows'])
+        assert abs(D(base['original']['ri_terminal_fraction'])-terminal_ri/(explicit+terminal)) < D('1E-40')
+        stressed = cost+D('.02')
+        challenged_pv = sum((D(row['dividend_paid'])/(1+stressed)**row['year'] for row in case['annual_rows']), D(0))
+        challenged_pv += D(case['terminal_assumed_dividend'])/stressed/(1+stressed)**len(case['annual_rows'])
+        assert abs(D(base['ke_plus_200bp']['result']['per_historical_share_cny'])-challenged_pv/shares) < D('1E-30')
+        boundary = base['first_year_boundary']
+        first = case['annual_rows'][0]
+        floor = D(case['cash_floor'])
+        assert abs(D(boundary['original_cash_above_floor_cny'])-(D(first['cash_close'])-floor)) < D('1E-30')
+        cash_at_boundary = (D(first['opening_parent_cash'])
+            +(D(ledger['plan']['explicit_retention'])-D(boundary['cash_only_delay_boundary_fraction']))*D(first['profit'])
+            -D(first['project_cash'])-D(first['fund_capital_call']))
+        assert abs(cash_at_boundary-floor) < D('1E-30')
     assert all(item['status'] == 'UNSUPPORTED' for item in result['unsupported_challenges'])
     assert result['normalized_parent_profit_cny'] is None
     assert result['g3_status'] == 'NOT_APPROVED_FOR_THIS_PENDING_CANDIDATE'
