@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 0,
     "CURRENT_PRODUCT_CLI": 26,
-    "CURRENT_RESEARCH_CLI": 222,
+    "CURRENT_RESEARCH_CLI": 225,
     "HISTORICAL_VALIDATION_TOOL": 57,
     "COMPANY_RESEARCH_CASE_TOOL": 218,
     "MIGRATION_TOOL": 13,
@@ -15,6 +15,39 @@
     "DELETE_CANDIDATE": 0
   },
   "entries": [
+    {
+      "path": "scripts/current/reobserve_pending_sources.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "LOW",
+      "line_count": 44,
+      "sha256": "9bc870f0f719c3960883a97c1a25b2bd6a49c3bfa3f424e8b0cc94d4b9f8cd85"
+    },
+    {
+      "path": "scripts/current/prepare_event_scan_supplement.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "LOW",
+      "line_count": 34,
+      "sha256": "fccc2d460a6da16c6e25d44b89ecb670eff7bffdc70b7a77bb1b719ad3f52883"
+    },
+    {
+      "path": "scripts/current/replay_pending_candidate.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "LOW",
+      "line_count": 34,
+      "sha256": "bc108dd4121c74467cbb69a9d5e4c2e6d826e28d366c04dc1ecdf65087a967e1"
+    },
     {
       "path": "scripts/current/replay_intraday_test_only.py",
       "category": "CURRENT_RESEARCH_CLI",

@@ -161,6 +161,9 @@ export function JudgmentSummary({
           <p style={{ margin: "0 0 8px" }}>
             <strong>关键价格：</strong>参考收盘{" "}
             {plan?.reference_close ?? plan?.current_reference_price ?? "待核验"}
+            {plan?.reference_price_scope ===
+              "CURRENT_VERIFIED_CLOSE_NOT_VALUATION_COMPARABLE" &&
+              "（行情已核验，研究尚不可比）"}
             （{plan?.market_trade_date ?? "日期待核验"}）；公开建仓条件价{" "}
             {plan?.entry_trigger_price ?? "未获准"}；加仓{" "}
             {typeof plan?.add_condition === "object" &&

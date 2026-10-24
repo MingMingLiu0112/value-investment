@@ -1399,3 +1399,625 @@ modeling remain unsupported. Real cost-adjusted strategy performance is NOT_RUN.
 Root owns latest integration tests, held-decision/private-risk code and API/Web/
 restart acceptance; this sidecar did not inspect or change private data or code.
 Only this V4 S2 subsection and its receipt were updated; action=no_order.
+
+## V5 integration checkpoint (2026-10-21)
+
+Goal DUAL-STRATEGY-END-TO-END-CLOSURE-V5 remains IN_PROGRESS. Source checkpoint
+`b6969333373e8be58bc3050362346ae73adc2bc8` has successful Core Research Gates
+(including Postgres) and Web Workbench CI. These checks do not establish formal
+investment eligibility or final user acceptance. Excel remains FROZEN.
+
+Implemented and verified the authenticated append-only private committed-risk
+confirmation/correction workflow, restart replay, journal-tip/IPS/lot binding and
+preservation of independent cash/cost facts when a risk source is rejected.
+Explicit opt-in SIMULATED display-close marks retain their source/date and never
+become ACTUAL formal market inputs. Official security identity and trading units
+can now consume the separately hash-verified current SAFE_REFRESH universe;
+stale economic research is neither rewritten nor promoted. Stock detail labels
+the existing TEST_ONLY private holding context.
+
+Actual browser evidence at desktop and 390px mobile includes positive scenario
+sizing of 700 shares for 600693, stressed loss CNY395 against a CNY400 budget,
+and a manually recorded simulated BUY700 at CNY9.15 with CNY5 fees. Reloaded
+TEST_ONLY account facts are cash CNY193590, cost CNY6410 and 700 shares, with
+next sell session 2026-10-22. The scenario is not a formal quantity or approved
+strategy. A separate overconcentrated fixture correctly rejects concentration
+and hotspot-budget breaches without changing IPS. No real private confirmation,
+trade, broker order, production scheduler or signature was submitted.
+
+Actual public results remain 5576 scanned / 111 leads / zero full quality PASS;
+latest published decisions are 6 NO_TRADE / 24 UNASSESSABLE / zero formal
+operation-eligible. A source-bound 600519 official fact was durably admitted and
+quality coverage changed 55.56% to 66.67%; complete debt scope and a new admitted
+economic valuation remain unproven. Current quote date is 2026-10-21; economic
+publication dates remain separately visible. Observation-only 600693 reference /
+entry / invalidation is CNY8.970 / 9.140 / 8.660; 60m volume ratio 0.75 remains
+below the existing 1.2 requirement. WATCH has not been relabeled BUY.
+
+Local receipts retain 192 risk tests, 270 metadata/API tests and 312 Web tests,
+with Web typecheck/format/build passing. Counts overlap and must not be summed.
+Latest browser/public/CI evidence binds the source checkpoint above; older
+observations retain their original source SHA. Shared unrelated dirty/untracked
+files are preserved, so clean whole-runtime release identity is not asserted.
+
+Exact continuation: independently verify the approved TEST_ONLY decision to
+formal personal-quantity browser path; complete lawful debt/forecast/economic
+research updates and their actual approval handoff; retain strict hotspot
+PIT/OOS/cost/Shadow admission; obtain real user IPS/portfolio/reconciliation only
+from the user. Real approval and natural-time evidence must not be substituted
+by synthetic fixtures. Final actual-user acceptance remains NOT_PASSED.
+Evidence: `artifacts/current/dual-strategy-v5/final-acceptance.json` and
+`web-e2e.json`. The existing local Web entry remains http://127.0.0.1:8001/daily.
+
+Independent portfolio review resolved the formal-quantity question: the existing
+formal preview deliberately rejects TEST_ONLY/SIMULATED accounts and plans.
+`TEST_OR_SIMULATED_ACCOUNT_NOT_ELIGIBLE` and `TEST_ONLY_PLAN_NOT_FORMAL` are
+required negative gates, not an adapter bug. Existing signed isolated research
+tests prove SIMULATED sizing and ledger closure; no test should manufacture a
+formal ACTUAL quantity. A separately isolated signed-research browser replay is
+still unperformed; it would remain TEST_ONLY rather than satisfy real formal
+admission. Do not weaken the account namespace to make this checkpoint pass.
+
+### V5 continuation: real comparative input admission
+
+2026-10-21: retained a new Sina consolidated income-statement snapshot with its
+original acquisition receipt. Exact BIZINCO and PARENETP values agree with the
+official FY2025 consolidated income statement for current and prior periods.
+Two previously missing FY2024 inputs now permit the existing growth derivation
+to admit revenue_yoy -1.2060035021% and net_income_yoy -4.5322548172%.
+The existing typed repository/checkpoint/default-restart chain consumes three
+derived facts (the existing debt ratio plus two growth metrics), raising coverage
+from the prior checkpoint's 66.67% to 88.89%. The base export is unchanged.
+Complete interest-bearing debt, total quality score and economic admission remain
+unproven. These observations are available from their actual 2026-10-21 capture,
+not from the original reporting period; strict historical PIT is not admitted.
+
+Source correlation is reusable across supported Shanghai/Shenzhen issuers and
+rechecks the exact official original, independent raw bytes, field/period/scope,
+currency, source endpoint and pinned acquisition receipt. It rejects a backdated
+descriptor that differs from its retained acquisition receipt. Financial adoption
+now reparses the official PDF before trusting a warm extraction cache; a forged
+cache with a recomputed internal digest is rejected. Independent adversarial
+review found no remaining P0/P1 in this scope after both fixes.
+
+112 focused backend tests passed, covering source correlation, real parser to
+growth integration, immutable adoption/restart and public projection. Current Web
+types/detail display the three verified metrics separately from published
+economics. Browser/build/CI evidence for this continuation is recorded separately
+from the earlier b6969333 checkpoint. No real signatures or transactions occur.
+
+### V5 continuation: durable queue feedback and browser-bound fill
+
+Completed the previously unperformed signed-research browser replay in an
+independent TEST_ONLY account. The actual daily card links to the stock detail,
+then to a draft bound to decision 600519 / research synthetic-d2-v1. Confirmed
+BUY300 at 5.01 plus fee 5 produces cash 8492, cost 1508 and 300 shares; quote 5
+produces market value 1500, equity 9992 and unrealized P/L -8. Reload retains
+these facts. Both portfolio retrospective and history retain the original
+research link. The mock retrospective explicitly preserves missing pretrade
+availability/risk proof. A prior unlinked draft was voided with its audit trail
+preserved. An independent read-only journal replay verifies the same result.
+Desktop and actual 390px mobile pages were checked; mobile document width is
+375px. No real account, user signature, formal quantity or broker order exists
+in this replay. Evidence: signed-browser-continuation.json and
+signed-browser-ledger-verification.json under artifacts/current/dual-strategy-v5/.
+
+Fixed the automatic feedback gap between durable income adoption and later
+queue/worker inputs. The queue reconstructs an immutable supplemental export
+from current base inputs and source-reverified durable adoption, preserving
+its original discovery receipt and cutoff. The worker checks the rebuilt
+queue before consuming the effective export; the base export is not replaced.
+Actual 600519 replay retains two new inputs, three metrics and 88.89% coverage;
+an empty candidate selection does not insert 600519 into the current lead pool.
+This real source-reuse check is separate from isolated full queue/worker tests.
+Complete debt, economic approval, hotspot strategy admission, real private
+account readiness and total Goal completion remain unproven. Excel is FROZEN;
+action=no_order. Current 12 acceptance states remain in the V5 checkpoint until
+individually superseded by evidence; positive replay does not turn WEB_E2E or
+REAL_ASSISTED_USE_READY into an unqualified whole-product PASS.
+
+### V5 continuation: replace an obsolete held-position review
+
+Fixed the read-only sell-review request lifecycle: changing quantity, intent,
+acknowledgement or identity invalidates the obsolete request and immediately
+releases its busy state. Its late response/finally cannot replace the current
+result or clear a newer request's busy state. Twenty-one focused tests and all
+313 Web tests pass; typecheck, targeted formatting and build pass. Independent
+scoped review found no P0/P1. Actual desktop and 390px browser checks reproduce
+replacement before the old response, with acknowledgement reset. The negative
+UNASSESSABLE result and all investment gates remain intact. Independent journal
+replay verifies unchanged revision 7, cash 8492 and cost 1508. All account data
+is TEST_ONLY, with historically reconstructed ownership rather than original PIT.
+Evidence: held-review-retry-browser.json and held-review-journal-verification.json
+in artifacts/current/dual-strategy-v5. This fixes an interaction, not real sell
+eligibility or overall V5 completion. Excel remains FROZEN; action=no_order.
+
+### V5 continuation: automatic acquisition, retained replay and usable handoff
+
+The bounded worker now automatically acquires an immutable Sina income original
+and correlates it with the official consolidated filing before admitting inputs.
+Its retry identity uses the verified registered baseline, so derived adoption or
+the next day's loader label cannot reset the three-attempt budget indefinitely.
+Actual 600519 acquisition admitted two comparative inputs and three derived
+metrics, reaching 88.89% coverage without changing the base export, discovery
+membership, total quality score or economic approval. Independent review found
+no remaining P0/P1 in this scope. Offline mode performs no network acquisition.
+
+Historical hotspot replay now consumes an immutable 20-file retained closure,
+not mutable current-price configuration. Actual retained data yields 161 signal
+events, 150 complete five-session followups and 11 right-censored events. The
+Web history page distinguishes the full historical interval from its frozen
+validation subwindow. Trade count remains null, not zero or 161. Contemporaneous
+selection, dated execution costs, untouched OOS and real Shadow are not proven;
+no strategy admission was granted. Only the exact privacy-reviewed public
+retained files are included in source delivery, not the surrounding runtime.
+Archive SHA checks remain byte-exact. Running Python rule identity permits only
+CRLF/LF normalization; whitespace, BOM, comments and other rule changes fail.
+A mandatory archive-only test copies just these 20 files and reproduces the
+161/150/11 counts without legacy originals or optional skips. Twenty-seven
+focused portability/API regressions pass.
+
+600519 old pending research has an immutable exact-input successor with a
+separate Web publication; the original research date remains 2026-10-11 and
+later 88.89% facts are not silently merged into its economic scenarios. An
+authenticated, read-only Web handoff exposes questions, support, counterevidence,
+candidate/model hashes and the existing external-signature path. No signing
+identity is pinned. Missing model-bound announcement scans remain an explicit
+engineering/evidence gap, not an approvable empty checklist. The original
+600887 replay is rejected for inconsistent source-availability timestamps.
+000333 registry text now reflects its verified existing draft while retaining
+PENDING_RESEARCH and all economic restrictions.
+
+Fresh independently verified quote 1309.69 on 2026-10-21 survives stale economic
+research clearing, with CURRENT_VERIFIED_CLOSE_NOT_VALUATION_COMPARABLE scope.
+Bear/base/bull, action prices and formal eligibility are still cleared. The Web
+explicitly labels the verified quote as not comparable to current research.
+
+Integration verification: 249 focused Core/API tests and 315 full Web tests
+passed, with typecheck, format and build. The final handoff wording received a
+separate focused regression. Actual Windows desktop and 390px browser checks
+cover public value detail, retained hotspot history and a read-only actual
+research handoff using a separate TEST_ONLY account. Private journal remained
+unchanged; no real signature, private confirmation or transaction was submitted.
+Shared unrelated dirty work is preserved. Browser build-time chunk reloads were
+resolved by reloading after the settled build; clean production deployment is
+not asserted. Source evidence and test checkpoints are separate observations.
+
+Delivery limitation: actual 600519 replay runtime stays local. Its transitive
+closure requires 78 hash-bound files; ordinary cross-platform source newline
+conversion also changes producer hashes. Fresh clones fail closed rather than
+pretend these runtime assets exist. The retained hotspot archive is separately
+complete. Do not call local evidence visibility portable release acceptance.
+
+Continuation: repair 600887 through a separately evidenced new package; create
+a new model-bound 600519 announcement-scan version, complete debt/economic
+research, then lawful review. Preserve hotspot PIT/OOS/cost/Shadow and genuine
+private IPS/account gates. The goal remains IN_PROGRESS, REAL_ASSISTED_USE_READY
+NOT_PROVEN. Twelve individually scoped statuses and exact evidence are recorded
+in artifacts/current/dual-strategy-v5/integrated-continuation.json.
+
+### V5 packaging correction after exact-SHA CI
+
+Source e64460c7 passed Web and isolated Postgres, but Core failed three repository
+architecture checks: the replay CLI was absent from two discovery inventories,
+and the retained archive was tracked under forbidden top-level runtime. This is
+an integration omission, not a research qualification failure. The CLI is now
+registered in both inventories. The archive is exported as a new immutable copy
+under artifacts/current/dual-strategy-v5/retained-hotspot-sources, preserving all
+19 source byte hashes and recording its original manifest plus actual export
+time. The original local runtime is unchanged and no longer included in delivery.
+Verifier path boundaries remain exact; architecture tests are not relaxed.
+The new public archive still replays 161/150/11 with unknown actual trade count.
+Earlier screenshots and integrated-continuation.json remain dated observations;
+the new packaging receipt supersedes only their public archive delivery path.
+
+### V5 new-source research and independent event consumption
+
+Delivery baseline d57f20600d5d3354a46051bbf04beb3ce7e1463a has exact-SHA
+Core/Postgres and Web success (runs 39624187766 and 39624187808).
+The shared checkout remains on another task's feat/p0-pit-validation; unrelated
+P0 files must remain untouched and excluded from this delivery branch.
+
+600887 retained originals now have a separate, truthful current local
+reobservation receipt. Original retrieval/availability metadata and bytes are
+preserved; this is neither online reacquisition nor contemporaneous PIT proof.
+The standard pending-candidate producer actually consumes the new package.
+The shared model emits a dated, unapproved candidate with four unsigned review
+groups. The registered supplemental path is a read-only review overlay, not a
+current economic publication. The adapter reprojects the consumed review packet
+from its exact package/workbench and rejects issuer, context or hash drift.
+Wizard/API/Web expose this new version without inheriting an old price-policy
+valuation hash, old G3 or current action prices. Registration drift fails closed
+instead of silently returning old materials. The current public economic case,
+private policy and investment eligibility remain unchanged.
+
+Root verified the actual 600887 handoff as EXTERNAL_SIGNATURE_REQUIRED with
+zero pinned signing roots. Missing announcement coverage stays explicit. The
+source registry and candidate dependencies remained byte-identical during the
+check. Evidence: 600887-new-input-handoff.json. Focused adapter, wizard, replay
+and API regressions: 55 passed. Independent review found no P0/P1 in this scope.
+
+600519 has a separate event-only package covering 2026-07-01 through 2026-10-20,
+including all seven announcements. Its new context has been consumed by the
+ordinary company application and matches the exact unsigned materiality packet.
+The genuine model result remains not_ready with null bear/base/bull; there is
+no G3 candidate for this context. Existing review_materiality.py consume and
+run_company_research.py accept the exact signed/reviewed context in isolation.
+No real response was signed or imported. A separate Web handoff must not replace
+the older economic candidate or treat the new event context as its G3 approval.
+
+Local source/event/architecture run: 83 passed, two inventory failures caused
+only by three unrelated untracked P0 scripts. Do not register or remove another
+task's files to conceal these failures; validate the scoped delivery tree and
+final CI independently. No tests, thresholds or repository boundaries changed.
+Earlier passing counts are dated observations, not final new-commit CI evidence.
+Goal stays IN_PROGRESS; real economic admission, hotspot strategy admission,
+real private portfolio readiness and user acceptance remain NOT_PROVEN.
+
+Final new-source integration checkpoint: 192 focused source, event, candidate,
+wizard, signed-materiality and API tests passed; full Web API suite passed 248.
+Web typecheck, formatting, 320 tests and production build passed. The separate
+event loader detects authenticated imported responses through the existing exact
+context journal and signature consumer, while retaining every independent gate.
+An independent review found a state-drift issue between event verification and
+old G3 projection; the wrapper now revalidates the event before returning and
+removes signing commands on drift. All three original reproductions are closed.
+No remaining P0/P1 was found in the bounded independent review.
+
+Browser validation also exposed stale authorization recovery: a fresh launch
+fragment could compete with cached expired sessions across parallel reads. The
+existing session helper now prioritizes a single fresh handshake, and late old
+401 responses cannot discard a newer session. Nine focused authorization tests
+pass, including no-link rejection. Actual browser restart/re-authorization with
+the old stored session restores the isolated TEST_ONLY holdings and real public
+review materials. It does not grant G3 or access to a real private account.
+
+Windows 1440x900 and 390x844 evidence shows 600887's new unsigned candidate and
+600519's independently consumed seven-announcement context, exact originals,
+external signing and subsequent research commands. The new event context stays
+separate from the original economic candidate; the original candidate's missing
+scan is not falsely cleared. See new-source-continuation.json. Final source SHA
+CI must still be verified after the scoped commit; local-only research assets
+and real investment qualification remain separate incomplete work.
+
+### V5 final homepage discoverability checkpoint
+
+New-source delivery 030e7581cd30ac99ac84315487af4daa04e7f6da passed exact-SHA
+Core Research Gates (39630169513) and Web Workbench (39630169305).
+See github-new-source-ci.json; this is source CI, not investment approval.
+
+The homepage now exposes all 15 existing published value research links when
+none has an admissible operation price. It states that price eligibility is
+missing rather than falsely implying there are no research leads. Publication
+version checks, candidate counts, ranking and strategy thresholds are unchanged.
+Actual Windows browser checks at 1280px and 390px found 15 links and no horizontal
+page overflow. Clicking 600887 opens its new consumed-source notice while
+retaining unapproved operation prices and locked private data. Screenshots and
+observations: value-entry-browser.json and value-entry-{desktop,mobile}.png.
+
+Independent read-only review found no P0/P1. Focused homepage tests: 15 passed;
+full Web: 321 passed, typecheck/format/build passed. The final delivery SHA needs
+its own CI observation. Total Goal stays IN_PROGRESS. The 12 closure statuses
+in new-source-continuation.json remain unchanged: actual economic admission,
+hotspot strategy validation and real private portfolio readiness are unproven.
+Issuer-specific debt/ROIC and earnings assumptions, economic/event version
+binding and local-only runtime portability remain engineering/research work;
+they must not be misclassified as solely user authorization or natural time.
+
+### V5 China research-day boundary correction
+
+The exact 2c252717 Web and Postgres checks passed, but Core failed nine tests
+after UTC 16:00: source candidates used the China research date while validators
+compared it to a UTC calendar date. This is a real boundary defect, not a missing
+investment approval. Three existing validators now compare calendar dates in
+Asia/Shanghai. Absolute availability/computation comparisons remain unchanged.
+Producer code, retained receipt bytes, candidate SHA bindings and model inputs
+are not rewritten. Nine fixed-time timezone-equivalence cases check UTC 15:59,
+16:00 and 23:59, reject the next China day and future availability by one
+microsecond, and keep unvalued drafts rejected. Focused verification: 122 passed,
+including the original source/event failures, research application and bound
+draft contracts. See test-results/v5-market-date.xml. Later exact-SHA CI must
+establish the final source delivery result; 2c252717 Core is not PASS.
+
+### V5 verified prior-session research and announcement handoff
+
+The existing 600887 shared model now consumes a separately bound candidate
+generated on China October 22 using the verified October 21 completed-close
+basis. This is explicitly ex-post research, not contemporaneous PIT or current
+market validity. Three replay-verified official windows cover July 1 through
+October 21 with 36 announcements and the exact same model descriptor. The new
+October 17-21 observation was actually acquired; source bytes and old availability
+metadata remain unchanged. This closes the perpetual same-day coverage CODE_GAP
+for this candidate without weakening EventScan or inventing an approval.
+
+The shared model's bear/base/bull output remains conditional_research_only.
+Normalized earnings, financial scope, economic approval, G3, materiality signatures
+and current-market eligibility must be evaluated separately. There is no approved
+entry/exit price or personal quantity. The original public economics are unchanged.
+The current 600519 standard replay was regenerated after the date-validator code
+change, preserving its October 11 economic date and separate seven-event context.
+
+Verification before the final transport fix: 486 integration tests passed,
+including full API coverage; Web 321 tests/typecheck/format/build passed. Exact
+e2d97007 Web/Postgres passed; Core had only two legacy assertions expecting the
+old UTC-midnight failure (4396 passed, 101 skipped). Those assertions were updated
+to exercise successful equivalent China dates with future-input rejection intact;
+128 focused regressions pass. This does not make e2d97007 Core successful.
+
+Actual browser inspection exposed a blank materiality status: a raw signing packet
+had been returned where the Web expected a transport wrapper with status and
+commands. Fix this existing boundary while preserving the exact raw signing bytes
+and their path/SHA; no wrapper may be consumed as a signed raw packet. Later
+browser/test receipts must prove this correction. Source portability, economic
+research/admission, independent hotspot validation and real private input remain
+open; the total Goal and twelve closure statuses remain IN_PROGRESS/PARTIAL or
+NOT_PROVEN as recorded, not full-product acceptance.
+
+The materiality transport fix retains raw signing bytes and provides explicit
+preparation when no saved packet exists. Full Web now passes 322 tests and
+typecheck/format/build. Initial backend verification passed 88 tests and an
+independent audit found no P0/P1/P2. A further real integration check identified
+that 600887 recomputation lacked its original schedule request. The exact request
+was recovered from config/daily-trade-assistant-600887-scope-v1.json and retained
+byte-for-byte beside the candidate, matching the hash already bound by its
+workbench receipt. The read adapter must verify that anchor before exposing the
+recompute command; no new scope or looser scheduler rule is authorized.
+
+Final browser validation is still pending: the isolated listener exited, and the
+browser entered a data-URL error page blocked by its URL policy. Manual navigation
+was requested while source verification continued. Earlier actual homepage and
+detail screenshots remain valid only for their recorded checkpoints. They do not
+prove the latest materiality/recompute view or final product acceptance.
+
+The schedule correction is now verified: 98 focused tests pass, and independent
+review reran 28 schedule cases with no P0/P1/P2. Root's real read-only handoff
+verification confirms the original request SHA, 36 announcements, unchanged raw
+contract and ALLOW_NORMAL_RESEARCH from the existing scheduler. Signing identity,
+G3, economic, materiality and current-market approval remain false/unproven; no
+signature or schedule consumption was performed. See
+artifacts/current/dual-strategy-v5/prior-session-handoff-verification.json.
+
+Source checkpoint a1692f3fe5ef997ca83e64d3072e91ce2186932c is pushed to the
+authorized delivery branch. Its exact Core/Web workflows (39641980365,
+39641979967) and isolated Postgres passed. Final local Web has 323 passing tests,
+typecheck/format/build pass. The earlier timezone failures are resolved on this
+checkpoint. This is source/test acceptance only; final repaired-handoff browser
+acceptance remains pending the manual URL-policy recovery, and real assisted
+use remains NOT_PROVEN.
+
+### V5 scoped research-source restoration
+
+The two exact current research entries can now be restored from the independently
+reviewed retained-research-sources archive. Euler checked the final 197-file
+manifest/object set and sanitized receipt; 217 expected/actual records match and
+no private account, session or signing secret is included. Top-level runtime is
+not tracked. The existing restore library verifies the entire package and refuses
+conflicting originals; shared runtime was not overwritten.
+
+Root tested a full staged checkout with Windows autocrlf enabled, not a source
+overlay with copied worktree configuration. It started without runtime, restored
+180 originals, verified all 36 current-context hashes and passed both existing
+600887/600519 verifiers plus the actual 36-announcement materiality handoff and
+bound scope request. Four source files and two config blobs needed retained CRLF
+bytes; all six are normalized-content identical to a1692f3f. Exact-path attributes
+also preserve the other currently hash-bound LF/CRLF context files. Historical
+producer bytes stay archive-only, never executable replacements.
+
+See full-source-checkout-verification.json and the two retained manifests. This
+closes scoped public-research restoration for these exact seeds; it does not prove
+whole-site cold start, automatic archive restoration, all inherited research,
+economic qualification, current-market validity or final user/browser acceptance.
+The final packaging SHA requires its own Core/Web result. Total Goal remains
+IN_PROGRESS and real assisted use NOT_PROVEN.
+
+### V5 economic-interpretation correction (000333)
+
+Final packaging commit 7c55b92a7fafed625929c51957ee4ead1ee17b10 passed exact
+Core Research Gates (39644565332, including Postgres) and Web Workbench
+(39644565288). The local github-portable-research-ci.json records this observation;
+it is not whole-product or investment acceptance.
+
+Actual retained issuer pages 7/8/55/56/98/170/173-175 exposed and corrected an
+economic interpretation error in the Midea draft generator: H1 weighted ROE
+11.33% must be compared with prior H1 11.29% (+0.04 percentage points), not with
+FY ROE 19.70% to claim deterioration. The issuer attributes much of the adjusted
+profit decline to different recurring/nonrecurring classifications for FX losses
+and risk-management instruments. This does not prove operating profit fell by
+the same 25.31%, nor prove underlying earnings recovered.
+
+The registered public correction consumes the retained official PDF (SHA
+576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8).
+Root and two read-only workers checked units, same-period ROE, derivative
+subcategories and six reconciliations. Scope differences of CNY39.969 million
+and CNY163.209 million remain explicit. Tax/ownership matching and OCI inclusion
+are unresolved; no mixed-instrument blanket add-back, inferred tax allocation,
+new normalized earnings, valuation or approval is created. Historical packages,
+scenario parameters and raw issuer bytes are unchanged. Existing Web research
+composition consumes the corrected registry summary and verified evidence.
+
+Focused existing publication-identity, Midea provenance/applicability and
+materiality-handoff regressions: 42 passed. Live composition is CURRENT with zero
+formal admissions. The new frozen Web publication and browser acceptance require
+separate verification; a successful build alone is not a visible-user result.
+The failed browser tab still awaits manual recovery under its URL security policy.
+All twelve product/investment statuses remain partial, blocked or not proven;
+total Goal IN_PROGRESS, real assisted use NOT_PROVEN, Excel FROZEN, action=no_order.
+
+### V5 registered-company quote observation wiring
+
+Actual browser verification of 000333 exposed a CODE_GAP: registry-only companies
+never called the existing quote bridge, so the detail showed no reference close
+despite independently verified public originals. Reuse that bridge in the existing
+adapter. Actual 2026-10-21 observations now show 000333=83.86, 000651=37.13 and
+600741=14.85. Their scenarios, formal comparison, actions, private quantities and
+approval remain unavailable. Correct the registry-only qualification/research-date
+defaults rather than implying a valuation exists. Price-not-admitted text must
+describe decision admission, not falsely claim that no verified quote exists.
+
+Independent review caught a pointer change between initial verification and final
+projection. The final implementation rechecks the fixed registration path and raw
+SHA and includes bundle/pointer bindings only on success. Drift revokes the quote
+observation, retains the research entry and excludes the stale binding. Independent
+50-case review and the original replacement probe confirm closure, with no remaining
+P0/P1/P2 in this bounded adapter. Root's real three-company verification preserves
+all formal/portfolio gates. Initial integration: 309 passed; after the pointer fix:
+72 targeted adapter/current-plan/API cases passed. Packet-version/identity and
+incremental-bridge regression: 22 passed.
+
+Bump the existing public packet engine to v21 for the changed projection semantics.
+Local snapshot pub-c7e8c45a229c2006ee96 is published with zero formal admissions.
+Public packet and receipt are retained byte-for-byte using the existing archive
+format and restore library; two-file isolated restoration passed. Euler's bounded
+privacy/hash review found no private account, IPS, token, signature or TEST_ONLY
+account. This is exact-snapshot restoration, not whole-site cold start. Frozen
+research economics and historical packages remain unchanged. The next economic
+step uses defensible forward assumptions/sensitivity in the existing model; it does
+not require undisclosed internal tax allocations or authorize blanket add-backs.
+
+The earlier d531be43 source checkpoint passed exact Core/Web/Postgres CI. Final
+quote-wiring SHA and desktop/mobile browser results must be recorded separately.
+The isolated materiality tab remains subject to manual URL-policy recovery; public
+main-site verification does not substitute for that authenticated workflow.
+Total Goal IN_PROGRESS; real assisted use NOT_PROVEN; action=no_order.
+
+Final local Web: 323 tests, typecheck, formatting and build passed. Actual existing
+main-site browser detail displays 83.86/2026-10-21 with verified-close-only wording
+and no decision admission. Saved screenshot has measured document width 1265 with
+no page overflow. The advertised viewport override did not apply: requesting 390
+still measured 1265, so mobile acceptance is NOT_PASSED, not a reused desktop PASS.
+Override was reset. See registered-quote-web-acceptance.json for this exact scope.
+Do not generalize the public-detail check to the separate authenticated materiality
+workflow. The main 8001 listener restarted successfully on owned PID 41152; an old
+temporary launcher readiness helper expected obsolete flat identity fields and
+reported failure, while listener ownership, live API and browser were verified.
+
+Continuation: verify final delivery SHA Core/Web CI; recover genuine 390px browser
+testing through a supported viewport mechanism; complete the existing authenticated
+materiality handoff after manual URL-policy recovery; continue defensible economic
+assumption review without waiting for nonpublic internal allocations. Preserve real
+economic/strategy admission and real private-input gates. No stage/total completion
+is claimed by this bounded quote-observation repair.
+
+### V5 held-hotspot ADD and model-period business corrections
+
+Quote checkpoint 51e2e7319837698f61e328198cdb82347fa15c0c passed exact
+Core Research Gates (39651831788, including Postgres) and Web Workbench
+(39651831791). registered-quote-final-ci.json records this checkpoint only.
+
+Actual company-detail review found that historical forecast_roe_2026 parameter
+IDs were displayed as calendar-year forecasts, although the dated model starts
+on 2026-06-30. Display now identifies the verified first model period ending
+2027-06-30. Reordered assumptions preserve the parameter-to-period mapping;
+missing, duplicate or unknown fields/model/timing use conservative generic
+labels. No economic input, value, date or source package changes. Actual Windows
+desktop browser shows the corrected periods and the unapproved-research notice;
+340 Web tests, typecheck, formatting and build passed. Genuine mobile acceptance
+remains NOT_PASSED because the advertised viewport override did not apply.
+
+Raman identified a real business CODE_GAP: the producer already computes a
+completed pullback-recovery ADD, but private sizing required an OPEN breakout
+and a producer ADD intent that the public producer never emits. The bounded fix
+selects ADD scope from replayed same-security/same-sleeve private holdings, not
+client input. Public OPEN remains unchanged. Private ADD consumes the original
+replayed recovery rule and current completed reference price, requires signed
+independent admission, owned EntryThesis/current consistency, and the unchanged
+cost, liquidity, quantity and shared-risk engines. Replaying case fields and
+action rules rejects drift. Only the exact known public OPEN wording projection
+may differ; the independent reviewer reproduced and closed that initial P2.
+No public WATCH is promoted and no actual strategy release or trade is created.
+
+Author integration: 299 passed. Independent final review: 151 passed, no bounded
+residual P0/P1/P2. Root ADD plus all Web API tests: 263 passed. These overlapping
+suites are not summed. The signed positive fixtures are isolated engineering
+contracts, not actual securities, user approvals or strategy validation.
+
+Gauss performed a source-verified 12-cell sensitivity experiment using the
+existing dated equity model; Euler independently replayed the arithmetic and
+27 bindings. Fixed retention/growth isolate existing ROE paths and explicit
+discount assumptions, with paired terminal-ROE-equals-cost stress cases. The
+6.8213% comparison uses dated sovereign/ERP inputs and an assumed beta of one;
+it is neither a measured Midea cost nor a lower bound. The result is unregistered,
+unapproved, not published as current valuation and never compared to market price.
+Historical source packages, dates, normalized earnings unknowns and gates remain.
+
+The owned 8001 local listener restarted on PID 3168 and public desktop detail
+was rechecked. Runtime identity is explicitly MISMATCH because the canonical
+checkout is another task's dirty feat/p0-pit-validation branch; no reset, branch
+switch or suppression was used. Local availability and passing source CI are
+not release acceptance. Authenticated materiality browser verification still
+requires recovery of its separate blocked URL. No real signature, private account
+readiness, natural Shadow session, production action or Excel change is claimed.
+All twelve Goal acceptance statuses remain partial, blocked or not proven.
+Total Goal IN_PROGRESS; real assisted use NOT_PROVEN; action=no_order.
+
+### V5 clean runtime and Windows evidence checkout closure
+
+Detached local acceptance checkout .tmp/v5a at 67561f4d uses its own Web build
+and backend on loopback 8031; runtime identity is MATCHED, source is clean and
+the original shared checkout and 8001 listener remain untouched. Restore used
+retained public archives plus exact SHA-verified local public runtime seeds.
+This proves bounded local acceptance, not a GitHub-only full-site cold start.
+Historical WPS provenance contains local path metadata and stays local; no
+private journal, bootstrap secret or workbook was copied or published.
+
+Actual Windows checkout exposed four registry evidence files converted to CRLF.
+Their Git blobs match the registered originals. Restore exact blobs locally and
+add four precise -text attributes to prevent future conversion; never edit the
+registered hashes or economic contents. All fourteen registry evidence hashes
+then pass. A missing bound discovery receipt was restored from its verified
+local public original. Daily API, strategy API and company detail now agree
+with snapshot pub-7e44f6474752da43eaf7, dated 2026-10-21, formal admissions zero.
+
+Real browser navigation verified the daily candidates, 600693 four conditional
+actions and 000333 verified-close-only restrictions. Desktop measured 1280x720;
+mobile measured 390x844 with document width 375 and no horizontal page overflow.
+These fresh mobile observations supersede the earlier unsupported-override
+failure only for this bounded public page scope. Private workflows and final
+user acceptance remain unproven. See clean-local-public-web-acceptance.json and
+its hash-bound screenshots; no all-product Web PASS is implied.
+
+When the daily API is unavailable because its source receipt cannot be verified,
+the home page previously blamed a null publication ID on a version conflict.
+Show the actual dependency category first, sanitize diagnostic paths and reserve
+version-conflict wording for two current nonempty differing identities. The
+candidate gate is unchanged. Thirty focused SSR cases, typecheck and formatting
+pass; independent bounded review found no P0/P1/P2. Source changes after the
+67561f4d browser checkpoint need their own exact-SHA verification.
+
+Next executable work: preserve verified recording-time personal risk alongside
+manual fills without claiming pretrade knowledge; create a new bounded Midea
+research candidate incorporating corrected evidence without rewriting old input
+or granting economic approval. Real G3, materiality, hotspot admission, private
+inputs and natural validation gates remain independent. Total Goal IN_PROGRESS;
+real assisted use NOT_PROVEN; action=no_order.
+
+### V5 manual-fill recording-time risk continuity
+
+The c9124708 evidence-checkout and diagnostic checkpoint passed exact Core
+39659783343 (including Postgres) and Web 39659783292 CI. The bounded public
+browser receipt remains explicitly tied to its earlier 67561f4d source.
+
+Manual fill prepare now optionally accepts risk_preview.assumptions only. The
+existing authenticated server risk engine derives account, security and sleeve
+from the fill, computes outside the journal lock and rechecks revision/tip,
+publication, research and current source/signature bindings inside the write.
+Failure records an unavailable optional attachment without suppressing lawful
+actual fill recording or bypassing cash, settlement, version and confirmation
+checks. Replay/idempotency retains the original immutable capture, not a later
+recalculation. No client result, scenario or quantity can certify this evidence.
+
+Evidence is RECORDING_TIME_RISK_NOT_PROVEN_PRETRADE, never trade-time knowledge
+or investment permission. Retrospective verifies its exact prepared record and
+still reports the independent pretrade gap. The UI reuses explicitly submitted
+same-context sizing assumptions, defaults capture off, excludes SELL and clears
+account/revision/security/sleeve drift. Draft and retrospective display bounded
+availability and failure in plain language; an actual trade can still be saved.
+
+Root backend plus Web API integration: 456 passed. Root Web: 374 passed,
+typecheck and formatting passed. Independent backend review: 34 passed, no
+bounded P0/P1/P2. Independent frontend review reran 51 focused cases and found
+no reproducible defect. Actual clean-runtime private browser flow still needs
+its own recorded result; these source checks do not
+prove real private readiness or formal qualification. See test-results/
+recording-risk-{root,author,independent}.xml and recording-risk-web.json.
+Total Goal IN_PROGRESS; real assisted use NOT_PROVEN; action=no_order.

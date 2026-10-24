@@ -37,6 +37,40 @@ def _saved_judgment(trade, now):
         return None, "SAVED_JUDGMENT_INVALID_OR_MISMATCHED"
 
 
+def _saved_recording_risk(snapshot, trade, records, now):
+    """Read the exact prepared journal capture, never infer pretrade availability."""
+    risk = (snapshot or {}).get("personal_risk_at_trade")
+    if risk is None:
+        return None, "RECORDING_TIME_PERSONAL_RISK_MISSING"
+    try:
+        revision = risk["journal_revision"]
+        generated = datetime.fromisoformat(risk["generated_at"])
+        verified = datetime.fromisoformat(risk["verified_at"])
+        recorded = datetime.fromisoformat(snapshot["recorded_at"])
+        if (type(revision) is not int or not 0 < revision < len(records)
+                or risk.get("status") != "SERVER_VERIFIED_RECORDING_TIME_RISK"
+                or risk.get("scope") != "RECORDING_TIME_RISK_NOT_PROVEN_PRETRADE"
+                or risk.get("action") != "no_order"
+                or any(risk.get(key) is not False for key in (
+                    "formal_eligibility", "trade_eligible", "broker_execution_permission", "trade_time_availability_proven"))
+                or snapshot.get("trade_time_availability_proven") is not False
+                or snapshot.get("personal_risk_capture") != risk
+                or risk.get("account_scope") != records[0]["body"]["account_scope"]
+                or risk.get("journal_tip_sha256") != records[revision - 1]["record_sha256"]
+                or records[revision]["kind"] != "FILL_PREPARED"
+                or records[revision]["body"]["fill"].get("judgment_snapshot") != snapshot
+                or records[revision]["body"]["fill"]["transaction_id"] != trade["transaction_id"]
+                or risk.get("symbol") != trade["symbol"] or risk.get("strategy") != trade["sleeve"]
+                or risk.get("research_version") != trade.get("research_version")
+                or risk.get("publication_id") != snapshot.get("publication_id")
+                or any(value.utcoffset() is None for value in (generated, verified, recorded))
+                or not generated <= verified <= recorded <= now):
+            raise ValueError("Invalid recording-time risk binding")
+        return deepcopy(risk), None
+    except (ValueError, KeyError, TypeError, AttributeError, IndexError):
+        return None, "RECORDING_TIME_PERSONAL_RISK_INVALID"
+
+
 def run_daily_retrospective_mock(*, journal: PrivateJournal, review_date: date,
                                  generated_at: datetime, max_trades: int = 20) -> dict:
     """Read an existing ledger only, reusing its hash validation and fill replay.
@@ -83,11 +117,14 @@ def run_daily_retrospective_mock(*, journal: PrivateJournal, review_date: date,
     trades = [trade for trade in replayed.trades if trade["trade_date"] == review_date.isoformat()]
     for trade in trades[:max_trades]:
         snapshot, gap = _saved_judgment(trade, generated_at)
+        recording_risk, risk_gap = _saved_recording_risk(snapshot, trade, records, generated_at)
         gaps = ["TRADE_TIME_PLAN_AND_DATA_AVAILABILITY_NOT_PROVEN",
                 "PERSONAL_RISK_AT_TRADE_NOT_PROVEN", "DEVIATION_REASON_NOT_RECORDED",
                 "SUBSEQUENT_RISK_NOT_EVALUATED_NO_LATER_EVIDENCE"]
         if gap:
             gaps.append(gap)
+        if risk_gap:
+            gaps.append(risk_gap)
         if not trade.get("decision_id"):
             gaps.append("UNLINKED_FILL_NO_RESEARCH_APPROVAL_INFERRED")
         differences = []
@@ -108,6 +145,8 @@ def run_daily_retrospective_mock(*, journal: PrivateJournal, review_date: date,
                 except (InvalidOperation, ValueError):
                     gaps.append("SAVED_REFERENCE_LEVEL_INVALID:" + field)
         result["items"].append(dict(manual_fill=deepcopy(trade), saved_judgment=snapshot,
+            recording_time_personal_risk=recording_risk,
+            recording_time_risk_status="AVAILABLE_RECORDING_TIME_ONLY" if recording_risk else "UNAVAILABLE",
             contemporaneous_plan=None, trade_time_availability_proven=False,
             research_approval_inferred=False, differences=differences, evidence_gaps=gaps,
             summary="MOCK review: confirmed ledger fill compared with saved recording-time judgment; human review required."))

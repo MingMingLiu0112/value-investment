@@ -112,6 +112,29 @@ beforeEach(() => {
   };
 });
 
+it("keeps unvalued company research reachable without claiming there are no value leads", () => {
+  state.daily.data.sections.value = [
+    {
+      id: "600887",
+      symbol: "600887",
+      name: "伊利股份",
+      strategy: "value",
+      action: "no_order",
+      status: "PENDING_RESEARCH",
+    },
+  ];
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain('aria-label="价值研究快捷入口"');
+  expect(html).toContain('href="/decisions/600887"');
+  expect(html).toContain("尚无可用的价值投资操作价");
+  expect(html).not.toContain("当前没有可展示的价值投资线索");
+  expect(html).not.toContain("正式可买入");
+  state.packet.data.publication_id = "wrong-publication";
+  expect(renderToStaticMarkup(<DailyDecisions />)).not.toContain(
+    'aria-label="价值研究快捷入口"',
+  );
+});
+
 it("shows an explicit unfinished-update message when finished_at is null", () => {
   state.update.data = {
     action: "no_order",
@@ -175,6 +198,99 @@ it.each(["daily unavailable", "packet unavailable", "different publication"])(
     expect(html).toContain("当前结果不可核验，已停止展示候选。");
   },
 );
+
+it.each(["gate_code", "blockers", "reason"])(
+  "prioritizes an unavailable source receipt from %s over a missing publication version",
+  (field) => {
+    const code = "VALUE_DISCOVERY_RECEIPT_BINDING_UNAVAILABLE";
+    state.daily.data.status = "UNAVAILABLE";
+    state.daily.data.publication = {
+      packet_status: "UNAVAILABLE",
+      publication_id: null,
+    };
+    state.daily.data.reason = "VALUE_DISCOVERY_RECEIPT_UNAVAILABLE";
+    state.daily.data.publication_source =
+      "D:\\private-source-root\\missing-receipt.json";
+    if (field === "blockers") {
+      state.daily.data.blockers = [
+        `${code}:D:\\private-source-root\\missing-receipt.json`,
+      ];
+      state.daily.data.reason =
+        "Source missing at D:\\private-source-root\\missing-receipt.json";
+    } else if (field === "gate_code") state.daily.data.gate_code = code;
+    state.packet.data.chain_error = "PUBLICATION_CHAIN_UNAVAILABLE";
+    const html = renderToStaticMarkup(<DailyDecisions />);
+    expect(html).toContain("价值投资初筛的来源回执缺失或未通过核验");
+    expect(html).toContain("当前结果不可核验，已停止展示候选。");
+    expect(html).not.toContain("判断与快照版本不一致");
+    expect(html).not.toContain("发布链不可用（哈希或结构校验未通过）");
+    expect(html).not.toContain("private-source-root");
+    expect(html).not.toContain("missing-receipt.json");
+    expect(html).not.toContain("中文在线回归候选");
+    expect(html).not.toContain('aria-label="价值研究快捷入口"');
+  },
+);
+
+it.each([
+  [null, "pub-verified"],
+  [undefined, "pub-verified"],
+  ["", "pub-verified"],
+  [" ", "pub-verified"],
+  ["pub-verified", null],
+  ["pub-verified", undefined],
+  ["pub-verified", ""],
+  [null, null],
+])(
+  "does not call missing version identities a mismatch (%s, %s)",
+  (daily, packet) => {
+    state.daily.data.publication.publication_id = daily;
+    state.packet.data.publication_id = packet;
+    const html = renderToStaticMarkup(<DailyDecisions />);
+    expect(html).toContain("正式发布链尚未就绪。");
+    expect(html).not.toContain("判断与快照版本不一致");
+    expect(html).not.toContain("中文在线回归候选");
+  },
+);
+
+it("reports a version mismatch only between two current nonempty publications", () => {
+  state.packet.data.publication_id = "pub-other";
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain("判断与快照版本不一致，请刷新后重试。");
+  expect(html).not.toContain("中文在线回归候选");
+});
+
+it.each(["daily", "packet"] as const)(
+  "translates known %s dependency codes and omits diagnostic paths",
+  (source) => {
+    const diagnostic =
+      "PUBLICATION_CHAIN_UNAVAILABLE:D:\\private-source-root\\missing.json";
+    if (source === "daily") {
+      state.daily.data.status = "UNAVAILABLE";
+      state.daily.data.gate_code = diagnostic;
+      state.daily.data.publication.publication_id = null;
+    } else {
+      state.packet.data.packet_status = "UNAVAILABLE";
+      state.packet.data.chain_error = diagnostic;
+    }
+    const html = renderToStaticMarkup(<DailyDecisions />);
+    expect(html).toContain("发布链不可用（哈希或结构校验未通过）");
+    expect(html).not.toContain("判断与快照版本不一致");
+    expect(html).not.toContain("private-source-root");
+    expect(html).not.toContain("中文在线回归候选");
+  },
+);
+
+it("uses a safe dependency fallback for an unrecognized backend diagnostic", () => {
+  state.daily.data.status = "UNAVAILABLE";
+  state.daily.data.publication.publication_id = null;
+  state.daily.data.reason =
+    "Missing source at /private-source-root/missing-receipt.json";
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain("当前结果所需的来源依赖缺失或未通过核验。");
+  expect(html).not.toContain("private-source-root");
+  expect(html).not.toContain("判断与快照版本不一致");
+  expect(html).not.toContain("中文在线回归候选");
+});
 
 it("labels frozen freshness as verification at publication time", () => {
   const html = renderToStaticMarkup(<DailyDecisions />);

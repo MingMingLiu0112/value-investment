@@ -155,6 +155,12 @@ def register_private_routes(
             return None
         return committed_risk().source(authenticated_subject="LOCAL_OPERATOR", now=now)
 
+    def calculate_risk_preview(payload):
+        now = datetime.now(timezone.utc)
+        return preview_private_hotspot_risk(service().journal, repository_root=project,
+            generated_at=now, payload=payload,
+            authenticated_subject="LOCAL_OPERATOR", committed_risk_source=committed_source(now))
+
     def refuse(request: Request, *, require_token: bool = True) -> JSONResponse | None:
         try:
             authorize(request, session=session_state, port=port, require_token=require_token)
@@ -358,11 +364,7 @@ def register_private_routes(
         if refusal is not None:
             return refusal
         try:
-            now = datetime.now(timezone.utc)
-            return preview_private_hotspot_risk(
-                PrivateJournal(resolve_private_root(repository_root=project)), repository_root=project,
-                generated_at=now, payload=payload,
-                authenticated_subject="LOCAL_OPERATOR", committed_risk_source=committed_source(now))
+            return calculate_risk_preview(payload)
         except PrivateStoreUnavailable as error:
             return JSONResponse(status_code=503, content={"action": "no_order",
                 "status": "PRIVATE_ROOT_UNAVAILABLE", "detail": str(error)})
@@ -477,7 +479,8 @@ def register_private_routes(
         refusal = refuse(request)
         if refusal is not None:
             return refusal
-        return emit(lambda: service().prepare_fill(payload, repository_root=project))
+        return emit(lambda: service().prepare_fill(payload, repository_root=project,
+            risk_capture_provider=calculate_risk_preview))
 
     @api.post("/api/v1/private/fills/confirm")
     def confirm_fill(request: Request, payload: dict = Body(...)):

@@ -1,4 +1,4 @@
-"""Known legacy midnight rejection; not on the registered daily v5 path."""
+"""Real candidate generation across China midnight preserves exact PIT instants."""
 from datetime import date, datetime, timedelta, timezone
 import json
 from zoneinfo import ZoneInfo
@@ -27,14 +27,6 @@ def test_legacy_candidate_actual_behavior_at_shanghai_boundary(tmp_path, monkeyp
     monkeypatch.setattr(candidate, 'datetime', BoundaryClock)
     package, policy, request = candidate_inputs(tmp_path)
     local = fixed.astimezone(ZoneInfo('Asia/Shanghai'))
-    if fixed.date() < local.date():
-        # KNOWN_NOT_FIXED_NOT_ON_DAILY_V5_PATH: the legacy producer stores UTC
-        # availability against a Shanghai research day; strict PIT rejects it.
-        with pytest.raises(ValueError, match='Research availability cannot precede research as-of'):
-            run(tmp_path, package, policy, request)
-        assert not (tmp_path / 'runtime/pending/candidate.json').exists()
-        assert not (tmp_path / 'runtime/pending/workbench.json').exists()
-        return
     result = run(tmp_path, package, policy, request)
     pit = json.loads((tmp_path / 'runtime/pending/package.json').read_text(encoding='utf-8'))['point_in_time']
     available = datetime.fromisoformat(pit['available_at'])
@@ -42,7 +34,7 @@ def test_legacy_candidate_actual_behavior_at_shanghai_boundary(tmp_path, monkeyp
     assert pit['research_as_of'] == pit['valuation_date'] == local.date().isoformat()
     assert available == computed == fixed
     assert available.utcoffset() == timedelta(0)
-    assert available.date() == local.date()
+    assert available.astimezone(ZoneInfo('Asia/Shanghai')).date() == local.date()
     assert result['price_admitted'] is result['approval_changed'] is False
     assert result['registered_current_case_changed'] is False
 

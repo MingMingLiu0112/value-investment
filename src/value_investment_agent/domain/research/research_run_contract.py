@@ -14,6 +14,7 @@ import hashlib
 import json
 import re
 from typing import Any, Mapping, Sequence
+from zoneinfo import ZoneInfo
 
 
 INPUT_DESCRIPTOR_SCHEMA = "m1-fixed-sample-input-v1"
@@ -180,7 +181,7 @@ class ResearchPitFrame:
             raise ValueError("Research report period cannot follow research as-of")
         if self.valuation_date > self.research_as_of:
             raise ValueError("Valuation date cannot follow research as-of")
-        if self.available_at.date() < self.research_as_of:
+        if self.available_at.astimezone(ZoneInfo("Asia/Shanghai")).date() < self.research_as_of:
             raise ValueError("Research availability cannot precede research as-of")
 
     def as_policy(self) -> dict[str, Any]:

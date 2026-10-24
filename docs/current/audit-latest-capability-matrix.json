@@ -1,0 +1,648 @@
+{
+  "schema_version": "full-audit-capability-matrix-v1",
+  "action": "no_order",
+  "audit_date": "2026-10-17",
+  "timezone": "Asia/Shanghai",
+  "audit_head": "d56ae6517b8121ed5677fa566263faf8db295f67",
+  "audit_branch": "codex/web-d1-investment-workbench",
+  "publication_id": "pub-cb73f09b88c4150ecf0d",
+  "evidence_root": "artifacts/current/full-audit-20261017",
+  "ratings": {
+    "ENGINEERING_READINESS": "PARTIAL",
+    "REAL_USER_WORKFLOW_READINESS": "PARTIAL",
+    "INVESTMENT_DECISION_QUALITY": "NOT_PROVEN"
+  },
+  "scope_note": "PASS layers are scoped evidence, not whole capability completion. Isolated tests do not establish real private use. Browser evidence is public/locked only. Formal authorization not established for any capability.",
+  "capabilities": [
+    {
+      "id": "data_authenticity",
+      "name": "数据真实性",
+      "status": "FAILED",
+      "source_paths": [
+        "src/value_investment_agent/application/product/source_bound_inputs.py",
+        "src/value_investment_agent/valuation_models/residual_income.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/research.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "119研究测试通过，但权益/股数×10及删锚三变异仍接受",
+      "business_outcome": "页锚正确，实际计算事实未被锚约束",
+      "gap": "页锚正确，实际计算事实未被锚约束",
+      "next_implementation": "P0 WP02A强制实际消费字段/单位/期间/范围绑定",
+      "user_participation_required": false,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "NOT_RUN",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "quotes_b1",
+      "name": "行情与B1",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/infrastructure/hotspot/current_price_case.py",
+        "src/value_investment_agent/application/product/daily_public_packet.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/preflight.json"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "38绑定预检exit0；当前引用10-16双源会话",
+      "business_outcome": "局部核验报价可读；全市场10-12报价独立交易日未验证",
+      "gap": "局部核验报价可读；全市场10-12报价独立交易日未验证",
+      "next_implementation": "保持B1复用；区分同日准入/历史展示和全市场分母",
+      "user_participation_required": false,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "PARTIAL",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "publication",
+      "name": "发布与版本一致",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/application/product/public_snapshot.py",
+        "src/value_investment_agent/presentation/web_api/runtime_identity.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/api-runtime-identity.json"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "本轮启动后MATCHED；远端Web失败",
+      "business_outcome": "公共包VERIFIED但旧发布入口未强制目的地围栏",
+      "gap": "公共包VERIFIED但旧发布入口未强制目的地围栏",
+      "next_implementation": "WP00/01修CI和权限围栏",
+      "user_participation_required": false,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "recovery",
+      "name": "备份恢复",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/operations/closure_restore_drill.py",
+        "src/value_investment_agent/backup.py",
+        "src/value_investment_agent/backup_security.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/private-operations.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "315定向含恢复安全；既有包SHA及直接恢复绑定本次匹配",
+      "business_outcome": "组件恢复有据；当前干净全系统/异机/同版本PG未证",
+      "gap": "组件恢复有据；当前干净全系统/异机/同版本PG未证",
+      "next_implementation": "WP01固定代码+递归必需资产恢复；外部异机取回",
+      "user_participation_required": true,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "NOT_RUN",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "funnel",
+      "name": "全市场初筛",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/application/research/research_funnel_audit.py",
+        "src/value_investment_agent/financial_quality.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/research.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "真实输入重算与留存相等；API已读",
+      "business_outcome": "5573/873/114可追踪，accepted完整0不是经济全淘汰",
+      "gap": "5573/873/114可追踪，accepted完整0不是经济全淘汰",
+      "next_implementation": "WP08补真实证据语义及下游关联分母",
+      "user_participation_required": false,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "PARTIAL",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "fundamental",
+      "name": "深度基本面",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/application/product/company_research.py",
+        "scripts/research_cases/midea/build_draft_package.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/research.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "美的原件p7及9锚单位归一化核验；119测试",
+      "business_outcome": "六家资产存在；美的期间比较与汇兑解释错误，经济桥未立",
+      "gap": "六家资产存在；美的期间比较与汇兑解释错误，经济桥未立",
+      "next_implementation": "WP02B先纠错及正常化/分配边界",
+      "user_participation_required": false,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "valuation",
+      "name": "估值可靠性",
+      "status": "NOT_READY",
+      "source_paths": [
+        "src/value_investment_agent/valuation_models/residual_income.py",
+        "src/value_investment_agent/research_application.py",
+        "src/value_investment_agent/domain/research/research_gate.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/research.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "美的三值真实重算一致；F1变异失败",
+      "business_outcome": "36.01/45.74/58.17仅草案，经济假设/输入约束/审批不足",
+      "gap": "36.01/45.74/58.17仅草案，经济假设/输入约束/审批不足",
+      "next_implementation": "02A→02B→03；不因数字存在授予可靠标签",
+      "user_participation_required": true,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "value_policy",
+      "name": "价值价格政策",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/application/decision/value_price_policy.py",
+        "src/value_investment_agent/domain/decision/value_action_plan.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/research.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "真实六家WATCH，政策binding=null；四动作隔离阈值测试",
+      "business_outcome": "OPEN/ADD正向可测，REDUCE/EXIT正式辅助资格硬限制未闭合",
+      "gap": "OPEN/ADD正向可测，REDUCE/EXIT正式辅助资格硬限制未闭合",
+      "next_implementation": "WP04独立四动作复核合同+本人政策叠加",
+      "user_participation_required": true,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "approvals",
+      "name": "研究与事件审核",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/application/product/research_reviews.py",
+        "src/value_investment_agent/domain/research/human_research_approval.py",
+        "src/value_investment_agent/application/product/research_materiality_reviews.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/research.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "G1/G3真实失败；合法隔离及拒绝测试通过",
+      "business_outcome": "G3、4公告材料性/覆盖未完；外部交接可读但真人签署未验",
+      "gap": "G3、4公告材料性/覆盖未完；外部交接可读但真人签署未验",
+      "next_implementation": "WP03绑定版本/身份/证据→接收→重验",
+      "user_participation_required": true,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "hotspot_discovery",
+      "name": "热点发现",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/domain/hotspot/daily_selection.py",
+        "src/value_investment_agent/application/hotspot/current_refresh.py",
+        "src/value_investment_agent/application/hotspot/current_registry.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/hotspot.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "94测试；十池元数据丢失复现",
+      "level_scope": "浏览器仅核旧五案例；新十池到真实消费者尚不完整，不能把局部接线或原件存在标为全链通过。",
+      "business_outcome": "10行业候选存在，旧5案例与新池交集1；消费3断点",
+      "gap": "10行业候选存在，旧5案例与新池交集1；消费3断点",
+      "next_implementation": "WP05先组合接线后逐只补采",
+      "user_participation_required": false,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PARTIAL",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PARTIAL",
+        "BROWSER_VERIFIED": "PARTIAL",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "multi_timeframe",
+      "name": "多周期结构",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/domain/hotspot/confirmed_price_structure.py",
+        "src/value_investment_agent/infrastructure/hotspot/current_price_case.py",
+        "src/value_investment_agent/application/hotspot/validation_evidence.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/hotspot.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "八案例按原可用时点重载成功；10池仅1绑定",
+      "business_outcome": "日线/60m/15m有确定性结构，分钟单源，0合格观察",
+      "gap": "日线/60m/15m有确定性结构，分钟单源，0合格观察",
+      "next_implementation": "05消费全部评估；保持completed bars/known_at",
+      "user_participation_required": false,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "strategy_validation",
+      "name": "策略有效性",
+      "status": "NOT_PROVEN",
+      "source_paths": [
+        "src/value_investment_agent/domain/hotspot/event_replay.py",
+        "src/value_investment_agent/domain/hotspot/structure_replay.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/hotspot.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "报告future_rule_version_used=true，净收益/成本null",
+      "business_outcome": "描述回放存在，不是PIT/OOS或策略优势",
+      "gap": "描述回放存在，不是PIT/OOS或策略优势",
+      "next_implementation": "WP06冻结规则/执行约束；自然会话另计",
+      "user_participation_required": true,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "NOT_RUN",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "private_facts",
+      "name": "私人资金与持仓",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/application/portfolio/private_portfolio_service.py",
+        "src/value_investment_agent/presentation/web_api/private_routes.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/private-operations.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "315专项、193API通过；浏览器保持锁定",
+      "business_outcome": "可录入/重放工程存在；本人journal/对账未证明",
+      "gap": "可录入/重放工程存在；本人journal/对账未证明",
+      "next_implementation": "WP07安全首次使用；本人网页录入",
+      "user_participation_required": true,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "NOT_RUN",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "risk_sizing",
+      "name": "仓位与双池风险",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/application/portfolio/private_risk_projection.py",
+        "src/value_investment_agent/application/portfolio/private_risk_preview.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/private-operations.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "现金底线/共享集中度/部分事实/未准入价格拒绝定向通过",
+      "business_outcome": "可核事实和情景算术可用，真实正式数量未证明",
+      "gap": "可核事实和情景算术可用，真实正式数量未证明",
+      "next_implementation": "WP04/07接证券条件与真实IPS，明确情景/正式量",
+      "user_participation_required": true,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "NOT_RUN",
+        "BROWSER_VERIFIED": "NOT_RUN",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "held_monitoring",
+      "name": "已有持仓追踪",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/application/portfolio/held_continuity.py",
+        "web/src/components/HoldingsAttention.tsx"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/private-operations.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "离榜/T+1/重启/未来证据拒绝测试通过",
+      "business_outcome": "离榜不删；公告覆盖没有生产赋值链",
+      "gap": "离榜不删；公告覆盖没有生产赋值链",
+      "next_implementation": "WP07补公开公告窗口/材料性绑定，缺失仍UNKNOWN",
+      "user_participation_required": false,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "NOT_RUN",
+        "BROWSER_VERIFIED": "NOT_RUN",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "manual_fills",
+      "name": "人工成交",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/application/portfolio/private_portfolio_service.py",
+        "web/src/components/FillPanel.tsx"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/private-operations.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "买/部分卖/费用/并发/revision/重启测试通过",
+      "business_outcome": "隔离账本可用；真人网页成交未验，不自动交易",
+      "gap": "隔离账本可用；真人网页成交未验，不自动交易",
+      "next_implementation": "WP07真实浏览器隔离正向及本人首次使用",
+      "user_participation_required": true,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "NOT_RUN",
+        "BROWSER_VERIFIED": "NOT_RUN",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "history",
+      "name": "历史与复盘",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/presentation/web_api/app.py",
+        "web/src/pages/DecisionHistory/index.tsx"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/screenshots/history-desktop.txt"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "API193测试；历史桌面/手机打开",
+      "business_outcome": "公开2证券4版本，私人成交锁定未知",
+      "gap": "公开2证券4版本，私人成交锁定未知",
+      "next_implementation": "WP09/10验证新研究/成交/重启历史一致",
+      "user_participation_required": true,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "PARTIAL",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "agent",
+      "name": "真实Agent",
+      "status": "NOT_PROVEN",
+      "source_paths": [
+        "src/value_investment_agent/infrastructure/agent_runtime/provider.py",
+        "src/value_investment_agent/application/research/agent_review/llm_pilot.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/private-operations.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "mock/provider负例定向通过；没有live调用",
+      "business_outcome": "三角色串行、工具0，OFFLINE/MOCK产物；非自主联网Agent",
+      "gap": "三角色串行、工具0，OFFLINE/MOCK产物；非自主联网Agent",
+      "next_implementation": "可选source_requests及预算重试工程；live需预算授权",
+      "user_participation_required": true,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "NOT_RUN",
+        "BROWSER_VERIFIED": "NOT_RUN",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "web_workflow",
+      "name": "Web业务操作",
+      "status": "PARTIAL",
+      "source_paths": [
+        "web/src/components/ConfirmationTasks.tsx",
+        "web/src/pages/DecisionDetail/index.tsx",
+        "web/.umirc.ts"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/screenshots/daily-desktop.txt"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "210Web测试；六route桌面/手机实际读",
+      "business_outcome": "公开观察可读；15重复错误和草案/正式状态混淆；私人真实闭环未验",
+      "gap": "公开观察可读；15重复错误和草案/正式状态混淆；私人真实闭环未验",
+      "next_implementation": "WP09按操作收敛，WP10双路线E2E",
+      "user_participation_required": false,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "PARTIAL",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "automation",
+      "name": "每日运营",
+      "status": "PARTIAL",
+      "source_paths": [
+        "scripts/current/run_daily_workbench.ps1",
+        "scripts/current/start_web_workbench.ps1",
+        "src/value_investment_agent/operations/decision_writer_registry.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/private-operations.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "实际任务3Ready/1Disabled；8001先拒绝后本轮启动；短路径故障E2E10passed",
+      "business_outcome": "本机启动可用，常驻/新调度/服务器当前状态未证；旧调用仍在",
+      "gap": "本机启动可用，常驻/新调度/服务器当前状态未证；旧调用仍在",
+      "next_implementation": "WP01围栏；生产退休另授权，状态留证",
+      "user_participation_required": true,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "excel",
+      "name": "唯一Excel同步",
+      "status": "NOT_READY",
+      "source_paths": [
+        "scripts/run_excel_mvp_publication.ps1",
+        "src/value_investment_agent/application/product/public_snapshot.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/api-daily-public-snapshot.json"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "正式文件SHA只读MATCHED；未修改工作簿",
+      "business_outcome": "快照10-01/行情10-09，excel_sync=null，不是今日Web同步",
+      "gap": "快照10-01/行情10-09，excel_sync=null，不是今日Web同步",
+      "next_implementation": "WP01保护目的地；09按保护合同发布或醒目标旧",
+      "user_participation_required": false,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "NOT_RUN",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "limited_use",
+      "name": "有限个人辅助使用",
+      "status": "PARTIAL",
+      "source_paths": [
+        "src/value_investment_agent/presentation/web_api/app.py",
+        "web/src/pages/Portfolio/index.tsx"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/screenshots/portfolio-desktop.txt"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "公开读可用、私人锁定；隔离工程通过",
+      "business_outcome": "可研究观察/风险线索，不是获准个性化交易指导",
+      "gap": "可研究观察/风险线索，不是获准个性化交易指导",
+      "next_implementation": "先00/01/02A，再02B/03/04/07/09/10",
+      "user_participation_required": true,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "PARTIAL",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    },
+    {
+      "id": "formal_eligibility",
+      "name": "正式投资资格",
+      "status": "NOT_READY",
+      "source_paths": [
+        "src/value_investment_agent/domain/research/research_gate.py",
+        "src/value_investment_agent/price_bridge.py",
+        "src/value_investment_agent/application/decision/value_action_plan.py"
+      ],
+      "evidence": [
+        "artifacts/current/full-audit-20261017/research.md"
+      ],
+      "version": "d56ae6517b8121ed5677fa566263faf8db295f67",
+      "test_results": "真实六家formal=false；页面正式0",
+      "business_outcome": "无正式动作许可，未证收益优势/真实用户验收",
+      "gap": "无正式动作许可，未证收益优势/真实用户验收",
+      "next_implementation": "真实经济研究/批准/价格/IPS/自然策略证据分别达标",
+      "user_participation_required": true,
+      "levels": {
+        "CODE_EXISTS": "PASS",
+        "CODE_CONNECTED": "PASS",
+        "TEST_VERIFIED": "PASS",
+        "REAL_DATA_VERIFIED": "PASS",
+        "BROWSER_VERIFIED": "PASS",
+        "BUSINESS_USABLE": "NOT_PROVEN",
+        "FORMALLY_AUTHORIZED": "NOT_PROVEN"
+      }
+    }
+  ]
+}

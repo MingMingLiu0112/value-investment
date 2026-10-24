@@ -10,6 +10,8 @@ const captured = vi.hoisted(() => ({
   riskProps: {} as Record<string, any>,
   segmented: undefined as Record<string, any> | undefined,
   sizing: undefined as Record<string, any> | undefined,
+  fill: undefined as Record<string, any> | undefined,
+  revision: 2,
 }));
 const reactState = vi.hoisted(() => ({
   use: null as
@@ -36,7 +38,7 @@ vi.mock("../src/hooks/usePrivateState", () => ({
     retry: vi.fn(),
     portfolio: {
       status: "CONNECTED",
-      revision: 2,
+      revision: captured.revision,
       cash_cny: "7337",
       total_equity_cny: captured.equity,
       realized_pnl_cny: "0",
@@ -74,7 +76,10 @@ vi.mock("../src/components/Workbench", () => ({
   Workbench: ({ children }: { children: React.ReactNode }) => children,
 }));
 vi.mock("../src/components/FillPanel", () => ({
-  FillPanel: () => null,
+  FillPanel: (props: Record<string, any>) => {
+    captured.fill = props;
+    return null;
+  },
   fillContextFromSearch: () => ({}),
 }));
 vi.mock("../src/components/PortfolioSetupForm", () => ({
@@ -135,6 +140,8 @@ beforeEach(() => {
   captured.accountScope = "";
   captured.segmented = undefined;
   captured.sizing = undefined;
+  captured.fill = undefined;
+  captured.revision = 2;
 });
 
 it("routes the workbench sleeve selector to the sizing panel", () => {
@@ -184,3 +191,62 @@ it.each([
     expect(captured.riskProps.data.engine.trade_eligible).toBe(false);
   },
 );
+
+it("passes only current same-account and same-sleeve assumptions to the fill panel", () => {
+  let selection: unknown = null;
+  let symbol = "";
+  let sleeve = "HOTSPOT_SATELLITE";
+  reactState.use = (initial) => {
+    if (initial === null)
+      return [
+        selection,
+        (next) => {
+          selection = next;
+        },
+      ];
+    if (initial === "")
+      return [
+        symbol,
+        (next) => {
+          symbol = String(next);
+        },
+      ];
+    if (initial === "HOTSPOT_SATELLITE")
+      return [
+        sleeve,
+        (next) => {
+          sleeve = String(next);
+        },
+      ];
+    return undefined;
+  };
+  try {
+    renderToStaticMarkup(<Portfolio />);
+    expect(captured.fill?.riskAssumptions).toBeUndefined();
+    captured.sizing!.onSymbolChange("600887");
+    renderToStaticMarkup(<Portfolio />);
+    const assumptions = { gap_stress_cny: "0.5" };
+    captured.sizing!.onRequest({ symbol: "600887", sleeve, assumptions });
+    assumptions.gap_stress_cny = "999";
+    renderToStaticMarkup(<Portfolio />);
+    expect(captured.fill?.riskAssumptions).toMatchObject({
+      revision: 2,
+      symbol: "600887",
+      sleeve: "HOTSPOT_SATELLITE",
+      assumptions: { gap_stress_cny: "0.5" },
+    });
+    captured.segmented!.onChange("CORE_VALUE");
+    renderToStaticMarkup(<Portfolio />);
+    expect(captured.fill?.riskAssumptions).toBeUndefined();
+    sleeve = "HOTSPOT_SATELLITE";
+    captured.revision = 3;
+    renderToStaticMarkup(<Portfolio />);
+    expect(captured.fill?.riskAssumptions).toBeUndefined();
+    captured.revision = 2;
+    captured.accountScope = "other-account";
+    renderToStaticMarkup(<Portfolio />);
+    expect(captured.fill?.riskAssumptions).toBeUndefined();
+  } finally {
+    reactState.use = null;
+  }
+});

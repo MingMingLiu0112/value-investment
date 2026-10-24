@@ -13,6 +13,7 @@ import json
 import os
 import threading
 from contextlib import contextmanager
+from copy import deepcopy
 from dataclasses import dataclass, replace
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
@@ -981,12 +982,37 @@ class PrivatePortfolioService:
         )
         return dict(record["response"]), str(record["record_sha256"])
 
-    def prepare_fill(self, request: Mapping[str, Any], *, repository_root: Path | None = None) -> tuple[dict[str, Any], str]:
+    def prepare_fill(self, request: Mapping[str, Any], *, repository_root: Path | None = None,
+                     risk_capture_provider: Callable[[dict], dict] | None = None) -> tuple[dict[str, Any], str]:
+        capture = None
+        if "risk_preview" in request:
+            # Never hold the journal lock while the existing preview reads it.
+            before = self.records()
+            existing = self._existing(before, request)
+            if existing is not None:
+                return existing
+            capture = {"started_at": self._now(), "journal_revision": len(before),
+                "journal_tip_sha256": before[-1]["record_sha256"] if before else None}
+            try:
+                from .judgment_snapshot import recording_risk_request
+                selected = recording_risk_request(_mapping(request.get("fill"), "fill"), request["risk_preview"])
+                if risk_capture_provider is None:
+                    raise ValueError("RISK_CAPTURE_PROVIDER_UNAVAILABLE")
+                capture["result"] = deepcopy(risk_capture_provider(selected))
+            except Exception as error:
+                # Optional research must not prevent recording an actual fill.
+                # Do not persist exception text, private paths or provider payloads.
+                known = {"RISK_CAPTURE_ASSUMPTIONS_REQUIRED", "BUY_ADD_RISK_NOT_APPLICABLE_TO_SELL",
+                    "RISK_CAPTURE_STRATEGY_MISMATCH", "RISK_CAPTURE_PROVIDER_UNAVAILABLE"}
+                capture["error"] = (str(error) if isinstance(error, ValueError) and str(error) in known
+                    else "RISK_CAPTURE_FAILED_OR_UNSUPPORTED")
+            capture["completed_at"] = self._now()
         with self.journal.transaction() as records:
-            return self._prepare_fill(records, request, repository_root=repository_root)
+            return self._prepare_fill(records, request, repository_root=repository_root, risk_capture=capture)
 
     def _prepare_fill(
-        self, records: Sequence[Mapping[str, Any]], request: Mapping[str, Any], *, repository_root: Path | None = None
+        self, records: Sequence[Mapping[str, Any]], request: Mapping[str, Any], *, repository_root: Path | None = None,
+        risk_capture=None,
     ) -> tuple[dict[str, Any], str]:
         existing = self._existing(records, request)
         if existing is not None:
@@ -1015,8 +1041,19 @@ class PrivatePortfolioService:
         }
         # Client-supplied snapshots can never certify the original judgment.
         from .judgment_snapshot import capture_judgment_snapshot
-        body["fill"]["judgment_snapshot"] = (capture_judgment_snapshot(repository_root, body["fill"])
-            if repository_root is not None else None)
+        try:
+            body["fill"]["judgment_snapshot"] = (capture_judgment_snapshot(repository_root, body["fill"])
+                if repository_root is not None else None)
+        except Exception:
+            if risk_capture is None:
+                raise
+            body["fill"]["judgment_snapshot"] = None
+        capture_outcome = None
+        if risk_capture is not None:
+            from .judgment_snapshot import attach_recording_time_risk
+            body["fill"]["judgment_snapshot"], capture_outcome = attach_recording_time_risk(
+                repository_root, body["fill"]["judgment_snapshot"], fill=body["fill"],
+                records=records, capture=risk_capture, now=self._now())
         payload = {
             "action": "no_order",
             "status": "FILL_PREPARED",
@@ -1029,6 +1066,8 @@ class PrivatePortfolioService:
                 "positions": self._positions(draft, self._sellable_as_of(draft, None)),
             },
         }
+        if capture_outcome is not None:
+            payload["personal_risk_capture"] = capture_outcome
         record = self.journal.append(
             kind="FILL_PREPARED",
             body=body,

@@ -17,6 +17,7 @@ from ...infrastructure.screening.financial_export_v2 import load_retained_financ
 from ...infrastructure.screening.value_evidence_enrichment_v1 import RetainedAnnualSource
 from ...infrastructure.screening.value_enrichment_progress import ValueEnrichmentProgress
 from ...m2_discovery_engine import _point_available_at
+from ...infrastructure.screening.sina_income_original import collect_sina_income_original
 
 
 def load_enrichment_research_contexts(*, root: Path, symbols, evaluation_at: datetime,
@@ -120,7 +121,32 @@ def _context_digest(context):
     return _canonical_hash(json.loads(json.dumps(payload, default=str)))
 
 
-def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=None):
+def _retry_baseline_contexts(root, supplied, *, evaluation_at, identity_at):
+    from dataclasses import replace
+
+    def normalized(context):
+        # Loader restamps the data-check date; provenance retains the registered
+        # artifact's original bytes, dates and model inputs.
+        return dict(case=replace(context['case'], as_of=identity_at.date()),
+                    facts=replace(context['facts'], as_of=identity_at.date()))
+
+    _, baselines, _ = load_enrichment_research_contexts(root=root, symbols=supplied,
+        evaluation_at=evaluation_at, _reuse=False)
+    result = {}
+    for symbol, context in supplied.items():
+        if symbol not in baselines:
+            raise ValueError('Retry identity requires verified registered baseline: ' + symbol)
+        baseline = normalized(baselines[symbol])
+        supplied_digest = _context_digest(normalized(context))
+        if supplied_digest != _context_digest(baseline):
+            restored = _verified_registered_adoption(root, symbol, evaluation_at)
+            if restored is None or supplied_digest != _context_digest(normalized(restored[1])):
+                raise ValueError('Supplied research context differs from verified registered inputs: ' + symbol)
+        result[symbol] = baseline
+    return result
+
+
+def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=None, binding=None):
     """Revalidate lineage and replay registration; checkpoints grant no authority."""
     from .value_evidence_enrichment_v1 import verify_enrichment_adoption
     from ...research_artifact_repository import InMemoryResearchArtifactRepository
@@ -130,7 +156,8 @@ def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=Non
     if not isinstance(symbol, str) or not re.fullmatch(r'\d{6}', symbol):
         raise ValueError('Research context requires security identity')
     root = root.resolve()
-    binding = ValueEnrichmentProgress(root).registered_adoption(symbol, cutoff=evaluation_at)
+    if binding is None:
+        binding = ValueEnrichmentProgress(root).registered_adoption(symbol, cutoff=evaluation_at)
     if binding is None:
         return None
     export_binding = binding['financial_export']
@@ -186,8 +213,12 @@ def read_verified_enrichment_progress(root: Path, symbol: str, evaluation_at: da
         summary, _, result = verified
         keys = ('status', 'symbol', 'adopted_fact_count', 'research_inputs_updated',
                 'quality_coverage_before', 'quality_coverage_after', 'formal_eligibility', 'action')
+        metrics = [dict(field_name=point['field_name'], value=point['value'],
+                        unit=point['unit'], period_label=point['period_label'])
+                   for point in result['adopted_points']
+                   if point['field_name'] in {'debt_ratio', 'revenue_yoy', 'net_income_yoy'}]
         return dict({key: summary[key] for key in keys}, as_of=result['evaluation_at'],
-                    verified_at=evaluation_at.isoformat())
+                    verified_at=evaluation_at.isoformat(), adopted_metrics=metrics)
     except (ValueError, KeyError, TypeError, OSError):
         return None
 
@@ -298,7 +329,10 @@ def _work_key(root, row, points, allow_network, retry_token, context=None):
     from ...infrastructure.screening import value_evidence_enrichment_v1 as extraction
     from ...infrastructure.screening import evidence_screen_v3
     from ... import financial_quality, filing_extract
-    modules = [Path(__file__), Path(value_evidence_enrichment_v1.__file__),
+    from . import income_source_correlation
+    from ...infrastructure.screening import sina_income_original
+    modules = [Path(__file__), Path(income_source_correlation.__file__), Path(value_evidence_enrichment_v1.__file__),
+        Path(sina_income_original.__file__),
         Path(value_research_priority_v2.__file__), Path(extraction.__file__),
         Path(evidence_screen_v3.__file__), Path(financial_quality.__file__), Path(filing_extract.__file__)]
     company = [p for p in points if p.get('symbol') == row['symbol']]
@@ -325,6 +359,48 @@ def _work_key(root, row, points, allow_network, retry_token, context=None):
         implementation=hashlib.sha256(b''.join(path.read_bytes() for path in modules)).hexdigest()))
 
 
+def _collect_income_supplement(root, symbol, source, points, export_payload, export_binding, output):
+    from copy import deepcopy
+    from dataclasses import asdict
+    from decimal import Decimal
+    from .income_source_correlation import correlate_income_inputs
+    from ...financial_quality import _accepted
+
+    descriptor = collect_sina_income_original(root=root, symbol=symbol,
+        output_dir=output / (symbol + '-income-original'), allow_network=True)
+    clock = datetime.now(timezone.utc)
+    correlated = correlate_income_inputs(root, source, descriptor, evaluation_at=clock)
+    added = []
+    for point in correlated:
+        existing = [p for p in points if p.get('symbol') == symbol
+            and p.get('field_name') == point['field_name'] and p.get('period_label') == point['period_label']
+            and _point_available_at(p, clock) is not None]
+        if any(p.get('unit') != 'CNY' or Decimal(str(p['value'])) != Decimal(point['value'])
+               or (p.get('metadata') or {}).get('statement_scope') == 'parent' for p in existing):
+            raise ValueError('Income correlation conflicts with retained company inputs')
+        accepted = [p for p in existing if _accepted(p)]
+        if len(accepted) > 1:
+            raise ValueError('Income correlation has ambiguous admitted company inputs')
+        if not accepted:
+            added.append(point)
+    if not added:
+        return points, None, []
+    payload = deepcopy(export_payload)
+    payload.setdefault('annual_points', []).extend(added)
+    payload['value_enrichment_base_export'] = payload.get('value_enrichment_base_export') or export_binding
+    declaration = asdict(source)
+    declarations = {(s['symbol'], s['period']): s for s in payload.get('value_enrichment_sources', [])}
+    identity = (symbol, source.period)
+    if identity in declarations and declarations[identity] != declaration:
+        raise ValueError('Income correlation conflicts with retained official source declaration')
+    declarations[identity] = declaration
+    payload['value_enrichment_sources'] = list(declarations.values())
+    path = output / (symbol + '-financial-inputs.json')
+    write_new_json(path, payload)
+    binding = dict(path=path.relative_to(root).as_posix(), sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+    return [*points, *added], binding, added
+
+
 def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
         financial_export_sha256, output_dir, budget, allow_network, retry_token, progress,
         repository, research_contexts):
@@ -343,9 +419,14 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
         raise ValueError('Enrichment requires an intact research-only priority queue')
     export = require_inside(root / 'runtime', financial_export_path, 'financial export')
     _load_bound(export, financial_export_sha256)
-    if (queue['inputs']['financial_export_path'] != export.relative_to(root).as_posix()
-            or queue['inputs']['financial_export_sha256'] != financial_export_sha256):
+    supplied = dict(path=export.relative_to(root).as_posix(), sha256=financial_export_sha256)
+    effective = dict(path=queue['inputs']['financial_export_path'],
+                     sha256=queue['inputs']['financial_export_sha256'])
+    if supplied != effective and supplied != queue['inputs'].get('base_financial_export'):
         raise ValueError('Queue and enrichment financial input binding differ')
+    export = require_inside(root / 'runtime', root / effective['path'], 'effective financial export')
+    financial_export_sha256 = effective['sha256']
+    export_payload = _load_bound(export, financial_export_sha256)
     inputs = queue['inputs']
     expected = build_value_research_priority_v2(root=root,
         report_path=root / inputs['report_path'], report_sha256=inputs['report_sha256'],
@@ -368,10 +449,15 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
     if len({row['symbol'] for row in selected}) != len(selected):
         raise ValueError('Duplicate enrichment selection')
     points, _ = load_retained_financial_export(export, evaluation_at=now)
+    retained_sources = {(s['symbol'], s['period']): s for s in export_payload.get('value_enrichment_sources', [])}
+    selected_symbols = {row['symbol'] for row in selected}
+    work_contexts = _retry_baseline_contexts(root,
+        {symbol: context for symbol, context in research_contexts.items() if symbol in selected_symbols},
+        evaluation_at=now, identity_at=datetime.fromisoformat(queue['evaluation_at']))
     output.mkdir(parents=True)
-    items, skipped, lawful_sources, adopted_fact_ids = [], [], [], []
+    items, skipped, lawful_sources, adopted_fact_ids, income_inputs = [], [], [], [], []
     for row in selected:
-        key = _work_key(root, row, points, allow_network, retry_token, research_contexts.get(row['symbol']))
+        key = _work_key(root, row, points, allow_network, retry_token, work_contexts.get(row['symbol']))
         previous = progress.load(key)
         if previous and (not previous['retryable'] or previous['attempt'] >= 3
                 or datetime.fromisoformat(previous['retry_after']) > now):
@@ -388,6 +474,7 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
             'transitions': ['SCREENED', 'EVIDENCE_ENRICHING'], 'formal_eligibility': False,
             'attempt': previous['attempt'] + 1 if previous else 1, 'retryable': False}
         adoption = None
+        item_points, item_export, added_income = points, effective, []
         try:
             candidates = [point for point in points if point.get('symbol') == symbol
                 and point.get('source_name') == 'CNINFO statutory disclosure'
@@ -396,12 +483,36 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
             if len(sources) != 1:
                 raise ValueError('OFFICIAL_ANNUAL_SOURCE_MISSING_OR_AMBIGUOUS')
             point = next(iter(sources.values()))
-            path, acquired, reused = _original(root, point, allow_network=allow_network)
-            source = RetainedAnnualSource(symbol, period, path.relative_to(root).as_posix(),
-                point['sha256'], point['source_url'], acquired.isoformat())
+            retained = retained_sources.get((symbol, period))
+            if retained and any((p.get('metadata') or {}).get('income_source_version')
+                                for p in points if p.get('symbol') == symbol):
+                source = RetainedAnnualSource(**retained)
+                if source.sha256 != point['sha256'] or source.source_url != point['source_url']:
+                    raise ValueError('Reused income official source binding mismatch')
+                reused = True
+            else:
+                path, acquired, reused = _original(root, point, allow_network=allow_network)
+                source = RetainedAnnualSource(symbol, period, path.relative_to(root).as_posix(),
+                    point['sha256'], point['source_url'], acquired.isoformat())
             result = enrich_retained_company(root, source, points,
                 evaluation_at=datetime.now(timezone.utc), cache_dir=root / '.tmp/value-enrichment-extraction',
                 name=row.get('company_name'))
+            if allow_network and any(p['field_name'] in {'revenue_yoy', 'net_income_yoy'}
+                                     for p in result.get('sourced_arithmetic_points', [])):
+                try:
+                    supplemented, supplement_binding, added = _collect_income_supplement(
+                        root, symbol, source, points, export_payload, effective, output)
+                    if supplement_binding:
+                        updated = enrich_retained_company(root, source, supplemented,
+                            evaluation_at=datetime.now(timezone.utc),
+                            cache_dir=root / '.tmp/value-enrichment-extraction', name=row.get('company_name'))
+                        result, item_points, item_export, added_income = updated, supplemented, supplement_binding, added
+                    item['income_collection'] = dict(status='SOURCE_REPLAYED', added_input_count=len(added))
+                except Exception as error:
+                    # Independent income failure cannot discard lawful official evidence.
+                    item['income_collection'] = dict(status='UNAVAILABLE',
+                        reason=type(error).__name__ + ':' + str(error), added_input_count=0)
+                    item['retryable'] = is_transient_evidence_failure(error)
             if symbol in research_contexts:
                 context = research_contexts[symbol]
                 _, baselines, _ = load_enrichment_research_contexts(root=root, symbols=[symbol],
@@ -409,13 +520,12 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
                 if symbol in baselines:
                     context = baselines[symbol]
                 result['research_registration'] = register_enriched_research(result,
-                    root=root, points=points,
+                    root=root, points=item_points,
                     repository=repository, case=context['case'], facts=context['facts'],
                     run_id=output.name + ':' + symbol)
                 if (symbol in baselines and result['research_registration']['status'] == 'RESEARCH_INPUTS_UPDATED'):
                     adoption = dict(symbol=symbol, baseline_sha256=_context_digest(context),
-                        financial_export=dict(path=export.relative_to(root).as_posix(),
-                                              sha256=financial_export_sha256))
+                        financial_export=item_export)
             # Page text remains in the extraction cache, not the small run receipt.
             result['source_extraction'].pop('page_texts', None)
             packet = json.loads(json.dumps(result, default=str, ensure_ascii=False, allow_nan=False))
@@ -424,6 +534,7 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
             if result.get('adopted_points'):
                 lawful_sources.append(packet['source_extraction']['identity']['source'])
                 adopted_fact_ids.extend(p['data_point_id'] for p in result['adopted_points'])
+                income_inputs.extend(added_income)
             item.update(state=result['state'], source_url=source.source_url, source_sha256=source.sha256,
                 source_reused=reused, extracted_candidates=len(result['candidate_matches']),
                 matched_candidates=sum(bool(match['matching_retained_fact_ids']) for match in result['candidate_matches']),
@@ -434,6 +545,8 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
                     'NOT_REQUESTED_NO_RESEARCH_CONTEXT'),
                 result_binding={'path': result_path.relative_to(root).as_posix(),
                     'sha256': hashlib.sha256(result_path.read_bytes()).hexdigest()})
+            if item_export != effective:
+                item['financial_export'] = item_export
             item['transitions'] += ['ORIGINAL_HASH_VERIFIED', 'CANDIDATES_EXTRACTED', 'QUALITY_REEVALUATED', result['state']]
         except Exception as error:
             # An unavailable issuer cannot suppress another independently selected issuer.
@@ -449,7 +562,7 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
         checkpoint = output / (symbol + '-attempt.json')
         write_new_json(checkpoint, item)
         progress.save({'key': _work_key(root, row, points, allow_network, retry_token,
-                                       research_contexts.get(row['symbol'])),
+                                       work_contexts.get(row['symbol'])),
             'attempt': item['attempt'], 'retryable': item['retryable'],
             'completed_at': datetime.now(timezone.utc).isoformat(),
             'registered_adoption': adoption,
@@ -459,6 +572,9 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
     consumption_export = None
     if lawful_sources:
         payload = json.loads(export.read_bytes())
+        if income_inputs:
+            payload.setdefault('annual_points', []).extend(income_inputs)
+            payload['value_enrichment_base_export'] = payload.get('value_enrichment_base_export') or effective
         # Preserve all source facts and their original assurance. The next
         # receipt clock must admit acquisition/review times before consumption.
         declarations = {(s['symbol'], s['period']): s for s in payload.get('value_enrichment_sources', [])}

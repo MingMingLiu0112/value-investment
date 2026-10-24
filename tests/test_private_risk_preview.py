@@ -157,7 +157,7 @@ def actual_contract_preview(tmp_path, monkeypatch, request):
     return service, legacy, core, packet, attribute, quote
 
 
-def register_hotspot_contract(root, legacy, *, namespace='ACTUAL'):
+def register_hotspot_contract(root, legacy, *, namespace='ACTUAL', case_binding=None):
     """Exercise signed registry verification; test trust is scoped by conftest."""
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from authorization_trust_registry_fixture import pin_test_trust_root
@@ -170,7 +170,7 @@ def register_hotspot_contract(root, legacy, *, namespace='ACTUAL'):
         raw = canonical_payload(value)
         path.write_bytes(raw)
         return {'path': name, 'sha256': hashlib.sha256(raw).hexdigest()}
-    case = write('case.json', {'namespace': namespace, 'action': 'no_order'})
+    case = case_binding or write('case.json', {'namespace': namespace, 'action': 'no_order'})
     legacy['case_sha256'] = case['sha256']
     key = Ed25519PrivateKey.generate()
     trust = {'schema_version': 'independent-hotspot-trust-root-v1', 'reviewer_id': 'isolated-contract',
@@ -179,11 +179,11 @@ def register_hotspot_contract(root, legacy, *, namespace='ACTUAL'):
         'valid_until': (NOW + timedelta(days=1)).isoformat()}
     source = {**case, 'namespace': namespace, 'available_at': (NOW - timedelta(hours=1)).isoformat()}
     gates = [write('gates/' + name + '.json', {'schema_version': 'independent-hotspot-gate-assessment-v1',
-        'action': 'no_order', 'namespace': namespace, 'symbol': '300364', 'rule_version': 'contract-v1',
+        'action': 'no_order', 'namespace': namespace, 'symbol': '300364', 'rule_version': legacy['model_or_rule_version'],
         'gate': name, 'status': 'PASS', 'available_at': source['available_at'],
         'expires_at': (NOW + timedelta(hours=1)).isoformat(), 'source_bindings': [source]}) for name in GATES]
     release = {'schema_version': 'independent-hotspot-release-v1', 'action': 'no_order', 'symbol': '300364',
-        'namespace': namespace, 'rule_version': 'contract-v1', 'reviewer_id': trust['reviewer_id'],
+        'namespace': namespace, 'rule_version': legacy['model_or_rule_version'], 'reviewer_id': trust['reviewer_id'],
         'reviewed_at': NOW.isoformat(), 'expires_at': (NOW + timedelta(hours=1)).isoformat(), 'gates': gates}
     write(POINTER, {'schema_version': 'current-hotspot-independent-admission-v1', 'action': 'no_order',
         'items': [{'symbol': '300364', 'release': write('release.json', {'payload': release,

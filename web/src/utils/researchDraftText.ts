@@ -91,9 +91,57 @@ export function researchConfidenceText(value?: string | null): string {
   return CONFIDENCE_TEXT[value.toLowerCase()] ?? value;
 }
 
-export function researchAssumptionName(value: string): string {
-  const roeYear = /^forecast_roe_(\d{4})$/.exec(value);
-  if (roeYear) return `${roeYear[1]} 年预测 ROE`;
+function modelAnniversary(basis: string, offset: number): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(basis)) return null;
+  const [year, month, day] = basis.split("-").map(Number);
+  const original = new Date(Date.UTC(year, month - 1, day));
+  if (original.toISOString().slice(0, 10) !== basis) return null;
+  const date = new Date(Date.UTC(year + offset, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year + offset ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day ||
+    year + offset > 9999
+  )
+    return null;
+  return date.toISOString().slice(0, 10);
+}
+
+export function researchForecastOrdinals(
+  names: readonly string[],
+): ReadonlyMap<string, number> {
+  // These historical IDs bind to forecast_roes.0..4, not calendar years.
+  const expected = ["2026", "2027", "2028", "2029", "2030"].map(
+    (suffix) => `forecast_roe_${suffix}`,
+  );
+  const forecasts = names.filter((name) => name.startsWith("forecast_roe"));
+  if (
+    forecasts.length !== expected.length ||
+    new Set(forecasts).size !== expected.length ||
+    !expected.every((name) => forecasts.includes(name))
+  )
+    return new Map();
+  return new Map(expected.map((name, index) => [name, index + 1]));
+}
+
+export function researchAssumptionName(
+  value: string,
+  period?: { ordinal: number; verifiedAnnualBasis?: string | null },
+): string {
+  if (value.startsWith("forecast_roe")) {
+    if (!period || !Number.isSafeInteger(period.ordinal) || period.ordinal < 1)
+      return "预测 ROE（模型年度）";
+    const label = `第${period.ordinal}期预测 ROE`;
+    if (period.verifiedAnnualBasis) {
+      const start = modelAnniversary(
+        period.verifiedAnnualBasis,
+        period.ordinal - 1,
+      );
+      const end = modelAnniversary(period.verifiedAnnualBasis, period.ordinal);
+      if (start && end) return `${label}（${start} 至 ${end}，模型年度）`;
+    }
+    return `${label}（模型年度）`;
+  }
   return ASSUMPTION_TEXT[value] ?? "其他估值假设";
 }
 

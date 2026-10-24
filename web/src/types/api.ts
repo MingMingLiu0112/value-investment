@@ -118,6 +118,7 @@ export interface CurrentPricePlan {
   supporting_facts?: unknown;
   counter_evidence?: unknown;
   reference_close?: string | null;
+  reference_price_scope?: string;
   price_comparison_eligible?: boolean;
   thesis?: string | null;
   conditional_valuation_range?: Partial<
@@ -666,6 +667,25 @@ export interface DetailResponse {
   status: ApiStatus;
   decision: DecisionItem | null;
   research_draft?: ResearchDraft | null;
+  review_replay?: {
+    status:
+      | "VERIFIED_EXACT_INPUT_REPLAY"
+      | "VERIFIED_NEW_INPUT_CANDIDATE"
+      | "SOURCE_UNAVAILABLE";
+    symbol: string;
+    action: "no_order";
+    formal_eligibility: false;
+    approval_changed?: false;
+    research_admitted?: false;
+    price_admitted?: false;
+    scope?: "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY";
+    research_as_of?: string;
+    replayed_at?: string;
+    prepared_at?: string;
+    valuation_basis_date?: string;
+    valuation_basis_scope?: "EX_POST_PRIOR_COMPLETED_SESSION";
+    next_url?: string;
+  };
   financial_progress?: {
     status: "VERIFIED_FACT_ADOPTION" | "UNVERIFIED";
     action: "no_order";
@@ -674,6 +694,12 @@ export interface DetailResponse {
     research_inputs_updated: boolean;
     quality_coverage_before: string;
     quality_coverage_after: string;
+    adopted_metrics?: {
+      field_name: "debt_ratio" | "revenue_yoy" | "net_income_yoy";
+      value: string;
+      unit: string;
+      period_label: string;
+    }[];
     formal_eligibility: false;
   } | null;
   publication?: PublicPacketBlock;
@@ -806,6 +832,20 @@ export interface PortfolioPosition {
   weight_pct: string | null;
 }
 
+export interface RecordingTimeRiskCapture {
+  status: string;
+  scope?: string;
+  reason?: string;
+  risk_status?: string | null;
+  review_quantity?: number | string | null;
+  blockers?: string[];
+}
+
+export interface RecordingTimeRiskEvidence {
+  recording_time_personal_risk?: RecordingTimeRiskCapture | null;
+  recording_time_risk_status?: string;
+}
+
 export interface PortfolioTrade {
   judgment_snapshot?: {
     publication_id: string;
@@ -813,6 +853,7 @@ export interface PortfolioTrade {
     trade_time_availability_proven: boolean;
     snapshot_sha256: string;
     plan: CurrentPricePlan;
+    personal_risk_capture?: RecordingTimeRiskCapture;
   } | null;
   transaction_id: string;
   side: string;
@@ -902,6 +943,7 @@ export interface WriteResponse {
   revision?: number;
   record_sha256?: string;
   detail?: unknown;
+  personal_risk_capture?: RecordingTimeRiskCapture;
   [key: string]: unknown;
 }
 

@@ -145,7 +145,8 @@ def extract_income_comparatives(pages: list[str], period: str) -> list[dict]:
 
 def extract_retained_annual(root: Path, source: RetainedAnnualSource, *,
                             evaluation_at: datetime, cache_dir: Path,
-                            max_bytes: int = 30_000_000, max_pages: int = 600) -> dict:
+                            max_bytes: int = 30_000_000, max_pages: int = 600,
+                            verify_cache: bool = False) -> dict:
     """Hash/clock check before cached reuse; no fetching and no source mutation."""
     if evaluation_at.tzinfo is None:
         raise ValueError('evaluation clock must be timezone aware')
@@ -175,6 +176,7 @@ def extract_retained_annual(root: Path, source: RetainedAnnualSource, *,
                     implementation_sha256=parser_hash)
     key = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
     cached = cache / (key + '.json')
+    cached_packet = None
     if cached.exists():
         envelope = json.loads(cached.read_bytes())
         packet = envelope['packet']
@@ -183,7 +185,9 @@ def extract_retained_annual(root: Path, source: RetainedAnnualSource, *,
             raise ValueError('extraction cache integrity mismatch')
         if packet['page_count'] > max_pages:
             raise ValueError('source exceeds page budget')
-        return dict(packet, reused=True)
+        if not verify_cache:
+            return dict(packet, reused=True)
+        cached_packet = packet
     # One extra page detects overflow without decoding an unbounded document.
     pages = extract_pages(path, limit=max_pages + 1)
     if len(pages) > max_pages:
@@ -216,6 +220,10 @@ def extract_retained_annual(root: Path, source: RetainedAnnualSource, *,
                   income_comparatives=extract_income_comparatives(pages, source.period),
                   debt_searches=searches, verification_created=False,
                   action='no_order', reused=False)
+    if cached_packet is not None:
+        if cached_packet != packet:
+            raise ValueError('extraction cache differs from original re-extraction')
+        return dict(packet, reused=True)
     cache.mkdir(parents=True, exist_ok=True)
     digest = hashlib.sha256(json.dumps(packet, sort_keys=True).encode()).hexdigest()
     cached.write_text(json.dumps(dict(packet=packet, packet_sha256=digest),

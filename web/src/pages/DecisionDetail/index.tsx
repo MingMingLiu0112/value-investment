@@ -867,6 +867,7 @@ export default function DecisionDetail() {
   const packet = useApi(api.packet);
   const decision = data?.decision;
   const progress = data?.financial_progress;
+  const replay = data?.review_replay;
   const verifiedProgress =
     progress?.status === "VERIFIED_FACT_ADOPTION" &&
     progress.action === "no_order" &&
@@ -923,6 +924,70 @@ export default function DecisionDetail() {
                 {(Number(progress.quality_coverage_before) * 100).toFixed(1)}%
                 到 {(Number(progress.quality_coverage_after) * 100).toFixed(1)}
                 %。 这是财务输入更新；估值、事件审核和投资资格仍独立核验。
+                {Array.isArray(progress.adopted_metrics) &&
+                  progress.adopted_metrics
+                    .filter(
+                      (metric) =>
+                        [
+                          "debt_ratio",
+                          "revenue_yoy",
+                          "net_income_yoy",
+                        ].includes(metric.field_name) &&
+                        metric.unit === "percent" &&
+                        typeof metric.value === "string" &&
+                        metric.value.trim() !== "" &&
+                        Number.isFinite(Number(metric.value)) &&
+                        /^\d{4}-12-31$/.test(metric.period_label),
+                    )
+                    .map((metric) => (
+                      <span
+                        key={`${metric.field_name}-${metric.period_label}`}
+                        style={{ display: "block" }}
+                      >
+                        {metric.period_label} ·{" "}
+                        {
+                          {
+                            debt_ratio: "资产负债率",
+                            revenue_yoy: "营业收入同比",
+                            net_income_yoy: "归母净利润同比",
+                          }[metric.field_name]
+                        }
+                        ：{Number(metric.value).toFixed(2)}%
+                      </span>
+                    ))}
+              </Typography.Paragraph>
+            )}
+            {(replay?.status === "VERIFIED_EXACT_INPUT_REPLAY" ||
+              replay?.status === "VERIFIED_NEW_INPUT_CANDIDATE") &&
+              replay.symbol === decision.symbol &&
+              replay.action === "no_order" &&
+              replay.formal_eligibility === false &&
+              replay.approval_changed === false &&
+              replay.research_admitted === false &&
+              replay.price_admitted === false &&
+              replay.scope === "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY" && (
+                <Typography.Paragraph role="status">
+                  {replay.status === "VERIFIED_NEW_INPUT_CANDIDATE"
+                    ? "新来源版本已完成研究消费，可办理精确版本审核；研究日为 "
+                    : "原研究已按当前程序核验重放，研究日仍为 "}
+                  {replay.research_as_of}
+                  {replay.valuation_basis_scope ===
+                    "EX_POST_PRIOR_COMPLETED_SESSION" &&
+                    replay.valuation_basis_date && (
+                      <>
+                        ；估值基准为 {replay.valuation_basis_date}
+                        收盘，属事后估计，不代表当前行情有效
+                      </>
+                    )}
+                  ；未获经济或买卖批准。{" "}
+                  <a href="#value-review-handoff">
+                    查看有权审核人的材料与签署路径
+                  </a>
+                </Typography.Paragraph>
+              )}
+            {replay?.status === "SOURCE_UNAVAILABLE" && (
+              <Typography.Paragraph role="status">
+                研究审核材料当前核验未通过，不能据此办理审核或更新操作资格。
               </Typography.Paragraph>
             )}
             <JudgmentSummary

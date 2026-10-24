@@ -60,6 +60,22 @@ export function MaterialityHandoff({
         </p>
       )}
       {material.reason && <p role="alert">材料暂不可交接：{material.reason}</p>}
+      {material.recompute_status === "BLOCKED" && (
+        <p role="alert">
+          重算暂不可办理：
+          {material.recompute_reason ?? "原始研究范围尚未通过核验。"}
+        </p>
+      )}
+      {material.status === "MATERIALITY_HANDOFF_BLOCKED" &&
+        material.commands?.prepare_handoff && (
+          <details>
+            <summary>准备原始签署材料</summary>
+            <p>保存对应版本的签署材料后重新读取；此步骤不授予任何审核资格。</p>
+            <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+              {material.commands.prepare_handoff}
+            </pre>
+          </details>
+        )}
       {material.commands &&
         (material.status === "EXTERNAL_SIGNATURE_REQUIRED" || imported) && (
           <details>
@@ -175,6 +191,11 @@ function ExternalReviewHandoff({
       {material?.status === "NOT_READY" && (
         <HandoffNotReady material={material} />
       )}
+      {material?.supplemental_materiality_handoff && (
+        <IndependentEventSupplement
+          material={material.supplemental_materiality_handoff}
+        />
+      )}
       {material?.status === "EXTERNAL_SIGNATURE_REQUIRED" && (
         <>
           <p>
@@ -221,6 +242,24 @@ function ExternalReviewHandoff({
         </>
       )}
     </section>
+  );
+}
+
+export function IndependentEventSupplement({
+  material,
+}: {
+  material: PolicyHandoff["supplemental_materiality_handoff"];
+}) {
+  if (!material) return null;
+  return (
+    <details>
+      <summary>独立新版本公告审核材料</summary>
+      <p>
+        本材料属于单独消费的公告研究版本，不替换上方估值候选，不授予
+        G3、当前估值或操作资格。
+      </p>
+      <MaterialityHandoff material={material} />
+    </details>
   );
 }
 

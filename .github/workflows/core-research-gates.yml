@@ -34,6 +34,8 @@ jobs:
           tests/test_core_workflow_targets.py
           tests/test_hotspot_price_behavior.py
           tests/test_hotspot_event_replay.py
+          tests/test_hotspot_retained_originals.py
+          tests/test_hotspot_retained_source_adapter.py
           tests/test_hotspot_structure_replay.py
           tests/test_intraday_conditions.py
           tests/test_intraday_observation.py
@@ -56,6 +58,7 @@ jobs:
           tests/test_public_evidence_archive.py
           tests/test_public_snapshot_retained_path.py
           tests/test_private_judgment_snapshot_service.py
+          tests/test_recording_time_risk_snapshot.py
           tests/test_security_attributes.py
           tests/test_value_model_identity.py
           tests/test_value_policy_review.py
@@ -64,6 +67,7 @@ jobs:
           tests/web_api/test_p5_reviews.py
           tests/test_private_first_use_workflow.py
           tests/test_private_risk_preview.py
+          tests/test_private_hotspot_add_preview.py
           tests/test_screening_financial_export_v2.py
           tests/test_m2_cli_versioned_integration.py
           tests/test_hotspot_two_stage_retained.py
@@ -81,6 +85,10 @@ jobs:
           tests/test_value_evidence_enrichment_v1.py
           tests/test_value_enrichment_batch.py
           tests/test_value_enrichment_durable_reuse.py
+          tests/test_income_source_correlation.py
+          tests/test_income_source_correlation_integration.py
+          tests/test_value_income_durable_queue.py
+          tests/test_sina_income_automatic_enrichment.py
           tests/test_private_committed_risk.py
           tests/test_private_committed_risk_service.py
           tests/test_current_security_metadata.py
@@ -311,6 +319,14 @@ jobs:
           tests/test_workbook_publication_restore_mapping.py
           tests/test_user_research_workflow.py
           tests/test_research_review_wizard.py
+          tests/test_pending_candidate_replay.py
+          tests/test_source_reobservation.py
+          tests/test_research_market_date.py
+          tests/test_pending_candidate_supplement.py
+          tests/test_supplement_external_review_handoff.py
+          tests/test_event_scan_supplement.py
+          tests/test_event_supplement_handoff.py
+          tests/test_replay_external_review_handoff.py
           tests/test_daily_product_update.py
           tests/test_daily_composer_integration_independent.py
           tests/test_hotspot_manual_scan.py

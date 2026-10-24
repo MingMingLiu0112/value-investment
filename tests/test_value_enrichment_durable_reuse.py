@@ -42,7 +42,8 @@ def test_restart_default_loader_and_safe_public_contract(durable):
     assert public == dict(status='VERIFIED_FACT_ADOPTION', symbol='600001', adopted_fact_count=1,
         research_inputs_updated=True, quality_coverage_before='0.0000',
         quality_coverage_after='0.1111', formal_eligibility=False, action='no_order',
-        as_of=durable['result']['evaluation_at'], verified_at=now.isoformat())
+        as_of=durable['result']['evaluation_at'], verified_at=now.isoformat(),
+        adopted_metrics=[dict(field_name='debt_ratio', value='20.0', unit='percent', period_label='2025-12-31')])
     assert batch.read_verified_enrichment_progress(root, '000002', now) is None
     assert batch.read_verified_enrichment_progress(root, '600001', now.replace(tzinfo=None)) is None
 

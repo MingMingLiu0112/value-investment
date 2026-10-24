@@ -1,5 +1,5 @@
 param(
-    [ValidateRange(1024, 65535)][int]$Port = 8001,
+    [ValidateSet(8001)][int]$Port = 8001,
     [switch]$Open,
     [switch]$Reauthorize
 )
@@ -12,6 +12,17 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
 $OutputEncoding = [System.Text.UTF8Encoding]::new()
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+$releasePointer = Join-Path $root '.tmp/active-web-release.json'
+if (Test-Path -LiteralPath $releasePointer) {
+    $release = Get-Content -LiteralPath $releasePointer -Raw -Encoding utf8 | ConvertFrom-Json
+    if ($release.schema_version -ne 'local-web-release-v1' -or $release.port -ne 8001) { throw 'Invalid local Web release pointer.' }
+    $releaseRoot = (Resolve-Path -LiteralPath $release.root).Path
+    if ($releaseRoot -eq $root) { throw 'Local Web release pointer must not recurse.' }
+    $releaseScript = Join-Path $releaseRoot 'scripts/current/start_web_workbench.ps1'
+    if (-not (Test-Path -LiteralPath $releaseScript)) { throw 'Local Web release entry is missing.' }
+    & $releaseScript @PSBoundParameters
+    exit $LASTEXITCODE
+}
 Set-Location -LiteralPath $root
 $env:PYTHONPATH = Join-Path $root 'src'
 $env:PYTHONIOENCODING = 'utf-8'
@@ -31,7 +42,7 @@ function Test-WorkbenchIdentity {
         return ($Process -and
             [string]::Equals($recordedRoot, $canonicalRoot, [StringComparison]::OrdinalIgnoreCase) -and
             [string]::Equals($Process.ExecutablePath, $ExpectedPython, [StringComparison]::OrdinalIgnoreCase) -and
-            $Process.ProcessId -eq $State.pid -and
+            $Process.ProcessId -eq $State.pid -and [int]$State.port -eq 8001 -and
             $actualCreation.UtcTicks -eq $recordedCreation.UtcTicks -and
             $Process.CommandLine -match 'value_investment_agent.presentation.web_api.app:app' -and
             @($Listeners | Where-Object { $_.OwningProcess -eq $State.pid -and
@@ -85,12 +96,10 @@ if (Test-Path -LiteralPath $statePath) {
         }
     } catch { Write-Host '原启动记录无法核验，保留现有进程。' }
 }
-while ($Port -le 65535) {
-    $probe = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
-    try { $probe.Start(); break } catch { $Port++ } finally { $probe.Stop() }
-}
-if ($Port -gt 65535) { throw '没有可用的本机回环端口。' }
-if ($Port -ne $requestedPort) { Write-Host "端口 $requestedPort 已占用，未停止任何进程；改用 http://127.0.0.1:$Port 。" }
+$probe = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
+try { $probe.Start() }
+catch { throw '端口 8001 已占用，且未通过本项目进程归属核验；拒绝另开端口或停止未知进程。' }
+finally { $probe.Stop() }
 $env:VALUE_INVESTMENT_WEB_PORT = "$Port"
 # WEB-D3 P0.2: the private API starts locked. This per-run secret is the only
 # way to unlock it; it is handed to the browser through the URL fragment (never

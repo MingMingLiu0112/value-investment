@@ -33,7 +33,7 @@ Exit codes (update result first, Web result second):
 #>
 param(
     [ValidateSet('READ_ONLY', 'SAFE_REFRESH')][string]$Mode = 'READ_ONLY',
-    [ValidateRange(1024, 65535)][int]$Port = 8001,
+    [ValidateSet(8001)][int]$Port = 8001,
     [switch]$Open,
     [switch]$NoServer,
     [switch]$Reauthorize,
@@ -69,6 +69,17 @@ if ($ExecuteValueEnrichment -and (-not $BuildValueResearchPriority -or $Mode -ne
     throw 'Financial enrichment requires SAFE_REFRESH and BuildValueResearchPriority.'
 }
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+$releasePointer = Join-Path $root '.tmp/active-web-release.json'
+if (Test-Path -LiteralPath $releasePointer) {
+    $release = Get-Content -LiteralPath $releasePointer -Raw -Encoding utf8 | ConvertFrom-Json
+    if ($release.schema_version -ne 'local-web-release-v1' -or $release.port -ne 8001) { throw 'Invalid local Web release pointer.' }
+    $releaseRoot = (Resolve-Path -LiteralPath $release.root).Path
+    if ($releaseRoot -eq $root) { throw 'Local Web release pointer must not recurse.' }
+    $releaseScript = Join-Path $releaseRoot 'scripts/current/run_daily_workbench.ps1'
+    if (-not (Test-Path -LiteralPath $releaseScript)) { throw 'Local Web release entry is missing.' }
+    & $releaseScript @PSBoundParameters
+    exit $LASTEXITCODE
+}
 Set-Location -LiteralPath $root
 $env:PYTHONPATH = Join-Path $root 'src'
 $env:PYTHONIOENCODING = 'utf-8'

@@ -99,6 +99,20 @@ def test_retained_extraction_cache_hash_and_budget(tmp_path, source):
         adapter.extract_retained_annual(tmp_path, source, **kwargs)
 
 
+def test_financial_admission_rejects_self_resealed_extraction_cache(tmp_path, source):
+    import json
+    cache = tmp_path / '.tmp/cache'
+    adapter.extract_retained_annual(tmp_path, source, evaluation_at=NOW, cache_dir=cache)
+    path = next(cache.glob('*.json'))
+    envelope = json.loads(path.read_bytes())
+    envelope['packet']['income_comparatives'] = [dict(field_name='revenue', value='999')]
+    envelope['packet_sha256'] = hashlib.sha256(
+        json.dumps(envelope['packet'], sort_keys=True).encode()).hexdigest()
+    path.write_text(json.dumps(envelope), encoding='utf-8')
+    with pytest.raises(ValueError, match='original re-extraction'):
+        enrich_retained_company(tmp_path, source, [], evaluation_at=NOW, cache_dir=cache)
+
+
 def test_company_information_code_on_page_six_is_verified_not_guessed(tmp_path, source, monkeypatch):
     pages = ['2025\u5e74\u5e74\u5ea6\u62a5\u544a'] + ['contents'] * 4 + ['\u80a1\u7968\u4ee3\u7801 600887']
     monkeypatch.setattr(adapter, 'extract_pages', lambda path, limit: pages[:limit])

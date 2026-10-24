@@ -500,6 +500,13 @@ def build_hotspot_quantitative_validation(*, root: Path, protocol_binding: dict 
     protocol, raw = _read_object(path, "quantitative protocol")
     if _hash_bytes(raw) != protocol_binding["sha256"]:
         raise ValueError("Quantitative protocol hash mismatch")
+    from .retained_source_replay import MANIFEST_SCHEMA, build_retained_descriptive_validation
+
+    if protocol.get("schema_version") == MANIFEST_SCHEMA:
+        result = build_retained_descriptive_validation(root=root,
+            manifest_binding=protocol_binding, now=now)
+        result["evidence_sha256"] = _recomputed_digest(result, "evidence_sha256")
+        return result
     if protocol.get("schema_version") == "hotspot-execution-protocol-v1":
         result = compute_quantitative_validation(root=root,
             binding=ProtocolBinding(**protocol_binding), protocol=protocol, now=now)

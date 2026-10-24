@@ -10,7 +10,7 @@ from ...domain.portfolio.security_attributes import (
     SCHEMA as ATTRIBUTE_SCHEMA, parse_observed_attributes, quantity_rule_blockers,
 )
 from ..hotspot.current_registry import load_price_conditions, registry_identity
-from ..hotspot.independent_price_conditions import project_independent_price_condition
+from ..hotspot.independent_price_conditions import project_independent_price_condition, observed_held_add
 from ..product.quote_bridge import execute_quote_bridge_for_symbol
 from ..product.public_snapshot import load_current_packet
 from ..product.publication_chain import load_current_chain
@@ -180,7 +180,8 @@ def _projected_scenario(scenario, *, journal, symbol, assumptions, binding,
     else:
         request = {**assumptions, "lot_size": int(Decimal(str(assumptions["lot_size"]))),
         "symbol": symbol, "sleeve": "HOTSPOT_SATELLITE",
-        "entry_price_cny": plan["entry_trigger_price"], "stop_price_cny": plan["invalidation_price"],
+        "entry_price_cny": (plan["current_reference_price"] if plan.get("risk_review_action") == "ADD"
+            else plan["entry_trigger_price"]), "stop_price_cny": plan["invalidation_price"],
         "quote_as_of": plan["market_trade_date"], "available_at": plan["data_available_at"],
         "valid_until": expiry + "T15:00:00+08:00",
         "liquidity_verified": execution["liquid"], "limit_up": execution["limit_up"],
@@ -288,6 +289,9 @@ def _actionable_decision(result, *, binding, symbol, sleeve, generated_at, entry
     engine = result.get("engine") or {}
     facts = result.get("facts") or {}
     plan = (binding or {}).get("plan") or {}
+    held = _same_sleeve_holding(facts, symbol, sleeve)
+    private_add = (sleeve == "HOTSPOT_SATELLITE" and held
+        and plan.get("risk_review_action") == "ADD" and observed_held_add(plan))
     blockers = list(dict.fromkeys([*result.get("blockers", []),
         *engine.get("blockers", []), *sizing.get("blockers", []), *plan.get("blockers", [])]))
     eligible = (plan.get("risk_review_eligible") is True
@@ -295,7 +299,7 @@ def _actionable_decision(result, *, binding, symbol, sleeve, generated_at, entry
         if sleeve == "HOTSPOT_SATELLITE" else plan.get("formal_eligibility") is True)
     if not binding or not eligible:
         blockers.append("CURRENT_PLAN_NOT_FORMALLY_ELIGIBLE")
-    if sleeve == "HOTSPOT_SATELLITE" and plan.get("signal_state") != "TRIGGER_OBSERVED":
+    if sleeve == "HOTSPOT_SATELLITE" and not private_add and plan.get("signal_state") != "TRIGGER_OBSERVED":
         blockers.append("CURRENT_ENTRY_CONDITION_NOT_OBSERVED")
     if sleeve == "CORE_VALUE" and plan.get("current_quote_verified") is not True:
         blockers.append("CURRENT_VALUE_QUOTE_NOT_VERIFIED")
@@ -335,15 +339,12 @@ def _actionable_decision(result, *, binding, symbol, sleeve, generated_at, entry
             blockers.append("CURRENT_PLAN_EXPIRED")
     except (ValueError, TypeError):
         blockers.append("PLAN_EXPIRY_MISSING_OR_INVALID")
-    held = any(row.get("symbol") == symbol and any(part.get("sleeve") == sleeve
-        and Decimal(part["quantity"]) > 0 for part in row.get("sleeves", []))
-        for row in facts.get("positions", []))
     if held and plan.get("add_condition") is None:
         blockers.append("CURRENT_PLAN_ADD_CONDITION_MISSING")
     if held:
         add = plan.get("add_condition")
-        if (plan.get("action_intent") != "ADD" or not isinstance(add, dict)
-                or not (add.get("triggered") is True or add.get("observed") is True)):
+        if (not private_add and (plan.get("action_intent") != "ADD" or not isinstance(add, dict)
+                or not (add.get("triggered") is True or add.get("observed") is True))):
             blockers.append("CURRENT_ADD_CONDITION_NOT_CONFIRMED")
         context = entry_context or {}
         blockers.extend(context.get("blockers") or [])
@@ -351,9 +352,9 @@ def _actionable_decision(result, *, binding, symbol, sleeve, generated_at, entry
             blockers.append("OWNED_ENTRY_DEPENDENCIES_REQUIRED")
         if not context.get("current_add_advisory_verified"):
             blockers.append("OWNED_CURRENT_ADD_ADVISORY_REQUIRED")
-    if plan.get("symbol") != symbol or plan.get("action_intent") not in {"OPEN", "ADD"}:
+    if plan.get("symbol") != symbol or (not private_add and plan.get("action_intent") not in {"OPEN", "ADD"}):
         blockers.append("CURRENT_PLAN_NOT_BUY_OR_ADD")
-    if not held and plan.get("action_intent") == "ADD":
+    if not held and (plan.get("action_intent") == "ADD" or plan.get("risk_review_action") == "ADD"):
         blockers.append("ADD_REQUIRES_SAME_SLEEVE_HOLDING")
     blockers = list(dict.fromkeys(blockers))
     details = sizing.get("sizing_details") or {}
@@ -398,7 +399,7 @@ def _actionable_decision(result, *, binding, symbol, sleeve, generated_at, entry
         "current_verified_reference_price": plan.get("reference_close") if sleeve == "CORE_VALUE" else plan.get("current_reference_price"),
         "reference_price_scope": plan.get("reference_price_scope"),
         "entry_condition": deepcopy(plan.get("entry_condition")),
-        "entry_price_or_range": plan.get("entry_trigger_price"),
+        "entry_price_or_range": plan.get("current_reference_price") if private_add else plan.get("entry_trigger_price"),
         "add_condition": deepcopy(plan.get("add_condition")),
         "reduce_condition": deepcopy(plan.get("reduce_condition")),
         "exit_condition": deepcopy(plan.get("exit_condition")),
@@ -421,7 +422,13 @@ def _actionable_decision(result, *, binding, symbol, sleeve, generated_at, entry
         "trade_eligible": False, "broker_execution_permission": False}
 
 
-def _current_plan(root, symbol, now):
+def _same_sleeve_holding(facts, symbol, sleeve):
+    return any(row.get("symbol") == symbol and any(part.get("sleeve") == sleeve
+        and Decimal(part["quantity"]) > 0 for part in row.get("sleeves", []))
+        for row in facts.get("positions", []))
+
+
+def _current_plan(root, symbol, now, review_action="OPEN"):
     packet, error = load_current_packet(root)
     if packet is None:
         return None, "PUBLIC_SNAPSHOT_UNAVAILABLE"
@@ -442,7 +449,8 @@ def _current_plan(root, symbol, now):
     if (plan.get("signal_state") in {"STALE", "BLOCKED", "TRIGGER_REJECTED", "EXPIRED"}
             or plan.get("candidate_lifecycle") == "PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY"):
         return None, "CURRENT_PLAN_STALE_OR_INVALIDATED"
-    independent = project_independent_price_condition(root, symbol=symbol, plan=plan, now=now)
+    independent = project_independent_price_condition(root, symbol=symbol, plan=plan, now=now,
+        review_action=review_action)
     return {"publication_id": packet["publication_id"], "plan": independent}, None
 
 
@@ -489,7 +497,10 @@ def preview_private_hotspot_risk(journal, *, repository_root, generated_at: date
         assumptions["lot_size"] = verified_rules["lot_size"]
         blockers = [item for item in blockers if item != "ASSUMPTION_MISSING:lot_size"]
     try:
-        binding, error = _current_plan(repository_root, symbol, generated_at)
+        # Action scope comes only from replayed private holdings, never payload.
+        held = _same_sleeve_holding(result.get("facts") or {}, symbol, "HOTSPOT_SATELLITE")
+        binding, error = (_current_plan(repository_root, symbol, generated_at, "ADD") if held
+            else _current_plan(repository_root, symbol, generated_at))
         if error:
             blockers.append(error)
     except (OSError, ValueError, KeyError, TypeError, AttributeError, ArithmeticError):
@@ -502,7 +513,10 @@ def preview_private_hotspot_risk(journal, *, repository_root, generated_at: date
             date.fromisoformat(plan["expires_after_session"])
         except ValueError:
             blockers.append("PLAN_EXPIRY_MISSING_OR_INVALID")
-        entry, stop = plan.get("entry_trigger_price"), plan.get("invalidation_price")
+        # Size against the verified completed close; the ADD price is the
+        # historical retest level, not an executable current purchase price.
+        entry = plan.get("current_reference_price") if held else plan.get("entry_trigger_price")
+        stop = plan.get("invalidation_price")
         if entry is None or stop is None:
             blockers.append("PLAN_PRICE_MISSING")
         elif not Decimal(0) < Decimal(stop) < Decimal(entry):

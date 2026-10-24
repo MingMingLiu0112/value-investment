@@ -14,9 +14,12 @@ function json(status: number, body: unknown): Response {
 
 function stubWindow(hash: string) {
   const store = new Map<string, string>();
-  const replaceState = vi.fn();
+  const location = { hash, pathname: "/daily", search: "" };
+  const replaceState = vi.fn(() => {
+    location.hash = "";
+  });
   vi.stubGlobal("window", {
-    location: { hash, pathname: "/daily", search: "" },
+    location,
     history: { replaceState },
     sessionStorage: {
       getItem: (key: string) => store.get(key) ?? null,
@@ -28,7 +31,7 @@ function stubWindow(hash: string) {
       },
     } as unknown as Storage,
   });
-  return { store, replaceState };
+  return { store, replaceState, location };
 }
 
 describe("private session unlock handling", () => {
@@ -90,7 +93,7 @@ describe("private session unlock handling", () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
-  it("exchanges the unlock fragment once and retries a refused read once", async () => {
+  it("exchanges the unlock fragment once without retaining it for later requests", async () => {
     const { replaceState } = stubWindow(`#unlock=${SECRET}`);
     const calls: Call[] = [];
     let unlocks = 0;
@@ -115,7 +118,7 @@ describe("private session unlock handling", () => {
             token: "token-" + unlocks,
           });
         }
-        if (headers["X-Local-Session"] === "token-2") {
+        if (headers["X-Local-Session"] === "token-1") {
           return json(200, { action: "no_order", status: "NOT_CONNECTED" });
         }
         return json(401, {
@@ -129,8 +132,8 @@ describe("private session unlock handling", () => {
     const body = await api.portfolio();
     expect(body.status).toBe("NOT_CONNECTED");
     const reads = calls.filter((call) => call.url === "/api/v1/portfolio");
-    expect(reads.map((call) => call.header)).toEqual(["token-1", "token-2"]);
-    expect(unlocks).toBe(2);
+    expect(reads.map((call) => call.header)).toEqual(["token-1"]);
+    expect(unlocks).toBe(1);
     expect(replaceState).toHaveBeenCalledWith(null, "", "/daily");
   });
 
@@ -181,5 +184,94 @@ describe("private session unlock handling", () => {
     await expect(api.portfolio()).rejects.toMatchObject({
       code: "LOCAL_SESSION_LOCKED",
     });
+  });
+
+  it("renews a stale stored session before all concurrent private reads", async () => {
+    const { store, location } = stubWindow(`#unlock=${SECRET}`);
+    store.set("vi-local-session", "expired-token");
+    let unlocks = 0;
+    const used: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (String(input) === UNLOCK_URL) {
+          unlocks += 1;
+          return json(200, { action: "no_order", token: "fresh-token" });
+        }
+        used.push(new Headers(init?.headers).get("X-Local-Session") ?? "");
+        return json(200, { action: "no_order", status: "NOT_CONNECTED" });
+      }),
+    );
+    const { api } = await import("../src/services/api");
+    await Promise.all([
+      api.portfolio(),
+      api.risk(),
+      api.valuePolicyHandoff("600519"),
+    ]);
+    expect(unlocks).toBe(1);
+    expect(used).toEqual(["fresh-token", "fresh-token", "fresh-token"]);
+    expect(store.get("vi-local-session")).toBe("fresh-token");
+    expect(location.hash).toBe("");
+  });
+
+  it("does not let a late expired read discard a newly unlocked session", async () => {
+    const { store, location } = stubWindow("");
+    store.set("vi-local-session", "expired-token");
+    let rejectOld: (response: Response) => void = () => {
+      throw new Error("Old request not started");
+    };
+    let started: () => void = () => {};
+    const oldStarted = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    let unlocks = 0;
+    const used: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (String(input) === UNLOCK_URL) {
+          unlocks += 1;
+          return json(200, { action: "no_order", token: "fresh-token" });
+        }
+        const token = new Headers(init?.headers).get("X-Local-Session") ?? "";
+        used.push(token);
+        if (token === "expired-token") {
+          return new Promise<Response>((resolve) => {
+            rejectOld = resolve;
+            started();
+          });
+        }
+        return json(200, { action: "no_order", status: "NOT_CONNECTED" });
+      }),
+    );
+    const { api } = await import("../src/services/api");
+    const old = api.portfolio();
+    await oldStarted;
+    location.hash = `#unlock=${SECRET}`;
+    await api.risk();
+    rejectOld(
+      json(401, { action: "no_order", status: "LOCAL_AUTHORIZATION_REQUIRED" }),
+    );
+    await old;
+    expect(unlocks).toBe(1);
+    expect(used).toEqual(["expired-token", "fresh-token", "fresh-token"]);
+    expect(store.get("vi-local-session")).toBe("fresh-token");
+    await api.valuePolicyHandoff("600519");
+    expect(used[used.length - 1]).toBe("fresh-token");
+  });
+
+  it("refuses an expired stored token without a fresh launcher link", async () => {
+    const { store } = stubWindow("");
+    store.set("vi-local-session", "expired-token");
+    const fetcher = vi.fn(async () =>
+      json(401, { action: "no_order", status: "LOCAL_AUTHORIZATION_REQUIRED" }),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    const { api } = await import("../src/services/api");
+    await expect(api.portfolio()).rejects.toMatchObject({
+      code: "LOCAL_SESSION_LOCKED",
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(store.has("vi-local-session")).toBe(false);
   });
 });

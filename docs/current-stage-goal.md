@@ -1,5 +1,31 @@
 # 当前总目标：价值投资建议与情绪卫星仓系统
 
+## 2026-10-24 当前执行入口与剩余业务闭环
+
+当前唯一 Goal 为 `DUAL-STRATEGY-RESEARCH-TO-DECISION-CLOSURE-20261023`。
+完整范围、最新基线、A-E剩余工作包和验收以
+[current/dual-strategy-closure-goal-prompt-20261023.md](current/dual-strategy-closure-goal-prompt-20261023.md)
+为本次用户授权的执行提示词；永久架构/方法/证据边界不变。
+唯一台账仍是 current/web-first-full-product-execution-ledger.md。
+下面按日期保留的旧任务只作历史，不重新排队执行。
+
+2026-10-24只读核对：8001运行d2892512，源码/前后端/发布登记MATCHED，
+对应Core/Web CI成功；集成与远程PR分支353a43ed是后续文档提交，
+其Web CI成功、Core取消，不宣称全部通过。
+早期三份波段提交和后续现金事件包已整合，不再要求重做合并。
+已上线临时双策略账户演练不等于持久账户；eb1的4f1a739d为独立提交，
+仍待独立审查、共享接口/Web接线、回归与发布，成交确认后更正尚不支持。
+
+剩余主线：经济研究与主估值准入、持久SIMULATED账户及Entry买卖一致性、
+波段真实独立验证和消费者、当前覆盖/事件/交易日历/每日增量、最终用户验收。
+主会话负责价值、共享API/Web/组合、审查、合并和8001；“框架搭建 (2)”
+负责波段，复用有界subagents。不得把签名工具、审计对象或测试数量当作策略有效。
+用户已授权完成大节点提交并推送现有PR #1分支，不含main合并、私人数据公开、
+服务器/生产任务/数据库或Canonical Excel操作。永久action=no_order。
+
+本次仅审查和修改目标文档，Goal工具状态为PAUSED；不自动恢复或标记完成。
+之后恢复时重新核对状态与提交，文档快照不覆盖新的实际证据。
+
 ## 2026-10-21 V5 end-to-end closure
 
 Latest explicit user scope is DUAL-STRATEGY-END-TO-END-CLOSURE-V5, attachment
