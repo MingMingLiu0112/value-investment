@@ -79,6 +79,20 @@ class _Entry(_Mutation):
     confirmation_note: str = Field(min_length=1, max_length=2000)
 
 
+class _Changes(_Strict):
+    quantity: str | None = Field(default=None, pattern=r'^[1-9][0-9]{0,6}$')
+    price_cny: str | None = Field(default=None, pattern=r'^[0-9]{1,10}(?:\.[0-9]{1,6})?$')
+    fees_cny: str | None = Field(default=None, pattern=r'^[0-9]{1,10}(?:\.[0-9]{1,6})?$')
+
+
+class _Correction(_Mutation):
+    target_fill_record_sha256: str = Field(pattern=r'^[a-f0-9]{64}$')
+    expected_original_version: str = Field(pattern=r'^[a-f0-9]{64}$')
+    changes: _Changes
+    confirmed_at: str = Field(min_length=20, max_length=40)
+    reason: str = Field(min_length=1, max_length=2000)
+
+
 def register_simulated_portfolio_routes(api: FastAPI, *, project, port=8001,
         clock=lambda: datetime.now(timezone.utc), core_symbols=('600519',)):
     headers = {'Cache-Control': 'no-store'}
@@ -100,7 +114,7 @@ def register_simulated_portfolio_routes(api: FastAPI, *, project, port=8001,
         try:
             now = clock()
             if operation:
-                mutation = mutate_simulated_portfolio(project, now, operation, payload.model_dump(),
+                mutation = mutate_simulated_portfolio(project, now, operation, payload.model_dump(exclude_none=True),
                     core_symbols=core_symbols)
             result = read_simulated_portfolio_workbench(project, clock(),
                 core_symbols=core_symbols, mutation=mutation)
@@ -139,3 +153,7 @@ def register_simulated_portfolio_routes(api: FastAPI, *, project, port=8001,
     @api.post('/api/v1/simulated-portfolio/confirm-entry')
     def entry(request: Request, payload: _Entry):
         return emit(request, 'confirm-entry', payload)
+
+    @api.post('/api/v1/simulated-portfolio/correct-fill')
+    def correct(request: Request, payload: _Correction):
+        return emit(request, 'correct-fill', payload)

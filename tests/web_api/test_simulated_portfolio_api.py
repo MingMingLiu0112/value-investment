@@ -167,6 +167,46 @@ def test_cancel_prepared_fill_does_not_change_cash(sources):
     assert cancelled.json()['account']['portfolio']['positions'] == []
 
 
+def test_confirmed_correction_appends_and_survives_restart_and_retry(sources):
+    root, symbol = sources
+    http = client(root)
+    view, _ = prepare_and_confirm(http, initialize(http), symbol)
+    target = view['mutation']['record_sha256']
+    journal = root / 'runtime/simulated-portfolios-v1/paper-dual-v1/journal.jsonl'
+    original = journal.read_bytes()
+    latest = read(http)
+    payload = request(latest, 'correct-price', target_fill_record_sha256=target,
+        expected_original_version=target, changes=dict(price_cny='12', fees_cny='7'),
+        confirmed_at=latest['server_now'], reason='Human confirmed TEST_ONLY price and fee correction')
+    response = http.post(URL + '/correct-fill', json=payload)
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result['account']['portfolio']['cash_cny'] == '8793'
+    assert result['account']['portfolio']['trades'][0]['record_sha256'] == target
+    assert journal.read_bytes().startswith(original)
+    assert len(journal.read_bytes().splitlines()) == len(original.splitlines()) + 1
+    correction = result['account']['fill_corrections'][target]
+    assert correction['effective_version_sha256'] == result['mutation']['record_sha256']
+    assert correction['original_fill']['price_cny'] == '10'
+    assert correction['effective_fill']['price_cny'] == '12'
+    assert result['account']['correction_reconciliation_status'] == 'INVALIDATED_RECONCILIATION_REQUIRED'
+    assert http.post(URL + '/correct-fill', json=payload).json()['mutation'] == result['mutation']
+    assert read(client(root))['account'] == result['account']
+    before = journal.read_bytes()
+    stale = dict(payload, idempotency_key='stale-correction', expected_revision=result['account']['revision'])
+    assert http.post(URL + '/correct-fill', json=stale).status_code == 409
+    assert journal.read_bytes() == before
+
+
+@pytest.mark.parametrize('changes', [{'symbol': '600000'}, {'quantity': '0'}, {'fees_cny': '-1'}])
+def test_correction_cannot_change_identity_or_invalid_numbers(tmp_path, changes):
+    payload = dict(confirmed_hypothetical=True, idempotency_key='bad-correction', expected_revision=0,
+        target_fill_record_sha256='a' * 64, expected_original_version='a' * 64, changes=changes,
+        confirmed_at=datetime.now(timezone.utc).isoformat(), reason='TEST_ONLY')
+    assert client(tmp_path).post(URL + '/correct-fill', json=payload).status_code == 422
+    assert not list(tmp_path.rglob('*.jsonl'))
+
+
 def test_recorded_account_remains_readable_when_current_sources_unavailable(sources, monkeypatch):
     root, symbol = sources
     http = client(root)

@@ -1,4 +1,5 @@
 import type { ValueResearchAnalysis } from "../types/api";
+import { SourceNativeEconomicReview } from "./SourceNativeEconomicReview";
 import {
   nativeCashFields,
   sourceNativeCashReviewMatches,
@@ -53,7 +54,7 @@ export function SourceNativeCashReview({
     return (
       <section aria-label="原生现金路径条件研究">
         <p className="value-analysis-boundary">
-          仅待审资料，新版本签名消费链尚未接通。这是工程缺口，不是等待用户授权。
+          当前页面仍展示待审候选；研究级签名CLI已实现，本页尚未接入其准入结果。
         </p>
         <p role="status">
           原生现金路径的分支、日期、来源或估值绑定待核验，暂不展示本附录现金数值。不得据此认定经济或交易准入。
@@ -68,7 +69,7 @@ export function SourceNativeCashReview({
     >
       <h3>原生现金路径条件研究</h3>
       <p className="value-analysis-boundary">
-        仅待审资料，新版本签名消费链尚未接通。这是工程缺口，不是等待用户授权；不能签署消费或视为已准备正式准入。
+        当前页面仍展示待审候选；研究级签名CLI已实现，本页尚未接入其准入结果，不能视为主估值或价格批准。
       </p>
       <p className="value-analysis-boundary">
         低置信度（LOW） · 前瞻假设，非正常化事实 · 未获主估值 / G3 或策略批准。
@@ -78,6 +79,11 @@ export function SourceNativeCashReview({
         {native.point_in_time.research_as_of}
         。这是指定基准日的条件模型，不是今日公允价值。
       </p>
+      <SourceNativeEconomicReview
+        key={`${symbol}:${native.candidate_binding.path}:${native.candidate_binding.sha256}`}
+        symbol={symbol}
+        candidate={native.candidate_binding}
+      />
       <h4>只选择了“暂时延迟回收”分支</h4>
       <p>
         本次后端明确选择

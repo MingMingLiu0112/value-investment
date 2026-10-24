@@ -1,0 +1,187 @@
+import { useRef, useState } from "react";
+import { Button } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
+import type {
+  EconomicBinding,
+  EconomicReview,
+} from "../services/sourceNativeEconomicReview";
+import { verifiedEconomicReview } from "../services/sourceNativeEconomicReview";
+import { readinessNumber } from "../utils/strategyReadiness";
+
+const percent = (value: string) =>
+  new Intl.NumberFormat("zh-CN", {
+    style: "percent",
+    maximumFractionDigits: 1,
+  }).format(Number(value));
+const labels = { bear: "保守", base: "基准", bull: "乐观" };
+
+export function EconomicReviewResult({ value }: { value: EconomicReview }) {
+  const [scenario, setScenario] = useState<"bear" | "base" | "bull">("base");
+  const row = value.scenarios.find((s) => s.scenario === scenario)!;
+  return (
+    <>
+      <p>
+        低置信度条件研究；财务基准 {value.share_basis.financial_basis}
+        ，历史普通股分母 {readinessNumber(
+          value.share_basis.ordinary_shares,
+        )}{" "}
+        股。未核验当前股本或价格资格。
+      </p>
+      <label>
+        条件情景{" "}
+        <select
+          aria-label="经济复核情景"
+          value={scenario}
+          onChange={(event) =>
+            setScenario(event.target.value as typeof scenario)
+          }
+        >
+          {(["bear", "base", "bull"] as const).map((name) => (
+            <option key={name} value={name}>
+              {labels[name]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <dl className="value-analysis-grid">
+        <div>
+          <dt>原候选条件值（元/历史股，未批准）</dt>
+          <dd>
+            {readinessNumber(row.original.candidate_per_historical_share_cny)}
+          </dd>
+        </div>
+        <div>
+          <dt>未来股利终值占模型总值</dt>
+          <dd>{percent(row.original.ddm_terminal_fraction)}</dd>
+        </div>
+        <div>
+          <dt>RI终端剩余收益占模型总值</dt>
+          <dd>{percent(row.original.ri_terminal_fraction)}</dd>
+        </div>
+        <div>
+          <dt>资本成本提高2个百分点的条件值（元/历史股）</dt>
+          <dd>
+            {row.ke_plus_200bp.status === "CONDITIONAL_KERNEL_SENSITIVITY"
+              ? readinessNumber(
+                  row.ke_plus_200bp.result!.per_historical_share_cny,
+                )
+              : "现有内核不支持此挑战"}
+          </dd>
+        </div>
+        <div>
+          <dt>首年母公司现金超过分析底线的模型缓冲（元）</dt>
+          <dd>
+            {readinessNumber(
+              row.first_year_boundary.original_cash_above_floor_cny,
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>其他假设固定时，首年延迟比例的现金边界</dt>
+          <dd>
+            {percent(row.first_year_boundary.cash_only_delay_boundary_fraction)}
+            {!row.first_year_boundary.boundary_within_zero_one &&
+              "（落在0–100%之外，不是可行安全比例）"}
+          </dd>
+        </div>
+      </dl>
+      <p>
+        两种终端占比口径不同，不能相加。终端占比较高说明价值依赖长期假设；窄幅三情景不能覆盖共同风险。
+      </p>
+      <p>
+        首年现金边界仅为固定盈利、分配、分析底线及付款假设下的关系，不是长期安全阈值、延迟概率或分红保证。资本成本挑战不是当前目标价或获批的新估值。
+      </p>
+      <h5>五组经济复核仍需判断的事实与假设</h5>
+      <ul>
+        {value.five_groups.map((group) => (
+          <li key={group.id}>
+            <strong>{group.title}：</strong>
+            {group.interpretation}
+          </li>
+        ))}
+      </ul>
+      <p>
+        正常化利润未在此确认；主估值、事件有效性、当前价格和用户策略确认仍分别验收。本结果不能直接形成买入或加仓资格。
+      </p>
+      <details>
+        <summary>候选版本与证据引用</summary>
+        <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+          {JSON.stringify(
+            {
+              candidate: value.candidate_binding,
+              sources: value.source_bindings,
+            },
+            null,
+            2,
+          )}
+        </pre>
+      </details>
+    </>
+  );
+}
+
+export function SourceNativeEconomicReview({
+  symbol,
+  candidate,
+}: {
+  symbol: string;
+  candidate: EconomicBinding;
+}) {
+  const [value, setValue] = useState<EconomicReview>();
+  const [error, setError] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const lock = useRef(false);
+  const visible =
+    value && verifiedEconomicReview(value, symbol, candidate)
+      ? value
+      : undefined;
+  async function read() {
+    if (lock.current) return;
+    lock.current = true;
+    setBusy(true);
+    setValue(undefined);
+    setError(false);
+    try {
+      const response = await fetch(
+        `/api/v1/value-economic-review/${encodeURIComponent(symbol)}`,
+        { cache: "no-store", credentials: "same-origin" },
+      );
+      if (!response.ok) throw new Error("unavailable");
+      const result = await response.json();
+      if (!verifiedEconomicReview(result, symbol, candidate))
+        throw new Error("identity");
+      setValue(result);
+    } catch {
+      setError(true);
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
+  return (
+    <section
+      aria-label="经济复核与共同风险"
+      style={{
+        minWidth: 0,
+        maxWidth: "100%",
+        overflowWrap: "anywhere",
+        marginBlock: 16,
+      }}
+    >
+      <h4>经济复核与共同风险</h4>
+      <Button
+        icon={<ReloadOutlined />}
+        loading={busy}
+        onClick={() => void read()}
+      >
+        读取经济复核
+      </Button>
+      {(error || (value && !visible)) && (
+        <p role="status">
+          当前候选或经济复核来源未能核验，暂不展示本附录数值。请核对候选版本；不影响保留原研究记录。
+        </p>
+      )}
+      {visible && <EconomicReviewResult value={visible} />}
+    </section>
+  );
+}

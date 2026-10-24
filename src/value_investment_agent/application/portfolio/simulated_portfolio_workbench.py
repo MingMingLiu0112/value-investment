@@ -96,6 +96,8 @@ def mutate_simulated_portfolio(project, now, operation, request, *, core_symbols
         if reference is None or expected != {key: reference[key] for key in ('path', 'sha256')}:
             raise SourceResearchVersionChanged('Displayed research reference changed')
         method = service.confirm_entry_hypothesis
+    elif operation == 'correct-fill':
+        method = service.correct_confirmed_fill
     else:
         raise JournalValidationError('Unsupported simulated operation')
     result, digest = method(payload)

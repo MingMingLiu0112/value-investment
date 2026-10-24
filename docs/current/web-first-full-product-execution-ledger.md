@@ -3796,3 +3796,83 @@ match their clean verification receipt; no large suite was rerun. Independent
 read-only review found no required correction to scope, inherited completion,
 pending simulation status or admission criteria. This verifies the prompt update,
 not the pending code or investment effectiveness.
+
+### 2026-10-24 - Resumed Goal: persistent SIM and economic explanations integrated
+
+The existing Goal was resumed by the user and is ACTIVE. The prompt-audit PAUSED
+observation above remains historical. This package advances the existing business
+paths; full assisted-use acceptance remains NOT_REACHED and action=no_order.
+
+Independent4f review found no required P1/P2; cd9d63c7 integrates persistent SIM
+context into the existing journal, accounting, risk and original Entry lineage.
+Root cd8475cd wires fixed local simulation routes, and657ce493 integrates the
+initial front end. User input cannot select ACTUAL, private storage, server clock
+or settlement overrides. GET creates no account; source collection failure does
+not turn existing cash/holdings into zero. Current references are not strategy or
+market-price approval. Initial IPS is still missing rather than guessed.
+
+Real interface integration caught two issues: HTTP-start time could predate the
+new journal record during readback, and the initial UI cancellation omitted the
+prepared hash. Both were corrected and tested. The financial engine retains its
+native clock; source evaluation times remain separate. Application security
+selection is injected from the HTTP composition layer, not a company literal.
+Source reference timestamps are stable across an Entry retry. Targeted API and
+architecture46 passed after those changes. Independent scope/time/source probes
+confirmed no new required P1/P2 in the original API slice.
+
+aa066e50 integrates independently reviewedfce11b8e: confirmed SIM price/quantity/
+fee corrections append an explicit versioned event and replay the original
+cash/FIFO/calendar/IPS engine. Original lines and Entry reasoning are preserved;
+illegal successors or intermediate budget breaches reject before append. Current
+snapshot reconciliation is invalidated. ACTUAL/old74bb reject this new kind.
+No reverse fill is invented.24e2de0c integrates the corresponding front end and
+preserves c8858760's cancellation fix and real-result contract test. HTTP409 with
+mutation_may_have_committed retains the original request/key for explicit retry.
+Root correction/API/architecture selection70 passed; author and independent
+algorithm tests are separately retained, not substitutes for product acceptance.
+
+Actual public references600519/native and300750/sealed were copied as59 pinned
+files into a new disposable test project. The NEW persistent service completed
+buy200/buy100/reduce100/exit100/price-and-fee correction, preserving original Entry
+and restoring identical state in a separate Python process. Prices/capital/fills
+are explicit TEST_ONLY hypotheses, not current quotes or broker observations.
+Receipt .tmp/real-persistent-public-api/06f98214d97341bcae698d46b5dab311/receipt.json
+SHA256231a9e38fc5886186db004e2e58957e6e1917285f09ae09b87a81255bb36c272.
+Its14 actual HTTP states pass the front-end verifier; combined persistent/legacy
+front-end selection68 passed/3 optional browser tests skipped. The test directory
+was removed only after restoration checks; this is not a live8001 persistent
+account or natural-time Shadow acceptance. Earlier13-state/unsupported receipts
+remain historical, not overwritten or relabeled.
+
+5444fb7a/ea7f914d integrate the reviewed economic projection. It reuses the existing
+native cash and RI kernels, distinguishes DDM/RI terminal fractions, exposes a
+Ke-only diagnostic and first-year cash identity, and keeps normalised profit null.
+Independent actualJS2/second-company review13 passed; no new economic approval,
+primary registration or price qualification was created. Root adds a separate
+read-only economic appendix endpoint to the current company page, without
+changing the old research calculator or the two byte-bound native modules.
+Actual HTTP economic receipt .tmp/real-economic-api/d2a96d0291584600bf5e8315bab6541f/receipt.json
+SHA25618c02a908a97b3cd051f9efc5defd0ba5e8f69f21000b9b0d6a359199f575d88,
+result SHA256857e95c69ae232cc48c031d2ebc88a091a3fc54bdaf3988acc5b7cd775986bbc.
+This is localTestClient evidence, not live8001. Backend economic/architecture46
+passed/1 optional real-input test skipped; the actualJS2 invocation is separate.
+Independent review found a P2 on same-SHA/different-path cached results. Full
+symbol:path:SHA keys and display-time identity validation close it; two formal
+loaded/late-response tests and the real-result front-end selection134 passed/
+4 skipped confirm the fix. Current-page unsigned state is now distinguished from
+the already implemented research-only signed CLI rather than claiming no CLI.
+
+f9a757b4 integrates sibling8d2f82e5 after independent review: execution-linked
+intent explanation distinguishes the zero-cost100-share simulated fill from
+normal/double-cost ORDER_LIMIT rejections. No unfilled intent becomes a position.
+Real cash source/tax/comparability/PIT/OOS boundaries remain unproved; overall
+swing coverage is still3/7 PARTIAL/NOT_PROVEN. Shared Web consumption remains work.
+
+Remote07c94db6 Core40063152523 was cancelled during the10-minute job window;
+PostgreSQL completed successfully. The log runs04:38:45Z through04:48:59Z and
+contains cancellation, not a passed gate. The offline job receives a bounded
+30-minute budget for the expanded suite; no tests or acceptance checks are
+removed. Exact clean full verification, new GitHub CI and actual8001 publication/
+browser acceptance are still pending at this source checkpoint. The running
+service remainsd289 until those gates pass. Private accounts, Canonical Excel,
+server/PTA, production DB/jobs, signer identities and broker remain untouched.

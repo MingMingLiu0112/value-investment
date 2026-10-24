@@ -167,9 +167,9 @@ it("TEST_ONLY displays a dated low-confidence native path without calculating, f
     "长期无法上划",
     "不证明其他分支成立",
     "本附录不证明历史现金桥完整",
-    "仅待审资料，新版本签名消费链尚未接通",
-    "这是工程缺口，不是等待用户授权",
-    "不能签署消费或视为已准备正式准入",
+    "当前页面仍展示待审候选",
+    "研究级签名CLI已实现",
+    "不能视为主估值或价格批准",
     "模型允许支付股息",
     "母公司单体权益",
     "-12,345.67",
@@ -296,7 +296,7 @@ it.each([
       <ValueResearchAnalysis decision={decision} />,
     );
     expect(html).toContain("暂不展示本附录现金数值");
-    expect(html).toContain("仅待审资料，新版本签名消费链尚未接通");
+    expect(html).toContain("当前页面仍展示待审候选");
     expect(html).not.toContain("模型允许支付股息");
     expect(html).not.toContain("-12,345.67");
   },

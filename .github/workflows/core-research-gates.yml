@@ -17,7 +17,7 @@ env:
 jobs:
   offline-core:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Prepare project-local temporary directory
@@ -74,6 +74,7 @@ jobs:
           tests/web_api/test_dual_simulated_journey.py
           tests/web_api/test_simulated_portfolio_api.py
           tests/test_simulated_portfolio_service_v1.py
+          tests/test_simulated_portfolio_corrections.py
           tests/test_private_first_use_workflow.py
           tests/test_private_risk_preview.py
           tests/test_private_hotspot_add_preview.py
@@ -160,6 +161,8 @@ jobs:
           tests/test_source_native_workflow_integration.py
           tests/test_source_native_signed_review_v2.py
           tests/test_source_native_review_cli.py
+          tests/test_source_native_economic_review_v1.py
+          tests/web_api/test_source_native_economic_api.py
           tests/test_content_addressed_economic_bridge.py
           tests/test_hotspot_cash_basis_v2.py
           tests/test_hotspot_cash_related_disclosures.py

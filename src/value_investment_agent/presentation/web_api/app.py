@@ -70,6 +70,7 @@ from .agent_research_routes import register_agent_research_routes
 from .simulated_journey_routes import register_simulated_journey_routes
 from .dual_simulated_journey_routes import register_dual_simulated_journey_routes
 from .simulated_portfolio_routes import register_simulated_portfolio_routes
+from .source_native_economic_routes import register_source_native_economic_routes
 from .runtime_identity import data_freshness, git_head, publication_registry_status, runtime_identity, sha256
 from .value_policy_routes import register_value_policy_routes
 from ...application.decision.value_policy_interaction import (
@@ -931,6 +932,7 @@ def create_app(
     register_simulated_journey_routes(api, project=project)
     register_dual_simulated_journey_routes(api, project=project)
     register_simulated_portfolio_routes(api, project=project, port=bound_port)
+    register_source_native_economic_routes(api, project=project)
     register_value_policy_routes(api, sessions=sessions, port=bound_port,
         principal_resolver=lambda request: PolicyPrincipal("local-account-owner", frozenset({PERMISSION})),
         get_service=lambda: value_policy_service or ValuePolicyInteractionService(
