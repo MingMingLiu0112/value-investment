@@ -72,6 +72,8 @@ jobs:
           tests/test_value_review_replay.py
           tests/web_api/test_p5_reviews.py
           tests/web_api/test_dual_simulated_journey.py
+          tests/web_api/test_simulated_portfolio_api.py
+          tests/test_simulated_portfolio_service_v1.py
           tests/test_private_first_use_workflow.py
           tests/test_private_risk_preview.py
           tests/test_private_hotspot_add_preview.py
